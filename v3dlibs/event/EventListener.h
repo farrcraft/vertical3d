@@ -5,15 +5,12 @@
 
 #include "EventInfo.h"
 
-namespace v3d::event
-{
-
+namespace v3d::event {
 	/** 
 	 * An Abstract Base Class for any derived class which wants to listen and
 	 * be notified of events.
 	 */
-	class EventListener
-	{
+	class EventListener {
 		public:
 			virtual ~EventListener() { }
 

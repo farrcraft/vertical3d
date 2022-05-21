@@ -1,28 +1,24 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
-#ifndef INCLUDED_V3D_MOUSEDEVICE
-#define INCLUDED_V3D_MOUSEDEVICE
+#pragma once
 
 #include "InputDevice.h"
 #include <map>
 #include <vector>
 #include <string>
 
-namespace v3D
-{
+namespace v3d::input {
 
 	class MouseEventListener;
 
-	class MouseDevice : public InputDevice
-	{
+	class MouseDevice : public InputDevice {
 		public:
-			class MouseState
-			{
+			class MouseState {
 				public:
-					typedef struct 
-					{ 
+					typedef struct  { 
 						int position_[2];
 					} MotionInfo;
 
@@ -66,6 +62,4 @@ namespace v3D
 	};
 
 
-}; // end v3D namespace
-
-#endif // INCLUDED_V3D_MOUSEDEVICE
+};

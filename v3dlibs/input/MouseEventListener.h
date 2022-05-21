@@ -1,21 +1,20 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
-#ifndef INCLUDED_V3D_MOUSEEVENTLISTENER
-#define INCLUDED_V3D_MOUSEEVENTLISTENER
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once
 
 #include "../event/EventListener.h"
 
-namespace v3D
-{
+namespace v3d::input {
 
 	/**
 	 * An event listener for mouse events.
  	 */
-	class MouseEventListener : public EventListener
-	{
+	class MouseEventListener : public v3d::event::EventListener {
 		public:
-			virtual ~MouseEventListener() { }
+			virtual ~MouseEventListener() = default;
 
 			virtual void motion(unsigned int x, unsigned int y) = 0;
 			virtual void buttonPressed(unsigned int button) = 0;
@@ -23,7 +22,4 @@ namespace v3D
 	};
 
 
-}; // end namespace v3D
-
-
-#endif // INCLUDED_V3D_MOUSEEVENTLISTENER
+};

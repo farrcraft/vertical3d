@@ -1,8 +1,9 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
-#ifndef INCLUDED_V3D_KEYBOARDDEVICE
-#define INCLUDED_V3D_KEYBOARDDEVICE
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once
 
 #include "InputDevice.h"
 
@@ -10,16 +11,13 @@
 #include <vector>
 #include <map>
 
-namespace v3D
-{
+namespace v3d::input {
 
 	class KeyboardEventListener;
 
-	class KeyboardDevice : public InputDevice
-	{
+	class KeyboardDevice : public InputDevice {
 		public:
-			class KeyState
-			{
+			class KeyState {
 				public:
 					bool pressed(const std::string & c) const;
 					bool operator() (const std::string & c);
@@ -50,6 +48,4 @@ namespace v3D
 	};
 
 
-}; // end namespace v3D
-
-#endif // INCLUDED_V3D_KEYBOARDDEVICE
+};

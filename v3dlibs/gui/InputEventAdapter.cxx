@@ -1,8 +1,13 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
 #include "InputEventAdapter.h"
 
 #include <boost/lexical_cast.hpp>
 
-using namespace v3D;
+using namespace v3d::input;
 
 InputEventAdapter::InputEventAdapter(boost::shared_ptr<KeyboardDevice> kb, boost::shared_ptr<MouseDevice> mouse)
 {
@@ -21,7 +26,7 @@ void InputEventAdapter::connect(EventListener * target)
 	targets_.push_back(target);
 }
 
-void InputEventAdapter::notify(const EventInfo & info)
+void InputEventAdapter::notify(const v3d::event::EventInfo & info)
 {
 	std::vector<EventListener * >::const_iterator iter = targets_.begin();
 	for (; iter != targets_.end(); iter++)
@@ -34,7 +39,7 @@ void InputEventAdapter::motion(unsigned int x, unsigned int y)
 {
 	std::string name = "mouse::";
 	name += "motion";
-	EventInfo e(name, EventInfo::MATCH_STATE_ANY);
+	v3d::event::EventInfo e(name, v3d::event::EventInfo::MATCH_STATE_ANY);
 	notify(e);
 }
 
@@ -43,7 +48,7 @@ void InputEventAdapter::buttonPressed(unsigned int button)
 	std::string name = "mouse::";
 	name += "button_";
 	name += boost::lexical_cast<std::string>(button);
-	EventInfo e(name, EventInfo::MATCH_STATE_ON);
+	v3d::event::EventInfo e(name, v3d::event::EventInfo::MATCH_STATE_ON);
 	notify(e);
 }
 
@@ -52,18 +57,18 @@ void InputEventAdapter::buttonReleased(unsigned int button)
 	std::string name = "mouse::";
 	name += "button_";
 	name += boost::lexical_cast<std::string>(button);
-	EventInfo e(name, EventInfo::MATCH_STATE_OFF);
+	v3d::event::EventInfo e(name, v3d::event::EventInfo::MATCH_STATE_OFF);
 	notify(e);
 }
 
 void InputEventAdapter::keyPressed(const std::string & key)
 {
-	EventInfo e(key, EventInfo::MATCH_STATE_ON);
+	v3d::event::EventInfo e(key, v3d::event::EventInfo::MATCH_STATE_ON);
 	notify(e);
 }
 
 void InputEventAdapter::keyReleased(const std::string & key)
 {
-	EventInfo e(key, EventInfo::MATCH_STATE_OFF);
+	v3d::event::EventInfo e(key, v3d::event::EventInfo::MATCH_STATE_OFF);
 	notify(e);
 }

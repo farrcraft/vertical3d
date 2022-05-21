@@ -1,23 +1,20 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
-#ifndef INCLUDED_V3D_INPUTDEVICE
-#define INCLUDED_V3D_INPUTDEVICE
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once
 
 #include "../event/EventEmitter.h"
 
-namespace v3D
-{
-
-
-	class InputDevice : public EventEmitter
-	{
+namespace v3d::input {
+	/**
+	 **/
+	class InputDevice : public v3d::event::EventEmitter {
 		public:
-			virtual ~InputDevice() { }
-
+			virtual ~InputDevice() = default;
+			/**
+			 **/
 			virtual bool tick() = 0;
 	};
-
-}; // end namespace v3D
-
-#endif // INCLUDED_V3D_INPUTDEVICE
+};

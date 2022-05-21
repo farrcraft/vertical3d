@@ -1,5 +1,9 @@
-#ifndef INCLUDED_V3D_INPUTEVENTADAPTER
-#define INCLUDED_V3D_INPUTEVENTADAPTER
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once
 
 #include "../input/MouseDevice.h"
 #include "../input/KeyboardDevice.h"
@@ -9,8 +13,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-namespace v3D
-{
+namespace v3d::input {
 
 	/**
 	* The InputEventAdapter provides the glue between libv3dcommand and libv3dinput, connecting the input device events to
@@ -18,8 +21,7 @@ namespace v3D
 	*/
 	class InputEventAdapter :
 		public MouseEventListener,
-		public KeyboardEventListener
-	{
+		public KeyboardEventListener {
 		public:
 			InputEventAdapter(boost::shared_ptr<KeyboardDevice> kb, boost::shared_ptr<MouseDevice> mouse);
 
@@ -34,13 +36,10 @@ namespace v3D
 			void keyReleased(const std::string & key);
 
 		protected:
-			void notify(const EventInfo & info);
+			void notify(const v3d::event::EventInfo & info);
 
 		private:
 			std::vector< EventListener * > targets_;
 	};
 
-}; // end namespace v3D
-
-
-#endif // INCLUDED_V3D_INPUTEVENTADAPTER
+};
