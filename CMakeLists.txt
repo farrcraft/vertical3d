@@ -20,7 +20,8 @@ include_directories(SYSTEM
 	${Boost_INCLUDE_DIRS}
 	"vendor/glm-0.9.9.8/glm"
 	"vendor/OpenAL 1.1 SDK/include"
-	"vendor/freealut-freealut_1_1_0/include")
+	"vendor/freealut-freealut_1_1_0/include"
+	"vendor/glew-2.2.0/include")
 
 link_directories(
 	${Boost_LIBRARY_DIRS})
