@@ -1,6 +1,6 @@
 /**
  * Vertical3D
- * Copyright(c) 2021 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
 **/
 
 #include "AudioClip.h"
@@ -16,47 +16,32 @@
 #endif
 #include <AL/alut.h>
 
-#include <log4cxx/logger.h>
-
 using namespace v3d::audio;
 
-AudioClip::AudioClip()
-{
-}
-
-AudioClip::~AudioClip()
-{
-}
-
-unsigned int AudioClip::source() const
-{
+unsigned int AudioClip::source() const noexcept {
 	return source_;
 }
 
-void AudioClip::destroy()
-{
+void AudioClip::destroy() {
 	alDeleteBuffers(1, &buffer_);
 	alDeleteSources(1, &source_);
 }
 
-bool AudioClip::load(const std::string & filename)
-{
+bool AudioClip::load(const std::string & filename) {
 	ALboolean loop = false;
-	log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("v3d.audio"));
+	// log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("v3d.audio"));
 
 	// load sound data from file
 	buffer_ = alutCreateBufferFromFile(filename.c_str());
-	if (alGetError() != AL_NO_ERROR)
-	{
-		LOG4CXX_ERROR(logger, "alut create failed for file [" << filename << "]");
+	if (alGetError() != AL_NO_ERROR) {
+		// LOG4CXX_ERROR(logger, "alut create failed for file [" << filename << "]");
 		return false;
 	}
 
 	// create a source for the sound
 	alGenSources(1, &source_);
-	if (alGetError() != AL_NO_ERROR)
-	{
-		LOG4CXX_ERROR(logger, "error generating OpenAL sources for audio clip [" << filename << "]");
+	if (alGetError() != AL_NO_ERROR) {
+		// LOG4CXX_ERROR(logger, "error generating OpenAL sources for audio clip [" << filename << "]");
 		return false;
 	}
 
@@ -71,12 +56,10 @@ bool AudioClip::load(const std::string & filename)
 	*/
 	alSourcei(source_, AL_LOOPING, loop);
 
-	if (alGetError() != AL_NO_ERROR)
-	{
-		LOG4CXX_ERROR(logger, "error setting source properties for audio clip [" << filename << "]");
+	if (alGetError() != AL_NO_ERROR) {
+		// LOG4CXX_ERROR(logger, "error setting source properties for audio clip [" << filename << "]");
 		return false;
 	}
 
 	return true;
 }
-

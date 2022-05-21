@@ -1,6 +1,6 @@
 /**
  * Vertical3D
- * Copyright(c) 2021 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
 #pragma once
@@ -9,20 +9,18 @@
 
 #include <string>
 
-namespace v3d::audio
-{
+namespace v3d::audio {
 
-	class AudioClip
-	{
+	class AudioClip final {
 		public:
-			AudioClip();
-			~AudioClip();
+			AudioClip() = default;
+			~AudioClip() = default;
 
 			bool load(const std::string & filename);
 			void destroy();
 
 	//		unsigned int buffer(void) const;
-			unsigned int source() const;
+			unsigned int source() const noexcept;
 
 	//		vector3d position(void) const;
 	//		vector3d velocity(void) const;

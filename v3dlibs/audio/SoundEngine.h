@@ -1,6 +1,6 @@
 /**
  * Vertical3D
- * Copyright(c) 2021 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
 **/
 
 #pragma once
@@ -10,17 +10,15 @@
 #include <boost/property_tree/ptree.hpp>
 #include <map>
 
-namespace v3d::audio
-{
+namespace v3d::audio {
 
 	/**
 	 * The SoundEngine class. It is responsible for all of the OpenAL functionality. 
 	 **/
-	class SoundEngine
-	{
+	class SoundEngine final {
 		public:
 			SoundEngine();
-			~SoundEngine();
+			~SoundEngine() = default;
 
 			void shutdown();
 			bool load(const boost::property_tree::ptree & tree, const std::string & assetPath);
