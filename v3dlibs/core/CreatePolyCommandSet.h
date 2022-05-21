@@ -5,16 +5,15 @@
 
 #pragma once
 
+#include "../brep/BRep.h"
+
 #include <boost/shared_ptr.hpp>
 
-namespace v3d {
-	class BRep;
-}
 namespace v3d::core {
 
-	boost::shared_ptr<v3d::BRep> create_poly_cube();
-	boost::shared_ptr<v3d::BRep> create_poly_plane();
-	boost::shared_ptr<v3d::BRep> create_poly_cylinder();
-	boost::shared_ptr<v3d::BRep> create_poly_cone();
+	boost::shared_ptr<v3d::brep::BRep> create_poly_cube();
+	boost::shared_ptr<v3d::brep::BRep> create_poly_plane();
+	boost::shared_ptr<v3d::brep::BRep> create_poly_cylinder();
+	boost::shared_ptr<v3d::brep::BRep> create_poly_cone();
 
 };
