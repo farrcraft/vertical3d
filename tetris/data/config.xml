@@ -1,0 +1,19 @@
+<?xml version="1.0" ?>
+<config>
+	<keys>
+		<bind event="a" scope="tetris" command="movePieceLeft" catch="on" />
+		<bind event="d" scope="tetris" command="movePieceRight" catch="on" />
+		<bind event="w" scope="tetris" command="rotatePieceCW" catch="on" />
+		<bind event="s" scope="tetris" command="rotatePieceCCW" catch="on" />
+		<bind event="space" scope="tetris" command="dropPiece" catch="on" />
+		<bind event="escape" command="toggleMenu" catch="on" />
+		<bind event="return" command="selectMenu" catch="on" />
+		<bind event="arrow_up" command="menuPrevious" catch="on" />
+		<bind event="arrow_down" command="menuNext" catch="on" />
+		<bind event="f1" command="toggleFS" catch="on" />
+		<bind event="f2" scope="tetris" command="debugMode" catch="on" />
+	</keys>
+	<menu>
+		<item label="Quit" command="quit" />
+	</menu>
+</config>
