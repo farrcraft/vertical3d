@@ -1,0 +1,206 @@
+<?xml version="1.0" ?>
+<window>
+	<menu>
+		<menu name="Create">
+			<menu name="Poly">
+				<menuitem name="Cube" command="create::poly::cube" />
+				<menuitem name="Plane" command="create::poly::plane" />
+				<menuitem name="Cylinder" command="create::poly::cylinder" />
+				<menuitem name="Cone" command="create::poly::cone" />
+			</menu>
+			<menu name="Camera">
+				<menuitem name="Orthographic" command="create::ortho::camera" />
+				<menuitem name="Perspective" command="create::perspective::camera" />
+			</menu>
+			<menu name="Light">
+			</menu>
+			<menuitem name="Group" command="create::group" />
+		</menu>
+		<menu name="View">
+			<menu name="Show">
+				<menuitem name="Mesh" command="view::show::mesh" type="check" />
+				<menuitem name="Light" command="view::show::light" type="check" />
+				<menuitem name="Camera" command="view::show::camera" type="check" />
+				<menuitem name="Handle" command="view::show::handle" type="check" />
+				<menuitem name="Grid" command="view::show::grid" type="check" />
+			</menu>
+			<menu name="Render Mode">
+				<menu name="Front Facing">
+					<menuitem name="Points" command="view::rendermode::front::points" type="radio" />
+					<menuitem name="Lines" command="view::rendermode::front::lines" type="radio" />
+					<menuitem name="Fill" command="view::rendermode::front::fill" type="radio" />
+				</menu>
+				<menu name="Back Facing">
+					<menuitem name="Points" command="view::rendermode::back::points" type="radio" />
+					<menuitem name="Lines" command="view::rendermode::back::lines" type="radio" />
+					<menuitem name="Fill" command="view::rendermode::back::fill" type="radio" />
+				</menu>
+			</menu>
+			<menu name="Cull Mode">
+				<menuitem name="None" command="view::cull::none" type="radio" />
+				<menuitem name="Front" command="view::cull::front" type="radio" />
+				<menuitem name="Back" command="view::cull::back" type="radio" />
+				<menuitem name="Both" command="view::cull::both" type="radio" />
+			</menu>
+			<menu name="Shading Mode">
+				<menuitem name="Flat" command="view::shade::flat" type="radio" />
+				<menuitem name="Smooth" command="view::shade::smooth" type="radio" />
+			</menu>
+			<menu name="Camera">
+				<menuitem name="Front" command="view::camera::front" type="radio" />
+				<menuitem name="Back" command="view::camera::back" type="radio" />
+				<menuitem name="Left" command="view::camera::left" type="radio" />
+				<menuitem name="Right" command="view::camera::right" type="radio" />
+				<menuitem name="Top" command="view::camera::top" type="radio" />
+				<menuitem name="Bottom" command="view::camera::bottom" type="radio" />
+				<menuitem name="Perspective" command="view::camera::perspective" type="radio" />
+			</menu>
+		</menu>
+		<menu name="Object Manipulators">
+			<menuitem name="Select" command="transform::select" />
+			<menuitem name="Translate" command="transform::translate" />
+			<menuitem name="Rotate" command="transform::rotate" />
+			<menuitem name="Scale" command="transform::scale" />
+			<menu name="Poly">
+				<menuitem name="Extrude Face" command="transform::poly::extrude_face" />
+				<menuitem name="Split Face" command="transform::poly::split_face" />
+				<menuitem name="Split Edge" command="transform::poly::split_edge" />
+			</menu>
+		</menu>
+		<menu name="Camera Manipulators">
+			<menuitem name="Truck" command="camera::truck" />
+			<menuitem name="Dolly" command="camera::dolly" />
+			<menuitem name="Zoom" command="camera::zoom" />
+			<menuitem name="Pan" command="camera::pan" />
+			<menuitem name="Pitch" command="camera::pitch" />
+		</menu>
+		<menu name="Select Mask">
+			<menuitem name="Face" command="select::mask::face" type="check" />
+			<menuitem name="Edge" command="select::mask::edge" type="check" />
+			<menuitem name="Vertex" command="select::mask::vertex" type="check" />
+			<menuitem name="Curve" command="select::mask::curve" type="check" />
+			<menuitem name="Mesh" command="select::mask::mesh" type="check" />
+			<menuitem name="Object" command="select::mask::object" type="check" />
+			<menuitem name="Light" command="select::mask::light" type="check" />
+			<menuitem name="Camera" command="select::mask::camera" type="check" />
+			<menuitem name="Handle" command="select::mask::handle" type="check" />
+		</menu>
+		<menu name="Project">
+			<menuitem name="Load" command="project::load" />
+			<menuitem name="Save" command="project::save" />
+			<menu name="Import">
+				<menuitem name="lwo" command="project::import::lwo" />
+				<menuitem name="dxf" command="project::import::dxf" />
+				<menuitem name="3ds" command="project::import::3ds" />
+				<menuitem name="milkshape" command="project::import::milkshape" />
+			</menu>
+		</menu>
+		<menu name="Render">
+			<menuitem name="Render Settings" command="render::settings" />
+			<menuitem name="Render View" command="render::view" />
+			<menuitem name="Render Batch Render" command="render::batch" />
+		</menu>
+		<menu name="Timeline">
+			<menuitem name="Set Key" command="timeline::set" />
+			<menu name="Playback">
+				<menuitem name="Play" command="timeline::playback::play" />
+				<menuitem name="Stop" command="timeline::playback::stop" />
+				<menuitem name="Next Frame" command="timeline::playback::next" />
+				<menuitem name="Previous Frame" command="timeline::playback::previous" />
+				<menuitem name="Next Keyed Frame" command="timeline::playback::next_key" />
+				<menuitem name="Previous Keyed Frame" command="timeline::playback::previous_key" />
+				<menuitem name="First Frame" command="timeline::playback::first" />
+				<menuitem name="Last Frame" command="timeline::playback::last" />
+				<menuitem name="First Keyed Frame" command="timeline::playback::first_key" />
+				<menuitem name="Last Keyed Frame" command="timeline::playback::last_key" />
+			</menu>
+		</menu>
+		<menuitem name="Quit" command="quit" />
+	</menu>
+
+	<toolbar position="top">
+		<button name="" command="select::mask::face" icon="" toggle="true" />
+		<button name="" command="select::mask::edge" icon="" toggle="true" />
+		<button name="" command="select::mask::vertex" icon="" toggle="true" />
+		<button name="" command="select::mask::curve" icon="" toggle="true" />
+		<button name="" command="select::mask::mesh" icon="" toggle="true" />
+		<button name="" command="select::mask::object" icon="" toggle="true" />
+		<button name="" command="select::mask::light" icon="" toggle="true" />
+		<button name="" command="select::mask::camera" icon="" toggle="true" />
+		<button name="" command="select::mask::handle" icon="" toggle="true" />
+	</toolbar>
+
+	<toolbar position="left" style="icons">
+		<button name="Select Tool" command="transform::select" icon="select.png" toggle="true" />
+		<button name="Translate Tool" command="transform::translate" icon="translate.png" toggle="true" />
+		<button name="Rotate Tool" command="transform::rotate" icon="rotate.png" toggle="true" />
+		<button name="Scale Tool" command="transform::scale" icon="scale.png" toggle="true" />
+	</toolbar>
+
+	<keybindings>
+		<bind command="transform::select" event="Keyboard::Q" />
+		<bind command="transform::translate" event="Keyboard::W" />
+		<bind command="transform::rotate" event="Keyboard::E" />
+		<bind command="transform::scale" event="Keyboard::R" />
+		<bind command="view::display::wireframe" event="Keyboard::4" />
+		<bind command="view::display::shaded" event="Keyboard::5" />
+		<bind command="view::camera::zoom" event="Keyboard::Alt" />
+		<bind command="view::camera::truck" event="Keyboard::Control" />
+		<bind command="view::camera::pan" event="Keyboard::Shift" />
+		<bind command="view::pop" event="Keyboard::Space" />
+	</keybindings>
+
+	<profile>
+		<camera name="Front" near=".001" far="100.0" adaptive="both" 
+				orthographic="true" zoom="10.0" aspect="1.33" 
+				eye="0.0, 0.0, -10.0" up="0.0, 1.0, 0.0" 
+				right="1.0, 0.0, 0.0" direction="0.0, 0.0, 1.0" />
+		<camera name="Back" near=".001" far="100.0" adaptive="both" 
+				orthographic="true" zoom="10.0" aspect="1.33" 
+				eye="0.0, 0.0, 10.0" up="0.0, 1.0, 0.0" 
+				right="-1.0, 0.0, 0.0" direction="0.0, 0.0, -1.0" 
+				orientation="0.0, 180.0, 0.0" />
+		<camera name="Left" near=".001" far="100.0" adaptive="both" 
+				orthographic="true" zoom="10.0" aspect="1.33" 
+				eye="-1.0, 0.0, 0.0" up="0.0, 1.0, 0.0" 
+				right="0.0, 0.0, -1.0" direction="1.0, 0.0, 0.0"
+				orientation="0.0, -90.0, 0.0" />
+		<camera name="Right" near=".001" far="100.0" adaptive="both" 
+				orthographic="true" zoom="10.0" aspect="1.33" 
+				eye="1.0, 0.0, 0.0" up="0.0, 1.0, 0.0" 
+				right="0.0, 0.0, 1.0" direction="-1.0, 0.0, 0.0"
+				orientation="0.0, 90.0, 0.0" />
+		<camera name="Top" near=".001" far="100.0" adaptive="both" 
+				orthographic="true" zoom="10.0" aspect="1.33" 
+				eye="0.0, 10.0, 0.0" up="0.0, 0.0, 1.0" 
+				right="1.0, 0.0, 0.0" direction="0.0, -1.0, 0.0"
+				orientation="-90.0, 0.0, 0.0" />
+		<camera name="Bottom" near=".001" far="100.0" adaptive="both" 
+				orthographic="true" zoom="10.0" aspect="1.33" 
+				eye="0.0, -1.0, 0.0" up="0.0, 0.0, -1.0" 
+				right="1.0, 0.0, 0.0" direction="0.0, 1.0, 0.0"
+				orientation="90.0, 0.0, 0.0" />
+		<camera name="Perspective" near=".001" far="100.0" fov="60.0" 
+				orthographic="false" aspect="1.33" adaptive="none" 
+				eye="0.0, 5.0, -20.0" up="0.0, 1.0, 0.0" 
+				right="1.0, 0.0, 0.0" direction="0.0, 0.0, 1.0" 
+				lookat="0.0, 0.0, 0.0" />
+		<camera name="Perspective2" near=".001" far="100.0" fov="60.0" 
+				orthographic="false" aspect="1.33" adaptive="none" 
+				eye="0.0, 1.0, -1.0" up="0.0, 1.0, 0.0" 
+				right="1.0, 0.0, 0.0" direction="0.0, 0.0, 1.0" />
+	</profile>
+
+	<viewlayout name="Quad Layout" width="1024" height="768" font="courier 8">
+		<viewgroup type="vertical">
+			<viewgroup type="horizontal">
+				<viewport camera="Front" />
+				<viewport camera="Top" />
+			</viewgroup>
+			<viewgroup type="horizontal">
+				<viewport camera="Left" />
+				<viewport camera="Perspective" />
+			</viewgroup>
+		</viewgroup>
+	</viewlayout>
+</window>

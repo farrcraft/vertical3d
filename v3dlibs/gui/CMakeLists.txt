@@ -1,0 +1,1 @@
+add_library("v3dlib_gui" "InputEventAdapter.h" "InputEventAdapter.cxx")

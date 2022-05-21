@@ -1,0 +1,10 @@
+##RenderMan RIB-Structure 1.1
+##Scene Test Scene 01
+version 3.03
+Format 640 480 1
+Projection "perspective"
+Clipping 10 1000.0
+FrameBegin
+WorldBegin
+WorldEnd
+FrameEnd

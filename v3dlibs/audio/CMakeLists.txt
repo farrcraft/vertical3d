@@ -1,0 +1,1 @@
+add_library("v3dlib_audio" "AudioClip.h" "AudioClip.cxx" "SoundEngine.h" "SoundEngine.cxx")

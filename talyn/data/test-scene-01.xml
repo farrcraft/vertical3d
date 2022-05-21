@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<scene name="test-scene-01">
+	<frame>
+		<format width="640" height="480" />
+		<clipping near="0.01" far="1.0" />
+	</frame>
+	<background>
+		<color red="0.0" green="0.0" blue="0.0" />
+	</background>
+	<sphere radius="1.0" />
+	<plane />
+</scene>

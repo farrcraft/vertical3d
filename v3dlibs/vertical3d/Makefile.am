@@ -1,0 +1,19 @@
+AUTOMAKE_OPTIONS = subdir-objects
+ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS} -I .
+
+bin_PROGRAMS = vertical3d
+vertical3d_SOURCES = \
+vertical3d.cxx \
+Controller.cxx \
+CameraControlTool.cxx \
+HWRenderContext.cxx \
+ViewPort.cxx
+
+AM_CPPFLAGS = $(DEPS_CFLAGS) $(BOOST_CPPFLAGS) $(GCOV_CFLAGS)
+AM_LDFLAGS = $(GCOV_LDFLAGS) \
+$(BOOST_SIGNALS_LDFLAGS) $(BOOST_SYSTEM_LDFLAGS) $(BOOST_FILESYSTEM_LDFLAGS) $(BOOST_PROGRAM_OPTIONS_LDFLAGS)
+
+vertical3d_LDADD = $(DEPS_LIBS) \
+ $(BOOST_SIGNALS_LIBS) $(BOOST_SYSTEM_LIBS) $(BOOST_FILESYSTEM_LIBS) $(BOOST_PROGRAM_OPTIONS_LIBS) \
+$(libpng_LIBS) $(JPEG_LIBS) $(liblog4cxx_LIBS) \
+$(top_builddir)/src/image/.libs/libv3dimage-@VERTICAL3D_API_VERSION@.la

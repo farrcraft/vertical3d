@@ -1,0 +1,2 @@
+add_library("v3dlib_3dtype" "3dtypes.h" "AABBox.h" "AABBox.cxx" "ArcBall.h" "ArcBall.cxx" "Bound2D.h" "Bound2D.cxx" "Camera.h" "Camera.cxx" "CameraProfile.h" "CameraProfile.cxx" "Color3.h" "Color3.cxx"
+"Color4.h" "Color4.cxx" "Matrix4.h" "Matrix4.cxx" "Quaternion.h" "Quaternion.cxx" "String.h" "String.cxx" "Vector.h" "Vector2.h" "Vector2.cxx" "Vector3.h" "Vector3.cxx" "Vector4.h" "Vector4.cxx")
