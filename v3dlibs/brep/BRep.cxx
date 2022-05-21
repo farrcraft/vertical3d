@@ -106,15 +106,15 @@ BRep::~BRep()
 {
 }
 
-v3d::types::Vector3 center(boost::shared_ptr<BRep> mesh, unsigned int face)
+v3d::type::Vector3 center(boost::shared_ptr<BRep> mesh, unsigned int face)
 {
 	float nverts = 0.0;
-	v3d::types::Vector3 mid(0.0, 0.0, 0.0);
+	v3d::type::Vector3 mid(0.0, 0.0, 0.0);
 
 	BRep::vertex_iterator it(mesh, face);
 	Vertex * vert;
 	// get edge vertices
-	v3d::types::Vector3 pt;
+	v3d::type::Vector3 pt;
 	for (; *it != 0; it++)
 	{
 		vert = *it;
@@ -128,7 +128,7 @@ v3d::types::Vector3 center(boost::shared_ptr<BRep> mesh, unsigned int face)
 	return mid;
 }
 
-void faceUV(boost::shared_ptr<BRep> mesh, unsigned int face, v3d::types::Vector3 & u, v3d::types::Vector3 & v)
+void faceUV(boost::shared_ptr<BRep> mesh, unsigned int face, v3d::type::Vector3 & u, v3d::type::Vector3 & v)
 {
 	BRep::edge_iterator it(mesh, face);
 	if (*it == 0)
@@ -138,7 +138,7 @@ void faceUV(boost::shared_ptr<BRep> mesh, unsigned int face, v3d::types::Vector3
 	if (!edge)
 		return;
 
-	v3d::types::Vector3 norm;
+	v3d::type::Vector3 norm;
 
 	unsigned int vert = edge->vertex();
 	assert(vert != BRep::INVALID_ID);
@@ -166,7 +166,7 @@ void faceUV(boost::shared_ptr<BRep> mesh, unsigned int face, v3d::types::Vector3
 	v.normalize();
 }
 
-unsigned int BRep::addVertex(const v3d::types::Vector3 & v)
+unsigned int BRep::addVertex(const v3d::type::Vector3 & v)
 {
 	unsigned int index = 0;
 	for (; index < vertices_.size(); index++)
@@ -196,12 +196,12 @@ unsigned int BRep::addEdge(unsigned int vertex)
 	return (edges_.size() - 1);
 }
 
-void BRep::addFace(const std::vector<v3d::types::Vector3> & vertices, const v3d::types::Vector3 & normal)
+void BRep::addFace(const std::vector<v3d::type::Vector3> & vertices, const v3d::type::Vector3 & normal)
 {
 	// add vertices
 	std::vector<unsigned int> indices;
 	unsigned int vertex;
-	std::vector<v3d::types::Vector3>::const_iterator it = vertices.begin();
+	std::vector<v3d::type::Vector3>::const_iterator it = vertices.begin();
 	for (; it != vertices.end(); it++)
 	{
 		vertex = addVertex(*it);
@@ -382,7 +382,7 @@ unsigned int BRep::addFace(const Face & f)
 	return (faces_.size() - 1);
 }
 
-void BRep::splitEdge(unsigned int edge, const v3d::types::Vector3 & point)
+void BRep::splitEdge(unsigned int edge, const v3d::type::Vector3 & point)
 {
 	unsigned int vertex;
 	vertices_.push_back(point);
@@ -403,15 +403,15 @@ void BRep::splitEdge(unsigned int edge, const v3d::types::Vector3 & point)
 }
 
 // calculate object-space bounds of mesh
-v3d::types::AABBox BRep::bound(void) const
+v3d::type::AABBox BRep::bound(void) const
 {
-	v3d::types::AABBox extents;
+	v3d::type::AABBox extents;
 	if (vertices_.size() == 0)
 		return extents;
-	v3d::types::Vector3 min, max;
+	v3d::type::Vector3 min, max;
 	min = vertices_[0].point();
 	max = min;
-	v3d::types::Vector3 vt;
+	v3d::type::Vector3 vt;
 	for (unsigned int index = 1; index < vertices_.size(); index++)
 	{
 		vt = vertices_[index].point();

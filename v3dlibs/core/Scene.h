@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "../3dtypes/CameraProfile.h"
-#include "../3dtypes/Camera.h"
+#include "../type/CameraProfile.h"
+#include "../type/Camera.h"
 
 #include <vector>
 #include <boost/shared_ptr.hpp>
@@ -44,7 +44,7 @@ namespace v3d::core
 				similar to the addBRep method but for camera profiles. except instead of a shape node
 				this might be for something called e.g. a TemplateNode. 
 			*/
-			void addCameraProfile(const v3d::types::CameraProfile & profile);
+			void addCameraProfile(const v3d::type::CameraProfile & profile);
 
 			/**
 			 * Accept a scene visitor to iterate over the scene
@@ -54,8 +54,8 @@ namespace v3d::core
 
 		private:
 			std::vector< boost::shared_ptr<BRep> >	meshes_;
-			std::vector< boost::shared_ptr<v3d::types::Camera> > cameras_;
-			std::vector<v3d::types::CameraProfile> cameraProfiles_;
+			std::vector< boost::shared_ptr<v3d::type::Camera> > cameras_;
+			std::vector<v3d::type::CameraProfile> cameraProfiles_;
 	};
 
 };

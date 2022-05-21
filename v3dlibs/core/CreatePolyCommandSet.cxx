@@ -7,11 +7,11 @@
 
 #include "CreatePolyCommandSet.h"
 #include "../brep/BRep.h"
-#include "../3dtypes/3dtypes.h"
+#include "../type/3dtypes.h"
 
 using namespace v3d::core;
 
-boost::shared_ptr<v3D::BRep> v3D::create_poly_cube()
+boost::shared_ptr<v3d::BRep> v3d::create_poly_cube()
 {
 	float length = 1.0;
 	float height = 1.0;
@@ -19,89 +19,89 @@ boost::shared_ptr<v3D::BRep> v3D::create_poly_cube()
 	length /= 2.0;
 	height /= 2.0;
 	width  /= 2.0;
-	boost::shared_ptr<v3D::BRep> mesh(new v3D::BRep());
+	boost::shared_ptr<v3d::BRep> mesh(new v3d::BRep());
 
 	// start new polygon - front
-	std::vector<v3D::Vector3> points;
-	v3D::Vector3 norm(0.0, 0.0, -1.0);
+	std::vector<v3d::type::Vector3> points;
+	v3d::type::Vector3 norm(0.0, 0.0, -1.0);
 	// add 4 vertices
-	points.push_back(v3D::Vector3(-width, -height, -length));
-	points.push_back(v3D::Vector3( width, -height, -length));
-	points.push_back(v3D::Vector3( width,  height, -length));
-	points.push_back(v3D::Vector3(-width,  height, -length));
+	points.push_back(v3d::type::Vector3(-width, -height, -length));
+	points.push_back(v3d::type::Vector3( width, -height, -length));
+	points.push_back(v3d::type::Vector3( width,  height, -length));
+	points.push_back(v3d::type::Vector3(-width,  height, -length));
 	mesh->addFace(points, norm);
 
 	// next polygon - right
 	points.clear();
-	norm = v3D::Vector3(1.0, 0.0, 0.0);
-	points.push_back(v3D::Vector3(width,  -height, -length));
-	points.push_back(v3D::Vector3( width, -height,  length));
-	points.push_back(v3D::Vector3( width,  height,  length));
-	points.push_back(v3D::Vector3( width,  height, -length));
+	norm = v3d::type::Vector3(1.0, 0.0, 0.0);
+	points.push_back(v3d::type::Vector3(width,  -height, -length));
+	points.push_back(v3d::type::Vector3( width, -height,  length));
+	points.push_back(v3d::type::Vector3( width,  height,  length));
+	points.push_back(v3d::type::Vector3( width,  height, -length));
 	mesh->addFace(points, norm);
 
 	// next polygon - top
 	points.clear();
-	norm = v3D::Vector3(0.0, 1.0, 0.0);
-	points.push_back(v3D::Vector3(-width,  height, -length));
-	points.push_back(v3D::Vector3( width,  height, -length));
-	points.push_back(v3D::Vector3( width,  height,  length));
-	points.push_back(v3D::Vector3(-width,  height,  length));
+	norm = v3d::type::Vector3(0.0, 1.0, 0.0);
+	points.push_back(v3d::type::Vector3(-width,  height, -length));
+	points.push_back(v3d::type::Vector3( width,  height, -length));
+	points.push_back(v3d::type::Vector3( width,  height,  length));
+	points.push_back(v3d::type::Vector3(-width,  height,  length));
 	mesh->addFace(points, norm);
 
 	// next polygon - left
 	points.clear();
-	norm = v3D::Vector3(-1.0, 0.0, 0.0);
-	points.push_back(v3D::Vector3(-width, -height,  length));
-	points.push_back(v3D::Vector3(-width, -height, -length));
-	points.push_back(v3D::Vector3(-width,  height, -length));
-	points.push_back(v3D::Vector3(-width,  height,  length));
+	norm = v3d::type::Vector3(-1.0, 0.0, 0.0);
+	points.push_back(v3d::type::Vector3(-width, -height,  length));
+	points.push_back(v3d::type::Vector3(-width, -height, -length));
+	points.push_back(v3d::type::Vector3(-width,  height, -length));
+	points.push_back(v3d::type::Vector3(-width,  height,  length));
 	mesh->addFace(points, norm);
 
 	// next polygon - back
 	points.clear();
-	norm = v3D::Vector3(0.0, 0.0, 1.0);
-	points.push_back(v3D::Vector3( width, -height,  length));
-	points.push_back(v3D::Vector3(-width, -height,  length));
-	points.push_back(v3D::Vector3(-width,  height,  length));
-	points.push_back(v3D::Vector3( width,  height,  length));
+	norm = v3d::type::Vector3(0.0, 0.0, 1.0);
+	points.push_back(v3d::type::Vector3( width, -height,  length));
+	points.push_back(v3d::type::Vector3(-width, -height,  length));
+	points.push_back(v3d::type::Vector3(-width,  height,  length));
+	points.push_back(v3d::type::Vector3( width,  height,  length));
 	mesh->addFace(points, norm);
 
 	// next polygon - bottom
 	points.clear();
-	norm = v3D::Vector3(0.0, -1.0, 0.0);
-	points.push_back(v3D::Vector3( width, -height, -length));
-	points.push_back(v3D::Vector3(-width, -height, -length));
-	points.push_back(v3D::Vector3(-width, -height,  length));
-	points.push_back(v3D::Vector3( width, -height,  length));
+	norm = v3d::Vector3(0.0, -1.0, 0.0);
+	points.push_back(v3d::type::Vector3( width, -height, -length));
+	points.push_back(v3d::type::Vector3(-width, -height, -length));
+	points.push_back(v3d::type::Vector3(-width, -height,  length));
+	points.push_back(v3d::type::Vector3( width, -height,  length));
 	mesh->addFace(points, norm);
 
 	return mesh;
 }
 
-boost::shared_ptr<v3D::BRep> v3D::create_poly_plane()
+boost::shared_ptr<v3d::BRep> v3d::create_poly_plane()
 {
 	float length = 1.0;
 	float width  = 1.0;
 	length /= 2.0;
 	width  /= 2.0;
 
-	boost::shared_ptr<v3D::BRep> mesh(new v3D::BRep());
+	boost::shared_ptr<v3d::BRep> mesh(new v3d::BRep());
 
 	v3D::Vector3 norm(0.0, 1.0, 0.0);
 
 	// add 4 vertices
-	std::vector<v3D::Vector3> vertices;
-	vertices.push_back(Vector3(-width, 0.0, -length));
-	vertices.push_back(Vector3( width, 0.0, -length));
-	vertices.push_back(Vector3( width, 0.0,  length));
-	vertices.push_back(Vector3(-width, 0.0,  length));
+	std::vector<v3D::type::Vector3> vertices;
+	vertices.push_back((v3d::type::Vector3(-width, 0.0, -length));
+	vertices.push_back((v3d::type::Vector3( width, 0.0, -length));
+	vertices.push_back((v3d::type::Vector3( width, 0.0,  length));
+	vertices.push_back((v3d::type::Vector3(-width, 0.0,  length));
 	mesh->addFace(vertices, norm);
 
 	return mesh;
 }
 
-boost::shared_ptr<v3D::BRep> v3D::create_poly_cone()
+boost::shared_ptr<v3d::BRep> v3d::create_poly_cone()
 {
 	int sides = 8;
 	float height = 1.0;
@@ -109,13 +109,13 @@ boost::shared_ptr<v3D::BRep> v3D::create_poly_cone()
 
 	float delta = 2.0 * PI / sides;
 
-	boost::shared_ptr<v3D::BRep> mesh(new v3D::BRep());
+	boost::shared_ptr<v3d::BRep> mesh(new v3d::BRep());
 
 	// create points in cone
-	std::vector<v3D::Vector3> points;
+	std::vector<v3d::type::Vector3> points;
 	for (int k = 0; k <= sides; k++)
 	{
-		v3D::Vector3 p;
+		v3d::type::Vector3 p;
 		int v;
 		p[0] = cos(delta * k) * radius;
 		p[1] = sin(delta * k) * radius;

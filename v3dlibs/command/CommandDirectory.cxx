@@ -37,7 +37,7 @@ void CommandDirectory::add(boost::shared_ptr<Command> cmd)
 void CommandDirectory::add(const std::string & name, const std::string & scope, 
 						  const Command::CommandHandlerType::slot_function_type & slot)
 {
-	boost::shared_ptr<v3D::Command> cmd(new v3D::Command(name, scope, slot));
+	boost::shared_ptr<Command> cmd(new Command(name, scope, slot));
 	add(cmd);
 }
 

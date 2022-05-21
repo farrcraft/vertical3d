@@ -5,7 +5,7 @@
 
 #include "Canvas.h"
 #include "Program.h"
-#include "../3dtypes/3dtypes.h"
+#include "../type/3dtypes.h"
 
 #include <GL/glew.h>
 

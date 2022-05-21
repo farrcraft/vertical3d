@@ -11,7 +11,7 @@ Vertex::Vertex()
 {
 }
 
-Vertex::Vertex(const v3d::types::Vector3 & p) : point_(p)
+Vertex::Vertex(const v3d::type::Vector3 & p) : point_(p)
 {
 }
 
@@ -24,7 +24,7 @@ bool Vertex::operator == (const Vertex & v)
 	return (point_ == v.point_);
 }
 
-bool Vertex::operator == (const v3d::types::Vector3 & v)
+bool Vertex::operator == (const v3d::type::Vector3 & v)
 {
 	return (point_ == v);
 }
@@ -39,12 +39,12 @@ void Vertex::edge(unsigned int e)
 	edge_ = e;
 }
 
-v3d::types::Vector3 Vertex::point(void) const
+v3d::type::Vector3 Vertex::point(void) const
 {
 	return point_;
 }
 
-void Vertex::point(const v3d::types::Vector3 & p)
+void Vertex::point(const v3d::type::Vector3 & p)
 {
 	point_ = p;
 }

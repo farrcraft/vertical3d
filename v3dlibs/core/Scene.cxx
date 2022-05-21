@@ -23,7 +23,7 @@ void Scene::accept(SceneVisitor * visitor)
 	}
 }
 
-void Scene::addCameraProfile(const v3d::types::CameraProfile & profile)
+void Scene::addCameraProfile(const v3d::type::CameraProfile & profile)
 {
 	cameraProfiles_.push_back(profile);
 }

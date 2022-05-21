@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../3dtypes/Vector3.h"
+#include "../type/Vector3.h"
 
 #include <string>
 
@@ -31,8 +31,8 @@ namespace v3d::audio
 			unsigned int buffer_;
 			unsigned int source_;
 
-			v3d::types::Vector3 position_;
-			v3d::types::Vector3 velocity_;
+			v3d::type::Vector3 position_;
+			v3d::type::Vector3 velocity_;
 	};
 
 };

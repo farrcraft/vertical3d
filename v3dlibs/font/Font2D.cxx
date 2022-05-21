@@ -1,6 +1,6 @@
 #include "Font2D.h"
 
-#include "../3dtypes/3dtypes.h"
+#include "../type/3dtypes.h"
 
 #include <ft2build.h>
 #include FT_FREETYPE_H

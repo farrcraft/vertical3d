@@ -11,7 +11,7 @@ Face::Face()
 {
 }
 
-Face::Face(const v3d::types::Vector3 & normal, unsigned int edge) : normal_(normal), edge_(edge)
+Face::Face(const v3d::type::Vector3 & normal, unsigned int edge) : normal_(normal), edge_(edge)
 {
 }
 
@@ -19,12 +19,12 @@ Face::~Face()
 {
 }
 
-v3d::types::Vector3 Face::normal(void) const
+v3d::type::Vector3 Face::normal(void) const
 {
 	return normal_;
 }
 
-void Face::normal(const v3d::types::Vector3 & n)
+void Face::normal(const v3d::type::Vector3 & n)
 {
 	normal_ = n;
 }

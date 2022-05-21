@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../3dtypes/Vector3.h"
+#include "../type/Vector3.h"
 
 namespace v3d::brep
 {
@@ -14,7 +14,7 @@ namespace v3d::brep
 	{
 		public:
 			Face();
-			Face(const v3d::types::Vector3 & normal, unsigned int edge);
+			Face(const v3d::type::Vector3 & normal, unsigned int edge);
 			~Face();
 
 			/*
@@ -22,13 +22,13 @@ namespace v3d::brep
 			void selected(bool sel);
 			*/
 
-			v3d::types::Vector3 normal(void) const;
-			void normal(const v3d::types::Vector3 & n);
+			v3d::type::Vector3 normal(void) const;
+			void normal(const v3d::type::Vector3 & n);
 			unsigned int edge(void) const;
 			void edge(unsigned int e);
 
 		private:
-			v3d::types::Vector3	normal_;
+			v3d::type::Vector3	normal_;
 			unsigned int edge_;
 	};
 
