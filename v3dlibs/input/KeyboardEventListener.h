@@ -1,16 +1,16 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
-#ifndef INCLUDED_V3D_KEYBOARDEVENTLISTENER
-#define INCLUDED_V3D_KEYBOARDEVENTLISTENER
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+**/
+
+#pragma once
 
 #include "../event/EventListener.h"
 
-namespace v3D
+namespace v3d::input
 {
 
-	class KeyboardEventListener : public EventListener
-	{
+	class KeyboardEventListener : public v3d::event::EventListener {
 		public:
 			virtual ~KeyboardEventListener() { }
 
@@ -28,6 +28,4 @@ namespace v3D
 
 
 
-}; // end namespace v3D
-
-#endif // INCLUDED_V3D_KEYBOARDEVENTLISTENER
+};

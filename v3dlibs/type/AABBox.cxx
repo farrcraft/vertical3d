@@ -1,11 +1,11 @@
 /**
  * Vertical3D
- * Copyright(c) 2021 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
 **/
 
 #include "AABBox.h"
 
-using namespace v3d::types;
+using namespace v3d::type;
 
 AABBox::AABBox()
 {

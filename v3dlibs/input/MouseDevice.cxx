@@ -1,13 +1,14 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+**/
 
 #include "MouseDevice.h"
 #include "MouseEventListener.h"
 
 #include <algorithm>
 
-using namespace v3D;
+using namespace v3d::input;
 
 bool MouseDevice::MouseState::pressed(unsigned int button) const
 {

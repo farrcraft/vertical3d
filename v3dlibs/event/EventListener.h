@@ -3,6 +3,8 @@
  * Copyright(c) 2021 Joshua Farr(josh@farrcraft.com)
 **/
 
+#pragma once
+
 #include "EventInfo.h"
 
 namespace v3d::event {

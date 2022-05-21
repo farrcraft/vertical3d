@@ -1,15 +1,18 @@
-#ifndef INCLUDED_V3D_PTREEREADER
-#define INCLUDED_V3D_PTREEREADER
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once
 
 #include "PropertyTree.h"
 
-#include <QuantumXML/src/Parser.h>
+#include "../../quantumxml/Parser.h"
 
 /**
  * A class for populating a PropertyTree from an XML file backend.
  */
-class PropertyTreeReader
-{
+class PropertyTreeReader {
 	public:
 
 		/**
@@ -31,5 +34,3 @@ class PropertyTreeReader
 		void read(PropertyTree & sections, DOM::Node::ptr node);
 		void read_attributes(PropertyTree & tree, DOM::Node::ptr node);
 };
-
-#endif // INCLUDED_V3D_PTREEREADER

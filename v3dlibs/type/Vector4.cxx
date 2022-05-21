@@ -1,6 +1,6 @@
 /**
  * Vertical3D
- * Copyright(c) 2021 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
 **/
 
 #include "Vector4.h"
@@ -184,29 +184,29 @@ std::string Vector4::str() const {
 	return str;
 }
 
-const Vector4 v3d::types::operator + (const Vector4 & lhs, const Vector4 & rhs) {
+const Vector4 v3d::type::operator + (const Vector4 & lhs, const Vector4 & rhs) {
 	return Vector4(lhs[0] + rhs[0], lhs[1] + rhs[1], lhs[2] + rhs[2], lhs[3] + rhs[3]);
 }
 
-const Vector4 v3d::types::operator + (const Vector4 & lhs, const float f) {
+const Vector4 v3d::type::operator + (const Vector4 & lhs, const float f) {
 	return Vector4(lhs[0] + f, lhs[1] + f, lhs[2] + f, lhs[3] + f);
 }
 
-const Vector4 v3d::types::operator - (const Vector4 & lhs, const Vector4 & rhs) {
+const Vector4 v3d::type::operator - (const Vector4 & lhs, const Vector4 & rhs) {
 	return Vector4(lhs[0] - rhs[0], lhs[1] - rhs[1], lhs[2] - rhs[2], lhs[3] - rhs[3]);
 }
 
-const float v3d::types::operator * (const Vector4 & lhs, const Vector4 & rhs) {
+const float v3d::type::operator * (const Vector4 & lhs, const Vector4 & rhs) {
 	return lhs.dot(rhs);
 }
 
-const Vector4 v3d::types::operator / (const Vector4 & lhs, const float f) {
+const Vector4 v3d::type::operator / (const Vector4 & lhs, const float f) {
 	assert (f != 0.0f);
 	float inv = 1.0f / f;
 	return Vector4(lhs[0] * inv, lhs[1] * inv, lhs[2] * inv, lhs[3] * inv);
 }
 
-const Vector4 v3d::types::operator * (const Vector4 & lhs, float f) {
+const Vector4 v3d::type::operator * (const Vector4 & lhs, float f) {
 	Vector4 vec;
 	vec[0] = lhs[0] * f;
 	vec[1] = lhs[1] * f;

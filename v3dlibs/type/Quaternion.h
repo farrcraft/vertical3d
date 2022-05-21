@@ -1,6 +1,6 @@
 /**
  * Vertical3D
- * Copyright(c) 2021 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
 **/
 
 #pragma once
@@ -12,15 +12,13 @@
 #include <string>
 #include <ostream>
 
-namespace v3d::type
-{
+namespace v3d::type {
 
 	/**
 	 * A Quaternion class.
 	 * Quaternions represent 3D rotations.
 	 */
-	class Quaternion
-	{
+	class Quaternion {
 		public:
 			/**
 			 * Default Constructor

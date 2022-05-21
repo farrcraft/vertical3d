@@ -372,7 +372,7 @@ const float * Matrix4::operator*() const
 	return src;
 }
 
-const Matrix4 v3d::types::operator*(const Matrix4 & lhs, const Matrix4 & rhs)
+const Matrix4 v3d::type::operator*(const Matrix4 & lhs, const Matrix4 & rhs)
 {
 	const float * A = *lhs;
 	const float * B = *rhs;
@@ -415,7 +415,7 @@ bool Matrix4::operator!=(const Matrix4 & m) const
 	return (!(*this == m));
 }
 
-const Matrix4 v3d::types::operator-(const Matrix4 & lhs, const Matrix4 & rhs)
+const Matrix4 v3d::type::operator-(const Matrix4 & lhs, const Matrix4 & rhs)
 {
 	const float * src1 = *lhs;
 	const float * src2 = *rhs;
@@ -430,7 +430,7 @@ const Matrix4 v3d::types::operator-(const Matrix4 & lhs, const Matrix4 & rhs)
 	return Matrix4(result);
 }
 
-const Matrix4 v3d::types::operator*(const Matrix4 & lhs, const float d)
+const Matrix4 v3d::type::operator*(const Matrix4 & lhs, const float d)
 {
 	const float * src = *lhs;
 	float result[16];
@@ -444,7 +444,7 @@ const Matrix4 v3d::types::operator*(const Matrix4 & lhs, const float d)
    return Matrix4(result);
 }
 
-const Matrix4 v3d::types::operator+(const Matrix4 & lhs, const Matrix4 & rhs)
+const Matrix4 v3d::type::operator+(const Matrix4 & lhs, const Matrix4 & rhs)
 {
 	const float *src1 = *lhs;
 	const float *src2 = *rhs;
@@ -457,7 +457,7 @@ const Matrix4 v3d::types::operator+(const Matrix4 & lhs, const Matrix4 & rhs)
 	return Matrix4(result);
 }
 
-const Vector3 v3d::types::operator*(const Matrix4 & lhs, const Vector3 & v)
+const Vector3 v3d::type::operator*(const Matrix4 & lhs, const Vector3 & v)
 {
 	Vector3 dest;
 	/*
