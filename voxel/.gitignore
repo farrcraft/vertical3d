@@ -1,0 +1,10 @@
+~trash
+/build.win32/Debug
+/project/voxel/Debug
+/project/*.suo
+/project/*sdf
+/project/voxel/*.user
+/project/voxel/*.log
+ChangeLog.txt
+NOTES.txt
+TODO.txt

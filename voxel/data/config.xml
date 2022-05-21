@@ -1,0 +1,13 @@
+<?xml version="1.0" ?>
+<config>
+	<keys>
+		<bind event="w" command="moveForward" scope="voxel" catch="any" />
+		<bind event="s" command="moveBackward" scope="voxel" catch="any" />
+		<bind event="a" command="moveLeft" scope="voxel" catch="any" />
+		<bind event="d" command="moveRight" scope="voxel" catch="any" />
+		<bind event="space" command="moveUp" scope="voxel" catch="any" />
+		<bind event="left_control" command="moveDown" scope="voxel" catch="any" />
+		<bind event="escape" command="showGameMenu" scope="ui" catch="on" />
+		<bind event="mouse::motion" command="look" scope="voxel" catch="any" />
+	</keys>
+</config>
