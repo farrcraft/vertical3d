@@ -24,3 +24,4 @@ missing
 *.deps/
 *Makefile
 aclocal.m4
+pong/Debug
