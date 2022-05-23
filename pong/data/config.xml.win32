@@ -1,0 +1,41 @@
+<?xml version="1.0" ?>
+<config>
+	<keys>
+		<bind event="w" command="leftPaddleUp" scope="pong" catch="any" />
+		<bind event="s" command="leftPaddleDown" scope="pong" catch="any" />
+		<bind event="arrow_up" command="rightPaddleUp" scope="pong" catch="any" />
+		<bind event="arrow_down" command="rightPaddleDown" scope="pong" catch="any" />
+		<bind event="escape" command="showGameMenu" scope="ui" catch="on" />
+		<bind event="return" command="selectMenu" scope="ui" catch="on" />
+		<bind event="arrow_up" command="menuPrevious" scope="ui" catch="on" />
+		<bind event="arrow_down" command="menuNext" scope="ui" catch="on" />
+		<bind event="f1" command="toggleFS" catch="on" />
+	</keys>
+	<vgui theme="default">
+		<theme name="default">
+			<style class="menu" name="default">
+				<font name="label" source="ui-text-font" align="center" />
+			</style>
+		</theme>
+		<menu name="game-menu" visible="false">
+			<item label="Options" command="submenu" scope="pong" type="submenu">
+				<item label="Rounds: " param="maxScore" command="set_gamevar" scope="pong" type="numeric_input" />
+				<item label="Player 1 Up: " param="pong::leftPaddleUp" command="set_key" scope="pong" type="key_input" />
+				<item label="Player 1 Down: " param="pong::leftPaddleDown" command="set_key" scope="pong" type="key_input" />
+				<item label="Player 2 Up: " param="pong::rightPaddleUp" command="set_key" scope="pong" type="key_input" />
+				<item label="Player 2 Down: " param="pong::rightPaddleDown" command="set_key" scope="pong" type="key_input" />
+			</item>
+			<item label="Singleplayer" command="setmode" scope="pong" param="SP" type="action" />
+			<item label="Co-op" command="setmode" scope="pong" param="coop" type="action" />
+			<item label="Multiplayer" command="setmode" scope="pong" param="MP" type="action" />
+			<item label="Quit" command="quit" scope="pong" type="action" />
+		</menu>
+		<font face="C:\Windows\Fonts\arial.ttf" size="32" bold="false" italics="false" name="ui-text-font" />
+		<font face="C:\Windows\Fonts\arial.ttf" size="64" bold="false" italics="false" name="score" />
+	</vgui>
+	<sounds>
+		<clip id="hit" file="hit.wav" />
+		<clip id="score" file="score.wav" />
+		<clip id="victory" file="victory.wav" />
+	</sounds>
+</config>
