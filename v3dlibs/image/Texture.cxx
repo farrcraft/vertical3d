@@ -1,9 +1,14 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
 #include "Texture.h"
 
 #include <cassert>
 #include <iostream>
 
-using namespace v3D;
+using namespace v3d::image;
 
 Texture::Texture() : type_(UNKNOWN), texID_(-1), wrap_(false), width_(0), height_(0) 
 { 

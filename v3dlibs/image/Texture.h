@@ -1,5 +1,9 @@
-#ifndef INCLUDED_V3D_TEXTURE
-#define INCLUDED_V3D_TEXTURE
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once
 
 #include "Image.h"
 
@@ -7,14 +11,11 @@
 
 #include <string>
 
-namespace v3D
-{
-
+namespace v3d::image {
 	/**
 	 * A OpenGL Texture object.
 	 */
-	class Texture
-	{
+	class Texture {
 		public:
 			Texture();
 			Texture(boost::shared_ptr<Image> image);
@@ -76,8 +77,7 @@ namespace v3D
 			 */
 			void release(void);
 
-			typedef enum 
-			{ 
+			typedef enum { 
 				NEAREST, 
 				LINEAR, 
 				MIPMAP, 
@@ -94,6 +94,4 @@ namespace v3D
 			boost::shared_ptr<Image> image_;
 	};
 
-}; // end namespace v3D
-
-#endif // INCLUDED_V3D_TEXTURE
+};

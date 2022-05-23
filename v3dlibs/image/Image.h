@@ -1,14 +1,15 @@
-#ifndef INCLUDED_V3D_IMAGE
-#define INCLUDED_V3D_IMAGE
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
-namespace v3D
-{
+#pragma once
 
+namespace v3d::image {
 	/**
 	 * a simple image class. 
 	 **/
-	class Image
-	{
+	class Image {
 		public:
 			/**
 			 * The format of the image (the number of channels)
@@ -82,6 +83,4 @@ namespace v3D
 			ImageFormat format_;
 	};
 
-}; // end namespace v3D
-
-#endif // INCLUDED_V3D_IMAGE
+};

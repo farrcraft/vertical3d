@@ -1,3 +1,8 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
 #include "JPEGWriter.h"
 
 #ifdef  __cplusplus
@@ -9,18 +14,15 @@
 #include <fstream>
 #include <iostream>
 
-using namespace v3D;
+using namespace v3d::image::writer;
 
-JPEGWriter::JPEGWriter()
-{
+JPEGWriter::JPEGWriter() {
 }
 
-JPEGWriter::~JPEGWriter()
-{
+JPEGWriter::~JPEGWriter() {
 }
 
-bool JPEGWriter::write(const std::string & filename, const boost::shared_ptr<Image> & img)
-{
+bool JPEGWriter::write(const std::string & filename, const boost::shared_ptr<Image> & img) {
 	struct jpeg_compress_struct cinfo;
 	struct jpeg_error_mgr jerr;
 
@@ -60,8 +62,7 @@ bool JPEGWriter::write(const std::string & filename, const boost::shared_ptr<Ima
 	unsigned int num_scanlines = 1;
 	unsigned int bytes_width = img->width() * img->format();
 	data += bytes_width * (cinfo.image_height - 1);
-	while (cinfo.next_scanline < cinfo.image_height) 
-	{
+	while (cinfo.next_scanline < cinfo.image_height) {
 		jpeg_write_scanlines(&cinfo, &data, num_scanlines);
 		data -= bytes_width;
 	}

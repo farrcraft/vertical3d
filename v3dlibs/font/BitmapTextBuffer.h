@@ -1,6 +1,7 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
 #pragma once
 
@@ -11,13 +12,11 @@
 #include <string>
 #include <vector>
 
-namespace v3D
-{
+namespace v3d::font {
 
 	class BitmapFont;
 
-	class BitmapTextBuffer : public TextBuffer
-	{
+	class BitmapTextBuffer : public TextBuffer {
 		public:
 			/**
 			 * Construct a new text buffer
@@ -48,5 +47,4 @@ namespace v3D
 		private:
 			boost::shared_ptr<BitmapFont> font_;
 	};
-
 }

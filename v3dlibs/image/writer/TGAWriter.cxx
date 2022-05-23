@@ -1,10 +1,15 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
 #include "TGAWriter.h"
 
 #include <fstream>
 #include <iostream>
 #include <cstring>
 
-using namespace v3D;
+using namespace v3d::image::writer;
 
 #pragma pack(push, 1)
 
@@ -38,20 +43,16 @@ struct tga_footer
 #pragma pack(pop)
 
 
-TGAWriter::TGAWriter()
-{
+TGAWriter::TGAWriter() {
 }
 
-TGAWriter::~TGAWriter()
-{
+TGAWriter::~TGAWriter() {
 }
 
-bool TGAWriter::write(const std::string & filename, const boost::shared_ptr<Image> & img)
-{
+bool TGAWriter::write(const std::string & filename, const boost::shared_ptr<Image> & img) {
 	std::fstream file;
 	file.open(filename.c_str(), std::fstream::out | std::fstream::binary);
-	if (file.fail())
-	{
+	if (file.fail()) {
 		return false;
 	}
 
@@ -71,8 +72,7 @@ bool TGAWriter::write(const std::string & filename, const boost::shared_ptr<Imag
 	unsigned char * data = img->data();
 	unsigned char * tmp_data = tmp_img->data();
 
-	if (file.fail())
-	{
+	if (file.fail()) {
 		file.close();
 		return false;
 	}

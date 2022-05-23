@@ -1,22 +1,24 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
 #include "BMPWriter.h"
 #include "../BMP.h"
 
 #include <fstream>
 #include <cstring>
 
-using namespace v3D;
+using namespace v3d::image::writer;
 
 
-BMPWriter::BMPWriter()
-{
+BMPWriter::BMPWriter() {
 }
 
-BMPWriter::~BMPWriter()
-{
+BMPWriter::~BMPWriter() {
 }
 
-bool BMPWriter::write(const std::string & filename, const boost::shared_ptr<Image> & img)
-{
+bool BMPWriter::write(const std::string & filename, const boost::shared_ptr<Image> & img) {
 	std::fstream file;
 	file.open(filename.c_str(), std::fstream::out | std::fstream::binary);
 
@@ -65,8 +67,7 @@ bool BMPWriter::write(const std::string & filename, const boost::shared_ptr<Imag
 	unsigned char * temp = img->data();
 
 	unsigned int k = 0;
-	for(unsigned int i = 0; i < size; i += channels) 
-	{
+	for(unsigned int i = 0; i < size; i += channels) {
 		//jump over the padding at the start of a new line
 		if((i + 1) % pad == 0) 
 		{

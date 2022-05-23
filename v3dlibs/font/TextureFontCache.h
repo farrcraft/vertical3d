@@ -1,7 +1,7 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- *
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
 #pragma once
 
@@ -10,14 +10,11 @@
 #include <vector>
 #include <string>
 
-namespace v3D
-{
-
+namespace v3d::font {
 	class TextureAtlas;
 	class TextureFont;
 
-	class TextureFontCache
-	{
+	class TextureFontCache {
 		public:
 			TextureFontCache(unsigned int width, unsigned int height, unsigned int depth);
 			~TextureFontCache();
@@ -34,5 +31,4 @@ namespace v3D
 			std::vector<boost::shared_ptr<TextureFont> > fonts_;
 			wchar_t * cache_;
 	};
-
 };

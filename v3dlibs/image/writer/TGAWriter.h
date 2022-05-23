@@ -5,24 +5,15 @@
 
 #pragma once
 
-#include "Image.h"
+#include "../ImageWriter.h"
 
-#include <boost/shared_ptr.hpp>
-
-#include <string>
-
-namespace v3d::image {
-	/**
-	 *  
-	 **/
-	class ImageWriter {
+namespace v3d::image::writer {
+	class TGAWriter final : public ImageWriter {
 		public:
-			ImageWriter();
-			virtual ~ImageWriter();
+			TGAWriter();
+			~TGAWriter();
 
 			virtual bool write(const std::string & filename, const boost::shared_ptr<Image> & img);
-
-		private:
 	};
 
-}; 
+};

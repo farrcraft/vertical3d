@@ -1,6 +1,7 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
 #pragma once
 
@@ -9,18 +10,14 @@
 #include <map>
 #include <string>
 
-namespace v3D
-{
-
+namespace v3d::font {
 	class Texture;
 
-	class BitmapFont
-	{
+	class BitmapFont {
 		public:
 			BitmapFont(const std::string & path, std::string & name);
 
-			struct CharDescriptor
-			{
+			struct CharDescriptor {
 				unsigned short x_;
 				unsigned short y_;
 				unsigned short width_;
@@ -32,8 +29,7 @@ namespace v3D
 				unsigned short channel_;
 			};
 
-			struct Charset
-			{
+			struct Charset {
 				unsigned short lineHeight_;
 				unsigned short base_;
 				unsigned short width_;
@@ -58,5 +54,4 @@ namespace v3D
 			Charset charset_;
 			boost::shared_ptr<Texture> texture_;
 	};
-
 };

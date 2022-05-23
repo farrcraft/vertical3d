@@ -1,5 +1,9 @@
-#ifndef INCLUDED_V3D_IMAGEREADER
-#define INCLUDED_V3D_IMAGEREADER
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once
 
 #include "Image.h"
 
@@ -7,14 +11,11 @@
 
 #include <string>
 
-namespace v3D
-{
-
+namespace v3d::image {
 	/**
 	 *  
 	 **/
-	class ImageReader
-	{
+	class ImageReader {
 		public:
 			ImageReader();
 			virtual ~ImageReader();
@@ -25,6 +26,4 @@ namespace v3D
 
 	};
 
-}; // end namespace v3D
-
-#endif // INCLUDED_V3D_IMAGEREADER
+};

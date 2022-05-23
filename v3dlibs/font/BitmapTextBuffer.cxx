@@ -1,13 +1,14 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
 #include "BitmapTextBuffer.h"
 #include "BitmapFont.h"
 
 #include <vector>
 
-using namespace v3D;
+using namespace v3d::font;
 
 BitmapTextBuffer::BitmapTextBuffer(boost::shared_ptr<BitmapFont> font) : 
 	font_(font) 

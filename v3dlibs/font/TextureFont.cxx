@@ -1,7 +1,7 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- *
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
 #include "TextureFont.h"
 #include "../image/TextureAtlas.h"
@@ -15,7 +15,7 @@
 
 #include <boost/log/trivial.hpp>
 
-using namespace v3D;
+using namespace v3d::font;
 
 class TextureFont::Freetype
 {

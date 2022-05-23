@@ -1,7 +1,7 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- *
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
 #include "TextureTextBuffer.h"
 #include "../image/TextureAtlas.h"
@@ -9,7 +9,7 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
-using namespace v3D;
+using namespace v3d::font;
 
 TextureTextBuffer::TextureTextBuffer() :
 	ascender_(0.0f),

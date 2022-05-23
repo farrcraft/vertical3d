@@ -1,3 +1,8 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
 #include "PNGWriter.h"
 
 #include <png.h>
@@ -5,19 +10,16 @@
 #include <iostream>
 #include <cstdio>
 
-using namespace v3D;
+using namespace v3d::image::writer;
 
-PNGWriter::PNGWriter()
-{
+PNGWriter::PNGWriter() {
 }
 
-PNGWriter::~PNGWriter()
-{
+PNGWriter::~PNGWriter() {
 }
 
 static void
-pngtest_warning(png_structp png_ptr, png_const_charp message)
-{
+pngtest_warning(png_structp png_ptr, png_const_charp message) {
 	PNG_CONST char *name = "UNKNOWN (ERROR!)";
 	png_voidp error_ptr = NULL;
 	if (png_ptr != NULL)
@@ -33,15 +35,13 @@ pngtest_warning(png_structp png_ptr, png_const_charp message)
  * error function pointer in png_set_error_fn().
  */
 static void
-pngtest_error(png_structp png_ptr, png_const_charp message)
-{
+pngtest_error(png_structp png_ptr, png_const_charp message) {
    pngtest_warning(png_ptr, message);
    /* We can return because png_error calls the default handler, which is
     * actually OK in this case. */
 }
 
-bool PNGWriter::write(const std::string & filename, const boost::shared_ptr<Image> & img)
-{
+bool PNGWriter::write(const std::string & filename, const boost::shared_ptr<Image> & img) {
 	// open the file
 	FILE * fp;
 	if ((fp = fopen(filename.c_str(), "wb")) == 0)
@@ -80,8 +80,7 @@ bool PNGWriter::write(const std::string & filename, const boost::shared_ptr<Imag
 	sig_bit.blue = bytes;
 
 	int color_type;
-	if (img->format() == Image::FORMAT_RGB)
-	{
+	if (img->format() == Image::FORMAT_RGB) {
 		color_type = PNG_COLOR_TYPE_RGB;
 	}
 	else if (img->format() == Image::FORMAT_RGBA)
@@ -119,8 +118,7 @@ bool PNGWriter::write(const std::string & filename, const boost::shared_ptr<Imag
 
 	png_bytep data = img->data();
 	j = height - 1;
-	for (k = 0; k < height; k++)
-	{
+	for (k = 0; k < height; k++) {
 		row_pointers[j] = data + k*width*bytes_per_pixel;
 		j--;
 	}

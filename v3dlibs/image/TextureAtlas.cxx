@@ -1,7 +1,8 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- *
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
 #include "TextureAtlas.h"
 
 #include "Image.h"
@@ -10,7 +11,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/log/trivial.hpp>
 
-using namespace v3D;
+using namespace v3d::image;
 
 TextureAtlas::TextureAtlas(unsigned int width, unsigned int height, unsigned int depth) :
 	width_(width),
@@ -35,7 +36,7 @@ TextureAtlas::TextureAtlas(unsigned int width, unsigned int height, unsigned int
 
 void TextureAtlas::write(const std::string & filename)
 {
-	v3D::ImageFactory factory;
+	ImageFactory factory;
 	factory.write(filename, image_);
 }
 

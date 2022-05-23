@@ -1,6 +1,7 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
 #include "BitmapFont.h"
 #include "../image/ImageFactory.h"
@@ -9,10 +10,9 @@
 #include <fstream>
 #include <sstream>
 
-using namespace v3D;
+using namespace v3d::font;
 
-std::pair<std::string, std::string> tokenize(const std::string & token)
-{
+std::pair<std::string, std::string> tokenize(const std::string & token) {
 	size_t pos = token.find('=');
 	std::string key = token.substr(0, pos);
 	std::string value = token.substr(pos + 1);
@@ -20,13 +20,11 @@ std::pair<std::string, std::string> tokenize(const std::string & token)
 	return kv;
 }
 
-BitmapFont::BitmapFont(const std::string & path, std::string & name)
-{
+BitmapFont::BitmapFont(const std::string & path, std::string & name) {
 	std::string filename = path + name + std::string(".fnt");
 	loadCharset(filename);
 	filename = path + charset_.fileName_;
-	if (!loadTexture(filename))
-	{
+	if (!loadTexture(filename)) {
 		std::string err = std::string("Error opening font image: ") + filename;
 		throw std::runtime_error(err);
 	}
@@ -35,8 +33,7 @@ BitmapFont::BitmapFont(const std::string & path, std::string & name)
 void BitmapFont::loadCharset(const std::string & filename)
 {
 	std::ifstream file(filename.c_str(), std::ios::in | std::ios::binary);
-	if (!file)
-	{
+	if (!file) {
 		std::string err = std::string("Error opening font file: ") + filename;
 		throw std::runtime_error(err);
 	}
@@ -44,8 +41,7 @@ void BitmapFont::loadCharset(const std::string & filename)
 	std::string line;
 	std::string token;
 
-	while (!file.eof())
-	{
+	while (!file.eof()) {
 		std::stringstream str;
 		std::getline(file, line);
 		str << line;
@@ -56,22 +52,18 @@ void BitmapFont::loadCharset(const std::string & filename)
 		}
 		else if (token == "common") // common data
 		{
-			while (!str.eof())
-			{
+			while (!str.eof()) {
 				str >> token;
 				std::pair<std::string, std::string> kv = tokenize(token);
 				std::stringstream converter;
 				converter << kv.second;
-				if (kv.first == "lineHeight")
-				{
+				if (kv.first == "lineHeight") {
 					converter >> charset_.lineHeight_;
 				}
-				else if (kv.first == "base")
-				{
+				else if (kv.first == "base") {
 					converter >> charset_.base_;
 				}
-				else if (kv.first == "scaleW")
-				{
+				else if (kv.first == "scaleW") {
 					converter >> charset_.width_;
 				}
 				else if (kv.first == "scaleH")
@@ -187,46 +179,38 @@ void BitmapFont::loadCharset(const std::string & filename)
 	}
 }
 
-BitmapFont::CharDescriptor BitmapFont::character(char c)
-{
+BitmapFont::CharDescriptor BitmapFont::character(char c) {
 	return charset_.chars_[c];
 }
 
-boost::shared_ptr<Texture> BitmapFont::texture()
-{
+boost::shared_ptr<Texture> BitmapFont::texture() {
 	return texture_;
 }
 
-unsigned short BitmapFont::charsetWidth() const
-{
+unsigned short BitmapFont::charsetWidth() const {
 	return charset_.width_;
 }
 
-unsigned short BitmapFont::charsetHeight() const
-{
+unsigned short BitmapFont::charsetHeight() const {
 	return charset_.height_;
 }
 
-unsigned short BitmapFont::lineHeight() const
-{
+unsigned short BitmapFont::lineHeight() const {
 	return charset_.lineHeight_;
 }
 
-bool BitmapFont::loadTexture(const std::string & filename)
-{
-	v3D::ImageFactory factory;
-	boost::shared_ptr<v3D::Image> image;
+bool BitmapFont::loadTexture(const std::string & filename) {
+	v3d::image::ImageFactory factory;
+	boost::shared_ptr<v3d::image::Image> image;
 
-	try
-	{
+	try {
 		image = factory.read(filename);
 	}
-	catch (std::string & e)
-	{
+	catch (std::string & e) {
 		return false;
 	}
 
-	texture_.reset(new Texture(image));
+	texture_.reset(new v3d::image::Texture(image));
 
 	return true;
 }

@@ -1,10 +1,9 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- *
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
-#ifndef INCLUDED_V3D_FONT2D
-#define INCLUDED_V3D_FONT2D
+#pragma once
 
 #include "../image/Texture.h"
 
@@ -14,9 +13,7 @@
 #include <vector>
 #include <map>
 
-namespace v3D
-{
-
+namespace v3d::font {
 	/**
 	 * 2D GL Font
 	 */
@@ -133,6 +130,4 @@ namespace v3D
 			unsigned int 	style_;
 	};
 
-}; // end namespace v3D
-
-#endif // INCLUDED_V3D_FONT2D
+};

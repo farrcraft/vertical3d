@@ -1,7 +1,7 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- *
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
 #pragma once
 
@@ -12,17 +12,14 @@
 #include <string>
 #include <vector>
 
-namespace v3D
-{
+namespace v3d::font {
 	class TextureFont;
 	/**
 	 * A text buffer for texture fonts
 	 */
-	class TextureTextBuffer : public TextBuffer
-	{
+	class TextureTextBuffer : public TextBuffer {
 		public:
-			typedef struct
-			{
+			typedef struct {
 				std::string family_; // e.g. normal, monospace, sans, serif
 				float size_;
 				bool bold_;
@@ -43,8 +40,7 @@ namespace v3D
 				boost::shared_ptr<TextureFont> font_;
 			} Markup;
 
-			typedef enum
-			{
+			typedef enum {
 				LCD_FILTERING_OFF = 1,
 				LCD_FILTERING_ON = 3
 			} LcdFiltering;
@@ -73,5 +69,4 @@ namespace v3D
 			std::vector<float> gamma_;
 			std::vector<glm::ivec4> items_;
 	};
-
 };

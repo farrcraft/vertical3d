@@ -1,6 +1,6 @@
 /**
  * Vertical3D
- * Copyright(c) 2021 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
 **/
 
 #pragma once
@@ -12,10 +12,7 @@
 
 #include <map>
 
-
-namespace v3d::command
-{
-
+namespace v3d::command {
 	/**
 	 * The CommandDirectory class. 
 	 *
@@ -40,8 +37,7 @@ namespace v3d::command
 	 * EventInfo object.
 	 *
 	 **/
-	class CommandDirectory : public v3d::event::EventListener
-	{
+	class CommandDirectory : public v3d::event::EventListener {
 		public:
 			/**
 			 * Bind a command to an event.

@@ -1,19 +1,19 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- *
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
 #pragma once
 
 #include <glm/glm.hpp>
 #include <boost/shared_ptr.hpp>
 #include <vector>
 
-namespace v3D
-{
+namespace v3d::image {
 	class Image;
-
-	class TextureAtlas
-	{
+	/**
+	 **/
+	class TextureAtlas {
 		public:
 			TextureAtlas(unsigned int width, unsigned int height, unsigned int depth);
 			~TextureAtlas();
@@ -42,5 +42,4 @@ namespace v3D
 			unsigned int id_;
 			boost::shared_ptr<Image> image_;
 	};
-
 };

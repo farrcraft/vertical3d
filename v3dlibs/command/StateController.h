@@ -1,6 +1,6 @@
 /**
  * Vertical3D
- * Copyright(c) 2021 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
 **/
 
 #pragma once
@@ -9,10 +9,8 @@
 #include <boost/shared_ptr.hpp>
 #include <deque>
 
-namespace v3d::command
-{
-	class StateController
-	{
+namespace v3d::command {
+	class StateController {
 		public:
 			StateController();
 			virtual ~StateController();
@@ -27,5 +25,4 @@ namespace v3d::command
 			std::vector<boost::shared_ptr<CommandTable> > _states;
 			std::deque<boost::shared_ptr<CommandTable> > _stack;
 	};
-
 };

@@ -1,7 +1,7 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- *
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
 #pragma once
 
@@ -11,16 +11,13 @@
 #include <vector>
 #include <string>
 
-namespace v3D
-{
+namespace v3d::font {
 
 	class TextureAtlas;
 
-	class TextureFont
-	{
+	class TextureFont {
 		public:
-			typedef struct
-			{
+			typedef struct {
 				wchar_t charcode_;
 				float kerning_;
 			} Kerning;
@@ -33,8 +30,7 @@ namespace v3D
 				OUTLINE_TYPE_OUTER = 3
 			} OutlineType;
 
-			typedef struct
-			{
+			typedef struct {
 				unsigned int id_;
 				wchar_t charcode_;
 				unsigned int width_;
@@ -88,5 +84,4 @@ namespace v3D
 			class Freetype;
 			boost::shared_ptr<Freetype> freetype_;
 	};
-
 };

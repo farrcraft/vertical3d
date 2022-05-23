@@ -1,5 +1,7 @@
-#ifndef INCLUDED_V3D_FONTCACHE
-#define INCLUDED_V3D_FONTCACHE
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
 #include "Font2D.h"
 
@@ -8,13 +10,11 @@
 #include <map>
 #include <string>
 
-namespace v3D
-{
+namespace v3d::font {
 	/**
 	 * A container of 2D fonts.
 	 */
-	class FontCache
-	{
+	class FontCache {
 		public:
 			FontCache();
 			~FontCache();
@@ -37,6 +37,4 @@ namespace v3D
 			std::map<std::string, boost::shared_ptr<Font2D> > fonts_;
 	};
 
-}; // end namespace v3D
-
-#endif // INCLUDED_V3D_FONTCACHE
+};

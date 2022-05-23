@@ -1,19 +1,18 @@
-#ifndef INCLUDED_V3D_IMAGEFACTORY
-#define INCLUDED_V3D_IMAGEFACTORY
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
 #include "ImageReader.h"
 #include "ImageWriter.h"
 
 #include <map>
 
-namespace v3D
-{
-
+namespace v3d::image {
 	/**
 	 * 
 	 **/
-	class ImageFactory
-	{
+	class ImageFactory {
 		public:
 			ImageFactory();
 			~ImageFactory();
@@ -29,6 +28,4 @@ namespace v3D
 			std::map<std::string, boost::shared_ptr<ImageWriter> > writers_;
 	};
 
-}; // end namespace v3D
-
-#endif // INCLUDED_V3D_IMAGEFACTORY
+};
