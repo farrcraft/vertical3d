@@ -1,5 +1,9 @@
-#ifndef INCLUDED_MOYA_POLYGON
-#define INCLUDED_MOYA_POLYGON
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once
 
 #include "ReyesPrimitive.h"
 #include "Vertex.h"
@@ -32,7 +36,7 @@ namespace v3D
 	
 				// reyes methods
 				//virtual bool 	diceable(void) const;
-				virtual AABBox 	bound(void) const;
+				virtual v3d::type::AABBox 	bound(void) const;
 				virtual void 	split(void);
 				virtual bool 	dice(boost::shared_ptr<MicroPolygonGrid> grid, unsigned int grid_size, boost::shared_ptr<RenderContext> rc);
 
@@ -46,5 +50,3 @@ namespace v3D
 	}; // end namespace Moya
 
 }; // end namespace v3D
-
-#endif // INCLUDED_MOYA_POLYGON

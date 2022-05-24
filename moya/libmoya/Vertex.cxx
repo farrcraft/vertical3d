@@ -1,3 +1,8 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
 #include "Vertex.h"
 
 using namespace v3D;
@@ -11,12 +16,12 @@ Vertex::~Vertex()
 {
 }
 
-Vector3 Vertex::point(void) const
+v3d::type::Vector3 Vertex::point(void) const
 {
 	 return _point;
 }
 
-void Vertex::point(const Vector3 & v)
+void Vertex::point(const v3d::type::Vector3 & v)
 {
 	 _point = v;
 }

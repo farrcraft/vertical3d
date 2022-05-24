@@ -1,20 +1,18 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
 #include "Polygon.h"
 #include "Plane.h"
 #include "RenderContext.h"
 
-#ifdef WIN32
-#include <3dtypes/3dtypes.h>
-#include <3dtypes/Matrix4.h>
-#else
-#include <vertical3d/3dtypes/3dtypes.h>
-#include <vertical3d/3dtypes/Matrix4.h>
-#endif
+#include "../../v3dlibs/type/3dtypes.h"
+#include "../../v3dlibs/type/Matrix4.h"
 
 #include <cmath>
 #include <cassert>
 #include <iostream>
-
-#include <log4cxx/logger.h>
 
 using namespace v3D;
 using namespace v3D::Moya;
@@ -57,9 +55,9 @@ Vertex & Polygon::operator [] (unsigned int idx)
 }
 
 // return an object space bound of the polygon
-AABBox Polygon::bound(void) const
+v3d::type::AABBox Polygon::bound(void) const
 {
-	AABBox bound;
+	v3d::type::AABBox bound;
 
 	if (_vertices.size() == 0)
 	{
@@ -69,11 +67,11 @@ AABBox Polygon::bound(void) const
 		move over each vertex and record min/max
 	*/
 	std::vector<Vertex>::const_iterator it = _vertices.begin();
-	Vector3 min, max;
+	v3d::type::Vector3 min, max;
 	min = _vertices[0].point();
 	max = min;
-	log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("v3d.moya"));
-	LOG4CXX_DEBUG(logger, "poly bounds based on - ");
+	//log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("v3d.moya"));
+	//LOG4CXX_DEBUG(logger, "poly bounds based on - ");
 	for (; it != _vertices.end(); it++)
 	{
 //		std::cerr << " v = " << (*it).point();
@@ -156,9 +154,9 @@ polygons
 */
 void Polygon::split(const Plane & plane, boost::shared_ptr<Polygon> p1, boost::shared_ptr<Polygon> p2)
 {
-	log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("v3d.moya"));
+	//log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("v3d.moya"));
 	// intersect each edge with the plane
-	Vector3 A, B, hit;
+	v3d::type::Vector3 A, B, hit;
 	int side;
 	Vertex vert;
 	int vcount;
@@ -188,12 +186,12 @@ void Polygon::split(const Plane & plane, boost::shared_ptr<Polygon> p1, boost::s
 			{
 				if (side < 0)
 				{
-					LOG4CXX_DEBUG(logger, "Polygon::split - A in p1");
+					//LOG4CXX_DEBUG(logger, "Polygon::split - A in p1");
 					p1->addVertex(vert);
 				}
 				else
 				{
-					LOG4CXX_DEBUG(logger, "Polygon::split - A in p2");
+					//LOG4CXX_DEBUG(logger, "Polygon::split - A in p2");
 					p2->addVertex(vert);
 				}
 			}
@@ -207,12 +205,12 @@ void Polygon::split(const Plane & plane, boost::shared_ptr<Polygon> p1, boost::s
 			{
 				if (side < 0)
 				{
-					LOG4CXX_DEBUG(logger, "Polygon::split - B in p2");
+					//LOG4CXX_DEBUG(logger, "Polygon::split - B in p2");
 					p2->addVertex(vert);
 				}
 				else
 				{
-					LOG4CXX_DEBUG(logger, "Polygon::split - B in p1");
+					//LOG4CXX_DEBUG(logger, "Polygon::split - B in p1");
 					p1->addVertex(vert);
 				}
 			}
@@ -225,18 +223,18 @@ void Polygon::split(const Plane & plane, boost::shared_ptr<Polygon> p1, boost::s
 			vert.point(A);
 			int bside = plane.classify(B);
 			assert(side == bside);
-			LOG4CXX_DEBUG(logger, "Polygon::split - sides = " << side << " == " << bside);
+			//LOG4CXX_DEBUG(logger, "Polygon::split - sides = " << side << " == " << bside);
 			if (side <= 0)
 			{
 				if (i == 0)
 				{
-					LOG4CXX_DEBUG(logger, "Polygon::split - A in p1");
+					//LOG4CXX_DEBUG(logger, "Polygon::split - A in p1");
 					p1->addVertex(vert);
 				}
 				vert.point(B);
 				if (i != (vcount - 1))
 				{
-					LOG4CXX_DEBUG(logger, "Polygon::split - B in p1");
+					//LOG4CXX_DEBUG(logger, "Polygon::split - B in p1");
 					p1->addVertex(vert);
 				}
 			}
@@ -244,13 +242,13 @@ void Polygon::split(const Plane & plane, boost::shared_ptr<Polygon> p1, boost::s
 			{
 				if (i == 0)
 				{
-					LOG4CXX_DEBUG(logger, "Polygon::split - A in p2");
+					//LOG4CXX_DEBUG(logger, "Polygon::split - A in p2");
 					p2->addVertex(vert);
 				}
 				vert.point(B);
 				if (i != (vcount - 1))
 				{
-					LOG4CXX_DEBUG(logger, "Polygon::split - B in p2");
+					//LOG4CXX_DEBUG(logger, "Polygon::split - B in p2");
 					p2->addVertex(vert);
 				}
 			}
@@ -260,24 +258,24 @@ void Polygon::split(const Plane & plane, boost::shared_ptr<Polygon> p1, boost::s
 
 void Polygon::split(void)
 {
-	log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("v3d.moya"));
-	LOG4CXX_DEBUG(logger, "Polygon::split - splitting polygon.");
+	//log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("v3d.moya"));
+	//LOG4CXX_DEBUG(logger, "Polygon::split - splitting polygon.");
 	// calculate polygon's normal from the polygon's first two vertices
-	Vector3 v0, v1, n;
+	v3d::type::Vector3 v0, v1, n;
 	v0 = _vertices[0].point() - _vertices[1].point();
 	v1 = _vertices[2].point() - _vertices[1].point();
 	n = v1.cross(v0);
 	n.normalize();
 	// calculate plane's normal
-	Vector3 pn;
+	v3d::type::Vector3 pn;
 	pn = n.cross(v0);
 	pn.normalize();
 
 //	std::cerr << "Polygon::split - poly normal = " << n << " plane normal = " << pn << std::endl;
 
 	// find a point on the plane
-	AABBox bounds;
-	Vector3 mp, pop;
+	v3d::type::AABBox bounds;
+	v3d::type::Vector3 mp, pop;
 	bounds = bound();
 	mp = (bounds.max() - bounds.min()) / 2.0;
 	pop = bounds.min() + mp;
@@ -324,8 +322,8 @@ void Polygon::split(void)
 //	delete p1;
 //	delete p2;	
 
-	LOG4CXX_DEBUG(logger, "Polygon::split - p1 vcount = " << pf1->vertexCount() << " p2 vcount = " << pf2->vertexCount());
-	LOG4CXX_DEBUG(logger, "Polygon::split - p3 vcount = " << pf3->vertexCount() << " p4 vcount = " << pf4->vertexCount());
+	//LOG4CXX_DEBUG(logger, "Polygon::split - p1 vcount = " << pf1->vertexCount() << " p2 vcount = " << pf2->vertexCount());
+	//LOG4CXX_DEBUG(logger, "Polygon::split - p3 vcount = " << pf3->vertexCount() << " p4 vcount = " << pf4->vertexCount());
 	// all that remains is to feed the new polygons p1 & p2 back into the top of 
 	// the renderer and discard the old one. we also must make sure not to put
 	// empty polygons back in.
@@ -333,56 +331,56 @@ void Polygon::split(void)
 	{
 		if (pf1->vertexCount() <= 2)
 		{
-			LOG4CXX_DEBUG(logger, "Polygon::split - generated polygon p1 has < 3 vertices.");
+			//LOG4CXX_DEBUG(logger, "Polygon::split - generated polygon p1 has < 3 vertices.");
 		}
-		LOG4CXX_DEBUG(logger, "Polygon::split - adding p1 to RC");
+		//LOG4CXX_DEBUG(logger, "Polygon::split - adding p1 to RC");
 //		RenderEngine::instance().activeRenderContext().addPolygon(pf1);
 	}
 	else
 	{
-		LOG4CXX_DEBUG(logger, "Polygon::split - empty polygon p1 discarded.");
+		//LOG4CXX_DEBUG(logger, "Polygon::split - empty polygon p1 discarded.");
 //		delete pf1;
 	}
 	if (pf2->vertexCount() > 0)
 	{
 		if (pf2->vertexCount() <= 2)
 		{
-			LOG4CXX_DEBUG(logger, "Polygon::split - generated polygon p2 has < 3 vertices.");
+			//LOG4CXX_DEBUG(logger, "Polygon::split - generated polygon p2 has < 3 vertices.");
 		}
-		LOG4CXX_DEBUG(logger, "Polygon::split - adding p2 to RC");
+		//LOG4CXX_DEBUG(logger, "Polygon::split - adding p2 to RC");
 //		RenderEngine::instance().activeRenderContext().addPolygon(pf2);
 	}
 	else
 	{
-		LOG4CXX_DEBUG(logger, "Polygon::split - empty polygon p2 discarded.");
+		//LOG4CXX_DEBUG(logger, "Polygon::split - empty polygon p2 discarded.");
 //		delete pf2;
 	}
 	if (pf3->vertexCount() > 0)
 	{
 		if (pf3->vertexCount() <= 2)
 		{
-			LOG4CXX_DEBUG(logger, "Polygon::split - generated polygon p3 has < 3 vertices.");
+			//LOG4CXX_DEBUG(logger, "Polygon::split - generated polygon p3 has < 3 vertices.");
 		}
-		LOG4CXX_DEBUG(logger, "Polygon::split - adding p3 to RC");
+		//LOG4CXX_DEBUG(logger, "Polygon::split - adding p3 to RC");
 //		RenderEngine::instance().activeRenderContext().addPolygon(pf3);
 	}
 	else
 	{
-		LOG4CXX_DEBUG(logger, "Polygon::split - empty polygon p3 discarded.");
+		//LOG4CXX_DEBUG(logger, "Polygon::split - empty polygon p3 discarded.");
 //		delete pf3;
 	}
 	if (pf4->vertexCount() > 0)
 	{
 		if (pf4->vertexCount() <= 2)
 		{
-			LOG4CXX_DEBUG(logger, "Polygon::split - generated polygon p4 has < 3 vertices.");
+			//LOG4CXX_DEBUG(logger, "Polygon::split - generated polygon p4 has < 3 vertices.");
 		}
-		LOG4CXX_DEBUG(logger, "Polygon::split - adding p4 to RC");
+		//LOG4CXX_DEBUG(logger, "Polygon::split - adding p4 to RC");
 //		RenderEngine::instance().activeRenderContext().addPolygon(pf4);
 	}
 	else
 	{
-		LOG4CXX_DEBUG(logger, "Polygon::split - empty polygon p4 discarded.");
+		//LOG4CXX_DEBUG(logger, "Polygon::split - empty polygon p4 discarded.");
 //		delete pf4;
 	}
 }
@@ -394,8 +392,8 @@ void Polygon::split(void)
 */
 bool Polygon::dice(boost::shared_ptr<MicroPolygonGrid> grid, unsigned int grid_size, boost::shared_ptr<RenderContext> rc)
 {
-	log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("v3d.moya"));
-	LOG4CXX_DEBUG(logger, "Polygon::dice - dicing polygon into micropolygon grids.");
+	//log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("v3d.moya"));
+	//LOG4CXX_DEBUG(logger, "Polygon::dice - dicing polygon into micropolygon grids.");
 
 	/*
 		the poly should already be in (unprojected) eye space
@@ -413,16 +411,16 @@ bool Polygon::dice(boost::shared_ptr<MicroPolygonGrid> grid, unsigned int grid_s
 	// grid dimensions are sizeXsize
 //	unsigned int size = static_cast<unsigned int>(sqrt(RenderEngine::instance().gridSize()));
 	// the eye space bound of the poly
-	AABBox bounds = bound();	
-	Vector3 bound_min = bounds.min();
-	Vector3 bound_max = bounds.max();
+	v3d::type::AABBox bounds = bound();	
+	v3d::type::Vector3 bound_min = bounds.min();
+	v3d::type::Vector3 bound_max = bounds.max();
 	// get the size of each micropoly
 	float offset_x = (bound_max[0] - bound_min[0]) / grid_size;
 	float offset_y = (bound_max[1] - bound_min[1]) / grid_size;
 	/*
 		convert the eye space bound to screen space
 	*/
-	Matrix4 screen = rc->coordinateSystem("screen");//RenderEngine::instance().activeRenderContext().coordinateSystem("screen");
+	v3d::type::Matrix4 screen = rc->coordinateSystem("screen");//RenderEngine::instance().activeRenderContext().coordinateSystem("screen");
 	screen *= rc->coordinateSystem("raster"); //RenderEngine::instance().activeRenderContext().coordinateSystem("raster");
 	bound_min = screen * bound_min;
 	bound_max = screen * bound_max;

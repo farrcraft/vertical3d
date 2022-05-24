@@ -1,13 +1,12 @@
-#ifndef INCLUDED_MOYA_PLANE
-#define INCLUDED_MOYA_PLANE
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
-#ifdef WIN32
-#include <3dtypes/Vector3.h>
-#include <3dtypes/AABBox.h>
-#else
-#include <vertical3d/3dtypes/Vector3.h>
-#include <vertical3d/3dtypes/AABBox.h>
-#endif
+#pragma once
+
+#include "../../v3dlibs/type/Vector3.h"
+#include "../../v3dlibs/type/AABBox.h"
 
 #include "Polygon.h"
 
@@ -26,7 +25,7 @@ namespace v3D
 		{
 			public:
 				Plane();
-				Plane(const Vector3 & A, const Vector3 & B, const Vector3 & C);
+				Plane(const v3d::type::Vector3 & A, const v3d::type::Vector3 & B, const v3d::type::Vector3 & C);
 				~Plane();
 	
 				enum HalfSpace
@@ -45,18 +44,18 @@ namespace v3D
 					C = 2,
 					D = 3
 				};
-				void set(const Vector3 & n, float d);
-				void calculate(const Vector3 & A, const Vector3 & B, const Vector3 & C);
-				void calculate(const Vector3 & normal, const Vector3 & point);
+				void set(const v3d::type::Vector3 & n, float d);
+				void calculate(const v3d::type::Vector3 & A, const v3d::type::Vector3 & B, const v3d::type::Vector3 & C);
+				void calculate(const v3d::type::Vector3 & normal, const v3d::type::Vector3 & point);
 	
 				/**
 				 * distance to point
 				 */
-				float 	distance(const Vector3 & point) const;
-				int 	classify(const AABBox & aabb) const;
-				int 	classify(const Vector3 & point) const;
-				bool 	intersect(const Vector3 & start, const Vector3 & direction, Vector3 & hitPoint) const;
-				bool 	intersectEdge(const Vector3 & A, const Vector3 & B, Vector3 & hitPoint) const;
+				float 	distance(const v3d::type::Vector3 & point) const;
+				int 	classify(const v3d::type::AABBox & aabb) const;
+				int 	classify(const v3d::type::Vector3 & point) const;
+				bool 	intersect(const v3d::type::Vector3 & start, const v3d::type::Vector3 & direction, v3d::type::Vector3 & hitPoint) const;
+				bool 	intersectEdge(const v3d::type::Vector3 & A, const v3d::type::Vector3 & B, v3d::type::Vector3 & hitPoint) const;
 				void 	clip(boost::shared_ptr<Polygon> poly);
 				void 	normalize(void);
 	
@@ -64,7 +63,7 @@ namespace v3D
 	
 	
 			private:
-				Vector3		_normal;
+				v3d::type::Vector3 _normal;
 				float		_distance;
 				float		_equation[4]; // abcd
 		};
@@ -73,4 +72,3 @@ namespace v3D
 
 }; // end namespace
 
-#endif // INCLUDED_MOYA_PLANE

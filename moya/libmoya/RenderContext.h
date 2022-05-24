@@ -1,14 +1,14 @@
-#ifndef INCLUDED_MOYA_RENDERCONTEXT
-#define INCLUDED_MOYA_RENDERCONTEXT
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once
 
 #include "Polygon.h"
 #include "FrameBuffer.h"
 
-#ifdef WIN32
-#include <3dtypes/Matrix4.h>
-#else
-#include <vertical3d/3dtypes/Matrix4.h>
-#endif
+#include "../../v3dlibs/type/Matrix4.h"
 
 #include <vector>
 #include <map>
@@ -90,7 +90,7 @@ namespace v3D
 				 */
 				void setCoordinateSystem(const std::string & name);
 				void setIdentityTransform();
-				void setTransform(const Matrix4 & trans);
+				void setTransform(const v3d::type::Matrix4 & trans);
 
 				void translate(float dx, float dy, float dz);
 				void rotate(float angle, float dx, float dy, float dz);
@@ -105,7 +105,7 @@ namespace v3D
 				/**
 				 *	Get the matrix for a named coordinate system.
 				 */
-				Matrix4 coordinateSystem(const std::string & name);
+				v3d::type::Matrix4 coordinateSystem(const std::string & name);
 
 				/*
 				unsigned int getPolygonCount(void) const;
@@ -123,8 +123,8 @@ namespace v3D
 			private:
 				std::string		  		_name;
 				//vector<PolygonPtr>  	_polygons;
-				std::vector<Matrix4>	_transforms;
-				std::map<std::string, Matrix4>	_coordinateSystems;
+				std::vector<v3d::type::Matrix4>	_transforms;
+				std::map<std::string, v3d::type::Matrix4>	_coordinateSystems;
 				boost::shared_ptr<FrameBuffer>	_frameBuffer;
 				// camera options
 				unsigned int			_xres;
@@ -134,7 +134,7 @@ namespace v3D
 				float					_frameAspect;	// default: 4/3
 				float					_screen[4];		// screen coordinates (after projection) of area to be rendered. default: [-4/3, 4/3, -1, 1]
 				std::string				_projection;	// type of projection - default: "orthographic"
-				Matrix4					_transform;		// world to camera transformation matrix / current transformation matrix
+				v3d::type::Matrix4 _transform;		// world to camera transformation matrix / current transformation matrix
 				float					_near;			// near clipping plane. default: epsilon
 				float					_far;			// far clipping plane. default: infinity
 				// other clipping planes
@@ -169,5 +169,3 @@ namespace v3D
 	}; // end namespace Moya
 
 }; // end namespace v3D
-
-#endif // INCLUDED_MOYA_RENDERCONTEXT

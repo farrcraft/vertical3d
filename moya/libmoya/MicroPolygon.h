@@ -1,5 +1,9 @@
-#ifndef INCLUDED_MOYA_MICROPOLYGON
-#define INCLUDED_MOYA_MICROPOLYGON
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once
 
 #include "Vertex.h"
 
@@ -24,5 +28,3 @@ namespace v3D
 	}; // end namespace Moya
 
 }; // end namespace v3D
-
-#endif // INCLUDED_MOYA_MICROPOLYGON

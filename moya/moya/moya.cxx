@@ -4,11 +4,6 @@
 #include <iostream>
 #include <boost/program_options.hpp>
 
-// include log4cxx header files.
-#include <log4cxx/logger.h>
-#include <log4cxx/basicconfigurator.h>
-#include <log4cxx/helpers/exception.h>
-
 int main (int argc, char *argv[])
 {
 	log4cxx::BasicConfigurator::configure();

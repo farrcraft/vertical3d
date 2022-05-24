@@ -1,13 +1,13 @@
-#ifndef INCLUDED_MOYA_REYESPRIMITIVE
-#define INCLUDED_MOYA_REYESPRIMITIVE
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once
 
 #include "MicroPolygonGrid.h"
 
-#ifdef WIN32
-#include <3dtypes/AABBox.h>
-#else
-#include <vertical3d/3dtypes/AABBox.h>
-#endif
+#include "../../v3dlibs/type/AABBox.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -23,7 +23,7 @@ namespace v3D
 				virtual ~ReyesPrimitive();
 	
 				virtual bool diceable(void) const;
-				virtual AABBox bound(void) const;
+				virtual v3d::type::AABBox bound(void) const;
 				virtual void split(void);
 				/*
 					turn a primitive into a micropolygon grid
@@ -44,5 +44,3 @@ namespace v3D
 	}; // end namespace Moya
 
 }; // end namespace v3D
-
-#endif // INCLUDED_MOYA_REYESPRIMITIVE

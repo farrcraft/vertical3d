@@ -1,3 +1,8 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
 #include "MicroPolygonGrid.h"
 
 using namespace v3D;

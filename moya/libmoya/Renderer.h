@@ -1,11 +1,11 @@
-#ifndef INCLUDED_MOYA_RENDERER
-#define INCLUDED_MOYA_RENDERER
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
-#ifdef WIN32
-#include <3dtypes/Color3.h>
-#else
-#include <vertical3d/3dtypes/Color3.h>
-#endif
+#pragma once
+
+#include "../../v3dlibs/type/Color3.h"
 
 #include "RenderContext.h"
 
@@ -84,4 +84,3 @@ namespace v3D
 
 }; // end namespace v3D
 
-#endif // INCLUDED_MOYA_RENDERER

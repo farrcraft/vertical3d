@@ -1,5 +1,9 @@
-#ifndef INCLUDED_MOYA_BUCKET
-#define INCLUDED_MOYA_BUCKET
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once
 
 #include "ReyesPrimitive.h"
 
@@ -43,5 +47,3 @@ namespace v3D
 
 }; // end namespace v3D
 
-
-#endif // INCLUDED_MOYA_BUCKET

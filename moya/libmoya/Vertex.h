@@ -1,13 +1,12 @@
-#ifndef INCLUDED_MOYA_VERTEX
-#define INCLUDED_MOYA_VERTEX
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
-#ifdef WIN32
-#include <3dtypes/Color3.h>
-#include <3dtypes/Vector3.h>
-#else
-#include <vertical3d/3dtypes/Color3.h>
-#include <vertical3d/3dtypes/Vector3.h>
-#endif
+#pragma once
+
+#include "../../v3dlibs/type/Color3.h"
+#include "../../v3dlibs/type/Vector3.h"
 
 namespace v3D
 {
@@ -26,13 +25,13 @@ namespace v3D
 					HAS_TEX_COORD = (1 << 3)
 				};
 
-				Vector3 point(void) const;
-				void point(const Vector3 & v);
+				v3d::type::Vector3 point(void) const;
+				void point(const v3d::type::Vector3 & v);
 
 			private:
-				Vector3			_point;
-				Color3			_color;
-				Vector3			_normal;
+				v3d::type::Vector3 _point;
+				v3d::type::Color3 _color;
+				v3d::type::Vector3 _normal;
 				unsigned int	_bits;
 		};
 
@@ -40,4 +39,3 @@ namespace v3D
 
 }; // end namespace v3D
 
-#endif // INCLUDED_MOYA_VERTEX

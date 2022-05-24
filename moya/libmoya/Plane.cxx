@@ -1,3 +1,8 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
 #include "Plane.h"
 
 #include <cmath>
@@ -10,7 +15,7 @@ Plane::Plane()
 {
 }
 
-Plane::Plane(const Vector3 & A, const Vector3 & B, const Vector3 & C)
+Plane::Plane(const v3d::type::Vector3 & A, const v3d::type::Vector3 & B, const v3d::type::Vector3 & C)
 {
 	calculate(A, B, C);
 }
@@ -29,7 +34,7 @@ void Plane::normalize(void)
 	_equation[3] /= mag;
 }
 
-void Plane::set(const Vector3 & n, float d)
+void Plane::set(const v3d::type::Vector3 & n, float d)
 {
 	_normal = n;
 	_distance = d;
@@ -52,7 +57,7 @@ void Plane::set(const Vector3 & n, float d)
 			distance value. any point (x,y,z) that satisfies this equation lies on
 			the plane
 */
-void Plane::calculate(const Vector3 & A, const Vector3 & B, const Vector3 & C)
+void Plane::calculate(const v3d::type::Vector3 & A, const v3d::type::Vector3 & B, const v3d::type::Vector3 & C)
 {
 	_normal = (B - A).cross(C - A); // normal = AB*AC
 	_normal.normalize();
@@ -60,7 +65,7 @@ void Plane::calculate(const Vector3 & A, const Vector3 & B, const Vector3 & C)
 }
 
 // tested - seems ok
-void Plane::calculate(const Vector3 & normal, const Vector3 & point)
+void Plane::calculate(const v3d::type::Vector3 & normal, const v3d::type::Vector3 & point)
 {
 	_normal = normal;
 	_distance = (_normal * point);
@@ -70,7 +75,7 @@ void Plane::calculate(const Vector3 & normal, const Vector3 & point)
 	_equation[3] = -(_normal[0] * point[0] + _normal[1] * point[1] + _normal[2] * point[2]);
 }
 
-float Plane::distance(const Vector3 & point) const
+float Plane::distance(const v3d::type::Vector3 & point) const
 {
 	return _equation[0] * point[0] + _equation[1] * point[1] + _equation[2] * point[2] + _equation[3];
 //	return ((_normal * point) - _distance);
@@ -78,7 +83,7 @@ float Plane::distance(const Vector3 & point) const
 
 // tested - seems ok
 // classifies whether a point is on either side of the plane or on the plane itself.
-int Plane::classify(const Vector3 & point) const
+int Plane::classify(const v3d::type::Vector3 & point) const
 {
 //	return !((_normal * point) > _distance);
 //	float d = _equation[A] * point.x() + _equation[B] * point.y() + _equation[C] * point.z() + _equation[D];
@@ -114,9 +119,9 @@ int Plane::classify(const Vector3 & point) const
 	classify the 8 points of the aabb against the plane
 	see: http://www.flipcode.com/articles/article_frustumculling.shtml
 */
-int Plane::classify(const AABBox & aabb) const
+int Plane::classify(const v3d::type::AABBox & aabb) const
 {
-	Vector3 corners[8];
+	v3d::type::Vector3 corners[8];
 	aabb.vertices(corners);
 	int inside = 8; // start with all 8 points inside
 	for (unsigned int i = 0; i < 8; i++)
@@ -157,7 +162,7 @@ void Plane::clip(boost::shared_ptr<Polygon> poly)
 {
 	boost::shared_ptr<Polygon> clippedPoly(new Polygon);
 	Vertex s, p, i;
-	Vector3 hit;
+	v3d::type::Vector3 hit;
 	unsigned int nverts;
 	 
 	nverts = poly->vertexCount();
@@ -212,7 +217,7 @@ void Plane::clip(boost::shared_ptr<Polygon> poly)
 }
 
 // ray intersection test
-bool Plane::intersect(const Vector3 & start, const Vector3 & direction, Vector3 & hitPoint) const
+bool Plane::intersect(const v3d::type::Vector3 & start, const v3d::type::Vector3 & direction, v3d::type::Vector3 & hitPoint) const
 {
 	float denom = _normal * direction;
 	if (denom == 0.0) // ray and plane are parallel
@@ -229,9 +234,9 @@ bool Plane::intersect(const Vector3 & start, const Vector3 & direction, Vector3 
 }
 
 // tested - seems ok
-bool Plane::intersectEdge(const Vector3 & A, const Vector3 & B, Vector3 & hitPoint) const
+bool Plane::intersectEdge(const v3d::type::Vector3 & A, const v3d::type::Vector3 & B, v3d::type::Vector3 & hitPoint) const
 {
-	Vector3 direction = B - A;
+	v3d::type::Vector3 direction = B - A;
 	float denom = _normal * direction; // dot product
 	if (denom == 0.0)
 	{

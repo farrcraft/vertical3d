@@ -1,15 +1,14 @@
-#ifndef INCLUDED_MOYA_FRUSTUM
-#define INCLUDED_MOYA_FRUSTUM
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once
 
 #include "Plane.h"
 
-#ifdef WIN32
-#include <3dtypes/AABBox.h>
-#include <3dtypes/Matrix4.h>
-#else
-#include <vertical3d/3dtypes/AABBox.h>
-#include <vertical3d/3dtypes/Matrix4.h>
-#endif
+#include "../../v3dlibs/type/AABBox.h"
+#include "../../v3dlibs/type/Matrix4.h"
 
 #include <string>
 #include <map>
@@ -23,7 +22,7 @@ namespace v3D
 		{
 			public:
 				Frustum();
-				Frustum(const Matrix4 & projection);
+				Frustum(const v3d::type::Matrix4 & projection);
 				~Frustum();
 			
 				enum HitClassification
@@ -34,12 +33,12 @@ namespace v3D
 				};
 	
 				// extract the 6 standard clipping planes from a projection matrix
-				void extract(const Matrix4 & projection);
+				void extract(const v3d::type::Matrix4 & projection);
 	
 				// normalize all planes in frustum
 				void normalize(void);
 	
-				int intersect(const AABBox & aabb);
+				int intersect(const v3d::type::AABBox & aabb);
 //				int intersect(const Sphere & sphere);
 				/*
 					clip polygon against frustum - modifies passed polygon structure
@@ -55,5 +54,3 @@ namespace v3D
 	}; // end namespace Moya
 
 }; // end namespace v3D
-
-#endif // INCLUDED_MOYA_FRUSTUM

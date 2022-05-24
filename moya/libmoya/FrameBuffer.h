@@ -1,5 +1,9 @@
-#ifndef INCLUDED_MOYA_FRAMEBUFFER
-#define INCLUDED_MOYA_FRAMEBUFFER
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once
 
 #include "Bucket.h"
 
@@ -31,7 +35,7 @@ namespace v3D
 
 				unsigned int * bucketSize(void) const;
 				unsigned int * imageSize(void) const;
-				void addPrimitive(const boost::shared_ptr<ReyesPrimitive> & primitive, const AABBox & bound);
+				void addPrimitive(const boost::shared_ptr<ReyesPrimitive> & primitive, const v3d::type::AABBox & bound);
 				void render(void);
 	
 				//typedef boost::multi_array<Bucket, 2> BucketGrid;
@@ -54,5 +58,3 @@ namespace v3D
 	}; // end namespace Moya
 
 }; // end namespace v3D
-
-#endif // INCLUDED_MOYA_FRAMEBUFFER

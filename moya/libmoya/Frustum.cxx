@@ -1,3 +1,8 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
 #include "Frustum.h"
 
 using namespace v3D;
@@ -7,7 +12,7 @@ Frustum::Frustum()
 {
 }
 
-Frustum::Frustum(const Matrix4 & projection)
+Frustum::Frustum(const v3d::type::Matrix4 & projection)
 {
 	extract(projection);
 }
@@ -24,7 +29,7 @@ Frustum::~Frustum()
 
 	the plane extraction is described in: http://www2.ravensoft.com/users/ggribb/plane%20extraction.pdf
 */
-void Frustum::extract(const Matrix4 & projection)
+void Frustum::extract(const v3d::type::Matrix4 & projection)
 {
 	Plane plane;
 	// left clipping plane
@@ -83,7 +88,7 @@ void Frustum::normalize(void)
 	tests aabb against all of the frustum's clipping planes 
 	aabb is either inside, outside, or intersecting the frustum
 */
-int Frustum::intersect(const AABBox & aabb)
+int Frustum::intersect(const v3d::type::AABBox & aabb)
 {
 	unsigned int inside = _clippingPlanes.size();
 	int hit = 0;

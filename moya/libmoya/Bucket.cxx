@@ -2,8 +2,6 @@
 
 #include <iostream>
 
-#include <log4cxx/logger.h>
-
 using namespace v3D::Moya;
 
 Bucket::Bucket()
@@ -16,16 +14,16 @@ Bucket::~Bucket()
 
 void Bucket::addPrimitive(boost::shared_ptr<ReyesPrimitive> primitive)
 {
-	log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("v3d.moya"));
-	LOG4CXX_DEBUG(logger, "Bucket::addPrimitive - adding primitive to bucket.");
+	//log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("v3d.moya"));
+	//LOG4CXX_DEBUG(logger, "Bucket::addPrimitive - adding primitive to bucket.");
 
 	_primitives.push_back(primitive);
 }
 
 void Bucket::render(void)
 {
-	log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("v3d.moya"));
-	LOG4CXX_DEBUG(logger, "Bucket::render - begin rendering bucket.");
+	//log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("v3d.moya"));
+	//LOG4CXX_DEBUG(logger, "Bucket::render - begin rendering bucket.");
 
 	// iterate over each primitive in the bucket
 	std::vector<boost::shared_ptr<ReyesPrimitive> >::iterator it = _primitives.begin();
@@ -59,7 +57,7 @@ void Bucket::render(void)
 		}
 		else
 		{
-			LOG4CXX_DEBUG(logger, "Bucket::render - primitive is undiceable. splitting into smaller primitives.");
+			//LOG4CXX_DEBUG(logger, "Bucket::render - primitive is undiceable. splitting into smaller primitives.");
 			// split primitive into smaller (possibly diceable) primitives
 			prim->split();
 			// put new primitives at head of unread portion of model file 
@@ -74,5 +72,5 @@ void Bucket::render(void)
 	// filter visible sample hits to produce pixels
 	// output pixels
 
-	LOG4CXX_DEBUG(logger, "Bucket::render - finished rendering bucket.");
+	//LOG4CXX_DEBUG(logger, "Bucket::render - finished rendering bucket.");
 }

@@ -1,5 +1,9 @@
-#ifndef INCLUDED_MOYA_MICROPOLYGONGRID
-#define INCLUDED_MOYA_MICROPOLYGONGRID
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once
 
 #include <vector>
 
@@ -30,5 +34,3 @@ namespace v3D
 	}; // end namespace Moya
 
 }; // end namespace v3D
-
-#endif // INCLUDED_MOYA_MICROPOLYGONGRID

@@ -1,18 +1,16 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
 #include "RenderContext.h"
 #include "Frustum.h"
 
-#ifdef WIN32
-#include <3dtypes/3dtypes.h>
-#include <3dtypes/AABBox.h>
-#else
-#include <vertical3d/3dtypes/3dtypes.h>
-#include <vertical3d/3dtypes/AABBox.h>
-#endif
+#include "../../v3dlibs/type/3dtypes.h"
+#include "../../v3dlibs/type/Matrix4.h"
 
 #include <cmath>
 #include <iostream>
-
-#include <log4cxx/logger.h>
 
 using namespace v3D;
 using namespace v3D::Moya;
@@ -38,7 +36,7 @@ RenderContext::~RenderContext()
 void RenderContext::initialize()
 {
 	// initialize the predefined coordinate systems to defaults (identity matrix)
-	Matrix4 def;
+	v3d::type::Matrix4 def;
 	def.identity();
 	_coordinateSystems["object"] = def;
 	_coordinateSystems["world"]  = def;
@@ -91,11 +89,11 @@ void RenderContext::prepareWorld()
 	// save the existing transform as the camera coordinate system
 	saveCoordinateSystem("camera");
 
-	log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("v3d.moya"));
-	LOG4CXX_DEBUG(logger, "RenderEngine::prepareWorld - camera coordinate system marked.");
+	//log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("v3d.moya"));
+	//LOG4CXX_DEBUG(logger, "RenderEngine::prepareWorld - camera coordinate system marked.");
 
 	// set raster transformation
-	Matrix4 raster;
+	v3d::type::Matrix4 raster;
 	raster.identity();
 	/*
 		screen transform maps to the canonical volume [-1, 1]
@@ -116,11 +114,11 @@ void RenderContext::prepareWorld()
 	bucket[0] = _bucketWidth;
 	bucket[1] = _bucketHeight;
 
-	LOG4CXX_DEBUG(logger, "RenderContext::prepareWorld - allocating framebuffer. image size = [" << screen[0] << " x " << screen[1] << "]. bucket size = [" << bucket[0] << " x " << bucket[1] << "]");
+	//LOG4CXX_DEBUG(logger, "RenderContext::prepareWorld - allocating framebuffer. image size = [" << screen[0] << " x " << screen[1] << "]. bucket size = [" << bucket[0] << " x " << bucket[1] << "]");
 
 	_frameBuffer.reset(new FrameBuffer(bucket, screen));
 
-	LOG4CXX_DEBUG(logger, "RenderEngine::prepareWorld - view options frozen.");
+	//LOG4CXX_DEBUG(logger, "RenderEngine::prepareWorld - view options frozen.");
 }
 
 unsigned int RenderContext::imageWidth() const
@@ -154,7 +152,7 @@ void RenderContext::projection(std::string name, float fov)
 	// only perspective uses fov
 	_projection = name;
 
-	Matrix4 projection;
+	v3d::type::Matrix4 projection;
 	// build the projection matrix
 	if (name == "perspective")
 	{
@@ -162,8 +160,8 @@ void RenderContext::projection(std::string name, float fov)
 	}
 	else if (name == "orthographic")
 	{
-		log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("v3d.moya"));
-		LOG4CXX_DEBUG(logger, "RenderContext::projection - enabling orthographic projection:");
+		//log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("v3d.moya"));
+		//LOG4CXX_DEBUG(logger, "RenderContext::projection - enabling orthographic projection:");
 		/*
 			orthographic projection looks something like:
 
@@ -291,12 +289,12 @@ void RenderContext::setIdentityTransform()
 	_transform.identity();
 }
 
-void RenderContext::setTransform(const Matrix4 & trans)
+void RenderContext::setTransform(const v3d::type::Matrix4 & trans)
 {
 	 _transform = trans;
 }
 
-Matrix4 RenderContext::coordinateSystem(const std::string & name)
+v3d::type::Matrix4 RenderContext::coordinateSystem(const std::string & name)
 {
 	return _coordinateSystems[name];
 }
@@ -320,7 +318,7 @@ void RenderContext::scale(float sx, float sy, float sz)
 */
 void RenderContext::addPolygon(boost::shared_ptr<Polygon> poly)
 {
-	log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("v3d.moya"));
+	//log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("v3d.moya"));
 	// if an output stream exists
 	// echo RiPolygon RIB command to output stream
 
@@ -334,12 +332,12 @@ void RenderContext::addPolygon(boost::shared_ptr<Polygon> poly)
 		we should probably just transform the poly to eye space first since any future calculations
 		on this poly will be done in eye space or beyond.
 	*/
-	AABBox bound = poly->bound();
+	v3d::type::AABBox bound = poly->bound();
 
-	Vector3 bound_max = bound.max();
-	Vector3 bound_min = bound.min();
+	v3d::type::Vector3 bound_max = bound.max();
+	v3d::type::Vector3 bound_min = bound.min();
 
-	LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - object space bounds are [" << bound_min.str() << "] x " << bound_max.str());
+	//LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - object space bounds are [" << bound_min.str() << "] x " << bound_max.str());
 	/*
 		convert bound to eye space coordinates
 		first multiply by modeling transformation to get world coordinates
@@ -348,8 +346,8 @@ void RenderContext::addPolygon(boost::shared_ptr<Polygon> poly)
 		for now we're just taking the current transform.
 		later we'll probably need to concatenate the _transforms matrix stack too
 	*/
-	LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - current transform matrix: " << _transform.str());
-	LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - camera transform matrix: " << _coordinateSystems["camera"].str());
+	//LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - current transform matrix: " << _transform.str());
+	//LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - camera transform matrix: " << _coordinateSystems["camera"].str());
 	bound_max = _transform * bound_max;
 	bound_max = _coordinateSystems["camera"].transpose() * bound_max;
 	bound_min = _transform * bound_min;
@@ -369,14 +367,14 @@ void RenderContext::addPolygon(boost::shared_ptr<Polygon> poly)
 		swap(bound_min[2], bound_max[2]);
 	}
 
-	LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - eye space bounds are " << bound_min.str() << " x " << bound_max.str());
+	//LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - eye space bounds are " << bound_min.str() << " x " << bound_max.str());
 
 	// do hither-yon cull
 	if ((bound_max[2] > _far && bound_min[2] > _far) 	// bound is completely outside far plane (too far away for the camera to see)
 	 || (bound_max[2] < _near && bound_min[2] < _near))	// bound is completely outside near plane (effectively behind camera)
 	{
 		// cull poly
-		LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - outside hither/yon. polygon was culled.");
+		//LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - outside hither/yon. polygon was culled.");
 		// no need to continue since poly won't be rendered
 		return;
 	}
@@ -401,7 +399,7 @@ void RenderContext::addPolygon(boost::shared_ptr<Polygon> poly)
 		// (mark undiceable so it will be split on the next pass)
 		if (bound_min[2] < 0.0)
 		{
-			LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - spanner - marking undiceable. polygon will be split.");
+			//LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - spanner - marking undiceable. polygon will be split.");
 			poly->diceable(false);
 		}
 		// else poly is in front of the eye plane and still projectable so continue
@@ -420,7 +418,7 @@ void RenderContext::addPolygon(boost::shared_ptr<Polygon> poly)
 	// screen space to reyes means renderman raster space
 	
 	//bound = poly->bound();
-	Matrix4 screen = _coordinateSystems["screen"];
+	v3d::type::Matrix4 screen = _coordinateSystems["screen"];
 	screen *= _coordinateSystems["raster"];
 	bound_min = screen * bound_min;
 	bound_max = screen * bound_max;
@@ -435,16 +433,16 @@ void RenderContext::addPolygon(boost::shared_ptr<Polygon> poly)
 
 	bound.extents(bound_min, bound_max);
 
-	LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - screen transform matrix: " << _coordinateSystems["screen"].str());
-	LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - raster transform matrix: " << _coordinateSystems["raster"].str());
-	LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - screen + raster transform matrix: " << screen.str());
-	LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - screen space bounds are " << bound_min.str() << " x " << bound_max.str());
+	//LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - screen transform matrix: " << _coordinateSystems["screen"].str());
+	//LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - raster transform matrix: " << _coordinateSystems["raster"].str());
+	//LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - screen + raster transform matrix: " << screen.str());
+	//LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - screen space bounds are " << bound_min.str() << " x " << bound_max.str());
 
 	// do viewing frustum cull
 	Frustum frustum(screen);
 	if (frustum.intersect(bound) == Frustum::OUTSIDE) // poly is entirely outside frustum
 	{
-		LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - outside frustum. polygon was culled.");
+		//LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - outside frustum. polygon was culled.");
 		return;
 	}
 
@@ -461,11 +459,11 @@ void RenderContext::addPolygon(boost::shared_ptr<Polygon> poly)
 		*/
 		float size = static_cast<float>(_gridSize);
 		size = sqrt(size) * _shadingRate;
-		Vector3 bound_size = bound_max - bound_min;
-		LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - bound size = " << bound_size.str() << " size = " << size);
+		v3d::type::Vector3 bound_size = bound_max - bound_min;
+		//LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - bound size = " << bound_size.str() << " size = " << size);
 		if ((bound_size[0] > size) || (bound_size[1] > size))
 		{
-			LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - bounds exceed grid size. poly will be split.");
+			//LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - bounds exceed grid size. poly will be split.");
 			poly->diceable(false);
 		}
 	}
@@ -479,7 +477,7 @@ void RenderContext::addPolygon(boost::shared_ptr<Polygon> poly)
 	{
 		for (unsigned int i = 0; i < poly->vertexCount(); i++)
 		{
-			Matrix4 em = _transform * _coordinateSystems["camera"].transpose();
+			v3d::type::Matrix4 em = _transform * _coordinateSystems["camera"].transpose();
 			Vertex pv = poly->vertex(i);
 			pv.point(em * pv.point());
 			(*poly)[i] = pv;
@@ -528,10 +526,10 @@ PolygonPtr RenderContext::getPolygon(unsigned int idx) const
 */
 void RenderContext::render()
 {
-	log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("v3d.moya"));
-	LOG4CXX_DEBUG(logger, "RenderContext::render - begin rendering framebuffer.");
+	//log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("v3d.moya"));
+	//LOG4CXX_DEBUG(logger, "RenderContext::render - begin rendering framebuffer.");
 
 	_frameBuffer->render();
 
-	LOG4CXX_DEBUG(logger, "RenderContext::render - finished rendering framebuffer.");
+	//LOG4CXX_DEBUG(logger, "RenderContext::render - finished rendering framebuffer.");
 }

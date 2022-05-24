@@ -1,3 +1,8 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
 #include "ReyesPrimitive.h"
 
 using namespace v3D;
@@ -16,9 +21,9 @@ bool ReyesPrimitive::diceable(void) const
 	return _diceable;
 }
 
-AABBox ReyesPrimitive::bound(void) const
+v3d::type::AABBox ReyesPrimitive::bound(void) const
 {
-	return AABBox();
+	return v3d::type::AABBox();
 }
 
 void ReyesPrimitive::split(void)
