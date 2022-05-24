@@ -7,6 +7,8 @@
 #include "../image/ImageFactory.h"
 #include "../image/Texture.h"
 
+#include <boost/make_shared.hpp>
+
 #include <fstream>
 #include <sstream>
 
@@ -183,7 +185,7 @@ BitmapFont::CharDescriptor BitmapFont::character(char c) {
 	return charset_.chars_[c];
 }
 
-boost::shared_ptr<Texture> BitmapFont::texture() {
+boost::shared_ptr<v3d::image::Texture> BitmapFont::texture() {
 	return texture_;
 }
 
@@ -210,7 +212,7 @@ bool BitmapFont::loadTexture(const std::string & filename) {
 		return false;
 	}
 
-	texture_.reset(new v3d::image::Texture(image));
+	texture_ = boost::make_shared<v3d::image::Texture>(image);
 
 	return true;
 }

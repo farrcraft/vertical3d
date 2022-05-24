@@ -1,3 +1,8 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
 #include "BMPReader.h"
 #include "../BMP.h"
 
@@ -10,7 +15,8 @@
 
 #include <boost/log/trivial.hpp>
 
-using namespace v3D;
+using namespace v3d::image;
+using namespace v3d::image::reader;
 
 
 BMPReader::BMPReader()

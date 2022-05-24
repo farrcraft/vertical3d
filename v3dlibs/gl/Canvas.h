@@ -1,14 +1,16 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- *
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once
 
 #include "VertexBuffer.h"
 
 #include <glm/glm.hpp>
 #include <deque>
 
-namespace v3D
+namespace v3d::gl
 {
 
 	class Program;

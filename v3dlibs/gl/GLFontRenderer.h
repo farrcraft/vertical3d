@@ -1,15 +1,14 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- *
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
-#ifndef INCLUDED_V3D_GL_FONT_RENDERER
-#define INCLUDED_V3D_GL_FONT_RENDERER
+#pragma once
 
 #include "../font/Font2D.h"
 #include "GLTexture.h"
 
-namespace v3D
+namespace v3d::gl
 {
 
 	/**
@@ -19,7 +18,7 @@ namespace v3D
 	{
 		public:
 			GLFontRenderer();
-			GLFontRenderer(const Font2D &f);
+			GLFontRenderer(const v3d::font::Font2D &f);
 			virtual ~GLFontRenderer();
 
 			/**
@@ -33,10 +32,8 @@ namespace v3D
 
 
 		private:
-			Font2D 		font_;
-			GLTexture 	texture_;
+			v3d::font::Font2D font_;
+			GLTexture texture_;
 	};
 
-}; // end namespace v3D
-
-#endif // INCLUDED_V3D_GL_TEXTURE
+};

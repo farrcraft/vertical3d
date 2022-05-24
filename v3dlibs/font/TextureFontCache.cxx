@@ -26,7 +26,7 @@ TextureFontCache::~TextureFontCache() {
 	delete [] cache_;
 }
 
-boost::shared_ptr<TextureAtlas> TextureFontCache::atlas() {
+boost::shared_ptr<v3d::image::TextureAtlas> TextureFontCache::atlas() {
 	return atlas_;
 }
 

@@ -1,24 +1,23 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- *
- */
-#ifndef INCLUDED_V3D_GL_TEXTURE
-#define INCLUDED_V3D_GL_TEXTURE
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once
 
 #include "../image/Texture.h"
 
-namespace v3D
-{
+namespace v3d::gl {
 
 	/**
 	 * A OpenGL Texture object.
 	 */
-	class GLTexture : public Texture
+	class GLTexture : public v3d::image::Texture
 	{
 		public:
 			GLTexture();
-			GLTexture(const Texture &t);
-			GLTexture(boost::shared_ptr<Image> image);
+			GLTexture(const v3d::image::Texture &t);
+			GLTexture(boost::shared_ptr<v3d::image::Image> image);
 			virtual ~GLTexture();
 
 			/**
@@ -36,9 +35,7 @@ namespace v3D
 			 * @param image the texture source image
 			 * @return true if the texture was sucessfully created
 			 */
-			bool create(boost::shared_ptr<Image> image);
+			bool create(boost::shared_ptr<v3d::image::Image> image);
 	};
 
-}; // end namespace v3D
-
-#endif // INCLUDED_V3D_GL_TEXTURE
+};

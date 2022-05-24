@@ -12,6 +12,7 @@
 #include <cmath>
 #include <algorithm>
 
+#include <boost/make_shared.hpp>
 #include <boost/log/trivial.hpp>
 
 #include "../type/3dtypes.h"
@@ -54,7 +55,7 @@ void Font2D::typeface(const std::string & face) {
     typeface_ = face;
 }
 
-boost::shared_ptr<Texture> Font2D::texture(void) const {
+boost::shared_ptr<v3d::image::Texture> Font2D::texture(void) const {
     return texture_;
 }
 
@@ -143,7 +144,7 @@ bool Font2D::build(void) {
     // the size must be a power of two
     image_height = npot(requested_height);
 
-    boost::shared_ptr<Image> image(new Image(image_width, image_height, 8));
+    boost::shared_ptr<v3d::image::Image> image = boost::make_shared<v3d::image::Image>(image_width, image_height, 8);
 
     unsigned int x = pad;
     unsigned int y = pad + max_ascent;
@@ -185,7 +186,7 @@ bool Font2D::build(void) {
 
     FT_Done_FreeType(library);
 
-    texture_ = boost::shared_ptr<Texture>(new Texture(image));
+    texture_ = boost::make_shared<v3d::image::Texture>(image);
 
     line_height_ = max_ascent + max_descent;
     tex_line_height_ = static_cast<float>(line_height_) / image_height;

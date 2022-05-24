@@ -8,7 +8,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <GL/glew.h>
 
-using namespace v3D;
+using namespace v3d::gl;
 
 VertexBuffer::VertexBuffer(BufferType type) :
 	ebo_(0),

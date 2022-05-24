@@ -1,10 +1,16 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
 #include "TGAReader.h"
 
 #include <fstream>
 #include <iostream>
 #include <cstring>
 
-using namespace v3D;
+using namespace v3d::image;
+using namespace v3d::image::reader;
 
 TGAReader::TGAReader()
 {

@@ -105,7 +105,7 @@ namespace v3d::font {
 			 * Access the underlying font character map texture
 			 * @return a pointer to the texture
 			 */
-			boost::shared_ptr<Texture> texture(void) const;
+			boost::shared_ptr<v3d::image::Texture> texture(void) const;
 			/**
 			 * Get the texture height
 			 * @return the texture height
@@ -120,7 +120,7 @@ namespace v3d::font {
 
 		private:
 			std::map<unsigned char, Glyph> 	glyphs_;
-			boost::shared_ptr<Texture> 		texture_;
+			boost::shared_ptr<v3d::image::Texture>	texture_;
 
 			float 			tex_line_height_; 	// _line
 			unsigned int 	line_height_; 		// _height

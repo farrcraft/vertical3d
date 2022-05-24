@@ -5,7 +5,7 @@
 #include <iostream>
 #include <cstring>
 
-using namespace v3D;
+using namespace v3d::image;
 
 Image::Image() : data_(0), width_(0), height_(0), bpp_(24), format_(FORMAT_RGB)
 {

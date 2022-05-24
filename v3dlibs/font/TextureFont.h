@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include "../image/TextureAtlas.h"
+
 #include <glm/glm.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -12,8 +14,6 @@
 #include <string>
 
 namespace v3d::font {
-
-	class TextureAtlas;
 
 	class TextureFont {
 		public:
@@ -43,7 +43,7 @@ namespace v3d::font {
 				float outlineThickness_;
 			} Glyph;
 
-			TextureFont(boost::shared_ptr<TextureAtlas> atlas, const std::string & filename, float size);
+			TextureFont(boost::shared_ptr<v3d::image::TextureAtlas> atlas, const std::string & filename, float size);
 
 			boost::shared_ptr<Glyph> glyph(wchar_t charcode);
 			float kerning(boost::shared_ptr<Glyph>, wchar_t charcode);
@@ -66,7 +66,7 @@ namespace v3d::font {
 
 		private:
 			std::vector<boost::shared_ptr<Glyph> > glyphs_;
-			boost::shared_ptr<TextureAtlas> atlas_;
+			boost::shared_ptr<v3d::image::TextureAtlas> atlas_;
 			std::string filename_;
 			float size_;
 			int hinting_;

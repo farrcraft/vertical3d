@@ -9,7 +9,7 @@
 #include <GL/glew.h>
 #include <boost/log/trivial.hpp>
 
-using namespace v3D;
+using namespace v3d::gl;
 
 Program::Program(std::vector<boost::shared_ptr<Shader>> & theShaders) :
 	enabled_(false)
@@ -50,10 +50,6 @@ void Program::shaders(std::vector<boost::shared_ptr<Shader>> & theShaders)
 	{
 		theShaders[i]->detach(id_);
 	}
-}
-
-Program::~Program()
-{
 }
 
 void Program::enable()

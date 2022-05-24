@@ -5,47 +5,35 @@
 
 #include "ImageFactory.h"
 
-#include "readers/TGAReader.h"
-#include "readers/BMPReader.h"
-#include "readers/PNGReader.h"
-#include "readers/JPEGReader.h"
+#include "reader/TGAReader.h"
+#include "reader/BMPReader.h"
+#include "reader/PNGReader.h"
+#include "reader/JPEGReader.h"
 
-#include "writers/TGAWriter.h"
-#include "writers/BMPWriter.h"
-#include "writers/PNGWriter.h"
-#include "writers/JPEGWriter.h"
+#include "writer/TGAWriter.h"
+#include "writer/BMPWriter.h"
+#include "writer/PNGWriter.h"
+#include "writer/JPEGWriter.h"
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/log/trivial.hpp>
+#include <boost/make_shared.hpp>
 
 #include <iostream>
 
 using namespace v3d::image;
 
 ImageFactory::ImageFactory() {
-	boost::shared_ptr<ImageReader> reader;
-	reader.reset(new TGAReader());
-	add("tga", reader);
-	reader.reset(new BMPReader());
-	add("bmp", reader);
-	reader.reset(new PNGReader());
-	add("png", reader);
-	reader.reset(new JPEGReader());
-	add("jpg", reader);
+	add("tga", boost::make_shared<reader::TGAReader>());
+	add("bmp", boost::make_shared<reader::BMPReader>());
+	add("png", boost::make_shared<reader::PNGReader>());
+	add("jpg", boost::make_shared<reader::JPEGReader>());
 
-	boost::shared_ptr<ImageWriter> writer;
-	writer.reset(new TGAWriter());
-	add("tga", writer);
-	writer.reset(new BMPWriter());
-	add("bmp", writer);
-	writer.reset(new PNGWriter());
-	add("png", writer);
-	writer.reset(new JPEGWriter());
-	add("jpg", writer);
-}
-
-ImageFactory::~ImageFactory() {
+	add("tga", boost::make_shared<writer::TGAWriter>());
+	add("bmp", boost::make_shared<writer::BMPWriter>());
+	add("png", boost::make_shared<writer::PNGWriter>());
+	add("jpg", boost::make_shared<writer::JPEGWriter>());
 }
 
 void ImageFactory::add(const std::string & name, const boost::shared_ptr<ImageReader> & reader) {

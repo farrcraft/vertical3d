@@ -1,10 +1,13 @@
-#ifndef INCLUDED_V3D_PNGREADER
-#define INCLUDED_V3D_PNGREADER
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once 
 
 #include "../ImageReader.h"
 
-namespace v3D
-{
+namespace v3d::image::reader {
 
 	class PNGReader : public ImageReader
 	{
@@ -15,6 +18,4 @@ namespace v3D
 			virtual boost::shared_ptr<Image> read(const std::string & filename);
 	};
 
-}; // end namespace v3D
-
-#endif // INCLUDED_V3D_PNGREADER
+};

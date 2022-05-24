@@ -1,7 +1,7 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- *
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
 #include "Canvas.h"
 #include "Program.h"
@@ -14,7 +14,7 @@
 
 #include <cmath>
 
-using namespace v3D;
+using namespace v3d::gl;
 
 Canvas::Canvas(boost::shared_ptr<Program> program) :
 	buffer_(VertexBuffer::BUFFER_TYPE_DYNAMIC),
@@ -78,8 +78,8 @@ void Canvas::upload()
 	}
 	glBindVertexArray(vao_);
 
-	buffer_.attribute(0, 3, v3D::VertexBuffer::ATTRIBUTE_TYPE_VERTEX, xyz_.size());
-	buffer_.attribute(1, 4, v3D::VertexBuffer::ATTRIBUTE_TYPE_COLOR, rgba_.size());
+	buffer_.attribute(0, 3, VertexBuffer::ATTRIBUTE_TYPE_VERTEX, xyz_.size());
+	buffer_.attribute(1, 4, VertexBuffer::ATTRIBUTE_TYPE_COLOR, rgba_.size());
 
 	buffer_.allocate();
 

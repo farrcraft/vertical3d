@@ -1,14 +1,13 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- *
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
 #pragma once
 
 #include <string>
 
-namespace v3D
-{
+namespace v3d::gl {
 
 	/**
 	 * A GLSL shader
@@ -42,4 +41,4 @@ namespace v3D
 			unsigned int id_;
 	};
 
-}; // end namespace v3D
+};

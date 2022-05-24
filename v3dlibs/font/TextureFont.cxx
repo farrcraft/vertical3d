@@ -83,7 +83,7 @@ bool TextureFont::Freetype::loadFace(const std::string & filename, float size)
 	return true;
 }
 
-TextureFont::TextureFont(boost::shared_ptr<TextureAtlas> atlas, const std::string & filename, float size) :
+TextureFont::TextureFont(boost::shared_ptr<v3d::image::TextureAtlas> atlas, const std::string & filename, float size) :
 	atlas_(atlas),
 	filename_(filename),
 	size_(size),

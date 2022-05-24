@@ -5,15 +5,14 @@
 
 #pragma once
 
+#include "TextureFont.h"
+
 #include <boost/shared_ptr.hpp>
 
 #include <vector>
 #include <string>
 
 namespace v3d::font {
-	class TextureAtlas;
-	class TextureFont;
-
 	class TextureFontCache {
 		public:
 			TextureFontCache(unsigned int width, unsigned int height, unsigned int depth);
@@ -24,10 +23,10 @@ namespace v3d::font {
 			boost::shared_ptr<TextureFont> load(const std::string & filename, float size);
 			bool remove(boost::shared_ptr<TextureFont> font);
 
-			boost::shared_ptr<TextureAtlas> atlas();
+			boost::shared_ptr<v3d::image::TextureAtlas> atlas();
 
 		private:
-			boost::shared_ptr<TextureAtlas> atlas_;
+			boost::shared_ptr<v3d::image::TextureAtlas> atlas_;
 			std::vector<boost::shared_ptr<TextureFont> > fonts_;
 			wchar_t * cache_;
 	};

@@ -5,14 +5,14 @@
 
 #pragma once
 
+#include "../image/Texture.h"
+
 #include <boost/shared_ptr.hpp>
 
 #include <map>
 #include <string>
 
 namespace v3d::font {
-	class Texture;
-
 	class BitmapFont {
 		public:
 			BitmapFont(const std::string & path, std::string & name);
@@ -44,7 +44,7 @@ namespace v3d::font {
 			unsigned short lineHeight() const;
 
 			CharDescriptor character(char c);
-			boost::shared_ptr<Texture> texture();
+			boost::shared_ptr<v3d::image::Texture> texture();
 
 		protected:
 			void loadCharset(const std::string & filename);
@@ -52,6 +52,6 @@ namespace v3d::font {
 
 		private:
 			Charset charset_;
-			boost::shared_ptr<Texture> texture_;
+			boost::shared_ptr<v3d::image::Texture> texture_;
 	};
 };

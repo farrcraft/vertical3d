@@ -1,40 +1,36 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- *
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
 #include "BitmapFontRenderer.h"
 #include <GL/glew.h>
 
-using namespace v3D;
+using namespace v3d::gl;
 
 BitmapFontRenderer::BitmapFontRenderer() :
-	vertexBuffer_(v3D::VertexBuffer::BUFFER_TYPE_DYNAMIC)
+	vertexBuffer_(VertexBuffer::BUFFER_TYPE_DYNAMIC)
 {
 
 }
 
-BitmapFontRenderer::BitmapFontRenderer(boost::shared_ptr<BitmapTextBuffer> buffer, boost::shared_ptr<Program> program) :
+BitmapFontRenderer::BitmapFontRenderer(boost::shared_ptr<v3d::font::BitmapTextBuffer> buffer, boost::shared_ptr<Program> program) :
 	program_(program),
 	buffer_(buffer),
-	vertexBuffer_(v3D::VertexBuffer::BUFFER_TYPE_DYNAMIC)
+	vertexBuffer_(VertexBuffer::BUFFER_TYPE_DYNAMIC)
 {
 }
 
-BitmapFontRenderer::~BitmapFontRenderer()
-{
-}
-
-boost::shared_ptr<BitmapTextBuffer> BitmapFontRenderer::buffer()
+boost::shared_ptr<v3d::font::BitmapTextBuffer> BitmapFontRenderer::buffer()
 {
 	return buffer_;
 }
 
 void BitmapFontRenderer::upload()
 {
-	vertexBuffer_.attribute(0, 3, v3D::VertexBuffer::ATTRIBUTE_TYPE_VERTEX, buffer_->vertices().size());
-	vertexBuffer_.attribute(1, 2, v3D::VertexBuffer::ATTRIBUTE_TYPE_NORMAL, buffer_->uvs().size());
-	vertexBuffer_.attribute(2, 4, v3D::VertexBuffer::ATTRIBUTE_TYPE_COLOR, buffer_->colors().size());
+	vertexBuffer_.attribute(0, 3, VertexBuffer::ATTRIBUTE_TYPE_VERTEX, buffer_->vertices().size());
+	vertexBuffer_.attribute(1, 2, VertexBuffer::ATTRIBUTE_TYPE_NORMAL, buffer_->uvs().size());
+	vertexBuffer_.attribute(2, 4, VertexBuffer::ATTRIBUTE_TYPE_COLOR, buffer_->colors().size());
 
 	vertexBuffer_.allocate();
 

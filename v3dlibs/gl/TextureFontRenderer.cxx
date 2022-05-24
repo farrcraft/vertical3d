@@ -1,7 +1,7 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- *
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
 #include "TextureFontRenderer.h"
 #include "../image/TextureAtlas.h"
@@ -11,28 +11,24 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <GL/glew.h>
 
-using namespace v3D;
+using namespace v3d::gl;
 
 TextureFontRenderer::TextureFontRenderer() :
-	vertexBuffer_(v3D::VertexBuffer::BUFFER_TYPE_DYNAMIC)
+	vertexBuffer_(VertexBuffer::BUFFER_TYPE_DYNAMIC)
 {
 
 }
 
-TextureFontRenderer::TextureFontRenderer(boost::shared_ptr<TextureTextBuffer> buffer, boost::shared_ptr<Program> program, boost::shared_ptr<TextureAtlas> atlas) :
+TextureFontRenderer::TextureFontRenderer(boost::shared_ptr<v3d::font::TextureTextBuffer> buffer, boost::shared_ptr<Program> program, boost::shared_ptr<v3d::image::TextureAtlas> atlas) :
 	program_(program),
 	buffer_(buffer),
 	atlas_(atlas),
-	vertexBuffer_(v3D::VertexBuffer::BUFFER_TYPE_DYNAMIC)
+	vertexBuffer_(VertexBuffer::BUFFER_TYPE_DYNAMIC)
 {
 	texture_.create(atlas_->image());
 }
 
-TextureFontRenderer::~TextureFontRenderer()
-{
-}
-
-boost::shared_ptr<TextureTextBuffer> TextureFontRenderer::buffer()
+boost::shared_ptr<v3d::font::TextureTextBuffer> TextureFontRenderer::buffer()
 {
 	return buffer_;
 }
@@ -50,11 +46,11 @@ void TextureFontRenderer::resize(float width, float height)
 
 void TextureFontRenderer::upload()
 {
-	vertexBuffer_.attribute(0, 3, v3D::VertexBuffer::ATTRIBUTE_TYPE_VERTEX, buffer_->vertices().size());
-	vertexBuffer_.attribute(1, 2, v3D::VertexBuffer::ATTRIBUTE_TYPE_NORMAL, buffer_->uvs().size());
-	vertexBuffer_.attribute(2, 4, v3D::VertexBuffer::ATTRIBUTE_TYPE_COLOR, buffer_->colors().size());
-	vertexBuffer_.attribute(3, 1, v3D::VertexBuffer::ATTRIBUTE_TYPE_GENERIC, buffer_->shift().size());
-	vertexBuffer_.attribute(4, 1, v3D::VertexBuffer::ATTRIBUTE_TYPE_GENERIC, buffer_->gamma().size());
+	vertexBuffer_.attribute(0, 3, VertexBuffer::ATTRIBUTE_TYPE_VERTEX, buffer_->vertices().size());
+	vertexBuffer_.attribute(1, 2, VertexBuffer::ATTRIBUTE_TYPE_NORMAL, buffer_->uvs().size());
+	vertexBuffer_.attribute(2, 4, VertexBuffer::ATTRIBUTE_TYPE_COLOR, buffer_->colors().size());
+	vertexBuffer_.attribute(3, 1, VertexBuffer::ATTRIBUTE_TYPE_GENERIC, buffer_->shift().size());
+	vertexBuffer_.attribute(4, 1, VertexBuffer::ATTRIBUTE_TYPE_GENERIC, buffer_->gamma().size());
 
 	vertexBuffer_.allocate();
 

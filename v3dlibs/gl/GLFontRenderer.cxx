@@ -1,7 +1,7 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- *
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
 #include "GLFontRenderer.h"
 
@@ -10,14 +10,14 @@
 #include <cassert>
 #include <iostream>
 
-using namespace v3D;
+using namespace v3d::gl;
 
 GLFontRenderer::GLFontRenderer()
 {
 
 }
 
-GLFontRenderer::GLFontRenderer(const Font2D &f) : font_(f)
+GLFontRenderer::GLFontRenderer(const v3d::font::Font2D &f) : font_(f)
 { 
 	texture_.create(font_.texture()->image());
 }
@@ -42,7 +42,7 @@ void GLFontRenderer::print(const std::string & text, float x, float y)
 	glBegin(GL_QUADS);
 	for (size_t i = 0; i < text.size(); i++)
 	{
-		const Font2D::Glyph * glyph = font_.glyph(text[i]);
+		const v3d::font::Font2D::Glyph * glyph = font_.glyph(text[i]);
 
 		glTexCoord2f(glyph->x1_, glyph->y1_);
 		glVertex2f(x, y);

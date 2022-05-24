@@ -1,7 +1,8 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- *
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
 #include "GLTexture.h"
 
 #include <GL/glew.h>
@@ -11,18 +12,18 @@
 
 #include <boost/log/trivial.hpp>
 
-using namespace v3D;
+using namespace v3d::gl;
 
 GLTexture::GLTexture()
 { 
 }
 
-GLTexture::GLTexture(boost::shared_ptr<Image> image)
+GLTexture::GLTexture(boost::shared_ptr<v3d::image::Image> image)
 {
 	create(image);
 }
 
-GLTexture::GLTexture(const Texture &t) : Texture(t)
+GLTexture::GLTexture(const v3d::image::Texture &t) : v3d::image::Texture(t)
 { 
 }
 
@@ -34,7 +35,6 @@ GLTexture::~GLTexture()
 		glDeleteTextures(1, &tex_id);
 	}
 }
-
 
 void GLTexture::wrap(bool repeat)
 { 
@@ -71,7 +71,7 @@ bool GLTexture::bind()
 	return true;
 }
 
-bool GLTexture::create(boost::shared_ptr<Image> image)
+bool GLTexture::create(boost::shared_ptr<v3d::image::Image> image)
 {
 	Texture::create(image);
 	unsigned int tex_id = id();

@@ -1,7 +1,7 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- *
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
 #pragma once
 
@@ -9,8 +9,7 @@
 #include <boost/shared_ptr.hpp>
 #include <vector>
 
-namespace v3D
-{
+namespace v3d::gl {
 
 	/**
 	 * A class for GPU buffer data
@@ -87,4 +86,4 @@ namespace v3D
 			bool allocated_;
 	};
 
-}; // end namespace v3D
+};

@@ -1,9 +1,13 @@
-#ifndef INCLUDED_V3D_BMP_COMMON
-#define INCLUDED_V3D_BMP_COMMON
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once
 
 #include <stdint.h>
 
-namespace v3D
+namespace v3d::image
 {
 
 #pragma pack(push, 2)
@@ -42,6 +46,4 @@ namespace v3D
 
 #pragma pack(pop)
 
-}; // end namespace v3D
-
-#endif // INCLUDED_V3D_BMP_COMMON
+};

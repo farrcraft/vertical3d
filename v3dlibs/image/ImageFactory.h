@@ -15,7 +15,7 @@ namespace v3d::image {
 	class ImageFactory {
 		public:
 			ImageFactory();
-			~ImageFactory();
+			~ImageFactory() = default;
 
 			void add(const std::string & name, const boost::shared_ptr<ImageReader> & reader);
 			void add(const std::string & name, const boost::shared_ptr<ImageWriter> & writer);

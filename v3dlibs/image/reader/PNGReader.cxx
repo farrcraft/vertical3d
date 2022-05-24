@@ -1,3 +1,8 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
 #include "PNGReader.h"
 
 #pragma pack(push, 1)
@@ -8,7 +13,8 @@
 #include <iostream>
 #include <cstdio>
 
-using namespace v3D;
+using namespace v3d::image;
+using namespace v3d::image::reader;
 
 PNGReader::PNGReader()
 {

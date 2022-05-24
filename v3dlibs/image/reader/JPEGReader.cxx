@@ -1,3 +1,8 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
 #include "JPEGReader.h"
 
 #ifdef  __cplusplus
@@ -18,7 +23,8 @@
 
 #include <boost/log/trivial.hpp>
 
-using namespace v3D;
+using namespace v3d::image;
+using namespace v3d::image::reader;
 
 // JPEG library error handling
 struct my_error_mgr 
@@ -43,15 +49,6 @@ METHODDEF(void) my_error_exit (j_common_ptr cinfo)
 
 	// Return control to the setjmp point
 	longjmp(myerr->setjmp_buffer, 1);
-}
-
-
-JPEGReader::JPEGReader()
-{
-}
-
-JPEGReader::~JPEGReader()
-{
 }
 
 boost::shared_ptr<Image> JPEGReader::read(const std::string &filename)
