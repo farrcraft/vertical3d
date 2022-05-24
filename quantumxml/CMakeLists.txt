@@ -1,0 +1,2 @@
+add_library("quantumxml" "Exception.h" "Exception.cxx" "FSMParser.h" "FSMParser.cxx" "Parser.h" "Parser.cxx" "Stream.h" "Stream.cxx"
+	"Tree.h" "URL.h" "URL.cxx" "Validator.h" "Validator.cxx" "XMLString.h")
