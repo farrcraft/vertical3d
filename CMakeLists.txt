@@ -33,3 +33,5 @@ link_directories(
 add_subdirectory ("v3dlibs")
 add_subdirectory("luxa")
 add_subdirectory("stark")
+add_subdirectory("quantumxml")
+add_subdirectory("talyn")

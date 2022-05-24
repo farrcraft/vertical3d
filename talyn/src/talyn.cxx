@@ -1,4 +1,9 @@
 /**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+ 
+ /**
  * Talyn 0.0.1
  * A software raytracing renderer
  * (c) 2008
@@ -85,7 +90,7 @@ http://books.google.com/books?id=bBOxUmw83jUC&pg=PA160&lpg=PA160&dq=raytracing+a
 #include "RIBReader.h"
 #include "RenderContext.h"
 
-#include <vertical3d/image/ImageFactory.h>
+#include "../../v3dlibs/image/ImageFactory.h"
 
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem/operations.hpp>
@@ -235,7 +240,7 @@ int main (int argc, char * argv[])
 		std::cout << "Rendering framebuffer..." << std::endl;
 	}
 	// framebuffer conversion to a writable image
-	boost::shared_ptr<v3D::Image> image = fb->render();
+	boost::shared_ptr<v3d::image::Image> image = fb->render();
 
 	if (!outfile.empty())
 	{
@@ -243,7 +248,7 @@ int main (int argc, char * argv[])
 		{
 			std::cout << "Writing image file: " << outfile << std::endl;
 		}
-		v3D::ImageFactory factory;
+		v3d::image::ImageFactory factory;
 		if (!factory.write(outfile, image))
 		{
 			std::cout << "error writing file!" << std::endl;

@@ -1,5 +1,9 @@
-#ifndef INCLUDED_TALYN_RIBREADER
-#define INCLUDED_TALYN_RIBREADER
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once
 
 #include "RenderContext.h"
 
@@ -27,5 +31,3 @@ namespace Talyn
 	};
 
 }; // end namespace Talyn
-
-#endif // INCLUDED_TALYN_RIBREADER

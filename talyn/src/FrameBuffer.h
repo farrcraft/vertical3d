@@ -1,12 +1,16 @@
-#ifndef INCLUDED_TALYN_FRAMEBUFFER
-#define INCLUDED_TALYN_FRAMEBUFFER
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
-#include <vertical3d/image/Image.h>
+#pragma once
+
+#include "../../v3dlibs/image/Image.h"
+
 #include <boost/shared_ptr.hpp>
 #include <vector>
 
-namespace Talyn
-{
+namespace Talyn {
 	/**
 	 *	a framebuffer provides a stack of image planes.
 	 *	each image plane is a 2d grid of float values. the width and height of
@@ -29,7 +33,7 @@ namespace Talyn
 			/**
 			 * Render the framebuffer contents into an image object
 			 */
-			boost::shared_ptr<v3D::Image> render();
+			boost::shared_ptr<v3d::image::Image> render();
 
 		private:
 			typedef std::vector< std::vector<float> > plane_t;
@@ -40,5 +44,3 @@ namespace Talyn
 	};
 
 }; // end namespace Talyn
-
-#endif // INCLUDED_TALYN_FRAMEBUFFER

@@ -1,8 +1,13 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
 #include "XMLSceneReader.h"
 
 #include <boost/lexical_cast.hpp>
 
-#include <QuantumXML/Parser.h>
+#include "../../quantumxml/Parser.h"
 
 using namespace Talyn;
 
