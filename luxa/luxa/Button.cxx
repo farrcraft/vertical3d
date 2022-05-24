@@ -1,6 +1,7 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
 #include "Button.h"
 #include "ComponentManager.h"
@@ -8,7 +9,7 @@
 #include "style/ImageStyleProperty.h"
 #include "style/FontStyleProperty.h"
 
-#include <vertical3d/gl/GLFontRenderer.h>
+#include "../../v3dlibs/gl/GLFontRenderer.h"
 
 using namespace Luxa;
 
@@ -36,7 +37,7 @@ void Button::state(ButtonState s)
 	state_ = s;
 }
 
-void Button::notify(const v3D::EventInfo & e)
+void Button::notify(const v3d::event::EventInfo & e)
 {
 	if (e.name() == "enter")
 	{
@@ -83,7 +84,7 @@ void Button::draw(ComponentRenderer * renderer, const boost::shared_ptr<Theme> &
 		return;
 
 	boost::shared_ptr<ImageStyleProperty> prop;
-	boost::shared_ptr<v3D::GLTexture> texture, left_texture, right_texture, top_texture, bottom_texture;
+	boost::shared_ptr<v3d::gl::GLTexture> texture, left_texture, right_texture, top_texture, bottom_texture;
 
 	// preload the 4 side textures first so we can calculate the proper button dims later
 	// left
@@ -110,7 +111,7 @@ void Button::draw(ComponentRenderer * renderer, const boost::shared_ptr<Theme> &
 	float button_width = s[0];
 	float button_height = s[1];
 
-	boost::shared_ptr<v3D::Font2D> font = renderer->getDefaultFont("button", theme);
+	boost::shared_ptr<v3d::font::Font2D> font = renderer->getDefaultFont("button", theme);
 	// make sure label text will fit within the button and expand the button size to make it fit if necessary
 	unsigned int font_width = font->width(label_);
 	unsigned int font_height = font->height();
@@ -173,7 +174,7 @@ void Button::draw(ComponentRenderer * renderer, const boost::shared_ptr<Theme> &
 	button_mid_x -= font_width / 2.0f;
 	button_mid_y -= font_height / 2.0f;
 	// cm->renderer()->print(font, button_mid_x, button_mid_y, _label)
-	v3D::GLFontRenderer fr(*font);
+	v3d::gl::GLFontRenderer fr(*font);
 	fr.print(label_, button_mid_x, button_mid_y);
 
 

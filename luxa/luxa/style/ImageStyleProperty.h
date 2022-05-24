@@ -1,13 +1,13 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
-#ifndef INCLUDED_LUXA_IMAGESTYLEPROPERTY
-#define INCLUDED_LUXA_IMAGESTYLEPROPERTY
+#pragma once
 
 #include "StyleProperty.h"
 
-#include <vertical3d/gl/GLTexture.h>
+#include "../../../v3dlibs/gl/GLTexture.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -29,7 +29,7 @@ namespace Luxa
 			 * Get the texture associated with the image property
 			 * @return a pointer to the texture
 			 */
-			boost::shared_ptr<v3D::GLTexture> texture(void) const;
+			boost::shared_ptr<v3d::gl::GLTexture> texture(void) const;
 			/**
 			 * Get the name of the image source
 			 * @return the image source name
@@ -39,14 +39,11 @@ namespace Luxa
 			 * Set the texture object associated with the image property
 			 * @param tex the texture
 			 */
-			void texture(boost::shared_ptr<v3D::GLTexture> tex);
+			void texture(boost::shared_ptr<v3d::gl::GLTexture> tex);
 
 		private:
 			std::string source_;
-			boost::shared_ptr<v3D::GLTexture> texture_;
+			boost::shared_ptr<v3d::gl::GLTexture> texture_;
 	};
 
 }; // end namespace Luxa
-
-
-#endif // INCLUDED_LUXA_IMAGESTYLEPROPERTY

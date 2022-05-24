@@ -1,15 +1,14 @@
 /**
- * Stark Game Engine Utility Library
- *
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
 #pragma once
 
 #include <boost/shared_ptr.hpp>
 #include <string>
 
-#include <vertical3d/gl/Program.h>
+#include "../../v3dlibs/gl/Program.h"
 
 class AssetLoader;
 
@@ -35,7 +34,7 @@ class ProgramFactory
 		 *
 		 * @return Program new shader program with shaders loaded, compiled, and linked.
 		 */
-		boost::shared_ptr<v3D::Program> create(unsigned int shaderTypes, const std::string & name);
+		boost::shared_ptr<v3d::gl::Program> create(unsigned int shaderTypes, const std::string & name);
 
 	private:
 		boost::shared_ptr<AssetLoader> loader_;

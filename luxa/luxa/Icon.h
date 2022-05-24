@@ -1,18 +1,17 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
-#ifndef INCLUDED_LUXA_ICON
-#define INCLUDED_LUXA_ICON
+#pragma once
 
 #include "Component.h"
 
-#include <vertical3d/gl/GLTexture.h>
+#include "../../v3dlibs/gl/GLTexture.h"
 
 #include <boost/shared_ptr.hpp>
 
-namespace Luxa
-{
+namespace Luxa {
 
 	class ComponentManager;
 
@@ -24,7 +23,7 @@ namespace Luxa
 	class Icon : public Component
 	{
 		public:
-			Icon(boost::shared_ptr<v3D::GLTexture> texture, ComponentManager * cm);
+			Icon(boost::shared_ptr<v3d::gl::GLTexture> texture, ComponentManager * cm);
 			~Icon();
 
 			/**
@@ -35,11 +34,8 @@ namespace Luxa
 			void draw(ComponentRenderer * renderer, const boost::shared_ptr<Theme> & theme) const;
 
 		private:
-			boost::shared_ptr<v3D::GLTexture> texture_;
+			boost::shared_ptr<v3d::gl::GLTexture> texture_;
 	};
 
 
 }; // end namespace Luxa
-
-
-#endif // INCLUDED_LUXA_ICON

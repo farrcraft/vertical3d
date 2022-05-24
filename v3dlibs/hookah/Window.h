@@ -1,5 +1,9 @@
-#ifndef INCLUDED_HOOKAH_WINDOW
-#define INCLUDED_HOOKAH_WINDOW
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once
 
 #include "../input/InputDevice.h"
 
@@ -91,7 +95,7 @@ namespace Hookah
 			 * @param name the name of the input device - should match the name used to create the device
 			 * @param device an input device object
 			 */
-			void addInputDevice(const std::string & name, boost::shared_ptr<v3D::InputDevice> device);
+			void addInputDevice(const std::string & name, boost::shared_ptr<v3d::input::InputDevice> device);
 
 			typedef boost::signals2::signal<void (unsigned int) > TickEventType;
 			typedef boost::signals2::signal< void (Window *) > DrawEventType;
@@ -122,12 +126,12 @@ namespace Hookah
 			std::string caption_;
 			void active(bool state);
 
-			boost::shared_ptr<v3D::InputDevice> device(const std::string & name);
+			boost::shared_ptr<v3d::input::InputDevice> device(const std::string & name);
 
 		private:
 			int width_;
 			int height_;
-			std::map< std::string, boost::shared_ptr<v3D::InputDevice> > inputDevices_;
+			std::map< std::string, boost::shared_ptr<v3d::input::InputDevice> > inputDevices_;
 			bool active_; // window focused
 
 			TickEventType tickEventListeners_;
@@ -137,5 +141,3 @@ namespace Hookah
 	};
 
 }; // end namespace Hookah
-
-#endif // INCLUDED_HOOKAH_WINDOW

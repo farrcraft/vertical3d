@@ -1,9 +1,9 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
-#ifndef INCLUDED_LUXA_DIALOG
-#define INCLUDED_LUXA_DIALOG
+#pragma once
 
 #include "Component.h"
 
@@ -13,10 +13,9 @@ namespace Luxa
 	class Dialog : public Component
 	{
 		public:
-			Dialog();
-			~Dialog();
+			Dialog() = default;
+			~Dialog() = default;
 	};
 
 }; // end namespace Luxa
 
-#endif // INCLUDED_LUXA_DIALOG

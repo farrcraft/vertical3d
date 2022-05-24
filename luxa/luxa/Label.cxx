@@ -1,11 +1,12 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
 #include "Label.h"
 #include "ComponentRenderer.h"
 
-#include <vertical3d/gl/GLFontRenderer.h>
+#include "../../v3dlibs/gl/GLFontRenderer.h"
 
 using namespace Luxa;
 
@@ -31,12 +32,12 @@ void Label::draw(ComponentRenderer * renderer, const boost::shared_ptr<Theme> & 
 {
 	glm::vec2 pos = position();
 
-	boost::shared_ptr<v3D::Font2D> font = renderer->getDefaultFont("label", theme);
+	boost::shared_ptr<v3d::font::Font2D> font = renderer->getDefaultFont("label", theme);
 	if (!font)
 	{
 		return;
 	}
-	v3D::GLFontRenderer fr(*font);
+	v3d::gl::GLFontRenderer fr(*font);
 	fr.print(text_, pos[0], pos[1]);
 }
 

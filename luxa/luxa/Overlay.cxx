@@ -1,6 +1,7 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
 #include "Overlay.h"
 
@@ -14,16 +15,16 @@ Overlay::Overlay(Mode m) : mode_(m)
 {
 }
 
-Overlay::Overlay(const v3D::Color3 & c) : color_(c), mode_(MODE_COLOR)
+Overlay::Overlay(const v3d::type::Color3 & c) : color_(c), mode_(MODE_COLOR)
 {
 }
 
-void Overlay::color(const v3D::Color3 & c)
+void Overlay::color(const v3d::type::Color3 & c)
 {
 	color_  = c;
 }
 
-v3D::Color3 Overlay::color() const
+v3d::type::Color3 Overlay::color() const
 {
 	return color_;
 }

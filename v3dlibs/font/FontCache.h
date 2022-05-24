@@ -3,6 +3,8 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
+#pragma once
+
 #include "Font2D.h"
 
 #include <boost/shared_ptr.hpp>

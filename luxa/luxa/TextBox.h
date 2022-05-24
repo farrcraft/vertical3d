@@ -1,9 +1,9 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
-#ifndef INCLUDED_LUXA_TEXTBOX
-#define INCLUDED_LUXA_TEXTBOX
+#pragma once
 
 #include "Component.h"
 
@@ -13,10 +13,9 @@ namespace Luxa
 	class TextBox : public Component
 	{
 		public:
-			TextBox();
-			~TextBox();
+			TextBox() = default;
+			~TextBox() = default;
 	};
 
 }; // end namespace Luxa
 
-#endif // INCLUDED_LUXA_TEXTBOX

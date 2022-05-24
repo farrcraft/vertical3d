@@ -1,9 +1,9 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
-#ifndef INCLUDED_LUXA_FONTSTYLEPROPERTY
-#define INCLUDED_LUXA_FONTSTYLEPROPERTY
+#pragma once
 
 #include "StyleProperty.h"
 
@@ -36,6 +36,3 @@ namespace Luxa
 	};
 
 }; // end namespace Luxa
-
-
-#endif // INCLUDED_LUXA_FONTSTYLEPROPERTY

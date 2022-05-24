@@ -1,6 +1,7 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
 #include "Component.h"
 
@@ -36,7 +37,7 @@ void Component::draw(ComponentRenderer * renderer, const boost::shared_ptr<Theme
 {
 }
 
-void Component::notify(const v3D::EventInfo & e)
+void Component::notify(const v3d::event::EventInfo & e)
 {
 }
 
@@ -65,9 +66,9 @@ unsigned int Component::depth() const
 	return zIndex_;
 }
 
-v3D::Bound2D Component::bound() const
+v3d::type::Bound2D Component::bound() const
 {
-	v3D::Bound2D bound(position_, size_);
+	v3d::type::Bound2D bound(position_, size_);
 	return bound;
 }
 
@@ -91,7 +92,7 @@ void Component::name(const std::string & str)
 	name_ = str;
 }
 
-bool Component::exec(const v3D::CommandInfo & command, const std::string & param)
+bool Component::exec(const v3d::command::CommandInfo & command, const std::string & param)
 {
 	return true;
 }

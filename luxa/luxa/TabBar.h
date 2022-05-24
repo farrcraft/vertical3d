@@ -1,9 +1,9 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
-#ifndef INCLUDED_LUXA_TABBAR
-#define INCLUDED_LUXA_TABBAR
+#pragma once
 
 #include "Component.h"
 
@@ -13,11 +13,9 @@ namespace Luxa
 	class TabBar : public Component
 	{
 		public:
-			TabBar();
-			~TabBar();
+			TabBar() = default;
+			~TabBar() = default;
 	};
 	
 }; // end namespace Luxa
 
-
-#endif // INCLUDED_LUXA_TABBAR

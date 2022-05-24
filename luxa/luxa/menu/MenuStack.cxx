@@ -1,6 +1,7 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
 #include "MenuStack.h"
 #include "../ComponentRenderer.h"
@@ -8,7 +9,7 @@
 #include "../style/Style.h"
 #include "../style/FontStyleProperty.h"
 
-#include <vertical3d/gl/GLFontRenderer.h>
+#include "../../../v3dlibs/gl/GLFontRenderer.h"
 
 using namespace Luxa;
 
@@ -30,7 +31,7 @@ void MenuStack::draw(ComponentRenderer * renderer, const boost::shared_ptr<Theme
 	boost::shared_ptr<MenuItem> active_item = lvl->active();
 	size_t active_count = 0;
 
-	boost::shared_ptr<v3D::Font2D> font = renderer->getDefaultFont("menu", theme);
+	boost::shared_ptr<v3d::font::Font2D> font = renderer->getDefaultFont("menu", theme);
 	if (!font)
 		return;
 
@@ -41,7 +42,7 @@ void MenuStack::draw(ComponentRenderer * renderer, const boost::shared_ptr<Theme
 	float x = (renderer->width() / 3.0f);
 	float y = 0.0f;
 
-	v3D::GLFontRenderer fr(*font);
+	v3d::gl::GLFontRenderer fr(*font);
 
 	// iterate over the active menu level
 	for (int i = menu_count; i >= 0; i--)

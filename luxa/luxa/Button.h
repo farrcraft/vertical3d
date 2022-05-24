@@ -1,9 +1,9 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
-#ifndef INCLUDED_LUXA_BUTTON
-#define INCLUDED_LUXA_BUTTON
+#pragma once
 
 #include "Component.h"
 
@@ -64,7 +64,7 @@ namespace Luxa
 			 * "button_release"
 			 * @param e the event that has occurred.
 			 */
-			void notify(const v3D::EventInfo & e);
+			void notify(const v3d::event::EventInfo & e);
 
 		private:
 			std::string label_;
@@ -73,6 +73,3 @@ namespace Luxa
 	};
 
 }; // end namespace Luxa
-
-#endif // INCLUDED_LUXA_BUTTON
-

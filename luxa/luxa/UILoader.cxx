@@ -1,6 +1,7 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
 #include "UILoader.h"
 #include "ComponentManager.h"
@@ -13,55 +14,55 @@
 #include "Icon.h"
 #include "menu/MenuStack.h"
 
-#include <vertical3d/3dtypes/String.h>
+#include "../../v3dlibs/type/String.h"
 
 #include <boost/foreach.hpp>
-#include <log4cxx/logger.h>
+#include <boost/make_shared.hpp>
 
 using namespace Luxa;
 
 bool UILoader::load(const boost::property_tree::ptree & tree, ComponentManager * cm)
 {
-	log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("luxa"));
-	LOG4CXX_DEBUG(logger, "UILoader::load - loading UI...");
+	// log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("luxa"));
+	// LOG4CXX_DEBUG(logger, "UILoader::load - loading UI...");
 	// <vgui theme="default">
 	//const PropertyTree & vgui = tree.find("vgui");
 	const boost::property_tree::ptree & vgui = tree.get_child("vgui");
 	// set default theme name
 	std::string theme_name = vgui.get<std::string>("<xmlattr>.theme");
-	LOG4CXX_DEBUG(logger, "UILoader::load - setting active vgui theme name [" << theme_name << "]");
+	// LOG4CXX_DEBUG(logger, "UILoader::load - setting active vgui theme name [" << theme_name << "]");
 	cm->activeTheme(theme_name);
 	// iterate over vgui child nodes
 	BOOST_FOREACH(boost::property_tree::ptree::value_type const & v, tree.get_child("vgui"))
 	{
         if(v.first == "theme")
 		{
-			LOG4CXX_DEBUG(logger, "UILoader::load - loading theme...");
+			//LOG4CXX_DEBUG(logger, "UILoader::load - loading theme...");
 			loadTheme(v.second, cm);
 		}
 		else if (v.first == "font")
 		{
-			LOG4CXX_DEBUG(logger, "UILoader::load - loading font...");
+			//LOG4CXX_DEBUG(logger, "UILoader::load - loading font...");
 			loadFont(v.second, cm);
 		}
 		else if (v.first == "button")
 		{
-			LOG4CXX_DEBUG(logger, "UILoader::load - loading button...");
+			//LOG4CXX_DEBUG(logger, "UILoader::load - loading button...");
 			loadButton(v.second, cm);
 		}
 		else if (v.first == "label")
 		{
-			LOG4CXX_DEBUG(logger, "UILoader::load - loading label...");
+			//LOG4CXX_DEBUG(logger, "UILoader::load - loading label...");
 			loadLabel(v.second, cm);
 		}
 		else if (v.first == "menu")
 		{
-			LOG4CXX_DEBUG(logger, "UILoader::load - loading menu...");
+			//LOG4CXX_DEBUG(logger, "UILoader::load - loading menu...");
 			loadMenu(v.second, cm);
 		}
 		else if (v.first == "icon")
 		{
-			LOG4CXX_DEBUG(logger, "UILoader::load - loading icon...");
+			//LOG4CXX_DEBUG(logger, "UILoader::load - loading icon...");
 			loadIcon(v.second, cm);
 		}
 	}
@@ -78,14 +79,14 @@ bool UILoader::load(const boost::property_tree::ptree & tree, ComponentManager *
 
 bool UILoader::loadStyle(const boost::property_tree::ptree & style_node, boost::shared_ptr<Theme> the_theme)
 {
-	log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("luxa"));
-	LOG4CXX_DEBUG(logger, "UILoader::loadStyle - loading style...");
+	//log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("luxa"));
+	//LOG4CXX_DEBUG(logger, "UILoader::loadStyle - loading style...");
 	// <style class="button" name="default" state="normal">
 	boost::shared_ptr<Style> the_style;
 	std::string class_name, style_name;
 	class_name = style_node.get<std::string>("<xmlattr>.class");
 	style_name = style_node.get<std::string>("<xmlattr>.name");
-	LOG4CXX_DEBUG(logger, "UILoader::loadStyle - got style name [" << style_name << "] with class [" << class_name << "]");
+	//LOG4CXX_DEBUG(logger, "UILoader::loadStyle - got style name [" << style_name << "] with class [" << class_name << "]");
 
 	// derived style type attributes and instantiation
 	if (class_name == "button")
@@ -157,8 +158,8 @@ bool UILoader::loadStyle(const boost::property_tree::ptree & style_node, boost::
 
 bool UILoader::loadStyleProperty(const boost::property_tree::ptree & property_node, boost::shared_ptr<Style> the_style, const std::string & property_type)
 {
-	log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("luxa"));
-	LOG4CXX_DEBUG(logger, "UILoader::loadStyle - loading style property type [" << property_type << "]...");
+	//log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("luxa"));
+	//LOG4CXX_DEBUG(logger, "UILoader::loadStyle - loading style property type [" << property_type << "]...");
 	// align, name, source attributes
 	// these three are common to both font and image styles
 	std::string align, name, source;
@@ -214,7 +215,7 @@ bool UILoader::loadStyleProperty(const boost::property_tree::ptree & property_no
 // <font face="Helvetica" size="32" bold="false" italics="false" name="ui-text-font" />
 bool UILoader::loadFont(const boost::property_tree::ptree & font_node, ComponentManager * cm)
 {
-	boost::shared_ptr<v3D::FontCache> fc = cm->fonts();
+	boost::shared_ptr<v3d::font::FontCache> fc = cm->fonts();
 	assert(fc != 0);
 	std::string name, face;
 	unsigned int size = 0;
@@ -236,7 +237,7 @@ bool UILoader::loadButton(const boost::property_tree::ptree & button_node, Compo
 	label = button_node.get<std::string>("<xmlattr>.label");
 	command = button_node.get<std::string>("<xmlattr>.command");
 	scope = button_node.get<std::string>("<xmlattr>.scope");
-	glm::vec2 size(v3D::string_to_vec2(button_node.get<std::string>("<xmlattr>.size")));
+	glm::vec2 size(v3d::type::string_to_vec2(button_node.get<std::string>("<xmlattr>.size")));
 	button->label(label);
 	button->size(size);
 	loadDefaultComponentAttributes(button_node, button);
@@ -263,7 +264,7 @@ void UILoader::loadDefaultComponentAttributes(const boost::property_tree::ptree 
 	std::string position = node.get<std::string>("<xmlattr>.position", "");
 	if (!position.empty())
 	{
-		component->position(v3D::string_to_vec2(position));
+		component->position(v3d::type::string_to_vec2(position));
 	}
 	std::string style = node.get<std::string>("<xmlattr>.style", "");
 	if (!style.empty())
@@ -290,7 +291,7 @@ bool UILoader::loadIcon(const boost::property_tree::ptree & icon_node, Component
 	std::string texture_name = icon_node.get<std::string>("<xmlattr>.name");
 	std::string source = icon_node.get<std::string>("<xmlattr>.source");
 
-	boost::shared_ptr<v3D::GLTexture> texture(new v3D::GLTexture(cm->loadImage(source)));
+	boost::shared_ptr<v3d::gl::GLTexture> texture = boost::make_shared<v3d::gl::GLTexture>(cm->loadImage(source));
 	cm->addTexture(texture_name, texture);
 
 	boost::shared_ptr<Icon> icon(new Icon(texture, cm));
@@ -336,14 +337,14 @@ bool UILoader::loadMenu(const boost::property_tree::ptree & menu_node, Component
 */
 void UILoader::loadMenuItem(ComponentManager * cm, const boost::property_tree::ptree & tree_item, boost::shared_ptr<Menu> parent)
 {
-	log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("luxa"));
+	//log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("luxa"));
 	std::string label = tree_item.get<std::string>("<xmlattr>.label", "");
 	std::string cmd = tree_item.get<std::string>("<xmlattr>.command");
 	std::string scope = tree_item.get<std::string>("<xmlattr>.scope");
 	std::string param = tree_item.get<std::string>("<xmlattr>.param", "");
 	std::string type = tree_item.get<std::string>("<xmlattr>.type");
-	LOG4CXX_DEBUG(logger, "UILoader::loadMenuItem - loading menu item label [" << label << "] command [" << cmd 
-		<< "] scope [" << scope << "] param [" << param << "] type [" << type << "]");
+	//LOG4CXX_DEBUG(logger, "UILoader::loadMenuItem - loading menu item label [" << label << "] command [" << cmd 
+	//	<< "] scope [" << scope << "] param [" << param << "] type [" << type << "]");
 	boost::shared_ptr<MenuItem> item(new MenuItem(cm, type, label, cmd, scope, param));
 	item->menu(parent);
 	parent->addItem(item);
@@ -376,8 +377,8 @@ bool UILoader::loadTheme(const boost::property_tree::ptree & theme_node, Compone
 	// <theme name="default">
 	std::string theme_name = theme_node.get<std::string>("<xmlattr>.name");
 	boost::shared_ptr<Theme> the_theme(new Theme(theme_name));
-	log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("luxa"));
-	LOG4CXX_DEBUG(logger, "UILoader::loadTheme - loading theme name [" << theme_name << "]");
+	//log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("luxa"));
+	//LOG4CXX_DEBUG(logger, "UILoader::loadTheme - loading theme name [" << theme_name << "]");
 	// iterate theme child nodes
 	BOOST_FOREACH(boost::property_tree::ptree::value_type const & v, theme_node)
 	{
@@ -415,8 +416,8 @@ bool UILoader::loadTextures(ComponentManager * cm)
 				boost::dynamic_pointer_cast<ImageStyleProperty, StyleProperty>(*prop_iter);
 			std::string texture_name = (*style_iter)->name() + "-" + image_prop->name() + "-" + image_prop->source();
 			// load the image
-			boost::shared_ptr<v3D::Image> img = cm->loadImage(image_prop->source());
-			boost::shared_ptr<v3D::GLTexture> texture(new v3D::GLTexture(img));
+			boost::shared_ptr<v3d::image::Image> img = cm->loadImage(image_prop->source());
+			boost::shared_ptr<v3d::gl::GLTexture> texture(new v3d::gl::GLTexture(img));
 			cm->addTexture(texture_name, texture);
 			image_prop->texture(texture);
 		}

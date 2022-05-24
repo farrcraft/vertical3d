@@ -1,24 +1,24 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
-#ifndef INCLUDED_LUXA_COMPONENTMANAGER
-#define INCLUDED_LUXA_COMPONENTMANAGER
+#pragma once
 
 #include "ComponentRenderer.h"
 
-#include <vertical3d/image/Texture.h>
-#include <vertical3d/hookah/Window.h>
-#include <vertical3d/input/MouseEventListener.h>
-#include <vertical3d/input/KeyboardEventListener.h>
-#include <vertical3d/command/CommandDirectory.h>
+#include "../../v3dlibs/image/Texture.h"
+#include "../../v3dlibs/hookah/Window.h"
+#include "../../v3dlibs/font/FontCache.h"
+#include "../../v3dlibs/input/MouseEventListener.h"
+#include "../../v3dlibs/input/KeyboardEventListener.h"
+#include "../../v3dlibs/command/CommandDirectory.h"
 
 #include <vector>
 #include <map>
 #include <string>
 
-namespace Luxa
-{
+namespace Luxa {
 
 	class Component;
 	class Theme;
@@ -27,11 +27,11 @@ namespace Luxa
 	 * A manager for vGUI components.
 	 */
 	class ComponentManager : 
-		public v3D::MouseEventListener,
-		public v3D::KeyboardEventListener
+		public v3d::input::MouseEventListener,
+		public v3d::input::KeyboardEventListener
 	{
 		public:
-			ComponentManager(boost::shared_ptr<v3D::FontCache> fc, boost::shared_ptr<v3D::CommandDirectory> directory);
+			ComponentManager(boost::shared_ptr<v3d::font::FontCache> fc, boost::shared_ptr<v3d::command::CommandDirectory> directory);
 
 			/**
 			 * Drawing callback renders all of the managed components.
@@ -75,9 +75,9 @@ namespace Luxa
 			 * Get the font cache used by the vgui system.
 			 * @return a pointer to the font cache
 			 */
-			boost::shared_ptr<v3D::FontCache> fonts() const;
-			void addTexture(const std::string & name, const boost::shared_ptr<v3D::Texture> & texture);
-			boost::shared_ptr<v3D::Image> loadImage(const std::string & filename);
+			boost::shared_ptr<v3d::font::FontCache> fonts() const;
+			void addTexture(const std::string & name, const boost::shared_ptr<v3d::image::Texture> & texture);
+			boost::shared_ptr<v3d::image::Image> loadImage(const std::string & filename);
 			/**
 			 * Get the active theme.
 			 * @return a pointer to the active theme
@@ -127,14 +127,14 @@ namespace Luxa
 			// overrides from KeyboardEventListener base
 			void keyPressed(const std::string & key);
 			void keyReleased(const std::string & key);
-			void notify(const v3D::EventInfo & e);
+			void notify(const v3d::event::EventInfo & e);
 
 		private:
 			std::vector< boost::shared_ptr<Component> > components_;
 			std::map < std::string, boost::shared_ptr<Theme> > themes_;
 			std::string activeTheme_;
-			std::map<std::string, boost::shared_ptr<v3D::Texture> >	textures_;
-			boost::shared_ptr<v3D::CommandDirectory> directory_;
+			std::map<std::string, boost::shared_ptr<v3d::image::Texture> > textures_;
+			boost::shared_ptr<v3d::command::CommandDirectory> directory_;
 			ComponentRenderer renderer_;
 			glm::vec2 mouse_;
 			boost::shared_ptr<Component> focused_;
@@ -142,5 +142,3 @@ namespace Luxa
 
 
 }; // end namespace Luxa
-
-#endif // INCLUDED_LUXA_COMPONENTMANAGER

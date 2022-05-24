@@ -1,15 +1,15 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
-#ifndef INCLUDED_LUXA_COMPONENT
-#define INCLUDED_LUXA_COMPONENT
+#pragma once
 
 #include "style/Theme.h"
 
-#include <vertical3d/3dtypes/Bound2D.h>
-#include <vertical3d/command/CommandInfo.h>
-#include <vertical3d/event/EventListener.h>
+#include "../../v3dlibs/type/Bound2D.h"
+#include "../../v3dlibs/command/CommandInfo.h"
+#include "../../v3dlibs/event/EventListener.h"
 
 #include <glm/glm.hpp>
 
@@ -19,8 +19,7 @@
 /**
  * Luxa library namespace.
  */
-namespace Luxa
-{
+namespace Luxa {
 
 	class ComponentRenderer;
 	class ComponentManager;
@@ -29,7 +28,7 @@ namespace Luxa
 	 * A vGUI Component
 	 * All UI components are all derived from this class.
 	 */
-	class Component : public v3D::EventListener
+	class Component : public v3d::event::EventListener
 	{
 		public:
 			static unsigned int lastID;
@@ -74,7 +73,7 @@ namespace Luxa
 			 * Get the component's bounding volume
 			 * @return the component's bounding box
 			 */
-			v3D::Bound2D bound() const;
+			v3d::type::Bound2D bound() const;
 			/**
 			 * Get the component's z index depth value
 			 * @return the component's zindex
@@ -116,13 +115,13 @@ namespace Luxa
 			 * @param param the parameter passed to the executed command
 			 * @return whether the command successfully executed
 			 */
-			virtual bool exec(const v3D::CommandInfo & cmd, const std::string & param);
+			virtual bool exec(const v3d::command::CommandInfo & cmd, const std::string & param);
 			/**
 			 * Event notification method.
 			 * Override from v3D::EventListener providing a way for derived components to react to events.
 			 * @param e the event that has occurred.
 			 */
-			virtual void notify(const v3D::EventInfo & e);
+			virtual void notify(const v3d::event::EventInfo & e);
 
 		protected:
 			ComponentManager * manager_;
@@ -139,4 +138,3 @@ namespace Luxa
 
 }; // end namespace Luxa
 
-#endif // INCLUDED_LUXA_COMPONENT

@@ -1,9 +1,9 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
-#ifndef INCLUDED_LUXA_MENU
-#define INCLUDED_LUXA_MENU
+#pragma once
 
 #include "../Component.h"
 #include "MenuItem.h"
@@ -90,4 +90,3 @@ namespace Luxa
 
 }; // end namespace Luxa
 
-#endif // INCLUDED_LUXA_MENU

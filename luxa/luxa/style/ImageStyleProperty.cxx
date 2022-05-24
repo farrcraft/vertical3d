@@ -1,6 +1,7 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
 #include "ImageStyleProperty.h"
 
@@ -14,12 +15,12 @@ ImageStyleProperty::~ImageStyleProperty()
 {
 }
 
-boost::shared_ptr<v3D::GLTexture> ImageStyleProperty::texture(void) const
+boost::shared_ptr<v3d::gl::GLTexture> ImageStyleProperty::texture(void) const
 {
 	return texture_;
 }
 
-void ImageStyleProperty::texture(boost::shared_ptr<v3D::GLTexture> tex)
+void ImageStyleProperty::texture(boost::shared_ptr<v3d::gl::GLTexture> tex)
 {
 	texture_ = tex;
 }

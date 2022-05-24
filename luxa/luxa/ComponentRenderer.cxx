@@ -1,6 +1,7 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
 #include "ComponentRenderer.h"
 #include "style/FontStyleProperty.h"
@@ -8,15 +9,17 @@
 
 #include <gl/glew.h>
 
+#include <boost/make_shared.hpp>
 
 using namespace Luxa;
 
-ComponentRenderer::ComponentRenderer(boost::shared_ptr<v3D::FontCache> fc) : fonts_(fc)
+ComponentRenderer::ComponentRenderer(boost::shared_ptr<v3d::font::FontCache> fc) : fonts_(fc)
 {
 }
 
-ComponentRenderer::ComponentRenderer() : width_(-1), height_(-1), fonts_(new v3D::FontCache())
-{
+ComponentRenderer::ComponentRenderer() : width_(-1), height_(-1) {
+	fonts_ = boost::make_shared<v3d::font::FontCache>();
+
 	glShadeModel(GL_SMOOTH);
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClearDepth(1.0f);
@@ -60,7 +63,7 @@ void ComponentRenderer::prepare()
 {
 	if (overlay_.mode() == Overlay::MODE_COLOR)
 	{
-		v3D::Color3 overlay_color = overlay_.color();
+		v3d::type::Color3 overlay_color = overlay_.color();
 		glClearColor(overlay_color[0], overlay_color[1], overlay_color[2], 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	}
@@ -118,7 +121,7 @@ class TexturedQuad
 };
 */
 
-bool ComponentRenderer::drawTexturedQuad(boost::shared_ptr<v3D::GLTexture> texture, float position_x, float position_y, float width, float height)
+bool ComponentRenderer::drawTexturedQuad(boost::shared_ptr<v3d::gl::GLTexture> texture, float position_x, float position_y, float width, float height)
 {
 	// get texturing state
 	GLboolean texture_enabled;
@@ -164,7 +167,7 @@ bool ComponentRenderer::drawTexturedQuad(boost::shared_ptr<v3D::GLTexture> textu
 	return true;
 }
 
-bool ComponentRenderer::drawTexture(boost::shared_ptr<v3D::GLTexture> texture, glm::vec2 position)
+bool ComponentRenderer::drawTexture(boost::shared_ptr<v3d::gl::GLTexture> texture, glm::vec2 position)
 {
 	// get texturing state
 	GLboolean texture_enabled;
@@ -234,14 +237,14 @@ void ComponentRenderer::clear()
 	glLoadIdentity();
 }
 
-boost::shared_ptr<v3D::FontCache> ComponentRenderer::fonts() const
+boost::shared_ptr<v3d::font::FontCache> ComponentRenderer::fonts() const
 {
 	return fonts_;
 }
 
-boost::shared_ptr<v3D::Font2D> ComponentRenderer::getDefaultFont(const std::string & style_class, boost::shared_ptr<Theme> theme)
+boost::shared_ptr<v3d::font::Font2D> ComponentRenderer::getDefaultFont(const std::string & style_class, boost::shared_ptr<Theme> theme)
 {
-	boost::shared_ptr<v3D::Font2D> font;
+	boost::shared_ptr<v3d::font::Font2D> font;
 
 	// get the default class style
 	std::vector< boost::shared_ptr<Style> > style_set = theme->getStyleSet("default", style_class);

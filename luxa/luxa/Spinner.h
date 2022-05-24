@@ -1,9 +1,9 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
-#ifndef INCLUDED_LUXA_SPINNER
-#define INCLUDED_LUXA_SPINNER
+#pragma once
 
 #include "Component.h"
 
@@ -13,10 +13,8 @@ namespace Luxa
 	class Spinner : public Component
 	{
 		public:
-			Spinner();
-			~Spinner();
+			Spinner() = default;
+			~Spinner() = default;
 	}; 
 
 }; // end namespace Luxa
-
-#endif // INCLUDED_LUXA_SPINNER

@@ -1,11 +1,12 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
-#ifndef INCLUDED_LUXA_OVERLAY
-#define INCLUDED_LUXA_OVERLAY
+#pragma once
 
-#include <vertical3d/3dtypes/Color3.h>
+#include "../../v3dlibs/type/Color3.h"
 
 namespace Luxa
 {
@@ -42,17 +43,17 @@ namespace Luxa
 			 * Construct a color overlay with the given color
 			 * @param c the color of the overlay
 			 */
-			Overlay(const v3D::Color3 & c);
+			Overlay(const v3d::type::Color3 & c);
 			/**
 			 * Set the overlay's color
 			 * @param c the new color
 			 */
-			void color(const v3D::Color3 & c);
+			void color(const v3d::type::Color3 & c);
 			/**
 			 * Get the overlay's color
 			 * @return the current overlay color
 			 */
-			v3D::Color3 color() const;
+			v3d::type::Color3 color() const;
 			/**
 			 * Get the overlay mode
 			 * @return the current overlay mode
@@ -61,9 +62,7 @@ namespace Luxa
 
 		private:
 			Mode mode_;
-			v3D::Color3 color_;
+			v3d::type::Color3 color_;
 	};
 
 }; // end namespace Luxa
-
-#endif // INCLUDED_LUXA_OVERLAY

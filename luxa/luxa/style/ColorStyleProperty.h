@@ -1,13 +1,13 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
-#ifndef INCLUDED_LUXA_COLORSTYLEPROPERTY
-#define INCLUDED_LUXA_COLORSTYLEPROPERTY
+#pragma once
 
 #include "StyleProperty.h"
 
-#include <vertical3d/3dtypes/Color3.h>
+#include "../../../v3dlibs/type/Color3.h"
 
 namespace Luxa
 {
@@ -22,9 +22,7 @@ namespace Luxa
 			~ColorStyleProperty();
 
 		private:
-			v3D::Color3 color_;
+			v3d::type::Color3 color_;
 	};
 
 };
-
-#endif // INCLUDED_LUXA_COLORSTYLEPROPERTY

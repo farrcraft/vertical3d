@@ -1,0 +1,1 @@
+add_library("stark" "stark/AssetLoader.h" "stark/AssetLoader.cxx" "stark/ProgramFactory.h" "stark/ProgramFactory.cxx")

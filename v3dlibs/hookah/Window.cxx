@@ -1,3 +1,8 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
 #include "Window.h"
 
 #include <iostream>
@@ -93,10 +98,10 @@ void Window::tick(unsigned int delta)
 	tickEventListeners_(delta);
 }
 
-boost::shared_ptr<v3D::InputDevice> Window::device(const std::string & name)
+boost::shared_ptr<v3d::input::InputDevice> Window::device(const std::string & name)
 {
-	boost::shared_ptr<v3D::InputDevice> empty_ptr;
-	std::map< std::string, boost::shared_ptr<v3D::InputDevice> >::iterator iter = inputDevices_.find(name);
+	boost::shared_ptr<v3d::input::InputDevice> empty_ptr;
+	std::map< std::string, boost::shared_ptr<v3d::input::InputDevice> >::iterator iter = inputDevices_.find(name);
 	if (iter != inputDevices_.end())
 		return iter->second;
 	return empty_ptr;
@@ -104,14 +109,14 @@ boost::shared_ptr<v3D::InputDevice> Window::device(const std::string & name)
 
 void Window::tick()
 {
-	std::map< std::string, boost::shared_ptr<v3D::InputDevice> >::iterator iter = inputDevices_.begin();
+	std::map< std::string, boost::shared_ptr<v3d::input::InputDevice> >::iterator iter = inputDevices_.begin();
 	for (; iter != inputDevices_.end(); ++iter)
 	{
 		iter->second->tick();
 	}
 }
 
-void Window::addInputDevice(const std::string & name, boost::shared_ptr<v3D::InputDevice> device)
+void Window::addInputDevice(const std::string & name, boost::shared_ptr<v3d::input::InputDevice> device)
 {
 	inputDevices_[name] = device;
 }

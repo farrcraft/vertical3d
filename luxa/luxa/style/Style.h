@@ -1,9 +1,9 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
-#ifndef INCLUDED_LUXA_STYLE
-#define INCLUDED_LUXA_STYLE
+#pragma once
 
 #include <boost/shared_ptr.hpp>
 
@@ -82,4 +82,3 @@ namespace Luxa
 
 }; // end namespace Luxa
 
-#endif // INCLUDED_LUXA_STYLE

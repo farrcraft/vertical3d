@@ -1,12 +1,12 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
-#ifndef INCLUDED_LUXA_COMPONENTRENDERER
-#define INCLUDED_LUXA_COMPONENTRENDERER
+#pragma once
 
-#include <vertical3d/gl/GLTexture.h>
-#include <vertical3d/font/FontCache.h>
+#include "../../v3dlibs/gl/GLTexture.h"
+#include "../../v3dlibs/font/FontCache.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/glm.hpp>
@@ -24,7 +24,7 @@ namespace Luxa
 	{
 		public:
 			ComponentRenderer();
-			ComponentRenderer(boost::shared_ptr<v3D::FontCache> fc);
+			ComponentRenderer(boost::shared_ptr<v3d::font::FontCache> fc);
 			~ComponentRenderer();
 
 			void overlay(const Overlay & o);
@@ -47,13 +47,13 @@ namespace Luxa
 			 * @param width the width of the quad in pixels
 			 * @param height the height of the quad in pixels
 			 */
-			bool drawTexturedQuad(boost::shared_ptr<v3D::GLTexture> texture, float position_x, float position_y, float width, float height);
+			bool drawTexturedQuad(boost::shared_ptr<v3d::gl::GLTexture> texture, float position_x, float position_y, float width, float height);
 			/**
 			 * Draw a texture
 			 * @param texture the texture to draw
 			 * @param position the position to draw the texture at
 			 */
-			bool drawTexture(boost::shared_ptr<v3D::GLTexture> texture, glm::vec2 position);
+			bool drawTexture(boost::shared_ptr<v3d::gl::GLTexture> texture, glm::vec2 position);
 
 			/**
 			 * Set the rendering color
@@ -97,22 +97,20 @@ namespace Luxa
 			 * Get the font cache used by the vgui system.
 			 * @return a pointer to the font cache
 			 */
-			boost::shared_ptr<v3D::FontCache> fonts() const;
+			boost::shared_ptr<v3d::font::FontCache> fonts() const;
 			/**
 			 * Get the default font for a component class.
 			 * @param style_class the class type of the component
 			 * @param theme the active theeme
 			 * @return the font for the requested component type
 			 */
-			boost::shared_ptr<v3D::Font2D> getDefaultFont(const std::string & style_class, boost::shared_ptr<Theme> theme);
+			boost::shared_ptr<v3d::font::Font2D> getDefaultFont(const std::string & style_class, boost::shared_ptr<Theme> theme);
 
 		private:
 			int width_;
 			int height_;
 			Overlay overlay_;
-			boost::shared_ptr<v3D::FontCache> fonts_;
+			boost::shared_ptr<v3d::font::FontCache> fonts_;
 	};
 
 }; // end namespace Luxa
-
-#endif // INCLUDED_LUXA_COMPONENTRENDERER

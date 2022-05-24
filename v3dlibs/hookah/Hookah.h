@@ -1,17 +1,14 @@
 /**
- * HooKaH - 3D Application Framework Library 
- * (c) Josh Farr <j.wgasa@gmail.com>
- * Version 0.0.8
- * 
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
-#ifndef INCLUDED_HOOKAH_HOOKAH
-#define INCLUDED_HOOKAH_HOOKAH
+
+#pragma once
 
 #include "Window.h"
 #include "../input/InputDevice.h"
 
-namespace Hookah
-{
+namespace Hookah {
 
 	// Global Engine Methods
 
@@ -35,8 +32,6 @@ namespace Hookah
 	 *				 specific, but common names include "mouse" and "keyboard".
 	 * @return a pointer to the new input device object
 	 */
-	boost::shared_ptr<v3D::InputDevice> CreateInputDevice(const std::string & device);
+	boost::shared_ptr<v3d::input::InputDevice> CreateInputDevice(const std::string & device);
 
 }; // end namespace Hookah
-
-#endif // INCLUDED_HOOKAH_HOOKAH

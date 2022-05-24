@@ -1,19 +1,20 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
 #include "ComponentManager.h"
 #include "Component.h"
 #include "style/Theme.h"
 
-#include <vertical3d/image/ImageFactory.h>
+#include "../../v3dlibs/image/ImageFactory.h"
 
 #include <boost/bind.hpp>
 #include <boost/cast.hpp>
 
 using namespace Luxa;
 
-ComponentManager::ComponentManager(boost::shared_ptr<v3D::FontCache> fc, boost::shared_ptr<v3D::CommandDirectory> directory) : renderer_(fc), directory_(directory)
+ComponentManager::ComponentManager(boost::shared_ptr<v3d::font::FontCache> fc, boost::shared_ptr<v3d::command::CommandDirectory> directory) : renderer_(fc), directory_(directory)
 {
 }
 
@@ -22,19 +23,19 @@ ComponentRenderer * ComponentManager::renderer()
 	return &renderer_;
 }
 
-void ComponentManager::addTexture(const std::string & name, const boost::shared_ptr<v3D::Texture> & texture)
+void ComponentManager::addTexture(const std::string & name, const boost::shared_ptr<v3d::image::Texture> & texture)
 {
 	textures_[name] = texture;
 }
 
-boost::shared_ptr<v3D::Image> ComponentManager::loadImage(const std::string & filename)
+boost::shared_ptr<v3d::image::Image> ComponentManager::loadImage(const std::string & filename)
 {
-	v3D::ImageFactory factory;
-	boost::shared_ptr<v3D::Image> img = factory.read(filename);
+	v3d::image::ImageFactory factory;
+	boost::shared_ptr<v3d::image::Image> img = factory.read(filename);
 	return img;
 }
 
-void ComponentManager::notify(const v3D::EventInfo & e)
+void ComponentManager::notify(const v3d::event::EventInfo & e)
 {
 }
 
@@ -57,14 +58,14 @@ void ComponentManager::motion(unsigned int x, unsigned int y)
 	// trigger mouse out event on old component
 	if (old_component && (component != old_component))
 	{
-		v3D::EventInfo leave_event("leave", v3D::EventInfo::MATCH_STATE_OFF);
+		v3d::event::EventInfo leave_event("leave", v3d::event::EventInfo::MATCH_STATE_OFF);
 		old_component->notify(leave_event);
 	}
 
 	// trigger mouse in event on component
 	if (component && (component != old_component))
 	{
-		v3D::EventInfo enter_event("enter", v3D::EventInfo::MATCH_STATE_ON);
+		v3d::event::EventInfo enter_event("enter", v3d::event::EventInfo::MATCH_STATE_ON);
 		component->notify(enter_event);
 	}
 }
@@ -86,7 +87,7 @@ boost::shared_ptr<Component> ComponentManager::intersect(glm::vec2 point) const
 
 bool ComponentManager::execCommand(const std::string & cmd, const std::string & scope, const std::string param)
 {
-	v3D::CommandInfo command(cmd, scope);
+	v3d::command::CommandInfo command(cmd, scope);
 	bool result = directory_->exec(command, param);
 	return result;
 }
@@ -95,7 +96,7 @@ void ComponentManager::buttonPressed(unsigned int button)
 {
 	// get the control at the top of the stack at these coordinates
 	boost::shared_ptr<Component> component = intersect(mouse_);
-	v3D::EventInfo e("button_pressed", v3D::EventInfo::MATCH_STATE_ON);
+	v3d::event::EventInfo e("button_pressed", v3d::event::EventInfo::MATCH_STATE_ON);
 	component->notify(e);
 }
 
@@ -103,7 +104,7 @@ void ComponentManager::buttonReleased(unsigned int button)
 {
 	// get the control at the top of the stack at these coordinates
 	boost::shared_ptr<Component> component = intersect(mouse_);
-	v3D::EventInfo e("button_released", v3D::EventInfo::MATCH_STATE_OFF);
+	v3d::event::EventInfo e("button_released", v3d::event::EventInfo::MATCH_STATE_OFF);
 	component->notify(e);
 }
 
@@ -191,7 +192,7 @@ unsigned int ComponentManager::height() const
 	return renderer_.height();
 }
 
-boost::shared_ptr<v3D::FontCache> ComponentManager::fonts() const
+boost::shared_ptr<v3d::font::FontCache> ComponentManager::fonts() const
 {
 	return renderer_.fonts();
 }

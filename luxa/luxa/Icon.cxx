@@ -1,13 +1,14 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
 #include "Icon.h"
 #include "ComponentRenderer.h"
 
 using namespace Luxa;
 
-Icon::Icon(boost::shared_ptr<v3D::GLTexture> texture, ComponentManager * cm) : Component(cm), texture_(texture)
+Icon::Icon(boost::shared_ptr<v3d::gl::GLTexture> texture, ComponentManager * cm) : Component(cm), texture_(texture)
 {
 }
 

@@ -1,9 +1,9 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
-#ifndef INCLUDED_LUXA_FRAME
-#define INCLUDED_LUXA_FRAME
+#pragma once
 
 #include "Component.h"
 
@@ -13,11 +13,8 @@ namespace Luxa
 	class Frame : public Component
 	{
 		public:
-			Frame();
-			~Frame();
+			Frame() = default;
+			~Frame() = default;
 	};
 
 }; // end namespace Luxa
-
-
-#endif // INCLUDED_LUXA_FRAME

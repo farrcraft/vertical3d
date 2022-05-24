@@ -3,7 +3,7 @@
 #
 cmake_minimum_required (VERSION 3.8)
 
-project ("monorepo")
+project ("vertical3d")
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -31,3 +31,5 @@ link_directories(
 
 # Include sub-projects.
 add_subdirectory ("v3dlibs")
+add_subdirectory("luxa")
+add_subdirectory("stark")
