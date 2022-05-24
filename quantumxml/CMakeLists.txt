@@ -11,7 +11,7 @@ add_library("quantumxml" "Exception.h" "Exception.cxx" "FSMParser.h" "FSMParser.
 	"states/EntityDecl.h" "states/EntityDecl.cxx" "states/Misc.h" "states/Misc.cxx" "states/NotationDecl.h" "states/NotationDecl.cxx"
 	"states/ProcessingInstruction.h" "states/ProcessingInstruction.cxx" "states/XMLDecl.h" "states/XMLDecl.cxx"
 	"fsm/Functor.h" "fsm/MultiState.h" "fsm/State.h" "fsm/StateBase.h" "fsm/StateBase.cxx" "fsm/StateMachine.h" "fsm/StateMachine.cxx"
-	"DOM/Attr.h" "DOM/Attr.h" "DOM/CDATASection.h" "DOM/CDATASection.cxx" "DOM/CharacterData.h" "DOM/CharacterData.cxx"
+	"DOM/Attr.h" "DOM/Attr.cxx" "DOM/CDATASection.h" "DOM/CDATASection.cxx" "DOM/CharacterData.h" "DOM/CharacterData.cxx"
 	"DOM/Comment.h" "DOM/Comment.cxx" "DOM/Document.h" "DOM/Document.cxx" "DOM/DocumentFragment.h" "DOM/DocumentFragment.cxx"
 	"DOM/DocumentType.h" "DOM/DocumentType.cxx" "DOM/DOMException.h" "DOM/DOMException.cxx" "DOM/DOMImplementation.h"
 	"DOM/DOMImplementation.cxx" "DOM/DOMString.h" "DOM/DOMString.cxx" "DOM/Element.h" "DOM/Element.cxx" "DOM/Entity.h" "DOM/Entity.cxx"
