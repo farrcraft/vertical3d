@@ -87,8 +87,8 @@ int main (int argc, char *argv[])
 		exit(EXIT_SUCCESS);
 	}
 
-	v3D::ImageFactory factory;
-	boost::shared_ptr<v3D::Image> image;
+	v3d::image::ImageFactory factory;
+	boost::shared_ptr<v3d::image::Image> image;
 
 	if (!silent)
 	{
