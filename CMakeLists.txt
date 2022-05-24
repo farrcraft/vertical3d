@@ -27,7 +27,10 @@ include_directories(SYSTEM
 	"vendor/jpeg-9e")
 
 link_directories(
-	${Boost_LIBRARY_DIRS})
+	${Boost_LIBRARY_DIRS}
+	"vendor/libjpeg-turbo-2.1.0"
+	"vendor/libpng-1.6.37"
+	"vendor/zlib-1.2.11")
 
 # Include sub-projects.
 add_subdirectory ("v3dlibs")
@@ -36,3 +39,4 @@ add_subdirectory("stark")
 add_subdirectory("quantumxml")
 add_subdirectory("talyn")
 add_subdirectory("moya")
+add_subdirectory("v3dshell")

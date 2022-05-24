@@ -1,13 +1,15 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
 #include "../libmoya/RenderMan.h"
 
 #include <cstdlib>
 #include <iostream>
 #include <boost/program_options.hpp>
 
-int main (int argc, char *argv[])
-{
-	log4cxx::BasicConfigurator::configure();
-
+int main (int argc, char *argv[]) {
 	/*
 		CLI Options:
 			-f / --file	scene.rib
@@ -102,7 +104,8 @@ int main (int argc, char *argv[])
 	RiBegin(RI_NULL);
 	//RiBegin("poly.rib");
 	RiWorldBegin();
-	RiSurface("plastic");
+	std::string surfaceName("plastic");
+	RiSurface(const_cast<char*>(surfaceName.c_str()));
 	RtPoint points[4] = { 0.0, 1.0, 0.0,	0.0, 1.0, 1.0,
 						  0.0, 0.0, 1.0,	0.0, 0.0, 0.0 };
 	RiPolygon(4, RI_P, (RtPointer)points, RI_NULL);

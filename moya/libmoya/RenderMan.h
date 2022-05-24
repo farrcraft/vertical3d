@@ -47,10 +47,11 @@ typedef RtPointer	RtContextHandle;
 
 extern RtToken	RI_FRAMEBUFFER, RI_FILE;
 extern RtToken	RI_RGB, RI_RGBA, RI_RGBZ, RI_RGBAZ, RI_A, RI_Z, RI_AZ;
-extern RtToken 	RI_PERSPECTIVE, RI_ORTHOGRAPHIC;
+extern const RtToken RI_PERSPECTIVE, RI_ORTHOGRAPHIC;
 extern RtToken 	RI_HIDDEN, RI_PAINT;
-extern RtToken	RI_CONSTANT, RI_SMOOTH;
-extern RtToken	RI_FLATNESS, RI_FOV;
+extern RtToken RI_CONSTANT, RI_SMOOTH;
+extern RtToken	RI_FLATNESS;
+extern const RtToken RI_FOV;
 extern RtToken	RI_AMBIENTLIGHT, RI_POINTLIGHT, RI_DISTANTLIGHT, RI_SPOTLIGHT;
 extern RtToken	RI_INTENSITY, RI_LIGHTCOLOR, RI_FROM, RI_TO, RI_CONEANGLE,
 				RI_CONEDELTAANGLE, RI_BEAMDISTRIBUTION;
@@ -63,7 +64,8 @@ extern RtToken	RI_MINDISTANCE, RI_MAXDISTANCE, RI_BACKGROUND, RI_DISTANCE,
 				RI_AMPLITUDE;
 extern RtToken	RI_RASTER, RI_SCREEN, RI_CAMERA, RI_WORLD, RI_OBJECT;
 extern RtToken	RI_INSIDE, RI_OUTSIDE, RI_LH, RI_RH;
-extern RtToken	RI_P, RI_PZ, RI_PW, RI_N, RI_NP, RI_CS, RI_OS, RI_S, RI_T, RI_ST;
+extern const RtToken RI_P, RI_PZ, RI_PW, RI_N, RI_CS, RI_OS, RI_S, RI_T, RI_ST;
+extern RtToken RI_NP;
 extern RtToken	RI_BILINEAR, RI_BICUBIC;
 extern RtToken	RI_LINEAR, RI_CUBIC;
 extern RtToken	RI_PRIMITIVE, RI_INTERSECTION, RI_UNION, RI_DIFFERENCE;
@@ -150,7 +152,7 @@ extern RtLightHandle
 				RiAreaLightSource(RtToken name, ...),
 				RiAreaLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
 extern RtVoid	RiIlluminate(RtLightHandle light, RtBoolean onoff),
-				RiSurface(RtToken name, ...),
+				RiSurface(const RtToken name, ...),
 				RiSurfaceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]),
 				RiAtmosphere(RtToken name, ...),
 				RiAtmosphereV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]),

@@ -23,14 +23,14 @@ RtToken RI_RGB,
 		RI_A, 
 		RI_Z, 
 		RI_AZ;
-RtToken RI_PERSPECTIVE	= "perspective", 
-		RI_ORTHOGRAPHIC	= "orthographic";
+const RtToken RI_PERSPECTIVE = const_cast<char*>("perspective");
+const RtToken RI_ORTHOGRAPHIC = const_cast<char*>("orthographic");
 RtToken RI_HIDDEN, 
 		RI_PAINT;
 RtToken RI_CONSTANT, 
 		RI_SMOOTH;
-RtToken RI_FLATNESS, 
-		RI_FOV 			= "fov";
+RtToken RI_FLATNESS;
+const RtToken RI_FOV = const_cast<char*>("fov");
 RtToken RI_AMBIENTLIGHT, 
 		RI_POINTLIGHT, 
 		RI_DISTANTLIGHT, 
@@ -71,16 +71,16 @@ RtToken RI_INSIDE,
 		RI_OUTSIDE, 
 		RI_LH, 
 		RI_RH;
-RtToken RI_P 			= "P", 
-		RI_PZ			= "Pz", 
-		RI_PW			= "Pw", 
-		RI_N			= "N", 
-		RI_NP, 
-		RI_CS			= "Os", 
-		RI_OS			= "Os", 
-		RI_S			= "s", 
-		RI_T			= "t", 
-		RI_ST			= "st";
+const RtToken RI_P = const_cast<char*>("P");
+const RtToken RI_PZ = const_cast<char*>("Pz");
+const RtToken RI_PW = const_cast<char*>("Pw");
+const RtToken RI_N = const_cast<char*>("N");
+RtToken		RI_NP;
+const RtToken RI_CS = const_cast<char*>("Cs");
+const RtToken RI_OS = const_cast<char*>("Os");
+const RtToken RI_S = const_cast<char*>("s");
+const RtToken RI_T = const_cast<char*>("t");
+const RtToken RI_ST	= const_cast<char*>("st");
 RtToken RI_BILINEAR, 
 		RI_BICUBIC;
 RtToken RI_LINEAR, 
@@ -529,7 +529,7 @@ shadername is the name of a surface shader. This procedure sets the current surf
 shader to be shadername. If the surface shader shadername is not defined, some
 implementation-dependent default surface shader (but not ”null”) is used.
 */
-RtVoid RiSurface(RtToken name, ...)
+RtVoid RiSurface(const RtToken name, ...)
 {
 }
 
@@ -779,7 +779,7 @@ RtVoid RiPolygon(RtInt nverts, ...)
 			RtPoint *points = (RtPoint*)p;
 			for (int i = 0; i < nverts; i++)
 			{
-				v.point(Vector3(points[i][0], points[i][1], points[i][2]));
+				v.point(v3d::type::Vector3(points[i][0], points[i][1], points[i][2]));
 				poly->addVertex(v);
 			}
 		}
