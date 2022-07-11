@@ -7,8 +7,7 @@
 
 #include "MicroPolygon.h"
 
-using namespace v3D;
-using namespace v3D::Moya;
+using namespace v3d::moya;
 
 MicroPolygon::MicroPolygon()
 {

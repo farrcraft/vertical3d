@@ -7,7 +7,7 @@
 
 #include "StyleProperty.h"
 
-#include "../../../v3dlibs/type/Color3.h"
+#include <glm/glm.hpp>
 
 namespace Luxa
 {
@@ -22,7 +22,7 @@ namespace Luxa
 			~ColorStyleProperty();
 
 		private:
-			v3d::type::Color3 color_;
+			glm::vec3 color_;
 	};
 
 };

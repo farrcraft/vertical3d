@@ -5,8 +5,7 @@
 
 #include "Vertex.h"
 
-using namespace v3D;
-using namespace v3D::Moya;
+using namespace v3d::moya;
 
 Vertex::Vertex()
 {
@@ -16,13 +15,13 @@ Vertex::~Vertex()
 {
 }
 
-v3d::type::Vector3 Vertex::point(void) const
+glm::vec3 Vertex::point(void) const
 {
-	 return _point;
+	 return point_;
 }
 
-void Vertex::point(const v3d::type::Vector3 & v)
+void Vertex::point(const glm::vec3 & v)
 {
-	 _point = v;
+	 point_ = v;
 }
 

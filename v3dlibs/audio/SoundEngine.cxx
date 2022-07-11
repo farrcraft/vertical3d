@@ -5,6 +5,8 @@
 
 #include "SoundEngine.h"
 
+#include <glm/gtc/type_ptr.hpp>
+
 #include <iostream>
 
 #ifdef WIN32
@@ -76,8 +78,8 @@ bool SoundEngine::playClip(const std::string & clip) {
 }
 
 void SoundEngine::updateListener() {
-	alListenerfv(AL_POSITION, *listenerPosition_);
-	alListenerfv(AL_VELOCITY, *listenerVelocity_);
+	alListenerfv(AL_POSITION, glm::value_ptr(listenerPosition_));
+	alListenerfv(AL_VELOCITY, glm::value_ptr(listenerVelocity_));
 
 	ALfloat listenerOrientation[] = {0.0, 0.0, -1.0, 0.0, 1.0, 0.0 };
 	alListenerfv(AL_ORIENTATION, listenerOrientation);

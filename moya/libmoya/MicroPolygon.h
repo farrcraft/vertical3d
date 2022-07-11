@@ -7,24 +7,17 @@
 
 #include "Vertex.h"
 
-namespace v3D
-{
-
-	namespace Moya
+namespace v3d::moya {
+	// a flat shaded quadrilateral with an area of about 1/4 of a pixel
+	class MicroPolygon
 	{
-		// a flat shaded quadrilateral with an area of about 1/4 of a pixel
-		class MicroPolygon
-		{
-			public:
-				MicroPolygon();
-				~MicroPolygon();
+		public:
+			MicroPolygon();
+			~MicroPolygon();
 	
-				Vertex & operator[] (unsigned int i);
+			Vertex & operator[] (unsigned int i);
 	
-			private:
-				Vertex		_points[4];
-		};
-	
-	}; // end namespace Moya
-
-}; // end namespace v3D
+		private:
+			Vertex		_points[4];
+	};
+};

@@ -66,12 +66,12 @@ namespace v3d::brep
 
 			v3d::type::AABBox bound(void) const;
 
-			void addFace(const std::vector<v3d::type::Vector3> & vertices, const v3d::type::Vector3 & normal);
-			void addEdge(const v3d::type::Vector3 & point);
+			void addFace(const std::vector<glm::vec3> & vertices, const glm::vec3 & normal);
+			void addEdge(const glm::vec3 & point);
 
-			void splitEdge(unsigned int edge, const v3d::type::Vector3 & point);
+			void splitEdge(unsigned int edge, const glm::vec3 & point);
 			void extrudeFace(unsigned int face);
-			void splitFace(unsigned int face, unsigned int leftEdge, unsigned int rightEdge, const v3d::type::Vector3 & leftPoint, const v3d::type::Vector3 & rightPoint);
+			void splitFace(unsigned int face, unsigned int leftEdge, unsigned int rightEdge, const glm::vec3 & leftPoint, const glm::vec3 & rightPoint);
 
 			unsigned int vertexCount(void) const;
 			unsigned int edgeCount(void) const;
@@ -82,7 +82,7 @@ namespace v3d::brep
 			unsigned int addFace(const Face & f);
 
 		protected:
-			unsigned int addVertex(const v3d::type::Vector3 & v);
+			unsigned int addVertex(const glm::vec3 & v);
 			unsigned int addEdge(unsigned int vertex);
 			unsigned int findPair(unsigned int edge, unsigned int prevEdge);
 
@@ -98,7 +98,7 @@ namespace v3d::brep
 	 * @param face the face number to get the center of
 	 * @return the point located in the middle of the face
 	 */
-	v3d::type::Vector3 center(boost::shared_ptr<BRep> mesh, unsigned int face);
+	glm::vec3 center(boost::shared_ptr<BRep> mesh, unsigned int face);
 	/**
 	 * Get the UV vectors for a mesh face
 	 * @param mesh the mesh to use
@@ -106,6 +106,6 @@ namespace v3d::brep
 	 * @param u the address of a vector to store the results in
 	 * @param v the address of a vector to store the results in
 	 */
-	void faceUV(boost::shared_ptr<BRep> mesh, unsigned int face, v3d::type::Vector3 & u, v3d::type::Vector3 & v);
+	void faceUV(boost::shared_ptr<BRep> mesh, unsigned int face, glm::vec3 & u, glm::vec3 & v);
 
 };

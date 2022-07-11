@@ -7,24 +7,24 @@
 #include "Frustum.h"
 
 #include "../../v3dlibs/type/3dtypes.h"
-#include "../../v3dlibs/type/Matrix4.h"
+
+#include <glm/gtc/matrix_transform.hpp>
 
 #include <cmath>
 #include <iostream>
 
-using namespace v3D;
-using namespace v3D::Moya;
+using namespace v3d::moya;
 
-RenderContext::RenderContext() : _xres(320), _yres(240), _pixelAspect(1.0), 
-				_projection("orthographic"), _shutterOpen(0.0), _shutterClose(0.0),
-				_bucketWidth(16), _bucketHeight(16), _gridSize(256), _shadingRate(1.0)
+RenderContext::RenderContext() : xres_(320), yres_(240), pixelAspect_(1.0), 
+				projection_("orthographic"), shutterOpen_(0.0), shutterClose_(0.0),
+				bucketWidth_(16), bucketHeight_(16), gridSize_(256), shadingRate_(1.0)
 {
 	initialize();
 }
 
-RenderContext::RenderContext(const std::string & name) : _name(name), _xres(320), _yres(240), _pixelAspect(1.0), 
-				_projection("orthographic"), _shutterOpen(0.0), _shutterClose(0.0),
-				_bucketWidth(16), _bucketHeight(16), _gridSize(256), _shadingRate(1.0)
+RenderContext::RenderContext(const std::string & name) : name_(name), xres_(320), yres_(240), pixelAspect_(1.0), 
+				projection_("orthographic"), shutterOpen_(0.0), shutterClose_(0.0),
+				bucketWidth_(16), bucketHeight_(16), gridSize_(256), shadingRate_(1.0)
 {
 	initialize();
 }
@@ -36,16 +36,15 @@ RenderContext::~RenderContext()
 void RenderContext::initialize()
 {
 	// initialize the predefined coordinate systems to defaults (identity matrix)
-	v3d::type::Matrix4 def;
-	def.identity();
-	_coordinateSystems["object"] = def;
-	_coordinateSystems["world"]  = def;
-	_coordinateSystems["camera"] = def;
-	_coordinateSystems["screen"] = def;
-	_coordinateSystems["raster"] = def;
-	_coordinateSystems["NDC"] 	 = def;
+	glm::mat4x4 def(1.0f);
+	coordinateSystems_["object"] = def;
+	coordinateSystems_["world"]  = def;
+	coordinateSystems_["camera"] = def;
+	coordinateSystems_["screen"] = def;
+	coordinateSystems_["raster"] = def;
+	coordinateSystems_["NDC"] 	 = def;
 
-	_transform.identity();
+	transform_ = glm::mat4x4(1.0f); //  identity
 
 	// initialize the z buffer
 
@@ -54,22 +53,22 @@ void RenderContext::initialize()
 
 unsigned int RenderContext::bucketWidth() const
 {
-	return _bucketWidth;
+	return bucketWidth_;
 }
 
 unsigned int RenderContext::bucketHeight() const
 {
-	return _bucketHeight;
+	return bucketHeight_;
 }
 
 unsigned int RenderContext::gridSize() const
 {
-	return _gridSize;
+	return gridSize_;
 }
 
 float RenderContext::shadingRate() const
 {
-	return _shadingRate;
+	return shadingRate_;
 }
 
 
@@ -93,47 +92,46 @@ void RenderContext::prepareWorld()
 	//LOG4CXX_DEBUG(logger, "RenderEngine::prepareWorld - camera coordinate system marked.");
 
 	// set raster transformation
-	v3d::type::Matrix4 raster;
-	raster.identity();
+	glm::mat4x4 raster(1.0f); // identity
 	/*
 		screen transform maps to the canonical volume [-1, 1]
 		raster transform scales to [0, xres] x [0, yres]
 	*/
-	float x = _xres / 2.0f;
-	float y = _yres / 2.0f;
-	raster.scale(x, y, 1.0);
-	raster.translate(1.0, 1.0, 0.0);
-	// mark the raster coordinate system
-	_coordinateSystems["raster"] = raster;
+	float x = xres_ / 2.0f;
+	float y = yres_ / 2.0f;
+	glm::scale(raster, glm::vec3(x, y, 1.0f));
+	glm::translate(raster, glm::vec3(1.0f, 1.0f, 1.0f));
 
+	// mark the raster coordinate system
+	coordinateSystems_["raster"] = raster;
 
 	unsigned int screen[2];
-	screen[0] = _xres;
-	screen[1] = _yres;
+	screen[0] = xres_;
+	screen[1] = yres_;
 	unsigned int bucket[2];
-	bucket[0] = _bucketWidth;
-	bucket[1] = _bucketHeight;
+	bucket[0] = bucketWidth_;
+	bucket[1] = bucketHeight_;
 
 	//LOG4CXX_DEBUG(logger, "RenderContext::prepareWorld - allocating framebuffer. image size = [" << screen[0] << " x " << screen[1] << "]. bucket size = [" << bucket[0] << " x " << bucket[1] << "]");
 
-	_frameBuffer.reset(new FrameBuffer(bucket, screen));
+	frameBuffer_.reset(new FrameBuffer(bucket, screen));
 
 	//LOG4CXX_DEBUG(logger, "RenderEngine::prepareWorld - view options frozen.");
 }
 
 unsigned int RenderContext::imageWidth() const
 {
-	return _xres;
+	return xres_;
 }
 
 unsigned int RenderContext::imageHeight() const
 {
-	return _yres;
+	return yres_;
 }
 
 float RenderContext::pixelAspect() const
 {
-	return _pixelAspect;
+	return pixelAspect_;
 }
 
 /*
@@ -150,13 +148,13 @@ void RenderContext::projection(std::string name, float fov)
 
 	// name is orthographic, perspective, or empty
 	// only perspective uses fov
-	_projection = name;
+	projection_ = name;
 
-	v3d::type::Matrix4 projection;
+	glm::mat4x4 projection;
 	// build the projection matrix
 	if (name == "perspective")
 	{
-		projection.identity();
+		projection = glm::mat4x4(1.0f); // identity
 	}
 	else if (name == "orthographic")
 	{
@@ -190,35 +188,41 @@ void RenderContext::projection(std::string name, float fov)
 
 		m[0] = 2 / screen window width
 		m[5] = 2 / screen window height
+
+		glm (column-major ordering):
+		[  00,  10,  20,  30 ]
+		[  01,  11,  21,  31 ]
+		[  02,  12,  22,  32 ]
+		[  03,  13,  23,  33 ]
 		*/
 
 		float left = -1.0;
-		float right = 1.0; //_xres;
+		float right = 1.0; //xres_;
 		float top = 1.0;
-		float bottom = -1.0; //_yres;
-		float far = _far;
-		float near = _near;
+		float bottom = -1.0; //yres_;
+		float far = far_;
+		float near = near_;
 
 		float tx = ((right + left) / (right - left));
 		float ty = ((top + bottom) / (top - bottom));
 		float tz = (far + near) / (far - near);
 
-		projection[0]  = 2.0f / (right - left);
-		projection[1]  = 0.0;
-		projection[2]  = 0.0;
-		projection[3]  = -tx;
-		projection[4]  = 0.0;
-		projection[5]  = 2.0f / (top - bottom);
-		projection[6]  = 0.0;
-		projection[7]  = -ty;
-		projection[8]  = 0.0;
-		projection[9]  = 0.0;
-		projection[10] = -2.0f / (far - near);
-		projection[11] = -tz;
-		projection[12] = 0.0;
-		projection[13] = 0.0;
-		projection[14] = 0.0;
-		projection[15] = 1.0;
+		projection[0][0] = 2.0f / (right - left);
+		projection[1][0] = 0.0;
+		projection[2][0] = 0.0;
+		projection[3][0] = -tx;
+		projection[0][1] = 0.0;
+		projection[1][1] = 2.0f / (top - bottom);
+		projection[2][1] = 0.0;
+		projection[3][1] = -ty;
+		projection[0][2] = 0.0;
+		projection[1][2] = 0.0;
+		projection[2][2] = -2.0f / (far - near);
+		projection[2][2] = -tz;
+		projection[0][3] = 0.0;
+		projection[1][3] = 0.0;
+		projection[2][3] = 0.0;
+		projection[3][3] = 1.0;
 
 //		std::cerr << projection;
 	}
@@ -231,12 +235,12 @@ void RenderContext::projection(std::string name, float fov)
 	
 
 	// append projection matrix to current transformation matrix
-	_transform *= projection;
+	transform_ *= projection;
 	// save as screen coordinate system
 	saveCoordinateSystem("screen");
-//	std::cerr << "marked system = " << std::endl << _coordinateSystems["screen"];
+//	std::cerr << "marked system = " << std::endl << coordinateSystems_["screen"];
 	// reinitialize current transformation to indentity matrix
-	_transform.identity();
+	transform_ = glm::mat4x4(1.0f);
 	// current transformation matrix is now the camera coordinate system
 }
 
@@ -247,9 +251,9 @@ void RenderContext::projection(std::string name, float fov)
 */
 void RenderContext::imageResolution(int xres, int yres, float aspect)
 {
-	_xres = xres;
-	_yres = yres;
-	_pixelAspect = aspect;
+	xres_ = xres;
+	yres_ = yres;
+	pixelAspect_ = aspect;
 }
 
 /*
@@ -258,50 +262,50 @@ void RenderContext::imageResolution(int xres, int yres, float aspect)
 */
 void RenderContext::clipping(float near, float far)
 {
-	_near = near;
-	_far = far;
+	near_ = near;
+	far_ = far;
 }
 
 void RenderContext::pushTransform(void)
 {
-	_transforms.push_back(_transform);
+	transforms_.push_back(transform_);
 }
 
 void RenderContext::popTransform(void)
 {
-	_transforms.pop_back();
+	transforms_.pop_back();
 }
 
 void RenderContext::saveCoordinateSystem(const std::string & name)
 {
-	_coordinateSystems[name] = _transform;
+	coordinateSystems_[name] = transform_;
 }
 
 void RenderContext::setCoordinateSystem(const std::string & name)
 {
 	// make sure name is a valid coordinate system
 
-	_transform = _coordinateSystems[name];
+	transform_ = coordinateSystems_[name];
 }
 
 void RenderContext::setIdentityTransform()
 {
-	_transform.identity();
+	transform_ = glm::mat4(1.0f);
 }
 
-void RenderContext::setTransform(const v3d::type::Matrix4 & trans)
+void RenderContext::setTransform(const glm::mat4x4 & trans)
 {
-	 _transform = trans;
+	 transform_ = trans;
 }
 
-v3d::type::Matrix4 RenderContext::coordinateSystem(const std::string & name)
+glm::mat4x4 RenderContext::coordinateSystem(const std::string & name)
 {
-	return _coordinateSystems[name];
+	return coordinateSystems_[name];
 }
 
 void RenderContext::translate(float dx, float dy, float dz)
 {
-	_transform.translate(dx, dy, dz);
+	transform_ = glm::translate(transform_, glm::vec3(dx, dy, dz));
 }
 
 void RenderContext::rotate(float angle, float dx, float dy, float dz)
@@ -334,8 +338,8 @@ void RenderContext::addPolygon(boost::shared_ptr<Polygon> poly)
 	*/
 	v3d::type::AABBox bound = poly->bound();
 
-	v3d::type::Vector3 bound_max = bound.max();
-	v3d::type::Vector3 bound_min = bound.min();
+	glm::vec3 bound_max = bound.max();
+	glm::vec3 bound_min = bound.min();
 
 	//LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - object space bounds are [" << bound_min.str() << "] x " << bound_max.str());
 	/*
@@ -344,14 +348,14 @@ void RenderContext::addPolygon(boost::shared_ptr<Polygon> poly)
 		next multiply by camera transformation to get camera/eye coordinates
 
 		for now we're just taking the current transform.
-		later we'll probably need to concatenate the _transforms matrix stack too
+		later we'll probably need to concatenate the transforms_ matrix stack too
 	*/
-	//LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - current transform matrix: " << _transform.str());
-	//LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - camera transform matrix: " << _coordinateSystems["camera"].str());
-	bound_max = _transform * bound_max;
-	bound_max = _coordinateSystems["camera"].transpose() * bound_max;
-	bound_min = _transform * bound_min;
-	bound_min = _coordinateSystems["camera"].transpose() * bound_min;
+	//LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - current transform matrix: " << transform_.str());
+	//LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - camera transform matrix: " << coordinateSystems_["camera"].str());
+	bound_max = glm::vec3(transform_ * glm::vec4(bound_max, 1.0f));
+	bound_max = glm::vec3(glm::transpose(coordinateSystems_["camera"]) * glm::vec4(bound_max, 1.0f));
+	bound_min = glm::vec3(transform_ * glm::vec4(bound_min, 1.0f));
+	bound_min = glm::vec3(glm::transpose(coordinateSystems_["camera"]) * glm::vec4(bound_min, 1.0f));
 
 	// camera transform might've flipped some components of min & max
 	if (bound_min[0] > bound_max[0])
@@ -370,8 +374,8 @@ void RenderContext::addPolygon(boost::shared_ptr<Polygon> poly)
 	//LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - eye space bounds are " << bound_min.str() << " x " << bound_max.str());
 
 	// do hither-yon cull
-	if ((bound_max[2] > _far && bound_min[2] > _far) 	// bound is completely outside far plane (too far away for the camera to see)
-	 || (bound_max[2] < _near && bound_min[2] < _near))	// bound is completely outside near plane (effectively behind camera)
+	if ((bound_max[2] > far_ && bound_min[2] > far_) 	// bound is completely outside far plane (too far away for the camera to see)
+	 || (bound_max[2] < near_ && bound_min[2] < near_))	// bound is completely outside near plane (effectively behind camera)
 	{
 		// cull poly
 		//LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - outside hither/yon. polygon was culled.");
@@ -386,14 +390,14 @@ void RenderContext::addPolygon(boost::shared_ptr<Polygon> poly)
 	/*
 		anything that spans hither or yon will make it past the first cull step above.
 		those conditions are:
-		(bound_max[2] < _far && bound_min[2] > _far)	not possible. max > min
-		(bound_max[2] > _far && bound_min[2] < _far)	crosses far plane
-		(bound_max[2] > _near && bound_min[2] < _near)	crosses near plane
-		(bound_max[2] < _near && bound_min[2] > _near)	not possible. max > min
+		(bound_max[2] < far_ && bound_min[2] > far_)	not possible. max > min
+		(bound_max[2] > far_ && bound_min[2] < far_)	crosses far plane
+		(bound_max[2] > near_ && bound_min[2] < near_)	crosses near plane
+		(bound_max[2] < near_ && bound_min[2] > near_)	not possible. max > min
 		
 		in the e plane test we are only concerned with the third condition
 	*/
-	if (bound_max[2] > _near && bound_min[2] < _near)	// crosses near plane
+	if (bound_max[2] > near_ && bound_min[2] < near_)	// crosses near plane
 	{
 		// if bound_min[2] also crosses the eye plane, we'll need to split it 
 		// (mark undiceable so it will be split on the next pass)
@@ -414,14 +418,14 @@ void RenderContext::addPolygon(boost::shared_ptr<Polygon> poly)
 		we don't want to transform the primitive here, just the bounds. 
 		we'll still need eye space in the second pass.
 	*/
-	//poly->transform(_coordinateSystems["screen"]);
+	//poly->transform(coordinateSystems_["screen"]);
 	// screen space to reyes means renderman raster space
 	
 	//bound = poly->bound();
-	v3d::type::Matrix4 screen = _coordinateSystems["screen"];
-	screen *= _coordinateSystems["raster"];
-	bound_min = screen * bound_min;
-	bound_max = screen * bound_max;
+	glm::mat4x4 screen = coordinateSystems_["screen"];
+	screen *= coordinateSystems_["raster"];
+	bound_min = glm::vec3(screen * glm::vec4(bound_min, 1.0f));
+	bound_max = glm::vec3(screen * glm::vec4(bound_max, 1.0f));
 
 	// screen transform might've flipped some components of min & max
 	if (bound_min[0] > bound_max[0])
@@ -433,8 +437,8 @@ void RenderContext::addPolygon(boost::shared_ptr<Polygon> poly)
 
 	bound.extents(bound_min, bound_max);
 
-	//LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - screen transform matrix: " << _coordinateSystems["screen"].str());
-	//LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - raster transform matrix: " << _coordinateSystems["raster"].str());
+	//LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - screen transform matrix: " << coordinateSystems_["screen"].str());
+	//LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - raster transform matrix: " << coordinateSystems_["raster"].str());
 	//LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - screen + raster transform matrix: " << screen.str());
 	//LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - screen space bounds are " << bound_min.str() << " x " << bound_max.str());
 
@@ -457,9 +461,9 @@ void RenderContext::addPolygon(boost::shared_ptr<Polygon> poly)
 			if our primitive's raster space bound is bigger
 			than the maximum grid size then it should be split
 		*/
-		float size = static_cast<float>(_gridSize);
-		size = sqrt(size) * _shadingRate;
-		v3d::type::Vector3 bound_size = bound_max - bound_min;
+		float size = static_cast<float>(gridSize_);
+		size = sqrt(size) * shadingRate_;
+		glm::vec3 bound_size = bound_max - bound_min;
 		//LOG4CXX_DEBUG(logger, "RenderContext::addPolygon - bound size = " << bound_size.str() << " size = " << size);
 		if ((bound_size[0] > size) || (bound_size[1] > size))
 		{
@@ -477,9 +481,9 @@ void RenderContext::addPolygon(boost::shared_ptr<Polygon> poly)
 	{
 		for (unsigned int i = 0; i < poly->vertexCount(); i++)
 		{
-			v3d::type::Matrix4 em = _transform * _coordinateSystems["camera"].transpose();
+			glm::mat4x4 em = transform_ * glm::transpose(coordinateSystems_["camera"]);
 			Vertex pv = poly->vertex(i);
-			pv.point(em * pv.point());
+			pv.point(glm::vec3(em * glm::vec4(pv.point(), 1.0f)));
 			(*poly)[i] = pv;
 		}
 	}
@@ -496,7 +500,7 @@ void RenderContext::addPolygon(boost::shared_ptr<Polygon> poly)
 			  so when we move to screen space above, we should really be moving to what 
 			  RenderMan calls raster space.
 	*/
-	_frameBuffer->addPrimitive(poly, bound);
+	frameBuffer_->addPrimitive(poly, bound);
 	// nothing left to do in the first pass for this primitive
 }
 /*
@@ -529,7 +533,7 @@ void RenderContext::render()
 	//log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("v3d.moya"));
 	//LOG4CXX_DEBUG(logger, "RenderContext::render - begin rendering framebuffer.");
 
-	_frameBuffer->render();
+	frameBuffer_->render();
 
 	//LOG4CXX_DEBUG(logger, "RenderContext::render - finished rendering framebuffer.");
 }

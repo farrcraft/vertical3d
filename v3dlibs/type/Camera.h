@@ -7,30 +7,28 @@
 
 #include "CameraProfile.h"
 
-namespace v3d::type
-{
+namespace v3d::type {
 
 	/**
 	 *	A 3D viewing camera.
 	 */
-	class Camera
-	{
+	class Camera {
 		public:
 			Camera();
 			Camera(const CameraProfile & profile);
 			virtual ~Camera();
 
 			// get
-			Matrix4	projection() const;
-			Matrix4 view() const;
+			glm::mat4x4	projection() const;
+			glm::mat4x4 view() const;
 
 			/**
 			 * Access the underlying camera profile
 			 */
 			CameraProfile & profile();
 
-			Vector3 unproject(const Vector3 & point, int viewport[4]);
-			Vector3 project(const Vector3 & point, int viewport[4]);
+			glm::vec3 unproject(const glm::vec3 & point, int viewport[4]);
+			glm::vec3 project(const glm::vec3 & point, int viewport[4]);
 
 			/**
 			 *	Create a projection matrix.
@@ -99,12 +97,12 @@ namespace v3d::type
 			*	handed system with right +x, up +y, and direction +z.
 			*	@param new_rot the new rotation value.
 			*/
-			void rotate(const Quaternion & new_rot);
+			void rotate(const glm::quat & new_rot);
 
 		private:
-			Vector3		lookAt_;
-			Matrix4		projection_;
-			Matrix4		view_;			// viewing transformation
+			glm::vec3 lookAt_;
+			glm::mat4x4 projection_;
+			glm::mat4x4 view_;			// viewing transformation
 			CameraProfile profile_;
 	};
 

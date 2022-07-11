@@ -5,16 +5,15 @@
 
 #pragma once
 
-#include "Vector3.h"
+#include <glm/glm.hpp>
+
 //#include "Polygon.h"
 
-namespace v3d::type
-{
+namespace v3d::type {
 	/**
 	 * A class defining a 3D Axis Aligned Bounding Box.
 	 */
-	class AABBox
-	{
+	class AABBox final {
 		public:
 			AABBox();
 			~AABBox();
@@ -23,38 +22,38 @@ namespace v3d::type
 			 * Get the minimum extents of the bounding box.
 			 * @return a vector of the minimum extents of the box.
 			 */
-			Vector3	min() const;
+			glm::vec3 min() const;
 			/**
 			 * Get the maximum extents of the bounding box.
 			 * @return a vector of the maximum extents of the box.
 			 */
-			Vector3 max() const;
+			glm::vec3 max() const;
 			/**
 			 * Get the 8 vertices that compose the bounding box
 			 * @param verts an array of Vector3's to hold the 8 vertices.
 			 */
-			void vertices(Vector3 * verts) const;
+			void vertices(glm::vec3 * verts) const;
 			/**
 			 * Set the minimum extents of the bounding box.
 			 * @param v the vector containing the minimum extents.
 			 */
-			void min(const Vector3 & v);
+			void min(const glm::vec3 & v);
 			/**
 			 * Set the maximum extents of the bounding box.
 			 * @param v the vector containing the maximum extents.
 			 */
-			void max(const Vector3 & v);
+			void max(const glm::vec3 & v);
 			/**
 			 * Set the minimum and maximum extents of the bounding box.
 			 * @param min the minimum extents of the bounding box.
 			 * @param max the maximum extents of the bounding box.
 			 */
-			void extents(const Vector3 & min, const Vector3 & max);
+			void extents(const glm::vec3 & min, const glm::vec3 & max);
 			/**
 			 * Get the origin of the bounding box.
 			 * @return the origin of the bounding box.
 			 */
-			Vector3	origin() const;
+			glm::vec3 origin() const;
 
 			/**
 			 * Extend bounds to include a point.
@@ -63,14 +62,14 @@ namespace v3d::type
 			 * assumed to exist in the same coordinate space.
 			 * @param point the point to include in the bounding box.
 			 */
-			void extend(const Vector3 & point);
+			void extend(const glm::vec3 & point);
 
 			// set min & max to bound polygon
 //			void		bound(const Polygon & poly);
 
 		private:
-			Vector3		min_;
-			Vector3		max_;
+			glm::vec3 min_;
+			glm::vec3 max_;
 	};
 	
 };

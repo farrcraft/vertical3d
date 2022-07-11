@@ -5,16 +5,15 @@
 
 #pragma once
 
-#include "../type/Vector3.h"
+#include <glm/glm.hpp>
 
 namespace v3d::brep
 {
 
-	class Face
-	{
+	class Face final {
 		public:
 			Face();
-			Face(const v3d::type::Vector3 & normal, unsigned int edge);
+			Face(const glm::vec3 & normal, unsigned int edge);
 			~Face();
 
 			/*
@@ -22,13 +21,13 @@ namespace v3d::brep
 			void selected(bool sel);
 			*/
 
-			v3d::type::Vector3 normal(void) const;
-			void normal(const v3d::type::Vector3 & n);
+			glm::vec3 normal(void) const;
+			void normal(const glm::vec3 & n);
 			unsigned int edge(void) const;
 			void edge(unsigned int e);
 
 		private:
-			v3d::type::Vector3	normal_;
+			glm::vec3 normal_;
 			unsigned int edge_;
 	};
 

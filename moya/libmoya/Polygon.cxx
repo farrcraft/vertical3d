@@ -8,14 +8,12 @@
 #include "RenderContext.h"
 
 #include "../../v3dlibs/type/3dtypes.h"
-#include "../../v3dlibs/type/Matrix4.h"
 
 #include <cmath>
 #include <cassert>
 #include <iostream>
 
-using namespace v3D;
-using namespace v3D::Moya;
+using namespace v3d::moya;
 
 
 Polygon::Polygon()
@@ -28,30 +26,30 @@ Polygon::~Polygon()
 
 void Polygon::addVertex(Vertex vert)
 {
-	_vertices.push_back(vert);
+	vertices_.push_back(vert);
 }
 
-unsigned int Polygon::vertexCount(void) const
+size_t Polygon::vertexCount(void) const
 {
-	return _vertices.size();
+	return vertices_.size();
 }
 
-Vertex Polygon::vertex(unsigned int idx) const
+Vertex Polygon::vertex(size_t idx) const
 {
-	assert(idx < _vertices.size());
-	return _vertices[idx];
+	assert(idx < vertices_.size());
+	return vertices_[idx];
 }
 
-void Polygon::removeVertex(unsigned int idx)
+void Polygon::removeVertex(size_t idx)
 {
-	assert(idx < _vertices.size());
-	_vertices.erase(_vertices.begin() + idx);
+	assert(idx < vertices_.size());
+	vertices_.erase(vertices_.begin() + idx);
 }
 
-Vertex & Polygon::operator [] (unsigned int idx)
+Vertex & Polygon::operator [] (size_t idx)
 {
-	assert(idx < _vertices.size());
-	return _vertices[idx];
+	assert(idx < vertices_.size());
+	return vertices_[idx];
 }
 
 // return an object space bound of the polygon
@@ -59,20 +57,20 @@ v3d::type::AABBox Polygon::bound(void) const
 {
 	v3d::type::AABBox bound;
 
-	if (_vertices.size() == 0)
+	if (vertices_.size() == 0)
 	{
 		return bound;
 	}
 	/*
 		move over each vertex and record min/max
 	*/
-	std::vector<Vertex>::const_iterator it = _vertices.begin();
-	v3d::type::Vector3 min, max;
-	min = _vertices[0].point();
+	std::vector<Vertex>::const_iterator it = vertices_.begin();
+	glm::vec3 min, max;
+	min = vertices_[0].point();
 	max = min;
 	//log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("v3d.moya"));
 	//LOG4CXX_DEBUG(logger, "poly bounds based on - ");
-	for (; it != _vertices.end(); it++)
+	for (; it != vertices_.end(); it++)
 	{
 //		std::cerr << " v = " << (*it).point();
 		if (min[0] > (*it).point()[0])
@@ -156,21 +154,21 @@ void Polygon::split(const Plane & plane, boost::shared_ptr<Polygon> p1, boost::s
 {
 	//log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("v3d.moya"));
 	// intersect each edge with the plane
-	v3d::type::Vector3 A, B, hit;
+	glm::vec3 A, B, hit;
 	int side;
 	Vertex vert;
-	int vcount;
-	for (unsigned int i = 0; i < _vertices.size(); i++)
+	size_t vcount;
+	for (unsigned int i = 0; i < vertices_.size(); i++)
 	{
-		vcount = _vertices.size();
-		A = _vertices[i].point();
+		vcount = vertices_.size();
+		A = vertices_[i].point();
 		if (i == (vcount - 1))
 		{
-			B = _vertices[0].point();
+			B = vertices_[0].point();
 		}
 		else
 		{
-			B = _vertices[i + 1].point();
+			B = vertices_[i + 1].point();
 		}
 		// classify which side of the plane A is on
 		// ...
@@ -261,23 +259,23 @@ void Polygon::split(void)
 	//log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("v3d.moya"));
 	//LOG4CXX_DEBUG(logger, "Polygon::split - splitting polygon.");
 	// calculate polygon's normal from the polygon's first two vertices
-	v3d::type::Vector3 v0, v1, n;
-	v0 = _vertices[0].point() - _vertices[1].point();
-	v1 = _vertices[2].point() - _vertices[1].point();
-	n = v1.cross(v0);
-	n.normalize();
+	glm::vec3 v0, v1, n;
+	v0 = vertices_[0].point() - vertices_[1].point();
+	v1 = vertices_[2].point() - vertices_[1].point();
+	n = glm::normalize(glm::cross(v1, v0));
+
 	// calculate plane's normal
-	v3d::type::Vector3 pn;
-	pn = n.cross(v0);
-	pn.normalize();
+	glm::vec3 pn;
+	pn = glm::normalize(glm::cross(n, v0));
 
 //	std::cerr << "Polygon::split - poly normal = " << n << " plane normal = " << pn << std::endl;
 
 	// find a point on the plane
 	v3d::type::AABBox bounds;
-	v3d::type::Vector3 mp, pop;
+	glm::vec3 mp, pop;
 	bounds = bound();
-	mp = (bounds.max() - bounds.min()) / 2.0;
+	mp = (bounds.max() - bounds.min());
+	mp /= 2.0;
 	pop = bounds.min() + mp;
 //	std::cerr << "Polygon::split - midpoint = " << mp << " point on plane = " << pop << std::endl;
 
@@ -296,8 +294,7 @@ void Polygon::split(void)
 	split(plane, p1, p2);
 	
 	// calculate normal for 2nd plane to split against
-	pn = n.cross(pn);
-	pn.normalize();
+	pn = glm::normalize(glm::cross(n, pn));
 
 //	std::cerr << "Polygon::split - plane normal 2 = " << pn << std::endl;
 
@@ -412,18 +409,18 @@ bool Polygon::dice(boost::shared_ptr<MicroPolygonGrid> grid, unsigned int grid_s
 //	unsigned int size = static_cast<unsigned int>(sqrt(RenderEngine::instance().gridSize()));
 	// the eye space bound of the poly
 	v3d::type::AABBox bounds = bound();	
-	v3d::type::Vector3 bound_min = bounds.min();
-	v3d::type::Vector3 bound_max = bounds.max();
+	glm::vec3 bound_min = bounds.min();
+	glm::vec3 bound_max = bounds.max();
 	// get the size of each micropoly
 	float offset_x = (bound_max[0] - bound_min[0]) / grid_size;
 	float offset_y = (bound_max[1] - bound_min[1]) / grid_size;
 	/*
 		convert the eye space bound to screen space
 	*/
-	v3d::type::Matrix4 screen = rc->coordinateSystem("screen");//RenderEngine::instance().activeRenderContext().coordinateSystem("screen");
+	glm::mat4x4 screen = rc->coordinateSystem("screen");//RenderEngine::instance().activeRenderContext().coordinateSystem("screen");
 	screen *= rc->coordinateSystem("raster"); //RenderEngine::instance().activeRenderContext().coordinateSystem("raster");
-	bound_min = screen * bound_min;
-	bound_max = screen * bound_max;
+	bound_min = glm::vec3(screen * glm::vec4(bound_min, 1.0f));
+	bound_max = glm::vec3(screen * glm::vec4(bound_max, 1.0f));
 
 	// screen transform might've flipped some components of min & max
 	if (bound_min[0] > bound_max[0])
@@ -477,7 +474,7 @@ bool Polygon::dice(boost::shared_ptr<MicroPolygonGrid> grid, unsigned int grid_s
 		empty[idx] = false;
 	}
 
-	for (idx = 0; idx < _vertices.size(); idx++)
+	for (idx = 0; idx < vertices_.size(); idx++)
 	{
 		
 	}

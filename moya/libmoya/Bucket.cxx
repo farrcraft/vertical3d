@@ -1,8 +1,13 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
 #include "Bucket.h"
 
 #include <iostream>
 
-using namespace v3D::Moya;
+using namespace v3d::moya;
 
 Bucket::Bucket()
 {

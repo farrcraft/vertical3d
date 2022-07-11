@@ -7,8 +7,7 @@
 #include <string>
 #include <string.h>
 
-using namespace v3D;
-using namespace v3D::Moya;
+using namespace v3d::moya;
 
 
 Renderer _renderer;
@@ -779,7 +778,7 @@ RtVoid RiPolygon(RtInt nverts, ...)
 			RtPoint *points = (RtPoint*)p;
 			for (int i = 0; i < nverts; i++)
 			{
-				v.point(v3d::type::Vector3(points[i][0], points[i][1], points[i][2]));
+				v.point(glm::vec3(points[i][0], points[i][1], points[i][2]));
 				poly->addVertex(v);
 			}
 		}

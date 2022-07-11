@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../type/Vector3.h"
+#include <glm/glm.hpp>
 
 #include <string>
 
@@ -29,8 +29,8 @@ namespace v3d::audio {
 			unsigned int buffer_;
 			unsigned int source_;
 
-			v3d::type::Vector3 position_;
-			v3d::type::Vector3 velocity_;
+			glm::vec3 position_;
+			glm::vec3 velocity_;
 	};
 
 };

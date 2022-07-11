@@ -5,28 +5,26 @@
 
 #pragma once
 
-#include "../type/Vector3.h"
+#include <glm/glm.hpp>
 
-namespace v3d::brep
-{
+namespace v3d::brep {
 
-	class Vertex
-	{
+	class Vertex final {
 		public:
 			Vertex();
-			Vertex(const v3d::type::Vector3 & p);
+			Vertex(const glm::vec3 & p);
 			~Vertex();
 
 			bool operator == (const Vertex & v);
-			bool operator == (const v3d::type::Vector3 & v);
+			bool operator == (const glm::vec3& v);
 
 			unsigned int edge(void) const;
 			void edge(unsigned int e);
-			v3d::type::Vector3 point(void) const;
-			void point(const v3d::type::Vector3 & p);
+			glm::vec3 point(void) const;
+			void point(const glm::vec3 & p);
 
 		private:
-			v3d::type::Vector3	point_;
+			glm::vec3 point_;
 			unsigned int edge_;
 	};
 

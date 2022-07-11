@@ -9,28 +9,20 @@
 
 #include "MicroPolygon.h"
 
-namespace v3D
-{
-
-	namespace Moya
+namespace v3d::moya {
+	// a grid of micropolygons
+	// micropolygon vertices are shared
+	class MicroPolygonGrid
 	{
+		public:
+			MicroPolygonGrid();
+			~MicroPolygonGrid();
 
-		// a grid of micropolygons
-		// micropolygon vertices are shared
-		class MicroPolygonGrid
-		{
-			public:
-				MicroPolygonGrid();
-				~MicroPolygonGrid();
+			Vertex			vertex(unsigned int i, unsigned int j) const;
+			MicroPolygon	microPolygon(unsigned int i, unsigned int j) const;
+			void 			addVertex(const Vertex & vert, unsigned int i, unsigned int j);
 
-				Vertex			vertex(unsigned int i, unsigned int j) const;
-				MicroPolygon	microPolygon(unsigned int i, unsigned int j) const;
-				void 			addVertex(const Vertex & vert, unsigned int i, unsigned int j);
-
-			private:
-				std::vector< std::vector<Vertex> >	_grid;
-		};
-
-	}; // end namespace Moya
-
-}; // end namespace v3D
+		private:
+			std::vector< std::vector<Vertex> >	_grid;
+	};
+};

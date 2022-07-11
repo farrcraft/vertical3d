@@ -5,8 +5,7 @@
 
 #include "ReyesPrimitive.h"
 
-using namespace v3D;
-using namespace v3D::Moya;
+using namespace v3d::moya;
 
 ReyesPrimitive::ReyesPrimitive()
 {

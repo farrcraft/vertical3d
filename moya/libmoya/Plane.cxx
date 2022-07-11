@@ -8,14 +8,14 @@
 #include <cmath>
 #include <cassert>
 
-using namespace v3D;
-using namespace v3D::Moya;
+using namespace v3d::moya;
+
 
 Plane::Plane()
 {
 }
 
-Plane::Plane(const v3d::type::Vector3 & A, const v3d::type::Vector3 & B, const v3d::type::Vector3 & C)
+Plane::Plane(const glm::vec3 & A, const glm::vec3 & B, const glm::vec3 & C)
 {
 	calculate(A, B, C);
 }
@@ -27,17 +27,17 @@ Plane::~Plane()
 void Plane::normalize(void)
 {
 	float mag;
-	mag = std::sqrt(_equation[0] * _equation[0] + _equation[1] * _equation[1] + _equation[2] * _equation[2]);
-	_equation[0] /= mag;
-	_equation[1] /= mag;
-	_equation[2] /= mag;
-	_equation[3] /= mag;
+	mag = std::sqrt(equation_[0] * equation_[0] + equation_[1] * equation_[1] + equation_[2] * equation_[2]);
+	equation_[0] /= mag;
+	equation_[1] /= mag;
+	equation_[2] /= mag;
+	equation_[3] /= mag;
 }
 
-void Plane::set(const v3d::type::Vector3 & n, float d)
+void Plane::set(const glm::vec3 & n, float d)
 {
-	_normal = n;
-	_distance = d;
+	normal_ = n;
+	distance_ = d;
 }
 
 /*
@@ -57,36 +57,35 @@ void Plane::set(const v3d::type::Vector3 & n, float d)
 			distance value. any point (x,y,z) that satisfies this equation lies on
 			the plane
 */
-void Plane::calculate(const v3d::type::Vector3 & A, const v3d::type::Vector3 & B, const v3d::type::Vector3 & C)
+void Plane::calculate(const glm::vec3 & A, const glm::vec3 & B, const glm::vec3 & C)
 {
-	_normal = (B - A).cross(C - A); // normal = AB*AC
-	_normal.normalize();
-	_distance = _normal * A;
+	normal_ = glm::normalize(glm::cross((B - A), (C - A))); // normal = AB*AC
+	distance_ = glm::dot(normal_, A);
 }
 
 // tested - seems ok
-void Plane::calculate(const v3d::type::Vector3 & normal, const v3d::type::Vector3 & point)
+void Plane::calculate(const glm::vec3 & normal, const glm::vec3 & point)
 {
-	_normal = normal;
-	_distance = (_normal * point);
-	_equation[0] = _normal[0];
-	_equation[1] = _normal[1];
-	_equation[2] = _normal[2];
-	_equation[3] = -(_normal[0] * point[0] + _normal[1] * point[1] + _normal[2] * point[2]);
+	normal_ = normal;
+	distance_ = glm::dot(normal_, point);
+	equation_[0] = normal_[0];
+	equation_[1] = normal_[1];
+	equation_[2] = normal_[2];
+	equation_[3] = -(normal_[0] * point[0] + normal_[1] * point[1] + normal_[2] * point[2]);
 }
 
-float Plane::distance(const v3d::type::Vector3 & point) const
+float Plane::distance(const glm::vec3 & point) const
 {
-	return _equation[0] * point[0] + _equation[1] * point[1] + _equation[2] * point[2] + _equation[3];
-//	return ((_normal * point) - _distance);
+	return equation_[0] * point[0] + equation_[1] * point[1] + equation_[2] * point[2] + equation_[3];
+//	return ((normal_ * point) - distance_);
 }
 
 // tested - seems ok
 // classifies whether a point is on either side of the plane or on the plane itself.
-int Plane::classify(const v3d::type::Vector3 & point) const
+int Plane::classify(const glm::vec3 & point) const
 {
-//	return !((_normal * point) > _distance);
-//	float d = _equation[A] * point.x() + _equation[B] * point.y() + _equation[C] * point.z() + _equation[D];
+//	return !((normal_ * point) > distance_);
+//	float d = equation_[A] * point.x() + equation_[B] * point.y() + equation_[C] * point.z() + equation_[D];
 	
 //	float d = distance(point);
 	//d = _plane[0] * point[0] + _plane[1] * point[2] + _plane[2] * point[2] + _plane[3];
@@ -95,14 +94,14 @@ int Plane::classify(const v3d::type::Vector3 & point) const
 	Ax + By + Cz = -D
 	*/
 	/*
-	float numer = (_normal * point) + _distance;
-	float denom = (_normal * 
+	float numer = (normal_ * point) + distance_;
+	float denom = (normal_ * 
 	*/
 	float dist;
-	//dist = -(_normal[0] * point[0] + _normal[1] * point[1] + _normal[2] * point[2]);
-	//dist = (_normal * point) - _distance;
+	//dist = -(normal_[0] * point[0] + normal_[1] * point[1] + normal_[2] * point[2]);
+	//dist = (normal_ * point) - distance_;
 	
-	dist = (_equation[0] * point[0] + _equation[1] * point[1] + _equation[2] * point[2] + _equation[3]);
+	dist = (equation_[0] * point[0] + equation_[1] * point[1] + equation_[2] * point[2] + equation_[3]);
 
 	if (dist < 0.0)
 	{
@@ -121,7 +120,7 @@ int Plane::classify(const v3d::type::Vector3 & point) const
 */
 int Plane::classify(const v3d::type::AABBox & aabb) const
 {
-	v3d::type::Vector3 corners[8];
+	glm::vec3 corners[8];
 	aabb.vertices(corners);
 	int inside = 8; // start with all 8 points inside
 	for (unsigned int i = 0; i < 8; i++)
@@ -147,7 +146,7 @@ int Plane::classify(const v3d::type::AABBox & aabb) const
 float & Plane::operator [] (unsigned int i)
 {
 	assert(i < 4);
-	return _equation[i];
+	return equation_[i];
 }
 
 
@@ -162,12 +161,12 @@ void Plane::clip(boost::shared_ptr<Polygon> poly)
 {
 	boost::shared_ptr<Polygon> clippedPoly(new Polygon);
 	Vertex s, p, i;
-	v3d::type::Vector3 hit;
-	unsigned int nverts;
+	glm::vec3 hit;
+	size_t nverts;
 	 
 	nverts = poly->vertexCount();
 	s = poly->vertex(nverts - 1); // start with last vertex
-	for (unsigned int j = 0; j < nverts; j++)
+	for (size_t j = 0; j < nverts; j++)
 	{
 		p = poly->vertex(j);
 		/*
@@ -217,14 +216,14 @@ void Plane::clip(boost::shared_ptr<Polygon> poly)
 }
 
 // ray intersection test
-bool Plane::intersect(const v3d::type::Vector3 & start, const v3d::type::Vector3 & direction, v3d::type::Vector3 & hitPoint) const
+bool Plane::intersect(const glm::vec3 & start, const glm::vec3 & direction, glm::vec3 & hitPoint) const
 {
-	float denom = _normal * direction;
+	float denom = glm::dot(normal_, direction);
 	if (denom == 0.0) // ray and plane are parallel
 	{
 		return false;
 	}
-	float tval = (_distance - (_normal * start)) / denom;
+	float tval = (distance_ - (glm::dot(normal_, start))) / denom;
 	if (tval >= 0.0) // intersection isn't behind ray
 	{
 		hitPoint = start + direction * tval;
@@ -234,15 +233,15 @@ bool Plane::intersect(const v3d::type::Vector3 & start, const v3d::type::Vector3
 }
 
 // tested - seems ok
-bool Plane::intersectEdge(const v3d::type::Vector3 & A, const v3d::type::Vector3 & B, v3d::type::Vector3 & hitPoint) const
+bool Plane::intersectEdge(const glm::vec3 & A, const glm::vec3 & B, glm::vec3 & hitPoint) const
 {
-	v3d::type::Vector3 direction = B - A;
-	float denom = _normal * direction; // dot product
+	glm::vec3 direction = B - A;
+	float denom = glm::dot(normal_, direction);
 	if (denom == 0.0)
 	{
 		return false;
 	}
-	float tval = (_distance - (_normal*A)) / denom;
+	float tval = (distance_ - (glm::dot(normal_, A))) / denom;
 	if (tval >= 0.0 && tval <= 1.0)
 	{
 		hitPoint = A + (direction * tval);

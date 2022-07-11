@@ -11,12 +11,7 @@
 
 #include <vector>
 
-namespace v3D
-{
-
-	namespace Moya
-	{
-
+namespace v3d::moya {
 		/*
 			the screen space to be rendered is broken down into a grid of tiles (buckets).
 			as geometry is converted to micropolygon grids it is placed in the appropriate 
@@ -26,24 +21,19 @@ namespace v3D
 			all buckets are the same size, configurable at render time.
 			the render context is responsible for the bucket size
 		*/
-		class Bucket
-		{
+		class Bucket final {
 			public:
 				Bucket();
 				~Bucket();
 				
-				void 	addPrimitive(boost::shared_ptr<ReyesPrimitive> primitive);
-				void	render(void);
+				void addPrimitive(boost::shared_ptr<ReyesPrimitive> primitive);
+				void render(void);
 	
 			private:
-				unsigned int						_left;		// left edge of this bucket in pixel coordinates
-				unsigned int						_top;		// top edge of this bucket in pixel coordinates
+				unsigned int _left;		// left edge of this bucket in pixel coordinates
+				unsigned int _top;		// top edge of this bucket in pixel coordinates
 				std::vector<boost::shared_ptr<ReyesPrimitive> >	_primitives;// list of primitives in this bucket
 	
 				std::vector<boost::shared_ptr<MicroPolygonGrid> >	_grids;
 		};
-
-	}; // end namespace Moya
-
-}; // end namespace v3D
-
+};

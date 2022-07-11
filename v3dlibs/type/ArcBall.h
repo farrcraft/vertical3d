@@ -5,31 +5,28 @@
 
 #pragma once
 
-#include "Vector2.h"
-#include "Vector3.h"
-#include "Quaternion.h"
+#include <glm/glm.hpp>
+#include <glm/ext/quaternion_float.hpp>
 
-namespace v3d::type
-{
+namespace v3d::type {
 	/**
 	 * ArcBall camera rotation utility.
 	 */
-	class ArcBall
-	{
+	class ArcBall final {
 		public:
 			ArcBall();
 			~ArcBall();
 
-			void click(const Vector2 & point);
-			Quaternion drag(const Vector2 & point);
-			Vector3 map(const Vector2 & new_point);
+			void click(const glm::vec2 & point);
+			glm::quat drag(const glm::vec2 & point);
+			glm::vec3 map(const glm::vec2 & new_point);
 			void bounds(float width, float height);
 
 		private:	
-			Vector3		start_;
-			Vector3		end_;
-			float		width_;
-			float		height_;
+			glm::vec3 start_;
+			glm::vec3 end_;
+			float width_;
+			float height_;
 	};
 
 };

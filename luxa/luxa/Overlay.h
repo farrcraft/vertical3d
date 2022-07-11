@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "../../v3dlibs/type/Color3.h"
+#include <glm/glm.hpp>
 
 namespace Luxa
 {
@@ -18,8 +18,7 @@ namespace Luxa
 	 * renderer how to handle the background. It can be transparent (do nothing), or a normal 
 	 * background color.
 	 */
-	class Overlay
-	{
+	class Overlay {
 		public:
 			/**
 			 * Overlay Mode
@@ -43,17 +42,17 @@ namespace Luxa
 			 * Construct a color overlay with the given color
 			 * @param c the color of the overlay
 			 */
-			Overlay(const v3d::type::Color3 & c);
+			Overlay(const glm::vec3 & c);
 			/**
 			 * Set the overlay's color
 			 * @param c the new color
 			 */
-			void color(const v3d::type::Color3 & c);
+			void color(const glm::vec3 & c);
 			/**
 			 * Get the overlay's color
 			 * @return the current overlay color
 			 */
-			v3d::type::Color3 color() const;
+			glm::vec3 color() const;
 			/**
 			 * Get the overlay mode
 			 * @return the current overlay mode
@@ -62,7 +61,7 @@ namespace Luxa
 
 		private:
 			Mode mode_;
-			v3d::type::Color3 color_;
+			glm::vec3 color_;
 	};
 
 }; // end namespace Luxa

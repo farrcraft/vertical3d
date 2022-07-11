@@ -7,7 +7,7 @@
 
 #include <iostream>
 
-using namespace v3D::Moya;
+using namespace v3d::moya;
 
 
 Renderer::Renderer()

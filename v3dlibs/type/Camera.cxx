@@ -3,10 +3,12 @@
  * Copyright(c) 2021 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include "Camera.h"
+
+#include <glm/gtc/quaternion.hpp>
+
 #include <iostream>
 #include <cmath>
-
-#include "Camera.h"
 
 using namespace v3d::type;
 
@@ -32,21 +34,21 @@ based on gluUnProject
 takes a screen space coordinate and the viewport dimensions
 and returns the world space coordinate
 */
-Vector3 Camera::unproject(const Vector3 & point, int viewport[4])
+glm::vec3 Camera::unproject(const glm::vec3 & point, int viewport[4])
 {
-	Vector3 p;
+	glm::vec4 p;
 	// normalize point to range [-1, 1]
 	p[0] = (point[0] - viewport[0]) * 2.0f / viewport[2] - 1.0f;
 	// flip y so 0 is at the bottom of the viewport and viewport size is the top
 	p[1] = ((viewport[3] - point[1]) - viewport[1]) * 2.0f / viewport[3] - 1.0f;
 	p[2] = 2.0f * point[2] - 1.0f;
+	p[3] = 1.0f;
 
 	// get inverse transformation matrix
-	Matrix4 m, inv;
+	glm::mat4x4 m, inv;
 	m = projection() * view();
-	inv = m;
-	inv.inverse();
-	float w = inv[12] * p[0] + inv[13] * p[1] + inv[14] * p[2] + inv[15];
+	inv = glm::inverse(m);
+	float w = inv[0][3] * p[0] + inv[1][3] * p[1] + inv[2][3] * p[2] + inv[3][3];
 
 	return ((inv * p) / w);
 }
@@ -56,10 +58,10 @@ based on gluProject
 takes a world space coordinate and the viewport dimensions
 returns the screen space coordinate
 */
-Vector3 Camera::project(const Vector3 & point, int viewport[4])
+glm::vec3 Camera::project(const glm::vec3 & point, int viewport[4])
 {
-	Vector3 p;
-	p = view() * point;
+	glm::vec4 p;
+	p = view() * glm::vec4(point, 1.0f);
 	p = projection() * p;
 
 	p[0] = viewport[0] + (1.0f + p[0]) * viewport[2] / 2.0f;
@@ -97,7 +99,7 @@ void Camera::createProjection() // active scene bound
 		*/
 		// gluPerspective part
 		float xmin, xmax, ymin, ymax;
-		ymax = profile_.near_ * tan(profile_.fov_ * PI / 360.0f);
+		ymax = profile_.near_ * tan(profile_.fov_ * glm::pi<float>() / 360.0f);
 		ymin = -ymax;
 		xmin = ymin * aspect;
 		xmax = ymax * aspect;
@@ -114,22 +116,22 @@ void Camera::createProjection() // active scene bound
 		float C = -(profile_.far_ + profile_.near_) / (profile_.far_ - profile_.near_);
 		float D = -(2.0f * profile_.far_ * profile_.near_) / (profile_.far_ - profile_.near_);
 
-		projection_[0] = x;
-		projection_[1] = 0.0f;
-		projection_[2] = A;
-		projection_[3] = 0.0f;
-		projection_[4] = 0.0f;
-		projection_[5] = y;
-		projection_[6] = B;
-		projection_[7] = 0.0f;
-		projection_[8] = 0.0f;
-		projection_[9] = 0.0f;
-		projection_[10] = C;
-		projection_[11] = D;
-		projection_[12] = 0.0f;
-		projection_[13] = 0.0f;
-		projection_[14] = -1.0f;
-		projection_[15] = 0.0f;
+		projection_[0][0] = x;
+		projection_[1][0] = 0.0f;
+		projection_[2][0] = A;
+		projection_[3][0] = 0.0f;
+		projection_[0][1] = 0.0f;
+		projection_[1][1] = y;
+		projection_[2][1] = B;
+		projection_[3][1] = 0.0f;
+		projection_[0][2] = 0.0f;
+		projection_[1][2] = 0.0f;
+		projection_[2][2] = C;
+		projection_[3][2] = D;
+		projection_[0][3] = 0.0f;
+		projection_[1][3] = 0.0f;
+		projection_[2][3] = -1.0f;
+		projection_[3][3] = 0.0f;
 	}
 	else // orthographic
 	{
@@ -163,41 +165,41 @@ void Camera::createProjection() // active scene bound
 		float ty = -(top + bottom) / (top - bottom);
 		float tz = -(far_val + near_val) / (far_val - near_val);
 
-		projection_[0] = 2.0f / (right - left);
-		projection_[1] = 0.0f;
-		projection_[2] = 0.0f;
-		projection_[3] = tx;
-		projection_[4] = 0.0f;
-		projection_[5] = 2.0f / (top - bottom);
-		projection_[6] = 0.0f;
-		projection_[7] = ty;
-		projection_[8] = 0.0f;
-		projection_[9] = 0.0f;
-		projection_[10] = -2.0f / (far_val - near_val);
-		projection_[11] = tz;
-		projection_[12] = 0.0f;
-		projection_[13] = 0.0f;
-		projection_[14] = 0.0f;
-		projection_[15] = 1.0f;
+		projection_[0][0] = 2.0f / (right - left);
+		projection_[1][0] = 0.0f;
+		projection_[2][0] = 0.0f;
+		projection_[3][0] = tx;
+		projection_[0][1] = 0.0f;
+		projection_[1][1] = 2.0f / (top - bottom);
+		projection_[2][1] = 0.0f;
+		projection_[3][1] = ty;
+		projection_[0][2] = 0.0f;
+		projection_[1][2] = 0.0f;
+		projection_[2][2] = -2.0f / (far_val - near_val);
+		projection_[3][2] = tz;
+		projection_[0][3] = 0.0f;
+		projection_[1][3] = 0.0f;
+		projection_[2][3] = 0.0f;
+		projection_[3][3] = 1.0f;
 	}
 }
 
 void Camera::createView()
 {
 	// set viewing matrix
-	view_.identity();
-	Vector3 e = -profile_.eye_;
+	view_ = glm::mat4(1.0f); // identity
+	glm::vec3 e = -profile_.eye_;
 	if (orthographic())
 	{
 		// normally for the camera rotation we'd want the inverse
 		// the inverse of a pure rotation matrix should also be the transpose
-		view_ = profile_.rotation_.matrix().transpose();
-		view_.translate(e[0], e[1], e[2]);
+		view_ = glm::transpose(glm::mat4_cast(profile_.rotation_));
+		view_ = glm::translate(view_, e);
 	}
 	else
 	{
-		Matrix4 rot = profile_.rotation_.matrix().transpose();
-		view_.translate(e[0], e[1], e[2]);
+		glm::mat4x4 rot = glm::transpose(glm::mat4_cast(profile_.rotation_));
+		view_ = glm::translate(view_, e);
 		view_ *= rot;
 	}
 }
@@ -209,10 +211,10 @@ void Camera::createView()
 */
 void Camera::pan(float angle)
 {
-	Vector3 axis(0.0, 1.0, 0.0);
-	Quaternion local_rotation;
-	local_rotation.rotation(axis, angle);
-	Quaternion total;
+	glm::vec3 axis(0.0, 1.0, 0.0);
+	glm::quat local_rotation;
+	local_rotation = glm::rotate(local_rotation, angle, axis);
+	glm::quat total;
 	total = profile_.rotation_;
 	total = total * local_rotation;
 	profile_.rotation_ = total;
@@ -223,10 +225,10 @@ void Camera::pan(float angle)
 */
 void Camera::tilt(float angle)
 {
-	Vector3 axis(1.0, 0.0, 0.0);
-	Quaternion local_rotation;
-	local_rotation.rotation(axis, angle);
-	Quaternion total;
+	glm::vec3 axis(1.0, 0.0, 0.0);
+	glm::quat local_rotation;
+	local_rotation = glm::rotate(local_rotation, angle, axis);
+	glm::quat total;
 	total = profile_.rotation_;
 	total = total * local_rotation;
 	profile_.rotation_ = total;
@@ -239,7 +241,7 @@ void Camera::tilt(float angle)
 */
 void Camera::dolly(float d)
 {
-	Vector3 ed = profile_.direction_ * d;
+	glm::vec3 ed = profile_.direction_ * d;
 	profile_.eye_ += ed;
 }
 
@@ -250,7 +252,7 @@ void Camera::dolly(float d)
 */
 void Camera::truck(float delta)
 {
-	Vector3 ed = profile_.right_ * delta;
+	glm::vec3 ed = profile_.right_ * delta;
 	profile_.eye_ += ed;
 }
 
@@ -268,16 +270,16 @@ void Camera::zoom(float z)
 */
 void Camera::pedestal(float delta)
 {
-	Vector3 ed = profile_.up_ * delta;
+	glm::vec3 ed = profile_.up_ * delta;
 	profile_.eye_ += ed;
 }
 
-Matrix4 Camera::view() const
+glm::mat4x4 Camera::view() const
 {
 	return view_;
 }
 
-Matrix4 Camera::projection() const
+glm::mat4x4 Camera::projection() const
 {
 	return projection_;
 }
@@ -303,7 +305,7 @@ float Camera::orthoFactor()
 	return factor;
 }
 
-void Camera::rotate(const Quaternion & new_rot)
+void Camera::rotate(const glm::quat & new_rot)
 {
 	if (new_rot[0] != 0.0 && new_rot[1] != 0.0 && new_rot[2] != 0.0 && new_rot[3] != 0.0)
 	{

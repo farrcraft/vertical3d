@@ -9,8 +9,7 @@
 #include <cassert>
 #include <iostream>
 
-using namespace v3D;
-using namespace v3D::Moya;
+using namespace v3d::moya;
 
 FrameBuffer::FrameBuffer(unsigned int bucketSize[2], unsigned int imageSize[2]) 
 /* : 
@@ -57,7 +56,7 @@ unsigned int * FrameBuffer::imageSize() const
 void FrameBuffer::addPrimitive(const boost::shared_ptr<ReyesPrimitive> & primitive, const v3d::type::AABBox & bound)
 {
 	// bound should be in raster space
-	v3d::type::Vector3 min = bound.min();
+	glm::vec3 min = bound.min();
 	// get the upper left corner of the bound and stick it in the corresponding bucket
 	unsigned int i = static_cast<unsigned int>(min[0]) / _bucketSize[0];
 	unsigned int j = static_cast<unsigned int>(min[1]) / _bucketSize[1];

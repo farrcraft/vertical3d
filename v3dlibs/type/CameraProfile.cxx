@@ -3,10 +3,12 @@
  * Copyright(c) 2021 Joshua Farr(josh@farrcraft.com)
 **/
 
+#include "CameraProfile.h"
+
+#include <glm/gtc/quaternion.hpp>
+
 #include <iostream>
 #include <cmath>
-
-#include "CameraProfile.h"
 
 using namespace v3d::type;
 
@@ -29,22 +31,22 @@ CameraProfile::~CameraProfile()
 }
 
 
-void CameraProfile::lookat(const Vector3 & center)
+void CameraProfile::lookat(const glm::vec3 & center)
 {
-	Vector3 x, y, z;
+	glm::vec3 x, y, z;
 
 	// new direction vector
 	z = center - eye_;
-	z.normalize();
+	z = glm::normalize(z);
 	// start with original up vector
 	y = up_;
 
 	// normal of yz plane is new right vector
-	x = y.cross(z);
-	x.normalize();
+	x = glm::cross(y, z);
+	x = glm::normalize(x);
 	// normal of the xy plane is the new up vector
-	y = z.cross(x);
-	y.normalize();
+	y = glm::cross(z, x);
+	y = glm::normalize(y);
 
 	/*
 		[  0,  1,  2,  3 ]
@@ -55,26 +57,33 @@ void CameraProfile::lookat(const Vector3 & center)
 		x = [ 0, 1, 2  ] = right
 		y = [ 4, 5, 6  ] = up
 		z = [ 8, 9, 10 ] = direction
-	*/
-	Matrix4 m;
-	m[0] = x[0];
-	m[1] = x[1];
-	m[2] = x[2];
-	m[3] = 0.0;
-	m[4] = y[0];
-	m[5] = y[1];
-	m[6] = y[2];
-	m[7] = 0.0;
-	m[8] = z[0];
-	m[9] = z[1];
-	m[10] = z[2];
-	m[11] = 0.0;
-	m[12] = 0.0;
-	m[13] = 0.0;
-	m[14] = 0.0;
-	m[15] = 1.0;
 
-	rotation_ = Quaternion(m);
+		glm (column-major ordering):
+		[  0,  4,  8,  12 ]
+		[  1,  5,  9,  13 ]
+		[  2,  6, 10,  14 ]
+		[  3,  7, 11,  15 ]
+	*/
+	glm::mat4x4 m;
+
+	m[0][0] = x[0];
+	m[1][0] = x[1];
+	m[2][0] = x[2];
+	m[3][0] = 0.0;
+	m[0][1] = y[0];
+	m[1][1] = y[1];
+	m[2][1] = y[2];
+	m[3][1] = 0.0;
+	m[0][2] = z[0];
+	m[1][2] = z[1];
+	m[2][2] = z[2];
+	m[3][2] = 0.0;
+	m[0][3] = 0.0;
+	m[1][3] = 0.0;
+	m[2][3] = 0.0;
+	m[3][3] = 1.0;
+
+	rotation_ = glm::quat_cast(m);
 	up_ = y;
 	direction_ = z;
 	right_ = x;
@@ -102,7 +111,7 @@ CameraProfile & CameraProfile::operator = (const CameraProfile & p)
 	return *this;
 }
 
-void CameraProfile::eye(const Vector3 & position)
+void CameraProfile::eye(const glm::vec3 & position)
 {
 	eye_ = position;
 }

@@ -15,16 +15,16 @@ Overlay::Overlay(Mode m) : mode_(m)
 {
 }
 
-Overlay::Overlay(const v3d::type::Color3 & c) : color_(c), mode_(MODE_COLOR)
+Overlay::Overlay(const glm::vec3 & c) : color_(c), mode_(MODE_COLOR)
 {
 }
 
-void Overlay::color(const v3d::type::Color3 & c)
+void Overlay::color(const glm::vec3 & c)
 {
 	color_  = c;
 }
 
-v3d::type::Color3 Overlay::color() const
+glm::vec3 Overlay::color() const
 {
 	return color_;
 }

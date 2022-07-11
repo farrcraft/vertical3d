@@ -29,8 +29,8 @@ namespace v3d::audio {
 		private:
 			std::map<std::string, AudioClip> sounds_;
 
-			v3d::type::Vector3 listenerPosition_;
-			v3d::type::Vector3 listenerVelocity_;
+			glm::vec3 listenerPosition_;
+			glm::vec3 listenerVelocity_;
 	};
 
 };

@@ -16,3 +16,11 @@ In the current iteration, everything is being moved into a monorepo, both build 
 entirely replaced with CMake, namespaces are being more granular, and code is slowly being updated
 to C++17 or newer.
 
+## glm
+
+Notes on replacing old v3dtypes with glm...
+
+I think we can get rid of the Color3 & Color4 types also...
+
+glm matrices are column-major order
+The [] operator on the matrix type returns a column vector

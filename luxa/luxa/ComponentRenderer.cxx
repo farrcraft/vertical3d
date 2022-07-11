@@ -63,7 +63,7 @@ void ComponentRenderer::prepare()
 {
 	if (overlay_.mode() == Overlay::MODE_COLOR)
 	{
-		v3d::type::Color3 overlay_color = overlay_.color();
+		glm::vec3 overlay_color = overlay_.color();
 		glClearColor(overlay_color[0], overlay_color[1], overlay_color[2], 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	}

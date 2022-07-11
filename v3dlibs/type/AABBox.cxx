@@ -15,33 +15,33 @@ AABBox::~AABBox()
 {
 }
 
-Vector3 AABBox::min() const
+glm::vec3 AABBox::min() const
 {
 	return min_;
 }
 
-Vector3 AABBox::max() const
+glm::vec3 AABBox::max() const
 {
 	return max_;
 }
 
-void AABBox::min(const Vector3 & v)
+void AABBox::min(const glm::vec3& v)
 {
 	min_ = v;
 }
 
-void AABBox::max(const Vector3 & v)
+void AABBox::max(const glm::vec3& v)
 {
 	max_ = v;
 }
 
-Vector3 AABBox::origin() const
+glm::vec3 AABBox::origin() const
 {
 	return (max_ - min_);
 }
 
 
-void AABBox::vertices(Vector3 * v) const
+void AABBox::vertices(glm::vec3* v) const
 {
 	// calculate the remaining vertices of the box from the two extents.
 	v[0][0] = min_[0];
@@ -74,13 +74,13 @@ void AABBox::vertices(Vector3 * v) const
 
 
 // set min & max extents
-void AABBox::extents(const Vector3 & min, const Vector3 & max)
+void AABBox::extents(const glm::vec3 & min, const glm::vec3 & max)
 {
 	min_ = min;
 	max_ = max;
 }
 
-void AABBox::extend(const Vector3 & point)
+void AABBox::extend(const glm::vec3 & point)
 {
 	if (point[0] < min_[0])
 		min_[0] = point[0];

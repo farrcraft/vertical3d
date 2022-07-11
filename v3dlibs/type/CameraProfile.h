@@ -5,11 +5,10 @@
 
 #pragma once
 
-#include <string>
+#include <glm/glm.hpp>
+#include <glm/ext/quaternion_float.hpp>
 
-#include "Vector3.h"
-#include "Matrix4.h"
-#include "Quaternion.h"
+#include <string>
 
 namespace v3d::type
 {
@@ -24,7 +23,7 @@ namespace v3d::type
 			virtual ~CameraProfile();
 
 			void clipping(float near, float far);
-			void eye(const Vector3 & position);
+			void eye(const glm::vec3 & position);
 
 			/**
 			*	Orient the camera to look at a point in space.
@@ -32,7 +31,7 @@ namespace v3d::type
 			*	will be in the center of the view.
 			*	@param center the point in world space to focus the camera on.
 			*/
-			void lookat(const Vector3 & center);
+			void lookat(const glm::vec3 & center);
 			/**
 			*	Copy camera settings.
 			*	@param profile the camera profile to copy settings from.
@@ -57,10 +56,10 @@ namespace v3d::type
 			} CameraOptions;
 
 			std::string		name_;
-			Vector3			eye_;
-			Vector3			direction_;
-			Vector3			right_;
-			Vector3			up_;
+			glm::vec3 eye_;
+			glm::vec3 direction_;
+			glm::vec3 right_;
+			glm::vec3 up_;
 			float			orthoZoom_;
 			float			pixelAspect_;	// pixel aspect ratio w:h e.g. 4/3 = 1.33
 			float			near_;
@@ -69,7 +68,7 @@ namespace v3d::type
 			unsigned int 	options_;
 			unsigned int	size_[2];
 
-			Quaternion		rotation_;
+			glm::quat rotation_;
 	};
 
 }; // end namespace v3D

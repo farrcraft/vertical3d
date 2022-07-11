@@ -4,6 +4,9 @@
 **/
 
 #include "ArcBall.h"
+
+#include <glm/gtc/constants.hpp>
+
 #include <cmath>
 
 using namespace v3d::type;
@@ -16,10 +19,10 @@ ArcBall::~ArcBall()
 {
 }
 
-Vector3 ArcBall::map(const Vector2 & new_point)
+glm::vec3 ArcBall::map(const glm::vec2 & new_point)
 {
-	Vector3 mapped_point;
-	Vector2 point;
+	glm::vec3 mapped_point;
+	glm::vec2 point;
 	point = new_point;
 
 	// scale point to range [-1, 1]
@@ -49,26 +52,26 @@ Vector3 ArcBall::map(const Vector2 & new_point)
 	return mapped_point;
 }
 
-void ArcBall::click(const Vector2 & point)
+void ArcBall::click(const glm::vec2 & point)
 {
 	start_ = map(point);
 }
 
-Quaternion ArcBall::drag(const Vector2 & point)
+glm::quat ArcBall::drag(const glm::vec2 & point)
 {
 	end_ = map(point);
 
-	Quaternion rot;
-	Vector3 perp;
+	glm::quat rot;
+	glm::vec3 perp;
 
-	perp = start_.cross(end_);
+	perp = glm::cross(start_, end_);
 
-	if (perp.length() > EPSILON)
+	if (glm::length(perp) > glm::epsilon<float>())
 	{
 		rot[0] = perp[0];
 		rot[1] = perp[1];
 		rot[2] = perp[2];
-		rot[3] = start_.dot(end_);
+		rot[3] = glm::dot(start_, end_);
 	}
 	else
 	{

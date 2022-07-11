@@ -11,6 +11,7 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/constants.hpp>
 
 #include <cmath>
 
@@ -153,7 +154,7 @@ void Canvas::circle(size_t sides, size_t size, glm::vec3 color)
 	glm::vec4 rgba(color, 0.0f);
 	glm::vec3 p0(middle.x, middle.y, middle.z);
 	addVertex(p0, rgba);
-	float delta = 2.0f * PI / sides;
+	float delta = 2.0f * glm::pi<float>() / sides;
 	unsigned int index = 1;
 	for (size_t k = 0; k < sides; k++)
 	{

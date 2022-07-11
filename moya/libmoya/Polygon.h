@@ -13,12 +13,7 @@
 
 #include <vector>
 
-namespace v3D
-{
-
-	namespace Moya
-	{
-
+namespace v3d::moya {
 		class Plane;
 		class RenderContext;
 
@@ -28,11 +23,25 @@ namespace v3D
 				Polygon();
 				virtual ~Polygon();
 	
-				void 			addVertex(Vertex vert);
-				unsigned int	vertexCount(void) const;
-				Vertex			vertex(unsigned int idx) const;
-				void			removeVertex(unsigned int idx);
-				Vertex &		operator [] (unsigned int idx);
+				/**
+				 **/
+				void addVertex(Vertex vert);
+
+				/**
+				 **/
+				size_t vertexCount(void) const;
+
+				/**
+				 **/
+				Vertex vertex(size_t idx) const;
+
+				/**
+				 **/
+				void removeVertex(size_t idx);
+
+				/**
+				 **/
+				Vertex & operator [] (size_t idx);
 	
 				// reyes methods
 				//virtual bool 	diceable(void) const;
@@ -44,9 +53,7 @@ namespace v3D
 				void 			split(const Plane & plane, boost::shared_ptr<Polygon> p1, boost::shared_ptr<Polygon> p2);
 
 			private:
-				std::vector<Vertex>		_vertices;
+				std::vector<Vertex>	vertices_;
 		};
-	
-	}; // end namespace Moya
 
-}; // end namespace v3D
+};
