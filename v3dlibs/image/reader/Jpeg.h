@@ -8,14 +8,14 @@
 #include "../Reader.h"
 
 namespace v3d::image::reader {
+    /**
+     **/
+    class Jpeg final : public v3d::image::Reader {
+     public:
+        Jpeg(const boost::shared_ptr<v3d::core::Logger> & logger);
+        ~Jpeg() = default;
 
-	class Jpeg final : public v3d::image::Reader
-	{
-		public:
-			Jpeg() = default;
-			~Jpeg() = default;
+        virtual boost::shared_ptr<Image> read(std::string_view filename);
+    };
 
-			virtual boost::shared_ptr<Image> read(std::string_view filename);
-	};
-
-};
+};  // namespace v3d::image::reader

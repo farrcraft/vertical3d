@@ -8,12 +8,12 @@
 #include "../Writer.h"
 
 namespace v3d::image::writer {
-	class Jpeg final : public v3d::image::Writer {
-		public:
-			Jpeg() = default;
-			~Jpeg() = default;
+    class Jpeg final : public v3d::image::Writer {
+     public:
+        Jpeg(const boost::shared_ptr<v3d::core::Logger> & logger);
+        ~Jpeg() = default;
 
-			virtual bool write(std::string_view filename, const boost::shared_ptr<Image> & img);
-	};
+        virtual bool write(std::string_view filename, const boost::shared_ptr<Image> & img);
+    };
 
 };

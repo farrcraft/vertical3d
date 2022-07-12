@@ -5,53 +5,57 @@
 
 #pragma once
 
-#include "../image/Texture.h"
-
-#include <boost/shared_ptr.hpp>
+#include <stdint.h>
 
 #include <map>
 #include <string>
 
+#include <boost/shared_ptr.hpp>
+
+#include "../image/Texture.h"
+#include "../core/Logger.h"
+
 namespace v3d::font {
-	class BitmapFont {
-		public:
-			BitmapFont(const std::string & path, std::string & name);
+    class BitmapFont {
+     public:
+        BitmapFont(const std::string & path, const std::string & name, const boost::shared_ptr<v3d::core::Logger> & logger);
 
-			struct CharDescriptor {
-				unsigned short x_;
-				unsigned short y_;
-				unsigned short width_;
-				unsigned short height_;
-				short xOffset_;
-				unsigned short yOffset_;
-				unsigned short xAdvance_;
-				unsigned short page_;
-				unsigned short channel_;
-			};
+        struct CharDescriptor {
+            uint16_t x_;
+            uint16_t y_;
+            uint16_t width_;
+            uint16_t height_;
+            int16_t xOffset_;
+            uint16_t yOffset_;
+            uint16_t xAdvance_;
+            uint16_t page_;
+            uint16_t channel_;
+        };
 
-			struct Charset {
-				unsigned short lineHeight_;
-				unsigned short base_;
-				unsigned short width_;
-				unsigned short height_;
-				unsigned short pages_;
-				std::string fileName_;
-				std::map<unsigned short, CharDescriptor> chars_;
-			};
+        struct Charset {
+            uint16_t lineHeight_;
+            uint16_t base_;
+            uint16_t width_;
+            uint16_t height_;
+            uint16_t pages_;
+            std::string fileName_;
+            std::map<uint16_t, CharDescriptor> chars_;
+        };
 
-			unsigned short charsetWidth() const;
-			unsigned short charsetHeight() const;
-			unsigned short lineHeight() const;
+        uint16_t charsetWidth() const;
+        uint16_t charsetHeight() const;
+        uint16_t lineHeight() const;
 
-			CharDescriptor character(char c);
-			boost::shared_ptr<v3d::image::Texture> texture();
+        CharDescriptor character(char c);
+        boost::shared_ptr<v3d::image::Texture> texture();
 
-		protected:
-			void loadCharset(const std::string & filename);
-			bool loadTexture(const std::string & filename);
+     protected:
+        void loadCharset(const std::string & filename);
+        bool loadTexture(const std::string & filename);
 
-		private:
-			Charset charset_;
-			boost::shared_ptr<v3d::image::Texture> texture_;
-	};
-};
+     private:
+        Charset charset_;
+        boost::shared_ptr<v3d::image::Texture> texture_;
+        boost::shared_ptr<v3d::core::Logger> logger_;
+    };
+};  // namespace v3d::font

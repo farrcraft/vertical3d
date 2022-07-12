@@ -1,1 +1,1 @@
-add_library("v3dlib_core" "Scene.h" "Scene.cxx" "SceneVisitor.h" "CreatePolyCommandSet.h" "CreatePolyCommandSet.cxx")
+add_library("v3dlib_core" "Scene.h" "Scene.cxx" "SceneVisitor.h" "CreatePolyCommandSet.h" "CreatePolyCommandSet.cxx" "Logger.h" "Logger.cxx")

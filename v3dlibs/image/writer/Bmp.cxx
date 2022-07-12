@@ -4,87 +4,90 @@
  **/
 
 #include "Bmp.h"
+
+#include <cstring>
+#include <fstream>
+#include <string>
+
 #include "../BmpHeader.h"
 
-#include <fstream>
-#include <cstring>
+namespace v3d::image::writer {
+    /**
+     **/
+    Bmp::Bmp(const boost::shared_ptr<v3d::core::Logger>& logger) : Writer(logger) {
+    }
 
-using namespace v3d::image;
-using namespace v3d::image::writer;
+    bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image>& img) {
+        std::fstream file;
+        file.open(static_cast<std::string>(filename).c_str(), std::fstream::out | std::fstream::binary);
 
+        if (file.fail())
+            return false;
 
-bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image> & img) {
-	std::fstream file;
-	file.open(static_cast<std::string>(filename).c_str(), std::fstream::out | std::fstream::binary);
+        bmp_file_header fheader;
+        memset(&fheader, 0, sizeof(bmp_file_header));
 
-	if (file.fail())
-		return false;
+        fheader.type_ = 19778;
+        fheader.offset_ = sizeof(bmp_file_header) + sizeof(bmp_info_header);
+        fheader.size_ = sizeof(img->data()) + fheader.offset_;
 
-	bmp_file_header fheader;
-	memset(&fheader, 0, sizeof(bmp_file_header));
+        // write file header
+        file.write(reinterpret_cast<char*>(&fheader), sizeof(bmp_file_header));
 
-	fheader.type_ = 19778;
-	fheader.offset_ = sizeof(bmp_file_header) + sizeof(bmp_info_header);
-	fheader.size_ = sizeof(img->data()) + fheader.offset_;
+        bmp_info_header iheader;
+        memset(&iheader, 0, sizeof(bmp_info_header));
 
-	// write file header
-	file.write(reinterpret_cast<char*>(&fheader), sizeof(bmp_file_header));
+        iheader.size_ = sizeof(bmp_info_header);
+        iheader.width_ = img->width();
+        iheader.height_ = img->height();
+        iheader.bits_ = img->bpp();
+        iheader.compression_ = 0;
 
-	bmp_info_header iheader;
-	memset(&iheader, 0, sizeof(bmp_info_header));
+        int64_t width, pad;
+        width = pad = iheader.width_ * (iheader.bits_ / 8);
+        // adjust pad width to dword boundary alignment
+        while (pad % 4 != 0) {
+            pad++;
+        }
 
-	iheader.size_ = sizeof(bmp_info_header);
-	iheader.width_ = img->width();
-	iheader.height_ = img->height();
-	iheader.bits_ = img->bpp();
-	iheader.compression_ = 0;
+        unsigned int channels = img->bpp() / 8;
+        iheader.imageSize_ = img->width() * img->height() * channels;
 
-	long width, pad;
-	width = pad = iheader.width_ * (iheader.bits_ / 8);
-	// adjust pad width to dword boundary alignment
-	while (pad % 4 != 0)
-	{
-		pad++;
-	}
+        // write info header
+        file.write(reinterpret_cast<char*>(&iheader), sizeof(bmp_info_header));
 
-	unsigned int channels = img->bpp() / 8;
-	iheader.imageSize_ = img->width() * img->height() * channels;
+        // size of image data buffer including boundary padding
+        int offset = pad - width;
+        uint64_t height = iheader.height_;
+        uint64_t size = pad * height;
+        boost::shared_ptr<Image> image(new Image(size));
+        unsigned char* data = image->data();
+        unsigned char* temp = img->data();
 
-	// write info header
-	file.write(reinterpret_cast<char*>(&iheader), sizeof(bmp_info_header));
+        unsigned int k = 0;
+        for (unsigned int i = 0; i < size; i += channels) {
+            // jump over the padding at the start of a new line
+            if ((i + 1) % pad == 0) {
+                i += offset;
+            }
+            // transfer the data
+            *(data + i + 2) = *(temp + k);
+            *(data + i + 1) = *(temp + k + 1);
+            *(data + i) = *(temp + k + 2);
 
-	// size of image data buffer including boundary padding
-	int offset = pad - width;
-	unsigned long height = iheader.height_;
-	unsigned long size = pad * height;
-	boost::shared_ptr<Image> image(new Image(size));
-	unsigned char * data = image->data();
-	unsigned char * temp = img->data();
+            if (img->format() == v3d::image::Image::Format::RGBA) {
+                *(data + i + 3) = *(temp + k + 3);
+            }
+            k += channels;
+        }
 
-	unsigned int k = 0;
-	for(unsigned int i = 0; i < size; i += channels) {
-		//jump over the padding at the start of a new line
-		if((i + 1) % pad == 0) 
-		{
-			i += offset;
-		}
-		//transfer the data
-		*(data + i + 2) = *(temp + k);
-	    *(data + i + 1) = *(temp + k + 1);
-		*(data + i) = *(temp + k + 2);
+        // write image data
+        file.write(reinterpret_cast<char*>(data), size);
 
-		if (img->format() == v3d::image::Image::Format::RGBA)
-		{
-			*(data + i + 3) = *(temp + k + 3);
-		}
-		k += channels;
-	}
+        // done reading in file
+        file.close();
 
-	// write image data
-	file.write(reinterpret_cast<char*>(data), size);
+        return true;
+    }
 
-	// done reading in file
-	file.close();
-
-	return true;
-}
+};  // namespace v3d::image::writer

@@ -7,16 +7,15 @@
 
 #include "../Reader.h"
 
-namespace v3d::image::reader
-{
+namespace v3d::image::reader {
+    /**
+     **/
+    class Tga : public v3d::image::Reader {
+     public:
+        explicit Tga(const boost::shared_ptr<v3d::core::Logger> & logger);
+        ~Tga() = default;
 
-	class Tga : public v3d::image::Reader
-	{
-		public:
-			Tga() = default;
-			~Tga() = default;
+        virtual boost::shared_ptr<Image> read(std::string_view filename);
+    };
 
-			virtual boost::shared_ptr<Image> read(std::string_view filename);
-	};
-
-};
+};  // namespace v3d::image::reader

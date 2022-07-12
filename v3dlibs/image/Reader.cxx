@@ -5,9 +5,17 @@
 
 #include "Reader.h"
 
-using namespace v3d::image;
+namespace v3d::image {
+    /**
+     **/
+    Reader::Reader(const boost::shared_ptr<v3d::core::Logger>& logger) : logger_(logger) {
+    }
 
-boost::shared_ptr<Image> Reader::read(std::string_view filename) {
-	boost::shared_ptr<Image> empty_ptr;
-	return empty_ptr;
-}
+    /**
+     **/
+    boost::shared_ptr<Image> Reader::read(std::string_view filename) {
+        boost::shared_ptr<Image> empty_ptr;
+        return empty_ptr;
+    }
+
+};  // namespace v3d::image

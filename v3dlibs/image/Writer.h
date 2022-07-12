@@ -7,20 +7,24 @@
 
 #include "Image.h"
 
-#include <boost/shared_ptr.hpp>
-
 #include <string>
 
+#include <boost/shared_ptr.hpp>
+
+#include "../core/Logger.h"
+
 namespace v3d::image {
-	/**
-	 *  
-	 **/
-	class Writer {
-		public:
-			Writer() = default;
-			virtual ~Writer() = default;
+    /**
+     *  
+     **/
+    class Writer {
+     public:
+        explicit Writer(const boost::shared_ptr<v3d::core::Logger>& logger);
+        virtual ~Writer() = default;
 
-			virtual bool write(std::string_view filename, const boost::shared_ptr<Image> & img);
-	};
+        virtual bool write(std::string_view filename, const boost::shared_ptr<Image> & img);
+     protected:
+         boost::shared_ptr<v3d::core::Logger> logger_;
+    };
 
-}; 
+};  // namespace v3d::image

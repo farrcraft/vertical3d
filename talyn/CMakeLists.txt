@@ -2,6 +2,7 @@ add_executable("talyn" "src/FrameBuffer.h" "src/Framebuffer.cxx" "src/RenderCont
 	"src/XMLSceneReader.h" "src/XMLSceneReader.cxx" "src/talyn.cxx")
 
 target_link_libraries("talyn" 
+	v3dlib_core
 	v3dlib_image
 	quantumxml
 	${Boost_LIBRARIES}
