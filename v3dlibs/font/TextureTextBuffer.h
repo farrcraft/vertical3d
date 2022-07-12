@@ -61,7 +61,7 @@ namespace v3d::font {
 		private:
 			float ascender_;
 			float descender_;
-			unsigned int lineStart_;
+			size_t lineStart_;
 			glm::vec2 origin_;
 
 			// vertex data

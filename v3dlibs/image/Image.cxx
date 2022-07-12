@@ -7,21 +7,18 @@
 
 using namespace v3d::image;
 
-Image::Image() : data_(0), width_(0), height_(0), bpp_(24), format_(FORMAT_RGB)
+Image::Image() : data_(0), width_(0), height_(0), bpp_(24), format_(Format::RGB)
 {
 }
 
-Image::Image(unsigned int w, unsigned int h, unsigned int b) : width_(w), height_(h), bpp_(b)
-{
+Image::Image(unsigned int w, unsigned int h, unsigned int b) : width_(w), height_(h), bpp_(b) {
 	unsigned int bytesPerPixel	= bpp_ / 8;
 	unsigned int size = width_ * height_ * bytesPerPixel;
-	if (bytesPerPixel == 3)
-	{
-		format_ = FORMAT_RGB;
+	if (bytesPerPixel == 3) {
+		format_ = Format::RGB;
 	}
-	else if (bytesPerPixel == 4)
-	{
-		format_ = FORMAT_RGBA;
+	else if (bytesPerPixel == 4) {
+		format_ = Format::RGBA;
 	}
 	data_ = new unsigned char [size];
 	memset(data_, 0, size);
@@ -34,8 +31,7 @@ Image::Image(unsigned long len) : width_(0), height_(0), bpp_(0)
 }
 
 
-Image::~Image()
-{
+Image::~Image() {
 	delete [] data_;
 }
 
@@ -59,8 +55,7 @@ unsigned int Image::height() const
 	return height_;
 }
 
-Image::ImageFormat Image::format() const
-{
+Image::Format Image::format() const {
 	return format_;
 }
 

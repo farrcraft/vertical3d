@@ -14,10 +14,10 @@ namespace v3d::image {
 			/**
 			 * The format of the image (the number of channels)
 			 */
-			typedef enum {
-				FORMAT_RGB = 3,
-				FORMAT_RGBA = 4
-			} ImageFormat;
+			enum class Format {
+				RGB = 3,
+				RGBA = 4
+			};
 
 			Image();
 			/**
@@ -70,7 +70,7 @@ namespace v3d::image {
 			 */
 			void height(unsigned int h);
 
-			ImageFormat format() const;
+			Format format() const;
 
 			unsigned char & operator[] (unsigned int i);
 			unsigned char operator[] (unsigned int i) const;
@@ -80,7 +80,7 @@ namespace v3d::image {
 			unsigned int bpp_;		// Color Depth In Bits Per Pixel
 			unsigned int width_;
 			unsigned int height_;
-			ImageFormat format_;
+			Format format_;
 	};
 
 };

@@ -53,7 +53,7 @@ namespace Luxa
 			size_t size() const;
 
 			// use a [] operator to get individual items instead
-			boost::shared_ptr<MenuItem> & operator[](unsigned int i);
+			boost::shared_ptr<MenuItem> & operator[](size_t i);
 
 			/**
 			 * Get the active MenuItem from this menu

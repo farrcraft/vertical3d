@@ -3,8 +3,8 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include "BMPReader.h"
-#include "../BMP.h"
+#include "Bmp.h"
+#include "../BmpHeader.h"
 
 #include <fstream>
 #include <sstream>
@@ -18,21 +18,12 @@
 using namespace v3d::image;
 using namespace v3d::image::reader;
 
-
-BMPReader::BMPReader()
-{
-}
-
-BMPReader::~BMPReader()
-{
-}
-
-boost::shared_ptr<Image> BMPReader::read(const std::string & filename)
+boost::shared_ptr<Image> Bmp::read(std::string_view filename)
 {
 	BOOST_LOG_TRIVIAL(debug) << "BMPReader::read - reading file: " << filename;
 
 	std::fstream file;
-	file.open(filename.c_str(), std::fstream::in | std::fstream::binary);
+	file.open(static_cast<std::string>(filename).c_str(), std::fstream::in | std::fstream::binary);
 
 	boost::shared_ptr<Image> empty_ptr;
 

@@ -31,7 +31,7 @@
 #include <iostream>
 #include <boost/program_options.hpp>
 
-#include "../image/ImageFactory.h"
+#include "../image/Factory.h"
 
 
 int main (int argc, char *argv[])
@@ -87,7 +87,7 @@ int main (int argc, char *argv[])
 		exit(EXIT_SUCCESS);
 	}
 
-	v3d::image::ImageFactory factory;
+	v3d::image::Factory factory;
 	boost::shared_ptr<v3d::image::Image> image;
 
 	if (!silent)

@@ -6,7 +6,7 @@
 #include "TextureAtlas.h"
 
 #include "Image.h"
-#include "ImageFactory.h"
+#include "Factory.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/log/trivial.hpp>
@@ -36,7 +36,7 @@ TextureAtlas::TextureAtlas(unsigned int width, unsigned int height, unsigned int
 
 void TextureAtlas::write(const std::string & filename)
 {
-	ImageFactory factory;
+	Factory factory;
 	factory.write(filename, image_);
 }
 

@@ -90,7 +90,7 @@ http://books.google.com/books?id=bBOxUmw83jUC&pg=PA160&lpg=PA160&dq=raytracing+a
 #include "RIBReader.h"
 #include "RenderContext.h"
 
-#include "../../v3dlibs/image/ImageFactory.h"
+#include "../../v3dlibs/image/Factory.h"
 
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem/operations.hpp>
@@ -248,7 +248,7 @@ int main (int argc, char * argv[])
 		{
 			std::cout << "Writing image file: " << outfile << std::endl;
 		}
-		v3d::image::ImageFactory factory;
+		v3d::image::Factory factory;
 		if (!factory.write(outfile, image))
 		{
 			std::cout << "error writing file!" << std::endl;

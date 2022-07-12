@@ -3,7 +3,7 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include "TGAReader.h"
+#include "Tga.h"
 
 #include <fstream>
 #include <iostream>
@@ -12,15 +12,7 @@
 using namespace v3d::image;
 using namespace v3d::image::reader;
 
-TGAReader::TGAReader()
-{
-}
-
-TGAReader::~TGAReader()
-{
-}
-
-boost::shared_ptr<Image> TGAReader::read(const std::string &filename)
+boost::shared_ptr<Image> Tga::read(std::string_view filename)
 {
 	// 2 = uncompressed rgb
 	// 3 = uncompressed b&w
@@ -30,14 +22,14 @@ boost::shared_ptr<Image> TGAReader::read(const std::string &filename)
 	unsigned char header[6];							// First 6 Useful Bytes From The Header
 
 	std::fstream file;
-	file.open(filename.c_str(), std::fstream::in | std::fstream::binary);
+	file.open(static_cast<std::string>(filename).c_str(), std::fstream::in | std::fstream::binary);
 	boost::shared_ptr<Image> empty_ptr;
 	if (file.fail())
 	{
 		return empty_ptr;
 	}
 
-	int length;
+	std::streamoff length;
 	file.seekg(0, std::fstream::end);
 	length = file.tellg();
 	file.seekg(0, std::fstream::beg);

@@ -4,7 +4,7 @@
  **/
 
 #include "BitmapFont.h"
-#include "../image/ImageFactory.h"
+#include "../image/Factory.h"
 #include "../image/Texture.h"
 
 #include <boost/make_shared.hpp>
@@ -202,7 +202,7 @@ unsigned short BitmapFont::lineHeight() const {
 }
 
 bool BitmapFont::loadTexture(const std::string & filename) {
-	v3d::image::ImageFactory factory;
+	v3d::image::Factory factory;
 	boost::shared_ptr<v3d::image::Image> image;
 
 	try {

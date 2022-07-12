@@ -3,7 +3,7 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include "PNGReader.h"
+#include "Png.h"
 
 #pragma pack(push, 1)
 
@@ -16,44 +16,32 @@
 using namespace v3d::image;
 using namespace v3d::image::reader;
 
-PNGReader::PNGReader()
-{
-}
-
-PNGReader::~PNGReader()
-{
-}
-
-boost::shared_ptr<Image> PNGReader::read(const std::string & filename)
-{
+boost::shared_ptr<Image> Png::read(std::string_view filename) {
 	boost::shared_ptr<Image> empty_ptr;
 
 	// open the file
 	FILE * fp;
-	if ((fp = fopen(filename.c_str(), "rb")) == 0)
-	{
+	errno_t err = fopen_s(&fp, static_cast<std::string>(filename).c_str(), "rb");
+	if (err != 0) {
 		return empty_ptr;
 	}
 
 	// make sure it's really a png file
     png_byte sig[8];
     fread(sig, 1, 8, fp);
-    if (!png_check_sig(sig, 8))
-    {
+    if (!png_check_sig(sig, 8)) {
 		return empty_ptr;
     }
 
 	png_structp png_ptr = 0;
 	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, 0, 0, 0);
-	if (!png_ptr)
-	{
+	if (!png_ptr) {
 		return empty_ptr;
     }
 
 	png_infop info_ptr = 0;
 	info_ptr = png_create_info_struct(png_ptr);
-	if (!info_ptr)
-	{
+	if (!info_ptr) {
 		png_destroy_read_struct(&png_ptr, NULL, NULL);
 		return empty_ptr;
 	}
@@ -89,7 +77,8 @@ boost::shared_ptr<Image> PNGReader::read(const std::string & filename)
 	png_get_IHDR(png_ptr, info_ptr, &width, &height, &bpp, &colors, 0, 0, 0);
 
 	// row_bytes is the width x number of channels
-	unsigned long rowbytes, channels;
+	size_t rowbytes;
+	unsigned long channels;
 	rowbytes = png_get_rowbytes(png_ptr, info_ptr);
 	channels = png_get_channels(png_ptr, info_ptr);
 
@@ -103,8 +92,7 @@ boost::shared_ptr<Image> PNGReader::read(const std::string & filename)
 
 	// set the individual row-pointers to point at the correct offsets
 	unsigned int j = (height - 1);
-	for (unsigned int i = 0; i < height; i++)
-	{
+	for (unsigned int i = 0; i < height; i++) {
 		rowpointers[j] = data + (i * rowbytes);
 		j--;
 	}

@@ -15,14 +15,12 @@ namespace v3d::image {
 	/**
 	 *  
 	 **/
-	class ImageWriter {
+	class Reader {
 		public:
-			ImageWriter();
-			virtual ~ImageWriter();
+			Reader() = default;
+			virtual ~Reader() = default;
 
-			virtual bool write(const std::string & filename, const boost::shared_ptr<Image> & img);
-
-		private:
+			virtual boost::shared_ptr<Image> read(std::string_view filename);
 	};
 
-}; 
+};

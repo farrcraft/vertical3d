@@ -29,7 +29,7 @@ VertexBuffer::~VertexBuffer()
 	glDeleteBuffers(1, &vbo_);
 }
 
-void VertexBuffer::attribute(unsigned int position, unsigned int size, AttributeType type, unsigned int length)
+void VertexBuffer::attribute(unsigned int position, unsigned int size, AttributeType type, size_t length)
 {
 	VertexAttribute attr;
 	attr.position_ = position;
@@ -78,11 +78,9 @@ void VertexBuffer::attribute(unsigned int position, unsigned int size, Attribute
 	}
 }
 
-void VertexBuffer::indices(const std::vector<unsigned int> & data)
-{
+void VertexBuffer::indices(const std::vector<size_t> & data) {
 	indices_ = data.size();
-	if (ebo_ == 0)
-	{
+	if (ebo_ == 0) {
 		glGenBuffers(1, &ebo_);
 	}
 	GLenum usage;
@@ -103,16 +101,13 @@ void VertexBuffer::indices(const std::vector<unsigned int> & data)
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_ * sizeof(unsigned int), &data[0], usage);
 }
 
-void VertexBuffer::indices(glm::ivec3 * data, size_t count)
-{
+void VertexBuffer::indices(glm::ivec3 * data, size_t count) {
 	indices_ = count;
-	if (ebo_ == 0)
-	{
+	if (ebo_ == 0) {
 		glGenBuffers(1, &ebo_);
 	}
 	GLenum usage;
-	switch (type_)
-	{
+	switch (type_) {
 		case BUFFER_TYPE_STATIC:
 			usage = GL_STATIC_DRAW;
 			break;
@@ -129,19 +124,16 @@ void VertexBuffer::indices(glm::ivec3 * data, size_t count)
 }
 
 
-void VertexBuffer::allocate()
-{
+void VertexBuffer::allocate() {
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_);
 
 	size_t bufferSize = 0;
-	for (unsigned int i = 0; i < attributes_.size(); i++)
-	{
+	for (unsigned int i = 0; i < attributes_.size(); i++) {
 		bufferSize += attributes_[i].stride_ * attributes_[i].length_;
 	}
 
 	GLenum usage;
-	switch (type_)
-	{
+	switch (type_) {
 		case BUFFER_TYPE_STATIC:
 			usage = GL_STATIC_DRAW;
 			break;
@@ -186,7 +178,7 @@ void VertexBuffer::data4f(unsigned int attr, const std::vector<glm::vec4> & data
 void VertexBuffer::set(unsigned int attr, const float * data, size_t size)
 {
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_);
-	unsigned int offset = attributes_[attr].offset_;
+	size_t offset = attributes_[attr].offset_;
 	size_t byteSize = attributes_[attr].stride_ * size;
 	glBufferSubData(GL_ARRAY_BUFFER, offset, byteSize, data);
 }

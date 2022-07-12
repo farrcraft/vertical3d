@@ -3,20 +3,15 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include "PNGWriter.h"
+#include "Png.h"
 
 #include <png.h>
 
 #include <iostream>
 #include <cstdio>
 
+using namespace v3d::image;
 using namespace v3d::image::writer;
-
-PNGWriter::PNGWriter() {
-}
-
-PNGWriter::~PNGWriter() {
-}
 
 static void
 pngtest_warning(png_structp png_ptr, png_const_charp message) {
@@ -41,11 +36,11 @@ pngtest_error(png_structp png_ptr, png_const_charp message) {
     * actually OK in this case. */
 }
 
-bool PNGWriter::write(const std::string & filename, const boost::shared_ptr<Image> & img) {
+bool Png::write(std::string_view filename, const boost::shared_ptr<Image> & img) {
 	// open the file
 	FILE * fp;
-	if ((fp = fopen(filename.c_str(), "wb")) == 0)
-	{
+	errno_t err = fopen_s(&fp, static_cast<std::string>(filename).c_str(), "wb");
+	if (err != 0) {
 		return false;
 	}
 
@@ -54,15 +49,13 @@ bool PNGWriter::write(const std::string & filename, const boost::shared_ptr<Imag
 
 	png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 
-	if (png_ptr == NULL)
-	{
+	if (png_ptr == NULL) {
 		fclose(fp);
 		return false;
 	}
 
 	info_ptr = png_create_info_struct(png_ptr);
-	if (info_ptr == NULL)
-	{
+	if (info_ptr == NULL) {
 		fclose(fp);
 		png_destroy_write_struct(&png_ptr,  NULL);
 		return false;
@@ -70,21 +63,20 @@ bool PNGWriter::write(const std::string & filename, const boost::shared_ptr<Imag
 
 	png_init_io(png_ptr, fp);
 
-	png_set_error_fn(png_ptr, (png_voidp)filename.c_str(), pngtest_error,
+	png_set_error_fn(png_ptr, (png_voidp)static_cast<std::string>(filename).c_str(), pngtest_error,
        pngtest_warning);
 
 	png_color_8 sig_bit;
-	int bytes = img->bpp() / img->format();
+	int bytes = img->bpp() / static_cast<int>(img->format());
 	sig_bit.red = bytes;
 	sig_bit.green = bytes;
 	sig_bit.blue = bytes;
 
 	int color_type;
-	if (img->format() == Image::FORMAT_RGB) {
+	if (img->format() == Image::Format::RGB) {
 		color_type = PNG_COLOR_TYPE_RGB;
 	}
-	else if (img->format() == Image::FORMAT_RGBA)
-	{
+	else if (img->format() == Image::Format::RGBA) {
 		color_type = PNG_COLOR_TYPE_RGB_ALPHA;
 		/// if the image has an alpha channel then
 		sig_bit.alpha = bytes;
@@ -108,7 +100,7 @@ bool PNGWriter::write(const std::string & filename, const boost::shared_ptr<Imag
 
 	png_uint_32 k, height, bytes_per_pixel, width, j;
 	height = img->height();
-	bytes_per_pixel = img->format();
+	bytes_per_pixel = static_cast<int>(img->format());
 	width = img->width();
 	png_byte ** row_pointers = 0;
 	row_pointers = new png_bytep[height];

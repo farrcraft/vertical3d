@@ -11,7 +11,7 @@ void TextBuffer::addVertex(const glm::vec3 & vertex) {
 	vertices_.push_back(vertex);
 }
 
-void TextBuffer::addIndex(unsigned int index) {
+void TextBuffer::addIndex(size_t index) {
 	indices_.push_back(index);
 }
 
@@ -47,7 +47,7 @@ std::vector<glm::vec4> & TextBuffer::colors() {
 	return colors_;
 }
 
-std::vector<unsigned int> & TextBuffer::indices() {
+std::vector<size_t> & TextBuffer::indices() {
 	return indices_;
 }
 
@@ -60,7 +60,7 @@ void TextBuffer::clear() {
 	colors_.clear();
 }
 
-void TextBuffer::resize(unsigned int size) {
+void TextBuffer::resize(size_t size) {
 	vertices_.resize(size);
 	uvs_.resize(size);
 	colors_.resize(size);

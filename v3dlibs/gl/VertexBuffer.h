@@ -32,8 +32,8 @@ namespace v3d::gl {
 				unsigned int position_;
 				unsigned int size_; // components in the attribute - 1-4
 				unsigned int stride_;
-				unsigned int length_;
-				unsigned int offset_;
+				size_t length_;
+				size_t offset_;
 			} VertexAttribute;
 
 			typedef enum
@@ -53,7 +53,7 @@ namespace v3d::gl {
 			 * @param AttributeType type the type of data stored in this attribute
 			 * @param unsigned int length the number of elements stored in this attribute
 			 */
-			void attribute(unsigned int position, unsigned int size, AttributeType type, unsigned int length);
+			void attribute(unsigned int position, unsigned int size, AttributeType type, size_t length);
 
 			/**
 			 * Upload attribute data
@@ -68,7 +68,7 @@ namespace v3d::gl {
 
 			void render();
 
-			void indices(const std::vector<unsigned int> & data);
+			void indices(const std::vector<size_t> & data);
 			void indices(glm::ivec3 * data, size_t count);
 			void allocate();
 
@@ -81,7 +81,7 @@ namespace v3d::gl {
 			unsigned int ebo_;
 			unsigned int vbo_;
 			std::vector<VertexAttribute> attributes_;
-			unsigned int indices_;
+			size_t indices_;
 			BufferType type_;
 			bool allocated_;
 	};

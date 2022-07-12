@@ -40,8 +40,8 @@ void TextureTextBuffer::addCharacter(glm::vec2 & pen, const Markup & markup, wch
 	}
 	unsigned int vcount = 0;
 	unsigned int icount = 0;
-	unsigned int istart = indices().size();
-	unsigned int vstart = vertices().size();
+	size_t istart = indices().size();
+	size_t vstart = vertices().size();
 
 	if (markup.backgroundColor_.a > 0.0f)
 	{
@@ -102,7 +102,7 @@ void TextureTextBuffer::addCharacter(glm::vec2 & pen, const Markup & markup, wch
 
 void TextureTextBuffer::addQuad(const glm::vec2 & xy0, const glm::vec2 & xy1, const glm::vec2 & uv0, const glm::vec2 & uv1, const glm::vec4 & color, float gamma)
 {
-	unsigned int vcount = vertices().size();
+	size_t vcount = vertices().size();
 
 	// uv[0,1].t are flipped so y(0) can be top of screen (otherwise texture is upside down)
 	addVertex(glm::vec3(xy0.x, xy0.y, 0.0f), glm::vec2(uv0.s, uv1.t), color, xy0.x - ((int)xy0.x), gamma);

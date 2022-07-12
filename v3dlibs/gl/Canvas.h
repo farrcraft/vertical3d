@@ -73,7 +73,7 @@ namespace v3d::gl
 			// vertex data
 			std::vector<glm::vec3> xyz_;
 			std::vector<glm::vec4> rgba_;
-			std::vector<unsigned int> indices_;
+			std::vector<size_t> indices_;
 	};
 
 };

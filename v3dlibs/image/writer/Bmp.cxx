@@ -3,24 +3,19 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include "BMPWriter.h"
-#include "../BMP.h"
+#include "Bmp.h"
+#include "../BmpHeader.h"
 
 #include <fstream>
 #include <cstring>
 
+using namespace v3d::image;
 using namespace v3d::image::writer;
 
 
-BMPWriter::BMPWriter() {
-}
-
-BMPWriter::~BMPWriter() {
-}
-
-bool BMPWriter::write(const std::string & filename, const boost::shared_ptr<Image> & img) {
+bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image> & img) {
 	std::fstream file;
-	file.open(filename.c_str(), std::fstream::out | std::fstream::binary);
+	file.open(static_cast<std::string>(filename).c_str(), std::fstream::out | std::fstream::binary);
 
 	if (file.fail())
 		return false;
@@ -78,7 +73,7 @@ bool BMPWriter::write(const std::string & filename, const boost::shared_ptr<Imag
 	    *(data + i + 1) = *(temp + k + 1);
 		*(data + i) = *(temp + k + 2);
 
-		if (img->format() == Image::FORMAT_RGBA)
+		if (img->format() == v3d::image::Image::Format::RGBA)
 		{
 			*(data + i + 3) = *(temp + k + 3);
 		}

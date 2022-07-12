@@ -30,8 +30,8 @@ FrameBuffer::~FrameBuffer()
 
 boost::shared_ptr<v3d::image::Image> FrameBuffer::render()
 {
-	unsigned int channels = planes_.size();
-	unsigned int bpp = channels * 8;
+	auto channels = planes_.size();
+	auto bpp = channels * 8;
 	boost::shared_ptr<v3d::image::Image> image = boost::make_shared<v3d::image::Image>(width_, height_, bpp);
 	unsigned char * data = image->data();
 	unsigned int index = 0;

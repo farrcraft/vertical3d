@@ -22,15 +22,15 @@ namespace v3d::font {
 			void invalidate();
 			bool dirty() const;
 
-			void resize(unsigned int size);
+			void resize(size_t size);
 
 			std::vector<glm::vec3> & vertices();
 			std::vector<glm::vec2> & uvs();
 			std::vector<glm::vec4> & colors();
-			std::vector<unsigned int> & indices();
+			std::vector<size_t> & indices();
 
 			void addVertex(const glm::vec3 & vertex);
-			void addIndex(unsigned int index);
+			void addIndex(size_t index);
 			void addColor(const glm::vec4 & color);
 			void addTextureCoordinate(const glm::vec2 & uv);
 			void dirty(bool state);
@@ -41,6 +41,6 @@ namespace v3d::font {
 			std::vector<glm::vec3> vertices_;
 			std::vector<glm::vec2> uvs_;
 			std::vector<glm::vec4> colors_;
-			std::vector<unsigned int> indices_;
+			std::vector<size_t> indices_;
 	};
 };

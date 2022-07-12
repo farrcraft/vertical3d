@@ -3,7 +3,7 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include "JPEGWriter.h"
+#include "Jpeg.h"
 
 #ifdef  __cplusplus
 	extern "C" {
@@ -14,22 +14,17 @@
 #include <fstream>
 #include <iostream>
 
+	using namespace v3d::image;
 using namespace v3d::image::writer;
 
-JPEGWriter::JPEGWriter() {
-}
-
-JPEGWriter::~JPEGWriter() {
-}
-
-bool JPEGWriter::write(const std::string & filename, const boost::shared_ptr<Image> & img) {
+bool Jpeg::write(std::string_view filename, const boost::shared_ptr<Image> & img) {
 	struct jpeg_compress_struct cinfo;
 	struct jpeg_error_mgr jerr;
 
 	// open the file
 	FILE * fp;
-	if ((fp = fopen(filename.c_str(), "wb")) == 0)
-	{
+	errno_t err = fopen_s(&fp, static_cast<std::string>(filename).c_str(), "wb");
+	if (err != 0) {
 		return false;
 	}
 
@@ -43,8 +38,8 @@ bool JPEGWriter::write(const std::string & filename, const boost::shared_ptr<Ima
 
 	jpeg_set_defaults(&cinfo);
 
-	cinfo.input_components = img->format();
-	cinfo.data_precision = img->bpp() / img->format();
+	cinfo.input_components = static_cast<int>(img->format());
+	cinfo.data_precision = img->bpp() / static_cast<int>(img->format());
 	cinfo.image_width = img->width();
 	cinfo.image_height = img->height();
 
@@ -60,7 +55,7 @@ bool JPEGWriter::write(const std::string & filename, const boost::shared_ptr<Ima
 	// Process data
 	unsigned char * data = img->data();
 	unsigned int num_scanlines = 1;
-	unsigned int bytes_width = img->width() * img->format();
+	unsigned int bytes_width = img->width() * static_cast<int>(img->format());
 	data += bytes_width * (cinfo.image_height - 1);
 	while (cinfo.next_scanline < cinfo.image_height) {
 		jpeg_write_scanlines(&cinfo, &data, num_scanlines);

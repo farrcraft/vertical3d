@@ -3,7 +3,7 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include "JPEGReader.h"
+#include "Jpeg.h"
 
 #ifdef  __cplusplus
 	extern "C" {
@@ -51,7 +51,7 @@ METHODDEF(void) my_error_exit (j_common_ptr cinfo)
 	longjmp(myerr->setjmp_buffer, 1);
 }
 
-boost::shared_ptr<Image> JPEGReader::read(const std::string &filename)
+boost::shared_ptr<Image> Jpeg::read(std::string_view filename)
 {
 	BOOST_LOG_TRIVIAL(debug) << "JPEGReader::read - Reading jpeg file [" << filename << "]";
 
@@ -61,8 +61,8 @@ boost::shared_ptr<Image> JPEGReader::read(const std::string &filename)
 	// open the file
 	FILE * fp;
 	errno = 0;
-	if ((fp = fopen(filename.c_str(), "rb")) == 0)
-	{
+	errno_t err = fopen_s(&fp, static_cast<std::string>(filename).c_str(), "rb");
+	if (err != 0) {
 		BOOST_LOG_TRIVIAL(debug) << "JPEGReader::read - failed opening file [" << filename << "] with errno [" << strerror(errno) << "]";
 		return empty_ptr;
 	}

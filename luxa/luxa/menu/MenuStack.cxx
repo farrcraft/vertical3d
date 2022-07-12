@@ -45,7 +45,7 @@ void MenuStack::draw(ComponentRenderer * renderer, const boost::shared_ptr<Theme
 	v3d::gl::GLFontRenderer fr(*font);
 
 	// iterate over the active menu level
-	for (int i = menu_count; i >= 0; i--)
+	for (size_t i = menu_count; i >= 0; i--)
 	{
 		y = (((renderer->height() - menu_height) / 2.0f) + (i * 50.0f));
 		label = (*lvl)[i]->label();

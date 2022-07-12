@@ -114,7 +114,7 @@ size_t Menu::size() const
 	return items_.size();
 }
 
-boost::shared_ptr<MenuItem> & Menu::operator[](unsigned int i)
+boost::shared_ptr<MenuItem> & Menu::operator[](size_t i)
 {
 	assert(i < items_.size());
 	return items_[i];

@@ -3,12 +3,13 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include "TGAWriter.h"
+#include "Tga.h"
 
 #include <fstream>
 #include <iostream>
 #include <cstring>
 
+using namespace v3d::image;
 using namespace v3d::image::writer;
 
 #pragma pack(push, 1)
@@ -43,15 +44,9 @@ struct tga_footer
 #pragma pack(pop)
 
 
-TGAWriter::TGAWriter() {
-}
-
-TGAWriter::~TGAWriter() {
-}
-
-bool TGAWriter::write(const std::string & filename, const boost::shared_ptr<Image> & img) {
+bool Tga::write(std::string_view filename, const boost::shared_ptr<Image> & img) {
 	std::fstream file;
-	file.open(filename.c_str(), std::fstream::out | std::fstream::binary);
+	file.open(static_cast<std::string>(filename).c_str(), std::fstream::out | std::fstream::binary);
 	if (file.fail()) {
 		return false;
 	}

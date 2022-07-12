@@ -48,7 +48,7 @@ void Canvas::clear()
 
 void Canvas::addQuad(const glm::vec2 & xy0, const glm::vec2 & xy1, const glm::vec4 & color)
 {
-	unsigned int vcount = xyz_.size();
+	size_t vcount = xyz_.size();
 
 	addVertex(glm::vec3(xy0.x, xy0.y, 0.0f), color);
 	addVertex(glm::vec3(xy0.x, xy1.y, 0.0f), color);
@@ -147,7 +147,7 @@ void Canvas::translate(glm::vec2 pos)
 
 void Canvas::circle(size_t sides, size_t size, glm::vec3 color)
 {
-	unsigned int vcount = xyz_.size();
+	size_t vcount = xyz_.size();
 	glm::mat4 mv = modelView_.back();
 	glm::vec4 middle(0.0f, 0.0f, 0.0f, 1.0f);
 	middle = mv * middle;
