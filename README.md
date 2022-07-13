@@ -17,6 +17,16 @@ entirely replaced with CMake, namespaces are being more granular, and code is sl
 to C++17 or newer.
 
 
+## Components
+
+* Luxa - GUI library
+* Moya - Renderman-compatible rendering engine
+* Rigel - An experimental v3d app implementation
+* Stark - A utility library for game-related functionality
+* Talyn - A raytracing renderer
+* Hookah - HAL library - provides core window/keyboard/mouse services
+* Odyssey - A game engine implementation
+
 ## Linting
 
 Code is linted against the [Google C++ style guide](https://google.github.io/styleguide/cppguide.html) using the Cpplint tool.
