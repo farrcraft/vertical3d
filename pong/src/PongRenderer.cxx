@@ -18,10 +18,12 @@
 #include "../../stark/AssetLoader.h"
 
 #include <boost/lexical_cast.hpp>
+#include <boost/make_shared.hpp>
 
 
-PongRenderer::PongRenderer(boost::shared_ptr<PongScene> scene, boost::shared_ptr<AssetLoader> & loader) : scene_(scene), fonts_(new v3d::font::FontCache()) {
-    v3d::gl::ProgramFactory factory(loader);
+PongRenderer::PongRenderer(boost::shared_ptr<PongScene> scene, const boost::shared_ptr<AssetLoader> & loader, const boost::shared_ptr<v3d::core::Logger> & logger) : scene_(scene) {
+    fonts_ = boost::make_shared<v3d::font::FontCache>(logger);
+    ProgramFactory factory(loader);
     boost::shared_ptr<v3d::gl::Program> program = factory.create(v3d::gl::Shader::SHADER_TYPE_VERTEX|v3d::gl::Shader::SHADER_TYPE_FRAGMENT, "shaders/canvas");
 
     canvas_.reset(new v3d::gl::Canvas(program));
@@ -41,7 +43,7 @@ PongRenderer::PongRenderer(boost::shared_ptr<PongScene> scene, boost::shared_ptr
 
     // setup text buffer
     boost::shared_ptr<v3d::gl::Program> textProgram = factory.create(v3d::gl::Shader::SHADER_TYPE_VERTEX | v3d::gl::Shader::SHADER_TYPE_FRAGMENT, "shaders/text");
-    fontCache_.reset(new v3d::font::TextureFontCache(512, 512, v3d::font::TextureTextBuffer::LCD_FILTERING_ON));
+    fontCache_ = boost::make_shared<v3d::font::TextureFontCache>(512, 512, v3d::font::TextureTextBuffer::LCD_FILTERING_ON, logger);
 
     markup_.bold_ = false;
     markup_.italic_ = false;
@@ -65,8 +67,8 @@ PongRenderer::PongRenderer(boost::shared_ptr<PongScene> scene, boost::shared_ptr
     markup_.font_ = fontCache_->load(filename, markup_.size_);
 
     boost::shared_ptr<v3d::font::TextureTextBuffer> text;
-    text.reset(new v3d::font::TextureTextBuffer());
-    fontRenderer_.reset(new v3d::gl::TextureFontRenderer(text, textProgram, fontCache_->atlas()));
+    text = boost::make_shared<v3d::font::TextureTextBuffer>();
+    fontRenderer_ = boost::make_shared<v3d::gl::TextureFontRenderer>(text, textProgram, fontCache_->atlas(), logger);
 }
 
 boost::shared_ptr<v3d::font::FontCache> PongRenderer::fonts() const {

@@ -18,15 +18,12 @@
 
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/property_tree/xml_parser.hpp>
+#include <boost/make_shared.hpp>
 
 
 PongController::PongController(const std::string & path) {
-    // FileLog logger(L"debug.log");
-    // log4cxx::BasicConfigurator::configure();
-
     // create a new command directory object
-    directory_.reset(new v3d::command::CommandDirectory());
+    directory_ = boost::make_shared<v3d::command::CommandDirectory>();
 
     // create new app window and set caption
     window_ = Hookah::Create3DWindow(800, 600);
@@ -35,7 +32,7 @@ PongController::PongController(const std::string & path) {
     keyboard_ = boost::dynamic_pointer_cast<v3d::input::KeyboardDevice, v3d::input::InputDevice>(Hookah::CreateInputDevice("keyboard"));
 
     // register directory as an observer of input device events
-    listenerAdapter_.reset(new v3d::input::InputEventAdapter(keyboard_, mouse_));
+    listenerAdapter_ = boost::make_shared<v3d::input::InputEventAdapter>(keyboard_, mouse_);
     listenerAdapter_->connect(directory_.get());
 
     // add device to window
@@ -49,10 +46,10 @@ PongController::PongController(const std::string & path) {
     boost::property_tree::read_xml(configFile, ptree);
 
     // create the scene
-    scene_.reset(new PongScene(ptree, path));
+    scene_ = boost::make_shared<PongScene>(ptree, path);
     // ...and the renderer
-    boost::shared_ptr<AssetLoader> loader(new AssetLoader(path, "pong.log"));
-    renderer_.reset(new PongRenderer(scene_, loader));
+    boost::shared_ptr<AssetLoader> loader = boost::make_shared<AssetLoader>(path);
+    renderer_ = boost::make_shared<PongRenderer>(scene_, loader);
 
     // register game commands
     // play commands
@@ -85,7 +82,7 @@ PongController::PongController(const std::string & path) {
     window_->addTickListener(boost::bind(&PongScene::tick, boost::ref(scene_), _1));
 
     // create ui
-    vgui_.reset(new Luxa::ComponentManager(renderer_->fonts(), directory_));
+    vgui_ = boost::make_shared<Luxa::ComponentManager>(renderer_->fonts(), directory_);
     // load ui components (including fonts) from the config property tree
     Luxa::UILoader ui_loader;
     boost::property_tree::ptree config = ptree.get_child("config");

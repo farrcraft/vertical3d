@@ -5,23 +5,25 @@
 
 #include "Key.h"
 
-using namespace odyssey::event;
+namespace odyssey::event {
 
-/**
- **/
-Key::Key(const std::string_view& name, bool pressed) :
-	name_(name),
-	pressed_(pressed) {
-}
+    /**
+     **/
+    Key::Key(const std::string_view& name, bool pressed) noexcept :
+        name_(name),
+        pressed_(pressed) {
+    }
 
-/**
-**/
-bool Key::pressed() const {
-	return pressed_;
-}
+    /**
+    **/
+    bool Key::pressed() const noexcept {
+        return pressed_;
+    }
 
-/**
-**/
-std::string_view Key::name() const {
-	return name_;
-}
+    /**
+    **/
+    std::string_view Key::name() const noexcept {
+        return name_;
+    }
+
+};  // namespace odyssey::event

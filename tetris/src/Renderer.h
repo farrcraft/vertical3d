@@ -21,7 +21,7 @@ class TetrisScene;
 
 class TetrisRenderer {
  public:
-    explicit TetrisRenderer(boost::shared_ptr<TetrisScene> scene);
+    TetrisRenderer(boost::shared_ptr<TetrisScene> scene, const boost::shared_ptr<v3d::core::Logger> & logger);
 
     void draw(Hookah::Window * window);
     void resize(int width, int height);
@@ -34,4 +34,5 @@ class TetrisRenderer {
     boost::shared_ptr<TetrisScene> scene_;
     std::map<std::string, boost::shared_ptr<v3d::gl::GLTexture> > textures_;
     boost::shared_ptr<v3d::font::FontCache> fonts_;
+    boost::shared_ptr<v3d::core::Logger> logger_;
 };

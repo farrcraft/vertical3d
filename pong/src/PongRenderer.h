@@ -19,7 +19,7 @@ class AssetLoader;
 
 class PongRenderer {
  public:
-    PongRenderer(boost::shared_ptr<PongScene> scene, const boost::shared_ptr<AssetLoader> & loader);
+    PongRenderer(boost::shared_ptr<PongScene> scene, const boost::shared_ptr<AssetLoader> & loader, const boost::shared_ptr<v3d::core::Logger> & logger);
 
     void draw(Hookah::Window * window);
     void resize(int width, int height);

@@ -14,9 +14,11 @@
 #include "../../v3dlibs/command/BindLoader.h"
 
 #include <boost/bind.hpp>
-#include <boost/property_tree/xml_parser.hpp>
+#include <boost/make_shared.hpp>
 
 Controller::Controller() {
+    logger_ = boost::make_shared<v3d::core::Logger>();
+
     // create new app window and set caption
     window_ = Hookah::Create3DWindow(800, 600);
 
@@ -38,9 +40,9 @@ Controller::Controller() {
     boost::property_tree::read_xml("config.xml", ptree);
 
     // setup scene
-    scene_.reset(new TetrisScene());
+    scene_ = boost::make_shared<TetrisScene>();
 
-    renderer_.reset(new TetrisRenderer(scene_));
+    renderer_ = boost::make_shared<TetrisRenderer>(scene_, logger_);
 
     // register game commands
     directory_.add("movePieceLeft", "tetris", boost::bind(&Controller::exec, boost::ref(*this), _1, _2));

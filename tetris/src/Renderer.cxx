@@ -15,32 +15,34 @@
 #include "../../v3dlibs/gl/GLFontRenderer.h"
 
 #include <boost/bind.hpp>
+#include <boost/make_shared.hpp>
 
-TetrisRenderer::TetrisRenderer(boost::shared_ptr<TetrisScene> scene) : scene_(scene), fonts_(new v3d::font::FontCache()) {
+TetrisRenderer::TetrisRenderer(boost::shared_ptr<TetrisScene> scene, const boost::shared_ptr<v3d::core::Logger> & logger) :
+    scene_(scene), fonts_(new v3d::font::FontCache(logger)), logger_(logger) {
     // load a font to use for debugging output
     fonts_->load("debug", "/usr/share/fonts/corefonts/arial.ttf", 32);
 
     try {
-        v3d::image::Factory factory;
+        v3d::image::Factory factory(logger);
         // load textures
         boost::shared_ptr<v3d::gl::GLTexture> texture;
-        texture.reset(new v3d::gl::GLTexture(factory.read("pieces/red.tga")));
+        texture = boost::make_shared<v3d::gl::GLTexture>(factory.read("pieces/red.tga"));
         textures_["red"] = texture;
-        texture.reset(new v3d::gl::GLTexture(factory.read("pieces/blue.tga")));
+        texture = boost::make_shared<v3d::gl::GLTexture>(factory.read("pieces/blue.tga"));
         textures_["blue"] = texture;
-        texture.reset(new v3d::gl::GLTexture(factory.read("pieces/cyan.tga")));
+        texture = boost::make_shared<v3d::gl::GLTexture>(factory.read("pieces/cyan.tga"));
         textures_["cyan"] = texture;
-        texture.reset(new v3d::gl::GLTexture(factory.read("pieces/green.tga")));
+        texture = boost::make_shared<v3d::gl::GLTexture>(factory.read("pieces/green.tga"));
         textures_["green"] = texture;
-        texture.reset(new v3d::gl::GLTexture(factory.read("pieces/orange.tga")));
+        texture = boost::make_shared<v3d::gl::GLTexture>(factory.read("pieces/orange.tga"));
         textures_["orange"] = texture;
-        texture.reset(new v3d::gl::GLTexture(factory.read("pieces/purple.tga")));
+        texture = boost::make_shared<v3d::gl::GLTexture>(factory.read("pieces/purple.tga"));
         textures_["purple"] = texture;
-        texture.reset(new v3d::gl::GLTexture(factory.read("pieces/yellow.tga")));
+        texture = boost::make_shared<v3d::gl::GLTexture>(factory.read("pieces/yellow.tga"));
         textures_["yellow"] = texture;
     }
     catch (...) {
-        std::clog << "texture load exception!" << std::endl;
+        LOG_ERROR(logger) << "texture load exception!" << std::endl;
     }
     glShadeModel(GL_SMOOTH);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -139,7 +141,7 @@ void TetrisRenderer::drawTetrad(const Tetrad & tetrad, bool dbg) {
 
         std::string txt;
         boost::shared_ptr<v3d::font::Font2D> font = fonts_->get("debug");
-        v3d::gl::GLFontRenderer fontRenderer(*font);
+        v3d::gl::GLFontRenderer fontRenderer(*font, logger_);
 
         txt = "Offset x: " + tetrad.offset(Tetrad::OFFSET_X);
         fontRenderer.print(txt, 500.0f, 250.0f);
