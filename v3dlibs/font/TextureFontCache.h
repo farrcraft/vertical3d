@@ -29,5 +29,6 @@ namespace v3d::font {
         boost::shared_ptr<v3d::image::TextureAtlas> atlas_;
         std::vector<boost::shared_ptr<TextureFont> > fonts_;
         wchar_t * cache_;
+        boost::shared_ptr<v3d::core::Logger> logger_;
     };
 };  // namespace v3d::font

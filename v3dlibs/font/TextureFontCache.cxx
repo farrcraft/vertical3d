@@ -17,7 +17,7 @@ namespace v3d::font {
         return result;
     }
 
-    TextureFontCache::TextureFontCache(unsigned int width, unsigned int height, unsigned int depth, const boost::shared_ptr<v3d::core::Logger>& logger) {
+    TextureFontCache::TextureFontCache(unsigned int width, unsigned int height, unsigned int depth, const boost::shared_ptr<v3d::core::Logger>& logger) : logger_(logger) {
         atlas_.reset(new v3d::image::TextureAtlas(width, height, depth, logger));
         cache_ = wcsdupstr(L" ");
     }
@@ -42,7 +42,7 @@ namespace v3d::font {
             }
         }
         boost::shared_ptr<TextureFont> font;
-        font.reset(new TextureFont(atlas_, filename, size));
+        font.reset(new TextureFont(atlas_, filename, size, logger_));
         font->loadGlyphs(cache_);
         fonts_.push_back(font);
         return font;

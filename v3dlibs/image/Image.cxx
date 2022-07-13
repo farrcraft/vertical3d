@@ -15,9 +15,9 @@ namespace v3d::image {
     Image::Image() : data_(0), width_(0), height_(0), bpp_(24), format_(Format::RGB) {
     }
 
-    Image::Image(uint64_t w, uint64_t h, uint64_t b) : width_(w), height_(h), bpp_(b) {
+    Image::Image(uint32_t w, uint32_t h, uint8_t b) : width_(w), height_(h), bpp_(b) {
         unsigned int bytesPerPixel = bpp_ / 8;
-        unsigned int size = width_ * height_ * bytesPerPixel;
+        uint64_t size = width_ * height_ * bytesPerPixel;
         if (bytesPerPixel == 3) {
             format_ = Format::RGB;
         } else if (bytesPerPixel == 4) {
@@ -45,11 +45,11 @@ namespace v3d::image {
         return bpp_;
     }
 
-    unsigned int Image::width() const {
+    uint32_t Image::width() const {
         return width_;
     }
 
-    unsigned int Image::height() const {
+    uint32_t Image::height() const {
         return height_;
     }
 

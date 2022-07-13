@@ -28,7 +28,7 @@ namespace v3d::image {
              * @param h image height
              * @param b bits per pixel
              */
-            Image(uint64_t w, uint64_t h, uint64_t b);
+            Image(uint32_t w, uint32_t h, uint8_t b);
             /**
              * Constructor
              * @param len length of the image data in bytes
@@ -50,12 +50,12 @@ namespace v3d::image {
              * Get the image width
              * @return the image width
              */
-            unsigned int width() const;
+            uint32_t width() const;
             /**
              * Get the image height
              * @return the image height
              */
-            unsigned int height() const;
+            uint32_t height() const;
             /**
              * Set the number of bits per pixel in the image
              * @param bits the number of bits per pixel
@@ -79,9 +79,9 @@ namespace v3d::image {
 
      private:
             unsigned char * data_;  // Data (Up To 32 Bits)
-            unsigned int bpp_;  // Color Depth In Bits Per Pixel
-            unsigned int width_;
-            unsigned int height_;
+            uint8_t bpp_;  // Color Depth In Bits Per Pixel
+            uint32_t width_;
+            uint32_t height_;
             Format format_;
     };
 

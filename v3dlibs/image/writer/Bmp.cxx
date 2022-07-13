@@ -43,7 +43,7 @@ namespace v3d::image::writer {
         iheader.bits_ = img->bpp();
         iheader.compression_ = 0;
 
-        int64_t width, pad;
+        int32_t width, pad;
         width = pad = iheader.width_ * (iheader.bits_ / 8);
         // adjust pad width to dword boundary alignment
         while (pad % 4 != 0) {

@@ -107,6 +107,8 @@ namespace Luxa {
             */
         boost::shared_ptr<Component> intersect(glm::vec2 point) const;
 
+        boost::shared_ptr<v3d::core::Logger> logger();
+
         bool toggleComponentVisibility(const std::string & name);
 
         /**

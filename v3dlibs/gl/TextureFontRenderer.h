@@ -7,50 +7,51 @@
 
 #include "../font/TextureTextBuffer.h"
 #include "../image/TextureAtlas.h"
+#include "../core/Logger.h"
 
 #include "VertexBuffer.h"
 #include "Program.h"
 #include "GLTexture.h"
 
 namespace v3d::gl {
-	/**
-	 * A OpenGL Font renderer for texture fonts.
-	 */
-	class TextureFontRenderer
-	{
-		public:
-			TextureFontRenderer();
-			TextureFontRenderer(boost::shared_ptr<v3d::font::TextureTextBuffer> buffer, boost::shared_ptr<Program> program, boost::shared_ptr<v3d::image::TextureAtlas> atlas);
-			virtual ~TextureFontRenderer() = default;
+    /**
+     * A OpenGL Font renderer for texture fonts.
+     */
+    class TextureFontRenderer {
+     public:
+        explicit TextureFontRenderer(const boost::shared_ptr<v3d::core::Logger> & logger);
+        TextureFontRenderer(boost::shared_ptr<v3d::font::TextureTextBuffer> buffer, boost::shared_ptr<Program> program,
+            boost::shared_ptr<v3d::image::TextureAtlas> atlas, const boost::shared_ptr<v3d::core::Logger> & logger);
+        virtual ~TextureFontRenderer() = default;
 
-			/**
-			 * Access the underlying text buffer
-			 */
-			boost::shared_ptr<v3d::font::TextureTextBuffer> buffer();
+        /**
+         * Access the underlying text buffer
+         */
+        boost::shared_ptr<v3d::font::TextureTextBuffer> buffer();
 
-			/**
-			 * Upload font data to the GPU
-			 */
-			void upload();
+        /**
+         * Upload font data to the GPU
+         */
+        void upload();
 
-			/**
-			 * Render uploaded font data
-			 */
-			void render();
+        /**
+         * Render uploaded font data
+         */
+        void render();
 
-			/**
-			 * Update the size of the rendering area.
-			 * The underlying shader normal matrices will updated.
-			 */
-			void resize(float width, float height);
+        /**
+         * Update the size of the rendering area.
+         * The underlying shader normal matrices will updated.
+         */
+        void resize(float width, float height);
 
-		private:
-			boost::shared_ptr<v3d::font::TextureTextBuffer> buffer_;
-			boost::shared_ptr<v3d::image::TextureAtlas> atlas_;
-			boost::shared_ptr<Program> program_;
-			VertexBuffer vertexBuffer_;
-			GLTexture texture_;
-	};
+     private:
+        boost::shared_ptr<v3d::font::TextureTextBuffer> buffer_;
+        boost::shared_ptr<v3d::image::TextureAtlas> atlas_;
+        boost::shared_ptr<Program> program_;
+        VertexBuffer vertexBuffer_;
+        GLTexture texture_;
+        boost::shared_ptr<v3d::core::Logger> logger_;
+    };
 
-}; // end namespace v3D
-
+};  // namespace v3d::gl

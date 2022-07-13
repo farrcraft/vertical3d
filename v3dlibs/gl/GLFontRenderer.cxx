@@ -9,57 +9,52 @@
 
 #include <cassert>
 #include <iostream>
+#include <string>
 
-using namespace v3d::gl;
+namespace v3d::gl {
+    GLFontRenderer::GLFontRenderer(const boost::shared_ptr<v3d::core::Logger>& logger) : texture_(logger) {
+    }
 
-GLFontRenderer::GLFontRenderer()
-{
+    GLFontRenderer::GLFontRenderer(const v3d::font::Font2D& f, const boost::shared_ptr<v3d::core::Logger>& logger) : font_(f), texture_(logger) {
+        texture_.create(font_.texture()->image());
+    }
 
-}
+    GLFontRenderer::~GLFontRenderer() {
+    }
 
-GLFontRenderer::GLFontRenderer(const v3d::font::Font2D &f) : font_(f)
-{ 
-	texture_.create(font_.texture()->image());
-}
+    void GLFontRenderer::print(const std::string& text, float x, float y) {
+        // set texture & blending states for font drawing
+        glPushAttrib(GL_TEXTURE_BIT | GL_COLOR_BUFFER_BIT);
+        glEnable(GL_TEXTURE_2D);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-GLFontRenderer::~GLFontRenderer()
-{
-}
+        if (!texture_.bind()) {
+            return;
+        }
 
-void GLFontRenderer::print(const std::string & text, float x, float y)
-{
-	// set texture & blending states for font drawing
-	glPushAttrib(GL_TEXTURE_BIT | GL_COLOR_BUFFER_BIT);
-	glEnable(GL_TEXTURE_2D);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); 
+        glBegin(GL_QUADS);
+        for (size_t i = 0; i < text.size(); i++) {
+            const v3d::font::Font2D::Glyph* glyph = font_.glyph(text[i]);
 
-	if (!texture_.bind())
-	{
-		return;
-	}
+            glTexCoord2f(glyph->x1_, glyph->y1_);
+            glVertex2f(x, y);
 
-	glBegin(GL_QUADS);
-	for (size_t i = 0; i < text.size(); i++)
-	{
-		const v3d::font::Font2D::Glyph * glyph = font_.glyph(text[i]);
+            glTexCoord2f(glyph->x1_, glyph->y1_ + font_.textureHeight());
+            glVertex2f(x, y + font_.height());
 
-		glTexCoord2f(glyph->x1_, glyph->y1_);
-		glVertex2f(x, y);
+            glTexCoord2f(glyph->x2_, glyph->y1_ + font_.textureHeight());
+            glVertex2f(x + glyph->advance_, y + font_.height());
 
-		glTexCoord2f(glyph->x1_, glyph->y1_ + font_.textureHeight());
-		glVertex2f(x, y + font_.height());
+            glTexCoord2f(glyph->x2_, glyph->y1_);
+            glVertex2f(x + glyph->advance_, y);
 
-		glTexCoord2f(glyph->x2_, glyph->y1_ + font_.textureHeight());
-		glVertex2f(x + glyph->advance_, y + font_.height());
+            x += glyph->advance_;
+        }
+        glEnd();
 
-		glTexCoord2f(glyph->x2_, glyph->y1_);
-		glVertex2f(x + glyph->advance_, y);
+        // reset texture & blend states to their initial settings
+        glPopAttrib();
+    }
 
-		x += glyph->advance_;
-	}
-	glEnd();
-
-	// reset texture & blend states to their initial settings
-	glPopAttrib();
-}
+};  // namespace v3d::gl

@@ -179,4 +179,7 @@ namespace Luxa {
         return theme;
     }
 
+    boost::shared_ptr<v3d::core::Logger> ComponentManager::logger() {
+        return logger_;
+    }
 };  // namespace Luxa
