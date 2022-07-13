@@ -1,6 +1,5 @@
 cmake_minimum_required (VERSION 3.8)
 
-
 add_subdirectory("audio")
 add_subdirectory("brep")
 add_subdirectory("command")
@@ -13,5 +12,4 @@ add_subdirectory("hookah")
 add_subdirectory("image")
 add_subdirectory("input")
 add_subdirectory("type")
-add_subdirectory("util")
 add_subdirectory("imagetool")

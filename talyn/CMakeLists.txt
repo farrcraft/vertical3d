@@ -4,7 +4,6 @@ add_executable("talyn" "src/FrameBuffer.h" "src/Framebuffer.cxx" "src/RenderCont
 target_link_libraries("talyn" 
 	v3dlib_core
 	v3dlib_image
-	quantumxml
 	${Boost_LIBRARIES}
 	"turbojpeg-static" "jpeg-static"
 	"libpng16d" "zlibd")
