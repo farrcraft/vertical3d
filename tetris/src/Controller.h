@@ -21,14 +21,14 @@ class Controller {
     Controller();
 
     bool run();
-    bool exec(const v3d::CommandInfo & command, const std::string & param);
+    bool exec(const v3d::command::CommandInfo & command, const std::string & param);
 
  private:
     boost::shared_ptr<TetrisScene> scene_;
     boost::shared_ptr<TetrisRenderer> renderer_;
     boost::shared_ptr<Hookah::Window> window_;
-    boost::shared_ptr<v3d::KeyboardDevice> keyboard_;
-    boost::shared_ptr<v3d::MouseDevice> mouse_;
-    v3d::CommandDirectory directory_;
-    boost::shared_ptr<v3d::InputEventAdapter> listenerAdapter_;
+    boost::shared_ptr<v3d::input::KeyboardDevice> keyboard_;
+    boost::shared_ptr<v3d::input::MouseDevice> mouse_;
+    v3d::command::CommandDirectory directory_;
+    boost::shared_ptr<v3d::input::InputEventAdapter> listenerAdapter_;
 };

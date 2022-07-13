@@ -20,11 +20,11 @@
 #include <boost/lexical_cast.hpp>
 
 
-PongRenderer::PongRenderer(boost::shared_ptr<PongScene> scene, boost::shared_ptr<AssetLoader> & loader) : scene_(scene), fonts_(new v3d::FontCache()) {
-    ProgramFactory factory(loader);
-    boost::shared_ptr<v3d::Program> program = factory.create(v3d::Shader::SHADER_TYPE_VERTEX|v3d::Shader::SHADER_TYPE_FRAGMENT, "shaders/canvas");
+PongRenderer::PongRenderer(boost::shared_ptr<PongScene> scene, boost::shared_ptr<AssetLoader> & loader) : scene_(scene), fonts_(new v3d::font::FontCache()) {
+    v3d::gl::ProgramFactory factory(loader);
+    boost::shared_ptr<v3d::gl::Program> program = factory.create(v3d::gl::Shader::SHADER_TYPE_VERTEX|v3d::gl::Shader::SHADER_TYPE_FRAGMENT, "shaders/canvas");
 
-    canvas_.reset(new v3d::Canvas(program));
+    canvas_.reset(new v3d::gl::Canvas(program));
 
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
@@ -40,8 +40,8 @@ PongRenderer::PongRenderer(boost::shared_ptr<PongScene> scene, boost::shared_ptr
     glActiveTexture(GL_TEXTURE0);
 
     // setup text buffer
-    boost::shared_ptr<v3d::Program> textProgram = factory.create(v3d::Shader::SHADER_TYPE_VERTEX|v3D::Shader::SHADER_TYPE_FRAGMENT, "shaders/text");
-    fontCache_.reset(new v3d::TextureFontCache(512, 512, v3d::TextureTextBuffer::LCD_FILTERING_ON));
+    boost::shared_ptr<v3d::gl::Program> textProgram = factory.create(v3d::gl::Shader::SHADER_TYPE_VERTEX | v3d::gl::Shader::SHADER_TYPE_FRAGMENT, "shaders/text");
+    fontCache_.reset(new v3d::font::TextureFontCache(512, 512, v3d::font::TextureTextBuffer::LCD_FILTERING_ON));
 
     markup_.bold_ = false;
     markup_.italic_ = false;
@@ -64,12 +64,12 @@ PongRenderer::PongRenderer(boost::shared_ptr<PongScene> scene, boost::shared_ptr
     std::string filename = loader->path() + std::string("fonts/DroidSerif-Regular.ttf");
     markup_.font_ = fontCache_->load(filename, markup_.size_);
 
-    boost::shared_ptr<v3d::TextureTextBuffer> text;
-    text.reset(new v3d::TextureTextBuffer());
-    fontRenderer_.reset(new v3d::TextureFontRenderer(text, textProgram, fontCache_->atlas()));
+    boost::shared_ptr<v3d::font::TextureTextBuffer> text;
+    text.reset(new v3d::font::TextureTextBuffer());
+    fontRenderer_.reset(new v3d::gl::TextureFontRenderer(text, textProgram, fontCache_->atlas()));
 }
 
-boost::shared_ptr<v3d::FontCache> PongRenderer::fonts() const {
+boost::shared_ptr<v3d::font::FontCache> PongRenderer::fonts() const {
     return fonts_;
 }
 

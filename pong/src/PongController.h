@@ -7,8 +7,8 @@
 #include <string>
 
 #include "../../v3dlibs/hookah/Window.h"
-#include "../../luxa/ComponentManager.h"
-#include "../../luxa/menu/Menu.h"
+#include "../../luxa/luxa/ComponentManager.h"
+#include "../../luxa/luxa/menu/Menu.h"
 #include "../../v3dlibs/input/KeyboardDevice.h"
 #include "../../v3dlibs/input/MouseDevice.h"
 #include "../../v3dlibs/gui/InputEventAdapter.h"
@@ -25,8 +25,8 @@ class PongController {
 
     bool run();
 
-    bool exec(const v3d::CommandInfo & command, const std::string & param);
-    bool execUI(const v3d::CommandInfo & command, const std::string & param);
+    bool exec(const v3d::command::CommandInfo & command, const std::string & param);
+    bool execUI(const v3d::command::CommandInfo & command, const std::string & param);
 
  protected:
      void setMenuItemDefaults(const boost::shared_ptr<Luxa::Menu> & menu);
@@ -36,8 +36,8 @@ class PongController {
     boost::shared_ptr<PongRenderer> renderer_;
     boost::shared_ptr<Luxa::ComponentManager> vgui_;
     boost::shared_ptr<Hookah::Window> window_;
-    boost::shared_ptr<v3d::KeyboardDevice> keyboard_;
-    boost::shared_ptr<v3d::MouseDevice> mouse_;
-    boost::shared_ptr<v3d::CommandDirectory> directory_;
-    boost::shared_ptr<v3d::InputEventAdapter> listenerAdapter_;
+    boost::shared_ptr<v3d::input::KeyboardDevice> keyboard_;
+    boost::shared_ptr<v3d::input::MouseDevice> mouse_;
+    boost::shared_ptr<v3d::command::CommandDirectory> directory_;
+    boost::shared_ptr<v3d::input::InputEventAdapter> listenerAdapter_;
 };

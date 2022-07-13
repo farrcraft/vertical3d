@@ -21,10 +21,10 @@ Controller::Controller() {
     window_ = Hookah::Create3DWindow(800, 600);
 
     // create input devices
-    keyboard_ = boost::dynamic_pointer_cast<v3d::KeyboardDevice, v3d::InputDevice>(Hookah::CreateInputDevice("keyboard"));
+    keyboard_ = boost::dynamic_pointer_cast<v3d::input::KeyboardDevice, v3d::input::InputDevice>(Hookah::CreateInputDevice("keyboard"));
 
     // register directory as an observer of input device events
-    listenerAdapter_.reset(new v3d::InputEventAdapter(keyboard_, mouse_));
+    listenerAdapter_.reset(new v3d::input::InputEventAdapter(keyboard_, mouse_));
     listenerAdapter_->connect(&directory_);
 
     // add device to window
@@ -59,14 +59,14 @@ Controller::Controller() {
     renderer_->resize(window_->width(), window_->height());
 
     // load key binds from the property tree
-    v3D::utility::load_binds(ptree, &directory_);
+    v3d::utility::load_binds(ptree, &directory_);
 }
 
 bool Controller::run() {
     return window_->run(Hookah::Window::EVENT_HANDLING_NONBLOCKING);
 }
 
-bool Controller::exec(const v3d::CommandInfo & command, const std::string & param) {
+bool Controller::exec(const v3d::command::CommandInfo & command, const std::string & param) {
     if (command.name() == "movePieceLeft") {
         // get the piece to move
         Tetrad & piece = scene_->board()->currentTetrad();

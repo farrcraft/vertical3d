@@ -7,11 +7,11 @@
 
 #include "PongScene.h"
 
-#include <vertical3d/hookah/Window.h>
-#include <vertical3d/gl/Canvas.h>
-#include <vertical3d/gl/TextureFontRenderer.h>
-#include <vertical3d/font/TextureFontCache.h>
-#include <vertical3d/font/FontCache.h>
+#include "../../v3dlibs/hookah/Window.h"
+#include "../../v3dlibs/gl/Canvas.h"
+#include "../../v3dlibs/gl/TextureFontRenderer.h"
+#include "../../v3dlibs/font/TextureFontCache.h"
+#include "../../v3dlibs/font/FontCache.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -27,14 +27,13 @@ class PongRenderer {
     void drawBall();
     void drawPaddle(const Paddle & paddle);
 
-    boost::shared_ptr<v3d::FontCache> fonts() const;
+    boost::shared_ptr<v3d::font::FontCache> fonts() const;
 
  private:
     boost::shared_ptr<PongScene> scene_;
-    boost::shared_ptr<v3d::FontCache> fonts_;
-    boost::shared_ptr<v3d::Canvas> canvas_;
-    v3d::TextureTextBuffer::Markup markup_;
-    boost::shared_ptr<v3d::TextureFontRenderer> fontRenderer_;
-    boost::shared_ptr<v3d::TextureFontCache> fontCache_;
+    boost::shared_ptr<v3d::font::FontCache> fonts_;
+    boost::shared_ptr<v3d::gl::Canvas> canvas_;
+    v3d::font::TextureTextBuffer::Markup markup_;
+    boost::shared_ptr<v3d::gl::TextureFontRenderer> fontRenderer_;
+    boost::shared_ptr<v3d::font::TextureFontCache> fontCache_;
 };
-

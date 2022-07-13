@@ -13,7 +13,7 @@
 
 #include "../../v3dlibs/command/BindLoader.h"
 #include "../../v3dlibs/hookah/Hookah.h"
-#include "../../luxa/UILoader.h"
+#include "../../luxa/luxa/UILoader.h"
 #include "../../stark/AssetLoader.h"
 
 #include <boost/bind.hpp>
@@ -26,16 +26,16 @@ PongController::PongController(const std::string & path) {
     // log4cxx::BasicConfigurator::configure();
 
     // create a new command directory object
-    directory_.reset(new v3d::CommandDirectory());
+    directory_.reset(new v3d::command::CommandDirectory());
 
     // create new app window and set caption
     window_ = Hookah::Create3DWindow(800, 600);
 
     // create input devices
-    keyboard_ = boost::dynamic_pointer_cast<v3d::KeyboardDevice, v3d::InputDevice>(Hookah::CreateInputDevice("keyboard"));
+    keyboard_ = boost::dynamic_pointer_cast<v3d::input::KeyboardDevice, v3d::input::InputDevice>(Hookah::CreateInputDevice("keyboard"));
 
     // register directory as an observer of input device events
-    listenerAdapter_.reset(new v3d::InputEventAdapter(keyboard_, mouse_));
+    listenerAdapter_.reset(new v3d::input::InputEventAdapter(keyboard_, mouse_));
     listenerAdapter_->connect(directory_.get());
 
     // add device to window
@@ -119,7 +119,7 @@ void PongController::setMenuItemDefaults(const boost::shared_ptr<Luxa::Menu> & m
         } else if (item->command() == "set_key") {
             // param contains a command name with the scope encoded
             // get the bind with the matching command from the directory
-            v3d::Bind bind = directory_->lookup(item->param());
+            v3d::command::Bind bind = directory_->lookup(item->param());
             std::string label = item->label();
             label += bind.event().name();
             item->label(label);
@@ -130,7 +130,7 @@ void PongController::setMenuItemDefaults(const boost::shared_ptr<Luxa::Menu> & m
     }
 }
 
-bool PongController::exec(const v3d::CommandInfo & command, const std::string & param) {
+bool PongController::exec(const v3d::command::CommandInfo & command, const std::string & param) {
     if (command.scope() != "pong")
         return false;
 
@@ -186,7 +186,7 @@ bool PongController::exec(const v3d::CommandInfo & command, const std::string & 
     return false;
 }
 
-bool PongController::execUI(const v3d::CommandInfo & command, const std::string & param) {
+bool PongController::execUI(const v3d::command::CommandInfo & command, const std::string & param) {
     if (command.scope() != "ui")
         return false;
 
