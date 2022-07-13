@@ -15,3 +15,12 @@ system used autotools on unix & Visual Studio solutions/projects on Windows.
 In the current iteration, everything is being moved into a monorepo, both build systems are being 
 entirely replaced with CMake, namespaces are being more granular, and code is slowly being updated
 to C++17 or newer.
+
+
+## Linting
+
+Code is linted against the [Google C++ style guide](https://google.github.io/styleguide/cppguide.html) using the Cpplint tool.
+
+This is the tool command for Visual Studio integration:
+
+> c:\Python310\lib\site-packages\cpplint.py --linelength=180 --filter=-runtime/indentation_namespace --output=vs7 $(ItemPath)
