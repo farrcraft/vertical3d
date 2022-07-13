@@ -4,22 +4,7 @@
  **/
 
 /**
- * Talyn 0.0.1
- * A software raytracing renderer
- * (c) 2008
- *
  * TODO:
- * (*) base application
- * (*) cli getopts support
- * (*) create framebuffer object
- * (*) allocate framebuffer given CLI image size parameters
- * (*) convert framebuffer data to Image object
- * (*) write image data to file format
- * (*) output empty rendered image
- * (*) support rib file format
- * (*) ascii rib file parser
- *		(*) open rib file
- *		(*) read rib token from stream
  * ( ) base rendering algorithm
  * ( ) render background color
  * ( ) input scene file format (xml-based)
@@ -57,8 +42,6 @@
  * ( ) integrate with moya
  *
  * 
- * Need to finish the xml scene parsing to get the background color and read in all of the frame
- * settings.
  * The intermediate goal for talyn is that it function as a standalone raytracer. It should eventually
  * become the raytracing component of moya. It may make sense to build up the core functionality of
  * moya at the same time. This could either be done in parallel or each could be built as a modular
@@ -88,7 +71,6 @@ http://books.google.com/books?id=bBOxUmw83jUC&pg=PA160&lpg=PA160&dq=raytracing+a
 
 #include <iostream>
 
-#include "XMLSceneReader.h"
 #include "RIBReader.h"
 #include "RenderContext.h"
 
@@ -181,16 +163,7 @@ int main(int argc, char * argv[]) {
     // determine the filetype of infile based on file extension
     std::string ext = infile.substr(infile.length() - 3);
 
-    // it should either be an .xml file for our own internal scene description format
-    if (ext == "xml") {
-        // create a URI based on the full file path
-        std::string filename = std::string("file://") + filepath;
-        Talyn::XMLSceneReader reader;
-        if (!reader.read(rc, filename)) {
-            std::cout << "error reading xml scene!" << std::endl;
-            exit(EXIT_FAILURE);
-        }
-    } else if (ext == "rib") {  // or .rib for renderman formatted files.
+    if (ext == "rib") {  // .rib for renderman formatted files.
         Talyn::RIBReader reader(rc);
         if (!reader.read(filepath)) {
             std::cout << "error reading rib file!" << std::endl;
