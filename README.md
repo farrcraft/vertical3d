@@ -12,9 +12,11 @@ A lot of this code can be traced back to the "early aught's" in a land before wh
 "modern C++". There was a single namespace, every library was its own repo/package and the build
 system used autotools on unix & Visual Studio solutions/projects on Windows.
 
+While that is a very modular design that has worked well for other OSS projects (e.g. KDE, Gnome)
+that split functionality across a larger number of smaller packages, it's much more work to maintain.
+
 In the current iteration, everything is being moved into a monorepo, both build systems are being 
-entirely replaced with CMake, namespaces are being more granular, and code is slowly being updated
-to C++17 or newer.
+entirely replaced with CMake, namespaces are more granular, and code is targetting C++17 or newer.
 
 
 ## Components
@@ -27,6 +29,7 @@ to C++17 or newer.
 * Hookah - HAL library - provides core window/keyboard/mouse services
 * Odyssey - A game engine implementation
 
+
 ## Linting
 
 Code is linted against the [Google C++ style guide](https://google.github.io/styleguide/cppguide.html) using the Cpplint tool.
@@ -34,3 +37,7 @@ Code is linted against the [Google C++ style guide](https://google.github.io/sty
 This is the tool command for Visual Studio integration:
 
 > c:\Python310\lib\site-packages\cpplint.py --linelength=180 --filter=-runtime/indentation_namespace --output=vs7 $(ItemPath)
+
+
+## TODO
+

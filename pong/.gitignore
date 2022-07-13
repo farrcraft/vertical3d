@@ -25,3 +25,4 @@ missing
 *Makefile
 aclocal.m4
 pong/Debug
+src/Debug

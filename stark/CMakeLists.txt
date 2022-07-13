@@ -1,1 +1,1 @@
-add_library("stark" "stark/AssetLoader.h" "stark/AssetLoader.cxx" "stark/ProgramFactory.h" "stark/ProgramFactory.cxx")
+add_library("stark" "AssetLoader.h" "AssetLoader.cxx" "ProgramFactory.h" "ProgramFactory.cxx")

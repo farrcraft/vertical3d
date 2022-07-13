@@ -10,24 +10,22 @@
 #include <string>
 #include <fstream>
 
-namespace Talyn
-{
+namespace Talyn {
 
-	class RIBReader
-	{
-		public:
-			RIBReader(const boost::shared_ptr<RenderContext> & rc);
+    class RIBReader {
+     public:
+        explicit RIBReader(const boost::shared_ptr<RenderContext> & rc);
 
-			bool read(const std::string & filename);
+        bool read(const std::string & filename);
 
 
-		protected:
-			void parseToken(const std::string & token);
-			std::string readToken();
+     protected:
+        void parseToken(const std::string & token);
+        std::string readToken();
 
-		private:
-			boost::shared_ptr<RenderContext> rc_;
-			std::ifstream file_;
-	};
+     private:
+        boost::shared_ptr<RenderContext> rc_;
+        std::ifstream file_;
+    };
 
-}; // end namespace Talyn
+};  // namespace Talyn

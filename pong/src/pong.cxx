@@ -1,5 +1,9 @@
 /**
- * Pong! - (c) 2006-2008 Josh Farr
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
+/**
  *
  * This version of pong began as a personal challenge to create the simple game.
  * Once a relatively complete and playable implementation was finished, much of
@@ -28,24 +32,22 @@
 
 #include "PongController.h"
 
-int main(int argc, char *argv[])
-{
-	// extract exe path from argv (needed for loading file assets with relative paths)
-	boost::filesystem::path path(boost::filesystem::initial_path<boost::filesystem::path>());
+int main(int argc, char *argv[]) {
+    // extract exe path from argv (needed for loading file assets with relative paths)
+    boost::filesystem::path path(boost::filesystem::initial_path<boost::filesystem::path>());
     path = boost::filesystem::system_complete(boost::filesystem::path(argv[0])).remove_filename();
 
-	boost::filesystem::path slash("/");
-	std::string preferredSlash = slash.make_preferred().string();
+    boost::filesystem::path slash("/");
+    std::string preferredSlash = slash.make_preferred().string();
 
-	std::string appPath = path.string() + preferredSlash;
+    std::string appPath = path.string() + preferredSlash;
 
-	PongController controller(appPath);
+    PongController controller(appPath);
 
-	if (!controller.run())
-	{
-		return EXIT_FAILURE;
-	}
+    if (!controller.run()) {
+        return EXIT_FAILURE;
+    }
 
-	return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }
 
