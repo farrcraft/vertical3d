@@ -5,12 +5,11 @@
 
 #pragma once
 
-#include "../engine/Logger.h"
+#include "../../v3dlibs/core/Logger.h"
 
 #include <SDL.h>
 
 namespace odyssey::ui {
-
     /**
     **/
     class Window final {
@@ -18,7 +17,7 @@ namespace odyssey::ui {
         /**
          * @param Logger* logger
          **/
-        Window(const boost::shared_ptr<odyssey::engine::Logger>& logger) noexcept;
+        Window(const boost::shared_ptr<v3d::core::Logger>& logger) noexcept;
 
         /**
          * @return bool
@@ -57,7 +56,7 @@ namespace odyssey::ui {
         SDL_Surface* surface_;
         int width_;
         int height_;
-        boost::shared_ptr<odyssey::engine::Logger> logger_;
+        boost::shared_ptr<v3d::core::Logger> logger_;
     };
 
 };  // namespace odyssey::ui

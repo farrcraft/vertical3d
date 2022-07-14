@@ -5,18 +5,19 @@
 
 #include "Image.h"
 
-using namespace odyssey::asset;
+namespace odyssey::asset {
+    /**
+     **/
+    Image::Image(std::string_view name, Type t, boost::shared_ptr<v3d::image::Image> img) :
+        Asset(name, t),
+        image_(img) {
 
-/**
- **/
-Image::Image(std::string_view name, Type t, boost::shared_ptr<odyssey::image::Image> img) : 
-	Asset(name, t),
-	image_(img) {
+    }
 
-}
+    /**
+     **/
+    boost::shared_ptr<v3d::image::Image> Image::image() {
+        return image_;
+    }
 
-/**
- **/
-boost::shared_ptr<odyssey::image::Image> Image::image() {
-	return image_;
-}
+};  // namespace odyssey::asset

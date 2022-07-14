@@ -7,7 +7,7 @@
 
 #include "Asset.h"
 #include "Type.h"
-#include "../engine/Logger.h"
+#include "../../v3dlibs/core/Logger.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -37,10 +37,10 @@ namespace odyssey::asset {
 		 *
 		 * @param Type t The asset type this loader provides
 		 **/
-		Loader(Type t, const boost::shared_ptr<odyssey::engine::Logger>& logger);
+		Loader(Type t, const boost::shared_ptr<v3d::core::Logger>& logger);
 
 	protected:
-		boost::shared_ptr<odyssey::engine::Logger> logger_;
+		boost::shared_ptr<v3d::core::Logger> logger_;
 
 	private:
 		Type type_;

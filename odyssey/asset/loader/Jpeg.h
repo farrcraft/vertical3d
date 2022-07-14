@@ -14,7 +14,7 @@ namespace odyssey::asset::loader {
 	public:
 		/**
 		 **/
-		Jpeg(const boost::shared_ptr<odyssey::engine::Logger> &logger);
+		Jpeg(const boost::shared_ptr<v3d::core::Logger> &logger);
 
 		/**
 		 **/

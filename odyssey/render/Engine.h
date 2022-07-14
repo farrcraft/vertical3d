@@ -11,7 +11,7 @@
 #include "Scene.h"
 #include "TextureCache.h"
 
-#include "../engine/Logger.h"
+#include "../../v3dlibs/core/Logger.h"
 #include "../asset/Manager.h"
 #include "../ui/Window.h"
 
@@ -26,7 +26,7 @@ namespace odyssey::render {
 	public:
 		/**
 		 **/
-		Engine(const boost::shared_ptr<odyssey::engine::Logger> &logger, const boost::shared_ptr<odyssey::asset::Manager> &assetManager);
+		Engine(const boost::shared_ptr<v3d::core::Logger> &logger, const boost::shared_ptr<odyssey::asset::Manager> &assetManager);
 		
 		/**
 		 **/
@@ -72,7 +72,7 @@ namespace odyssey::render {
 	private:
 		boost::shared_ptr <odyssey::ui::Window> window_;
 		boost::shared_ptr<Context> context_;
-		boost::shared_ptr<odyssey::engine::Logger> logger_;
+		boost::shared_ptr<v3d::core::Logger> logger_;
 		boost::shared_ptr<Texture> backBuffer_;
 		boost::shared_ptr<odyssey::asset::Manager> assetManager_;
 		std::list<boost::shared_ptr<Renderable>> renderables_;

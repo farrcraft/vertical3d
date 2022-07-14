@@ -5,18 +5,20 @@
 
 #include "Loader.h"
 
-using namespace odyssey::asset;
+namespace odyssey::asset {
 
-/**
- **/
-Loader::Loader(Type t, const boost::shared_ptr<odyssey::engine::Logger> & logger) :
-	type_(t),
-	logger_(logger) {
+    /**
+     **/
+    Loader::Loader(Type t, const boost::shared_ptr<v3d::core::Logger>& logger) :
+        type_(t),
+        logger_(logger) {
 
-}
+    }
 
-/**
- **/
-Type Loader::type() const {
-	return type_;
-}
+    /**
+     **/
+    Type Loader::type() const {
+        return type_;
+    }
+
+};  // namespace odyssey::asset

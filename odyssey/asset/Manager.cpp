@@ -14,7 +14,7 @@ using namespace odyssey::asset;
 
 /**
  **/
-Manager::Manager(std::string_view path, const boost::shared_ptr<odyssey::engine::Logger> & logger) :
+Manager::Manager(std::string_view path, const boost::shared_ptr<v3d::core::Logger> & logger) :
 	logger_(logger) {
 	path_ = static_cast<std::string>(path);
 	LOG_INFO(logger_) << "Setting asset manager path to: " << path_.c_str();

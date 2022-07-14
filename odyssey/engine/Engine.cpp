@@ -17,7 +17,7 @@ namespace odyssey::engine {
     /**
      **/
     bool Engine::initialize() {
-        logger_ = boost::make_shared<Logger>();
+        logger_ = boost::make_shared<v3d::core::Logger>();
 
         LOG_INFO(logger_) << "Initializing engine...";
 

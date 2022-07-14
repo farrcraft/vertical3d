@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../image/Image.h"
+#include "../../v3dlibs/image/Image.h"
 
 #include <boost/shared_ptr.hpp>
 #include <SDL.h>
@@ -19,7 +19,7 @@ namespace odyssey::render {
 		/**
 		 * Create an SDL surface from an image object
 		 **/
-		Surface(boost::shared_ptr<odyssey::image::Image> image);
+		Surface(boost::shared_ptr<v3d::image::Image> image);
 
 		/**
 		 **/

@@ -40,7 +40,7 @@ namespace v3d {
         glLoadIdentity();
         // append the camera's projection matrix
         camera->createProjection();
-        Matrix4 p = camera->projection().transpose();
+        glm::mat4 p = camera->projection().transpose();
         glMultMatrixf(*p);
 
         // modelview contains modeling and viewing transforms
@@ -56,7 +56,7 @@ namespace v3d {
         // http://www.opengl.org/resources/faq/technical/viewing.htm
         // http://www.evl.uic.edu/ralph/508S98/coordinates.html
         camera->createView();
-        Matrix4 m = camera->view().transpose();
+        glm::mat4 m = camera->view().transpose();
         glMultMatrixf(*m);
 
         // set clear color to backgroundColor
@@ -108,7 +108,7 @@ namespace v3d {
             v3d::brep::BRep::vertex_iterator it(mesh, face_count);
             Vertex* vertex;
             for (; *it != 0; it++) {
-                Vector3 v;
+                glm::vec3 v;
                 vertex = *it;
                 v = vertex->point();
                 glVertex3f(v[0], v[1], v[2]);

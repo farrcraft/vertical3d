@@ -12,7 +12,7 @@ using namespace odyssey::render;
 
 /**
  **/
-Engine::Engine(const boost::shared_ptr<odyssey::engine::Logger> &logger, const boost::shared_ptr<odyssey::asset::Manager> &assetManager) :
+Engine::Engine(const boost::shared_ptr<v3d::core::Logger> &logger, const boost::shared_ptr<odyssey::asset::Manager> &assetManager) :
 	logger_(logger),
 	assetManager_(assetManager) {
 	textureCache_ = boost::make_shared<TextureCache>();

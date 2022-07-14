@@ -6,7 +6,7 @@
 #pragma once
 
 #include "Asset.h"
-#include "../image/Image.h"
+#include "../../v3dlibs/image/Image.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -17,13 +17,13 @@ namespace odyssey::asset {
      public:
         /**
          **/
-        Image(std::string_view name, Type t, boost::shared_ptr<odyssey::image::Image> img);
+        Image(std::string_view name, Type t, boost::shared_ptr<v3d::image::Image> img);
 
         /**
          **/
-        boost::shared_ptr<odyssey::image::Image> image();
+        boost::shared_ptr<v3d::image::Image> image();
 
      private:
-        boost::shared_ptr<odyssey::image::Image> image_;
+        boost::shared_ptr<v3d::image::Image> image_;
     };
 };  // namespace odyssey::asset
