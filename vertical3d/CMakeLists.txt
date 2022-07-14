@@ -6,3 +6,12 @@ add_executable("vertical3d"
 	"ViewPort.h" "ViewPort.cxx"
 	"Visitor.h"
 	"vertical3d.cxx")
+
+target_link_libraries(vertical3d
+	v3dlib_core
+	v3dlib_image
+	${Boost_LIBRARIES}
+	"turbojpeg-static"
+	"jpeg-static"
+	"libpng16d"
+	"zlibd")
