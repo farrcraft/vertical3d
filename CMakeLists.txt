@@ -38,6 +38,7 @@ find_package(Boost 1.76.0 REQUIRED COMPONENTS log)
 include_directories(SYSTEM
 	${Boost_INCLUDE_DIRS}
 	"vendor/entt-3.10.1/src"
+	"vendor/libnoise/include/noise"
 	"vendor/glm-0.9.9.8/glm"
 	"vendor/OpenAL 1.1 SDK/include"
 	"vendor/freealut-freealut_1_1_0/include"
@@ -63,3 +64,4 @@ add_subdirectory("pong")
 add_subdirectory("tetris")
 add_subdirectory("voxel")
 add_subdirectory("odyssey")
+add_subdirectory("vertical3d")
