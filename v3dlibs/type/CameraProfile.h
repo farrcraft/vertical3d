@@ -5,70 +5,66 @@
 
 #pragma once
 
+#include <string>
+
 #include <glm/glm.hpp>
 #include <glm/ext/quaternion_float.hpp>
 
-#include <string>
+namespace v3d::type {
+    /**
+     * A class containing the common camera settings.
+     */
+    class CameraProfile {
+        public:
+            CameraProfile(const std::string & name);
+            virtual ~CameraProfile();
 
-namespace v3d::type
-{
+            void clipping(float near, float far);
+            void eye(const glm::vec3 & position);
 
-	/**
-	 * A class containing the common camera settings.
-	 */
-	class CameraProfile
-	{
-		public:
-			CameraProfile(const std::string & name);
-			virtual ~CameraProfile();
+            /**
+            *	Orient the camera to look at a point in space.
+            *	The camera normals and rotation will be recalculated so the point
+            *	will be in the center of the view.
+            *	@param center the point in world space to focus the camera on.
+            */
+            void lookat(const glm::vec3 & center);
+            /**
+            *	Copy camera settings.
+            *	@param profile the camera profile to copy settings from.
+            */
+            void clone(const CameraProfile & profile);
+            /**
+            *	Assignment operator.
+            *	Copy the camera settings from one profile and assign them to another.
+            *	This is just the profile method packaged in an operator.
+            *	@param p the camera profile to copy settings from.
+            *	@return the camera profile with the new settings copied to it.
+            */
+            CameraProfile & operator = (const CameraProfile & p);
 
-			void clipping(float near, float far);
-			void eye(const glm::vec3 & position);
+        protected:
+            friend class Camera;
 
-			/**
-			*	Orient the camera to look at a point in space.
-			*	The camera normals and rotation will be recalculated so the point
-			*	will be in the center of the view.
-			*	@param center the point in world space to focus the camera on.
-			*/
-			void lookat(const glm::vec3 & center);
-			/**
-			*	Copy camera settings.
-			*	@param profile the camera profile to copy settings from.
-			*/
-			void clone(const CameraProfile & profile);
-			/**
-			*	Assignment operator.
-			*	Copy the camera settings from one profile and assign them to another.
-			*	This is just the profile method packaged in an operator.
-			*	@param p the camera profile to copy settings from.
-			*	@return the camera profile with the new settings copied to it.
-			*/
-			CameraProfile & operator = (const CameraProfile & p);
+            typedef enum CameraOptions {
+                OPTION_ORTHOGRAPHIC			= (1 << 1),
+                OPTION_DEFAULT				= (1 << 2)
+            } CameraOptions;
 
-		protected:
-			friend class Camera;
+            std::string name_;
+            glm::vec3 eye_;
+            glm::vec3 direction_;
+            glm::vec3 right_;
+            glm::vec3 up_;
+            float orthoZoom_;
+            float pixelAspect_;  // pixel aspect ratio w:h e.g. 4/3 = 1.33
+            float near_;
+            float far_;
+            float fov_;  // y fov
+            unsigned int options_;
+            unsigned int size_[2];
 
-			typedef enum CameraOptions
-			{
-				OPTION_ORTHOGRAPHIC			= (1 << 1),
-				OPTION_DEFAULT				= (1 << 2)
-			} CameraOptions;
+            glm::quat rotation_;
+    };
 
-			std::string		name_;
-			glm::vec3 eye_;
-			glm::vec3 direction_;
-			glm::vec3 right_;
-			glm::vec3 up_;
-			float			orthoZoom_;
-			float			pixelAspect_;	// pixel aspect ratio w:h e.g. 4/3 = 1.33
-			float			near_;
-			float			far_;
-			float			fov_;			// y fov
-			unsigned int 	options_;
-			unsigned int	size_[2];
-
-			glm::quat rotation_;
-	};
-
-}; // end namespace v3D
+};  // namespace v3d::type
