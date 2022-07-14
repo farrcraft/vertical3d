@@ -18,11 +18,13 @@
 
 #include <boost/make_shared.hpp>
 
-DebugOverlay::DebugOverlay(boost::shared_ptr<Scene> scene, boost::shared_ptr<v3d::gl::Program> shaderProgram, boost::shared_ptr<AssetLoader> loader) :
+DebugOverlay::DebugOverlay(boost::shared_ptr<Scene> scene, boost::shared_ptr<v3d::gl::Program> shaderProgram,
+    boost::shared_ptr<AssetLoader> loader,
+    const boost::shared_ptr<v3d::core::Logger> & logger) :
     scene_(scene),
     enabled_(false) {
     // setup text buffer
-    fontCache_ = boost::make_shared<v3d::font::TextureFontCache>(512, 512, v3d::font::TextureTextBuffer::LCD_FILTERING_ON);
+    fontCache_ = boost::make_shared<v3d::font::TextureFontCache>(512, 512, v3d::font::TextureTextBuffer::LCD_FILTERING_ON, logger);
     boost::shared_ptr<v3d::font::TextureTextBuffer> text;
     text = boost::make_shared<v3d::font::TextureTextBuffer>();
 

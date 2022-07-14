@@ -28,9 +28,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
 
-#include <boost/log/trivial.hpp>
-
-
+#include <boost/make_shared.hpp>
 
 void loadMaterials(boost::shared_ptr<v3d::gl::Program> program) {
     MaterialFactory factory(program);
@@ -68,10 +66,11 @@ void loadMaterials(boost::shared_ptr<v3d::gl::Program> program) {
     factory.create("materials[15]", glm::vec3(0.91f, 0.91f, 0.91f));
 }
 
-Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_ptr<AssetLoader> & loader) :
+Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_ptr<AssetLoader> & loader, const boost::shared_ptr<v3d::core::Logger> & logger) :
     scene_(scene),
     debug_(false),
-    builder_(scene->chunks()) {
+    builder_(scene->chunks()),
+    logger_(logger) {
     // log GL version info
     std::stringstream msg;
     const GLubyte * renderer = glGetString(GL_RENDERER);
@@ -82,7 +81,7 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
     msg << " Vendor: " << vendor << std::endl;
     msg << " GL Version: " << version << std::endl;
     msg << " GLSL: " << glslVersion << std::endl;
-    BOOST_LOG_TRIVIAL(info) << msg.str();
+    LOG_INFO(logger) << msg.str();
 
     // setup shaders
     std::string shaderName;
@@ -137,7 +136,7 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
     boost::shared_ptr<v3d::gl::Program> textProgram = factory.create(v3d::gl::Shader::SHADER_TYPE_VERTEX|v3d::gl::Shader::SHADER_TYPE_FRAGMENT, "shaders/text");
     programs_["text"] = textProgram;
 
-    debugOverlay_.reset(new DebugOverlay(scene_, textProgram, loader));
+    debugOverlay_ = boost::make_shared<DebugOverlay>(scene_, textProgram, loader, logger);
 }
 
 
