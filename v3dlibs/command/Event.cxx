@@ -1,56 +1,48 @@
 /**
  * Vertical3D
- * Copyright(c) 2021 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
 **/
 
 #include "Event.h"
 
-using namespace v3d::command;
+namespace v3d::command {
+    Event::Event() : catchflag_(MATCH_STATE_ANY) {
+    }
 
-Event::Event() : _catchflag(MATCH_STATE_ANY)
-{
-}
+    Event::Event(const std::string& name, std::string ns, MatchState flag) {
+        if (ns.size() == 0)
+            ns = "__global__";
 
-Event::Event(const std::string & name, std::string ns, MatchState flag)
-{
-	if (ns.size() == 0)
-		ns = "__global__";
+        namespace_ = ns;
+        name_ = name;
+        catchflag_ = flag;
+    }
 
-	_namespace = ns;
-	_name = name;
-	_catchflag = flag;
-}
+    Event::~Event() {
+    }
 
-Event::~Event()
-{
-}
+    std::string Event::name(void) const {
+        return name_;
+    }
 
-std::string Event::name(void) const
-{
-	return _name;
-}
+    std::string Event::ns(void) const {
+        return namespace_;
+    }
 
-std::string Event::ns(void) const
-{
-	return _namespace;
-}
+    Event::MatchState Event::flag(void) const {
+        return catchflag_;
+    }
 
-Event::MatchState Event::flag(void) const
-{
-	return _catchflag;
-}
+    void Event::name(const std::string& n) {
+        name_ = n;
+    }
 
-void Event::name(const std::string & n)
-{
-	_name = n;
-}
+    void Event::ns(const std::string& n) {
+        namespace_ = n;
+    }
 
-void Event::ns(const std::string & n)
-{
-	_namespace = n;
-}
+    void Event::flag(MatchState f) {
+        catchflag_ = f;
+    }
 
-void Event::flag(MatchState f)
-{
-	_catchflag = f;
-}
+};  // namespace v3d::command

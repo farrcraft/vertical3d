@@ -8,13 +8,13 @@
 #include "../event/EventEmitter.h"
 
 namespace v3d::input {
-	/**
-	 **/
-	class InputDevice : public v3d::event::EventEmitter {
-		public:
-			virtual ~InputDevice() = default;
-			/**
-			 **/
-			virtual bool tick() = 0;
-	};
-};
+    /**
+     **/
+    class InputDevice : public v3d::event::EventEmitter {
+     public:
+            virtual ~InputDevice() = default;
+            /**
+             **/
+            virtual bool tick() = 0;
+    };
+};  // namespace v3d::input

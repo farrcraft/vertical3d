@@ -39,5 +39,12 @@ This is the tool command for Visual Studio integration:
 > c:\Python310\lib\site-packages\cpplint.py --linelength=180 --filter=-runtime/indentation_namespace --output=vs7 $(ItemPath)
 
 
+## Dependencies
+
+- [libnoise](https://github.com/eXpl0it3r/libnoise) - This is an unofficial fork that adds CMake support.
+
+
 ## TODO
 
+[] Replace all of the old XML config stuff with JSON equivalents
+[] Get tests working again

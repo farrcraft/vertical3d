@@ -23,7 +23,7 @@ class Scene;
  * Application controller
  */
 class Controller :
-    public v3d::MouseEventListener {
+    public v3d::input::MouseEventListener {
  public:
         /**
          * Initialize the controller
@@ -36,24 +36,24 @@ class Controller :
          */
         bool run();
 
-        bool exec(const v3d::CommandInfo & command, const std::string & param);
-        bool execUI(const v3d::CommandInfo & command, const std::string & param);
+        bool exec(const v3d::command::CommandInfo & command, const std::string & param);
+        bool execUI(const v3d::command::CommandInfo & command, const std::string & param);
 
         // mouse event listener overrides
         void motion(unsigned int x, unsigned int y);
         void buttonPressed(unsigned int button);
         void buttonReleased(unsigned int button);
 
-        void notify(const v3D::EventInfo & e);
+        void notify(const v3d::event::EventInfo & e);
 
  private:
         boost::shared_ptr<Hookah::Window> window_;
 
-        boost::shared_ptr<v3d::KeyboardDevice> keyboard_;
-        boost::shared_ptr<v3d::MouseDevice> mouse_;
+        boost::shared_ptr<v3d::input::KeyboardDevice> keyboard_;
+        boost::shared_ptr<v3d::input::MouseDevice> mouse_;
 
-        boost::shared_ptr<v3d::CommandDirectory> directory_;
-        boost::shared_ptr<v3d::InputEventAdapter> listenerAdapter_;
+        boost::shared_ptr<v3d::command::CommandDirectory> directory_;
+        boost::shared_ptr<v3d::input::InputEventAdapter> listenerAdapter_;
 
         boost::shared_ptr<Renderer> renderer_;
         boost::shared_ptr<Scene> scene_;

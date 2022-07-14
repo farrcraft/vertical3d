@@ -1,23 +1,23 @@
 /**
- * Voxel Engine
- *
- * (c) Joshua Farr <j.wgasa@gmail.com>
- *
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
 #pragma once
 
-#include <vertical3d/gl/Program.h>
+#include <string>
+
+#include "../../v3dlibs/gl/Program.h"
+
 #include <boost/shared_ptr.hpp>
 #include <glm/glm.hpp>
 
-class MaterialFactory
-{
-	public:
-		MaterialFactory(boost::shared_ptr<v3D::Program> program);
+class MaterialFactory {
+ public:
+    explicit MaterialFactory(boost::shared_ptr<v3d::gl::Program> program);
 
-		void create(const std::string & name, const glm::vec3 & color);
+    void create(const std::string & name, const glm::vec3 & color);
 
-	private:
-		boost::shared_ptr<v3D::Program> program_;
+ private:
+    boost::shared_ptr<v3d::gl::Program> program_;
 };

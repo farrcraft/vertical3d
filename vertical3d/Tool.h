@@ -1,21 +1,21 @@
-#ifndef INCLUDED_V3D_TOOL
-#define INCLUDED_V3D_TOOL
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+**/
+
+#pragma once
 
 #include <string>
 
-namespace v3D
-{
+namespace v3d {
 
-	class Tool
-	{
-		public:
-			virtual ~Tool() { }
+    class Tool {
+     public:
+            virtual ~Tool() { }
 
-			virtual void activate(const std::string & name) = 0;
-			virtual void deactivate(const std::string & name) = 0;
-	};
+            virtual void activate(const std::string & name) = 0;
+            virtual void deactivate(const std::string & name) = 0;
+    };
 
 
-}; // end namespace v3D
-
-#endif // INCLUDED_V3D_TOOL
+};  // namespace v3d
