@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <list>
+
 #include "Context.h"
 #include "Operation.h"
 #include "Renderable.h"
@@ -23,11 +25,11 @@ namespace odyssey::render {
      * it is the responsibility of the render engine to manage the rendering pipeline.
      **/
     class Engine {
-    public:
+     public:
         /**
          **/
         Engine(const boost::shared_ptr<v3d::core::Logger> &logger, const boost::shared_ptr<v3d::asset::Manager> &assetManager);
-        
+
         /**
          **/
         ~Engine();
@@ -35,7 +37,7 @@ namespace odyssey::render {
         /**
          **/
         bool initialize(const boost::shared_ptr<odyssey::ui::Window> &window);
-        
+
         /**
          **/
         bool shutdown();
@@ -43,11 +45,11 @@ namespace odyssey::render {
         /**
          **/
         boost::shared_ptr<v3d::asset::Manager> assetManager();
-        
+
         /**
          **/
         boost::shared_ptr<TextureCache> textureCache();
-        
+
         /**
          * Handle a resize event 
          **/
@@ -69,7 +71,7 @@ namespace odyssey::render {
          **/
         boost::shared_ptr<Scene> scene();
 
-    private:
+     private:
         boost::shared_ptr <odyssey::ui::Window> window_;
         boost::shared_ptr<Context> context_;
         boost::shared_ptr<v3d::core::Logger> logger_;

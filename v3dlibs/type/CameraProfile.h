@@ -15,8 +15,8 @@ namespace v3d::type {
      * A class containing the common camera settings.
      */
     class CameraProfile {
-        public:
-            CameraProfile(const std::string & name);
+     public:
+            explicit CameraProfile(const std::string & name);
             virtual ~CameraProfile();
 
             void clipping(float near, float far);
@@ -43,12 +43,12 @@ namespace v3d::type {
             */
             CameraProfile & operator = (const CameraProfile & p);
 
-        protected:
+     protected:
             friend class Camera;
 
             typedef enum CameraOptions {
-                OPTION_ORTHOGRAPHIC			= (1 << 1),
-                OPTION_DEFAULT				= (1 << 2)
+                OPTION_ORTHOGRAPHIC = (1 << 1),
+                OPTION_DEFAULT = (1 << 2)
             } CameraOptions;
 
             std::string name_;
