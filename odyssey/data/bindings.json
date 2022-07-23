@@ -1,0 +1,21 @@
+{
+	"contexts": [
+		{
+			"context": "player::movement",
+			"bindings": {
+				"keyboard::w": "player::movement::forward",
+				"keyboard::s": "player::movement::backward",
+				"keyboard::a": "player::movement::left",
+				"keyboard::d": "player::movement::right",
+				"keyboard::space": "player::movement::up",
+				"mouse::click::left": "player::action::use"
+			}
+		},
+		{
+			"context": "ui::navigation",
+			"bindings": {
+				"keyboard::arrow_up": "ui::navigation::up"
+			}
+		}
+	]
+}
