@@ -106,7 +106,7 @@ namespace v3d {
             glBegin(GL_POLYGON);
 
             v3d::brep::BRep::vertex_iterator it(mesh, face_count);
-            Vertex* vertex;
+            v3d::brep::Vertex* vertex;
             for (; *it != 0; it++) {
                 glm::vec3 v;
                 vertex = *it;
