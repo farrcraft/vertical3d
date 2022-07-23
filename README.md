@@ -47,4 +47,15 @@ This is the tool command for Visual Studio integration:
 ## TODO
 
 [] Replace all of the old XML config stuff with JSON equivalents
+[] refactor common json functionality out of odyssey into a common v3dlib
+[] move rigel/libv3dgraph to new v3dlib v3d::dag 
+[] update luxa ui loader to use json instead of xml
+[] update pong to use json instead of xml
+[] update tetris to use json instead of xml
+[] update voxel to use json instead of xml
+[] make sure rigel libv3dcore/brep doesn't have anything missing from v3dlibs/brep & remove it
+[] merge rigel libv3dcommand with v3dlibs/command & remove it
 [] Get tests working again
+[] integrate tests into github actions
+[] integrate cpplint into github actions
+[] fix all of the build warnings

@@ -1,17 +1,17 @@
 /**
- * The Untitled Adventure / Odyssey
- * Copyright (c) 2022 Joshua Farr (josh@farrcraft.com)
- **/
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+**/
 
 #pragma once
 
 #include "../Loader.h"
 
-namespace odyssey::asset::loader {
+namespace v3d::asset::loader {
     /**
      **/
     class Png final : public Loader {
-    public:
+     public:
         /**
          **/
         Png(const boost::shared_ptr<v3d::core::Logger>& logger);
@@ -20,4 +20,4 @@ namespace odyssey::asset::loader {
          **/
         boost::shared_ptr<Asset> load(std::string_view name);
     };
-};  // namespace odyssey::asset::loader
+};  // namespace v3d::asset::loader

@@ -14,15 +14,15 @@ link_directories(
 
 # Add source to this project's executable.
 add_executable (Odyssey WIN32 "Odyssey.cpp" "Odyssey.h" "ui/Window.h" 
-"engine/Engine.h" "engine/Engine.cpp" "ui/Window.cpp" "ui/Screen.h" "ui/Screen.cpp" "config/Bootstrap.h" "config/Bootstrap.cpp" "config/JsonFile.h" "config/JsonFile.cpp" 
-"asset/loader/Jpeg.cpp" "engine/Sprite.h" "render/Texture.h"  "render/Frame.h" "engine/Player.h" "engine/SpriteSheet.h" 
+"engine/Engine.h" "engine/Engine.cpp" "ui/Window.cpp" "ui/Screen.h" "ui/Screen.cpp" "config/Bootstrap.h" "config/Bootstrap.cpp" "../v3dlibs/asset/JsonFile.h" "../v3dlibs/asset/JsonFile.cpp" 
+ "engine/Sprite.h" "render/Texture.h"  "render/Frame.h" "engine/Player.h" "engine/SpriteSheet.h" 
 "render/Engine.h" "render/Engine.cpp" "render/Renderable.h" "engine/Player.cpp" "render/renderable/Player.h" "render/renderable/Player.cpp" "render/Renderable.cpp" 
-"asset/Manager.h" "asset/Asset.h" "asset/Manager.cpp" "asset/Asset.cpp" "asset/Type.h"   "render/Texture.cpp" "asset/Loader.h" "asset/Cache.h" "render/TextureCache.h"
-"render/Surface.h" "render/Surface.cpp" "actor/Actor.h" "render/TextureCache.cpp" "asset/loader/Png.h" "asset/loader/Png.cpp" "asset/Image.h" "asset/Image.cpp" "asset/Loader.cpp" 
+ "render/Texture.cpp" "render/TextureCache.h"
+"render/Surface.h" "render/Surface.cpp" "actor/Actor.h" "render/TextureCache.cpp" 
 "render/operation/BlitTexture.h" "render/Operation.h" "render/Frame.cpp" "render/operation/BlitTexture.cpp" "render/Context.h" "render/Context.cpp" "render/Scene.h" "render/Scene.cpp" 
 "tile/Tile.h" "tile/Size.h" "engine/Unit.h" "component/Position.h" "component/Position.cpp" "input/Engine.h" "input/Engine.cpp" "input/Device.h" "input/Device.cpp" "input/Mouse.h" "input/Mouse.cpp" 
-"input/Keyboard.h" "input/Keyboard.cpp" "event/KeyUp.h" "config/BindingContext.h" "system/Movement.h"  "input/KeyState.h" "input/KeyState.cpp" "asset/Json.h" "asset/Json.cpp" "asset/loader/Json.h" 
-"asset/loader/Json.cpp" "system/Movement.cpp" "asset/Cache.cpp" "config/BindingContext.cpp" "config/Config.h" "config/Config.cpp" "event/Key.h" "event/Key.cpp" "event/KeyUp.cpp" "event/KeyDown.h" "event/KeyDown.cpp")
+"input/Keyboard.h" "input/Keyboard.cpp" "event/KeyUp.h" "config/BindingContext.h" "system/Movement.h"  "input/KeyState.h" "input/KeyState.cpp" "system/Movement.cpp" "config/BindingContext.cpp" "config/Config.h" 
+"config/Config.cpp" "event/Key.h" "event/Key.cpp" "event/KeyUp.cpp" "event/KeyDown.h" "event/KeyDown.cpp")
 
 # SDL2MAIN_LIBRARY is also specified within SDL2_LIBRARY by the FindSDL2 module.
 # It's needed for Windows specific main function.

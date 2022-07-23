@@ -1,17 +1,16 @@
 /**
- * The Untitled Adventure / Odyssey
- * Copyright (c) 2022 Joshua Farr (josh@farrcraft.com)
- **/
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+**/
 
 #include "Image.h"
 
-namespace odyssey::asset {
+namespace v3d::asset {
     /**
      **/
     Image::Image(std::string_view name, Type t, boost::shared_ptr<v3d::image::Image> img) :
         Asset(name, t),
         image_(img) {
-
     }
 
     /**
@@ -20,4 +19,4 @@ namespace odyssey::asset {
         return image_;
     }
 
-};  // namespace odyssey::asset
+};  // namespace v3d::asset

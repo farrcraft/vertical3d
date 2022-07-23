@@ -5,8 +5,6 @@
 
 #pragma once
 
-#include "../asset/Json.h"
-
 #include <boost/shared_ptr.hpp>
 
 #include <map>

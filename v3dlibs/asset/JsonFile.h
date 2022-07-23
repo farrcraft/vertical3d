@@ -1,19 +1,21 @@
 /**
- * The Untitled Adventure / Odyssey
- * Copyright (c) 2022 Joshua Farr (josh@farrcraft.com)
- **/
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+**/
 
 #pragma once
 
+#include <string>
+
 #include <boost/json.hpp>
 
-namespace odyssey::config {
+namespace v3d::asset {
 
     /**
      * This is based on the example JSON loading code in the boost library
      **/
     class JsonFile {
-    public:
+     public:
         /**
          **/
         JsonFile() = default;
@@ -45,7 +47,7 @@ namespace odyssey::config {
 
         /**
          **/
-        long size() const noexcept;
+        int64_t size() const noexcept;
 
         /**
          **/
@@ -67,9 +69,9 @@ namespace odyssey::config {
          **/
         std::size_t read(char* data, std::size_t size);
 
-    private:
+     private:
         FILE* handle_ = nullptr;
-        long size_ = 0;
+        int64_t size_ = 0;
     };
 
 
@@ -97,4 +99,4 @@ namespace odyssey::config {
         return s;
     }
 
-};
+};  // namespace v3d::asset

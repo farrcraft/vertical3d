@@ -8,7 +8,7 @@
 #include <iostream>
 #include <string>
 
-#include "JsonFile.h"
+#include "../../v3dlibs/asset/JsonFile.h"
 
 #include <boost/filesystem.hpp>
 
@@ -26,7 +26,7 @@ namespace odyssey::config {
         try {
             boost::filesystem::path path = boost::filesystem::current_path();
             LOG_INFO(logger) << "Looking for bootstrap.json in: " << path;
-            JsonFile file("bootstrap.json", "r");
+            v3d::asset::JsonFile file("bootstrap.json", "r");
             boost::json::stream_parser parser;
             boost::json::error_code err;
             do {

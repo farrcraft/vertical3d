@@ -8,7 +8,7 @@
 #include "../../v3dlibs/core/Logger.h"
 #include "Player.h"
 
-#include "../asset/Manager.h"
+#include "../../v3dlibs/asset/Manager.h"
 #include "../config/Bootstrap.h"
 #include "../config/Config.h"
 #include "../input/Engine.h"
@@ -61,7 +61,7 @@ namespace odyssey::engine {
         boost::shared_ptr<odyssey::render::Engine> renderEngine_;
         boost::shared_ptr<odyssey::input::Engine> inputEngine_;
 
-        boost::shared_ptr<odyssey::asset::Manager> assetManager_;
+        boost::shared_ptr<v3d::asset::Manager> assetManager_;
 
         entt::registry registry_;
         boost::shared_ptr<entt::dispatcher> dispatcher_;

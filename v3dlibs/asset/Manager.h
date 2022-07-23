@@ -1,19 +1,21 @@
 /**
- * The Untitled Adventure / Odyssey
- * Copyright (c) 2022 Joshua Farr (josh@farrcraft.com)
- **/
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+**/
 
 #pragma once
+
+#include <unordered_map>
 
 #include "Asset.h"
 #include "Loader.h"
 #include "Type.h"
 
-#include "../../v3dlibs/core/Logger.h"
+#include "../core/Logger.h"
 
 #include <boost/filesystem.hpp>
 
-namespace odyssey::asset {
+namespace v3d::asset {
     /**
      * The Asset Manager provides an access point for mapping and loading assets
      * within a single path.
@@ -50,4 +52,4 @@ namespace odyssey::asset {
         boost::shared_ptr<v3d::core::Logger> logger_;
     };
 
-};
+};  // namespace v3d::asset

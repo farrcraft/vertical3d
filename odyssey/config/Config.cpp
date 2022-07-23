@@ -5,19 +5,20 @@
 
 #include "Config.h"
 
+#include <string>
+
 #include <boost/make_shared.hpp>
 
 namespace odyssey::config {
     /**
      **/
     Config::Config(const boost::shared_ptr<v3d::core::Logger>& logger) : logger_(logger) {
-
     }
 
     /**
      **/
-    bool Config::load(const boost::shared_ptr<odyssey::asset::Manager>& assetManager) {
-        boost::shared_ptr<odyssey::asset::Json> bindings = boost::dynamic_pointer_cast<odyssey::asset::Json>(assetManager->loadTypeFromExt("bindings.json"));
+    bool Config::load(const boost::shared_ptr<v3d::asset::Manager>& assetManager) {
+        boost::shared_ptr<v3d::asset::Json> bindings = boost::dynamic_pointer_cast<v3d::asset::Json>(assetManager->loadTypeFromExt("bindings.json"));
         if (!bindings || !loadBindings(bindings)) {
             return false;
         }
@@ -26,7 +27,7 @@ namespace odyssey::config {
 
     /**
      **/
-    bool Config::loadBindings(const boost::shared_ptr<odyssey::asset::Json>& bindings) {
+    bool Config::loadBindings(const boost::shared_ptr<v3d::asset::Json>& bindings) {
         auto const doc = bindings->document();
         auto const contexts = doc.at("contexts");
         if (!contexts.is_array()) {

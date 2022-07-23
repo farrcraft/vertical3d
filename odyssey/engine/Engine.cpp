@@ -35,7 +35,7 @@ namespace odyssey::engine {
             return false;
         }
 
-        assetManager_ = boost::make_shared<odyssey::asset::Manager>(bootstrap_.dataPath(), logger_);
+        assetManager_ = boost::make_shared<v3d::asset::Manager>(bootstrap_.dataPath(), logger_);
 
         player_ = boost::make_shared<Player>(registry_);
 

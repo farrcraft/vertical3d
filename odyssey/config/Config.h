@@ -5,20 +5,21 @@
 
 #pragma once
 
-#include "BindingContext.h"
-#include "../asset/Manager.h"
-
-#include <boost/shared_ptr.hpp>
-
 #include <unordered_map>
 #include <string_view>
+
+#include "BindingContext.h"
+#include "../../v3dlibs/asset/Json.h"
+#include "../../v3dlibs/asset/Manager.h"
+
+#include <boost/shared_ptr.hpp>
 
 namespace odyssey::config {
     /**
      * JSON file-derived configuration
      **/
     class Config final {
-    public:
+     public:
         /**
          **/
         Config(const boost::shared_ptr<v3d::core::Logger> &logger);
@@ -30,9 +31,9 @@ namespace odyssey::config {
          * 
          * @return true if all of the config is successfully loaded
          **/
-        bool load(const boost::shared_ptr<odyssey::asset::Manager>& assetManager);
-        
-    protected:
+        bool load(const boost::shared_ptr<v3d::asset::Manager>& assetManager);
+
+     protected:
         /**
          * Load the bindings.json config
          * 
@@ -40,10 +41,11 @@ namespace odyssey::config {
          * 
          * @return true if bindings are successfully loaded
          **/
-        bool loadBindings(const boost::shared_ptr<odyssey::asset::Json>& bindings);
+        bool loadBindings(const boost::shared_ptr<v3d::asset::Json>& bindings);
 
-    private:
+     private:
         std::unordered_map<std::string_view, boost::shared_ptr<BindingContext> > contexts_;
         boost::shared_ptr<v3d::core::Logger> logger_;
     };
-};
+};  // namespace odyssey::config
+

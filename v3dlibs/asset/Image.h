@@ -1,16 +1,16 @@
 /**
- * The Untitled Adventure / Odyssey
- * Copyright (c) 2022 Joshua Farr (josh@farrcraft.com)
- **/
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+**/
 
 #pragma once
 
 #include "Asset.h"
-#include "../../v3dlibs/image/Image.h"
+#include "../image/Image.h"
 
 #include <boost/shared_ptr.hpp>
 
-namespace odyssey::asset {
+namespace v3d::asset {
     /**
      **/
     class Image : public Asset {
@@ -26,4 +26,4 @@ namespace odyssey::asset {
      private:
         boost::shared_ptr<v3d::image::Image> image_;
     };
-};  // namespace odyssey::asset
+};  // namespace v3d::asset
