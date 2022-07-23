@@ -35,5 +35,6 @@ target_link_libraries(Odyssey
 		"jpeg-static"
 		"libpng16d"
 		"zlibd"
+		"v3dlib_asset"
 		"v3dlib_core"
 		"v3dlib_image")
