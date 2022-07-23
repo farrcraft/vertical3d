@@ -70,18 +70,18 @@ namespace v3d::brep {
             void extrudeFace(unsigned int face);
             void splitFace(unsigned int face, unsigned int leftEdge, unsigned int rightEdge, const glm::vec3 & leftPoint, const glm::vec3 & rightPoint);
 
-            unsigned int vertexCount(void) const;
-            unsigned int edgeCount(void) const;
-            unsigned int faceCount(void) const;
+            size_t vertexCount(void) const;
+            size_t edgeCount(void) const;
+            size_t faceCount(void) const;
 
-            unsigned int addVertex(const Vertex & v);
-            unsigned int addEdge(const HalfEdge & e);
-            unsigned int addFace(const Face & f);
+            size_t addVertex(const Vertex & v);
+            size_t addEdge(const HalfEdge & e);
+            size_t addFace(const Face & f);
 
      protected:
-            unsigned int addVertex(const glm::vec3 & v);
-            unsigned int addEdge(unsigned int vertex);
-            unsigned int findPair(unsigned int edge, unsigned int prevEdge);
+            size_t addVertex(const glm::vec3 & v);
+            size_t addEdge(unsigned int vertex);
+            size_t findPair(unsigned int edge, unsigned int prevEdge);
 
      private:
             std::vector<Vertex> vertices_;

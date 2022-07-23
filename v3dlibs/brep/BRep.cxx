@@ -144,7 +144,7 @@ void faceUV(boost::shared_ptr<BRep> mesh, unsigned int face, glm::vec3 & u, glm:
     u = glm::normalize(glm::cross(v, norm));
 }
 
-unsigned int BRep::addVertex(const glm::vec3 & v) {
+size_t BRep::addVertex(const glm::vec3 & v) {
     unsigned int index = 0;
     for (; index < vertices_.size(); index++) {
         if (vertices_[index] == v)
@@ -155,7 +155,7 @@ unsigned int BRep::addVertex(const glm::vec3 & v) {
     return (vertices_.size() - 1);
 }
 
-unsigned int BRep::addEdge(unsigned int vertex) {
+size_t BRep::addEdge(unsigned int vertex) {
     HalfEdge e(vertex);
     /*
     unsigned int index = 0;
@@ -174,7 +174,7 @@ unsigned int BRep::addEdge(unsigned int vertex) {
 void BRep::addFace(const std::vector<glm::vec3> & vertices, const glm::vec3 & normal) {
     // add vertices
     std::vector<unsigned int> indices;
-    unsigned int vertex;
+    size_t vertex;
     std::vector<glm::vec3>::const_iterator it = vertices.begin();
     for (; it != vertices.end(); it++) {
         vertex = addVertex(*it);
@@ -182,8 +182,8 @@ void BRep::addFace(const std::vector<glm::vec3> & vertices, const glm::vec3 & no
     }
 
     // add edges
-    unsigned int index = 0;
-    unsigned int edge_id;
+    size_t index = 0;
+    size_t edge_id;
     /*
     unsigned int firstEdgeID = INVALID_ID;
     unsigned int lastEdgeID = INVALID_ID;
@@ -248,14 +248,14 @@ void BRep::addFace(const std::vector<glm::vec3> & vertices, const glm::vec3 & no
     }
 }
 
-unsigned int BRep::findPair(unsigned int edge, unsigned int prevEdge) {
+size_t BRep::findPair(unsigned int edge, unsigned int prevEdge) {
     // this edge's pair points to the previous edge/vertex in this face
     // find the edge that points to the previous edge's vertex 
     // and whose next edge points to this edge's vertex
 
-    unsigned int index = 0;
+    size_t index = 0;
     // pairs never share the same face
-    unsigned int face = edges_[edge].face();
+    size_t face = edges_[edge].face();
     for (; index < edges_.size(); index++)
     {
         if (edges_[index].face() != face &&
@@ -318,34 +318,34 @@ Vertex * BRep::vertex(unsigned int vert)
     return 0;
 }
 
-unsigned int BRep::vertexCount(void) const
+size_t BRep::vertexCount(void) const
 {
     return vertices_.size();
 }
 
-unsigned int BRep::edgeCount(void) const
+size_t BRep::edgeCount(void) const
 {
     return edges_.size();
 }
 
-unsigned int BRep::faceCount(void) const
+size_t BRep::faceCount(void) const
 {
     return faces_.size();
 }
 
-unsigned int BRep::addVertex(const Vertex & v)
+size_t BRep::addVertex(const Vertex & v)
 {
     vertices_.push_back(v);
     return (vertices_.size() - 1);
 }
 
-unsigned int BRep::addEdge(const HalfEdge & e)
+size_t BRep::addEdge(const HalfEdge & e)
 {
     edges_.push_back(e);
     return (edges_.size() - 1);
 }
 
-unsigned int BRep::addFace(const Face & f)
+size_t BRep::addFace(const Face & f)
 {
     faces_.push_back(f);
     return (faces_.size() - 1);
