@@ -1,0 +1,168 @@
+{
+	"keys": [
+		{
+			"event": "w",
+			"command": "leftPaddleUp",
+			"scope": "pong",
+			"catch": "any"
+		},
+		{
+			"event": "s",
+			"command": "leftPaddleDown",
+			"scope": "pong",
+			"catch": "any"
+		},
+		{
+			"event": "arrow_up",
+			"command": "rightPaddleUp",
+			"scope": "pong",
+			"catch": "any"
+		},
+		{
+			"event": "arrow_down",
+			"command": "rightPaddleDown",
+			"scope": "pong",
+			"catch": "any"
+		},
+		{
+			"event": "escape",
+			"command": "showGameMenu",
+			"scope": "ui",
+			"catch": "on"
+		},
+		{
+			"event": "return",
+			"command": "selectMenu",
+			"scope": "ui",
+			"catch": "on"
+		},
+		{
+			"event": "arrow_up",
+			"command": "menuPrevious",
+			"scope": "ui",
+			"catch": "on"
+		},
+		{
+			"event": "arrow_down",
+			"command": "menuNext",
+			"scope": "ui",
+			"catch": "on"
+		},
+		{
+			"event": "f1",
+			"command": "toggleFS",
+			"catch": "on"
+		}
+	],
+	"vgui": {
+		"theme": {
+			"name": "default"
+		},
+		"menu": {
+			"name": "game-menu",
+			"visible": false,
+			"items": [
+				{
+					"label": "Options",
+					"command": "submenu",
+					"scope": "pong",
+					"type": "submenu",
+					"items": [
+						{
+							"label": "Rounds: ",
+							"param": "maxScore",
+							"command": "set_gamevar",
+							"scope": "pong",
+							"type": "numeric_input"
+						},
+						{
+							"label": "Player 1 Up: ",
+							"param": "pong::leftPaddleUp",
+							"command": "set_key",
+							"scope": "pong",
+							"type": "key_input"
+						},
+						{
+							"label": "Player 1 Down: ",
+							"param": "pong::leftPaddleDown",
+							"command": "set_key",
+							"scope": "pong",
+							"type": "key_input"
+						},
+						{
+							"label": "Player 2 Up: ",
+							"param": "pong::rightPaddleUp",
+							"command": "set_key",
+							"scope": "pong",
+							"type": "key_input"
+						},
+						{
+							"label": "Player 2 Down: ",
+							"param": "pong::rightPaddleDown",
+							"command": "set_key",
+							"scope": "pong",
+							"type": "key_input"
+						}
+					]
+				},
+				{
+					"label": "Singleplayer",
+					"param": "SP",
+					"command": "setmode",
+					"scope": "pong",
+					"type": "action"
+				},
+				{
+					"label": "Co-op",
+					"param": "coop",
+					"command": "setmode",
+					"scope": "pong",
+					"type": "action"
+				},
+				{
+					"label": "Multiplayer",
+					"param": "MP",
+					"command": "setmode",
+					"scope": "pong",
+					"type": "action"
+				},
+				{
+					"label": "Quit",
+					"command": "quit",
+					"scope": "pong",
+					"type": "action"
+				}
+			]
+		},
+		"fonts": [
+			{
+				"face": "arial.ttf",
+				"size": 32,
+				"bold": false,
+				"italics": false,
+				"name": "ui-text-font"
+			},
+			{
+				"face": "arial.ttf",
+				"size": 64,
+				"bold": false,
+				"italics": false,
+				"name": "score"
+			}
+		],
+		"sounds": [
+			{
+				"clip_id": "hit",
+				"file": "hit.wav"
+			},
+			{
+				"clip_id": "score",
+				"file": "score.wav"
+			},
+			{
+				"clip_id": "victory",
+				"file": "victory.wav"
+			}
+		]
+	}
+}

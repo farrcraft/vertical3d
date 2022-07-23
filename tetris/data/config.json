@@ -1,0 +1,71 @@
+{
+	"keys": [
+		{
+			"event": "a",
+			"command": "movePieceLeft",
+			"scope": "tetris",
+			"catch": "on"
+		},
+		{
+			"event": "d",
+			"command": "movePieceRight",
+			"scope": "tetris",
+			"catch": "on"
+		},
+		{
+			"event": "w",
+			"command": "rotatePieceCW",
+			"scope": "tetris",
+			"catch": "on"
+		},
+		{
+			"event": "s",
+			"command": "rotatePieceCCW",
+			"scope": "tetris",
+			"catch": "on"
+		},
+		{
+			"event": "space",
+			"command": "dropPiece",
+			"scope": "tetris",
+			"catch": "on"
+		},
+		{
+			"event": "escape",
+			"command": "toggleMenu",
+			"catch": "on"
+		},
+		{
+			"event": "return",
+			"command": "selectMenu",
+			"catch": "on"
+		},
+		{
+			"event": "arrow_up",
+			"command": "menuPrevious",
+			"catch": "on"
+		},
+		{
+			"event": "arrow_down",
+			"command": "menuNext",
+			"catch": "on"
+		},
+		{
+			"event": "f1",
+			"command": "toggleFS",
+			"catch": "on"
+		},
+		{
+			"event": "f2",
+			"command": "debugMode",
+			"scope": "tetris",
+			"catch": "on"
+		}
+	],
+	"menu": [
+		{
+			"label": "Quit",
+			"command": "quit"
+		}
+	]
+}
