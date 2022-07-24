@@ -14,9 +14,11 @@ link_directories(
 
 # Add source to this project's executable.
 add_executable (Odyssey WIN32 "Odyssey.cpp" "Odyssey.h" "ui/Window.h" 
-"engine/Engine.h" "engine/Engine.cpp" "ui/Window.cpp" "ui/Screen.h" "ui/Screen.cpp" "config/Bootstrap.h" "config/Bootstrap.cpp" "../v3dlibs/asset/JsonFile.h" "../v3dlibs/asset/JsonFile.cpp" 
+"engine/Engine.h" "engine/Engine.cpp" "ui/Window.cpp" "ui/Screen.h" "ui/Screen.cpp"
  "engine/Sprite.h" "render/Texture.h"  "render/Frame.h" "engine/Player.h" "engine/SpriteSheet.h" 
-"render/Engine.h" "render/Engine.cpp" "render/Renderable.h" "engine/Player.cpp" "render/renderable/Player.h" "render/renderable/Player.cpp" "render/Renderable.cpp" 
+"render/Engine.h" "render/Engine.cpp" "render/Renderable.h" "engine/Player.cpp" 
+"render/renderable/Player.h" "render/renderable/Player.cpp" 
+"render/Renderable.cpp" 
  "render/Texture.cpp" "render/TextureCache.h"
 "render/Surface.h" "render/Surface.cpp" "actor/Actor.h" "render/TextureCache.cpp" 
 "render/operation/BlitTexture.h" "render/Operation.h" "render/Frame.cpp" "render/operation/BlitTexture.cpp" "render/Context.h" "render/Context.cpp" "render/Scene.h" "render/Scene.cpp" 

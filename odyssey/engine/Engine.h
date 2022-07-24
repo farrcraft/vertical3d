@@ -5,11 +5,12 @@
 
 #pragma once
 
+#include <string>
+
 #include "../../v3dlibs/core/Logger.h"
 #include "Player.h"
 
 #include "../../v3dlibs/asset/Manager.h"
-#include "../config/Bootstrap.h"
 #include "../config/Config.h"
 #include "../input/Engine.h"
 #include "../ui/Window.h"
@@ -24,6 +25,14 @@ namespace odyssey::engine {
      **/
     class Engine final {
      public:
+        /**
+         * Constructor.
+         * 
+         * @param appPath The fully qualified base path name from which all relative 
+         *                paths will be derived.
+         **/
+        explicit Engine(const std::string_view& appPath);
+
         /**
          * Initialize the engine.
          * Initialization includes only the minimal amount of work required to get
@@ -51,7 +60,7 @@ namespace odyssey::engine {
         bool shutdown();
 
      private:
-        odyssey::config::Bootstrap bootstrap_;
+        std::string appPath_;
         boost::shared_ptr<odyssey::config::Config> config_;
         boost::shared_ptr<odyssey::ui::Window> window_;
         boost::shared_ptr<v3d::core::Logger> logger_;

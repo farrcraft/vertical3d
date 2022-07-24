@@ -5,6 +5,8 @@
 
 #include "Engine.h"
 
+#include <string>
+
 #include "../render/renderable/Player.h"
 
 #include <boost/filesystem.hpp>
@@ -13,6 +15,11 @@
 #include <SDL.h>
 
 namespace odyssey::engine {
+    /**
+     **/
+    Engine::Engine(const std::string_view& appPath) :
+        appPath_(appPath) {
+    }
 
     /**
      **/
@@ -22,6 +29,7 @@ namespace odyssey::engine {
         LOG_INFO(logger_) << "Initializing engine...";
 
         config_ = boost::make_shared<odyssey::config::Config>(logger_);
+
         dispatcher_ = boost::make_shared<entt::dispatcher>();
 
         // Initialize SDL
@@ -30,21 +38,18 @@ namespace odyssey::engine {
             return false;
         }
 
-        // Load bootstrap config
-        if (!bootstrap_.load(logger_)) {
-            return false;
-        }
-
-        assetManager_ = boost::make_shared<v3d::asset::Manager>(bootstrap_.dataPath(), logger_);
+        std::string dataPath = appPath_ + std::string("data/");
+        assetManager_ = boost::make_shared<v3d::asset::Manager>(dataPath, logger_);
 
         player_ = boost::make_shared<Player>(registry_);
 
-        window_ = boost::make_shared<odyssey::ui::Window>(logger_);
-        if (!window_->create(bootstrap_.windowWidth(), bootstrap_.windowHeight())) {
+        // Load config (through the asset manager)
+        if (!config_->load(assetManager_)) {
             return false;
         }
 
-        if (!config_->load(assetManager_)) {
+        window_ = boost::make_shared<odyssey::ui::Window>(logger_);
+        if (!window_->create(config_->windowWidth(), config_->windowHeight())) {
             return false;
         }
 

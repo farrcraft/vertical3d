@@ -6,6 +6,7 @@
 #pragma once
 
 #include <unordered_map>
+#include <string>
 #include <string_view>
 
 #include "BindingContext.h"
@@ -33,6 +34,14 @@ namespace odyssey::config {
          **/
         bool load(const boost::shared_ptr<v3d::asset::Manager>& assetManager);
 
+        /**
+         **/
+        int windowWidth() const;
+
+        /**
+         **/
+        int windowHeight() const;
+
      protected:
         /**
          * Load the bindings.json config
@@ -43,9 +52,22 @@ namespace odyssey::config {
          **/
         bool loadBindings(const boost::shared_ptr<v3d::asset::Json>& bindings);
 
+        /**
+         * Load the root config file
+         * 
+         * * @param config the json file asset to load config from
+         * 
+         * @return true if the config is successfully loaded
+         **/
+        bool loadConfig(const boost::shared_ptr<v3d::asset::Json>& config);
+
+
      private:
         std::unordered_map<std::string_view, boost::shared_ptr<BindingContext> > contexts_;
         boost::shared_ptr<v3d::core::Logger> logger_;
+        std::string configPath_;
+        int windowWidth_;
+        int windowHeight_;
     };
 };  // namespace odyssey::config
 

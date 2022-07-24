@@ -3,29 +3,35 @@
  * Copyright (c) 2022 Joshua Farr (josh@farrcraft.com)
  **/
 
+#include "Odyssey.h"
+
 #include <SDL.h>
 #include <SDL_main.h>
 
-#include "Odyssey.h"
 #include "engine/Engine.h"
 
 /**
  **/
 int main(int argc, char* argv[]) {
-	odyssey::engine::Engine engine;
-	if (!engine.initialize()) {
-		return -1;
-	}
+    // extract exe path from argv (needed for loading file assets with relative paths)
+    std::string appPath =
+        boost::filesystem::path(boost::filesystem::system_complete(boost::filesystem::path(argv[0])).remove_filename()).string() +
+        boost::filesystem::path("/").make_preferred().string();
 
-	const bool ok = engine.run();
+    odyssey::engine::Engine engine(appPath);
+    if (!engine.initialize()) {
+        return -1;
+    }
 
-	if (!engine.shutdown()) {
-		return -1;
-	}
+    const bool ok = engine.run();
 
-	if (!ok) {
-		return -1;
-	}
+    if (!engine.shutdown()) {
+        return -1;
+    }
 
-	return 0;
+    if (!ok) {
+        return -1;
+    }
+
+    return 0;
 }

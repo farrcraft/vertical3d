@@ -12,12 +12,18 @@
 namespace odyssey::config {
     /**
      **/
-    Config::Config(const boost::shared_ptr<v3d::core::Logger>& logger) : logger_(logger) {
+    Config::Config(const boost::shared_ptr<v3d::core::Logger>& logger) :
+        logger_(logger) {
     }
 
     /**
      **/
     bool Config::load(const boost::shared_ptr<v3d::asset::Manager>& assetManager) {
+        boost::shared_ptr<v3d::asset::Json> config = boost::dynamic_pointer_cast<v3d::asset::Json>(assetManager->loadTypeFromExt("config.json"));
+        if (!config || !loadConfig(config)) {
+            return false;
+        }
+
         boost::shared_ptr<v3d::asset::Json> bindings = boost::dynamic_pointer_cast<v3d::asset::Json>(assetManager->loadTypeFromExt("bindings.json"));
         if (!bindings || !loadBindings(bindings)) {
             return false;
@@ -73,4 +79,28 @@ namespace odyssey::config {
         return true;
     }
 
+    /**
+     **/
+    bool Config::loadConfig(const boost::shared_ptr<v3d::asset::Json>& config) {
+        auto const doc = config->document();
+        // default window options
+        auto const window = doc.at("window");
+        windowWidth_ = boost::json::value_to<int>(window.at("width"));
+        windowHeight_ = boost::json::value_to<int>(window.at("height"));
+        LOG_INFO(logger_) << "Setting default window size to " << windowWidth_ << "x" << windowHeight_;
+
+        return true;
+    }
+
+    /**
+     **/
+    int Config::windowWidth() const {
+        return windowWidth_;
+    }
+
+    /**
+     **/
+    int Config::windowHeight() const {
+        return windowHeight_;
+    }
 };  // namespace odyssey::config
