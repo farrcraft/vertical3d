@@ -7,7 +7,7 @@
 
 #include "StyleProperty.h"
 
-#include "../../../v3dlibs/gl/GLTexture.h"
+#include "../../../api/gl/GLTexture.h"
 
 #include <boost/shared_ptr.hpp>
 

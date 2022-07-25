@@ -7,9 +7,9 @@
 
 #include "engine/Aligned.h"
 
-#include "../../v3dlibs/gl/Program.h"
-#include "../../v3dlibs/gl/TextureFontRenderer.h"
-#include "../../v3dlibs/font/TextureFontCache.h"
+#include "../../api/gl/Program.h"
+#include "../../api/gl/TextureFontRenderer.h"
+#include "../../api/font/TextureFontCache.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -19,7 +19,7 @@ class Scene;
 class DebugOverlay : public Aligned<16> {
  public:
     DebugOverlay(boost::shared_ptr<Scene> scene, boost::shared_ptr<v3d::gl::Program> shaderProgram, 
-        boost::shared_ptr<AssetLoader> loader, const boost::shared_ptr<v3d::core::Logger> & logger);
+        boost::shared_ptr<AssetLoader> loader, const boost::shared_ptr<v3d::log::Logger> & logger);
 
     void enable(bool status);
     void render();

@@ -54,9 +54,9 @@ link_directories(
 	"vendor/libpng-1.6.37"
 	"vendor/zlib-1.2.11")
 
-# Include sub-projects.
-add_subdirectory ("v3dlibs")
-add_subdirectory("luxa")
+# Include sub-projects
+add_subdirectory("api")
+# add_subdirectory("luxa")
 add_subdirectory("stark")
 add_subdirectory("talyn")
 add_subdirectory("moya")
@@ -66,3 +66,4 @@ add_subdirectory("tetris")
 add_subdirectory("voxel")
 add_subdirectory("odyssey")
 add_subdirectory("vertical3d")
+add_subdirectory("imagetool")

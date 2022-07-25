@@ -6,7 +6,7 @@
 #include "ProgramFactory.h"
 #include "AssetLoader.h"
 
-#include "../../v3dlibs/gl/Shader.h"
+#include "../../api/gl/Shader.h"
 
 #include <boost/make_shared.hpp>
 

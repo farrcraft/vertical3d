@@ -5,28 +5,28 @@
 
 #pragma once
 
-#include "../ui/Window.h"
+#include "../../api/ui/Window.h"
 
 #include <boost/shared_ptr.hpp>
 
 namespace odyssey::render {
-	/**
-	 **/
-	class Context {
-	public:
-		/**
-		 **/
-		Context(boost::shared_ptr<odyssey::ui::Window> window);
+    /**
+     **/
+    class Context {
+     public:
+        /**
+         **/
+        Context(boost::shared_ptr<v3d::ui::Window> window);
 
-		/**
-		 **/
-		~Context();
+        /**
+         **/
+        ~Context();
 
-		/**
-		 **/
-		SDL_Renderer* handle();
+        /**
+         **/
+        SDL_Renderer* handle();
 
-	private:
-		SDL_Renderer* renderer_;
-	};
-};
+     private:
+        SDL_Renderer* renderer_;
+    };
+};  // namespace odyssey::render

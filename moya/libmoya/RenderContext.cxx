@@ -13,7 +13,7 @@
 
 #include "Frustum.h"
 
-#include "../../v3dlibs/type/3dtypes.h"
+#include "../../api/type/3dtypes.h"
 
 namespace v3d::moya {
 

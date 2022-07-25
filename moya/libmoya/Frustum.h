@@ -7,7 +7,7 @@
 
 #include "Plane.h"
 
-#include "../../v3dlibs/type/AABBox.h"
+#include "../../api/type/AABBox.h"
 
 #include <string>
 #include <map>

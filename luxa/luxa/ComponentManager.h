@@ -11,13 +11,13 @@
 #include <map>
 #include <string>
 
-#include "../../v3dlibs/image/Texture.h"
+#include "../../api/image/Texture.h"
 #include "../../v3dlibs/hookah/Window.h"
-#include "../../v3dlibs/font/FontCache.h"
+#include "../../api/font/FontCache.h"
 #include "../../v3dlibs/input/MouseEventListener.h"
 #include "../../v3dlibs/input/KeyboardEventListener.h"
 #include "../../v3dlibs/command/CommandDirectory.h"
-#include "../../v3dlibs/core/Logger.h"
+#include "../../api/log/Logger.h"
 
 namespace Luxa {
 
@@ -31,7 +31,7 @@ namespace Luxa {
         public v3d::input::MouseEventListener,
         public v3d::input::KeyboardEventListener {
      public:
-        ComponentManager(boost::shared_ptr<v3d::font::FontCache> fc, boost::shared_ptr<v3d::command::CommandDirectory> directory, boost::shared_ptr<v3d::core::Logger> logger);
+        ComponentManager(boost::shared_ptr<v3d::font::FontCache> fc, boost::shared_ptr<v3d::command::CommandDirectory> directory, boost::shared_ptr<v3d::log::Logger> logger);
 
         /**
             * Drawing callback renders all of the managed components.
@@ -107,7 +107,7 @@ namespace Luxa {
             */
         boost::shared_ptr<Component> intersect(glm::vec2 point) const;
 
-        boost::shared_ptr<v3d::core::Logger> logger();
+        boost::shared_ptr<v3d::log::Logger> logger();
 
         bool toggleComponentVisibility(const std::string & name);
 
@@ -140,7 +140,7 @@ namespace Luxa {
         ComponentRenderer renderer_;
         glm::vec2 mouse_;
         boost::shared_ptr<Component> focused_;
-        boost::shared_ptr<v3d::core::Logger> logger_;
+        boost::shared_ptr<v3d::log::Logger> logger_;
     };
 
 

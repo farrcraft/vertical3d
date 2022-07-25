@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../../v3dlibs/gl/Program.h"
+#include "../../api/gl/Program.h"
 
 #include <glm/glm.hpp>
 #include <boost/shared_ptr.hpp>

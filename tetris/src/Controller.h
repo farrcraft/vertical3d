@@ -12,7 +12,7 @@
 #include "../../v3dlibs/input/KeyboardDevice.h"
 #include "../../v3dlibs/input/MouseDevice.h"
 #include "../../v3dlibs/gui/InputEventAdapter.h"
-#include "../../v3dlibs/core/Logger.h"
+#include "../../api/log/Logger.h"
 
 class TetrisScene;
 class TetrisRenderer;
@@ -32,5 +32,5 @@ class Controller {
     boost::shared_ptr<v3d::input::MouseDevice> mouse_;
     v3d::command::CommandDirectory directory_;
     boost::shared_ptr<v3d::input::InputEventAdapter> listenerAdapter_;
-    boost::shared_ptr<v3d::core::Logger> logger_;
+    boost::shared_ptr<v3d::log::Logger> logger_;
 };

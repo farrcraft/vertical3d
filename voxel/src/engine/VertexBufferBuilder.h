@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../../v3dlibs/gl/VertexBuffer.h"
+#include "../../api/gl/VertexBuffer.h"
 
 #include <boost/shared_ptr.hpp>
 

@@ -7,8 +7,8 @@
 
 #include <string>
 
-#include "../../v3dlibs/gl/GLTexture.h"
-#include "../../v3dlibs/font/FontCache.h"
+#include "../../api/gl/GLTexture.h"
+#include "../../api/font/FontCache.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/glm.hpp>
@@ -23,7 +23,7 @@ namespace Luxa {
      */
     class ComponentRenderer {
      public:
-            explicit ComponentRenderer(const boost::shared_ptr<v3d::core::Logger>& logger);
+            explicit ComponentRenderer(const boost::shared_ptr<v3d::log::Logger>& logger);
             explicit ComponentRenderer(boost::shared_ptr<v3d::font::FontCache> fc);
             ~ComponentRenderer();
 

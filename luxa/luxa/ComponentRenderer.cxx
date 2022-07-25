@@ -18,7 +18,7 @@ namespace Luxa {
     ComponentRenderer::ComponentRenderer(boost::shared_ptr<v3d::font::FontCache> fc) : fonts_(fc) {
     }
 
-    ComponentRenderer::ComponentRenderer(const boost::shared_ptr<v3d::core::Logger>& logger) :
+    ComponentRenderer::ComponentRenderer(const boost::shared_ptr<v3d::log::Logger>& logger) :
         width_(-1),
         height_(-1) {
         fonts_ = boost::make_shared<v3d::font::FontCache>(logger);

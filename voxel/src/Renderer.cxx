@@ -20,7 +20,7 @@
 #include "voxel/ChunkBufferPool.h"
 #include "engine/MaterialFactory.h"
 
-#include "../../v3dlibs//gl/Shader.h"
+#include "../../api//gl/Shader.h"
 #include "../../stark/AssetLoader.h"
 #include "../../stark/ProgramFactory.h"
 
@@ -66,7 +66,7 @@ void loadMaterials(boost::shared_ptr<v3d::gl::Program> program) {
     factory.create("materials[15]", glm::vec3(0.91f, 0.91f, 0.91f));
 }
 
-Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_ptr<AssetLoader> & loader, const boost::shared_ptr<v3d::core::Logger> & logger) :
+Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_ptr<AssetLoader> & loader, const boost::shared_ptr<v3d::log::Logger> & logger) :
     scene_(scene),
     debug_(false),
     builder_(scene->chunks()),

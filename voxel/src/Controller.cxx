@@ -4,6 +4,9 @@
  **/
 
 #include "Controller.h"
+
+#include <functional>
+
 #include "Renderer.h"
 #include "Scene.h"
 #include "game/Player.h"
@@ -13,6 +16,8 @@
 
 #include "../../stark/AssetLoader.h"
 
+#include <boost/bind/bind.hpp>
+#include <boost/bind/placeholders.hpp>
 #include <boost/make_shared.hpp>
 
 Controller::Controller(const std::string & path) :
@@ -53,6 +58,7 @@ Controller::Controller(const std::string & path) :
 
     // register game commands
     // player commands
+    using namespace boost::bind::placeholders;
     directory_->add("moveUp", "voxel", boost::bind(&Controller::exec, boost::ref(*this), _1, _2));
     directory_->add("moveDown", "voxel", boost::bind(&Controller::exec, boost::ref(*this), _1, _2));
     directory_->add("moveLeft", "voxel", boost::bind(&Controller::exec, boost::ref(*this), _1, _2));

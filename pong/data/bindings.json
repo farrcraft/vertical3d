@@ -1,0 +1,49 @@
+{
+  "bindings": [
+    {
+      "event": "keyboard::w",
+      "command": "pong::leftPaddleUp",
+      "catch": "any"
+    },
+    {
+      "event": "keyboard::s",
+      "command": "pong::leftPaddleDown",
+      "catch": "any"
+    },
+    {
+      "event": "keyboard::arrow_up",
+      "command": "pong::rightPaddleUp",
+      "catch": "any"
+    },
+    {
+      "event": "keyboard::arrow_down",
+      "command": "pong::rightPaddleDown",
+      "catch": "any"
+    },
+    {
+      "event": "keyboard::escape",
+      "command": "ui::showGameMenu",
+      "catch": "on"
+    },
+    {
+      "event": "keyboard::return",
+      "command": "ui::selectMenu",
+      "catch": "on"
+    },
+    {
+      "event": "keyboard::arrow_up",
+      "command": "ui::menuPrevious",
+      "catch": "on"
+    },
+    {
+      "event": "keyboard::arrow_down",
+      "command": "ui::menuNext",
+      "catch": "on"
+    },
+    {
+      "event": "keyboard::f1",
+      "command": "toggleFS",
+      "catch": "on"
+    }
+  ]
+}

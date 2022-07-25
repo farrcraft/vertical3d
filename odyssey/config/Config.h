@@ -10,8 +10,8 @@
 #include <string_view>
 
 #include "BindingContext.h"
-#include "../../v3dlibs/asset/Json.h"
-#include "../../v3dlibs/asset/Manager.h"
+#include "../../api/asset/Json.h"
+#include "../../api/asset/Manager.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -23,7 +23,7 @@ namespace odyssey::config {
      public:
         /**
          **/
-        Config(const boost::shared_ptr<v3d::core::Logger> &logger);
+        Config(const boost::shared_ptr<v3d::log::Logger> &logger);
 
         /**
          * Load all of the standard config
@@ -64,7 +64,7 @@ namespace odyssey::config {
 
      private:
         std::unordered_map<std::string_view, boost::shared_ptr<BindingContext> > contexts_;
-        boost::shared_ptr<v3d::core::Logger> logger_;
+        boost::shared_ptr<v3d::log::Logger> logger_;
         std::string configPath_;
         int windowWidth_;
         int windowHeight_;

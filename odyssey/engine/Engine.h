@@ -7,13 +7,13 @@
 
 #include <string>
 
-#include "../../v3dlibs/core/Logger.h"
+#include "../../api/log/Logger.h"
 #include "Player.h"
 
-#include "../../v3dlibs/asset/Manager.h"
+#include "../../api/asset/Manager.h"
 #include "../config/Config.h"
-#include "../input/Engine.h"
-#include "../ui/Window.h"
+#include "../../api/input/Engine.h"
+#include "../../api/ui/Window.h"
 #include "../render/Engine.h"
 #include "../system/Movement.h"
 
@@ -62,13 +62,13 @@ namespace odyssey::engine {
      private:
         std::string appPath_;
         boost::shared_ptr<odyssey::config::Config> config_;
-        boost::shared_ptr<odyssey::ui::Window> window_;
-        boost::shared_ptr<v3d::core::Logger> logger_;
+        boost::shared_ptr<v3d::ui::Window> window_;
+        boost::shared_ptr<v3d::log::Logger> logger_;
 
         boost::shared_ptr<Player> player_;
 
         boost::shared_ptr<odyssey::render::Engine> renderEngine_;
-        boost::shared_ptr<odyssey::input::Engine> inputEngine_;
+        boost::shared_ptr<v3d::input::Engine> inputEngine_;
 
         boost::shared_ptr<v3d::asset::Manager> assetManager_;
 

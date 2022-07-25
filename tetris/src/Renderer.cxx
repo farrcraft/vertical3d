@@ -11,13 +11,13 @@
 #include "Renderer.h"
 #include "TetrisScene.h"
 
-#include "../../v3dlibs/image/Factory.h"
-#include "../../v3dlibs/gl/GLFontRenderer.h"
+#include "../../api/image/Factory.h"
+#include "../../api/gl/GLFontRenderer.h"
 
 #include <boost/bind.hpp>
 #include <boost/make_shared.hpp>
 
-TetrisRenderer::TetrisRenderer(boost::shared_ptr<TetrisScene> scene, const boost::shared_ptr<v3d::core::Logger> & logger) :
+TetrisRenderer::TetrisRenderer(boost::shared_ptr<TetrisScene> scene, const boost::shared_ptr<v3d::log::Logger> & logger) :
     scene_(scene), fonts_(new v3d::font::FontCache(logger)), logger_(logger) {
     // load a font to use for debugging output
     fonts_->load("debug", "/usr/share/fonts/corefonts/arial.ttf", 32);

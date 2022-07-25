@@ -6,7 +6,7 @@
 #pragma once
 
 #include "CommandDirectory.h"
-#include "../core/Logger.h"
+#include "../log/Logger.h"
 
 #include <boost/property_tree/ptree.hpp>
 
@@ -23,6 +23,6 @@ namespace v3d::command::utility {
      * @param directory the CommandDirectory to store the loaded bindings in
      * @return whether loading was successful or not
     **/
-    bool load_binds(const boost::property_tree::ptree & tree, CommandDirectory * directory, const boost::shared_ptr<v3d::core::Logger> & logger);
+    bool load_binds(const boost::property_tree::ptree & tree, CommandDirectory * directory, const boost::shared_ptr<v3d::log::Logger> & logger);
 
 };  // namespace v3d::command::utility

@@ -10,8 +10,8 @@
 
 #include "Version.h"
 #include "Scene.h"
-#include "../../v3dlibs/font/TextureFontCache.h"
-#include "../../v3dlibs/font/TextureTextBuffer.h"
+#include "../../api/font/TextureFontCache.h"
+#include "../../api/font/TextureTextBuffer.h"
 #include "game/Player.h"
 
 #include "../../stark/AssetLoader.h"
@@ -20,7 +20,7 @@
 
 DebugOverlay::DebugOverlay(boost::shared_ptr<Scene> scene, boost::shared_ptr<v3d::gl::Program> shaderProgram,
     boost::shared_ptr<AssetLoader> loader,
-    const boost::shared_ptr<v3d::core::Logger> & logger) :
+    const boost::shared_ptr<v3d::log::Logger> & logger) :
     scene_(scene),
     enabled_(false) {
     // setup text buffer

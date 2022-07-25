@@ -7,11 +7,11 @@
 
 #include "PongScene.h"
 
-#include "../../v3dlibs/hookah/Window.h"
-#include "../../v3dlibs/gl/Canvas.h"
-#include "../../v3dlibs/gl/TextureFontRenderer.h"
-#include "../../v3dlibs/font/TextureFontCache.h"
-#include "../../v3dlibs/font/FontCache.h"
+#include "../../api/hookah/Window.h"
+#include "../../api/gl/Canvas.h"
+#include "../../api/gl/TextureFontRenderer.h"
+#include "../../api/font/TextureFontCache.h"
+#include "../../api/font/FontCache.h"
 
 #include <boost/shared_ptr.hpp>
 

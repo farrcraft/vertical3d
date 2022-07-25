@@ -8,7 +8,7 @@
 #include "../operation/BlitTexture.h"
 #include "../Surface.h"
 #include "../Texture.h"
-#include "../../../v3dlibs/asset/Image.h"
+#include "../../../api/asset/Image.h"
 #include "../Engine.h"
 #include "../../engine/Unit.h"
 

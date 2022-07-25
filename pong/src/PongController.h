@@ -6,6 +6,8 @@
 
 #include <string>
 
+#include "../../api/log/Logger.h"
+#include "../../api/asset/Manager.h"
 #include "../../v3dlibs/hookah/Window.h"
 #include "../../luxa/luxa/ComponentManager.h"
 #include "../../luxa/luxa/menu/Menu.h"
@@ -20,8 +22,9 @@ class PongRenderer;
  * The core game controller class
  */
 class PongController {
+    
  public:
-    explicit PongController(const std::string & path);
+    explicit PongController(const std::string_view & path);
 
     bool run();
 
@@ -29,9 +32,10 @@ class PongController {
     bool execUI(const v3d::command::CommandInfo & command, const std::string & param);
 
  protected:
-     void setMenuItemDefaults(const boost::shared_ptr<Luxa::Menu> & menu);
+    void setMenuItemDefaults(const boost::shared_ptr<Luxa::Menu> & menu);
 
  private:
+    boost::shared_ptr<v3d::log::Logger> logger_;
     boost::shared_ptr<PongScene> scene_;
     boost::shared_ptr<PongRenderer> renderer_;
     boost::shared_ptr<Luxa::ComponentManager> vgui_;
@@ -40,4 +44,5 @@ class PongController {
     boost::shared_ptr<v3d::input::MouseDevice> mouse_;
     boost::shared_ptr<v3d::command::CommandDirectory> directory_;
     boost::shared_ptr<v3d::input::InputEventAdapter> listenerAdapter_;
+    boost::shared_ptr<v3d::asset::Manager> assetManager_;
 };

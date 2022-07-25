@@ -12,7 +12,7 @@
 namespace odyssey::config {
     /**
      **/
-    Config::Config(const boost::shared_ptr<v3d::core::Logger>& logger) :
+    Config::Config(const boost::shared_ptr<v3d::log::Logger>& logger) :
         logger_(logger) {
     }
 

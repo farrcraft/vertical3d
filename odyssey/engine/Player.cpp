@@ -4,15 +4,17 @@
  **/
 
 #include "Player.h"
-#include "../component/Position.h"
+#include "../../api/component/Position.h"
 
-using namespace odyssey::engine;
+namespace odyssey::engine {
 
-/**
- **/
-Player::Player(entt::registry &registry) {
-	// register a player entity
-	id_ = registry.create();
-	// create the components attached to player entity
-	registry.emplace<odyssey::component::Position>(id_, 0, 0);
-}
+    /**
+     **/
+    Player::Player(entt::registry& registry) {
+        // register a player entity
+        id_ = registry.create();
+        // create the components attached to player entity
+        registry.emplace<v3d::component::Position>(id_, 0, 0);
+    }
+
+};  // namespace odyssey::engine

@@ -34,13 +34,9 @@
 
 int main(int argc, char *argv[]) {
     // extract exe path from argv (needed for loading file assets with relative paths)
-    boost::filesystem::path path(boost::filesystem::initial_path<boost::filesystem::path>());
-    path = boost::filesystem::system_complete(boost::filesystem::path(argv[0])).remove_filename();
-
-    boost::filesystem::path slash("/");
-    std::string preferredSlash = slash.make_preferred().string();
-
-    std::string appPath = path.string() + preferredSlash;
+    std::string appPath = 
+        boost::filesystem::path(boost::filesystem::system_complete(boost::filesystem::path(argv[0])).remove_filename()).string() + 
+        boost::filesystem::path("/").make_preferred().string();
 
     PongController controller(appPath);
 

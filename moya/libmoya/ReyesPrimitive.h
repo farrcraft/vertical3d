@@ -7,7 +7,7 @@
 
 #include "MicroPolygonGrid.h"
 
-#include "../../v3dlibs/type/AABBox.h"
+#include "../../api/type/AABBox.h"
 
 #include <boost/shared_ptr.hpp>
 

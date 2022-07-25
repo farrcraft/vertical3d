@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "../../v3dlibs/gl/Program.h"
+#include "../../api/gl/Program.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/glm.hpp>

@@ -12,7 +12,7 @@
 namespace odyssey::render {
     /**
      **/
-    Engine::Engine(const boost::shared_ptr<v3d::core::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager) :
+    Engine::Engine(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager) :
         logger_(logger),
         assetManager_(assetManager) {
         textureCache_ = boost::make_shared<TextureCache>();
@@ -25,7 +25,7 @@ namespace odyssey::render {
 
     /**
      **/
-    bool Engine::initialize(const boost::shared_ptr <odyssey::ui::Window>& window) {
+    bool Engine::initialize(const boost::shared_ptr <v3d::ui::Window>& window) {
         window_ = window;
         context_ = boost::make_shared<Context>(window_);
         scene_ = boost::make_shared<Scene>(context_);

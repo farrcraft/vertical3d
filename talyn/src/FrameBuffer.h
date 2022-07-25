@@ -7,7 +7,7 @@
 
 #include <vector>
 
-#include "../../v3dlibs/image/Image.h"
+#include "../../api/image/Image.h"
 
 #include <boost/shared_ptr.hpp>
 

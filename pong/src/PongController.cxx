@@ -16,14 +16,22 @@
 #include "../../luxa/luxa/UILoader.h"
 #include "../../stark/AssetLoader.h"
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
+#include <boost/bind/placeholders.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
 
 
-PongController::PongController(const std::string & path) {
-    // create a new command directory object
+PongController::PongController(const std::string_view & path) {
+    logger_ = boost::make_shared<v3d::core::Logger>();
+
     directory_ = boost::make_shared<v3d::command::CommandDirectory>();
+
+    std::string dataPath = std::string(path) + std::string("data/");
+    assetManager_ = boost::make_shared<v3d::asset::Manager>(dataPath, logger_);
+
+    // need to load config here... (also replaces the property tree xml loading stuff...)
+    std::string configFile = dataPath + std::string("config.json");
 
     // create new app window and set caption
     window_ = Hookah::Create3DWindow(800, 600);
@@ -42,7 +50,6 @@ PongController::PongController(const std::string & path) {
 
     // load config file into a property tree
     boost::property_tree::ptree ptree;
-    std::string configFile = path + std::string("config.xml");
     boost::property_tree::read_xml(configFile, ptree);
 
     // create the scene

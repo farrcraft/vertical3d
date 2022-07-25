@@ -12,8 +12,8 @@
 #include "Tetrad.h"
 
 #include "../../v3dlibs/hookah/Window.h"
-#include "../../v3dlibs/gl/GLTexture.h"
-#include "../../v3dlibs/font/FontCache.h"
+#include "../../api/gl/GLTexture.h"
+#include "../../api/font/FontCache.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -21,7 +21,7 @@ class TetrisScene;
 
 class TetrisRenderer {
  public:
-    TetrisRenderer(boost::shared_ptr<TetrisScene> scene, const boost::shared_ptr<v3d::core::Logger> & logger);
+    TetrisRenderer(boost::shared_ptr<TetrisScene> scene, const boost::shared_ptr<v3d::log::Logger> & logger);
 
     void draw(Hookah::Window * window);
     void resize(int width, int height);
@@ -34,5 +34,5 @@ class TetrisRenderer {
     boost::shared_ptr<TetrisScene> scene_;
     std::map<std::string, boost::shared_ptr<v3d::gl::GLTexture> > textures_;
     boost::shared_ptr<v3d::font::FontCache> fonts_;
-    boost::shared_ptr<v3d::core::Logger> logger_;
+    boost::shared_ptr<v3d::log::Logger> logger_;
 };

@@ -5,31 +5,31 @@
 
 #pragma once
 
-#include "../../v3dlibs/image/Image.h"
+#include "../../api/image/Image.h"
 
 #include <boost/shared_ptr.hpp>
 #include <SDL.h>
 
 namespace odyssey::render {
-	/**
-	 * Represents an SDL surface
-	 **/
-	class Surface {
-	public:
-		/**
-		 * Create an SDL surface from an image object
-		 **/
-		Surface(boost::shared_ptr<v3d::image::Image> image);
+    /**
+     * Represents an SDL surface
+     **/
+    class Surface {
+     public:
+        /**
+         * Create an SDL surface from an image object
+         **/
+        Surface(boost::shared_ptr<v3d::image::Image> image);
 
-		/**
-		 **/
-		~Surface();
+        /**
+         **/
+        ~Surface();
 
-		/**
-		 **/
-		SDL_Surface* surface();
+        /**
+         **/
+        SDL_Surface* surface();
 
-	private:
-		SDL_Surface* surface_;
-	};
-};
+     private:
+        SDL_Surface* surface_;
+    };
+};  // namespace odyssey::render

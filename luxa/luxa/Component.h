@@ -11,9 +11,9 @@
 
 #include "style/Theme.h"
 
-#include "../../v3dlibs/type/Bound2D.h"
-#include "../../v3dlibs/command/CommandInfo.h"
-#include "../../v3dlibs/event/EventListener.h"
+#include "../../api/type/Bound2D.h"
+#include "../../api/command/CommandInfo.h"
+#include "../../api/event/EventListener.h"
 
 /**
  * Luxa library namespace.

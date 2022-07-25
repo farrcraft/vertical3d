@@ -5,28 +5,30 @@
 
 #include "Context.h"
 
-using namespace odyssey::render;
+namespace odyssey::render {
 
-/**
- **/
-Context::Context(boost::shared_ptr<odyssey::ui::Window> window) {
-	renderer_ = SDL_CreateRenderer(window->sdl(), -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE);
-	if (renderer_ == NULL) {
-		throw std::invalid_argument(SDL_GetError());
-	}
-}
+    /**
+     **/
+    Context::Context(boost::shared_ptr<v3d::ui::Window> window) {
+        renderer_ = SDL_CreateRenderer(window->sdl(), -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE);
+        if (renderer_ == NULL) {
+            throw std::invalid_argument(SDL_GetError());
+        }
+    }
 
-/**
- **/
-Context::~Context() {
-	if (renderer_ != NULL) {
-		SDL_DestroyRenderer(renderer_);
-		renderer_ = NULL;
-	}
-}
+    /**
+     **/
+    Context::~Context() {
+        if (renderer_ != NULL) {
+            SDL_DestroyRenderer(renderer_);
+            renderer_ = NULL;
+        }
+    }
 
-/**
- **/
-SDL_Renderer* Context::handle() {
-	return renderer_;
-}
+    /**
+     **/
+    SDL_Renderer* Context::handle() {
+        return renderer_;
+    }
+
+};  // namespace odyssey::render

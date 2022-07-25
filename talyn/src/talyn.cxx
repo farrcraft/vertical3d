@@ -74,7 +74,7 @@ http://books.google.com/books?id=bBOxUmw83jUC&pg=PA160&lpg=PA160&dq=raytracing+a
 #include "RIBReader.h"
 #include "RenderContext.h"
 
-#include "../../v3dlibs/image/Factory.h"
+#include "../../api/image/Factory.h"
 
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem/operations.hpp>
@@ -193,7 +193,7 @@ int main(int argc, char * argv[]) {
     }
     // framebuffer conversion to a writable image
     boost::shared_ptr<v3d::image::Image> image = fb->render();
-    auto logger = boost::make_shared<v3d::core::Logger>();
+    auto logger = boost::make_shared<v3d::log::Logger>();
     if (!outfile.empty()) {
         if (!silent) {
             std::cout << "Writing image file: " << outfile << std::endl;
