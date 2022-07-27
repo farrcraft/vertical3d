@@ -12,7 +12,7 @@
 #include "voxel/MeshBuilder.h"
 
 #include "../../api/log/Logger.h"
-#include "../../api/hookah/Window.h"
+#include "../../api/ui/Window.h"
 #include "../../api/gl/Program.h"
 
 #include <boost/shared_ptr.hpp>
@@ -35,7 +35,7 @@ class Renderer {
     /**
      * Draw the frame
      */
-    void draw(Hookah::Window * window);
+    void draw(boost::shared_ptr<v3d::ui::Window> window);
     /**
      * Resize the frame
      */

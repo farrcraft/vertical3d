@@ -140,7 +140,7 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
 }
 
 
-void Renderer::draw(Hookah::Window * window) {
+void Renderer::draw(boost::shared_ptr<v3d::ui::Window> window) {
     glClearColor(0.4f, 0.6f, 0.9f, 1.0f);
     glClearDepth(1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
