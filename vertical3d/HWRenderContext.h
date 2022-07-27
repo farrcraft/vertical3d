@@ -7,8 +7,8 @@
 
 #include "../v3dlibs/core/SceneVisitor.h"
 #include "../v3dlibs/core/Scene.h"
-#include "../v3dlibs/type/Camera.h"
-#include "../v3dlibs/brep/BRep.h"
+#include "../api/type/Camera.h"
+#include "../api/brep/BRep.h"
 
 namespace v3d {
 

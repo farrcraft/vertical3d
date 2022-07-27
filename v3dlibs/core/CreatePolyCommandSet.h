@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../brep/BRep.h"
+#include "../../api/brep/BRep.h"
 
 #include <boost/shared_ptr.hpp>
 

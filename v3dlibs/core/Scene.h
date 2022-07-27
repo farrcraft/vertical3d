@@ -9,9 +9,9 @@
 
 #include "SceneVisitor.h"
 
-#include "../type/CameraProfile.h"
-#include "../type/Camera.h"
-#include "../brep/BRep.h"
+#include "../../api/type/CameraProfile.h"
+#include "../../api/type/Camera.h"
+#include "../../api/brep/BRep.h"
 
 #include <boost/shared_ptr.hpp>
 

@@ -6,7 +6,7 @@
 #pragma once
 
 #include "CommandDirectory.h"
-#include "../log/Logger.h"
+#include "../../api/log/Logger.h"
 
 #include <boost/property_tree/ptree.hpp>
 

@@ -10,7 +10,7 @@
 #include <gl/gl.h>
 
 #include "../v3dlibs/core/Scene.h"
-#include "../v3dlibs/brep/BRep.h"
+#include "../api/brep/BRep.h"
 
 namespace v3d {
 
