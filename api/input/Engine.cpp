@@ -6,6 +6,7 @@
 #include "Engine.h"
 #include "Keyboard.h"
 #include "Mouse.h"
+#include "DeviceType.h"
 
 #include <boost/make_shared.hpp>
 
@@ -13,12 +14,16 @@ namespace v3d::input {
 
     /**
      **/
-    Engine::Engine(const boost::shared_ptr<entt::dispatcher>& dispatcher) :
+    Engine::Engine(const boost::shared_ptr<entt::dispatcher>& dispatcher, int devices) :
         dispatcher_(dispatcher) {
 
         // add keyboard & mouse devices
-        devices_.push_back(boost::make_shared<Keyboard>(dispatcher_));
-        devices_.push_back(boost::make_shared<Mouse>(dispatcher_));
+        if (devices & DeviceType::Keyboard) {
+            devices_.push_back(boost::make_shared<Keyboard>(dispatcher_));
+        }
+        if (devices & DeviceType::Mouse) {
+            devices_.push_back(boost::make_shared<Mouse>(dispatcher_));
+        }
     }
 
     /**

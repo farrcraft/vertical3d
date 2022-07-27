@@ -22,7 +22,7 @@ namespace v3d::input {
      public:
         /**
          **/
-        Engine(const boost::shared_ptr<entt::dispatcher> &dispatcher);
+        Engine(const boost::shared_ptr<entt::dispatcher> &dispatcher, int devices);
 
         /**
          **/
@@ -32,4 +32,5 @@ namespace v3d::input {
         std::vector<boost::shared_ptr<Device> > devices_;
         boost::shared_ptr<entt::dispatcher> dispatcher_;
     };
+
 };  // namespace v3d::input
