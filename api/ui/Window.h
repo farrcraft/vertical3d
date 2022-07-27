@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "../log/Logger.h"
 
 #include <SDL.h>
@@ -51,9 +53,27 @@ namespace v3d::ui {
          **/
         int height() const noexcept;
 
+        /**
+         * Set the window caption.
+         * @param cap the new window caption
+         */
+        void caption(const std::string_view& cap);
+
+        /**
+         * Toggle mouse cursor visibility
+         * @param state whether to enable or disable
+         */
+        void cursor(bool state);
+
+        /**
+         * Move the mouse cursor to a new position in the window
+         */
+        void warpCursor(int x, int y);
+
      private:
         SDL_Window* window_;
         SDL_Surface* surface_;
+        std::string caption_;
         int width_;
         int height_;
         boost::shared_ptr<v3d::log::Logger> logger_;

@@ -77,4 +77,18 @@ namespace v3d::ui {
         SDL_UpdateWindowSurface(window_);
     }
 
+
+    void Window::caption(const std::string_view& cap) {
+        caption_ = cap;
+        SDL_SetWindowTitle(window_, caption_.c_str());
+    }
+
+    void Window::cursor(bool state) {
+        int toggle = state ? 1 : 0;
+        SDL_ShowCursor(toggle);
+    }
+
+    void Window::warpCursor(int x, int y) {
+        SDL_WarpMouseInWindow(window_, x, y);
+    }
 };  // namespace v3d::ui
