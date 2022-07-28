@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "../../api/engine/Feature.h"
 #include "../render/renderable/Player.h"
 
 #include <boost/filesystem.hpp>
@@ -18,42 +19,21 @@ namespace odyssey::engine {
     /**
      **/
     Engine::Engine(const std::string_view& appPath) :
-        appPath_(appPath) {
+        v3d::engine::Engine(appPath) {
     }
 
     /**
      **/
     bool Engine::initialize() {
-        logger_ = boost::make_shared<v3d::core::Logger>();
-
-        LOG_INFO(logger_) << "Initializing engine...";
-
-        config_ = boost::make_shared<odyssey::config::Config>(logger_);
-
-        dispatcher_ = boost::make_shared<entt::dispatcher>();
-
-        // Initialize SDL
-        if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-            LOG_ERROR(logger_) << "SDL could not initialize! SDL_Error: " << SDL_GetError();
+        if (!v3d::engine::Engine::initialize(static_cast<int>(
+            v3d::engine::Engine::Feature::Config |
+            v3d::engine::Engine::Feature::Window |
+            v3d::engine::Engine::Feature::MouseInput |
+            v3d::engine::Engine::Feature::KeyboardInput))) {
             return false;
         }
-
-        std::string dataPath = appPath_ + std::string("data/");
-        assetManager_ = boost::make_shared<v3d::asset::Manager>(dataPath, logger_);
 
         player_ = boost::make_shared<Player>(registry_);
-
-        // Load config (through the asset manager)
-        if (!config_->load(assetManager_)) {
-            return false;
-        }
-
-        window_ = boost::make_shared<odyssey::ui::Window>(logger_);
-        if (!window_->create(config_->windowWidth(), config_->windowHeight())) {
-            return false;
-        }
-
-        inputEngine_ = boost::make_shared<odyssey::input::Engine>(dispatcher_);
 
         movementSystem_ = boost::make_shared<odyssey::system::Movement>();
 
@@ -86,12 +66,10 @@ namespace odyssey::engine {
     /**
      **/
     bool Engine::shutdown() {
-        LOG_INFO(logger_) << "Shutting down engine...";
+        if (!v3d::engine::Engine::shutdown()) {
+            return false;
+        }
 
-        window_->destroy();
-
-        // Quit SDL subsystems
-        SDL_Quit();
         return true;
     }
 
@@ -140,7 +118,20 @@ namespace odyssey::engine {
 
     /**
      **/
+    bool Engine::render() {
+        if (!v3d::engine::Engine::render()) {
+            return false;
+        }
+        renderEngine_->renderFrame();
+    }
+
+    /**
+     **/
     bool Engine::tick() {
+        if (!v3d::engine::Engine::tick()) {
+            return false;
+
+        }
         // Tick various systems, e.g. Movement System, Collision System, Combat System, etc
         if (!movementSystem_->tick()) {
             return false;

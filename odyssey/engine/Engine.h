@@ -10,8 +10,9 @@
 #include "../../api/log/Logger.h"
 #include "Player.h"
 
+#include "../../api/engine/Engine.h"
 #include "../../api/asset/Manager.h"
-#include "../config/Config.h"
+#include "../../api/config/Config.h"
 #include "../../api/input/Engine.h"
 #include "../../api/ui/Window.h"
 #include "../render/Engine.h"
@@ -23,7 +24,7 @@ namespace odyssey::engine {
      * This is the game engine.
      * It is responsible for the main game loop
      **/
-    class Engine final {
+    class Engine final : public v3d::engine::Engine {
      public:
         /**
          * Constructor.
@@ -60,21 +61,10 @@ namespace odyssey::engine {
         bool shutdown();
 
      private:
-        std::string appPath_;
-        boost::shared_ptr<odyssey::config::Config> config_;
-        boost::shared_ptr<v3d::ui::Window> window_;
-        boost::shared_ptr<v3d::log::Logger> logger_;
 
         boost::shared_ptr<Player> player_;
-
         boost::shared_ptr<odyssey::render::Engine> renderEngine_;
-        boost::shared_ptr<v3d::input::Engine> inputEngine_;
-
-        boost::shared_ptr<v3d::asset::Manager> assetManager_;
-
         entt::registry registry_;
-        boost::shared_ptr<entt::dispatcher> dispatcher_;
-
         boost::shared_ptr<odyssey::system::Movement> movementSystem_;
     };
 
