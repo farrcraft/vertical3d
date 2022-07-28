@@ -61,8 +61,20 @@ namespace v3d::engine {
                 return false;
             }
 
+            int width = -1;
+            int height = -1;
+            // if there is a window config with dimensions specified, we'll use those.
+            if (features_ & Feature::Config) {
+                boost::shared_ptr<v3d::asset::Json> windowConfig = config_->get(v3d::config::Type::Window);
+                if (windowConfig) {
+                    auto const doc = windowConfig->document();
+                    auto const window = doc.at("window");
+                    width = boost::json::value_to<int>(window.at("width"));
+                    height = boost::json::value_to<int>(window.at("height"));
+                }
+            }
             window_ = boost::make_shared<v3d::ui::Window>(logger_);
-            if (features_ & Feature::Config && !window_->create(config_->windowWidth(), config_->windowHeight())) {
+            if (features_ & Feature::Config && !window_->create(width, height)) {
                 return false;
             }
         }
