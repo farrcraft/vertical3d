@@ -1,6 +1,6 @@
 /**
- * The Untitled Adventure / Odyssey
- * Copyright (c) 2022 Joshua Farr (josh@farrcraft.com)
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
 #pragma once
@@ -9,13 +9,14 @@
 #include <string>
 #include <string_view>
 
+#include "Type.h"
 #include "BindingContext.h"
-#include "../../api/asset/Json.h"
-#include "../../api/asset/Manager.h"
+#include "../asset/Json.h"
+#include "../asset/Manager.h"
 
 #include <boost/shared_ptr.hpp>
 
-namespace odyssey::config {
+namespace v3d::config {
     /**
      * JSON file-derived configuration
      **/
@@ -35,23 +36,11 @@ namespace odyssey::config {
         bool load(const boost::shared_ptr<v3d::asset::Manager>& assetManager);
 
         /**
+         * Get a loaded config
          **/
-        int windowWidth() const;
-
-        /**
-         **/
-        int windowHeight() const;
+        boost::shared_ptr<v3d::asset::Json> get(Type configType);
 
      protected:
-        /**
-         * Load the bindings.json config
-         * 
-         * @param bindings the json file asset to load bindings from
-         * 
-         * @return true if bindings are successfully loaded
-         **/
-        bool loadBindings(const boost::shared_ptr<v3d::asset::Json>& bindings);
-
         /**
          * Load the root config file
          * 
@@ -65,9 +54,7 @@ namespace odyssey::config {
      private:
         std::unordered_map<std::string_view, boost::shared_ptr<BindingContext> > contexts_;
         boost::shared_ptr<v3d::log::Logger> logger_;
-        std::string configPath_;
-        int windowWidth_;
-        int windowHeight_;
+        std::unordered_map<Type, boost::shared_ptr<v3d::asset::Json> > configs_;
     };
-};  // namespace odyssey::config
+};  // namespace v3d::config
 

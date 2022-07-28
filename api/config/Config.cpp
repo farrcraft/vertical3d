@@ -1,6 +1,6 @@
 /**
- * The Untitled Adventure / Odyssey
- * Copyright (c) 2022 Joshua Farr (josh@farrcraft.com)
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
 #include "Config.h"
@@ -9,7 +9,7 @@
 
 #include <boost/make_shared.hpp>
 
-namespace odyssey::config {
+namespace v3d::config {
     /**
      **/
     Config::Config(const boost::shared_ptr<v3d::log::Logger>& logger) :
@@ -20,19 +20,53 @@ namespace odyssey::config {
      **/
     bool Config::load(const boost::shared_ptr<v3d::asset::Manager>& assetManager) {
         boost::shared_ptr<v3d::asset::Json> config = boost::dynamic_pointer_cast<v3d::asset::Json>(assetManager->loadTypeFromExt("config.json"));
-        if (!config || !loadConfig(config)) {
+        if (!config) {
             return false;
         }
-
-        boost::shared_ptr<v3d::asset::Json> bindings = boost::dynamic_pointer_cast<v3d::asset::Json>(assetManager->loadTypeFromExt("bindings.json"));
-        if (!bindings || !loadBindings(bindings)) {
+        auto const doc = config->document();
+        auto const configs = doc.at("configs");
+        if (!configs.is_array()) {
+            LOG_ERROR(logger_) << "Missing configs in config";
             return false;
+        }
+        // for each context
+        auto const items = configs.as_array();
+        auto it = items.begin();
+        for (; it != items.end(); ++it) {
+            if (!it->is_object()) {
+                LOG_ERROR(logger_) << "Unrecognized config";
+                return false;
+            }
+            auto const entry = it->as_object();
+            std::string typeName = boost::json::value_to<std::string>(entry.at("type"));
+            std::string fileName = boost::json::value_to<std::string>(entry.at("file"));
+            Type type = stringToType(typeName);
+            if (type == Type::Unknown) {
+                LOG_ERROR(logger_) << "Unknown config type: " << typeName;
+                return false;
+            }
+            boost::shared_ptr<v3d::asset::Json> asset = boost::dynamic_pointer_cast<v3d::asset::Json>(assetManager->loadTypeFromExt(fileName));
+            if (!asset) {
+                LOG_ERROR(logger_) << "Config file not found: " << fileName;
+                return false;
+            }
+            configs_[type] = asset;
         }
         return true;
     }
 
     /**
      **/
+    boost::shared_ptr<v3d::asset::Json> Config::get(Type configType) {
+        auto entry = configs_.find(configType);
+        if (entry == configs_.end()) {
+            return nullptr;
+        }
+        return entry->second;
+    }
+
+    /**
+
     bool Config::loadBindings(const boost::shared_ptr<v3d::asset::Json>& bindings) {
         auto const doc = bindings->document();
         auto const contexts = doc.at("contexts");
@@ -78,29 +112,5 @@ namespace odyssey::config {
 
         return true;
     }
-
-    /**
-     **/
-    bool Config::loadConfig(const boost::shared_ptr<v3d::asset::Json>& config) {
-        auto const doc = config->document();
-        // default window options
-        auto const window = doc.at("window");
-        windowWidth_ = boost::json::value_to<int>(window.at("width"));
-        windowHeight_ = boost::json::value_to<int>(window.at("height"));
-        LOG_INFO(logger_) << "Setting default window size to " << windowWidth_ << "x" << windowHeight_;
-
-        return true;
-    }
-
-    /**
-     **/
-    int Config::windowWidth() const {
-        return windowWidth_;
-    }
-
-    /**
-     **/
-    int Config::windowHeight() const {
-        return windowHeight_;
-    }
-};  // namespace odyssey::config
+    */
+};  // namespace v3d::config

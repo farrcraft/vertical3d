@@ -1,6 +1,6 @@
 /**
- * The Untitled Adventure / Odyssey
- * Copyright (c) 2022 Joshua Farr (josh@farrcraft.com)
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
 #pragma once
@@ -11,7 +11,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-namespace odyssey::config {
+namespace v3d::config {
     /**
      * A key binding maps an input device key sequence to a system action
      * this might also depend on context
@@ -41,4 +41,4 @@ namespace odyssey::config {
         std::string_view context_;
         std::unordered_map<std::string_view, std::string_view> bindings_;
     };
-};  // namespace odyssey::config
+};  // namespace v3d::config

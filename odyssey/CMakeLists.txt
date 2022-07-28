@@ -22,8 +22,6 @@ add_executable (Odyssey WIN32 "Odyssey.cpp" "Odyssey.h" "ui/Screen.h" "ui/Screen
 "render/Surface.h" "render/Surface.cpp" "actor/Actor.h" "render/TextureCache.cpp" 
 "render/operation/BlitTexture.h" "render/Operation.h" "render/Frame.cpp" "render/operation/BlitTexture.cpp" "render/Context.h" "render/Context.cpp" "render/Scene.h" "render/Scene.cpp" 
 "tile/Tile.h" "tile/Size.h" "engine/Unit.h"
-"config/BindingContext.h" "system/Movement.h" "system/Movement.cpp" "config/BindingContext.cpp" "config/Config.h" 
-"config/Config.cpp"
 )
 
 # SDL2MAIN_LIBRARY is also specified within SDL2_LIBRARY by the FindSDL2 module.
