@@ -1,7 +1,7 @@
 /**
  * Vertical3D
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
-**/
+ **/
 
 #include "Manager.h"
 
@@ -10,6 +10,7 @@
 #include "loader/Jpeg.h"
 #include "loader/Json.h"
 #include "loader/Png.h"
+#include "loader/Wav.h"
 
 #include <boost/make_shared.hpp>
 
@@ -24,6 +25,7 @@ namespace v3d::asset {
         loaders_[asset::Type::IMAGE_JPEG] = boost::make_shared<v3d::asset::loader::Jpeg>(logger_);
         loaders_[asset::Type::IMAGE_PNG] = boost::make_shared<v3d::asset::loader::Png>(logger_);
         loaders_[asset::Type::JSON_DOCUMENT] = boost::make_shared<v3d::asset::loader::Json>(logger_);
+        loaders_[asset::Type::AUDIO_WAV] = boost::make_shared<v3d::asset::loader::Wav>(logger_);
     }
 
     /**
@@ -59,6 +61,8 @@ namespace v3d::asset {
             asset = load(name, asset::Type::IMAGE_JPEG);
         } else if (ext == ".json") {
             asset = load(name, asset::Type::JSON_DOCUMENT);
+        } else if (ext == ".wav") {
+            asset = load(name, asset::Type::AUDIO_WAV);
         } else {
             throw std::invalid_argument("unrecognized extension");
         }

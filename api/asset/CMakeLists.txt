@@ -10,4 +10,4 @@ add_library("v3dlib_asset"
 "loader/Jpeg.h" "loader/Jpeg.cpp"
 "loader/Json.h" "loader/Json.cpp"
 "loader/Png.h" "loader/Png.cpp"
-)
+ "loader/Wav.h" "loader/Wav.cpp" "Sound.h" "Sound.cpp")
