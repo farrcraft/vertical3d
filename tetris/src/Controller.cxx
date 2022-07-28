@@ -10,14 +10,11 @@
 #include "TetrisScene.h"
 #include "Renderer.h"
 
-#include "../../v3dlibs/hookah/Hookah.h"
-#include "../../v3dlibs/command/BindLoader.h"
-
 #include <boost/bind.hpp>
 #include <boost/make_shared.hpp>
 
 Controller::Controller() {
-    logger_ = boost::make_shared<v3d::core::Logger>();
+    logger_ = boost::make_shared<v3d::log::Logger>();
 
     // create new app window and set caption
     window_ = Hookah::Create3DWindow(800, 600);

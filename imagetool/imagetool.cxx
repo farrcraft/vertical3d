@@ -8,7 +8,7 @@
 #include <boost/program_options.hpp>
 #include <boost/make_shared.hpp>
 
-#include "../image/Factory.h"
+#include "../api/image/Factory.h"
 
 
 int main(int argc, char *argv[]) {
@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_SUCCESS);
     }
 
-    auto logger = boost::make_shared<v3d::core::Logger>();
+    auto logger = boost::make_shared<v3d::log::Logger>();
 
     v3d::image::Factory factory(logger);
     boost::shared_ptr<v3d::image::Image> image;
