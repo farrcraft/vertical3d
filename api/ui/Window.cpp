@@ -22,19 +22,19 @@ namespace v3d::ui {
     /**
     **/
     bool Window::create(int width, int height) {
-        // Create window
-        window_ = SDL_CreateWindow("Odyssey", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
+        if (width > 0) {
+            width_ = width;
+        }
+        if (height > 0) {
+            height_ = height;
+        }
+        LOG_INFO(logger_) << "Creating window [" << width_ << "] x [" << height_ << "]";
+        window_ = SDL_CreateWindow("Odyssey", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width_, height_, SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
         if (window_ == nullptr) {
             LOG_ERROR(logger_) << "Window could not be created! SDL_Error: " << SDL_GetError();
             return false;
         }
-        // The surface contained by the window
         surface_ = SDL_GetWindowSurface(window_);
-
-        // how do we keep these up to date when the window is resized?
-        width_ = width;
-        height_ = height;
-
         return true;
     }
 
