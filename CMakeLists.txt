@@ -41,12 +41,10 @@ include_directories(SYSTEM
 	"vendor/entt-3.10.1/src"
 	"vendor/libnoise/include/noise"
 	"vendor/glm-0.9.9.8/glm"
-	"vendor/OpenAL 1.1 SDK/include"
-	"vendor/freealut-freealut_1_1_0/include"
 	"vendor/glew-2.2.0/include"
 	"vendor/freetype-2.12.1/include"
-	"vendor/libpng-1.6.37"
-	"vendor/jpeg-9e")
+	"vendor/soloud20200207/include"
+)
 
 link_directories(
 	${Boost_LIBRARY_DIRS}
