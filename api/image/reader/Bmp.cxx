@@ -15,6 +15,8 @@
 
 #include "../BmpHeader.h"
 
+#include <boost/make_shared.hpp>
+
 namespace v3d::image::reader {
     /**
      **/
@@ -104,7 +106,7 @@ namespace v3d::image::reader {
         LOG_DEBUG(logger_) << "BMPReader::read - width is: " << width << " after padding: " << pad;
 
         // this is just temporary storage
-        boost::shared_ptr<Image> img(new Image(size));
+        boost::shared_ptr<Image> img = boost::make_shared<Image>(size);
         unsigned char* temp = img->data();
 
         /*
