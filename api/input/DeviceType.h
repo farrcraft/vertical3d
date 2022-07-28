@@ -18,4 +18,10 @@ namespace v3d::input {
     constexpr bool operator&(int lhs, DeviceType rhs) {
         return lhs & static_cast<int>(rhs);
     }
+
+    constexpr int& operator|=(int &lhs, DeviceType rhs) {
+        lhs = lhs | static_cast<int>(rhs);
+        return lhs;
+    }
+
 };  // namespace v3d::input
