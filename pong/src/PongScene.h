@@ -11,13 +11,12 @@
 #include "Paddle.h"
 #include "GameState.h"
 
-#include "../../v3dlibs/audio/SoundEngine.h"
-
-#include <boost/property_tree/ptree.hpp>
+#include <entt/entt.hpp>
+#include <boost/shared_ptr.hpp>
 
 class PongScene {
  public:
-    PongScene(const boost::property_tree::ptree & ptree, const std::string & assetPath);
+    PongScene(const boost::shared_ptr<entt::dispatcher> & dispatcher);
     ~PongScene();
 
     void tick(unsigned int delta);
@@ -31,9 +30,9 @@ class PongScene {
     GameState & state();
 
  private:
+    boost::shared_ptr<entt::dispatcher> dispatcher_;
     Ball ball_;
     Paddle left_, right_;
     GameState gameState_;
     int width_, height_;
-    v3d::audio::SoundEngine soundEngine_;
 };

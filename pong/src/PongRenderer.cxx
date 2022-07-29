@@ -11,8 +11,8 @@
 #include <iostream>
 #include <string>
 
-#include "../../v3dlibs/gl/Shader.h"
-#include "../../v3dlibs/font/TextureTextBuffer.h"
+#include "../../api/gl/Shader.h"
+#include "../../api/font/TextureTextBuffer.h"
 
 #include "../../stark/ProgramFactory.h"
 #include "../../stark/AssetLoader.h"
@@ -21,12 +21,12 @@
 #include <boost/make_shared.hpp>
 
 
-PongRenderer::PongRenderer(boost::shared_ptr<PongScene> scene, const boost::shared_ptr<AssetLoader> & loader, const boost::shared_ptr<v3d::core::Logger> & logger) : scene_(scene) {
+PongRenderer::PongRenderer(boost::shared_ptr<PongScene> scene, const boost::shared_ptr<AssetLoader> & loader, const boost::shared_ptr<v3d::log::Logger> & logger) : scene_(scene) {
     fonts_ = boost::make_shared<v3d::font::FontCache>(logger);
     ProgramFactory factory(loader);
     boost::shared_ptr<v3d::gl::Program> program = factory.create(v3d::gl::Shader::SHADER_TYPE_VERTEX|v3d::gl::Shader::SHADER_TYPE_FRAGMENT, "shaders/canvas");
 
-    canvas_.reset(new v3d::gl::Canvas(program));
+    canvas_ = boost::make_shared<v3d::gl::Canvas>(program);
 
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
@@ -78,18 +78,18 @@ boost::shared_ptr<v3d::font::FontCache> PongRenderer::fonts() const {
 void PongRenderer::resize(int width, int height) {
     scene_->resize(width, height);
     canvas_->resize(width, height);
-    float w = static_cast<float>(width);
-    float h = static_cast<float>(height);
+    const float w = static_cast<float>(width);
+    const float h = static_cast<float>(height);
     fontRenderer_->resize(w, h);
 }
 
-void PongRenderer::draw(Hookah::Window * window) {
+void PongRenderer::draw(boost::shared_ptr<v3d::ui::Window> window) {
     canvas_->clear();
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    int width = window->width();
-    int height = window->height();
+    const int width = window->width();
+    const int height = window->height();
 
     // draw the scoreboard
     fontRenderer_->buffer()->clear();
@@ -138,7 +138,7 @@ void PongRenderer::draw(Hookah::Window * window) {
 }
 
 void PongRenderer::drawBall() {
-    int sides = 32;
+    const int sides = 32;
     glm::vec2 position = scene_->ball().position();
 
     canvas_->push();

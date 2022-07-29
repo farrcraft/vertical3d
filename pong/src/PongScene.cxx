@@ -8,21 +8,14 @@
 #include <iostream>
 #include <string>
 
+#include "../../api/event/Sound.h"
 
-PongScene::PongScene(const boost::property_tree::ptree & ptree, const std::string & assetPath) {
+PongScene::PongScene(const boost::shared_ptr<entt::dispatcher>& dispatcher) : dispatcher_(dispatcher) {
     left_.color(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(1.0f, 1.0f, 1.0f));
     right_.color(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(1.0f, 1.0f, 1.0f));
-
-    // load all of the sound clips
-    if (!soundEngine_.load(ptree, assetPath)) {
-        // log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("pong.log"));
-        // LOG4CXX_ERROR(logger, "error loading sounds");
-        return;
-    }
 }
 
 PongScene::~PongScene() {
-    soundEngine_.shutdown();
 }
 
 void PongScene::resize(int width, int height) {
@@ -38,10 +31,8 @@ void PongScene::tick(unsigned int delta) {
     // check for victory conditions
     if (left_.score() == gameState_.maxScore() ||
         right_.score() == gameState_.maxScore()) {
-        // reset game state
         reset();
-        // play victory sound
-        soundEngine_.playClip("victory");
+        dispatcher_->trigger(v3d::event::Sound("victory"));
     }
     glm::vec2 ball_pos = ball_.position();
     glm::vec2 ball_dir = ball_.direction();
@@ -87,9 +78,7 @@ void PongScene::tick(unsigned int delta) {
         ball_dir *= gameState_.ballSpeedup();
 
         ball_.direction(ball_dir);
-
-        // play paddle hit / ball bounce SFX
-        soundEngine_.playClip("hit");
+        dispatcher_->trigger(v3d::event::Sound("hit"));
     } else if (((ball_pos[1] + (gameState_.ballSize() / 2.0f)) >= (right_.position() - paddle_mid)) &&
             ((ball_pos[1] - (gameState_.ballSize() / 2.0f)) <= (right_.position() + paddle_mid)) &&
             (ball_pos[0] >= (width_ - ((gameState_.ballSize() / 2.0f) + paddle_size)))) {
@@ -104,9 +93,7 @@ void PongScene::tick(unsigned int delta) {
         ball_dir *= gameState_.ballSpeedup();
 
         ball_.direction(ball_dir);
-
-        // play paddle hit / ball bounce SFX
-        soundEngine_.playClip("hit");
+        dispatcher_->trigger(v3d::event::Sound("hit"));
     }
 
     bool reset_ball = false;
@@ -117,16 +104,12 @@ void PongScene::tick(unsigned int delta) {
         right_.score(right_.score() + 1);
         victor = -1.0f;
         reset_ball = true;
-
-        // play score point SFX
-        soundEngine_.playClip("score");
+        dispatcher_->trigger(v3d::event::Sound("score"));
     } else if (ball_pos[0] >= (width_ - (gameState_.ballSize() / 2.0f))) {
         left_.score(left_.score() + 1);
         victor = 1.0f;
         reset_ball = true;
-
-        // play score point SFX
-        soundEngine_.playClip("score");
+        dispatcher_->trigger(v3d::event::Sound("score"));
     }
     if (reset_ball) {
         // reposition the ball in the center of the screen
@@ -153,16 +136,12 @@ void PongScene::tick(unsigned int delta) {
         glm::vec2 ball_dir = ball_.direction();
         ball_dir[1] = -ball_dir[1];
         ball_.direction(ball_dir);
-
-        // play ball bounce SFX
-        soundEngine_.playClip("bounce");
+        dispatcher_->trigger(v3d::event::Sound("bounce"));
     } else if (ball_pos[1] <= (15.0f - (gameState_.ballSize() / 2.0f))) {
         glm::vec2 ball_dir = ball_.direction();
         ball_dir[1] = -ball_dir[1];
         ball_.direction(ball_dir);
-
-        // play ball bounce SFX
-        soundEngine_.playClip("bounce");
+        dispatcher_->trigger(v3d::event::Sound("bounce"));
     }
 
 

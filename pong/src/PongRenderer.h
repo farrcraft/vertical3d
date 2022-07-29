@@ -7,7 +7,7 @@
 
 #include "PongScene.h"
 
-#include "../../api/hookah/Window.h"
+#include "../../api/ui/Window.h"
 #include "../../api/gl/Canvas.h"
 #include "../../api/gl/TextureFontRenderer.h"
 #include "../../api/font/TextureFontCache.h"
@@ -19,9 +19,9 @@ class AssetLoader;
 
 class PongRenderer {
  public:
-    PongRenderer(boost::shared_ptr<PongScene> scene, const boost::shared_ptr<AssetLoader> & loader, const boost::shared_ptr<v3d::core::Logger> & logger);
+    PongRenderer(boost::shared_ptr<PongScene> scene, const boost::shared_ptr<AssetLoader> & loader, const boost::shared_ptr<v3d::log::Logger> & logger);
 
-    void draw(Hookah::Window * window);
+    void draw(boost::shared_ptr<v3d::ui::Window> window);
     void resize(int width, int height);
 
     void drawBall();

@@ -11,53 +11,41 @@
 #include "PongRenderer.h"
 #include "PongScene.h"
 
-#include "../../v3dlibs/command/BindLoader.h"
-#include "../../v3dlibs/hookah/Hookah.h"
+#include "../../api/engine/Feature.h"
 #include "../../luxa/luxa/UILoader.h"
 #include "../../stark/AssetLoader.h"
 
-#include <boost/bind/bind.hpp>
-#include <boost/bind/placeholders.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
 
 
-PongController::PongController(const std::string_view & path) {
-    logger_ = boost::make_shared<v3d::core::Logger>();
+PongController::PongController(const std::string_view & path) : v3d::engine::Engine(path) {
+}
 
-    directory_ = boost::make_shared<v3d::command::CommandDirectory>();
-
-    std::string dataPath = std::string(path) + std::string("data/");
-    assetManager_ = boost::make_shared<v3d::asset::Manager>(dataPath, logger_);
-
-    // need to load config here... (also replaces the property tree xml loading stuff...)
-    std::string configFile = dataPath + std::string("config.json");
-
-    // create new app window and set caption
-    window_ = Hookah::Create3DWindow(800, 600);
-
-    // create input devices
-    keyboard_ = boost::dynamic_pointer_cast<v3d::input::KeyboardDevice, v3d::input::InputDevice>(Hookah::CreateInputDevice("keyboard"));
-
-    // register directory as an observer of input device events
-    listenerAdapter_ = boost::make_shared<v3d::input::InputEventAdapter>(keyboard_, mouse_);
-    listenerAdapter_->connect(directory_.get());
-
-    // add device to window
-    window_->addInputDevice("keyboard", keyboard_);
+bool::PongController::initialize() {
+    if (!Engine::initialize(
+        static_cast<int>(v3d::engine::Feature::Window |
+        v3d::engine::Feature::KeyboardInput |
+        v3d::engine::Feature::MouseInput |
+        v3d::engine::Feature::Config))) {
+        return false;
+    }
 
     window_->caption("Pong!");
 
-    // load config file into a property tree
-    boost::property_tree::ptree ptree;
-    boost::property_tree::read_xml(configFile, ptree);
-
-    // create the scene
-    scene_ = boost::make_shared<PongScene>(ptree, path);
-    // ...and the renderer
+    scene_ = boost::make_shared<PongScene>();
+    // [FIXME] - factor out this stark thing...
     boost::shared_ptr<AssetLoader> loader = boost::make_shared<AssetLoader>(path);
     renderer_ = boost::make_shared<PongRenderer>(scene_, loader);
 
+    soundEngine_ = boost::make_shared<v3d::audio::Engine>();
+    soundEngine_->initialize();
+    if (config_) {
+        boost::shared_ptr<v3d::asset::Json> soundConfig = config_->get(v3d::config::Type::Sound);
+        if (soundConfig) {
+            soundEngine_->load(soundConfig);
+        }
+    }
     // register game commands
     // play commands
     directory_->add("leftPaddleUp", "pong", boost::bind(&PongController::exec, boost::ref(*this), _1, _2));
@@ -70,12 +58,9 @@ PongController::PongController(const std::string_view & path) {
     directory_->add("menuNext", "ui", boost::bind(&PongController::execUI, boost::ref(*this), _1, _2));
     directory_->add("selectMenu", "ui", boost::bind(&PongController::execUI, boost::ref(*this), _1, _2));
     // config commands
-    directory_->add("setmode", "pong",  boost::bind(&PongController::exec, boost::ref(*this), _1, _2));
+    directory_->add("setmode", "pong", boost::bind(&PongController::exec, boost::ref(*this), _1, _2));
     // app commands
-    directory_->add("quit", "pong",  boost::bind(&PongController::exec, boost::ref(*this), _1, _2));
-
-    // load key binds from the property tree
-    v3d::utility::load_binds(ptree, directory_.get());
+    directory_->add("quit", "pong", boost::bind(&PongController::exec, boost::ref(*this), _1, _2));
 
     // set the scene size according to the window canvas
     renderer_->resize(window_->width(), window_->height());
@@ -94,21 +79,27 @@ PongController::PongController(const std::string_view & path) {
     Luxa::UILoader ui_loader;
     boost::property_tree::ptree config = ptree.get_child("config");
     ui_loader.load(config, &(*vgui_));
-/*
-    // register vgui event listeners
-    window_->addPostDrawListener(boost::bind(&Luxa::ComponentManager::draw, boost::ref(vgui_), _1));
-    window_->addResizeListener(boost::bind(&Luxa::ComponentManager::resize, boost::ref(vgui_), _1, _2));
-    window_->addTickListener(boost::bind(&Luxa::ComponentManager::tick, boost::ref(vgui_), _1));
+    /*
+        // register vgui event listeners
+        window_->addPostDrawListener(boost::bind(&Luxa::ComponentManager::draw, boost::ref(vgui_), _1));
+        window_->addResizeListener(boost::bind(&Luxa::ComponentManager::resize, boost::ref(vgui_), _1, _2));
+        window_->addTickListener(boost::bind(&Luxa::ComponentManager::tick, boost::ref(vgui_), _1));
 
-    // set default managed area to match canvas size
-    vgui_->resize(window_->width(), window_->height());
+        // set default managed area to match canvas size
+        vgui_->resize(window_->width(), window_->height());
 
-    setMenuItemDefaults(boost::dynamic_pointer_cast<Luxa::Menu, Luxa::Component>(vgui_->getComponent("game-menu")));
-*/
+        setMenuItemDefaults(boost::dynamic_pointer_cast<Luxa::Menu, Luxa::Component>(vgui_->getComponent("game-menu")));
+    */
 }
 
-bool PongController::run() {
-    return window_->run(Hookah::Window::EVENT_HANDLING_NONBLOCKING);
+/**
+  **/
+bool PongController::shutdown() {
+    soundEngine_->shutdown();
+    if (!v3d::engine::Engine::shutdown()) {
+        return false;
+    }
+    return true;
 }
 
 void PongController::setMenuItemDefaults(const boost::shared_ptr<Luxa::Menu> & menu) {
@@ -183,8 +174,7 @@ bool PongController::exec(const v3d::command::CommandInfo & command, const std::
             scene_->right().down(!scene_->right().down());
         return true;
     } else if (command.name() == "quit") {
-        window_->shutdown();
-        return true;
+        return shutdown();
     }
 
     return false;

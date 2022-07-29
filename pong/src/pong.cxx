@@ -14,8 +14,6 @@
  *
  *
  * TODO:
- * (*) fix menu system
- * (*) rendering code should go in PongRenderer class
  * ( ) support key rebinding
  * ( ) modify game vars
  * ( ) network multiplayer mode
@@ -40,10 +38,9 @@ int main(int argc, char *argv[]) {
 
     PongController controller(appPath);
 
-    if (!controller.run()) {
+    if (!controller.initialize() || !controller.eventLoop()) {
         return EXIT_FAILURE;
     }
 
     return EXIT_SUCCESS;
 }
-
