@@ -4,13 +4,15 @@
 **/
 
 #include "Engine.h"
+#include "../event/Sound.h"
 
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
 
 namespace v3d::audio {
 
-    Engine::Engine(const boost::shared_ptr<v3d::log::Logger> & logger) : logger_(logger) {
+    Engine::Engine(const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<entt::dispatcher> &dispatcher) : 
+        dispatcher_(dispatcher), logger_(logger) {
     }
 
     void Engine::shutdown() {
@@ -23,7 +25,14 @@ namespace v3d::audio {
     bool Engine::initialize() {
         soloud_.init();
 
+        dispatcher_->sink<v3d::event::Sound>().connect<&Engine::soundEvent>(*this);
         return true;
+    }
+
+    void Engine::soundEvent(const v3d::event::Sound& sound) {
+        if (!playClip(sound.clip())) {
+            LOG_ERROR(logger_) << "unable to play clip: " << sound.clip();
+        }
     }
 
     bool Engine::load(const boost::shared_ptr<v3d::asset::Json>& config) {
