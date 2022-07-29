@@ -13,6 +13,7 @@
 #include "Scene.h"
 #include "TextureCache.h"
 
+#include "../../api/event/WindowResize.h"
 #include "../../api/log/Logger.h"
 #include "../../api/asset/Manager.h"
 #include "../../api/ui/Window.h"
@@ -53,7 +54,7 @@ namespace odyssey::render {
         /**
          * Handle a resize event 
          **/
-        void resize(int width, int height);
+        void resize(const v3d::event::WindowResize &event);
 
         /**
          **/

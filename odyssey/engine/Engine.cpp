@@ -60,6 +60,8 @@ namespace odyssey::engine {
             // Assign events to window.
             dispatcher_->sink<odyssey::event::KeyDown>().connect<&Window::on_key_down>(window_);
         */
+        dispatcher_->sink<v3d::event::WindowResize>().connect<&odyssey::render::Engine::resize>(renderEngine_);
+
         return true;
     }
 
@@ -68,50 +70,6 @@ namespace odyssey::engine {
     bool Engine::shutdown() {
         if (!v3d::engine::Engine::shutdown()) {
             return false;
-        }
-
-        return true;
-    }
-
-    /**
-     **/
-    bool Engine::run() {
-        bool quit = false;
-        SDL_Event event;
-        // Enter main game loop
-        while (!quit) {
-            // Handle events on queue
-            while (SDL_PollEvent(&event) != 0) {
-                // check for input device events first
-                if (inputEngine_->filterEvent(event)) {
-                    continue;
-                }
-                switch (event.type) {
-                case SDL_QUIT:
-                    quit = true;
-                    break;
-                case SDL_WINDOWEVENT:
-                    switch (event.window.event) {
-                    case SDL_WINDOWEVENT_RESIZED:
-                        renderEngine_->resize(event.window.data1, event.window.data2);
-                        break;
-                    case SDL_WINDOWEVENT_SIZE_CHANGED:
-                        renderEngine_->resize(event.window.data1, event.window.data2);
-                        break;
-                    case SDL_WINDOWEVENT_FOCUS_LOST:
-                        break;
-                    case SDL_WINDOWEVENT_FOCUS_GAINED:
-                        break;
-                    }
-                    break;
-                }
-            }
-            // tick the game
-            if (!tick()) {
-                return false;
-            }
-            // and draw the frame on the screen
-            renderEngine_->renderFrame();
         }
         return true;
     }

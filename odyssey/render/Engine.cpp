@@ -51,8 +51,8 @@ namespace odyssey::render {
 
     /**
      **/
-    void Engine::resize(int width, int height) {
-        window_->resize(width, height);
+    void Engine::resize(const v3d::event::WindowResize& event) {
+        window_->resize(event.width(), event.height());
         //  backBuffer_ = boost::make_shared<Texture>(context_, width, height);
     }
 

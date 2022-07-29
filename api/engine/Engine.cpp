@@ -88,7 +88,6 @@ namespace v3d::engine {
         LOG_INFO(logger_) << "Shutting down engine...";
         if (features_ & Feature::Window) {
             window_->destroy();
-            // Quit SDL subsystems
             SDL_Quit();
         }
         return true;
@@ -120,14 +119,11 @@ namespace v3d::engine {
                 case SDL_WINDOWEVENT:
                     switch (event.window.event) {
                     case SDL_WINDOWEVENT_RESIZED:
-                        dispatcher_->trigger<v3d::event::WindowResize>(event.window.data1, event.window.data2);
-                        // [FIXME] - this isn't hooked up on the other side yet -
-                        // renderEngine_->resize(event.window.data1, event.window.data2);
-                        break;
                     case SDL_WINDOWEVENT_SIZE_CHANGED:
-                        dispatcher_->trigger<v3d::event::WindowResize>(event.window.data1, event.window.data2);
-                        // [FIXME] - this isn't hooked up on the other side yet -
-                        // renderEngine_->resize(event.window.data1, event.window.data2);
+                        if (window_) {
+                            window_->resize(event.window.data1, event.window.data2);
+                        }
+                        dispatcher_->trigger(v3d::event::WindowResize(event.window.data1, event.window.data2));
                         break;
                     case SDL_WINDOWEVENT_FOCUS_LOST:
                         break;

@@ -44,12 +44,6 @@ namespace odyssey::engine {
         bool initialize();
 
         /**
-         * The game loop entry point
-         * @return bool
-         **/
-        bool run();
-
-        /**
          * Advance the game world time
          * @return bool
          **/
@@ -61,7 +55,6 @@ namespace odyssey::engine {
         bool shutdown();
 
      private:
-
         boost::shared_ptr<Player> player_;
         boost::shared_ptr<odyssey::render::Engine> renderEngine_;
         entt::registry registry_;
