@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    const bool ok = engine.run();
+    const bool ok = engine.eventLoop();
 
     if (!engine.shutdown()) {
         return -1;
