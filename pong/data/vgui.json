@@ -1,0 +1,83 @@
+{
+  "vgui": {
+    "theme": {
+      "name": "default"
+    },
+    "menu": {
+      "name": "game-menu",
+      "visible": false,
+      "items": [
+        {
+          "label": "Options",
+          "command": "submenu",
+          "scope": "pong",
+          "type": "submenu",
+          "items": [
+            {
+              "label": "Rounds: ",
+              "param": "maxScore",
+              "command": "set_gamevar",
+              "scope": "pong",
+              "type": "numeric_input"
+            },
+            {
+              "label": "Player 1 Up: ",
+              "param": "pong::leftPaddleUp",
+              "command": "set_key",
+              "scope": "pong",
+              "type": "key_input"
+            },
+            {
+              "label": "Player 1 Down: ",
+              "param": "pong::leftPaddleDown",
+              "command": "set_key",
+              "scope": "pong",
+              "type": "key_input"
+            },
+            {
+              "label": "Player 2 Up: ",
+              "param": "pong::rightPaddleUp",
+              "command": "set_key",
+              "scope": "pong",
+              "type": "key_input"
+            },
+            {
+              "label": "Player 2 Down: ",
+              "param": "pong::rightPaddleDown",
+              "command": "set_key",
+              "scope": "pong",
+              "type": "key_input"
+            }
+          ]
+        },
+        {
+          "label": "Singleplayer",
+          "param": "SP",
+          "command": "setmode",
+          "scope": "pong",
+          "type": "action"
+        },
+        {
+          "label": "Co-op",
+          "param": "coop",
+          "command": "setmode",
+          "scope": "pong",
+          "type": "action"
+        },
+        {
+          "label": "Multiplayer",
+          "param": "MP",
+          "command": "setmode",
+          "scope": "pong",
+          "type": "action"
+        },
+        {
+          "label": "Quit",
+          "command": "quit",
+          "scope": "pong",
+          "type": "action"
+        }
+      ]
+    }
+  }
+}

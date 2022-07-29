@@ -1,0 +1,18 @@
+{
+  "fonts": [
+    {
+      "face": "arial.ttf",
+      "size": 32,
+      "bold": false,
+      "italics": false,
+      "name": "ui-text-font"
+    },
+    {
+      "face": "arial.ttf",
+      "size": 64,
+      "bold": false,
+      "italics": false,
+      "name": "score"
+    }
+  ]
+}

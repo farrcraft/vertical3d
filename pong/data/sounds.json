@@ -1,0 +1,16 @@
+{
+  "sounds": [
+    {
+      "clip_id": "hit",
+      "file": "hit.wav"
+    },
+    {
+      "clip_id": "score",
+      "file": "score.wav"
+    },
+    {
+      "clip_id": "victory",
+      "file": "victory.wav"
+    }
+  ]
+}

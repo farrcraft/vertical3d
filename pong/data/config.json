@@ -1,113 +1,25 @@
 {
-	"vgui": {
-		"theme": {
-			"name": "default"
+	"configs": [
+		{
+			"type": "bindings",
+			"file": "bindings.json"
 		},
-		"menu": {
-			"name": "game-menu",
-			"visible": false,
-			"items": [
-				{
-					"label": "Options",
-					"command": "submenu",
-					"scope": "pong",
-					"type": "submenu",
-					"items": [
-						{
-							"label": "Rounds: ",
-							"param": "maxScore",
-							"command": "set_gamevar",
-							"scope": "pong",
-							"type": "numeric_input"
-						},
-						{
-							"label": "Player 1 Up: ",
-							"param": "pong::leftPaddleUp",
-							"command": "set_key",
-							"scope": "pong",
-							"type": "key_input"
-						},
-						{
-							"label": "Player 1 Down: ",
-							"param": "pong::leftPaddleDown",
-							"command": "set_key",
-							"scope": "pong",
-							"type": "key_input"
-						},
-						{
-							"label": "Player 2 Up: ",
-							"param": "pong::rightPaddleUp",
-							"command": "set_key",
-							"scope": "pong",
-							"type": "key_input"
-						},
-						{
-							"label": "Player 2 Down: ",
-							"param": "pong::rightPaddleDown",
-							"command": "set_key",
-							"scope": "pong",
-							"type": "key_input"
-						}
-					]
-				},
-				{
-					"label": "Singleplayer",
-					"param": "SP",
-					"command": "setmode",
-					"scope": "pong",
-					"type": "action"
-				},
-				{
-					"label": "Co-op",
-					"param": "coop",
-					"command": "setmode",
-					"scope": "pong",
-					"type": "action"
-				},
-				{
-					"label": "Multiplayer",
-					"param": "MP",
-					"command": "setmode",
-					"scope": "pong",
-					"type": "action"
-				},
-				{
-					"label": "Quit",
-					"command": "quit",
-					"scope": "pong",
-					"type": "action"
-				}
-			]
+		{
+			"type": "vgui",
+			"file": "vgui.json" 
 		},
-		"fonts": [
-			{
-				"face": "arial.ttf",
-				"size": 32,
-				"bold": false,
-				"italics": false,
-				"name": "ui-text-font"
-			},
-			{
-				"face": "arial.ttf",
-				"size": 64,
-				"bold": false,
-				"italics": false,
-				"name": "score"
-			}
-		],
-		"sounds": [
-			{
-				"clip_id": "hit",
-				"file": "hit.wav"
-			},
-			{
-				"clip_id": "score",
-				"file": "score.wav"
-			},
-			{
-				"clip_id": "victory",
-				"file": "victory.wav"
-			}
-		]
-	}
+		{
+			"type": "window",
+			"file": "window.json"
+		},
+		{
+			"type": "sounds",
+			"file": "sounds.json"
+
+		},
+		{
+			"type": "fonts",
+			"file": "fonts.json"
+		}
+	]
 }

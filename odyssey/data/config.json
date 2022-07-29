@@ -1,6 +1,12 @@
 {
-  "window": {
-    "width": 800,
-    "height": 600
-  }
+  "configs": [
+    {
+      "type": "bindings",
+      "file": "bindings.json"
+    },
+    {
+      "type": "window",
+      "file": "window.json"
+    }
+  ]
 }
