@@ -7,14 +7,12 @@
 
 #include "Component.h"
 
-namespace Luxa
-{
+namespace Luxa {
 
-	class Frame : public Component
-	{
-		public:
-			Frame() = default;
-			~Frame() = default;
-	};
+    class Frame : public Component {
+     public:
+        Frame() = default;
+        ~Frame() = default;
+    };
 
-}; // end namespace Luxa
+};  // end namespace Luxa

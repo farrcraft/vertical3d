@@ -7,14 +7,12 @@
 
 #include "Component.h"
 
-namespace Luxa
-{
+namespace Luxa {
 
-	class Window : public Component
-	{
-		public:
-			Window();
-			~Window();
-	};
+    class Window : public Component {
+     public:
+        Window();
+        ~Window();
+    };
 
-}; // end namespace Luxa
+};  // end namespace Luxa

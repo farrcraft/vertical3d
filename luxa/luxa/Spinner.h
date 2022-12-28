@@ -7,14 +7,12 @@
 
 #include "Component.h"
 
-namespace Luxa
-{
+namespace Luxa {
 
-	class Spinner : public Component
-	{
-		public:
-			Spinner() = default;
-			~Spinner() = default;
-	}; 
+    class Spinner : public Component {
+     public:
+        Spinner() = default;
+        ~Spinner() = default;
+    };
 
-}; // end namespace Luxa
+};  // end namespace Luxa

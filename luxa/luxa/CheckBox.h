@@ -7,14 +7,12 @@
 
 #include "Component.h"
 
-namespace Luxa
-{
+namespace Luxa {
 
-	class CheckBox : public Component
-	{
-		public:
-			CheckBox();
-			~CheckBox();
-	};
+    class CheckBox : public Component {
+     public:
+        CheckBox();
+        ~CheckBox();
+    };
 
-}; // end namespace Luxa
+};  // end namespace Luxa

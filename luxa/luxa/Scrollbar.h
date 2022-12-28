@@ -7,14 +7,12 @@
 
 #include "Component.h"
 
-namespace Luxa
-{
+namespace Luxa {
 
-	class Scrollbar : public Component
-	{
-		public:
-			Scrollbar() = default;
-			~Scrollbar() = default;
-	};
+    class Scrollbar : public Component {
+     public:
+        Scrollbar() = default;
+        ~Scrollbar() = default;
+    };
 
-}; // end namespace Luxa
+};  // end namespace Luxa

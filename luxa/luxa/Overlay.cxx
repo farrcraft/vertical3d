@@ -5,31 +5,27 @@
 
 #include "Overlay.h"
 
-using namespace Luxa;
+namespace Luxa {
 
-Overlay::Overlay() : mode_(MODE_TRANSPARENT)
-{
+Overlay::Overlay() : mode_(MODE_TRANSPARENT) {
 }
 
-Overlay::Overlay(Mode m) : mode_(m)
-{
+Overlay::Overlay(Mode m) : mode_(m) {
 }
 
-Overlay::Overlay(const glm::vec3 & c) : color_(c), mode_(MODE_COLOR)
-{
+Overlay::Overlay(const glm::vec3& c) : color_(c), mode_(MODE_COLOR) {
 }
 
-void Overlay::color(const glm::vec3 & c)
-{
-	color_  = c;
+void Overlay::color(const glm::vec3& c) {
+    color_ = c;
 }
 
-glm::vec3 Overlay::color() const
-{
-	return color_;
+glm::vec3 Overlay::color() const {
+    return color_;
 }
 
-Overlay::Mode Overlay::mode() const
-{
-	return mode_;
+Overlay::Mode Overlay::mode() const {
+    return mode_;
 }
+
+};  // end namespace Luxa

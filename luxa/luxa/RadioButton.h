@@ -1,22 +1,19 @@
 /**
- * (c) Joshua Farr <j.wgasa@gmail.com>
- */
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
 
-#ifndef INCLUDED_LUXA_RADIOBUTTON
-#define INCLUDED_LUXA_RADIOBUTTON
+
+#pragma once
 
 #include "Component.h"
 
-namespace Luxa
-{
+namespace Luxa {
 
-	class RadioButton : public Component
-	{
-		public:
-			RadioButton();
-			~RadioButton();
-	};
+    class RadioButton : public Component {
+     public:
+        RadioButton();
+        ~RadioButton();
+    };
 
-}; // end namespace Luxa
-
-#endif // INCLUDED_LUXA_RADIOBUTTON
+};  // end namespace Luxa

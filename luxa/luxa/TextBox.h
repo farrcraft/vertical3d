@@ -7,15 +7,12 @@
 
 #include "Component.h"
 
-namespace Luxa
-{
+namespace Luxa {
 
-	class TextBox : public Component
-	{
-		public:
-			TextBox() = default;
-			~TextBox() = default;
-	};
+    class TextBox : public Component {
+     public:
+        TextBox() = default;
+        ~TextBox() = default;
+    };
 
-}; // end namespace Luxa
-
+};  // end namespace Luxa

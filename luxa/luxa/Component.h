@@ -12,8 +12,7 @@
 #include "style/Theme.h"
 
 #include "../../api/type/Bound2D.h"
-#include "../../api/command/CommandInfo.h"
-#include "../../api/event/EventListener.h"
+
 
 /**
  * Luxa library namespace.
@@ -27,7 +26,7 @@ namespace Luxa {
      * A vGUI Component
      * All UI components are all derived from this class.
      */
-    class Component : public v3d::event::EventListener {
+    class Component {
      public:
             static unsigned int lastID;
 

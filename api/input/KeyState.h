@@ -14,7 +14,7 @@ namespace v3d::input {
      * KeyState keeps track of the current state of all keys based on all of the key up/down
      * events that we've seen.
      **/
-    class KeyState {
+    class KeyState final {
      public:
         /**
          * Update the state to indicate that a key is currently being pressed

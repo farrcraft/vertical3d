@@ -7,14 +7,12 @@
 
 #include "Component.h"
 
-namespace Luxa
-{
+namespace Luxa {
 
-	class TabPage : public Component
-	{
-		public:
-			TabPage() = default;
-			~TabPage() = default;
-	}; 
+    class TabPage : public Component {
+     public:
+        TabPage() = default;
+        ~TabPage() = default;
+    };
 
-}; // end namespace Luxa
+};  // end namespace Luxa
