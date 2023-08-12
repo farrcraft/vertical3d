@@ -18,7 +18,7 @@ set(Boost_USE_STATIC_LIBS ON)
 # I haven't figured out how to make this work with a relative path
 set(CMAKE_MODULE_PATH "Y:/Josh/Code/vertical3d/odyssey/cmake")
 
-list(APPEND CMAKE_PREFIX_PATH "Y:/Josh/Code/vertical3d/vendor/boost/boost_1_79_0")
+list(APPEND CMAKE_PREFIX_PATH "Y:/Josh/Code/vertical3d/vendor/boost/boost_1_82_0")
 
 # This path is used by FindSDL2 module. 
 # It will find include and lib folders under this directory.
@@ -54,7 +54,6 @@ link_directories(
 
 # Include sub-projects
 add_subdirectory("api")
-# add_subdirectory("luxa")
 add_subdirectory("stark")
 add_subdirectory("talyn")
 add_subdirectory("moya")
