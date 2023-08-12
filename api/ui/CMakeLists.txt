@@ -1,3 +1,9 @@
 add_library("v3dlib_ui"
 	"Window.h" "Window.cpp"
-)
+ "component/Button.h" "component/Button.cpp" "Component.h" "Component.cpp" "component/Icon.h" "component/Icon.cpp" "component/Label.h" "component/Label.cpp" "Overlay.h" "Overlay.cpp" 
+"component/Dialog.h" "component/Frame.h" "component/HorizontalBox.h" "component/HorizontalBox.cpp"
+"component/InputBox.h" "component/RadioButton.h" "component/Scrollbar.h" "component/SelectList.h"
+"component/Spinner.h" "component/TabBar.h" "component/TabPage.h" "component/TextBox.h"
+"component/ToolTip.h" "component/VerticalBox.h" "component/VerticalBox.cpp"
+"Container.h" "Container.cpp" "style/Button.h" "Style.h" "Style.cpp" "style/Property.h" "style/Property.cpp" "style/property/Font.h" "style/property/Font.cpp" "style/property/Image.h" "style/property/Image.cpp"
+"style/Theme.h" "style/Theme.cpp" "style/Button.cpp" "style/Menu.h" "style/Menu.cpp")
