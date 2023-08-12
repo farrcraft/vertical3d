@@ -1,6 +1,6 @@
 /**
- * The Untitled Adventure / Odyssey
- * Copyright (c) 2021 Joshua Farr (josh@farrcraft.com)
+ * Vertical3D
+ * Copyright (c) 2023 Joshua Farr (josh@farrcraft.com)
  **/
 
 #pragma once
@@ -12,7 +12,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-namespace odyssey::render {
+namespace v3d::render::realtime {
 	/**
 	 **/
 	class Frame {

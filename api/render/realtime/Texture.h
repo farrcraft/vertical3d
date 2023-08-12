@@ -1,6 +1,6 @@
 /**
- * The Untitled Adventure / Odyssey
- * Copyright (c) 2022 Joshua Farr (josh@farrcraft.com)
+ * Vertical3D
+ * Copyright (c) 2023 Joshua Farr (josh@farrcraft.com)
  **/
 
 #pragma once
@@ -10,7 +10,7 @@
 #include <boost/shared_ptr.hpp>
 #include <SDL.h>
 
-namespace odyssey::render {
+namespace v3d::render::realtime {
 	/**
 	 * Represents an SDL Texture
 	 **/
@@ -53,4 +53,4 @@ namespace odyssey::render {
 		int height_;
 	};
 
-};
+};  // namespace v3d::render::realtime

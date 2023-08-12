@@ -1,11 +1,11 @@
 /**
- * The Untitled Adventure / Odyssey
- * Copyright (c) 2021 Joshua Farr (josh@farrcraft.com)
+ * Vertical3D
+ * Copyright (c) 2023 Joshua Farr (josh@farrcraft.com)
  **/
 
 #include "Texture.h"
 
-namespace odyssey::render {
+namespace v3d::render::realtime {
 
     /**
      **/
@@ -66,4 +66,4 @@ namespace odyssey::render {
         return texture_;
     }
 
-};  // namespace odyssey::render
+};  // namespace v3d::render::realtime

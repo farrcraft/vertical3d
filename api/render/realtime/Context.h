@@ -1,15 +1,15 @@
 /**
- * The Untitled Adventure / Odyssey
+ * Vertical3D
  * Copyright (c) 2021 Joshua Farr (josh@farrcraft.com)
  **/
 
 #pragma once
 
-#include "../../api/ui/Window.h"
+#include "../../ui/Window.h"
 
 #include <boost/shared_ptr.hpp>
 
-namespace odyssey::render {
+namespace v3d::render::realtime {
     /**
      **/
     class Context {
@@ -29,4 +29,4 @@ namespace odyssey::render {
      private:
         SDL_Renderer* renderer_;
     };
-};  // namespace odyssey::render
+};  // namespace v3d::render::realtime

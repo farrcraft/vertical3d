@@ -1,15 +1,14 @@
 /**
- * The Untitled Adventure / Odyssey
- * Copyright (c) 2021 Joshua Farr (josh@farrcraft.com)
+ * Vertical3D
+ * Copyright (c) 2023 Joshua Farr (josh@farrcraft.com)
  **/
 
 #include "BlitTexture.h"
 
-using namespace odyssey::render;
-using namespace odyssey::render::operation;
+namespace v3d::render::realtime::operation {
 
 /**
- **/
+	**/
 BlitTexture::BlitTexture(boost::shared_ptr<Texture> source, boost::shared_ptr<Texture> destination) :
 	source_(source),
 	destination_(destination) {
@@ -17,7 +16,7 @@ BlitTexture::BlitTexture(boost::shared_ptr<Texture> source, boost::shared_ptr<Te
 }
 
 /**
- **/
+	**/
 bool BlitTexture::run(boost::shared_ptr<Context> context) {
 	//Now render to the texture
 	SDL_SetRenderTarget(context->handle(), destination_->tex());
@@ -32,3 +31,5 @@ bool BlitTexture::run(boost::shared_ptr<Context> context) {
 
 	return true;
 }
+
+};  // namespace v3d::render::realtime::operation

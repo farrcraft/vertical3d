@@ -1,16 +1,16 @@
 /**
- * The Untitled Adventure / Odyssey
- * Copyright (c) 2021 Joshua Farr (josh@farrcraft.com)
+ * Vertical3D
+ * Copyright (c) 2023 Joshua Farr (josh@farrcraft.com)
  **/
 
 #pragma once
 
-#include "../../api/image/Image.h"
+#include "../../image/Image.h"
 
 #include <boost/shared_ptr.hpp>
 #include <SDL.h>
 
-namespace odyssey::render {
+namespace v3d::render::realtime {
     /**
      * Represents an SDL surface
      **/
@@ -32,4 +32,4 @@ namespace odyssey::render {
      private:
         SDL_Surface* surface_;
     };
-};  // namespace odyssey::render
+};  // namespace v3d::render::realtime

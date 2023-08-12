@@ -1,11 +1,11 @@
 /**
- * The Untitled Adventure / Odyssey
- * Copyright (c) 2021 Joshua Farr (josh@farrcraft.com)
+ * Vertical3D
+ * Copyright (c) 2023 Joshua Farr (josh@farrcraft.com)
  **/
 
 #include "Surface.h"
 
-namespace odyssey::render {
+namespace v3d::render::realtime {
     /**
      **/
     Surface::Surface(boost::shared_ptr<v3d::image::Image> image) {
@@ -44,4 +44,4 @@ namespace odyssey::render {
         return surface_;
     }
 
-};  // namespace odyssey::render
+};  // namespace v3d::render::realtime
