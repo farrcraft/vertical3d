@@ -4,7 +4,7 @@
  **/
 
 #include "Player.h"
-#include "../../api/component/Position.h"
+#include "../../api/ecs/component/Position.h"
 
 namespace odyssey::engine {
 
@@ -14,7 +14,7 @@ namespace odyssey::engine {
         // register a player entity
         id_ = registry.create();
         // create the components attached to player entity
-        registry.emplace<v3d::component::Position>(id_, 0, 0);
+        registry.emplace<v3d::ecs::component::Position>(id_, 0, 0);
     }
 
 };  // namespace odyssey::engine

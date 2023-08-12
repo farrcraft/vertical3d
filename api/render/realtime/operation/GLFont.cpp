@@ -22,7 +22,7 @@ namespace v3d::render::realtime::operation {
     }
 
     /**
-        **/
+     **/
     bool GLFont::run(boost::shared_ptr<Context> context) {
         // set texture & blending states for font drawing
         glPushAttrib(GL_TEXTURE_BIT | GL_COLOR_BUFFER_BIT);
