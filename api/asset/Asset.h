@@ -24,7 +24,7 @@ namespace v3d::asset {
         virtual ~Asset() = default;
 
      protected:
-        std::string_view name_;
+        std::string name_;
         Type type_;
     };
 };  // namespace v3d::asset
