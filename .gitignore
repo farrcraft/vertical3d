@@ -1,3 +1,4 @@
 vendor/*
 out/build/*
 .vs*
+docs/ChangeLog.md
