@@ -5,6 +5,8 @@
 
 #include "GLTexturedQuad.h"
 
+#include <GL/glew.h>
+
 namespace v3d::render::realtime::operation {
 
 	/**

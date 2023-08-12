@@ -70,7 +70,7 @@ namespace v3d::render::realtime::operation {
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             vertexBuffer_.render();
             program_->disable();
-            return;
+            return false;
         }
         glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
         glBlendColor(1.0f, 1.0f, 1.0f, 1.0f);
