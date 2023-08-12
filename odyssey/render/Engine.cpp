@@ -15,7 +15,7 @@ namespace odyssey::render {
     Engine::Engine(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager) :
         logger_(logger),
         assetManager_(assetManager) {
-        textureCache_ = boost::make_shared<TextureCache>();
+        textureCache_ = boost::make_shared<v3d::render::realtime::TextureCache>();
     }
 
     /**
@@ -27,7 +27,7 @@ namespace odyssey::render {
      **/
     bool Engine::initialize(const boost::shared_ptr <v3d::ui::Window>& window) {
         window_ = window;
-        context_ = boost::make_shared<Context>(window_);
+        context_ = boost::make_shared<v3d::render::realtime::Context>(window_);
         scene_ = boost::make_shared<Scene>(context_);
 
         // we need to determine the scale factor
@@ -36,7 +36,7 @@ namespace odyssey::render {
         int height = odyssey::engine::unit::tile_height * odyssey::engine::unit::screen_tile_height;
         SDL_RenderSetLogicalSize(context_->handle(), width, height);
 
-        backBuffer_ = boost::make_shared<Texture>(context_, width, height);
+        backBuffer_ = boost::make_shared<v3d::render::realtime::Texture>(context_, width, height);
 
         SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
 
@@ -59,7 +59,7 @@ namespace odyssey::render {
     /**
      **/
     void Engine::renderFrame() {
-        boost::shared_ptr<Frame> frame = scene_->collect();
+        boost::shared_ptr<v3d::render::realtime::Frame> frame = scene_->collect();
         frame->draw();
 
         // flip backbuffer
@@ -76,19 +76,19 @@ namespace odyssey::render {
 
     /**
      **/
-    boost::shared_ptr<TextureCache> Engine::textureCache() {
+    boost::shared_ptr<v3d::render::realtime::TextureCache> Engine::textureCache() {
         return textureCache_;
     }
 
     /**
      **/
-    boost::shared_ptr<Context> Engine::context() {
+    boost::shared_ptr<v3d::render::realtime::Context> Engine::context() {
         return context_;
     }
 
     /**
      **/
-    boost::shared_ptr<Texture> Engine::backBuffer() {
+    boost::shared_ptr<v3d::render::realtime::Texture> Engine::backBuffer() {
         return backBuffer_;
     }
 

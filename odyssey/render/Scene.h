@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "Context.h"
-#include "Frame.h"
+#include "../../api/render/realtime/Context.h"
+#include "../../api/render/realtime/Frame.h"
 #include "renderable/Player.h"
 
 #include <boost/shared_ptr.hpp>
@@ -18,11 +18,11 @@ namespace odyssey::render {
 	public:
 		/**
 		 **/
-		Scene(boost::shared_ptr<Context> context);
+		Scene(boost::shared_ptr<v3d::render::realtime::Context> context);
 
 		/**
 		 **/
-		boost::shared_ptr<Frame> collect();
+		boost::shared_ptr<v3d::render::realtime::Frame> collect();
 
 		/**
 		 **/
@@ -30,6 +30,6 @@ namespace odyssey::render {
 
 	private:
 		boost::shared_ptr<renderable::Player> player_;
-		boost::shared_ptr<Context> context_;
+		boost::shared_ptr<v3d::render::realtime::Context> context_;
 	};
 };

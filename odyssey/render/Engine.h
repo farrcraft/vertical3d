@@ -49,7 +49,7 @@ namespace odyssey::render {
 
         /**
          **/
-        boost::shared_ptr<TextureCache> textureCache();
+        boost::shared_ptr<v3d::render::realtime::TextureCache> textureCache();
 
         /**
          * Handle a resize event 
@@ -62,11 +62,11 @@ namespace odyssey::render {
 
         /**
          **/
-        boost::shared_ptr<Context> context();
+        boost::shared_ptr<v3d::render::realtime::Context> context();
 
         /**
          **/
-        boost::shared_ptr<Texture> backBuffer();
+        boost::shared_ptr<v3d::render::realtime::Texture> backBuffer();
 
         /**
          **/
@@ -74,12 +74,12 @@ namespace odyssey::render {
 
      private:
         boost::shared_ptr <v3d::ui::Window> window_;
-        boost::shared_ptr<Context> context_;
+        boost::shared_ptr<v3d::render::realtime::Context> context_;
         boost::shared_ptr<v3d::log::Logger> logger_;
-        boost::shared_ptr<Texture> backBuffer_;
+        boost::shared_ptr<v3d::render::realtime::Texture> backBuffer_;
         boost::shared_ptr<v3d::asset::Manager> assetManager_;
         std::list<boost::shared_ptr<Renderable>> renderables_;
-        boost::shared_ptr<TextureCache> textureCache_;
+        boost::shared_ptr<v3d::render::realtime::TextureCache> textureCache_;
         boost::shared_ptr<Scene> scene_;
     };
 };  // namespace odyssey::render

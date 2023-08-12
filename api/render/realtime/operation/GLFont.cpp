@@ -31,7 +31,7 @@ namespace v3d::render::realtime::operation {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         if (!texture_.bind()) {
-            return;
+            return false;
         }
 
         glBegin(GL_QUADS);

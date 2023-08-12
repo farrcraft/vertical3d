@@ -7,6 +7,7 @@
 
 #include "../Renderable.h"
 #include "../../engine/Player.h"
+#include "../../../api/render/realtime/Frame.h"
 
 namespace odyssey::render::renderable {
 	/**
@@ -19,7 +20,7 @@ namespace odyssey::render::renderable {
 
 		/**
 		 **/
-		void draw(boost::shared_ptr<Frame> frame);
+		void draw(boost::shared_ptr<v3d::render::realtime::Frame> frame);
 
 	private:
 		boost::shared_ptr<odyssey::engine::Player> player_;

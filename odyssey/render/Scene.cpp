@@ -11,15 +11,15 @@ using namespace odyssey::render;
 
 /**
  **/
-Scene::Scene(boost::shared_ptr<Context> context) :
+Scene::Scene(boost::shared_ptr<v3d::render::realtime::Context> context) :
 	context_(context) {
 
 }
 
 /**
  **/
-boost::shared_ptr<Frame> Scene::collect() {
-	boost::shared_ptr<Frame> frame = boost::make_shared<Frame>(context_);
+boost::shared_ptr<v3d::render::realtime::Frame> Scene::collect() {
+	boost::shared_ptr<v3d::render::realtime::Frame> frame = boost::make_shared<v3d::render::realtime::Frame>(context_);
 
 	// do stuff with frame
 	player_->draw(frame);
