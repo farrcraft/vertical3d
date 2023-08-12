@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "Frame.h"
+#include "../../api/render/realtime/Frame.h"
 
 namespace odyssey::render {
     /**
@@ -23,9 +23,10 @@ namespace odyssey::render {
 
         /**
          **/
-        virtual void draw(boost::shared_ptr<Frame> frame) = 0;
+        virtual void draw(boost::shared_ptr<v3d::render::realtime::Frame> frame) = 0;
 
     protected:
         boost::shared_ptr<odyssey::render::Engine> renderer_;
     };
+
 };  // namespace odyssey::render

@@ -7,11 +7,11 @@
 
 #include <list>
 
-#include "Context.h"
-#include "Operation.h"
+#include "../../api/render/realtime/Context.h"
+#include "../../api/render/realtime/Operation.h"
 #include "Renderable.h"
 #include "Scene.h"
-#include "TextureCache.h"
+#include "../../api/render/realtime/TextureCache.h"
 
 #include "../../api/event/WindowResize.h"
 #include "../../api/log/Logger.h"

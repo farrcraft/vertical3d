@@ -60,11 +60,14 @@ namespace Luxa {
     }
 
     void ComponentRenderer::prepare() {
+        // block replaced by v3d::render::realtime::operation::Overlay
+        /*
         if (overlay_.mode() == Overlay::MODE_COLOR) {
             glm::vec3 overlay_color = overlay_.color();
             glClearColor(overlay_color[0], overlay_color[1], overlay_color[2], 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         }
+        */
 
         glPushAttrib(GL_FOG_BIT | GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_LIGHTING_BIT | GL_DEPTH_BUFFER_BIT);
         glDisable(GL_LIGHTING);
@@ -118,92 +121,14 @@ namespace Luxa {
     */
 
     bool ComponentRenderer::drawTexturedQuad(boost::shared_ptr<v3d::gl::GLTexture> texture, float position_x, float position_y, float width, float height) {
-        // get texturing state
-        GLboolean texture_enabled;
-        texture_enabled = glIsEnabled(GL_TEXTURE_2D);
-        // enable states if they weren't already
-        if (texture_enabled == GL_FALSE)
-            glEnable(GL_TEXTURE_2D);
-
-        if (!texture) {
-            return false;
-        }
-        texture->bind();
-
-        glPushMatrix();
-        glTranslatef(position_x, position_y, 0.0f);
-
-        glScalef(width, height, 1.0f);
-
-        // draw quad
-        glBegin(GL_QUADS);
-
-        glTexCoord2f(0.0f, 0.0f);
-        glVertex3f(0.0f, 1.0f, 0.0f);
-
-        glTexCoord2f(1.0f, 0.0f);
-        glVertex3f(1.0f, 1.0f, 0.0f);
-
-        glTexCoord2f(1.0f, 1.0f);
-        glVertex3f(1.0f, 0.0f, 0.0f);
-
-        glTexCoord2f(0.0f, 1.0f);
-        glVertex3f(0.0f, 0.0f, 0.0f);
-
-        glEnd();
-
-        glPopMatrix();
-
-        // reset texture state to initial setting
-        if (texture_enabled == GL_FALSE)
-            glDisable(GL_TEXTURE_2D);
+        // moved to v3d::render::realtime::operation::GLTexturedQuad
 
         return true;
     }
 
     bool ComponentRenderer::drawTexture(boost::shared_ptr<v3d::gl::GLTexture> texture, glm::vec2 position) {
-        // get texturing state
-        GLboolean texture_enabled;
-        texture_enabled = glIsEnabled(GL_TEXTURE_2D);
-        // enable states if they weren't already
-        if (texture_enabled == GL_FALSE) {
-            glEnable(GL_TEXTURE_2D);
-        }
-
-        if (!texture) {
-            return false;
-        }
-        texture->bind();
-
-        glPushMatrix();
-        glTranslatef(position[0], position[1], 0.0f);
-
-        float x = static_cast<float>(texture->width());
-        float y = static_cast<float>(texture->height());
-        // draw quad
-        glBegin(GL_QUADS);
-
-        glTexCoord2f(0.0f, 1.0f);
-        glVertex3f(0.0f, y, 0.0f);
-
-        glTexCoord2f(1.0f, 1.0f);
-        glVertex3f(x, y, 0.0f);
-
-        glTexCoord2f(1.0f, 0.0f);
-        glVertex3f(x, 0.0f, 0.0f);
-
-        glTexCoord2f(0.0f, 0.0f);
-        glVertex3f(0.0f, 0.0f, 0.0f);
-
-        glEnd();
-
-        glPopMatrix();
-
-        // reset texture state to initial setting
-        if (texture_enabled == GL_FALSE) {
-            glDisable(GL_TEXTURE_2D);
-        }
-
+        // moved to v3d::render::realtime::operation::GLTexture
+ 
         return true;
     }
 

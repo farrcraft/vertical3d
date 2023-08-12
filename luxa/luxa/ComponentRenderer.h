@@ -13,8 +13,8 @@
 #include <boost/shared_ptr.hpp>
 #include <glm/glm.hpp>
 
-#include "Overlay.h"
-#include "style/Theme.h"
+#include "../../api/ui/Overlay.h"
+#include "../../api/ui/style/Theme.h"
 
 namespace Luxa {
 
@@ -27,7 +27,7 @@ namespace Luxa {
             explicit ComponentRenderer(boost::shared_ptr<v3d::font::FontCache> fc);
             ~ComponentRenderer();
 
-            void overlay(const Overlay & o);
+            void overlay(const v3d::ui::Overlay & o);
 
             /**
              * Draw the ui
@@ -109,7 +109,7 @@ namespace Luxa {
      private:
             int width_;
             int height_;
-            Overlay overlay_;
+            v3d::ui::Overlay overlay_;
             boost::shared_ptr<v3d::font::FontCache> fonts_;
     };
 

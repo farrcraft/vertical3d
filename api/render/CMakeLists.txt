@@ -5,4 +5,5 @@ add_library("v3dlib_render"
 	"realtime/Operation.h"
 	"realtime/Texture.h" "realtime/Texture.cpp"
 	"realtime/operation/BlitTexture.h" "realtime/operation/BlitTexture.cpp"
-	"realtime/TextureCache.h" "realtime/TextureCache.cpp")
+	"realtime/TextureCache.h" "realtime/TextureCache.cpp" "realtime/operation/GLTexturedQuad.h" "realtime/operation/GLTexturedQuad.cpp"
+	"realtime/operation/GLTexture.h" "realtime/operation/GLTexture.cpp" "realtime/operation/Overlay.h" "realtime/operation/Overlay.cpp")
