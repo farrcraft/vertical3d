@@ -7,12 +7,12 @@
 
 #include "Component.h"
 
-namespace Luxa {
+namespace v3d::ui::component {
 
     class CheckBox : public Component {
      public:
-        CheckBox();
-        ~CheckBox();
+        CheckBox() = default;
+        ~CheckBox() = default;
     };
 
-};  // end namespace Luxa
+};  // end namespace v3d::ui::component
