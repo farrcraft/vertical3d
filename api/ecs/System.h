@@ -5,12 +5,18 @@
 
 #pragma once
 
-#include <glm/vec2.hpp>
+#include <entt/entt.hpp>
 
 namespace v3d::ecs {
 
-	class System final {
+	class System {
+	public:
+		System(entt::registry& registry);
 
+		virtual bool tick() = 0;
+
+	protected:
+		entt::registry& registry_;
 	};
 
 };  // namespace v3d::ecs
