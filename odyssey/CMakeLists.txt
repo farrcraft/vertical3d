@@ -14,13 +14,12 @@ link_directories(
 
 # Add source to this project's executable.
 add_executable (Odyssey WIN32 "Odyssey.cpp" "Odyssey.h" "ui/Screen.h" "ui/Screen.cpp"
- "engine/Sprite.h" "render/Texture.h"  "render/Frame.h" "engine/Player.h" "engine/SpriteSheet.h" 
+ "engine/Sprite.h" "engine/Player.h" "engine/SpriteSheet.h" 
 "render/Engine.h" "render/Engine.cpp" "render/Renderable.h" "engine/Player.cpp" 
 "render/renderable/Player.h" "render/renderable/Player.cpp" 
 "render/Renderable.cpp" 
- "render/Texture.cpp" "render/TextureCache.h"
-"render/Surface.h" "render/Surface.cpp" "actor/Actor.h" "render/TextureCache.cpp" 
-"render/operation/BlitTexture.h" "render/Operation.h" "render/Frame.cpp" "render/operation/BlitTexture.cpp" "render/Context.h" "render/Context.cpp" "render/Scene.h" "render/Scene.cpp" 
+ "actor/Actor.h"
+ "render/Scene.h" "render/Scene.cpp" 
 "tile/Tile.h" "tile/Size.h" "engine/Unit.h"
 )
 
@@ -40,4 +39,5 @@ target_link_libraries(Odyssey
 		"v3dlib_log"
 		"v3dlib_image"
 		"v3dlib_ui"
+		"v3dlib_render"
 )
