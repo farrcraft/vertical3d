@@ -30,10 +30,10 @@ namespace v3d::input {
          * 
          * @return bool true if the resulting state is a pressed key
          **/
-        bool operator() (std::string_view c);
+        bool operator() (std::string c);
 
      private:
-        std::vector<std::string_view> keys_;
+        std::vector<std::string> keys_;
     };
 
 };  // namespace v3d::input

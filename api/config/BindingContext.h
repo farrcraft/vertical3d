@@ -35,10 +35,10 @@ namespace v3d::config {
          * 
          * @return bool true if setting this binding overrides a previous binding
          **/
-        bool setBinding(const std::string_view& key, const std::string_view& binding);
+        bool setBinding(const std::string& key, const std::string& binding);
 
      private:
-        std::string_view context_;
-        std::unordered_map<std::string_view, std::string_view> bindings_;
+        std::string context_;
+        std::unordered_map<std::string, std::string> bindings_;
     };
 };  // namespace v3d::config

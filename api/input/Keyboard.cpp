@@ -13,8 +13,8 @@ namespace v3d::input {
     /**
      * Map a SDL key symbol to a string representation
      **/
-    std::string_view keyEvent(const SDL_Keysym* keysym) {
-        std::string_view evnt;
+    std::string keyEvent(const SDL_Keysym* keysym) {
+        std::string evnt;
 
         switch (keysym->sym) {
         case SDLK_ESCAPE:
@@ -266,7 +266,7 @@ namespace v3d::input {
     /**
      **/
     bool Keyboard::handleEvent(const SDL_Event& event) {
-        std::string_view keyName;
+        std::string keyName;
         bool pressed = true;
         switch (event.type) {
         case SDL_KEYDOWN:

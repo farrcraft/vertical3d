@@ -7,7 +7,7 @@
 
 #include "Key.h"
 
-#include <string_view>
+#include <string>
 
 namespace v3d::event {
 
@@ -17,6 +17,6 @@ namespace v3d::event {
      public:
         /**
          **/
-        KeyUp(const std::string_view& name);
+        KeyUp(const std::string& name);
     };
 };  // namespace v3d::event

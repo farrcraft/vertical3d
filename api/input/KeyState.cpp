@@ -12,7 +12,7 @@ namespace v3d::input {
     /**
      **/
     bool KeyState::pressed(std::string_view c) const {
-        std::vector<std::string_view>::const_iterator iter = std::find(keys_.begin(), keys_.end(), c);
+        std::vector<std::string>::const_iterator iter = std::find(keys_.begin(), keys_.end(), c);
         if (iter != keys_.end()) {
             return true;
         }
@@ -21,8 +21,8 @@ namespace v3d::input {
 
     /**
      **/
-    bool KeyState::operator() (std::string_view c) {
-        std::vector<std::string_view>::const_iterator iter = std::find(keys_.begin(), keys_.end(), c);
+    bool KeyState::operator() (std::string c) {
+        std::vector<std::string>::const_iterator iter = std::find(keys_.begin(), keys_.end(), c);
         bool pressed = true;
         if (iter != keys_.end()) {
             keys_.erase(iter);

@@ -9,7 +9,7 @@ namespace v3d::event {
 
     /**
      **/
-    KeyDown::KeyDown(const std::string_view& name) :
+    KeyDown::KeyDown(const std::string& name) :
         Key(name, true) {
     }
 

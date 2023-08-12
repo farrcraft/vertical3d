@@ -15,7 +15,8 @@ namespace v3d::config {
 
     /**
      **/
-    bool BindingContext::setBinding(const std::string_view& key, const std::string_view& binding) {
+    bool BindingContext::setBinding(const std::string& key, const std::string& binding) {
+        std::string check(binding);
         bool exists = bindings_.contains(binding);
         bindings_[key] = binding;
         return exists;
