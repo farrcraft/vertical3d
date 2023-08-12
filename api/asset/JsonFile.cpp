@@ -74,29 +74,24 @@ namespace v3d::asset {
 
     /**
      **/
-    void JsonFile::fail(boost::json::error_code& ec) {
-        ec.assign(errno, boost::json::generic_category());
-    }
-
-    /**
-     **/
-    void JsonFile::open(char const* path, char const* mode, boost::json::error_code& ec) {
+    bool JsonFile::open(char const* path, char const* mode, boost::json::error_code& ec) {
         close();
         errno_t err = fopen_s(&handle_, path, mode);
         if (err != 0) {
-            return fail(ec);
+            return false;
         }
         if (std::fseek(handle_, 0, SEEK_END) != 0) {
-            return fail(ec);
+            return false;
         }
         size_ = std::ftell(handle_);
         if (size_ == -1) {
             size_ = 0;
-            return fail(ec);
+            return false;
         }
         if (std::fseek(handle_, 0, SEEK_SET) != 0) {
-            return fail(ec);
+            return false;
         }
+        return true;
     }
 
     /**
@@ -104,7 +99,8 @@ namespace v3d::asset {
     std::size_t JsonFile::read(char* data, std::size_t size, boost::json::error_code& ec) {
         auto const nread = std::fread(data, 1, size, handle_);
         if (std::ferror(handle_)) {
-            ec.assign(errno, boost::json::generic_category());
+            // [FIXME]
+            // ec.assign(errno, boost::json::generic_category());
         }
         return nread;
     }

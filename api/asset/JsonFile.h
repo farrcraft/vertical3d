@@ -32,7 +32,6 @@ namespace v3d::asset {
          **/
         JsonFile& operator=(JsonFile&& other) noexcept;
 
-
         /**
          **/
         ~JsonFile();
@@ -43,7 +42,7 @@ namespace v3d::asset {
 
         /**
          **/
-        void open(char const* path, char const* mode, boost::json::error_code& ec);
+        bool open(char const* path, char const* mode, boost::json::error_code& ec);
 
         /**
          **/
@@ -56,10 +55,6 @@ namespace v3d::asset {
         /**
          **/
         void close();
-
-        /**
-         **/
-        void fail(boost::json::error_code& ec);
 
         /**
          **/
