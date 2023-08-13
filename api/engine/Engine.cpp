@@ -20,14 +20,14 @@ namespace v3d::engine {
     /**
      **/
     Engine::Engine(const std::string_view& appPath) :
-        appPath_(appPath) {
+        appPath_(appPath),
+        features_(0) {
     }
 
     /**
      **/
     bool Engine::initialize(int features) {
         logger_ = boost::make_shared<v3d::log::Logger>();
-
 
         LOG_INFO(logger_) << "Initializing engine...";
 
