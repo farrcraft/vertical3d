@@ -9,6 +9,8 @@
 #include <windows.h>
 #include <gl/gl.h>
 
+#include <glm/ext.hpp>
+
 #include "../v3dlibs/core/Scene.h"
 #include "../api/brep/BRep.h"
 
@@ -40,8 +42,8 @@ namespace v3d {
         glLoadIdentity();
         // append the camera's projection matrix
         camera->createProjection();
-        glm::mat4 p = camera->projection().transpose();
-        glMultMatrixf(*p);
+        glm::mat4 p = glm::transpose(camera->projection());
+        glMultMatrixf(glm::value_ptr(p));
 
         // modelview contains modeling and viewing transforms
         glMatrixMode(GL_MODELVIEW);
@@ -56,8 +58,8 @@ namespace v3d {
         // http://www.opengl.org/resources/faq/technical/viewing.htm
         // http://www.evl.uic.edu/ralph/508S98/coordinates.html
         camera->createView();
-        glm::mat4 m = camera->view().transpose();
-        glMultMatrixf(*m);
+        glm::mat4 m = glm::transpose(camera->view());
+        glMultMatrixf(glm::value_ptr(m));
 
         // set clear color to backgroundColor
         glClearColor(0.4f, 0.4f, 0.4f, 1.0f);
