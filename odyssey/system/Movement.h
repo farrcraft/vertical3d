@@ -5,10 +5,12 @@
 
 #pragma once
 
+#include "../../api/ecs/System.h"
+
 namespace odyssey::system {
 	/**
 	 **/
-	class Movement final {
+	class Movement final : public v3d::ecs::System {
 	public:
 		/**
 		 * @return bool
