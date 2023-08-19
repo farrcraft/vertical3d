@@ -14,7 +14,7 @@ namespace v3d::asset::loader {
 
     /**
      **/
-    Png::Png(const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(Type::IMAGE_PNG, logger) {
+    Png::Png(Manager& manager, const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(manager, Type::IMAGE_PNG, logger) {
     }
 
     /**
@@ -24,7 +24,7 @@ namespace v3d::asset::loader {
         boost::shared_ptr<v3d::image::Image> image;
         image = reader.read(name);
 
-        boost::shared_ptr<Image> asset = boost::make_shared<Image>(name, Type::IMAGE_PNG, image);
+        boost::shared_ptr<Image> asset = boost::make_shared<Image>(std::string(name), Type::IMAGE_PNG, image);
 
         return asset;
     }

@@ -8,7 +8,7 @@
 namespace v3d::asset {
     /**
      **/
-    Image::Image(std::string_view name, Type t, boost::shared_ptr<v3d::image::Image> img) :
+    Image::Image(const std::string& name, Type t, boost::shared_ptr<v3d::image::Image> img) :
         Asset(name, t),
         image_(img) {
     }

@@ -16,7 +16,7 @@ namespace v3d::asset {
      public:
         /**
          **/
-        Asset(std::string_view name, Type t);
+        Asset(std::string name, Type t);
 
         /**
          * Default destructor

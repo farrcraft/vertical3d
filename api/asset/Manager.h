@@ -1,6 +1,6 @@
 /**
  * Vertical3D
- * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
 #pragma once
@@ -41,8 +41,10 @@ namespace v3d::asset {
          **/
         boost::shared_ptr<Asset> loadTypeFromExt(std::string_view name);
 
-     protected:
         /**
+         * Get the loader for an asset type
+         * 
+         * @param type
          **/
         boost::shared_ptr<Loader> resolveLoader(asset::Type t);
 

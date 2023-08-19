@@ -17,7 +17,7 @@ namespace v3d::asset {
      public:
         /**
          **/
-        Json(std::string_view name, Type t, const boost::json::object &doc);
+        Json(const std::string& name, Type t, const boost::json::object &doc);
 
         /**
          **/

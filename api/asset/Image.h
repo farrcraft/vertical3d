@@ -17,7 +17,7 @@ namespace v3d::asset {
      public:
         /**
          **/
-        Image(std::string_view name, Type t, boost::shared_ptr<v3d::image::Image> img);
+        Image(const std::string& name, Type t, boost::shared_ptr<v3d::image::Image> img);
 
         /**
          **/

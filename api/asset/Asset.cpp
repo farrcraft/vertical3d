@@ -7,7 +7,7 @@
 
 namespace v3d::asset {
 
-    Asset::Asset(std::string_view name, asset::Type t) :
+    Asset::Asset(std::string name, asset::Type t) :
         name_(name),
         type_(t) {
     }

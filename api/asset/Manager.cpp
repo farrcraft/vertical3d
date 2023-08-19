@@ -1,6 +1,6 @@
 /**
  * Vertical3D
- * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
 #include "Manager.h"
@@ -10,6 +10,9 @@
 #include "loader/Jpeg.h"
 #include "loader/Json.h"
 #include "loader/Png.h"
+#include "loader/Shader.h"
+#include "loader/ShaderProgram.h"
+#include "loader/Text.h"
 #include "loader/Wav.h"
 
 #include <boost/make_shared.hpp>
@@ -22,10 +25,14 @@ namespace v3d::asset {
         logger_(logger) {
         path_ = static_cast<std::string>(path);
         LOG_INFO(logger_) << "Setting asset manager path to: " << path_.c_str();
-        loaders_[asset::Type::IMAGE_JPEG] = boost::make_shared<v3d::asset::loader::Jpeg>(logger_);
-        loaders_[asset::Type::IMAGE_PNG] = boost::make_shared<v3d::asset::loader::Png>(logger_);
-        loaders_[asset::Type::JSON_DOCUMENT] = boost::make_shared<v3d::asset::loader::Json>(logger_);
-        loaders_[asset::Type::AUDIO_WAV] = boost::make_shared<v3d::asset::loader::Wav>(logger_);
+        loaders_[asset::Type::IMAGE_JPEG] = boost::make_shared<v3d::asset::loader::Jpeg>(*this, logger_);
+        loaders_[asset::Type::IMAGE_PNG] = boost::make_shared<v3d::asset::loader::Png>(*this, logger_);
+        loaders_[asset::Type::JSON_DOCUMENT] = boost::make_shared<v3d::asset::loader::Json>(*this, logger_);
+        loaders_[asset::Type::AUDIO_WAV] = boost::make_shared<v3d::asset::loader::Wav>(*this, logger_);
+        loaders_[asset::Type::TEXT] = boost::make_shared<v3d::asset::loader::Text>(*this, logger_);
+        loaders_[asset::Type::SHADER_FRAGMENT] = boost::make_shared<v3d::asset::loader::Shader>(*this, asset::Type::SHADER_FRAGMENT, logger_);
+        loaders_[asset::Type::SHADER_VERTEX] = boost::make_shared<v3d::asset::loader::Shader>(*this, asset::Type::SHADER_VERTEX, logger_);
+        loaders_[asset::Type::SHADER_PROGRAM] = boost::make_shared<v3d::asset::loader::ShaderProgram>(*this, logger_);
     }
 
     /**

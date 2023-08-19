@@ -13,7 +13,7 @@ namespace v3d::asset::loader {
 
     /**
      **/
-    Wav::Wav(const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(Type::AUDIO_WAV, logger) {
+    Wav::Wav(Manager& manager, const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(manager, Type::AUDIO_WAV, logger) {
     }
 
     /**
@@ -22,7 +22,7 @@ namespace v3d::asset::loader {
 
         boost::shared_ptr<v3d::audio::AudioClip> clip = boost::make_shared<v3d::audio::AudioClip>();
         clip->load(name);
-        boost::shared_ptr<Sound> asset = boost::make_shared<Sound>(name, Type::AUDIO_WAV, clip);
+        boost::shared_ptr<Sound> asset = boost::make_shared<Sound>(std::string(name), Type::AUDIO_WAV, clip);
 
         return asset;
     }

@@ -8,7 +8,7 @@
 namespace v3d::asset {
     /**
      **/
-    Sound::Sound(std::string_view name, Type t, boost::shared_ptr<v3d::audio::AudioClip> clip) :
+    Sound::Sound(const std::string& name, Type t, boost::shared_ptr<v3d::audio::AudioClip> clip) :
         Asset(name, t),
         clip_(clip) {
     }

@@ -1,6 +1,6 @@
 /**
  * Vertical3D
- * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
 **/
 
 #include "Json.h"
@@ -19,7 +19,7 @@
 namespace v3d::asset {
     /**
      **/
-    loader::Json::Json(const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(Type::JSON_DOCUMENT, logger) {
+    loader::Json::Json(Manager& manager, const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(manager, Type::JSON_DOCUMENT, logger) {
     }
 
     /**
@@ -46,7 +46,7 @@ namespace v3d::asset {
             auto const document = parser.release();
             //  boost::json::object const& object = document.as_object();
 
-            asset = boost::make_shared<v3d::asset::Json>(name, Type::JSON_DOCUMENT, document.as_object());
+            asset = boost::make_shared<v3d::asset::Json>(std::string(name), Type::JSON_DOCUMENT, document.as_object());
         }
         catch (std::exception const& e) {
             LOG_ERROR(logger_) << "Bootstrap caught exception: " << e.what();
