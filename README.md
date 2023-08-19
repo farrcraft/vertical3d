@@ -22,7 +22,6 @@ entirely replaced with CMake, namespaces are more granular, and code is targetti
 ## Components
 
 * Moya - Renderman-compatible rendering engine
-* Stark - A utility library for game-related functionality
 * Talyn - A raytracing renderer
 * Odyssey - A game engine implementation
 

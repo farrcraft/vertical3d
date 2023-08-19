@@ -13,6 +13,10 @@ namespace v3d::asset {
         IMAGE_PNG = 1,
         IMAGE_JPEG = 2,
         JSON_DOCUMENT = 3,
-        AUDIO_WAV = 4
+        AUDIO_WAV = 4,
+        TEXT = 5,
+        SHADER_PROGRAM = 6,
+        SHADER_VERTEX = 7,
+        SHADER_FRAGMENT = 8
     };
 };  // namespace v3d::asset
