@@ -35,7 +35,7 @@ target_link_libraries(Odyssey
 		"libpng16d"
 		"zlibd"
 		"v3dlib_asset"
-		"v3dlib_component"
+		"v3dlib_ecs"
 		"v3dlib_log"
 		"v3dlib_image"
 		"v3dlib_ui"
