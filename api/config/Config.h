@@ -1,6 +1,6 @@
 /**
  * Vertical3D
- * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
 #pragma once
@@ -39,17 +39,6 @@ namespace v3d::config {
          * Get a loaded config
          **/
         boost::shared_ptr<v3d::asset::Json> get(Type configType);
-
-     protected:
-        /**
-         * Load the root config file
-         * 
-         * * @param config the json file asset to load config from
-         * 
-         * @return true if the config is successfully loaded
-         **/
-        bool loadConfig(const boost::shared_ptr<v3d::asset::Json>& config);
-
 
      private:
         std::unordered_map<std::string_view, boost::shared_ptr<BindingContext> > contexts_;

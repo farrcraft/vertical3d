@@ -1,0 +1,103 @@
+{
+  "mappings": [
+    {
+      "source": {
+        "scope": "keyboard",
+        "name": "w",
+        "context": "any"
+      },
+      "destination": {
+        "scope": "pong",
+        "name": "leftPaddleUp"
+      }
+    },
+    {
+      "source": {
+        "scope": "keyboard",
+        "name": "s",
+        "context": "any"
+      },
+      "destination": {
+        "scope": "pong",
+        "name": "leftPaddleDown"
+      }
+    },
+    {
+      "source": {
+        "scope": "keyboard",
+        "name": "arrow_up",
+        "context": "any"
+      },
+      "destination": {
+        "scope": "pong",
+        "name": "rightPaddleUp"
+      }
+    },
+    {
+      "source": {
+        "scope": "keyboard",
+        "name": "arrow_down",
+        "context": "any"
+      },
+      "destination": {
+        "scope": "pong",
+        "name": "rightPaddleDown"
+      }
+    },
+    {
+      "source": {
+        "scope": "keyboard",
+        "name": "escape",
+        "context": "on"
+      },
+      "destination": {
+        "scope": "ui",
+        "name": "showGameMenu"
+      }
+    },
+    {
+      "source": {
+        "scope": "keyboard",
+        "name": "return",
+        "context": "on"
+      },
+      "destination": {
+        "scope": "ui",
+        "name": "selectMenu"
+      }
+    },
+    {
+      "source": {
+        "scope": "keyboard",
+        "name": "arrow_up",
+        "context": "on"
+      },
+      "destination": {
+        "scope": "ui",
+        "name": "menuPrevious"
+      }
+    },
+    {
+      "source": {
+        "scope": "keyboard",
+        "name": "arrow_down",
+        "context": "on"
+      },
+      "destination": {
+        "scope": "ui",
+        "name": "menuNext"
+      }
+    },
+    {
+      "source": {
+        "scope": "keyboard",
+        "name": "f1",
+        "context": "on"
+      },
+      "destination": {
+        "scope": "pong",
+        "name": "toggleFS"
+      }
+    }
+  ]
+}

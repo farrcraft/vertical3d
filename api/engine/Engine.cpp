@@ -19,9 +19,60 @@
 namespace v3d::engine {
     /**
      **/
-    Engine::Engine(const std::string_view& appPath) :
+    Engine::Engine(const std::string& appPath) :
         appPath_(appPath),
         features_(0) {
+    }
+
+    bool Engine::registerEventMappings() {
+        boost::shared_ptr<v3d::asset::Json> mappingConfig = config_->get(v3d::config::Type::Binding);
+        if (!mappingConfig) {
+            return true;
+        }
+
+        // We're only supporting a single global mapper for now
+        boost::shared_ptr<v3d::event::Mapper> mapper = boost::make_shared<v3d::event::Mapper>("global");
+
+        auto const doc = mappingConfig->document();
+        auto const mappings = doc.at("mappings");
+        if (!mappings.is_array()) {
+            LOG_ERROR(logger_) << "Missing mappings in config";
+            return false;
+        }
+        // for each mapping
+        auto const items = mappings.as_array();
+        auto it = items.begin();
+        for (; it != items.end(); ++it) {
+            if (!it->is_object()) {
+                LOG_ERROR(logger_) << "Unrecognized mapping";
+                return false;
+            }
+            auto const mapping = it->as_object();
+            auto const source = mapping.at("source");
+            if (!source.is_object()) {
+                LOG_ERROR(logger_) << "Missing mapping source";
+                return false;
+            }
+            std::string sourceName = boost::json::value_to<std::string>(source.at("name"));
+            std::string sourceScope = boost::json::value_to<std::string>(source.at("scope"));
+            std::string sourceContext = boost::json::value_to<std::string>(source.at("context"));
+
+            v3d::event::Event sourceEvent(sourceName, sourceScope, sourceContext);
+
+            auto const destination = mapping.at("destination");
+            if (!destination.is_object()) {
+                LOG_ERROR(logger_) << "Missing mapping destination";
+                return false;
+            }
+            std::string destinationName = boost::json::value_to<std::string>(destination.at("name"));
+            std::string destinationScope = boost::json::value_to<std::string>(destination.at("scope"));
+            std::string destinationContext = boost::json::value_to<std::string>(destination.at("context"));
+
+            v3d::event::Event destinationEvent(destinationName, destinationScope, destinationContext);
+            mapper->map(sourceEvent, destinationEvent);
+        }
+        eventEngine_->addMapper(mapper);
+        return true;
     }
 
     /**
@@ -34,10 +85,16 @@ namespace v3d::engine {
         std::string dataPath = appPath_ + std::string("data/");
         assetManager_ = boost::make_shared<v3d::asset::Manager>(dataPath, logger_);
 
+        eventEngine_ = boost::make_shared<v3d::event::Engine>();
+
         if (features_ & Feature::Config) {
             config_ = boost::make_shared<v3d::config::Config>(logger_);
             // Load config (through the asset manager)
             if (!config_->load(assetManager_)) {
+                return false;
+            }
+            // If config includes event mappings/bindings, they will get loaded here
+            if (!registerEventMappings()) {
                 return false;
             }
         }

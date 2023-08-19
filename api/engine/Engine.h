@@ -1,6 +1,6 @@
 /**
  * Vertical3D
- * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
 #pragma once
@@ -12,6 +12,7 @@
 #include "../asset/Manager.h"
 #include "../config/Config.h"
 #include "../input/Engine.h"
+#include "../event/Engine.h"
 #include "../ui/Window.h"
 
 namespace v3d::engine {
@@ -28,7 +29,7 @@ namespace v3d::engine {
          * @param appPath The fully qualified base path name from which all relative
          *                paths will be derived.
          **/
-        explicit Engine(const std::string_view& appPath);
+        explicit Engine(const std::string& appPath);
 
         /**
          * Initialize the engine.
@@ -74,9 +75,13 @@ namespace v3d::engine {
         boost::shared_ptr<entt::dispatcher> dispatcher_;
 
      private:
+
+         bool registerEventMappings();
+
          std::string appPath_;
          int features_;
          boost::shared_ptr<v3d::input::Engine> inputEngine_;
+         boost::shared_ptr<v3d::event::Engine> eventEngine_;
     };
 
 };  // namespace v3d::engine
