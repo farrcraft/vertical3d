@@ -54,7 +54,6 @@ link_directories(
 
 # Include sub-projects
 add_subdirectory("api")
-add_subdirectory("stark")
 add_subdirectory("talyn")
 add_subdirectory("moya")
 add_subdirectory("v3dshell")
