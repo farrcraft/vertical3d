@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "Context.h"
+#include "Context2D.h"
 
 #include <boost/shared_ptr.hpp>
 #include <SDL.h>
@@ -14,21 +14,21 @@ namespace v3d::render::realtime {
 	/**
 	 * Represents an SDL Texture
 	 **/
-	class Texture {
+	class Texture2D {
 	public:
 		/**
 		 * Create a texture from a surface 
 		 **/
-		Texture(boost::shared_ptr<Context> context, SDL_Surface* surface, int width, int height);
+		Texture2D(boost::shared_ptr<Context2D> context, SDL_Surface* surface, int width, int height);
 
 		/**
 		 * Create an empty texture with given dimensions 
 		 **/
-		Texture(boost::shared_ptr<Context> context, int width, int height);
+		Texture2D(boost::shared_ptr<Context2D> context, int width, int height);
 
 		/**
 		 **/
-		~Texture();
+		~Texture2D();
 
 		/**
 		 **/
@@ -47,7 +47,7 @@ namespace v3d::render::realtime {
 		SDL_Texture* tex() noexcept;
 
 	private:
-		boost::shared_ptr<Context> context_;
+		boost::shared_ptr<Context2D> context_;
 		SDL_Texture* texture_;
 		int width_;
 		int height_;

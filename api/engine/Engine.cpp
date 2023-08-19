@@ -10,6 +10,7 @@
 #include "Feature.h"
 #include "../input/DeviceType.h"
 #include "../event/WindowResize.h"
+#include "../render/realtime/2D/Window2D.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/make_shared.hpp>
@@ -111,31 +112,47 @@ namespace v3d::engine {
             inputEngine_ = boost::make_shared<v3d::input::Engine>(dispatcher_, devices);
         }
 
-        if (features_ & Feature::Window) {
+        if (features_ & Feature::Window2D || features_ & Feature::Window3D) {
             // Initialize SDL
             if (SDL_Init(SDL_INIT_VIDEO) < 0) {
                 LOG_ERROR(logger_) << "SDL could not initialize! SDL_Error: " << SDL_GetError();
                 return false;
             }
 
-            int width = -1;
-            int height = -1;
+            if (features & Feature::Window2D) {
+                window_ = boost::make_shared<v3d::render::realtime::Window2D>(logger_);
+            }
+            else {
+                window_ = boost::make_shared<v3d::render::realtime::Window3D>(logger_);
+            }
+            
             // if there is a window config with dimensions specified, we'll use those.
             if (features_ & Feature::Config) {
                 boost::shared_ptr<v3d::asset::Json> windowConfig = config_->get(v3d::config::Type::Window);
+                int width = -1;
+                int height = -1;
+                int logicalWidth = -1;
+                int logicalHeight = -1;
                 if (windowConfig) {
                     auto const doc = windowConfig->document();
                     auto const window = doc.at("window");
                     width = boost::json::value_to<int>(window.at("width"));
                     height = boost::json::value_to<int>(window.at("height"));
+                    width = boost::json::value_to<int>(window.at("logicalWidth"));
+                    height = boost::json::value_to<int>(window.at("logicalHeight"));
+                }
+                if (features & Feature::Window2D) {
+                    if (!window_->create(width, height, logicalWidth, logicalHeight)) {
+                        return false;
+                    }
+                }
+                else {
+                    if (!window_->create(width, height)) {
+                        return false;
+                    }
                 }
             }
-            window_ = boost::make_shared<v3d::ui::Window>(logger_);
-            if (features_ & Feature::Config && !window_->create(width, height)) {
-                return false;
-            }
         }
-
         return true;
     }
 
@@ -143,7 +160,7 @@ namespace v3d::engine {
      **/
     bool Engine::shutdown() {
         LOG_INFO(logger_) << "Shutting down engine...";
-        if (features_ & Feature::Window) {
+        if (features_ & Feature::Window2D || features_ & Feature::Window3D) {
             window_->destroy();
             SDL_Quit();
         }

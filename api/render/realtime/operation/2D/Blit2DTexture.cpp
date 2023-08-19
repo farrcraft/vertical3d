@@ -3,13 +3,13 @@
  * Copyright (c) 2023 Joshua Farr (josh@farrcraft.com)
  **/
 
-#include "BlitTexture.h"
+#include "Blit2DTexture.h"
 
 namespace v3d::render::realtime::operation {
 
 /**
 	**/
-BlitTexture::BlitTexture(boost::shared_ptr<Texture> source, boost::shared_ptr<Texture> destination) :
+Blit2DTexture::Blit2DTexture(boost::shared_ptr<Texture2D> source, boost::shared_ptr<Texture2D> destination) :
 	source_(source),
 	destination_(destination) {
 
@@ -17,7 +17,7 @@ BlitTexture::BlitTexture(boost::shared_ptr<Texture> source, boost::shared_ptr<Te
 
 /**
 	**/
-bool BlitTexture::run(boost::shared_ptr<Context> context) {
+bool Blit2DTexture::run(boost::shared_ptr<Context2D> context) {
 	//Now render to the texture
 	SDL_SetRenderTarget(context->handle(), destination_->tex());
 	SDL_RenderClear(context->handle());

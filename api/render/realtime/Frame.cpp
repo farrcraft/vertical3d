@@ -11,7 +11,6 @@ namespace v3d::render::realtime {
 **/
 Frame::Frame(boost::shared_ptr<Context> context) :
 	context_(context) {
-
 }
 
 /**

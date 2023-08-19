@@ -3,13 +3,13 @@
  * Copyright (c) 2023 Joshua Farr (josh@farrcraft.com)
  **/
 
-#include "Texture.h"
+#include "Texture2D.h"
 
 namespace v3d::render::realtime {
 
     /**
      **/
-    Texture::Texture(boost::shared_ptr<Context> context, SDL_Surface* surface, int width, int height) :
+    Texture2D::Texture2D(boost::shared_ptr<Context2D> context, SDL_Surface* surface, int width, int height) :
         context_(context),
         width_(width),
         height_(height) {
@@ -18,7 +18,7 @@ namespace v3d::render::realtime {
 
     /**
      **/
-    Texture::Texture(boost::shared_ptr<Context> context, int width, int height) :
+    Texture2D::Texture2D(boost::shared_ptr<Context2D> context, int width, int height) :
         context_(context),
         width_(width),
         height_(height) {
@@ -27,7 +27,7 @@ namespace v3d::render::realtime {
 
     /**
      **/
-    void Texture::resize(int width, int height) {
+    void Texture2D::resize(int width, int height) {
         SDL_Texture* resized = SDL_CreateTexture(context_->handle(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, width, height);
         SDL_SetRenderTarget(context_->handle(), resized);
         SDL_Rect dest = { .x = 0, .y = 0, .w = width, .h = height };
@@ -41,7 +41,7 @@ namespace v3d::render::realtime {
 
     /**
      **/
-    Texture::~Texture() {
+    Texture2D::~Texture2D() {
         if (texture_ != nullptr) {
             SDL_DestroyTexture(texture_);
             texture_ = nullptr;
@@ -50,19 +50,19 @@ namespace v3d::render::realtime {
 
     /**
      **/
-    int Texture::width() const noexcept {
+    int Texture2D::width() const noexcept {
         return width_;
     }
 
     /**
      **/
-    int Texture::height() const noexcept {
+    int Texture2D::height() const noexcept {
         return height_;
     }
 
     /**
      **/
-    SDL_Texture* Texture::tex() noexcept {
+    SDL_Texture* Texture2D::tex() noexcept {
         return texture_;
     }
 

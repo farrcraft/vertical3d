@@ -11,10 +11,11 @@ namespace v3d::engine {
 
 	*/
 	enum class Feature : uint32_t {
-		Window = (1 << 0),
+		Window2D = (1 << 0),
 		Config = (1 << 1),
 		MouseInput = (1 << 2),
-		KeyboardInput = (1 << 3)
+		KeyboardInput = (1 << 3),
+		Window3D = (1 << 4)
 	};
 
 	constexpr Feature operator|(Feature lhs, Feature rhs) {

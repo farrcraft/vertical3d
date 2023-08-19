@@ -13,7 +13,7 @@
 #include "../config/Config.h"
 #include "../input/Engine.h"
 #include "../event/Engine.h"
-#include "../ui/Window.h"
+#include "../render/realtime/Window.h"
 
 namespace v3d::engine {
 
@@ -70,7 +70,7 @@ namespace v3d::engine {
      protected:
         boost::shared_ptr<v3d::log::Logger> logger_;
         boost::shared_ptr<v3d::config::Config> config_;
-        boost::shared_ptr<v3d::ui::Window> window_;
+        boost::shared_ptr<v3d::render::realtime::Window> window_;
         boost::shared_ptr<v3d::asset::Manager> assetManager_;
         boost::shared_ptr<entt::dispatcher> dispatcher_;
 

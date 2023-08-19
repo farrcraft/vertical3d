@@ -7,15 +7,17 @@
 
 #include <string>
 
-#include "../log/Logger.h"
+#include "../../log/Logger.h"
 
 #include <SDL.h>
 
-namespace v3d::ui {
+#include <boost/shared_ptr.hpp>
+
+namespace v3d::render::realtime {
     /**
     **/
-    class Window final {
-     public:
+    class Window {
+    public:
         /**
          * @param Logger* logger
          **/
@@ -24,22 +26,16 @@ namespace v3d::ui {
         /**
          * @return bool
          **/
-        bool create(int width, int height);
+        virtual bool create(int width, int height);
 
         /**
          * @return void
          **/
-        void destroy();
+        virtual void destroy();
 
         /**
          **/
         SDL_Window* sdl() noexcept;
-
-        /**
-         * Paint a surface onto the window.
-         * Typically this isn't used and texture rendering is done instead.
-         **/
-        void paint(SDL_Surface *surface);
 
         /**
          **/
@@ -70,9 +66,8 @@ namespace v3d::ui {
          */
         void warpCursor(int x, int y);
 
-     private:
+    private:
         SDL_Window* window_;
-        SDL_Surface* surface_;
         std::string caption_;
         int width_;
         int height_;
