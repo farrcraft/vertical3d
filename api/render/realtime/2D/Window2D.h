@@ -16,6 +16,10 @@ namespace v3d::render::realtime {
     **/
     class Window2D final : public Window {
      public:
+         /**
+          **/
+         Window2D(const boost::shared_ptr<v3d::log::Logger>& logger) noexcept;
+
         /**
          * @return bool
          **/
@@ -31,6 +35,10 @@ namespace v3d::render::realtime {
          * Typically this isn't used and texture rendering is done instead.
          **/
         void paint(SDL_Surface *surface);
+
+        /**
+         **/
+        void logicalSize(int width, int height);
 
         /**
          **/

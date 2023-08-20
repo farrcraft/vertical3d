@@ -8,6 +8,9 @@
 #include <iostream>
 
 namespace v3d::render::realtime {
+    Window2D::Window2D(const boost::shared_ptr<v3d::log::Logger>& logger) noexcept : Window(logger) {
+    }
+
     /**
     **/
     bool Window2D::create(int width, int height, int logicalWidth, int logicalHeight) {
@@ -48,6 +51,11 @@ namespace v3d::render::realtime {
         return logicalHeight_;
     }
 
+    void Window2D::logicalSize(int width, int height) {
+        logicalWidth_ = width;
+        logicalHeight_ = height;
+
+    }
 
     /**
      **/

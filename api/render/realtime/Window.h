@@ -26,7 +26,7 @@ namespace v3d::render::realtime {
         /**
          * @return bool
          **/
-        virtual bool create(int width, int height);
+        virtual bool create(int width, int height, bool hasOpenGL = false);
 
         /**
          * @return void

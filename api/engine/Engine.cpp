@@ -11,6 +11,7 @@
 #include "../input/DeviceType.h"
 #include "../event/WindowResize.h"
 #include "../render/realtime/2D/Window2D.h"
+#include "../render/realtime/Window3D.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/make_shared.hpp>
@@ -138,11 +139,11 @@ namespace v3d::engine {
                     auto const window = doc.at("window");
                     width = boost::json::value_to<int>(window.at("width"));
                     height = boost::json::value_to<int>(window.at("height"));
-                    width = boost::json::value_to<int>(window.at("logicalWidth"));
-                    height = boost::json::value_to<int>(window.at("logicalHeight"));
+                    logicalWidth = boost::json::value_to<int>(window.at("logicalWidth"));
+                    logicalHeight = boost::json::value_to<int>(window.at("logicalHeight"));
                 }
                 if (features & Feature::Window2D) {
-                    if (!window_->create(width, height, logicalWidth, logicalHeight)) {
+                    if (!boost::static_pointer_cast<v3d::render::realtime::Window2D>(window_)->create(width, height, logicalWidth, logicalHeight)) {
                         return false;
                     }
                 }

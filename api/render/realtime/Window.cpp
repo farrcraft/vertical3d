@@ -20,7 +20,7 @@ namespace v3d::render::realtime {
 
     /**
     **/
-    bool Window::create(int width, int height) {
+    bool Window::create(int width, int height, bool hasOpenGL) {
         if (width > 0) {
             width_ = width;
         }
@@ -28,7 +28,14 @@ namespace v3d::render::realtime {
             height_ = height;
         }
         LOG_INFO(logger_) << "Creating window [" << width_ << "] x [" << height_ << "]";
-        window_ = SDL_CreateWindow("Vertical3D", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width_, height_, SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
+        int windowFlags;
+        if (hasOpenGL) {
+            windowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN;
+        }
+        else {
+            windowFlags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN;
+        }
+        window_ = SDL_CreateWindow("Vertical3D", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width_, height_, windowFlags);
         if (window_ == nullptr) {
             LOG_ERROR(logger_) << "Window could not be created! SDL_Error: " << SDL_GetError();
             return false;
