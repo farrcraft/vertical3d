@@ -17,11 +17,16 @@
 
 namespace v3d::render::realtime {
        /* The render engine.
-        * This is different from the game engine.While the game engine is responsible for coordinating the game,
+        * This is different from the game engine.
+        * While the game engine is responsible for coordinating the game,
         * it is the responsibility of the render engine to manage the rendering pipeline.
         **/
         class Engine2D : public Engine {
         public:
+            /**
+             **/
+            Engine2D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry& registry);
+
             /**
              **/
             bool initialize(const boost::shared_ptr<Window2D>& window);

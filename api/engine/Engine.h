@@ -15,6 +15,8 @@
 #include "../event/Engine.h"
 #include "../render/realtime/Window.h"
 
+#include <entt/entt.hpp>
+
 namespace v3d::engine {
 
     /**
@@ -73,6 +75,7 @@ namespace v3d::engine {
         boost::shared_ptr<v3d::render::realtime::Window> window_;
         boost::shared_ptr<v3d::asset::Manager> assetManager_;
         boost::shared_ptr<entt::dispatcher> dispatcher_;
+        entt::registry registry_;
 
      private:
 

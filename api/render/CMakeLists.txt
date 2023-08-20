@@ -17,4 +17,4 @@ add_library("v3dlib_render"
 	"realtime/2D/Scene2D.h" "realtime/2D/Scene2D.cpp" 
 	"realtime/Engine.h" "realtime/Engine.cpp" 
 	"realtime/Context.h" "realtime/Window.h" "realtime/Window.cpp" 
-	"realtime/2D/Operation2D.h" "realtime/2D/Operation2D.cpp" "realtime/Window3D.h" "realtime/Window3D.cpp")
+	"realtime/2D/Operation2D.h" "realtime/2D/Operation2D.cpp" "realtime/Window3D.h" "realtime/Window3D.cpp" "realtime/Engine3D.h" "realtime/Engine3D.cpp")
