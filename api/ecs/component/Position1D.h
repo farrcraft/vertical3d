@@ -30,6 +30,14 @@ namespace v3d::ecs::component {
         float x() const;
 
         /**
+         **/
+        float value() const;
+
+        /**
+         **/
+        void set(float pos);
+
+        /**
          * Move assignment
          **/
         Position1D& operator=(Position1D&&) noexcept;

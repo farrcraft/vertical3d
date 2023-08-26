@@ -34,6 +34,14 @@ namespace v3d::ecs::component {
         float y() const;
 
         /**
+         **/
+        glm::vec2 value() const;
+
+        /**
+         **/
+        void set(const glm::vec2& position);
+
+        /**
          * Move assignment
          **/
         Position2D& operator=(Position2D&&) noexcept;

@@ -32,4 +32,17 @@ namespace v3d::ecs::component {
     float Position2D::y() const {
         return position_.y;
     }
+
+    /**
+     **/
+    glm::vec2 Position2D::value() const {
+        return position_;
+    }
+
+    /**
+     **/
+    void Position2D::set(const glm::vec2& position) {
+        position_ = position;
+    }
+
 };  // namespace v3d::ecs::component

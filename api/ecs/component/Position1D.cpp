@@ -28,4 +28,17 @@ namespace v3d::ecs::component {
         return position_;
     }
 
+
+    /**
+     **/
+    float Position1D::value() const {
+        return position_;
+    }
+
+    /**
+     **/
+    void Position1D::set(float pos) {
+        position_ = pos;
+    }
+
 };  // namespace v3d::ecs::component

@@ -38,6 +38,14 @@ namespace v3d::ecs::component {
         float blue() const;
 
         /**
+         **/
+        glm::vec3 value() const;
+
+        /**
+         **/
+        void set(const glm::vec3& value);
+
+        /**
          * Move assignment
          **/
         Color3& operator=(Color3&&) noexcept;

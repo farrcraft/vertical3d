@@ -35,4 +35,16 @@ namespace v3d::ecs::component {
     float Color3::blue() const {
         return color_.z;
     }
+
+    /**
+     **/
+    glm::vec3 Color3::value() const {
+        return color_;
+    }
+
+    /**
+     **/
+    void Color3::set(const glm::vec3& value) {
+        color_ = value;
+    }
 };  // namespace v3d::ecs::component
