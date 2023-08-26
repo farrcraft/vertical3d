@@ -66,7 +66,7 @@ namespace v3d::gl {
 			void data3f(unsigned int attr, const std::vector<glm::vec3> & data);
 			void data4f(unsigned int attr, const std::vector<glm::vec4> & data);
 
-			void render();
+			void render() const;
 
 			void indices(const std::vector<size_t> & data);
 			void indices(glm::ivec3 * data, size_t count);

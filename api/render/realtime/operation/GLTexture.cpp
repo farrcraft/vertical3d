@@ -10,7 +10,7 @@
 namespace v3d::render::realtime::operation {
 
     /**
-        **/
+     **/
     GLTexture::GLTexture(boost::shared_ptr<v3d::gl::GLTexture> texture, const glm::vec2& position) :
         position_(position),
         texture_(texture) {
@@ -18,7 +18,7 @@ namespace v3d::render::realtime::operation {
     }
 
     /**
-        **/
+     **/
     bool GLTexture::run(boost::shared_ptr<Context> context) {
         // get texturing state
         GLboolean texture_enabled;

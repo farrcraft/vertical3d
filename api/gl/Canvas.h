@@ -10,29 +10,21 @@
 #include <glm/glm.hpp>
 #include <deque>
 
-namespace v3d::gl
-{
-
-	class Program;
-
+namespace v3d::gl {
 	/**
 	 * An OpenGL Canvas for rendering 2D primitives
 	 */
-	class Canvas
-	{
+	class Canvas {
 		public:
-			Canvas(boost::shared_ptr<Program> program);
-			Canvas(boost::shared_ptr<Program> program, unsigned int width, unsigned int height);
+			Canvas();
+			Canvas(unsigned int width, unsigned int height);
 			~Canvas();
 
 			/**
 			 * Upload canvas primitive data to the GPU
 			 */
 			void upload();
-			/**
-			 * Render the canvas
-			 */
-			void render();
+	
 			/**
 			 * Clear the canvas
 			 */
@@ -41,6 +33,8 @@ namespace v3d::gl
 			 * Update the size of the canvas
 			 */
 			void resize(unsigned int width, unsigned int height);
+
+			const VertexBuffer& buffer() const;
 
 			void rect(unsigned int left, unsigned int right, unsigned int top, unsigned int bottom, glm::vec3 color);
 			void circle(size_t sides, size_t size, glm::vec3 color);
@@ -65,9 +59,7 @@ namespace v3d::gl
 			unsigned int width_;
 			unsigned int height_;
 			std::deque<glm::mat4> modelView_;
-			glm::mat4 projection_;
 			VertexBuffer buffer_;
-			boost::shared_ptr<Program> program_;
 			unsigned int vao_;
 
 			// vertex data
