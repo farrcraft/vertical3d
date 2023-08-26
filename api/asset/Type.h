@@ -17,6 +17,7 @@ namespace v3d::asset {
         TEXT = 5,
         SHADER_PROGRAM = 6,
         SHADER_VERTEX = 7,
-        SHADER_FRAGMENT = 8
+        SHADER_FRAGMENT = 8,
+        FONT_2D = 9
     };
 };  // namespace v3d::asset

@@ -14,6 +14,7 @@
 #include "loader/ShaderProgram.h"
 #include "loader/Text.h"
 #include "loader/Wav.h"
+#include "loader/Font2D.h"
 
 #include <boost/make_shared.hpp>
 
@@ -33,6 +34,7 @@ namespace v3d::asset {
         loaders_[asset::Type::SHADER_FRAGMENT] = boost::make_shared<v3d::asset::loader::Shader>(*this, asset::Type::SHADER_FRAGMENT, logger_);
         loaders_[asset::Type::SHADER_VERTEX] = boost::make_shared<v3d::asset::loader::Shader>(*this, asset::Type::SHADER_VERTEX, logger_);
         loaders_[asset::Type::SHADER_PROGRAM] = boost::make_shared<v3d::asset::loader::ShaderProgram>(*this, logger_);
+        loaders_[asset::Type::FONT_2D] = boost::make_shared<v3d::asset::loader::Font2D>(*this, logger_);
     }
 
     /**

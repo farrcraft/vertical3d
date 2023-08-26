@@ -14,4 +14,9 @@ add_library("v3dlib_asset"
  "Sound.h" "Sound.cpp" 
  "Text.h" "Text.cpp"
  "loader/Text.h" "loader/Text.cpp"
- "Shader.h" "Shader.cpp" "loader/Shader.h" "loader/Shader.cpp" "ShaderProgram.h" "ShaderProgram.cpp" "loader/ShaderProgram.h" "loader/ShaderProgram.cpp"  )
+ "Shader.h" "Shader.cpp" 
+ "loader/Shader.h" "loader/Shader.cpp" 
+ "ShaderProgram.h" "ShaderProgram.cpp" 
+ "loader/ShaderProgram.h" "loader/ShaderProgram.cpp" 
+ "Font2D.h" "Font2D.cpp"
+"loader/Font2D.h" "loader/Font2D.cpp")
