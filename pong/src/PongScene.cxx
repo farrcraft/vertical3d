@@ -10,9 +10,14 @@
 
 #include "../../api/event/Sound.h"
 
-PongScene::PongScene(const boost::shared_ptr<entt::dispatcher>& dispatcher) : dispatcher_(dispatcher) {
-    left_.color(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(1.0f, 1.0f, 1.0f));
-    right_.color(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+PongScene::PongScene(entt::registry& registry, const boost::shared_ptr<entt::dispatcher>& dispatcher) : 
+    dispatcher_(dispatcher),
+    registry_(registry),
+    left_(registry), 
+    right_(registry),
+    ball_(registry) {
+    left_.color(glm::vec3(1.0f, 1.0f, 1.0f));
+    right_.color(glm::vec3(1.0f, 1.0f, 1.0f));
 }
 
 PongScene::~PongScene() {
@@ -23,7 +28,7 @@ void PongScene::resize(int width, int height) {
     height_ = height;
 }
 
-void PongScene::tick(unsigned int delta) {
+void PongScene::tick() {
     if (gameState_.paused()) {
         return;
     }

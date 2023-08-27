@@ -16,10 +16,10 @@
 
 class PongScene {
  public:
-    PongScene(const boost::shared_ptr<entt::dispatcher> & dispatcher);
+    explicit PongScene(entt::registry& registry, const boost::shared_ptr<entt::dispatcher> & dispatcher);
     ~PongScene();
 
-    void tick(unsigned int delta);
+    void tick();
     void resize(int width, int height);
 
     void reset();
@@ -35,4 +35,5 @@ class PongScene {
     Paddle left_, right_;
     GameState gameState_;
     int width_, height_;
+    entt::registry& registry_;
 };
