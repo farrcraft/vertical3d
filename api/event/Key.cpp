@@ -6,11 +6,10 @@
 #include "Key.h"
 
 namespace v3d::event {
-
     /**
      **/
-    Key::Key(const std::string_view& name, bool pressed) noexcept :
-        name_(name),
+    Key::Key(const std::string& name, bool pressed) noexcept :
+        Event(name, "keyboard", pressed ? "down" : "up"),
         pressed_(pressed) {
     }
 
@@ -18,12 +17,6 @@ namespace v3d::event {
     **/
     bool Key::pressed() const noexcept {
         return pressed_;
-    }
-
-    /**
-    **/
-    std::string_view Key::name() const noexcept {
-        return name_;
     }
 
 };  // namespace v3d::event

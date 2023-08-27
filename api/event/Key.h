@@ -5,27 +5,25 @@
 
 #pragma once
 
+#include "Event.h"
+
 #include <string>
 
 namespace v3d::event {
 
     /**
      **/
-    class Key {
+    class Key : public Event {
      public:
         /**
          **/
-        Key(const std::string_view &name, bool pressed) noexcept;
+        Key(const std::string& name, bool pressed) noexcept;
 
         /**
          **/
         bool pressed() const noexcept;
 
-        /**
-         **/
-        std::string_view name() const noexcept;
      private:
-        std::string name_;
         bool pressed_;
     };
 };  // namespace v3d::event
