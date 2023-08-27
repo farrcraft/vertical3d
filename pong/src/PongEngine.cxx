@@ -3,7 +3,7 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include "PongController.h"
+#include "PongEngine.h"
 
 #include <iostream>
 #include <string>
@@ -12,19 +12,22 @@
 #include "PongScene.h"
 
 #include "../../api/engine/Feature.h"
+#include "../../api/ecs/component/Position1D.h"
+#include "../../api/ecs/component/Position2D.h"
+#include "../../api/ecs/component/Color3.h"
+
 #include "../../luxa/luxa/UILoader.h"
-#include "../../stark/AssetLoader.h"
 
 #include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
 
 
-PongController::PongController(const std::string_view & path) : v3d::engine::Engine(path) {
+PongEngine::PongEngine(const std::string & path) : v3d::engine::Engine(path) {
 }
 
-bool::PongController::initialize() {
+bool::PongEngine::initialize() {
     if (!Engine::initialize(
-        static_cast<int>(v3d::engine::Feature::Window |
+        static_cast<int>(v3d::engine::Feature::Window3D |
         v3d::engine::Feature::KeyboardInput |
         v3d::engine::Feature::MouseInput |
         v3d::engine::Feature::Config))) {
@@ -33,12 +36,7 @@ bool::PongController::initialize() {
 
     window_->caption("Pong!");
 
-    scene_ = boost::make_shared<PongScene>();
-    // [FIXME] - factor out this stark thing...
-    boost::shared_ptr<AssetLoader> loader = boost::make_shared<AssetLoader>(path);
-    renderer_ = boost::make_shared<PongRenderer>(scene_, loader);
-
-    soundEngine_ = boost::make_shared<v3d::audio::Engine>();
+    soundEngine_ = boost::make_shared<v3d::audio::Engine>(logger_, dispatcher_);
     soundEngine_->initialize();
     if (config_) {
         boost::shared_ptr<v3d::asset::Json> soundConfig = config_->get(v3d::config::Type::Sound);
@@ -46,6 +44,14 @@ bool::PongController::initialize() {
             soundEngine_->load(soundConfig);
         }
     }
+
+    renderer_ = boost::make_shared<PongRenderer>(logger_, assetManager_, registry_);
+    if (!renderer_->initialize(window_)) {
+        return false;
+    }
+
+    scene_ = boost::make_shared<PongScene>(registry_, dispatcher_);
+
     // register game commands
     // play commands
     directory_->add("leftPaddleUp", "pong", boost::bind(&PongController::exec, boost::ref(*this), _1, _2));
@@ -93,8 +99,18 @@ bool::PongController::initialize() {
 }
 
 /**
-  **/
-bool PongController::shutdown() {
+ **/
+bool PongEngine::tick() {
+    if (!v3d::engine::Engine::tick()) {
+        return false;
+    }
+    scene_->tick();
+    return true;
+}
+
+/**
+ **/
+bool PongEngine::shutdown() {
     soundEngine_->shutdown();
     if (!v3d::engine::Engine::shutdown()) {
         return false;
@@ -102,7 +118,7 @@ bool PongController::shutdown() {
     return true;
 }
 
-void PongController::setMenuItemDefaults(const boost::shared_ptr<Luxa::Menu> & menu) {
+void PongEngine::setMenuItemDefaults(const boost::shared_ptr<Luxa::Menu> & menu) {
     for (unsigned int i = 0; i < menu->size(); i++) {
         boost::shared_ptr<Luxa::MenuItem> item = (*menu)[i];
         if (item->command() == "set_gamevar") {
@@ -125,7 +141,44 @@ void PongController::setMenuItemDefaults(const boost::shared_ptr<Luxa::Menu> & m
     }
 }
 
-bool PongController::exec(const v3d::command::CommandInfo & command, const std::string & param) {
+bool PongEngine::setGameMode(const std::string_view& mode) {
+    // changing game modes resets game state (including pause state) so the menu will need to be hidden
+    boost::shared_ptr<Luxa::Menu> menu =
+        boost::dynamic_pointer_cast<Luxa::Menu, Luxa::Component>(vgui_->getComponent("game-menu"));
+    if (mode == "SP") {
+        // set singleplayer mode
+        scene_->state().coop(false);
+        scene_->reset();
+        menu->visible(false);
+        return true;
+    } else if (mode == "coop") {
+        // set coop mode
+        scene_->state().coop(true);
+        scene_->reset();
+        menu->visible(false);
+        return true;
+    } else if (mode == "MP") {
+        // set network multiplayer mode
+        scene_->state().coop(false);
+        scene_->reset();
+        menu->visible(false);
+        return true;
+    }
+    return false;
+}
+
+bool PongEngine::setGamevar(const std::string_view& var) {
+    if (param == "maxScore") {
+        // _scene->state().maxScore(max_score);
+    }
+    return true;
+}
+
+bool PongEngine::quitEvent() {
+    return shutdown();
+}
+
+bool PongEngine::exec(const v3d::command::CommandInfo & command, const std::string & param) {
     if (command.scope() != "pong")
         return false;
 
@@ -180,7 +233,7 @@ bool PongController::exec(const v3d::command::CommandInfo & command, const std::
     return false;
 }
 
-bool PongController::execUI(const v3d::command::CommandInfo & command, const std::string & param) {
+bool PongEngine::execUI(const v3d::command::CommandInfo & command, const std::string & param) {
     if (command.scope() != "ui")
         return false;
 

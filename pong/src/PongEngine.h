@@ -19,17 +19,21 @@ class PongScene;
 class PongRenderer;
 
 /**
- * The core game controller class
+ * The core game engine class
  */
-class PongController final : public v3d::engine::Engine {
-    
+class PongEngine final : public v3d::engine::Engine {
  public:
-    explicit PongController(const std::string_view & path);
+    explicit PongEngine(const std::string & path);
 
     /**
      * @return bool
      **/
     bool initialize();
+
+    /**
+     * @return bool
+     **/
+    bool tick();
 
     /**
      * @return bool
