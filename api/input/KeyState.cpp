@@ -1,11 +1,12 @@
 /**
  * Vertical3D
- * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
 #include "KeyState.h"
 
 #include <algorithm>
+#include <string>
 
 namespace v3d::input {
 
@@ -27,8 +28,7 @@ namespace v3d::input {
         if (iter != keys_.end()) {
             keys_.erase(iter);
             pressed = false;
-        }
-        else {
+        } else {
             keys_.push_back(c);
         }
         return pressed;

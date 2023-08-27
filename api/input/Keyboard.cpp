@@ -1,12 +1,15 @@
 /**
  * Vertical3D
- * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
 #include "Keyboard.h"
 
+#include <string>
+
 #include "../event/KeyDown.h"
 #include "../event/KeyUp.h"
+#include "../event/Source.h"
 
 namespace v3d::input {
 
@@ -268,12 +271,14 @@ namespace v3d::input {
     bool Keyboard::handleEvent(const SDL_Event& event) {
         std::string keyName;
         bool pressed = true;
+        std::string context;
         switch (event.type) {
         case SDL_KEYDOWN:
             keyName = keyEvent(&event.key.keysym);
             if (!state_.pressed(keyName)) {
                 state_(keyName);
             }
+            context = "down";
             dispatcher_->trigger<v3d::event::KeyDown>(keyName);
             break;
         case SDL_KEYUP:
@@ -282,12 +287,17 @@ namespace v3d::input {
                 state_(keyName);
             }
             pressed = false;
-            // dispatcher_.trigger<KeyUp>(evnt);
+            context = "up";
             dispatcher_->trigger<v3d::event::KeyUp>(keyName);
             break;
         default:
             return false;
         }
+
+        // trigger an event source event so any mappers can propogate any mapped events
+        v3d::event::Source source(keyName, "keyboard", context);
+        dispatcher_->trigger(source);
+
         return true;
     }
 

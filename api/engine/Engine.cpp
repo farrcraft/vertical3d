@@ -87,7 +87,8 @@ namespace v3d::engine {
         std::string dataPath = appPath_ + std::string("data/");
         assetManager_ = boost::make_shared<v3d::asset::Manager>(dataPath, logger_);
 
-        eventEngine_ = boost::make_shared<v3d::event::Engine>();
+        dispatcher_ = boost::make_shared<entt::dispatcher>();
+        eventEngine_ = boost::make_shared<v3d::event::Engine>(dispatcher_);
 
         if (features_ & Feature::Config) {
             config_ = boost::make_shared<v3d::config::Config>(logger_);
@@ -101,7 +102,6 @@ namespace v3d::engine {
             }
         }
 
-        dispatcher_ = boost::make_shared<entt::dispatcher>();
         int devices = 0;
         if (features_ & Feature::KeyboardInput) {
             devices |= v3d::input::DeviceType::Keyboard;
