@@ -1,12 +1,11 @@
 /**
  * The Untitled Adventure / Odyssey
- * Copyright (c) 2021 Joshua Farr (josh@farrcraft.com)
+ * Copyright (c) 2023 Joshua Farr (josh@farrcraft.com)
  **/
 
 #pragma once
 
-#include "../../api/render/realtime/Context.h"
-#include "../../api/render/realtime/Frame.h"
+#include "../../api/render/realtime/2D/Scene2D.h"
 #include "renderable/Player.h"
 
 #include <boost/shared_ptr.hpp>
@@ -14,12 +13,8 @@
 namespace odyssey::render {
 	/**
 	 **/
-	class Scene {
+	class Scene final : public v3d::render::realtime::Scene2D {
 	public:
-		/**
-		 **/
-		Scene(boost::shared_ptr<v3d::render::realtime::Context> context);
-
 		/**
 		 **/
 		boost::shared_ptr<v3d::render::realtime::Frame> collect();
@@ -30,6 +25,5 @@ namespace odyssey::render {
 
 	private:
 		boost::shared_ptr<renderable::Player> player_;
-		boost::shared_ptr<v3d::render::realtime::Context> context_;
 	};
 };

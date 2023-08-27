@@ -26,12 +26,12 @@ int main(int argc, char* argv[]) {
     const bool ok = engine.eventLoop();
 
     if (!engine.shutdown()) {
-        return -1;
+        return EXIT_FAILURE;
     }
 
     if (!ok) {
-        return -1;
+        return EXIT_FAILURE;
     }
 
-    return 0;
+    return EXIT_SUCCESS;
 }

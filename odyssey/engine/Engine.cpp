@@ -4,6 +4,7 @@
  **/
 
 #include "Engine.h"
+#include "Unit.h"
 
 #include <string>
 
@@ -18,7 +19,7 @@
 namespace odyssey::engine {
     /**
      **/
-    Engine::Engine(const std::string_view& appPath) :
+    Engine::Engine(const std::string& appPath) :
         v3d::engine::Engine(appPath) {
     }
 
@@ -27,7 +28,7 @@ namespace odyssey::engine {
     bool Engine::initialize() {
         if (!v3d::engine::Engine::initialize(static_cast<int>(
             v3d::engine::Engine::Feature::Config |
-            v3d::engine::Engine::Feature::Window |
+            v3d::engine::Engine::Feature::Window2D |
             v3d::engine::Engine::Feature::MouseInput |
             v3d::engine::Engine::Feature::KeyboardInput))) {
             return false;
@@ -35,10 +36,16 @@ namespace odyssey::engine {
 
         player_ = boost::make_shared<Player>(registry_);
 
-        movementSystem_ = boost::make_shared<odyssey::system::Movement>();
+        movementSystem_ = boost::make_shared<odyssey::system::Movement>(registry_);
 
-        renderEngine_ = boost::make_shared<odyssey::render::Engine>(logger_, assetManager_);
-        if (!renderEngine_->initialize(window_)) {
+        renderEngine_ = boost::make_shared<v3d::render::realtime::Engine2D>(logger_, assetManager_);
+
+        boost::shared_ptr <v3d::render::realtime::Window2D> window = window();
+        int width = unit::tile_width * unit::screen_tile_width;
+        int height = unit::tile_height * unit::screen_tile_height;
+        window->logicalSize(width, height);
+
+        if (!renderEngine_->initialize(window)) {
             return false;
         }
 
@@ -52,6 +59,13 @@ namespace odyssey::engine {
         not all contexts will be actively able to process all events all of the time
         sometimes a context could block others (e.g. an active ui blocks player interaction)
         and sometimes multiple contexts will need to all process the same event
+
+        the input engine maintains current key state
+
+        BindingContext
+        Binding
+        BindingResolver
+
 
             // Assign events to systems.
             dispatcher_->sink<odyssey::event::KeyDown>().connect<&odyssey::system::Movement::on_key_down>(movementSystem_);

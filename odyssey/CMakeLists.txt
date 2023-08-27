@@ -15,7 +15,7 @@ link_directories(
 # Add source to this project's executable.
 add_executable (Odyssey WIN32 "Odyssey.cpp" "Odyssey.h" "ui/Screen.h" "ui/Screen.cpp"
  "engine/Sprite.h" "engine/Player.h" "engine/SpriteSheet.h" 
-"render/Engine.h" "render/Engine.cpp" "render/Renderable.h" "engine/Player.cpp" 
+  "render/Renderable.h" "engine/Player.cpp" 
 "render/renderable/Player.h" "render/renderable/Player.cpp" 
 "render/Renderable.cpp" 
  "actor/Actor.h"

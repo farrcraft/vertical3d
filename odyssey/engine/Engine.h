@@ -14,8 +14,7 @@
 #include "../../api/asset/Manager.h"
 #include "../../api/config/Config.h"
 #include "../../api/input/Engine.h"
-#include "../../api/ui/Window.h"
-#include "../render/Engine.h"
+#include "../../api/render/realtime/2D/Engine2D.h"
 #include "../system/Movement.h"
 
 namespace odyssey::engine {
@@ -32,7 +31,7 @@ namespace odyssey::engine {
          * @param appPath The fully qualified base path name from which all relative 
          *                paths will be derived.
          **/
-        explicit Engine(const std::string_view& appPath);
+        explicit Engine(const std::string& appPath);
 
         /**
          * Initialize the engine.
@@ -56,8 +55,7 @@ namespace odyssey::engine {
 
      private:
         boost::shared_ptr<Player> player_;
-        boost::shared_ptr<odyssey::render::Engine> renderEngine_;
-        entt::registry registry_;
+        boost::shared_ptr<v3d::render::realtime::Engine2D> renderEngine_;
         boost::shared_ptr<odyssey::system::Movement> movementSystem_;
     };
 
