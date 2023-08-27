@@ -6,6 +6,7 @@
 #pragma once
 
 #include "Engine.h"
+#include "Context.h"
 #include "Window3D.h"
 
 namespace v3d::render::realtime {
@@ -25,6 +26,9 @@ namespace v3d::render::realtime {
          **/
         void renderFrame();
 
+        boost::shared_ptr<Context> context();
+
     private:
+        boost::shared_ptr<Context> context_;
     };
 };  // namespace v3d::render::realtime
