@@ -5,11 +5,20 @@
 
 #pragma once
 
+#include <entt/entt.hpp>
 #include <glm/glm.hpp>
+
+struct Direction final {
+    glm::vec2 direction_;
+};
+
+struct Size final {
+    float size_;
+};
 
 class Ball {
  public:
-    Ball();
+    Ball(entt::registry& registry);
 
     void direction(const glm::vec2 & dir);
     glm::vec2 direction() const;
@@ -23,7 +32,6 @@ class Ball {
     void size(float s);
 
  private:
-    glm::vec2 position_;
-    glm::vec2 direction_;
-    float size_;
+    entt::registry& registry_;
+    entt::entity id_;
 };

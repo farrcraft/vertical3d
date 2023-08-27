@@ -7,21 +7,39 @@
 
 #include <utility>
 
+#include <entt/entt.hpp>
 #include <glm/glm.hpp>
 
-class Paddle {
- public:
-    Paddle();
+struct Offset final {
+    float offset_;
+};
 
-    void color(const glm::vec3 & color1, const glm::vec3 & color2);
+struct Score final {
+    int score_;
+};
+
+struct Travel final {
+    bool up_;
+    bool down_;
+};
+
+struct PaddleSize final {
+    float size_;
+    float length_;
+};
+
+class Paddle final {
+ public:
+    Paddle(entt::registry& registry);
+
+    void color(const glm::vec3 & color);
     void move(float delta);
     void position(const float pos);
     void offset(const float off);
     float offset() const;
     float position() const;
 
-    glm::vec3 color1() const;
-    glm::vec3 color2() const;
+    glm::vec3 color() const;
 
     void reset();
 
@@ -36,15 +54,6 @@ class Paddle {
     void score(int s);
 
  private:
-    float position_;
-    float offset_;
-    glm::vec3 color1_;
-    glm::vec3 color2_;
-
-    float length_;
-    float size_;
-
-    bool up_;
-    bool down_;
-    int score_;
+    entt::entity id_;
+    entt::registry& registry_;
 };
