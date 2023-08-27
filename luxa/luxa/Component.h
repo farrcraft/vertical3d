@@ -9,8 +9,6 @@
 
 #include <glm/glm.hpp>
 
-#include "style/Theme.h"
-
 #include "../../api/type/Bound2D.h"
 
 
