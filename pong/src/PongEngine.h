@@ -1,6 +1,6 @@
 /**
  * Vertical3D
- * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
 #pragma once
@@ -10,6 +10,7 @@
 
 #include "../../api/engine/Engine.h"
 #include "../../api/audio/Engine.h"
+#include "../../api/event/Event.h"
 #include "../../luxa/luxa/ComponentManager.h"
 #include "../../luxa/luxa/menu/Menu.h"
 
@@ -36,12 +37,17 @@ class PongEngine final : public v3d::engine::Engine {
     bool tick();
 
     /**
+     **/
+    bool render();
+
+    /**
      * @return bool
      **/
     bool shutdown();
 
+    void handleEvent(const v3d::event::Event& event);
+
     bool exec(const v3d::command::CommandInfo & command, const std::string & param);
-    bool execUI(const v3d::command::CommandInfo & command, const std::string & param);
 
  protected:
     void setMenuItemDefaults(const boost::shared_ptr<Luxa::Menu> & menu);

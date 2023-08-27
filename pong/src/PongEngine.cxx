@@ -1,6 +1,6 @@
 /**
  * Vertical3D
- * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
 #include "PongEngine.h"
@@ -46,27 +46,17 @@ bool::PongEngine::initialize() {
     }
 
     renderer_ = boost::make_shared<PongRenderer>(logger_, assetManager_, registry_);
-    if (!renderer_->initialize(window_)) {
-        return false;
-    }
-
     scene_ = boost::make_shared<PongScene>(registry_, dispatcher_);
 
     // register game commands
-    // play commands
-    directory_->add("leftPaddleUp", "pong", boost::bind(&PongController::exec, boost::ref(*this), _1, _2));
-    directory_->add("leftPaddleDown", "pong", boost::bind(&PongController::exec, boost::ref(*this), _1, _2));
-    directory_->add("rightPaddleUp", "pong", boost::bind(&PongController::exec, boost::ref(*this), _1, _2));
-    directory_->add("rightPaddleDown", "pong", boost::bind(&PongController::exec, boost::ref(*this), _1, _2));
-    // ui commands
-    directory_->add("showGameMenu", "ui", boost::bind(&PongController::execUI, boost::ref(*this), _1, _2));
-    directory_->add("menuPrevious", "ui", boost::bind(&PongController::execUI, boost::ref(*this), _1, _2));
-    directory_->add("menuNext", "ui", boost::bind(&PongController::execUI, boost::ref(*this), _1, _2));
-    directory_->add("selectMenu", "ui", boost::bind(&PongController::execUI, boost::ref(*this), _1, _2));
+    dispatcher_->sink<v3d::event::Event>().connect<&PongEngine::handleEvent>(*this);
+
+    /*
     // config commands
     directory_->add("setmode", "pong", boost::bind(&PongController::exec, boost::ref(*this), _1, _2));
     // app commands
     directory_->add("quit", "pong", boost::bind(&PongController::exec, boost::ref(*this), _1, _2));
+    */
 
     // set the scene size according to the window canvas
     renderer_->resize(window_->width(), window_->height());
@@ -75,9 +65,11 @@ bool::PongEngine::initialize() {
     scene_->reset();
 
     // register event listeners
+    /*
     window_->addDrawListener(boost::bind(&PongRenderer::draw, boost::ref(renderer_), _1));
     window_->addResizeListener(boost::bind(&PongRenderer::resize, boost::ref(renderer_), _1, _2));
     window_->addTickListener(boost::bind(&PongScene::tick, boost::ref(scene_), _1));
+    */
 
     // create ui
     vgui_ = boost::make_shared<Luxa::ComponentManager>(renderer_->fonts(), directory_);
@@ -105,6 +97,10 @@ bool PongEngine::tick() {
         return false;
     }
     scene_->tick();
+    return true;
+}
+
+bool PongEngine::render() {
     return true;
 }
 
@@ -178,6 +174,72 @@ bool PongEngine::quitEvent() {
     return shutdown();
 }
 
+void PongEngine::handleEvent(const v3d::event::Event& event) {
+    if (event.scope() == "pong") {
+        // play commands
+        if (event.name() == "leftPaddleDown") {
+            if (!scene_->state().paused()) {
+                scene_->left().down(!scene_->left().down());
+            }
+        } else if (event.name() == "rightPaddleUp") {
+            if (!scene_->state().paused() && scene_->state().coop()) {
+                scene_->right().up(!scene_->right().up());
+            }
+        } else if (event.name() == "rightPaddleDown") {
+            if (!scene_->state().paused() && scene_->state().coop()) {
+                scene_->right().down(!scene_->right().down());
+            }
+        }
+        return;
+    } else if (event.scope() == "ui") {
+        boost::shared_ptr<Luxa::Menu> menu =
+            boost::dynamic_pointer_cast<Luxa::Menu, Luxa::Component>(vgui_->getComponent("game-menu"));
+        bool vis = menu->visible();
+
+        if (event.name() == "showGameMenu") {
+            if (!vis) {
+                scene_->state().pause(true);
+                menu->visible(true);
+            } else {
+                if (!menu->up()) {
+                    scene_->state().pause(false);
+                    menu->visible(false);
+                }
+            }
+            return;
+        }
+
+        // the remaining ui commands only work when menu is visible
+        if (!vis) {
+            return;
+        }
+
+        if (event.name() == "menuPrevious") {  // select the previous menu item
+            menu->previous();
+        }
+        else if (event.name() == "menuNext") {  // select the next menu item
+            menu->next();
+        }
+        else if (event.name() == "selectMenu") {  // select the current menu item
+            menu->activate();
+            /*
+            boost::shared_ptr<Luxa::MenuItem> item = menu->active();
+            if (item)
+            {
+                if (item->submenu()) // menu item has a submenu so activate the submenu
+                {
+                    menu->down();
+                }
+                else // menu item represents a command so execute the bound command
+                {
+                    directory_.exec(v3D::CommandInfo(item->command(), item->scope()), item->param());
+                }
+            }
+            */
+        }
+    }
+}
+
 bool PongEngine::exec(const v3d::command::CommandInfo & command, const std::string & param) {
     if (command.scope() != "pong")
         return false;
@@ -210,22 +272,6 @@ bool PongEngine::exec(const v3d::command::CommandInfo & command, const std::stri
             // _scene->state().maxScore(max_score);
         }
     } else if (command.name() == "set_key") {
-    } else if (command.name() == "leftPaddleUp") {
-        if (!scene_->state().paused())
-            scene_->left().up(!scene_->left().up());
-        return true;
-    } else if (command.name() == "leftPaddleDown") {
-        if (!scene_->state().paused())
-            scene_->left().down(!scene_->left().down());
-        return true;
-    } else if (command.name() == "rightPaddleUp") {
-        if (!scene_->state().paused() && scene_->state().coop())
-                scene_->right().up(!scene_->right().up());
-        return true;
-    } else if (command.name() == "rightPaddleDown") {
-        if (!scene_->state().paused() && scene_->state().coop())
-            scene_->right().down(!scene_->right().down());
-        return true;
     } else if (command.name() == "quit") {
         return shutdown();
     }
@@ -233,54 +279,3 @@ bool PongEngine::exec(const v3d::command::CommandInfo & command, const std::stri
     return false;
 }
 
-bool PongEngine::execUI(const v3d::command::CommandInfo & command, const std::string & param) {
-    if (command.scope() != "ui")
-        return false;
-
-    boost::shared_ptr<Luxa::Menu> menu =
-        boost::dynamic_pointer_cast<Luxa::Menu, Luxa::Component>(vgui_->getComponent("game-menu"));
-    bool vis = menu->visible();
-
-    if (command.name() == "showGameMenu") {
-        if (!vis) {
-            scene_->state().pause(true);
-            menu->visible(true);
-        } else {
-            if (!menu->up()) {
-                scene_->state().pause(false);
-                menu->visible(false);
-            }
-        }
-        return true;
-    }
-
-    // the remaining ui commands only work when menu is visible
-    if (!vis)
-        return false;
-
-    if (command.name() == "menuPrevious") {  // select the previous menu item
-        menu->previous();
-        return true;
-    } else if (command.name() == "menuNext") {  // select the next menu item
-        menu->next();
-        return true;
-    } else if (command.name() == "selectMenu") {  // select the current menu item
-        menu->activate();
-        /*
-        boost::shared_ptr<Luxa::MenuItem> item = menu->active();
-        if (item)
-        {
-            if (item->submenu()) // menu item has a submenu so activate the submenu
-            {
-                menu->down();
-            }
-            else // menu item represents a command so execute the bound command
-            {
-                directory_.exec(v3D::CommandInfo(item->command(), item->scope()), item->param());
-            }
-        }
-        */
-        return true;
-    }
-    return false;
-}
