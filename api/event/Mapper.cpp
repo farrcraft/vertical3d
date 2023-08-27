@@ -11,19 +11,19 @@ Mapper::Mapper(const std::string& name) : name_(name) {
 }
 
 std::string_view Mapper::name() const {
-	return name_;
+    return name_;
 }
 
 void Mapper::map(const Event& source, const Event& destination) {
-	mappings_[source] = destination;
+    mappings_[source] = destination;
 }
 
 boost::optional<Event> Mapper::destination(const Event& source) {
-	auto iter = mappings_.find(source);
-	if (iter != mappings_.end()) {
-		return iter->second;
-	}
-	return boost::none;
+    auto iter = mappings_.find(source);
+    if (iter != mappings_.end()) {
+        return iter->second;
+    }
+    return boost::none;
 }
 
 };  // namespace v3d::event

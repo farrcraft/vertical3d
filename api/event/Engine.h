@@ -7,17 +7,19 @@
 
 #include "Mapper.h"
 
+#include <map>
+#include <string>
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::event {
-	/**
-	 **/
-	class Engine {
-	public:
-		void addMapper(const boost::shared_ptr<Mapper>& mapper);
+    /**
+     **/
+    class Engine {
+     public:
+        void addMapper(const boost::shared_ptr<Mapper>& mapper);
 
-	private:
-		std::map<std::string, boost::shared_ptr<Mapper>> mappers_;
-	};
+     private:
+        std::map<std::string, boost::shared_ptr<Mapper>> mappers_;
+    };
 
 };  // namespace v3d::event

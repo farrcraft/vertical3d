@@ -13,19 +13,19 @@
 #include <boost/optional.hpp>
 
 namespace v3d::event {
-	/**
-	 **/
-	class Mapper {
-	public:
-		Mapper(const std::string& name);
+    /**
+     **/
+    class Mapper {
+     public:
+        explicit Mapper(const std::string& name);
 
-		std::string_view name() const;
+        std::string_view name() const;
 
-		void map(const Event& source, const Event& destination);
-		boost::optional<Event> destination(const Event& source);
+        void map(const Event& source, const Event& destination);
+        boost::optional<Event> destination(const Event& source);
 
-	private:
-		std::string name_;
-		std::map<Event, Event> mappings_;
-	};
+     private:
+        std::string name_;
+        std::map<Event, Event> mappings_;
+    };
 };  // namespace v3d::event
