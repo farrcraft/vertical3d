@@ -9,7 +9,6 @@
 #include "../../../api/render/realtime/Surface.h"
 #include "../../../api/render/realtime/2D/Texture2D.h"
 #include "../../../api/asset/Image.h"
-#include "../Engine.h"
 #include "../../engine/Unit.h"
 
 #include <boost/make_shared.hpp>
