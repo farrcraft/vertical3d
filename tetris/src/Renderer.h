@@ -13,7 +13,6 @@
 
 #include "../../v3dlibs/hookah/Window.h"
 #include "../../api/gl/GLTexture.h"
-#include "../../api/font/FontCache.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -33,6 +32,5 @@ class TetrisRenderer {
  private:
     boost::shared_ptr<TetrisScene> scene_;
     std::map<std::string, boost::shared_ptr<v3d::gl::GLTexture> > textures_;
-    boost::shared_ptr<v3d::font::FontCache> fonts_;
     boost::shared_ptr<v3d::log::Logger> logger_;
 };
