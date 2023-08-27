@@ -13,36 +13,29 @@
 
 #include "../../api/gl/Shader.h"
 #include "../../api/font/TextureTextBuffer.h"
-
-#include "../../stark/ProgramFactory.h"
-#include "../../stark/AssetLoader.h"
+#include "../../api/asset/ShaderProgram.h"
+#include "../../api/asset/Font2D.h"
 
 #include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
+PongRenderer::PongRenderer(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry& registry) : 
+    engine_(logger, assetManager, registry) {
 
-PongRenderer::PongRenderer(boost::shared_ptr<PongScene> scene, const boost::shared_ptr<AssetLoader> & loader, const boost::shared_ptr<v3d::log::Logger> & logger) : scene_(scene) {
-    fonts_ = boost::make_shared<v3d::font::FontCache>(logger);
-    ProgramFactory factory(loader);
-    boost::shared_ptr<v3d::gl::Program> program = factory.create(v3d::gl::Shader::SHADER_TYPE_VERTEX|v3d::gl::Shader::SHADER_TYPE_FRAGMENT, "shaders/canvas");
+    boost::shared_ptr<v3d::asset::Loader> loader = assetManager->resolveLoader(v3d::asset::Type::SHADER_PROGRAM);
+    v3d::asset::ParameterValue value;
+    value = static_cast<unsigned int>(v3d::gl::Shader::SHADER_TYPE_VERTEX | v3d::gl::Shader::SHADER_TYPE_FRAGMENT);
+    loader->parameter("shaderTypes", value);
+    boost::shared_ptr<v3d::asset::ShaderProgram> program = boost::dynamic_pointer_cast<v3d::asset::ShaderProgram>(assetManager->load("shaders/canvas", v3d::asset::Type::SHADER_PROGRAM));
+    canvasProgram_ = program->program();
 
-    canvas_ = boost::make_shared<v3d::gl::Canvas>(program);
-
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClearDepth(1.0f);
-    glEnable(GL_DEPTH_TEST);
-    glDepthMask(GL_TRUE);
-    glDepthFunc(GL_LEQUAL);
-    glDepthRange(0.0f, 1.0f);
-    glEnable(GL_DEPTH_CLAMP);
-    // CCW winding is default
-    glFrontFace(GL_CCW);
-    glActiveTexture(GL_TEXTURE0);
+    canvas_ = boost::make_shared<v3d::gl::Canvas>();
 
     // setup text buffer
-    boost::shared_ptr<v3d::gl::Program> textProgram = factory.create(v3d::gl::Shader::SHADER_TYPE_VERTEX | v3d::gl::Shader::SHADER_TYPE_FRAGMENT, "shaders/text");
+    boost::shared_ptr<v3d::asset::ShaderProgram> textProgram = boost::dynamic_pointer_cast<v3d::asset::ShaderProgram>(assetManager->load("shaders/text", v3d::asset::Type::SHADER_PROGRAM)); 
+ 
     fontCache_ = boost::make_shared<v3d::font::TextureFontCache>(512, 512, v3d::font::TextureTextBuffer::LCD_FILTERING_ON, logger);
 
     markup_.bold_ = false;
@@ -63,33 +56,37 @@ PongRenderer::PongRenderer(boost::shared_ptr<PongScene> scene, const boost::shar
                                 L"`abcdefghijklmnopqrstuvwxyz{|}~";
     fontCache_->charcodes(charcodes);
 
-    std::string filename = loader->path() + std::string("fonts/DroidSerif-Regular.ttf");
-    markup_.font_ = fontCache_->load(filename, markup_.size_);
+    // [FIXME] - needs to be refactored to use asset API
+    value = static_cast<unsigned int>(markup_.size_);
+    loader->parameter("fontSize", value);
+    boost::shared_ptr<v3d::asset::Font2D> font = boost::dynamic_pointer_cast<v3d::asset::Font2D>(assetManager->load("fonts/DroidSerif-Regular.ttf", v3d::asset::Type::FONT_2D));
+    markup_.font_ = font->font();
 
     boost::shared_ptr<v3d::font::TextureTextBuffer> text;
     text = boost::make_shared<v3d::font::TextureTextBuffer>();
-    fontRenderer_ = boost::make_shared<v3d::gl::TextureFontRenderer>(text, textProgram, fontCache_->atlas(), logger);
-}
-
-boost::shared_ptr<v3d::font::FontCache> PongRenderer::fonts() const {
-    return fonts_;
+    fontRenderer_ = boost::make_shared<v3d::render::realtime::operation::TextureFont>(text, textProgram, fontCache_->atlas(), logger);
 }
 
 void PongRenderer::resize(int width, int height) {
     scene_->resize(width, height);
     canvas_->resize(width, height);
+    canvasProgram_->enable();
     const float w = static_cast<float>(width);
     const float h = static_cast<float>(height);
+    glm::mat4 projection = glm::ortho(0.0f, w, h, 0.0f, -1.0f, 1.0f);
+    unsigned int projectionMatrix = canvasProgram_->uniform("projectionMatrix");
+    glUniformMatrix4fv(projectionMatrix, 1, GL_FALSE, glm::value_ptr(projection));
+    canvasProgram_->disable();
     fontRenderer_->resize(w, h);
 }
 
-void PongRenderer::draw(boost::shared_ptr<v3d::ui::Window> window) {
+void PongRenderer::draw() {
     canvas_->clear();
 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    engine_.renderFrame();
 
-    const int width = window->width();
-    const int height = window->height();
+    const int width = engine_.window()->width();
+    const int height = engine_.window()->height();
 
     // draw the scoreboard
     fontRenderer_->buffer()->clear();
@@ -151,12 +148,11 @@ void PongRenderer::drawBall() {
 
 void PongRenderer::drawPaddle(const Paddle & paddle) {
     canvas_->push();
-    glm::vec3 color1 = paddle.color1();
-    glm::vec3 color2 = paddle.color2();
+    glm::vec3 color = paddle.color();
     // use a translation to get to object space
     // offsetting y so our origin is the left corner
     // x is adjusted depending on which side of the screen the paddle is on
     canvas_->translate(glm::vec2(paddle.offset(), paddle.position() - 25));
-    canvas_->rect(0, 15, 0, 50, color1);
+    canvas_->rect(0, 15, 0, 50, color);
     canvas_->pop();
 }
