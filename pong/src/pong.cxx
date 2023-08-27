@@ -38,9 +38,13 @@ int main(int argc, char *argv[]) {
 
     PongEngine engine(appPath);
 
+    int exitStatus = EXIT_SUCCESS;
     if (!engine.initialize() || !engine.eventLoop()) {
-        return EXIT_FAILURE;
+        exitStatus = EXIT_FAILURE;
+    }
+    if (!engine.shutdown()) {
+        exitStatus = EXIT_FAILURE;
     }
 
-    return EXIT_SUCCESS;
+    return exitStatus;
 }
