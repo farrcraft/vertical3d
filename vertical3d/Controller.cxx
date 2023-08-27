@@ -9,8 +9,6 @@
 
 #include "CameraControlTool.h"
 
-#include "../../v3dlibs/command/BindLoader.h"
-#include "../../v3dlibs/hookah/Hookah.h"
 #include "../../v3dlibs/core/CreatePolyCommandSet.h"
 
 
