@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include "../Component.h"
-
 #include <string>
+
+#include "../Component.h"
 
 namespace v3d::ui::component {
 
@@ -15,8 +15,8 @@ namespace v3d::ui::component {
      * A vGUI Label
      **/
     class Label : public Component {
-    public:
-        explicit Label();
+     public:
+        Label();
         ~Label();
 
         /**
@@ -30,10 +30,9 @@ namespace v3d::ui::component {
          */
         std::string_view text(void) const;
 
-    private:
+     private:
         std::string text_;
         //  std::string _font;
     };
 
-};  // end namespace Luxa
-
+};  // namespace v3d::ui::component

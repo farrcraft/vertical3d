@@ -16,7 +16,7 @@ namespace v3d::ui {
 
     class Container {
      public:
-        explicit Container(const std::string& name);
+        explicit Container(const std::string& name, bool visible);
 
         /**
          * Get whether the container is visible or not

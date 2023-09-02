@@ -4,6 +4,9 @@
 **/
 
 #include "Png.h"
+
+#include <string>
+
 #include "../Image.h"
 #include "../Type.h"
 #include "../../image/reader/Png.h"
@@ -14,7 +17,7 @@ namespace v3d::asset::loader {
 
     /**
      **/
-    Png::Png(Manager& manager, const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(manager, Type::IMAGE_PNG, logger) {
+    Png::Png(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(manager, Type::IMAGE_PNG, logger) {
     }
 
     /**

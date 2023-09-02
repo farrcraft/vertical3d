@@ -4,12 +4,15 @@
  **/
 #pragma once
 
+#include <map>
+#include <string>
+#include <string_view>
+#include <variant>
+
 #include "Asset.h"
 #include "Type.h"
 #include "../log/Logger.h"
 
-#include <map>
-#include <variant>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -52,7 +55,7 @@ namespace v3d::asset {
          * @param value The parameter value
          **/
         void parameter(const std::string &name, const ParameterValue &value);
-        
+
         /**
          * Fetch a parameter
          **/
@@ -64,11 +67,11 @@ namespace v3d::asset {
          *
          * @param Type t The asset type this loader provides
          **/
-        Loader(Manager& manager, Type t, const boost::shared_ptr<v3d::log::Logger>& logger);
+        Loader(Manager* manager, Type t, const boost::shared_ptr<v3d::log::Logger>& logger);
 
      protected:
         boost::shared_ptr<v3d::log::Logger> logger_;
-        Manager& manager_;
+        Manager* manager_;
         std::map<std::string, ParameterValue> parameters_;
 
      private:

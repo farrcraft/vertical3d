@@ -12,17 +12,17 @@
 namespace v3d::ui::style::prop
 {
 
-	/**
-	 * A vGUI style property that defines a single color.
-	 */
-	class Color : public Property
-	{
-	public:
-		Color();
-		~Color();
+    /**
+     * A vGUI style property that defines a single color.
+     */
+    class Color : public Property
+    {
+    public:
+        Color();
+        ~Color();
 
-	private:
-		glm::vec3 color_;
-	};
+    private:
+        glm::vec3 color_;
+    };
 
 };

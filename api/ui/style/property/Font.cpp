@@ -17,27 +17,27 @@ Font::~Font()
 
 bool Font::italics() const
 {
-	return italics_;
+    return italics_;
 }
 
 bool Font::bold() const
 {
-	return bold_;
+    return bold_;
 }
 
 std::string Font::face() const
 {
-	return face_;
+    return face_;
 }
 
 unsigned int Font::size() const
 {
-	return size_;
+    return size_;
 }
 
 std::string Font::source() const
 {
-	return source_;
+    return source_;
 }
 
 }  // namespace v3d::ui::style::prop

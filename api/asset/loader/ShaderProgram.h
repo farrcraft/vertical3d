@@ -11,10 +11,10 @@ namespace v3d::asset::loader {
     /**
      **/
     class ShaderProgram final : public Loader {
-    public:
+     public:
         /**
          **/
-        ShaderProgram(Manager& manager, const boost::shared_ptr<v3d::log::Logger>& logger);
+        ShaderProgram(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& logger);
 
         /**
          **/

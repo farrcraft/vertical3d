@@ -17,17 +17,17 @@ Image::~Image()
 
 boost::shared_ptr<v3d::gl::GLTexture> Image::texture(void) const
 {
-	return texture_;
+    return texture_;
 }
 
 void Image::texture(boost::shared_ptr<v3d::gl::GLTexture> tex)
 {
-	texture_ = tex;
+    texture_ = tex;
 }
 
 std::string_view Image::source() const
 {
-	return source_;
+    return source_;
 }
 
 };  // namespace v3d::ui::style::prop

@@ -14,15 +14,15 @@ Property::~Property() {
 }
 
 Property::Alignment Property::align() const {
-	return align_;
+    return align_;
 }
 
 void Property::align(Alignment a) {
-	align_ = a;
+    align_ = a;
 }
 
 std::string_view Property::name() const {
-	return name_;
+    return name_;
 }
 
 };  // namespace v3d::ui::style

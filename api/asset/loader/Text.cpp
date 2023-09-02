@@ -4,10 +4,12 @@
  **/
 
 #include "Text.h"
-#include "../Text.h"
-#include "../Type.h"
 
 #include <fstream>
+#include <string>
+
+#include "../Text.h"
+#include "../Type.h"
 
 #include <boost/make_shared.hpp>
 
@@ -15,7 +17,7 @@ namespace v3d::asset::loader {
 
     /**
      **/
-    Text::Text(Manager& manager, const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(manager, Type::TEXT, logger) {
+    Text::Text(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(manager, Type::TEXT, logger) {
     }
 
     /**

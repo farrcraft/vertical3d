@@ -14,7 +14,7 @@ namespace v3d::asset::loader {
      public:
         /**
          **/
-        Json(Manager& manager, const boost::shared_ptr<v3d::log::Logger>& logger);
+        Json(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& logger);
 
         /**
          **/

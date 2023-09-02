@@ -11,10 +11,10 @@ namespace v3d::asset::loader {
     /**
      **/
     class Wav final : public Loader {
-    public:
+     public:
         /**
          **/
-        Wav(Manager& manager, const boost::shared_ptr<v3d::log::Logger>& logger);
+        Wav(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& logger);
 
         /**
          **/

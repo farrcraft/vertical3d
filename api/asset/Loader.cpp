@@ -8,14 +8,13 @@
 namespace v3d::asset {
 /**
     **/
-Loader::Loader(Manager& manager, Type t, const boost::shared_ptr<v3d::log::Logger>& logger) :
+Loader::Loader(Manager* manager, Type t, const boost::shared_ptr<v3d::log::Logger>& logger) :
     manager_(manager),
     type_(t),
     logger_(logger) {
 }
 
 void Loader::reset() {
-
 }
 
 void Loader::parameter(const std::string& name, const ParameterValue& value) {

@@ -5,19 +5,18 @@
 
 #pragma once
 
-#include "../Component.h"
-
 #include <string>
 #include <utility>
 
+#include "../Component.h"
 
 namespace v3d::ui::component {
     /**
      * A vGUI Button
      */
     class Button : public Component {
-    public:
-        explicit Button();
+     public:
+        Button();
 
         /**
             * button state enumeration
@@ -50,10 +49,10 @@ namespace v3d::ui::component {
          */
         void state(ButtonState s);
 
-    private:
+     private:
         std::string label_;
         ButtonState state_;
         std::pair<std::string, std::string> command_;  // <scope, command>
     };
 
-};  // end namespace Luxa
+};  // namespace v3d::ui::component

@@ -4,6 +4,9 @@
  **/
 
 #include "Wav.h"
+
+#include <string>
+
 #include "../Type.h"
 #include "../Sound.h"
 
@@ -13,13 +16,12 @@ namespace v3d::asset::loader {
 
     /**
      **/
-    Wav::Wav(Manager& manager, const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(manager, Type::AUDIO_WAV, logger) {
+    Wav::Wav(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(manager, Type::AUDIO_WAV, logger) {
     }
 
     /**
      **/
     boost::shared_ptr<Asset> Wav::load(std::string_view name) {
-
         boost::shared_ptr<v3d::audio::AudioClip> clip = boost::make_shared<v3d::audio::AudioClip>();
         clip->load(name);
         boost::shared_ptr<Sound> asset = boost::make_shared<Sound>(std::string(name), Type::AUDIO_WAV, clip);

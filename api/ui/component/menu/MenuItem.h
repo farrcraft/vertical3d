@@ -7,10 +7,10 @@
 
 #include "../../Component.h"
 
+#include <string>
+
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
-
-#include <string>
 
 namespace v3d::ui {
     class Menu;
@@ -39,7 +39,7 @@ namespace v3d::ui {
          * @param scope the scope of the command
          * @param param the command paramater
          */
-        MenuItem(const std::string & type, const std::string & label, 
+        MenuItem(const std::string & type, const std::string & label,
                     const std::string & cmd, const std::string & scope, const std::string & param);
 
         /**
@@ -89,7 +89,7 @@ namespace v3d::ui {
      private:
         std::string label_;
         boost::shared_ptr<Menu> submenu_;
-        boost::weak_ptr<Menu> menu_; // owning menu
+        boost::weak_ptr<Menu> menu_;  // owning menu
         std::string command_;
         std::string scope_;
         std::string param_;

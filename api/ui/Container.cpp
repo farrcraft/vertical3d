@@ -7,9 +7,9 @@
 
 namespace v3d::ui {
 
-Container::Container(const std::string& name) :
+Container::Container(const std::string& name, bool visible) :
     name_(name),
-    visible_(false) {
+    visible_(visible) {
 }
 
 void Container::add(const boost::shared_ptr<Component>& component) {

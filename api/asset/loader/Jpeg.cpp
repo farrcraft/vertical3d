@@ -14,7 +14,7 @@ namespace v3d::asset::loader {
 
     /**
      **/
-    Jpeg::Jpeg(Manager& manager, const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(manager, Type::IMAGE_JPEG, logger) {
+    Jpeg::Jpeg(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(manager, Type::IMAGE_JPEG, logger) {
     }
 
     /**

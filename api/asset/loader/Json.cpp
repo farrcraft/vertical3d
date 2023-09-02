@@ -19,7 +19,7 @@
 namespace v3d::asset {
     /**
      **/
-    loader::Json::Json(Manager& manager, const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(manager, Type::JSON_DOCUMENT, logger) {
+    loader::Json::Json(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(manager, Type::JSON_DOCUMENT, logger) {
     }
 
     /**

@@ -4,6 +4,10 @@
  **/
 
 #include "ShaderProgram.h"
+
+#include <string>
+#include <vector>
+
 #include "../Manager.h"
 #include "../ShaderProgram.h"
 #include "../Shader.h"
@@ -17,7 +21,7 @@ namespace v3d::asset::loader {
 
     /**
      **/
-    ShaderProgram::ShaderProgram(Manager& manager, const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(manager, Type::SHADER_PROGRAM, logger) {
+    ShaderProgram::ShaderProgram(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(manager, Type::SHADER_PROGRAM, logger) {
     }
 
     /**
@@ -33,12 +37,12 @@ namespace v3d::asset::loader {
         boost::shared_ptr<v3d::gl::Program> program;
 
         if (shaderTypes & v3d::gl::Shader::SHADER_TYPE_VERTEX) {
-            boost::shared_ptr<v3d::asset::Shader> shader = boost::dynamic_pointer_cast<v3d::asset::Shader>(manager_.load(name, Type::SHADER_VERTEX));
+            boost::shared_ptr<v3d::asset::Shader> shader = boost::dynamic_pointer_cast<v3d::asset::Shader>(manager_->load(name, Type::SHADER_VERTEX));
             theShaders.push_back(shader->shader());
         }
 
         if (shaderTypes & v3d::gl::Shader::SHADER_TYPE_FRAGMENT) {
-            boost::shared_ptr<v3d::asset::Shader> shader = boost::dynamic_pointer_cast<v3d::asset::Shader>(manager_.load(name, Type::SHADER_FRAGMENT));
+            boost::shared_ptr<v3d::asset::Shader> shader = boost::dynamic_pointer_cast<v3d::asset::Shader>(manager_->load(name, Type::SHADER_FRAGMENT));
             theShaders.push_back(shader->shader());
         }
 

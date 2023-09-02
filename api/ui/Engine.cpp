@@ -47,7 +47,8 @@ namespace v3d::ui {
             }
             auto const containerEntry = containerIterator->as_object();
             std::string containerName = boost::json::value_to<std::string>(containerEntry.at("name"));
-            boost::shared_ptr<Container> container = boost::make_shared<Container>(containerName);
+            bool visible = boost::json::value_to<bool>(containerEntry.at("visible"));
+            boost::shared_ptr<Container> container = boost::make_shared<Container>(containerName, visible);
             containers_.push_back(container);
         }
     }

@@ -11,10 +11,10 @@ namespace v3d::asset::loader {
     /**
      **/
     class Font2D final : public Loader {
-    public:
+     public:
         /**
          **/
-        Font2D(Manager& manager, const boost::shared_ptr<v3d::log::Logger>& logger);
+        Font2D(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& logger);
 
         /**
          **/

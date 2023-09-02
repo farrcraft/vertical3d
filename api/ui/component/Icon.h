@@ -19,13 +19,13 @@ namespace v3d::ui::component {
      * dimensions and not the size set in the component.
      */
     class Icon : public Component {
-    public:
-        Icon(boost::shared_ptr<v3d::gl::GLTexture> texture);
+     public:
+        explicit Icon(boost::shared_ptr<v3d::gl::GLTexture> texture);
         ~Icon();
 
-    private:
+     private:
         boost::shared_ptr<v3d::gl::GLTexture> texture_;
     };
 
 
-};  // end namespace Luxa
+};  // namespace v3d::ui::component

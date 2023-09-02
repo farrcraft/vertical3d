@@ -9,6 +9,9 @@ This is the tool command for Visual Studio integration:
 
 >  C:\Python311\python.exe c:\Python311\lib\site-packages\cpplint.py --linelength=180 --filter=-runtime/indentation_namespace --output=vs7 $(ItemPath)
 
+To run the linter on everything from CLI:
+
+>  C:\Python311\python.exe c:\Python311\lib\site-packages\cpplint.py --linelength=180 --filter=-runtime/indentation_namespace --exclude=vendor --exclude=vault --exclude=out --exclude=voxel/src/noise --recursive .
 
 # CI Pipeline
 

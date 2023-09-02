@@ -26,15 +26,15 @@ namespace v3d::asset {
         logger_(logger) {
         path_ = static_cast<std::string>(path);
         LOG_INFO(logger_) << "Setting asset manager path to: " << path_.c_str();
-        loaders_[asset::Type::IMAGE_JPEG] = boost::make_shared<v3d::asset::loader::Jpeg>(*this, logger_);
-        loaders_[asset::Type::IMAGE_PNG] = boost::make_shared<v3d::asset::loader::Png>(*this, logger_);
-        loaders_[asset::Type::JSON_DOCUMENT] = boost::make_shared<v3d::asset::loader::Json>(*this, logger_);
-        loaders_[asset::Type::AUDIO_WAV] = boost::make_shared<v3d::asset::loader::Wav>(*this, logger_);
-        loaders_[asset::Type::TEXT] = boost::make_shared<v3d::asset::loader::Text>(*this, logger_);
-        loaders_[asset::Type::SHADER_FRAGMENT] = boost::make_shared<v3d::asset::loader::Shader>(*this, asset::Type::SHADER_FRAGMENT, logger_);
-        loaders_[asset::Type::SHADER_VERTEX] = boost::make_shared<v3d::asset::loader::Shader>(*this, asset::Type::SHADER_VERTEX, logger_);
-        loaders_[asset::Type::SHADER_PROGRAM] = boost::make_shared<v3d::asset::loader::ShaderProgram>(*this, logger_);
-        loaders_[asset::Type::FONT_2D] = boost::make_shared<v3d::asset::loader::Font2D>(*this, logger_);
+        loaders_[asset::Type::IMAGE_JPEG] = boost::make_shared<v3d::asset::loader::Jpeg>(this, logger_);
+        loaders_[asset::Type::IMAGE_PNG] = boost::make_shared<v3d::asset::loader::Png>(this, logger_);
+        loaders_[asset::Type::JSON_DOCUMENT] = boost::make_shared<v3d::asset::loader::Json>(this, logger_);
+        loaders_[asset::Type::AUDIO_WAV] = boost::make_shared<v3d::asset::loader::Wav>(this, logger_);
+        loaders_[asset::Type::TEXT] = boost::make_shared<v3d::asset::loader::Text>(this, logger_);
+        loaders_[asset::Type::SHADER_FRAGMENT] = boost::make_shared<v3d::asset::loader::Shader>(this, asset::Type::SHADER_FRAGMENT, logger_);
+        loaders_[asset::Type::SHADER_VERTEX] = boost::make_shared<v3d::asset::loader::Shader>(this, asset::Type::SHADER_VERTEX, logger_);
+        loaders_[asset::Type::SHADER_PROGRAM] = boost::make_shared<v3d::asset::loader::ShaderProgram>(this, logger_);
+        loaders_[asset::Type::FONT_2D] = boost::make_shared<v3d::asset::loader::Font2D>(this, logger_);
     }
 
     /**
