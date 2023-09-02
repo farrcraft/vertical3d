@@ -1,6 +1,6 @@
 /**
  * Vertical3D
- * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
 #pragma once
@@ -20,10 +20,10 @@ namespace v3d::ui {
      * All UI components are all derived from this class.
      */
     class Component {
-    public:
+     public:
         static unsigned int lastID;
 
-        explicit Component();
+        Component();
         virtual ~Component();
 
         /**
@@ -93,7 +93,7 @@ namespace v3d::ui {
          */
         void name(const std::string& str);
 
-    private:
+     private:
         glm::vec2 position_;
         glm::vec2 size_;
         unsigned int zIndex_;

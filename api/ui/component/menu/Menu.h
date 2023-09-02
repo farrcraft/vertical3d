@@ -5,10 +5,12 @@
 
 #pragma once
 
-#include "../../Component.h"
-#include "MenuItem.h"
+#include "Menu.h"
 
 #include <vector>
+
+#include "../../Component.h"
+#include "MenuItem.h"
 
 namespace v3d::ui {
 

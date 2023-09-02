@@ -7,16 +7,16 @@
 
 #include "Component.h"
 
+#include <string>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
 
-
 namespace v3d::ui {
-	
-	class Container {
-	public:
-        Container();
+
+    class Container {
+     public:
+        explicit Container(const std::string& name);
 
         /**
          * Get whether the container is visible or not
@@ -31,9 +31,10 @@ namespace v3d::ui {
 
         void add(const boost::shared_ptr<Component>& component);
 
-	private:
+     private:
+        std::string name_;
         std::vector<boost::shared_ptr<Component>> components_;
         bool visible_;
-	};
+    };
 
 };  // namespace v3d::ui
