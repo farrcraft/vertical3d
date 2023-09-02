@@ -7,7 +7,7 @@
 
 #include "Type.h"
 
-#include <string_view>
+#include <string>
 
 namespace v3d::asset {
     /**

@@ -14,7 +14,7 @@ namespace v3d::asset {
     /**
      **/
     class Font2D : public Asset {
-    public:
+     public:
         /**
          **/
         Font2D(const std::string& name, Type t, boost::shared_ptr<v3d::font::Font2D> font);
@@ -23,7 +23,7 @@ namespace v3d::asset {
          **/
         boost::shared_ptr<v3d::font::Font2D> font();
 
-    private:
+     private:
         boost::shared_ptr<v3d::font::Font2D> font_;
     };
 };  // namespace v3d::asset
