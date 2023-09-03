@@ -18,20 +18,14 @@ that split functionality across a larger number of smaller packages, it's much m
 In the current iteration, everything is being moved into a monorepo, both build systems have been  
 entirely replaced with CMake, namespaces are more granular, and code is targetting C++17 or newer.
 
-
-## Components
-
-* Moya - Renderman-compatible rendering engine
-* Talyn - A raytracing renderer
-* Odyssey - A game engine implementation
-
-
 ### Apps
 
-* imagetool
+* imagetool - A basic image manipulation CLI tool
 * Pong
 * Tetris
-* Voxel
-* v3dshell
-* Vertical3D
-
+* Voxel - A minecraft-style voxel terrain generator
+* Vertical3D - A 3D modeling tool suite
+* v3dshell - A CLI REPL interface for Vertical3D
+* Moya - Renderman-compatible rendering engine
+* Talyn - A raytracing renderer
+* Odyssey - A tile-based rogue-like game
