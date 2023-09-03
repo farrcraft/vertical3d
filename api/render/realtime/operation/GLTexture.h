@@ -12,23 +12,23 @@
 #include <glm/vec2.hpp>
 
 namespace v3d::render::realtime::operation {
-	/**
-	 * Draw a GL texture at position
-	 **/
-	class GLTexture : public Operation {
-	public:
-		/**
-		 *
-		 **/
-		GLTexture(boost::shared_ptr<v3d::gl::GLTexture> texture, const glm::vec2& position);
+    /**
+     * Draw a GL texture at position
+     **/
+    class GLTexture : public Operation {
+     public:
+        /**
+         *
+         **/
+        GLTexture(boost::shared_ptr<v3d::gl::GLTexture> texture, const glm::vec2& position);
 
-		/**
-		 *
-		 **/
-		bool run(boost::shared_ptr<Context> context);
+        /**
+         *
+         **/
+        bool run(boost::shared_ptr<Context> context);
 
-	private:
-		glm::vec2 position_;
-		boost::shared_ptr<v3d::gl::GLTexture> texture_;
-	};
-};
+     private:
+        glm::vec2 position_;
+        boost::shared_ptr<v3d::gl::GLTexture> texture_;
+    };
+};  // namespace v3d::render::realtime::operation

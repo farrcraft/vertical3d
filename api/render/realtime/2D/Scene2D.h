@@ -12,19 +12,19 @@
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::render::realtime {
-	/**
-	 **/
-	class Scene2D {
-	public:
-		/**
-		 **/
-		Scene2D(boost::shared_ptr<Context2D> context);
+    /**
+     **/
+    class Scene2D {
+     public:
+        /**
+         **/
+        Scene2D(boost::shared_ptr<Context2D> context);
 
-		/**
-		 **/
-		boost::shared_ptr<Frame> collect();
+        /**
+         **/
+        boost::shared_ptr<Frame> collect();
 
-	protected:
-		boost::shared_ptr<v3d::render::realtime::Context2D> context_;
-	};
-};
+     protected:
+        boost::shared_ptr<v3d::render::realtime::Context2D> context_;
+    };
+};  // namespace v3d::render::realtime

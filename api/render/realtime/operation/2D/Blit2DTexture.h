@@ -11,21 +11,21 @@
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::render::realtime::operation {
-	/**
-	 * Copy a source texture to a destination texture
-	 **/
-	class Blit2DTexture : public Operation {
-	public:
-		/**
-		 **/
-		Blit2DTexture(boost::shared_ptr<Texture2D> source, boost::shared_ptr<Texture2D> destination);
-		
-		/**
-		 **/
-		bool run(boost::shared_ptr<Context2D> context);
+    /**
+     * Copy a source texture to a destination texture
+     **/
+    class Blit2DTexture : public Operation {
+     public:
+        /**
+         **/
+        Blit2DTexture(boost::shared_ptr<Texture2D> source, boost::shared_ptr<Texture2D> destination);
+        
+        /**
+         **/
+        bool run(boost::shared_ptr<Context2D> context);
 
-	private:
-		boost::shared_ptr<Texture2D> source_;
-		boost::shared_ptr<Texture2D> destination_;
-	};
-};
+     private:
+        boost::shared_ptr<Texture2D> source_;
+        boost::shared_ptr<Texture2D> destination_;
+    };
+};  // namespace v3d::render::realtime::operation

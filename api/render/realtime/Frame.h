@@ -13,24 +13,24 @@
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::render::realtime {
-	/**
-	 **/
-	class Frame {
-	public:
-		/**
-		 **/
-		Frame(boost::shared_ptr<Context> context);
+    /**
+     **/
+    class Frame {
+     public:
+        /**
+         **/
+        Frame(boost::shared_ptr<Context> context);
 
-		/**
-		 **/
-		void addOperation(boost::shared_ptr<Operation> operation);
+        /**
+         **/
+        void addOperation(boost::shared_ptr<Operation> operation);
 
-		/**
-		 **/
-		void draw();
+        /**
+         **/
+        void draw();
 
-	private:
-		boost::shared_ptr<Context> context_;
-		std::vector<boost::shared_ptr<Operation>> operations_;
-	};
-};
+     private:
+        boost::shared_ptr<Context> context_;
+        std::vector<boost::shared_ptr<Operation>> operations_;
+    };
+};  // namespace v3d::render::realtime

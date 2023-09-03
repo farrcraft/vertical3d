@@ -12,22 +12,22 @@
 #include <glm/vec2.hpp>
 
 namespace v3d::render::realtime::operation {
-	/**
-	 * Draw a GL texture at position
-	 **/
-	class Overlay : public Operation {
-	public:
-		/**
-		 *
-		 **/
-		Overlay(boost::shared_ptr<v3d::ui::Overlay> overlay);
+    /**
+     * Draw a GL texture at position
+     **/
+    class Overlay : public Operation {
+     public:
+        /**
+         *
+         **/
+        explicit Overlay(boost::shared_ptr<v3d::ui::Overlay> overlay);
 
-		/**
-		 *
-		 **/
-		bool run(boost::shared_ptr<Context> context);
+        /**
+         *
+         **/
+        bool run(boost::shared_ptr<Context> context);
 
-	private:
-		boost::shared_ptr<v3d::ui::Overlay> overlay_;
-	};
-};
+     private:
+        boost::shared_ptr<v3d::ui::Overlay> overlay_;
+    };
+};  // namespace v3d::render::realtime::operation

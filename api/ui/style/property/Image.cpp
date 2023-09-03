@@ -7,26 +7,21 @@
 
 namespace v3d::ui::style::prop {
 
-Image::Image(const std::string& name, const std::string& src) : Property(name), source_(src)
-{
+Image::Image(const std::string& name, const std::string& src) : Property(name), source_(src) {
 }
 
-Image::~Image()
-{
+Image::~Image() {
 }
 
-boost::shared_ptr<v3d::gl::GLTexture> Image::texture(void) const
-{
+boost::shared_ptr<v3d::gl::GLTexture> Image::texture(void) const {
     return texture_;
 }
 
-void Image::texture(boost::shared_ptr<v3d::gl::GLTexture> tex)
-{
+void Image::texture(boost::shared_ptr<v3d::gl::GLTexture> tex) {
     texture_ = tex;
 }
 
-std::string_view Image::source() const
-{
+std::string_view Image::source() const {
     return source_;
 }
 

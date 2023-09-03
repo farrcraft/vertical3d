@@ -1,110 +1,106 @@
 /**
  * Vertical3D
- * Copyright(c) 2021 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
 #pragma once
 
 #include <vector>
 
-#include <libv3dtypes/AABBox.h>
-#include <libv3dgraph/Node.h>
-#include <libv3dgraph/Transform.h>
+#include "libv3dtypes/AABBox.h"
+#include "libv3dgraph/Node.h"
+#include "libv3dgraph/Transform.h"
 
 #include "Vertex.h"
 #include "HalfEdge.h"
 #include "Face.h"
 
-namespace v3D
-{
+namespace v3D {
 
-	class HalfEdgeBRep : public DAG::Node, public DAG::Transform
-	{
-		public:
-			HalfEdgeBRep();
-			~HalfEdgeBRep();
+    class HalfEdgeBRep : public DAG::Node, public DAG::Transform {
+     public:
+        HalfEdgeBRep();
+        ~HalfEdgeBRep();
 
-			static const unsigned int INVALID_ID;
+        static const unsigned int INVALID_ID;
 
-			class edge_iterator
-			{
-				public:
-					edge_iterator();
-					edge_iterator(HalfEdgeBRep * brep, unsigned int faceID);
-					~edge_iterator();
-		
-					HalfEdge * operator * ();
-					edge_iterator operator++ (int);
-		
-					void reset(HalfEdgeBRep * brep, unsigned int faceID);
-					HalfEdgeBRep * brep(void) const;
+        class edge_iterator {
+         public:
+            edge_iterator();
+            edge_iterator(HalfEdgeBRep * brep, unsigned int faceID);
+            ~edge_iterator();
 
-				private:
-					HalfEdge *		_edge;
-					unsigned int	_firstEdgeID;
-					HalfEdgeBRep *	_brep;
-			};
+            HalfEdge * operator * ();
+            edge_iterator operator++ (int);
 
-			class vertex_iterator
-			{
-				public:
-					vertex_iterator();
-					vertex_iterator(HalfEdgeBRep * brep, unsigned int faceID);
-					~vertex_iterator();
+            void reset(HalfEdgeBRep * brep, unsigned int faceID);
+            HalfEdgeBRep * brep(void) const;
 
-					Vertex * operator * ();
-					vertex_iterator operator++ (int);
+         private:
+            HalfEdge* _edge;
+            unsigned int _firstEdgeID;
+            HalfEdgeBRep* _brep;
+        };
 
-					void reset(HalfEdgeBRep * brep, unsigned int faceID);
+        class vertex_iterator {
+         public:
+            vertex_iterator();
+            vertex_iterator(HalfEdgeBRep * brep, unsigned int faceID);
+            ~vertex_iterator();
 
-				private:
-					edge_iterator	_iterator;
-			};
+            Vertex * operator * ();
+            vertex_iterator operator++ (int);
 
-			HalfEdge * edge(unsigned int edgeID);
-			Face * face(unsigned int faceID);
-			Vertex * vertex(unsigned int vertexID);
+            void reset(HalfEdgeBRep * brep, unsigned int faceID);
 
-			AABBox bound(void) const;
+         private:
+            edge_iterator _iterator;
+        };
 
-			bool selected(void) const;
-			void selected(bool sel);
+        HalfEdge * edge(unsigned int edgeID);
+        Face * face(unsigned int faceID);
+        Vertex * vertex(unsigned int vertexID);
 
-			void addFace(const std::vector<Vector3> & vertices, const Vector3 & normal);
-			void addEdge(const Vector3 & point);
+        AABBox bound(void) const;
 
-			void splitEdge(unsigned int edgeID, const Vector3 & point);
-			void extrudeFace(unsigned int faceID);
-			void splitFace(unsigned int faceID, unsigned int leftEdgeID, unsigned int rightEdgeID, const Vector3 & leftPoint, const Vector3 & rightPoint);
+        bool selected(void) const;
+        void selected(bool sel);
 
-			Vector3 center(unsigned int faceID);
-			void faceUV(unsigned int faceID, Vector3 & u, Vector3 & v);
+        void addFace(const std::vector<Vector3> & vertices, const Vector3 & normal);
+        void addEdge(const Vector3 & point);
 
-			unsigned int vertexCount(void) const;
-			unsigned int edgeCount(void) const;
-			unsigned int faceCount(void) const;
+        void splitEdge(unsigned int edgeID, const Vector3 & point);
+        void extrudeFace(unsigned int faceID);
+        void splitFace(unsigned int faceID, unsigned int leftEdgeID, unsigned int rightEdgeID, const Vector3 & leftPoint, const Vector3 & rightPoint);
 
-			// derived from DAG::Transform
-			virtual void translation(const Vector3 & t);
-			virtual Vector3 translation(void) const;
+        Vector3 center(unsigned int faceID);
+        void faceUV(unsigned int faceID, Vector3 * u, Vector3 * v);
 
-			unsigned int addVertex(const Vertex & v);
-			unsigned int addEdge(const HalfEdge & e);
-			unsigned int addFace(const Face & f);
+        unsigned int vertexCount(void) const;
+        unsigned int edgeCount(void) const;
+        unsigned int faceCount(void) const;
 
-		protected:
-			unsigned int addVertex(const Vector3 & v);
-			unsigned int addEdge(unsigned int vertexID);
-			unsigned int findPair(unsigned int edgeID, unsigned int prevEdgeID);
+        // derived from DAG::Transform
+        virtual void translation(const Vector3 & t);
+        virtual Vector3 translation(void) const;
 
-		private:
-			std::vector<Vertex>		_vertices;
-			std::vector<Face>		_faces;
-			std::vector<HalfEdge>	_edges;
-			bool					_selected;
-	};
+        unsigned int addVertex(const Vertex & v);
+        unsigned int addEdge(const HalfEdge & e);
+        unsigned int addFace(const Face & f);
 
-	typedef HalfEdgeBRep Mesh;
-	typedef Mesh * MeshPtr;
+     protected:
+        unsigned int addVertex(const Vector3 & v);
+        unsigned int addEdge(unsigned int vertexID);
+        unsigned int findPair(unsigned int edgeID, unsigned int prevEdgeID);
 
-}; // end namespace v3D
+     private:
+        std::vector<Vertex> _vertices;
+        std::vector<Face> _faces;
+        std::vector<HalfEdge> _edges;
+        bool _selected;
+    };
+
+    typedef HalfEdgeBRep Mesh;
+    typedef Mesh * MeshPtr;
+
+};  // end namespace v3D

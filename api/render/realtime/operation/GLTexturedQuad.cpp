@@ -9,18 +9,17 @@
 
 namespace v3d::render::realtime::operation {
 
-	/**
-		**/
-	GLTexturedQuad::GLTexturedQuad(boost::shared_ptr<v3d::gl::GLTexture> texture, const glm::vec2& position, const glm::vec2& dimensions) :
-		dimensions_(dimensions),
-		position_(position),
-		texture_(texture) {
+    /**
+     **/
+    GLTexturedQuad::GLTexturedQuad(boost::shared_ptr<v3d::gl::GLTexture> texture, const glm::vec2& position, const glm::vec2& dimensions) :
+        dimensions_(dimensions),
+        position_(position),
+        texture_(texture) {
+    }
 
-	}
-
-	/**
-		**/
-	bool GLTexturedQuad::run(boost::shared_ptr<Context> context) {
+    /**
+     **/
+    bool GLTexturedQuad::run(boost::shared_ptr<Context> context) {
         // get texturing state
         GLboolean texture_enabled;
         texture_enabled = glIsEnabled(GL_TEXTURE_2D);
@@ -61,7 +60,7 @@ namespace v3d::render::realtime::operation {
         if (texture_enabled == GL_FALSE)
             glDisable(GL_TEXTURE_2D);
 
-		return true;
-	}
+        return true;
+    }
 
 };  // namespace v3d::render::realtime::operation

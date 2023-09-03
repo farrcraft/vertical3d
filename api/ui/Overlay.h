@@ -18,7 +18,7 @@ namespace v3d::ui {
      * background color.
      */
     class Overlay {
-    public:
+     public:
         /**
             * Overlay Mode
             */
@@ -57,7 +57,7 @@ namespace v3d::ui {
             */
         Mode mode() const;
 
-    private:
+     private:
         Mode mode_;
         glm::vec3 color_;
     };

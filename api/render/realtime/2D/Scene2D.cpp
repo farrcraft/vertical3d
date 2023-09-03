@@ -9,22 +9,22 @@
 
 namespace v3d::render::realtime {
 
-	/**
-	 **/
-	Scene2D::Scene2D(boost::shared_ptr<Context2D> context) :
-		context_(context) {
+    /**
+     **/
+    Scene2D::Scene2D(boost::shared_ptr<Context2D> context) :
+        context_(context) {
 
-	}
+    }
 
-	/**
-	 **/
-	boost::shared_ptr<Frame> Scene2D::collect() {
-		boost::shared_ptr<Frame> frame = boost::make_shared<Frame>(context_);
+    /**
+     **/
+    boost::shared_ptr<Frame> Scene2D::collect() {
+        boost::shared_ptr<Frame> frame = boost::make_shared<Frame>(context_);
 
-		// do stuff with frame
-		// player_->draw(frame);
+        // do stuff with frame
+        // player_->draw(frame);
 
-		return frame;
-	}
+        return frame;
+    }
 
 };  // namespace v3d::render::realtime

@@ -5,22 +5,21 @@
 
 #pragma once
 
+#include <string>
+
 #include "../Property.h"
 
 #include "../../../api/gl/GLTexture.h"
 
 #include <boost/shared_ptr.hpp>
 
-#include <string>
-
 namespace v3d::ui::style::prop {
 
     /**
      * A style property that defines an image.
      */
-    class Image : public Property
-    {
-    public:
+    class Image : public Property {
+     public:
         Image(const std::string& name, const std::string& src);
         ~Image();
 
@@ -40,9 +39,9 @@ namespace v3d::ui::style::prop {
          */
         void texture(boost::shared_ptr<v3d::gl::GLTexture> tex);
 
-    private:
+     private:
         std::string source_;
         boost::shared_ptr<v3d::gl::GLTexture> texture_;
     };
 
-}; // end namespace v3d::ui::style::prop
+};  // end namespace v3d::ui::style::prop

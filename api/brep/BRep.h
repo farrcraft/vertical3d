@@ -1,6 +1,6 @@
 /**
  * Vertical3D
- * Copyright(c) 2021 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
 **/
 
 #pragma once
@@ -103,6 +103,6 @@ namespace v3d::brep {
      * @param u the address of a vector to store the results in
      * @param v the address of a vector to store the results in
      */
-    void faceUV(boost::shared_ptr<BRep> mesh, unsigned int face, glm::vec3 & u, glm::vec3 & v);
+    void faceUV(boost::shared_ptr<BRep> mesh, unsigned int face, glm::vec3* u, glm::vec3* v);
 
 };  // namespace v3d::brep

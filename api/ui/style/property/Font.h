@@ -5,19 +5,17 @@
 
 #pragma once
 
-#include "../Property.h"
-
 #include <string>
 
-namespace v3d::ui::style::prop
-{
+#include "../Property.h"
+
+namespace v3d::ui::style::prop {
 
     /**
      * A style property that defines a font.
      */
-    class Font : public Property
-    {
-    public:
+    class Font : public Property {
+     public:
         Font(const std::string& name, const std::string& src);
         ~Font();
 
@@ -27,7 +25,7 @@ namespace v3d::ui::style::prop
         unsigned int size() const;
         std::string source() const;
 
-    private:
+     private:
         std::string source_;
         bool italics_;
         bool bold_;
@@ -35,4 +33,4 @@ namespace v3d::ui::style::prop
         unsigned int size_;
     };
 
-}; // end namespace v3d::ui::style::prop
+};  // end namespace v3d::ui::style::prop

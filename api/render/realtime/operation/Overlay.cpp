@@ -13,7 +13,6 @@ namespace v3d::render::realtime::operation {
      **/
     Overlay::Overlay(boost::shared_ptr<v3d::ui::Overlay> overlay) :
         overlay_(overlay) {
-
     }
 
     /**

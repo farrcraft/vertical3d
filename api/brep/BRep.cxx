@@ -1,6 +1,6 @@
 /**
  * Vertical3D
- * Copyright(c) 2021 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
 **/
 
 #include "BRep.h"
@@ -109,7 +109,7 @@ namespace v3d::brep {
         return mid;
     }
 
-    void faceUV(boost::shared_ptr<BRep> mesh, unsigned int face, glm::vec3& u, glm::vec3& v) {
+    void faceUV(boost::shared_ptr<BRep> mesh, unsigned int face, glm::vec3* u, glm::vec3* v) {
         BRep::edge_iterator it(mesh, face);
         if (*it == 0)
             return;
@@ -126,7 +126,7 @@ namespace v3d::brep {
         assert(pair != BRep::INVALID_ID);
         unsigned int pair_vert = mesh->edge(pair)->vertex();
         assert(pair_vert != BRep::INVALID_ID);
-        u = mesh->vertex(vert)->point() - mesh->vertex(pair_vert)->point();
+        *u = mesh->vertex(vert)->point() - mesh->vertex(pair_vert)->point();
         it++;
         edge = *it;
         assert(edge != 0);
@@ -136,11 +136,11 @@ namespace v3d::brep {
         assert(pair != BRep::INVALID_ID);
         pair_vert = mesh->edge(pair)->vertex();
         assert(pair_vert != BRep::INVALID_ID);
-        v = mesh->vertex(vert)->point() - mesh->vertex(pair_vert)->point();
+        *v = mesh->vertex(vert)->point() - mesh->vertex(pair_vert)->point();
 
-        norm = glm::normalize(glm::cross(u, v));
-        v = glm::normalize(glm::cross(u, norm));
-        u = glm::normalize(glm::cross(v, norm));
+        norm = glm::normalize(glm::cross(*u, *v));
+        *v = glm::normalize(glm::cross(*u, norm));
+        *u = glm::normalize(glm::cross(*v, norm));
     }
 
     size_t BRep::addVertex(const glm::vec3& v) {

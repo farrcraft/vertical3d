@@ -9,20 +9,18 @@
 
 #include <glm/glm.hpp>
 
-namespace v3d::ui::style::prop
-{
+namespace v3d::ui::style::prop {
 
     /**
      * A vGUI style property that defines a single color.
      */
-    class Color : public Property
-    {
-    public:
+    class Color : public Property {
+     public:
         Color();
         ~Color();
 
-    private:
+     private:
         glm::vec3 color_;
     };
 
-};
+};  // namespace v3d::ui::style::prop

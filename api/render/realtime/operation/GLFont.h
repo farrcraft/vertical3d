@@ -14,25 +14,25 @@
 #include <glm/vec2.hpp>
 
 namespace v3d::render::realtime::operation {
-	/**
-	 * Draw a GL font at position
-	 **/
-	class GLFont : public Operation {
-	public:
-		/**
-		 *
-		 **/
-		GLFont(const v3d::font::Font2D& font, const std::string& text, const glm::vec2& position, const boost::shared_ptr<v3d::log::Logger>& logger);
+    /**
+     * Draw a GL font at position
+     **/
+    class GLFont : public Operation {
+     public:
+        /**
+         *
+         **/
+        GLFont(const v3d::font::Font2D& font, const std::string& text, const glm::vec2& position, const boost::shared_ptr<v3d::log::Logger>& logger);
 
-		/**
-		 *
-		 **/
-		bool run(boost::shared_ptr<Context> context);
+        /**
+         *
+         **/
+        bool run(boost::shared_ptr<Context> context);
 
-	private:
-		v3d::font::Font2D font_;
-		glm::vec2 position_;
-		std::string text_;
-		v3d::gl::GLTexture texture_;
-	};
-};
+     private:
+        v3d::font::Font2D font_;
+        glm::vec2 position_;
+        std::string text_;
+        v3d::gl::GLTexture texture_;
+    };
+};  // namespace v3d::render::realtime::operation

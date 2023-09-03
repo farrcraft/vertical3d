@@ -13,30 +13,30 @@
 #include "../../../log/Logger.h"
 
 namespace v3d::render::realtime::operation {
-	/**
-	 * Draw a GL font at position
-	 **/
-	class BitmapFont : public Operation {
-	public:
-		/**
-		 *
-		 **/
-		BitmapFont(boost::shared_ptr<v3d::font::BitmapTextBuffer> buffer, boost::shared_ptr<v3d::gl::Program> program, const boost::shared_ptr<v3d::log::Logger>& logger);
+    /**
+     * Draw a GL font at position
+     **/
+    class BitmapFont : public Operation {
+     public:
+        /**
+         *
+         **/
+        BitmapFont(boost::shared_ptr<v3d::font::BitmapTextBuffer> buffer, boost::shared_ptr<v3d::gl::Program> program, const boost::shared_ptr<v3d::log::Logger>& logger);
 
-		boost::shared_ptr<v3d::font::BitmapTextBuffer> buffer();
+        boost::shared_ptr<v3d::font::BitmapTextBuffer> buffer();
 
-		void upload();
-		void clear();
+        void upload();
+        void clear();
 
-		/**
-		 *
-		 **/
-		bool run(boost::shared_ptr<Context> context);
+        /**
+         *
+         **/
+        bool run(boost::shared_ptr<Context> context);
 
-	private:
-		boost::shared_ptr<v3d::font::BitmapTextBuffer> buffer_;
-		boost::shared_ptr<v3d::gl::Program> program_;
-		v3d::gl::VertexBuffer vertexBuffer_;
-		v3d::gl::GLTexture texture_;
-	};
-};
+     private:
+        boost::shared_ptr<v3d::font::BitmapTextBuffer> buffer_;
+        boost::shared_ptr<v3d::gl::Program> program_;
+        v3d::gl::VertexBuffer vertexBuffer_;
+        v3d::gl::GLTexture texture_;
+    };
+};  // namespace v3d::render::realtime::operation
