@@ -12,7 +12,6 @@ namespace v3d::render::realtime::operation {
     Canvas::Canvas(boost::shared_ptr<v3d::gl::Canvas> canvas, boost::shared_ptr<v3d::gl::Program> program) :
         canvas_(canvas),
         program_(program) {
-
     }
 
     /**

@@ -4,6 +4,9 @@
  **/
 
 #include "Font2D.h"
+
+#include <string>
+
 #include "../Font2D.h"
 #include "../Type.h"
 #include "../../font/Font2D.h"

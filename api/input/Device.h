@@ -17,7 +17,7 @@ namespace v3d::input {
      public:
         /**
          **/
-        Device(const boost::shared_ptr<entt::dispatcher> &dispatcher);
+        explicit Device(const boost::shared_ptr<entt::dispatcher> &dispatcher);
 
         /**
          **/

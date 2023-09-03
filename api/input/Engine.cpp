@@ -16,7 +16,6 @@ namespace v3d::input {
      **/
     Engine::Engine(const boost::shared_ptr<entt::dispatcher>& dispatcher, int devices) :
         dispatcher_(dispatcher) {
-
         // add keyboard & mouse devices
         if (devices & DeviceType::Keyboard) {
             devices_.push_back(boost::make_shared<Keyboard>(dispatcher_));

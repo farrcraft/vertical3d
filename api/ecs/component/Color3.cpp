@@ -15,8 +15,7 @@ namespace v3d::ecs::component {
         this->color_ = c.color_;
     }
 
-    Color3& Color3::operator=(Color3&& c) noexcept
-    {
+    Color3& Color3::operator=(Color3&& c) noexcept {
         if (this != &c) {
             this->color_ = c.color_;
         }

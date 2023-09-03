@@ -1,6 +1,6 @@
 /**
  * Vertical3D
- * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
 #include "Engine.h"
@@ -122,11 +122,10 @@ namespace v3d::engine {
 
             if (features & Feature::Window2D) {
                 window_ = boost::make_shared<v3d::render::realtime::Window2D>(logger_);
-            }
-            else {
+            } else {
                 window_ = boost::make_shared<v3d::render::realtime::Window3D>(logger_);
             }
-            
+
             // if there is a window config with dimensions specified, we'll use those.
             if (features_ & Feature::Config) {
                 boost::shared_ptr<v3d::asset::Json> windowConfig = config_->get(v3d::config::Type::Window);
@@ -146,8 +145,7 @@ namespace v3d::engine {
                     if (!boost::static_pointer_cast<v3d::render::realtime::Window2D>(window_)->create(width, height, logicalWidth, logicalHeight)) {
                         return false;
                     }
-                }
-                else {
+                } else {
                     if (!window_->create(width, height)) {
                         return false;
                     }

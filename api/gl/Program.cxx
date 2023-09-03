@@ -12,18 +12,18 @@
 #include "Shader.h"
 
 namespace v3d::gl {
-    Program::Program(std::vector<boost::shared_ptr<Shader>>& theShaders) :
+    Program::Program(std::vector<boost::shared_ptr<Shader>>* theShaders) :
         enabled_(false) {
         shaders(theShaders);
     }
 
     /**
      **/
-    void Program::shaders(std::vector<boost::shared_ptr<Shader>>& theShaders) {
+    void Program::shaders(std::vector<boost::shared_ptr<Shader>>* theShaders) {
         id_ = glCreateProgram();
 
-        for (std::vector<boost::shared_ptr<Shader>>::size_type i = 0; i != theShaders.size(); i++) {
-            theShaders[i]->attach(id_);
+        for (std::vector<boost::shared_ptr<Shader>>::size_type i = 0; i != theShaders->size(); i++) {
+            (*theShaders)[i]->attach(id_);
         }
 
         glLinkProgram(id_);
@@ -42,8 +42,8 @@ namespace v3d::gl {
             throw std::runtime_error(msg);
         }
 
-        for (std::vector<boost::shared_ptr<Shader>>::size_type i = 0; i != theShaders.size(); i++) {
-            theShaders[i]->detach(id_);
+        for (std::vector<boost::shared_ptr<Shader>>::size_type i = 0; i != theShaders->size(); i++) {
+            (*theShaders)[i]->detach(id_);
         }
     }
 

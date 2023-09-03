@@ -19,14 +19,12 @@ namespace v3d::render::realtime {
         }
         if (logicalWidth > 0) {
             logicalWidth_ = logicalWidth;
-        }
-        else {
+        } else {
             logicalWidth_ = width;
         }
         if (logicalHeight > 0) {
             logicalHeight_ = logicalHeight;
-        }
-        else {
+        } else {
             logicalHeight_ = height;
         }
         surface_ = SDL_GetWindowSurface(sdl());
@@ -54,7 +52,6 @@ namespace v3d::render::realtime {
     void Window2D::logicalSize(int width, int height) {
         logicalWidth_ = width;
         logicalHeight_ = height;
-
     }
 
     /**
@@ -64,4 +61,4 @@ namespace v3d::render::realtime {
         SDL_UpdateWindowSurface(sdl());
     }
 
-};  // namespace v3d::ui
+};  // namespace v3d::render::realtime

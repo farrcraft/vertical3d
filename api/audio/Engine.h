@@ -1,9 +1,11 @@
 /**
  * Vertical3D
- * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
 **/
 
 #pragma once
+
+#include <soloud.h>
 
 #include <map>
 #include <string>
@@ -13,7 +15,6 @@
 #include "../log/Logger.h"
 #include "../event/Sound.h"
 
-#include <soloud.h>
 #include <boost/shared_ptr.hpp>
 #include <entt/entt.hpp>
 

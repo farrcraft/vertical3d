@@ -5,10 +5,10 @@
 
 #include "Window3D.h"
 
+#include <GL/glew.h>
+
 #include <sstream>
 #include <iostream>
-
-#include <GL/glew.h>
 
 namespace v3d::render::realtime {
     Window3D::Window3D(const boost::shared_ptr<v3d::log::Logger>& logger) noexcept : Window(logger) {
@@ -34,8 +34,7 @@ namespace v3d::render::realtime {
         // need the experimental flag to get support for glGenVertexArrays
         glewExperimental = GL_TRUE;
         GLenum err = glewInit();
-        if (err != GLEW_OK)
-        {
+        if (err != GLEW_OK) {
             std::stringstream msg;
             msg << glewGetErrorString(err);
             throw std::runtime_error(msg.str());
@@ -56,4 +55,4 @@ namespace v3d::render::realtime {
         Window::destroy();
     }
 
-};  // namespace v3d::ui
+};  // namespace v3d::render::realtime

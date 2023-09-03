@@ -12,13 +12,12 @@ namespace v3d::render::realtime::operation {
 Blit2DTexture::Blit2DTexture(boost::shared_ptr<Texture2D> source, boost::shared_ptr<Texture2D> destination) :
     source_(source),
     destination_(destination) {
-
 }
 
 /**
     **/
 bool Blit2DTexture::run(boost::shared_ptr<Context2D> context) {
-    //Now render to the texture
+    // Now render to the texture
     SDL_SetRenderTarget(context->handle(), destination_->tex());
     SDL_RenderClear(context->handle());
 
@@ -26,7 +25,7 @@ bool Blit2DTexture::run(boost::shared_ptr<Context2D> context) {
     SDL_Rect dest = { .x = 0, .y = 0, .w = source_->width(), .h = source_->height() };
 
     SDL_RenderCopy(context->handle(), source_->tex(), nullptr, &dest);
-    //Detach the texture
+    // Detach the texture
     SDL_SetRenderTarget(context->handle(), nullptr);
 
     return true;

@@ -1,7 +1,7 @@
 /**
  * Vertical3D
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
-**/
+ **/
 
 #pragma once
 
@@ -37,6 +37,7 @@ namespace v3d::ecs::component {
          * Move assignment
          **/
         PositionFixed2D& operator=(PositionFixed2D&&) noexcept;
+
      private:
         glm::ivec2 position_;
     };

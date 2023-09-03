@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "Asset.h"
 #include "../gl/Shader.h"
 
@@ -14,7 +16,7 @@ namespace v3d::asset {
     /**
      **/
     class Shader : public Asset {
-    public:
+     public:
         /**
          **/
         Shader(const std::string& name, Type t, boost::shared_ptr<v3d::gl::Shader> shader);
@@ -23,7 +25,7 @@ namespace v3d::asset {
          **/
         boost::shared_ptr<v3d::gl::Shader> shader();
 
-    private:
+     private:
         boost::shared_ptr<v3d::gl::Shader> shader_;
     };
 };  // namespace v3d::asset

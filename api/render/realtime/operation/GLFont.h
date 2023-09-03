@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "../Operation.h"
 #include "../../../font/Font2D.h"
 #include "../../../gl/GLTexture.h"

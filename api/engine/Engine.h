@@ -78,7 +78,6 @@ namespace v3d::engine {
         entt::registry registry_;
 
      private:
-
          bool registerEventMappings();
 
          std::string appPath_;

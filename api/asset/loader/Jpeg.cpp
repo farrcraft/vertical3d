@@ -4,6 +4,9 @@
 **/
 
 #include "Jpeg.h"
+
+#include <string>
+
 #include "../Image.h"
 #include "../../image/reader/Jpeg.h"
 

@@ -19,8 +19,8 @@ namespace v3d::input {
         return lhs & static_cast<int>(rhs);
     }
 
-    constexpr int& operator|=(int &lhs, DeviceType rhs) {
-        lhs = lhs | static_cast<int>(rhs);
+    constexpr int* operator|=(int *lhs, DeviceType rhs) {
+        *lhs = *lhs | static_cast<int>(rhs);
         return lhs;
     }
 

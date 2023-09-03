@@ -9,7 +9,6 @@ namespace v3d::input {
 
     Device::Device(const boost::shared_ptr<entt::dispatcher>& dispatcher) :
         dispatcher_(dispatcher) {
-
     }
 
 };  // namespace v3d::input

@@ -1,7 +1,7 @@
 /**
  * Vertical3D
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
-**/
+ **/
 
 #pragma once
 
@@ -12,7 +12,7 @@ namespace v3d::ecs::component {
      * A 1D position
      **/
     class Position1D final {
-    public:
+     public:
         Position1D(const float x) noexcept;
 
         /**
@@ -41,7 +41,8 @@ namespace v3d::ecs::component {
          * Move assignment
          **/
         Position1D& operator=(Position1D&&) noexcept;
-    private:
+
+     private:
         float position_;
     };
 
