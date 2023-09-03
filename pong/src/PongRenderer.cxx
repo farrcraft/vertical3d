@@ -141,7 +141,7 @@ void PongRenderer::drawBall() {
     canvas_->push();
     canvas_->translate(position);
     glm::vec3 color(1.0f, 1.0f, 1.0f);
-    canvas_->circle(sides, scene_->ball().size(), color);
+    canvas_->circle(sides, static_cast<size_t>(scene_->ball().size()), color);
 
     canvas_->pop();
 }
