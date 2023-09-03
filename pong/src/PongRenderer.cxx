@@ -97,7 +97,7 @@ void PongRenderer::draw() {
     glm::vec2 pen(width / 4.0f, height / 4.0f);
     std::string buffer = txt.str();
     std::wstring widestr = std::wstring(buffer.begin(), buffer.end());
-    fontRenderer_->buffer()->addText(*pen, markup_, widestr.c_str());
+    fontRenderer_->buffer()->addText(&pen, markup_, widestr.c_str());
 
     // right score
     txt.str("");
@@ -106,7 +106,7 @@ void PongRenderer::draw() {
     txt << boost::lexical_cast<std::string>(scene_->right().score());
     buffer = txt.str();
     widestr = std::wstring(buffer.begin(), buffer.end());
-    fontRenderer_->buffer()->addText(*pen, markup_, widestr.c_str());
+    fontRenderer_->buffer()->addText(&pen, markup_, widestr.c_str());
 
     // draw the gameboard
 
