@@ -9,6 +9,7 @@
 
 #include <glm/glm.hpp>
 
+#include "component/Type.h"
 #include "style/Theme.h"
 
 #include "../../api/type/Bound2D.h"
@@ -23,7 +24,7 @@ namespace v3d::ui {
      public:
         static unsigned int lastID;
 
-        Component();
+        explicit Component(component::Type type);
         virtual ~Component();
 
         /**
@@ -93,6 +94,12 @@ namespace v3d::ui {
          */
         void name(const std::string& str);
 
+        /**
+         * Get the component type
+         * @return the component type
+         **/
+        component::Type type() const;
+
      private:
         glm::vec2 position_;
         glm::vec2 size_;
@@ -101,6 +108,7 @@ namespace v3d::ui {
         std::string style_;
         std::string name_;
         bool visible_;
+        component::Type type_;
     };
 
 };  // end namespace v3d::ui

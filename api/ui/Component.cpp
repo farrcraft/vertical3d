@@ -10,7 +10,13 @@ namespace v3d::ui {
     unsigned int Component::lastID = 0;
 
 
-    Component::Component() : id_(lastID++), visible_(true), zIndex_(0) {
+    Component::Component(component::Type type) :
+        id_(lastID++),
+        visible_(true),
+        zIndex_(0),
+        type_(type),
+        size_(0.0f, 0.0f),
+        position_(0.0f, 0.0f) {
     }
 
     Component::~Component() {
@@ -67,6 +73,9 @@ namespace v3d::ui {
 
     void Component::name(const std::string& str) {
         name_ = str;
+    }
+    component::Type Component::type() const {
+        return type_;
     }
 
 };  // end namespace v3d::ui

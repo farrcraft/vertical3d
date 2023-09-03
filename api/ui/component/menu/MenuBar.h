@@ -1,6 +1,6 @@
 /**
  * Vertical3D
- * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
 #pragma once
@@ -11,7 +11,7 @@ namespace v3d::ui {
 
     class MenuBar : public Component {
      public:
-        MenuBar() = default;
+        MenuBar();
         ~MenuBar() = default;
     };
 

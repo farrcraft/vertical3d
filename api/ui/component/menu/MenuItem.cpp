@@ -10,6 +10,7 @@ namespace v3d::ui {
 
     MenuItem::MenuItem(menu::ItemType type, const std::string& label,
         const std::string& cmd, const std::string& scope) :
+        Component(component::Type::MENU_ITEM),
         label_(label), type_(type), command_(cmd), scope_(scope) {
     }
 

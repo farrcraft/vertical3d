@@ -6,6 +6,9 @@
 #include "Menu.h"
 
 namespace v3d::ui {
+    Menu::Menu() : Component(component::Type::MENU) {
+    }
+
     /**
      **/
     void Menu::parent(boost::weak_ptr<Menu> p) {

@@ -9,7 +9,7 @@
 
 namespace v3d::ui::component {
 
-    Button::Button() : state_(STATE_NORMAL) {
+    Button::Button() : state_(STATE_NORMAL), Component(component::Type::BUTTON) {
     }
 
     void Button::label(const std::string& str) {

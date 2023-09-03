@@ -20,6 +20,8 @@ namespace v3d::ui {
      */
     class Menu : public Component {
      public:
+         Menu();
+
         /**
             * Make the next item in the menu active.
             * If the last item in the menu is already active, it will wrap around
