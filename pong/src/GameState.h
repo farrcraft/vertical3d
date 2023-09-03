@@ -1,6 +1,6 @@
 /**
  * Vertical3D
- * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
 #pragma once
@@ -25,6 +25,7 @@ class GameState {
 
     void coop(bool mode);
     void ballStartSpeed(float speed);
+    void maxScore(int max);
 
     void pause(bool state);
     bool paused() const;

@@ -51,3 +51,7 @@ void GameState::coop(bool mode) {
 void GameState::ballStartSpeed(float speed) {
     ballStartSpeed_ = speed;
 }
+
+void GameState::maxScore(int max) {
+    maxScore_ = max;
+}
