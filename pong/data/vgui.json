@@ -1,83 +1,81 @@
 {
-  "vgui": {
-    "theme": {
+  "themes": [
+    {
       "name": "default"
-    },
-    "menu": {
+    }
+  ],
+  "containers": [
+    {
       "name": "game-menu",
       "visible": false,
-      "items": [
+      "components": [
         {
-          "label": "Options",
-          "command": "submenu",
-          "scope": "pong",
-          "type": "submenu",
+          "type": "menu",
           "items": [
             {
-              "label": "Rounds: ",
-              "param": "maxScore",
-              "command": "set_gamevar",
-              "scope": "pong",
-              "type": "numeric_input"
+              "label": "Options",
+              "action": "submenu",
+              "type": "submenu",
+              "items": [
+                {
+                  "label": "Rounds: ",
+                  "command": "setMaxScore",
+                  "scope": "ui",
+                  "type": "numeric_input"
+                },
+                {
+                  "label": "Player 1 Up: ",
+                  "command": "setLeftPaddleUpKey",
+                  "scope": "ui",
+                  "type": "key_input"
+                },
+                {
+                  "label": "Player 1 Down: ",
+                  "command": "setLeftPaddleDownKey",
+                  "scope": "ui",
+                  "type": "key_input"
+                },
+                {
+                  "label": "Player 2 Up: ",
+                  "command": "setRightPaddleUpKey",
+                  "scope": "ui",
+                  "type": "key_input"
+                },
+                {
+                  "label": "Player 2 Down: ",
+                  "command": "setRightPaddleDownKey",
+                  "scope": "ui",
+                  "type": "key_input"
+                }
+              ]
             },
             {
-              "label": "Player 1 Up: ",
-              "param": "pong::leftPaddleUp",
-              "command": "set_key",
-              "scope": "pong",
-              "type": "key_input"
+              "label": "Singleplayer",
+              "command": "setSingleplayerMode",
+              "scope": "ui",
+              "type": "action"
             },
             {
-              "label": "Player 1 Down: ",
-              "param": "pong::leftPaddleDown",
-              "command": "set_key",
-              "scope": "pong",
-              "type": "key_input"
+              "label": "Co-op",
+              "command": "setCoopMode",
+              "scope": "ui",
+              "type": "action"
             },
             {
-              "label": "Player 2 Up: ",
-              "param": "pong::rightPaddleUp",
-              "command": "set_key",
-              "scope": "pong",
-              "type": "key_input"
+              "label": "Multiplayer",
+              "command": "setMultiplayerMode",
+              "scope": "ui",
+              "type": "action"
             },
             {
-              "label": "Player 2 Down: ",
-              "param": "pong::rightPaddleDown",
-              "command": "set_key",
-              "scope": "pong",
-              "type": "key_input"
+              "label": "Quit",
+              "command": "quit",
+              "scope": "ui",
+              "type": "action"
             }
           ]
-        },
-        {
-          "label": "Singleplayer",
-          "param": "SP",
-          "command": "setmode",
-          "scope": "pong",
-          "type": "action"
-        },
-        {
-          "label": "Co-op",
-          "param": "coop",
-          "command": "setmode",
-          "scope": "pong",
-          "type": "action"
-        },
-        {
-          "label": "Multiplayer",
-          "param": "MP",
-          "command": "setmode",
-          "scope": "pong",
-          "type": "action"
-        },
-        {
-          "label": "Quit",
-          "command": "quit",
-          "scope": "pong",
-          "type": "action"
         }
       ]
     }
-  }
+  ]
 }
