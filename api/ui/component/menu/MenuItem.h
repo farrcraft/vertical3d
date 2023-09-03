@@ -5,9 +5,10 @@
 
 #pragma once
 
-#include "../../Component.h"
-
 #include <string>
+
+#include "../../Component.h"
+#include "Type.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
@@ -39,7 +40,7 @@ namespace v3d::ui {
          * @param scope the scope of the command
          * @param param the command paramater
          */
-        MenuItem(const std::string & type, const std::string & label,
+        MenuItem(menu::ItemType type, const std::string & label,
                     const std::string & cmd, const std::string & scope, const std::string & param);
 
         /**
@@ -65,7 +66,7 @@ namespace v3d::ui {
           * Get the current menu item label text
           * @return the label text
           */
-        std::string label() const;
+        std::string_view label() const;
         /**
           * Get the submenu
           * @return the child menu
@@ -84,7 +85,7 @@ namespace v3d::ui {
 
         std::string scope() const;
         std::string param() const;
-        std::string type() const;
+        menu::ItemType type() const;
 
      private:
         std::string label_;
@@ -93,7 +94,7 @@ namespace v3d::ui {
         std::string command_;
         std::string scope_;
         std::string param_;
-        std::string type_;
+        menu::ItemType type_;
     };
 
 };  // namespace v3d::ui

@@ -8,7 +8,7 @@
 
 namespace v3d::ui {
 
-    MenuItem::MenuItem(const std::string& type, const std::string& label,
+    MenuItem::MenuItem(menu::ItemType type, const std::string& label,
         const std::string& cmd, const std::string& scope, const std::string& param) :
         label_(label), type_(type), command_(cmd), scope_(scope), param_(param) {
     }
@@ -25,7 +25,7 @@ namespace v3d::ui {
         sub->parent(menu_);
     }
 
-    std::string MenuItem::label() const {
+    std::string_view MenuItem::label() const {
         return label_;
     }
 
@@ -53,7 +53,7 @@ namespace v3d::ui {
         return param_;
     }
 
-    std::string MenuItem::type() const {
+    menu::ItemType MenuItem::type() const {
         return type_;
     }
 
