@@ -18,7 +18,7 @@ struct Size final {
 
 class Ball {
  public:
-    Ball(entt::registry& registry);
+    Ball(entt::registry* registry);
 
     void direction(const glm::vec2 & dir);
     glm::vec2 direction() const;
@@ -32,6 +32,6 @@ class Ball {
     void size(float s);
 
  private:
-    entt::registry& registry_;
+    entt::registry* registry_;
     entt::entity id_;
 };

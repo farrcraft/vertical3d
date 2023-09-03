@@ -1,6 +1,6 @@
 /**
  * Vertical3D
- * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
 #pragma once
@@ -30,7 +30,7 @@ struct PaddleSize final {
 
 class Paddle final {
  public:
-    Paddle(entt::registry& registry);
+    Paddle(entt::registry* registry);
 
     void color(const glm::vec3 & color);
     void move(float delta);
@@ -55,5 +55,5 @@ class Paddle final {
 
  private:
     entt::entity id_;
-    entt::registry& registry_;
+    entt::registry* registry_;
 };

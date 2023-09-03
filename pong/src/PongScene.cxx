@@ -1,6 +1,6 @@
 /**
  * Vertical3D
- * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
 #include "PongScene.h"
@@ -10,7 +10,7 @@
 
 #include "../../api/event/Sound.h"
 
-PongScene::PongScene(entt::registry& registry, const boost::shared_ptr<entt::dispatcher>& dispatcher) : 
+PongScene::PongScene(entt::registry* registry, const boost::shared_ptr<entt::dispatcher>& dispatcher) : 
     dispatcher_(dispatcher),
     registry_(registry),
     left_(registry), 
