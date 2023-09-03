@@ -22,7 +22,7 @@ namespace v3d::gl {
         /**
             * Construct a new program a collection of shaders
             */
-        explicit Program(std::vector<boost::shared_ptr<Shader>> * theShaders);
+        explicit Program(const std::vector<boost::shared_ptr<Shader>>& theShaders);
         ~Program() = default;
 
         /**
@@ -42,7 +42,7 @@ namespace v3d::gl {
         unsigned int uniform(const std::string & name);
 
      protected:
-        void shaders(std::vector<boost::shared_ptr<Shader>>* theShaders);
+        void shaders(const std::vector<boost::shared_ptr<Shader>>& theShaders);
 
      private:
         unsigned int id_;

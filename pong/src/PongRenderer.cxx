@@ -21,7 +21,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-PongRenderer::PongRenderer(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry& registry) : 
+PongRenderer::PongRenderer(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry) : 
     engine_(logger, assetManager, registry) {
 
     boost::shared_ptr<v3d::asset::Loader> loader = assetManager->resolveLoader(v3d::asset::Type::SHADER_PROGRAM);
@@ -97,7 +97,7 @@ void PongRenderer::draw() {
     glm::vec2 pen(width / 4.0f, height / 4.0f);
     std::string buffer = txt.str();
     std::wstring widestr = std::wstring(buffer.begin(), buffer.end());
-    fontRenderer_->buffer()->addText(pen, markup_, widestr.c_str());
+    fontRenderer_->buffer()->addText(*pen, markup_, widestr.c_str());
 
     // right score
     txt.str("");
@@ -106,7 +106,7 @@ void PongRenderer::draw() {
     txt << boost::lexical_cast<std::string>(scene_->right().score());
     buffer = txt.str();
     widestr = std::wstring(buffer.begin(), buffer.end());
-    fontRenderer_->buffer()->addText(pen, markup_, widestr.c_str());
+    fontRenderer_->buffer()->addText(*pen, markup_, widestr.c_str());
 
     // draw the gameboard
 

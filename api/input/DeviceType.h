@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 namespace v3d::input {
     enum class DeviceType : uint32_t {
         Mouse = (1 << 0),
@@ -19,9 +21,8 @@ namespace v3d::input {
         return lhs & static_cast<int>(rhs);
     }
 
-    constexpr int* operator|=(int *lhs, DeviceType rhs) {
-        *lhs = *lhs | static_cast<int>(rhs);
+    constexpr int& operator|=(int& lhs, DeviceType rhs) {  // NOLINT(runtime/references)
+        lhs = lhs | static_cast<int>(rhs);
         return lhs;
     }
-
 };  // namespace v3d::input
