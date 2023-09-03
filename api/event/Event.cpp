@@ -8,11 +8,11 @@
 namespace v3d::event {
 
 Event::Event(const std::string& name, const std::string& scope, const std::string& context) :
-    name_(name), scope_(scope), context_(context) {
+    name_(name), scope_(scope), context_(context), hasData_(false) {
 }
 
 Event::Event(const std::string& name, const std::string& scope) :
-    name_(name), scope_(scope) {
+    name_(name), scope_(scope), hasData_(false) {
 }
 
 bool Event::operator() (const Event& lhs, const Event& rhs) const {
@@ -42,6 +42,17 @@ std::string Event::str() const {
         str += "::"s + context_;
     }
     return str;
+}
+
+void Event::data(const EventData& d) {
+    data_ = d;
+}
+
+boost::optional<EventData> Event::data() const {
+    if (hasData_) {
+        return data_;
+    }
+    return boost::none;
 }
 
 };  // namespace v3d::event

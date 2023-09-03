@@ -6,9 +6,13 @@
 #pragma once
 
 #include <string>
+#include <variant>
+
+#include <boost/optional.hpp>
 
 namespace v3d::event {
 
+    using EventData = std::variant<int, std::string>;
 
     /**
      **/
@@ -25,12 +29,17 @@ namespace v3d::event {
         std::string_view scope() const;
         std::string_view context() const;
 
+        void data(const EventData &d);
+        boost::optional<EventData> data() const;
+
         std::string str() const;
 
      private:
         std::string name_;
         std::string scope_;  // aka namespace
         std::string context_;
+        bool hasData_;
+        EventData data_;
     };
 
 };  // namespace v3d::event
