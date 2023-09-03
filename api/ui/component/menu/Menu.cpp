@@ -103,7 +103,7 @@ namespace v3d::ui {
             if (item->type() == menu::ItemType::Submenu && item->submenu()) {  // menu item has a submenu so activate the submenu
                 bool activated = down();
             } else if (item->type() == menu::ItemType::Action) {  // menu item represents a command so execute the bound command
-                manager_->execCommand(item->command(), item->scope(), item->param());
+                // manager_->execCommand(item->command(), item->scope(), item->param());
             } else if (item->type() == menu::ItemType::Input ||
                 item->type() == menu::ItemType::NumericInput ||
                 item->type() == menu::ItemType::KeyInput) {

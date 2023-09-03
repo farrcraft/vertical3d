@@ -41,7 +41,7 @@ namespace v3d::ui {
          * @param param the command paramater
          */
         MenuItem(menu::ItemType type, const std::string & label,
-                    const std::string & cmd, const std::string & scope, const std::string & param);
+                    const std::string & cmd, const std::string & scope);
 
         /**
           * Draw the menu item
@@ -76,15 +76,14 @@ namespace v3d::ui {
           * Get the command name bound to the menu item
           * @return the command name
           */
-        std::string command() const;
+        std::string_view command() const;
         /**
           * Get the owning menu this item belongs to.
           * @return a pointer to the parent menu
           **/
         boost::weak_ptr<Menu> menu();
 
-        std::string scope() const;
-        std::string param() const;
+        std::string_view scope() const;
         menu::ItemType type() const;
 
      private:
@@ -93,7 +92,6 @@ namespace v3d::ui {
         boost::weak_ptr<Menu> menu_;  // owning menu
         std::string command_;
         std::string scope_;
-        std::string param_;
         menu::ItemType type_;
     };
 
