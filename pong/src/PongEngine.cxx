@@ -174,7 +174,7 @@ bool PongEngine::setGameMode(const std::string_view& mode) {
 }
 */
 void PongEngine::handleEvent(const v3d::event::Event& event) {
-    if (event.scope() == "pong") {
+    if (event.context()->name() == "pong") {
         // play commands
         if (event.name() == "leftPaddleDown") {
             if (!scene_->state().paused()) {
@@ -190,7 +190,7 @@ void PongEngine::handleEvent(const v3d::event::Event& event) {
             }
         }
         return;
-    } else if (event.scope() == "ui") {
+    } else if (event.context()->name() == "ui") {
         if (event.name() == "setMaxScore") {
             boost::optional<v3d::event::EventData> data = event.data();
             if (data) {
@@ -215,8 +215,7 @@ void PongEngine::handleEvent(const v3d::event::Event& event) {
             return;
         }
 
-        boost::shared_ptr<Luxa::Menu> menu =
-            boost::dynamic_pointer_cast<Luxa::Menu, Luxa::Component>(vgui_->getComponent("game-menu"));
+        boost::shared_ptr<v3d::ui::Container> menu = vgui_->container("game-menu");
         bool vis = menu->visible();
 
         if (event.name() == "showGameMenu") {

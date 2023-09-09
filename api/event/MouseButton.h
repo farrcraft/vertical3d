@@ -13,17 +13,22 @@ namespace v3d::event {
 
     /**
      **/
-    class Key : public Event {
+    class MouseButton : public Event {
      public:
         /**
          **/
-        Key(const std::string& name, const boost::shared_ptr<Context>& context, bool pressed) noexcept;
+        MouseButton(unsigned int button, const boost::shared_ptr<Context>& context, bool pressed) noexcept;
+
+        /**
+         **/
+        unsigned int button() const noexcept;
 
         /**
          **/
         bool pressed() const noexcept;
 
      private:
+        unsigned int button_;
         bool pressed_;
     };
 };  // namespace v3d::event

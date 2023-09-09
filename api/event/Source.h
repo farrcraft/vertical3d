@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "Context.h"
 #include "Event.h"
 
 #include <string>
@@ -17,6 +18,6 @@ namespace v3d::event {
      public:
         /**
          **/
-        Source(const std::string& name, const std::string& scope, const std::string& context);
+        Source(const std::string& name, const boost::shared_ptr<Context>& context);
     };
 };  // namespace v3d::event

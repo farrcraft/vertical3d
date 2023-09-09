@@ -5,29 +5,31 @@
 
 #pragma once
 
+#include "Context.h"
+
 #include <string>
 #include <variant>
 
+#include <boost/shared_ptr.hpp>
 #include <boost/optional.hpp>
 
 namespace v3d::event {
 
-    using EventData = std::variant<int, std::string>;
+    using EventData = std::variant<int, bool, std::string>;
 
     /**
      **/
     class Event {
      public:
         Event() = default;
-        Event(const std::string& name, const std::string& scope, const std::string& context);
-        Event(const std::string& name, const std::string& scope);
+        Event(const std::string& name, const boost::shared_ptr<Context>& context);
+        explicit Event(const std::string& name);
 
         bool operator() (const Event& lhs, const Event& rhs) const;
         bool operator <(const Event& rhs) const;
 
         std::string_view name() const;
-        std::string_view scope() const;
-        std::string_view context() const;
+        boost::shared_ptr<Context> context() const;
 
         void data(const EventData &d);
         boost::optional<EventData> data() const;
@@ -36,8 +38,7 @@ namespace v3d::event {
 
      private:
         std::string name_;
-        std::string scope_;  // aka namespace
-        std::string context_;
+        boost::shared_ptr<Context> context_;  // aka namespace
         bool hasData_;
         EventData data_;
     };

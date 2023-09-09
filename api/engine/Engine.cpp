@@ -56,10 +56,9 @@ namespace v3d::engine {
                 return false;
             }
             std::string sourceName = boost::json::value_to<std::string>(source.at("name"));
-            std::string sourceScope = boost::json::value_to<std::string>(source.at("scope"));
-            std::string sourceContext = boost::json::value_to<std::string>(source.at("context"));
-
-            v3d::event::Event sourceEvent(sourceName, sourceScope, sourceContext);
+            std::string sourceContextName = boost::json::value_to<std::string>(source.at("context"));
+            boost::shared_ptr<v3d::event::Context> sourceContext = eventEngine_->resolveContext(sourceContextName);
+            v3d::event::Event sourceEvent(sourceName, sourceContext);
 
             auto const destination = mapping.at("destination");
             if (!destination.is_object()) {
@@ -67,10 +66,9 @@ namespace v3d::engine {
                 return false;
             }
             std::string destinationName = boost::json::value_to<std::string>(destination.at("name"));
-            std::string destinationScope = boost::json::value_to<std::string>(destination.at("scope"));
-            std::string destinationContext = boost::json::value_to<std::string>(destination.at("context"));
-
-            v3d::event::Event destinationEvent(destinationName, destinationScope, destinationContext);
+            std::string destinationContextName = boost::json::value_to<std::string>(destination.at("context"));
+            boost::shared_ptr<v3d::event::Context> destinationContext = eventEngine_->resolveContext(destinationContextName);
+            v3d::event::Event destinationEvent(destinationName, destinationContext);
             mapper->map(sourceEvent, destinationEvent);
         }
         eventEngine_->addMapper(mapper);
@@ -110,7 +108,7 @@ namespace v3d::engine {
             devices |= v3d::input::DeviceType::Mouse;
         }
         if (devices != 0) {
-            inputEngine_ = boost::make_shared<v3d::input::Engine>(dispatcher_, devices);
+            inputEngine_ = boost::make_shared<v3d::input::Engine>(eventEngine_, dispatcher_, devices);
         }
 
         if (features_ & Feature::Window2D || features_ & Feature::Window3D) {

@@ -8,7 +8,6 @@
 #include <string>
 
 #include "../log/Logger.h"
-
 #include "../asset/Manager.h"
 #include "../config/Config.h"
 #include "../input/Engine.h"

@@ -17,6 +17,6 @@ namespace v3d::event {
      public:
         /**
          **/
-        KeyDown(const std::string& name);
+        KeyDown(const std::string& name, const boost::shared_ptr<Context>& context);
     };
 };  // namespace v3d::event

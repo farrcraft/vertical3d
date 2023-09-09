@@ -7,6 +7,8 @@
 
 #include "Source.h"
 
+#include <boost/make_shared.hpp>
+
 namespace v3d::event {
 
     Engine::Engine(const boost::shared_ptr<entt::dispatcher>& dispatcher) : dispatcher_(dispatcher) {
@@ -31,4 +33,16 @@ namespace v3d::event {
         }
     }
 
+    /**
+     **/
+    boost::shared_ptr<Context> Engine::resolveContext(const std::string_view& name) {
+        for (auto it = contexts_.begin(); it != contexts_.end(); it++) {
+            if ((*it)->name() == name) {
+                return *it;
+            }
+        }
+        boost::shared_ptr<Context> context = boost::make_shared<Context>(std::string(name));
+        contexts_.push_back(context);
+        return context;
+    }
 };  // namespace v3d::event

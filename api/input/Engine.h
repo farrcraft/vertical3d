@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "Device.h"
+#include "../event/Engine.h"
 
 #include <SDL.h>
 #include <boost/shared_ptr.hpp>
@@ -22,7 +23,7 @@ namespace v3d::input {
      public:
         /**
          **/
-        Engine(const boost::shared_ptr<entt::dispatcher> &dispatcher, int devices);
+        Engine(const boost::shared_ptr<v3d::event::Engine> & eventEngine, const boost::shared_ptr<entt::dispatcher> &dispatcher, int devices);
 
         /**
          **/
@@ -31,6 +32,7 @@ namespace v3d::input {
      private:
         std::vector<boost::shared_ptr<Device> > devices_;
         boost::shared_ptr<entt::dispatcher> dispatcher_;
+        boost::shared_ptr<v3d::event::Engine> eventEngine_;
     };
 
 };  // namespace v3d::input

@@ -9,8 +9,8 @@ namespace v3d::event {
 
     /**
      **/
-    Source::Source(const std::string& name, const std::string& scope, const std::string& context) :
-        Event(name, scope, context) {
+    Source::Source(const std::string& name, const boost::shared_ptr<Context>& context) :
+        Event(name, context) {
     }
 
 };  // namespace v3d::event
