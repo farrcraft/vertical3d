@@ -24,4 +24,9 @@ void Container::visible(bool vis) {
     visible_ = vis;
 }
 
+std::string_view Container::name() const {
+    return name_;
+}
+
+
 };  // namespace v3d::ui
