@@ -7,7 +7,7 @@
 
 #include "../../Component.h"
 
-namespace v3d::ui {
+namespace v3d::ui::component {
 
     class MenuBar : public Component {
      public:
@@ -15,5 +15,4 @@ namespace v3d::ui {
         ~MenuBar() = default;
     };
 
-};  // namespace v3d::ui
-
+};  // namespace v3d::ui::component

@@ -7,7 +7,7 @@
 
 #include "Menu.h"
 
-namespace v3d::ui {
+namespace v3d::ui::component {
 
     class RadialMenu : public Menu {
      public:
@@ -15,4 +15,4 @@ namespace v3d::ui {
         ~RadialMenu() = default;
     };
 
-};  // namespace v3d::ui
+};  // namespace v3d::ui::component
