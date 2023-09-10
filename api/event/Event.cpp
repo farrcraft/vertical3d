@@ -8,11 +8,11 @@
 namespace v3d::event {
 
 Event::Event(const std::string& name, const boost::shared_ptr<Context>& context) :
-    name_(name), context_(context), hasData_(false) {
+    name_(name), context_(context), hasData_(false), type_(Type::Unknown) {
 }
 
 Event::Event(const std::string& name) :
-    name_(name), hasData_(false) {
+    name_(name), hasData_(false), type_(Type::Unknown) {
 }
 
 bool Event::operator() (const Event& lhs, const Event& rhs) const {
@@ -29,6 +29,18 @@ std::string_view Event::name() const {
 
 boost::shared_ptr<Context> Event::context() const {
     return context_;
+}
+
+/**
+ **/
+void Event::type(Type t) {
+    type_ = t;
+}
+
+/**
+ **/
+constexpr Type Event::type() const {
+    return type_;
 }
 
 std::string Event::str() const {

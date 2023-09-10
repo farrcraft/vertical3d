@@ -5,14 +5,12 @@
 
 #include "Engine.h"
 
-#include "Source.h"
-
 #include <boost/make_shared.hpp>
 
 namespace v3d::event {
 
     Engine::Engine(const boost::shared_ptr<entt::dispatcher>& dispatcher) : dispatcher_(dispatcher) {
-        dispatcher->sink<Source>().connect<&Engine::handleSourceEvent>(*this);
+        dispatcher->sink<Event>().connect<&Engine::handleSourceEvent>(*this);
     }
 
     /**
@@ -24,7 +22,10 @@ namespace v3d::event {
 
     /**
      **/
-    void Engine::handleSourceEvent(const Source& source) {
+    void Engine::handleSourceEvent(const Event& source) {
+        if (source.type() != Type::Source) {
+            return;
+        }
         for (auto it = mappers_.begin(); it != mappers_.end(); it++) {
             boost::optional<Event> destination = it->second->destination(source);
             if (destination) {

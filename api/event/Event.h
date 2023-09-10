@@ -6,6 +6,7 @@
 #pragma once
 
 #include "Context.h"
+#include "Type.h"
 
 #include <string>
 #include <variant>
@@ -30,6 +31,8 @@ namespace v3d::event {
 
         std::string_view name() const;
         boost::shared_ptr<Context> context() const;
+        void type(Type t);
+        constexpr Type type() const;
 
         void data(const EventData &d);
         boost::optional<EventData> data() const;
@@ -41,6 +44,7 @@ namespace v3d::event {
         boost::shared_ptr<Context> context_;  // aka namespace
         bool hasData_;
         EventData data_;
+        Type type_;
     };
 
 };  // namespace v3d::event

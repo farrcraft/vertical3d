@@ -14,7 +14,6 @@
 #include <entt/entt.hpp>
 
 #include "Context.h"
-#include "Source.h"
 
 namespace v3d::event {
     /**
@@ -31,7 +30,7 @@ namespace v3d::event {
 
         /**
          **/
-        void handleSourceEvent(const Source& source);
+        void handleSourceEvent(const Event& source);
 
         /**
          * Look up a context from its name.

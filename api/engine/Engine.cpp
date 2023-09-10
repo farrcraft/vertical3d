@@ -59,6 +59,7 @@ namespace v3d::engine {
             std::string sourceContextName = boost::json::value_to<std::string>(source.at("context"));
             boost::shared_ptr<v3d::event::Context> sourceContext = eventEngine_->resolveContext(sourceContextName);
             v3d::event::Event sourceEvent(sourceName, sourceContext);
+            sourceEvent.type(v3d::event::Type::Source);
 
             auto const destination = mapping.at("destination");
             if (!destination.is_object()) {
@@ -69,6 +70,7 @@ namespace v3d::engine {
             std::string destinationContextName = boost::json::value_to<std::string>(destination.at("context"));
             boost::shared_ptr<v3d::event::Context> destinationContext = eventEngine_->resolveContext(destinationContextName);
             v3d::event::Event destinationEvent(destinationName, destinationContext);
+            destinationEvent.type(v3d::event::Type::Destination);
             mapper->map(sourceEvent, destinationEvent);
         }
         eventEngine_->addMapper(mapper);
