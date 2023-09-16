@@ -59,7 +59,7 @@ namespace v3d::ui {
         return bound;
     }
 
-    std::string Component::style() const {
+    std::string_view Component::style() const {
         return style_;
     }
 
@@ -67,7 +67,7 @@ namespace v3d::ui {
         style_ = str;
     }
 
-    std::string Component::name() const {
+    std::string_view Component::name() const {
         return name_;
     }
 

@@ -72,7 +72,7 @@ namespace v3d::ui {
          * Get the style name of the component
          * @return the style name
          */
-        std::string style() const;
+        std::string_view style() const;
         /**
          * Get whether the component is visible or not
          * @return true if the component is visible
@@ -87,7 +87,7 @@ namespace v3d::ui {
          * Get the component name
          * @return the component name
          */
-        std::string name() const;
+        std::string_view name() const;
         /**
          * Set the component name
          * @param str the new component name
