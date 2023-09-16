@@ -1,6 +1,6 @@
 /**
  * Vertical3D
- * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
 #include "PongRenderer.h"
@@ -14,7 +14,9 @@
 #include "../../api/gl/Shader.h"
 #include "../../api/font/TextureTextBuffer.h"
 #include "../../api/asset/ShaderProgram.h"
-#include "../../api/asset/Font2D.h"
+#include "../../api/asset/TextureFont.h"
+#include "../../api/render/realtime/Frame.h"
+#include "../../api/render/realtime/operation/Canvas.h"
 
 #include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
@@ -24,17 +26,17 @@
 PongRenderer::PongRenderer(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry) : 
     engine_(logger, assetManager, registry) {
 
-    boost::shared_ptr<v3d::asset::Loader> loader = assetManager->resolveLoader(v3d::asset::Type::SHADER_PROGRAM);
+    boost::shared_ptr<v3d::asset::Loader> loader = assetManager->resolveLoader(v3d::asset::Type::ShaderProgram);
     v3d::asset::ParameterValue value;
     value = static_cast<unsigned int>(v3d::gl::Shader::SHADER_TYPE_VERTEX | v3d::gl::Shader::SHADER_TYPE_FRAGMENT);
     loader->parameter("shaderTypes", value);
-    boost::shared_ptr<v3d::asset::ShaderProgram> program = boost::dynamic_pointer_cast<v3d::asset::ShaderProgram>(assetManager->load("shaders/canvas", v3d::asset::Type::SHADER_PROGRAM));
+    boost::shared_ptr<v3d::asset::ShaderProgram> program = boost::dynamic_pointer_cast<v3d::asset::ShaderProgram>(assetManager->load("shaders/canvas", v3d::asset::Type::ShaderProgram));
     canvasProgram_ = program->program();
 
     canvas_ = boost::make_shared<v3d::gl::Canvas>();
 
     // setup text buffer
-    boost::shared_ptr<v3d::asset::ShaderProgram> textProgram = boost::dynamic_pointer_cast<v3d::asset::ShaderProgram>(assetManager->load("shaders/text", v3d::asset::Type::SHADER_PROGRAM)); 
+    boost::shared_ptr<v3d::asset::ShaderProgram> textProgram = boost::dynamic_pointer_cast<v3d::asset::ShaderProgram>(assetManager->load("shaders/text", v3d::asset::Type::ShaderProgram)); 
  
     fontCache_ = boost::make_shared<v3d::font::TextureFontCache>(512, 512, v3d::font::TextureTextBuffer::LCD_FILTERING_ON, logger);
 
@@ -56,15 +58,16 @@ PongRenderer::PongRenderer(const boost::shared_ptr<v3d::log::Logger>& logger, co
                                 L"`abcdefghijklmnopqrstuvwxyz{|}~";
     fontCache_->charcodes(charcodes);
 
-    // [FIXME] - needs to be refactored to use asset API
-    value = static_cast<unsigned int>(markup_.size_);
-    loader->parameter("fontSize", value);
-    boost::shared_ptr<v3d::asset::Font2D> font = boost::dynamic_pointer_cast<v3d::asset::Font2D>(assetManager->load("fonts/DroidSerif-Regular.ttf", v3d::asset::Type::FONT_2D));
+    loader->parameter("fontSize", markup_.size_);
+    boost::shared_ptr<v3d::asset::TextureFont> font = boost::dynamic_pointer_cast<v3d::asset::TextureFont>(assetManager->load("fonts/DroidSerif-Regular.ttf", v3d::asset::Type::TextureFont));
+    font->font()->atlas(fontCache_->atlas());
+    font->font()->loadGlyphs(charcodes);
+    fontCache_->add(font->font());
     markup_.font_ = font->font();
 
     boost::shared_ptr<v3d::font::TextureTextBuffer> text;
     text = boost::make_shared<v3d::font::TextureTextBuffer>();
-    fontRenderer_ = boost::make_shared<v3d::render::realtime::operation::TextureFont>(text, textProgram, fontCache_->atlas(), logger);
+    fontRenderer_ = boost::make_shared<v3d::render::realtime::operation::TextureFont>(text, textProgram->program(), fontCache_->atlas(), logger);
 }
 
 void PongRenderer::resize(int width, int height) {
@@ -126,12 +129,13 @@ void PongRenderer::draw() {
 
     drawBall();
 
-    // upload to GPU & render
-    canvas_->upload();
-    fontRenderer_->upload();
+    v3d::render::realtime::Frame frame(engine_.context());
+    boost::shared_ptr<v3d::render::realtime::Operation> canvasOp = boost::make_shared<v3d::render::realtime::operation::Canvas>(canvas_, nullptr);
+    frame.addOperation(canvasOp);
+    frame.addOperation(fontRenderer_);
 
-    canvas_->render();
-    fontRenderer_->render();
+    // upload to GPU & render
+    frame.draw();
 }
 
 void PongRenderer::drawBall() {
