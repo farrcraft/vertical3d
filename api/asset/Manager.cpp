@@ -15,6 +15,7 @@
 #include "loader/Text.h"
 #include "loader/Wav.h"
 #include "loader/Font2D.h"
+#include "loader/TextureFont.h"
 
 #include <boost/make_shared.hpp>
 
@@ -26,15 +27,16 @@ namespace v3d::asset {
         logger_(logger) {
         path_ = static_cast<std::string>(path);
         LOG_INFO(logger_) << "Setting asset manager path to: " << path_.c_str();
-        loaders_[asset::Type::IMAGE_JPEG] = boost::make_shared<v3d::asset::loader::Jpeg>(this, logger_);
-        loaders_[asset::Type::IMAGE_PNG] = boost::make_shared<v3d::asset::loader::Png>(this, logger_);
-        loaders_[asset::Type::JSON_DOCUMENT] = boost::make_shared<v3d::asset::loader::Json>(this, logger_);
-        loaders_[asset::Type::AUDIO_WAV] = boost::make_shared<v3d::asset::loader::Wav>(this, logger_);
-        loaders_[asset::Type::TEXT] = boost::make_shared<v3d::asset::loader::Text>(this, logger_);
-        loaders_[asset::Type::SHADER_FRAGMENT] = boost::make_shared<v3d::asset::loader::Shader>(this, asset::Type::SHADER_FRAGMENT, logger_);
-        loaders_[asset::Type::SHADER_VERTEX] = boost::make_shared<v3d::asset::loader::Shader>(this, asset::Type::SHADER_VERTEX, logger_);
-        loaders_[asset::Type::SHADER_PROGRAM] = boost::make_shared<v3d::asset::loader::ShaderProgram>(this, logger_);
-        loaders_[asset::Type::FONT_2D] = boost::make_shared<v3d::asset::loader::Font2D>(this, logger_);
+        loaders_[asset::Type::ImageJpeg] = boost::make_shared<v3d::asset::loader::Jpeg>(this, logger_);
+        loaders_[asset::Type::ImagePng] = boost::make_shared<v3d::asset::loader::Png>(this, logger_);
+        loaders_[asset::Type::JsonDocument] = boost::make_shared<v3d::asset::loader::Json>(this, logger_);
+        loaders_[asset::Type::AudioWav] = boost::make_shared<v3d::asset::loader::Wav>(this, logger_);
+        loaders_[asset::Type::Text] = boost::make_shared<v3d::asset::loader::Text>(this, logger_);
+        loaders_[asset::Type::ShaderFragment] = boost::make_shared<v3d::asset::loader::Shader>(this, asset::Type::ShaderFragment, logger_);
+        loaders_[asset::Type::ShaderVertex] = boost::make_shared<v3d::asset::loader::Shader>(this, asset::Type::ShaderVertex, logger_);
+        loaders_[asset::Type::ShaderProgram] = boost::make_shared<v3d::asset::loader::ShaderProgram>(this, logger_);
+        loaders_[asset::Type::Font2D] = boost::make_shared<v3d::asset::loader::Font2D>(this, logger_);
+        loaders_[asset::Type::TextureFont] = boost::make_shared<v3d::asset::loader::TextureFont>(this, logger_);
     }
 
     /**
@@ -65,13 +67,13 @@ namespace v3d::asset {
         boost::shared_ptr<Asset> asset;
         std::string ext = pathName.extension().string();
         if (ext == ".png") {
-            asset = load(name, asset::Type::IMAGE_PNG);
+            asset = load(name, asset::Type::ImagePng);
         } else if (ext == ".jpg") {
-            asset = load(name, asset::Type::IMAGE_JPEG);
+            asset = load(name, asset::Type::ImageJpeg);
         } else if (ext == ".json") {
-            asset = load(name, asset::Type::JSON_DOCUMENT);
+            asset = load(name, asset::Type::JsonDocument);
         } else if (ext == ".wav") {
-            asset = load(name, asset::Type::AUDIO_WAV);
+            asset = load(name, asset::Type::AudioWav);
         } else {
             throw std::invalid_argument("unrecognized extension");
         }

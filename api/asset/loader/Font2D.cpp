@@ -17,7 +17,7 @@ namespace v3d::asset::loader {
 
     /**
      **/
-    Font2D::Font2D(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(manager, Type::FONT_2D, logger) {
+    Font2D::Font2D(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(manager, Type::Font2D, logger) {
     }
 
     /**

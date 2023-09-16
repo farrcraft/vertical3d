@@ -19,7 +19,7 @@
 namespace v3d::asset {
     /**
      **/
-    loader::Json::Json(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(manager, Type::JSON_DOCUMENT, logger) {
+    loader::Json::Json(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(manager, Type::JsonDocument, logger) {
     }
 
     /**
@@ -46,7 +46,7 @@ namespace v3d::asset {
             auto const document = parser.release();
             //  boost::json::object const& object = document.as_object();
 
-            asset = boost::make_shared<v3d::asset::Json>(std::string(name), Type::JSON_DOCUMENT, document.as_object());
+            asset = boost::make_shared<v3d::asset::Json>(std::string(name), Type::JsonDocument, document.as_object());
         }
         catch (std::exception const& e) {
             LOG_ERROR(logger_) << "Bootstrap caught exception: " << e.what();
