@@ -23,21 +23,22 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-PongRenderer::PongRenderer(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry) : 
+PongRenderer::PongRenderer(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry) :
     engine_(logger, assetManager, registry) {
-
     boost::shared_ptr<v3d::asset::Loader> loader = assetManager->resolveLoader(v3d::asset::Type::ShaderProgram);
     v3d::asset::ParameterValue value;
     value = static_cast<unsigned int>(v3d::gl::Shader::SHADER_TYPE_VERTEX | v3d::gl::Shader::SHADER_TYPE_FRAGMENT);
     loader->parameter("shaderTypes", value);
-    boost::shared_ptr<v3d::asset::ShaderProgram> program = boost::dynamic_pointer_cast<v3d::asset::ShaderProgram>(assetManager->load("shaders/canvas", v3d::asset::Type::ShaderProgram));
+    boost::shared_ptr<v3d::asset::ShaderProgram> program = boost::dynamic_pointer_cast<v3d::asset::ShaderProgram>(
+        assetManager->load("shaders/canvas", v3d::asset::Type::ShaderProgram));
     canvasProgram_ = program->program();
 
     canvas_ = boost::make_shared<v3d::gl::Canvas>();
 
     // setup text buffer
-    boost::shared_ptr<v3d::asset::ShaderProgram> textProgram = boost::dynamic_pointer_cast<v3d::asset::ShaderProgram>(assetManager->load("shaders/text", v3d::asset::Type::ShaderProgram)); 
- 
+    boost::shared_ptr<v3d::asset::ShaderProgram> textProgram = boost::dynamic_pointer_cast<v3d::asset::ShaderProgram>(
+        assetManager->load("shaders/text", v3d::asset::Type::ShaderProgram));
+
     fontCache_ = boost::make_shared<v3d::font::TextureFontCache>(512, 512, v3d::font::TextureTextBuffer::LCD_FILTERING_ON, logger);
 
     markup_.bold_ = false;
@@ -59,7 +60,8 @@ PongRenderer::PongRenderer(const boost::shared_ptr<v3d::log::Logger>& logger, co
     fontCache_->charcodes(charcodes);
 
     loader->parameter("fontSize", markup_.size_);
-    boost::shared_ptr<v3d::asset::TextureFont> font = boost::dynamic_pointer_cast<v3d::asset::TextureFont>(assetManager->load("fonts/DroidSerif-Regular.ttf", v3d::asset::Type::TextureFont));
+    boost::shared_ptr<v3d::asset::TextureFont> font = boost::dynamic_pointer_cast<v3d::asset::TextureFont>(
+        assetManager->load("fonts/DroidSerif-Regular.ttf", v3d::asset::Type::TextureFont));
     font->font()->atlas(fontCache_->atlas());
     font->font()->loadGlyphs(charcodes);
     fontCache_->add(font->font());

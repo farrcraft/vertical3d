@@ -1,6 +1,6 @@
 /**
  * Vertical3D
- * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
 #pragma once
@@ -18,7 +18,7 @@ struct Size final {
 
 class Ball {
  public:
-    Ball(entt::registry* registry);
+    explicit Ball(entt::registry* registry);
 
     void direction(const glm::vec2 & dir);
     glm::vec2 direction() const;

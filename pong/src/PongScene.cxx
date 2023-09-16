@@ -10,10 +10,10 @@
 
 #include "../../api/event/Sound.h"
 
-PongScene::PongScene(entt::registry* registry, const boost::shared_ptr<entt::dispatcher>& dispatcher) : 
+PongScene::PongScene(entt::registry* registry, const boost::shared_ptr<entt::dispatcher>& dispatcher) :
     dispatcher_(dispatcher),
     registry_(registry),
-    left_(registry), 
+    left_(registry),
     right_(registry),
     ball_(registry) {
     left_.color(glm::vec3(1.0f, 1.0f, 1.0f));

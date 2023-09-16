@@ -5,11 +5,10 @@
 
 #include "Ball.h"
 
-#include "../../api/ecs/component/Color3.h"
-#include "../../api/ecs/component/Position2D.h"
-
 #include <cmath>
 
+#include "../../api/ecs/component/Color3.h"
+#include "../../api/ecs/component/Position2D.h"
 
 Ball::Ball(entt::registry* registry) : registry_(registry) {
     id_ = registry->create();
