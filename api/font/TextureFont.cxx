@@ -1,6 +1,6 @@
 /**
  * Vertical3D
- * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
 #include "TextureFont.h"
@@ -82,8 +82,8 @@ namespace v3d::font {
         return true;
     }
 
-    TextureFont::TextureFont(boost::shared_ptr<v3d::image::TextureAtlas> atlas, const std::string& filename, float size, const boost::shared_ptr<v3d::log::Logger> & logger) :
-        atlas_(atlas),
+    TextureFont::TextureFont(const std::string& filename, float size, const boost::shared_ptr<v3d::log::Logger> & logger) :
+        atlas_(nullptr),
         filename_(filename),
         size_(size),
         height_(0),
@@ -127,6 +127,12 @@ namespace v3d::font {
         linegap_ = height_ - ascender_ + descender_;
 
         freetype_->release();
+    }
+
+    /**
+     **/
+    void TextureFont::atlas(boost::shared_ptr<v3d::image::TextureAtlas> atlas) {
+        atlas_ = atlas;
     }
 
     boost::shared_ptr<TextureFont::Glyph> TextureFont::createGlyph() {
@@ -205,6 +211,10 @@ namespace v3d::font {
     }
 
     bool TextureFont::loadGlyphs(const wchar_t* charcodes) {
+        if (!atlas_) {
+            return false;
+        }
+
         if (!freetype_->loadFace(filename_, size_)) {
             return false;
         }
