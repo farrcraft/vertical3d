@@ -1,6 +1,6 @@
 /**
  * Vertical3D
- * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
 #pragma once
@@ -20,7 +20,8 @@ namespace v3d::font {
 
         void charcodes(const wchar_t * charcodes);
 
-        boost::shared_ptr<TextureFont> load(const std::string & filename, float size);
+        boost::shared_ptr<TextureFont> find(const std::string & filename, float size);
+        void add(boost::shared_ptr<TextureFont> font);
         bool remove(boost::shared_ptr<TextureFont> font);
 
         boost::shared_ptr<v3d::image::TextureAtlas> atlas();
