@@ -19,7 +19,7 @@
 namespace v3d::asset {
     class Manager;
 
-    using ParameterValue = std::variant<unsigned int, std::string>;
+    using ParameterValue = std::variant<unsigned int, float, std::string>;
 
     /**
      * The base interface for asset loaders
