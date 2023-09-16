@@ -6,11 +6,11 @@ GameState::GameState()
 
 void GameState::pause(bool state)
 {
-	paused_ = state;
+    paused_ = state;
 }
 
 bool GameState::paused() const
 {
-	return paused_;
+    return paused_;
 }
 

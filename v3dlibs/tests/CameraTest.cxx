@@ -4,43 +4,43 @@
 
 BOOST_AUTO_TEST_CASE( camera_test )
 {
-	v3D::Camera camera;
+    v3D::Camera camera;
 
-	// orthographic
-	camera.orthographic(true);
-	bool ortho = camera.orthographic();
-	BOOST_CHECK_EQUAL(ortho, true);
-	camera.orthographic(false);
-	ortho = camera.orthographic();
-	BOOST_CHECK_EQUAL(ortho, false);
+    // orthographic
+    camera.orthographic(true);
+    bool ortho = camera.orthographic();
+    BOOST_CHECK_EQUAL(ortho, true);
+    camera.orthographic(false);
+    ortho = camera.orthographic();
+    BOOST_CHECK_EQUAL(ortho, false);
 
-	// unproject
+    // unproject
 
-	// project
+    // project
 
-	// createProjection
+    // createProjection
 
-	// createView
+    // createView
 
-	// projection
+    // projection
 
-	// view
+    // view
 
-	// pan
+    // pan
 
-	// tilt
+    // tilt
 
-	// zoom
+    // zoom
 
-	// dolly
+    // dolly
 
-	// truck
+    // truck
 
-	// pedestal
+    // pedestal
 
-	// orthoFactor
+    // orthoFactor
 
-	// rotate
+    // rotate
 
 
 }
