@@ -9,7 +9,6 @@
 
 #include "../event/KeyDown.h"
 #include "../event/KeyUp.h"
-#include "../event/Source.h"
 
 namespace v3d::input {
 
@@ -292,7 +291,8 @@ namespace v3d::input {
         }
 
         // trigger an event source event so any mappers can propogate any mapped events
-        v3d::event::Source source(keyName, context_);
+        v3d::event::Event source(keyName, context_);
+        source.type(v3d::event::Type::Source);
         v3d::event::EventData keyState = pressed;
         source.data(keyState);
         dispatcher_->trigger(source);
