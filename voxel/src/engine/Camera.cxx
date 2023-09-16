@@ -14,14 +14,14 @@
 #include <glm/gtx/norm.hpp>
 
 Camera::Camera() :
-	behavior_(CAMERA_BEHAVIOR_FLIGHT),
-	fovx_(90.0f),
-	near_(0.1f),
-	far_(1000.0f),
-	aspect_(1.0f),
-	pitch_(0.0f),
-	eye_(0.0f, 0.0f, 0.0f),
-	xAxis_(1.0f, 0.0f, 0.0f),
+    behavior_(CAMERA_BEHAVIOR_FLIGHT),
+    fovx_(90.0f),
+    near_(0.1f),
+    far_(1000.0f),
+    aspect_(1.0f),
+    pitch_(0.0f),
+    eye_(0.0f, 0.0f, 0.0f),
+    xAxis_(1.0f, 0.0f, 0.0f),
     yAxis_(0.0f, 1.0f, 0.0f),
     zAxis_(0.0f, 0.0f, 1.0f),
     direction_(0.0f, 0.0f, -1.0f),
@@ -36,67 +36,67 @@ Camera::Camera() :
 
 const glm::vec3 &Camera::acceleration() const
 { 
-	return acceleration_; 
+    return acceleration_; 
 }
 
 Camera::CameraBehavior Camera::behavior() const
 { 
-	return behavior_;
+    return behavior_;
 }
 
 const glm::vec3 &Camera::currentVelocity() const
 { 
-	return currentVelocity_; 
+    return currentVelocity_; 
 }
 
 const glm::vec3 &Camera::position() const
 { 
-	return eye_;
+    return eye_;
 }
 
 const glm::mat4 &Camera::projection() const
 { 
-	return projection_;
+    return projection_;
 }
 
 const glm::vec3 &Camera::velocity() const
 { 
-	return velocity_; 
+    return velocity_; 
 }
 
 const glm::vec3 &Camera::direction() const
 { 
-	return direction_;
+    return direction_;
 }
 
 const glm::mat4 &Camera::view() const
 { 
-	return view_;
+    return view_;
 }
 
 const glm::vec3 &Camera::xAxis() const
 {
-	return xAxis_;
+    return xAxis_;
 }
 
 const glm::vec3 &Camera::yAxis() const
 { 
-	return yAxis_; 
+    return yAxis_; 
 }
 
 const glm::vec3 &Camera::zAxis() const
 { 
-	return zAxis_; 
+    return zAxis_; 
 }
 
 bool Camera::dirty() const
 {
-	return dirty_;
+    return dirty_;
 }
 
 void Camera::dirty(bool status)
 {
-	dirty_ = status;
+    dirty_ = status;
 }
 
 void Camera::lookAt(const glm::vec3 &target)
@@ -112,9 +112,9 @@ void Camera::lookAt(const glm::vec3 &eye, const glm::vec3 &target, const glm::ve
 
     direction_ = -zAxis_;
 
-	xAxis_ = glm::normalize(glm::cross(up, zAxis_));
+    xAxis_ = glm::normalize(glm::cross(up, zAxis_));
 
-	yAxis_ = glm::normalize(glm::cross(zAxis_, xAxis_));
+    yAxis_ = glm::normalize(glm::cross(zAxis_, xAxis_));
 
     view_[0][0] = xAxis_.x;
     view_[1][0] = xAxis_.y;
@@ -132,15 +132,15 @@ void Camera::lookAt(const glm::vec3 &eye, const glm::vec3 &target, const glm::ve
     view_[3][2] = -glm::dot(zAxis_, eye);
 
     // Extract the pitch angle from the view matrix.
-	pitch_ = glm::degrees(-asinf(view_[1][2]));
+    pitch_ = glm::degrees(-asinf(view_[1][2]));
 
-	dirty_ = true;
+    dirty_ = true;
 }
 
 void Camera::move(float dx, float dy, float dz)
 {
 
-	glm::vec3 eye = calculateMovement(glm::vec3(dx, dy, dz));
+    glm::vec3 eye = calculateMovement(glm::vec3(dx, dy, dz));
     position(eye);
 }
 
@@ -150,7 +150,7 @@ glm::vec3 Camera::calculateMovement(const glm::vec3 & delta)
     // world units upwards or downwards; and dz world units forwards
     // or backwards.
 
-	glm::vec3 eye = eye_;
+    glm::vec3 eye = eye_;
     glm::vec3 forwards;
 
     if (behavior_ == CAMERA_BEHAVIOR_FIRST_PERSON)
@@ -159,7 +159,7 @@ glm::vec3 Camera::calculateMovement(const glm::vec3 & delta)
         // z axis as doing so will cause the camera to move more slowly as the
         // camera's view approaches 90 degrees straight up and down.
 
-		forwards = glm::normalize(glm::cross(glm::vec3(0.0f, 1.0f, 0.0f), xAxis_));
+        forwards = glm::normalize(glm::cross(glm::vec3(0.0f, 1.0f, 0.0f), xAxis_));
     }
     else
     {
@@ -170,7 +170,7 @@ glm::vec3 Camera::calculateMovement(const glm::vec3 & delta)
     eye += glm::vec3(0.0f, 1.0f, 0.0f) * delta.y;
     eye += forwards * delta.z;
 
-	return eye;
+    return eye;
 }
 
 void Camera::move(const glm::vec3 &direction, const glm::vec3 &amount)
@@ -190,7 +190,7 @@ void Camera::perspective(float fovx, float aspect, float znear, float zfar)
     // Construct a projection matrix based on the horizontal field of view
     // 'fovx' rather than the more traditional vertical field of view 'fovy'.
 
-	float e = 1.0f / tanf(glm::radians(fovx) / 2.0f);
+    float e = 1.0f / tanf(glm::radians(fovx) / 2.0f);
     float aspectInv = 1.0f / aspect;
     float fovy = 2.0f * atanf(aspectInv / e);
     float xScale = 1.0f / tanf(0.5f * fovy);
@@ -229,12 +229,12 @@ void Camera::rotate(float headingDegrees, float pitchDegrees, float rollDegrees)
 
     switch (behavior_)
     {
-	    case CAMERA_BEHAVIOR_FIRST_PERSON:
-		    rotateFirstPerson(headingDegrees, pitchDegrees);
-			break;
-	    case CAMERA_BEHAVIOR_FLIGHT:
-		    rotateFlight(headingDegrees, pitchDegrees, rollDegrees);
-			break;
+        case CAMERA_BEHAVIOR_FIRST_PERSON:
+            rotateFirstPerson(headingDegrees, pitchDegrees);
+            break;
+        case CAMERA_BEHAVIOR_FLIGHT:
+            rotateFlight(headingDegrees, pitchDegrees, rollDegrees);
+            break;
     }
 
     updateViewMatrix(true);
@@ -247,7 +247,7 @@ void Camera::rotateFlight(float headingDegrees, float pitchDegrees, float rollDe
     // Rotate camera's existing x and z axes about its existing y axis.
     if (headingDegrees != 0.0f)
     {
-		rotMtx = glm::rotate(rotMtx, headingDegrees, yAxis_);
+        rotMtx = glm::rotate(rotMtx, headingDegrees, yAxis_);
         xAxis_ = glm::vec3(glm::vec4(xAxis_, 0.0f) * rotMtx);
         zAxis_ = glm::vec3(glm::vec4(zAxis_, 0.0f) * rotMtx);
     }
@@ -322,7 +322,7 @@ void Camera::behavior(CameraBehavior newBehavior)
         // Moving from flight-simulator mode to first-person.
         // Need to ignore camera roll, but retain existing pitch and heading.
 
-		lookAt(eye_, eye_ - zAxis_, glm::vec3(0.0f, 1.0f, 0.0f));
+        lookAt(eye_, eye_ - zAxis_, glm::vec3(0.0f, 1.0f, 0.0f));
     }
 
     behavior_ = newBehavior;
@@ -362,8 +362,8 @@ void Camera::velocity(const glm::vec3 &velocity)
 
 glm::vec3 Camera::calculateDisplacement(const glm::vec3 &direction, float elapsedTimeSec)
 {
-	glm::vec3 displacement(0.0f);
-	if (glm::length2(currentVelocity_) != 0.0f)
+    glm::vec3 displacement(0.0f);
+    if (glm::length2(currentVelocity_) != 0.0f)
     {
         // Only move the camera if the velocity vector is not of zero length.
         // Doing this guards against the camera slowly creeping around due to
@@ -380,22 +380,22 @@ glm::vec3 Camera::calculateDisplacement(const glm::vec3 &direction, float elapse
         // state when the camera is no longer moving along that direction. To
         // account for this the camera's current velocity is also checked.
 
-		if (direction.x == 0.0f && glm::epsilonEqual(currentVelocity_.x, 0.0f, glm::epsilon<float>()))
-		{
+        if (direction.x == 0.0f && glm::epsilonEqual(currentVelocity_.x, 0.0f, glm::epsilon<float>()))
+        {
             displacement.x = 0.0f;
-		}
+        }
 
-		if (direction.y == 0.0f && glm::epsilonEqual(currentVelocity_.y, 0.0f, glm::epsilon<float>()))
-		{
+        if (direction.y == 0.0f && glm::epsilonEqual(currentVelocity_.y, 0.0f, glm::epsilon<float>()))
+        {
             displacement.y = 0.0f;
-		}
+        }
 
-		if (direction.z == 0.0f && glm::epsilonEqual(currentVelocity_.z, 0.0f, glm::epsilon<float>()))
-		{
+        if (direction.z == 0.0f && glm::epsilonEqual(currentVelocity_.z, 0.0f, glm::epsilon<float>()))
+        {
             displacement.z = 0.0f;
-		}
-	}
-	return displacement;
+        }
+    }
+    return displacement;
 }
 
 void Camera::updatePosition(const glm::vec3 &direction, float elapsedTimeSec)
@@ -404,8 +404,8 @@ void Camera::updatePosition(const glm::vec3 &direction, float elapsedTimeSec)
     // assumed here to somewhat simplify the calculations. The direction vector
     // is in the range [-1,1].
 
-	glm::vec3 displacement = calculateDisplacement(direction, elapsedTimeSec);
-	move(displacement.x, displacement.y, displacement.z);
+    glm::vec3 displacement = calculateDisplacement(direction, elapsedTimeSec);
+    move(displacement.x, displacement.y, displacement.z);
 
     // Continuously update the camera's velocity vector even if the camera
     // hasn't moved during this call. When the camera is no longer being moved
@@ -514,8 +514,8 @@ void Camera::updateViewMatrix(bool orthogonalizeAxes)
     {
         // Regenerate the camera's local axes to orthogonalize them.
         zAxis_ = glm::normalize(zAxis_);
-		yAxis_ = glm::normalize(glm::cross(zAxis_, xAxis_));
-		xAxis_ = glm::normalize(glm::cross(yAxis_, zAxis_));
+        yAxis_ = glm::normalize(glm::cross(zAxis_, xAxis_));
+        xAxis_ = glm::normalize(glm::cross(yAxis_, zAxis_));
         direction_ = -zAxis_;
     }
 
@@ -540,5 +540,5 @@ void Camera::updateViewMatrix(bool orthogonalizeAxes)
     view_[2][3] = 0.0f;
     view_[3][3] = 1.0f;
 
-	dirty_ = true;
+    dirty_ = true;
 }

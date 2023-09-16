@@ -4,16 +4,16 @@
 namespace v3D
 {
 
-	class Visitor
-	{
-		public:
-			Visitor();
-			virtual ~Visitor();
+    class Visitor
+    {
+        public:
+            Visitor();
+            virtual ~Visitor();
 
-			//virtual void visit(Particle * particle) = 0;
+            //virtual void visit(Particle * particle) = 0;
 
-		private:
-	};
+        private:
+    };
 
 }; // end namespace v3D
 

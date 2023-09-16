@@ -18,19 +18,19 @@ class Camera;
 
 class Scene
 {
-	public:
-		Scene();
+    public:
+        Scene();
 
-		void tick(unsigned int delta);
+        void tick(unsigned int delta);
 
-		boost::shared_ptr<Player> player();
-		boost::shared_ptr<GameState> state();
-		boost::shared_ptr<Camera> camera();
+        boost::shared_ptr<Player> player();
+        boost::shared_ptr<GameState> state();
+        boost::shared_ptr<Camera> camera();
 
-		boost::unordered_map<unsigned int, boost::shared_ptr<Chunk> > & chunks();
+        boost::unordered_map<unsigned int, boost::shared_ptr<Chunk> > & chunks();
 
-	private:
-		boost::shared_ptr<Player> player_;
-		boost::shared_ptr<GameState> state_;
-		boost::unordered_map<unsigned int, boost::shared_ptr<Chunk> > chunks_;
+    private:
+        boost::shared_ptr<Player> player_;
+        boost::shared_ptr<GameState> state_;
+        boost::unordered_map<unsigned int, boost::shared_ptr<Chunk> > chunks_;
 };

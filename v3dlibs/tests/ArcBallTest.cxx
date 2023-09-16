@@ -4,17 +4,17 @@
 
 BOOST_AUTO_TEST_CASE( arcball_test )
 {
-	v3D::ArcBall ball;
+    v3D::ArcBall ball;
 
-	// bounds
-	ball.bounds(0.5f, 0.5f);
+    // bounds
+    ball.bounds(0.5f, 0.5f);
 
-	// click
-	v3D::Vector2 point(1.0f, 1.0f);
-	ball.click(point);
+    // click
+    v3D::Vector2 point(1.0f, 1.0f);
+    ball.click(point);
 
-	// map
+    // map
 
-	// drag
+    // drag
 
 }

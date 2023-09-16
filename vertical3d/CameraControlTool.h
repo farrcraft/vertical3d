@@ -9,10 +9,7 @@
 
 #include "Tool.h"
 #include "ViewPort.h"
-
-#include "../v3dlibs/type/ArcBall.h"
-#include "../v3dlibs/input/MouseEventListener.h"
-#include "../v3dlibs/input/MouseDevice.h"
+#include "../api/type/ArcBall.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -20,10 +17,9 @@
  * The CameraControlTool provides interactive manipulation of a Camera through a ViewPort.
  */
 class CameraControlTool :
-    public v3d::Tool,
-    public v3d::input::MouseEventListener {
+    public v3d::Tool {
  public:
-        CameraControlTool(const boost::shared_ptr<v3d::input::MouseDevice> & mouse, const boost::shared_ptr<v3d::ViewPort> & view);
+        CameraControlTool(const boost::shared_ptr<v3d::ViewPort> & view);
 
         typedef enum CameraMode {
             CAMERA_MODE_ZOOM,
@@ -51,6 +47,5 @@ class CameraControlTool :
         CameraMode mode_;
         boost::shared_ptr<v3d::ViewPort> view_;
         v3d::type::ArcBall arcball_;
-        boost::shared_ptr<v3d::input::MouseDevice> mouse_;
 };
 
