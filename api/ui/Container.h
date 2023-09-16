@@ -34,6 +34,7 @@ namespace v3d::ui {
         void visible(bool vis);
 
         void add(const boost::shared_ptr<Component>& component);
+        boost::shared_ptr<Component> get(const std::string& name) const;
 
      private:
         std::string name_;
