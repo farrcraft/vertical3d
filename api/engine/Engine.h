@@ -81,6 +81,7 @@ namespace v3d::engine {
 
          std::string appPath_;
          int features_;
+         bool needShutdown_;
          boost::shared_ptr<v3d::input::Engine> inputEngine_;
          boost::shared_ptr<v3d::event::Engine> eventEngine_;
     };

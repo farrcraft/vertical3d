@@ -23,7 +23,8 @@ namespace v3d::engine {
      **/
     Engine::Engine(const std::string& appPath) :
         appPath_(appPath),
-        features_(0) {
+        features_(0),
+        needShutdown_(false) {
     }
 
     bool Engine::registerEventMappings() {
@@ -119,6 +120,8 @@ namespace v3d::engine {
                 LOG_ERROR(logger_) << "SDL could not initialize! SDL_Error: " << SDL_GetError();
                 return false;
             }
+            // We've reached a point of initialization that will require a shutdown
+            needShutdown_ = true;
 
             if (features & Feature::Window2D) {
                 window_ = boost::make_shared<v3d::render::realtime::Window2D>(logger_);
@@ -158,6 +161,9 @@ namespace v3d::engine {
     /**
      **/
     bool Engine::shutdown() {
+        if (!needShutdown_) {
+            return true;
+        }
         LOG_INFO(logger_) << "Shutting down engine...";
         if (features_ & Feature::Window2D || features_ & Feature::Window3D) {
             window_->destroy();
