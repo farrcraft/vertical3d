@@ -74,6 +74,7 @@ namespace v3d::engine {
         boost::shared_ptr<v3d::render::realtime::Window> window_;
         boost::shared_ptr<v3d::asset::Manager> assetManager_;
         boost::shared_ptr<entt::dispatcher> dispatcher_;
+        boost::shared_ptr<v3d::event::Engine> eventEngine_;
         entt::registry registry_;
 
      private:
@@ -83,7 +84,6 @@ namespace v3d::engine {
          int features_;
          bool needShutdown_;
          boost::shared_ptr<v3d::input::Engine> inputEngine_;
-         boost::shared_ptr<v3d::event::Engine> eventEngine_;
     };
 
 };  // namespace v3d::engine
