@@ -5,6 +5,8 @@
 
 #include "Surface.h"
 
+#include <string>
+
 namespace v3d::render::realtime {
     /**
      **/
@@ -16,7 +18,7 @@ namespace v3d::render::realtime {
         gmask = 0x00ff0000 >> shift;
         bmask = 0x0000ff00 >> shift;
         amask = 0x000000ff >> shift;
-#else // little endian, like x86
+#else  // little endian, like x86
         rmask = 0x000000ff;
         gmask = 0x0000ff00;
         bmask = 0x00ff0000;

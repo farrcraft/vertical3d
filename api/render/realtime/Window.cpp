@@ -31,8 +31,7 @@ namespace v3d::render::realtime {
         int windowFlags;
         if (hasOpenGL) {
             windowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN;
-        }
-        else {
+        } else {
             windowFlags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN;
         }
         window_ = SDL_CreateWindow("Vertical3D", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width_, height_, windowFlags);
@@ -87,4 +86,4 @@ namespace v3d::render::realtime {
     void Window::warpCursor(int x, int y) {
         SDL_WarpMouseInWindow(window_, x, y);
     }
-};  // namespace v3d::ui
+};  // namespace v3d::render::realtime

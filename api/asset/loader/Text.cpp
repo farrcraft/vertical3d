@@ -17,7 +17,7 @@ namespace v3d::asset::loader {
 
     /**
      **/
-    Text::Text(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(manager, Type::TEXT, logger) {
+    Text::Text(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(manager, Type::Text, logger) {
     }
 
     /**
@@ -35,7 +35,7 @@ namespace v3d::asset::loader {
         file.seekg(0, std::ios::beg);
         file.read(&content[0], content.size());
         file.close();
-        boost::shared_ptr<Asset> text = boost::make_shared<v3d::asset::Text>(std::string(name), Type::TEXT, content);
+        boost::shared_ptr<Asset> text = boost::make_shared<v3d::asset::Text>(std::string(name), Type::Text, content);
 
         return text;
     }

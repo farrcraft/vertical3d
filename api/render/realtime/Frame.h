@@ -19,7 +19,7 @@ namespace v3d::render::realtime {
      public:
         /**
          **/
-        Frame(boost::shared_ptr<Context> context);
+        explicit Frame(boost::shared_ptr<Context> context);
 
         /**
          **/

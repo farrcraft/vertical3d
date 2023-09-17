@@ -1,7 +1,7 @@
 /**
  * Vertical3D
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
-**/
+ **/
 
 #include "PositionFixed2D.h"
 
@@ -16,8 +16,7 @@ namespace v3d::ecs::component {
         this->position_ = p.position_;
     }
 
-    PositionFixed2D& PositionFixed2D::operator=(PositionFixed2D&& p) noexcept
-    {
+    PositionFixed2D& PositionFixed2D::operator=(PositionFixed2D&& p) noexcept {
         if (this != &p) {
             this->position_ = p.position_;
         }

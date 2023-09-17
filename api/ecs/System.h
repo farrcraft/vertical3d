@@ -9,14 +9,14 @@
 
 namespace v3d::ecs {
 
-	class System {
-	public:
-		System(entt::registry& registry);
+    class System {
+     public:
+        explicit System(entt::registry* registry);
 
-		virtual bool tick() = 0;
+        virtual bool tick() = 0;
 
-	protected:
-		entt::registry& registry_;
-	};
+     protected:
+        entt::registry* registry_;
+    };
 
 };  // namespace v3d::ecs

@@ -5,51 +5,49 @@
 
 #pragma once
 
-#include <boost/shared_ptr.hpp>
-
 #include <vector>
 #include <string>
 #include <map>
 
-namespace v3d::gl
-{
-	class Shader;
+#include <boost/shared_ptr.hpp>
 
-	/**
-	 * A GLSL shader program
-	 */
-	class Program
-	{
-		public:
-			/**
-			 * Construct a new program a collection of shaders
-			 */
-			Program(std::vector<boost::shared_ptr<Shader>> & theShaders);
-			~Program() = default;
+namespace v3d::gl {
+    class Shader;
 
-			/**
-			 * Start using the program
-			 */
-			void enable();
+    /**
+     * A GLSL shader program
+     */
+    class Program {
+     public:
+        /**
+            * Construct a new program a collection of shaders
+            */
+        explicit Program(const std::vector<boost::shared_ptr<Shader>>& theShaders);
+        ~Program() = default;
 
-			/**
-			 * Stop using the program
-			 */
-			void disable();
+        /**
+            * Start using the program
+            */
+        void enable();
 
-			/**
-			 * Get the id of a uniform shader program variable
-			 *
-			 */
-			unsigned int uniform(const std::string & name);
+        /**
+            * Stop using the program
+            */
+        void disable();
 
-		protected:
-			void shaders(std::vector<boost::shared_ptr<Shader>> & theShaders);
+        /**
+            * Get the id of a uniform shader program variable
+            *
+            */
+        unsigned int uniform(const std::string & name);
 
-		private:
-			unsigned int id_;
-			std::map<std::string, unsigned int> uniforms_;
-			bool enabled_;
-	};
+     protected:
+        void shaders(const std::vector<boost::shared_ptr<Shader>>& theShaders);
 
-}; // end namespace v3D
+     private:
+        unsigned int id_;
+        std::map<std::string, unsigned int> uniforms_;
+        bool enabled_;
+    };
+
+};  // end namespace v3d::gl

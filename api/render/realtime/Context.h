@@ -11,7 +11,7 @@ namespace v3d::render::realtime {
     /**
      **/
     class Context {
-    public:
+     public:
         /**
          **/
         Context() = default;

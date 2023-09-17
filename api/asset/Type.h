@@ -9,15 +9,16 @@ namespace v3d::asset {
     /**
      **/
     enum class Type {
-        TYPE_UNDEFINED = 0,
-        IMAGE_PNG = 1,
-        IMAGE_JPEG = 2,
-        JSON_DOCUMENT = 3,
-        AUDIO_WAV = 4,
-        TEXT = 5,
-        SHADER_PROGRAM = 6,
-        SHADER_VERTEX = 7,
-        SHADER_FRAGMENT = 8,
-        FONT_2D = 9
+        Undefined = 0,
+        ImagePng = 1,
+        ImageJpeg = 2,
+        JsonDocument = 3,
+        AudioWav = 4,
+        Text = 5,
+        ShaderProgram = 6,
+        ShaderVertex = 7,
+        ShaderFragment = 8,
+        Font2D = 9,
+        TextureFont = 10
     };
 };  // namespace v3d::asset

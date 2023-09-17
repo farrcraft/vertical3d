@@ -11,13 +11,13 @@
 
 class TerrainMap
 {
-	public:
-		void generate();
+    public:
+        void generate();
 
-		float height(unsigned int x, unsigned int z);
+        float height(unsigned int x, unsigned int z);
 
-	private:
-		// pimpl
-		class Noise;
-		boost::shared_ptr<Noise> noise_;
+    private:
+        // pimpl
+        class Noise;
+        boost::shared_ptr<Noise> noise_;
 };

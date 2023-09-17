@@ -1,7 +1,7 @@
 /**
  * Vertical3D
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
-**/
+ **/
 
 #include "Position2D.h"
 
@@ -16,8 +16,7 @@ namespace v3d::ecs::component {
         this->position_ = p.position_;
     }
 
-    Position2D& Position2D::operator=(Position2D&& p) noexcept
-    {
+    Position2D& Position2D::operator=(Position2D&& p) noexcept {
         if (this != &p) {
             this->position_ = p.position_;
         }

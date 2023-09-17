@@ -7,7 +7,7 @@
 
 namespace v3d::ui::component {
 
-    Icon::Icon(boost::shared_ptr<v3d::gl::GLTexture> texture) : texture_(texture) {
+    Icon::Icon(boost::shared_ptr<v3d::gl::GLTexture> texture) : texture_(texture), Component(component::Type::ICON) {
     }
 
     Icon::~Icon() {

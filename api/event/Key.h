@@ -17,7 +17,7 @@ namespace v3d::event {
      public:
         /**
          **/
-        Key(const std::string& name, bool pressed) noexcept;
+        Key(const std::string& name, const boost::shared_ptr<Context>& context, bool pressed) noexcept;
 
         /**
          **/

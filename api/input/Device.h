@@ -1,9 +1,11 @@
 /**
  * Vertical3D
- * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
 #pragma once
+
+#include "../event/Context.h"
 
 #include <entt/entt.hpp>
 #include <boost/shared_ptr.hpp>
@@ -17,7 +19,7 @@ namespace v3d::input {
      public:
         /**
          **/
-        Device(const boost::shared_ptr<entt::dispatcher> &dispatcher);
+        explicit Device(const boost::shared_ptr<v3d::event::Context> & context, const boost::shared_ptr<entt::dispatcher> &dispatcher);
 
         /**
          **/
@@ -34,6 +36,7 @@ namespace v3d::input {
         virtual bool handleEvent(const SDL_Event& event) = 0;
 
      protected:
+        boost::shared_ptr<v3d::event::Context> context_;
         boost::shared_ptr<entt::dispatcher> dispatcher_;
     };
 };  // namespace v3d::input

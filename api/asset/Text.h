@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "Asset.h"
 
 #include <boost/json.hpp>
@@ -14,7 +16,7 @@ namespace v3d::asset {
      * A simple text asset
      **/
     class Text final : public Asset {
-    public:
+     public:
         /**
          **/
         Text(const std::string& name, Type t, const std::string& content);
@@ -23,7 +25,7 @@ namespace v3d::asset {
          **/
         std::string const& content();
 
-    private:
+     private:
         std::string content_;
     };
 };  // namespace v3d::asset

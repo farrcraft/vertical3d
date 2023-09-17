@@ -1,6 +1,6 @@
 /**
  * Vertical3D
- * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
 #include "Engine.h"
@@ -23,7 +23,8 @@ namespace v3d::engine {
      **/
     Engine::Engine(const std::string& appPath) :
         appPath_(appPath),
-        features_(0) {
+        features_(0),
+        needShutdown_(false) {
     }
 
     bool Engine::registerEventMappings() {
@@ -56,10 +57,10 @@ namespace v3d::engine {
                 return false;
             }
             std::string sourceName = boost::json::value_to<std::string>(source.at("name"));
-            std::string sourceScope = boost::json::value_to<std::string>(source.at("scope"));
-            std::string sourceContext = boost::json::value_to<std::string>(source.at("context"));
-
-            v3d::event::Event sourceEvent(sourceName, sourceScope, sourceContext);
+            std::string sourceContextName = boost::json::value_to<std::string>(source.at("context"));
+            boost::shared_ptr<v3d::event::Context> sourceContext = eventEngine_->resolveContext(sourceContextName);
+            v3d::event::Event sourceEvent(sourceName, sourceContext);
+            sourceEvent.type(v3d::event::Type::Source);
 
             auto const destination = mapping.at("destination");
             if (!destination.is_object()) {
@@ -67,10 +68,10 @@ namespace v3d::engine {
                 return false;
             }
             std::string destinationName = boost::json::value_to<std::string>(destination.at("name"));
-            std::string destinationScope = boost::json::value_to<std::string>(destination.at("scope"));
-            std::string destinationContext = boost::json::value_to<std::string>(destination.at("context"));
-
-            v3d::event::Event destinationEvent(destinationName, destinationScope, destinationContext);
+            std::string destinationContextName = boost::json::value_to<std::string>(destination.at("context"));
+            boost::shared_ptr<v3d::event::Context> destinationContext = eventEngine_->resolveContext(destinationContextName);
+            v3d::event::Event destinationEvent(destinationName, destinationContext);
+            destinationEvent.type(v3d::event::Type::Destination);
             mapper->map(sourceEvent, destinationEvent);
         }
         eventEngine_->addMapper(mapper);
@@ -110,7 +111,7 @@ namespace v3d::engine {
             devices |= v3d::input::DeviceType::Mouse;
         }
         if (devices != 0) {
-            inputEngine_ = boost::make_shared<v3d::input::Engine>(dispatcher_, devices);
+            inputEngine_ = boost::make_shared<v3d::input::Engine>(eventEngine_, dispatcher_, devices);
         }
 
         if (features_ & Feature::Window2D || features_ & Feature::Window3D) {
@@ -119,14 +120,15 @@ namespace v3d::engine {
                 LOG_ERROR(logger_) << "SDL could not initialize! SDL_Error: " << SDL_GetError();
                 return false;
             }
+            // We've reached a point of initialization that will require a shutdown
+            needShutdown_ = true;
 
             if (features & Feature::Window2D) {
                 window_ = boost::make_shared<v3d::render::realtime::Window2D>(logger_);
-            }
-            else {
+            } else {
                 window_ = boost::make_shared<v3d::render::realtime::Window3D>(logger_);
             }
-            
+
             // if there is a window config with dimensions specified, we'll use those.
             if (features_ & Feature::Config) {
                 boost::shared_ptr<v3d::asset::Json> windowConfig = config_->get(v3d::config::Type::Window);
@@ -146,8 +148,7 @@ namespace v3d::engine {
                     if (!boost::static_pointer_cast<v3d::render::realtime::Window2D>(window_)->create(width, height, logicalWidth, logicalHeight)) {
                         return false;
                     }
-                }
-                else {
+                } else {
                     if (!window_->create(width, height)) {
                         return false;
                     }
@@ -160,6 +161,9 @@ namespace v3d::engine {
     /**
      **/
     bool Engine::shutdown() {
+        if (!needShutdown_) {
+            return true;
+        }
         LOG_INFO(logger_) << "Shutting down engine...";
         if (features_ & Feature::Window2D || features_ & Feature::Window3D) {
             window_->destroy();

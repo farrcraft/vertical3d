@@ -37,7 +37,7 @@ bool::PongEngine::initialize() {
     soundEngine_ = boost::make_shared<v3d::audio::Engine>(logger_, dispatcher_);
     soundEngine_->initialize();
 
-    vgui_ = boost::make_shared<v3d::ui::Engine>(logger_);
+    vgui_ = boost::make_shared<v3d::ui::Engine>(eventEngine_, logger_);
 
     if (config_) {
         boost::shared_ptr<v3d::asset::Json> soundConfig = config_->get(v3d::config::Type::Sound);
@@ -53,7 +53,7 @@ bool::PongEngine::initialize() {
         }
     }
 
-    renderer_ = boost::make_shared<PongRenderer>(logger_, assetManager_, registry_);
+    renderer_ = boost::make_shared<PongRenderer>(logger_, assetManager_, &registry_);
     scene_ = boost::make_shared<PongScene>(&registry_, dispatcher_);
 
     // register game commands
@@ -98,6 +98,7 @@ bool::PongEngine::initialize() {
 
         setMenuItemDefaults(boost::dynamic_pointer_cast<Luxa::Menu, Luxa::Component>(vgui_->getComponent("game-menu")));
     */
+    return true;
 }
 
 /**
@@ -174,7 +175,10 @@ bool PongEngine::setGameMode(const std::string_view& mode) {
 }
 */
 void PongEngine::handleEvent(const v3d::event::Event& event) {
-    if (event.scope() == "pong") {
+    boost::shared_ptr<v3d::ui::Container> menuContainer = vgui_->container("game-menu");
+    boost::shared_ptr<v3d::ui::component::Menu> menu = boost::dynamic_pointer_cast<v3d::ui::component::Menu>(menuContainer->get("main-menu"));
+    bool vis = menu->visible();
+    if (event.context()->name() == "pong") {
         // play commands
         if (event.name() == "leftPaddleDown") {
             if (!scene_->state().paused()) {
@@ -188,9 +192,20 @@ void PongEngine::handleEvent(const v3d::event::Event& event) {
             if (!scene_->state().paused() && scene_->state().coop()) {
                 scene_->right().down(!scene_->right().down());
             }
+        } else if (event.name() == "showGameMenu") {
+            if (!vis) {
+                scene_->state().pause(true);
+                menu->visible(true);
+            } else {
+                // need to check if this is the top-level menu or not
+                // if this is a submenu, we just need to go back to the next menu up
+                // only if we're in the top-level menu do we want to resume
+                scene_->state().pause(false);
+                menu->visible(false);
+            }
         }
         return;
-    } else if (event.scope() == "ui") {
+    } else if (event.context()->name() == "ui") {
         if (event.name() == "setMaxScore") {
             boost::optional<v3d::event::EventData> data = event.data();
             if (data) {
@@ -215,15 +230,12 @@ void PongEngine::handleEvent(const v3d::event::Event& event) {
             return;
         }
 
-        boost::shared_ptr<Luxa::Menu> menu =
-            boost::dynamic_pointer_cast<Luxa::Menu, Luxa::Component>(vgui_->getComponent("game-menu"));
-        bool vis = menu->visible();
-
         if (event.name() == "showGameMenu") {
             if (!vis) {
                 scene_->state().pause(true);
                 menu->visible(true);
             } else {
+                // if we're at the top-level menu and not in a submenu, make the game active again
                 if (!menu->up()) {
                     scene_->state().pause(false);
                     menu->visible(false);
@@ -239,11 +251,9 @@ void PongEngine::handleEvent(const v3d::event::Event& event) {
 
         if (event.name() == "menuPrevious") {  // select the previous menu item
             menu->previous();
-        }
-        else if (event.name() == "menuNext") {  // select the next menu item
+        } else if (event.name() == "menuNext") {  // select the next menu item
             menu->next();
-        }
-        else if (event.name() == "selectMenu") {  // select the current menu item
+        } else if (event.name() == "selectMenu") {  // select the current menu item
             menu->activate();
             /*
             boost::shared_ptr<Luxa::MenuItem> item = menu->active();

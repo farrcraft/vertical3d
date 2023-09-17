@@ -7,30 +7,38 @@
 
 #include <string>
 
-#include "../../v3dlibs/hookah/Window.h"
-#include "../../v3dlibs/command/CommandDirectory.h"
-#include "../../v3dlibs/input/KeyboardDevice.h"
-#include "../../v3dlibs/input/MouseDevice.h"
-#include "../../v3dlibs/gui/InputEventAdapter.h"
+#include "../../api/engine/Engine.h"
 #include "../../api/log/Logger.h"
+#include "../../api/event/Event.h"
+
+#include <entt/entt.hpp>
 
 class TetrisScene;
 class TetrisRenderer;
 
-class Controller {
+class Controller final : public v3d::engine::Engine {
  public:
-    Controller();
+    Controller(const std::string& path);
 
-    bool run();
-    bool exec(const v3d::command::CommandInfo & command, const std::string & param);
+    bool initialize();
+    /**
+     * @return bool
+     **/
+    bool tick();
+
+    /**
+     **/
+    bool render();
+
+    /**
+     * @return bool
+     **/
+    bool shutdown();
+
+    void handleEvent(const v3d::event::Event& event);
 
  private:
     boost::shared_ptr<TetrisScene> scene_;
     boost::shared_ptr<TetrisRenderer> renderer_;
-    boost::shared_ptr<Hookah::Window> window_;
-    boost::shared_ptr<v3d::input::KeyboardDevice> keyboard_;
-    boost::shared_ptr<v3d::input::MouseDevice> mouse_;
-    v3d::command::CommandDirectory directory_;
-    boost::shared_ptr<v3d::input::InputEventAdapter> listenerAdapter_;
-    boost::shared_ptr<v3d::log::Logger> logger_;
+    entt::registry registry_;
 };

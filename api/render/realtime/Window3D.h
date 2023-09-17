@@ -15,7 +15,7 @@ namespace v3d::render::realtime {
     /**
     **/
     class Window3D final : public Window {
-    public:
+     public:
         Window3D(const boost::shared_ptr<v3d::log::Logger>& logger) noexcept;
 
         /**
@@ -28,8 +28,8 @@ namespace v3d::render::realtime {
          **/
         void destroy();
 
-    private:
+     private:
         SDL_GLContext context_;  // Part of window for now - could move to Context3D later...
     };
 
-};  // namespace v3d::ui
+};  // namespace v3d::render::realtime

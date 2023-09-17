@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "Asset.h"
 #include "../audio/AudioClip.h"
 
@@ -14,7 +16,7 @@ namespace v3d::asset {
     /**
      **/
     class Sound : public Asset {
-    public:
+     public:
         /**
          **/
         Sound(const std::string& name, Type t, boost::shared_ptr<v3d::audio::AudioClip> clip);
@@ -23,7 +25,7 @@ namespace v3d::asset {
          **/
         boost::shared_ptr<v3d::audio::AudioClip> clip();
 
-    private:
+     private:
         boost::shared_ptr<v3d::audio::AudioClip> clip_;
     };
 };  // namespace v3d::asset

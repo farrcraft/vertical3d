@@ -11,14 +11,13 @@
 #include "voxel/Voxel.h"
 #include "voxel/MeshBuilder.h"
 
+#include "../../api/asset/Manager.h"
 #include "../../api/log/Logger.h"
-#include "../../api/ui/Window.h"
 #include "../../api/gl/Program.h"
 
 #include <boost/shared_ptr.hpp>
 
 class Scene;
-class AssetLoader;
 class DebugOverlay;
 class ChunkBufferPool;
 
@@ -30,12 +29,12 @@ class Renderer {
     /**
      * Default Constructor
      */
-    Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_ptr<AssetLoader> & loader, const boost::shared_ptr<v3d::log::Logger> & logger);
+    Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager);
 
     /**
      * Draw the frame
      */
-    void draw(boost::shared_ptr<v3d::ui::Window> window);
+    void draw();
     /**
      * Resize the frame
      */

@@ -19,4 +19,4 @@ add_library("v3dlib_asset"
  "ShaderProgram.h" "ShaderProgram.cpp" 
  "loader/ShaderProgram.h" "loader/ShaderProgram.cpp" 
  "Font2D.h" "Font2D.cpp"
-"loader/Font2D.h" "loader/Font2D.cpp")
+"loader/Font2D.h" "loader/Font2D.cpp" "loader/TextureFont.h" "loader/TextureFont.cpp" "TextureFont.h" "TextureFont.cpp")

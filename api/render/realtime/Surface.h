@@ -19,7 +19,7 @@ namespace v3d::render::realtime {
         /**
          * Create an SDL surface from an image object
          **/
-        Surface(boost::shared_ptr<v3d::image::Image> image);
+        explicit Surface(boost::shared_ptr<v3d::image::Image> image);
 
         /**
          **/

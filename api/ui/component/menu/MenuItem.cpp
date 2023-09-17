@@ -6,14 +6,11 @@
 #include "MenuItem.h"
 #include "Menu.h"
 
-namespace v3d::ui {
+namespace v3d::ui::component {
 
-    MenuItem::MenuItem(menu::ItemType type, const std::string& label,
-        const std::string& cmd, const std::string& scope, const std::string& param) :
-        label_(label), type_(type), command_(cmd), scope_(scope), param_(param) {
-    }
-
-    void MenuItem::draw() const {
+    MenuItem::MenuItem(menu::ItemType type, const std::string& label) :
+        Component(component::Type::MENU_ITEM),
+        label_(label), type_(type) {
     }
 
     void MenuItem::label(const std::string& str) {
@@ -33,8 +30,13 @@ namespace v3d::ui {
         return submenu_;
     }
 
-    std::string MenuItem::command() const {
-        return command_;
+    void MenuItem::event(const v3d::event::Event &destination) {
+        event_ = destination;
+        event_.type(v3d::event::Type::Destination);
+    }
+
+    v3d::event::Event MenuItem::event() const {
+        return event_;
     }
 
     void MenuItem::menu(boost::weak_ptr<Menu> m) {
@@ -45,16 +47,8 @@ namespace v3d::ui {
         return menu_;
     }
 
-    std::string MenuItem::scope() const {
-        return scope_;
-    }
-
-    std::string MenuItem::param() const {
-        return param_;
-    }
-
     menu::ItemType MenuItem::type() const {
         return type_;
     }
 
-};  // namespace v3d::ui
+};  // namespace v3d::ui::component

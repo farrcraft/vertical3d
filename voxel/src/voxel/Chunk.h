@@ -16,41 +16,41 @@
 
 class Chunk
 {
-	public:
-		Chunk(TerrainMap & terrain, glm::ivec3 chunkPosition, unsigned int ceiling);
+    public:
+        Chunk(TerrainMap & terrain, glm::ivec3 chunkPosition, unsigned int ceiling);
 
-		void update();
-		void render();
+        void update();
+        void render();
 
-		void invalidate();
-		void dirty(bool state);
+        void invalidate();
+        void dirty(bool state);
 
-		/**
-		 * The number of voxels in single dimension of the chunk volume
-		 */
-		unsigned int size() const;
+        /**
+         * The number of voxels in single dimension of the chunk volume
+         */
+        unsigned int size() const;
 
-		boost::unordered_map<unsigned int, boost::shared_ptr<Voxel> > & blocks();
+        boost::unordered_map<unsigned int, boost::shared_ptr<Voxel> > & blocks();
 
-		bool empty() const;
-		bool dirty() const;
+        bool empty() const;
+        bool dirty() const;
 
-		/**
-		 * Check to see if a neighboring block exists with an opposing face that makes the checking block's face hidden
-		 *
-		 * @param face the block's face to check
-		 * @param position the position of the block
-		 */
-		bool hidden(Voxel::BlockFace face, const glm::ivec3 & position);
+        /**
+         * Check to see if a neighboring block exists with an opposing face that makes the checking block's face hidden
+         *
+         * @param face the block's face to check
+         * @param position the position of the block
+         */
+        bool hidden(Voxel::BlockFace face, const glm::ivec3 & position);
 
-		glm::ivec3 position() const;
+        glm::ivec3 position() const;
 
-		bool active(glm::ivec3 blockPosition) const;
+        bool active(glm::ivec3 blockPosition) const;
 
-	private:
-		boost::unordered_map<unsigned int, boost::shared_ptr<Voxel> > blocks_;
-		glm::ivec3 position_;
-		bool dirty_;
-		bool empty_;
-		unsigned int size_;
+    private:
+        boost::unordered_map<unsigned int, boost::shared_ptr<Voxel> > blocks_;
+        glm::ivec3 position_;
+        bool dirty_;
+        bool empty_;
+        unsigned int size_;
 };

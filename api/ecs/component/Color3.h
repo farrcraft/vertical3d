@@ -12,7 +12,7 @@ namespace v3d::ecs::component {
      * An RGB Color
      **/
     class Color3 final {
-    public:
+     public:
         Color3(const float red, const float green, const float blue) noexcept;
 
         /**
@@ -49,7 +49,8 @@ namespace v3d::ecs::component {
          * Move assignment
          **/
         Color3& operator=(Color3&&) noexcept;
-    private:
+
+     private:
         glm::vec3 color_;
     };
 

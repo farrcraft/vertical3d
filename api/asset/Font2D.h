@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "Asset.h"
 #include "../font/Font2D.h"
 

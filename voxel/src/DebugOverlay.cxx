@@ -1,6 +1,6 @@
 /**
  * Vertical3D
- * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
 #include "DebugOverlay.h"
@@ -14,12 +14,9 @@
 #include "../../api/font/TextureTextBuffer.h"
 #include "game/Player.h"
 
-#include "../../stark/AssetLoader.h"
-
 #include <boost/make_shared.hpp>
 
 DebugOverlay::DebugOverlay(boost::shared_ptr<Scene> scene, boost::shared_ptr<v3d::gl::Program> shaderProgram,
-    boost::shared_ptr<AssetLoader> loader,
     const boost::shared_ptr<v3d::log::Logger> & logger) :
     scene_(scene),
     enabled_(false) {

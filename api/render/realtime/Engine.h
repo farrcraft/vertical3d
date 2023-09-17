@@ -5,10 +5,10 @@
 
 #pragma once
 
- //#include <list>
+// #include <list>
 
 #include "Operation.h"
-//#include "Renderable.h"
+// #include "Renderable.h"
 #include "Window.h"
 
 #include "../../event/WindowResize.h"
@@ -23,10 +23,10 @@ namespace v3d::render::realtime {
      * it is the responsibility of the render engine to manage the rendering pipeline.
      **/
     class Engine {
-    public:
+     public:
         /**
          **/
-        Engine(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry& registry);
+        Engine(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry);
 
         /**
          **/
@@ -53,11 +53,11 @@ namespace v3d::render::realtime {
          **/
         virtual void renderFrame() = 0;
 
-    private:
+     private:
         boost::shared_ptr<v3d::log::Logger> logger_;
         boost::shared_ptr<v3d::asset::Manager> assetManager_;
         boost::shared_ptr<Window> window_;
-        entt::registry& registry_;
-        //std::list<boost::shared_ptr<Renderable>> renderables_;
+        entt::registry* registry_;
+        // std::list<boost::shared_ptr<Renderable>> renderables_;
     };
 };  // namespace v3d::render::realtime

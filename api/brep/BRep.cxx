@@ -342,12 +342,12 @@ namespace v3d::brep {
         vertices_.push_back(point);
         vertex = vertices_.size() - 1;
 
-        HalfEdge newEdge = edges_[edge];
+        HalfEdge newEdge(edges_[edge]);
         // edge goes from PVT to point
         // newEdge goes from point to NVT
         newEdge.vertex(vertex);
 
-        unsigned new_edge_id;
+        size_t new_edge_id;
         edges_.push_back(newEdge);
         new_edge_id = edges_.size() - 1;
 

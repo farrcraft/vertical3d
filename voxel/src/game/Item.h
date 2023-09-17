@@ -12,34 +12,34 @@
  */
 class Item
 {
-	public:
-		typedef enum
-		{
-			WEARABLE_TYPE_FEET,
-			WEARABLE_TYPE_LEGS,
-			WEARABLE_TYPE_HEAD,
-			WEARABLE_TYPE_CHEST
-		} WearableType;
+    public:
+        typedef enum
+        {
+            WEARABLE_TYPE_FEET,
+            WEARABLE_TYPE_LEGS,
+            WEARABLE_TYPE_HEAD,
+            WEARABLE_TYPE_CHEST
+        } WearableType;
 
-		typedef enum
-		{
-			ITEM_TYPE_ORE,
-			ITEM_TYPE_PLANT,
-			ITEM_TYPE_FOOD,
-			ITEM_TYPE_WEAPON,
-			ITEM_TYPE_TOOL,
-			ITEM_TYPE_WEARABLE,
-			ITEM_TYPE_UTILITY
-		} ItemType;
+        typedef enum
+        {
+            ITEM_TYPE_ORE,
+            ITEM_TYPE_PLANT,
+            ITEM_TYPE_FOOD,
+            ITEM_TYPE_WEAPON,
+            ITEM_TYPE_TOOL,
+            ITEM_TYPE_WEARABLE,
+            ITEM_TYPE_UTILITY
+        } ItemType;
 
-		Item();
+        Item();
 
-		bool equipped() const;
-		void equip();
-		bool equipable() const;
+        bool equipped() const;
+        void equip();
+        bool equipable() const;
 
-		bool wearable() const;
+        bool wearable() const;
 
-	private:
-		bool equipped_;
+    private:
+        bool equipped_;
 };

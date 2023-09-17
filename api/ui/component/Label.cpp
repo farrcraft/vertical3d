@@ -6,7 +6,7 @@
 #include "Label.h"
 
 namespace v3d::ui::component {
-    Label::Label() {
+    Label::Label() : Component(component::Type::LABEL) {
     }
 
     Label::~Label() {

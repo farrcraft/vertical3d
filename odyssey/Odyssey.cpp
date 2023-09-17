@@ -20,7 +20,7 @@ int main(int argc, char* argv[]) {
 
     odyssey::engine::Engine engine(appPath);
     if (!engine.initialize()) {
-        return -1;
+        return EXIT_FAILURE;
     }
 
     const bool ok = engine.eventLoop();

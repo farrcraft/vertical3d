@@ -12,14 +12,14 @@
 #include "Shader.h"
 
 namespace v3d::gl {
-    Program::Program(std::vector<boost::shared_ptr<Shader>>& theShaders) :
+    Program::Program(const std::vector<boost::shared_ptr<Shader>>& theShaders) :
         enabled_(false) {
         shaders(theShaders);
     }
 
     /**
      **/
-    void Program::shaders(std::vector<boost::shared_ptr<Shader>>& theShaders) {
+    void Program::shaders(const std::vector<boost::shared_ptr<Shader>>& theShaders) {
         id_ = glCreateProgram();
 
         for (std::vector<boost::shared_ptr<Shader>>::size_type i = 0; i != theShaders.size(); i++) {

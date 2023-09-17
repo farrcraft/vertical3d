@@ -2,100 +2,91 @@
   "mappings": [
     {
       "source": {
-        "scope": "keyboard",
-        "name": "w",
-        "context": "any"
+        "context": "keyboard",
+        "name": "w"
       },
       "destination": {
-        "scope": "pong",
+        "context": "pong",
         "name": "leftPaddleUp"
       }
     },
     {
       "source": {
-        "scope": "keyboard",
-        "name": "s",
-        "context": "any"
+        "context": "keyboard",
+        "name": "s"
       },
       "destination": {
-        "scope": "pong",
+        "context": "pong",
         "name": "leftPaddleDown"
       }
     },
     {
       "source": {
-        "scope": "keyboard",
-        "name": "arrow_up",
-        "context": "any"
+        "context": "keyboard",
+        "name": "arrow_up"
       },
       "destination": {
-        "scope": "pong",
+        "context": "pong",
         "name": "rightPaddleUp"
       }
     },
     {
       "source": {
-        "scope": "keyboard",
-        "name": "arrow_down",
-        "context": "any"
+        "context": "keyboard",
+        "name": "arrow_down"
       },
       "destination": {
-        "scope": "pong",
+        "context": "pong",
         "name": "rightPaddleDown"
       }
     },
     {
       "source": {
-        "scope": "keyboard",
-        "name": "escape",
-        "context": "on"
+        "context": "keyboard",
+        "name": "escape"
       },
       "destination": {
-        "scope": "ui",
+        "context": "pong",
         "name": "showGameMenu"
       }
     },
     {
       "source": {
-        "scope": "keyboard",
-        "name": "return",
-        "context": "on"
+        "context": "keyboard",
+        "name": "return"
       },
       "destination": {
-        "scope": "ui",
+        "context": "ui",
         "name": "selectMenu"
       }
     },
     {
       "source": {
-        "scope": "keyboard",
-        "name": "arrow_up",
-        "context": "on"
+        "context": "keyboard",
+        "name": "arrow_up"
       },
       "destination": {
-        "scope": "ui",
+        "context": "ui",
         "name": "menuPrevious"
       }
     },
     {
       "source": {
-        "scope": "keyboard",
-        "name": "arrow_down",
-        "context": "on"
+        "context": "keyboard",
+        "name": "arrow_down"
       },
       "destination": {
-        "scope": "ui",
+        "context": "ui",
         "name": "menuNext"
       }
     },
     {
       "source": {
-        "scope": "keyboard",
-        "name": "f1",
-        "context": "on"
+        "context": "keyboard",
+        "name": "f1"
       },
       "destination": {
-        "scope": "pong",
+        "context": "pong",
         "name": "toggleFS"
       }
     }

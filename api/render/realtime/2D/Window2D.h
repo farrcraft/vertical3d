@@ -54,4 +54,4 @@ namespace v3d::render::realtime {
         int logicalHeight_;
     };
 
-};  // namespace v3d::ui
+};  // namespace v3d::render::realtime

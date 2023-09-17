@@ -7,10 +7,9 @@
 
 #include <string>
 
-CameraControlTool::CameraControlTool(const boost::shared_ptr<v3d::input::MouseDevice> & mouse, const boost::shared_ptr<v3d::ViewPort> & view) :
+CameraControlTool::CameraControlTool(const boost::shared_ptr<v3d::ViewPort> & view) :
     mode_(CAMERA_MODE_NONE),
-    view_(view),
-    mouse_(mouse) {
+    view_(view) {
 }
 
 // tool overrides
@@ -22,12 +21,12 @@ void CameraControlTool::activate(const std::string & name) {
     } else if (name == "pan_camera_tool") {
         mode_ = CAMERA_MODE_PAN;
     }
-    mouse_->addEventListener(this, "camera_control_tool");
+    // mouse_->addEventListener(this, "camera_control_tool");
 }
 
 void CameraControlTool::deactivate(const std::string & name) {
     mode_ = CAMERA_MODE_NONE;
-    mouse_->removeEventListener("camera_control_tool");
+    // mouse_->removeEventListener("camera_control_tool");
 }
 
 // mouse event listener overrides

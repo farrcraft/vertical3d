@@ -13,7 +13,6 @@ namespace v3d::render::realtime {
      **/
     Scene2D::Scene2D(boost::shared_ptr<Context2D> context) :
         context_(context) {
-
     }
 
     /**

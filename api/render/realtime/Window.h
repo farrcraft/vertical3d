@@ -17,11 +17,11 @@ namespace v3d::render::realtime {
     /**
     **/
     class Window {
-    public:
+     public:
         /**
          * @param Logger* logger
          **/
-        Window(const boost::shared_ptr<v3d::log::Logger>& logger) noexcept;
+        explicit Window(const boost::shared_ptr<v3d::log::Logger>& logger) noexcept;
 
         /**
          * @return bool
@@ -66,7 +66,7 @@ namespace v3d::render::realtime {
          */
         void warpCursor(int x, int y);
 
-    private:
+     private:
         SDL_Window* window_;
         std::string caption_;
         int width_;
@@ -74,4 +74,4 @@ namespace v3d::render::realtime {
         boost::shared_ptr<v3d::log::Logger> logger_;
     };
 
-};  // namespace v3d::ui
+};  // namespace v3d::render::realtime

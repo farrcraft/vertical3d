@@ -18,7 +18,7 @@ set(Boost_USE_STATIC_LIBS ON)
 # I haven't figured out how to make this work with a relative path
 set(CMAKE_MODULE_PATH "Y:/Josh/Code/vertical3d/odyssey/cmake")
 
-list(APPEND CMAKE_PREFIX_PATH "Y:/Josh/Code/vertical3d/vendor/boost/boost_1_82_0")
+list(APPEND CMAKE_PREFIX_PATH "Y:/Josh/Code/vertical3d/vendor/boost/boost_1_83_0")
 
 # This path is used by FindSDL2 module. 
 # It will find include and lib folders under this directory.
@@ -50,7 +50,8 @@ link_directories(
 	${Boost_LIBRARY_DIRS}
 	"vendor/libjpeg-turbo-2.1.0"
 	"vendor/libpng-1.6.37"
-	"vendor/zlib-1.2.11")
+	"vendor/zlib-1.2.11"
+	"vendor/glew-2.2.0/lib/Release/x64")
 
 # Include sub-projects
 add_subdirectory("api")
@@ -61,5 +62,5 @@ add_subdirectory("pong")
 add_subdirectory("tetris")
 add_subdirectory("voxel")
 add_subdirectory("odyssey")
-add_subdirectory("vertical3d")
+# add_subdirectory("vertical3d")
 add_subdirectory("imagetool")

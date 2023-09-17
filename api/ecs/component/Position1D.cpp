@@ -1,7 +1,7 @@
 /**
  * Vertical3D
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
-**/
+ **/
 
 #include "Position1D.h"
 
@@ -15,8 +15,7 @@ namespace v3d::ecs::component {
         this->position_ = p.position_;
     }
 
-    Position1D& Position1D::operator=(Position1D&& p) noexcept
-    {
+    Position1D& Position1D::operator=(Position1D&& p) noexcept {
         if (this != &p) {
             this->position_ = p.position_;
         }

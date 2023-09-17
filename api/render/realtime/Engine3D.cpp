@@ -12,7 +12,7 @@
 namespace v3d::render::realtime {
     /**
      **/
-    Engine3D::Engine3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry& registry) :
+    Engine3D::Engine3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry) :
         Engine(logger, assetManager, registry) {
         context_ = boost::make_shared<Context>();
     }

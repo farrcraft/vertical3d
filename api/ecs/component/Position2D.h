@@ -1,7 +1,7 @@
 /**
  * Vertical3D
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
-**/
+ **/
 
 #pragma once
 
@@ -12,7 +12,7 @@ namespace v3d::ecs::component {
      * A 2D position
      **/
     class Position2D final {
-    public:
+     public:
         Position2D(const float x, const float y) noexcept;
 
         /**
@@ -45,7 +45,8 @@ namespace v3d::ecs::component {
          * Move assignment
          **/
         Position2D& operator=(Position2D&&) noexcept;
-    private:
+
+     private:
         glm::vec2 position_;
     };
 

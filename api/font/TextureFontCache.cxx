@@ -35,17 +35,22 @@ namespace v3d::font {
         cache_ = wcsdupstr(charcodes);
     }
 
-    boost::shared_ptr<TextureFont> TextureFontCache::load(const std::string& filename, float size) {
+    /**
+     **/
+    boost::shared_ptr<TextureFont> TextureFontCache::find(const std::string& filename, float size) {
         for (unsigned int i = 0; i < fonts_.size(); ++i) {
             if (fonts_[i]->filename() == filename && fonts_[i]->size() == size) {
                 return fonts_[i];
             }
         }
-        boost::shared_ptr<TextureFont> font;
-        font.reset(new TextureFont(atlas_, filename, size, logger_));
-        font->loadGlyphs(cache_);
+
+        return nullptr;
+    }
+
+    /**
+     **/
+    void TextureFontCache::add(boost::shared_ptr<TextureFont> font) {
         fonts_.push_back(font);
-        return font;
     }
 
     bool TextureFontCache::remove(boost::shared_ptr<TextureFont> font) {

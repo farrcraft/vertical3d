@@ -1,6 +1,6 @@
 /**
  * Vertical3D
- * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
 #pragma once
@@ -17,6 +17,6 @@ namespace v3d::event {
      public:
         /**
          **/
-        KeyUp(const std::string& name);
+        KeyUp(const std::string& name, const boost::shared_ptr<Context>& context);
     };
 };  // namespace v3d::event

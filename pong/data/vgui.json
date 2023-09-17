@@ -10,6 +10,7 @@
       "visible": false,
       "components": [
         {
+          "name":  "main-menu",
           "type": "menu",
           "items": [
             {
@@ -20,31 +21,31 @@
                 {
                   "label": "Rounds: ",
                   "command": "setMaxScore",
-                  "scope": "ui",
+                  "context": "ui",
                   "type": "numeric_input"
                 },
                 {
                   "label": "Player 1 Up: ",
                   "command": "setLeftPaddleUpKey",
-                  "scope": "ui",
+                  "context": "ui",
                   "type": "key_input"
                 },
                 {
                   "label": "Player 1 Down: ",
                   "command": "setLeftPaddleDownKey",
-                  "scope": "ui",
+                  "context": "ui",
                   "type": "key_input"
                 },
                 {
                   "label": "Player 2 Up: ",
                   "command": "setRightPaddleUpKey",
-                  "scope": "ui",
+                  "context": "ui",
                   "type": "key_input"
                 },
                 {
                   "label": "Player 2 Down: ",
                   "command": "setRightPaddleDownKey",
-                  "scope": "ui",
+                  "context": "ui",
                   "type": "key_input"
                 }
               ]
@@ -52,25 +53,25 @@
             {
               "label": "Singleplayer",
               "command": "setSingleplayerMode",
-              "scope": "ui",
+              "context": "ui",
               "type": "action"
             },
             {
               "label": "Co-op",
               "command": "setCoopMode",
-              "scope": "ui",
+              "context": "ui",
               "type": "action"
             },
             {
               "label": "Multiplayer",
               "command": "setMultiplayerMode",
-              "scope": "ui",
+              "context": "ui",
               "type": "action"
             },
             {
               "label": "Quit",
               "command": "quit",
-              "scope": "ui",
+              "context": "ui",
               "type": "action"
             }
           ]

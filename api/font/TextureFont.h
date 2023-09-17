@@ -1,6 +1,6 @@
 /**
  * Vertical3D
- * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
 #pragma once
@@ -44,10 +44,14 @@ namespace v3d::font {
             float outlineThickness_;
         } Glyph;
 
-        TextureFont(boost::shared_ptr<v3d::image::TextureAtlas> atlas, const std::string & filename, float size, const boost::shared_ptr<v3d::log::Logger> & logger);
+        TextureFont(const std::string& filename, float size, const boost::shared_ptr<v3d::log::Logger> & logger);
 
         boost::shared_ptr<Glyph> glyph(wchar_t charcode);
         float kerning(boost::shared_ptr<Glyph>, wchar_t charcode);
+
+        /**
+         **/
+        void atlas(boost::shared_ptr<v3d::image::TextureAtlas> atlas);
 
         bool loadGlyphs(const wchar_t * charcodes);
 

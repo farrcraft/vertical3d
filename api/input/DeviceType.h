@@ -1,9 +1,11 @@
 /**
  * Vertical3D
- * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
 #pragma once
+
+#include <cstdint>
 
 namespace v3d::input {
     enum class DeviceType : uint32_t {
@@ -19,9 +21,8 @@ namespace v3d::input {
         return lhs & static_cast<int>(rhs);
     }
 
-    constexpr int& operator|=(int &lhs, DeviceType rhs) {
+    constexpr int& operator|=(int& lhs, DeviceType rhs) {  // NOLINT(runtime/references)
         lhs = lhs | static_cast<int>(rhs);
         return lhs;
     }
-
 };  // namespace v3d::input

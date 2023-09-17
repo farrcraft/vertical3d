@@ -4,14 +4,15 @@
  **/
 
 #include "Canvas.h"
-#include "../type/3dtypes.h"
 
 #include <GL/glew.h>
 
+#include <cmath>
+
+#include "../type/3dtypes.h"
+
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-
-#include <cmath>
 
 namespace v3d::gl {
 
@@ -29,8 +30,7 @@ namespace v3d::gl {
         push();
     }
 
-    Canvas::~Canvas()
-    {
+    Canvas::~Canvas() {
     }
 
     void Canvas::clear() {
@@ -57,16 +57,13 @@ namespace v3d::gl {
         indices_.push_back(vcount + 2);
     }
 
-    void Canvas::addVertex(const glm::vec3& position, const glm::vec4& color)
-    {
+    void Canvas::addVertex(const glm::vec3& position, const glm::vec4& color) {
         xyz_.push_back(position);
         rgba_.push_back(color);
     }
 
-    void Canvas::upload()
-    {
-        if (vao_ == 0)
-        {
+    void Canvas::upload() {
+        if (vao_ == 0) {
             glGenVertexArrays(1, &vao_);
         }
         glBindVertexArray(vao_);
@@ -131,14 +128,12 @@ namespace v3d::gl {
         addVertex(p0, rgba);
         float delta = 2.0f * glm::pi<float>() / sides;
         unsigned int index = 1;
-        for (size_t k = 0; k < sides; k++)
-        {
+        for (size_t k = 0; k < sides; k++) {
             glm::vec4 p1(0.0f, 0.0f, 0.0f, 1.0f);
             p1[0] = cos(delta * k) * size;
             p1[1] = sin(delta * k) * size;
             size_t n = k + 1;
-            if (n == sides)
-            {
+            if (n == sides) {
                 n = 0;
             }
             glm::vec4 p2(0.0f, 0.0f, 0.0f, 1.0f);

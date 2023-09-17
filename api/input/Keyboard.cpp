@@ -9,7 +9,6 @@
 
 #include "../event/KeyDown.h"
 #include "../event/KeyUp.h"
-#include "../event/Source.h"
 
 namespace v3d::input {
 
@@ -271,15 +270,13 @@ namespace v3d::input {
     bool Keyboard::handleEvent(const SDL_Event& event) {
         std::string keyName;
         bool pressed = true;
-        std::string context;
         switch (event.type) {
         case SDL_KEYDOWN:
             keyName = keyEvent(&event.key.keysym);
             if (!state_.pressed(keyName)) {
                 state_(keyName);
             }
-            context = "down";
-            dispatcher_->trigger<v3d::event::KeyDown>(keyName);
+            dispatcher_->trigger<v3d::event::KeyDown>(v3d::event::KeyDown(keyName, context_));
             break;
         case SDL_KEYUP:
             keyName = keyEvent(&event.key.keysym);
@@ -287,15 +284,17 @@ namespace v3d::input {
                 state_(keyName);
             }
             pressed = false;
-            context = "up";
-            dispatcher_->trigger<v3d::event::KeyUp>(keyName);
+            dispatcher_->trigger<v3d::event::KeyUp>(v3d::event::KeyUp(keyName, context_));
             break;
         default:
             return false;
         }
 
         // trigger an event source event so any mappers can propogate any mapped events
-        v3d::event::Source source(keyName, "keyboard", context);
+        v3d::event::Event source(keyName, context_);
+        source.type(v3d::event::Type::Source);
+        v3d::event::EventData keyState = pressed;
+        source.data(keyState);
         dispatcher_->trigger(source);
 
         return true;

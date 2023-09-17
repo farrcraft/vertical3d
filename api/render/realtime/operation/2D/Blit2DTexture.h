@@ -19,7 +19,7 @@ namespace v3d::render::realtime::operation {
         /**
          **/
         Blit2DTexture(boost::shared_ptr<Texture2D> source, boost::shared_ptr<Texture2D> destination);
-        
+
         /**
          **/
         bool run(boost::shared_ptr<Context2D> context);

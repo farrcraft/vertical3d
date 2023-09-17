@@ -8,7 +8,6 @@
 #include <string>
 
 #include "../log/Logger.h"
-
 #include "../asset/Manager.h"
 #include "../config/Config.h"
 #include "../input/Engine.h"
@@ -75,16 +74,16 @@ namespace v3d::engine {
         boost::shared_ptr<v3d::render::realtime::Window> window_;
         boost::shared_ptr<v3d::asset::Manager> assetManager_;
         boost::shared_ptr<entt::dispatcher> dispatcher_;
+        boost::shared_ptr<v3d::event::Engine> eventEngine_;
         entt::registry registry_;
 
      private:
-
          bool registerEventMappings();
 
          std::string appPath_;
          int features_;
+         bool needShutdown_;
          boost::shared_ptr<v3d::input::Engine> inputEngine_;
-         boost::shared_ptr<v3d::event::Engine> eventEngine_;
     };
 
 };  // namespace v3d::engine

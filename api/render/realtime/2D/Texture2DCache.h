@@ -7,6 +7,7 @@
 
 #include "Texture2D.h"
 
+#include <string>
 #include <unordered_map>
 
 #include <boost/shared_ptr.hpp>
@@ -19,7 +20,7 @@ namespace v3d::render::realtime {
         /**
          **/
         bool cache(const std::string& key, boost::shared_ptr<Texture2D> texture);
-        
+
         /**
          **/
         boost::shared_ptr<Texture2D> fetch(const std::string& key);
