@@ -25,4 +25,6 @@ int main(int argc, char *argv[]) {
     if (!controller.shutdown()) {
         exitStatus = EXIT_FAILURE;
     }
+
+    return exitStatus;
 }
