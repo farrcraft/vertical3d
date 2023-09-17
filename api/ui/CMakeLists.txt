@@ -32,4 +32,4 @@ add_library("v3dlib_ui"
 "component/menu/MenuBar.h"
 "component/menu/Menu.h" "component/menu/Menu.cpp"
 "component/menu/MenuItem.h" "component/menu/MenuItem.cpp"
-"Engine.h" "Engine.cpp" "component/menu/Type.h" "component/Type.h" "component/menu/MenuBar.cpp")
+"Engine.h" "Engine.cpp" "component/menu/Type.h" "component/Type.h" "component/menu/MenuBar.cpp" "Navigation.h")

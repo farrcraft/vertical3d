@@ -5,14 +5,35 @@
 
 #include "Menu.h"
 
-namespace v3d::ui {
+namespace v3d::ui::component {
     Menu::Menu() : Component(component::Type::MENU) {
+    }
+
+    bool Menu::navigate(Navigation direction, bool wrap) {
+        if (direction == Navigation::UnselectItem) {
+        } else if (direction == Navigation::SelectItem) {
+        } else if (direction == Navigation::NextItem) {
+        } else if (direction == Navigation::PreviousItem) {
+        } else if (direction == Navigation::HierarchyUp) {
+        } else if (direction == Navigation::HierarchyDown) {
+        } else {
+            return false;
+        }
+        return true;
     }
 
     /**
      **/
     void Menu::parent(boost::weak_ptr<Menu> p) {
         parent_ = p;
+    }
+
+    bool Menu::hasParent() const {
+        boost::shared_ptr<Menu> menu = parent_.lock();
+        if (menu) {
+            return true;
+        }
+        return false;
     }
 
     boost::shared_ptr<Menu> Menu::level() const {
@@ -28,15 +49,17 @@ namespace v3d::ui {
     }
 
     boost::shared_ptr<MenuItem> Menu::active() const {
-        boost::shared_ptr<MenuItem> item;
-        if (active_ != items_.end())
-            item = *active_;
+        if (active_ == items_.end()) {
+            return nullptr;
+        }
+        boost::shared_ptr<MenuItem> item(*active_);
         return item;
     }
 
     void Menu::active(int idx) {
-        if (idx < 0 || static_cast<unsigned>(idx) >= items_.size())
+        if (idx < 0 || static_cast<unsigned>(idx) >= items_.size()) {
             active_ = items_.end();
+        }
 
         std::vector< boost::shared_ptr<MenuItem> >::iterator iter = items_.begin();
         for (int i = 0; i < idx; i++) {
@@ -116,4 +139,4 @@ namespace v3d::ui {
         }
     }
 
-};  // namespace v3d::ui
+};  // namespace v3d::ui::component
