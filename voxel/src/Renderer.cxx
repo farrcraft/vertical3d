@@ -20,9 +20,8 @@
 #include "voxel/ChunkBufferPool.h"
 #include "engine/MaterialFactory.h"
 
-#include "../../api//gl/Shader.h"
-#include "../../stark/AssetLoader.h"
-#include "../../stark/ProgramFactory.h"
+#include "../../api/asset/ShaderProgram.h"
+#include "../../api/gl/Shader.h"
 
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -66,7 +65,7 @@ void loadMaterials(boost::shared_ptr<v3d::gl::Program> program) {
     factory.create("materials[15]", glm::vec3(0.91f, 0.91f, 0.91f));
 }
 
-Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_ptr<AssetLoader> & loader, const boost::shared_ptr<v3d::log::Logger> & logger) :
+Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager) :
     scene_(scene),
     debug_(false),
     builder_(scene->chunks()),
@@ -86,8 +85,12 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
     // setup shaders
     std::string shaderName;
     shaderName = "shaders/voxel_ads";
-    ProgramFactory factory(loader);
-    boost::shared_ptr<v3d::gl::Program> voxelProgram = factory.create(v3d::gl::Shader::SHADER_TYPE_VERTEX|v3d::gl::Shader::SHADER_TYPE_FRAGMENT, shaderName);
+    boost::shared_ptr<v3d::asset::Loader> loader = assetManager->resolveLoader(v3d::asset::Type::ShaderProgram);
+    v3d::asset::ParameterValue value;
+    value = static_cast<unsigned int>(v3d::gl::Shader::SHADER_TYPE_VERTEX | v3d::gl::Shader::SHADER_TYPE_FRAGMENT);
+    loader->parameter("shaderTypes", value);
+    boost::shared_ptr<v3d::asset::ShaderProgram> program = boost::dynamic_pointer_cast<v3d::asset::ShaderProgram>(assetManager->load(shaderName, v3d::asset::Type::ShaderProgram));
+    boost::shared_ptr<v3d::gl::Program> voxelProgram = program->program();
 
     // setup shader program uniforms
     voxelProgram->enable();
@@ -140,7 +143,7 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
 }
 
 
-void Renderer::draw(boost::shared_ptr<v3d::ui::Window> window) {
+void Renderer::draw() {
     glClearColor(0.4f, 0.6f, 0.9f, 1.0f);
     glClearDepth(1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
