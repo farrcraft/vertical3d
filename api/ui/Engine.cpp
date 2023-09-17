@@ -7,13 +7,13 @@
 
 #include <string>
 
-#include "component/menu/Menu.h"
 #include "component/menu/MenuItem.h"
 
 #include <boost/make_shared.hpp>
 
 namespace v3d::ui {
-    Engine::Engine(const boost::shared_ptr<v3d::log::Logger>& logger) : logger_(logger) {
+    Engine::Engine(const boost::shared_ptr<v3d::event::Engine>& eventEngine, const boost::shared_ptr<v3d::log::Logger>& logger) :
+        eventEngine_(eventEngine), logger_(logger) {
     }
 
     bool Engine::load(const boost::shared_ptr<v3d::asset::Json>& config) {
@@ -72,12 +72,16 @@ namespace v3d::ui {
                 }
                 auto const componentEntry = componentIterator->as_object();
                 std::string componentType = boost::json::value_to<std::string>(componentEntry.at("type"));
+                std::string componentName = boost::json::value_to<std::string>(componentEntry.at("name"));
 
                 // read individual component types
                 if (componentType == "menu") {
-                    if (!loadMenu(componentEntry)) {
+                    boost::shared_ptr<component::Menu> menu = loadMenu(componentEntry);
+                    if (!menu) {
                         return false;
                     }
+                    menu->name(componentName);
+                    container->add(menu);
                 }
             }
         }
@@ -86,30 +90,51 @@ namespace v3d::ui {
 
     /**
      **/
-    bool Engine::loadMenu(const boost::json::object& component) {
-        boost::shared_ptr<Menu> menu = boost::make_shared<Menu>();
+    boost::shared_ptr<component::Menu> Engine::loadMenu(const boost::json::object& component) {
+        boost::shared_ptr<component::Menu> menu = boost::make_shared<component::Menu>();
 
         auto const itemsSection = component.at("items");
         if (!itemsSection.is_array()) {
             LOG_ERROR(logger_) << "Missing menu items in config";
-            return false;
+            return nullptr;
         }
         auto const items = itemsSection.as_array();
         auto itemsIterator = items.begin();
         for (; itemsIterator != items.end(); ++itemsIterator) {
             if (!itemsIterator->is_object()) {
                 LOG_ERROR(logger_) << "Unrecognized menu item config";
-                return false;
+                return nullptr;
             }
             auto const menuItemConfig = itemsIterator->as_object();
             std::string label = boost::json::value_to<std::string>(menuItemConfig.at("label"));
             std::string itemType = boost::json::value_to<std::string>(menuItemConfig.at("type"));
             std::string command = boost::json::value_to<std::string>(menuItemConfig.at("command"));
-            std::string scope = boost::json::value_to<std::string>(menuItemConfig.at("scope"));
+            std::string context = boost::json::value_to<std::string>(menuItemConfig.at("context"));
 
-            boost::shared_ptr<MenuItem> menuItem = boost::make_shared<MenuItem>(menu::stringToType(itemType), label, command, scope);
+            boost::shared_ptr<component::MenuItem> menuItem = boost::make_shared<component::MenuItem>(menu::stringToType(itemType), label);
+            if (context.length() > 0 && command.length() > 0) {
+                boost::shared_ptr<v3d::event::Context> eventContext = eventEngine_->resolveContext(context);
+                v3d::event::Event event(command, eventContext);
+                menuItem->event(event);
+            }
+
             menu->addItem(menuItem);
+
+            if (menuItem->type() == menu::ItemType::Submenu) {
+                boost::shared_ptr<component::Menu> submenu = loadMenu(menuItemConfig);
+                menuItem->submenu(submenu);
+            }
         }
-        return true;
+        return menu;
+    }
+
+    boost::shared_ptr<Container> Engine::container(const std::string_view& name) {
+        auto containers = containers_.begin();
+        for (; containers != containers_.end(); ++containers) {
+            if ((*containers)->name() == name) {
+                return *containers;
+            }
+        }
+        return nullptr;
     }
 };  // namespace v3d::ui
