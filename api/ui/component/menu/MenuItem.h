@@ -9,11 +9,12 @@
 
 #include "../../Component.h"
 #include "Type.h"
+#include "../../../event/Event.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 
-namespace v3d::ui {
+namespace v3d::ui::component {
     class Menu;
 
     /**
@@ -40,13 +41,8 @@ namespace v3d::ui {
          * @param scope the scope of the command
          * @param param the command paramater
          */
-        MenuItem(menu::ItemType type, const std::string & label,
-                    const std::string & cmd, const std::string & scope);
+        MenuItem(menu::ItemType type, const std::string & label);
 
-        /**
-          * Draw the menu item
-          */
-        void draw() const;
         /**
           * Set the menu item text label 
           * @param str the new label text
@@ -73,26 +69,29 @@ namespace v3d::ui {
           */
         boost::shared_ptr<Menu> submenu() const;
         /**
-          * Get the command name bound to the menu item
-          * @return the command name
+         * Set the event that will be triggered by activating this menu item.
+         * @param destination the event destination
+         **/
+        void event(const v3d::event::Event &destination);
+        /**
+          * Get the event bound to the menu item
+          * @return the event
           */
-        std::string_view command() const;
+        v3d::event::Event event() const;
         /**
           * Get the owning menu this item belongs to.
           * @return a pointer to the parent menu
           **/
         boost::weak_ptr<Menu> menu();
 
-        std::string_view scope() const;
         menu::ItemType type() const;
 
      private:
         std::string label_;
         boost::shared_ptr<Menu> submenu_;
         boost::weak_ptr<Menu> menu_;  // owning menu
-        std::string command_;
-        std::string scope_;
         menu::ItemType type_;
+        v3d::event::Event event_;
     };
 
-};  // namespace v3d::ui
+};  // namespace v3d::ui::component
