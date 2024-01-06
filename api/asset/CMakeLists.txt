@@ -20,3 +20,7 @@ add_library("v3dlib_asset"
  "loader/ShaderProgram.h" "loader/ShaderProgram.cpp" 
  "Font2D.h" "Font2D.cpp"
 "loader/Font2D.h" "loader/Font2D.cpp" "loader/TextureFont.h" "loader/TextureFont.cpp" "TextureFont.h" "TextureFont.cpp")
+
+target_compile_definitions(v3dlib_asset PUBLIC BOOST_USE_WINAPI_VERSION=0x0A00)
+target_compile_definitions(v3dlib_asset PUBLIC _WIN32_WINNT=0x0A00)
+target_compile_definitions(v3dlib_asset PUBLIC WINVER=0x0A00)

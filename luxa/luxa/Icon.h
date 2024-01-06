@@ -5,13 +5,13 @@
 
 #pragma once
 
-#include "Component.h"
+#include "../Component.h"
 
 #include "../../v3dlibs/gl/GLTexture.h"
 
 #include <boost/shared_ptr.hpp>
 
-namespace Luxa {
+namespace v3d::ui::component {
 
     class ComponentManager;
 
@@ -37,4 +37,4 @@ namespace Luxa {
     };
 
 
-};  // end namespace Luxa
+};  // end namespace v3d::ui::component

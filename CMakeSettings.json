@@ -7,9 +7,24 @@
       "inheritEnvironments": [ "msvc_x64_x64" ],
       "buildRoot": "${projectDir}\\out\\build\\${name}",
       "installRoot": "${projectDir}\\out\\install\\${name}",
-      "cmakeCommandArgs": "",
       "buildCommandArgs": "",
-      "ctestCommandArgs": ""
+      "variables": [
+        {
+          "name": "VCPKG_ROOT",
+          "value": "Y:\\Josh\\Code\\vertical3d\\vendor\\vcpkg",
+          "type": "STRING"
+        },
+        {
+          "name": "VCPKG_TARGET_TRIPLET",
+          "value": "x64-windows",
+          "type": "STRING"
+        },
+        {
+          "name": "CMAKE_MODULE_LINKER_FLAGS",
+          "value": "/machine:X86",
+          "type": "STRING"
+        }
+      ]
     }
   ]
 }

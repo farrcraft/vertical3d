@@ -18,3 +18,8 @@ add_library("v3dlib_render"
 	"realtime/Engine.h" "realtime/Engine.cpp" 
 	"realtime/Context.h" "realtime/Window.h" "realtime/Window.cpp" 
 	"realtime/2D/Operation2D.h" "realtime/2D/Operation2D.cpp" "realtime/Window3D.h" "realtime/Window3D.cpp" "realtime/Engine3D.h" "realtime/Engine3D.cpp" "realtime/operation/Canvas.h" "realtime/operation/Canvas.cpp")
+
+# Workaround for a boost log ABI bug - https://github.com/microsoft/vcpkg/discussions/22762
+target_compile_definitions(v3dlib_render PUBLIC BOOST_USE_WINAPI_VERSION=0x0A00)
+target_compile_definitions(v3dlib_render PUBLIC _WIN32_WINNT=0x0A00)
+target_compile_definitions(v3dlib_render PUBLIC WINVER=0x0A00)
