@@ -11,7 +11,7 @@
       "variables": [
         {
           "name": "VCPKG_ROOT",
-          "value": "Y:\\Josh\\Code\\vertical3d\\vendor\\vcpkg",
+          "value": "${projectDir}\\vertical3d\\vendor\\vcpkg",
           "type": "STRING"
         },
         {
@@ -21,7 +21,7 @@
         },
         {
           "name": "CMAKE_MODULE_LINKER_FLAGS",
-          "value": "/machine:X86",
+          "value": "/machine:x64",
           "type": "STRING"
         }
       ]
