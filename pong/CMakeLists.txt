@@ -26,6 +26,7 @@ target_link_libraries("pong" PRIVATE
 	v3dlib_font
 	v3dlib_log
 	v3dlib_render
+	v3dlib_type
 	v3dlib_ui
 	${Boost_LIBRARIES}
 	${SDL2_LIBRARIES}
