@@ -32,7 +32,7 @@ namespace v3d::asset {
          * @param name
          * @param type
          **/
-        boost::shared_ptr<Asset> load(std::string_view name, asset::Type t);
+        boost::shared_ptr<Asset> load(std::string_view name, asset::Type t, bool hasPath = false);
 
         /**
          * Load an asset, guessing the type from its filename extension.

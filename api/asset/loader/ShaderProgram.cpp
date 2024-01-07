@@ -37,12 +37,12 @@ namespace v3d::asset::loader {
         boost::shared_ptr<v3d::gl::Program> program;
 
         if (shaderTypes & v3d::gl::Shader::SHADER_TYPE_VERTEX) {
-            boost::shared_ptr<v3d::asset::Shader> shader = boost::dynamic_pointer_cast<v3d::asset::Shader>(manager_->load(name, Type::ShaderVertex));
+            boost::shared_ptr<v3d::asset::Shader> shader = boost::dynamic_pointer_cast<v3d::asset::Shader>(manager_->load(name, Type::ShaderVertex, true));
             theShaders.push_back(shader->shader());
         }
 
         if (shaderTypes & v3d::gl::Shader::SHADER_TYPE_FRAGMENT) {
-            boost::shared_ptr<v3d::asset::Shader> shader = boost::dynamic_pointer_cast<v3d::asset::Shader>(manager_->load(name, Type::ShaderFragment));
+            boost::shared_ptr<v3d::asset::Shader> shader = boost::dynamic_pointer_cast<v3d::asset::Shader>(manager_->load(name, Type::ShaderFragment, true));
             theShaders.push_back(shader->shader());
         }
 
