@@ -10,18 +10,24 @@
 - SoLoud
 - FreeType2
 
+Dependencies are managed using `vcpkg` when possible.  Otherwise they are configured as git submodules in the `vendor/` directory.
+These submodules will need to be cloned and manually built individually.  See the Submodules section below for build instructions.
+
 
 # Packages
 
-Install vcpkg from the installation instructions: https://vcpkg.io/en/getting-started
+There are some weird boost log ABI compatibility issues out of the box and vcpkg needs a minor patch to make it work.
+For more information about the bug and the origin of this workaround, see the comments at: https://github.com/microsoft/vcpkg/discussions/22762
 
+Grab a copy of vcpkg:
 ```
 mkdir vendor
 cd vendor
 git clone https://github.com/Microsoft/vcpkg.git
 ```
 
-Apply this diff in the vcpkg directory:
+
+Before doing anything else, apply this diff in the vcpkg directory:
 
 ```
 diff --git a/triplets/x64-windows.cmake b/triplets/x64-windows.cmake
@@ -36,7 +42,7 @@ index d0be7297f..86fcd4207 100644
 +set(VCPKG_CXX_FLAGS "${VCPKG_CXX_FLAGS} /DBOOST_ALL_DYN_LINK /DBOOST_USE_WINAPI_VERSION=0x0A00 /D_WIN32_WINNT=0x0A00 /DWINVER=0x0A00")
 ```
 
-Condinue with running:
+Continue as normal with running:
 
 ```
 # Prepare to use vcpkg
@@ -50,7 +56,7 @@ cd ..
 .\vendor\vcpkg\vcpkg.exe integrate install
 ```
 
-## Adding Dependencies
+## Adding New Dependencies
 
 To add a new dependency, open a developer command prompt and run, e.g. for boost:
 ```
@@ -69,6 +75,8 @@ git submodule add https://github.com/jarikomppa/soloud vendor/soloud
 ```
 
 ## Building SoLoud
+
+SoLoud has a dependency on SDL2 which means that vcpkg-base dependencies need to be installed first.
 
 ```
 cd vendor/soloud/contrib
