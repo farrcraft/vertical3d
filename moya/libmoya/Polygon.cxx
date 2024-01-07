@@ -149,7 +149,7 @@ namespace v3d::moya {
             }
             // classify which side of the plane A is on
             side = plane.classify(A);
-            if (plane.intersectEdge(A, B, hit)) {
+            if (plane.intersectEdge(A, B, &hit)) {
                 // A is on one side and B on the other
                 // hit is the common vertex both new edges share
                 // create a new edge for p1 and p2 e1 (A, hit), e2 (hit, B)

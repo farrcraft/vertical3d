@@ -38,7 +38,7 @@ Scene::Scene() {
         for (unsigned int y = 0; y < worldHeight; y++) {
             for (unsigned int z = 0; z < worldDepth; z++) {
                 glm::ivec3 pos(x, y, z);
-                chunk.reset(new Chunk(terrain, pos, worldHeight));
+                chunk.reset(new Chunk(&terrain, pos, worldHeight));
                 hash = encoder.encode(pos);
                 chunks_[hash] = chunk;
             }

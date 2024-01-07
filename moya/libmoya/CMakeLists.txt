@@ -1,3 +1,14 @@
-add_library("libmoya" "Bucket.h" "Bucket.cxx" "FrameBuffer.h" "FrameBuffer.cxx" "Frustum.h" "Frustum.cxx" "MicroPolygon.h" "MicroPolygon.cxx"
-	"MicroPolygonGrid.h" "MicroPolygonGrid.cxx" "Plane.h" "Plane.cxx" "Polygon.h" "Polygon.cxx" "RenderContext.h" "RenderContext.cxx"
-	"Renderer.h" "Renderer.cxx" "RenderMan.h" "RenderMan.cxx" "ReyesPrimitive.h" "ReyesPrimitive.cxx" "Vertex.h" "Vertex.cxx")
+add_library("v3dlib_moya" 
+	"Bucket.h" "Bucket.cxx"
+	"FrameBuffer.h" "FrameBuffer.cxx"
+	"Frustum.h" "Frustum.cxx"
+	"MicroPolygon.h" "MicroPolygon.cxx"
+	"MicroPolygonGrid.h" "MicroPolygonGrid.cxx"
+	"Plane.h" "Plane.cxx"
+	"Polygon.h" "Polygon.cxx"
+	"RenderContext.h" "RenderContext.cxx"
+	"Renderer.h" "Renderer.cxx"
+	"RenderMan.h" "RenderMan.cxx"
+	"ReyesPrimitive.h" "ReyesPrimitive.cxx"
+	"Vertex.h" "Vertex.cxx"
+)

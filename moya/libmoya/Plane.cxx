@@ -165,7 +165,7 @@ void Plane::clip(boost::shared_ptr<Polygon> poly) {
                   clippedPoly->addVertex(p);
              } else {
                   // case 4
-                  intersectEdge(s.point(), p.point(), hit);
+                  intersectEdge(s.point(), p.point(), &hit);
                   i.point(hit);
                   clippedPoly->addVertex(i);
                   clippedPoly->addVertex(p);
@@ -174,7 +174,7 @@ void Plane::clip(boost::shared_ptr<Polygon> poly) {
              side = classify(s.point());
              if (side == POSITIVE || side == ON_PLANE) {
                   // case 2
-                  intersectEdge(s.point(), p.point(), hit);
+                  intersectEdge(s.point(), p.point(), &hit);
                   i.point(hit);
                   clippedPoly->addVertex(i);
              } else {
