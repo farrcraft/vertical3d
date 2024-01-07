@@ -1,9 +1,7 @@
 /**
-* Voxel Engine
-*
-* (c) Joshua Farr <j.wgasa@gmail.com>
-*
-*/
+ * Vertical3D
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
+**/
 
 #pragma once
 
@@ -13,11 +11,9 @@
  * Source: http://stackoverflow.com/questions/16376942/best-cross-platform-method-to-get-aligned-memory
  */
 template<std::size_t Alignment>
-class Aligned
-{
-public:
-    void* operator new(std::size_t size)
-    {
+class Aligned {
+ public:
+    void* operator new(std::size_t size) {
         std::size_t space = size + (Alignment - 1);
         void *ptr = malloc(space + sizeof(void*));
         void *original_ptr = ptr;
@@ -35,8 +31,7 @@ public:
         return ptr;
     }
 
-    void operator delete(void* ptr)
-    {
+    void operator delete(void* ptr) {
         char *ptr_bytes = static_cast<char*>(ptr);
         ptr_bytes -= sizeof(void*);
 

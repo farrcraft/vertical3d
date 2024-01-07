@@ -16,10 +16,9 @@
 /**
  * The CameraControlTool provides interactive manipulation of a Camera through a ViewPort.
  */
-class CameraControlTool :
-    public v3d::Tool {
+class CameraControlTool : public v3d::Tool {
  public:
-        CameraControlTool(const boost::shared_ptr<v3d::ViewPort> & view);
+        explicit CameraControlTool(const boost::shared_ptr<v3d::ViewPort> & view);
 
         typedef enum CameraMode {
             CAMERA_MODE_ZOOM,

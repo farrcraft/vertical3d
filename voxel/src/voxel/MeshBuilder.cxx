@@ -10,7 +10,7 @@
 #include "ChunkBufferPool.h"
 #include "../engine/MortonCode.h"
 
-MeshBuilder::MeshBuilder(boost::unordered_map<unsigned int, boost::shared_ptr<Chunk > > & chunks) :
+MeshBuilder::MeshBuilder(const boost::unordered_map<unsigned int, boost::shared_ptr<Chunk > > & chunks) :
     chunks_(chunks) {
     const size_t vertices = 32768;
     const size_t tris = 49152;
@@ -35,7 +35,7 @@ void MeshBuilder::build(const boost::shared_ptr<ChunkBufferPool> & pool, size_t 
 
 
 // generate a single mesh for the entire chunk
-void MeshBuilder::generateChunk(const boost::shared_ptr<ChunkBufferPool> & pool, boost::shared_ptr<Chunk> & chunk) {
+void MeshBuilder::generateChunk(const boost::shared_ptr<ChunkBufferPool> & pool, const boost::shared_ptr<Chunk> & chunk) {
     unsigned int hash = 0;
     glm::ivec3 pos;
     MortonCode codec;

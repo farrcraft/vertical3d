@@ -1,27 +1,27 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
+**/
+
 #include "Item.h"
 
 Item::Item() :
-    equipped_(false)
-{
+    equipped_(false) {
 }
 
-bool Item::equipped() const
-{
+bool Item::equipped() const {
     return equipped_;
 }
 
-bool Item::equipable() const
-{
+bool Item::equipable() const {
     return false;
 }
 
 
-void Item::equip()
-{
+void Item::equip() {
     equipped_ = !equipped_;
 }
 
-bool Item::wearable() const
-{
+bool Item::wearable() const {
     return false;
 }
