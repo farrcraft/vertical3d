@@ -12,10 +12,10 @@
  */
 struct LogInitializerFixture
 {
-	LogInitializerFixture()
-	{
-		log4cxx::BasicConfigurator::configure();
-	}
+    LogInitializerFixture()
+    {
+        log4cxx::BasicConfigurator::configure();
+    }
 };
 
 BOOST_GLOBAL_FIXTURE(LogInitializerFixture)
