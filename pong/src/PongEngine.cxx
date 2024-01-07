@@ -118,7 +118,9 @@ bool PongEngine::render() {
 /**
  **/
 bool PongEngine::shutdown() {
-    soundEngine_->shutdown();
+    if (soundEngine_) {
+        soundEngine_->shutdown();
+    }
     if (!v3d::engine::Engine::shutdown()) {
         return false;
     }
