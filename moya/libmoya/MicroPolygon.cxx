@@ -19,6 +19,6 @@ MicroPolygon::~MicroPolygon()
 
 Vertex & MicroPolygon::operator[] (unsigned int i)
 {
-	assert(i < 4);
-	return _points[i];
+    assert(i < 4);
+    return _points[i];
 }

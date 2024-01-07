@@ -14,62 +14,62 @@ Renderer _renderer;
 
 
 RtToken RI_FRAMEBUFFER, 
-		RI_FILE;
+        RI_FILE;
 RtToken RI_RGB, 
-		RI_RGBA, 
-		RI_RGBZ, 
-		RI_RGBAZ, 
-		RI_A, 
-		RI_Z, 
-		RI_AZ;
+        RI_RGBA, 
+        RI_RGBZ, 
+        RI_RGBAZ, 
+        RI_A, 
+        RI_Z, 
+        RI_AZ;
 const RtToken RI_PERSPECTIVE = const_cast<char*>("perspective");
 const RtToken RI_ORTHOGRAPHIC = const_cast<char*>("orthographic");
 RtToken RI_HIDDEN, 
-		RI_PAINT;
+        RI_PAINT;
 RtToken RI_CONSTANT, 
-		RI_SMOOTH;
+        RI_SMOOTH;
 RtToken RI_FLATNESS;
 const RtToken RI_FOV = const_cast<char*>("fov");
 RtToken RI_AMBIENTLIGHT, 
-		RI_POINTLIGHT, 
-		RI_DISTANTLIGHT, 
-		RI_SPOTLIGHT;
+        RI_POINTLIGHT, 
+        RI_DISTANTLIGHT, 
+        RI_SPOTLIGHT;
 RtToken RI_INTENSITY, 
-		RI_LIGHTCOLOR, 
-		RI_FROM, 
-		RI_TO, 
-		RI_CONEANGLE,
-		RI_CONEDELTAANGLE, 
-		RI_BEAMDISTRIBUTION;
+        RI_LIGHTCOLOR, 
+        RI_FROM, 
+        RI_TO, 
+        RI_CONEANGLE,
+        RI_CONEDELTAANGLE, 
+        RI_BEAMDISTRIBUTION;
 RtToken RI_MATTE, 
-		RI_METAL, 
-		RI_SHINYMETAL, 
-		RI_PLASTIC, 
-		RI_PAINTEDPLASTIC;
+        RI_METAL, 
+        RI_SHINYMETAL, 
+        RI_PLASTIC, 
+        RI_PAINTEDPLASTIC;
 RtToken RI_KA, 
-		RI_KD, 
-		RI_KS, 
-		RI_ROUGHNESS, 
-		RI_KR, 
-		RI_TEXTURENAME, 
-		RI_SPECULARCOLOR;
+        RI_KD, 
+        RI_KS, 
+        RI_ROUGHNESS, 
+        RI_KR, 
+        RI_TEXTURENAME, 
+        RI_SPECULARCOLOR;
 RtToken RI_DEPTHCUE, 
-		RI_FOG, 
-		RI_BUMPY;
+        RI_FOG, 
+        RI_BUMPY;
 RtToken RI_MINDISTANCE, 
-		RI_MAXDISTANCE, 
-		RI_BACKGROUND, 
-		RI_DISTANCE,
-		RI_AMPLITUDE;
+        RI_MAXDISTANCE, 
+        RI_BACKGROUND, 
+        RI_DISTANCE,
+        RI_AMPLITUDE;
 RtToken RI_RASTER, 
-		RI_SCREEN, 
-		RI_CAMERA, 
-		RI_WORLD, 
-		RI_OBJECT;
+        RI_SCREEN, 
+        RI_CAMERA, 
+        RI_WORLD, 
+        RI_OBJECT;
 RtToken RI_INSIDE, 
-		RI_OUTSIDE, 
-		RI_LH, 
-		RI_RH;
+        RI_OUTSIDE, 
+        RI_LH, 
+        RI_RH;
 const RtToken RI_P = const_cast<char*>("P");
 const RtToken RI_PZ = const_cast<char*>("Pz");
 const RtToken RI_PW = const_cast<char*>("Pw");
@@ -81,62 +81,62 @@ const RtToken RI_S = const_cast<char*>("s");
 const RtToken RI_T = const_cast<char*>("t");
 const RtToken RI_ST	= const_cast<char*>("st");
 RtToken RI_BILINEAR, 
-		RI_BICUBIC;
+        RI_BICUBIC;
 RtToken RI_LINEAR, 
-		RI_CUBIC;
+        RI_CUBIC;
 RtToken RI_PRIMITIVE, 
-		RI_INTERSECTION, 
-		RI_UNION, 
-		RI_DIFFERENCE;
+        RI_INTERSECTION, 
+        RI_UNION, 
+        RI_DIFFERENCE;
 RtToken RI_PERIODIC, 
-		RI_NONPERIODIC, 
-		RI_CLAMP, 
-		RI_BLACK;
+        RI_NONPERIODIC, 
+        RI_CLAMP, 
+        RI_BLACK;
 RtToken RI_IGNORE, 
-		RI_PRINT, 
-		RI_ABORT, 
-		RI_HANDLER;
+        RI_PRINT, 
+        RI_ABORT, 
+        RI_HANDLER;
 RtToken RI_COMMENT, 
-		RI_STRUCTURE, 
-		RI_VERBATIM;
+        RI_STRUCTURE, 
+        RI_VERBATIM;
 RtToken RI_IDENTIFIER, 
-		RI_NAME, 
-		RI_SHADINGGROUP;
+        RI_NAME, 
+        RI_SHADINGGROUP;
 RtToken RI_WIDTH, 
-		RI_CONSTANTWIDTH;
+        RI_CONSTANTWIDTH;
 
 RtBasis	RiBezierBasis, 
-		RiBSplineBasis, 
-		RiCatmullRomBasis,
-		RiHermiteBasis, 
-		RiPowerBasis;
+        RiBSplineBasis, 
+        RiCatmullRomBasis,
+        RiHermiteBasis, 
+        RiPowerBasis;
 
 RtInt	RiLastError;
 
 // RI subroutines
 RtFloat	RiGaussianFilter(RtFloat x, RtFloat y, RtFloat xwidth, RtFloat ywidth)
 {
-	return 0.0;
+    return 0.0;
 }
 
 RtFloat	RiBoxFilter(RtFloat x, RtFloat y, RtFloat xwidth, RtFloat ywidth)
 {
-	return 0.0;
+    return 0.0;
 }
 
 RtFloat	RiTriangleFilter(RtFloat x, RtFloat y, RtFloat xwidth, RtFloat ywidth)
 {
-	return 0.0;
+    return 0.0;
 }
 
 RtFloat	RiCatmullRomFilter(RtFloat x, RtFloat y, RtFloat xwidth, RtFloat ywidth)
 {
-	return 0.0;
+    return 0.0;
 }
 
 RtFloat	RiSincFilter(RtFloat x, RtFloat y, RtFloat xwidth, RtFloat ywidth)
 {
-	return 0.0;
+    return 0.0;
 }
 
 RtVoid	RiErrorIgnore(RtInt code, RtInt severity, char *msg)
@@ -168,7 +168,7 @@ RiGetContext and RiContext have no RIB equivalents
 */
 RtContextHandle RiGetContext(void)
 {
-	return 0;
+    return 0;
 }
 
 RtVoid	RiContext(RtContextHandle)
@@ -177,7 +177,7 @@ RtVoid	RiContext(RtContextHandle)
 
 RtToken	RiDeclare(char *name, char *declaration)
 {
-	return 0;
+    return 0;
 }
 
 
@@ -194,12 +194,12 @@ RtToken	RiDeclare(char *name, char *declaration)
  */
 RtVoid RiBegin(RtToken name)
 {
-	std::string str;
-	if (name != RI_NULL)
-	{
-		str = name;
-	}
-	_renderer.createRenderContext(str);
+    std::string str;
+    if (name != RI_NULL)
+    {
+        str = name;
+    }
+    _renderer.createRenderContext(str);
 }
 
 
@@ -212,7 +212,7 @@ RtVoid RiBegin(RtToken name)
  */
 RtVoid RiEnd(void)
 {
-	_renderer.destroyActiveRenderContext();
+    _renderer.destroyActiveRenderContext();
 }
 
 RtVoid RiFrameBegin(RtInt frame)
@@ -237,7 +237,7 @@ been defined.
 */
 RtVoid RiWorldBegin(void)
 {
-	_renderer.activeRenderContext().prepareWorld();
+    _renderer.activeRenderContext().prepareWorld();
 }
 
 /*
@@ -250,7 +250,7 @@ their handles).
 */
 RtVoid RiWorldEnd(void)
 {
-	_renderer.activeRenderContext().render();
+    _renderer.activeRenderContext().render();
 }
 
 /*
@@ -278,7 +278,7 @@ display device for that particular parameter.
 */
 RtVoid RiFormat(RtInt xres, RtInt yres, RtFloat aspect)
 {
-	_renderer.activeRenderContext().imageResolution(xres, yres, aspect);
+    _renderer.activeRenderContext().imageResolution(xres, yres, aspect);
 }
 
 RtVoid RiFrameAspectRatio(RtFloat aspect)
@@ -323,32 +323,32 @@ identity matrix, so screen space and camera space are identical.
 */
 RtVoid RiProjection(RtToken name, ...)
 {
-	// get parameter list
-	va_list ap;
-	va_start(ap, name);
-	RtToken param = va_arg(ap, RtToken);
-	std::string token;
-	float fov = 90.;
-	if (name == RI_NULL)
-		_renderer.activeRenderContext().projection("");
-	else if (!strncmp(name, RI_PERSPECTIVE, 11))
-	{
-		// perspective takes an optional fov parameter
-		if (param != RI_NULL)
-		{
-			token = va_arg(ap, RtToken);
-			if (token == RI_FOV)
-			{
-				fov = va_arg(ap, double);
-			}
-		}
-		_renderer.activeRenderContext().projection(name, fov);
-	}
-	else
-	{
-		_renderer.activeRenderContext().projection(name);
-	}
-	va_end(ap);
+    // get parameter list
+    va_list ap;
+    va_start(ap, name);
+    RtToken param = va_arg(ap, RtToken);
+    std::string token;
+    float fov = 90.;
+    if (name == RI_NULL)
+        _renderer.activeRenderContext().projection("");
+    else if (!strncmp(name, RI_PERSPECTIVE, 11))
+    {
+        // perspective takes an optional fov parameter
+        if (param != RI_NULL)
+        {
+            token = va_arg(ap, RtToken);
+            if (token == RI_FOV)
+            {
+                fov = va_arg(ap, double);
+            }
+        }
+        _renderer.activeRenderContext().projection(name, fov);
+    }
+    else
+    {
+        _renderer.activeRenderContext().projection(name);
+    }
+    va_end(ap);
 }
 
 RtVoid RiProjectionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])
@@ -369,7 +369,7 @@ the near and far clipping planes.
 */
 RtVoid RiClipping(RtFloat hither, RtFloat yon)
 {
-	_renderer.activeRenderContext().clipping(hither, yon);
+    _renderer.activeRenderContext().clipping(hither, yon);
 }
 
 RtVoid RiClippingPlane(RtFloat x, RtFloat y, RtFloat z, RtFloat nx, RtFloat ny, RtFloat nz)
@@ -501,22 +501,22 @@ is returned that can be used to turn the light off or on again.
 */
 RtLightHandle RiLightSource(RtToken name, ...)
 {
-	return 0;
+    return 0;
 }
 
 RtLightHandle RiLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])
 {
-	return 0;
+    return 0;
 }
 
 RtLightHandle RiAreaLightSource(RtToken name, ...)
 {
-	return 0;
+    return 0;
 }
 
 RtLightHandle RiAreaLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])
 {
-	return 0;
+    return 0;
 }
 
 RtVoid RiIlluminate(RtLightHandle light, RtBoolean onoff)
@@ -605,7 +605,7 @@ Set the current transformation to the identity.
 */
 RtVoid RiIdentity(void)
 {
-	_renderer.activeRenderContext().setIdentityTransform();
+    _renderer.activeRenderContext().setIdentityTransform();
 }
 
 /*
@@ -613,7 +613,7 @@ Set the current transformation to the transformation transform.
 */
 RtVoid RiTransform(RtMatrix transform)
 {
-	//Moya::getInstance().getActiveRenderContext().setTransform(transform);
+    //Moya::getInstance().getActiveRenderContext().setTransform(transform);
 }
 
 RtVoid RiPerspective(RtFloat fov)
@@ -625,7 +625,7 @@ Concatenate a translation onto the current transformation.
 */
 RtVoid RiTranslate(RtFloat dx, RtFloat dy, RtFloat dz)
 {
-	_renderer.activeRenderContext().translate(dx, dy, dz);
+    _renderer.activeRenderContext().translate(dx, dy, dz);
 }
 
 /*
@@ -633,7 +633,7 @@ Concatenate a rotation of angle degrees about the given axis onto the current tr
 */
 RtVoid RiRotate(RtFloat angle, RtFloat dx, RtFloat dy, RtFloat dz)
 {
-	_renderer.activeRenderContext().rotate(angle, dx, dy, dz);
+    _renderer.activeRenderContext().rotate(angle, dx, dy, dz);
 }
 
 /*
@@ -641,7 +641,7 @@ Concatenate a scaling onto the current transformation.
 */
 RtVoid RiScale(RtFloat sx, RtFloat sy, RtFloat sz)
 {
-	_renderer.activeRenderContext().scale(sx, sy, sz);
+    _renderer.activeRenderContext().scale(sx, sy, sz);
 }
 
 RtVoid RiSkew(RtFloat angle, RtFloat dx1, RtFloat dy1, RtFloat dz1, RtFloat dx2, RtFloat dy2, RtFloat dz2)
@@ -673,17 +673,17 @@ RtVoid RiDisplacementV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[
 
 RtVoid RiCoordinateSystem(RtToken space)
 {
-	_renderer.activeRenderContext().saveCoordinateSystem(space);
+    _renderer.activeRenderContext().saveCoordinateSystem(space);
 }
 
 RtVoid RiCoordSysTransform(RtToken space)
 {
-	_renderer.activeRenderContext().setCoordinateSystem(space);
+    _renderer.activeRenderContext().setCoordinateSystem(space);
 }
 
 RtPoint * RiTransformPoints(RtToken fromspace, RtToken tospace, RtInt n, RtPoint points[])
 {
-	return 0;
+    return 0;
 }
 
 /*
@@ -692,12 +692,12 @@ nested with respect to the various begin-end constructs.
 */
 RtVoid RiTransformBegin(void)
 {
-	_renderer.activeRenderContext().pushTransform();
+    _renderer.activeRenderContext().pushTransform();
 }
 
 RtVoid RiTransformEnd(void)
 {
-	_renderer.activeRenderContext().popTransform();
+    _renderer.activeRenderContext().popTransform();
 }
 
 RtVoid RiAttribute(RtToken name, ...)
@@ -723,99 +723,99 @@ polygons but the results are unpredictable.
 */
 RtVoid RiPolygon(RtInt nverts, ...)
 {
-	/*
-		parameterlist is a list of token-array pairs - or -
-		a sequence of pairs of arguments, the first being an RtToken and the 
-		second being an RtPointer, an untyped pointer to an array of either
-		RtFloat, RtString or other values. The list is terminated by the special
-		token RI_NULL.
-		
-		
-		tokens are:
-			
-			Info			Name	Type		Class		Floats
-			------------------------------------------------------
-			Position		"P"		point		vertex		3
-							"Pz"	float		vertex		1
-							"Pw"	h			vertex		4
-			Normal			"N"		normal		varying		3
-			Color			"Cs"	color		varying		(3)
-			Opacity			"Os"	color		varying		(3)
-			Texture Coords	"s"		float		varying		1
-							"t"		float		varying		1
-							"st"	2 float		varying		2
-		crorresponding tokens:
-			RI_P, RI_PZ, RI_PW, RI_N, RI_CS, RI_OS, RI_S, RI_T, RI_ST
+    /*
+        parameterlist is a list of token-array pairs - or -
+        a sequence of pairs of arguments, the first being an RtToken and the 
+        second being an RtPointer, an untyped pointer to an array of either
+        RtFloat, RtString or other values. The list is terminated by the special
+        token RI_NULL.
+        
+        
+        tokens are:
+            
+            Info			Name	Type		Class		Floats
+            ------------------------------------------------------
+            Position		"P"		point		vertex		3
+                            "Pz"	float		vertex		1
+                            "Pw"	h			vertex		4
+            Normal			"N"		normal		varying		3
+            Color			"Cs"	color		varying		(3)
+            Opacity			"Os"	color		varying		(3)
+            Texture Coords	"s"		float		varying		1
+                            "t"		float		varying		1
+                            "st"	2 float		varying		2
+        crorresponding tokens:
+            RI_P, RI_PZ, RI_PW, RI_N, RI_CS, RI_OS, RI_S, RI_T, RI_ST
 
-		usage:
-			RtPoint points[4] = { 0.0, 1.0, 0.0,	0.0, 1.0, 1.0,
-								  0.0, 0.0, 1.0,	0.0, 0.0, 0.0 };
-			RiPolygon(4, RI_P, (RtPointer)points, RI_NULL);
+        usage:
+            RtPoint points[4] = { 0.0, 1.0, 0.0,	0.0, 1.0, 1.0,
+                                  0.0, 0.0, 1.0,	0.0, 0.0, 0.0 };
+            RiPolygon(4, RI_P, (RtPointer)points, RI_NULL);
 
-		gourad shaded:
-			RtColor colors[4];
-			RiPolygon(4, "P", (RtPointer)points, "Cs", (RtPointer)colors, RI_NULL);
+        gourad shaded:
+            RtColor colors[4];
+            RiPolygon(4, "P", (RtPointer)points, "Cs", (RtPointer)colors, RI_NULL);
 
-		phong shaded:
-			RtPoint normals[4];
-			RiPolygon(4, "P", (RtPointer)points, "N", (RtPointer)normals, RI_NULL);
-	*/
-	va_list ap;
-	
-	va_start(ap, nverts);
+        phong shaded:
+            RtPoint normals[4];
+            RiPolygon(4, "P", (RtPointer)points, "N", (RtPointer)normals, RI_NULL);
+    */
+    va_list ap;
+    
+    va_start(ap, nverts);
 
-	RtToken name = va_arg(ap, RtToken);
-	std::string token;
-	boost::shared_ptr<Polygon> poly(new Polygon);
-	while (name != RI_NULL)
-	{
-		token = name;
-		RtPointer p = va_arg(ap, RtPointer);
-		if (token == RI_P)
-		{
-			// p contains RtPoint points[nverts]
-			Vertex v;
-			RtPoint *points = (RtPoint*)p;
-			for (int i = 0; i < nverts; i++)
-			{
-				v.point(glm::vec3(points[i][0], points[i][1], points[i][2]));
-				poly->addVertex(v);
-			}
-		}
-		else if (token == RI_PZ)
-		{
-		}
-		else if (token == RI_PW)
-		{
-		}
-		else if (token == RI_N)
-		{
-			// p contains RtPoint normals[nverts]
-		}
-		else if (token == RI_CS)
-		{
-			// p contains RtColor colors[nverts]
-		}
-		else if (token == RI_OS)
-		{
-		}
-		else if (token == RI_S)
-		{
-		}
-		else if (token == RI_T)
-		{
-		}
-		else if (token == RI_ST)
-		{
-		}
-		// else error
+    RtToken name = va_arg(ap, RtToken);
+    std::string token;
+    boost::shared_ptr<Polygon> poly(new Polygon);
+    while (name != RI_NULL)
+    {
+        token = name;
+        RtPointer p = va_arg(ap, RtPointer);
+        if (token == RI_P)
+        {
+            // p contains RtPoint points[nverts]
+            Vertex v;
+            RtPoint *points = (RtPoint*)p;
+            for (int i = 0; i < nverts; i++)
+            {
+                v.point(glm::vec3(points[i][0], points[i][1], points[i][2]));
+                poly->addVertex(v);
+            }
+        }
+        else if (token == RI_PZ)
+        {
+        }
+        else if (token == RI_PW)
+        {
+        }
+        else if (token == RI_N)
+        {
+            // p contains RtPoint normals[nverts]
+        }
+        else if (token == RI_CS)
+        {
+            // p contains RtColor colors[nverts]
+        }
+        else if (token == RI_OS)
+        {
+        }
+        else if (token == RI_S)
+        {
+        }
+        else if (token == RI_T)
+        {
+        }
+        else if (token == RI_ST)
+        {
+        }
+        // else error
 
-		name = va_arg(ap, RtToken);
-	}
-	va_end(ap);
-	
-	// add poly to renderer
-	_renderer.activeRenderContext().addPolygon(poly);
+        name = va_arg(ap, RtToken);
+    }
+    va_end(ap);
+    
+    // add poly to renderer
+    _renderer.activeRenderContext().addPolygon(poly);
 }
 
 RtVoid RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], RtPointer parms[])
@@ -992,7 +992,7 @@ RtVoid RiSolidEnd(void)
 
 RtObjectHandle RiObjectBegin(void)
 {
-	return 0;
+    return 0;
 }
 
 RtVoid	RiObjectEnd(void)

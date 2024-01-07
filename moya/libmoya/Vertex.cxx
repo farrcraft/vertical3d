@@ -17,11 +17,11 @@ Vertex::~Vertex()
 
 glm::vec3 Vertex::point(void) const
 {
-	 return point_;
+     return point_;
 }
 
 void Vertex::point(const glm::vec3 & v)
 {
-	 point_ = v;
+     point_ = v;
 }
 

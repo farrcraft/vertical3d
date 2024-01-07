@@ -97,136 +97,136 @@ RIBReader::RIBReader(const boost::shared_ptr<RenderContext> & rc) : rc_(rc)
 
 std::string RIBReader::readToken()
 {
-	std::string token;
-	file_ >> token;
-	return token;
+    std::string token;
+    file_ >> token;
+    return token;
 }
 
 void RIBReader::parseToken(const std::string & token)
 {
 
-	if (token == "WorldBegin")
-	{
-	}
-	else if (token == "WorldEnd")
-	{
-	}
-	else if (token == "FrameBegin")
-	{
-	}
-	else if (token == "FrameEnd")
-	{
-	}
-	else if (token == "AttributeBegin")
-	{
-	}
-	else if (token == "Attribute")
-	{
-	}
-	else if (token == "AttributeEnd")
-	{
-	}
-	else if (token == "Transform")
-	{
-	}
-	else if (token == "Sphere")
-	{
-	}
-	else if (token == "Surface")
-	{
-	}
-	else if (token == "Polygon")
-	{
-	}
-	else if (token == "Displacement")
-	{
-	}
-	else if (token == "version")
-	{
-	}
-	else if (token == "Option")
-	{
-	}
-	else if (token == "Clipping")
-	{
-	}
-	else if (token == "Format")
-	{
-		std::string xres, yres, aspect;
-		xres = readToken();
-		yres = readToken();
-		aspect = readToken();
-		unsigned int width = boost::lexical_cast<unsigned int>(xres);
-		unsigned int height = boost::lexical_cast<unsigned int>(yres);
-		rc_->format(width, height);
-	}
-	else if (token == "Projection")
-	{
-	}
-	else if (token == "ShadingRate")
-	{
-	}
-	else if (token == "Declare")
-	{
-	}
-	else if (token == "##RenderMan")
-	{
-	}
-	else if (token == "##Scene")
-	{
-	}
-	else if (token == "##Creator")
-	{
-	}
-	else if (token == "##CreationDate")
-	{
-	}
-	else if (token == "##For")
-	{
-	}
-	else if (token == "##Frames")
-	{
-	}
-	else if (token == "##Shaders")
-	{
-	}
-	else if (token == "##CapabilitiesNeeded")
-	{
-	}
-	else if (token == "##CameraOrientation")
-	{
-	}
+    if (token == "WorldBegin")
+    {
+    }
+    else if (token == "WorldEnd")
+    {
+    }
+    else if (token == "FrameBegin")
+    {
+    }
+    else if (token == "FrameEnd")
+    {
+    }
+    else if (token == "AttributeBegin")
+    {
+    }
+    else if (token == "Attribute")
+    {
+    }
+    else if (token == "AttributeEnd")
+    {
+    }
+    else if (token == "Transform")
+    {
+    }
+    else if (token == "Sphere")
+    {
+    }
+    else if (token == "Surface")
+    {
+    }
+    else if (token == "Polygon")
+    {
+    }
+    else if (token == "Displacement")
+    {
+    }
+    else if (token == "version")
+    {
+    }
+    else if (token == "Option")
+    {
+    }
+    else if (token == "Clipping")
+    {
+    }
+    else if (token == "Format")
+    {
+        std::string xres, yres, aspect;
+        xres = readToken();
+        yres = readToken();
+        aspect = readToken();
+        unsigned int width = boost::lexical_cast<unsigned int>(xres);
+        unsigned int height = boost::lexical_cast<unsigned int>(yres);
+        rc_->format(width, height);
+    }
+    else if (token == "Projection")
+    {
+    }
+    else if (token == "ShadingRate")
+    {
+    }
+    else if (token == "Declare")
+    {
+    }
+    else if (token == "##RenderMan")
+    {
+    }
+    else if (token == "##Scene")
+    {
+    }
+    else if (token == "##Creator")
+    {
+    }
+    else if (token == "##CreationDate")
+    {
+    }
+    else if (token == "##For")
+    {
+    }
+    else if (token == "##Frames")
+    {
+    }
+    else if (token == "##Shaders")
+    {
+    }
+    else if (token == "##CapabilitiesNeeded")
+    {
+    }
+    else if (token == "##CameraOrientation")
+    {
+    }
 }
 
 bool RIBReader::read(const std::string &filename)
 {
-	int length = 0;
-	file_.exceptions ( /*std::ifstream::eofbit |  std::ifstream::failbit | */std::ifstream::badbit );
-	try
-	{
-		file_.open(filename.c_str());
-		if (!file_)
-		{
-			std::cout << "Error opening file - " << filename << std::endl;
-			return false;
-		}
-		std::string token;
-		while (!file_.eof())
-		{
-			// read a token from the stream
-			token = readToken();
-			std::cout << "read token: " << token << std::endl;
-			// parse the token
-			parseToken(token);
-		}
-	}
-	catch (std::ifstream::failure e)
-	{
-		std::cout << "Exception opening/reading file '" << filename << "' - " << e.what() << std::endl;
-		return false;
-	}
+    int length = 0;
+    file_.exceptions ( /*std::ifstream::eofbit |  std::ifstream::failbit | */std::ifstream::badbit );
+    try
+    {
+        file_.open(filename.c_str());
+        if (!file_)
+        {
+            std::cout << "Error opening file - " << filename << std::endl;
+            return false;
+        }
+        std::string token;
+        while (!file_.eof())
+        {
+            // read a token from the stream
+            token = readToken();
+            std::cout << "read token: " << token << std::endl;
+            // parse the token
+            parseToken(token);
+        }
+    }
+    catch (std::ifstream::failure e)
+    {
+        std::cout << "Exception opening/reading file '" << filename << "' - " << e.what() << std::endl;
+        return false;
+    }
 
-	file_.close();
+    file_.close();
 
-	return true;
+    return true;
 }
