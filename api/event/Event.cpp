@@ -39,7 +39,7 @@ void Event::type(Type t) {
 
 /**
  **/
-constexpr Type Event::type() const {
+Type Event::type() const {
     return type_;
 }
 
