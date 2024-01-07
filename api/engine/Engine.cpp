@@ -82,6 +82,7 @@ namespace v3d::engine {
      **/
     bool Engine::initialize(int features) {
         logger_ = boost::make_shared<v3d::log::Logger>();
+        features_ = features;
 
         LOG_INFO(logger_) << "Initializing engine...";
 
