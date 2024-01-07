@@ -14,7 +14,7 @@ namespace odyssey::render {
     /**
      **/
     class Scene final : public v3d::render::realtime::Scene2D {
-    public:
+     public:
         /**
          **/
         boost::shared_ptr<v3d::render::realtime::Frame> collect();
@@ -23,7 +23,7 @@ namespace odyssey::render {
          **/
         void setPlayer(boost::shared_ptr<renderable::Player> player);
 
-    private:
+     private:
         boost::shared_ptr<renderable::Player> player_;
     };
-};
+};  // namespace odyssey::render

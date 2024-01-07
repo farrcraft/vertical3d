@@ -7,7 +7,7 @@
 
 #include <boost/make_shared.hpp>
 
-using namespace odyssey::render;
+namespace odyssey::render {
 
 /**
  **/
@@ -25,3 +25,5 @@ boost::shared_ptr<v3d::render::realtime::Frame> Scene::collect() {
 void Scene::setPlayer(boost::shared_ptr<renderable::Player> player) {
     player_ = player;
 }
+
+};  // namespace odyssey::render

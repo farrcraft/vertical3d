@@ -15,4 +15,4 @@ namespace odyssey::engine {
         const int screen_tile_width = 20;
         const int screen_tile_height = 12;
     };
-};
+};  // namespace odyssey::engine

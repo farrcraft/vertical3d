@@ -1,9 +1,13 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
 #include <boost/test/unit_test.hpp>
 
 #include "../libmoya/Renderer.h"
 
-BOOST_AUTO_TEST_CASE( renderer_test )
-{
+BOOST_AUTO_TEST_CASE(renderer_test) {
     v3D::Moya::Renderer renderer;
     // create a new render context
     renderer.createRenderContext("default context");

@@ -20,8 +20,7 @@ namespace odyssey::render::renderable {
     Player::Player(boost::shared_ptr<v3d::render::realtime::Engine2D> renderer, boost::shared_ptr<odyssey::engine::Player> player) :
         Renderable(renderer),
         player_(player) {
-
-        //boost::shared_ptr<odyssey::asset::Image> asset = assetManager->load("sample.png", odyssey::asset::Type::IMAGE_PNG);
+        // boost::shared_ptr<odyssey::asset::Image> asset = assetManager->load("sample.png", odyssey::asset::Type::IMAGE_PNG);
         boost::shared_ptr<v3d::asset::Asset> asset = renderer_->assetManager()->loadTypeFromExt("sample.png");
         boost::shared_ptr<v3d::asset::Image> img = boost::static_pointer_cast<v3d::asset::Image>(asset);
 
@@ -29,7 +28,8 @@ namespace odyssey::render::renderable {
         boost::shared_ptr<v3d::render::realtime::Surface> surface = boost::make_shared<v3d::render::realtime::Surface>(img->image());
 
         // create texture from surface
-        boost::shared_ptr<v3d::render::realtime::Texture2D> texture = boost::make_shared<v3d::render::realtime::Texture2D>(renderer_->context(), surface->surface(), img->image()->width(), img->image()->height());
+        boost::shared_ptr<v3d::render::realtime::Texture2D> texture =
+            boost::make_shared<v3d::render::realtime::Texture2D>(renderer_->context(), surface->surface(), img->image()->width(), img->image()->height());
 
         // we need to scale our texture to our tile size proportions
         texture->resize(odyssey::engine::unit::tile_width, odyssey::engine::unit::tile_height);
@@ -44,7 +44,8 @@ namespace odyssey::render::renderable {
         // fetch our source texture from the cache
         boost::shared_ptr<v3d::render::realtime::Texture2D> source = renderer_->textureCache()->fetch("sample.png");
         // create a new blit texture render operation
-        boost::shared_ptr<v3d::render::realtime::operation::Blit2DTexture> operation = boost::make_shared<v3d::render::realtime::operation::Blit2DTexture>(source, renderer_->backBuffer());
+        boost::shared_ptr<v3d::render::realtime::operation::Blit2DTexture> operation =
+            boost::make_shared<v3d::render::realtime::operation::Blit2DTexture>(source, renderer_->backBuffer());
         // push onto frame
         frame->addOperation(operation);
     }

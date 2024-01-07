@@ -74,13 +74,13 @@ Tetrad & GameBoard::currentTetrad() {
 Tetrad GameBoard::randomTetrad() {
     // pick a shape
     size_t shapeCount = shapes_.size();
-    size_t num = rand() % shapeCount;
+    size_t num = rand() % shapeCount;  // NOLINT
     // log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("tetris"));
     // LOG4CXX_DEBUG(logger, "GameBoard::randomTetrad - selecting random tretrad # [" << num << "] from [" << shapeCount << "]");
 
     Tetrad piece(shapes_[num]);
     // and an initial rotation
-    unsigned int rot = rand() % 3;
+    unsigned int rot = rand() % 3;  // NOLINT
     for (unsigned int i = 0; i < rot; i++) {
         piece.rotate(Tetrad::CLOCKWISE);
     }

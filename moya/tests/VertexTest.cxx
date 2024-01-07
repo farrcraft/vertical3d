@@ -1,9 +1,13 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
 #include <boost/test/unit_test.hpp>
 
 #include "../libmoya/Vertex.h"
 
-BOOST_AUTO_TEST_CASE( vertex_test )
-{
+BOOST_AUTO_TEST_CASE(vertex_test) {
 
     v3D::Moya::Vertex vertex;
 

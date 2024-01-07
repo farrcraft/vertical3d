@@ -1,9 +1,13 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
 #include <boost/test/unit_test.hpp>
 
 #include "../libmoya/RenderContext.h"
 
-BOOST_AUTO_TEST_CASE( renderContext_test )
-{
+BOOST_AUTO_TEST_CASE(renderContext_test) {
     v3D::Moya::RenderContext rc;
     unsigned int bucket_width = 0;
     unsigned int bucket_height = 0;

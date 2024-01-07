@@ -1,9 +1,13 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
 #include <boost/test/unit_test.hpp>
 
 #include "../libmoya/Polygon.h"
 
-BOOST_AUTO_TEST_CASE( polygon_test )
-{
+BOOST_AUTO_TEST_CASE(polygon_test) {
     v3D::Moya::Polygon polygon;
 
     // polygon starts out with no vertices

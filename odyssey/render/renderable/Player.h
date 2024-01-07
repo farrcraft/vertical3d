@@ -26,4 +26,4 @@ namespace odyssey::render::renderable {
      private:
         boost::shared_ptr<odyssey::engine::Player> player_;
     };
-};
+};  // namespace odyssey::render::renderable

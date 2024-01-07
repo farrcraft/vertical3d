@@ -102,7 +102,6 @@ namespace odyssey::engine {
     bool Engine::tick() {
         if (!v3d::engine::Engine::tick()) {
             return false;
-
         }
         // Tick various systems, e.g. Movement System, Collision System, Combat System, etc
         if (!movementSystem_->tick()) {

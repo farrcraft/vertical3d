@@ -1,9 +1,13 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
 #include <boost/test/unit_test.hpp>
 
 #include "../libmoya/ReyesPrimitive.h"
 
-BOOST_AUTO_TEST_CASE( reyesPrimitive_test )
-{
+BOOST_AUTO_TEST_CASE(reyesPrimitive_test) {
 
     v3D::Moya::ReyesPrimitive primitive;
 

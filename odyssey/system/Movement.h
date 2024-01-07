@@ -11,10 +11,10 @@ namespace odyssey::system {
     /**
      **/
     class Movement final : public v3d::ecs::System {
-    public:
+     public:
         /**
          * @return bool
          **/
         bool tick();
     };
-};
+};  // namespace odyssey::system

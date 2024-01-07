@@ -9,6 +9,5 @@ namespace odyssey::tile {
     /**
      **/
     class Tile {
-
     };
 };

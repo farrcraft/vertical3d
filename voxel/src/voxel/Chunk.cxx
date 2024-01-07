@@ -7,7 +7,7 @@
 #include "Chunk.h"
 #include "../engine/MortonCode.h"
 
-Chunk::Chunk(TerrainMap & terrain, glm::ivec3 chunkPosition, unsigned int ceiling) :
+Chunk::Chunk(TerrainMap * terrain, glm::ivec3 chunkPosition, unsigned int ceiling) :
     dirty_(false),
     size_(16),
     empty_(false),
@@ -27,7 +27,7 @@ Chunk::Chunk(TerrainMap & terrain, glm::ivec3 chunkPosition, unsigned int ceilin
         for (unsigned int z = 0; z < size_; z++) {
             float posZ = static_cast<float>(z + chunkPosition.z);
             // height is in the range [0.0-255.0]
-            float height = terrain.height(x + chunkPosition.x, z + chunkPosition.z);
+            float height = terrain->height(x + chunkPosition.x, z + chunkPosition.z);
             unsigned int blockHeight = 0;
             if (height > 0.0f) {
                 // scale into the range of the world ceiling

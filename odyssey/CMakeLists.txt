@@ -13,7 +13,7 @@ link_directories(
 	"../vendor/zlib-1.2.11")
 
 # Add source to this project's executable.
-add_executable (Odyssey WIN32 "Odyssey.cpp" "Odyssey.h" "ui/Screen.h" "ui/Screen.cpp"
+add_executable (Odyssey WIN32 "Odyssey.cpp"  "ui/Screen.h" "ui/Screen.cpp"
  "engine/Sprite.h" "engine/Player.h" "engine/SpriteSheet.h" 
   "render/Renderable.h" "engine/Player.cpp" 
 "render/renderable/Player.h" "render/renderable/Player.cpp" 
