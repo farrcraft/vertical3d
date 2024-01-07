@@ -6,8 +6,9 @@
 
 #pragma once
 
-#include <boost/shared_ptr.hpp>
 #include <vector>
+
+#include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
 
 class Chunk;

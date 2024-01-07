@@ -8,7 +8,7 @@
 #include "Bucket.h"
 
 #include <vector>
-//#include <boost/multi_array.hpp>
+// #include <boost/multi_array.hpp>
 
 namespace v3d::moya {
     /*
@@ -25,30 +25,30 @@ namespace v3d::moya {
         the number of planes is determined in part by calls to RiDisplay()
     */
     class FrameBuffer {
-        public:
-            FrameBuffer(unsigned int bucketSize[2], unsigned int imageSize[2]);
-            ~FrameBuffer();
+     public:
+        FrameBuffer(unsigned int bucketSize[2], unsigned int imageSize[2]);
+        ~FrameBuffer();
 
-            unsigned int * bucketSize(void) const;
-            unsigned int * imageSize(void) const;
-            void addPrimitive(const boost::shared_ptr<ReyesPrimitive> & primitive, const v3d::type::AABBox & bound);
-            void render(void);
-    
-            //typedef boost::multi_array<Bucket, 2> BucketGrid;
-            typedef std::vector< std::vector<Bucket> > BucketGrid;
+        unsigned int * bucketSize(void) const;
+        unsigned int * imageSize(void) const;
+        void addPrimitive(const boost::shared_ptr<ReyesPrimitive> & primitive, const v3d::type::AABBox & bound);
+        void render(void);
 
-        protected:
-            void allocate(void);
+        // typedef boost::multi_array<Bucket, 2> BucketGrid;
+        typedef std::vector< std::vector<Bucket> > BucketGrid;
 
-        private:
-            // plane_t plane(boost::extents[640][480]);
-            //typedef boost::multi_array<float, 2> plane_t;
-            typedef std::vector< std::vector<float> > plane_t;
+     protected:
+        void allocate(void);
 
-            BucketGrid				_buckets;
-            std::vector<plane_t>	_planes;
-            unsigned int			_bucketSize[2];
-            unsigned int			_imageSize[2];
+     private:
+        // plane_t plane(boost::extents[640][480]);
+        // typedef boost::multi_array<float, 2> plane_t;
+        typedef std::vector< std::vector<float> > plane_t;
+
+        BucketGrid _buckets;
+        std::vector<plane_t> _planes;
+        unsigned int _bucketSize[2];
+        unsigned int _imageSize[2];
     };
 
-};
+};  // namespace v3d::moya

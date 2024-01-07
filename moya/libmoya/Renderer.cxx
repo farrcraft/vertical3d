@@ -6,29 +6,26 @@
 #include "Renderer.h"
 
 #include <iostream>
+#include <string>
 
-using namespace v3d::moya;
+namespace v3d::moya {
 
 
-Renderer::Renderer()
-{
+Renderer::Renderer() {
 }
 
-Renderer::~Renderer()
-{
+Renderer::~Renderer() {
 }
 
 /**
  * Establish a new rendering context.
  * This maps to RiBegin()
 */
-void Renderer::createRenderContext(const std::string & name)
-{
+void Renderer::createRenderContext(const std::string & name) {
     // should probably go somewhere else since it could be displayed multiple times here...
-    if (_contexts.size() == 0)
-    {
+    if (_contexts.size() == 0) {
         std::cout << "The RenderMan (R) Interface Procedures and Protocol are:" << std::endl <<
-                     "Copyright 1988, 1989, Pixar" << std::endl << 
+                     "Copyright 1988, 1989, Pixar" << std::endl <<
                      "All Rights Reserved" << std::endl;
     }
 
@@ -36,15 +33,12 @@ void Renderer::createRenderContext(const std::string & name)
     _contexts.push_back(context);
 }
 
-void Renderer::destroyActiveRenderContext(void)
-{
+void Renderer::destroyActiveRenderContext(void) {
     _contexts.pop_back();
 }
 
-RenderContext & Renderer::activeRenderContext(void)
-{
-    if (_contexts.size() == 0)
-    {
+RenderContext & Renderer::activeRenderContext(void) {
+    if (_contexts.size() == 0) {
         createRenderContext("");
     }
     return _contexts[_contexts.size() - 1];
@@ -102,5 +96,6 @@ void Renderer::renderPolygon(boost::shared_ptr<Polygon> poly)
     // is the polygon facing the camera?
     // cull polygon completely or clip to view frustum
 
-//}
+// }
 
+};  // namespace v3d::moya

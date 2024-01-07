@@ -3,10 +3,11 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include "../libmoya/RenderMan.h"
-
 #include <cstdlib>
 #include <iostream>
+
+#include "../libmoya/RenderMan.h"
+
 #include <boost/program_options.hpp>
 
 int main(int argc, char *argv[]) {
@@ -28,8 +29,7 @@ int main(int argc, char *argv[]) {
         ("file", boost::program_options::value<std::string>(), "input filename to be rendered")
         ("output", boost::program_options::value<std::string>(), "filename to be written")
         ("grid", boost::program_options::value<int>(), "micropolygon grid size")
-        ("bucket", boost::program_options::value<int>(), "nXm pixel bucket size")
-    ;
+        ("bucket", boost::program_options::value<int>(), "nXm pixel bucket size");
 
     // parse options
     boost::program_options::variables_map var_map;
@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
     if (var_map.count("version")) {
         std::cout << "Moya v0.0.1" << std::endl;
         std::cout << "The RenderMan (R) Interface Procedures and Protocol are:" << std::endl <<
-                     "Copyright 1988, 1989, Pixar" << std::endl << 
+                     "Copyright 1988, 1989, Pixar" << std::endl <<
                      "All Rights Reserved" << std::endl;
 
         exit(EXIT_SUCCESS);
@@ -100,8 +100,10 @@ int main(int argc, char *argv[]) {
     RiWorldBegin();
     std::string surfaceName("plastic");
     RiSurface(const_cast<char*>(surfaceName.c_str()));
-    RtPoint points[4] = { 0.0, 1.0, 0.0,	0.0, 1.0, 1.0,
-                          0.0, 0.0, 1.0,	0.0, 0.0, 0.0 };
+    RtPoint points[4] = { 0.0, 1.0, 0.0,
+                          0.0, 1.0, 1.0,
+                          0.0, 0.0, 1.0,
+                          0.0, 0.0, 0.0 };
     RiPolygon(4, RI_P, (RtPointer)points, RI_NULL);
     /*
         gourad shaded:

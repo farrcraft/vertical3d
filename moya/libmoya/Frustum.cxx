@@ -5,19 +5,16 @@
 
 #include "Frustum.h"
 
-using namespace v3d::moya;
+namespace v3d::moya {
 
-Frustum::Frustum()
-{
+Frustum::Frustum() {
 }
 
-Frustum::Frustum(const glm::mat4x4 & projection)
-{
+Frustum::Frustum(const glm::mat4x4 & projection) {
     extract(projection);
 }
 
-Frustum::~Frustum()
-{
+Frustum::~Frustum() {
 }
 
 /*
@@ -39,8 +36,7 @@ Frustum::~Frustum()
         [  2,  6, 10,  14 ]
         [  3,  7, 11,  15 ]
 */
-void Frustum::extract(const glm::mat4x4 & projection)
-{
+void Frustum::extract(const glm::mat4x4 & projection) {
     Plane plane;
     // left clipping plane
     plane[0] = projection[3][0] + projection[0][0];
@@ -78,7 +74,7 @@ void Frustum::extract(const glm::mat4x4 & projection)
     plane[2] = projection[2][2];
     plane[3] = projection[2][3];
     _clippingPlanes["near"] = plane;
-    
+
     // far
     plane[0] = projection[3][0] - projection[2][0];
     plane[1] = projection[3][1] - projection[2][1];
@@ -87,11 +83,9 @@ void Frustum::extract(const glm::mat4x4 & projection)
     _clippingPlanes["far"] = plane;
 }
 
-void Frustum::normalize(void)
-{
+void Frustum::normalize(void) {
     std::map<std::string, Plane>::iterator it = _clippingPlanes.begin();
-    for (; it != _clippingPlanes.end(); it++)
-    {
+    for (; it != _clippingPlanes.end(); it++) {
         (it->second).normalize();
     }
 }
@@ -100,37 +94,32 @@ void Frustum::normalize(void)
     tests aabb against all of the frustum's clipping planes 
     aabb is either inside, outside, or intersecting the frustum
 */
-int Frustum::intersect(const v3d::type::AABBox & aabb)
-{
+int Frustum::intersect(const v3d::type::AABBox & aabb) {
     size_t inside = _clippingPlanes.size();
     int hit = 0;
     // do plane/box intersection tests
     std::map<std::string, Plane>::iterator it = _clippingPlanes.begin();
-    for (; it != _clippingPlanes.end(); it++)
-    {
+    for (; it != _clippingPlanes.end(); it++) {
         hit = (it->second).classify(aabb);
-        if (hit == Plane::OUTSIDE)
-        {
+        if (hit == Plane::OUTSIDE) {
             inside--;
         }
     }
-    if (inside == _clippingPlanes.size())
-    {
+    if (inside == _clippingPlanes.size()) {
         return INSIDE;
     }
-    if (inside == 0)
-    {
+    if (inside == 0) {
         return OUTSIDE;
     }
     return CROSSING;
 }
 
 // clip a polygon against each of the clipping planes in the frustum
-void Frustum::clip(boost::shared_ptr<Polygon> poly)
-{
+void Frustum::clip(boost::shared_ptr<Polygon> poly) {
     std::map<std::string, Plane>::iterator it = _clippingPlanes.begin();
-    for (; it != _clippingPlanes.end(); it++)
-    {
+    for (; it != _clippingPlanes.end(); it++) {
         (it->second).clip(poly);
     }
 }
+
+};  // namespace v3d::moya

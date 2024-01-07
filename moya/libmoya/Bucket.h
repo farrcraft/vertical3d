@@ -5,11 +5,11 @@
 
 #pragma once
 
+#include <vector>
+
 #include "ReyesPrimitive.h"
 
 #include <boost/shared_ptr.hpp>
-
-#include <vector>
 
 namespace v3d::moya {
         /*
@@ -22,18 +22,18 @@ namespace v3d::moya {
             the render context is responsible for the bucket size
         */
         class Bucket final {
-            public:
-                Bucket();
-                ~Bucket();
-                
-                void addPrimitive(boost::shared_ptr<ReyesPrimitive> primitive);
-                void render(void);
-    
-            private:
-                unsigned int _left;		// left edge of this bucket in pixel coordinates
-                unsigned int _top;		// top edge of this bucket in pixel coordinates
-                std::vector<boost::shared_ptr<ReyesPrimitive> >	_primitives;// list of primitives in this bucket
-    
-                std::vector<boost::shared_ptr<MicroPolygonGrid> >	_grids;
+         public:
+            Bucket();
+            ~Bucket();
+
+            void addPrimitive(boost::shared_ptr<ReyesPrimitive> primitive);
+            void render(void);
+
+         private:
+            unsigned int _left;  // left edge of this bucket in pixel coordinates
+            unsigned int _top;  // top edge of this bucket in pixel coordinates
+            std::vector<boost::shared_ptr<ReyesPrimitive> > _primitives;  // list of primitives in this bucket
+
+            std::vector<boost::shared_ptr<MicroPolygonGrid> > _grids;
         };
-};
+};  // namespace v3d::moya

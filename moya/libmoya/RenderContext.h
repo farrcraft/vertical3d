@@ -18,13 +18,12 @@ namespace v3d::moya {
         *	multiple contexts may exist at once, but only one is ever active at any
         *	time
         */
-    class RenderContext
-    {
-        public:
+    class RenderContext {
+     public:
             RenderContext();
-            RenderContext(const std::string & name);
+            explicit RenderContext(const std::string & name);
             ~RenderContext();
-    
+
             typedef std::vector<boost::shared_ptr<Polygon> > PolygonList;
 
             /**
@@ -44,12 +43,12 @@ namespace v3d::moya {
                 *	on the context. we might just output a rib file.
                 */
             void render();
-    
+
             // get methods
             unsigned int imageWidth() const;
             unsigned int imageHeight() const;
             float pixelAspect() const;
-    
+
             // manipulators
             /**
                 *	maps to RiFormat(xres, yres, aspect)
@@ -110,32 +109,32 @@ namespace v3d::moya {
             unsigned int gridSize() const;
             float shadingRate() const;
 
-        protected:
+     protected:
             void initialize();
 
-        private:
-            std::string	name_;
-            //vector<PolygonPtr>  	_polygons;
-            std::vector<glm::mat4x4>	transforms_;
-            std::map<std::string, glm::mat4x4>	coordinateSystems_;
-            boost::shared_ptr<FrameBuffer>	frameBuffer_;
+     private:
+            std::string name_;
+            // vector<PolygonPtr> _polygons;
+            std::vector<glm::mat4x4> transforms_;
+            std::map<std::string, glm::mat4x4> coordinateSystems_;
+            boost::shared_ptr<FrameBuffer> frameBuffer_;
             // camera options
             unsigned int xres_;
             unsigned int yres_;
             float pixelAspect_;
-            float					crop_[4];		// region of raster that is rendered. defaults [0,1,0,1]
-            float					frameAspect_;	// default: 4/3
-            float					screen_[4];		// screen coordinates (after projection) of area to be rendered. default: [-4/3, 4/3, -1, 1]
-            std::string				projection_;	// type of projection - default: "orthographic"
-            glm::mat4x4 transform_;		// world to camera transformation matrix / current transformation matrix
-            float near_;			// near clipping plane. default: epsilon
-            float far_;			// far clipping plane. default: infinity
+            float crop_[4];  // region of raster that is rendered. defaults [0,1,0,1]
+            float frameAspect_;  // default: 4/3
+            float screen_[4];  // screen coordinates (after projection) of area to be rendered. default: [-4/3, 4/3, -1, 1]
+            std::string projection_;  // type of projection - default: "orthographic"
+            glm::mat4x4 transform_;  // world to camera transformation matrix / current transformation matrix
+            float near_;  // near clipping plane. default: epsilon
+            float far_;  // far clipping plane. default: infinity
             // other clipping planes
-            float fStop_;			// for depth of field. default: infinity
+            float fStop_;  // for depth of field. default: infinity
             float focalLength_;
             float focalDistance_;
-            float shutterOpen_;	// default: 0
-            float shutterClose_;	// default: 0
+            float shutterOpen_;  // default: 0
+            float shutterClose_;  // default: 0
 
 
             /*
@@ -153,9 +152,9 @@ namespace v3d::moya {
                 32x32 * .25 = 8x8 pixel grid
                 16x16 * 1 = 16x16 pixel grid
             */
-            unsigned int bucketWidth_;	// default = 16, 16
+            unsigned int bucketWidth_;  // default = 16, 16
             unsigned int bucketHeight_;
-            unsigned int gridSize_;		// default = 256
+            unsigned int gridSize_;  // default = 256
             float shadingRate_;
     };
-};
+};  // namespace v3d::moya

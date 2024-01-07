@@ -5,6 +5,9 @@
 
 #pragma once
 
+#include <string>
+#include <vector>
+
 #include "RenderContext.h"
 
 namespace v3d::moya {
@@ -44,9 +47,8 @@ namespace v3d::moya {
         "one true API" clause. The Pixar copyright notice is printed on stdout 
         whenever a new render context is pushed onto an empty stack.
     */
-    class Renderer
-    {
-        public:
+    class Renderer {
+     public:
             Renderer();
             ~Renderer();
 
@@ -69,7 +71,7 @@ namespace v3d::moya {
                 */
             RenderContext & activeRenderContext(void);
 
-        private:
-            std::vector<RenderContext>	_contexts;
+     private:
+            std::vector<RenderContext> _contexts;
     };
-};
+};  // namespace v3d::moya

@@ -8,7 +8,6 @@
 #include "../libmoya/ReyesPrimitive.h"
 
 BOOST_AUTO_TEST_CASE(reyesPrimitive_test) {
-
     v3D::Moya::ReyesPrimitive primitive;
 
     primitive.diceable(true);
@@ -22,5 +21,4 @@ BOOST_AUTO_TEST_CASE(reyesPrimitive_test) {
     diceable = primitive.diceable();
 
     BOOST_CHECK_EQUAL(diceable, false);
-
 }

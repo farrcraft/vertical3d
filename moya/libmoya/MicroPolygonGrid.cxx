@@ -5,23 +5,19 @@
 
 #include "MicroPolygonGrid.h"
 
-using namespace v3d::moya;
+namespace v3d::moya {
 
-MicroPolygonGrid::MicroPolygonGrid()
-{
+MicroPolygonGrid::MicroPolygonGrid() {
 }
 
-MicroPolygonGrid::~MicroPolygonGrid()
-{
+MicroPolygonGrid::~MicroPolygonGrid() {
 }
 
-Vertex MicroPolygonGrid::vertex(unsigned int i, unsigned int j) const
-{
+Vertex MicroPolygonGrid::vertex(unsigned int i, unsigned int j) const {
     return _grid[i][j];
 }
 
-MicroPolygon MicroPolygonGrid::microPolygon(unsigned int i, unsigned int j) const
-{
+MicroPolygon MicroPolygonGrid::microPolygon(unsigned int i, unsigned int j) const {
     /*
         poly is composed of points on grid:
         [i][j]
@@ -37,7 +33,8 @@ MicroPolygon MicroPolygonGrid::microPolygon(unsigned int i, unsigned int j) cons
     return p;
 }
 
-void MicroPolygonGrid::addVertex(const Vertex & vert, unsigned int i, unsigned int j)
-{
+void MicroPolygonGrid::addVertex(const Vertex & vert, unsigned int i, unsigned int j) {
     _grid[i][j] = vert;
 }
+
+};  // namespace v3d::moya

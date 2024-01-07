@@ -10,7 +10,7 @@ namespace odyssey::engine {
 
     /**
      **/
-    Player::Player(entt::registry& registry) {
+    Player::Player(const entt::registry& registry) {
         // register a player entity
         id_ = registry.create();
         // create the components attached to player entity

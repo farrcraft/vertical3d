@@ -13,10 +13,10 @@
 
 namespace v3d::moya {
     class ReyesPrimitive {
-        public:
+     public:
             ReyesPrimitive();
             virtual ~ReyesPrimitive();
-    
+
             virtual bool diceable(void) const;
             virtual v3d::type::AABBox bound(void) const;
             virtual void split(void);
@@ -31,8 +31,8 @@ namespace v3d::moya {
             */
             virtual bool dice(boost::shared_ptr<MicroPolygonGrid> grid);
             virtual void diceable(bool status);
-    
-        private:
-            bool		_diceable;
+
+     private:
+            bool _diceable;
     };
-};
+};  // namespace v3d::moya

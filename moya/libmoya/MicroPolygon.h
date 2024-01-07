@@ -9,15 +9,14 @@
 
 namespace v3d::moya {
     // a flat shaded quadrilateral with an area of about 1/4 of a pixel
-    class MicroPolygon
-    {
-        public:
-            MicroPolygon();
-            ~MicroPolygon();
-    
-            Vertex & operator[] (unsigned int i);
-    
-        private:
-            Vertex		_points[4];
+    class MicroPolygon {
+     public:
+        MicroPolygon();
+        ~MicroPolygon();
+
+        Vertex & operator[] (unsigned int i);
+
+     private:
+        Vertex _points[4];
     };
-};
+};  // namespace v3d::moya

@@ -17,10 +17,10 @@ namespace odyssey::engine {
      public:
         /**
          **/
-        Player(entt::registry &registry);
+        Player(const entt::registry &registry);
 
      private:
         entt::entity id_;
         Sprite sprite_;
     };
-};
+};  // namespace odyssey::engine
