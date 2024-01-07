@@ -38,11 +38,7 @@ namespace v3d::asset {
 
         /**
          **/
-        void open(char const* path, char const* mode);
-
-        /**
-         **/
-        bool open(char const* path, char const* mode, const boost::json::error_code& ec);
+        bool open(char const* path, char const* mode);
 
         /**
          **/
@@ -72,8 +68,7 @@ namespace v3d::asset {
 
     inline std::string read_file(char const* path, const boost::json::error_code& ec) {
         JsonFile f;
-        f.open(path, "r", ec);
-        if (ec) {
+        if (!f.open(path, "r")) {
             return {};
         }
         std::string s;

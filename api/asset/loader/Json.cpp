@@ -49,7 +49,7 @@ namespace v3d::asset {
             asset = boost::make_shared<v3d::asset::Json>(std::string(name), Type::JsonDocument, document.as_object());
         }
         catch (std::exception const& e) {
-            LOG_ERROR(logger_) << "Bootstrap caught exception: " << e.what();
+            LOG_ERROR(logger_) << "Caught exception loading JSON asset: " << e.what();
         }
 
         return asset;
