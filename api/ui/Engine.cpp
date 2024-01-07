@@ -108,8 +108,15 @@ namespace v3d::ui {
             auto const menuItemConfig = itemsIterator->as_object();
             std::string label = boost::json::value_to<std::string>(menuItemConfig.at("label"));
             std::string itemType = boost::json::value_to<std::string>(menuItemConfig.at("type"));
-            std::string command = boost::json::value_to<std::string>(menuItemConfig.at("command"));
-            std::string context = boost::json::value_to<std::string>(menuItemConfig.at("context"));
+
+            std::string command;
+            std::string context;
+            if (menuItemConfig.contains("command")) {
+                command = boost::json::value_to<std::string>(menuItemConfig.at("command"));
+            }
+            if (menuItemConfig.contains("context")) {
+                context = boost::json::value_to<std::string>(menuItemConfig.at("context"));
+            }
 
             boost::shared_ptr<component::MenuItem> menuItem = boost::make_shared<component::MenuItem>(menu::stringToType(itemType), label);
             if (context.length() > 0 && command.length() > 0) {
