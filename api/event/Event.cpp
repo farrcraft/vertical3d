@@ -20,7 +20,7 @@ bool Event::operator() (const Event& lhs, const Event& rhs) const {
 }
 
 bool Event::operator <(const Event& rhs) const {
-    return str() == rhs.str();
+    return str().compare(rhs.str()) < 0;
 }
 
 std::string_view Event::name() const {
