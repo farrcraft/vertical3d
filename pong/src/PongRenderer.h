@@ -30,6 +30,8 @@ class PongRenderer final {
     void drawBall();
     void drawPaddle(const Paddle & paddle);
 
+    void scene(const boost::shared_ptr<PongScene>& scene);
+
  private:
     boost::shared_ptr<PongScene> scene_;
     boost::shared_ptr<v3d::gl::Canvas> canvas_;

@@ -167,3 +167,7 @@ void PongRenderer::drawPaddle(const Paddle & paddle) {
     canvas_->rect(0, 15, 0, 50, color);
     canvas_->pop();
 }
+
+void PongRenderer::scene(const boost::shared_ptr<PongScene>& scene) {
+    scene_ = scene;
+}
