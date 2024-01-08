@@ -52,9 +52,10 @@ bool::PongEngine::initialize() {
             }
         }
     }
-
-    renderer_ = boost::make_shared<PongRenderer>(logger_, assetManager_, &registry_);
+    boost::shared_ptr<v3d::render::realtime::Window3D> win = boost::dynamic_pointer_cast<v3d::render::realtime::Window3D>(window());
+    renderer_ = boost::make_shared<PongRenderer>(win, logger_, assetManager_, &registry_);
     scene_ = boost::make_shared<PongScene>(&registry_, dispatcher_);
+    renderer_->scene(scene_);
 
     // register game commands
     dispatcher_->sink<v3d::event::Event>().connect<&PongEngine::handleEvent>(*this);
@@ -118,7 +119,9 @@ bool PongEngine::render() {
 /**
  **/
 bool PongEngine::shutdown() {
-    soundEngine_->shutdown();
+    if (soundEngine_) {
+        soundEngine_->shutdown();
+    }
     if (!v3d::engine::Engine::shutdown()) {
         return false;
     }

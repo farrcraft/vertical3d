@@ -1,4 +1,5 @@
-vendor/*
+vendor/vcpkg/
 out/build/*
 .vs*
 docs/ChangeLog.md
+vcpkg_installed/*

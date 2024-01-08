@@ -11,19 +11,19 @@
 #include <boost/shared_ptr.hpp>
 
 namespace odyssey::render {
-	/**
-	 **/
-	class Scene final : public v3d::render::realtime::Scene2D {
-	public:
-		/**
-		 **/
-		boost::shared_ptr<v3d::render::realtime::Frame> collect();
+    /**
+     **/
+    class Scene final : public v3d::render::realtime::Scene2D {
+     public:
+        /**
+         **/
+        boost::shared_ptr<v3d::render::realtime::Frame> collect();
 
-		/**
-		 **/
-		void setPlayer(boost::shared_ptr<renderable::Player> player);
+        /**
+         **/
+        void setPlayer(boost::shared_ptr<renderable::Player> player);
 
-	private:
-		boost::shared_ptr<renderable::Player> player_;
-	};
-};
+     private:
+        boost::shared_ptr<renderable::Player> player_;
+    };
+};  // namespace odyssey::render

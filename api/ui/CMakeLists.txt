@@ -33,3 +33,8 @@ add_library("v3dlib_ui"
 "component/menu/Menu.h" "component/menu/Menu.cpp"
 "component/menu/MenuItem.h" "component/menu/MenuItem.cpp"
 "Engine.h" "Engine.cpp" "component/menu/Type.h" "component/Type.h" "component/menu/MenuBar.cpp" "Navigation.h")
+
+# Workaround for a boost log ABI bug - https://github.com/microsoft/vcpkg/discussions/22762
+target_compile_definitions(v3dlib_ui PUBLIC BOOST_USE_WINAPI_VERSION=0x0A00)
+target_compile_definitions(v3dlib_ui PUBLIC _WIN32_WINNT=0x0A00)
+target_compile_definitions(v3dlib_ui PUBLIC WINVER=0x0A00)

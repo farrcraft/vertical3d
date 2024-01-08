@@ -8,7 +8,6 @@
 #include <string>
 
 #include "../../api/gl/GLTexture.h"
-#include "../../api/font/FontCache.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/glm.hpp>
@@ -24,7 +23,7 @@ namespace Luxa {
     class ComponentRenderer {
      public:
             explicit ComponentRenderer(const boost::shared_ptr<v3d::log::Logger>& logger);
-            explicit ComponentRenderer(boost::shared_ptr<v3d::font::FontCache> fc);
+            explicit ComponentRenderer();
             ~ComponentRenderer();
 
             void overlay(const v3d::ui::Overlay & o);
@@ -93,24 +92,11 @@ namespace Luxa {
 
             void prepare();
             void post();
-            /**
-             * Get the font cache used by the vgui system.
-             * @return a pointer to the font cache
-             */
-            boost::shared_ptr<v3d::font::FontCache> fonts() const;
-            /**
-             * Get the default font for a component class.
-             * @param style_class the class type of the component
-             * @param theme the active theeme
-             * @return the font for the requested component type
-             */
-            boost::shared_ptr<v3d::font::Font2D> getDefaultFont(const std::string & style_class, boost::shared_ptr<Theme> theme);
 
      private:
             int width_;
             int height_;
             v3d::ui::Overlay overlay_;
-            boost::shared_ptr<v3d::font::FontCache> fonts_;
     };
 
 };  // end namespace Luxa

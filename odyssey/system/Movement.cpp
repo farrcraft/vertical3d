@@ -5,10 +5,12 @@
 
 #include "Movement.h"
 
-using namespace odyssey::system;
+namespace odyssey::system {
 
 /**
  **/
 bool Movement::tick() {
-	return true;
+    return true;
 }
+
+};  // namespace odyssey::system

@@ -68,6 +68,11 @@ namespace v3d::engine {
          **/
         virtual bool shutdown();
 
+        /**
+         * @return Window
+         **/
+        boost::shared_ptr<v3d::render::realtime::Window> window() const;
+
      protected:
         boost::shared_ptr<v3d::log::Logger> logger_;
         boost::shared_ptr<v3d::config::Config> config_;

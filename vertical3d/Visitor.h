@@ -1,21 +1,19 @@
-#ifndef INCLUDED_V3D_VISITOR
-#define INCLUDED_V3D_VISITOR
+/**
+ * Vertical3D
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
+**/
 
-namespace v3D
-{
+#pragma once
 
-    class Visitor
-    {
-        public:
+namespace v3D {
+
+    class Visitor {
+     public:
             Visitor();
             virtual ~Visitor();
 
-            //virtual void visit(Particle * particle) = 0;
-
-        private:
+            // virtual void visit(Particle * particle) = 0;
     };
 
-}; // end namespace v3D
+};  // end namespace v3D
 
-
-#endif // INCLUDED_V3D_VISITOR

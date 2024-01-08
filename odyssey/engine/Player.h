@@ -10,17 +10,17 @@
 #include <entt/entt.hpp>
 
 namespace odyssey::engine {
-	/**
-	 * 
-	 **/
-	class Player final {
-	public:
-		/**
-		 **/
-		Player(entt::registry &registry);
+    /**
+     * 
+     **/
+    class Player final {
+     public:
+        /**
+         **/
+        Player(const entt::registry &registry);
 
-	private:
-		entt::entity id_;
-		Sprite sprite_;
-	};
-};
+     private:
+        entt::entity id_;
+        Sprite sprite_;
+    };
+};  // namespace odyssey::engine

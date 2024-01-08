@@ -51,8 +51,12 @@ namespace v3d::asset {
 
     /**
      **/
-    boost::shared_ptr<Asset> Manager::load(std::string_view name, asset::Type t) {
-        boost::filesystem::path assetPath = path_;
+    boost::shared_ptr<Asset> Manager::load(std::string_view name, asset::Type t, bool hasPath) {
+        boost::filesystem::path assetPath;
+        // recursive asset loaders will already have a path set
+        if (!hasPath) {
+            assetPath = path_;
+        }
         assetPath /= static_cast<std::string>(name);
 
         boost::shared_ptr<Loader> loader = resolveLoader(t);

@@ -1,9 +1,5 @@
-﻿/**
- * The Untitled Adventure / Odyssey
- * Copyright (c) 2022 Joshua Farr (josh@farrcraft.com)
- **/
-
-#include "Odyssey.h"
+﻿  // Vertical3D
+  // Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
 
 #include <SDL.h>
 #include <SDL_main.h>

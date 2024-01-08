@@ -12,16 +12,16 @@ namespace odyssey::render {
     /**
      **/
     class Renderable {
-    public:
+     public:
         /**
          **/
-        Renderable(boost::shared_ptr<v3d::render::realtime::Engine2D> renderer);
+        explicit Renderable(boost::shared_ptr<v3d::render::realtime::Engine2D> renderer);
 
         /**
          **/
         virtual void draw(boost::shared_ptr<v3d::render::realtime::Frame> frame) = 0;
 
-    protected:
+     protected:
         boost::shared_ptr<v3d::render::realtime::Engine2D> renderer_;
     };
 

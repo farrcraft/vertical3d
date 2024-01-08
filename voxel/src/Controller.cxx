@@ -85,23 +85,17 @@ void Controller::handleEvent(const v3d::event::Event& event) {
     // player commands
     if (event.name() == "moveForward") {
         scene_->player()->move(Player::MOVE_FORWARD);
-    }
-    else if (event.name() == "moveBackward") {
+    } else if (event.name() == "moveBackward") {
         scene_->player()->move(Player::MOVE_BACKWARD);
-    }
-    else if (event.name() == "moveLeft") {
+    } else if (event.name() == "moveLeft") {
         scene_->player()->move(Player::MOVE_LEFT);
-    }
-    else if (event.name() == "moveRight") {
+    } else if (event.name() == "moveRight") {
         scene_->player()->move(Player::MOVE_RIGHT);
-    }
-    else if (event.name() == "moveUp") {
+    } else if (event.name() == "moveUp") {
         scene_->player()->move(Player::MOVE_UP);
-    }
-    else if (event.name() == "moveDown") {
+    } else if (event.name() == "moveDown") {
         scene_->player()->move(Player::MOVE_DOWN);
-    }
-    else if (event.name() == "debug") {  // debug commands
+    } else if (event.name() == "debug") {  // debug commands
         debug_ = !debug_;
         renderer_->debug(debug_);
     }

@@ -13,7 +13,7 @@ link_directories(
 	"../vendor/zlib-1.2.11")
 
 # Add source to this project's executable.
-add_executable (Odyssey WIN32 "Odyssey.cpp" "Odyssey.h" "ui/Screen.h" "ui/Screen.cpp"
+add_executable (Odyssey WIN32 "Odyssey.cpp"  "ui/Screen.h" "ui/Screen.cpp"
  "engine/Sprite.h" "engine/Player.h" "engine/SpriteSheet.h" 
   "render/Renderable.h" "engine/Player.cpp" 
 "render/renderable/Player.h" "render/renderable/Player.cpp" 
@@ -27,13 +27,15 @@ add_executable (Odyssey WIN32 "Odyssey.cpp" "Odyssey.h" "ui/Screen.h" "ui/Screen
 # It's needed for Windows specific main function.
 # If I don't use FindSDL2 module, I have to link it as well.
 target_link_libraries(Odyssey
-		${SDL2MAIN_LIBRARY}
-        ${SDL2_LIBRARY}
+#		${SDL2MAIN_LIBRARY}
+        ${SDL2_LIBRARIES}
 		${Boost_LIBRARIES}
-		"turbojpeg-static"
-		"jpeg-static"
-		"libpng16d"
-		"zlibd"
+		JPEG::JPEG
+		${PNG_LIBRARIES}
+#		"turbojpeg-static"
+#		"jpeg-static"
+#		"libpng16d"
+#		"zlibd"
 		"v3dlib_asset"
 		"v3dlib_ecs"
 		"v3dlib_log"

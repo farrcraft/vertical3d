@@ -82,6 +82,7 @@ namespace v3d::engine {
      **/
     bool Engine::initialize(int features) {
         logger_ = boost::make_shared<v3d::log::Logger>();
+        features_ = features;
 
         LOG_INFO(logger_) << "Initializing engine...";
 
@@ -149,7 +150,7 @@ namespace v3d::engine {
                         return false;
                     }
                 } else {
-                    if (!window_->create(width, height)) {
+                    if (!boost::static_pointer_cast<v3d::render::realtime::Window3D>(window_)->create(width, height)) {
                         return false;
                     }
                 }
@@ -228,6 +229,10 @@ namespace v3d::engine {
      **/
     bool Engine::tick() {
         return true;
+    }
+
+    boost::shared_ptr<v3d::render::realtime::Window> Engine::window() const {
+        return window_;
     }
 
 };  // namespace v3d::engine

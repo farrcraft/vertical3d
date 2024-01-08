@@ -23,8 +23,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-PongRenderer::PongRenderer(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry) :
+PongRenderer::PongRenderer(const boost::shared_ptr<v3d::render::realtime::Window3D>& window, const boost::shared_ptr<v3d::log::Logger>& logger,
+    const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry) :
     engine_(logger, assetManager, registry) {
+    engine_.initialize(window);
+
     boost::shared_ptr<v3d::asset::Loader> loader = assetManager->resolveLoader(v3d::asset::Type::ShaderProgram);
     v3d::asset::ParameterValue value;
     value = static_cast<unsigned int>(v3d::gl::Shader::SHADER_TYPE_VERTEX | v3d::gl::Shader::SHADER_TYPE_FRAGMENT);
@@ -59,9 +62,11 @@ PongRenderer::PongRenderer(const boost::shared_ptr<v3d::log::Logger>& logger, co
                                 L"`abcdefghijklmnopqrstuvwxyz{|}~";
     fontCache_->charcodes(charcodes);
 
+    loader = assetManager->resolveLoader(v3d::asset::Type::TextureFont);
     loader->parameter("fontSize", markup_.size_);
     boost::shared_ptr<v3d::asset::TextureFont> font = boost::dynamic_pointer_cast<v3d::asset::TextureFont>(
         assetManager->load("fonts/DroidSerif-Regular.ttf", v3d::asset::Type::TextureFont));
+
     font->font()->atlas(fontCache_->atlas());
     font->font()->loadGlyphs(charcodes);
     fontCache_->add(font->font());
@@ -161,4 +166,8 @@ void PongRenderer::drawPaddle(const Paddle & paddle) {
     canvas_->translate(glm::vec2(paddle.offset(), paddle.position() - 25));
     canvas_->rect(0, 15, 0, 50, color);
     canvas_->pop();
+}
+
+void PongRenderer::scene(const boost::shared_ptr<PongScene>& scene) {
+    scene_ = scene;
 }

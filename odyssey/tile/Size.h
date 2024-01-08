@@ -6,11 +6,11 @@
 #pragma once
 
 namespace odyssey::tile {
-	/**
-	 * Tile dimensions
-	 **/
-	namespace size {
-		const int width = 32;
-		const int height = 32;
-	};
+    /**
+     * Tile dimensions
+     **/
+    namespace size {
+        const int width = 32;
+        const int height = 32;
+    };
 }

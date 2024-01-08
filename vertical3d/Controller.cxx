@@ -20,7 +20,7 @@ Controller::Controller() {
     // create new app window and set caption
     window_ = Hookah::Create3DWindow(800, 600);
 
-    // create input devices 
+    // create input devices
     keyboard_ = boost::shared_dynamic_cast<v3d::input::KeyboardDevice, v3d::input::InputDevice>(Hookah::CreateInputDevice("keyboard"));
     mouse_ = boost::shared_dynamic_cast<v3d::input::MouseDevice, v3d::input::InputDevice>(Hookah::CreateInputDevice("mouse"));
 
@@ -60,7 +60,7 @@ Controller::Controller() {
     // register event listeners
     window_->addDrawListener(boost::bind(&v3d::ViewPort::draw, boost::ref(view_), _1));
     window_->addResizeListener(boost::bind(&v3d::ViewPort::resize, boost::ref(view_), _1, _2));
-//	_window->addTickListener(boost::bind(&Scene::tick, boost::ref(_scene), _1));
+    // _window->addTickListener(boost::bind(&Scene::tick, boost::ref(_scene), _1));
 
     // register core application commands
     directory_->add("poly_cube", "create", boost::bind(&Controller::exec, boost::ref(*this), _1, _2));
@@ -103,7 +103,6 @@ Controller::Controller() {
     // load UI from the root config property tree
     Luxa::UILoader ui_loader;
     ui_loader.load(ptree, &cm_);
-
 }
 
 Controller::~Controller() {
@@ -167,13 +166,11 @@ void Controller::load_camera_profiles(const boost::property_tree::ptree & tree) 
             right="1.0, 0.0, 0.0" direction="0.0, 0.0, 1.0" />
     */
 
-    //const PropertyTree & cameras = tree.find("config.cameraprofiles");
+    // const PropertyTree & cameras = tree.find("config.cameraprofiles");
 
     std::string param, name;
-    BOOST_FOREACH(boost::property_tree::ptree::value_type const & v, tree.get_child("cameraprofiles"))
-    {
-        if (v.first == "camera")
-        {
+    BOOST_FOREACH(boost::property_tree::ptree::value_type const & v, tree.get_child("cameraprofiles")) {
+        if (v.first == "camera") {
             const boost::property_tree::ptree & camera = v.second;
 
             name = camera.get<std::string>("<xmlattr>.name");

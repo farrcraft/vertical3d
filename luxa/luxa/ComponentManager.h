@@ -13,7 +13,6 @@
 
 #include "../../api/image/Texture.h"
 #include "../../v3dlibs/hookah/Window.h"
-#include "../../api/font/FontCache.h"
 #include "../../v3dlibs/input/MouseEventListener.h"
 #include "../../v3dlibs/input/KeyboardEventListener.h"
 #include "../../v3dlibs/command/CommandDirectory.h"
@@ -31,7 +30,7 @@ namespace Luxa {
         public v3d::input::MouseEventListener,
         public v3d::input::KeyboardEventListener {
      public:
-        ComponentManager(boost::shared_ptr<v3d::font::FontCache> fc, boost::shared_ptr<v3d::command::CommandDirectory> directory, boost::shared_ptr<v3d::log::Logger> logger);
+        ComponentManager(boost::shared_ptr<v3d::command::CommandDirectory> directory, boost::shared_ptr<v3d::log::Logger> logger);
 
         /**
             * Drawing callback renders all of the managed components.
@@ -71,11 +70,7 @@ namespace Luxa {
             * @return the current height
             */
         unsigned int height() const;
-        /**
-            * Get the font cache used by the vgui system.
-            * @return a pointer to the font cache
-            */
-        boost::shared_ptr<v3d::font::FontCache> fonts() const;
+
         void addTexture(const std::string & name, const boost::shared_ptr<v3d::image::Texture> & texture);
         boost::shared_ptr<v3d::image::Image> loadImage(const std::string & filename);
         /**

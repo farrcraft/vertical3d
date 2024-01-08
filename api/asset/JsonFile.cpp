@@ -20,7 +20,9 @@ namespace v3d::asset {
     /**
      **/
     JsonFile::JsonFile(char const* path, char const* mode) {
-        open(path, mode);
+        if (!open(path, mode)) {
+            throw std::runtime_error("Could not open JSON file.");
+        }
     }
 
     /**
@@ -42,12 +44,24 @@ namespace v3d::asset {
 
     /**
      **/
-    void JsonFile::open(char const* path, char const* mode) {
-        boost::json::error_code ec;
-        open(path, mode, ec);
-        if (ec) {
-            throw boost::json::system_error(ec);
+    bool JsonFile::open(char const* path, char const* mode) {
+        close();
+        errno_t err = fopen_s(&handle_, path, mode);
+        if (err != 0) {
+            return false;
         }
+        if (std::fseek(handle_, 0, SEEK_END) != 0) {
+            return false;
+        }
+        size_ = std::ftell(handle_);
+        if (size_ == -1) {
+            size_ = 0;
+            return false;
+        }
+        if (std::fseek(handle_, 0, SEEK_SET) != 0) {
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -70,28 +84,6 @@ namespace v3d::asset {
             handle_ = nullptr;
             size_ = 0;
         }
-    }
-
-    /**
-     **/
-    bool JsonFile::open(char const* path, char const* mode, const boost::json::error_code& ec) {
-        close();
-        errno_t err = fopen_s(&handle_, path, mode);
-        if (err != 0) {
-            return false;
-        }
-        if (std::fseek(handle_, 0, SEEK_END) != 0) {
-            return false;
-        }
-        size_ = std::ftell(handle_);
-        if (size_ == -1) {
-            size_ = 0;
-            return false;
-        }
-        if (std::fseek(handle_, 0, SEEK_SET) != 0) {
-            return false;
-        }
-        return true;
     }
 
     /**

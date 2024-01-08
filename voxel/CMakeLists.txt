@@ -20,3 +20,7 @@ add_executable("voxel"
 	"src/Renderer.h" "src/Renderer.cxx"
 	"src/Scene.h" "src/Scene.cxx"
 	"src/Version.h" "src/main.cxx")
+
+target_link_libraries("voxel" PRIVATE
+	"libnoise"
+)

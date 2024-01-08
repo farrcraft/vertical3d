@@ -1,0 +1,12 @@
+{
+  "dependencies": [
+    "boost",
+    "freetype",
+    "glew",
+    "glm",
+    "libjpeg-turbo",
+    "libpng",
+    "sdl2",
+    "entt"
+  ]
+}

@@ -1,9 +1,7 @@
 /**
- * Voxel Engine
- *
- * (c) Joshua Farr <j.wgasa@gmail.com>
- *
- */
+ * Vertical3D
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
+**/
 
 #include "Scene.h"
 
@@ -18,8 +16,7 @@
 
 #include <glm/gtx/string_cast.hpp>
 
-Scene::Scene()
-{
+Scene::Scene() {
     player_.reset(new Player(glm::vec3(0.0f, 25.0f, 100.0f)));
 
     // generate the terrain heightmap
@@ -37,14 +34,11 @@ Scene::Scene()
 
     // populate world chunks
     boost::shared_ptr<Chunk> chunk;
-    for (unsigned int x = 0; x < worldWidth; x++)
-    {
-        for (unsigned int y = 0; y < worldHeight; y++)
-        {
-            for (unsigned int z = 0; z < worldDepth; z++)
-            {
+    for (unsigned int x = 0; x < worldWidth; x++) {
+        for (unsigned int y = 0; y < worldHeight; y++) {
+            for (unsigned int z = 0; z < worldDepth; z++) {
                 glm::ivec3 pos(x, y, z);
-                chunk.reset(new Chunk(terrain, pos, worldHeight));
+                chunk.reset(new Chunk(&terrain, pos, worldHeight));
                 hash = encoder.encode(pos);
                 chunks_[hash] = chunk;
             }
@@ -54,29 +48,24 @@ Scene::Scene()
     state_.reset(new GameState());
 }
 
-boost::unordered_map<unsigned int, boost::shared_ptr<Chunk> > & Scene::chunks()
-{
+boost::unordered_map<unsigned int, boost::shared_ptr<Chunk> > & Scene::chunks() {
     return chunks_;
 }
 
 
-boost::shared_ptr<Player> Scene::player()
-{
+boost::shared_ptr<Player> Scene::player() {
     return player_;
 }
 
-boost::shared_ptr<GameState> Scene::state()
-{
+boost::shared_ptr<GameState> Scene::state() {
     return state_;
 }
 
-boost::shared_ptr<Camera> Scene::camera()
-{
+boost::shared_ptr<Camera> Scene::camera() {
     return player_->camera();
 }
 
-void Scene::tick(unsigned int delta)
-{
+void Scene::tick(unsigned int delta) {
     player_->tick(delta);
 }
 

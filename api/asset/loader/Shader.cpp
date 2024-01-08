@@ -28,12 +28,12 @@ boost::shared_ptr<Asset> Shader::load(std::string_view name) {
     boost::shared_ptr<v3d::gl::Shader> shader;
     if (type() == Type::ShaderFragment) {
         std::string filename = std::string(name) + std::string(".frag");
-        boost::shared_ptr<v3d::asset::Text> script = boost::dynamic_pointer_cast<v3d::asset::Text>(manager_->load(filename, Type::Text));
-        shader.reset(new v3d::gl::Shader(v3d::gl::Shader::SHADER_TYPE_FRAGMENT, script->content()));
+        boost::shared_ptr<v3d::asset::Text> script = boost::dynamic_pointer_cast<v3d::asset::Text>(manager_->load(filename, Type::Text, true));
+        shader = boost::make_shared <v3d::gl::Shader>(v3d::gl::Shader::SHADER_TYPE_FRAGMENT, script->content());
     } else if (type() == Type::ShaderVertex) {
         std::string filename = std::string(name) + std::string(".vert");
-        boost::shared_ptr<v3d::asset::Text> script = boost::dynamic_pointer_cast<v3d::asset::Text>(manager_->load(filename, Type::Text));
-        shader.reset(new v3d::gl::Shader(v3d::gl::Shader::SHADER_TYPE_VERTEX, script->content()));
+        boost::shared_ptr<v3d::asset::Text> script = boost::dynamic_pointer_cast<v3d::asset::Text>(manager_->load(filename, Type::Text, true));
+        shader = boost::make_shared<v3d::gl::Shader>(v3d::gl::Shader::SHADER_TYPE_VERTEX, script->content());
     }
     boost::shared_ptr<Asset> asset = boost::make_shared<v3d::asset::Shader>(std::string(name), type(), shader);
     return asset;

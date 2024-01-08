@@ -1,22 +1,18 @@
 /**
- * Voxel Engine
- *
- * (c) Joshua Farr <j.wgasa@gmail.com>
- *
- */
+ * Vertical3D
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
+**/
 
 #include "Player.h"
 #include "../engine/Camera.h"
 
-typedef struct Moves
-{
-    unsigned int move_; // movement flag
-    unsigned int axis_; // vector position of movement
-    float magnitude_; // negative or positive movement vector
+typedef struct Moves {
+    unsigned int move_;  // movement flag
+    unsigned int axis_;  // vector position of movement
+    float magnitude_;  // negative or positive movement vector
 } Moves;
 
-Moves possibleMoves[] =
-{
+Moves possibleMoves[] = {
     { Player::MOVE_FORWARD, 2, 1.0f },
     { Player::MOVE_BACKWARD, 2, -1.0f },
     { Player::MOVE_RIGHT, 0, 1.0f },
@@ -27,8 +23,7 @@ Moves possibleMoves[] =
 
 Player::Player(const glm::vec3 & pos) :
     position_(pos),
-    movement_(0)
-{
+    movement_(0) {
     camera_.reset(new Camera());
     camera_->behavior(Camera::CAMERA_BEHAVIOR_FIRST_PERSON);
     camera_->position(position_);
@@ -36,35 +31,26 @@ Player::Player(const glm::vec3 & pos) :
     camera_->velocity(glm::vec3(2.0f, 2.0f, 2.0f));
 }
 
-glm::vec3 Player::position() const
-{
+glm::vec3 Player::position() const {
     return position_;
 }
 
-boost::shared_ptr<Camera> Player::camera()
-{
+boost::shared_ptr<Camera> Player::camera() {
     return camera_;
 }
 
-void Player::position(const glm::vec3 & pos)
-{
+void Player::position(const glm::vec3 & pos) {
     position_ = pos;
 }
 
-void Player::move(Movement direction)
-{
-    for (unsigned int i = 0; i < 6; i++)
-    {
-        if (direction == possibleMoves[i].move_)
-        {
+void Player::move(Movement direction) {
+    for (unsigned int i = 0; i < 6; i++) {
+        if (direction == possibleMoves[i].move_) {
             glm::vec3 velocity = camera_->currentVelocity();
-            if (movement_ & direction)
-            {
+            if (movement_ & direction) {
                 velocity[possibleMoves[i].axis_] = 0.0f;
                 movement_ &= ~direction;
-            }
-            else
-            {
+            } else {
                 velocity[possibleMoves[i].axis_] = possibleMoves[i].magnitude_;
                 movement_ |= direction;
             }
@@ -74,8 +60,7 @@ void Player::move(Movement direction)
     }
 }
 
-void Player::look(float heading, float pitch)
-{
+void Player::look(float heading, float pitch) {
     const float cameraRotationSpeed = 0.01f;
 
     heading *= cameraRotationSpeed;
@@ -84,32 +69,27 @@ void Player::look(float heading, float pitch)
     camera_->rotate(heading, pitch, 0.0f);
 }
 
-void Player::tick(unsigned int delta)
-{
+void Player::tick(unsigned int delta) {
     // update player position based on current movement flags
     glm::vec3 dir(0.0f, 0.0f, 0.0f);
-    for (unsigned int i = 0; i < 6; i++)
-    {
-        if (movement_ & possibleMoves[i].move_)
-        {
+    for (unsigned int i = 0; i < 6; i++) {
+        if (movement_ & possibleMoves[i].move_) {
             dir[possibleMoves[i].axis_] = possibleMoves[i].magnitude_;
         }
     }
     float elapsedTimeSec = 0.1f;
-    //camera_->updatePosition(dir, elapsedTimeSec);
+    // camera_->updatePosition(dir, elapsedTimeSec);
     glm::vec3 displacement = camera_->calculateDisplacement(dir, elapsedTimeSec);
     glm::vec3 position = camera_->calculateMovement(displacement);
-    if (!checkWorldCollision(position))
-    {
+    if (!checkWorldCollision(position)) {
         camera_->position(position);
 
-        //position_ = camera_->position();
+        // position_ = camera_->position();
         position_ = position;
     }
 }
 
-bool Player::checkWorldCollision(const glm::vec3 & position)
-{
+bool Player::checkWorldCollision(const glm::vec3 & position) {
     /*
     convert position into voxel coordinate space
     convert voxel position into chunk coordinate space
@@ -118,7 +98,7 @@ bool Player::checkWorldCollision(const glm::vec3 & position)
         return true
     */
     glm::ivec3 voxelPosition;
-    
+
     return false;
 }
 

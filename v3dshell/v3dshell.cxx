@@ -1,15 +1,13 @@
 /**
- * Vertical|3D - 3D Content Creation Application
- * (c) 2007-2008 Josh Farr
- * Version 0.0.1
- **/
+ * Vertical3D
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
+**/
+
 
 #include <cstdlib>
 #include <iostream>
 
 
-int main (int argc, char *argv[])
-{
-
-	return EXIT_SUCCESS;
+int main(int argc, char *argv[]) {
+    return EXIT_SUCCESS;
 }

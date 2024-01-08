@@ -3,10 +3,11 @@
  * Copyright (c) 2021 Joshua Farr (josh@farrcraft.com)
  **/
 
-namespace odyssey::engine {
-	/**
-	 **/
-	class Sprite {
+#pragma once
 
-	};
+namespace odyssey::engine {
+    /**
+     **/
+    class Sprite {
+    };
 };

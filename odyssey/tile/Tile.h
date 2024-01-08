@@ -6,9 +6,8 @@
 #pragma once
 
 namespace odyssey::tile {
-	/**
-	 **/
-	class Tile {
-
-	};
+    /**
+     **/
+    class Tile {
+    };
 };

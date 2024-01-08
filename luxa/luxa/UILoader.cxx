@@ -20,7 +20,20 @@
 
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
-
+/*
+{
+    "vgui": {
+        "theme": {
+            "name": "themename",
+            "font": {},
+            "button": {},
+            "label": {},
+            "menu": {},
+            "icon": {}
+        }
+    }
+}
+*/
 namespace Luxa {
 
 bool UILoader::load(const boost::property_tree::ptree& tree, ComponentManager* cm) {

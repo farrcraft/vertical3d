@@ -5,6 +5,11 @@
 
 #pragma once
 
+// Fix necessary for EnTT - https://github.com/skypjack/entt/issues/96#issuecomment-395867237
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+
 #include <soloud.h>
 
 #include <map>
@@ -16,6 +21,7 @@
 #include "../event/Sound.h"
 
 #include <boost/shared_ptr.hpp>
+
 #include <entt/entt.hpp>
 
 namespace v3d::audio {

@@ -18,7 +18,7 @@ class Scene;
 
 class DebugOverlay : public Aligned<16> {
  public:
-    DebugOverlay(boost::shared_ptr<Scene> scene, boost::shared_ptr<v3d::gl::Program> shaderProgram, 
+    DebugOverlay(boost::shared_ptr<Scene> scene, boost::shared_ptr<v3d::gl::Program> shaderProgram,
         const boost::shared_ptr<v3d::log::Logger> & logger);
 
     void enable(bool status);

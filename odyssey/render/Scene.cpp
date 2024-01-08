@@ -7,21 +7,23 @@
 
 #include <boost/make_shared.hpp>
 
-using namespace odyssey::render;
+namespace odyssey::render {
 
 /**
  **/
 boost::shared_ptr<v3d::render::realtime::Frame> Scene::collect() {
-	boost::shared_ptr<v3d::render::realtime::Frame> frame = boost::make_shared<v3d::render::realtime::Frame>(context_);
+    boost::shared_ptr<v3d::render::realtime::Frame> frame = boost::make_shared<v3d::render::realtime::Frame>(context_);
 
-	// do stuff with frame
-	player_->draw(frame);
+    // do stuff with frame
+    player_->draw(frame);
 
-	return frame;
+    return frame;
 }
 
 /**
  **/
 void Scene::setPlayer(boost::shared_ptr<renderable::Player> player) {
-	player_ = player;
+    player_ = player;
 }
+
+};  // namespace odyssey::render

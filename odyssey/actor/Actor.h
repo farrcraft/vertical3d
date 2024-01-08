@@ -6,9 +6,8 @@
 #pragma once
 
 namespace odyssey::actor {
-	/**
-	 **/
-	class Actor {
-
-	};
+    /**
+     **/
+    class Actor {
+    };
 };

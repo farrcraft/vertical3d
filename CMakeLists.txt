@@ -1,31 +1,24 @@
 ﻿# CMakeList.txt : Top-level CMake project file, do global configuration
 # and include sub-projects here.
 #
-#set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 cmake_minimum_required (VERSION 3.8)
 cmake_policy(SET CMP0079 NEW)
 
 project ("vertical3d")
 
 # This gets us C++17 and newer language features, e.g. nested namespace support - https://docs.microsoft.com/en-us/cpp/error-messages/compiler-errors-1/compiler-error-c2429?view=msvc-160
-#add_compile_options("/std:c++latest")
-set(CMAKE_CXX_STANDARD 23)
+add_compile_options("/std:c++latest")
+#set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+add_compile_options("/permissive-")
 
 # Need to set this for the COMPONENTS stanza to work next
 set(Boost_USE_STATIC_LIBS ON)
 
-# I haven't figured out how to make this work with a relative path
-set(CMAKE_MODULE_PATH "Y:/Josh/Code/vertical3d/odyssey/cmake")
-
-list(APPEND CMAKE_PREFIX_PATH "Y:/Josh/Code/vertical3d/vendor/boost/boost_1_83_0")
-
-# This path is used by FindSDL2 module. 
-# It will find include and lib folders under this directory.
-# This is because find command doesn't include any path for Windows.
-# So it can't find anything using default paths.
-# SDL2_PATH is already expected in module file. I'm using the same variable.
-set(SDL2_PATH "vendor/sdl2/SDL2-2.0.14")
+# Don't emit warnings if boost version is newer than the cmake FindBoost definition
+set(Boost_NO_WARN_NEW_VERSIONS ON)
 
 # CMake parses module files by their names. It will use FindSDL2 in this case.
 find_package(SDL2 REQUIRED)
@@ -34,24 +27,28 @@ find_package(SDL2 REQUIRED)
 include_directories(SYSTEM ${SDL2_INCLUDE_DIR})
 
 # CMake already comes with a module for boost - https://cmake.org/cmake/help/latest/module/FindBoost.html
-find_package(Boost 1.76.0 REQUIRED COMPONENTS log)
+find_package(Boost 1.76.0 REQUIRED COMPONENTS json locale log program_options)
+
+find_package(Freetype REQUIRED)
+find_package(PNG REQUIRED)
+find_package(JPEG REQUIRED)
+find_package(libjpeg-turbo CONFIG REQUIRED)
+find_package(GLEW REQUIRED)
+find_package(EnTT)
+find_package(OpenGL REQUIRED)
 
 include_directories(SYSTEM
 	${Boost_INCLUDE_DIRS}
-	"vendor/entt-3.10.1/src"
+	${SDL2_INCLUDE_DIRS}
 	"vendor/libnoise/include/noise"
-	"vendor/glm-0.9.9.8/glm"
-	"vendor/glew-2.2.0/include"
-	"vendor/freetype-2.12.1/include"
-	"vendor/soloud20200207/include"
+	"vendor/soloud/include"
 )
 
 link_directories(
 	${Boost_LIBRARY_DIRS}
-	"vendor/libjpeg-turbo-2.1.0"
-	"vendor/libpng-1.6.37"
-	"vendor/zlib-1.2.11"
-	"vendor/glew-2.2.0/lib/Release/x64")
+	"vendor/soloud/contrib/Debug"
+	"vendor/libnoise/Debug"
+)
 
 # Include sub-projects
 add_subdirectory("api")

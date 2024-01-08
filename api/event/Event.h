@@ -32,7 +32,7 @@ namespace v3d::event {
         std::string_view name() const;
         boost::shared_ptr<Context> context() const;
         void type(Type t);
-        constexpr Type type() const;
+        Type type() const;
 
         void data(const EventData &d);
         boost::optional<EventData> data() const;

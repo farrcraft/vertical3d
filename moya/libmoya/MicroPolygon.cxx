@@ -7,18 +7,16 @@
 
 #include "MicroPolygon.h"
 
-using namespace v3d::moya;
+namespace v3d::moya {
 
-MicroPolygon::MicroPolygon()
-{
+MicroPolygon::MicroPolygon() {
 }
 
-MicroPolygon::~MicroPolygon()
-{
+MicroPolygon::~MicroPolygon() {
 }
 
-Vertex & MicroPolygon::operator[] (unsigned int i)
-{
-	assert(i < 4);
-	return _points[i];
+Vertex & MicroPolygon::operator[] (unsigned int i) {
+    assert(i < 4);
+    return _points[i];
 }
+};  // namespace v3d::moya

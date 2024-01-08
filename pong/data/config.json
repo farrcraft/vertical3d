@@ -1,11 +1,11 @@
 {
 	"configs": [
 		{
-			"type": "bindings",
+			"type": "binding",
 			"file": "mappings.json"
 		},
 		{
-			"type": "vgui",
+			"type": "ui",
 			"file": "vgui.json" 
 		},
 		{
@@ -13,13 +13,9 @@
 			"file": "window.json"
 		},
 		{
-			"type": "sounds",
+			"type": "sound",
 			"file": "sounds.json"
 
-		},
-		{
-			"type": "fonts",
-			"file": "fonts.json"
 		}
 	]
 }

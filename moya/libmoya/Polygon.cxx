@@ -149,7 +149,7 @@ namespace v3d::moya {
             }
             // classify which side of the plane A is on
             side = plane.classify(A);
-            if (plane.intersectEdge(A, B, hit)) {
+            if (plane.intersectEdge(A, B, &hit)) {
                 // A is on one side and B on the other
                 // hit is the common vertex both new edges share
                 // create a new edge for p1 and p2 e1 (A, hit), e2 (hit, B)
@@ -238,7 +238,7 @@ namespace v3d::moya {
         plane.calculate(pn, pop);
 
         // split the two new polygons against the two created by the last split
-        boost::shared_ptr<Polygon>	pf1(new Polygon()),
+        boost::shared_ptr<Polygon> pf1(new Polygon()),
             pf2(new Polygon()),
             pf3(new Polygon()),
             pf4(new Polygon());
@@ -257,6 +257,7 @@ namespace v3d::moya {
         // all that remains is to feed the new polygons p1 & p2 back into the top of
         // the renderer and discard the old one. we also must make sure not to put
         // empty polygons back in.
+        /*
         if (pf1->vertexCount() > 0) {
             if (pf1->vertexCount() <= 2) {
             }
@@ -281,6 +282,7 @@ namespace v3d::moya {
             // RenderEngine::instance().activeRenderContext().addPolygon(pf4);
         } else {
         }
+        */
     }
 
     /*
