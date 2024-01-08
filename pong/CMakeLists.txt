@@ -33,6 +33,7 @@ target_link_libraries("pong" PRIVATE
 	${PNG_LIBRARIES}
 	JPEG::JPEG
 	Boost::log
+	OpenGL::GL
 	GLEW::GLEW
 	Freetype::Freetype
 	"soloud"

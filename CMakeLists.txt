@@ -35,6 +35,7 @@ find_package(JPEG REQUIRED)
 find_package(libjpeg-turbo CONFIG REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(EnTT)
+find_package(OpenGL REQUIRED)
 
 include_directories(SYSTEM
 	${Boost_INCLUDE_DIRS}
