@@ -23,7 +23,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-PongRenderer::PongRenderer(const boost::shared_ptr<v3d::render::realtime::Window3D>& window, const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry) :
+PongRenderer::PongRenderer(const boost::shared_ptr<v3d::render::realtime::Window3D>& window, const boost::shared_ptr<v3d::log::Logger>& logger,
+    const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry) :
     engine_(logger, assetManager, registry) {
     engine_.initialize(window);
 
