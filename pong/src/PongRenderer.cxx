@@ -62,9 +62,11 @@ PongRenderer::PongRenderer(const boost::shared_ptr<v3d::render::realtime::Window
                                 L"`abcdefghijklmnopqrstuvwxyz{|}~";
     fontCache_->charcodes(charcodes);
 
+    loader = assetManager->resolveLoader(v3d::asset::Type::TextureFont);
     loader->parameter("fontSize", markup_.size_);
     boost::shared_ptr<v3d::asset::TextureFont> font = boost::dynamic_pointer_cast<v3d::asset::TextureFont>(
         assetManager->load("fonts/DroidSerif-Regular.ttf", v3d::asset::Type::TextureFont));
+
     font->font()->atlas(fontCache_->atlas());
     font->font()->loadGlyphs(charcodes);
     fontCache_->add(font->font());
