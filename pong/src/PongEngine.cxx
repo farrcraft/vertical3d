@@ -52,8 +52,8 @@ bool::PongEngine::initialize() {
             }
         }
     }
-
-    renderer_ = boost::make_shared<PongRenderer>(logger_, assetManager_, &registry_);
+    boost::shared_ptr<v3d::render::realtime::Window3D> win = boost::dynamic_pointer_cast<v3d::render::realtime::Window3D>(window());
+    renderer_ = boost::make_shared<PongRenderer>(win, logger_, assetManager_, &registry_);
     scene_ = boost::make_shared<PongScene>(&registry_, dispatcher_);
 
     // register game commands

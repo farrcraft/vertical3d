@@ -22,19 +22,6 @@ namespace v3d::render::realtime {
     bool Engine3D::initialize(const boost::shared_ptr <Window3D>& window) {
         Engine::initialize(window);
 
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClearDepth(1.0f);
-        glEnable(GL_DEPTH_TEST);
-        glDepthMask(GL_TRUE);
-        glDepthFunc(GL_LEQUAL);
-        glDepthRange(0.0f, 1.0f);
-        glEnable(GL_DEPTH_CLAMP);
-        // CCW winding is default
-        glFrontFace(GL_CCW);
-        glActiveTexture(GL_TEXTURE0);
-
         return true;
     }
 

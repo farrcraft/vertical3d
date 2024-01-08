@@ -24,12 +24,18 @@ namespace v3d::render::realtime {
         bool create(int width, int height);
 
         /**
+         * @return bool
+         **/
+        bool created() const;
+
+        /**
          * @return void
          **/
         void destroy();
 
      private:
         SDL_GLContext context_;  // Part of window for now - could move to Context3D later...
+        bool created_;
     };
 
 };  // namespace v3d::render::realtime

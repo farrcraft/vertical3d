@@ -11,7 +11,7 @@
 #include <iostream>
 
 namespace v3d::render::realtime {
-    Window3D::Window3D(const boost::shared_ptr<v3d::log::Logger>& logger) noexcept : Window(logger) {
+    Window3D::Window3D(const boost::shared_ptr<v3d::log::Logger>& logger) noexcept : created_(false), Window(logger) {
     }
 
     /**
@@ -42,6 +42,21 @@ namespace v3d::render::realtime {
 
         // enable vsync
         SDL_GL_SetSwapInterval(1);
+
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClearDepth(1.0f);
+        glEnable(GL_DEPTH_TEST);
+        glDepthMask(GL_TRUE);
+        glDepthFunc(GL_LEQUAL);
+        glDepthRange(0.0f, 1.0f);
+        glEnable(GL_DEPTH_CLAMP);
+        // CCW winding is default
+        glFrontFace(GL_CCW);
+        glActiveTexture(GL_TEXTURE0);
+
+        created_ = true;
         return true;
     }
 
@@ -53,6 +68,10 @@ namespace v3d::render::realtime {
             context_ = nullptr;
         }
         Window::destroy();
+        created_ = false;
     }
 
+    bool Window3D::created() const {
+        return created_;
+    }
 };  // namespace v3d::render::realtime
