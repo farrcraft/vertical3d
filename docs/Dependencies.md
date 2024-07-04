@@ -65,6 +65,14 @@ To add a new dependency, open a developer command prompt and run, e.g. for boost
 
 Packages are automatically installed during CMake generation.
 
+## Updating Dependency Versions
+
+To update package versions, e.g. to get a newer boost version, update the baseline and then re-run install:
+
+```
+.\vendor\vcpkg\vcpkg.exe x-update-baseline
+.\vendor\vcpkg\vcpkg.exe install
+```
 
 # Submodules
 
