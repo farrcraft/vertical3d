@@ -31,7 +31,7 @@ namespace v3d::audio {
 
     void Engine::soundEvent(const v3d::event::Sound& sound) {
         if (!playClip(sound.clip())) {
-            LOG_ERROR(logger_) << "unable to play clip: " << sound.clip();
+            logger_->get()->error("unable to play clip: {}", sound.clip());
         }
     }
 
@@ -39,7 +39,7 @@ namespace v3d::audio {
         auto const doc = config->document();
         auto const sounds = doc.at("sounds");
         if (!sounds.is_array()) {
-            LOG_ERROR(logger_) << "Missing sounds in audio config";
+            logger_->get()->error("Missing sounds in audio config");
             return false;
         }
         // for each sound
@@ -47,7 +47,7 @@ namespace v3d::audio {
         auto it = items.begin();
         for (; it != items.end(); ++it) {
             if (!it->is_object()) {
-                LOG_ERROR(logger_) << "Unrecognized sound config";
+                logger_->get()->error("Unrecognized sound config");
                 return false;
             }
             auto const sound = it->as_object();
@@ -60,7 +60,7 @@ namespace v3d::audio {
     }
 
     bool Engine::loadClip(const std::string_view & filename, const std::string_view & key) {
-        LOG_DEBUG(logger_) << "SoundEngine::loadClip - loading audio clip with filename [" << filename << "] with id [" << key << "]";
+        logger_->get()->debug("SoundEngine::loadClip - loading audio clip with filename [{}] with id [{}]", filename, key);
 
         boost::shared_ptr<AudioClip> clip = boost::make_shared<AudioClip>();
 

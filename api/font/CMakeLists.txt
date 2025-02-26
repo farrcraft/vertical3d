@@ -7,3 +7,8 @@ add_library("v3dlib_font" "BitmapFont.h" "BitmapFont.cxx" "BitmapTextBuffer.h" "
 target_compile_definitions(v3dlib_font PUBLIC BOOST_USE_WINAPI_VERSION=0x0A00)
 target_compile_definitions(v3dlib_font PUBLIC _WIN32_WINNT=0x0A00)
 target_compile_definitions(v3dlib_font PUBLIC WINVER=0x0A00)
+
+target_compile_options(v3dlib_font PRIVATE /EHsc)
+
+set(CMAKE_CXX_FLAGS "/utf-8")
+set(CMAKE_C_FLAGS "/utf-8")

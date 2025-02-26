@@ -22,14 +22,14 @@ namespace v3d::ui {
         // read themes
         auto const themesSection = doc.at("themes");
         if (!themesSection.is_array()) {
-            LOG_ERROR(logger_) << "Missing themes in config";
+            logger_->get()->error("Missing themes in config");
             return false;
         }
         auto const themes = themesSection.as_array();
         auto it = themes.begin();
         for (; it != themes.end(); ++it) {
             if (!it->is_object()) {
-                LOG_ERROR(logger_) << "Unrecognized theme config";
+                logger_->get()->error("Unrecognized theme config");
                 return false;
             }
             auto const themeEntry = it->as_object();
@@ -41,14 +41,14 @@ namespace v3d::ui {
         // read containers
         auto const containersSection = doc.at("containers");
         if (!containersSection.is_array()) {
-            LOG_ERROR(logger_) << "Missing containers in config";
+            logger_->get()->error("Missing containers in config");
             return false;
         }
         auto const containers = containersSection.as_array();
         auto containerIterator = containers.begin();
         for (; containerIterator != containers.end(); ++containerIterator) {
             if (!containerIterator->is_object()) {
-                LOG_ERROR(logger_) << "Unrecognized containers config";
+                logger_->get()->error("Unrecognized containers config");
                 return false;
             }
             auto const containerEntry = containerIterator->as_object();
@@ -60,14 +60,14 @@ namespace v3d::ui {
             // read components in this container
             auto const componentsSection = containerEntry.at("components");
             if (!componentsSection.is_array()) {
-                LOG_ERROR(logger_) << "Missing components in config";
+                logger_->get()->error("Missing components in config");
                 return false;
             }
             auto const components = componentsSection.as_array();
             auto componentIterator = components.begin();
             for (; componentIterator != components.end(); ++componentIterator) {
                 if (!componentIterator->is_object()) {
-                    LOG_ERROR(logger_) << "Unrecognized component config";
+                    logger_->get()->error("Unrecognized component config");
                     return false;
                 }
                 auto const componentEntry = componentIterator->as_object();
@@ -95,14 +95,14 @@ namespace v3d::ui {
 
         auto const itemsSection = component.at("items");
         if (!itemsSection.is_array()) {
-            LOG_ERROR(logger_) << "Missing menu items in config";
+            logger_->get()->error("Missing menu items in config");
             return nullptr;
         }
         auto const items = itemsSection.as_array();
         auto itemsIterator = items.begin();
         for (; itemsIterator != items.end(); ++itemsIterator) {
             if (!itemsIterator->is_object()) {
-                LOG_ERROR(logger_) << "Unrecognized menu item config";
+                logger_->get()->error("Unrecognized menu item config");
                 return nullptr;
             }
             auto const menuItemConfig = itemsIterator->as_object();

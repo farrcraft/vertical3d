@@ -62,7 +62,7 @@ namespace v3d::image {
 
         std::string ext = static_cast<std::string>(filename).substr(filename.length() - 3);
 
-        LOG_DEBUG(logger_) << "ImageFactory::read - reading file [" << filename << "] with reader bound to extension [" << ext << "] from path [" << filepath << "]";
+        logger_->get()->debug("ImageFactory::read - reading file {} with reader bound to extension {} from path {}", filename, ext, filepath);
 
         std::map<std::string, boost::shared_ptr<Reader> >::iterator it = readers_.find(ext);
         if (it != readers_.end()) {
@@ -70,7 +70,7 @@ namespace v3d::image {
             return reader->read(filepath);
         }
         boost::shared_ptr<Image> empty_ptr;
-        LOG_DEBUG(logger_) << "ImageFactory::read - no reader exists for detected image format!";
+        logger_->get()->error("ImageFactory::read - no reader exists for detected image format!");
         return empty_ptr;
     }
 

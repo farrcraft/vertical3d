@@ -20,7 +20,7 @@ namespace v3d::image {
         logger_(logger) {
         if (depth != 1 && depth != 3 && depth != 4) {
             std::string err = "Invalid texture atlas depth - must be 1, 3, or 4";
-            LOG_ERROR(logger) << err;
+            logger_->get()->error(err);
             throw std::runtime_error(err);
         }
 

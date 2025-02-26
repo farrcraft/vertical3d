@@ -26,7 +26,7 @@ namespace v3d::config {
         auto const doc = config->document();
         auto const configs = doc.at("configs");
         if (!configs.is_array()) {
-            LOG_ERROR(logger_) << "Missing configs in config";
+            logger_->get()->error("Missing configs in config");
             return false;
         }
         // for each context
@@ -34,7 +34,7 @@ namespace v3d::config {
         auto it = items.begin();
         for (; it != items.end(); ++it) {
             if (!it->is_object()) {
-                LOG_ERROR(logger_) << "Unrecognized config";
+                logger_->get()->error("Unrecognized config");
                 return false;
             }
             auto const entry = it->as_object();
@@ -42,12 +42,12 @@ namespace v3d::config {
             std::string fileName = boost::json::value_to<std::string>(entry.at("file"));
             Type type = stringToType(typeName);
             if (type == Type::Unknown) {
-                LOG_ERROR(logger_) << "Unknown config type: " << typeName;
+                logger_->get()->error("Unknown config type: {}", typeName);
                 return false;
             }
             boost::shared_ptr<v3d::asset::Json> asset = boost::dynamic_pointer_cast<v3d::asset::Json>(assetManager->loadTypeFromExt(fileName));
             if (!asset) {
-                LOG_ERROR(logger_) << "Config file not found: " << fileName;
+                logger_->get()->error("Config file not found: ", fileName);
                 return false;
             }
             configs_[type] = asset;

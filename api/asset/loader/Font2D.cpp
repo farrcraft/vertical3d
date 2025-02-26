@@ -28,8 +28,8 @@ namespace v3d::asset::loader {
             return nullptr;
         }
         unsigned int fontSize = std::get<unsigned int>(param.get());
-        boost::shared_ptr<v3d::font::Font2D> font = boost::make_shared<v3d::font::Font2D>(std::string(name), fontSize);
-        font->build(logger_);
+        boost::shared_ptr<v3d::font::Font2D> font = boost::make_shared<v3d::font::Font2D>(std::string(name), fontSize, logger_);
+        font->build();
 
         boost::shared_ptr<Asset> asset = boost::make_shared<v3d::asset::Font2D>(std::string(name), type(), font);
         return asset;

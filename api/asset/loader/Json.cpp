@@ -27,7 +27,7 @@ namespace v3d::asset {
     boost::shared_ptr<Asset> loader::Json::load(std::string_view name) {
         boost::shared_ptr<v3d::asset::Json> asset;
         try {
-            LOG_INFO(logger_) << "Looking for json asset at: " << name;
+            logger_->get()->info("Looking for json asset at: {}", name);
             JsonFile file(static_cast<std::string>(name).c_str(), "r");
             boost::json::stream_parser parser;
             boost::json::error_code err;
@@ -49,7 +49,7 @@ namespace v3d::asset {
             asset = boost::make_shared<v3d::asset::Json>(std::string(name), Type::JsonDocument, document.as_object());
         }
         catch (std::exception const& e) {
-            LOG_ERROR(logger_) << "Caught exception loading JSON asset: " << e.what();
+            logger_->get()->error("Caught exception loading JSON asset: {}", e.what());
         }
 
         return asset;

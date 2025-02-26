@@ -39,7 +39,7 @@ namespace v3d::engine {
         auto const doc = mappingConfig->document();
         auto const mappings = doc.at("mappings");
         if (!mappings.is_array()) {
-            LOG_ERROR(logger_) << "Missing mappings in config";
+            logger_->get()->error("Missing mappings in config");
             return false;
         }
         // for each mapping
@@ -47,13 +47,13 @@ namespace v3d::engine {
         auto it = items.begin();
         for (; it != items.end(); ++it) {
             if (!it->is_object()) {
-                LOG_ERROR(logger_) << "Unrecognized mapping";
+                logger_->get()->error("Unrecognized mapping");
                 return false;
             }
             auto const mapping = it->as_object();
             auto const source = mapping.at("source");
             if (!source.is_object()) {
-                LOG_ERROR(logger_) << "Missing mapping source";
+                logger_->get()->error("Missing mapping source");
                 return false;
             }
             std::string sourceName = boost::json::value_to<std::string>(source.at("name"));
@@ -64,7 +64,7 @@ namespace v3d::engine {
 
             auto const destination = mapping.at("destination");
             if (!destination.is_object()) {
-                LOG_ERROR(logger_) << "Missing mapping destination";
+                logger_->get()->error("Missing mapping destination");
                 return false;
             }
             std::string destinationName = boost::json::value_to<std::string>(destination.at("name"));
@@ -84,7 +84,7 @@ namespace v3d::engine {
         logger_ = boost::make_shared<v3d::log::Logger>();
         features_ = features;
 
-        LOG_INFO(logger_) << "Initializing engine...";
+        logger_->get()->info("Initializing engine...");
 
         std::string dataPath = appPath_ + std::string("data/");
         assetManager_ = boost::make_shared<v3d::asset::Manager>(dataPath, logger_);
@@ -118,7 +118,7 @@ namespace v3d::engine {
         if (features_ & Feature::Window2D || features_ & Feature::Window3D) {
             // Initialize SDL
             if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-                LOG_ERROR(logger_) << "SDL could not initialize! SDL_Error: " << SDL_GetError();
+                logger_->get()->error("SDL could not initialize! SDL_Error: {}", SDL_GetError());
                 return false;
             }
             // We've reached a point of initialization that will require a shutdown
@@ -165,7 +165,7 @@ namespace v3d::engine {
         if (!needShutdown_) {
             return true;
         }
-        LOG_INFO(logger_) << "Shutting down engine...";
+        logger_->get()->info("Shutting down engine...");
         if (features_ & Feature::Window2D || features_ & Feature::Window3D) {
             window_->destroy();
             SDL_Quit();

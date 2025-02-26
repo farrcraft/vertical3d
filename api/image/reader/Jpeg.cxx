@@ -49,7 +49,7 @@ namespace v3d::image::reader {
     }
 
     boost::shared_ptr<Image> Jpeg::read(std::string_view filename) {
-        LOG_DEBUG(logger_) << "JPEGReader::read - Reading jpeg file [" << filename << "]";
+        logger_->get()->debug("JPEGReader::read - Reading jpeg file {}", filename);
 
         boost::shared_ptr<Image> empty_ptr;
         struct jpeg_decompress_struct cinfo;
@@ -59,8 +59,8 @@ namespace v3d::image::reader {
         errno = 0;
         errno_t err = fopen_s(&fp, static_cast<std::string>(filename).c_str(), "rb");
         if (err != 0) {
-            LOG_DEBUG(logger_) << "JPEGReader::read - failed opening file [" << filename << "] with errno [" <<
-                strerror(errno) << "]";
+            logger_->get()->error("JPEGReader::read - failed opening file {} with errno {}", filename,
+                strerror(errno));
             return empty_ptr;
         }
 

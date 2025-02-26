@@ -43,20 +43,20 @@ namespace v3d::font {
         // initialize freetype library
         FT_Error error;
         if ((error = FT_Init_FreeType(&library_)) != 0) {
-            LOG_ERROR(logger_) << "Error initializing freetype library!";
+            logger_->get()->error("Error initializing freetype library!");
             return false;
         }
 
         // load font file
         if ((error = FT_New_Face(library_, filename.c_str(), 0, &face_)) != 0) {
-            LOG_ERROR(logger_) << "Error creating new freetype face!";
+            logger_->get()->error("Error creating new freetype face!");
             FT_Done_FreeType(library_);
             return false;
         }
 
         // select charmap
         if ((error = FT_Select_Charmap(face_, FT_ENCODING_UNICODE)) != 0) {
-            LOG_ERROR(logger_) << "Error selecting freetype charmap!";
+            logger_->get()->error("Error selecting freetype charmap!");
             release();
             return false;
         }
@@ -65,7 +65,7 @@ namespace v3d::font {
         // size *= 100.0f;
         size_t hres = 64;
         if ((error = FT_Set_Char_Size(face_, static_cast<int>((size * 64)), 0, 72 * hres, 72)) != 0) {
-            LOG_ERROR(logger_) << "Error setting freetype char size!";
+            logger_->get()->error("Error setting freetype char size!");
             release();
             return false;
         }
@@ -172,7 +172,7 @@ namespace v3d::font {
             glm::ivec4 region = atlas_->region(5, 5);
 
             if (region.x < 0) {
-                LOG_DEBUG(logger_) << "Texture atlas is full!";
+                logger_->get()->error("Texture atlas is full!");
                 return glyph;
             }
             glyph = createGlyph();
@@ -243,7 +243,7 @@ namespace v3d::font {
             }
             FT_Error error;
             if ((error = FT_Load_Glyph(freetype_->face_, glyphIndex, flags)) != 0) {
-                LOG_ERROR(logger_) << "Error loading glyph!";
+                logger_->get()->error("Error loading glyph!");
                 FT_Done_FreeType(freetype_->library_);
                 return false;
             }
@@ -266,7 +266,7 @@ namespace v3d::font {
             } else {
                 FT_Stroker stroker;
                 if ((error = FT_Stroker_New(freetype_->library_, &stroker)) != 0) {
-                    LOG_ERROR(logger_) << "Error creating stroker!";
+                    logger_->get()->error("Error creating stroker!");
                     freetype_->release();
                     return false;
                 }
@@ -277,7 +277,7 @@ namespace v3d::font {
                     FT_STROKER_LINEJOIN_ROUND,
                     0);
                 if ((error = FT_Get_Glyph(freetype_->face_->glyph, &ft_glyph)) != 0) {
-                    LOG_ERROR(logger_) << "Error getting glyph!";
+                    logger_->get()->error("Error getting glyph!");
                     freetype_->release();
                     return false;
                 }
@@ -290,20 +290,20 @@ namespace v3d::font {
                     error = FT_Glyph_StrokeBorder(&ft_glyph, stroker, 1, 1);
                 }
                 if (error) {
-                    LOG_ERROR(logger_) << "Error setting glyph stroke border!";
+                    logger_->get()->error("Error setting glyph stroke border!");
                     freetype_->release();
                     return false;
                 }
 
                 if (atlas_->depth() == 1) {
                     if ((error = FT_Glyph_To_Bitmap(&ft_glyph, FT_RENDER_MODE_NORMAL, 0, 1)) != 0) {
-                        LOG_ERROR(logger_) << "Error converting glyph to bitmap!";
+                        logger_->get()->error("Error converting glyph to bitmap!");
                         freetype_->release();
                         return false;
                     }
                 } else {
                     if ((error = FT_Glyph_To_Bitmap(&ft_glyph, FT_RENDER_MODE_LCD, 0, 1)) != 0) {
-                        LOG_ERROR(logger_) << "Error converting glyph to bitmap!";
+                        logger_->get()->error("Error converting glyph to bitmap!");
                         freetype_->release();
                         return false;
                     }
@@ -324,7 +324,7 @@ namespace v3d::font {
             glm::ivec4 region = atlas_->region(w, h);
             if (region.x < 0) {
                 missed++;
-                LOG_ERROR(logger_) << "Texture atlas is full!";
+                logger_->get()->error("Texture atlas is full!");
                 continue;
             }
             w = w - 1;

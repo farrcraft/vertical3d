@@ -17,10 +17,12 @@
 #include "../type/3dtypes.h"
 
 namespace v3d::font {
-    Font2D::Font2D() : typeface_("Courier New"), size_(24), line_height_(0), tex_line_height_(0.0f) {
+    Font2D::Font2D(const boost::shared_ptr<v3d::log::Logger>& logger) :
+        typeface_("Courier New"), size_(24), line_height_(0), tex_line_height_(0.0f), logger_(logger) {
     }
 
-    Font2D::Font2D(const std::string& face, unsigned int size) : typeface_(face), size_(size), line_height_(0), tex_line_height_(0.0f) {
+    Font2D::Font2D(const std::string& face, unsigned int size, const boost::shared_ptr<v3d::log::Logger>& logger) :
+        typeface_(face), size_(size), line_height_(0), tex_line_height_(0.0f), logger_(logger) {
     }
 
     Font2D::~Font2D() {
@@ -56,38 +58,38 @@ namespace v3d::font {
 
     // NOTE: fonts aren't locale or language aware - there is a limited predefined character range supported.
     // freetype font loading based on gpwiki sample code
-    bool Font2D::build(const boost::shared_ptr<v3d::log::Logger>& logger) {
+    bool Font2D::build() {
         // the set of all characters to be loaded from the font file
         const std::string charset("abcdefghijklmnopqrstuvwxyz"
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
             "1234567890~!@#$%^&*()-=+;:"
             " _'\",./?[]|\\<>{}`\xFF");
 
-        LOG_DEBUG(logger) << "Font2D::build - Building font: " << typeface_;
+        logger_->get()->debug("Font2D::build - Building font: {}", typeface_);
 
         // initialize freetype library
         FT_Library library;
         FT_Error error;
         if ((error = FT_Init_FreeType(&library)) != 0) {
-            LOG_DEBUG(logger) << "Font2D::build - Error initializing freetype library!";
+            logger_->get()->debug("Font2D::build - Error initializing freetype library!");
             return false;
         }
         // load font file
         FT_Face face;
         std::string filename(typeface_);
         if ((error = FT_New_Face(library, filename.c_str(), 0, &face)) != 0) {
-            LOG_DEBUG(logger) << "Font2D::build - Error creating new freetype face!";
+            logger_->get()->debug("Font2D::build - Error creating new freetype face!");
             return false;
         }
         // make sure this is a scalable truetype font
         if (!(face->face_flags & FT_FACE_FLAG_SCALABLE) || !(face->face_flags & FT_FACE_FLAG_HORIZONTAL)) {
-            LOG_DEBUG(logger) << "Font2D::build - Not a scalable TTF font!";
+            logger_->get()->debug("Font2D::build - Not a scalable TTF font!");
             return false;
         }
 
         // set the font size
         if ((error = FT_Set_Pixel_Sizes(face, size_, 0)) != 0) {
-            LOG_DEBUG(logger) << "Font2D::build - Error setting font pixel size!";
+            logger_->get()->debug("Font2D::build - Error setting font pixel size!");
             return false;
         }
 
@@ -114,7 +116,7 @@ namespace v3d::font {
 
             // load the glyph and render the bitmap
             if ((error = FT_Load_Char(face, charcode, FT_LOAD_RENDER)) != 0) {
-                LOG_DEBUG(logger) << "Font2D::build - Error loading character [" << charcode << "] from typeface!";
+                logger_->get()->debug("Font2D::build - Error loading character {} from typeface!", charcode);
                 return false;
             }
             // get the advance in pixels and added padding
@@ -152,7 +154,7 @@ namespace v3d::font {
 
             // load the glyph and render the bitmap
             if ((error = FT_Load_Char(face, charcode, FT_LOAD_RENDER)) != 0) {
-                LOG_DEBUG(logger) << "Font2D::build - Error loading character [" << charcode << "] !";
+                logger_->get()->debug("Font2D::build - Error loading character {} !", charcode);
                 return false;
             }
             unsigned int advance = (face->glyph->metrics.horiAdvance >> 6) + pad;

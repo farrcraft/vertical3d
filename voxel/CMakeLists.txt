@@ -1,4 +1,4 @@
-add_executable("voxel" 
+add_executable(voxel
 	"src/engine/Aligned.h"
 	"src/engine/Camera.h" "src/engine/Camera.cxx"
 	"src/engine/Light.h" "src/engine/Light.cxx"
@@ -21,6 +21,11 @@ add_executable("voxel"
 	"src/Scene.h" "src/Scene.cxx"
 	"src/Version.h" "src/main.cxx")
 
-target_link_libraries("voxel" PRIVATE
+target_link_libraries(voxel PRIVATE
 	"libnoise"
 )
+
+target_compile_options(voxel PRIVATE /EHsc)
+
+set(CMAKE_CXX_FLAGS "/utf-8")
+set(CMAKE_C_FLAGS "/utf-8")

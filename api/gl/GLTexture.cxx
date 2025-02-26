@@ -48,7 +48,7 @@ namespace v3d::gl {
         if (tex_id != -1) {
             glBindTexture(GL_TEXTURE_2D, tex_id);
         } else {
-            LOG_ERROR(logger_) << "GLTexture::bind - bad texture id!";
+            logger_->get()->error("GLTexture::bind - bad texture id!");
             return false;
         }
 

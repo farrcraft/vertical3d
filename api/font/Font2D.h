@@ -20,8 +20,8 @@ namespace v3d::font {
      */
     class Font2D {
      public:
-            Font2D();
-            Font2D(const std::string & face, unsigned int size);
+            Font2D(const boost::shared_ptr<v3d::log::Logger>& logger);
+            Font2D(const std::string & face, unsigned int size, const boost::shared_ptr<v3d::log::Logger>& logger);
             ~Font2D();
 
             /**
@@ -80,7 +80,7 @@ namespace v3d::font {
              * Generate the GL objects necessary for the font with the current face and size.
              * @return whether the font was build successfully
              */
-            bool build(const boost::shared_ptr<v3d::log::Logger> & logger);
+            bool build();
             /**
              * Get the width of the string
              * @param str the string to get the width of
@@ -125,6 +125,8 @@ namespace v3d::font {
             std::string typeface_;
             int size_;
             unsigned int style_;
+
+            boost::shared_ptr<v3d::log::Logger> logger_;
     };
 
 };  // namespace v3d::font

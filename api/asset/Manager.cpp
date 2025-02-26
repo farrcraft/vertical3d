@@ -26,7 +26,7 @@ namespace v3d::asset {
     Manager::Manager(std::string_view path, const boost::shared_ptr<v3d::log::Logger>& logger) :
         logger_(logger) {
         path_ = static_cast<std::string>(path);
-        LOG_INFO(logger_) << "Setting asset manager path to: " << path_.c_str();
+        logger_->get()->info("Setting asset manager path to: {}", path);
         loaders_[asset::Type::ImageJpeg] = boost::make_shared<v3d::asset::loader::Jpeg>(this, logger_);
         loaders_[asset::Type::ImagePng] = boost::make_shared<v3d::asset::loader::Png>(this, logger_);
         loaders_[asset::Type::JsonDocument] = boost::make_shared<v3d::asset::loader::Json>(this, logger_);

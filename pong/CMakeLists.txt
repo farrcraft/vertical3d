@@ -1,4 +1,4 @@
-add_executable("pong" 
+add_executable(pong
 	"src/Ball.h" "src/Ball.cxx"
 	"src/GameState.h" "src/GameState.cxx"
 	"src/Paddle.h" "src/Paddle.cxx"
@@ -13,7 +13,7 @@ target_compile_definitions(pong PUBLIC BOOST_USE_WINAPI_VERSION=0x0A00)
 target_compile_definitions(pong PUBLIC _WIN32_WINNT=0x0A00)
 target_compile_definitions(pong PUBLIC WINVER=0x0A00)
 
-target_link_libraries("pong" PRIVATE
+target_link_libraries(pong PRIVATE
 	v3dlib_asset
 	v3dlib_audio
 	v3dlib_config
@@ -32,9 +32,14 @@ target_link_libraries("pong" PRIVATE
 	${SDL2_LIBRARIES}
 	${PNG_LIBRARIES}
 	JPEG::JPEG
-	Boost::log
 	OpenGL::GL
 	GLEW::GLEW
 	Freetype::Freetype
 	"soloud"
+	spdlog::spdlog
 )
+
+target_compile_options(pong PRIVATE /EHsc)
+
+set(CMAKE_CXX_FLAGS "/utf-8")
+set(CMAKE_C_FLAGS "/utf-8")
