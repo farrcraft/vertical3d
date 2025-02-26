@@ -137,7 +137,7 @@ void PongRenderer::draw() {
     drawBall();
 
     v3d::render::realtime::Frame frame(engine_.context());
-    boost::shared_ptr<v3d::render::realtime::Operation> canvasOp = boost::make_shared<v3d::render::realtime::operation::Canvas>(canvas_, nullptr);
+    boost::shared_ptr<v3d::render::realtime::Operation> canvasOp = boost::make_shared<v3d::render::realtime::operation::Canvas>(canvas_, canvasProgram_);
     frame.addOperation(canvasOp);
     frame.addOperation(fontRenderer_);
 
