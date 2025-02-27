@@ -113,6 +113,7 @@ bool PongEngine::tick() {
 }
 
 bool PongEngine::render() {
+    renderer_->draw();
     return true;
 }
 
@@ -183,7 +184,11 @@ void PongEngine::handleEvent(const v3d::event::Event& event) {
     bool vis = menu->visible();
     if (event.context()->name() == "pong") {
         // play commands
-        if (event.name() == "leftPaddleDown") {
+        if (event.name() == "leftPaddleUp") {
+            if (!scene_->state().paused()) {
+                scene_->left().down(!scene_->left().up());
+            }
+        } else if (event.name() == "leftPaddleDown") {
             if (!scene_->state().paused()) {
                 scene_->left().down(!scene_->left().down());
             }
