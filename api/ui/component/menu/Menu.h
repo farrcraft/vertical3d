@@ -105,7 +105,7 @@ namespace v3d::ui::component {
 
      private:
         std::vector< boost::shared_ptr<MenuItem> > items_;
-        std::vector< boost::shared_ptr<MenuItem> >::iterator active_;  // the active item in this menu
+        int active_;  // the active item in this menu
         boost::weak_ptr<Menu> level_;
         boost::weak_ptr<Menu> parent_;  // if this is a submenu it will have a parent menu
     };

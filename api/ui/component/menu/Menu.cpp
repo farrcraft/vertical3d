@@ -6,7 +6,7 @@
 #include "Menu.h"
 
 namespace v3d::ui::component {
-    Menu::Menu() : Component(component::Type::MENU) {
+    Menu::Menu() : Component(component::Type::MENU), active_(-1) {
     }
 
     bool Menu::navigate(Navigation direction, bool wrap) {
@@ -49,51 +49,54 @@ namespace v3d::ui::component {
     }
 
     boost::shared_ptr<MenuItem> Menu::active() const {
-        if (active_ == items_.end()) {
+        if (active_ < 0) {
             return nullptr;
         }
-        boost::shared_ptr<MenuItem> item(*active_);
-        return item;
+        return items_[active_];
     }
 
     void Menu::active(int idx) {
         if (idx < 0 || static_cast<unsigned>(idx) >= items_.size()) {
-            active_ = items_.end();
+            active_ = -1;
         }
-
-        std::vector< boost::shared_ptr<MenuItem> >::iterator iter = items_.begin();
-        for (int i = 0; i < idx; i++) {
-            iter++;
-        }
-        active_ = iter;
+        active_ = idx;
     }
 
     bool Menu::next() {
+        if (level_.empty()) {
+            return false;
+        }
         boost::shared_ptr<Menu> lvl = level_.lock();
         lvl->active_++;
-        if (lvl->active_ == lvl->items_.end()) {  // wrap around
-            lvl->active_ = lvl->items_.begin();
+        if (lvl->active_ == -1) {  // wrap around
+            lvl->active_ = 0;
             return false;
         }
         return true;
     }
 
     bool Menu::previous() {
-        boost::shared_ptr<Menu> lvl = level_.lock();
-        if (lvl->active_ == lvl->items_.end()) {  // wrap around
-            lvl->active_ = lvl->items_.begin();
+        if (level_.empty()) {
             return false;
         }
-        if (lvl->active_ != lvl->items_.begin()) {
+        boost::shared_ptr<Menu> lvl = level_.lock();
+        if (lvl->active_ == -1) {  // wrap around
+            lvl->active_ = 0;
+            return false;
+        }
+        if (lvl->active_ > 0) {
             lvl->active_--;
         } else {
-            lvl->active_ = lvl->items_.end();
+            lvl->active_ = -1;
             lvl->active_--;
         }
         return true;
     }
 
     bool Menu::up() {
+        if (level_.empty()) {
+            return false;
+        }
         boost::shared_ptr<Menu> lvl = level_.lock();
         if (lvl->parent_.expired()) {
             return false;
@@ -103,10 +106,10 @@ namespace v3d::ui::component {
     }
 
     bool Menu::down() {
-        if (active_ == items_.end()) {
+        if (active_ == -1) {
             return false;
         }
-        boost::shared_ptr<Menu> sm = (*active_)->submenu();
+        boost::shared_ptr<Menu> sm = items_[active_]->submenu();
         if (sm) {
             level_ = sm;
             return true;
