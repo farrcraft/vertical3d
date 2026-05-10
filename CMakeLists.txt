@@ -21,10 +21,10 @@ set(Boost_USE_STATIC_LIBS ON)
 set(Boost_NO_WARN_NEW_VERSIONS ON)
 
 # CMake parses module files by their names. It will use FindSDL2 in this case.
-find_package(SDL2 REQUIRED)
+find_package(SDL3 REQUIRED)
 
-# SDL2_INCLUDE_DIR variable set by the FindSDL2 module (if it finds directory).
-include_directories(SYSTEM ${SDL2_INCLUDE_DIR})
+# SDL3_INCLUDE_DIR variable set by the FindSDL3 module (if it finds directory).
+include_directories(SYSTEM ${SDL3_INCLUDE_DIR})
 
 # CMake already comes with a module for boost - https://cmake.org/cmake/help/latest/module/FindBoost.html
 find_package(Boost 1.76.0 REQUIRED COMPONENTS json locale log program_options)
@@ -40,7 +40,7 @@ find_package(spdlog CONFIG REQUIRED)
 
 include_directories(SYSTEM
 	${Boost_INCLUDE_DIRS}
-	${SDL2_INCLUDE_DIRS}
+	${SDL3_INCLUDE_DIRS}
 	"vendor/libnoise/include/noise"
 	"vendor/soloud/include"
 )

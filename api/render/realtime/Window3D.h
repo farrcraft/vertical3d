@@ -9,7 +9,7 @@
 
 #include "Window.h"
 
-#include <SDL.h>
+#include <SDL3/SDL.h>
 
 namespace v3d::render::realtime {
     /**

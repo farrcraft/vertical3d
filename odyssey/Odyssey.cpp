@@ -1,8 +1,8 @@
 ﻿  // Vertical3D
   // Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
 
-#include <SDL.h>
-#include <SDL_main.h>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
 
 #include "engine/Engine.h"
 

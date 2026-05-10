@@ -9,7 +9,7 @@
 
 #include "../../log/Logger.h"
 
-#include <SDL.h>
+#include <SDL3/SDL.h>
 
 #include <boost/shared_ptr.hpp>
 

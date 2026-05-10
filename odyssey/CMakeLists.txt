@@ -23,12 +23,12 @@ add_executable (Odyssey WIN32 "Odyssey.cpp"  "ui/Screen.h" "ui/Screen.cpp"
 "tile/Tile.h" "tile/Size.h" "engine/Unit.h"
 )
 
-# SDL2MAIN_LIBRARY is also specified within SDL2_LIBRARY by the FindSDL2 module.
+# SDL3MAIN_LIBRARY is also specified within SDL3_LIBRARY by the FindSDL3 module.
 # It's needed for Windows specific main function.
-# If I don't use FindSDL2 module, I have to link it as well.
+# If I don't use FindSDL3 module, I have to link it as well.
 target_link_libraries(Odyssey
-#		${SDL2MAIN_LIBRARY}
-        ${SDL2_LIBRARIES}
+#		${SDL3MAIN_LIBRARY}
+        ${SDL3_LIBRARIES}
 		${Boost_LIBRARIES}
 		JPEG::JPEG
 		${PNG_LIBRARIES}

@@ -30,11 +30,11 @@ namespace v3d::render::realtime {
         logger_->get()->info("Creating window {} x {}", width, height);
         int windowFlags;
         if (hasOpenGL) {
-            windowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN;
+            windowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
         } else {
-            windowFlags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN;
+            windowFlags = SDL_WINDOW_RESIZABLE;
         }
-        window_ = SDL_CreateWindow("Vertical3D", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width_, height_, windowFlags);
+        window_ = SDL_CreateWindow("Vertical3D", width_, height_, windowFlags);
         if (window_ == nullptr) {
            logger_->get()->error("Window could not be created! SDL_Error: {}", SDL_GetError());
             return false;
@@ -79,8 +79,11 @@ namespace v3d::render::realtime {
     }
 
     void Window::cursor(bool state) {
-        int toggle = state ? 1 : 0;
-        SDL_ShowCursor(toggle);
+        if (state) {
+            SDL_ShowCursor();
+        } else {
+            SDL_HideCursor();
+        }
     }
 
     void Window::warpCursor(int x, int y) {

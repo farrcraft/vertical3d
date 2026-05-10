@@ -22,11 +22,11 @@ namespace v3d::render::realtime {
         context_ = boost::make_shared<v3d::render::realtime::Context2D>(window);
         scene_ = boost::make_shared<Scene2D>(context_);
 
-        SDL_RenderSetLogicalSize(context_->handle(), window->logicalWidth(), window->logicalHeight());
+        SDL_SetRenderLogicalPresentation(context_->handle(), window->logicalWidth(), window->logicalHeight(), SDL_LOGICAL_PRESENTATION_STRETCH);
 
         backBuffer_ = boost::make_shared<v3d::render::realtime::Texture2D>(context_, window->logicalWidth(), window->logicalHeight());
 
-        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+        SDL_SetTextureScaleMode(backBuffer_->tex(), SDL_SCALEMODE_LINEAR);
 
         return true;
     }
@@ -39,7 +39,7 @@ namespace v3d::render::realtime {
 
         // flip backbuffer
         SDL_RenderClear(context_->handle());
-        SDL_RenderCopyEx(context_->handle(), backBuffer_->tex(), nullptr, nullptr, 0, nullptr, SDL_FLIP_VERTICAL);
+        SDL_RenderTextureRotated(context_->handle(), backBuffer_->tex(), nullptr, nullptr, 0.0, nullptr, SDL_FLIP_VERTICAL);
         SDL_RenderPresent(context_->handle());
     }
 

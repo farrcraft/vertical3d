@@ -10,7 +10,7 @@
 #include "Device.h"
 #include "../event/Engine.h"
 
-#include <SDL.h>
+#include <SDL3/SDL.h>
 #include <boost/shared_ptr.hpp>
 #include <entt/entt.hpp>
 

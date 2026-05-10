@@ -9,7 +9,7 @@
 
 #include <entt/entt.hpp>
 #include <boost/shared_ptr.hpp>
-#include <SDL.h>
+#include <SDL3/SDL.h>
 
 namespace v3d::input {
     /**

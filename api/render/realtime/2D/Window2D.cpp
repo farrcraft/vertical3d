@@ -8,7 +8,7 @@
 #include <iostream>
 
 namespace v3d::render::realtime {
-    Window2D::Window2D(const boost::shared_ptr<v3d::log::Logger>& logger) noexcept : Window(logger) {
+    Window2D::Window2D(const boost::shared_ptr<v3d::log::Logger>& logger) noexcept : logicalWidth_(-1), logicalHeight_(-1), surface_(nullptr), Window(logger) {
     }
 
     /**
@@ -34,9 +34,10 @@ namespace v3d::render::realtime {
     /**
      **/
     void Window2D::destroy() {
-        SDL_FreeSurface(surface_);
         surface_ = nullptr;
         Window::destroy();
+        logicalWidth_ = -1;
+        logicalHeight_ = -1;
     }
 
     int Window2D::logicalWidth() const noexcept {

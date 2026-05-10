@@ -11,11 +11,11 @@ namespace v3d::input {
      **/
     bool Mouse::handleEvent(const SDL_Event& event) {
         switch (event.type) {
-        case SDL_MOUSEBUTTONUP:
+        case SDL_EVENT_MOUSE_BUTTON_UP:
             break;
-        case SDL_MOUSEBUTTONDOWN:
+        case SDL_EVENT_MOUSE_BUTTON_DOWN:
             break;
-        case SDL_MOUSEMOTION:
+        case SDL_EVENT_MOUSE_MOTION:
             break;
         default:
             return false;

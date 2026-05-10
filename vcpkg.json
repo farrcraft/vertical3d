@@ -7,7 +7,7 @@
     "glm",
     "libjpeg-turbo",
     "libpng",
-    "sdl2",
+    "sdl3",
     "spdlog"
   ]
 }

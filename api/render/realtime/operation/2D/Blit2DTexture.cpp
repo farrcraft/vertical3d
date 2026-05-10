@@ -22,9 +22,9 @@ bool Blit2DTexture::run(boost::shared_ptr<Context2D> context) {
     SDL_RenderClear(context->handle());
 
     // set the target dimensions to match the source
-    SDL_Rect dest = { .x = 0, .y = 0, .w = source_->width(), .h = source_->height() };
+    SDL_FRect dest = { .x = 0.0f, .y = 0.0f, .w = static_cast<float>(source_->width()), .h = static_cast<float>(source_->height()) };
 
-    SDL_RenderCopy(context->handle(), source_->tex(), nullptr, &dest);
+    SDL_RenderTexture(context->handle(), source_->tex(), nullptr, &dest);
     // Detach the texture
     SDL_SetRenderTarget(context->handle(), nullptr);
 

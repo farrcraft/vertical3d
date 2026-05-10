@@ -14,6 +14,9 @@ namespace v3d::render::realtime {
         width_(width),
         height_(height) {
         texture_ = SDL_CreateTextureFromSurface(context_->handle(), surface);
+        if (texture_ == nullptr) {
+            throw std::runtime_error("Failed to create texture from surface");
+        }
     }
 
     /**
@@ -23,15 +26,21 @@ namespace v3d::render::realtime {
         width_(width),
         height_(height) {
         texture_ = SDL_CreateTexture(context_->handle(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, width, height);
+        if (texture_ == nullptr) {
+            throw std::runtime_error("Failed to create texture from surface");
+        }
     }
 
     /**
      **/
     void Texture2D::resize(int width, int height) {
         SDL_Texture* resized = SDL_CreateTexture(context_->handle(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, width, height);
+        if (texture_ == nullptr) {
+            throw std::runtime_error("Failed to create texture from surface");
+        }
         SDL_SetRenderTarget(context_->handle(), resized);
-        SDL_Rect dest = { .x = 0, .y = 0, .w = width, .h = height };
-        SDL_RenderCopy(context_->handle(), texture_, nullptr, &dest);
+        SDL_FRect dest = { .x = 0.0f, .y = 0.0f, .w = static_cast<float>(width), .h = static_cast<float>(height) };
+        SDL_RenderTexture(context_->handle(), texture_, nullptr, &dest);
         SDL_SetRenderTarget(context_->handle(), nullptr);
         SDL_DestroyTexture(texture_);
         width_ = width;

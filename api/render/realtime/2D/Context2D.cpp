@@ -10,7 +10,7 @@ namespace v3d::render::realtime {
     /**
      **/
     Context2D::Context2D(boost::shared_ptr<Window2D> window) {
-        renderer_ = SDL_CreateRenderer(window->sdl(), -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE);
+        renderer_ = SDL_CreateRenderer(window->sdl(), NULL);
         if (renderer_ == NULL) {
             throw std::invalid_argument(SDL_GetError());
         }

@@ -16,7 +16,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/make_shared.hpp>
 
-#include <SDL.h>
+#include <SDL3/SDL.h>
 
 namespace v3d::engine {
     /**
@@ -117,7 +117,7 @@ namespace v3d::engine {
 
         if (features_ & Feature::Window2D || features_ & Feature::Window3D) {
             // Initialize SDL
-            if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+            if (!SDL_Init(SDL_INIT_VIDEO)) {
                 logger_->get()->error("SDL could not initialize! SDL_Error: {}", SDL_GetError());
                 return false;
             }
@@ -193,23 +193,19 @@ namespace v3d::engine {
                     continue;
                 }
                 switch (event.type) {
-                case SDL_QUIT:
+                case SDL_EVENT_QUIT:
                     quit = true;
                     break;
-                case SDL_WINDOWEVENT:
-                    switch (event.window.event) {
-                    case SDL_WINDOWEVENT_RESIZED:
-                    case SDL_WINDOWEVENT_SIZE_CHANGED:
-                        if (window_) {
-                            window_->resize(event.window.data1, event.window.data2);
-                        }
-                        dispatcher_->trigger(v3d::event::WindowResize(event.window.data1, event.window.data2));
-                        break;
-                    case SDL_WINDOWEVENT_FOCUS_LOST:
-                        break;
-                    case SDL_WINDOWEVENT_FOCUS_GAINED:
-                        break;
+                case SDL_EVENT_WINDOW_RESIZED:
+                case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+                    if (window_) {
+                        window_->resize(event.window.data1, event.window.data2);
                     }
+                    dispatcher_->trigger(v3d::event::WindowResize(event.window.data1, event.window.data2));
+                    break;
+                case SDL_EVENT_WINDOW_FOCUS_LOST:
+                    break;
+                case SDL_EVENT_WINDOW_FOCUS_GAINED:
                     break;
                 }
             }

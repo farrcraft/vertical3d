@@ -15,92 +15,92 @@ namespace v3d::input {
     /**
      * Map a SDL key symbol to a string representation
      **/
-    std::string keyEvent(const SDL_Keysym* keysym) {
+    std::string keyEvent(SDL_Keycode key) {
         std::string evnt;
 
-        switch (keysym->sym) {
+        switch (key) {
         case SDLK_ESCAPE:
             evnt = "escape";
             break;
         case SDLK_RETURN:
             evnt = "return";
             break;
-        case SDLK_a:
+        case SDLK_A:
             evnt = "a";
             break;
-        case SDLK_b:
+        case SDLK_B:
             evnt = "b";
             break;
-        case SDLK_c:
+        case SDLK_C:
             evnt = "c";
             break;
-        case SDLK_d:
+        case SDLK_D:
             evnt = "d";
             break;
-        case SDLK_e:
+        case SDLK_E:
             evnt = "e";
             break;
-        case SDLK_f:
+        case SDLK_F:
             evnt = "f";
             break;
-        case SDLK_g:
+        case SDLK_G:
             evnt = "g";
             break;
-        case SDLK_h:
+        case SDLK_H:
             evnt = "h";
             break;
-        case SDLK_i:
+        case SDLK_I:
             evnt = "i";
             break;
-        case SDLK_j:
+        case SDLK_J:
             evnt = "j";
             break;
-        case SDLK_k:
+        case SDLK_K:
             evnt = "k";
             break;
-        case SDLK_l:
+        case SDLK_L:
             evnt = "l";
             break;
-        case SDLK_m:
+        case SDLK_M:
             evnt = "m";
             break;
-        case SDLK_n:
+        case SDLK_N:
             evnt = "n";
             break;
-        case SDLK_o:
+        case SDLK_O:
             evnt = "o";
             break;
-        case SDLK_p:
+        case SDLK_P:
             evnt = "p";
             break;
-        case SDLK_q:
+        case SDLK_Q:
             evnt = "q";
             break;
-        case SDLK_r:
+        case SDLK_R:
             evnt = "r";
             break;
-        case SDLK_s:
+        case SDLK_S:
             evnt = "s";
             break;
-        case SDLK_t:
+        case SDLK_T:
             evnt = "t";
             break;
-        case SDLK_u:
+        case SDLK_U:
             evnt = "u";
             break;
-        case SDLK_v:
+        case SDLK_V:
             evnt = "v";
             break;
-        case SDLK_w:
+        case SDLK_W:
             evnt = "w";
             break;
-        case SDLK_x:
+        case SDLK_X:
             evnt = "x";
             break;
-        case SDLK_y:
+        case SDLK_Y:
             evnt = "y";
             break;
-        case SDLK_z:
+        case SDLK_Z:
             evnt = "z";
             break;
         case SDLK_0:
@@ -139,20 +139,11 @@ namespace v3d::input {
         case SDLK_PERIOD:
             evnt = ".";
             break;
-        case SDLK_EXCLAIM:
-            evnt = "!";
-            break;
         case SDLK_MINUS:
             evnt = "-";
             break;
         case SDLK_COMMA:
             evnt = ",";
-            break;
-        case SDLK_PLUS:
-            evnt = "+";
-            break;
-        case SDLK_ASTERISK:
-            evnt = "*";
             break;
         case SDLK_SEMICOLON:
             evnt = ";";
@@ -163,7 +154,7 @@ namespace v3d::input {
         case SDLK_TAB:
             evnt = "tab";
             break;
-        case SDLK_BACKQUOTE:
+        case SDLK_GRAVE:
             evnt = "`";
             break;
         case SDLK_UP:
@@ -271,15 +262,15 @@ namespace v3d::input {
         std::string keyName;
         bool pressed = true;
         switch (event.type) {
-        case SDL_KEYDOWN:
-            keyName = keyEvent(&event.key.keysym);
+        case SDL_EVENT_KEY_DOWN:
+            keyName = keyEvent(event.key.key);
             if (!state_.pressed(keyName)) {
                 state_(keyName);
             }
             dispatcher_->trigger<v3d::event::KeyDown>(v3d::event::KeyDown(keyName, context_));
             break;
-        case SDL_KEYUP:
-            keyName = keyEvent(&event.key.keysym);
+        case SDL_EVENT_KEY_UP:
+            keyName = keyEvent(event.key.key);
             if (!state_.pressed(keyName)) {
                 state_(keyName);
             }

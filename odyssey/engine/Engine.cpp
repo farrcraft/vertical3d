@@ -14,7 +14,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/make_shared.hpp>
 
-#include <SDL.h>
+#include <SDL3/SDL.h>
 
 namespace odyssey::engine {
     /**
