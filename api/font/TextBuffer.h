@@ -27,7 +27,7 @@ namespace v3d::font {
         std::vector<glm::vec3> & vertices();
         std::vector<glm::vec2> & uvs();
         std::vector<glm::vec4> & colors();
-        std::vector<size_t> & indices();
+        std::vector<unsigned int> & indices();
 
         void addVertex(const glm::vec3 & vertex);
         void addIndex(size_t index);
@@ -40,6 +40,6 @@ namespace v3d::font {
         std::vector<glm::vec3> vertices_;
         std::vector<glm::vec2> uvs_;
         std::vector<glm::vec4> colors_;
-        std::vector<size_t> indices_;
+        std::vector<unsigned int> indices_;
     };
 };  // namespace v3d::font

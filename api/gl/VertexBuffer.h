@@ -65,7 +65,7 @@ namespace v3d::gl {
 
         void render() const;
 
-        void indices(const std::vector<size_t> & data);
+        void indices(const std::vector<unsigned int> & data);
         void indices(glm::ivec3 * data, size_t count);
         void allocate();
 

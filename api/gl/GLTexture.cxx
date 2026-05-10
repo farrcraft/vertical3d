@@ -19,7 +19,7 @@ namespace v3d::gl {
         create(image);
     }
 
-    GLTexture::GLTexture(const v3d::image::Texture & t) : v3d::image::Texture(t) {
+    GLTexture::GLTexture(const v3d::image::Texture & t, const boost::shared_ptr<v3d::log::Logger>& logger) : v3d::image::Texture(t), logger_(logger) {
     }
 
     GLTexture::~GLTexture() {
@@ -35,8 +35,8 @@ namespace v3d::gl {
             return;
         }
         if (!repeat) {
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         } else {
             glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
             glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -45,7 +45,7 @@ namespace v3d::gl {
 
     bool GLTexture::bind() {
         unsigned int tex_id = id();
-        if (tex_id != -1) {
+        if (!isnull()) {
             glBindTexture(GL_TEXTURE_2D, tex_id);
         } else {
             logger_->get()->error("GLTexture::bind - bad texture id!");
@@ -66,12 +66,16 @@ namespace v3d::gl {
 
         int format = GL_RGB;
         int internalformat = GL_RGB;
-        if (image->bpp() == 24) {  // is the image 24 bits?
+        if (image->bpp() == 24) {
             format = GL_RGB;
             internalformat = GL_RGB;
         } else if (image->bpp() == 8) {
             format = GL_ALPHA;
             internalformat = GL_ALPHA8;
+        }
+        else if (image->bpp() == 32) {
+            format = GL_RGBA;
+            internalformat = GL_RGBA;
         }
 
         // test to make sure texture will fit first

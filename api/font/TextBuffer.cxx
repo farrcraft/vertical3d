@@ -47,7 +47,7 @@ namespace v3d::font {
         return colors_;
     }
 
-    std::vector<size_t>& TextBuffer::indices() {
+    std::vector<unsigned int>& TextBuffer::indices() {
         return indices_;
     }
 

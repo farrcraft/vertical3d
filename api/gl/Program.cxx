@@ -17,6 +17,10 @@ namespace v3d::gl {
         shaders(theShaders);
     }
 
+    Program::~Program() {
+        glDeleteProgram(id_);
+    }
+
     /**
      **/
     void Program::shaders(const std::vector<boost::shared_ptr<Shader>>& theShaders) {
@@ -67,14 +71,15 @@ namespace v3d::gl {
 
     /**
      **/
-    unsigned int Program::uniform(const std::string& name) {
+    int Program::uniform(const std::string& name) {
         if (uniforms_.find(name) == uniforms_.end()) {
             if (!enabled_) {
                 enable();
             }
             uniforms_[name] = glGetUniformLocation(id_, name.c_str());
+            return uniforms_[name];
         }
-        return uniforms_[name];
+        return -1;
     }
 
 };  // namespace v3d::gl

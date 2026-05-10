@@ -24,6 +24,7 @@ namespace v3d::gl {
             glDeleteBuffers(1, &ebo_);
         }
         glDeleteBuffers(1, &vbo_);
+        glDeleteVertexArrays(1, &vao_);
     }
 
     void VertexBuffer::attribute(unsigned int position, unsigned int size, AttributeType type, size_t length) {
@@ -67,7 +68,7 @@ namespace v3d::gl {
         }
     }
 
-    void VertexBuffer::indices(const std::vector<size_t>& data) {
+    void VertexBuffer::indices(const std::vector<unsigned int>& data) {
         indices_ = data.size();
         if (ebo_ == 0) {
             glGenBuffers(1, &ebo_);
@@ -108,7 +109,7 @@ namespace v3d::gl {
         }
         glBindVertexArray(vao_);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_ * sizeof(unsigned int), &(data[0].x), usage);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_ * sizeof(glm::ivec3), &(data[0].x), usage);
     }
 
 
@@ -143,18 +144,30 @@ namespace v3d::gl {
     }
 
     void VertexBuffer::data1f(unsigned int attr, const std::vector<float>& data) {
+        if (data.size() == 0) {
+            return;
+        }
         set(attr, &data[0], data.size());
     }
 
     void VertexBuffer::data2f(unsigned int attr, const std::vector<glm::vec2>& data) {
+        if (data.size() == 0) {
+            return;
+        }
         set(attr, glm::value_ptr(data[0]), data.size());
     }
 
     void VertexBuffer::data3f(unsigned int attr, const std::vector<glm::vec3>& data) {
+        if (data.size() == 0) {
+            return;
+        }
         set(attr, glm::value_ptr(data[0]), data.size());
     }
 
     void VertexBuffer::data4f(unsigned int attr, const std::vector<glm::vec4>& data) {
+        if (data.size() == 0) {
+            return;
+        }
         set(attr, glm::value_ptr(data[0]), data.size());
     }
 

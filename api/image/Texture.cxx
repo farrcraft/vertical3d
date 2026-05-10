@@ -9,7 +9,7 @@
 #include <iostream>
 
 namespace v3d::image {
-    Texture::Texture() : type_(UNKNOWN), texID_(-1), wrap_(false), width_(0), height_(0) {
+    Texture::Texture() : type_(UNKNOWN), texID_(0), wrap_(false), width_(0), height_(0) {
     }
 
     Texture::Texture(const Texture& t) : type_(t.type_), texID_(t.texID_), wrap_(t.wrap_), width_(0), height_(0) {

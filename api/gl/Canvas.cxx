@@ -17,6 +17,8 @@
 namespace v3d::gl {
 
     Canvas::Canvas() :
+        width_(0),
+        height_(0),
         buffer_(VertexBuffer::BUFFER_TYPE_DYNAMIC),
         vao_(0) {
         push();
@@ -63,10 +65,12 @@ namespace v3d::gl {
     }
 
     void Canvas::upload() {
+        /* [FIXME] - I think we can completely remove vao_ from Canvas
         if (vao_ == 0) {
             glGenVertexArrays(1, &vao_);
         }
         glBindVertexArray(vao_);
+        */
 
         buffer_.attribute(0, 3, VertexBuffer::ATTRIBUTE_TYPE_VERTEX, xyz_.size());
         buffer_.attribute(1, 4, VertexBuffer::ATTRIBUTE_TYPE_COLOR, rgba_.size());
@@ -97,7 +101,7 @@ namespace v3d::gl {
         p = glm::vec4(right, top, 0.0f, 1.0f);
         p = mv * p;
         glm::vec2 xy1(p.x, p.y);
-        glm::vec4 rgba(color, 0.0f);
+        glm::vec4 rgba(color, 1.0f);
         addQuad(xy0, xy1, rgba);
     }
 
@@ -123,7 +127,7 @@ namespace v3d::gl {
         glm::mat4 mv = modelView_.back();
         glm::vec4 middle(0.0f, 0.0f, 0.0f, 1.0f);
         middle = mv * middle;
-        glm::vec4 rgba(color, 0.0f);
+        glm::vec4 rgba(color, 1.0f);
         glm::vec3 p0(middle.x, middle.y, middle.z);
         addVertex(p0, rgba);
         float delta = 2.0f * glm::pi<float>() / sides;

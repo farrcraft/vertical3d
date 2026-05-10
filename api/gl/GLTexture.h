@@ -16,7 +16,7 @@ namespace v3d::gl {
     class GLTexture : public v3d::image::Texture {
      public:
         explicit GLTexture(const boost::shared_ptr<v3d::log::Logger>& logger);
-        explicit GLTexture(const v3d::image::Texture &t);
+        explicit GLTexture(const v3d::image::Texture &t, const boost::shared_ptr<v3d::log::Logger>& logger);
         GLTexture(boost::shared_ptr<v3d::image::Image> image, const boost::shared_ptr<v3d::log::Logger> & logger);
         virtual ~GLTexture();
 

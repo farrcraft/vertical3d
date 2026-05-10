@@ -17,7 +17,11 @@ namespace v3d::render::realtime {
     /**
      **/
     boost::shared_ptr<Texture2D> Texture2DCache::fetch(const std::string& key) {
-        return textures_[key];
+        auto it = textures_.find(key);
+        if (it == textures_.end()) {
+            return nullptr;
+        }
+        return it->second;
     }
 
 };  // namespace v3d::render::realtime
