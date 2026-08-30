@@ -22,6 +22,12 @@ namespace v3d::render::realtime {
     Engine::~Engine() {
     }
 
+    /**
+     **/
+    const boost::shared_ptr<v3d::log::Logger>& Engine::logger() const noexcept {
+        return logger_;
+    }
+
     bool Engine::initialize(const boost::shared_ptr<Window>& window) {
         window_ = window;
         return true;

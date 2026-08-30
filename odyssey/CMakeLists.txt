@@ -29,6 +29,7 @@ add_executable (Odyssey WIN32 "Odyssey.cpp"  "ui/Screen.h" "ui/Screen.cpp"
 target_link_libraries(Odyssey
 #		${SDL3MAIN_LIBRARY}
         ${SDL3_LIBRARIES}
+		${Vulkan_LIBRARIES}
 		${Boost_LIBRARIES}
 		JPEG::JPEG
 		${PNG_LIBRARIES}

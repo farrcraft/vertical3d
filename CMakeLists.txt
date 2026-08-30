@@ -26,6 +26,8 @@ find_package(SDL3 REQUIRED)
 # SDL3_INCLUDE_DIR variable set by the FindSDL3 module (if it finds directory).
 include_directories(SYSTEM ${SDL3_INCLUDE_DIR})
 
+find_package(Vulkan REQUIRED)
+
 # CMake already comes with a module for boost - https://cmake.org/cmake/help/latest/module/FindBoost.html
 find_package(Boost 1.76.0 REQUIRED COMPONENTS json locale log program_options)
 
@@ -41,6 +43,7 @@ find_package(spdlog CONFIG REQUIRED)
 include_directories(SYSTEM
 	${Boost_INCLUDE_DIRS}
 	${SDL3_INCLUDE_DIRS}
+	${Vulkan_INCLUDE_DIRS}
 	"vendor/libnoise/include/noise"
 	"vendor/soloud/include"
 )

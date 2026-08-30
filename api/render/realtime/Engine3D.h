@@ -7,6 +7,7 @@
 
 #include "Engine.h"
 #include "Context.h"
+#include "Context3D.h"
 #include "Window3D.h"
 
 namespace v3d::render::realtime {

@@ -26,7 +26,7 @@ namespace v3d::render::realtime {
         /**
          * @return bool
          **/
-        virtual bool create(int width, int height, bool hasOpenGL = false);
+        virtual bool create(int width, int height, bool hasVulkan = false);
 
         /**
          * @return void
@@ -65,6 +65,11 @@ namespace v3d::render::realtime {
          * Move the mouse cursor to a new position in the window
          */
         void warpCursor(int x, int y);
+
+     protected:
+        /**
+         **/
+        const boost::shared_ptr<v3d::log::Logger>& logger() const noexcept;
 
      private:
         SDL_Window* window_;

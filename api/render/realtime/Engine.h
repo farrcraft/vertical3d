@@ -53,6 +53,11 @@ namespace v3d::render::realtime {
          **/
         virtual void renderFrame() = 0;
 
+     protected:
+        /**
+         **/
+        const boost::shared_ptr<v3d::log::Logger>& logger() const noexcept;
+
      private:
         boost::shared_ptr<v3d::log::Logger> logger_;
         boost::shared_ptr<v3d::asset::Manager> assetManager_;

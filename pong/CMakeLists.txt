@@ -30,6 +30,7 @@ target_link_libraries(pong PRIVATE
 	v3dlib_ui
 	${Boost_LIBRARIES}
 	${SDL3_LIBRARIES}
+	${Vulkan_LIBRARIES}
 	${PNG_LIBRARIES}
 	JPEG::JPEG
 	OpenGL::GL

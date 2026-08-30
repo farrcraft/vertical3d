@@ -19,8 +19,14 @@ namespace v3d::render::realtime {
     }
 
     /**
+     **/
+    const boost::shared_ptr<v3d::log::Logger>& Window::logger() const noexcept {
+        return logger_;
+    }
+
+    /**
     **/
-    bool Window::create(int width, int height, bool hasOpenGL) {
+    bool Window::create(int width, int height, bool hasVulkan) {
         if (width > 0) {
             width_ = width;
         }
@@ -29,8 +35,8 @@ namespace v3d::render::realtime {
         }
         logger_->get()->info("Creating window {} x {}", width, height);
         int windowFlags;
-        if (hasOpenGL) {
-            windowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
+        if (hasVulkan) {
+            windowFlags = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE;
         } else {
             windowFlags = SDL_WINDOW_RESIZABLE;
         }

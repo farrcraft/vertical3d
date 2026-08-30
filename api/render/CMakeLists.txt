@@ -17,7 +17,15 @@ add_library("v3dlib_render"
 	"realtime/2D/Scene2D.h" "realtime/2D/Scene2D.cpp" 
 	"realtime/Engine.h" "realtime/Engine.cpp" 
 	"realtime/Context.h" "realtime/Window.h" "realtime/Window.cpp" 
-	"realtime/2D/Operation2D.h" "realtime/2D/Operation2D.cpp" "realtime/Window3D.h" "realtime/Window3D.cpp" "realtime/Engine3D.h" "realtime/Engine3D.cpp" "realtime/operation/Canvas.h" "realtime/operation/Canvas.cpp")
+	"realtime/2D/Operation2D.h" "realtime/2D/Operation2D.cpp" 
+	"realtime/Window3D.h" "realtime/Window3D.cpp" 
+	"realtime/Engine3D.h" "realtime/Engine3D.cpp" 
+	"realtime/operation/Canvas.h" "realtime/operation/Canvas.cpp" 
+	"realtime/Context3D.h" "realtime/Context3D.cpp" 
+	"realtime/vulkan/Result.h" "realtime/vulkan/Result.cxx" 
+	"realtime/vulkan/Instance.h" "realtime/vulkan/Instance.cxx" 
+	"realtime/vulkan/Surface.h" "realtime/vulkan/Surface.cxx" 
+	"realtime/vulkan/Device.h" "realtime/vulkan/Device.cxx")
 
 # Workaround for a boost log ABI bug - https://github.com/microsoft/vcpkg/discussions/22762
 target_compile_definitions(v3dlib_render PUBLIC BOOST_USE_WINAPI_VERSION=0x0A00)
