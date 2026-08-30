@@ -68,6 +68,11 @@ namespace v3d::render::realtime::vulkan {
         VkPhysicalDevice physical() const noexcept;
 
         /**
+         * @return the surface the device was selected to present to
+         **/
+        boost::shared_ptr<Surface> surface() const noexcept;
+
+        /**
          * @return the queue families backing the device
          **/
         const QueueFamilies& families() const noexcept;

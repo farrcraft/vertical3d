@@ -78,6 +78,12 @@ namespace v3d::render::realtime::vulkan {
 
     /**
      **/
+    boost::shared_ptr<Surface> Device::surface() const noexcept {
+        return surface_;
+    }
+
+    /**
+     **/
     const Device::QueueFamilies& Device::families() const noexcept {
         return families_;
     }

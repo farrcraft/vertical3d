@@ -5,6 +5,7 @@
 
 #include "Context3D.h"
 
+#include <cstdint>
 #include <stdexcept>
 
 #include <boost/make_shared.hpp>
@@ -18,6 +19,7 @@ namespace v3d::render::realtime {
             throw std::runtime_error("A 3D context needs a created window to render to");
         }
         device_ = boost::make_shared<vulkan::Device>(logger, window_->instance(), window_->surface());
+        swapchain_ = boost::make_shared<vulkan::Swapchain>(logger, device_, static_cast<uint32_t>(window_->width()), static_cast<uint32_t>(window_->height()));
     }
 
     /**
@@ -29,5 +31,17 @@ namespace v3d::render::realtime {
      **/
     boost::shared_ptr<vulkan::Device> Context3D::device() const {
         return device_;
+    }
+
+    /**
+     **/
+    boost::shared_ptr<vulkan::Swapchain> Context3D::swapchain() const {
+        return swapchain_;
+    }
+
+    /**
+     **/
+    void Context3D::resize() {
+        swapchain_->recreate(static_cast<uint32_t>(window_->width()), static_cast<uint32_t>(window_->height()));
     }
 };  // namespace v3d::render::realtime

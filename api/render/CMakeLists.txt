@@ -25,7 +25,8 @@ add_library("v3dlib_render"
 	"realtime/vulkan/Result.h" "realtime/vulkan/Result.cxx" 
 	"realtime/vulkan/Instance.h" "realtime/vulkan/Instance.cxx" 
 	"realtime/vulkan/Surface.h" "realtime/vulkan/Surface.cxx" 
-	"realtime/vulkan/Device.h" "realtime/vulkan/Device.cxx")
+	"realtime/vulkan/Device.h" "realtime/vulkan/Device.cxx" 
+	"realtime/vulkan/Swapchain.h" "realtime/vulkan/Swapchain.cxx")
 
 # Workaround for a boost log ABI bug - https://github.com/microsoft/vcpkg/discussions/22762
 target_compile_definitions(v3dlib_render PUBLIC BOOST_USE_WINAPI_VERSION=0x0A00)

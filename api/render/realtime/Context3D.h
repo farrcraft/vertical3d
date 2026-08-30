@@ -8,6 +8,7 @@
 #include "Context.h"
 #include "Window3D.h"
 #include "vulkan/Device.h"
+#include "vulkan/Swapchain.h"
 
 #include "../../log/Logger.h"
 
@@ -34,8 +35,20 @@ namespace v3d::render::realtime {
          **/
         boost::shared_ptr<vulkan::Device> device() const;
 
+        /**
+         * @return the chain of images being presented to the window
+         **/
+        boost::shared_ptr<vulkan::Swapchain> swapchain() const;
+
+        /**
+         * Rebuild the swapchain against the window's current size.
+         * Call this when presenting reports the chain has gone out of date.
+         **/
+        void resize();
+
      private:
         boost::shared_ptr<Window3D> window_;
         boost::shared_ptr<vulkan::Device> device_;
+        boost::shared_ptr<vulkan::Swapchain> swapchain_;
     };
 };  // namespace v3d::render::realtime
