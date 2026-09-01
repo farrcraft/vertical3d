@@ -5,65 +5,94 @@
 
 #include "PongRenderer.h"
 
-#include <GL/glew.h>
-
-#include <cmath>
-#include <iostream>
 #include <string>
 
-#include "../../api/gl/Shader.h"
-#include "../../api/font/TextureTextBuffer.h"
-#include "../../api/asset/ShaderProgram.h"
 #include "../../api/asset/TextureFont.h"
-#include "../../api/render/realtime/Frame.h"
-#include "../../api/render/realtime/operation/Canvas.h"
 
+#include <boost/bind/bind.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 
+namespace {
+
+    /**
+     * The glyphs pong ever draws - printable ascii. The atlas is uploaded to the device once
+     * at load, so every glyph has to be packed into it before then.
+     **/
+    const wchar_t* const charcodes =
+        L" !\"#$%&'()*+,-./0123456789:;<=>?"
+        L"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"
+        L"`abcdefghijklmnopqrstuvwxyz{|}~";
+
+    /**
+     * The size the font is rasterized at. Nothing scales a glyph, so this is also the size
+     * everything is drawn at.
+     **/
+    const float fontSize = 28.0f;
+
+    const glm::vec4 boardColour(0.35f, 0.35f, 0.35f, 1.0f);
+    const glm::vec4 ballColour(1.0f, 1.0f, 1.0f, 1.0f);
+    const glm::vec4 scoreColour(0.85f, 0.85f, 0.85f, 1.0f);
+
+    const unsigned int ballSides = 32;
+    const unsigned int wallThickness = 15;
+    const unsigned int centreLineWidth = 14;
+
+};  // namespace
+
+/**
+ **/
 PongRenderer::PongRenderer(const boost::shared_ptr<v3d::render::realtime::Window3D>& window, const boost::shared_ptr<v3d::log::Logger>& logger,
     const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry) :
     engine_(logger, assetManager, registry) {
     engine_.initialize(window);
 
-    boost::shared_ptr<v3d::asset::Loader> loader = assetManager->resolveLoader(v3d::asset::Type::ShaderProgram);
-    v3d::asset::ParameterValue value;
-    value = static_cast<unsigned int>(v3d::gl::Shader::SHADER_TYPE_VERTEX | v3d::gl::Shader::SHADER_TYPE_FRAGMENT);
-    loader->parameter("shaderTypes", value);
-    boost::shared_ptr<v3d::asset::ShaderProgram> program = boost::dynamic_pointer_cast<v3d::asset::ShaderProgram>(
-        assetManager->load("shaders/canvas", v3d::asset::Type::ShaderProgram));
-    canvasProgram_ = program->program();
+    loadFont(assetManager, logger);
 
-    canvas_ = boost::make_shared<v3d::gl::Canvas>();
+    uiRenderer_ = boost::make_shared<v3d::ui::ComponentRenderer>(
+        [this](const std::string& text) -> float {
+            float width = 0.0f;
+            for (char character : text) {
+                boost::shared_ptr<v3d::font::TextureFont::Glyph> glyph = markup_.font_->glyph(static_cast<wchar_t>(character));
+                if (glyph) {
+                    width += glyph->advance_.x;
+                }
+            }
+            return width;
+        },
+        [this](const std::string& text, const glm::vec2& pen, const glm::vec4& colour) {
+            drawText(text, pen, colour);
+        });
+    uiRenderer_->style().lineHeight = fontSize * 1.4f;
+}
 
-    // setup text buffer
-    boost::shared_ptr<v3d::asset::ShaderProgram> textProgram = boost::dynamic_pointer_cast<v3d::asset::ShaderProgram>(
-        assetManager->load("shaders/text", v3d::asset::Type::ShaderProgram));
+/**
+ **/
+void PongRenderer::loadFont(const boost::shared_ptr<v3d::asset::Manager>& assetManager, const boost::shared_ptr<v3d::log::Logger>& logger) {
+    // a one channel atlas: the glyph's coverage becomes its alpha, which is what lets text
+    // go through the quad shader. Subpixel (LCD) filtering would need dual source blending or
+    // a second pass
+    fontCache_ = boost::make_shared<v3d::font::TextureFontCache>(512, 512, v3d::font::TextureTextBuffer::LCD_FILTERING_OFF, logger);
+    fontCache_->charcodes(charcodes);
 
-    fontCache_ = boost::make_shared<v3d::font::TextureFontCache>(512, 512, v3d::font::TextureTextBuffer::LCD_FILTERING_ON, logger);
-
+    markup_.family_ = "sans";
     markup_.bold_ = false;
     markup_.italic_ = false;
     markup_.rise_ = 0.0f;
     markup_.spacing_ = 0.0f;
-    markup_.gamma_ = 0.5f;
+    markup_.gamma_ = 1.0f;
+    markup_.outline_ = false;
     markup_.underline_ = false;
     markup_.overline_ = false;
     markup_.strikethrough_ = false;
     markup_.foregroundColor_ = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-    markup_.backgroundColor_ = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
-    markup_.size_ = 64.0f;
+    // transparent, so no background quad is emitted behind each glyph
+    markup_.backgroundColor_ = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
+    markup_.size_ = fontSize;
 
-    // characters to cache
-    const wchar_t *charcodes =  L" !\"#$%&'()*+,-./0123456789:;<=>?"
-                                L"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"
-                                L"`abcdefghijklmnopqrstuvwxyz{|}~";
-    fontCache_->charcodes(charcodes);
-
-    loader = assetManager->resolveLoader(v3d::asset::Type::TextureFont);
-    loader->parameter("fontSize", markup_.size_);
+    boost::shared_ptr<v3d::asset::Loader> loader = assetManager->resolveLoader(v3d::asset::Type::TextureFont);
+    v3d::asset::ParameterValue value = markup_.size_;
+    loader->parameter("fontSize", value);
     boost::shared_ptr<v3d::asset::TextureFont> font = boost::dynamic_pointer_cast<v3d::asset::TextureFont>(
         assetManager->load("fonts/NotoSans-Regular.ttf", v3d::asset::Type::TextureFont));
 
@@ -72,124 +101,131 @@ PongRenderer::PongRenderer(const boost::shared_ptr<v3d::render::realtime::Window
     fontCache_->add(font->font());
     markup_.font_ = font->font();
 
-    boost::shared_ptr<v3d::font::TextureTextBuffer> text;
-    text = boost::make_shared<v3d::font::TextureTextBuffer>();
-    fontRenderer_ = boost::make_shared<v3d::render::realtime::operation::TextureFont>(text, textProgram->program(), fontCache_->atlas(), logger);
+    // every glyph is packed by now, so the atlas can go to the device once and stay there
+    atlas_ = engine_.quads()->texture(fontCache_->atlas()->image());
+
+    text_ = boost::make_shared<v3d::font::TextureTextBuffer>();
 }
 
-void PongRenderer::resize(int width, int height) {
-    scene_->resize(width, height);
-    canvas_->resize(width, height);
-    canvasProgram_->enable();
-    const float w = static_cast<float>(width);
-    const float h = static_cast<float>(height);
-    glm::mat4 projection = glm::ortho(0.0f, w, h, 0.0f, -1.0f, 1.0f);
-    unsigned int projectionMatrix = canvasProgram_->uniform("projectionMatrix");
-    glUniformMatrix4fv(projectionMatrix, 1, GL_FALSE, glm::value_ptr(projection));
-    canvasProgram_->disable();
-    fontRenderer_->resize(w, h);
-}
-
-void PongRenderer::draw() {
-    canvas_->clear();
-
-    // clear color & depth buffers
-    engine_.renderFrame();
-
-    const int width = engine_.window()->width();
-    const int height = engine_.window()->height();
-
-    // center line
-    glm::vec3 color(0.35f, 0.35f, 0.35f);
-    canvas_->rect(((width / 2) - 7), ((width / 2) + 7), 0, height, color);
-
-    v3d::render::realtime::Frame frame(engine_.context());
-    boost::shared_ptr<v3d::render::realtime::Operation> canvasOp = boost::make_shared<v3d::render::realtime::operation::Canvas>(canvas_, canvasProgram_);
-    frame.addOperation(canvasOp);
-
-    // upload to GPU & render
-    frame.draw();
-
-    /*
-    canvas_->clear();
-
-    // clear color & depth buffers
-    engine_.renderFrame();
-
-    const int width = engine_.window()->width();
-    const int height = engine_.window()->height();
-
-    // draw the scoreboard
-    fontRenderer_->buffer()->clear();
-    std::stringstream txt;
-
-    // left score
-    txt << boost::lexical_cast<std::string>(scene_->left().score());
-    glm::vec2 pen(width / 4.0f, height / 4.0f);
-    std::string buffer = txt.str();
-    std::wstring widestr = std::wstring(buffer.begin(), buffer.end());
-    fontRenderer_->buffer()->addText(&pen, markup_, widestr.c_str());
-
-    // right score
-    txt.str("");
-    txt.clear();
-    pen = glm::vec2(((width / 4.0f) * 3.0f), (height / 4.0f));
-    txt << boost::lexical_cast<std::string>(scene_->right().score());
-    buffer = txt.str();
-    widestr = std::wstring(buffer.begin(), buffer.end());
-    fontRenderer_->buffer()->addText(&pen, markup_, widestr.c_str());
-
-    // draw the gameboard
-
-    // center line
-    glm::vec3 color(0.35f, 0.35f, 0.35f);
-    canvas_->rect(((width / 2) - 7), ((width / 2) + 7), 0, height, color);
-
-    // bottom wall
-    canvas_->rect(0, width, height - 15, height, color);
-
-    // top wall
-    canvas_->rect(0, width, 0, 15, color);
-
-    // draw the paddles and ball
-    drawPaddle(scene_->left());
-    drawPaddle(scene_->right());
-
-    drawBall();
-
-    v3d::render::realtime::Frame frame(engine_.context());
-    boost::shared_ptr<v3d::render::realtime::Operation> canvasOp = boost::make_shared<v3d::render::realtime::operation::Canvas>(canvas_, canvasProgram_);
-    frame.addOperation(canvasOp);
-    frame.addOperation(fontRenderer_);
-
-    // upload to GPU & render
-    frame.draw();
-    */
-}
-
-void PongRenderer::drawBall() {
-    const int sides = 32;
-    glm::vec2 position = scene_->ball().position();
-
-    canvas_->push();
-    canvas_->translate(position);
-    glm::vec3 color(1.0f, 1.0f, 1.0f);
-    canvas_->circle(sides, static_cast<size_t>(scene_->ball().size()), color);
-
-    canvas_->pop();
-}
-
-void PongRenderer::drawPaddle(const Paddle & paddle) {
-    canvas_->push();
-    glm::vec3 color = paddle.color();
-    // use a translation to get to object space
-    // offsetting y so our origin is the left corner
-    // x is adjusted depending on which side of the screen the paddle is on
-    canvas_->translate(glm::vec2(paddle.offset(), paddle.position() - 25));
-    canvas_->rect(0, 15, 0, 50, color);
-    canvas_->pop();
-}
-
+/**
+ **/
 void PongRenderer::scene(const boost::shared_ptr<PongScene>& scene) {
     scene_ = scene;
+}
+
+/**
+ **/
+void PongRenderer::ui(const boost::shared_ptr<v3d::ui::Engine>& ui) {
+    ui_ = ui;
+}
+
+/**
+ **/
+void PongRenderer::resize(int width, int height) {
+    if (scene_) {
+        scene_->resize(width, height);
+    }
+    canvas_.resize(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+}
+
+/**
+ **/
+void PongRenderer::drawText(const std::string& text, const glm::vec2& pen, const glm::vec4& colour) {
+    if (text.empty() || !markup_.font_) {
+        return;
+    }
+    text_->clear();
+    markup_.foregroundColor_ = colour;
+
+    glm::vec2 cursor = pen;
+    const std::wstring wide(text.begin(), text.end());
+    text_->addText(&cursor, markup_, wide);
+
+    canvas_.text(*text_, atlas_);
+}
+
+/**
+ **/
+void PongRenderer::draw() {
+    if (!scene_) {
+        return;
+    }
+
+    const int width = engine_.window()->width();
+    const int height = engine_.window()->height();
+    if (width <= 0 || height <= 0) {
+        // a minimized window: the engine skips the frame, and a canvas with no area has no
+        // projection to build geometry against
+        engine_.renderFrame();
+        return;
+    }
+
+    // nothing dispatches a resize event yet - render::Engine::resize is still dead code - so
+    // the window is the only thing that knows
+    if (canvas_.width() != static_cast<uint32_t>(width) || canvas_.height() != static_cast<uint32_t>(height)) {
+        resize(width, height);
+    }
+
+    canvas_.clear();
+
+    drawBoard();
+    drawPaddle(scene_->left());
+    drawPaddle(scene_->right());
+    drawBall();
+    drawScores();
+
+    if (ui_) {
+        uiRenderer_->draw(&canvas_, *ui_);
+    }
+
+    boost::shared_ptr<v3d::render::realtime::Pass> pass =
+        engine_.frame()->pass(v3d::render::realtime::Engine3D::colourPass);
+    engine_.quads()->submit(canvas_, pass.get());
+
+    engine_.renderFrame();
+}
+
+/**
+ **/
+void PongRenderer::drawBoard() {
+    const float width = static_cast<float>(engine_.window()->width());
+    const float height = static_cast<float>(engine_.window()->height());
+    const float half = centreLineWidth * 0.5f;
+    const float wall = static_cast<float>(wallThickness);
+
+    // centre line
+    canvas_.rect(glm::vec2(width * 0.5f - half, 0.0f), glm::vec2(width * 0.5f + half, height), boardColour);
+    // top and bottom walls
+    canvas_.rect(glm::vec2(0.0f, 0.0f), glm::vec2(width, wall), boardColour);
+    canvas_.rect(glm::vec2(0.0f, height - wall), glm::vec2(width, height), boardColour);
+}
+
+/**
+ **/
+void PongRenderer::drawScores() {
+    const float width = static_cast<float>(engine_.window()->width());
+    const float height = static_cast<float>(engine_.window()->height());
+
+    const std::string left = boost::lexical_cast<std::string>(scene_->left().score());
+    const std::string right = boost::lexical_cast<std::string>(scene_->right().score());
+
+    drawText(left, glm::vec2(width * 0.25f, height * 0.25f), scoreColour);
+    drawText(right, glm::vec2(width * 0.75f, height * 0.25f), scoreColour);
+}
+
+/**
+ **/
+void PongRenderer::drawBall() {
+    canvas_.circle(scene_->ball().position(), scene_->ball().size(), ballSides, ballColour);
+}
+
+/**
+ **/
+void PongRenderer::drawPaddle(const Paddle& paddle) {
+    canvas_.push();
+    // the paddle's position is the centre of its travel; its rectangle is drawn from the corner
+    canvas_.translate(glm::vec2(paddle.offset(), paddle.position() - 25.0f));
+    const glm::vec3 colour = paddle.color();
+    canvas_.rect(glm::vec2(0.0f, 0.0f), glm::vec2(15.0f, 50.0f), glm::vec4(colour, 1.0f));
+    canvas_.pop();
 }

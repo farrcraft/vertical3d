@@ -23,11 +23,18 @@ namespace v3d::render::realtime {
         pipelineCache_ = boost::make_shared<vulkan::PipelineCache>(device_);
         resources_ = boost::make_shared<vulkan::Resources>(device_);
         presenter_ = boost::make_shared<vulkan::Presenter>(logger, device_, swapchain_);
+        // dynamic rendering has no render pass to take the target format from, so a pipeline
+        // is built against the chain's. Recreating the chain keeps that format
+        quads_ = boost::make_shared<vulkan::QuadRenderer>(logger, device_, pipelineCache_, resources_, presenter_, swapchain_->format());
     }
 
     /**
      **/
     Context3D::~Context3D() {
+        // the device may still be drawing with everything about to be destroyed
+        if (presenter_) {
+            presenter_->waitIdle();
+        }
     }
 
     /**
@@ -58,6 +65,12 @@ namespace v3d::render::realtime {
      **/
     boost::shared_ptr<vulkan::Resources> Context3D::resources() const {
         return resources_;
+    }
+
+    /**
+     **/
+    boost::shared_ptr<vulkan::QuadRenderer> Context3D::quads() const {
+        return quads_;
     }
 
     /**

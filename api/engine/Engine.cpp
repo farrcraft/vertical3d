@@ -219,6 +219,11 @@ namespace v3d::engine {
                 case SDL_EVENT_QUIT:
                     quit = true;
                     break;
+                case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+                    // SDL turns the last window closing into a quit only once that window is
+                    // destroyed, and nothing here destroys it, so the request is what to act on
+                    quit = true;
+                    break;
                 case SDL_EVENT_WINDOW_RESIZED:
                 case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
                     if (window_) {

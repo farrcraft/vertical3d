@@ -15,6 +15,8 @@ namespace v3d::font {
      */
     class TextBuffer {
      public:
+        TextBuffer();
+
         /**
             * Clear the existing text buffer
             */
@@ -28,6 +30,11 @@ namespace v3d::font {
         std::vector<glm::vec2> & uvs();
         std::vector<glm::vec4> & colors();
         std::vector<unsigned int> & indices();
+
+        const std::vector<glm::vec3> & vertices() const;
+        const std::vector<glm::vec2> & uvs() const;
+        const std::vector<glm::vec4> & colors() const;
+        const std::vector<unsigned int> & indices() const;
 
         void addVertex(const glm::vec3 & vertex);
         void addIndex(size_t index);

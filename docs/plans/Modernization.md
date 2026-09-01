@@ -125,12 +125,11 @@ current SDL video driver (windows)" and pong aborted on startup. That is fixed i
 `vcpkg.json`. It cost nothing but a five minute SDL rebuild, and it means the vulkan path had
 never once run - "it builds" really was the only signal there was.
 
-What is still missing is anything that draws: no pipeline exists, so the only draw item that
-puts pixels down is one carrying a record callback. Every app renderer still calls OpenGL
+**Phase 3 put pixels down.** There is one pipeline - the batched quad of ADR-0005 - and pong
+draws its whole frame, ui included, through it. Tetris, voxel and odyssey still call OpenGL
 against a context nothing creates.
 
-**Build health.** Clean: all `api/` libraries, pong, talyn, v3dshell, imagetool, and - since
-2026-08-31 - odyssey and tetris. Broken: voxel alone, drifted behind api changes.
+**Build health.** Everything compiles and links, voxel included.
 
 **Odyssey builds, as of 2026-08-31.** It runs on `Feature::Window2D` → `Engine2D` →
 `Context2D`, which is SDL's own renderer, not GL and not Vulkan, so it was never blocked by
@@ -310,19 +309,77 @@ Done when: a window clears to a colour and survives a resize and a minimize. It 
 
 ### Phase 3 — pong as the pilot
 
-pong is the only app already on the `api/` framework and the only one that builds, so it
-defines what the api actually needs. Port it before generalising.
+Done, 2026-08-31. pong plays, drawn entirely through the batched quad, and its own sources
+name no GL at all.
 
-- The batched quad primitive: a Vulkan replacement for `v3d::gl::Canvas` plus its operation,
-  the 1x1 white texture, and flush-on-texture-change. This serves every app, so build it
-  once and build it properly.
-- Text: a Vulkan path for `operation::TextureFont` and `TextureFontCache`, which is the same
-  primitive drawing from the glyph atlas.
-- Re-wire pong's UI to `v3d::ui`; delete the commented-out Luxa block.
-- Delete `api/gl/` and drop GLEW and OpenGL from every link list once nothing references
-  them.
+- ~~The batched quad primitive: a Vulkan replacement for `v3d::gl::Canvas` plus its
+  operation, the 1x1 white texture, and flush-on-texture-change.~~ Done, and split across the
+  cpu/gpu line: `realtime::Canvas` accumulates quads, cuts a batch where the texture changes,
+  and owns the modelview stack and the projection - all of it vulkan-free and unit tested -
+  while `vulkan::QuadRenderer` owns the one pipeline, the descriptor pool, the white texture
+  and a vertex and index buffer per frame in flight. The infrastructure that had to land
+  under it was most of the work: `vulkan::Buffer` (host visible, persistently mapped,
+  grow-only), `vulkan::Memory`, `vulkan::TextureFactory` (staging upload on a one-shot
+  buffer), and a `Recorder` that binds pipelines, descriptor sets and buffers and issues real
+  draws instead of only calling an item's record callback.
+- ~~Text: a Vulkan path for `operation::TextureFont` and `TextureFontCache`, which is the
+  same primitive drawing from the glyph atlas.~~ Done, and it needed no new operation at all:
+  the font library already lays glyphs out into positions, atlas coordinates and colours, so
+  `Canvas::text` copies them into the same stream. The atlas is one channel and its image
+  view swizzles that channel into alpha, so a glyph samples as white-with-coverage and the
+  one quad shader serves text without a branch.
+- ~~Re-wire pong's UI to `v3d::ui`; delete the commented-out Luxa block.~~ Done. The Luxa
+  blocks are gone from `PongEngine`, and `v3d::ui::ComponentRenderer` is the rebuild the luxa
+  audit called for - it draws a menu onto the canvas the game is already filling, so the ui
+  costs no pass and no draw of its own. Text measuring and writing are handed in as callbacks
+  rather than the ui library depending on the font one, which is also what makes its layout
+  testable without a device.
+- **Not done: deleting `api/gl` and dropping GLEW and OpenGL from every link list.** The
+  phase's own bullet says "once nothing references them", and things still do - tetris and
+  voxel both draw with `v3d::gl`, and they are phases 4 and 5. What did land: six operations
+  nothing used any more are deleted (`operation::Canvas`, `GLFont`, `GLTexture`,
+  `GLTexturedQuad`, `Overlay`, `BitmapFont`), leaving only `operation::TextureFont`, which
+  voxel still constructs. And GL is no longer named by any app: `v3dlib_gl` links OpenGL and
+  GLEW itself, and `v3dlib_asset` links `v3dlib_gl`, because its `Shader` and `ShaderProgram`
+  asset types build a `v3d::gl::Program`. So pong's link line has no GL in it, and the two
+  lines that remain are the ones that go with the tree.
 
-Done when: pong plays, and no GL remains anywhere in the tree.
+One decision and several defects turned up on the way:
+
+- **The swapchain was the wrong colour space**, and phase 2 could not have noticed because it
+  only ever cleared. An `_SRGB` target encodes on write, so every colour in the engine was
+  displayed brighter than it was written - the `(0.06, 0.07, 0.10)` clear came out mid slate
+  grey. Now a `UNORM` format, recorded as
+  [ADR-0009](../adr/0009-colour-authored-in-display-space.md), which is the decision voxel
+  will have to revisit.
+- **Validation was loaded and silent, which is indistinguishable from validation that is not
+  loaded.** Nothing created a debug messenger, so nothing the layer said reached anybody.
+  `vulkan::Instance` now enables the Khronos layer when it is installed and routes its
+  warnings and errors through the logger. Phase 2's "validation layer loaded and silent"
+  should be read as unverified.
+- **No app had a way to quit.** `Engine::eventLoop` handled `SDL_EVENT_QUIT`, which SDL only
+  sends once the last window is destroyed, and nothing destroyed it - so the close button did
+  nothing. It now handles `SDL_EVENT_WINDOW_CLOSE_REQUESTED`.
+- **The menu was toggled on the wrong object.** pong read and wrote visibility on the menu
+  component, which is visible from the moment it is built; it is the container the config
+  starts hidden. So the first press of escape thought the menu was already open and hid it.
+- **Glyph quads were the wrong height.** `TextureTextBuffer` took a glyph's top as its
+  bearing above its bottom rather than its height, which is only the same when a bitmap is
+  exactly as tall as its bearing - so descenders were drawn short. It had never shown,
+  because nothing had ever drawn text.
+- **`TextBuffer::dirty_` was never initialized**, and `clear()` did not reset it.
+
+Also landed: the log flushes from info up, so a killed process leaves a log worth reading;
+pong's `main` catches and prints an exception rather than dying in a message-less abort
+dialog; and `api/ui` has a test suite - six cases over menu layout, submenu descent and
+visibility - alongside fourteen new ones for the canvas.
+
+Verified by running pong: it draws the board, the paddles, the ball and the scoreboard, opens
+its menu over the game with the active item highlighted, and the Khronos validation layer -
+now actually reporting - says nothing across the run.
+
+Done when: pong plays. It does. The GL deletion moves to phase 5, behind the two apps that
+still need it.
 
 ### Phase 4 — tetris
 
@@ -359,6 +416,13 @@ Vulkan path has textured-quad batching from Phase 4, port it:
   one `Window`, and drop the `Window2D`/`Window3D` feature flags for a single windowing flag.
 - Add the sprite/orthographic pass properly, so a 2D game gets painter ordering and no depth
   buffer without special-casing the engine.
+- **Delete `api/gl`**, carried over from phase 3. Voxel is the last thing that draws with it,
+  along with `operation::TextureFont` and the `Shader`/`ShaderProgram` asset types that build
+  a `v3d::gl::Program`. When it goes, so do the `v3dlib_gl` link in
+  `api/asset/CMakeLists.txt` and the OpenGL and GLEW `find_package` calls in the root.
+- **Revisit [ADR-0009](../adr/0009-colour-authored-in-display-space.md).** A lit scene has to
+  blend in linear space, and the moment lighting lands, authoring colour in display space
+  stops being a convenience and starts being wrong. Expect to supersede that record here.
 
 ### Phase 6 — the Vertical3D editor
 
@@ -389,11 +453,12 @@ nothing left worth taking.
 Deliberately not last. This is independent of the render rewrite and blocked by nothing.
 
 Tier 1 landed on 2026-08-31. `enable_testing()` and a `v3d_add_test` helper are in the root
-CMakeLists, seven binaries build from `api/<lib>/tests`, and `ctest --test-dir
-out/build/x64-Debug` runs the lot in under two seconds. Coverage is `type`, `brep`, `image`,
-`font`, `input`, `event` and - since the phase 2 work - the window-free half of `render`.
-Still uncovered: `asset`, `config`, `dag`, `ecs`, `audio`, `log`, `ui`, and everything in
-`api/render` below the recorder.
+CMakeLists, eight binaries build from `api/<lib>/tests`, and `ctest --test-dir
+out/build/x64-Debug` runs the lot in about a second. Coverage is `type`, `brep`, `image`,
+`font`, `input`, `event`, the window-free half of `render` - which since phase 3 includes the
+canvas's batching, transform stack and projection - and `ui`, whose ComponentRenderer is
+testable because it takes text measuring and writing as callbacks. Still uncovered: `asset`,
+`config`, `dag`, `ecs`, `audio`, `log`, and everything in `api/render` below the recorder.
 
 `pong/run-unit-tests.sh` and `tetris/run-unit-tests.sh` still invoke a `unit_tests` binary
 that no CMakeLists builds; they belong to tier 3 and are stale until it lands.

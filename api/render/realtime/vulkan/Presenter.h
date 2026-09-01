@@ -94,6 +94,27 @@ namespace v3d::render::realtime::vulkan {
          **/
         void waitIdle() const;
 
+        /**
+         * @return how many frames may be recorded ahead of the device
+         **/
+        uint32_t framesInFlight() const noexcept;
+
+        /**
+         * @return which of those frames the next acquire() will record, and so which slot of
+         *         any per-frame resource the caller keeps is the one to write into
+         **/
+        uint32_t frame() const noexcept;
+
+        /**
+         * Wait until the frame that will be recorded next has finished its last submission.
+         *
+         * acquire() does this itself. It is exposed for anything else keeping a resource per
+         * frame in flight - a geometry buffer a batcher rewrites, typically - which has to
+         * write into that slot before the frame is recorded, while the device may still be
+         * reading what was in it two frames ago.
+         **/
+        void waitFrame() const;
+
      private:
         /**
          **/

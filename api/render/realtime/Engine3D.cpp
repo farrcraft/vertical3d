@@ -57,6 +57,12 @@ namespace v3d::render::realtime {
 
     /**
      **/
+    boost::shared_ptr<vulkan::QuadRenderer> Engine3D::quads() const {
+        return context_ ? context_->quads() : boost::shared_ptr<vulkan::QuadRenderer>();
+    }
+
+    /**
+     **/
     void Engine3D::clearColour(const glm::vec4& colour) {
         clearColour_ = colour;
         if (frame_) {
@@ -101,7 +107,7 @@ namespace v3d::render::realtime {
         target.view = swapchain->views()[acquisition.image];
         target.extent = swapchain->extent();
 
-        recorder_.record(acquisition.commands, *frame_, target);
+        recorder_.record(acquisition.commands, *frame_, target, *context_->resources());
 
         if (presenter->present(acquisition) == vulkan::Presenter::Status::OutOfDate) {
             context_->resize();

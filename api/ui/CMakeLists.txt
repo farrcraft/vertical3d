@@ -32,6 +32,7 @@ add_library("v3dlib_ui"
 "component/menu/MenuBar.h"
 "component/menu/Menu.h" "component/menu/Menu.cpp"
 "component/menu/MenuItem.h" "component/menu/MenuItem.cpp"
+"ComponentRenderer.h" "ComponentRenderer.cpp"
 "Engine.h" "Engine.cpp" "component/menu/Type.h" "component/Type.h" "component/menu/MenuBar.cpp" "Navigation.h")
 
 # Workaround for a boost log ABI bug - https://github.com/microsoft/vcpkg/discussions/22762
@@ -40,9 +41,13 @@ target_compile_definitions(v3dlib_ui PUBLIC _WIN32_WINNT=0x0A00)
 target_compile_definitions(v3dlib_ui PUBLIC WINVER=0x0A00)
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
-target_link_libraries(v3dlib_ui PUBLIC v3dlib_log)
+# v3dlib_render: ComponentRenderer draws onto a realtime::Canvas. The dependency is one way -
+# nothing in the renderer knows about a ui component - and Canvas carries no vulkan of its own.
+target_link_libraries(v3dlib_ui PUBLIC v3dlib_log v3dlib_render)
 
 target_compile_options(v3dlib_ui PRIVATE /EHsc)
 
 set(CMAKE_CXX_FLAGS "/utf-8")
 set(CMAKE_C_FLAGS "/utf-8")
+
+add_subdirectory("tests")

@@ -23,7 +23,9 @@
  **/
 
 #include <cstdlib>
+#include <exception>
 #include <iostream>
+#include <string>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -38,10 +40,18 @@ int main(int argc, char *argv[]) {
 
     PongEngine engine(appPath);
 
+    // the renderer reports what it cannot do by throwing, and an uncaught exception on
+    // windows is an abort dialog with no message in it
     int exitStatus = EXIT_SUCCESS;
-    if (!engine.initialize() || !engine.eventLoop()) {
+    try {
+        if (!engine.initialize() || !engine.eventLoop()) {
+            exitStatus = EXIT_FAILURE;
+        }
+    } catch (const std::exception& error) {
+        std::cerr << "pong failed: " << error.what() << std::endl;
         exitStatus = EXIT_FAILURE;
     }
+
     if (!engine.shutdown()) {
         exitStatus = EXIT_FAILURE;
     }

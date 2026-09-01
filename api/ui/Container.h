@@ -35,6 +35,11 @@ namespace v3d::ui {
 
         void add(const boost::shared_ptr<Component>& component);
         boost::shared_ptr<Component> get(const std::string& name) const;
+        /**
+         * Get everything the container holds, in the order it was added.
+         * @return the components, for a renderer that has to walk all of them
+         **/
+        const std::vector<boost::shared_ptr<Component>>& components() const noexcept;
 
      private:
         std::string name_;

@@ -22,6 +22,10 @@ namespace v3d::log {
         }
         logger_ = spdlog::basic_logger_mt("v3d-logger", "v3d.log");
         logger_->set_level(spdlog::level::debug);
+        // a graphics app that goes wrong tends to stop responding rather than return from
+        // main, and a buffered sink loses the lines that say what it was doing. Nothing in the
+        // tree logs at info per frame, so flushing from info up costs a few writes at startup
+        logger_->flush_on(spdlog::level::info);
     }
 
     /**

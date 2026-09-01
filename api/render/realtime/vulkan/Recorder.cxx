@@ -21,13 +21,24 @@ namespace v3d::render::realtime::vulkan {
 
     /**
      **/
-    void Recorder::record(VkCommandBuffer commands, const Frame& frame, const Target& target) const {
+    Recorder::Bound::Bound() noexcept :
+        pipeline(nullptr),
+        set(VK_NULL_HANDLE),
+        vertexBuffer(VK_NULL_HANDLE),
+        vertexBufferOffset(0),
+        indexBuffer(VK_NULL_HANDLE),
+        indexBufferOffset(0) {
+    }
+
+    /**
+     **/
+    void Recorder::record(VkCommandBuffer commands, const Frame& frame, const Target& target, const Resources& resources) const {
         // the acquired image comes back in whatever layout it was left in, and nothing in the
         // frame reads it, so undefined is the honest source layout and the cheapest one
         transition(commands, target.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
         for (const boost::shared_ptr<Pass>& pass : frame.passes()) {
-            record(commands, *pass, target);
+            record(commands, *pass, target, resources);
         }
 
         transition(commands, target.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
@@ -35,7 +46,7 @@ namespace v3d::render::realtime::vulkan {
 
     /**
      **/
-    void Recorder::record(VkCommandBuffer commands, const Pass& pass, const Target& target) {
+    void Recorder::record(VkCommandBuffer commands, const Pass& pass, const Target& target, const Resources& resources) {
         VkRenderingAttachmentInfo colour{};
         colour.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
         colour.imageView = target.view;
@@ -75,16 +86,72 @@ namespace v3d::render::realtime::vulkan {
         vkCmdSetViewport(commands, 0, 1, &viewport);
         vkCmdSetScissor(commands, 0, 1, &area);
 
+        Bound bound;
         for (const DrawItem& item : pass.items()) {
-            // nothing binds pipelines or descriptor sets yet, so the escape hatch is the
-            // only item that draws anything - the rest of the recording lands with the
-            // first real pipeline in phase 3
-            if (item.record) {
-                item.record(commands);
-            }
+            record(commands, item, resources, &bound);
         }
 
         vkCmdEndRendering(commands);
+    }
+
+    /**
+     **/
+    void Recorder::record(VkCommandBuffer commands, const DrawItem& item, const Resources& resources, Bound* bound) {
+        // the escape hatch of ADR-0004, for work the item's fields cannot describe. It
+        // records whatever it likes, so nothing about what is bound survives it
+        if (item.record) {
+            item.record(commands);
+            *bound = Bound();
+            return;
+        }
+
+        const Pipeline* pipeline = resources.pipeline(item.pipeline);
+        if (pipeline == nullptr || pipeline->pipeline == VK_NULL_HANDLE) {
+            return;
+        }
+
+        if (pipeline != bound->pipeline) {
+            vkCmdBindPipeline(commands, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipeline);
+            bound->pipeline = pipeline;
+            // a different layout invalidates what was bound against the old one
+            bound->set = VK_NULL_HANDLE;
+        }
+
+        if (item.pushSize > 0 && pipeline->pushStages != 0) {
+            vkCmdPushConstants(commands, pipeline->layout, pipeline->pushStages, 0, item.pushSize, item.push.data());
+        }
+
+        const Material* material = resources.material(item.material);
+        if (material != nullptr && material->set != VK_NULL_HANDLE && material->set != bound->set) {
+            // set 1 is the per material frequency of the binding convention in
+            // docs/RenderingPipeline.md - set 0 is the pass's, and nothing fills it yet
+            vkCmdBindDescriptorSets(commands, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 1, 1, &material->set, 0, nullptr);
+            bound->set = material->set;
+        }
+
+        if (item.vertexBuffer != VK_NULL_HANDLE &&
+            (item.vertexBuffer != bound->vertexBuffer || item.vertexBufferOffset != bound->vertexBufferOffset)) {
+            vkCmdBindVertexBuffers(commands, 0, 1, &item.vertexBuffer, &item.vertexBufferOffset);
+            bound->vertexBuffer = item.vertexBuffer;
+            bound->vertexBufferOffset = item.vertexBufferOffset;
+        }
+
+        if (item.indices > 0) {
+            if (item.indexBuffer == VK_NULL_HANDLE) {
+                return;
+            }
+            if (item.indexBuffer != bound->indexBuffer || item.indexBufferOffset != bound->indexBufferOffset) {
+                vkCmdBindIndexBuffer(commands, item.indexBuffer, item.indexBufferOffset, item.indexType);
+                bound->indexBuffer = item.indexBuffer;
+                bound->indexBufferOffset = item.indexBufferOffset;
+            }
+            vkCmdDrawIndexed(commands, item.indices, item.instances, item.firstIndex, static_cast<int32_t>(item.firstVertex), item.firstInstance);
+            return;
+        }
+
+        if (item.vertices > 0) {
+            vkCmdDraw(commands, item.vertices, item.instances, item.firstVertex, item.firstInstance);
+        }
     }
 
     /**

@@ -25,6 +25,7 @@ namespace v3d::render::realtime::vulkan {
 
         VkPipeline pipeline;
         VkPipelineLayout layout;
+        VkShaderStageFlags pushStages;  /**< which stages the layout declared push constants for **/
     };
 
     /**
@@ -60,9 +61,8 @@ namespace v3d::render::realtime::vulkan {
      * stable and while something outlives the frames using it, which is what this is for.
      *
      * Resources live until the context does. Nothing here reference counts or frees an
-     * individual resource, because nothing yet needs to: textures and pipelines are built
-     * at load time and used until the app closes. Per-level unloading is the thing that
-     * will ask for more than this.
+     * individual resource: textures and pipelines are built at load time and used until the
+     * app closes.
      **/
     class Resources final {
      public:

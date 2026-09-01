@@ -141,8 +141,12 @@ namespace v3d::render::realtime::vulkan {
     /**
      **/
     VkSurfaceFormatKHR Swapchain::chooseFormat(const std::vector<VkSurfaceFormatKHR>& formats) {
+        // a UNORM format rather than an SRGB one, so a colour a shader writes is the colour
+        // that appears - see ADR-0009. An _SRGB target encodes on write, taking every colour
+        // in the engine as linear and brightening it
         for (const VkSurfaceFormatKHR& format : formats) {
-            if (format.format == VK_FORMAT_B8G8R8A8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+            if ((format.format == VK_FORMAT_B8G8R8A8_UNORM || format.format == VK_FORMAT_R8G8B8A8_UNORM) &&
+                format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
                 return format;
             }
         }

@@ -12,7 +12,9 @@ target_compile_definitions(v3dlib_gl PUBLIC _WIN32_WINNT=0x0A00)
 target_compile_definitions(v3dlib_gl PUBLIC WINVER=0x0A00)
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
-target_link_libraries(v3dlib_gl PUBLIC v3dlib_log)
+# OpenGL and GLEW are this library's own dependency rather than every consuming app's, so an
+# app links GL exactly when it links something that draws with it.
+target_link_libraries(v3dlib_gl PUBLIC v3dlib_log OpenGL::GL GLEW::GLEW)
 
 target_compile_options(v3dlib_gl PRIVATE /EHsc)
 

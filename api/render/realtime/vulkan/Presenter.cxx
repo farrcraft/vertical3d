@@ -130,12 +130,19 @@ namespace v3d::render::realtime::vulkan {
 
     /**
      **/
-    Presenter::Status Presenter::acquire(Acquisition* acquisition) {
-        // a window with no area has no chain to draw into
-        if (!swapchain_->valid() || renderFinished_.empty()) {
-            return Status::Skip;
-        }
+    uint32_t Presenter::framesInFlight() const noexcept {
+        return framesInFlight_;
+    }
 
+    /**
+     **/
+    uint32_t Presenter::frame() const noexcept {
+        return frame_;
+    }
+
+    /**
+     **/
+    void Presenter::waitFrame() const {
         VkFence fence = inFlight_[frame_];
         VkResult result = vkWaitForFences(device_->handle(), 1, &fence, VK_TRUE, UINT64_MAX);
         if (result != VK_SUCCESS) {
@@ -143,9 +150,21 @@ namespace v3d::render::realtime::vulkan {
             msg << "Unable to wait on a vulkan frame fence - " << resultString(result);
             throw std::runtime_error(msg.str());
         }
+    }
+
+    /**
+     **/
+    Presenter::Status Presenter::acquire(Acquisition* acquisition) {
+        // a window with no area has no chain to draw into
+        if (!swapchain_->valid() || renderFinished_.empty()) {
+            return Status::Skip;
+        }
+
+        waitFrame();
+        VkFence fence = inFlight_[frame_];
 
         uint32_t image = 0;
-        result = vkAcquireNextImageKHR(device_->handle(), swapchain_->handle(), UINT64_MAX, imageAvailable_[frame_], VK_NULL_HANDLE, &image);
+        VkResult result = vkAcquireNextImageKHR(device_->handle(), swapchain_->handle(), UINT64_MAX, imageAvailable_[frame_], VK_NULL_HANDLE, &image);
         if (result == VK_ERROR_OUT_OF_DATE_KHR) {
             // the semaphore was not signalled, so nothing is left waiting by giving up here
             return Status::OutOfDate;

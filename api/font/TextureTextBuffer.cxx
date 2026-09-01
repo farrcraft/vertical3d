@@ -4,6 +4,9 @@
  **/
 
 #include "TextureTextBuffer.h"
+
+#include <vector>
+
 #include "../image/TextureAtlas.h"
 #include "TextureFont.h"
 
@@ -79,9 +82,11 @@ namespace v3d::font {
             icount += 6;
         }
 
-        // actual glyph
-        glm::vec2 xy0(pen->x + glyph->offset_.x, static_cast<int>(pen->y + glyph->height_ - glyph->offset_.y));
-        glm::vec2 xy1(xy0.x + glyph->width_, static_cast<int>(xy0.y - glyph->offset_.y));
+        // actual glyph. y grows downwards and the pen sits on the baseline, so the bottom of
+        // the quad is however far the bitmap reaches below the baseline - its height less the
+        // bearing - and the top is one bitmap height above that
+        glm::vec2 xy0(pen->x + glyph->offset_.x, static_cast<float>(static_cast<int>(pen->y + glyph->height_ - glyph->offset_.y)));
+        glm::vec2 xy1(xy0.x + glyph->width_, static_cast<float>(static_cast<int>(xy0.y - glyph->height_)));
 
         addQuad(xy0, xy1, glyph->st_[0], glyph->st_[1], markup.foregroundColor_, markup.gamma_);
 

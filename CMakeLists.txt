@@ -85,6 +85,32 @@ function(v3d_add_test lib)
 	add_test(NAME ${lib} COMMAND ${target} --detect_memory_leaks=0 WORKING_DIRECTORY $<TARGET_FILE_DIR:${target}>)
 endfunction()
 
+# Shaders are compiled to SPIR-V at build time and embedded in the library that draws with
+# them, rather than shipped as data files: they belong to the engine rather than to any app,
+# and nothing copies per-app data into the build tree. glslc's -mfmt=c writes the module out
+# as a C initialiser list, which the source includes into a uint32_t array.
+if(NOT Vulkan_GLSLC_EXECUTABLE)
+	find_program(Vulkan_GLSLC_EXECUTABLE NAMES glslc HINTS "$ENV{VULKAN_SDK}/Bin" "$ENV{VULKAN_SDK}/bin")
+endif()
+if(NOT Vulkan_GLSLC_EXECUTABLE)
+	message(FATAL_ERROR "glslc was not found - it ships with the Vulkan SDK, which VULKAN_SDK should point at")
+endif()
+
+function(v3d_add_shader target source)
+	get_filename_component(name ${source} NAME)
+	set(output "${CMAKE_CURRENT_BINARY_DIR}/shaders/${name}.inc")
+	add_custom_command(
+		OUTPUT ${output}
+		COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/shaders"
+		COMMAND ${Vulkan_GLSLC_EXECUTABLE} --target-env=vulkan1.3 -O -mfmt=c "${CMAKE_CURRENT_SOURCE_DIR}/${source}" -o ${output}
+		DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${source}"
+		COMMENT "Compiling ${source} to SPIR-V"
+		VERBATIM)
+	set_source_files_properties(${output} PROPERTIES HEADER_FILE_ONLY TRUE GENERATED TRUE)
+	target_sources(${target} PRIVATE ${output})
+	target_include_directories(${target} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+endfunction()
+
 # Include sub-projects
 add_subdirectory("api")
 add_subdirectory("talyn")

@@ -27,7 +27,9 @@ target_compile_definitions(v3dlib_asset PUBLIC _WIN32_WINNT=0x0A00)
 target_compile_definitions(v3dlib_asset PUBLIC WINVER=0x0A00)
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
-target_link_libraries(v3dlib_asset PUBLIC v3dlib_log)
+# v3dlib_gl: the Shader and ShaderProgram asset types build a v3d::gl::Program, so this
+# library cannot be linked without the GL one. This line goes when api/gl does.
+target_link_libraries(v3dlib_asset PUBLIC v3dlib_log v3dlib_gl)
 
 target_compile_options(v3dlib_asset PRIVATE /EHsc)
 

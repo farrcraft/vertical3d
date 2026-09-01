@@ -20,7 +20,6 @@ target_link_libraries(pong PRIVATE
 	v3dlib_ecs
 	v3dlib_engine
 	v3dlib_event
-	v3dlib_gl
 	v3dlib_image
 	v3dlib_input
 	v3dlib_font
@@ -33,8 +32,6 @@ target_link_libraries(pong PRIVATE
 	${Vulkan_LIBRARIES}
 	${PNG_LIBRARIES}
 	JPEG::JPEG
-	OpenGL::GL
-	GLEW::GLEW
 	Freetype::Freetype
 	"soloud"
 )

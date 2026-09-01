@@ -7,6 +7,8 @@
 
 #include <vulkan/vulkan.h>
 
+#include "Resources.h"
+
 #include "../Frame.h"
 #include "../Pass.h"
 
@@ -19,9 +21,13 @@ namespace v3d::render::realtime::vulkan {
      * one place that touches a command buffer. It draws through dynamic rendering - there is
      * no VkRenderPass and no VkFramebuffer anywhere in the renderer, per ADR-0002.
      *
-     * Items are recorded in submission order for now. Sorting on the draw item's key and
-     * merging adjacent items that share a pipeline and material both belong here, and
-     * neither can be written until there are pipelines and materials to compare.
+     * Items are recorded in submission order, which is the order 2D content has to be drawn
+     * in - the only pass anything draws into so far is painter ordered. Sorting on the draw
+     * item's key is what a depth tested scene pass will want, and belongs here.
+     *
+     * Nothing already bound is rebound: a pipeline and a descriptor set are bound only when
+     * an item asks for a different one than the last item did, so a run of quads sharing a
+     * texture costs one bind between them.
      **/
     class Recorder final {
      public:
@@ -40,10 +46,25 @@ namespace v3d::render::realtime::vulkan {
         /**
          * Record a whole frame, including the layout transitions either side of it.
          * @param commands a command buffer that has already been begun
+         * @param resources what the frame's draw items name by handle
          **/
-        void record(VkCommandBuffer commands, const Frame& frame, const Target& target) const;
+        void record(VkCommandBuffer commands, const Frame& frame, const Target& target, const Resources& resources) const;
 
      private:
+        /**
+         * What the last item recorded left bound, so the next one can skip rebinding it.
+         **/
+        struct Bound {
+            Bound() noexcept;
+
+            const Pipeline* pipeline;
+            VkDescriptorSet set;
+            VkBuffer vertexBuffer;
+            VkDeviceSize vertexBufferOffset;
+            VkBuffer indexBuffer;
+            VkDeviceSize indexBufferOffset;
+        };
+
         /**
          * Move an image between layouts with a synchronization2 barrier.
          **/
@@ -51,7 +72,12 @@ namespace v3d::render::realtime::vulkan {
 
         /**
          **/
-        static void record(VkCommandBuffer commands, const Pass& pass, const Target& target);
+        static void record(VkCommandBuffer commands, const Pass& pass, const Target& target, const Resources& resources);
+
+        /**
+         * Bind what the item needs that is not bound already, and issue its draw.
+         **/
+        static void record(VkCommandBuffer commands, const DrawItem& item, const Resources& resources, Bound* bound);
     };
 
 };  // namespace v3d::render::realtime::vulkan

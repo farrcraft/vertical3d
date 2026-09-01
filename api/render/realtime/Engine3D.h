@@ -50,14 +50,20 @@ namespace v3d::render::realtime {
          **/
         void clearColour(const glm::vec4& colour);
 
-        boost::shared_ptr<Context> context();
-
-     private:
         /**
-         * The pass every frame has, drawing straight to the window.
+         * The batched quad primitive every 2D thing draws through - ADR-0005. An app fills a
+         * Canvas during its tick and hands both to this.
+         **/
+        boost::shared_ptr<vulkan::QuadRenderer> quads() const;
+
+        /**
+         * The name of the pass every frame has, for an app adding items to it directly.
          **/
         static const char* const colourPass;
 
+        boost::shared_ptr<Context> context();
+
+     private:
         boost::shared_ptr<Context3D> context_;
         boost::shared_ptr<Frame> frame_;
         vulkan::Recorder recorder_;

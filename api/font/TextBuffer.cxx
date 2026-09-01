@@ -5,7 +5,12 @@
 
 #include "TextBuffer.h"
 
+#include <vector>
+
 namespace v3d::font {
+
+    TextBuffer::TextBuffer() : dirty_(true) {
+    }
 
     void TextBuffer::addVertex(const glm::vec3& vertex) {
         vertices_.push_back(vertex);
@@ -51,6 +56,22 @@ namespace v3d::font {
         return indices_;
     }
 
+    const std::vector<glm::vec3>& TextBuffer::vertices() const {
+        return vertices_;
+    }
+
+    const std::vector<glm::vec2>& TextBuffer::uvs() const {
+        return uvs_;
+    }
+
+    const std::vector<glm::vec4>& TextBuffer::colors() const {
+        return colors_;
+    }
+
+    const std::vector<unsigned int>& TextBuffer::indices() const {
+        return indices_;
+    }
+
     void TextBuffer::clear() {
         // allocating effectively clears the buffer
         // buffer_.allocate();
@@ -58,6 +79,7 @@ namespace v3d::font {
         vertices_.clear();
         uvs_.clear();
         colors_.clear();
+        dirty_ = true;
     }
 
     void TextBuffer::resize(size_t size) {

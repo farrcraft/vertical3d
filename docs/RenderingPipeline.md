@@ -5,7 +5,9 @@ questions until the Vulkan frame loop landed; the questions that are still open 
 bottom, and the rest is now a description rather than a proposal.
 
 The decisions behind the shape of this are [ADR-0001](adr/0001-vulkan-replaces-opengl.md)
-through [ADR-0005](adr/0005-one-batched-quad-primitive.md). Read those for why; this is what.
+through [ADR-0005](adr/0005-one-batched-quad-primitive.md), plus
+[ADR-0008](adr/0008-binding-by-update-frequency.md) and
+[ADR-0009](adr/0009-colour-authored-in-display-space.md). Read those for why; this is what.
 
 ## The chain of objects
 
@@ -17,6 +19,7 @@ Window3D  ->  Context3D  ->  Frame  ->  Pass  ->  DrawItem
                   +-- vulkan::Presenter   acquire, submit, present, and the sync between them
                   +-- vulkan::PipelineCache
                   +-- vulkan::Resources   pipelines, materials and textures, addressed by handle
+                  +-- vulkan::QuadRenderer the one 2D pipeline, and the geometry buffers it uploads through
 ```
 
 `Window3D` creates an `SDL_WINDOW_VULKAN` window and owns the `vulkan::Instance` and
@@ -50,10 +53,62 @@ A `DrawItem` is a description of one draw, not something that draws itself
 ([ADR-0004](adr/0004-operations-as-draw-data.md)). It names its pipeline and material by
 handle and carries a `SortKey`. The engine owns sorting, merging and recording.
 
-**Nothing sorts yet.** `Recorder` walks each pass in submission order. The sort key is filled
-in from the first version anyway, because the layer field is the thing that keeps painter
-ordering correct once sorting arrives, and retrofitting it means auditing every call site
-with an invisible failure mode.
+**Nothing sorts yet.** `Recorder` walks each pass in submission order. That is not only an
+omission: the one pass anything draws into is a 2D one, and 2D content is painter ordered, so
+submission order is the order it has to be recorded in. Sorting is what a depth tested scene
+pass will want. The sort key is filled in from the first version anyway, because the layer
+field is what keeps painter ordering correct once sorting arrives, and retrofitting it means
+auditing every call site with an invisible failure mode.
+
+What the recorder does do is skip rebinding what is already bound. A pipeline, a descriptor
+set and a vertex buffer are bound only when the item asks for a different one than the last
+item did, so a run of quads sharing a texture costs one bind between them.
+
+## 2D drawing: the batched quad
+
+Every 2D thing in the engine - a rectangle, a sprite, a glyph - is one quad with a texture,
+per [ADR-0005](adr/0005-one-batched-quad-primitive.md). The primitive is split across the
+cpu/gpu line:
+
+- **`realtime::Canvas`** accumulates the quads. It holds a vertex stream of position, uv and
+  colour, an index stream, and the batches those are cut into - and it cuts a batch only
+  where the bound texture changes. It has a modelview stack that applies as vertices are
+  added, and it produces the pixels-to-clip-space projection the pipeline is pushed. None of
+  it touches vulkan, which is why the batching has unit tests.
+- **`vulkan::QuadRenderer`** owns the one pipeline, the descriptor pool and layouts, the 1x1
+  white texture an untextured quad is drawn against, and a vertex and index buffer per frame
+  in flight. `submit(canvas, pass)` uploads the canvas into the buffers belonging to the
+  frame about to be recorded, and turns each batch into a `DrawItem`.
+
+The buffers are per frame in flight because the device may still be reading the previous
+frame's geometry. `submit` calls `Presenter::waitFrame()` before writing, which is the same
+fence `acquire` waits on, so it costs the frame nothing it was not going to pay.
+
+Text goes through the same path. A `v3d::font` text buffer lays glyphs out into positions,
+atlas coordinates and colours; `Canvas::text` copies those into the stream against the atlas
+texture. A single channel atlas is given an image view that swizzles its one channel into
+alpha and ones into rgb, so the glyph samples as white-with-coverage and the shader needs no
+branch for text.
+
+The ui draws through the same canvas rather than a pass of its own -
+`v3d::ui::ComponentRenderer` adds its panels and highlights as quads and asks the app to
+write its labels, so a game and its menu are one upload and a draw per texture.
+
+## Shaders
+
+The engine's shaders live in `api/render/shaders`, are compiled to SPIR-V by `glslc` at build
+time, and are embedded in the library. They are not data files: they belong to the engine
+rather than to any app, and per-app data is not copied into the build tree by CMake, so a
+shader on disk beside an executable is a shader that goes stale silently. `v3d_add_shader` in
+the root CMakeLists does the compiling; `glslc -mfmt=c` writes the module out as a C
+initialiser list that the source includes into a `uint32_t` array.
+
+## Colour
+
+The swapchain is a `UNORM` format, not an `_SRGB` one, so a colour a shader writes is the
+colour that appears - see [ADR-0009](adr/0009-colour-authored-in-display-space.md). Every
+colour in the tree is authored in display space, and textures are uploaded as `UNORM` to
+match. This is the decision a lit 3D scene will have to revisit.
 
 ## What renderFrame does
 
@@ -111,15 +166,19 @@ until the app closes; per-level unloading is the thing that will ask for more.
 
 ## What is not built yet
 
-- **Any pipeline at all.** Nothing binds a pipeline or a descriptor set, so the only draw
-  item that draws anything is one carrying a `record` callback. The batched quad of
-  [ADR-0005](adr/0005-one-batched-quad-primitive.md) is the first real one, in phase 3.
-- **Sorting and merging.** The recorder walks submission order.
+- **Any 3D pipeline.** There is exactly one pipeline, and it draws 2D quads. Meshes, shaders
+  with vertex normals, and a camera are what voxel will need in phase 5.
+- **Sorting and merging.** The recorder walks submission order; see above for why that is
+  correct for the pass that exists and not for the one that does not.
 - **Depth.** `Pass::depth` is recorded and ignored; there is no depth attachment.
 - **Offscreen targets**, and with them compositing and logical presentation.
-- **The GL path is still in the tree.** `api/gl`, `operation::Canvas`, `operation::GLTexture`
-  and the rest still exist, and pong and tetris still call them against a context nothing
-  creates. They go in phase 3.
+- **Set 0.** The per-frame descriptor set layout exists and is empty. The projection is a
+  push constant while there is one camera; a camera uniform is what fills set 0.
+- **The GL path is not gone.** `api/gl` still exists and tetris and voxel still draw with it
+  against a context nothing creates. The six operations nothing used any more -
+  `operation::Canvas`, `GLFont`, `GLTexture`, `GLTexturedQuad`, `Overlay` and `BitmapFont` -
+  were deleted in phase 3; `operation::TextureFont` survives because voxel still constructs
+  one. `api/gl` goes when tetris and voxel are ported, in phases 4 and 5.
 
 ## Still open: how this meets the ECS
 

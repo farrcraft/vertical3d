@@ -31,6 +31,12 @@ namespace v3d::ui {
         boost::shared_ptr<Container> container(const std::string_view& name);
 
         /**
+         * Get every container that was loaded, in the order the config listed them.
+         * @return the containers, for a renderer that has to walk all of them
+         **/
+        const std::vector<boost::shared_ptr<Container>>& containers() const noexcept;
+
+        /**
          * Get a loaded theme by name.
          * @param name the theme name
          * @return the named theme, or null when no theme of that name was loaded

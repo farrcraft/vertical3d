@@ -10,6 +10,7 @@
 #include "vulkan/Device.h"
 #include "vulkan/PipelineCache.h"
 #include "vulkan/Presenter.h"
+#include "vulkan/QuadRenderer.h"
 #include "vulkan/Resources.h"
 #include "vulkan/Swapchain.h"
 
@@ -60,6 +61,11 @@ namespace v3d::render::realtime {
         boost::shared_ptr<vulkan::Resources> resources() const;
 
         /**
+         * @return the batched quad primitive of ADR-0005, which every 2D thing draws through
+         **/
+        boost::shared_ptr<vulkan::QuadRenderer> quads() const;
+
+        /**
          * Rebuild the swapchain against the window's current size, and everything that is
          * sized by it. Call this when presenting reports the chain has gone out of date.
          **/
@@ -71,6 +77,7 @@ namespace v3d::render::realtime {
         boost::shared_ptr<vulkan::Swapchain> swapchain_;
         boost::shared_ptr<vulkan::PipelineCache> pipelineCache_;
         boost::shared_ptr<vulkan::Resources> resources_;
+        boost::shared_ptr<vulkan::QuadRenderer> quads_;
         // last, so that it is torn down first - nothing else may go away while a frame it
         // submitted is still in flight
         boost::shared_ptr<vulkan::Presenter> presenter_;

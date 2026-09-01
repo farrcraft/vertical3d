@@ -7,6 +7,8 @@
 
 #include <vulkan/vulkan.h>
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 
@@ -17,16 +19,14 @@ namespace v3d::render::realtime {
     /**
      * Where a draw item falls in the order the engine records items in.
      *
-     * The fields are ordered from the coarsest grouping to the finest, and packed into one
-     * integer so a whole pass sorts on a single comparison. Layer comes first because 2D
+     * The fields are ordered from the coarsest grouping to the finest and packed into one
+     * integer, so a whole pass sorts on a single comparison. Layer comes first because 2D
      * content is painter ordered: a sprite drawn later has to stay on top of the one under
      * it whatever pipeline or material either of them uses. Within a layer, grouping by
      * pipeline and then material is what lets the recorder merge adjacent items.
      *
      * Nothing sorts yet - the recorder walks each pass in submission order, per ADR-0004 -
-     * but the field has to be filled in from the first version, because auditing every call
-     * site later is the expensive way to discover a sprite is behind the thing it should be
-     * in front of.
+     * so filling the key in is a caller's obligation that nothing enforces.
      **/
     struct SortKey final {
         /**
@@ -58,12 +58,30 @@ namespace v3d::render::realtime {
      **/
     struct DrawItem final {
         /**
+         * How many bytes of push constants an item can carry.
+         *
+         * One mat4, which is the transform the quad primitive pushes. Vulkan guarantees 128
+         * bytes, but an item is copied into a pass's queue by value, so an unfilled block is
+         * memcpyd every frame.
+         **/
+        static const std::size_t pushCapacity = 64;
+
+        /**
          **/
         DrawItem() noexcept;
 
         SortKey key;               /**< where the item falls in the recording order **/
         PipelineHandle pipeline;   /**< the pipeline the item draws with **/
         MaterialHandle material;   /**< the descriptor set bound at set 1 **/
+
+        VkBuffer vertexBuffer;     /**< the geometry the draw reads, or null for a shader that needs none **/
+        VkDeviceSize vertexBufferOffset;  /**< where in that buffer this item's vertices start **/
+        VkBuffer indexBuffer;      /**< the indices, when the draw is indexed **/
+        VkDeviceSize indexBufferOffset;   /**< where in that buffer this item's indices start **/
+        VkIndexType indexType;     /**< how wide those indices are **/
+
+        std::array<unsigned char, pushCapacity> push;  /**< the push constant block, copied so nothing outlives the item **/
+        uint32_t pushSize;         /**< how much of it the pipeline's layout declared **/
 
         uint32_t vertices;         /**< how many vertices to draw, when the item is not indexed **/
         uint32_t firstVertex;      /**< the first vertex, or the value added to each index when it is **/

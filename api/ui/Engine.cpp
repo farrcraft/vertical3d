@@ -6,6 +6,7 @@
 #include "Engine.h"
 
 #include <string>
+#include <vector>
 
 #include "component/menu/MenuItem.h"
 
@@ -188,4 +189,10 @@ namespace v3d::ui {
         }
         return nullptr;
     }
+    /**
+     **/
+    const std::vector<boost::shared_ptr<Container>>& Engine::containers() const noexcept {
+        return containers_;
+    }
+
 };  // namespace v3d::ui

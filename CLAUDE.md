@@ -21,7 +21,7 @@ MSVC/Windows only in practice. The root CMakeLists passes `/std:c++latest` and `
 
 [docs/sdlc.md](docs/sdlc.md) describes how work moves through the repo — where plans live,
 when a decision earns an ADR, and what "verified" currently means. Decisions are recorded in
-[docs/adr/](docs/adr/), indexed in its README — seven of them cover the Vulkan rewrite and
+[docs/adr/](docs/adr/), indexed in its README — nine of them cover the Vulkan rewrite and
 are worth reading before touching `api/render`. Phased plans live in
 [docs/plans/](docs/plans/).
 
@@ -40,6 +40,11 @@ ninja -C out/build/x64-Debug -k 0         # keep going past the broken targets (
 ```
 
 - `/utf-8` is required, not cosmetic: spdlog's bundled fmt has a `static_assert` that fails without it.
+- **Shaders are compiled at build time and embedded, not shipped as data.** `v3d_add_shader(<target> <source>)`
+  in the root CMakeLists runs the Vulkan SDK's `glslc` over a GLSL file and writes SPIR-V as a C initialiser
+  list into `<binary dir>/shaders/<name>.inc`, which the source `#include`s into a `uint32_t` array. The
+  engine's shaders live in [api/render/shaders/](api/render/shaders/). `VULKAN_SDK` has to point at an SDK
+  install, or configuration fails with "glslc was not found".
 - Editing `vcpkg.json` re-runs the manifest install. A cold install builds boost from source and takes roughly 45 minutes.
 - **`sdl3` is requested with its `vulkan` feature**, and has to be. Without it SDL builds with `SDL_VULKAN=OFF`, the windows video driver leaves `Vulkan_LoadLibrary` unset, and `SDL_Vulkan_LoadLibrary` fails with "No dynamic Vulkan support in current SDL video driver (windows)" — which surfaces as an unhandled exception on startup, not as a build failure. Changing it rebuilds SDL only, about five minutes.
 - **Never delete `out/build/<config>/vcpkg_installed/`** — that directory *is* the dependency install. When CMake needs a fresh cache (typically after a VS toolset update leaves the cached `CMAKE_CXX_COMPILER` path pointing at a version that no longer exists), delete only `CMakeCache.txt`, `CMakeFiles/`, `build.ninja`, `cmake_install.cmake` and `.ninja_*`, then reconfigure. Reconfiguring is fast; reinstalling is not.
@@ -74,7 +79,7 @@ out/build/x64-Debug/api/image/tests/v3dtest_image.exe --run_test=texture_test
 
 `v3d_add_test(<lib> <sources>)` in the root CMakeLists builds `v3dtest_<lib>`, links the framework, and adds the ctest entry with the working directory set beside the executable so a suite's data files resolve. Link the library under test yourself in `api/<lib>/tests/CMakeLists.txt`. `TestMain` (one per target) carries the `BOOST_TEST_MODULE` define and nothing else.
 
-Covered as of 2026-08-31: `type`, `brep`, `image`, `font`, `input`, `event`, `render` — 63 cases, migrated out of `v3dlibs/tests/` (the command-layer tests were rewritten against `api/event`, and the two input tests against `Keyboard`/`Mouse`). `render` covers only the parts that need neither a window nor a GPU — the frame and pass model, the draw item's sort key, and the handle registry. Not covered: `asset`, `config`, `dag`, `ecs`, `audio`, `log`, `ui`, and everything in `api/render` below the recorder — that needs a window and a GPU, so it waits on [ADR 0007](docs/adr/0007-ci-rendering-tests.md). `moya/tests/` and `tetris/tests/` still build nothing; `pong/run-unit-tests.sh` and `tetris/run-unit-tests.sh` still invoke a `unit_tests` binary that does not exist. Boost.Test's leak check reports a permanent false positive for any suite that builds a `Logger` (spdlog's registry outlives the report), which is why `add_test` passes `--detect_memory_leaks=0`.
+Covered as of 2026-08-31: `type`, `brep`, `image`, `font`, `input`, `event`, `render`, `ui` — 83 cases, migrated out of `v3dlibs/tests/` (the command-layer tests were rewritten against `api/event`, and the two input tests against `Keyboard`/`Mouse`). `render` and `ui` cover only the parts that need neither a window nor a GPU — the frame and pass model, the draw item's sort key, the handle registry, and the canvas's batching, transform stack and projection; and, for `ui`, menu layout, submenu descent and visibility, which are testable because `ComponentRenderer` takes text measuring and writing as callbacks rather than depending on the font library. Not covered: `asset`, `config`, `dag`, `ecs`, `audio`, `log`, and everything in `api/render` below the recorder — that needs a window and a GPU, so it waits on [ADR 0007](docs/adr/0007-ci-rendering-tests.md). `moya/tests/` and `tetris/tests/` still build nothing; `pong/run-unit-tests.sh` and `tetris/run-unit-tests.sh` still invoke a `unit_tests` binary that does not exist. Boost.Test's leak check reports a permanent false positive for any suite that builds a `Logger` (spdlog's registry outlives the report), which is why `add_test` passes `--detect_memory_leaks=0`.
 
 ## Build health
 
@@ -85,6 +90,9 @@ Everything compiles and links as of 2026-08-31.
   `target_link_libraries` still named only `libnoise`, so it could not have linked even once the objects
   compiled. It now links the same `v3dlib_*` set as tetris. `src/game/Player.cxx` and
   `src/noise/noiseutils.cpp` were also missing from the target's source list.
+- **No app names OpenGL or GLEW any more.** `v3dlib_gl` links them itself, and `v3dlib_asset` links
+  `v3dlib_gl` because its `Shader` and `ShaderProgram` asset types build a `v3d::gl::Program`. So an app
+  links GL exactly when it links something that draws with it — pong, since its port, links none.
 
 **Apps name neither spdlog nor fmt.** `v3dlib_log` links `spdlog::spdlog` PUBLIC, so the `SPDLOG_COMPILED_LIB` definition and the spdlog/fmt link dependencies propagate to every library and app that consumes it. Every `api/` library whose sources compile [Logger.h](api/log/Logger.h) links `v3dlib_log` PUBLIC for the same reason — a target that compiles that header without the definition builds spdlog header-only and emits symbols the compiled spdlog library also defines, which surfaces as a duplicate-symbol link error in whichever app happens to pull the wrong object first. If you add an api library that logs, link `v3dlib_log`.
 
@@ -96,11 +104,17 @@ Check this list before assuming a build failure is yours.
 
 **Feature flags decide what exists.** `Engine::initialize(int features)` takes a bitmask of `v3d::engine::Feature` (Window2D, Window3D, Config, KeyboardInput, MouseInput) and only constructs what was asked for. `Feature::Config` loads `data/config.json`, which must use the newer indirect form — `{"configs": [{"type": "...", "file": "..."}]}` referencing separate mappings/window/ui/sound files. Pong's `data/` is the reference; tetris was migrated to the same shape on 2026-08-31. No app still uses the older inline `keys`/`menu` format, which `Config::load` rejects.
 
-**Render pipeline.** Window → Engine2D/Engine3D → Context → Frame. Each frame the app builds a `Frame` from the engine's `Context`, adds `Operation`s to it, and calls `draw()`; operations are collected during the tick and executed in that final step. `v3d::gl::Canvas` accumulates 2D primitives into a vertex buffer that `operation::Canvas` uploads and draws — note its vertices carry position and rgba only, with **no texture coordinates**, so anything textured needs a different operation (`operation::GLTexturedQuad`) or an extension to Canvas. `Context2D` wraps an `SDL_Renderer`; `Context3D` owns the Vulkan device and swapchain. See [docs/RenderingPipeline.md](docs/RenderingPipeline.md).
+**Render pipeline.** Window → Engine2D/Engine3D → Context → Frame → Pass → DrawItem. On the Vulkan path an app fills a `realtime::Canvas` during its tick, hands it to `Engine3D::quads()->submit(canvas, pass)`, and calls `renderFrame()`, which records and presents. `Frame::addOperation`/`draw()` is the pre-Vulkan path, kept only for the apps not yet ported. `Context2D` wraps an `SDL_Renderer`; `Context3D` owns the Vulkan device, swapchain and quad renderer. The old `v3d::gl::Canvas` is still there for tetris and voxel, and still carries no texture coordinates — do not extend it, port the app instead. See [docs/RenderingPipeline.md](docs/RenderingPipeline.md).
 
 **The Vulkan frame loop is in, and a window clears to a colour.** `Window3D` creates an `SDL_WINDOW_VULKAN` window and owns `vulkan::Instance` and `vulkan::Surface`; `Context3D` owns `vulkan::Device`, `vulkan::Swapchain`, `vulkan::Presenter` (command pool, per-frame command buffers, semaphores and fences, and the acquire/submit/present loop), `vulkan::PipelineCache` and `vulkan::Resources`. `Engine3D::renderFrame()` records the frame it has been given and presents it, rebuilding the swapchain when acquiring or presenting reports it out of date. Drawing goes through **dynamic rendering** — there is no `VkRenderPass` and no `VkFramebuffer` — and layout transitions use synchronization2 barriers. A frame is a list of `Pass`es holding `DrawItem`s; the recorder walks them in submission order and nothing sorts yet. See [docs/RenderingPipeline.md](docs/RenderingPipeline.md), which describes what exists rather than what was planned.
 
-**No pipeline exists yet, so nothing but the clear is drawn.** Every app renderer still calls OpenGL against a context nothing creates, and the first real pipeline — the batched quad of [ADR-0005](docs/adr/0005-one-batched-quad-primitive.md) — lands with pong's port. The old GL setup in `Window3D::create` is commented out rather than deleted, kept as reference for what the Vulkan path still has to replace.
+**The batched quad is the one pipeline, and pong draws through it.** `realtime::Canvas` accumulates 2D quads on the CPU — position, uv and colour, with a batch cut only where the bound texture changes — and `vulkan::QuadRenderer` owns the pipeline, the descriptor pool, the 1x1 white texture an untextured quad is drawn against, and a vertex and index buffer per frame in flight. A rectangle, a sprite, a glyph and a menu panel are all the same primitive ([ADR-0005](docs/adr/0005-one-batched-quad-primitive.md)). Text needs no separate path: the font library lays glyphs out and `Canvas::text` copies them in against the atlas, whose single channel is swizzled into alpha by its image view. `v3d::ui::ComponentRenderer` draws the ui onto the same canvas.
+
+**The swapchain is a UNORM format, not sRGB** — colour is authored in display space and written out unchanged, per [ADR-0009](docs/adr/0009-colour-authored-in-display-space.md). An `_SRGB` target encodes on write, which brightens every colour in the tree; that was the phase 2 default and it was wrong. A lit 3D scene will have to revisit this.
+
+**Tetris, voxel and odyssey still call OpenGL** against a context nothing creates. `api/gl` therefore stays until they are ported. The old GL setup in `Window3D::create` is commented out rather than deleted, kept as reference for what the Vulkan path still has to replace.
+
+**The Khronos validation layer is enabled when it is installed**, and `vulkan::Instance` routes its warnings and errors through the logger. Without that messenger a loaded layer is silent, which looks exactly like a clean run — so treat any earlier claim of "validation clean" that predates it as unverified.
 
 **ECS.** entt. The `registry` lives on the app's `Controller` and is passed into the render engine as a raw `entt::registry*`. [docs/ECSDesign.md](docs/ECSDesign.md) describes the intended design, which is largely aspirational.
 

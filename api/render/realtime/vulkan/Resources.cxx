@@ -11,7 +11,8 @@ namespace v3d::render::realtime::vulkan {
      **/
     Pipeline::Pipeline() noexcept :
         pipeline(VK_NULL_HANDLE),
-        layout(VK_NULL_HANDLE) {
+        layout(VK_NULL_HANDLE),
+        pushStages(0) {
     }
 
     /**

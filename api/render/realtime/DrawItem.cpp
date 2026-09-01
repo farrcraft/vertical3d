@@ -34,6 +34,13 @@ namespace v3d::render::realtime {
     /**
      **/
     DrawItem::DrawItem() noexcept :
+        vertexBuffer(VK_NULL_HANDLE),
+        vertexBufferOffset(0),
+        indexBuffer(VK_NULL_HANDLE),
+        indexBufferOffset(0),
+        indexType(VK_INDEX_TYPE_UINT32),
+        push{},
+        pushSize(0),
         vertices(0),
         firstVertex(0),
         indices(0),
