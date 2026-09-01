@@ -61,11 +61,12 @@ There is no working test suite. Boost.Test sources exist under `v3dlibs/tests/`,
 
 ## Build health
 
-Not everything compiles. Failing objects: three in `voxel`, one in `tetris`.
+Not everything compiles. Failing objects: three in `voxel`. Everything else builds.
 
-- **Clean:** every `api/` library, plus `pong`, `odyssey`, `talyn`, `v3dshell`, `imagetool`.
-- **`tetris`** — mid-refactor onto `Engine3D`. Includes `api/gl/GLFontRenderer.h`, which does not exist; uses a `fonts_` member that was dropped from the header. Its link list is also short: it includes `api/engine`, `api/event`, `api/gl`, `api/log` and `api/render` while linking only `v3dlib_image`, which will surface once it compiles.
+- **Clean:** every `api/` library, plus `pong`, `tetris`, `odyssey`, `talyn`, `v3dshell`, `imagetool`.
 - **`voxel`** — drifted behind API changes in the shared libraries (undeclared identifiers, calls to methods that no longer exist).
+
+**Apps link `fmt::fmt`, not `spdlog::spdlog`.** The `api/` libraries use spdlog header-only against external fmt, so they carry spdlog's symbols themselves and need only fmt's. Linking the compiled `spdlog::spdlog` target on top of them defines `spdlog::logger::log` twice — pong and odyssey get away with it, tetris and talyn do not.
 
 Check this list before assuming a build failure is yours.
 

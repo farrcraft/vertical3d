@@ -8,10 +8,32 @@ add_executable(tetris
 	"src/tetris.cxx")
 
 target_link_libraries(tetris
+	v3dlib_asset
+	v3dlib_audio
+	v3dlib_config
+	v3dlib_ecs
+	v3dlib_engine
+	v3dlib_event
+	v3dlib_font
+	v3dlib_gl
 	v3dlib_image
+	v3dlib_input
+	v3dlib_log
+	v3dlib_render
+	v3dlib_type
 	${Boost_LIBRARIES}
+	${SDL3_LIBRARIES}
+	${Vulkan_LIBRARIES}
 	${PNG_LIBRARIES}
 	JPEG::JPEG
+	OpenGL::GL
+	GLEW::GLEW
+	Freetype::Freetype
+	"soloud"
+	# fmt, not spdlog::spdlog: the api libraries use spdlog header-only against external
+	# fmt, so they need fmt's symbols, and linking the compiled spdlog target on top of
+	# them defines spdlog::logger::log twice. talyn links the same way.
+	fmt::fmt
 )
 
 target_compile_options(tetris PRIVATE /EHsc)

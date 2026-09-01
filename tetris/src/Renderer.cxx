@@ -5,47 +5,42 @@
 
 #include <GL/glew.h>
 
-#include <iostream>
 #include <string>
 
 #include "Renderer.h"
 #include "TetrisScene.h"
 
 #include "../../api/image/Factory.h"
-#include "../../api/gl/GLFontRenderer.h"
 
 #include <boost/bind.hpp>
 #include <boost/make_shared.hpp>
 
 TetrisRenderer::TetrisRenderer(const boost::shared_ptr<v3d::render::realtime::Window3D>& window, const boost::shared_ptr<v3d::log::Logger>& logger,
     const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry) :
-    engine_(logger, assetManager, registry) {
+    logger_(logger), engine_(logger, assetManager, registry) {
     engine_.initialize(window);
-
-    // load a font to use for debugging output
-    fonts_->load("debug", "/usr/share/fonts/corefonts/arial.ttf", 32);
 
     try {
         v3d::image::Factory factory(logger);
         // load textures
         boost::shared_ptr<v3d::gl::GLTexture> texture;
-        texture = boost::make_shared<v3d::gl::GLTexture>(factory.read("pieces/red.tga"));
+        texture = boost::make_shared<v3d::gl::GLTexture>(factory.read("pieces/red.tga"), logger);
         textures_["red"] = texture;
-        texture = boost::make_shared<v3d::gl::GLTexture>(factory.read("pieces/blue.tga"));
+        texture = boost::make_shared<v3d::gl::GLTexture>(factory.read("pieces/blue.tga"), logger);
         textures_["blue"] = texture;
-        texture = boost::make_shared<v3d::gl::GLTexture>(factory.read("pieces/cyan.tga"));
+        texture = boost::make_shared<v3d::gl::GLTexture>(factory.read("pieces/cyan.tga"), logger);
         textures_["cyan"] = texture;
-        texture = boost::make_shared<v3d::gl::GLTexture>(factory.read("pieces/green.tga"));
+        texture = boost::make_shared<v3d::gl::GLTexture>(factory.read("pieces/green.tga"), logger);
         textures_["green"] = texture;
-        texture = boost::make_shared<v3d::gl::GLTexture>(factory.read("pieces/orange.tga"));
+        texture = boost::make_shared<v3d::gl::GLTexture>(factory.read("pieces/orange.tga"), logger);
         textures_["orange"] = texture;
-        texture = boost::make_shared<v3d::gl::GLTexture>(factory.read("pieces/purple.tga"));
+        texture = boost::make_shared<v3d::gl::GLTexture>(factory.read("pieces/purple.tga"), logger);
         textures_["purple"] = texture;
-        texture = boost::make_shared<v3d::gl::GLTexture>(factory.read("pieces/yellow.tga"));
+        texture = boost::make_shared<v3d::gl::GLTexture>(factory.read("pieces/yellow.tga"), logger);
         textures_["yellow"] = texture;
     }
     catch (...) {
-        LOG_ERROR(logger) << "texture load exception!" << std::endl;
+        logger_->get()->error("texture load exception!");
     }
     glShadeModel(GL_SMOOTH);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -139,35 +134,11 @@ void TetrisRenderer::drawTetrad(const Tetrad & tetrad, bool dbg) {
         return;
     }
 
-    if (dbg) {
-        glPushMatrix();
-        glLoadIdentity();
-        glColor3f(1.0f, 1.0f, 1.0f);
+    // TODO(josh): debug text needs rewriting against operation::TextureFont - see
+    // docs/plans/Modernization.md phase 4. The block that was here drew through a
+    // FontCache and GLFontRenderer that no longer exist, and built its strings by
+    // adding ints to string literals.
 
-        std::string txt;
-        boost::shared_ptr<v3d::font::Font2D> font = fonts_->get("debug");
-        v3d::gl::GLFontRenderer fontRenderer(*font, logger_);
-
-        txt = "Offset x: " + tetrad.offset(Tetrad::OFFSET_X);
-        fontRenderer.print(txt, 500.0f, 250.0f);
-
-        txt = "width: " + tetrad.width();
-        fontRenderer.print(txt, 500.0f, 275.0f);
-
-        txt = "Offset y: " + tetrad.offset(Tetrad::OFFSET_Y);
-        fontRenderer.print(txt, 500.0f, 300.0f);
-
-        txt = "height: " + tetrad.height();
-        fontRenderer.print(txt, 500.0f, 325.0f);
-
-        txt = "pos x: " + tetrad.position().first;
-        fontRenderer.print(txt, 500.0f, 350.0f);
-
-        txt = "pos y: ", tetrad.position().second;
-        fontRenderer.print(txt, 500.0f, 400.0f);
-
-        glPopMatrix();
-    }
     Tetrad::ShapeInfo shape = tetrad.shape();
 
     // set texture

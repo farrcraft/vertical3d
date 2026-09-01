@@ -116,8 +116,7 @@ app renderer still call OpenGL against a context that is no longer created. pong
 does not draw. Until the frame loop exists, "it builds" is the only signal available.
 
 **Build health.** Clean: all `api/` libraries, pong, talyn, v3dshell, imagetool, and - since
-2026-08-31 - odyssey. Broken: tetris (missing header, dropped member) and voxel (drifted
-behind api changes).
+2026-08-31 - odyssey and tetris. Broken: voxel alone, drifted behind api changes.
 
 **Odyssey builds, as of 2026-08-31.** It runs on `Feature::Window2D` → `Engine2D` →
 `Context2D`, which is SDL's own renderer, not GL and not Vulkan, so it was never blocked by
@@ -207,9 +206,14 @@ None of this is blocked. It shrinks the surface area everything else has to work
   Two small api changes went with it: `Scene2D::collect` is now virtual with a scene setter
   on `Engine2D`, which is how an app gets its own renderables into the frame, and `Context`
   and `Operation` gained virtual destructors.
-- Make tetris compile: drop the missing `GLFontRenderer.h` include and the debug-text block
-  (which is broken C++, not just outdated — it does pointer arithmetic on string literals),
-  restore or remove `fonts_`, fix the link list. Target a green build, not a running game.
+- ~~Make tetris compile.~~ Done 2026-08-31, and it links. The `GLFontRenderer.h` include,
+  the debug-text block and `fonts_` are gone; `GLTexture` had also grown a logger parameter
+  that its seven call sites did not pass, and `LOG_ERROR` became the spdlog wrapper. The link
+  list went from one library to thirteen plus their externals — and had to take `fmt::fmt`
+  rather than `spdlog::spdlog`, because the api libraries compile spdlog header-only and the
+  compiled target duplicates `spdlog::logger::log` on top of them. Tetris does not run: its
+  config is still the old inline form (next item), and it draws through fixed-function GL
+  against a context nothing creates.
 - Migrate `tetris/data/config.json` from the old inline `keys`/`menu` form to the
   `{"configs": [...]}` form that `Config::load` requires. Pong's `data/` is the reference.
 
