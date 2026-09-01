@@ -20,7 +20,6 @@ set(Boost_USE_STATIC_LIBS ON)
 # Don't emit warnings if boost version is newer than the cmake FindBoost definition
 set(Boost_NO_WARN_NEW_VERSIONS ON)
 
-# CMake parses module files by their names. It will use FindSDL2 in this case.
 find_package(SDL3 REQUIRED)
 
 # SDL3_INCLUDE_DIR variable set by the FindSDL3 module (if it finds directory).

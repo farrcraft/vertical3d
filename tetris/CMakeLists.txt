@@ -8,7 +8,6 @@ add_executable(tetris
 	"src/tetris.cxx")
 
 target_link_libraries(tetris
-	v3dlib_core
 	v3dlib_image
 	${Boost_LIBRARIES}
 	${PNG_LIBRARIES}

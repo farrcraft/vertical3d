@@ -10,7 +10,6 @@ target_link_libraries("talyn" PRIVATE
 	${Boost_LIBRARIES}
 	${PNG_LIBRARIES}
 	JPEG::JPEG
-	${SDL2_LIBRARIES}
 	fmt::fmt
 )
 
