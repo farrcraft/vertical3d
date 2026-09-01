@@ -8,6 +8,8 @@ add_executable(voxel
 	"src/engine/VertexBufferBuilder.h" "src/engine/VertexBufferBuilder.cxx"
 	"src/game/GameState.h" "src/game/GameState.cxx"
 	"src/game/Item.h" "src/game/Item.cxx"
+	"src/game/Player.h" "src/game/Player.cxx"
+	"src/noise/noiseutils.h" "src/noise/noiseutils.cpp"
 	"src/voxel/Chunk.h" "src/voxel/Chunk.cxx"
 	"src/voxel/ChunkBufferPool.h" "src/voxel/ChunkBufferPool.cxx"
 	"src/voxel/MeshBuilder.h" "src/voxel/MeshBuilder.cxx"
@@ -22,6 +24,28 @@ add_executable(voxel
 	"src/Version.h" "src/main.cxx")
 
 target_link_libraries(voxel PRIVATE
+	v3dlib_asset
+	v3dlib_audio
+	v3dlib_config
+	v3dlib_ecs
+	v3dlib_engine
+	v3dlib_event
+	v3dlib_font
+	v3dlib_gl
+	v3dlib_image
+	v3dlib_input
+	v3dlib_log
+	v3dlib_render
+	v3dlib_type
+	${Boost_LIBRARIES}
+	${SDL3_LIBRARIES}
+	${Vulkan_LIBRARIES}
+	${PNG_LIBRARIES}
+	JPEG::JPEG
+	OpenGL::GL
+	GLEW::GLEW
+	Freetype::Freetype
+	"soloud"
 	"libnoise"
 )
 

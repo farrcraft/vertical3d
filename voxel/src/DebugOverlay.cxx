@@ -10,20 +10,21 @@
 
 #include "Version.h"
 #include "Scene.h"
+#include "../../api/asset/TextureFont.h"
 #include "../../api/font/TextureFontCache.h"
 #include "../../api/font/TextureTextBuffer.h"
 #include "game/Player.h"
 
 #include <boost/make_shared.hpp>
 
-DebugOverlay::DebugOverlay(boost::shared_ptr<Scene> scene, boost::shared_ptr<v3d::gl::Program> shaderProgram,
-    const boost::shared_ptr<v3d::log::Logger> & logger) :
+DebugOverlay::DebugOverlay(const boost::shared_ptr<Scene>& scene, const boost::shared_ptr<v3d::gl::Program>& shaderProgram,
+    const boost::shared_ptr<v3d::asset::Manager>& assetManager, const boost::shared_ptr<v3d::log::Logger>& logger) :
     scene_(scene),
-    enabled_(false) {
+    enabled_(false),
+    frames_(0),
+    elapsed_(0) {
     // setup text buffer
     fontCache_ = boost::make_shared<v3d::font::TextureFontCache>(512, 512, v3d::font::TextureTextBuffer::LCD_FILTERING_ON, logger);
-    boost::shared_ptr<v3d::font::TextureTextBuffer> text;
-    text = boost::make_shared<v3d::font::TextureTextBuffer>();
 
     markup_.bold_ = false;
     markup_.italic_ = false;
@@ -43,10 +44,20 @@ DebugOverlay::DebugOverlay(boost::shared_ptr<Scene> scene, boost::shared_ptr<v3d
                                 L"`abcdefghijklmnopqrstuvwxyz{|}~";
     fontCache_->charcodes(charcodes);
 
-    std::string filename = loader->path() + std::string("fonts/NotoSans-Regular.ttf");
-    markup_.font_ = fontCache_->load(filename, markup_.size_);
+    boost::shared_ptr<v3d::asset::Loader> loader = assetManager->resolveLoader(v3d::asset::Type::TextureFont);
+    loader->parameter("fontSize", markup_.size_);
+    boost::shared_ptr<v3d::asset::TextureFont> font = boost::dynamic_pointer_cast<v3d::asset::TextureFont>(
+        assetManager->load("fonts/NotoSans-Regular.ttf", v3d::asset::Type::TextureFont));
 
-    renderer_ = boost::make_shared<v3d::gl::TextureFontRenderer>(text, shaderProgram, fontCache_->atlas());
+    font->font()->atlas(fontCache_->atlas());
+    font->font()->loadGlyphs(charcodes);
+    fontCache_->add(font->font());
+    markup_.font_ = font->font();
+
+    boost::shared_ptr<v3d::font::TextureTextBuffer> text;
+    text = boost::make_shared<v3d::font::TextureTextBuffer>();
+
+    renderer_ = boost::make_shared<v3d::render::realtime::operation::TextureFont>(text, shaderProgram, fontCache_->atlas(), logger);
 }
 
 
@@ -65,11 +76,8 @@ bool DebugOverlay::enabled() const {
     return enabled_;
 }
 
-void DebugOverlay::render() {
-    if (!enabled_) {
-        return;
-    }
-    renderer_->render();
+boost::shared_ptr<v3d::render::realtime::operation::TextureFont> DebugOverlay::operation() const {
+    return renderer_;
 }
 
 const unsigned int samples = 100;
@@ -115,6 +123,5 @@ void DebugOverlay::update(unsigned int delta) {
     std::string buffer = info.str();
     std::wstring widestr = std::wstring(buffer.begin(), buffer.end());
 
-    renderer_->buffer()->addText(pen, markup_, widestr.c_str());
-    renderer_->upload();
+    renderer_->buffer()->addText(&pen, markup_, widestr.c_str());
 }

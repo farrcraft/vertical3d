@@ -22,6 +22,9 @@
 
 #include "../../api/asset/ShaderProgram.h"
 #include "../../api/gl/Shader.h"
+#include "../../api/render/realtime/Frame.h"
+
+#define GLM_ENABLE_EXPERIMENTAL 1
 
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -65,11 +68,15 @@ void loadMaterials(boost::shared_ptr<v3d::gl::Program> program) {
     factory.create("materials[15]", glm::vec3(0.91f, 0.91f, 0.91f));
 }
 
-Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager) :
+Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_ptr<v3d::render::realtime::Window3D>& window,
+    const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry) :
     scene_(scene),
     debug_(false),
     builder_(scene->chunks()),
-    logger_(logger) {
+    logger_(logger),
+    engine_(logger, assetManager, registry) {
+    engine_.initialize(window);
+
     // log GL version info
     std::stringstream msg;
     const GLubyte * renderer = glGetString(GL_RENDERER);
@@ -80,7 +87,7 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
     msg << " Vendor: " << vendor << std::endl;
     msg << " GL Version: " << version << std::endl;
     msg << " GLSL: " << glslVersion << std::endl;
-    LOG_INFO(logger) << msg.str();
+    logger_->get()->info(msg.str());
 
     // setup shaders
     std::string shaderName;
@@ -136,10 +143,12 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
     glActiveTexture(GL_TEXTURE0);
 
     // setup the shader program for text rendering
-    boost::shared_ptr<v3d::gl::Program> textProgram = factory.create(v3d::gl::Shader::SHADER_TYPE_VERTEX|v3d::gl::Shader::SHADER_TYPE_FRAGMENT, "shaders/text");
+    boost::shared_ptr<v3d::asset::ShaderProgram> textAsset = boost::dynamic_pointer_cast<v3d::asset::ShaderProgram>(
+        assetManager->load("shaders/text", v3d::asset::Type::ShaderProgram));
+    boost::shared_ptr<v3d::gl::Program> textProgram = textAsset->program();
     programs_["text"] = textProgram;
 
-    debugOverlay_ = boost::make_shared<DebugOverlay>(scene_, textProgram, loader, logger);
+    debugOverlay_ = boost::make_shared<DebugOverlay>(scene_, textProgram, assetManager, logger);
 }
 
 
@@ -178,9 +187,11 @@ void Renderer::draw() {
     program->disable();
 
     // render text
+    v3d::render::realtime::Frame frame(engine_.context());
     if (debug_) {
-        debugOverlay_->render();
+        frame.addOperation(debugOverlay_->operation());
     }
+    frame.draw();
 }
 
 void Renderer::tick(unsigned int delta) {

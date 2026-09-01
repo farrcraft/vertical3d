@@ -14,6 +14,8 @@
 #include "voxel/Chunk.h"
 #include "voxel/TerrainMap.h"
 
+#define GLM_ENABLE_EXPERIMENTAL 1
+
 #include <glm/gtx/string_cast.hpp>
 
 Scene::Scene() {

@@ -14,8 +14,10 @@
 #include "../../api/asset/Manager.h"
 #include "../../api/log/Logger.h"
 #include "../../api/gl/Program.h"
+#include "../../api/render/realtime/Engine3D.h"
 
 #include <boost/shared_ptr.hpp>
+#include <entt/entt.hpp>
 
 class Scene;
 class DebugOverlay;
@@ -29,7 +31,8 @@ class Renderer {
     /**
      * Default Constructor
      */
-    Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager);
+    Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_ptr<v3d::render::realtime::Window3D>& window,
+        const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry);
 
     /**
      * Draw the frame
@@ -52,4 +55,5 @@ class Renderer {
         boost::shared_ptr<ChunkBufferPool> pool_;
         MeshBuilder builder_;
         boost::shared_ptr<v3d::log::Logger> logger_;
+        v3d::render::realtime::Engine3D engine_;
 };
