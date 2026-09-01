@@ -17,8 +17,11 @@
 #include <boost/bind.hpp>
 #include <boost/make_shared.hpp>
 
-TetrisRenderer::TetrisRenderer(boost::shared_ptr<TetrisScene> scene, const boost::shared_ptr<v3d::log::Logger> & logger) :
-    scene_(scene), fonts_(new v3d::font::FontCache(logger)), logger_(logger) {
+TetrisRenderer::TetrisRenderer(const boost::shared_ptr<v3d::render::realtime::Window3D>& window, const boost::shared_ptr<v3d::log::Logger>& logger,
+    const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry) :
+    engine_(logger, assetManager, registry) {
+    engine_.initialize(window);
+
     // load a font to use for debugging output
     fonts_->load("debug", "/usr/share/fonts/corefonts/arial.ttf", 32);
 
@@ -62,7 +65,9 @@ void TetrisRenderer::resize(int width, int height) {
     glMatrixMode(GL_MODELVIEW);
 }
 
-void TetrisRenderer::draw(Hookah::Window * window) {
+void TetrisRenderer::draw() {
+    const int width = engine_.window()->width();
+    const int height = engine_.window()->height();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
     glPushAttrib(GL_TEXTURE_BIT);
@@ -72,9 +77,9 @@ void TetrisRenderer::draw(Hookah::Window * window) {
     glColor3f(0.35f, 0.35f, 0.35f);
     glBegin(GL_QUADS);
         glVertex2i(0, 0);
-        glVertex2i(window->width(), 0);
-        glVertex2i(window->width(), window->height());
-        glVertex2i(0, window->height());
+        glVertex2i(width, 0);
+        glVertex2i(width, height);
+        glVertex2i(0, height);
     glEnd();
 
     // draw the game board
@@ -243,4 +248,8 @@ void TetrisRenderer::drawPiece(const Piece & piece) {
     glVertex3f(0.0f,  1.0f,  0.0f);
 
     glEnd();
+}
+
+void TetrisRenderer::scene(const boost::shared_ptr<TetrisScene>& scene) {
+    scene_ = scene;
 }
