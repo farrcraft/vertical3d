@@ -19,6 +19,7 @@ namespace v3d::asset {
         ShaderVertex = 7,
         ShaderFragment = 8,
         Font2D = 9,
-        TextureFont = 10
+        TextureFont = 10,
+        ImageTga = 11
     };
 };  // namespace v3d::asset

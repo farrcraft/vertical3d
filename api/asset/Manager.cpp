@@ -10,6 +10,7 @@
 #include "loader/Jpeg.h"
 #include "loader/Json.h"
 #include "loader/Png.h"
+#include "loader/Tga.h"
 #include "loader/Shader.h"
 #include "loader/ShaderProgram.h"
 #include "loader/Text.h"
@@ -29,6 +30,7 @@ namespace v3d::asset {
         logger_->get()->info("Setting asset manager path to: {}", path);
         loaders_[asset::Type::ImageJpeg] = boost::make_shared<v3d::asset::loader::Jpeg>(this, logger_);
         loaders_[asset::Type::ImagePng] = boost::make_shared<v3d::asset::loader::Png>(this, logger_);
+        loaders_[asset::Type::ImageTga] = boost::make_shared<v3d::asset::loader::Tga>(this, logger_);
         loaders_[asset::Type::JsonDocument] = boost::make_shared<v3d::asset::loader::Json>(this, logger_);
         loaders_[asset::Type::AudioWav] = boost::make_shared<v3d::asset::loader::Wav>(this, logger_);
         loaders_[asset::Type::Text] = boost::make_shared<v3d::asset::loader::Text>(this, logger_);
@@ -74,6 +76,8 @@ namespace v3d::asset {
             asset = load(name, asset::Type::ImagePng);
         } else if (ext == ".jpg") {
             asset = load(name, asset::Type::ImageJpeg);
+        } else if (ext == ".tga") {
+            asset = load(name, asset::Type::ImageTga);
         } else if (ext == ".json") {
             asset = load(name, asset::Type::JsonDocument);
         } else if (ext == ".wav") {

@@ -70,6 +70,17 @@ class Tetrad {
 
         Tetrad & operator=(const Tetrad & t);
 
+        /**
+         * Move a shape's filled cells into the top left of its 4x4 grid.
+         *
+         * Every shape is kept this way. A rotation produces one, so a shape that did not
+         * start out normalised would behave differently before its first turn than after -
+         * it would stop a cell short of the left wall until it was rotated once.
+         *
+         * @param shape the layout to normalise in place
+         */
+        static void normalize(ShapeInfo * shape);
+
  private:
         unsigned int orientation_;  // 0 = 0, 1 = 90, 2 = 180, 3 = 270 degree rotation
         PositionType position_;  // where on the board

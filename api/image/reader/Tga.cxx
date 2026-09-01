@@ -9,6 +9,7 @@
 #include <iostream>
 #include <cstring>
 #include <string>
+#include <vector>
 
 namespace v3d::image::reader {
     /**
@@ -82,6 +83,23 @@ namespace v3d::image::reader {
                 data[i + 2] = temp;
             }
         }
+
+        // bit 5 of the image descriptor is the vertical origin, and it is clear far more
+        // often than it is set - the file then holds its rows bottom up. Every other reader
+        // here yields a top down image, and so does every consumer of one, so flip rather
+        // than leave the orientation up to whoever wrote the file
+        if ((header[5] & 0x20) == 0) {
+            const unsigned int stride = width * bytespp;
+            std::vector<unsigned char> row(stride);
+            for (unsigned int i = 0; i < height / 2; ++i) {
+                unsigned char* top = data + i * stride;
+                unsigned char* bottom = data + (height - 1 - i) * stride;
+                memcpy(row.data(), top, stride);
+                memcpy(top, bottom, stride);
+                memcpy(bottom, row.data(), stride);
+            }
+        }
+
         file.close();
         return img;
     }

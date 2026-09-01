@@ -6,6 +6,9 @@
 #include "Controller.h"
 
 #include <cstdlib>
+#include <exception>
+#include <iostream>
+#include <string>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -18,10 +21,18 @@ int main(int argc, char *argv[]) {
 
     Controller controller(appPath);
 
+    // the renderer reports what it cannot do by throwing, and an uncaught exception on
+    // windows is an abort dialog with no message in it
     int exitStatus = EXIT_SUCCESS;
-    if (!controller.initialize() || !controller.eventLoop()) {
+    try {
+        if (!controller.initialize() || !controller.eventLoop()) {
+            exitStatus = EXIT_FAILURE;
+        }
+    } catch (const std::exception& error) {
+        std::cerr << "tetris failed: " << error.what() << std::endl;
         exitStatus = EXIT_FAILURE;
     }
+
     if (!controller.shutdown()) {
         exitStatus = EXIT_FAILURE;
     }

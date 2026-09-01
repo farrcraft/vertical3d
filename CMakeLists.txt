@@ -67,6 +67,19 @@ function(v3d_add_shared_data target)
 		VERBATIM)
 endfunction()
 
+# An app's own assets are committed under <app>/data. They are copied beside the executable
+# after it links for the same reason the shared ones are - the engine resolves every asset
+# relative to the exe - and because a build tree that is not refreshed from the source tree
+# drifts silently: editing <app>/data then appears to do nothing.
+function(v3d_add_app_data target)
+	add_custom_command(TARGET ${target} POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_directory
+			"${CMAKE_CURRENT_SOURCE_DIR}/data"
+			"$<TARGET_FILE_DIR:${target}>/data"
+		COMMENT "Copying data for ${target}"
+		VERBATIM)
+endfunction()
+
 # Tests live next to the library they cover, in api/<lib>/tests, and each directory builds
 # one Boost.Test binary. v3d_add_test wires up what every one of them needs: the framework
 # (whose imported target carries BOOST_TEST_DYN_LINK, since vcpkg builds boost shared),
@@ -87,8 +100,8 @@ endfunction()
 
 # Shaders are compiled to SPIR-V at build time and embedded in the library that draws with
 # them, rather than shipped as data files: they belong to the engine rather than to any app,
-# and nothing copies per-app data into the build tree. glslc's -mfmt=c writes the module out
-# as a C initialiser list, which the source includes into a uint32_t array.
+# so no app's data directory is the right place for them. glslc's -mfmt=c writes the module
+# out as a C initialiser list, which the source includes into a uint32_t array.
 if(NOT Vulkan_GLSLC_EXECUTABLE)
 	find_program(Vulkan_GLSLC_EXECUTABLE NAMES glslc HINTS "$ENV{VULKAN_SDK}/Bin" "$ENV{VULKAN_SDK}/bin")
 endif()

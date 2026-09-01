@@ -126,8 +126,11 @@ current SDL video driver (windows)" and pong aborted on startup. That is fixed i
 never once run - "it builds" really was the only signal there was.
 
 **Phase 3 put pixels down.** There is one pipeline - the batched quad of ADR-0005 - and pong
-draws its whole frame, ui included, through it. Tetris, voxel and odyssey still call OpenGL
-against a context nothing creates.
+draws its whole frame, ui included, through it.
+
+**Phase 4 took tetris off OpenGL.** It draws through the same canvas, with its seven block
+textures packed into one atlas so the whole well is a single batch. Voxel and odyssey are
+what is left calling GL against a context nothing creates.
 
 **Build health.** Everything compiles and links, voxel included.
 
@@ -383,21 +386,70 @@ still need it.
 
 ### Phase 4 — tetris
 
-The quad primitive already exists from Phase 3, so what tetris adds is the sprite atlas.
+Done, 2026-08-31. Tetris plays: the well fills, rows clear, the preview and the score are
+drawn, and the menu opens over a paused board.
 
-- Pack the seven piece textures into one `v3d::image::TextureAtlas` at load time, so the
-  board draws as a single batch instead of flushing per block.
-- Replace the fixed-function draw path wholesale — `glBegin`/`glEnd`, `glTranslatef`,
-  `glPushMatrix`, `glOrtho`. This is the oldest rendering code in the repo and none of it
-  survives; rewrite against the Canvas equivalent rather than porting call by call.
-- Rewrite the debug text against `TextureFont`.
-- Wire `Controller` to `v3d::ui` the way `PongEngine` is: construct the engine, load the
-  `ui` config, and handle `toggleMenu` plus the `ui::` commands. `tetris/data/vgui.json`
-  exists and is loaded as an asset already, but nothing consumes it.
-- Load piece textures through `asset::Manager` instead of `image::Factory` with hardcoded
-  relative paths.
+- ~~Pack the seven piece textures into one `v3d::image::TextureAtlas` at load time, so the
+  board draws as a single batch instead of flushing per block.~~ Done. A 256x256 RGB atlas,
+  uploaded once; the uv rect for each colour is inset half a texel so filtering a 64x64
+  block down to a ~28 pixel cell cannot reach into its neighbour across the packer's border.
+- ~~Replace the fixed-function draw path wholesale.~~ Done. `TetrisRenderer` is a rewrite
+  against `realtime::Canvas` and names no GL at all - the well, every block, the preview,
+  the text and the menu are all the one quad, submitted as one canvas per frame.
+- ~~Rewrite the debug text against `TextureFont`.~~ Done, the same way pong loads its font.
+  F2 shows the falling tetrad's position and extent.
+- ~~Wire `Controller` to `v3d::ui`.~~ Done. It constructs the engine, loads the `ui` config,
+  and handles `toggleMenu` plus the `ui::` commands. `vgui.json` gained a New Game item, so
+  the menu does something beyond quitting.
+- ~~Load piece textures through `asset::Manager` instead of `image::Factory` with hardcoded
+  relative paths.~~ Done, which needed an `asset::Type::ImageTga` and a `loader::Tga`
+  alongside the png and jpeg ones. `pieces/shapes.txt` was read the same way - a cwd
+  relative `ifstream` - and now loads as an `asset::Text`.
 
-Done when: tetris plays.
+Five things turned up that the render port could not have run without, and one that only
+this app's data could have exposed:
+
+- **The TGA reader handed its rows on in file order**, so every image it read came out
+  upside down. The origin bit in the image descriptor is clear far more often than it is
+  set, which means bottom-up rows, and every other reader in `api/image` - and every
+  consumer of one - is top-down. It had never shown because the only fixture testing it is
+  a uniformly coloured 2x2. The blocks are bevelled, so on the atlas it showed immediately.
+  Fixed, with a red-over-green fixture that can tell the difference.
+- **Nothing copied an app's own `data/` into the build tree.** Tetris had no data there at
+  all, so it could not have started. `v3d_add_app_data` in the root CMakeLists now copies
+  `<app>/data` beside the executable the way `v3d_add_shared_data` copies the root one.
+  Only tetris uses it; pong still runs from a years-stale manual copy.
+- **`Controller::initialize` fell off the end without returning**, `tick` never ticked the
+  scene, and `render` drew nothing - so even with a renderer, nothing would have moved.
+- **`Tetrad::operator=` did not copy the position**, which the copy constructor beside it
+  does. Nothing had noticed because the one assignment in the tree set the position
+  immediately afterwards.
+- **`Tetrad::rotate` turned the shape one way and did nothing at all the other way** - the
+  counter-clockwise branch copied the layout unchanged - and `width()`/`height()` seeded
+  their minimum at 0, so both were really `max + 1`. All three are fixed; rotation now
+  maintains `orientation_` itself rather than leaving the caller to.
+- **The board wrote a landed tetrad into `pieces_` without bounds checking**, from a
+  collision test built out of per-axis offset arithmetic that the controller partly
+  duplicated. That is one `GameBoard::fits(tetrad, column, row)` now, which the fall, the
+  sideways moves and the rotation all go through, so there is one description of what a
+  legal position is. Rotation against a wall tries a one and two cell kick either side
+  before giving up. Row clearing scans bottom up and re-examines a cleared row rather than
+  stepping past it, which the old loop did not; the score it feeds was a field nobody set
+  and nobody read.
+
+`tetris/tests/` builds the first per-app suite, ten cases over the board and the tetrad -
+`fits` against the walls, the floor and a block; a row that clears and one that does not;
+game over; shape normalisation on load; the four rotation states, the two directions being
+each other's inverse, assignment carrying the position, and the extents. None of it needs a
+window or a device, and the tetrad cases are written directly against the three defects
+listed above - the dead counter-clockwise branch, the assignment that dropped the position,
+and the extents that were really `max + 1`. Reading a shape set and installing one are now
+separate `GameBoard::load` overloads so a test can supply its own shapes rather than a file,
+and `piece()` gained the setter that matches its getter, so a board can be arranged.
+
+Still not done: `tetris/run-unit-tests.sh` invokes a `unit_tests` binary that does not
+exist, and the renderer has no coverage - that waits on
+[ADR 0007](../adr/0007-ci-rendering-tests.md) like the rest of the device-side work.
 
 ### Phase 5 — voxel and odyssey, and the engine consolidation
 

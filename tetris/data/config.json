@@ -7,6 +7,10 @@
     {
       "type": "ui",
       "file": "vgui.json"
+    },
+    {
+      "type": "window",
+      "file": "window.json"
     }
   ]
 }

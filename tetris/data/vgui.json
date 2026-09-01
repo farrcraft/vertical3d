@@ -14,6 +14,12 @@
           "type": "menu",
           "items": [
             {
+              "label": "New Game",
+              "command": "newGame",
+              "context": "ui",
+              "type": "action"
+            },
+            {
               "label": "Quit",
               "command": "quit",
               "context": "ui",
