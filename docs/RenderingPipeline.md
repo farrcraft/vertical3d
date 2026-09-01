@@ -13,7 +13,7 @@ through [ADR-0005](adr/0005-one-batched-quad-primitive.md), plus
 ## The chain of objects
 
 ```
-Window3D  ->  Context3D  ->  Frame  ->  Pass  ->  DrawItem
+Window    ->  Context3D  ->  Frame  ->  Pass  ->  DrawItem
                   |
                   +-- vulkan::Device      the gpu, its queues, and the 1.3 features
                   +-- vulkan::Swapchain   the images presented to the window
@@ -26,9 +26,12 @@ Window3D  ->  Context3D  ->  Frame  ->  Pass  ->  DrawItem
                   +-- vulkan::QuadRenderer the 2D pipelines, and the geometry buffers they upload through
 ```
 
-`Window3D` creates an `SDL_WINDOW_VULKAN` window and owns the `vulkan::Instance` and
-`vulkan::Surface`. `Context3D` is built from a created window and owns everything that
-belongs to the device. `Engine3D` drives a frame per tick.
+`realtime::Window` creates an `SDL_WINDOW_VULKAN` window and owns the `vulkan::Instance`
+and `vulkan::Surface`. There is one window class rather than a 2D and a 3D one: since
+odyssey's port on 2026-09-01 every app presents through a swapchain, and a 2D game differs
+from a 3D one in what its passes ask for - an orthographic projection and no depth - not in
+the window underneath them. `Context3D` is built from a created window and owns everything
+that belongs to the device. `Engine3D` drives a frame per tick.
 
 There is no `VkRenderPass` and no `VkFramebuffer` anywhere. Passes draw through dynamic
 rendering, straight into the swapchain image views, per
@@ -258,12 +261,11 @@ for a handle to sort on. So `vulkan::Mesh` is owned by whatever built it - a chu
 - **Culling.** Nothing is culled against the frustum. Voxel submits an item per meshed chunk
   whether or not the chunk is in front of the camera, which is what its chunk-local vertices
   and per-chunk origin were put in place to make possible.
-- **The GL path is not gone**, but nothing outside `api/` draws with it. Voxel's port on
-  2026-09-01 took the last app consumer, and `operation::TextureFont` and `v3d::gl::Canvas`
-  went with it. What still holds `api/gl` is inside the api: the `Shader`/`ShaderProgram`
-  asset types, and `api/ui/style/property/Image` and `api/ui/component/Icon`, which each hold
-  a `v3d::gl::GLTexture`. Porting those two onto the texture handle the quad renderer uses is
-  what deleting `api/gl` now waits on.
+- **A 2D pass does not use set 0.** `Canvas::projection()` builds an orthographic matrix by
+  hand and the quad pipeline reads it from a push constant, while `vulkan::FrameUniforms`
+  holds a camera per pass that only voxel's terrain pipeline reads. A pass carrying an
+  orthographic camera, with the quad pipeline reading it from set 0 like everything else,
+  is what would make the 2D path stop being a special case.
 
 ## Still open: how this meets the ECS
 

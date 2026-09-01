@@ -630,39 +630,122 @@ Four things the port turned up that the survey did not:
 Odyssey is where the consolidation actually lands. It builds, and it runs on `SDL_Renderer`
 rather than on GL, so it was never blocked by Vulkan.
 
-**It does not start either**, which the voxel survey's probe answered in passing on
-2026-08-31 — the question the earlier note left open. It fails identically to voxel at the
-first step: no `v3d_add_app_data`, so there is no `config.json` beside the executable and the
-process exits 1. Behind that sits a second failure it has not reached: `odyssey/data/config.json`
-says `"type": "bindings"` and `config::stringToType` only knows `"binding"`, so `Config::load`
-would log "Unknown config type" and return false. Both are a few minutes of work and both come
-before any port:
+**Make it start.** Done, 2026-09-01, and the two items the note predicted were the first two
+of six. Odyssey now opens a window and draws, which nobody had seen it do.
 
-- Call `v3d_add_app_data(odyssey)` and fix the config type name to `"binding"`. Then find out
-  what odyssey actually does, which nobody has seen.
+- ~~Call `v3d_add_app_data(odyssey)` and fix the config type name to `"binding"`.~~ Done, and
+  four more failures sat behind them, each only reachable once the one in front was fixed:
+  - `odyssey/data/bindings.json` was in a third binding format — `contexts` holding an
+    event-string-to-command map — that nothing has read since the `mappings` shape landed.
+    `registerEventMappings` reaches for `doc.at("mappings")`, which throws. Migrated to
+    `mappings.json` against pong's as the reference. The `player::movement::*` destinations
+    became `odyssey::move*`, since a destination is a context and a name rather than a path,
+    and `ui::navigation::up` is dropped: odyssey has no ui. An `escape` → `odyssey::quit`
+    binding replaces it, handled through `Engine::quit()` rather than `shutdown()`.
+  - `odyssey/data/window.json` carried only width and height. `Engine::initialize` reads
+    `logicalWidth` and `logicalHeight` with `at()`, which throws on a config that omits them —
+    the one lookup in engine startup that `Config::load`'s `contains()` guards do not cover.
+    Set to 1280x768, which is what `unit::tile_* * unit::screen_tile_*` comes to and what the
+    app overrides the window's logical size with anyway.
+  - **`Window2D::create` took the window surface, and that alone made `Engine2D` impossible to
+    build.** `SDL_GetWindowSurface` associates a surface with the window for as long as it
+    lives, and SDL then refuses `SDL_CreateRenderer` on it — `Context2D`'s constructor threw
+    "Surface already associated with window" out of `Engine2D::initialize`, which reached
+    `main` as an `abort()`. The surface is only ever read by `paint()`, which has no callers,
+    so it is acquired there lazily instead. Nothing else in the tree had noticed: pong and
+    tetris are both on `Window3D` since their ports, and odyssey is the only `Window2D`
+    consumer there has ever been.
+  - `sample.png`, the one asset odyssey draws, is not in the repository and never has been. A
+    placeholder sprite is committed as `odyssey/data/sample.png`. The missing file was not
+    reported: `image::reader::Png` returns an empty image, and `asset::loader::Png` wrapped
+    that in an `asset::Image` that looks loaded until a consumer dereferences it — `Surface`
+    did, and asserted. All three image loaders now log the path and return no asset at all
+    when the read fails, which is the convention `loader::Json` already had.
 
-Once the Vulkan path has textured-quad batching from Phase 4, port it:
+**What odyssey does**, now that it has been seen: it opens a 1280x768 window, clears to black,
+and blits one 64x64 sprite at the origin. That is all. `Movement::tick` returns true and does
+nothing; the `PositionFixed2D` component `engine::Player` puts on its entity is never read, so
+the sprite is not drawn from it and cannot move. `Sprite`, `SpriteSheet`, `Actor`, `Tile` and
+`ui::Screen` are empty declarations. The port below is therefore not a port of a game — it is
+a port of one textured quad, and everything the app would need to be a game is still unwritten.
 
-- Replace its `Blit2DTexture` usage with the batched textured quad. That is close to the
-  whole port — see the state notes above.
-- Move it from `Feature::Window2D` to the single window and engine.
-- Delete `api/render/realtime/2D/` and `operation/2D/`, collapse `Window2D`/`Window3D` into
-  one `Window`, and drop the `Window2D`/`Window3D` feature flags for a single windowing flag.
-- Add the sprite/orthographic pass properly, so a 2D game gets painter ordering and no depth
-  buffer without special-casing the engine.
-- **Delete `api/gl`**, carried over from phase 3. **No app draws with it any more** — voxel's
-  port on 2026-09-01 took the last one, and `operation::TextureFont` and `v3d::gl::Canvas`
-  have no consumers left at all. What still holds it is the `Shader`/`ShaderProgram` asset
-  types that build a `v3d::gl::Program`. Two consumers inside `api/` go with them, which the survey turned up:
-  `api/ui/style/property/Image` and `api/ui/component/Icon` each hold a
-  `boost::shared_ptr<v3d::gl::GLTexture>`, and both are built. They want the texture handle
-  the quad renderer already uses — which is the same gap [LuxaAudit.md](../LuxaAudit.md)
-  records as unported theme image loading, so the two are one piece of work. When `api/gl`
-  goes, so do the `v3dlib_gl` link in `api/asset/CMakeLists.txt` and the OpenGL and GLEW
-  `find_package` calls in the root.
-- **Revisit [ADR-0009](../adr/0009-colour-authored-in-display-space.md).** A lit scene has to
-  blend in linear space, and the moment lighting lands, authoring colour in display space
-  stops being a convenience and starts being wrong. Expect to supersede that record here.
+**Port odyssey, and the consolidation with it.** Done, 2026-09-01, except for the two items
+struck through below that turn out not to be this phase's after all.
+
+- ~~Replace its `Blit2DTexture` usage with the batched textured quad.~~ Done, as
+  `odyssey/render/Renderer`, which replaces `Scene`, `Renderable` and `renderable::Player` at
+  about half their combined size. The sprite is drawn at the tile its entity's
+  `PositionFixed2D` names rather than at a hardcoded origin, which is the first time anything
+  has read that component — the old renderable held a `boost::shared_ptr<engine::Player>` and
+  ignored it. `engine::Player::entity()` is what the renderer looks it up by.
+- ~~Move it from `Feature::Window2D` to the single window and engine.~~ Done.
+- ~~Delete `api/render/realtime/2D/` and `operation/2D/`, collapse `Window2D`/`Window3D` into
+  one `Window`, and drop the `Window2D`/`Window3D` feature flags for a single windowing
+  flag.~~ Done, and more went with them than the item names:
+  - `realtime::Surface`, the SDL surface wrapper, whose only consumer was `Texture2D`.
+  - `Frame::addOperation`, `Frame::draw` and `realtime::Operation` — the pre-Vulkan
+    submission path, which the frame's own comment said was kept "only until the apps still
+    calling it are ported". Odyssey was the last.
+  - `realtime::Engine::resize`, which called `window_->resize()` a second time after
+    `engine::Engine::eventLoop` had already done it. Odyssey held the only connection to it.
+  - `operation::TextureFont`, which derived from `Operation` and drew a GL font.
+  - The window config's `logicalWidth` and `logicalHeight`, which were `Window2D`'s logical
+    presentation and named nothing once it was gone. All four apps' `window.json` lost them.
+    While the window creation was being rewritten it also stopped being conditional on
+    `Feature::Config`: an app with no window config now gets a window at the default size
+    rather than a window that is constructed and never created.
+  - The commented-out GL setup in `Window3D::create`. It was kept as reference for what the
+    Vulkan path had to replace, and the Vulkan path has replaced all of it — depth test and
+    range in `DepthBuffer` and the pipeline, culling and winding in `PipelineBuilder`, the
+    clear in `Recorder`, vsync in `Presenter`.
+- ~~**Delete `api/gl`**, carried over from phase 3.~~ Done, along with the root
+  `find_package(OpenGL)` and `find_package(GLEW)` calls and the `glew` port in `vcpkg.json`.
+  Both holders turned out smaller than the item expected:
+  - `api/ui/style/property/Image` and `api/ui/component/Icon` hold a
+    `render::realtime::TextureHandle` now. This cost `v3dlib_ui` no new dependency — it
+    already links `v3dlib_render`, because `ComponentRenderer` draws onto a `Canvas`. Neither
+    class ever called a method on the GL texture; both used it as an opaque handle, which is
+    exactly what `TextureHandle` is. **Nothing sets either handle yet**, so this is the type
+    half of [LuxaAudit.md](../LuxaAudit.md) item 5 and not the image-loading half.
+  - The `Shader` and `ShaderProgram` asset types, their two loaders, their three
+    `asset::Type` values and their `Manager` registrations are **deleted rather than ported**.
+    Nothing has loaded a shader asset since `v3d_add_shader` started compiling GLSL at build
+    time and embedding the SPIR-V; they existed only to build a `v3d::gl::Program` nobody
+    asked for.
+- ~~Add the sprite/orthographic pass properly, so a 2D game gets painter ordering and no depth
+  buffer without special-casing the engine.~~ **Half of this was already true, and the other
+  half is not this item.** A pass is painter ordered unless it asks for `sort(true)`, and the
+  depth buffer is allocated the first frame a pass asks for depth, so a 2D game already pays
+  for neither — odyssey's renderer says nothing about either and gets both right. What is
+  still a special case is the projection: `Canvas::projection()` builds an orthographic matrix
+  by hand and the quad pipeline reads it from a push constant, while `FrameUniforms` holds a
+  camera per pass that only voxel's terrain reads. Giving `Pass` an orthographic camera and
+  having the quad pipeline read set 0 like everything else is a change to the shared pipeline
+  all four apps draw through, and it belongs with phase 6's multiple viewports — the first
+  thing that actually needs a per-pass camera on a 2D pass.
+- **Revisit [ADR-0009](../adr/0009-colour-authored-in-display-space.md).** Not yet due. The
+  record itself says the reckoning comes when a lit scene has to blend in linear space, and
+  nothing in this phase added lighting. Carried to whichever phase does.
+
+**What the port turned up that the plan did not.** Both are library defects that no app had
+been in a position to notice:
+
+- **`image::reader::Png` handed back an upside down picture**, and `image::writer::Png`
+  reversed its rows to match, so a round trip cancelled out and the writer's round-trip test
+  passed. Only a *displayed* png saw it, and nothing displayed one — tetris's textures are
+  tga, and the pre-Vulkan 2D path presented its whole back buffer with an
+  `SDL_FLIP_VERTICAL`, which compensated for every image whether or not it needed it. Both
+  leave the rows alone now. `writer::Tga` had the mirror of the bug: it wrote top down
+  without setting bit 5 of the descriptor, so its own reader believed the file was bottom up
+  and turned it over. `imagewriter_orientation_test` pins both, with an image whose rows
+  differ — the existing round-trip test uses a uniform blue square, which cannot see a flip.
+  The jpeg reader and writer still reverse their rows; they are self consistent, nothing
+  displays a jpeg, and they are left alone deliberately.
+- **The three image loaders wrapped a failed read in an asset that looks loaded.**
+  `asset::loader::Png` built an `asset::Image` around the empty image the reader returns for
+  a missing file, so the failure surfaced only where something dereferenced it — for odyssey,
+  inside `realtime::Surface`, as an assert. All three now log the path and return no asset at
+  all, which is what `loader::Json` already did.
 
 ### Phase 6 — the Vertical3D editor
 

@@ -206,10 +206,12 @@ reason "the class exists in api" was not a sufficient test.
    `STATE_PRESS` transitions. `ui::component::Button` keeps `state()` and the `ButtonState`
    enum with nothing to drive them. The replacement is presumably the entt dispatcher, but
    no component subscribes to anything today.
-5. **`api/ui` still depends on OpenGL.** `component/Icon.h` and `style/property/Image.h`
-   both hold a `boost::shared_ptr<v3d::gl::GLTexture>`. Phase 3 deletes `api/gl/`, so both
-   need a texture handle from the Phase 2 resource work first. Worth noting because
-   `v3dlib_ui` is otherwise free of realtime dependencies.
+5. ~~**`api/ui` still depends on OpenGL.**~~ Fixed 2026-09-01. `component/Icon.h` and
+   `style/property/Image.h` now hold a `render::realtime::TextureHandle` instead of a
+   `boost::shared_ptr<v3d::gl::GLTexture>`, which cost `v3dlib_ui` no new dependency - it
+   already links `v3dlib_render` for `ComponentRenderer`'s canvas. **Nothing sets either
+   handle yet**: uploading a theme's image through `QuadRenderer::texture` and drawing an
+   `Icon` from it is still item 6 below.
 
 ## Salvage
 
@@ -244,7 +246,8 @@ except where noted.
 7. Rebuild UI drawing as operations on the batched quad: the ortho UI pass, per-component
    transforms, `Button`'s nine-slice, `Label`/`Icon`, `MenuStack`'s vertical layout, and
    theme-to-font resolution. (Phase 3, blocked by Phase 2.)
-8. Move `Icon` and `style::prop::Image` off `v3d::gl::GLTexture`. (Phase 3.)
+8. ~~Move `Icon` and `style::prop::Image` off `v3d::gl::GLTexture`.~~ Done 2026-09-01, as
+   part of deleting `api/gl` in phase 5.
 9. Recover `luxa/tests/` from `d31a2e9^` into `api/ui/tests/`. (Tests workstream.)
 
 Items 1, 2 and 4 are done. Items 5 and 9 do not require anything that does not already
