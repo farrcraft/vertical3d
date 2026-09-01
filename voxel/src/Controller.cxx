@@ -14,7 +14,7 @@
 #include "game/Player.h"
 #include "../../api/config/Type.h"
 #include "../../api/engine/Feature.h"
-#include "../../api/render/realtime/Window3D.h"
+#include "../../api/render/realtime/Window.h"
 #include "../../api/ui/component/menu/Menu.h"
 
 #include <boost/make_shared.hpp>
@@ -39,7 +39,7 @@ Controller::Controller(const std::string& appPath) :
 bool Controller::initialize() {
     if (!v3d::engine::Engine::initialize(static_cast<int>(
         v3d::engine::Feature::Config |
-        v3d::engine::Feature::Window3D |
+        v3d::engine::Feature::Window |
         v3d::engine::Feature::MouseInput |
         v3d::engine::Feature::KeyboardInput))) {
         return false;
@@ -70,7 +70,7 @@ bool Controller::initialize() {
 
     scene_ = boost::make_shared<Scene>();
 
-    boost::shared_ptr<v3d::render::realtime::Window3D> win = boost::dynamic_pointer_cast<v3d::render::realtime::Window3D>(window());
+    boost::shared_ptr<v3d::render::realtime::Window> win = window();
     renderer_ = boost::make_shared<Renderer>(scene_, win, logger_, assetManager_, &registry_);
     renderer_->ui(vgui_);
 

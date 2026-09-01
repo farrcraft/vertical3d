@@ -1,8 +1,8 @@
 {
   "configs": [
     {
-      "type": "bindings",
-      "file": "bindings.json"
+      "type": "binding",
+      "file": "mappings.json"
     },
     {
       "type": "window",

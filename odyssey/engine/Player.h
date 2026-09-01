@@ -19,6 +19,12 @@ namespace odyssey::engine {
          **/
         Player(entt::registry *registry);
 
+        /**
+         * The entity the player's components hang off, for a system or the renderer that
+         * needs to look one of them up.
+         **/
+        entt::entity entity() const noexcept;
+
      private:
         entt::entity id_;
         Sprite sprite_;

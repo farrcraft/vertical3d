@@ -12,16 +12,16 @@ link_directories(
 	"../vendor/zlib-1.2.11")
 
 # Add source to this project's executable.
-add_executable (Odyssey WIN32 "Odyssey.cpp"  "ui/Screen.h" "ui/Screen.cpp"
- "engine/Engine.h" "engine/Engine.cpp"
- "engine/Sprite.h" "engine/Player.h" "engine/SpriteSheet.h" 
-  "render/Renderable.h" "engine/Player.cpp" 
-"render/renderable/Player.h" "render/renderable/Player.cpp" 
-"render/Renderable.cpp" 
- "actor/Actor.h"
- "render/Scene.h" "render/Scene.cpp" 
-"system/Movement.h" "system/Movement.cpp"
-"tile/Tile.h" "tile/Size.h" "engine/Unit.h"
+add_executable(Odyssey
+	"Odyssey.cpp"
+	"actor/Actor.h"
+	"engine/Engine.h" "engine/Engine.cpp"
+	"engine/Player.h" "engine/Player.cpp"
+	"engine/Sprite.h" "engine/SpriteSheet.h" "engine/Unit.h"
+	"render/Renderer.h" "render/Renderer.cpp"
+	"system/Movement.h" "system/Movement.cpp"
+	"tile/Tile.h" "tile/Size.h"
+	"ui/Screen.h" "ui/Screen.cpp"
 )
 
 # SDL3MAIN_LIBRARY is also specified within SDL3_LIBRARY by the FindSDL3 module.
@@ -44,7 +44,6 @@ target_link_libraries(Odyssey
 		"v3dlib_engine"
 		"v3dlib_event"
 		"v3dlib_font"
-		"v3dlib_gl"
 		"v3dlib_input"
 		"v3dlib_log"
 		"v3dlib_image"
@@ -53,6 +52,8 @@ target_link_libraries(Odyssey
 		"v3dlib_render"
 		Freetype::Freetype
 )
+
+v3d_add_app_data(Odyssey)
 
 target_compile_options(Odyssey PRIVATE /EHsc)
 

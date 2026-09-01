@@ -1,0 +1,76 @@
+{
+  "mappings": [
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "w"
+      },
+      "destination": {
+        "context": "odyssey",
+        "name": "moveForward"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "s"
+      },
+      "destination": {
+        "context": "odyssey",
+        "name": "moveBackward"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "a"
+      },
+      "destination": {
+        "context": "odyssey",
+        "name": "moveLeft"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "d"
+      },
+      "destination": {
+        "context": "odyssey",
+        "name": "moveRight"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "space"
+      },
+      "destination": {
+        "context": "odyssey",
+        "name": "moveUp"
+      }
+    },
+    {
+      "source": {
+        "context": "mouse",
+        "name": "left",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "odyssey",
+        "name": "use"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "escape",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "odyssey",
+        "name": "quit"
+      }
+    }
+  ]
+}

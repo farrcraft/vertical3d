@@ -7,7 +7,7 @@
 
 #include "../Component.h"
 
-#include "../../gl/GLTexture.h"
+#include "../../render/realtime/Handle.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -20,11 +20,11 @@ namespace v3d::ui::component {
      */
     class Icon : public Component {
      public:
-        explicit Icon(boost::shared_ptr<v3d::gl::GLTexture> texture);
+        explicit Icon(const v3d::render::realtime::TextureHandle& texture);
         ~Icon();
 
      private:
-        boost::shared_ptr<v3d::gl::GLTexture> texture_;
+        v3d::render::realtime::TextureHandle texture_;
     };
 
 

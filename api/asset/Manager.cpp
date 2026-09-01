@@ -11,8 +11,6 @@
 #include "loader/Json.h"
 #include "loader/Png.h"
 #include "loader/Tga.h"
-#include "loader/Shader.h"
-#include "loader/ShaderProgram.h"
 #include "loader/Text.h"
 #include "loader/Wav.h"
 #include "loader/Font2D.h"
@@ -34,9 +32,6 @@ namespace v3d::asset {
         loaders_[asset::Type::JsonDocument] = boost::make_shared<v3d::asset::loader::Json>(this, logger_);
         loaders_[asset::Type::AudioWav] = boost::make_shared<v3d::asset::loader::Wav>(this, logger_);
         loaders_[asset::Type::Text] = boost::make_shared<v3d::asset::loader::Text>(this, logger_);
-        loaders_[asset::Type::ShaderFragment] = boost::make_shared<v3d::asset::loader::Shader>(this, asset::Type::ShaderFragment, logger_);
-        loaders_[asset::Type::ShaderVertex] = boost::make_shared<v3d::asset::loader::Shader>(this, asset::Type::ShaderVertex, logger_);
-        loaders_[asset::Type::ShaderProgram] = boost::make_shared<v3d::asset::loader::ShaderProgram>(this, logger_);
         loaders_[asset::Type::Font2D] = boost::make_shared<v3d::asset::loader::Font2D>(this, logger_);
         loaders_[asset::Type::TextureFont] = boost::make_shared<v3d::asset::loader::TextureFont>(this, logger_);
     }

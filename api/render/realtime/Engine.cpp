@@ -41,13 +41,6 @@ namespace v3d::render::realtime {
 
     /**
      **/
-    void Engine::resize(const v3d::event::WindowResize& event) {
-        window_->resize(event.width(), event.height());
-        //  backBuffer_ = boost::make_shared<Texture>(context_, width, height);
-    }
-
-    /**
-     **/
     boost::shared_ptr<v3d::asset::Manager> Engine::assetManager() {
         return assetManager_;
     }

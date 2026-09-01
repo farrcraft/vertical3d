@@ -5,37 +5,63 @@
 
 #pragma once
 
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_vulkan.h>
+
 #include <string>
 
-#include "../../log/Logger.h"
+#include "vulkan/Instance.h"
+#include "vulkan/Surface.h"
 
-#include <SDL3/SDL.h>
+#include "../../log/Logger.h"
 
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::render::realtime {
     /**
-    **/
-    class Window {
+     * The window everything is drawn into, and the vulkan instance and surface that reach it.
+     *
+     * Every window is a vulkan window: an app presents through a swapchain whether it draws
+     * in two dimensions or three, per ADR-0001. What separates a 2D app from a 3D one is what
+     * its passes ask for - an orthographic camera and no depth - not the window under them.
+     **/
+    class Window final {
      public:
         /**
-         * @param Logger* logger
+         * @param logger
          **/
         explicit Window(const boost::shared_ptr<v3d::log::Logger>& logger) noexcept;
 
         /**
-         * @return bool
+         * Create the window, the vulkan instance, and the surface that presents to it.
+         *
+         * @throw std::runtime_error if the vulkan loader or SDL's extension list is missing
+         * @return whether the window itself could be created
          **/
-        virtual bool create(int width, int height, bool hasVulkan = false);
+        bool create(int width, int height);
 
         /**
-         * @return void
+         * @return whether create() has succeeded and destroy() has not been called since
          **/
-        virtual void destroy();
+        bool created() const noexcept;
+
+        /**
+         **/
+        void destroy();
 
         /**
          **/
         SDL_Window* sdl() noexcept;
+
+        /**
+         * @return the vulkan instance the window was created against
+         **/
+        boost::shared_ptr<vulkan::Instance> instance() const;
+
+        /**
+         * @return the vulkan surface the window presents to
+         **/
+        boost::shared_ptr<vulkan::Surface> surface() const;
 
         /**
          **/
@@ -66,16 +92,15 @@ namespace v3d::render::realtime {
          */
         void warpCursor(int x, int y);
 
-     protected:
-        /**
-         **/
-        const boost::shared_ptr<v3d::log::Logger>& logger() const noexcept;
-
      private:
         SDL_Window* window_;
+        boost::shared_ptr<vulkan::Instance> instance_;
+        boost::shared_ptr<vulkan::Surface> surface_;
         std::string caption_;
         int width_;
         int height_;
+        bool vulkanLoaded_;
+        bool created_;
         boost::shared_ptr<v3d::log::Logger> logger_;
     };
 

@@ -15,10 +15,6 @@ add_library("v3dlib_asset"
  "Sound.h" "Sound.cpp" 
  "Text.h" "Text.cpp"
  "loader/Text.h" "loader/Text.cpp"
- "Shader.h" "Shader.cpp" 
- "loader/Shader.h" "loader/Shader.cpp" 
- "ShaderProgram.h" "ShaderProgram.cpp" 
- "loader/ShaderProgram.h" "loader/ShaderProgram.cpp" 
  "Font2D.h" "Font2D.cpp"
 "loader/Font2D.h" "loader/Font2D.cpp" "loader/TextureFont.h" "loader/TextureFont.cpp" "TextureFont.h" "TextureFont.cpp")
 
@@ -28,11 +24,9 @@ target_compile_definitions(v3dlib_asset PUBLIC _WIN32_WINNT=0x0A00)
 target_compile_definitions(v3dlib_asset PUBLIC WINVER=0x0A00)
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
-# v3dlib_gl: the Shader and ShaderProgram asset types build a v3d::gl::Program, so this
-# library cannot be linked without the GL one. This line goes when api/gl does.
 # v3dlib_audio: the Wav loader calls v3d::audio::AudioClip::load, so an app that links this
 # library needs the audio one whether or not it plays a sound.
-target_link_libraries(v3dlib_asset PUBLIC v3dlib_log v3dlib_gl v3dlib_audio)
+target_link_libraries(v3dlib_asset PUBLIC v3dlib_log v3dlib_audio)
 
 target_compile_options(v3dlib_asset PRIVATE /EHsc)
 

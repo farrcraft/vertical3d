@@ -19,7 +19,7 @@ Controller::Controller(const std::string& path) : v3d::engine::Engine(path) {
 
 bool Controller::initialize() {
     if (!Engine::initialize(
-        static_cast<int>(v3d::engine::Feature::Window3D |
+        static_cast<int>(v3d::engine::Feature::Window |
             v3d::engine::Feature::KeyboardInput |
             v3d::engine::Feature::MouseInput |
             v3d::engine::Feature::Config))) {
@@ -43,7 +43,7 @@ bool Controller::initialize() {
         return false;
     }
 
-    boost::shared_ptr<v3d::render::realtime::Window3D> win = boost::dynamic_pointer_cast<v3d::render::realtime::Window3D>(window());
+    boost::shared_ptr<v3d::render::realtime::Window> win = window();
     renderer_ = boost::make_shared<TetrisRenderer>(win, logger_, assetManager_, &registry_);
     renderer_->scene(scene_);
     renderer_->ui(vgui_);

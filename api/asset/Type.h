@@ -15,9 +15,6 @@ namespace v3d::asset {
         JsonDocument = 3,
         AudioWav = 4,
         Text = 5,
-        ShaderProgram = 6,
-        ShaderVertex = 7,
-        ShaderFragment = 8,
         Font2D = 9,
         TextureFont = 10,
         ImageTga = 11

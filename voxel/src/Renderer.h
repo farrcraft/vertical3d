@@ -43,7 +43,7 @@ class Renderer {
     /**
      * @throw std::runtime_error if the pipeline or its uniforms cannot be built
      **/
-    Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_ptr<v3d::render::realtime::Window3D>& window,
+    Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_ptr<v3d::render::realtime::Window>& window,
         const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry);
 
     /**

@@ -12,10 +12,10 @@
 
 #include "../../api/engine/Engine.h"
 #include "../../api/asset/Manager.h"
+#include "../../api/event/Event.h"
 #include "../../api/config/Config.h"
 #include "../../api/input/Engine.h"
-#include "../../api/render/realtime/2D/Engine2D.h"
-#include "../render/Scene.h"
+#include "../render/Renderer.h"
 #include "../system/Movement.h"
 
 namespace odyssey::engine {
@@ -61,8 +61,13 @@ namespace odyssey::engine {
         bool shutdown() override;
 
      private:
+        /**
+         * Handle a mapped event, one of the destinations named in data/mappings.json.
+         **/
+        void handleEvent(const v3d::event::Event& event);
+
         boost::shared_ptr<Player> player_;
-        boost::shared_ptr<v3d::render::realtime::Engine2D> renderEngine_;
+        boost::shared_ptr<odyssey::render::Renderer> renderer_;
         boost::shared_ptr<odyssey::system::Movement> movementSystem_;
     };
 

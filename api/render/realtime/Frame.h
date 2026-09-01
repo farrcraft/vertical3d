@@ -6,7 +6,6 @@
 #pragma once
 
 #include "Context.h"
-#include "Operation.h"
 #include "Pass.h"
 
 #include <string>
@@ -50,21 +49,8 @@ namespace v3d::render::realtime {
          **/
         void reset() noexcept;
 
-        /**
-         * The pre-vulkan submission path, where an operation drew itself against the
-         * context. Superseded by passes and draw items per ADR-0004, and kept only until
-         * the apps still calling it are ported.
-         **/
-        void addOperation(boost::shared_ptr<Operation> operation);
-
-        /**
-         * Run the operations added to the frame. See addOperation.
-         **/
-        void draw();
-
      private:
         boost::shared_ptr<Context> context_;
         std::vector<boost::shared_ptr<Pass>> passes_;
-        std::vector<boost::shared_ptr<Operation>> operations_;
     };
 };  // namespace v3d::render::realtime

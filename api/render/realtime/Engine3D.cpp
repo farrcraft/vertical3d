@@ -20,7 +20,7 @@ namespace v3d::render::realtime {
 
     /**
      **/
-    bool Engine3D::initialize(const boost::shared_ptr <Window3D>& window) {
+    bool Engine3D::initialize(const boost::shared_ptr<Window>& window) {
         Engine::initialize(window);
 
         // the context can only be built once there is a created window to take a device from

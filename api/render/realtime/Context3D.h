@@ -6,7 +6,7 @@
 #pragma once
 
 #include "Context.h"
-#include "Window3D.h"
+#include "Window.h"
 #include "vulkan/DepthBuffer.h"
 #include "vulkan/Device.h"
 #include "vulkan/FrameUniforms.h"
@@ -32,7 +32,7 @@ namespace v3d::render::realtime {
          * @param logger
          * @param window the window the context renders to
          **/
-        Context3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Window3D>& window);
+        Context3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Window>& window);
 
         /**
          **/
@@ -109,7 +109,7 @@ namespace v3d::render::realtime {
         void resize();
 
      private:
-        boost::shared_ptr<Window3D> window_;
+        boost::shared_ptr<Window> window_;
         boost::shared_ptr<vulkan::Device> device_;
         boost::shared_ptr<vulkan::Swapchain> swapchain_;
         boost::shared_ptr<vulkan::PipelineCache> pipelineCache_;

@@ -101,7 +101,7 @@ namespace {
 
 /**
  **/
-Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_ptr<v3d::render::realtime::Window3D>& window,
+Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_ptr<v3d::render::realtime::Window>& window,
     const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry) :
     scene_(scene),
     logger_(logger),
@@ -397,8 +397,7 @@ void Renderer::draw() {
         return;
     }
 
-    // nothing dispatches a resize event yet - render::Engine::resize is still dead code - so
-    // the window is the only thing that knows
+    // no resize event reaches the renderer, so the window is the only thing that knows
     if (canvas_.width() != static_cast<uint32_t>(width) || canvas_.height() != static_cast<uint32_t>(height)) {
         resize(width, height);
     }

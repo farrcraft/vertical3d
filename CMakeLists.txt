@@ -34,9 +34,7 @@ find_package(Freetype REQUIRED)
 find_package(PNG REQUIRED)
 find_package(JPEG REQUIRED)
 find_package(libjpeg-turbo CONFIG REQUIRED)
-find_package(GLEW REQUIRED)
 find_package(EnTT)
-find_package(OpenGL REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 
 include_directories(SYSTEM

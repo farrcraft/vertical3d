@@ -17,4 +17,10 @@ namespace odyssey::engine {
         registry->emplace<v3d::ecs::component::PositionFixed2D>(id_, 0, 0);
     }
 
+    /**
+     **/
+    entt::entity Player::entity() const noexcept {
+        return id_;
+    }
+
 };  // namespace odyssey::engine

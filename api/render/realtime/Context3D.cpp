@@ -13,7 +13,7 @@
 namespace v3d::render::realtime {
     /**
      **/
-    Context3D::Context3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Window3D>& window) :
+    Context3D::Context3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Window>& window) :
         window_(window),
         depthFormat_(VK_FORMAT_UNDEFINED) {
         if (!window_ || !window_->instance() || !window_->surface()) {

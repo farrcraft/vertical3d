@@ -3,7 +3,6 @@
     "boost",
     "entt",
     "freetype",
-    "glew",
     "glm",
     "libjpeg-turbo",
     "libpng",

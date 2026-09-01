@@ -9,7 +9,7 @@
 #include "Context3D.h"
 #include "Engine.h"
 #include "Frame.h"
-#include "Window3D.h"
+#include "Window.h"
 #include "vulkan/Recorder.h"
 
 #include <glm/vec4.hpp>
@@ -25,7 +25,7 @@ namespace v3d::render::realtime {
 
         /**
          **/
-        bool initialize(const boost::shared_ptr<Window3D>& window);
+        bool initialize(const boost::shared_ptr<Window>& window);
 
         /**
          * Wait for everything in flight before the device and the window go away.
