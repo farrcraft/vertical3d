@@ -17,7 +17,9 @@ namespace v3d::render::realtime {
         Context() = default;
 
         /**
+         * Virtual so that a Context can be narrowed back to the concrete context an
+         * operation needs, and so deleting through a base pointer is well defined.
          **/
-        ~Context() = default;
+        virtual ~Context() = default;
     };
 };  // namespace v3d::render::realtime

@@ -6,6 +6,8 @@
 #include "Engine.h"
 #include "Unit.h"
 
+#include <SDL3/SDL.h>
+
 #include <string>
 
 #include "../../api/engine/Feature.h"
@@ -13,8 +15,6 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/make_shared.hpp>
-
-#include <SDL3/SDL.h>
 
 namespace odyssey::engine {
     /**
@@ -27,30 +27,37 @@ namespace odyssey::engine {
      **/
     bool Engine::initialize() {
         if (!v3d::engine::Engine::initialize(static_cast<int>(
-            v3d::engine::Engine::Feature::Config |
-            v3d::engine::Engine::Feature::Window2D |
-            v3d::engine::Engine::Feature::MouseInput |
-            v3d::engine::Engine::Feature::KeyboardInput))) {
+            v3d::engine::Feature::Config |
+            v3d::engine::Feature::Window2D |
+            v3d::engine::Feature::MouseInput |
+            v3d::engine::Feature::KeyboardInput))) {
             return false;
         }
 
-        player_ = boost::make_shared<Player>(registry_);
+        player_ = boost::make_shared<Player>(&registry_);
 
-        movementSystem_ = boost::make_shared<odyssey::system::Movement>(registry_);
+        movementSystem_ = boost::make_shared<odyssey::system::Movement>(&registry_);
 
-        renderEngine_ = boost::make_shared<v3d::render::realtime::Engine2D>(logger_, assetManager_);
+        renderEngine_ = boost::make_shared<v3d::render::realtime::Engine2D>(logger_, assetManager_, &registry_);
 
-        boost::shared_ptr <v3d::render::realtime::Window2D> window = window();
+        boost::shared_ptr<v3d::render::realtime::Window2D> window2D =
+            boost::dynamic_pointer_cast<v3d::render::realtime::Window2D>(window());
+        if (!window2D) {
+            return false;
+        }
         int width = unit::tile_width * unit::screen_tile_width;
         int height = unit::tile_height * unit::screen_tile_height;
-        window->logicalSize(width, height);
+        window2D->logicalSize(width, height);
 
-        if (!renderEngine_->initialize(window)) {
+        if (!renderEngine_->initialize(window2D)) {
             return false;
         }
 
+        // the engine installs an empty scene; replace it with ours so the player is drawn.
         // need to convert this to ECS...
-        renderEngine_->scene()->setPlayer(boost::make_shared<odyssey::render::renderable::Player>(renderEngine_, player_));
+        boost::shared_ptr<odyssey::render::Scene> scene = boost::make_shared<odyssey::render::Scene>(renderEngine_->context());
+        scene->setPlayer(boost::make_shared<odyssey::render::renderable::Player>(renderEngine_, player_));
+        renderEngine_->scene(scene);
 
         /*
         we don't want to send device events directly to systems
@@ -74,7 +81,7 @@ namespace odyssey::engine {
             // Assign events to window.
             dispatcher_->sink<odyssey::event::KeyDown>().connect<&Window::on_key_down>(window_);
         */
-        dispatcher_->sink<v3d::event::WindowResize>().connect<&odyssey::render::Engine::resize>(renderEngine_);
+        dispatcher_->sink<v3d::event::WindowResize>().connect<&v3d::render::realtime::Engine::resize>(*renderEngine_);
 
         return true;
     }
@@ -95,12 +102,13 @@ namespace odyssey::engine {
             return false;
         }
         renderEngine_->renderFrame();
+        return true;
     }
 
     /**
      **/
-    bool Engine::tick() {
-        if (!v3d::engine::Engine::tick()) {
+    bool Engine::tick(unsigned int delta) {
+        if (!v3d::engine::Engine::tick(delta)) {
             return false;
         }
         // Tick various systems, e.g. Movement System, Collision System, Combat System, etc

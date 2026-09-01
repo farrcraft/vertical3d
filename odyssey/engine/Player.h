@@ -17,7 +17,7 @@ namespace odyssey::engine {
      public:
         /**
          **/
-        Player(const entt::registry &registry);
+        Player(entt::registry *registry);
 
      private:
         entt::entity id_;

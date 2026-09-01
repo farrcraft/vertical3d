@@ -15,6 +15,7 @@
 #include "../../api/config/Config.h"
 #include "../../api/input/Engine.h"
 #include "../../api/render/realtime/2D/Engine2D.h"
+#include "../render/Scene.h"
 #include "../system/Movement.h"
 
 namespace odyssey::engine {
@@ -46,12 +47,18 @@ namespace odyssey::engine {
          * Advance the game world time
          * @return bool
          **/
-        bool tick();
+        bool tick(unsigned int delta) override;
+
+        /**
+         * Draw the current frame
+         * @return bool
+         **/
+        bool render() override;
 
         /**
          * @return bool
          **/
-        bool shutdown();
+        bool shutdown() override;
 
      private:
         boost::shared_ptr<Player> player_;

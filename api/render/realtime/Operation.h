@@ -16,6 +16,10 @@ namespace v3d::render::realtime {
      public:
         /**
          **/
+        virtual ~Operation() = default;
+
+        /**
+         **/
         virtual bool run(boost::shared_ptr<Context> context) = 0;
     };
 };  // namespace v3d::render::realtime

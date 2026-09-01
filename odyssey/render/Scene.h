@@ -17,7 +17,11 @@ namespace odyssey::render {
      public:
         /**
          **/
-        boost::shared_ptr<v3d::render::realtime::Frame> collect();
+        using Scene2D::Scene2D;
+
+        /**
+         **/
+        boost::shared_ptr<v3d::render::realtime::Frame> collect() override;
 
         /**
          **/

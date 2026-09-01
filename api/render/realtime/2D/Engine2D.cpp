@@ -67,4 +67,10 @@ namespace v3d::render::realtime {
         return scene_;
     }
 
+    /**
+     **/
+    void Engine2D::scene(const boost::shared_ptr<Scene2D>& scene) {
+        scene_ = scene;
+    }
+
 };  // namespace v3d::render::realtime

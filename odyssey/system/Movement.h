@@ -13,8 +13,13 @@ namespace odyssey::system {
     class Movement final : public v3d::ecs::System {
      public:
         /**
+         * Inherit base constructor
+         **/
+        using System::System;
+
+        /**
          * @return bool
          **/
-        bool tick();
+        bool tick() override;
     };
 };  // namespace odyssey::system

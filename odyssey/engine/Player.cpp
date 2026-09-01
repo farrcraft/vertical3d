@@ -10,11 +10,11 @@ namespace odyssey::engine {
 
     /**
      **/
-    Player::Player(const entt::registry& registry) {
+    Player::Player(entt::registry* registry) {
         // register a player entity
-        id_ = registry.create();
+        id_ = registry->create();
         // create the components attached to player entity
-        registry.emplace<v3d::ecs::component::PositionFixed2D>(id_, 0, 0);
+        registry->emplace<v3d::ecs::component::PositionFixed2D>(id_, 0, 0);
     }
 
 };  // namespace odyssey::engine

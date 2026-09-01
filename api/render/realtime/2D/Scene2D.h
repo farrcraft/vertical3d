@@ -22,7 +22,13 @@ namespace v3d::render::realtime {
 
         /**
          **/
-        boost::shared_ptr<Frame> collect();
+        virtual ~Scene2D() = default;
+
+        /**
+         * Build the frame for this tick. An app overrides this to add its own operations;
+         * the base collects nothing.
+         **/
+        virtual boost::shared_ptr<Frame> collect();
 
      protected:
         boost::shared_ptr<v3d::render::realtime::Context2D> context_;

@@ -51,6 +51,12 @@ namespace v3d::render::realtime {
          **/
         boost::shared_ptr<Scene2D> scene();
 
+        /**
+         * Replace the scene with the app's own, which is how an app gets its renderables
+         * into the frame. Set it after initialize, which installs an empty default.
+         **/
+        void scene(const boost::shared_ptr<Scene2D>& scene);
+
      private:
         boost::shared_ptr<Context2D> context_;
         boost::shared_ptr<Texture2D> backBuffer_;

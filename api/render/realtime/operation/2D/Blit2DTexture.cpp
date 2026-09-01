@@ -16,7 +16,7 @@ Blit2DTexture::Blit2DTexture(boost::shared_ptr<Texture2D> source, boost::shared_
 
 /**
     **/
-bool Blit2DTexture::run(boost::shared_ptr<Context2D> context) {
+bool Blit2DTexture::run2D(boost::shared_ptr<Context2D> context) {
     // Now render to the texture
     SDL_SetRenderTarget(context->handle(), destination_->tex());
     SDL_RenderClear(context->handle());

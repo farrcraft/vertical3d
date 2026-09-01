@@ -2,9 +2,8 @@
 # project specific logic here.
 #
 
-# CMake already comes with a module for boost - https://cmake.org/cmake/help/latest/module/FindBoost.html
-find_package(Boost 1.76.0 REQUIRED COMPONENTS log)
-
+# Boost comes from the root CMakeLists - asking for it again here would narrow
+# Boost_LIBRARIES to just the components named, and odyssey needs json through v3dlib_asset.
 
 link_directories(
 	${Boost_LIBRARY_DIRS}
@@ -14,12 +13,14 @@ link_directories(
 
 # Add source to this project's executable.
 add_executable (Odyssey WIN32 "Odyssey.cpp"  "ui/Screen.h" "ui/Screen.cpp"
+ "engine/Engine.h" "engine/Engine.cpp"
  "engine/Sprite.h" "engine/Player.h" "engine/SpriteSheet.h" 
   "render/Renderable.h" "engine/Player.cpp" 
 "render/renderable/Player.h" "render/renderable/Player.cpp" 
 "render/Renderable.cpp" 
  "actor/Actor.h"
  "render/Scene.h" "render/Scene.cpp" 
+"system/Movement.h" "system/Movement.cpp"
 "tile/Tile.h" "tile/Size.h" "engine/Unit.h"
 )
 
@@ -38,11 +39,27 @@ target_link_libraries(Odyssey
 #		"libpng16d"
 #		"zlibd"
 		"v3dlib_asset"
+		"v3dlib_audio"
+		"v3dlib_config"
 		"v3dlib_ecs"
+		"v3dlib_engine"
+		"v3dlib_event"
+		"v3dlib_font"
+		"v3dlib_gl"
+		"v3dlib_input"
 		"v3dlib_log"
 		"v3dlib_image"
+		"v3dlib_type"
 		"v3dlib_ui"
 		"v3dlib_render"
+		Freetype::Freetype
+		spdlog::spdlog
+		# odyssey uses neither GL nor audio, but v3dlib_asset carries shader and wav
+		# loaders that do, and a static lib brings them along. The GL half goes when
+		# api/gl does - see docs/plans/Modernization.md phase 3.
+		OpenGL::GL
+		GLEW::GLEW
+		"soloud"
 )
 
 target_compile_options(Odyssey PRIVATE /EHsc)
