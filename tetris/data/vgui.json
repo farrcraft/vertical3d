@@ -1,0 +1,27 @@
+{
+  "themes": [
+    {
+      "name": "default"
+    }
+  ],
+  "containers": [
+    {
+      "name": "game-menu",
+      "visible": false,
+      "components": [
+        {
+          "name": "main-menu",
+          "type": "menu",
+          "items": [
+            {
+              "label": "Quit",
+              "command": "quit",
+              "context": "ui",
+              "type": "action"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
