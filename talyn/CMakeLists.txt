@@ -10,7 +10,6 @@ target_link_libraries("talyn" PRIVATE
 	${Boost_LIBRARIES}
 	${PNG_LIBRARIES}
 	JPEG::JPEG
-	fmt::fmt
 )
 
 # Workaround for a boost log ABI bug - https://github.com/microsoft/vcpkg/discussions/22762

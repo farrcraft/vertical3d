@@ -37,7 +37,6 @@ target_link_libraries(pong PRIVATE
 	GLEW::GLEW
 	Freetype::Freetype
 	"soloud"
-	spdlog::spdlog
 )
 
 v3d_add_shared_data(pong)

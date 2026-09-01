@@ -30,10 +30,6 @@ target_link_libraries(tetris
 	GLEW::GLEW
 	Freetype::Freetype
 	"soloud"
-	# fmt, not spdlog::spdlog: the api libraries use spdlog header-only against external
-	# fmt, so they need fmt's symbols, and linking the compiled spdlog target on top of
-	# them defines spdlog::logger::log twice. talyn links the same way.
-	fmt::fmt
 )
 
 target_compile_options(tetris PRIVATE /EHsc)

@@ -11,6 +11,9 @@ target_compile_definitions(v3dlib_gl PUBLIC BOOST_USE_WINAPI_VERSION=0x0A00)
 target_compile_definitions(v3dlib_gl PUBLIC _WIN32_WINNT=0x0A00)
 target_compile_definitions(v3dlib_gl PUBLIC WINVER=0x0A00)
 
+# PUBLIC: these sources compile Logger.h, and so do their consumers.
+target_link_libraries(v3dlib_gl PUBLIC v3dlib_log)
+
 target_compile_options(v3dlib_gl PRIVATE /EHsc)
 
 set(CMAKE_CXX_FLAGS "/utf-8")

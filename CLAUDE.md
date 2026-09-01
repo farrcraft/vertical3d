@@ -66,7 +66,7 @@ Not everything compiles. Failing objects: three in `voxel`. Everything else buil
 - **Clean:** every `api/` library, plus `pong`, `tetris`, `odyssey`, `talyn`, `v3dshell`, `imagetool`.
 - **`voxel`** — drifted behind API changes in the shared libraries (undeclared identifiers, calls to methods that no longer exist).
 
-**Apps link `fmt::fmt`, not `spdlog::spdlog`.** The `api/` libraries use spdlog header-only against external fmt, so they carry spdlog's symbols themselves and need only fmt's. Linking the compiled `spdlog::spdlog` target on top of them defines `spdlog::logger::log` twice — pong and odyssey get away with it, tetris and talyn do not.
+**Apps name neither spdlog nor fmt.** `v3dlib_log` links `spdlog::spdlog` PUBLIC, so the `SPDLOG_COMPILED_LIB` definition and the spdlog/fmt link dependencies propagate to every library and app that consumes it. Every `api/` library whose sources compile [Logger.h](api/log/Logger.h) links `v3dlib_log` PUBLIC for the same reason — a target that compiles that header without the definition builds spdlog header-only and emits symbols the compiled spdlog library also defines, which surfaces as a duplicate-symbol link error in whichever app happens to pull the wrong object first. If you add an api library that logs, link `v3dlib_log`.
 
 Check this list before assuming a build failure is yours.
 
