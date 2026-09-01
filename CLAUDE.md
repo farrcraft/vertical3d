@@ -125,5 +125,10 @@ Check this list before assuming a build failure is yours.
 - 4-space indent; access specifiers indented one space into the class body (` public:`, ` private:`).
 - `boost::shared_ptr` / `boost::make_shared` throughout, not the `std` equivalents.
 - Doc comments are `/** **/` blocks, frequently left empty above trivial members.
+- **Comments explain the code, not the change.** No history ("this used to", "the block that was here"), no
+  justification for why a commit exists, no roadmap for a later phase. Why a decision was made belongs in
+  [docs/adr/](docs/adr/) and what is coming belongs in [docs/plans/](docs/plans/) — a comment that repeats either
+  goes stale where nobody is looking. A non-obvious invariant, a trap, or a constraint the code satisfies is
+  exactly what a comment is for.
 - Logging is spdlog through the wrapper: `logger_->get()->info("... {}", value)`. The older `LOG_INFO`/`LOG_ERROR` macros survive only in commented-out or non-compiling code — don't add new uses.
 - [.gitattributes](.gitattributes) enforces LF (`* text=auto eol=lf`). Editors that save CRLF turn a small change into a whole-file diff; strip the CRs rather than committing them.

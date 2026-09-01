@@ -21,11 +21,9 @@ namespace v3d::render::realtime {
      * The pass is the unit of variation between 2D and 3D drawing rather than the engine
      * being, per ADR-0003: a sprite pass is one with no depth buffer and painter ordering,
      * a scene pass is one with depth and front to back ordering, and a viewport of an editor
-     * is one more pass over the same device. A frame holds a list of them even while there
-     * is only ever one, because retrofitting the list later is the expensive version.
+     * is one more pass over the same device.
      *
-     * Only the swapchain image is a valid target so far, so a pass has no target field yet -
-     * offscreen targets arrive with compositing.
+     * Only the swapchain image is a valid target so far, so a pass has no target field yet.
      **/
     class Pass final {
      public:

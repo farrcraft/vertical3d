@@ -103,9 +103,9 @@ namespace v3d::font {
         freetype_ = boost::make_shared<Freetype>(logger);
 
         // the face is loaded at its own size. Asking for a hundred times the size - the
-        // upstream trick for reading the metrics with more precision, undone by the /100
-        // below - overflows what FT_Set_Char_Size accepts at the 64x horizontal resolution
-        // this uses, so the request failed and every metric stayed at zero.
+        // upstream trick for reading the metrics with more precision - overflows what
+        // FT_Set_Char_Size accepts at the 64x horizontal resolution this uses, and every
+        // metric comes back zero.
         if (!freetype_->loadFace(filename_, size_)) {
             return;
         }

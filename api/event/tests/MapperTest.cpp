@@ -80,8 +80,8 @@ BOOST_AUTO_TEST_CASE(mapper_multiple_bindings_test) {
 
     v3d::event::Mapper mapper("global");
 
-    // one key can drive more than one command. A map keyed by source silently replaced the
-    // first binding with the second, which is why pong's second paddle never moved.
+    // one key can drive more than one command, so a mapper keyed by source alone would
+    // silently keep only the last binding
     mapper.map(source(keyboard, "arrow_up", v3d::event::State::Any), destination(game, "rightPaddleUp"));
     mapper.map(source(keyboard, "arrow_up", v3d::event::State::Pressed), destination(ui, "menuPrevious"));
 

@@ -217,8 +217,7 @@ namespace v3d::font {
     }
 
     const Font2D::Glyph* Font2D::glyph(unsigned char charcode) const {
-        // nothing has been built yet, so there is no glyph to fall back to - dereferencing
-        // begin() on the empty map was undefined
+        // no glyph to fall back to, and begin() on an empty map cannot be dereferenced
         if (glyphs_.empty()) {
             return nullptr;
         }

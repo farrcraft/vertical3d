@@ -134,10 +134,7 @@ void TetrisRenderer::drawTetrad(const Tetrad & tetrad, bool dbg) {
         return;
     }
 
-    // TODO(josh): debug text needs rewriting against operation::TextureFont - see
-    // docs/plans/Modernization.md phase 4. The block that was here drew through a
-    // FontCache and GLFontRenderer that no longer exist, and built its strings by
-    // adding ints to string literals.
+    // TODO(josh): debug text is unimplemented - see docs/plans/Modernization.md phase 4.
 
     Tetrad::ShapeInfo shape = tetrad.shape();
 
