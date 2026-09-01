@@ -129,8 +129,11 @@ never once run - "it builds" really was the only signal there was.
 draws its whole frame, ui included, through it.
 
 **Phase 4 took tetris off OpenGL.** It draws through the same canvas, with its seven block
-textures packed into one atlas so the whole well is a single batch. Voxel and odyssey are
-what is left calling GL against a context nothing creates.
+textures packed into one atlas so the whole well is a single batch. Voxel is what is left
+calling GL against a context nothing creates — and it is the only one, which is not what this
+plan said before the survey. Odyssey has no GL in it at all; it draws through `Context2D`,
+which is `SDL_Renderer`. What odyssey has is a stale `OpenGL::GL` and `GLEW::GLEW` pair in
+its `CMakeLists.txt`, which voxel also carries redundantly.
 
 **Build health.** Everything compiles and links, voxel included.
 
@@ -145,7 +148,31 @@ behind the api as voxel has; and it re-ran `find_package(Boost COMPONENTS log)` 
 narrowing `Boost_LIBRARIES` and losing boost::json. All of that is fixed. Whether odyssey
 *runs* is still a question nobody has asked.
 
-**Voxel is blocked by Vulkan.** It uses `Feature::Window3D`.
+**The voxel survey is done.** Written up in [docs/VoxelSurvey.md](../VoxelSurvey.md),
+2026-08-31. **Voxel does not run, and the render port is the fourth thing wrong with it, not
+the first.** It exits 1 before a window opens, because it never calls `v3d_add_app_data` and
+so has no `config.json` in the build tree; put one there and `Config::load` throws
+uncaught on `doc.at("configs")`, because voxel is now the only app left on the rejected
+inline `keys` format; give it a valid config and the entire Vulkan stack comes up clean —
+window, instance, device, swapchain — and then it segfaults in `Renderer`'s constructor,
+which streams `glGetString(GL_RENDERER)` into a log message with no GL context and no
+`glewInit` behind it. All three were observed, not inferred.
+
+The survey also found what voxel needs that the api does not have, which is what makes this
+a phase rather than a port: a depth buffer (`Pass::depth` is stored and ignored, and there is
+no depth image in `api/render` at all), a way for an app to build a second pipeline without
+forking `QuadRenderer`'s 150 inline lines, set 0 from
+[ADR-0008](../adr/0008-binding-by-update-frequency.md) (created with zero bindings, never
+bound), device-local buffers with a staging upload for static geometry, and the sorting that
+a few hundred chunk draws is the first frame to need. Items one to three are what phase 6's
+multiple viewports need too.
+
+Six defects in `voxel/` came with it, none of them reachable while the app could not start.
+The two that matter: `Scene` passes `Chunk` a world height counted in **chunks** where the
+scaling wants **blocks**, so terrain is at most 4 blocks tall in a 64 block world and 768 of
+1,024 chunks are empty by construction; and three of the six cross-chunk face occlusion
+checks move to the neighbouring chunk without moving to its facing block, so those seams cull
+the wrong faces.
 
 **The 2D engine is small and half-finished.** All of `api/render/realtime/2D/` is roughly
 610 lines of thin `SDL_Renderer` wrapping — `Context2D` is an `SDL_Renderer`, `Texture2D` is
@@ -164,9 +191,15 @@ waiting on now is the batched quad pipeline rather than the loop. Note that odys
 its move off `SDL_Renderer` is, and the SDL path can keep running until the Vulkan one reaches
 parity.
 
+Voxel turned out not to be blocked by the frame loop either, in the sense that mattered: it
+never reached one. It exits before opening a window, for reasons that have nothing to do with
+rendering — see the state note above. Getting it to start is unblocked by everything and
+should not wait for the api work queued behind it.
+
 Not blocked by anything: deleting the legacy trees, the SDL2 leftovers, the `Operation`
-signature fix and odyssey with it, tetris's config-format migration (done), the test
-framework (done), and docs. Roughly half the outstanding work is in this bucket, and all of
+signature fix and odyssey with it, tetris's config-format migration (done), voxel's
+config-format migration and its missing `v3d_add_app_data` (not done), the test framework
+(done), and docs. Roughly half the outstanding work is in this bucket, and all of
 it makes the Vulkan work easier to review by shrinking the noise around it.
 
 The one hard ordering constraint inside the Vulkan work: the apps need batched quads, and
@@ -453,13 +486,111 @@ exist, and the renderer has no coverage - that waits on
 
 ### Phase 5 — voxel and odyssey, and the engine consolidation
 
-Voxel needs a 3D scene path — shaders, meshes, camera — that pong and tetris never exercised,
-so it is the app that will drive real api growth. It needs its own survey before it can be
-scoped.
+Voxel needs a 3D scene path — depth, shaders, meshes, a shared camera — that pong and tetris
+never exercised, so it is the app that drives real api growth. Surveyed on 2026-08-31 in
+[docs/VoxelSurvey.md](../VoxelSurvey.md); read it before starting, particularly for the
+defect list, which is not repeated here.
 
-Odyssey is where the consolidation actually lands. It should come out of Phase 1 building on
-`SDL_Renderer`; whether it *runs* is a separate question nobody has asked yet. Once the
-Vulkan path has textured-quad batching from Phase 4, port it:
+The order below is the survey's: make it start, grow the api, port the renderer, then delete
+`api/gl`. The first group is half an hour of work and unblocks every observation after it —
+until voxel runs, every claim about it is a claim about a binary nobody has executed.
+
+**Make it start.** Done, 2026-08-31, and it goes exactly as far as the survey predicted it
+would: config, window, Vulkan instance, device and swapchain all come up, and the process
+then dies in `Renderer`'s constructor at the `glGetString` call. Nothing short of the render
+port gets past that — every GL call after it is against a context nothing creates.
+
+- ~~Call `v3d_add_app_data(voxel)`.~~ Done. `voxel/data/` now reaches the build tree, which
+  it never had.
+- ~~Migrate `voxel/data/config.json` to the indirect form, splitting the eight `keys` entries
+  into a `mappings.json`.~~ Done, against pong's `data/` as the reference, plus the
+  `window.json` the old format had no place for. Seven of the eight entries carried over.
+  The eighth was `mouse::motion` → `look`, and it is dropped rather than translated: motion
+  is not a bindable source event — `input::Mouse` dispatches a `MouseMotion` and returns
+  before naming one — and `Controller::handleMotion` is already connected to that signal
+  directly, so the binding never did anything. The slot went to `f3` → `debug`, which
+  `Controller` has always handled and nothing had ever bound.
+- ~~Make `Config::load` survive a config it does not understand.~~ Done. Every lookup is
+  guarded by a `contains()` now, so the old inline format comes back as a logged `false`
+  like every other rejection rather than as an exception out of engine startup.
+- ~~Drop the dead links from `voxel/CMakeLists.txt`: `v3dlib_audio` and `soloud` ... and
+  `OpenGL::GL` and `GLEW::GLEW`.~~ Partly done, and **the audio half of this item was
+  wrong**. The GL pair really is redundant and is gone from both voxel and odyssey. The
+  audio pair is not: `v3dlib_asset`'s Wav loader calls `v3d::audio::AudioClip::load`, so
+  dropping it fails the link outright. Fixed at the layer instead, the way `v3dlib_gl`
+  already was — `v3dlib_asset` links `v3dlib_audio` PUBLIC and `v3dlib_audio` links `soloud`
+  PUBLIC, so no app names either unless it plays a sound itself. Odyssey's explicit pair is
+  gone with its GL one; pong keeps `v3dlib_audio` because it does play sounds.
+- ~~Fix the six defects in the survey.~~ Done, all six. The two that change what the app
+  draws: `Scene` now passes `worldHeight * chunkSize` as the chunk ceiling, so terrain
+  scales into 64 blocks rather than 4; and `MeshBuilder`'s `RIGHT`, `FRONT` and `TOP`
+  cross-chunk checks move the block to the near edge of the neighbour instead of leaving it
+  at 15, with the three that were right no longer hardcoding that 15. The other four:
+  `MeshCache::createFace` builds a quad from four vertices indexed six times rather than six
+  vertices indexed in order, so the index buffer carries information and
+  `VertexBufferBuilder` writes four per-vertex info entries per face instead of six; the two
+  triangles `VertexBufferBuilder` read and never used are gone; `GameState` initialises its
+  three fields; and `Chunk` and `MeshCache` list their initialisers in declaration order.
+
+**Grow the api.** These are the phase's real content, and the first three are what phase 6's
+multiple viewports need as well.
+
+- **A depth buffer.** `Pass::depth(bool)` is stored, read back, and ignored. Add the depth
+  image to `Context3D` beside the swapchain, rebuild it on resize, attach it in
+  `Recorder::record` when the pass asks for depth, transition it with synchronization2
+  alongside the colour image, and put its format on the pipeline's
+  `VkPipelineRenderingCreateInfo`. Nothing 3D is correct until this exists.
+- **A pipeline builder** in `api/render/realtime/vulkan`, so the second pipeline is not a
+  copy of `QuadRenderer`'s ~150 inline lines of create-info. `Context3D` already exposes the
+  device, the cache and the resources an app would need; what is missing is anything to
+  build with.
+- **Set 0.** `QuadRenderer` creates `frameLayout_` with zero bindings and nothing writes or
+  binds against it, so [ADR-0008](../adr/0008-binding-by-update-frequency.md)'s per-frame
+  frequency is decided and unbuilt. A camera and projection shared by a few hundred chunk
+  draws is the case it was decided for.
+- **Device-local buffers with a staging upload.** `vulkan::Buffer` is host-visible and says
+  in its own header that static geometry is not what it is for. `TextureFactory` already has
+  the staging-buffer and one-shot-submit pattern privately; generalising it is most of the
+  work.
+- **Decide whether geometry is a `Resources` handle.** Pipelines, materials and textures are
+  registered so that a draw item's sort key means something; a mesh is none of the three and
+  `DrawItem` takes raw `VkBuffer`s. Either it joins them or voxel owns chunk-mesh lifetime
+  itself — worth settling deliberately rather than by default.
+- **Sort the frame.** Nothing does, per ADR-0004, and a pong frame never cared. One draw per
+  non-empty chunk is the first frame where the key earns its keep.
+
+**Port voxel.**
+
+- Rewrite the two shaders it loads for Vulkan GLSL — explicit `set` and `binding`, matrices
+  in set 0, the 16-material table in a UBO — and compile them with `v3d_add_shader`, which
+  already takes any target. The other ten GLSL files in `voxel/data/shaders/` are earlier
+  lighting experiments the app never loads and should go with the port.
+- Replace `ChunkBufferPool` and `VertexBufferBuilder` with device-local mesh buffers and one
+  `DrawItem` per chunk. Consider moving chunk vertices into chunk-local space with the origin
+  in a push constant: they are in world space today, which is why nothing can cull.
+- Rewrite `DebugOverlay` against `realtime::Canvas` and the font library, the way tetris's
+  debug text was. It is the last consumer of `operation::TextureFont`.
+- Wire `Controller` to `v3d::ui`. Its config already binds escape to `showGameMenu` in the
+  `ui` scope and there is no `ui::Engine` and no `vgui.json` to receive it.
+- Add `voxel/tests/` for the meshing and terrain logic — tier 3, and the chunk, mesh cache
+  and Morton code paths need neither a window nor a device. The two culling defects above are
+  what the first cases should be written against.
+
+Odyssey is where the consolidation actually lands. It builds, and it runs on `SDL_Renderer`
+rather than on GL, so it was never blocked by Vulkan.
+
+**It does not start either**, which the voxel survey's probe answered in passing on
+2026-08-31 — the question the earlier note left open. It fails identically to voxel at the
+first step: no `v3d_add_app_data`, so there is no `config.json` beside the executable and the
+process exits 1. Behind that sits a second failure it has not reached: `odyssey/data/config.json`
+says `"type": "bindings"` and `config::stringToType` only knows `"binding"`, so `Config::load`
+would log "Unknown config type" and return false. Both are a few minutes of work and both come
+before any port:
+
+- Call `v3d_add_app_data(odyssey)` and fix the config type name to `"binding"`. Then find out
+  what odyssey actually does, which nobody has seen.
+
+Once the Vulkan path has textured-quad batching from Phase 4, port it:
 
 - Replace its `Blit2DTexture` usage with the batched textured quad. That is close to the
   whole port — see the state notes above.
@@ -470,8 +601,13 @@ Vulkan path has textured-quad batching from Phase 4, port it:
   buffer without special-casing the engine.
 - **Delete `api/gl`**, carried over from phase 3. Voxel is the last thing that draws with it,
   along with `operation::TextureFont` and the `Shader`/`ShaderProgram` asset types that build
-  a `v3d::gl::Program`. When it goes, so do the `v3dlib_gl` link in
-  `api/asset/CMakeLists.txt` and the OpenGL and GLEW `find_package` calls in the root.
+  a `v3d::gl::Program`. Two consumers inside `api/` go with them, which the survey turned up:
+  `api/ui/style/property/Image` and `api/ui/component/Icon` each hold a
+  `boost::shared_ptr<v3d::gl::GLTexture>`, and both are built. They want the texture handle
+  the quad renderer already uses — which is the same gap [LuxaAudit.md](../LuxaAudit.md)
+  records as unported theme image loading, so the two are one piece of work. When `api/gl`
+  goes, so do the `v3dlib_gl` link in `api/asset/CMakeLists.txt` and the OpenGL and GLEW
+  `find_package` calls in the root.
 - **Revisit [ADR-0009](../adr/0009-colour-authored-in-display-space.md).** A lit scene has to
   blend in linear space, and the moment lighting lands, authoring colour in display space
   stops being a convenience and starts being wrong. Expect to supersede that record here.

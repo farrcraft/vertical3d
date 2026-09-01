@@ -20,26 +20,19 @@ boost::shared_ptr<v3d::gl::VertexBuffer> VertexBufferBuilder::build(const boost:
 
     glm::ivec4 * faces = mesh->faces();
     unsigned int faceCount = mesh->faceCount();
+    // attribute 1 is per-vertex, and a face is a four-vertex quad.
     std::vector<glm::vec2> info;
-    info.reserve(faceCount * 6);
+    info.reserve(faceCount * 4);
 
     glm::vec3 * meshVertices = mesh->vertices();
     glm::ivec3 * meshTris = mesh->tris();
-    glm::ivec3 leftTri;
-    glm::ivec3 rightTri;
     unsigned int vertexCount = mesh->vertexCount();
     for (unsigned int i = 0; i < faceCount; i++) {
         glm::ivec4 face = faces[i];
 
-        leftTri = meshTris[face.x];
-        rightTri = meshTris[face.y];
-        info.push_back(glm::vec2(face.z, face.w));
-        info.push_back(glm::vec2(face.z, face.w));
-        info.push_back(glm::vec2(face.z, face.w));
-
-        info.push_back(glm::vec2(face.z, face.w));
-        info.push_back(glm::vec2(face.z, face.w));
-        info.push_back(glm::vec2(face.z, face.w));
+        for (unsigned int corner = 0; corner < 4; corner++) {
+            info.push_back(glm::vec2(face.z, face.w));
+        }
     }
     buffer->attribute(0, 3, v3d::gl::VertexBuffer::ATTRIBUTE_TYPE_VERTEX, vertexCount);
     buffer->attribute(1, 2, v3d::gl::VertexBuffer::ATTRIBUTE_TYPE_GENERIC, info.size());

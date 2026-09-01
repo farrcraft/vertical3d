@@ -12,7 +12,7 @@ Much of this code traces back to the early 2000s and is being modernised increme
 
 - `vertical3d/` is the desktop 3D editing app the repo is named after, to be rewritten onto the new api. Not dead code.
 - `rigel/` is the earlier prototype of that app; its viewport, manipulator and modelling-command work has to be folded into the rewrite before it can go.
-- `luxa/` and `v3dlibs/` are migrations in progress, and both audits are now written up: [docs/LuxaAudit.md](docs/LuxaAudit.md) and [docs/V3dlibsAudit.md](docs/V3dlibsAudit.md). Each lists what has to land before its tree can be deleted, plus the `api/` regressions the audit turned up — the most consequential being that `Menu::activate()` dispatches nothing and `api/input/Mouse::handleEvent` swallows every mouse event. Read the relevant one before deleting anything from either tree.
+- `luxa/` and `v3dlibs/` are migrations in progress, and both audits are now written up: [docs/LuxaAudit.md](docs/LuxaAudit.md) and [docs/V3dlibsAudit.md](docs/V3dlibsAudit.md). A third survey, [docs/VoxelSurvey.md](docs/VoxelSurvey.md), scopes the voxel port. Each lists what has to land before its tree can be deleted, plus the `api/` regressions the audit turned up — the most consequential being that `Menu::activate()` dispatches nothing and `api/input/Mouse::handleEvent` swallows every mouse event. Read the relevant one before deleting anything from either tree.
 - `vault/quantumxml` is genuinely archived, superseded by the JSON config work.
 
 MSVC/Windows only in practice. The root CMakeLists passes `/std:c++latest` and `/permissive-` unconditionally, and targets set `/EHsc` and `/utf-8` individually.
@@ -54,7 +54,7 @@ ninja -C out/build/x64-Debug -k 0         # keep going past the broken targets (
   `cmake -S vendor/libnoise -B vendor/libnoise/build-ninja -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_POLICY_VERSION_MINIMUM=3.5
   -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebugDLL -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY=<repo>/vendor/libnoise/Debug`. The
   `CMAKE_POLICY_VERSION_MINIMUM` is needed because its `cmake_minimum_required(VERSION 3.0)` predates what current CMake accepts.
-- **Assets shared by more than one app live in the root [data/](data/)**, committed once. `v3d_add_shared_data(<target>)` — defined in the root CMakeLists — copies them next to that app's executable after it links, merging into whatever the app keeps in `<app>/data`. Currently only fonts, used by pong, tetris, voxel and the font test suite. An app's own `data/` is copied the same way by `v3d_add_app_data(<target>)`, but **only tetris calls it**: everywhere else the `data/` directories in `out/build/<config>/<app>/` are manual copies and are years stale, so editing `pong/data/*.json` does not affect a run from the build tree until you copy it across yourself.
+- **Assets shared by more than one app live in the root [data/](data/)**, committed once. `v3d_add_shared_data(<target>)` — defined in the root CMakeLists — copies them next to that app's executable after it links, merging into whatever the app keeps in `<app>/data`. Currently only fonts, used by pong, tetris, voxel and the font test suite. An app's own `data/` is copied the same way by `v3d_add_app_data(<target>)`, but **only tetris and voxel call it**: everywhere else the `data/` directories in `out/build/<config>/<app>/` are manual copies and are years stale, so editing `pong/data/*.json` does not affect a run from the build tree until you copy it across yourself. Odyssey has no `data/` in the build tree at all, which is why it too exits 1 before opening a window.
 - `VCPKG_ROOT` in CMakeSettings.json has a doubled path segment (`vertical3d/vertical3d/vendor/vcpkg`) and points nowhere. vcpkg works through the toolchain file regardless.
 
 ## Lint
@@ -91,10 +91,13 @@ Everything compiles and links as of 2026-08-31.
   compiled. It now links a `v3dlib_*` set of its own — the same one tetris had before its port,
   `v3dlib_gl` included, which voxel still needs and tetris no longer does. `src/game/Player.cxx`
   and `src/noise/noiseutils.cpp` were also missing from the target's source list.
-- **No app names OpenGL or GLEW any more.** `v3dlib_gl` links them itself, and `v3dlib_asset` links
+- **No app needs to name OpenGL or GLEW.** `v3dlib_gl` links them itself, and `v3dlib_asset` links
   `v3dlib_gl` because its `Shader` and `ShaderProgram` asset types build a `v3d::gl::Program`. So an app
   links GL exactly when it links something that draws with it — pong and tetris, since their ports,
-  link none.
+  link none. Voxel and odyssey both named `OpenGL::GL` and `GLEW::GLEW` redundantly until
+  2026-08-31; neither does now.
+
+**Apps name neither soloud nor `v3dlib_audio` unless they play a sound.** `v3dlib_asset`'s Wav loader calls `v3d::audio::AudioClip::load`, so any app linking asset needs audio whether or not it makes noise; `v3dlib_asset` links `v3dlib_audio` PUBLIC and `v3dlib_audio` links `soloud` PUBLIC, the same arrangement `v3dlib_gl` has for OpenGL and GLEW. Pong names `v3dlib_audio` because it really does play sounds.
 
 **Apps name neither spdlog nor fmt.** `v3dlib_log` links `spdlog::spdlog` PUBLIC, so the `SPDLOG_COMPILED_LIB` definition and the spdlog/fmt link dependencies propagate to every library and app that consumes it. Every `api/` library whose sources compile [Logger.h](api/log/Logger.h) links `v3dlib_log` PUBLIC for the same reason — a target that compiles that header without the definition builds spdlog header-only and emits symbols the compiled spdlog library also defines, which surfaces as a duplicate-symbol link error in whichever app happens to pull the wrong object first. If you add an api library that logs, link `v3dlib_log`.
 
@@ -104,7 +107,7 @@ Check this list before assuming a build failure is yours.
 
 **Two different classes named Engine.** `v3d::engine::Engine` (api/engine) is the *game* engine: main loop, window, asset manager, config, input. Each app subclasses it as `Controller`. `v3d::render::realtime::Engine` (api/render) is the *render* engine, subclassed as `Engine2D`/`Engine3D`. Apps hold both.
 
-**Feature flags decide what exists.** `Engine::initialize(int features)` takes a bitmask of `v3d::engine::Feature` (Window2D, Window3D, Config, KeyboardInput, MouseInput) and only constructs what was asked for. `Feature::Config` loads `data/config.json`, which must use the newer indirect form — `{"configs": [{"type": "...", "file": "..."}]}` referencing separate mappings/window/ui/sound files. Pong's `data/` is the reference; tetris was migrated to the same shape on 2026-08-31. No app still uses the older inline `keys`/`menu` format, which `Config::load` rejects.
+**Feature flags decide what exists.** `Engine::initialize(int features)` takes a bitmask of `v3d::engine::Feature` (Window2D, Window3D, Config, KeyboardInput, MouseInput) and only constructs what was asked for. `Feature::Config` loads `data/config.json`, which must use the newer indirect form — `{"configs": [{"type": "...", "file": "..."}]}` referencing separate mappings/window/ui/sound files. Pong's `data/` is the reference; tetris and voxel were both migrated to the same shape on 2026-08-31, and no app is on the older inline `keys` format any more. `Config::load` guards every lookup with a `contains()`, so a config it does not understand is a logged `false` rather than an exception out of engine startup. Odyssey is on the indirect form but writes `"type": "bindings"`, and `stringToType` only knows `"binding"`, so it still fails — and it is missing `v3d_add_app_data` on top of that, so it has no `config.json` beside its executable to fail on.
 
 **Render pipeline.** Window → Engine2D/Engine3D → Context → Frame → Pass → DrawItem. On the Vulkan path an app fills a `realtime::Canvas` during its tick, hands it to `Engine3D::quads()->submit(canvas, pass)`, and calls `renderFrame()`, which records and presents. `Frame::addOperation`/`draw()` is the pre-Vulkan path, kept only for the apps not yet ported. `Context2D` wraps an `SDL_Renderer`; `Context3D` owns the Vulkan device, swapchain and quad renderer. The old `v3d::gl::Canvas` is still there for voxel, and still carries no texture coordinates — do not extend it, port the app instead. See [docs/RenderingPipeline.md](docs/RenderingPipeline.md).
 
@@ -114,7 +117,7 @@ Check this list before assuming a build failure is yours.
 
 **The swapchain is a UNORM format, not sRGB** — colour is authored in display space and written out unchanged, per [ADR-0009](docs/adr/0009-colour-authored-in-display-space.md). An `_SRGB` target encodes on write, which brightens every colour in the tree; that was the phase 2 default and it was wrong. A lit 3D scene will have to revisit this.
 
-**Voxel and odyssey still call OpenGL** against a context nothing creates. `api/gl` therefore stays until they are ported. The old GL setup in `Window3D::create` is commented out rather than deleted, kept as reference for what the Vulkan path still has to replace.
+**Voxel still calls OpenGL** against a context nothing creates, and is the only app that does — odyssey draws through `Context2D`, which is `SDL_Renderer`. `api/gl` therefore stays until voxel is ported, along with `operation::TextureFont`, the `Shader`/`ShaderProgram` asset types, and `api/ui/style/property/Image` and `api/ui/component/Icon`, which both hold a `v3d::gl::GLTexture`. The old GL setup in `Window3D::create` is commented out rather than deleted, kept as reference for what the Vulkan path still has to replace. **Voxel does not run** — see [docs/VoxelSurvey.md](docs/VoxelSurvey.md). As of 2026-08-31 it loads its config, opens a window and brings up the Vulkan device and swapchain, then segfaults in `Renderer`'s constructor on `glGetString` against a context nothing created. Nothing short of the render port gets past that.
 
 **The Khronos validation layer is enabled when it is installed**, and `vulkan::Instance` routes its warnings and errors through the logger. Without that messenger a loaded layer is silent, which looks exactly like a clean run — so treat any earlier claim of "validation clean" that predates it as unverified.
 

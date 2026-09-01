@@ -24,6 +24,14 @@ namespace v3d::config {
             return false;
         }
         auto const doc = config->document();
+        // every lookup below is guarded by a contains() rather than reaching straight for
+        // at(): boost::json::at throws, and a config this function does not understand has to
+        // come back as a false return like every other rejection here, not as an exception
+        // out of engine startup.
+        if (!doc.contains("configs")) {
+            logger_->get()->error("Missing configs in config");
+            return false;
+        }
         auto const configs = doc.at("configs");
         if (!configs.is_array()) {
             logger_->get()->error("Missing configs in config");
@@ -38,6 +46,10 @@ namespace v3d::config {
                 return false;
             }
             auto const entry = it->as_object();
+            if (!entry.contains("type") || !entry.contains("file")) {
+                logger_->get()->error("Config entry needs both a type and a file");
+                return false;
+            }
             std::string typeName = boost::json::value_to<std::string>(entry.at("type"));
             std::string fileName = boost::json::value_to<std::string>(entry.at("file"));
             Type type = stringToType(typeName);
@@ -47,7 +59,7 @@ namespace v3d::config {
             }
             boost::shared_ptr<v3d::asset::Json> asset = boost::dynamic_pointer_cast<v3d::asset::Json>(assetManager->loadTypeFromExt(fileName));
             if (!asset) {
-                logger_->get()->error("Config file not found: ", fileName);
+                logger_->get()->error("Config file not found: {}", fileName);
                 return false;
             }
             configs_[type] = asset;

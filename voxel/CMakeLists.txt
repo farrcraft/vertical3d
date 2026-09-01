@@ -25,7 +25,6 @@ add_executable(voxel
 
 target_link_libraries(voxel PRIVATE
 	v3dlib_asset
-	v3dlib_audio
 	v3dlib_config
 	v3dlib_ecs
 	v3dlib_engine
@@ -42,13 +41,11 @@ target_link_libraries(voxel PRIVATE
 	${Vulkan_LIBRARIES}
 	${PNG_LIBRARIES}
 	JPEG::JPEG
-	OpenGL::GL
-	GLEW::GLEW
 	Freetype::Freetype
-	"soloud"
 	"libnoise"
 )
 
+v3d_add_app_data(voxel)
 v3d_add_shared_data(voxel)
 
 target_compile_options(voxel PRIVATE /EHsc)

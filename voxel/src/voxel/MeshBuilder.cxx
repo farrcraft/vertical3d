@@ -74,38 +74,41 @@ void MeshBuilder::generateChunk(const boost::shared_ptr<ChunkBufferPool> & pool,
                         if (pos.x == 0 && chunkPosition.x > 0) {
                             neighborChunkPosition.x -= 1;
                             ignoreNeighbor = false;
-                            neighborBlockPosition.x = 15;
+                            neighborBlockPosition.x = static_cast<int>(chunkSize) - 1;
                         }
                         break;
                     case Voxel::BLOCK_FACE_RIGHT:
                         if (pos.x == chunkSize - 1) {
                             neighborChunkPosition.x += 1;
+                            neighborBlockPosition.x = 0;
                             ignoreNeighbor = false;
                         }
                         break;
                     case Voxel::BLOCK_FACE_BACK:
                         if (pos.z == 0 && chunkPosition.z > 0) {
                             neighborChunkPosition.z -= 1;
-                            neighborBlockPosition.z = 15;
+                            neighborBlockPosition.z = static_cast<int>(chunkSize) - 1;
                             ignoreNeighbor = false;
                         }
                         break;
                     case Voxel::BLOCK_FACE_FRONT:
                         if (pos.z == chunkSize - 1) {
                             neighborChunkPosition.z += 1;
+                            neighborBlockPosition.z = 0;
                             ignoreNeighbor = false;
                         }
                         break;
                     case Voxel::BLOCK_FACE_TOP:
                         if (pos.y == chunkSize - 1) {
                             neighborChunkPosition.y += 1;
+                            neighborBlockPosition.y = 0;
                             ignoreNeighbor = false;
                         }
                         break;
                     case Voxel::BLOCK_FACE_BOTTOM:
                         if (pos.y == 0 && chunkPosition.y > 0) {
                             neighborChunkPosition.y -= 1;
-                            neighborBlockPosition.y = 15;
+                            neighborBlockPosition.y = static_cast<int>(chunkSize) - 1;
                             ignoreNeighbor = false;
                         }
                         break;

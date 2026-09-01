@@ -39,7 +39,6 @@ target_link_libraries(Odyssey
 #		"libpng16d"
 #		"zlibd"
 		"v3dlib_asset"
-		"v3dlib_audio"
 		"v3dlib_config"
 		"v3dlib_ecs"
 		"v3dlib_engine"
@@ -53,12 +52,6 @@ target_link_libraries(Odyssey
 		"v3dlib_ui"
 		"v3dlib_render"
 		Freetype::Freetype
-		# odyssey uses neither GL nor audio, but v3dlib_asset carries shader and wav
-		# loaders that do, and a static lib brings them along. The GL half goes when
-		# api/gl does - see docs/plans/Modernization.md phase 3.
-		OpenGL::GL
-		GLEW::GLEW
-		"soloud"
 )
 
 target_compile_options(Odyssey PRIVATE /EHsc)

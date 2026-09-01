@@ -5,7 +5,10 @@
 
 #include "GameState.h"
 
-GameState::GameState() {
+GameState::GameState() :
+    state_(STATE_LOADING),
+    coop_(false),
+    paused_(false) {
 }
 
 void GameState::pause(bool state) {

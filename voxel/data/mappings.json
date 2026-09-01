@@ -1,0 +1,86 @@
+{
+  "mappings": [
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "w"
+      },
+      "destination": {
+        "context": "voxel",
+        "name": "moveForward"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "s"
+      },
+      "destination": {
+        "context": "voxel",
+        "name": "moveBackward"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "a"
+      },
+      "destination": {
+        "context": "voxel",
+        "name": "moveLeft"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "d"
+      },
+      "destination": {
+        "context": "voxel",
+        "name": "moveRight"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "space"
+      },
+      "destination": {
+        "context": "voxel",
+        "name": "moveUp"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "left_control"
+      },
+      "destination": {
+        "context": "voxel",
+        "name": "moveDown"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "f3",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "voxel",
+        "name": "debug"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "escape",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "ui",
+        "name": "showGameMenu"
+      }
+    }
+  ]
+}

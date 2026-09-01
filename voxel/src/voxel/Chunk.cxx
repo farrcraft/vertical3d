@@ -8,10 +8,10 @@
 #include "../engine/MortonCode.h"
 
 Chunk::Chunk(TerrainMap * terrain, glm::ivec3 chunkPosition, unsigned int ceiling) :
+    position_(chunkPosition),
     dirty_(false),
-    size_(16),
     empty_(false),
-    position_(chunkPosition) {
+    size_(16) {
     float maxTerrainHeight = 255.0f;
     float voxelHeight = static_cast<float>(ceiling);
     MortonCode encoder;

@@ -40,7 +40,9 @@ Scene::Scene() {
         for (unsigned int y = 0; y < worldHeight; y++) {
             for (unsigned int z = 0; z < worldDepth; z++) {
                 glm::ivec3 pos(x, y, z);
-                chunk.reset(new Chunk(&terrain, pos, worldHeight));
+                // Chunk scales the heightmap against a ceiling measured in blocks, so it
+                // wants the world's block height, not its chunk count.
+                chunk.reset(new Chunk(&terrain, pos, static_cast<unsigned int>(worldHeight * chunkSize)));
                 hash = encoder.encode(pos);
                 chunks_[hash] = chunk;
             }
