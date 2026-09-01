@@ -13,12 +13,13 @@ which was the only signal anyone had. Run it and it exits 1 before a window open
 and it segfaults inside `Renderer`'s constructor. The render port is the large piece of work,
 but it is the fourth thing that has to be fixed, not the first.
 
-> **Since the survey**, the first two of those and all six defects below are fixed — see the
-> "Make it start" group in
+> **Since the survey**, all of it is done: the four failures, the six defects, the seven api
+> gaps and the render port — see the phase 5 groups in
 > [plans/Modernization.md](plans/Modernization.md#phase-5--voxel-and-odyssey-and-the-engine-consolidation).
-> Voxel now loads its config, opens a window and brings up the Vulkan device and swapchain,
-> and dies at the `glGetString` call. Everything below is the state the survey found; the
-> "What the api does not have yet" list is still entirely ahead.
+> As of 2026-09-01 voxel runs and draws terrain through Vulkan, with a depth tested and
+> sorted scene pass of its own pipeline and a painter ordered pass of batched quads over it
+> for the debug overlay and the game menu. Nothing in `voxel/` calls OpenGL any more.
+> Everything below is the state the survey found, kept as the record of what was wrong.
 
 ## Method
 

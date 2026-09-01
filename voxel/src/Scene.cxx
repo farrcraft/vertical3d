@@ -19,7 +19,9 @@
 #include <glm/gtx/string_cast.hpp>
 
 Scene::Scene() {
-    player_.reset(new Player(glm::vec3(0.0f, 25.0f, 100.0f)));
+    // above the terrain rather than inside it. The world is 64 blocks tall now that the
+    // chunk ceiling is measured in blocks, and the old spawn at 25 is well under the hills.
+    player_.reset(new Player(glm::vec3(128.0f, 80.0f, 240.0f)));
 
     // generate the terrain heightmap
     TerrainMap terrain;

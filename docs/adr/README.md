@@ -16,6 +16,6 @@ old record's status and leave the file in place.
 | [0005](0005-one-batched-quad-primitive.md) | 2D Drawing — One Batched Quad Primitive With An Optional Texture | accepted | 2026-08-30 |
 | [0006](0006-keep-both-pong-and-tetris.md) | App Scope — Both Pong And Tetris Are Kept | accepted | 2026-08-30 |
 | [0007](0007-ci-rendering-tests.md) | CI Rendering Tests — Software Vulkan On A Windows Runner | accepted | 2026-08-30 |
-| [0008](0008-binding-by-update-frequency.md) | Shader Bindings — Descriptor Sets By Update Frequency, Per-Object Data In Push Constants | proposed | 2026-08-31 |
+| [0008](0008-binding-by-update-frequency.md) | Shader Bindings — Descriptor Sets By Update Frequency, Per-Object Data In Push Constants | accepted | 2026-08-31 |
 | [0009](0009-colour-authored-in-display-space.md) | Colour — Authored In Display Space, Presented Through A UNORM Swapchain | accepted | 2026-08-31 |
 | [0010](0010-meshes-are-owned-by-the-app.md) | Geometry Ownership — Meshes Belong To The App, Not To Resources | accepted | 2026-08-31 |

@@ -568,22 +568,64 @@ tetris, and waiting for the port below to use them for what they were built for.
   would put a panel over the text drawn on it. `Pass::ordered()` is what the recorder walks,
   which puts the decision where it can be unit tested without a device.
 
-**Port voxel.**
+**Port voxel.** Done, 2026-09-01, and voxel draws terrain. It is the first app in the tree
+with a depth tested, sorted scene of its own pipeline, and the first thing to read set 0 —
+which is what [ADR-0008](../adr/0008-binding-by-update-frequency.md) was waiting for.
 
-- Rewrite the two shaders it loads for Vulkan GLSL — explicit `set` and `binding`, matrices
-  in set 0, the 16-material table in a UBO — and compile them with `v3d_add_shader`, which
-  already takes any target. The other ten GLSL files in `voxel/data/shaders/` are earlier
-  lighting experiments the app never loads and should go with the port.
-- Replace `ChunkBufferPool` and `VertexBufferBuilder` with device-local mesh buffers and one
-  `DrawItem` per chunk. Consider moving chunk vertices into chunk-local space with the origin
-  in a push constant: they are in world space today, which is why nothing can cull.
-- Rewrite `DebugOverlay` against `realtime::Canvas` and the font library, the way tetris's
-  debug text was. It is the last consumer of `operation::TextureFont`.
-- Wire `Controller` to `v3d::ui`. Its config already binds escape to `showGameMenu` in the
-  `ui` scope and there is no `ui::Engine` and no `vgui.json` to receive it.
-- Add `voxel/tests/` for the meshing and terrain logic — tier 3, and the chunk, mesh cache
-  and Morton code paths need neither a window nor a device. The two culling defects above are
-  what the first cases should be written against.
+- ~~Rewrite the two shaders it loads for Vulkan GLSL — explicit `set` and `binding`, matrices
+  in set 0, the 16-material table in a UBO — and compile them with `v3d_add_shader`.~~ Done,
+  as `voxel/shaders/voxel.{vert,frag}`, and the twelve GLSL files in `voxel/data/shaders/`
+  are gone with them. Shading is per vertex rather than per fragment: a block face is flat,
+  so its normal and its material are constant across the quad and the four corners carry
+  everything the interpolator needs. `engine/SceneUniforms.h` is the C++ mirror of the set 1
+  block, written as vec4s throughout because that is what std140 rounds a vec3 up to anyway.
+- ~~Replace `ChunkBufferPool` and `VertexBufferBuilder` with device-local mesh buffers and one
+  `DrawItem` per chunk.~~ Done, as `voxel/ChunkMeshPool` over `engine/ChunkMeshBuilder`, and
+  **the vertices did move into chunk-local space** — the chunk's corner goes in a push
+  constant, so a chunk can be culled or moved without rebuilding its mesh. The mesh cache
+  subtracts the origin as it extracts, which is one line and is unit tested.
+- ~~Rewrite `DebugOverlay` against `realtime::Canvas` and the font library.~~ Done, and it
+  shrank to what it always was: a rolling frame time and the player position, as lines of
+  text. Drawing them is the renderer's, which already owns a font for the ui.
+  `operation::TextureFont` has no consumers left.
+- ~~Wire `Controller` to `v3d::ui`.~~ Done. `data/vgui.json` is a game menu of Resume and
+  Quit, escape shows and hides it, and the menu pauses the world and gives the pointer back —
+  mouselook warps the cursor to the centre every frame, which a menu cannot be used through.
+  `GameState::pause` was dead until now. Both items work: `Menu::activate()` dispatches an
+  action item's bound event, which [LuxaAudit.md](../LuxaAudit.md) records as fixed on
+  2026-08-31 — CLAUDE.md still listed it as an open regression and no longer does.
+- ~~Add `voxel/tests/`.~~ Done — 17 cases over the chunk, the mesh cache, the Morton code and
+  the seam culling. The seam arithmetic moved out of `MeshBuilder` into `voxel/FaceCulling`
+  so that it could be tested without a device, which is what carries the regression test for
+  the three cross-chunk checks that used to look at the wrong block. `TerrainMap::height` is
+  virtual now, so a chunk can be built against a flat map rather than against perlin noise.
+
+Four things the port turned up that the survey did not:
+
+- **A quit command must not call `shutdown()`.** Voxel is the first app whose menu anyone has
+  driven to a Quit item, and doing so threw. `Engine::eventLoop` ticks and renders after an
+  event handler returns, so a handler that destroys the window and calls `SDL_Quit` leaves
+  the frame after it acquiring a swapchain image from a lost surface — `Presenter::acquire`
+  throws on it, or the process spins on with no window, depending on what the driver hands
+  back. `v3d::engine::Engine::quit()` is the fix: a flag the loop breaks on, with `main`
+  shutting down once outside it. **Pong and tetris have the same defect** and still call
+  `shutdown()` from their handlers.
+
+- **The camera's projection was gl's.** `Camera::perspective` built a matrix mapping z to
+  [-1, 1] with y up. Vulkan clips against [0, 1] with y down, so it now negates the y scale
+  and maps near to zero — and, because flipping y reverses the winding a front face presents,
+  the terrain pipeline calls its front faces clockwise. Nothing else in the tree had noticed:
+  pong and tetris are orthographic and build their projection by hand in `Canvas`.
+- **The spawn point is inside the hills.** The player has always started at `(0, 25, 100)`,
+  which was above a world whose terrain reached four blocks. With the chunk ceiling fixed the
+  terrain reaches sixty-four, and the old spawn is buried in it — the app draws a screen of
+  sky and the odd sliver of a face seen from inside. Moved to `(128, 80, 240)`, above the
+  terrain and looking across it. There is no collision or gravity — `checkWorldCollision`
+  returns false and always has — so standing on the ground is not on offer yet.
+- **Nothing culls, and the frame costs about 58 ms in a debug build.** One draw item per
+  meshed chunk, all of them submitted every frame whether or not they are in front of the
+  camera. The chunk-local vertices are what a frustum cull needs and it is now a small piece
+  of work, but it is not this phase's.
 
 Odyssey is where the consolidation actually lands. It builds, and it runs on `SDL_Renderer`
 rather than on GL, so it was never blocked by Vulkan.
@@ -608,9 +650,10 @@ Once the Vulkan path has textured-quad batching from Phase 4, port it:
   one `Window`, and drop the `Window2D`/`Window3D` feature flags for a single windowing flag.
 - Add the sprite/orthographic pass properly, so a 2D game gets painter ordering and no depth
   buffer without special-casing the engine.
-- **Delete `api/gl`**, carried over from phase 3. Voxel is the last thing that draws with it,
-  along with `operation::TextureFont` and the `Shader`/`ShaderProgram` asset types that build
-  a `v3d::gl::Program`. Two consumers inside `api/` go with them, which the survey turned up:
+- **Delete `api/gl`**, carried over from phase 3. **No app draws with it any more** — voxel's
+  port on 2026-09-01 took the last one, and `operation::TextureFont` and `v3d::gl::Canvas`
+  have no consumers left at all. What still holds it is the `Shader`/`ShaderProgram` asset
+  types that build a `v3d::gl::Program`. Two consumers inside `api/` go with them, which the survey turned up:
   `api/ui/style/property/Image` and `api/ui/component/Icon` each hold a
   `boost::shared_ptr<v3d::gl::GLTexture>`, and both are built. They want the texture handle
   the quad renderer already uses — which is the same gap [LuxaAudit.md](../LuxaAudit.md)

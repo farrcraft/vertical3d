@@ -81,6 +81,39 @@
         "context": "ui",
         "name": "showGameMenu"
       }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "arrow_up",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "ui",
+        "name": "menuPrevious"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "arrow_down",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "ui",
+        "name": "menuNext"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "return",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "ui",
+        "name": "selectMenu"
+      }
     }
   ]
 }

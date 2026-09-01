@@ -24,7 +24,20 @@ namespace v3d::engine {
     Engine::Engine(const std::string& appPath) :
         appPath_(appPath),
         features_(0),
-        needShutdown_(false) {
+        needShutdown_(false),
+        quitting_(false) {
+    }
+
+    /**
+     **/
+    void Engine::quit() noexcept {
+        quitting_ = true;
+    }
+
+    /**
+     **/
+    bool Engine::quitting() const noexcept {
+        return quitting_;
     }
 
     bool Engine::registerEventMappings() {
@@ -204,25 +217,24 @@ namespace v3d::engine {
     /**
      **/
     bool Engine::eventLoop() {
-        bool quit = false;
         SDL_Event event;
         uint64_t lastTick = SDL_GetTicks();
         // Enter main game loop
-        while (!quit) {
+        while (!quitting_) {
             // Handle events on queue
-            while (SDL_PollEvent(&event) != 0) {
+            while (SDL_PollEvent(&event) != 0 && !quitting_) {
                 // check for input device events first
                 if (inputEngine_ && inputEngine_->filterEvent(event)) {
                     continue;
                 }
                 switch (event.type) {
                 case SDL_EVENT_QUIT:
-                    quit = true;
+                    quit();
                     break;
                 case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
                     // SDL turns the last window closing into a quit only once that window is
                     // destroyed, and nothing here destroys it, so the request is what to act on
-                    quit = true;
+                    quit();
                     break;
                 case SDL_EVENT_WINDOW_RESIZED:
                 case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
@@ -236,6 +248,11 @@ namespace v3d::engine {
                 case SDL_EVENT_WINDOW_FOCUS_GAINED:
                     break;
                 }
+            }
+            // an event handler may have asked to stop, and the window it drew into can have
+            // gone with it - so nothing after this point runs on the frame that quit
+            if (quitting_) {
+                break;
             }
             // tick the game, telling it how long the last frame took
             uint64_t now = SDL_GetTicks();

@@ -227,7 +227,9 @@ overwritten.
 Every pipeline in the engine declares that same layout at set 0, which is what makes them
 interchangeable within a pass: a set bound for one stays bound across a pipeline change to
 another built against the same layout. The quad pipeline declares it and reads nothing from
-it - a canvas carries its own orthographic projection in a push constant.
+it - a canvas carries its own orthographic projection in a push constant. Voxel's terrain
+pipeline is the first that does read it, and reads nothing else per draw: one camera at set
+0, one block palette at set 1, and the chunk's origin in a 16 byte push constant.
 
 ## Resource handles
 
@@ -248,19 +250,20 @@ for a handle to sort on. So `vulkan::Mesh` is owned by whatever built it - a chu
 
 ## What is not built yet
 
-- **Any 3D pipeline.** The two pipelines that exist both draw 2D quads. The pieces a scene
-  pipeline is assembled from - the builder, set 0, depth, device local meshes - are all here;
-  no shader has been written against them, and no app builds one yet.
 - **Merging.** Sorting groups the draws that could be merged into one, and nothing merges
   them. Adjacent items sharing a pipeline and a material still cost a draw call each.
 - **Offscreen targets**, and with them compositing and logical presentation.
 - **A second depth buffer.** There is one per context, so two passes wanting different depth
   at the same time - which four editor viewports may - would share it.
-- **The GL path is not gone.** `api/gl` still exists and voxel still draws with it against a
-  context nothing creates. The six operations nothing used any more - `operation::Canvas`,
-  `GLFont`, `GLTexture`, `GLTexturedQuad`, `Overlay` and `BitmapFont` - were deleted in phase
-  3; `operation::TextureFont` survives because voxel still constructs one. `api/gl` goes when
-  voxel is ported, in phase 5.
+- **Culling.** Nothing is culled against the frustum. Voxel submits an item per meshed chunk
+  whether or not the chunk is in front of the camera, which is what its chunk-local vertices
+  and per-chunk origin were put in place to make possible.
+- **The GL path is not gone**, but nothing outside `api/` draws with it. Voxel's port on
+  2026-09-01 took the last app consumer, and `operation::TextureFont` and `v3d::gl::Canvas`
+  went with it. What still holds `api/gl` is inside the api: the `Shader`/`ShaderProgram`
+  asset types, and `api/ui/style/property/Image` and `api/ui/component/Icon`, which each hold
+  a `v3d::gl::GLTexture`. Porting those two onto the texture handle the quad renderer uses is
+  what deleting `api/gl` now waits on.
 
 ## Still open: how this meets the ECS
 

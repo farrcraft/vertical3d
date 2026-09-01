@@ -71,6 +71,21 @@ namespace v3d::engine {
         virtual bool shutdown();
 
         /**
+         * Ask the game loop to stop after the frame it is on.
+         *
+         * This is what a quit command calls, and shutdown() is not: the loop ticks and
+         * renders after an event handler returns, so tearing the window and SDL down from
+         * inside a handler leaves the frame after it drawing against a destroyed window.
+         * eventLoop() returns, and the caller shuts down once, outside the loop.
+         **/
+        void quit() noexcept;
+
+        /**
+         * @return whether something has asked the loop to stop
+         **/
+        bool quitting() const noexcept;
+
+        /**
          * @return Window
          **/
         boost::shared_ptr<v3d::render::realtime::Window> window() const;
@@ -90,6 +105,7 @@ namespace v3d::engine {
          std::string appPath_;
          int features_;
          bool needShutdown_;
+         bool quitting_;
          boost::shared_ptr<v3d::input::Engine> inputEngine_;
     };
 

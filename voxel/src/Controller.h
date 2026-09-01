@@ -11,6 +11,7 @@
 #include "../../api/engine/Engine.h"
 #include "../../api/event/Event.h"
 #include "../../api/event/MouseMotion.h"
+#include "../../api/ui/Engine.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -65,7 +66,21 @@ class Controller final : public v3d::engine::Engine {
         void handleMotion(const v3d::event::MouseMotion& event);
 
  private:
+        /**
+         * Show the game menu, or take one step back out of it.
+         *
+         * The cursor goes with it: mouselook warps the pointer to the centre every frame,
+         * which a menu cannot be clicked or seen through.
+         **/
+        void toggleMenu();
+
+        /**
+         * @return whether the menu is up, which is what suspends mouselook and movement
+         **/
+        bool menuVisible() const;
+
         boost::shared_ptr<Scene> scene_;
         boost::shared_ptr<Renderer> renderer_;
+        boost::shared_ptr<v3d::ui::Engine> vgui_;
         bool debug_;
 };

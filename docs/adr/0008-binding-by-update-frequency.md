@@ -1,7 +1,7 @@
 # ADR-0008: Shader Bindings — Descriptor Sets By Update Frequency, Per-Object Data In Push Constants
 
 **Date**: 2026-08-31
-**Status**: proposed
+**Status**: accepted
 **Deciders**: Joshua Farr
 
 ## Context
@@ -77,5 +77,9 @@ key is ordered to match: layer, pipeline, material, depth.
 - Guessing a value's frequency wrong is cheap to fix while there is one pipeline and
   expensive once there are several. Phase 3 builds the first one, and it is the point at
   which to check the choice against something real rather than against this document.
+  **Checked on 2026-09-01**: voxel's terrain pipeline is the second, and the first shader in
+  the tree to read set 0. A frame is one camera at set 0, one block palette at set 1 shared
+  by every chunk in the world, and a chunk's origin in a 16 byte push constant — which is
+  the split this decided, arrived at without wanting to move anything.
 - Devices vary in maximum bound descriptor sets, but the floor is four and this uses two, so
   nothing here is at risk from a weak device.
