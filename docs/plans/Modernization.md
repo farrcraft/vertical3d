@@ -148,8 +148,8 @@ its move off `SDL_Renderer` is, and the SDL path can keep running until the Vulk
 parity.
 
 Not blocked by anything: deleting the legacy trees, the SDL2 leftovers, the `Operation`
-signature fix and odyssey with it, tetris's config-format migration, the test framework, and
-docs. Roughly half the outstanding work is in this bucket, and all of it makes the Vulkan
+signature fix and odyssey with it, tetris's config-format migration (done), the test
+framework, and docs. Roughly half the outstanding work is in this bucket, and all of it makes the Vulkan
 work easier to review by shrinking the noise around it.
 
 The one hard ordering constraint inside the Vulkan work: the apps need batched quads, and
@@ -212,10 +212,19 @@ None of this is blocked. It shrinks the surface area everything else has to work
   list went from one library to thirteen plus their externals — and had to take `fmt::fmt`
   rather than `spdlog::spdlog`, because the api libraries compile spdlog header-only and the
   compiled target duplicates `spdlog::logger::log` on top of them. Tetris does not run: its
-  config is still the old inline form (next item), and it draws through fixed-function GL
-  against a context nothing creates.
-- Migrate `tetris/data/config.json` from the old inline `keys`/`menu` form to the
-  `{"configs": [...]}` form that `Config::load` requires. Pong's `data/` is the reference.
+  config format is fixed (next item), but it draws through fixed-function GL against a
+  context nothing creates.
+- ~~Migrate `tetris/data/config.json` from the old inline `keys`/`menu` form to the
+  `{"configs": [...]}` form that `Config::load` requires.~~ Done 2026-08-31, against pong's
+  `data/` as the reference. The eleven `keys` entries are now `mappings.json` and the `Quit`
+  menu is now `vgui.json`; every old entry was `"catch": "on"`, so each mapping source
+  carries `"state": "pressed"`. No `window` or `sound` config is listed, because the old file
+  had neither and `Window::create` falls back to its defaults without one. Two gaps this
+  leaves: `Controller` never constructs a `v3d::ui::Engine`, so `vgui.json` is loaded as an
+  asset and nothing handles the `ui::` commands or `toggleMenu`/`toggleFS` — that is the
+  same wiring `PongEngine` already does, and it is now a Phase 4 item; and
+  `tetris/CMakeLists.txt` does not copy `data/` to the build tree, so a run out of
+  `out/build/` still reads the years-stale manual copy.
 
 Done when: the whole tree builds, `vault/` is gone, and the luxa and v3dlibs audits have
 produced a written list of what still has to move. Both audits are closed.
@@ -271,6 +280,9 @@ The quad primitive already exists from Phase 3, so what tetris adds is the sprit
   `glPushMatrix`, `glOrtho`. This is the oldest rendering code in the repo and none of it
   survives; rewrite against the Canvas equivalent rather than porting call by call.
 - Rewrite the debug text against `TextureFont`.
+- Wire `Controller` to `v3d::ui` the way `PongEngine` is: construct the engine, load the
+  `ui` config, and handle `toggleMenu` plus the `ui::` commands. `tetris/data/vgui.json`
+  exists and is loaded as an asset already, but nothing consumes it.
 - Load piece textures through `asset::Manager` instead of `image::Factory` with hardcoded
   relative paths.
 
