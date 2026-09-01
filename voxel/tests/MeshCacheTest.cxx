@@ -27,8 +27,8 @@ namespace {
 };  // namespace
 
 BOOST_AUTO_TEST_CASE(a_face_is_four_vertices_indexed_six_times_test) {
-    // the defect this covers: a quad used to be six unique vertices with the indices running
-    // 0, 1, 2, 3... - a quarter of the mesh carrying no information
+    // a face is four corners drawn as two triangles, so the six indices it emits name four
+    // vertices between them - indices running 0, 1, 2, 3... would carry no information
     boost::shared_ptr<MeshCache> mesh = cache();
     mesh->extract(block(glm::vec3(0.0f, 0.0f, 0.0f)), Voxel::BLOCK_FACE_FRONT, glm::vec3(0.0f));
 

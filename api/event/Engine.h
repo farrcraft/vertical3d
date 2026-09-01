@@ -41,7 +41,7 @@ namespace v3d::event {
 
         /**
          * Send a destination event named by string, for callers that hold a name rather than
-         * a resolved Event - the replacement for the old CommandDirectory::exec.
+         * a resolved Event.
          *
          * @param context the name of the event's context
          * @param name the event name

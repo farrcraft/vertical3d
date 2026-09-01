@@ -39,9 +39,9 @@ namespace {
 };  // namespace
 
 BOOST_AUTO_TEST_CASE(chunk_ceiling_is_measured_in_blocks_test) {
-    // the defect this covers: Scene passed the world's chunk count as the ceiling, so a
-    // heightmap at full scale reached four blocks in a world 64 tall and every chunk above
-    // the first generated nothing
+    // the ceiling is in blocks, not chunks. A heightmap is scaled against it, so passing the
+    // world's chunk count instead flattens terrain in a 64 block world to four blocks and
+    // leaves every chunk above the first empty
     FlatTerrain terrain(255.0f);
 
     Chunk full(&terrain, glm::ivec3(0, 1, 0), worldHeightInBlocks);

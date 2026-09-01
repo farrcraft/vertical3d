@@ -189,7 +189,7 @@ void Camera::perspective(float fovx, float aspect, float znear, float zfar) {
     projection_[2][0] = 0.0f;
     projection_[2][1] = 0.0f;
     // near maps to zero and far to one, which is the depth range vulkan clips against and
-    // what the engine clears the depth buffer to - not gl's minus one to one
+    // what the engine clears the depth buffer to
     projection_[2][2] = zfar / (znear - zfar);
     projection_[2][3] = -1.0f;
 

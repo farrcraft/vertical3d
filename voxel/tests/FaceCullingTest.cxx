@@ -15,9 +15,9 @@ namespace {
 };  // namespace
 
 BOOST_AUTO_TEST_CASE(seam_lookup_moves_the_block_as_well_as_the_chunk_test) {
-    // the defect this covers: the three faces that look out the high side of a chunk moved
-    // the chunk they looked in but left the block where it was, so they asked whether the
-    // block at 15 of the next chunk along was solid when the one against the face is at 0
+    // crossing a seam moves the block as well as the chunk. For a face looking out the high
+    // side, the block against it is at 0 of the neighbour, not at 15 - carrying the
+    // coordinate over unchanged asks about the block at the far side of the next chunk
     const glm::ivec3 chunk(1, 1, 1);
 
     const Neighbour right = neighbourAcrossSeam(Voxel::BLOCK_FACE_RIGHT, glm::ivec3(high, 4, 4), chunk, chunkSize);

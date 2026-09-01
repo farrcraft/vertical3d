@@ -60,7 +60,8 @@ BOOST_AUTO_TEST_CASE(engine_dispatch_test) {
     Recorder recorder;
     dispatcher->sink<v3d::event::Event>().connect<&Recorder::handle>(recorder);
 
-    // dispatch by name is what the old CommandDirectory::exec did
+    // dispatching by name resolves the context and builds the event, so a caller holding
+    // two strings reaches the same sink a resolved Event would
     engine.dispatch("ui", "quit");
     BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1u);
     BOOST_CHECK_EQUAL(recorder.events_[0].name(), "quit");

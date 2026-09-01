@@ -114,8 +114,8 @@ BOOST_AUTO_TEST_CASE(tetrad_assignment_test) {
 }
 
 BOOST_AUTO_TEST_CASE(tetrad_extent_test) {
-    // the L is three tall and two wide, and both used to be reported as the largest index
-    // plus one because the minimum was seeded at zero
+    // the L is three tall and two wide, so an extent that ignored the minimum occupied row
+    // and column would report three for both
     Tetrad piece(el());
     BOOST_CHECK_EQUAL(piece.width(), 2u);
     BOOST_CHECK_EQUAL(piece.height(), 3u);
