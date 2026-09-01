@@ -11,6 +11,7 @@
 #include <sstream>
 #include <stdexcept>
 
+#include "PipelineBuilder.h"
 #include "Result.h"
 
 #include "../DrawItem.h"
@@ -47,42 +48,25 @@ namespace v3d::render::realtime::vulkan {
         const VkDeviceSize initialVertexBytes = 64 * 1024;
         const VkDeviceSize initialIndexBytes = 32 * 1024;
 
-        /**
-         **/
-        VkShaderModule createModule(VkDevice device, const uint32_t* code, std::size_t bytes) {
-            VkShaderModuleCreateInfo info{};
-            info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-            info.codeSize = bytes;
-            info.pCode = code;
-
-            VkShaderModule module = VK_NULL_HANDLE;
-            VkResult result = vkCreateShaderModule(device, &info, nullptr, &module);
-            if (result != VK_SUCCESS) {
-                std::stringstream msg;
-                msg << "Unable to create a vulkan shader module - " << resultString(result);
-                throw std::runtime_error(msg.str());
-            }
-            return module;
-        }
-
     };  // namespace
 
     /**
      **/
     QuadRenderer::QuadRenderer(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Device>& device,
         const boost::shared_ptr<PipelineCache>& cache, const boost::shared_ptr<Resources>& resources,
-        const boost::shared_ptr<Presenter>& presenter, VkFormat colour) :
+        const boost::shared_ptr<Presenter>& presenter, const boost::shared_ptr<FrameUniforms>& uniforms,
+        VkFormat colour, VkFormat depth) :
         logger_(logger),
         device_(device),
         cache_(cache),
         resources_(resources),
         presenter_(presenter),
-        frameLayout_(VK_NULL_HANDLE),
+        uniforms_(uniforms),
         materialLayout_(VK_NULL_HANDLE),
         remaining_(0) {
         factory_ = boost::make_shared<TextureFactory>(device_);
         createLayouts();
-        createPipeline(colour);
+        createPipelines(colour, depth);
         createBuffers();
         createWhite();
     }
@@ -90,7 +74,7 @@ namespace v3d::render::realtime::vulkan {
     /**
      **/
     QuadRenderer::~QuadRenderer() {
-        // the pipeline, its layout, the textures and the materials all belong to Resources -
+        // the pipelines, their layouts, the textures and the materials belong to Resources -
         // what is owned here is the descriptor machinery and the geometry buffers
         for (VkDescriptorPool pool : pools_) {
             vkDestroyDescriptorPool(device_->handle(), pool, nullptr);
@@ -100,28 +84,11 @@ namespace v3d::render::realtime::vulkan {
         if (materialLayout_ != VK_NULL_HANDLE) {
             vkDestroyDescriptorSetLayout(device_->handle(), materialLayout_, nullptr);
         }
-        if (frameLayout_ != VK_NULL_HANDLE) {
-            vkDestroyDescriptorSetLayout(device_->handle(), frameLayout_, nullptr);
-        }
     }
 
     /**
      **/
     void QuadRenderer::createLayouts() {
-        // set 0 is the per frame frequency of the convention in docs/RenderingPipeline.md.
-        // Nothing binds anything at it - the projection is a push constant - but the layout
-        // has to exist for the sampler to sit at set 1
-        VkDescriptorSetLayoutCreateInfo frame{};
-        frame.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        frame.bindingCount = 0;
-
-        VkResult result = vkCreateDescriptorSetLayout(device_->handle(), &frame, nullptr, &frameLayout_);
-        if (result != VK_SUCCESS) {
-            std::stringstream msg;
-            msg << "Unable to create the per frame descriptor set layout - " << resultString(result);
-            throw std::runtime_error(msg.str());
-        }
-
         VkDescriptorSetLayoutBinding sampler{};
         sampler.binding = 0;
         sampler.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -133,7 +100,7 @@ namespace v3d::render::realtime::vulkan {
         material.bindingCount = 1;
         material.pBindings = &sampler;
 
-        result = vkCreateDescriptorSetLayout(device_->handle(), &material, nullptr, &materialLayout_);
+        VkResult result = vkCreateDescriptorSetLayout(device_->handle(), &material, nullptr, &materialLayout_);
         if (result != VK_SUCCESS) {
             std::stringstream msg;
             msg << "Unable to create the per material descriptor set layout - " << resultString(result);
@@ -143,165 +110,27 @@ namespace v3d::render::realtime::vulkan {
 
     /**
      **/
-    void QuadRenderer::createPipeline(VkFormat colour) {
-        VkDevice device = device_->handle();
+    void QuadRenderer::createPipelines(VkFormat colour, VkFormat depth) {
+        PipelineBuilder builder(device_);
+        builder.name("quad")
+            .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
+            .shader(VK_SHADER_STAGE_FRAGMENT_BIT, fragmentShader, sizeof(fragmentShader))
+            .vertexBinding(0, sizeof(Canvas::Vertex))
+            .vertexAttribute(0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Canvas::Vertex, position))
+            .vertexAttribute(1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Canvas::Vertex, uv))
+            .vertexAttribute(2, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Canvas::Vertex, colour))
+            // nothing 2D has a back face worth culling, and not culling means a caller cannot
+            // get a quad's winding wrong and have it silently disappear
+            .cull(VK_CULL_MODE_NONE)
+            .set(uniforms_->layout())
+            .set(materialLayout_)
+            .push(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4))
+            .colourFormat(colour);
 
-        VkShaderModule vertex = createModule(device, vertexShader, sizeof(vertexShader));
-        VkShaderModule fragment = VK_NULL_HANDLE;
-        try {
-            fragment = createModule(device, fragmentShader, sizeof(fragmentShader));
-        } catch (...) {
-            vkDestroyShaderModule(device, vertex, nullptr);
-            throw;
-        }
+        pipeline_ = resources_->add(builder.build(cache_));
 
-        Pipeline built;
-        built.pushStages = VK_SHADER_STAGE_VERTEX_BIT;
-
-        VkPushConstantRange push{};
-        push.stageFlags = built.pushStages;
-        push.offset = 0;
-        push.size = sizeof(glm::mat4);
-
-        const VkDescriptorSetLayout sets[2] = {frameLayout_, materialLayout_};
-
-        VkPipelineLayoutCreateInfo layout{};
-        layout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        layout.setLayoutCount = 2;
-        layout.pSetLayouts = sets;
-        layout.pushConstantRangeCount = 1;
-        layout.pPushConstantRanges = &push;
-
-        VkResult result = vkCreatePipelineLayout(device, &layout, nullptr, &built.layout);
-        if (result != VK_SUCCESS) {
-            vkDestroyShaderModule(device, fragment, nullptr);
-            vkDestroyShaderModule(device, vertex, nullptr);
-            std::stringstream msg;
-            msg << "Unable to create the quad pipeline layout - " << resultString(result);
-            throw std::runtime_error(msg.str());
-        }
-
-        VkPipelineShaderStageCreateInfo stages[2]{};
-        stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-        stages[0].module = vertex;
-        stages[0].pName = "main";
-        stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-        stages[1].module = fragment;
-        stages[1].pName = "main";
-
-        VkVertexInputBindingDescription binding{};
-        binding.binding = 0;
-        binding.stride = sizeof(Canvas::Vertex);
-        binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-        VkVertexInputAttributeDescription attributes[3]{};
-        attributes[0].location = 0;
-        attributes[0].binding = 0;
-        attributes[0].format = VK_FORMAT_R32G32_SFLOAT;
-        attributes[0].offset = offsetof(Canvas::Vertex, position);
-        attributes[1].location = 1;
-        attributes[1].binding = 0;
-        attributes[1].format = VK_FORMAT_R32G32_SFLOAT;
-        attributes[1].offset = offsetof(Canvas::Vertex, uv);
-        attributes[2].location = 2;
-        attributes[2].binding = 0;
-        attributes[2].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-        attributes[2].offset = offsetof(Canvas::Vertex, colour);
-
-        VkPipelineVertexInputStateCreateInfo input{};
-        input.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-        input.vertexBindingDescriptionCount = 1;
-        input.pVertexBindingDescriptions = &binding;
-        input.vertexAttributeDescriptionCount = 3;
-        input.pVertexAttributeDescriptions = attributes;
-
-        VkPipelineInputAssemblyStateCreateInfo assembly{};
-        assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-        assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-
-        VkPipelineViewportStateCreateInfo viewport{};
-        viewport.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-        viewport.viewportCount = 1;
-        viewport.scissorCount = 1;
-
-        VkPipelineRasterizationStateCreateInfo raster{};
-        raster.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-        raster.polygonMode = VK_POLYGON_MODE_FILL;
-        // nothing 2D has a back face worth culling, and not culling means a caller cannot get
-        // a quad's winding wrong and have it silently disappear
-        raster.cullMode = VK_CULL_MODE_NONE;
-        raster.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-        raster.lineWidth = 1.0f;
-
-        VkPipelineMultisampleStateCreateInfo multisample{};
-        multisample.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-        multisample.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-
-        VkPipelineDepthStencilStateCreateInfo depth{};
-        depth.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-        // 2D content is painter ordered, so it neither tests nor writes depth
-        depth.depthTestEnable = VK_FALSE;
-        depth.depthWriteEnable = VK_FALSE;
-
-        VkPipelineColorBlendAttachmentState blend{};
-        blend.blendEnable = VK_TRUE;
-        blend.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-        blend.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-        blend.colorBlendOp = VK_BLEND_OP_ADD;
-        blend.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-        blend.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-        blend.alphaBlendOp = VK_BLEND_OP_ADD;
-        blend.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-
-        VkPipelineColorBlendStateCreateInfo blending{};
-        blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-        blending.attachmentCount = 1;
-        blending.pAttachments = &blend;
-
-        // the viewport is dynamic so that a window resize costs no pipeline rebuild
-        const VkDynamicState dynamics[2] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
-        VkPipelineDynamicStateCreateInfo dynamic{};
-        dynamic.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-        dynamic.dynamicStateCount = 2;
-        dynamic.pDynamicStates = dynamics;
-
-        // dynamic rendering, so the formats come from here rather than from a render pass
-        VkPipelineRenderingCreateInfo rendering{};
-        rendering.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
-        rendering.colorAttachmentCount = 1;
-        rendering.pColorAttachmentFormats = &colour;
-
-        VkGraphicsPipelineCreateInfo info{};
-        info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        info.pNext = &rendering;
-        info.stageCount = 2;
-        info.pStages = stages;
-        info.pVertexInputState = &input;
-        info.pInputAssemblyState = &assembly;
-        info.pViewportState = &viewport;
-        info.pRasterizationState = &raster;
-        info.pMultisampleState = &multisample;
-        info.pDepthStencilState = &depth;
-        info.pColorBlendState = &blending;
-        info.pDynamicState = &dynamic;
-        info.layout = built.layout;
-
-        result = vkCreateGraphicsPipelines(device, cache_->handle(), 1, &info, nullptr, &built.pipeline);
-
-        // the modules are only needed while the pipeline is being compiled
-        vkDestroyShaderModule(device, fragment, nullptr);
-        vkDestroyShaderModule(device, vertex, nullptr);
-
-        if (result != VK_SUCCESS) {
-            vkDestroyPipelineLayout(device, built.layout, nullptr);
-            std::stringstream msg;
-            msg << "Unable to create the quad pipeline - " << resultString(result);
-            throw std::runtime_error(msg.str());
-        }
-
-        pipeline_ = resources_->add(built);
+        builder.name("quad-depth").depthFormat(depth);
+        depthPipeline_ = resources_->add(builder.build(cache_));
     }
 
     /**
@@ -444,7 +273,10 @@ namespace v3d::render::realtime::vulkan {
 
         const glm::mat4 projection = canvas.projection();
 
-        const Pipeline* pipeline = resources_->pipeline(pipeline_);
+        // dynamic rendering matches a pipeline to the pass's attachments, so which of the two
+        // is drawn with follows from whether the pass has a depth buffer
+        const PipelineHandle handle = pass->depth() ? depthPipeline_ : pipeline_;
+        const Pipeline* pipeline = resources_->pipeline(handle);
         for (const Canvas::Batch& batch : canvas.batches()) {
             if (batch.indices == 0) {
                 continue;
@@ -454,9 +286,9 @@ namespace v3d::render::realtime::vulkan {
 
             DrawItem item;
             item.key.layer = layer;
-            item.key.pipeline = static_cast<uint16_t>(pipeline_.id());
+            item.key.pipeline = static_cast<uint16_t>(handle.id());
             item.key.material = static_cast<uint16_t>(bound.id());
-            item.pipeline = pipeline_;
+            item.pipeline = handle;
             item.material = bound;
             item.vertexBuffer = vertices->handle();
             item.indexBuffer = indices->handle();

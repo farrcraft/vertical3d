@@ -6,8 +6,9 @@ bottom, and the rest is now a description rather than a proposal.
 
 The decisions behind the shape of this are [ADR-0001](adr/0001-vulkan-replaces-opengl.md)
 through [ADR-0005](adr/0005-one-batched-quad-primitive.md), plus
-[ADR-0008](adr/0008-binding-by-update-frequency.md) and
-[ADR-0009](adr/0009-colour-authored-in-display-space.md). Read those for why; this is what.
+[ADR-0008](adr/0008-binding-by-update-frequency.md),
+[ADR-0009](adr/0009-colour-authored-in-display-space.md) and
+[ADR-0010](adr/0010-meshes-are-owned-by-the-app.md). Read those for why; this is what.
 
 ## The chain of objects
 
@@ -19,7 +20,10 @@ Window3D  ->  Context3D  ->  Frame  ->  Pass  ->  DrawItem
                   +-- vulkan::Presenter   acquire, submit, present, and the sync between them
                   +-- vulkan::PipelineCache
                   +-- vulkan::Resources   pipelines, materials and textures, addressed by handle
-                  +-- vulkan::QuadRenderer the one 2D pipeline, and the geometry buffers it uploads through
+                  +-- vulkan::FrameUniforms  set 0 - a camera per pass per frame in flight
+                  +-- vulkan::Uploader    the one-shot queue everything device local is copied by
+                  +-- vulkan::DepthBuffer the depth image, allocated the first frame a pass asks
+                  +-- vulkan::QuadRenderer the 2D pipelines, and the geometry buffers they upload through
 ```
 
 `Window3D` creates an `SDL_WINDOW_VULKAN` window and owns the `vulkan::Instance` and
@@ -46,23 +50,82 @@ the engine's `colour` pass, drawing straight to the window - but the list is a l
 first version because compositing, offscreen targets and an editor's four viewports of one
 scene are all more passes rather than a different kind of frame
 ([ADR-0003](adr/0003-one-realtime-engine.md)). A pass carries what varies between 2D and 3D
-drawing: whether it clears and to what, whether it depth tests, and what region of the target
-it draws into.
+drawing: whether it clears and to what, whether it depth tests, what region of the target it
+draws into, the camera it draws through, and whether its items are sorted.
 
 A `DrawItem` is a description of one draw, not something that draws itself
 ([ADR-0004](adr/0004-operations-as-draw-data.md)). It names its pipeline and material by
 handle and carries a `SortKey`. The engine owns sorting, merging and recording.
 
-**Nothing sorts yet.** `Recorder` walks each pass in submission order. That is not only an
-omission: the one pass anything draws into is a 2D one, and 2D content is painter ordered, so
-submission order is the order it has to be recorded in. Sorting is what a depth tested scene
-pass will want. The sort key is filled in from the first version anyway, because the layer
-field is what keeps painter ordering correct once sorting arrives, and retrofitting it means
-auditing every call site with an invisible failure mode.
+**Sorting is per pass and off by default.** `Pass::ordered()` hands the recorder either the
+submission order or the sort key order, and `Pass::sort(true)` is what asks for the second.
+The default has to be submission order: 2D content is painter ordered, and the key groups by
+pipeline and material within a layer, so sorting a canvas of batches would put a panel over
+the text drawn on it. A depth tested scene pass is what sorting is for - one item per object,
+grouped so the recorder can skip the binds between them. The sort is stable, so items whose
+keys are equal keep the order they arrived in.
 
-What the recorder does do is skip rebinding what is already bound. A pipeline, a descriptor
-set and a vertex buffer are bound only when the item asks for a different one than the last
-item did, so a run of quads sharing a texture costs one bind between them.
+What the recorder does either way is skip rebinding what is already bound. A pipeline, a
+descriptor set and a vertex buffer are bound only when the item asks for a different one than
+the last item did, so a run of quads sharing a texture costs one bind between them.
+
+## Depth
+
+`Context3D` owns one depth image beside the swapchain, sized with it and rebuilt with it. It
+is **allocated the first frame a pass asks for depth** and never at all otherwise, so pong and
+tetris - painter ordered, reading no depth - pay nothing for it.
+
+A pass with `depth(true)` gets it as a `pDepthAttachment` on its `VkRenderingInfo`. Depth is
+cleared exactly when colour is, so a pass drawing on top of what the pass before it left keeps
+that depth too. The image is transitioned to `DEPTH_ATTACHMENT_OPTIMAL` once per frame, from
+`UNDEFINED` - nothing carries depth between frames, so what the last one left is not worth a
+barrier to preserve, and the first pass to use it therefore has to clear.
+
+Dynamic rendering matches a pipeline to the attachments of the pass it draws into: a pipeline
+built with no depth format cannot draw into a pass that has one. That is why `QuadRenderer`
+compiles its pipeline twice, once each way, and picks between them from `Pass::depth()`.
+Neither tests or writes depth - a ui drawn over a scene has to stay on top of it whatever the
+scene left in the buffer.
+
+## Building a pipeline
+
+`vulkan::PipelineBuilder` describes a graphics pipeline a chained call at a time. What it
+defaults is what every pipeline in this engine has agreed on: a dynamic viewport and scissor
+so a resize costs no rebuild, one sample, one colour attachment, no culling, alpha blending,
+and dynamic rendering rather than a render pass. Shader modules belong to the builder and are
+destroyed with it; the pipeline and its layout are handed back for `Resources` to own.
+
+```
+PipelineBuilder(device)
+    .name("quad")
+    .shader(VK_SHADER_STAGE_VERTEX_BIT, code, sizeof(code))
+    .vertexBinding(0, sizeof(Vertex))
+    .vertexAttribute(0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, position))
+    .set(uniforms->layout())     // set 0 first - they are numbered in the order they are added
+    .set(materialLayout)
+    .push(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4))
+    .colourFormat(swapchain->format())
+    .build(cache);
+```
+
+## Buffers
+
+There are two, and which one a caller wants follows from how often the contents change.
+
+- **`vulkan::Buffer`** is host visible and kept mapped for its whole life. This is what a
+  frame of geometry is built in: a batcher rewrites the whole thing every frame, so a staging
+  copy would cost more than the slower reads do.
+- **`vulkan::DeviceBuffer`** is device local and filled through a staging copy. Geometry built
+  once and drawn for the life of the process pays for that copy at load time and is read out
+  of the memory closest to the device every frame after.
+
+Both go through `vulkan::Uploader`, which records, submits and waits for one command buffer -
+and the waiting is what keeps a staging allocation to the function that made it. It waits, so
+it is for load time work rather than for anything overlapping the frame loop.
+
+`vulkan::Mesh` is the pair of device local buffers a draw reads: vertices, and indices where
+the draw is indexed. `Mesh::describe(&item)` fills in a draw item of geometry fields and
+leaves what it draws with, and where it sorts, to the caller.
 
 ## 2D drawing: the batched quad
 
@@ -141,7 +204,7 @@ Everything downstream depends on this being fixed, so it is fixed here:
 
 | Set | Frequency | Holds |
 |---|---|---|
-| set 0 | per frame, bound once by the pass | camera, projection, viewport, time |
+| set 0 | per frame, bound once by the pass | camera, projection, viewport |
 | set 1 | per material | the sampled texture and whatever else the material needs |
 | push constants | per object | transform and tint |
 
@@ -152,6 +215,19 @@ two handles.
 
 The sort key is ordered to match: layer, then pipeline, then material, then depth. Sorting on
 it groups exactly the draws that can share a binding.
+
+**Set 0 is built.** `vulkan::FrameUniforms` owns the layout - one uniform buffer at binding 0,
+visible to both the vertex and the fragment stage - and a slot per pass per frame in flight,
+each a small buffer and the descriptor set that points at it for good. `Recorder` writes the
+view, the projection, their product and the viewport rectangle of a pass into the next slot
+and binds it at 0 for every item in that pass. A slot is written during recording, which is
+after the presenter has waited on the fence of the frame, so nothing is reading what is
+overwritten.
+
+Every pipeline in the engine declares that same layout at set 0, which is what makes them
+interchangeable within a pass: a set bound for one stays bound across a pipeline change to
+another built against the same layout. The quad pipeline declares it and reads nothing from
+it - a canvas carries its own orthographic projection in a push constant.
 
 ## Resource handles
 
@@ -164,21 +240,27 @@ than what it was given for.
 Nothing frees an individual resource. Textures and pipelines are built at load time and used
 until the app closes; per-level unloading is the thing that will ask for more.
 
+**Geometry is not one of them.** A mesh is created and destroyed while the app runs, which a
+registry that never frees cannot hold without leaking, and the sort key has no geometry field
+for a handle to sort on. So `vulkan::Mesh` is owned by whatever built it - a chunk, a model -
+`DrawItem` keeps raw `VkBuffer`s, and a draw item is valid only while its mesh is alive. See
+[ADR-0010](adr/0010-meshes-are-owned-by-the-app.md).
+
 ## What is not built yet
 
-- **Any 3D pipeline.** There is exactly one pipeline, and it draws 2D quads. Meshes, shaders
-  with vertex normals, and a camera are what voxel will need in phase 5.
-- **Sorting and merging.** The recorder walks submission order; see above for why that is
-  correct for the pass that exists and not for the one that does not.
-- **Depth.** `Pass::depth` is recorded and ignored; there is no depth attachment.
+- **Any 3D pipeline.** The two pipelines that exist both draw 2D quads. The pieces a scene
+  pipeline is assembled from - the builder, set 0, depth, device local meshes - are all here;
+  no shader has been written against them, and no app builds one yet.
+- **Merging.** Sorting groups the draws that could be merged into one, and nothing merges
+  them. Adjacent items sharing a pipeline and a material still cost a draw call each.
 - **Offscreen targets**, and with them compositing and logical presentation.
-- **Set 0.** The per-frame descriptor set layout exists and is empty. The projection is a
-  push constant while there is one camera; a camera uniform is what fills set 0.
-- **The GL path is not gone.** `api/gl` still exists and tetris and voxel still draw with it
-  against a context nothing creates. The six operations nothing used any more -
-  `operation::Canvas`, `GLFont`, `GLTexture`, `GLTexturedQuad`, `Overlay` and `BitmapFont` -
-  were deleted in phase 3; `operation::TextureFont` survives because voxel still constructs
-  one. `api/gl` goes when tetris and voxel are ported, in phases 4 and 5.
+- **A second depth buffer.** There is one per context, so two passes wanting different depth
+  at the same time - which four editor viewports may - would share it.
+- **The GL path is not gone.** `api/gl` still exists and voxel still draws with it against a
+  context nothing creates. The six operations nothing used any more - `operation::Canvas`,
+  `GLFont`, `GLTexture`, `GLTexturedQuad`, `Overlay` and `BitmapFont` - were deleted in phase
+  3; `operation::TextureFont` survives because voxel still constructs one. `api/gl` goes when
+  voxel is ported, in phase 5.
 
 ## Still open: how this meets the ECS
 

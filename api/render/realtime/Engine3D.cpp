@@ -107,7 +107,28 @@ namespace v3d::render::realtime {
         target.view = swapchain->views()[acquisition.image];
         target.extent = swapchain->extent();
 
-        recorder_.record(acquisition.commands, *frame_, target, *context_->resources());
+        // the depth buffer is allocated the first frame a pass asks for one, so an app that
+        // never depth tests never pays for a full screen image it does not read
+        bool depth = false;
+        for (const boost::shared_ptr<Pass>& pass : frame_->passes()) {
+            if (pass->depth()) {
+                depth = true;
+                break;
+            }
+        }
+        if (depth) {
+            const boost::shared_ptr<vulkan::DepthBuffer> buffer = context_->depth();
+            if (buffer->valid()) {
+                target.depthImage = buffer->image();
+                target.depthView = buffer->view();
+            }
+        }
+
+        const boost::shared_ptr<vulkan::FrameUniforms> uniforms = context_->frameUniforms();
+        // the slots of the frame about to be recorded are free - acquire() waited on its fence
+        uniforms->begin(presenter->frame());
+
+        recorder_.record(acquisition.commands, *frame_, target, *context_->resources(), uniforms.get());
 
         if (presenter->present(acquisition) == vulkan::Presenter::Status::OutOfDate) {
             context_->resize();

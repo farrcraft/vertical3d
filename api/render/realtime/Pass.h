@@ -10,6 +10,7 @@
 
 #include "DrawItem.h"
 
+#include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
 
 namespace v3d::render::realtime {
@@ -61,6 +62,11 @@ namespace v3d::render::realtime {
 
         /**
          * Whether the pass depth tests. 2D passes do not - they rely on painter ordering.
+         *
+         * A pass that asks for depth is given the context's depth buffer as an attachment,
+         * which is allocated the first frame anything asks for it. Depth is cleared exactly
+         * when colour is, so a pass drawing on top of what the pass before it left keeps
+         * that pass's depth too.
          **/
         void depth(bool enabled) noexcept;
 
@@ -82,6 +88,43 @@ namespace v3d::render::realtime {
         const glm::vec4& viewport() const noexcept;
 
         /**
+         * The camera every item in the pass draws through, bound once at set 0 per
+         * ADR-0008 rather than pushed per draw.
+         *
+         * Both default to the identity, which is what a 2D pass wants: a canvas carries its
+         * own orthographic projection in a push constant and nothing reads set 0.
+         **/
+        void camera(const glm::mat4& view, const glm::mat4& projection) noexcept;
+
+        /**
+         * @return the world to view transform the pass draws through
+         **/
+        const glm::mat4& view() const noexcept;
+
+        /**
+         * @return the view to clip transform the pass draws through
+         **/
+        const glm::mat4& projection() const noexcept;
+
+        /**
+         * Record the pass's items in sort key order rather than in submission order.
+         *
+         * Off by default, and it has to be: 2D content is painter ordered, and the key sorts
+         * by pipeline and material within a layer, so sorting a canvas's batches would put a
+         * panel over the text on it. A depth tested scene pass is the case this is for - it
+         * has one item per object, and grouping them by pipeline and material is what lets
+         * the recorder skip rebinding between them.
+         *
+         * The sort is stable, so items whose keys are equal keep the order they arrived in.
+         **/
+        void sort(bool enabled) noexcept;  // NOLINT(build/include_what_you_use) - the name, not std::sort
+
+        /**
+         * @return whether the pass is recorded in sort key order
+         **/
+        bool sorts() const noexcept;
+
+        /**
          * Add a draw item to the pass. The engine decides when it is recorded.
          **/
         void submit(const DrawItem& item);
@@ -90,6 +133,19 @@ namespace v3d::render::realtime {
          * @return the items submitted to the pass, in submission order
          **/
         const std::vector<DrawItem>& items() const noexcept;
+
+        /**
+         * The items in the order the engine records them - submission order, or sort key
+         * order when the pass sorts.
+         *
+         * They come back as pointers because a draw item carries its push constant block by
+         * value, so sorting the queue itself would move a hundred-odd bytes per swap. The
+         * pointers are into the pass's own queue and stay valid until the next submit() or
+         * reset().
+         *
+         * @param into cleared and filled with the items
+         **/
+        void ordered(std::vector<const DrawItem*>* into) const;
 
         /**
          * Drop the submitted items, keeping the pass's configuration. Called at the end of
@@ -101,9 +157,12 @@ namespace v3d::render::realtime {
         std::string name_;
         glm::vec4 clearColour_;
         glm::vec4 viewport_;
+        glm::mat4 view_;
+        glm::mat4 projection_;
         std::vector<DrawItem> items_;
         bool clears_;
         bool depth_;
+        bool sorts_;
     };
 
 };  // namespace v3d::render::realtime

@@ -24,7 +24,7 @@ namespace v3d::render::realtime::vulkan {
      **/
     TextureFactory::TextureFactory(const boost::shared_ptr<Device>& device) :
         device_(device) {
-        pool_ = boost::make_shared<CommandPool>(device_, device_->families().graphics);
+        uploader_ = boost::make_shared<Uploader>(device_);
     }
 
     /**
@@ -127,28 +127,21 @@ namespace v3d::render::realtime::vulkan {
             throw std::runtime_error(msg.str());
         }
 
-        std::vector<VkCommandBuffer> buffers = pool_->allocate(1);
-        VkCommandBuffer commands = buffers.front();
+        const VkBuffer source = staging.handle();
+        const VkImage image = texture.image;
+        uploader_->oneShot([source, image, width, height](VkCommandBuffer commands) {
+            transition(commands, image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-        VkCommandBufferBeginInfo begin{};
-        begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-        vkBeginCommandBuffer(commands, &begin);
+            VkBufferImageCopy copy{};
+            copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            copy.imageSubresource.layerCount = 1;
+            copy.imageExtent.width = width;
+            copy.imageExtent.height = height;
+            copy.imageExtent.depth = 1;
+            vkCmdCopyBufferToImage(commands, source, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
 
-        transition(commands, texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-        VkBufferImageCopy copy{};
-        copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        copy.imageSubresource.layerCount = 1;
-        copy.imageExtent.width = width;
-        copy.imageExtent.height = height;
-        copy.imageExtent.depth = 1;
-        vkCmdCopyBufferToImage(commands, staging.handle(), texture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
-
-        transition(commands, texture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-        vkEndCommandBuffer(commands);
-        submit(commands);
+            transition(commands, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        });
 
         VkImageViewCreateInfo view{};
         view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -202,30 +195,6 @@ namespace v3d::render::realtime::vulkan {
         }
 
         return texture;
-    }
-
-    /**
-     **/
-    void TextureFactory::submit(VkCommandBuffer commands) const {
-        VkCommandBufferSubmitInfo info{};
-        info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
-        info.commandBuffer = commands;
-
-        VkSubmitInfo2 submission{};
-        submission.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
-        submission.commandBufferInfoCount = 1;
-        submission.pCommandBufferInfos = &info;
-
-        VkResult result = vkQueueSubmit2(device_->graphicsQueue(), 1, &submission, VK_NULL_HANDLE);
-        if (result != VK_SUCCESS) {
-            std::stringstream msg;
-            msg << "Unable to submit a vulkan texture upload - " << resultString(result);
-            throw std::runtime_error(msg.str());
-        }
-
-        // waiting is what keeps the staging buffer's lifetime to this function. Textures are
-        // built at load time, so no frame is waiting on it
-        vkQueueWaitIdle(device_->graphicsQueue());
     }
 
     /**

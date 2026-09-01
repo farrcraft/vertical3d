@@ -9,9 +9,9 @@
 
 #include <cstdint>
 
-#include "CommandPool.h"
 #include "Device.h"
 #include "Resources.h"
+#include "Uploader.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -25,8 +25,8 @@ namespace v3d::render::realtime::vulkan {
      * Turns pixels into a sampled image the shaders can read.
      *
      * Every texture is uploaded through a staging buffer and a one-shot command buffer that
-     * the factory waits on before returning. Textures are built at load time, so nothing
-     * needs an upload that overlaps the frames being drawn.
+     * the factory waits on before returning - see Uploader. Textures are built at load time,
+     * so nothing needs an upload that overlaps the frames being drawn.
      *
      * A single channel image is given a view that swizzles its one channel into alpha and
      * ones into rgb, so a glyph atlas samples as white-with-coverage and the one quad shader
@@ -64,17 +64,12 @@ namespace v3d::render::realtime::vulkan {
 
      private:
         /**
-         * Run a one-shot command buffer to completion.
-         **/
-        void submit(VkCommandBuffer commands) const;
-
-        /**
          * Move the image between layouts either side of the copy.
          **/
         static void transition(VkCommandBuffer commands, VkImage image, VkImageLayout from, VkImageLayout to);
 
         boost::shared_ptr<Device> device_;
-        boost::shared_ptr<CommandPool> pool_;
+        boost::shared_ptr<Uploader> uploader_;
     };
 
 };  // namespace v3d::render::realtime::vulkan

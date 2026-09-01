@@ -532,32 +532,41 @@ port gets past that — every GL call after it is against a context nothing crea
   triangles `VertexBufferBuilder` read and never used are gone; `GameState` initialises its
   three fields; and `Chunk` and `MeshCache` list their initialisers in declaration order.
 
-**Grow the api.** These are the phase's real content, and the first three are what phase 6's
-multiple viewports need as well.
+**Grow the api.** Done, 2026-08-31 — all six items. These were the phase's real content, and
+the first three are what phase 6's multiple viewports need as well. Nothing here has a 3D
+consumer yet: the parts are built, verified against the validation layer through pong and
+tetris, and waiting for the port below to use them for what they were built for.
 
-- **A depth buffer.** `Pass::depth(bool)` is stored, read back, and ignored. Add the depth
-  image to `Context3D` beside the swapchain, rebuild it on resize, attach it in
-  `Recorder::record` when the pass asks for depth, transition it with synchronization2
-  alongside the colour image, and put its format on the pipeline's
-  `VkPipelineRenderingCreateInfo`. Nothing 3D is correct until this exists.
-- **A pipeline builder** in `api/render/realtime/vulkan`, so the second pipeline is not a
-  copy of `QuadRenderer`'s ~150 inline lines of create-info. `Context3D` already exposes the
-  device, the cache and the resources an app would need; what is missing is anything to
-  build with.
-- **Set 0.** `QuadRenderer` creates `frameLayout_` with zero bindings and nothing writes or
-  binds against it, so [ADR-0008](../adr/0008-binding-by-update-frequency.md)'s per-frame
-  frequency is decided and unbuilt. A camera and projection shared by a few hundred chunk
-  draws is the case it was decided for.
-- **Device-local buffers with a staging upload.** `vulkan::Buffer` is host-visible and says
-  in its own header that static geometry is not what it is for. `TextureFactory` already has
-  the staging-buffer and one-shot-submit pattern privately; generalising it is most of the
-  work.
-- **Decide whether geometry is a `Resources` handle.** Pipelines, materials and textures are
-  registered so that a draw item's sort key means something; a mesh is none of the three and
-  `DrawItem` takes raw `VkBuffer`s. Either it joins them or voxel owns chunk-mesh lifetime
-  itself — worth settling deliberately rather than by default.
-- **Sort the frame.** Nothing does, per ADR-0004, and a pong frame never cared. One draw per
-  non-empty chunk is the first frame where the key earns its keep.
+- ~~**A depth buffer.**~~ Done, as `vulkan::DepthBuffer`, owned by `Context3D` and rebuilt
+  with the swapchain. It is **allocated lazily** — the first frame a pass asks for depth, and
+  never otherwise, so pong and tetris do not pay a full-screen image for something painter
+  ordering does not read. `Recorder` attaches it when the pass asks, clears it exactly when
+  the pass clears colour, and transitions it from `UNDEFINED` once per frame. The one thing
+  the item did not anticipate: dynamic rendering matches a pipeline to its pass's
+  attachments, so a pipeline built without a depth format cannot draw into a pass that has
+  one — `QuadRenderer` therefore compiles its pipeline twice and picks between them from
+  `Pass::depth()`.
+- ~~**A pipeline builder.**~~ Done, as `vulkan::PipelineBuilder`. `QuadRenderer`'s ~150 lines
+  of inline create-info are now fifteen chained calls, which is what proves the builder
+  rather than leaving it to the first app that tries.
+- ~~**Set 0.**~~ Done, as `vulkan::FrameUniforms` — the layout every pipeline in the engine
+  declares, plus a slot per pass per frame in flight holding view, projection, their product
+  and the viewport. `Recorder` writes and binds it per pass.
+  [ADR-0008](../adr/0008-binding-by-update-frequency.md) stays **proposed**: the set is built
+  and bound, and no shader has read it yet, which is the check that record asked for.
+- ~~**Device-local buffers with a staging upload.**~~ Done, as `vulkan::DeviceBuffer` over a
+  shared `vulkan::Uploader` — the one-shot record/submit/wait that `TextureFactory` had
+  privately and now uses from the same place. `vulkan::Mesh` is the pair of them a draw
+  reads.
+- ~~**Decide whether geometry is a `Resources` handle.**~~ Decided: **no**, and recorded as
+  [ADR-0010](../adr/0010-meshes-are-owned-by-the-app.md). `Resources` never frees an
+  individual resource, and a chunk mesh dies while the app runs; the sort key has no geometry
+  field, so a handle would sort nothing. The app owns meshes, and `vulkan::Mesh` is the api
+  type it owns them as.
+- ~~**Sort the frame.**~~ Done, and **opt-in per pass** — `Pass::sort(true)`. It has to be:
+  the key groups by pipeline and material within a layer, so sorting a canvas of batches
+  would put a panel over the text drawn on it. `Pass::ordered()` is what the recorder walks,
+  which puts the decision where it can be unit tested without a device.
 
 **Port voxel.**
 

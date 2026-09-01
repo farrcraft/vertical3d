@@ -13,6 +13,7 @@
 
 #include "Buffer.h"
 #include "Device.h"
+#include "FrameUniforms.h"
 #include "PipelineCache.h"
 #include "Presenter.h"
 #include "Resources.h"
@@ -55,13 +56,17 @@ namespace v3d::render::realtime::vulkan {
          * @param cache the pipeline cache every pipeline is compiled against
          * @param resources where the pipeline, textures and materials are registered
          * @param presenter which frame in flight is being recorded, and when its buffers are free
+         * @param uniforms set 0, whose layout the quad pipelines declare so that a pass can
+         *        bind one camera across them and every other pipeline in the engine
          * @param colour the format of the image the pass draws into, which dynamic rendering
          *        needs at pipeline creation because there is no render pass to take it from
-         * @throw std::runtime_error if the pipeline or its resources cannot be created
+         * @param depth the format of the depth image, for the second of the two pipelines
+         * @throw std::runtime_error if the pipelines or their resources cannot be created
          **/
         QuadRenderer(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Device>& device,
             const boost::shared_ptr<PipelineCache>& cache, const boost::shared_ptr<Resources>& resources,
-            const boost::shared_ptr<Presenter>& presenter, VkFormat colour);
+            const boost::shared_ptr<Presenter>& presenter, const boost::shared_ptr<FrameUniforms>& uniforms,
+            VkFormat colour, VkFormat depth);
 
         /**
          **/
@@ -102,14 +107,21 @@ namespace v3d::render::realtime::vulkan {
 
      private:
         /**
-         * Build the descriptor set layouts and the pipeline layout the quad pipeline uses.
+         * Build the per material descriptor set layout. Set 0's belongs to FrameUniforms,
+         * because every pipeline in the engine has to declare the same one.
          **/
         void createLayouts();
 
         /**
-         * Compile the one pipeline, against the format the pass draws into.
+         * Compile the quad pipeline twice - once for a pass with a depth attachment and once
+         * for a pass without.
+         *
+         * Two, because dynamic rendering matches a pipeline to the attachments of the pass it
+         * draws into: one built with no depth format cannot draw into a pass that has one.
+         * Neither tests or writes depth - 2D is painter ordered either way, and a ui drawn
+         * over a scene has to stay on top of it whatever the scene left in the buffer.
          **/
-        void createPipeline(VkFormat colour);
+        void createPipelines(VkFormat colour, VkFormat depth);
 
         /**
          * Allocate the geometry buffers, one set per frame in flight.
@@ -136,14 +148,15 @@ namespace v3d::render::realtime::vulkan {
         boost::shared_ptr<PipelineCache> cache_;
         boost::shared_ptr<Resources> resources_;
         boost::shared_ptr<Presenter> presenter_;
+        boost::shared_ptr<FrameUniforms> uniforms_;
         boost::shared_ptr<TextureFactory> factory_;
 
-        VkDescriptorSetLayout frameLayout_;     /**< set 0, per frame - empty until a pass has anything to bind **/
         VkDescriptorSetLayout materialLayout_;  /**< set 1, the sampler every quad reads through **/
         std::vector<VkDescriptorPool> pools_;
         uint32_t remaining_;                    /**< sets left in the last pool **/
 
-        PipelineHandle pipeline_;
+        PipelineHandle pipeline_;               /**< for a pass with no depth attachment **/
+        PipelineHandle depthPipeline_;          /**< for a pass with one **/
         TextureHandle white_;
         std::map<uint32_t, MaterialHandle> materials_;
 

@@ -5,6 +5,7 @@
 
 #include "Pass.h"
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -16,8 +17,11 @@ namespace v3d::render::realtime {
         name_(name),
         clearColour_(0.0f, 0.0f, 0.0f, 1.0f),
         viewport_(0.0f, 0.0f, 0.0f, 0.0f),
+        view_(1.0f),
+        projection_(1.0f),
         clears_(true),
-        depth_(false) {
+        depth_(false),
+        sorts_(false) {
     }
 
     /**
@@ -77,6 +81,37 @@ namespace v3d::render::realtime {
 
     /**
      **/
+    void Pass::camera(const glm::mat4& view, const glm::mat4& projection) noexcept {
+        view_ = view;
+        projection_ = projection;
+    }
+
+    /**
+     **/
+    const glm::mat4& Pass::view() const noexcept {
+        return view_;
+    }
+
+    /**
+     **/
+    const glm::mat4& Pass::projection() const noexcept {
+        return projection_;
+    }
+
+    /**
+     **/
+    void Pass::sort(bool enabled) noexcept {
+        sorts_ = enabled;
+    }
+
+    /**
+     **/
+    bool Pass::sorts() const noexcept {
+        return sorts_;
+    }
+
+    /**
+     **/
     void Pass::submit(const DrawItem& item) {
         items_.push_back(item);
     }
@@ -85,6 +120,27 @@ namespace v3d::render::realtime {
      **/
     const std::vector<DrawItem>& Pass::items() const noexcept {
         return items_;
+    }
+
+    /**
+     **/
+    void Pass::ordered(std::vector<const DrawItem*>* into) const {
+        if (into == nullptr) {
+            return;
+        }
+        into->clear();
+        into->reserve(items_.size());
+        for (const DrawItem& item : items_) {
+            into->push_back(&item);
+        }
+        if (!sorts_) {
+            return;
+        }
+        // stable, so that items whose keys are equal keep the order they arrived in - which
+        // is what a run of quads sharing a pipeline and a material depends on
+        std::stable_sort(into->begin(), into->end(), [](const DrawItem* left, const DrawItem* right) {
+            return left->key < right->key;
+        });
     }
 
     /**

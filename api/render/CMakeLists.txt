@@ -32,6 +32,12 @@ add_library("v3dlib_render"
 	"realtime/vulkan/Resources.h" "realtime/vulkan/Resources.cxx"
 	"realtime/vulkan/Memory.h" "realtime/vulkan/Memory.cxx"
 	"realtime/vulkan/Buffer.h" "realtime/vulkan/Buffer.cxx"
+	"realtime/vulkan/Uploader.h" "realtime/vulkan/Uploader.cxx"
+	"realtime/vulkan/DeviceBuffer.h" "realtime/vulkan/DeviceBuffer.cxx"
+	"realtime/vulkan/Mesh.h" "realtime/vulkan/Mesh.cxx"
+	"realtime/vulkan/DepthBuffer.h" "realtime/vulkan/DepthBuffer.cxx"
+	"realtime/vulkan/FrameUniforms.h" "realtime/vulkan/FrameUniforms.cxx"
+	"realtime/vulkan/PipelineBuilder.h" "realtime/vulkan/PipelineBuilder.cxx"
 	"realtime/vulkan/TextureFactory.h" "realtime/vulkan/TextureFactory.cxx"
 	"realtime/vulkan/QuadRenderer.h" "realtime/vulkan/QuadRenderer.cxx")
 

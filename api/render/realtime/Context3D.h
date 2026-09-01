@@ -7,12 +7,15 @@
 
 #include "Context.h"
 #include "Window3D.h"
+#include "vulkan/DepthBuffer.h"
 #include "vulkan/Device.h"
+#include "vulkan/FrameUniforms.h"
 #include "vulkan/PipelineCache.h"
 #include "vulkan/Presenter.h"
 #include "vulkan/QuadRenderer.h"
 #include "vulkan/Resources.h"
 #include "vulkan/Swapchain.h"
+#include "vulkan/Uploader.h"
 
 #include "../../log/Logger.h"
 
@@ -66,6 +69,40 @@ namespace v3d::render::realtime {
         boost::shared_ptr<vulkan::QuadRenderer> quads() const;
 
         /**
+         * @return set 0, where each pass's camera is written and bound from - ADR-0008
+         **/
+        boost::shared_ptr<vulkan::FrameUniforms> frameUniforms() const;
+
+        /**
+         * @return the one-shot queue everything reaching device local memory is copied by
+         **/
+        boost::shared_ptr<vulkan::Uploader> uploader() const;
+
+        /**
+         * The format a pipeline that depth tests has to be built against.
+         *
+         * Known from the device rather than from the image, so a pipeline can be built
+         * before anything has asked for a depth buffer.
+         **/
+        VkFormat depthFormat() const noexcept;
+
+        /**
+         * The depth buffer, allocated on the first call and sized with the swapchain from
+         * then on.
+         *
+         * Lazy because a 2D app never asks: pong and tetris draw painter ordered quads and
+         * would otherwise pay a full screen depth image for nothing.
+         *
+         * @return the buffer, which may be invalid if the window has no area
+         **/
+        boost::shared_ptr<vulkan::DepthBuffer> depth();
+
+        /**
+         * @return whether a depth buffer has been allocated, without allocating one
+         **/
+        bool hasDepth() const noexcept;
+
+        /**
          * Rebuild the swapchain against the window's current size, and everything that is
          * sized by it. Call this when presenting reports the chain has gone out of date.
          **/
@@ -77,6 +114,10 @@ namespace v3d::render::realtime {
         boost::shared_ptr<vulkan::Swapchain> swapchain_;
         boost::shared_ptr<vulkan::PipelineCache> pipelineCache_;
         boost::shared_ptr<vulkan::Resources> resources_;
+        boost::shared_ptr<vulkan::Uploader> uploader_;
+        boost::shared_ptr<vulkan::FrameUniforms> frameUniforms_;
+        boost::shared_ptr<vulkan::DepthBuffer> depth_;
+        VkFormat depthFormat_;
         boost::shared_ptr<vulkan::QuadRenderer> quads_;
         // last, so that it is torn down first - nothing else may go away while a frame it
         // submitted is still in flight

@@ -5,7 +5,7 @@
 
 #include "Recorder.h"
 
-#include <algorithm>
+#include <vector>
 
 #include <boost/shared_ptr.hpp>
 
@@ -16,13 +16,16 @@ namespace v3d::render::realtime::vulkan {
     Recorder::Target::Target() noexcept :
         image(VK_NULL_HANDLE),
         view(VK_NULL_HANDLE),
-        extent{0, 0} {
+        extent{0, 0},
+        depthImage(VK_NULL_HANDLE),
+        depthView(VK_NULL_HANDLE) {
     }
 
     /**
      **/
     Recorder::Bound::Bound() noexcept :
         pipeline(nullptr),
+        frameSet(VK_NULL_HANDLE),
         set(VK_NULL_HANDLE),
         vertexBuffer(VK_NULL_HANDLE),
         vertexBufferOffset(0),
@@ -32,13 +35,37 @@ namespace v3d::render::realtime::vulkan {
 
     /**
      **/
-    void Recorder::record(VkCommandBuffer commands, const Frame& frame, const Target& target, const Resources& resources) const {
+    void Recorder::record(VkCommandBuffer commands, const Frame& frame, const Target& target, const Resources& resources,
+        FrameUniforms* uniforms) const {
         // the acquired image comes back in whatever layout it was left in, and nothing in the
         // frame reads it, so undefined is the honest source layout and the cheapest one
         transition(commands, target.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
+        bool depth = false;
         for (const boost::shared_ptr<Pass>& pass : frame.passes()) {
-            record(commands, *pass, target, resources);
+            if (pass->depth()) {
+                depth = true;
+                break;
+            }
+        }
+        if (depth && target.depthImage != VK_NULL_HANDLE) {
+            transitionDepth(commands, target.depthImage);
+        }
+
+        for (const boost::shared_ptr<Pass>& pass : frame.passes()) {
+            VkDescriptorSet frameSet = VK_NULL_HANDLE;
+            if (uniforms != nullptr) {
+                FrameUniforms::Camera camera;
+                camera.view = pass->view();
+                camera.projection = pass->projection();
+                camera.viewProjection = camera.projection * camera.view;
+                camera.viewport.x = pass->viewport().x;
+                camera.viewport.y = pass->viewport().y;
+                camera.viewport.z = pass->viewport().z > 0.0f ? pass->viewport().z : static_cast<float>(target.extent.width);
+                camera.viewport.w = pass->viewport().w > 0.0f ? pass->viewport().w : static_cast<float>(target.extent.height);
+                frameSet = uniforms->write(camera);
+            }
+            record(commands, *pass, target, resources, frameSet);
         }
 
         transition(commands, target.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
@@ -46,7 +73,8 @@ namespace v3d::render::realtime::vulkan {
 
     /**
      **/
-    void Recorder::record(VkCommandBuffer commands, const Pass& pass, const Target& target, const Resources& resources) {
+    void Recorder::record(VkCommandBuffer commands, const Pass& pass, const Target& target, const Resources& resources,
+        VkDescriptorSet frameSet) {
         VkRenderingAttachmentInfo colour{};
         colour.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
         colour.imageView = target.view;
@@ -58,6 +86,19 @@ namespace v3d::render::realtime::vulkan {
         colour.clearValue.color.float32[1] = pass.clearColour().g;
         colour.clearValue.color.float32[2] = pass.clearColour().b;
         colour.clearValue.color.float32[3] = pass.clearColour().a;
+
+        const bool depth = pass.depth() && target.depthView != VK_NULL_HANDLE;
+
+        VkRenderingAttachmentInfo depthAttachment{};
+        depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+        depthAttachment.imageView = target.depthView;
+        depthAttachment.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+        // depth follows colour: a pass that starts the image over starts the depth over too,
+        // and one drawing on top of another keeps what that one wrote
+        depthAttachment.loadOp = pass.clears() ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
+        depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        // far is one - the projections in api/type are not reversed depth
+        depthAttachment.clearValue.depthStencil.depth = 1.0f;
 
         // the region a pass draws into, which is the whole image until something asks for less
         VkRect2D area{};
@@ -72,6 +113,7 @@ namespace v3d::render::realtime::vulkan {
         rendering.layerCount = 1;
         rendering.colorAttachmentCount = 1;
         rendering.pColorAttachments = &colour;
+        rendering.pDepthAttachment = depth ? &depthAttachment : nullptr;
 
         vkCmdBeginRendering(commands, &rendering);
 
@@ -86,9 +128,13 @@ namespace v3d::render::realtime::vulkan {
         vkCmdSetViewport(commands, 0, 1, &viewport);
         vkCmdSetScissor(commands, 0, 1, &area);
 
+        // the pass decides whether that is submission order or sort key order
+        std::vector<const DrawItem*> ordered;
+        pass.ordered(&ordered);
+
         Bound bound;
-        for (const DrawItem& item : pass.items()) {
-            record(commands, item, resources, &bound);
+        for (const DrawItem* item : ordered) {
+            record(commands, *item, resources, frameSet, &bound);
         }
 
         vkCmdEndRendering(commands);
@@ -96,7 +142,7 @@ namespace v3d::render::realtime::vulkan {
 
     /**
      **/
-    void Recorder::record(VkCommandBuffer commands, const DrawItem& item, const Resources& resources, Bound* bound) {
+    void Recorder::record(VkCommandBuffer commands, const DrawItem& item, const Resources& resources, VkDescriptorSet frameSet, Bound* bound) {
         // the escape hatch of ADR-0004, for work the item's fields cannot describe. It
         // records whatever it likes, so nothing about what is bound survives it
         if (item.record) {
@@ -114,7 +160,15 @@ namespace v3d::render::realtime::vulkan {
             vkCmdBindPipeline(commands, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipeline);
             bound->pipeline = pipeline;
             // a different layout invalidates what was bound against the old one
+            bound->frameSet = VK_NULL_HANDLE;
             bound->set = VK_NULL_HANDLE;
+        }
+
+        if (frameSet != VK_NULL_HANDLE && frameSet != bound->frameSet) {
+            // set 0 is the per frame frequency of ADR-0008 - the camera the whole pass draws
+            // through, which is why it is bound here and never per item
+            vkCmdBindDescriptorSets(commands, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 0, 1, &frameSet, 0, nullptr);
+            bound->frameSet = frameSet;
         }
 
         if (item.pushSize > 0 && pipeline->pushStages != 0) {
@@ -123,8 +177,7 @@ namespace v3d::render::realtime::vulkan {
 
         const Material* material = resources.material(item.material);
         if (material != nullptr && material->set != VK_NULL_HANDLE && material->set != bound->set) {
-            // set 1 is the per material frequency of the binding convention in
-            // docs/RenderingPipeline.md - set 0 is the pass's, and nothing fills it yet
+            // set 1 is the per material frequency of the same convention
             vkCmdBindDescriptorSets(commands, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 1, 1, &material->set, 0, nullptr);
             bound->set = material->set;
         }
@@ -185,6 +238,37 @@ namespace v3d::render::realtime::vulkan {
             barrier.dstStageMask = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT;
             barrier.dstAccessMask = VK_ACCESS_2_NONE;
         }
+
+        VkDependencyInfo dependency{};
+        dependency.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+        dependency.imageMemoryBarrierCount = 1;
+        dependency.pImageMemoryBarriers = &barrier;
+
+        vkCmdPipelineBarrier2(commands, &dependency);
+    }
+
+    /**
+     **/
+    void Recorder::transitionDepth(VkCommandBuffer commands, VkImage image) {
+        VkImageMemoryBarrier2 barrier{};
+        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+        // nothing carries depth from one frame to the next, so what the last frame left is
+        // not worth the barrier it would cost to preserve
+        barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        barrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.image = image;
+        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+        barrier.subresourceRange.baseMipLevel = 0;
+        barrier.subresourceRange.levelCount = 1;
+        barrier.subresourceRange.baseArrayLayer = 0;
+        barrier.subresourceRange.layerCount = 1;
+        // the previous frame's tests are what this waits on, and they run at both depth stages
+        barrier.srcStageMask = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
+        barrier.srcAccessMask = VK_ACCESS_2_NONE;
+        barrier.dstStageMask = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
+        barrier.dstAccessMask = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
         VkDependencyInfo dependency{};
         dependency.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
