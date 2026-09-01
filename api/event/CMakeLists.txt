@@ -12,3 +12,4 @@ add_library("v3dlib_event"
  "MouseMotion.h" "MouseMotion.cpp"
  "State.h"
  "Type.h")
+add_subdirectory("tests")

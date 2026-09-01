@@ -93,20 +93,25 @@ namespace v3d::image::reader {
         if (!file) {
             throw std::runtime_error("error reading bmp colors!");
         }
-        // size of image data buffer including boundary padding
-        uint64_t size = iheader.width_ * iheader.height_ * (iheader.bits_ / 8);
         int64_t width, pad;
         width = pad = iheader.width_ * (iheader.bits_ / 8);
         // adjust pad width to dword boundary alignment
         while (pad % 4 != 0) {
             pad++;
         }
+        // a negative height means the rows are stored top down; either way there are that
+        // many of them
+        uint64_t rows = static_cast<uint64_t>(iheader.height_ < 0 ? -iheader.height_ : iheader.height_);
+        // the image's own bytes, and the larger number of them the file actually holds -
+        // every row on disk is padded out to a dword boundary
+        uint64_t size = static_cast<uint64_t>(width) * rows;
+        uint64_t storedSize = static_cast<uint64_t>(pad) * rows;
 
         logger_->get()->debug("BMPReader::read - allocating image bits: {}", size);
         logger_->get()->debug("BMPReader::read - width is: {} after padding: {}", width, pad);
 
         // this is just temporary storage
-        boost::shared_ptr<Image> img = boost::make_shared<Image>(size);
+        boost::shared_ptr<Image> img = boost::make_shared<Image>(storedSize);
         unsigned char* temp = img->data();
 
         /*
@@ -122,7 +127,7 @@ namespace v3d::image::reader {
         */
 
         // read image data
-        file.read(reinterpret_cast<char*>(temp), size);
+        file.read(reinterpret_cast<char*>(temp), storedSize);
 
         logger_->get()->debug("BMPReader::read - done reading file..");
 
@@ -134,9 +139,8 @@ namespace v3d::image::reader {
         file.close();
 
         auto offset = pad - width;
-        uint64_t height = iheader.height_;
 
-        boost::shared_ptr<Image> image(new Image(iheader.width_, height, 24));
+        boost::shared_ptr<Image> image(new Image(iheader.width_, static_cast<uint32_t>(rows), 24));
         unsigned char* data = image->data();
 
         // convert 8/24bit image from bgr to rgb
@@ -189,36 +193,19 @@ namespace v3d::image::reader {
                 *(data + i + 2) = ((*(temp + i + 1) >> 1) << 3);  // B
             }
         } else if (iheader.bits_ == 24) {
-            if (iheader.height_ > 0) {
-                // count backwards so you start at the front of the image
-                for (uint64_t i = 0; i < size; i += 3) {
-                    // jump over the padding at the start of a new line
-                    if ((i + 1) % pad == 0) {
-                        i += offset;
-                    }
-
-                    // transfer the data
-                    *(data + i + 2) = *(temp + i);
-                    *(data + i + 1) = *(temp + i + 1);
-                    *(data + i) = *(temp + i + 2);
-                }
-            } else {  // image parser for a forward image
-                auto j = size - 3;
-                // count backwards so you start at the front of the image
-                // here you can start from the back of the file or the front,
-                // after the header  The only problem is that some programs
-                // will pad not only the data, but also the file size to
-                // be divisible by 4 bytes.
-                for (uint64_t i = 0; i < size; i += 3) {
-                    // jump over the padding at the start of a new line
-                    if ((i + 1) % pad == 0) {
-                        i += offset;
-                    }
-                    // transfer the data
-                    *(data + j + 2) = *(temp + i);
-                    *(data + j + 1) = *(temp + i + 1);
-                    *(data + j) = *(temp + i + 2);
-                    j -= 3;
+            // rows come off the disk padded to a dword boundary and go into the image
+            // without that padding, so each is copied on its own. Walking both buffers with
+            // one index and a modulo test for the padding read past the end of the data and
+            // misplaced every row after the first - it only ever looked right because every
+            // fixture is a single flat colour.
+            for (uint64_t row = 0; row < rows; ++row) {
+                const unsigned char* src = temp + row * pad;
+                unsigned char* dest = data + row * width;
+                for (int64_t column = 0; column < iheader.width_; ++column) {
+                    // bgr on disk, rgb in memory
+                    dest[column * 3 + 0] = src[column * 3 + 2];
+                    dest[column * 3 + 1] = src[column * 3 + 1];
+                    dest[column * 3 + 2] = src[column * 3 + 0];
                 }
             }
         } else {

@@ -63,9 +63,10 @@ None of `v3dlibs/`, `luxa/`, `rigel/`, `vertical3d/` or `vault/` is in the root
 
 Among the apps, none still includes a legacy header — `voxel/src/Controller.h` is already
 clean, and pong's Luxa usage is commented out. `vertical3d/` is the only consumer left, of
-`v3dlibs/core`, `hookah` and `command`. `v3dlibs/tests/` is the only test corpus in the
-working tree and must be salvaged before that tree goes; `luxa/tests/` and two v3dlibs tests
-were deleted rather than migrated and are recoverable from history.
+`v3dlibs/core`, `hookah` and `command`. The test corpus was the other thing holding the
+tree up; it moved into per-library `api/<lib>/tests` on 2026-08-31, and `v3dlibs/tests/` is
+gone. The files deleted rather than migrated - `luxa/tests/` and two v3dlibs tests - turned
+out to be empty stubs.
 
 **The luxa audit is done.** Written up in [docs/LuxaAudit.md](../LuxaAudit.md), 2026-08-31.
 `luxa/` cannot be deleted yet, and the blocking list is nine items long. The short version:
@@ -89,8 +90,8 @@ items in `pong/data/vgui.json` remain unreachable.
 2026-08-31. Most of the tree is genuinely covered: `input/` by `api/input`, `hookah/Window`
 by `api/render/realtime/Window`, `gui/InputEventAdapter` by `api/event` plus `api/input`, and
 `command/` by `api/event` — nothing still needs `CommandDirectory`, `CommandTable` or
-`StateController`. What keeps the tree alive is narrower than expected: the test corpus has
-to move, and `vertical3d/` still includes six of its headers. `core/Scene` and `SceneVisitor`
+`StateController`. What keeps the tree alive is narrower than expected: at the time of the audit, the test
+corpus had to move - it since has - and `vertical3d/` still includes six of its headers. `core/Scene` and `SceneVisitor`
 should *not* be folded into `api/dag` — that library is 374 lines of skeleton with no
 traversal, no visitor and no consumers anywhere — they go with the editor in Phase 6, as
 `CreatePolyCommandSet` already does.
@@ -149,8 +150,8 @@ parity.
 
 Not blocked by anything: deleting the legacy trees, the SDL2 leftovers, the `Operation`
 signature fix and odyssey with it, tetris's config-format migration (done), the test
-framework, and docs. Roughly half the outstanding work is in this bucket, and all of it makes the Vulkan
-work easier to review by shrinking the noise around it.
+framework (done), and docs. Roughly half the outstanding work is in this bucket, and all of
+it makes the Vulkan work easier to review by shrinking the noise around it.
 
 The one hard ordering constraint inside the Vulkan work: the apps need batched quads, and
 nothing provides them. `v3d::gl::Canvas` batches coloured quads but carries no texture
@@ -189,10 +190,20 @@ None of this is blocked. It shrinks the surface area everything else has to work
   still short in the other direction — it includes `api/engine`, `api/event`, `api/gl`,
   `api/log` and `api/render` while linking only `v3dlib_image` — which is part of the
   "fix the link list" item below and will only surface once tetris compiles.
-- Salvage `v3dlibs/tests/` — the largest reason that tree is still alive — into per-library
-  `tests/` directories, fixing the stale `../3dtypes/` and `ImageFactory.h` include paths on
-  the way. Recover `BRepTest`/`CameraProfileTest` from `6cfb4b6^` and `luxa/tests/` from
-  `d31a2e9^`; all three were deleted rather than migrated.
+- ~~Salvage `v3dlibs/tests/` into per-library `tests/` directories.~~ Done 2026-08-31.
+  `v3dlibs/tests/` is gone; six Boost.Test binaries now build from `api/<lib>/tests` and run
+  under ctest, covering `type`, `brep`, `image`, `font`, `input` and `event` in 47 cases.
+  Almost nothing was a path rewrite: the type and brep tests were written against
+  `v3D::Vector3`, the image tests against an `ImageFactory` that now takes a logger, and the
+  font and input tests against classes that no longer exist. Of the six command-layer tests,
+  `BindTest`, `CommandDirectoryTest` and `EventInfoTest` became `MapperTest`, `EngineTest`
+  and `EventTest`; the other three were dropped as covered. The three recoveries were a dead
+  end worth recording: `BRepTest`, `CameraProfileTest` and all of `luxa/tests/` are empty
+  test bodies, a zero-byte file and a log4cxx fixture, so nothing was lost when they were
+  deleted. Running the corpus for the first time in years turned up eleven `api/` defects,
+  including a BMP writer that corrupted the heap and a `Logger` constructor that threw on
+  the second one built — which is to say tetris threw on startup. All are fixed and listed
+  in [docs/V3dlibsAudit.md](../V3dlibsAudit.md).
 - Leave `rigel/` and `vertical3d/` alone. They belong to Phase 6.
 - ~~Delete `talyn`'s `${SDL2_LIBRARIES}` link and `odyssey/cmake/FindSDL2.cmake`.~~ Done
   2026-08-31, along with a stale `FindSDL2` comment in the root `CMakeLists.txt`. Neither
@@ -334,11 +345,14 @@ nothing left worth taking.
 
 Deliberately not last. This is independent of the render rewrite and blocked by nothing.
 
-There is no working test suite today: Boost.Test sources sit in `v3dlibs/tests/`, and
-`pong/run-unit-tests.sh` and `tetris/run-unit-tests.sh` invoke a `unit_tests` binary that no
-CMakeLists builds. The existing tests cover `api/type` (AABBox, ArcBall, Bound2D, Camera),
-`api/brep` (Face, HalfEdge, Vertex), `api/image`, `api/font`, `api/input` and the old command
-layer.
+Tier 1 landed on 2026-08-31. `enable_testing()` and a `v3d_add_test` helper are in the root
+CMakeLists, six binaries build from `api/<lib>/tests`, and `ctest --test-dir
+out/build/x64-Debug` runs the lot in under two seconds. Coverage is `type`, `brep`, `image`,
+`font`, `input` and `event`. Still uncovered: `asset`, `config`, `dag`, `ecs`, `audio`,
+`log`, `ui`, and everything under `api/render`.
+
+`pong/run-unit-tests.sh` and `tetris/run-unit-tests.sh` still invoke a `unit_tests` binary
+that no CMakeLists builds; they belong to tier 3 and are stale until it lands.
 
 Three tiers, decided 2026-08-30:
 
@@ -356,17 +370,23 @@ Renderer, ReyesPrimitive, Vertex), `tetris/tests/` has a bare `TestMain.cxx`, an
 
 Work:
 
-- Split `v3dlibs/tests/` by target library and move each file to its api home before the
-  legacy tree is deleted. Drop the ones covering the removed command layer
-  (`BindTest`, `CommandTest`, `CommandDirectoryTest`, `CommandInfoTest`, `EventInfoTest`,
-  `InputEventAdapterTest`) unless the behaviour survived into `api/config` or `api/event`,
-  in which case rewrite them against the new interfaces.
-- `enable_testing()` at the root plus `add_test` per target, so one `ctest` run covers
-  everything and individual suites stay separately runnable.
-- Add ctest to CI alongside cpplint.
-- Start coverage on the libraries that need neither a window nor a GPU: `type`, `brep`,
-  `dag`, `image`, `asset`, `config`, `event`, `input`, `font`. Those can run in CI from day
-  one, which the render libraries cannot — see open question 4.
+- ~~Split `v3dlibs/tests/` by target library and move each file to its api home before the
+  legacy tree is deleted.~~ Done 2026-08-31, command-layer tests included — three rewritten
+  against `api/event`, three dropped as covered.
+- ~~`enable_testing()` at the root plus `add_test` per target, so one `ctest` run covers
+  everything and individual suites stay separately runnable.~~ Done 2026-08-31, as
+  `v3d_add_test(<lib> <sources>)`.
+- Add ctest to CI alongside cpplint. Nothing yet builds the tree in CI, so this is a new
+  workflow rather than a step added to the cpplint one.
+- Cover the api libraries the salvage did not reach: `asset`, `config`, `dag`, `ecs`,
+  `audio`, `ui`. `config` and `asset` are the ones an app most visibly depends on - the
+  config-format migrations in this phase were verified by reading `Config::load`, not by
+  running it.
+- Revive `moya/tests/` (five real test files, no target) and `tetris/tests/` (a bare
+  `TestMain`), which is tier 3 and now needs only a CMakeLists each.
+- ~~Start coverage on the libraries that need neither a window nor a GPU.~~ Done for
+  `type`, `brep`, `image`, `event`, `input` and `font`; `dag`, `asset` and `config` remain.
+  Those can run in CI from day one, which the render libraries cannot — see open question 4.
 
 Two items on `docs/TODO.md` — "Get tests working again" and "integrate tests into github
 actions" — are this workstream.

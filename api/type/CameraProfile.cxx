@@ -22,7 +22,12 @@ namespace v3d::type {
         up_(0.0f, 1.0f, 0.0f),
         right_(1.0f, 0.0f, 0.0f),
         direction_(0.0f, 0.0f, 1.0f),
-        options_(OPTION_ORTHOGRAPHIC | OPTION_DEFAULT) {
+        options_(OPTION_ORTHOGRAPHIC | OPTION_DEFAULT),
+        // glm leaves both of these uninitialized, and Camera reads them before anything
+        // else has a chance to set them - createView casts the rotation, and orthoFactor
+        // divides by the width
+        rotation_(1.0f, 0.0f, 0.0f, 0.0f),
+        size_{ 0, 0 } {
     }
 
     CameraProfile::~CameraProfile() {

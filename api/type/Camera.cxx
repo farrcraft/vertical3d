@@ -197,7 +197,7 @@ namespace v3d::type {
     */
     void Camera::pan(float angle) {
         glm::vec3 axis(0.0, 1.0, 0.0);
-        glm::quat local_rotation;
+        glm::quat local_rotation(1.0f, 0.0f, 0.0f, 0.0f);
         local_rotation = glm::rotate(local_rotation, angle, axis);
         glm::quat total;
         total = profile_.rotation_;
@@ -210,7 +210,7 @@ namespace v3d::type {
     */
     void Camera::tilt(float angle) {
         glm::vec3 axis(1.0, 0.0, 0.0);
-        glm::quat local_rotation;
+        glm::quat local_rotation(1.0f, 0.0f, 0.0f, 0.0f);
         local_rotation = glm::rotate(local_rotation, angle, axis);
         glm::quat total;
         total = profile_.rotation_;

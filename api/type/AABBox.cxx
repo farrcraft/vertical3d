@@ -7,7 +7,9 @@
 
 namespace v3d::type {
 
-    AABBox::AABBox() {
+    // an empty box sits at the origin rather than wherever the stack left it - BRep::bound
+    // returns a default-constructed box for a mesh with no vertices, and its caller reads it
+    AABBox::AABBox() : min_(0.0f), max_(0.0f) {
     }
 
     AABBox::~AABBox() {

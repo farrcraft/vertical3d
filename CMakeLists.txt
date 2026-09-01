@@ -28,7 +28,7 @@ include_directories(SYSTEM ${SDL3_INCLUDE_DIR})
 find_package(Vulkan REQUIRED)
 
 # CMake already comes with a module for boost - https://cmake.org/cmake/help/latest/module/FindBoost.html
-find_package(Boost 1.76.0 REQUIRED COMPONENTS json locale log program_options)
+find_package(Boost 1.76.0 REQUIRED COMPONENTS filesystem json locale log program_options unit_test_framework)
 
 find_package(Freetype REQUIRED)
 find_package(PNG REQUIRED)
@@ -65,6 +65,24 @@ function(v3d_add_shared_data target)
 			"$<TARGET_FILE_DIR:${target}>/data"
 		COMMENT "Copying shared data for ${target}"
 		VERBATIM)
+endfunction()
+
+# Tests live next to the library they cover, in api/<lib>/tests, and each directory builds
+# one Boost.Test binary. v3d_add_test wires up what every one of them needs: the framework
+# (whose imported target carries BOOST_TEST_DYN_LINK, since vcpkg builds boost shared),
+# /EHsc and /utf-8 - the latter is required wherever spdlog's bundled fmt is compiled - and
+# a working directory beside the executable, so a test's data files resolve the same way an
+# app's do. Run them with ctest --test-dir out/build/<config>.
+enable_testing()
+
+function(v3d_add_test lib)
+	set(target "v3dtest_${lib}")
+	add_executable(${target} ${ARGN})
+	target_link_libraries(${target} PRIVATE Boost::unit_test_framework)
+	target_compile_options(${target} PRIVATE /EHsc /utf-8)
+	# Boost.Test's CRT leak check reports at exit, before spdlog's global registry is torn
+	# down, so any test that builds a Logger reports the same permanent false positive.
+	add_test(NAME ${lib} COMMAND ${target} --detect_memory_leaks=0 WORKING_DIRECTORY $<TARGET_FILE_DIR:${target}>)
 endfunction()
 
 # Include sub-projects

@@ -217,6 +217,11 @@ namespace v3d::font {
     }
 
     const Font2D::Glyph* Font2D::glyph(unsigned char charcode) const {
+        // nothing has been built yet, so there is no glyph to fall back to - dereferencing
+        // begin() on the empty map was undefined
+        if (glyphs_.empty()) {
+            return nullptr;
+        }
         std::map<unsigned char, Glyph>::const_iterator iter = glyphs_.find(charcode);
         if (iter == glyphs_.end()) {
             iter = glyphs_.begin();

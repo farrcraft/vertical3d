@@ -8,9 +8,10 @@ close before the tree can be deleted: every library still in it, where it landed
 (or did not), and what has to be built before nothing is lost.
 
 **Verdict up front: `v3dlibs/` cannot be deleted yet, but it is much closer than `luxa/`.**
-Most of the tree is genuinely covered. Two things block deletion — `vertical3d/` still
-includes six of its headers, and the test corpus has to move. Everything else is either
-covered, deliberately replaced, or dead.
+Most of the tree is genuinely covered. Two things blocked deletion — `vertical3d/` still
+includes six of its headers, and the test corpus had to move. The corpus moved on
+2026-08-31, so `vertical3d/` is the only one left. Everything else is either covered,
+deliberately replaced, or dead.
 
 The audit also found that the *replacement* for the command layer was less finished than the
 plan assumed, and that mouse input did not work at all. Those were `api/` bugs, not reasons
@@ -37,7 +38,7 @@ v3dlibs/gui/        InputEventAdapter
 v3dlibs/hookah/     Hookah, Window, drivers/sdl2/
 v3dlibs/input/      InputDevice, KeyboardDevice, MouseDevice, and their listener interfaces
 v3dlibs/component/  Component.h
-v3dlibs/tests/      23 Boost.Test sources plus 9 image fixtures
+v3dlibs/tests/      23 Boost.Test sources plus 9 image fixtures (moved out 2026-08-31)
 ```
 
 Already migrated out, and out of scope here: `type`, `brep`, `image`, `font`, `gl`, `dag`,
@@ -233,10 +234,16 @@ comment, and `docs/ECSDesign.md` already covers that ground.
 
 ## Tests
 
-`v3dlibs/tests/` is the largest single reason not to delete the tree yet. 23 Boost.Test
-sources, 1,016 lines, plus nine image fixtures under `tests/data/`. Their include paths are
-stale — `../3dtypes/` and `../image/ImageFactory.h` were renamed years ago — so each move is
-a path rewrite, not a copy.
+**Done 2026-08-31.** `v3dlibs/tests/` is gone; the corpus now lives in six per-library
+`tests/` directories built as `v3dtest_<lib>` and run by ctest. What follows is the plan it
+was moved against, with what actually happened noted against it.
+
+`v3dlibs/tests/` was the largest single reason not to delete the tree. 23 Boost.Test
+sources, 1,016 lines, plus nine image fixtures under `tests/data/`. Their include paths were
+stale — `../3dtypes/` and `../image/ImageFactory.h` were renamed years ago — so each move was
+a path rewrite, not a copy. In the event almost every file needed more than that: the type
+and brep tests were on `v3D::Vector3` rather than glm, the image tests on an `ImageFactory`
+that now takes a logger, and the font and input tests on classes that no longer exist.
 
 Where each file goes:
 
@@ -252,15 +259,25 @@ Where each file goes:
 | `TestMain` | One per target |
 
 The six command-layer tests are the ones the plan flags for deletion "unless the behaviour
-survived". Two of them should be rewritten rather than dropped: `BindTest` covers
-event-to-command matching, which is `Mapper`'s job, and `CommandDirectoryTest` covers
-dispatch. Both are testing behaviour that still exists under different names, and `api/event`
-has no tests at all.
+survived". Three were rewritten rather than dropped: `BindTest` covered event-to-command
+matching, which is `Mapper`'s job; `CommandDirectoryTest` covered dispatch, which is
+`event::Engine`'s; and `EventInfoTest` covered a name/state/data triple that is now
+`event::Event`. They became `MapperTest`, `EngineTest` and `EventTest`. `CommandTest`,
+`CommandInfoTest` and `InputEventAdapterTest` were dropped — the first two are covered by
+`EventTest`, and the adapter's job is now what `Keyboard::handleEvent` and
+`Mouse::handleEvent` do, which `KeyboardTest` and `MouseTest` cover directly.
 
-`MouseDeviceTest` is worth rewriting first — it would have caught the empty `Mouse::handleEvent`.
+`MouseDeviceTest` was worth rewriting first — it would have caught the empty
+`Mouse::handleEvent`.
 
 Two more, `BRepTest.cxx` and `CameraProfileTest.cxx`, were deleted in `6cfb4b6`, a commit
-whose message is "tab cleanup". That looks accidental. Recover them from `6cfb4b6^`.
+whose message is "tab cleanup". That looked accidental, and it was — but recovering them
+from `6cfb4b6^` turned up two empty `BOOST_AUTO_TEST_CASE` bodies and nothing else. The same
+goes for `luxa/tests/` at `d31a2e9^`: `ButtonTest.cxx` is an empty case, `ComponentManagerTest.cxx`
+is a zero-byte file, and `TestMain.cxx` configures log4cxx, which left the repo years ago.
+Nothing was lost in either deletion. Both files were recovered to their new homes and given
+real bodies; the luxa three were left in history, since `api/ui` needs tests written against
+what it does now rather than an empty shell.
 
 ## Corrections to the plan's starting notes
 
@@ -285,8 +302,8 @@ whose message is "tab cleanup". That looks accidental. Recover them from `6cfb4b
 ## What has to happen before `v3dlibs/` can be deleted
 
 1. ~~Drop `v3dlib_core` from tetris's link list.~~ **Done 2026-08-31.**
-2. Move `v3dlibs/tests/` to per-library `tests/` directories with corrected include paths,
-   and recover `BRepTest`/`CameraProfileTest` from `6cfb4b6^`. (Tests workstream.)
+2. ~~Move `v3dlibs/tests/` to per-library `tests/` directories with corrected include paths,
+   and recover `BRepTest`/`CameraProfileTest` from `6cfb4b6^`.~~ **Done 2026-08-31.**
 3. Move `core/Scene`, `core/SceneVisitor` and `core/CreatePolyCommandSet` to wherever the
    editor rewrite wants them — not into `api/dag`. (Phase 6, or earlier as a straight move to
    unblock deletion.)
@@ -321,3 +338,55 @@ a source event could only reach one destination, because `Mapper` used a `std::m
 `operator[]` silently overwrote — which is why pong's right paddle had never worked; and
 `Keyboard::handleEvent` cleared key state on the wrong condition, so `KeyState` never
 tracked a key correctly.
+
+## What running the salvaged tests found
+
+Every one of these was found by getting a test to compile and run against the code, and
+every one was fixed on 2026-08-31 unless marked otherwise. Nothing here was visible before,
+because nothing had executed this code since the corpus stopped building.
+
+- **`writer::Bmp::write` overran both buffers.** A single index walked the destination with a
+  modulo test for the row padding while reading the source, which has none — so it wrote
+  past the end of a `pad * height` buffer and read past the end of the image. It corrupted
+  the heap on a 2x2 image. `reader::Bmp::read` had the mirror of the same walk and read
+  `width * height * bpp/8` bytes from a file whose rows are padded, so every row after the
+  first landed in the wrong place. Both now copy a row at a time. Neither was noticeable
+  before because every fixture is one flat colour.
+- **`writer::Jpeg::write` never closed its file.** The handle leaked and the tail of the
+  image stayed in the stdio buffer, so anything reading the file back in the same process
+  got a truncated jpeg.
+- **`log::Logger`'s constructor threw on the second one built.** `spdlog::basic_logger_mt`
+  rejects a second registration under the same name, and tetris builds a `Logger` in its
+  `Controller` before `Engine::initialize` builds another — so tetris threw on startup. It
+  now takes over the registered logger.
+- **`font::TextureFont` could not load a face at all.** The constructor asked FreeType for a
+  size a hundred times the real one — the upstream trick for reading metrics precisely — which
+  overflows `FT_Set_Char_Size` at the 64x horizontal resolution it uses, so the request failed
+  and ascender, descender, height and linegap were all zero. Metrics now come off the face at
+  its own size, read as 26.6 fixed point.
+- **`image::Texture`'s copy lost the image.** Neither the copy constructor nor assignment
+  copied `image_`, and the copy constructor zeroed the dimensions, so a copied texture kept
+  its id and reported itself as an empty 0x0. `release()` cleared the image but not the type
+  that `isnull()` reads, so a released texture went on claiming it had something to draw.
+- **`brep` had two different `INVALID_ID` values** — `1 << 30` in `HalfEdge.cxx` and
+  `1 << 31` as `BRep::INVALID_ID` — so an unpaired half edge never compared equal to the
+  sentinel `BRep` tested it against. One constant now, in `HalfEdge.h`.
+- **`brep`'s `operator==` were non-const**, which under C++20 makes every `a == b` ambiguous
+  with the reversed candidate the compiler synthesizes. Any C++20 caller comparing a `Vertex`
+  or a `HalfEdge` failed to compile.
+- **Uninitialized state in `api/type`.** `CameraProfile` left `rotation_` and `size_` unset
+  and `Camera::createView` read the first of them; `Camera::pan`/`tilt` rotated an
+  uninitialized quaternion; `AABBox`'s default constructor left both extents unset, which
+  `BRep::bound` returns for an empty mesh.
+- **`ArcBall::bounds` guarded against a zero divisor off by one** — it clamped the viewport
+  to 1, and the scale divides by (extent - 1), so a 1x1 viewport still produced NaN for
+  every mapped point.
+- **`Font2D::glyph` dereferenced `begin()` on an empty map** when called before `build()`.
+  It returns null now. It still falls back to the first glyph for a charcode it does not
+  have, which does not agree with `width()` returning 0 for the same charcode — left alone,
+  since something has to draw.
+
+Two things the tests document rather than fix, both in `api/type`:
+`CameraProfile::size_` has no setter anywhere, so `Camera::orthoFactor` always divides by
+zero; and `Camera::rotate` ignores any quaternion with a zero component, which is most of
+the axis-aligned ones.

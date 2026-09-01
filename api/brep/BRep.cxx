@@ -10,7 +10,7 @@
 
 
 namespace v3d::brep {
-    const uint32_t BRep::INVALID_ID = (1 << 31);
+    const uint32_t BRep::INVALID_ID = static_cast<uint32_t>(v3d::brep::INVALID_ID);
 
 
     BRep::edge_iterator::edge_iterator() : firstEdge_(INVALID_ID), edge_(0) {

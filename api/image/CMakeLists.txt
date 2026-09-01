@@ -20,7 +20,13 @@ target_compile_definitions(v3dlib_image PUBLIC WINVER=0x0A00)
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
 target_link_libraries(v3dlib_image PUBLIC v3dlib_log)
 
+# Factory resolves paths through boost::filesystem, so anything linking this library needs
+# it too - the apps were picking it up by accident, through boost log's own dependencies.
+target_link_libraries(v3dlib_image PUBLIC Boost::filesystem)
+
 target_compile_options(v3dlib_image PRIVATE /EHsc)
 
 set(CMAKE_CXX_FLAGS "/utf-8")
 set(CMAKE_C_FLAGS "/utf-8")
+
+add_subdirectory("tests")

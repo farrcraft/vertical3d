@@ -3,13 +3,9 @@
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
 **/
 
-#pragma once
-
 #include "HalfEdge.h"
 
 namespace v3d::brep {
-
-    const uint64_t INVALID_ID = (1 << 30);
 
     HalfEdge::HalfEdge() : vertex_(INVALID_ID), pair_(INVALID_ID), next_(INVALID_ID), face_(INVALID_ID) {
     }
@@ -24,7 +20,7 @@ namespace v3d::brep {
     HalfEdge::~HalfEdge() {
     }
 
-    bool HalfEdge::operator == (const HalfEdge& e) {
+    bool HalfEdge::operator == (const HalfEdge& e) const {
         return (vertex_ == e.vertex_ &&
             face_ == e.face_ &&
             next_ == e.next_ &&

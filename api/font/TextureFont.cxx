@@ -102,7 +102,11 @@ namespace v3d::font {
 
         freetype_ = boost::make_shared<Freetype>(logger);
 
-        if (!freetype_->loadFace(filename_, size_ * 100)) {
+        // the face is loaded at its own size. Asking for a hundred times the size - the
+        // upstream trick for reading the metrics with more precision, undone by the /100
+        // below - overflows what FT_Set_Char_Size accepts at the 64x horizontal resolution
+        // this uses, so the request failed and every metric stayed at zero.
+        if (!freetype_->loadFace(filename_, size_)) {
             return;
         }
 
@@ -120,10 +124,12 @@ namespace v3d::font {
             underlineThickness_ = 1.0f;
         }
 
+        // metrics are 26.6 fixed point, which carries the fractional pixel the /100 was
+        // reaching for
         FT_Size_Metrics metrics = freetype_->face_->size->metrics;
-        ascender_ = (metrics.ascender >> 6) / 100.0f;
-        descender_ = (metrics.descender >> 6) / 100.0f;
-        height_ = (metrics.height >> 6) / 100.0f;
+        ascender_ = metrics.ascender / 64.0f;
+        descender_ = metrics.descender / 64.0f;
+        height_ = metrics.height / 64.0f;
         linegap_ = height_ - ascender_ + descender_;
 
         freetype_->release();

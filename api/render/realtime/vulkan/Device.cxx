@@ -24,6 +24,11 @@ namespace v3d::render::realtime::vulkan {
         const char* const requiredExtensions[] = {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME
         };
+
+        /**
+         * The vulkan version the renderer is written against.
+         **/
+        const uint32_t requiredApiVersion = VK_API_VERSION_1_3;
     };  // namespace
 
     /**
@@ -192,6 +197,14 @@ namespace v3d::render::realtime::vulkan {
 
         VkPhysicalDeviceProperties selectedProperties{};
         for (VkPhysicalDevice device : devices) {
+            VkPhysicalDeviceProperties properties{};
+            vkGetPhysicalDeviceProperties(device, &properties);
+
+            // the renderer is built against 1.3 - dynamic rendering and synchronization2
+            if (properties.apiVersion < requiredApiVersion) {
+                continue;
+            }
+
             if (!hasRequiredExtensions(device)) {
                 continue;
             }
@@ -200,9 +213,6 @@ namespace v3d::render::realtime::vulkan {
             if (!families.complete()) {
                 continue;
             }
-
-            VkPhysicalDeviceProperties properties{};
-            vkGetPhysicalDeviceProperties(device, &properties);
 
             // a discrete gpu is worth taking over whatever we may have already settled for
             const bool discrete = properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
@@ -217,7 +227,10 @@ namespace v3d::render::realtime::vulkan {
         }
 
         if (physical_ == VK_NULL_HANDLE) {
-            throw std::runtime_error("No physical vulkan device can both render and present to the window");
+            std::stringstream msg;
+            msg << "No physical vulkan device supports " << VK_API_VERSION_MAJOR(requiredApiVersion) << "." << VK_API_VERSION_MINOR(requiredApiVersion)
+                << " and can both render to and present to the window";
+            throw std::runtime_error(msg.str());
         }
 
         logger_->get()->info("Using vulkan device {}", std::string(selectedProperties.deviceName));

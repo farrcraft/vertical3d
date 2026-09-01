@@ -15,8 +15,10 @@ namespace v3d::brep {
         Vertex(const glm::vec3 & p);
         ~Vertex();
 
-        bool operator == (const Vertex & v);
-        bool operator == (const glm::vec3& v);
+        // const, because C++20's reversed candidate for a non-const operator== makes every
+        // a == b ambiguous with the b == a it synthesizes
+        bool operator == (const Vertex & v) const;
+        bool operator == (const glm::vec3& v) const;
 
         unsigned int edge(void) const;
         void edge(unsigned int e);

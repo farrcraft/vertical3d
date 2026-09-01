@@ -7,3 +7,4 @@ add_library("v3dlib_type"
 "CameraProfile.h" "CameraProfile.cxx"  
 "String.h" "String.cxx"
 )
+add_subdirectory("tests")

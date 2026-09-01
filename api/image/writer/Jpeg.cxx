@@ -7,6 +7,7 @@
 
 #include <jpeglib.h>
 
+#include <cstdio>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -67,6 +68,11 @@ namespace v3d::image::writer {
         // Finish compression and release memory
         jpeg_finish_compress(&cinfo);
         jpeg_destroy_compress(&cinfo);
+
+        // without this the handle leaks and, worse, the last of the image sits in the stdio
+        // buffer - anything that reads the file back before the process exits gets a
+        // truncated jpeg
+        fclose(fp);
 
         return true;
     }

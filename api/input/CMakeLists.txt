@@ -7,3 +7,4 @@ add_library("v3dlib_input"
 	"Mouse.h" "Mouse.cpp"
 	"MouseState.h" "MouseState.cpp"
  "DeviceType.h")
+add_subdirectory("tests")

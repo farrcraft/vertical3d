@@ -16,11 +16,11 @@ Vertex::Vertex(const glm::vec3& p) : point_(p) {
 Vertex::~Vertex() {
 }
 
-bool Vertex::operator == (const Vertex & v) {
+bool Vertex::operator == (const Vertex & v) const {
     return (point_ == v.point_);
 }
 
-bool Vertex::operator == (const glm::vec3 & v) {
+bool Vertex::operator == (const glm::vec3 & v) const {
     return (point_ == v);
 }
 

@@ -57,7 +57,18 @@ Run in CI by [.github/workflows/cpplint.yml](.github/workflows/cpplint.yml). Cur
 
 ## Tests
 
-There is no working test suite. Boost.Test sources exist under `v3dlibs/tests/`, and `pong/run-unit-tests.sh` / `tetris/run-unit-tests.sh` invoke a `unit_tests` binary — but no CMakeLists builds one, and `v3dlibs/` is not in the build. Don't offer a test command; verify changes by building.
+Boost.Test, one binary per api library, built from `api/<lib>/tests/` and registered with ctest:
+
+```
+ninja -C out/build/x64-Debug                       # tests build with everything else
+ctest --test-dir out/build/x64-Debug --output-on-failure
+ctest --test-dir out/build/x64-Debug -R image      # one suite
+out/build/x64-Debug/api/image/tests/v3dtest_image.exe --run_test=texture_test
+```
+
+`v3d_add_test(<lib> <sources>)` in the root CMakeLists builds `v3dtest_<lib>`, links the framework, and adds the ctest entry with the working directory set beside the executable so a suite's data files resolve. Link the library under test yourself in `api/<lib>/tests/CMakeLists.txt`. `TestMain` (one per target) carries the `BOOST_TEST_MODULE` define and nothing else.
+
+Covered as of 2026-08-31: `type`, `brep`, `image`, `font`, `input`, `event` — 47 cases, migrated out of `v3dlibs/tests/` (the command-layer tests were rewritten against `api/event`, and the two input tests against `Keyboard`/`Mouse`). Not covered: `asset`, `config`, `dag`, `ecs`, `audio`, `log`, `ui`, and everything under `api/render` — the render libraries need a window and a GPU, so they wait on [ADR 0007](docs/adr/0007-ci-rendering-tests.md). `moya/tests/` and `tetris/tests/` still build nothing; `pong/run-unit-tests.sh` and `tetris/run-unit-tests.sh` still invoke a `unit_tests` binary that does not exist. Boost.Test's leak check reports a permanent false positive for any suite that builds a `Logger` (spdlog's registry outlives the report), which is why `add_test` passes `--detect_memory_leaks=0`.
 
 ## Build health
 

@@ -9,6 +9,14 @@
 
 namespace v3d::brep {
 
+    /**
+     * The id a half edge, face or vertex reference carries when it points at nothing.
+     * BRep::INVALID_ID is the same value - these were two different constants, 1 << 30
+     * here and 1 << 31 there, so an unpaired edge never compared equal to the sentinel
+     * BRep tested it against.
+     **/
+    constexpr uint64_t INVALID_ID = (1ull << 31);
+
     class HalfEdge {
      public:
         HalfEdge();
@@ -16,7 +24,9 @@ namespace v3d::brep {
         explicit HalfEdge(const HalfEdge & e);
         ~HalfEdge();
 
-        bool operator == (const HalfEdge & e);
+        // const, because C++20's reversed candidate for a non-const operator== makes every
+        // a == b ambiguous with the b == a it synthesizes
+        bool operator == (const HalfEdge & e) const;
         HalfEdge & operator = (const HalfEdge & e);
 
         uint64_t vertex(void) const;

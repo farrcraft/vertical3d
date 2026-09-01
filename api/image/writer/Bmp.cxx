@@ -9,6 +9,8 @@
 #include <fstream>
 #include <string>
 
+#include <boost/make_shared.hpp>
+
 #include "../BmpHeader.h"
 
 namespace v3d::image::writer {
@@ -29,10 +31,9 @@ namespace v3d::image::writer {
 
         fheader.type_ = 19778;
         fheader.offset_ = sizeof(bmp_file_header) + sizeof(bmp_info_header);
-        fheader.size_ = sizeof(img->data()) + fheader.offset_;
-
-        // write file header
-        file.write(reinterpret_cast<char*>(&fheader), sizeof(bmp_file_header));
+        // the total file size, filled in below once the padded data length is known -
+        // sizeof(img->data()) was the size of the pointer
+        fheader.size_ = fheader.offset_;
 
         bmp_info_header iheader;
         memset(&iheader, 0, sizeof(bmp_info_header));
@@ -53,32 +54,37 @@ namespace v3d::image::writer {
         unsigned int channels = img->bpp() / 8;
         iheader.imageSize_ = img->width() * img->height() * channels;
 
-        // write info header
+        // size of the image data including the per row boundary padding
+        uint64_t rows = img->height();
+        uint64_t rowBytes = static_cast<uint64_t>(width);
+        uint64_t size = static_cast<uint64_t>(pad) * rows;
+
+        fheader.size_ = static_cast<uint32_t>(fheader.offset_ + size);
+
+        // write the headers
+        file.write(reinterpret_cast<char*>(&fheader), sizeof(bmp_file_header));
         file.write(reinterpret_cast<char*>(&iheader), sizeof(bmp_info_header));
 
-        // size of image data buffer including boundary padding
-        int offset = pad - width;
-        uint64_t height = iheader.height_;
-        uint64_t size = pad * height;
-        boost::shared_ptr<Image> image(new Image(size));
+        boost::shared_ptr<Image> image = boost::make_shared<Image>(size);
         unsigned char* data = image->data();
         unsigned char* temp = img->data();
 
-        unsigned int k = 0;
-        for (unsigned int i = 0; i < size; i += channels) {
-            // jump over the padding at the start of a new line
-            if ((i + 1) % pad == 0) {
-                i += offset;
+        // each row is copied on its own, because the padding is per row and the source
+        // image has none of it. Walking both buffers with a single index and a modulo test
+        // ran off the end of each - past the destination by a row's worth of padding, and
+        // past the source by however many bytes of padding the whole image adds up to.
+        for (uint64_t row = 0; row < rows; ++row) {
+            unsigned char* dest = data + row * pad;
+            const unsigned char* src = temp + row * rowBytes;
+            for (uint32_t column = 0; column < img->width(); ++column) {
+                // rgb in memory, bgr on disk
+                dest[column * channels + 0] = src[column * channels + 2];
+                dest[column * channels + 1] = src[column * channels + 1];
+                dest[column * channels + 2] = src[column * channels + 0];
+                if (img->format() == v3d::image::Image::Format::RGBA) {
+                    dest[column * channels + 3] = src[column * channels + 3];
+                }
             }
-            // transfer the data
-            *(data + i + 2) = *(temp + k);
-            *(data + i + 1) = *(temp + k + 1);
-            *(data + i) = *(temp + k + 2);
-
-            if (img->format() == v3d::image::Image::Format::RGBA) {
-                *(data + i + 3) = *(temp + k + 3);
-            }
-            k += channels;
         }
 
         // write image data

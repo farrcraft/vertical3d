@@ -120,12 +120,14 @@ the check by an identifier cpplint no longer uses. Ignore those; treat anything 
 real finding. Do not "fix" the indentation to satisfy it, and do not widen the filter —
 that whole class of noise is a known defect in the workflow, not in the code.
 
-## There are no tests
+## Tests
 
-No CMakeLists builds a test binary. `pong/run-unit-tests.sh` and `tetris/run-unit-tests.sh`
-invoke a `unit_tests` that does not exist, and `v3dlibs/` is not in the build. Do not offer
-a test command and do not claim a change is verified by tests. Building is the only
-available check.
+Six Boost.Test binaries, one per covered api library, built from `api/<lib>/tests/` and run
+with `ctest --test-dir out/build/x64-Debug`. They cover `type`, `brep`, `image`, `font`,
+`input` and `event` only - there is nothing for `asset`, `config`, `dag`, `ecs`, `audio`,
+`ui` or any of `api/render`, so for a change outside those six libraries building is still
+the only available check. The per-app `run-unit-tests.sh` scripts invoke a `unit_tests`
+binary that does not exist; ignore them.
 
 Nothing renders either — the Vulkan frame loop does not exist yet — so "it builds" is the
 whole of the signal for anything under `api/render`.
