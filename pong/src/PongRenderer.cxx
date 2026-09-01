@@ -65,7 +65,7 @@ PongRenderer::PongRenderer(const boost::shared_ptr<v3d::render::realtime::Window
     loader = assetManager->resolveLoader(v3d::asset::Type::TextureFont);
     loader->parameter("fontSize", markup_.size_);
     boost::shared_ptr<v3d::asset::TextureFont> font = boost::dynamic_pointer_cast<v3d::asset::TextureFont>(
-        assetManager->load("fonts/DroidSerif-Regular.ttf", v3d::asset::Type::TextureFont));
+        assetManager->load("fonts/NotoSans-Regular.ttf", v3d::asset::Type::TextureFont));
 
     font->font()->atlas(fontCache_->atlas());
     font->font()->loadGlyphs(charcodes);
@@ -93,6 +93,27 @@ void PongRenderer::resize(int width, int height) {
 void PongRenderer::draw() {
     canvas_->clear();
 
+    // clear color & depth buffers
+    engine_.renderFrame();
+
+    const int width = engine_.window()->width();
+    const int height = engine_.window()->height();
+
+    // center line
+    glm::vec3 color(0.35f, 0.35f, 0.35f);
+    canvas_->rect(((width / 2) - 7), ((width / 2) + 7), 0, height, color);
+
+    v3d::render::realtime::Frame frame(engine_.context());
+    boost::shared_ptr<v3d::render::realtime::Operation> canvasOp = boost::make_shared<v3d::render::realtime::operation::Canvas>(canvas_, canvasProgram_);
+    frame.addOperation(canvasOp);
+
+    // upload to GPU & render
+    frame.draw();
+
+    /*
+    canvas_->clear();
+
+    // clear color & depth buffers
     engine_.renderFrame();
 
     const int width = engine_.window()->width();
@@ -143,6 +164,7 @@ void PongRenderer::draw() {
 
     // upload to GPU & render
     frame.draw();
+    */
 }
 
 void PongRenderer::drawBall() {

@@ -43,6 +43,7 @@ ninja -C out/build/x64-Debug -k 0         # keep going past the broken targets (
 - Editing `vcpkg.json` re-runs the manifest install. A cold install builds boost from source and takes roughly 45 minutes.
 - **Never delete `out/build/<config>/vcpkg_installed/`** — that directory *is* the dependency install. When CMake needs a fresh cache (typically after a VS toolset update leaves the cached `CMAKE_CXX_COMPILER` path pointing at a version that no longer exists), delete only `CMakeCache.txt`, `CMakeFiles/`, `build.ninja`, `cmake_install.cmake` and `.ninja_*`, then reconfigure. Reconfiguring is fast; reinstalling is not.
 - `vendor/libnoise` and `vendor/soloud` are git submodules built separately, not by this project. `link_directories` expects their artefacts under `vendor/*/Debug`.
+- **Assets shared by more than one app live in the root [data/](data/)**, committed once. `v3d_add_shared_data(<target>)` — defined in the root CMakeLists — copies them next to that app's executable after it links, merging into whatever the app keeps in `<app>/data`. Currently only fonts, used by pong and voxel. Per-app data is *not* copied by CMake: the `data/` directories in `out/build/<config>/<app>/` are manual copies and are years stale, so editing `pong/data/*.json` does not affect a run from the build tree until you copy it across yourself.
 - `VCPKG_ROOT` in CMakeSettings.json has a doubled path segment (`vertical3d/vertical3d/vendor/vcpkg`) and points nowhere. vcpkg works through the toolchain file regardless.
 
 ## Lint

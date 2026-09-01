@@ -43,8 +43,7 @@ DebugOverlay::DebugOverlay(boost::shared_ptr<Scene> scene, boost::shared_ptr<v3d
                                 L"`abcdefghijklmnopqrstuvwxyz{|}~";
     fontCache_->charcodes(charcodes);
 
-    std::string filename = loader->path() + std::string("fonts/DroidSerif-Regular.ttf");
-    // std::string filename = loader->path() + std::string("fonts/Vera.ttf");
+    std::string filename = loader->path() + std::string("fonts/NotoSans-Regular.ttf");
     markup_.font_ = fontCache_->load(filename, markup_.size_);
 
     renderer_ = boost::make_shared<v3d::gl::TextureFontRenderer>(text, shaderProgram, fontCache_->atlas());

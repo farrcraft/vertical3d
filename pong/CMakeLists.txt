@@ -40,6 +40,8 @@ target_link_libraries(pong PRIVATE
 	spdlog::spdlog
 )
 
+v3d_add_shared_data(pong)
+
 target_compile_options(pong PRIVATE /EHsc)
 
 set(CMAKE_CXX_FLAGS "/utf-8")

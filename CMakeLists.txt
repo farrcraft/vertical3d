@@ -53,6 +53,20 @@ link_directories(
 	"vendor/libnoise/Debug"
 )
 
+# Assets shared by more than one app live in the root data/ directory, so there is one
+# committed copy rather than one per app. v3d_add_shared_data copies them into an app's
+# runtime data directory after it links, alongside whatever that app keeps in <app>/data.
+# The engine resolves assets relative to the executable, so the destination has to be
+# beside the exe rather than in the source tree.
+function(v3d_add_shared_data target)
+	add_custom_command(TARGET ${target} POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_directory
+			"${CMAKE_SOURCE_DIR}/data"
+			"$<TARGET_FILE_DIR:${target}>/data"
+		COMMENT "Copying shared data for ${target}"
+		VERBATIM)
+endfunction()
+
 # Include sub-projects
 add_subdirectory("api")
 add_subdirectory("talyn")

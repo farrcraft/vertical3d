@@ -25,6 +25,8 @@ target_link_libraries(voxel PRIVATE
 	"libnoise"
 )
 
+v3d_add_shared_data(voxel)
+
 target_compile_options(voxel PRIVATE /EHsc)
 
 set(CMAKE_CXX_FLAGS "/utf-8")
