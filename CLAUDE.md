@@ -6,7 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A monorepo for the Vertical3D ecosystem: reusable C++ libraries under `api/` (targets named `v3dlib_*`, one per subdirectory) plus the apps that consume them at the top level — pong, tetris, voxel, odyssey, talyn, moya, imagetool, v3dshell.
 
-Much of this code traces back to the early 2000s and is being modernised incrementally: C++17+, granular namespaces, CMake replacing autotools and VS solutions. Expect wide variance in how modern any given file is. `v3dlibs/`, `rigel/`, `luxa/`, `vault/` and `vertical3d/` are legacy trees — not in the root `add_subdirectory` list, excluded from lint, and not built.
+Much of this code traces back to the early 2000s and is being modernised incrementally: C++17+, granular namespaces, CMake replacing autotools and VS solutions. Expect wide variance in how modern any given file is.
+
+`v3dlibs/`, `rigel/`, `luxa/`, `vault/` and `vertical3d/` are absent from the root `add_subdirectory` list, excluded from lint, and not built — but "not built" does not mean disposable, and they are four different situations:
+
+- `vertical3d/` is the desktop 3D editing app the repo is named after, to be rewritten onto the new api. Not dead code.
+- `rigel/` is the earlier prototype of that app; its viewport, manipulator and modelling-command work has to be folded into the rewrite before it can go.
+- `luxa/` and `v3dlibs/` are migrations in progress, and both audits are now written up: [docs/LuxaAudit.md](docs/LuxaAudit.md) and [docs/V3dlibsAudit.md](docs/V3dlibsAudit.md). Each lists what has to land before its tree can be deleted, plus the `api/` regressions the audit turned up — the most consequential being that `Menu::activate()` dispatches nothing and `api/input/Mouse::handleEvent` swallows every mouse event. Read the relevant one before deleting anything from either tree.
+- `vault/quantumxml` is genuinely archived, superseded by the JSON config work.
 
 MSVC/Windows only in practice. The root CMakeLists passes `/std:c++latest` and `/permissive-` unconditionally, and targets set `/EHsc` and `/utf-8` individually.
 
@@ -53,12 +60,11 @@ There is no working test suite. Boost.Test sources exist under `v3dlibs/tests/`,
 
 ## Build health
 
-Not everything compiles. From the last full build (219 of 222 objects):
+Not everything compiles. Failing objects: three in `voxel`, one in `tetris`.
 
-- **Clean:** every `api/` library, plus `pong`, `talyn`, `v3dshell`, `imagetool`.
-- **`tetris`** — mid-refactor onto `Engine3D`. Includes `api/gl/GLFontRenderer.h`, which does not exist; uses a `fonts_` member that was dropped from the header; links `v3dlib_core`, which is never built.
+- **Clean:** every `api/` library, plus `pong`, `odyssey`, `talyn`, `v3dshell`, `imagetool`.
+- **`tetris`** — mid-refactor onto `Engine3D`. Includes `api/gl/GLFontRenderer.h`, which does not exist; uses a `fonts_` member that was dropped from the header. Its link list is also short: it includes `api/engine`, `api/event`, `api/gl`, `api/log` and `api/render` while linking only `v3dlib_image`, which will surface once it compiles.
 - **`voxel`** — drifted behind API changes in the shared libraries (undeclared identifiers, calls to methods that no longer exist).
-- **`odyssey`** — [Operation.h](api/render/realtime/Operation.h) declares `virtual bool run(shared_ptr<Context>) = 0`, but `Operation2D` and `Blit2DTexture` declare `run(shared_ptr<Context2D>)`. Different signature, so nothing overrides the pure virtual and every 2D operation is abstract.
 
 Check this list before assuming a build failure is yours.
 

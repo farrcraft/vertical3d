@@ -15,7 +15,8 @@ of half-finishing all of them at the same time.
 5. pong and tetris moved onto the new `api/` framework
 6. voxel and odyssey after that — neither was built on the v3d frameworks, so both need
    api features that do not exist yet
-7. moya and talyn — offline renderers, no realtime dependency
+7. the Vertical3D editor rewritten onto the new api, folding in what rigel prototyped
+8. moya and talyn — offline renderers, no realtime dependency
 
 Plus two things that need backfilling throughout: documentation and tests.
 
@@ -37,23 +38,75 @@ Recorded in [docs/adr/](../adr/), not here. The ones that shape this plan:
 
 Verified against the tree on 2026-08-30.
 
-**SDL3 is done in everything that builds.** No SDL2 code remains in `api/` or in any app.
-Two dead references are left: `talyn/CMakeLists.txt` links `${SDL2_LIBRARIES}`, an
-undefined variable that now expands to nothing, and `odyssey/cmake/FindSDL2.cmake` is a
-stale module nothing uses. The only real SDL2 code left is `v3dlibs/hookah/drivers/sdl2/`,
-which is not built. Call this workstream finished once those three are deleted.
+**SDL3 is done.** No SDL2 code remains in `api/` or in any app. The dead references are gone
+as of 2026-08-31: `talyn`'s `${SDL2_LIBRARIES}` link, `odyssey/cmake/FindSDL2.cmake`, and a
+stale comment in the root `CMakeLists.txt` claiming `find_package(SDL3)` resolves through a
+`FindSDL2` module. The only SDL2 code left anywhere is `v3dlibs/hookah/drivers/sdl2/`, which
+is not built and goes when that tree does - see [docs/V3dlibsAudit.md](../V3dlibsAudit.md).
+Treat this workstream as closed.
 
-**The legacy migration is further along than it looks.** `v3dlibs/` and `luxa/` are not in
-the root `add_subdirectory` list — nothing in the build has referenced them for some time.
-`api/ui` is already a superset of `luxa/luxa` (Button, Icon, Label, Component and the menu
-components, plus containers, styles and a dozen components luxa never had). The command and
-binding layer from `v3dlibs/command` did not move across as-is; it was reworked into
-`api/config` (`BindingContext`) and `api/event` (`Mapper`). Among the apps, only
-`voxel/src/Controller.h` still includes legacy headers. pong's Luxa usage is commented out.
+**The legacy trees are not all the same kind of thing, and only one is disposable.**
+None of `v3dlibs/`, `luxa/`, `rigel/`, `vertical3d/` or `vault/` is in the root
+`add_subdirectory` list, so "not built" says nothing about whether it is finished with.
 
-So this is mostly a deletion exercise, not a porting one — with one exception:
-`v3dlibs/tests/` is the only test corpus in the repo and must be salvaged before the tree
-goes.
+- **`vertical3d/` is an app, not dead code.** It is the desktop 3D editing tool the
+  repository is named after, listed in `README.md` alongside the others. It is to be
+  rewritten onto the new api, not deleted.
+- **`rigel/` is the earlier prototype of that app** and holds functionality the rewrite
+  needs to absorb first — viewport layout, an arcball camera, a construction plane,
+  transform manipulators, and the poly modelling command sets. Two items already on
+  `docs/TODO.md` cover part of this. It can only be deleted after the fold-in.
+- **`luxa/` and `v3dlibs/` are migrations in progress**, and each needs a functional
+  equivalence audit before removal, not an assumption that `api/` covers it.
+- **`vault/quantumxml` is genuinely archived** — an XML parser superseded by the JSON
+  config work, per `docs/Vault.md` and the first item on `docs/TODO.md`.
+
+Among the apps, none still includes a legacy header — `voxel/src/Controller.h` is already
+clean, and pong's Luxa usage is commented out. `vertical3d/` is the only consumer left, of
+`v3dlibs/core`, `hookah` and `command`. `v3dlibs/tests/` is the only test corpus in the
+working tree and must be salvaged before that tree goes; `luxa/tests/` and two v3dlibs tests
+were deleted rather than migrated and are recoverable from history.
+
+**The luxa audit is done.** Written up in [docs/LuxaAudit.md](../LuxaAudit.md), 2026-08-31.
+`luxa/` cannot be deleted yet, and the blocking list is nine items long. The short version:
+`ComponentRenderer` has to be rebuilt on the Vulkan quad rather than ported, and takes the
+ortho UI pass and theme-to-font resolution with it; `ComponentManager` is only half covered
+by `ui::Engine` plus `ui::Container`, with mouse hit-testing, hover/focus, the active theme
+and image loading all unported; and `ui::Engine::load` covers menus alone, so the whole of
+`api/ui/style/` is migrated but unreachable. Two of the three flagged unknowns shrank on
+inspection — `Window` is an empty stub with no implementation, and `MenuStack` is a `draw()`
+routine whose navigation was always in `Menu`, which migrated intact, so `ui::Navigation`
+needs no reconciliation.
+
+The audit also turned up regressions in `api/ui` itself, none blocked by Vulkan. The worst:
+`Menu::activate()` had its dispatch commented out, and the menu never navigated at all
+because `Engine::loadMenu` set neither the active level nor the active item. Both are fixed
+as of 2026-08-31, along with `MenuItem`'s missing value field and `ui::Engine`'s missing
+theme accessor. Input capture for input-type menu items is still unbuilt, so the five input
+items in `pong/data/vgui.json` remain unreachable.
+
+**The v3dlibs audit is done.** Written up in [docs/V3dlibsAudit.md](../V3dlibsAudit.md),
+2026-08-31. Most of the tree is genuinely covered: `input/` by `api/input`, `hookah/Window`
+by `api/render/realtime/Window`, `gui/InputEventAdapter` by `api/event` plus `api/input`, and
+`command/` by `api/event` — nothing still needs `CommandDirectory`, `CommandTable` or
+`StateController`. What keeps the tree alive is narrower than expected: the test corpus has
+to move, and `vertical3d/` still includes six of its headers. `core/Scene` and `SceneVisitor`
+should *not* be folded into `api/dag` — that library is 374 lines of skeleton with no
+traversal, no visitor and no consumers anywhere — they go with the editor in Phase 6, as
+`CreatePolyCommandSet` already does.
+
+The replacement for the command layer was less finished than assumed, and the audit turned up
+`api/` defects alongside it — every one of them fixed on 2026-08-31. The worst were that
+`api/input/Mouse::handleEvent` was empty and returned true, so **every mouse event in every
+app was swallowed**; that `Event::operator<` compared only `context::name`, so key press and
+release mapped to the same destination with the edge dropped; and that `Mapper`'s `std::map`
+let a second binding on a key silently replace the first. `api/event` now has a `State` on
+every event, a `multimap` of bindings, an optional `"state"` and `"param"` per binding, and
+`dispatch(context, name)` for invoke-by-name; `api/input` has a working mouse with
+`MouseState` and a `MouseMotion` event; `Engine::tick(delta)` supplies the frame delta again;
+and `config::BindingContext` is deleted in favour of `event::Mapper`. Still open:
+`event::Context::active` is written and read by nothing, which is the state scoping the
+editor will need.
 
 **Vulkan is the critical path and nothing renders right now.** `Window3D` owns a
 `vulkan::Instance` and `vulkan::Surface`; `Context3D` owns a `vulkan::Device` and
@@ -62,15 +115,20 @@ objects, and the acquire/submit/present loop. Meanwhile `Engine3D::renderFrame()
 app renderer still call OpenGL against a context that is no longer created. pong links and
 does not draw. Until the frame loop exists, "it builds" is the only signal available.
 
-**Build health.** Clean: all `api/` libraries, pong, talyn, v3dshell, imagetool. Broken:
-tetris (missing header, dropped member, links a target that is never built), voxel (drifted
-behind api changes), odyssey (see below).
+**Build health.** Clean: all `api/` libraries, pong, talyn, v3dshell, imagetool, and - since
+2026-08-31 - odyssey. Broken: tetris (missing header, dropped member) and voxel (drifted
+behind api changes).
 
-**Odyssey is not blocked by Vulkan.** It runs on `Feature::Window2D` → `Engine2D` →
-`Context2D`, which is SDL's own renderer, not GL and not Vulkan. Its only blocker is a
-signature bug: `Operation::run` takes `shared_ptr<Context>` while `Operation2D::run` and
-`Blit2DTexture::run` take `shared_ptr<Context2D>`, so nothing overrides the pure virtual and
-every 2D operation is abstract. That is a small fix, and it unblocks a whole app.
+**Odyssey builds, as of 2026-08-31.** It runs on `Feature::Window2D` → `Engine2D` →
+`Context2D`, which is SDL's own renderer, not GL and not Vulkan, so it was never blocked by
+Vulkan. The signature bug is fixed - `Operation2D` now narrows the frame's `Context` to a
+`Context2D` once and calls a protected `run2D`, which `Blit2DTexture` implements - but that
+turned out to be only the first of several problems, because fixing it let odyssey reach the
+link stage for the first time. Its `CMakeLists.txt` had never listed `engine/Engine.cpp` or
+`system/Movement.cpp`, so those two files had never been compiled and had drifted as far
+behind the api as voxel has; and it re-ran `find_package(Boost COMPONENTS log)` locally,
+narrowing `Boost_LIBRARIES` and losing boost::json. All of that is fixed. Whether odyssey
+*runs* is still a question nobody has asked.
 
 **Voxel is blocked by Vulkan.** It uses `Feature::Window3D`.
 
@@ -107,18 +165,56 @@ before building the frame loop around it, or it gets built twice.
 
 None of this is blocked. It shrinks the surface area everything else has to work against.
 
-- Delete `v3dlibs/`, `luxa/`, `rigel/`, `vertical3d/` — after salvaging `v3dlibs/tests/`
-  and after `voxel/src/Controller.h` stops including legacy headers.
-- Delete `talyn`'s `${SDL2_LIBRARIES}` link and `odyssey/cmake/FindSDL2.cmake`. SDL3
-  workstream closed.
-- Fix the `Operation::run` / `Operation2D::run` signature mismatch. Odyssey builds again.
+- Delete `vault/quantumxml`. It is the only tree that can go without an audit first.
+- ~~Audit `luxa/` against `api/ui`~~ — done, [docs/LuxaAudit.md](../LuxaAudit.md). The tree
+  stays until its nine-item blocking list is worked off; five of those items need nothing
+  that does not already exist, and the rest land in Phase 3.
+- ~~Audit `v3dlibs/` against the api libraries~~ — done,
+  [docs/V3dlibsAudit.md](../V3dlibsAudit.md). Five things have to land before the tree can
+  go, and the last of them waits on Phase 6 unless `core/` is moved across early.
+- ~~From the luxa audit: wire `Menu::activate()` to the dispatcher, restore `MenuItem`'s
+  value field, give `ui::Engine` a theme accessor.~~ Done 2026-08-31. Menu navigation had to
+  be fixed alongside — `level_`, `active_` and each item's owning menu were never set at
+  load, and the `next()`/`previous()` wrap-around ran off both ends of `items_`, so the menu
+  had not been navigating either. Input capture for input-type items is still missing; the
+  value field it writes to now exists.
+- ~~From the v3dlibs audit: implement `api/input/Mouse::handleEvent`, make key press and
+  release distinguishable, give bindings a parameter, add invoke-by-name, restore the frame
+  delta, settle `config::BindingContext` against `event::Mapper`.~~ Done 2026-08-31. Two more
+  defects in the same machinery had to go with them: `Mapper` used a `std::map`, so a second
+  binding on one key silently replaced the first and pong's right paddle had never worked;
+  and `Keyboard::handleEvent` cleared key state on the wrong condition. Still open from that
+  audit: `event::Context::active` is set and read by nothing, which is the state-scoping the
+  editor will need.
+- ~~Drop `v3dlib_core` from tetris's link list.~~ Done 2026-08-31. Tetris's link list is
+  still short in the other direction — it includes `api/engine`, `api/event`, `api/gl`,
+  `api/log` and `api/render` while linking only `v3dlib_image` — which is part of the
+  "fix the link list" item below and will only surface once tetris compiles.
+- Salvage `v3dlibs/tests/` — the largest reason that tree is still alive — into per-library
+  `tests/` directories, fixing the stale `../3dtypes/` and `ImageFactory.h` include paths on
+  the way. Recover `BRepTest`/`CameraProfileTest` from `6cfb4b6^` and `luxa/tests/` from
+  `d31a2e9^`; all three were deleted rather than migrated.
+- Leave `rigel/` and `vertical3d/` alone. They belong to Phase 6.
+- ~~Delete `talyn`'s `${SDL2_LIBRARIES}` link and `odyssey/cmake/FindSDL2.cmake`.~~ Done
+  2026-08-31, along with a stale `FindSDL2` comment in the root `CMakeLists.txt`. Neither
+  changed a build: the variable was undefined and expanded to nothing, and nothing set
+  `CMAKE_MODULE_PATH` to reach the module. SDL3 workstream closed apart from
+  `v3dlibs/hookah/drivers/sdl2/`, which goes with that tree.
+- ~~Fix the `Operation::run` / `Operation2D::run` signature mismatch.~~ Done 2026-08-31, and
+  odyssey builds. The signature fix was small; what it exposed was not. Odyssey's
+  `CMakeLists.txt` was missing four source files and eleven libraries, and the two source
+  files it had never compiled needed the same kind of api-drift repair voxel still needs.
+  Two small api changes went with it: `Scene2D::collect` is now virtual with a scene setter
+  on `Engine2D`, which is how an app gets its own renderables into the frame, and `Context`
+  and `Operation` gained virtual destructors.
 - Make tetris compile: drop the missing `GLFontRenderer.h` include and the debug-text block
   (which is broken C++, not just outdated — it does pointer arithmetic on string literals),
   restore or remove `fonts_`, fix the link list. Target a green build, not a running game.
 - Migrate `tetris/data/config.json` from the old inline `keys`/`menu` form to the
   `{"configs": [...]}` form that `Config::load` requires. Pong's `data/` is the reference.
 
-Done when: the whole tree builds, and `api/` is the only library tree in the repo.
+Done when: the whole tree builds, `vault/` is gone, and the luxa and v3dlibs audits have
+produced a written list of what still has to move. Both audits are closed.
 
 ### Phase 2 — Vulkan to first pixel
 
@@ -193,6 +289,30 @@ Vulkan path has textured-quad batching from Phase 4, port it:
   one `Window`, and drop the `Window2D`/`Window3D` feature flags for a single windowing flag.
 - Add the sprite/orthographic pass properly, so a 2D game gets painter ordering and no depth
   buffer without special-casing the engine.
+
+### Phase 6 — the Vertical3D editor
+
+The app the repository is named after, and the largest piece of work here. It is a desktop
+3D editing tool, which means it needs things no game in this repo does: multiple viewports,
+manipulator gizmos, a construction plane, selection, and an undoable command model.
+
+- Survey `rigel/` and decide what to fold in. It holds the working prototype of most of the
+  above — `ViewLayout`, `ViewPort`, `RenderView`, `ConstructionPlane`, `ArcBall`, the
+  `manipulators/` and the `commands/` sets. `api/type` has already absorbed `ArcBall`,
+  `Camera` and `CameraProfile`, and `api/brep` mirrors `libv3dcore/brep`, so the fold-in is
+  partly done and partly duplicated. Two items on `docs/TODO.md` track the brep and command
+  library merges specifically.
+- Rewrite `vertical3d/` — `Controller`, `ViewPort`, `CameraControlTool`, `HWRenderContext`
+  — onto the current api. `HWRenderContext` is the GL render context and does not survive
+  [ADR-0001](../adr/0001-vulkan-replaces-opengl.md).
+- Multiple viewports are the feature that will push hardest on the pass model from
+  [ADR-0003](../adr/0003-one-realtime-engine.md). Four views of one scene is four passes
+  with four cameras against one device, which the model should already express — this is
+  the app that proves whether it does.
+- Delete `rigel/` once the fold-in is complete, and not before.
+
+Done when: the editor opens a project, draws a scene from multiple viewports, and rigel has
+nothing left worth taking.
 
 ### Ongoing — tests
 
