@@ -11,7 +11,7 @@ namespace v3d::ui::component {
 
     class PopupMenu : public Menu {
      public:
-        PopupMenu() = default;
+        using Menu::Menu;
         ~PopupMenu() = default;
     };
 

@@ -37,7 +37,7 @@ bool::PongEngine::initialize() {
     soundEngine_ = boost::make_shared<v3d::audio::Engine>(logger_, dispatcher_);
     soundEngine_->initialize();
 
-    vgui_ = boost::make_shared<v3d::ui::Engine>(eventEngine_, logger_);
+    vgui_ = boost::make_shared<v3d::ui::Engine>(eventEngine_, dispatcher_, logger_);
 
     if (config_) {
         boost::shared_ptr<v3d::asset::Json> soundConfig = config_->get(v3d::config::Type::Sound);
@@ -104,8 +104,8 @@ bool::PongEngine::initialize() {
 
 /**
  **/
-bool PongEngine::tick() {
-    if (!v3d::engine::Engine::tick()) {
+bool PongEngine::tick(unsigned int delta) {
+    if (!v3d::engine::Engine::tick(delta)) {
         return false;
     }
     scene_->tick();
@@ -184,21 +184,24 @@ void PongEngine::handleEvent(const v3d::event::Event& event) {
     bool vis = menu->visible();
     if (event.context()->name() == "pong") {
         // play commands
+        // the paddle moves while its key is held, so these follow the event's edge rather
+        // than toggling - which is all the toggling ever stood in for
+        bool held = (event.state() == v3d::event::State::Pressed);
         if (event.name() == "leftPaddleUp") {
             if (!scene_->state().paused()) {
-                scene_->left().down(!scene_->left().up());
+                scene_->left().up(held);
             }
         } else if (event.name() == "leftPaddleDown") {
             if (!scene_->state().paused()) {
-                scene_->left().down(!scene_->left().down());
+                scene_->left().down(held);
             }
         } else if (event.name() == "rightPaddleUp") {
             if (!scene_->state().paused() && scene_->state().coop()) {
-                scene_->right().up(!scene_->right().up());
+                scene_->right().up(held);
             }
         } else if (event.name() == "rightPaddleDown") {
             if (!scene_->state().paused() && scene_->state().coop()) {
-                scene_->right().down(!scene_->right().down());
+                scene_->right().down(held);
             }
         } else if (event.name() == "showGameMenu") {
             if (!vis) {

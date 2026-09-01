@@ -5,4 +5,5 @@ add_library("v3dlib_input"
 	"Keyboard.h" "Keyboard.cpp"
 	"KeyState.h" "KeyState.cpp"
 	"Mouse.h" "Mouse.cpp"
+	"MouseState.h" "MouseState.cpp"
  "DeviceType.h")

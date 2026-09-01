@@ -6,11 +6,15 @@
 #include "MenuItem.h"
 #include "Menu.h"
 
+#include <string>
+#include <type_traits>
+#include <variant>
+
 namespace v3d::ui::component {
 
     MenuItem::MenuItem(menu::ItemType type, const std::string& label) :
         Component(component::Type::MENU_ITEM),
-        label_(label), type_(type) {
+        label_(label), type_(type), hasValue_(false) {
     }
 
     void MenuItem::label(const std::string& str) {
@@ -24,6 +28,41 @@ namespace v3d::ui::component {
 
     std::string_view MenuItem::label() const {
         return label_;
+    }
+
+    /**
+     **/
+    std::string MenuItem::text() const {
+        if (!hasValue_) {
+            return label_;
+        }
+        std::string value = std::visit([](auto&& held) -> std::string {
+            using T = std::decay_t<decltype(held)>;
+            if constexpr (std::is_same_v<T, std::string>) {
+                return held;
+            } else if constexpr (std::is_same_v<T, bool>) {
+                return held ? "true" : "false";
+            } else {
+                return std::to_string(held);
+            }
+        }, value_);
+        return label_ + value;
+    }
+
+    /**
+     **/
+    void MenuItem::value(const v3d::event::EventData& v) {
+        value_ = v;
+        hasValue_ = true;
+    }
+
+    /**
+     **/
+    boost::optional<v3d::event::EventData> MenuItem::value() const {
+        if (!hasValue_) {
+            return boost::none;
+        }
+        return value_;
     }
 
     boost::shared_ptr<Menu> MenuItem::submenu(void) const {

@@ -28,10 +28,12 @@ bool Controller::initialize() {
 
     window_->caption("Tetris!");
 
+    boost::shared_ptr<v3d::render::realtime::Window3D> win = boost::dynamic_pointer_cast<v3d::render::realtime::Window3D>(window());
+    renderer_ = boost::make_shared<TetrisRenderer>(win, logger_, assetManager_, &registry_);
+
     // setup scene
     scene_ = boost::make_shared<TetrisScene>();
-
-    renderer_ = boost::make_shared<TetrisRenderer>(scene_, logger_);
+    renderer_->scene(scene_);
 
     // register game commands
     dispatcher_->sink<v3d::event::Event>().connect<&Controller::handleEvent>(*this);
@@ -60,8 +62,8 @@ bool Controller::initialize() {
 
 /**
  **/
-bool Controller::tick() {
-    if (!v3d::engine::Engine::tick()) {
+bool Controller::tick(unsigned int delta) {
+    if (!v3d::engine::Engine::tick(delta)) {
         return false;
     }
     // scene_->tick();

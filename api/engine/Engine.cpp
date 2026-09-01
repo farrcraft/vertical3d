@@ -5,6 +5,8 @@
 
 #include "Engine.h"
 
+#include <SDL3/SDL.h>
+
 #include <string>
 
 #include "Feature.h"
@@ -15,8 +17,6 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/make_shared.hpp>
-
-#include <SDL3/SDL.h>
 
 namespace v3d::engine {
     /**
@@ -61,6 +61,12 @@ namespace v3d::engine {
             boost::shared_ptr<v3d::event::Context> sourceContext = eventEngine_->resolveContext(sourceContextName);
             v3d::event::Event sourceEvent(sourceName, sourceContext);
             sourceEvent.type(v3d::event::Type::Source);
+            // an optional "state" binds one edge only - "pressed"/"down" or "released"/"up".
+            // without it the binding matches both, which is what most actions want.
+            if (source.as_object().contains("state")) {
+                std::string sourceState = boost::json::value_to<std::string>(source.at("state"));
+                sourceEvent.state(v3d::event::stringToState(sourceState));
+            }
 
             auto const destination = mapping.at("destination");
             if (!destination.is_object()) {
@@ -72,6 +78,22 @@ namespace v3d::engine {
             boost::shared_ptr<v3d::event::Context> destinationContext = eventEngine_->resolveContext(destinationContextName);
             v3d::event::Event destinationEvent(destinationName, destinationContext);
             destinationEvent.type(v3d::event::Type::Destination);
+            // an optional "param" lets one action serve several bindings, telling them apart by
+            // the value it arrives with. It reaches the handler as the event's data, the same
+            // way a menu item's value does.
+            if (destination.as_object().contains("param")) {
+                auto const param = destination.at("param");
+                if (param.is_int64()) {
+                    destinationEvent.data(static_cast<int>(param.as_int64()));
+                } else if (param.is_bool()) {
+                    destinationEvent.data(param.as_bool());
+                } else if (param.is_string()) {
+                    destinationEvent.data(boost::json::value_to<std::string>(param));
+                } else {
+                    logger_->get()->error("Unsupported binding param type for [{}]", destinationName);
+                    return false;
+                }
+            }
             mapper->map(sourceEvent, destinationEvent);
         }
         eventEngine_->addMapper(mapper);
@@ -184,6 +206,7 @@ namespace v3d::engine {
     bool Engine::eventLoop() {
         bool quit = false;
         SDL_Event event;
+        uint64_t lastTick = SDL_GetTicks();
         // Enter main game loop
         while (!quit) {
             // Handle events on queue
@@ -209,8 +232,11 @@ namespace v3d::engine {
                     break;
                 }
             }
-            // tick the game
-            if (!tick()) {
+            // tick the game, telling it how long the last frame took
+            uint64_t now = SDL_GetTicks();
+            unsigned int delta = static_cast<unsigned int>(now - lastTick);
+            lastTick = now;
+            if (!tick(delta)) {
                 return false;
             }
             // and draw the frame on the screen
@@ -223,7 +249,7 @@ namespace v3d::engine {
 
     /**
      **/
-    bool Engine::tick() {
+    bool Engine::tick(unsigned int delta) {
         return true;
     }
 

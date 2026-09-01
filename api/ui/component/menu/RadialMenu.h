@@ -11,7 +11,7 @@ namespace v3d::ui::component {
 
     class RadialMenu : public Menu {
      public:
-        RadialMenu() = default;
+        using Menu::Menu;
         ~RadialMenu() = default;
     };
 

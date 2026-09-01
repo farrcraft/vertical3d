@@ -6,6 +6,7 @@
 #pragma once
 
 #include "Device.h"
+#include "MouseState.h"
 
 namespace v3d::input {
     /**
@@ -21,5 +22,13 @@ namespace v3d::input {
          * @return bool true if the event was handled
          **/
         bool handleEvent(const SDL_Event& event);
+
+        /**
+         * The cursor position and held buttons, as of the last event handled.
+         **/
+        const MouseState& state() const;
+
+     private:
+        MouseState state_;
     };
 };  // namespace v3d::input

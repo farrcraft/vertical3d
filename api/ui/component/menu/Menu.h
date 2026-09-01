@@ -5,13 +5,14 @@
 
 #pragma once
 
-#include "Menu.h"
-
 #include <vector>
 
 #include "../../Component.h"
 #include "../../Navigation.h"
 #include "MenuItem.h"
+
+#include <boost/shared_ptr.hpp>
+#include <entt/entt.hpp>
 
 namespace v3d::ui::component {
     /**
@@ -20,7 +21,10 @@ namespace v3d::ui::component {
      */
     class Menu : public Component {
      public:
-         Menu();
+         /**
+          * @param dispatcher the dispatcher activated menu items send their bound event to
+          **/
+         explicit Menu(const boost::shared_ptr<entt::dispatcher>& dispatcher);
 
          /**
           * Navigate changes the currently active menu item.
@@ -77,8 +81,10 @@ namespace v3d::ui::component {
           */
         void active(int idx);
         /**
-          * Activate the currently active menu item.
-          *
+          * Activate the active item of the current menu level.
+          * A submenu item descends a level; an action item dispatches its bound event.
+          * Input item types are not implemented yet - they need the ui to capture input
+          * until the next activation, which nothing does. See docs/LuxaAudit.md.
           */
         void activate();
 
@@ -104,8 +110,15 @@ namespace v3d::ui::component {
         bool hasParent() const;
 
      private:
+        /**
+         * Send a menu item's bound event, carrying its value as event data when it has one.
+         * @return false when the item has no event bound to it
+         **/
+        bool dispatch(const boost::shared_ptr<MenuItem>& item) const;
+
+        boost::shared_ptr<entt::dispatcher> dispatcher_;
         std::vector< boost::shared_ptr<MenuItem> > items_;
-        int active_;  // the active item in this menu
+        int active_;  // the active item in this menu, or -1 when there is none
         boost::weak_ptr<Menu> level_;
         boost::weak_ptr<Menu> parent_;  // if this is a submenu it will have a parent menu
     };

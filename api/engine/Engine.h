@@ -51,9 +51,11 @@ namespace v3d::engine {
 
         /**
          * Advance the game world time
+         * @param delta milliseconds elapsed since the previous tick. Simulation that scales by
+         *              this stays frame rate independent; simulation that ignores it does not.
          * @return bool
          **/
-        virtual bool tick();
+        virtual bool tick(unsigned int delta);
 
         /**
          * Render the current frame.

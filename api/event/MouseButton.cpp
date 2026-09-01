@@ -12,8 +12,8 @@ namespace v3d::event {
         Event("button", context),
         button_(button),
         pressed_(pressed) {
-        EventData buttonState = pressed;
-        data(buttonState);
+        // the edge belongs in the event's state; data is reserved for a parameter
+        state(pressed ? State::Pressed : State::Released);
     }
 
     /**

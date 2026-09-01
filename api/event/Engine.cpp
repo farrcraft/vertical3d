@@ -5,6 +5,9 @@
 
 #include "Engine.h"
 
+#include <string>
+#include <vector>
+
 #include <boost/make_shared.hpp>
 
 namespace v3d::event {
@@ -27,11 +30,31 @@ namespace v3d::event {
             return;
         }
         for (auto it = mappers_.begin(); it != mappers_.end(); it++) {
-            boost::optional<Event> destination = it->second->destination(source);
-            if (destination) {
-                dispatcher_->trigger(destination.get());
+            std::vector<Event> destinations = it->second->destinations(source);
+            for (auto mapped = destinations.begin(); mapped != destinations.end(); ++mapped) {
+                // carry the edge across so a handler can tell press from release without
+                // needing a separate binding for each
+                mapped->state(source.state());
+                dispatcher_->trigger(*mapped);
             }
         }
+    }
+
+    /**
+     **/
+    void Engine::dispatch(const std::string_view& context, const std::string& name) {
+        Event event(name, resolveContext(context));
+        event.type(Type::Destination);
+        dispatcher_->trigger(event);
+    }
+
+    /**
+     **/
+    void Engine::dispatch(const std::string_view& context, const std::string& name, const EventData& data) {
+        Event event(name, resolveContext(context));
+        event.type(Type::Destination);
+        event.data(data);
+        dispatcher_->trigger(event);
     }
 
     /**

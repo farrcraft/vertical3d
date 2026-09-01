@@ -24,7 +24,7 @@ class Controller final : public v3d::engine::Engine {
     /**
      * @return bool
      **/
-    bool tick();
+    bool tick(unsigned int delta);
 
     /**
      **/

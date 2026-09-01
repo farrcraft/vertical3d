@@ -271,7 +271,7 @@ namespace v3d::input {
             break;
         case SDL_EVENT_KEY_UP:
             keyName = keyEvent(event.key.key);
-            if (!state_.pressed(keyName)) {
+            if (state_.pressed(keyName)) {
                 state_(keyName);
             }
             pressed = false;
@@ -281,11 +281,12 @@ namespace v3d::input {
             return false;
         }
 
-        // trigger an event source event so any mappers can propogate any mapped events
+        // trigger an event source event so any mappers can propogate any mapped events.
+        // the edge is carried as the event's state, not as its data - data is the binding's
+        // parameter, and the two would otherwise overwrite each other.
         v3d::event::Event source(keyName, context_);
         source.type(v3d::event::Type::Source);
-        v3d::event::EventData keyState = pressed;
-        source.data(keyState);
+        source.state(pressed ? v3d::event::State::Pressed : v3d::event::State::Released);
         dispatcher_->trigger(source);
 
         return true;

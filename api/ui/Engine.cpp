@@ -12,8 +12,9 @@
 #include <boost/make_shared.hpp>
 
 namespace v3d::ui {
-    Engine::Engine(const boost::shared_ptr<v3d::event::Engine>& eventEngine, const boost::shared_ptr<v3d::log::Logger>& logger) :
-        eventEngine_(eventEngine), logger_(logger) {
+    Engine::Engine(const boost::shared_ptr<v3d::event::Engine>& eventEngine, const boost::shared_ptr<entt::dispatcher>& dispatcher,
+        const boost::shared_ptr<v3d::log::Logger>& logger) :
+        eventEngine_(eventEngine), dispatcher_(dispatcher), logger_(logger) {
     }
 
     bool Engine::load(const boost::shared_ptr<v3d::asset::Json>& config) {
@@ -36,6 +37,11 @@ namespace v3d::ui {
             std::string themeName = boost::json::value_to<std::string>(themeEntry.at("name"));
             boost::shared_ptr<style::Theme> theme = boost::make_shared<style::Theme>(themeName);
             themes_.push_back(theme);
+            // the config has no field naming the active theme yet - that arrives with the style
+            // schema (docs/LuxaAudit.md), so until then the first theme loaded is the active one.
+            if (!activeTheme_) {
+                activeTheme_ = theme;
+            }
         }
 
         // read containers
@@ -81,6 +87,8 @@ namespace v3d::ui {
                         return false;
                     }
                     menu->name(componentName);
+                    // this is the menu the app navigates, so it starts as its own active level
+                    menu->level(menu);
                     container->add(menu);
                 }
             }
@@ -91,7 +99,7 @@ namespace v3d::ui {
     /**
      **/
     boost::shared_ptr<component::Menu> Engine::loadMenu(const boost::json::object& component) {
-        boost::shared_ptr<component::Menu> menu = boost::make_shared<component::Menu>();
+        boost::shared_ptr<component::Menu> menu = boost::make_shared<component::Menu>(dispatcher_);
 
         auto const itemsSection = component.at("items");
         if (!itemsSection.is_array()) {
@@ -119,6 +127,8 @@ namespace v3d::ui {
             }
 
             boost::shared_ptr<component::MenuItem> menuItem = boost::make_shared<component::MenuItem>(menu::stringToType(itemType), label);
+            // the owning menu has to be set before the submenu below, which reads it to find its parent
+            menuItem->menu(menu);
             if (context.length() > 0 && command.length() > 0) {
                 boost::shared_ptr<v3d::event::Context> eventContext = eventEngine_->resolveContext(context);
                 v3d::event::Event event(command, eventContext);
@@ -129,10 +139,44 @@ namespace v3d::ui {
 
             if (menuItem->type() == menu::ItemType::Submenu) {
                 boost::shared_ptr<component::Menu> submenu = loadMenu(menuItemConfig);
+                if (!submenu) {  // submenu(null) would fault setting the parent
+                    return nullptr;
+                }
                 menuItem->submenu(submenu);
             }
         }
+        menu->active(0);
         return menu;
+    }
+
+    /**
+     **/
+    boost::shared_ptr<style::Theme> Engine::theme(const std::string_view& name) const {
+        auto it = themes_.begin();
+        for (; it != themes_.end(); ++it) {
+            if ((*it)->name() == name) {
+                return *it;
+            }
+        }
+        return nullptr;
+    }
+
+    /**
+     **/
+    boost::shared_ptr<style::Theme> Engine::activeTheme() const {
+        return activeTheme_;
+    }
+
+    /**
+     **/
+    bool Engine::activeTheme(const std::string_view& name) {
+        boost::shared_ptr<style::Theme> found = theme(name);
+        if (!found) {
+            logger_->get()->error("No such ui theme [{}]", name);
+            return false;
+        }
+        activeTheme_ = found;
+        return true;
     }
 
     boost::shared_ptr<Container> Engine::container(const std::string_view& name) {

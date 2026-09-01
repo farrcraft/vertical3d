@@ -39,6 +39,24 @@ namespace v3d::event {
          **/
         boost::shared_ptr<Context> resolveContext(const std::string_view& name);
 
+        /**
+         * Send a destination event named by string, for callers that hold a name rather than
+         * a resolved Event - the replacement for the old CommandDirectory::exec.
+         *
+         * @param context the name of the event's context
+         * @param name the event name
+         **/
+        void dispatch(const std::string_view& context, const std::string& name);
+
+        /**
+         * Send a destination event named by string, carrying a parameter.
+         *
+         * @param context the name of the event's context
+         * @param name the event name
+         * @param data the event's parameter
+         **/
+        void dispatch(const std::string_view& context, const std::string& name, const EventData& data);
+
      private:
         boost::shared_ptr<entt::dispatcher> dispatcher_;
         std::map<std::string, boost::shared_ptr<Mapper>> mappers_;

@@ -10,7 +10,6 @@
 #include <string_view>
 
 #include "Type.h"
-#include "BindingContext.h"
 #include "../asset/Json.h"
 #include "../asset/Manager.h"
 
@@ -41,7 +40,6 @@ namespace v3d::config {
         boost::shared_ptr<v3d::asset::Json> get(Type configType);
 
      private:
-        std::unordered_map<std::string_view, boost::shared_ptr<BindingContext> > contexts_;
         boost::shared_ptr<v3d::log::Logger> logger_;
         std::unordered_map<Type, boost::shared_ptr<v3d::asset::Json> > configs_;
     };

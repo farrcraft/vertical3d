@@ -41,7 +41,7 @@ class Controller final : public v3d::engine::Engine {
          * Advance the game world time
          * @return bool
          **/
-        bool tick();
+        bool tick(unsigned int delta);
 
         /**
          * @return bool

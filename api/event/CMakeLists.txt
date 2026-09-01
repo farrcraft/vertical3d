@@ -9,4 +9,6 @@ add_library("v3dlib_event"
  "Engine.h" "Engine.cpp"
  "Context.h" "Context.cpp"
  "MouseButton.h" "MouseButton.cpp"
+ "MouseMotion.h" "MouseMotion.cpp"
+ "State.h"
  "Type.h")

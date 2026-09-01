@@ -6,7 +6,8 @@
 #include "Menu.h"
 
 namespace v3d::ui::component {
-    Menu::Menu() : Component(component::Type::MENU), active_(-1) {
+    Menu::Menu(const boost::shared_ptr<entt::dispatcher>& dispatcher) :
+        Component(component::Type::MENU), dispatcher_(dispatcher), active_(-1) {
     }
 
     bool Menu::navigate(Navigation direction, bool wrap) {
@@ -49,26 +50,27 @@ namespace v3d::ui::component {
     }
 
     boost::shared_ptr<MenuItem> Menu::active() const {
-        if (active_ < 0) {
+        if (active_ < 0 || static_cast<size_t>(active_) >= items_.size()) {
             return nullptr;
         }
         return items_[active_];
     }
 
     void Menu::active(int idx) {
-        if (idx < 0 || static_cast<unsigned>(idx) >= items_.size()) {
+        if (idx < 0 || static_cast<size_t>(idx) >= items_.size()) {
             active_ = -1;
+            return;
         }
         active_ = idx;
     }
 
     bool Menu::next() {
-        if (level_.empty()) {
+        boost::shared_ptr<Menu> lvl = level();
+        if (!lvl || lvl->items_.empty()) {
             return false;
         }
-        boost::shared_ptr<Menu> lvl = level_.lock();
         lvl->active_++;
-        if (lvl->active_ == -1) {  // wrap around
+        if (lvl->active_ < 0 || static_cast<size_t>(lvl->active_) >= lvl->items_.size()) {  // wrap around
             lvl->active_ = 0;
             return false;
         }
@@ -76,28 +78,27 @@ namespace v3d::ui::component {
     }
 
     bool Menu::previous() {
-        if (level_.empty()) {
+        boost::shared_ptr<Menu> lvl = level();
+        if (!lvl || lvl->items_.empty()) {
             return false;
         }
-        boost::shared_ptr<Menu> lvl = level_.lock();
-        if (lvl->active_ == -1) {  // wrap around
+        if (lvl->active_ < 0 || static_cast<size_t>(lvl->active_) >= lvl->items_.size()) {  // wrap around
             lvl->active_ = 0;
             return false;
         }
         if (lvl->active_ > 0) {
             lvl->active_--;
         } else {
-            lvl->active_ = -1;
-            lvl->active_--;
+            lvl->active_ = static_cast<int>(lvl->items_.size()) - 1;
         }
         return true;
     }
 
     bool Menu::up() {
-        if (level_.empty()) {
+        boost::shared_ptr<Menu> lvl = level();
+        if (!lvl) {
             return false;
         }
-        boost::shared_ptr<Menu> lvl = level_.lock();
         if (lvl->parent_.expired()) {
             return false;
         }
@@ -106,10 +107,15 @@ namespace v3d::ui::component {
     }
 
     bool Menu::down() {
-        if (active_ == -1) {
+        boost::shared_ptr<Menu> lvl = level();
+        if (!lvl) {
             return false;
         }
-        boost::shared_ptr<Menu> sm = items_[active_]->submenu();
+        boost::shared_ptr<MenuItem> item = lvl->active();
+        if (!item) {
+            return false;
+        }
+        boost::shared_ptr<Menu> sm = item->submenu();
         if (sm) {
             level_ = sm;
             return true;
@@ -126,18 +132,40 @@ namespace v3d::ui::component {
         return items_[i];
     }
 
+    /**
+     **/
+    bool Menu::dispatch(const boost::shared_ptr<MenuItem>& item) const {
+        v3d::event::Event event = item->event();
+        // an item is only bound to an event when its config gave both a command and a context.
+        // Event::str() dereferences the context, so an unbound event must never be sent.
+        if (!dispatcher_ || !event.context()) {
+            return false;
+        }
+        boost::optional<v3d::event::EventData> value = item->value();
+        if (value) {
+            event.data(value.get());
+        }
+        dispatcher_->trigger(event);
+        return true;
+    }
+
     void Menu::activate() {
-        boost::shared_ptr<MenuItem> item = active();
+        boost::shared_ptr<Menu> lvl = level();
+        if (!lvl) {
+            return;
+        }
+        boost::shared_ptr<MenuItem> item = lvl->active();
         if (item) {
             if (item->type() == menu::ItemType::Submenu && item->submenu()) {  // menu item has a submenu so activate the submenu
                 bool activated = down();
-            } else if (item->type() == menu::ItemType::Action) {  // menu item represents a command so execute the bound command
-                // manager_->execCommand(item->command(), item->scope(), item->param());
+            } else if (item->type() == menu::ItemType::Action) {  // menu item represents a command so send the bound event
+                dispatch(item);
             } else if (item->type() == menu::ItemType::Input ||
                 item->type() == menu::ItemType::NumericInput ||
                 item->type() == menu::ItemType::KeyInput) {
                 // the ui needs to capture all input until the next ui activation (e.g. another select menu command bound
-                // event is received)
+                // event is received), and then dispatch(item) with the captured value. Nothing captures input yet, so
+                // activating an input item does nothing rather than sending a stale value.
             }
         }
     }
