@@ -66,3 +66,37 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_test, OutputDirectory) {
     // an extension with no writer bound to it is refused rather than guessed at
     BOOST_CHECK_EQUAL(factory.write("data_out/test_write.qwe", img24), false);
 }
+
+/**
+ * Which way up an image is, once it has been through a writer and a reader.
+ *
+ * v3d::image::Image holds its rows top down - row 0 is the top of the picture - and the
+ * canvas, the texture factory and every consumer downstream of them read it that way. A
+ * format whose file layout is bottom up has to be flipped by its reader and its writer, so
+ * that the pair agree with Image rather than only with each other. The rows here differ
+ * because an image of one colour round trips through a flip unchanged.
+ **/
+BOOST_FIXTURE_TEST_CASE(imagewriter_orientation_test, OutputDirectory) {
+    // two rows of one pixel: red on top, green below
+    boost::shared_ptr<v3d::image::Image> image = boost::make_shared<v3d::image::Image>(1, 2, 24);
+    (*image)[0] = 0xff; (*image)[1] = 0; (*image)[2] = 0;
+    (*image)[3] = 0; (*image)[4] = 0xff; (*image)[5] = 0;
+
+    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    v3d::image::Factory factory(logger);
+
+    const char* lossless[] = { "data_out/test_orientation.tga", "data_out/test_orientation.png" };
+    for (const char* filename : lossless) {
+        BOOST_TEST_CONTEXT(filename) {
+            BOOST_REQUIRE_EQUAL(factory.write(filename, image), true);
+
+            boost::shared_ptr<v3d::image::Image> read = factory.read(filename);
+            BOOST_REQUIRE(read != nullptr);
+            BOOST_REQUIRE_EQUAL(read->height(), 2u);
+            // the top row is still the red one
+            BOOST_CHECK_EQUAL((*read)[0], 0xff);
+            BOOST_CHECK_EQUAL((*read)[1], 0);
+            BOOST_CHECK_EQUAL((*read)[4], 0xff);
+        }
+    }
+}

@@ -61,6 +61,10 @@ namespace v3d::image::writer {
         fheader.height_ = img->height();
         fheader.bpp_ = img->bpp();
         fheader.type_ = 2;  // rgb
+        // bit 5 of the descriptor is the vertical origin, and the rows below go out top down
+        // because that is the order Image holds them in. Leaving it clear claims bottom up,
+        // which a reader is entitled to act on by turning the picture over
+        fheader.descriptor_ = 0x20;
 
         file.write(reinterpret_cast<char*>(&fheader), sizeof(fheader));
 

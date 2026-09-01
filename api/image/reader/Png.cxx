@@ -97,11 +97,10 @@ namespace v3d::image::reader {
         png_byte** rowpointers = 0;
         rowpointers = new png_bytep[height];
 
-        // set the individual row-pointers to point at the correct offsets
-        unsigned int j = (height - 1);
+        // set the individual row-pointers to point at the correct offsets. A png file stores
+        // its rows top down and so does Image, so row i of the file is row i of the buffer
         for (unsigned int i = 0; i < height; i++) {
-            rowpointers[j] = data + (i * rowbytes);
-            j--;
+            rowpointers[i] = data + (i * rowbytes);
         }
 
         // now we can go ahead and just read the whole image

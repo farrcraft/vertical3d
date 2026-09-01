@@ -23,9 +23,15 @@ namespace v3d::asset::loader {
     /**
      **/
     boost::shared_ptr<Asset> Tga::load(std::string_view name) {
+        logger_->get()->info("Looking for tga asset at: {}", name);
         v3d::image::reader::Tga reader(logger_);
-        boost::shared_ptr<v3d::image::Image> image;
-        image = reader.read(name);
+        boost::shared_ptr<v3d::image::Image> image = reader.read(name);
+        // an asset holding no image is indistinguishable from a loaded one until a
+        // consumer dereferences it, so a read that failed comes back as no asset at all
+        if (!image) {
+            logger_->get()->error("Could not read tga asset: {}", name);
+            return boost::shared_ptr<Asset>();
+        }
 
         boost::shared_ptr<Image> asset = boost::make_shared<Image>(std::string(name), Type::ImageTga, image);
 

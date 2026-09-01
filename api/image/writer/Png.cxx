@@ -103,7 +103,7 @@ namespace v3d::image::writer {
         /* pack pixels into bytes */
         // png_set_packing(png_ptr);
 
-        png_uint_32 k, height, bytes_per_pixel, width, j;
+        png_uint_32 k, height, bytes_per_pixel, width;
         height = img->height();
         bytes_per_pixel = static_cast<int>(img->format());
         width = img->width();
@@ -114,10 +114,9 @@ namespace v3d::image::writer {
             png_error(png_ptr, "Image is too tall to process in memory");
 
         png_bytep data = img->data();
-        j = height - 1;
+        // both the file and Image are top down, so the rows go out in the order they are in
         for (k = 0; k < height; k++) {
-            row_pointers[j] = data + k * width * bytes_per_pixel;
-            j--;
+            row_pointers[k] = data + k * width * bytes_per_pixel;
         }
 
         png_write_image(png_ptr, row_pointers);
