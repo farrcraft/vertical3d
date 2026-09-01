@@ -70,6 +70,11 @@ namespace v3d::render::realtime::vulkan {
         const VkExtent2D& extent() const noexcept;
 
         /**
+         * @return each image in the chain - owned by the chain, not by us
+         **/
+        const std::vector<VkImage>& images() const noexcept;
+
+        /**
          * @return a view onto each image in the chain
          **/
         const std::vector<VkImageView>& views() const noexcept;

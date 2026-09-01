@@ -77,6 +77,12 @@ namespace v3d::render::realtime::vulkan {
 
     /**
      **/
+    const std::vector<VkImage>& Swapchain::images() const noexcept {
+        return images_;
+    }
+
+    /**
+     **/
     const std::vector<VkImageView>& Swapchain::views() const noexcept {
         return views_;
     }

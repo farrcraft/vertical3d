@@ -105,6 +105,11 @@ namespace v3d::render::realtime::vulkan {
         bool hasRequiredExtensions(VkPhysicalDevice device) const;
 
         /**
+         * @return whether a physical device offers the 1.3 features the renderer draws with
+         **/
+        bool hasRequiredFeatures(VkPhysicalDevice device) const;
+
+        /**
          **/
         void createLogical();
 

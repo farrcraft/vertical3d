@@ -109,12 +109,25 @@ and `config::BindingContext` is deleted in favour of `event::Mapper`. Still open
 `event::Context::active` is written and read by nothing, which is the state scoping the
 editor will need.
 
-**Vulkan is the critical path and nothing renders right now.** `Window3D` owns a
-`vulkan::Instance` and `vulkan::Surface`; `Context3D` owns a `vulkan::Device` and
-`vulkan::Swapchain`. Missing: render pass, framebuffers, command pool and buffers, sync
-objects, and the acquire/submit/present loop. Meanwhile `Engine3D::renderFrame()` and every
-app renderer still call OpenGL against a context that is no longer created. pong links and
-does not draw. Until the frame loop exists, "it builds" is the only signal available.
+**Vulkan is the critical path, and as of 2026-08-31 a window clears to a colour.** Phase 2
+is done. `Context3D` now owns a `vulkan::Presenter` - command pool, per frame command
+buffers, image-available and render-finished semaphores, in-flight fences, two frames in
+flight - and `Engine3D::renderFrame()` acquires, records, submits and presents, rebuilding
+the swapchain whenever acquiring or presenting reports it out of date. Drawing is through
+dynamic rendering with synchronization2 barriers; there is no `VkRenderPass` and no
+`VkFramebuffer` anywhere. Verified by running pong with its GL setup stubbed out: it cleared,
+survived five programmatic resizes, a minimize and a restore, with the Khronos validation
+layer loaded and silent.
+
+Getting there turned up one thing nobody had noticed: **`sdl3` was installed without its
+`vulkan` feature**, so `SDL_Vulkan_LoadLibrary` failed with "No dynamic Vulkan support in
+current SDL video driver (windows)" and pong aborted on startup. That is fixed in
+`vcpkg.json`. It cost nothing but a five minute SDL rebuild, and it means the vulkan path had
+never once run - "it builds" really was the only signal there was.
+
+What is still missing is anything that draws: no pipeline exists, so the only draw item that
+puts pixels down is one carrying a record callback. Every app renderer still calls OpenGL
+against a context nothing creates.
 
 **Build health.** Clean: all `api/` libraries, pong, talyn, v3dshell, imagetool, and - since
 2026-08-31 - odyssey and tetris. Broken: voxel alone, drifted behind api changes.
@@ -143,8 +156,9 @@ the one operation it needs — a textured quad — is the same primitive tetris 
 
 The instinct is to queue everything behind Vulkan. That is wrong for about half the work.
 
-Blocked by the Vulkan frame loop: pong's renderer, tetris's renderer, voxel, and odyssey's
-eventual port onto the consolidated engine. Note that odyssey *building* is not blocked — only
+Blocked by the Vulkan frame loop, which landed on 2026-08-31: pong's renderer, tetris's
+renderer, voxel, and odyssey's eventual port onto the consolidated engine. What those are
+waiting on now is the batched quad pipeline rather than the loop. Note that odyssey *building* is not blocked — only
 its move off `SDL_Renderer` is, and the SDL path can keep running until the Vulkan one reaches
 parity.
 
@@ -242,28 +256,57 @@ produced a written list of what still has to move. Both audits are closed.
 
 ### Phase 2 — Vulkan to first pixel
 
-- Dynamic rendering against the swapchain image views. No `VkRenderPass`, no
-  `VkFramebuffer` — enable `dynamicRendering` through `VkPhysicalDeviceVulkan13Features`
-  chained onto device creation, which also means moving from `pEnabledFeatures` to
-  `VkPhysicalDeviceFeatures2`.
-- Command pool and per-frame command buffers.
-- Sync: image-available and render-finished semaphores, in-flight fences, frames-in-flight.
-  Use `synchronization2` barriers rather than the 1.0 forms.
-- `Engine3D::renderFrame()` acquires, records, submits, presents — and recreates the
-  swapchain on `VK_ERROR_OUT_OF_DATE_KHR` / `VK_SUBOPTIMAL_KHR`. That is the reliable resize
-  trigger; note `render::realtime::Engine::resize` is dead code that nothing ever connects.
-- Build the frame as a list of passes from the start, even while there is only one.
-  Retrofitting the pass model after the fact is the expensive version of this.
-- The draw-item type and its sort key, including the 2D layer field. Recording walks each
-  pass's queue in submission order for now; sorting and merging come later.
-- Resource handles: a pipeline cache, a material or descriptor registry, and texture
-  handles. Nothing can be sorted or merged until these exist, so they belong here rather
-  than being deferred to the phase that first needs them.
-- Bind by update frequency, and write the convention down: set 0 per-frame — camera,
-  projection, viewport — bound once by the pass; set 1 per-material; push constants
-  per-object for transform and tint. Everything downstream depends on this being fixed.
+Done, 2026-08-31. A window clears to a colour and survives a resize and a minimize.
 
-Done when: a window clears to a colour and survives a resize and a minimize.
+- ~~Dynamic rendering against the swapchain image views.~~ Done. `VkPhysicalDeviceVulkan13Features`
+  chained onto `VkPhysicalDeviceFeatures2` at device creation, asking for `dynamicRendering`
+  and `synchronization2`; `pEnabledFeatures` is now null, since a feature struct in the chain
+  and that field are mutually exclusive. Physical device selection rejects anything that does
+  not offer both. No `VkRenderPass` and no `VkFramebuffer` exist anywhere in the renderer.
+- ~~Command pool and per-frame command buffers.~~ Done, as `vulkan::CommandPool` and the
+  buffers `vulkan::Presenter` allocates from it. Buffers are reset individually rather than
+  by resetting the pool, because a frame in flight still owns its buffer while the next one
+  is being recorded.
+- ~~Sync.~~ Done. Two frames in flight, each with an image-available semaphore, a fence and a
+  command buffer; the render-finished semaphore is **per swapchain image** rather than per
+  frame, because presentation waits on it and presentation is tied to the image. Submission
+  is `vkQueueSubmit2` and both layout transitions are `vkCmdPipelineBarrier2`.
+- ~~`Engine3D::renderFrame()` acquires, records, submits, presents, and recreates the
+  swapchain on out-of-date or suboptimal.~~ Done. A suboptimal frame is still drawn and
+  presented and the chain is rebuilt before the next one. The fence is reset only once the
+  frame is certain to be submitted, so an acquire that gives up leaves nothing waiting. A
+  window with no area has no swapchain at all: `acquire` answers `Skip` and the engine
+  rebuilds once the window has an area again, which is what makes minimizing survivable.
+  `render::realtime::Engine::resize` is still the dead code it was - the out-of-date result
+  is the trigger, and nothing needs the event.
+- ~~Build the frame as a list of passes from the start.~~ Done. `Frame` is a list of `Pass`,
+  each carrying its clear, depth flag, viewport region and queue of draw items. The engine
+  builds one pass called `colour`; `Frame::addOperation` and `draw()` survive alongside it as
+  the pre-vulkan path the unported apps still call, and go in phase 3.
+- ~~The draw-item type and its sort key, including the 2D layer field.~~ Done. `SortKey` packs
+  layer, pipeline, material and depth into one 64 bit integer, ordered coarsest first so that
+  a sort groups exactly what can be merged. Nothing sorts yet - the recorder walks submission
+  order - but the layer field is filled in from the first version, which was the point.
+- ~~Resource handles: a pipeline cache, a material or descriptor registry, and texture
+  handles.~~ Done. `Handle<Tag>` is a typed, comparable slot id; `Registry<Tag, Resource>`
+  hands out stable slots; `vulkan::Resources` holds the pipeline, material and texture
+  registries and destroys what it was given. `vulkan::PipelineCache` is a real
+  `VkPipelineCache`, created before the first pipeline exists because a pipeline built
+  outside the cache is not retroactively put into it. Nothing is registered yet - phase 3
+  fills these when it builds the quad pipeline.
+- ~~Bind by update frequency, and write the convention down.~~ Done, in
+  [docs/RenderingPipeline.md](../RenderingPipeline.md): set 0 per frame bound by the pass,
+  set 1 per material, push constants per object. The sort key's field order matches it.
+
+Two things landed alongside, neither of them planned:
+
+- **`sdl3` needed its `vulkan` feature.** See the state notes above. This is the reason the
+  vulkan code had never run.
+- **`api/render` has a test suite now** - 16 cases over the frame model, the sort key and the
+  handle registry, which are the parts that need neither a window nor a GPU. Everything below
+  the recorder still waits on [ADR-0007](../adr/0007-ci-rendering-tests.md).
+
+Done when: a window clears to a colour and survives a resize and a minimize. It does.
 
 ### Phase 3 — pong as the pilot
 
@@ -346,10 +389,11 @@ nothing left worth taking.
 Deliberately not last. This is independent of the render rewrite and blocked by nothing.
 
 Tier 1 landed on 2026-08-31. `enable_testing()` and a `v3d_add_test` helper are in the root
-CMakeLists, six binaries build from `api/<lib>/tests`, and `ctest --test-dir
+CMakeLists, seven binaries build from `api/<lib>/tests`, and `ctest --test-dir
 out/build/x64-Debug` runs the lot in under two seconds. Coverage is `type`, `brep`, `image`,
-`font`, `input` and `event`. Still uncovered: `asset`, `config`, `dag`, `ecs`, `audio`,
-`log`, `ui`, and everything under `api/render`.
+`font`, `input`, `event` and - since the phase 2 work - the window-free half of `render`.
+Still uncovered: `asset`, `config`, `dag`, `ecs`, `audio`, `log`, `ui`, and everything in
+`api/render` below the recorder.
 
 `pong/run-unit-tests.sh` and `tetris/run-unit-tests.sh` still invoke a `unit_tests` binary
 that no CMakeLists builds; they belong to tier 3 and are stale until it lands.
@@ -399,9 +443,11 @@ in rough order of value:
 - The rationale for the Vulkan move. Nothing anywhere records why, and the same is true of
   the SDL3 upgrade. This does not need to be a formal ADR, but the reasoning should exist
   somewhere before it is forgotten.
-- `docs/RenderingPipeline.md` and `docs/ECSDesign.md` are design notes written as open
-  questions. Once Phase 2 settles the `Frame`/`Operation` question, rewrite the first to
-  describe what exists.
+- ~~`docs/RenderingPipeline.md` is a design note written as open questions - rewrite it to
+  describe what exists once phase 2 settles the `Frame`/`Operation` question.~~ Done
+  2026-08-31: it now describes the frame loop, the pass and draw item model, the binding
+  convention and what is still missing. `docs/ECSDesign.md` is still a set of open questions,
+  and the one about what a renderable component looks like is now the live one.
 - `docs/Dependencies.md` still lists sdl2 and does not mention Vulkan.
 
 ## Where moya and talyn fit

@@ -20,6 +20,9 @@ namespace v3d::render::realtime {
         }
         device_ = boost::make_shared<vulkan::Device>(logger, window_->instance(), window_->surface());
         swapchain_ = boost::make_shared<vulkan::Swapchain>(logger, device_, static_cast<uint32_t>(window_->width()), static_cast<uint32_t>(window_->height()));
+        pipelineCache_ = boost::make_shared<vulkan::PipelineCache>(device_);
+        resources_ = boost::make_shared<vulkan::Resources>(device_);
+        presenter_ = boost::make_shared<vulkan::Presenter>(logger, device_, swapchain_);
     }
 
     /**
@@ -41,7 +44,28 @@ namespace v3d::render::realtime {
 
     /**
      **/
+    boost::shared_ptr<vulkan::Presenter> Context3D::presenter() const {
+        return presenter_;
+    }
+
+    /**
+     **/
+    boost::shared_ptr<vulkan::PipelineCache> Context3D::pipelineCache() const {
+        return pipelineCache_;
+    }
+
+    /**
+     **/
+    boost::shared_ptr<vulkan::Resources> Context3D::resources() const {
+        return resources_;
+    }
+
+    /**
+     **/
     void Context3D::resize() {
         swapchain_->recreate(static_cast<uint32_t>(window_->width()), static_cast<uint32_t>(window_->height()));
+        // a new chain can hold a different number of images, and the presenter keeps a
+        // semaphore per image
+        presenter_->reset();
     }
 };  // namespace v3d::render::realtime

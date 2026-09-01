@@ -22,11 +22,19 @@ add_library("v3dlib_render"
 	"realtime/Engine3D.h" "realtime/Engine3D.cpp" 
 	"realtime/operation/Canvas.h" "realtime/operation/Canvas.cpp" 
 	"realtime/Context3D.h" "realtime/Context3D.cpp" 
+	"realtime/Handle.h" "realtime/Registry.h"
+	"realtime/DrawItem.h" "realtime/DrawItem.cpp"
+	"realtime/Pass.h" "realtime/Pass.cpp"
 	"realtime/vulkan/Result.h" "realtime/vulkan/Result.cxx" 
 	"realtime/vulkan/Instance.h" "realtime/vulkan/Instance.cxx" 
 	"realtime/vulkan/Surface.h" "realtime/vulkan/Surface.cxx" 
 	"realtime/vulkan/Device.h" "realtime/vulkan/Device.cxx" 
-	"realtime/vulkan/Swapchain.h" "realtime/vulkan/Swapchain.cxx")
+	"realtime/vulkan/Swapchain.h" "realtime/vulkan/Swapchain.cxx"
+	"realtime/vulkan/CommandPool.h" "realtime/vulkan/CommandPool.cxx"
+	"realtime/vulkan/PipelineCache.h" "realtime/vulkan/PipelineCache.cxx"
+	"realtime/vulkan/Presenter.h" "realtime/vulkan/Presenter.cxx"
+	"realtime/vulkan/Recorder.h" "realtime/vulkan/Recorder.cxx"
+	"realtime/vulkan/Resources.h" "realtime/vulkan/Resources.cxx")
 
 # Workaround for a boost log ABI bug - https://github.com/microsoft/vcpkg/discussions/22762
 target_compile_definitions(v3dlib_render PUBLIC BOOST_USE_WINAPI_VERSION=0x0A00)
@@ -40,3 +48,5 @@ target_compile_options(v3dlib_render PRIVATE /EHsc)
 
 set(CMAKE_CXX_FLAGS "/utf-8")
 set(CMAKE_C_FLAGS "/utf-8")
+
+add_subdirectory("tests")

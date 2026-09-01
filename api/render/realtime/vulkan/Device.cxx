@@ -175,6 +175,22 @@ namespace v3d::render::realtime::vulkan {
 
     /**
      **/
+    bool Device::hasRequiredFeatures(VkPhysicalDevice device) const {
+        VkPhysicalDeviceVulkan13Features features13{};
+        features13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+
+        VkPhysicalDeviceFeatures2 features{};
+        features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        features.pNext = &features13;
+
+        vkGetPhysicalDeviceFeatures2(device, &features);
+
+        // ADR-0002 - the renderer draws through dynamic rendering and synchronizes with the 1.3 barrier forms
+        return features13.dynamicRendering == VK_TRUE && features13.synchronization2 == VK_TRUE;
+    }
+
+    /**
+     **/
     void Device::selectPhysical() {
         uint32_t count = 0;
         VkResult result = vkEnumeratePhysicalDevices(instance_->handle(), &count, nullptr);
@@ -209,6 +225,10 @@ namespace v3d::render::realtime::vulkan {
                 continue;
             }
 
+            if (!hasRequiredFeatures(device)) {
+                continue;
+            }
+
             QueueFamilies families = findFamilies(device);
             if (!families.complete()) {
                 continue;
@@ -229,7 +249,7 @@ namespace v3d::render::realtime::vulkan {
         if (physical_ == VK_NULL_HANDLE) {
             std::stringstream msg;
             msg << "No physical vulkan device supports " << VK_API_VERSION_MAJOR(requiredApiVersion) << "." << VK_API_VERSION_MINOR(requiredApiVersion)
-                << " and can both render to and present to the window";
+                << " with dynamic rendering and synchronization2, and can both render to and present to the window";
             throw std::runtime_error(msg.str());
         }
 
@@ -254,13 +274,25 @@ namespace v3d::render::realtime::vulkan {
             queueInfos.push_back(queueInfo);
         }
 
-        VkPhysicalDeviceFeatures features{};
+        // dynamic rendering replaces render passes and framebuffers, and synchronization2 replaces
+        // the 1.0 barrier and submit forms - both are 1.3 core features and both have to be asked for
+        VkPhysicalDeviceVulkan13Features features13{};
+        features13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+        features13.dynamicRendering = VK_TRUE;
+        features13.synchronization2 = VK_TRUE;
+
+        // a feature struct chained onto pNext and pEnabledFeatures are mutually exclusive, so
+        // the base features travel in the chain as well
+        VkPhysicalDeviceFeatures2 features{};
+        features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        features.pNext = &features13;
 
         VkDeviceCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+        createInfo.pNext = &features;
         createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueInfos.size());
         createInfo.pQueueCreateInfos = queueInfos.data();
-        createInfo.pEnabledFeatures = &features;
+        createInfo.pEnabledFeatures = nullptr;
         createInfo.enabledExtensionCount = static_cast<uint32_t>(std::size(requiredExtensions));
         createInfo.ppEnabledExtensionNames = requiredExtensions;
 

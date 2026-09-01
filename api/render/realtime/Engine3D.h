@@ -5,10 +5,14 @@
 
 #pragma once
 
-#include "Engine.h"
 #include "Context.h"
 #include "Context3D.h"
+#include "Engine.h"
+#include "Frame.h"
 #include "Window3D.h"
+#include "vulkan/Recorder.h"
+
+#include <glm/vec4.hpp>
 
 namespace v3d::render::realtime {
     /* A 3D render engine.
@@ -24,12 +28,39 @@ namespace v3d::render::realtime {
         bool initialize(const boost::shared_ptr<Window3D>& window);
 
         /**
+         * Wait for everything in flight before the device and the window go away.
          **/
-        void renderFrame();
+        bool shutdown() override;
+
+        /**
+         * Record the frame that has been built up, present it, and empty it ready for the
+         * next one. Rebuilds the swapchain when the window has changed size underneath it,
+         * and draws nothing at all while the window has no area.
+         **/
+        void renderFrame() override;
+
+        /**
+         * The frame being built for the next present. Passes and draw items are added to
+         * this during a tick, and recorded in one step by renderFrame().
+         **/
+        boost::shared_ptr<Frame> frame() const;
+
+        /**
+         * The colour the frame's first pass clears to.
+         **/
+        void clearColour(const glm::vec4& colour);
 
         boost::shared_ptr<Context> context();
 
      private:
-        boost::shared_ptr<Context> context_;
+        /**
+         * The pass every frame has, drawing straight to the window.
+         **/
+        static const char* const colourPass;
+
+        boost::shared_ptr<Context3D> context_;
+        boost::shared_ptr<Frame> frame_;
+        vulkan::Recorder recorder_;
+        glm::vec4 clearColour_;
     };
 };  // namespace v3d::render::realtime

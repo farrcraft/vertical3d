@@ -7,7 +7,12 @@
     "glm",
     "libjpeg-turbo",
     "libpng",
-    "sdl3",
+    {
+      "name": "sdl3",
+      "features": [
+        "vulkan"
+      ]
+    },
     "spdlog",
     "vulkan"
   ]
