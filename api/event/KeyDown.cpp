@@ -5,6 +5,8 @@
 
 #include "KeyDown.h"
 
+#include <string>
+
 namespace v3d::event {
 
     /**

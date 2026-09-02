@@ -7,6 +7,8 @@
 
 #include <spdlog/spdlog.h>
 
+#include <memory>
+
 namespace v3d::log {
 
     /**
@@ -23,7 +25,6 @@ namespace v3d::log {
 
      private:
          std::shared_ptr<spdlog::logger> logger_;
-
     };
 
 };  // namespace v3d::log

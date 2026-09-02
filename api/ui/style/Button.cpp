@@ -5,6 +5,8 @@
 
 #include "Button.h"
 
+#include <string>
+
 namespace v3d::ui::style {
 
 Button::Button(const std::string& str, v3d::ui::component::Button::ButtonState s) : Style(str, "button"), state_(s) {

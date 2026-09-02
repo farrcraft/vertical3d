@@ -6,6 +6,8 @@
 #include "Factory.h"
 
 #include <iostream>
+#include <map>
+#include <string>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>

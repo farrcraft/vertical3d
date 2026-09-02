@@ -5,6 +5,8 @@
 
 #include "Component.h"
 
+#include <string>
+
 namespace v3d::ui {
 
     unsigned int Component::lastID = 0;

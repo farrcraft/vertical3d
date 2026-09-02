@@ -5,6 +5,8 @@
 
 #include "Image.h"
 
+#include <string>
+
 namespace v3d::ui::style::prop {
 
 Image::Image(const std::string& name, const std::string& src) : Property(name), source_(src) {

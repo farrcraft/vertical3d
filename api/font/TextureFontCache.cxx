@@ -4,6 +4,8 @@
  **/
 
 #include "TextureFontCache.h"
+
+#include <string>
 #include "../image/TextureAtlas.h"
 #include "TextureFont.h"
 

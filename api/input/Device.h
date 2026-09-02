@@ -5,11 +5,12 @@
 
 #pragma once
 
+#include <SDL3/SDL.h>
+
 #include "../event/Context.h"
 
 #include <entt/entt.hpp>
 #include <boost/shared_ptr.hpp>
-#include <SDL3/SDL.h>
 
 namespace v3d::input {
     /**

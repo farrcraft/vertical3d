@@ -9,6 +9,7 @@
 #include <cassert>
 #include <iostream>
 #include <utility>
+#include <vector>
 
 #include "Plane.h"
 #include "RenderContext.h"

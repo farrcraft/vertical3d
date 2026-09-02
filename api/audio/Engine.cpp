@@ -4,6 +4,8 @@
 **/
 
 #include "Engine.h"
+
+#include <string>
 #include "../event/Sound.h"
 
 #include <boost/foreach.hpp>

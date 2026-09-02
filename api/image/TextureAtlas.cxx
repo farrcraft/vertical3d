@@ -5,6 +5,8 @@
 
 #include "TextureAtlas.h"
 
+#include <string>
+
 #include <boost/shared_ptr.hpp>
 
 #include "Image.h"

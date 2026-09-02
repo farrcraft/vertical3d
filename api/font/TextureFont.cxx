@@ -11,6 +11,7 @@
 #include FT_LCD_FILTER_H
 
 #include <cmath>
+#include <string>
 
 #include <boost/make_shared.hpp>
 

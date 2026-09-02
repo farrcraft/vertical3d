@@ -6,6 +6,7 @@
 #include "AudioClip.h"
 
 #include <iostream>
+#include <string>
 #include <boost/make_shared.hpp>
 
 namespace v3d::audio {

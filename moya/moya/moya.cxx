@@ -5,6 +5,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <string>
 
 #include "../libmoya/RenderMan.h"
 

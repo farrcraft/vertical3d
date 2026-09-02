@@ -359,7 +359,7 @@ void Camera::updatePosition(const glm::vec3 &direction, float elapsedTimeSec) {
     // is in the range [-1,1].
 
     glm::vec3 displacement = calculateDisplacement(direction, elapsedTimeSec);
-    move(displacement.x, displacement.y, displacement.z);
+    move(displacement.x, displacement.y, displacement.z);  // NOLINT(build/include_what_you_use) - the method, not std::move
 
     // Continuously update the camera's velocity vector even if the camera
     // hasn't moved during this call. When the camera is no longer being moved

@@ -5,6 +5,8 @@
 
 #include "TextureFont.h"
 
+#include <string>
+
 namespace v3d::asset {
     /**
      **/

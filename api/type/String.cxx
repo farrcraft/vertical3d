@@ -6,6 +6,7 @@
 #include "String.h"
 
 #include <cassert>
+#include <string>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
 

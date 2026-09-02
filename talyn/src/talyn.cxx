@@ -70,6 +70,7 @@ http://books.google.com/books?id=bBOxUmw83jUC&pg=PA160&lpg=PA160&dq=raytracing+a
 */
 
 #include <iostream>
+#include <string>
 
 #include "RIBReader.h"
 #include "RenderContext.h"

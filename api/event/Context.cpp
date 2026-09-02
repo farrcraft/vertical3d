@@ -5,6 +5,8 @@
 
 #include "Context.h"
 
+#include <string>
+
 namespace v3d::event {
 
     Context::Context(const std::string& name) :

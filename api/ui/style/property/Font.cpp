@@ -5,6 +5,8 @@
 
 #include "Font.h"
 
+#include <string>
+
 namespace v3d::ui::style::prop {
 
 Font::Font(const std::string& name, const std::string& src) : Property(name), source_(src), italics_(false), bold_(false) {

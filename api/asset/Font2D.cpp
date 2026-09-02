@@ -5,6 +5,8 @@
 
 #include "Font2D.h"
 
+#include <string>
+
 namespace v3d::asset {
     /**
      **/

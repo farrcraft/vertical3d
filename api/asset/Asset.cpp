@@ -5,6 +5,8 @@
 
 #include "Asset.h"
 
+#include <string>
+
 namespace v3d::asset {
 
     Asset::Asset(std::string name, asset::Type t) :

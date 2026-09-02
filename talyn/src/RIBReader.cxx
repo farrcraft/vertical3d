@@ -6,6 +6,7 @@
 #include "RIBReader.h"
 
 #include <iostream>
+#include <string>
 
 #include <boost/lexical_cast.hpp>
 

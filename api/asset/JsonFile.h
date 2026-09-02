@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstdio>
 #include <string>
 
 #include <boost/json.hpp>

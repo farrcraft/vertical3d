@@ -6,6 +6,7 @@
 #include "FrameBuffer.h"
 
 #include <iostream>
+#include <vector>
 
 #include <boost/make_shared.hpp>
 

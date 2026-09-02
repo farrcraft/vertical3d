@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <string>
+#include <vector>
 
 namespace v3d::input {
 

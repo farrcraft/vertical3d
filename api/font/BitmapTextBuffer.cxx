@@ -6,6 +6,7 @@
 #include "BitmapTextBuffer.h"
 #include "BitmapFont.h"
 
+#include <string>
 #include <vector>
 
 namespace v3d::font {

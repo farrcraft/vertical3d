@@ -11,6 +11,7 @@
 #include <string>
 #include <cmath>
 #include <algorithm>
+#include <map>
 
 #include <boost/make_shared.hpp>
 

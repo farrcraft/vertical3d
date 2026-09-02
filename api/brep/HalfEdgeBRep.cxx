@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cassert>
 #include <utility>
+#include <vector>
 
 #include "HalfEdgeBRep.h"
 

@@ -5,6 +5,9 @@
 
 #include "Loader.h"
 
+#include <map>
+#include <string>
+
 namespace v3d::asset {
 /**
     **/

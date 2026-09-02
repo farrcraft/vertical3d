@@ -7,6 +7,8 @@
 
 #include <spdlog/sinks/basic_file_sink.h>
 
+#include <memory>
+
 namespace v3d::log {
 
     /**

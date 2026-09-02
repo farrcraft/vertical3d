@@ -5,6 +5,7 @@
 
 #include "Button.h"
 
+#include <string>
 #include <vector>
 
 namespace v3d::ui::component {

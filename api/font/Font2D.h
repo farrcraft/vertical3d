@@ -20,7 +20,7 @@ namespace v3d::font {
      */
     class Font2D {
      public:
-            Font2D(const boost::shared_ptr<v3d::log::Logger>& logger);
+            explicit Font2D(const boost::shared_ptr<v3d::log::Logger>& logger);
             Font2D(const std::string & face, unsigned int size, const boost::shared_ptr<v3d::log::Logger>& logger);
             ~Font2D();
 

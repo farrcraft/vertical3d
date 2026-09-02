@@ -6,6 +6,7 @@
 #include "Bucket.h"
 
 #include <iostream>
+#include <vector>
 
 namespace v3d::moya {
     Bucket::Bucket() {

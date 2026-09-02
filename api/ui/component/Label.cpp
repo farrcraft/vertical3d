@@ -5,6 +5,8 @@
 
 #include "Label.h"
 
+#include <string>
+
 namespace v3d::ui::component {
     Label::Label() : Component(component::Type::LABEL) {
     }

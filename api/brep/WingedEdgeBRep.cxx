@@ -6,6 +6,7 @@
 #include <iostream>
 #include <algorithm>
 #include <cassert>
+#include <vector>
 
 #include "WingedEdgeBRep.h"
 

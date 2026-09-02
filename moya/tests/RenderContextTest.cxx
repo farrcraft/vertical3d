@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE(renderContext_test) {
 
     // test coorindate system transforms
 
-    v3D::Matrix4 transform(3.0f);
+    v3D::Matrix4 transform(3.0f);  // NOLINT(build/include_what_you_use) - the name, not std::transform
 
     rc.setTransform(transform);
     // save the transform as the world coordinate system
