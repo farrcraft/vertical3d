@@ -20,10 +20,11 @@ Two rules that override the urge to get moving:
   `#pragma warning(disable:)`, catching and dropping an exception, or removing a file from a
   target are all ways of turning a bug into a bug you can no longer see.
 
-**Be honest about the toolkit.** This project has no test suite, no sanitizer build, and no
-static analysis beyond cpplint. Vulkan validation layers exist but are not enabled. That
-makes disciplined reading and bisection more important here than in a repo where you can
-throw tools at the problem, not less.
+**Be honest about the toolkit.** This project has no sanitizer build and no static analysis
+beyond cpplint. What it does have is a Boost.Test suite behind ctest and the Khronos
+validation layer, whose messages `vulkan::Instance` routes through the logger. Neither
+reaches a rendering defect below the recorder, so disciplined reading and bisection still
+matter more here than in a repo where you can throw tools at the problem.
 
 ---
 
@@ -35,17 +36,18 @@ throw tools at the problem, not less.
   caused it, and the useful half is usually not the first line. Nothing is logged to a file
   by default, so redirect and read the file rather than the console tail:
   `ninja -C out/build/x64-Debug > build.log 2>&1`.
-- **Check whether it is already known.** The Build health section of `CLAUDE.md` lists the
-  targets that do not compile and why. `tetris`, `voxel` and `odyssey` all fail for
-  pre-existing reasons. Debugging a break you did not cause is a different task.
+- **Check whether it is already known.** The Build health section of `CLAUDE.md` says what
+  the tree's state was at the last full build and which failures predate you. Debugging a
+  break you did not cause is a different task.
 - **Reproduce it deliberately** and write the steps down. For an app, that means which app,
   which `data/` config, and what you did.
 - **Narrow it.** Build one target rather than the tree. For a compile error, `cl /Zs` on a
   single translation unit iterates in seconds where a full build takes minutes — pass the
   same include paths and `/std:c++latest /permissive- /utf-8 /EHsc` the build uses.
 - **Look at what changed.** `git diff`, `git log -p -- <file>`, and `git bisect` when there
-  is a clean pass/fail command. With no test suite the pass/fail is usually "does this
-  target build" or "does the app get past initialisation".
+  is a clean pass/fail command. `ctest --test-dir out/build/x64-Debug -R <suite>` is one
+  where the defect has a cpu half; otherwise it is "does this target build" or "does the app
+  get past initialisation".
 - **Trace backwards from the bad value**, not forwards from the entry point. Ask where the
   value was last correct.
 
@@ -138,9 +140,11 @@ git diff / git log -p / git bisect        # when there is a clean pass/fail comm
 
 Plus the Visual Studio debugger, and spdlog for probes.
 
-**Vulkan validation layers are not enabled.** For a Vulkan defect they are the single most
-valuable diagnostic available, and turning them on is a legitimate step — but say that you
-did, and do not leave them enabled without a decision to do so.
+**The Khronos validation layer is enabled when it is installed**, and `vulkan::Instance`
+routes its warnings and errors through the logger — so for a Vulkan defect, read `v3d.log`
+before anything else. A silent log means the layer found nothing, not that it is off; a run
+with no layer installed is also silent, so confirm the instance logged that validation is on.
 
-**There is no test suite**, no sanitizer build, and no clang-tidy. Do not reach for them,
-and do not claim a fix is verified by them.
+**There is no sanitizer build and no clang-tidy.** Do not reach for them, and do not claim a
+fix is verified by them. The test suite is real — use it where the defect has a cpu half,
+and say so where it does not.

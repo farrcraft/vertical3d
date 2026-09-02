@@ -152,6 +152,15 @@ Check this list before assuming a build failure is yours.
   justification for why a commit exists, no roadmap for a later phase. Why a decision was made belongs in
   [docs/adr/](docs/adr/) and what is coming belongs in [docs/plans/](docs/plans/) — a comment that repeats either
   goes stale where nobody is looking. A non-obvious invariant, a trap, or a constraint the code satisfies is
-  exactly what a comment is for.
+  exactly what a comment is for. Three habits that keep reappearing:
+  - **No provenance from another tree.** "which is rigel's rule", "what `v3dlibs` did here". `rigel/`, `v3dlibs/`,
+    `luxa/` and `vault/` are all scheduled for deletion, so every such reference has an expiry date. Keep the rule,
+    drop the attribution — [docs/RigelSurvey.md](docs/RigelSurvey.md) and the audits are where a port's lineage lives.
+  - **Cite an ADR, do not summarise it.** "per ADR-00NN" followed by a paragraph re-deriving the argument is the
+    restatement the ADR exists to prevent. Say which record settles it, then state only the invariant a caller has
+    to honour.
+  - **Plain register.** No conversational openers ("and ...", "so ..."), no personification ("one edge to anybody
+    selecting it"), no editorialising about how bad the alternative would be. A comment is a note to the next
+    reader, not narration.
 - Logging is spdlog through the wrapper: `logger_->get()->info("... {}", value)`. The older `LOG_INFO`/`LOG_ERROR` macros survive only in commented-out or non-compiling code — don't add new uses.
 - [.gitattributes](.gitattributes) enforces LF (`* text=auto eol=lf`). Editors that save CRLF turn a small change into a whole-file diff; strip the CRs rather than committing them.

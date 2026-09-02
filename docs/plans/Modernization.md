@@ -1015,4 +1015,4 @@ function for keeping those libraries free of realtime dependencies.
 ## Open questions
 
 None outstanding. The last one — how render tests run in CI — is settled in
-[ADR-0001](../adr/0001-ci-rendering-tests.md), pending acceptance.
+[ADR-0007](../adr/0007-ci-rendering-tests.md).

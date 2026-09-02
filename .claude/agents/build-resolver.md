@@ -13,11 +13,10 @@ the right one.
 
 ## Before anything else: is it already broken?
 
-`CLAUDE.md` has a Build health section listing targets that do not compile and why. As of
-the last full build, `tetris`, `voxel` and `odyssey` all fail for reasons that predate
-whatever you are working on. **Check that list before assuming a failure is yours.** Fixing
-a pre-existing break is a different task from fixing a regression, and conflating them
-produces a large diff nobody asked for.
+`CLAUDE.md` has a Build health section saying what the tree's state was at the last full
+build, and which failures predate whatever you are working on. **Check that list before
+assuming a failure is yours.** Fixing a pre-existing break is a different task from fixing a
+regression, and conflating them produces a large diff nobody asked for.
 
 ## The one rule that outranks finishing
 
@@ -41,7 +40,7 @@ There is no wrapper script. The build needs an MSVC Developer environment, then 
 vcvars64.bat                              # or run from a Developer Command Prompt
 ninja -C out/build/x64-Debug              # everything
 ninja -C out/build/x64-Debug pong         # one target
-ninja -C out/build/x64-Debug -k 0         # keep going past the broken targets
+ninja -C out/build/x64-Debug -k 0         # keep going past a failing target
 ```
 
 Output is not logged anywhere by default and the tail is rarely the useful part — MSVC

@@ -21,8 +21,8 @@ git diff HEAD -- CMakeLists.txt '*/CMakeLists.txt' vcpkg.json .gitattributes
 ```
 
 Read `CLAUDE.md` first. Read the ADR governing the subsystem — `docs/adr/README.md` is the
-index, and the seven records there cover the Vulkan rewrite. `docs/plans/Modernization.md`
-says which phase the work belongs to and what it is allowed to depend on.
+index. `docs/plans/Modernization.md` says which phase the work belongs to and what it is
+allowed to depend on.
 
 Review only what changed and what the change makes wrong. Do not audit the file.
 
@@ -36,8 +36,8 @@ Review only what changed and what the change makes wrong. Do not audit the file.
 
 Report nothing you cannot point at a line for. An empty review is a valid review.
 
-Be careful not to report pre-existing breakage as though the change caused it. `tetris`,
-`voxel` and `odyssey` do not compile, for reasons listed in `CLAUDE.md`.
+Be careful not to report pre-existing breakage as though the change caused it. `CLAUDE.md`
+keeps a build health list; check it before attributing a failure to the diff.
 
 ---
 
@@ -119,7 +119,12 @@ From `docs/sdlc.md`:
   constrains later phases, or a future reader would ask "why on earth is it done this way".
   If the diff makes such a choice and `docs/adr/` did not move, that is a finding.
 - **A decision restated rather than linked.** `docs/adr/` is the only home; a plan or a
-  comment that re-argues a recorded decision will eventually disagree with it.
+  comment that re-argues a recorded decision will eventually disagree with it. A comment
+  citing "per ADR-00NN" and then summarising it is the same finding.
+- **A comment carrying something that will expire.** Provenance from a tree scheduled for
+  deletion (`rigel/`, `v3dlibs/`, `luxa/`, `vault/`), the history of what the code used to
+  be, or a roadmap for a later phase. Keep the rule, drop the attribution. See the comment
+  convention in `CLAUDE.md`.
 - **A change that moved a workstream without updating the plan's state notes**, or changed
   architecture, build or convention without updating `CLAUDE.md`.
 
@@ -141,15 +146,17 @@ You have Bash. Prefer evidence over assertion.
 
 ```
 ninja -C out/build/x64-Debug <target>
+ctest --test-dir out/build/x64-Debug --output-on-failure
 cpplint --linelength=180 --filter=-runtime/indentation_namespace,-build/namespaces_literals <files>
 ```
 
 Building needs an MSVC Developer environment first. Every file reports
 `whitespace/indent_namespace` from a stale filter in the workflow — ignore those.
 
-**There is no test suite**, and nothing renders yet, so do not ask for test evidence or
-claim a change is verified beyond compiling. If you run a check, quote what it said; if you
-do not, do not imply that you did.
+There is a test suite — one binary per api library and per app with logic worth covering —
+so a change with a testable cpu half that brings no cases is a finding. CI still renders
+nothing, so do not ask for render evidence beyond a run whose validation log is silent. If
+you run a check, quote what it said; if you do not, do not imply that you did.
 
 ## Output
 

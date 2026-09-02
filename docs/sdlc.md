@@ -4,8 +4,6 @@ How work moves through this repository. This is a solo project, so the process e
 one reason: work happens in bursts months apart, and the reasoning behind a change has to
 survive the gap. Anything that does not serve that is ceremony and should be cut.
 
-Some of what follows describes practice that is not in place yet. Those parts are marked.
-
 ## 1. Plan
 
 Phased plans live in [`plans/`](plans/). A workstream earns a plan document when it spans
@@ -52,23 +50,26 @@ diff, so strip the CRs rather than committing them.
 
 ## 4. Verify
 
-**Build.** The authoritative check today. `ninja -C out/build/x64-Debug`, or one target at a
-time. `tetris`, `voxel` and `odyssey` are known broken for reasons recorded in `CLAUDE.md`;
-check that list before assuming a failure is yours.
+**Build.** `ninja -C out/build/x64-Debug`, or one target at a time. Everything compiles and
+links; `CLAUDE.md` keeps a build health list, so check it before assuming a failure is
+yours.
 
 **Lint.** cpplint, per the command in `CLAUDE.md`, run in CI by
 [`.github/workflows/cpplint.yml`](../.github/workflows/cpplint.yml). Every file reports
 `whitespace/indent_namespace` because the filter in that workflow names the check by its old
 identifier; ignore those and treat everything else as real.
 
-**Tests.** *Not in place.* Three tiers are planned — unit tests per api library, an
-integration suite across libraries, and per-app suites. See the testing section of the
-modernization plan.
+**Tests.** Boost.Test, one binary per api library plus one per app that has logic worth
+covering, registered with ctest: `ctest --test-dir out/build/x64-Debug --output-on-failure`.
+`CLAUDE.md` records what is covered and what is not — everything in `api/render` below the
+recorder needs a window and a GPU and is not. A change with a testable cpu half is expected
+to bring cases with it.
 
-**Render verification.** Nothing renders until the Vulkan frame loop lands, so "it builds"
-is currently the only available signal for the render layer. Once there is a frame loop, CI
-runs render tests against a software Vulkan implementation per
-[ADR-0001](adr/0001-ci-rendering-tests.md).
+**Render verification.** The frame loop is in and the apps draw, but CI still renders
+nothing, so a rendering change is verified by running the app and reading the log: the
+Khronos validation layer is routed through the logger, and a silent run is the signal.
+Automating it against a software Vulkan implementation is
+[ADR-0007](adr/0007-ci-rendering-tests.md), which has not been done.
 
 ## 5. Record
 
@@ -77,5 +78,9 @@ A change is not finished when it compiles. Before moving on:
 - Update the plan's state notes if the change moved a workstream.
 - Update `CLAUDE.md` if it changed the architecture, the build, or a convention — that file
   is what a new session reads first, and a stale one actively misleads.
+- Re-read the comments the change added, against the comment convention in `CLAUDE.md`.
+  Comments are written while the reasoning is loudest and the surrounding decision is not yet
+  recorded, so they collect provenance, ADR summaries and narration that a second pass
+  removes in a minute.
 - Set an ADR's status when a proposed decision is accepted, deprecated, or superseded.
   Superseding does not delete: leave the old file in place and point it at the new one.

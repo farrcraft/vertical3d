@@ -5,10 +5,10 @@ description: Write an ADR for a technical decision in this project, in the house
 
 # Architecture Decision Records
 
-`docs/adr/` is this project's record of why the codebase is shaped the way it is. It is new
-and small: a `template.md`, an index in `README.md`, and seven
-accepted records covering the Vulkan rewrite. Expect to be adding the eighth, not
-bootstrapping the log.
+`docs/adr/` is this project's record of why the codebase is shaped the way it is: a
+`template.md`, an index in `README.md`, and a numbered run of accepted records — the Vulkan
+rewrite, then the editor. Read the index for the current count and add the next number; you
+are extending the log, not bootstrapping it.
 
 The process rule lives in [`docs/sdlc.md`](../../../docs/sdlc.md) §2 ("Decide"). This skill
 is how to carry it out.
@@ -111,7 +111,7 @@ variant; consistency across the record is the point.
 3. **Draft it from `template.md`.** Delete the placeholder prose; leave no bracketed hints.
 4. **Add the index row** at the bottom of the table in `docs/adr/README.md`:
    ```
-   | [0008](0008-slug.md) | Title — Short Statement | accepted | YYYY-MM-DD |
+   | [NNNN](NNNN-slug.md) | Title — Short Statement | accepted | YYYY-MM-DD |
    ```
    The title in the row matches the title in the file.
 5. **Show it before committing it.** The decision is the user's; the writing is yours. A

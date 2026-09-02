@@ -57,9 +57,9 @@ What differs here:
 - **Warnings are not errors here.** There is no `/WX`, no `-Werror`, and no
   `cmake/CompilerOptions.cmake`. The tree already carries some warnings. The rule is do not
   add new ones and do not suppress existing ones instead of fixing them.
-- **There is no sanitizer build, no clang-tidy and no test suite.** cpplint is the only
-  static analysis. Do not claim verification you cannot perform; building is usually the
-  whole of the available proof.
+- **There is no sanitizer build and no clang-tidy.** cpplint is the only static analysis.
+  There is a Boost.Test suite behind ctest, so a testable cpu change can be proved; anything
+  needing a window or a GPU cannot. Do not claim verification you did not perform.
 
 ## Constraints
 
