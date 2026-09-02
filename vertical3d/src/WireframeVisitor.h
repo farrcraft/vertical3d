@@ -18,11 +18,12 @@ namespace v3d::editor {
      * Draws every mesh of a scene as a wireframe, onto one line canvas.
      *
      * A mesh is drawn through its own transform, so the canvas carries the placement rather
-     * than the geometry. Each edge is drawn once: a half edge and its pair are the same
-     * segment, so only the lower numbered of the two emits it.
+     * than the geometry, and each edge is drawn once - see ownsEdge().
      *
      * Wireframe is the only display mode the editor has - a shaded mode needs a triangle
-     * primitive, which is not the line one.
+     * primitive, which is not the line one. That is also why a selected face is drawn as
+     * its boundary and a selected vertex as a small box: there is nothing to fill either
+     * with.
      **/
     class WireframeVisitor final : public SceneVisitor {
      public:
@@ -37,6 +38,16 @@ namespace v3d::editor {
         void visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) override;
 
      private:
+        /**
+         * Whether either half of an edge is selected.
+         **/
+        bool edgeSelected(const boost::shared_ptr<v3d::brep::BRep>& mesh, unsigned int edge) const;
+
+        /**
+         * A box at each selected vertex, sized against the mesh.
+         **/
+        void markers(const boost::shared_ptr<v3d::brep::BRep>& mesh);
+
         v3d::render::realtime::LineCanvas* canvas_;
         glm::vec4 wire_;
         glm::vec4 object_;

@@ -6,6 +6,9 @@
 #pragma once
 
 #include "CameraProfile.h"
+#include "Ray.h"
+
+#include <glm/vec2.hpp>
 
 namespace v3d::type {
 
@@ -34,6 +37,19 @@ namespace v3d::type {
 
             glm::vec3 unproject(const glm::vec3 & point, int viewport[4]);
             glm::vec3 project(const glm::vec3 & point, int viewport[4]);
+
+            /**
+             *	The ray a screen point casts into the scene, in world space.
+             *	It starts at the near plane and its direction is a unit vector, so a
+             *	distance along it is in world units. An orthographic camera gives a ray
+             *	parallel to every other, which falls out of unprojecting the two depths
+             *	rather than being a case of its own.
+             *	The matrices are the cached ones, so createProjection() and createView()
+             *	have to have been called for the state the point was clicked against.
+             *	@param point where the click was, in window pixels
+             *	@param viewport the region the camera draws into, as x, y, width, height
+             */
+            Ray ray(const glm::vec2 & point, int viewport[4]);
 
             /**
              *	Create a projection matrix.

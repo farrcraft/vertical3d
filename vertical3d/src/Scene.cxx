@@ -77,4 +77,12 @@ namespace v3d::editor {
         }
     }
 
+    /**
+     **/
+    void Scene::deselectComponents() noexcept {
+        for (const boost::shared_ptr<v3d::brep::BRep>& mesh : meshes_) {
+            mesh->deselectComponents();
+        }
+    }
+
 };  // namespace v3d::editor

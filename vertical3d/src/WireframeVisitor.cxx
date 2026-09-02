@@ -5,8 +5,13 @@
 
 #include "WireframeVisitor.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <vector>
+
+#include "MeshTopology.h"
+
+#include "../../api/type/AABBox.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -25,39 +30,17 @@ namespace v3d::editor {
         const glm::vec4 object(0.35f, 0.72f, 1.0f, 1.0f);
 
         /**
-         * A selected edge, or one whose pair is selected - the two halves are one edge to
-         * anybody selecting it.
+         * A selected component: an edge, the boundary of a selected face, or the marker
+         * drawn at a selected vertex.
          **/
         const glm::vec4 component(1.0f, 0.62f, 0.19f, 1.0f);
 
         /**
-         * The half edges of one face, in order.
-         *
-         * Bounded by the mesh's edge count, so a next chain that does not close - which is
-         * what an unfinished modelling operation leaves behind - ends the walk rather than
-         * spinning.
+         * How big a selected vertex's marker is, as a fraction of the mesh's largest
+         * dimension. A line canvas is world space, so the marker cannot be sized in pixels
+         * and is sized against the mesh instead.
          **/
-        std::vector<unsigned int> loop(const boost::shared_ptr<v3d::brep::BRep>& mesh, unsigned int face) {
-            std::vector<unsigned int> edges;
-            v3d::brep::Face* start = mesh->face(face);
-            if (start == nullptr) {
-                return edges;
-            }
-            unsigned int current = start->edge();
-            while (edges.size() <= mesh->edgeCount()) {
-                v3d::brep::HalfEdge* edge = mesh->edge(current);
-                if (edge == nullptr) {
-                    break;
-                }
-                edges.push_back(current);
-                const uint64_t next = edge->next();
-                if (next == v3d::brep::INVALID_ID || next == start->edge()) {
-                    break;
-                }
-                current = static_cast<unsigned int>(next);
-            }
-            return edges;
-        }
+        constexpr float markerScale = 0.04f;
 
     };  // namespace
 
@@ -83,51 +66,83 @@ namespace v3d::editor {
         canvas_->transform(mesh->matrix());
 
         const std::size_t faces = mesh->faceCount();
-        for (std::size_t face = 0; face < faces; face++) {
-            const std::vector<unsigned int> edges = loop(mesh, static_cast<unsigned int>(face));
-            if (edges.size() < 2) {
+        for (std::size_t index = 0; index < faces; index++) {
+            const unsigned int number = static_cast<unsigned int>(index);
+            v3d::brep::Face* face = mesh->face(number);
+            // a selected face is drawn as its boundary, there being no filled primitive to
+            // shade it with
+            const bool selected = face != nullptr && face->selected();
+            const std::vector<unsigned int> loop = faceLoop(mesh, number);
+            if (loop.size() < 2) {
                 continue;
             }
 
-            for (std::size_t index = 0; index < edges.size(); index++) {
-                const unsigned int current = edges[index];
-                v3d::brep::HalfEdge* edge = mesh->edge(current);
-                if (edge == nullptr) {
+            for (std::size_t entry = 0; entry < loop.size(); entry++) {
+                const unsigned int current = loop[entry];
+                if (!ownsEdge(mesh, current)) {
                     continue;
                 }
 
-                const uint64_t pair = edge->pair();
-                // a half edge and its pair are the same segment seen from the two faces
-                // that share it, so the lower numbered of the two draws it
-                if (pair != v3d::brep::INVALID_ID && pair < current) {  // NOLINT(build/include_what_you_use) - the half edge, not std::pair
+                glm::vec3 from, to;
+                if (!loopSegment(mesh, loop, entry, &from, &to)) {
                     continue;
                 }
 
-                // a half edge names the vertex it ends at, so its segment starts where the
-                // one before it in the loop ended
-                const unsigned int previous = edges[(index + edges.size() - 1) % edges.size()];
-                v3d::brep::HalfEdge* before = mesh->edge(previous);
-                if (before == nullptr) {
-                    continue;
-                }
-
-                v3d::brep::Vertex* from = mesh->vertex(static_cast<unsigned int>(before->vertex()));
-                v3d::brep::Vertex* to = mesh->vertex(static_cast<unsigned int>(edge->vertex()));
-                if (from == nullptr || to == nullptr) {
-                    continue;
-                }
-
-                bool selected = edge->selected();
-                if (!selected && pair != v3d::brep::INVALID_ID) {
-                    v3d::brep::HalfEdge* other = mesh->edge(static_cast<unsigned int>(pair));
-                    selected = other != nullptr && other->selected();
-                }
-
-                canvas_->line(from->point(), to->point(), selected ? component_ : base);
+                canvas_->line(from, to, selected || edgeSelected(mesh, current) ? component_ : base);
             }
         }
 
+        markers(mesh);
+
         canvas_->pop();
+    }
+
+    /**
+     **/
+    bool WireframeVisitor::edgeSelected(const boost::shared_ptr<v3d::brep::BRep>& mesh, unsigned int edge) const {
+        v3d::brep::HalfEdge* half = mesh->edge(edge);
+        if (half == nullptr) {
+            return false;
+        }
+        if (half->selected()) {
+            return true;
+        }
+        // the two halves are one edge to a selection, so either being selected colours
+        // the segment
+        const uint64_t pair = half->pair();  // NOLINT(build/include_what_you_use) - the half edge, not std::pair
+        if (pair == v3d::brep::INVALID_ID) {
+            return false;
+        }
+        v3d::brep::HalfEdge* other = mesh->edge(static_cast<unsigned int>(pair));
+        return other != nullptr && other->selected();
+    }
+
+    /**
+     **/
+    void WireframeVisitor::markers(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
+        const std::size_t count = mesh->vertexCount();
+        if (count == 0) {
+            return;
+        }
+
+        float size = 0.0f;
+        const v3d::type::AABBox bound = mesh->bound();
+        const glm::vec3 extent = bound.max() - bound.min();
+        size = std::max(std::max(extent.x, extent.y), extent.z) * markerScale;
+        if (size <= 0.0f) {
+            // a flat or degenerate mesh still gets a marker that can be seen
+            size = markerScale;
+        }
+
+        const glm::vec3 corner(size, size, size);
+        for (std::size_t index = 0; index < count; index++) {
+            v3d::brep::Vertex* vertex = mesh->vertex(static_cast<unsigned int>(index));
+            if (vertex == nullptr || !vertex->selected()) {
+                continue;
+            }
+            const glm::vec3 point = vertex->point();
+            canvas_->box(point - corner, point + corner, component_);
+        }
     }
 
 };  // namespace v3d::editor

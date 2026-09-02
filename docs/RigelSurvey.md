@@ -139,12 +139,21 @@ ever asked for.
    - **`fov` is unreachable**, which the perspective profiles in `gui.xml` set and rigel's
      own loader also failed to read (see the defects).
 
-3. **Picking.** `ViewPort::selection_hit_test` is `glRenderMode(GL_SELECT)` with a name stack
-   and a hand-rolled `gluPickMatrix` — deprecated in GL 3 and nonexistent in Vulkan. The
-   name-space encoding it wraps around that is worth keeping: ids below 16,777,216 are
-   objects, the next 32 are manipulator axes, everything above is a face, edge or vertex
-   index resolved against the active select mask. The mechanism has to be rebuilt as either
-   a ray cast against the brep or an id-buffer pass, and that decision is worth an ADR.
+3. ~~**Picking.**~~ **Fixed 2026-09-02** —
+   [ADR-0014](adr/0014-picking-is-a-cpu-ray-cast.md). It is a cpu ray cast against the brep
+   rather than an id-buffer pass: an object and a face are hit by the ray meeting a triangle
+   of a fan over the face's loop, and a vertex and an edge — which are drawn one pixel wide
+   and have no area to rasterise or to hit exactly — by screen space proximity, nearest to
+   the camera winning, which is what the depth sorted hit buffer below did.
+   `ViewPort::selection_hit_test` was `glRenderMode(GL_SELECT)` with a name stack and a
+   hand-rolled `gluPickMatrix`, deprecated in GL 3 and nonexistent in Vulkan. Its behaviour
+   came across and its encoding did not: an object still has to be selected before any of
+   its components may be, a miss still deselects, and a second click on a component still
+   toggles it — but the name-space encoding (ids below 16,777,216 objects, the next 32
+   manipulator axes, everything above a component index) existed only because a GL name stack
+   carries one `GLuint`. A `Hit` is a struct and says what kind of thing it holds, so the
+   manipulators will be picked by their own test against the ray rather than by reserving a
+   range of the same integer.
 
 4. ~~**A mesh has no identity and no transform.**~~ **Fixed 2026-09-02** -
    [ADR-0013](adr/0013-mesh-is-a-dag-node.md). What follows is what the gap was. Rigel's `HalfEdgeBRep` derives from
@@ -155,9 +164,11 @@ ever asked for.
 
 5. ~~**Selection state on three of the four brep types.**~~ **Fixed 2026-09-02.** All four
    carry it - and `Face`'s had been commented out rather than kept, so it was four of four
-   rather than three. `BRep::deselectComponents()` and `Scene::deselect()` clear them.
-   What decides which of the three a click writes is a select mask, which does not exist
-   yet.
+   rather than three. `BRep::deselectComponents()`, `Scene::deselect()` and
+   `Scene::deselectComponents()` clear them. The select mask that decides which of the three
+   a click writes landed with picking the same day: `v3d::editor::SelectMask` is object,
+   vertex, edge or face, held by `SelectTool`, and changing it clears the component
+   selection.
 
 6. ~~**A per-pass camera on an orthographic pass, and more than one viewport.**~~
    **Landed 2026-09-01.** The editor draws four passes over one frame, each with its own
@@ -188,9 +199,11 @@ ever asked for.
 Items 1, 2 and 6 are the ones that gate everything else - a modeller that cannot draw a line,
 cannot configure a camera and cannot show four views is not a modeller. All three landed on
 2026-09-01: the editor builds, runs, and draws a construction grid through four viewports of
-one scene. Items 4 and 5 landed on 2026-09-02, and the editor draws a scene. What is left of this
-list is items 3, 7, 8 and 9 - picking, the interactive command model, project persistence
-and undo.
+one scene. Items 4, 5 and 3 landed on 2026-09-02, and the editor draws a scene and selects
+what is in it. What is left of this list is items 7, 8 and 9 - the interactive command model,
+project persistence and undo. Item 7 is half done: `SelectTool` is the second `Tool` and does
+receive motion and button events, but nothing draws feedback while active the way
+`SplitEdgeTool` did, and there is still no `Command` and no tool map.
 
 ## Defects found
 
@@ -327,9 +340,10 @@ and two things did not come across:
   into the rewrite before it can go".** That is right about the manipulators and the command
   sets and wrong about the viewport: `ViewPort` is 1,381 lines of GTK signal handlers and
   immediate-mode GL, and the part of it that had portable value — the camera modes — is
-  already in `vertical3d/CameraControlTool`. What is left to take from `ViewPort` is the
-  picking name-space scheme and the decoration and handle geometry, both of which are
-  descriptions rather than code.
+  already in `vertical3d/CameraControlTool`. Its picking behaviour came across on 2026-09-02
+  and its name-space encoding deliberately did not, per
+  [ADR-0014](adr/0014-picking-is-a-cpu-ray-cast.md). What is left to take from `ViewPort` is
+  the decoration and handle geometry, which is a description rather than code.
 
 ## What has to happen before `rigel/` can be deleted
 
@@ -356,7 +370,9 @@ games; it is blocked by the api never having had a customer that draws lines or 
    named members its header does not declare and called three glm methods that do not
    exist, and its `CMakeLists.txt` listed the header twice and the implementation not at
    all, so nothing had ever built it.
-5. Decide picking — ray cast or id buffer — in an ADR, and port the name-space scheme onto it.
+5. ~~Decide picking — ray cast or id buffer — in an ADR, and port the name-space scheme onto
+   it.~~ Done 2026-09-02: [ADR-0014](adr/0014-picking-is-a-cpu-ray-cast.md), a ray cast. The
+   name-space scheme is not ported — a typed `Hit` replaces it.
    `Camera::project()` and `::unproject()` are inverses of each other as of 2026-09-01,
    which a ray cast would be built on; they were not before.
 6. Port the three manipulators onto lines and the picking decision, fixing the translate

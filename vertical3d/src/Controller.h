@@ -11,6 +11,8 @@
 #include "CameraControlTool.h"
 #include "CameraProfiles.h"
 #include "Scene.h"
+#include "SelectMask.h"
+#include "SelectTool.h"
 #include "ViewLayout.h"
 #include "ViewPort.h"
 
@@ -95,6 +97,7 @@ namespace v3d::editor {
         boost::shared_ptr<ViewPort> activeView_;
 
         boost::shared_ptr<CameraControlTool> cameraTool_;
+        boost::shared_ptr<SelectTool> selectTool_;
         boost::shared_ptr<Renderer> renderer_;
 
         glm::vec2 cursor_;

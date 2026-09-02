@@ -834,19 +834,44 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
   of the frame's ring, which `Engine3D` returns after recording. Appending into one buffer
   would not do: growing a buffer replaces the allocation and invalidates the handle every
   draw item recorded before it is holding.
-- Selection needed three things the api did not have. **Two of the three landed 2026-09-02**
-  as [ADR-0013](../adr/0013-mesh-is-a-dag-node.md): `brep::BRep` derives from `dag::Node`
-  and `dag::Transform`, so a mesh has an id and a placement, and `selected()` is on all four
-  of `Vertex`, `HalfEdge`, `Face` and `BRep` — `Face`'s had been commented out rather than
-  kept, so it was four of four missing rather than three. `dag::Transform` had to be made to
-  compile first: it named members its own header does not declare, called three glm methods
-  that do not exist, and was left out of its `CMakeLists.txt`, so nothing had ever built it.
-  It now composes translation * rotation * scale, and `translation(v)` sets where it used to
-  accumulate.
-  - **Picking is the third and is still open** — a ray cast against the brep or an id-buffer
-    pass, worth an ADR. What it returns is settled: a `dag::Node` id.
-  - What decides which of vertex, edge and face a click writes is a select mask, which does
-    not exist yet. Nothing enforces that only one kind is selected at a time.
+- ~~Selection needed three things the api did not have.~~ **All three landed 2026-09-02.**
+  The first two are [ADR-0013](../adr/0013-mesh-is-a-dag-node.md): `brep::BRep` derives from
+  `dag::Node` and `dag::Transform`, so a mesh has an id and a placement, and `selected()` is
+  on all four of `Vertex`, `HalfEdge`, `Face` and `BRep` — `Face`'s had been commented out
+  rather than kept, so it was four of four missing rather than three. `dag::Transform` had to
+  be made to compile first: it named members its own header does not declare, called three
+  glm methods that do not exist, and was left out of its `CMakeLists.txt`, so nothing had
+  ever built it. It now composes translation * rotation * scale, and `translation(v)` sets
+  where it used to accumulate.
+  - ~~**Picking is the third**~~ — landed as
+    [ADR-0014](../adr/0014-picking-is-a-cpu-ray-cast.md): a cpu ray cast against the brep,
+    not an id-buffer pass. An id buffer would start by writing the triangle primitive the
+    tree does not have, needs a readback that either stalls the frame or answers a click a
+    frame late, and cannot answer for a one pixel line at all. So an object and a face —
+    which have area — are hit by the ray meeting a triangle of a fan over the face's loop,
+    and a vertex and an edge by screen space proximity, nearest to the camera winning as
+    rigel's depth sorted hit buffer did. `v3d::type::Ray` and `Camera::ray()` are the api
+    half; `v3d::editor::Picker` is the policy. The ray is moved into each mesh's space by the
+    inverse of its matrix rather than the geometry into the world, and
+    `Ray::transformed()` does not renormalise, so a distance is comparable across meshes of
+    different scales. Rigel's integer name-space encoding is not ported: a `Hit` is a struct
+    and can say what kind of thing it holds.
+  - ~~What decides which of vertex, edge and face a click writes is a select mask, which does
+    not exist yet.~~ `v3d::editor::SelectMask` is object, vertex, edge or face, held by
+    `SelectTool` and bound to o, v, e and f because gui.xml puts the masks on a menu and a
+    toolbar and there are neither yet. Changing it clears the component selection, which is
+    what keeps one kind selected at a time. The curve, mesh, light, camera and handle masks
+    gui.xml also lists have no node type to select and are left out rather than stubbed.
+  - `SelectTool` is the second `Tool` and shares the primary button with the camera one: a
+    drag with a modifier held drives a camera and a bare click picks, which is how rigel
+    divided them. Rigel's rules come with it — an object has to be selected before any of
+    its components may be, a miss in object mode deselects everything and a miss in a
+    component mode clears only the components, and clicking the same component twice
+    deselects it. Verified against a run: a cube selects, deselects, and toggles one of its
+    faces, with the validation layer silent.
+  - Still open: **multiple selection**. One thing is selected at a time, which is rigel's
+    limit too, so a rubber band or a shift-click is a change to the selection model rather
+    than to the tool.
 - ~~Rewrite `vertical3d/` onto the current api.~~ Done 2026-09-01. **The editor opens, and
   draws four viewports of one scene.** It runs on `v3d::engine::Engine` the way every other
   app does - `Feature::Config | Window | MouseInput | KeyboardInput` - with `src/`, `data/`
@@ -878,9 +903,13 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
     the same scene through its own camera. The create commands arrive in a `create` context
     bound to keys 1 to 4, because `gui.xml` puts them on menus and there are no menus yet.
     Verified against a run: cube and cylinder, four viewports, validation silent.
+  - **Selection landed 2026-09-02**, per ADR-0014 above: a click picks, the wireframe shows
+    what is selected - a selected object recolours, a selected face draws its boundary in the
+    component colour and a selected vertex draws a small box, there being no filled primitive
+    to shade either with - and the mask keys switch what a click looks for.
   - Not yet: `Controller` has no tool map and no ui - the menus, toolbars and 51 command
-    strings of `gui.xml` are still untranslated - and a mesh can be created and drawn but
-    not selected, moved or saved.
+    strings of `gui.xml` are still untranslated - and a mesh can be created, drawn and
+    selected but not moved or saved.
 - ~~Multiple viewports are the feature that will push hardest on the pass model from
   [ADR-0003](../adr/0003-one-realtime-engine.md).~~ Done 2026-09-01, and **the model
   expressed it**. Four views is four `Pass`es over one `Frame`: each carries its region as
@@ -896,8 +925,9 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
   land first.
 
 Done when: the editor opens a project, draws a scene from multiple viewports, and rigel has
-nothing left worth taking. It draws a scene from multiple viewports as of 2026-09-02; there
-is no project - nothing loads or saves one, and nothing selects or moves what is in it.
+nothing left worth taking. It draws a scene from multiple viewports as of 2026-09-02, and
+selects what is in it; there is no project - nothing loads or saves one - and nothing moves a
+selection, which is the manipulators.
 
 ### Ongoing — tests
 

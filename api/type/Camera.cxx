@@ -75,6 +75,14 @@ namespace v3d::type {
         return p;
     }
 
+    Ray Camera::ray(const glm::vec2& point, int viewport[4]) {
+        // the two ends of the pixel's line through the frustum. Depth zero is the near
+        // plane and one is the far one, per ADR-0012
+        const glm::vec3 from = unproject(glm::vec3(point.x, point.y, 0.0f), viewport);
+        const glm::vec3 to = unproject(glm::vec3(point.x, point.y, 1.0f), viewport);
+        return Ray(from, to - from);
+    }
+
     /*
     build either an orthographic or perspective projection matrix
 

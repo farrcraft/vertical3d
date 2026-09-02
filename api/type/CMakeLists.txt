@@ -5,6 +5,7 @@ add_library("v3dlib_type"
 "Bound2D.h" "Bound2D.cxx" 
 "Camera.h" "Camera.cxx" 
 "CameraProfile.h" "CameraProfile.cxx"  
+"Ray.h" "Ray.cxx" 
 "String.h" "String.cxx"
 )
 add_subdirectory("tests")

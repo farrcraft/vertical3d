@@ -63,6 +63,13 @@ namespace v3d::editor {
          **/
         void deselect() noexcept;
 
+        /**
+         * Clear the component selection of every mesh, leaving the objects selected - what
+         * a select mask change does, since the components of one kind mean nothing to an
+         * operation working in another.
+         **/
+        void deselectComponents() noexcept;
+
      private:
         std::vector<boost::shared_ptr<v3d::brep::BRep>> meshes_;
     };

@@ -40,6 +40,12 @@ namespace v3d::editor {
          **/
         const char* const createContext = "create";
 
+        /**
+         * The context the select mask commands arrive in - gui.xml's select::mask::*,
+         * bound to keys here for the same reason the create commands are.
+         **/
+        const char* const selectContext = "select";
+
     };  // namespace
 
     /**
@@ -84,6 +90,7 @@ namespace v3d::editor {
         }
 
         cameraTool_ = boost::make_shared<CameraControlTool>();
+        selectTool_ = boost::make_shared<SelectTool>(scene_, logger_);
 
         dispatcher_->sink<v3d::event::Event>().connect<&Controller::handleEvent>(*this);
         dispatcher_->sink<v3d::event::MouseMotion>().connect<&Controller::handleMotion>(*this);
@@ -189,11 +196,17 @@ namespace v3d::editor {
             if (index < views_.size()) {
                 activeView_ = views_[index];
                 cameraTool_->view(activeView_);
+                if (selectTool_) {
+                    selectTool_->view(activeView_);
+                }
             }
         }
 
         if (cameraTool_) {
             cameraTool_->motion(cursor_);
+        }
+        if (selectTool_) {
+            selectTool_->motion(cursor_);
         }
     }
 
@@ -217,6 +230,13 @@ namespace v3d::editor {
             return;
         }
 
+        if (event.context()->name() == selectContext) {
+            if (event.state() != v3d::event::State::Released) {
+                selectTool_->activate(std::string(event.name()));
+            }
+            return;
+        }
+
         if (event.context()->name() != viewContext) {
             return;
         }
@@ -226,7 +246,13 @@ namespace v3d::editor {
         if (name == "drag") {
             // the primary mouse button, whose number the input layer does not put on the
             // mapped event - the binding names which button it is
-            cameraTool_->button(1, event.state() == v3d::event::State::Pressed, cursor_);
+            const bool pressed = event.state() == v3d::event::State::Pressed;
+            cameraTool_->button(1, pressed, cursor_);
+            // one button, two tools: a modifier held means the drag is driving a camera,
+            // so a bare click is what picks
+            if (cameraTool_->mode() == CameraControlTool::CAMERA_MODE_NONE) {
+                selectTool_->button(1, pressed, cursor_);
+            }
             return;
         }
 

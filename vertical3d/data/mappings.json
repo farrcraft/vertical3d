@@ -109,6 +109,50 @@
     {
       "source": {
         "context": "keyboard",
+        "name": "o",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "select",
+        "name": "object"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "v",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "select",
+        "name": "vertex"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "e",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "select",
+        "name": "edge"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "f",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "select",
+        "name": "face"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
         "name": "escape",
         "state": "pressed"
       },

@@ -22,3 +22,4 @@ old record's status and leave the file in place.
 | [0011](0011-lines-are-the-second-primitive.md) | Line Drawing — A Second Primitive, In World Space, Through The Pass Camera | accepted | 2026-09-01 |
 | [0012](0012-camera-builds-vulkan-clip-space.md) | Camera Convention — `v3d::type::Camera` Builds Vulkan Clip Space | accepted | 2026-09-01 |
 | [0013](0013-mesh-is-a-dag-node.md) | Scene Model — A Mesh Is A dag Node With A Transform, And The Scene Belongs To The Editor | accepted | 2026-09-02 |
+| [0014](0014-picking-is-a-cpu-ray-cast.md) | Picking — A CPU Ray Cast Against The Brep, With Screen Space Proximity For Components | accepted | 2026-09-02 |
