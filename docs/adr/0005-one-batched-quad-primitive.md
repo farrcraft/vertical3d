@@ -4,6 +4,9 @@
 **Status**: accepted
 **Deciders**: Joshua Farr
 
+Extended by [ADR-0011](0011-lines-are-the-second-primitive.md): the one primitive here is the
+one primitive for 2D. Lines are a second, for the editor.
+
 ## Context
 
 `v3d::gl::Canvas` batches coloured quads, but its vertices carry position and rgba only —

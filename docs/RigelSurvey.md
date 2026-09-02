@@ -107,7 +107,11 @@ stalled on the legacy trees, not a blank page.
 This is the list that makes phase 6 a phase. Each item is something no game in the repo has
 ever asked for.
 
-1. **A line primitive.** [ADR-0005](adr/0005-one-batched-quad-primitive.md) made the batched
+1. ~~**A line primitive.**~~ **Landed 2026-09-01** as
+   [ADR-0011](adr/0011-lines-are-the-second-primitive.md) -
+   `realtime::LineCanvas` and `vulkan::LineRenderer`, world space and through the pass
+   camera. What follows is what the gap was.
+   [ADR-0005](adr/0005-one-batched-quad-primitive.md) made the batched
    quad the one primitive, which was right for four games and is wrong for a modeller.
    Rigel's viewport draws, by line count, mostly lines: the construction grid, the axis
    decoration in the corner, wireframe and shaded-wireframe mesh display, selected-edge
@@ -174,8 +178,10 @@ ever asked for.
    and lists rigel as holding "the working prototype of most of the above"; on this one it
    holds nothing.
 
-Items 1, 2 and 6 are the ones that gate everything else. A modeller that cannot draw a line,
-cannot configure a camera and cannot show four views is not a modeller.
+Items 1, 2 and 6 are the ones that gate everything else - a modeller that cannot draw a line,
+cannot configure a camera and cannot show four views is not a modeller. Two of the three
+landed on 2026-09-01; item 6, the per-pass camera and the multiple viewports over it, is what
+is left of the gate.
 
 ## Defects found
 

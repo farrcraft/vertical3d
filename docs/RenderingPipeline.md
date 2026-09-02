@@ -1,14 +1,15 @@
 # The Rendering Pipeline
 
-Describes what `api/render/realtime` actually does, as of 2026-08-31. It was a page of open
+Describes what `api/render/realtime` actually does, as of 2026-09-01. It was a page of open
 questions until the Vulkan frame loop landed; the questions that are still open are at the
 bottom, and the rest is now a description rather than a proposal.
 
 The decisions behind the shape of this are [ADR-0001](adr/0001-vulkan-replaces-opengl.md)
 through [ADR-0005](adr/0005-one-batched-quad-primitive.md), plus
 [ADR-0008](adr/0008-binding-by-update-frequency.md),
-[ADR-0009](adr/0009-colour-authored-in-display-space.md) and
-[ADR-0010](adr/0010-meshes-are-owned-by-the-app.md). Read those for why; this is what.
+[ADR-0009](adr/0009-colour-authored-in-display-space.md),
+[ADR-0010](adr/0010-meshes-are-owned-by-the-app.md) and
+[ADR-0011](adr/0011-lines-are-the-second-primitive.md). Read those for why; this is what.
 
 ## The chain of objects
 
@@ -133,8 +134,8 @@ leaves what it draws with, and where it sorts, to the caller.
 ## 2D drawing: the batched quad
 
 Every 2D thing in the engine - a rectangle, a sprite, a glyph - is one quad with a texture,
-per [ADR-0005](adr/0005-one-batched-quad-primitive.md). The primitive is split across the
-cpu/gpu line:
+per [ADR-0005](adr/0005-one-batched-quad-primitive.md). Lines are the other primitive and are
+described below. The quad is split across the cpu/gpu line:
 
 - **`realtime::Canvas`** accumulates the quads. It holds a vertex stream of position, uv and
   colour, an index stream, and the batches those are cut into - and it cuts a batch only
@@ -159,6 +160,30 @@ branch for text.
 The ui draws through the same canvas rather than a pass of its own -
 `v3d::ui::ComponentRenderer` adds its panels and highlights as quads and asks the app to
 write its labels, so a game and its menu are one upload and a draw per texture.
+
+## Line drawing
+
+The second primitive, per [ADR-0011](adr/0011-lines-are-the-second-primitive.md). It is what
+the editor's construction grid, axis decoration, wireframe display, selected-edge highlight
+and manipulators are all made of, and it is split across the cpu/gpu line the same way:
+
+- **`realtime::LineCanvas`** accumulates segments - `line`, `polyline`, `box` and `circle`
+  over a modelview stack that applies as vertices are added. There is no index stream and no
+  batching, because there is no texture to cut a batch on: a whole canvas is one draw.
+- **`vulkan::LineRenderer`** owns two pipelines and a vertex buffer per frame in flight.
+  `submit(canvas, pass)` uploads and adds one `DrawItem`.
+
+Two things differ from the quad. Positions are in **world space**, and the transform is the
+camera the pass carries at set 0 rather than a projection in a push constant - lines are the
+first thing in the engine to read set 0 and the quad pipeline is meant to follow. And the two
+pipelines differ in behaviour as well as in attachment format: the one built for a pass with
+depth **tests and writes** it, so a wireframe is occluded by the geometry in front of it,
+while the quad's depth variant does neither. Lines drawn over a scene rather than into it go
+in a pass without depth, which is the pass model choosing rather than a flag on the renderer.
+
+Lines are one pixel wide; `wideLines` is an optional device feature and the device does not
+ask for it. The renderer is built on the first call to `Context3D::lines()`, the way the
+depth buffer is, so an app that draws no lines pays nothing for it.
 
 ## Shaders
 
@@ -232,7 +257,10 @@ interchangeable within a pass: a set bound for one stays bound across a pipeline
 another built against the same layout. The quad pipeline declares it and reads nothing from
 it - a canvas carries its own orthographic projection in a push constant. Voxel's terrain
 pipeline is the first that does read it, and reads nothing else per draw: one camera at set
-0, one block palette at set 1, and the chunk's origin in a 16 byte push constant.
+0, one block palette at set 1, and the chunk's origin in a 16 byte push constant. The line
+pipelines read it and declare nothing else at all - no set 1 and no push constant - which
+still leaves them compatible for set 0 with the quad and terrain pipelines, since
+compatibility runs from set 0 upwards.
 
 ## Resource handles
 

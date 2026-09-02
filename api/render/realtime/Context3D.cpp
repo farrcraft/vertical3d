@@ -14,6 +14,7 @@ namespace v3d::render::realtime {
     /**
      **/
     Context3D::Context3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Window>& window) :
+        logger_(logger),
         window_(window),
         depthFormat_(VK_FORMAT_UNDEFINED) {
         if (!window_ || !window_->instance() || !window_->surface()) {
@@ -96,6 +97,16 @@ namespace v3d::render::realtime {
      **/
     VkFormat Context3D::depthFormat() const noexcept {
         return depthFormat_;
+    }
+
+    /**
+     **/
+    boost::shared_ptr<vulkan::LineRenderer> Context3D::lines() {
+        if (!lines_) {
+            lines_ = boost::make_shared<vulkan::LineRenderer>(logger_, device_, pipelineCache_, resources_, presenter_,
+                frameUniforms_, swapchain_->format(), depthFormat_);
+        }
+        return lines_;
     }
 
     /**

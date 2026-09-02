@@ -764,12 +764,26 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
   camera-profile and viewport-layout definition, which is a data asset to translate into the
   JSON config form. `RenderView` turns out to be an empty `Gtk::DrawingArea` and is worth
   nothing. The survey's eleven-item delete list replaces this bullet.
-- **The api has no line primitive, and that is this phase's largest gap.**
-  [ADR-0005](../adr/0005-one-batched-quad-primitive.md) made the batched quad the one
-  primitive, which four games were happy with. A modeller is mostly lines: the construction
-  grid, the axis decoration, wireframe display, selected-edge highlighting, and the shafts
-  and circles of all three manipulators. `vulkan::PipelineBuilder` already takes `topology()`
-  and `polygon()`, so the pipeline is cheap; nothing in the api produces line geometry.
+- ~~**The api has no line primitive, and that is this phase's largest gap.**~~ Landed
+  2026-09-01 as [ADR-0011](../adr/0011-lines-are-the-second-primitive.md).
+  `realtime::LineCanvas` accumulates segments on the cpu - `line`, `polyline`, `box`,
+  `circle` and a transform stack - and `vulkan::LineRenderer` draws the whole of one as a
+  single non-indexed line list. Positions are in world space and read the pass camera at set
+  0, which makes it the first thing in `api/render` to do so and the worked example for
+  moving the quad pipeline onto the same footing. The pipeline built for a pass with a depth
+  attachment tests and writes depth, so a wireframe is occluded and an overlay is a pass
+  without depth rather than a flag. Lines are one pixel wide - `wideLines` is an optional
+  device feature and the device does not ask for it.
+  - The renderer is built on the first call to `Context3D::lines()` rather than at startup,
+    the way the depth buffer is, so a 2D game pays neither the two pipeline compiles nor a
+    vertex buffer per frame in flight.
+  - **The device half has not been run.** The cpu side has a ten-case suite in
+    `api/render/tests/LineCanvasTest.cpp`; the pipelines compile and link but nothing draws
+    lines yet, so they have never been through the validation layer. The first consumer is
+    where that gets found - the position `vulkan::Mesh` was in before voxel's port.
+  - A construction grid is deliberately not in the api. `LineCanvas` offers primitives; the
+    grid's extent, spacing, major intervals and orientation are the editor's policy, and
+    rigel's `ConstructionPlane` is the behaviour to fold in there.
 - ~~**`v3d::type::CameraProfile` is write-only**, which blocks both the `gui.xml`
   translation and the camera control that has already been ported.~~ Done 2026-09-01. Every
   field has a getter and a setter now, `size()` among them, so a profile table can be loaded

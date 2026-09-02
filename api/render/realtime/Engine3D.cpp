@@ -63,6 +63,12 @@ namespace v3d::render::realtime {
 
     /**
      **/
+    boost::shared_ptr<vulkan::LineRenderer> Engine3D::lines() {
+        return context_ ? context_->lines() : boost::shared_ptr<vulkan::LineRenderer>();
+    }
+
+    /**
+     **/
     void Engine3D::clearColour(const glm::vec4& colour) {
         clearColour_ = colour;
         if (frame_) {

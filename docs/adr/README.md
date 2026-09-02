@@ -19,3 +19,4 @@ old record's status and leave the file in place.
 | [0008](0008-binding-by-update-frequency.md) | Shader Bindings — Descriptor Sets By Update Frequency, Per-Object Data In Push Constants | accepted | 2026-08-31 |
 | [0009](0009-colour-authored-in-display-space.md) | Colour — Authored In Display Space, Presented Through A UNORM Swapchain | accepted | 2026-08-31 |
 | [0010](0010-meshes-are-owned-by-the-app.md) | Geometry Ownership — Meshes Belong To The App, Not To Resources | accepted | 2026-08-31 |
+| [0011](0011-lines-are-the-second-primitive.md) | Line Drawing — A Second Primitive, In World Space, Through The Pass Camera | accepted | 2026-09-01 |

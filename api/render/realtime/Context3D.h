@@ -10,6 +10,7 @@
 #include "vulkan/DepthBuffer.h"
 #include "vulkan/Device.h"
 #include "vulkan/FrameUniforms.h"
+#include "vulkan/LineRenderer.h"
 #include "vulkan/PipelineCache.h"
 #include "vulkan/Presenter.h"
 #include "vulkan/QuadRenderer.h"
@@ -69,6 +70,18 @@ namespace v3d::render::realtime {
         boost::shared_ptr<vulkan::QuadRenderer> quads() const;
 
         /**
+         * The line primitive of ADR-0011, built on the first call and kept from then on.
+         *
+         * Lazy for the same reason the depth buffer is: an app that draws no lines would
+         * otherwise pay two pipeline compiles and a vertex buffer per frame in flight for
+         * nothing.
+         *
+         * @return the renderer, which every line in the engine draws through
+         * @throw std::runtime_error if its pipelines cannot be created
+         **/
+        boost::shared_ptr<vulkan::LineRenderer> lines();
+
+        /**
          * @return set 0, where each pass's camera is written and bound from - ADR-0008
          **/
         boost::shared_ptr<vulkan::FrameUniforms> frameUniforms() const;
@@ -109,6 +122,7 @@ namespace v3d::render::realtime {
         void resize();
 
      private:
+        boost::shared_ptr<v3d::log::Logger> logger_;
         boost::shared_ptr<Window> window_;
         boost::shared_ptr<vulkan::Device> device_;
         boost::shared_ptr<vulkan::Swapchain> swapchain_;
@@ -119,6 +133,7 @@ namespace v3d::render::realtime {
         boost::shared_ptr<vulkan::DepthBuffer> depth_;
         VkFormat depthFormat_;
         boost::shared_ptr<vulkan::QuadRenderer> quads_;
+        boost::shared_ptr<vulkan::LineRenderer> lines_;
         // last, so that it is torn down first - nothing else may go away while a frame it
         // submitted is still in flight
         boost::shared_ptr<vulkan::Presenter> presenter_;

@@ -57,6 +57,15 @@ namespace v3d::render::realtime {
         boost::shared_ptr<vulkan::QuadRenderer> quads() const;
 
         /**
+         * The line primitive of ADR-0011. An app fills a LineCanvas during its tick and
+         * hands both to this.
+         *
+         * Built on the first call rather than at startup, so an app that draws no lines pays
+         * nothing for it.
+         **/
+        boost::shared_ptr<vulkan::LineRenderer> lines();
+
+        /**
          * The name of the pass every frame has, for an app adding items to it directly.
          **/
         static const char* const colourPass;

@@ -6,6 +6,7 @@ add_library("v3dlib_render"
 	"realtime/Context3D.h" "realtime/Context3D.cpp" 
 	"realtime/Handle.h" "realtime/Registry.h"
 	"realtime/Canvas.h" "realtime/Canvas.cpp"
+	"realtime/LineCanvas.h" "realtime/LineCanvas.cpp"
 	"realtime/DrawItem.h" "realtime/DrawItem.cpp"
 	"realtime/Pass.h" "realtime/Pass.cpp"
 	"realtime/vulkan/Result.h" "realtime/vulkan/Result.cxx" 
@@ -27,12 +28,17 @@ add_library("v3dlib_render"
 	"realtime/vulkan/FrameUniforms.h" "realtime/vulkan/FrameUniforms.cxx"
 	"realtime/vulkan/PipelineBuilder.h" "realtime/vulkan/PipelineBuilder.cxx"
 	"realtime/vulkan/TextureFactory.h" "realtime/vulkan/TextureFactory.cxx"
-	"realtime/vulkan/QuadRenderer.h" "realtime/vulkan/QuadRenderer.cxx")
+	"realtime/vulkan/QuadRenderer.h" "realtime/vulkan/QuadRenderer.cxx"
+	"realtime/vulkan/LineRenderer.h" "realtime/vulkan/LineRenderer.cxx")
 
 # The one batched quad primitive of ADR-0005. Compiled to SPIR-V and embedded rather than
 # loaded from disk - see v3d_add_shader in the root CMakeLists.
 v3d_add_shader(v3dlib_render "shaders/quad.vert")
 v3d_add_shader(v3dlib_render "shaders/quad.frag")
+
+# The line primitive of ADR-0011.
+v3d_add_shader(v3dlib_render "shaders/line.vert")
+v3d_add_shader(v3dlib_render "shaders/line.frag")
 
 # Workaround for a boost log ABI bug - https://github.com/microsoft/vcpkg/discussions/22762
 target_compile_definitions(v3dlib_render PUBLIC BOOST_USE_WINAPI_VERSION=0x0A00)
