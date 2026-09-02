@@ -194,16 +194,11 @@ namespace v3d::type {
         y = glm::normalize(y);
 
         /*
-            [  0,  1,  2,  3 ]
-            [  4,  5,  6,  7 ]
-            [  8,  9, 10, 11 ]
-            [ 12, 13, 14, 15 ]
+            the rotation takes the camera out of the default basis and into the one its three
+            normals define, so the normals are its columns. Camera::createView() transposes it
+            to get the world to view transform.
 
-            x = [ 0, 1, 2  ] = right
-            y = [ 4, 5, 6  ] = up
-            z = [ 8, 9, 10 ] = direction
-
-            glm (column-major ordering):
+            glm indexes [column][row]:
             [  0,  4,  8,  12 ]
             [  1,  5,  9,  13 ]
             [  2,  6, 10,  14 ]
@@ -212,20 +207,20 @@ namespace v3d::type {
         glm::mat4x4 m;
 
         m[0][0] = x[0];
-        m[1][0] = x[1];
-        m[2][0] = x[2];
-        m[3][0] = 0.0;
-        m[0][1] = y[0];
-        m[1][1] = y[1];
-        m[2][1] = y[2];
-        m[3][1] = 0.0;
-        m[0][2] = z[0];
-        m[1][2] = z[1];
-        m[2][2] = z[2];
-        m[3][2] = 0.0;
+        m[0][1] = x[1];
+        m[0][2] = x[2];
         m[0][3] = 0.0;
+        m[1][0] = y[0];
+        m[1][1] = y[1];
+        m[1][2] = y[2];
         m[1][3] = 0.0;
+        m[2][0] = z[0];
+        m[2][1] = z[1];
+        m[2][2] = z[2];
         m[2][3] = 0.0;
+        m[3][0] = 0.0;
+        m[3][1] = 0.0;
+        m[3][2] = 0.0;
         m[3][3] = 1.0;
 
         rotation_ = glm::quat_cast(m);

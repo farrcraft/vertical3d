@@ -27,6 +27,11 @@ namespace v3d::type {
              */
             CameraProfile & profile();
 
+            /**
+             * Access the underlying camera profile read only.
+             */
+            const CameraProfile & profile() const;
+
             glm::vec3 unproject(const glm::vec3 & point, int viewport[4]);
             glm::vec3 project(const glm::vec3 & point, int viewport[4]);
 

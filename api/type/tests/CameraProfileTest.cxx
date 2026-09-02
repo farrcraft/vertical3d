@@ -27,12 +27,13 @@ BOOST_AUTO_TEST_CASE(cameraprofile_test) {
     untouched.createView();
     BOOST_CHECK_CLOSE(untouched.view()[3][0], -4.0f, 0.01f);
 
-    // clipping planes reach the projection
+    // clipping planes reach the projection, which maps them onto the [0, 1] depth range
+    // vulkan clips against - ADR-0012
     profile.clipping(1.0f, 3.0f);
     v3d::type::Camera clipped(profile);
     clipped.createProjection();
-    BOOST_CHECK_CLOSE(clipped.projection()[2][2], -2.0f / (3.0f - 1.0f), 0.01f);
-    BOOST_CHECK_CLOSE(clipped.projection()[3][2], -(3.0f + 1.0f) / (3.0f - 1.0f), 0.01f);
+    BOOST_CHECK_CLOSE(clipped.projection()[2][2], 1.0f / (3.0f - 1.0f), 0.01f);
+    BOOST_CHECK_CLOSE(clipped.projection()[3][2], -1.0f / (3.0f - 1.0f), 0.01f);
 
     // assignment copies every field, so a camera on the copy sees the same view
     v3d::type::CameraProfile duplicate("duplicate");
