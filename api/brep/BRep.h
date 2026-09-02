@@ -12,12 +12,21 @@
 #include "Face.h"
 
 #include "../type/AABBox.h"
+#include "../dag/Node.h"
+#include "../dag/Transform.h"
 
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::brep {
 
-    class BRep {
+    /**
+     * A boundary representation mesh.
+     *
+     * It is a dag::Node, so it has an id the selection model keys on, and a dag::Transform,
+     * so its geometry is described about its own origin and placed by matrix(). The three
+     * manipulators write through the transform rather than through the vertices.
+     **/
+    class BRep : public v3d::dag::Node, public v3d::dag::Transform {
      public:
             BRep();
             ~BRep();
@@ -63,6 +72,19 @@ namespace v3d::brep {
 
             v3d::type::AABBox bound(void) const;
 
+            /**
+             * Whether the mesh as a whole is selected, which is object mode selection.
+             * Component selection is the flag each Vertex, HalfEdge and Face carries.
+             **/
+            bool selected(void) const noexcept;
+            void selected(bool sel) noexcept;
+
+            /**
+             * Clear the selection flag of every vertex, edge and face, leaving the mesh's
+             * own flag alone - a select mask change deselects components, not objects.
+             **/
+            void deselectComponents(void) noexcept;
+
             void addFace(const std::vector<glm::vec3> & vertices, const glm::vec3 & normal);
             void addEdge(const glm::vec3 & point);
 
@@ -87,6 +109,7 @@ namespace v3d::brep {
             std::vector<Vertex> vertices_;
             std::vector<Face> faces_;
             std::vector<HalfEdge> edges_;
+            bool selected_;
     };
 
     /**

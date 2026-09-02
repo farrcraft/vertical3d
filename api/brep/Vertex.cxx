@@ -7,10 +7,10 @@
 
 namespace v3d::brep {
 
-Vertex::Vertex() {
+Vertex::Vertex() : selected_(false) {
 }
 
-Vertex::Vertex(const glm::vec3& p) : point_(p) {
+Vertex::Vertex(const glm::vec3& p) : point_(p), selected_(false) {
 }
 
 Vertex::~Vertex() {
@@ -22,6 +22,14 @@ bool Vertex::operator == (const Vertex & v) const {
 
 bool Vertex::operator == (const glm::vec3 & v) const {
     return (point_ == v);
+}
+
+bool Vertex::selected(void) const noexcept {
+    return selected_;
+}
+
+void Vertex::selected(bool sel) noexcept {
+    selected_ = sel;
 }
 
 unsigned int Vertex::edge(void) const {

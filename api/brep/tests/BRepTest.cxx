@@ -143,3 +143,37 @@ BOOST_AUTO_TEST_CASE(brep_split_edge_test) {
     BOOST_CHECK_EQUAL(mesh.edge(4)->vertex(), 4u);
     BOOST_CHECK_EQUAL((mesh.vertex(4)->point() == glm::vec3(0.5f, 0.0f, 0.0f)), true);
 }
+
+BOOST_AUTO_TEST_CASE(brep_identity_test) {
+    v3d::brep::BRep first;
+    v3d::brep::BRep second;
+
+    // a mesh is a dag::Node, which is what gives the selection model something to key on
+    BOOST_CHECK(first.id() != second.id());
+
+    // and a dag::Transform, so its geometry is described about its own origin
+    first.translation(glm::vec3(4.0f, 0.0f, 0.0f));
+    glm::vec4 placed = first.matrix() * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+    BOOST_CHECK_CLOSE(placed.x, 5.0f, 0.01f);
+}
+
+BOOST_AUTO_TEST_CASE(brep_selection_test) {
+    v3d::brep::BRep mesh;
+    mesh.addFace(quad(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+    BOOST_CHECK_EQUAL(mesh.selected(), false);
+    mesh.selected(true);
+    BOOST_CHECK_EQUAL(mesh.selected(), true);
+
+    mesh.vertex(0)->selected(true);
+    mesh.edge(0)->selected(true);
+    mesh.face(0)->selected(true);
+
+    mesh.deselectComponents();
+
+    BOOST_CHECK_EQUAL(mesh.vertex(0)->selected(), false);
+    BOOST_CHECK_EQUAL(mesh.edge(0)->selected(), false);
+    BOOST_CHECK_EQUAL(mesh.face(0)->selected(), false);
+    // the object's own selection survives a component deselect
+    BOOST_CHECK_EQUAL(mesh.selected(), true);
+}

@@ -84,7 +84,7 @@ namespace v3d::brep {
     }
 
 
-    BRep::BRep() {
+    BRep::BRep() : selected_(false) {
     }
 
     BRep::~BRep() {
@@ -355,6 +355,26 @@ namespace v3d::brep {
         newEdge.pair(edge);
         newEdge.next(edges_[edge].next());
         edges_[edge].next(new_edge_id);
+    }
+
+    bool BRep::selected(void) const noexcept {
+        return selected_;
+    }
+
+    void BRep::selected(bool sel) noexcept {
+        selected_ = sel;
+    }
+
+    void BRep::deselectComponents(void) noexcept {
+        for (Vertex& vert : vertices_) {
+            vert.selected(false);
+        }
+        for (HalfEdge& e : edges_) {
+            e.selected(false);
+        }
+        for (Face& f : faces_) {
+            f.selected(false);
+        }
     }
 
     // calculate object-space bounds of mesh

@@ -33,3 +33,19 @@ BOOST_AUTO_TEST_CASE(halfEdge_test) {
     edge2 = edge;
     BOOST_CHECK_EQUAL((edge2 == edge), true);
 }
+
+BOOST_AUTO_TEST_CASE(halfedge_selection_test) {
+    v3d::brep::HalfEdge edge(3);
+
+    BOOST_CHECK_EQUAL(edge.selected(), false);
+    edge.selected(true);
+    BOOST_CHECK_EQUAL(edge.selected(), true);
+
+    // a copy carries the selection, since a BRep stores edges by value and copies them
+    v3d::brep::HalfEdge duplicate(edge);
+    BOOST_CHECK_EQUAL(duplicate.selected(), true);
+
+    // equality is topological, so it ignores the flag
+    v3d::brep::HalfEdge other(3);
+    BOOST_CHECK_EQUAL((edge == other), true);
+}

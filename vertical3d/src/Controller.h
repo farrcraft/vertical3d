@@ -10,6 +10,7 @@
 
 #include "CameraControlTool.h"
 #include "CameraProfiles.h"
+#include "Scene.h"
 #include "ViewLayout.h"
 #include "ViewPort.h"
 
@@ -70,6 +71,13 @@ namespace v3d::editor {
 
      private:
         /**
+         * Put one of the polygon primitives into the scene, at the origin.
+         * @param name which primitive, as the create binding names it
+         * @return whether the name was one of them
+         **/
+        bool createPoly(const std::string& name);
+
+        /**
          * Build one viewport per leaf of the layout, with the profile it names.
          * @return whether every view could be built
          **/
@@ -80,6 +88,7 @@ namespace v3d::editor {
          **/
         void layoutViews(int width, int height);
 
+        boost::shared_ptr<Scene> scene_;
         boost::shared_ptr<CameraProfiles> profiles_;
         boost::shared_ptr<ViewLayout> layout_;
         std::vector<boost::shared_ptr<ViewPort>> views_;

@@ -3,14 +3,19 @@ add_executable("vertical3d"
 	"src/CameraProfiles.h" "src/CameraProfiles.cxx"
 	"src/ConstructionPlane.h" "src/ConstructionPlane.cxx"
 	"src/Controller.h" "src/Controller.cxx"
+	"src/CreatePoly.h" "src/CreatePoly.cxx"
 	"src/Renderer.h" "src/Renderer.cxx"
+	"src/Scene.h" "src/Scene.cxx"
+	"src/SceneVisitor.h"
 	"src/Tool.h"
 	"src/ViewLayout.h" "src/ViewLayout.cxx"
 	"src/ViewPort.h" "src/ViewPort.cxx"
+	"src/WireframeVisitor.h" "src/WireframeVisitor.cxx"
 	"src/main.cxx")
 
 target_link_libraries(vertical3d PRIVATE
 	v3dlib_asset
+	v3dlib_brep
 	v3dlib_config
 	v3dlib_ecs
 	v3dlib_engine

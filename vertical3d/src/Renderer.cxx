@@ -50,6 +50,12 @@ namespace v3d::editor {
 
     /**
      **/
+    void Renderer::scene(const boost::shared_ptr<Scene>& scene) {
+        scene_ = scene;
+    }
+
+    /**
+     **/
     void Renderer::draw() {
         boost::shared_ptr<v3d::render::realtime::Frame> frame = engine_.frame();
         if (!frame) {
@@ -58,13 +64,18 @@ namespace v3d::editor {
 
         boost::shared_ptr<v3d::render::realtime::vulkan::LineRenderer> lines = engine_.lines();
 
+        // a view with no scene still draws its grid, which is what an empty document looks
+        // like rather than an error
+        const Scene empty;
+        const Scene& scene = scene_ ? *scene_ : empty;
+
         for (std::size_t index = 0; index < views_.size(); index++) {
             const boost::shared_ptr<ViewPort>& view = views_[index];
             if (!view) {
                 continue;
             }
 
-            view->draw(&canvases_[index]);
+            view->draw(scene, &canvases_[index]);
 
             boost::shared_ptr<v3d::render::realtime::Pass> pass = frame->pass(view->name());
             pass->viewport(view->region());

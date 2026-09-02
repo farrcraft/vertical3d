@@ -27,3 +27,15 @@ BOOST_AUTO_TEST_CASE(vertex_test) {
     vertex3.edge(11);
     BOOST_CHECK_EQUAL(vertex3.edge(), 11u);
 }
+
+BOOST_AUTO_TEST_CASE(vertex_selection_test) {
+    v3d::brep::Vertex vertex(glm::vec3(1.0f, 2.0f, 3.0f));
+
+    BOOST_CHECK_EQUAL(vertex.selected(), false);
+    vertex.selected(true);
+    BOOST_CHECK_EQUAL(vertex.selected(), true);
+
+    // selection is not part of what makes two vertices the same point
+    v3d::brep::Vertex other(glm::vec3(1.0f, 2.0f, 3.0f));
+    BOOST_CHECK_EQUAL((vertex == other), true);
+}

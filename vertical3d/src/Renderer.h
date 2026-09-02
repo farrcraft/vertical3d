@@ -7,6 +7,7 @@
 
 #include <vector>
 
+#include "Scene.h"
 #include "ViewPort.h"
 
 #include "../../api/asset/Manager.h"
@@ -54,6 +55,11 @@ namespace v3d::editor {
         void views(const std::vector<boost::shared_ptr<ViewPort>>& views);
 
         /**
+         * What every view draws. One scene, four passes.
+         **/
+        void scene(const boost::shared_ptr<Scene>& scene);
+
+        /**
          * Draw one frame - a pass per view.
          **/
         void draw();
@@ -70,6 +76,7 @@ namespace v3d::editor {
         // context that owns the device is
         v3d::render::realtime::Engine3D engine_;
 
+        boost::shared_ptr<Scene> scene_;
         std::vector<boost::shared_ptr<ViewPort>> views_;
         // one canvas per view rather than one shared: a canvas becomes a single draw item,
         // and each is filled before any of them is submitted

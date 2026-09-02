@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "CreatePoly.h"
 #include "Renderer.h"
 
 #include "../../api/config/Type.h"
@@ -32,6 +33,12 @@ namespace v3d::editor {
          * repository shares.
          **/
         const char* const uiContext = "ui";
+
+        /**
+         * The context the Create menu's commands arrive in - gui.xml's create::poly::*,
+         * which are bound to keys here because the editor has no menus yet.
+         **/
+        const char* const createContext = "create";
 
     };  // namespace
 
@@ -60,6 +67,8 @@ namespace v3d::editor {
             return false;
         }
 
+        scene_ = boost::make_shared<Scene>();
+
         profiles_ = boost::make_shared<CameraProfiles>(logger_);
         if (!profiles_->load(config_->get(v3d::config::Type::Camera))) {
             return false;
@@ -82,6 +91,7 @@ namespace v3d::editor {
 
         renderer_ = boost::make_shared<Renderer>(window(), logger_, assetManager_, &registry_);
         renderer_->views(views_);
+        renderer_->scene(scene_);
 
         layoutViews(window_->width(), window_->height());
 
@@ -103,6 +113,30 @@ namespace v3d::editor {
         if (!views_.empty()) {
             activeView_ = views_.front();
         }
+        return true;
+    }
+
+    /**
+     **/
+    bool Controller::createPoly(const std::string& name) {
+        boost::shared_ptr<v3d::brep::BRep> mesh;
+        if (name == "cube") {
+            mesh = create_poly_cube();
+        } else if (name == "plane") {
+            mesh = create_poly_plane();
+        } else if (name == "cylinder") {
+            mesh = create_poly_cylinder();
+        } else if (name == "cone") {
+            mesh = create_poly_cone();
+        } else {
+            return false;
+        }
+
+        // a new mesh is the selected one, which is what the transform tools will act on
+        scene_->deselect();
+        mesh->selected(true);
+        scene_->add(mesh);
+        logger_->get()->info("created a {} - {} meshes", name, scene_->count());
         return true;
     }
 
@@ -175,6 +209,14 @@ namespace v3d::editor {
             return;
         }
 
+        if (event.context()->name() == createContext) {
+            // a create is a press, so the release the same key also delivers is ignored
+            if (event.state() != v3d::event::State::Released) {
+                createPoly(std::string(event.name()));
+            }
+            return;
+        }
+
         if (event.context()->name() != viewContext) {
             return;
         }
@@ -191,6 +233,13 @@ namespace v3d::editor {
         if (name == "toggleGrid") {
             if (activeView_) {
                 activeView_->show(ViewPort::SHOW_GRID, !activeView_->shows(ViewPort::SHOW_GRID));
+            }
+            return;
+        }
+
+        if (name == "toggleMesh") {
+            if (activeView_) {
+                activeView_->show(ViewPort::SHOW_MESH, !activeView_->shows(ViewPort::SHOW_MESH));
             }
             return;
         }

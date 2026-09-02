@@ -86,11 +86,11 @@ them completely.
 | `vertical3d/ArcBall` | `v3d::type::ArcBall` | **Complete.** Same four methods, same semantics, glm for the vector types. |
 | `libv3dcore/Camera` | `v3d::type::Camera` | **Complete and then some.** Same projection, view, unproject, project and the six camera moves; gained `orthoFactor()` and `rotate()`. Composes a profile rather than deriving from one. |
 | `libv3dcore/CameraProfile` | `v3d::type::CameraProfile` | **Data complete, interface gone.** See gap 2. |
-| `libv3dcore/brep/HalfEdgeBRep` | `v3d::brep::BRep` | Modernised and renamed. Loses `DAG::Node`/`DAG::Transform` and the `selected` flag — see gaps 4 and 5. |
-| `libv3dcore/brep/{Vertex,Face,HalfEdge}` | `v3d::brep::{Vertex,Face,HalfEdge}` | Migrated. Only `Face` kept `selected()`. |
+| `libv3dcore/brep/HalfEdgeBRep` | `v3d::brep::BRep` | Modernised and renamed. **Complete as of 2026-09-02** — the `dag::Node`/`dag::Transform` base and the `selected` flag are back. |
+| `libv3dcore/brep/{Vertex,Face,HalfEdge}` | `v3d::brep::{Vertex,Face,HalfEdge}` | Migrated. All three carry `selected()` again as of 2026-09-02. |
 | `libv3dcore/brep/{Edge,WingedEdgeBRep}` | — | Copied into `api/brep` and **not built** — see the corrections below. |
-| `libv3dcore/Scene` | `v3d::core::Scene` in `v3dlibs/core` | Already modernised there, waiting on the editor. |
-| `vertical3d/commands/CreatePolyCommandSet` | `v3d::core::create_poly_*` in `v3dlibs/core` | Already reduced to four free functions returning a `brep::BRep`. The command wrapper is gone; the geometry survived. |
+| `libv3dcore/Scene` | `v3d::editor::Scene` in `vertical3d/src` | **Moved 2026-09-02**, and reduced to meshes: the views own the cameras and `CameraProfiles` owns the profile table. |
+| `vertical3d/commands/CreatePolyCommandSet` | `v3d::editor::create_poly_*` in `vertical3d/src` | **Moved 2026-09-02.** Four free functions returning a `brep::BRep`; the command wrapper is gone. The cone and the cylinder were rebuilt about +y, centred like the cube and the plane, and the cone's ring had an uninitialised third coordinate. |
 | `ViewPort`'s camera modes | `vertical3d/CameraControlTool` | **Ported, with two things dropped** — see the defects. |
 | `Window`'s keybinding table | `api/config` + `api/input` + `api/event` | Covered and better: `mappings.json` and `event::Mapper` do what `load_keybindings` did without the hardcoded key switch. |
 | `libv3dcommand/Tool` | `v3d::Tool` in `vertical3d/` | **Half.** `activate`/`deactivate` only; `motion`, `button` and `draw` unported. |
@@ -146,14 +146,18 @@ ever asked for.
    index resolved against the active select mask. The mechanism has to be rebuilt as either
    a ray cast against the brep or an id-buffer pass, and that decision is worth an ADR.
 
-4. **A mesh has no identity and no transform.** Rigel's `HalfEdgeBRep` derives from
+4. ~~**A mesh has no identity and no transform.**~~ **Fixed 2026-09-02** -
+   [ADR-0013](adr/0013-mesh-is-a-dag-node.md). What follows is what the gap was. Rigel's `HalfEdgeBRep` derives from
    `DAG::Node` and `DAG::Transform`, which is where `id()`, `matrix()`, `translation()`,
    `rotation()` and `scale()` come from — the selection model keys on the id and all three
    manipulators write through the transform. `api/dag::Node` and `api/dag::Transform` exist
    and carry exactly those members. `api/brep::BRep` derives from neither.
 
-5. **Selection state on three of the four brep types.** `api/brep::Face` kept `selected()`.
-   `Vertex`, `HalfEdge` and `BRep` did not, and component selection needs all four.
+5. ~~**Selection state on three of the four brep types.**~~ **Fixed 2026-09-02.** All four
+   carry it - and `Face`'s had been commented out rather than kept, so it was four of four
+   rather than three. `BRep::deselectComponents()` and `Scene::deselect()` clear them.
+   What decides which of the three a click writes is a select mask, which does not exist
+   yet.
 
 6. ~~**A per-pass camera on an orthographic pass, and more than one viewport.**~~
    **Landed 2026-09-01.** The editor draws four passes over one frame, each with its own
@@ -184,9 +188,9 @@ ever asked for.
 Items 1, 2 and 6 are the ones that gate everything else - a modeller that cannot draw a line,
 cannot configure a camera and cannot show four views is not a modeller. All three landed on
 2026-09-01: the editor builds, runs, and draws a construction grid through four viewports of
-one scene. What is left of this list is items 3, 4, 5, 7, 8 and 9 -
-picking, mesh identity, component selection, the interactive command model, project
-persistence and undo.
+one scene. Items 4 and 5 landed on 2026-09-02, and the editor draws a scene. What is left of this
+list is items 3, 7, 8 and 9 - picking, the interactive command model, project persistence
+and undo.
 
 ## Defects found
 
@@ -345,8 +349,13 @@ games; it is blocked by the api never having had a customer that draws lines or 
 3. ~~Give the api a line primitive: geometry on `Canvas` or a sibling of it, and a line
    pipeline through `PipelineBuilder`.~~ Done 2026-09-01 as
    [ADR-0011](adr/0011-lines-are-the-second-primitive.md), and first drawn the same day.
-4. Give `api/brep::BRep` a `dag::Node`/`dag::Transform` base and put `selected()` back on
-   `Vertex`, `HalfEdge` and `BRep`.
+4. ~~Give `api/brep::BRep` a `dag::Node`/`dag::Transform` base and put `selected()` back on
+   `Vertex`, `HalfEdge` and `BRep`.~~ Done 2026-09-02, recorded as
+   [ADR-0013](adr/0013-mesh-is-a-dag-node.md). `Face` got it back too - its accessors were
+   commented out rather than kept. `dag::Transform` had to be made to compile first: it
+   named members its header does not declare and called three glm methods that do not
+   exist, and its `CMakeLists.txt` listed the header twice and the implementation not at
+   all, so nothing had ever built it.
 5. Decide picking — ray cast or id buffer — in an ADR, and port the name-space scheme onto it.
    `Camera::project()` and `::unproject()` are inverses of each other as of 2026-09-01,
    which a ray cast would be built on; they were not before.

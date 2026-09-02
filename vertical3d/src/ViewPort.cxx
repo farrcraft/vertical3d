@@ -7,6 +7,8 @@
 
 #include <string>
 
+#include "WireframeVisitor.h"
+
 #include <boost/make_shared.hpp>
 
 namespace v3d::editor {
@@ -87,7 +89,7 @@ namespace v3d::editor {
 
     /**
      **/
-    void ViewPort::draw(v3d::render::realtime::LineCanvas* canvas) {
+    void ViewPort::draw(const Scene& scene, v3d::render::realtime::LineCanvas* canvas) {
         if (canvas == nullptr) {
             return;
         }
@@ -100,6 +102,11 @@ namespace v3d::editor {
 
         if (shows(SHOW_GRID)) {
             grid_.draw(*camera_, canvas);
+        }
+
+        if (shows(SHOW_MESH)) {
+            WireframeVisitor wireframe(canvas);
+            scene.accept(&wireframe);
         }
     }
 

@@ -8,6 +8,7 @@
 #include <string>
 
 #include "ConstructionPlane.h"
+#include "Scene.h"
 
 #include "../../api/render/realtime/LineCanvas.h"
 #include "../../api/type/Camera.h"
@@ -101,8 +102,14 @@ namespace v3d::editor {
          *
          * The canvas is cleared first: it is rebuilt every frame rather than kept, because
          * the grid follows the camera and the camera moves.
+         *
+         * The scene is drawn by every view that shows meshes, so one scene becomes four
+         * canvases - each view draws it through its own camera.
+         *
+         * @param scene what to draw, which the controller owns
+         * @param canvas where the view's geometry goes
          **/
-        void draw(v3d::render::realtime::LineCanvas* canvas);
+        void draw(const Scene& scene, v3d::render::realtime::LineCanvas* canvas);
 
      private:
         std::string name_;

@@ -6,6 +6,7 @@ add_library("v3dlib_dag"
 "Set.h" "Set.cxx"
 "State.h" "State.cxx"
 "Switch.h" "Switch.cxx"
-"Transform.h" "Transform.h"
+"Transform.h" "Transform.cxx"
 "View.h" "View.cxx"
 )
+add_subdirectory("tests")

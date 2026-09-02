@@ -54,6 +54,61 @@
     {
       "source": {
         "context": "keyboard",
+        "name": "m",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "view",
+        "name": "toggleMesh"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "1",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "create",
+        "name": "cube"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "2",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "create",
+        "name": "plane"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "3",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "create",
+        "name": "cylinder"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "4",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "create",
+        "name": "cone"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
         "name": "escape",
         "state": "pressed"
       },

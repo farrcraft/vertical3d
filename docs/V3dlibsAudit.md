@@ -210,7 +210,9 @@ the cursor position, and is readable through `Mouse::state()`.
 
 ## core: two files that belong to the editor, not to `api`
 
-- **`Scene` and `SceneVisitor`** are 27 and 40 lines: a flat container of BReps, cameras and
+- **`Scene` and `SceneVisitor`** — **moved to `vertical3d/src/` on 2026-09-02**, per
+  [ADR-0013](adr/0013-mesh-is-a-dag-node.md). What follows is what the audit found. They are
+  27 and 40 lines: a flat container of BReps, cameras and
   camera profiles, plus a visitor that walks the meshes. The plan asks whether they should be
   checked against `api/dag`. They should not be folded into it. `api/dag` is 374 lines of
   skeleton — `Node` holds an id and nothing else, `Root` and `Group` hold
@@ -219,7 +221,8 @@ the cursor position, and is readable through `Mouse::state()`.
   `Scene`'s only consumer is `vertical3d/`, its own header calls its design an open question,
   and the editor rewrite is where that question gets answered. Move it with the editor in
   Phase 6.
-- **`CreatePolyCommandSet`** — `create_poly_cube`/`plane`/`cylinder`/`cone` — is editor
+- **`CreatePolyCommandSet`** — **moved to `vertical3d/src/CreatePoly.cxx` on 2026-09-02.**
+  `create_poly_cube`/`plane`/`cylinder`/`cone` — is editor
   modelling code. `docs/TODO.md` already tracks merging it with rigel's `libv3dcommand`. Also
   Phase 6.
 
@@ -304,9 +307,12 @@ what it does now rather than an empty shell.
 1. ~~Drop `v3dlib_core` from tetris's link list.~~ **Done 2026-08-31.**
 2. ~~Move `v3dlibs/tests/` to per-library `tests/` directories with corrected include paths,
    and recover `BRepTest`/`CameraProfileTest` from `6cfb4b6^`.~~ **Done 2026-08-31.**
-3. Move `core/Scene`, `core/SceneVisitor` and `core/CreatePolyCommandSet` to wherever the
-   editor rewrite wants them — not into `api/dag`. (Phase 6, or earlier as a straight move to
-   unblock deletion.)
+3. ~~Move `core/Scene`, `core/SceneVisitor` and `core/CreatePolyCommandSet` to wherever the
+   editor rewrite wants them — not into `api/dag`.~~ **Done 2026-09-02.** All three are in
+   `vertical3d/src/` as `v3d::editor`, recorded as
+   [ADR-0013](adr/0013-mesh-is-a-dag-node.md). `Scene` lost its camera and profile lists,
+   which the views and `CameraProfiles` already own. `core/` held nothing else — its
+   `Logger` had moved to `api/log` — so the directory and `v3dlib_core` are gone with them.
 4. Delete `component/Component.h`, `hookah/Hookah.h` and `hookah/drivers/sdl2/` with the
    tree. Nothing to salvage. (Deleting `drivers/sdl2/` also closes the SDL3 workstream.)
 5. Rewrite `vertical3d/`'s six legacy includes, or accept that the tree survives until

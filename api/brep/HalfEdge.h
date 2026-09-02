@@ -29,6 +29,13 @@ namespace v3d::brep {
         bool operator == (const HalfEdge & e) const;
         HalfEdge & operator = (const HalfEdge & e);
 
+        /**
+         * Whether this component is selected. Selection is per component, not per mesh, so
+         * a vertex, an edge and a face each carry their own.
+         **/
+        bool selected(void) const noexcept;
+        void selected(bool sel) noexcept;
+
         uint64_t vertex(void) const;
         uint64_t face(void) const;
         uint64_t pair(void) const;
@@ -44,6 +51,7 @@ namespace v3d::brep {
         uint64_t face_;  // face to left of edge
         uint64_t pair_;  // symetric half edge
         uint64_t next_;  // next CCW half edge
+        bool selected_;
     };
 
 };  // namespace v3d::brep

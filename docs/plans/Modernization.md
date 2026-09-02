@@ -64,8 +64,11 @@ None of `v3dlibs/`, `luxa/`, `rigel/`, `vertical3d/` or `vault/` is in the root
   config work, per `docs/Vault.md` and the first item on `docs/TODO.md`.
 
 Among the apps, none still includes a legacy header — `voxel/src/Controller.h` is already
-clean, and pong's Luxa usage is commented out. `vertical3d/` is the only consumer left, of
-`v3dlibs/core`, `hookah` and `command`. The test corpus was the other thing holding the
+clean, and pong's Luxa usage is commented out. `vertical3d/` was the last consumer, of
+`v3dlibs/core`, `hookah` and `command`; the rewrite of 2026-09-01 dropped all six includes
+and the move of `core/` into `vertical3d/src` on 2026-09-02 emptied that directory. **Only
+`luxa/` includes a `v3dlibs/` header now**, from seven of its own files, and neither tree is
+built. The test corpus was the other thing holding the
 tree up; it moved into per-library `api/<lib>/tests` on 2026-08-31, and `v3dlibs/tests/` is
 gone. The files deleted rather than migrated - `luxa/tests/` and two v3dlibs tests - turned
 out to be empty stubs.
@@ -93,10 +96,13 @@ items in `pong/data/vgui.json` remain unreachable.
 by `api/render/realtime/Window`, `gui/InputEventAdapter` by `api/event` plus `api/input`, and
 `command/` by `api/event` — nothing still needs `CommandDirectory`, `CommandTable` or
 `StateController`. What keeps the tree alive is narrower than expected: at the time of the audit, the test
-corpus had to move - it since has - and `vertical3d/` still includes six of its headers. `core/Scene` and `SceneVisitor`
+corpus had to move - it since has - and `vertical3d/` still included six of its headers - it
+no longer does. `core/Scene` and `SceneVisitor`
 should *not* be folded into `api/dag` — that library is 374 lines of skeleton with no
 traversal, no visitor and no consumers anywhere — they go with the editor in Phase 6, as
-`CreatePolyCommandSet` already does.
+`CreatePolyCommandSet` already does. **All three moved on 2026-09-02**, which took
+`v3dlibs/core/` and `v3dlib_core` with them; what is left of the tree is `command`, `gui`,
+`hookah`, `input` and `component`, and only `luxa/` still includes any of it.
 
 The replacement for the command layer was less finished than assumed, and the audit turned up
 `api/` defects alongside it — every one of them fixed on 2026-08-31. The worst were that
@@ -828,10 +834,19 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
   of the frame's ring, which `Engine3D` returns after recording. Appending into one buffer
   would not do: growing a buffer replaces the allocation and invalidates the handle every
   draw item recorded before it is holding.
-- Selection needs three things the api does not have: a picking mechanism to replace
-  `GL_SELECT` (ray cast or id buffer — worth an ADR), a `dag::Node`/`dag::Transform` base on
-  `brep::BRep` so a mesh has an id and a transform, and `selected()` back on `brep::Vertex`,
-  `HalfEdge` and `BRep`, which kept it only on `Face`.
+- Selection needed three things the api did not have. **Two of the three landed 2026-09-02**
+  as [ADR-0013](../adr/0013-mesh-is-a-dag-node.md): `brep::BRep` derives from `dag::Node`
+  and `dag::Transform`, so a mesh has an id and a placement, and `selected()` is on all four
+  of `Vertex`, `HalfEdge`, `Face` and `BRep` — `Face`'s had been commented out rather than
+  kept, so it was four of four missing rather than three. `dag::Transform` had to be made to
+  compile first: it named members its own header does not declare, called three glm methods
+  that do not exist, and was left out of its `CMakeLists.txt`, so nothing had ever built it.
+  It now composes translation * rotation * scale, and `translation(v)` sets where it used to
+  accumulate.
+  - **Picking is the third and is still open** — a ray cast against the brep or an id-buffer
+    pass, worth an ADR. What it returns is settled: a `dag::Node` id.
+  - What decides which of vertex, edge and face a click writes is a select mask, which does
+    not exist yet. Nothing enforces that only one kind is selected at a time.
 - ~~Rewrite `vertical3d/` onto the current api.~~ Done 2026-09-01. **The editor opens, and
   draws four viewports of one scene.** It runs on `v3d::engine::Engine` the way every other
   app does - `Feature::Config | Window | MouseInput | KeyboardInput` - with `src/`, `data/`
@@ -855,9 +870,17 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
   - `HWRenderContext` and `Visitor` are deleted. The first is the GL render context and does
     not survive [ADR-0001](../adr/0001-vulkan-replaces-opengl.md); the second was an empty
     class in the old `v3D` namespace with no members and no consumer.
-  - Not yet: there is no scene, so the four views draw a grid and nothing else. `Controller`
-    has no tool map, no create commands and no ui - the menus, toolbars and 51 command
-    strings of `gui.xml` are still untranslated.
+  - **There is a scene as of 2026-09-02.** `v3d::editor::Scene`, `SceneVisitor` and the four
+    `create_poly_*` primitives moved out of `v3dlibs/core` into `vertical3d/src`, which
+    emptied that directory and deleted `v3dlib_core` with it. `WireframeVisitor` turns a
+    scene into a `LineCanvas` - a segment per edge, with a half edge and its pair drawn once
+    between them, through the mesh's own transform - and every view that shows meshes draws
+    the same scene through its own camera. The create commands arrive in a `create` context
+    bound to keys 1 to 4, because `gui.xml` puts them on menus and there are no menus yet.
+    Verified against a run: cube and cylinder, four viewports, validation silent.
+  - Not yet: `Controller` has no tool map and no ui - the menus, toolbars and 51 command
+    strings of `gui.xml` are still untranslated - and a mesh can be created and drawn but
+    not selected, moved or saved.
 - ~~Multiple viewports are the feature that will push hardest on the pass model from
   [ADR-0003](../adr/0003-one-realtime-engine.md).~~ Done 2026-09-01, and **the model
   expressed it**. Four views is four `Pass`es over one `Frame`: each carries its region as
@@ -873,8 +896,8 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
   land first.
 
 Done when: the editor opens a project, draws a scene from multiple viewports, and rigel has
-nothing left worth taking. It draws from multiple viewports as of 2026-09-01; there is no
-project and no scene yet.
+nothing left worth taking. It draws a scene from multiple viewports as of 2026-09-02; there
+is no project - nothing loads or saves one, and nothing selects or moves what is in it.
 
 ### Ongoing — tests
 

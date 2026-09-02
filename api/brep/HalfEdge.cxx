@@ -7,10 +7,10 @@
 
 namespace v3d::brep {
 
-    HalfEdge::HalfEdge() : vertex_(INVALID_ID), pair_(INVALID_ID), next_(INVALID_ID), face_(INVALID_ID) {
+    HalfEdge::HalfEdge() : vertex_(INVALID_ID), pair_(INVALID_ID), next_(INVALID_ID), face_(INVALID_ID), selected_(false) {
     }
 
-    HalfEdge::HalfEdge(uint64_t vert) : vertex_(vert), pair_(INVALID_ID), next_(INVALID_ID), face_(INVALID_ID) {
+    HalfEdge::HalfEdge(uint64_t vert) : vertex_(vert), pair_(INVALID_ID), next_(INVALID_ID), face_(INVALID_ID), selected_(false) {
     }
 
     HalfEdge::HalfEdge(const HalfEdge& e) {
@@ -32,8 +32,17 @@ namespace v3d::brep {
         face_ = e.face_;
         next_ = e.next_;
         pair_ = e.pair_;
+        selected_ = e.selected_;
 
         return *this;
+    }
+
+    bool HalfEdge::selected(void) const noexcept {
+        return selected_;
+    }
+
+    void HalfEdge::selected(bool sel) noexcept {
+        selected_ = sel;
     }
 
     uint64_t HalfEdge::vertex(void) const {

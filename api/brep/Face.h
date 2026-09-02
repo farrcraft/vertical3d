@@ -15,10 +15,12 @@ namespace v3d::brep {
         Face(const glm::vec3 & normal, unsigned int edge);
         ~Face();
 
-        /*
-        bool selected(void) const;
-        void selected(bool sel);
-        */
+        /**
+         * Whether this component is selected. Selection is per component, not per mesh, so
+         * a vertex, an edge and a face each carry their own.
+         **/
+        bool selected(void) const noexcept;
+        void selected(bool sel) noexcept;
 
         glm::vec3 normal(void) const;
         void normal(const glm::vec3 & n);
@@ -28,6 +30,7 @@ namespace v3d::brep {
      private:
         glm::vec3 normal_;
         unsigned int edge_;
+        bool selected_;
     };
 
 };  // namespace v3d::brep
