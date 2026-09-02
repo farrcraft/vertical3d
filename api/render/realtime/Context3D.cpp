@@ -111,6 +111,12 @@ namespace v3d::render::realtime {
 
     /**
      **/
+    bool Context3D::hasLines() const noexcept {
+        return static_cast<bool>(lines_);
+    }
+
+    /**
+     **/
     boost::shared_ptr<vulkan::DepthBuffer> Context3D::depth() {
         if (!depth_) {
             // the chain's extent rather than the window's - the surface is allowed to dictate

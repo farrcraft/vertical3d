@@ -73,6 +73,12 @@ namespace v3d::render::realtime {
         boost::shared_ptr<Context> context();
 
      private:
+        /**
+         * Drop what the frame collected and give back the geometry buffers its submissions
+         * took, whether or not the frame was recorded.
+         **/
+        void endFrame();
+
         boost::shared_ptr<Context3D> context_;
         boost::shared_ptr<Frame> frame_;
         vulkan::Recorder recorder_;

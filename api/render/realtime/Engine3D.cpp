@@ -40,6 +40,12 @@ namespace v3d::render::realtime {
             // submitted against them, but only just
             context_->presenter()->waitIdle();
         }
+        // the context has to go before the window does. It owns the device, which holds
+        // the window's surface alive, and the window's teardown unloads the vulkan library -
+        // a surface destroyed after that is not destroyed at all, and the instance reports
+        // it as leaked
+        frame_.reset();
+        context_.reset();
         return Engine::shutdown();
     }
 
@@ -92,7 +98,7 @@ namespace v3d::render::realtime {
             // the window changed size between the last present and this acquire - rebuild
             // the chain and let the next frame draw into it
             context_->resize();
-            frame_->reset();
+            endFrame();
             return;
         }
 
@@ -102,7 +108,7 @@ namespace v3d::render::realtime {
             if (window() && window()->width() > 0 && window()->height() > 0) {
                 context_->resize();
             }
-            frame_->reset();
+            endFrame();
             return;
         }
 
@@ -140,7 +146,21 @@ namespace v3d::render::realtime {
             context_->resize();
         }
 
+        endFrame();
+    }
+
+    /**
+     **/
+    void Engine3D::endFrame() {
         frame_->reset();
+        // the geometry buffers this frame's submissions took go back to the front of
+        // their rings, for the next frame to claim from
+        if (context_) {
+            context_->quads()->endFrame();
+            if (context_->hasLines()) {
+                context_->lines()->endFrame();
+            }
+        }
     }
 
 };  // namespace v3d::render::realtime

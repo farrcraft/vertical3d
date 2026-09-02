@@ -1,0 +1,66 @@
+{
+  "mappings": [
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "left_alt"
+      },
+      "destination": {
+        "context": "view",
+        "name": "zoomCamera"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "left_control"
+      },
+      "destination": {
+        "context": "view",
+        "name": "truckCamera"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "left_shift"
+      },
+      "destination": {
+        "context": "view",
+        "name": "panCamera"
+      }
+    },
+    {
+      "source": {
+        "context": "mouse",
+        "name": "left"
+      },
+      "destination": {
+        "context": "view",
+        "name": "drag"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "g",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "view",
+        "name": "toggleGrid"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "escape",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "ui",
+        "name": "quit"
+      }
+    }
+  ]
+}

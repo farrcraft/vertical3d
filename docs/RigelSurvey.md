@@ -155,11 +155,14 @@ ever asked for.
 5. **Selection state on three of the four brep types.** `api/brep::Face` kept `selected()`.
    `Vertex`, `HalfEdge` and `BRep` did not, and component selection needs all four.
 
-6. **A per-pass camera on an orthographic pass, and more than one viewport.** Phase 5 already
-   deferred giving `Pass` an orthographic camera to this phase, on the grounds that multiple
-   viewports are the first thing that needs one. Four views of one scene is four passes with
-   four cameras against one device, which [ADR-0003](adr/0003-one-realtime-engine.md) says
-   the model expresses; this is the app that finds out.
+6. ~~**A per-pass camera on an orthographic pass, and more than one viewport.**~~
+   **Landed 2026-09-01.** The editor draws four passes over one frame, each with its own
+   region and its own camera at set 0, and three of the four cameras are orthographic. The
+   frame model expressed it unchanged - what had to be fixed was underneath it:
+   `v3d::type::Camera` built OpenGL clip space and looked down the wrong axis
+   ([ADR-0012](adr/0012-camera-builds-vulkan-clip-space.md)), `CameraProfile::lookat()`
+   stored the transpose of its rotation, and both geometry renderers wrote every submission
+   of a frame into the same buffer, so a second canvas overwrote the first.
 
 7. **The interactive half of the command model.** `api/event` maps input to named events and
    dispatches them by context; it has no `Command`, and nothing in it corresponds to rigel's
@@ -179,9 +182,11 @@ ever asked for.
    holds nothing.
 
 Items 1, 2 and 6 are the ones that gate everything else - a modeller that cannot draw a line,
-cannot configure a camera and cannot show four views is not a modeller. Two of the three
-landed on 2026-09-01; item 6, the per-pass camera and the multiple viewports over it, is what
-is left of the gate.
+cannot configure a camera and cannot show four views is not a modeller. All three landed on
+2026-09-01: the editor builds, runs, and draws a construction grid through four viewports of
+one scene. What is left of this list is items 3, 4, 5, 7, 8 and 9 -
+picking, mesh identity, component selection, the interactive command model, project
+persistence and undo.
 
 ## Defects found
 
@@ -327,25 +332,39 @@ and two things did not come across:
 In dependency order. Nothing here is blocked by the Vulkan work, which landed for the four
 games; it is blocked by the api never having had a customer that draws lines or picks.
 
-1. Translate `docs/xml/gui.xml` into the repo's JSON config form — menus, toolbar, bindings,
-   camera profiles, viewport layout — and put it in `vertical3d/data/`. This is the single
-   highest-value item and it depends on nothing except gap 2.
-2. Give `api/type::CameraProfile` back its accessors, including the viewport size that
-   `orthoFactor()` divides by, and decide whether adaptive projection and position come back.
-3. Give the api a line primitive: geometry on `Canvas` or a sibling of it, and a line
-   pipeline through `PipelineBuilder`.
+1. ~~Translate `docs/xml/gui.xml` into the repo's JSON config form — menus, toolbar,
+   bindings, camera profiles, viewport layout — and put it in `vertical3d/data/`.~~
+   **Half done 2026-09-01.** The camera profile table is `data/cameras.json`, the viewport
+   layout is `data/layout.json`, and the camera bindings are `data/mappings.json`; both new
+   files load through `api/config`, which gained a `camera` and a `layout` type for them.
+   The menus, the two toolbars and the 51 command strings behind them are not translated,
+   and want item 8 first — there is nothing yet for a menu item to invoke.
+2. ~~Give `api/type::CameraProfile` back its accessors, including the viewport size that
+   `orthoFactor()` divides by, and decide whether adaptive projection and position come
+   back.~~ Done 2026-09-01, both options included.
+3. ~~Give the api a line primitive: geometry on `Canvas` or a sibling of it, and a line
+   pipeline through `PipelineBuilder`.~~ Done 2026-09-01 as
+   [ADR-0011](adr/0011-lines-are-the-second-primitive.md), and first drawn the same day.
 4. Give `api/brep::BRep` a `dag::Node`/`dag::Transform` base and put `selected()` back on
    `Vertex`, `HalfEdge` and `BRep`.
 5. Decide picking — ray cast or id buffer — in an ADR, and port the name-space scheme onto it.
+   `Camera::project()` and `::unproject()` are inverses of each other as of 2026-09-01,
+   which a ray cast would be built on; they were not before.
 6. Port the three manipulators onto lines and the picking decision, fixing the translate
    defect and the uninitialised coordinate space on the way.
-7. Port `ConstructionPlane` onto lines, either implementing autoscale or dropping its
-   interface.
+7. ~~Port `ConstructionPlane` onto lines, either implementing autoscale or dropping its
+   interface.~~ Done 2026-09-01, in `vertical3d/src/ConstructionPlane.cxx`. Autoscale and
+   `infinite` are dropped: neither had a reader in rigel either — `_autoscale`, `_infinite`
+   and `_scaleFactor` were set and never used. Line width goes with them, per ADR-0011;
+   colour carries the emphasis the origin lines had.
 8. Port the five command sets onto `api/event` contexts, and decide what a `Tool` is in the
-   api now that `event::Engine` dispatches by name.
+   api now that `event::Engine` dispatches by name. `vertical3d/src/Tool.h` now has the
+   motion and button half as well as activate/deactivate, which is the shape to lift.
 9. Decide the project file format and port `ProjectCommandSet::read`/`write` onto it.
 10. Settle `api/brep`'s three unbuilt files — port or delete.
-11. Multiple viewports, which is the phase's headline feature and wants items 2, 3 and 6 first.
+11. ~~Multiple viewports, which is the phase's headline feature and wants items 2, 3 and 6
+    first.~~ Done 2026-09-01, and it wanted 2 and 3 but not 6. Four passes over one frame,
+    each with its region and its camera.
 
 Undo is on the phase 6 list and rigel contributes nothing to it; it should be scoped
 independently rather than treated as a fold-in.

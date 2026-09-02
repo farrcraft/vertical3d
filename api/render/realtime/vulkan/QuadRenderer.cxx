@@ -10,6 +10,7 @@
 #include <map>
 #include <sstream>
 #include <stdexcept>
+#include <vector>
 
 #include "PipelineBuilder.h"
 #include "Result.h"
@@ -63,11 +64,12 @@ namespace v3d::render::realtime::vulkan {
         presenter_(presenter),
         uniforms_(uniforms),
         materialLayout_(VK_NULL_HANDLE),
-        remaining_(0) {
+        remaining_(0),
+        cursor_(0) {
         factory_ = boost::make_shared<TextureFactory>(device_);
         createLayouts();
         createPipelines(colour, depth);
-        createBuffers();
+        geometry_.resize(presenter_->framesInFlight() > 0 ? presenter_->framesInFlight() : 1);
         createWhite();
     }
 
@@ -135,11 +137,21 @@ namespace v3d::render::realtime::vulkan {
 
     /**
      **/
-    void QuadRenderer::createBuffers() {
-        for (uint32_t frame = 0; frame < presenter_->framesInFlight(); frame++) {
-            vertices_.push_back(boost::make_shared<Buffer>(device_, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, initialVertexBytes));
-            indices_.push_back(boost::make_shared<Buffer>(device_, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, initialIndexBytes));
+    QuadRenderer::Geometry QuadRenderer::claim() {
+        std::vector<Geometry>& ring = geometry_[presenter_->frame()];
+        if (cursor_ >= ring.size()) {
+            Geometry geometry;
+            geometry.vertices = boost::make_shared<Buffer>(device_, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, initialVertexBytes);
+            geometry.indices = boost::make_shared<Buffer>(device_, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, initialIndexBytes);
+            ring.push_back(geometry);
         }
+        return ring[cursor_++];
+    }
+
+    /**
+     **/
+    void QuadRenderer::endFrame() noexcept {
+        cursor_ = 0;
     }
 
     /**
@@ -255,12 +267,12 @@ namespace v3d::render::realtime::vulkan {
             return;
         }
 
-        const uint32_t frame = presenter_->frame();
-        // the device may still be reading what this slot held two frames ago
+        // the device may still be reading what this frame's slots held two frames ago
         presenter_->waitFrame();
 
-        const boost::shared_ptr<Buffer>& vertices = vertices_[frame];
-        const boost::shared_ptr<Buffer>& indices = indices_[frame];
+        const Geometry claimed = claim();
+        const boost::shared_ptr<Buffer>& vertices = claimed.vertices;
+        const boost::shared_ptr<Buffer>& indices = claimed.indices;
 
         const VkDeviceSize vertexBytes = canvas.vertices().size() * sizeof(Canvas::Vertex);
         const VkDeviceSize indexBytes = canvas.indices().size() * sizeof(uint32_t);

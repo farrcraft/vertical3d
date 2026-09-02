@@ -14,6 +14,8 @@ namespace v3d::config {
         Binding,
         Ui,
         Sound,
+        Camera,
+        Layout,
     };
 
     constexpr Type stringToType(const std::string_view& typeName) {
@@ -25,6 +27,10 @@ namespace v3d::config {
             return Type::Ui;
         } else if (typeName == "sound") {
             return Type::Sound;
+        } else if (typeName == "camera") {
+            return Type::Camera;
+        } else if (typeName == "layout") {
+            return Type::Layout;
         }
         return  Type::Unknown;
     }

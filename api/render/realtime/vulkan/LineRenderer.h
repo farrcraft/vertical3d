@@ -7,6 +7,7 @@
 
 #include <vulkan/vulkan.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
@@ -30,11 +31,15 @@ namespace v3d::render::realtime::vulkan {
     /**
      * The device half of the line primitive - ADR-0011.
      *
-     * A canvas is filled on the cpu during a tick and handed here, which uploads it into the
+     * A canvas is filled on the cpu during a tick and handed here, which uploads it into a
      * buffer belonging to the frame about to be recorded. There is no texture, no material
      * and no index buffer, so a whole canvas becomes one draw. The buffers are per frame in
      * flight, because the device may still be reading the previous frame's out of the
      * previous slot.
+     *
+     * A frame may submit any number of canvases, and each submission takes a buffer of its
+     * own out of the frame's ring. They cannot share one: growing a buffer replaces the
+     * allocation, which invalidates the handle every draw item already recorded holds.
      *
      * Lines are one pixel wide. Wider ones need the wideLines device feature, which the
      * device does not ask for.
@@ -78,6 +83,12 @@ namespace v3d::render::realtime::vulkan {
          **/
         void submit(const LineCanvas& canvas, Pass* pass, uint16_t layer = 0);
 
+        /**
+         * Give back the buffers this frame's submissions took, so the next frame starts at
+         * the front of the ring again. The engine calls this once a frame has been recorded.
+         **/
+        void endFrame() noexcept;
+
      private:
         /**
          * Compile the line pipeline twice - once for a pass with a depth attachment and once
@@ -91,9 +102,10 @@ namespace v3d::render::realtime::vulkan {
         void createPipelines(VkFormat colour, VkFormat depth);
 
         /**
-         * Allocate the vertex buffers, one per frame in flight.
+         * Take the next free buffer of the frame being recorded, adding one to the ring if
+         * every buffer in it has already been claimed this frame.
          **/
-        void createBuffers();
+        boost::shared_ptr<Buffer> claim();
 
         boost::shared_ptr<v3d::log::Logger> logger_;
         boost::shared_ptr<Device> device_;
@@ -105,7 +117,9 @@ namespace v3d::render::realtime::vulkan {
         PipelineHandle pipeline_;       /**< for a pass with no depth attachment **/
         PipelineHandle depthPipeline_;  /**< for a pass with one, and it tests against it **/
 
-        std::vector<boost::shared_ptr<Buffer>> vertices_;
+        /**< a ring of vertex buffers per frame in flight, grown as a frame's submissions ask **/
+        std::vector<std::vector<boost::shared_ptr<Buffer>>> vertices_;
+        std::size_t cursor_;  /**< how far into the current frame's ring submit() has got **/
     };
 
 };  // namespace v3d::render::realtime::vulkan

@@ -1,0 +1,20 @@
+{
+  "configs": [
+    {
+      "type": "binding",
+      "file": "mappings.json"
+    },
+    {
+      "type": "window",
+      "file": "window.json"
+    },
+    {
+      "type": "camera",
+      "file": "cameras.json"
+    },
+    {
+      "type": "layout",
+      "file": "layout.json"
+    }
+  ]
+}

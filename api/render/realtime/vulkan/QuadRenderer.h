@@ -7,6 +7,7 @@
 
 #include <vulkan/vulkan.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <map>
 #include <vector>
@@ -41,9 +42,14 @@ namespace v3d::render::realtime::vulkan {
      * a sprite and a glyph differ only in which texture is bound and what the vertex colour is.
      *
      * A Canvas is filled on the cpu during a tick and handed here, which uploads its geometry
-     * into the buffers belonging to the frame about to be recorded and turns each of its
+     * into buffers belonging to the frame about to be recorded and turns each of its
      * batches into a draw item on a pass. The buffers are per frame in flight, because the
      * device may still be reading the previous frame's out of the previous slot.
+     *
+     * A frame may submit any number of canvases, and each submission takes a pair of
+     * buffers of its own out of the frame's ring. They cannot share one pair: growing a
+     * buffer replaces the allocation, which invalidates the handle every draw item already
+     * recorded holds.
      *
      * Everything it registers - the pipeline, the white texture, a material per texture -
      * belongs to Resources and lives until the context does.
@@ -105,6 +111,12 @@ namespace v3d::render::realtime::vulkan {
          **/
         void submit(const Canvas& canvas, Pass* pass, uint16_t layer = 0);
 
+        /**
+         * Give back the buffers this frame's submissions took, so the next frame starts at
+         * the front of the ring again. The engine calls this once a frame has been recorded.
+         **/
+        void endFrame() noexcept;
+
      private:
         /**
          * Build the per material descriptor set layout. Set 0's belongs to FrameUniforms,
@@ -124,9 +136,18 @@ namespace v3d::render::realtime::vulkan {
         void createPipelines(VkFormat colour, VkFormat depth);
 
         /**
-         * Allocate the geometry buffers, one set per frame in flight.
+         * A canvas's geometry for one frame - one submission's worth.
          **/
-        void createBuffers();
+        struct Geometry {
+            boost::shared_ptr<Buffer> vertices;
+            boost::shared_ptr<Buffer> indices;
+        };
+
+        /**
+         * Take the next free pair of buffers of the frame being recorded, adding one to the
+         * ring if every pair in it has already been claimed this frame.
+         **/
+        Geometry claim();
 
         /**
          * The 1x1 white texture, so that an untextured quad needs no second pipeline.
@@ -160,8 +181,9 @@ namespace v3d::render::realtime::vulkan {
         TextureHandle white_;
         std::map<uint32_t, MaterialHandle> materials_;
 
-        std::vector<boost::shared_ptr<Buffer>> vertices_;
-        std::vector<boost::shared_ptr<Buffer>> indices_;
+        /**< a ring of geometry per frame in flight, grown as a frame's submissions ask **/
+        std::vector<std::vector<Geometry>> geometry_;
+        std::size_t cursor_;  /**< how far into the current frame's ring submit() has got **/
     };
 
 };  // namespace v3d::render::realtime::vulkan

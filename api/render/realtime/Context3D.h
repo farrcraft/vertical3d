@@ -82,6 +82,11 @@ namespace v3d::render::realtime {
         boost::shared_ptr<vulkan::LineRenderer> lines();
 
         /**
+         * @return whether a line renderer has been built, without building one
+         **/
+        bool hasLines() const noexcept;
+
+        /**
          * @return set 0, where each pass's camera is written and bound from - ADR-0008
          **/
         boost::shared_ptr<vulkan::FrameUniforms> frameUniforms() const;

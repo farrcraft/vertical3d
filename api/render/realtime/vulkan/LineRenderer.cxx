@@ -6,6 +6,7 @@
 #include "LineRenderer.h"
 
 #include <cstddef>
+#include <vector>
 
 #include "PipelineBuilder.h"
 
@@ -49,9 +50,10 @@ namespace v3d::render::realtime::vulkan {
         cache_(cache),
         resources_(resources),
         presenter_(presenter),
-        uniforms_(uniforms) {
+        uniforms_(uniforms),
+        cursor_(0) {
         createPipelines(colour, depth);
-        createBuffers();
+        vertices_.resize(presenter_->framesInFlight() > 0 ? presenter_->framesInFlight() : 1);
     }
 
     /**
@@ -85,10 +87,18 @@ namespace v3d::render::realtime::vulkan {
 
     /**
      **/
-    void LineRenderer::createBuffers() {
-        for (uint32_t frame = 0; frame < presenter_->framesInFlight(); frame++) {
-            vertices_.push_back(boost::make_shared<Buffer>(device_, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, initialVertexBytes));
+    boost::shared_ptr<Buffer> LineRenderer::claim() {
+        std::vector<boost::shared_ptr<Buffer>>& ring = vertices_[presenter_->frame()];
+        if (cursor_ >= ring.size()) {
+            ring.push_back(boost::make_shared<Buffer>(device_, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, initialVertexBytes));
         }
+        return ring[cursor_++];
+    }
+
+    /**
+     **/
+    void LineRenderer::endFrame() noexcept {
+        cursor_ = 0;
     }
 
     /**
@@ -98,11 +108,10 @@ namespace v3d::render::realtime::vulkan {
             return;
         }
 
-        const uint32_t frame = presenter_->frame();
-        // the device may still be reading what this slot held two frames ago
+        // the device may still be reading what this frame's slots held two frames ago
         presenter_->waitFrame();
 
-        const boost::shared_ptr<Buffer>& vertices = vertices_[frame];
+        const boost::shared_ptr<Buffer> vertices = claim();
         const VkDeviceSize vertexBytes = canvas.vertices().size() * sizeof(LineCanvas::Vertex);
 
         vertices->grow(vertexBytes);

@@ -777,10 +777,10 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
   - The renderer is built on the first call to `Context3D::lines()` rather than at startup,
     the way the depth buffer is, so a 2D game pays neither the two pipeline compiles nor a
     vertex buffer per frame in flight.
-  - **The device half has not been run.** The cpu side has a ten-case suite in
-    `api/render/tests/LineCanvasTest.cpp`; the pipelines compile and link but nothing draws
-    lines yet, so they have never been through the validation layer. The first consumer is
-    where that gets found - the position `vulkan::Mesh` was in before voxel's port.
+  - ~~**The device half has not been run.**~~ Run on 2026-09-01, by the editor. Both
+    pipelines draw, the depth one is what a viewport uses, and the validation layer is
+    silent across a run with four line canvases a frame, four programmatic resizes, a
+    minimize and a restore. What the first consumer found is below.
   - A construction grid is deliberately not in the api. `LineCanvas` offers primitives; the
     grid's extent, spacing, major intervals and orientation are the editor's policy, and
     rigel's `ConstructionPlane` is the behaviour to fold in there.
@@ -802,28 +802,79 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
   - `CameraControlTool::pan` drags the arcball to the point the gesture has reached rather
     than the one it came from; `motion()` records `last_` only after `pan()` returns, so
     every rotation was one event stale and the first after a click was identity.
+- ~~**`v3d::type::Camera` builds OpenGL clip space**, which nothing can draw with.~~
+  Fixed 2026-09-01, recorded as
+  [ADR-0012](../adr/0012-camera-builds-vulkan-clip-space.md). This was not on the list
+  because nothing had ever drawn through the class: its `createProjection()` was written
+  against `glFrustum` and `glOrtho`, so y pointed up and depth ran -1 to 1, and under Vulkan
+  a scene comes out mirrored with the near half of the frustum clipped away. Voxel had
+  already answered this privately, with a second camera class of its own. Three further
+  defects in the same three functions went with it, none of them observable before:
+  - **The projection looked down -z while the profile's basis pointed the view along +z.**
+    The default profile sits at `(0, 0, -1)` with `direction` `(0, 0, 1)`, so the origin was
+    *behind* the camera. Both are now +z, which is what the profile documents and what every
+    profile in `gui.xml` assumes.
+  - **`CameraProfile::lookat()` stored the transpose of the rotation it meant**, so a camera
+    told to look at a point looked away from it under any non-identity orientation - which
+    is every view but Front.
+  - **`Camera::project()` never divided by w**, and `project()` and `unproject()` measured y
+    in opposite directions, so only points on the horizontal centre line round tripped. The
+    test suite had recorded that as expected behaviour. Picking needs the round trip.
+- ~~**A frame could only ever submit one canvas.**~~ Fixed 2026-09-01. `QuadRenderer` and
+  `LineRenderer` both wrote every submission into one buffer per frame in flight, from
+  offset zero - so a second `submit()` in a frame overwrote the first and left its draw item
+  pointing at the wrong geometry. Four games never noticed because each submits exactly
+  once; four viewports submit four times. Each submission now takes a buffer of its own out
+  of the frame's ring, which `Engine3D` returns after recording. Appending into one buffer
+  would not do: growing a buffer replaces the allocation and invalidates the handle every
+  draw item recorded before it is holding.
 - Selection needs three things the api does not have: a picking mechanism to replace
   `GL_SELECT` (ray cast or id buffer — worth an ADR), a `dag::Node`/`dag::Transform` base on
   `brep::BRep` so a mesh has an id and a transform, and `selected()` back on `brep::Vertex`,
   `HalfEdge` and `BRep`, which kept it only on `Face`.
-- Rewrite `vertical3d/` — `Controller`, `ViewPort`, `CameraControlTool`, `HWRenderContext`
-  — onto the current api. **Three of the four already exist** and are written against the
-  current `api/type` and glm; they are commented out of the app's `CMakeLists.txt` because
-  they still include `v3dlibs/hookah`, `v3dlibs/gui` and `luxa/`. `HWRenderContext` is the GL
-  render context and does not survive
-  [ADR-0001](../adr/0001-vulkan-replaces-opengl.md).
-- Multiple viewports are the feature that will push hardest on the pass model from
-  [ADR-0003](../adr/0003-one-realtime-engine.md). Four views of one scene is four passes
-  with four cameras against one device, which the model should already express — this is
-  the app that proves whether it does. The orthographic per-pass camera deferred out of
-  phase 5 lands here.
+- ~~Rewrite `vertical3d/` onto the current api.~~ Done 2026-09-01. **The editor opens, and
+  draws four viewports of one scene.** It runs on `v3d::engine::Engine` the way every other
+  app does - `Feature::Config | Window | MouseInput | KeyboardInput` - with `src/`, `data/`
+  and `tests/` directories like its neighbours, and it is in the root `add_subdirectory`
+  list again.
+  - `gui.xml`'s two data halves are translated: `data/cameras.json` is the eight camera
+    profiles and `data/layout.json` is the quad viewport tree. `api/config` gained a
+    `camera` and a `layout` type so both load through `Config` like every other config file.
+    Each profile is given as eye, lookat and up rather than as three normals, because the
+    normals and the rotation have to agree and `lookat()` is the one call that writes all
+    four; and the near plane is 0.1 rather than the 0.001 in `gui.xml`, which spends the
+    whole depth range on the first thousandth of the scene.
+  - `ViewLayout` flattens the nested `<viewgroup>` tree into one pixel region per viewport,
+    which is what rigel built a tree of `Gtk::Paned` from. The panes are not draggable yet;
+    that is the only behaviour the flattening drops.
+  - `ConstructionPlane` is folded in from rigel and draws through `LineCanvas`. Rigel drew
+    its origin lines thicker with `glLineWidth`; lines are one pixel wide, so colour carries
+    the emphasis. It is the editor's rather than the api's, per ADR-0011.
+  - `CameraControlTool` drives whichever view the cursor is over, so a four way split is
+    four cameras and one tool. The modifier held picks the move, as `view::camera::*` did.
+  - `HWRenderContext` and `Visitor` are deleted. The first is the GL render context and does
+    not survive [ADR-0001](../adr/0001-vulkan-replaces-opengl.md); the second was an empty
+    class in the old `v3D` namespace with no members and no consumer.
+  - Not yet: there is no scene, so the four views draw a grid and nothing else. `Controller`
+    has no tool map, no create commands and no ui - the menus, toolbars and 51 command
+    strings of `gui.xml` are still untranslated.
+- ~~Multiple viewports are the feature that will push hardest on the pass model from
+  [ADR-0003](../adr/0003-one-realtime-engine.md).~~ Done 2026-09-01, and **the model
+  expressed it**. Four views is four `Pass`es over one `Frame`: each carries its region as
+  its viewport and scissor, its own camera at set 0, and clears its own region of the colour
+  and depth attachments. Nothing in the frame model had to change to allow it -
+  `FrameUniforms` already kept a slot per pass per frame in flight, and `Recorder` already
+  honoured a pass viewport. What did have to change was the one-canvas-per-frame limit
+  above, which is a renderer defect rather than a model one. The orthographic per-pass
+  camera deferred out of phase 5 lands with ADR-0012.
 - **Undo has no prototype.** Rigel has no undo or redo anywhere, so the undoable command
   model has to be designed rather than folded in.
 - Delete `rigel/` once the fold-in is complete, and not before. The survey lists what has to
   land first.
 
 Done when: the editor opens a project, draws a scene from multiple viewports, and rigel has
-nothing left worth taking.
+nothing left worth taking. It draws from multiple viewports as of 2026-09-01; there is no
+project and no scene yet.
 
 ### Ongoing — tests
 
@@ -831,7 +882,8 @@ Deliberately not last. This is independent of the render rewrite and blocked by 
 
 Tier 1 landed on 2026-08-31. `enable_testing()` and a `v3d_add_test` helper are in the root
 CMakeLists, eight binaries build from `api/<lib>/tests`, and `ctest --test-dir
-out/build/x64-Debug` runs the lot in about a second. Coverage is `type`, `brep`, `image`,
+out/build/x64-Debug` runs the lot in about a second. Eleven suites run as of 2026-09-01,
+the app ones for tetris, voxel and the editor included. Coverage is `type`, `brep`, `image`,
 `font`, `input`, `event`, the window-free half of `render` - which since phase 3 includes the
 canvas's batching, transform stack and projection - and `ui`, whose ComponentRenderer is
 testable because it takes text measuring and writing as callbacks. Still uncovered: `asset`,
@@ -868,8 +920,8 @@ Work:
   `audio`, `ui`. `config` and `asset` are the ones an app most visibly depends on - the
   config-format migrations in this phase were verified by reading `Config::load`, not by
   running it.
-- Revive `moya/tests/` (five real test files, no target) and `tetris/tests/` (a bare
-  `TestMain`), which is tier 3 and now needs only a CMakeLists each.
+- Revive `moya/tests/` (five real test files, no target), which is tier 3 and now needs
+  only a CMakeLists. `tetris/tests/`, `voxel/tests/` and `vertical3d/tests/` are done.
 - ~~Start coverage on the libraries that need neither a window nor a GPU.~~ Done for
   `type`, `brep`, `image`, `event`, `input` and `font`; `dag`, `asset` and `config` remain.
   Those can run in CI from day one, which the render libraries cannot — see open question 4.

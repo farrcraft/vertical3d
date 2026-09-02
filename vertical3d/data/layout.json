@@ -1,0 +1,24 @@
+{
+  "layout": {
+    "name": "Quad Layout",
+    "root": {
+      "split": "vertical",
+      "children": [
+        {
+          "split": "horizontal",
+          "children": [
+            { "camera": "Front" },
+            { "camera": "Top" }
+          ]
+        },
+        {
+          "split": "horizontal",
+          "children": [
+            { "camera": "Left" },
+            { "camera": "Perspective" }
+          ]
+        }
+      ]
+    }
+  }
+}
