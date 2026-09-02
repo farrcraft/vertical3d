@@ -61,10 +61,11 @@ ninja -C out/build/x64-Debug -k 0         # keep going past the broken targets (
 
 ```
 cpplint --linelength=180 --filter=-runtime/indentation_namespace,-build/namespaces_literals \
+  --exclude=out --exclude=vendor --exclude=vcpkg_installed \
   --exclude=vault --exclude=voxel/src/noise --exclude=v3dlibs --exclude=rigel --exclude=luxa --recursive .
 ```
 
-Run in CI by [.github/workflows/cpplint.yml](.github/workflows/cpplint.yml). Current cpplint renamed the namespace-indent check to `whitespace/indent_namespace`, so the `-runtime/indentation_namespace` filter no longer suppresses it and **every file in the repo reports it**. Ignore those; treat anything else as a real finding.
+Run in CI by [.github/workflows/cpplint.yml](.github/workflows/cpplint.yml). The first three excludes matter only locally - CI never builds, checks out no submodules and installs no ports, so it has none of those trees - but a developer machine has all three, and they hold two orders of magnitude more lintable files than the project does. `vcpkg_installed/` at the repo root is the worst of them at 80,000-odd third party headers. Note that `--exclude` filters what is linted and not what is walked, so the run still costs an `os.walk` of the whole tree either way. Current cpplint renamed the namespace-indent check to `whitespace/indent_namespace`, so the `-runtime/indentation_namespace` filter no longer suppresses it and **every file in the repo reports it**. Ignore those; treat anything else as a real finding.
 
 ## Tests
 
