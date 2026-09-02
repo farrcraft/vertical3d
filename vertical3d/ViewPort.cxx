@@ -25,6 +25,12 @@ namespace v3d {
 
     void ViewPort::resize(int width, int height) {
         rc_.resize(width, height);
+        // the camera needs the viewport it draws into: the ortho factors divide by the
+        // size, and the projection is built around the pixel aspect ratio
+        camera_->profile().size(static_cast<unsigned int>(width), static_cast<unsigned int>(height));
+        if (height > 0) {
+            camera_->profile().pixelAspect(static_cast<float>(width) / static_cast<float>(height));
+        }
     }
 
     void ViewPort::invalidate() {

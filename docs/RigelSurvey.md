@@ -118,8 +118,10 @@ ever asked for.
    `DrawItem` path to carry it. **This is the largest single api gap in the survey and the
    plan does not list it.**
 
-2. **`CameraProfile` is write-only.** `v3d::type::CameraProfile` holds every field rigel's
-   does — name, eye, direction, right, up, orthoZoom, pixelAspect, near, far, fov, rotation,
+2. ~~**`CameraProfile` is write-only.**~~ **Fixed 2026-09-01** - every field has an
+   accessor pair, the ortho factor is split into a horizontal and a vertical one, and both
+   guard the unset viewport size. What follows is what the gap was.
+   `v3d::type::CameraProfile` holds every field rigel's does — name, eye, direction, right, up, orthoZoom, pixelAspect, near, far, fov, rotation,
    options, size — and exposes `clipping`, `eye`, `lookat`, `clone` and `operator=`. The
    other twenty-odd accessors are gone, the rest of the state is `protected` behind
    `friend class Camera`, and the adaptive-projection and adaptive-position options were
@@ -186,8 +188,8 @@ the tree has not compiled since 2022.
   `_showFlags ^= SHOW_HANDLE`, which is `^= 3`, and toggles grid and camera instead. Only
   `SHOW_GRID` and `SHOW_MESH` are ever tested, and `SHOW_MESH` is 5, so hiding the grid also
   hides the meshes. `Window::SelectMasks` in the same tree gets this right with `(1 << n)`.
-  **`vertical3d/ViewPort.h` has already copied the broken enum verbatim** — fix it there
-  first, since that file is the one that survives.
+  `vertical3d/ViewPort.h` had copied the broken enum verbatim; **fixed there 2026-09-01**,
+  since that file is the one that survives.
 
 - **`TranslateManipulator::transform` throws away the x component of a free drag, and treats
   a frame delta as an absolute position.** The unconstrained branch reads
@@ -260,14 +262,19 @@ the tree has not compiled since 2022.
 `vertical3d/CameraControlTool` is rigel's `ViewPort` camera-mode block, ported and tidied,
 and two things did not come across:
 
-- **The arcball is never clicked.** Rigel called `_arcball.click()` on button press to set the
-  drag reference point and `_arcball.bounds(w, h)` on configure to size the sphere.
-  `CameraControlTool::buttonPressed` is empty and nothing calls `bounds`, so `pan` drags
-  against an unset start point on a zero-sized sphere. `v3d::type::ArcBall` has both methods.
-- **Vertical truck uses the horizontal factor.** Rigel scaled a pedestal by
-  `(orthoZoom * 2) / height` and a truck by `(orthoZoom * 2 * pixelAspect) / width`;
-  `orthoFactor()` is only the second, and `CameraControlTool::truck` uses it for both. On a
-  4:3 view that is a 1.77x error on vertical drags.
+- ~~**The arcball is never clicked.**~~ Fixed 2026-09-01. Rigel called `_arcball.click()`
+  on button press to set the drag reference point and `_arcball.bounds(w, h)` on configure
+  to size the sphere. `CameraControlTool::buttonPressed` was empty and nothing called
+  `bounds`, so `pan` dragged against an unset start point on a zero-sized sphere.
+- ~~**Vertical truck uses the horizontal factor.**~~ Fixed 2026-09-01. Rigel scaled a
+  pedestal by `(orthoZoom * 2) / height` and a truck by
+  `(orthoZoom * 2 * pixelAspect) / width`; `orthoFactor()` was only the second, and
+  `CameraControlTool::truck` used it for both. On a 4:3 view that is a 1.77x error on
+  vertical drags.
+- **`CameraControlTool::pan` drags the arcball to the point the gesture came from**, not the
+  one it has reached - `motion()` records `last_` only after `pan()` returns, so every
+  rotation is one event stale and the first after a click is identity. Rigel passed the
+  current event position. Fixed 2026-09-01 with the two above.
 
 ## Corrections
 

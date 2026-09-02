@@ -8,6 +8,7 @@
 #include <string>
 
 CameraControlTool::CameraControlTool(const boost::shared_ptr<v3d::ViewPort> & view) :
+    last_(0.0f, 0.0f),
     mode_(CAMERA_MODE_NONE),
     view_(view) {
 }
@@ -29,6 +30,10 @@ void CameraControlTool::deactivate(const std::string & name) {
     // mouse_->removeEventListener("camera_control_tool");
 }
 
+void CameraControlTool::resize(unsigned int width, unsigned int height) {
+    arcball_.bounds(static_cast<float>(width), static_cast<float>(height));
+}
+
 // mouse event listener overrides
 void CameraControlTool::motion(unsigned int x, unsigned int y) {
     glm::vec2 position(x, y);
@@ -44,6 +49,8 @@ void CameraControlTool::motion(unsigned int x, unsigned int y) {
 }
 
 void CameraControlTool::buttonPressed(unsigned int button) {
+    // the arcball drags from the point it was last clicked at
+    arcball_.click(last_);
 }
 
 void CameraControlTool::buttonReleased(unsigned int button) {
@@ -62,7 +69,7 @@ void CameraControlTool::zoom(const glm::vec2 & position) {
     float factor;
     if (camera->orthographic()) {
         // size is the viewport size (pixel dimensions)
-        factor = camera->orthoFactor();
+        factor = camera->orthoFactorHorizontal();
         camera->zoom(-delta * factor);
     } else {
         factor = 0.125;
@@ -83,14 +90,15 @@ void CameraControlTool::truck(const glm::vec2 & position) {
     float factor;
     if (delta_x != 0.0) {
         if (camera->orthographic())
-            factor = camera->orthoFactor();
+            factor = camera->orthoFactorHorizontal();
         else
             factor = 0.125;
         camera->truck(delta_x * -factor);
     }
     if (delta_y != 0.0)  {
+        // the vertical factor - the pixel aspect ratio belongs to width alone
         if (camera->orthographic())
-            factor = camera->orthoFactor();
+            factor = camera->orthoFactorVertical();
         else
             factor = 0.125;
         camera->pedestal(delta_y * factor);
@@ -106,7 +114,8 @@ void CameraControlTool::pan(const glm::vec2 & position) {
         return;
     if (!camera->orthographic()) {
         glm::quat rot;
-        rot = arcball_.drag(glm::vec2(static_cast<float>(last_[0]), static_cast<float>(last_[1])));
+        // the point the drag has reached: motion() records last_ only after this returns
+        rot = arcball_.drag(position);
         camera->rotate(rot);
     }
     view_->invalidate();

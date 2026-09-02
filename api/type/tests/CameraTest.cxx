@@ -105,3 +105,22 @@ BOOST_AUTO_TEST_CASE(camera_project_test) {
     BOOST_CHECK_SMALL(roundTrip[1], 0.001f);
     BOOST_CHECK_CLOSE(roundTrip[2], world[2], 0.1f);
 }
+
+BOOST_AUTO_TEST_CASE(camera_ortho_factor_test) {
+    v3d::type::Camera camera;
+
+    // nothing has given the camera a viewport, so there is nothing to divide by
+    BOOST_CHECK_EQUAL(camera.orthoFactorHorizontal(), 0.0f);
+    BOOST_CHECK_EQUAL(camera.orthoFactorVertical(), 0.0f);
+
+    camera.profile().size(640, 480);
+
+    // the horizontal factor carries the pixel aspect ratio and the vertical one does not
+    BOOST_CHECK_CLOSE(camera.orthoFactorHorizontal(), (1.0f * 2.0f * 1.33f) / 640.0f, 0.01f);
+    BOOST_CHECK_CLOSE(camera.orthoFactorVertical(), (1.0f * 2.0f) / 480.0f, 0.01f);
+
+    // zooming out covers more world per pixel in both directions
+    camera.zoom(1.0f);
+    BOOST_CHECK_CLOSE(camera.orthoFactorHorizontal(), (2.0f * 2.0f * 1.33f) / 640.0f, 0.01f);
+    BOOST_CHECK_CLOSE(camera.orthoFactorVertical(), (2.0f * 2.0f) / 480.0f, 0.01f);
+}

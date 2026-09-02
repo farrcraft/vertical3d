@@ -263,21 +263,25 @@ namespace v3d::type {
     }
 
     bool Camera::orthographic() const {
-        if (profile_.options_ & CameraProfile::OPTION_ORTHOGRAPHIC)
-            return true;
-        return false;
+        return profile_.orthographic();
     }
 
     void Camera::orthographic(bool ortho) {
-        if (ortho)
-            profile_.options_ |= CameraProfile::OPTION_ORTHOGRAPHIC;
-        else
-            profile_.options_ &= ~CameraProfile::OPTION_ORTHOGRAPHIC;
+        profile_.orthographic(ortho);
     }
 
-    float Camera::orthoFactor() {
-        float factor = (profile_.orthoZoom_ * 2.0f * profile_.pixelAspect_) / profile_.size_[0];
-        return factor;
+    float Camera::orthoFactorHorizontal() const {
+        if (profile_.size_[0] == 0) {
+            return 0.0f;
+        }
+        return (profile_.orthoZoom_ * 2.0f * profile_.pixelAspect_) / profile_.size_[0];
+    }
+
+    float Camera::orthoFactorVertical() const {
+        if (profile_.size_[1] == 0) {
+            return 0.0f;
+        }
+        return (profile_.orthoZoom_ * 2.0f) / profile_.size_[1];
     }
 
     void Camera::rotate(const glm::quat& new_rot) {

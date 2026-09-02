@@ -29,12 +29,16 @@ namespace v3d {
             ViewPort(const boost::shared_ptr<Hookah::Window> & window, const boost::shared_ptr<v3d::core::Scene> & scene);
             ~ViewPort();
 
+            /**
+             * Bit flags, ORed together into showFlags_ - each value has to own a bit of
+             * its own or toggling one decoration hides another.
+             */
             typedef enum VisibleFilter {
-                SHOW_GRID = 1,
-                SHOW_CAMERA,
-                SHOW_HANDLE,
-                SHOW_LIGHT,
-                SHOW_MESH
+                SHOW_GRID = (1 << 0),
+                SHOW_CAMERA = (1 << 1),
+                SHOW_HANDLE = (1 << 2),
+                SHOW_LIGHT = (1 << 3),
+                SHOW_MESH = (1 << 4)
             } VisibleFilter;
 
             /**

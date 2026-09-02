@@ -88,7 +88,19 @@ namespace v3d::type {
 
             bool orthographic() const;
             void orthographic(bool ortho);
-            float orthoFactor();
+            /**
+            *	The world units a single horizontal pixel of the viewport covers.
+            *	A screen space drag is turned into a camera move by multiplying it by this.
+            *	The factor is a division by the viewport size, so it is zero until the
+            *	profile has been given one.
+            */
+            float orthoFactorHorizontal() const;
+            /**
+            *	The world units a single vertical pixel of the viewport covers.
+            *	The pixel aspect ratio applies to width only, so the two factors are not
+            *	interchangeable.
+            */
+            float orthoFactorVertical() const;
             /**
             *	Rotate the camera by a given amount.
             *	The rotation tells how to transform the camera into the same space 

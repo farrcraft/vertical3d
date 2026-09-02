@@ -770,11 +770,24 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
   grid, the axis decoration, wireframe display, selected-edge highlighting, and the shafts
   and circles of all three manipulators. `vulkan::PipelineBuilder` already takes `topology()`
   and `polygon()`, so the pipeline is cheap; nothing in the api produces line geometry.
-- **`v3d::type::CameraProfile` is write-only**, which blocks both the `gui.xml` translation
-  and the camera control that has already been ported. It keeps every field and exposes
-  `clipping`, `eye`, `lookat` and `clone`; the rest is `protected` behind
-  `friend class Camera`, and adaptive projection and position were dropped. `orthoFactor()`
-  divides by a viewport size nothing can set.
+- ~~**`v3d::type::CameraProfile` is write-only**, which blocks both the `gui.xml`
+  translation and the camera control that has already been ported.~~ Done 2026-09-01. Every
+  field has a getter and a setter now, `size()` among them, so a profile table can be loaded
+  into one; adaptive projection and position are back as their own option bits, and
+  `OPTION_DEFAULT` — which had no reader, no accessor and sat on rigel's adaptive-projection
+  bit — went to make room. The five-argument constructor `vertical3d/Controller` already
+  calls exists. `orthoFactor()` is gone, replaced by `orthoFactorHorizontal()` and
+  `orthoFactorVertical()`: the pixel aspect ratio belongs to width alone, and the single
+  factor was being used for both axes. Both return zero rather than dividing by an unset
+  viewport size. Three things in `vertical3d/` went with it, none of them built yet:
+  - `ViewPort::resize` writes the camera's viewport size and pixel aspect, which is what
+    makes the ortho factors non-zero, and `ViewPort::VisibleFilter` is `(1 << n)` per value
+    instead of the sequential values it copied from rigel.
+  - `CameraControlTool::buttonPressed` clicks the arcball and a new `resize()` gives it its
+    bounds — the two things the port dropped. Vertical truck uses the vertical factor.
+  - `CameraControlTool::pan` drags the arcball to the point the gesture has reached rather
+    than the one it came from; `motion()` records `last_` only after `pan()` returns, so
+    every rotation was one event stale and the first after a click was identity.
 - Selection needs three things the api does not have: a picking mechanism to replace
   `GL_SELECT` (ray cast or id buffer — worth an ADR), a `dag::Node`/`dag::Transform` base on
   `brep::BRep` so a mesh has an id and a transform, and `selected()` back on `brep::Vertex`,
@@ -784,9 +797,7 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
   current `api/type` and glm; they are commented out of the app's `CMakeLists.txt` because
   they still include `v3dlibs/hookah`, `v3dlibs/gui` and `luxa/`. `HWRenderContext` is the GL
   render context and does not survive
-  [ADR-0001](../adr/0001-vulkan-replaces-opengl.md). `vertical3d/ViewPort.h` has also copied
-  rigel's broken `VisibleFilter` enum verbatim — sequential values used as bit flags — and
-  should be fixed there first.
+  [ADR-0001](../adr/0001-vulkan-replaces-opengl.md).
 - Multiple viewports are the feature that will push hardest on the pass model from
   [ADR-0003](../adr/0003-one-realtime-engine.md). Four views of one scene is four passes
   with four cameras against one device, which the model should already express — this is

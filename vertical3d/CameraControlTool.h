@@ -31,6 +31,12 @@ class CameraControlTool : public v3d::Tool {
         void activate(const std::string & name);
         void deactivate(const std::string & name);
 
+        /**
+         * Resize the view the tool drives. The arcball maps a click onto a sphere the size
+         * of the view, so it has to be told when that size changes.
+         */
+        void resize(unsigned int width, unsigned int height);
+
         // mouse event listener overrides
         void motion(unsigned int x, unsigned int y);
         void buttonPressed(unsigned int button);
