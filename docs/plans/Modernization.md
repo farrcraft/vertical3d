@@ -54,8 +54,10 @@ None of `v3dlibs/`, `luxa/`, `rigel/`, `vertical3d/` or `vault/` is in the root
   rewritten onto the new api, not deleted.
 - **`rigel/` is the earlier prototype of that app** and holds functionality the rewrite
   needs to absorb first — viewport layout, an arcball camera, a construction plane,
-  transform manipulators, and the poly modelling command sets. Two items already on
-  `docs/TODO.md` cover part of this. It can only be deleted after the fold-in.
+  transform manipulators, and the poly modelling command sets. The survey is done,
+  [docs/RigelSurvey.md](../RigelSurvey.md), 2026-09-01: none of it is portable code, the
+  fold-in is a harvest of behaviour plus one XML data file, and the blocking list is eleven
+  items long. It can only be deleted after the fold-in.
 - **`luxa/` and `v3dlibs/` are migrations in progress**, and each needs a functional
   equivalence audit before removal, not an assumption that `api/` covers it.
 - **`vault/quantumxml` is genuinely archived** — an XML parser superseded by the JSON
@@ -753,20 +755,47 @@ The app the repository is named after, and the largest piece of work here. It is
 3D editing tool, which means it needs things no game in this repo does: multiple viewports,
 manipulator gizmos, a construction plane, selection, and an undoable command model.
 
-- Survey `rigel/` and decide what to fold in. It holds the working prototype of most of the
-  above — `ViewLayout`, `ViewPort`, `RenderView`, `ConstructionPlane`, `ArcBall`, the
-  `manipulators/` and the `commands/` sets. `api/type` has already absorbed `ArcBall`,
-  `Camera` and `CameraProfile`, and `api/brep` mirrors `libv3dcore/brep`, so the fold-in is
-  partly done and partly duplicated. Two items on `docs/TODO.md` track the brep and command
-  library merges specifically.
+- ~~Survey `rigel/` and decide what to fold in.~~ Done 2026-09-01, written up in
+  [docs/RigelSurvey.md](../RigelSurvey.md). **Nothing in rigel can be ported.** It is a
+  gtkmm 2 / gtkglextmm / libxml++ application with no build files, whose own support
+  libraries were moved out from under it in 2022; every line of drawing is immediate-mode GL
+  and every line of windowing is GTK. What comes across is behaviour, a handful of
+  algorithms, and `rigel/docs/xml/gui.xml` — the editor's whole menu, toolbar, keybinding,
+  camera-profile and viewport-layout definition, which is a data asset to translate into the
+  JSON config form. `RenderView` turns out to be an empty `Gtk::DrawingArea` and is worth
+  nothing. The survey's eleven-item delete list replaces this bullet.
+- **The api has no line primitive, and that is this phase's largest gap.**
+  [ADR-0005](../adr/0005-one-batched-quad-primitive.md) made the batched quad the one
+  primitive, which four games were happy with. A modeller is mostly lines: the construction
+  grid, the axis decoration, wireframe display, selected-edge highlighting, and the shafts
+  and circles of all three manipulators. `vulkan::PipelineBuilder` already takes `topology()`
+  and `polygon()`, so the pipeline is cheap; nothing in the api produces line geometry.
+- **`v3d::type::CameraProfile` is write-only**, which blocks both the `gui.xml` translation
+  and the camera control that has already been ported. It keeps every field and exposes
+  `clipping`, `eye`, `lookat` and `clone`; the rest is `protected` behind
+  `friend class Camera`, and adaptive projection and position were dropped. `orthoFactor()`
+  divides by a viewport size nothing can set.
+- Selection needs three things the api does not have: a picking mechanism to replace
+  `GL_SELECT` (ray cast or id buffer — worth an ADR), a `dag::Node`/`dag::Transform` base on
+  `brep::BRep` so a mesh has an id and a transform, and `selected()` back on `brep::Vertex`,
+  `HalfEdge` and `BRep`, which kept it only on `Face`.
 - Rewrite `vertical3d/` — `Controller`, `ViewPort`, `CameraControlTool`, `HWRenderContext`
-  — onto the current api. `HWRenderContext` is the GL render context and does not survive
-  [ADR-0001](../adr/0001-vulkan-replaces-opengl.md).
+  — onto the current api. **Three of the four already exist** and are written against the
+  current `api/type` and glm; they are commented out of the app's `CMakeLists.txt` because
+  they still include `v3dlibs/hookah`, `v3dlibs/gui` and `luxa/`. `HWRenderContext` is the GL
+  render context and does not survive
+  [ADR-0001](../adr/0001-vulkan-replaces-opengl.md). `vertical3d/ViewPort.h` has also copied
+  rigel's broken `VisibleFilter` enum verbatim — sequential values used as bit flags — and
+  should be fixed there first.
 - Multiple viewports are the feature that will push hardest on the pass model from
   [ADR-0003](../adr/0003-one-realtime-engine.md). Four views of one scene is four passes
   with four cameras against one device, which the model should already express — this is
-  the app that proves whether it does.
-- Delete `rigel/` once the fold-in is complete, and not before.
+  the app that proves whether it does. The orthographic per-pass camera deferred out of
+  phase 5 lands here.
+- **Undo has no prototype.** Rigel has no undo or redo anywhere, so the undoable command
+  model has to be designed rather than folded in.
+- Delete `rigel/` once the fold-in is complete, and not before. The survey lists what has to
+  land first.
 
 Done when: the editor opens a project, draws a scene from multiple viewports, and rigel has
 nothing left worth taking.
