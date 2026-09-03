@@ -65,6 +65,17 @@
     {
       "source": {
         "context": "keyboard",
+        "name": "h",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "view",
+        "name": "toggleHandle"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
         "name": "1",
         "state": "pressed"
       },
@@ -109,7 +120,51 @@
     {
       "source": {
         "context": "keyboard",
-        "name": "o",
+        "name": "q",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "transform",
+        "name": "select"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "w",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "transform",
+        "name": "translate"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "e",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "transform",
+        "name": "rotate"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "r",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "transform",
+        "name": "scale"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "5",
         "state": "pressed"
       },
       "destination": {
@@ -120,7 +175,7 @@
     {
       "source": {
         "context": "keyboard",
-        "name": "v",
+        "name": "6",
         "state": "pressed"
       },
       "destination": {
@@ -131,7 +186,7 @@
     {
       "source": {
         "context": "keyboard",
-        "name": "e",
+        "name": "7",
         "state": "pressed"
       },
       "destination": {
@@ -142,12 +197,34 @@
     {
       "source": {
         "context": "keyboard",
-        "name": "f",
+        "name": "8",
         "state": "pressed"
       },
       "destination": {
         "context": "select",
         "name": "face"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "z",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "edit",
+        "name": "undo"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "y",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "edit",
+        "name": "redo"
       }
     },
     {

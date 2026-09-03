@@ -47,6 +47,17 @@ namespace v3d::editor {
 
     /**
      **/
+    boost::shared_ptr<v3d::brep::BRep> Scene::selection() const {
+        auto it = std::find_if(meshes_.begin(), meshes_.end(),
+            [](const boost::shared_ptr<v3d::brep::BRep>& mesh) { return mesh->selected(); });
+        if (it == meshes_.end()) {
+            return boost::shared_ptr<v3d::brep::BRep>();
+        }
+        return *it;
+    }
+
+    /**
+     **/
     std::size_t Scene::count() const noexcept {
         return meshes_.size();
     }

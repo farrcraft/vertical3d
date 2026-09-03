@@ -10,9 +10,11 @@
 
 #include "CameraControlTool.h"
 #include "CameraProfiles.h"
+#include "CommandStack.h"
 #include "Scene.h"
 #include "SelectMask.h"
 #include "SelectTool.h"
+#include "TransformTool.h"
 #include "ViewLayout.h"
 #include "ViewPort.h"
 
@@ -80,6 +82,13 @@ namespace v3d::editor {
         bool createPoly(const std::string& name);
 
         /**
+         * Step the history one command in either direction and say so.
+         * @param name either "undo" or "redo"
+         * @return whether the name was one of them
+         **/
+        bool history(const std::string& name);
+
+        /**
          * Build one viewport per leaf of the layout, with the profile it names.
          * @return whether every view could be built
          **/
@@ -91,6 +100,7 @@ namespace v3d::editor {
         void layoutViews(int width, int height);
 
         boost::shared_ptr<Scene> scene_;
+        boost::shared_ptr<CommandStack> commands_;
         boost::shared_ptr<CameraProfiles> profiles_;
         boost::shared_ptr<ViewLayout> layout_;
         std::vector<boost::shared_ptr<ViewPort>> views_;
@@ -98,6 +108,7 @@ namespace v3d::editor {
 
         boost::shared_ptr<CameraControlTool> cameraTool_;
         boost::shared_ptr<SelectTool> selectTool_;
+        boost::shared_ptr<TransformTool> transformTool_;
         boost::shared_ptr<Renderer> renderer_;
 
         glm::vec2 cursor_;

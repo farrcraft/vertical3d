@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "CreateCommand.h"
 #include "CreatePoly.h"
 #include "Renderer.h"
 
@@ -46,6 +47,18 @@ namespace v3d::editor {
          **/
         const char* const selectContext = "select";
 
+        /**
+         * The context undo and redo arrive in, on keys for the same reason - gui.xml has
+         * neither command, so there is no menu binding to translate.
+         **/
+        const char* const editContext = "edit";
+
+        /**
+         * The context the transform tool modes arrive in - gui.xml's transform::*, on the
+         * keys it binds them to.
+         **/
+        const char* const transformContext = "transform";
+
     };  // namespace
 
     /**
@@ -74,6 +87,7 @@ namespace v3d::editor {
         }
 
         scene_ = boost::make_shared<Scene>();
+        commands_ = boost::make_shared<CommandStack>();
 
         profiles_ = boost::make_shared<CameraProfiles>(logger_);
         if (!profiles_->load(config_->get(v3d::config::Type::Camera))) {
@@ -91,6 +105,8 @@ namespace v3d::editor {
 
         cameraTool_ = boost::make_shared<CameraControlTool>();
         selectTool_ = boost::make_shared<SelectTool>(scene_, logger_);
+        transformTool_ = boost::make_shared<TransformTool>(scene_, logger_);
+        transformTool_->commands(commands_);
 
         dispatcher_->sink<v3d::event::Event>().connect<&Controller::handleEvent>(*this);
         dispatcher_->sink<v3d::event::MouseMotion>().connect<&Controller::handleMotion>(*this);
@@ -99,6 +115,7 @@ namespace v3d::editor {
         renderer_ = boost::make_shared<Renderer>(window(), logger_, assetManager_, &registry_);
         renderer_->views(views_);
         renderer_->scene(scene_);
+        renderer_->manipulator(transformTool_->manipulator());
 
         layoutViews(window_->width(), window_->height());
 
@@ -139,11 +156,31 @@ namespace v3d::editor {
             return false;
         }
 
-        // a new mesh is the selected one, which is what the transform tools will act on
-        scene_->deselect();
-        mesh->selected(true);
-        scene_->add(mesh);
+        // the command is what does the creating, so that making a mesh and redoing one are
+        // the same code rather than two that have to agree
+        boost::shared_ptr<CreateCommand> command = boost::make_shared<CreateCommand>(scene_, mesh, name);
+        command->redo();
+        commands_->push(command);
         logger_->get()->info("created a {} - {} meshes", name, scene_->count());
+        return true;
+    }
+
+    /**
+     **/
+    bool Controller::history(const std::string& name) {
+        boost::shared_ptr<Command> command;
+        if (name == "undo") {
+            command = commands_->undo();
+        } else if (name == "redo") {
+            command = commands_->redo();
+        } else {
+            return false;
+        }
+        if (!command) {
+            logger_->get()->info("nothing to {}", name);
+            return true;
+        }
+        logger_->get()->info("{} {}", name, command->name());
         return true;
     }
 
@@ -191,7 +228,7 @@ namespace v3d::editor {
 
         // the view under the cursor is the one a drag would drive - but not while one is
         // under way, or a gesture that wandered over a border would change camera mid drag
-        if (cameraTool_ && !cameraTool_->dragging()) {
+        if (cameraTool_ && !cameraTool_->dragging() && transformTool_ && !transformTool_->dragging()) {
             const std::size_t index = layout_->viewAt(cursor_.x, cursor_.y);
             if (index < views_.size()) {
                 activeView_ = views_[index];
@@ -199,11 +236,15 @@ namespace v3d::editor {
                 if (selectTool_) {
                     selectTool_->view(activeView_);
                 }
+                transformTool_->view(activeView_);
             }
         }
 
         if (cameraTool_) {
             cameraTool_->motion(cursor_);
+        }
+        if (transformTool_) {
+            transformTool_->motion(cursor_);
         }
         if (selectTool_) {
             selectTool_->motion(cursor_);
@@ -230,9 +271,24 @@ namespace v3d::editor {
             return;
         }
 
+        if (event.context()->name() == editContext) {
+            if (event.state() != v3d::event::State::Released) {
+                history(std::string(event.name()));
+            }
+            return;
+        }
+
         if (event.context()->name() == selectContext) {
             if (event.state() != v3d::event::State::Released) {
                 selectTool_->activate(std::string(event.name()));
+            }
+            return;
+        }
+
+        if (event.context()->name() == transformContext) {
+            if (event.state() != v3d::event::State::Released) {
+                transformTool_->activate(std::string(event.name()));
+                renderer_->manipulator(transformTool_->manipulator());
             }
             return;
         }
@@ -248,10 +304,14 @@ namespace v3d::editor {
             // mapped event - the binding names which button it is
             const bool pressed = event.state() == v3d::event::State::Pressed;
             cameraTool_->button(1, pressed, cursor_);
-            // one button, two tools: a modifier held means the drag is driving a camera,
-            // so a bare click is what picks
+            // one button, three tools. A modifier held means the drag is driving a camera;
+            // otherwise a handle of the selection takes the press if the cursor is on one,
+            // and a press no handle took is what picks
             if (cameraTool_->mode() == CameraControlTool::CAMERA_MODE_NONE) {
-                selectTool_->button(1, pressed, cursor_);
+                transformTool_->button(1, pressed, cursor_);
+                if (!transformTool_->dragging()) {
+                    selectTool_->button(1, pressed, cursor_);
+                }
             }
             return;
         }
@@ -266,6 +326,13 @@ namespace v3d::editor {
         if (name == "toggleMesh") {
             if (activeView_) {
                 activeView_->show(ViewPort::SHOW_MESH, !activeView_->shows(ViewPort::SHOW_MESH));
+            }
+            return;
+        }
+
+        if (name == "toggleHandle") {
+            if (activeView_) {
+                activeView_->show(ViewPort::SHOW_HANDLE, !activeView_->shows(ViewPort::SHOW_HANDLE));
             }
             return;
         }

@@ -93,7 +93,7 @@ them completely.
 | `vertical3d/commands/CreatePolyCommandSet` | `v3d::editor::create_poly_*` in `vertical3d/src` | **Moved 2026-09-02.** Four free functions returning a `brep::BRep`; the command wrapper is gone. The cone and the cylinder were rebuilt about +y, centred like the cube and the plane, and the cone's ring had an uninitialised third coordinate. |
 | `ViewPort`'s camera modes | `vertical3d/CameraControlTool` | **Ported, with two things dropped** — see the defects. |
 | `Window`'s keybinding table | `api/config` + `api/input` + `api/event` | Covered and better: `mappings.json` and `event::Mapper` do what `load_keybindings` did without the hardcoded key switch. |
-| `libv3dcommand/Tool` | `v3d::Tool` in `vertical3d/` | **Half.** `activate`/`deactivate` only; `motion`, `button` and `draw` unported. |
+| `libv3dcommand/Tool` | `v3d::editor::Tool` in `vertical3d/src` | **Ported bar `draw`.** `activate`, `deactivate`, `motion` and `button`; a tool that draws feedback does it through the manipulator it holds rather than through the interface. |
 
 The other thing already done is the one the plan does not mention at all: `vertical3d/` is not
 an empty shell. It has a `ViewPort`, a `Controller` with a tool map and camera-profile
@@ -191,19 +191,24 @@ ever asked for.
    scene serialisation anywhere in the repository. `api/config` and `api/asset` are JSON, so
    this is a format decision as much as a port.
 
-9. **Undo.** Rigel has none — a case-insensitive search for undo or redo over the whole tree
-   returns nothing. The plan lists an undoable command model among the things phase 6 needs
-   and lists rigel as holding "the working prototype of most of the above"; on this one it
-   holds nothing.
+9. ~~**Undo.**~~ **Designed 2026-09-02**, as
+   [ADR-0016](adr/0016-undo-records-what-has-already-happened.md). Rigel has none — a
+   case-insensitive search for undo or redo over the whole tree returns nothing — so this one
+   was scoped independently rather than folded in, and the plan's claim that rigel holds "the
+   working prototype of most of the above" never covered it. A command is a record of a
+   change already made, one gesture is one command, and `TransformTool` is where a gesture's
+   ends are known.
 
 Items 1, 2 and 6 are the ones that gate everything else - a modeller that cannot draw a line,
-cannot configure a camera and cannot show four views is not a modeller. All three landed on
-2026-09-01: the editor builds, runs, and draws a construction grid through four viewports of
-one scene. Items 4, 5 and 3 landed on 2026-09-02, and the editor draws a scene and selects
-what is in it. What is left of this list is items 7, 8 and 9 - the interactive command model,
-project persistence and undo. Item 7 is half done: `SelectTool` is the second `Tool` and does
-receive motion and button events, but nothing draws feedback while active the way
-`SplitEdgeTool` did, and there is still no `Command` and no tool map.
+cannot configure a camera and cannot show four views is not a modeller. Two of the three
+landed on 2026-09-01: the editor builds, runs, and draws a construction grid through four
+viewports of one scene. Items 4, 5, 3, 6 and 9 landed on 2026-09-02, and the editor draws a
+scene, selects what is in it, moves what is selected and takes it back. What is left of this
+list is items 7 and 8 - the interactive command model and project persistence. Item 7 is most
+of the way there: `SelectTool` and `TransformTool` are `Tool`s that receive motion and button
+events, `TransformTool` draws its own feedback the way `SplitEdgeTool` did, and there is a
+`Command` now - but it is the undoable half of one per ADR-0016 rather than the invocable
+half rigel's `CommandDirectory` held, and there is still no tool map.
 
 ## Defects found
 
@@ -219,8 +224,8 @@ the tree has not compiled since 2022.
   `vertical3d/ViewPort.h` had copied the broken enum verbatim; **fixed there 2026-09-01**,
   since that file is the one that survives.
 
-- **`TranslateManipulator::transform` throws away the x component of a free drag, and treats
-  a frame delta as an absolute position.** The unconstrained branch reads
+- ~~**`TranslateManipulator::transform` throws away the x component of a free drag, and treats
+  a frame delta as an absolute position.**~~ **Fixed in the port, 2026-09-02.** The unconstrained branch reads
   `t = camera->right() * mouse_delta[0];` and then `t = camera->up() * -mouse_delta[1];` —
   an assignment, not an accumulation — so horizontal movement is discarded. It then calls
   `_selection->translation(t)`, setting the object's translation to one frame's delta rather
@@ -241,7 +246,8 @@ the tree has not compiled since 2022.
   also uninitialised, the constructor's initialiser list covering only the two fields that
   are used.
 
-- **`TransformManipulator` leaves `_coordinateSpace` uninitialised.** The constructor
+- ~~**`TransformManipulator` leaves `_coordinateSpace` uninitialised.**~~ **Fixed in the
+  port, 2026-09-02.** The constructor
   initialises `_axisConstraint` and nothing else, so a manipulator is in global or local
   space depending on what was on the heap. Nothing reads it yet, which is the only reason it
   does not show.
@@ -375,8 +381,14 @@ games; it is blocked by the api never having had a customer that draws lines or 
    name-space scheme is not ported — a typed `Hit` replaces it.
    `Camera::project()` and `::unproject()` are inverses of each other as of 2026-09-01,
    which a ray cast would be built on; they were not before.
-6. Port the three manipulators onto lines and the picking decision, fixing the translate
-   defect and the uninitialised coordinate space on the way.
+6. ~~Port the three manipulators onto lines and the picking decision, fixing the translate
+   defect and the uninitialised coordinate space on the way.~~ Done 2026-09-02, recorded as
+   [ADR-0015](adr/0015-manipulators-write-the-object-transform.md). A handle writes the
+   mesh's `dag::Transform`, is drawn at the object's own origin because that is where the
+   transform pivots, and is picked by projecting itself to the screen. Both defects are
+   fixed and the coordinate space is initialised. Rigel's centring on the selected
+   components is not ported: rotation and scale pivot at the origin, so a gizmo drawn at a
+   face's centre would turn the object about a point it is not drawn at.
 7. ~~Port `ConstructionPlane` onto lines, either implementing autoscale or dropping its
    interface.~~ Done 2026-09-01, in `vertical3d/src/ConstructionPlane.cxx`. Autoscale and
    `infinite` are dropped: neither had a reader in rigel either — `_autoscale`, `_infinite`
@@ -391,8 +403,8 @@ games; it is blocked by the api never having had a customer that draws lines or 
     first.~~ Done 2026-09-01, and it wanted 2 and 3 but not 6. Four passes over one frame,
     each with its region and its camera.
 
-Undo is on the phase 6 list and rigel contributes nothing to it; it should be scoped
-independently rather than treated as a fold-in.
+~~Undo is on the phase 6 list and rigel contributes nothing to it; it should be scoped
+independently rather than treated as a fold-in.~~ Done that way on 2026-09-02, as ADR-0016.
 
 Delete `rigel/` when 1 through 10 have landed. `docs/xml/gui.xml`, the four icons and this
 document are what should outlive it.

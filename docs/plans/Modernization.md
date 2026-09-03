@@ -907,9 +907,16 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
     what is selected - a selected object recolours, a selected face draws its boundary in the
     component colour and a selected vertex draws a small box, there being no filled primitive
     to shade either with - and the mask keys switch what a click looks for.
+  - **The manipulators landed 2026-09-02**, per ADR-0015 above: q, w, e and r choose between
+    none, translate, rotate and scale, a handle takes a bare press if the cursor is on one
+    and a press no handle took is what picks, and the handles are drawn in an overlay pass
+    per viewport. The select masks moved off o, v, e and f to the digits 5 to 8, because
+    gui.xml binds e to the rotate tool.
+  - **Undo landed 2026-09-02**, per ADR-0016 below: z and y step the history, a create and a
+    whole transform gesture are each one step, and `CommandStack` is the editor's.
   - Not yet: `Controller` has no tool map and no ui - the menus, toolbars and 51 command
-    strings of `gui.xml` are still untranslated - and a mesh can be created, drawn and
-    selected but not moved or saved.
+    strings of `gui.xml` are still untranslated - and a mesh can be created, drawn, selected,
+    moved and taken back but not saved.
 - ~~Multiple viewports are the feature that will push hardest on the pass model from
   [ADR-0003](../adr/0003-one-realtime-engine.md).~~ Done 2026-09-01, and **the model
   expressed it**. Four views is four `Pass`es over one `Frame`: each carries its region as
@@ -919,15 +926,67 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
   honoured a pass viewport. What did have to change was the one-canvas-per-frame limit
   above, which is a renderer defect rather than a model one. The orthographic per-pass
   camera deferred out of phase 5 lands with ADR-0012.
-- **Undo has no prototype.** Rigel has no undo or redo anywhere, so the undoable command
-  model has to be designed rather than folded in.
+- ~~The three manipulators.~~ Landed 2026-09-02 as
+  [ADR-0015](../adr/0015-manipulators-write-the-object-transform.md). A handle writes the
+  mesh's `dag::Transform` and never its geometry, is drawn at the object's own origin
+  because that is where the transform pivots, and is picked by projecting itself to the
+  screen and measuring the cursor's distance from it. `Manipulator` is the base - an axis
+  constraint, a coordinate space, and a placement giving the origin, the alignment and a
+  handle length that is a constant number of pixels converted through the view;
+  `TranslateManipulator`, `RotateManipulator` and `ScaleManipulator` are the three, and
+  `TransformTool` is the third `Tool`, with q, w, e and r choosing which is in force.
+  - **A drag is measured rather than read.** `apply()` is given the two cursor positions
+    either side of one motion event and adds what it measures. Both rigel defects go with
+    that: a free drag keeps its horizontal component, and a translate accumulates instead of
+    writing one frame's delta as an absolute position. The uninitialised coordinate space
+    goes too.
+  - An axis drag is the gesture's component along the projected handle, and a rotate ring
+    turns by how far the cursor swept round the origin on screen. Rigel asked instead whether
+    an axis was more horizontal or more vertical and used that whole component, which is the
+    same answer only for an axis aligned view.
+  - **The handles are an overlay**: a second pass per viewport with no depth attachment, over
+    what the scene pass left, per ADR-0011. A handle shares its plane with the construction
+    grid's own axis lines, and the depth test decides between them arbitrarily.
+  - A ring within about eight degrees of edge on is not offered to a click. Its projection is
+    a line through the middle of the manipulator whose ends land on the rim of the ring
+    facing the camera, so it would take the clicks meant for that rim.
+  - Still open: a component mode selects a face and then moves the object, because a
+    manipulator writes the transform. Moving a component is a modelling operation and there
+    is none.
+- ~~**Undo has no prototype.**~~ Designed and landed 2026-09-02 as
+  [ADR-0016](../adr/0016-undo-records-what-has-already-happened.md). Rigel has no undo or
+  redo anywhere, so there was nothing to fold in. **A command is a record of a change that
+  has already been made**, not a request to make one: `Command` has `undo()`, `redo()` and
+  `name()` and no `execute()`, and `CommandStack::push` never applies anything. That is what
+  an interactive gesture needs - a drag applies a manipulator on every motion event, because
+  it cannot wait for its own end to show what it is doing, so by the time anything can be
+  recorded the change has been made several hundred times over.
+  - **One gesture is one command.** `TransformTool` is where a gesture's beginning and end
+    are known, so it snapshots the placement when a handle is grabbed and pushes a
+    `TransformCommand` when the drag ends. Every path out of a drag commits - a release and
+    a mode change that drops the drag alike - and a handle grabbed and released without
+    moving records nothing.
+  - `CreateCommand` is the other one, and the first do goes through its `redo()`, so making
+    a mesh and redoing one are the same code rather than two that have to agree.
+  - A command holds the mesh it acts on rather than its id: a mesh taken out of the scene by
+    an undo stays alive in the command that removed it and comes back with the id it had, so
+    a transform command deeper in the history still names the same object.
+  - Selection is not history. Undo keeps the scene's own invariant that at most one mesh is
+    selected and restores nothing else, so undoing a create leaves nothing selected.
+  - Undo and redo are on z and y, unmodified: a mapping binds one key with one state and has
+    no notion of a chord, so ctrl-z is not expressible and control is already the truck
+    camera modifier. Placeholder keys, like the create and select mask ones.
+  - Verified against a run: a cylinder created, undone, undone again against an empty
+    history and redone, with the validation layer silent.
+  - Still open: nothing but a create and a transform is undoable, and a modelling operation
+    that edits geometry will need to record the topology it changed rather than a placement.
 - Delete `rigel/` once the fold-in is complete, and not before. The survey lists what has to
   land first.
 
 Done when: the editor opens a project, draws a scene from multiple viewports, and rigel has
-nothing left worth taking. It draws a scene from multiple viewports as of 2026-09-02, and
-selects what is in it; there is no project - nothing loads or saves one - and nothing moves a
-selection, which is the manipulators.
+nothing left worth taking. It draws a scene from multiple viewports as of 2026-09-02, selects
+what is in it, moves, turns and resizes what is selected, and takes any of it back. There is
+no project - nothing loads or saves one - and there are no menus.
 
 ### Ongoing — tests
 

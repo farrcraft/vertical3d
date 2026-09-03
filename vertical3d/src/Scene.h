@@ -44,6 +44,14 @@ namespace v3d::editor {
         boost::shared_ptr<v3d::brep::BRep> mesh(unsigned int id) const;
 
         /**
+         * @return the selected mesh, or an empty pointer.
+         *
+         * One thing is selected at a time, so the first selected mesh is the selection.
+         * The transform tools act on it, and component selection lives inside it.
+         **/
+        boost::shared_ptr<v3d::brep::BRep> selection() const;
+
+        /**
          * @return how many meshes the scene holds
          **/
         std::size_t count() const noexcept;

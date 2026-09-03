@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "Manipulator.h"
 #include "WireframeVisitor.h"
 
 #include <boost/make_shared.hpp>
@@ -18,7 +19,7 @@ namespace v3d::editor {
     ViewPort::ViewPort(const std::string& name, const v3d::type::CameraProfile& profile) :
         name_(name),
         region_(0.0f, 0.0f, 0.0f, 0.0f),
-        showFlags_(SHOW_GRID | SHOW_MESH) {
+        showFlags_(SHOW_GRID | SHOW_MESH | SHOW_HANDLE) {
         camera_ = boost::make_shared<v3d::type::Camera>(profile);
     }
 
@@ -89,11 +90,15 @@ namespace v3d::editor {
 
     /**
      **/
-    void ViewPort::draw(const Scene& scene, v3d::render::realtime::LineCanvas* canvas) {
+    void ViewPort::draw(const Scene& scene, const Manipulator* manipulator,
+        v3d::render::realtime::LineCanvas* canvas, v3d::render::realtime::LineCanvas* handles) {
         if (canvas == nullptr) {
             return;
         }
         canvas->clear();
+        if (handles != nullptr) {
+            handles->clear();
+        }
 
         // the matrices are rebuilt once a frame rather than on every camera move, so a
         // frame sees one consistent view however many moves went into it
@@ -107,6 +112,10 @@ namespace v3d::editor {
         if (shows(SHOW_MESH)) {
             WireframeVisitor wireframe(canvas);
             scene.accept(&wireframe);
+        }
+
+        if (shows(SHOW_HANDLE) && manipulator != nullptr && handles != nullptr) {
+            manipulator->draw(scene.selection(), *this, handles);
         }
     }
 

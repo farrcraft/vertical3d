@@ -22,6 +22,11 @@ namespace v3d::editor {
          **/
         const glm::vec4 background(0.16f, 0.17f, 0.19f, 1.0f);
 
+        /**
+         * What a view's handle pass is called, on the end of the view's own name.
+         **/
+        const char* const handleSuffix = " handles";
+
     };  // namespace
 
     /**
@@ -46,12 +51,19 @@ namespace v3d::editor {
     void Renderer::views(const std::vector<boost::shared_ptr<ViewPort>>& views) {
         views_ = views;
         canvases_.resize(views_.size());
+        overlays_.resize(views_.size());
     }
 
     /**
      **/
     void Renderer::scene(const boost::shared_ptr<Scene>& scene) {
         scene_ = scene;
+    }
+
+    /**
+     **/
+    void Renderer::manipulator(const boost::shared_ptr<Manipulator>& manipulator) {
+        manipulator_ = manipulator;
     }
 
     /**
@@ -75,7 +87,7 @@ namespace v3d::editor {
                 continue;
             }
 
-            view->draw(scene, &canvases_[index]);
+            view->draw(scene, manipulator_.get(), &canvases_[index], &overlays_[index]);
 
             boost::shared_ptr<v3d::render::realtime::Pass> pass = frame->pass(view->name());
             pass->viewport(view->region());
@@ -85,8 +97,19 @@ namespace v3d::editor {
             pass->depth(true);
             pass->camera(view->camera()->view(), view->camera()->projection());
 
+            // the handles go over the top of what the scene pass left, undepth tested, so
+            // that a handle lying in the plane of the grid is not lost to it
+            boost::shared_ptr<v3d::render::realtime::Pass> overlay = frame->pass(view->name() + handleSuffix);
+            overlay->viewport(view->region());
+            overlay->keepColour();
+            overlay->depth(false);
+            overlay->camera(view->camera()->view(), view->camera()->projection());
+
             if (lines) {
                 lines->submit(canvases_[index], pass.get());
+                if (!overlays_[index].empty()) {
+                    lines->submit(overlays_[index], overlay.get());
+                }
             }
         }
 
