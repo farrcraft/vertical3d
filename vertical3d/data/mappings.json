@@ -7,7 +7,7 @@
       },
       "destination": {
         "context": "view",
-        "name": "zoomCamera"
+        "name": "camera::zoom"
       }
     },
     {
@@ -17,7 +17,7 @@
       },
       "destination": {
         "context": "view",
-        "name": "truckCamera"
+        "name": "camera::truck"
       }
     },
     {
@@ -27,7 +27,7 @@
       },
       "destination": {
         "context": "view",
-        "name": "panCamera"
+        "name": "camera::pan"
       }
     },
     {
@@ -48,7 +48,7 @@
       },
       "destination": {
         "context": "view",
-        "name": "toggleGrid"
+        "name": "show::grid"
       }
     },
     {
@@ -59,7 +59,7 @@
       },
       "destination": {
         "context": "view",
-        "name": "toggleMesh"
+        "name": "show::mesh"
       }
     },
     {
@@ -70,7 +70,7 @@
       },
       "destination": {
         "context": "view",
-        "name": "toggleHandle"
+        "name": "show::handle"
       }
     },
     {
@@ -81,7 +81,7 @@
       },
       "destination": {
         "context": "create",
-        "name": "cube"
+        "name": "poly::cube"
       }
     },
     {
@@ -92,7 +92,7 @@
       },
       "destination": {
         "context": "create",
-        "name": "plane"
+        "name": "poly::plane"
       }
     },
     {
@@ -103,7 +103,7 @@
       },
       "destination": {
         "context": "create",
-        "name": "cylinder"
+        "name": "poly::cylinder"
       }
     },
     {
@@ -114,7 +114,7 @@
       },
       "destination": {
         "context": "create",
-        "name": "cone"
+        "name": "poly::cone"
       }
     },
     {
@@ -169,7 +169,7 @@
       },
       "destination": {
         "context": "select",
-        "name": "object"
+        "name": "mask::object"
       }
     },
     {
@@ -180,7 +180,7 @@
       },
       "destination": {
         "context": "select",
-        "name": "vertex"
+        "name": "mask::vertex"
       }
     },
     {
@@ -191,7 +191,7 @@
       },
       "destination": {
         "context": "select",
-        "name": "edge"
+        "name": "mask::edge"
       }
     },
     {
@@ -202,7 +202,29 @@
       },
       "destination": {
         "context": "select",
-        "name": "face"
+        "name": "mask::face"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "o",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "project",
+        "name": "load"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "s",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "project",
+        "name": "save"
       }
     },
     {

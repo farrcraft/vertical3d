@@ -361,8 +361,10 @@ games; it is blocked by the api never having had a customer that draws lines or 
    **Half done 2026-09-01.** The camera profile table is `data/cameras.json`, the viewport
    layout is `data/layout.json`, and the camera bindings are `data/mappings.json`; both new
    files load through `api/config`, which gained a `camera` and a `layout` type for them.
-   The menus, the two toolbars and the 51 command strings behind them are not translated,
-   and want item 8 first — there is nothing yet for a menu item to invoke.
+   The command strings behind the menus are translated as of 2026-09-02 — item 8 registers
+   nineteen of them under gui.xml's own names, and item 9 adds `project::load` and
+   `project::save`, so a menu item has something to invoke. The menus themselves and the two
+   toolbars are not translated.
 2. ~~Give `api/type::CameraProfile` back its accessors, including the viewport size that
    `orthoFactor()` divides by, and decide whether adaptive projection and position come
    back.~~ Done 2026-09-01, both options included.
@@ -394,10 +396,30 @@ games; it is blocked by the api never having had a customer that draws lines or 
    `infinite` are dropped: neither had a reader in rigel either — `_autoscale`, `_infinite`
    and `_scaleFactor` were set and never used. Line width goes with them, per ADR-0011;
    colour carries the emphasis the origin lines had.
-8. Port the five command sets onto `api/event` contexts, and decide what a `Tool` is in the
-   api now that `event::Engine` dispatches by name. `vertical3d/src/Tool.h` now has the
-   motion and button half as well as activate/deactivate, which is the shape to lift.
-9. Decide the project file format and port `ProjectCommandSet::read`/`write` onto it.
+8. ~~Port the five command sets onto `api/event` contexts, and decide what a `Tool` is in
+   the api now that `event::Engine` dispatches by name.~~ Done 2026-09-02, recorded as
+   [ADR-0017](adr/0017-a-command-is-a-name-in-a-context.md). A command is identified by its
+   context and name together, which is what `Event::str()` returns and what a binding and a
+   menu item both carry, so `v3d::editor::CommandDirectory` maps that string to a handler
+   and `Controller::handleEvent` is a lookup. `data/mappings.json` was rewritten onto
+   gui.xml's own command names, so the menu translation of item 1 now has commands to name.
+   `Tool` stays in the editor: no game holds a gesture open across events, and one consumer
+   is not a library. 21 of gui.xml's 51 commands have handlers, out of 24 registrations; the
+   other 30 log themselves as unregistered rather than being dropped, which is what makes
+   item 1 checkable.
+9. ~~Decide the project file format and port `ProjectCommandSet::read`/`write` onto it.~~
+   Done 2026-09-02, recorded as
+   [ADR-0018](adr/0018-a-project-is-json-and-stores-topology-verbatim.md). The shape is
+   rigel's - a project of meshes, each a transform and flat lists of vertices, half edges
+   and faces addressed by index - in JSON rather than XML, because the library rigel parsed
+   with is gtkmm's and `vault/quantumxml` was archived when the JSON config work replaced
+   it. `v3d::editor::Project` is the reader and the writer. Three departures: the topology
+   is written index for index rather than rebuilt through `BRep::addFace`, which welds and
+   pairs by search and would renumber the mesh; the selection rigel stored on every mesh,
+   vertex, edge and face is not stored, being where the user is rather than what the
+   document holds; and there is no scene array, the editor having one `Scene` and the
+   `version` field being what makes adding the level cheap. Rigel's `Window::fileChooser`
+   has no counterpart, so both commands work on one document at a fixed path.
 10. Settle `api/brep`'s three unbuilt files — port or delete.
 11. ~~Multiple viewports, which is the phase's headline feature and wants items 2, 3 and 6
     first.~~ Done 2026-09-01, and it wanted 2 and 3 but not 6. Four passes over one frame,
@@ -406,5 +428,5 @@ games; it is blocked by the api never having had a customer that draws lines or 
 ~~Undo is on the phase 6 list and rigel contributes nothing to it; it should be scoped
 independently rather than treated as a fold-in.~~ Done that way on 2026-09-02, as ADR-0016.
 
-Delete `rigel/` when 1 through 10 have landed. `docs/xml/gui.xml`, the four icons and this
-document are what should outlive it.
+Delete `rigel/` when 1 through 10 have landed - 1 and 10 are what is left. `docs/xml/gui.xml`,
+the four icons and this document are what should outlive it.

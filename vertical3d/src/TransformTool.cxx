@@ -156,6 +156,17 @@ namespace v3d::editor {
 
     /**
      **/
+    void TransformTool::cancel() {
+        dragged_.reset();
+        boost::shared_ptr<Manipulator> current = manipulator();
+        if (current) {
+            current->active(false);
+        }
+        dragging_ = false;
+    }
+
+    /**
+     **/
     void TransformTool::commit() {
         boost::shared_ptr<v3d::brep::BRep> mesh = dragged_;
         dragged_.reset();

@@ -93,6 +93,13 @@ namespace v3d::editor {
          **/
         bool dragging() const noexcept;
 
+        /**
+         * End a drag without recording it, which is what replacing the scene does: the
+         * mesh the gesture is holding is leaving the document, so there is nothing left
+         * for a command to be undone against. The mode is kept.
+         **/
+        void cancel();
+
      private:
         /**
          * Record the gesture that has just ended, if it moved anything. Every path out of a

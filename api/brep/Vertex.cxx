@@ -5,12 +5,14 @@
 
 #include "Vertex.h"
 
+#include "HalfEdge.h"
+
 namespace v3d::brep {
 
-Vertex::Vertex() : selected_(false) {
+Vertex::Vertex() : edge_(static_cast<unsigned int>(INVALID_ID)), selected_(false) {
 }
 
-Vertex::Vertex(const glm::vec3& p) : point_(p), selected_(false) {
+Vertex::Vertex(const glm::vec3& p) : point_(p), edge_(static_cast<unsigned int>(INVALID_ID)), selected_(false) {
 }
 
 Vertex::~Vertex() {

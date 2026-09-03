@@ -914,9 +914,15 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
     gui.xml binds e to the rotate tool.
   - **Undo landed 2026-09-02**, per ADR-0016 below: z and y step the history, a create and a
     whole transform gesture are each one step, and `CommandStack` is the editor's.
-  - Not yet: `Controller` has no tool map and no ui - the menus, toolbars and 51 command
-    strings of `gui.xml` are still untranslated - and a mesh can be created, drawn, selected,
-    moved and taken back but not saved.
+  - **The command directory landed 2026-09-02**, per ADR-0017 below: a command is its
+    context and name together, `CommandDirectory` maps that to a handler, and
+    `Controller::handleEvent` is a lookup rather than the chain of context and name
+    comparisons it had been. `data/mappings.json` now names gui.xml's own commands.
+  - **A project saves and opens as of 2026-09-02**, per ADR-0018 below: `project::load` and
+    `project::save` read and write one JSON document, and `v3d::editor::Project` is the
+    reader and the writer.
+  - Not yet: there is no ui - the menus and the two toolbars of `gui.xml` are still
+    untranslated, and 30 of its 51 commands have no handler.
 - ~~Multiple viewports are the feature that will push hardest on the pass model from
   [ADR-0003](../adr/0003-one-realtime-engine.md).~~ Done 2026-09-01, and **the model
   expressed it**. Four views is four `Pass`es over one `Frame`: each carries its region as
@@ -980,13 +986,61 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
     history and redone, with the validation layer silent.
   - Still open: nothing but a create and a transform is undoable, and a modelling operation
     that edits geometry will need to record the topology it changed rather than a placement.
+- ~~**There is nothing a menu item could invoke.**~~ Landed 2026-09-02 as
+  [ADR-0017](../adr/0017-a-command-is-a-name-in-a-context.md), which is item 8 of the
+  survey's delete list. A command is identified by its context and name together -
+  `Event::str()`, which is the form gui.xml's 51 command strings are already in - and
+  `v3d::editor::CommandDirectory` maps that to a handler. A key binding and a menu item carry
+  the same `event::Event`, so both reach the same handler with nothing added for the second.
+  - The command names are gui.xml's, and `data/mappings.json` was rewritten onto them, so
+    translating the menus is now writing the menu tree rather than also inventing a name
+    table. `ui::quit` and `edit::undo`/`edit::redo` are the two deviations - gui.xml gives
+    quit no context and has no history commands at all.
+  - **Only a destination event is a command**, which fixes a defect the old chain hid: every
+    keypress reached the editor's handler twice, once as itself and once as what it mapped
+    to, and the chain dropped the raw one silently because its `keyboard` context matched
+    none of the six it knew.
+  - An unregistered command is logged rather than ignored, and `names()` says what the editor
+    can do, so a translated menu is checkable against it. The 24 registrations cover 21 of
+    the 51; the other 30 have no handler.
+  - **`Tool` stays in the editor**, which is the other half of survey item 8. No game in the
+    repository holds a gesture open across events, and one consumer is not a library.
+- ~~**A project is not saved anywhere.**~~ Landed 2026-09-02 as
+  [ADR-0018](../adr/0018-a-project-is-json-and-stores-topology-verbatim.md), which is item 9
+  of the survey's delete list. A project is a JSON document holding a version, a name and one
+  array of meshes - rigel's `<project>`/`<scene>`/`<mesh>` shape in the encoding the tree
+  already parses, since the XML library rigel used went with `vault/quantumxml`.
+  - **The topology is stored as it stands** rather than as the calls that would rebuild it.
+    `BRep::addFace(points, normal)` welds vertices and pairs edges by search, so a mesh
+    rebuilt through it comes back renumbered, and anything that names an index - a selection,
+    a modelling record, a per-face material - would then name something else. Written index
+    for index, a round trip is the identity.
+  - Neither a mesh's id nor its selection is stored. An id comes from a process wide counter
+    and a saved one would collide with a mesh already loaded; selection is where the user is
+    rather than what the document holds, which is the rule ADR-0016 applies to history.
+  - A file the reader does not fully understand is refused rather than loaded as far as it
+    gets, and the document in memory is left alone. An index naming a vertex, edge or face
+    the mesh does not hold is what the wireframe and the picker would walk off the end of.
+  - `Vertex::edge_` turned out to have no writer in any construction path and no reader
+    outside its own test, so it was indeterminate on every mesh in the tree. It is
+    initialised to `INVALID_ID` now, and is not one of the things a file carries.
+  - Reading clears the history: the commands describe a scene that no longer exists.
+    `TransformTool::cancel()` is new for the same reason - a gesture under way is holding a
+    mesh the read is about to take out of the scene.
+  - Verified against a run: a cube and a cylinder created and saved, a plane created, the
+    file loaded back over all three, and an undo after it reporting an empty history - with
+    the validation layer silent.
+  - Still open: there is no file chooser, so both commands work on one document at a fixed
+    path beside the executable. No "save as", no dirty flag, and nothing warns before a load
+    replaces unsaved work.
 - Delete `rigel/` once the fold-in is complete, and not before. The survey lists what has to
-  land first.
+  land first: the menus and toolbars of item 1.
 
 Done when: the editor opens a project, draws a scene from multiple viewports, and rigel has
 nothing left worth taking. It draws a scene from multiple viewports as of 2026-09-02, selects
-what is in it, moves, turns and resizes what is selected, and takes any of it back. There is
-no project - nothing loads or saves one - and there are no menus.
+what is in it, moves, turns and resizes what is selected, takes any of it back, dispatches
+every one of those by name, and saves and opens what it has made. There are no menus, which is
+the last of it.
 
 ### Ongoing — tests
 
@@ -1000,6 +1054,7 @@ the app ones for tetris, voxel and the editor included. Coverage is `type`, `bre
 canvas's batching, transform stack and projection - and `ui`, whose ComponentRenderer is
 testable because it takes text measuring and writing as callbacks. Still uncovered: `asset`,
 `config`, `dag`, `ecs`, `audio`, `log`, and everything in `api/render` below the recorder.
+230 cases as of 2026-09-02, the editor's command directory and project file included.
 
 `pong/run-unit-tests.sh` and `tetris/run-unit-tests.sh` still invoke a `unit_tests` binary
 that no CMakeLists builds; they belong to tier 3 and are stale until it lands.

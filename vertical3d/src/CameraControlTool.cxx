@@ -20,11 +20,11 @@ namespace v3d::editor {
     /**
      **/
     void CameraControlTool::activate(const std::string& name) {
-        if (name == "zoomCamera") {
+        if (name == "zoom") {
             mode_ = CAMERA_MODE_ZOOM;
-        } else if (name == "truckCamera") {
+        } else if (name == "truck") {
             mode_ = CAMERA_MODE_TRUCK;
-        } else if (name == "panCamera") {
+        } else if (name == "pan") {
             mode_ = CAMERA_MODE_PAN;
         }
     }

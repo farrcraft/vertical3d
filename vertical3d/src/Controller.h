@@ -10,7 +10,9 @@
 
 #include "CameraControlTool.h"
 #include "CameraProfiles.h"
+#include "CommandDirectory.h"
 #include "CommandStack.h"
+#include "Project.h"
 #include "Scene.h"
 #include "SelectMask.h"
 #include "SelectTool.h"
@@ -58,7 +60,8 @@ namespace v3d::editor {
         bool shutdown() override;
 
         /**
-         * A mapped event - a camera mode modifier, a drag, or a command.
+         * A mapped event. Its identity is a command name, so this is a lookup in the
+         * directory and nothing else.
          **/
         void handleEvent(const v3d::event::Event& event);
 
@@ -75,18 +78,61 @@ namespace v3d::editor {
 
      private:
         /**
-         * Put one of the polygon primitives into the scene, at the origin.
-         * @param name which primitive, as the create binding names it
-         * @return whether the name was one of them
+         * Register a handler for every command the editor answers to. What is not in here
+         * is what the editor cannot do, which is how an untranslated menu item reports
+         * itself.
          **/
-        bool createPoly(const std::string& name);
+        void registerCommands();
+
+        /**
+         * Put one of the polygon primitives into the scene, at the origin.
+         * @param name which primitive, as the create commands name it
+         **/
+        void createPoly(const std::string& name);
 
         /**
          * Step the history one command in either direction and say so.
          * @param name either "undo" or "redo"
-         * @return whether the name was one of them
          **/
-        bool history(const std::string& name);
+        void history(const std::string& name);
+
+        /**
+         * Read the project over the scene, or write the scene out as one.
+         *
+         * There is no file chooser in the tree, so both work on one document at a fixed
+         * path - see ADR-0018.
+         **/
+        void openProject();
+        void saveProject();
+
+        /**
+         * @return where the one document lives, beside the executable
+         **/
+        std::string projectPath() const;
+
+        /**
+         * Turn one of a view's visibility flags on or off.
+         * @param filter which flag
+         **/
+        void toggleShow(ViewPort::VisibleFilter filter);
+
+        /**
+         * The primary mouse button, which drives three tools - see registerCommands().
+         **/
+        void drag(bool pressed);
+
+        /**
+         * Choose the transform tool's mode and tell the renderer which handles to draw.
+         * @param name the mode, as TransformTool names it
+         **/
+        void transformMode(const std::string& name);
+
+        /**
+         * Hold or release a camera move for as long as its modifier is down.
+         * @param name the move, as CameraControlTool names it
+         * @param pressed whether the modifier went down or came up
+         **/
+        void cameraMode(const std::string& name, bool pressed);
 
         /**
          * Build one viewport per leaf of the layout, with the profile it names.
@@ -99,7 +145,10 @@ namespace v3d::editor {
          **/
         void layoutViews(int width, int height);
 
+        std::string path_;
         boost::shared_ptr<Scene> scene_;
+        boost::shared_ptr<Project> project_;
+        CommandDirectory directory_;
         boost::shared_ptr<CommandStack> commands_;
         boost::shared_ptr<CameraProfiles> profiles_;
         boost::shared_ptr<ViewLayout> layout_;

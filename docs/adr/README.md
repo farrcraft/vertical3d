@@ -25,3 +25,5 @@ old record's status and leave the file in place.
 | [0014](0014-picking-is-a-cpu-ray-cast.md) | Picking — A CPU Ray Cast Against The Brep, With Screen Space Proximity For Components | accepted | 2026-09-02 |
 | [0015](0015-manipulators-write-the-object-transform.md) | Manipulators — Handles Write The Object Transform, And Are An Overlay Pass | accepted | 2026-09-02 |
 | [0016](0016-undo-records-what-has-already-happened.md) | Undo — A Command Records What Has Already Happened, And A Gesture Is One Of Them | accepted | 2026-09-02 |
+| [0017](0017-a-command-is-a-name-in-a-context.md) | Command Dispatch — A Command Is A Name In A Context, And The Directory Is The Editor's | accepted | 2026-09-02 |
+| [0018](0018-a-project-is-json-and-stores-topology-verbatim.md) | Project Persistence — A Project Is JSON, And The Topology Is Stored Verbatim | accepted | 2026-09-02 |

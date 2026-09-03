@@ -21,50 +21,11 @@
 
 namespace v3d::editor {
 
-    namespace {
-
-        /**
-         * The context the camera bindings and the view commands arrive in. Named by
-         * data/mappings.json, so the two have to be changed together.
-         **/
-        const char* const viewContext = "view";
-
-        /**
-         * The context the application level commands arrive in, which every app in the
-         * repository shares.
-         **/
-        const char* const uiContext = "ui";
-
-        /**
-         * The context the Create menu's commands arrive in - gui.xml's create::poly::*,
-         * which are bound to keys here because the editor has no menus yet.
-         **/
-        const char* const createContext = "create";
-
-        /**
-         * The context the select mask commands arrive in - gui.xml's select::mask::*,
-         * bound to keys here for the same reason the create commands are.
-         **/
-        const char* const selectContext = "select";
-
-        /**
-         * The context undo and redo arrive in, on keys for the same reason - gui.xml has
-         * neither command, so there is no menu binding to translate.
-         **/
-        const char* const editContext = "edit";
-
-        /**
-         * The context the transform tool modes arrive in - gui.xml's transform::*, on the
-         * keys it binds them to.
-         **/
-        const char* const transformContext = "transform";
-
-    };  // namespace
-
     /**
      **/
     Controller::Controller(const std::string& path) :
         v3d::engine::Engine(path),
+        path_(path),
         cursor_(0.0f, 0.0f) {
     }
 
@@ -87,6 +48,7 @@ namespace v3d::editor {
         }
 
         scene_ = boost::make_shared<Scene>();
+        project_ = boost::make_shared<Project>(logger_);
         commands_ = boost::make_shared<CommandStack>();
 
         profiles_ = boost::make_shared<CameraProfiles>(logger_);
@@ -117,6 +79,9 @@ namespace v3d::editor {
         renderer_->scene(scene_);
         renderer_->manipulator(transformTool_->manipulator());
 
+        // after the tools and the renderer, because every handler closes over one of them
+        registerCommands();
+
         layoutViews(window_->width(), window_->height());
 
         logger_->get()->info("{} with {} views", layout_->name(), views_.size());
@@ -142,7 +107,80 @@ namespace v3d::editor {
 
     /**
      **/
-    bool Controller::createPoly(const std::string& name) {
+    void Controller::registerCommands() {
+        // a refused registration means the name is already taken, which is one of the two
+        // handlers never running - so it is said out loud rather than returned to nobody
+        auto press = [this](const std::string& name, const CommandDirectory::PressHandler& handler) {
+            if (!directory_.addPress(name, handler)) {
+                logger_->get()->error("{} is registered twice", name);
+            }
+        };
+        auto hold = [this](const std::string& name, const CommandDirectory::Handler& handler) {
+            if (!directory_.add(name, handler)) {
+                logger_->get()->error("{} is registered twice", name);
+            }
+        };
+
+        // the names are gui.xml's, because a menu translated from it names the command it
+        // invokes and the two have to meet somewhere
+        press("create::poly::cube", [this]() { createPoly("cube"); });
+        press("create::poly::plane", [this]() { createPoly("plane"); });
+        press("create::poly::cylinder", [this]() { createPoly("cylinder"); });
+        press("create::poly::cone", [this]() { createPoly("cone"); });
+
+        press("select::mask::object", [this]() { selectTool_->activate("object"); });
+        press("select::mask::vertex", [this]() { selectTool_->activate("vertex"); });
+        press("select::mask::edge", [this]() { selectTool_->activate("edge"); });
+        press("select::mask::face", [this]() { selectTool_->activate("face"); });
+
+        press("transform::select", [this]() { transformMode("select"); });
+        press("transform::translate", [this]() { transformMode("translate"); });
+        press("transform::rotate", [this]() { transformMode("rotate"); });
+        press("transform::scale", [this]() { transformMode("scale"); });
+
+        // camera and light have flags on the view and nothing that draws them, so a command
+        // for either would be a menu item that appears to work
+        press("view::show::grid", [this]() { toggleShow(ViewPort::SHOW_GRID); });
+        press("view::show::mesh", [this]() { toggleShow(ViewPort::SHOW_MESH); });
+        press("view::show::handle", [this]() { toggleShow(ViewPort::SHOW_HANDLE); });
+
+        // the three camera moves are held rather than latched: the modifier going down
+        // chooses what a drag performs and it coming up puts the tool back to none
+        hold("view::camera::zoom", [this](const v3d::event::Event& event) {
+            cameraMode("zoom", event.state() != v3d::event::State::Released);
+        });
+        hold("view::camera::truck", [this](const v3d::event::Event& event) {
+            cameraMode("truck", event.state() != v3d::event::State::Released);
+        });
+        hold("view::camera::pan", [this](const v3d::event::Event& event) {
+            cameraMode("pan", event.state() != v3d::event::State::Released);
+        });
+
+        hold("view::drag", [this](const v3d::event::Event& event) {
+            drag(event.state() == v3d::event::State::Pressed);
+        });
+
+        press("project::load", [this]() { openProject(); });
+        press("project::save", [this]() { saveProject(); });
+
+        // gui.xml has neither, so there is no menu name to match
+        press("edit::undo", [this]() { history("undo"); });
+        press("edit::redo", [this]() { history("redo"); });
+
+        // gui.xml names this one without a context; ui is the context every app in the
+        // repository puts its application level commands in
+        press("ui::quit", [this]() {
+            // not shutdown() - this is running inside the event loop, which would tick and
+            // render one more frame against the window shutdown() had destroyed
+            quit();
+        });
+
+        logger_->get()->info("{} commands registered", directory_.size());
+    }
+
+    /**
+     **/
+    void Controller::createPoly(const std::string& name) {
         boost::shared_ptr<v3d::brep::BRep> mesh;
         if (name == "cube") {
             mesh = create_poly_cube();
@@ -153,7 +191,7 @@ namespace v3d::editor {
         } else if (name == "cone") {
             mesh = create_poly_cone();
         } else {
-            return false;
+            return;
         }
 
         // the command is what does the creating, so that making a mesh and redoing one are
@@ -162,26 +200,93 @@ namespace v3d::editor {
         command->redo();
         commands_->push(command);
         logger_->get()->info("created a {} - {} meshes", name, scene_->count());
-        return true;
     }
 
     /**
      **/
-    bool Controller::history(const std::string& name) {
+    void Controller::history(const std::string& name) {
         boost::shared_ptr<Command> command;
         if (name == "undo") {
             command = commands_->undo();
         } else if (name == "redo") {
             command = commands_->redo();
         } else {
-            return false;
+            return;
         }
         if (!command) {
             logger_->get()->info("nothing to {}", name);
-            return true;
+            return;
         }
         logger_->get()->info("{} {}", name, command->name());
-        return true;
+    }
+
+    /**
+     **/
+    std::string Controller::projectPath() const {
+        return path_ + "project.json";
+    }
+
+    /**
+     **/
+    void Controller::openProject() {
+        // a gesture under way is holding the mesh it started on, which the read is about to
+        // take out of the scene
+        transformTool_->cancel();
+        if (!project_->read(projectPath(), scene_)) {
+            return;
+        }
+        // the history describes a scene that no longer exists, and nothing in it could be
+        // undone against the one that replaced it
+        commands_->clear();
+    }
+
+    /**
+     **/
+    void Controller::saveProject() {
+        project_->write(projectPath(), scene_);
+    }
+
+    /**
+     **/
+    void Controller::toggleShow(ViewPort::VisibleFilter filter) {
+        if (activeView_) {
+            activeView_->show(filter, !activeView_->shows(filter));
+        }
+    }
+
+    /**
+     **/
+    void Controller::transformMode(const std::string& name) {
+        transformTool_->activate(name);
+        renderer_->manipulator(transformTool_->manipulator());
+    }
+
+    /**
+     **/
+    void Controller::cameraMode(const std::string& name, bool pressed) {
+        if (pressed) {
+            cameraTool_->activate(name);
+        } else {
+            cameraTool_->deactivate(name);
+        }
+    }
+
+    /**
+     **/
+    void Controller::drag(bool pressed) {
+        // the primary mouse button, whose number the input layer does not put on the mapped
+        // event - the binding names which button it is
+        cameraTool_->button(1, pressed, cursor_);
+        // one button, three tools. A modifier held means the drag is driving a camera;
+        // otherwise a handle of the selection takes the press if the cursor is on one, and a
+        // press no handle took is what picks
+        if (cameraTool_->mode() != CameraControlTool::CAMERA_MODE_NONE) {
+            return;
+        }
+        transformTool_->button(1, pressed, cursor_);
+        if (!transformTool_->dragging()) {
+            selectTool_->button(1, pressed, cursor_);
+        }
     }
 
     /**
@@ -254,97 +359,14 @@ namespace v3d::editor {
     /**
      **/
     void Controller::handleEvent(const v3d::event::Event& event) {
-        if (event.context()->name() == uiContext) {
-            if (event.name() == "quit") {
-                // not shutdown() - this is running inside the event loop, which would tick
-                // and render one more frame against the window shutdown() had destroyed
-                quit();
-            }
+        // the dispatcher carries both halves of a mapping. A source event is the keypress
+        // itself, which event::Engine is what listens for; only what a binding or a menu
+        // item produced is a command
+        if (event.type() != v3d::event::Type::Destination) {
             return;
         }
-
-        if (event.context()->name() == createContext) {
-            // a create is a press, so the release the same key also delivers is ignored
-            if (event.state() != v3d::event::State::Released) {
-                createPoly(std::string(event.name()));
-            }
-            return;
-        }
-
-        if (event.context()->name() == editContext) {
-            if (event.state() != v3d::event::State::Released) {
-                history(std::string(event.name()));
-            }
-            return;
-        }
-
-        if (event.context()->name() == selectContext) {
-            if (event.state() != v3d::event::State::Released) {
-                selectTool_->activate(std::string(event.name()));
-            }
-            return;
-        }
-
-        if (event.context()->name() == transformContext) {
-            if (event.state() != v3d::event::State::Released) {
-                transformTool_->activate(std::string(event.name()));
-                renderer_->manipulator(transformTool_->manipulator());
-            }
-            return;
-        }
-
-        if (event.context()->name() != viewContext) {
-            return;
-        }
-
-        const std::string name(event.name());
-
-        if (name == "drag") {
-            // the primary mouse button, whose number the input layer does not put on the
-            // mapped event - the binding names which button it is
-            const bool pressed = event.state() == v3d::event::State::Pressed;
-            cameraTool_->button(1, pressed, cursor_);
-            // one button, three tools. A modifier held means the drag is driving a camera;
-            // otherwise a handle of the selection takes the press if the cursor is on one,
-            // and a press no handle took is what picks
-            if (cameraTool_->mode() == CameraControlTool::CAMERA_MODE_NONE) {
-                transformTool_->button(1, pressed, cursor_);
-                if (!transformTool_->dragging()) {
-                    selectTool_->button(1, pressed, cursor_);
-                }
-            }
-            return;
-        }
-
-        if (name == "toggleGrid") {
-            if (activeView_) {
-                activeView_->show(ViewPort::SHOW_GRID, !activeView_->shows(ViewPort::SHOW_GRID));
-            }
-            return;
-        }
-
-        if (name == "toggleMesh") {
-            if (activeView_) {
-                activeView_->show(ViewPort::SHOW_MESH, !activeView_->shows(ViewPort::SHOW_MESH));
-            }
-            return;
-        }
-
-        if (name == "toggleHandle") {
-            if (activeView_) {
-                activeView_->show(ViewPort::SHOW_HANDLE, !activeView_->shows(ViewPort::SHOW_HANDLE));
-            }
-            return;
-        }
-
-        // the three camera modes are held rather than toggled: the modifier going down
-        // selects the move a drag performs and it coming up puts the tool back to none
-        if (name == "zoomCamera" || name == "truckCamera" || name == "panCamera") {
-            if (event.state() == v3d::event::State::Released) {
-                cameraTool_->deactivate(name);
-            } else {
-                cameraTool_->activate(name);
-            }
+        if (!directory_.invoke(event)) {
+            logger_->get()->warn("no command is registered as {}", event.str());
         }
     }
 
