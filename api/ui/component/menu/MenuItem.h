@@ -22,12 +22,18 @@ namespace v3d::ui::component {
      * A single menu item. It consists of a label and points to an optional submenu.
      * There are several different types of menu items:
      * - action - activating an action item dispatches its bound event
+     * - check - an action item that also shows a mark when it is checked
+     * - radio - a check item that is one of a set, only one of which is marked
      * - submenu - activating this type of menu item will replace the currently active menu with the submenu
      * - input - this type of menu item is the same as an action item type except that it accepts a single input 
      *		when activated before it dispatches the event. the input becomes the item's value, which is sent as
      *		the event's data.
      * - numeric_input - the same as an input type except restricted to number input types only
      * - key_input - an input type that uses a key name as the value
+     *
+     * A check or radio item does not own the state it shows. Activating one dispatches its
+     * event like an action item and marks nothing; whatever answers the command sets
+     * checked(), so the mark cannot disagree with what the item reports.
      *
      * An input type item's value is appended to its label by text(), so a label ending in a separator
      * ("Rounds: ") reads as 'Rounds: 5'.
@@ -108,12 +114,24 @@ namespace v3d::ui::component {
 
         menu::ItemType type() const;
 
+        /**
+          * Set whether a check or radio item draws its mark.
+          * @param on whether the item is checked
+          */
+        void checked(bool on);
+        /**
+          * Get whether the item is checked. An item of any other type is never checked.
+          * @return whether the item draws its mark
+          */
+        bool checked() const;
+
      private:
         std::string label_;
         boost::shared_ptr<Menu> submenu_;
         boost::weak_ptr<Menu> menu_;  // owning menu
         menu::ItemType type_;
         v3d::event::Event event_;
+        bool checked_;
         bool hasValue_;
         v3d::event::EventData value_;
     };

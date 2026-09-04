@@ -6,13 +6,18 @@
 #pragma once
 
 #include <string>
-#include <utility>
 
 #include "../Component.h"
+
+#include "../../event/Event.h"
 
 namespace v3d::ui::component {
     /**
      * A vGUI Button
+     *
+     * A toggle button does not own the state it shows, for the reason a check menu item does
+     * not: pressing one sends its command and marks nothing, and whatever answers the command
+     * sets checked(). See ADR-0019.
      */
     class Button : public Component {
      public:
@@ -49,10 +54,44 @@ namespace v3d::ui::component {
          */
         void state(ButtonState s);
 
+        /**
+         * Set the event pressing the button sends.
+         * @param destination the event destination
+         **/
+        void event(const v3d::event::Event& destination);
+        /**
+         * Get the event bound to the button
+         * @return the event
+         **/
+        v3d::event::Event event() const;
+
+        /**
+         * Set whether the button shows a mark when it is checked.
+         * @param on whether it is a toggle rather than a plain button
+         **/
+        void toggle(bool on);
+        /**
+         * @return whether the button is a toggle
+         **/
+        bool toggle() const;
+
+        /**
+          * Set whether a toggle button draws its mark.
+          * @param on whether the button is checked
+          */
+        void checked(bool on);
+        /**
+          * Get whether the button is checked. A button that is not a toggle is never checked.
+          * @return whether the button draws its mark
+          */
+        bool checked() const;
+
      private:
         std::string label_;
         ButtonState state_;
-        std::pair<std::string, std::string> command_;  // <scope, command>
+        v3d::event::Event event_;
+        bool toggle_;
+        bool checked_;
     };
 
 };  // namespace v3d::ui::component

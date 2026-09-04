@@ -158,7 +158,9 @@ namespace v3d::ui::component {
         if (item) {
             if (item->type() == menu::ItemType::Submenu && item->submenu()) {  // menu item has a submenu so activate the submenu
                 bool activated = down();
-            } else if (item->type() == menu::ItemType::Action) {  // menu item represents a command so send the bound event
+            } else if (item->type() == menu::ItemType::Action ||
+                item->type() == menu::ItemType::Check ||
+                item->type() == menu::ItemType::Radio) {  // menu item represents a command so send the bound event
                 dispatch(item);
             } else if (item->type() == menu::ItemType::Input ||
                 item->type() == menu::ItemType::NumericInput ||

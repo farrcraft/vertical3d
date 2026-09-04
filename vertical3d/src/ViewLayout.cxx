@@ -100,9 +100,17 @@ namespace v3d::editor {
     /**
      **/
     void ViewLayout::resize(int width, int height) {
-        place(root_, glm::vec4(0.0f, 0.0f,
+        resize(glm::vec4(0.0f, 0.0f,
             static_cast<float>(width > 0 ? width : 0),
             static_cast<float>(height > 0 ? height : 0)));
+    }
+
+    /**
+     **/
+    void ViewLayout::resize(const glm::vec4& region) {
+        place(root_, glm::vec4(region.x, region.y,
+            region.z > 0.0f ? region.z : 0.0f,
+            region.w > 0.0f ? region.w : 0.0f));
     }
 
     /**

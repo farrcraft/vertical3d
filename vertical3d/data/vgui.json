@@ -1,0 +1,650 @@
+{
+  "themes": [
+    {
+      "name": "default"
+    }
+  ],
+  "containers": [
+    {
+      "name": "editor",
+      "visible": true,
+      "components": [
+        {
+          "name": "menu-bar",
+          "type": "menubar",
+          "menus": [
+            {
+              "label": "Create",
+              "items": [
+                {
+                  "label": "Poly",
+                  "type": "submenu",
+                  "items": [
+                    {
+                      "label": "Cube",
+                      "type": "action",
+                      "context": "create",
+                      "command": "poly::cube"
+                    },
+                    {
+                      "label": "Plane",
+                      "type": "action",
+                      "context": "create",
+                      "command": "poly::plane"
+                    },
+                    {
+                      "label": "Cylinder",
+                      "type": "action",
+                      "context": "create",
+                      "command": "poly::cylinder"
+                    },
+                    {
+                      "label": "Cone",
+                      "type": "action",
+                      "context": "create",
+                      "command": "poly::cone"
+                    }
+                  ]
+                },
+                {
+                  "label": "Camera",
+                  "type": "submenu",
+                  "items": [
+                    {
+                      "label": "Orthographic",
+                      "type": "action",
+                      "context": "create",
+                      "command": "ortho::camera"
+                    },
+                    {
+                      "label": "Perspective",
+                      "type": "action",
+                      "context": "create",
+                      "command": "perspective::camera"
+                    }
+                  ]
+                },
+                {
+                  "label": "Group",
+                  "type": "action",
+                  "context": "create",
+                  "command": "group"
+                }
+              ]
+            },
+            {
+              "label": "Edit",
+              "items": [
+                {
+                  "label": "Undo",
+                  "type": "action",
+                  "context": "edit",
+                  "command": "undo"
+                },
+                {
+                  "label": "Redo",
+                  "type": "action",
+                  "context": "edit",
+                  "command": "redo"
+                }
+              ]
+            },
+            {
+              "label": "View",
+              "items": [
+                {
+                  "label": "Show",
+                  "type": "submenu",
+                  "items": [
+                    {
+                      "label": "Mesh",
+                      "type": "check",
+                      "context": "view",
+                      "command": "show::mesh"
+                    },
+                    {
+                      "label": "Light",
+                      "type": "check",
+                      "context": "view",
+                      "command": "show::light"
+                    },
+                    {
+                      "label": "Camera",
+                      "type": "check",
+                      "context": "view",
+                      "command": "show::camera"
+                    },
+                    {
+                      "label": "Handle",
+                      "type": "check",
+                      "context": "view",
+                      "command": "show::handle"
+                    },
+                    {
+                      "label": "Grid",
+                      "type": "check",
+                      "context": "view",
+                      "command": "show::grid"
+                    }
+                  ]
+                },
+                {
+                  "label": "Render Mode",
+                  "type": "submenu",
+                  "items": [
+                    {
+                      "label": "Front Facing",
+                      "type": "submenu",
+                      "items": [
+                        {
+                          "label": "Points",
+                          "type": "radio",
+                          "context": "view",
+                          "command": "rendermode::front::points"
+                        },
+                        {
+                          "label": "Lines",
+                          "type": "radio",
+                          "context": "view",
+                          "command": "rendermode::front::lines"
+                        },
+                        {
+                          "label": "Fill",
+                          "type": "radio",
+                          "context": "view",
+                          "command": "rendermode::front::fill"
+                        }
+                      ]
+                    },
+                    {
+                      "label": "Back Facing",
+                      "type": "submenu",
+                      "items": [
+                        {
+                          "label": "Points",
+                          "type": "radio",
+                          "context": "view",
+                          "command": "rendermode::back::points"
+                        },
+                        {
+                          "label": "Lines",
+                          "type": "radio",
+                          "context": "view",
+                          "command": "rendermode::back::lines"
+                        },
+                        {
+                          "label": "Fill",
+                          "type": "radio",
+                          "context": "view",
+                          "command": "rendermode::back::fill"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "label": "Cull Mode",
+                  "type": "submenu",
+                  "items": [
+                    {
+                      "label": "None",
+                      "type": "radio",
+                      "context": "view",
+                      "command": "cull::none"
+                    },
+                    {
+                      "label": "Front",
+                      "type": "radio",
+                      "context": "view",
+                      "command": "cull::front"
+                    },
+                    {
+                      "label": "Back",
+                      "type": "radio",
+                      "context": "view",
+                      "command": "cull::back"
+                    },
+                    {
+                      "label": "Both",
+                      "type": "radio",
+                      "context": "view",
+                      "command": "cull::both"
+                    }
+                  ]
+                },
+                {
+                  "label": "Shading Mode",
+                  "type": "submenu",
+                  "items": [
+                    {
+                      "label": "Flat",
+                      "type": "radio",
+                      "context": "view",
+                      "command": "shade::flat"
+                    },
+                    {
+                      "label": "Smooth",
+                      "type": "radio",
+                      "context": "view",
+                      "command": "shade::smooth"
+                    }
+                  ]
+                },
+                {
+                  "label": "Camera",
+                  "type": "submenu",
+                  "items": [
+                    {
+                      "label": "Front",
+                      "type": "radio",
+                      "context": "view",
+                      "command": "camera::front"
+                    },
+                    {
+                      "label": "Back",
+                      "type": "radio",
+                      "context": "view",
+                      "command": "camera::back"
+                    },
+                    {
+                      "label": "Left",
+                      "type": "radio",
+                      "context": "view",
+                      "command": "camera::left"
+                    },
+                    {
+                      "label": "Right",
+                      "type": "radio",
+                      "context": "view",
+                      "command": "camera::right"
+                    },
+                    {
+                      "label": "Top",
+                      "type": "radio",
+                      "context": "view",
+                      "command": "camera::top"
+                    },
+                    {
+                      "label": "Bottom",
+                      "type": "radio",
+                      "context": "view",
+                      "command": "camera::bottom"
+                    },
+                    {
+                      "label": "Perspective",
+                      "type": "radio",
+                      "context": "view",
+                      "command": "camera::perspective"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "label": "Object Manipulators",
+              "items": [
+                {
+                  "label": "Select",
+                  "type": "radio",
+                  "context": "transform",
+                  "command": "select"
+                },
+                {
+                  "label": "Translate",
+                  "type": "radio",
+                  "context": "transform",
+                  "command": "translate"
+                },
+                {
+                  "label": "Rotate",
+                  "type": "radio",
+                  "context": "transform",
+                  "command": "rotate"
+                },
+                {
+                  "label": "Scale",
+                  "type": "radio",
+                  "context": "transform",
+                  "command": "scale"
+                },
+                {
+                  "label": "Poly",
+                  "type": "submenu",
+                  "items": [
+                    {
+                      "label": "Extrude Face",
+                      "type": "action",
+                      "context": "transform",
+                      "command": "poly::extrude_face"
+                    },
+                    {
+                      "label": "Split Face",
+                      "type": "action",
+                      "context": "transform",
+                      "command": "poly::split_face"
+                    },
+                    {
+                      "label": "Split Edge",
+                      "type": "action",
+                      "context": "transform",
+                      "command": "poly::split_edge"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "label": "Camera Manipulators",
+              "items": [
+                {
+                  "label": "Truck",
+                  "type": "action",
+                  "context": "camera",
+                  "command": "truck"
+                },
+                {
+                  "label": "Dolly",
+                  "type": "action",
+                  "context": "camera",
+                  "command": "dolly"
+                },
+                {
+                  "label": "Zoom",
+                  "type": "action",
+                  "context": "camera",
+                  "command": "zoom"
+                },
+                {
+                  "label": "Pan",
+                  "type": "action",
+                  "context": "camera",
+                  "command": "pan"
+                },
+                {
+                  "label": "Pitch",
+                  "type": "action",
+                  "context": "camera",
+                  "command": "pitch"
+                }
+              ]
+            },
+            {
+              "label": "Select Mask",
+              "items": [
+                {
+                  "label": "Face",
+                  "type": "check",
+                  "context": "select",
+                  "command": "mask::face"
+                },
+                {
+                  "label": "Edge",
+                  "type": "check",
+                  "context": "select",
+                  "command": "mask::edge"
+                },
+                {
+                  "label": "Vertex",
+                  "type": "check",
+                  "context": "select",
+                  "command": "mask::vertex"
+                },
+                {
+                  "label": "Curve",
+                  "type": "check",
+                  "context": "select",
+                  "command": "mask::curve"
+                },
+                {
+                  "label": "Mesh",
+                  "type": "check",
+                  "context": "select",
+                  "command": "mask::mesh"
+                },
+                {
+                  "label": "Object",
+                  "type": "check",
+                  "context": "select",
+                  "command": "mask::object"
+                },
+                {
+                  "label": "Light",
+                  "type": "check",
+                  "context": "select",
+                  "command": "mask::light"
+                },
+                {
+                  "label": "Camera",
+                  "type": "check",
+                  "context": "select",
+                  "command": "mask::camera"
+                },
+                {
+                  "label": "Handle",
+                  "type": "check",
+                  "context": "select",
+                  "command": "mask::handle"
+                }
+              ]
+            },
+            {
+              "label": "Project",
+              "items": [
+                {
+                  "label": "Load",
+                  "type": "action",
+                  "context": "project",
+                  "command": "load"
+                },
+                {
+                  "label": "Save",
+                  "type": "action",
+                  "context": "project",
+                  "command": "save"
+                },
+                {
+                  "label": "Import",
+                  "type": "submenu",
+                  "items": [
+                    {
+                      "label": "lwo",
+                      "type": "action",
+                      "context": "project",
+                      "command": "import::lwo"
+                    },
+                    {
+                      "label": "dxf",
+                      "type": "action",
+                      "context": "project",
+                      "command": "import::dxf"
+                    },
+                    {
+                      "label": "3ds",
+                      "type": "action",
+                      "context": "project",
+                      "command": "import::3ds"
+                    },
+                    {
+                      "label": "milkshape",
+                      "type": "action",
+                      "context": "project",
+                      "command": "import::milkshape"
+                    }
+                  ]
+                },
+                {
+                  "label": "Quit",
+                  "type": "action",
+                  "context": "ui",
+                  "command": "quit"
+                }
+              ]
+            },
+            {
+              "label": "Render",
+              "items": [
+                {
+                  "label": "Render Settings",
+                  "type": "action",
+                  "context": "render",
+                  "command": "settings"
+                },
+                {
+                  "label": "Render View",
+                  "type": "action",
+                  "context": "render",
+                  "command": "view"
+                },
+                {
+                  "label": "Render Batch Render",
+                  "type": "action",
+                  "context": "render",
+                  "command": "batch"
+                }
+              ]
+            },
+            {
+              "label": "Timeline",
+              "items": [
+                {
+                  "label": "Set Key",
+                  "type": "action",
+                  "context": "timeline",
+                  "command": "set"
+                },
+                {
+                  "label": "Playback",
+                  "type": "submenu",
+                  "items": [
+                    {
+                      "label": "Play",
+                      "type": "action",
+                      "context": "timeline",
+                      "command": "playback::play"
+                    },
+                    {
+                      "label": "Stop",
+                      "type": "action",
+                      "context": "timeline",
+                      "command": "playback::stop"
+                    },
+                    {
+                      "label": "Next Frame",
+                      "type": "action",
+                      "context": "timeline",
+                      "command": "playback::next"
+                    },
+                    {
+                      "label": "Previous Frame",
+                      "type": "action",
+                      "context": "timeline",
+                      "command": "playback::previous"
+                    },
+                    {
+                      "label": "Next Keyed Frame",
+                      "type": "action",
+                      "context": "timeline",
+                      "command": "playback::next_key"
+                    },
+                    {
+                      "label": "Previous Keyed Frame",
+                      "type": "action",
+                      "context": "timeline",
+                      "command": "playback::previous_key"
+                    },
+                    {
+                      "label": "First Frame",
+                      "type": "action",
+                      "context": "timeline",
+                      "command": "playback::first"
+                    },
+                    {
+                      "label": "Last Frame",
+                      "type": "action",
+                      "context": "timeline",
+                      "command": "playback::last"
+                    },
+                    {
+                      "label": "First Keyed Frame",
+                      "type": "action",
+                      "context": "timeline",
+                      "command": "playback::first_key"
+                    },
+                    {
+                      "label": "Last Keyed Frame",
+                      "type": "action",
+                      "context": "timeline",
+                      "command": "playback::last_key"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "select-mask",
+          "type": "toolbar",
+          "edge": "top",
+          "buttons": [
+            {
+              "label": "Object",
+              "toggle": true,
+              "context": "select",
+              "command": "mask::object"
+            },
+            {
+              "label": "Vertex",
+              "toggle": true,
+              "context": "select",
+              "command": "mask::vertex"
+            },
+            {
+              "label": "Edge",
+              "toggle": true,
+              "context": "select",
+              "command": "mask::edge"
+            },
+            {
+              "label": "Face",
+              "toggle": true,
+              "context": "select",
+              "command": "mask::face"
+            }
+          ]
+        },
+        {
+          "name": "tools",
+          "type": "toolbar",
+          "edge": "left",
+          "buttons": [
+            {
+              "label": "Select",
+              "toggle": true,
+              "context": "transform",
+              "command": "select"
+            },
+            {
+              "label": "Translate",
+              "toggle": true,
+              "context": "transform",
+              "command": "translate"
+            },
+            {
+              "label": "Rotate",
+              "toggle": true,
+              "context": "transform",
+              "command": "rotate"
+            },
+            {
+              "label": "Scale",
+              "toggle": true,
+              "context": "transform",
+              "command": "scale"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

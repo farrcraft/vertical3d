@@ -8,7 +8,9 @@
 #include <vector>
 
 #include "Container.h"
+#include "component/Toolbar.h"
 #include "component/menu/Menu.h"
+#include "component/menu/MenuBar.h"
 #include "style/Theme.h"
 
 #include "../asset/Json.h"
@@ -56,6 +58,15 @@ namespace v3d::ui {
 
      protected:
          boost::shared_ptr<component::Menu> loadMenu(const boost::json::object& component);
+         boost::shared_ptr<component::MenuBar> loadMenuBar(const boost::json::object& component);
+         boost::shared_ptr<component::Toolbar> loadToolbar(const boost::json::object& component);
+
+         /**
+          * Read the "context" and "command" pair a menu item or a toolbar button names, and
+          * resolve the context.
+          * @return the event, or one with no context when the config gave neither
+          **/
+         v3d::event::Event loadCommand(const boost::json::object& entry);
 
      private:
         boost::shared_ptr<v3d::log::Logger> logger_;

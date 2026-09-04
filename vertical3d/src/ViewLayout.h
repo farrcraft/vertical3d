@@ -61,6 +61,12 @@ namespace v3d::editor {
         void resize(int width, int height);
 
         /**
+         * Divide a region of the window between the views, rather than the whole of it. The
+         * menu bar takes a strip off the top, and the views have the rest.
+         **/
+        void resize(const glm::vec4& region);
+
+        /**
          * @return the views, in the order the document listed them
          **/
         const std::vector<View>& views() const noexcept;

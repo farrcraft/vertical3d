@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "component/menu/MenuBar.h"
 #include "component/menu/MenuItem.h"
 
 #include <boost/make_shared.hpp>
@@ -91,6 +92,20 @@ namespace v3d::ui {
                     // this is the menu the app navigates, so it starts as its own active level
                     menu->level(menu);
                     container->add(menu);
+                } else if (componentType == "menubar") {
+                    boost::shared_ptr<component::MenuBar> bar = loadMenuBar(componentEntry);
+                    if (!bar) {
+                        return false;
+                    }
+                    bar->name(componentName);
+                    container->add(bar);
+                } else if (componentType == "toolbar") {
+                    boost::shared_ptr<component::Toolbar> bar = loadToolbar(componentEntry);
+                    if (!bar) {
+                        return false;
+                    }
+                    bar->name(componentName);
+                    container->add(bar);
                 }
             }
         }
@@ -118,22 +133,13 @@ namespace v3d::ui {
             std::string label = boost::json::value_to<std::string>(menuItemConfig.at("label"));
             std::string itemType = boost::json::value_to<std::string>(menuItemConfig.at("type"));
 
-            std::string command;
-            std::string context;
-            if (menuItemConfig.contains("command")) {
-                command = boost::json::value_to<std::string>(menuItemConfig.at("command"));
-            }
-            if (menuItemConfig.contains("context")) {
-                context = boost::json::value_to<std::string>(menuItemConfig.at("context"));
-            }
+            const v3d::event::Event command = loadCommand(menuItemConfig);
 
             boost::shared_ptr<component::MenuItem> menuItem = boost::make_shared<component::MenuItem>(menu::stringToType(itemType), label);
             // the owning menu has to be set before the submenu below, which reads it to find its parent
             menuItem->menu(menu);
-            if (context.length() > 0 && command.length() > 0) {
-                boost::shared_ptr<v3d::event::Context> eventContext = eventEngine_->resolveContext(context);
-                v3d::event::Event event(command, eventContext);
-                menuItem->event(event);
+            if (command.context()) {
+                menuItem->event(command);
             }
 
             menu->addItem(menuItem);
@@ -148,6 +154,99 @@ namespace v3d::ui {
         }
         menu->active(0);
         return menu;
+    }
+
+    /**
+     **/
+    boost::shared_ptr<component::MenuBar> Engine::loadMenuBar(const boost::json::object& component) {
+        boost::shared_ptr<component::MenuBar> bar = boost::make_shared<component::MenuBar>();
+
+        auto const menusSection = component.at("menus");
+        if (!menusSection.is_array()) {
+            logger_->get()->error("Missing menus in config");
+            return nullptr;
+        }
+        auto const menus = menusSection.as_array();
+        auto menuIterator = menus.begin();
+        for (; menuIterator != menus.end(); ++menuIterator) {
+            if (!menuIterator->is_object()) {
+                logger_->get()->error("Unrecognized menu config");
+                return nullptr;
+            }
+            auto const menuConfig = menuIterator->as_object();
+            std::string label = boost::json::value_to<std::string>(menuConfig.at("label"));
+            boost::shared_ptr<component::Menu> menu = loadMenu(menuConfig);
+            if (!menu) {
+                return nullptr;
+            }
+            menu->name(label);
+            // a bar's menus are dropped rather than navigated, so none of them is a level and
+            // none starts with an item active
+            menu->active(-1);
+            bar->add(label, menu);
+        }
+        return bar;
+    }
+
+    /**
+     **/
+    v3d::event::Event Engine::loadCommand(const boost::json::object& entry) {
+        std::string command;
+        std::string context;
+        if (entry.contains("command")) {
+            command = boost::json::value_to<std::string>(entry.at("command"));
+        }
+        if (entry.contains("context")) {
+            context = boost::json::value_to<std::string>(entry.at("context"));
+        }
+        if (context.empty() || command.empty()) {
+            return v3d::event::Event();
+        }
+        return v3d::event::Event(command, eventEngine_->resolveContext(context));
+    }
+
+    /**
+     **/
+    boost::shared_ptr<component::Toolbar> Engine::loadToolbar(const boost::json::object& component) {
+        std::string edgeName = "top";
+        if (component.contains("edge")) {
+            edgeName = boost::json::value_to<std::string>(component.at("edge"));
+        }
+        component::Toolbar::Edge edge = component::Toolbar::Edge::Top;
+        if (edgeName == "left") {
+            edge = component::Toolbar::Edge::Left;
+        } else if (edgeName != "top") {
+            logger_->get()->error("A toolbar runs along the top or the left edge, not [{}]", edgeName);
+            return nullptr;
+        }
+
+        boost::shared_ptr<component::Toolbar> bar = boost::make_shared<component::Toolbar>(dispatcher_, edge);
+
+        auto const buttonsSection = component.at("buttons");
+        if (!buttonsSection.is_array()) {
+            logger_->get()->error("Missing toolbar buttons in config");
+            return nullptr;
+        }
+        auto const buttons = buttonsSection.as_array();
+        auto buttonIterator = buttons.begin();
+        for (; buttonIterator != buttons.end(); ++buttonIterator) {
+            if (!buttonIterator->is_object()) {
+                logger_->get()->error("Unrecognized toolbar button config");
+                return nullptr;
+            }
+            auto const buttonConfig = buttonIterator->as_object();
+            boost::shared_ptr<component::Button> button = boost::make_shared<component::Button>();
+            button->label(boost::json::value_to<std::string>(buttonConfig.at("label")));
+            if (buttonConfig.contains("toggle")) {
+                button->toggle(boost::json::value_to<bool>(buttonConfig.at("toggle")));
+            }
+            const v3d::event::Event command = loadCommand(buttonConfig);
+            if (command.context()) {
+                button->event(command);
+            }
+            bar->add(button);
+        }
+        return bar;
     }
 
     /**

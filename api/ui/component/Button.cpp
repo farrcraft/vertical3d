@@ -6,11 +6,14 @@
 #include "Button.h"
 
 #include <string>
-#include <vector>
 
 namespace v3d::ui::component {
 
-    Button::Button() : state_(STATE_NORMAL), Component(component::Type::BUTTON) {
+    Button::Button() :
+        Component(component::Type::BUTTON),
+        state_(STATE_NORMAL),
+        toggle_(false),
+        checked_(false) {
     }
 
     void Button::label(const std::string& str) {
@@ -27,6 +30,31 @@ namespace v3d::ui::component {
 
     void Button::state(ButtonState s) {
         state_ = s;
+    }
+
+    void Button::event(const v3d::event::Event& destination) {
+        event_ = destination;
+        event_.type(v3d::event::Type::Destination);
+    }
+
+    v3d::event::Event Button::event() const {
+        return event_;
+    }
+
+    void Button::toggle(bool on) {
+        toggle_ = on;
+    }
+
+    bool Button::toggle() const {
+        return toggle_;
+    }
+
+    void Button::checked(bool on) {
+        checked_ = on;
+    }
+
+    bool Button::checked() const {
+        return toggle_ && checked_;
     }
 
 };  // namespace v3d::ui::component

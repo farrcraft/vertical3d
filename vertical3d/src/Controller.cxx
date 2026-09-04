@@ -5,6 +5,7 @@
 
 #include "Controller.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <string>
 #include <vector>
@@ -16,17 +17,30 @@
 #include "../../api/config/Type.h"
 #include "../../api/engine/Feature.h"
 #include "../../api/render/realtime/Window.h"
+#include "../../api/ui/Container.h"
 
 #include <boost/make_shared.hpp>
 
 namespace v3d::editor {
+
+    namespace {
+
+        /**
+         * What the ui config calls the container the editor's own components are in, and the
+         * menu bar within it. Every other component of that container is a toolbar.
+         **/
+        const char* const uiContainer = "editor";
+        const char* const menuBar = "menu-bar";
+
+    };  // namespace
 
     /**
      **/
     Controller::Controller(const std::string& path) :
         v3d::engine::Engine(path),
         path_(path),
-        cursor_(0.0f, 0.0f) {
+        cursor_(0.0f, 0.0f),
+        uiGrab_(false) {
     }
 
     /**
@@ -79,10 +93,16 @@ namespace v3d::editor {
         renderer_->scene(scene_);
         renderer_->manipulator(transformTool_->manipulator());
 
+        if (!buildUi()) {
+            return false;
+        }
+        renderer_->ui(vgui_);
+
         // after the tools and the renderer, because every handler closes over one of them
         registerCommands();
 
         layoutViews(window_->width(), window_->height());
+        syncUi();
 
         logger_->get()->info("{} with {} views", layout_->name(), views_.size());
         return true;
@@ -103,6 +123,82 @@ namespace v3d::editor {
             activeView_ = views_.front();
         }
         return true;
+    }
+
+    /**
+     **/
+    bool Controller::buildUi() {
+        boost::shared_ptr<v3d::asset::Json> config = config_->get(v3d::config::Type::Ui);
+        if (!config) {
+            logger_->get()->error("The editor has no ui config, so it would have no menus");
+            return false;
+        }
+
+        vgui_ = boost::make_shared<v3d::ui::Engine>(eventEngine_, dispatcher_, logger_);
+        if (!vgui_->load(config)) {
+            return false;
+        }
+
+        boost::shared_ptr<v3d::ui::Container> container = vgui_->container(uiContainer);
+        if (!container) {
+            logger_->get()->error("The ui config has no {} container", uiContainer);
+            return false;
+        }
+        menu_ = boost::dynamic_pointer_cast<v3d::ui::component::MenuBar>(container->get(menuBar));
+        if (!menu_) {
+            logger_->get()->error("The {} container has no {} in it", uiContainer, menuBar);
+            return false;
+        }
+
+        toolbars_.clear();
+        for (const boost::shared_ptr<v3d::ui::Component>& component : container->components()) {
+            boost::shared_ptr<v3d::ui::component::Toolbar> bar =
+                boost::dynamic_pointer_cast<v3d::ui::component::Toolbar>(component);
+            if (bar) {
+                toolbars_.push_back(bar);
+            }
+        }
+        return true;
+    }
+
+    /**
+     **/
+    void Controller::syncUi() {
+        if (!menu_) {
+            return;
+        }
+        auto mark = [this](const char* command, bool on) {
+            boost::shared_ptr<v3d::ui::component::MenuItem> item = menu_->find(command);
+            if (item) {
+                item->checked(on);
+            }
+            // a command may be on a menu, on a toolbar or on both, and the two show the same
+            // flag - the editor's, rather than one each
+            for (const boost::shared_ptr<v3d::ui::component::Toolbar>& bar : toolbars_) {
+                boost::shared_ptr<v3d::ui::component::Button> button = bar->find(command);
+                if (button) {
+                    button->checked(on);
+                }
+            }
+        };
+
+        if (activeView_) {
+            mark("view::show::mesh", activeView_->shows(ViewPort::SHOW_MESH));
+            mark("view::show::handle", activeView_->shows(ViewPort::SHOW_HANDLE));
+            mark("view::show::grid", activeView_->shows(ViewPort::SHOW_GRID));
+        }
+
+        const SelectMask mask = selectTool_->mask();
+        mark("select::mask::object", mask == SelectMask::Object);
+        mark("select::mask::vertex", mask == SelectMask::Vertex);
+        mark("select::mask::edge", mask == SelectMask::Edge);
+        mark("select::mask::face", mask == SelectMask::Face);
+
+        const TransformTool::Mode mode = transformTool_->mode();
+        mark("transform::select", mode == TransformTool::Mode::None);
+        mark("transform::translate", mode == TransformTool::Mode::Translate);
+        mark("transform::rotate", mode == TransformTool::Mode::Rotate);
+        mark("transform::scale", mode == TransformTool::Mode::Scale);
     }
 
     /**
@@ -175,7 +271,13 @@ namespace v3d::editor {
             quit();
         });
 
-        logger_->get()->info("{} commands registered", directory_.size());
+        std::size_t named = 0;
+        for (const std::string& name : directory_.names()) {
+            if (menu_ && menu_->find(name)) {
+                named++;
+            }
+        }
+        logger_->get()->info("{} commands registered, {} of them on a menu", directory_.size(), named);
     }
 
     /**
@@ -273,7 +375,52 @@ namespace v3d::editor {
 
     /**
      **/
+    bool Controller::uiMotion(const glm::vec2& cursor) {
+        // the menu first, because an open panel is drawn over a toolbar and so takes the
+        // cursor where the two overlap
+        const bool overMenu = menu_ && menu_->motion(cursor);
+        bool taken = overMenu;
+        for (const boost::shared_ptr<v3d::ui::component::Toolbar>& bar : toolbars_) {
+            // every strip hears about it either way, so that a button the cursor has left -
+            // or that an open panel is now covering - stops drawing its hover
+            if (overMenu) {
+                bar->leave();
+            } else {
+                taken = bar->motion(cursor) || taken;
+            }
+        }
+        return taken;
+    }
+
+    /**
+     **/
+    bool Controller::uiPress(const glm::vec2& cursor) {
+        if (menu_ && menu_->press(cursor)) {
+            return true;
+        }
+        for (const boost::shared_ptr<v3d::ui::component::Toolbar>& bar : toolbars_) {
+            if (bar->press(cursor)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     **/
     void Controller::drag(bool pressed) {
+        // the ui is drawn over every view, so it is offered the press first, and the
+        // release that ends one it took reaches nothing else
+        if (pressed) {
+            uiGrab_ = uiPress(cursor_);
+            if (uiGrab_) {
+                return;
+            }
+        } else if (uiGrab_) {
+            uiGrab_ = false;
+            return;
+        }
+
         // the primary mouse button, whose number the input layer does not put on the mapped
         // event - the binding names which button it is
         cameraTool_->button(1, pressed, cursor_);
@@ -292,7 +439,12 @@ namespace v3d::editor {
     /**
      **/
     void Controller::layoutViews(int width, int height) {
-        layout_->resize(width, height);
+        // the menu bar and the toolbars cover strips along two edges, and the views divide
+        // what is left
+        const glm::vec2 inset = renderer_ ? renderer_->insets() : glm::vec2(0.0f, 0.0f);
+        layout_->resize(glm::vec4(inset.x, inset.y,
+            std::max(0.0f, static_cast<float>(width) - inset.x),
+            std::max(0.0f, static_cast<float>(height) - inset.y)));
         const std::vector<ViewLayout::View>& regions = layout_->views();
         for (std::size_t index = 0; index < views_.size() && index < regions.size(); index++) {
             views_[index]->resize(regions[index].region);
@@ -331,12 +483,24 @@ namespace v3d::editor {
     void Controller::handleMotion(const v3d::event::MouseMotion& event) {
         cursor_ = event.position();
 
+        const bool dragging = (cameraTool_ && cameraTool_->dragging()) || (transformTool_ && transformTool_->dragging());
+        // a gesture under way keeps the cursor wherever it goes, so a drag that wanders under
+        // a strip is not interrupted by it
+        if (!dragging && uiMotion(cursor_)) {
+            return;
+        }
+
         // the view under the cursor is the one a drag would drive - but not while one is
         // under way, or a gesture that wandered over a border would change camera mid drag
-        if (cameraTool_ && !cameraTool_->dragging() && transformTool_ && !transformTool_->dragging()) {
+        if (!dragging) {
             const std::size_t index = layout_->viewAt(cursor_.x, cursor_.y);
             if (index < views_.size()) {
+                const bool changed = views_[index] != activeView_;
                 activeView_ = views_[index];
+                if (changed) {
+                    // the show flags a check item draws are the active view's
+                    syncUi();
+                }
                 cameraTool_->view(activeView_);
                 if (selectTool_) {
                     selectTool_->view(activeView_);
@@ -367,7 +531,11 @@ namespace v3d::editor {
         }
         if (!directory_.invoke(event)) {
             logger_->get()->warn("no command is registered as {}", event.str());
+            return;
         }
+        // a check item shows what the editor holds rather than remembering its own state, so
+        // whatever the command changed is read back here
+        syncUi();
     }
 
 };  // namespace v3d::editor

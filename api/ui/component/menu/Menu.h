@@ -104,18 +104,20 @@ namespace v3d::ui::component {
         void parent(boost::weak_ptr<Menu> p);
 
         /**
+         * Send a menu item's bound event, carrying its value as event data when it has one.
+         * Public because a menu bar activates an item the cursor is on rather than the one
+         * navigation left active.
+         * @return false when the item has no event bound to it
+         **/
+        bool dispatch(const boost::shared_ptr<MenuItem>& item) const;
+
+        /**
          * Check to see if this is a submenu.
          * @return true if this is a submenu.
          **/
         bool hasParent() const;
 
      private:
-        /**
-         * Send a menu item's bound event, carrying its value as event data when it has one.
-         * @return false when the item has no event bound to it
-         **/
-        bool dispatch(const boost::shared_ptr<MenuItem>& item) const;
-
         boost::shared_ptr<entt::dispatcher> dispatcher_;
         std::vector< boost::shared_ptr<MenuItem> > items_;
         int active_;  // the active item in this menu, or -1 when there is none

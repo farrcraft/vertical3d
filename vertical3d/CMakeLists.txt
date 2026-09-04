@@ -41,6 +41,7 @@ target_link_libraries(vertical3d PRIVATE
 	v3dlib_log
 	v3dlib_render
 	v3dlib_type
+	v3dlib_ui
 	${Boost_LIBRARIES}
 	${SDL3_LIBRARIES}
 	${Vulkan_LIBRARIES}
@@ -49,6 +50,7 @@ target_link_libraries(vertical3d PRIVATE
 	Freetype::Freetype
 )
 
+v3d_add_shared_data(vertical3d)
 v3d_add_app_data(vertical3d)
 
 target_compile_options(vertical3d PRIVATE /EHsc)

@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <string>
 #include <vector>
 
 #include "Manipulator.h"
@@ -12,13 +13,19 @@
 #include "ViewPort.h"
 
 #include "../../api/asset/Manager.h"
+#include "../../api/font/TextureFontCache.h"
+#include "../../api/font/TextureTextBuffer.h"
 #include "../../api/log/Logger.h"
+#include "../../api/render/realtime/Canvas.h"
 #include "../../api/render/realtime/Engine3D.h"
 #include "../../api/render/realtime/LineCanvas.h"
 #include "../../api/render/realtime/Window.h"
+#include "../../api/ui/ComponentRenderer.h"
+#include "../../api/ui/Engine.h"
 
 #include <boost/shared_ptr.hpp>
 #include <entt/entt.hpp>
+#include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
 namespace v3d::editor {
@@ -36,6 +43,10 @@ namespace v3d::editor {
      * own region. The handle pass that follows it does not, and keeps what the scene pass
      * left: the manipulator is an overlay, and an overlay is a pass without depth per
      * ADR-0011.
+     *
+     * One more pass follows all of them, over the whole window rather than a view, and holds
+     * the ui - quads rather than lines, because a panel and a glyph are the same primitive
+     * per ADR-0005.
      */
     class Renderer final {
      public:
@@ -70,6 +81,17 @@ namespace v3d::editor {
         void manipulator(const boost::shared_ptr<Manipulator>& manipulator);
 
         /**
+         * The ui drawn over every view, or null to draw none.
+         **/
+        void ui(const boost::shared_ptr<v3d::ui::Engine>& ui);
+
+        /**
+         * How much of the window's edges the ui covers - the menu bar and the toolbars - which
+         * is what the views are not given. Left in x and top in y.
+         **/
+        glm::vec2 insets() const;
+
+        /**
          * Draw one frame - a pass per view.
          **/
         void draw();
@@ -80,6 +102,21 @@ namespace v3d::editor {
         void shutdown();
 
      private:
+        /**
+         * Build the glyph atlas the ui is drawn with, and upload it once.
+         **/
+        void loadFont(const boost::shared_ptr<v3d::asset::Manager>& assetManager);
+
+        /**
+         * Lay a string out at the pen and append its glyphs to the ui canvas.
+         **/
+        void drawText(const std::string& text, const glm::vec2& pen, const glm::vec4& colour);
+
+        /**
+         * Fill the ui canvas and give the frame the one pass that draws it.
+         **/
+        void drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& frame);
+
         boost::shared_ptr<v3d::log::Logger> logger_;
 
         // first, so that everything holding a device handle below is destroyed before the
@@ -94,6 +131,15 @@ namespace v3d::editor {
         std::vector<v3d::render::realtime::LineCanvas> canvases_;
         // and one more per view for the handles, which are drawn in a pass of their own
         std::vector<v3d::render::realtime::LineCanvas> overlays_;
+
+        boost::shared_ptr<v3d::ui::Engine> ui_;
+        boost::shared_ptr<v3d::ui::ComponentRenderer> uiRenderer_;
+        v3d::render::realtime::Canvas canvas_;
+        boost::shared_ptr<v3d::font::TextureFontCache> fontCache_;
+        boost::shared_ptr<v3d::font::TextureTextBuffer> text_;
+        v3d::font::TextureTextBuffer::Markup markup_;
+        v3d::render::realtime::TextureHandle atlas_;
+
         glm::vec4 background_;
     };
 

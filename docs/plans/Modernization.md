@@ -921,8 +921,16 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
   - **A project saves and opens as of 2026-09-02**, per ADR-0018 below: `project::load` and
     `project::save` read and write one JSON document, and `v3d::editor::Project` is the
     reader and the writer.
-  - Not yet: there is no ui - the menus and the two toolbars of `gui.xml` are still
-    untranslated, and 30 of its 51 commands have no handler.
+  - **The menus landed 2026-09-02**, per ADR-0019 below: `data/vgui.json` is gui.xml's menu
+    tree, drawn as a bar across the top of the window with dropped panels and flyouts, and a
+    click on an item sends the same command a key binding does. The views divide what is left
+    of the window under it.
+  - **The toolbars landed 2026-09-04**, as two more components of `data/vgui.json`: a row of
+    select mask buttons under the menu bar and a column of tool buttons down the left side,
+    both of them applying ADR-0019's two rules to `component::Button` - a press is answered
+    out of the bounds the last draw left, and a toggle shows a flag it does not own.
+    `ComponentRenderer::insets()` is what the views are shrunk by. 55 of the menu's 75
+    commands still have no handler and log themselves when clicked.
 - ~~Multiple viewports are the feature that will push hardest on the pass model from
   [ADR-0003](../adr/0003-one-realtime-engine.md).~~ Done 2026-09-01, and **the model
   expressed it**. Four views is four `Pass`es over one `Frame`: each carries its region as
@@ -1033,14 +1041,48 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
   - Still open: there is no file chooser, so both commands work on one document at a fixed
     path beside the executable. No "save as", no dirty flag, and nothing warns before a load
     replaces unsaved work.
-- Delete `rigel/` once the fold-in is complete, and not before. The survey lists what has to
-  land first: the menus and toolbars of item 1.
+- ~~**There is nothing that draws a menu.**~~ Landed 2026-09-02 as
+  [ADR-0019](../adr/0019-the-ui-is-laid-out-by-what-draws-it.md). `api/ui` had a menu, but it
+  was a game's pause menu - one panel centred on the canvas, navigated by the keyboard, with
+  no notion of a strip and no idea where the cursor is. **Drawing is what lays the ui out**:
+  `ComponentRenderer` leaves every component holding the bounds it was drawn in, and
+  `component::MenuBar` answers the cursor by testing it against those. The components already
+  carried a position, a size and a `bound()` and nothing had ever written to them.
+  - A menu is drawn twice at once - a label in the strip and the panel it drops - so the
+    label's bounds live on the bar and the menu's own are the panel. One component cannot
+    hold two rectangles.
+  - **A check item does not own the state it shows.** `menu::ItemType` gained `Check` and
+    `Radio`, which is what gui.xml marks its `<menuitem>`s with; activating one sends its
+    command and marks nothing, and `Controller::syncMenu` reads the editor back afterwards.
+    Otherwise the mark would disagree with the flag the first time a key invoked the same
+    command.
+  - The bar is offered the cursor before the tools, except during a gesture, and a press it
+    took is remembered so the release does not reach three tools that never saw the press.
+  - **gui.xml has 79 distinct command strings, not the 51 recorded here and in the survey**;
+    73 of them are on a menu and six more only on a toolbar or a binding. The editor answers
+    to 24, 20 of which the menu names - the other four are `view::drag` and the three camera
+    modifiers, which are held rather than invoked.
+  - Verified against a run: the bar over four viewports, Create > Poly > Cube making a cube,
+    the three show flags marked and toggling, an unregistered command logging itself, and
+    Project > Quit shutting down - validation silent throughout.
+  - ~~Still open: the two toolbars.~~ Landed 2026-09-04, under the same ADR: `component::Toolbar`
+    is a strip of buttons on the top or the left edge, `Button` carries the same
+    `event::Event` a menu item does, and both are drawn onto the ui canvas. Two things the
+    translation could not take verbatim: gui.xml's top toolbar gives its nine buttons neither
+    a name nor an icon, so the four the editor has a mask for are labelled with the mask's own
+    name and the five with no node type to select are left out as ADR-0014 left them out of
+    the mask; and the left toolbar's four icons are labelled instead, there being no image
+    path in `api/ui` - `style::property::Image` is write-only like the rest of the theme.
+    `rigel/icons/` is where those four PNGs are if an iconic toolbar is ever wanted.
+- Delete `rigel/` once the fold-in is complete, and not before. The survey's list is worked
+  off as of 2026-09-04; the four icons in `rigel/icons/` are the only thing in the tree that
+  a later change would want, and nothing else is.
 
 Done when: the editor opens a project, draws a scene from multiple viewports, and rigel has
 nothing left worth taking. It draws a scene from multiple viewports as of 2026-09-02, selects
 what is in it, moves, turns and resizes what is selected, takes any of it back, dispatches
-every one of those by name, and saves and opens what it has made. There are no menus, which is
-the last of it.
+every one of those by name, saves and opens what it has made, and carries gui.xml's menus and
+both of its toolbars as of 2026-09-04. What is left is deleting `rigel/`.
 
 ### Ongoing — tests
 
@@ -1054,7 +1096,8 @@ the app ones for tetris, voxel and the editor included. Coverage is `type`, `bre
 canvas's batching, transform stack and projection - and `ui`, whose ComponentRenderer is
 testable because it takes text measuring and writing as callbacks. Still uncovered: `asset`,
 `config`, `dag`, `ecs`, `audio`, `log`, and everything in `api/render` below the recorder.
-230 cases as of 2026-09-02, the editor's command directory and project file included.
+240 cases as of 2026-09-04, the editor's command directory and project file and the
+ui's toolbar included.
 
 `pong/run-unit-tests.sh` and `tetris/run-unit-tests.sh` still invoke a `unit_tests` binary
 that no CMakeLists builds; they belong to tier 3 and are stale until it lands.

@@ -14,7 +14,7 @@ namespace v3d::ui::component {
 
     MenuItem::MenuItem(menu::ItemType type, const std::string& label) :
         Component(component::Type::MENU_ITEM),
-        label_(label), type_(type), hasValue_(false) {
+        label_(label), type_(type), checked_(false), hasValue_(false) {
     }
 
     void MenuItem::label(const std::string& str) {
@@ -88,6 +88,18 @@ namespace v3d::ui::component {
 
     menu::ItemType MenuItem::type() const {
         return type_;
+    }
+
+    /**
+     **/
+    void MenuItem::checked(bool on) {
+        checked_ = on;
+    }
+
+    /**
+     **/
+    bool MenuItem::checked() const {
+        return checked_;
     }
 
 };  // namespace v3d::ui::component

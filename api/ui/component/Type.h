@@ -31,6 +31,7 @@ namespace v3d::ui::component {
         TAB_BAR = 19,
         TAB_PAGE = 20,
         TEXT_BOX = 21,
-        TOOLTIP = 22
+        TOOLTIP = 22,
+        TOOLBAR = 23
     };
 }  // namespace v3d::ui::component

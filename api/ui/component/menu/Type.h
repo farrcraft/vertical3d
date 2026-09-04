@@ -12,6 +12,8 @@ namespace v3d::ui::menu {
         Unknown,
         Action,
         Submenu,
+        Check,
+        Radio,
         Input,
         NumericInput,
         KeyInput
@@ -22,6 +24,10 @@ namespace v3d::ui::menu {
             return ItemType::Action;
         } else if (typeName == "submenu") {
             return ItemType::Submenu;
+        } else if (typeName == "check") {
+            return ItemType::Check;
+        } else if (typeName == "radio") {
+            return ItemType::Radio;
         } else if (typeName == "input") {
             return ItemType::Input;
         } else if (typeName == "numeric_input") {

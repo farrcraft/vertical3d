@@ -363,8 +363,24 @@ games; it is blocked by the api never having had a customer that draws lines or 
    files load through `api/config`, which gained a `camera` and a `layout` type for them.
    The command strings behind the menus are translated as of 2026-09-02 — item 8 registers
    nineteen of them under gui.xml's own names, and item 9 adds `project::load` and
-   `project::save`, so a menu item has something to invoke. The menus themselves and the two
-   toolbars are not translated.
+   `project::save`, so a menu item has something to invoke. **The menus themselves landed
+   2026-09-02**, as `vertical3d/data/vgui.json` and
+   [ADR-0019](adr/0019-the-ui-is-laid-out-by-what-draws-it.md): nine menus over 75 commands,
+   drawn by `api/ui` as a bar with dropped panels and flyouts, hit tested against the bounds
+   the renderer leaves on each component. **The two toolbars landed 2026-09-04**, which
+   closes this item: `ui::component::Toolbar` is a strip of `Button`s on the top or the left
+   edge of the window, and both are more of `vertical3d/data/vgui.json`. Two departures from
+   what gui.xml says, both forced: its top toolbar gives its nine buttons neither a name nor
+   an icon, so the four masks the editor has are labelled with the mask's own name and the
+   five with no node type to select are left out, as ADR-0014 left them out of the mask; and
+   the left toolbar's four buttons are labelled rather than drawn from `rigel/icons/`, there
+   being no image path in `api/ui`. Those four PNGs are the one thing left in this tree that
+   a later change would want.
+
+   **gui.xml has 79 distinct command strings, not the 51 counted below**; 73 of them are on
+   a menu, and six — `view::camera::{pan,truck,zoom}`, `view::display::{shaded,wireframe}`
+   and `view::pop` — appear only on a toolbar or a binding. The editor answers to 24, 20 of
+   which the menu names.
 2. ~~Give `api/type::CameraProfile` back its accessors, including the viewport size that
    `orthoFactor()` divides by, and decide whether adaptive projection and position come
    back.~~ Done 2026-09-01, both options included.

@@ -24,6 +24,9 @@
 #include "../../api/event/Event.h"
 #include "../../api/event/MouseMotion.h"
 #include "../../api/event/WindowResize.h"
+#include "../../api/ui/Engine.h"
+#include "../../api/ui/component/Toolbar.h"
+#include "../../api/ui/component/menu/MenuBar.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
@@ -77,6 +80,31 @@ namespace v3d::editor {
         void handleResize(const v3d::event::WindowResize& event);
 
      private:
+        /**
+         * Read the ui tree and find the menu bar and the toolbars in it.
+         * @return whether there is a ui to draw
+         **/
+        bool buildUi();
+
+        /**
+         * Mark the menu items and toolbar buttons whose commands describe a state the editor
+         * holds, so that what a check item and a toggle button show is read from the editor
+         * rather than remembered by the ui.
+         **/
+        void syncUi();
+
+        /**
+         * Offer the cursor to the ui before the tools see it.
+         * @return whether the ui took it
+         **/
+        bool uiMotion(const glm::vec2& cursor);
+
+        /**
+         * Offer a press to the ui before the tools see it.
+         * @return whether the ui took it
+         **/
+        bool uiPress(const glm::vec2& cursor);
+
         /**
          * Register a handler for every command the editor answers to. What is not in here
          * is what the editor cannot do, which is how an untranslated menu item reports
@@ -147,6 +175,9 @@ namespace v3d::editor {
 
         std::string path_;
         boost::shared_ptr<Scene> scene_;
+        boost::shared_ptr<v3d::ui::Engine> vgui_;
+        boost::shared_ptr<v3d::ui::component::MenuBar> menu_;
+        std::vector<boost::shared_ptr<v3d::ui::component::Toolbar>> toolbars_;
         boost::shared_ptr<Project> project_;
         CommandDirectory directory_;
         boost::shared_ptr<CommandStack> commands_;
@@ -161,6 +192,9 @@ namespace v3d::editor {
         boost::shared_ptr<Renderer> renderer_;
 
         glm::vec2 cursor_;
+        // whether the ui took the press, so that the release that ends it does not reach
+        // the tools that never saw the press
+        bool uiGrab_;
     };
 
 };  // namespace v3d::editor
