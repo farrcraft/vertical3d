@@ -48,6 +48,9 @@ Treat this workstream as closed.
 **The legacy trees are not all the same kind of thing, and only one is disposable.**
 None of `v3dlibs/`, `luxa/`, `rigel/`, `vertical3d/` or `vault/` is in the root
 `add_subdirectory` list, so "not built" says nothing about whether it is finished with.
+**`rigel/`, `luxa/` and `vault/quantumxml` are all deleted as of 2026-09-04**, each after
+its own list was worked off or, in vault's case, with no list to work off; `v3dlibs/` is what
+is left.
 
 - **`vertical3d/` is an app, not dead code.** It is the desktop 3D editing tool the
   repository is named after, listed in `README.md` alongside the others. It is to be
@@ -59,22 +62,23 @@ None of `v3dlibs/`, `luxa/`, `rigel/`, `vertical3d/` or `vault/` is in the root
   fold-in is a harvest of behaviour plus one XML data file, and the blocking list is eleven
   items long. It can only be deleted after the fold-in.
 - **`luxa/` and `v3dlibs/` are migrations in progress**, and each needs a functional
-  equivalence audit before removal, not an assumption that `api/` covers it.
+  equivalence audit before removal, not an assumption that `api/` covers it. `luxa/`'s is
+  worked off and the tree is gone, 2026-09-04.
 - **`vault/quantumxml` is genuinely archived** — an XML parser superseded by the JSON
   config work, per `docs/Vault.md` and the first item on `docs/TODO.md`.
 
 Among the apps, none still includes a legacy header — `voxel/src/Controller.h` is already
 clean, and pong's Luxa usage is commented out. `vertical3d/` was the last consumer, of
 `v3dlibs/core`, `hookah` and `command`; the rewrite of 2026-09-01 dropped all six includes
-and the move of `core/` into `vertical3d/src` on 2026-09-02 emptied that directory. **Only
-`luxa/` includes a `v3dlibs/` header now**, from seven of its own files, and neither tree is
-built. The test corpus was the other thing holding the
+and the move of `core/` into `vertical3d/src` on 2026-09-02 emptied that directory. **Nothing includes a `v3dlibs/` header
+now**: `luxa/` was the last, from seven of its own files, and it was deleted on 2026-09-04. The test corpus was the other thing holding the
 tree up; it moved into per-library `api/<lib>/tests` on 2026-08-31, and `v3dlibs/tests/` is
 gone. The files deleted rather than migrated - `luxa/tests/` and two v3dlibs tests - turned
 out to be empty stubs.
 
-**The luxa audit is done.** Written up in [docs/LuxaAudit.md](../LuxaAudit.md), 2026-08-31.
-`luxa/` cannot be deleted yet, and the blocking list is nine items long. The short version:
+**The luxa audit is done, and closed.** Written up in
+[docs/LuxaAudit.md](../LuxaAudit.md), 2026-08-31, worked off on 2026-09-04 and the tree
+deleted with it. The nine item list as it stood: The short version:
 `ComponentRenderer` has to be rebuilt on the Vulkan quad rather than ported, and takes the
 ortho UI pass and theme-to-font resolution with it; `ComponentManager` is only half covered
 by `ui::Engine` plus `ui::Container`, with mouse hit-testing, hover/focus, the active theme
@@ -82,7 +86,12 @@ and image loading all unported; and `ui::Engine::load` covers menus alone, so th
 `api/ui/style/` is migrated but unreachable. Two of the three flagged unknowns shrank on
 inspection — `Window` is an empty stub with no implementation, and `MenuStack` is a `draw()`
 routine whose navigation was always in `Menu`, which migrated intact, so `ui::Navigation`
-needs no reconciliation.
+needs no reconciliation. What closed it: the renderer was rebuilt on the batched quad with
+the menu bar (ADR-0019), hit-testing arrived with it against the bounds a draw leaves, and
+the theme half landed as
+[ADR-0020](../adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md) - a theme is JSON,
+`ComponentRenderer` draws with the `ui` style it names, and an image the config names is
+resolved to a texture by a callback the app supplies rather than by the library loading it.
 
 The audit also turned up regressions in `api/ui` itself, none blocked by Vulkan. The worst:
 `Menu::activate()` had its dispatch commented out, and the menu never navigated at all
@@ -222,10 +231,13 @@ before building the frame loop around it, or it gets built twice.
 
 None of this is blocked. It shrinks the surface area everything else has to work against.
 
-- Delete `vault/quantumxml`. It is the only tree that can go without an audit first.
-- ~~Audit `luxa/` against `api/ui`~~ — done, [docs/LuxaAudit.md](../LuxaAudit.md). The tree
-  stays until its nine-item blocking list is worked off; five of those items need nothing
-  that does not already exist, and the rest land in Phase 3.
+- ~~Delete `vault/quantumxml`. It is the only tree that can go without an audit first.~~
+  Done 2026-09-04.
+- ~~Audit `luxa/` against `api/ui`~~ — done, [docs/LuxaAudit.md](../LuxaAudit.md), and
+  **the nine-item list is worked off and the tree deleted as of 2026-09-04**. The last two
+  items were one piece of work, recorded as
+  [ADR-0020](../adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md): a theme is
+  data the ui engine reads, and an image it names is resolved to a texture by the app.
 - ~~Audit `v3dlibs/` against the api libraries~~ — done,
   [docs/V3dlibsAudit.md](../V3dlibsAudit.md). Five things have to land before the tree can
   go, and the last of them waits on Phase 6 unless `core/` is moved across early.
@@ -295,7 +307,8 @@ None of this is blocked. It shrinks the surface area everything else has to work
   `out/build/` still reads the years-stale manual copy.
 
 Done when: the whole tree builds, `vault/` is gone, and the luxa and v3dlibs audits have
-produced a written list of what still has to move. Both audits are closed.
+produced a written list of what still has to move. Both audits are closed, and `vault/` went
+on 2026-09-04. **Phase 1 is done.**
 
 ### Phase 2 — Vulkan to first pixel
 
@@ -1071,18 +1084,22 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
     translation could not take verbatim: gui.xml's top toolbar gives its nine buttons neither
     a name nor an icon, so the four the editor has a mask for are labelled with the mask's own
     name and the five with no node type to select are left out as ADR-0014 left them out of
-    the mask; and the left toolbar's four icons are labelled instead, there being no image
-    path in `api/ui` - `style::property::Image` is write-only like the rest of the theme.
-    `rigel/icons/` is where those four PNGs are if an iconic toolbar is ever wanted.
-- Delete `rigel/` once the fold-in is complete, and not before. The survey's list is worked
-  off as of 2026-09-04; the four icons in `rigel/icons/` are the only thing in the tree that
-  a later change would want, and nothing else is.
+    the mask; and the left toolbar's four icons were labelled instead, there being no image
+    path in `api/ui` at the time. **The left toolbar is iconic as of 2026-09-04**, with
+    [ADR-0020](../adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md): a `Button`
+    names an image, the ui engine's image pass resolves it through the app, and the four PNGs
+    were recovered out of `rigel/icons/` into `vertical3d/data/icons/` before that tree was
+    deleted.
+- ~~Delete `rigel/` once the fold-in is complete, and not before.~~ **Deleted 2026-09-04**,
+  the survey's list having been worked off. The four icons in `rigel/icons/` went with it and
+  are the only thing a later change would want; `git show 54d79e8^:rigel/icons/rotate.png` is
+  where they are if an iconic toolbar is ever built.
 
 Done when: the editor opens a project, draws a scene from multiple viewports, and rigel has
 nothing left worth taking. It draws a scene from multiple viewports as of 2026-09-02, selects
 what is in it, moves, turns and resizes what is selected, takes any of it back, dispatches
 every one of those by name, saves and opens what it has made, and carries gui.xml's menus and
-both of its toolbars as of 2026-09-04. What is left is deleting `rigel/`.
+both of its toolbars as of 2026-09-04, and `rigel/` is deleted. **Phase 6 is done.**
 
 ### Ongoing — tests
 
@@ -1096,8 +1113,8 @@ the app ones for tetris, voxel and the editor included. Coverage is `type`, `bre
 canvas's batching, transform stack and projection - and `ui`, whose ComponentRenderer is
 testable because it takes text measuring and writing as callbacks. Still uncovered: `asset`,
 `config`, `dag`, `ecs`, `audio`, `log`, and everything in `api/render` below the recorder.
-240 cases as of 2026-09-04, the editor's command directory and project file and the
-ui's toolbar included.
+254 cases as of 2026-09-04, the editor's command directory and project file and the
+ui's toolbar and theme included.
 
 `pong/run-unit-tests.sh` and `tetris/run-unit-tests.sh` still invoke a `unit_tests` binary
 that no CMakeLists builds; they belong to tier 3 and are stale until it lands.
@@ -1127,7 +1144,7 @@ Work:
 - Add ctest to CI alongside cpplint. Nothing yet builds the tree in CI, so this is a new
   workflow rather than a step added to the cpplint one.
 - Cover the api libraries the salvage did not reach: `asset`, `config`, `dag`, `ecs`,
-  `audio`, `ui`. `config` and `asset` are the ones an app most visibly depends on - the
+  `audio`. `ui` is covered as of 2026-09-04 - its renderer, menu bar, toolbar and theme. `config` and `asset` are the ones an app most visibly depends on - the
   config-format migrations in this phase were verified by reading `Config::load`, not by
   running it.
 - Revive `moya/tests/` (five real test files, no target), which is tier 3 and now needs

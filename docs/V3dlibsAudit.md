@@ -315,8 +315,10 @@ what it does now rather than an empty shell.
    `Logger` had moved to `api/log` — so the directory and `v3dlib_core` are gone with them.
 4. Delete `component/Component.h`, `hookah/Hookah.h` and `hookah/drivers/sdl2/` with the
    tree. Nothing to salvage. (Deleting `drivers/sdl2/` also closes the SDL3 workstream.)
-5. Rewrite `vertical3d/`'s six legacy includes, or accept that the tree survives until
-   Phase 6 begins.
+5. ~~Rewrite `vertical3d/`'s six legacy includes, or accept that the tree survives until
+   Phase 6 begins.~~ **Done** - the rewrite of 2026-09-01 dropped all six, and with `luxa/`
+   deleted on 2026-09-04 **nothing in the tree includes a `v3dlibs/` header any more**. Only
+   item 4 is left, which is the deletion itself.
 
 Then `v3dlibs/` can be deleted.
 
