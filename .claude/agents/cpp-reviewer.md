@@ -59,9 +59,9 @@ keeps a build health list; check it before attributing a failure to the diff.
 - **A source file added without being added to its `CMakeLists.txt`.** Every source list in
   this repo is hand-written. A missing entry is a link error at best and a silently
   unbuilt file at worst.
-- **Anything new under `v3dlibs/`, `luxa/`, `rigel/`, `vault/` or `vertical3d/`.** Those
-  trees are not in the build and are slated for deletion. Adding to them is work that will
-  be thrown away.
+- **An `#include` or a reference to `v3dlibs/`, `luxa/`, `rigel/` or `vault/`.** All four
+  trees were deleted on 2026-09-04. Nothing can name them any more, and a diff that does is
+  either stale or was written against a checkout that predates the deletion.
 
 ## MAJOR — conventions
 
@@ -121,10 +121,10 @@ From `docs/sdlc.md`:
 - **A decision restated rather than linked.** `docs/adr/` is the only home; a plan or a
   comment that re-argues a recorded decision will eventually disagree with it. A comment
   citing "per ADR-00NN" and then summarising it is the same finding.
-- **A comment carrying something that will expire.** Provenance from a tree scheduled for
-  deletion (`rigel/`, `v3dlibs/`, `luxa/`, `vault/`), the history of what the code used to
-  be, or a roadmap for a later phase. Keep the rule, drop the attribution. See the comment
-  convention in `CLAUDE.md`.
+- **A comment carrying something that will expire.** Provenance from a deleted tree
+  (`rigel/`, `v3dlibs/`, `luxa/`, `vault/`), the history of what the code used to be, or a
+  roadmap for a later phase. Keep the rule, drop the attribution. See the comment convention
+  in `CLAUDE.md`.
 - **A change that moved a workstream without updating the plan's state notes**, or changed
   architecture, build or convention without updating `CLAUDE.md`.
 

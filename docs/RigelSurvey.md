@@ -1,5 +1,11 @@
 # Rigel Survey
 
+**Closed 2026-09-04. `rigel/` is deleted.** The eleven-item list is worked off; what follows
+is the record of what the tree held and where each piece went, kept because it is the only
+account of that. Recover a source with `git show 54d79e8^:rigel/...` — the four PNGs in
+`rigel/icons/` are the only thing a later change is likely to want, and they were already
+recovered into `vertical3d/data/icons/`.
+
 Phase 6 of [plans/Modernization.md](plans/Modernization.md). Surveyed against the tree on
 2026-09-01.
 
@@ -373,9 +379,12 @@ games; it is blocked by the api never having had a customer that draws lines or 
    what gui.xml says, both forced: its top toolbar gives its nine buttons neither a name nor
    an icon, so the four masks the editor has are labelled with the mask's own name and the
    five with no node type to select are left out, as ADR-0014 left them out of the mask; and
-   the left toolbar's four buttons are labelled rather than drawn from `rigel/icons/`, there
-   being no image path in `api/ui`. Those four PNGs are the one thing left in this tree that
-   a later change would want.
+   the left toolbar's four buttons were labelled rather than drawn from `rigel/icons/`, there
+   being no image path in `api/ui` at the time. **The second departure closed the same day**,
+   with [ADR-0020](adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md): a `Button`
+   names an image, the ui engine's image pass resolves it through the app, and the four PNGs
+   were recovered into `vertical3d/data/icons/` before this tree was deleted. The top toolbar
+   is still labelled, gui.xml naming nothing to draw there.
 
    **gui.xml has 79 distinct command strings, not the 51 counted below**; 73 of them are on
    a menu, and six — `view::camera::{pan,truck,zoom}`, `view::display::{shaded,wireframe}`
@@ -436,7 +445,10 @@ games; it is blocked by the api never having had a customer that draws lines or 
    document holds; and there is no scene array, the editor having one `Scene` and the
    `version` field being what makes adding the level cheap. Rigel's `Window::fileChooser`
    has no counterpart, so both commands work on one document at a fixed path.
-10. Settle `api/brep`'s three unbuilt files — port or delete.
+10. Settle `api/brep`'s three unbuilt files — port or delete. **Still open**, and it did not
+    hold the deletion up: `Edge`, `HalfEdgeBRep` and `WingedEdgeBRep` are in `api/brep/` and
+    absent from its `add_library` list, which is a question about that library rather than
+    about this tree. It is the one item on [TODO.md](TODO.md) that came from here.
 11. ~~Multiple viewports, which is the phase's headline feature and wants items 2, 3 and 6
     first.~~ Done 2026-09-01, and it wanted 2 and 3 but not 6. Four passes over one frame,
     each with its region and its camera.
@@ -444,5 +456,12 @@ games; it is blocked by the api never having had a customer that draws lines or 
 ~~Undo is on the phase 6 list and rigel contributes nothing to it; it should be scoped
 independently rather than treated as a fold-in.~~ Done that way on 2026-09-02, as ADR-0016.
 
-Delete `rigel/` when 1 through 10 have landed - 1 and 10 are what is left. `docs/xml/gui.xml`,
-the four icons and this document are what should outlive it.
+**`rigel/` was deleted on 2026-09-04**, with 1 through 9 and 11 landed. Item 10 went with it
+unanswered, which was the right call — it is a question about `api/brep`, not about anything
+this tree held.
+
+Of the three things that were to outlive it, two did: the four icons are in
+`vertical3d/data/icons/`, and this document. **`docs/xml/gui.xml` did not** — it is in git
+history only, at `git show 54d79e8^:rigel/docs/xml/gui.xml`. Its content survives translated,
+across `vertical3d/data/`'s `vgui.json`, `cameras.json`, `layout.json` and `mappings.json`,
+but a question about what the original said has to go to git.

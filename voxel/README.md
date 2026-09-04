@@ -3,25 +3,16 @@
 A Minecraft inspired random voxel world generation app.
 
 
+Ported onto the current api and Vulkan on 2026-09-01: terrain draws through a depth tested,
+sorted pass of voxel's own pipeline, one draw item per meshed chunk, with a second pass of
+batched quads for the debug overlay and the game menu. [../docs/VoxelSurvey.md](../docs/VoxelSurvey.md)
+is the record of what it was before that.
+
 ## Dependencies
 
-### My own local base code libraries
-
-* v3dlibs
-* stark
-
-### 3rd party libraries
-
-* SDL 2 (2.0.3)
-* boost (1.57)
-* glew (1.11.0)
-* glm (0.9.6.1)
-* log4cxx
-* libnoise (1.0)
-* freetype (2.5)
-
-CMake should be installed to build some of the 3rd party libraries.
-
-SDL 2 requires the old DirectX SDK.  The new Windows SDK will not work.
-
-libnoise requires the MFC components to be installed with Visual Studio.
+Everything but libnoise comes from the repository's own libraries and its vcpkg manifest — see
+[../docs/Dependencies.md](../docs/Dependencies.md). Voxel is the only app that links
+[libnoise](https://github.com/eXpl0it3r/libnoise), which is a git submodule built separately, and
+it will not link without it. Its test suite links libnoise too: `Chunk` is built against a
+`TerrainMap`, and the vtable of the flat one a test supplies refers to the perlin implementation
+whether or not any case generates noise.

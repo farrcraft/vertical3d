@@ -1,6 +1,6 @@
 # The Rendering Pipeline
 
-Describes what `api/render/realtime` actually does, as of 2026-09-01. It was a page of open
+Describes what `api/render/realtime` actually does, as of 2026-09-04. It was a page of open
 questions until the Vulkan frame loop landed; the questions that are still open are at the
 bottom, and the rest is now a description rather than a proposal.
 
@@ -284,8 +284,9 @@ for a handle to sort on. So `vulkan::Mesh` is owned by whatever built it - a chu
 - **Merging.** Sorting groups the draws that could be merged into one, and nothing merges
   them. Adjacent items sharing a pipeline and a material still cost a draw call each.
 - **Offscreen targets**, and with them compositing and logical presentation.
-- **A second depth buffer.** There is one per context, so two passes wanting different depth
-  at the same time - which four editor viewports may - would share it.
+- **A second depth buffer.** There is one per context, and the editor's four viewports do
+  share it. That works only because their regions do not overlap and each pass clears its
+  own: two passes wanting different depth over the same pixels would not.
 - **Culling.** Nothing is culled against the frustum. Voxel submits an item per meshed chunk
   whether or not the chunk is in front of the camera, which is what its chunk-local vertices
   and per-chunk origin were put in place to make possible.

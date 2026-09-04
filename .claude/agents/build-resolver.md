@@ -111,7 +111,8 @@ result is dropped is a defect even if it builds.
 
 ```
 cpplint --linelength=180 --filter=-runtime/indentation_namespace,-build/namespaces_literals \
-  --exclude=vault --exclude=voxel/src/noise --exclude=v3dlibs --exclude=rigel --exclude=luxa --recursive .
+  --exclude=out --exclude=vendor --exclude=vcpkg_installed \
+  --exclude=voxel/src/noise --recursive .
 ```
 
 **Every file in the repo reports `whitespace/indent_namespace`** because the filter names
@@ -121,15 +122,17 @@ that whole class of noise is a known defect in the workflow, not in the code.
 
 ## Tests
 
-Six Boost.Test binaries, one per covered api library, built from `api/<lib>/tests/` and run
-with `ctest --test-dir out/build/x64-Debug`. They cover `type`, `brep`, `image`, `font`,
-`input` and `event` only - there is nothing for `asset`, `config`, `dag`, `ecs`, `audio`,
-`ui` or any of `api/render`, so for a change outside those six libraries building is still
-the only available check. The per-app `run-unit-tests.sh` scripts invoke a `unit_tests`
-binary that does not exist; ignore them.
+16 Boost.Test binaries over 332 cases, built from `api/<lib>/tests/` and `<app>/tests/` and
+run with `ctest --test-dir out/build/x64-Debug`. They cover `type`, `brep`, `dag`, `image`,
+`font`, `input`, `event`, `asset`, `config`, the window-free half of `render` and of `ui`,
+and the apps `pong`, `tetris`, `voxel`, `vertical3d` and `moya`. Nothing covers `ecs`,
+`audio`, `log`, `engine` or anything in `api/render` below the recorder, so for a change
+there building is still the only available check. CI runs the whole thing —
+[.github/workflows/ctest.yml](../../.github/workflows/ctest.yml).
 
-Nothing renders either — the Vulkan frame loop does not exist yet — so "it builds" is the
-whole of the signal for anything under `api/render`.
+Rendering is not covered: it needs a window and a GPU, which is
+[ADR-0007](../../docs/adr/0007-ci-rendering-tests.md). For anything under `api/render`,
+"it builds" plus a run with the validation layer is the whole of the signal.
 
 ## Workflow
 
@@ -141,9 +144,10 @@ whole of the signal for anything under `api/render`.
 5. **Rebuild the target that failed**, not the whole tree.
 6. **Run cpplint on the files you touched** if you edited C++.
 
-Never edit anything under `v3dlibs/`, `luxa/`, `rigel/`, `vault/` or `vertical3d/` to fix a
-build. Those trees are not in the build at all; if a change there appears to be the fix, you
-have misread the problem.
+Every directory in the root is in the build now — the legacy trees `v3dlibs/`, `luxa/`,
+`rigel/` and `vault/` were all deleted on 2026-09-04, and `vertical3d/` is the editor and is
+built. `vendor/` is the one exception: those are submodules built separately, and a fix that
+edits one is almost always a misread of the problem.
 
 ## Reporting
 

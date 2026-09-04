@@ -18,6 +18,11 @@ that split functionality across a larger number of smaller packages, it's much m
 In the current iteration, everything is being moved into a monorepo, both build systems have been  
 entirely replaced with CMake, namespaces are more granular, and code is targetting C++17 or newer.
 
+That modernization is tracked in [docs/plans/Modernization.md](docs/plans/Modernization.md), whose
+six phases all closed on 2026-09-04 — OpenGL is gone and rendering is Vulkan throughout, SDL3
+replaced SDL2, and the four legacy trees are deleted. The decisions behind it are in
+[docs/adr/](docs/adr/), and [docs/sdlc.md](docs/sdlc.md) describes how work moves through the repo.
+
 ### Apps
 
 * imagetool - A basic image manipulation CLI tool

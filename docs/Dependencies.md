@@ -1,17 +1,26 @@
 # Dependencies
 
-- [libnoise](https://github.com/eXpl0it3r/libnoise) - This is an unofficial fork that adds CMake support.
-- glm
+Managed by `vcpkg`, through the manifest in [vcpkg.json](../vcpkg.json):
+
 - boost
 - entt
-- libjpeg
+- freetype
+- glm
+- libjpeg-turbo
 - libpng
-- sdl2
-- SoLoud
-- FreeType2
+- sdl3, **with its `vulkan` feature** - without it SDL builds with `SDL_VULKAN=OFF` and `SDL_Vulkan_LoadLibrary` fails at startup with "No dynamic Vulkan support in current SDL video driver (windows)"
+- spdlog
+- vulkan
 
-Dependencies are managed using `vcpkg` when possible.  Otherwise they are configured as git submodules in the `vendor/` directory.
-These submodules will need to be cloned and manually built individually.  See the Submodules section below for build instructions.
+Not from vcpkg:
+
+- **The Vulkan SDK**, which every configure needs whether or not it will draw: the root CMakeLists calls `find_package(Vulkan)` and looks for `glslc` with a `FATAL_ERROR`, because shaders are compiled at build time and embedded as SPIR-V. `VULKAN_SDK` has to point at an install.
+- [libnoise](https://github.com/eXpl0it3r/libnoise) - an unofficial fork that adds CMake support. A git submodule, built separately; only voxel links it.
+- [SoLoud](https://github.com/jarikomppa/soloud) - a git submodule, built separately. `v3dlib_audio` is built on it.
+
+Submodules are configured in the `vendor/` directory, and need to be cloned and built individually. See the Submodules section below. `link_directories` expects their artefacts under `vendor/*/Debug`.
+
+There is no OpenGL: `api/gl` was deleted on 2026-09-01, and the `find_package(OpenGL)` and `find_package(GLEW)` calls and the `glew` port went with it. See [adr/0001-vulkan-replaces-opengl.md](adr/0001-vulkan-replaces-opengl.md).
 
 
 # Packages
@@ -84,18 +93,36 @@ git submodule add https://github.com/jarikomppa/soloud vendor/soloud
 
 ## Building SoLoud
 
-SoLoud has a dependency on SDL2 which means that vcpkg-base dependencies need to be installed first.
+`SOLOUD_BACKEND_SDL2` defaults ON and this tree installs SDL3, so turn it off explicitly. What to
+turn on instead: `SOLOUD_BACKEND_NULL`, which is also on by default and is what CI builds since
+nothing under test plays a sound, or `SOLOUD_BACKEND_WINMM` on a machine that has to hear pong. The
+archive lands where the root CMakeLists' `link_directories` expects it.
 
 ```
-cd vendor/soloud/contrib
-cmake -B . -DSDL2_INCLUDE_DIR="..\..\..\vcpkg_installed\x64-windows\include" -DSDL2_LIBRARY="..\..\..\vcpkg_installed\x64-windows\lib"
-MSBuild SoLoud.sln /p:IncludePath="..\..\..\vcpkg_installed\x64-windows\include\SDL2;$(IncludePath)"
+cmake -S vendor/soloud/contrib -B vendor/soloud/build-ninja -G Ninja \
+  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+  -DSOLOUD_STATIC=ON -DSOLOUD_BUILD_DEMOS=OFF \
+  -DSOLOUD_BACKEND_NULL=ON -DSOLOUD_BACKEND_SDL2=OFF \
+  -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY=<repo>/vendor/soloud/contrib/Debug
+cmake --build vendor/soloud/build-ninja
 ```
+
+A prebuilt soloud is committed in the tree, so this is only needed on a fresh checkout or to change
+the backend.
 
 ## Building libnoise
 
+Build it **out of source**. The `CMakeCache.txt` libnoise commits names a "Visual Studio 17 2022"
+generator that is not necessarily installed, and reusing that cache is the usual reason a build of it
+fails. `CMAKE_POLICY_VERSION_MINIMUM` is needed because its `cmake_minimum_required(VERSION 3.0)`
+predates what current CMake accepts.
+
 ```
-cd vendor/libnoise
-cmake -B .
-MSBuild libnoise.sln
+cmake -S vendor/libnoise -B vendor/libnoise/build-ninja -G Ninja \
+  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+  -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebugDLL \
+  -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY=<repo>/vendor/libnoise/Debug
+cmake --build vendor/libnoise/build-ninja
 ```
+
+libnoise is not prebuilt in the tree, and `voxel` will not link without it.

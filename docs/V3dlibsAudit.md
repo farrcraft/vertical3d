@@ -1,7 +1,12 @@
 # v3dlibs Audit
 
+**Closed 2026-09-04. `v3dlibs/` is deleted.** All five items are worked off. What follows is
+the record of what the tree held and where each piece went, kept because it is the only
+account of that. Recover the sources from `git show 68821c4^:v3dlibs/...` if a question about
+the original ever comes up.
+
 Phase 1 of [plans/Modernization.md](plans/Modernization.md). Audited against the tree on
-2026-08-31. Companion to [LuxaAudit.md](LuxaAudit.md).
+2026-08-31. Companion to [LuxaAudit.md](LuxaAudit.md), which closed the same day.
 
 `v3dlibs/` is a migration in progress. This is the functional equivalence record that has to
 close before the tree can be deleted: every library still in it, where it landed in `api/`
@@ -313,14 +318,16 @@ what it does now rather than an empty shell.
    [ADR-0013](adr/0013-mesh-is-a-dag-node.md). `Scene` lost its camera and profile lists,
    which the views and `CameraProfiles` already own. `core/` held nothing else — its
    `Logger` had moved to `api/log` — so the directory and `v3dlib_core` are gone with them.
-4. Delete `component/Component.h`, `hookah/Hookah.h` and `hookah/drivers/sdl2/` with the
-   tree. Nothing to salvage. (Deleting `drivers/sdl2/` also closes the SDL3 workstream.)
+4. ~~Delete `component/Component.h`, `hookah/Hookah.h` and `hookah/drivers/sdl2/` with the
+   tree. Nothing to salvage. (Deleting `drivers/sdl2/` also closes the SDL3 workstream.)~~
+   **Done 2026-09-04**, with the whole tree: `command`, `gui`, `hookah`, `input` and
+   `component` were what was left of it. The SDL3 workstream is closed with them.
 5. ~~Rewrite `vertical3d/`'s six legacy includes, or accept that the tree survives until
    Phase 6 begins.~~ **Done** - the rewrite of 2026-09-01 dropped all six, and with `luxa/`
    deleted on 2026-09-04 **nothing in the tree includes a `v3dlibs/` header any more**. Only
-   item 4 is left, which is the deletion itself.
+   item 4 was left, which is the deletion itself.
 
-Then `v3dlibs/` can be deleted.
+`v3dlibs/` was deleted on 2026-09-04.
 
 Separately — these are `api/` defects the audit turned up, and none of them keeps
 `v3dlibs/` alive. **6 to 11 and 13 were fixed on 2026-08-31**; only 12 is still open.
@@ -338,7 +345,8 @@ Separately — these are `api/` defects the audit turned up, and none of them ke
 11. ~~Restore frame delta in `Engine::eventLoop` and pass it to `tick()`.~~ Done. Apps still
     have to *use* it; none does yet.
 12. Wire `event::Context::active`, or delete it, before the editor needs state scoping.
-    (Phase 6 at the latest.) **Still open.**
+    **Still open.** Phase 6 closed on 2026-09-04 without needing it, so the deadline this
+    item carried has passed and the field is still written and read by nothing.
 13. ~~Fix `Event::str()`'s null-context dereference.~~ Done.
 
 Two more defects surfaced while fixing those, both in the same machinery and both fixed:
