@@ -1,0 +1,142 @@
+# Builds the tree and runs the Boost.Test suites through ctest. This is a separate workflow
+# from cpplint rather than a step added to it: cpplint needs nothing but python, and this
+# needs a compiler, the Vulkan SDK, a vcpkg install and both vendor submodules built.
+name: ctest
+
+on: [push, pull_request]
+
+# A push that supersedes an earlier one cancels it. The cold dependency build is expensive
+# enough that queueing runs of the same branch is worth avoiding.
+concurrency:
+  group: ctest-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: windows-latest
+    timeout-minutes: 120
+
+    env:
+      BUILD_DIR: out/build/ci
+      # The installer names its own directory after the version it carries, so the build is
+      # given a fixed root instead and never has to know which version that was.
+      VULKAN_SDK_ROOT: C:\VulkanSDK\current
+      # vcpkg's binary cache. Named explicitly rather than left on its default under
+      # LOCALAPPDATA, because the actions/cache path has to name it too and the runner's own
+      # environment is not readable from a workflow expression.
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\out\build\vcpkg-cache
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # soloud and libnoise are submodules, and both are needed: v3dlib_audio compiles
+          # soloud's headers, voxel compiles libnoise's, and the two suites link them.
+          submodules: true
+
+      - name: Locate the MSVC toolchain
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $install = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $install) { throw "no MSVC toolchain on this image" }
+          $line = 'call "' + $install + '\VC\Auxiliary\Build\vcvars64.bat"'
+          Set-Content -Path "$env:RUNNER_TEMP\vcvars.bat" -Value $line -Encoding ascii
+
+      - name: Restore the Vulkan SDK
+        id: vulkan-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.VULKAN_SDK_ROOT }}
+          key: vulkan-sdk-${{ runner.os }}-latest
+
+      # The root CMakeLists calls find_package(Vulkan) and looks for glslc with a
+      # FATAL_ERROR, so every configure needs the SDK - including one that only builds the
+      # suites that never touch a device.
+      - name: Install the Vulkan SDK
+        if: steps.vulkan-cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          $installer = "$env:RUNNER_TEMP\vulkan-sdk.exe"
+          Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/latest/windows/vulkan_sdk.exe" -OutFile $installer
+          $arguments = @(
+            "--root", "$env:VULKAN_SDK_ROOT",
+            "--accept-licenses", "--default-answer", "--confirm-command", "install"
+          )
+          $process = Start-Process -FilePath $installer -ArgumentList $arguments -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "the Vulkan SDK installer exited $($process.ExitCode)" }
+
+      - name: Put the Vulkan SDK on the environment
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "$env:VULKAN_SDK_ROOT\Bin\glslc.exe")) {
+            throw "glslc is not under $env:VULKAN_SDK_ROOT - the SDK install or its cache is incomplete"
+          }
+          "VULKAN_SDK=$env:VULKAN_SDK_ROOT" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      # vcpkg builds boost from source, which is most of an hour cold. The binary cache is
+      # what makes a second run cheap, and vcpkg refuses a cache directory that is not there.
+      - name: Cache the vcpkg binaries
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+          restore-keys: vcpkg-${{ runner.os }}-
+
+      - name: Make the vcpkg cache directory
+        shell: pwsh
+        run: New-Item -ItemType Directory -Force -Path "$env:VCPKG_DEFAULT_BINARY_CACHE" | Out-Null
+
+      # Both vendor libraries are built out of source: libnoise commits a CMakeCache.txt
+      # naming a generator that is not on this image, and neither declares a
+      # cmake_minimum_required current CMake still accepts on its own. The archives land
+      # where the root CMakeLists' link_directories expects them.
+      #
+      # soloud is built on its null backend: the SDL2 one is its default, this tree installs
+      # SDL3, and nothing under test plays a sound.
+      - name: Build soloud
+        shell: cmd
+        run: |
+          call "%RUNNER_TEMP%\vcvars.bat" >nul
+          cmake -S vendor/soloud/contrib -B "%RUNNER_TEMP%\soloud" -G Ninja ^
+            -DCMAKE_BUILD_TYPE=Debug ^
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 ^
+            -DSOLOUD_STATIC=ON ^
+            -DSOLOUD_BUILD_DEMOS=OFF ^
+            -DSOLOUD_BACKEND_NULL=ON ^
+            -DSOLOUD_BACKEND_SDL2=OFF ^
+            -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY="%GITHUB_WORKSPACE%\vendor\soloud\contrib\Debug" || exit /b 1
+          cmake --build "%RUNNER_TEMP%\soloud" || exit /b 1
+
+      - name: Build libnoise
+        shell: cmd
+        run: |
+          call "%RUNNER_TEMP%\vcvars.bat" >nul
+          cmake -S vendor/libnoise -B "%RUNNER_TEMP%\libnoise" -G Ninja ^
+            -DCMAKE_BUILD_TYPE=Debug ^
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 ^
+            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebugDLL ^
+            -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY="%GITHUB_WORKSPACE%\vendor\libnoise\Debug" || exit /b 1
+          cmake --build "%RUNNER_TEMP%\libnoise" || exit /b 1
+
+      - name: Configure
+        shell: cmd
+        run: |
+          call "%RUNNER_TEMP%\vcvars.bat" >nul
+          cmake --version || exit /b 1
+          ninja --version || exit /b 1
+          cmake -S . -B "%BUILD_DIR%" -G Ninja ^
+            -DCMAKE_BUILD_TYPE=Debug ^
+            -DCMAKE_TOOLCHAIN_FILE="%VCPKG_INSTALLATION_ROOT%\scripts\buildsystems\vcpkg.cmake" ^
+            -DVCPKG_TARGET_TRIPLET=x64-windows || exit /b 1
+
+      - name: Build
+        shell: cmd
+        run: |
+          call "%RUNNER_TEMP%\vcvars.bat" >nul
+          cmake --build "%BUILD_DIR%" || exit /b 1
+
+      - name: Test
+        shell: cmd
+        run: |
+          call "%RUNNER_TEMP%\vcvars.bat" >nul
+          ctest --test-dir "%BUILD_DIR%" --output-on-failure || exit /b 1

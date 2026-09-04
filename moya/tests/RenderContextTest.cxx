@@ -3,73 +3,98 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <string>
+
 #include <boost/test/unit_test.hpp>
+
+#include <glm/glm.hpp>
 
 #include "../libmoya/RenderContext.h"
 
-BOOST_AUTO_TEST_CASE(renderContext_test) {
-    v3D::Moya::RenderContext rc;
-    unsigned int bucket_width = 0;
-    unsigned int bucket_height = 0;
-    unsigned int grid_size = 0;
+/**
+ * The defaults a context starts on, which stand in for the RiFormat and bucketing options a
+ * RIB file would otherwise set.
+ **/
+BOOST_AUTO_TEST_CASE(render_context_defaults_test) {
+    v3d::moya::RenderContext rc;
 
-    // test default constructor values
-    bucket_width = rc.bucketWidth();
-    BOOST_CHECK_EQUAL(bucket_width, 16);
+    BOOST_TEST(rc.bucketWidth() == 16u);
+    BOOST_TEST(rc.bucketHeight() == 16u);
+    BOOST_TEST(rc.gridSize() == 256u);
+    BOOST_TEST(rc.shadingRate() == 1.0f);
+    BOOST_TEST(rc.imageWidth() == 320u);
+    BOOST_TEST(rc.imageHeight() == 240u);
+    BOOST_TEST(rc.pixelAspect() == 1.0f);
+}
 
-    bucket_height = rc.bucketHeight();
-    BOOST_CHECK_EQUAL(bucket_height, 16);
+BOOST_AUTO_TEST_CASE(render_context_image_resolution_test) {
+    v3d::moya::RenderContext rc;
 
-    grid_size = rc.gridSize();
-    BOOST_CHECK_EQUAL(grid_size, 256);
-
-    unsigned int image_width = 0;
-    unsigned int image_height = 0;
-    float aspect = 0.0f;
-
-    image_width = rc.imageWidth();
-    BOOST_CHECK_EQUAL(image_width, 320);
-
-    image_height = rc.imageHeight();
-    BOOST_CHECK_EQUAL(image_height, 240);
-
-    aspect = rc.pixelAspect();
-    BOOST_CHECK_EQUAL(aspect, 1.0f);
-
-    // test setting image resolution
     rc.imageResolution(1024, 768, 1.3f);
 
-    image_width = rc.imageWidth();
-    BOOST_CHECK_EQUAL(image_width, 1024);
+    BOOST_TEST(rc.imageWidth() == 1024u);
+    BOOST_TEST(rc.imageHeight() == 768u);
+    BOOST_TEST(rc.pixelAspect() == 1.3f);
+}
 
-    image_height = rc.imageHeight();
-    BOOST_CHECK_EQUAL(image_height, 768);
+/**
+ * A named context takes the same defaults as an unnamed one - the name is what RiBegin is
+ * given and is not itself an option.
+ **/
+BOOST_AUTO_TEST_CASE(render_context_named_test) {
+    v3d::moya::RenderContext rc(std::string("scene.rib"));
 
-    aspect = rc.pixelAspect();
-    BOOST_CHECK_EQUAL(aspect, 1.3f);
+    BOOST_TEST(rc.imageWidth() == 320u);
+    BOOST_TEST(rc.gridSize() == 256u);
+}
 
-    float shading_rate = 0.0f;
-    shading_rate = rc.shadingRate();
-    BOOST_CHECK_EQUAL(shading_rate, 1.0f);
+/**
+ * The six reserved systems are identity until something saves over them, so a lookup before
+ * any transform has been set does not hand back an uninitialised matrix.
+ **/
+BOOST_AUTO_TEST_CASE(render_context_reserved_coordinate_systems_test) {
+    v3d::moya::RenderContext rc;
+    glm::mat4x4 identity(1.0f);
 
-    // test coorindate system transforms
+    const char* reserved[] = { "object", "world", "camera", "screen", "raster", "NDC" };
+    for (auto name : reserved) {
+        BOOST_TEST((rc.coordinateSystem(name) == identity));
+    }
+}
 
-    v3D::Matrix4 transform(3.0f);  // NOLINT(build/include_what_you_use) - the name, not std::transform
+/**
+ * saveCoordinateSystem files the current transform under a name, and setCoordinateSystem is
+ * the way back - together they are what RiCoordinateSystem and RiCoordSysTransform do.
+ **/
+BOOST_AUTO_TEST_CASE(render_context_coordinate_system_test) {
+    v3d::moya::RenderContext rc;
+    glm::mat4x4 scaled(3.0f);
 
-    rc.setTransform(transform);
-    // save the transform as the world coordinate system
+    rc.setTransform(scaled);
     rc.saveCoordinateSystem("world");
-    v3D::Matrix4 world;
-    world = rc.coordinateSystem("world");
-    // test that we got back the same transform that we set
-    BOOST_CHECK_EQUAL((transform == world), true);
-    // push the transform onto the stack
-    rc.pushTransform();
-    // active transform should be identity
+    BOOST_TEST((rc.coordinateSystem("world") == scaled));
+
     rc.setIdentityTransform();
-    // world coordinate system is overwritten with identity transform
     rc.saveCoordinateSystem("world");
-    world = rc.coordinateSystem("world");
-    v3D::Matrix4 identity;
-    BOOST_CHECK_EQUAL((world == identity), true);
+    BOOST_TEST((rc.coordinateSystem("world") == glm::mat4x4(1.0f)));
+
+    rc.setCoordinateSystem("world");
+    rc.saveCoordinateSystem("object");
+    BOOST_TEST((rc.coordinateSystem("object") == glm::mat4x4(1.0f)));
+}
+
+/**
+ * A translate composes onto the current transform rather than replacing it, so two of them
+ * accumulate.
+ **/
+BOOST_AUTO_TEST_CASE(render_context_translate_test) {
+    v3d::moya::RenderContext rc;
+
+    rc.setIdentityTransform();
+    rc.translate(1.0f, 2.0f, 3.0f);
+    rc.translate(1.0f, 2.0f, 3.0f);
+    rc.saveCoordinateSystem("object");
+
+    glm::mat4x4 composed = rc.coordinateSystem("object");
+    BOOST_TEST((glm::vec3(composed[3]) == glm::vec3(2.0f, 4.0f, 6.0f)));
 }

@@ -7,26 +7,48 @@
 
 #include "../libmoya/Renderer.h"
 
-BOOST_AUTO_TEST_CASE(renderer_test) {
-    v3D::Moya::Renderer renderer;
-    // create a new render context
+/**
+ * activeRenderContext hands back a reference into the stack, so a caller writing an option
+ * through it is writing the context the renderer holds rather than a copy.
+ **/
+BOOST_AUTO_TEST_CASE(renderer_active_context_test) {
+    v3d::moya::Renderer renderer;
     renderer.createRenderContext("default context");
-    // get a reference to the context
-    v3D::Moya::RenderContext & rc = renderer.activeRenderContext();
-    // set the image resolution on the context
-    rc.imageResolution(1280, 960, 1.0f);
-    // get another reference to the context from the renderer
-    v3D::Moya::RenderContext rc2 = renderer.activeRenderContext();
-    // test that the resolution we set is the same on the new reference
-    unsigned int width;
-    width = rc2.imageWidth();
-    BOOST_CHECK_EQUAL(width, 1280);
 
-    // destroy the context
+    renderer.activeRenderContext().imageResolution(1280, 960, 1.0f);
+
+    BOOST_TEST(renderer.activeRenderContext().imageWidth() == 1280u);
+}
+
+/**
+ * The stack is what RiBegin and RiEnd push and pop: destroying the active context uncovers
+ * the one below it with the options it was left holding.
+ **/
+BOOST_AUTO_TEST_CASE(renderer_context_stack_test) {
+    v3d::moya::Renderer renderer;
+
+    renderer.createRenderContext("outer");
+    renderer.activeRenderContext().imageResolution(800, 600, 1.0f);
+
+    renderer.createRenderContext("inner");
+    renderer.activeRenderContext().imageResolution(1280, 960, 1.0f);
+    BOOST_TEST(renderer.activeRenderContext().imageWidth() == 1280u);
+
     renderer.destroyActiveRenderContext();
-    // get another context (creates a new context)
-    rc = renderer.activeRenderContext();
-    // make sure the resolution is the default
-    width = rc.imageWidth();
-    BOOST_CHECK_EQUAL(width, 320);
+    BOOST_TEST(renderer.activeRenderContext().imageWidth() == 800u);
+}
+
+/**
+ * A renderer with no context builds one on demand rather than answering with nothing, which
+ * is what makes every option call safe before RiBegin.
+ **/
+BOOST_AUTO_TEST_CASE(renderer_implicit_context_test) {
+    v3d::moya::Renderer renderer;
+
+    BOOST_TEST(renderer.activeRenderContext().imageWidth() == 320u);
+
+    renderer.activeRenderContext().imageResolution(1280, 960, 1.0f);
+    renderer.destroyActiveRenderContext();
+
+    BOOST_TEST(renderer.activeRenderContext().imageWidth() == 320u);
 }

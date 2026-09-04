@@ -5,6 +5,7 @@
 
 #include "Config.h"
 
+#include <exception>
 #include <string>
 
 #include <boost/make_shared.hpp>
@@ -57,7 +58,16 @@ namespace v3d::config {
                 logger_->get()->error("Unknown config type: {}", typeName);
                 return false;
             }
-            boost::shared_ptr<v3d::asset::Json> asset = boost::dynamic_pointer_cast<v3d::asset::Json>(assetManager->loadTypeFromExt(fileName));
+            // loadTypeFromExt throws for an extension it has no loader for, which is the one
+            // way a config file can reject this function rather than being rejected by it.
+            boost::shared_ptr<v3d::asset::Json> asset;
+            try {
+                asset = boost::dynamic_pointer_cast<v3d::asset::Json>(assetManager->loadTypeFromExt(fileName));
+            }
+            catch (std::exception const& e) {
+                logger_->get()->error("Config file could not be loaded: {} - {}", fileName, e.what());
+                return false;
+            }
             if (!asset) {
                 logger_->get()->error("Config file not found: {}", fileName);
                 return false;

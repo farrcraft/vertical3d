@@ -42,3 +42,5 @@ target_compile_options(pong PRIVATE /EHsc)
 
 set(CMAKE_CXX_FLAGS "/utf-8")
 set(CMAKE_C_FLAGS "/utf-8")
+
+add_subdirectory("tests")

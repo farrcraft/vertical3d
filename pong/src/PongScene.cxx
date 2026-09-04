@@ -46,12 +46,14 @@ void PongScene::tick() {
     if (!gameState_.coop()) {
         // is the ball headed towards the ai's paddle (towards the right side)?
         if (ball_dir[0] > 0.0f) {
+            // travel is signed the way the court is: up decreases the paddle position and
+            // down increases it, so approaching a ball above the paddle is up.
             if (ball_pos[1] < right_.position()) {
-                right_.down(true);
-                right_.up(false);
-            } else if (ball_pos[1] > right_.position()) {
-                right_.down(false);
                 right_.up(true);
+                right_.down(false);
+            } else if (ball_pos[1] > right_.position()) {
+                right_.up(false);
+                right_.down(true);
             }
         } else {
             // no need to move the paddle if the ball is moving away from it
