@@ -10,6 +10,7 @@
 #include "../Component.h"
 
 #include "../../event/Event.h"
+#include "../../render/realtime/Handle.h"
 
 namespace v3d::ui::component {
     /**
@@ -18,6 +19,10 @@ namespace v3d::ui::component {
      * A toggle button does not own the state it shows, for the reason a check menu item does
      * not: pressing one sends its command and marks nothing, and whatever answers the command
      * sets checked(). See ADR-0019.
+     *
+     * A button that names an icon is drawn as that image instead of as its label, and holds
+     * the texture whatever uploaded the image put there. It keeps its label either way, which
+     * is what a strip measures before anything has been resolved. See ADR-0020.
      */
     class Button : public Component {
      public:
@@ -66,6 +71,25 @@ namespace v3d::ui::component {
         v3d::event::Event event() const;
 
         /**
+         * Set the image the button draws instead of its label.
+         * @param source the name of the image, for whatever resolves sources to textures
+         **/
+        void icon(const std::string& source);
+        /**
+         * @return the name of the image the button draws, empty when it is a labelled one
+         **/
+        std::string_view icon() const;
+
+        /**
+         * @return the texture the icon draws with, unset until something has uploaded icon()
+         **/
+        v3d::render::realtime::TextureHandle texture() const noexcept;
+        /**
+         * @param tex a handle from the renderer that uploaded icon()
+         **/
+        void texture(const v3d::render::realtime::TextureHandle& tex) noexcept;
+
+        /**
          * Set whether the button shows a mark when it is checked.
          * @param on whether it is a toggle rather than a plain button
          **/
@@ -88,6 +112,8 @@ namespace v3d::ui::component {
 
      private:
         std::string label_;
+        std::string icon_;
+        v3d::render::realtime::TextureHandle texture_;
         ButtonState state_;
         v3d::event::Event event_;
         bool toggle_;

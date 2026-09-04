@@ -28,3 +28,4 @@ old record's status and leave the file in place.
 | [0017](0017-a-command-is-a-name-in-a-context.md) | Command Dispatch — A Command Is A Name In A Context, And The Directory Is The Editor's | accepted | 2026-09-02 |
 | [0018](0018-a-project-is-json-and-stores-topology-verbatim.md) | Project Persistence — A Project Is JSON, And The Topology Is Stored Verbatim | accepted | 2026-09-02 |
 | [0019](0019-the-ui-is-laid-out-by-what-draws-it.md) | Menu Bar — The UI Is Laid Out By What Draws It, And Hit Tested Against Those Bounds | accepted | 2026-09-02 |
+| [0020](0020-a-theme-is-data-and-the-app-resolves-its-images.md) | Themes — A Theme Is Data, And The App Resolves The Images It Names | accepted | 2026-09-04 |

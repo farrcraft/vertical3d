@@ -10,9 +10,13 @@
 
 #include "Container.h"
 #include "Engine.h"
+#include "component/Button.h"
+#include "component/Icon.h"
+#include "component/Label.h"
 #include "component/Toolbar.h"
 #include "component/menu/Menu.h"
 #include "component/menu/MenuBar.h"
+#include "style/Theme.h"
 
 #include "../render/realtime/Canvas.h"
 
@@ -36,8 +40,8 @@ namespace v3d::ui {
      * Drawing is also what lays the ui out: every component is left holding the bounds it
      * was drawn in, which is what the cursor is tested against, per ADR-0019.
      *
-     * Only menus, menu bars and toolbars are drawn. The other components in this library
-     * have no loader, so nothing can construct one to be drawn - see docs/LuxaAudit.md.
+     * Menus, menu bars, toolbars, buttons, labels and icons are drawn. The rest of the
+     * components in this library are empty declarations with no loader.
      *
      * The strips stack in the order a container lists them. A menu bar takes the top of the
      * canvas, a top toolbar takes a band under whatever is already there, and a left toolbar
@@ -62,9 +66,8 @@ namespace v3d::ui {
         /**
          * What the ui cannot work out from the components alone.
          *
-         * These belong to the theme, which cannot supply them: v3d::ui::style::Theme loads,
-         * but its properties are write-only - prop::Color has no accessor and nothing parses
-         * one out of a config. Defaults live here until the style properties can be read.
+         * These are what a theme's "ui" style names, and what is left here is the default a
+         * theme that names nothing draws in. theme() is what reads one in, per ADR-0020.
          **/
         struct Style final {
             Style() noexcept;
@@ -72,6 +75,7 @@ namespace v3d::ui {
             float lineHeight;      /**< the baseline to baseline distance of one menu item **/
             float padding;         /**< the gap between the text and the panel around it **/
             float barHeight;       /**< how tall the strip of a menu bar or a toolbar is **/
+            float iconSize;        /**< the side of the square an icon is drawn in **/
             float panelPadding;    /**< the gap above and below the items of a dropped panel **/
             glm::vec4 panel;       /**< the background the menu is drawn on **/
             glm::vec4 border;      /**< the panel's outline **/
@@ -91,6 +95,39 @@ namespace v3d::ui {
          * @return the colours and metrics the ui is drawn with, to be changed in place
          **/
         Style& style() noexcept;
+
+        /**
+         * Draw with a theme: read its "ui" style into style(), and keep it for the images a
+         * button is drawn from.
+         *
+         * Every colour and metric the style does not name keeps the value it had, so a theme
+         * carrying nothing changes nothing and a theme carrying one colour changes one.
+         *
+         * @param theme the active theme, or null to go back to drawing in the defaults
+         **/
+        void theme(const boost::shared_ptr<style::Theme>& theme);
+
+        /**
+         * @return the theme being drawn with, which is null until one is given
+         **/
+        boost::shared_ptr<style::Theme> theme() const noexcept;
+
+        /**
+         * Draw a label - one line of text at the position it holds.
+         **/
+        void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Label>& label) const;
+
+        /**
+         * Draw an icon - the texture something resolved its source to, at the size the
+         * component was given. An icon whose source was never resolved draws nothing.
+         **/
+        void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Icon>& icon) const;
+
+        /**
+         * Draw a button at the position and size it holds, which is what a button in a
+         * container carries and what a toolbar writes on the ones in the strip.
+         **/
+        void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Button>& button) const;
 
         /**
          * Draw every visible container of a ui engine.
@@ -151,14 +188,46 @@ namespace v3d::ui {
             const glm::vec2& origin) const;
 
         /**
-         * How wide a toolbar's widest label is, which is what sizes a column and what a row
+         * How wide a toolbar's widest button is, which is what sizes a column and what a row
          * has no use for.
          **/
         float widest(const component::Toolbar& bar) const;
 
+        /**
+         * How much room one button asks for along a strip - its icon's side when it names
+         * one, and otherwise its label's width.
+         **/
+        float extent(const component::Button& button) const;
+
+        /**
+         * Draw the nine images a button style names over the button's box - the four corners
+         * at their own size, the four edges stretched along it, and the centre over the rest.
+         *
+         * @return false when the theme names no image for that button in that state, which is
+         *      what leaves a flat button to be drawn instead
+         **/
+        bool skin(v3d::render::realtime::Canvas* canvas, const component::Button& button,
+            const glm::vec2& min, const glm::vec2& max) const;
+
+        /**
+         * Find the style a component is drawn with.
+         *
+         * A component names a style; one that names none is drawn with whichever style of
+         * that class the theme holds first, so that a theme can dress every button without
+         * every button naming it.
+         *
+         * The return type is the library's Style and not this class's, which is the struct of
+         * colours and metrics above.
+         *
+         * @param className the style class - "button", "ui"
+         * @param name what the component's style() gives, which may be empty
+         **/
+        boost::shared_ptr<v3d::ui::Style> lookup(const std::string& className, const std::string_view& name) const;
+
         Measure measure_;
         Write write_;
         Style style_;
+        boost::shared_ptr<style::Theme> theme_;
     };
 
 };  // namespace v3d::ui

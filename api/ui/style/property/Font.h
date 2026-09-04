@@ -25,6 +25,11 @@ namespace v3d::ui::style::prop {
         unsigned int size() const;
         std::string source() const;
 
+        void italics(bool on);
+        void bold(bool on);
+        void face(const std::string& name);
+        void size(unsigned int points);
+
      private:
         std::string source_;
         bool italics_;

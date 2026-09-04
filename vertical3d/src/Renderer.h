@@ -118,6 +118,8 @@ namespace v3d::editor {
         void drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& frame);
 
         boost::shared_ptr<v3d::log::Logger> logger_;
+        // kept for the images a ui theme names, which are resolved when the ui arrives
+        boost::shared_ptr<v3d::asset::Manager> assetManager_;
 
         // first, so that everything holding a device handle below is destroyed before the
         // context that owns the device is

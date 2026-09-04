@@ -41,6 +41,22 @@ namespace v3d::ui::component {
         return event_;
     }
 
+    void Button::icon(const std::string& source) {
+        icon_ = source;
+    }
+
+    std::string_view Button::icon() const {
+        return icon_;
+    }
+
+    v3d::render::realtime::TextureHandle Button::texture() const noexcept {
+        return texture_;
+    }
+
+    void Button::texture(const v3d::render::realtime::TextureHandle& tex) noexcept {
+        texture_ = tex;
+    }
+
     void Button::toggle(bool on) {
         toggle_ = on;
     }

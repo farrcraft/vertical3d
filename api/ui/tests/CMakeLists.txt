@@ -4,6 +4,7 @@ v3d_add_test(ui
 	"TestMain.cpp"
 	"ComponentRendererTest.cpp"
 	"MenuBarTest.cpp"
+	"ThemeTest.cpp"
 	"ToolbarTest.cpp")
 
 target_link_libraries(v3dtest_ui PRIVATE

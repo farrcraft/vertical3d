@@ -9,7 +9,7 @@
 
 namespace v3d::ui::style::prop {
 
-Font::Font(const std::string& name, const std::string& src) : Property(name), source_(src), italics_(false), bold_(false) {
+Font::Font(const std::string& name, const std::string& src) : Property(name), source_(src), italics_(false), bold_(false), size_(0) {
 }
 
 Font::~Font() {
@@ -33,6 +33,22 @@ unsigned int Font::size() const {
 
 std::string Font::source() const {
     return source_;
+}
+
+void Font::italics(bool on) {
+    italics_ = on;
+}
+
+void Font::bold(bool on) {
+    bold_ = on;
+}
+
+void Font::face(const std::string& name) {
+    face_ = name;
+}
+
+void Font::size(unsigned int points) {
+    size_ = points;
 }
 
 }  // namespace v3d::ui::style::prop

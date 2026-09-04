@@ -11,6 +11,10 @@
 #include <vector>
 
 #include "component/Type.h"
+#include "style/Button.h"
+#include "style/property/Color.h"
+#include "style/property/Image.h"
+#include "style/property/Number.h"
 
 namespace v3d::ui {
 
@@ -30,6 +34,13 @@ namespace v3d::ui {
         const float ruleWidth = 1.0f;
 
         /**
+         * How far in from the edge of a skinned button the corner images reach, when the
+         * style names no corner of its own. A texture carries no size a handle can be asked
+         * for, so this is a number rather than something measured.
+         **/
+        const float defaultCorner = 8.0f;
+
+        /**
          * Leave a component holding the bounds it was drawn in, which is what the cursor is
          * tested against per ADR-0019.
          *
@@ -41,6 +52,38 @@ namespace v3d::ui {
             component.size(size);
         }
 
+        /**
+         * Read a colour out of a style, leaving what is there when the style does not name it.
+         **/
+        void colour(const boost::shared_ptr<Style>& target, const std::string& name, glm::vec4* into) {
+            boost::shared_ptr<style::prop::Color> property =
+                boost::dynamic_pointer_cast<style::prop::Color>(target->property(name, "color"));
+            if (property) {
+                *into = property->value();
+            }
+        }
+
+        /**
+         * Read a metric out of a style, leaving what is there when the style does not name it.
+         **/
+        void metric(const boost::shared_ptr<Style>& target, const std::string& name, float* into) {
+            boost::shared_ptr<style::prop::Number> property =
+                boost::dynamic_pointer_cast<style::prop::Number>(target->property(name, "number"));
+            if (property) {
+                *into = property->value();
+            }
+        }
+
+        /**
+         * @return the texture a style's image property was resolved to, unset when the style
+         *      names no such image or nothing has resolved it
+         **/
+        v3d::render::realtime::TextureHandle image(const boost::shared_ptr<Style>& target, const std::string& name) {
+            boost::shared_ptr<style::prop::Image> property =
+                boost::dynamic_pointer_cast<style::prop::Image>(target->property(name, "image"));
+            return property ? property->texture() : v3d::render::realtime::TextureHandle();
+        }
+
     };  // namespace
 
     /**
@@ -49,6 +92,7 @@ namespace v3d::ui {
         lineHeight(34.0f),
         padding(24.0f),
         barHeight(28.0f),
+        iconSize(22.0f),
         panelPadding(4.0f),
         panel(0.05f, 0.06f, 0.09f, 0.92f),
         border(0.35f, 0.38f, 0.45f, 1.0f),
@@ -69,6 +113,50 @@ namespace v3d::ui {
      **/
     ComponentRenderer::Style& ComponentRenderer::style() noexcept {
         return style_;
+    }
+
+    /**
+     **/
+    void ComponentRenderer::theme(const boost::shared_ptr<style::Theme>& theme) {
+        theme_ = theme;
+        if (!theme_) {
+            return;
+        }
+
+        const boost::shared_ptr<v3d::ui::Style> chrome = lookup("ui", std::string_view());
+        if (!chrome) {
+            return;
+        }
+
+        colour(chrome, "panel", &style_.panel);
+        colour(chrome, "border", &style_.border);
+        colour(chrome, "text", &style_.text);
+        colour(chrome, "active-text", &style_.activeText);
+        colour(chrome, "highlight", &style_.highlight);
+        colour(chrome, "hover", &style_.hover);
+
+        metric(chrome, "line-height", &style_.lineHeight);
+        metric(chrome, "padding", &style_.padding);
+        metric(chrome, "bar-height", &style_.barHeight);
+        metric(chrome, "icon-size", &style_.iconSize);
+        metric(chrome, "panel-padding", &style_.panelPadding);
+    }
+
+    /**
+     **/
+    boost::shared_ptr<style::Theme> ComponentRenderer::theme() const noexcept {
+        return theme_;
+    }
+
+    /**
+     **/
+    boost::shared_ptr<v3d::ui::Style> ComponentRenderer::lookup(const std::string& className, const std::string_view& name) const {
+        if (!theme_) {
+            return nullptr;
+        }
+        const std::vector<boost::shared_ptr<v3d::ui::Style>> styles =
+            theme_->getStyleSet(std::string(name), className);
+        return styles.empty() ? nullptr : styles.front();
     }
 
     /**
@@ -112,11 +200,156 @@ namespace v3d::ui {
                     draw(canvas, bar, glm::vec2(taken.x, taken.y));
                     taken.x += bar->bound().size().x + ruleWidth;
                 }
+            } else if (component->type() == component::Type::BUTTON) {
+                draw(canvas, boost::dynamic_pointer_cast<component::Button>(component));
+            } else if (component->type() == component::Type::LABEL) {
+                draw(canvas, boost::dynamic_pointer_cast<component::Label>(component));
+            } else if (component->type() == component::Type::ICON) {
+                draw(canvas, boost::dynamic_pointer_cast<component::Icon>(component));
             }
         }
         for (const boost::shared_ptr<component::MenuBar>& bar : bars) {
             draw(canvas, bar);
         }
+    }
+
+    /**
+     **/
+    void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Label>& label) const {
+        if (canvas == nullptr || !label) {
+            return;
+        }
+        const std::string text(label->text());
+        place(*label, label->position(), glm::vec2(measure_(text), style_.lineHeight));
+
+        const glm::vec2 pen(label->position().x, label->position().y + style_.lineHeight * 0.75f);
+        write_(text, pen, style_.text);
+    }
+
+    /**
+     **/
+    void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Icon>& icon) const {
+        if (canvas == nullptr || !icon || !icon->texture().valid()) {
+            return;
+        }
+        // an icon given no size is a square the height of a strip, which is the one size the
+        // ui has that is not derived from a string
+        glm::vec2 size = icon->size();
+        if (size.x <= 0.0f || size.y <= 0.0f) {
+            size = glm::vec2(style_.barHeight, style_.barHeight);
+        }
+        place(*icon, icon->position(), size);
+
+        canvas->rect(icon->position(), icon->position() + size,
+            glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), icon->texture());
+    }
+
+    /**
+     **/
+    void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Button>& button) const {
+        if (canvas == nullptr || !button) {
+            return;
+        }
+        const std::string label(button->label());
+
+        glm::vec2 size = button->size();
+        if (size.x <= 0.0f || size.y <= 0.0f) {
+            size = glm::vec2(extent(*button) + style_.padding, style_.barHeight);
+        }
+        const glm::vec2 min = button->position();
+        place(*button, min, size);
+
+        // a checked toggle keeps its highlight whether or not the cursor is on it, which is
+        // what says which mask and which tool are in force
+        const bool lit = button->checked() || button->state() == component::Button::STATE_HOVER;
+        if (!skin(canvas, *button, min, min + size) && lit) {
+            canvas->rect(min, min + size, button->checked() ? style_.highlight : style_.hover);
+        }
+
+        // an icon is what the button says instead of its label, not as well as it. The label
+        // stays on the component for whatever measures it before an image has been resolved
+        if (button->texture().valid()) {
+            const float side = std::min(style_.iconSize, std::min(size.x, size.y));
+            const glm::vec2 corner = min + (size - glm::vec2(side, side)) * 0.5f;
+            canvas->rect(corner, corner + glm::vec2(side, side),
+                glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), button->texture());
+            return;
+        }
+
+        const glm::vec2 baseline(min.x + (size.x - measure_(label)) * 0.5f, min.y + size.y * 0.7f);
+        write_(label, baseline, lit ? style_.activeText : style_.text);
+    }
+
+    /**
+     **/
+    float ComponentRenderer::extent(const component::Button& button) const {
+        // what the button asks a strip for, which is the icon it names rather than the
+        // texture it holds - a strip is laid out before anything has been resolved
+        if (!button.icon().empty()) {
+            return style_.iconSize;
+        }
+        return measure_(std::string(button.label()));
+    }
+
+    /**
+     **/
+    bool ComponentRenderer::skin(v3d::render::realtime::Canvas* canvas, const component::Button& button,
+        const glm::vec2& min, const glm::vec2& max) const {
+        if (!theme_) {
+            return false;
+        }
+
+        // a button's styles are told apart by state as well as by name, so the set is walked
+        // rather than asked for one
+        boost::shared_ptr<v3d::ui::Style> target;
+        for (const boost::shared_ptr<v3d::ui::Style>& candidate : theme_->getStyleSet(std::string(button.style()), "button")) {
+            const boost::shared_ptr<style::Button> styled = boost::dynamic_pointer_cast<style::Button>(candidate);
+            if (styled && styled->state() == button.state()) {
+                target = styled;
+                break;
+            }
+        }
+        if (!target) {
+            return false;
+        }
+
+        float corner = defaultCorner;
+        metric(target, "corner", &corner);
+        corner = std::min(corner, std::min((max.x - min.x) * 0.5f, (max.y - min.y) * 0.5f));
+
+        const glm::vec2 uv0(0.0f, 0.0f);
+        const glm::vec2 uv1(1.0f, 1.0f);
+        const glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
+        unsigned int drawn = 0;
+
+        // every one of the nine is optional: a style naming only a centre is a flat skin, and
+        // one naming none at all is not a skin, which is what leaves the button drawn flat
+        const struct {
+            const char* name;
+            glm::vec2 min;
+            glm::vec2 max;
+        } parts[] = {
+            { "top-left", min, min + glm::vec2(corner, corner) },
+            { "top-right", glm::vec2(max.x - corner, min.y), glm::vec2(max.x, min.y + corner) },
+            { "bottom-left", glm::vec2(min.x, max.y - corner), glm::vec2(min.x + corner, max.y) },
+            { "bottom-right", max - glm::vec2(corner, corner), max },
+            { "top", glm::vec2(min.x + corner, min.y), glm::vec2(max.x - corner, min.y + corner) },
+            { "bottom", glm::vec2(min.x + corner, max.y - corner), glm::vec2(max.x - corner, max.y) },
+            { "left", glm::vec2(min.x, min.y + corner), glm::vec2(min.x + corner, max.y - corner) },
+            { "right", glm::vec2(max.x - corner, min.y + corner), glm::vec2(max.x, max.y - corner) },
+            { "center", min + glm::vec2(corner, corner), max - glm::vec2(corner, corner) }
+        };
+
+        for (const auto& part : parts) {
+            const v3d::render::realtime::TextureHandle texture = image(target, part.name);
+            if (!texture.valid()) {
+                continue;
+            }
+            canvas->rect(part.min, part.max, uv0, uv1, white, texture);
+            drawn++;
+        }
+
+        return drawn > 0;
     }
 
     /**
@@ -270,14 +503,14 @@ namespace v3d::ui {
     /**
      **/
     float ComponentRenderer::widest(const component::Toolbar& bar) const {
-        float extent = 0.0f;
+        float widest = 0.0f;
         for (std::size_t index = 0; index < bar.size(); index++) {
             const boost::shared_ptr<component::Button> button = bar.button(index);
             if (button) {
-                extent = std::max(extent, measure_(std::string(button->label())));
+                widest = std::max(widest, extent(*button));
             }
         }
-        return extent;
+        return widest;
     }
 
     /**
@@ -312,24 +545,17 @@ namespace v3d::ui {
             if (!button) {
                 continue;
             }
-            const std::string label(button->label());
-            const glm::vec2 extent = row
-                ? glm::vec2(measure_(label) + style_.padding, size.y)
+            // the strip decides how big a button in it is - a row's is as wide as its label
+            // and a column's is as wide as the strip - and the button is then drawn at the
+            // size it was given, the same way a button anywhere else is
+            const glm::vec2 box = row
+                ? glm::vec2(extent(*button) + style_.padding, size.y)
                 : glm::vec2(size.x, style_.lineHeight);
 
-            place(*button, pen, extent);
+            place(*button, pen, box);
+            draw(canvas, button);
 
-            // a checked toggle keeps its highlight whether or not the cursor is on it, which
-            // is what says which mask and which tool are in force
-            const bool lit = button->checked() || button->state() == component::Button::STATE_HOVER;
-            if (lit) {
-                canvas->rect(pen, pen + extent, button->checked() ? style_.highlight : style_.hover);
-            }
-
-            const glm::vec2 baseline(pen.x + (extent.x - measure_(label)) * 0.5f, pen.y + extent.y * 0.7f);
-            write_(label, baseline, lit ? style_.activeText : style_.text);
-
-            pen += row ? glm::vec2(extent.x, 0.0f) : glm::vec2(0.0f, extent.y);
+            pen += row ? glm::vec2(box.x, 0.0f) : glm::vec2(0.0f, box.y);
         }
     }
 

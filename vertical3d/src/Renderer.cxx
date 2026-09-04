@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "../../api/asset/Image.h"
 #include "../../api/asset/TextureFont.h"
 #include "../../api/asset/Type.h"
 #include "../../api/render/realtime/Frame.h"
@@ -60,6 +61,7 @@ namespace v3d::editor {
         const boost::shared_ptr<v3d::log::Logger>& logger,
         const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry) :
         logger_(logger),
+        assetManager_(assetManager),
         engine_(logger, assetManager, registry),
         background_(background) {
         engine_.initialize(window);
@@ -178,6 +180,26 @@ namespace v3d::editor {
      **/
     void Renderer::ui(const boost::shared_ptr<v3d::ui::Engine>& ui) {
         ui_ = ui;
+        if (!ui_ || !uiRenderer_) {
+            return;
+        }
+
+        // the app half of ADR-0020: an image a theme names is an asset like any other, and
+        // the texture it becomes is the quad renderer's
+        ui_->resolveImages([this](const std::string& source) -> v3d::render::realtime::TextureHandle {
+            const v3d::asset::Type type = source.ends_with(".png")
+                ? v3d::asset::Type::ImagePng : v3d::asset::Type::ImageTga;
+            boost::shared_ptr<v3d::asset::Image> asset =
+                boost::dynamic_pointer_cast<v3d::asset::Image>(assetManager_->load(source, type));
+            if (!asset || !asset->image()) {
+                return v3d::render::realtime::TextureHandle();
+            }
+            return engine_.quads()->texture(asset->image());
+        });
+
+        // the metrics the constructor worked out from the font size stand unless the theme
+        // names its own
+        uiRenderer_->theme(ui_->activeTheme());
     }
 
     /**
