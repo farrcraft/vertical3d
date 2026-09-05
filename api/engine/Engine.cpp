@@ -265,7 +265,7 @@ namespace v3d::engine {
 
     /**
      **/
-    bool Engine::tick(unsigned int delta) {
+    bool Engine::tick(unsigned int /* delta */) {
         return true;
     }
 

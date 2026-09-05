@@ -56,6 +56,11 @@ set_target_properties(voxel PROPERTIES WIN32_EXECUTABLE TRUE)
 
 target_compile_options(voxel PRIVATE /EHsc)
 
+# noiseutils is Jason Bevins' libnoise utility layer, vendored verbatim. It is not held to
+# the tree's warning level for the same reason cpplint skips it - a local fix is lost the
+# next time it is taken from upstream.
+set_source_files_properties("src/noise/noiseutils.cpp" PROPERTIES COMPILE_OPTIONS "/wd4100;/wd4189;/wd4244")
+
 set(CMAKE_CXX_FLAGS "/utf-8")
 set(CMAKE_C_FLAGS "/utf-8")
 

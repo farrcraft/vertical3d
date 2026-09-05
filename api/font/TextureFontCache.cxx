@@ -12,10 +12,9 @@
 namespace v3d::font {
 
     wchar_t* wcsdupstr(const wchar_t* string) {
-        wchar_t* result;
-        size_t len = (wcslen(string) + 1) * sizeof(wchar_t);
-        result = new wchar_t[len];
-        wcscpy(result, string);
+        const size_t len = wcslen(string) + 1;
+        wchar_t* result = new wchar_t[len];
+        wcscpy_s(result, len, string);
         return result;
     }
 

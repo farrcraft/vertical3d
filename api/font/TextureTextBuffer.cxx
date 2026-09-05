@@ -20,7 +20,7 @@ namespace v3d::font {
         lineStart_(0) {
     }
 
-    void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar_t current, wchar_t previous) {
+    void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar_t current, wchar_t /* previous */) {
         if (current == L'\n') {
             pen->x = origin_.x;
             pen->y += markup.font_->height() - markup.font_->descender();
@@ -33,7 +33,7 @@ namespace v3d::font {
             return;
         }
         boost::shared_ptr<TextureFont::Glyph> glyph = markup.font_->glyph(current);
-        boost::shared_ptr<TextureFont::Glyph> black = markup.font_->glyph(-1);
+        boost::shared_ptr<TextureFont::Glyph> black = markup.font_->glyph(static_cast<wchar_t>(-1));
         if (!glyph) {
             return;
         }
@@ -98,7 +98,7 @@ namespace v3d::font {
     }
 
     void TextureTextBuffer::addQuad(const glm::vec2& xy0, const glm::vec2& xy1, const glm::vec2& uv0, const glm::vec2& uv1, const glm::vec4& color, float gamma) {
-        size_t vcount = vertices().size();
+        const unsigned int vcount = static_cast<unsigned int>(vertices().size());
 
         // uv[0,1].t are flipped so y(0) can be top of screen (otherwise texture is upside down)
         addVertex(glm::vec3(xy0.x, xy0.y, 0.0f), glm::vec2(uv0.s, uv1.t), color, xy0.x - (static_cast<int>(xy0.x)), gamma);

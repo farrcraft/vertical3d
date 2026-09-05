@@ -31,7 +31,7 @@ namespace v3d::editor {
 
     /**
      **/
-    void SelectTool::deactivate(const std::string& name) {
+    void SelectTool::deactivate(const std::string& /* name */) {
     }
 
     /**

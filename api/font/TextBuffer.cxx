@@ -16,7 +16,7 @@ namespace v3d::font {
         vertices_.push_back(vertex);
     }
 
-    void TextBuffer::addIndex(size_t index) {
+    void TextBuffer::addIndex(unsigned int index) {
         indices_.push_back(index);
     }
 

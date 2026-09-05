@@ -31,7 +31,7 @@ namespace v3d::editor {
 
     /**
      **/
-    void CameraControlTool::deactivate(const std::string& name) {
+    void CameraControlTool::deactivate(const std::string& /* name */) {
         mode_ = CAMERA_MODE_NONE;
     }
 

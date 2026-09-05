@@ -40,10 +40,10 @@ void PongScene::tick() {
         dispatcher_->trigger(v3d::event::Sound("victory"));
     }
     glm::vec2 ball_pos = ball_.position();
-    glm::vec2 ball_dir = ball_.direction();
 
     // give AI a turn in single player mode
     if (!gameState_.coop()) {
+        glm::vec2 ball_dir = ball_.direction();
         // is the ball headed towards the ai's paddle (towards the right side)?
         if (ball_dir[0] > 0.0f) {
             // travel is signed the way the court is: up decreases the paddle position and

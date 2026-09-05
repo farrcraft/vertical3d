@@ -62,7 +62,5 @@ std::string Piece::str() const {
             break;
         default:
             return "";
-            break;
     }
-    return "";
 }

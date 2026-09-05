@@ -29,8 +29,7 @@ namespace v3d::image {
         // 1 pixel border
         nodes_.push_back(glm::ivec3(1, 1, width - 2));
 
-        size_t size = width * height * depth;
-        image_.reset(new Image(width, height, depth * 8));
+        image_.reset(new Image(width, height, static_cast<uint8_t>(depth * 8)));
     }
 
     void TextureAtlas::write(const std::string& filename) {

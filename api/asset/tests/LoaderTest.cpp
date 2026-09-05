@@ -25,7 +25,7 @@ namespace {
             Loader(nullptr, v3d::asset::Type::Text, logger) {
         }
 
-        boost::shared_ptr<v3d::asset::Asset> load(std::string_view name) override {
+        boost::shared_ptr<v3d::asset::Asset> load(std::string_view /* name */) override {
             return boost::shared_ptr<v3d::asset::Asset>();
         }
     };

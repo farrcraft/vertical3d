@@ -37,7 +37,7 @@ namespace v3d::font {
         const std::vector<unsigned int> & indices() const;
 
         void addVertex(const glm::vec3 & vertex);
-        void addIndex(size_t index);
+        void addIndex(unsigned int index);
         void addColor(const glm::vec4 & color);
         void addTextureCoordinate(const glm::vec2 & uv);
         void dirty(bool state);

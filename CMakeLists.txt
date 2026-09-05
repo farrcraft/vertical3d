@@ -14,6 +14,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_options("/permissive-")
 
+# CMake seeds CMAKE_CXX_FLAGS with /W3, and MSVC reports D9025 for a command line that names
+# two warning levels, so the default has to come out before /W4 goes in.
+string(REGEX REPLACE "/W[0-4]" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+add_compile_options("/W4")
+
 # Need to set this for the COMPONENTS stanza to work next
 set(Boost_USE_STATIC_LIBS ON)
 

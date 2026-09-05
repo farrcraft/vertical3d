@@ -45,7 +45,7 @@ namespace v3d::image {
              * Get the number of bits per pixel in the image
              * @return number of bits per pixel
              */
-            unsigned int bpp() const;
+            uint8_t bpp() const;
             /**
              * Get the image width
              * @return the image width
@@ -60,7 +60,7 @@ namespace v3d::image {
              * Set the number of bits per pixel in the image
              * @param bits the number of bits per pixel
              */
-            void bpp(unsigned int bits);
+            void bpp(uint8_t bits);
             /**
              * Set the width of the image
              * @param w the image width

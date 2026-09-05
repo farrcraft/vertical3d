@@ -10,7 +10,7 @@ namespace v3d::ui::component {
         Component(component::Type::MENU), dispatcher_(dispatcher), active_(-1) {
     }
 
-    bool Menu::navigate(Navigation direction, bool wrap) {
+    bool Menu::navigate(Navigation direction, bool /* wrap */) {
         if (direction == Navigation::UnselectItem) {
         } else if (direction == Navigation::SelectItem) {
         } else if (direction == Navigation::NextItem) {
@@ -157,7 +157,7 @@ namespace v3d::ui::component {
         boost::shared_ptr<MenuItem> item = lvl->active();
         if (item) {
             if (item->type() == menu::ItemType::Submenu && item->submenu()) {  // menu item has a submenu so activate the submenu
-                bool activated = down();
+                down();
             } else if (item->type() == menu::ItemType::Action ||
                 item->type() == menu::ItemType::Check ||
                 item->type() == menu::ItemType::Radio) {  // menu item represents a command so send the bound event

@@ -13,7 +13,7 @@ namespace v3d::image {
 
     /**
      **/
-    boost::shared_ptr<Image> Reader::read(std::string_view filename) {
+    boost::shared_ptr<Image> Reader::read(std::string_view /* filename */) {
         boost::shared_ptr<Image> empty_ptr;
         return empty_ptr;
     }

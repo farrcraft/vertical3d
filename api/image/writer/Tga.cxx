@@ -7,6 +7,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <cstring>
 #include <string>
 
@@ -54,11 +55,16 @@ namespace v3d::image::writer {
             return false;
         }
 
+        if (img->width() > std::numeric_limits<uint16_t>::max() ||
+            img->height() > std::numeric_limits<uint16_t>::max()) {
+            return false;
+        }
+
         tga_header fheader;
         memset(&fheader, 0, sizeof(tga_header));
 
-        fheader.width_ = img->width();
-        fheader.height_ = img->height();
+        fheader.width_ = static_cast<uint16_t>(img->width());
+        fheader.height_ = static_cast<uint16_t>(img->height());
         fheader.bpp_ = img->bpp();
         fheader.type_ = 2;  // rgb
         // bit 5 of the descriptor is the vertical origin, and the rows below go out top down
@@ -90,8 +96,9 @@ namespace v3d::image::writer {
         tga_footer footer;
         memset(&footer, 0, sizeof(tga_footer));
 
-        // footer.signature_ = 'TRUEVISION-XFILE';
-        strncpy(footer.signature_, "TRUEVISION-XFILE", 16);
+        // The signature fills the field exactly, with no terminator - it is 16 bytes of a
+        // fixed size record rather than a C string.
+        memcpy(footer.signature_, "TRUEVISION-XFILE", sizeof(footer.signature_));
         footer.reserved_ = '.';
         file.write(reinterpret_cast<char*>(&footer), sizeof(footer));
 

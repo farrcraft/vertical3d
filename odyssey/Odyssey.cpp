@@ -14,7 +14,7 @@
 
 /**
  **/
-int main(int argc, char* argv[]) {
+int main(int /* argc */, char* argv[]) {
     // extract exe path from argv (needed for loading file assets with relative paths)
     std::string appPath =
         boost::filesystem::path(boost::filesystem::system_complete(boost::filesystem::path(argv[0])).remove_filename()).string() +

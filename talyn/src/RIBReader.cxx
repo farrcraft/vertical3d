@@ -141,7 +141,6 @@ void RIBReader::parseToken(const std::string & token) {
 }
 
 bool RIBReader::read(const std::string &filename) {
-    int length = 0;
     file_.exceptions(/*std::ifstream::eofbit |  std::ifstream::failbit | */std::ifstream::badbit);
     try {
         file_.open(filename.c_str());

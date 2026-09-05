@@ -76,7 +76,7 @@ size_t MeshCache::addTri(size_t a, size_t b, size_t c) {
     if (triCount_ == maxTris_) {
         throw std::runtime_error("MeshCache tri limit exceeded!");
     }
-    unsigned int index = triCount_;
+    size_t index = triCount_;
     triCount_++;
     tris_[index] = glm::ivec3(a, b, c);
     return index;
@@ -95,7 +95,7 @@ size_t MeshCache::addVertex(const glm::vec3 & vertex) {
     if (vertexCount_ == maxVertices_) {
         throw std::runtime_error("MeshCache vertex limit exceeded!");
     }
-    unsigned int index = vertexCount_;
+    size_t index = vertexCount_;
     vertexCount_++;
     vertices_[index] = vertex;
     return index;

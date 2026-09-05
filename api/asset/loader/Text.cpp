@@ -26,7 +26,9 @@ namespace v3d::asset::loader {
         // read shader file content
         std::ifstream file(std::string(name).c_str(), std::ios::in | std::ios::binary);
         if (!file) {
-            std::string err = std::string("error loading asset file: ") + std::string(name) + std::string(" - ") + strerror(errno);
+            char reason[256] = {};
+            strerror_s(reason, sizeof(reason), errno);
+            std::string err = std::string("error loading asset file: ") + std::string(name) + std::string(" - ") + reason;
             throw std::runtime_error(err);
         }
         std::string content;

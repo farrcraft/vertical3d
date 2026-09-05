@@ -12,3 +12,9 @@ add_library("v3dlib_moya"
 	"ReyesPrimitive.h" "ReyesPrimitive.cxx"
 	"Vertex.h" "Vertex.cxx"
 )
+
+# RenderMan.cxx declares the whole RenderMan Interface and leaves most of its entry points
+# empty, so every parameter of every unimplemented one is unreferenced. That is 500-odd C4100
+# reports at /W4 - enough to bury the rest of the tree's warnings - and naming the parameters
+# out would only have to be undone as each function grows a body.
+target_compile_options("v3dlib_moya" PRIVATE /wd4100)

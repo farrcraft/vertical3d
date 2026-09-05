@@ -64,7 +64,7 @@ namespace v3d::font {
 
         // set char size
         // size *= 100.0f;
-        size_t hres = 64;
+        const FT_UInt hres = 64;
         if ((error = FT_Set_Char_Size(face_, static_cast<int>((size * 64)), 0, 72 * hres, 72)) != 0) {
             logger_->get()->error("Error setting freetype char size!");
             release();
@@ -255,7 +255,7 @@ namespace v3d::font {
                 FT_Done_FreeType(freetype_->library_);
                 return false;
             }
-            FT_Glyph ft_glyph;
+            FT_Glyph ft_glyph = nullptr;
             FT_GlyphSlot slot;
             FT_Bitmap ft_bitmap;
             int ft_bitmap_width = 0;

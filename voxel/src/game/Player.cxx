@@ -7,7 +7,7 @@
 #include "../engine/Camera.h"
 
 typedef struct Moves {
-    unsigned int move_;  // movement flag
+    Player::Movement move_;  // movement flag
     unsigned int axis_;  // vector position of movement
     float magnitude_;  // negative or positive movement vector
 } Moves;
@@ -69,7 +69,7 @@ void Player::look(float heading, float pitch) {
     camera_->rotate(heading, pitch, 0.0f);
 }
 
-void Player::tick(unsigned int delta) {
+void Player::tick(unsigned int /* delta */) {
     // update player position based on current movement flags
     glm::vec3 dir(0.0f, 0.0f, 0.0f);
     for (unsigned int i = 0; i < 6; i++) {
@@ -89,7 +89,7 @@ void Player::tick(unsigned int delta) {
     }
 }
 
-bool Player::checkWorldCollision(const glm::vec3 & position) {
+bool Player::checkWorldCollision(const glm::vec3 & /* position */) {
     /*
     convert position into voxel coordinate space
     convert voxel position into chunk coordinate space
@@ -97,8 +97,6 @@ bool Player::checkWorldCollision(const glm::vec3 & position) {
     if voxel at position is active
         return true
     */
-    glm::ivec3 voxelPosition;
-
     return false;
 }
 

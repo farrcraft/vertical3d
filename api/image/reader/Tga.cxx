@@ -62,7 +62,7 @@ namespace v3d::image::reader {
             return empty_ptr;
         }
 
-        boost::shared_ptr<Image> img(new Image(width, height, bpp));
+        boost::shared_ptr<Image> img(new Image(width, height, static_cast<uint8_t>(bpp)));
 
         unsigned int bytespp = bpp / 8;
         unsigned int size = width * height * bytespp;
@@ -75,7 +75,7 @@ namespace v3d::image::reader {
         }
 
         if (bytespp >= 3) {
-            unsigned int temp;
+            unsigned char temp;
             for (unsigned int i = 0; i < static_cast<int>(size); i += bytespp) {
                 // Swaps The 1st And 3rd Bytes ('R'ed and 'B'lue)
                 temp = data[i];

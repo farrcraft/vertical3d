@@ -72,18 +72,17 @@ namespace v3d::image::writer {
         png_set_error_fn(png_ptr, (png_voidp)static_cast<std::string>(filename).c_str(), pngtest_error,
             pngtest_warning);
 
-        png_color_8 sig_bit;
-        int bytes = img->bpp() / static_cast<int>(img->format());
+        // png_set_sBIT reads whichever members the colour type covers, so the ones this
+        // writer does not set have to be zero rather than indeterminate.
+        png_color_8 sig_bit = {};
+        const png_byte bytes = static_cast<png_byte>(img->bpp() / static_cast<int>(img->format()));
         sig_bit.red = bytes;
         sig_bit.green = bytes;
         sig_bit.blue = bytes;
 
-        int color_type;
-        if (img->format() == Image::Format::RGB) {
-            color_type = PNG_COLOR_TYPE_RGB;
-        } else if (img->format() == Image::Format::RGBA) {
+        int color_type = PNG_COLOR_TYPE_RGB;
+        if (img->format() == Image::Format::RGBA) {
             color_type = PNG_COLOR_TYPE_RGB_ALPHA;
-            /// if the image has an alpha channel then
             sig_bit.alpha = bytes;
         }
         png_set_IHDR(png_ptr, info_ptr, img->width(), img->height(), bytes, color_type,

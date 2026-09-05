@@ -41,7 +41,7 @@ namespace v3d::image {
         return data_;
     }
 
-    unsigned int Image::bpp() const {
+    uint8_t Image::bpp() const {
         return bpp_;
     }
 
@@ -57,7 +57,7 @@ namespace v3d::image {
         return format_;
     }
 
-    void Image::bpp(unsigned int bits) {
+    void Image::bpp(uint8_t bits) {
         bpp_ = bits;
     }
 

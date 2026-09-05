@@ -311,9 +311,6 @@ namespace v3d::moya {
         v3d::type::AABBox bounds = bound();
         glm::vec3 bound_min = bounds.min();
         glm::vec3 bound_max = bounds.max();
-        // get the size of each micropoly
-        float offset_x = (bound_max[0] - bound_min[0]) / grid_size;
-        float offset_y = (bound_max[1] - bound_min[1]) / grid_size;
         /*
             convert the eye space bound to screen space
         */

@@ -13,7 +13,7 @@ bool TetrisScene::load(const boost::shared_ptr<v3d::asset::Manager>& assetManage
     return board_.load(assetManager);
 }
 
-void TetrisScene::resize(int width, int height) {
+void TetrisScene::resize(int /* width */, int /* height */) {
 }
 
 GameBoard * TetrisScene::board() {

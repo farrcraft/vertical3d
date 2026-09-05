@@ -15,6 +15,10 @@ v3d_add_test(voxel
 	"../src/voxel/TerrainMap.cxx"
 	"../src/voxel/Voxel.cxx")
 
+# A source file property is scoped to the directory that sets it, so the exemption the app
+# gives the vendored noise utility does not reach the suite that shares the file.
+set_source_files_properties("../src/noise/noiseutils.cpp" PROPERTIES COMPILE_OPTIONS "/wd4100;/wd4189;/wd4244")
+
 # A chunk is built against a TerrainMap, and the vtable of the one the tests derive from
 # refers to the perlin implementation whether or not any test generates noise.
 target_link_libraries(v3dtest_voxel PRIVATE

@@ -159,7 +159,7 @@ namespace v3d::font {
         try {
             image = factory.read(filename);
         }
-        catch (std::string& e) {
+        catch (const std::string&) {
             return false;
         }
 

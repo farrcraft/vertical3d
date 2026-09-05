@@ -26,10 +26,15 @@ namespace v3d::image::reader {
     }
 
     // JPEG library error handling
+    // jmp_buf is over-aligned, so the struct is padded to suit it. That is the platform's
+    // requirement rather than something to pack away, and nothing here is written to a file.
+#pragma warning(push)
+#pragma warning(disable : 4324)
     struct my_error_mgr {
         struct jpeg_error_mgr pub;  // "public" fields
         jmp_buf setjmp_buffer;  // for return to caller
     };
+#pragma warning(pop)
 
     typedef struct my_error_mgr* my_error_ptr;
 
@@ -56,11 +61,11 @@ namespace v3d::image::reader {
 
         // open the file
         FILE* fp;
-        errno = 0;
         errno_t err = fopen_s(&fp, static_cast<std::string>(filename).c_str(), "rb");
         if (err != 0) {
-            logger_->get()->error("JPEGReader::read - failed opening file {} with errno {}", filename,
-                strerror(errno));
+            char reason[256] = {};
+            strerror_s(reason, sizeof(reason), err);
+            logger_->get()->error("JPEGReader::read - failed opening file {} with errno {}", filename, reason);
             return empty_ptr;
         }
 
@@ -68,7 +73,15 @@ namespace v3d::image::reader {
         // We set up the normal JPEG error routines, then override error_exit.
         cinfo.err = jpeg_std_error(&jerr.pub);
         jerr.pub.error_exit = my_error_exit;
+        // longjmp does not destroy anything constructed after the setjmp point, so every
+        // object below that owns memory is declared above it. The decoder signals failure by
+        // longjmping out of any of the jpeg_* calls that follow.
+        boost::shared_ptr<Image> img;
         // Establish the setjmp return context for my_error_exit to use.
+        // C4611 flags the mix of setjmp with C++ object destruction, which the declaration
+        // above satisfies: no owning object is constructed after this point.
+#pragma warning(push)
+#pragma warning(disable : 4611)
         if (setjmp(jerr.setjmp_buffer)) {
             /* If we get here, the JPEG code has signaled an error.
                 * We need to clean up the JPEG object, close the input file, and return.
@@ -77,6 +90,7 @@ namespace v3d::image::reader {
             fclose(fp);
             return empty_ptr;
         }
+#pragma warning(pop)
         // Initialize the JPEG decompression object
         jpeg_create_decompress(&cinfo);
 
@@ -105,7 +119,7 @@ namespace v3d::image::reader {
         // Adjust default decompression parameters by re-parsing the options
         (void)jpeg_start_decompress(&cinfo);
 
-        boost::shared_ptr<Image> img(new Image(cinfo.image_width, cinfo.image_height, 24));
+        img.reset(new Image(cinfo.image_width, cinfo.image_height, 24));
         unsigned char* data = img->data();
 
         // Process data. A jpeg stores its scanlines top down and so does Image, so scanline

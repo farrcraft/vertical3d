@@ -90,7 +90,7 @@ namespace v3d::image::reader {
         channels = png_get_channels(png_ptr, info_ptr);
 
         // now we can allocate memory to store the image
-        boost::shared_ptr<Image> img(new Image(width, height, channels * bpp));
+        boost::shared_ptr<Image> img(new Image(width, height, static_cast<uint8_t>(channels * bpp)));
         unsigned char* data = img->data();
 
         // and allocate memory for an array of row-pointers

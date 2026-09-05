@@ -140,7 +140,7 @@ namespace v3d::render::realtime {
     /**
      **/
     void Window::warpCursor(int x, int y) {
-        SDL_WarpMouseInWindow(window_, x, y);
+        SDL_WarpMouseInWindow(window_, static_cast<float>(x), static_cast<float>(y));
     }
 
 };  // namespace v3d::render::realtime

@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <fstream>
+#include <limits>
 #include <string>
 #include <system_error>
 #include <vector>
@@ -60,30 +61,35 @@ namespace v3d::editor {
 
         /**
          * Read a whole number, which is what every reference within a mesh is.
-         * A double or a negative is a malformed index rather than one to round.
+         * A double, a negative, or one too large for brep::Index is a malformed index
+         * rather than one to round or truncate.
          * @return false when the entry is missing or is not one, leaving out alone
          **/
-        bool index(const boost::json::object& entry, const char* key, uint64_t* out) {
+        bool index(const boost::json::object& entry, const char* key, v3d::brep::Index* out) {
             if (!entry.contains(key)) {
                 return false;
             }
             const boost::json::value& value = entry.at(key);
+            uint64_t whole = 0;
             if (value.is_uint64()) {
-                *out = value.as_uint64();
-                return true;
+                whole = value.as_uint64();
+            } else if (value.is_int64() && value.as_int64() >= 0) {
+                whole = static_cast<uint64_t>(value.as_int64());
+            } else {
+                return false;
             }
-            if (value.is_int64() && value.as_int64() >= 0) {
-                *out = static_cast<uint64_t>(value.as_int64());
-                return true;
+            if (whole > std::numeric_limits<v3d::brep::Index>::max()) {
+                return false;
             }
-            return false;
+            *out = static_cast<v3d::brep::Index>(whole);
+            return true;
         }
 
         /**
          * Whether a reference names something the mesh holds. INVALID_ID is allowed
          * wherever a reference may be absent - an edge on a boundary has no pair.
          **/
-        bool refers(uint64_t id, std::size_t count, bool optional) {
+        bool refers(v3d::brep::Index id, std::size_t count, bool optional) {
             if (optional && id == v3d::brep::INVALID_ID) {
                 return true;
             }
@@ -337,8 +343,8 @@ namespace v3d::editor {
         }
         const boost::json::object& root = document.as_object();
 
-        uint64_t version = 0;
-        if (!index(root, "version", &version) || version != static_cast<uint64_t>(VERSION)) {
+        v3d::brep::Index version = 0;
+        if (!index(root, "version", &version) || version != static_cast<v3d::brep::Index>(VERSION)) {
             logger_->get()->error("{} is not a version {} project", path, VERSION);
             return false;
         }
@@ -389,16 +395,16 @@ namespace v3d::editor {
                 mesh->addVertex(v3d::brep::Vertex(glm::vec3(values[0], values[1], values[2])));
             }
 
-            for (const boost::json::value& value : entry.at("edges").as_array()) {
-                if (!value.is_object()) {
+            for (const boost::json::value& edgeEntry : entry.at("edges").as_array()) {
+                if (!edgeEntry.is_object()) {
                     logger_->get()->error("An edge in {} is not an object", path);
                     return false;
                 }
-                const boost::json::object& record = value.as_object();
-                uint64_t vertex = 0;
-                uint64_t face = 0;
-                uint64_t pair = 0;
-                uint64_t next = 0;
+                const boost::json::object& record = edgeEntry.as_object();
+                v3d::brep::Index vertex = 0;
+                v3d::brep::Index face = 0;
+                v3d::brep::Index pair = 0;
+                v3d::brep::Index next = 0;
                 if (!index(record, "vertex", &vertex) || !index(record, "face", &face) ||
                     !index(record, "pair", &pair) || !index(record, "next", &next)) {
                     logger_->get()->error("An edge in {} is missing one of its references", path);
@@ -412,14 +418,14 @@ namespace v3d::editor {
                 mesh->addEdge(edge);
             }
 
-            for (const boost::json::value& value : entry.at("faces").as_array()) {
-                if (!value.is_object()) {
+            for (const boost::json::value& faceEntry : entry.at("faces").as_array()) {
+                if (!faceEntry.is_object()) {
                     logger_->get()->error("A face in {} is not an object", path);
                     return false;
                 }
-                const boost::json::object& record = value.as_object();
+                const boost::json::object& record = faceEntry.as_object();
                 float normal[3] = { 0.0f, 0.0f, 0.0f };
-                uint64_t edge = 0;
+                v3d::brep::Index edge = 0;
                 if (!numbers(record, "normal", 3, normal) || !index(record, "edge", &edge)) {
                     logger_->get()->error("A face in {} is missing its normal or its edge", path);
                     return false;

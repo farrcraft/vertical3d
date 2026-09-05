@@ -83,7 +83,7 @@ namespace v3d::editor {
 
     /**
      **/
-    void TransformTool::deactivate(const std::string& name) {
+    void TransformTool::deactivate(const std::string& /* name */) {
         // the modes latch rather than being held, so there is nothing to undo when the key
         // that chose one comes up
     }
