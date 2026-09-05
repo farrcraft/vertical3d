@@ -147,11 +147,11 @@ You have Bash. Prefer evidence over assertion.
 ```
 ninja -C out/build/x64-Debug <target>
 ctest --test-dir out/build/x64-Debug --output-on-failure
-cpplint --linelength=180 --filter=-runtime/indentation_namespace,-build/namespaces_literals <files>
+cpplint --linelength=180 --filter=-whitespace/indent_namespace,-build/namespaces_literals <files>
 ```
 
-Building needs an MSVC Developer environment first. Every file reports
-`whitespace/indent_namespace` from a stale filter in the workflow — ignore those.
+Building needs an MSVC Developer environment first. The tree is clean at that lint command,
+so every finding is a real one.
 
 There is a test suite — one binary per api library and per app with logic worth covering —
 so a change with a testable cpu half that brings no cases is a finding. CI still renders

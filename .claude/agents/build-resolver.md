@@ -110,15 +110,17 @@ result is dropped is a defect even if it builds.
 ## Lint
 
 ```
-cpplint --linelength=180 --filter=-runtime/indentation_namespace,-build/namespaces_literals \
+cpplint --linelength=180 --filter=-whitespace/indent_namespace,-build/namespaces_literals \
   --exclude=out --exclude=vendor --exclude=vcpkg_installed \
   --exclude=voxel/src/noise --recursive .
 ```
 
-**Every file in the repo reports `whitespace/indent_namespace`** because the filter names
-the check by an identifier cpplint no longer uses. Ignore those; treat anything else as a
-real finding. Do not "fix" the indentation to satisfy it, and do not widen the filter —
-that whole class of noise is a known defect in the workflow, not in the code.
+**The tree is clean at this command**, so every finding is a real one and a report of zero
+is the expected result rather than a sign the run went wrong.
+
+`whitespace/indent_namespace` is suppressed because the house style indents inside a
+namespace. Do not "fix" the indentation to satisfy it, and do not widen the filter past
+these two entries.
 
 ## Tests
 

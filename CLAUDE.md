@@ -96,16 +96,19 @@ ninja -C out/build/x64-Debug pong         # one target
 ## Lint
 
 ```
-cpplint --linelength=180 --filter=-runtime/indentation_namespace,-build/namespaces_literals \
+cpplint --linelength=180 --filter=-whitespace/indent_namespace,-build/namespaces_literals \
   --exclude=out --exclude=vendor --exclude=vcpkg_installed \
   --exclude=voxel/src/noise --recursive .
 ```
 
-Run in CI by [.github/workflows/cpplint.yml](.github/workflows/cpplint.yml). The excludes matter only
-locally — CI checks out no submodules and installs no ports — but a developer machine has all three trees,
-and `vcpkg_installed/` alone holds 80,000-odd third party headers. Current cpplint renamed the
-namespace-indent check to `whitespace/indent_namespace`, so the `-runtime/indentation_namespace` filter no
-longer suppresses it and **every file in the repo reports it**. Ignore those; treat anything else as real.
+Run in CI by [.github/workflows/cpplint.yml](.github/workflows/cpplint.yml). **The tree is clean at
+it** — every finding is a real one. The excludes matter only locally — CI checks out no submodules and
+installs no ports — but a developer machine has all three trees, and `vcpkg_installed/` alone holds
+80,000-odd third party headers.
+
+`whitespace/indent_namespace` is suppressed because the house style indents inside a namespace and the
+check is Google's rule that it should not. A name cpplint does not know is accepted and silently
+suppresses nothing, so a filter that stops working looks exactly like a tree that started failing.
 
 ## Tests
 
