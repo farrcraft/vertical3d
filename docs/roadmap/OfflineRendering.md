@@ -1,36 +1,42 @@
 # Offline Rendering
 
 Two of the applications in this tree are offline renderers. `talyn` is a raytracer; `moya` is a
-reyes renderer behind the RenderMan interface. Between them they hold about 4,500 lines, they
-both build, and **as of 2026-09-05 both produce a picture whose pixels came from geometry** —
-talyn a flat shaded triangle, moya a flat shaded polygon, each compared against a committed
-reference in ctest.
+reyes renderer behind the RenderMan interface. **As of 2026-09-05 both read a scene from a RIB
+file and draw it**, each compared against a committed reference in ctest, and the editor exports
+to the same format.
 
 Before that, neither had ever rendered anything: talyn wrote a black PNG of the size the scene
 file asked for and moya wrote no file at all. That was the shape of the problem — in both, the
-scaffolding around the renderer was further along than the renderer. What is left of it is a
-scene each renderer can only be handed in code, one constant colour for every surface, and one
-sample per pixel.
+scaffolding around the renderer was further along than the renderer. What is left of it is one
+flat colour per surface with no light and no material behind it, and one sample per pixel.
 
-State as of 2026-09-05, with phase 1 closed the same day as
-[its own plan](../plans/completed/OfflineRenderingPhase1.md). Nothing beyond that phase is
-scheduled; per [the modernization plan's conclusion](../plans/completed/Modernization.md) both
-renderers are deliberately kept out of the realtime work, and this roadmap does not change that.
+State as of 2026-09-05, with phases 1 and 2 closed the same day as their own plans
+([one](../plans/completed/OfflineRenderingPhase1.md),
+[two](../plans/completed/OfflineRenderingPhase2.md)). Nothing beyond them is scheduled; per
+[the modernization plan's conclusion](../plans/completed/Modernization.md) both renderers are
+deliberately kept out of the realtime work, and this roadmap does not change that.
 
 ## What exists
 
 ### moya — the reyes renderer
 
-`moya/libmoya` builds as `v3dlib_moya`, with `moya/moya/moya.cxx` as a driver that calls the RI
-C API directly and `moya/tests/` as a suite of 43 cases that pass.
+`moya/libmoya` builds as `v3dlib_moya`, with `moya/moya/moya.cxx` as a driver that reads a RIB
+file through the shared reader and `moya/tests/` as a suite of 55 cases that pass.
+
+There are **two ways into a render context**, and by
+[ADR-0025](../adr/0025-the-rib-reader-dispatches-a-cpp-request-interface.md) neither goes
+through the other: the RI C entry points, and
+[`moya::RIBHandler`](../../moya/libmoya/RIBHandler.cxx). Both drive `RenderContext`, which is
+where the behaviour is. A reader cannot use the C API, because a `va_list` cannot be built at
+runtime.
 
 The **RenderMan interface** is declared in full — every entry point in
 [RenderMan.h](../../moya/libmoya/RenderMan.h) has a definition, which is what RI compliance
-asks for even from a renderer that supports nothing. About thirty of them have a body. The ones
-that matter are `RiBegin`/`RiEnd` (push and pop a context), `RiWorldBegin`/`RiWorldEnd` (the two
-reyes passes), `RiFormat`, `RiProjection`, `RiClipping`, the transform stack, and `RiPolygon`,
-which walks a varargs parameter list, reads `RI_P` and builds a `Polygon`. `RiSphere` is empty,
-`RiSurface` is empty, and `RiLightSource` returns 0.
+asks for even from a renderer that supports nothing. About forty of them have a body. `RiSphere`
+is empty, `RiSurface` is empty, and `RiLightSource` returns 0. **The `V` forms are the ones
+still worth having** — `RiPolygonV` and its siblings are the standard's own answer to a caller
+holding a runtime parameter list, and implementing them on the handler would give the C API and
+the reader one path rather than two.
 
 The **first reyes pass** is real and is the most finished code in either renderer.
 [`RenderContext::addPolygon`](../../moya/libmoya/RenderContext.cxx) bounds a polygon in object
@@ -43,17 +49,24 @@ and files it in the bucket its upper left corner lands in. The supporting maths 
 The **second pass** dices, shades and hides.
 [`Bucket::render`](../../moya/libmoya/Bucket.cxx) splits a primitive too large for one grid and
 its pieces go back through the first pass until each fits; a primitive that fits is diced into
-one `MicroPolygonGrid` by bilinear interpolation over its first four vertices, shaded from one
-constant, and sampled at one pixel centre per micropolygon against a depth plane. `RiDisplay`
-records a name and a mode, and `RenderContext::render` writes the colour planes through
-`image::Factory` once the buckets are done.
+one `MicroPolygonGrid` by bilinear interpolation over its first four vertices, and sampled at
+one pixel centre per micropolygon against a depth plane. Dicing interpolates the primitive's
+colour along with its position, which is the whole of shading: there is no separate shade step
+and no constant written over the top of one. `RiDisplay` records a name and a mode, and
+`RenderContext::render` writes the colour planes through `image::Factory` once the buckets are
+done.
 
-So the driver runs, prints Pixar's copyright, builds a context, buckets a polygon, subdivides
-whatever is too big, dices the rest, and writes a white rectangle on black.
+So the driver reads a file, prints Pixar's copyright, builds a context, buckets each polygon,
+subdivides whatever is too big, dices the rest, and writes the picture the scene named.
 
-What the second pass does not do: no shading beyond the constant, no pixel filter, no
-supersampling, no bucket overlap — a grid is sampled wherever it lands rather than being handed
-to each bucket it touches — and no more than four vertices per polygon.
+**A primitive carries the graphics state it was submitted under** — the object to eye transform
+and the colour, on `ReyesPrimitive`. Splitting resubmits pieces through the first pass during
+the second one, when neither is current any more, and a split builds its pieces out of
+intersection points that carry no colour of their own.
+
+What the second pass does not do: no material and no light behind that colour, no pixel filter,
+no supersampling, no bucket overlap — a grid is sampled wherever it lands rather than being
+handed to each bucket it touches — and no more than four vertices per polygon.
 
 ### talyn — the raytracer
 
@@ -64,18 +77,25 @@ to each bucket it touches — and no more than four vertices per polygon.
 `main` parses eight options with `program_options`, dispatches on the file extension, and
 drives a `RenderContext` to an image written through `image::Factory` — `--outfile foo.png`
 works, and the format comes from the extension, so bmp, jpeg, png and tga are all reachable.
-The [RIBReader](../../talyn/libtalyn/RIBReader.cxx) reads whitespace-separated tokens and
-switches on twenty-odd of them. **Exactly one has a body**: `Format` reads three more tokens
-and sizes the framebuffer. Every other request, geometry included, is recognised and discarded.
+`talyn --file scene.rib` reads that scene through the shared reader and
+[`talyn::RIBHandler`](../../talyn/libtalyn/RIBHandler.cxx), which fans a polygon into triangles
+through the current transformation and builds the camera at `WorldBegin`.
+
+**The camera is the one thing talyn cannot take from an arbitrary RIB file.** `CameraProfile`
+holds an eye and a rotation, and `Camera::createView()` composes them, so a world to camera
+matrix that reverses handedness — which is what RI's camera basis is for any general lookat —
+cannot be expressed. Such a scene is refused with a message rather than rendered mirrored. It
+is the shape [ADR-0024](../adr/0024-api-type-serves-both-renderers.md) anticipated and the
+first thing that would make it concrete.
 
 [`RenderContext::render`](../../talyn/libtalyn/RenderContext.cxx) casts a primary ray through
 every pixel centre, takes the nearest triangle hit and writes that triangle's flat colour or
 the scene background. The 30-line comment above it gives the recursive algorithm the later
 phases fill in — shadow rays with attenuation, reflection and refraction at depth.
 
-`talyn::Scene` is a camera, a list of flat coloured triangles and a background, and it can only
-be built in code: the reader has no route to geometry, so **the driver still writes a
-background-only image**. talyn's picture comes from its suite until the RIB reader of phase 2.
+`talyn::Scene` is a camera, a list of flat coloured triangles and a background. The background
+is the one thing a file cannot set — RIB says it with `RiImager`, which is phase 3 — so a scene
+that wants one draws a backdrop polygon, which is what the reference fixture does.
 
 ### What the api already provides
 
@@ -167,6 +187,10 @@ last piece is what makes `--output` mean something, and by
 
 ### Phase 2 — a scene worth rendering
 
+**Done, 2026-09-05.** [OfflineRenderingPhase2.md](../plans/completed/OfflineRenderingPhase2.md)
+is the plan, and carries the step ordering and what landed; what follows is why the phase was
+second.
+
 Blocked by phase 1, which is done: parsing a scene format nobody can render is unverifiable work.
 
 RIB is the format both renderers read, by
@@ -187,8 +211,10 @@ renderers are fed until then, and is what a test fixture is either way.
 
 ### Phase 3 — light and surface
 
-Blocked by phase 2 for moya (a scene has to be able to *say* "light"), by phase 1 only for
-talyn (a hard-coded light in a hard-coded scene is a fine start).
+Blocked by phase 2, which is done. It is the next phase that would earn a plan.
+
+A scene can now *say* "light" — `LightSource` and `Surface` reach both handlers, with their
+parameters typed by the declaration table, and both drop them.
 
 moya's `RiLightSource` returns 0, its `RiSurface` is empty, and neither renderer has a material
 of any kind. The RI standard shaders — matte, metal, plastic, paintedplastic — are the obvious
@@ -268,6 +294,11 @@ Phase 1 collected on that. `talyn/tests/data/reference-triangle.png` and
 each render a scene and compare it against one with `image::compare` — a tolerance rather than
 an equality, for float rounding across compilers. That is the first real render regression test
 the repo has had, and it is the reason phase 1 was phase 1 rather than a detail of phase 2.
+
+**Each reference is reached by two routes.** Phase 2 added a `.rib` beside each `.png`
+describing the same scene, so the file path and the code path are pinned to one picture apiece:
+if they ever disagree, a case says which. That is what makes the reader a rendering change
+rather than a parsing one.
 
 **Both references are expected to be regenerated** as phases 3 to 5 change shading and sampling
 on purpose. What they buy is that a change which was *not* meant to alter the picture says so. A

@@ -16,8 +16,9 @@ When every phase is closed it moves to [`plans/completed/`](plans/completed/) an
 items move to [`TODO.md`](TODO.md).
 
 **No plan is open.**
-[`plans/completed/OfflineRenderingPhase1.md`](plans/completed/OfflineRenderingPhase1.md) closed on
-2026-09-05 and took up phase 1 of the offline rendering roadmap.
+[`plans/completed/OfflineRenderingPhase2.md`](plans/completed/OfflineRenderingPhase2.md) and
+[`plans/completed/OfflineRenderingPhase1.md`](plans/completed/OfflineRenderingPhase1.md) both
+closed on 2026-09-05 and took up the first two phases of the offline rendering roadmap.
 [`plans/completed/Modernization.md`](plans/completed/Modernization.md) closed on 2026-09-04 and
 covered the overlapping rewrites: SDL3, the legacy tree migration, Vulkan, the engine
 consolidation, and the per-app ports. Unphased work is in [`TODO.md`](TODO.md).

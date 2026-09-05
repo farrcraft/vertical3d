@@ -30,7 +30,7 @@ earns an ADR, and what "verified" currently means. Decisions are in [docs/adr/](
 README; most of the first twelve cover the Vulkan rewrite and are worth reading before touching `api/render`.
 Plans live in [docs/plans/](docs/plans/), surveys and audits in [docs/audits/](docs/audits/), roadmaps for
 areas nobody has taken up in [docs/roadmap/](docs/roadmap/), and unphased work in
-[docs/TODO.md](docs/TODO.md). No plan is open; phase 2 of
+[docs/TODO.md](docs/TODO.md). No plan is open; phase 3 of
 [the offline rendering roadmap](docs/roadmap/OfflineRendering.md) is the next thing that would earn one.
 
 ## Build
@@ -133,7 +133,8 @@ nothing else.
   `talyn/tests/data/` — compared with `image::compare`, which reports the worst pixel and by how much
   rather than only that two images differ. A failing case, or a missing reference, writes what it
   rendered to `data_out/` beside the executable, which is also how a reference is regenerated when a
-  change is meant to alter the picture.
+  change is meant to alter the picture. **Each PNG has a `.rib` beside it describing the same scene**,
+  so the file path and the code path are pinned to one picture and a divergence between them fails.
 - The api libraries are testable without a window because `ComponentRenderer` takes text measuring and
   writing as callbacks rather than depending on the font library, and because a strip is hit tested
   against the bounds a draw left on it per ADR-0019. Keep that seam when adding to `ui` or `render`.
@@ -187,6 +188,29 @@ lets their suites render in CI where everything below the recorder in `api/rende
 - **A `RenderContext` writes a file only when `RiDisplay` named one with type `"file"`.** The RI token
   table in `RenderMan.cxx` is `RtToken`, i.e. pointers, and most of it is still uninitialised — a null
   one reaches the context as an empty string rather than as an error.
+- **RIB is read by one reader for both renderers**, `offline::RIBReader`, dispatching onto
+  `offline::RIBHandler` — a C++ interface with typed parameter lists, not the RI C ABI, per
+  [ADR-0025](docs/adr/0025-the-rib-reader-dispatches-a-cpp-request-interface.md). Each renderer
+  implements it as `<renderer>::RIBHandler`. **Every method has an empty body rather than being pure
+  virtual**, because the RI standard asks a renderer to accept a request it does not support — so a
+  misspelled override is silent, and every override carries `override`.
+- **A matrix crosses the RIB boundary by being read in order, not transposed.** RIB writes row major
+  under a row vector convention and glm stores column major under a column vector one, so
+  `glm::make_mat4` over the sixteen floats *is* the conversion. This applies to `Transform`,
+  `ConcatTransform`, `RtMatrix` and the editor's export alike.
+- **A RIB `Polygon` carries no vertex count** — it is the length of `"P"`, which the reader divides
+  out. So a parameter list is parsed before the count is known, and an unbracketed varying or vertex
+  parameter ends the parse rather than being guessed at.
+- **moya's world-to-camera transform applies as it stands.** `prepareWorld` saves the current
+  transformation as the camera coordinate system, and by the RI standard that transformation *is* the
+  world to camera one. A transpose and an inverse are each right only when it is a rotation.
+- **talyn refuses a camera `type::CameraProfile` cannot hold** — an off centre `ScreenWindow`, a
+  non-rigid matrix, or one that reverses handedness, which is what RI's camera basis is for a general
+  lookat. `RIBHandler::error()` says which; the reader still succeeds, because the request was
+  understood.
+- **A `ReyesPrimitive` carries the transform and colour it was submitted under.** Splitting resubmits
+  pieces through the first pass during the second one, when neither is current, and a split builds its
+  pieces from intersection points that carry no colour at all.
 
 ### Invariants that bite
 
@@ -240,9 +264,13 @@ Each of these is settled by an ADR; read the record rather than inferring the ru
 
 Three things the ADRs do not say. **Multiple viewports are several passes over one frame** — the editor's
 `Renderer` builds one `Pass` per `ViewPort`, each with its own region, camera and clear; `data/layout.json`
-decides the split. **There is no file chooser in the tree**, so `project::load` and `project::save` work on
-one document at a fixed `project.json` beside the executable. **`Tool` stays in the editor**: no game holds
-a gesture open across events.
+decides the split. **There is no file chooser in the tree**, so `project::load`, `project::save` and
+`project::export::rib` work on one document at a fixed `project.json` or `export.rib` beside the
+executable. **`Tool` stays in the editor**: no game holds a gesture open across events.
+
+The RIB export is one way, per [ADR-0023](docs/adr/0023-rib-is-the-offline-scene-description.md):
+`RIBExportVisitor` writes topology and a placement per mesh from the active view's camera, and nothing
+reads it back. The scene has no lights and no materials, so what it produces renders in one flat colour.
 
 ## Conventions
 
