@@ -8,14 +8,14 @@ A monorepo for the Vertical3D ecosystem: reusable C++ libraries under `api/` (ta
 
 Much of this code traces back to the early 2000s and is being modernised incrementally: C++17+, granular namespaces, CMake replacing autotools and VS solutions. Expect wide variance in how modern any given file is.
 
-**There are no legacy trees left.** `vault/`, `rigel/`, `luxa/` and `v3dlibs/` are all deleted as of 2026-09-04, each after the list in its own survey or audit was worked off. Every directory in the root now builds. The records stay in `docs/` because they are the only account of what those trees held, and a file comes back with `git show <commit>^:<path>`:
+**There are no legacy trees left.** `vault/`, `rigel/`, `luxa/` and `v3dlibs/` are all deleted as of 2026-09-04, each after the list in its own survey or audit was worked off. Every directory in the root now builds. The records stay in [docs/audits/](docs/audits/) because they are the only account of what those trees held, and a file comes back with `git show <commit>^:<path>`:
 
-- [docs/V3dlibsAudit.md](docs/V3dlibsAudit.md) — the shared libraries, and where each piece landed in `api/`. `v3dlibs/core/` went first, on 2026-09-02: `Scene`, `SceneVisitor` and the `create_poly_*` primitives moved into `vertical3d/src/` per [ADR-0013](docs/adr/0013-mesh-is-a-dag-node.md). Recover from `git show 68821c4^:v3dlibs/<path>`.
-- [docs/LuxaAudit.md](docs/LuxaAudit.md) — the old ui library against `api/ui`. Recover from `git show fe6d114^:luxa/<path>`.
-- [docs/RigelSurvey.md](docs/RigelSurvey.md) — the earlier prototype of the editor. Read it before writing off a rigel feature as already covered; recover from `git show 54d79e8^:rigel/<path>`, and note that the four PNGs in `rigel/icons/` are the only thing a later change would want — they were already recovered into `vertical3d/data/icons/`.
+- [docs/audits/completed/V3dlibsAudit.md](docs/audits/completed/V3dlibsAudit.md) — the shared libraries, and where each piece landed in `api/`. `v3dlibs/core/` went first, on 2026-09-02: `Scene`, `SceneVisitor` and the `create_poly_*` primitives moved into `vertical3d/src/` per [ADR-0013](docs/adr/0013-mesh-is-a-dag-node.md). Recover from `git show 68821c4^:v3dlibs/<path>`.
+- [docs/audits/completed/LuxaAudit.md](docs/audits/completed/LuxaAudit.md) — the old ui library against `api/ui`. Recover from `git show fe6d114^:luxa/<path>`.
+- [docs/audits/completed/RigelSurvey.md](docs/audits/completed/RigelSurvey.md) — the earlier prototype of the editor. Read it before writing off a rigel feature as already covered; recover from `git show 54d79e8^:rigel/<path>`, and note that the four PNGs in `rigel/icons/` are the only thing a later change would want — they were already recovered into `vertical3d/data/icons/`.
 - `vault/quantumxml` was genuinely archived, superseded by the JSON config work, and had no list to work off.
 
-Two of the audits' findings are worth knowing before you assume an item is still open: `Menu::activate()` dispatching nothing and `api/input/Mouse::handleEvent` swallowing every mouse event were the most consequential `api/` regressions either turned up, and both were fixed on 2026-08-31. [docs/VoxelSurvey.md](docs/VoxelSurvey.md) is the fourth record, scoping voxel's port rather than a deletion.
+Two of the audits' findings are worth knowing before you assume an item is still open: `Menu::activate()` dispatching nothing and `api/input/Mouse::handleEvent` swallowing every mouse event were the most consequential `api/` regressions either turned up, and both were fixed on 2026-08-31. [docs/audits/completed/VoxelSurvey.md](docs/audits/completed/VoxelSurvey.md) is the fourth record, scoping voxel's port rather than a deletion.
 
 `vertical3d/` is the editor, rewritten onto the current api and built again as of 2026-09-01. It opens and draws four viewports of a scene over a construction grid; the manipulators, undo, the command model and project persistence all landed on 2026-09-02, the menus the same day, and the two toolbars on 2026-09-04. Its sources are grouped into `src/view/`, `src/scene/`, `src/command/`, `src/tool/` and `src/manipulator/`, leaving `Controller`, `Renderer` and `main` at the root of `src/` as the app shell; `tests/` mirrors those five directories. Includes are relative, so a file under one of them reaches the api as `../../../api/`.
 
@@ -27,7 +27,9 @@ MSVC/Windows only in practice. The root CMakeLists passes `/std:c++latest` and `
 when a decision earns an ADR, and what "verified" currently means. Decisions are recorded in
 [docs/adr/](docs/adr/), indexed in its README — nine of them cover the Vulkan rewrite and
 are worth reading before touching `api/render`. Phased plans live in
-[docs/plans/](docs/plans/).
+[docs/plans/](docs/plans/), surveys and audits in [docs/audits/](docs/audits/), and unphased
+work in [docs/TODO.md](docs/TODO.md). No plan is open: the modernization plan closed on
+2026-09-04.
 
 ## Build
 
@@ -158,7 +160,7 @@ Check this list before assuming a build failure is yours.
 
 **`v3d::type::Camera` builds Vulkan clip space** — y down, depth zero at the near plane and one at the far one — and the camera looks along its own `direction`, which is +z of the basis its three normals define. See [ADR-0012](docs/adr/0012-camera-builds-vulkan-clip-space.md). It built OpenGL projections until 2026-09-01, which nothing had noticed because nothing had ever drawn through the class; voxel carries a second camera of its own that had already made the same choice privately. `Camera::project()` and `::unproject()` are inverses of each other, which picking will need and which they were not before.
 
-**Voxel is ported, and no app calls OpenGL any more.** As of 2026-09-01 it runs and draws terrain through Vulkan: a depth tested, sorted scene pass of its own pipeline built with `vulkan::PipelineBuilder`, one `DrawItem` per meshed chunk over a `vulkan::Mesh` the app owns per [ADR-0010](docs/adr/0010-meshes-are-owned-by-the-app.md), and a second painter ordered pass of batched quads for the debug overlay and the game menu. Its shaders are `voxel/shaders/voxel.{vert,frag}`, embedded by `v3d_add_shader`, and are the first in the tree to read set 0. See [docs/VoxelSurvey.md](docs/VoxelSurvey.md) for what it was, and the phase 5 groups in [docs/plans/Modernization.md](docs/plans/Modernization.md) for what changed.
+**Voxel is ported, and no app calls OpenGL any more.** As of 2026-09-01 it runs and draws terrain through Vulkan: a depth tested, sorted scene pass of its own pipeline built with `vulkan::PipelineBuilder`, one `DrawItem` per meshed chunk over a `vulkan::Mesh` the app owns per [ADR-0010](docs/adr/0010-meshes-are-owned-by-the-app.md), and a second painter ordered pass of batched quads for the debug overlay and the game menu. Its shaders are `voxel/shaders/voxel.{vert,frag}`, embedded by `v3d_add_shader`, and are the first in the tree to read set 0. See [docs/audits/completed/VoxelSurvey.md](docs/audits/completed/VoxelSurvey.md) for what it was, and the phase 5 groups in [docs/plans/completed/Modernization.md](docs/plans/completed/Modernization.md) for what changed.
 
 **Odyssey runs and is ported.** As of 2026-09-01 it opens a 1280x768 window and draws one 64x64 sprite through the batched quad, at the tile its entity's `PositionFixed2D` names. That is the whole of what it draws: `Movement::tick` returns true and does nothing, and `Sprite`, `SpriteSheet`, `Actor`, `Tile` and `ui::Screen` are empty declarations. It was the last consumer of the `SDL_Renderer` path, so porting it is what let that tree and `api/gl` go.
 
@@ -182,7 +184,7 @@ Check this list before assuming a build failure is yours.
   exactly what a comment is for. Three habits that keep reappearing:
   - **No provenance from another tree.** "which is rigel's rule", "what `v3dlibs` did here". `rigel/`, `v3dlibs/`,
     `luxa/` and `vault/` are all deleted, so every such reference names something no reader can open. Keep the rule,
-    drop the attribution — [docs/RigelSurvey.md](docs/RigelSurvey.md) and the audits are where a port's lineage lives.
+    drop the attribution — [docs/audits/completed/RigelSurvey.md](docs/audits/completed/RigelSurvey.md) and the audits are where a port's lineage lives.
   - **Cite an ADR, do not summarise it.** "per ADR-00NN" followed by a paragraph re-deriving the argument is the
     restatement the ADR exists to prevent. Say which record settles it, then state only the invariant a caller has
     to honour.

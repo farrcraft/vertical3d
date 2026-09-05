@@ -13,7 +13,7 @@ a theme's name and stopped. Every colour and metric the ui is drawn with was the
 hardcoded default on `ComponentRenderer::Style`, and `component::Icon` and `prop::Image`
 each held a texture handle nothing could set — which is why the editor's toolbars are
 labelled where `gui.xml` asks for icons. Closing this is the last item on
-[LuxaAudit.md](../LuxaAudit.md) and what lets `luxa/` be deleted. Two things constrain it:
+[LuxaAudit.md](../audits/completed/LuxaAudit.md) and what lets `luxa/` be deleted. Two things constrain it:
 `v3dlib_ui` depends on `v3dlib_render` for the canvas and on nothing else, and
 [ADR-0019](0019-the-ui-is-laid-out-by-what-draws-it.md) already settled that the library
 knows where things go while the app knows how to draw them.

@@ -15,7 +15,7 @@ same integer". This is the record of what that test turned out to be, and of the
 questions the port had to answer first: what a handle writes, and where it is drawn.
 
 Rigel has three manipulators — translate, rotate and scale — described in
-[RigelSurvey.md](../RigelSurvey.md) item 6. None of it is portable: each draws itself with
+[RigelSurvey.md](../audits/completed/RigelSurvey.md) item 6. None of it is portable: each draws itself with
 `glBegin`/`glEnd` and a `glLoadName` per axis, and each turns a mouse delta into a transform
 by way of `Window::instance()->activeView()`. What comes across is the shape of the thing: a
 base holding an axis constraint and a coordinate space, three subclasses, and one live

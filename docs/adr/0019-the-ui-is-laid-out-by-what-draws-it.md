@@ -104,7 +104,7 @@ Four things follow from it.
 ### Positive
 - The menu section of `gui.xml` is translated: `vertical3d/data/vgui.json` is nine menus over
   75 commands, drawn as a bar with dropped panels and flyouts three deep. That is the last of
-  item 1 of [docs/RigelSurvey.md](../RigelSurvey.md).
+  item 1 of [docs/audits/completed/RigelSurvey.md](../audits/completed/RigelSurvey.md).
 - A key binding, a menu item and — when there is one — a toolbar button reach the same handler
   with nothing added for the second and third, which is what ADR-0017 was for.
 - Verified against a run on 2026-09-02: the bar drawn over four viewports, Create > Poly > Cube

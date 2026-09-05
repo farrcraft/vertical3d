@@ -11,7 +11,7 @@ engine draws, and four games have been happy with it: a rectangle, a sprite, a g
 menu panel are all the same textured quad. The editor of phase 6 is not a game. A modeller is
 mostly lines — a construction grid, an axis decoration in the corner, wireframe and
 shaded-wireframe display, a highlighted edge, and the shafts and rings of the translate,
-rotate and scale manipulators — and [RigelSurvey.md](../RigelSurvey.md) calls the absence of
+rotate and scale manipulators — and [RigelSurvey.md](../audits/completed/RigelSurvey.md) calls the absence of
 any way to draw one the largest single api gap in the tree.
 
 A line can be faked with quads: two triangles per segment, expanded on the cpu or in a

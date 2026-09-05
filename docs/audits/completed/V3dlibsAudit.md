@@ -5,7 +5,7 @@ the record of what the tree held and where each piece went, kept because it is t
 account of that. Recover the sources from `git show 68821c4^:v3dlibs/...` if a question about
 the original ever comes up.
 
-Phase 1 of [plans/Modernization.md](plans/Modernization.md). Audited against the tree on
+Phase 1 of [plans/completed/Modernization.md](../../plans/completed/Modernization.md). Audited against the tree on
 2026-08-31. Companion to [LuxaAudit.md](LuxaAudit.md), which closed the same day.
 
 `v3dlibs/` is a migration in progress. This is the functional equivalence record that has to
@@ -216,7 +216,7 @@ the cursor position, and is readable through `Mouse::state()`.
 ## core: two files that belong to the editor, not to `api`
 
 - **`Scene` and `SceneVisitor`** — **moved to `vertical3d/src/` on 2026-09-02**, per
-  [ADR-0013](adr/0013-mesh-is-a-dag-node.md). What follows is what the audit found. They are
+  [ADR-0013](../../adr/0013-mesh-is-a-dag-node.md). What follows is what the audit found. They are
   27 and 40 lines: a flat container of BReps, cameras and
   camera profiles, plus a visitor that walks the meshes. The plan asks whether they should be
   checked against `api/dag`. They should not be folded into it. `api/dag` is 374 lines of
@@ -315,7 +315,7 @@ what it does now rather than an empty shell.
 3. ~~Move `core/Scene`, `core/SceneVisitor` and `core/CreatePolyCommandSet` to wherever the
    editor rewrite wants them — not into `api/dag`.~~ **Done 2026-09-02.** All three are in
    `vertical3d/src/` as `v3d::editor`, recorded as
-   [ADR-0013](adr/0013-mesh-is-a-dag-node.md). `Scene` lost its camera and profile lists,
+   [ADR-0013](../../adr/0013-mesh-is-a-dag-node.md). `Scene` lost its camera and profile lists,
    which the views and `CameraProfiles` already own. `core/` held nothing else — its
    `Logger` had moved to `api/log` — so the directory and `v3dlib_core` are gone with them.
 4. ~~Delete `component/Component.h`, `hookah/Hookah.h` and `hookah/drivers/sdl2/` with the

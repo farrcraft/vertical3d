@@ -6,7 +6,7 @@ account of that. Recover a source with `git show 54d79e8^:rigel/...` — the fou
 `rigel/icons/` are the only thing a later change is likely to want, and they were already
 recovered into `vertical3d/data/icons/`.
 
-Phase 6 of [plans/Modernization.md](plans/Modernization.md). Surveyed against the tree on
+Phase 6 of [plans/completed/Modernization.md](../../plans/completed/Modernization.md). Surveyed against the tree on
 2026-09-01.
 
 `rigel/` is the earlier prototype of the Vertical3D editor, and the plan has always said the
@@ -17,7 +17,7 @@ be scoped rather than guessed at.
 **Verdict up front: nothing in rigel can be ported, and one file in it is worth more than the
 other fifty-three.** It is a gtkmm 2 / gtkglextmm / libxml++ application. Every line of
 drawing is immediate-mode OpenGL and every line of windowing is GTK, so
-[ADR-0001](adr/0001-vulkan-replaces-opengl.md) and SDL3 between them take all of it. What
+[ADR-0001](../../adr/0001-vulkan-replaces-opengl.md) and SDL3 between them take all of it. What
 survives is behaviour, six or seven algorithms, and `docs/xml/gui.xml` — the editor's whole
 menu, toolbar, keybinding, camera-profile and viewport-layout definition, which is a data
 asset and needs translating, not rewriting.
@@ -114,10 +114,10 @@ This is the list that makes phase 6 a phase. Each item is something no game in t
 ever asked for.
 
 1. ~~**A line primitive.**~~ **Landed 2026-09-01** as
-   [ADR-0011](adr/0011-lines-are-the-second-primitive.md) -
+   [ADR-0011](../../adr/0011-lines-are-the-second-primitive.md) -
    `realtime::LineCanvas` and `vulkan::LineRenderer`, world space and through the pass
    camera. What follows is what the gap was.
-   [ADR-0005](adr/0005-one-batched-quad-primitive.md) made the batched
+   [ADR-0005](../../adr/0005-one-batched-quad-primitive.md) made the batched
    quad the one primitive, which was right for four games and is wrong for a modeller.
    Rigel's viewport draws, by line count, mostly lines: the construction grid, the axis
    decoration in the corner, wireframe and shaded-wireframe mesh display, selected-edge
@@ -146,7 +146,7 @@ ever asked for.
      own loader also failed to read (see the defects).
 
 3. ~~**Picking.**~~ **Fixed 2026-09-02** —
-   [ADR-0014](adr/0014-picking-is-a-cpu-ray-cast.md). It is a cpu ray cast against the brep
+   [ADR-0014](../../adr/0014-picking-is-a-cpu-ray-cast.md). It is a cpu ray cast against the brep
    rather than an id-buffer pass: an object and a face are hit by the ray meeting a triangle
    of a fan over the face's loop, and a vertex and an edge — which are drawn one pixel wide
    and have no area to rasterise or to hit exactly — by screen space proximity, nearest to
@@ -162,7 +162,7 @@ ever asked for.
    range of the same integer.
 
 4. ~~**A mesh has no identity and no transform.**~~ **Fixed 2026-09-02** -
-   [ADR-0013](adr/0013-mesh-is-a-dag-node.md). What follows is what the gap was. Rigel's `HalfEdgeBRep` derives from
+   [ADR-0013](../../adr/0013-mesh-is-a-dag-node.md). What follows is what the gap was. Rigel's `HalfEdgeBRep` derives from
    `DAG::Node` and `DAG::Transform`, which is where `id()`, `matrix()`, `translation()`,
    `rotation()` and `scale()` come from — the selection model keys on the id and all three
    manipulators write through the transform. `api/dag::Node` and `api/dag::Transform` exist
@@ -181,7 +181,7 @@ ever asked for.
    region and its own camera at set 0, and three of the four cameras are orthographic. The
    frame model expressed it unchanged - what had to be fixed was underneath it:
    `v3d::type::Camera` built OpenGL clip space and looked down the wrong axis
-   ([ADR-0012](adr/0012-camera-builds-vulkan-clip-space.md)), `CameraProfile::lookat()`
+   ([ADR-0012](../../adr/0012-camera-builds-vulkan-clip-space.md)), `CameraProfile::lookat()`
    stored the transpose of its rotation, and both geometry renderers wrote every submission
    of a frame into the same buffer, so a second canvas overwrote the first.
 
@@ -198,7 +198,7 @@ ever asked for.
    this is a format decision as much as a port.
 
 9. ~~**Undo.**~~ **Designed 2026-09-02**, as
-   [ADR-0016](adr/0016-undo-records-what-has-already-happened.md). Rigel has none — a
+   [ADR-0016](../../adr/0016-undo-records-what-has-already-happened.md). Rigel has none — a
    case-insensitive search for undo or redo over the whole tree returns nothing — so this one
    was scoped independently rather than folded in, and the plan's claim that rigel holds "the
    working prototype of most of the above" never covered it. A command is a record of a
@@ -352,7 +352,7 @@ and two things did not come across:
   immediate-mode GL, and the part of it that had portable value — the camera modes — is
   already in `vertical3d/CameraControlTool`. Its picking behaviour came across on 2026-09-02
   and its name-space encoding deliberately did not, per
-  [ADR-0014](adr/0014-picking-is-a-cpu-ray-cast.md). What is left to take from `ViewPort` is
+  [ADR-0014](../../adr/0014-picking-is-a-cpu-ray-cast.md). What is left to take from `ViewPort` is
   the decoration and handle geometry, which is a description rather than code.
 
 ## What has to happen before `rigel/` can be deleted
@@ -369,7 +369,7 @@ games; it is blocked by the api never having had a customer that draws lines or 
    nineteen of them under gui.xml's own names, and item 9 adds `project::load` and
    `project::save`, so a menu item has something to invoke. **The menus themselves landed
    2026-09-02**, as `vertical3d/data/vgui.json` and
-   [ADR-0019](adr/0019-the-ui-is-laid-out-by-what-draws-it.md): nine menus over 75 commands,
+   [ADR-0019](../../adr/0019-the-ui-is-laid-out-by-what-draws-it.md): nine menus over 75 commands,
    drawn by `api/ui` as a bar with dropped panels and flyouts, hit tested against the bounds
    the renderer leaves on each component. **The two toolbars landed 2026-09-04**, which
    closes this item: `ui::component::Toolbar` is a strip of `Button`s on the top or the left
@@ -379,7 +379,7 @@ games; it is blocked by the api never having had a customer that draws lines or 
    five with no node type to select are left out, as ADR-0014 left them out of the mask; and
    the left toolbar's four buttons were labelled rather than drawn from `rigel/icons/`, there
    being no image path in `api/ui` at the time. **The second departure closed the same day**,
-   with [ADR-0020](adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md): a `Button`
+   with [ADR-0020](../../adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md): a `Button`
    names an image, the ui engine's image pass resolves it through the app, and the four PNGs
    were recovered into `vertical3d/data/icons/` before this tree was deleted. The top toolbar
    is still labelled, gui.xml naming nothing to draw there.
@@ -393,22 +393,22 @@ games; it is blocked by the api never having had a customer that draws lines or 
    back.~~ Done 2026-09-01, both options included.
 3. ~~Give the api a line primitive: geometry on `Canvas` or a sibling of it, and a line
    pipeline through `PipelineBuilder`.~~ Done 2026-09-01 as
-   [ADR-0011](adr/0011-lines-are-the-second-primitive.md), and first drawn the same day.
+   [ADR-0011](../../adr/0011-lines-are-the-second-primitive.md), and first drawn the same day.
 4. ~~Give `api/brep::BRep` a `dag::Node`/`dag::Transform` base and put `selected()` back on
    `Vertex`, `HalfEdge` and `BRep`.~~ Done 2026-09-02, recorded as
-   [ADR-0013](adr/0013-mesh-is-a-dag-node.md). `Face` got it back too - its accessors were
+   [ADR-0013](../../adr/0013-mesh-is-a-dag-node.md). `Face` got it back too - its accessors were
    commented out rather than kept. `dag::Transform` had to be made to compile first: it
    named members its header does not declare and called three glm methods that do not
    exist, and its `CMakeLists.txt` listed the header twice and the implementation not at
    all, so nothing had ever built it.
 5. ~~Decide picking — ray cast or id buffer — in an ADR, and port the name-space scheme onto
-   it.~~ Done 2026-09-02: [ADR-0014](adr/0014-picking-is-a-cpu-ray-cast.md), a ray cast. The
+   it.~~ Done 2026-09-02: [ADR-0014](../../adr/0014-picking-is-a-cpu-ray-cast.md), a ray cast. The
    name-space scheme is not ported — a typed `Hit` replaces it.
    `Camera::project()` and `::unproject()` are inverses of each other as of 2026-09-01,
    which a ray cast would be built on; they were not before.
 6. ~~Port the three manipulators onto lines and the picking decision, fixing the translate
    defect and the uninitialised coordinate space on the way.~~ Done 2026-09-02, recorded as
-   [ADR-0015](adr/0015-manipulators-write-the-object-transform.md). A handle writes the
+   [ADR-0015](../../adr/0015-manipulators-write-the-object-transform.md). A handle writes the
    mesh's `dag::Transform`, is drawn at the object's own origin because that is where the
    transform pivots, and is picked by projecting itself to the screen. Both defects are
    fixed and the coordinate space is initialised. Rigel's centring on the selected
@@ -421,7 +421,7 @@ games; it is blocked by the api never having had a customer that draws lines or 
    colour carries the emphasis the origin lines had.
 8. ~~Port the five command sets onto `api/event` contexts, and decide what a `Tool` is in
    the api now that `event::Engine` dispatches by name.~~ Done 2026-09-02, recorded as
-   [ADR-0017](adr/0017-a-command-is-a-name-in-a-context.md). A command is identified by its
+   [ADR-0017](../../adr/0017-a-command-is-a-name-in-a-context.md). A command is identified by its
    context and name together, which is what `Event::str()` returns and what a binding and a
    menu item both carry, so `v3d::editor::CommandDirectory` maps that string to a handler
    and `Controller::handleEvent` is a lookup. `data/mappings.json` was rewritten onto
@@ -432,7 +432,7 @@ games; it is blocked by the api never having had a customer that draws lines or 
    item 1 checkable.
 9. ~~Decide the project file format and port `ProjectCommandSet::read`/`write` onto it.~~
    Done 2026-09-02, recorded as
-   [ADR-0018](adr/0018-a-project-is-json-and-stores-topology-verbatim.md). The shape is
+   [ADR-0018](../../adr/0018-a-project-is-json-and-stores-topology-verbatim.md). The shape is
    rigel's - a project of meshes, each a transform and flat lists of vertices, half edges
    and faces addressed by index - in JSON rather than XML, because the library rigel parsed
    with is gtkmm's and `vault/quantumxml` was archived when the JSON config work replaced
@@ -446,7 +446,7 @@ games; it is blocked by the api never having had a customer that draws lines or 
 10. Settle `api/brep`'s three unbuilt files — port or delete. **Still open**, and it did not
     hold the deletion up: `Edge`, `HalfEdgeBRep` and `WingedEdgeBRep` are in `api/brep/` and
     absent from its `add_library` list, which is a question about that library rather than
-    about this tree. It is the one item on [TODO.md](TODO.md) that came from here.
+    about this tree. It is the one item on [TODO.md](../../TODO.md) that came from here.
 11. ~~Multiple viewports, which is the phase's headline feature and wants items 2, 3 and 6
     first.~~ Done 2026-09-01, and it wanted 2 and 3 but not 6. Four passes over one frame,
     each with its region and its camera.

@@ -10,12 +10,20 @@ Phased plans live in [`plans/`](plans/). A workstream earns a plan document when
 several phases or several apps and the ordering between the pieces is not obvious — when
 the interesting question is *what blocks what*, not *what needs doing*.
 
-[`plans/Modernization.md`](plans/Modernization.md) is the current one, covering the
-overlapping rewrites: SDL3, the legacy tree migration, Vulkan, the engine consolidation, and
-the per-app ports.
-
 A plan is a living document. When something lands, update the state notes in it rather than
 leaving them to rot — a plan describing a tree that no longer exists is worse than no plan.
+When every phase is closed it moves to [`plans/completed/`](plans/completed/) and its open
+items move to [`TODO.md`](TODO.md).
+
+**No plan is open.** [`plans/completed/Modernization.md`](plans/completed/Modernization.md)
+closed on 2026-09-04 and covered the overlapping rewrites: SDL3, the legacy tree migration,
+Vulkan, the engine consolidation, and the per-app ports. Unphased work is in
+[`TODO.md`](TODO.md).
+
+A tree being folded into the current layout or deleted gets a survey or an audit instead —
+an itemised list of what has to land elsewhere first, and the only account of that tree once
+it is gone. They live in [`audits/`](audits/), and move to [`audits/completed/`](audits/completed/)
+when the list is worked off.
 
 ## 2. Decide
 
@@ -75,7 +83,8 @@ Automating it against a software Vulkan implementation is
 
 A change is not finished when it compiles. Before moving on:
 
-- Update the plan's state notes if the change moved a workstream.
+- Update the open plan's state notes if the change moved a workstream, or `docs/TODO.md`
+  when there is no plan open, which there is not.
 - Update `CLAUDE.md` if it changed the architecture, the build, or a convention — that file
   is what a new session reads first, and a stale one actively misleads.
 - Re-read the comments the change added, against the comment convention in `CLAUDE.md`.

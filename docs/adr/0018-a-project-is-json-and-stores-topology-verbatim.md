@@ -8,8 +8,8 @@
 
 The editor makes meshes, selects them, moves them and takes any of it back, and loses all of
 it when the window closes. Project persistence is item 9 of
-[the rigel survey's delete list](../RigelSurvey.md) and one of the two things left in
-[phase 6](../plans/Modernization.md) before `rigel/` can go.
+[the rigel survey’s delete list](../audits/completed/RigelSurvey.md) and one of the two things left in
+[phase 6](../plans/completed/Modernization.md) before `rigel/` can go.
 
 Rigel had a format: `ProjectCommandSet::read`/`write` over libxml++, a `<project>` of
 `<scene>`s of `<mesh>`es, each mesh carrying a transform and then flat lists of vertices,

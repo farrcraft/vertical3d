@@ -14,7 +14,7 @@ left is downstream of it: the manipulators act on a selection, the modelling ope
 on a selected component, and project persistence writes out what a selection names.
 
 Rigel's `ViewPort::selection_hit_test` is `glRenderMode(GL_SELECT)` with a name stack and a
-hand-rolled `gluPickMatrix`, described in [RigelSurvey.md](../RigelSurvey.md) item 3.
+hand-rolled `gluPickMatrix`, described in [RigelSurvey.md](../audits/completed/RigelSurvey.md) item 3.
 `GL_SELECT` was deprecated in GL 3 and has no Vulkan equivalent, so the mechanism has to be
 rebuilt whatever else happens. What it wrapped is worth keeping: an object must be selected
 before any of its components may be, a click that hits nothing deselects, clicking a

@@ -41,8 +41,8 @@ usually the right home for a number.
 
 ## Where decisions live
 
-`docs/adr/` only. `docs/plans/Modernization.md` links to the records that shape it and does
-not restate them; keep it that way. A decision recorded in two places is a decision that
+`docs/adr/` only. A plan links to the records that shape it and does not restate them; keep
+it that way. A decision recorded in two places is a decision that
 will eventually disagree with itself.
 
 ## The house format

@@ -13,7 +13,7 @@ Picking has to name what it hit. The translate, rotate and scale manipulators ha
 somewhere. Component selection has to be remembered between the click that makes it and the
 operation that consumes it. Project persistence has to write out where each mesh sits.
 
-[RigelSurvey.md](../RigelSurvey.md) records what rigel did: `HalfEdgeBRep` derived from
+[RigelSurvey.md](../audits/completed/RigelSurvey.md) records what rigel did: `HalfEdgeBRep` derived from
 `DAG::Node` and `DAG::Transform`, the selection model keyed on `id()`, and all three
 manipulators wrote through `matrix()`, `translation()`, `rotation()` and `scale()`.
 `api/dag::Node` and `api/dag::Transform` are the survivors of that library and carry exactly
@@ -25,7 +25,7 @@ which is why nobody had noticed.
 
 The other half of the question is where a scene lives. `v3dlibs/core/Scene` is a flat list of
 meshes, cameras and camera profiles with a visitor over the meshes;
-[V3dlibsAudit.md](../V3dlibsAudit.md) concluded it should not be folded into `api/dag` —
+[V3dlibsAudit.md](../audits/completed/V3dlibsAudit.md) concluded it should not be folded into `api/dag` —
 which is 374 lines of skeleton with no traversal, no visitor and no way to add a child — and
 should move with the editor instead.
 

@@ -21,8 +21,8 @@ git diff HEAD -- CMakeLists.txt '*/CMakeLists.txt' vcpkg.json .gitattributes
 ```
 
 Read `CLAUDE.md` first. Read the ADR governing the subsystem — `docs/adr/README.md` is the
-index. `docs/plans/Modernization.md` says which phase the work belongs to and what it is
-allowed to depend on.
+index. `docs/plans/completed/Modernization.md` says which phase the work belonged to and what it
+is allowed to depend on.
 
 Review only what changed and what the change makes wrong. Do not audit the file.
 

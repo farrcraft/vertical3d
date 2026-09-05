@@ -1,6 +1,6 @@
 # Voxel Survey
 
-Phase 5 of [plans/Modernization.md](plans/Modernization.md). Surveyed against the tree on
+Phase 5 of [plans/completed/Modernization.md](../../plans/completed/Modernization.md). Surveyed against the tree on
 2026-08-31.
 
 Voxel is the app that drives real api growth: it is the first thing in the repo that needs a
@@ -15,7 +15,7 @@ but it is the fourth thing that has to be fixed, not the first.
 
 > **Since the survey**, all of it is done: the four failures, the six defects, the seven api
 > gaps and the render port — see the phase 5 groups in
-> [plans/Modernization.md](plans/Modernization.md#phase-5--voxel-and-odyssey-and-the-engine-consolidation).
+> [plans/completed/Modernization.md](../../plans/completed/Modernization.md#phase-5--voxel-and-odyssey-and-the-engine-consolidation).
 > As of 2026-09-01 voxel runs and draws terrain through Vulkan, with a depth tested and
 > sorted scene pass of its own pipeline and a painter ordered pass of batched quads over it
 > for the debug overlay and the game menu. Nothing in `voxel/` calls OpenGL any more.
@@ -118,7 +118,7 @@ tetris never asked for.
    build one — by copying all of it. A pipeline builder in
    `api/render/realtime/vulkan` is what stops the second pipeline being a fork of the first.
 
-3. **Set 0, the per-frame descriptor.** [ADR-0008](adr/0008-binding-by-update-frequency.md)
+3. **Set 0, the per-frame descriptor.** [ADR-0008](../../adr/0008-binding-by-update-frequency.md)
    decided that camera and projection live at set 0, bound once per pass.
    `QuadRenderer::createLayouts` creates `frameLayout_` with **zero bindings** and nothing
    ever writes or binds a set against it. The quad pipeline pushes a mat4 per draw, which is
@@ -137,7 +137,7 @@ tetris never asked for.
    the one class of GPU object in the frame that nothing outlives on the app's behalf.
 
 6. **Sorting and merging.** Nothing sorts; the recorder walks each pass in submission order,
-   which [ADR-0004](adr/0004-operations-as-draw-data.md) allowed for. A pong frame is a
+   which [ADR-0004](../../adr/0004-operations-as-draw-data.md) allowed for. A pong frame is a
    handful of items. Voxel submits one per non-empty chunk, and is the first frame where the
    sort key has to do the job it was designed for.
 
@@ -194,7 +194,7 @@ while the app could not start.
 
 ## Three things the survey corrects elsewhere
 
-- **Odyssey does not call OpenGL.** `plans/Modernization.md` says "voxel and odyssey still
+- **Odyssey does not call OpenGL.** `plans/completed/Modernization.md` says "voxel and odyssey still
   call GL against a context nothing creates". There is no GL in `odyssey/src` at all — it
   draws through `Context2D`, which is `SDL_Renderer`. What odyssey has is a stale
   `OpenGL::GL` and `GLEW::GLEW` pair in its `CMakeLists.txt`. **Voxel is the only app that
@@ -224,7 +224,7 @@ voxel is still on the inline format.
 ## Scope
 
 The phase items and their order are in
-[plans/Modernization.md](plans/Modernization.md#phase-5--voxel-and-odyssey-and-the-engine-consolidation).
+[plans/completed/Modernization.md](../../plans/completed/Modernization.md#phase-5--voxel-and-odyssey-and-the-engine-consolidation).
 The short version: make it start, then give the api a depth buffer and a way to describe a
 second pipeline, then port the renderer, then delete `api/gl`.
 
