@@ -9,9 +9,11 @@
 #include <cstddef>
 #include <string>
 #include <vector>
+#include <fstream>
 
 #include "command/CreateCommand.h"
 #include "scene/CreatePoly.h"
+#include "scene/RIBExportVisitor.h"
 #include "Renderer.h"
 
 #include "../../api/config/Type.h"
@@ -258,6 +260,7 @@ namespace v3d::editor {
 
         press("project::load", [this]() { openProject(); });
         press("project::save", [this]() { saveProject(); });
+        press("project::export::rib", [this]() { exportProject(); });
 
         // gui.xml has neither, so there is no menu name to match
         press("edit::undo", [this]() { history("undo"); });
@@ -326,6 +329,35 @@ namespace v3d::editor {
      **/
     std::string Controller::projectPath() const {
         return path_ + "project.json";
+    }
+
+    /**
+     **/
+    std::string Controller::exportPath() const {
+        return path_ + "export.rib";
+    }
+
+    /**
+     **/
+    void Controller::exportProject() {
+        if (!activeView_ || !activeView_->camera()) {
+            logger_->get()->error("nothing to export a scene from - there is no active view");
+            return;
+        }
+
+        std::ofstream file(exportPath().c_str());
+        if (!file.is_open()) {
+            logger_->get()->error("could not write {}", exportPath());
+            return;
+        }
+
+        RIBExportVisitor visitor(&file);
+        const glm::uvec2 size = activeView_->camera()->profile().size();
+        visitor.begin(*activeView_->camera(), size.x, size.y);
+        scene_->accept(&visitor);
+        visitor.end();
+
+        logger_->get()->info("exported {} mesh(es) to {}", scene_->count(), exportPath());
     }
 
     /**

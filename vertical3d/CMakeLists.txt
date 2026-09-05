@@ -13,6 +13,7 @@ add_executable("vertical3d"
 	"src/scene/MeshTopology.h" "src/scene/MeshTopology.cxx"
 	"src/scene/CreatePoly.h" "src/scene/CreatePoly.cxx"
 	"src/scene/WireframeVisitor.h" "src/scene/WireframeVisitor.cxx"
+	"src/scene/RIBExportVisitor.h" "src/scene/RIBExportVisitor.cxx"
 	"src/scene/Project.h" "src/scene/Project.cxx"
 
 	"src/command/Command.h"

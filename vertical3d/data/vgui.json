@@ -457,6 +457,18 @@
                   "command": "save"
                 },
                 {
+                  "label": "Export",
+                  "type": "submenu",
+                  "items": [
+                    {
+                      "label": "rib",
+                      "type": "action",
+                      "context": "project",
+                      "command": "export::rib"
+                    }
+                  ]
+                },
+                {
                   "label": "Import",
                   "type": "submenu",
                   "items": [

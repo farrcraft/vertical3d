@@ -8,6 +8,7 @@ v3d_add_test(vertical3d
 	"scene/SceneTest.cxx"
 	"scene/CreatePolyTest.cxx"
 	"scene/WireframeVisitorTest.cxx"
+	"scene/RIBExportVisitorTest.cxx"
 	"scene/ProjectTest.cxx"
 
 	"command/CommandDirectoryTest.cxx"
@@ -27,6 +28,7 @@ v3d_add_test(vertical3d
 	"../src/scene/MeshTopology.cxx"
 	"../src/scene/CreatePoly.cxx"
 	"../src/scene/WireframeVisitor.cxx"
+	"../src/scene/RIBExportVisitor.cxx"
 	"../src/scene/Project.cxx"
 	"../src/command/CommandDirectory.cxx"
 	"../src/command/CommandStack.cxx"
@@ -48,6 +50,7 @@ target_link_libraries(v3dtest_vertical3d PRIVATE
 	v3dlib_font
 	v3dlib_log
 	v3dlib_render
+	v3dlib_render_offline
 	v3dlib_type
 	${Boost_LIBRARIES}
 	${SDL3_LIBRARIES}

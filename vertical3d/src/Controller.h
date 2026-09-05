@@ -134,9 +134,22 @@ namespace v3d::editor {
         void saveProject();
 
         /**
+         * Write the scene out as RIB for the offline renderers, per ADR-0023.
+         *
+         * One way: topology and a placement per mesh, from the active view's camera. The
+         * project format stays the editor's own and nothing reads this back.
+         **/
+        void exportProject();
+
+        /**
          * @return where the one document lives, beside the executable
          **/
         std::string projectPath() const;
+
+        /**
+         * @return where the RIB export goes, beside the executable
+         **/
+        std::string exportPath() const;
 
         /**
          * Turn one of a view's visibility flags on or off.
