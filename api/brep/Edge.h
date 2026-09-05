@@ -5,48 +5,63 @@
 
 #pragma once
 
-namespace v3D {
+#include "Index.h"
 
+namespace v3d::brep {
+
+    /**
+     * One edge of a winged-edge mesh.
+     *
+     * Unlike a HalfEdge, an edge is shared: it names the vertex at each end, the face on
+     * each side, and the four edges it meets at those ends - the wings. That is what lets a
+     * traversal turn either way from an edge without a paired twin.
+     **/
     class Edge {
      public:
         Edge();
         Edge(const Edge & e);
-        Edge(unsigned int prevVertexID, unsigned int nextVertexID);
+        Edge(Index prevVertex, Index nextVertex);
         ~Edge();
 
-        bool operator == (const Edge & e);
+        // const, because C++20's reversed candidate for a non-const operator== makes every
+        // a == b ambiguous with the b == a it synthesizes
+        bool operator == (const Edge & e) const;
         Edge & operator = (const Edge & e);
 
-        bool selected(void) const;
-        void selected(bool sel);
+        /**
+         * Whether this component is selected. Selection is per component, not per mesh, so
+         * a vertex, an edge and a face each carry their own.
+         **/
+        bool selected(void) const noexcept;
+        void selected(bool sel) noexcept;
 
-        unsigned int prevVertex(void) const;
-        unsigned int nextVertex(void) const;
-        unsigned int prevFace(void) const;
-        unsigned int nextFace(void) const;
-        unsigned int prevCWEdge(void) const;
-        unsigned int nextCWEdge(void) const;
-        unsigned int prevCCWEdge(void) const;
-        unsigned int nextCCWEdge(void) const;
-        void prevVertex(unsigned int vertexID);
-        void nextVertex(unsigned int vertexID);
-        void prevFace(unsigned int faceID);
-        void nextFace(unsigned int faceID);
-        void prevCWEdge(unsigned int edgeID);
-        void nextCWEdge(unsigned int edgeID);
-        void prevCCWEdge(unsigned int edgeID);
-        void nextCCWEdge(unsigned int edgeID);
+        Index prevVertex(void) const;
+        Index nextVertex(void) const;
+        Index prevFace(void) const;
+        Index nextFace(void) const;
+        Index prevCWEdge(void) const;
+        Index nextCWEdge(void) const;
+        Index prevCCWEdge(void) const;
+        Index nextCCWEdge(void) const;
+        void prevVertex(Index vertex);
+        void nextVertex(Index vertex);
+        void prevFace(Index face);
+        void nextFace(Index face);
+        void prevCWEdge(Index edge);
+        void nextCWEdge(Index edge);
+        void prevCCWEdge(Index edge);
+        void nextCCWEdge(Index edge);
 
      private:
-        unsigned int _prevVertexID;  // vertices
-        unsigned int _nextVertexID;
-        unsigned int _prevFaceID;  // adjacent faces
-        unsigned int _nextFaceID;
-        unsigned int _prevCWEdgeID;  // wings
-        unsigned int _nextCWEdgeID;
-        unsigned int _prevCCWEdgeID;
-        unsigned int _nextCCWEdgeID;
-        bool _selected;
+        Index prevVertex_;  // vertices
+        Index nextVertex_;
+        Index prevFace_;  // adjacent faces
+        Index nextFace_;
+        Index prevCWEdge_;  // wings
+        Index nextCWEdge_;
+        Index prevCCWEdge_;
+        Index nextCCWEdge_;
+        bool selected_;
     };
 
-};  // end namespace v3D
+};  // namespace v3d::brep

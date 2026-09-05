@@ -1125,7 +1125,7 @@ Deliberately not last. This is independent of the render rewrite and blocked by 
 
 Tier 1 landed on 2026-08-31. `enable_testing()` and a `v3d_add_test` helper are in the root
 CMakeLists, eight binaries build from `api/<lib>/tests`, and `ctest --test-dir
-out/build/x64-Debug` runs the lot in about a second. **Twenty suites and 382 cases run as of
+out/build/x64-Debug` runs the lot in about a second. **Twenty suites and 395 cases run as of
 2026-09-04**, every app but odyssey included. Coverage is every `api/` library bar the render
 code below the recorder: `type`, `brep`, `dag`, `image`, `font`, `input`, `event`, `asset`,
 `config`, `ecs`, `audio`, `log`, `engine`, the window-free half of `render` - which since

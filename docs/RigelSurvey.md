@@ -94,7 +94,7 @@ them completely.
 | `libv3dcore/CameraProfile` | `v3d::type::CameraProfile` | **Data complete, interface gone.** See gap 2. |
 | `libv3dcore/brep/HalfEdgeBRep` | `v3d::brep::BRep` | Modernised and renamed. **Complete as of 2026-09-02** — the `dag::Node`/`dag::Transform` base and the `selected` flag are back. |
 | `libv3dcore/brep/{Vertex,Face,HalfEdge}` | `v3d::brep::{Vertex,Face,HalfEdge}` | Migrated. All three carry `selected()` again as of 2026-09-02. |
-| `libv3dcore/brep/{Edge,WingedEdgeBRep}` | — | Copied into `api/brep` and **not built** — see the corrections below. |
+| `libv3dcore/brep/{Edge,WingedEdgeBRep}` | `v3d::brep::{Edge,WingedEdgeBRep}` | Ported and built 2026-09-04, the way `HalfEdgeBRep` became `BRep`. |
 | `libv3dcore/Scene` | `v3d::editor::Scene` in `vertical3d/src` | **Moved 2026-09-02**, and reduced to meshes: the views own the cameras and `CameraProfiles` owns the profile table. |
 | `vertical3d/commands/CreatePolyCommandSet` | `v3d::editor::create_poly_*` in `vertical3d/src` | **Moved 2026-09-02.** Four free functions returning a `brep::BRep`; the command wrapper is gone. The cone and the cylinder were rebuilt about +y, centred like the cube and the plane, and the cone's ring had an uninitialised third coordinate. |
 | `ViewPort`'s camera modes | `vertical3d/CameraControlTool` | **Ported, with two things dropped** — see the defects. |
@@ -325,15 +325,13 @@ and two things did not come across:
   is itself being replaced by `api/event`, which has no `Tool`. Both items should be rewritten
   against `api/`.
 
-- **`api/brep` already contains rigel's `Edge`, `HalfEdgeBRep` and `WingedEdgeBRep`, and does
-  not build them.** All six files are rigel's, reformatted to the house brace style and
-  otherwise unchanged: still `namespace v3D`, still including `libv3dtypes/AABBox.h`,
-  `libv3dgraph/Node.h` and `libv3dgraph/Transform.h`, none of which exist. `api/brep`'s
-  `CMakeLists.txt` names only `BRep`, `Face`, `HalfEdge` and `Vertex`. Nothing anywhere
-  includes the other three. So the brep merge is not "check nothing is missing and delete" —
-  it is a decision about whether the winged-edge representation is wanted at all, and if it
-  is, porting it the way `HalfEdgeBRep` became `BRep`. If it is not, six files should go from
-  `api/brep`, not just from rigel.
+- ~~**`api/brep` already contains rigel's `Edge`, `HalfEdgeBRep` and `WingedEdgeBRep`, and
+  does not build them.**~~ Settled 2026-09-04. All six were rigel's, reformatted to the house
+  brace style and otherwise unchanged: still `namespace v3D`, still including
+  `libv3dtypes/AABBox.h`, `libv3dgraph/Node.h` and `libv3dgraph/Transform.h`, none of which
+  exist, so none of them compiled. `Edge` and `WingedEdgeBRep` are ported and built, with
+  suites of their own; `HalfEdgeBRep` is deleted, because `BRep` is what it became and
+  building it would have put a second copy of that class in the same library.
 
 - **`v3dlib_brep` has no consumer.** Only its own test binary links it.
 
