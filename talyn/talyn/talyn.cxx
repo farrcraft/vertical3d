@@ -6,10 +6,11 @@
 #include <iostream>
 #include <string>
 
-#include "../libtalyn/RIBReader.h"
+#include "../libtalyn/RIBHandler.h"
 #include "../libtalyn/RenderContext.h"
 
 #include "../../api/image/Factory.h"
+#include "../../api/render/offline/RIBReader.h"
 
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem/operations.hpp>
@@ -98,10 +99,18 @@ int main(int argc, char * argv[]) {
     // determine the filetype of infile based on file extension
     std::string ext = infile.substr(infile.length() - 3);
 
+    auto logger = boost::make_shared<v3d::log::Logger>();
+
     if (ext == "rib") {  // .rib for renderman formatted files.
-        v3d::talyn::RIBReader reader(rc);
-        if (!reader.read(filepath)) {
-            std::cout << "error reading rib file!" << std::endl;
+        v3d::talyn::RIBHandler handler(rc);
+        v3d::render::offline::RIBReader reader(logger);
+        if (!reader.read(filepath, &handler)) {
+            std::cout << "error reading rib file - " << reader.error() << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        // the file parsed, but it may have asked for a camera this renderer cannot build
+        if (!handler.error().empty()) {
+            std::cout << "cannot render this scene - " << handler.error() << std::endl;
             exit(EXIT_FAILURE);
         }
     } else {
@@ -138,7 +147,6 @@ int main(int argc, char * argv[]) {
     }
     // framebuffer conversion to a writable image
     boost::shared_ptr<v3d::image::Image> image = fb->image(4);
-    auto logger = boost::make_shared<v3d::log::Logger>();
     if (!outfile.empty()) {
         if (!silent) {
             std::cout << "Writing image file: " << outfile << std::endl;

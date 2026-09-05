@@ -10,6 +10,9 @@
 #include <boost/filesystem/operations.hpp>
 
 #include "../libtalyn/RenderContext.h"
+#include "../libtalyn/RIBHandler.h"
+
+#include "../../api/render/offline/RIBReader.h"
 
 #include "../../api/image/Compare.h"
 #include "../../api/image/Factory.h"
@@ -18,6 +21,8 @@ namespace {
 
     const char* REFERENCE = "data/reference-triangle.png";
     const char* RENDERED = "data_out/reference-triangle.png";
+    const char* RIB_SCENE = "data/reference-triangle.rib";
+    const char* RIB_RENDERED = "data_out/reference-triangle-rib.png";
 
     /*
         Regenerating this reference is expected whenever shading or sampling changes the
@@ -78,4 +83,38 @@ BOOST_AUTO_TEST_CASE(talyn_reference_test) {
     }
     BOOST_CHECK_MESSAGE(difference.match,
         difference.description() + " - what was rendered instead is in " + RENDERED);
+}
+
+/**
+ * The same scene said in RIB, against the same committed picture.
+ *
+ * Two routes to one image: if the file path and the code path disagree, this says so, and
+ * neither of them is the reference. The background is a backdrop polygon rather than a scene
+ * colour, because RiImager is not implemented - so the file says with geometry what the code
+ * built scene says with Scene::background().
+ **/
+BOOST_AUTO_TEST_CASE(talyn_reference_from_rib_test) {
+    auto rc = boost::make_shared<v3d::talyn::RenderContext>();
+    v3d::talyn::RIBHandler handler(rc);
+    v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(reader.read(RIB_SCENE, &handler));
+    BOOST_CHECK_EQUAL(reader.error(), "");
+    BOOST_REQUIRE_EQUAL(handler.error(), "");
+
+    rc->render();
+    boost::shared_ptr<v3d::image::Image> rendered = rc->framebuffer()->image(3);
+
+    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    v3d::image::Factory factory(logger);
+    boost::shared_ptr<v3d::image::Image> reference = factory.read(REFERENCE);
+    BOOST_REQUIRE(reference != nullptr);
+
+    v3d::image::Difference difference = v3d::image::compare(*rendered, *reference, 1);
+    if (!difference.match) {
+        boost::filesystem::create_directory("data_out");
+        factory.write(RIB_RENDERED, rendered);
+    }
+    BOOST_CHECK_MESSAGE(difference.match,
+        difference.description() + " - what the rib scene rendered instead is in " + RIB_RENDERED);
 }

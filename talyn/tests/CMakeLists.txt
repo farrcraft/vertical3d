@@ -3,7 +3,7 @@
 v3d_add_test(talyn
 	"TestMain.cxx"
 	"RenderContextTest.cxx"
-	"RIBReaderTest.cxx"
+	"RIBHandlerTest.cxx"
 	"ReferenceTest.cxx"
 	"SceneTest.cxx")
 
