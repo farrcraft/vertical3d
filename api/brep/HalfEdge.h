@@ -5,22 +5,14 @@
 
 #pragma once
 
-#include <cstdint>
+#include "Index.h"
 
 namespace v3d::brep {
-
-    /**
-     * The id a half edge, face or vertex reference carries when it points at nothing.
-     * BRep::INVALID_ID is the same value - these were two different constants, 1 << 30
-     * here and 1 << 31 there, so an unpaired edge never compared equal to the sentinel
-     * BRep tested it against.
-     **/
-    constexpr uint64_t INVALID_ID = (1ull << 31);
 
     class HalfEdge {
      public:
         HalfEdge();
-        explicit HalfEdge(uint64_t vert);
+        explicit HalfEdge(Index vert);
         explicit HalfEdge(const HalfEdge & e);
         ~HalfEdge();
 
@@ -36,21 +28,21 @@ namespace v3d::brep {
         bool selected(void) const noexcept;
         void selected(bool sel) noexcept;
 
-        uint64_t vertex(void) const;
-        uint64_t face(void) const;
-        uint64_t pair(void) const;
-        uint64_t next(void) const;
+        Index vertex(void) const;
+        Index face(void) const;
+        Index pair(void) const;
+        Index next(void) const;
 
-        void vertex(uint64_t vert);
-        void face(uint64_t f);
-        void pair(uint64_t e);
-        void next(uint64_t e);
+        void vertex(Index vert);
+        void face(Index f);
+        void pair(Index e);
+        void next(Index e);
 
      private:
-        uint64_t vertex_;  // vertex at end of half edge
-        uint64_t face_;  // face to left of edge
-        uint64_t pair_;  // symetric half edge
-        uint64_t next_;  // next CCW half edge
+        Index vertex_;  // vertex at end of half edge
+        Index face_;  // face to left of edge
+        Index pair_;  // symetric half edge
+        Index next_;  // next CCW half edge
         bool selected_;
     };
 

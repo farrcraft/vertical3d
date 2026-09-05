@@ -10,7 +10,7 @@ namespace v3d::brep {
     HalfEdge::HalfEdge() : vertex_(INVALID_ID), pair_(INVALID_ID), next_(INVALID_ID), face_(INVALID_ID), selected_(false) {
     }
 
-    HalfEdge::HalfEdge(uint64_t vert) : vertex_(vert), pair_(INVALID_ID), next_(INVALID_ID), face_(INVALID_ID), selected_(false) {
+    HalfEdge::HalfEdge(Index vert) : vertex_(vert), pair_(INVALID_ID), next_(INVALID_ID), face_(INVALID_ID), selected_(false) {
     }
 
     HalfEdge::HalfEdge(const HalfEdge& e) {
@@ -45,35 +45,35 @@ namespace v3d::brep {
         selected_ = sel;
     }
 
-    uint64_t HalfEdge::vertex(void) const {
+    Index HalfEdge::vertex(void) const {
         return vertex_;
     }
 
-    uint64_t HalfEdge::face(void) const {
+    Index HalfEdge::face(void) const {
         return face_;
     }
 
-    uint64_t HalfEdge::pair(void) const {
+    Index HalfEdge::pair(void) const {
         return pair_;
     }
 
-    uint64_t HalfEdge::next(void) const {
+    Index HalfEdge::next(void) const {
         return next_;
     }
 
-    void HalfEdge::vertex(uint64_t v) {
+    void HalfEdge::vertex(Index v) {
         vertex_ = v;
     }
 
-    void HalfEdge::face(uint64_t f) {
+    void HalfEdge::face(Index f) {
         face_ = f;
     }
 
-    void HalfEdge::pair(uint64_t e) {
+    void HalfEdge::pair(Index e) {
         pair_ = e;
     }
 
-    void HalfEdge::next(uint64_t e) {
+    void HalfEdge::next(Index e) {
         next_ = e;
     }
 

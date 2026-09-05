@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include "Index.h"
+
 #include <glm/glm.hpp>
 
 namespace v3d::brep {
@@ -12,7 +14,7 @@ namespace v3d::brep {
     class Face final {
      public:
         Face();
-        Face(const glm::vec3 & normal, unsigned int edge);
+        Face(const glm::vec3 & normal, Index edge);
         ~Face();
 
         /**
@@ -24,12 +26,12 @@ namespace v3d::brep {
 
         glm::vec3 normal(void) const;
         void normal(const glm::vec3 & n);
-        unsigned int edge(void) const;
-        void edge(unsigned int e);
+        Index edge(void) const;
+        void edge(Index e);
 
      private:
         glm::vec3 normal_;
-        unsigned int edge_;
+        Index edge_;
         bool selected_;
     };
 

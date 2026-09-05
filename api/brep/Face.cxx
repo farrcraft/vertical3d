@@ -10,7 +10,7 @@ namespace v3d::brep {
     Face::Face() : selected_(false) {
     }
 
-    Face::Face(const glm::vec3& normal, unsigned int edge) : normal_(normal), edge_(edge), selected_(false) {
+    Face::Face(const glm::vec3& normal, Index edge) : normal_(normal), edge_(edge), selected_(false) {
     }
 
     Face::~Face() {
@@ -32,11 +32,11 @@ namespace v3d::brep {
         normal_ = n;
     }
 
-    unsigned int Face::edge(void) const {
+    Index Face::edge(void) const {
         return edge_;
     }
 
-    void Face::edge(unsigned int e) {
+    void Face::edge(Index e) {
         edge_ = e;
     }
 

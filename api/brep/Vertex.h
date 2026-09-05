@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include "Index.h"
+
 #include <glm/glm.hpp>
 
 namespace v3d::brep {
@@ -27,14 +29,14 @@ namespace v3d::brep {
         bool selected(void) const noexcept;
         void selected(bool sel) noexcept;
 
-        unsigned int edge(void) const;
-        void edge(unsigned int e);
+        Index edge(void) const;
+        void edge(Index e);
         glm::vec3 point(void) const;
         void point(const glm::vec3 & p);
 
      private:
         glm::vec3 point_;
-        unsigned int edge_;
+        Index edge_;
         bool selected_;
     };
 

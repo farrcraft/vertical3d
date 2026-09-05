@@ -4,8 +4,8 @@ Loose ends that are not phased work. Everything scheduled lives in
 [plans/Modernization.md](plans/Modernization.md), whose "What is left" section carries the
 open items the phases closed around.
 
-[] work out all of the size_t / unsigned int type issues - maybe need to switch to use uint64_t from unsigned int?
-[] fix all of the build warnings
+[x] work out all of the size_t / unsigned int type issues - api/brep names an index with one type, `brep::Index`, as of 2026-09-04. It is uint32_t rather than uint64_t: a half edge holds four and a mesh is mostly half edges. Nothing else in the tree mixed the two.
+[x] fix all of the build warnings - a clean build reported 72 at MSVC's default /W1 and reports none as of 2026-09-04. Raising to /W3 or /W4 has never been tried and would find more.
 [] factor out all SDL calls from apps and into the api instead - three left: `odyssey/Odyssey.cpp` and `odyssey/engine/Engine.cpp` include `SDL3/SDL.h` directly, and `voxel/src/Controller.cxx` reaches through `window_->sdl()` for `SDL_GetWindowFlags`
 [] decide whether api/brep keeps Edge, HalfEdgeBRep and WingedEdgeBRep - they are rigel's files, reformatted, still namespace v3D, and no CMakeLists builds them
 

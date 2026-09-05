@@ -1294,8 +1294,11 @@ done.
 - ~~`event::Context::active` is written and read by nothing.~~ Deleted 2026-09-04. The editor
   was expected to need it for state scoping and closed without it, and a flag nothing sets or
   reads reads as working scoping to whoever finds it next.
-- Two items survive on `docs/TODO.md` that nobody has scoped: the `size_t` / `unsigned int`
-  audit, and the build warnings.
+- ~~Two items survive on `docs/TODO.md` that nobody has scoped: the `size_t` / `unsigned int`
+  audit, and the build warnings.~~ Both closed 2026-09-04, and they were one item: of the 72
+  warnings a clean build reported at MSVC's default `/W1`, 21 were `api/brep` converting
+  between the three types it used to name an index. `brep::Index` is now the one type. The
+  build is warning free at `/W1`; nobody has tried `/W3` or `/W4`, which would find more.
 
 **Editor work the phase left open**, if the app is what gets pushed rather than the platform:
 55 of the menu's 75 commands have no handler and log themselves; there is no modelling

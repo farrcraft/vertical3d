@@ -9,10 +9,10 @@
 
 namespace v3d::brep {
 
-Vertex::Vertex() : edge_(static_cast<unsigned int>(INVALID_ID)), selected_(false) {
+Vertex::Vertex() : edge_(static_cast<Index>(INVALID_ID)), selected_(false) {
 }
 
-Vertex::Vertex(const glm::vec3& p) : point_(p), edge_(static_cast<unsigned int>(INVALID_ID)), selected_(false) {
+Vertex::Vertex(const glm::vec3& p) : point_(p), edge_(static_cast<Index>(INVALID_ID)), selected_(false) {
 }
 
 Vertex::~Vertex() {
@@ -34,11 +34,11 @@ void Vertex::selected(bool sel) noexcept {
     selected_ = sel;
 }
 
-unsigned int Vertex::edge(void) const {
+Index Vertex::edge(void) const {
     return edge_;
 }
 
-void Vertex::edge(unsigned int e) {
+void Vertex::edge(Index e) {
     edge_ = e;
 }
 
