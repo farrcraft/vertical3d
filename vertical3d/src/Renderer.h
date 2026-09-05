@@ -8,9 +8,9 @@
 #include <string>
 #include <vector>
 
-#include "Manipulator.h"
-#include "Scene.h"
-#include "ViewPort.h"
+#include "manipulator/Manipulator.h"
+#include "scene/Scene.h"
+#include "view/ViewPort.h"
 
 #include "../../api/asset/Manager.h"
 #include "../../api/font/TextureFontCache.h"

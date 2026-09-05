@@ -10,8 +10,8 @@
 #include <string>
 #include <vector>
 
-#include "CreateCommand.h"
-#include "CreatePoly.h"
+#include "command/CreateCommand.h"
+#include "scene/CreatePoly.h"
 #include "Renderer.h"
 
 #include "../../api/config/Type.h"

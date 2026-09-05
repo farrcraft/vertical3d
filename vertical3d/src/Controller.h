@@ -8,17 +8,17 @@
 #include <string>
 #include <vector>
 
-#include "CameraControlTool.h"
-#include "CameraProfiles.h"
-#include "CommandDirectory.h"
-#include "CommandStack.h"
-#include "Project.h"
-#include "Scene.h"
-#include "SelectMask.h"
-#include "SelectTool.h"
-#include "TransformTool.h"
-#include "ViewLayout.h"
-#include "ViewPort.h"
+#include "tool/CameraControlTool.h"
+#include "view/CameraProfiles.h"
+#include "command/CommandDirectory.h"
+#include "command/CommandStack.h"
+#include "scene/Project.h"
+#include "scene/Scene.h"
+#include "tool/SelectMask.h"
+#include "tool/SelectTool.h"
+#include "tool/TransformTool.h"
+#include "view/ViewLayout.h"
+#include "view/ViewPort.h"
 
 #include "../../api/engine/Engine.h"
 #include "../../api/event/Event.h"

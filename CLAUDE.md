@@ -17,7 +17,7 @@ Much of this code traces back to the early 2000s and is being modernised increme
 
 Two of the audits' findings are worth knowing before you assume an item is still open: `Menu::activate()` dispatching nothing and `api/input/Mouse::handleEvent` swallowing every mouse event were the most consequential `api/` regressions either turned up, and both were fixed on 2026-08-31. [docs/VoxelSurvey.md](docs/VoxelSurvey.md) is the fourth record, scoping voxel's port rather than a deletion.
 
-`vertical3d/` is the editor, rewritten onto the current api and built again as of 2026-09-01. It opens and draws four viewports of a scene over a construction grid; the manipulators, undo, the command model and project persistence all landed on 2026-09-02, the menus the same day, and the two toolbars on 2026-09-04.
+`vertical3d/` is the editor, rewritten onto the current api and built again as of 2026-09-01. It opens and draws four viewports of a scene over a construction grid; the manipulators, undo, the command model and project persistence all landed on 2026-09-02, the menus the same day, and the two toolbars on 2026-09-04. Its sources are grouped into `src/view/`, `src/scene/`, `src/command/`, `src/tool/` and `src/manipulator/`, leaving `Controller`, `Renderer` and `main` at the root of `src/` as the app shell; `tests/` mirrors those five directories. Includes are relative, so a file under one of them reaches the api as `../../../api/`.
 
 MSVC/Windows only in practice. The root CMakeLists passes `/std:c++latest` and `/permissive-` unconditionally, and targets set `/EHsc` and `/utf-8` individually.
 
