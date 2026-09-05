@@ -4,36 +4,37 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A monorepo for the Vertical3D ecosystem: reusable C++ libraries under `api/` (targets named `v3dlib_*`, one per subdirectory) plus the apps that consume them at the top level — pong, tetris, voxel, odyssey, vertical3d, talyn, moya, imagetool, v3dshell.
+A monorepo for the Vertical3D ecosystem: reusable C++ libraries under `api/` (targets named `v3dlib_*`,
+one per subdirectory) plus the apps that consume them at the top level — pong, tetris, voxel, odyssey,
+vertical3d, talyn, moya, imagetool, v3dshell. Every directory in the root builds.
 
-Much of this code traces back to the early 2000s and is being modernised incrementally: C++17+, granular namespaces, CMake replacing autotools and VS solutions. Expect wide variance in how modern any given file is.
+Much of this code traces back to the early 2000s and is being modernised incrementally: C++17+, granular
+namespaces, CMake replacing autotools and VS solutions. Expect wide variance in how modern any given file
+is. MSVC/Windows only in practice; the root CMakeLists passes `/std:c++latest` and `/permissive-`
+unconditionally, and targets set `/EHsc` and `/utf-8` individually.
 
-**There are no legacy trees left.** `vault/`, `rigel/`, `luxa/` and `v3dlibs/` are all deleted as of 2026-09-04, each after the list in its own survey or audit was worked off. Every directory in the root now builds. The records stay in [docs/audits/](docs/audits/) because they are the only account of what those trees held, and a file comes back with `git show <commit>^:<path>`:
+The legacy trees — `vault/`, `rigel/`, `luxa/`, `v3dlibs/` — are all deleted. [docs/audits/](docs/audits/)
+is the only account of what they held and carries the `git show` incantation to recover a file from each.
+Read [RigelSurvey.md](docs/audits/completed/RigelSurvey.md) before writing off a rigel feature as covered.
 
-- [docs/audits/completed/V3dlibsAudit.md](docs/audits/completed/V3dlibsAudit.md) — the shared libraries, and where each piece landed in `api/`. `v3dlibs/core/` went first, on 2026-09-02: `Scene`, `SceneVisitor` and the `create_poly_*` primitives moved into `vertical3d/src/` per [ADR-0013](docs/adr/0013-mesh-is-a-dag-node.md). Recover from `git show 68821c4^:v3dlibs/<path>`.
-- [docs/audits/completed/LuxaAudit.md](docs/audits/completed/LuxaAudit.md) — the old ui library against `api/ui`. Recover from `git show fe6d114^:luxa/<path>`.
-- [docs/audits/completed/RigelSurvey.md](docs/audits/completed/RigelSurvey.md) — the earlier prototype of the editor. Read it before writing off a rigel feature as already covered; recover from `git show 54d79e8^:rigel/<path>`, and note that the four PNGs in `rigel/icons/` are the only thing a later change would want — they were already recovered into `vertical3d/data/icons/`.
-- `vault/quantumxml` was genuinely archived, superseded by the JSON config work, and had no list to work off.
-
-Two of the audits' findings are worth knowing before you assume an item is still open: `Menu::activate()` dispatching nothing and `api/input/Mouse::handleEvent` swallowing every mouse event were the most consequential `api/` regressions either turned up, and both were fixed on 2026-08-31. [docs/audits/completed/VoxelSurvey.md](docs/audits/completed/VoxelSurvey.md) is the fourth record, scoping voxel's port rather than a deletion.
-
-`vertical3d/` is the editor, rewritten onto the current api and built again as of 2026-09-01. It opens and draws four viewports of a scene over a construction grid; the manipulators, undo, the command model and project persistence all landed on 2026-09-02, the menus the same day, and the two toolbars on 2026-09-04. Its sources are grouped into `src/view/`, `src/scene/`, `src/command/`, `src/tool/` and `src/manipulator/`, leaving `Controller`, `Renderer` and `main` at the root of `src/` as the app shell; `tests/` mirrors those five directories. Includes are relative, so a file under one of them reaches the api as `../../../api/`.
-
-MSVC/Windows only in practice. The root CMakeLists passes `/std:c++latest` and `/permissive-` unconditionally, and targets set `/EHsc` and `/utf-8` individually.
+`vertical3d/` is the editor: four viewports of a scene over a construction grid, with manipulators, undo,
+a command directory, menus, two toolbars and project persistence. Its sources group into `src/view/`,
+`src/scene/`, `src/command/`, `src/tool/` and `src/manipulator/`, leaving `Controller`, `Renderer` and
+`main` at the root of `src/` as the app shell; `tests/` mirrors those five. Includes are relative, so a
+file under one of them reaches the api as `../../../api/`.
 
 ## Process
 
-[docs/sdlc.md](docs/sdlc.md) describes how work moves through the repo — where plans live,
-when a decision earns an ADR, and what "verified" currently means. Decisions are recorded in
-[docs/adr/](docs/adr/), indexed in its README — nine of them cover the Vulkan rewrite and
-are worth reading before touching `api/render`. Phased plans live in
-[docs/plans/](docs/plans/), surveys and audits in [docs/audits/](docs/audits/), and unphased
-work in [docs/TODO.md](docs/TODO.md). No plan is open: the modernization plan closed on
-2026-09-04.
+[docs/sdlc.md](docs/sdlc.md) describes how work moves through the repo — where plans live, when a decision
+earns an ADR, and what "verified" currently means. Decisions are in [docs/adr/](docs/adr/), indexed in its
+README; most of the first twelve cover the Vulkan rewrite and are worth reading before touching `api/render`.
+Plans live in [docs/plans/](docs/plans/), surveys and audits in [docs/audits/](docs/audits/), and unphased
+work in [docs/TODO.md](docs/TODO.md). No plan is open.
 
 ## Build
 
-Visual Studio generates `out/build/x64-Debug` from [CMakeSettings.json](CMakeSettings.json). From a shell, use a Developer environment (`vcvars64.bat`), then:
+Visual Studio generates `out/build/x64-Debug` from [CMakeSettings.json](CMakeSettings.json). From a shell,
+use a Developer environment (`vcvars64.bat`), then:
 
 ```
 cmake -S . -B out/build/x64-Debug -G Ninja \
@@ -42,28 +43,53 @@ cmake -S . -B out/build/x64-Debug -G Ninja \
   -DVCPKG_TARGET_TRIPLET=x64-windows
 ninja -C out/build/x64-Debug              # everything
 ninja -C out/build/x64-Debug pong         # one target
-ninja -C out/build/x64-Debug -k 0         # keep going past the broken targets (see below)
 ```
 
 - `/utf-8` is required, not cosmetic: spdlog's bundled fmt has a `static_assert` that fails without it.
-- **Shaders are compiled at build time and embedded, not shipped as data.** `v3d_add_shader(<target> <source>)`
-  in the root CMakeLists runs the Vulkan SDK's `glslc` over a GLSL file and writes SPIR-V as a C initialiser
-  list into `<binary dir>/shaders/<name>.inc`, which the source `#include`s into a `uint32_t` array. The
-  engine's shaders live in [api/render/shaders/](api/render/shaders/). `VULKAN_SDK` has to point at an SDK
-  install, or configuration fails with "glslc was not found".
-- Editing `vcpkg.json` re-runs the manifest install. A cold install builds boost from source and takes roughly 45 minutes.
-- **`sdl3` is requested with its `vulkan` feature**, and has to be. Without it SDL builds with `SDL_VULKAN=OFF`, the windows video driver leaves `Vulkan_LoadLibrary` unset, and `SDL_Vulkan_LoadLibrary` fails with "No dynamic Vulkan support in current SDL video driver (windows)" — which surfaces as an unhandled exception on startup, not as a build failure. Changing it rebuilds SDL only, about five minutes.
-- **Never delete `out/build/<config>/vcpkg_installed/`** — that directory *is* the dependency install. When CMake needs a fresh cache (typically after a VS toolset update leaves the cached `CMAKE_CXX_COMPILER` path pointing at a version that no longer exists), delete only `CMakeCache.txt`, `CMakeFiles/`, `build.ninja`, `cmake_install.cmake` and `.ninja_*`, then reconfigure. Reconfiguring is fast; reinstalling is not.
-- `vendor/libnoise` is the only git submodule left, built separately, not by this project. `link_directories` expects its artefacts under `vendor/libnoise/Debug`.
-  It is not prebuilt, and `voxel` will not link without it. Its committed `CMakeCache.txt` names a
-  "Visual Studio 17 2022" generator that no longer exists here, so configure it out of source instead of reusing that cache:
-  `cmake -S vendor/libnoise -B vendor/libnoise/build-ninja -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-  -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebugDLL -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY=<repo>/vendor/libnoise/Debug`. The
-  `CMAKE_POLICY_VERSION_MINIMUM` is needed because its `cmake_minimum_required(VERSION 3.0)` predates what current CMake accepts.
-- **Assets shared by more than one app live in the root [data/](data/)**, committed once. `v3d_add_shared_data(<target>)` — defined in the root CMakeLists — copies them next to that app's executable after it links, merging into whatever the app keeps in `<app>/data`. Currently only fonts, used by pong, tetris, voxel and the font test suite. An app's own `data/` is copied the same way by `v3d_add_app_data(<target>)`, but **only tetris, voxel and odyssey call it**: everywhere else the `data/` directories in `out/build/<config>/<app>/` are manual copies and are years stale, so editing `pong/data/*.json` does not affect a run from the build tree until you copy it across yourself.
-- **The vcpkg baseline is pinned in [vcpkg-configuration.json](vcpkg-configuration.json)**, not in `vcpkg.json`, and it is a commit of microsoft/vcpkg rather than the `vendor/vcpkg` ports tree on disk. A port missing from that commit fails to resolve with "the baseline does not contain an entry for port X" even when `vendor/vcpkg/ports/X` exists. It moved from 2025-02-21 to 2026-05-09 on 2026-09-04 to reach `sdl3-mixer`, which took boost 1.86 to 1.91 and SDL3 3.2.4 to 3.4.8 with it.
-- **boost 1.91 removed `boost::json::error_code` and `boost::json::system_error`.** They were aliases into `boost::system`, and the replacement is to name that namespace and include `<boost/system/error_code.hpp>` and `<boost/system/system_error.hpp>` directly - `boost/json.hpp` no longer pulls them in. [api/asset/JsonFile.h](api/asset/JsonFile.h) is where the tree's json error handling lives.
-- `VCPKG_ROOT` in CMakeSettings.json has a doubled path segment (`vertical3d/vertical3d/vendor/vcpkg`) and points nowhere. vcpkg works through the toolchain file regardless.
+- **Never delete `out/build/<config>/vcpkg_installed/`** — that directory *is* the dependency install.
+  When CMake needs a fresh cache (typically after a VS toolset update leaves the cached
+  `CMAKE_CXX_COMPILER` pointing at a version that no longer exists), delete only `CMakeCache.txt`,
+  `CMakeFiles/`, `build.ninja`, `cmake_install.cmake` and `.ninja_*`, then reconfigure. Reconfiguring is
+  fast; reinstalling is not.
+- **Shaders are compiled at build time and embedded, not shipped as data.** `v3d_add_shader(<target>
+  <source>)` runs the Vulkan SDK's `glslc` over a GLSL file and writes SPIR-V as a C initialiser list into
+  `<binary dir>/shaders/<name>.inc`, which the source `#include`s into a `uint32_t` array. The engine's
+  shaders are in [api/render/shaders/](api/render/shaders/). `VULKAN_SDK` must point at an SDK install or
+  configuration fails with "glslc was not found".
+- **`sdl3` is requested with its `vulkan` feature**, and has to be. Without it SDL builds with
+  `SDL_VULKAN=OFF` and `SDL_Vulkan_LoadLibrary` fails with "No dynamic Vulkan support in current SDL video
+  driver (windows)" — which surfaces as an unhandled exception on startup, not as a build failure.
+- **The vcpkg baseline is pinned in [vcpkg-configuration.json](vcpkg-configuration.json)**, not in
+  `vcpkg.json`, and it is a commit of microsoft/vcpkg rather than the `vendor/vcpkg` ports tree on disk. A
+  port missing from that commit fails with "the baseline does not contain an entry for port X" even when
+  `vendor/vcpkg/ports/X` exists.
+- Editing `vcpkg.json` re-runs the manifest install; a cold install builds boost from source and takes
+  roughly 45 minutes. Changing the sdl3 feature set rebuilds SDL only, about five minutes.
+- **boost 1.91 removed `boost::json::error_code` and `boost::json::system_error`.** Name `boost::system`
+  and include `<boost/system/error_code.hpp>` and `<boost/system/system_error.hpp>` directly.
+  [api/asset/JsonFile.h](api/asset/JsonFile.h) is where the tree's json error handling lives.
+- `vendor/libnoise` is the only submodule, is not prebuilt, and `voxel` will not link without it. Build it
+  out of source — see [docs/Dependencies.md](docs/Dependencies.md#building-libnoise); `link_directories`
+  expects its artefacts under `vendor/libnoise/Debug`.
+- **Assets shared by more than one app live in the root [data/](data/)**, copied next to an executable by
+  `v3d_add_shared_data(<target>)`. An app's own `data/` is copied by `v3d_add_app_data(<target>)`, but
+  **only tetris, voxel and odyssey call it** — everywhere else the `data/` under
+  `out/build/<config>/<app>/` is a stale manual copy, so editing `pong/data/*.json` does not affect a run
+  from the build tree until you copy it across.
+- `VCPKG_ROOT` in CMakeSettings.json has a doubled path segment and points nowhere. vcpkg works through
+  the toolchain file regardless.
+
+### Linking rules
+
+- **Apps name neither spdlog nor fmt.** `v3dlib_log` links `spdlog::spdlog` PUBLIC so the
+  `SPDLOG_COMPILED_LIB` definition propagates. Every `api/` library whose sources compile
+  [Logger.h](api/log/Logger.h) must link `v3dlib_log` PUBLIC for the same reason — without the definition
+  it builds spdlog header-only and emits symbols the compiled library also defines, which surfaces as a
+  duplicate-symbol link error in whichever app pulls the wrong object first.
+- **Apps name neither the mixer nor `v3dlib_audio` unless they play a sound.** `v3dlib_asset` links
+  `v3dlib_audio` PUBLIC and `v3dlib_audio` links `SDL3_mixer::SDL3_mixer` PUBLIC, so it propagates.
+- **There is no OpenGL in the tree.** A target naming `OpenGL::GL`, `GLEW::GLEW` or `v3dlib_gl` will not
+  configure.
 
 ## Lint
 
@@ -73,11 +99,17 @@ cpplint --linelength=180 --filter=-runtime/indentation_namespace,-build/namespac
   --exclude=voxel/src/noise --recursive .
 ```
 
-Run in CI by [.github/workflows/cpplint.yml](.github/workflows/cpplint.yml). The first three excludes matter only locally - CI never builds, checks out no submodules and installs no ports, so it has none of those trees - but a developer machine has all three, and they hold two orders of magnitude more lintable files than the project does. `vcpkg_installed/` at the repo root is the worst of them at 80,000-odd third party headers. Note that `--exclude` filters what is linted and not what is walked, so the run still costs an `os.walk` of the whole tree either way. Current cpplint renamed the namespace-indent check to `whitespace/indent_namespace`, so the `-runtime/indentation_namespace` filter no longer suppresses it and **every file in the repo reports it**. Ignore those; treat anything else as a real finding.
+Run in CI by [.github/workflows/cpplint.yml](.github/workflows/cpplint.yml). The excludes matter only
+locally — CI checks out no submodules and installs no ports — but a developer machine has all three trees,
+and `vcpkg_installed/` alone holds 80,000-odd third party headers. Current cpplint renamed the
+namespace-indent check to `whitespace/indent_namespace`, so the `-runtime/indentation_namespace` filter no
+longer suppresses it and **every file in the repo reports it**. Ignore those; treat anything else as real.
 
 ## Tests
 
-Boost.Test, one binary per api library, built from `api/<lib>/tests/` and registered with ctest — plus one per app, where the app has logic worth covering:
+Boost.Test, one binary per api library from `api/<lib>/tests/`, plus one per app where the app has logic
+worth covering. Registered with ctest and run in CI by
+[.github/workflows/ctest.yml](.github/workflows/ctest.yml).
 
 ```
 ninja -C out/build/x64-Debug                       # tests build with everything else
@@ -86,110 +118,131 @@ ctest --test-dir out/build/x64-Debug -R image      # one suite
 out/build/x64-Debug/api/image/tests/v3dtest_image.exe --run_test=texture_test
 ```
 
-`v3d_add_test(<lib> <sources>)` in the root CMakeLists builds `v3dtest_<lib>`, links the framework, and adds the ctest entry with the working directory set beside the executable so a suite's data files resolve. **CI runs the whole thing** as of 2026-09-04 — [.github/workflows/ctest.yml](.github/workflows/ctest.yml) builds the tree on a Windows runner and runs `ctest`, separately from the cpplint workflow. It has to set up three things a developer machine already has: install the Vulkan SDK (every configure needs it — the root CMakeLists looks for `glslc` with a `FATAL_ERROR`, so there is no cheaper subset job), take vcpkg from the runner's `VCPKG_INSTALLATION_ROOT` because `vendor/vcpkg` is not tracked, and build the one vendor submodule — libnoise, out of source, since the `CMakeCache.txt` it commits names a generator no runner has. Link the library under test yourself in `api/<lib>/tests/CMakeLists.txt`. `TestMain` (one per target) carries the `BOOST_TEST_MODULE` define and nothing else.
+`v3d_add_test(<lib> <sources>)` builds `v3dtest_<lib>`, links the framework, and adds the ctest entry with
+the working directory beside the executable so a suite's fixtures resolve. Link the library under test
+yourself in `api/<lib>/tests/CMakeLists.txt`. `TestMain` carries the `BOOST_TEST_MODULE` define and
+nothing else.
 
-Covered as of 2026-09-04: every `api/` library but the render code below the recorder — `type`, `brep`, `dag`, `image`, `font`, `input`, `event`, `render`, `ui`, `asset`, `config`, `ecs`, `audio`, `log` and `engine` — plus the app suites `pong`, `tetris`, `voxel`, `vertical3d` and `moya` — 20 suites and 395 cases, migrated out of `v3dlibs/tests/` (the command-layer tests were rewritten against `api/event`, and the two input tests against `Keyboard`/`Mouse`). `render` and `ui` cover only the parts that need neither a window nor a GPU — the frame and pass model including the camera and the record ordering `Pass::ordered()` produces, the draw item's sort key, the handle registry, the canvas's batching, transform stack and projection, and the line canvas's geometry and transform stack; and, for `ui`, menu layout, submenu descent and visibility, the menu bar - opening and closing, sliding between menus, where a flyout is placed, the command an item sends, and the mark a check item draws - and the toolbar, which is the row and column layouts, the command a button sends, what an unbound button does, the hover, the insets a strip reserves matching where it is drawn, and — since 2026-09-04 — the theme: what a style's colours, numbers, fonts and images load as, what a theme overrides and what it leaves alone, the image pass, and the drawing of a button, a label and an icon. All of it is testable because `ComponentRenderer` takes text measuring and writing as callbacks rather than depending on the font library, and because a strip is hit tested against the bounds a draw left on it per ADR-0019. `asset` covers the manager - a loader per registered type, the extension that picks one, path resolution and what a missing file comes back as - the loader base's parameters, and the json and text loaders; `config` covers the indirect `{"configs": [...]}` form, every way a document is rejected, and `stringToType`. Both take a fixture directory copied beside the executable, because a manager resolves a relative path against the working directory. `ecs` covers the four components and the system base over an entt registry; `log` covers the one name the wrapper registers under, the two levels it sets, and the second `Logger` taking over the first; `audio` covers what a clip does with a file it cannot read, every way a sounds document is rejected, and what the resolver is asked for, but never opens a device, so nothing there plays a clip; and `engine` covers the feature mask, the config and the mappings `initialize()` reads - the state a binding names, the three types a destination's param may be, and each way a mapping document is refused - plus the quit flag the loop stops on. Its fixtures are app paths rather than data paths, because `initialize()` appends `data/` to what it was given. Nothing in it asks for `Feature::Window`. Not covered: everything in `api/render` below the recorder, and `Feature::Window` and `audio::Engine::initialize()` — that needs a window, a GPU or a sound device, so it waits on [ADR 0007](docs/adr/0007-ci-rendering-tests.md). `pong/tests/`, `tetris/tests/`, `voxel/tests/`, `vertical3d/tests/` and `moya/tests/` are the app suites — `v3d_add_test` is not api-only, and they build against `<app>/src/*.cxx` directly: pong's ball, paddle, game state and the whole of `PongScene::tick` - collision, scoring, the wall bounce, the paddle run and the single-player ai, each read back off the sound the tick fires - the board and the tetrad, voxel's chunk, mesh cache, Morton code and chunk-seam face culling, and the editor's view layout, camera profile table, construction grid, scene, polygon primitives, wireframe, picker, select tool, manipulators, transform tool, undo stack, command directory and project file all need neither a window nor a device. Voxel's suite links `libnoise`, because `Chunk` is built against a `TerrainMap` and the vtable of the flat one a test supplies refers to the perlin implementation whether or not any case generates noise. `moya/tests/` builds as of 2026-09-04: the five files it held were written against the old `v3D::Moya` namespace and `v3D::Vector3`, so they were rewritten against `v3d::moya` and glm rather than merely given a `CMakeLists.txt`. The two `run-unit-tests.sh` scripts are deleted - they invoked a `unit_tests` binary no CMakeLists builds, and ctest is the runner. Boost.Test's leak check reports a permanent false positive for any suite that builds a `Logger` (spdlog's registry outlives the report), which is why `add_test` passes `--detect_memory_leaks=0`.
-
-## Build health
-
-Everything compiles and links as of 2026-09-01.
-
-- **Clean:** every `api/` library, plus `pong`, `tetris`, `voxel`, `odyssey`, `vertical3d`, `talyn`, `v3dshell`, `imagetool`.
-- **`voxel`** was the last holdout — it had drifted behind API changes in the shared libraries, and its
-  `target_link_libraries` still named only `libnoise`, so it could not have linked even once the objects
-  compiled. It now links a `v3dlib_*` set of its own, which since the port on 2026-09-01 is tetris's plus
-  `libnoise` and minus `v3dlib_audio`. `src/game/Player.cxx` and `src/noise/noiseutils.cpp` were also
-  missing from the target's source list.
-- **There is no OpenGL in the tree.** `api/gl` was deleted on 2026-09-01 with the last thing that held
-  it, and the root `find_package(OpenGL)` and `find_package(GLEW)` calls and the `glew` port in
-  [vcpkg.json](vcpkg.json) went with it. A target that names `OpenGL::GL`, `GLEW::GLEW` or `v3dlib_gl`
-  will not configure.
-
-**Apps name neither the mixer nor `v3dlib_audio` unless they play a sound.** `v3dlib_asset`'s Wav loader calls `v3d::audio::AudioClip::load`, so any app linking asset needs audio whether or not it makes noise; `v3dlib_asset` links `v3dlib_audio` PUBLIC and `v3dlib_audio` links `SDL3_mixer::SDL3_mixer` PUBLIC, so the dependency propagates rather than being named again by every consumer. Pong is the only app that plays anything.
-
-**`api/audio` is SDL3_mixer, from vcpkg**, per [ADR-0021](docs/adr/0021-sdl3-mixer-replaces-soloud.md) — SoLoud and its `vendor/soloud` submodule are gone. `audio::Engine` owns `MIX_Init` and one `MIX_Mixer` over the default playback device, and `AudioClip` owns a `MIX_Audio` loaded against a *null* mixer, so a clip reads through the asset manager with no engine up and plays through whichever device an app later opens. `MIX_Init` counts its callers, so a clip holds its own reference and releases it when destroyed. `initialize()` also brings up SDL's audio subsystem, which the game engine does not ask for — it initialises video only. A device that will not open is a logged error and a silent app rather than a failure: `playClip` refuses when nothing is open, and teardown skips a mixer that never started.
-
-**A sound is an asset, and the app resolves it.** `audio::Engine::load` takes a `Resolve` callback and never touches the asset manager: `v3dlib_asset` loads through `v3dlib_audio`, so the dependency cannot run the other way. That is the seam ADR-0020 takes for the ui's images. Until 2026-09-04 the engine read a config's filename directly, which resolved against the working directory rather than the manager's path, so pong never found a wav it named.
-
-**Apps name neither spdlog nor fmt.** `v3dlib_log` links `spdlog::spdlog` PUBLIC, so the `SPDLOG_COMPILED_LIB` definition and the spdlog/fmt link dependencies propagate to every library and app that consumes it. Every `api/` library whose sources compile [Logger.h](api/log/Logger.h) links `v3dlib_log` PUBLIC for the same reason — a target that compiles that header without the definition builds spdlog header-only and emits symbols the compiled spdlog library also defines, which surfaces as a duplicate-symbol link error in whichever app happens to pull the wrong object first. If you add an api library that logs, link `v3dlib_log`.
-
-Check this list before assuming a build failure is yours.
+- Everything is covered except `api/render` below the recorder, `Feature::Window`, and
+  `audio::Engine::initialize()` — those need a window, a GPU or a sound device, and wait on
+  [ADR-0007](docs/adr/0007-ci-rendering-tests.md). `ctest -N` lists what exists; the test sources are the
+  record of what each suite asserts.
+- The api libraries are testable without a window because `ComponentRenderer` takes text measuring and
+  writing as callbacks rather than depending on the font library, and because a strip is hit tested
+  against the bounds a draw left on it per ADR-0019. Keep that seam when adding to `ui` or `render`.
+- Voxel's suite must link `libnoise`: `Chunk` is built against a `TerrainMap`, and the vtable of the flat
+  one a test supplies refers to the perlin implementation whether or not a case generates noise.
+- `add_test` passes `--detect_memory_leaks=0` because Boost.Test reports a permanent false positive for
+  any suite that builds a `Logger` — spdlog's registry outlives the report.
+- **A round trip cannot see a symmetric orientation fault**: a writer and a reader that both reverse their
+  rows return the image they were given. `imagewriter_jpeg_orientation_test` goes through libjpeg directly
+  on one side of each check for exactly this reason.
 
 ## Architecture
 
-**Two different classes named Engine.** `v3d::engine::Engine` (api/engine) is the *game* engine: main loop, window, asset manager, config, input. Each app subclasses it as `Controller`. `v3d::render::realtime::Engine` (api/render) is the *render* engine, subclassed as `Engine3D`. Apps hold both.
+**Two different classes named Engine.** `v3d::engine::Engine` (api/engine) is the *game* engine: main
+loop, window, asset manager, config, input. Each app subclasses it as `Controller`.
+`v3d::render::realtime::Engine` (api/render) is the *render* engine, subclassed as `Engine3D`. Apps hold
+both.
 
-**A quit command calls `Engine::quit()`, never `shutdown()`.** `eventLoop` ticks and renders after an event handler returns, so a handler that tears down the window and calls `SDL_Quit` leaves the next frame drawing into a destroyed window — which surfaces as a throw out of `Presenter::acquire` on a lost surface, or as a process that keeps spinning with no window, depending on what the driver returns. `quit()` sets a flag the loop breaks on; `main` calls `shutdown()` once, after `eventLoop()` returns. Every app follows this as of 2026-09-04 - pong and tetris were the last two calling `shutdown()` from a handler. **An app's `shutdown()` has to tear its renderer down before the base class runs**, which is `Engine3D::shutdown()` by way of the app's own renderer: it waits for what is in flight and drops the context, and the context owns the device that holds the window's surface alive. `render::realtime::Window::destroy()` unloads the vulkan library, so a surface released after it is never destroyed and the instance reports it leaked - which is what pong and tetris did until they gained the same `renderer_->shutdown()` call voxel, odyssey and the editor already had.
+**Render pipeline.** Window → Engine3D → Context3D → Frame → Pass → DrawItem, one of each. An app fills a
+`realtime::Canvas` during its tick, submits it, and calls `renderFrame()`. Drawing goes through dynamic
+rendering — no `VkRenderPass`, no `VkFramebuffer`. [docs/RenderingPipeline.md](docs/RenderingPipeline.md)
+describes the whole chain and is the reference for anything below this line.
 
-**Feature flags decide what exists.** `Engine::initialize(int features)` takes a bitmask of `v3d::engine::Feature` (Window, Config, KeyboardInput, MouseInput) and only constructs what was asked for. `Feature::Config` loads `data/config.json`, which must use the newer indirect form — `{"configs": [{"type": "...", "file": "..."}]}` referencing separate mappings/window/ui/sound files. Pong's `data/` is the reference; tetris and voxel were migrated to the same shape on 2026-08-31 and odyssey on 2026-09-01, and no app is on the older inline `keys` format any more. `config::Type` also carries `camera` and `layout`, which only the editor uses — its camera profile table and its viewport split, both translated from rigel's `gui.xml`. `Config::load` guards every lookup with a `contains()`, and since 2026-09-04 catches what `Manager::loadTypeFromExt` throws for an extension it has no loader for, so a config it does not understand is a logged `false` rather than an exception out of engine startup. `Engine::registerEventMappings` guards its lookups the same way as of 2026-09-04, so a mappings document naming no `mappings`, or a binding naming no source or destination, is a logged `false` too. A window config is still not guarded: `Engine::initialize` reads `width` and `height` with `at()`, so a `window.json` naming neither throws. An app with no window config at all gets a window at the default size rather than none.
+**There are two primitives**: the batched quad ([ADR-0005](docs/adr/0005-one-batched-quad-primitive.md))
+and the line ([ADR-0011](docs/adr/0011-lines-are-the-second-primitive.md)). A rectangle, a sprite, a glyph
+and a menu panel are all the quad; text needs no separate path, and `ui::ComponentRenderer` draws onto the
+same canvas. Lines are world space and read the pass camera at set 0.
 
-**Render pipeline.** Window → Engine3D → Context3D → Frame → Pass → DrawItem, and there is exactly one of each. An app fills a `realtime::Canvas` during its tick, hands it to `Engine3D::quads()->submit(canvas, pass)`, and calls `renderFrame()`, which records and presents. `Context3D` owns the Vulkan device, swapchain and quad renderer. The `SDL_Renderer` path — `Engine2D`, `Context2D`, `Scene2D`, `Texture2D`, `Window2D`, `Blit2DTexture` — and the `Operation` submission path it used were deleted on 2026-09-01 with odyssey's port, which was their last consumer. See [docs/RenderingPipeline.md](docs/RenderingPipeline.md).
+**ECS.** entt. The `registry` lives on the app's `Controller` and is passed into the render engine as a
+raw `entt::registry*`. [docs/ECSDesign.md](docs/ECSDesign.md) is largely aspirational.
 
-**The Vulkan frame loop is in, and a window clears to a colour.** `realtime::Window` creates an `SDL_WINDOW_VULKAN` window and owns `vulkan::Instance` and `vulkan::Surface` — there is one window class, not a 2D and a 3D one, and one `Feature::Window` flag that asks for it; `Context3D` owns `vulkan::Device`, `vulkan::Swapchain`, `vulkan::Presenter` (command pool, per-frame command buffers, semaphores and fences, and the acquire/submit/present loop), `vulkan::PipelineCache`, `vulkan::Resources`, `vulkan::FrameUniforms`, `vulkan::Uploader` and — lazily — `vulkan::DepthBuffer`. `Engine3D::renderFrame()` records the frame it has been given and presents it, rebuilding the swapchain when acquiring or presenting reports it out of date. Drawing goes through **dynamic rendering** — there is no `VkRenderPass` and no `VkFramebuffer` — and layout transitions use synchronization2 barriers. A frame is a list of `Pass`es holding `DrawItem`s, recorded in submission order unless the pass asks to be sorted. See [docs/RenderingPipeline.md](docs/RenderingPipeline.md), which describes what exists rather than what was planned.
+### Invariants that bite
 
-**What phase 5 added to the api, all of it 2026-08-31 and none of it with a 3D consumer yet.** `vulkan::DepthBuffer` is owned by `Context3D` and **allocated the first frame a pass asks for depth**, so a 2D app never pays for it; `Recorder` attaches it, clears it exactly when the pass clears colour, and transitions it from `UNDEFINED` once a frame. Because dynamic rendering matches a pipeline to its pass's attachments, `QuadRenderer` compiles its pipeline **twice** — with and without a depth format — and picks between them from `Pass::depth()`. `vulkan::PipelineBuilder` describes a pipeline a chained call at a time and is what the quad pipeline is now built through. `vulkan::FrameUniforms` is set 0 of [ADR-0008](docs/adr/0008-binding-by-update-frequency.md) — the layout every pipeline declares, plus a camera slot per pass per frame in flight that `Recorder` writes and binds. `vulkan::DeviceBuffer` and `vulkan::Mesh` are device-local geometry filled through `vulkan::Uploader`, the one-shot record/submit/wait that `TextureFactory` also uses. Sorting is `Pass::sort(true)`, opt-in because the key groups by pipeline and material within a layer and a canvas of batches has to stay in submission order. **Meshes are not `Resources` handles** — the app owns them, per [ADR-0010](docs/adr/0010-meshes-are-owned-by-the-app.md).
+- **A quit command calls `Engine::quit()`, never `shutdown()`.** `eventLoop` ticks and renders after a
+  handler returns, so tearing the window down inside one leaves the next frame drawing into a destroyed
+  window. `quit()` sets a flag the loop breaks on; `main` calls `shutdown()` after `eventLoop()` returns.
+- **An app's `shutdown()` must tear its renderer down before the base class runs.** The context owns the
+  device that holds the window's surface alive, and `Window::destroy()` unloads the vulkan library — a
+  surface released after it is never destroyed, and the instance reports it leaked.
+- **Feature flags decide what exists.** `Engine::initialize(int features)` takes a bitmask of
+  `v3d::engine::Feature` and only constructs what was asked for. `Feature::Config` loads
+  `data/config.json`, which must use the indirect form — `{"configs": [{"type": "...", "file": "..."}]}`.
+  Pong's `data/` is the reference. `Config::load` and `registerEventMappings` guard every lookup and log a
+  `false`, but **a window config is not guarded**: `initialize` reads `width` and `height` with `at()`, so
+  a `window.json` naming neither throws.
+- **A frame may submit any number of canvases, and each takes a buffer of its own.** Appending into one
+  buffer would not work: `vulkan::Buffer::grow` replaces the allocation, invalidating the handle every
+  draw item recorded before it is holding.
+- **The swapchain is UNORM, not sRGB** — colour is authored in display space
+  ([ADR-0009](docs/adr/0009-colour-authored-in-display-space.md)). A lit 3D scene will revisit this.
+- **`v3d::type::Camera` builds Vulkan clip space**, and `project()`/`unproject()` are inverses
+  ([ADR-0012](docs/adr/0012-camera-builds-vulkan-clip-space.md)).
+- **Meshes are owned by the app**, not by `Resources`
+  ([ADR-0010](docs/adr/0010-meshes-are-owned-by-the-app.md)).
+- **`image::Image` row 0 is the top of the picture.** Every consumer downstream — the canvas, the texture
+  factory, the atlas packer — reads them that way. The jpeg reader also asks the decoder for RGB whatever
+  the file holds, because it builds a 24 bit `Image` and copies three bytes a pixel.
+- **The Khronos validation layer is enabled when installed**, and `vulkan::Instance` routes it through the
+  logger. Without that messenger a loaded layer is silent, which looks exactly like a clean run.
 
-**There are two primitives: the batched quad and the line.** The quad is what pong and tetris both draw through. `realtime::Canvas` accumulates 2D quads on the CPU — position, uv and colour, with a batch cut only where the bound texture changes — and `vulkan::QuadRenderer` owns the two pipelines it compiles, the descriptor pool, the 1x1 white texture an untextured quad is drawn against, and a vertex and index buffer per frame in flight. A rectangle, a sprite, a glyph and a menu panel are all the same primitive ([ADR-0005](docs/adr/0005-one-batched-quad-primitive.md)). Text needs no separate path: the font library lays glyphs out and `Canvas::text` copies them in against the atlas, whose single channel is swizzled into alpha by its image view. `v3d::ui::ComponentRenderer` draws the ui onto the same canvas. **Lines are the second primitive**, added 2026-09-01 for the editor ([ADR-0011](docs/adr/0011-lines-are-the-second-primitive.md)): `realtime::LineCanvas` accumulates segments on the cpu and `vulkan::LineRenderer` draws a whole canvas as one non-indexed line list. Unlike the quad, positions are in world space and read the pass camera at set 0, and the pipeline built for a pass with depth tests and writes it. `Context3D::lines()` builds the renderer on first use, so a 2D app pays nothing. The editor is the first consumer and drew through both pipelines on 2026-09-01, validation clean.
+### The editor
 
+`api/brep` holds two mesh representations: `BRep` is half-edge and is what the editor models with;
+`WingedEdgeBRep` is winged-edge and has no consumer yet. `Vertex`, `Face` and `Index` are common to both.
+A mesh names its own parts with `brep::Index` — one `uint32_t` for a vertex, a half edge or a face, since
+all three are offsets into a `BRep`'s arrays. `INVALID_ID` is `1 << 31` and **its value is part of the
+project file format**, so it cannot be changed without invalidating documents already written.
 
-**The swapchain is a UNORM format, not sRGB** — colour is authored in display space and written out unchanged, per [ADR-0009](docs/adr/0009-colour-authored-in-display-space.md). An `_SRGB` target encodes on write, which brightens every colour in the tree; that was the phase 2 default and it was wrong. A lit 3D scene will have to revisit this.
+Each of these is settled by an ADR; read the record rather than inferring the rule from the code.
 
-**A frame may submit any number of canvases, and each takes a buffer of its own.** `QuadRenderer` and `LineRenderer` keep a ring of geometry buffers per frame in flight rather than one, and `Engine3D` returns the ring to its start once the frame has been recorded. Appending several canvases into one buffer would not work: `vulkan::Buffer::grow` replaces the allocation, which invalidates the handle every draw item recorded before it is holding. Until 2026-09-01 there was one buffer per frame and a second `submit()` silently overwrote the first, which four games that each submit once never saw.
+| Area | Record |
+|---|---|
+| A mesh is a dag node with a transform; the scene belongs to the editor | [ADR-0013](docs/adr/0013-mesh-is-a-dag-node.md) |
+| Picking is a CPU ray cast, with screen space proximity for components | [ADR-0014](docs/adr/0014-picking-is-a-cpu-ray-cast.md) |
+| Manipulators write the object transform, and are an overlay pass | [ADR-0015](docs/adr/0015-manipulators-write-the-object-transform.md) |
+| Undo records what has already happened; one gesture is one command | [ADR-0016](docs/adr/0016-undo-records-what-has-already-happened.md) |
+| A command is a name in a context; the directory is the editor's | [ADR-0017](docs/adr/0017-a-command-is-a-name-in-a-context.md) |
+| A project is JSON, and stores topology verbatim | [ADR-0018](docs/adr/0018-a-project-is-json-and-stores-topology-verbatim.md) |
+| The ui is laid out by what draws it, and hit tested against those bounds | [ADR-0019](docs/adr/0019-the-ui-is-laid-out-by-what-draws-it.md) |
+| A theme is data, and the app resolves the images it names | [ADR-0020](docs/adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md) |
 
-**`api/brep` holds two mesh representations.** `BRep` is the half-edge one and is what the editor models with; `WingedEdgeBRep` is the winged-edge one, ported and built on 2026-09-04 and with no consumer yet - an edge is shared rather than paired, naming a vertex at each end, a face on each side and the four edges it meets, so a traversal can turn either way without a twin. `Vertex`, `Face` and `Index` are common to both; `HalfEdge` belongs to the first and `Edge` to the second.
-
-**A mesh names its own parts with `brep::Index`.** One `uint32_t` for a vertex, a half edge or a face, in [api/brep/Index.h](api/brep/Index.h), because all three are offsets into a `BRep`'s arrays and converting between them is never meaningful. `INVALID_ID` is `1 << 31` and its value is part of the project file format per ADR-0018, so it cannot be changed without invalidating documents already written. Counts stay `size_t`; the narrowing where a container's `size()` becomes an index is one explicit cast each.
-
-**The editor has a scene, and a mesh knows where it is.** `v3d::brep::BRep` derives from `v3d::dag::Node` and `v3d::dag::Transform` as of 2026-09-02, so it has a process-unique id and a placement, and all four of `Vertex`, `HalfEdge`, `Face` and `BRep` carry a `selected()` flag — [ADR-0013](docs/adr/0013-mesh-is-a-dag-node.md). `v3dlib_brep` links `v3dlib_dag` PUBLIC for it, which is that library's first consumer; `dag::Transform` had never been compiled and did not, so it was rewritten. `v3d::editor::Scene` holds the meshes and nothing else, `WireframeVisitor` turns one into a `LineCanvas`, and keys 1 to 4 create a cube, plane, cylinder or cone through the `create` event context.
-
-**Picking is a cpu ray cast, and it lives in the editor.** Per [ADR-0014](docs/adr/0014-picking-is-a-cpu-ray-cast.md), an object and a face are hit by the ray meeting a triangle of a fan over the face's half edge loop; a vertex and an edge, which are drawn one pixel wide, by screen space proximity with the nearest to the camera winning. There is no id buffer — that would start by writing the triangle primitive the tree does not have, and would answer a click a frame late. `v3d::type::Ray` and `Camera::ray()` are the api half; `v3d::editor::Picker` and `SelectTool` are the policy. The select mask is object, vertex, edge or face, bound to the digits 5 to 8, and changing it clears the component selection so that one kind is selected at a time. An object has to be selected before any of its components may be, which is rigel's rule. One thing is selected at a time — there is no rubber band and no shift-click.
-
-**Manipulators write the object transform, and are an overlay pass.** Per [ADR-0015](docs/adr/0015-manipulators-write-the-object-transform.md), a handle writes the mesh's `dag::Transform` and never its geometry, is drawn at the object's own origin because that is where the transform pivots, and is picked by projecting itself to the screen and measuring the cursor's distance from it. `v3d::editor::Manipulator` is the base — an axis constraint whose none is the centre handle, a coordinate space, and a placement whose handle length is a constant number of pixels converted through the view; `TranslateManipulator`, `RotateManipulator` and `ScaleManipulator` are the three, and `TransformTool` holds them with q, w, e and r choosing which is in force. A drag is measured rather than read: `apply()` takes the two cursor positions either side of one motion event and adds what it measures, so a translate accumulates and a rotation composes. The handles go in a second pass per viewport with no depth attachment, over what the scene pass left — a handle shares its plane with the construction grid's own axis lines, and an overlay is a pass without depth per ADR-0011. **The primary mouse button now drives three tools**: a camera modifier held moves a camera, otherwise a handle takes the press if the cursor is on one, and a press no handle took is what picks.
-
-**A project is JSON, and the topology is stored verbatim.** Per [ADR-0018](docs/adr/0018-a-project-is-json-and-stores-topology-verbatim.md), `v3d::editor::Project` reads and writes a document holding a version, a name and one array of meshes — a placement, an array of points, an array of half edges naming indices, and an array of faces. The arrays are written and read index for index rather than rebuilt through `BRep::addFace`, which welds vertices and pairs edges by search and would renumber everything. Neither a mesh's id nor its selection is stored: an id comes from a process-wide counter, and selection is where the user is rather than what the document holds. Reading replaces the scene, clears the history, and refuses a file whose indices name something the mesh does not hold rather than loading as far as it gets — `INVALID_ID` stays legal wherever a reference may be absent. **There is no file chooser in the tree**, so `project::load` and `project::save` work on one document at a fixed `project.json` beside the executable.
-
-**The ui is laid out by what draws it.** Per [ADR-0019](docs/adr/0019-the-ui-is-laid-out-by-what-draws-it.md), `ui::ComponentRenderer` leaves every component holding the bounds it was drawn in, and `ui::component::MenuBar` answers the cursor by testing it against those - so nothing is hit until something has been drawn. A menu is on screen twice when it is open, as a label in the strip and as the panel it drops, and one `Component` cannot hold two rectangles: the label's bounds are the bar's and the menu's own are the panel's. A check or radio item does not own the state it shows - activating one sends its command and marks nothing, and whatever answers the command sets `checked()`. `vertical3d/data/vgui.json` is `gui.xml`'s menu tree, nine menus over 75 commands, of which the editor answers to 20; the rest log themselves per ADR-0017. **The two toolbars are in as of 2026-09-04** and are more of the same file: `component::Toolbar` is a strip of `Button`s on the top or the left edge, a `Button` carries the same `event::Event` a menu item does, and a toggle button shows a flag it does not own for the reason a check item does. The strips reserve the window's edges - `ComponentRenderer::insets()` is what an app subtracts before laying out what it draws, and the editor's views divide what is left. A menu bar is drawn after them whatever order a container lists it in, because an open menu drops a panel over them. **The left toolbar is iconic as of 2026-09-04**: a `Button` names an image, `Engine::resolveImages()` resolves it per ADR-0020, and the four PNGs recovered out of `rigel/icons/` into `vertical3d/data/icons/` are what it draws - gui.xml's own four, at 22 pixels square. An icon replaces the label rather than joining it, and a button whose image did not resolve falls back to drawing the label, so a missing file is a readable strip rather than an empty one. The top toolbar is still labelled: gui.xml names neither a label nor an icon for any of its nine buttons, so the four masks the editor has are labelled from the mask name and the five with no node type to select are left out, as ADR-0014 left them out of the mask. The box containers are still empty headers.
-
-**A theme is data, and the app resolves what it names.** Per [ADR-0020](docs/adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md), `ui::Engine::load` reads a theme's styles and their four kinds of property - colours, numbers, fonts and images, each read as the kind of the array it was written in - and `ComponentRenderer::theme()` reads the `ui` style into the colours and metrics it draws with, overriding only what the theme names, so a theme carrying nothing draws what the defaults draw. `v3dlib_ui` still links neither `asset` nor anything vulkan: `Engine::resolveImages()` hands every source the config named to a callback the app supplies, which for the editor is `asset::Manager::load` plus `QuadRenderer::texture`. That is the seam text measuring and writing already use, and it is what keeps the whole library testable without a window. `Button`, `Label` and `Icon` are loadable component types and are drawn - a button over the nine images its style names for its state, or flat when the theme names none, and carrying an icon of its own where a config names one. `vertical3d/data/vgui.json` carries the editor's chrome colours and is the reference for the schema; a config with a name-only theme, which is what pong, tetris and voxel have, is still legal and unchanged.
-
-**A command is a name in a context, and the directory is the editor's.** Per [ADR-0017](docs/adr/0017-a-command-is-a-name-in-a-context.md), a command is identified by its context and name together — `event::Event::str()`, which is the form `gui.xml`'s command strings already take — and `v3d::editor::CommandDirectory` maps that string to a handler. `Controller::registerCommands` is the list of what the editor can do and `handleEvent` is a lookup. A key binding and a `ui::component::MenuItem` carry the same `event::Event`, so both reach the same handler. Three rules: only a `Type::Destination` event is a command, because the dispatcher also carries the raw keypress the mapping came from; a name with no handler is logged rather than dropped, so an untranslated menu item reports itself; and a duplicate registration is refused rather than overwriting. `data/mappings.json` names gui.xml's commands — `create::poly::cube`, `select::mask::object`, `view::show::grid` — bar `ui::quit` and `edit::undo`/`edit::redo`, which gui.xml has no name for. **gui.xml has 79 distinct command strings**, 73 of them on a menu; the 51 that ADR-0017 and the survey give is a miscount. **`Tool` stays in the editor**: no game holds a gesture open across events.
-
-**Undo is a stack of records of what has already happened.** Per [ADR-0016](docs/adr/0016-undo-records-what-has-already-happened.md), `v3d::editor::Command` has `undo()`, `redo()` and `name()` and no `execute()` — `CommandStack::push` never applies anything, because a drag has already written the transform hundreds of times by the time a gesture ends. **One gesture is one command**: `TransformTool` snapshots the placement when a handle is grabbed and commits on every path out of the drag, a release and a mode change alike. `CreateCommand` and `TransformCommand` are the two, both holding the mesh rather than its id so that a mesh removed by an undo comes back with the id a deeper command still names, and a create's first do goes through `redo()`. Selection is not history. z and y step the history, unmodified, because a mapping has no chords and control is the truck camera modifier.
-
-**Multiple viewports are several passes over one frame.** The editor's `Renderer` builds one `Pass` per `ViewPort`, each carrying that view's pixel region as its viewport and scissor, its own camera at set 0, and its own clear of both attachments within that region. Nothing in `Frame`, `Pass`, `Recorder` or `FrameUniforms` had to change for it — `FrameUniforms` already kept a camera slot per pass per frame in flight. `data/layout.json` is what decides the split, translated from rigel's `gui.xml` viewgroup tree.
-
-**`v3d::type::Camera` builds Vulkan clip space** — y down, depth zero at the near plane and one at the far one — and the camera looks along its own `direction`, which is +z of the basis its three normals define. See [ADR-0012](docs/adr/0012-camera-builds-vulkan-clip-space.md). It built OpenGL projections until 2026-09-01, which nothing had noticed because nothing had ever drawn through the class; voxel carries a second camera of its own that had already made the same choice privately. `Camera::project()` and `::unproject()` are inverses of each other, which picking will need and which they were not before.
-
-**Voxel is ported, and no app calls OpenGL any more.** As of 2026-09-01 it runs and draws terrain through Vulkan: a depth tested, sorted scene pass of its own pipeline built with `vulkan::PipelineBuilder`, one `DrawItem` per meshed chunk over a `vulkan::Mesh` the app owns per [ADR-0010](docs/adr/0010-meshes-are-owned-by-the-app.md), and a second painter ordered pass of batched quads for the debug overlay and the game menu. Its shaders are `voxel/shaders/voxel.{vert,frag}`, embedded by `v3d_add_shader`, and are the first in the tree to read set 0. See [docs/audits/completed/VoxelSurvey.md](docs/audits/completed/VoxelSurvey.md) for what it was, and the phase 5 groups in [docs/plans/completed/Modernization.md](docs/plans/completed/Modernization.md) for what changed.
-
-**Odyssey runs and is ported.** As of 2026-09-01 it opens a 1280x768 window and draws one 64x64 sprite through the batched quad, at the tile its entity's `PositionFixed2D` names. That is the whole of what it draws: `Movement::tick` returns true and does nothing, and `Sprite`, `SpriteSheet`, `Actor`, `Tile` and `ui::Screen` are empty declarations. It was the last consumer of the `SDL_Renderer` path, so porting it is what let that tree and `api/gl` go.
-
-**Images are top down, and `image::Image` row 0 is the top of the picture.** Every consumer downstream — the canvas, the texture factory, the atlas packer — reads them that way. The png reader and writer both reversed their rows until 2026-09-01, which cancelled out on a round trip and handed every *displayed* png an upside down picture; the tga writer left its origin bit clear, so its own reader turned a file it had just written over. `imagewriter_orientation_test` in [api/image/tests/ImageWriterTest.cxx](api/image/tests/ImageWriterTest.cxx) pins both, with rows that differ — the older uniform test image could not see a flip. **The jpeg pair was fixed on 2026-09-04** and is pinned by `imagewriter_jpeg_orientation_test`, which goes through libjpeg directly on one side of each check: a round trip cannot see this fault, because a writer and a reader that both reverse their rows return the image they were given. That is the trap to remember before covering an orientation with a round trip. The jpeg reader also asks the decoder for RGB whatever the file holds, because it builds a 24 bit `Image` and copies three bytes a pixel: a greyscale jpeg decoded in its own colour space gives one component per pixel, and the third byte of the last pixel is off the end of the scanline.
-
-**The Khronos validation layer is enabled when it is installed**, and `vulkan::Instance` routes its warnings and errors through the logger. Without that messenger a loaded layer is silent, which looks exactly like a clean run — so treat any earlier claim of "validation clean" that predates it as unverified.
-
-**ECS.** entt. The `registry` lives on the app's `Controller` and is passed into the render engine as a raw `entt::registry*`. [docs/ECSDesign.md](docs/ECSDesign.md) describes the intended design, which is largely aspirational.
+Three things the ADRs do not say. **Multiple viewports are several passes over one frame** — the editor's
+`Renderer` builds one `Pass` per `ViewPort`, each with its own region, camera and clear; `data/layout.json`
+decides the split. **There is no file chooser in the tree**, so `project::load` and `project::save` work on
+one document at a fixed `project.json` beside the executable. **`Tool` stays in the editor**: no game holds
+a gesture open across events.
 
 ## Conventions
 
-- Headers are `.h`; implementations are `.cpp` **or** `.cxx`, mixed even within a directory (`api/render/realtime/*.cpp` alongside `api/render/realtime/vulkan/*.cxx`). Match the immediate neighbours.
-- Namespaces mirror the `api/` path: `v3d::asset`, `v3d::render::realtime`, `v3d::render::realtime::vulkan`. Closed with `};  // namespace <full name>` — the trailing semicolon is part of the style.
+- Headers are `.h`; implementations are `.cpp` **or** `.cxx`, mixed even within a directory
+  (`api/render/realtime/*.cpp` alongside `api/render/realtime/vulkan/*.cxx`). Match the immediate
+  neighbours.
+- Namespaces mirror the `api/` path: `v3d::asset`, `v3d::render::realtime`,
+  `v3d::render::realtime::vulkan`. Closed with `};  // namespace <full name>` — the trailing semicolon is
+  part of the style.
 - 4-space indent; access specifiers indented one space into the class body (` public:`, ` private:`).
 - `boost::shared_ptr` / `boost::make_shared` throughout, not the `std` equivalents.
 - Doc comments are `/** **/` blocks, frequently left empty above trivial members.
-- **Comments explain the code, not the change.** No history ("this used to", "the block that was here"), no
-  justification for why a commit exists, no roadmap for a later phase. Why a decision was made belongs in
-  [docs/adr/](docs/adr/) and what is coming belongs in [docs/plans/](docs/plans/) — a comment that repeats either
-  goes stale where nobody is looking. A non-obvious invariant, a trap, or a constraint the code satisfies is
-  exactly what a comment is for. Three habits that keep reappearing:
-  - **No provenance from another tree.** "which is rigel's rule", "what `v3dlibs` did here". `rigel/`, `v3dlibs/`,
-    `luxa/` and `vault/` are all deleted, so every such reference names something no reader can open. Keep the rule,
-    drop the attribution — [docs/audits/completed/RigelSurvey.md](docs/audits/completed/RigelSurvey.md) and the audits are where a port's lineage lives.
-  - **Cite an ADR, do not summarise it.** "per ADR-00NN" followed by a paragraph re-deriving the argument is the
-    restatement the ADR exists to prevent. Say which record settles it, then state only the invariant a caller has
-    to honour.
-  - **Plain register.** No conversational openers ("and ...", "so ..."), no personification ("one edge to anybody
-    selecting it"), no editorialising about how bad the alternative would be. A comment is a note to the next
-    reader, not narration.
-- Logging is spdlog through the wrapper: `logger_->get()->info("... {}", value)`. The older `LOG_INFO`/`LOG_ERROR` macros survive only in commented-out or non-compiling code — don't add new uses.
-- [.gitattributes](.gitattributes) enforces LF (`* text=auto eol=lf`). Editors that save CRLF turn a small change into a whole-file diff; strip the CRs rather than committing them.
+- Logging is spdlog through the wrapper: `logger_->get()->info("... {}", value)`. The older
+  `LOG_INFO`/`LOG_ERROR` macros survive only in commented-out or non-compiling code — don't add new uses.
+- [.gitattributes](.gitattributes) enforces LF (`* text=auto eol=lf`). Editors that save CRLF turn a small
+  change into a whole-file diff; strip the CRs rather than committing them.
+- **Comments explain the code, not the change.** No history ("this used to", "the block that was here"),
+  no justification for why a commit exists, no roadmap for a later phase. Why a decision was made belongs
+  in [docs/adr/](docs/adr/) and what is coming belongs in [docs/plans/](docs/plans/) — a comment that
+  repeats either goes stale where nobody is looking. A non-obvious invariant, a trap, or a constraint the
+  code satisfies is exactly what a comment is for. Three habits that keep reappearing:
+  - **No provenance from another tree.** "which is rigel's rule", "what `v3dlibs` did here". Those trees
+    are deleted, so every such reference names something no reader can open. Keep the rule, drop the
+    attribution — the audits are where a port's lineage lives.
+  - **Cite an ADR, do not summarise it.** "per ADR-00NN" followed by a paragraph re-deriving the argument
+    is the restatement the ADR exists to prevent. Say which record settles it, then state only the
+    invariant a caller has to honour.
+  - **Plain register.** No conversational openers ("and ...", "so ..."), no personification, no
+    editorialising about how bad the alternative would be. A comment is a note to the next reader, not
+    narration.
+
+**This file follows the same rule.** It describes the tree as it stands — not what changed, not when.
+Dated narrative and per-commit history belong in git, the ADRs and the plans.

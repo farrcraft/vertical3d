@@ -140,3 +140,9 @@ consumer is not a library.
   menu item that appears to work and does nothing. They go in when there is something to hide.
 - Nothing yet checks a menu file against `names()`. The listing exists for it; the check
   arrives with the menus.
+
+## Erratum
+
+The count of 51 commands used throughout this record is wrong. `gui.xml` holds **79 distinct command
+strings**, 73 of them reachable from a menu. The decision and its consequences are unaffected — only the
+arithmetic in the counts above is. The editor answers to 20 of them; the rest log themselves.
