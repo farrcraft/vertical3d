@@ -7,9 +7,20 @@ v3d_add_test(moya
 	"MicroPolygonGridTest.cxx"
 	"PlaneTest.cxx"
 	"PolygonTest.cxx"
+	"ReferenceTest.cxx"
 	"RenderContextTest.cxx"
 	"RendererTest.cxx"
 	"ReyesPrimitiveTest.cxx"
 	"VertexTest.cxx")
 
-target_link_libraries(v3dtest_moya PRIVATE v3dlib_moya v3dlib_type ${Boost_LIBRARIES})
+# the suite renders through image::Factory, which is where the png and jpeg codecs come in
+target_link_libraries(v3dtest_moya PRIVATE v3dlib_moya v3dlib_type ${Boost_LIBRARIES} ${PNG_LIBRARIES} JPEG::JPEG)
+
+# The reference image is resolved against the working directory, which v3d_add_test points at
+# the executable, so the fixtures have to sit beside it.
+add_custom_command(TARGET v3dtest_moya POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+		"${CMAKE_CURRENT_SOURCE_DIR}/data"
+		"$<TARGET_FILE_DIR:v3dtest_moya>/data"
+	COMMENT "Copying moya test fixtures"
+	VERBATIM)

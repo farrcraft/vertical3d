@@ -24,7 +24,7 @@ v3d::type::AABBox ReyesPrimitive::bound(void) const {
 void ReyesPrimitive::split(RenderContext & rc) {
 }
 
-bool ReyesPrimitive::dice(boost::shared_ptr<MicroPolygonGrid> grid, RenderContext & rc) {
+bool ReyesPrimitive::dice(boost::shared_ptr<MicroPolygonGrid> & grid, RenderContext & rc) {
     return false;
 }
 

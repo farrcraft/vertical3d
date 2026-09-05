@@ -10,9 +10,13 @@
 #include <string>
 #include <utility>
 
+#include <boost/make_shared.hpp>
+
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "Frustum.h"
+
+#include "../../api/image/Factory.h"
 
 #include "../../api/type/3dtypes.h"
 
@@ -85,11 +89,15 @@ namespace v3d::moya {
         /*
             screen transform maps to the canonical volume [-1, 1]
             raster transform scales to [0, xres] x [0, yres]
+
+            y is negated because raster space has its origin at the upper left corner and
+            counts downward, which is also the row order image::Image is in - without the
+            flip a correctly computed picture is written upside down.
         */
         float x = xres_ / 2.0f;
         float y = yres_ / 2.0f;
-        raster = glm::scale(raster, glm::vec3(x, y, 1.0f));
-        raster = glm::translate(raster, glm::vec3(1.0f, 1.0f, 1.0f));
+        raster = glm::scale(raster, glm::vec3(x, -y, 1.0f));
+        raster = glm::translate(raster, glm::vec3(1.0f, -1.0f, 1.0f));
 
         // mark the raster coordinate system
         coordinateSystems_["raster"] = raster;
@@ -378,8 +386,9 @@ namespace v3d::moya {
         }
 
         // bound = poly->bound();
-        glm::mat4x4 screen = coordinateSystems_["screen"];
-        screen *= coordinateSystems_["raster"];
+        // the raster transform reads the canonical volume the projection writes, so it goes
+        // on the left - a matrix applies to what is on its right
+        glm::mat4x4 screen = coordinateSystems_["raster"] * coordinateSystems_["screen"];
         bound_min = glm::vec3(screen * glm::vec4(bound_min, 1.0f));
         bound_max = glm::vec3(screen * glm::vec4(bound_max, 1.0f));
 
@@ -449,10 +458,35 @@ namespace v3d::moya {
         on the context. we might just output a rib file.
     */
     /*
-        perform the second reyes pass
+        maps to RiDisplay()
+    */
+    void RenderContext::display(const std::string & name, const std::string & type, const std::string & mode) {
+        displayName_ = name;
+        displayType_ = type;
+        displayMode_ = mode;
+    }
+
+    /*
+        perform the second reyes pass, then write what it sampled
     */
     void RenderContext::render() {
+        if (!frameBuffer_) {
+            return;
+        }
+
         frameBuffer_->render(*this);
+
+        // a display named nothing, or one that is not a file, leaves the samples in the
+        // planes rather than writing them
+        if (displayName_.empty() || displayType_ != "file") {
+            return;
+        }
+
+        // the alpha and depth modes need planes the hider does not write yet, so every mode
+        // is the three colour channels for now
+        auto logger = boost::make_shared<v3d::log::Logger>();
+        v3d::image::Factory factory(logger);
+        factory.write(displayName_, frameBuffer_->planes()->image(FrameBuffer::CHANNELS));
     }
 
 };  // namespace v3d::moya

@@ -98,13 +98,23 @@ int main(int argc, char *argv[]) {
     */
     RiBegin(RI_NULL);
     // RiBegin("poly.rib");
+    RiFormat(320, 240, 1.0f);
+    // the defaults are RI_EPSILON and RI_INFINITY, which leave the orthographic depth scale
+    // at about 2e-38 and collapse every z onto the near plane
+    RiClipping(1.0f, 100.0f);
+    if (!outfile.empty()) {
+        RiDisplay(const_cast<char*>(outfile.c_str()), RI_FILE, RI_RGB, RI_NULL);
+    }
     RiWorldBegin();
     std::string surfaceName("plastic");
     RiSurface(const_cast<char*>(surfaceName.c_str()));
-    RtPoint points[4] = { 0.0, 1.0, 0.0,
-                          0.0, 1.0, 1.0,
-                          0.0, 0.0, 1.0,
-                          0.0, 0.0, 0.0 };
+    // a square facing the camera. The orthographic screen window is [-1, 1] on both axes, so
+    // this covers the middle of the frame; a quad with one x at every vertex is edge on and
+    // projects to a line
+    RtPoint points[4] = { -0.6, -0.6, 5.0,
+                           0.6, -0.6, 5.0,
+                           0.6,  0.6, 5.0,
+                          -0.6,  0.6, 5.0 };
     RiPolygon(4, RI_P, (RtPointer)points, RI_NULL);
     /*
         gourad shaded:

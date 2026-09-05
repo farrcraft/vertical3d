@@ -7,25 +7,35 @@
 
 #include "Bucket.h"
 
+#include "../../api/render/offline/FrameBuffer.h"
+
 #include <vector>
-// #include <boost/multi_array.hpp>
 
 namespace v3d::moya {
     /*
-        a framebuffer provides a stack of image planes.
-        each image plane is a 2d grid of float values. the width and height of
-        the grid corresponds to the image or screen dimensions.
-        each plane in the buffer represents a color channel (separate planes for
-        r, g, b, a or a single monochrome/bitmap plane) or some other float
-        data associated with a pixel coordinate (such as a z-depth).
-    
-        color values are represented as floating point numbers in the range [0.0 .. 1.0] 
-        instead of unsigned integers so the same structure can be used for the z buffer.
-    
-        the number of planes is determined in part by calls to RiDisplay()
+        the screen space to be rendered is broken down into a grid of tiles (buckets).
+        the framebuffer owns that grid, and the stack of float image planes the buckets
+        write their samples into.
     */
     class FrameBuffer {
      public:
+        /**
+         * The planes a render writes. The colour channels lead because the image conversion
+         * takes the leading planes as the picture; the depth follows them, and is the
+         * renderer's own rather than an alpha - written into one it would be a wrong picture
+         * that looks like a shading fault.
+         */
+        enum Plane {
+            RED = 0,
+            GREEN = 1,
+            BLUE = 2,
+            DEPTH = 3
+        };
+        /**
+         * How many of the planes are the picture.
+         */
+        static const unsigned int CHANNELS = 3;
+
         FrameBuffer(unsigned int bucketSize[2], unsigned int imageSize[2]);
         ~FrameBuffer();
 
@@ -41,22 +51,21 @@ namespace v3d::moya {
          * How many primitives are waiting across every bucket.
          */
         size_t primitiveCount(void) const;
+        /**
+         * The image planes the hider writes samples into, indexed by Plane.
+         */
+        boost::shared_ptr<v3d::render::offline::FrameBuffer> planes(void) const;
         void addPrimitive(const boost::shared_ptr<ReyesPrimitive> & primitive, const v3d::type::AABBox & bound);
         void render(RenderContext & rc);
 
-        // typedef boost::multi_array<Bucket, 2> BucketGrid;
         typedef std::vector< std::vector<Bucket> > BucketGrid;
 
      protected:
         void allocate(void);
 
      private:
-        // plane_t plane(boost::extents[640][480]);
-        // typedef boost::multi_array<float, 2> plane_t;
-        typedef std::vector< std::vector<float> > plane_t;
-
         BucketGrid buckets_;
-        std::vector<plane_t> planes_;
+        boost::shared_ptr<v3d::render::offline::FrameBuffer> planes_;
         unsigned int bucketSize_[2];
         unsigned int imageSize_[2];
         unsigned int bucketColumns_ = 0;

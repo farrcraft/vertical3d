@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <limits>
 #include <vector>
 
 #include "ReyesPrimitive.h"
@@ -41,6 +42,15 @@ void FrameBuffer::allocate() {
         }
         buckets_.push_back(vb);
     }
+
+    planes_.reset(new v3d::render::offline::FrameBuffer(imageSize_[0], imageSize_[1], DEPTH + 1));
+    // a sample wins its pixel by being nearer than what the depth plane already holds, so an
+    // untouched pixel has to start further away than anything the hider can produce
+    planes_->clear(DEPTH, std::numeric_limits<float>::max());
+}
+
+boost::shared_ptr<v3d::render::offline::FrameBuffer> FrameBuffer::planes() const {
+    return planes_;
 }
 
 unsigned int FrameBuffer::bucketColumns() const {
@@ -94,10 +104,19 @@ void FrameBuffer::addPrimitive(const boost::shared_ptr<ReyesPrimitive> & primiti
 void FrameBuffer::render(RenderContext & rc) {
     /*
         go through the buckets and render their contents
+
+        A split hands its pieces back to the first pass, which buckets each by where it lands
+        rather than by where the sweep has reached, so a piece can land behind it. Sweeping
+        again picks those up; a primitive already diced yields no further grid, so a repeated
+        sweep costs a pass over the grid and nothing else. Splitting terminates, so this does.
     */
-    for (unsigned int i = 0; i < bucketColumns_; i++) {
-        for (unsigned int j = 0; j < bucketRows_; j++) {
-            buckets_[i][j].render(rc);
+    bool split = true;
+    while (split) {
+        split = false;
+        for (unsigned int i = 0; i < bucketColumns_; i++) {
+            for (unsigned int j = 0; j < bucketRows_; j++) {
+                split = buckets_[i][j].render(rc) || split;
+            }
         }
     }
 }

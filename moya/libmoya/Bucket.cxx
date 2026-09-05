@@ -5,10 +5,91 @@
 
 #include "Bucket.h"
 
-#include <iostream>
+#include <algorithm>
+#include <cmath>
 #include <vector>
 
+#include "FrameBuffer.h"
+#include "RenderContext.h"
+
 namespace v3d::moya {
+
+    namespace {
+
+        // one constant colour for every surface: there is no material and no light
+        const glm::vec3 SURFACE_COLOR(1.0f, 1.0f, 1.0f);
+
+        void shade(MicroPolygonGrid & grid) {
+            for (unsigned int i = 0; i < grid.size(); i++) {
+                for (unsigned int j = 0; j < grid.size(); j++) {
+                    Vertex vert = grid.vertex(i, j);
+                    vert.color(SURFACE_COLOR);
+                    grid.addVertex(vert, i, j);
+                }
+            }
+        }
+
+        /*
+            One sample per pixel centre, no pixel filter: each micropolygon is bounded in
+            raster space and every pixel centre the bound covers takes its colour, where its
+            depth beats what the plane already holds.
+        */
+        void hide(MicroPolygonGrid & grid, RenderContext & rc) {
+            boost::shared_ptr<FrameBuffer> framebuffer = rc.framebuffer();
+            boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = framebuffer->planes();
+
+            // eye space to raster is the projection and then the scale into pixels, in that
+            // order - a matrix applies to what is on its right
+            glm::mat4x4 toRaster = rc.coordinateSystem("raster") * rc.coordinateSystem("screen");
+
+            const int width = static_cast<int>(planes->width());
+            const int height = static_cast<int>(planes->height());
+
+            for (unsigned int i = 0; i + 1 < grid.size(); i++) {
+                for (unsigned int j = 0; j + 1 < grid.size(); j++) {
+                    MicroPolygon poly = grid.microPolygon(i, j);
+
+                    glm::vec3 corner = glm::vec3(toRaster * glm::vec4(poly[0].point(), 1.0f));
+                    glm::vec3 min = corner;
+                    glm::vec3 max = corner;
+                    float depth = corner.z;
+                    for (unsigned int k = 1; k < 4; k++) {
+                        corner = glm::vec3(toRaster * glm::vec4(poly[k].point(), 1.0f));
+                        min = glm::min(min, corner);
+                        max = glm::max(max, corner);
+                        depth += corner.z;
+                    }
+                    // a micropolygon is smaller than a pixel, so one depth for the whole of
+                    // it is as fine as the sampling can tell
+                    depth /= 4.0f;
+
+                    // a pixel is sampled at its centre, so column c is covered when the bound
+                    // spans c + 0.5
+                    int left = std::max(0, static_cast<int>(std::ceil(min.x - 0.5f)));
+                    int right = std::min(width - 1, static_cast<int>(std::floor(max.x - 0.5f)));
+                    int top = std::max(0, static_cast<int>(std::ceil(min.y - 0.5f)));
+                    int bottom = std::min(height - 1, static_cast<int>(std::floor(max.y - 0.5f)));
+
+                    const glm::vec3 color = poly[0].color();
+                    for (int row = top; row <= bottom; row++) {
+                        for (int column = left; column <= right; column++) {
+                            unsigned int x = static_cast<unsigned int>(column);
+                            unsigned int y = static_cast<unsigned int>(row);
+                            if (depth >= planes->value(FrameBuffer::DEPTH, x, y)) {
+                                continue;
+                            }
+                            planes->value(FrameBuffer::RED, x, y, color.r);
+                            planes->value(FrameBuffer::GREEN, x, y, color.g);
+                            planes->value(FrameBuffer::BLUE, x, y, color.b);
+                            planes->value(FrameBuffer::DEPTH, x, y, depth);
+                        }
+                    }
+                }
+            }
+        }
+
+    };  // namespace
+
     Bucket::Bucket() {
     }
 
@@ -23,33 +104,19 @@ namespace v3d::moya {
         return primitives_.size();
     }
 
-    void Bucket::render(RenderContext & rc) {
+    bool Bucket::render(RenderContext & rc) {
+        bool split = false;
         // iterate over each primitive in the bucket
         // splitting resubmits pieces through the first pass, which may append to this same
         // bucket, so the loop reads the size each time around rather than caching it
         for (size_t i = 0; i < primitives_.size(); i++) {
             // a copy, because the entry it came from is erased below while it is still in use
             boost::shared_ptr<ReyesPrimitive> prim = primitives_[i];
-            // if primitive can be diced
             if (prim->diceable()) {
-                // dice primitive into grid of micropolygons
                 boost::shared_ptr<MicroPolygonGrid> grid;
                 while (prim->dice(grid, rc)) {
-                    // compute normals and tangent vectors for micropolygons in grid
-                    // shade micropolygons in grid
-                    // break grid into micropolygons
-                    // for each micropolygon
-                        // bound micropolygon in eye space
-                        // if micropolygon outside hither-yon range, cull it
-                        // convert micropolygon to screen space
-                        // if micropolygon overlaps other buckets
-                            // put micropolygon in each bucket it overlaps
-                            // (even though micropolygons are less than 1 pixel, the grid it is in might overlap another bucket)
-                        // for each sample point inside the screen space bound
-                            // if sample point is outside micropolygon
-                                // calculate z of micropolygon at sample point by interpolation
-                                // if z at sample point less than z already in buffer
-                                    // replace sample in buffer with this sample
+                    shade(*grid);
+                    hide(*grid, rc);
                 }
             } else {
                 // split primitive into smaller (possibly diceable) primitives
@@ -59,10 +126,10 @@ namespace v3d::moya {
                 prim->split(rc);
                 primitives_.erase(primitives_.begin() + i);
                 i--;
+                split = true;
             }
         }
-        // filter visible sample hits to produce pixels
-        // output pixels
+        return split;
     }
 
 };  // namespace v3d::moya

@@ -1,28 +1,28 @@
 # Offline Rendering
 
-Two of the applications in this tree are offline renderers. `talyn` is an intended raytracer;
-`moya` is a reyes renderer behind the RenderMan interface. Between them they hold about 4,500
-lines, they both build and both run, and **neither has ever produced a picture of anything**.
-talyn writes a black PNG of the size the scene file asked for. moya writes no file at all.
+Two of the applications in this tree are offline renderers. `talyn` is a raytracer; `moya` is a
+reyes renderer behind the RenderMan interface. Between them they hold about 4,500 lines, they
+both build, and **as of 2026-09-05 both produce a picture whose pixels came from geometry** —
+talyn a flat shaded triangle, moya a flat shaded polygon, each compared against a committed
+reference in ctest.
 
-That is the shape of the problem: in both, the scaffolding around the renderer is further
-along than the renderer. talyn has a command line, a scene file reader and an image writer
-with a comment where the ray tracing goes. moya has the whole RenderMan API surface, a context
-stack, a coordinate system stack and the entire first reyes pass, with a comment where the
-second pass goes. Each is a few hundred lines of actual rendering away from being a renderer,
-and each has a few hundred lines of scaffolding that will need reworking before those lines
-can be written.
+Before that, neither had ever rendered anything: talyn wrote a black PNG of the size the scene
+file asked for and moya wrote no file at all. That was the shape of the problem — in both, the
+scaffolding around the renderer was further along than the renderer. What is left of it is a
+scene each renderer can only be handed in code, one constant colour for every surface, and one
+sample per pixel.
 
-State as of 2026-09-04. Neither renderer is scheduled; per
-[the modernization plan's conclusion](../plans/completed/Modernization.md) they are deliberately
-kept out of the realtime work, and this roadmap does not change that.
+State as of 2026-09-05, with phase 1 closed the same day as
+[its own plan](../plans/completed/OfflineRenderingPhase1.md). Nothing beyond that phase is
+scheduled; per [the modernization plan's conclusion](../plans/completed/Modernization.md) both
+renderers are deliberately kept out of the realtime work, and this roadmap does not change that.
 
 ## What exists
 
 ### moya — the reyes renderer
 
 `moya/libmoya` builds as `v3dlib_moya`, with `moya/moya/moya.cxx` as a driver that calls the RI
-C API directly and `moya/tests/` as a suite of 39 cases that pass.
+C API directly and `moya/tests/` as a suite of 43 cases that pass.
 
 The **RenderMan interface** is declared in full — every entry point in
 [RenderMan.h](../../moya/libmoya/RenderMan.h) has a definition, which is what RI compliance
@@ -40,43 +40,42 @@ it undiceable if it is larger than a grid, transforms a diceable polygon's verti
 and files it in the bucket its upper left corner lands in. The supporting maths — `Plane`,
 `Frustum` plane extraction, `AABBox` classification, the Sutherland-Hodgman clip — is written.
 
-The **second pass is half a comment**. [`Bucket::render`](../../moya/libmoya/Bucket.cxx)
-splits: a primitive too large for one grid is subdivided and its pieces go back through the
-first pass until each fits, which as of 2026-09-04 works and is tested. Everything after that
-is fourteen lines of pseudocode describing dicing, shading, bounding, culling, bucket overlap,
-sampling and hiding, and none of it is code. `Polygon::dice` reaches the point of having the
-polygon's raster bound and returns `false`. `MicroPolygon` and `MicroPolygonGrid` are
-containers with no producer. `FrameBuffer::planes_` — the float image planes the whole design
-is built around — is declared, never allocated and never written. Nothing converts a
-framebuffer to an image, `v3dlib_moya` links no `v3dlib_image`, and the driver's `--output` is
-parsed and dropped.
+The **second pass** dices, shades and hides.
+[`Bucket::render`](../../moya/libmoya/Bucket.cxx) splits a primitive too large for one grid and
+its pieces go back through the first pass until each fits; a primitive that fits is diced into
+one `MicroPolygonGrid` by bilinear interpolation over its first four vertices, shaded from one
+constant, and sampled at one pixel centre per micropolygon against a depth plane. `RiDisplay`
+records a name and a mode, and `RenderContext::render` writes the colour planes through
+`image::Factory` once the buckets are done.
 
 So the driver runs, prints Pixar's copyright, builds a context, buckets a polygon, subdivides
-whatever is too big, finds nothing it can dice, and exits 0.
+whatever is too big, dices the rest, and writes a white rectangle on black.
+
+What the second pass does not do: no shading beyond the constant, no pixel filter, no
+supersampling, no bucket overlap — a grid is sampled wherever it lands rather than being handed
+to each bucket it touches — and no more than four vertices per polygon.
 
 ### talyn — the raytracer
 
-`talyn/src` builds one executable. There is no library, no `tests/` directory and no ctest
-entry.
+`talyn/libtalyn` builds `v3dlib_talyn`, with `talyn/talyn/talyn.cxx` as a driver and
+`talyn/tests/` as a suite, mirroring moya per
+[ADR-0022](../adr/0022-offline-rendering-shares-an-api-library.md).
 
 `main` parses eight options with `program_options`, dispatches on the file extension, and
-drives a `RenderContext` and a `FrameBuffer` to an image written through `image::Factory` —
-`--outfile foo.png` works, and the format comes from the extension, so bmp, jpeg, png and tga
-are all reachable. The [RIBReader](../../talyn/src/RIBReader.cxx) reads whitespace-separated
-tokens and switches on twenty-odd of them. **Exactly one has a body**: `Format` reads three
-more tokens and sizes the framebuffer. Every other request, geometry included, is recognised
-and discarded. The `FrameBuffer` is a stack of float planes with a conversion to
-`image::Image`.
+drives a `RenderContext` to an image written through `image::Factory` — `--outfile foo.png`
+works, and the format comes from the extension, so bmp, jpeg, png and tga are all reachable.
+The [RIBReader](../../talyn/libtalyn/RIBReader.cxx) reads whitespace-separated tokens and
+switches on twenty-odd of them. **Exactly one has a body**: `Format` reads three more tokens
+and sizes the framebuffer. Every other request, geometry included, is recognised and discarded.
 
-[`RenderContext::render`](../../talyn/src/RenderContext.cxx) is a 30-line comment giving the
-recursive ray tracing algorithm — primary rays, nearest hit, shadow rays with attenuation,
-reflection and refraction at depth. There is no scene, no camera, no primitive, no ray and no
-intersection anywhere in the tree's talyn.
+[`RenderContext::render`](../../talyn/libtalyn/RenderContext.cxx) casts a primary ray through
+every pixel centre, takes the nearest triangle hit and writes that triangle's flat colour or
+the scene background. The 30-line comment above it gives the recursive algorithm the later
+phases fill in — shadow rays with attenuation, reflection and refraction at depth.
 
-The header of [talyn.cxx](../../talyn/src/talyn.cxx) carries a 35-item wish list running from
-"base rendering algorithm" to radiosity and photon mapping, and a design note proposing that
-talyn eventually become moya's raytracing component, reached through a shading language's
-`trace()`. None of that list is started. The note is a live question and is picked up below.
+`talyn::Scene` is a camera, a list of flat coloured triangles and a background, and it can only
+be built in code: the reader has no route to geometry, so **the driver still writes a
+background-only image**. talyn's picture comes from its suite until the RIB reader of phase 2.
 
 ### What the api already provides
 
@@ -88,8 +87,10 @@ Neither renderer needs to write intersection maths or camera maths from scratch.
   exactly what a primary ray and a triangle-mesh raytracer need.
 * **[`type::Camera`](../../api/type/Camera.h)** builds the matrices and `project()`/`unproject()`
   are inverses ([ADR-0012](../adr/0012-camera-builds-vulkan-clip-space.md)), so a primary ray
-  through a pixel is an unproject and a subtract — with the caveat that it builds *Vulkan* clip
-  space, which is a decision an offline renderer inherits rather than needs.
+  through a pixel is an unproject and a subtract. It builds *Vulkan* clip space, which an
+  offline renderer has no reason to want; by
+  [ADR-0024](../adr/0024-api-type-serves-both-renderers.md) that convention becomes a parameter
+  rather than a reason for a second camera.
 * **`api/image`** reads and writes bmp, jpeg, png and tga, and `Image` row 0 is the top of the
   picture, which is what both framebuffers assume.
 * **`api/brep`, `api/dag`, `api/asset`, `api/log`, `api/config`** are all free of realtime
@@ -139,8 +140,11 @@ unconditionally.
 
 ### Phase 1 — each renderer computes a pixel
 
-Everything else is blocked on this, for a reason that is not obvious: **a renderer that
-computes nothing and a renderer that works are indistinguishable from the outside today**.
+**Done, 2026-09-05.** [OfflineRenderingPhase1.md](../plans/completed/OfflineRenderingPhase1.md) is
+the plan, and carries the step ordering and what landed; what follows is why the phase was first.
+
+Everything else was blocked on this, for a reason that is not obvious: **a renderer that
+computes nothing and a renderer that works are indistinguishable from the outside**.
 talyn's black PNG is what a correct render of an empty scene looks like. moya's clean exit is
 what a correct render of a scene it culled entirely looks like. Until each produces a pixel
 whose value came from geometry, there is nothing to write a test against and no way to tell a
@@ -157,25 +161,29 @@ the picture will not be the one that was computed.
 **moya** — dicing, then output. `dice` dispatches and the grid takes an extent, so what is
 left is filling that grid from a polygon, then allocating `planes_`, writing a flat colour per
 micropolygon, and adding the framebuffer-to-`image::Image` conversion talyn already has. That
-last piece is what makes `--output` mean something, and means `v3dlib_moya` grows a
-`v3dlib_image` link.
+last piece is what makes `--output` mean something, and by
+[ADR-0022](../adr/0022-offline-rendering-shares-an-api-library.md) it is written once in
+`api/render/offline` rather than copied across.
 
 ### Phase 2 — a scene worth rendering
 
-Blocked by phase 1: parsing a scene format nobody can render is unverifiable work.
+Blocked by phase 1, which is done: parsing a scene format nobody can render is unverifiable work.
 
-The RIB reader is in the wrong tree. talyn has a reader that recognises requests and acts on
-one of them; moya has the RI entry points the reader should be calling. One reader driving the
-RI API serves both, and it needs a real tokenizer first — quoted strings, bracketed arrays and
-typed parameter lists, none of which the current whitespace split handles.
+RIB is the format both renderers read, by
+[ADR-0023](../adr/0023-rib-is-the-offline-scene-description.md), and the reader is in the wrong
+tree for it: talyn has one that recognises requests and acts on one of them, and moya has the RI
+entry points it should be calling. The reader moves to `api/render/offline` and needs a real
+tokenizer first — quoted strings, bracketed arrays and typed parameter lists, none of which the
+current whitespace split handles, and a declaration table without which the first parameter that
+is not `P` has no type.
 
-The other route in is [the editor's project file](../adr/0018-a-project-is-json-and-stores-topology-verbatim.md).
-It is the only actual scene in the tree and the only source of meshes that is not hand-written
-RIB, and `api/asset` already parses JSON. It carries topology and a placement per mesh and
+The editor is the other end of the same decision. Its project file
+([ADR-0018](../adr/0018-a-project-is-json-and-stores-topology-verbatim.md)) stays the editor's
+own and gains a RIB export, one way. That export carries topology and a placement per mesh and
 **nothing else** — the editor's `Scene` has no lights and no materials, and `SceneVisitor` is
-written in anticipation of them rather than for them. So this route renders grey until the
-editor's scene model grows the things phase 3 needs, which makes it the slower of the two to
-first picture and the more valuable afterwards.
+written in anticipation of them rather than for them — so a scene out of the editor renders grey
+until the editor's scene model grows the things phase 3 needs. Hand-written RIB is what the
+renderers are fed until then, and is what a test fixture is either way.
 
 ### Phase 3 — light and surface
 
@@ -188,9 +196,8 @@ target because the tokens are already declared. Shadow rays are talyn's version 
 step, and are cheap once primary rays work.
 
 The large question sitting underneath this phase is whether shading is fixed-function C++ or a
-shading language. It is the difference between a weekend and a subsystem, it decides whether
-talyn's raytracing is reached through `trace()` from a shader, and it should not be answered by
-starting to write either one.
+shading language. It is the one thing this roadmap opened that is still open, and it is picked
+up below.
 
 ### Phase 4 — sampling and quality
 
@@ -212,29 +219,39 @@ built on principle.
 
 ### Phase 6 — whether they unify
 
-The question [talyn.cxx](../../talyn/src/talyn.cxx) asks: one renderer with two algorithms
-behind a common interface, or two renderers that share libraries. It cannot be answered before
-phase 3, because the answer depends on how much the two turn out to share once both actually
-shade something, and on whether shading is a language. Deliberately last.
+The question talyn's driver used to ask in a comment at the top of it, until phase 1 removed the
+comment: one renderer with two algorithms behind a common interface, or two renderers that share
+libraries. Sharing libraries is settled —
+[ADR-0022](../adr/0022-offline-rendering-shares-an-api-library.md) gives them one, and
+[ADR-0023](../adr/0023-rib-is-the-offline-scene-description.md) gives them one way in — so what
+is left is whether talyn becomes moya's raytracing component, reached from a shader's `trace()`.
+That cannot be answered before phase 3, because it depends on how much the two turn out to share
+once both actually shade something, and on whether shading is a language. Deliberately last.
 
-## What this needs decided
+## What is decided
 
-Each of these is hard to reverse and would otherwise be settled by whoever writes the code
-first. None is decided here — see [sdlc.md](../sdlc.md).
+Four of the five questions this roadmap opened are settled, on 2026-09-04, in three records —
+where the shared code lives and whether talyn stays an executable turned out to be one decision.
+The records hold the reasoning; these are pointers, not summaries.
 
-* **Where the shared offline code lives.** Two `FrameBuffer` classes exist with the same design
-  and the same doc comment, and two `RenderContext` classes. The candidates are an `api/`
-  library both consume, `v3dlib_moya` as the shared one with talyn depending on it, or leaving
-  them separate. talyn.cxx's own note proposes a third name, `libv3drender`.
-* **Which scene description is primary** — RIB, the editor's project JSON, or both through one
-  intermediate. This decides where the reader lives and what phase 2 costs.
-* **Whether the offline renderers use `type::Camera`.** It builds Vulkan clip space by
-  [ADR-0012](../adr/0012-camera-builds-vulkan-clip-space.md), and reyes has its own
-  well-specified screen and raster spaces that moya's `RenderContext` already half implements.
-  Reusing it inherits a convention chosen for the swapchain.
-* **Fixed-function shading or a shading language.** Phase 3, and it reaches into phase 6.
-* **Whether talyn stays an executable.** It has no library and no tests, and it cannot get
-  tests without one.
+* **Where the shared offline code lives** — `api/render/offline`, a second library beside
+  `v3dlib_render` that links neither Vulkan nor SDL, and talyn splits into a library, a driver
+  and a suite the way moya already is:
+  [ADR-0022](../adr/0022-offline-rendering-shares-an-api-library.md).
+* **Which scene description is primary** — RIB, read by one reader in that library; the editor's
+  project file stays the editor's and gains a one-way export:
+  [ADR-0023](../adr/0023-rib-is-the-offline-scene-description.md).
+* **Whether the offline renderers use `api/type`** — yes, and a convention only one renderer
+  needs becomes a parameter of the type rather than a second copy of it, starting with the clip
+  space `Camera` builds: [ADR-0024](../adr/0024-api-type-serves-both-renderers.md), which
+  narrows [ADR-0012](../adr/0012-camera-builds-vulkan-clip-space.md) without reversing it.
+
+## What this still needs decided
+
+**Fixed-function shading or a shading language.** Phase 3, and it reaches into phase 6: it
+decides whether talyn's raytracing is reached through `trace()` from a shader, which is the
+remaining half of whether the two renderers unify. It is the difference between a weekend and a
+subsystem, and it should not be answered by starting to write either one.
 
 ## Verification
 
@@ -246,14 +263,17 @@ recorder in `api/render` needs a window and a GPU and is waiting on
 an app and reading the validation log. Neither of these renderers touches a window, a device or
 a swapchain — `moya/tests/CMakeLists.txt` already says so, and its suite runs in CI now.
 
-So the moment phase 1 lands, a rendered image can be compared against a committed reference in
-ctest, on every push, with no GPU. That is the first real render regression test the repo has
-had, and it is the reason phase 1 is phase 1 rather than a detail of phase 2.
+Phase 1 collected on that. `talyn/tests/data/reference-triangle.png` and
+`moya/tests/data/reference-polygon.png` are committed, and `ctest -R talyn` and `ctest -R moya`
+each render a scene and compare it against one with `image::compare` — a tolerance rather than
+an equality, for float rounding across compilers. That is the first real render regression test
+the repo has had, and it is the reason phase 1 was phase 1 rather than a detail of phase 2.
 
-Two things stand in the way of collecting on that. talyn has no `tests/` directory, no library
-to link and no ctest entry, so its half of the work starts by giving it one. And a reference
-image comparison needs a tolerance rather than an equality — the tree has no image-comparison
-helper, and `api/image`'s suite is the natural place for one.
+**Both references are expected to be regenerated** as phases 3 to 5 change shading and sampling
+on purpose. What they buy is that a change which was *not* meant to alter the picture says so. A
+failing case, or a missing reference, writes what it rendered to `data_out/` beside the
+executable — chasing a CI failure without the actual image is most of the cost of a reference
+test.
 
 ## Not on this roadmap
 

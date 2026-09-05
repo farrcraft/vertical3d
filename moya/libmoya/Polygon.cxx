@@ -283,82 +283,54 @@ namespace v3d::moya {
 
     /*
         dice - turn the polygon into a grid of micropolygons
-        dicing is done in eye space
-        this means we can work in x, y space and not worry about z
+        dicing is done in eye space, so the grid is built in x, y, z and projected only when
+        the hider needs raster coordinates
     */
-    bool Polygon::dice(boost::shared_ptr<MicroPolygonGrid> grid, RenderContext & rc) {
+    bool Polygon::dice(boost::shared_ptr<MicroPolygonGrid> & grid, RenderContext & rc) {
+        // one grid covers the whole polygon at this sampling, so the call after the first is
+        // the end of the sequence rather than another grid
+        if (diced_ || vertices_.size() < 3) {
+            return false;
+        }
+
         /*
-            the poly should already be in (unprojected) eye space
-            we need to know how big our grid is
-            micropolygons will always be approximately 1/2 pixel per side in size
-            grids can be any size up to a maximum size
-            ideally the maximum grid size should be no larger than the bucket size
-            1 pixel = 4 micropolygons
-            the gridsize is stored as the number of micropolygons in the grid
-            does shading rate affect micropolygon size?
-            larger shading rate = coarser dicing / smaller = finer
-            grids may span multiple buckets
-            diceable polygons should already be split down to match the grid size
-         */
-         // grid dimensions are sizeXsize
-         // unsigned int size = static_cast<unsigned int>(sqrt(RenderEngine::instance().gridSize()));
-         // the eye space bound of the poly
-        v3d::type::AABBox bounds = bound();
-        glm::vec3 bound_min = bounds.min();
-        glm::vec3 bound_max = bounds.max();
-        /*
-            convert the eye space bound to screen space
+            the grid size is the number of micropolygons in a grid, and a grid of n vertices a
+            side is n - 1 of them a side. The first pass has already split anything whose
+            raster bound is larger than that, so one grid is enough for what reaches here.
         */
-        glm::mat4x4 screen = rc.coordinateSystem("screen");
-        screen *= rc.coordinateSystem("raster");
-        bound_min = glm::vec3(screen * glm::vec4(bound_min, 1.0f));
-        bound_max = glm::vec3(screen * glm::vec4(bound_max, 1.0f));
+        unsigned int across = static_cast<unsigned int>(sqrt(static_cast<float>(rc.gridSize())));
+        grid.reset(new MicroPolygonGrid(across + 1));
 
-        // screen transform might've flipped some components of min & max
-        if (bound_min[0] > bound_max[0]) {
-            std::swap(bound_min[0], bound_max[0]);
-        }
-        if (bound_min[1] > bound_max[1]) {
-            std::swap(bound_min[1], bound_max[1]);
-        }
-        if (bound_min[2] > bound_max[2]) {
-            std::swap(bound_min[2], bound_max[2]);
-        }
-
-        bounds.extents(bound_min, bound_max);
         /*
-            to build the grid do we:
-                iterate the vertices of the poly
-            or
-                iterate the points on the grid
-
-            we expect the input poly to be about the same size as a grid but what if
-            it is smaller or larger?
-
-            first:
-            use the first part of graham's scan algorithm:
-            http://softsurfer.com/Archive/algorithm_0109/algorithm_0109.htm
-            to arrange the vertices in order.
-            once they're arranged, the initial vertices make up the starting grid
-            then edges are subdivided and new edges are added until the edges
-            match the maximum micropolygon size
-
-            instead of starting out with a grid size of iXj we start out with a
-            single "micro"polygon equivalent to the initial polygon
-
-            micropolygons are quadrilaterals but the undiced polygons might have
-            more than 4 vertices. how do we handle this?
-
-            initialize a sizeXsize grid of booleans to false
-            iterate over the poly's vertices
-                put the vertex in the proper spot on the grid
-                mark the corresponding boolean grid point true
-            iterate over the boolean grid points that are still false
-                create a new vertex iterpolated between the existing vertices
+            bilinear interpolation over the polygon's first four vertices. A triangle's fourth
+            corner degenerates onto its third; a polygon with more than four vertices has the
+            rest dropped, which is a wrong grid for a concave one and is what triangulating
+            before dicing would fix.
         */
+        glm::vec3 corners[4] = {
+            vertices_[0].point(),
+            vertices_[1].point(),
+            vertices_[2].point(),
+            vertices_[vertices_.size() > 3 ? 3 : 2].point()
+        };
 
-        // don't continue dicing this polygon
-        return false;
+        const unsigned int size = grid->size();
+        const float span = static_cast<float>(size - 1);
+        for (unsigned int i = 0; i < size; i++) {
+            float u = static_cast<float>(i) / span;
+            for (unsigned int j = 0; j < size; j++) {
+                float w = static_cast<float>(j) / span;
+                Vertex vert;
+                vert.point(corners[0] * ((1.0f - u) * (1.0f - w)) +
+                           corners[1] * (u * (1.0f - w)) +
+                           corners[2] * (u * w) +
+                           corners[3] * ((1.0f - u) * w));
+                grid->addVertex(vert, i, j);
+            }
+        }
+
+        diced_ = true;
+        return true;
     }
 
 };  // namespace v3d::moya

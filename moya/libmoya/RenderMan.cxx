@@ -20,15 +20,17 @@ namespace {
 
 };  // namespace
 
-RtToken RI_FRAMEBUFFER,
-        RI_FILE;
-RtToken RI_RGB,
-        RI_RGBA,
-        RI_RGBZ,
-        RI_RGBAZ,
-        RI_A,
-        RI_Z,
-        RI_AZ;
+// the display type and mode tokens carry the strings RiDisplay compares against, so an
+// uninitialised one reaches the context as a null pointer and no output is selected
+RtToken RI_FRAMEBUFFER = const_cast<char*>("framebuffer"),
+        RI_FILE = const_cast<char*>("file");
+RtToken RI_RGB = const_cast<char*>("rgb"),
+        RI_RGBA = const_cast<char*>("rgba"),
+        RI_RGBZ = const_cast<char*>("rgbz"),
+        RI_RGBAZ = const_cast<char*>("rgbaz"),
+        RI_A = const_cast<char*>("a"),
+        RI_Z = const_cast<char*>("z"),
+        RI_AZ = const_cast<char*>("az");
 const RtToken RI_PERSPECTIVE = const_cast<char*>("perspective");
 const RtToken RI_ORTHOGRAPHIC = const_cast<char*>("orthographic");
 RtToken RI_HIDDEN,
@@ -403,6 +405,10 @@ display's coordinate system; by default the origin is set to (0,0). The default 
 device is renderer implementation-specific.
 */
 RtVoid RiDisplay(char *name, RtToken type, RtToken mode, ...) {
+    renderer.activeRenderContext().display(
+        name ? name : "",
+        type ? type : "",
+        mode ? mode : "");
 }
 
 RtVoid RiDisplayV(char *name, RtToken type, RtToken mode, RtInt n, RtToken tokens[], RtPointer parms[]) {

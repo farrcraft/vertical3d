@@ -28,16 +28,15 @@ namespace v3d::moya {
              * usefully split submits nothing and is dropped.
              */
             virtual void split(RenderContext & rc);
-            /*
-                turn a primitive into a micropolygon grid
-                i think this is supposed to return 1 or more grids as necessary
-                signature would be:
-                bool dice(MicroPolygonGridPtr & grid);
-                and it would return false until done, each time creating a new grid.
-                so you'd just do:
-                while (!primitive_ptr->dice(grid)) { do something with grid }
-            */
-            virtual bool dice(boost::shared_ptr<MicroPolygonGrid> grid, RenderContext & rc);
+            /**
+             * Turn the primitive into a micropolygon grid, one call per grid.
+             *
+             * A primitive may need more than one, so the caller loops - each call that
+             * produces a grid replaces what the reference holds and answers true, and the
+             * call after the last one answers false. A primitive that answered true without
+             * end would never leave that loop.
+             */
+            virtual bool dice(boost::shared_ptr<MicroPolygonGrid> & grid, RenderContext & rc);
             virtual void diceable(bool status);
 
      private:

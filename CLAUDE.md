@@ -30,7 +30,8 @@ earns an ADR, and what "verified" currently means. Decisions are in [docs/adr/](
 README; most of the first twelve cover the Vulkan rewrite and are worth reading before touching `api/render`.
 Plans live in [docs/plans/](docs/plans/), surveys and audits in [docs/audits/](docs/audits/), roadmaps for
 areas nobody has taken up in [docs/roadmap/](docs/roadmap/), and unphased work in
-[docs/TODO.md](docs/TODO.md). No plan is open.
+[docs/TODO.md](docs/TODO.md). No plan is open; phase 2 of
+[the offline rendering roadmap](docs/roadmap/OfflineRendering.md) is the next thing that would earn one.
 
 ## Build
 
@@ -74,7 +75,7 @@ ninja -C out/build/x64-Debug pong         # one target
   expects its artefacts under `vendor/libnoise/Debug`.
 - **Assets shared by more than one app live in the root [data/](data/)**, copied next to an executable by
   `v3d_add_shared_data(<target>)`. An app's own `data/` is copied by `v3d_add_app_data(<target>)`, but
-  **only tetris, voxel and odyssey call it** — everywhere else the `data/` under
+  **only tetris, voxel, odyssey and talyn call it** — everywhere else the `data/` under
   `out/build/<config>/<app>/` is a stale manual copy, so editing `pong/data/*.json` does not affect a run
   from the build tree until you copy it across.
 - `VCPKG_ROOT` in CMakeSettings.json has a doubled path segment and points nowhere. vcpkg works through
@@ -128,6 +129,11 @@ nothing else.
   `audio::Engine::initialize()` — those need a window, a GPU or a sound device, and wait on
   [ADR-0007](docs/adr/0007-ci-rendering-tests.md). `ctest -N` lists what exists; the test sources are the
   record of what each suite asserts.
+- **The moya and talyn suites each render against a committed PNG** — `moya/tests/data/` and
+  `talyn/tests/data/` — compared with `image::compare`, which reports the worst pixel and by how much
+  rather than only that two images differ. A failing case, or a missing reference, writes what it
+  rendered to `data_out/` beside the executable, which is also how a reference is regenerated when a
+  change is meant to alter the picture.
 - The api libraries are testable without a window because `ComponentRenderer` takes text measuring and
   writing as callbacks rather than depending on the font library, and because a strip is hit tested
   against the bounds a draw left on it per ADR-0019. Keep that seam when adding to `ui` or `render`.
@@ -158,6 +164,29 @@ same canvas. Lines are world space and read the pass camera at set 0.
 
 **ECS.** entt. The `registry` lives on the app's `Controller` and is passed into the render engine as a
 raw `entt::registry*`. [docs/ECSDesign.md](docs/ECSDesign.md) is largely aspirational.
+
+### The offline renderers
+
+`talyn` (raytracer) and `moya` (reyes, behind the RenderMan interface) are the *other* renderers, and
+share nothing with the realtime stack. Each is a library, a driver and a suite —
+`talyn/libtalyn` + `talyn/talyn` + `talyn/tests`, and the same three for moya — per
+[ADR-0022](docs/adr/0022-offline-rendering-shares-an-api-library.md), with what they share in
+`api/render/offline` (`v3dlib_render_offline`, namespace `v3d::render::offline`). That library **names
+neither Vulkan nor SDL**, and neither renderer touches a window, a device or a swapchain, which is what
+lets their suites render in CI where everything below the recorder in `api/render` cannot.
+[docs/roadmap/OfflineRendering.md](docs/roadmap/OfflineRendering.md) is the account of where they stand.
+
+- **`api/render/CMakeLists.txt` adds `offline` below its `set(CMAKE_CXX_FLAGS "/utf-8")` line**, where
+  `tests` already is. A subdirectory added above it does not inherit the flag.
+- **The plane count is not the channel count.** `offline::FrameBuffer` is a stack of float planes;
+  `image(channels)` takes the leading planes as the picture and leaves the rest to the renderer.
+  moya's are RGB plus a depth, named by `moya::FrameBuffer::Plane`; talyn's four are RGBA.
+- **moya's raster space counts y downward from the upper left**, which is RI's convention and
+  `image::Image`'s row order. `raster * screen` is the composition — a matrix applies to what is on its
+  right — and reversing either would write a correct render upside down or in eye units.
+- **A `RenderContext` writes a file only when `RiDisplay` named one with type `"file"`.** The RI token
+  table in `RenderMan.cxx` is `RtToken`, i.e. pointers, and most of it is still uninitialised — a null
+  one reaches the context as an empty string rather than as an error.
 
 ### Invariants that bite
 

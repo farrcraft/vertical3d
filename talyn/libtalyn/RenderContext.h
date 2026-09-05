@@ -7,7 +7,9 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "FrameBuffer.h"
+#include "Scene.h"
+
+#include "../../api/render/offline/FrameBuffer.h"
 
 namespace v3d::talyn {
     /**
@@ -27,12 +29,22 @@ namespace v3d::talyn {
             */
         void format(unsigned int width, unsigned int height);
 
+        /**
+         * Cast a primary ray through the centre of every pixel and write what it finds.
+         *
+         * The camera is given the framebuffer's size and its matrices are rebuilt here,
+         * since Camera::ray() reads the cached ones. Nothing is drawn without a format().
+         */
         void render();
 
-        boost::shared_ptr<FrameBuffer> framebuffer() const;
+        Scene & scene();
+        const Scene & scene() const;
+
+        boost::shared_ptr<v3d::render::offline::FrameBuffer> framebuffer() const;
 
      private:
-        boost::shared_ptr<FrameBuffer> framebuffer_;
+        boost::shared_ptr<v3d::render::offline::FrameBuffer> framebuffer_;
+        Scene scene_;
     };
 
 

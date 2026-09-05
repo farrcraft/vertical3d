@@ -17,4 +17,8 @@ add_library("v3dlib_moya"
 # empty, so every parameter of every unimplemented one is unreferenced. That is 500-odd C4100
 # reports at /W4 - enough to bury the rest of the tree's warnings - and naming the parameters
 # out would only have to be undone as each function grows a body.
-target_compile_options("v3dlib_moya" PRIVATE /wd4100)
+target_compile_options("v3dlib_moya" PRIVATE /wd4100 /EHsc /utf-8)
+
+# PUBLIC: the framebuffer is part of the render context.s interface, and the image factory
+# it writes through compiles Logger.h.
+target_link_libraries("v3dlib_moya" PUBLIC v3dlib_render_offline v3dlib_type)

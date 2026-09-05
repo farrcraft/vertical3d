@@ -30,3 +30,6 @@ old record's status and leave the file in place.
 | [0019](0019-the-ui-is-laid-out-by-what-draws-it.md) | Menu Bar — The UI Is Laid Out By What Draws It, And Hit Tested Against Those Bounds | accepted | 2026-09-02 |
 | [0020](0020-a-theme-is-data-and-the-app-resolves-its-images.md) | Themes — A Theme Is Data, And The App Resolves The Images It Names | accepted | 2026-09-04 |
 | [0021](0021-sdl3-mixer-replaces-soloud.md) | Audio Backend — SDL3_mixer Replaces SoLoud, And A Clip Resolves Through The Asset Manager | accepted | 2026-09-04 |
+| [0022](0022-offline-rendering-shares-an-api-library.md) | Offline Rendering Layout — Shared Code Lives In `api/render/offline`, And Each Renderer Is A Library With A Driver | accepted | 2026-09-04 |
+| [0023](0023-rib-is-the-offline-scene-description.md) | Offline Scene Description — RIB Is What Both Renderers Read, And The Editor Exports To It | accepted | 2026-09-04 |
+| [0024](0024-api-type-serves-both-renderers.md) | Shared Types — `api/type` Serves Both Renderers, And A Convention Is A Parameter Rather Than A Fork | accepted | 2026-09-04 |

@@ -22,6 +22,13 @@ namespace v3d::moya {
         glm::vec3 point(void) const;
         void point(const glm::vec3 & v);
 
+        /**
+         * The shaded colour. Set on every vertex of a grid rather than per micropolygon,
+         * since a micropolygon shares its corners with its neighbours.
+         */
+        glm::vec3 color(void) const;
+        void color(const glm::vec3 & c);
+
      private:
         // a grid is filled in by writing over default constructed vertices, so a vertex that
         // has not been written to yet has to read as one rather than as whatever was there

@@ -65,6 +65,14 @@ namespace v3d::moya {
 
             void projection(std::string name, float fov = 90.0);
 
+            /**
+                *	maps to RiDisplay()
+                *	names where the render's samples go once the buckets are done. A type of
+                *	"file" is what render() writes through image::Factory, which picks the
+                *	format from the name's extension.
+                */
+            void display(const std::string & name, const std::string & type, const std::string & mode);
+
             void pushTransform();
             void popTransform();
             /**
@@ -132,6 +140,11 @@ namespace v3d::moya {
             float frameAspect_ = 4.0f / 3.0f;
             float screen_[4] = { -4.0f / 3.0f, 4.0f / 3.0f, -1.0f, 1.0f };  // screen coordinates, after projection, of the area to be rendered
             std::string projection_ = "orthographic";
+            // display options. An empty name is no output, which is the RI default of a
+            // framebuffer this renderer does not have
+            std::string displayName_;
+            std::string displayType_;
+            std::string displayMode_;
             glm::mat4x4 transform_ = glm::mat4x4(1.0f);  // world to camera transformation matrix / current transformation matrix
             float near_ = 1.0e-10f;  // near clipping plane
             float far_ = 1.0e38f;  // far clipping plane

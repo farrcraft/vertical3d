@@ -1,5 +1,6 @@
 v3d_add_test(image
 	"TestMain.cxx"
+	"CompareTest.cxx"
 	"ImageTest.cxx"
 	"ImageReaderTest.cxx"
 	"ImageWriterTest.cxx"

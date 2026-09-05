@@ -104,6 +104,10 @@ it meant. The projection is the one place the two conventions meet.
   two functions build.
 - Two camera classes remain in the tree with the same convention and different interfaces —
   voxel's and the api's. That is a duplication to collapse later, not a decision made here.
+- The convention is no longer the class's only one.
+  [ADR-0024](0024-api-type-serves-both-renderers.md) makes it a parameter so the offline
+  renderers can use the same camera; Vulkan clip space stays the default and stays what the
+  realtime stack gets.
 
 ### Risks
 - Anything that stored a projection built by the old code and compares against a new one will

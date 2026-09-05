@@ -3,77 +3,11 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
-/**
- * TODO:
- * ( ) base rendering algorithm
- * ( ) render background color
- * ( ) input scene file format (xml-based)
- *		( ) read image dimensions from scene file
- *		( ) read scene background color from scene file
- * ( ) support renderman api
- * ( ) ray intersection algorithms
- * ( ) read sphere object from scene file
- * ( ) render sphere
- * ( ) render simple polygon
- * ( ) phong shading
- * ( ) blinn shading
- * ( ) gourad shading
- * ( ) texture mapping
- * ( ) render reflections
- * ( ) render shadows
- * ( ) render point light
- * ( ) render spot light
- * ( ) render fog
- * ( ) bump mapping
- * ( ) camera definitions
- * ( ) heightfields
- * ( ) photon mapping
- * ( ) specular highlighting
- * ( ) phong highlighting
- * ( ) radiosity
- * ( ) render plane
- * ( ) index of refraction
- * ( ) antialiasing
- * ( ) adaptive supersampling
- * ( ) spacial subdivisions
- * ( ) smooth triangles
- * ( ) transparency
- * ( ) lighting models
- * ( ) integrate with moya
- *
- * 
- * The intermediate goal for talyn is that it function as a standalone raytracer. It should eventually
- * become the raytracing component of moya. It may make sense to build up the core functionality of
- * moya at the same time. This could either be done in parallel or each could be built as a modular
- * rendering plugin. The common rendering code could be located in a libv3drender library.
- *
- * The immediate short term goal is to get a bare essential renderer running and properly functioning. 
- * It should be a fairly minimal implementation of the core raytracing algorithm. Once this is done, it 
- * should be possible to build up the same functionality in moya. This should probably be done in a completely
- * new branch from a fresh code base separate from the original moya project. Common code should be carved 
- * out of talyn then. Any useful pieces from the old moya code base can be rolled in as necessary.
- *
- * How the two renders are unified into the common rendering interface will depend partly on how different
- * their results are. One possibility is that ray tracing is supported only through the shading language's
- * ray tracing capabilities (e.g. the trace shader method).
- *
- * There are two different renderers: 
- *		talyn - raytracing algoritm
- *		moya - reyes algorithm
- * They are both available through the renderman interface.
- */
-
-/*
-http://fuzzyphoton.tripod.com/rtalgo.htm
-http://www.siggraph.org/education/materials/HyperGraph/raytrace/rtracewr.htm
-http://books.google.com/books?id=bBOxUmw83jUC&pg=PA160&lpg=PA160&dq=raytracing+algorithm&source=web&ots=BipKf5Qm84&sig=--x6d4rP-OPcALY81HXgtKubVR8&hl=en&sa=X&oi=book_result&resnum=7&ct=result#PPA160,M1
-*/
-
 #include <iostream>
 #include <string>
 
-#include "RIBReader.h"
-#include "RenderContext.h"
+#include "../libtalyn/RIBReader.h"
+#include "../libtalyn/RenderContext.h"
 
 #include "../../api/image/Factory.h"
 
@@ -191,13 +125,19 @@ int main(int argc, char * argv[]) {
     // actually do the rendering
     rc->render();
 
-    boost::shared_ptr<v3d::talyn::FrameBuffer> fb = rc->framebuffer();
+    boost::shared_ptr<v3d::render::offline::FrameBuffer> fb = rc->framebuffer();
+    if (!fb) {
+        // the framebuffer is allocated by the scene's Format request, and a scene that names
+        // no format leaves nothing to write
+        std::cout << "scene did not set an image format!" << std::endl;
+        exit(EXIT_FAILURE);
+    }
 
     if (!silent) {
         std::cout << "Rendering framebuffer..." << std::endl;
     }
     // framebuffer conversion to a writable image
-    boost::shared_ptr<v3d::image::Image> image = fb->render();
+    boost::shared_ptr<v3d::image::Image> image = fb->image(4);
     auto logger = boost::make_shared<v3d::log::Logger>();
     if (!outfile.empty()) {
         if (!silent) {
