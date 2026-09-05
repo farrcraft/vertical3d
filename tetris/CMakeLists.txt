@@ -32,6 +32,10 @@ target_link_libraries(tetris PRIVATE
 v3d_add_app_data(tetris)
 v3d_add_shared_data(tetris)
 
+# a console subsystem executable is given a console of its own alongside the app's window.
+# main is reached through the WinMain that SDL_main.h supplies.
+set_target_properties(tetris PROPERTIES WIN32_EXECUTABLE TRUE)
+
 target_compile_options(tetris PRIVATE /EHsc)
 
 set(CMAKE_CXX_FLAGS "/utf-8")

@@ -4,9 +4,13 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 
+#include <cstdlib>
+#include <exception>
 #include <string>
 
 #include "engine/Engine.h"
+
+#include "../api/log/Logger.h"
 
 /**
  **/
@@ -17,19 +21,24 @@ int main(int argc, char* argv[]) {
         boost::filesystem::path("/").make_preferred().string();
 
     odyssey::engine::Engine engine(appPath);
-    if (!engine.initialize()) {
-        return EXIT_FAILURE;
-    }
 
-    const bool ok = engine.eventLoop();
+    // the renderer reports what it cannot do by throwing, and an uncaught exception on
+    // windows is an abort dialog with no message in it. A windowed app has no console,
+    // so the log is the only place what went wrong is readable
+    int exitStatus = EXIT_SUCCESS;
+    try {
+        if (!engine.initialize() || !engine.eventLoop()) {
+            exitStatus = EXIT_FAILURE;
+        }
+    } catch (const std::exception& error) {
+        v3d::log::Logger logger;
+        logger.get()->error("odyssey failed: {}", error.what());
+        exitStatus = EXIT_FAILURE;
+    }
 
     if (!engine.shutdown()) {
-        return EXIT_FAILURE;
+        exitStatus = EXIT_FAILURE;
     }
 
-    if (!ok) {
-        return EXIT_FAILURE;
-    }
-
-    return EXIT_SUCCESS;
+    return exitStatus;
 }

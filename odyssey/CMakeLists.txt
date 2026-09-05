@@ -55,6 +55,10 @@ target_link_libraries(Odyssey
 
 v3d_add_app_data(Odyssey)
 
+# a console subsystem executable is given a console of its own alongside the app's window.
+# main is reached through the WinMain that SDL_main.h supplies.
+set_target_properties(Odyssey PROPERTIES WIN32_EXECUTABLE TRUE)
+
 target_compile_options(Odyssey PRIVATE /EHsc)
 
 set(CMAKE_CXX_FLAGS "/utf-8")

@@ -3,14 +3,18 @@
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
 **/
 
+// the WinMain a windows subsystem executable is entered through, which calls this main
+#include <SDL3/SDL_main.h>
+
 #include <cstdlib>
-#include <iostream>
 #include <string>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 
 #include "Controller.h"
+
+#include "../../api/log/Logger.h"
 
 
 int main(int argc, char *argv[]) {
@@ -35,8 +39,10 @@ int main(int argc, char *argv[]) {
         }
     } catch (const std::exception& e) {
         // an uncaught exception aborts into a message-less dialog, which says nothing about
-        // what went wrong and leaves the process alive
-        std::cerr << "Vertical|3D failed: " << e.what() << std::endl;
+        // what went wrong and leaves the process alive. A windowed app has no console, so
+        // the log is the only place this is readable
+        v3d::log::Logger logger;
+        logger.get()->error("Vertical|3D failed: {}", e.what());
         return EXIT_FAILURE;
     }
 

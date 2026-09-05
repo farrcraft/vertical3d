@@ -50,6 +50,10 @@ v3d_add_shader(voxel "shaders/voxel.frag")
 v3d_add_app_data(voxel)
 v3d_add_shared_data(voxel)
 
+# a console subsystem executable is given a console of its own alongside the app's window.
+# main is reached through the WinMain that SDL_main.h supplies.
+set_target_properties(voxel PROPERTIES WIN32_EXECUTABLE TRUE)
+
 target_compile_options(voxel PRIVATE /EHsc)
 
 set(CMAKE_CXX_FLAGS "/utf-8")
