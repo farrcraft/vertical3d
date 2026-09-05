@@ -2,11 +2,13 @@
 
 Code is linted against the [Google C++ style guide](https://google.github.io/styleguide/cppguide.html) using the Cpplint tool.
 
-> pip install cpplint
+> pip install cpplint==2.0.2
+
+Pinned, and CI installs the same version. This is the community fork rather than Google's original, and it renames checks between releases: a filter naming a category cpplint does not have suppresses nothing and reports nothing, so an unpinned bump can turn the tree red without a line of code changing. It is also what decides the namespace rule below, which is enforced rather than suppressed.
 
 This is the tool command for Visual Studio integration:
 
->  C:\Python311\python.exe c:\Python311\lib\site-packages\cpplint.py --linelength=180 --filter=-build/namespaces_literals --output=vs7 $(ItemPath)
+>  C:\Python312\python.exe C:\Python312\Lib\site-packages\cpplint.py --linelength=180 --filter=-build/namespaces_literals --output=vs7 $(ItemPath)
 
 To run the linter on everything from CLI:
 
