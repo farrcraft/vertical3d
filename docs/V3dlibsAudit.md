@@ -344,9 +344,11 @@ Separately — these are `api/` defects the audit turned up, and none of them ke
     `Menu::activate()` turned out not to need it.
 11. ~~Restore frame delta in `Engine::eventLoop` and pass it to `tick()`.~~ Done. Apps still
     have to *use* it; none does yet.
-12. Wire `event::Context::active`, or delete it, before the editor needs state scoping.
-    **Still open.** Phase 6 closed on 2026-09-04 without needing it, so the deadline this
-    item carried has passed and the field is still written and read by nothing.
+12. ~~Wire `event::Context::active`, or delete it, before the editor needs state scoping.~~
+    Deleted 2026-09-04. Phase 6 closed without needing it, so the need this item anticipated
+    did not arrive, and a flag nothing sets or reads is worse than no flag: it reads as
+    working scoping. `Context` is now a name. Recover it from `git show 5413f5c:api/event/Context.h`
+    if state scoping is ever wanted; what it would take is in "State scoping is a stub" above.
 13. ~~Fix `Event::str()`'s null-context dereference.~~ Done.
 
 Two more defects surfaced while fixing those, both in the same machinery and both fixed:

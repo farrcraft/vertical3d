@@ -14,14 +14,10 @@ namespace v3d::event {
      public:
         explicit Context(const std::string& name);
 
-        void active(bool state);
-
         std::string_view name() const;
-        bool active() const;
 
      private:
         std::string name_;
-        bool active_;
     };
 
 };  // namespace v3d::event

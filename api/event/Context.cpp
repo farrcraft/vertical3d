@@ -10,20 +10,11 @@
 namespace v3d::event {
 
     Context::Context(const std::string& name) :
-        name_(name),
-        active_(false) {
-    }
-
-    void Context::active(bool state) {
-        active_ = state;
+        name_(name) {
     }
 
     std::string_view Context::name() const {
         return name_;
-    }
-
-    bool Context::active() const {
-        return active_;
     }
 
 };  // namespace v3d::event

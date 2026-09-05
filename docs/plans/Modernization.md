@@ -124,8 +124,8 @@ every event, a `multimap` of bindings, an optional `"state"` and `"param"` per b
 `dispatch(context, name)` for invoke-by-name; `api/input` has a working mouse with
 `MouseState` and a `MouseMotion` event; `Engine::tick(delta)` supplies the frame delta again;
 and `config::BindingContext` is deleted in favour of `event::Mapper`. Still open:
-`event::Context::active` is written and read by nothing, which is the state scoping the
-editor will need.
+`event::Context::active` was written and read by nothing, and was deleted on 2026-09-04
+once the editor closed without needing state scoping.
 
 **Vulkan is the critical path, and as of 2026-08-31 a window clears to a colour.** Phase 2
 is done. `Context3D` now owns a `vulkan::Presenter` - command pool, per frame command
@@ -270,8 +270,8 @@ None of this is blocked. It shrinks the surface area everything else has to work
   defects in the same machinery had to go with them: `Mapper` used a `std::map`, so a second
   binding on one key silently replaced the first and pong's right paddle had never worked;
   and `Keyboard::handleEvent` cleared key state on the wrong condition. Still open from that
-  audit: `event::Context::active` is set and read by nothing, which is the state-scoping the
-  editor will need.
+  audit: `event::Context::active` was set and read by nothing, and went on 2026-09-04 once
+  the editor closed without needing state scoping.
 - ~~Drop `v3dlib_core` from tetris's link list.~~ Done 2026-08-31. Tetris's link list is
   still short in the other direction — it includes `api/engine`, `api/event`, `api/gl`,
   `api/log` and `api/render` while linking only `v3dlib_image` — which is part of the
@@ -1291,8 +1291,9 @@ done.
   `imagewriter_jpeg_orientation_test` pins them by encoding and decoding through libjpeg
   directly on one side of each check, because a round trip returns the image it was given
   whichever way round the pair agrees to store it.
-- `event::Context::active` is written and read by nothing. It is the state scoping the editor
-  was expected to need, from the v3dlibs audit.
+- ~~`event::Context::active` is written and read by nothing.~~ Deleted 2026-09-04. The editor
+  was expected to need it for state scoping and closed without it, and a flag nothing sets or
+  reads reads as working scoping to whoever finds it next.
 - Two items survive on `docs/TODO.md` that nobody has scoped: the `size_t` / `unsigned int`
   audit, and the build warnings.
 
