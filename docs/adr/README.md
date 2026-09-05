@@ -33,3 +33,4 @@ old record's status and leave the file in place.
 | [0022](0022-offline-rendering-shares-an-api-library.md) | Offline Rendering Layout — Shared Code Lives In `api/render/offline`, And Each Renderer Is A Library With A Driver | accepted | 2026-09-04 |
 | [0023](0023-rib-is-the-offline-scene-description.md) | Offline Scene Description — RIB Is What Both Renderers Read, And The Editor Exports To It | accepted | 2026-09-04 |
 | [0024](0024-api-type-serves-both-renderers.md) | Shared Types — `api/type` Serves Both Renderers, And A Convention Is A Parameter Rather Than A Fork | accepted | 2026-09-04 |
+| [0025](0025-the-rib-reader-dispatches-a-cpp-request-interface.md) | RIB Dispatch — The Reader Hands A Renderer C++ Requests With Typed Parameter Lists | accepted | 2026-09-05 |

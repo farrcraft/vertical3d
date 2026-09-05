@@ -3,6 +3,11 @@
 # suites run in CI where everything below the recorder in api/render cannot.
 add_library("v3dlib_render_offline"
 	"FrameBuffer.h" "FrameBuffer.cxx"
+	"RIBLexer.h" "RIBLexer.cxx"
+	"RIBDeclarations.h" "RIBDeclarations.cxx"
+	"RIBParameters.h" "RIBParameters.cxx"
+	"RIBHandler.h"
+	"RIBReader.h" "RIBReader.cxx"
 )
 
 # Workaround for a boost log ABI bug - https://github.com/microsoft/vcpkg/discussions/22762
