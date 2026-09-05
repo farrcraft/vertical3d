@@ -102,21 +102,22 @@ namespace v3d::image::reader {
         boost::shared_ptr<Image> img(new Image(cinfo.image_width, cinfo.image_height, 24));
         unsigned char* data = img->data();
 
-        // Process data
+        // Process data. A jpeg stores its scanlines top down and so does Image, so scanline
+        // i is row i of the buffer.
         JDIMENSION num_scanlines = 0;
-        int row = cinfo.output_height - 1;
+        unsigned int row = 0;
         unsigned int index = 0;
         while (cinfo.output_scanline < cinfo.output_height) {
             num_scanlines = jpeg_read_scanlines(&cinfo, buffer, buffer_height);
 
-            index = row * cinfo.output_components * cinfo.output_width;
+            index = row * 3 * cinfo.output_width;
             for (unsigned int i = 0; i < cinfo.output_width; i++) {
                 data[index] = buffer[0][(i * cinfo.output_components)];
                 data[index + 1] = buffer[0][(i * cinfo.output_components) + 1];
                 data[index + 2] = buffer[0][(i * cinfo.output_components) + 2];
                 index += 3;
             }
-            row--;
+            row++;
         }
 
         // Finish decompression and release memory.

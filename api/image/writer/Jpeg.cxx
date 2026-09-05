@@ -55,14 +55,14 @@ namespace v3d::image::writer {
         // Start compressor
         jpeg_start_compress(&cinfo, TRUE);
 
-        // Process data
+        // Process data. Both the file and Image are top down, so the scanlines go out in the
+        // order they are in.
         unsigned char* data = img->data();
         unsigned int num_scanlines = 1;
         unsigned int bytes_width = img->width() * static_cast<int>(img->format());
-        data += bytes_width * (cinfo.image_height - 1);
         while (cinfo.next_scanline < cinfo.image_height) {
             jpeg_write_scanlines(&cinfo, &data, num_scanlines);
-            data -= bytes_width;
+            data += bytes_width;
         }
 
         // Finish compression and release memory

@@ -3,7 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+// jpeglib.h names FILE in its stdio helpers without including stdio itself
+#include <stdio.h>
+#include <jpeglib.h>
+
 #include <string>
+#include <vector>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
@@ -99,4 +104,106 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_orientation_test, OutputDirectory) {
             BOOST_CHECK_EQUAL((*read)[4], 0xff);
         }
     }
+}
+
+/**
+ * The jpeg pair is pinned against libjpeg directly rather than against itself.
+ *
+ * A round trip cannot see an orientation fault: a writer and a reader that both reverse
+ * their rows return the image they were given. So the writer is checked by decoding what it
+ * produced, and the reader by handing it a file encoded here, each with the other half of
+ * the pair left out of it.
+ *
+ * The image is two bands rather than two rows because jpeg is lossy and its 8x8 blocks
+ * bleed across a boundary; a band per half of an 8 row image leaves the first and last
+ * scanlines unambiguous.
+ **/
+BOOST_FIXTURE_TEST_CASE(imagewriter_jpeg_orientation_test, OutputDirectory) {
+    const unsigned int side = 8;
+    boost::shared_ptr<v3d::image::Image> image =
+        boost::make_shared<v3d::image::Image>(side, side, 24);
+    for (unsigned int row = 0; row < side; ++row) {
+        for (unsigned int column = 0; column < side; ++column) {
+            const unsigned int pixel = (row * side + column) * 3;
+            // red over the top half, green over the bottom
+            (*image)[pixel + 0] = static_cast<unsigned char>(row < side / 2 ? 0xff : 0);
+            (*image)[pixel + 1] = static_cast<unsigned char>(row < side / 2 ? 0 : 0xff);
+            (*image)[pixel + 2] = 0;
+        }
+    }
+
+    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    v3d::image::Factory factory(logger);
+
+    const char* written = "data_out/test_orientation_written.jpg";
+    BOOST_REQUIRE_EQUAL(factory.write(written, image), true);
+
+    // what the writer put in the file: scanline 0 has to be the red band
+    {
+        FILE* fp = nullptr;
+        BOOST_REQUIRE_EQUAL(fopen_s(&fp, written, "rb"), 0);
+        jpeg_decompress_struct cinfo;
+        jpeg_error_mgr jerr;
+        cinfo.err = jpeg_std_error(&jerr);
+        jpeg_create_decompress(&cinfo);
+        jpeg_stdio_src(&cinfo, fp);
+        jpeg_read_header(&cinfo, TRUE);
+        jpeg_start_decompress(&cinfo);
+
+        std::vector<unsigned char> scanline(cinfo.output_width * cinfo.output_components);
+        unsigned char* rows[1] = { scanline.data() };
+        jpeg_read_scanlines(&cinfo, rows, 1);
+        BOOST_CHECK_GT(scanline[0], scanline[1]);
+
+        while (cinfo.output_scanline < cinfo.output_height) {
+            jpeg_read_scanlines(&cinfo, rows, 1);
+        }
+        // and the last one the green band
+        BOOST_CHECK_GT(scanline[1], scanline[0]);
+
+        jpeg_finish_decompress(&cinfo);
+        jpeg_destroy_decompress(&cinfo);
+        fclose(fp);
+    }
+
+    // and what the reader makes of a file whose first scanline is red: row 0 of the buffer
+    const char* encoded = "data_out/test_orientation_encoded.jpg";
+    {
+        FILE* fp = nullptr;
+        BOOST_REQUIRE_EQUAL(fopen_s(&fp, encoded, "wb"), 0);
+        jpeg_compress_struct cinfo;
+        jpeg_error_mgr jerr;
+        cinfo.err = jpeg_std_error(&jerr);
+        jpeg_create_compress(&cinfo);
+        jpeg_stdio_dest(&cinfo, fp);
+        cinfo.image_width = side;
+        cinfo.image_height = side;
+        cinfo.input_components = 3;
+        cinfo.in_color_space = JCS_RGB;
+        jpeg_set_defaults(&cinfo);
+        jpeg_start_compress(&cinfo, TRUE);
+
+        std::vector<unsigned char> scanline(side * 3);
+        while (cinfo.next_scanline < cinfo.image_height) {
+            const bool top = cinfo.next_scanline < side / 2;
+            for (unsigned int column = 0; column < side; ++column) {
+                scanline[column * 3 + 0] = static_cast<unsigned char>(top ? 0xff : 0);
+                scanline[column * 3 + 1] = static_cast<unsigned char>(top ? 0 : 0xff);
+                scanline[column * 3 + 2] = 0;
+            }
+            unsigned char* rows[1] = { scanline.data() };
+            jpeg_write_scanlines(&cinfo, rows, 1);
+        }
+        jpeg_finish_compress(&cinfo);
+        jpeg_destroy_compress(&cinfo);
+        fclose(fp);
+    }
+
+    boost::shared_ptr<v3d::image::Image> read = factory.read(encoded);
+    BOOST_REQUIRE(read != nullptr);
+    BOOST_REQUIRE_EQUAL(read->height(), side);
+    // row 0 is the top of the picture, which is the red band
+    BOOST_CHECK_GT((*read)[0], (*read)[1]);
+    const unsigned int last = (side - 1) * side * 3;
+    BOOST_CHECK_GT((*read)[last + 1], (*read)[last]);
 }

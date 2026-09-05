@@ -778,8 +778,8 @@ been in a position to notice:
   without setting bit 5 of the descriptor, so its own reader believed the file was bottom up
   and turned it over. `imagewriter_orientation_test` pins both, with an image whose rows
   differ — the existing round-trip test uses a uniform blue square, which cannot see a flip.
-  The jpeg reader and writer still reverse their rows; they are self consistent, nothing
-  displays a jpeg, and they are left alone deliberately.
+  The jpeg reader and writer were left alone at the time - self consistent, and nothing
+  displays a jpeg - and were fixed together on 2026-09-04.
 - **The three image loaders wrapped a failed read in an asset that looks loaded.**
   `asset::loader::Png` built an `asset::Image` around the empty image the reader returns for
   a missing file, so the failure surfaced only where something dereferenced it — for odyssey,
@@ -1125,7 +1125,7 @@ Deliberately not last. This is independent of the render rewrite and blocked by 
 
 Tier 1 landed on 2026-08-31. `enable_testing()` and a `v3d_add_test` helper are in the root
 CMakeLists, eight binaries build from `api/<lib>/tests`, and `ctest --test-dir
-out/build/x64-Debug` runs the lot in about a second. **Twenty suites and 380 cases run as of
+out/build/x64-Debug` runs the lot in about a second. **Twenty suites and 381 cases run as of
 2026-09-04**, every app but odyssey included. Coverage is every `api/` library bar the render
 code below the recorder: `type`, `brep`, `dag`, `image`, `font`, `input`, `event`, `asset`,
 `config`, `ecs`, `audio`, `log`, `engine`, the window-free half of `render` - which since
@@ -1287,8 +1287,10 @@ done.
   3.4.8 with it; the only source change that cost was `boost::json::error_code` and
   `boost::json::system_error`, which 1.91 removed in favour of the `boost::system` names they
   aliased. `libnoise` is the only submodule left.
-- The jpeg reader and writer both reverse their rows. The pair is self-consistent and nothing
-  displays a jpeg, so it is invisible until something does — fix them together.
+- ~~The jpeg reader and writer both reverse their rows.~~ Fixed 2026-09-04, both together.
+  `imagewriter_jpeg_orientation_test` pins them by encoding and decoding through libjpeg
+  directly on one side of each check, because a round trip returns the image it was given
+  whichever way round the pair agrees to store it.
 - `event::Context::active` is written and read by nothing. It is the state scoping the editor
   was expected to need, from the v3dlibs audit.
 - Two items survive on `docs/TODO.md` that nobody has scoped: the `size_t` / `unsigned int`
