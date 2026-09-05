@@ -13,6 +13,9 @@ namespace v3d::ecs {
      public:
         explicit System(entt::registry* registry);
 
+        // a system is held polymorphically, so destruction has to reach the derived one
+        virtual ~System() = default;
+
         virtual bool tick() = 0;
 
      protected:

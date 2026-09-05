@@ -1,6 +1,6 @@
 # The manager, the loader base and the two text-shaped loaders need neither a window nor a
-# device - they resolve a path and read a file. The image, font and audio loaders are covered
-# by their own libraries' suites.
+# device - they resolve a path and read a file. The wav loader is here because reading one
+# needs no device either; the image and font loaders are covered by their own suites.
 v3d_add_test(asset
 	"TestMain.cpp"
 	"ManagerTest.cpp"
@@ -8,8 +8,7 @@ v3d_add_test(asset
 	"JsonTest.cpp"
 	"TextTest.cpp")
 
-# SDL3: v3dlib_asset reaches soloud through v3dlib_audio, and soloud's static backend
-# names the SDL audio entry points, so a binary that links asset at all resolves them.
+# SDL3: v3dlib_asset reaches the mixer through v3dlib_audio, which carries SDL3 with it.
 target_link_libraries(v3dtest_asset PRIVATE
 	v3dlib_asset
 	v3dlib_image

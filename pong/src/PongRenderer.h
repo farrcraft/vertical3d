@@ -44,6 +44,11 @@ class PongRenderer final {
      **/
     void ui(const boost::shared_ptr<v3d::ui::Engine>& ui);
 
+    /**
+     * Wait for everything in flight, before the window the device draws to goes away.
+     **/
+    void shutdown();
+
  private:
     /**
      * Load the font and pack the glyphs pong draws into one atlas, then upload it.

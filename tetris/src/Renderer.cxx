@@ -185,6 +185,12 @@ void TetrisRenderer::ui(const boost::shared_ptr<v3d::ui::Engine>& ui) {
 
 /**
  **/
+void TetrisRenderer::shutdown() {
+    engine_.shutdown();
+}
+
+/**
+ **/
 void TetrisRenderer::resize(int width, int height) {
     if (scene_) {
         scene_->resize(width, height);

@@ -29,3 +29,4 @@ old record's status and leave the file in place.
 | [0018](0018-a-project-is-json-and-stores-topology-verbatim.md) | Project Persistence — A Project Is JSON, And The Topology Is Stored Verbatim | accepted | 2026-09-02 |
 | [0019](0019-the-ui-is-laid-out-by-what-draws-it.md) | Menu Bar — The UI Is Laid Out By What Draws It, And Hit Tested Against Those Bounds | accepted | 2026-09-02 |
 | [0020](0020-a-theme-is-data-and-the-app-resolves-its-images.md) | Themes — A Theme Is Data, And The App Resolves The Images It Names | accepted | 2026-09-04 |
+| [0021](0021-sdl3-mixer-replaces-soloud.md) | Audio Backend — SDL3_mixer Replaces SoLoud, And A Clip Resolves Through The Asset Manager | accepted | 2026-09-04 |

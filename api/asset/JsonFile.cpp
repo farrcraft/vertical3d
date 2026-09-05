@@ -88,7 +88,7 @@ namespace v3d::asset {
 
     /**
      **/
-    std::size_t JsonFile::read(char* data, std::size_t size, const boost::json::error_code& ec) {
+    std::size_t JsonFile::read(char* data, std::size_t size, const boost::system::error_code& ec) {
         auto const nread = std::fread(data, 1, size, handle_);
         if (std::ferror(handle_)) {
             // [FIXME]
@@ -100,10 +100,10 @@ namespace v3d::asset {
     /**
      **/
     std::size_t JsonFile::read(char* data, std::size_t size) {
-        boost::json::error_code ec;
+        boost::system::error_code ec;
         auto const nread = read(data, size, ec);
         if (ec) {
-            throw boost::json::system_error(ec);
+            throw boost::system::system_error(ec);
         }
         return nread;
     }

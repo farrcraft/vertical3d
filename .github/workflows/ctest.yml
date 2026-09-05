@@ -29,8 +29,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # soloud and libnoise are submodules, and both are needed: v3dlib_audio compiles
-          # soloud's headers, voxel compiles libnoise's, and the two suites link them.
+          # libnoise is a submodule and is needed: voxel compiles its headers and its suite
+          # links it. It is the only one left - the mixer comes from vcpkg per ADR-0021.
           submodules: true
 
       - name: Locate the MSVC toolchain
@@ -86,27 +86,10 @@ jobs:
         shell: pwsh
         run: New-Item -ItemType Directory -Force -Path "$env:VCPKG_DEFAULT_BINARY_CACHE" | Out-Null
 
-      # Both vendor libraries are built out of source: libnoise commits a CMakeCache.txt
-      # naming a generator that is not on this image, and neither declares a
-      # cmake_minimum_required current CMake still accepts on its own. The archives land
-      # where the root CMakeLists' link_directories expects them.
-      #
-      # soloud is built on its null backend: the SDL2 one is its default, this tree installs
-      # SDL3, and nothing under test plays a sound.
-      - name: Build soloud
-        shell: cmd
-        run: |
-          call "%RUNNER_TEMP%\vcvars.bat" >nul
-          cmake -S vendor/soloud/contrib -B "%RUNNER_TEMP%\soloud" -G Ninja ^
-            -DCMAKE_BUILD_TYPE=Debug ^
-            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 ^
-            -DSOLOUD_STATIC=ON ^
-            -DSOLOUD_BUILD_DEMOS=OFF ^
-            -DSOLOUD_BACKEND_NULL=ON ^
-            -DSOLOUD_BACKEND_SDL2=OFF ^
-            -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY="%GITHUB_WORKSPACE%\vendor\soloud\contrib\Debug" || exit /b 1
-          cmake --build "%RUNNER_TEMP%\soloud" || exit /b 1
-
+      # libnoise is built out of source: it commits a CMakeCache.txt naming a generator that
+      # is not on this image, and its cmake_minimum_required predates what current CMake
+      # accepts on its own. The archive lands where the root CMakeLists link_directories
+      # expects it. It is the only vendored library left, per ADR-0021.
       - name: Build libnoise
         shell: cmd
         run: |

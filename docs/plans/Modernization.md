@@ -1125,12 +1125,14 @@ Deliberately not last. This is independent of the render rewrite and blocked by 
 
 Tier 1 landed on 2026-08-31. `enable_testing()` and a `v3d_add_test` helper are in the root
 CMakeLists, eight binaries build from `api/<lib>/tests`, and `ctest --test-dir
-out/build/x64-Debug` runs the lot in about a second. **Sixteen suites and 332 cases run as of
-2026-09-04**, every app but odyssey included. Coverage is `type`, `brep`, `dag`, `image`,
-`font`, `input`, `event`, `asset`, `config`, the window-free half of `render` - which since
+out/build/x64-Debug` runs the lot in about a second. **Twenty suites and 380 cases run as of
+2026-09-04**, every app but odyssey included. Coverage is every `api/` library bar the render
+code below the recorder: `type`, `brep`, `dag`, `image`, `font`, `input`, `event`, `asset`,
+`config`, `ecs`, `audio`, `log`, `engine`, the window-free half of `render` - which since
 phase 3 includes the canvas's batching, transform stack and projection - and `ui`, whose
 ComponentRenderer is testable because it takes text measuring and writing as callbacks. Still
-uncovered: `ecs`, `audio`, `log`, and everything in `api/render` below the recorder.
+uncovered: everything in `api/render` below the recorder, and the two entry points that open
+a device - `Feature::Window` and `audio::Engine::initialize()`.
 
 Tier 3 is done for every app that has logic worth covering. Odyssey is the exception and is
 not an omission: `Movement::tick` returns true and does nothing, and `Sprite`, `SpriteSheet`,
@@ -1175,9 +1177,9 @@ Work:
   - **`vendor/vcpkg` is not tracked**, so CI uses the runner's own vcpkg through
     `VCPKG_INSTALLATION_ROOT`. A cold install builds boost from source, which is most of an
     hour; the binary cache is what makes a second run cheap.
-  - **soloud is built on its null backend.** Its default is SDL2, this tree installs SDL3,
-    and nothing under test plays a sound. libnoise is built out of source, because the
-    `CMakeCache.txt` it commits names a generator no runner has.
+  - **libnoise is built out of source**, because the `CMakeCache.txt` it commits names a
+    generator no runner has. It is the only vendored library the workflow builds since
+    [ADR-0021](../adr/0021-sdl3-mixer-replaces-soloud.md) took the mixer from vcpkg.
   - Ninja and a `vcvars64.bat` located through `vswhere`, rather than the Visual Studio
     generator, so a CI failure means what a local one does. Everything but the runner-specific
     half - the SDK install, the runner's vcpkg, and `vswhere` - was verified locally by
@@ -1188,8 +1190,17 @@ Work:
   were verified against by reading `Config::load` rather than running it. Running it found
   the hole that reading it had not: `Manager::loadTypeFromExt` throws for an extension it has
   no loader for, and that was the one path out of `Config::load` that escaped as an exception
-  rather than the false return every other rejection takes. Fixed with the test.
-  `ecs`, `audio` and `log` remain.
+  rather than the false return every other rejection takes. Fixed with the test. `ecs`,
+  `audio`, `log` and `engine` closed the list the same day - the last four libraries that need
+  neither a window nor a GPU - and running them found three more defects that reading had not:
+  `ecs::component::Color3`'s definition named its second and third parameters in the opposite
+  order to its declaration, so `green()` returned the blue argument and `blue()` the green one,
+  invisible because white is the only colour anything constructs; `audio::AudioClip::load`
+  returned true whatever the backend reported, so a missing wav became a clip that plays
+  silence rather than an error a caller can see; and `engine::Engine::registerEventMappings` reached
+  for `at()` on a document that need not hold the key, which is the same throw out of startup
+  `Config::load` had already been fixed for. All three are fixed with the tests, and
+  `ecs::System` gained the virtual destructor a polymorphic base needs.
 - ~~Revive `moya/tests/` (five real test files, no target), which is tier 3 and now needs
   only a CMakeLists.~~ Done 2026-09-04, and it needed more than a CMakeLists: the five files
   were written against the old `v3D::Moya` namespace and `v3D::Vector3`/`Matrix4`, all of
@@ -1201,9 +1212,10 @@ Work:
   single-player ai - which turned out to have its ai travel inverted, moving the paddle away
   from the ball it was meant to be returning. `tetris/tests/`, `voxel/tests/` and
   `vertical3d/tests/` were already done.
-- ~~Start coverage on the libraries that need neither a window nor a GPU.~~ Done, `dag`,
-  `asset` and `config` included as of 2026-09-04. All of it can run in CI from day one, which
-  the render libraries cannot — see [ADR-0007](../adr/0007-ci-rendering-tests.md).
+- ~~Start coverage on the libraries that need neither a window nor a GPU.~~ Done, and closed
+  as of 2026-09-04 - `dag`, `asset`, `config`, `ecs`, `audio`, `log` and `engine` included.
+  All of it can run in CI from day one, which the render libraries cannot — see
+  [ADR-0007](../adr/0007-ci-rendering-tests.md).
 
 Two items on `docs/TODO.md` — "Get tests working again" and "integrate tests into github
 actions" — are this workstream.
@@ -1246,9 +1258,10 @@ done.
 
 **The two ongoing workstreams**, both above:
 
-- Tests: `ecs`, `audio` and `log` have no suite, and neither does `api/engine`, which the
-  tests section never named. All four need neither a window nor a GPU. Everything below the
-  recorder in `api/render` still waits on [ADR-0007](../adr/0007-ci-rendering-tests.md).
+- Tests: `ecs`, `audio`, `log` and `api/engine` landed on 2026-09-04, which is every library
+  that needs neither a window nor a GPU. What is left needs one: everything below the recorder
+  in `api/render`, `Feature::Window`, and `audio::Engine::initialize()` - all of it waiting on
+  [ADR-0007](../adr/0007-ci-rendering-tests.md).
 - Documentation: the rationale for the Vulkan move and for the SDL3 upgrade is recorded
   nowhere — [ADR-0001](../adr/0001-vulkan-replaces-opengl.md) records the decision, not the
   reasoning behind it. `docs/ECSDesign.md` is still a set of open questions, and the one about
@@ -1256,9 +1269,24 @@ done.
 
 **Defects carried in the notes, none of them scheduled:**
 
-- **Pong and tetris call `shutdown()` from their quit handlers**, which is the
-  frame-after-teardown defect `CLAUDE.md` describes. `Engine::quit()` is what a handler should
-  call.
+- ~~**Pong and tetris call `shutdown()` from their quit handlers**, which is the
+  frame-after-teardown defect `CLAUDE.md` describes.~~ Fixed 2026-09-04: both handlers call
+  `Engine::quit()`, and `main` is the only caller of `shutdown()` left in either app. Closing
+  the window turned up a second defect on the same path - neither app tore its renderer down,
+  so `Engine3D::shutdown()` never ran, the context outlived
+  `render::realtime::Window::destroy()`, and the instance reported a leaked `VkSurfaceKHR` on
+  every exit. Both now call `renderer_->shutdown()` first, as voxel, odyssey and the editor
+  already did, and both exit validation clean.
+- ~~**Nothing in the tree makes a sound, and the reason is the vendored soloud.**~~ Fixed
+  2026-09-04 by replacing it: `api/audio` is SDL3_mixer from vcpkg per
+  [ADR-0021](../adr/0021-sdl3-mixer-replaces-soloud.md), and pong plays its clips. The
+  faults underneath it went the same day - a clip resolves through the asset manager,
+  `initialize()` reports what the backend said instead of ignoring it, and `playClip` and
+  teardown are guarded against a device that never opened. Taking the port moved the vcpkg
+  baseline from 2025-02-21 to 2026-05-09, which carried boost 1.86 to 1.91 and SDL3 3.2.4 to
+  3.4.8 with it; the only source change that cost was `boost::json::error_code` and
+  `boost::json::system_error`, which 1.91 removed in favour of the `boost::system` names they
+  aliased. `libnoise` is the only submodule left.
 - The jpeg reader and writer both reverse their rows. The pair is self-consistent and nothing
   displays a jpeg, so it is invisible until something does — fix them together.
 - `event::Context::active` is written and read by nothing. It is the state scoping the editor

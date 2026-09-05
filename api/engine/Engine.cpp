@@ -48,13 +48,14 @@ namespace v3d::engine {
         boost::shared_ptr<v3d::event::Mapper> mapper = boost::make_shared<v3d::event::Mapper>("global");
 
         auto const doc = mappingConfig->document();
-        auto const mappings = doc.at("mappings");
-        if (!mappings.is_array()) {
+        // every lookup below is guarded by a contains() rather than reaching straight for
+        // at(): boost::json::at throws, and a mapping document this function does not
+        // understand has to come back as a false return, not as an exception out of startup.
+        if (!doc.contains("mappings") || !doc.at("mappings").is_array()) {
             logger_->get()->error("Missing mappings in config");
             return false;
         }
-        // for each mapping
-        auto const items = mappings.as_array();
+        auto const items = doc.at("mappings").as_array();
         auto it = items.begin();
         for (; it != items.end(); ++it) {
             if (!it->is_object()) {
@@ -62,9 +63,13 @@ namespace v3d::engine {
                 return false;
             }
             auto const mapping = it->as_object();
-            auto const source = mapping.at("source");
-            if (!source.is_object()) {
+            if (!mapping.contains("source") || !mapping.at("source").is_object()) {
                 logger_->get()->error("Missing mapping source");
+                return false;
+            }
+            auto const source = mapping.at("source");
+            if (!source.as_object().contains("name") || !source.as_object().contains("context")) {
+                logger_->get()->error("Mapping source needs both a name and a context");
                 return false;
             }
             std::string sourceName = boost::json::value_to<std::string>(source.at("name"));
@@ -79,9 +84,13 @@ namespace v3d::engine {
                 sourceEvent.state(v3d::event::stringToState(sourceState));
             }
 
-            auto const destination = mapping.at("destination");
-            if (!destination.is_object()) {
+            if (!mapping.contains("destination") || !mapping.at("destination").is_object()) {
                 logger_->get()->error("Missing mapping destination");
+                return false;
+            }
+            auto const destination = mapping.at("destination");
+            if (!destination.as_object().contains("name") || !destination.as_object().contains("context")) {
+                logger_->get()->error("Mapping destination needs both a name and a context");
                 return false;
             }
             std::string destinationName = boost::json::value_to<std::string>(destination.at("name"));

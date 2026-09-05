@@ -21,5 +21,4 @@ target_link_libraries(v3dtest_tetris PRIVATE
 	${SDL3_LIBRARIES}
 	${PNG_LIBRARIES}
 	JPEG::JPEG
-	Freetype::Freetype
-	"soloud")
+	Freetype::Freetype)

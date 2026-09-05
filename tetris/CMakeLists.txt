@@ -27,7 +27,6 @@ target_link_libraries(tetris PRIVATE
 	${PNG_LIBRARIES}
 	JPEG::JPEG
 	Freetype::Freetype
-	"soloud"
 )
 
 v3d_add_app_data(tetris)

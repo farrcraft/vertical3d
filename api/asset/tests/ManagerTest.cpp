@@ -12,6 +12,7 @@
 #include "../Image.h"
 #include "../Json.h"
 #include "../Manager.h"
+#include "../Sound.h"
 #include "../Text.h"
 #include "../Type.h"
 
@@ -66,6 +67,23 @@ BOOST_AUTO_TEST_CASE(manager_type_from_extension_test) {
 
     auto picture = assets->loadTypeFromExt("pixel.png");
     BOOST_TEST(static_cast<bool>(boost::dynamic_pointer_cast<v3d::asset::Image>(picture)));
+
+    auto sound = assets->loadTypeFromExt("tone.wav");
+    auto clip = boost::dynamic_pointer_cast<v3d::asset::Sound>(sound);
+    BOOST_REQUIRE(clip);
+    BOOST_TEST(static_cast<bool>(clip->clip()));
+    BOOST_TEST(clip->clip()->audio() != nullptr);
+}
+
+/**
+ * A wav that would not read comes back as no asset at all, the same as every other loader:
+ * an asset holding no clip is indistinguishable from a loaded one until something plays it.
+ **/
+BOOST_AUTO_TEST_CASE(manager_unreadable_wav_test) {
+    auto assets = manager();
+
+    BOOST_TEST(!assets->load("nowhere.wav", v3d::asset::Type::AudioWav));
+    BOOST_TEST(!assets->load("plain.txt", v3d::asset::Type::AudioWav));
 }
 
 /**

@@ -33,7 +33,6 @@ target_link_libraries(pong PRIVATE
 	${PNG_LIBRARIES}
 	JPEG::JPEG
 	Freetype::Freetype
-	"soloud"
 )
 
 v3d_add_shared_data(pong)

@@ -25,6 +25,9 @@ find_package(SDL3 REQUIRED)
 # SDL3_INCLUDE_DIR variable set by the FindSDL3 module (if it finds directory).
 include_directories(SYSTEM ${SDL3_INCLUDE_DIR})
 
+# The mixer is what api/audio is built on, per ADR-0021.
+find_package(SDL3_mixer CONFIG REQUIRED)
+
 find_package(Vulkan REQUIRED)
 
 # CMake already comes with a module for boost - https://cmake.org/cmake/help/latest/module/FindBoost.html
@@ -42,12 +45,10 @@ include_directories(SYSTEM
 	${SDL3_INCLUDE_DIRS}
 	${Vulkan_INCLUDE_DIRS}
 	"vendor/libnoise/include/noise"
-	"vendor/soloud/include"
 )
 
 link_directories(
 	${Boost_LIBRARY_DIRS}
-	"vendor/soloud/contrib/Debug"
 	"vendor/libnoise/Debug"
 )
 

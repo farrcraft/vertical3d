@@ -12,6 +12,7 @@
         "vulkan"
       ]
     },
+    "sdl3-mixer",
     "spdlog",
     "vulkan"
   ]

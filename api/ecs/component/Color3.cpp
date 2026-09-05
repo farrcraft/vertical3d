@@ -7,7 +7,7 @@
 
 namespace v3d::ecs::component {
 
-    Color3::Color3(const float red, const float blue, const float green) noexcept
+    Color3::Color3(const float red, const float green, const float blue) noexcept
         : color_(red, green, blue) {
     }
 

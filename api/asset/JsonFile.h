@@ -9,6 +9,8 @@
 #include <string>
 
 #include <boost/json.hpp>
+#include <boost/system/error_code.hpp>
+#include <boost/system/system_error.hpp>
 
 namespace v3d::asset {
 
@@ -55,7 +57,7 @@ namespace v3d::asset {
 
         /**
          **/
-        std::size_t read(char* data, std::size_t size, const boost::json::error_code& ec);
+        std::size_t read(char* data, std::size_t size, const boost::system::error_code& ec);
 
         /**
          **/
@@ -67,7 +69,7 @@ namespace v3d::asset {
     };
 
 
-    inline std::string read_file(char const* path, const boost::json::error_code& ec) {
+    inline std::string read_file(char const* path, const boost::system::error_code& ec) {
         JsonFile f;
         if (!f.open(path, "r")) {
             return {};
@@ -82,10 +84,10 @@ namespace v3d::asset {
     }
 
     inline std::string read_file(char const* path) {
-        boost::json::error_code ec;
+        boost::system::error_code ec;
         auto s = read_file(path, ec);
         if (ec) {
-            throw boost::json::system_error(ec);
+            throw boost::system::system_error(ec);
         }
         return s;
     }

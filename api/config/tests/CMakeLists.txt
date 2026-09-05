@@ -6,8 +6,7 @@ v3d_add_test(config
 	"ConfigTest.cpp"
 	"TypeTest.cpp")
 
-# SDL3: v3dlib_config reaches soloud through v3dlib_asset and v3dlib_audio, and soloud's
-# static backend names the SDL audio entry points.
+# SDL3: v3dlib_config reaches the mixer through v3dlib_asset and v3dlib_audio.
 target_link_libraries(v3dtest_config PRIVATE
 	v3dlib_config
 	v3dlib_asset

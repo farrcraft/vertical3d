@@ -121,6 +121,12 @@ void PongRenderer::ui(const boost::shared_ptr<v3d::ui::Engine>& ui) {
 
 /**
  **/
+void PongRenderer::shutdown() {
+    engine_.shutdown();
+}
+
+/**
+ **/
 void PongRenderer::resize(int width, int height) {
     if (scene_) {
         scene_->resize(width, height);

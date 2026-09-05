@@ -9,14 +9,14 @@ Managed by `vcpkg`, through the manifest in [vcpkg.json](../vcpkg.json):
 - libjpeg-turbo
 - libpng
 - sdl3, **with its `vulkan` feature** - without it SDL builds with `SDL_VULKAN=OFF` and `SDL_Vulkan_LoadLibrary` fails at startup with "No dynamic Vulkan support in current SDL video driver (windows)"
+- sdl3-mixer - what `v3dlib_audio` is built on, per [adr/0021-sdl3-mixer-replaces-soloud.md](adr/0021-sdl3-mixer-replaces-soloud.md). It needs SDL >= 3.4.0, which is why the vcpkg baseline moved
 - spdlog
 - vulkan
 
 Not from vcpkg:
 
 - **The Vulkan SDK**, which every configure needs whether or not it will draw: the root CMakeLists calls `find_package(Vulkan)` and looks for `glslc` with a `FATAL_ERROR`, because shaders are compiled at build time and embedded as SPIR-V. `VULKAN_SDK` has to point at an install.
-- [libnoise](https://github.com/eXpl0it3r/libnoise) - an unofficial fork that adds CMake support. A git submodule, built separately; only voxel links it.
-- [SoLoud](https://github.com/jarikomppa/soloud) - a git submodule, built separately. `v3dlib_audio` is built on it.
+- [libnoise](https://github.com/eXpl0it3r/libnoise) - an unofficial fork that adds CMake support. A git submodule, built separately; only voxel links it, and it is the only submodule left.
 
 Submodules are configured in the `vendor/` directory, and need to be cloned and built individually. See the Submodules section below. `link_directories` expects their artefacts under `vendor/*/Debug`.
 
@@ -88,27 +88,8 @@ To update package versions, e.g. to get a newer boost version, update the baseli
 To add a new submodule:
 
 ```
-git submodule add https://github.com/jarikomppa/soloud vendor/soloud
+git submodule add https://github.com/eXpl0it3r/libnoise vendor/libnoise
 ```
-
-## Building SoLoud
-
-`SOLOUD_BACKEND_SDL2` defaults ON and this tree installs SDL3, so turn it off explicitly. What to
-turn on instead: `SOLOUD_BACKEND_NULL`, which is also on by default and is what CI builds since
-nothing under test plays a sound, or `SOLOUD_BACKEND_WINMM` on a machine that has to hear pong. The
-archive lands where the root CMakeLists' `link_directories` expects it.
-
-```
-cmake -S vendor/soloud/contrib -B vendor/soloud/build-ninja -G Ninja \
-  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-  -DSOLOUD_STATIC=ON -DSOLOUD_BUILD_DEMOS=OFF \
-  -DSOLOUD_BACKEND_NULL=ON -DSOLOUD_BACKEND_SDL2=OFF \
-  -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY=<repo>/vendor/soloud/contrib/Debug
-cmake --build vendor/soloud/build-ninja
-```
-
-A prebuilt soloud is committed in the tree, so this is only needed on a fresh checkout or to change
-the backend.
 
 ## Building libnoise
 

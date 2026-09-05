@@ -25,7 +25,7 @@ Return		- Select Menu Item
 
 ## 3rd Party Libraries:
 - SDL3
-- SoLoud
+- SDL3_mixer
 - Vulkan
 
 See [../docs/Dependencies.md](../docs/Dependencies.md). The release notes below are an archive

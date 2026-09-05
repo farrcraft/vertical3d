@@ -11,6 +11,7 @@
 #include "PongRenderer.h"
 #include "PongScene.h"
 
+#include "../../api/asset/Sound.h"
 #include "../../api/engine/Feature.h"
 #include "../../api/ecs/component/Position1D.h"
 #include "../../api/ecs/component/Position2D.h"
@@ -35,6 +36,8 @@ bool::PongEngine::initialize() {
     window_->caption("Pong!");
 
     soundEngine_ = boost::make_shared<v3d::audio::Engine>(logger_, dispatcher_);
+    // the return is not read: a device that will not open leaves the engine silent, and the
+    // engine logs why. Every clip played against it is a false return.
     soundEngine_->initialize();
 
     vgui_ = boost::make_shared<v3d::ui::Engine>(eventEngine_, dispatcher_, logger_);
@@ -42,7 +45,17 @@ bool::PongEngine::initialize() {
     if (config_) {
         boost::shared_ptr<v3d::asset::Json> soundConfig = config_->get(v3d::config::Type::Sound);
         if (soundConfig) {
-            soundEngine_->load(soundConfig);
+            // a clip is an asset like any other, so the file the config names is resolved
+            // against the manager's path rather than the working directory
+            soundEngine_->load(soundConfig,
+                [this](const std::string& source) -> boost::shared_ptr<v3d::audio::AudioClip> {
+                    boost::shared_ptr<v3d::asset::Sound> asset = boost::dynamic_pointer_cast<v3d::asset::Sound>(
+                        assetManager_->load(source, v3d::asset::Type::AudioWav));
+                    if (!asset) {
+                        return boost::shared_ptr<v3d::audio::AudioClip>();
+                    }
+                    return asset->clip();
+                });
         }
 
         boost::shared_ptr<v3d::asset::Json> uiConfig = config_->get(v3d::config::Type::Ui);
@@ -90,6 +103,10 @@ bool PongEngine::render() {
 bool PongEngine::shutdown() {
     if (soundEngine_) {
         soundEngine_->shutdown();
+    }
+    if (renderer_) {
+        // the device has to be idle before the window it presents to is destroyed
+        renderer_->shutdown();
     }
     if (!v3d::engine::Engine::shutdown()) {
         return false;
@@ -157,7 +174,9 @@ void PongEngine::handleEvent(const v3d::event::Event& event) {
             scene_->state().coop(false);
             scene_->reset();
         } else if (event.name() == "quit") {
-            shutdown();
+            // not shutdown() - this is running inside the event loop, which would tick and
+            // render one more frame against the window shutdown() had destroyed
+            quit();
             return;
         }
 

@@ -1,0 +1,12 @@
+{
+	"configs": [
+		{
+			"type": "binding",
+			"file": "mappings.json"
+		},
+		{
+			"type": "window",
+			"file": "window.json"
+		}
+	]
+}

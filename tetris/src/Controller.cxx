@@ -77,6 +77,10 @@ bool Controller::render() {
 /**
  **/
 bool Controller::shutdown() {
+    if (renderer_) {
+        // the device has to be idle before the window it presents to is destroyed
+        renderer_->shutdown();
+    }
     if (!v3d::engine::Engine::shutdown()) {
         return false;
     }
@@ -181,7 +185,9 @@ void Controller::handleEvent(const v3d::event::Event& event) {
             return;
         }
         if (event.name() == "quit") {
-            shutdown();
+            // not shutdown() - this is running inside the event loop, which would tick and
+            // render one more frame against the window shutdown() had destroyed
+            quit();
             return;
         }
         if (event.name() == "toggleMenu") {

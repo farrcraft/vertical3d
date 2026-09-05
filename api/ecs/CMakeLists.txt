@@ -4,3 +4,5 @@ add_library("v3dlib_ecs"
  "component/Position1D.h" "component/Position1D.cpp" 
  "component/Color3.h" "component/Color3.cpp"
  "System.h" "System.cpp")
+
+add_subdirectory("tests")

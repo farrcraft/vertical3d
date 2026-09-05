@@ -5,26 +5,38 @@
 
 #pragma once
 
-#include <soloud_wav.h>
+#include <SDL3_mixer/SDL_mixer.h>
 
 #include <string>
 
-#include <boost/shared_ptr.hpp>
-
 namespace v3d::audio {
 
+    /**
+     * One loaded sound.
+     *
+     * A clip is loaded against no mixer, so it can be read through the asset manager without
+     * an audio::Engine and played through whichever mixer an app later opens. It holds a
+     * MIX_Init reference for as long as it holds audio, because the library counts them.
+     **/
     class AudioClip final {
      public:
         AudioClip() = default;
-        ~AudioClip() = default;
+        ~AudioClip();
+
+        // the clip owns its MIX_Audio and the MIX_Init reference that came with it
+        AudioClip(const AudioClip&) = delete;
+        AudioClip& operator=(const AudioClip&) = delete;
 
         bool load(const std::string_view & filename);
         void destroy();
 
-        boost::shared_ptr<SoLoud::Wav> wav();
+        /**
+         * @return what was loaded, or null for a clip that holds nothing
+         **/
+        MIX_Audio* audio() const noexcept;
 
      private:
-        boost::shared_ptr<SoLoud::Wav> wav_;
+        MIX_Audio* audio_ = nullptr;
     };
 
 };  // namespace v3d::audio

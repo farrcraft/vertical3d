@@ -329,7 +329,7 @@ namespace v3d::editor {
             return false;
         }
 
-        boost::json::error_code error;
+        boost::system::error_code error;
         const boost::json::value document = boost::json::parse(text, error);
         if (error || !document.is_object()) {
             logger_->get()->error("{} is not a project: {}", path, error.message());

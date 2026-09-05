@@ -30,7 +30,7 @@ namespace v3d::asset {
             logger_->get()->info("Looking for json asset at: {}", name);
             JsonFile file(static_cast<std::string>(name).c_str(), "r");
             boost::json::stream_parser parser;
-            boost::json::error_code err;
+            boost::system::error_code err;
             do {
                 char buf[4096];
                 auto const nread = file.read(buf, sizeof(buf));

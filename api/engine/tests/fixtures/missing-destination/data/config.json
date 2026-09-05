@@ -1,0 +1,8 @@
+{
+	"configs": [
+		{
+			"type": "binding",
+			"file": "mappings.json"
+		}
+	]
+}
