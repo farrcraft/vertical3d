@@ -10,7 +10,7 @@
 #include <string>
 #include <fstream>
 
-namespace Talyn {
+namespace v3d::talyn {
 
     class RIBReader {
      public:
@@ -28,4 +28,4 @@ namespace Talyn {
         std::ifstream file_;
     };
 
-};  // namespace Talyn
+};  // namespace v3d::talyn

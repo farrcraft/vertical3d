@@ -17,6 +17,6 @@ namespace v3d::moya {
         Vertex & operator[] (unsigned int i);
 
      private:
-        Vertex _points[4];
+        Vertex points_[4];
     };
 };  // namespace v3d::moya

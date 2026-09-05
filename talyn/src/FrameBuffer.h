@@ -12,7 +12,7 @@
 #include <boost/shared_ptr.hpp>
 
 
-namespace Talyn {
+namespace v3d::talyn {
     /**
      *	a framebuffer provides a stack of image planes.
      *	each image plane is a 2d grid of float values. the width and height of
@@ -44,4 +44,4 @@ namespace Talyn {
         unsigned int height_;
     };
 
-};  // end namespace Talyn
+};  // namespace v3d::talyn

@@ -10,7 +10,7 @@
 
 #include <boost/make_shared.hpp>
 
-namespace Talyn {
+namespace v3d::talyn {
 
     FrameBuffer::FrameBuffer(unsigned int width, unsigned int height, unsigned int depth) : width_(width), height_(height) {
         for (unsigned int i = 0; i < depth; i++) {
@@ -49,4 +49,4 @@ namespace Talyn {
         return image;
     }
 
-};  // namespace Talyn
+};  // namespace v3d::talyn

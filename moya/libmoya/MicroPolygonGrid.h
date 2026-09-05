@@ -32,6 +32,6 @@ namespace v3d::moya {
         void addVertex(const Vertex & vert, unsigned int i, unsigned int j);
 
      private:
-        std::vector< std::vector<Vertex> > _grid;
+        std::vector< std::vector<Vertex> > grid_;
     };
 };  // namespace v3d::moya

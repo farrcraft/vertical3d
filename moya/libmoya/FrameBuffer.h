@@ -55,12 +55,12 @@ namespace v3d::moya {
         // typedef boost::multi_array<float, 2> plane_t;
         typedef std::vector< std::vector<float> > plane_t;
 
-        BucketGrid _buckets;
-        std::vector<plane_t> _planes;
-        unsigned int _bucketSize[2];
-        unsigned int _imageSize[2];
-        unsigned int _bucketColumns = 0;
-        unsigned int _bucketRows = 0;
+        BucketGrid buckets_;
+        std::vector<plane_t> planes_;
+        unsigned int bucketSize_[2];
+        unsigned int imageSize_[2];
+        unsigned int bucketColumns_ = 0;
+        unsigned int bucketRows_ = 0;
     };
 
 };  // namespace v3d::moya

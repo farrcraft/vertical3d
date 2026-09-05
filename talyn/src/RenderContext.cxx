@@ -5,7 +5,7 @@
 
 #include "RenderContext.h"
 
-namespace Talyn {
+namespace v3d::talyn {
 
     RenderContext::RenderContext() {
     }
@@ -56,4 +56,4 @@ namespace Talyn {
         return framebuffer_;
     }
 
-};  // namespace Talyn
+};  // namespace v3d::talyn

@@ -41,6 +41,6 @@ namespace v3d::moya {
         void clip(const boost::shared_ptr<Polygon> & poly);
 
      private:
-        std::map<std::string, Plane> _clippingPlanes;
+        std::map<std::string, Plane> clippingPlanes_;
     };
 };  // namespace v3d::moya

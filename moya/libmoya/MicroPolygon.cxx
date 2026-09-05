@@ -17,6 +17,6 @@ MicroPolygon::~MicroPolygon() {
 
 Vertex & MicroPolygon::operator[] (unsigned int i) {
     assert(i < 4);
-    return _points[i];
+    return points_[i];
 }
 };  // namespace v3d::moya

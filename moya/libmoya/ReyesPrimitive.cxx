@@ -14,7 +14,7 @@ ReyesPrimitive::~ReyesPrimitive() {
 }
 
 bool ReyesPrimitive::diceable(void) const {
-    return _diceable;
+    return diceable_;
 }
 
 v3d::type::AABBox ReyesPrimitive::bound(void) const {
@@ -29,7 +29,7 @@ bool ReyesPrimitive::dice(boost::shared_ptr<MicroPolygonGrid> grid, RenderContex
 }
 
 void ReyesPrimitive::diceable(bool status) {
-    _diceable = status;
+    diceable_ = status;
 }
 
 };  // namespace v3d::moya

@@ -10,19 +10,19 @@
 
 namespace v3d::moya {
 
-MicroPolygonGrid::MicroPolygonGrid(unsigned int size) : _grid(size, std::vector<Vertex>(size)) {
+MicroPolygonGrid::MicroPolygonGrid(unsigned int size) : grid_(size, std::vector<Vertex>(size)) {
 }
 
 MicroPolygonGrid::~MicroPolygonGrid() {
 }
 
 unsigned int MicroPolygonGrid::size(void) const {
-    return static_cast<unsigned int>(_grid.size());
+    return static_cast<unsigned int>(grid_.size());
 }
 
 Vertex MicroPolygonGrid::vertex(unsigned int i, unsigned int j) const {
     assert(i < size() && j < size());
-    return _grid[i][j];
+    return grid_[i][j];
 }
 
 MicroPolygon MicroPolygonGrid::microPolygon(unsigned int i, unsigned int j) const {
@@ -37,16 +37,16 @@ MicroPolygon MicroPolygonGrid::microPolygon(unsigned int i, unsigned int j) cons
     // vertices close the grid rather than opening a polygon of their own
     assert(i + 1 < size() && j + 1 < size());
     MicroPolygon p;
-    p[0] = _grid[i][j];
-    p[1] = _grid[i][j+1];
-    p[2] = _grid[i+1][j+1];
-    p[3] = _grid[i+1][j];
+    p[0] = grid_[i][j];
+    p[1] = grid_[i][j+1];
+    p[2] = grid_[i+1][j+1];
+    p[3] = grid_[i+1][j];
     return p;
 }
 
 void MicroPolygonGrid::addVertex(const Vertex & vert, unsigned int i, unsigned int j) {
     assert(i < size() && j < size());
-    _grid[i][j] = vert;
+    grid_[i][j] = vert;
 }
 
 };  // namespace v3d::moya

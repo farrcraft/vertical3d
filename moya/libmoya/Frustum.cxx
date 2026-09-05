@@ -47,17 +47,17 @@ Frustum::~Frustum() {
     one running [-1, 1], which the far plane below was already written for.
 */
 void Frustum::extract(const glm::mat4x4 & projection) {
-    _clippingPlanes["left"] = rowPlane(projection, 0, 1.0f);
-    _clippingPlanes["right"] = rowPlane(projection, 0, -1.0f);
-    _clippingPlanes["bottom"] = rowPlane(projection, 1, 1.0f);
-    _clippingPlanes["top"] = rowPlane(projection, 1, -1.0f);
-    _clippingPlanes["near"] = rowPlane(projection, 2, 1.0f);
-    _clippingPlanes["far"] = rowPlane(projection, 2, -1.0f);
+    clippingPlanes_["left"] = rowPlane(projection, 0, 1.0f);
+    clippingPlanes_["right"] = rowPlane(projection, 0, -1.0f);
+    clippingPlanes_["bottom"] = rowPlane(projection, 1, 1.0f);
+    clippingPlanes_["top"] = rowPlane(projection, 1, -1.0f);
+    clippingPlanes_["near"] = rowPlane(projection, 2, 1.0f);
+    clippingPlanes_["far"] = rowPlane(projection, 2, -1.0f);
 }
 
 void Frustum::normalize(void) {
-    std::map<std::string, Plane>::iterator it = _clippingPlanes.begin();
-    for (; it != _clippingPlanes.end(); it++) {
+    std::map<std::string, Plane>::iterator it = clippingPlanes_.begin();
+    for (; it != clippingPlanes_.end(); it++) {
         (it->second).normalize();
     }
 }
@@ -70,8 +70,8 @@ int Frustum::intersect(const v3d::type::AABBox & aabb) {
     // one plane excluding the box excludes it from the frustum: the half spaces are
     // intersected, not unioned, so a box outside any one of them is outside all six
     bool crossing = false;
-    std::map<std::string, Plane>::iterator it = _clippingPlanes.begin();
-    for (; it != _clippingPlanes.end(); it++) {
+    std::map<std::string, Plane>::iterator it = clippingPlanes_.begin();
+    for (; it != clippingPlanes_.end(); it++) {
         int hit = (it->second).classify(aabb);
         if (hit == Plane::OUTSIDE) {
             return OUTSIDE;
@@ -85,8 +85,8 @@ int Frustum::intersect(const v3d::type::AABBox & aabb) {
 
 // clip a polygon against each of the clipping planes in the frustum
 void Frustum::clip(const boost::shared_ptr<Polygon> & poly) {
-    std::map<std::string, Plane>::iterator it = _clippingPlanes.begin();
-    for (; it != _clippingPlanes.end(); it++) {
+    std::map<std::string, Plane>::iterator it = clippingPlanes_.begin();
+    for (; it != clippingPlanes_.end(); it++) {
         (it->second).clip(poly);
     }
 }

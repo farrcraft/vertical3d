@@ -16,20 +16,20 @@ namespace v3d::moya {
     }
 
     void Bucket::addPrimitive(boost::shared_ptr<ReyesPrimitive> primitive) {
-        _primitives.push_back(primitive);
+        primitives_.push_back(primitive);
     }
 
     size_t Bucket::primitiveCount(void) const {
-        return _primitives.size();
+        return primitives_.size();
     }
 
     void Bucket::render(RenderContext & rc) {
         // iterate over each primitive in the bucket
         // splitting resubmits pieces through the first pass, which may append to this same
         // bucket, so the loop reads the size each time around rather than caching it
-        for (size_t i = 0; i < _primitives.size(); i++) {
+        for (size_t i = 0; i < primitives_.size(); i++) {
             // a copy, because the entry it came from is erased below while it is still in use
-            boost::shared_ptr<ReyesPrimitive> prim = _primitives[i];
+            boost::shared_ptr<ReyesPrimitive> prim = primitives_[i];
             // if primitive can be diced
             if (prim->diceable()) {
                 // dice primitive into grid of micropolygons
@@ -57,7 +57,7 @@ namespace v3d::moya {
                 // buckets it and decides whether it is diceable in turn, so the original is
                 // finished with either way
                 prim->split(rc);
-                _primitives.erase(_primitives.begin() + i);
+                primitives_.erase(primitives_.begin() + i);
                 i--;
             }
         }

@@ -72,6 +72,6 @@ namespace v3d::moya {
             RenderContext & activeRenderContext(void);
 
      private:
-            std::vector<RenderContext> _contexts;
+            std::vector<RenderContext> contexts_;
     };
 };  // namespace v3d::moya

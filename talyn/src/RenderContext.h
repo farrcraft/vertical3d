@@ -9,7 +9,7 @@
 
 #include "FrameBuffer.h"
 
-namespace Talyn {
+namespace v3d::talyn {
     /**
      * What all does a rc encapsulate? What does the RISpec say about rendering with multiple renderers?
      * Only one RC can be active at a time.
@@ -36,4 +36,4 @@ namespace Talyn {
     };
 
 
-};  // end namespace Talyn
+};  // namespace v3d::talyn

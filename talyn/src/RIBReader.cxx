@@ -10,7 +10,7 @@
 
 #include <boost/lexical_cast.hpp>
 
-namespace Talyn {
+namespace v3d::talyn {
 
 /*
 ##RenderMan RIB-Structure 1.1
@@ -167,4 +167,4 @@ bool RIBReader::read(const std::string &filename) {
     return true;
 }
 
-};  // end namespace Talyn
+};  // namespace v3d::talyn

@@ -155,7 +155,7 @@ int main(int argc, char * argv[]) {
     }
 
     // establish new render context
-    boost::shared_ptr<Talyn::RenderContext> rc(new Talyn::RenderContext());
+    boost::shared_ptr<v3d::talyn::RenderContext> rc(new v3d::talyn::RenderContext());
 
     // construct full fs path of source scene file
     boost::filesystem::path full_path = boost::filesystem::system_complete(infile);
@@ -165,7 +165,7 @@ int main(int argc, char * argv[]) {
     std::string ext = infile.substr(infile.length() - 3);
 
     if (ext == "rib") {  // .rib for renderman formatted files.
-        Talyn::RIBReader reader(rc);
+        v3d::talyn::RIBReader reader(rc);
         if (!reader.read(filepath)) {
             std::cout << "error reading rib file!" << std::endl;
             exit(EXIT_FAILURE);
@@ -191,7 +191,7 @@ int main(int argc, char * argv[]) {
     // actually do the rendering
     rc->render();
 
-    boost::shared_ptr<Talyn::FrameBuffer> fb = rc->framebuffer();
+    boost::shared_ptr<v3d::talyn::FrameBuffer> fb = rc->framebuffer();
 
     if (!silent) {
         std::cout << "Rendering framebuffer..." << std::endl;

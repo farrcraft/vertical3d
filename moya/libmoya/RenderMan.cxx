@@ -12,7 +12,13 @@
 
 #include <string>
 
-v3d::moya::Renderer _renderer;
+namespace {
+
+    // the renderer the C interface drives. An identifier with a leading underscore at namespace
+    // scope is reserved to the implementation, and nothing outside this file names it.
+    v3d::moya::Renderer renderer;
+
+};  // namespace
 
 RtToken RI_FRAMEBUFFER,
         RI_FILE;
@@ -184,7 +190,7 @@ RtVoid RiBegin(RtToken name) {
     if (name != RI_NULL) {
         str = name;
     }
-    _renderer.createRenderContext(str);
+    renderer.createRenderContext(str);
 }
 
 
@@ -196,7 +202,7 @@ RtVoid RiBegin(RtToken name) {
  * (the only exceptions are RiErrorHandler, RiOption, and RiContext).
  */
 RtVoid RiEnd(void) {
-    _renderer.destroyActiveRenderContext();
+    renderer.destroyActiveRenderContext();
 }
 
 RtVoid RiFrameBegin(RtInt frame) {
@@ -218,7 +224,7 @@ are defined, whereas other rendering programs may wait until the entire scene ha
 been defined.
 */
 RtVoid RiWorldBegin(void) {
-    _renderer.activeRenderContext().prepareWorld();
+    renderer.activeRenderContext().prepareWorld();
 }
 
 /*
@@ -230,7 +236,7 @@ block are removed and their storage reclaimed when RiWorldEnd is called (thus in
 their handles).
 */
 RtVoid RiWorldEnd(void) {
-    _renderer.activeRenderContext().render();
+    renderer.activeRenderContext().render();
 }
 
 /*
@@ -257,7 +263,7 @@ is specified as a nonpositive value, the resolution defaults to that of the
 display device for that particular parameter.
 */
 RtVoid RiFormat(RtInt xres, RtInt yres, RtFloat aspect) {
-    _renderer.activeRenderContext().imageResolution(xres, yres, aspect);
+    renderer.activeRenderContext().imageResolution(xres, yres, aspect);
 }
 
 RtVoid RiFrameAspectRatio(RtFloat aspect) {
@@ -276,18 +282,18 @@ projection matrix. It appends this projection matrix to the current transformati
 and stores this as the screen transformation, then marks the current coordinate
 system as the camera coordinate system and reinitializes the current transformation
 matrix to the identity camera transformation. The required types of projection are
-”perspective”, ”orthographic”, and RI NULL.
-”perspective” builds a projection matrix that does a perspective projection along the
+"perspective", "orthographic", and RI NULL.
+"perspective" builds a projection matrix that does a perspective projection along the
 z-axis, using the RiClipping values, so that points on the near clipping plane project
-to z = 0 and points on the far clipping plane project to z = 1. ”perspective” takes one
-optional parameter, ”fov”, a single RtFloat that indicates he full angle perspective field
+to z = 0 and points on the far clipping plane project to z = 1. "perspective" takes one
+optional parameter, "fov", a single RtFloat that indicates he full angle perspective field
 of view (in degrees) between screen space coordinates (-1,0) and (1,0) (equivalently
 between (0,-1) and (0,1)). The default is 90 degrees.
 Note that there is a redundancy in the focal length implied by this procedure and the
 one set by RiDepthOfField. The focal length implied by this command is:
 focallength = (horizontalscreenwidth / verticalscreenwidth) / tan(fov / 2)
-”orthographic” builds a simple orthographic projection that scales z using the RiClipping
-values as above. ”orthographic” takes no parameters.
+"orthographic" builds a simple orthographic projection that scales z using the RiClipping
+values as above. "orthographic" takes no parameters.
 RI NULL uses an identity projection matrix, and simply marks camera space in situations
 where the user has generated his own projection matrices himself using RiPerspective
 or RiTransform.
@@ -305,7 +311,7 @@ RtVoid RiProjection(RtToken name, ...) {
     std::string token;
     float fov = 90.;
     if (name == RI_NULL) {
-        _renderer.activeRenderContext().projection("");
+        renderer.activeRenderContext().projection("");
     } else if (!strncmp(name, RI_PERSPECTIVE, 11)) {
         // perspective takes an optional fov parameter
         if (param != RI_NULL) {
@@ -314,9 +320,9 @@ RtVoid RiProjection(RtToken name, ...) {
                 fov = static_cast<float>(va_arg(ap, double));
             }
         }
-        _renderer.activeRenderContext().projection(name, fov);
+        renderer.activeRenderContext().projection(name, fov);
     } else {
-        _renderer.activeRenderContext().projection(name);
+        renderer.activeRenderContext().projection(name);
     }
     va_end(ap);
 }
@@ -337,7 +343,7 @@ For reasons of efficiency, it is generally a good idea to bound the scene tightl
 the near and far clipping planes.
 */
 RtVoid RiClipping(RtFloat hither, RtFloat yon) {
-    _renderer.activeRenderContext().clipping(hither, yon);
+    renderer.activeRenderContext().clipping(hither, yon);
 }
 
 RtVoid RiClippingPlane(RtFloat x, RtFloat y, RtFloat z, RtFloat nx, RtFloat ny, RtFloat nz) {
@@ -371,29 +377,29 @@ RtVoid RiQuantize(RtToken type, RtInt one, RtInt min, RtInt max, RtFloat ampl) {
 Choose a display by name and set the type of output being generated. name is either
 the name of a picture file or the name of the framebuffer, depending on type.
 The type of display is the display format, output device, or output driver. All implementations
-must support the type names ”framebuffer” and ”file”, which indicate
+must support the type names "framebuffer" and "file", which indicate
 that the renderer should select the default framebuffer or default file format, respectively.
 Implementations may support any number of particular formats or devices
-(for example, ”tiff” might indicate that a TIFF file should be written), and may allow
+(for example, "tiff" might indicate that a TIFF file should be written), and may allow
 the supported formats to be user-extensible in an implementation-specific manner.
 The mode indicates what data are to be output in this display stream. All renderers
-must support any combination (string concatenation) of ”rgb” for color (usually red,
+must support any combination (string concatenation) of "rgb" for color (usually red,
 green and blue intensities unless there are more or less than 3 color samples; see the
-next section, Additional options), ”a” for alpha, and ”z” for depth values, in that order.
-Renderers may additionally produce “images” consisting of arbitrary data, by using a
+next section, Additional options), "a" for alpha, and "z" for depth values, in that order.
+Renderers may additionally produce "images" consisting of arbitrary data, by using a
 mode that is the name of a known geometric quantity or the name of a shader output
 variable. Note also that multiple display channels can be specified, by prepending
 the + character to the name. For example,
-RiDisplay (”out.tif,” ”file,” ”rgba”, RI NULL);
-RiDisplay (”+normal.tif,” ”file,” ”N”, RI NULL);
+RiDisplay ("out.tif," "file," "rgba", RI NULL);
+RiDisplay ("+normal.tif," "file," "N", RI NULL);
 will produce a four-channel image consisting of the filtered color and alpha in out.tif,
 and also a second three-channel image file normal.tif consisting of the surface normal
 of the nearest surface behind each pixel. (This would, of course, only be useful if
 RiQuantize were instructed to output floating point data or otherwise scale the data.)
 Display options or device-dependent display modes or functions may be set using
-the parameterlist. One such option is required: ”origin”, which takes an array of two
+the parameterlist. One such option is required: "origin", which takes an array of two
 RtInts, sets the x and y position of the upper left hand corner of the image in the
-display’s coordinate system; by default the origin is set to (0,0). The default display
+display's coordinate system; by default the origin is set to (0,0). The default display
 device is renderer implementation-specific.
 */
 RtVoid RiDisplay(char *name, RtToken type, RtToken mode, ...) {
@@ -467,7 +473,7 @@ RtVoid RiIlluminate(RtLightHandle light, RtBoolean onoff) {
 /*
 shadername is the name of a surface shader. This procedure sets the current surface
 shader to be shadername. If the surface shader shadername is not defined, some
-implementation-dependent default surface shader (but not ”null”) is used.
+implementation-dependent default surface shader (but not "null") is used.
 */
 RtVoid RiSurface(const RtToken name, ...) {
 }
@@ -527,7 +533,7 @@ RtVoid RiSides(RtInt sides) {
 Set the current transformation to the identity.
 */
 RtVoid RiIdentity(void) {
-    _renderer.activeRenderContext().setIdentityTransform();
+    renderer.activeRenderContext().setIdentityTransform();
 }
 
 /*
@@ -544,21 +550,21 @@ RtVoid RiPerspective(RtFloat fov) {
 Concatenate a translation onto the current transformation.
 */
 RtVoid RiTranslate(RtFloat dx, RtFloat dy, RtFloat dz) {
-    _renderer.activeRenderContext().translate(dx, dy, dz);
+    renderer.activeRenderContext().translate(dx, dy, dz);
 }
 
 /*
 Concatenate a rotation of angle degrees about the given axis onto the current transformation.
 */
 RtVoid RiRotate(RtFloat angle, RtFloat dx, RtFloat dy, RtFloat dz) {
-    _renderer.activeRenderContext().rotate(angle, dx, dy, dz);
+    renderer.activeRenderContext().rotate(angle, dx, dy, dz);
 }
 
 /*
 Concatenate a scaling onto the current transformation.
 */
 RtVoid RiScale(RtFloat sx, RtFloat sy, RtFloat sz) {
-    _renderer.activeRenderContext().scale(sx, sy, sz);
+    renderer.activeRenderContext().scale(sx, sy, sz);
 }
 
 RtVoid RiSkew(RtFloat angle, RtFloat dx1, RtFloat dy1, RtFloat dz1, RtFloat dx2, RtFloat dy2, RtFloat dz2) {
@@ -584,11 +590,11 @@ RtVoid RiDisplacementV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[
 }
 
 RtVoid RiCoordinateSystem(RtToken space) {
-    _renderer.activeRenderContext().saveCoordinateSystem(space);
+    renderer.activeRenderContext().saveCoordinateSystem(space);
 }
 
 RtVoid RiCoordSysTransform(RtToken space) {
-    _renderer.activeRenderContext().setCoordinateSystem(space);
+    renderer.activeRenderContext().setCoordinateSystem(space);
 }
 
 RtPoint * RiTransformPoints(RtToken fromspace, RtToken tospace, RtInt n, RtPoint points[]) {
@@ -600,11 +606,11 @@ Push and pop the current transformation. Pushing and popping must be properly
 nested with respect to the various begin-end constructs.
 */
 RtVoid RiTransformBegin(void) {
-    _renderer.activeRenderContext().pushTransform();
+    renderer.activeRenderContext().pushTransform();
 }
 
 RtVoid RiTransformEnd(void) {
-    _renderer.activeRenderContext().popTransform();
+    renderer.activeRenderContext().popTransform();
 }
 
 RtVoid RiAttribute(RtToken name, ...) {
@@ -617,7 +623,7 @@ RtVoid RiAttributeV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) 
 nvertices is the number of vertices in a single closed planar convex polygon. parameterlist
 is a list of token-array pairs where each token is one of the standard geometric primitive
 variables or a variable which has been defined with RiDeclare. The parameter
-list must include at least position (”P”) information. If a primitive variable is of classss
+list must include at least position ("P") information. If a primitive variable is of classss
 vertex or varying, the array contains nvertices elements of the type corresponding
 to the token. If the variable is uniform or constant, the array contains a single element.
 The number of floats associated with each type is given in Table 5.1, Standard
@@ -700,7 +706,7 @@ RtVoid RiPolygon(RtInt nverts, ...) {
     va_end(ap);
 
     // add poly to renderer
-    _renderer.activeRenderContext().addPolygon(poly);
+    renderer.activeRenderContext().addPolygon(poly);
 }
 
 RtVoid RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], RtPointer parms[]) {

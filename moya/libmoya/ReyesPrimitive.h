@@ -46,6 +46,6 @@ namespace v3d::moya {
                 An unmeasured primitive is therefore split rather than diced, which routes it
                 through that measurement instead of assuming it small enough to skip it.
             */
-            bool _diceable = false;
+            bool diceable_ = false;
     };
 };  // namespace v3d::moya
