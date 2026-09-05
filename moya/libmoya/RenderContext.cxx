@@ -22,6 +22,14 @@
 
 namespace v3d::moya {
 
+    glm::vec3 project(const glm::mat4x4 & m, const glm::vec3 & point) {
+        const glm::vec4 projected = m * glm::vec4(point, 1.0f);
+        if (projected.w <= 1.0e-6f) {
+            return glm::vec3(projected);
+        }
+        return glm::vec3(projected) / projected.w;
+    }
+
     RenderContext::RenderContext() {
         initialize();
     }
@@ -77,12 +85,20 @@ namespace v3d::moya {
         the framebuffer will be allocated here
     */
     void RenderContext::prepareWorld() {
-        // do we always need to do this or only when a projection hasn't explicitly been set?
-        projection("");
+        // a scene that named no projection gets the default, and one that named a projection
+        // has already had its screen transform built and its transform reset - projecting
+        // again here would compose the projection twice and would save that reset as the
+        // camera transform
+        if (!projectionNamed_) {
+            projection("");
+        }
 
         // establish the world coordinate system
-        // save the existing transform as the camera coordinate system
+        // save the existing transform as the camera coordinate system. What a scene set
+        // between RiProjection and here is the world to camera transformation
         saveCoordinateSystem("camera");
+        // inside the world block the current transformation is object to world
+        transform_ = glm::mat4x4(1.0f);
 
         // set raster transformation
         glm::mat4x4 raster(1.0f);  // identity
@@ -137,13 +153,36 @@ namespace v3d::moya {
         // name is orthographic, perspective, or empty
         // only perspective uses fov
         projection_ = name;
+        projectionNamed_ = true;
+
+        const float left = screen_[0];
+        const float right = screen_[1];
+        const float bottom = screen_[2];
+        const float top = screen_[3];
 
         // an unsupported projection falls through every branch below, so this has to start as
         // something composable rather than as whatever the stack held
         glm::mat4x4 projection(1.0f);
         // build the projection matrix
         if (name == "perspective") {
-            projection = glm::mat4x4(1.0f);  // identity
+            /*
+                RI states fov as the full angle between screen space (-1, 0) and (1, 0), so a
+                point at eye depth z reaches screen x = 1 at x = z * tan(fov / 2). The screen
+                window then selects the part of screen space the image covers.
+
+                The interface looks down +z, so w is +z rather than the -z a right handed
+                system would write, and depth runs [-1, 1] to match the orthographic branch
+                and the plane extraction in Frustum::extract.
+            */
+            const float tangent = std::tan(glm::radians(fov) / 2.0f);
+            projection = glm::mat4x4(0.0f);
+            projection[0][0] = 2.0f / ((right - left) * tangent);
+            projection[1][1] = 2.0f / ((top - bottom) * tangent);
+            projection[2][0] = -(right + left) / (right - left);
+            projection[2][1] = -(top + bottom) / (top - bottom);
+            projection[2][2] = (far_ + near_) / (far_ - near_);
+            projection[2][3] = 1.0f;
+            projection[3][2] = -2.0f * far_ * near_ / (far_ - near_);
         } else if (name == "orthographic") {
             /*
                 [2 / (right-left)	0					0				-tx	]
@@ -169,10 +208,6 @@ namespace v3d::moya {
             [  03,  13,  23,  33 ]
             */
 
-            float left = -1.0;
-            float right = 1.0;  // xres_;
-            float top = 1.0;
-            float bottom = -1.0;  // yres_;
             float far = far_;
             float near = near_;
 
@@ -205,11 +240,10 @@ namespace v3d::moya {
             // unsupported projections default to orthographic
         }
 
-        // set transform to screen transformation
-
-
-        // append projection matrix to current transformation matrix
-        transform_ *= projection;
+        // append the projection to the current transformation. RI states the composition in
+        // row vectors, where the projection is on the right; a matrix applies to what is on
+        // its right here, so it goes on the left
+        transform_ = projection * transform_;
         // save as screen coordinate system
         saveCoordinateSystem("screen");
 
@@ -227,6 +261,40 @@ namespace v3d::moya {
         xres_ = xres;
         yres_ = yres;
         pixelAspect_ = aspect;
+        if (!frameAspectNamed_ && yres_ > 0) {
+            frameAspectRatio(xres_ * pixelAspect_ / yres_);
+            frameAspectNamed_ = false;
+        }
+    }
+
+    /*
+        maps to RiFrameAspectRatio(aspect)
+    */
+    void RenderContext::frameAspectRatio(float aspect) {
+        frameAspect_ = aspect;
+        frameAspectNamed_ = true;
+        if (screenNamed_) {
+            return;
+        }
+        // the RI default: the wider dimension spans [-1, 1] and the other is the reciprocal,
+        // so that a frame which is not square does not stretch a square window across itself
+        if (frameAspect_ >= 1.0f) {
+            screenWindow(-frameAspect_, frameAspect_, -1.0f, 1.0f);
+        } else {
+            screenWindow(-1.0f, 1.0f, -1.0f / frameAspect_, 1.0f / frameAspect_);
+        }
+        screenNamed_ = false;
+    }
+
+    /*
+        maps to RiScreenWindow(left, right, bottom, top)
+    */
+    void RenderContext::screenWindow(float left, float right, float bottom, float top) {
+        screen_[0] = left;
+        screen_[1] = right;
+        screen_[2] = bottom;
+        screen_[3] = top;
+        screenNamed_ = true;
     }
 
     /*
@@ -243,7 +311,32 @@ namespace v3d::moya {
     }
 
     void RenderContext::popTransform(void) {
+        if (transforms_.empty()) {
+            return;
+        }
+        transform_ = transforms_.back();
         transforms_.pop_back();
+    }
+
+    void RenderContext::attributeBegin() {
+        Attributes saved;
+        saved.transform = transform_;
+        saved.color = color_;
+        saved.opacity = opacity_;
+        saved.shadingRate = shadingRate_;
+        attributes_.push_back(saved);
+    }
+
+    void RenderContext::attributeEnd() {
+        if (attributes_.empty()) {
+            return;
+        }
+        const Attributes & saved = attributes_.back();
+        transform_ = saved.transform;
+        color_ = saved.color;
+        opacity_ = saved.opacity;
+        shadingRate_ = saved.shadingRate;
+        attributes_.pop_back();
     }
 
     void RenderContext::saveCoordinateSystem(const std::string& name) {
@@ -262,6 +355,39 @@ namespace v3d::moya {
 
     void RenderContext::setTransform(const glm::mat4x4& trans) {
         transform_ = trans;
+    }
+
+    void RenderContext::concatTransform(const glm::mat4x4& trans) {
+        transform_ = transform_ * trans;
+    }
+
+    void RenderContext::color(const glm::vec3& value) {
+        color_ = value;
+    }
+
+    glm::vec3 RenderContext::color() const {
+        return color_;
+    }
+
+    void RenderContext::opacity(const glm::vec3& value) {
+        opacity_ = value;
+    }
+
+    glm::vec3 RenderContext::opacity() const {
+        return opacity_;
+    }
+
+    void RenderContext::shadingRate(float size) {
+        shadingRate_ = size;
+    }
+
+    void RenderContext::bucketSize(unsigned int width, unsigned int height) {
+        bucketWidth_ = width;
+        bucketHeight_ = height;
+    }
+
+    void RenderContext::gridSize(unsigned int size) {
+        gridSize_ = size;
     }
 
     glm::mat4x4 RenderContext::coordinateSystem(const std::string& name) {
@@ -298,6 +424,21 @@ namespace v3d::moya {
             we should probably just transform the poly to eye space first since any future calculations
             on this poly will be done in eye space or beyond.
         */
+        // a primitive carries the state it was submitted under - see ReyesPrimitive::place().
+        // A piece handed back by a split is already placed and keeps its parent's
+        if (!poly->placed()) {
+            poly->place(coordinateSystems_["camera"] * transform_, color_);
+        }
+
+        // a vertex that brought no "Cs" of its own takes the primitive's colour. There is no
+        // light and no material behind it - RiSurface is still empty - so this is the
+        // geometry's colour rather than a shaded one
+        for (unsigned int i = 0; i < poly->vertexCount(); i++) {
+            if (!(*poly)[i].hasColor()) {
+                (*poly)[i].color(poly->color());
+            }
+        }
+
         v3d::type::AABBox bound = poly->bound();
 
         glm::vec3 bound_max = bound.max();
@@ -312,10 +453,13 @@ namespace v3d::moya {
             later we'll probably need to concatenate the transforms_ matrix stack too
         */
 
-        bound_max = glm::vec3(transform_ * glm::vec4(bound_max, 1.0f));
-        bound_max = glm::vec3(glm::transpose(coordinateSystems_["camera"]) * glm::vec4(bound_max, 1.0f));
-        bound_min = glm::vec3(transform_ * glm::vec4(bound_min, 1.0f));
-        bound_min = glm::vec3(glm::transpose(coordinateSystems_["camera"]) * glm::vec4(bound_min, 1.0f));
+        // the camera coordinate system holds the world to camera transformation, which is what
+        // prepareWorld() saved, so it applies as it stands. Neither a transpose nor an inverse
+        // belongs here: both happen to be right when it is a rotation and neither is when a
+        // scene places its camera with a matrix that also translates
+        const glm::mat4x4 toEye = poly->placement();
+        bound_max = glm::vec3(toEye * glm::vec4(bound_max, 1.0f));
+        bound_min = glm::vec3(toEye * glm::vec4(bound_min, 1.0f));
 
         // camera transform might've flipped some components of min & max
         if (bound_min[0] > bound_max[0])  {
@@ -389,8 +533,11 @@ namespace v3d::moya {
         // the raster transform reads the canonical volume the projection writes, so it goes
         // on the left - a matrix applies to what is on its right
         glm::mat4x4 screen = coordinateSystems_["raster"] * coordinateSystems_["screen"];
-        bound_min = glm::vec3(screen * glm::vec4(bound_min, 1.0f));
-        bound_max = glm::vec3(screen * glm::vec4(bound_max, 1.0f));
+        // two corners through a perspective projection bound the box only approximately - the
+        // eight are not the two once w varies - which is enough for the size test and the
+        // bucket this picks, and is what the split below re-measures anyway
+        bound_min = project(screen, bound_min);
+        bound_max = project(screen, bound_max);
 
         // screen transform might've flipped some components of min & max
         if (bound_min[0] > bound_max[0])
@@ -427,9 +574,8 @@ namespace v3d::moya {
          */
         if (poly->diceable()) {
             for (unsigned int i = 0; i < poly->vertexCount(); i++) {
-                glm::mat4x4 em = transform_ * glm::transpose(coordinateSystems_["camera"]);
                 Vertex pv = poly->vertex(i);
-                pv.point(glm::vec3(em * glm::vec4(pv.point(), 1.0f)));
+                pv.point(glm::vec3(toEye * glm::vec4(pv.point(), 1.0f)));
                 (*poly)[i] = pv;
             }
         }
@@ -464,6 +610,10 @@ namespace v3d::moya {
         displayName_ = name;
         displayType_ = type;
         displayMode_ = mode;
+    }
+
+    const std::string & RenderContext::displayName() const {
+        return displayName_;
     }
 
     /*

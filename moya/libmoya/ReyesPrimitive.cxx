@@ -32,4 +32,22 @@ void ReyesPrimitive::diceable(bool status) {
     diceable_ = status;
 }
 
+bool ReyesPrimitive::placed(void) const {
+    return placed_;
+}
+
+void ReyesPrimitive::place(const glm::mat4x4 & toEye, const glm::vec3 & color) {
+    placement_ = toEye;
+    color_ = color;
+    placed_ = true;
+}
+
+const glm::mat4x4 & ReyesPrimitive::placement(void) const {
+    return placement_;
+}
+
+const glm::vec3 & ReyesPrimitive::color(void) const {
+    return color_;
+}
+
 };  // namespace v3d::moya

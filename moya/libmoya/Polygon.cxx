@@ -276,6 +276,11 @@ namespace v3d::moya {
         const boost::shared_ptr<Polygon> pieces[] = { pf1, pf2, pf3, pf4 };
         for (const boost::shared_ptr<Polygon> & piece : pieces) {
             if (progress(piece, bounds)) {
+                // a piece is measured with the state its parent was submitted under, not with
+                // whatever the current transformation and colour have since become
+                if (placed()) {
+                    piece->place(placement(), color());
+                }
                 rc.addPolygon(piece);
             }
         }
@@ -307,11 +312,20 @@ namespace v3d::moya {
             rest dropped, which is a wrong grid for a concave one and is what triangulating
             before dicing would fix.
         */
+        const size_t fourth = vertices_.size() > 3 ? 3 : 2;
         glm::vec3 corners[4] = {
             vertices_[0].point(),
             vertices_[1].point(),
             vertices_[2].point(),
-            vertices_[vertices_.size() > 3 ? 3 : 2].point()
+            vertices_[fourth].point()
+        };
+        // colour interpolates the same way the position does, so a "Cs" given per vertex
+        // reaches the grid. It is the geometry's colour rather than a shaded one
+        glm::vec3 colors[4] = {
+            vertices_[0].color(),
+            vertices_[1].color(),
+            vertices_[2].color(),
+            vertices_[fourth].color()
         };
 
         const unsigned int size = grid->size();
@@ -325,6 +339,10 @@ namespace v3d::moya {
                            corners[1] * (u * (1.0f - w)) +
                            corners[2] * (u * w) +
                            corners[3] * ((1.0f - u) * w));
+                vert.color(colors[0] * ((1.0f - u) * (1.0f - w)) +
+                           colors[1] * (u * (1.0f - w)) +
+                           colors[2] * (u * w) +
+                           colors[3] * ((1.0f - u) * w));
                 grid->addVertex(vert, i, j);
             }
         }

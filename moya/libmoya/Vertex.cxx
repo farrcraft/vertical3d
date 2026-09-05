@@ -30,4 +30,8 @@ void Vertex::color(const glm::vec3 & c) {
      bits_ |= HAS_COLOR;
 }
 
+bool Vertex::hasColor(void) const {
+     return (bits_ & HAS_COLOR) != 0;
+}
+
 };  // namespace v3d::moya

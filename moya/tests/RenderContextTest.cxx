@@ -177,10 +177,11 @@ BOOST_AUTO_TEST_CASE(render_context_split_terminates_test) {
     rc.render();
 
     /*
-        The raster bound is 288 pixels across and a grid covers 16, so five rounds of four way
-        splitting bring every piece under a grid: 4^5 pieces, all of them diceable and bucketed.
-        Reaching the count at all is half the assertion - a split that failed to shrink its
-        input would be re-split without end.
+        The default screen window is [-4/3, 4/3] by [-1, 1] over a 320 by 240 image, so the
+        raster bound is 216 pixels across. A grid covers 16, so four rounds of four way
+        splitting bring every piece under one: 4^4 pieces, all diceable and bucketed. Reaching
+        the count at all is half the assertion - a split that failed to shrink its input would
+        be re-split without end.
     */
-    BOOST_TEST(rc.framebuffer()->primitiveCount() == 1024u);
+    BOOST_TEST(rc.framebuffer()->primitiveCount() == 256u);
 }

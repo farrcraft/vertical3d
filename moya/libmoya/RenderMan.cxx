@@ -12,6 +12,8 @@
 
 #include <string>
 
+#include <glm/gtc/type_ptr.hpp>
+
 namespace {
 
     // the renderer the C interface drives. An identifier with a leading underscore at namespace
@@ -269,9 +271,11 @@ RtVoid RiFormat(RtInt xres, RtInt yres, RtFloat aspect) {
 }
 
 RtVoid RiFrameAspectRatio(RtFloat aspect) {
+    renderer.activeRenderContext().frameAspectRatio(aspect);
 }
 
 RtVoid RiScreenWindow(RtFloat left, RtFloat right, RtFloat bot, RtFloat top) {
+    renderer.activeRenderContext().screenWindow(left, right, bot, top);
 }
 
 RtVoid RiCropWindow(RtFloat xmin, RtFloat xmax, RtFloat ymin, RtFloat ymax) {
@@ -433,9 +437,11 @@ RtVoid RiOptionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
 RtVoid RiAttributeBegin(void) {
+    renderer.activeRenderContext().attributeBegin();
 }
 
 RtVoid RiAttributeEnd(void) {
+    renderer.activeRenderContext().attributeEnd();
 }
 
 /*
@@ -443,10 +449,11 @@ Set the current color to color. Normally there are three components in the color
 green, and blue), but this may be changed with the colorsamples request.
 */
 RtVoid RiColor(RtColor color) {
-    // RenderEngine::instance().setCurrentColor(Color3(color[0], color[1], color[2]));
+    renderer.activeRenderContext().color(glm::vec3(color[0], color[1], color[2]));
 }
 
 RtVoid RiOpacity(RtColor color) {
+    renderer.activeRenderContext().opacity(glm::vec3(color[0], color[1], color[2]));
 }
 
 RtVoid RiTextureCoordinates(RtFloat s1, RtFloat t1, RtFloat s2, RtFloat t2, RtFloat s3, RtFloat t3, RtFloat s4, RtFloat t4) {
@@ -506,6 +513,7 @@ RtVoid RiExteriorV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
 RtVoid RiShadingRate(RtFloat size) {
+    renderer.activeRenderContext().shadingRate(size);
 }
 
 RtVoid RiShadingInterpolation(RtToken type) {
@@ -542,11 +550,31 @@ RtVoid RiIdentity(void) {
     renderer.activeRenderContext().setIdentityTransform();
 }
 
+namespace {
+
+    /*
+        An RtMatrix is sixteen floats in RI's row major order under a row vector convention;
+        glm stores column major under a column vector one, so reading them in order is the
+        change of convention and a transpose would undo it.
+    */
+    glm::mat4x4 matrix(RtMatrix transform) {
+        return glm::make_mat4(&transform[0][0]);
+    }
+
+};  // namespace
+
 /*
 Set the current transformation to the transformation transform.
 */
 RtVoid RiTransform(RtMatrix transform) {
-    // Moya::getInstance().getActiveRenderContext().setTransform(transform);
+    renderer.activeRenderContext().setTransform(matrix(transform));
+}
+
+/*
+Concatenate the transformation transform onto the current transformation.
+*/
+RtVoid RiConcatTransform(RtMatrix transform) {
+    renderer.activeRenderContext().concatTransform(matrix(transform));
 }
 
 RtVoid RiPerspective(RtFloat fov) {

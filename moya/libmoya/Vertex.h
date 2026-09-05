@@ -28,6 +28,11 @@ namespace v3d::moya {
          */
         glm::vec3 color(void) const;
         void color(const glm::vec3 & c);
+        /**
+         * Whether a colour was written. A primitive carrying no "Cs" takes the colour that
+         * was current when it was added, and one that carries its own keeps it.
+         */
+        bool hasColor(void) const;
 
      private:
         // a grid is filled in by writing over default constructed vertices, so a vertex that

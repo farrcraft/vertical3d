@@ -16,19 +16,6 @@ namespace v3d::moya {
 
     namespace {
 
-        // one constant colour for every surface: there is no material and no light
-        const glm::vec3 SURFACE_COLOR(1.0f, 1.0f, 1.0f);
-
-        void shade(MicroPolygonGrid & grid) {
-            for (unsigned int i = 0; i < grid.size(); i++) {
-                for (unsigned int j = 0; j < grid.size(); j++) {
-                    Vertex vert = grid.vertex(i, j);
-                    vert.color(SURFACE_COLOR);
-                    grid.addVertex(vert, i, j);
-                }
-            }
-        }
-
         /*
             One sample per pixel centre, no pixel filter: each micropolygon is bounded in
             raster space and every pixel centre the bound covers takes its colour, where its
@@ -49,12 +36,12 @@ namespace v3d::moya {
                 for (unsigned int j = 0; j + 1 < grid.size(); j++) {
                     MicroPolygon poly = grid.microPolygon(i, j);
 
-                    glm::vec3 corner = glm::vec3(toRaster * glm::vec4(poly[0].point(), 1.0f));
+                    glm::vec3 corner = project(toRaster, poly[0].point());
                     glm::vec3 min = corner;
                     glm::vec3 max = corner;
                     float depth = corner.z;
                     for (unsigned int k = 1; k < 4; k++) {
-                        corner = glm::vec3(toRaster * glm::vec4(poly[k].point(), 1.0f));
+                        corner = project(toRaster, poly[k].point());
                         min = glm::min(min, corner);
                         max = glm::max(max, corner);
                         depth += corner.z;
@@ -115,7 +102,8 @@ namespace v3d::moya {
             if (prim->diceable()) {
                 boost::shared_ptr<MicroPolygonGrid> grid;
                 while (prim->dice(grid, rc)) {
-                    shade(*grid);
+                    // dicing carries the primitive's own colour onto the grid, which is the
+                    // whole of shading until RiSurface has an implementation
                     hide(*grid, rc);
                 }
             } else {

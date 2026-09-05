@@ -58,6 +58,20 @@ namespace v3d::moya {
                 */
             void imageResolution(int xres, int yres, float aspect);
             /**
+                *	maps to RiFrameAspectRatio(aspect)
+                *	the ratio of the width of the whole image to its height. Set by
+                *	imageResolution() from the pixel resolution unless this named one, which
+                *	is what makes RiFormat and RiFrameAspectRatio independent.
+                */
+            void frameAspectRatio(float aspect);
+            /**
+                *	maps to RiScreenWindow(left, right, bottom, top)
+                *	the rectangle of screen space the image covers. Defaults from the frame
+                *	aspect - [-a, a] by [-1, 1] for an image wider than it is tall - so a
+                *	4:3 image does not stretch a square window across itself.
+                */
+            void screenWindow(float left, float right, float bottom, float top);
+            /**
                 *	maps to RiClipping(hither, yon)
                 *	sets the position of the near and far clipping planes
                 */
@@ -72,9 +86,22 @@ namespace v3d::moya {
                 *	format from the name's extension.
                 */
             void display(const std::string & name, const std::string & type, const std::string & mode);
+            const std::string & displayName() const;
 
+            /**
+                *	maps to RiTransformBegin() and RiTransformEnd()
+                *	pop restores what push saved, which is what makes the pair a bracket
+                *	rather than a discard.
+                */
             void pushTransform();
             void popTransform();
+            /**
+                *	maps to RiAttributeBegin() and RiAttributeEnd()
+                *	the current transform, colour, opacity and shading rate push and pop
+                *	together - a scene with two objects nests them and expects all of it back.
+                */
+            void attributeBegin();
+            void attributeEnd();
             /**
                 *	maps to RiCoordinateSystem()
                 *	saves the current transformation as a custom named coordinate system
@@ -91,10 +118,35 @@ namespace v3d::moya {
             void setCoordinateSystem(const std::string & name);
             void setIdentityTransform();
             void setTransform(const glm::mat4x4 & trans);
+            /**
+                *	maps to RiConcatTransform()
+                *	the given transform applies before what the current one already holds,
+                *	which is the direction RI concatenates in: a translate inside a rotate
+                *	moves along the rotated axes.
+                */
+            void concatTransform(const glm::mat4x4 & trans);
 
             void translate(float dx, float dy, float dz);
             void rotate(float angle, float dx, float dy, float dz);
             void scale(float sx, float sy, float sz);
+
+            /**
+                *	maps to RiColor() and RiOpacity()
+                *	the colour a primitive added from here on carries, unless it brings a
+                *	"Cs" of its own. It is not a material - there is no light and no shader
+                *	behind it.
+                */
+            void color(const glm::vec3 & value);
+            glm::vec3 color() const;
+            void opacity(const glm::vec3 & value);
+            glm::vec3 opacity() const;
+
+            /**
+                *	maps to RiShadingRate() and to Option "limits"
+                */
+            void shadingRate(float size);
+            void bucketSize(unsigned int width, unsigned int height);
+            void gridSize(unsigned int size);
 
             /**
                 *	maps to RiPolygon()
@@ -128,8 +180,20 @@ namespace v3d::moya {
                 RI_EPSILON and RI_INFINITY are 1.0e-10 and 1.0e38; RenderMan.h is the C interface
                 and is deliberately not included here.
             */
+            /**
+                *	What RiAttributeBegin saves and RiAttributeEnd puts back.
+                */
+            class Attributes {
+             public:
+                glm::mat4x4 transform = glm::mat4x4(1.0f);
+                glm::vec3 color = glm::vec3(1.0f);
+                glm::vec3 opacity = glm::vec3(1.0f);
+                float shadingRate = 1.0f;
+            };
+
             std::string name_;
             std::vector<glm::mat4x4> transforms_;
+            std::vector<Attributes> attributes_;
             std::map<std::string, glm::mat4x4> coordinateSystems_;
             boost::shared_ptr<FrameBuffer> frameBuffer_;
             // camera options
@@ -139,6 +203,14 @@ namespace v3d::moya {
             float crop_[4] = { 0.0f, 1.0f, 0.0f, 1.0f };  // region of raster that is rendered
             float frameAspect_ = 4.0f / 3.0f;
             float screen_[4] = { -4.0f / 3.0f, 4.0f / 3.0f, -1.0f, 1.0f };  // screen coordinates, after projection, of the area to be rendered
+            // whichever of these a scene named explicitly stops following the one above it:
+            // RiFormat sets the frame aspect, which sets the screen window, and either can be
+            // overridden without the other reverting it
+            bool frameAspectNamed_ = false;
+            bool screenNamed_ = false;
+            bool projectionNamed_ = false;
+            glm::vec3 color_ = glm::vec3(1.0f);
+            glm::vec3 opacity_ = glm::vec3(1.0f);
             std::string projection_ = "orthographic";
             // display options. An empty name is no output, which is the RI default of a
             // framebuffer this renderer does not have
@@ -176,4 +248,16 @@ namespace v3d::moya {
             unsigned int gridSize_ = 256;
             float shadingRate_ = 1.0f;
     };
+
+    /**
+     *	A point through a matrix that may be a perspective one, with the divide.
+     *
+     *	An orthographic projection leaves w at one and the divide changes nothing; a
+     *	perspective one writes the eye depth into w, and a point taken without dividing is
+     *	then in eye units where the caller wanted pixels. A w at or behind the eye is left
+     *	undivided - the primitive it came from is marked undiceable and split before it is
+     *	sampled.
+     */
+    glm::vec3 project(const glm::mat4x4 & m, const glm::vec3 & point);
+
 };  // namespace v3d::moya

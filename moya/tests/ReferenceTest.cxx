@@ -12,6 +12,9 @@
 #include <glm/glm.hpp>
 
 #include "../libmoya/RenderContext.h"
+#include "../libmoya/RIBHandler.h"
+
+#include "../../api/render/offline/RIBReader.h"
 
 #include "../../api/image/Compare.h"
 #include "../../api/image/Factory.h"
@@ -20,6 +23,8 @@ namespace {
 
     const char* REFERENCE = "data/reference-polygon.png";
     const char* RENDERED = "data_out/reference-polygon.png";
+    const char* RIB_SCENE = "data/reference-polygon.rib";
+    const char* RIB_RENDERED = "data_out/reference-polygon-rib.png";
 
     v3d::moya::Vertex vertex(float x, float y, float z) {
         v3d::moya::Vertex v;
@@ -64,7 +69,7 @@ BOOST_AUTO_TEST_CASE(moya_renders_a_polygon_test) {
 
     boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = rc.framebuffer()->planes();
 
-    // the quad covers raster x over [9.6, 41.6] and y over [4.8, 28.8]
+    // the quad covers raster x over [15.2, 39.2] and y over [4.8, 28.8]
     BOOST_TEST(planes->value(v3d::moya::FrameBuffer::RED, 24, 16) == 1.0f);
     BOOST_TEST(planes->value(v3d::moya::FrameBuffer::BLUE, 24, 16) == 1.0f);
     // and nothing outside it
@@ -108,6 +113,38 @@ BOOST_AUTO_TEST_CASE(moya_reference_test) {
     }
     BOOST_CHECK_MESSAGE(difference.match,
         difference.description() + " - what was rendered instead is in " + RENDERED);
+}
+
+/**
+ * The same scene said in RIB, against the same committed picture.
+ *
+ * Two routes to one image: if the file path and the code path disagree, this says so, and
+ * neither of them is the reference. It is what makes the reader a rendering change rather
+ * than a parsing one.
+ **/
+BOOST_AUTO_TEST_CASE(moya_reference_from_rib_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(reader.read(RIB_SCENE, &handler));
+    BOOST_CHECK_EQUAL(reader.error(), "");
+
+    boost::shared_ptr<v3d::image::Image> rendered =
+        handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS);
+
+    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    v3d::image::Factory factory(logger);
+    boost::shared_ptr<v3d::image::Image> reference = factory.read(REFERENCE);
+    BOOST_REQUIRE(reference != nullptr);
+
+    v3d::image::Difference difference = v3d::image::compare(*rendered, *reference, 1);
+    if (!difference.match) {
+        boost::filesystem::create_directory("data_out");
+        factory.write(RIB_RENDERED, rendered);
+    }
+    BOOST_CHECK_MESSAGE(difference.match,
+        difference.description() + " - what the rib scene rendered instead is in " + RIB_RENDERED);
 }
 
 /**

@@ -9,6 +9,7 @@ v3d_add_test(moya
 	"PolygonTest.cxx"
 	"ReferenceTest.cxx"
 	"RenderContextTest.cxx"
+	"RIBHandlerTest.cxx"
 	"RendererTest.cxx"
 	"ReyesPrimitiveTest.cxx"
 	"VertexTest.cxx")
