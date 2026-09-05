@@ -28,8 +28,9 @@ file under one of them reaches the api as `../../../api/`.
 [docs/sdlc.md](docs/sdlc.md) describes how work moves through the repo — where plans live, when a decision
 earns an ADR, and what "verified" currently means. Decisions are in [docs/adr/](docs/adr/), indexed in its
 README; most of the first twelve cover the Vulkan rewrite and are worth reading before touching `api/render`.
-Plans live in [docs/plans/](docs/plans/), surveys and audits in [docs/audits/](docs/audits/), and unphased
-work in [docs/TODO.md](docs/TODO.md). No plan is open.
+Plans live in [docs/plans/](docs/plans/), surveys and audits in [docs/audits/](docs/audits/), roadmaps for
+areas nobody has taken up in [docs/roadmap/](docs/roadmap/), and unphased work in
+[docs/TODO.md](docs/TODO.md). No plan is open.
 
 ## Build
 

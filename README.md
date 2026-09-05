@@ -96,6 +96,7 @@ Pong, Tetris, Voxel, Odyssey and Vertical3D all run.
 * [docs/adr/](docs/adr/) — architecture decision records, and why things are shaped as they are
 * [docs/RenderingPipeline.md](docs/RenderingPipeline.md) — the render chain from window to draw item
 * [docs/Dependencies.md](docs/Dependencies.md) — vcpkg, submodules, and adding a dependency
+* [docs/roadmap/](docs/roadmap/) — what an unscheduled area would need, and in what order
 * [docs/TODO.md](docs/TODO.md) — what is loose
 * [CLAUDE.md](CLAUDE.md) — orientation for coding agents, and a fair summary of the tree's traps
 

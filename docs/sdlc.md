@@ -25,6 +25,11 @@ an itemised list of what has to land elsewhere first, and the only account of th
 it is gone. They live in [`audits/`](audits/), and move to [`audits/completed/`](audits/completed/)
 when the list is worked off.
 
+An area nobody has taken up gets a roadmap, in [`roadmap/`](roadmap/): what it would need and
+in what order, written while the code is fresh in someone's head rather than when the work
+starts. A roadmap is not scheduled and does not close — **when one of its sections is taken up
+it earns a plan**, and the roadmap points at it.
+
 ## 2. Decide
 
 **Significant decisions get an ADR.** Significant means hard to reverse, constrains later
