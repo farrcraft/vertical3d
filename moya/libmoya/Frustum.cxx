@@ -10,6 +10,25 @@
 
 namespace v3d::moya {
 
+namespace {
+
+    /**
+     * A frustum plane is the matrix's w row plus or minus one of its x, y or z rows.
+     *
+     * glm is column major, so row i component k is m[k][i]. Reading m[i][k] instead extracts
+     * the planes of the transposed matrix, which for anything but a symmetric one is a
+     * different frustum.
+     **/
+    Plane rowPlane(const glm::mat4x4 & m, unsigned int row, float sign) {
+        Plane plane;
+        for (unsigned int k = 0; k < 4; k++) {
+            plane[k] = m[k][3] + sign * m[k][row];
+        }
+        return plane;
+    }
+
+};  // namespace
+
 Frustum::Frustum() {
 }
 
@@ -21,69 +40,19 @@ Frustum::~Frustum() {
 }
 
 /*
-    [ a, b, c, d ]	[  1,  2,  3,  4 ]	[ 11, 12, 13, 14 ]
-    [ e, f, g, h ]	[  5,  6,  7,  8 ]	[ 21, 22, 23, 24 ]
-    [ i, j, k, l ]	[  9, 10, 11, 12 ]	[ 31, 32, 33, 34 ]
-    [ m, n, o, p ]	[ 13, 14, 15, 16 ]	[ 41, 42, 43, 44 ]
-
     the plane extraction is described in: http://www2.ravensoft.com/users/ggribb/plane%20extraction.pdf
 
-        [  0,  1,  2,  3 ]
-        [  4,  5,  6,  7 ]
-        [  8,  9, 10,  11 ]
-        [ 12, 13, 14,  15 ]
-
-        glm (column-major ordering):
-        [  0,  4,  8,  12 ]
-        [  1,  5,  9,  13 ]
-        [  2,  6, 10,  14 ]
-        [  3,  7, 11,  15 ]
+    the near plane is the w row plus the z row rather than the z row alone. The z-row-only form
+    is for a clip volume whose depth runs [0, 1]; both glm and RenderContext::projection build
+    one running [-1, 1], which the far plane below was already written for.
 */
 void Frustum::extract(const glm::mat4x4 & projection) {
-    Plane plane;
-    // left clipping plane
-    plane[0] = projection[3][0] + projection[0][0];
-    plane[1] = projection[3][1] + projection[0][1];
-    plane[2] = projection[3][2] + projection[0][2];
-    plane[3] = projection[3][3] + projection[0][3];
-
-    _clippingPlanes["left"] = plane;
-
-    // right clipping plane
-    plane[0] = projection[3][0] - projection[0][0];
-    plane[1] = projection[3][1] - projection[0][1];
-    plane[2] = projection[3][2] - projection[0][2];
-    plane[3] = projection[3][3] - projection[0][3];
-
-    _clippingPlanes["right"] = plane;
-
-    // top clipping plane
-    plane[0] = projection[3][0] - projection[1][0];
-    plane[1] = projection[3][1] - projection[1][1];
-    plane[2] = projection[3][2] - projection[1][2];
-    plane[3] = projection[3][3] - projection[1][3];
-    _clippingPlanes["top"] = plane;
-
-    // bottom plane
-    plane[0] = projection[3][0] + projection[1][0];
-    plane[1] = projection[3][1] + projection[1][1];
-    plane[2] = projection[3][2] + projection[1][2];
-    plane[3] = projection[3][3] + projection[1][3];
-    _clippingPlanes["bottom"] = plane;
-
-    // near
-    plane[0] = projection[2][0];
-    plane[1] = projection[2][1];
-    plane[2] = projection[2][2];
-    plane[3] = projection[2][3];
-    _clippingPlanes["near"] = plane;
-
-    // far
-    plane[0] = projection[3][0] - projection[2][0];
-    plane[1] = projection[3][1] - projection[2][1];
-    plane[2] = projection[3][2] - projection[2][2];
-    plane[3] = projection[3][3] - projection[2][3];
-    _clippingPlanes["far"] = plane;
+    _clippingPlanes["left"] = rowPlane(projection, 0, 1.0f);
+    _clippingPlanes["right"] = rowPlane(projection, 0, -1.0f);
+    _clippingPlanes["bottom"] = rowPlane(projection, 1, 1.0f);
+    _clippingPlanes["top"] = rowPlane(projection, 1, -1.0f);
+    _clippingPlanes["near"] = rowPlane(projection, 2, 1.0f);
+    _clippingPlanes["far"] = rowPlane(projection, 2, -1.0f);
 }
 
 void Frustum::normalize(void) {
@@ -98,27 +67,24 @@ void Frustum::normalize(void) {
     aabb is either inside, outside, or intersecting the frustum
 */
 int Frustum::intersect(const v3d::type::AABBox & aabb) {
-    size_t inside = _clippingPlanes.size();
-    int hit = 0;
-    // do plane/box intersection tests
+    // one plane excluding the box excludes it from the frustum: the half spaces are
+    // intersected, not unioned, so a box outside any one of them is outside all six
+    bool crossing = false;
     std::map<std::string, Plane>::iterator it = _clippingPlanes.begin();
     for (; it != _clippingPlanes.end(); it++) {
-        hit = (it->second).classify(aabb);
+        int hit = (it->second).classify(aabb);
         if (hit == Plane::OUTSIDE) {
-            inside--;
+            return OUTSIDE;
+        }
+        if (hit == Plane::CROSSING) {
+            crossing = true;
         }
     }
-    if (inside == _clippingPlanes.size()) {
-        return INSIDE;
-    }
-    if (inside == 0) {
-        return OUTSIDE;
-    }
-    return CROSSING;
+    return crossing ? CROSSING : INSIDE;
 }
 
 // clip a polygon against each of the clipping planes in the frustum
-void Frustum::clip(boost::shared_ptr<Polygon> poly) {
+void Frustum::clip(const boost::shared_ptr<Polygon> & poly) {
     std::map<std::string, Plane>::iterator it = _clippingPlanes.begin();
     for (; it != _clippingPlanes.end(); it++) {
         (it->second).clip(poly);

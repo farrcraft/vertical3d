@@ -19,17 +19,22 @@ namespace v3d::moya {
         _primitives.push_back(primitive);
     }
 
-    void Bucket::render(void) {
+    size_t Bucket::primitiveCount(void) const {
+        return _primitives.size();
+    }
+
+    void Bucket::render(RenderContext & rc) {
         // iterate over each primitive in the bucket
-        std::vector<boost::shared_ptr<ReyesPrimitive> >::iterator it = _primitives.begin();
-        boost::shared_ptr<ReyesPrimitive> prim;
-        for (unsigned int i = 0; i < _primitives.size(); i++) {
-            prim = _primitives[i];
+        // splitting resubmits pieces through the first pass, which may append to this same
+        // bucket, so the loop reads the size each time around rather than caching it
+        for (size_t i = 0; i < _primitives.size(); i++) {
+            // a copy, because the entry it came from is erased below while it is still in use
+            boost::shared_ptr<ReyesPrimitive> prim = _primitives[i];
             // if primitive can be diced
             if (prim->diceable()) {
                 // dice primitive into grid of micropolygons
                 boost::shared_ptr<MicroPolygonGrid> grid;
-                while (prim->dice(grid)) {
+                while (prim->dice(grid, rc)) {
                     // compute normals and tangent vectors for micropolygons in grid
                     // shade micropolygons in grid
                     // break grid into micropolygons
@@ -48,12 +53,10 @@ namespace v3d::moya {
                 }
             } else {
                 // split primitive into smaller (possibly diceable) primitives
-                prim->split();
-                // put new primitives at head of unread portion of model file
-                // (go back and start with the first pass for each new split primitive)
-                // the splitter is responsible for feeding new polygons back in
-                // the old original polygon can be discarded now
-                // delete prim;
+                // the splitter feeds each piece back through the first pass, which is what
+                // buckets it and decides whether it is diceable in turn, so the original is
+                // finished with either way
+                prim->split(rc);
                 _primitives.erase(_primitives.begin() + i);
                 i--;
             }

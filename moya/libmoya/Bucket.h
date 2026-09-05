@@ -27,11 +27,18 @@ namespace v3d::moya {
             ~Bucket();
 
             void addPrimitive(boost::shared_ptr<ReyesPrimitive> primitive);
-            void render(void);
+            /**
+             * Render every primitive in the bucket. A primitive too large to dice is split,
+             * and its pieces go back through the first pass, which may add them to this bucket
+             * or another one.
+             */
+            void render(RenderContext & rc);
+
+            size_t primitiveCount(void) const;
 
          private:
-            unsigned int _left;  // left edge of this bucket in pixel coordinates
-            unsigned int _top;  // top edge of this bucket in pixel coordinates
+            unsigned int _left = 0;  // left edge of this bucket in pixel coordinates
+            unsigned int _top = 0;  // top edge of this bucket in pixel coordinates
             std::vector<boost::shared_ptr<ReyesPrimitive> > _primitives;  // list of primitives in this bucket
 
             std::vector<boost::shared_ptr<MicroPolygonGrid> > _grids;

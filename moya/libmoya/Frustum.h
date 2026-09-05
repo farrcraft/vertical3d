@@ -38,7 +38,7 @@ namespace v3d::moya {
             this does a sutherland-hodgeman clip against each plane
             reyes doesn't perform any clipping operations
         */
-        void clip(boost::shared_ptr<Polygon> poly);
+        void clip(const boost::shared_ptr<Polygon> & poly);
 
      private:
         std::map<std::string, Plane> _clippingPlanes;

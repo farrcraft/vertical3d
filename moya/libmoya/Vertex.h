@@ -23,9 +23,11 @@ namespace v3d::moya {
         void point(const glm::vec3 & v);
 
      private:
-        glm::vec3 point_;
-        glm::vec3 color_;
-        glm::vec3 normal_;
-        unsigned int bits_;
+        // a grid is filled in by writing over default constructed vertices, so a vertex that
+        // has not been written to yet has to read as one rather than as whatever was there
+        glm::vec3 point_ = glm::vec3(0.0f);
+        glm::vec3 color_ = glm::vec3(0.0f);
+        glm::vec3 normal_ = glm::vec3(0.0f);
+        unsigned int bits_ = 0;
     };
 };  // namespace v3d::moya

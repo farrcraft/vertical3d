@@ -62,6 +62,20 @@ BOOST_AUTO_TEST_CASE(polygon_remove_middle_vertex_test) {
 }
 
 /**
+ * clear empties the polygon, which is how a clip writes its result back over the one it was
+ * given.
+ **/
+BOOST_AUTO_TEST_CASE(polygon_clear_test) {
+    v3d::moya::Polygon polygon;
+    polygon.addVertex(vertex(1.0f, 1.0f, 1.0f));
+    polygon.addVertex(vertex(2.0f, 2.0f, 2.0f));
+
+    polygon.clear();
+
+    BOOST_TEST(polygon.vertexCount() == 0u);
+}
+
+/**
  * The bound is in object space and is the per-axis extent of the vertices, which is what the
  * splitter and the bucket assignment both read.
  **/

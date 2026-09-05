@@ -2,6 +2,10 @@
 # neither a window nor a device - only the type library its geometry is built on.
 v3d_add_test(moya
 	"TestMain.cxx"
+	"FrameBufferTest.cxx"
+	"FrustumTest.cxx"
+	"MicroPolygonGridTest.cxx"
+	"PlaneTest.cxx"
 	"PolygonTest.cxx"
 	"RenderContextTest.cxx"
 	"RendererTest.cxx"

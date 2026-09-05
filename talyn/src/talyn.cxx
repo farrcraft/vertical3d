@@ -146,7 +146,7 @@ int main(int argc, char * argv[]) {
         width = var_map["width"].as<unsigned int>();
     }
     if (var_map.count("height")) {
-        width = var_map["height"].as<unsigned int>();
+        height = var_map["height"].as<unsigned int>();
     }
 
     if (infile.empty()) {
@@ -178,6 +178,10 @@ int main(int argc, char * argv[]) {
     // override any file size specs if they were provided on the command line
     if (width > 0 && height > 0) {
         rc->format(width, height);
+    } else if (width > 0 || height > 0) {
+        // format() sizes both dimensions at once and the scene's own value for the other one
+        // is not readable back, so a lone override cannot be honoured
+        std::cout << "--width and --height must be given together to override the scene" << std::endl;
     }
 
     if (!silent) {

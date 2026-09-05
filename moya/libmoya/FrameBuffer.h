@@ -31,8 +31,18 @@ namespace v3d::moya {
 
         unsigned int * bucketSize(void) const;
         unsigned int * imageSize(void) const;
+        /**
+         * The bucket grid's extent. An image that is not a whole number of buckets across
+         * still gets the partial bucket that covers its last few pixels.
+         */
+        unsigned int bucketColumns(void) const;
+        unsigned int bucketRows(void) const;
+        /**
+         * How many primitives are waiting across every bucket.
+         */
+        size_t primitiveCount(void) const;
         void addPrimitive(const boost::shared_ptr<ReyesPrimitive> & primitive, const v3d::type::AABBox & bound);
-        void render(void);
+        void render(RenderContext & rc);
 
         // typedef boost::multi_array<Bucket, 2> BucketGrid;
         typedef std::vector< std::vector<Bucket> > BucketGrid;
@@ -49,6 +59,8 @@ namespace v3d::moya {
         std::vector<plane_t> _planes;
         unsigned int _bucketSize[2];
         unsigned int _imageSize[2];
+        unsigned int _bucketColumns = 0;
+        unsigned int _bucketRows = 0;
     };
 
 };  // namespace v3d::moya

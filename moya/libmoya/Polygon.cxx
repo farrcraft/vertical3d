@@ -18,6 +18,25 @@
 
 namespace v3d::moya {
 
+    namespace {
+
+        /**
+         * A piece is worth handing back only if it bounds something and is strictly smaller
+         * than what it came from on some axis. A split that does not shrink its input would be
+         * measured as undiceable again and split again, without end.
+         **/
+        bool progress(const boost::shared_ptr<Polygon> & piece, const v3d::type::AABBox & parent) {
+            if (piece->vertexCount() < 3) {
+                return false;
+            }
+            glm::vec3 was = parent.max() - parent.min();
+            v3d::type::AABBox bound = piece->bound();
+            glm::vec3 is = bound.max() - bound.min();
+            return is[0] < was[0] || is[1] < was[1] || is[2] < was[2];
+        }
+
+    };  // namespace
+
     Polygon::Polygon() {
     }
 
@@ -40,6 +59,10 @@ namespace v3d::moya {
     void Polygon::removeVertex(size_t idx) {
         assert(idx < vertices_.size());
         vertices_.erase(vertices_.begin() + idx);
+    }
+
+    void Polygon::clear(void) {
+        vertices_.clear();
     }
 
     Vertex& Polygon::operator[] (size_t idx) {
@@ -134,7 +157,7 @@ namespace v3d::moya {
     args p1 and p2 should be pointers to empty polygons to store the resulting split
     polygons
     */
-    void Polygon::split(const Plane& plane, boost::shared_ptr<Polygon> p1, boost::shared_ptr<Polygon> p2) {
+    void Polygon::split(const Plane& plane, const boost::shared_ptr<Polygon> & p1, const boost::shared_ptr<Polygon> & p2) {
         // intersect each edge with the plane
         glm::vec3 A, B, hit;
         int side;
@@ -202,7 +225,13 @@ namespace v3d::moya {
         }
     }
 
-    void Polygon::split(void) {
+    void Polygon::split(RenderContext & rc) {
+        // the cutting plane is derived from the first three vertices, and a polygon holding
+        // fewer than that has no area to divide
+        if (vertices_.size() < 3) {
+            return;
+        }
+
         // calculate polygon's normal from the polygon's first two vertices
         glm::vec3 v0, v1, n;
         v0 = vertices_[0].point() - vertices_[1].point();
@@ -225,10 +254,6 @@ namespace v3d::moya {
 
         // two new (potentially) polygons created as a result of splitting
         boost::shared_ptr<Polygon> p1(new Polygon()), p2(new Polygon());
-        /*
-        p1 = new Polygon();
-        p2 = new Polygon();
-        */
         // first split
         split(plane, p1, p2);
 
@@ -243,47 +268,17 @@ namespace v3d::moya {
             pf2(new Polygon()),
             pf3(new Polygon()),
             pf4(new Polygon());
-        /*
-        pf1 = new Polygon();
-        pf2 = new Polygon();
-        pf3 = new Polygon();
-        pf4 = new Polygon();
-        */
         p1->split(plane, pf1, pf2);
         p2->split(plane, pf3, pf4);
 
-        // free up the two intermediate polygons
-
-
-        // all that remains is to feed the new polygons p1 & p2 back into the top of
-        // the renderer and discard the old one. we also must make sure not to put
-        // empty polygons back in.
-        /*
-        if (pf1->vertexCount() > 0) {
-            if (pf1->vertexCount() <= 2) {
+        // the four pieces go back to the top of the renderer, which re-bounds, re-culls and
+        // re-measures each against the grid; this polygon is discarded by the caller
+        const boost::shared_ptr<Polygon> pieces[] = { pf1, pf2, pf3, pf4 };
+        for (const boost::shared_ptr<Polygon> & piece : pieces) {
+            if (progress(piece, bounds)) {
+                rc.addPolygon(piece);
             }
-            // RenderEngine::instance().activeRenderContext().addPolygon(pf1);
-        } else {
         }
-        if (pf2->vertexCount() > 0) {
-            if (pf2->vertexCount() <= 2) {
-            }
-            // RenderEngine::instance().activeRenderContext().addPolygon(pf2);
-        } else {
-        }
-        if (pf3->vertexCount() > 0) {
-            if (pf3->vertexCount() <= 2) {
-            }
-            // RenderEngine::instance().activeRenderContext().addPolygon(pf3);
-        } else {
-        }
-        if (pf4->vertexCount() > 0) {
-            if (pf4->vertexCount() <= 2) {
-            }
-            // RenderEngine::instance().activeRenderContext().addPolygon(pf4);
-        } else {
-        }
-        */
     }
 
     /*
@@ -291,7 +286,7 @@ namespace v3d::moya {
         dicing is done in eye space
         this means we can work in x, y space and not worry about z
     */
-    bool Polygon::dice(boost::shared_ptr<MicroPolygonGrid> grid, unsigned int grid_size, boost::shared_ptr<RenderContext> rc) {
+    bool Polygon::dice(boost::shared_ptr<MicroPolygonGrid> grid, RenderContext & rc) {
         /*
             the poly should already be in (unprojected) eye space
             we need to know how big our grid is
@@ -314,8 +309,8 @@ namespace v3d::moya {
         /*
             convert the eye space bound to screen space
         */
-        glm::mat4x4 screen = rc->coordinateSystem("screen");  // RenderEngine::instance().activeRenderContext().coordinateSystem("screen");
-        screen *= rc->coordinateSystem("raster");  // RenderEngine::instance().activeRenderContext().coordinateSystem("raster");
+        glm::mat4x4 screen = rc.coordinateSystem("screen");
+        screen *= rc.coordinateSystem("raster");
         bound_min = glm::vec3(screen * glm::vec4(bound_min, 1.0f));
         bound_max = glm::vec3(screen * glm::vec4(bound_max, 1.0f));
 
@@ -361,14 +356,6 @@ namespace v3d::moya {
             iterate over the boolean grid points that are still false
                 create a new vertex iterpolated between the existing vertices
         */
-        std::vector<bool> empty;
-        unsigned int idx = 0;
-        for (; idx < (grid_size * grid_size); idx++) {
-            empty[idx] = false;
-        }
-
-        for (idx = 0; idx < vertices_.size(); idx++) {
-        }
 
         // don't continue dicing this polygon
         return false;

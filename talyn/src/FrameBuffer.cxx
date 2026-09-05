@@ -31,13 +31,15 @@ namespace Talyn {
 
     boost::shared_ptr<v3d::image::Image> FrameBuffer::render() {
         auto channels = planes_.size();
-        auto bpp = channels * 8;
+        auto bpp = static_cast<uint8_t>(channels * 8);
         boost::shared_ptr<v3d::image::Image> image = boost::make_shared<v3d::image::Image>(width_, height_, bpp);
         unsigned char* data = image->data();
         unsigned int index = 0;
         for (unsigned int row = 0; row < height_; row++) {
             for (unsigned int col = 0; col < width_; col++) {
-                index = (row * width_) + col;
+                // an image pixel is `channels` bytes wide, so the plane coordinate has to be
+                // scaled by that to reach the pixel rather than landing on its neighbours
+                index = static_cast<unsigned int>(((row * width_) + col) * channels);
 
                 for (unsigned int i = 0; i < channels; i++) {
                     data[index + i] = static_cast<unsigned char>(planes_[i][row][col] * 255.0f);

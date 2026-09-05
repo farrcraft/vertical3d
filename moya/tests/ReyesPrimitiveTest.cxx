@@ -8,6 +8,17 @@
 #include "../libmoya/Polygon.h"
 #include "../libmoya/ReyesPrimitive.h"
 
+/**
+ * A primitive is undiceable until the first pass has measured it against the grid size, so an
+ * unmeasured one is routed through that measurement rather than assumed small enough to skip
+ * it.
+ **/
+BOOST_AUTO_TEST_CASE(reyes_primitive_default_diceable_test) {
+    v3d::moya::ReyesPrimitive primitive;
+
+    BOOST_TEST(!primitive.diceable());
+}
+
 BOOST_AUTO_TEST_CASE(reyes_primitive_diceable_test) {
     v3d::moya::ReyesPrimitive primitive;
 

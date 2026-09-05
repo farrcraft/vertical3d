@@ -6,10 +6,21 @@
 #include <string>
 
 #include <boost/test/unit_test.hpp>
+#include <boost/make_shared.hpp>
 
 #include <glm/glm.hpp>
 
 #include "../libmoya/RenderContext.h"
+
+namespace {
+
+    v3d::moya::Vertex vertex(float x, float y, float z) {
+        v3d::moya::Vertex v;
+        v.point(glm::vec3(x, y, z));
+        return v;
+    }
+
+};  // namespace
 
 /**
  * The defaults a context starts on, which stand in for the RiFormat and bucketing options a
@@ -97,4 +108,79 @@ BOOST_AUTO_TEST_CASE(render_context_translate_test) {
 
     glm::mat4x4 composed = rc.coordinateSystem("object");
     BOOST_TEST((glm::vec3(composed[3]) == glm::vec3(2.0f, 4.0f, 6.0f)));
+}
+
+/**
+ * A rotate composes onto the current transform the way a translate does. Both it and scale
+ * used to have empty bodies, so RiRotate and RiScale were silent no-ops.
+ **/
+BOOST_AUTO_TEST_CASE(render_context_rotate_test) {
+    v3d::moya::RenderContext rc;
+
+    rc.setIdentityTransform();
+    rc.rotate(90.0f, 0.0f, 0.0f, 1.0f);
+    rc.saveCoordinateSystem("object");
+
+    // the angle is in degrees, which is what RiRotate states it in
+    glm::mat4x4 composed = rc.coordinateSystem("object");
+    glm::vec3 turned = glm::vec3(composed * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+    BOOST_TEST(turned.x == 0.0f, boost::test_tools::tolerance(0.0001f));
+    BOOST_TEST(turned.y == 1.0f, boost::test_tools::tolerance(0.0001f));
+}
+
+BOOST_AUTO_TEST_CASE(render_context_scale_test) {
+    v3d::moya::RenderContext rc;
+
+    rc.setIdentityTransform();
+    rc.scale(2.0f, 3.0f, 4.0f);
+    rc.saveCoordinateSystem("object");
+
+    glm::mat4x4 composed = rc.coordinateSystem("object");
+    glm::vec3 scaled = glm::vec3(composed * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+    BOOST_TEST((scaled == glm::vec3(2.0f, 3.0f, 4.0f)));
+}
+
+/**
+ * The first pass files a polygon in the bucket its raster bound opens in.
+ **/
+BOOST_AUTO_TEST_CASE(render_context_buckets_a_polygon_test) {
+    v3d::moya::RenderContext rc;
+    rc.prepareWorld();
+
+    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    polygon->addVertex(vertex(-0.9f, -0.9f, 5.0f));
+    polygon->addVertex(vertex(0.9f, -0.9f, 5.0f));
+    polygon->addVertex(vertex(0.9f, 0.9f, 5.0f));
+    polygon->addVertex(vertex(-0.9f, 0.9f, 5.0f));
+    rc.addPolygon(polygon);
+
+    BOOST_TEST(rc.framebuffer()->primitiveCount() == 1u);
+}
+
+/**
+ * A polygon far larger than one grid is undiceable, so the second pass splits it and hands the
+ * pieces back to the first, which measures each in turn. The recursion ends because a split
+ * that does not shrink its input is not handed back at all - without that the pieces would be
+ * re-split forever.
+ **/
+BOOST_AUTO_TEST_CASE(render_context_split_terminates_test) {
+    v3d::moya::RenderContext rc;
+    rc.prepareWorld();
+
+    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    polygon->addVertex(vertex(-0.9f, -0.9f, 5.0f));
+    polygon->addVertex(vertex(0.9f, -0.9f, 5.0f));
+    polygon->addVertex(vertex(0.9f, 0.9f, 5.0f));
+    polygon->addVertex(vertex(-0.9f, 0.9f, 5.0f));
+    rc.addPolygon(polygon);
+
+    rc.render();
+
+    /*
+        The raster bound is 288 pixels across and a grid covers 16, so five rounds of four way
+        splitting bring every piece under a grid: 4^5 pieces, all of them diceable and bucketed.
+        Reaching the count at all is half the assertion - a split that failed to shrink its
+        input would be re-split without end.
+    */
+    BOOST_TEST(rc.framebuffer()->primitiveCount() == 1024u);
 }

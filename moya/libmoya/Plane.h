@@ -40,21 +40,39 @@ namespace v3d::moya {
         void calculate(const glm::vec3 & normal, const glm::vec3 & point);
 
         /**
-        * distance to point
+        * The plane's normal, which is normalized only if the plane is.
+        */
+        glm::vec3 normal(void) const;
+        /**
+        * The plane's distance from the origin along its normal.
+        */
+        float distance(void) const;
+
+        /**
+        * signed distance to point
         */
         float distance(const glm::vec3 & point) const;
         int classify(const v3d::type::AABBox & aabb) const;
         int classify(const glm::vec3 & point) const;
         bool intersect(const glm::vec3 & start, const glm::vec3 & direction, glm::vec3 * hitPoint) const;
         bool intersectEdge(const glm::vec3 & A, const glm::vec3 & B, glm::vec3 * hitPoint) const;
-        void clip(boost::shared_ptr<Polygon> poly);
+        /**
+        * Sutherland-Hodgman clip of a polygon against this plane, keeping the positive
+        * half space. The polygon is rewritten in place, which is what lets a caller run one
+        * plane after another over the same one.
+        */
+        void clip(const boost::shared_ptr<Polygon> & poly);
         void normalize(void);
 
         float & operator[] (unsigned int i);
 
      private:
-        glm::vec3 normal_;
-        float distance_;
-        float equation_[4];  // abcd
+        /*
+            The equation is the plane's only state: normal in [A..C] and the negated distance
+            from the origin in [D], so that distance(p) is the equation applied to p. A stored
+            normal and distance alongside it is what the two writers that set only one of the
+            pair used to disagree about.
+        */
+        float equation_[4] = { 0.0f, 0.0f, 0.0f, 0.0f };  // abcd
     };
 };  // namespace v3d::moya

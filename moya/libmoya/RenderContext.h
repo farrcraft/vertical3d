@@ -99,10 +99,10 @@ namespace v3d::moya {
                 */
             glm::mat4x4 coordinateSystem(const std::string & name);
 
-            /*
-            unsigned int getPolygonCount(void) const;
-            PolygonPtr getPolygon(unsigned int idx) const;
-            */
+            /**
+                *	The buckets the world was prepared into. Null until prepareWorld().
+                */
+            boost::shared_ptr<FrameBuffer> framebuffer() const;
 
             unsigned int bucketWidth() const;
             unsigned int bucketHeight() const;
@@ -113,28 +113,34 @@ namespace v3d::moya {
             void initialize();
 
      private:
+            /*
+                Every option carries the default the RI standard gives it. They are stated here
+                rather than in a constructor initialiser list because there are two constructors
+                and a member set by only one of them reads as a default while being indeterminate.
+                RI_EPSILON and RI_INFINITY are 1.0e-10 and 1.0e38; RenderMan.h is the C interface
+                and is deliberately not included here.
+            */
             std::string name_;
-            // vector<PolygonPtr> _polygons;
             std::vector<glm::mat4x4> transforms_;
             std::map<std::string, glm::mat4x4> coordinateSystems_;
             boost::shared_ptr<FrameBuffer> frameBuffer_;
             // camera options
-            unsigned int xres_;
-            unsigned int yres_;
-            float pixelAspect_;
-            float crop_[4];  // region of raster that is rendered. defaults [0,1,0,1]
-            float frameAspect_;  // default: 4/3
-            float screen_[4];  // screen coordinates (after projection) of area to be rendered. default: [-4/3, 4/3, -1, 1]
-            std::string projection_;  // type of projection - default: "orthographic"
-            glm::mat4x4 transform_;  // world to camera transformation matrix / current transformation matrix
-            float near_;  // near clipping plane. default: epsilon
-            float far_;  // far clipping plane. default: infinity
+            unsigned int xres_ = 320;
+            unsigned int yres_ = 240;
+            float pixelAspect_ = 1.0f;
+            float crop_[4] = { 0.0f, 1.0f, 0.0f, 1.0f };  // region of raster that is rendered
+            float frameAspect_ = 4.0f / 3.0f;
+            float screen_[4] = { -4.0f / 3.0f, 4.0f / 3.0f, -1.0f, 1.0f };  // screen coordinates, after projection, of the area to be rendered
+            std::string projection_ = "orthographic";
+            glm::mat4x4 transform_ = glm::mat4x4(1.0f);  // world to camera transformation matrix / current transformation matrix
+            float near_ = 1.0e-10f;  // near clipping plane
+            float far_ = 1.0e38f;  // far clipping plane
             // other clipping planes
-            float fStop_;  // for depth of field. default: infinity
-            float focalLength_;
-            float focalDistance_;
-            float shutterOpen_;  // default: 0
-            float shutterClose_;  // default: 0
+            float fStop_ = 1.0e38f;  // for depth of field
+            float focalLength_ = 0.0f;
+            float focalDistance_ = 0.0f;
+            float shutterOpen_ = 0.0f;
+            float shutterClose_ = 0.0f;
 
 
             /*
@@ -152,9 +158,9 @@ namespace v3d::moya {
                 32x32 * .25 = 8x8 pixel grid
                 16x16 * 1 = 16x16 pixel grid
             */
-            unsigned int bucketWidth_;  // default = 16, 16
-            unsigned int bucketHeight_;
-            unsigned int gridSize_;  // default = 256
-            float shadingRate_;
+            unsigned int bucketWidth_ = 16;
+            unsigned int bucketHeight_ = 16;
+            unsigned int gridSize_ = 256;
+            float shadingRate_ = 1.0f;
     };
 };  // namespace v3d::moya

@@ -1,5 +1,5 @@
 add_executable("talyn"
-	"src/FrameBuffer.h" "src/Framebuffer.cxx"
+	"src/FrameBuffer.h" "src/FrameBuffer.cxx"
 	"src/RenderContext.h" "src/RenderContext.cxx"
 	"src/RIBReader.h" "src/RIBReader.cxx"
 	  "src/talyn.cxx")

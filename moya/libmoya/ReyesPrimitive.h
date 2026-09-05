@@ -12,6 +12,8 @@
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::moya {
+    class RenderContext;
+
     class ReyesPrimitive {
      public:
             ReyesPrimitive();
@@ -19,7 +21,13 @@ namespace v3d::moya {
 
             virtual bool diceable(void) const;
             virtual v3d::type::AABBox bound(void) const;
-            virtual void split(void);
+            /**
+             * Break the primitive into smaller ones and submit each back to the first pass,
+             * which is what decides the bucket and the diceability of each piece. The caller
+             * discards this primitive afterwards either way, so a primitive that cannot be
+             * usefully split submits nothing and is dropped.
+             */
+            virtual void split(RenderContext & rc);
             /*
                 turn a primitive into a micropolygon grid
                 i think this is supposed to return 1 or more grids as necessary
@@ -29,10 +37,15 @@ namespace v3d::moya {
                 so you'd just do:
                 while (!primitive_ptr->dice(grid)) { do something with grid }
             */
-            virtual bool dice(boost::shared_ptr<MicroPolygonGrid> grid);
+            virtual bool dice(boost::shared_ptr<MicroPolygonGrid> grid, RenderContext & rc);
             virtual void diceable(bool status);
 
      private:
-            bool _diceable;
+            /*
+                False until the first pass has measured the primitive against the grid size.
+                An unmeasured primitive is therefore split rather than diced, which routes it
+                through that measurement instead of assuming it small enough to skip it.
+            */
+            bool _diceable = false;
     };
 };  // namespace v3d::moya

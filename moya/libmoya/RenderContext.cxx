@@ -18,15 +18,11 @@
 
 namespace v3d::moya {
 
-    RenderContext::RenderContext() : xres_(320), yres_(240), pixelAspect_(1.0),
-        projection_("orthographic"), shutterOpen_(0.0), shutterClose_(0.0),
-        bucketWidth_(16), bucketHeight_(16), gridSize_(256), shadingRate_(1.0) {
+    RenderContext::RenderContext() {
         initialize();
     }
 
-    RenderContext::RenderContext(const std::string& name) : name_(name), xres_(320), yres_(240), pixelAspect_(1.0),
-        projection_("orthographic"), shutterOpen_(0.0), shutterClose_(0.0),
-        bucketWidth_(16), bucketHeight_(16), gridSize_(256), shadingRate_(1.0) {
+    RenderContext::RenderContext(const std::string& name) : name_(name) {
         initialize();
     }
 
@@ -43,11 +39,14 @@ namespace v3d::moya {
         coordinateSystems_["raster"] = def;
         coordinateSystems_["NDC"] = def;
 
-        transform_ = glm::mat4x4(1.0f);  //  identity
 
         // initialize the z buffer
 
         // initialize buckets - done in prepareWorld()
+    }
+
+    boost::shared_ptr<FrameBuffer> RenderContext::framebuffer() const {
+        return frameBuffer_;
     }
 
     unsigned int RenderContext::bucketWidth() const {
@@ -131,23 +130,13 @@ namespace v3d::moya {
         // only perspective uses fov
         projection_ = name;
 
-        glm::mat4x4 projection;
+        // an unsupported projection falls through every branch below, so this has to start as
+        // something composable rather than as whatever the stack held
+        glm::mat4x4 projection(1.0f);
         // build the projection matrix
         if (name == "perspective") {
             projection = glm::mat4x4(1.0f);  // identity
         } else if (name == "orthographic") {
-            /*
-                orthographic projection looks something like:
-
-                [ 2/(xright - xleft)	0						0					-((xright + xleft)/(xright-xleft))	]
-                [ 		0				2/(ytop - ybottom)		0					-((ytop+ybottom)/(ytop-ybottom))	]
-                [		0				0						-2/(zfront-zback)	(zfront+zback)/(zfront-zback)		]
-                [		0				0						0					1									]
-
-                this is almost the same as used in v3D::Core::Camera::createProjection()
-                the only difference is that tx and ty are negated.
-            */
-
             /*
                 [2 / (right-left)	0					0				-tx	]
                 [0					2 / (bottom-top)	0				-ty	]
@@ -193,8 +182,11 @@ namespace v3d::moya {
             projection[3][1] = -ty;
             projection[0][2] = 0.0;
             projection[1][2] = 0.0;
-            projection[2][2] = -2.0f / (far - near);
-            projection[2][2] = -tz;
+            // positive, as the matrix above is written: the interface looks down +z, and the
+            // negated form belongs to a right handed system, where it puts the whole of the
+            // clip range behind the near plane
+            projection[2][2] = 2.0f / (far - near);
+            projection[3][2] = -tz;
             projection[0][3] = 0.0;
             projection[1][3] = 0.0;
             projection[2][3] = 0.0;
@@ -272,10 +264,14 @@ namespace v3d::moya {
         transform_ = glm::translate(transform_, glm::vec3(dx, dy, dz));
     }
 
+    // RiRotate states its angle in degrees, which is the one place the interface disagrees
+    // with glm
     void RenderContext::rotate(float angle, float dx, float dy, float dz) {
+        transform_ = glm::rotate(transform_, glm::radians(angle), glm::vec3(dx, dy, dz));
     }
 
     void RenderContext::scale(float sx, float sy, float sz) {
+        transform_ = glm::scale(transform_, glm::vec3(sx, sy, sz));
     }
 
     /*
@@ -285,8 +281,6 @@ namespace v3d::moya {
     void RenderContext::addPolygon(boost::shared_ptr<Polygon> poly) {
         // if an output stream exists
         // echo RiPolygon RIB command to output stream
-
-        // _polygons.push_back(poly);
 
         // bound polygon in eye space
         /*
@@ -369,6 +363,20 @@ namespace v3d::moya {
         // poly->transform(coordinateSystems_["screen"]);
         // screen space to reyes means renderman raster space
 
+        // do viewing frustum cull
+        /*
+            The planes of a matrix bound the region of the space it reads that lands inside the
+            canonical clip volume, so the test is against the eye space bound and against the
+            projection alone. Testing the raster space bound against the planes of the raster
+            matrix asks whether pixel coordinates fall inside a volume measured in eye units.
+        */
+        Frustum frustum(coordinateSystems_["screen"]);
+        v3d::type::AABBox eyeBound;
+        eyeBound.extents(bound_min, bound_max);
+        if (frustum.intersect(eyeBound) == Frustum::OUTSIDE) {  // poly is entirely outside frustum
+            return;
+        }
+
         // bound = poly->bound();
         glm::mat4x4 screen = coordinateSystems_["screen"];
         screen *= coordinateSystems_["raster"];
@@ -384,12 +392,6 @@ namespace v3d::moya {
             std::swap(bound_min[2], bound_max[2]);
 
         bound.extents(bound_min, bound_max);
-
-        // do viewing frustum cull
-        Frustum frustum(screen);
-        if (frustum.intersect(bound) == Frustum::OUTSIDE) {  // poly is entirely outside frustum
-            return;
-        }
 
         /*
             if the primitive is spanning the e plane then we already know it needs split
@@ -439,20 +441,6 @@ namespace v3d::moya {
         // nothing left to do in the first pass for this primitive
     }
     /*
-    unsigned int RenderContext::getPolygonCount(void) const
-    {
-      return _polygons.size();
-    }
-
-    PolygonPtr RenderContext::getPolygon(unsigned int idx) const
-    {
-      assert(idx >= 0 && idx < _polygons.size());
-      return _polygons[idx];
-    }
-    */
-
-
-    /*
         maps to RiWorldEnd()
         once rendering is done, objects, lights and other stuff set
         after prepareWorld() are destroyed and the memory reclaimed
@@ -464,7 +452,7 @@ namespace v3d::moya {
         perform the second reyes pass
     */
     void RenderContext::render() {
-        frameBuffer_->render();
+        frameBuffer_->render(*this);
     }
 
 };  // namespace v3d::moya
