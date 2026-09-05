@@ -16,15 +16,15 @@
 
 namespace {
 
-    const glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
-    const glm::vec4 red(1.0f, 0.0f, 0.0f, 1.0f);
+const glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
+const glm::vec4 red(1.0f, 0.0f, 0.0f, 1.0f);
 
-    /**
-     * A quarter turn about z, which takes the x axis onto the y axis.
-     **/
-    glm::mat4 quarterTurn() {
-        return glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    }
+/**
+ * A quarter turn about z, which takes the x axis onto the y axis.
+ **/
+glm::mat4 quarterTurn() {
+    return glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+}
 
 };  // namespace
 

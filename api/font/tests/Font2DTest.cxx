@@ -11,8 +11,8 @@
 #include "../Font2D.h"
 
 namespace {
-    // the shared font, copied next to the executable by this directory's CMakeLists
-    const char* kTypeface = "data/fonts/NotoSans-Regular.ttf";
+// the shared font, copied next to the executable by this directory's CMakeLists
+const char* kTypeface = "data/fonts/NotoSans-Regular.ttf";
 };  // namespace
 
 BOOST_AUTO_TEST_CASE(font_properties_test) {

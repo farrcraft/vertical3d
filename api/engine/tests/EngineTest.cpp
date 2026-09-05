@@ -14,61 +14,61 @@
 
 namespace {
 
-    /**
-     * The engine keeps what it built where its app subclass can reach it, so a test reads the
-     * mappings it registered the way a Controller does.
-     **/
-    class TestEngine final : public v3d::engine::Engine {
-     public:
-        using Engine::Engine;
+/**
+ * The engine keeps what it built where its app subclass can reach it, so a test reads the
+ * mappings it registered the way a Controller does.
+ **/
+class TestEngine final : public v3d::engine::Engine {
+ public:
+    using Engine::Engine;
 
-        const boost::shared_ptr<entt::dispatcher>& dispatcher() const {
-            return dispatcher_;
-        }
-
-        const boost::shared_ptr<v3d::event::Engine>& events() const {
-            return eventEngine_;
-        }
-
-        const boost::shared_ptr<v3d::config::Config>& config() const {
-            return config_;
-        }
-
-        const boost::shared_ptr<v3d::asset::Manager>& assets() const {
-            return assetManager_;
-        }
-    };
-
-    /**
-     * Collects the destination events a mapping produced.
-     **/
-    struct Recorder {
-        void handle(const v3d::event::Event& event) {
-            if (event.type() == v3d::event::Type::Destination) {
-                events_.push_back(event);
-            }
-        }
-
-        std::vector<v3d::event::Event> events_;
-    };
-
-    v3d::event::Event source(const boost::shared_ptr<v3d::event::Context>& context,
-        const std::string& name, v3d::event::State state) {
-        v3d::event::Event event(name, context);
-        event.type(v3d::event::Type::Source);
-        event.state(state);
-        return event;
+    const boost::shared_ptr<entt::dispatcher>& dispatcher() const {
+        return dispatcher_;
     }
 
-    /**
-     * An app path rather than a data path: initialize() appends "data/" to it, so a fixture
-     * carries the directory the manager ends up resolving against one level down.
-     **/
-    std::string appPath(const std::string& fixture) {
-        return "fixtures/" + fixture + "/";
+    const boost::shared_ptr<v3d::event::Engine>& events() const {
+        return eventEngine_;
     }
 
-    const int configFeature = static_cast<int>(v3d::engine::Feature::Config);
+    const boost::shared_ptr<v3d::config::Config>& config() const {
+        return config_;
+    }
+
+    const boost::shared_ptr<v3d::asset::Manager>& assets() const {
+        return assetManager_;
+    }
+};
+
+/**
+ * Collects the destination events a mapping produced.
+ **/
+struct Recorder {
+    void handle(const v3d::event::Event& event) {
+        if (event.type() == v3d::event::Type::Destination) {
+            events_.push_back(event);
+        }
+    }
+
+    std::vector<v3d::event::Event> events_;
+};
+
+v3d::event::Event source(const boost::shared_ptr<v3d::event::Context>& context,
+    const std::string& name, v3d::event::State state) {
+    v3d::event::Event event(name, context);
+    event.type(v3d::event::Type::Source);
+    event.state(state);
+    return event;
+}
+
+/**
+ * An app path rather than a data path: initialize() appends "data/" to it, so a fixture
+ * carries the directory the manager ends up resolving against one level down.
+ **/
+std::string appPath(const std::string& fixture) {
+    return "fixtures/" + fixture + "/";
+}
+
+const int configFeature = static_cast<int>(v3d::engine::Feature::Config);
 
 };  // namespace
 

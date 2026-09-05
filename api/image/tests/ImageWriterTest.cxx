@@ -17,15 +17,15 @@
 #include "../Factory.h"
 
 namespace {
-    /**
-     * Writes land in a directory of their own beside the executable, created here rather
-     * than committed, so a run never depends on what the last one left behind.
-     **/
-    struct OutputDirectory {
-        OutputDirectory() {
-            boost::filesystem::create_directory("data_out");
-        }
-    };
+/**
+ * Writes land in a directory of their own beside the executable, created here rather
+ * than committed, so a run never depends on what the last one left behind.
+ **/
+struct OutputDirectory {
+    OutputDirectory() {
+        boost::filesystem::create_directory("data_out");
+    }
+};
 };  // namespace
 
 BOOST_FIXTURE_TEST_CASE(imagewriter_test, OutputDirectory) {

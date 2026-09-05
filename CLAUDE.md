@@ -96,7 +96,7 @@ ninja -C out/build/x64-Debug pong         # one target
 ## Lint
 
 ```
-cpplint --linelength=180 --filter=-whitespace/indent_namespace,-build/namespaces_literals \
+cpplint --linelength=180 --filter=-build/namespaces_literals \
   --exclude=out --exclude=vendor --exclude=vcpkg_installed \
   --exclude=voxel/src/noise --recursive .
 ```
@@ -106,9 +106,9 @@ it** — every finding is a real one. The excludes matter only locally — CI ch
 installs no ports — but a developer machine has all three trees, and `vcpkg_installed/` alone holds
 80,000-odd third party headers.
 
-`whitespace/indent_namespace` is suppressed because the house style indents inside a namespace and the
-check is Google's rule that it should not. A name cpplint does not know is accepted and silently
-suppresses nothing, so a filter that stops working looks exactly like a tree that started failing.
+**Nothing is suppressed but `build/namespaces_literals`.** A name cpplint does not know is accepted and
+silently suppresses nothing, so a filter entry that stops working looks exactly like a tree that started
+failing — check a suppression still names a live category before trusting it.
 
 ## Tests
 
@@ -284,6 +284,10 @@ reads it back. The scene has no lights and no materials, so what it produces ren
   `v3d::render::realtime::vulkan`. Closed with `};  // namespace <full name>` — the trailing semicolon is
   part of the style.
 - 4-space indent; access specifiers indented one space into the class body (` public:`, ` private:`).
+- **A namespace body is not indented**, which is Google's rule and what `whitespace/indent_namespace`
+  enforces. That check cannot tell a continuation line from a declaration, so a continuation at namespace
+  scope — a constructor's initialiser list, a string built from adjacent literals — sits at column 0 too.
+  It only misreads a nested-class constructor (`Recorder::Target::Target()`), not `Plain::Plain()`.
 - `boost::shared_ptr` / `boost::make_shared` throughout, not the `std` equivalents.
 - Doc comments are `/** **/` blocks, frequently left empty above trivial members.
 - Logging is spdlog through the wrapper: `logger_->get()->info("... {}", value)`. The older

@@ -11,27 +11,27 @@
 
 namespace {
 
-    /**
-     * Every primitive is a unit across and centred on the origin, so one placed by its
-     * transform lands where the transform says rather than where its geometry was built.
-     **/
-    void checkUnitCentred(const boost::shared_ptr<v3d::brep::BRep>& mesh, bool flat) {
-        v3d::type::AABBox bound = mesh->bound();
-        glm::vec3 min = bound.min();
-        glm::vec3 max = bound.max();
+/**
+ * Every primitive is a unit across and centred on the origin, so one placed by its
+ * transform lands where the transform says rather than where its geometry was built.
+ **/
+void checkUnitCentred(const boost::shared_ptr<v3d::brep::BRep>& mesh, bool flat) {
+    v3d::type::AABBox bound = mesh->bound();
+    glm::vec3 min = bound.min();
+    glm::vec3 max = bound.max();
 
-        BOOST_CHECK_SMALL(min.x + max.x, 0.0001f);
-        BOOST_CHECK_SMALL(min.y + max.y, 0.0001f);
-        BOOST_CHECK_SMALL(min.z + max.z, 0.0001f);
+    BOOST_CHECK_SMALL(min.x + max.x, 0.0001f);
+    BOOST_CHECK_SMALL(min.y + max.y, 0.0001f);
+    BOOST_CHECK_SMALL(min.z + max.z, 0.0001f);
 
-        BOOST_CHECK_CLOSE(max.x - min.x, 1.0f, 1.0f);
-        BOOST_CHECK_CLOSE(max.z - min.z, 1.0f, 1.0f);
-        if (flat) {
-            BOOST_CHECK_SMALL(max.y - min.y, 0.0001f);
-        } else {
-            BOOST_CHECK_CLOSE(max.y - min.y, 1.0f, 1.0f);
-        }
+    BOOST_CHECK_CLOSE(max.x - min.x, 1.0f, 1.0f);
+    BOOST_CHECK_CLOSE(max.z - min.z, 1.0f, 1.0f);
+    if (flat) {
+        BOOST_CHECK_SMALL(max.y - min.y, 0.0001f);
+    } else {
+        BOOST_CHECK_CLOSE(max.y - min.y, 1.0f, 1.0f);
     }
+}
 
 };  // namespace
 

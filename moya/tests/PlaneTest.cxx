@@ -13,20 +13,20 @@
 
 namespace {
 
-    v3d::moya::Vertex vertex(float x, float y, float z) {
-        v3d::moya::Vertex v;
-        v.point(glm::vec3(x, y, z));
-        return v;
-    }
+v3d::moya::Vertex vertex(float x, float y, float z) {
+    v3d::moya::Vertex v;
+    v.point(glm::vec3(x, y, z));
+    return v;
+}
 
-    /**
-     * The z = 0 plane, keeping the positive half space.
-     **/
-    v3d::moya::Plane zPlane() {
-        v3d::moya::Plane plane;
-        plane.calculate(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-        return plane;
-    }
+/**
+ * The z = 0 plane, keeping the positive half space.
+ **/
+v3d::moya::Plane zPlane() {
+    v3d::moya::Plane plane;
+    plane.calculate(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    return plane;
+}
 
 };  // namespace
 

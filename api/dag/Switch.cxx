@@ -7,10 +7,10 @@
 
 namespace v3d::dag {
 
-    Switch::Switch() {
-    }
+Switch::Switch() {
+}
 
-    Switch::~Switch() {
-    }
+Switch::~Switch() {
+}
 
 };  // namespace v3d::dag

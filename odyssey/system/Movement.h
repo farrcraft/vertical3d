@@ -8,18 +8,18 @@
 #include "../../api/ecs/System.h"
 
 namespace odyssey::system {
+/**
+ **/
+class Movement final : public v3d::ecs::System {
+ public:
     /**
+     * Inherit base constructor
      **/
-    class Movement final : public v3d::ecs::System {
-     public:
-        /**
-         * Inherit base constructor
-         **/
-        using System::System;
+    using System::System;
 
-        /**
-         * @return bool
-         **/
-        bool tick() override;
-    };
+    /**
+     * @return bool
+     **/
+    bool tick() override;
+};
 };  // namespace odyssey::system

@@ -15,35 +15,35 @@
 
 namespace {
 
-    /**
-     * What the renderer asked to be written, so a test can check where a label went without
-     * a font, an atlas or a device.
-     **/
-    struct Written final {
-        std::string text;
-        glm::vec2 pen;
-        glm::vec4 colour;
-    };
+/**
+ * What the renderer asked to be written, so a test can check where a label went without
+ * a font, an atlas or a device.
+ **/
+struct Written final {
+    std::string text;
+    glm::vec2 pen;
+    glm::vec4 colour;
+};
 
-    /**
-     * A fixed width per character, so a label's width is predictable.
-     **/
-    const float characterWidth = 10.0f;
+/**
+ * A fixed width per character, so a label's width is predictable.
+ **/
+const float characterWidth = 10.0f;
 
-    /**
-     * A menu of action items with the given labels, with its level pointing at itself the way
-     * the ui engine's loader leaves it.
-     **/
-    boost::shared_ptr<v3d::ui::component::Menu> buildMenu(const std::vector<std::string>& labels) {
-        boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-        boost::shared_ptr<v3d::ui::component::Menu> menu = boost::make_shared<v3d::ui::component::Menu>(dispatcher);
-        for (const std::string& label : labels) {
-            menu->addItem(boost::make_shared<v3d::ui::component::MenuItem>(v3d::ui::menu::ItemType::Action, label));
-        }
-        menu->level(menu);
-        menu->active(0);
-        return menu;
+/**
+ * A menu of action items with the given labels, with its level pointing at itself the way
+ * the ui engine's loader leaves it.
+ **/
+boost::shared_ptr<v3d::ui::component::Menu> buildMenu(const std::vector<std::string>& labels) {
+    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    boost::shared_ptr<v3d::ui::component::Menu> menu = boost::make_shared<v3d::ui::component::Menu>(dispatcher);
+    for (const std::string& label : labels) {
+        menu->addItem(boost::make_shared<v3d::ui::component::MenuItem>(v3d::ui::menu::ItemType::Action, label));
     }
+    menu->level(menu);
+    menu->active(0);
+    return menu;
+}
 
 };  // namespace
 

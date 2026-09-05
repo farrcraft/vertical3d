@@ -15,34 +15,34 @@
 
 namespace {
 
-    boost::shared_ptr<v3d::audio::Engine> engine() {
-        return boost::make_shared<v3d::audio::Engine>(
-            boost::make_shared<v3d::log::Logger>(),
-            boost::make_shared<entt::dispatcher>());
-    }
+boost::shared_ptr<v3d::audio::Engine> engine() {
+    return boost::make_shared<v3d::audio::Engine>(
+        boost::make_shared<v3d::log::Logger>(),
+        boost::make_shared<entt::dispatcher>());
+}
 
-    boost::shared_ptr<v3d::asset::Json> config(const std::string& text) {
-        return boost::make_shared<v3d::asset::Json>(
-            "sounds", v3d::asset::Type::JsonDocument, boost::json::parse(text).as_object());
-    }
+boost::shared_ptr<v3d::asset::Json> config(const std::string& text) {
+    return boost::make_shared<v3d::asset::Json>(
+        "sounds", v3d::asset::Type::JsonDocument, boost::json::parse(text).as_object());
+}
 
-    /**
-     * Stands in for the app's asset manager: records what it was asked for and reads the file
-     * the way the Wav loader does, so a source that resolves to nothing comes back as no clip.
-     **/
-    struct Resolver {
-        boost::shared_ptr<v3d::audio::AudioClip> operator()(const std::string& source) {
-            asked_.push_back(source);
-            boost::shared_ptr<v3d::audio::AudioClip> clip =
-                boost::make_shared<v3d::audio::AudioClip>();
-            if (!clip->load(source)) {
-                return boost::shared_ptr<v3d::audio::AudioClip>();
-            }
-            return clip;
+/**
+ * Stands in for the app's asset manager: records what it was asked for and reads the file
+ * the way the Wav loader does, so a source that resolves to nothing comes back as no clip.
+ **/
+struct Resolver {
+    boost::shared_ptr<v3d::audio::AudioClip> operator()(const std::string& source) {
+        asked_.push_back(source);
+        boost::shared_ptr<v3d::audio::AudioClip> clip =
+            boost::make_shared<v3d::audio::AudioClip>();
+        if (!clip->load(source)) {
+            return boost::shared_ptr<v3d::audio::AudioClip>();
         }
+        return clip;
+    }
 
-        std::vector<std::string> asked_;
-    };
+    std::vector<std::string> asked_;
+};
 
 };  // namespace
 

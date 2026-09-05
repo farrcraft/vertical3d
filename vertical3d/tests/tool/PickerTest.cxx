@@ -22,31 +22,31 @@
 
 namespace {
 
-    /**
-     * A square front view, four hundred pixels on a side, of the default orthographic
-     * profile: the eye is at z of -1 looking along +z, and the volume spans [-1, 1] on both
-     * axes - so the unit primitives cover the middle half of it and a world unit is two
-     * hundred pixels.
-     **/
-    boost::shared_ptr<v3d::editor::ViewPort> frontView() {
-        v3d::type::CameraProfile profile("front");
-        boost::shared_ptr<v3d::editor::ViewPort> view = boost::make_shared<v3d::editor::ViewPort>("front", profile);
-        view->resize(glm::vec4(0.0f, 0.0f, 400.0f, 400.0f));
-        return view;
-    }
+/**
+ * A square front view, four hundred pixels on a side, of the default orthographic
+ * profile: the eye is at z of -1 looking along +z, and the volume spans [-1, 1] on both
+ * axes - so the unit primitives cover the middle half of it and a world unit is two
+ * hundred pixels.
+ **/
+boost::shared_ptr<v3d::editor::ViewPort> frontView() {
+    v3d::type::CameraProfile profile("front");
+    boost::shared_ptr<v3d::editor::ViewPort> view = boost::make_shared<v3d::editor::ViewPort>("front", profile);
+    view->resize(glm::vec4(0.0f, 0.0f, 400.0f, 400.0f));
+    return view;
+}
 
-    /**
-     * Where a world point lands in that view, which is how a test aims a click at a
-     * particular piece of geometry.
-     **/
-    glm::vec2 screen(const boost::shared_ptr<v3d::editor::ViewPort>& view, const glm::vec3& point) {
-        boost::shared_ptr<v3d::type::Camera> camera = view->camera();
-        camera->createProjection();
-        camera->createView();
-        int viewport[4] = { 0, 0, 400, 400 };
-        const glm::vec3 projected = camera->project(point, viewport);
-        return glm::vec2(projected[0], projected[1]);
-    }
+/**
+ * Where a world point lands in that view, which is how a test aims a click at a
+ * particular piece of geometry.
+ **/
+glm::vec2 screen(const boost::shared_ptr<v3d::editor::ViewPort>& view, const glm::vec3& point) {
+    boost::shared_ptr<v3d::type::Camera> camera = view->camera();
+    camera->createProjection();
+    camera->createView();
+    int viewport[4] = { 0, 0, 400, 400 };
+    const glm::vec3 projected = camera->project(point, viewport);
+    return glm::vec2(projected[0], projected[1]);
+}
 
 };  // namespace
 

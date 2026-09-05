@@ -10,21 +10,21 @@
 #include <string>
 
 namespace v3d::asset {
+/**
+ **/
+class Asset {
+ public:
     /**
      **/
-    class Asset {
-     public:
-        /**
-         **/
-        Asset(std::string name, Type t);
+    Asset(std::string name, Type t);
 
-        /**
-         * Default destructor
-         **/
-        virtual ~Asset() = default;
+    /**
+     * Default destructor
+     **/
+    virtual ~Asset() = default;
 
-     protected:
-        std::string name_;
-        Type type_;
-    };
+ protected:
+    std::string name_;
+    Type type_;
+};
 };  // namespace v3d::asset

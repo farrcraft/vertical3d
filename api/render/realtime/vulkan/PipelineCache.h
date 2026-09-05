@@ -13,38 +13,38 @@
 
 namespace v3d::render::realtime::vulkan {
 
+/**
+ * The driver's cache of compiled pipeline state.
+ *
+ * Every pipeline the engine builds is created against this, so that pipelines sharing
+ * shader stages or state pay for the compilation once. A pipeline created outside the
+ * cache is not retroactively put into it, which is why the cache exists from the first
+ * frame rather than being added when it starts to matter.
+ *
+ * Nothing writes the cache to disk, so it lives only as long as the process.
+ **/
+class PipelineCache final {
+ public:
     /**
-     * The driver's cache of compiled pipeline state.
-     *
-     * Every pipeline the engine builds is created against this, so that pipelines sharing
-     * shader stages or state pay for the compilation once. A pipeline created outside the
-     * cache is not retroactively put into it, which is why the cache exists from the first
-     * frame rather than being added when it starts to matter.
-     *
-     * Nothing writes the cache to disk, so it lives only as long as the process.
+     * @param device the device pipelines are compiled for
      **/
-    class PipelineCache final {
-     public:
-        /**
-         * @param device the device pipelines are compiled for
-         **/
-        explicit PipelineCache(const boost::shared_ptr<Device>& device);
+    explicit PipelineCache(const boost::shared_ptr<Device>& device);
 
-        /**
-         **/
-        ~PipelineCache();
+    /**
+     **/
+    ~PipelineCache();
 
-        PipelineCache(const PipelineCache&) = delete;
-        PipelineCache& operator=(const PipelineCache&) = delete;
+    PipelineCache(const PipelineCache&) = delete;
+    PipelineCache& operator=(const PipelineCache&) = delete;
 
-        /**
-         * @return the underlying cache handle, to be passed to every pipeline creation
-         **/
-        VkPipelineCache handle() const noexcept;
+    /**
+     * @return the underlying cache handle, to be passed to every pipeline creation
+     **/
+    VkPipelineCache handle() const noexcept;
 
-     private:
-        boost::shared_ptr<Device> device_;
-        VkPipelineCache cache_;
-    };
+ private:
+    boost::shared_ptr<Device> device_;
+    VkPipelineCache cache_;
+};
 
 };  // namespace v3d::render::realtime::vulkan

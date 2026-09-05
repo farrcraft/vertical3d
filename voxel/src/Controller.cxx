@@ -21,12 +21,12 @@
 
 namespace {
 
-    /**
-     * The container the escape key shows and hides, and the menu inside it. Both are named
-     * by data/vgui.json, so the two have to be changed together.
-     **/
-    const char* const menuContainerName = "game-menu";
-    const char* const menuName = "main-menu";
+/**
+ * The container the escape key shows and hides, and the menu inside it. Both are named
+ * by data/vgui.json, so the two have to be changed together.
+ **/
+const char* const menuContainerName = "game-menu";
+const char* const menuName = "main-menu";
 
 };  // namespace
 

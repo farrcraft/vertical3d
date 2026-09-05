@@ -7,10 +7,10 @@
 
 namespace v3d::dag {
 
-    Edge::Edge() {
-    }
+Edge::Edge() {
+}
 
-    Edge::~Edge() {
-    }
+Edge::~Edge() {
+}
 
 };  // namespace v3d::dag

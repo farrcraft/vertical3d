@@ -9,10 +9,10 @@
 
 namespace v3d::ui::component {
 
-    class CheckBox : public Component {
-     public:
-        CheckBox() = default;
-        ~CheckBox() = default;
-    };
+class CheckBox : public Component {
+ public:
+    CheckBox() = default;
+    ~CheckBox() = default;
+};
 
 };  // end namespace v3d::ui::component

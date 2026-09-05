@@ -16,10 +16,10 @@
 
 namespace {
 
-    /**
-     * Points for clearing one row.
-     **/
-    const unsigned int rowScore = 100;
+/**
+ * Points for clearing one row.
+ **/
+const unsigned int rowScore = 100;
 
 };  // namespace
 

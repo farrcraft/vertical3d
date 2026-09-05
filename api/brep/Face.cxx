@@ -7,37 +7,37 @@
 
 namespace v3d::brep {
 
-    Face::Face() : selected_(false) {
-    }
+Face::Face() : selected_(false) {
+}
 
-    Face::Face(const glm::vec3& normal, Index edge) : normal_(normal), edge_(edge), selected_(false) {
-    }
+Face::Face(const glm::vec3& normal, Index edge) : normal_(normal), edge_(edge), selected_(false) {
+}
 
-    Face::~Face() {
-    }
+Face::~Face() {
+}
 
-    bool Face::selected(void) const noexcept {
-        return selected_;
-    }
+bool Face::selected(void) const noexcept {
+    return selected_;
+}
 
-    void Face::selected(bool sel) noexcept {
-        selected_ = sel;
-    }
+void Face::selected(bool sel) noexcept {
+    selected_ = sel;
+}
 
-    glm::vec3 Face::normal(void) const {
-        return normal_;
-    }
+glm::vec3 Face::normal(void) const {
+    return normal_;
+}
 
-    void Face::normal(const glm::vec3& n) {
-        normal_ = n;
-    }
+void Face::normal(const glm::vec3& n) {
+    normal_ = n;
+}
 
-    Index Face::edge(void) const {
-        return edge_;
-    }
+Index Face::edge(void) const {
+    return edge_;
+}
 
-    void Face::edge(Index e) {
-        edge_ = e;
-    }
+void Face::edge(Index e) {
+    edge_ = e;
+}
 
 };  // namespace v3d::brep

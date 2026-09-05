@@ -11,17 +11,17 @@
 #include "../BRep.h"
 
 namespace {
-    /**
-     * A unit quad in the z = 0 plane, wound counter-clockwise.
-     **/
-    std::vector<glm::vec3> quad(float z) {
-        std::vector<glm::vec3> vertices;
-        vertices.push_back(glm::vec3(0.0f, 0.0f, z));
-        vertices.push_back(glm::vec3(1.0f, 0.0f, z));
-        vertices.push_back(glm::vec3(1.0f, 1.0f, z));
-        vertices.push_back(glm::vec3(0.0f, 1.0f, z));
-        return vertices;
-    }
+/**
+ * A unit quad in the z = 0 plane, wound counter-clockwise.
+ **/
+std::vector<glm::vec3> quad(float z) {
+    std::vector<glm::vec3> vertices;
+    vertices.push_back(glm::vec3(0.0f, 0.0f, z));
+    vertices.push_back(glm::vec3(1.0f, 0.0f, z));
+    vertices.push_back(glm::vec3(1.0f, 1.0f, z));
+    vertices.push_back(glm::vec3(0.0f, 1.0f, z));
+    return vertices;
+}
 };  // namespace
 
 BOOST_AUTO_TEST_CASE(brep_empty_test) {

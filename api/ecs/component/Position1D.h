@@ -8,42 +8,42 @@
 #include <glm/vec2.hpp>
 
 namespace v3d::ecs::component {
+/**
+ * A 1D position
+ **/
+class Position1D final {
+ public:
+    Position1D(const float x) noexcept;
+
     /**
-     * A 1D position
+     * Move constructor
      **/
-    class Position1D final {
-     public:
-        Position1D(const float x) noexcept;
+    Position1D(Position1D&&) noexcept;
 
-        /**
-         * Move constructor
-         **/
-        Position1D(Position1D&&) noexcept;
+    /**
+     * Default destructor
+     **/
+    ~Position1D() noexcept = default;
 
-        /**
-         * Default destructor
-         **/
-        ~Position1D() noexcept = default;
+    /**
+     **/
+    float x() const;
 
-        /**
-         **/
-        float x() const;
+    /**
+     **/
+    float value() const;
 
-        /**
-         **/
-        float value() const;
+    /**
+     **/
+    void set(float pos);
 
-        /**
-         **/
-        void set(float pos);
+    /**
+     * Move assignment
+     **/
+    Position1D& operator=(Position1D&&) noexcept;
 
-        /**
-         * Move assignment
-         **/
-        Position1D& operator=(Position1D&&) noexcept;
-
-     private:
-        float position_;
-    };
+ private:
+    float position_;
+};
 
 };  // namespace v3d::ecs::component

@@ -16,9 +16,9 @@
 
 namespace {
 
-    // the renderer the C interface drives. An identifier with a leading underscore at namespace
-    // scope is reserved to the implementation, and nothing outside this file names it.
-    v3d::moya::Renderer renderer;
+// the renderer the C interface drives. An identifier with a leading underscore at namespace
+// scope is reserved to the implementation, and nothing outside this file names it.
+v3d::moya::Renderer renderer;
 
 };  // namespace
 
@@ -552,14 +552,14 @@ RtVoid RiIdentity(void) {
 
 namespace {
 
-    /*
-        An RtMatrix is sixteen floats in RI's row major order under a row vector convention;
-        glm stores column major under a column vector one, so reading them in order is the
-        change of convention and a transpose would undo it.
-    */
-    glm::mat4x4 matrix(RtMatrix transform) {
-        return glm::make_mat4(&transform[0][0]);
-    }
+/*
+    An RtMatrix is sixteen floats in RI's row major order under a row vector convention;
+    glm stores column major under a column vector one, so reading them in order is the
+    change of convention and a transpose would undo it.
+*/
+glm::mat4x4 matrix(RtMatrix transform) {
+    return glm::make_mat4(&transform[0][0]);
+}
 
 };  // namespace
 

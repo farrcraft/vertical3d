@@ -16,19 +16,19 @@
  * bindings and answers what a source event maps to.
  **/
 namespace {
-    v3d::event::Event source(const boost::shared_ptr<v3d::event::Context>& context,
-        const std::string& name, v3d::event::State state) {
-        v3d::event::Event event(name, context);
-        event.type(v3d::event::Type::Source);
-        event.state(state);
-        return event;
-    }
+v3d::event::Event source(const boost::shared_ptr<v3d::event::Context>& context,
+    const std::string& name, v3d::event::State state) {
+    v3d::event::Event event(name, context);
+    event.type(v3d::event::Type::Source);
+    event.state(state);
+    return event;
+}
 
-    v3d::event::Event destination(const boost::shared_ptr<v3d::event::Context>& context, const std::string& name) {
-        v3d::event::Event event(name, context);
-        event.type(v3d::event::Type::Destination);
-        return event;
-    }
+v3d::event::Event destination(const boost::shared_ptr<v3d::event::Context>& context, const std::string& name) {
+    v3d::event::Event event(name, context);
+    event.type(v3d::event::Type::Destination);
+    return event;
+}
 };  // namespace
 
 BOOST_AUTO_TEST_CASE(mapper_test) {

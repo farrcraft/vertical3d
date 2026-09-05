@@ -100,8 +100,8 @@ failed fix is itself data about what the system is really doing.
 2. **Verify with the command that failed**, and quote what it said. Building the target that
    broke is usually the whole of the available proof; say so plainly rather than implying
    more. If the fix is in a library, build a consumer of it too.
-3. **Run cpplint on the files you touched.** Ignore `whitespace/indent_namespace`, which
-   every file reports because of a stale filter in the workflow.
+3. **Run cpplint on the files you touched.** The tree is clean at that command, so
+   anything it reports is yours.
 4. **State what you did not verify.** Nothing renders yet, so no change under `api/render`
    can be proven to draw correctly. That is a limitation to name, not to paper over.
 5. **Record what you found but did not fix.** Known breakage lives in the Build health

@@ -7,17 +7,17 @@
 
 namespace v3d::dag {
 
-    class Node {
-     public:
-        Node();
-        virtual ~Node();
+class Node {
+ public:
+    Node();
+    virtual ~Node();
 
-        unsigned int id(void) const;
+    unsigned int id(void) const;
 
-        static unsigned int baseID(void);
+    static unsigned int baseID(void);
 
-     private:
-        unsigned int _id;
-    };
+ private:
+    unsigned int _id;
+};
 
 };  // namespace v3d::dag

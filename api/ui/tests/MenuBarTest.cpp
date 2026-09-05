@@ -16,116 +16,116 @@
 
 namespace {
 
-    /**
-     * A fixed width per character, so a label's width is predictable.
-     **/
-    const float characterWidth = 10.0f;
+/**
+ * A fixed width per character, so a label's width is predictable.
+ **/
+const float characterWidth = 10.0f;
 
-    /**
-     * Where the labels went, so a test can check the layout without a font or a device.
-     **/
-    struct Written final {
-        std::string text;
-        glm::vec2 pen;
-    };
+/**
+ * Where the labels went, so a test can check the layout without a font or a device.
+ **/
+struct Written final {
+    std::string text;
+    glm::vec2 pen;
+};
 
-    /**
-     * The dispatcher, the events sent to it, and the bar they came from, all of which have to
-     * outlive each other in that order.
-     **/
-    struct Fixture final {
-        Fixture() :
-            dispatcher(boost::make_shared<entt::dispatcher>()),
-            context(boost::make_shared<v3d::event::Context>("test")),
-            bar(boost::make_shared<v3d::ui::component::MenuBar>()),
-            renderer(
-                [](const std::string& text) { return static_cast<float>(text.size()) * characterWidth; },
-                [this](const std::string& text, const glm::vec2& pen, const glm::vec4&) {
-                    Written line;
-                    line.text = text;
-                    line.pen = pen;
-                    written.push_back(line);
-                }) {
-            dispatcher->sink<v3d::event::Event>().connect<&Fixture::receive>(*this);
-            canvas.resize(800, 600);
-        }
-
-        void receive(const v3d::event::Event& event) {
-            sent.push_back(event.str());
-        }
-
-        /**
-         * An item bound to "test::<name>", or to nothing when the name is empty.
-         **/
-        boost::shared_ptr<v3d::ui::component::MenuItem> item(v3d::ui::menu::ItemType type,
-            const std::string& label, const std::string& name) {
-            boost::shared_ptr<v3d::ui::component::MenuItem> made =
-                boost::make_shared<v3d::ui::component::MenuItem>(type, label);
-            if (!name.empty()) {
-                made->event(v3d::event::Event(name, context));
-            }
-            return made;
-        }
-
-        boost::shared_ptr<v3d::ui::component::Menu> menu() {
-            return boost::make_shared<v3d::ui::component::Menu>(dispatcher);
-        }
-
-        /**
-         * Draw the bar, which is also what lays it out.
-         **/
-        void draw() {
-            written.clear();
-            canvas.clear();
-            renderer.draw(&canvas, bar);
-        }
-
-        /**
-         * The middle of a component, which is where a click on it lands.
-         **/
-        static glm::vec2 centre(const v3d::ui::Component& component) {
-            return component.position() + component.size() * 0.5f;
-        }
-
-        /**
-         * The middle of a menu's label in the strip, which the bar holds rather than the menu.
-         **/
-        glm::vec2 label(std::size_t index) const {
-            const v3d::type::Bound2D bounds = bar->bound(index);
-            return bounds.position() + bounds.size() * 0.5f;
-        }
-
-        boost::shared_ptr<entt::dispatcher> dispatcher;
-        boost::shared_ptr<v3d::event::Context> context;
-        boost::shared_ptr<v3d::ui::component::MenuBar> bar;
-        v3d::render::realtime::Canvas canvas;
-        std::vector<Written> written;
-        std::vector<std::string> sent;
-        v3d::ui::ComponentRenderer renderer;
-    };
-
-    /**
-     * A bar of two menus: "File" holding an action and a checked item, and "View" holding a
-     * submenu that holds one action.
-     **/
-    void build(Fixture* fixture) {
-        boost::shared_ptr<v3d::ui::component::Menu> file = fixture->menu();
-        file->addItem(fixture->item(v3d::ui::menu::ItemType::Action, "Open", "open"));
-        file->addItem(fixture->item(v3d::ui::menu::ItemType::Check, "Grid", "grid"));
-
-        boost::shared_ptr<v3d::ui::component::Menu> shading = fixture->menu();
-        shading->addItem(fixture->item(v3d::ui::menu::ItemType::Action, "Flat", "flat"));
-
-        boost::shared_ptr<v3d::ui::component::MenuItem> deeper =
-            fixture->item(v3d::ui::menu::ItemType::Submenu, "Shading", "");
-        boost::shared_ptr<v3d::ui::component::Menu> view = fixture->menu();
-        deeper->menu(view);
-        deeper->submenu(shading);
-        view->addItem(deeper);
-
-        fixture->bar->add("File", file);
-        fixture->bar->add("View", view);
+/**
+ * The dispatcher, the events sent to it, and the bar they came from, all of which have to
+ * outlive each other in that order.
+ **/
+struct Fixture final {
+    Fixture() :
+        dispatcher(boost::make_shared<entt::dispatcher>()),
+        context(boost::make_shared<v3d::event::Context>("test")),
+        bar(boost::make_shared<v3d::ui::component::MenuBar>()),
+        renderer(
+            [](const std::string& text) { return static_cast<float>(text.size()) * characterWidth; },
+            [this](const std::string& text, const glm::vec2& pen, const glm::vec4&) {
+                Written line;
+                line.text = text;
+                line.pen = pen;
+                written.push_back(line);
+            }) {
+        dispatcher->sink<v3d::event::Event>().connect<&Fixture::receive>(*this);
+        canvas.resize(800, 600);
     }
+
+    void receive(const v3d::event::Event& event) {
+        sent.push_back(event.str());
+    }
+
+    /**
+     * An item bound to "test::<name>", or to nothing when the name is empty.
+     **/
+    boost::shared_ptr<v3d::ui::component::MenuItem> item(v3d::ui::menu::ItemType type,
+        const std::string& label, const std::string& name) {
+        boost::shared_ptr<v3d::ui::component::MenuItem> made =
+            boost::make_shared<v3d::ui::component::MenuItem>(type, label);
+        if (!name.empty()) {
+            made->event(v3d::event::Event(name, context));
+        }
+        return made;
+    }
+
+    boost::shared_ptr<v3d::ui::component::Menu> menu() {
+        return boost::make_shared<v3d::ui::component::Menu>(dispatcher);
+    }
+
+    /**
+     * Draw the bar, which is also what lays it out.
+     **/
+    void draw() {
+        written.clear();
+        canvas.clear();
+        renderer.draw(&canvas, bar);
+    }
+
+    /**
+     * The middle of a component, which is where a click on it lands.
+     **/
+    static glm::vec2 centre(const v3d::ui::Component& component) {
+        return component.position() + component.size() * 0.5f;
+    }
+
+    /**
+     * The middle of a menu's label in the strip, which the bar holds rather than the menu.
+     **/
+    glm::vec2 label(std::size_t index) const {
+        const v3d::type::Bound2D bounds = bar->bound(index);
+        return bounds.position() + bounds.size() * 0.5f;
+    }
+
+    boost::shared_ptr<entt::dispatcher> dispatcher;
+    boost::shared_ptr<v3d::event::Context> context;
+    boost::shared_ptr<v3d::ui::component::MenuBar> bar;
+    v3d::render::realtime::Canvas canvas;
+    std::vector<Written> written;
+    std::vector<std::string> sent;
+    v3d::ui::ComponentRenderer renderer;
+};
+
+/**
+ * A bar of two menus: "File" holding an action and a checked item, and "View" holding a
+ * submenu that holds one action.
+ **/
+void build(Fixture* fixture) {
+    boost::shared_ptr<v3d::ui::component::Menu> file = fixture->menu();
+    file->addItem(fixture->item(v3d::ui::menu::ItemType::Action, "Open", "open"));
+    file->addItem(fixture->item(v3d::ui::menu::ItemType::Check, "Grid", "grid"));
+
+    boost::shared_ptr<v3d::ui::component::Menu> shading = fixture->menu();
+    shading->addItem(fixture->item(v3d::ui::menu::ItemType::Action, "Flat", "flat"));
+
+    boost::shared_ptr<v3d::ui::component::MenuItem> deeper =
+        fixture->item(v3d::ui::menu::ItemType::Submenu, "Shading", "");
+    boost::shared_ptr<v3d::ui::component::Menu> view = fixture->menu();
+    deeper->menu(view);
+    deeper->submenu(shading);
+    view->addItem(deeper);
+
+    fixture->bar->add("File", file);
+    fixture->bar->add("View", view);
+}
 
 };  // namespace
 

@@ -19,32 +19,32 @@
  * feeds it is an SDL_Event and what it watches for is what comes out of the dispatcher.
  **/
 namespace {
-    struct Recorder {
-        void down(const v3d::event::KeyDown& event) {
-            down_.push_back(std::string(event.name()));
-        }
-
-        void up(const v3d::event::KeyUp& event) {
-            up_.push_back(std::string(event.name()));
-        }
-
-        void sourceEvent(const v3d::event::Event& event) {
-            if (event.type() == v3d::event::Type::Source) {
-                source_.push_back(event);
-            }
-        }
-
-        std::vector<std::string> down_;
-        std::vector<std::string> up_;
-        std::vector<v3d::event::Event> source_;
-    };
-
-    SDL_Event keyEvent(uint32_t type, SDL_Keycode key) {
-        SDL_Event event{};
-        event.type = type;
-        event.key.key = key;
-        return event;
+struct Recorder {
+    void down(const v3d::event::KeyDown& event) {
+        down_.push_back(std::string(event.name()));
     }
+
+    void up(const v3d::event::KeyUp& event) {
+        up_.push_back(std::string(event.name()));
+    }
+
+    void sourceEvent(const v3d::event::Event& event) {
+        if (event.type() == v3d::event::Type::Source) {
+            source_.push_back(event);
+        }
+    }
+
+    std::vector<std::string> down_;
+    std::vector<std::string> up_;
+    std::vector<v3d::event::Event> source_;
+};
+
+SDL_Event keyEvent(uint32_t type, SDL_Keycode key) {
+    SDL_Event event{};
+    event.type = type;
+    event.key.key = key;
+    return event;
+}
 };  // namespace
 
 BOOST_AUTO_TEST_CASE(keyboard_test) {

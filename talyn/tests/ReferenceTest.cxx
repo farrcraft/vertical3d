@@ -19,39 +19,39 @@
 
 namespace {
 
-    const char* REFERENCE = "data/reference-triangle.png";
-    const char* RENDERED = "data_out/reference-triangle.png";
-    const char* RIB_SCENE = "data/reference-triangle.rib";
-    const char* RIB_RENDERED = "data_out/reference-triangle-rib.png";
+const char* REFERENCE = "data/reference-triangle.png";
+const char* RENDERED = "data_out/reference-triangle.png";
+const char* RIB_SCENE = "data/reference-triangle.rib";
+const char* RIB_RENDERED = "data_out/reference-triangle-rib.png";
 
-    /*
-        Regenerating this reference is expected whenever shading or sampling changes the
-        picture on purpose. What it buys is that a change which was not meant to alter the
-        picture says so.
-    */
-    boost::shared_ptr<v3d::image::Image> render() {
-        v3d::talyn::RenderContext rc;
-        rc.format(64, 48);
+/*
+    Regenerating this reference is expected whenever shading or sampling changes the
+    picture on purpose. What it buys is that a change which was not meant to alter the
+    picture says so.
+*/
+boost::shared_ptr<v3d::image::Image> render() {
+    v3d::talyn::RenderContext rc;
+    rc.format(64, 48);
 
-        v3d::type::CameraProfile & profile = rc.scene().camera().profile();
-        profile.orthographic(true);
-        // the frame is 4:3, so the pixel has to be, or the picture is stretched across it
-        profile.pixelAspect(4.0f / 3.0f);
-        profile.orthoZoom(1.0f);
-        profile.eye(glm::vec3(0.0f, 0.0f, -1.0f));
-        profile.clipping(0.001f, 100.0f);
+    v3d::type::CameraProfile & profile = rc.scene().camera().profile();
+    profile.orthographic(true);
+    // the frame is 4:3, so the pixel has to be, or the picture is stretched across it
+    profile.pixelAspect(4.0f / 3.0f);
+    profile.orthoZoom(1.0f);
+    profile.eye(glm::vec3(0.0f, 0.0f, -1.0f));
+    profile.clipping(0.001f, 100.0f);
 
-        rc.scene().background(glm::vec3(0.15f, 0.25f, 0.45f));
-        // asymmetric about both axes, so a flipped picture is a failing one
-        rc.scene().add(v3d::talyn::Triangle(
-            glm::vec3(-0.8f, -0.6f, 2.0f),
-            glm::vec3(0.8f, -0.6f, 2.0f),
-            glm::vec3(0.0f, 0.7f, 2.0f),
-            glm::vec3(0.9f, 0.2f, 0.2f)));
+    rc.scene().background(glm::vec3(0.15f, 0.25f, 0.45f));
+    // asymmetric about both axes, so a flipped picture is a failing one
+    rc.scene().add(v3d::talyn::Triangle(
+        glm::vec3(-0.8f, -0.6f, 2.0f),
+        glm::vec3(0.8f, -0.6f, 2.0f),
+        glm::vec3(0.0f, 0.7f, 2.0f),
+        glm::vec3(0.9f, 0.2f, 0.2f)));
 
-        rc.render();
-        return rc.framebuffer()->image(3);
-    }
+    rc.render();
+    return rc.framebuffer()->image(3);
+}
 
 };  // namespace
 

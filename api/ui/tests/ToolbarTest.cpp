@@ -18,70 +18,70 @@
 
 namespace {
 
-    /**
-     * A fixed width per character, so a label's width is predictable.
-     **/
-    const float characterWidth = 10.0f;
+/**
+ * A fixed width per character, so a label's width is predictable.
+ **/
+const float characterWidth = 10.0f;
+
+/**
+ * The dispatcher, the events sent to it, and the strips they came from, all of which have
+ * to outlive each other in that order.
+ **/
+struct Fixture final {
+    Fixture() :
+        dispatcher(boost::make_shared<entt::dispatcher>()),
+        context(boost::make_shared<v3d::event::Context>("test")),
+        renderer(
+            [](const std::string& text) { return static_cast<float>(text.size()) * characterWidth; },
+            [](const std::string&, const glm::vec2&, const glm::vec4&) {}) {
+        dispatcher->sink<v3d::event::Event>().connect<&Fixture::receive>(*this);
+        canvas.resize(800, 600);
+    }
+
+    void receive(const v3d::event::Event& event) {
+        sent.push_back(event.str());
+    }
 
     /**
-     * The dispatcher, the events sent to it, and the strips they came from, all of which have
-     * to outlive each other in that order.
+     * A button labelled and bound to "test::<name>", or to nothing when the name is empty.
      **/
-    struct Fixture final {
-        Fixture() :
-            dispatcher(boost::make_shared<entt::dispatcher>()),
-            context(boost::make_shared<v3d::event::Context>("test")),
-            renderer(
-                [](const std::string& text) { return static_cast<float>(text.size()) * characterWidth; },
-                [](const std::string&, const glm::vec2&, const glm::vec4&) {}) {
-            dispatcher->sink<v3d::event::Event>().connect<&Fixture::receive>(*this);
-            canvas.resize(800, 600);
+    boost::shared_ptr<v3d::ui::component::Button> button(const std::string& label, const std::string& name,
+        bool toggle) {
+        boost::shared_ptr<v3d::ui::component::Button> made =
+            boost::make_shared<v3d::ui::component::Button>();
+        made->label(label);
+        made->toggle(toggle);
+        if (!name.empty()) {
+            made->event(v3d::event::Event(name, context));
         }
+        return made;
+    }
 
-        void receive(const v3d::event::Event& event) {
-            sent.push_back(event.str());
-        }
+    /**
+     * A strip of three buttons: two toggles and one plain, the last of them unbound.
+     **/
+    boost::shared_ptr<v3d::ui::component::Toolbar> bar(v3d::ui::component::Toolbar::Edge edge) {
+        boost::shared_ptr<v3d::ui::component::Toolbar> made =
+            boost::make_shared<v3d::ui::component::Toolbar>(dispatcher, edge);
+        made->add(button("Object", "object", true));
+        made->add(button("Translate", "translate", true));
+        made->add(button("Go", "", false));
+        return made;
+    }
 
-        /**
-         * A button labelled and bound to "test::<name>", or to nothing when the name is empty.
-         **/
-        boost::shared_ptr<v3d::ui::component::Button> button(const std::string& label, const std::string& name,
-            bool toggle) {
-            boost::shared_ptr<v3d::ui::component::Button> made =
-                boost::make_shared<v3d::ui::component::Button>();
-            made->label(label);
-            made->toggle(toggle);
-            if (!name.empty()) {
-                made->event(v3d::event::Event(name, context));
-            }
-            return made;
-        }
+    /**
+     * The middle of a component, which is where a click on it lands.
+     **/
+    static glm::vec2 centre(const v3d::ui::Component& component) {
+        return component.position() + component.size() * 0.5f;
+    }
 
-        /**
-         * A strip of three buttons: two toggles and one plain, the last of them unbound.
-         **/
-        boost::shared_ptr<v3d::ui::component::Toolbar> bar(v3d::ui::component::Toolbar::Edge edge) {
-            boost::shared_ptr<v3d::ui::component::Toolbar> made =
-                boost::make_shared<v3d::ui::component::Toolbar>(dispatcher, edge);
-            made->add(button("Object", "object", true));
-            made->add(button("Translate", "translate", true));
-            made->add(button("Go", "", false));
-            return made;
-        }
-
-        /**
-         * The middle of a component, which is where a click on it lands.
-         **/
-        static glm::vec2 centre(const v3d::ui::Component& component) {
-            return component.position() + component.size() * 0.5f;
-        }
-
-        boost::shared_ptr<entt::dispatcher> dispatcher;
-        boost::shared_ptr<v3d::event::Context> context;
-        v3d::render::realtime::Canvas canvas;
-        std::vector<std::string> sent;
-        v3d::ui::ComponentRenderer renderer;
-    };
+    boost::shared_ptr<entt::dispatcher> dispatcher;
+    boost::shared_ptr<v3d::event::Context> context;
+    v3d::render::realtime::Canvas canvas;
+    std::vector<std::string> sent;
+    v3d::ui::ComponentRenderer renderer;
+};
 
 };  // namespace
 

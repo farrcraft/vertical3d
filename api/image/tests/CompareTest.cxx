@@ -11,13 +11,13 @@
 
 namespace {
 
-    v3d::image::Image solid(uint32_t width, uint32_t height, uint8_t bpp, unsigned char value) {
-        v3d::image::Image image(width, height, bpp);
-        for (uint32_t i = 0; i < width * height * (bpp / 8u); i++) {
-            image[i] = value;
-        }
-        return image;
+v3d::image::Image solid(uint32_t width, uint32_t height, uint8_t bpp, unsigned char value) {
+    v3d::image::Image image(width, height, bpp);
+    for (uint32_t i = 0; i < width * height * (bpp / 8u); i++) {
+        image[i] = value;
     }
+    return image;
+}
 
 };  // namespace
 

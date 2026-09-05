@@ -12,17 +12,17 @@
 
 namespace {
 
-    /**
-     * Records what it was handed, in the order it was handed it.
-     **/
-    class CountingVisitor final : public v3d::editor::SceneVisitor {
-     public:
-        void visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) override {
-            visited.push_back(mesh->id());
-        }
+/**
+ * Records what it was handed, in the order it was handed it.
+ **/
+class CountingVisitor final : public v3d::editor::SceneVisitor {
+ public:
+    void visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) override {
+        visited.push_back(mesh->id());
+    }
 
-        std::vector<unsigned int> visited;
-    };
+    std::vector<unsigned int> visited;
+};
 
 };  // namespace
 

@@ -11,35 +11,35 @@
 
 namespace {
 
-    /**
-     * An L, which is the same shape as none of its own rotations - so a turn that did
-     * nothing, or turned the wrong way, shows up.
-     **/
-    Tetrad::ShapeInfo el() {
-        Tetrad::ShapeInfo shape;
-        for (unsigned int i = 0; i < 4; i++) {
-            for (unsigned int j = 0; j < 4; j++) {
-                shape.layout_[i][j] = 0;
-            }
+/**
+ * An L, which is the same shape as none of its own rotations - so a turn that did
+ * nothing, or turned the wrong way, shows up.
+ **/
+Tetrad::ShapeInfo el() {
+    Tetrad::ShapeInfo shape;
+    for (unsigned int i = 0; i < 4; i++) {
+        for (unsigned int j = 0; j < 4; j++) {
+            shape.layout_[i][j] = 0;
         }
-        shape.layout_[0][0] = 1;
-        shape.layout_[1][0] = 1;
-        shape.layout_[2][0] = 1;
-        shape.layout_[2][1] = 1;
-        shape.color_ = "orange";
-        return shape;
     }
+    shape.layout_[0][0] = 1;
+    shape.layout_[1][0] = 1;
+    shape.layout_[2][0] = 1;
+    shape.layout_[2][1] = 1;
+    shape.color_ = "orange";
+    return shape;
+}
 
-    bool same(const Tetrad::ShapeInfo & a, const Tetrad::ShapeInfo & b) {
-        for (unsigned int i = 0; i < 4; i++) {
-            for (unsigned int j = 0; j < 4; j++) {
-                if (a.layout_[i][j] != b.layout_[i][j]) {
-                    return false;
-                }
+bool same(const Tetrad::ShapeInfo & a, const Tetrad::ShapeInfo & b) {
+    for (unsigned int i = 0; i < 4; i++) {
+        for (unsigned int j = 0; j < 4; j++) {
+            if (a.layout_[i][j] != b.layout_[i][j]) {
+                return false;
             }
         }
-        return true;
     }
+    return true;
+}
 
 };  // namespace
 

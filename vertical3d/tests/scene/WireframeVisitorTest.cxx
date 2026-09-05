@@ -14,19 +14,19 @@
 
 namespace {
 
-    /**
-     * A unit quad in the z = 0 plane. One face, so none of its four edges has a pair.
-     **/
-    boost::shared_ptr<v3d::brep::BRep> quad() {
-        boost::shared_ptr<v3d::brep::BRep> mesh = boost::make_shared<v3d::brep::BRep>();
-        std::vector<glm::vec3> points;
-        points.push_back(glm::vec3(0.0f, 0.0f, 0.0f));
-        points.push_back(glm::vec3(1.0f, 0.0f, 0.0f));
-        points.push_back(glm::vec3(1.0f, 1.0f, 0.0f));
-        points.push_back(glm::vec3(0.0f, 1.0f, 0.0f));
-        mesh->addFace(points, glm::vec3(0.0f, 0.0f, 1.0f));
-        return mesh;
-    }
+/**
+ * A unit quad in the z = 0 plane. One face, so none of its four edges has a pair.
+ **/
+boost::shared_ptr<v3d::brep::BRep> quad() {
+    boost::shared_ptr<v3d::brep::BRep> mesh = boost::make_shared<v3d::brep::BRep>();
+    std::vector<glm::vec3> points;
+    points.push_back(glm::vec3(0.0f, 0.0f, 0.0f));
+    points.push_back(glm::vec3(1.0f, 0.0f, 0.0f));
+    points.push_back(glm::vec3(1.0f, 1.0f, 0.0f));
+    points.push_back(glm::vec3(0.0f, 1.0f, 0.0f));
+    mesh->addFace(points, glm::vec3(0.0f, 0.0f, 1.0f));
+    return mesh;
+}
 
 };  // namespace
 

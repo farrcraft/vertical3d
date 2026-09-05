@@ -17,26 +17,26 @@
  * that hold a string rather than a resolved event.
  **/
 namespace {
-    /**
-     * Collects every destination event the dispatcher delivers.
-     **/
-    struct Recorder {
-        void handle(const v3d::event::Event& event) {
-            if (event.type() == v3d::event::Type::Destination) {
-                events_.push_back(event);
-            }
+/**
+ * Collects every destination event the dispatcher delivers.
+ **/
+struct Recorder {
+    void handle(const v3d::event::Event& event) {
+        if (event.type() == v3d::event::Type::Destination) {
+            events_.push_back(event);
         }
-
-        std::vector<v3d::event::Event> events_;
-    };
-
-    v3d::event::Event source(const boost::shared_ptr<v3d::event::Context>& context,
-        const std::string& name, v3d::event::State state) {
-        v3d::event::Event event(name, context);
-        event.type(v3d::event::Type::Source);
-        event.state(state);
-        return event;
     }
+
+    std::vector<v3d::event::Event> events_;
+};
+
+v3d::event::Event source(const boost::shared_ptr<v3d::event::Context>& context,
+    const std::string& name, v3d::event::State state) {
+    v3d::event::Event event(name, context);
+    event.type(v3d::event::Type::Source);
+    event.state(state);
+    return event;
+}
 };  // namespace
 
 BOOST_AUTO_TEST_CASE(engine_context_test) {

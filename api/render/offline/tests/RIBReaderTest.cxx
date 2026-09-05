@@ -15,141 +15,141 @@
 
 namespace {
 
-    /**
-     * Counts what it was handed, which is what proves the parser without either renderer.
-     **/
-    class CountingHandler final : public v3d::render::offline::RIBHandler {
-     public:
-        void version(float number) override {
-            version_ = number;
-            counts_["version"]++;
-        }
-        void declare(const std::string & name, const std::string & declaration) override {
-            (void)declaration;
-            declared_.push_back(name);
-            counts_["Declare"]++;
-        }
-        void option(const std::string & name, const v3d::render::offline::ParameterList & parameters) override {
-            (void)name;
-            bucket_ = parameters.floats("bucketsize");
-            counts_["Option"]++;
-        }
-        void format(unsigned int width, unsigned int height, float pixelAspect) override {
-            width_ = width;
-            height_ = height;
-            pixelAspect_ = pixelAspect;
-            counts_["Format"]++;
-        }
-        void projection(const std::string & name, const v3d::render::offline::ParameterList & parameters) override {
-            projection_ = name;
-            fov_ = parameters.number("fov", 90.0f);
-            counts_["Projection"]++;
-        }
-        void clipping(float hither, float yon) override {
-            hither_ = hither;
-            yon_ = yon;
-            counts_["Clipping"]++;
-        }
-        void display(const std::string & name, const std::string & type, const std::string & mode,
-            const v3d::render::offline::ParameterList & parameters) override {
-            (void)parameters;
-            display_ = name + "|" + type + "|" + mode;
-            counts_["Display"]++;
-        }
-        void frameBegin(int frame) override {
-            frame_ = frame;
-            counts_["FrameBegin"]++;
-        }
-        void frameEnd() override { counts_["FrameEnd"]++; }
-        void worldBegin() override { counts_["WorldBegin"]++; }
-        void worldEnd() override { counts_["WorldEnd"]++; }
-        void attributeBegin() override { counts_["AttributeBegin"]++; }
-        void attributeEnd() override { counts_["AttributeEnd"]++; }
-        void transform(const glm::mat4x4 & matrix) override {  // NOLINT(build/include_what_you_use)
-            transform_ = matrix;
-            counts_["Transform"]++;
-        }
-        void concatTransform(const glm::mat4x4 & matrix) override {
-            transform_ = matrix;
-            counts_["ConcatTransform"]++;
-        }
-        void translate(float dx, float dy, float dz) override {
-            translate_ = glm::vec3(dx, dy, dz);
-            counts_["Translate"]++;
-        }
-        void color(const glm::vec3 & value) override {
-            color_ = value;
-            counts_["Color"]++;
-        }
-        void surface(const std::string & name, const v3d::render::offline::ParameterList & parameters) override {
-            surface_ = name;
-            roughness_ = parameters.number("roughness", -1.0f);
-            counts_["Surface"]++;
-        }
-        void attribute(const std::string & name, const v3d::render::offline::ParameterList & parameters) override {
-            (void)name;
-            identifier_ = parameters.string("name", "");
-            counts_["Attribute"]++;
-        }
-        void polygon(unsigned int vertices, const v3d::render::offline::ParameterList & parameters) override {
-            vertices_ = vertices;
-            points_ = parameters.points("P");
-            colors_ = parameters.points("Cs");
-            counts_["Polygon"]++;
-        }
-        void pointsPolygons(const std::vector<unsigned int> & perPolygon, const std::vector<unsigned int> & indices,
-            const v3d::render::offline::ParameterList & parameters) override {
-            perPolygon_ = perPolygon;
-            indices_ = indices;
-            points_ = parameters.points("P");
-            counts_["PointsPolygons"]++;
-        }
-        void sphere(float radius, float zmin, float zmax, float thetamax,
-            const v3d::render::offline::ParameterList & parameters) override {
-            (void)zmin;
-            (void)zmax;
-            (void)thetamax;
-            (void)parameters;
-            radius_ = radius;
-            counts_["Sphere"]++;
-        }
-
-        unsigned int count(const std::string & name) const {
-            const std::map<std::string, unsigned int>::const_iterator found = counts_.find(name);
-            return found == counts_.end() ? 0u : found->second;
-        }
-
-        std::map<std::string, unsigned int> counts_;
-        std::vector<std::string> declared_;
-        std::vector<float> bucket_;
-        std::vector<glm::vec3> points_;
-        std::vector<glm::vec3> colors_;
-        std::vector<unsigned int> perPolygon_;
-        std::vector<unsigned int> indices_;
-        glm::mat4x4 transform_ = glm::mat4x4(1.0f);
-        glm::vec3 translate_ = glm::vec3(0.0f);
-        glm::vec3 color_ = glm::vec3(0.0f);
-        std::string projection_;
-        std::string display_;
-        std::string surface_;
-        std::string identifier_;
-        float version_ = 0.0f;
-        float pixelAspect_ = 0.0f;
-        float hither_ = 0.0f;
-        float yon_ = 0.0f;
-        float fov_ = 0.0f;
-        float roughness_ = 0.0f;
-        float radius_ = 0.0f;
-        unsigned int width_ = 0;
-        unsigned int height_ = 0;
-        unsigned int vertices_ = 0;
-        int frame_ = 0;
-    };
-
-    bool read(const std::string & source, CountingHandler * handler, v3d::render::offline::RIBReader * reader) {
-        std::istringstream stream(source);
-        return reader->read(stream, handler);
+/**
+ * Counts what it was handed, which is what proves the parser without either renderer.
+ **/
+class CountingHandler final : public v3d::render::offline::RIBHandler {
+ public:
+    void version(float number) override {
+        version_ = number;
+        counts_["version"]++;
     }
+    void declare(const std::string & name, const std::string & declaration) override {
+        (void)declaration;
+        declared_.push_back(name);
+        counts_["Declare"]++;
+    }
+    void option(const std::string & name, const v3d::render::offline::ParameterList & parameters) override {
+        (void)name;
+        bucket_ = parameters.floats("bucketsize");
+        counts_["Option"]++;
+    }
+    void format(unsigned int width, unsigned int height, float pixelAspect) override {
+        width_ = width;
+        height_ = height;
+        pixelAspect_ = pixelAspect;
+        counts_["Format"]++;
+    }
+    void projection(const std::string & name, const v3d::render::offline::ParameterList & parameters) override {
+        projection_ = name;
+        fov_ = parameters.number("fov", 90.0f);
+        counts_["Projection"]++;
+    }
+    void clipping(float hither, float yon) override {
+        hither_ = hither;
+        yon_ = yon;
+        counts_["Clipping"]++;
+    }
+    void display(const std::string & name, const std::string & type, const std::string & mode,
+        const v3d::render::offline::ParameterList & parameters) override {
+        (void)parameters;
+        display_ = name + "|" + type + "|" + mode;
+        counts_["Display"]++;
+    }
+    void frameBegin(int frame) override {
+        frame_ = frame;
+        counts_["FrameBegin"]++;
+    }
+    void frameEnd() override { counts_["FrameEnd"]++; }
+    void worldBegin() override { counts_["WorldBegin"]++; }
+    void worldEnd() override { counts_["WorldEnd"]++; }
+    void attributeBegin() override { counts_["AttributeBegin"]++; }
+    void attributeEnd() override { counts_["AttributeEnd"]++; }
+    void transform(const glm::mat4x4 & matrix) override {  // NOLINT(build/include_what_you_use)
+        transform_ = matrix;
+        counts_["Transform"]++;
+    }
+    void concatTransform(const glm::mat4x4 & matrix) override {
+        transform_ = matrix;
+        counts_["ConcatTransform"]++;
+    }
+    void translate(float dx, float dy, float dz) override {
+        translate_ = glm::vec3(dx, dy, dz);
+        counts_["Translate"]++;
+    }
+    void color(const glm::vec3 & value) override {
+        color_ = value;
+        counts_["Color"]++;
+    }
+    void surface(const std::string & name, const v3d::render::offline::ParameterList & parameters) override {
+        surface_ = name;
+        roughness_ = parameters.number("roughness", -1.0f);
+        counts_["Surface"]++;
+    }
+    void attribute(const std::string & name, const v3d::render::offline::ParameterList & parameters) override {
+        (void)name;
+        identifier_ = parameters.string("name", "");
+        counts_["Attribute"]++;
+    }
+    void polygon(unsigned int vertices, const v3d::render::offline::ParameterList & parameters) override {
+        vertices_ = vertices;
+        points_ = parameters.points("P");
+        colors_ = parameters.points("Cs");
+        counts_["Polygon"]++;
+    }
+    void pointsPolygons(const std::vector<unsigned int> & perPolygon, const std::vector<unsigned int> & indices,
+        const v3d::render::offline::ParameterList & parameters) override {
+        perPolygon_ = perPolygon;
+        indices_ = indices;
+        points_ = parameters.points("P");
+        counts_["PointsPolygons"]++;
+    }
+    void sphere(float radius, float zmin, float zmax, float thetamax,
+        const v3d::render::offline::ParameterList & parameters) override {
+        (void)zmin;
+        (void)zmax;
+        (void)thetamax;
+        (void)parameters;
+        radius_ = radius;
+        counts_["Sphere"]++;
+    }
+
+    unsigned int count(const std::string & name) const {
+        const std::map<std::string, unsigned int>::const_iterator found = counts_.find(name);
+        return found == counts_.end() ? 0u : found->second;
+    }
+
+    std::map<std::string, unsigned int> counts_;
+    std::vector<std::string> declared_;
+    std::vector<float> bucket_;
+    std::vector<glm::vec3> points_;
+    std::vector<glm::vec3> colors_;
+    std::vector<unsigned int> perPolygon_;
+    std::vector<unsigned int> indices_;
+    glm::mat4x4 transform_ = glm::mat4x4(1.0f);
+    glm::vec3 translate_ = glm::vec3(0.0f);
+    glm::vec3 color_ = glm::vec3(0.0f);
+    std::string projection_;
+    std::string display_;
+    std::string surface_;
+    std::string identifier_;
+    float version_ = 0.0f;
+    float pixelAspect_ = 0.0f;
+    float hither_ = 0.0f;
+    float yon_ = 0.0f;
+    float fov_ = 0.0f;
+    float roughness_ = 0.0f;
+    float radius_ = 0.0f;
+    unsigned int width_ = 0;
+    unsigned int height_ = 0;
+    unsigned int vertices_ = 0;
+    int frame_ = 0;
+};
+
+bool read(const std::string & source, CountingHandler * handler, v3d::render::offline::RIBReader * reader) {
+    std::istringstream stream(source);
+    return reader->read(stream, handler);
+}
 
 };  // namespace
 

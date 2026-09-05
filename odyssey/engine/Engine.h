@@ -20,55 +20,55 @@
 
 namespace odyssey::engine {
 
+/**
+ * This is the game engine.
+ * It is responsible for the main game loop
+ **/
+class Engine final : public v3d::engine::Engine {
+ public:
     /**
-     * This is the game engine.
-     * It is responsible for the main game loop
+     * Constructor.
+     * 
+     * @param appPath The fully qualified base path name from which all relative 
+     *                paths will be derived.
      **/
-    class Engine final : public v3d::engine::Engine {
-     public:
-        /**
-         * Constructor.
-         * 
-         * @param appPath The fully qualified base path name from which all relative 
-         *                paths will be derived.
-         **/
-        explicit Engine(const std::string& appPath);
+    explicit Engine(const std::string& appPath);
 
-        /**
-         * Initialize the engine.
-         * Initialization includes only the minimal amount of work required to get
-         * a window displayed on the screen.
-         * 
-         * @return bool
-         **/
-        bool initialize();
+    /**
+     * Initialize the engine.
+     * Initialization includes only the minimal amount of work required to get
+     * a window displayed on the screen.
+     * 
+     * @return bool
+     **/
+    bool initialize();
 
-        /**
-         * Advance the game world time
-         * @return bool
-         **/
-        bool tick(unsigned int delta) override;
+    /**
+     * Advance the game world time
+     * @return bool
+     **/
+    bool tick(unsigned int delta) override;
 
-        /**
-         * Draw the current frame
-         * @return bool
-         **/
-        bool render() override;
+    /**
+     * Draw the current frame
+     * @return bool
+     **/
+    bool render() override;
 
-        /**
-         * @return bool
-         **/
-        bool shutdown() override;
+    /**
+     * @return bool
+     **/
+    bool shutdown() override;
 
-     private:
-        /**
-         * Handle a mapped event, one of the destinations named in data/mappings.json.
-         **/
-        void handleEvent(const v3d::event::Event& event);
+ private:
+    /**
+     * Handle a mapped event, one of the destinations named in data/mappings.json.
+     **/
+    void handleEvent(const v3d::event::Event& event);
 
-        boost::shared_ptr<Player> player_;
-        boost::shared_ptr<odyssey::render::Renderer> renderer_;
-        boost::shared_ptr<odyssey::system::Movement> movementSystem_;
-    };
+    boost::shared_ptr<Player> player_;
+    boost::shared_ptr<odyssey::render::Renderer> renderer_;
+    boost::shared_ptr<odyssey::system::Movement> movementSystem_;
+};
 
 };  // namespace odyssey::engine

@@ -12,20 +12,20 @@ namespace v3d::moya {
 
 namespace {
 
-    /**
-     * A frustum plane is the matrix's w row plus or minus one of its x, y or z rows.
-     *
-     * glm is column major, so row i component k is m[k][i]. Reading m[i][k] instead extracts
-     * the planes of the transposed matrix, which for anything but a symmetric one is a
-     * different frustum.
-     **/
-    Plane rowPlane(const glm::mat4x4 & m, unsigned int row, float sign) {
-        Plane plane;
-        for (unsigned int k = 0; k < 4; k++) {
-            plane[k] = m[k][3] + sign * m[k][row];
-        }
-        return plane;
+/**
+ * A frustum plane is the matrix's w row plus or minus one of its x, y or z rows.
+ *
+ * glm is column major, so row i component k is m[k][i]. Reading m[i][k] instead extracts
+ * the planes of the transposed matrix, which for anything but a symmetric one is a
+ * different frustum.
+ **/
+Plane rowPlane(const glm::mat4x4 & m, unsigned int row, float sign) {
+    Plane plane;
+    for (unsigned int k = 0; k < 4; k++) {
+        plane[k] = m[k][3] + sign * m[k][row];
     }
+    return plane;
+}
 
 };  // namespace
 

@@ -14,24 +14,24 @@
 
 namespace {
 
-    typedef v3d::render::offline::RIBToken Token;
+typedef v3d::render::offline::RIBToken Token;
 
-    std::vector<Token> lex(const std::string & source, std::string * error = nullptr) {
-        std::istringstream stream(source);
-        v3d::render::offline::RIBLexer lexer(stream);
-        std::vector<Token> tokens;
-        for (;;) {
-            Token token = lexer.next();
-            if (token.kind() == Token::Kind::END) {
-                break;
-            }
-            tokens.push_back(token);
+std::vector<Token> lex(const std::string & source, std::string * error = nullptr) {
+    std::istringstream stream(source);
+    v3d::render::offline::RIBLexer lexer(stream);
+    std::vector<Token> tokens;
+    for (;;) {
+        Token token = lexer.next();
+        if (token.kind() == Token::Kind::END) {
+            break;
         }
-        if (error) {
-            *error = lexer.error();
-        }
-        return tokens;
+        tokens.push_back(token);
     }
+    if (error) {
+        *error = lexer.error();
+    }
+    return tokens;
+}
 
 };  // namespace
 

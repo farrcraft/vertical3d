@@ -15,19 +15,19 @@
 
 namespace {
 
-    const glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
-    const glm::vec4 red(1.0f, 0.0f, 0.0f, 1.0f);
+const glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
+const glm::vec4 red(1.0f, 0.0f, 0.0f, 1.0f);
 
-    /**
-     * The point one corner of the canvas maps to, for checking the projection without
-     * pulling glm's matrix multiply into the expectation.
-     **/
-    glm::vec2 project(const v3d::render::realtime::Canvas& canvas, const glm::vec2& point) {
-        const glm::mat4 projection = canvas.projection();
-        return glm::vec2(
-            projection[0][0] * point.x + projection[3][0],
-            projection[1][1] * point.y + projection[3][1]);
-    }
+/**
+ * The point one corner of the canvas maps to, for checking the projection without
+ * pulling glm's matrix multiply into the expectation.
+ **/
+glm::vec2 project(const v3d::render::realtime::Canvas& canvas, const glm::vec2& point) {
+    const glm::mat4 projection = canvas.projection();
+    return glm::vec2(
+        projection[0][0] * point.x + projection[3][0],
+        projection[1][1] * point.y + projection[3][1]);
+}
 
 };  // namespace
 

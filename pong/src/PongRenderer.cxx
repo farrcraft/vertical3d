@@ -15,28 +15,28 @@
 
 namespace {
 
-    /**
-     * The glyphs pong ever draws - printable ascii. The atlas is uploaded to the device once
-     * at load, so every glyph has to be packed into it before then.
-     **/
-    const wchar_t* const charcodes =
-        L" !\"#$%&'()*+,-./0123456789:;<=>?"
-        L"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"
-        L"`abcdefghijklmnopqrstuvwxyz{|}~";
+/**
+ * The glyphs pong ever draws - printable ascii. The atlas is uploaded to the device once
+ * at load, so every glyph has to be packed into it before then.
+ **/
+const wchar_t* const charcodes =
+L" !\"#$%&'()*+,-./0123456789:;<=>?"
+L"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"
+L"`abcdefghijklmnopqrstuvwxyz{|}~";
 
-    /**
-     * The size the font is rasterized at. Nothing scales a glyph, so this is also the size
-     * everything is drawn at.
-     **/
-    const float fontSize = 28.0f;
+/**
+ * The size the font is rasterized at. Nothing scales a glyph, so this is also the size
+ * everything is drawn at.
+ **/
+const float fontSize = 28.0f;
 
-    const glm::vec4 boardColour(0.35f, 0.35f, 0.35f, 1.0f);
-    const glm::vec4 ballColour(1.0f, 1.0f, 1.0f, 1.0f);
-    const glm::vec4 scoreColour(0.85f, 0.85f, 0.85f, 1.0f);
+const glm::vec4 boardColour(0.35f, 0.35f, 0.35f, 1.0f);
+const glm::vec4 ballColour(1.0f, 1.0f, 1.0f, 1.0f);
+const glm::vec4 scoreColour(0.85f, 0.85f, 0.85f, 1.0f);
 
-    const unsigned int ballSides = 32;
-    const unsigned int wallThickness = 15;
-    const unsigned int centreLineWidth = 14;
+const unsigned int ballSides = 32;
+const unsigned int wallThickness = 15;
+const unsigned int centreLineWidth = 14;
 
 };  // namespace
 

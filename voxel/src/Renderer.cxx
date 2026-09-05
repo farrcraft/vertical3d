@@ -31,71 +31,71 @@
 
 namespace {
 
-    /**
-     * The terrain pipeline's shader modules, compiled to SPIR-V at build time by glslc and
-     * included as the C initialiser lists its -mfmt=c writes - see v3d_add_shader.
-     **/
-    const uint32_t vertexShader[] =
+/**
+ * The terrain pipeline's shader modules, compiled to SPIR-V at build time by glslc and
+ * included as the C initialiser lists its -mfmt=c writes - see v3d_add_shader.
+ **/
+const uint32_t vertexShader[] =
 #include "shaders/voxel.vert.inc"
-    ;  // NOLINT(whitespace/semicolon)
+;  // NOLINT(whitespace/semicolon)
 
-    const uint32_t fragmentShader[] =
+const uint32_t fragmentShader[] =
 #include "shaders/voxel.frag.inc"
-    ;  // NOLINT(whitespace/semicolon)
+;  // NOLINT(whitespace/semicolon)
 
-    /**
-     * The pass the terrain draws into. It is the frame's first, so it is the one that clears.
-     **/
-    const char* const terrainPass = v3d::render::realtime::Engine3D::colourPass;
+/**
+ * The pass the terrain draws into. It is the frame's first, so it is the one that clears.
+ **/
+const char* const terrainPass = v3d::render::realtime::Engine3D::colourPass;
 
-    /**
-     * The pass the overlay and the ui draw into, over whatever the terrain left.
-     **/
-    const char* const overlayPass = "overlay";
+/**
+ * The pass the overlay and the ui draw into, over whatever the terrain left.
+ **/
+const char* const overlayPass = "overlay";
 
-    /**
-     * The glyphs voxel ever draws - printable ascii. The atlas goes to the device once at
-     * load, so everything that will be drawn has to be packed into it before then.
-     **/
-    const wchar_t* const charcodes =
-        L" !\"#$%&'()*+,-./0123456789:;<=>?"
-        L"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"
-        L"`abcdefghijklmnopqrstuvwxyz{|}~";
+/**
+ * The glyphs voxel ever draws - printable ascii. The atlas goes to the device once at
+ * load, so everything that will be drawn has to be packed into it before then.
+ **/
+const wchar_t* const charcodes =
+L" !\"#$%&'()*+,-./0123456789:;<=>?"
+L"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"
+L"`abcdefghijklmnopqrstuvwxyz{|}~";
 
-    const float fontSize = 18.0f;
+const float fontSize = 18.0f;
 
-    const glm::vec4 sky(0.4f, 0.6f, 0.9f, 1.0f);
-    const glm::vec4 textColour(0.95f, 0.95f, 0.95f, 1.0f);
-    const glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
+const glm::vec4 sky(0.4f, 0.6f, 0.9f, 1.0f);
+const glm::vec4 textColour(0.95f, 0.95f, 0.95f, 1.0f);
+const glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
 
-    /**
-     * How many chunks are remeshed in one tick. Meshing waits for its staging copy, so the
-     * whole world arriving in one frame would be a visible stall.
-     **/
-    const size_t chunkUpdatesPerTick = 16;
+/**
+ * How many chunks are remeshed in one tick. Meshing waits for its staging copy, so the
+ * whole world arriving in one frame would be a visible stall.
+ **/
+const size_t chunkUpdatesPerTick = 16;
 
-    /**
-     * The block palette, indexed by Voxel::BlockType less one - air is never meshed, so the
-     * table starts at dirt.
-     **/
-    const glm::vec3 palette[materialCount] = {
-        glm::vec3(0.9f, 0.5f, 0.3f),     // dirt
-        glm::vec3(0.13f, 0.56f, 0.19f),  // grass
-        glm::vec3(0.9f, 0.88f, 0.58f),   // sand
-        glm::vec3(0.75f, 0.75f, 0.75f),  // stone
-        glm::vec3(0.52f, 0.52f, 0.52f),  // gravel
-        glm::vec3(0.25f, 0.39f, 0.96f),  // water
-        glm::vec3(0.16f, 0.16f, 0.16f),  // ore
-        glm::vec3(0.5f, 0.29f, 0.02f),   // wood
-        glm::vec3(1.0f, 0.47f, 0.12f),   // lava
-        glm::vec3(0.76f, 0.87f, 1.0f),   // glass
-        glm::vec3(0.29f, 0.29f, 0.29f),  // bedrock
-        glm::vec3(0.86f, 0.86f, 0.86f),  // clay
-        glm::vec3(0.96f, 0.96f, 0.96f),  // ice
-        glm::vec3(0.85f, 0.81f, 0.56f),  // sandstone
-        glm::vec3(0.0f, 0.0f, 0.0f),     // obsidian
-        glm::vec3(0.91f, 0.91f, 0.91f)   // snow
-    };
+/**
+ * The block palette, indexed by Voxel::BlockType less one - air is never meshed, so the
+ * table starts at dirt.
+ **/
+const glm::vec3 palette[materialCount] = {
+    glm::vec3(0.9f, 0.5f, 0.3f),     // dirt
+    glm::vec3(0.13f, 0.56f, 0.19f),  // grass
+    glm::vec3(0.9f, 0.88f, 0.58f),   // sand
+    glm::vec3(0.75f, 0.75f, 0.75f),  // stone
+    glm::vec3(0.52f, 0.52f, 0.52f),  // gravel
+    glm::vec3(0.25f, 0.39f, 0.96f),  // water
+    glm::vec3(0.16f, 0.16f, 0.16f),  // ore
+    glm::vec3(0.5f, 0.29f, 0.02f),   // wood
+    glm::vec3(1.0f, 0.47f, 0.12f),   // lava
+    glm::vec3(0.76f, 0.87f, 1.0f),   // glass
+    glm::vec3(0.29f, 0.29f, 0.29f),  // bedrock
+    glm::vec3(0.86f, 0.86f, 0.86f),  // clay
+    glm::vec3(0.96f, 0.96f, 0.96f),  // ice
+    glm::vec3(0.85f, 0.81f, 0.56f),  // sandstone
+    glm::vec3(0.0f, 0.0f, 0.0f),     // obsidian
+    glm::vec3(0.91f, 0.91f, 0.91f)   // snow
+};
 
 };  // namespace
 

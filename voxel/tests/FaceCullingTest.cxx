@@ -9,8 +9,8 @@
 
 namespace {
 
-    const int chunkSize = 16;
-    const int high = chunkSize - 1;
+const int chunkSize = 16;
+const int high = chunkSize - 1;
 
 };  // namespace
 

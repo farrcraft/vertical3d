@@ -18,9 +18,9 @@
 
 namespace {
 
-    boost::shared_ptr<v3d::asset::Manager> manager(const std::string& path = "data") {
-        return boost::make_shared<v3d::asset::Manager>(path, boost::make_shared<v3d::log::Logger>());
-    }
+boost::shared_ptr<v3d::asset::Manager> manager(const std::string& path = "data") {
+    return boost::make_shared<v3d::asset::Manager>(path, boost::make_shared<v3d::log::Logger>());
+}
 
 };  // namespace
 

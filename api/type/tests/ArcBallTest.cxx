@@ -8,12 +8,12 @@
 #include "../ArcBall.h"
 
 namespace {
-    // bounds() maps the viewport onto [-1, 1], so the centre of a 640x480 viewport is the
-    // point that maps to the top of the sphere.
-    const float kWidth = 640.0f;
-    const float kHeight = 480.0f;
-    const float kCentreX = (kWidth - 1.0f) * 0.5f;
-    const float kCentreY = (kHeight - 1.0f) * 0.5f;
+// bounds() maps the viewport onto [-1, 1], so the centre of a 640x480 viewport is the
+// point that maps to the top of the sphere.
+const float kWidth = 640.0f;
+const float kHeight = 480.0f;
+const float kCentreX = (kWidth - 1.0f) * 0.5f;
+const float kCentreY = (kHeight - 1.0f) * 0.5f;
 };  // namespace
 
 BOOST_AUTO_TEST_CASE(arcball_test) {

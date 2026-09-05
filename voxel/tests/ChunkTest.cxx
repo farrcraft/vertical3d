@@ -10,31 +10,31 @@
 
 namespace {
 
-    /**
-     * A heightmap of one value, so that what a chunk fills to is a function of the ceiling
-     * it was given and nothing else.
-     **/
-    class FlatTerrain final : public TerrainMap {
-     public:
-        explicit FlatTerrain(float height) : height_(height) {
-        }
+/**
+ * A heightmap of one value, so that what a chunk fills to is a function of the ceiling
+ * it was given and nothing else.
+ **/
+class FlatTerrain final : public TerrainMap {
+ public:
+    explicit FlatTerrain(float height) : height_(height) {
+    }
 
-        float height(unsigned int x, unsigned int z) override {
-            static_cast<void>(x);
-            static_cast<void>(z);
-            return height_;
-        }
+    float height(unsigned int x, unsigned int z) override {
+        static_cast<void>(x);
+        static_cast<void>(z);
+        return height_;
+    }
 
-     private:
-        float height_;
-    };
+ private:
+    float height_;
+};
 
-    const unsigned int chunkSize = 16;
+const unsigned int chunkSize = 16;
 
-    /**
-     * The world voxel builds: 256 wide, 256 deep and 64 tall, in chunks of 16.
-     **/
-    const unsigned int worldHeightInBlocks = 64;
+/**
+ * The world voxel builds: 256 wide, 256 deep and 64 tall, in chunks of 16.
+ **/
+const unsigned int worldHeightInBlocks = 64;
 
 };  // namespace
 

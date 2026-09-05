@@ -7,10 +7,10 @@
 
 namespace v3d::dag {
 
-    class Switch {
-     public:
-        Switch();
-        virtual ~Switch();
-    };
+class Switch {
+ public:
+    Switch();
+    virtual ~Switch();
+};
 
 };  // namespace v3d::dag

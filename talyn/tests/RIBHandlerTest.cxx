@@ -15,11 +15,11 @@
 
 namespace {
 
-    bool read(const std::string & source, v3d::talyn::RIBHandler * handler) {
-        v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
-        std::istringstream stream(source);
-        return reader.read(stream, handler);
-    }
+bool read(const std::string & source, v3d::talyn::RIBHandler * handler) {
+    v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
+    std::istringstream stream(source);
+    return reader.read(stream, handler);
+}
 
 };  // namespace
 

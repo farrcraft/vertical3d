@@ -18,14 +18,14 @@
 
 namespace {
 
-    /**
-     * The event a binding or a menu item would deliver.
-     **/
-    v3d::event::Event command(const std::string& context, const std::string& name, v3d::event::State state) {
-        v3d::event::Event event(name, boost::make_shared<v3d::event::Context>(context));
-        event.state(state);
-        return event;
-    }
+/**
+ * The event a binding or a menu item would deliver.
+ **/
+v3d::event::Event command(const std::string& context, const std::string& name, v3d::event::State state) {
+    v3d::event::Event event(name, boost::make_shared<v3d::event::Context>(context));
+    event.state(state);
+    return event;
+}
 
 };  // namespace
 

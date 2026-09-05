@@ -19,44 +19,44 @@
  * would have caught it.
  **/
 namespace {
-    struct Recorder {
-        void button(const v3d::event::MouseButton& event) {
-            buttons_.push_back(event);
-        }
-
-        void motion(const v3d::event::MouseMotion& event) {
-            motion_.push_back(event);
-        }
-
-        void sourceEvent(const v3d::event::Event& event) {
-            if (event.type() == v3d::event::Type::Source) {
-                source_.push_back(event);
-            }
-        }
-
-        std::vector<v3d::event::MouseButton> buttons_;
-        std::vector<v3d::event::MouseMotion> motion_;
-        std::vector<v3d::event::Event> source_;
-    };
-
-    SDL_Event buttonEvent(uint32_t type, uint8_t button, float x, float y) {
-        SDL_Event event{};
-        event.type = type;
-        event.button.button = button;
-        event.button.x = x;
-        event.button.y = y;
-        return event;
+struct Recorder {
+    void button(const v3d::event::MouseButton& event) {
+        buttons_.push_back(event);
     }
 
-    SDL_Event motionEvent(float x, float y, float dx, float dy) {
-        SDL_Event event{};
-        event.type = SDL_EVENT_MOUSE_MOTION;
-        event.motion.x = x;
-        event.motion.y = y;
-        event.motion.xrel = dx;
-        event.motion.yrel = dy;
-        return event;
+    void motion(const v3d::event::MouseMotion& event) {
+        motion_.push_back(event);
     }
+
+    void sourceEvent(const v3d::event::Event& event) {
+        if (event.type() == v3d::event::Type::Source) {
+            source_.push_back(event);
+        }
+    }
+
+    std::vector<v3d::event::MouseButton> buttons_;
+    std::vector<v3d::event::MouseMotion> motion_;
+    std::vector<v3d::event::Event> source_;
+};
+
+SDL_Event buttonEvent(uint32_t type, uint8_t button, float x, float y) {
+    SDL_Event event{};
+    event.type = type;
+    event.button.button = button;
+    event.button.x = x;
+    event.button.y = y;
+    return event;
+}
+
+SDL_Event motionEvent(float x, float y, float dx, float dy) {
+    SDL_Event event{};
+    event.type = SDL_EVENT_MOUSE_MOTION;
+    event.motion.x = x;
+    event.motion.y = y;
+    event.motion.xrel = dx;
+    event.motion.yrel = dy;
+    return event;
+}
 };  // namespace
 
 BOOST_AUTO_TEST_CASE(mouse_button_test) {

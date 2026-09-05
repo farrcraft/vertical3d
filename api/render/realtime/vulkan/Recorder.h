@@ -15,84 +15,84 @@
 
 namespace v3d::render::realtime::vulkan {
 
+/**
+ * Turns a frame into commands.
+ *
+ * Recording is the engine's job rather than an operation's, per ADR-0004, so this is the
+ * one place that touches a command buffer. It draws through dynamic rendering - there is
+ * no VkRenderPass and no VkFramebuffer anywhere in the renderer, per ADR-0002.
+ *
+ * A pass is recorded in submission order unless it asks to be sorted, which is what 2D
+ * content needs - see Pass::sort. A sorted pass is walked in sort key order, so items
+ * sharing a pipeline and a material end up adjacent and the binds between them fall away.
+ *
+ * Nothing already bound is rebound: a pipeline and a descriptor set are bound only when
+ * an item asks for a different one than the last item did, so a run of quads sharing a
+ * texture costs one bind between them.
+ **/
+class Recorder final {
+ public:
     /**
-     * Turns a frame into commands.
-     *
-     * Recording is the engine's job rather than an operation's, per ADR-0004, so this is the
-     * one place that touches a command buffer. It draws through dynamic rendering - there is
-     * no VkRenderPass and no VkFramebuffer anywhere in the renderer, per ADR-0002.
-     *
-     * A pass is recorded in submission order unless it asks to be sorted, which is what 2D
-     * content needs - see Pass::sort. A sorted pass is walked in sort key order, so items
-     * sharing a pipeline and a material end up adjacent and the binds between them fall away.
-     *
-     * Nothing already bound is rebound: a pipeline and a descriptor set are bound only when
-     * an item asks for a different one than the last item did, so a run of quads sharing a
-     * texture costs one bind between them.
+     * What a frame is being recorded into. The swapchain image the presenter acquired,
+     * and the depth buffer the context keeps beside it.
      **/
-    class Recorder final {
-     public:
-        /**
-         * What a frame is being recorded into. The swapchain image the presenter acquired,
-         * and the depth buffer the context keeps beside it.
-         **/
-        struct Target {
-            Target() noexcept;
+    struct Target {
+        Target() noexcept;
 
-            VkImage image;         /**< transitioned for drawing and then for presenting **/
-            VkImageView view;      /**< the colour attachment the passes draw into **/
-            VkExtent2D extent;     /**< the size of the image **/
-            VkImage depthImage;    /**< the depth buffer, or null when there is none **/
-            VkImageView depthView; /**< the attachment a pass that depth tests draws into **/
-        };
-
-        /**
-         * Record a whole frame, including the layout transitions either side of it.
-         * @param commands a command buffer that has already been begun
-         * @param resources what the frame's draw items name by handle
-         * @param uniforms where each pass's camera is written and bound from, or null for a
-         *        frame whose pipelines declare nothing at set 0
-         **/
-        void record(VkCommandBuffer commands, const Frame& frame, const Target& target, const Resources& resources,
-            FrameUniforms* uniforms = nullptr) const;
-
-     private:
-        /**
-         * What the last item recorded left bound, so the next one can skip rebinding it.
-         **/
-        struct Bound {
-            Bound() noexcept;
-
-            const Pipeline* pipeline;
-            VkDescriptorSet frameSet;
-            VkDescriptorSet set;
-            VkBuffer vertexBuffer;
-            VkDeviceSize vertexBufferOffset;
-            VkBuffer indexBuffer;
-            VkDeviceSize indexBufferOffset;
-        };
-
-        /**
-         * Move the colour image between layouts with a synchronization2 barrier.
-         **/
-        static void transition(VkCommandBuffer commands, VkImage image, VkImageLayout from, VkImageLayout to);
-
-        /**
-         * Bring the depth image into the layout a pass attaches it in. The contents are
-         * discarded, which is why the first pass to use it in a frame has to clear.
-         **/
-        static void transitionDepth(VkCommandBuffer commands, VkImage image);
-
-        /**
-         * @param frameSet what the pass binds at set 0, or null if it binds nothing there
-         **/
-        static void record(VkCommandBuffer commands, const Pass& pass, const Target& target, const Resources& resources,
-            VkDescriptorSet frameSet);
-
-        /**
-         * Bind what the item needs that is not bound already, and issue its draw.
-         **/
-        static void record(VkCommandBuffer commands, const DrawItem& item, const Resources& resources, VkDescriptorSet frameSet, Bound* bound);
+        VkImage image;         /**< transitioned for drawing and then for presenting **/
+        VkImageView view;      /**< the colour attachment the passes draw into **/
+        VkExtent2D extent;     /**< the size of the image **/
+        VkImage depthImage;    /**< the depth buffer, or null when there is none **/
+        VkImageView depthView; /**< the attachment a pass that depth tests draws into **/
     };
+
+    /**
+     * Record a whole frame, including the layout transitions either side of it.
+     * @param commands a command buffer that has already been begun
+     * @param resources what the frame's draw items name by handle
+     * @param uniforms where each pass's camera is written and bound from, or null for a
+     *        frame whose pipelines declare nothing at set 0
+     **/
+    void record(VkCommandBuffer commands, const Frame& frame, const Target& target, const Resources& resources,
+        FrameUniforms* uniforms = nullptr) const;
+
+ private:
+    /**
+     * What the last item recorded left bound, so the next one can skip rebinding it.
+     **/
+    struct Bound {
+        Bound() noexcept;
+
+        const Pipeline* pipeline;
+        VkDescriptorSet frameSet;
+        VkDescriptorSet set;
+        VkBuffer vertexBuffer;
+        VkDeviceSize vertexBufferOffset;
+        VkBuffer indexBuffer;
+        VkDeviceSize indexBufferOffset;
+    };
+
+    /**
+     * Move the colour image between layouts with a synchronization2 barrier.
+     **/
+    static void transition(VkCommandBuffer commands, VkImage image, VkImageLayout from, VkImageLayout to);
+
+    /**
+     * Bring the depth image into the layout a pass attaches it in. The contents are
+     * discarded, which is why the first pass to use it in a frame has to clear.
+     **/
+    static void transitionDepth(VkCommandBuffer commands, VkImage image);
+
+    /**
+     * @param frameSet what the pass binds at set 0, or null if it binds nothing there
+     **/
+    static void record(VkCommandBuffer commands, const Pass& pass, const Target& target, const Resources& resources,
+        VkDescriptorSet frameSet);
+
+    /**
+     * Bind what the item needs that is not bound already, and issue its draw.
+     **/
+    static void record(VkCommandBuffer commands, const DrawItem& item, const Resources& resources, VkDescriptorSet frameSet, Bound* bound);
+};
 
 };  // namespace v3d::render::realtime::vulkan

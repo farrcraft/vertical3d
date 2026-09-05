@@ -18,95 +18,95 @@
 
 namespace v3d::engine {
 
+/**
+ * This is the game engine.
+ * It is responsible for the main game loop
+ **/
+class Engine {
+ public:
     /**
-     * This is the game engine.
-     * It is responsible for the main game loop
+     * Constructor.
+     *
+     * @param appPath The fully qualified base path name from which all relative
+     *                paths will be derived.
      **/
-    class Engine {
-     public:
-        /**
-         * Constructor.
-         *
-         * @param appPath The fully qualified base path name from which all relative
-         *                paths will be derived.
-         **/
-        explicit Engine(const std::string& appPath);
+    explicit Engine(const std::string& appPath);
 
-        /**
-         * Initialize the engine.
-         * Initialization includes only the minimal amount of work required to get
-         * a window displayed on the screen.
-         *
-         * @param features The set of engine features to be enabled.
-         * @return bool
-         **/
-        bool initialize(int features);
+    /**
+     * Initialize the engine.
+     * Initialization includes only the minimal amount of work required to get
+     * a window displayed on the screen.
+     *
+     * @param features The set of engine features to be enabled.
+     * @return bool
+     **/
+    bool initialize(int features);
 
-        /**
-         * The game loop entry point
-         * 
-         * @return bool
-         **/
-        bool eventLoop();
+    /**
+     * The game loop entry point
+     * 
+     * @return bool
+     **/
+    bool eventLoop();
 
-        /**
-         * Advance the game world time
-         * @param delta milliseconds elapsed since the previous tick. Simulation that scales by
-         *              this stays frame rate independent; simulation that ignores it does not.
-         * @return bool
-         **/
-        virtual bool tick(unsigned int delta);
+    /**
+     * Advance the game world time
+     * @param delta milliseconds elapsed since the previous tick. Simulation that scales by
+     *              this stays frame rate independent; simulation that ignores it does not.
+     * @return bool
+     **/
+    virtual bool tick(unsigned int delta);
 
-        /**
-         * Render the current frame.
-         * This will be called after each tick within the event loop to draw the current frame
-         * 
-         * @return bool
-         **/
-        virtual bool render();
+    /**
+     * Render the current frame.
+     * This will be called after each tick within the event loop to draw the current frame
+     * 
+     * @return bool
+     **/
+    virtual bool render();
 
-        /**
-         * @return bool
-         **/
-        virtual bool shutdown();
+    /**
+     * @return bool
+     **/
+    virtual bool shutdown();
 
-        /**
-         * Ask the game loop to stop after the frame it is on.
-         *
-         * This is what a quit command calls, and shutdown() is not: the loop ticks and
-         * renders after an event handler returns, so tearing the window and SDL down from
-         * inside a handler leaves the frame after it drawing against a destroyed window.
-         * eventLoop() returns, and the caller shuts down once, outside the loop.
-         **/
-        void quit() noexcept;
+    /**
+     * Ask the game loop to stop after the frame it is on.
+     *
+     * This is what a quit command calls, and shutdown() is not: the loop ticks and
+     * renders after an event handler returns, so tearing the window and SDL down from
+     * inside a handler leaves the frame after it drawing against a destroyed window.
+     * eventLoop() returns, and the caller shuts down once, outside the loop.
+     **/
+    void quit() noexcept;
 
-        /**
-         * @return whether something has asked the loop to stop
-         **/
-        bool quitting() const noexcept;
+    /**
+     * @return whether something has asked the loop to stop
+     **/
+    bool quitting() const noexcept;
 
-        /**
-         * @return Window
-         **/
-        boost::shared_ptr<v3d::render::realtime::Window> window() const;
+    /**
+     * @return Window
+     **/
+    boost::shared_ptr<v3d::render::realtime::Window> window() const;
 
-     protected:
-        boost::shared_ptr<v3d::log::Logger> logger_;
-        boost::shared_ptr<v3d::config::Config> config_;
-        boost::shared_ptr<v3d::render::realtime::Window> window_;
-        boost::shared_ptr<v3d::asset::Manager> assetManager_;
-        boost::shared_ptr<entt::dispatcher> dispatcher_;
-        boost::shared_ptr<v3d::event::Engine> eventEngine_;
-        entt::registry registry_;
+ protected:
+    boost::shared_ptr<v3d::log::Logger> logger_;
+    boost::shared_ptr<v3d::config::Config> config_;
+    boost::shared_ptr<v3d::render::realtime::Window> window_;
+    boost::shared_ptr<v3d::asset::Manager> assetManager_;
+    boost::shared_ptr<entt::dispatcher> dispatcher_;
+    boost::shared_ptr<v3d::event::Engine> eventEngine_;
+    entt::registry registry_;
 
-     private:
-         bool registerEventMappings();
+ private:
+     bool registerEventMappings();
 
-         std::string appPath_;
-         int features_;
-         bool needShutdown_;
-         bool quitting_;
-         boost::shared_ptr<v3d::input::Engine> inputEngine_;
-    };
+     std::string appPath_;
+     int features_;
+     bool needShutdown_;
+     bool quitting_;
+     boost::shared_ptr<v3d::input::Engine> inputEngine_;
+};
 
 };  // namespace v3d::engine

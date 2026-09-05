@@ -110,7 +110,7 @@ result is dropped is a defect even if it builds.
 ## Lint
 
 ```
-cpplint --linelength=180 --filter=-whitespace/indent_namespace,-build/namespaces_literals \
+cpplint --linelength=180 --filter=-build/namespaces_literals \
   --exclude=out --exclude=vendor --exclude=vcpkg_installed \
   --exclude=voxel/src/noise --recursive .
 ```
@@ -118,9 +118,9 @@ cpplint --linelength=180 --filter=-whitespace/indent_namespace,-build/namespaces
 **The tree is clean at this command**, so every finding is a real one and a report of zero
 is the expected result rather than a sign the run went wrong.
 
-`whitespace/indent_namespace` is suppressed because the house style indents inside a
-namespace. Do not "fix" the indentation to satisfy it, and do not widen the filter past
-these two entries.
+`build/namespaces_literals` is the only suppression, and adding another is the weakening
+this file's one rule forbids. A namespace body is not indented here, continuation lines at
+namespace scope included.
 
 ## Tests
 

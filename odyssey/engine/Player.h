@@ -10,23 +10,23 @@
 #include <entt/entt.hpp>
 
 namespace odyssey::engine {
+/**
+ * 
+ **/
+class Player final {
+ public:
     /**
-     * 
      **/
-    class Player final {
-     public:
-        /**
-         **/
-        Player(entt::registry *registry);
+    Player(entt::registry *registry);
 
-        /**
-         * The entity the player's components hang off, for a system or the renderer that
-         * needs to look one of them up.
-         **/
-        entt::entity entity() const noexcept;
+    /**
+     * The entity the player's components hang off, for a system or the renderer that
+     * needs to look one of them up.
+     **/
+    entt::entity entity() const noexcept;
 
-     private:
-        entt::entity id_;
-        Sprite sprite_;
-    };
+ private:
+    entt::entity id_;
+    Sprite sprite_;
+};
 };  // namespace odyssey::engine

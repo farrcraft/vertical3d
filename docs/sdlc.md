@@ -71,9 +71,8 @@ links; `CLAUDE.md` keeps a build health list, so check it before assuming a fail
 yours.
 
 **Lint.** cpplint, per the command in `CLAUDE.md`, run in CI by
-[`.github/workflows/cpplint.yml`](../.github/workflows/cpplint.yml). Every file reports
-`whitespace/indent_namespace` because the filter in that workflow names the check by its old
-identifier; ignore those and treat everything else as real.
+[`.github/workflows/cpplint.yml`](../.github/workflows/cpplint.yml). The tree is clean at it,
+so every finding is a real one.
 
 **Tests.** Boost.Test, one binary per api library plus one per app that has logic worth
 covering, registered with ctest: `ctest --test-dir out/build/x64-Debug --output-on-failure`.

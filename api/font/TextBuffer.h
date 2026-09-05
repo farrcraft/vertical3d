@@ -10,43 +10,43 @@
 #include <glm/glm.hpp>
 
 namespace v3d::font {
+/**
+ * A base text buffer class that can be inherited by specific text types
+ */
+class TextBuffer {
+ public:
+    TextBuffer();
+
     /**
-     * A base text buffer class that can be inherited by specific text types
-     */
-    class TextBuffer {
-     public:
-        TextBuffer();
+        * Clear the existing text buffer
+        */
+    void clear();
+    void invalidate();
+    bool dirty() const;
 
-        /**
-            * Clear the existing text buffer
-            */
-        void clear();
-        void invalidate();
-        bool dirty() const;
+    void resize(size_t size);
 
-        void resize(size_t size);
+    std::vector<glm::vec3> & vertices();
+    std::vector<glm::vec2> & uvs();
+    std::vector<glm::vec4> & colors();
+    std::vector<unsigned int> & indices();
 
-        std::vector<glm::vec3> & vertices();
-        std::vector<glm::vec2> & uvs();
-        std::vector<glm::vec4> & colors();
-        std::vector<unsigned int> & indices();
+    const std::vector<glm::vec3> & vertices() const;
+    const std::vector<glm::vec2> & uvs() const;
+    const std::vector<glm::vec4> & colors() const;
+    const std::vector<unsigned int> & indices() const;
 
-        const std::vector<glm::vec3> & vertices() const;
-        const std::vector<glm::vec2> & uvs() const;
-        const std::vector<glm::vec4> & colors() const;
-        const std::vector<unsigned int> & indices() const;
+    void addVertex(const glm::vec3 & vertex);
+    void addIndex(unsigned int index);
+    void addColor(const glm::vec4 & color);
+    void addTextureCoordinate(const glm::vec2 & uv);
+    void dirty(bool state);
 
-        void addVertex(const glm::vec3 & vertex);
-        void addIndex(unsigned int index);
-        void addColor(const glm::vec4 & color);
-        void addTextureCoordinate(const glm::vec2 & uv);
-        void dirty(bool state);
-
-     private:
-        bool dirty_;
-        std::vector<glm::vec3> vertices_;
-        std::vector<glm::vec2> uvs_;
-        std::vector<glm::vec4> colors_;
-        std::vector<unsigned int> indices_;
-    };
+ private:
+    bool dirty_;
+    std::vector<glm::vec3> vertices_;
+    std::vector<glm::vec2> uvs_;
+    std::vector<glm::vec4> colors_;
+    std::vector<unsigned int> indices_;
+};
 };  // namespace v3d::font

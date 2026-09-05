@@ -10,10 +10,10 @@
 
 namespace v3d::ui::component {
 
-    class RadioButton : public Component {
-     public:
-        RadioButton() = default;
-        ~RadioButton() = default;
-    };
+class RadioButton : public Component {
+ public:
+    RadioButton() = default;
+    ~RadioButton() = default;
+};
 
 };  // end namespace v3d::ui::component

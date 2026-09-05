@@ -11,20 +11,20 @@
 
 namespace v3d::log {
 
-    /**
-     **/
-    class Logger final {
-     public:
-            /**
-             **/
-            Logger();
+/**
+ **/
+class Logger final {
+ public:
+        /**
+         **/
+        Logger();
 
-            /**
-             **/
-            std::shared_ptr<spdlog::logger>& get();
+        /**
+         **/
+        std::shared_ptr<spdlog::logger>& get();
 
-     private:
-         std::shared_ptr<spdlog::logger> logger_;
-    };
+ private:
+     std::shared_ptr<spdlog::logger> logger_;
+};
 
 };  // namespace v3d::log

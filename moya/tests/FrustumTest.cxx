@@ -12,19 +12,19 @@
 
 namespace {
 
-    v3d::type::AABBox box(const glm::vec3 & min, const glm::vec3 & max) {
-        v3d::type::AABBox b;
-        b.extents(min, max);
-        return b;
-    }
+v3d::type::AABBox box(const glm::vec3 & min, const glm::vec3 & max) {
+    v3d::type::AABBox b;
+    b.extents(min, max);
+    return b;
+}
 
-    /**
-     * A symmetric orthographic volume two units on a side, which is the shape the render
-     * context's own projection builds.
-     **/
-    glm::mat4x4 volume() {
-        return glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
-    }
+/**
+ * A symmetric orthographic volume two units on a side, which is the shape the render
+ * context's own projection builds.
+ **/
+glm::mat4x4 volume() {
+    return glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
+}
 
 };  // namespace
 

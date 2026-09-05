@@ -9,17 +9,17 @@
 
 namespace v3d::asset {
 
-    /**
-     **/
-    Json::Json(const std::string& name, Type t, const boost::json::object& doc) :
-        Asset(name, t),
-        document_(doc) {
-    }
+/**
+ **/
+Json::Json(const std::string& name, Type t, const boost::json::object& doc) :
+    Asset(name, t),
+    document_(doc) {
+}
 
-    /**
-     **/
-    boost::json::object const& Json::document() {
-        return document_;
-    }
+/**
+ **/
+boost::json::object const& Json::document() {
+    return document_;
+}
 
 };  // namespace v3d::asset

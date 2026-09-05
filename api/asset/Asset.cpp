@@ -9,9 +9,9 @@
 
 namespace v3d::asset {
 
-    Asset::Asset(std::string name, asset::Type t) :
-        name_(name),
-        type_(t) {
-    }
+Asset::Asset(std::string name, asset::Type t) :
+    name_(name),
+    type_(t) {
+}
 
 };  // namespace v3d::asset

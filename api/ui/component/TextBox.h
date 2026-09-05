@@ -9,10 +9,10 @@
 
 namespace v3d::ui::component {
 
-    class TextBox : public Component {
-     public:
-        TextBox() = default;
-        ~TextBox() = default;
-    };
+class TextBox : public Component {
+ public:
+    TextBox() = default;
+    ~TextBox() = default;
+};
 
 };  // end namespace v3d::ui::component

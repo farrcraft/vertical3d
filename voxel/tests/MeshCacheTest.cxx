@@ -13,16 +13,16 @@
 
 namespace {
 
-    /**
-     * Room for one block with every face cut - six quads.
-     **/
-    boost::shared_ptr<MeshCache> cache() {
-        return boost::make_shared<MeshCache>(24, 12, 6);
-    }
+/**
+ * Room for one block with every face cut - six quads.
+ **/
+boost::shared_ptr<MeshCache> cache() {
+    return boost::make_shared<MeshCache>(24, 12, 6);
+}
 
-    boost::shared_ptr<Voxel> block(const glm::vec3& position) {
-        return boost::make_shared<Voxel>(Voxel::BLOCK_TYPE_STONE, position);
-    }
+boost::shared_ptr<Voxel> block(const glm::vec3& position) {
+    return boost::make_shared<Voxel>(Voxel::BLOCK_TYPE_STONE, position);
+}
 
 };  // namespace
 

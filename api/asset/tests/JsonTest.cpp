@@ -14,10 +14,10 @@
 
 namespace {
 
-    boost::shared_ptr<v3d::asset::Json> document(const std::string& name) {
-        v3d::asset::Manager assets("data", boost::make_shared<v3d::log::Logger>());
-        return boost::dynamic_pointer_cast<v3d::asset::Json>(assets.loadTypeFromExt(name));
-    }
+boost::shared_ptr<v3d::asset::Json> document(const std::string& name) {
+    v3d::asset::Manager assets("data", boost::make_shared<v3d::log::Logger>());
+    return boost::dynamic_pointer_cast<v3d::asset::Json>(assets.loadTypeFromExt(name));
+}
 
 };  // namespace
 

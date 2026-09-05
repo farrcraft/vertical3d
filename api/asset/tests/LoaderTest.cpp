@@ -15,24 +15,24 @@
 
 namespace {
 
-    /**
-     * Loader's constructor is protected and every parameter case below is about the base
-     * class rather than about any format, so the suite supplies its own leaf.
-     **/
-    class Probe final : public v3d::asset::Loader {
-     public:
-        explicit Probe(const boost::shared_ptr<v3d::log::Logger>& logger) :
-            Loader(nullptr, v3d::asset::Type::Text, logger) {
-        }
-
-        boost::shared_ptr<v3d::asset::Asset> load(std::string_view /* name */) override {
-            return boost::shared_ptr<v3d::asset::Asset>();
-        }
-    };
-
-    Probe probe() {
-        return Probe(boost::make_shared<v3d::log::Logger>());
+/**
+ * Loader's constructor is protected and every parameter case below is about the base
+ * class rather than about any format, so the suite supplies its own leaf.
+ **/
+class Probe final : public v3d::asset::Loader {
+ public:
+    explicit Probe(const boost::shared_ptr<v3d::log::Logger>& logger) :
+        Loader(nullptr, v3d::asset::Type::Text, logger) {
     }
+
+    boost::shared_ptr<v3d::asset::Asset> load(std::string_view /* name */) override {
+        return boost::shared_ptr<v3d::asset::Asset>();
+    }
+};
+
+Probe probe() {
+    return Probe(boost::make_shared<v3d::log::Logger>());
+}
 
 };  // namespace
 

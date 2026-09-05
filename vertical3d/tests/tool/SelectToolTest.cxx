@@ -20,44 +20,44 @@
 
 namespace {
 
-    /**
-     * The same square front view the picker's own tests use: a world unit is two hundred
-     * pixels and the middle of the view is the middle of a unit primitive.
-     **/
-    boost::shared_ptr<v3d::editor::ViewPort> frontView() {
-        v3d::type::CameraProfile profile("front");
-        boost::shared_ptr<v3d::editor::ViewPort> view = boost::make_shared<v3d::editor::ViewPort>("front", profile);
-        view->resize(glm::vec4(0.0f, 0.0f, 400.0f, 400.0f));
-        return view;
-    }
+/**
+ * The same square front view the picker's own tests use: a world unit is two hundred
+ * pixels and the middle of the view is the middle of a unit primitive.
+ **/
+boost::shared_ptr<v3d::editor::ViewPort> frontView() {
+    v3d::type::CameraProfile profile("front");
+    boost::shared_ptr<v3d::editor::ViewPort> view = boost::make_shared<v3d::editor::ViewPort>("front", profile);
+    view->resize(glm::vec4(0.0f, 0.0f, 400.0f, 400.0f));
+    return view;
+}
 
-    /**
-     * A tool over a scene, in a front view, with no logger - a test has no use for the
-     * lines a pick writes, and the tool takes an empty one.
-     **/
-    boost::shared_ptr<v3d::editor::SelectTool> tool(const boost::shared_ptr<v3d::editor::Scene>& scene) {
-        boost::shared_ptr<v3d::editor::SelectTool> select =
-            boost::make_shared<v3d::editor::SelectTool>(scene, boost::shared_ptr<v3d::log::Logger>());
-        select->view(frontView());
-        return select;
-    }
+/**
+ * A tool over a scene, in a front view, with no logger - a test has no use for the
+ * lines a pick writes, and the tool takes an empty one.
+ **/
+boost::shared_ptr<v3d::editor::SelectTool> tool(const boost::shared_ptr<v3d::editor::Scene>& scene) {
+    boost::shared_ptr<v3d::editor::SelectTool> select =
+        boost::make_shared<v3d::editor::SelectTool>(scene, boost::shared_ptr<v3d::log::Logger>());
+    select->view(frontView());
+    return select;
+}
 
-    /**
-     * How many components of a mesh are selected, across all three kinds.
-     **/
-    std::size_t selectedComponents(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
-        std::size_t count = 0;
-        for (std::size_t index = 0; index < mesh->vertexCount(); index++) {
-            count += mesh->vertex(static_cast<unsigned int>(index))->selected() ? 1 : 0;
-        }
-        for (std::size_t index = 0; index < mesh->edgeCount(); index++) {
-            count += mesh->edge(static_cast<unsigned int>(index))->selected() ? 1 : 0;
-        }
-        for (std::size_t index = 0; index < mesh->faceCount(); index++) {
-            count += mesh->face(static_cast<unsigned int>(index))->selected() ? 1 : 0;
-        }
-        return count;
+/**
+ * How many components of a mesh are selected, across all three kinds.
+ **/
+std::size_t selectedComponents(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
+    std::size_t count = 0;
+    for (std::size_t index = 0; index < mesh->vertexCount(); index++) {
+        count += mesh->vertex(static_cast<unsigned int>(index))->selected() ? 1 : 0;
     }
+    for (std::size_t index = 0; index < mesh->edgeCount(); index++) {
+        count += mesh->edge(static_cast<unsigned int>(index))->selected() ? 1 : 0;
+    }
+    for (std::size_t index = 0; index < mesh->faceCount(); index++) {
+        count += mesh->face(static_cast<unsigned int>(index))->selected() ? 1 : 0;
+    }
+    return count;
+}
 
 };  // namespace
 

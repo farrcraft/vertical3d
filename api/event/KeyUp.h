@@ -11,12 +11,12 @@
 
 namespace v3d::event {
 
+/**
+ **/
+class KeyUp final : public Key {
+ public:
     /**
      **/
-    class KeyUp final : public Key {
-     public:
-        /**
-         **/
-        KeyUp(const std::string& name, const boost::shared_ptr<Context>& context);
-    };
+    KeyUp(const std::string& name, const boost::shared_ptr<Context>& context);
+};
 };  // namespace v3d::event

@@ -14,39 +14,39 @@
 
 namespace {
 
-    /**
-     * A system holds the registry it was given rather than one of its own, because the app
-     * owns the registry and passes it in as a raw pointer.
-     **/
-    class CountingSystem final : public v3d::ecs::System {
-     public:
-        using System::System;
+/**
+ * A system holds the registry it was given rather than one of its own, because the app
+ * owns the registry and passes it in as a raw pointer.
+ **/
+class CountingSystem final : public v3d::ecs::System {
+ public:
+    using System::System;
 
-        bool tick() override {
-            ticks_++;
-            registry_->view<v3d::ecs::component::Position1D>().each(
-                [](v3d::ecs::component::Position1D& position) {
-                    position.set(position.value() + 1.0f);
-                });
-            return true;
-        }
+    bool tick() override {
+        ticks_++;
+        registry_->view<v3d::ecs::component::Position1D>().each(
+            [](v3d::ecs::component::Position1D& position) {
+                position.set(position.value() + 1.0f);
+            });
+        return true;
+    }
 
-        int ticks() const {
-            return ticks_;
-        }
+    int ticks() const {
+        return ticks_;
+    }
 
-     private:
-        int ticks_ = 0;
-    };
+ private:
+    int ticks_ = 0;
+};
 
-    class FailingSystem final : public v3d::ecs::System {
-     public:
-        using System::System;
+class FailingSystem final : public v3d::ecs::System {
+ public:
+    using System::System;
 
-        bool tick() override {
-            return false;
-        }
-    };
+    bool tick() override {
+        return false;
+    }
+};
 
 };  // namespace
 

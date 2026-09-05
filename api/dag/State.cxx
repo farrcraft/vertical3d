@@ -7,10 +7,10 @@
 
 namespace v3d::dag {
 
-    State::State() {
-    }
+State::State() {
+}
 
-    State::~State() {
-    }
+State::~State() {
+}
 
 };  // namespace v3d::dag

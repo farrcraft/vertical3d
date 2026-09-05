@@ -7,10 +7,10 @@
 
 namespace v3d::asset {
 
-    /**
-     **/
-    Cache::Cache(Type t) :
-        type_(t) {
-    }
+/**
+ **/
+Cache::Cache(Type t) :
+    type_(t) {
+}
 
 };  // namespace v3d::asset

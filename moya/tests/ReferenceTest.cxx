@@ -21,40 +21,40 @@
 
 namespace {
 
-    const char* REFERENCE = "data/reference-polygon.png";
-    const char* RENDERED = "data_out/reference-polygon.png";
-    const char* RIB_SCENE = "data/reference-polygon.rib";
-    const char* RIB_RENDERED = "data_out/reference-polygon-rib.png";
+const char* REFERENCE = "data/reference-polygon.png";
+const char* RENDERED = "data_out/reference-polygon.png";
+const char* RIB_SCENE = "data/reference-polygon.rib";
+const char* RIB_RENDERED = "data_out/reference-polygon-rib.png";
 
-    v3d::moya::Vertex vertex(float x, float y, float z) {
-        v3d::moya::Vertex v;
-        v.point(glm::vec3(x, y, z));
-        return v;
-    }
+v3d::moya::Vertex vertex(float x, float y, float z) {
+    v3d::moya::Vertex v;
+    v.point(glm::vec3(x, y, z));
+    return v;
+}
 
-    /*
-        A quad facing the camera, asymmetric about both axes so that a flipped picture is a
-        failing one. The screen window is [-1, 1] on both axes, and the raster transform puts
-        its origin at the upper left corner.
+/*
+    A quad facing the camera, asymmetric about both axes so that a flipped picture is a
+    failing one. The screen window is [-1, 1] on both axes, and the raster transform puts
+    its origin at the upper left corner.
 
-        Regenerating this reference is expected whenever shading or sampling changes the
-        picture on purpose. What it buys is that a change which was not meant to alter the
-        picture says so.
-    */
-    void scene(v3d::moya::RenderContext & rc) {
-        rc.imageResolution(64, 48, 1.0f);
-        // the defaults are RI_EPSILON and RI_INFINITY, which leave the orthographic depth
-        // scale at about 2e-38 and collapse every z onto the near plane
-        rc.clipping(1.0f, 100.0f);
-        rc.prepareWorld();
+    Regenerating this reference is expected whenever shading or sampling changes the
+    picture on purpose. What it buys is that a change which was not meant to alter the
+    picture says so.
+*/
+void scene(v3d::moya::RenderContext & rc) {
+    rc.imageResolution(64, 48, 1.0f);
+    // the defaults are RI_EPSILON and RI_INFINITY, which leave the orthographic depth
+    // scale at about 2e-38 and collapse every z onto the near plane
+    rc.clipping(1.0f, 100.0f);
+    rc.prepareWorld();
 
-        boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
-        polygon->addVertex(vertex(-0.7f, -0.2f, 5.0f));
-        polygon->addVertex(vertex(0.3f, -0.2f, 5.0f));
-        polygon->addVertex(vertex(0.3f, 0.8f, 5.0f));
-        polygon->addVertex(vertex(-0.7f, 0.8f, 5.0f));
-        rc.addPolygon(polygon);
-    }
+    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    polygon->addVertex(vertex(-0.7f, -0.2f, 5.0f));
+    polygon->addVertex(vertex(0.3f, -0.2f, 5.0f));
+    polygon->addVertex(vertex(0.3f, 0.8f, 5.0f));
+    polygon->addVertex(vertex(-0.7f, 0.8f, 5.0f));
+    rc.addPolygon(polygon);
+}
 
 };  // namespace
 

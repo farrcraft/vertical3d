@@ -13,19 +13,19 @@
 
 namespace {
 
-    /**
-     * One directory per case, because load() always reads config.json out of the manager's
-     * own path and a rejection is only distinguishable from the document that caused it.
-     **/
-    boost::shared_ptr<v3d::asset::Manager> assets(const std::string& fixture) {
-        return boost::make_shared<v3d::asset::Manager>(
-            "data/" + fixture, boost::make_shared<v3d::log::Logger>());
-    }
+/**
+ * One directory per case, because load() always reads config.json out of the manager's
+ * own path and a rejection is only distinguishable from the document that caused it.
+ **/
+boost::shared_ptr<v3d::asset::Manager> assets(const std::string& fixture) {
+    return boost::make_shared<v3d::asset::Manager>(
+        "data/" + fixture, boost::make_shared<v3d::log::Logger>());
+}
 
-    bool loads(const std::string& fixture) {
-        v3d::config::Config config(boost::make_shared<v3d::log::Logger>());
-        return config.load(assets(fixture));
-    }
+bool loads(const std::string& fixture) {
+    v3d::config::Config config(boost::make_shared<v3d::log::Logger>());
+    return config.load(assets(fixture));
+}
 
 };  // namespace
 

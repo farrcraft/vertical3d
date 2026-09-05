@@ -22,75 +22,75 @@
 
 namespace {
 
-    boost::shared_ptr<v3d::log::Logger> logger() {
-        return boost::make_shared<v3d::log::Logger>();
+boost::shared_ptr<v3d::log::Logger> logger() {
+    return boost::make_shared<v3d::log::Logger>();
+}
+
+/**
+ * A path to write a project to and read it back from.
+ **/
+std::string scratch(const char* name) {
+    return (boost::filesystem::temp_directory_path() / name).string();
+}
+
+void put(const std::string& path, const std::string& text) {
+    std::ofstream file(path, std::ios::binary | std::ios::trunc);
+    file.write(text.data(), static_cast<std::streamsize>(text.size()));
+}
+
+std::string get(const std::string& path) {
+    std::ifstream file(path, std::ios::binary);
+    return std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+}
+
+/**
+ * Collects a scene's meshes in the order it holds them.
+ **/
+class Collector final : public v3d::editor::SceneVisitor {
+ public:
+    void visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) override {
+        meshes.push_back(mesh);
     }
 
-    /**
-     * A path to write a project to and read it back from.
-     **/
-    std::string scratch(const char* name) {
-        return (boost::filesystem::temp_directory_path() / name).string();
+    std::vector<boost::shared_ptr<v3d::brep::BRep>> meshes;
+};
+
+std::vector<boost::shared_ptr<v3d::brep::BRep>> meshes(const boost::shared_ptr<v3d::editor::Scene>& scene) {
+    Collector collector;
+    scene->accept(&collector);
+    return collector.meshes;
+}
+
+/**
+ * Whether two meshes hold the same geometry, the same topology and the same placement.
+ * Ids are deliberately not compared - a mesh read from a file is a new node.
+ **/
+void same(const boost::shared_ptr<v3d::brep::BRep>& left, const boost::shared_ptr<v3d::brep::BRep>& right) {
+    BOOST_REQUIRE_EQUAL(left->vertexCount(), right->vertexCount());
+    BOOST_REQUIRE_EQUAL(left->edgeCount(), right->edgeCount());
+    BOOST_REQUIRE_EQUAL(left->faceCount(), right->faceCount());
+
+    for (std::size_t index = 0; index < left->vertexCount(); index++) {
+        const unsigned int id = static_cast<unsigned int>(index);
+        BOOST_CHECK(left->vertex(id)->point() == right->vertex(id)->point());
+    }
+    for (std::size_t index = 0; index < left->edgeCount(); index++) {
+        const unsigned int id = static_cast<unsigned int>(index);
+        BOOST_CHECK_EQUAL(left->edge(id)->vertex(), right->edge(id)->vertex());
+        BOOST_CHECK_EQUAL(left->edge(id)->face(), right->edge(id)->face());
+        BOOST_CHECK_EQUAL(left->edge(id)->pair(), right->edge(id)->pair());
+        BOOST_CHECK_EQUAL(left->edge(id)->next(), right->edge(id)->next());
+    }
+    for (std::size_t index = 0; index < left->faceCount(); index++) {
+        const unsigned int id = static_cast<unsigned int>(index);
+        BOOST_CHECK(left->face(id)->normal() == right->face(id)->normal());
+        BOOST_CHECK_EQUAL(left->face(id)->edge(), right->face(id)->edge());
     }
 
-    void put(const std::string& path, const std::string& text) {
-        std::ofstream file(path, std::ios::binary | std::ios::trunc);
-        file.write(text.data(), static_cast<std::streamsize>(text.size()));
-    }
-
-    std::string get(const std::string& path) {
-        std::ifstream file(path, std::ios::binary);
-        return std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-    }
-
-    /**
-     * Collects a scene's meshes in the order it holds them.
-     **/
-    class Collector final : public v3d::editor::SceneVisitor {
-     public:
-        void visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) override {
-            meshes.push_back(mesh);
-        }
-
-        std::vector<boost::shared_ptr<v3d::brep::BRep>> meshes;
-    };
-
-    std::vector<boost::shared_ptr<v3d::brep::BRep>> meshes(const boost::shared_ptr<v3d::editor::Scene>& scene) {
-        Collector collector;
-        scene->accept(&collector);
-        return collector.meshes;
-    }
-
-    /**
-     * Whether two meshes hold the same geometry, the same topology and the same placement.
-     * Ids are deliberately not compared - a mesh read from a file is a new node.
-     **/
-    void same(const boost::shared_ptr<v3d::brep::BRep>& left, const boost::shared_ptr<v3d::brep::BRep>& right) {
-        BOOST_REQUIRE_EQUAL(left->vertexCount(), right->vertexCount());
-        BOOST_REQUIRE_EQUAL(left->edgeCount(), right->edgeCount());
-        BOOST_REQUIRE_EQUAL(left->faceCount(), right->faceCount());
-
-        for (std::size_t index = 0; index < left->vertexCount(); index++) {
-            const unsigned int id = static_cast<unsigned int>(index);
-            BOOST_CHECK(left->vertex(id)->point() == right->vertex(id)->point());
-        }
-        for (std::size_t index = 0; index < left->edgeCount(); index++) {
-            const unsigned int id = static_cast<unsigned int>(index);
-            BOOST_CHECK_EQUAL(left->edge(id)->vertex(), right->edge(id)->vertex());
-            BOOST_CHECK_EQUAL(left->edge(id)->face(), right->edge(id)->face());
-            BOOST_CHECK_EQUAL(left->edge(id)->pair(), right->edge(id)->pair());
-            BOOST_CHECK_EQUAL(left->edge(id)->next(), right->edge(id)->next());
-        }
-        for (std::size_t index = 0; index < left->faceCount(); index++) {
-            const unsigned int id = static_cast<unsigned int>(index);
-            BOOST_CHECK(left->face(id)->normal() == right->face(id)->normal());
-            BOOST_CHECK_EQUAL(left->face(id)->edge(), right->face(id)->edge());
-        }
-
-        BOOST_CHECK(left->translation() == right->translation());
-        BOOST_CHECK(left->scale() == right->scale());
-        BOOST_CHECK(left->rotation() == right->rotation());
-    }
+    BOOST_CHECK(left->translation() == right->translation());
+    BOOST_CHECK(left->scale() == right->scale());
+    BOOST_CHECK(left->rotation() == right->rotation());
+}
 
 };  // namespace
 

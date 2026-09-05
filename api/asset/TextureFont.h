@@ -13,19 +13,19 @@
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::asset {
+/**
+ **/
+class TextureFont : public Asset {
+ public:
     /**
      **/
-    class TextureFont : public Asset {
-     public:
-        /**
-         **/
-        TextureFont(const std::string& name, Type t, boost::shared_ptr<v3d::font::TextureFont> font);
+    TextureFont(const std::string& name, Type t, boost::shared_ptr<v3d::font::TextureFont> font);
 
-        /**
-         **/
-        boost::shared_ptr<v3d::font::TextureFont> font();
+    /**
+     **/
+    boost::shared_ptr<v3d::font::TextureFont> font();
 
-     private:
-        boost::shared_ptr<v3d::font::TextureFont> font_;
-    };
+ private:
+    boost::shared_ptr<v3d::font::TextureFont> font_;
+};
 };  // namespace v3d::asset

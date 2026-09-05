@@ -17,45 +17,45 @@
 
 namespace {
 
-    /**
-     * The scene says what happened by triggering a sound, so the clips a tick fires are the
-     * only account of which branch it took.
-     **/
-    struct Sounds final {
-        void heard(const v3d::event::Sound& sound) {
-            clips_.push_back(std::string(sound.clip()));
-        }
+/**
+ * The scene says what happened by triggering a sound, so the clips a tick fires are the
+ * only account of which branch it took.
+ **/
+struct Sounds final {
+    void heard(const v3d::event::Sound& sound) {
+        clips_.push_back(std::string(sound.clip()));
+    }
 
-        bool has(const std::string& clip) const {
-            for (const auto& played : clips_) {
-                if (played == clip) {
-                    return true;
-                }
+    bool has(const std::string& clip) const {
+        for (const auto& played : clips_) {
+            if (played == clip) {
+                return true;
             }
-            return false;
         }
+        return false;
+    }
 
-        std::vector<std::string> clips_;
-    };
+    std::vector<std::string> clips_;
+};
 
-    /**
-     * A scene the size of pong's own window, reset and listening. Everything below measures
-     * against the 800x600 the app opens at, since the collision tests are written in pixels.
-     **/
-    struct Fixture final {
-        Fixture() :
-            dispatcher_(boost::make_shared<entt::dispatcher>()),
-            scene_(&registry_, dispatcher_) {
-            dispatcher_->sink<v3d::event::Sound>().connect<&Sounds::heard>(sounds_);
-            scene_.resize(800, 600);
-            scene_.reset();
-        }
+/**
+ * A scene the size of pong's own window, reset and listening. Everything below measures
+ * against the 800x600 the app opens at, since the collision tests are written in pixels.
+ **/
+struct Fixture final {
+    Fixture() :
+        dispatcher_(boost::make_shared<entt::dispatcher>()),
+        scene_(&registry_, dispatcher_) {
+        dispatcher_->sink<v3d::event::Sound>().connect<&Sounds::heard>(sounds_);
+        scene_.resize(800, 600);
+        scene_.reset();
+    }
 
-        entt::registry registry_;
-        boost::shared_ptr<entt::dispatcher> dispatcher_;
-        Sounds sounds_;
-        PongScene scene_;
-    };
+    entt::registry registry_;
+    boost::shared_ptr<entt::dispatcher> dispatcher_;
+    Sounds sounds_;
+    PongScene scene_;
+};
 
 };  // namespace
 

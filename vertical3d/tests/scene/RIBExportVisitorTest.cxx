@@ -20,98 +20,98 @@
 
 namespace {
 
-    /**
-     * What the reader made of the file, which is a stronger assertion than what the text
-     * looked like: the export is only worth anything if a renderer can read it back.
-     **/
-    class ImportHandler final : public v3d::render::offline::RIBHandler {
-     public:
-        void format(unsigned int width, unsigned int height, float pixelAspect) override {
-            (void)pixelAspect;
-            width_ = width;
-            height_ = height;
-        }
-        void projection(const std::string & name, const v3d::render::offline::ParameterList & parameters) override {
-            (void)parameters;
-            projection_ = name;
-        }
-        void screenWindow(float left, float right, float bottom, float top) override {
-            (void)left;
-            (void)bottom;
-            right_ = right;
-            top_ = top;
-        }
-        void clipping(float hither, float yon) override {
-            hither_ = hither;
-            yon_ = yon;
-        }
-        void transform(const glm::mat4x4 & matrix) override {  // NOLINT(build/include_what_you_use)
-            camera_ = matrix;
-        }
-        void concatTransform(const glm::mat4x4 & matrix) override {
-            placements_.push_back(matrix);
-        }
-        void worldBegin() override { worlds_++; }
-        void worldEnd() override { worlds_++; }
-        void attributeBegin() override { blocks_++; }
-        void attribute(const std::string & name, const v3d::render::offline::ParameterList & parameters) override {
-            (void)name;
-            names_.push_back(parameters.string("name", ""));
-        }
-        void polygon(unsigned int vertices, const v3d::render::offline::ParameterList & parameters) override {
-            faces_++;
-            corners_ += vertices;
-            points_ = parameters.points("P");
-        }
-
-        std::vector<glm::mat4x4> placements_;
-        std::vector<std::string> names_;
-        std::vector<glm::vec3> points_;
-        glm::mat4x4 camera_ = glm::mat4x4(1.0f);
-        std::string projection_;
-        float right_ = 0.0f;
-        float top_ = 0.0f;
-        float hither_ = 0.0f;
-        float yon_ = 0.0f;
-        unsigned int width_ = 0;
-        unsigned int height_ = 0;
-        unsigned int faces_ = 0;
-        unsigned int corners_ = 0;
-        unsigned int worlds_ = 0;
-        unsigned int blocks_ = 0;
-    };
-
-    v3d::type::Camera camera(bool orthographic) {
-        v3d::type::CameraProfile profile("export");
-        profile.orthographic(orthographic);
-        profile.orthoZoom(2.0f);
-        profile.pixelAspect(4.0f / 3.0f);
-        profile.fov(50.0f);
-        profile.clipping(0.5f, 250.0f);
-        profile.eye(glm::vec3(0.0f, 0.0f, -8.0f));
-
-        v3d::type::Camera result(profile);
-        result.profile().size(320, 240);
-        result.createProjection();
-        result.createView();
-        return result;
+/**
+ * What the reader made of the file, which is a stronger assertion than what the text
+ * looked like: the export is only worth anything if a renderer can read it back.
+ **/
+class ImportHandler final : public v3d::render::offline::RIBHandler {
+ public:
+    void format(unsigned int width, unsigned int height, float pixelAspect) override {
+        (void)pixelAspect;
+        width_ = width;
+        height_ = height;
+    }
+    void projection(const std::string & name, const v3d::render::offline::ParameterList & parameters) override {
+        (void)parameters;
+        projection_ = name;
+    }
+    void screenWindow(float left, float right, float bottom, float top) override {
+        (void)left;
+        (void)bottom;
+        right_ = right;
+        top_ = top;
+    }
+    void clipping(float hither, float yon) override {
+        hither_ = hither;
+        yon_ = yon;
+    }
+    void transform(const glm::mat4x4 & matrix) override {  // NOLINT(build/include_what_you_use)
+        camera_ = matrix;
+    }
+    void concatTransform(const glm::mat4x4 & matrix) override {
+        placements_.push_back(matrix);
+    }
+    void worldBegin() override { worlds_++; }
+    void worldEnd() override { worlds_++; }
+    void attributeBegin() override { blocks_++; }
+    void attribute(const std::string & name, const v3d::render::offline::ParameterList & parameters) override {
+        (void)name;
+        names_.push_back(parameters.string("name", ""));
+    }
+    void polygon(unsigned int vertices, const v3d::render::offline::ParameterList & parameters) override {
+        faces_++;
+        corners_ += vertices;
+        points_ = parameters.points("P");
     }
 
-    std::string exportScene(const boost::shared_ptr<v3d::editor::Scene> & scene, bool orthographic) {
-        std::ostringstream stream;
-        v3d::editor::RIBExportVisitor visitor(&stream);
-        const v3d::type::Camera view = camera(orthographic);
-        visitor.begin(view, 320, 240);
-        scene->accept(&visitor);
-        visitor.end();
-        return stream.str();
-    }
+    std::vector<glm::mat4x4> placements_;
+    std::vector<std::string> names_;
+    std::vector<glm::vec3> points_;
+    glm::mat4x4 camera_ = glm::mat4x4(1.0f);
+    std::string projection_;
+    float right_ = 0.0f;
+    float top_ = 0.0f;
+    float hither_ = 0.0f;
+    float yon_ = 0.0f;
+    unsigned int width_ = 0;
+    unsigned int height_ = 0;
+    unsigned int faces_ = 0;
+    unsigned int corners_ = 0;
+    unsigned int worlds_ = 0;
+    unsigned int blocks_ = 0;
+};
 
-    bool reimport(const std::string & source, ImportHandler * handler) {
-        v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
-        std::istringstream stream(source);
-        return reader.read(stream, handler);
-    }
+v3d::type::Camera camera(bool orthographic) {
+    v3d::type::CameraProfile profile("export");
+    profile.orthographic(orthographic);
+    profile.orthoZoom(2.0f);
+    profile.pixelAspect(4.0f / 3.0f);
+    profile.fov(50.0f);
+    profile.clipping(0.5f, 250.0f);
+    profile.eye(glm::vec3(0.0f, 0.0f, -8.0f));
+
+    v3d::type::Camera result(profile);
+    result.profile().size(320, 240);
+    result.createProjection();
+    result.createView();
+    return result;
+}
+
+std::string exportScene(const boost::shared_ptr<v3d::editor::Scene> & scene, bool orthographic) {
+    std::ostringstream stream;
+    v3d::editor::RIBExportVisitor visitor(&stream);
+    const v3d::type::Camera view = camera(orthographic);
+    visitor.begin(view, 320, 240);
+    scene->accept(&visitor);
+    visitor.end();
+    return stream.str();
+}
+
+bool reimport(const std::string & source, ImportHandler * handler) {
+    v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
+    std::istringstream stream(source);
+    return reader.read(stream, handler);
+}
 
 };  // namespace
 

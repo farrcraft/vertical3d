@@ -9,10 +9,10 @@
 
 namespace v3d::ui::component {
 
-    class Frame : public Component {
-     public:
-        Frame() = default;
-        ~Frame() = default;
-    };
+class Frame : public Component {
+ public:
+    Frame() = default;
+    ~Frame() = default;
+};
 
 };  // end namespace v3d::ui::component

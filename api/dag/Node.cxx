@@ -7,21 +7,21 @@
 
 namespace v3d::dag {
 
-    unsigned int baseNodeID = 0;
+unsigned int baseNodeID = 0;
 
-    Node::Node() {
-        _id = ++baseNodeID;
-    }
+Node::Node() {
+    _id = ++baseNodeID;
+}
 
-    Node::~Node() {
-    }
+Node::~Node() {
+}
 
-    unsigned int Node::id(void) const {
-        return _id;
-    }
+unsigned int Node::id(void) const {
+    return _id;
+}
 
-    unsigned int Node::baseID(void) {
-        return baseNodeID;
-    }
+unsigned int Node::baseID(void) {
+    return baseNodeID;
+}
 
 };  // namespace v3d::dag

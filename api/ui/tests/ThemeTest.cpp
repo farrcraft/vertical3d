@@ -22,55 +22,55 @@
 
 namespace {
 
-    /**
-     * A ui engine over a document written inline, which is what a config file amounts to by
-     * the time it reaches the loader.
-     **/
-    boost::shared_ptr<v3d::ui::Engine> load(const std::string& document, bool* loaded) {
-        boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-        boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
-            boost::make_shared<v3d::event::Engine>(dispatcher),
-            dispatcher,
-            boost::make_shared<v3d::log::Logger>());
+/**
+ * A ui engine over a document written inline, which is what a config file amounts to by
+ * the time it reaches the loader.
+ **/
+boost::shared_ptr<v3d::ui::Engine> load(const std::string& document, bool* loaded) {
+    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
+        boost::make_shared<v3d::event::Engine>(dispatcher),
+        dispatcher,
+        boost::make_shared<v3d::log::Logger>());
 
-        const boost::shared_ptr<v3d::asset::Json> config = boost::make_shared<v3d::asset::Json>(
-            "vgui", v3d::asset::Type::JsonDocument, boost::json::parse(document).as_object());
-        *loaded = ui->load(config);
-        return ui;
+    const boost::shared_ptr<v3d::asset::Json> config = boost::make_shared<v3d::asset::Json>(
+        "vgui", v3d::asset::Type::JsonDocument, boost::json::parse(document).as_object());
+    *loaded = ui->load(config);
+    return ui;
+}
+
+/**
+ * A renderer that records nothing but the geometry, since none of these cases is about
+ * where a label went.
+ **/
+v3d::ui::ComponentRenderer renderer() {
+    return v3d::ui::ComponentRenderer(
+        [](const std::string& text) { return static_cast<float>(text.size()) * 10.0f; },
+        [](const std::string&, const glm::vec2&, const glm::vec4&) {});
+}
+
+/**
+ * What the renderer asked to be written, for the cases that are about a label.
+ **/
+struct Written final {
+    std::string text;
+    glm::vec2 pen;
+    glm::vec4 colour;
+};
+
+/**
+ * Hands every source the same texture, and says which sources it was asked for.
+ **/
+struct Uploader final {
+    v3d::render::realtime::TextureHandle operator()(const std::string& source) {
+        asked.push_back(source);
+        return v3d::render::realtime::TextureHandle(7);
     }
 
-    /**
-     * A renderer that records nothing but the geometry, since none of these cases is about
-     * where a label went.
-     **/
-    v3d::ui::ComponentRenderer renderer() {
-        return v3d::ui::ComponentRenderer(
-            [](const std::string& text) { return static_cast<float>(text.size()) * 10.0f; },
-            [](const std::string&, const glm::vec2&, const glm::vec4&) {});
-    }
+    std::vector<std::string> asked;
+};
 
-    /**
-     * What the renderer asked to be written, for the cases that are about a label.
-     **/
-    struct Written final {
-        std::string text;
-        glm::vec2 pen;
-        glm::vec4 colour;
-    };
-
-    /**
-     * Hands every source the same texture, and says which sources it was asked for.
-     **/
-    struct Uploader final {
-        v3d::render::realtime::TextureHandle operator()(const std::string& source) {
-            asked.push_back(source);
-            return v3d::render::realtime::TextureHandle(7);
-        }
-
-        std::vector<std::string> asked;
-    };
-
-    const char* const themedDocument = R"({
+const char* const themedDocument = R"({
         "themes": [
             {
                 "name": "dark",
@@ -98,7 +98,7 @@ namespace {
         ],
         "theme": "light",
         "containers": [ { "name": "hud", "visible": true, "components": [] } ]
-    })";
+})";
 
 };  // namespace
 

@@ -11,7 +11,7 @@
 #include "../TextureFontCache.h"
 
 namespace {
-    const char* kTypeface = "data/fonts/NotoSans-Regular.ttf";
+const char* kTypeface = "data/fonts/NotoSans-Regular.ttf";
 };  // namespace
 
 /**

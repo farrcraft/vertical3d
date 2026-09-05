@@ -21,22 +21,22 @@
 
 namespace {
 
-    /**
-     * The same square front view the picker's own tests use: a world unit is two hundred
-     * pixels and the middle of the view is the middle of a unit primitive. The camera looks
-     * along +z, so world x runs right across the view and world y runs up it.
-     **/
-    boost::shared_ptr<v3d::editor::ViewPort> frontView() {
-        v3d::type::CameraProfile profile("front");
-        boost::shared_ptr<v3d::editor::ViewPort> view = boost::make_shared<v3d::editor::ViewPort>("front", profile);
-        view->resize(glm::vec4(0.0f, 0.0f, 400.0f, 400.0f));
-        return view;
-    }
+/**
+ * The same square front view the picker's own tests use: a world unit is two hundred
+ * pixels and the middle of the view is the middle of a unit primitive. The camera looks
+ * along +z, so world x runs right across the view and world y runs up it.
+ **/
+boost::shared_ptr<v3d::editor::ViewPort> frontView() {
+    v3d::type::CameraProfile profile("front");
+    boost::shared_ptr<v3d::editor::ViewPort> view = boost::make_shared<v3d::editor::ViewPort>("front", profile);
+    view->resize(glm::vec4(0.0f, 0.0f, 400.0f, 400.0f));
+    return view;
+}
 
-    /**
-     * The middle of that view, which is where an untranslated mesh sits.
-     **/
-    const glm::vec2 centre(200.0f, 200.0f);
+/**
+ * The middle of that view, which is where an untranslated mesh sits.
+ **/
+const glm::vec2 centre(200.0f, 200.0f);
 
 };  // namespace
 

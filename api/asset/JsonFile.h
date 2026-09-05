@@ -14,82 +14,82 @@
 
 namespace v3d::asset {
 
+/**
+ * This is based on the example JSON loading code in the boost library
+ **/
+class JsonFile {
+ public:
     /**
-     * This is based on the example JSON loading code in the boost library
      **/
-    class JsonFile {
-     public:
-        /**
-         **/
-        JsonFile() = default;
+    JsonFile() = default;
 
-        /**
-         **/
-        JsonFile(JsonFile&& other) noexcept;
+    /**
+     **/
+    JsonFile(JsonFile&& other) noexcept;
 
-        /**
-         **/
-        JsonFile(char const* path, char const* mode);
+    /**
+     **/
+    JsonFile(char const* path, char const* mode);
 
-        /**
-         **/
-        JsonFile& operator=(JsonFile&& other) noexcept;
+    /**
+     **/
+    JsonFile& operator=(JsonFile&& other) noexcept;
 
-        /**
-         **/
-        ~JsonFile();
+    /**
+     **/
+    ~JsonFile();
 
-        /**
-         **/
-        bool open(char const* path, char const* mode);
+    /**
+     **/
+    bool open(char const* path, char const* mode);
 
-        /**
-         **/
-        int64_t size() const noexcept;
+    /**
+     **/
+    int64_t size() const noexcept;
 
-        /**
-         **/
-        bool eof() const noexcept;
+    /**
+     **/
+    bool eof() const noexcept;
 
-        /**
-         **/
-        void close();
+    /**
+     **/
+    void close();
 
-        /**
-         **/
-        std::size_t read(char* data, std::size_t size, const boost::system::error_code& ec);
+    /**
+     **/
+    std::size_t read(char* data, std::size_t size, const boost::system::error_code& ec);
 
-        /**
-         **/
-        std::size_t read(char* data, std::size_t size);
+    /**
+     **/
+    std::size_t read(char* data, std::size_t size);
 
-     private:
-        FILE* handle_ = nullptr;
-        int64_t size_ = 0;
-    };
+ private:
+    FILE* handle_ = nullptr;
+    int64_t size_ = 0;
+};
 
 
-    inline std::string read_file(char const* path, const boost::system::error_code& ec) {
-        JsonFile f;
-        if (!f.open(path, "r")) {
-            return {};
-        }
-        std::string s;
-        s.resize(f.size());
-        s.resize(f.read(&s[0], s.size(), ec));
-        if (ec) {
-            return {};
-        }
-        return s;
+inline std::string read_file(char const* path, const boost::system::error_code& ec) {
+    JsonFile f;
+    if (!f.open(path, "r")) {
+        return {};
     }
-
-    inline std::string read_file(char const* path) {
-        boost::system::error_code ec;
-        auto s = read_file(path, ec);
-        if (ec) {
-            throw boost::system::system_error(ec);
-        }
-        return s;
+    std::string s;
+    s.resize(f.size());
+    s.resize(f.read(&s[0], s.size(), ec));
+    if (ec) {
+        return {};
     }
+    return s;
+}
+
+inline std::string read_file(char const* path) {
+    boost::system::error_code ec;
+    auto s = read_file(path, ec);
+    if (ec) {
+        throw boost::system::system_error(ec);
+    }
+    return s;
+}
 
 };  // namespace v3d::asset

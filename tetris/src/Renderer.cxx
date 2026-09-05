@@ -21,45 +21,45 @@
 
 namespace {
 
-    /**
-     * The glyphs tetris ever draws - printable ascii. The atlas is uploaded to the device
-     * once at load, so every glyph has to be packed into it before then.
-     **/
-    const wchar_t* const charcodes =
-        L" !\"#$%&'()*+,-./0123456789:;<=>?"
-        L"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"
-        L"`abcdefghijklmnopqrstuvwxyz{|}~";
+/**
+ * The glyphs tetris ever draws - printable ascii. The atlas is uploaded to the device
+ * once at load, so every glyph has to be packed into it before then.
+ **/
+const wchar_t* const charcodes =
+L" !\"#$%&'()*+,-./0123456789:;<=>?"
+L"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"
+L"`abcdefghijklmnopqrstuvwxyz{|}~";
 
-    /**
-     * The size the font is rasterized at. Nothing scales a glyph, so this is also the size
-     * everything is drawn at.
-     **/
-    const float fontSize = 22.0f;
+/**
+ * The size the font is rasterized at. Nothing scales a glyph, so this is also the size
+ * everything is drawn at.
+ **/
+const float fontSize = 22.0f;
 
-    /**
-     * The piece colours, which are also the texture file names and the names a shape in
-     * pieces/shapes.txt gives itself.
-     **/
-    const char* const colours[] = { "red", "cyan", "blue", "green", "orange", "purple", "yellow" };
+/**
+ * The piece colours, which are also the texture file names and the names a shape in
+ * pieces/shapes.txt gives itself.
+ **/
+const char* const colours[] = { "red", "cyan", "blue", "green", "orange", "purple", "yellow" };
 
-    /**
-     * The atlas the seven 64x64 block textures are packed into. Three fit across a row, so
-     * seven need three rows, and the packer keeps a one pixel border on every side.
-     **/
-    const unsigned int atlasSize = 256;
+/**
+ * The atlas the seven 64x64 block textures are packed into. Three fit across a row, so
+ * seven need three rows, and the packer keeps a one pixel border on every side.
+ **/
+const unsigned int atlasSize = 256;
 
-    /**
-     * How many cells of well width the panel beside it is given, for the preview and the
-     * score. The two together decide how big a cell can be.
-     **/
-    const float panelCells = 6.0f;
+/**
+ * How many cells of well width the panel beside it is given, for the preview and the
+ * score. The two together decide how big a cell can be.
+ **/
+const float panelCells = 6.0f;
 
-    const float margin = 16.0f;
+const float margin = 16.0f;
 
-    const glm::vec4 wellColour(0.04f, 0.04f, 0.05f, 1.0f);
-    const glm::vec4 borderColour(0.30f, 0.30f, 0.34f, 1.0f);
-    const glm::vec4 textColour(0.85f, 0.85f, 0.85f, 1.0f);
-    const glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
+const glm::vec4 wellColour(0.04f, 0.04f, 0.05f, 1.0f);
+const glm::vec4 borderColour(0.30f, 0.30f, 0.34f, 1.0f);
+const glm::vec4 textColour(0.85f, 0.85f, 0.85f, 1.0f);
+const glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
 
 };  // namespace
 

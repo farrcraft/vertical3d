@@ -13,7 +13,7 @@
 
 namespace {
 
-    typedef v3d::render::offline::RIBDeclaration Declaration;
+typedef v3d::render::offline::RIBDeclaration Declaration;
 
 };  // namespace
 

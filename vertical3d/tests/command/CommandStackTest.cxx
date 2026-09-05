@@ -21,40 +21,40 @@
 
 namespace {
 
-    /**
-     * A command that records how often it has been asked to do and undo itself, which is
-     * what the stack's own behaviour is measured by.
-     **/
-    class CountingCommand final : public v3d::editor::Command {
-     public:
-        explicit CountingCommand(const std::string& name) :
-            name_(name),
-            undone(0),
-            redone(0) {
-        }
-
-        void undo() override {
-            undone++;
-        }
-
-        void redo() override {
-            redone++;
-        }
-
-        std::string name() const override {
-            return name_;
-        }
-
-        std::string name_;
-        int undone;
-        int redone;
-    };
-
-    /**
-     **/
-    boost::shared_ptr<CountingCommand> counter(const std::string& name) {
-        return boost::make_shared<CountingCommand>(name);
+/**
+ * A command that records how often it has been asked to do and undo itself, which is
+ * what the stack's own behaviour is measured by.
+ **/
+class CountingCommand final : public v3d::editor::Command {
+ public:
+    explicit CountingCommand(const std::string& name) :
+        name_(name),
+        undone(0),
+        redone(0) {
     }
+
+    void undo() override {
+        undone++;
+    }
+
+    void redo() override {
+        redone++;
+    }
+
+    std::string name() const override {
+        return name_;
+    }
+
+    std::string name_;
+    int undone;
+    int redone;
+};
+
+/**
+ **/
+boost::shared_ptr<CountingCommand> counter(const std::string& name) {
+    return boost::make_shared<CountingCommand>(name);
+}
 
 };  // namespace
 

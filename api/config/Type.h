@@ -8,30 +8,30 @@
 #include <string_view>
 
 namespace v3d::config {
-    enum class Type {
-        Unknown,
-        Window,
-        Binding,
-        Ui,
-        Sound,
-        Camera,
-        Layout,
-    };
+enum class Type {
+    Unknown,
+    Window,
+    Binding,
+    Ui,
+    Sound,
+    Camera,
+    Layout,
+};
 
-    constexpr Type stringToType(const std::string_view& typeName) {
-        if (typeName == "window") {
-            return Type::Window;
-        } else if (typeName == "binding") {
-            return Type::Binding;
-        } else if (typeName == "ui") {
-            return Type::Ui;
-        } else if (typeName == "sound") {
-            return Type::Sound;
-        } else if (typeName == "camera") {
-            return Type::Camera;
-        } else if (typeName == "layout") {
-            return Type::Layout;
-        }
-        return  Type::Unknown;
+constexpr Type stringToType(const std::string_view& typeName) {
+    if (typeName == "window") {
+        return Type::Window;
+    } else if (typeName == "binding") {
+        return Type::Binding;
+    } else if (typeName == "ui") {
+        return Type::Ui;
+    } else if (typeName == "sound") {
+        return Type::Sound;
+    } else if (typeName == "camera") {
+        return Type::Camera;
+    } else if (typeName == "layout") {
+        return Type::Layout;
     }
+    return  Type::Unknown;
+}
 };  // namespace v3d::config

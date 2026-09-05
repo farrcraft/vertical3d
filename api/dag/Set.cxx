@@ -7,10 +7,10 @@
 
 namespace v3d::dag {
 
-    Set::Set() {
-    }
+Set::Set() {
+}
 
-    Set::~Set() {
-    }
+Set::~Set() {
+}
 
 };  // namespace v3d::dag

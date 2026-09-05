@@ -7,4 +7,4 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions/setup-python@v4
     - run: pip install cpplint
-    - run: cpplint --linelength=180 --filter=-whitespace/indent_namespace,-build/namespaces_literals --exclude=out --exclude=vendor --exclude=vcpkg_installed --exclude=voxel/src/noise --recursive .
+    - run: cpplint --linelength=180 --filter=-build/namespaces_literals --exclude=out --exclude=vendor --exclude=vcpkg_installed --exclude=voxel/src/noise --recursive .

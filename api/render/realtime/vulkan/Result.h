@@ -11,10 +11,10 @@
 
 namespace v3d::render::realtime::vulkan {
 
-    /**
-     * @param result a result code returned by any of the vulkan entry points
-     * @return a readable form of the code, or its numeric value when it is not one we name
-     **/
-    std::string resultString(VkResult result);
+/**
+ * @param result a result code returned by any of the vulkan entry points
+ * @return a readable form of the code, or its numeric value when it is not one we name
+ **/
+std::string resultString(VkResult result);
 
 };  // namespace v3d::render::realtime::vulkan

@@ -14,27 +14,27 @@
 
 namespace {
 
-    boost::shared_ptr<v3d::asset::Json> config(const std::string& text) {
-        boost::json::value parsed = boost::json::parse(text);
-        return boost::make_shared<v3d::asset::Json>("cameras", v3d::asset::Type::JsonDocument, parsed.as_object());
-    }
+boost::shared_ptr<v3d::asset::Json> config(const std::string& text) {
+    boost::json::value parsed = boost::json::parse(text);
+    return boost::make_shared<v3d::asset::Json>("cameras", v3d::asset::Type::JsonDocument, parsed.as_object());
+}
 
-    boost::shared_ptr<v3d::log::Logger> logger() {
-        return boost::make_shared<v3d::log::Logger>();
-    }
+boost::shared_ptr<v3d::log::Logger> logger() {
+    return boost::make_shared<v3d::log::Logger>();
+}
 
-    /**
-     * Two of the profiles from data/cameras.json.
-     **/
-    const char* const cameras =
-        "{\"cameras\": ["
-        "{\"name\": \"Top\", \"orthographic\": true, \"eye\": [0.0, 10.0, 0.0],"
-        " \"lookat\": [0.0, 0.0, 0.0], \"up\": [0.0, 0.0, 1.0], \"zoom\": 10.0,"
-        " \"aspect\": 1.33, \"near\": 0.1, \"far\": 100.0, \"adaptive\": \"both\"},"
-        "{\"name\": \"Perspective\", \"orthographic\": false, \"eye\": [0.0, 5.0, -20.0],"
-        " \"lookat\": [0.0, 0.0, 0.0], \"up\": [0.0, 1.0, 0.0], \"fov\": 60.0,"
-        " \"aspect\": 1.33, \"near\": 0.1, \"far\": 100.0, \"adaptive\": \"none\"}"
-        "]}";
+/**
+ * Two of the profiles from data/cameras.json.
+ **/
+const char* const cameras =
+"{\"cameras\": ["
+"{\"name\": \"Top\", \"orthographic\": true, \"eye\": [0.0, 10.0, 0.0],"
+" \"lookat\": [0.0, 0.0, 0.0], \"up\": [0.0, 0.0, 1.0], \"zoom\": 10.0,"
+" \"aspect\": 1.33, \"near\": 0.1, \"far\": 100.0, \"adaptive\": \"both\"},"
+"{\"name\": \"Perspective\", \"orthographic\": false, \"eye\": [0.0, 5.0, -20.0],"
+" \"lookat\": [0.0, 0.0, 0.0], \"up\": [0.0, 1.0, 0.0], \"fov\": 60.0,"
+" \"aspect\": 1.33, \"near\": 0.1, \"far\": 100.0, \"adaptive\": \"none\"}"
+"]}";
 
 };  // namespace
 

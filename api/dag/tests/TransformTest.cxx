@@ -13,15 +13,15 @@
 
 namespace {
 
-    bool near(const glm::vec3& a, const glm::vec3& b) {
-        const float tolerance = 0.0001f;
-        return glm::abs(a.x - b.x) < tolerance && glm::abs(a.y - b.y) < tolerance && glm::abs(a.z - b.z) < tolerance;
-    }
+bool near(const glm::vec3& a, const glm::vec3& b) {
+    const float tolerance = 0.0001f;
+    return glm::abs(a.x - b.x) < tolerance && glm::abs(a.y - b.y) < tolerance && glm::abs(a.z - b.z) < tolerance;
+}
 
-    glm::vec3 apply(const glm::mat4& transform, const glm::vec3& point) {
-        glm::vec4 result = transform * glm::vec4(point, 1.0f);
-        return glm::vec3(result);
-    }
+glm::vec3 apply(const glm::mat4& transform, const glm::vec3& point) {
+    glm::vec4 result = transform * glm::vec4(point, 1.0f);
+    return glm::vec3(result);
+}
 
 };  // namespace
 

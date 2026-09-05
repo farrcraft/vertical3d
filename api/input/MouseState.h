@@ -11,50 +11,50 @@
 
 namespace v3d::input {
 
+/**
+ * MouseState keeps track of the cursor position and of which buttons are currently held,
+ * based on all of the motion and button events we've seen. It is the mouse counterpart of
+ * KeyState.
+ **/
+class MouseState final {
+ public:
+    MouseState();
+
     /**
-     * MouseState keeps track of the cursor position and of which buttons are currently held,
-     * based on all of the motion and button events we've seen. It is the mouse counterpart of
-     * KeyState.
+     * Is a button currently held?
+     *
+     * @param button the SDL button index
+     *
+     * @return bool
      **/
-    class MouseState final {
-     public:
-        MouseState();
+    bool pressed(unsigned int button) const;
 
-        /**
-         * Is a button currently held?
-         *
-         * @param button the SDL button index
-         *
-         * @return bool
-         **/
-        bool pressed(unsigned int button) const;
+    /**
+     * Toggle the state of a button
+     *
+     * @param button the button being toggled
+     *
+     * @return bool true if the resulting state is a pressed button
+     **/
+    bool operator() (unsigned int button);
 
-        /**
-         * Toggle the state of a button
-         *
-         * @param button the button being toggled
-         *
-         * @return bool true if the resulting state is a pressed button
-         **/
-        bool operator() (unsigned int button);
+    /**
+     * Move the cursor
+     *
+     * @param p the new cursor position
+     *
+     * @return the previous position
+     **/
+    glm::vec2 operator() (const glm::vec2& p);
 
-        /**
-         * Move the cursor
-         *
-         * @param p the new cursor position
-         *
-         * @return the previous position
-         **/
-        glm::vec2 operator() (const glm::vec2& p);
+    /**
+     * @return the current cursor position
+     **/
+    glm::vec2 position() const;
 
-        /**
-         * @return the current cursor position
-         **/
-        glm::vec2 position() const;
-
-     private:
-        std::vector<unsigned int> buttons_;
-        glm::vec2 position_;
-    };
+ private:
+    std::vector<unsigned int> buttons_;
+    glm::vec2 position_;
+};
 
 };  // namespace v3d::input

@@ -12,41 +12,41 @@
 
 namespace {
 
-    /**
-     * A one cell shape, so that a test can put exactly one block where it wants it. A
-     * rotation of a single cell normalises back to the same layout, which the board's random
-     * initial rotation relies on here.
-     **/
-    Tetrad::ShapeInfo dot() {
-        Tetrad::ShapeInfo shape;
-        for (unsigned int i = 0; i < 4; i++) {
-            for (unsigned int j = 0; j < 4; j++) {
-                shape.layout_[i][j] = 0;
-            }
+/**
+ * A one cell shape, so that a test can put exactly one block where it wants it. A
+ * rotation of a single cell normalises back to the same layout, which the board's random
+ * initial rotation relies on here.
+ **/
+Tetrad::ShapeInfo dot() {
+    Tetrad::ShapeInfo shape;
+    for (unsigned int i = 0; i < 4; i++) {
+        for (unsigned int j = 0; j < 4; j++) {
+            shape.layout_[i][j] = 0;
         }
-        shape.layout_[0][0] = 1;
-        shape.color_ = "red";
-        return shape;
     }
+    shape.layout_[0][0] = 1;
+    shape.color_ = "red";
+    return shape;
+}
 
-    /**
-     * A 2x1 horizontal bar, for the cases that need a shape wider than one cell.
-     **/
-    Tetrad::ShapeInfo bar() {
-        Tetrad::ShapeInfo shape = dot();
-        shape.layout_[0][1] = 1;
-        shape.color_ = "blue";
-        return shape;
-    }
+/**
+ * A 2x1 horizontal bar, for the cases that need a shape wider than one cell.
+ **/
+Tetrad::ShapeInfo bar() {
+    Tetrad::ShapeInfo shape = dot();
+    shape.layout_[0][1] = 1;
+    shape.color_ = "blue";
+    return shape;
+}
 
-    boost::shared_ptr<GameBoard> board() {
-        boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
-        boost::shared_ptr<GameBoard> game = boost::make_shared<GameBoard>(logger);
-        std::vector<Tetrad::ShapeInfo> shapes;
-        shapes.push_back(dot());
-        game->load(shapes);
-        return game;
-    }
+boost::shared_ptr<GameBoard> board() {
+    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    boost::shared_ptr<GameBoard> game = boost::make_shared<GameBoard>(logger);
+    std::vector<Tetrad::ShapeInfo> shapes;
+    shapes.push_back(dot());
+    game->load(shapes);
+    return game;
+}
 
 };  // namespace
 

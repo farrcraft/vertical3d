@@ -14,11 +14,11 @@
 
 namespace {
 
-    v3d::moya::Vertex vertex(float x, float y, float z) {
-        v3d::moya::Vertex v;
-        v.point(glm::vec3(x, y, z));
-        return v;
-    }
+v3d::moya::Vertex vertex(float x, float y, float z) {
+    v3d::moya::Vertex v;
+    v.point(glm::vec3(x, y, z));
+    return v;
+}
 
 };  // namespace
 

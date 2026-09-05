@@ -7,10 +7,10 @@
 
 namespace v3d::dag {
 
-    Group::Group() {
-    }
+Group::Group() {
+}
 
-    Group::~Group() {
-    }
+Group::~Group() {
+}
 
 };  // v3d::dag

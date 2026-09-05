@@ -7,10 +7,10 @@
 
 namespace v3d::dag {
 
-    View::View() {
-    }
+View::View() {
+}
 
-    View::~View() {
-    }
+View::~View() {
+}
 
 };  // namespace v3d::dag
