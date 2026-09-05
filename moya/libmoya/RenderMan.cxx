@@ -311,7 +311,7 @@ RtVoid RiProjection(RtToken name, ...) {
         if (param != RI_NULL) {
             token = va_arg(ap, RtToken);
             if (token == RI_FOV) {
-                fov = va_arg(ap, double);
+                fov = static_cast<float>(va_arg(ap, double));
             }
         }
         _renderer.activeRenderContext().projection(name, fov);

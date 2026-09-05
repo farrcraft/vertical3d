@@ -89,8 +89,8 @@ namespace v3d::moya {
         */
         float x = xres_ / 2.0f;
         float y = yres_ / 2.0f;
-        glm::scale(raster, glm::vec3(x, y, 1.0f));
-        glm::translate(raster, glm::vec3(1.0f, 1.0f, 1.0f));
+        raster = glm::scale(raster, glm::vec3(x, y, 1.0f));
+        raster = glm::translate(raster, glm::vec3(1.0f, 1.0f, 1.0f));
 
         // mark the raster coordinate system
         coordinateSystems_["raster"] = raster;
