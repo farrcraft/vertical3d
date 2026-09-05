@@ -110,7 +110,7 @@ result is dropped is a defect even if it builds.
 ## Lint
 
 ```
-cpplint --linelength=180 --filter=-build/namespaces_literals \
+cpplint --linelength=180 \
   --exclude=out --exclude=vendor --exclude=vcpkg_installed \
   --exclude=voxel/src/noise --recursive .
 ```
@@ -118,9 +118,8 @@ cpplint --linelength=180 --filter=-build/namespaces_literals \
 **The tree is clean at this command**, so every finding is a real one and a report of zero
 is the expected result rather than a sign the run went wrong.
 
-`build/namespaces_literals` is the only suppression, and adding another is the weakening
-this file's one rule forbids. A namespace body is not indented here, continuation lines at
-namespace scope included.
+There is no `--filter`, and adding one is the weakening this file's one rule forbids. A
+namespace body is not indented here, continuation lines at namespace scope included.
 
 ## Tests
 

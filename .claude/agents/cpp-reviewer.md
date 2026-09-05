@@ -147,7 +147,7 @@ You have Bash. Prefer evidence over assertion.
 ```
 ninja -C out/build/x64-Debug <target>
 ctest --test-dir out/build/x64-Debug --output-on-failure
-cpplint --linelength=180 --filter=-build/namespaces_literals <files>
+cpplint --linelength=180 <files>
 ```
 
 Building needs an MSVC Developer environment first. The tree is clean at that lint command,

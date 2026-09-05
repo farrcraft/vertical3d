@@ -8,12 +8,12 @@ Pinned, and CI installs the same version. This is the community fork rather than
 
 This is the tool command for Visual Studio integration:
 
->  C:\Python312\python.exe C:\Python312\Lib\site-packages\cpplint.py --linelength=180 --filter=-build/namespaces_literals --output=vs7 $(ItemPath)
+>  C:\Python312\python.exe C:\Python312\Lib\site-packages\cpplint.py --linelength=180 --output=vs7 $(ItemPath)
 
 To run the linter on everything from CLI:
 
 ```
-cpplint --linelength=180 --filter=-build/namespaces_literals \
+cpplint --linelength=180 \
   --exclude=out --exclude=vendor --exclude=vcpkg_installed \
   --exclude=voxel/src/noise --recursive .
 ```
@@ -22,7 +22,7 @@ The first three excludes matter only locally — CI never builds, checks out no 
 
 **The tree is clean at this command**, so every finding is a real one and a report of zero is the expected result.
 
-`build/namespaces_literals` is the only suppression. Do not add another: cpplint accepts a filter naming a category it does not have and silently suppresses nothing, so an entry that stops working looks exactly like a tree that started failing — which is what `runtime/indentation_namespace` did here for as long as it took the check to be renamed `whitespace/indent_namespace` under it.
+There is no `--filter`: every check cpplint has is enforced. Do not add one. cpplint accepts a filter naming a category it does not have and then silently suppresses nothing, so an entry that stops working looks exactly like a tree that started failing — which is what `runtime/indentation_namespace` did here for as long as it took the check to be renamed `whitespace/indent_namespace` under it.
 
 ## Namespace indentation
 

@@ -96,7 +96,7 @@ ninja -C out/build/x64-Debug pong         # one target
 ## Lint
 
 ```
-cpplint --linelength=180 --filter=-build/namespaces_literals \
+cpplint --linelength=180 \
   --exclude=out --exclude=vendor --exclude=vcpkg_installed \
   --exclude=voxel/src/noise --recursive .
 ```
@@ -106,9 +106,9 @@ it** — every finding is a real one. The excludes matter only locally — CI ch
 installs no ports — but a developer machine has all three trees, and `vcpkg_installed/` alone holds
 80,000-odd third party headers.
 
-**Nothing is suppressed but `build/namespaces_literals`.** A name cpplint does not know is accepted and
-silently suppresses nothing, so a filter entry that stops working looks exactly like a tree that started
-failing — check a suppression still names a live category before trusting it.
+**Nothing is suppressed** — there is no `--filter` at all. Keep it that way: cpplint accepts a name it
+does not know and then silently suppresses nothing, so a filter entry that stops working looks exactly
+like a tree that started failing.
 
 ## Tests
 

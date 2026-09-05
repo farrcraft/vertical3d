@@ -62,12 +62,12 @@ State Event::state() const {
 }
 
 std::string Event::str() const {
-    using namespace std::literals;
     if (!context_) {
         return name_;
     }
-    std::string str = std::string(context_->name()) + "::"s + name_;
-    return str;
+    // the context's name is a string_view, so the first operand has to be a string for the
+    // rest to concatenate onto
+    return std::string(context_->name()) + "::" + name_;
 }
 
 void Event::data(const EventData& d) {

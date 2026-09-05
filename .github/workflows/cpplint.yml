@@ -9,4 +9,4 @@ jobs:
     # pinned: a filter naming a category cpplint does not have suppresses nothing and
     # says nothing, so a version bump can turn the tree red without a code change
     - run: pip install cpplint==2.0.2
-    - run: cpplint --linelength=180 --filter=-build/namespaces_literals --exclude=out --exclude=vendor --exclude=vcpkg_installed --exclude=voxel/src/noise --recursive .
+    - run: cpplint --linelength=180 --exclude=out --exclude=vendor --exclude=vcpkg_installed --exclude=voxel/src/noise --recursive .
