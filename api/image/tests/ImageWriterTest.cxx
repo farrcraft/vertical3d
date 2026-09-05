@@ -207,3 +207,64 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_jpeg_orientation_test, OutputDirectory) {
     const unsigned int last = (side - 1) * side * 3;
     BOOST_CHECK_GT((*read)[last + 1], (*read)[last]);
 }
+
+/**
+ * A greyscale jpeg is decoded as RGB.
+ *
+ * The reader builds a 24 bit Image and copies three bytes a pixel, which is only true of the
+ * scanline if the decoder was asked for RGB. Left in its own colour space a greyscale file
+ * yields one component per pixel, and the third byte of the last pixel is off the end of the
+ * row. The ramp is what makes that visible: reading three bytes out of a single component
+ * row takes the next two pixels' greys as green and blue, so the channels come apart.
+ **/
+BOOST_FIXTURE_TEST_CASE(imagereader_greyscale_jpeg_test, OutputDirectory) {
+    const unsigned int side = 8;
+    const char* greyscale = "data_out/test_greyscale.jpg";
+    {
+        FILE* fp = nullptr;
+        BOOST_REQUIRE_EQUAL(fopen_s(&fp, greyscale, "wb"), 0);
+        jpeg_compress_struct cinfo;
+        jpeg_error_mgr jerr;
+        cinfo.err = jpeg_std_error(&jerr);
+        jpeg_create_compress(&cinfo);
+        jpeg_stdio_dest(&cinfo, fp);
+        cinfo.image_width = side;
+        cinfo.image_height = side;
+        cinfo.input_components = 1;
+        cinfo.in_color_space = JCS_GRAYSCALE;
+        jpeg_set_defaults(&cinfo);
+        // lossless enough that a channel that came from the wrong pixel cannot be mistaken
+        // for compression noise
+        jpeg_set_quality(&cinfo, 100, TRUE);
+        jpeg_start_compress(&cinfo, TRUE);
+
+        std::vector<unsigned char> scanline(side);
+        while (cinfo.next_scanline < cinfo.image_height) {
+            // a ramp across the row, so neighbouring pixels differ
+            for (unsigned int column = 0; column < side; ++column) {
+                scanline[column] = static_cast<unsigned char>(column * 0x20);
+            }
+            unsigned char* rows[1] = { scanline.data() };
+            jpeg_write_scanlines(&cinfo, rows, 1);
+        }
+        jpeg_finish_compress(&cinfo);
+        jpeg_destroy_compress(&cinfo);
+        fclose(fp);
+    }
+
+    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    v3d::image::Factory factory(logger);
+
+    boost::shared_ptr<v3d::image::Image> read = factory.read(greyscale);
+    BOOST_REQUIRE(read != nullptr);
+    BOOST_REQUIRE_EQUAL(read->width(), side);
+    BOOST_REQUIRE_EQUAL(read->height(), side);
+
+    // grey replicated into all three channels, for every pixel including the last of a row
+    for (unsigned int pixel = 0; pixel < side * side; ++pixel) {
+        BOOST_TEST_CONTEXT("pixel " << pixel) {
+            BOOST_CHECK_EQUAL((*read)[pixel * 3 + 0], (*read)[pixel * 3 + 1]);
+            BOOST_CHECK_EQUAL((*read)[pixel * 3 + 1], (*read)[pixel * 3 + 2]);
+        }
+    }
+}

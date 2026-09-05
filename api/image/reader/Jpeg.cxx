@@ -86,6 +86,12 @@ namespace v3d::image::reader {
         // Read file header, set default decompression parameters
         jpeg_read_header(&cinfo, TRUE);
 
+        // Image is three bytes a pixel and the loop below copies three, so the decoder is
+        // asked for RGB whatever the file holds. A greyscale jpeg decoded in its own colour
+        // space yields one component per pixel, and reading three out of that row walks off
+        // the end of it. Set before calc_output_dimensions, which sizes the scanline buffer.
+        cinfo.out_color_space = JCS_RGB;
+
         jpeg_calc_output_dimensions(&cinfo);
 
         // Create decompressor output buffer.
