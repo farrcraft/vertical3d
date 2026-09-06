@@ -84,6 +84,22 @@ void Engine3D::clearColour(const glm::vec4& colour) {
 
 /**
  **/
+bool Engine3D::beginFrame(glm::ivec2* size) {
+    const boost::shared_ptr<Window> target = window();
+    const int width = target ? target->width() : 0;
+    const int height = target ? target->height() : 0;
+    if (width <= 0 || height <= 0) {
+        renderFrame();
+        return false;
+    }
+    if (size != nullptr) {
+        *size = glm::ivec2(width, height);
+    }
+    return true;
+}
+
+/**
+ **/
 void Engine3D::renderFrame() {
     if (!context_ || !frame_) {
         return;

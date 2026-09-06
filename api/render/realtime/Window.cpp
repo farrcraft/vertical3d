@@ -129,6 +129,15 @@ void Window::caption(const std::string_view& cap) {
 
 /**
  **/
+bool Window::focused() const {
+    if (window_ == nullptr) {
+        return false;
+    }
+    return (SDL_GetWindowFlags(window_) & SDL_WINDOW_INPUT_FOCUS) != 0;
+}
+
+/**
+ **/
 void Window::cursor(bool state) {
     if (state) {
         SDL_ShowCursor();

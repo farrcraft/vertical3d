@@ -12,6 +12,7 @@
 #include "Window.h"
 #include "vulkan/Recorder.h"
 
+#include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
 namespace v3d::render::realtime {
@@ -38,6 +39,21 @@ class Engine3D : public Engine {
      * and draws nothing at all while the window has no area.
      **/
     void renderFrame() override;
+
+    /**
+     * Whether there is a frame worth building, and how big it is.
+     *
+     * A minimized window has no area, and a canvas with none has no projection to build
+     * geometry against. When this returns false the frame has already been presented -
+     * empty - so the caller draws nothing and returns.
+     *
+     * No resize event reaches a renderer, so this is also where an app learns that the
+     * window it is drawing into has changed size.
+     *
+     * @param size where the window's size in pixels is written, when there is a frame
+     * @return false when the frame was skipped
+     **/
+    bool beginFrame(glm::ivec2* size);
 
     /**
      * The frame being built for the next present. Passes and draw items are added to

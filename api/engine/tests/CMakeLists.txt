@@ -3,6 +3,7 @@
 # would need SDL and a device.
 v3d_add_test(engine
 	"TestMain.cpp"
+	"ApplicationTest.cpp"
 	"FeatureTest.cpp"
 	"EngineTest.cpp")
 
