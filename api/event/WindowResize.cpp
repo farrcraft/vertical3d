@@ -3,8 +3,6 @@
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
-#pragma once
-
 #include "WindowResize.h"
 
 namespace v3d::event {

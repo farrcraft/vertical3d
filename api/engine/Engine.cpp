@@ -12,6 +12,7 @@
 #include "Feature.h"
 #include "../input/DeviceType.h"
 #include "../event/WindowResize.h"
+#include "../event/WindowFocus.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/make_shared.hpp>
@@ -249,6 +250,14 @@ bool Engine::eventLoop() {
                     window_->resize(event.window.data1, event.window.data2);
                 }
                 dispatcher_->trigger(v3d::event::WindowResize(event.window.data1, event.window.data2));
+                break;
+            // a key released while the window is unfocused never arrives, so an app that
+            // wants held input dropped needs to be told focus went rather than poll for it
+            case SDL_EVENT_WINDOW_FOCUS_GAINED:
+                dispatcher_->trigger(v3d::event::WindowFocus(true));
+                break;
+            case SDL_EVENT_WINDOW_FOCUS_LOST:
+                dispatcher_->trigger(v3d::event::WindowFocus(false));
                 break;
             default:
                 break;
