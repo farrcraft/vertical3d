@@ -18,6 +18,10 @@ jobs:
 
     env:
       BUILD_DIR: out/build/ci
+      # The out of tree build of ADR-0027, which is a second build directory rather than a
+      # second workflow: it needs this job's toolchain, vcpkg install and SDK, and a runner
+      # of its own would build boost again to prove one link line.
+      STARTER_BUILD_DIR: out/build/ci-starter
       # The installer names its own directory after the version it carries, so the build is
       # given a fixed root instead and never has to know which version that was.
       VULKAN_SDK_ROOT: C:\VulkanSDK\current
@@ -88,8 +92,8 @@ jobs:
 
       # libnoise is built out of source: it commits a CMakeCache.txt naming a generator that
       # is not on this image, and its cmake_minimum_required predates what current CMake
-      # accepts on its own. The archive lands where the root CMakeLists link_directories
-      # expects it. It is the only vendored library left, per ADR-0021.
+      # accepts on its own. The archive lands where voxel's target_link_directories expects
+      # it. It is the only vendored library left, per ADR-0021.
       - name: Build libnoise
         shell: cmd
         run: |
@@ -123,3 +127,23 @@ jobs:
         run: |
           call "%RUNNER_TEMP%\vcvars.bat" >nul
           ctest --test-dir "%BUILD_DIR%" --output-on-failure || exit /b 1
+
+      # Nothing inside the tree can tell a target that carries its own include path and its
+      # own dependencies from one picking them up off the root's global or off an app that
+      # names all thirteen libraries, because in this repository both are always there. Only a
+      # root project of its own separates them, which is what this builds - and it is what
+      # found api/engine and api/render not declaring the api libraries they use.
+      #
+      # It reuses this job's vcpkg install rather than resolving from its own manifest, which
+      # would build boost a second time to install the same package set.
+      - name: Build the starter example
+        shell: cmd
+        run: |
+          call "%RUNNER_TEMP%\vcvars.bat" >nul
+          cmake -S docs/examples/starter -B "%STARTER_BUILD_DIR%" -G Ninja ^
+            -DCMAKE_BUILD_TYPE=Debug ^
+            -DCMAKE_TOOLCHAIN_FILE="%VCPKG_INSTALLATION_ROOT%\scripts\buildsystems\vcpkg.cmake" ^
+            -DVCPKG_TARGET_TRIPLET=x64-windows ^
+            -DVCPKG_INSTALLED_DIR="%GITHUB_WORKSPACE%\out\build\ci\vcpkg_installed" ^
+            -DVCPKG_MANIFEST_INSTALL=OFF || exit /b 1
+          cmake --build "%STARTER_BUILD_DIR%" || exit /b 1

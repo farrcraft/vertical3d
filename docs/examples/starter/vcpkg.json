@@ -1,0 +1,19 @@
+{
+  "dependencies": [
+    "boost",
+    "entt",
+    "freetype",
+    "glm",
+    "libjpeg-turbo",
+    "libpng",
+    {
+      "name": "sdl3",
+      "features": [
+        "vulkan"
+      ]
+    },
+    "sdl3-mixer",
+    "spdlog",
+    "vulkan"
+  ]
+}
