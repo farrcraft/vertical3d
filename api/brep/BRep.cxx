@@ -6,10 +6,10 @@
 #include "BRep.h"
 
 #include <algorithm>
-
-#include <glm/common.hpp>
 #include <cassert>
 #include <vector>
+
+#include <glm/common.hpp>
 
 
 namespace v3d::brep {

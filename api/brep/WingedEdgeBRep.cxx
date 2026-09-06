@@ -4,10 +4,10 @@
  **/
 
 #include <algorithm>
-
-#include <glm/common.hpp>
 #include <cassert>
 #include <vector>
+
+#include <glm/common.hpp>
 
 #include "WingedEdgeBRep.h"
 

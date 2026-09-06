@@ -6,12 +6,12 @@
 #include "Polygon.h"
 
 #include <cmath>
-
-#include <glm/common.hpp>
 #include <cassert>
 #include <iostream>
 #include <utility>
 #include <vector>
+
+#include <glm/common.hpp>
 
 #include "Plane.h"
 #include "RenderContext.h"
