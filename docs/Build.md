@@ -19,10 +19,12 @@ is added or updated. This document covers what the build does with them.
 
 ## The CMake layout
 
-**The root is three files.** [cmake/v3dDependencies.cmake](../cmake/v3dDependencies.cmake)
-holds every `find_package`, [cmake/v3dHelpers.cmake](../cmake/v3dHelpers.cmake) the five
-`v3d_add_*` functions, and [CMakeLists.txt](../CMakeLists.txt) the options and the
-subdirectory list.
+**The root is four files.** [cmake/v3dApiLibraries.cmake](../cmake/v3dApiLibraries.cmake)
+holds the manifest of what each api library depends on,
+[cmake/v3dDependencies.cmake](../cmake/v3dDependencies.cmake) the `find_package` calls,
+[cmake/v3dHelpers.cmake](../cmake/v3dHelpers.cmake) the five `v3d_add_*` functions, and
+[CMakeLists.txt](../CMakeLists.txt) the options. `api/CMakeLists.txt` is a loop over the
+libraries the root selected — see [Selecting the api](#selecting-the-api).
 
 **Paths into this repository go through `V3D_ROOT`, never `CMAKE_SOURCE_DIR`.** Once another
 project has nested this one, `CMAKE_SOURCE_DIR` names the consumer's root — see
@@ -46,12 +48,50 @@ itself.
 | `V3D_WARNINGS_AS_ERRORS` | top level | `/WX`, and whether an analyser finding stops the build |
 | `V3D_ANALYZE` | `OFF` | MSVC `/analyze` — see [Linting.md](Linting.md) |
 | `V3D_CLANG_TIDY` | `OFF` | clang-tidy — see [Linting.md](Linting.md) |
+| `V3D_LIBRARIES` | `all` | Which api libraries to build — see below |
 
 "top level" means `PROJECT_IS_TOP_LEVEL`: on for every build of this repository, off for a
 consumer that has nested it.
 
 The tests guard is written on each `add_subdirectory("tests")` rather than inside
 `v3d_add_test`, because a `tests/CMakeLists.txt` names its target again after calling it.
+
+### Selecting the api
+
+Per [ADR-0033](adr/0033-a-consumer-selects-the-api-libraries-it-wants.md), **a consumer names
+the libraries it links and the tree works out the rest**:
+
+```cmake
+set(V3D_BUILD_APPS OFF)
+set(V3D_BUILD_TESTS OFF)
+set(V3D_LIBRARIES image log)      # or leave it at "all"
+add_subdirectory("${V3D_TREE}" v3d)
+```
+
+The closure of that set decides two things: which subdirectories `api/CMakeLists.txt` adds, and
+which packages `v3d_find_packages` looks for. `image log` needs Boost, JPEG, PNG, glm and
+spdlog, and **configures with no Vulkan SDK, no SDL3 and no Freetype installed**. `v3d::render`
+is what wants Vulkan, and `v3d::render_offline` — added by `api/CMakeLists.txt` rather than by
+`api/render`, so it is takeable on its own — wants none of it.
+
+Two things are always resolved whatever is selected. **Boost**, because
+`v3d_add_api_library` links `Boost::headers` into every library. And **glslc**, but only if
+`api/render` is in the closure, because that is the only thing calling `v3d_add_shader`.
+
+`V3D_LIBRARIES` must be `all` when `V3D_BUILD_APPS` or `V3D_BUILD_TESTS` is on, and the
+configure stops if it is not: the apps name every library between them, and each `tests/`
+directory belongs to one library.
+
+**The manifest is checked against the link graph on every configure.**
+[cmake/v3dApiLibraries.cmake](../cmake/v3dApiLibraries.cmake) states each library's `REQUIRES`
+and `PACKAGES` a second time, because the closure has to be known before any library has been
+configured. `v3d_api_verify_manifest` reads what the targets actually linked and fails on a
+difference in either direction, so the two cannot drift. Adding a package to an api library
+means editing its `CMakeLists.txt` **and** the manifest; forgetting the second stops the next
+configure with the exact line that is wrong.
+
+`cgltf` is the one entry nothing can check — it contributes an include directory rather than an
+imported target, so it has no link line to appear in.
 
 ### The helper functions
 
@@ -142,7 +182,10 @@ library names its types, and PRIVATE otherwise.
 
 The starter is the only thing in the tree that can catch an api library relying on a global
 the root sets, or on an app naming every library. That is how `api/engine` and `api/render`
-were found not declaring the api libraries they use.
+were found not declaring the api libraries they use. It names its three libraries in
+`V3D_LIBRARIES` rather than taking `all`, so the closure of
+[ADR-0033](adr/0033-a-consumer-selects-the-api-libraries-it-wants.md) is exercised on every
+push as well.
 
 [examples/](../examples/) is the exception to "every directory here builds with the tree":
 nothing in the root's `add_subdirectory` list names it, because each example is a root project

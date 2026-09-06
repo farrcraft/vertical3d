@@ -10,7 +10,7 @@ left in a finished plan.
 Carried out of [plans/completed/ExternalApiConsumption.md](plans/completed/ExternalApiConsumption.md),
 which closed on 2026-09-05.
 
-[] make the Vulkan dependency conditional - find_package(Vulkan) is unconditional and add_subdirectory("api") builds v3dlib_render whatever else is off, so a consumer wanting only v3dlib_image still needs the Vulkan SDK. A per-library dependency block would fix it and is most of the installed-package work of [ADR-0027](adr/0027-the-api-is-consumed-as-source.md) Alternative 2 arriving early.
+[x] make the Vulkan dependency conditional - done 2026-09-06, [ADR-0033](adr/0033-a-consumer-selects-the-api-libraries-it-wants.md). A consumer names its libraries in `V3D_LIBRARIES` and a manifest expands the closure, which decides both what is built and what is looked for; `image;log` configures with no Vulkan SDK. `v3d::render_offline` is added by `api/CMakeLists.txt` rather than by `api/render`, so the offline renderers are takeable without the realtime stack.
 [] decide what find_package(Boost) at the root does to a consumer cache - Boost_USE_STATIC_LIBS ON is a cache variable and is in force for the consumer own boost lookup. Either state it in the contract or set it scoped. The example consumer does not detect it, because it never looks boost up itself.
 
 ## The clang-tidy backlog

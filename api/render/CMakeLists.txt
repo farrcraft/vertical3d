@@ -56,11 +56,6 @@ target_compile_options(v3dlib_render PRIVATE /EHsc)
 set(CMAKE_CXX_FLAGS "/utf-8")
 set(CMAKE_C_FLAGS "/utf-8")
 
-# offline is added below the flags above for the same reason tests is - a subdirectory added
-# over them does not inherit /utf-8, and spdlog's bundled fmt has a static_assert that fails
-# without it.
-add_subdirectory("offline")
-
 if(V3D_BUILD_TESTS)
 	add_subdirectory("tests")
 endif()

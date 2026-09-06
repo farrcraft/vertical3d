@@ -17,6 +17,12 @@ set(V3D_ROOT "${CMAKE_CURRENT_LIST_DIR}" CACHE INTERNAL "The root of the vertica
 option(V3D_BUILD_APPS "Build the applications as well as the api libraries" ${PROJECT_IS_TOP_LEVEL})
 option(V3D_BUILD_TESTS "Build the Boost.Test suites and register them with ctest" ${PROJECT_IS_TOP_LEVEL})
 
+# Which api libraries to build, per ADR-0033. A consumer names the ones it links and gets
+# those and whatever they need; nothing else is added and no package outside that closure is
+# looked for, so an app wanting only v3d::image does not need the Vulkan SDK. The manifest
+# that expands this is cmake/v3dApiLibraries.cmake.
+set(V3D_LIBRARIES "all" CACHE STRING "The api libraries to build, or \"all\"")
+
 # This gets us C++17 and newer language features, e.g. nested namespace support - https://docs.microsoft.com/en-us/cpp/error-messages/compiler-errors-1/compiler-error-c2429?view=msvc-160
 # Stated as a standard rather than as /std:c++latest directly: an imported target that
 # requires cxx_std_17 - glm and EnTT both do - adds /std:c++17 to the command line, and MSVC
@@ -77,8 +83,31 @@ if(V3D_CLANG_TIDY)
 	endif()
 endif()
 
+include("${CMAKE_CURRENT_LIST_DIR}/cmake/v3dApiLibraries.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/cmake/v3dDependencies.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/cmake/v3dHelpers.cmake")
+
+# The apps name every api library between them, and every tests directory is one library's,
+# so either of those means all of them. Loud rather than quiet: a consumer that narrowed the
+# selection and left the apps on asked for two things that contradict.
+if(V3D_BUILD_APPS OR V3D_BUILD_TESTS)
+	if(NOT V3D_LIBRARIES STREQUAL "all")
+		message(FATAL_ERROR
+			"V3D_LIBRARIES names a subset, but V3D_BUILD_APPS or V3D_BUILD_TESTS is on and "
+			"both need the whole api. Set them OFF, or leave V3D_LIBRARIES as \"all\".")
+	endif()
+endif()
+
+if(V3D_LIBRARIES STREQUAL "all")
+	set(V3D_LIBRARIES ${V3D_API_LIBRARIES})
+endif()
+
+v3d_api_closure()
+v3d_find_packages(${V3D_API_PACKAGES})
+list(JOIN V3D_API_BUILD " " v3d_summary)
+message(STATUS "vertical3d api: ${v3d_summary}")
+list(JOIN V3D_API_PACKAGES " " v3d_summary)
+message(STATUS "vertical3d packages: Boost ${v3d_summary}")
 
 if(V3D_BUILD_TESTS)
 	enable_testing()

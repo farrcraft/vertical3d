@@ -1,8 +1,8 @@
 # A windowed application outside the vertical3d tree, built the way
 # [docs/NewProject.md](../../docs/NewProject.md) describes. It exists to be configured by CI: nothing
 # inside the tree can tell a target that carries its own include path and its own dependencies
-# from one picking them up off the root's global or off an app that names all thirteen
-# libraries, because in this repository both are always there.
+# from one picking them up off the root's global or off an app that names every library,
+# because in this repository both are always there.
 #
 # It is a root project of its own rather than a subdirectory of vertical3d, which is what makes
 # CMAKE_SOURCE_DIR differ from V3D_ROOT.
@@ -28,6 +28,12 @@ add_compile_options("/permissive-")
 # The path is relative here because the example travels with the tree it consumes.
 set(V3D_BUILD_APPS OFF)
 set(V3D_BUILD_TESTS OFF)
+
+# The three libraries this app links, per ADR-0033. Their closure is what gets built and what
+# decides which packages are looked for, so naming them here rather than leaving V3D_LIBRARIES
+# at "all" is also what makes CI check that the closure is right: an api library that does not
+# declare something it links fails this configure and no other.
+set(V3D_LIBRARIES engine log render)
 get_filename_component(V3D_TREE "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
 add_subdirectory("${V3D_TREE}" v3d)
 

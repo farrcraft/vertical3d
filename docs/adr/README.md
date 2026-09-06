@@ -43,3 +43,4 @@ old record's status and leave the file in place.
 | [0030](0030-a-model-is-an-interleaved-array-that-names-its-texture.md) | Loaded Geometry — A Model Is One Interleaved Array With A Material That Names Its Texture | accepted | 2026-09-06 |
 | [0031](0031-a-pass-draws-into-a-target-it-names.md) | Offscreen Rendering — A Pass Draws Into A Target It Names, And The Recorder Leaves It Readable | accepted | 2026-09-06 |
 | [0032](0032-the-loop-simulates-at-a-fixed-step.md) | Game Loop — The Loop Simulates At A Fixed Step And Renders At A Variable One | accepted | 2026-09-06 |
+| [0033](0033-a-consumer-selects-the-api-libraries-it-wants.md) | API Selection — A Consumer Names The Libraries It Wants, And A Manifest Expands The Closure | accepted | 2026-09-06 |

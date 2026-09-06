@@ -85,6 +85,7 @@ add_compile_options("/permissive-")
 
 set(V3D_BUILD_APPS OFF)
 set(V3D_BUILD_TESTS OFF)
+set(V3D_LIBRARIES engine log render)
 add_subdirectory("vendor/vertical3d" v3d)
 
 add_executable(myapp
@@ -99,7 +100,7 @@ target_link_libraries(myapp PRIVATE
 	v3d::render)
 ```
 
-Five things in that are worth knowing rather than copying.
+Six things in that are worth knowing rather than copying.
 
 **The standard is stated, not flagged.** `CMAKE_CXX_STANDARD 23` maps to `/std:c++latest` on
 MSVC. Writing `add_compile_options("/std:c++latest")` instead gets you `warning D9025:
@@ -112,6 +113,13 @@ arrive through the `v3d::` targets.
 **`V3D_BUILD_APPS` and `V3D_BUILD_TESTS` go off**, or you build pong, tetris, the editor, both
 offline renderers and 22 test binaries alongside your app. They already default to off when
 vertical3d is not the top level project; setting them explicitly documents the intent.
+
+**`V3D_LIBRARIES` names the api libraries you link.** Their closure is what gets built and
+what decides which packages are looked for, per
+[ADR-0033](adr/0033-a-consumer-selects-the-api-libraries-it-wants.md), so an app that wants
+only `v3d::image` needs no Vulkan SDK and no SDL3 installed. Leave it out and you get `all`,
+which is every library and every package. It has to be `all` if you turned the apps or the
+tests back on.
 
 **Targets are `v3d::<library>`**, one alias per directory under `api/`. Name only what you use.
 Each library declares what it needs, so `v3d::engine` brings `v3d::asset`, `v3d::config`,
