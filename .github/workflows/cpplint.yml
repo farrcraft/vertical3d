@@ -1,5 +1,12 @@
 name: cpplint
-on: [push, pull_request]
+# push is filtered to the default branch and pull_request is not: a branch in this repository
+# fires both events, so an unfiltered "on: [push, pull_request]" runs every job twice for the
+# whole life of a pull request. A branch with no pull request open gets no run - open one to
+# get CI.
+on:
+  push:
+    branches: [main]
+  pull_request:
 jobs:
   cpplint:
     runs-on: ubuntu-latest

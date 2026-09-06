@@ -3,7 +3,14 @@
 # needs a compiler, the Vulkan SDK, a vcpkg install and both vendor submodules built.
 name: ctest
 
-on: [push, pull_request]
+# push is filtered to the default branch and pull_request is not: a branch in this repository
+# fires both events, so an unfiltered "on: [push, pull_request]" runs every job twice for the
+# whole life of a pull request. The cost of that is a second Vulkan SDK install and a second
+# boost build per push. A branch with no pull request open gets no run - open one to get CI.
+on:
+  push:
+    branches: [main]
+  pull_request:
 
 # A push that supersedes an earlier one cancels it. The cold dependency build is expensive
 # enough that queueing runs of the same branch is worth avoiding.
