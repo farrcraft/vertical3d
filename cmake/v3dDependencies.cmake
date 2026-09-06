@@ -32,3 +32,9 @@ find_package(libjpeg-turbo CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(EnTT CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
+
+# cgltf is a single header with no CMake config of its own, so there is no target to link
+# and the header has to be found by hand. api/asset puts this on its own include path
+# rather than the tree relying on the vcpkg include directory being globally reachable,
+# which is what ADR-0027 took away.
+find_path(V3D_CGLTF_INCLUDE_DIR NAMES "cgltf.h" REQUIRED)
