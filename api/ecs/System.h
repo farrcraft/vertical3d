@@ -16,7 +16,15 @@ class System {
     // a system is held polymorphically, so destruction has to reach the derived one
     virtual ~System() = default;
 
-    virtual bool tick() = 0;
+    /**
+     * Advance this system by one simulation step.
+     *
+     * Named for what the engine calls it from rather than for the frame, because a system
+     * runs on the fixed step of ADR-0032 and not once per drawn frame.
+     *
+     * @param step seconds of simulated time
+     **/
+    virtual bool simulate(float step) = 0;
 
  protected:
     entt::registry* registry_;

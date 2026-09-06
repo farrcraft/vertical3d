@@ -20,6 +20,6 @@ class Movement final : public v3d::ecs::System {
     /**
      * @return bool
      **/
-    bool tick() override;
+    bool simulate(float step) override;
 };
 };  // namespace odyssey::system

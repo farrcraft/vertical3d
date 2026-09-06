@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <utility>
+
 #include <entt/entt.hpp>
 #include <glm/glm.hpp>
 
@@ -26,7 +28,11 @@ class Ball {
     glm::vec2 position() const;
     void position(const glm::vec2 & pos);
 
-    void move();
+    /**
+     * Advance by the direction, which is a velocity in units per second.
+     * @param step seconds of simulated time
+     **/
+    void move(float step);
 
     float size() const;
     void size(float s);

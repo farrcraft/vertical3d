@@ -9,7 +9,7 @@ namespace odyssey::system {
 
 /**
  **/
-bool Movement::tick() {
+bool Movement::simulate(float /* step */) {
     return true;
 }
 

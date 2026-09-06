@@ -10,6 +10,18 @@
 
 #include "../../api/event/Sound.h"
 
+namespace {
+
+// pixels per second. The court is 800x600 and a paddle runs 40 to 560, so a paddle crosses
+// its whole run in a little under six seconds.
+constexpr float PADDLE_SPEED = 90.0f;
+
+// the angle a travelling paddle puts into the return, in pixels per second of vertical
+// velocity - small enough that a rally bends rather than turns
+constexpr float PADDLE_ENGLISH = 0.9f;
+
+};  // namespace
+
 PongScene::PongScene(entt::registry* registry, const boost::shared_ptr<entt::dispatcher>& dispatcher) :
     dispatcher_(dispatcher),
     registry_(registry),
@@ -77,9 +89,9 @@ void PongScene::bouncePaddles(const glm::vec2& ballPosition) {
         glm::vec2 ball_dir = ball_.direction();
         ball_dir = -ball_dir;
         if (left_.down())
-            ball_dir += glm::vec2(0.0f, -0.015f);
+            ball_dir += glm::vec2(0.0f, -PADDLE_ENGLISH);
         else if (left_.up())
-            ball_dir -= glm::vec2(0.0f, -0.015f);
+            ball_dir -= glm::vec2(0.0f, -PADDLE_ENGLISH);
         // speed the ball up slightly
         ball_dir *= gameState_.ballSpeedup();
 
@@ -92,9 +104,9 @@ void PongScene::bouncePaddles(const glm::vec2& ballPosition) {
         glm::vec2 ball_dir = ball_.direction();
         ball_dir = -ball_dir;
         if (right_.down())
-            ball_dir += glm::vec2(0.0f, 0.015f);
+            ball_dir += glm::vec2(0.0f, PADDLE_ENGLISH);
         else if (right_.up())
-            ball_dir -= glm::vec2(0.0f, 0.015f);
+            ball_dir -= glm::vec2(0.0f, PADDLE_ENGLISH);
         // speed the ball up slightly
         ball_dir *= gameState_.ballSpeedup();
 
@@ -152,30 +164,29 @@ void PongScene::bounceWalls(const glm::vec2& ballPosition) {
     }
 }
 
-void PongScene::movePaddles() {
-    float step = 1.5f;
+void PongScene::movePaddles(float step) {
+    /// FIXME: use variables for screen extents and paddle sizes
+    float travel = PADDLE_SPEED * step;
     float bottom = 560.0f;
     float top = 40.0f;
-    /// FIXME: use "Uint32 SDL_GetTicks(void)" to work out a movement delta
-    /// use variables for screen extents and paddle sizes
     if (left_.up()) {
         if (left_.position() > top)
-            left_.position(left_.position() - step);
+            left_.position(left_.position() - travel);
     } else if (left_.down()) {
         if (left_.position() < bottom)
-            left_.position(left_.position() + step);
+            left_.position(left_.position() + travel);
     }
 
     if (right_.up()) {
         if (right_.position() > top)
-            right_.position(right_.position() - step);
+            right_.position(right_.position() - travel);
     } else if (right_.down()) {
         if (right_.position() < bottom)
-            right_.position(right_.position() + step);
+            right_.position(right_.position() + travel);
     }
 }
 
-void PongScene::tick() {
+void PongScene::tick(float step) {
     if (gameState_.paused()) {
         return;
     }
@@ -191,9 +202,9 @@ void PongScene::tick() {
     bouncePaddles(ballPosition);
     scorePoint(ballPosition);
     bounceWalls(ballPosition);
-    movePaddles();
+    movePaddles(step);
 
-    ball_.move();
+    ball_.move(step);
 }
 
 

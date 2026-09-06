@@ -20,7 +20,11 @@ class PongScene {
     explicit PongScene(entt::registry* registry, const boost::shared_ptr<entt::dispatcher> & dispatcher);
     ~PongScene();
 
-    void tick();
+    /**
+     * Advance the rally by one simulation step.
+     * @param step seconds, which every speed below is expressed against
+     **/
+    void tick(float step);
     void resize(int width, int height);
 
     void reset();
@@ -41,7 +45,7 @@ class PongScene {
     void bouncePaddles(const glm::vec2& ballPosition);
     void scorePoint(const glm::vec2& ballPosition);
     void bounceWalls(const glm::vec2& ballPosition);
-    void movePaddles();
+    void movePaddles(float step);
 
     boost::shared_ptr<entt::dispatcher> dispatcher_;
     Ball ball_;

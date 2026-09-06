@@ -85,12 +85,12 @@ bool Engine::render() {
 
 /**
  **/
-bool Engine::tick(unsigned int delta) {
-    if (!v3d::engine::Engine::tick(delta)) {
+bool Engine::simulate(float step) {
+    if (!v3d::engine::Engine::simulate(step)) {
         return false;
     }
-    // Tick various systems, e.g. Movement System, Collision System, Combat System, etc
-    if (!movementSystem_->tick()) {
+    // Step various systems, e.g. Movement System, Collision System, Combat System, etc
+    if (!movementSystem_->simulate(step)) {
         return false;
     }
     return true;

@@ -9,14 +9,15 @@
 
 /**
  * The values a round starts on. The ball size is what the collision tests measure against,
- * and the max score is what ends a game.
+ * and the max score is what ends a game. The start speed is pixels per second, because the
+ * scene advances by a fixed step rather than by a frame.
  **/
 BOOST_AUTO_TEST_CASE(game_state_defaults_test) {
     GameState state;
 
     BOOST_TEST(state.ballSize() == 10.0f);
     BOOST_TEST(state.ballSpeedup() == 1.0f);
-    BOOST_TEST(state.ballStartSpeed() == 1.0f);
+    BOOST_TEST(state.ballStartSpeed() == 60.0f);
     BOOST_TEST(state.maxScore() == 5);
     BOOST_TEST(state.coop());
     BOOST_TEST(!state.paused());
@@ -36,7 +37,7 @@ BOOST_AUTO_TEST_CASE(game_state_reset_test) {
 
     state.reset();
 
-    BOOST_TEST(state.ballStartSpeed() == 1.0f);
+    BOOST_TEST(state.ballStartSpeed() == 60.0f);
     BOOST_TEST(state.ballSpeedup() == 1.0f);
     BOOST_TEST(!state.paused());
     BOOST_TEST(!state.coop());

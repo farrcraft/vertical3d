@@ -44,10 +44,10 @@ class Engine final : public v3d::engine::Engine {
     bool initialize();
 
     /**
-     * Advance the game world time
+     * Advance the game world by one fixed simulation step
      * @return bool
      **/
-    bool tick(unsigned int delta) override;
+    bool simulate(float step) override;
 
     /**
      * Draw the current frame

@@ -88,11 +88,11 @@ bool::PongEngine::initialize() {
 
 /**
  **/
-bool PongEngine::tick(unsigned int delta) {
-    if (!v3d::engine::Engine::tick(delta)) {
+bool PongEngine::simulate(float step) {
+    if (!v3d::engine::Engine::simulate(step)) {
         return false;
     }
-    scene_->tick();
+    scene_->tick(step);
     return true;
 }
 

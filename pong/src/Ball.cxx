@@ -38,11 +38,11 @@ void Ball::position(const glm::vec2 & pos) {
     component.set(pos);
 }
 
-void Ball::move() {
+void Ball::move(float step) {
     Direction& direction = registry_->get<Direction>(id_);
     v3d::ecs::component::Position2D& position = registry_->get<v3d::ecs::component::Position2D>(id_);
     glm::vec2 lastPosition = position.value();
-    position.set(lastPosition + direction.direction_);
+    position.set(lastPosition + (direction.direction_ * step));
 }
 
 float Ball::size() const {

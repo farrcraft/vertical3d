@@ -20,7 +20,9 @@ bool GameState::paused() const {
 void GameState::reset() {
     // percentage to increase ball speed each round
     ballSpeedup_ = 1.0f;
-    ballStartSpeed_ = 1.0f;
+    // pixels per second: the ball crosses the 800 pixel court in a little over thirteen
+    // seconds when it is served, and faster every round after
+    ballStartSpeed_ = 60.0f;
     paused_ = false;
 }
 

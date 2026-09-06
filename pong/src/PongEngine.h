@@ -32,7 +32,7 @@ class PongEngine final : public v3d::engine::Engine {
     /**
      * @return bool
      **/
-    bool tick(unsigned int delta);
+    bool simulate(float step) override;
 
     /**
      **/
