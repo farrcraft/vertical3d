@@ -1,0 +1,125 @@
+{
+  "mappings": [
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "a",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "tetris",
+        "name": "movePieceLeft"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "d",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "tetris",
+        "name": "movePieceRight"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "w",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "tetris",
+        "name": "rotatePieceCW"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "s",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "tetris",
+        "name": "rotatePieceCCW"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "space",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "tetris",
+        "name": "dropPiece"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "escape",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "tetris",
+        "name": "toggleMenu"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "return",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "ui",
+        "name": "selectMenu"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "arrow_up",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "ui",
+        "name": "menuPrevious"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "arrow_down",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "ui",
+        "name": "menuNext"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "f1",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "tetris",
+        "name": "toggleFS"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "f2",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "tetris",
+        "name": "debugMode"
+      }
+    }
+  ]
+}

@@ -1,2 +1,0 @@
-add_library("v3dlib_command" "Bind.h" "Bind.cxx" "BindLoader.h" "BindLoader.cxx" "Command.h" "Command.cxx" "CommandDirectory.h" "CommandDirectory.cxx"
-	"CommandInfo.h" "CommandInfo.cxx" "StateController.h" "StateController.cxx" "CommandTable.h" "CommandTable.cxx" "Event.h" "Event.cxx")

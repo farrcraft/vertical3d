@@ -5,37 +5,35 @@
 
 #include "Logger.h"
 
-#include <boost/log/sinks/text_file_backend.hpp>
-#include <boost/log/utility/setup/common_attributes.hpp>
-#include <boost/log/utility/setup/file.hpp>
-#include <boost/locale.hpp>
+#include <spdlog/sinks/basic_file_sink.h>
+
+#include <memory>
 
 namespace v3d::log {
 
-    /**
-     **/
-    Logger::Logger() {
-        // Setup logging
-        auto sink = boost::log::add_file_log(
-            boost::log::keywords::file_name = "v3d_%N.log",  /*< file name pattern >*/
-            boost::log::keywords::rotation_size = 10 * 1024 * 1024,  /*< rotate files every 10 MiB... >*/
-            boost::log::keywords::time_based_rotation =
-                boost::log::sinks::file::rotation_at_time_point(0, 0, 0), /*< ...or at midnight >*/
-            boost::log::keywords::format = "[%TimeStamp%]: %Message%" /*< log record format >*/);
-        // Hard coding - log info or higher
-        boost::log::core::get()->set_filter(
-            boost::log::trivial::severity >= boost::log::trivial::info);
-
-        std::locale loc = boost::locale::generator()("en_US.UTF-8");
-        sink->imbue(loc);
-
-        boost::log::add_common_attributes();
+/**
+ **/
+Logger::Logger() {
+    // spdlog's registry is global and throws on a second registration under the same
+    // name, so a second Logger takes over the one already registered rather than
+    // bringing the process down. Apps really do build two - tetris constructs one in its
+    // Controller before Engine::initialize constructs its own.
+    logger_ = spdlog::get("v3d-logger");
+    if (logger_) {
+        return;
     }
+    logger_ = spdlog::basic_logger_mt("v3d-logger", "v3d.log");
+    logger_->set_level(spdlog::level::debug);
+    // a graphics app that goes wrong tends to stop responding rather than return from
+    // main, and a buffered sink loses the lines that say what it was doing. Nothing in the
+    // tree logs at info per frame, so flushing from info up costs a few writes at startup
+    logger_->flush_on(spdlog::level::info);
+}
 
-    /**
-     **/
-    boost::log::sources::severity_logger< boost::log::trivial::severity_level >& Logger::get() {
-        return logger_;
-    }
+/**
+ **/
+std::shared_ptr<spdlog::logger>& Logger::get() {
+    return logger_;
+}
 
 };  // namespace v3d::log

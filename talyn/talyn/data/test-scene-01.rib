@@ -1,0 +1,29 @@
+##RenderMan RIB-Structure 1.1
+##Scene Three triangles under a perspective camera
+version 3.03
+Format 320 240 1
+Projection "perspective" "fov" 45
+Clipping 1 100
+# the camera sits four units back along -z looking down +z, which is the interface's
+# convention. A world to camera transformation has to be a rotation and a translation
+Transform [1 0 0 0  0 1 0 0  0 0 1 0  0 0 4 1]
+FrameBegin 1
+WorldBegin
+# a backdrop, far enough away to sit behind everything and large enough to fill the frame
+AttributeBegin
+Color [0.15 0.25 0.45]
+Polygon "P" [-40 -30 40  40 -30 40  40 30 40  -40 30 40]
+AttributeEnd
+AttributeBegin
+Color [0.9 0.2 0.2]
+Translate -0.7 -0.2 0
+Polygon "P" [-0.6 -0.5 0  0.6 -0.5 0  0 0.7 0]
+AttributeEnd
+AttributeBegin
+Color [0.2 0.7 0.4]
+Translate 0.8 0.3 -1
+Rotate 30 0 0 1
+Polygon "P" [-0.5 -0.4 0  0.5 -0.4 0  0 0.6 0]
+AttributeEnd
+WorldEnd
+FrameEnd

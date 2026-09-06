@@ -11,19 +11,19 @@
 
 namespace v3d::event {
 
+/**
+ **/
+class Key : public Event {
+ public:
     /**
      **/
-    class Key : public Event {
-     public:
-        /**
-         **/
-        Key(const std::string& name, const boost::shared_ptr<Context>& context, bool pressed) noexcept;
+    Key(const std::string& name, const boost::shared_ptr<Context>& context, bool pressed) noexcept;
 
-        /**
-         **/
-        bool pressed() const noexcept;
+    /**
+     **/
+    bool pressed() const noexcept;
 
-     private:
-        bool pressed_;
-    };
+ private:
+    bool pressed_;
+};
 };  // namespace v3d::event

@@ -5,43 +5,101 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <glm/glm.hpp>
+
 #include "../libmoya/Polygon.h"
 
-BOOST_AUTO_TEST_CASE(polygon_test) {
-    v3D::Moya::Polygon polygon;
+namespace {
 
-    // polygon starts out with no vertices
-    unsigned int count = 0;
-    count = polygon.vertexCount();
-    BOOST_CHECK_EQUAL(count, 0);
+v3d::moya::Vertex vertex(float x, float y, float z) {
+    v3d::moya::Vertex v;
+    v.point(glm::vec3(x, y, z));
+    return v;
+}
 
-    // create a new polygon vertex
-    v3D::Vector3 point(2.0f, 5.0f, 7.0f);
-    v3D::Moya::Vertex vertex;
-    vertex.point(point);
-    polygon.addVertex(vertex);
+};  // namespace
 
-    // should have 1 vertex now
-    count = polygon.vertexCount();
-    BOOST_CHECK_EQUAL(count, 1);
+BOOST_AUTO_TEST_CASE(polygon_vertex_test) {
+    v3d::moya::Polygon polygon;
 
-    // vertex we added should be the one we got back
-    v3D::Moya::Vertex vertex2;
-    vertex2 = polygon.vertex(0);
-    // can only compare vertex points
-    v3D::Vector3 point2;
-    point2 = vertex2.point();
-    BOOST_CHECK_EQUAL((point == point2), true);
+    BOOST_TEST(polygon.vertexCount() == 0u);
 
-    // alternate access method
-    v3D::Moya::Vertex vertex3;
-    vertex3 = polygon[0];
-    v3D::Vector3 point3;
-    point3 = vertex3.point();
-    BOOST_CHECK_EQUAL((point == point3), true);
+    glm::vec3 point(2.0f, 5.0f, 7.0f);
+    polygon.addVertex(vertex(point.x, point.y, point.z));
 
-    // make sure removing vertices works
+    BOOST_TEST(polygon.vertexCount() == 1u);
+    BOOST_TEST((polygon.vertex(0).point() == point));
+    BOOST_TEST((polygon[0].point() == point));
+
     polygon.removeVertex(0);
-    count = polygon.vertexCount();
-    BOOST_CHECK_EQUAL(count, 0);
+    BOOST_TEST(polygon.vertexCount() == 0u);
+}
+
+/**
+ * The subscript is the only accessor that hands back a reference, so it is the one a caller
+ * can write a vertex through.
+ **/
+BOOST_AUTO_TEST_CASE(polygon_vertex_reference_test) {
+    v3d::moya::Polygon polygon;
+    polygon.addVertex(vertex(1.0f, 1.0f, 1.0f));
+
+    polygon[0].point(glm::vec3(4.0f, 5.0f, 6.0f));
+
+    BOOST_TEST((polygon.vertex(0).point() == glm::vec3(4.0f, 5.0f, 6.0f)));
+}
+
+BOOST_AUTO_TEST_CASE(polygon_remove_middle_vertex_test) {
+    v3d::moya::Polygon polygon;
+    polygon.addVertex(vertex(0.0f, 0.0f, 0.0f));
+    polygon.addVertex(vertex(1.0f, 0.0f, 0.0f));
+    polygon.addVertex(vertex(2.0f, 0.0f, 0.0f));
+
+    polygon.removeVertex(1);
+
+    BOOST_TEST(polygon.vertexCount() == 2u);
+    BOOST_TEST((polygon.vertex(0).point() == glm::vec3(0.0f, 0.0f, 0.0f)));
+    BOOST_TEST((polygon.vertex(1).point() == glm::vec3(2.0f, 0.0f, 0.0f)));
+}
+
+/**
+ * clear empties the polygon, which is how a clip writes its result back over the one it was
+ * given.
+ **/
+BOOST_AUTO_TEST_CASE(polygon_clear_test) {
+    v3d::moya::Polygon polygon;
+    polygon.addVertex(vertex(1.0f, 1.0f, 1.0f));
+    polygon.addVertex(vertex(2.0f, 2.0f, 2.0f));
+
+    polygon.clear();
+
+    BOOST_TEST(polygon.vertexCount() == 0u);
+}
+
+/**
+ * The bound is in object space and is the per-axis extent of the vertices, which is what the
+ * splitter and the bucket assignment both read.
+ **/
+BOOST_AUTO_TEST_CASE(polygon_bound_test) {
+    v3d::moya::Polygon polygon;
+    polygon.addVertex(vertex(-1.0f, 4.0f, 0.0f));
+    polygon.addVertex(vertex(3.0f, -2.0f, 5.0f));
+    polygon.addVertex(vertex(0.0f, 1.0f, -7.0f));
+
+    v3d::type::AABBox bound = polygon.bound();
+
+    BOOST_TEST((bound.min() == glm::vec3(-1.0f, -2.0f, -7.0f)));
+    BOOST_TEST((bound.max() == glm::vec3(3.0f, 4.0f, 5.0f)));
+}
+
+/**
+ * A polygon holding nothing has no extent to report, so the bound comes back as the default
+ * one rather than as whatever the first vertex would have seeded it with.
+ **/
+BOOST_AUTO_TEST_CASE(polygon_empty_bound_test) {
+    v3d::moya::Polygon polygon;
+
+    v3d::type::AABBox bound = polygon.bound();
+
+    BOOST_TEST((bound.min() == glm::vec3(0.0f, 0.0f, 0.0f)));
+    BOOST_TEST((bound.max() == glm::vec3(0.0f, 0.0f, 0.0f)));
 }

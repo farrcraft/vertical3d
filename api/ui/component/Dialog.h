@@ -9,11 +9,11 @@
 
 namespace v3d::ui::component {
 
-    class Dialog : public Component {
-     public:
-        Dialog() = default;
-        ~Dialog() = default;
-    };
+class Dialog : public Component {
+ public:
+    Dialog() = default;
+    ~Dialog() = default;
+};
 
 };  // end namespace v3d::ui::component
 

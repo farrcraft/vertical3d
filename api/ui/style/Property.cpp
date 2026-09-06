@@ -5,6 +5,8 @@
 
 #include "Property.h"
 
+#include <string>
+
 namespace v3d::ui::style {
 
 Property::Property(const std::string& str) : align_(NULL_ALIGNMENT), name_(str) {

@@ -9,15 +9,15 @@
 
 namespace v3d::dag {
 
-    class Node;
+class Node;
 
-    class Root {
-     public:
-        Root();
-        virtual ~Root();
+class Root {
+ public:
+    Root();
+    virtual ~Root();
 
-     private:
-        std::vector<Node *> children_;
-    };
+ private:
+    std::vector<Node *> children_;
+};
 
 };  // namespace v3d::dag

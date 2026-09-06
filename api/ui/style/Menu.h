@@ -11,13 +11,13 @@
 
 namespace v3d::ui::style {
 
-    class Menu : public Style {
-     public:
-        explicit Menu(const std::string & str);
-        ~Menu();
+class Menu : public Style {
+ public:
+    explicit Menu(const std::string & str);
+    ~Menu();
 
-     private:
-    };
+ private:
+};
 
 
 };  // end namespace v3d::ui::style

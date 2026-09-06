@@ -1,0 +1,24 @@
+{
+  "configs": [
+    {
+      "type": "binding",
+      "file": "mappings.json"
+    },
+    {
+      "type": "ui",
+      "file": "vgui.json"
+    },
+    {
+      "type": "window",
+      "file": "window.json"
+    },
+    {
+      "type": "camera",
+      "file": "cameras.json"
+    },
+    {
+      "type": "layout",
+      "file": "layout.json"
+    }
+  ]
+}

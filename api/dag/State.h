@@ -7,10 +7,10 @@
 
 namespace v3d::dag {
 
-    class State {
-     public:
-        State();
-        virtual ~State();
-    };
+class State {
+ public:
+    State();
+    virtual ~State();
+};
 
 };  // namespace v3d::dag

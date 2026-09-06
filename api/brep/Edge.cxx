@@ -5,109 +5,119 @@
 
 #include "Edge.h"
 
-namespace v3D {
+namespace v3d::brep {
 
-    Edge::Edge() {
-    }
+Edge::Edge() :
+    prevVertex_(INVALID_ID), nextVertex_(INVALID_ID),
+    prevFace_(INVALID_ID), nextFace_(INVALID_ID),
+    prevCWEdge_(INVALID_ID), nextCWEdge_(INVALID_ID),
+    prevCCWEdge_(INVALID_ID), nextCCWEdge_(INVALID_ID),
+    selected_(false) {
+}
 
-    Edge::Edge(const Edge& e) {
-        *this = e;
-    }
+Edge::Edge(const Edge& e) {
+    *this = e;
+}
 
-    Edge::Edge(unsigned int prevVertexID, unsigned int nextVertexID) : _prevVertexID(prevVertexID), _nextVertexID(nextVertexID) {
-    }
+Edge::Edge(Index prevVertex, Index nextVertex) :
+    prevVertex_(prevVertex), nextVertex_(nextVertex),
+    prevFace_(INVALID_ID), nextFace_(INVALID_ID),
+    prevCWEdge_(INVALID_ID), nextCWEdge_(INVALID_ID),
+    prevCCWEdge_(INVALID_ID), nextCCWEdge_(INVALID_ID),
+    selected_(false) {
+}
 
-    Edge::~Edge() {
-    }
+Edge::~Edge() {
+}
 
-    bool Edge::operator == (const Edge& e) {
-        return ((_prevVertexID == e._prevVertexID && _nextVertexID == e._nextVertexID) ||
-            (_prevVertexID == e._nextVertexID && _nextVertexID == e._prevVertexID));
-    }
+bool Edge::operator == (const Edge& e) const {
+    return ((prevVertex_ == e.prevVertex_ && nextVertex_ == e.nextVertex_) ||
+        (prevVertex_ == e.nextVertex_ && nextVertex_ == e.prevVertex_));
+}
 
-    Edge& Edge::operator = (const Edge& e) {
-        _selected = e._selected;
-        _prevVertexID = e._prevVertexID;
-        _nextVertexID = e._nextVertexID;
-        _prevFaceID = e._prevFaceID;
-        _nextFaceID = e._nextFaceID;
-        _prevCWEdgeID = e._prevCWEdgeID;
-        _nextCWEdgeID = e._nextCWEdgeID;
-        _prevCCWEdgeID = e._prevCCWEdgeID;
-        _nextCCWEdgeID = e._nextCCWEdgeID;
-        return *this;
-    }
+Edge& Edge::operator = (const Edge& e) {
+    selected_ = e.selected_;
+    prevVertex_ = e.prevVertex_;
+    nextVertex_ = e.nextVertex_;
+    prevFace_ = e.prevFace_;
+    nextFace_ = e.nextFace_;
+    prevCWEdge_ = e.prevCWEdge_;
+    nextCWEdge_ = e.nextCWEdge_;
+    prevCCWEdge_ = e.prevCCWEdge_;
+    nextCCWEdge_ = e.nextCCWEdge_;
+    return *this;
+}
 
-    bool Edge::selected(void) const {
-        return _selected;
-    }
+bool Edge::selected(void) const noexcept {
+    return selected_;
+}
 
-    void Edge::selected(bool sel) {
-        _selected = sel;
-    }
+void Edge::selected(bool sel) noexcept {
+    selected_ = sel;
+}
 
-    unsigned int Edge::prevVertex(void) const {
-        return _prevVertexID;
-    }
+Index Edge::prevVertex(void) const {
+    return prevVertex_;
+}
 
-    unsigned int Edge::nextVertex(void) const {
-        return _nextVertexID;
-    }
+Index Edge::nextVertex(void) const {
+    return nextVertex_;
+}
 
-    unsigned int Edge::prevFace(void) const {
-        return _prevFaceID;
-    }
+Index Edge::prevFace(void) const {
+    return prevFace_;
+}
 
-    unsigned int Edge::nextFace(void) const {
-        return _nextFaceID;
-    }
+Index Edge::nextFace(void) const {
+    return nextFace_;
+}
 
-    unsigned int Edge::prevCWEdge(void) const {
-        return _prevCWEdgeID;
-    }
+Index Edge::prevCWEdge(void) const {
+    return prevCWEdge_;
+}
 
-    unsigned int Edge::nextCWEdge(void) const {
-        return _nextCWEdgeID;
-    }
+Index Edge::nextCWEdge(void) const {
+    return nextCWEdge_;
+}
 
-    unsigned int Edge::prevCCWEdge(void) const {
-        return _prevCCWEdgeID;
-    }
+Index Edge::prevCCWEdge(void) const {
+    return prevCCWEdge_;
+}
 
-    unsigned int Edge::nextCCWEdge(void) const {
-        return _nextCCWEdgeID;
-    }
+Index Edge::nextCCWEdge(void) const {
+    return nextCCWEdge_;
+}
 
-    void Edge::prevVertex(unsigned int vertexID) {
-        _prevVertexID = vertexID;
-    }
+void Edge::prevVertex(Index vertex) {
+    prevVertex_ = vertex;
+}
 
-    void Edge::nextVertex(unsigned int vertexID) {
-        _nextVertexID = vertexID;
-    }
+void Edge::nextVertex(Index vertex) {
+    nextVertex_ = vertex;
+}
 
-    void Edge::prevFace(unsigned int faceID) {
-        _prevFaceID = faceID;
-    }
+void Edge::prevFace(Index face) {
+    prevFace_ = face;
+}
 
-    void Edge::nextFace(unsigned int faceID) {
-        _nextFaceID = faceID;
-    }
+void Edge::nextFace(Index face) {
+    nextFace_ = face;
+}
 
-    void Edge::prevCWEdge(unsigned int edgeID) {
-        _prevCWEdgeID = edgeID;
-    }
+void Edge::prevCWEdge(Index edge) {
+    prevCWEdge_ = edge;
+}
 
-    void Edge::nextCWEdge(unsigned int edgeID) {
-        _nextCWEdgeID = edgeID;
-    }
+void Edge::nextCWEdge(Index edge) {
+    nextCWEdge_ = edge;
+}
 
-    void Edge::prevCCWEdge(unsigned int edgeID) {
-        _prevCCWEdgeID = edgeID;
-    }
+void Edge::prevCCWEdge(Index edge) {
+    prevCCWEdge_ = edge;
+}
 
-    void Edge::nextCCWEdge(unsigned int edgeID) {
-        _nextCCWEdgeID = edgeID;
-    }
+void Edge::nextCCWEdge(Index edge) {
+    nextCCWEdge_ = edge;
+}
 
-};  // namespace v3D
+};  // namespace v3d::brep

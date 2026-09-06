@@ -6,6 +6,7 @@
 #include "Piece.h"
 
 #include <iostream>
+#include <string>
 
 Piece::Piece(ColorType type) : color_(type) {
 }
@@ -61,7 +62,5 @@ std::string Piece::str() const {
             break;
         default:
             return "";
-            break;
     }
-    return "";
 }

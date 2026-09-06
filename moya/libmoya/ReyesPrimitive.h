@@ -9,30 +9,63 @@
 
 #include "../../api/type/AABBox.h"
 
+#include <glm/mat4x4.hpp>
+#include <glm/vec3.hpp>
+
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::moya {
-    class ReyesPrimitive {
-     public:
-            ReyesPrimitive();
-            virtual ~ReyesPrimitive();
+class RenderContext;
 
-            virtual bool diceable(void) const;
-            virtual v3d::type::AABBox bound(void) const;
-            virtual void split(void);
-            /*
-                turn a primitive into a micropolygon grid
-                i think this is supposed to return 1 or more grids as necessary
-                signature would be:
-                bool dice(MicroPolygonGridPtr & grid);
-                and it would return false until done, each time creating a new grid.
-                so you'd just do:
-                while (!primitive_ptr->dice(grid)) { do something with grid }
-            */
-            virtual bool dice(boost::shared_ptr<MicroPolygonGrid> grid);
-            virtual void diceable(bool status);
+class ReyesPrimitive {
+ public:
+        ReyesPrimitive();
+        virtual ~ReyesPrimitive();
 
-     private:
-            bool _diceable;
-    };
+        virtual bool diceable(void) const;
+        virtual v3d::type::AABBox bound(void) const;
+        /**
+         * Break the primitive into smaller ones and submit each back to the first pass,
+         * which is what decides the bucket and the diceability of each piece. The caller
+         * discards this primitive afterwards either way, so a primitive that cannot be
+         * usefully split submits nothing and is dropped.
+         */
+        virtual void split(RenderContext & rc);
+        /**
+         * Turn the primitive into a micropolygon grid, one call per grid.
+         *
+         * A primitive may need more than one, so the caller loops - each call that
+         * produces a grid replaces what the reference holds and answers true, and the
+         * call after the last one answers false. A primitive that answered true without
+         * end would never leave that loop.
+         */
+        virtual bool dice(boost::shared_ptr<MicroPolygonGrid> & grid, RenderContext & rc);
+        virtual void diceable(bool status);
+
+        /**
+         * The graphics state this primitive was submitted under: the object to eye
+         * transformation the first pass measured it with, and the colour that was current.
+         *
+         * A primitive keeps both because splitting resubmits its pieces through that pass
+         * during the second one, when neither is current any more - a scene that places
+         * and colours two objects would otherwise measure a split piece of the first
+         * against the state of the last. The pieces need the colour for a second reason:
+         * a split builds its vertices from intersection points, so they carry none.
+         */
+        bool placed(void) const;
+        void place(const glm::mat4x4 & toEye, const glm::vec3 & color);
+        const glm::mat4x4 & placement(void) const;
+        const glm::vec3 & color(void) const;
+
+ private:
+        glm::mat4x4 placement_ = glm::mat4x4(1.0f);
+        glm::vec3 color_ = glm::vec3(1.0f);
+        bool placed_ = false;
+        /*
+            False until the first pass has measured the primitive against the grid size.
+            An unmeasured primitive is therefore split rather than diced, which routes it
+            through that measurement instead of assuming it small enough to skip it.
+        */
+        bool diceable_ = false;
+};
 };  // namespace v3d::moya

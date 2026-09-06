@@ -12,51 +12,63 @@
 
 #include "../../api/engine/Engine.h"
 #include "../../api/asset/Manager.h"
+#include "../../api/event/Event.h"
 #include "../../api/config/Config.h"
 #include "../../api/input/Engine.h"
-#include "../../api/render/realtime/2D/Engine2D.h"
+#include "../render/Renderer.h"
 #include "../system/Movement.h"
 
 namespace odyssey::engine {
 
+/**
+ * This is the game engine.
+ * It is responsible for the main game loop
+ **/
+class Engine final : public v3d::engine::Engine {
+ public:
     /**
-     * This is the game engine.
-     * It is responsible for the main game loop
+     * Constructor.
+     * 
+     * @param appPath The fully qualified base path name from which all relative 
+     *                paths will be derived.
      **/
-    class Engine final : public v3d::engine::Engine {
-     public:
-        /**
-         * Constructor.
-         * 
-         * @param appPath The fully qualified base path name from which all relative 
-         *                paths will be derived.
-         **/
-        explicit Engine(const std::string& appPath);
+    explicit Engine(const std::string& appPath);
 
-        /**
-         * Initialize the engine.
-         * Initialization includes only the minimal amount of work required to get
-         * a window displayed on the screen.
-         * 
-         * @return bool
-         **/
-        bool initialize();
+    /**
+     * Initialize the engine.
+     * Initialization includes only the minimal amount of work required to get
+     * a window displayed on the screen.
+     * 
+     * @return bool
+     **/
+    bool initialize();
 
-        /**
-         * Advance the game world time
-         * @return bool
-         **/
-        bool tick();
+    /**
+     * Advance the game world time
+     * @return bool
+     **/
+    bool tick(unsigned int delta) override;
 
-        /**
-         * @return bool
-         **/
-        bool shutdown();
+    /**
+     * Draw the current frame
+     * @return bool
+     **/
+    bool render() override;
 
-     private:
-        boost::shared_ptr<Player> player_;
-        boost::shared_ptr<v3d::render::realtime::Engine2D> renderEngine_;
-        boost::shared_ptr<odyssey::system::Movement> movementSystem_;
-    };
+    /**
+     * @return bool
+     **/
+    bool shutdown() override;
+
+ private:
+    /**
+     * Handle a mapped event, one of the destinations named in data/mappings.json.
+     **/
+    void handleEvent(const v3d::event::Event& event);
+
+    boost::shared_ptr<Player> player_;
+    boost::shared_ptr<odyssey::render::Renderer> renderer_;
+    boost::shared_ptr<odyssey::system::Movement> movementSystem_;
+};
 
 };  // namespace odyssey::engine

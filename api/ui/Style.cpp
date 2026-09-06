@@ -4,6 +4,11 @@
  **/
 
 #include "Style.h"
+
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 #include "style/Property.h"
 
 namespace v3d::ui {

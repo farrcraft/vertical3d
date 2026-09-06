@@ -1,10 +1,19 @@
 name: cpplint
-on: [push, pull_request]
+# push is filtered to the default branch and pull_request is not: a branch in this repository
+# fires both events, so an unfiltered "on: [push, pull_request]" runs every job twice for the
+# whole life of a pull request. A branch with no pull request open gets no run - open one to
+# get CI.
+on:
+  push:
+    branches: [main]
+  pull_request:
 jobs:
   cpplint:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-python@v4
-    - run: pip install cpplint
-    - run: cpplint --linelength=180 --filter=-runtime/indentation_namespace,-build/namespaces_literals --exclude=vault --exclude=voxel/src/noise --exclude=v3dlibs --exclude=rigel --exclude=luxa --recursive .
+    # pinned: a filter naming a category cpplint does not have suppresses nothing and
+    # says nothing, so a version bump can turn the tree red without a code change
+    - run: pip install cpplint==2.0.2
+    - run: cpplint --linelength=180 --exclude=out --exclude=vendor --exclude=vcpkg_installed --exclude=voxel/src/noise --recursive .

@@ -5,59 +5,53 @@
 
 #pragma once
 
-// #include <list>
-
-#include "Operation.h"
-// #include "Renderable.h"
 #include "Window.h"
 
-#include "../../event/WindowResize.h"
 #include "../../log/Logger.h"
 #include "../../asset/Manager.h"
 
 #include <entt/entt.hpp>
 
 namespace v3d::render::realtime {
-    /* The render engine.
-     * This is different from the game engine.While the game engine is responsible for coordinating the game,
-     * it is the responsibility of the render engine to manage the rendering pipeline.
+/* The render engine.
+ * This is different from the game engine.While the game engine is responsible for coordinating the game,
+ * it is the responsibility of the render engine to manage the rendering pipeline.
+ **/
+class Engine {
+ public:
+    /**
      **/
-    class Engine {
-     public:
-        /**
-         **/
-        Engine(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry);
+    Engine(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry);
 
-        /**
-         **/
-        ~Engine();
+    /**
+     **/
+    ~Engine();
 
-        bool initialize(const boost::shared_ptr<Window>& window);
+    bool initialize(const boost::shared_ptr<Window>& window);
 
-        /**
-         **/
-        virtual bool shutdown();
+    /**
+     **/
+    virtual bool shutdown();
 
-        /**
-         **/
-        boost::shared_ptr<v3d::asset::Manager> assetManager();
+    /**
+     **/
+    boost::shared_ptr<v3d::asset::Manager> assetManager();
 
-        boost::shared_ptr<Window> window();
+    boost::shared_ptr<Window> window();
 
-        /**
-         * Handle a resize event
-         **/
-        void resize(const v3d::event::WindowResize& event);
+    /**
+     **/
+    virtual void renderFrame() = 0;
 
-        /**
-         **/
-        virtual void renderFrame() = 0;
+ protected:
+    /**
+     **/
+    const boost::shared_ptr<v3d::log::Logger>& logger() const noexcept;
 
-     private:
-        boost::shared_ptr<v3d::log::Logger> logger_;
-        boost::shared_ptr<v3d::asset::Manager> assetManager_;
-        boost::shared_ptr<Window> window_;
-        entt::registry* registry_;
-        // std::list<boost::shared_ptr<Renderable>> renderables_;
-    };
+ private:
+    boost::shared_ptr<v3d::log::Logger> logger_;
+    boost::shared_ptr<v3d::asset::Manager> assetManager_;
+    boost::shared_ptr<Window> window_;
+    entt::registry* registry_;
+};
 };  // namespace v3d::render::realtime

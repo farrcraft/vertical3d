@@ -16,46 +16,49 @@
 #include "../log/Logger.h"
 
 namespace v3d::font {
-    class BitmapFont {
-     public:
-        BitmapFont(const std::string & path, const std::string & name, const boost::shared_ptr<v3d::log::Logger> & logger);
+class BitmapFont {
+ public:
+    BitmapFont(const std::string & path, const std::string & name, const boost::shared_ptr<v3d::log::Logger> & logger);
 
-        struct CharDescriptor {
-            uint16_t x_;
-            uint16_t y_;
-            uint16_t width_;
-            uint16_t height_;
-            int16_t xOffset_;
-            uint16_t yOffset_;
-            uint16_t xAdvance_;
-            uint16_t page_;
-            uint16_t channel_;
-        };
-
-        struct Charset {
-            uint16_t lineHeight_;
-            uint16_t base_;
-            uint16_t width_;
-            uint16_t height_;
-            uint16_t pages_;
-            std::string fileName_;
-            std::map<uint16_t, CharDescriptor> chars_;
-        };
-
-        uint16_t charsetWidth() const;
-        uint16_t charsetHeight() const;
-        uint16_t lineHeight() const;
-
-        CharDescriptor character(char c);
-        boost::shared_ptr<v3d::image::Texture> texture();
-
-     protected:
-        void loadCharset(const std::string & filename);
-        bool loadTexture(const std::string & filename);
-
-     private:
-        Charset charset_;
-        boost::shared_ptr<v3d::image::Texture> texture_;
-        boost::shared_ptr<v3d::log::Logger> logger_;
+    // A char line in a .fnt names its fields by key, so a malformed or abbreviated one
+    // leaves whichever it omits unwritten. The descriptor is copied into the charset
+    // whatever the line held, so every field has to start from a defined value.
+    struct CharDescriptor {
+        uint16_t x_ = 0;
+        uint16_t y_ = 0;
+        uint16_t width_ = 0;
+        uint16_t height_ = 0;
+        int16_t xOffset_ = 0;
+        uint16_t yOffset_ = 0;
+        uint16_t xAdvance_ = 0;
+        uint16_t page_ = 0;
+        uint16_t channel_ = 0;
     };
+
+    struct Charset {
+        uint16_t lineHeight_;
+        uint16_t base_;
+        uint16_t width_;
+        uint16_t height_;
+        uint16_t pages_;
+        std::string fileName_;
+        std::map<uint16_t, CharDescriptor> chars_;
+    };
+
+    uint16_t charsetWidth() const;
+    uint16_t charsetHeight() const;
+    uint16_t lineHeight() const;
+
+    CharDescriptor character(char c);
+    boost::shared_ptr<v3d::image::Texture> texture();
+
+ protected:
+    void loadCharset(const std::string & filename);
+    bool loadTexture(const std::string & filename);
+
+ private:
+    Charset charset_;
+    boost::shared_ptr<v3d::image::Texture> texture_;
+    boost::shared_ptr<v3d::log::Logger> logger_;
+};
 };  // namespace v3d::font

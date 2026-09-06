@@ -9,10 +9,10 @@
 
 namespace v3d::ui::component {
 
-    class RadialMenu : public Menu {
-     public:
-        RadialMenu() = default;
-        ~RadialMenu() = default;
-    };
+class RadialMenu : public Menu {
+ public:
+    using Menu::Menu;
+    ~RadialMenu() = default;
+};
 
 };  // namespace v3d::ui::component

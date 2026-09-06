@@ -5,35 +5,45 @@
 
 #pragma once
 
-#include <cstdint>
+#include "Index.h"
 
 namespace v3d::brep {
 
-    class HalfEdge {
-     public:
-        HalfEdge();
-        explicit HalfEdge(uint64_t vert);
-        explicit HalfEdge(const HalfEdge & e);
-        ~HalfEdge();
+class HalfEdge {
+ public:
+    HalfEdge();
+    explicit HalfEdge(Index vert);
+    explicit HalfEdge(const HalfEdge & e);
+    ~HalfEdge();
 
-        bool operator == (const HalfEdge & e);
-        HalfEdge & operator = (const HalfEdge & e);
+    // const, because C++20's reversed candidate for a non-const operator== makes every
+    // a == b ambiguous with the b == a it synthesizes
+    bool operator == (const HalfEdge & e) const;
+    HalfEdge & operator = (const HalfEdge & e);
 
-        uint64_t vertex(void) const;
-        uint64_t face(void) const;
-        uint64_t pair(void) const;
-        uint64_t next(void) const;
+    /**
+     * Whether this component is selected. Selection is per component, not per mesh, so
+     * a vertex, an edge and a face each carry their own.
+     **/
+    bool selected(void) const noexcept;
+    void selected(bool sel) noexcept;
 
-        void vertex(uint64_t vert);
-        void face(uint64_t f);
-        void pair(uint64_t e);
-        void next(uint64_t e);
+    Index vertex(void) const;
+    Index face(void) const;
+    Index pair(void) const;
+    Index next(void) const;
 
-     private:
-        uint64_t vertex_;  // vertex at end of half edge
-        uint64_t face_;  // face to left of edge
-        uint64_t pair_;  // symetric half edge
-        uint64_t next_;  // next CCW half edge
-    };
+    void vertex(Index vert);
+    void face(Index f);
+    void pair(Index e);
+    void next(Index e);
+
+ private:
+    Index vertex_;  // vertex at end of half edge
+    Index face_;  // face to left of edge
+    Index pair_;  // symetric half edge
+    Index next_;  // next CCW half edge
+    bool selected_;
+};
 
 };  // namespace v3d::brep

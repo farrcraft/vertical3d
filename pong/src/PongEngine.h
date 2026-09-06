@@ -33,7 +33,7 @@ class PongEngine final : public v3d::engine::Engine {
     /**
      * @return bool
      **/
-    bool tick();
+    bool tick(unsigned int delta);
 
     /**
      **/
@@ -45,9 +45,6 @@ class PongEngine final : public v3d::engine::Engine {
     bool shutdown();
 
     void handleEvent(const v3d::event::Event& event);
-
-    // protected:
-    // void setMenuItemDefaults(const boost::shared_ptr<Luxa::Menu> & menu);
 
  private:
     boost::shared_ptr<v3d::audio::Engine> soundEngine_;

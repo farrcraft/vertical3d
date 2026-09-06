@@ -9,10 +9,10 @@
 
 namespace v3d::ui::component {
 
-    class PopupMenu : public Menu {
-     public:
-        PopupMenu() = default;
-        ~PopupMenu() = default;
-    };
+class PopupMenu : public Menu {
+ public:
+    using Menu::Menu;
+    ~PopupMenu() = default;
+};
 
 };  // namespace v3d::ui::component

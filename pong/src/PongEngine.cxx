@@ -11,6 +11,7 @@
 #include "PongRenderer.h"
 #include "PongScene.h"
 
+#include "../../api/asset/Sound.h"
 #include "../../api/engine/Feature.h"
 #include "../../api/ecs/component/Position1D.h"
 #include "../../api/ecs/component/Position2D.h"
@@ -25,7 +26,7 @@ PongEngine::PongEngine(const std::string & path) : v3d::engine::Engine(path) {
 
 bool::PongEngine::initialize() {
     if (!Engine::initialize(
-        static_cast<int>(v3d::engine::Feature::Window3D |
+        static_cast<int>(v3d::engine::Feature::Window |
         v3d::engine::Feature::KeyboardInput |
         v3d::engine::Feature::MouseInput |
         v3d::engine::Feature::Config))) {
@@ -35,14 +36,26 @@ bool::PongEngine::initialize() {
     window_->caption("Pong!");
 
     soundEngine_ = boost::make_shared<v3d::audio::Engine>(logger_, dispatcher_);
+    // the return is not read: a device that will not open leaves the engine silent, and the
+    // engine logs why. Every clip played against it is a false return.
     soundEngine_->initialize();
 
-    vgui_ = boost::make_shared<v3d::ui::Engine>(eventEngine_, logger_);
+    vgui_ = boost::make_shared<v3d::ui::Engine>(eventEngine_, dispatcher_, logger_);
 
     if (config_) {
         boost::shared_ptr<v3d::asset::Json> soundConfig = config_->get(v3d::config::Type::Sound);
         if (soundConfig) {
-            soundEngine_->load(soundConfig);
+            // a clip is an asset like any other, so the file the config names is resolved
+            // against the manager's path rather than the working directory
+            soundEngine_->load(soundConfig,
+                [this](const std::string& source) -> boost::shared_ptr<v3d::audio::AudioClip> {
+                    boost::shared_ptr<v3d::asset::Sound> asset = boost::dynamic_pointer_cast<v3d::asset::Sound>(
+                        assetManager_->load(source, v3d::asset::Type::AudioWav));
+                    if (!asset) {
+                        return boost::shared_ptr<v3d::audio::AudioClip>();
+                    }
+                    return asset->clip();
+                });
         }
 
         boost::shared_ptr<v3d::asset::Json> uiConfig = config_->get(v3d::config::Type::Ui);
@@ -52,20 +65,14 @@ bool::PongEngine::initialize() {
             }
         }
     }
-    boost::shared_ptr<v3d::render::realtime::Window3D> win = boost::dynamic_pointer_cast<v3d::render::realtime::Window3D>(window());
+    boost::shared_ptr<v3d::render::realtime::Window> win = window();
     renderer_ = boost::make_shared<PongRenderer>(win, logger_, assetManager_, &registry_);
     scene_ = boost::make_shared<PongScene>(&registry_, dispatcher_);
     renderer_->scene(scene_);
+    renderer_->ui(vgui_);
 
     // register game commands
     dispatcher_->sink<v3d::event::Event>().connect<&PongEngine::handleEvent>(*this);
-
-    /*
-    // config commands
-    directory_->add("setmode", "pong", boost::bind(&PongController::exec, boost::ref(*this), _1, _2));
-    // app commands
-    directory_->add("quit", "pong", boost::bind(&PongController::exec, boost::ref(*this), _1, _2));
-    */
 
     // set the scene size according to the window canvas
     renderer_->resize(window_->width(), window_->height());
@@ -73,39 +80,13 @@ bool::PongEngine::initialize() {
     // reset scene & game state
     scene_->reset();
 
-    // register event listeners
-    /*
-    window_->addDrawListener(boost::bind(&PongRenderer::draw, boost::ref(renderer_), _1));
-    window_->addResizeListener(boost::bind(&PongRenderer::resize, boost::ref(renderer_), _1, _2));
-    window_->addTickListener(boost::bind(&PongScene::tick, boost::ref(scene_), _1));
-    */
-
-    // create ui
-    /*
-    vgui_ = boost::make_shared<Luxa::ComponentManager>(renderer_->fonts(), directory_);
-    // load ui components (including fonts) from the config property tree
-    Luxa::UILoader ui_loader;
-    boost::property_tree::ptree config = ptree.get_child("config");
-    ui_loader.load(config, &(*vgui_));
-    */
-    /*
-        // register vgui event listeners
-        window_->addPostDrawListener(boost::bind(&Luxa::ComponentManager::draw, boost::ref(vgui_), _1));
-        window_->addResizeListener(boost::bind(&Luxa::ComponentManager::resize, boost::ref(vgui_), _1, _2));
-        window_->addTickListener(boost::bind(&Luxa::ComponentManager::tick, boost::ref(vgui_), _1));
-
-        // set default managed area to match canvas size
-        vgui_->resize(window_->width(), window_->height());
-
-        setMenuItemDefaults(boost::dynamic_pointer_cast<Luxa::Menu, Luxa::Component>(vgui_->getComponent("game-menu")));
-    */
     return true;
 }
 
 /**
  **/
-bool PongEngine::tick() {
-    if (!v3d::engine::Engine::tick()) {
+bool PongEngine::tick(unsigned int delta) {
+    if (!v3d::engine::Engine::tick(delta)) {
         return false;
     }
     scene_->tick();
@@ -113,6 +94,7 @@ bool PongEngine::tick() {
 }
 
 bool PongEngine::render() {
+    renderer_->draw();
     return true;
 }
 
@@ -122,89 +104,52 @@ bool PongEngine::shutdown() {
     if (soundEngine_) {
         soundEngine_->shutdown();
     }
+    if (renderer_) {
+        // the device has to be idle before the window it presents to is destroyed
+        renderer_->shutdown();
+    }
     if (!v3d::engine::Engine::shutdown()) {
         return false;
     }
     return true;
 }
-/*
-void PongEngine::setMenuItemDefaults(const boost::shared_ptr<Luxa::Menu> & menu) {
-    for (unsigned int i = 0; i < menu->size(); i++) {
-        boost::shared_ptr<Luxa::MenuItem> item = (*menu)[i];
-        if (item->command() == "set_gamevar") {
-            if (item->param() == "maxScore") {
-                std::string label = "Rounds: ";
-                label += boost::lexical_cast<std::string>(scene_->state().maxScore());
-                item->label(label);
-            }
-        } else if (item->command() == "set_key") {
-            // param contains a command name with the scope encoded
-            // get the bind with the matching command from the directory
-            v3d::command::Bind bind = directory_->lookup(item->param());
-            std::string label = item->label();
-            label += bind.event().name();
-            item->label(label);
-        }
-        if (item->submenu()) {
-            setMenuItemDefaults(item->submenu());
-        }
-    }
-}
-
-bool PongEngine::setGameMode(const std::string_view& mode) {
-    // changing game modes resets game state (including pause state) so the menu will need to be hidden
-    boost::shared_ptr<Luxa::Menu> menu =
-        boost::dynamic_pointer_cast<Luxa::Menu, Luxa::Component>(vgui_->getComponent("game-menu"));
-    if (mode == "SP") {
-        // set singleplayer mode
-        scene_->state().coop(false);
-        scene_->reset();
-        menu->visible(false);
-        return true;
-    } else if (mode == "coop") {
-        // set coop mode
-        scene_->state().coop(true);
-        scene_->reset();
-        menu->visible(false);
-        return true;
-    } else if (mode == "MP") {
-        // set network multiplayer mode
-        scene_->state().coop(false);
-        scene_->reset();
-        menu->visible(false);
-        return true;
-    }
-    return false;
-}
-*/
 void PongEngine::handleEvent(const v3d::event::Event& event) {
     boost::shared_ptr<v3d::ui::Container> menuContainer = vgui_->container("game-menu");
     boost::shared_ptr<v3d::ui::component::Menu> menu = boost::dynamic_pointer_cast<v3d::ui::component::Menu>(menuContainer->get("main-menu"));
-    bool vis = menu->visible();
+    // the container is what is shown and hidden. A component is visible from the moment it
+    // is built, so the menu itself is not the thing to ask
+    bool vis = menuContainer->visible();
     if (event.context()->name() == "pong") {
         // play commands
-        if (event.name() == "leftPaddleDown") {
+        // the paddle moves while its key is held, so these follow the event's edge
+        bool held = (event.state() == v3d::event::State::Pressed);
+        if (event.name() == "leftPaddleUp") {
             if (!scene_->state().paused()) {
-                scene_->left().down(!scene_->left().down());
+                scene_->left().up(held);
+            }
+        } else if (event.name() == "leftPaddleDown") {
+            if (!scene_->state().paused()) {
+                scene_->left().down(held);
             }
         } else if (event.name() == "rightPaddleUp") {
             if (!scene_->state().paused() && scene_->state().coop()) {
-                scene_->right().up(!scene_->right().up());
+                scene_->right().up(held);
             }
         } else if (event.name() == "rightPaddleDown") {
             if (!scene_->state().paused() && scene_->state().coop()) {
-                scene_->right().down(!scene_->right().down());
+                scene_->right().down(held);
             }
         } else if (event.name() == "showGameMenu") {
             if (!vis) {
                 scene_->state().pause(true);
-                menu->visible(true);
+                menuContainer->visible(true);
             } else {
-                // need to check if this is the top-level menu or not
-                // if this is a submenu, we just need to go back to the next menu up
-                // only if we're in the top-level menu do we want to resume
-                scene_->state().pause(false);
-                menu->visible(false);
+                // going back up out of a submenu leaves the menu open - it is only closing
+                // the top level that resumes the game
+                if (!menu->up()) {
+                    scene_->state().pause(false);
+                    menuContainer->visible(false);
+                }
             }
         }
         return;
@@ -229,19 +174,21 @@ void PongEngine::handleEvent(const v3d::event::Event& event) {
             scene_->state().coop(false);
             scene_->reset();
         } else if (event.name() == "quit") {
-            shutdown();
+            // not shutdown() - this is running inside the event loop, which would tick and
+            // render one more frame against the window shutdown() had destroyed
+            quit();
             return;
         }
 
         if (event.name() == "showGameMenu") {
             if (!vis) {
                 scene_->state().pause(true);
-                menu->visible(true);
+                menuContainer->visible(true);
             } else {
                 // if we're at the top-level menu and not in a submenu, make the game active again
                 if (!menu->up()) {
                     scene_->state().pause(false);
-                    menu->visible(false);
+                    menuContainer->visible(false);
                 }
             }
             return;
@@ -258,61 +205,6 @@ void PongEngine::handleEvent(const v3d::event::Event& event) {
             menu->next();
         } else if (event.name() == "selectMenu") {  // select the current menu item
             menu->activate();
-            /*
-            boost::shared_ptr<Luxa::MenuItem> item = menu->active();
-            if (item)
-            {
-                if (item->submenu()) // menu item has a submenu so activate the submenu
-                {
-                    menu->down();
-                }
-                else // menu item represents a command so execute the bound command
-                {
-                    directory_.exec(v3D::CommandInfo(item->command(), item->scope()), item->param());
-                }
-            }
-            */
         }
     }
 }
-/*
-bool PongEngine::exec(const v3d::command::CommandInfo & command, const std::string & param) {
-    if (command.scope() != "pong")
-        return false;
-
-    if (command.name() == "setmode") {
-        // changing game modes resets game state (including pause state) so the menu will need to be hidden
-        boost::shared_ptr<Luxa::Menu> menu =
-            boost::dynamic_pointer_cast<Luxa::Menu, Luxa::Component>(vgui_->getComponent("game-menu"));
-        if (param == "SP") {
-            // set singleplayer mode
-            scene_->state().coop(false);
-            scene_->reset();
-            menu->visible(false);
-            return true;
-        } else if (param == "coop") {
-            // set coop mode
-            scene_->state().coop(true);
-            scene_->reset();
-            menu->visible(false);
-            return true;
-        } else if (param == "MP") {
-            // set network multiplayer mode
-            scene_->state().coop(false);
-            scene_->reset();
-            menu->visible(false);
-            return true;
-        }
-    } else if (command.name() == "set_gamevar") {
-        if (param == "maxScore") {
-            // _scene->state().maxScore(max_score);
-        }
-    } else if (command.name() == "set_key") {
-    } else if (command.name() == "quit") {
-        return shutdown();
-    }
-
-    return false;
-}
-
-*/

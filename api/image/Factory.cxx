@@ -6,6 +6,8 @@
 #include "Factory.h"
 
 #include <iostream>
+#include <map>
+#include <string>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -22,56 +24,56 @@
 #include "writer/Jpeg.h"
 
 namespace v3d::image {
-    /**
-     **/
-    Factory::Factory(const boost::shared_ptr<v3d::log::Logger>& logger) : logger_(logger) {
-        add("tga", boost::make_shared<reader::Tga>(logger));
-        add("bmp", boost::make_shared<reader::Bmp>(logger));
-        add("png", boost::make_shared<reader::Png>(logger));
-        add("jpg", boost::make_shared<reader::Jpeg>(logger));
+/**
+ **/
+Factory::Factory(const boost::shared_ptr<v3d::log::Logger>& logger) : logger_(logger) {
+    add("tga", boost::make_shared<reader::Tga>(logger));
+    add("bmp", boost::make_shared<reader::Bmp>(logger));
+    add("png", boost::make_shared<reader::Png>(logger));
+    add("jpg", boost::make_shared<reader::Jpeg>(logger));
 
-        add("tga", boost::make_shared<writer::Tga>(logger));
-        add("bmp", boost::make_shared<writer::Bmp>(logger));
-        add("png", boost::make_shared<writer::Png>(logger));
-        add("jpg", boost::make_shared<writer::Jpeg>(logger));
+    add("tga", boost::make_shared<writer::Tga>(logger));
+    add("bmp", boost::make_shared<writer::Bmp>(logger));
+    add("png", boost::make_shared<writer::Png>(logger));
+    add("jpg", boost::make_shared<writer::Jpeg>(logger));
+}
+
+void Factory::add(const std::string& name, const boost::shared_ptr<Reader>& reader) {
+    readers_[name] = reader;
+}
+
+void Factory::add(const std::string& name, const boost::shared_ptr<Writer>& writer) {
+    writers_[name] = writer;
+}
+
+bool Factory::write(std::string_view filename, const boost::shared_ptr<Image>& img) {
+    boost::filesystem::path full_path = boost::filesystem::system_complete(static_cast<std::string>(filename));
+
+    std::string ext = static_cast<std::string>(filename).substr(filename.length() - 3);
+    std::map<std::string, boost::shared_ptr<Writer> >::iterator it = writers_.find(ext);
+    if (it != writers_.end()) {
+        boost::shared_ptr<Writer> writer = (*it).second;
+        return writer->write(full_path.string(), img);
     }
+    return false;
+}
 
-    void Factory::add(const std::string& name, const boost::shared_ptr<Reader>& reader) {
-        readers_[name] = reader;
+boost::shared_ptr<Image> Factory::read(std::string_view filename) {
+    boost::filesystem::path full_path = boost::filesystem::system_complete(static_cast<std::string>(filename));
+    std::string filepath = full_path.string();
+
+    std::string ext = static_cast<std::string>(filename).substr(filename.length() - 3);
+
+    logger_->get()->debug("ImageFactory::read - reading file {} with reader bound to extension {} from path {}", filename, ext, filepath);
+
+    std::map<std::string, boost::shared_ptr<Reader> >::iterator it = readers_.find(ext);
+    if (it != readers_.end()) {
+        boost::shared_ptr<Reader> reader = (*it).second;
+        return reader->read(filepath);
     }
-
-    void Factory::add(const std::string& name, const boost::shared_ptr<Writer>& writer) {
-        writers_[name] = writer;
-    }
-
-    bool Factory::write(std::string_view filename, const boost::shared_ptr<Image>& img) {
-        boost::filesystem::path full_path = boost::filesystem::system_complete(static_cast<std::string>(filename));
-
-        std::string ext = static_cast<std::string>(filename).substr(filename.length() - 3);
-        std::map<std::string, boost::shared_ptr<Writer> >::iterator it = writers_.find(ext);
-        if (it != writers_.end()) {
-            boost::shared_ptr<Writer> writer = (*it).second;
-            return writer->write(full_path.string(), img);
-        }
-        return false;
-    }
-
-    boost::shared_ptr<Image> Factory::read(std::string_view filename) {
-        boost::filesystem::path full_path = boost::filesystem::system_complete(static_cast<std::string>(filename));
-        std::string filepath = full_path.string();
-
-        std::string ext = static_cast<std::string>(filename).substr(filename.length() - 3);
-
-        LOG_DEBUG(logger_) << "ImageFactory::read - reading file [" << filename << "] with reader bound to extension [" << ext << "] from path [" << filepath << "]";
-
-        std::map<std::string, boost::shared_ptr<Reader> >::iterator it = readers_.find(ext);
-        if (it != readers_.end()) {
-            boost::shared_ptr<Reader> reader = (*it).second;
-            return reader->read(filepath);
-        }
-        boost::shared_ptr<Image> empty_ptr;
-        LOG_DEBUG(logger_) << "ImageFactory::read - no reader exists for detected image format!";
-        return empty_ptr;
-    }
+    boost::shared_ptr<Image> empty_ptr;
+    logger_->get()->error("ImageFactory::read - no reader exists for detected image format!");
+    return empty_ptr;
+}
 
 };  // namespace v3d::image

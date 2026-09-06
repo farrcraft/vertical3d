@@ -23,7 +23,14 @@ class MeshCache {
     size_t addTri(const glm::vec3 & v0, const glm::vec3 & v1, const glm::vec3 & v2);
     size_t addVertex(const glm::vec3 & vertex);
 
-    void extract(const boost::shared_ptr<Voxel> & voxel, unsigned int faces);
+    /**
+     * Cut the visible faces of a block into the cache.
+     * @param voxel the block, whose position is in world blocks
+     * @param faces which of its faces are not hidden
+     * @param origin the corner of the chunk it belongs to, subtracted so that the geometry
+     *        is chunk local and the chunk's position stays a push constant
+     */
+    void extract(const boost::shared_ptr<Voxel> & voxel, unsigned int faces, const glm::vec3 & origin);
     void createFace(unsigned int type, unsigned int drawFaces, unsigned int inFaces, const glm::vec3 & v0, const glm::vec3 & v1, const glm::vec3 & v2, const glm::vec3 & v3);
 
     glm::vec3 * vertices();

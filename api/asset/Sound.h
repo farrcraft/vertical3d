@@ -13,19 +13,19 @@
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::asset {
+/**
+ **/
+class Sound : public Asset {
+ public:
     /**
      **/
-    class Sound : public Asset {
-     public:
-        /**
-         **/
-        Sound(const std::string& name, Type t, boost::shared_ptr<v3d::audio::AudioClip> clip);
+    Sound(const std::string& name, Type t, boost::shared_ptr<v3d::audio::AudioClip> clip);
 
-        /**
-         **/
-        boost::shared_ptr<v3d::audio::AudioClip> clip();
+    /**
+     **/
+    boost::shared_ptr<v3d::audio::AudioClip> clip();
 
-     private:
-        boost::shared_ptr<v3d::audio::AudioClip> clip_;
-    };
+ private:
+    boost::shared_ptr<v3d::audio::AudioClip> clip_;
+};
 };  // namespace v3d::asset

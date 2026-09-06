@@ -5,6 +5,9 @@
 
 #include "Container.h"
 
+#include <string>
+#include <vector>
+
 namespace v3d::ui {
 
 Container::Container(const std::string& name, bool visible) :
@@ -40,5 +43,9 @@ std::string_view Container::name() const {
     return name_;
 }
 
+
+const std::vector<boost::shared_ptr<Component>>& Container::components() const noexcept {
+    return components_;
+}
 
 };  // namespace v3d::ui

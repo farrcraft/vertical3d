@@ -1,0 +1,8 @@
+{
+	"configs": [
+		{
+			"type": "window",
+			"file": "window.json"
+		}
+	]
+}

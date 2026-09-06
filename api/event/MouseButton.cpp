@@ -6,26 +6,26 @@
 #include "MouseButton.h"
 
 namespace v3d::event {
-    /**
-     **/
-    MouseButton::MouseButton(unsigned int button, const boost::shared_ptr<Context>& context, bool pressed) noexcept :
-        Event("button", context),
-        button_(button),
-        pressed_(pressed) {
-        EventData buttonState = pressed;
-        data(buttonState);
-    }
+/**
+ **/
+MouseButton::MouseButton(unsigned int button, const boost::shared_ptr<Context>& context, bool pressed) noexcept :
+    Event("button", context),
+    button_(button),
+    pressed_(pressed) {
+    // the edge belongs in the event's state; data is reserved for a parameter
+    state(pressed ? State::Pressed : State::Released);
+}
 
-    /**
-     **/
-    unsigned int MouseButton::button() const noexcept {
-        return button_;
-    }
+/**
+ **/
+unsigned int MouseButton::button() const noexcept {
+    return button_;
+}
 
-    /**
-    **/
-    bool MouseButton::pressed() const noexcept {
-        return pressed_;
-    }
+/**
+**/
+bool MouseButton::pressed() const noexcept {
+    return pressed_;
+}
 
 };  // namespace v3d::event

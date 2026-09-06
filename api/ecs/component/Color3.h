@@ -8,50 +8,50 @@
 #include <glm/vec3.hpp>
 
 namespace v3d::ecs::component {
+/**
+ * An RGB Color
+ **/
+class Color3 final {
+ public:
+    Color3(const float red, const float green, const float blue) noexcept;
+
     /**
-     * An RGB Color
+     * Move constructor
      **/
-    class Color3 final {
-     public:
-        Color3(const float red, const float green, const float blue) noexcept;
+    Color3(Color3&&) noexcept;
 
-        /**
-         * Move constructor
-         **/
-        Color3(Color3&&) noexcept;
+    /**
+     * Default destructor
+     **/
+    ~Color3() noexcept = default;
 
-        /**
-         * Default destructor
-         **/
-        ~Color3() noexcept = default;
+    /**
+     **/
+    float red() const;
 
-        /**
-         **/
-        float red() const;
+    /**
+     **/
+    float green() const;
 
-        /**
-         **/
-        float green() const;
+    /**
+     **/
+    float blue() const;
 
-        /**
-         **/
-        float blue() const;
+    /**
+     **/
+    glm::vec3 value() const;
 
-        /**
-         **/
-        glm::vec3 value() const;
+    /**
+     **/
+    void set(const glm::vec3& value);
 
-        /**
-         **/
-        void set(const glm::vec3& value);
+    /**
+     * Move assignment
+     **/
+    Color3& operator=(Color3&&) noexcept;
 
-        /**
-         * Move assignment
-         **/
-        Color3& operator=(Color3&&) noexcept;
-
-     private:
-        glm::vec3 color_;
-    };
+ private:
+    glm::vec3 color_;
+};
 
 };  // namespace v3d::ecs::component

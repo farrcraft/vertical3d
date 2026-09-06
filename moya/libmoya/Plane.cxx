@@ -31,8 +31,18 @@ void Plane::normalize(void) {
 }
 
 void Plane::set(const glm::vec3 & n, float d) {
-    normal_ = n;
-    distance_ = d;
+    equation_[0] = n[0];
+    equation_[1] = n[1];
+    equation_[2] = n[2];
+    equation_[3] = -d;
+}
+
+glm::vec3 Plane::normal(void) const {
+    return glm::vec3(equation_[0], equation_[1], equation_[2]);
+}
+
+float Plane::distance(void) const {
+    return -equation_[3];
 }
 
 /*
@@ -53,46 +63,27 @@ void Plane::set(const glm::vec3 & n, float d) {
             the plane
 */
 void Plane::calculate(const glm::vec3 & A, const glm::vec3 & B, const glm::vec3 & C) {
-    normal_ = glm::normalize(glm::cross((B - A), (C - A)));  // normal = AB*AC
-    distance_ = glm::dot(normal_, A);
+    glm::vec3 n = glm::normalize(glm::cross((B - A), (C - A)));  // normal = AB*AC
+    set(n, glm::dot(n, A));
 }
 
 // tested - seems ok
 void Plane::calculate(const glm::vec3 & normal, const glm::vec3 & point) {
-    normal_ = normal;
-    distance_ = glm::dot(normal_, point);
-    equation_[0] = normal_[0];
-    equation_[1] = normal_[1];
-    equation_[2] = normal_[2];
-    equation_[3] = -(normal_[0] * point[0] + normal_[1] * point[1] + normal_[2] * point[2]);
+    set(normal, glm::dot(normal, point));
 }
 
 float Plane::distance(const glm::vec3 & point) const {
     return equation_[0] * point[0] + equation_[1] * point[1] + equation_[2] * point[2] + equation_[3];
-    // return ((normal_ * point) - distance_);
 }
 
 // tested - seems ok
 // classifies whether a point is on either side of the plane or on the plane itself.
 int Plane::classify(const glm::vec3 & point) const {
-    // return !((normal_ * point) > distance_);
-    // float d = equation_[A] * point.x() + equation_[B] * point.y() + equation_[C] * point.z() + equation_[D];
-
-    // float d = distance(point);
-    // d = _plane[0] * point[0] + _plane[1] * point[2] + _plane[2] * point[2] + _plane[3];
     /*
-    Ax + By + Cz + D = 0
-    Ax + By + Cz = -D
+        Ax + By + Cz + D = 0
+        Ax + By + Cz = -D
     */
-    /*
-    float numer = (normal_ * point) + distance_;
-    float denom = (normal_ * 
-    */
-    float dist;
-    // dist = -(normal_[0] * point[0] + normal_[1] * point[1] + normal_[2] * point[2]);
-    // dist = (normal_ * point) - distance_;
-
-    dist = (equation_[0] * point[0] + equation_[1] * point[1] + equation_[2] * point[2] + equation_[3]);
+    float dist = distance(point);
 
     if (dist < 0.0) {
         return NEGATIVE;
@@ -140,13 +131,18 @@ float & Plane::operator[] (unsigned int i) {
     instead of clipping against a single clipping rectangle edge, we clip against
     a plane.
 */
-void Plane::clip(boost::shared_ptr<Polygon> poly) {
-    boost::shared_ptr<Polygon> clippedPoly(new Polygon);
+void Plane::clip(const boost::shared_ptr<Polygon> & poly) {
+    Polygon clippedPoly;
     Vertex s, p, i;
     glm::vec3 hit;
     size_t nverts;
 
     nverts = poly->vertexCount();
+    // fewer than three vertices bound no area to keep, and the walk below opens on the vertex
+    // before the first one
+    if (nverts < 3) {
+        return;
+    }
     s = poly->vertex(nverts - 1);  // start with last vertex
     for (size_t j = 0; j < nverts; j++) {
         p = poly->vertex(j);
@@ -162,13 +158,13 @@ void Plane::clip(boost::shared_ptr<Polygon> poly) {
              side = classify(s.point());
              if (side == POSITIVE || side == ON_PLANE) {
                   // case 1
-                  clippedPoly->addVertex(p);
+                  clippedPoly.addVertex(p);
              } else {
                   // case 4
                   intersectEdge(s.point(), p.point(), &hit);
                   i.point(hit);
-                  clippedPoly->addVertex(i);
-                  clippedPoly->addVertex(p);
+                  clippedPoly.addVertex(i);
+                  clippedPoly.addVertex(p);
              }
         } else {  // cases 2 & 3
              side = classify(s.point());
@@ -176,7 +172,7 @@ void Plane::clip(boost::shared_ptr<Polygon> poly) {
                   // case 2
                   intersectEdge(s.point(), p.point(), &hit);
                   i.point(hit);
-                  clippedPoly->addVertex(i);
+                  clippedPoly.addVertex(i);
              } else {
                   // case 3
                   // entire edge is clipped - no action required
@@ -184,16 +180,20 @@ void Plane::clip(boost::shared_ptr<Polygon> poly) {
         }
         s = p;
     }
-    poly = clippedPoly;
+
+    poly->clear();
+    for (size_t k = 0; k < clippedPoly.vertexCount(); k++) {
+        poly->addVertex(clippedPoly.vertex(k));
+    }
 }
 
 // ray intersection test
 bool Plane::intersect(const glm::vec3 & start, const glm::vec3 & direction, glm::vec3 * hitPoint) const {
-    float denom = glm::dot(normal_, direction);
+    float denom = glm::dot(normal(), direction);
     if (denom == 0.0) {  // ray and plane are parallel
         return false;
     }
-    float tval = (distance_ - (glm::dot(normal_, start))) / denom;
+    float tval = (distance() - (glm::dot(normal(), start))) / denom;
     if (tval >= 0.0) {  // intersection isn't behind ray
         glm::vec3 hit = start + direction * tval;
         hitPoint->x = hit.x;
@@ -207,11 +207,11 @@ bool Plane::intersect(const glm::vec3 & start, const glm::vec3 & direction, glm:
 // tested - seems ok
 bool Plane::intersectEdge(const glm::vec3 & A, const glm::vec3 & B, glm::vec3 * hitPoint) const {
     glm::vec3 direction = B - A;
-    float denom = glm::dot(normal_, direction);
+    float denom = glm::dot(normal(), direction);
     if (denom == 0.0) {
         return false;
     }
-    float tval = (distance_ - (glm::dot(normal_, A))) / denom;
+    float tval = (distance() - (glm::dot(normal(), A))) / denom;
     if (tval >= 0.0 && tval <= 1.0) {
         glm::vec3 hit = A + (direction * tval);
         hitPoint->x = hit.x;

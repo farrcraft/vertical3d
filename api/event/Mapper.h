@@ -9,23 +9,35 @@
 
 #include <map>
 #include <string>
-
-#include <boost/optional.hpp>
+#include <vector>
 
 namespace v3d::event {
+/**
+ **/
+class Mapper {
+ public:
+    explicit Mapper(const std::string& name);
+
+    std::string_view name() const;
+
     /**
+     * Bind a source event to a destination event.
+     * One source may be bound to several destinations - an arrow key driving both a
+     * paddle and a menu, say - and every one of them is sent when it occurs.
      **/
-    class Mapper {
-     public:
-        explicit Mapper(const std::string& name);
+    void map(const Event& source, const Event& destination);
 
-        std::string_view name() const;
+    /**
+     * Find every destination bound to a source event.
+     * A binding matches when it was bound to the edge the source occurred on, or to
+     * State::Any.
+     *
+     * @return the matching destinations, empty when the source is bound to nothing
+     **/
+    std::vector<Event> destinations(const Event& source) const;
 
-        void map(const Event& source, const Event& destination);
-        boost::optional<Event> destination(const Event& source);
-
-     private:
-        std::string name_;
-        std::map<Event, Event> mappings_;
-    };
+ private:
+    std::multimap<Event, Event> mappings_;
+    std::string name_;
+};
 };  // namespace v3d::event

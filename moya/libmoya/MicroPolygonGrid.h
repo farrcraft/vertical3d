@@ -10,18 +10,28 @@
 #include "MicroPolygon.h"
 
 namespace v3d::moya {
-    // a grid of micropolygons
-    // micropolygon vertices are shared
-    class MicroPolygonGrid {
-     public:
-        MicroPolygonGrid();
-        ~MicroPolygonGrid();
+// a grid of micropolygons
+// micropolygon vertices are shared
+class MicroPolygonGrid {
+ public:
+    /**
+     * A grid of size-by-size vertices, which is size-1 by size-1 micropolygons. There is
+     * no default constructor because a grid's extent is fixed when it is made and every
+     * accessor indexes into it.
+     */
+    explicit MicroPolygonGrid(unsigned int size);
+    ~MicroPolygonGrid();
 
-        Vertex vertex(unsigned int i, unsigned int j) const;
-        MicroPolygon microPolygon(unsigned int i, unsigned int j) const;
-        void addVertex(const Vertex & vert, unsigned int i, unsigned int j);
+    /**
+     * The number of vertices along one side.
+     */
+    unsigned int size(void) const;
 
-     private:
-        std::vector< std::vector<Vertex> > _grid;
-    };
+    Vertex vertex(unsigned int i, unsigned int j) const;
+    MicroPolygon microPolygon(unsigned int i, unsigned int j) const;
+    void addVertex(const Vertex & vert, unsigned int i, unsigned int j);
+
+ private:
+    std::vector< std::vector<Vertex> > grid_;
+};
 };  // namespace v3d::moya

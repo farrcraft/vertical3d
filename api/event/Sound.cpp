@@ -9,10 +9,10 @@
 
 namespace v3d::event {
 
-    Sound::Sound(const std::string_view& clip) noexcept : clip_(clip) {
-    }
+Sound::Sound(const std::string_view& clip) noexcept : clip_(clip) {
+}
 
-    std::string_view Sound::clip() const noexcept {
-        return clip_;
-    }
+std::string_view Sound::clip() const noexcept {
+    return clip_;
+}
 };  // namespace v3d::event

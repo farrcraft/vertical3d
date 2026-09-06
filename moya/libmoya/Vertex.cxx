@@ -21,4 +21,17 @@ void Vertex::point(const glm::vec3 & v) {
      point_ = v;
 }
 
+glm::vec3 Vertex::color(void) const {
+     return color_;
+}
+
+void Vertex::color(const glm::vec3 & c) {
+     color_ = c;
+     bits_ |= HAS_COLOR;
+}
+
+bool Vertex::hasColor(void) const {
+     return (bits_ & HAS_COLOR) != 0;
+}
+
 };  // namespace v3d::moya

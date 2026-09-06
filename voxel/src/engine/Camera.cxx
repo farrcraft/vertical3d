@@ -6,6 +6,8 @@
 
 #include "Camera.h"
 
+#define GLM_ENABLE_EXPERIMENTAL
+
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/epsilon.hpp>
@@ -177,18 +179,23 @@ void Camera::perspective(float fovx, float aspect, float znear, float zfar) {
     projection_[0][3] = 0.0f;
 
     projection_[1][0] = 0.0f;
-    projection_[1][1] = yScale;
+    // negated: vulkan's clip space has y pointing down, where the axes this is built from
+    // have it pointing up. Which also reverses the winding a front face presents, so the
+    // pipeline drawing through this has to call its front faces clockwise
+    projection_[1][1] = -yScale;
     projection_[1][2] = 0.0f;
     projection_[1][3] = 0.0f;
 
     projection_[2][0] = 0.0f;
     projection_[2][1] = 0.0f;
-    projection_[2][2] = (zfar + znear) / (znear - zfar);
+    // near maps to zero and far to one, which is the depth range vulkan clips against and
+    // what the engine clears the depth buffer to
+    projection_[2][2] = zfar / (znear - zfar);
     projection_[2][3] = -1.0f;
 
     projection_[3][0] = 0.0f;
     projection_[3][1] = 0.0f;
-    projection_[3][2] = (2.0f * zfar * znear) / (znear - zfar);
+    projection_[3][2] = (zfar * znear) / (znear - zfar);
     projection_[3][3] = 0.0f;
 
     fovx_ = fovx;
@@ -352,7 +359,7 @@ void Camera::updatePosition(const glm::vec3 &direction, float elapsedTimeSec) {
     // is in the range [-1,1].
 
     glm::vec3 displacement = calculateDisplacement(direction, elapsedTimeSec);
-    move(displacement.x, displacement.y, displacement.z);
+    move(displacement.x, displacement.y, displacement.z);  // NOLINT(build/include_what_you_use) - the method, not std::move
 
     // Continuously update the camera's velocity vector even if the camera
     // hasn't moved during this call. When the camera is no longer being moved

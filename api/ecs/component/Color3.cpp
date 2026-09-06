@@ -7,43 +7,43 @@
 
 namespace v3d::ecs::component {
 
-    Color3::Color3(const float red, const float blue, const float green) noexcept
-        : color_(red, green, blue) {
-    }
+Color3::Color3(const float red, const float green, const float blue) noexcept
+    : color_(red, green, blue) {
+}
 
-    Color3::Color3(Color3&& c) noexcept {
+Color3::Color3(Color3&& c) noexcept {
+    this->color_ = c.color_;
+}
+
+Color3& Color3::operator=(Color3&& c) noexcept {
+    if (this != &c) {
         this->color_ = c.color_;
     }
 
-    Color3& Color3::operator=(Color3&& c) noexcept {
-        if (this != &c) {
-            this->color_ = c.color_;
-        }
+    return *this;
+}
 
-        return *this;
-    }
+float Color3::red() const {
+    return color_.x;
+}
 
-    float Color3::red() const {
-        return color_.x;
-    }
+float Color3::green() const {
+    return color_.y;
+}
 
-    float Color3::green() const {
-        return color_.y;
-    }
+float Color3::blue() const {
+    return color_.z;
+}
 
-    float Color3::blue() const {
-        return color_.z;
-    }
+/**
+ **/
+glm::vec3 Color3::value() const {
+    return color_;
+}
 
-    /**
-     **/
-    glm::vec3 Color3::value() const {
-        return color_;
-    }
-
-    /**
-     **/
-    void Color3::set(const glm::vec3& value) {
-        color_ = value;
-    }
+/**
+ **/
+void Color3::set(const glm::vec3& value) {
+    color_ = value;
+}
 };  // namespace v3d::ecs::component

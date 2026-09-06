@@ -14,10 +14,14 @@
 #include "voxel/Chunk.h"
 #include "voxel/TerrainMap.h"
 
+#define GLM_ENABLE_EXPERIMENTAL 1
+
 #include <glm/gtx/string_cast.hpp>
 
 Scene::Scene() {
-    player_.reset(new Player(glm::vec3(0.0f, 25.0f, 100.0f)));
+    // above the terrain rather than inside it - the world is 64 blocks tall, and there is no
+    // collision or gravity to lift a spawn that starts under the hills back out of them
+    player_.reset(new Player(glm::vec3(128.0f, 80.0f, 240.0f)));
 
     // generate the terrain heightmap
     TerrainMap terrain;
@@ -38,7 +42,9 @@ Scene::Scene() {
         for (unsigned int y = 0; y < worldHeight; y++) {
             for (unsigned int z = 0; z < worldDepth; z++) {
                 glm::ivec3 pos(x, y, z);
-                chunk.reset(new Chunk(&terrain, pos, worldHeight));
+                // Chunk scales the heightmap against a ceiling measured in blocks, so it
+                // wants the world's block height, not its chunk count.
+                chunk.reset(new Chunk(&terrain, pos, static_cast<unsigned int>(worldHeight * chunkSize)));
                 hash = encoder.encode(pos);
                 chunks_[hash] = chunk;
             }

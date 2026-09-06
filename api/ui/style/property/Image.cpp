@@ -5,6 +5,8 @@
 
 #include "Image.h"
 
+#include <string>
+
 namespace v3d::ui::style::prop {
 
 Image::Image(const std::string& name, const std::string& src) : Property(name), source_(src) {
@@ -13,11 +15,11 @@ Image::Image(const std::string& name, const std::string& src) : Property(name), 
 Image::~Image() {
 }
 
-boost::shared_ptr<v3d::gl::GLTexture> Image::texture(void) const {
+v3d::render::realtime::TextureHandle Image::texture() const noexcept {
     return texture_;
 }
 
-void Image::texture(boost::shared_ptr<v3d::gl::GLTexture> tex) {
+void Image::texture(const v3d::render::realtime::TextureHandle& tex) noexcept {
     texture_ = tex;
 }
 

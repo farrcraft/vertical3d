@@ -1,17 +1,26 @@
 # Dependencies
 
-- [libnoise](https://github.com/eXpl0it3r/libnoise) - This is an unofficial fork that adds CMake support.
-- glm
+Managed by `vcpkg`, through the manifest in [vcpkg.json](../vcpkg.json):
+
 - boost
 - entt
-- libjpeg
+- freetype
+- glm
+- libjpeg-turbo
 - libpng
-- sdl2
-- SoLoud
-- FreeType2
+- sdl3, **with its `vulkan` feature** - without it SDL builds with `SDL_VULKAN=OFF` and `SDL_Vulkan_LoadLibrary` fails at startup with "No dynamic Vulkan support in current SDL video driver (windows)"
+- sdl3-mixer - what `v3dlib_audio` is built on, per [adr/0021-sdl3-mixer-replaces-soloud.md](adr/0021-sdl3-mixer-replaces-soloud.md). It needs SDL >= 3.4.0, which is why the vcpkg baseline moved
+- spdlog
+- vulkan
 
-Dependencies are managed using `vcpkg` when possible.  Otherwise they are configured as git submodules in the `vendor/` directory.
-These submodules will need to be cloned and manually built individually.  See the Submodules section below for build instructions.
+Not from vcpkg:
+
+- **The Vulkan SDK**, which every configure needs whether or not it will draw: `find_package(Vulkan)` is unconditional, and `v3d_add_shader` looks for `glslc` with a `FATAL_ERROR` on the first shader it is asked to compile, because shaders are compiled at build time and embedded as SPIR-V. `VULKAN_SDK` has to point at an install.
+- [libnoise](https://github.com/eXpl0it3r/libnoise) - an unofficial fork that adds CMake support. A git submodule, built separately; only voxel links it, and it is the only submodule left.
+
+Submodules are configured in the `vendor/` directory, and need to be cloned and built individually. See the Submodules section below. voxel's `target_link_directories` expects their artefacts under `vendor/*/Debug`.
+
+There is no OpenGL: `api/gl` was deleted on 2026-09-01, and the `find_package(OpenGL)` and `find_package(GLEW)` calls and the `glew` port went with it. See [adr/0001-vulkan-replaces-opengl.md](adr/0001-vulkan-replaces-opengl.md).
 
 
 # Packages
@@ -65,29 +74,53 @@ To add a new dependency, open a developer command prompt and run, e.g. for boost
 
 Packages are automatically installed during CMake generation.
 
+## Updating Dependency Versions
+
+To update package versions, e.g. to get a newer boost version, update the baseline and then re-run install:
+
+```
+.\vendor\vcpkg\vcpkg.exe x-update-baseline
+.\vendor\vcpkg\vcpkg.exe install
+```
 
 # Submodules
 
 To add a new submodule:
 
 ```
-git submodule add https://github.com/jarikomppa/soloud vendor/soloud
-```
-
-## Building SoLoud
-
-SoLoud has a dependency on SDL2 which means that vcpkg-base dependencies need to be installed first.
-
-```
-cd vendor/soloud/contrib
-cmake -B . -DSDL2_INCLUDE_DIR="..\..\..\vcpkg_installed\x64-windows\include" -DSDL2_LIBRARY="..\..\..\vcpkg_installed\x64-windows\lib"
-MSBuild SoLoud.sln /p:IncludePath="..\..\..\vcpkg_installed\x64-windows\include\SDL2;$(IncludePath)"
+git submodule add https://github.com/eXpl0it3r/libnoise vendor/libnoise
 ```
 
 ## Building libnoise
 
+Build it **out of source**. The `CMakeCache.txt` libnoise commits names a "Visual Studio 17 2022"
+generator that is not necessarily installed, and reusing that cache is the usual reason a build of it
+fails. `CMAKE_POLICY_VERSION_MINIMUM` is needed because its `cmake_minimum_required(VERSION 3.0)`
+predates what current CMake accepts.
+
 ```
-cd vendor/libnoise
-cmake -B .
-MSBuild libnoise.sln
+cmake -S vendor/libnoise -B vendor/libnoise/build-ninja -G Ninja \
+  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+  -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebugDLL \
+  -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY=<repo>/vendor/libnoise/Debug
+cmake --build vendor/libnoise/build-ninja
 ```
+
+libnoise is not prebuilt in the tree, and `voxel` will not link without it.
+
+## Consuming the api from another repository
+
+An application outside this tree takes it as source, per
+[adr/0027-the-api-is-consumed-as-source.md](adr/0027-the-api-is-consumed-as-source.md), and
+[NewProject.md](NewProject.md) is the walkthrough. Two things about it belong here rather than
+there, because they are what this document is:
+
+- **The consumer's `vcpkg.json` is the one that gets installed.** Manifest mode reads the root
+  project's manifest, and once vertical3d is nested that is the consumer's. Copy
+  [vcpkg.json](../vcpkg.json) across; the api's dependencies are not resolved from the tree's own.
+- **`vendor/vcpkg/` is gitignored here**, so cloning this repository does not bring a vcpkg with
+  it. A consumer clones its own.
+
+The baseline in [vcpkg-configuration.json](../vcpkg-configuration.json) has to be copied verbatim
+into the consumer's, and nothing checks that it was. Boost is static, so a drifted baseline is a
+link error rather than a warning.

@@ -9,10 +9,10 @@
 
 namespace v3d::ui::component {
 
-    class TabBar : public Component {
-     public:
-        TabBar() = default;
-        ~TabBar() = default;
-    };
+class TabBar : public Component {
+ public:
+    TabBar() = default;
+    ~TabBar() = default;
+};
 
 };  // end namespace v3d::ui::component

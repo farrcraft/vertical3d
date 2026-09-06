@@ -9,14 +9,17 @@
 
 namespace v3d::ecs {
 
-    class System {
-     public:
-        explicit System(entt::registry* registry);
+class System {
+ public:
+    explicit System(entt::registry* registry);
 
-        virtual bool tick() = 0;
+    // a system is held polymorphically, so destruction has to reach the derived one
+    virtual ~System() = default;
 
-     protected:
-        entt::registry* registry_;
-    };
+    virtual bool tick() = 0;
+
+ protected:
+    entt::registry* registry_;
+};
 
 };  // namespace v3d::ecs

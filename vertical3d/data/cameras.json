@@ -1,0 +1,100 @@
+{
+  "cameras": [
+    {
+      "name": "Front",
+      "orthographic": true,
+      "eye": [0.0, 0.0, -10.0],
+      "lookat": [0.0, 0.0, 0.0],
+      "up": [0.0, 1.0, 0.0],
+      "zoom": 10.0,
+      "aspect": 1.33,
+      "near": 0.1,
+      "far": 100.0,
+      "adaptive": "both"
+    },
+    {
+      "name": "Back",
+      "orthographic": true,
+      "eye": [0.0, 0.0, 10.0],
+      "lookat": [0.0, 0.0, 0.0],
+      "up": [0.0, 1.0, 0.0],
+      "zoom": 10.0,
+      "aspect": 1.33,
+      "near": 0.1,
+      "far": 100.0,
+      "adaptive": "both"
+    },
+    {
+      "name": "Left",
+      "orthographic": true,
+      "eye": [-10.0, 0.0, 0.0],
+      "lookat": [0.0, 0.0, 0.0],
+      "up": [0.0, 1.0, 0.0],
+      "zoom": 10.0,
+      "aspect": 1.33,
+      "near": 0.1,
+      "far": 100.0,
+      "adaptive": "both"
+    },
+    {
+      "name": "Right",
+      "orthographic": true,
+      "eye": [10.0, 0.0, 0.0],
+      "lookat": [0.0, 0.0, 0.0],
+      "up": [0.0, 1.0, 0.0],
+      "zoom": 10.0,
+      "aspect": 1.33,
+      "near": 0.1,
+      "far": 100.0,
+      "adaptive": "both"
+    },
+    {
+      "name": "Top",
+      "orthographic": true,
+      "eye": [0.0, 10.0, 0.0],
+      "lookat": [0.0, 0.0, 0.0],
+      "up": [0.0, 0.0, 1.0],
+      "zoom": 10.0,
+      "aspect": 1.33,
+      "near": 0.1,
+      "far": 100.0,
+      "adaptive": "both"
+    },
+    {
+      "name": "Bottom",
+      "orthographic": true,
+      "eye": [0.0, -10.0, 0.0],
+      "lookat": [0.0, 0.0, 0.0],
+      "up": [0.0, 0.0, -1.0],
+      "zoom": 10.0,
+      "aspect": 1.33,
+      "near": 0.1,
+      "far": 100.0,
+      "adaptive": "both"
+    },
+    {
+      "name": "Perspective",
+      "orthographic": false,
+      "eye": [0.0, 5.0, -20.0],
+      "lookat": [0.0, 0.0, 0.0],
+      "up": [0.0, 1.0, 0.0],
+      "fov": 60.0,
+      "aspect": 1.33,
+      "near": 0.1,
+      "far": 100.0,
+      "adaptive": "none"
+    },
+    {
+      "name": "Perspective2",
+      "orthographic": false,
+      "eye": [0.0, 1.0, -1.0],
+      "lookat": [0.0, 0.0, 0.0],
+      "up": [0.0, 1.0, 0.0],
+      "fov": 60.0,
+      "aspect": 1.33,
+      "near": 0.1,
+      "far": 100.0,
+      "adaptive": "none"
+    }
+  ]
+}

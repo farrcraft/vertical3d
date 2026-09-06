@@ -10,15 +10,15 @@
 #include "../voxel/Voxel.h"
 
 MeshCache::MeshCache(size_t vertices, size_t tris, size_t faces) :
-    triCount_(0),
-    vertexCount_(0),
-    faceCount_(0),
-    maxVertices_(vertices),
-    maxFaces_(faces),
-    maxTris_(tris),
     vertices_(0),
     tris_(0),
-    faces_(0) {
+    faces_(0),
+    vertexCount_(0),
+    triCount_(0),
+    faceCount_(0),
+    maxVertices_(vertices),
+    maxTris_(tris),
+    maxFaces_(faces) {
     if (vertices > 0) {
         vertices_ = new glm::vec3[vertices];
     }
@@ -76,7 +76,7 @@ size_t MeshCache::addTri(size_t a, size_t b, size_t c) {
     if (triCount_ == maxTris_) {
         throw std::runtime_error("MeshCache tri limit exceeded!");
     }
-    unsigned int index = triCount_;
+    size_t index = triCount_;
     triCount_++;
     tris_[index] = glm::ivec3(a, b, c);
     return index;
@@ -95,13 +95,13 @@ size_t MeshCache::addVertex(const glm::vec3 & vertex) {
     if (vertexCount_ == maxVertices_) {
         throw std::runtime_error("MeshCache vertex limit exceeded!");
     }
-    unsigned int index = vertexCount_;
+    size_t index = vertexCount_;
     vertexCount_++;
     vertices_[index] = vertex;
     return index;
 }
 
-void MeshCache::extract(const boost::shared_ptr<Voxel> & voxel, unsigned int faces) {
+void MeshCache::extract(const boost::shared_ptr<Voxel> & voxel, unsigned int faces, const glm::vec3 & origin) {
     if (!voxel->active() || (faces & Voxel::BLOCK_FACE_NONE)) {
         return;
     }
@@ -110,7 +110,7 @@ void MeshCache::extract(const boost::shared_ptr<Voxel> & voxel, unsigned int fac
         faces = Voxel::BLOCK_FACE_FRONT|Voxel::BLOCK_FACE_BACK|Voxel::BLOCK_FACE_LEFT|Voxel::BLOCK_FACE_RIGHT|Voxel::BLOCK_FACE_TOP|Voxel::BLOCK_FACE_BOTTOM;
     }
 
-    glm::vec3 position = voxel->position();
+    glm::vec3 position = voxel->position() - origin;
     unsigned int type = voxel->type();
 
     // front
@@ -138,8 +138,16 @@ void MeshCache::createFace(unsigned int type, unsigned int drawFaces, unsigned i
         return;
     }
 
-    size_t t1 = addTri(v0, v1, v2);
-    size_t t2 = addTri(v0, v2, v3);
+    // the two triangles share an edge, so the quad is four vertices indexed six times.
+    // addTri(vec3, vec3, vec3) would append three fresh vertices per triangle and leave the
+    // index buffer holding 0, 1, 2, 3... - a quarter of the mesh carrying no information.
+    size_t p0 = addVertex(v0);
+    size_t p1 = addVertex(v1);
+    size_t p2 = addVertex(v2);
+    size_t p3 = addVertex(v3);
+
+    size_t t1 = addTri(p0, p1, p2);
+    size_t t2 = addTri(p0, p2, p3);
 
     if (faceCount_ == maxFaces_) {
         throw std::runtime_error("MeshCache face limit exceeded!");

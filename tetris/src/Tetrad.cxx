@@ -18,6 +18,7 @@ Tetrad::Tetrad() : orientation_(0), initialized_(false) {
 
 Tetrad & Tetrad::operator=(const Tetrad & t) {
     orientation_ = t.orientation_;
+    position_ = t.position_;
     initialized_ = t.initialized_;
     shape_ = t.shape_;
     return *this;
@@ -40,44 +41,54 @@ void Tetrad::move(int dx, int dy) {
 }
 
 void Tetrad::rotate(RotationDirection dir) {
+    // rows run down the screen and columns across it, so a quarter turn clockwise sends the
+    // cell at (row, column) to (column, 3 - row), and the other direction is its inverse
     uint8_t rotated[4][4];
-
     for (unsigned int i = 0; i < 4; i++) {
         for (unsigned int j = 0; j < 4; j++) {
-            int new_x, new_y;
-            if (dir == CLOCKWISE) {  // clockwise
-                new_x = i + (3 - (i+j));
-                new_y = i;
-                rotated[new_x][new_y] = shape_.layout_[i][j];
-            } else {  // ccw
-                rotated[i][j] = shape_.layout_[i][j];
+            if (dir == CLOCKWISE) {
+                rotated[j][3 - i] = shape_.layout_[i][j];
+            } else {
+                rotated[3 - j][i] = shape_.layout_[i][j];
             }
         }
     }
-
-    // copy rotation before shift first so we get correct offsets for the shift later
-    // std::copy(rotated, rotated + 16, shape_.layout_);
     memcpy(shape_.layout_, rotated, sizeof(rotated));
 
-    // FIXME!!!
-    uint8_t shifted[4][4];
-    unsigned int off_x = offset(Tetrad::OFFSET_Y);
-    unsigned int off_y = offset(Tetrad::OFFSET_X);
-    unsigned shift_x, shift_y;
+    // a turn leaves the shape wherever in the grid the arithmetic put it, and the board
+    // reads the grid's corner as the tetrad's position
+    normalize(&shape_);
 
+    if (dir == CLOCKWISE) {
+        orientation_ = (orientation_ + 1) % 4;
+    } else {
+        orientation_ = (orientation_ + 3) % 4;
+    }
+}
+
+void Tetrad::normalize(ShapeInfo * shape) {
+    unsigned int row = 4;
+    unsigned int column = 4;
     for (unsigned int i = 0; i < 4; i++) {
         for (unsigned int j = 0; j < 4; j++) {
-            shift_x = i + off_x;
-            shift_y = j + off_y;
-            if (shift_x < 4 && shift_y < 4)
-                shifted[i][j] = rotated[shift_x][shift_y];
-            else
-                shifted[i][j] = 0;
+            if (shape->layout_[i][j] != 0) {
+                row = (row < i) ? row : i;
+                column = (column < j) ? column : j;
+            }
         }
     }
+    // an empty layout, or one already in the corner
+    if (row == 4 || column == 4 || (row == 0 && column == 0)) {
+        return;
+    }
 
-    // std::copy(shifted, shifted + 16, shape_.layout_);
-    memcpy(shape_.layout_, shifted, sizeof(shifted));
+    uint8_t shifted[4][4] = { { 0 } };
+    for (unsigned int i = 0; i + row < 4; i++) {
+        for (unsigned int j = 0; j + column < 4; j++) {
+            shifted[i][j] = shape->layout_[i + row][j + column];
+        }
+    }
+    memcpy(shape->layout_, shifted, sizeof(shifted));
 }
 
 void Tetrad::position(PositionType p) {
@@ -119,43 +130,35 @@ unsigned int Tetrad::offset(OffsetAxis dir) const {
 }
 
 unsigned int Tetrad::width() const {
-    unsigned int min = 0, max = 0;
-    bool found_edge;
+    unsigned int min = 4, max = 0;
 
     for (unsigned int i = 0; i < 4; i++) {
-        found_edge = false;
         for (unsigned int j = 0; j < 4; j++) {
-            if (shape_.layout_[i][j] == 1) {  // flip i & j here for height instead
-                if (!found_edge) {
-                    found_edge = true;
-                    if (min > j)
-                        min = j;
-                }
-                if (max < j)
-                    max = j;
+            if (shape_.layout_[i][j] == 1) {
+                min = (min < j) ? min : j;
+                max = (max > j) ? max : j;
             }
         }
+    }
+    if (min > max) {
+        return 0;
     }
     return (max - min + 1);
 }
 
 unsigned int Tetrad::height() const {
-    unsigned int min = 0, max = 0;
-    bool found_edge;
+    unsigned int min = 4, max = 0;
 
     for (unsigned int i = 0; i < 4; i++) {
-        found_edge = false;
         for (unsigned int j = 0; j < 4; j++) {
-            if (shape_.layout_[j][i] == 1) {  // flip i & j here for width instead
-                if (!found_edge) {
-                    found_edge = true;
-                    if (min > j)
-                        min = j;
-                }
-                if (max < j)
-                    max = j;
+            if (shape_.layout_[i][j] == 1) {
+                min = (min < i) ? min : i;
+                max = (max > i) ? max : i;
             }
         }
+    }
+    if (min > max) {
+        return 0;
     }
     return (max - min + 1);
 }

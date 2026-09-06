@@ -6,8 +6,8 @@
 #pragma once
 
 namespace odyssey::engine {
-    /**
-     **/
-    class Sprite {
-    };
+/**
+ **/
+class Sprite {
+};
 };

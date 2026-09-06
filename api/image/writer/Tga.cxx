@@ -7,6 +7,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <cstring>
 #include <string>
 
@@ -40,59 +41,69 @@ struct tga_footer {
 #pragma pack(pop)
 
 namespace v3d::image::writer {
-    /**
-     **/
-    Tga::Tga(const boost::shared_ptr<v3d::log::Logger> & logger) : Writer(logger) {
+/**
+ **/
+Tga::Tga(const boost::shared_ptr<v3d::log::Logger> & logger) : Writer(logger) {
+}
+
+/**
+ **/
+bool Tga::write(std::string_view filename, const boost::shared_ptr<Image>& img) {
+    std::fstream file;
+    file.open(static_cast<std::string>(filename).c_str(), std::fstream::out | std::fstream::binary);
+    if (file.fail()) {
+        return false;
     }
 
-    /**
-     **/
-    bool Tga::write(std::string_view filename, const boost::shared_ptr<Image>& img) {
-        std::fstream file;
-        file.open(static_cast<std::string>(filename).c_str(), std::fstream::out | std::fstream::binary);
-        if (file.fail()) {
-            return false;
-        }
+    if (img->width() > std::numeric_limits<uint16_t>::max() ||
+        img->height() > std::numeric_limits<uint16_t>::max()) {
+        return false;
+    }
 
-        tga_header fheader;
-        memset(&fheader, 0, sizeof(tga_header));
+    tga_header fheader;
+    memset(&fheader, 0, sizeof(tga_header));
 
-        fheader.width_ = img->width();
-        fheader.height_ = img->height();
-        fheader.bpp_ = img->bpp();
-        fheader.type_ = 2;  // rgb
+    fheader.width_ = static_cast<uint16_t>(img->width());
+    fheader.height_ = static_cast<uint16_t>(img->height());
+    fheader.bpp_ = img->bpp();
+    fheader.type_ = 2;  // rgb
+    // bit 5 of the descriptor is the vertical origin, and the rows below go out top down
+    // because that is the order Image holds them in. Leaving it clear claims bottom up,
+    // which a reader is entitled to act on by turning the picture over
+    fheader.descriptor_ = 0x20;
 
-        file.write(reinterpret_cast<char*>(&fheader), sizeof(fheader));
+    file.write(reinterpret_cast<char*>(&fheader), sizeof(fheader));
 
-        unsigned int bytespp = fheader.bpp_ / 8;
-        unsigned int size = fheader.width_ * fheader.height_ * bytespp;
-        boost::shared_ptr<Image> tmp_img(new Image(size));
-        unsigned char* data = img->data();
-        unsigned char* tmp_data = tmp_img->data();
+    unsigned int bytespp = fheader.bpp_ / 8;
+    unsigned int size = fheader.width_ * fheader.height_ * bytespp;
+    boost::shared_ptr<Image> tmp_img(new Image(size));
+    unsigned char* data = img->data();
+    unsigned char* tmp_data = tmp_img->data();
 
-        if (file.fail()) {
-            file.close();
-            return false;
-        }
-
-        for (unsigned int i = 0; i < static_cast<int>(size); i += bytespp) {  // Swaps The 1st And 3rd Bytes ('R'ed and 'B'lue)
-            tmp_data[i] = data[i + 2];
-            tmp_data[i + 1] = data[i + 1];
-            tmp_data[i + 2] = data[i];
-        }
-
-        file.write(reinterpret_cast<char*>(tmp_data), size);
-
-        tga_footer footer;
-        memset(&footer, 0, sizeof(tga_footer));
-
-        // footer.signature_ = 'TRUEVISION-XFILE';
-        strncpy(footer.signature_, "TRUEVISION-XFILE", 16);
-        footer.reserved_ = '.';
-        file.write(reinterpret_cast<char*>(&footer), sizeof(footer));
-
+    if (file.fail()) {
         file.close();
-        return true;
+        return false;
     }
+
+    for (unsigned int i = 0; i < static_cast<int>(size); i += bytespp) {  // Swaps The 1st And 3rd Bytes ('R'ed and 'B'lue)
+        tmp_data[i] = data[i + 2];
+        tmp_data[i + 1] = data[i + 1];
+        tmp_data[i + 2] = data[i];
+    }
+
+    file.write(reinterpret_cast<char*>(tmp_data), size);
+
+    tga_footer footer;
+    memset(&footer, 0, sizeof(tga_footer));
+
+    // The signature fills the field exactly, with no terminator - it is 16 bytes of a
+    // fixed size record rather than a C string.
+    memcpy(footer.signature_, "TRUEVISION-XFILE", sizeof(footer.signature_));
+    footer.reserved_ = '.';
+    file.write(reinterpret_cast<char*>(&footer), sizeof(footer));
+
+    file.close();
+    return true;
+}
 
 };  // namespace v3d::image::writer

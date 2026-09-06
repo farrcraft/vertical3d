@@ -11,24 +11,24 @@
 
 namespace v3d::event {
 
+/**
+ **/
+class MouseButton : public Event {
+ public:
     /**
      **/
-    class MouseButton : public Event {
-     public:
-        /**
-         **/
-        MouseButton(unsigned int button, const boost::shared_ptr<Context>& context, bool pressed) noexcept;
+    MouseButton(unsigned int button, const boost::shared_ptr<Context>& context, bool pressed) noexcept;
 
-        /**
-         **/
-        unsigned int button() const noexcept;
+    /**
+     **/
+    unsigned int button() const noexcept;
 
-        /**
-         **/
-        bool pressed() const noexcept;
+    /**
+     **/
+    bool pressed() const noexcept;
 
-     private:
-        unsigned int button_;
-        bool pressed_;
-    };
+ private:
+    unsigned int button_;
+    bool pressed_;
+};
 };  // namespace v3d::event

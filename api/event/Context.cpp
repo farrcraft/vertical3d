@@ -5,23 +5,16 @@
 
 #include "Context.h"
 
+#include <string>
+
 namespace v3d::event {
 
-    Context::Context(const std::string& name) :
-        name_(name),
-        active_(false) {
-    }
+Context::Context(const std::string& name) :
+    name_(name) {
+}
 
-    void Context::active(bool state) {
-        active_ = state;
-    }
-
-    std::string_view Context::name() const {
-        return name_;
-    }
-
-    bool Context::active() const {
-        return active_;
-    }
+std::string_view Context::name() const {
+    return name_;
+}
 
 };  // namespace v3d::event

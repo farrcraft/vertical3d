@@ -10,16 +10,16 @@
 
 namespace v3d::event {
 
+/**
+ **/
+class Sound final {
+ public:
     /**
      **/
-    class Sound final {
-     public:
-        /**
-         **/
-        Sound(const std::string_view &clip) noexcept;
-        std::string_view clip() const noexcept;
+    Sound(const std::string_view &clip) noexcept;
+    std::string_view clip() const noexcept;
 
-     private:
-        std::string clip_;
-    };
+ private:
+    std::string clip_;
+};
 };  // namespace v3d::event

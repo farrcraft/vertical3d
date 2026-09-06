@@ -5,6 +5,8 @@
 
 #include "Menu.h"
 
+#include <string>
+
 namespace v3d::ui::style {
 
 Menu::Menu(const std::string& str) : Style(str, "menu") {

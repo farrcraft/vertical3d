@@ -43,7 +43,8 @@
     {
       "source": {
         "context": "keyboard",
-        "name": "escape"
+        "name": "escape",
+        "state": "pressed"
       },
       "destination": {
         "context": "pong",
@@ -53,7 +54,8 @@
     {
       "source": {
         "context": "keyboard",
-        "name": "return"
+        "name": "return",
+        "state": "pressed"
       },
       "destination": {
         "context": "ui",
@@ -63,7 +65,8 @@
     {
       "source": {
         "context": "keyboard",
-        "name": "arrow_up"
+        "name": "arrow_up",
+        "state": "pressed"
       },
       "destination": {
         "context": "ui",
@@ -73,7 +76,8 @@
     {
       "source": {
         "context": "keyboard",
-        "name": "arrow_down"
+        "name": "arrow_down",
+        "state": "pressed"
       },
       "destination": {
         "context": "ui",
@@ -83,7 +87,8 @@
     {
       "source": {
         "context": "keyboard",
-        "name": "f1"
+        "name": "f1",
+        "state": "pressed"
       },
       "destination": {
         "context": "pong",

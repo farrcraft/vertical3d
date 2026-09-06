@@ -1,0 +1,264 @@
+{
+  "mappings": [
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "left_alt"
+      },
+      "destination": {
+        "context": "view",
+        "name": "camera::zoom"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "left_control"
+      },
+      "destination": {
+        "context": "view",
+        "name": "camera::truck"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "left_shift"
+      },
+      "destination": {
+        "context": "view",
+        "name": "camera::pan"
+      }
+    },
+    {
+      "source": {
+        "context": "mouse",
+        "name": "left"
+      },
+      "destination": {
+        "context": "view",
+        "name": "drag"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "g",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "view",
+        "name": "show::grid"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "m",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "view",
+        "name": "show::mesh"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "h",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "view",
+        "name": "show::handle"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "1",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "create",
+        "name": "poly::cube"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "2",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "create",
+        "name": "poly::plane"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "3",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "create",
+        "name": "poly::cylinder"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "4",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "create",
+        "name": "poly::cone"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "q",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "transform",
+        "name": "select"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "w",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "transform",
+        "name": "translate"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "e",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "transform",
+        "name": "rotate"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "r",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "transform",
+        "name": "scale"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "5",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "select",
+        "name": "mask::object"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "6",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "select",
+        "name": "mask::vertex"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "7",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "select",
+        "name": "mask::edge"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "8",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "select",
+        "name": "mask::face"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "o",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "project",
+        "name": "load"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "s",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "project",
+        "name": "save"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "z",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "edit",
+        "name": "undo"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "y",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "edit",
+        "name": "redo"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "escape",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "ui",
+        "name": "quit"
+      }
+    }
+  ]
+}

@@ -1,2 +1,5 @@
 add_subdirectory("libmoya")
 add_subdirectory("moya")
+if(V3D_BUILD_TESTS)
+	add_subdirectory("tests")
+endif()

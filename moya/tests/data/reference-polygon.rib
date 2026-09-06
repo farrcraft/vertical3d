@@ -1,0 +1,13 @@
+##RenderMan RIB-Structure 1.1
+##Scene The phase 1 reference scene, said in RIB
+version 3.03
+Format 64 48 1
+Projection "orthographic"
+# the defaults are RI_EPSILON and RI_INFINITY, which leave the orthographic depth scale at
+# about 2e-38 and collapse every z onto the near plane
+Clipping 1 100
+WorldBegin
+# asymmetric about both axes, so a flipped picture is a failing one. No Color, so it takes the
+# RI default of white - which is what the code built scene renders
+Polygon "P" [-0.7 -0.2 5  0.3 -0.2 5  0.3 0.8 5  -0.7 0.8 5]
+WorldEnd

@@ -6,9 +6,9 @@
 #pragma once
 
 namespace v3d::dag {
-    class Edge {
-     public:
-        Edge();
-        virtual ~Edge();
-    };
+class Edge {
+ public:
+    Edge();
+    virtual ~Edge();
+};
 };  // end namespace v3d::dag

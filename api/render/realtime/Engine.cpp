@@ -9,44 +9,43 @@
 
 
 namespace v3d::render::realtime {
-    /**
-     **/
-    Engine::Engine(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry) :
-        logger_(logger),
-        assetManager_(assetManager),
-        registry_(registry) {
-    }
+/**
+ **/
+Engine::Engine(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry) :
+    logger_(logger),
+    assetManager_(assetManager),
+    registry_(registry) {
+}
 
-    /**
-     **/
-    Engine::~Engine() {
-    }
+/**
+ **/
+Engine::~Engine() {
+}
 
-    bool Engine::initialize(const boost::shared_ptr<Window>& window) {
-        window_ = window;
-        return true;
-    }
+/**
+ **/
+const boost::shared_ptr<v3d::log::Logger>& Engine::logger() const noexcept {
+    return logger_;
+}
 
-    /**
-     **/
-    bool Engine::shutdown() {
-        return true;
-    }
+bool Engine::initialize(const boost::shared_ptr<Window>& window) {
+    window_ = window;
+    return true;
+}
 
-    /**
-     **/
-    void Engine::resize(const v3d::event::WindowResize& event) {
-        window_->resize(event.width(), event.height());
-        //  backBuffer_ = boost::make_shared<Texture>(context_, width, height);
-    }
+/**
+ **/
+bool Engine::shutdown() {
+    return true;
+}
 
-    /**
-     **/
-    boost::shared_ptr<v3d::asset::Manager> Engine::assetManager() {
-        return assetManager_;
-    }
+/**
+ **/
+boost::shared_ptr<v3d::asset::Manager> Engine::assetManager() {
+    return assetManager_;
+}
 
-    boost::shared_ptr<Window> Engine::window() {
-        return window_;
-    }
+boost::shared_ptr<Window> Engine::window() {
+    return window_;
+}
 };  // namespace v3d::render::realtime

@@ -6,25 +6,40 @@
 #include "Controller.h"
 
 #include <functional>
+#include <string>
 
 #include "Renderer.h"
 #include "Scene.h"
+#include "game/GameState.h"
 #include "game/Player.h"
+#include "../../api/config/Type.h"
 #include "../../api/engine/Feature.h"
+#include "../../api/render/realtime/Window.h"
+#include "../../api/ui/component/menu/Menu.h"
 
 #include <boost/make_shared.hpp>
 
+namespace {
+
+/**
+ * The container the escape key shows and hides, and the menu inside it. Both are named
+ * by data/vgui.json, so the two have to be changed together.
+ **/
+const char* const menuContainerName = "game-menu";
+const char* const menuName = "main-menu";
+
+};  // namespace
 
 Controller::Controller(const std::string& appPath) :
-    debug_(false),
-    v3d::engine::Engine(appPath) {
+    v3d::engine::Engine(appPath),
+    debug_(false) {
 }
 
 
 bool Controller::initialize() {
     if (!v3d::engine::Engine::initialize(static_cast<int>(
         v3d::engine::Feature::Config |
-        v3d::engine::Feature::Window3D |
+        v3d::engine::Feature::Window |
         v3d::engine::Feature::MouseInput |
         v3d::engine::Feature::KeyboardInput))) {
         return false;
@@ -37,30 +52,27 @@ bool Controller::initialize() {
     // move mouse cursor to center of window
     window_->warpCursor(window_->width() / 2, window_->height() / 2);
 
+    vgui_ = boost::make_shared<v3d::ui::Engine>(eventEngine_, dispatcher_, logger_);
+    if (config_) {
+        boost::shared_ptr<v3d::asset::Json> uiConfig = config_->get(v3d::config::Type::Ui);
+        if (uiConfig) {
+            if (!vgui_->load(uiConfig)) {
+                return false;
+            }
+        }
+    }
+
     // register game commands
     dispatcher_->sink<v3d::event::Event>().connect<&Controller::handleEvent>(*this);
-    /*
-    // player commands
-    using namespace boost::bind::placeholders;
-    directory_->add("moveUp", "voxel", boost::bind(&Controller::exec, boost::ref(*this), _1, _2));
-    directory_->add("moveDown", "voxel", boost::bind(&Controller::exec, boost::ref(*this), _1, _2));
-    directory_->add("moveLeft", "voxel", boost::bind(&Controller::exec, boost::ref(*this), _1, _2));
-    directory_->add("moveRight", "voxel", boost::bind(&Controller::exec, boost::ref(*this), _1, _2));
-    directory_->add("moveForward", "voxel", boost::bind(&Controller::exec, boost::ref(*this), _1, _2));
-    directory_->add("moveBackward", "voxel", boost::bind(&Controller::exec, boost::ref(*this), _1, _2));
-    directory_->add("look", "voxel", boost::bind(&Controller::exec, boost::ref(*this), _1, _2));
-    // ui commands
-    directory_->add("showGameMenu", "ui", boost::bind(&Controller::execUI, boost::ref(*this), _1, _2));
-    // debug commands
-    directory_->add("debug", "voxel", boost::bind(&Controller::exec, boost::ref(*this), _1, _2));
-    */
-    scene_ = boost::make_shared<Scene>();
-
     // this is actually the game controller
     // maybe we need a separate player controller class to intercept mouse events?
-    mouse_->addEventListener(this, "player_controller");
+    dispatcher_->sink<v3d::event::MouseMotion>().connect<&Controller::handleMotion>(*this);
 
-    renderer_ = boost::make_shared<Renderer>(scene_, loader);
+    scene_ = boost::make_shared<Scene>();
+
+    boost::shared_ptr<v3d::render::realtime::Window> win = window();
+    renderer_ = boost::make_shared<Renderer>(scene_, win, logger_, assetManager_, &registry_);
+    renderer_->ui(vgui_);
 
     // set the scene size according to the window canvas
     renderer_->resize(window_->width(), window_->height());
@@ -70,15 +82,123 @@ bool Controller::initialize() {
 
 /**
  **/
+bool Controller::tick(unsigned int delta) {
+    if (!v3d::engine::Engine::tick(delta)) {
+        return false;
+    }
+    if (!scene_->state()->paused()) {
+        scene_->tick(delta);
+    }
+    renderer_->tick(delta);
+    return true;
+}
+
+/**
+ **/
+bool Controller::render() {
+    renderer_->draw();
+    return true;
+}
+
+/**
+ **/
 bool Controller::shutdown() {
+    if (renderer_) {
+        // the device has to be idle before the window it presents to is destroyed
+        renderer_->shutdown();
+    }
     if (!v3d::engine::Engine::shutdown()) {
         return false;
     }
     return true;
 }
 
+/**
+ **/
+bool Controller::menuVisible() const {
+    if (!vgui_) {
+        return false;
+    }
+    boost::shared_ptr<v3d::ui::Container> container = vgui_->container(menuContainerName);
+    return container && container->visible();
+}
+
+/**
+ **/
+void Controller::toggleMenu() {
+    if (!vgui_) {
+        return;
+    }
+    boost::shared_ptr<v3d::ui::Container> container = vgui_->container(menuContainerName);
+    if (!container) {
+        return;
+    }
+    boost::shared_ptr<v3d::ui::component::Menu> menu =
+        boost::dynamic_pointer_cast<v3d::ui::component::Menu>(container->get(menuName));
+
+    // the container is what is shown and hidden. A component is visible from the moment it
+    // is built, so the menu itself is not the thing to ask
+    if (!container->visible()) {
+        scene_->state()->pause(true);
+        container->visible(true);
+        window_->cursor(true);
+        return;
+    }
+    // going back up out of a submenu leaves the menu open - it is only closing the top
+    // level that puts the player back in the world
+    if (!menu || !menu->up()) {
+        scene_->state()->pause(false);
+        container->visible(false);
+        window_->cursor(false);
+        window_->warpCursor(window_->width() / 2, window_->height() / 2);
+    }
+}
+
 void Controller::handleEvent(const v3d::event::Event& event) {
+    if (event.context()->name() == "ui") {
+        if (event.name() == "showGameMenu") {
+            toggleMenu();
+            return;
+        }
+        if (event.name() == "quit") {
+            // not shutdown() - this is running inside the event loop, which would tick and
+            // render one more frame against the window shutdown() had just destroyed
+            quit();
+            return;
+        }
+
+        if (!menuVisible()) {
+            return;
+        }
+        boost::shared_ptr<v3d::ui::Container> container = vgui_->container(menuContainerName);
+        boost::shared_ptr<v3d::ui::component::Menu> menu =
+            boost::dynamic_pointer_cast<v3d::ui::component::Menu>(container->get(menuName));
+        if (!menu) {
+            return;
+        }
+        if (event.name() == "menuPrevious") {
+            menu->previous();
+        } else if (event.name() == "menuNext") {
+            menu->next();
+        } else if (event.name() == "selectMenu") {
+            menu->activate();
+        }
+        return;
+    }
+
     if (event.context()->name() != "voxel") {
+        return;
+    }
+
+    // the debug overlay is readable whether or not the world is running
+    if (event.name() == "debug") {
+        debug_ = !debug_;
+        renderer_->debug(debug_);
+        return;
+    }
+
+    // nothing moves while the menu is up
+    if (menuVisible()) {
         return;
     }
 
@@ -95,42 +215,24 @@ void Controller::handleEvent(const v3d::event::Event& event) {
         scene_->player()->move(Player::MOVE_UP);
     } else if (event.name() == "moveDown") {
         scene_->player()->move(Player::MOVE_DOWN);
-    } else if (event.name() == "debug") {  // debug commands
-        debug_ = !debug_;
-        renderer_->debug(debug_);
     }
 }
 
-bool Controller::execUI(const v3d::command::CommandInfo & command, const std::string & param) {
-    if (command.scope() != "ui") {
-        return false;
-    }
-
-    if (command.name() == "showGameMenu") {
-        window_->shutdown();
-    }
-
-    return false;
-}
-
-void Controller::motion(unsigned int x, unsigned int y) {
-    if (!window_->active()) {
+void Controller::handleMotion(const v3d::event::MouseMotion& event) {
+    if ((SDL_GetWindowFlags(window_->sdl()) & SDL_WINDOW_INPUT_FOCUS) == 0) {
         return;
     }
-    unsigned int centerX = window_->width() / 2;
-    unsigned int centerY = window_->height() / 2;
+    // the menu owns the pointer while it is up, so it is not warped back to the centre
+    if (menuVisible()) {
+        return;
+    }
+    const int centerX = window_->width() / 2;
+    const int centerY = window_->height() / 2;
 
-    int yDelta = y - centerY;
-    int xDelta = x - centerX;
-    float pitch = static_cast<float>(yDelta);
-    float heading = static_cast<float>(xDelta);
+    const glm::vec2 position = event.position();
+    const float heading = position.x - static_cast<float>(centerX);
+    const float pitch = position.y - static_cast<float>(centerY);
 
     scene_->player()->look(heading, pitch);
     window_->warpCursor(centerX, centerY);
-}
-
-void Controller::buttonPressed(unsigned int button) {
-}
-
-void Controller::buttonReleased(unsigned int button) {
 }

@@ -5,30 +5,40 @@
 
 #include "Vertex.h"
 
+#include "HalfEdge.h"
+
 namespace v3d::brep {
 
-Vertex::Vertex() {
+Vertex::Vertex() : edge_(static_cast<Index>(INVALID_ID)), selected_(false) {
 }
 
-Vertex::Vertex(const glm::vec3& p) : point_(p) {
+Vertex::Vertex(const glm::vec3& p) : point_(p), edge_(static_cast<Index>(INVALID_ID)), selected_(false) {
 }
 
 Vertex::~Vertex() {
 }
 
-bool Vertex::operator == (const Vertex & v) {
+bool Vertex::operator == (const Vertex & v) const {
     return (point_ == v.point_);
 }
 
-bool Vertex::operator == (const glm::vec3 & v) {
+bool Vertex::operator == (const glm::vec3 & v) const {
     return (point_ == v);
 }
 
-unsigned int Vertex::edge(void) const {
+bool Vertex::selected(void) const noexcept {
+    return selected_;
+}
+
+void Vertex::selected(bool sel) noexcept {
+    selected_ = sel;
+}
+
+Index Vertex::edge(void) const {
     return edge_;
 }
 
-void Vertex::edge(unsigned int e) {
+void Vertex::edge(Index e) {
     edge_ = e;
 }
 

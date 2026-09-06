@@ -6,19 +6,17 @@
 #pragma once
 
 namespace v3d::asset {
-    /**
-     **/
-    enum class Type {
-        Undefined = 0,
-        ImagePng = 1,
-        ImageJpeg = 2,
-        JsonDocument = 3,
-        AudioWav = 4,
-        Text = 5,
-        ShaderProgram = 6,
-        ShaderVertex = 7,
-        ShaderFragment = 8,
-        Font2D = 9,
-        TextureFont = 10
-    };
+/**
+ **/
+enum class Type {
+    Undefined = 0,
+    ImagePng = 1,
+    ImageJpeg = 2,
+    JsonDocument = 3,
+    AudioWav = 4,
+    Text = 5,
+    Font2D = 9,
+    TextureFont = 10,
+    ImageTga = 11
+};
 };  // namespace v3d::asset

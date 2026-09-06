@@ -9,14 +9,14 @@
 
 namespace v3d::event {
 
-    WindowResize::WindowResize(int width, int height) noexcept : width_(width), height_(height) {
-    }
+WindowResize::WindowResize(int width, int height) noexcept : width_(width), height_(height) {
+}
 
-    int WindowResize::width() const noexcept {
-        return width_;
-    }
+int WindowResize::width() const noexcept {
+    return width_;
+}
 
-    int WindowResize::height() const noexcept {
-        return height_;
-    }
+int WindowResize::height() const noexcept {
+    return height_;
+}
 };  // namespace v3d::event

@@ -9,10 +9,10 @@
 
 namespace v3d::ui::component {
 
-    class Spinner : public Component {
-     public:
-        Spinner() = default;
-        ~Spinner() = default;
-    };
+class Spinner : public Component {
+ public:
+    Spinner() = default;
+    ~Spinner() = default;
+};
 
 };  // end namespace v3d::ui::component

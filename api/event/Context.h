@@ -8,20 +8,16 @@
 #include <string>
 
 namespace v3d::event {
-    /**
-     **/
-    class Context {
-     public:
-        explicit Context(const std::string& name);
+/**
+ **/
+class Context {
+ public:
+    explicit Context(const std::string& name);
 
-        void active(bool state);
+    std::string_view name() const;
 
-        std::string_view name() const;
-        bool active() const;
-
-     private:
-        std::string name_;
-        bool active_;
-    };
+ private:
+    std::string name_;
+};
 
 };  // namespace v3d::event

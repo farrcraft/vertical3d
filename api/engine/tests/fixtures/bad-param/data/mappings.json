@@ -1,0 +1,15 @@
+{
+	"mappings": [
+		{
+			"source": {
+				"context": "keyboard",
+				"name": "w"
+			},
+			"destination": {
+				"context": "pong",
+				"name": "leftPaddleUp",
+				"param": [1, 2]
+			}
+		}
+	]
+}

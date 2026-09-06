@@ -5,6 +5,9 @@
 
 #include "Theme.h"
 
+#include <string>
+#include <vector>
+
 namespace v3d::ui::style {
 
 Theme::Theme(const std::string& str) : name_(str) {

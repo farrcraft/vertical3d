@@ -174,6 +174,7 @@ extern RtVoid RiBound(RtBound bound),
 
 extern RtVoid RiIdentity(void),
     RiTransform(RtMatrix transform),
+    RiConcatTransform(RtMatrix transform),
     RiPerspective(RtFloat fov),
     RiTranslate(RtFloat dx, RtFloat dy, RtFloat dz),
     RiRotate(RtFloat angle, RtFloat dx, RtFloat dy, RtFloat dz),

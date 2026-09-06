@@ -5,22 +5,17 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <string>
 
-#include "../libmoya/RenderMan.h"
+#include "../libmoya/RIBHandler.h"
+#include "../libmoya/Renderer.h"
 
+#include "../../api/render/offline/RIBReader.h"
+
+#include <boost/make_shared.hpp>
 #include <boost/program_options.hpp>
 
 int main(int argc, char *argv[]) {
-    /*
-        CLI Options:
-            -f / --file	scene.rib
-            -o / --output file.ext
-            - 									accept input from stdin
-            -v / --version					display version and exit
-            -h / --help						display help message and exit
-            -b / --bucket n m				set bucket size to n-by-m pixels
-            -g / --grid size				set grid size to size
-    */
     // setup option parser
     boost::program_options::options_description opts_desc("Allowed options");
     opts_desc.add_options()
@@ -53,8 +48,6 @@ int main(int argc, char *argv[]) {
 
     std::string infile;
     std::string outfile;
-    std::string bucket_size;
-    int grid_size = -1;
 
     if (var_map.count("file")) {
         infile = var_map["file"].as<std::string>();
@@ -63,60 +56,38 @@ int main(int argc, char *argv[]) {
         outfile = var_map["output"].as<std::string>();
     }
 
-    /*
-    if (infile.empty())
-    {
+    if (infile.empty()) {
         std::cout << opts_desc << std::endl;
         exit(EXIT_SUCCESS);
     }
-    */
 
+    // RiBegin and RiEnd have no RIB equivalent - the standard says they are implied at the
+    // start and end of a file - so the handler is what creates and destroys the context
+    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+
+    if (!outfile.empty()) {
+        handler.output(outfile);
+    }
+    // the grid and bucket sizes a scene names are Option "limits", and the command line
+    // overrides them by being applied first and re-applied after
     if (var_map.count("grid")) {
-        grid_size = var_map["grid"].as<int>();
+        handler.context().gridSize(static_cast<unsigned int>(var_map["grid"].as<int>()));
     }
-
     if (var_map.count("bucket")) {
-        bucket_size = var_map["bucket"].as<std::string>();
+        const unsigned int size = static_cast<unsigned int>(var_map["bucket"].as<int>());
+        handler.context().bucketSize(size, size);
     }
 
-    // get scene description
-    // render scene
-    // output rendered image
-    /*
-        using the Moya API directly:
-    
-            Moya & moya = Moya::getInstance();
-            moya.createRenderContext("");
-            moya.prepareWorld();
-            ??? moya.surface("plastic");
-            ??? moya.sphere(1, -1, 1, 360);
-            moya.render();
-            moya.destroyWorld();
+    std::cout << "Rendering scene file: " << infile << std::endl;
 
-        or with the RenderMan C API:
-    */
-    RiBegin(RI_NULL);
-    // RiBegin("poly.rib");
-    RiWorldBegin();
-    std::string surfaceName("plastic");
-    RiSurface(const_cast<char*>(surfaceName.c_str()));
-    RtPoint points[4] = { 0.0, 1.0, 0.0,
-                          0.0, 1.0, 1.0,
-                          0.0, 0.0, 1.0,
-                          0.0, 0.0, 0.0 };
-    RiPolygon(4, RI_P, (RtPointer)points, RI_NULL);
-    /*
-        gourad shaded:
-            RtColor colors[4];
-            RiPolygon(4, "P", (RtPointer)points, "Cs", (RtPointer)colors, RI_NULL);
+    v3d::render::offline::RIBReader reader(logger);
+    if (!reader.read(infile, &handler)) {
+        std::cout << "error reading rib file - " << reader.error() << std::endl;
+        exit(EXIT_FAILURE);
+    }
 
-        phong shaded:
-            RtPoint normals[4];
-            RiPolygon(4, "P", (RtPointer)points, "N", (RtPointer)normals, RI_NULL);
-    */
-    // RiSphere(1, -1, 1, 360);
-    RiWorldEnd();
-    RiEnd();
-
+    // the picture was written by RiWorldEnd, which is where the RI standard puts it
     return EXIT_SUCCESS;
 }

@@ -1,0 +1,7 @@
+{
+    "configs": [
+        { "type": "window", "file": "window.json" },
+        { "type": "binding", "file": "mappings.json" },
+        { "type": "ui", "file": "vgui.json" }
+    ]
+}

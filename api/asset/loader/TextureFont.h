@@ -8,16 +8,16 @@
 #include "../Loader.h"
 
 namespace v3d::asset::loader {
+/**
+ **/
+class TextureFont final : public Loader {
+ public:
     /**
      **/
-    class TextureFont final : public Loader {
-     public:
-        /**
-         **/
-        TextureFont(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& logger);
+    TextureFont(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& logger);
 
-        /**
-         **/
-        boost::shared_ptr<Asset> load(std::string_view name);
-    };
+    /**
+     **/
+    boost::shared_ptr<Asset> load(std::string_view name);
+};
 };  // namespace v3d::asset::loader

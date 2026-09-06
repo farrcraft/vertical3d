@@ -16,33 +16,51 @@
 #include "Context.h"
 
 namespace v3d::event {
+/**
+ **/
+class Engine {
+ public:
+     /**
+      **/
+    explicit Engine(const boost::shared_ptr<entt::dispatcher>& dispatcher);
+
     /**
      **/
-    class Engine {
-     public:
-         /**
-          **/
-        explicit Engine(const boost::shared_ptr<entt::dispatcher>& dispatcher);
+    void addMapper(const boost::shared_ptr<Mapper>& mapper);
 
-        /**
-         **/
-        void addMapper(const boost::shared_ptr<Mapper>& mapper);
+    /**
+     **/
+    void handleSourceEvent(const Event& source);
 
-        /**
-         **/
-        void handleSourceEvent(const Event& source);
+    /**
+     * Look up a context from its name.
+     * If no existing context exists, a new one will be created.
+     * @return context an event context
+     **/
+    boost::shared_ptr<Context> resolveContext(const std::string_view& name);
 
-        /**
-         * Look up a context from its name.
-         * If no existing context exists, a new one will be created.
-         * @return context an event context
-         **/
-        boost::shared_ptr<Context> resolveContext(const std::string_view& name);
+    /**
+     * Send a destination event named by string, for callers that hold a name rather than
+     * a resolved Event.
+     *
+     * @param context the name of the event's context
+     * @param name the event name
+     **/
+    void dispatch(const std::string_view& context, const std::string& name);
 
-     private:
-        boost::shared_ptr<entt::dispatcher> dispatcher_;
-        std::map<std::string, boost::shared_ptr<Mapper>> mappers_;
-        std::vector<boost::shared_ptr<Context>> contexts_;
-    };
+    /**
+     * Send a destination event named by string, carrying a parameter.
+     *
+     * @param context the name of the event's context
+     * @param name the event name
+     * @param data the event's parameter
+     **/
+    void dispatch(const std::string_view& context, const std::string& name, const EventData& data);
+
+ private:
+    boost::shared_ptr<entt::dispatcher> dispatcher_;
+    std::map<std::string, boost::shared_ptr<Mapper>> mappers_;
+    std::vector<boost::shared_ptr<Context>> contexts_;
+};
 
 };  // namespace v3d::event

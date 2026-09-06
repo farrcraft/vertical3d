@@ -5,18 +5,20 @@
 
 #include "Sound.h"
 
-namespace v3d::asset {
-    /**
-     **/
-    Sound::Sound(const std::string& name, Type t, boost::shared_ptr<v3d::audio::AudioClip> clip) :
-        Asset(name, t),
-        clip_(clip) {
-    }
+#include <string>
 
-    /**
-     **/
-    boost::shared_ptr<v3d::audio::AudioClip> Sound::clip() {
-        return clip_;
-    }
+namespace v3d::asset {
+/**
+ **/
+Sound::Sound(const std::string& name, Type t, boost::shared_ptr<v3d::audio::AudioClip> clip) :
+    Asset(name, t),
+    clip_(clip) {
+}
+
+/**
+ **/
+boost::shared_ptr<v3d::audio::AudioClip> Sound::clip() {
+    return clip_;
+}
 
 };  // namespace v3d::asset

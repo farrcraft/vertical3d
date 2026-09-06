@@ -19,7 +19,7 @@ Controller::Controller(const std::string& path) : v3d::engine::Engine(path) {
 
 bool Controller::initialize() {
     if (!Engine::initialize(
-        static_cast<int>(v3d::engine::Feature::Window3D |
+        static_cast<int>(v3d::engine::Feature::Window |
             v3d::engine::Feature::KeyboardInput |
             v3d::engine::Feature::MouseInput |
             v3d::engine::Feature::Config))) {
@@ -28,159 +28,188 @@ bool Controller::initialize() {
 
     window_->caption("Tetris!");
 
-    // setup scene
-    scene_ = boost::make_shared<TetrisScene>();
+    vgui_ = boost::make_shared<v3d::ui::Engine>(eventEngine_, dispatcher_, logger_);
+    if (config_) {
+        boost::shared_ptr<v3d::asset::Json> uiConfig = config_->get(v3d::config::Type::Ui);
+        if (uiConfig) {
+            if (!vgui_->load(uiConfig)) {
+                return false;
+            }
+        }
+    }
 
-    renderer_ = boost::make_shared<TetrisRenderer>(scene_, logger_);
+    scene_ = boost::make_shared<TetrisScene>(logger_);
+    if (!scene_->load(assetManager_)) {
+        return false;
+    }
+
+    boost::shared_ptr<v3d::render::realtime::Window> win = window();
+    renderer_ = boost::make_shared<TetrisRenderer>(win, logger_, assetManager_, &registry_);
+    renderer_->scene(scene_);
+    renderer_->ui(vgui_);
 
     // register game commands
     dispatcher_->sink<v3d::event::Event>().connect<&Controller::handleEvent>(*this);
-    /*
-    directory_.add("movePieceLeft", "tetris", boost::bind(&Controller::exec, boost::ref(*this), _1, _2));
-    directory_.add("movePieceRight", "tetris", boost::bind(&Controller::exec, boost::ref(*this), _1, _2));
-    directory_.add("rotatePieceCW", "tetris", boost::bind(&Controller::exec, boost::ref(*this), _1, _2));
-    directory_.add("rotatePieceCCW", "tetris", boost::bind(&Controller::exec, boost::ref(*this), _1, _2));
-    directory_.add("dropPiece", "tetris", boost::bind(&Controller::exec, boost::ref(*this), _1, _2));
-    directory_.add("debugMode", "tetris", boost::bind(&Controller::exec, boost::ref(*this), _1, _2));
-    */
-
-    // register event listeners
-    /*
-    window_->addDrawListener(boost::bind(&TetrisRenderer::draw, boost::ref(renderer_), _1));
-    window_->addResizeListener(boost::bind(&TetrisRenderer::resize, boost::ref(renderer_), _1, _2));
-    window_->addTickListener(boost::bind(&TetrisScene::tick, boost::ref(scene_), _1));
-    */
 
     // set the scene size according to the window canvas
     renderer_->resize(window_->width(), window_->height());
 
-    // load key binds from the property tree
-    // v3d::utility::load_binds(ptree, &directory_);
+    scene_->reset();
+
+    return true;
 }
 
 /**
  **/
-bool Controller::tick() {
-    if (!v3d::engine::Engine::tick()) {
+bool Controller::tick(unsigned int delta) {
+    if (!v3d::engine::Engine::tick(delta)) {
         return false;
     }
-    // scene_->tick();
+    scene_->tick(delta);
     return true;
 }
 
 bool Controller::render() {
+    renderer_->draw();
     return true;
 }
 
 /**
  **/
 bool Controller::shutdown() {
+    if (renderer_) {
+        // the device has to be idle before the window it presents to is destroyed
+        renderer_->shutdown();
+    }
     if (!v3d::engine::Engine::shutdown()) {
         return false;
     }
     return true;
 }
 
-void Controller::handleEvent(const v3d::event::Event& event) {
-    if (event.name() == "movePieceLeft") {
-        // get the piece to move
-        Tetrad & piece = scene_->board()->currentTetrad();
+/**
+ **/
+void Controller::slide(int columns) {
+    GameBoard* board = scene_->board();
+    Tetrad& piece = board->currentTetrad();
+    const Tetrad::PositionType position = piece.position();
 
-        unsigned int offset = piece.offset(Tetrad::OFFSET_X);
+    if (board->fits(piece, static_cast<int>(position.first) + columns, static_cast<int>(position.second))) {
+        piece.move(columns, 0);
+    }
+}
 
-        // do collision detection
-        Tetrad::PositionType pos = piece.position();
-
-        // at edge of board already
-        if ((pos.first + offset) == 0) {
-            return;
-        }
-
-        // is there a piece to the left that would block this one?
-        bool hit = false;
-        for (unsigned int k = 0; k < 4; k++) {
-            Piece p = scene_->board()->piece(pos.first - 1, pos.second + k);
-            if (p.color() != Piece::COLOR_EMPTY) {
-                if (piece.shape().layout_[0][k] == 1) {
-                    hit = true;
-                }
-            }
-        }
-        if (hit) {
-            return;
-        }
-
-        piece.move(-1, 0);
-        return;
-    } else if (event.name() == "movePieceRight") {
-        Tetrad & piece = scene_->board()->currentTetrad();
-        Tetrad::PositionType pos = piece.position();
-
-        unsigned int width = piece.width();
-        unsigned int offset = piece.offset(Tetrad::OFFSET_X);
-
-        // already at edge of board?
-        if (pos.first + width >= scene_->board()->columns()) {
-            return;
-        }
-
-        // is there a piece to the right that would block this one?
-        bool hit = false;
-        /*
-            look at each block to the right of this tetrad
-
-        */
-        for (unsigned int k = 0; k < 4; k++) {
-            Piece p = scene_->board()->piece(pos.first + 2, pos.second + k);
-            if (p.color() != Piece::COLOR_EMPTY) {
-                if (piece.shape().layout_[3][k] == 1) {
-                    hit = true;
-                }
-            }
-        }
-        if (hit) {
-            return;
-        }
-
-        piece.move(1, 0);
-        return;
-    } else if (event.name() == "rotatePieceCW") {
-        Tetrad & piece = scene_->board()->currentTetrad();
-        unsigned int orient = piece.orientation();
-        if (orient > 0) {
-            orient--;
-        } else {
-            orient = 3;
-        }
-        piece.orientation(orient);
-        piece.rotate(Tetrad::CLOCKWISE);
-        Tetrad::PositionType pos = piece.position();
-        if (pos.first + piece.width() > scene_->board()->columns()) {
-            piece.move((scene_->board()->columns() - (pos.first + piece.width())), 0);
-        }
-        return;
-    } else if (event.name() == "rotatePieceCCW") {
-        Tetrad & piece = scene_->board()->currentTetrad();
-        unsigned int orient = piece.orientation();
-        if (orient < 3) {
-            orient++;
-        } else {
-            orient = 0;
-        }
-        piece.orientation(orient);
-        piece.rotate(Tetrad::COUNTERCLOCKWISE);
-        Tetrad::PositionType pos = piece.position();
-        if (pos.first + piece.width() > scene_->board()->columns()) {
-            piece.move((scene_->board()->columns() - (pos.first + piece.width())), 0);
-        }
-        return;
-    } else if (event.name() == "dropPiece") {
-        scene_->board()->dropTetrad();
-        return;
-    } else if (event.name() == "debugMode") {
-        scene_->debug(!scene_->debug());
-        scene_->board()->debug(scene_->debug());
+/**
+ **/
+void Controller::rotate(Tetrad::RotationDirection direction) {
+    GameBoard* board = scene_->board();
+    Tetrad& piece = board->currentTetrad();
+    if (!piece.initialized()) {
         return;
     }
-    return;
+
+    Tetrad turned = piece;
+    turned.rotate(direction);
+
+    const Tetrad::PositionType position = piece.position();
+    const int row = static_cast<int>(position.second);
+    const int column = static_cast<int>(position.first);
+    const int kicks[] = { 0, -1, 1, -2, 2 };
+    for (int kick : kicks) {
+        if (board->fits(turned, column + kick, row)) {
+            turned.position(Tetrad::PositionType(static_cast<unsigned int>(column + kick), position.second));
+            piece = turned;
+            return;
+        }
+    }
+}
+
+/**
+ **/
+void Controller::toggleMenu() {
+    boost::shared_ptr<v3d::ui::Container> menuContainer = vgui_->container("game-menu");
+    if (!menuContainer) {
+        return;
+    }
+    boost::shared_ptr<v3d::ui::component::Menu> menu =
+        boost::dynamic_pointer_cast<v3d::ui::component::Menu>(menuContainer->get("main-menu"));
+
+    // the container is what is shown and hidden. A component is visible from the moment it
+    // is built, so the menu itself is not the thing to ask
+    if (!menuContainer->visible()) {
+        scene_->pause(true);
+        menuContainer->visible(true);
+        return;
+    }
+    // going back up out of a submenu leaves the menu open - it is only closing the top
+    // level that resumes the game
+    if (!menu || !menu->up()) {
+        scene_->pause(false);
+        menuContainer->visible(false);
+    }
+}
+
+void Controller::handleEvent(const v3d::event::Event& event) {
+    if (event.context()->name() == "tetris") {
+        if (event.name() == "toggleMenu") {
+            toggleMenu();
+            return;
+        }
+        if (event.name() == "debugMode") {
+            scene_->debug(!scene_->debug());
+            scene_->board()->debug(scene_->debug());
+            return;
+        }
+        // the board only takes play commands while it is running
+        if (scene_->paused() || scene_->board()->over()) {
+            return;
+        }
+        if (event.name() == "movePieceLeft") {
+            slide(-1);
+        } else if (event.name() == "movePieceRight") {
+            slide(1);
+        } else if (event.name() == "rotatePieceCW") {
+            rotate(Tetrad::CLOCKWISE);
+        } else if (event.name() == "rotatePieceCCW") {
+            rotate(Tetrad::COUNTERCLOCKWISE);
+        } else if (event.name() == "dropPiece") {
+            scene_->board()->dropTetrad();
+        }
+        return;
+    }
+
+    if (event.context()->name() == "ui") {
+        if (event.name() == "newGame") {
+            scene_->reset();
+            toggleMenu();
+            return;
+        }
+        if (event.name() == "quit") {
+            // not shutdown() - this is running inside the event loop, which would tick and
+            // render one more frame against the window shutdown() had destroyed
+            quit();
+            return;
+        }
+        if (event.name() == "toggleMenu") {
+            toggleMenu();
+            return;
+        }
+
+        boost::shared_ptr<v3d::ui::Container> menuContainer = vgui_->container("game-menu");
+        if (!menuContainer || !menuContainer->visible()) {
+            return;
+        }
+        boost::shared_ptr<v3d::ui::component::Menu> menu =
+            boost::dynamic_pointer_cast<v3d::ui::component::Menu>(menuContainer->get("main-menu"));
+        if (!menu) {
+            return;
+        }
+        if (event.name() == "menuPrevious") {
+            menu->previous();
+        } else if (event.name() == "menuNext") {
+            menu->next();
+        } else if (event.name() == "selectMenu") {
+            menu->activate();
+        }
+    }
 }
