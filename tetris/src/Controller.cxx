@@ -64,11 +64,11 @@ bool Controller::initialize() {
 
 /**
  **/
-bool Controller::tick(unsigned int delta) {
-    if (!v3d::engine::Engine::tick(delta)) {
+bool Controller::simulate(float step) {
+    if (!v3d::engine::Engine::simulate(step)) {
         return false;
     }
-    scene_->tick(delta);
+    scene_->tick(step);
     return true;
 }
 

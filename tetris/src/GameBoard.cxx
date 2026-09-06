@@ -24,8 +24,8 @@ const unsigned int rowScore = 100;
 };  // namespace
 
 GameBoard::GameBoard(const boost::shared_ptr<v3d::log::Logger>& logger) :
-                        rows_(20), cols_(10), fallRate_(800),
-                        fastFallMultiplier_(8), fastFall_(false), nextMove_(800),
+                        rows_(20), cols_(10), fallRate_(0.8f),
+                        fastFallMultiplier_(8), fastFall_(false), nextMove_(0.8f),
                         debug_(false), score_(0), over_(false), logger_(logger) {
     reset();
 
@@ -251,7 +251,7 @@ void GameBoard::lockTetrad() {
     }
 }
 
-void GameBoard::update(unsigned int delta) {
+void GameBoard::update(float step) {
     if (over_ || shapes_.empty()) {
         return;
     }
@@ -262,11 +262,11 @@ void GameBoard::update(unsigned int delta) {
         return;
     }
 
-    nextMove_ -= static_cast<int>(delta);
-    if (nextMove_ > 0) {
+    nextMove_ -= step;
+    if (nextMove_ > 0.0f) {
         return;
     }
-    nextMove_ = fastFall_ ? (fallRate_ / fastFallMultiplier_) : fallRate_;
+    nextMove_ = fastFall_ ? (fallRate_ / static_cast<float>(fastFallMultiplier_)) : fallRate_;
 
     const Tetrad::PositionType position = currentTetrad_.position();
     if (fits(currentTetrad_, position.first, position.second + 1)) {

@@ -20,7 +20,11 @@ class Scene {
  public:
     Scene();
 
-    void tick(unsigned int delta);
+    /**
+     * Advance the world by one simulation step.
+     * @param step seconds of simulated time
+     */
+    void tick(float step);
 
     boost::shared_ptr<Player> player();
     boost::shared_ptr<GameState> state();

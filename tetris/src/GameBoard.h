@@ -49,7 +49,11 @@ class GameBoard {
          */
         void reset();
 
-        void update(unsigned int delta);
+        /**
+         * Advance the falling tetrad by one simulation step.
+         * @param step seconds of simulated time
+         */
+        void update(float step);
 
         /**
          * Get the currently falling tetrad.
@@ -139,10 +143,10 @@ class GameBoard {
         unsigned int rows_;
         unsigned int cols_;
 
-        unsigned int fallRate_;
+        float fallRate_;  // seconds a tetrad rests on each row
         unsigned int fastFallMultiplier_;
         bool fastFall_;
-        int nextMove_;  // ms remaining until the current tetrad falls again
+        float nextMove_;  // seconds remaining until the current tetrad falls again
 
         Tetrad currentTetrad_;
         Tetrad nextTetrad_;

@@ -156,7 +156,9 @@ Pong has [tests](../../../pong/tests/) covering `Ball`, `Paddle` and `PongScene`
 place to land the assertion that the same simulated duration produces the same result whatever the
 frame pacing was.
 
-**Tetris and voxel are deliberately not moved here.** They already take the delta and scale by it,
+**Tetris and voxel are deliberately not moved here.** They moved on 2026-09-06 instead, and the
+premise below turned out to be half wrong - voxel's `Player::tick` ignored its delta and moved a
+hardcoded 0.1 seconds per frame. They already take the delta and scale by it,
 so they are correct-ish and changing them is a behaviour change without a bug behind it. They move
 when someone is in them for another reason; note it in [TODO.md](../../TODO.md) rather than growing
 this plan.
@@ -282,8 +284,8 @@ and the states around it are per-app.
 Both of the first two are settled by [ADR-0032](../../adr/0032-the-loop-simulates-at-a-fixed-step.md):
 the rate is a constant, and the accumulator is its own type.
 
-The third is carried out to [TODO.md](../../TODO.md), which is where an open item belongs once the
-plan holding it is closed: **do tetris and voxel eventually move onto `simulate()`?** They are
-not wrong today, so there is no forcing reason — but leaving two apps on a different timing
-model than the other two is the kind of split that is invisible until someone copies the wrong
-one.
+The third — **do tetris and voxel eventually move onto `simulate()`?** — was carried out to
+[TODO.md](../../TODO.md) and answered there on 2026-09-06: yes, and sooner than this expected.
+The premise that they were "not wrong today" did not survive reading them. Tetris counted whole
+milliseconds, so a step shorter than one rounded to zero and nothing fell; voxel's player
+ignored its delta and moved a hardcoded tenth of a second per frame.

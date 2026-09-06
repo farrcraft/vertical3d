@@ -71,7 +71,7 @@ boost::shared_ptr<Camera> Scene::camera() {
     return player_->camera();
 }
 
-void Scene::tick(unsigned int delta) {
-    player_->tick(delta);
+void Scene::tick(float step) {
+    player_->tick(step);
 }
 

@@ -90,10 +90,10 @@ BOOST_AUTO_TEST_CASE(gameboard_row_clear_test) {
     game->piece(0, bottom - 2, Piece(Piece::COLOR_PURPLE));
 
     // spawn, then steer the one cell piece over the gap and let it fall into it
-    game->update(0);
+    game->update(0.0f);
     game->currentTetrad().position(Tetrad::PositionType(last, 0));
     for (unsigned int i = 0; i < 64 && game->score() == 0; i++) {
-        game->update(1000);
+        game->update(1.0f);
     }
 
     BOOST_CHECK_EQUAL(game->score(), 100u);
@@ -113,10 +113,10 @@ BOOST_AUTO_TEST_CASE(gameboard_incomplete_row_test) {
         game->piece(column, bottom, Piece(Piece::COLOR_GREEN));
     }
 
-    game->update(0);
+    game->update(0.0f);
     game->currentTetrad().position(Tetrad::PositionType(game->columns() - 1, 0));
     for (unsigned int i = 0; i < 64; i++) {
-        game->update(1000);
+        game->update(1.0f);
     }
 
     BOOST_CHECK_EQUAL(game->score(), 0u);
@@ -133,12 +133,12 @@ BOOST_AUTO_TEST_CASE(gameboard_game_over_test) {
         }
     }
 
-    game->update(0);
+    game->update(0.0f);
     BOOST_CHECK_EQUAL(game->over(), true);
 
     // and a game that is over does not keep running
     const unsigned int score = game->score();
-    game->update(10000);
+    game->update(10.0f);
     BOOST_CHECK_EQUAL(game->score(), score);
 }
 
@@ -157,6 +157,35 @@ BOOST_AUTO_TEST_CASE(gameboard_load_test) {
     shapes.push_back(offset);
     BOOST_REQUIRE_EQUAL(game.load(shapes), true);
 
-    game.update(0);
+    game.update(0.0f);
     BOOST_CHECK_EQUAL(game.currentTetrad().shape().layout_[0][0], 1);
+}
+
+/**
+ * The fall rate is a duration rather than a number of steps, so a second of simulated time
+ * drops a tetrad the same distance however that second was divided up. This is what the
+ * board was not doing while update() counted whole milliseconds: a step shorter than one
+ * rounded to zero and the piece never fell at all.
+ **/
+BOOST_AUTO_TEST_CASE(gameboard_fall_rate_is_a_duration_test) {
+    boost::shared_ptr<GameBoard> coarse = board();
+    boost::shared_ptr<GameBoard> fine = board();
+
+    coarse->update(0.0f);
+    fine->update(0.0f);
+    coarse->currentTetrad().position(Tetrad::PositionType(0, 0));
+    fine->currentTetrad().position(Tetrad::PositionType(0, 0));
+
+    // four seconds, at 60 Hz and at 240 Hz
+    for (unsigned int i = 0; i < 240; i++) {
+        coarse->update(1.0f / 60.0f);
+    }
+    for (unsigned int i = 0; i < 960; i++) {
+        fine->update(1.0f / 240.0f);
+    }
+
+    BOOST_CHECK_EQUAL(coarse->currentTetrad().position().second,
+                      fine->currentTetrad().position().second);
+    // and it actually fell, so the comparison is not two pieces sitting at the top
+    BOOST_CHECK_GT(coarse->currentTetrad().position().second, 0);
 }

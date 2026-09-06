@@ -27,8 +27,11 @@ Player::Player(const glm::vec3 & pos) :
     camera_.reset(new Camera());
     camera_->behavior(Camera::CAMERA_BEHAVIOR_FIRST_PERSON);
     camera_->position(position_);
+    // units per second and per second squared. The camera's velocity is constant here -
+    // nothing calls updateVelocity - so the walk is the linear term and the acceleration is
+    // a small addition on top of it.
     camera_->acceleration(glm::vec3(8.0f, 8.0f, 8.0f));
-    camera_->velocity(glm::vec3(2.0f, 2.0f, 2.0f));
+    camera_->velocity(glm::vec3(12.0f, 12.0f, 12.0f));
 }
 
 glm::vec3 Player::position() const {
@@ -69,7 +72,7 @@ void Player::look(float heading, float pitch) {
     camera_->rotate(heading, pitch, 0.0f);
 }
 
-void Player::tick(unsigned int /* delta */) {
+void Player::tick(float step) {
     // update player position based on current movement flags
     glm::vec3 dir(0.0f, 0.0f, 0.0f);
     for (unsigned int i = 0; i < 6; i++) {
@@ -77,9 +80,7 @@ void Player::tick(unsigned int /* delta */) {
             dir[possibleMoves[i].axis_] = possibleMoves[i].magnitude_;
         }
     }
-    float elapsedTimeSec = 0.1f;
-    // camera_->updatePosition(dir, elapsedTimeSec);
-    glm::vec3 displacement = camera_->calculateDisplacement(dir, elapsedTimeSec);
+    glm::vec3 displacement = camera_->calculateDisplacement(dir, step);
     glm::vec3 position = camera_->calculateMovement(displacement);
     if (!checkWorldCollision(position)) {
         camera_->position(position);

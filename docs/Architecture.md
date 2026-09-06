@@ -132,8 +132,10 @@ state, UI animation, camera smoothing — is what `tick()` is still for.
 interpolates between two simulation states. Nothing reads it yet. `Engine::statistics()` is
 what the loop measured about its own pacing; steps-per-frame is the number worth watching.
 
-Pong and odyssey are on `simulate()`. Tetris and voxel are still on `tick(delta)`, which they
-scale by, so they are correct but on a different timing model.
+Every app that simulates is on `simulate()`. **Voxel is the one that overrides both**, and is
+worth reading as the example: its world steps in `simulate()`, while chunk remeshing — a budget
+of so many chunks per frame — and the debug overlay's frame-time average stay in `tick()`,
+because neither is simulation and neither wants to run twice on a slow frame.
 
 ## Invariants that bite
 

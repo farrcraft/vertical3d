@@ -77,10 +77,21 @@ bool Controller::tick(unsigned int delta) {
     if (!v3d::engine::Engine::tick(delta)) {
         return false;
     }
-    if (!scene_->state()->paused()) {
-        scene_->tick(delta);
-    }
+    // the renderer's per-frame work stays here rather than moving to simulate(): remeshing
+    // is a budget of chunks per frame, and the debug overlay averages how long a frame took
     renderer_->tick(delta);
+    return true;
+}
+
+/**
+ **/
+bool Controller::simulate(float step) {
+    if (!v3d::engine::Engine::simulate(step)) {
+        return false;
+    }
+    if (!scene_->state()->paused()) {
+        scene_->tick(step);
+    }
     return true;
 }
 

@@ -44,7 +44,8 @@ class Controller final : public v3d::engine::Engine {
          * Advance the game world time
          * @return bool
          **/
-        bool tick(unsigned int delta);
+        bool tick(unsigned int delta) override;
+        bool simulate(float step) override;
 
         /**
          * Draw the current frame

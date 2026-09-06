@@ -10,7 +10,6 @@ left in a finished plan.
 Carried out of [plans/completed/ExternalApiConsumption.md](plans/completed/ExternalApiConsumption.md),
 which closed on 2026-09-05.
 
-[x] make the Vulkan dependency conditional - done 2026-09-06, [ADR-0033](adr/0033-a-consumer-selects-the-api-libraries-it-wants.md). A consumer names its libraries in `V3D_LIBRARIES` and a manifest expands the closure, which decides both what is built and what is looked for; `image;log` configures with no Vulkan SDK. `v3d::render_offline` is added by `api/CMakeLists.txt` rather than by `api/render`, so the offline renderers are takeable without the realtime stack.
 [] decide what find_package(Boost) at the root does to a consumer cache - Boost_USE_STATIC_LIBS ON is a cache variable and is in force for the consumer own boost lookup. Either state it in the contract or set it scoped. The example consumer does not detect it, because it never looks boost up itself.
 
 ## The clang-tidy backlog
@@ -79,7 +78,7 @@ The loop simulates at a fixed step as of 2026-09-06 —
 [ADR-0032](adr/0032-the-loop-simulates-at-a-fixed-step.md), and
 [plans/completed/GameLoopFoundations.md](plans/completed/GameLoopFoundations.md).
 
-[] tetris and voxel are still on `tick(delta)`. They are not wrong - both scale by the delta - so there is no forcing reason to move them, but two apps on a different timing model than the other two is the kind of split that is invisible until someone copies the wrong one
+[x] tetris and voxel move onto `simulate()` - done 2026-09-06. Neither was as correct as this entry claimed: tetris counted whole milliseconds, so a step under 1 ms rounded to zero and nothing fell, and voxel's `Player::tick` ignored its delta outright and moved a hardcoded 0.1 seconds per frame. Voxel keeps a `tick()` too, for chunk remeshing and the debug overlay.
 [] nothing reads `Engine::alpha()`. A renderer that interpolated between the last two simulation states would use it; until one does, the world is drawn snapped to the last completed step and motion is quantised to 60 Hz however fast the display is
 [] nothing draws the frame statistics. `Engine::statistics()` reports steps-per-frame, which is what says the clamp is doing real work, and it is invisible without something to show it
 

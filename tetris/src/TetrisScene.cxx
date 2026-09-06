@@ -25,11 +25,11 @@ void TetrisScene::reset() {
     paused_ = false;
 }
 
-void TetrisScene::tick(unsigned int delta) {
+void TetrisScene::tick(float step) {
     if (paused_) {
         return;
     }
-    board_.update(delta);
+    board_.update(step);
 }
 
 unsigned int TetrisScene::score() const {

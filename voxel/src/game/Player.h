@@ -37,7 +37,11 @@ class Player {
         LOOK_RIGHT = 16
     } Look;
 
-    void tick(unsigned int delta);
+    /**
+     * Move by one simulation step, in whichever directions are currently held.
+     * @param step seconds of simulated time
+     */
+    void tick(float step);
 
     boost::shared_ptr<Camera> camera();
 

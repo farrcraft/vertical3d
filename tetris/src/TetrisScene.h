@@ -22,7 +22,11 @@ class TetrisScene {
      */
     bool load(const boost::shared_ptr<v3d::asset::Manager>& assetManager);
 
-    void tick(unsigned int delta);
+    /**
+     * Advance the board by one simulation step.
+     * @param step seconds, which is what the fall rate is expressed against
+     */
+    void tick(float step);
     void resize(int width, int height);
 
     /**
