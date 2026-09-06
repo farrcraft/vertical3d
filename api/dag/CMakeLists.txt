@@ -1,4 +1,4 @@
-add_library("v3dlib_dag"
+v3d_add_api_library(dag
 "Edge.h" "Edge.cxx"
 "Group.h" "Group.cxx"
 "Node.h" "Node.cxx"
@@ -9,4 +9,9 @@ add_library("v3dlib_dag"
 "Transform.h" "Transform.cxx"
 "View.h" "View.cxx"
 )
-add_subdirectory("tests")
+
+target_link_libraries(v3dlib_dag PUBLIC glm::glm)
+
+if(V3D_BUILD_TESTS)
+	add_subdirectory("tests")
+endif()

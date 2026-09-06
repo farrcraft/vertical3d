@@ -1,4 +1,4 @@
-add_library("v3dlib_render"
+v3d_add_api_library(render
 	"realtime/Frame.h" "realtime/Frame.cpp"
 	"realtime/Engine.h" "realtime/Engine.cpp" 
 	"realtime/Context.h" "realtime/Window.h" "realtime/Window.cpp" 
@@ -40,13 +40,15 @@ v3d_add_shader(v3dlib_render "shaders/quad.frag")
 v3d_add_shader(v3dlib_render "shaders/line.vert")
 v3d_add_shader(v3dlib_render "shaders/line.frag")
 
-# Workaround for a boost log ABI bug - https://github.com/microsoft/vcpkg/discussions/22762
-target_compile_definitions(v3dlib_render PUBLIC BOOST_USE_WINAPI_VERSION=0x0A00)
-target_compile_definitions(v3dlib_render PUBLIC _WIN32_WINNT=0x0A00)
-target_compile_definitions(v3dlib_render PUBLIC WINVER=0x0A00)
-
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
-target_link_libraries(v3dlib_render PUBLIC v3dlib_log)
+# Vulkan and SDL3 are PUBLIC because the realtime headers name their types outright -
+# Context3D.h and every vulkan/ header carry VkDevice and its neighbours, and Window.h
+# carries SDL_Window.
+target_link_libraries(v3dlib_render PUBLIC v3dlib_log v3dlib_asset Vulkan::Vulkan SDL3::SDL3 glm::glm EnTT::EnTT)
+
+# PRIVATE: Canvas.h and TextureFactory.h forward declare font::TextBuffer and image::Image
+# rather than including them, so a consumer needs these only if it names one itself.
+target_link_libraries(v3dlib_render PRIVATE v3dlib_font v3dlib_image)
 
 target_compile_options(v3dlib_render PRIVATE /EHsc)
 
@@ -57,4 +59,7 @@ set(CMAKE_C_FLAGS "/utf-8")
 # over them does not inherit /utf-8, and spdlog's bundled fmt has a static_assert that fails
 # without it.
 add_subdirectory("offline")
-add_subdirectory("tests")
+
+if(V3D_BUILD_TESTS)
+	add_subdirectory("tests")
+endif()

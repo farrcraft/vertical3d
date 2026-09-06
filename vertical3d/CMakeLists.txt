@@ -48,12 +48,6 @@ target_link_libraries(vertical3d PRIVATE
 	v3dlib_render
 	v3dlib_type
 	v3dlib_ui
-	${Boost_LIBRARIES}
-	${SDL3_LIBRARIES}
-	${Vulkan_LIBRARIES}
-	${PNG_LIBRARIES}
-	JPEG::JPEG
-	Freetype::Freetype
 )
 
 v3d_add_shared_data(vertical3d)
@@ -68,4 +62,6 @@ target_compile_options(vertical3d PRIVATE /EHsc)
 set(CMAKE_CXX_FLAGS "/utf-8")
 set(CMAKE_C_FLAGS "/utf-8")
 
-add_subdirectory("tests")
+if(V3D_BUILD_TESTS)
+	add_subdirectory("tests")
+endif()

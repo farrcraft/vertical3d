@@ -1,21 +1,9 @@
-include_directories(SYSTEM
-	${Boost_INCLUDE_DIRS}
-	${Png_INCLUDE_DIRS}
-	#"../../vendor/libpng-1.6.40"
-	#"../../vendor/libjpeg-turbo-3.0.1"
-)
-
-add_library("v3dlib_image" 
+v3d_add_api_library(image
 	"Image.h" "Image.cxx" "Compare.h" "Compare.cxx" "Factory.h" "Factory.cxx" "Reader.h" "Reader.cxx" "Writer.h" "Writer.cxx"
 	"Texture.h" "Texture.cxx" "TextureAtlas.h" "TextureAtlas.cxx" "reader/Bmp.h" "reader/Bmp.cxx" "reader/Jpeg.h" "reader/Jpeg.cxx"
 	"reader/Png.h" "reader/Png.cxx" "reader/Tga.h" "reader/Tga.cxx" "writer/Bmp.h" "writer/Bmp.cxx"
 	"writer/Jpeg.h" "writer/Jpeg.cxx" "writer/Png.h" "writer/Png.cxx" "writer/Tga.h" "writer/Tga.cxx"
 )
-
-# Workaround for a boost log ABI bug - https://github.com/microsoft/vcpkg/discussions/22762
-target_compile_definitions(v3dlib_image PUBLIC BOOST_USE_WINAPI_VERSION=0x0A00)
-target_compile_definitions(v3dlib_image PUBLIC _WIN32_WINNT=0x0A00)
-target_compile_definitions(v3dlib_image PUBLIC WINVER=0x0A00)
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
 target_link_libraries(v3dlib_image PUBLIC v3dlib_log)
@@ -24,9 +12,17 @@ target_link_libraries(v3dlib_image PUBLIC v3dlib_log)
 # it too - the apps were picking it up by accident, through boost log's own dependencies.
 target_link_libraries(v3dlib_image PUBLIC Boost::filesystem)
 
+# glm is named by Texture.h and TextureAtlas.h.
+target_link_libraries(v3dlib_image PUBLIC glm::glm)
+
+# PRIVATE: the codecs are reached only from reader/ and writer/, never from a header.
+target_link_libraries(v3dlib_image PRIVATE PNG::PNG JPEG::JPEG)
+
 target_compile_options(v3dlib_image PRIVATE /EHsc)
 
 set(CMAKE_CXX_FLAGS "/utf-8")
 set(CMAKE_C_FLAGS "/utf-8")
 
-add_subdirectory("tests")
+if(V3D_BUILD_TESTS)
+	add_subdirectory("tests")
+endif()

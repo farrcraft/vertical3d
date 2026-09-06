@@ -35,14 +35,13 @@ target_link_libraries(voxel PRIVATE
 	v3dlib_render
 	v3dlib_type
 	v3dlib_ui
-	${Boost_LIBRARIES}
-	${SDL3_LIBRARIES}
-	${Vulkan_LIBRARIES}
-	${PNG_LIBRARIES}
-	JPEG::JPEG
-	Freetype::Freetype
 	"libnoise"
 )
+
+# libnoise is voxel's alone: it is not prebuilt and is built out of source, per
+# docs/Dependencies.md. link_directories expects its artefacts under vendor/libnoise/Debug.
+target_include_directories(voxel SYSTEM PRIVATE "${V3D_ROOT}/vendor/libnoise/include/noise")
+target_link_directories(voxel PRIVATE "${V3D_ROOT}/vendor/libnoise/Debug")
 
 v3d_add_shader(voxel "shaders/voxel.vert")
 v3d_add_shader(voxel "shaders/voxel.frag")
@@ -64,4 +63,6 @@ set_source_files_properties("src/noise/noiseutils.cpp" PROPERTIES COMPILE_OPTION
 set(CMAKE_CXX_FLAGS "/utf-8")
 set(CMAKE_C_FLAGS "/utf-8")
 
-add_subdirectory("tests")
+if(V3D_BUILD_TESTS)
+	add_subdirectory("tests")
+endif()

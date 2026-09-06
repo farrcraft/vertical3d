@@ -1,19 +1,19 @@
-add_library("v3dlib_font" "BitmapFont.h" "BitmapFont.cxx" "BitmapTextBuffer.h" "BitmapTextBuffer.cxx" "Font2D.h" "Font2D.cxx"
+v3d_add_api_library(font "BitmapFont.h" "BitmapFont.cxx" "BitmapTextBuffer.h" "BitmapTextBuffer.cxx" "Font2D.h" "Font2D.cxx"
 	  "TextBuffer.h" "TextBuffer.cxx" "TextureFont.h" "TextureFont.cxx" "TextureFontCache.h" "TextureFontCache.cxx"
 	"TextureTextBuffer.h" "TextureTextBuffer.cxx")
 
-
-# Workaround for a boost log ABI bug - https://github.com/microsoft/vcpkg/discussions/22762
-target_compile_definitions(v3dlib_font PUBLIC BOOST_USE_WINAPI_VERSION=0x0A00)
-target_compile_definitions(v3dlib_font PUBLIC _WIN32_WINNT=0x0A00)
-target_compile_definitions(v3dlib_font PUBLIC WINVER=0x0A00)
-
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
-target_link_libraries(v3dlib_font PUBLIC v3dlib_log)
+# Freetype: TextureFont.h names FT_Library and FT_Face.
+target_link_libraries(v3dlib_font PUBLIC v3dlib_log v3dlib_image Freetype::Freetype glm::glm)
+
+# PRIVATE: the atlas is bounded with a type::Bound2D, which no font header names.
+target_link_libraries(v3dlib_font PRIVATE v3dlib_type)
 
 target_compile_options(v3dlib_font PRIVATE /EHsc)
 
 set(CMAKE_CXX_FLAGS "/utf-8")
 set(CMAKE_C_FLAGS "/utf-8")
 
-add_subdirectory("tests")
+if(V3D_BUILD_TESTS)
+	add_subdirectory("tests")
+endif()

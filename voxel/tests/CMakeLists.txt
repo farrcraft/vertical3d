@@ -19,6 +19,11 @@ v3d_add_test(voxel
 # gives the vendored noise utility does not reach the suite that shares the file.
 set_source_files_properties("../src/noise/noiseutils.cpp" PROPERTIES COMPILE_OPTIONS "/wd4100;/wd4189;/wd4244")
 
+# libnoise reaches the suite the same way it reaches the app - named by the target that
+# compiles its headers, rather than by the root for the whole tree.
+target_include_directories(v3dtest_voxel SYSTEM PRIVATE "${V3D_ROOT}/vendor/libnoise/include/noise")
+target_link_directories(v3dtest_voxel PRIVATE "${V3D_ROOT}/vendor/libnoise/Debug")
+
 # A chunk is built against a TerrainMap, and the vtable of the one the tests derive from
 # refers to the perlin implementation whether or not any test generates noise.
 target_link_libraries(v3dtest_voxel PRIVATE

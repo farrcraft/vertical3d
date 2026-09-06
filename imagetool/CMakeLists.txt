@@ -1,18 +1,12 @@
 add_executable(imagetool "imagetool.cxx")
 
+# Boost::program_options is named here rather than reached through a library: imagetool
+# parses its own command line. The winapi version workaround arrives with v3dlib_image.
 target_link_libraries(imagetool PRIVATE
 		v3dlib_log
 		v3dlib_image
-		${Boost_LIBRARIES}
-		${PNG_LIBRARIES}
-		JPEG::JPEG
-		fmt::fmt
+		Boost::program_options
 )
-
-# Workaround for a boost log ABI bug - https://github.com/microsoft/vcpkg/discussions/22762
-target_compile_definitions(imagetool PUBLIC BOOST_USE_WINAPI_VERSION=0x0A00)
-target_compile_definitions(imagetool PUBLIC _WIN32_WINNT=0x0A00)
-target_compile_definitions(imagetool PUBLIC WINVER=0x0A00)
 
 target_compile_options(imagetool PRIVATE /EHsc)
 
