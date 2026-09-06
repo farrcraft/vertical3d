@@ -5,6 +5,8 @@
 
 #include "QuadRenderer.h"
 
+#include "RenderTarget.h"
+
 #include <cstddef>
 #include <cstring>
 #include <map>
@@ -171,6 +173,12 @@ TextureHandle QuadRenderer::texture(const boost::shared_ptr<v3d::image::Image>& 
  **/
 TextureHandle QuadRenderer::texture(const unsigned char* pixels, uint32_t width, uint32_t height, uint32_t channels) {
     return resources_->add(factory_->create(pixels, width, height, channels));
+}
+
+/**
+ **/
+TextureHandle QuadRenderer::texture(const RenderTarget& target) {
+    return resources_->add(target.texture());
 }
 
 /**

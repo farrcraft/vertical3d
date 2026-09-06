@@ -25,6 +25,7 @@ v3d_add_api_library(render
 	"realtime/vulkan/DeviceBuffer.h" "realtime/vulkan/DeviceBuffer.cxx"
 	"realtime/vulkan/Mesh.h" "realtime/vulkan/Mesh.cxx"
 	"realtime/vulkan/DepthBuffer.h" "realtime/vulkan/DepthBuffer.cxx"
+	"realtime/vulkan/RenderTarget.h" "realtime/vulkan/RenderTarget.cxx"
 	"realtime/vulkan/FrameUniforms.h" "realtime/vulkan/FrameUniforms.cxx"
 	"realtime/vulkan/PipelineBuilder.h" "realtime/vulkan/PipelineBuilder.cxx"
 	"realtime/vulkan/TextureFactory.h" "realtime/vulkan/TextureFactory.cxx"

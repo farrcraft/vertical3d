@@ -51,6 +51,16 @@ struct Texture final {
     VkImageView view;
     VkSampler sampler;
     VkExtent2D extent;
+
+    /**
+     * Whether registering this hands over the images or only names them.
+     *
+     * True for everything TextureFactory builds, which exists to be owned here. False for
+     * a RenderTarget, whose images are the target's and are freed and reallocated whenever
+     * it is resized - destroying them here as well would free them twice, and a target
+     * outliving nothing is not what a handle into a registry means.
+     **/
+    bool owned;
 };
 
 /**

@@ -5,11 +5,87 @@
 
 #include "Recorder.h"
 
+#include <cstddef>
 #include <vector>
+
+#include "RenderTarget.h"
 
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::render::realtime::vulkan {
+
+namespace {
+
+/**
+ * Whether the pass at an index is the first of the frame to draw into the target it
+ * names, or the last.
+ *
+ * A target is brought into the layout a pass attaches it in once, before the first pass
+ * that writes it, and left readable after the last one - so two passes drawing into one
+ * target cost one pair of barriers rather than two. Scanned rather than tallied because a
+ * frame has a handful of passes, and a walk is easier to be sure of than a map that has
+ * to be cleared every frame.
+ **/
+bool firstWrite(const std::vector<boost::shared_ptr<Pass>>& passes, std::size_t index) {
+    for (std::size_t before = 0; before < index; ++before) {
+        if (passes[before]->target() == passes[index]->target()) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool lastWrite(const std::vector<boost::shared_ptr<Pass>>& passes, std::size_t index) {
+    for (std::size_t after = index + 1; after < passes.size(); ++after) {
+        if (passes[after]->target() == passes[index]->target()) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * Where a pass actually draws: a target of its own, or what the frame was given.
+ **/
+Recorder::Target resolve(const Pass& pass, const Recorder::Target& frame) {
+    const boost::shared_ptr<RenderTarget>& offscreen = pass.target();
+    if (!offscreen) {
+        return frame;
+    }
+
+    Recorder::Target into;
+    into.image = offscreen->image();
+    into.view = offscreen->view();
+    into.extent = offscreen->extent();
+    into.depthImage = offscreen->depthImage();
+    into.depthView = offscreen->depthView();
+    return into;
+}
+
+/**
+ * Write the pass's camera into the frame's uniform buffer and return the set it is bound
+ * from, or null for a frame whose pipelines declare nothing at set 0.
+ *
+ * A viewport of zero means the whole of what is being drawn into, which is the target's
+ * extent rather than the frame's - a pass into a smaller target sees that target's size.
+ **/
+VkDescriptorSet writeCamera(FrameUniforms* uniforms, const Pass& pass, const Recorder::Target& into) {
+    if (uniforms == nullptr) {
+        return VK_NULL_HANDLE;
+    }
+
+    FrameUniforms::Camera camera;
+    camera.view = pass.view();
+    camera.projection = pass.projection();
+    camera.viewProjection = camera.projection * camera.view;
+    camera.viewport.x = pass.viewport().x;
+    camera.viewport.y = pass.viewport().y;
+    camera.viewport.z = pass.viewport().z > 0.0f ? pass.viewport().z : static_cast<float>(into.extent.width);
+    camera.viewport.w = pass.viewport().w > 0.0f ? pass.viewport().w : static_cast<float>(into.extent.height);
+    return uniforms->write(camera);
+}
+
+};  // namespace
 
 /**
  **/
@@ -41,9 +117,11 @@ void Recorder::record(VkCommandBuffer commands, const Frame& frame, const Target
     // frame reads it, so undefined is the honest source layout and the cheapest one
     transition(commands, target.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
+    // the context's depth buffer is only wanted by a pass drawing into the swapchain image -
+    // a pass with a target of its own attaches that target's, at that target's size
     bool depth = false;
     for (const boost::shared_ptr<Pass>& pass : frame.passes()) {
-        if (pass->depth()) {
+        if (pass->depth() && !pass->target()) {
             depth = true;
             break;
         }
@@ -52,20 +130,31 @@ void Recorder::record(VkCommandBuffer commands, const Frame& frame, const Target
         transitionDepth(commands, target.depthImage);
     }
 
-    for (const boost::shared_ptr<Pass>& pass : frame.passes()) {
-        VkDescriptorSet frameSet = VK_NULL_HANDLE;
-        if (uniforms != nullptr) {
-            FrameUniforms::Camera camera;
-            camera.view = pass->view();
-            camera.projection = pass->projection();
-            camera.viewProjection = camera.projection * camera.view;
-            camera.viewport.x = pass->viewport().x;
-            camera.viewport.y = pass->viewport().y;
-            camera.viewport.z = pass->viewport().z > 0.0f ? pass->viewport().z : static_cast<float>(target.extent.width);
-            camera.viewport.w = pass->viewport().w > 0.0f ? pass->viewport().w : static_cast<float>(target.extent.height);
-            frameSet = uniforms->write(camera);
+    const std::vector<boost::shared_ptr<Pass>>& passes = frame.passes();
+    for (std::size_t index = 0; index < passes.size(); ++index) {
+        const boost::shared_ptr<Pass>& pass = passes[index];
+
+        const Target into = resolve(*pass, target);
+        const bool offscreen = static_cast<bool>(pass->target());
+
+        if (offscreen && firstWrite(passes, index)) {
+            // undefined as the source layout: a target carries nothing from one frame to the
+            // next, the same way the swapchain image and the depth buffer do not. The
+            // barrier still orders this frame's writes after the reads the previous frame
+            // made of the same image
+            transition(commands, into.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            if (pass->depth() && into.depthImage != VK_NULL_HANDLE) {
+                transitionDepth(commands, into.depthImage);
+            }
         }
-        record(commands, *pass, target, resources, frameSet);
+
+        record(commands, *pass, into, resources, writeCamera(uniforms, *pass, into));
+
+        // what a target is for: every pass after the last one that wrote it can sample it
+        if (offscreen && lastWrite(passes, index)) {
+            transition(commands, into.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        }
     }
 
     transition(commands, target.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
@@ -224,12 +313,31 @@ void Recorder::transition(VkCommandBuffer commands, VkImage image, VkImageLayout
     barrier.subresourceRange.layerCount = 1;
 
     if (to == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) {
-        // nothing before the attachment writes touches the image, and the submission
-        // already waits on the image-available semaphore at that same stage
-        barrier.srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
+        // two things have to have happened before the transition writes the image.
+        //
+        // COLOR_ATTACHMENT_OUTPUT is the stage the presenter waits the image-available
+        // semaphore at, and a transition is a write: without that stage in the first scope
+        // the barrier is not ordered after the wait, and the acquire's read of the image
+        // races it. Synchronization validation reports that as WRITE_AFTER_READ against
+        // vkAcquireNextImageKHR.
+        //
+        // FRAGMENT_SHADER is for a render target rather than the swapchain: there is one
+        // image and two frames in flight, so the previous frame may still be sampling it. A
+        // barrier's first scope reaches work already submitted to the queue, so naming the
+        // stage that reads is what orders the two.
+        barrier.srcStageMask =
+            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+        // a write after a read needs the reads to have happened, not to be visible
         barrier.srcAccessMask = VK_ACCESS_2_NONE;
         barrier.dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
         barrier.dstAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+    } else if (to == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+        // a target changing hands: what the pass wrote has to be visible to the fragment
+        // shader of whichever later pass samples it
+        barrier.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+        barrier.srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+        barrier.dstStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+        barrier.dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
     } else {
         // presentation is not a pipeline stage - the semaphore it waits on is what
         // orders it, so the barrier only has to make the writes visible

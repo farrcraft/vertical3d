@@ -35,6 +35,8 @@ class Image;
 
 namespace v3d::render::realtime::vulkan {
 
+class RenderTarget;
+
 /**
  * The device half of the one batched quad primitive - ADR-0005.
  *
@@ -92,6 +94,18 @@ class QuadRenderer final {
      * @param channels 1 for a coverage mask such as a glyph atlas, 3 or 4 for colour
      **/
     TextureHandle texture(const unsigned char* pixels, uint32_t width, uint32_t height, uint32_t channels);
+
+    /**
+     * Register a render target so that a canvas can sample what a pass drew into it.
+     *
+     * The images stay the target's - what is registered names them rather than taking them
+     * over, so nothing here frees them. A target that is resized allocates new ones, and
+     * the handle this returned then names images that no longer exist: register the target
+     * again after a recreate() and use the new handle.
+     *
+     * @return the handle to draw with
+     **/
+    TextureHandle texture(const RenderTarget& target);
 
     /**
      * @return the 1x1 white texture an untextured quad is drawn against

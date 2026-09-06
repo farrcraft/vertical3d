@@ -13,7 +13,13 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
 
+#include <boost/shared_ptr.hpp>
+
 namespace v3d::render::realtime {
+
+namespace vulkan {
+class RenderTarget;
+};  // namespace vulkan
 
 /**
  * One pass of a frame - a target, what to do with what is already in it, a camera, and
@@ -24,7 +30,8 @@ namespace v3d::render::realtime {
  * a scene pass is one with depth and front to back ordering, and a viewport of an editor
  * is one more pass over the same device.
  *
- * Only the swapchain image is a valid target so far, so a pass has no target field yet.
+ * A pass draws into the swapchain image unless it names one of its own - see target()
+ * and ADR-0031.
  **/
 class Pass final {
  public:
@@ -63,10 +70,11 @@ class Pass final {
     /**
      * Whether the pass depth tests. 2D passes do not - they rely on painter ordering.
      *
-     * A pass that asks for depth is given the context's depth buffer as an attachment,
-     * which is allocated the first frame anything asks for it. Depth is cleared exactly
-     * when colour is, so a pass drawing on top of what the pass before it left keeps
-     * that pass's depth too.
+     * A pass that asks for depth is given one the size of what it draws into: the
+     * context's depth buffer for a pass on the swapchain, allocated the first frame
+     * anything asks for it, and the target's own for a pass with a target. Depth is
+     * cleared exactly when colour is, so a pass drawing on top of what the pass before
+     * it left keeps that pass's depth too.
      **/
     void depth(bool enabled) noexcept;
 
@@ -74,6 +82,27 @@ class Pass final {
      * @return whether the pass depth tests
      **/
     bool depth() const noexcept;
+
+    /**
+     * Draw into an offscreen target rather than into the swapchain image.
+     *
+     * The recorder leaves a target readable by every pass after the last one that drew
+     * into it, so a pass sampling what an earlier pass rendered names that target's
+     * texture as a material like any other - ADR-0031. A pass that reads a target it also
+     * draws into, or one written by a later pass in the same frame, reads what is there
+     * rather than what it expects; ordering the passes is the caller's.
+     *
+     * A pipeline is built against the format of what it draws into, so a pass whose target
+     * is not the swapchain's format needs a pipeline built for that format.
+     *
+     * Passing an empty pointer puts the pass back on the swapchain image.
+     **/
+    void target(const boost::shared_ptr<vulkan::RenderTarget>& target) noexcept;
+
+    /**
+     * @return the target the pass draws into, or an empty pointer for the swapchain image
+     **/
+    const boost::shared_ptr<vulkan::RenderTarget>& target() const noexcept;
 
     /**
      * The region of the target the pass draws into, as x, y, width, height in pixels.
@@ -160,6 +189,7 @@ class Pass final {
     glm::mat4 view_;
     glm::mat4 projection_;
     std::vector<DrawItem> items_;
+    boost::shared_ptr<vulkan::RenderTarget> target_;
     bool clears_;
     bool depth_;
     bool sorts_;

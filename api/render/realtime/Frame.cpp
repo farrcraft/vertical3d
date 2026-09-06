@@ -34,6 +34,26 @@ boost::shared_ptr<Pass> Frame::pass(const std::string& name) {
 
 /**
  **/
+boost::shared_ptr<Pass> Frame::passBefore(const std::string& name, const std::string& before) {
+    std::vector<boost::shared_ptr<Pass>>::iterator at = passes_.end();
+    for (std::vector<boost::shared_ptr<Pass>>::iterator entry = passes_.begin(); entry != passes_.end(); ++entry) {
+        if ((*entry)->name() == name) {
+            return *entry;
+        }
+        if (at == passes_.end() && (*entry)->name() == before) {
+            at = entry;
+        }
+    }
+
+    boost::shared_ptr<Pass> pass = boost::make_shared<Pass>(name);
+    // insert() invalidates the iterator, which is why the position is found first and the
+    // whole list is walked before anything is added to it
+    passes_.insert(at, pass);
+    return pass;
+}
+
+/**
+ **/
 const std::vector<boost::shared_ptr<Pass>>& Frame::passes() const noexcept {
     return passes_;
 }

@@ -60,11 +60,13 @@ struct DrawItem final {
     /**
      * How many bytes of push constants an item can carry.
      *
-     * One mat4, which is the transform the quad primitive pushes. Vulkan guarantees 128
-     * bytes, but an item is copied into a pass's queue by value, so an unfilled block is
-     * memcpyd every frame.
+     * 128 is what vulkan guarantees, and taking all of it is what lets an item carry a
+     * transform alongside the handful of floats a lit or graded material wants - a mat4
+     * and a vec4 and a scalar is 84, and the quad primitive's lone mat4 is 64. The cost is
+     * real and is paid per item per frame: an item is copied into a pass's queue by value,
+     * so the unfilled part of the block is memcpyd whether or not a pipeline declared it.
      **/
-    static const std::size_t pushCapacity = 64;
+    static const std::size_t pushCapacity = 128;
 
     /**
      **/
