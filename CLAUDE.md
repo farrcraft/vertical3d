@@ -138,6 +138,36 @@ installs no ports — but a developer machine has all three trees, and `vcpkg_in
 does not know and then silently suppresses nothing, so a filter entry that stops working looks exactly
 like a tree that started failing.
 
+## Static analysis
+
+Three gates, declared in [CMakeLists.txt](CMakeLists.txt) and all MSVC-side.
+
+- **`/WX` is on** whenever this project is the top level one, so every build of this repository and
+  no build of a consumer that has nested it. The tree is clean at `/W4`, so a warning is a new one.
+  `-DV3D_WARNINGS_AS_ERRORS=OFF` is the way past it, not an edit.
+- **`/analyze`** is `-DV3D_ANALYZE=ON`, off by default because it costs several times a plain
+  compile of the tree. Nothing in the tree reports at it. `voxel/src/noise/noiseutils.cpp` is
+  exempted with `/analyze-` in both the app's and the suite's `set_source_files_properties` — it is
+  vendored verbatim and cpplint skips it for the same reason.
+- **clang-tidy** is `-DV3D_CLANG_TIDY=ON`, off by default at a similar cost, with the check list in
+  [.clang-tidy](.clang-tidy). The binary ships with the MSVC install, under `VC/Tools/Llvm/x64/bin`.
+  Four families are enabled and 23 checks subtracted; the tree is clean at the 183 left, and
+  [docs/TODO.md](docs/TODO.md) carries what each subtraction reports — except the seven the
+  `.clang-tidy` comment records as settled rather than pending. `V3D_WARNINGS_AS_ERRORS`
+  decides whether a finding stops the build, for clang-tidy as much as for the compiler.
+
+Toggling either analyser rewrites the compile command, so ninja rebuilds what it has to on its own.
+Two traps, both silent:
+
+- **CMake writes a system include directory as the joined `-external:I<dir>`**, which clang-cl's
+  option table has as separate only. clang-tidy discards it *and every option after it* without
+  saying so, which surfaces as "cannot use 'throw' with exceptions disabled" on every source that
+  throws. The `--extra-arg-before=/EHsc` on the invocation is what restores it: an extra-arg-before
+  is applied ahead of the command rather than inside it.
+- **A check name clang-tidy does not know is not an error**, which is cpplint's `--filter` hazard
+  again. `.clang-tidy` enables whole families and subtracts by name, so a name that stops meaning
+  anything turns findings on rather than off.
+
 ## Tests
 
 Boost.Test, one binary per api library from `api/<lib>/tests/`, plus one per app where the app has logic

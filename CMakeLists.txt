@@ -32,6 +32,51 @@ add_compile_options("/permissive-")
 string(REGEX REPLACE "/W[0-4]" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 add_compile_options("/W4")
 
+# The three static analysis gates. /WX follows whether this project is the top level one: a
+# consumer that has nested this tree builds it with whatever toolset it happens to have, and a
+# newer one inventing a warning is not that consumer's build to stop.
+#
+# The two analysers are off by default even here, because neither is priced for the edit-build
+# loop: each costs several times a plain compile of the tree, and they are a pass over a change
+# rather than a step in building one.
+option(V3D_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" ${PROJECT_IS_TOP_LEVEL})
+option(V3D_ANALYZE "Run MSVC's /analyze static analysis with the compiler" OFF)
+option(V3D_CLANG_TIDY "Run clang-tidy over every source the compiler builds" OFF)
+
+if(V3D_WARNINGS_AS_ERRORS)
+	add_compile_options("/WX")
+endif()
+
+# /analyze's findings are the C6xxx and C26xxx numbers, and they reach /WX like any other
+# warning. External headers are skipped: CMake gives an imported target's include directories
+# to MSVC as /external:I, and /analyze:external- is what stops the analyser walking into them -
+# without it a boost or glm header costs more analysis time than the whole tree and reports
+# findings in code this repository does not own. /analyze:external- is not the default.
+if(V3D_ANALYZE)
+	add_compile_options("/analyze" "/analyze:external-")
+endif()
+
+# The check list is .clang-tidy at the root of the tree. CMAKE_CXX_CLANG_TIDY is read when a
+# target is created, so this has to precede the add_subdirectory calls below; CMake passes
+# --driver-mode=cl for an MSVC build itself.
+#
+# /EHsc is repeated to clang-tidy rather than left to the compile command it is already on.
+# CMake writes a system include directory as the joined -external:I<dir>, which clang-cl's
+# option table has as separate only; clang-tidy drops it and, silently, every option after it,
+# so the /EHsc on the command line never reaches the parser and every source that throws fails
+# with "cannot use 'throw' with exceptions disabled". An --extra-arg-before is applied ahead of
+# the command, which is the one position that survives.
+if(V3D_CLANG_TIDY)
+	find_program(V3D_CLANG_TIDY_EXECUTABLE NAMES clang-tidy REQUIRED)
+	set(CMAKE_CXX_CLANG_TIDY "${V3D_CLANG_TIDY_EXECUTABLE}" "--quiet" "--extra-arg-before=/EHsc")
+	# One switch decides whether a finding stops the build, whichever analyser made it. A
+	# clang-tidy finding is otherwise printed and passed over, which is how a check list
+	# nobody has to keep clean stops being one.
+	if(V3D_WARNINGS_AS_ERRORS)
+		list(APPEND CMAKE_CXX_CLANG_TIDY "--warnings-as-errors=*")
+	endif()
+endif()
+
 include("${CMAKE_CURRENT_LIST_DIR}/cmake/v3dDependencies.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/cmake/v3dHelpers.cmake")
 

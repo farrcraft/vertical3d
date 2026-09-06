@@ -20,6 +20,35 @@ which closed on 2026-09-05.
 [] make the Vulkan dependency conditional - find_package(Vulkan) is unconditional and add_subdirectory("api") builds v3dlib_render whatever else is off, so a consumer wanting only v3dlib_image still needs the Vulkan SDK. A per-library dependency block would fix it and is most of the installed-package work of [ADR-0027](adr/0027-the-api-is-consumed-as-source.md) Alternative 2 arriving early.
 [] decide what find_package(Boost) at the root does to a consumer cache - Boost_USE_STATIC_LIBS ON is a cache variable and is in force for the consumer own boost lookup. Either state it in the contract or set it scoped. The example consumer does not detect it, because it never looks boost up itself.
 
+## The clang-tidy backlog
+
+[.clang-tidy](../.clang-tidy) enables bugprone, performance, misc and readability and subtracts
+23 checks by name. The tree is clean at the 183 that are left. Seven of the subtractions are
+settled rather than pending and are not listed here - the file says why. The rest are this
+table: what the tree reports at that check, counted once per distinct site over a full
+`-DV3D_CLANG_TIDY=ON` build. Removing a line means fixing what it reports, never widening the
+exclusion. `voxel/src/noise` is not counted - it is vendored verbatim and is skipped by
+clang-tidy, `/analyze` and cpplint alike.
+
+| Check | Sites | Note |
+|---|---|---|
+| `readability-convert-member-functions-to-static` | 26 |  |
+| `performance-unnecessary-value-param` | 31 | the fix is a const reference, not the by-value-and-move the check suggests |
+| `bugprone-derived-method-shadowing-base-method` | 6 | `size()` on a strip and on a component mean different things |
+| `readability-implicit-bool-conversion` | 69 |  |
+| `bugprone-narrowing-conversions` | 111 |  |
+| `readability-braces-around-statements` | 111 |  |
+| `readability-math-missing-parentheses` | 131 |  |
+| `bugprone-easily-swappable-parameters` | 233 |  |
+| `performance-enum-size` | 303 |  |
+| `misc-use-internal-linkage` | 526 |  |
+| `misc-const-correctness` | 939 |  |
+| `misc-non-private-member-variables-in-classes` | 1303 |  |
+| `readability-magic-numbers` | 1883 |  |
+| `readability-identifier-length` | 2483 |  |
+| `misc-include-cleaner` | 3346 |  |
+| `readability-uppercase-literal-suffix` | 4156 |  |
+
 ## Ongoing workstreams
 
 **Tests.** Every library needing neither a window nor a GPU is covered as of 2026-09-04. What
