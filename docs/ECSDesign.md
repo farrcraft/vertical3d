@@ -1,34 +1,41 @@
-# ECS (Entity Component System) Design
+# ECS Design
 
-The [Entt library](https://github.com/skypjack/entt/wiki/Crash-Course:-entity-component-system) is used as the ECS foundation.
+The ECS is [entt](https://github.com/skypjack/entt/wiki/Crash-Course:-entity-component-system).
+This document is notes plus what the tree actually does today; the design question it was
+written around — what a renderable component looks like — is still open. See
+[RenderingPipeline.md](RenderingPipeline.md#still-open-how-this-meets-the-ecs).
 
-Using the Odyssey implementation as a reference:
+## What exists
 
-Odyssey::engine (game engine)
-	Entt::registry
-	Entt::dispatcher
-	Systems # These don't derive from Entt
-		Movement
+`v3d::engine::Engine` holds the `entt::registry` by value as a protected member, so an app's
+`Controller` inherits it and passes `&registry_` to whatever needs it — the render engine takes
+a raw `entt::registry*`. There is no accessor; only a subclass reaches it.
 
+`v3d::ecs::System` ([api/ecs/System.h](../api/ecs/System.h)) is all the system support there
+is: a registry pointer and a `virtual bool tick()`. `odyssey::system::Movement` is the one
+subclass in the tree.
 
-A registry stores and manages entities (or identifiers) and components.
+`api/ecs/component/` holds the components more than one app could want, and there are four:
+`Color3`, `Position1D`, `Position2D` and `PositionFixed2D`. An app defines the rest beside its
+own code — pong has `Score`, `Travel`, `Offset` and `PaddleSize`; odyssey has `Size` and
+`Direction`.
 
-The registry emplace member function template creates, initializes and assigns to an entity the given component. 
-It accepts a variable number of arguments to use to construct the component itself
+An entity's components are emplaced by the class that owns the entity id, and read back
+through the registry:
 
-registry.emplace<ComponentName>(Entity, ComponentConstructorParam, ComponentConstructorParam...)
+```
+registry->emplace<v3d::ecs::component::Position2D>(id_, 0.0f, 0.0f);
+...
+v3d::ecs::component::Position2D& position = registry_->get<v3d::ecs::component::Position2D>(id_);
+```
 
-Component examples
-	Position
-	Velocity
-	Renderable
-	Tickable
+`try_get` is the guarded form, and odyssey's renderer uses it to draw the player only when the
+component is there.
 
+## Notes
 
-Observers
-
-Registries can bind a listener to component and entity lifecycle events
-	On Construct
-	On Destruction
-	On Update (Patch)
-
+- A registry can bind a listener to component and entity lifecycle events: on construct, on
+  destroy, and on update (patch). Nothing in the tree does yet.
+- The `entt::dispatcher` beside it is not part of the ECS work. `Engine::initialize` creates it
+  and hands it to the event, input and audio engines, which is how a sound event reaches
+  `audio::Engine`.

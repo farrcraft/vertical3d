@@ -7,6 +7,9 @@ it done this way". Anything smaller belongs in a comment beside the thing it exp
 Copy [template.md](template.md) and add a row below. Superseding does not delete: set the
 old record's status and leave the file in place.
 
+0026 is missing from the sequence rather than lost: it is reserved by
+[the open shading plan](../plans/OfflineRenderingPhase3.md), whose first step writes it.
+
 | ADR | Title | Status | Date |
 |---|---|---|---|
 | [0001](0001-vulkan-replaces-opengl.md) | Rendering Backend — Vulkan Replaces OpenGL Outright | accepted | 2026-08-30 |
@@ -36,3 +39,6 @@ old record's status and leave the file in place.
 | [0025](0025-the-rib-reader-dispatches-a-cpp-request-interface.md) | RIB Dispatch — The Reader Hands A Renderer C++ Requests With Typed Parameter Lists | accepted | 2026-09-05 |
 | [0027](0027-the-api-is-consumed-as-source.md) | External Consumption — The api Is Taken As Source Through An `add_subdirectory`-able Root, Not As An Installed Package | accepted | 2026-09-05 |
 | [0028](0028-an-apps-shell-belongs-to-the-api.md) | App Shell — What Every App Repeats Belongs To The api, Not To Each App | accepted | 2026-09-05 |
+| [0029](0029-tile-grids-are-an-api-library.md) | Tile Grids — A Library Of Their Own, 8-Way On The Ground Plane, Asked Rather Than Told What Blocks | accepted | 2026-09-06 |
+| [0030](0030-a-model-is-an-interleaved-array-that-names-its-texture.md) | Loaded Geometry — A Model Is One Interleaved Array With A Material That Names Its Texture | accepted | 2026-09-06 |
+| [0031](0031-a-pass-draws-into-a-target-it-names.md) | Offscreen Rendering — A Pass Draws Into A Target It Names, And The Recorder Leaves It Readable | accepted | 2026-09-06 |

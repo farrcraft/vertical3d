@@ -36,7 +36,7 @@ what makes it that game and nothing else.
 - **Pros**: One copy of each. `v3dlib_ui` already links render, asset and font, so
   `TextRenderer` and `GameMenu` need no new dependency edge, and `GameMenu` is testable with
   no device, which the code it replaces never was. A fifth app — and
-  [docs/examples/starter](../examples/starter/) is one — starts from a working shell.
+  [examples/starter](../../examples/starter/) is one — starts from a working shell.
 - **Cons**: `v3dlib_ui` grows a class that needs a GPU, in a library whose suite is otherwise
   device-free. `GameMenu` hard-codes three command names and two component names, which is
   app-facing policy sitting in a library.
@@ -84,7 +84,8 @@ what makes it that game and nothing else.
 
 ### Negative
 - `TextRenderer` cannot be tested: its constructor uploads an atlas, so it needs a device, and
-  it joins the list in `CLAUDE.md` of what waits on [ADR-0007](0007-ci-rendering-tests.md).
+  it joins the list in [Testing.md](../Testing.md) of what waits on
+  [ADR-0007](0007-ci-rendering-tests.md).
 - An app wanting to draw text in two fonts now holds two `TextRenderer`s where it used to hold
   two markups against one atlas. Nothing in the tree does.
 - `v3dlib_ui` is no longer a library a consumer can link without a Vulkan device somewhere in

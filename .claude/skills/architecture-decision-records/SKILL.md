@@ -35,7 +35,7 @@ afterwards tends to justify what was built instead of recording what was weighed
 
 ### Too small for an ADR
 
-`sdlc.md` and `CLAUDE.md` cover the rest. Do not write an ADR for naming, formatting, a
+`sdlc.md` and the reference documents in `docs/` cover the rest. Do not write an ADR for naming, formatting, a
 local refactor, or a constant whose reasoning fits beside it in the header. That header is
 usually the right home for a number.
 

@@ -410,7 +410,7 @@ phase 2 and two new — on a machine with no GPU.
 ## Verification
 
 The four gates in [sdlc.md](../sdlc.md) §4: `ninja -C out/build/x64-Debug`, cpplint per
-`CLAUDE.md`, and `ctest --test-dir out/build/x64-Debug --output-on-failure`.
+[Linting.md](../Linting.md), and `ctest --test-dir out/build/x64-Debug --output-on-failure`.
 
 Render verification is ctest, as it was in phases 1 and 2. Neither renderer touches a window, a
 device or a swapchain, so "run it and read the validation log" — the method for every other
