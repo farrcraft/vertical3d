@@ -1,6 +1,7 @@
 v3d_add_api_library(engine
 	"Application.h" "Application.cpp"
 	"Feature.h"
+	"Accumulator.h" "Accumulator.cpp"
 	"Engine.h" "Engine.cpp"
 )
 

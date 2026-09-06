@@ -225,7 +225,9 @@ bool Engine::render() {
  **/
 bool Engine::eventLoop() {
     SDL_Event event;
-    uint64_t lastTick = SDL_GetTicks();
+    // nanoseconds, not SDL_GetTicks(): a whole millisecond cannot express 60 Hz, and a frame
+    // faster than 1 ms measures as no elapsed time at all
+    uint64_t lastTick = SDL_GetTicksNS();
     // Enter main game loop
     while (!quitting_) {
         // Handle events on queue
@@ -258,11 +260,19 @@ bool Engine::eventLoop() {
             break;
         }
         // tick the game, telling it how long the last frame took
-        uint64_t now = SDL_GetTicks();
-        unsigned int delta = static_cast<unsigned int>(now - lastTick);
+        uint64_t now = SDL_GetTicksNS();
+        uint64_t elapsed = now - lastTick;
         lastTick = now;
-        if (!tick(delta)) {
+        if (!tick(static_cast<unsigned int>(elapsed / SDL_NS_PER_MS))) {
             return false;
+        }
+        // and advance the simulation by however many whole steps that frame owes, per
+        // ADR-0032 - the accumulator clamps the frame and carries the remainder forward
+        accumulator_.accumulate(elapsed);
+        while (accumulator_.drain()) {
+            if (!simulate(Accumulator::seconds)) {
+                return false;
+            }
         }
         // and draw the frame on the screen
         if (!render()) {
@@ -276,6 +286,16 @@ bool Engine::eventLoop() {
  **/
 bool Engine::tick(unsigned int /* delta */) {
     return true;
+}
+
+/**
+ **/
+bool Engine::simulate(float /* step */) {
+    return true;
+}
+
+float Engine::alpha() const noexcept {
+    return accumulator_.alpha();
 }
 
 boost::shared_ptr<v3d::render::realtime::Window> Engine::window() const {

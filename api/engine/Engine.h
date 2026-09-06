@@ -7,6 +7,8 @@
 
 #include <string>
 
+#include "Accumulator.h"
+
 #include "../log/Logger.h"
 #include "../asset/Manager.h"
 #include "../config/Config.h"
@@ -59,6 +61,25 @@ class Engine {
     virtual bool tick(unsigned int delta);
 
     /**
+     * Advance the simulation by one fixed step.
+     *
+     * Called zero or more times per frame, however many whole steps the real time since the
+     * last frame owes, per ADR-0032. Simulation belongs here and not in tick(): what runs
+     * on a fixed step produces the same result whatever the frame rate was, and what runs
+     * in tick() does not.
+     *
+     * @param step seconds of simulated time, always Accumulator::seconds
+     * @return bool
+     **/
+    virtual bool simulate(float step);
+
+    /**
+     * The fraction of a simulation step elapsed but not yet simulated, in [0, 1).
+     * A renderer that interpolates between the last two simulation states blends by this.
+     **/
+    float alpha() const noexcept;
+
+    /**
      * Render the current frame.
      * This will be called after each tick within the event loop to draw the current frame
      * 
@@ -99,6 +120,7 @@ class Engine {
     boost::shared_ptr<entt::dispatcher> dispatcher_;
     boost::shared_ptr<v3d::event::Engine> eventEngine_;
     entt::registry registry_;
+    Accumulator accumulator_;
 
  private:
      bool registerEventMappings();

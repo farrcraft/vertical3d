@@ -42,3 +42,4 @@ old record's status and leave the file in place.
 | [0029](0029-tile-grids-are-an-api-library.md) | Tile Grids — A Library Of Their Own, 8-Way On The Ground Plane, Asked Rather Than Told What Blocks | accepted | 2026-09-06 |
 | [0030](0030-a-model-is-an-interleaved-array-that-names-its-texture.md) | Loaded Geometry — A Model Is One Interleaved Array With A Material That Names Its Texture | accepted | 2026-09-06 |
 | [0031](0031-a-pass-draws-into-a-target-it-names.md) | Offscreen Rendering — A Pass Draws Into A Target It Names, And The Recorder Leaves It Readable | accepted | 2026-09-06 |
+| [0032](0032-the-loop-simulates-at-a-fixed-step.md) | Game Loop — The Loop Simulates At A Fixed Step And Renders At A Variable One | accepted | 2026-09-06 |
