@@ -93,6 +93,12 @@ symmetric because the endpoints are ordered before the line is traced.
   `v3dlib_grid`, and every case is assertable with no device. There is no world space filled
   primitive in the tree, so only outlines come across; a filled tile has no home yet.
 
+**`odyssey` is the consumer.** It reads a board from `data/map.json` — rows of characters, one
+per tile — into a `TileGrid`, and a click routes the player there with `findPath`. The app's own
+`tile::Kind` is what decides passability and cover together; the grid holds both and has an
+opinion about neither, which is the split ADR-0029 is built on. The map format is odyssey's and
+is deliberately not in the api: one consumer is not a library.
+
 ## Geometry
 
 **Three things are called a mesh, and they are not interchangeable.**

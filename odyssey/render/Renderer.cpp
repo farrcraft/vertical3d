@@ -26,6 +26,29 @@ const char* const spriteName = "sample.png";
 constexpr glm::vec4 clearColour(0.05f, 0.05f, 0.07f, 1.0f);
 constexpr glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
 
+/**
+ * A tile is drawn as its kind's colour, and a kind is the only thing that separates them:
+ * there is no tile artwork yet, and a flat colour is enough to read the board while there
+ * is not. An unset texture handle draws against the renderer's white texture, so the quad
+ * comes out as the colour alone.
+ **/
+glm::vec4 tileColour(odyssey::tile::Kind kind) {
+    switch (kind) {
+    case odyssey::tile::Kind::Wall:
+        return glm::vec4(0.35f, 0.35f, 0.40f, 1.0f);
+    case odyssey::tile::Kind::Crate:
+        return glm::vec4(0.45f, 0.33f, 0.18f, 1.0f);
+    default:
+        return glm::vec4(0.14f, 0.15f, 0.18f, 1.0f);
+    }
+}
+
+/**
+ * A hairline of the clear colour around each tile, so a board of flat quads reads as a
+ * grid rather than as one field of colour.
+ **/
+constexpr float tileGap = 1.0f;
+
 };  // namespace
 
 /**
@@ -58,6 +81,12 @@ void Renderer::player(const boost::shared_ptr<odyssey::engine::Player>& player) 
 
 /**
  **/
+void Renderer::map(const boost::shared_ptr<odyssey::tile::Map>& map) {
+    map_ = map;
+}
+
+/**
+ **/
 void Renderer::shutdown() {
     engine_.shutdown();
 }
@@ -74,6 +103,7 @@ void Renderer::draw() {
     }
 
     canvas_.clear();
+    drawMap();
     drawPlayer();
 
     boost::shared_ptr<v3d::render::realtime::Pass> pass =
@@ -81,6 +111,27 @@ void Renderer::draw() {
     engine_.quads()->submit(canvas_, pass.get());
 
     engine_.renderFrame();
+}
+
+/**
+ **/
+void Renderer::drawMap() {
+    if (!map_ || !map_->loaded()) {
+        return;
+    }
+    const v3d::grid::TileGrid& grid = *map_->grid();
+    for (int y = 0; y < grid.height(); y++) {
+        for (int x = 0; x < grid.width(); x++) {
+            const v3d::grid::TileCoord tile{x, y};
+            const glm::vec2 min(
+                static_cast<float>(x * odyssey::engine::unit::tile_width) + tileGap,
+                static_cast<float>(y * odyssey::engine::unit::tile_height) + tileGap);
+            const glm::vec2 max = min + glm::vec2(
+                static_cast<float>(odyssey::engine::unit::tile_width) - (2.0f * tileGap),
+                static_cast<float>(odyssey::engine::unit::tile_height) - (2.0f * tileGap));
+            canvas_.rect(min, max, tileColour(map_->kind(tile)));
+        }
+    }
 }
 
 /**

@@ -34,7 +34,8 @@ Two seams keep the api libraries testable without a window, and both are worth p
 font library, and a strip is hit tested against the bounds a draw left on it, per
 [ADR-0019](adr/0019-the-ui-is-laid-out-by-what-draws-it.md). `api/grid` and
 `api/render/offline` name no device at all, so their suites run in CI where the realtime stack
-cannot.
+cannot. The same is true of an app's own rules: `odyssey`'s suite covers its map format and the
+route across it, and stands up neither a window nor a device to do it.
 
 ## Suites with something to know about them
 

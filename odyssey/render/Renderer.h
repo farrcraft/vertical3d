@@ -8,6 +8,7 @@
 #include <string>
 
 #include "../engine/Player.h"
+#include "../tile/Map.h"
 
 #include "../../api/asset/Manager.h"
 #include "../../api/log/Logger.h"
@@ -49,11 +50,22 @@ class Renderer final {
     void player(const boost::shared_ptr<odyssey::engine::Player>& player);
 
     /**
+     * The board to draw under everything else, or null to draw none.
+     **/
+    void map(const boost::shared_ptr<odyssey::tile::Map>& map);
+
+    /**
      * Wait for everything in flight, before the window the device draws to goes away.
      **/
     void shutdown();
 
  private:
+    /**
+     * The board, one untextured quad per tile. They are drawn first and the pass is in
+     * submission order, so everything else lands on top of them.
+     **/
+    void drawMap();
+
     /**
      * The sprite, at the tile its entity's position names.
      **/
@@ -61,6 +73,7 @@ class Renderer final {
 
     boost::shared_ptr<v3d::log::Logger> logger_;
     boost::shared_ptr<odyssey::engine::Player> player_;
+    boost::shared_ptr<odyssey::tile::Map> map_;
     entt::registry* registry_;
 
     v3d::render::realtime::Canvas canvas_;
