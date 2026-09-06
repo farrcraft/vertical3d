@@ -22,6 +22,5 @@ class GameState {
 
  private:
     SimulationState state_;
-    bool coop_;
     bool paused_;
 };

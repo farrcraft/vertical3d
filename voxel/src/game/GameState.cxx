@@ -7,7 +7,6 @@
 
 GameState::GameState() :
     state_(STATE_LOADING),
-    coop_(false),
     paused_(false) {
 }
 

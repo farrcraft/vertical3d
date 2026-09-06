@@ -31,12 +31,6 @@ set(V3D_BUILD_TESTS OFF)
 get_filename_component(V3D_TREE "${CMAKE_CURRENT_LIST_DIR}/../../.." ABSOLUTE)
 add_subdirectory("${V3D_TREE}" v3d)
 
-# A package this project names itself has to be found in this scope. find_package creates
-# imported targets in the directory that calls it and below, so nothing vertical3d resolved is
-# visible here. After the add_subdirectory, so that Boost_USE_STATIC_LIBS is already what the
-# api was resolved against.
-find_package(Boost REQUIRED COMPONENTS filesystem)
-
 add_executable(v3dstarter
 	"src/AppEngine.h" "src/AppEngine.cxx"
 	"src/main.cxx")
@@ -47,8 +41,11 @@ add_executable(v3dstarter
 # - which this app does not draw and so does not ask for.
 v3d_add_app_data(v3dstarter)
 
+# Three targets and no third party package of its own. boost::filesystem is compiled by these
+# sources - asset/Manager.h names a path - but it arrives through v3d::asset, so nothing here
+# has to name it. A consumer that does name a package itself has to find_package it in its own
+# scope; see docs/NewProject.md.
 target_link_libraries(v3dstarter PRIVATE
 	v3d::engine
 	v3d::log
-	v3d::render
-	Boost::filesystem)
+	v3d::render)

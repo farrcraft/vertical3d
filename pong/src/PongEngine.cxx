@@ -41,6 +41,9 @@ bool::PongEngine::initialize() {
     soundEngine_->initialize();
 
     vgui_ = boost::make_shared<v3d::ui::Engine>(eventEngine_, dispatcher_, logger_);
+    menu_ = boost::make_shared<v3d::ui::GameMenu>(vgui_, [this](bool suspended) {
+        scene_->state().pause(suspended);
+    });
 
     if (config_) {
         boost::shared_ptr<v3d::asset::Json> soundConfig = config_->get(v3d::config::Type::Sound);
@@ -114,11 +117,6 @@ bool PongEngine::shutdown() {
     return true;
 }
 void PongEngine::handleEvent(const v3d::event::Event& event) {
-    boost::shared_ptr<v3d::ui::Container> menuContainer = vgui_->container("game-menu");
-    boost::shared_ptr<v3d::ui::component::Menu> menu = boost::dynamic_pointer_cast<v3d::ui::component::Menu>(menuContainer->get("main-menu"));
-    // the container is what is shown and hidden. A component is visible from the moment it
-    // is built, so the menu itself is not the thing to ask
-    bool vis = menuContainer->visible();
     if (event.context()->name() == "pong") {
         // play commands
         // the paddle moves while its key is held, so these follow the event's edge
@@ -140,17 +138,7 @@ void PongEngine::handleEvent(const v3d::event::Event& event) {
                 scene_->right().down(held);
             }
         } else if (event.name() == "showGameMenu") {
-            if (!vis) {
-                scene_->state().pause(true);
-                menuContainer->visible(true);
-            } else {
-                // going back up out of a submenu leaves the menu open - it is only closing
-                // the top level that resumes the game
-                if (!menu->up()) {
-                    scene_->state().pause(false);
-                    menuContainer->visible(false);
-                }
-            }
+            menu_->toggle();
         }
         return;
     } else if (event.context()->name() == "ui") {
@@ -181,30 +169,10 @@ void PongEngine::handleEvent(const v3d::event::Event& event) {
         }
 
         if (event.name() == "showGameMenu") {
-            if (!vis) {
-                scene_->state().pause(true);
-                menuContainer->visible(true);
-            } else {
-                // if we're at the top-level menu and not in a submenu, make the game active again
-                if (!menu->up()) {
-                    scene_->state().pause(false);
-                    menuContainer->visible(false);
-                }
-            }
+            menu_->toggle();
             return;
         }
 
-        // the remaining ui commands only work when menu is visible
-        if (!vis) {
-            return;
-        }
-
-        if (event.name() == "menuPrevious") {  // select the previous menu item
-            menu->previous();
-        } else if (event.name() == "menuNext") {  // select the next menu item
-            menu->next();
-        } else if (event.name() == "selectMenu") {  // select the current menu item
-            menu->activate();
-        }
+        menu_->navigate(event.name());
     }
 }

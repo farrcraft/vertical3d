@@ -9,14 +9,12 @@
 
 #include "PongScene.h"
 
-#include "../../api/font/TextureFontCache.h"
-#include "../../api/font/TextureTextBuffer.h"
-
 #include "../../api/asset/Manager.h"
 #include "../../api/render/realtime/Canvas.h"
 #include "../../api/render/realtime/Engine3D.h"
-#include "../../api/ui/Engine.h"
 #include "../../api/ui/ComponentRenderer.h"
+#include "../../api/ui/Engine.h"
+#include "../../api/ui/TextRenderer.h"
 
 #include <boost/shared_ptr.hpp>
 #include <entt/entt.hpp>
@@ -50,20 +48,10 @@ class PongRenderer final {
     void shutdown();
 
  private:
-    /**
-     * Load the font and pack the glyphs pong draws into one atlas, then upload it.
-     **/
-    void loadFont(const boost::shared_ptr<v3d::asset::Manager>& assetManager, const boost::shared_ptr<v3d::log::Logger>& logger);
-
     void drawBoard();
     void drawScores();
     void drawBall();
     void drawPaddle(const Paddle& paddle);
-
-    /**
-     * Lay a string out at the pen and append its glyphs to the canvas.
-     **/
-    void drawText(const std::string& text, const glm::vec2& pen, const glm::vec4& colour);
 
     boost::shared_ptr<PongScene> scene_;
     boost::shared_ptr<v3d::ui::Engine> ui_;
@@ -71,10 +59,6 @@ class PongRenderer final {
     v3d::render::realtime::Canvas canvas_;
     v3d::render::realtime::Engine3D engine_;
 
-    boost::shared_ptr<v3d::font::TextureFontCache> fontCache_;
-    boost::shared_ptr<v3d::font::TextureTextBuffer> text_;
-    v3d::font::TextureTextBuffer::Markup markup_;
-    v3d::render::realtime::TextureHandle atlas_;
-
+    boost::shared_ptr<v3d::ui::TextRenderer> text_;
     boost::shared_ptr<v3d::ui::ComponentRenderer> uiRenderer_;
 };

@@ -6,8 +6,6 @@
 #include "Engine.h"
 #include "Unit.h"
 
-#include <SDL3/SDL.h>
-
 #include <string>
 
 #include "../../api/engine/Feature.h"

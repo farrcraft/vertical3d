@@ -13,8 +13,6 @@
 #include "view/ViewPort.h"
 
 #include "../../api/asset/Manager.h"
-#include "../../api/font/TextureFontCache.h"
-#include "../../api/font/TextureTextBuffer.h"
 #include "../../api/log/Logger.h"
 #include "../../api/render/realtime/Canvas.h"
 #include "../../api/render/realtime/Engine3D.h"
@@ -22,6 +20,7 @@
 #include "../../api/render/realtime/Window.h"
 #include "../../api/ui/ComponentRenderer.h"
 #include "../../api/ui/Engine.h"
+#include "../../api/ui/TextRenderer.h"
 
 #include <boost/shared_ptr.hpp>
 #include <entt/entt.hpp>
@@ -103,16 +102,6 @@ class Renderer final {
 
  private:
     /**
-     * Build the glyph atlas the ui is drawn with, and upload it once.
-     **/
-    void loadFont(const boost::shared_ptr<v3d::asset::Manager>& assetManager);
-
-    /**
-     * Lay a string out at the pen and append its glyphs to the ui canvas.
-     **/
-    void drawText(const std::string& text, const glm::vec2& pen, const glm::vec4& colour);
-
-    /**
      * Fill the ui canvas and give the frame the one pass that draws it.
      **/
     void drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& frame);
@@ -137,10 +126,7 @@ class Renderer final {
     boost::shared_ptr<v3d::ui::Engine> ui_;
     boost::shared_ptr<v3d::ui::ComponentRenderer> uiRenderer_;
     v3d::render::realtime::Canvas canvas_;
-    boost::shared_ptr<v3d::font::TextureFontCache> fontCache_;
-    boost::shared_ptr<v3d::font::TextureTextBuffer> text_;
-    v3d::font::TextureTextBuffer::Markup markup_;
-    v3d::render::realtime::TextureHandle atlas_;
+    boost::shared_ptr<v3d::ui::TextRenderer> text_;
 
     glm::vec4 background_;
 };

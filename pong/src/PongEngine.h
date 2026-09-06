@@ -13,8 +13,7 @@
 #include "../../api/audio/Engine.h"
 #include "../../api/event/Event.h"
 #include "../../api/ui/Engine.h"
-
-#include <entt/entt.hpp>
+#include "../../api/ui/GameMenu.h"
 
 class PongRenderer;
 
@@ -52,6 +51,5 @@ class PongEngine final : public v3d::engine::Engine {
     boost::shared_ptr<PongScene> scene_;
     boost::shared_ptr<PongRenderer> renderer_;
     boost::shared_ptr<v3d::ui::Engine> vgui_;
-
-    entt::registry registry_;
+    boost::shared_ptr<v3d::ui::GameMenu> menu_;
 };

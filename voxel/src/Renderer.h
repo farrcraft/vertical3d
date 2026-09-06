@@ -10,14 +10,13 @@
 #include <string>
 
 #include "../../api/asset/Manager.h"
-#include "../../api/font/TextureFontCache.h"
-#include "../../api/font/TextureTextBuffer.h"
 #include "../../api/log/Logger.h"
 #include "../../api/render/realtime/Canvas.h"
 #include "../../api/render/realtime/Engine3D.h"
 #include "../../api/render/realtime/vulkan/DeviceBuffer.h"
 #include "../../api/ui/ComponentRenderer.h"
 #include "../../api/ui/Engine.h"
+#include "../../api/ui/TextRenderer.h"
 
 #include <boost/shared_ptr.hpp>
 #include <entt/entt.hpp>
@@ -94,24 +93,9 @@ class Renderer {
     void createPipeline();
 
     /**
-     * Load the font and pack the glyphs the overlay and the ui draw into one atlas.
-     **/
-    void loadFont(const boost::shared_ptr<v3d::asset::Manager>& assetManager, const boost::shared_ptr<v3d::log::Logger>& logger);
-
-    /**
      * One draw item per meshed chunk, submitted to the terrain pass.
      **/
     void drawTerrain(v3d::render::realtime::Pass* pass);
-
-    /**
-     * Lay a string out at the pen and append its glyphs to the canvas.
-     **/
-    void drawText(const std::string& text, const glm::vec2& pen, const glm::vec4& colour);
-
-    /**
-     * @return the width of a string in the overlay's font
-     **/
-    float measureText(const std::string& text) const;
 
     boost::shared_ptr<Scene> scene_;
     boost::shared_ptr<v3d::log::Logger> logger_;
@@ -134,10 +118,7 @@ class Renderer {
     boost::shared_ptr<DebugOverlay> debugOverlay_;
 
     v3d::render::realtime::Canvas canvas_;
-    boost::shared_ptr<v3d::font::TextureFontCache> fontCache_;
-    boost::shared_ptr<v3d::font::TextureTextBuffer> text_;
-    v3d::font::TextureTextBuffer::Markup markup_;
-    v3d::render::realtime::TextureHandle atlas_;
+    boost::shared_ptr<v3d::ui::TextRenderer> text_;
 
     boost::shared_ptr<v3d::ui::Engine> ui_;
     boost::shared_ptr<v3d::ui::ComponentRenderer> uiRenderer_;

@@ -13,12 +13,11 @@
 #include "TetrisScene.h"
 
 #include "../../api/asset/Manager.h"
-#include "../../api/font/TextureFontCache.h"
-#include "../../api/font/TextureTextBuffer.h"
 #include "../../api/render/realtime/Canvas.h"
 #include "../../api/render/realtime/Engine3D.h"
 #include "../../api/ui/ComponentRenderer.h"
 #include "../../api/ui/Engine.h"
+#include "../../api/ui/TextRenderer.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
@@ -77,11 +76,6 @@ class TetrisRenderer final {
     void loadPieces(const boost::shared_ptr<v3d::asset::Manager>& assetManager, const boost::shared_ptr<v3d::log::Logger>& logger);
 
     /**
-     * Load the font and pack the glyphs tetris draws into one atlas, then upload it.
-     **/
-    void loadFont(const boost::shared_ptr<v3d::asset::Manager>& assetManager, const boost::shared_ptr<v3d::log::Logger>& logger);
-
-    /**
      * @return where the well goes in a window of the canvas's current size
      **/
     Layout layout() const;
@@ -97,11 +91,6 @@ class TetrisRenderer final {
      **/
     void drawBlock(const std::string& colour, const glm::vec2& min, float cell);
 
-    /**
-     * Lay a string out at the pen and append its glyphs to the canvas.
-     **/
-    void drawText(const std::string& text, const glm::vec2& pen, const glm::vec4& colour);
-
     boost::shared_ptr<TetrisScene> scene_;
     boost::shared_ptr<v3d::ui::Engine> ui_;
     boost::shared_ptr<v3d::log::Logger> logger_;
@@ -112,10 +101,6 @@ class TetrisRenderer final {
     v3d::render::realtime::TextureHandle pieces_;
     std::map<std::string, Sprite> sprites_;
 
-    boost::shared_ptr<v3d::font::TextureFontCache> fontCache_;
-    boost::shared_ptr<v3d::font::TextureTextBuffer> text_;
-    v3d::font::TextureTextBuffer::Markup markup_;
-    v3d::render::realtime::TextureHandle atlas_;
-
+    boost::shared_ptr<v3d::ui::TextRenderer> text_;
     boost::shared_ptr<v3d::ui::ComponentRenderer> uiRenderer_;
 };

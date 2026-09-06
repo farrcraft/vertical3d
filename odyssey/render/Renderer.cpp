@@ -65,16 +65,12 @@ void Renderer::shutdown() {
 /**
  **/
 void Renderer::draw() {
-    const int width = engine_.window()->width();
-    const int height = engine_.window()->height();
-    if (width <= 0 || height <= 0) {
-        // a minimized window: the engine skips the frame, and a canvas with no area has
-        // no projection to build geometry against
-        engine_.renderFrame();
+    glm::ivec2 size;
+    if (!engine_.beginFrame(&size)) {
         return;
     }
-    if (canvas_.width() != static_cast<uint32_t>(width) || canvas_.height() != static_cast<uint32_t>(height)) {
-        canvas_.resize(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+    if (canvas_.width() != static_cast<uint32_t>(size.x) || canvas_.height() != static_cast<uint32_t>(size.y)) {
+        canvas_.resize(static_cast<uint32_t>(size.x), static_cast<uint32_t>(size.y));
     }
 
     canvas_.clear();

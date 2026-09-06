@@ -13,8 +13,7 @@
 #include "../../api/log/Logger.h"
 #include "../../api/event/Event.h"
 #include "../../api/ui/Engine.h"
-
-#include <entt/entt.hpp>
+#include "../../api/ui/GameMenu.h"
 
 class TetrisScene;
 class TetrisRenderer;
@@ -55,13 +54,8 @@ class Controller final : public v3d::engine::Engine {
      **/
     void rotate(Tetrad::RotationDirection direction);
 
-    /**
-     * Show or hide the game menu, pausing the board while it is up.
-     **/
-    void toggleMenu();
-
     boost::shared_ptr<TetrisScene> scene_;
     boost::shared_ptr<TetrisRenderer> renderer_;
     boost::shared_ptr<v3d::ui::Engine> vgui_;
-    entt::registry registry_;
+    boost::shared_ptr<v3d::ui::GameMenu> menu_;
 };
