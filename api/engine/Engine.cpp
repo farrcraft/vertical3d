@@ -277,7 +277,7 @@ bool Engine::eventLoop() {
         }
         // and advance the simulation by however many whole steps that frame owes, per
         // ADR-0032 - the accumulator clamps the frame and carries the remainder forward
-        accumulator_.accumulate(elapsed);
+        statistics_.frame(elapsed, accumulator_.accumulate(elapsed));
         while (accumulator_.drain()) {
             if (!simulate(Accumulator::seconds)) {
                 return false;
@@ -305,6 +305,10 @@ bool Engine::simulate(float /* step */) {
 
 float Engine::alpha() const noexcept {
     return accumulator_.alpha();
+}
+
+const Statistics& Engine::statistics() const noexcept {
+    return statistics_;
 }
 
 boost::shared_ptr<v3d::render::realtime::Window> Engine::window() const {

@@ -8,6 +8,7 @@
 #include <string>
 
 #include "Accumulator.h"
+#include "Statistics.h"
 
 #include "../log/Logger.h"
 #include "../asset/Manager.h"
@@ -80,6 +81,11 @@ class Engine {
     float alpha() const noexcept;
 
     /**
+     * What the loop measured about its own pacing, per frame.
+     **/
+    const Statistics& statistics() const noexcept;
+
+    /**
      * Render the current frame.
      * This will be called after each tick within the event loop to draw the current frame
      * 
@@ -121,6 +127,7 @@ class Engine {
     boost::shared_ptr<v3d::event::Engine> eventEngine_;
     entt::registry registry_;
     Accumulator accumulator_;
+    Statistics statistics_;
 
  private:
      bool registerEventMappings();
