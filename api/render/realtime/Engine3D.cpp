@@ -44,7 +44,8 @@ bool Engine3D::shutdown() {
     // the window's surface alive, and the window's teardown unloads the vulkan library -
     // a surface destroyed after that is not destroyed at all, and the instance reports
     // it as leaked
-    frame_.reset();
+    // released, not Frame::reset() - the assignment is what tells the two apart at a glance
+    frame_ = nullptr;
     context_.reset();
     return Engine::shutdown();
 }

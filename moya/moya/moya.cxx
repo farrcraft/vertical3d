@@ -3,7 +3,9 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <cstdio>
 #include <cstdlib>
+#include <exception>
 #include <iostream>
 #include <string>
 
@@ -15,7 +17,9 @@
 #include <boost/make_shared.hpp>
 #include <boost/program_options.hpp>
 
-int main(int argc, char *argv[]) {
+namespace {
+
+int run(int argc, char *argv[]) {
     // setup option parser
     boost::program_options::options_description opts_desc("Allowed options");
     opts_desc.add_options()
@@ -33,15 +37,15 @@ int main(int argc, char *argv[]) {
 
     // process options
     if (var_map.count("help")) {
-        std::cout << opts_desc << std::endl;
+        std::cout << opts_desc << "\n";
         exit(EXIT_SUCCESS);
     }
 
     if (var_map.count("version")) {
-        std::cout << "Moya v0.0.1" << std::endl;
-        std::cout << "The RenderMan (R) Interface Procedures and Protocol are:" << std::endl <<
-                     "Copyright 1988, 1989, Pixar" << std::endl <<
-                     "All Rights Reserved" << std::endl;
+        std::cout << "Moya v0.0.1" << "\n";
+        std::cout << "The RenderMan (R) Interface Procedures and Protocol are:" << "\n" <<
+                     "Copyright 1988, 1989, Pixar" << "\n" <<
+                     "All Rights Reserved" << "\n";
 
         exit(EXIT_SUCCESS);
     }
@@ -57,7 +61,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (infile.empty()) {
-        std::cout << opts_desc << std::endl;
+        std::cout << opts_desc << "\n";
         exit(EXIT_SUCCESS);
     }
 
@@ -80,14 +84,36 @@ int main(int argc, char *argv[]) {
         handler.context().bucketSize(size, size);
     }
 
-    std::cout << "Rendering scene file: " << infile << std::endl;
+    // flushed rather than left to the buffer: the render that follows it is the whole
+    // run, and a progress line nobody sees until the picture is written is not one
+    std::cout << "Rendering scene file: " << infile << "\n" << std::flush;
 
     v3d::render::offline::RIBReader reader(logger);
     if (!reader.read(infile, &handler)) {
-        std::cout << "error reading rib file - " << reader.error() << std::endl;
+        std::cout << "error reading rib file - " << reader.error() << "\n";
         exit(EXIT_FAILURE);
     }
 
     // the picture was written by RiWorldEnd, which is where the RI standard puts it
     return EXIT_SUCCESS;
+}
+
+};  // namespace
+
+int main(int argc, char *argv[]) {
+    // the option parser and the reader both report by throwing, and an exception leaving
+    // main is an abort with no message in it. The handler reports through stdio rather than
+    // the stream the rest of the file writes to: a last resort that can itself throw is not
+    // one
+    try {
+        return run(argc, argv);
+    } catch (const std::exception& error) {
+        std::fputs("error: ", stderr);
+        std::fputs(error.what(), stderr);
+        std::fputs("\n", stderr);
+        return EXIT_FAILURE;
+    } catch (...) {
+        std::fputs("error: unrecognised failure\n", stderr);
+        return EXIT_FAILURE;
+    }
 }

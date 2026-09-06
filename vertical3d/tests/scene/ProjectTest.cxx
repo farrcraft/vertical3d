@@ -183,11 +183,11 @@ BOOST_AUTO_TEST_CASE(project_written_form_test) {
 
     const std::string text = get(path);
     // indented rather than the one line boost::json serializes, so the file diffs
-    BOOST_CHECK(text.find("\n") != std::string::npos);
-    BOOST_CHECK(text.find("\"version\": 1") != std::string::npos);
-    BOOST_CHECK(text.find("\"name\": \"form\"") != std::string::npos);
+    BOOST_CHECK(text.contains('\n'));
+    BOOST_CHECK(text.contains("\"version\": 1"));
+    BOOST_CHECK(text.contains("\"name\": \"form\""));
     // a vector stays on one line - a mesh broken a number to a line is unreadable
-    BOOST_CHECK(text.find("\"normal\": [0, 1, 0]") != std::string::npos);
+    BOOST_CHECK(text.contains("\"normal\": [0, 1, 0]"));
 
     boost::filesystem::remove(path);
 }

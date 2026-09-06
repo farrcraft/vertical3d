@@ -46,8 +46,8 @@ const uint32_t poolSize = 64;
  * What each geometry buffer starts at, in bytes. A screen of quads fits without
  * growing, and the buffers double from here when something does not.
  **/
-const VkDeviceSize initialVertexBytes = 64 * 1024;
-const VkDeviceSize initialIndexBytes = 32 * 1024;
+const VkDeviceSize initialVertexBytes = 64ULL * 1024;
+const VkDeviceSize initialIndexBytes = 32ULL * 1024;
 
 };  // namespace
 

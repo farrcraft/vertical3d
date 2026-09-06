@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -27,12 +28,7 @@ struct Sounds final {
     }
 
     bool has(const std::string& clip) const {
-        for (const auto& played : clips_) {
-            if (played == clip) {
-                return true;
-            }
-        }
-        return false;
+        return std::ranges::any_of(clips_, [&clip](const std::string& played) { return played == clip; });
     }
 
     std::vector<std::string> clips_;

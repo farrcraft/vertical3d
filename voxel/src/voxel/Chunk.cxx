@@ -62,10 +62,7 @@ glm::ivec3 Chunk::position() const {
 bool Chunk::active(glm::ivec3 blockPosition) const {
     MortonCode codec;
     unsigned int hash = codec.encode(blockPosition);
-    if (blocks_.find(hash) != blocks_.end()) {
-        return true;
-    }
-    return false;
+    return blocks_.contains(hash);
 }
 
 
@@ -94,11 +91,7 @@ bool Chunk::hidden(Voxel::BlockFace face, const glm::ivec3 & position) {
             break;
     }
     neighborHash = codec.encode(neighborPosition);
-    if (blocks_.find(neighborHash) != blocks_.end()) {
-        return true;
-    }
-
-    return false;
+    return blocks_.contains(neighborHash);
 }
 
 boost::unordered_map<unsigned int, boost::shared_ptr<Voxel> > & Chunk::blocks() {

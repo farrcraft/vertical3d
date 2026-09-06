@@ -129,8 +129,8 @@ void DeviceBuffer::upload(const void* data, VkDeviceSize bytes, VkDeviceSize off
     Buffer staging(device_, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, bytes);
     staging.write(data, bytes);
 
-    const VkBuffer source = staging.handle();
-    const VkBuffer destination = buffer_;
+    VkBuffer source = staging.handle();
+    VkBuffer destination = buffer_;
     uploader_->oneShot([source, destination, bytes, offset](VkCommandBuffer commands) {
         VkBufferCopy copy{};
         copy.srcOffset = 0;

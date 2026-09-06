@@ -65,9 +65,9 @@ BOOST_AUTO_TEST_CASE(riblexer_unterminated_string_test) {
     std::vector<Token> tokens = lex("Surface \"plastic", &error);
 
     BOOST_CHECK_EQUAL(tokens.size(), 1u);
-    BOOST_CHECK(error.find("unterminated string") != std::string::npos);
+    BOOST_CHECK(error.contains("unterminated string"));
     // and it says where
-    BOOST_CHECK(error.find("column 9") != std::string::npos);
+    BOOST_CHECK(error.contains("column 9"));
 }
 
 /**
@@ -131,18 +131,18 @@ BOOST_AUTO_TEST_CASE(riblexer_position_test) {
 BOOST_AUTO_TEST_CASE(riblexer_binary_rejected_test) {
     std::string error;
     lex(std::string("\x80\x05" "Format", 8), &error);
-    BOOST_CHECK(error.find("binary RIB") != std::string::npos);
+    BOOST_CHECK(error.contains("binary RIB"));
 
     std::string gzipped;
     lex(std::string("\x1f\x8b\x08\x00", 4), &gzipped);
-    BOOST_CHECK(gzipped.find("gzipped RIB") != std::string::npos);
+    BOOST_CHECK(gzipped.contains("gzipped RIB"));
 }
 
 BOOST_AUTO_TEST_CASE(riblexer_unexpected_character_test) {
     std::string error;
     lex("Format 640 * 480", &error);
 
-    BOOST_CHECK(error.find("unexpected character '*'") != std::string::npos);
+    BOOST_CHECK(error.contains("unexpected character '*'"));
 }
 
 /**

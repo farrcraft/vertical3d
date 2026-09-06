@@ -7,7 +7,7 @@
 #include <SDL3/SDL_main.h>
 
 #include <cstdlib>
-#include <ctime>
+#include <random>
 
 #include "Controller.h"
 
@@ -15,8 +15,10 @@
 
 
 int main(int /* argc */, char *argv[]) {
-    // seed the random number generator
-    srand(static_cast<unsigned int>(time(nullptr)));
+    // Chunk generation draws its block types from rand(). The seed comes from the platform's
+    // entropy source rather than the clock, which two runs started in the same second share.
+    std::random_device entropy;
+    srand(entropy());
 
     return v3d::engine::run<Controller>(argv[0], "voxel");
 }

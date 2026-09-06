@@ -21,11 +21,11 @@ namespace {
 /**
  * The three axis colours, and the colour a handle takes while it is the active one.
  **/
-const glm::vec4 xColour(0.90f, 0.28f, 0.32f, 1.0f);
-const glm::vec4 yColour(0.42f, 0.82f, 0.35f, 1.0f);
-const glm::vec4 zColour(0.32f, 0.55f, 0.95f, 1.0f);
-const glm::vec4 centreColour(0.80f, 0.82f, 0.86f, 1.0f);
-const glm::vec4 activeColour(1.0f, 0.86f, 0.25f, 1.0f);
+constexpr glm::vec4 xColour(0.90f, 0.28f, 0.32f, 1.0f);
+constexpr glm::vec4 yColour(0.42f, 0.82f, 0.35f, 1.0f);
+constexpr glm::vec4 zColour(0.32f, 0.55f, 0.95f, 1.0f);
+constexpr glm::vec4 centreColour(0.80f, 0.82f, 0.86f, 1.0f);
+constexpr glm::vec4 activeColour(1.0f, 0.86f, 0.25f, 1.0f);
 
 };  // namespace
 
@@ -273,7 +273,8 @@ float Manipulator::distanceToSegment(const glm::vec2& from, const glm::vec2& to,
 float Manipulator::along(const ViewPort& view, const Placement& placement, Axis axis,
     const glm::vec2& from, const glm::vec2& to) const {
     const glm::vec3 unit = direction(placement, axis);
-    glm::vec2 root, tip;
+    glm::vec2 root;
+    glm::vec2 tip;
     if (!project(view, placement.origin, &root) ||
         !project(view, placement.origin + unit * placement.size, &tip)) {
         return 0.0f;

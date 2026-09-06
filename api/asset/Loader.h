@@ -69,7 +69,6 @@ class Loader {
      **/
     Loader(Manager* manager, Type t, const boost::shared_ptr<v3d::log::Logger>& logger);
 
- protected:
     boost::shared_ptr<v3d::log::Logger> logger_;
     Manager* manager_;
     std::map<std::string, ParameterValue> parameters_;

@@ -6,6 +6,8 @@
 #include "BRep.h"
 
 #include <algorithm>
+
+#include <glm/common.hpp>
 #include <cassert>
 #include <vector>
 
@@ -380,27 +382,17 @@ void BRep::deselectComponents(void) noexcept {
 // calculate object-space bounds of mesh
 v3d::type::AABBox BRep::bound(void) const {
     v3d::type::AABBox extents;
-    if (vertices_.size() == 0)
+    if (vertices_.empty())
         return extents;
-    glm::vec3 min, max;
+    glm::vec3 min;
+    glm::vec3 max;
     min = vertices_[0].point();
     max = min;
     glm::vec3 vt;
     for (Index index = 1; index < static_cast<Index>(vertices_.size()); index++) {
         vt = vertices_[index].point();
-        if (vt[0] < min[0])
-            min[0] = vt[0];
-        if (vt[1] < min[1])
-            min[1] = vt[1];
-        if (vt[2] < min[2])
-            min[2] = vt[2];
-
-        if (vt[0] > max[0])
-            max[0] = vt[0];
-        if (vt[1] > max[1])
-            max[1] = vt[1];
-        if (vt[2] > max[2])
-            max[2] = vt[2];
+        min = glm::min(min, vt);
+        max = glm::max(max, vt);
     }
     extents.extents(min, max);
     return extents;

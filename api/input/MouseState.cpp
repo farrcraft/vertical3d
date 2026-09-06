@@ -19,10 +19,7 @@ MouseState::MouseState() : position_(0.0f, 0.0f) {
  **/
 bool MouseState::pressed(unsigned int button) const {
     std::vector<unsigned int>::const_iterator iter = std::find(buttons_.begin(), buttons_.end(), button);
-    if (iter != buttons_.end()) {
-        return true;
-    }
-    return false;
+    return iter != buttons_.end();
 }
 
 /**

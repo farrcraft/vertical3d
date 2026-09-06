@@ -13,12 +13,12 @@ namespace v3d::ecs::component {
  **/
 class Position1D final {
  public:
-    Position1D(const float x) noexcept;
+    Position1D(float x) noexcept;
 
     /**
      * Move constructor
      **/
-    Position1D(Position1D&&) noexcept;
+    Position1D(Position1D&& p) noexcept;
 
     /**
      * Default destructor
@@ -40,7 +40,7 @@ class Position1D final {
     /**
      * Move assignment
      **/
-    Position1D& operator=(Position1D&&) noexcept;
+    Position1D& operator=(Position1D&& p) noexcept;
 
  private:
     float position_;

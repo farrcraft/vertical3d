@@ -25,7 +25,7 @@ namespace {
 /**
  * What every viewport clears to.
  **/
-const glm::vec4 background(0.16f, 0.17f, 0.19f, 1.0f);
+constexpr glm::vec4 background(0.16f, 0.17f, 0.19f, 1.0f);
 
 /**
  * What a view's handle pass is called, on the end of the view's own name.

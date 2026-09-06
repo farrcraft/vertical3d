@@ -28,40 +28,39 @@ void PongScene::resize(int width, int height) {
     height_ = height;
 }
 
-void PongScene::tick() {
-    if (gameState_.paused()) {
-        return;
-    }
-
-    // check for victory conditions
+void PongScene::checkVictory() {
     if (left_.score() == gameState_.maxScore() ||
         right_.score() == gameState_.maxScore()) {
         reset();
         dispatcher_->trigger(v3d::event::Sound("victory"));
     }
-    glm::vec2 ball_pos = ball_.position();
+}
 
+void PongScene::steerOpponent(const glm::vec2& ballPosition) {
     // give AI a turn in single player mode
-    if (!gameState_.coop()) {
-        glm::vec2 ball_dir = ball_.direction();
-        // is the ball headed towards the ai's paddle (towards the right side)?
-        if (ball_dir[0] > 0.0f) {
-            // travel is signed the way the court is: up decreases the paddle position and
-            // down increases it, so approaching a ball above the paddle is up.
-            if (ball_pos[1] < right_.position()) {
-                right_.up(true);
-                right_.down(false);
-            } else if (ball_pos[1] > right_.position()) {
-                right_.up(false);
-                right_.down(true);
-            }
-        } else {
-            // no need to move the paddle if the ball is moving away from it
-            right_.up(false);
-            right_.down(false);
-        }
+    if (gameState_.coop()) {
+        return;
     }
+    glm::vec2 ball_dir = ball_.direction();
+    // is the ball headed towards the ai's paddle (towards the right side)?
+    if (ball_dir[0] > 0.0f) {
+        // travel is signed the way the court is: up decreases the paddle position and
+        // down increases it, so approaching a ball above the paddle is up.
+        if (ballPosition[1] < right_.position()) {
+            right_.up(true);
+            right_.down(false);
+        } else if (ballPosition[1] > right_.position()) {
+            right_.up(false);
+            right_.down(true);
+        }
+    } else {
+        // no need to move the paddle if the ball is moving away from it
+        right_.up(false);
+        right_.down(false);
+    }
+}
 
+void PongScene::bouncePaddles(const glm::vec2& ballPosition) {
     // assume both paddles are the same dimensions
     float paddle_mid = left_.length() / 2.0f;
     float paddle_size = left_.size();
@@ -71,9 +70,9 @@ void PongScene::tick() {
     // we'll just ignore that the ball is round for this.
     // also, since we know the paddles are always a fixed distance from the edges of
     // the window, we can exploit this and just check how close we are.
-    if (((ball_pos[1] + (gameState_.ballSize() / 2.0f)) >= (left_.position() - paddle_mid)) &&
-        ((ball_pos[1] - (gameState_.ballSize() / 2.0f)) <= (left_.position() + paddle_mid)) &&
-        (ball_pos[0] <= ((gameState_.ballSize() / 2.0f) + paddle_size))) {
+    if (((ballPosition[1] + (gameState_.ballSize() / 2.0f)) >= (left_.position() - paddle_mid)) &&
+        ((ballPosition[1] - (gameState_.ballSize() / 2.0f)) <= (left_.position() + paddle_mid)) &&
+        (ballPosition[0] <= ((gameState_.ballSize() / 2.0f) + paddle_size))) {
         // alter ball direction
         glm::vec2 ball_dir = ball_.direction();
         ball_dir = -ball_dir;
@@ -86,9 +85,9 @@ void PongScene::tick() {
 
         ball_.direction(ball_dir);
         dispatcher_->trigger(v3d::event::Sound("hit"));
-    } else if (((ball_pos[1] + (gameState_.ballSize() / 2.0f)) >= (right_.position() - paddle_mid)) &&
-            ((ball_pos[1] - (gameState_.ballSize() / 2.0f)) <= (right_.position() + paddle_mid)) &&
-            (ball_pos[0] >= (width_ - ((gameState_.ballSize() / 2.0f) + paddle_size)))) {
+    } else if (((ballPosition[1] + (gameState_.ballSize() / 2.0f)) >= (right_.position() - paddle_mid)) &&
+            ((ballPosition[1] - (gameState_.ballSize() / 2.0f)) <= (right_.position() + paddle_mid)) &&
+            (ballPosition[0] >= (width_ - ((gameState_.ballSize() / 2.0f) + paddle_size)))) {
         // alter ball direction
         glm::vec2 ball_dir = ball_.direction();
         ball_dir = -ball_dir;
@@ -102,68 +101,69 @@ void PongScene::tick() {
         ball_.direction(ball_dir);
         dispatcher_->trigger(v3d::event::Sound("hit"));
     }
+}
 
+void PongScene::scorePoint(const glm::vec2& ballPosition) {
     bool reset_ball = false;
     float victor = 0.0f;
     // if the ball hits the left or right edge of the screen then we need
     // to update the score and reset the ball
-    if (ball_pos[0] <= (gameState_.ballSize() / 2.0f)) {
+    if (ballPosition[0] <= (gameState_.ballSize() / 2.0f)) {
         right_.score(right_.score() + 1);
         victor = -1.0f;
         reset_ball = true;
         dispatcher_->trigger(v3d::event::Sound("score"));
-    } else if (ball_pos[0] >= (width_ - (gameState_.ballSize() / 2.0f))) {
+    } else if (ballPosition[0] >= (width_ - (gameState_.ballSize() / 2.0f))) {
         left_.score(left_.score() + 1);
         victor = 1.0f;
         reset_ball = true;
         dispatcher_->trigger(v3d::event::Sound("score"));
     }
-    if (reset_ball) {
-        // reposition the ball in the center of the screen
-        float mid_y = height_ / 2.0f;
-        float mid_x = width_ / 2.0f;
-        glm::vec2 v(mid_x, mid_y);
-        ball_.position(v);
-        // set the ball rolling
-        float speed = gameState_.ballStartSpeed() * gameState_.ballSpeedup();
-        // last winner serves the ball
-        glm::vec2 dir(speed * victor, 0.0f);
-        ball_.direction(dir);
-        // start at this slightly faster speed next time
-        gameState_.ballStartSpeed(speed);
-
-        // reset the default paddle positions
-        left_.position(mid_y);
-        right_.position(mid_y);
+    if (!reset_ball) {
+        return;
     }
+    // reposition the ball in the center of the screen
+    float mid_y = height_ / 2.0f;
+    float mid_x = width_ / 2.0f;
+    glm::vec2 v(mid_x, mid_y);
+    ball_.position(v);
+    // set the ball rolling
+    float speed = gameState_.ballStartSpeed() * gameState_.ballSpeedup();
+    // last winner serves the ball
+    glm::vec2 dir(speed * victor, 0.0f);
+    ball_.direction(dir);
+    // start at this slightly faster speed next time
+    gameState_.ballStartSpeed(speed);
 
+    // reset the default paddle positions
+    left_.position(mid_y);
+    right_.position(mid_y);
+}
+
+void PongScene::bounceWalls(const glm::vec2& ballPosition) {
     // if the ball has hit the top or bottom of the screen then we need to alter the
     // direction of the ball so it bounces off
-    if (ball_pos[1] >= ((height_ - 15.0f) - (gameState_.ballSize() / 2.0f))) {
-        glm::vec2 ball_dir = ball_.direction();
-        ball_dir[1] = -ball_dir[1];
-        ball_.direction(ball_dir);
-        dispatcher_->trigger(v3d::event::Sound("bounce"));
-    } else if (ball_pos[1] <= (15.0f - (gameState_.ballSize() / 2.0f))) {
+    if (ballPosition[1] >= ((height_ - 15.0f) - (gameState_.ballSize() / 2.0f)) ||
+        ballPosition[1] <= (15.0f - (gameState_.ballSize() / 2.0f))) {
         glm::vec2 ball_dir = ball_.direction();
         ball_dir[1] = -ball_dir[1];
         ball_.direction(ball_dir);
         dispatcher_->trigger(v3d::event::Sound("bounce"));
     }
+}
 
-
+void PongScene::movePaddles() {
     float step = 1.5f;
     float bottom = 560.0f;
     float top = 40.0f;
+    /// FIXME: use "Uint32 SDL_GetTicks(void)" to work out a movement delta
+    /// use variables for screen extents and paddle sizes
     if (left_.up()) {
-        /// FIXME: use "Uint32 SDL_GetTicks(void)" to work out a movement delta
-        /// use variables for screen extents and paddle sizes
         if (left_.position() > top)
             left_.position(left_.position() - step);
     } else if (left_.down()) {
         if (left_.position() < bottom)
             left_.position(left_.position() + step);
-    } else {
     }
 
     if (right_.up()) {
@@ -172,10 +172,30 @@ void PongScene::tick() {
     } else if (right_.down()) {
         if (right_.position() < bottom)
             right_.position(right_.position() + step);
-    } else {
     }
+}
+
+void PongScene::tick() {
+    if (gameState_.paused()) {
+        return;
+    }
+
+    checkVictory();
+
+    // one snapshot serves the whole tick: a bounce changes the ball's direction rather
+    // than its position, and the reposition a point scores happens after everything that
+    // reads where the ball was
+    const glm::vec2 ballPosition = ball_.position();
+
+    steerOpponent(ballPosition);
+    bouncePaddles(ballPosition);
+    scorePoint(ballPosition);
+    bounceWalls(ballPosition);
+    movePaddles();
+
     ball_.move();
 }
+
 
 void PongScene::reset() {
     float mid_y = height_ / 2.0f;

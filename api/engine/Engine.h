@@ -14,6 +14,7 @@
 #include "../event/Engine.h"
 #include "../render/realtime/Window.h"
 
+#include <boost/json.hpp>
 #include <entt/entt.hpp>
 
 namespace v3d::engine {
@@ -101,6 +102,15 @@ class Engine {
 
  private:
      bool registerEventMappings();
+
+     /**
+      * One end of a binding: the name and context it fires under, plus what that end
+      * alone carries - the edge a source matches, and the parameter a destination
+      * arrives with.
+      * @return false when the mapping does not describe that end, which is logged
+      **/
+     bool readMappingSource(const boost::json::object& mapping, v3d::event::Event* event);
+     bool readMappingDestination(const boost::json::object& mapping, v3d::event::Event* event);
 
      std::string appPath_;
      int features_;

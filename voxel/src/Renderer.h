@@ -68,7 +68,7 @@ class Renderer {
     /**
      * The ui whose containers are drawn over the terrain, or null to draw none.
      **/
-    void ui(const boost::shared_ptr<v3d::ui::Engine>& ui);
+    void ui(const boost::shared_ptr<v3d::ui::Engine>& engine);
 
     /**
      * Wait for everything in flight, before the window the device draws to goes away.

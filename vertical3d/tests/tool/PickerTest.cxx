@@ -198,7 +198,8 @@ BOOST_AUTO_TEST_CASE(picker_edge_test) {
 
     const std::vector<unsigned int> loop = v3d::editor::faceLoop(cube, 0);
     BOOST_REQUIRE_GE(loop.size(), 3u);
-    glm::vec3 from, to;
+    glm::vec3 from;
+    glm::vec3 to;
     BOOST_REQUIRE_EQUAL(v3d::editor::loopSegment(cube, loop, 0, &from, &to), true);
 
     // the middle of an edge, which is the point furthest from either of its vertices

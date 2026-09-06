@@ -8,7 +8,7 @@
 namespace v3d::event {
 /**
  **/
-MouseMotion::MouseMotion(const glm::vec2& position, const glm::vec2& motion, const boost::shared_ptr<Context>& context) noexcept :
+MouseMotion::MouseMotion(const glm::vec2& position, const glm::vec2& motion, const boost::shared_ptr<Context>& context) :
     Event("motion", context),
     position_(position),
     motion_(motion) {

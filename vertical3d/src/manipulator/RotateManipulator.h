@@ -44,6 +44,16 @@ class RotateManipulator final : public Manipulator {
      * into the screen sweeps the opposite way round the origin from one about an axis
      * coming out of it, and the sign follows from which it is.
      **/
+    /**
+     * How close the cursor comes to the ring about one axis, in pixels.
+     *
+     * A ring is not one segment, so it is tested as the run of segments it is drawn
+     * as. Nothing within tolerance of any of them, and nothing that projects at all,
+     * both come back negative.
+     **/
+    float ringDistance(const Placement& placement, const glm::vec3& unit,
+        const ViewPort& view, const glm::vec2& cursor) const;
+
     float swept(const ViewPort& view, const Placement& placement, Axis axis,
         const glm::vec2& from, const glm::vec2& to) const;
 };

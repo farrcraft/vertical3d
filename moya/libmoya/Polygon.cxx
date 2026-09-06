@@ -6,6 +6,8 @@
 #include "Polygon.h"
 
 #include <cmath>
+
+#include <glm/common.hpp>
 #include <cassert>
 #include <iostream>
 #include <utility>
@@ -74,38 +76,20 @@ Vertex& Polygon::operator[] (size_t idx) {
 v3d::type::AABBox Polygon::bound(void) const {
     v3d::type::AABBox bound;
 
-    if (vertices_.size() == 0) {
+    if (vertices_.empty()) {
         return bound;
     }
     /*
         move over each vertex and record min/max
     */
     std::vector<Vertex>::const_iterator it = vertices_.begin();
-    glm::vec3 min, max;
+    glm::vec3 min;
+    glm::vec3 max;
     min = vertices_[0].point();
     max = min;
     for (; it != vertices_.end(); it++) {
-        // std::cerr << " v = " << (*it).point();
-        if (min[0] > (*it).point()[0]) {
-            min[0] = (*it).point()[0];
-        }
-        if (max[0] < (*it).point()[0]) {
-            max[0] = (*it).point()[0];
-        }
-
-        if (min[1] > (*it).point()[1]) {
-            min[1] = (*it).point()[1];
-        }
-        if (max[1] < (*it).point()[1]) {
-            max[1] = (*it).point()[1];
-        }
-
-        if (min[2] > (*it).point()[2]) {
-            min[2] = (*it).point()[2];
-        }
-        if (max[2] < (*it).point()[2]) {
-            max[2] = (*it).point()[2];
-        }
+        min = glm::min(min, (*it).point());
+        max = glm::max(max, (*it).point());
     }
     bound.extents(min, max);
 
@@ -157,14 +141,67 @@ internal splitter - will be called 3 times by split()
 args p1 and p2 should be pointers to empty polygons to store the resulting split
 polygons
 */
+namespace {
+
+/**
+ * An edge that crosses the plane. hit is the vertex both halves come to share, so it goes
+ * into each of them; which half keeps A and which keeps B follows the side A is on.
+ **/
+void addCrossingEdge(const glm::vec3& a, const glm::vec3& b, const glm::vec3& hit, int side,
+    bool first, bool last, const boost::shared_ptr<Polygon>& p1, const boost::shared_ptr<Polygon>& p2) {
+    Vertex vert;
+    vert.point(a);
+    if (first) {
+        if (side < 0) {
+            p1->addVertex(vert);
+        } else {
+            p2->addVertex(vert);
+        }
+    }
+
+    vert.point(hit);
+    p1->addVertex(vert);
+    p2->addVertex(vert);
+
+    vert.point(b);
+    if (!last) {
+        if (side < 0) {
+            p2->addVertex(vert);
+        } else {
+            p1->addVertex(vert);
+        }
+    }
+}
+
+/**
+ * An edge wholly on one side of the plane, so both its vertices go to the same half.
+ *
+ * Only the first edge contributes its A and only a non-final edge contributes its B: every
+ * other vertex is the B of the edge before it.
+ **/
+void addWholeEdge(const glm::vec3& a, const glm::vec3& b, int side, bool first, bool last,
+    const boost::shared_ptr<Polygon>& p1, const boost::shared_ptr<Polygon>& p2) {
+    const boost::shared_ptr<Polygon>& half = side <= 0 ? p1 : p2;
+    Vertex vert;
+    vert.point(a);
+    if (first) {
+        half->addVertex(vert);
+    }
+    vert.point(b);
+    if (!last) {
+        half->addVertex(vert);
+    }
+}
+
+};  // namespace
+
 void Polygon::split(const Plane& plane, const boost::shared_ptr<Polygon> & p1, const boost::shared_ptr<Polygon> & p2) {
     // intersect each edge with the plane
-    glm::vec3 A, B, hit;
-    int side;
-    Vertex vert;
-    size_t vcount;
+    glm::vec3 A;
+    glm::vec3 B;
+    glm::vec3 hit;
     for (unsigned int i = 0; i < vertices_.size(); i++) {
-        vcount = vertices_.size();
+        const size_t vcount = vertices_.size();
         A = vertices_[i].point();
         if (i == (vcount - 1)) {
             B = vertices_[0].point();
@@ -172,55 +209,15 @@ void Polygon::split(const Plane& plane, const boost::shared_ptr<Polygon> & p1, c
             B = vertices_[i + 1].point();
         }
         // classify which side of the plane A is on
-        side = plane.classify(A);
+        const int side = plane.classify(A);
+        const bool first = (i == 0);
+        const bool last = (i == (vcount - 1));
         if (plane.intersectEdge(A, B, &hit)) {
-            // A is on one side and B on the other
-            // hit is the common vertex both new edges share
-            // create a new edge for p1 and p2 e1 (A, hit), e2 (hit, B)
-            vert.point(A);
-            if (i == 0) {
-                if (side < 0) {
-                    p1->addVertex(vert);
-                } else {
-                    p2->addVertex(vert);
-                }
-            }
-
-            vert.point(hit);
-            p1->addVertex(vert);
-            p2->addVertex(vert);
-
-            vert.point(B);
-            if (i != (vcount - 1)) {
-                if (side < 0) {
-                    p2->addVertex(vert);
-                } else {
-                    p1->addVertex(vert);
-                }
-            }
+            addCrossingEdge(A, B, hit, side, first, last, p1, p2);
         } else {
-            // add edge to poly corresponding to the classification of A
             // since there was no intersection, B will be on the same side
-            vert.point(A);
-            int bside = plane.classify(B);
-            assert(side == bside);
-            if (side <= 0) {
-                if (i == 0) {
-                    p1->addVertex(vert);
-                }
-                vert.point(B);
-                if (i != (vcount - 1)) {
-                    p1->addVertex(vert);
-                }
-            } else {
-                if (i == 0) {
-                    p2->addVertex(vert);
-                }
-                vert.point(B);
-                if (i != (vcount - 1)) {
-                    p2->addVertex(vert);
-                }
-            }
+            assert(side == plane.classify(B));
+            addWholeEdge(A, B, side, first, last, p1, p2);
         }
     }
 }
@@ -233,7 +230,9 @@ void Polygon::split(RenderContext & rc) {
     }
 
     // calculate polygon's normal from the polygon's first two vertices
-    glm::vec3 v0, v1, n;
+    glm::vec3 v0;
+    glm::vec3 v1;
+    glm::vec3 n;
     v0 = vertices_[0].point() - vertices_[1].point();
     v1 = vertices_[2].point() - vertices_[1].point();
     n = glm::normalize(glm::cross(v1, v0));
@@ -243,7 +242,8 @@ void Polygon::split(RenderContext & rc) {
     pn = glm::normalize(glm::cross(n, v0));
     // find a point on the plane
     v3d::type::AABBox bounds;
-    glm::vec3 mp, pop;
+    glm::vec3 mp;
+    glm::vec3 pop;
     bounds = bound();
     mp = (bounds.max() - bounds.min());
     mp /= 2.0;
@@ -253,7 +253,8 @@ void Polygon::split(RenderContext & rc) {
     plane.calculate(pn, pop);
 
     // two new (potentially) polygons created as a result of splitting
-    boost::shared_ptr<Polygon> p1(new Polygon()), p2(new Polygon());
+    boost::shared_ptr<Polygon> p1(new Polygon());
+    boost::shared_ptr<Polygon> p2(new Polygon());
     // first split
     split(plane, p1, p2);
 
@@ -264,10 +265,10 @@ void Polygon::split(RenderContext & rc) {
     plane.calculate(pn, pop);
 
     // split the two new polygons against the two created by the last split
-    boost::shared_ptr<Polygon> pf1(new Polygon()),
-        pf2(new Polygon()),
-        pf3(new Polygon()),
-        pf4(new Polygon());
+    boost::shared_ptr<Polygon> pf1(new Polygon());
+    boost::shared_ptr<Polygon> pf2(new Polygon());
+    boost::shared_ptr<Polygon> pf3(new Polygon());
+    boost::shared_ptr<Polygon> pf4(new Polygon());
     p1->split(plane, pf1, pf2);
     p2->split(plane, pf3, pf4);
 

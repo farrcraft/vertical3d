@@ -17,7 +17,8 @@ class MouseButton : public Event {
  public:
     /**
      **/
-    MouseButton(unsigned int button, const boost::shared_ptr<Context>& context, bool pressed) noexcept;
+    // not noexcept: the base takes the event name as a std::string, which allocates
+    MouseButton(unsigned int button, const boost::shared_ptr<Context>& context, bool pressed);
 
     /**
      **/

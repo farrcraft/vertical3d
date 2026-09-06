@@ -29,7 +29,7 @@ std::vector< boost::shared_ptr<Style> > Theme::getStyleSet(const std::string& na
     std::vector< boost::shared_ptr<Style> > matching_styles;
     std::vector< boost::shared_ptr<Style> >::const_iterator iter = styles_.begin();
     for (; iter != styles_.end(); iter++) {
-        if ((name == "" || (*iter)->name() == name) && (class_name == "" || (*iter)->className() == class_name))
+        if ((name.empty() || (*iter)->name() == name) && (class_name.empty() || (*iter)->className() == class_name))
             matching_styles.push_back((*iter));
     }
     return matching_styles;

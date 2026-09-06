@@ -13,12 +13,12 @@ namespace v3d::ecs::component {
  **/
 class Color3 final {
  public:
-    Color3(const float red, const float green, const float blue) noexcept;
+    Color3(float red, float green, float blue) noexcept;
 
     /**
      * Move constructor
      **/
-    Color3(Color3&&) noexcept;
+    Color3(Color3&& c) noexcept;
 
     /**
      * Default destructor
@@ -48,7 +48,7 @@ class Color3 final {
     /**
      * Move assignment
      **/
-    Color3& operator=(Color3&&) noexcept;
+    Color3& operator=(Color3&& c) noexcept;
 
  private:
     glm::vec3 color_;

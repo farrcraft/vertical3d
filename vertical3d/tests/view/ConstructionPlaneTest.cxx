@@ -34,7 +34,10 @@ BOOST_AUTO_TEST_CASE(constructionplane_extent_test) {
     grid.spacing(1.0f);
     grid.draw(camera, &canvas);
 
-    float minU = 0.0f, maxU = 0.0f, minV = 0.0f, maxV = 0.0f;
+    float minU = 0.0f;
+    float maxU = 0.0f;
+    float minV = 0.0f;
+    float maxV = 0.0f;
     for (const v3d::render::realtime::LineCanvas::Vertex& vertex : canvas.vertices()) {
         minU = std::min(minU, vertex.position.x);
         maxU = std::max(maxU, vertex.position.x);

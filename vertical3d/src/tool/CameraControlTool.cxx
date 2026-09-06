@@ -140,7 +140,8 @@ void CameraControlTool::truck(const glm::vec2& position) {
     if (!camera) {
         return;
     }
-    float delta_x, delta_y;
+    float delta_x;
+    float delta_y;
     delta_x = static_cast<float>(position[0] - last_[0]);
     delta_y = static_cast<float>(position[1] - last_[1]);
     float factor;

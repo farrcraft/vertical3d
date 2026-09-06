@@ -149,7 +149,9 @@ void Picker::surface(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
 
         // a fan from the loop's first vertex is correct only for a planar convex
         // face, which is all the primitives and the modelling operations produce
-        glm::vec3 first, second, third;
+        glm::vec3 first;
+        glm::vec3 second;
+        glm::vec3 third;
         if (!loopSegment(mesh, loop, 0, &first, nullptr)) {
             continue;
         }
@@ -198,12 +200,14 @@ void Picker::edges(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
                 continue;
             }
 
-            glm::vec3 from, to;
+            glm::vec3 from;
+            glm::vec3 to;
             if (!loopSegment(mesh, loop, index, &from, &to)) {
                 continue;
             }
 
-            glm::vec2 start, end;
+            glm::vec2 start;
+            glm::vec2 end;
             float startDepth = 0.0f;
             float endDepth = 0.0f;
             if (!screen(from, &start, &startDepth) || !screen(to, &end, &endDepth)) {

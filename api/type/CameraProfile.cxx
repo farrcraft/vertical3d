@@ -178,7 +178,9 @@ void CameraProfile::size(unsigned int width, unsigned int height) {
 }
 
 void CameraProfile::lookat(const glm::vec3& center) {
-    glm::vec3 x, y, z;
+    glm::vec3 x;
+    glm::vec3 y;
+    glm::vec3 z;
 
     // new direction vector
     z = center - eye_;
@@ -247,7 +249,9 @@ void CameraProfile::clone(const CameraProfile& profile) {
 }
 
 CameraProfile& CameraProfile::operator = (const CameraProfile& p) {
-    clone(p);
+    if (this != &p) {
+        clone(p);
+    }
     return *this;
 }
 

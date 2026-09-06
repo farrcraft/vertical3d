@@ -125,7 +125,7 @@ void TextureTextBuffer::addVertex(const glm::vec3& position, const glm::vec2& te
 }
 
 void TextureTextBuffer::addText(glm::vec2* pen, const Markup& markup, const std::wstring& text) {
-    if (vertices().size() == 0) {
+    if (vertices().empty()) {
         origin_ = *pen;
     }
     /*

@@ -46,10 +46,10 @@ const float panelCells = 6.0f;
 
 const float margin = 16.0f;
 
-const glm::vec4 wellColour(0.04f, 0.04f, 0.05f, 1.0f);
-const glm::vec4 borderColour(0.30f, 0.30f, 0.34f, 1.0f);
-const glm::vec4 textColour(0.85f, 0.85f, 0.85f, 1.0f);
-const glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
+constexpr glm::vec4 wellColour(0.04f, 0.04f, 0.05f, 1.0f);
+constexpr glm::vec4 borderColour(0.30f, 0.30f, 0.34f, 1.0f);
+constexpr glm::vec4 textColour(0.85f, 0.85f, 0.85f, 1.0f);
+constexpr glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
 
 };  // namespace
 

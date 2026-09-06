@@ -151,6 +151,7 @@ BOOST_AUTO_TEST_CASE(parameterlist_reads_back_typed_test) {
     BOOST_REQUIRE(Declaration::parse("uniform string", &text));
 
     std::vector<float> values;
+    values.reserve(6);
     for (int i = 0; i < 6; i++) {
         values.push_back(static_cast<float>(i));
     }

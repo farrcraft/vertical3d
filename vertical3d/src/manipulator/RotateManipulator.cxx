@@ -70,6 +70,44 @@ RotateManipulator::RotateManipulator() {
 
 /**
  **/
+float RotateManipulator::ringDistance(const Placement& placement, const glm::vec3& unit,
+    const ViewPort& view, const glm::vec2& cursor) const {
+    glm::vec3 first;
+    glm::vec3 second;
+    perpendiculars(unit, &first, &second);
+
+    glm::vec2 start;
+    bool started = false;
+    float nearest = -1.0f;
+    for (unsigned int step = 0; step <= ringSides; step++) {
+        const float angle = 2.0f * glm::pi<float>() * static_cast<float>(step) /
+            static_cast<float>(ringSides);
+        const glm::vec3 point = placement.origin +
+            (first * std::cos(angle) + second * std::sin(angle)) * placement.size;
+
+        glm::vec2 end;
+        if (!project(view, point, &end)) {
+            started = false;
+            continue;
+        }
+        if (!started) {
+            started = true;
+            start = end;
+            continue;
+        }
+
+        const float distance = distanceToSegment(start, end, cursor);
+        start = end;
+        if (distance > tolerance) {
+            continue;
+        }
+        if (nearest < 0.0f || distance < nearest) {
+            nearest = distance;
+        }
+    }
+    return nearest;
+}
+
 bool RotateManipulator::grab(const boost::shared_ptr<v3d::brep::BRep>& mesh, const ViewPort& view,
     const glm::vec2& cursor, Axis* axis) const {
     const Placement seat = placement(mesh, view);
@@ -105,42 +143,17 @@ bool RotateManipulator::grab(const boost::shared_ptr<v3d::brep::BRep>& mesh, con
         if (std::fabs(glm::dot(unit, forward)) < faceOn) {
             continue;
         }
-
-        glm::vec3 first, second;
-        perpendiculars(unit, &first, &second);
-
-        glm::vec2 start;
-        bool started = false;
-        for (unsigned int step = 0; step <= ringSides; step++) {
-            const float angle = 2.0f * glm::pi<float>() * static_cast<float>(step) /
-                static_cast<float>(ringSides);
-            const glm::vec3 point = seat.origin +
-                (first * std::cos(angle) + second * std::sin(angle)) * seat.size;
-
-            glm::vec2 end;
-            if (!project(view, point, &end)) {
-                started = false;
-                continue;
-            }
-            if (!started) {
-                started = true;
-                start = end;
-                continue;
-            }
-
-            const float distance = distanceToSegment(start, end, cursor);
-            start = end;
-            if (distance > tolerance) {
-                continue;
-            }
-            if (found && distance >= nearest) {
-                continue;
-            }
-            found = true;
-            nearest = distance;
-            if (axis != nullptr) {
-                *axis = handle;
-            }
+        const float distance = ringDistance(seat, unit, view, cursor);
+        if (distance < 0.0f) {
+            continue;
+        }
+        if (found && distance >= nearest) {
+            continue;
+        }
+        found = true;
+        nearest = distance;
+        if (axis != nullptr) {
+            *axis = handle;
         }
     }
     return found;
@@ -160,7 +173,8 @@ void RotateManipulator::draw(const boost::shared_ptr<v3d::brep::BRep>& mesh, con
 
     const Axis axes[3] = { Axis::X, Axis::Y, Axis::Z };
     for (const Axis handle : axes) {
-        glm::vec3 first, second;
+        glm::vec3 first;
+        glm::vec3 second;
         perpendiculars(direction(seat, handle), &first, &second);
         canvas->circle(seat.origin, first, second, seat.size, ringSides, colour(handle));
     }
@@ -170,10 +184,10 @@ void RotateManipulator::draw(const boost::shared_ptr<v3d::brep::BRep>& mesh, con
 
 /**
  **/
-float RotateManipulator::swept(const ViewPort& view, const Placement& seat, Axis axis,
+float RotateManipulator::swept(const ViewPort& view, const Placement& placement, Axis axis,
     const glm::vec2& from, const glm::vec2& to) const {
     glm::vec2 root;
-    if (!project(view, seat.origin, &root)) {
+    if (!project(view, placement.origin, &root)) {
         return 0.0f;
     }
 
@@ -188,7 +202,7 @@ float RotateManipulator::swept(const ViewPort& view, const Placement& seat, Axis
 
     glm::vec3 forward(0.0f, 0.0f, 1.0f);  // NOLINT(build/include_what_you_use) - the direction, not std::forward
     basis(view, nullptr, nullptr, &forward);
-    return glm::dot(direction(seat, axis), forward) > 0.0f ? -angle : angle;
+    return glm::dot(direction(placement, axis), forward) > 0.0f ? -angle : angle;
 }
 
 /**

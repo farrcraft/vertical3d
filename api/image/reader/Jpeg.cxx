@@ -38,10 +38,14 @@ struct my_error_mgr {
 
 typedef struct my_error_mgr* my_error_ptr;
 
+namespace {
+
 /*
     * Here's the routine that will replace the standard error_exit method:
     */
-METHODDEF(void) my_error_exit(j_common_ptr cinfo) {
+// libjpeg spells this METHODDEF(void), which is static - the anonymous namespace is what
+// gives it internal linkage here, and both together is a redundant static
+void my_error_exit(j_common_ptr cinfo) {
     // cinfo->err really points to a my_error_mgr struct, so coerce pointer
     my_error_ptr myerr = (my_error_ptr)cinfo->err;
 
@@ -52,6 +56,8 @@ METHODDEF(void) my_error_exit(j_common_ptr cinfo) {
     // Return control to the setjmp point
     longjmp(myerr->setjmp_buffer, 1);
 }
+
+};  // namespace
 
 boost::shared_ptr<Image> Jpeg::read(std::string_view filename) {
     logger_->get()->debug("JPEGReader::read - Reading jpeg file {}", filename);
@@ -126,15 +132,16 @@ boost::shared_ptr<Image> Jpeg::read(std::string_view filename) {
     // i is row i of the buffer.
     JDIMENSION num_scanlines = 0;
     unsigned int row = 0;
-    unsigned int index = 0;
+    size_t index = 0;
     while (cinfo.output_scanline < cinfo.output_height) {
         num_scanlines = jpeg_read_scanlines(&cinfo, buffer, buffer_height);
 
-        index = row * 3 * cinfo.output_width;
+        index = static_cast<size_t>(row) * 3 * cinfo.output_width;
         for (unsigned int i = 0; i < cinfo.output_width; i++) {
-            data[index] = buffer[0][(i * cinfo.output_components)];
-            data[index + 1] = buffer[0][(i * cinfo.output_components) + 1];
-            data[index + 2] = buffer[0][(i * cinfo.output_components) + 2];
+            const size_t sample = static_cast<size_t>(i) * cinfo.output_components;
+            data[index] = buffer[0][sample];
+            data[index + 1] = buffer[0][sample + 1];
+            data[index + 2] = buffer[0][sample + 2];
             index += 3;
         }
         row++;

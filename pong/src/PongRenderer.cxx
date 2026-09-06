@@ -18,9 +18,9 @@ namespace {
  **/
 const float fontSize = 28.0f;
 
-const glm::vec4 boardColour(0.35f, 0.35f, 0.35f, 1.0f);
-const glm::vec4 ballColour(1.0f, 1.0f, 1.0f, 1.0f);
-const glm::vec4 scoreColour(0.85f, 0.85f, 0.85f, 1.0f);
+constexpr glm::vec4 boardColour(0.35f, 0.35f, 0.35f, 1.0f);
+constexpr glm::vec4 ballColour(1.0f, 1.0f, 1.0f, 1.0f);
+constexpr glm::vec4 scoreColour(0.85f, 0.85f, 0.85f, 1.0f);
 
 const unsigned int ballSides = 32;
 const unsigned int wallThickness = 15;

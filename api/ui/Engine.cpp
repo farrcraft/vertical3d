@@ -56,21 +56,29 @@ style::Property::Alignment alignment(const boost::json::object& entry) {
     const std::string name = boost::json::value_to<std::string>(entry.at("align"));
     if (name == "top") {
         return style::Property::TOP;
-    } else if (name == "bottom") {
+    }
+    if (name == "bottom") {
         return style::Property::BOTTOM;
-    } else if (name == "left") {
+    }
+    if (name == "left") {
         return style::Property::LEFT;
-    } else if (name == "right") {
+    }
+    if (name == "right") {
         return style::Property::RIGHT;
-    } else if (name == "top-left") {
+    }
+    if (name == "top-left") {
         return style::Property::TOP_LEFT;
-    } else if (name == "bottom-left") {
+    }
+    if (name == "bottom-left") {
         return style::Property::BOTTOM_LEFT;
-    } else if (name == "top-right") {
+    }
+    if (name == "top-right") {
         return style::Property::TOP_RIGHT;
-    } else if (name == "bottom-right") {
+    }
+    if (name == "bottom-right") {
         return style::Property::BOTTOM_RIGHT;
-    } else if (name == "center") {
+    }
+    if (name == "center") {
         return style::Property::CENTER;
     }
     return style::Property::NULL_ALIGNMENT;
@@ -93,50 +101,52 @@ Engine::Engine(const boost::shared_ptr<v3d::event::Engine>& eventEngine, const b
     eventEngine_(eventEngine), dispatcher_(dispatcher), logger_(logger) {
 }
 
-bool Engine::load(const boost::shared_ptr<v3d::asset::Json>& config) {
-    auto const doc = config->document();
+bool Engine::loadTheme(const boost::json::object& entry) {
+    std::string themeName = boost::json::value_to<std::string>(entry.at("name"));
+    boost::shared_ptr<style::Theme> theme = boost::make_shared<style::Theme>(themeName);
 
-    // read themes
+    // a theme with no styles in it is legal and draws in the defaults, which is what
+    // every ui config in the tree was before the styles could be read
+    if (entry.contains("styles")) {
+        if (!entry.at("styles").is_array()) {
+            logger_->get()->error("Unrecognized styles config in theme [{}]", themeName);
+            return false;
+        }
+        auto const styles = entry.at("styles").as_array();
+        for (const auto* styleIterator = styles.begin(); styleIterator != styles.end(); ++styleIterator) {
+            if (!styleIterator->is_object()) {
+                logger_->get()->error("Unrecognized style config in theme [{}]", themeName);
+                return false;
+            }
+            if (!loadStyle(styleIterator->as_object(), theme)) {
+                return false;
+            }
+        }
+    }
+
+    themes_.push_back(theme);
+    // the first theme loaded is active unless the document names one, which is what
+    // makes a config carrying a single theme need no field at all
+    if (!activeTheme_) {
+        activeTheme_ = theme;
+    }
+    return true;
+}
+
+bool Engine::loadThemes(const boost::json::object& doc) {
     auto const themesSection = doc.at("themes");
     if (!themesSection.is_array()) {
         logger_->get()->error("Missing themes in config");
         return false;
     }
     auto const themes = themesSection.as_array();
-    auto it = themes.begin();
-    for (; it != themes.end(); ++it) {
+    for (const auto* it = themes.begin(); it != themes.end(); ++it) {
         if (!it->is_object()) {
             logger_->get()->error("Unrecognized theme config");
             return false;
         }
-        auto const themeEntry = it->as_object();
-        std::string themeName = boost::json::value_to<std::string>(themeEntry.at("name"));
-        boost::shared_ptr<style::Theme> theme = boost::make_shared<style::Theme>(themeName);
-
-        // a theme with no styles in it is legal and draws in the defaults, which is what
-        // every ui config in the tree was before the styles could be read
-        if (themeEntry.contains("styles")) {
-            if (!themeEntry.at("styles").is_array()) {
-                logger_->get()->error("Unrecognized styles config in theme [{}]", themeName);
-                return false;
-            }
-            auto const styles = themeEntry.at("styles").as_array();
-            for (auto styleIterator = styles.begin(); styleIterator != styles.end(); ++styleIterator) {
-                if (!styleIterator->is_object()) {
-                    logger_->get()->error("Unrecognized style config in theme [{}]", themeName);
-                    return false;
-                }
-                if (!loadStyle(styleIterator->as_object(), theme)) {
-                    return false;
-                }
-            }
-        }
-
-        themes_.push_back(theme);
-        // the first theme loaded is active unless the document names one, which is what
-        // makes a config carrying a single theme need no field at all
-        if (!activeTheme_) {
-            activeTheme_ = theme;
+        if (!loadTheme(it->as_object())) {
+            return false;
         }
     }
 
@@ -146,90 +156,108 @@ bool Engine::load(const boost::shared_ptr<v3d::asset::Json>& config) {
             return false;
         }
     }
+    return true;
+}
 
-    // read containers
+bool Engine::loadComponent(const boost::json::object& entry, const boost::shared_ptr<Container>& container) {
+    std::string componentType = boost::json::value_to<std::string>(entry.at("type"));
+    std::string componentName = boost::json::value_to<std::string>(entry.at("name"));
+
+    // read individual component types
+    if (componentType == "menu") {
+        boost::shared_ptr<component::Menu> menu = loadMenu(entry);
+        if (!menu) {
+            return false;
+        }
+        menu->name(componentName);
+        // this is the menu the app navigates, so it starts as its own active level
+        menu->level(menu);
+        container->add(menu);
+    } else if (componentType == "menubar") {
+        boost::shared_ptr<component::MenuBar> bar = loadMenuBar(entry);
+        if (!bar) {
+            return false;
+        }
+        bar->name(componentName);
+        container->add(bar);
+    } else if (componentType == "toolbar") {
+        boost::shared_ptr<component::Toolbar> bar = loadToolbar(entry);
+        if (!bar) {
+            return false;
+        }
+        bar->name(componentName);
+        loadAttributes(entry, bar);
+        container->add(bar);
+    } else if (componentType == "button") {
+        boost::shared_ptr<component::Button> button = loadButton(entry);
+        button->name(componentName);
+        loadAttributes(entry, button);
+        container->add(button);
+    } else if (componentType == "label") {
+        boost::shared_ptr<component::Label> label = loadLabel(entry);
+        label->name(componentName);
+        loadAttributes(entry, label);
+        container->add(label);
+    } else if (componentType == "icon") {
+        boost::shared_ptr<component::Icon> icon = loadIcon(entry);
+        if (!icon) {
+            return false;
+        }
+        icon->name(componentName);
+        loadAttributes(entry, icon);
+        container->add(icon);
+    } else {
+        logger_->get()->error("Unrecognized ui component type [{}]", componentType);
+        return false;
+    }
+    return true;
+}
+
+bool Engine::loadContainer(const boost::json::object& entry) {
+    std::string containerName = boost::json::value_to<std::string>(entry.at("name"));
+    bool visible = boost::json::value_to<bool>(entry.at("visible"));
+    boost::shared_ptr<Container> container = boost::make_shared<Container>(containerName, visible);
+    containers_.push_back(container);
+
+    // read components in this container
+    auto const componentsSection = entry.at("components");
+    if (!componentsSection.is_array()) {
+        logger_->get()->error("Missing components in config");
+        return false;
+    }
+    auto const components = componentsSection.as_array();
+    for (const auto* it = components.begin(); it != components.end(); ++it) {
+        if (!it->is_object()) {
+            logger_->get()->error("Unrecognized component config");
+            return false;
+        }
+        if (!loadComponent(it->as_object(), container)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool Engine::load(const boost::shared_ptr<v3d::asset::Json>& config) {
+    auto const doc = config->document();
+
+    if (!loadThemes(doc)) {
+        return false;
+    }
+
     auto const containersSection = doc.at("containers");
     if (!containersSection.is_array()) {
         logger_->get()->error("Missing containers in config");
         return false;
     }
     auto const containers = containersSection.as_array();
-    auto containerIterator = containers.begin();
-    for (; containerIterator != containers.end(); ++containerIterator) {
-        if (!containerIterator->is_object()) {
+    for (const auto* it = containers.begin(); it != containers.end(); ++it) {
+        if (!it->is_object()) {
             logger_->get()->error("Unrecognized containers config");
             return false;
         }
-        auto const containerEntry = containerIterator->as_object();
-        std::string containerName = boost::json::value_to<std::string>(containerEntry.at("name"));
-        bool visible = boost::json::value_to<bool>(containerEntry.at("visible"));
-        boost::shared_ptr<Container> container = boost::make_shared<Container>(containerName, visible);
-        containers_.push_back(container);
-
-        // read components in this container
-        auto const componentsSection = containerEntry.at("components");
-        if (!componentsSection.is_array()) {
-            logger_->get()->error("Missing components in config");
+        if (!loadContainer(it->as_object())) {
             return false;
-        }
-        auto const components = componentsSection.as_array();
-        auto componentIterator = components.begin();
-        for (; componentIterator != components.end(); ++componentIterator) {
-            if (!componentIterator->is_object()) {
-                logger_->get()->error("Unrecognized component config");
-                return false;
-            }
-            auto const componentEntry = componentIterator->as_object();
-            std::string componentType = boost::json::value_to<std::string>(componentEntry.at("type"));
-            std::string componentName = boost::json::value_to<std::string>(componentEntry.at("name"));
-
-            // read individual component types
-            if (componentType == "menu") {
-                boost::shared_ptr<component::Menu> menu = loadMenu(componentEntry);
-                if (!menu) {
-                    return false;
-                }
-                menu->name(componentName);
-                // this is the menu the app navigates, so it starts as its own active level
-                menu->level(menu);
-                container->add(menu);
-            } else if (componentType == "menubar") {
-                boost::shared_ptr<component::MenuBar> bar = loadMenuBar(componentEntry);
-                if (!bar) {
-                    return false;
-                }
-                bar->name(componentName);
-                container->add(bar);
-            } else if (componentType == "toolbar") {
-                boost::shared_ptr<component::Toolbar> bar = loadToolbar(componentEntry);
-                if (!bar) {
-                    return false;
-                }
-                bar->name(componentName);
-                loadAttributes(componentEntry, bar);
-                container->add(bar);
-            } else if (componentType == "button") {
-                boost::shared_ptr<component::Button> button = loadButton(componentEntry);
-                button->name(componentName);
-                loadAttributes(componentEntry, button);
-                container->add(button);
-            } else if (componentType == "label") {
-                boost::shared_ptr<component::Label> label = loadLabel(componentEntry);
-                label->name(componentName);
-                loadAttributes(componentEntry, label);
-                container->add(label);
-            } else if (componentType == "icon") {
-                boost::shared_ptr<component::Icon> icon = loadIcon(componentEntry);
-                if (!icon) {
-                    return false;
-                }
-                icon->name(componentName);
-                loadAttributes(componentEntry, icon);
-                container->add(icon);
-            } else {
-                logger_->get()->error("Unrecognized ui component type [{}]", componentType);
-                return false;
-            }
         }
     }
     return true;
@@ -276,6 +304,45 @@ bool Engine::loadStyle(const boost::json::object& entry, const boost::shared_ptr
 
 /**
  **/
+boost::shared_ptr<style::Property> Engine::loadProperty(const std::string& section,
+    const boost::json::object& property, const std::string& name, std::string* propertyClass) {
+    if (section == "colors") {
+        *propertyClass = "color";
+        return boost::make_shared<style::prop::Color>(name,
+            numbers<glm::vec4, 4>(property, "value", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
+    }
+    if (section == "numbers") {
+        if (!property.contains("value") || !property.at("value").is_number()) {
+            logger_->get()->error("The style number [{}] has no value", name);
+            return nullptr;
+        }
+        *propertyClass = "number";
+        return boost::make_shared<style::prop::Number>(name,
+            static_cast<float>(boost::json::value_to<double>(property.at("value"))));
+    }
+    if (section == "fonts") {
+        boost::shared_ptr<style::prop::Font> font = boost::make_shared<style::prop::Font>(name,
+            property.contains("source") ? boost::json::value_to<std::string>(property.at("source")) : std::string());
+        if (property.contains("face")) {
+            font->face(boost::json::value_to<std::string>(property.at("face")));
+        }
+        if (property.contains("size")) {
+            font->size(static_cast<unsigned int>(boost::json::value_to<double>(property.at("size"))));
+        }
+        font->bold(flag(property, "bold", false));
+        font->italics(flag(property, "italics", false));
+        *propertyClass = "font";
+        return font;
+    }
+    if (!property.contains("source")) {
+        logger_->get()->error("The style image [{}] names no source", name);
+        return nullptr;
+    }
+    *propertyClass = "image";
+    return boost::make_shared<style::prop::Image>(name,
+        boost::json::value_to<std::string>(property.at("source")));
+}
+
 bool Engine::loadProperties(const boost::json::object& entry, const boost::shared_ptr<Style>& target) {
     // the four arrays are the four property classes a style is asked for by, so what a
     // property is read as is where it was written rather than a field it carries
@@ -290,7 +357,7 @@ bool Engine::loadProperties(const boost::json::object& entry, const boost::share
             return false;
         }
         auto const properties = entry.at(section).as_array();
-        for (auto it = properties.begin(); it != properties.end(); ++it) {
+        for (const auto* it = properties.begin(); it != properties.end(); ++it) {
             if (!it->is_object() || !it->as_object().contains("name")) {
                 logger_->get()->error("A style property needs a name");
                 return false;
@@ -298,43 +365,11 @@ bool Engine::loadProperties(const boost::json::object& entry, const boost::share
             auto const property = it->as_object();
             const std::string name = boost::json::value_to<std::string>(property.at("name"));
 
-            boost::shared_ptr<style::Property> loaded;
             std::string propertyClass;
-            if (std::string(section) == "colors") {
-                loaded = boost::make_shared<style::prop::Color>(name,
-                    numbers<glm::vec4, 4>(property, "value", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
-                propertyClass = "color";
-            } else if (std::string(section) == "numbers") {
-                if (!property.contains("value") || !property.at("value").is_number()) {
-                    logger_->get()->error("The style number [{}] has no value", name);
-                    return false;
-                }
-                loaded = boost::make_shared<style::prop::Number>(name,
-                    static_cast<float>(boost::json::value_to<double>(property.at("value"))));
-                propertyClass = "number";
-            } else if (std::string(section) == "fonts") {
-                boost::shared_ptr<style::prop::Font> font = boost::make_shared<style::prop::Font>(name,
-                    property.contains("source") ? boost::json::value_to<std::string>(property.at("source")) : std::string());
-                if (property.contains("face")) {
-                    font->face(boost::json::value_to<std::string>(property.at("face")));
-                }
-                if (property.contains("size")) {
-                    font->size(static_cast<unsigned int>(boost::json::value_to<double>(property.at("size"))));
-                }
-                font->bold(flag(property, "bold", false));
-                font->italics(flag(property, "italics", false));
-                loaded = font;
-                propertyClass = "font";
-            } else {
-                if (!property.contains("source")) {
-                    logger_->get()->error("The style image [{}] names no source", name);
-                    return false;
-                }
-                loaded = boost::make_shared<style::prop::Image>(name,
-                    boost::json::value_to<std::string>(property.at("source")));
-                propertyClass = "image";
+            boost::shared_ptr<style::Property> loaded = loadProperty(section, property, name, &propertyClass);
+            if (!loaded) {
+                return false;
             }
-
             loaded->align(alignment(property));
             target->addProperty(loaded, propertyClass);
         }
@@ -396,12 +431,8 @@ boost::shared_ptr<component::Icon> Engine::loadIcon(const boost::json::object& e
 
 /**
  **/
-std::size_t Engine::resolveImages(const Resolve& resolve) {
-    if (!resolve) {
-        return 0;
-    }
+std::size_t Engine::resolveThemeImages(const Resolve& resolve) {
     std::size_t resolved = 0;
-
     for (const boost::shared_ptr<style::Theme>& theme : themes_) {
         for (const boost::shared_ptr<Style>& target : theme->getStyleSet("", "")) {
             for (const boost::shared_ptr<style::Property>& property : target->getPropertySet("", "image")) {
@@ -420,39 +451,56 @@ std::size_t Engine::resolveImages(const Resolve& resolve) {
             }
         }
     }
+    return resolved;
+}
 
-    for (const boost::shared_ptr<Container>& container : containers_) {
-        for (const boost::shared_ptr<Component>& component : container->components()) {
-            boost::shared_ptr<component::Icon> icon = boost::dynamic_pointer_cast<component::Icon>(component);
-            if (icon) {
-                if (resolveIcon(resolve, std::string(icon->source()), icon)) {
-                    resolved++;
-                }
-                continue;
-            }
-            boost::shared_ptr<component::Button> button = boost::dynamic_pointer_cast<component::Button>(component);
-            if (button) {
-                if (resolveIcon(resolve, std::string(button->icon()), button)) {
-                    resolved++;
-                }
-                continue;
-            }
-            // a strip's buttons are its own rather than the container's, so they are not
-            // reached by walking what the container holds
-            boost::shared_ptr<component::Toolbar> bar = boost::dynamic_pointer_cast<component::Toolbar>(component);
-            if (!bar) {
-                continue;
-            }
-            for (std::size_t index = 0; index < bar->size(); index++) {
-                const boost::shared_ptr<component::Button> held = bar->button(index);
-                if (held && resolveIcon(resolve, std::string(held->icon()), held)) {
-                    resolved++;
-                }
-            }
+std::size_t Engine::resolveComponentImages(const Resolve& resolve, const boost::shared_ptr<Component>& component) {
+    std::size_t resolved = 0;
+
+    boost::shared_ptr<component::Icon> icon = boost::dynamic_pointer_cast<component::Icon>(component);
+    if (icon) {
+        if (resolveIcon(resolve, std::string(icon->source()), icon)) {
+            resolved++;
+        }
+        return resolved;
+    }
+    boost::shared_ptr<component::Button> button = boost::dynamic_pointer_cast<component::Button>(component);
+    if (button) {
+        if (resolveIcon(resolve, std::string(button->icon()), button)) {
+            resolved++;
+        }
+        return resolved;
+    }
+    // a strip's buttons are its own rather than the container's, so they are not
+    // reached by walking what the container holds
+    boost::shared_ptr<component::Toolbar> bar = boost::dynamic_pointer_cast<component::Toolbar>(component);
+    if (!bar) {
+        return resolved;
+    }
+    for (std::size_t index = 0; index < bar->size(); index++) {
+        const boost::shared_ptr<component::Button> held = bar->button(index);
+        if (held && resolveIcon(resolve, std::string(held->icon()), held)) {
+            resolved++;
         }
     }
-
     return resolved;
+}
+
+std::size_t Engine::resolveContainerImages(const Resolve& resolve) {
+    std::size_t resolved = 0;
+    for (const boost::shared_ptr<Container>& container : containers_) {
+        for (const boost::shared_ptr<Component>& component : container->components()) {
+            resolved += resolveComponentImages(resolve, component);
+        }
+    }
+    return resolved;
+}
+
+std::size_t Engine::resolveImages(const Resolve& resolve) {
+    if (!resolve) {
+        return 0;
+    }
+    return resolveThemeImages(resolve) + resolveContainerImages(resolve);
 }
 
 /**
@@ -474,16 +522,16 @@ bool Engine::resolveIcon(const Resolve& resolve, const std::string& source, cons
 
 /**
  **/
-boost::shared_ptr<component::Menu> Engine::loadMenu(const boost::json::object& component) {
+boost::shared_ptr<component::Menu> Engine::loadMenu(const boost::json::object& entry) {
     boost::shared_ptr<component::Menu> menu = boost::make_shared<component::Menu>(dispatcher_);
 
-    auto const itemsSection = component.at("items");
+    auto const itemsSection = entry.at("items");
     if (!itemsSection.is_array()) {
         logger_->get()->error("Missing menu items in config");
         return nullptr;
     }
     auto const items = itemsSection.as_array();
-    auto itemsIterator = items.begin();
+    const auto* itemsIterator = items.begin();
     for (; itemsIterator != items.end(); ++itemsIterator) {
         if (!itemsIterator->is_object()) {
             logger_->get()->error("Unrecognized menu item config");
@@ -518,16 +566,16 @@ boost::shared_ptr<component::Menu> Engine::loadMenu(const boost::json::object& c
 
 /**
  **/
-boost::shared_ptr<component::MenuBar> Engine::loadMenuBar(const boost::json::object& component) {
+boost::shared_ptr<component::MenuBar> Engine::loadMenuBar(const boost::json::object& entry) {
     boost::shared_ptr<component::MenuBar> bar = boost::make_shared<component::MenuBar>();
 
-    auto const menusSection = component.at("menus");
+    auto const menusSection = entry.at("menus");
     if (!menusSection.is_array()) {
         logger_->get()->error("Missing menus in config");
         return nullptr;
     }
     auto const menus = menusSection.as_array();
-    auto menuIterator = menus.begin();
+    const auto* menuIterator = menus.begin();
     for (; menuIterator != menus.end(); ++menuIterator) {
         if (!menuIterator->is_object()) {
             logger_->get()->error("Unrecognized menu config");
@@ -567,10 +615,10 @@ v3d::event::Event Engine::loadCommand(const boost::json::object& entry) {
 
 /**
  **/
-boost::shared_ptr<component::Toolbar> Engine::loadToolbar(const boost::json::object& component) {
+boost::shared_ptr<component::Toolbar> Engine::loadToolbar(const boost::json::object& entry) {
     std::string edgeName = "top";
-    if (component.contains("edge")) {
-        edgeName = boost::json::value_to<std::string>(component.at("edge"));
+    if (entry.contains("edge")) {
+        edgeName = boost::json::value_to<std::string>(entry.at("edge"));
     }
     component::Toolbar::Edge edge = component::Toolbar::Edge::Top;
     if (edgeName == "left") {
@@ -582,13 +630,13 @@ boost::shared_ptr<component::Toolbar> Engine::loadToolbar(const boost::json::obj
 
     boost::shared_ptr<component::Toolbar> bar = boost::make_shared<component::Toolbar>(dispatcher_, edge);
 
-    auto const buttonsSection = component.at("buttons");
+    auto const buttonsSection = entry.at("buttons");
     if (!buttonsSection.is_array()) {
         logger_->get()->error("Missing toolbar buttons in config");
         return nullptr;
     }
     auto const buttons = buttonsSection.as_array();
-    auto buttonIterator = buttons.begin();
+    const auto* buttonIterator = buttons.begin();
     for (; buttonIterator != buttons.end(); ++buttonIterator) {
         if (!buttonIterator->is_object()) {
             logger_->get()->error("Unrecognized toolbar button config");

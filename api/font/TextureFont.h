@@ -47,7 +47,7 @@ class TextureFont {
     TextureFont(const std::string& filename, float size, const boost::shared_ptr<v3d::log::Logger> & logger);
 
     boost::shared_ptr<Glyph> glyph(wchar_t charcode);
-    float kerning(boost::shared_ptr<Glyph>, wchar_t charcode);
+    float kerning(boost::shared_ptr<Glyph> glyph, wchar_t charcode);
 
     /**
      **/

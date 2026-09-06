@@ -23,8 +23,8 @@ namespace {
  **/
 const char* const spriteName = "sample.png";
 
-const glm::vec4 clearColour(0.05f, 0.05f, 0.07f, 1.0f);
-const glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
+constexpr glm::vec4 clearColour(0.05f, 0.05f, 0.07f, 1.0f);
+constexpr glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
 
 };  // namespace
 

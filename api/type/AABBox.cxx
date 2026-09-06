@@ -5,6 +5,8 @@
 
 #include "AABBox.h"
 
+#include <glm/common.hpp>
+
 namespace v3d::type {
 
 // an empty box sits at the origin rather than wherever the stack left it - BRep::bound
@@ -74,19 +76,8 @@ void AABBox::extents(const glm::vec3& min, const glm::vec3& max) {
 }
 
 void AABBox::extend(const glm::vec3& point) {
-    if (point[0] < min_[0])
-        min_[0] = point[0];
-    if (point[1] < min_[1])
-        min_[1] = point[1];
-    if (point[2] < min_[2])
-        min_[2] = point[2];
-
-    if (point[0] > max_[0])
-        max_[0] = point[0];
-    if (point[1] > max_[1])
-        max_[1] = point[1];
-    if (point[2] > max_[2])
-        max_[2] = point[2];
+    min_ = glm::min(min_, point);
+    max_ = glm::max(max_, point);
 }
 
 };  // namespace v3d::type

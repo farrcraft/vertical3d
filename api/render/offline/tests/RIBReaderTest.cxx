@@ -273,7 +273,7 @@ BOOST_AUTO_TEST_CASE(ribreader_undeclared_parameter_test) {
     CountingHandler bare;
     v3d::render::offline::RIBReader second(boost::make_shared<v3d::log::Logger>());
     BOOST_CHECK(!read("Surface \"marble\" \"veins\" 3\n", &bare, &second));
-    BOOST_CHECK(second.error().find("undeclared parameter 'veins'") != std::string::npos);
+    BOOST_CHECK(second.error().contains("undeclared parameter 'veins'"));
 }
 
 /**
@@ -347,8 +347,8 @@ BOOST_AUTO_TEST_CASE(ribreader_error_position_test) {
     v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_CHECK(!read("Format 640 480 1\nClipping 1 \"near\"\n", &handler, &reader));
-    BOOST_CHECK(reader.error().find("expected a number") != std::string::npos);
-    BOOST_CHECK(reader.error().find("line 2") != std::string::npos);
+    BOOST_CHECK(reader.error().contains("expected a number"));
+    BOOST_CHECK(reader.error().contains("line 2"));
 }
 
 BOOST_AUTO_TEST_CASE(ribreader_missing_file_test) {
@@ -356,7 +356,7 @@ BOOST_AUTO_TEST_CASE(ribreader_missing_file_test) {
     v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_CHECK(!reader.read("data/no-such-scene.rib", &handler));
-    BOOST_CHECK(reader.error().find("could not open") != std::string::npos);
+    BOOST_CHECK(reader.error().contains("could not open"));
 }
 
 /**

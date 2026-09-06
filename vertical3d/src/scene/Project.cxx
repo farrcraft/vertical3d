@@ -5,6 +5,7 @@
 
 #include "Project.h"
 
+#include <algorithm>
 #include <charconv>
 #include <cstddef>
 #include <cstdint>
@@ -117,12 +118,7 @@ bool scalarArray(const boost::json::value& value) {
     if (!value.is_array()) {
         return false;
     }
-    for (const boost::json::value& item : value.as_array()) {
-        if (!scalar(item)) {
-            return false;
-        }
-    }
-    return true;
+    return std::ranges::all_of(value.as_array(), scalar);
 }
 
 /**
@@ -137,12 +133,9 @@ bool compact(const boost::json::value& value) {
     if (!value.is_object()) {
         return false;
     }
-    for (const auto& entry : value.as_object()) {
-        if (!scalar(entry.value()) && !scalarArray(entry.value())) {
-            return false;
-        }
-    }
-    return true;
+    return std::ranges::all_of(value.as_object(), [](const auto& entry) {
+        return scalar(entry.value()) || scalarArray(entry.value());
+    });
 }
 
 /**
@@ -297,6 +290,137 @@ class WriteVisitor final : public SceneVisitor {
     boost::json::array meshes;
 };
 
+/**
+ * Read the placement a mesh was saved under. Every part of it is optional: a mesh saved
+ * before the transform was written carries none, and is left where a new one starts.
+ **/
+void readTransform(const boost::json::object& entry, const boost::shared_ptr<v3d::brep::BRep>& mesh) {
+    if (!entry.contains("transform") || !entry.at("transform").is_object()) {
+        return;
+    }
+    const boost::json::object& transform = entry.at("transform").as_object();
+    float values[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+    if (numbers(transform, "translation", 3, values)) {
+        mesh->translation(glm::vec3(values[0], values[1], values[2]));
+    }
+    if (numbers(transform, "scale", 3, values)) {
+        mesh->scale(glm::vec3(values[0], values[1], values[2]));
+    }
+    if (numbers(transform, "rotation", 4, values)) {
+        mesh->rotation(glm::quat(values[3], values[0], values[1], values[2]));
+    }
+}
+
+bool readVertices(const boost::json::array& points, const std::string& path,
+    const boost::shared_ptr<v3d::brep::BRep>& mesh, const boost::shared_ptr<v3d::log::Logger>& logger) {
+    for (const boost::json::value& point : points) {
+        float values[3] = { 0.0f, 0.0f, 0.0f };
+        if (!numbers(point, 3, values)) {
+            logger->get()->error("A vertex in {} is not three numbers", path);
+            return false;
+        }
+        mesh->addVertex(v3d::brep::Vertex(glm::vec3(values[0], values[1], values[2])));
+    }
+    return true;
+}
+
+bool readEdges(const boost::json::array& edges, const std::string& path,
+    const boost::shared_ptr<v3d::brep::BRep>& mesh, const boost::shared_ptr<v3d::log::Logger>& logger) {
+    for (const boost::json::value& edgeEntry : edges) {
+        if (!edgeEntry.is_object()) {
+            logger->get()->error("An edge in {} is not an object", path);
+            return false;
+        }
+        const boost::json::object& record = edgeEntry.as_object();
+        v3d::brep::Index vertex = 0;
+        v3d::brep::Index face = 0;
+        v3d::brep::Index pair = 0;
+        v3d::brep::Index next = 0;
+        if (!index(record, "vertex", &vertex) || !index(record, "face", &face) ||
+            !index(record, "pair", &pair) || !index(record, "next", &next)) {
+            logger->get()->error("An edge in {} is missing one of its references", path);
+            return false;
+        }
+        v3d::brep::HalfEdge edge;
+        edge.vertex(vertex);
+        edge.face(face);
+        edge.pair(pair);
+        edge.next(next);
+        mesh->addEdge(edge);
+    }
+    return true;
+}
+
+bool readFaces(const boost::json::array& faces, const std::string& path,
+    const boost::shared_ptr<v3d::brep::BRep>& mesh, const boost::shared_ptr<v3d::log::Logger>& logger) {
+    for (const boost::json::value& faceEntry : faces) {
+        if (!faceEntry.is_object()) {
+            logger->get()->error("A face in {} is not an object", path);
+            return false;
+        }
+        const boost::json::object& record = faceEntry.as_object();
+        float normal[3] = { 0.0f, 0.0f, 0.0f };
+        v3d::brep::Index edge = 0;
+        if (!numbers(record, "normal", 3, normal) || !index(record, "edge", &edge)) {
+            logger->get()->error("A face in {} is missing its normal or its edge", path);
+            return false;
+        }
+        mesh->addFace(v3d::brep::Face(glm::vec3(normal[0], normal[1], normal[2]),
+            static_cast<unsigned int>(edge)));
+    }
+    return true;
+}
+
+/**
+ * A reference out of range is a mesh the wireframe and the picker would walk off the end
+ * of, so it is refused here rather than found by whatever reads it first.
+ **/
+bool validMesh(const boost::shared_ptr<v3d::brep::BRep>& mesh, const std::string& path,
+    const boost::shared_ptr<v3d::log::Logger>& logger) {
+    for (std::size_t id = 0; id < mesh->edgeCount(); id++) {
+        const v3d::brep::HalfEdge* edge = mesh->edge(static_cast<unsigned int>(id));
+        if (!refers(edge->vertex(), mesh->vertexCount(), false) ||
+            !refers(edge->face(), mesh->faceCount(), true) ||
+            !refers(edge->pair(), mesh->edgeCount(), true) ||
+            !refers(edge->next(), mesh->edgeCount(), true)) {
+            logger->get()->error("Edge {} in {} names something the mesh does not hold", id, path);
+            return false;
+        }
+    }
+    for (std::size_t id = 0; id < mesh->faceCount(); id++) {
+        if (!refers(mesh->face(static_cast<unsigned int>(id))->edge(), mesh->edgeCount(), false)) {
+            logger->get()->error("Face {} in {} names an edge the mesh does not hold", id, path);
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * @return the mesh one entry of the meshes array describes, or null when it does not
+ *         describe a consistent one
+ **/
+boost::shared_ptr<v3d::brep::BRep> readMesh(const boost::json::object& entry, const std::string& path,
+    const boost::shared_ptr<v3d::log::Logger>& logger) {
+    boost::shared_ptr<v3d::brep::BRep> mesh = boost::make_shared<v3d::brep::BRep>();
+    readTransform(entry, mesh);
+
+    if (!entry.contains("vertices") || !entry.at("vertices").is_array() ||
+        !entry.contains("edges") || !entry.at("edges").is_array() ||
+        !entry.contains("faces") || !entry.at("faces").is_array()) {
+        logger->get()->error("A mesh in {} is missing its vertices, edges or faces", path);
+        return nullptr;
+    }
+
+    if (!readVertices(entry.at("vertices").as_array(), path, mesh, logger) ||
+        !readEdges(entry.at("edges").as_array(), path, mesh, logger) ||
+        !readFaces(entry.at("faces").as_array(), path, mesh, logger) ||
+        !validMesh(mesh, path, logger)) {
+        return nullptr;
+    }
+    return mesh;
+}
+
 };  // namespace
 
 /**
@@ -362,97 +486,10 @@ bool Project::read(const std::string& path, const boost::shared_ptr<Scene>& scen
             logger_->get()->error("{} holds something that is not a mesh", path);
             return false;
         }
-        const boost::json::object& entry = value.as_object();
-        boost::shared_ptr<v3d::brep::BRep> mesh = boost::make_shared<v3d::brep::BRep>();
-
-        if (entry.contains("transform") && entry.at("transform").is_object()) {
-            const boost::json::object& transform = entry.at("transform").as_object();
-            float values[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-            if (numbers(transform, "translation", 3, values)) {
-                mesh->translation(glm::vec3(values[0], values[1], values[2]));
-            }
-            if (numbers(transform, "scale", 3, values)) {
-                mesh->scale(glm::vec3(values[0], values[1], values[2]));
-            }
-            if (numbers(transform, "rotation", 4, values)) {
-                mesh->rotation(glm::quat(values[3], values[0], values[1], values[2]));
-            }
-        }
-
-        if (!entry.contains("vertices") || !entry.at("vertices").is_array() ||
-            !entry.contains("edges") || !entry.at("edges").is_array() ||
-            !entry.contains("faces") || !entry.at("faces").is_array()) {
-            logger_->get()->error("A mesh in {} is missing its vertices, edges or faces", path);
+        boost::shared_ptr<v3d::brep::BRep> mesh = readMesh(value.as_object(), path, logger_);
+        if (!mesh) {
             return false;
         }
-
-        for (const boost::json::value& point : entry.at("vertices").as_array()) {
-            float values[3] = { 0.0f, 0.0f, 0.0f };
-            if (!numbers(point, 3, values)) {
-                logger_->get()->error("A vertex in {} is not three numbers", path);
-                return false;
-            }
-            mesh->addVertex(v3d::brep::Vertex(glm::vec3(values[0], values[1], values[2])));
-        }
-
-        for (const boost::json::value& edgeEntry : entry.at("edges").as_array()) {
-            if (!edgeEntry.is_object()) {
-                logger_->get()->error("An edge in {} is not an object", path);
-                return false;
-            }
-            const boost::json::object& record = edgeEntry.as_object();
-            v3d::brep::Index vertex = 0;
-            v3d::brep::Index face = 0;
-            v3d::brep::Index pair = 0;
-            v3d::brep::Index next = 0;
-            if (!index(record, "vertex", &vertex) || !index(record, "face", &face) ||
-                !index(record, "pair", &pair) || !index(record, "next", &next)) {
-                logger_->get()->error("An edge in {} is missing one of its references", path);
-                return false;
-            }
-            v3d::brep::HalfEdge edge;
-            edge.vertex(vertex);
-            edge.face(face);
-            edge.pair(pair);
-            edge.next(next);
-            mesh->addEdge(edge);
-        }
-
-        for (const boost::json::value& faceEntry : entry.at("faces").as_array()) {
-            if (!faceEntry.is_object()) {
-                logger_->get()->error("A face in {} is not an object", path);
-                return false;
-            }
-            const boost::json::object& record = faceEntry.as_object();
-            float normal[3] = { 0.0f, 0.0f, 0.0f };
-            v3d::brep::Index edge = 0;
-            if (!numbers(record, "normal", 3, normal) || !index(record, "edge", &edge)) {
-                logger_->get()->error("A face in {} is missing its normal or its edge", path);
-                return false;
-            }
-            mesh->addFace(v3d::brep::Face(glm::vec3(normal[0], normal[1], normal[2]),
-                static_cast<unsigned int>(edge)));
-        }
-
-        // a reference out of range is a mesh the wireframe and the picker would walk off
-        // the end of, so it is refused here rather than found by whatever reads it first
-        for (std::size_t id = 0; id < mesh->edgeCount(); id++) {
-            const v3d::brep::HalfEdge* edge = mesh->edge(static_cast<unsigned int>(id));
-            if (!refers(edge->vertex(), mesh->vertexCount(), false) ||
-                !refers(edge->face(), mesh->faceCount(), true) ||
-                !refers(edge->pair(), mesh->edgeCount(), true) ||
-                !refers(edge->next(), mesh->edgeCount(), true)) {
-                logger_->get()->error("Edge {} in {} names something the mesh does not hold", id, path);
-                return false;
-            }
-        }
-        for (std::size_t id = 0; id < mesh->faceCount(); id++) {
-            if (!refers(mesh->face(static_cast<unsigned int>(id))->edge(), mesh->edgeCount(), false)) {
-                logger_->get()->error("Face {} in {} names an edge the mesh does not hold", id, path);
-                return false;
-            }
-        }
-
         meshes.push_back(mesh);
     }
 

@@ -11,7 +11,9 @@
 #include <cstdio>
 #include <string>
 
-static void
+namespace {
+
+void
 pngtest_warning(png_structp png_ptr, png_const_charp message) {
     PNG_CONST char *name = "UNKNOWN (ERROR!)";
     png_voidp error_ptr = NULL;
@@ -19,7 +21,7 @@ pngtest_warning(png_structp png_ptr, png_const_charp message) {
         error_ptr = png_get_error_ptr(png_ptr);
     if (error_ptr != NULL)
         name = reinterpret_cast<char*>(error_ptr);
-    std::cout << name << ": libpng warning: " << message << std::endl;
+    std::cout << name << ": libpng warning: " << message << "\n";
 }
 
 /* This is the default error handling function.  Note that replacements for
@@ -27,12 +29,14 @@ pngtest_warning(png_structp png_ptr, png_const_charp message) {
  * function is used by default, or if the program supplies NULL for the
  * error function pointer in png_set_error_fn().
  */
-static void
+void
 pngtest_error(png_structp png_ptr, png_const_charp message) {
     pngtest_warning(png_ptr, message);
     /* We can return because png_error calls the default handler, which is
     * actually OK in this case. */
 }
+
+};  // namespace
 
 namespace v3d::image::writer {
 /**
@@ -102,7 +106,10 @@ bool Png::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     /* pack pixels into bytes */
     // png_set_packing(png_ptr);
 
-    png_uint_32 k, height, bytes_per_pixel, width;
+    png_uint_32 k;
+    png_uint_32 height;
+    png_uint_32 bytes_per_pixel;
+    png_uint_32 width;
     height = img->height();
     bytes_per_pixel = static_cast<int>(img->format());
     width = img->width();
@@ -115,7 +122,7 @@ bool Png::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     png_bytep data = img->data();
     // both the file and Image are top down, so the rows go out in the order they are in
     for (k = 0; k < height; k++) {
-        row_pointers[k] = data + k * width * bytes_per_pixel;
+        row_pointers[k] = data + static_cast<size_t>(k) * width * bytes_per_pixel;
     }
 
     png_write_image(png_ptr, row_pointers);

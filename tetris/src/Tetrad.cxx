@@ -112,15 +112,14 @@ const Tetrad::ShapeInfo & Tetrad::shape() const {
 }
 
 unsigned int Tetrad::offset(OffsetAxis dir) const {
-    unsigned int x = 3, y = 3;
+    unsigned int x = 3;
+    unsigned int y = 3;
 
     for (unsigned int i = 0; i < 4; i++) {
         for (unsigned int j = 0; j < 4; j++) {
             if (shape_.layout_[i][j] == 1) {
-                if (x > j)
-                    x = j;
-                if (y > i)
-                    y = i;
+                x = std::min(x, j);
+                y = std::min(y, i);
             }
         }
     }
@@ -130,7 +129,8 @@ unsigned int Tetrad::offset(OffsetAxis dir) const {
 }
 
 unsigned int Tetrad::width() const {
-    unsigned int min = 4, max = 0;
+    unsigned int min = 4;
+    unsigned int max = 0;
 
     for (unsigned int i = 0; i < 4; i++) {
         for (unsigned int j = 0; j < 4; j++) {
@@ -147,7 +147,8 @@ unsigned int Tetrad::width() const {
 }
 
 unsigned int Tetrad::height() const {
-    unsigned int min = 4, max = 0;
+    unsigned int min = 4;
+    unsigned int max = 0;
 
     for (unsigned int i = 0; i < 4; i++) {
         for (unsigned int j = 0; j < 4; j++) {

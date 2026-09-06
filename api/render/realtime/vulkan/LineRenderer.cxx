@@ -35,7 +35,7 @@ const uint32_t fragmentShader[] =
  * What each vertex buffer starts at, in bytes. The buffers double from here when a
  * canvas does not fit.
  **/
-const VkDeviceSize initialVertexBytes = 64 * 1024;
+const VkDeviceSize initialVertexBytes = 64ULL * 1024;
 
 };  // namespace
 

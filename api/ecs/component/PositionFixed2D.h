@@ -13,12 +13,12 @@ namespace v3d::ecs::component {
  **/
 class PositionFixed2D final {
  public:
-     PositionFixed2D(const int x, const int y) noexcept;
+     PositionFixed2D(int x, int y) noexcept;
 
     /**
      * Move constructor
      **/
-     PositionFixed2D(PositionFixed2D&&) noexcept;
+     PositionFixed2D(PositionFixed2D&& p) noexcept;
 
     /**
      * Default destructor
@@ -36,7 +36,7 @@ class PositionFixed2D final {
     /**
      * Move assignment
      **/
-    PositionFixed2D& operator=(PositionFixed2D&&) noexcept;
+    PositionFixed2D& operator=(PositionFixed2D&& p) noexcept;
 
  private:
     glm::ivec2 position_;

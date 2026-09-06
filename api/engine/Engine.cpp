@@ -38,6 +38,65 @@ bool Engine::quitting() const noexcept {
     return quitting_;
 }
 
+bool Engine::readMappingSource(const boost::json::object& mapping, v3d::event::Event* event) {
+    if (!mapping.contains("source") || !mapping.at("source").is_object()) {
+        logger_->get()->error("Missing mapping source");
+        return false;
+    }
+    auto const source = mapping.at("source");
+    if (!source.as_object().contains("name") || !source.as_object().contains("context")) {
+        logger_->get()->error("Mapping source needs both a name and a context");
+        return false;
+    }
+    std::string sourceName = boost::json::value_to<std::string>(source.at("name"));
+    std::string sourceContextName = boost::json::value_to<std::string>(source.at("context"));
+    boost::shared_ptr<v3d::event::Context> sourceContext = eventEngine_->resolveContext(sourceContextName);
+    *event = v3d::event::Event(sourceName, sourceContext);
+    event->type(v3d::event::Type::Source);
+    // an optional "state" binds one edge only - "pressed"/"down" or "released"/"up".
+    // without it the binding matches both, which is what most actions want.
+    if (source.as_object().contains("state")) {
+        std::string sourceState = boost::json::value_to<std::string>(source.at("state"));
+        event->state(v3d::event::stringToState(sourceState));
+    }
+    return true;
+}
+
+bool Engine::readMappingDestination(const boost::json::object& mapping, v3d::event::Event* event) {
+    if (!mapping.contains("destination") || !mapping.at("destination").is_object()) {
+        logger_->get()->error("Missing mapping destination");
+        return false;
+    }
+    auto const destination = mapping.at("destination");
+    if (!destination.as_object().contains("name") || !destination.as_object().contains("context")) {
+        logger_->get()->error("Mapping destination needs both a name and a context");
+        return false;
+    }
+    std::string destinationName = boost::json::value_to<std::string>(destination.at("name"));
+    std::string destinationContextName = boost::json::value_to<std::string>(destination.at("context"));
+    boost::shared_ptr<v3d::event::Context> destinationContext = eventEngine_->resolveContext(destinationContextName);
+    *event = v3d::event::Event(destinationName, destinationContext);
+    event->type(v3d::event::Type::Destination);
+    // an optional "param" lets one action serve several bindings, telling them apart by
+    // the value it arrives with. It reaches the handler as the event's data, the same
+    // way a menu item's value does.
+    if (!destination.as_object().contains("param")) {
+        return true;
+    }
+    auto const param = destination.at("param");
+    if (param.is_int64()) {
+        event->data(static_cast<int>(param.as_int64()));
+    } else if (param.is_bool()) {
+        event->data(param.as_bool());
+    } else if (param.is_string()) {
+        event->data(boost::json::value_to<std::string>(param));
+    } else {
+        logger_->get()->error("Unsupported binding param type for [{}]", destinationName);
+        return false;
+    }
+    return true;
+}
+
 bool Engine::registerEventMappings() {
     boost::shared_ptr<v3d::asset::Json> mappingConfig = config_->get(v3d::config::Type::Binding);
     if (!mappingConfig) {
@@ -56,63 +115,17 @@ bool Engine::registerEventMappings() {
         return false;
     }
     auto const items = doc.at("mappings").as_array();
-    auto it = items.begin();
-    for (; it != items.end(); ++it) {
+    for (const auto* it = items.begin(); it != items.end(); ++it) {
         if (!it->is_object()) {
             logger_->get()->error("Unrecognized mapping");
             return false;
         }
         auto const mapping = it->as_object();
-        if (!mapping.contains("source") || !mapping.at("source").is_object()) {
-            logger_->get()->error("Missing mapping source");
+        v3d::event::Event sourceEvent;
+        v3d::event::Event destinationEvent;
+        if (!readMappingSource(mapping, &sourceEvent) ||
+            !readMappingDestination(mapping, &destinationEvent)) {
             return false;
-        }
-        auto const source = mapping.at("source");
-        if (!source.as_object().contains("name") || !source.as_object().contains("context")) {
-            logger_->get()->error("Mapping source needs both a name and a context");
-            return false;
-        }
-        std::string sourceName = boost::json::value_to<std::string>(source.at("name"));
-        std::string sourceContextName = boost::json::value_to<std::string>(source.at("context"));
-        boost::shared_ptr<v3d::event::Context> sourceContext = eventEngine_->resolveContext(sourceContextName);
-        v3d::event::Event sourceEvent(sourceName, sourceContext);
-        sourceEvent.type(v3d::event::Type::Source);
-        // an optional "state" binds one edge only - "pressed"/"down" or "released"/"up".
-        // without it the binding matches both, which is what most actions want.
-        if (source.as_object().contains("state")) {
-            std::string sourceState = boost::json::value_to<std::string>(source.at("state"));
-            sourceEvent.state(v3d::event::stringToState(sourceState));
-        }
-
-        if (!mapping.contains("destination") || !mapping.at("destination").is_object()) {
-            logger_->get()->error("Missing mapping destination");
-            return false;
-        }
-        auto const destination = mapping.at("destination");
-        if (!destination.as_object().contains("name") || !destination.as_object().contains("context")) {
-            logger_->get()->error("Mapping destination needs both a name and a context");
-            return false;
-        }
-        std::string destinationName = boost::json::value_to<std::string>(destination.at("name"));
-        std::string destinationContextName = boost::json::value_to<std::string>(destination.at("context"));
-        boost::shared_ptr<v3d::event::Context> destinationContext = eventEngine_->resolveContext(destinationContextName);
-        v3d::event::Event destinationEvent(destinationName, destinationContext);
-        destinationEvent.type(v3d::event::Type::Destination);
-        // an optional "param" lets one action serve several bindings, telling them apart by
-        // the value it arrives with. It reaches the handler as the event's data, the same
-        // way a menu item's value does.
-        if (destination.as_object().contains("param")) {
-            auto const param = destination.at("param");
-            if (param.is_int64()) {
-                destinationEvent.data(static_cast<int>(param.as_int64()));
-            } else if (param.is_bool()) {
-                destinationEvent.data(param.as_bool());
-            } else if (param.is_string()) {
-                destinationEvent.data(boost::json::value_to<std::string>(param));
-            } else {
-                logger_->get()->error("Unsupported binding param type for [{}]", destinationName);
-                return false;
-            }
         }
         mapper->map(sourceEvent, destinationEvent);
     }
@@ -223,11 +236,9 @@ bool Engine::eventLoop() {
             }
             switch (event.type) {
             case SDL_EVENT_QUIT:
-                quit();
-                break;
+            // SDL turns the last window closing into a quit only once that window is
+            // destroyed, and nothing here destroys it, so the request is what to act on
             case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
-                // SDL turns the last window closing into a quit only once that window is
-                // destroyed, and nothing here destroys it, so the request is what to act on
                 quit();
                 break;
             case SDL_EVENT_WINDOW_RESIZED:
@@ -237,9 +248,7 @@ bool Engine::eventLoop() {
                 }
                 dispatcher_->trigger(v3d::event::WindowResize(event.window.data1, event.window.data2));
                 break;
-            case SDL_EVENT_WINDOW_FOCUS_LOST:
-                break;
-            case SDL_EVENT_WINDOW_FOCUS_GAINED:
+            default:
                 break;
             }
         }

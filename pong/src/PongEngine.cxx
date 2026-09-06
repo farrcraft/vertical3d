@@ -116,63 +116,71 @@ bool PongEngine::shutdown() {
     }
     return true;
 }
+
+void PongEngine::handlePlayEvent(const v3d::event::Event& event) {
+    // play commands
+    // the paddle moves while its key is held, so these follow the event's edge
+    bool held = (event.state() == v3d::event::State::Pressed);
+    if (event.name() == "leftPaddleUp") {
+        if (!scene_->state().paused()) {
+            scene_->left().up(held);
+        }
+    } else if (event.name() == "leftPaddleDown") {
+        if (!scene_->state().paused()) {
+            scene_->left().down(held);
+        }
+    } else if (event.name() == "rightPaddleUp") {
+        if (!scene_->state().paused() && scene_->state().coop()) {
+            scene_->right().up(held);
+        }
+    } else if (event.name() == "rightPaddleDown") {
+        if (!scene_->state().paused() && scene_->state().coop()) {
+            scene_->right().down(held);
+        }
+    } else if (event.name() == "showGameMenu") {
+        menu_->toggle();
+    }
+}
+
+void PongEngine::handleUiEvent(const v3d::event::Event& event) {
+    if (event.name() == "setMaxScore") {
+        boost::optional<v3d::event::EventData> data = event.data();
+        if (data) {
+            unsigned int maxScore = std::get<int>(data.get());
+            scene_->state().maxScore(maxScore);
+        }
+    } else if (event.name() == "setLeftPaddleUpKey" || event.name() == "setLeftPaddleDownKey" ||
+               event.name() == "setRightPaddleUpKey" || event.name() == "setRightPaddleDownKey") {
+        // a key binding carries the captured key as its data, and input capture for an
+        // input menu item is unbuilt, so these four arrive with nothing to bind
+    } else if (event.name() == "setSingleplayerMode" || event.name() == "setMultiplayerMode") {
+        // coop is the only mode that differs; the second paddle is the same opponent
+        scene_->state().coop(false);
+        scene_->reset();
+    } else if (event.name() == "setCoopMode") {
+        scene_->state().coop(true);
+        scene_->reset();
+    } else if (event.name() == "quit") {
+        // not shutdown() - this is running inside the event loop, which would tick and
+        // render one more frame against the window shutdown() had destroyed
+        quit();
+        return;
+    }
+
+    if (event.name() == "showGameMenu") {
+        menu_->toggle();
+        return;
+    }
+
+    menu_->navigate(event.name());
+}
+
 void PongEngine::handleEvent(const v3d::event::Event& event) {
     if (event.context()->name() == "pong") {
-        // play commands
-        // the paddle moves while its key is held, so these follow the event's edge
-        bool held = (event.state() == v3d::event::State::Pressed);
-        if (event.name() == "leftPaddleUp") {
-            if (!scene_->state().paused()) {
-                scene_->left().up(held);
-            }
-        } else if (event.name() == "leftPaddleDown") {
-            if (!scene_->state().paused()) {
-                scene_->left().down(held);
-            }
-        } else if (event.name() == "rightPaddleUp") {
-            if (!scene_->state().paused() && scene_->state().coop()) {
-                scene_->right().up(held);
-            }
-        } else if (event.name() == "rightPaddleDown") {
-            if (!scene_->state().paused() && scene_->state().coop()) {
-                scene_->right().down(held);
-            }
-        } else if (event.name() == "showGameMenu") {
-            menu_->toggle();
-        }
+        handlePlayEvent(event);
         return;
-    } else if (event.context()->name() == "ui") {
-        if (event.name() == "setMaxScore") {
-            boost::optional<v3d::event::EventData> data = event.data();
-            if (data) {
-                unsigned int maxScore = std::get<int>(data.get());
-                scene_->state().maxScore(maxScore);
-            }
-        } else if (event.name() == "setLeftPaddleUpKey") {
-        } else if (event.name() == "setLeftPaddleDownKey") {
-        } else if (event.name() == "setRightPaddleUpKey") {
-        } else if (event.name() == "setRightPaddleDownKey") {
-        } else if (event.name() == "setSingleplayerMode") {
-            scene_->state().coop(false);
-            scene_->reset();
-        } else if (event.name() == "setCoopMode") {
-            scene_->state().coop(true);
-            scene_->reset();
-        } else if (event.name() == "setMultiplayerMode") {
-            scene_->state().coop(false);
-            scene_->reset();
-        } else if (event.name() == "quit") {
-            // not shutdown() - this is running inside the event loop, which would tick and
-            // render one more frame against the window shutdown() had destroyed
-            quit();
-            return;
-        }
-
-        if (event.name() == "showGameMenu") {
-            menu_->toggle();
-            return;
-        }
-
-        menu_->navigate(event.name());
+    }
+    if (event.context()->name() == "ui") {
+        handleUiEvent(event);
     }
 }

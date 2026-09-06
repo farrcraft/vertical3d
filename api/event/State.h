@@ -30,7 +30,8 @@ enum class State {
 constexpr State stringToState(const std::string_view& stateName) {
     if (stateName == "pressed" || stateName == "down") {
         return State::Pressed;
-    } else if (stateName == "released" || stateName == "up") {
+    }
+    if (stateName == "released" || stateName == "up") {
         return State::Released;
     }
     return State::Any;

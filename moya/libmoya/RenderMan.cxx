@@ -18,7 +18,14 @@ namespace {
 
 // the renderer the C interface drives. An identifier with a leading underscore at namespace
 // scope is reserved to the implementation, and nothing outside this file names it.
-v3d::moya::Renderer renderer;
+//
+// It is built on first use rather than at static initialisation: the RI entry points are the
+// only things that reach it, and an exception out of a dynamic initialiser reaches no handler
+// at all, where one out of RiBegin reaches the caller's.
+v3d::moya::Renderer& renderer() {
+    static v3d::moya::Renderer instance;
+    return instance;
+}
 
 };  // namespace
 
@@ -33,14 +40,14 @@ RtToken RI_RGB = const_cast<char*>("rgb"),
         RI_A = const_cast<char*>("a"),
         RI_Z = const_cast<char*>("z"),
         RI_AZ = const_cast<char*>("az");
-const RtToken RI_PERSPECTIVE = const_cast<char*>("perspective");
-const RtToken RI_ORTHOGRAPHIC = const_cast<char*>("orthographic");
+RtToken RI_PERSPECTIVE = const_cast<char*>("perspective");
+RtToken RI_ORTHOGRAPHIC = const_cast<char*>("orthographic");
 RtToken RI_HIDDEN,
         RI_PAINT;
 RtToken RI_CONSTANT,
         RI_SMOOTH;
 RtToken RI_FLATNESS;
-const RtToken RI_FOV = const_cast<char*>("fov");
+RtToken RI_FOV = const_cast<char*>("fov");
 RtToken RI_AMBIENTLIGHT,
         RI_POINTLIGHT,
         RI_DISTANTLIGHT,
@@ -81,16 +88,16 @@ RtToken RI_INSIDE,
         RI_OUTSIDE,
         RI_LH,
         RI_RH;
-const RtToken RI_P = const_cast<char*>("P");
-const RtToken RI_PZ = const_cast<char*>("Pz");
-const RtToken RI_PW = const_cast<char*>("Pw");
-const RtToken RI_N = const_cast<char*>("N");
+RtToken RI_P = const_cast<char*>("P");
+RtToken RI_PZ = const_cast<char*>("Pz");
+RtToken RI_PW = const_cast<char*>("Pw");
+RtToken RI_N = const_cast<char*>("N");
 RtToken RI_NP;
-const RtToken RI_CS = const_cast<char*>("Cs");
-const RtToken RI_OS = const_cast<char*>("Os");
-const RtToken RI_S = const_cast<char*>("s");
-const RtToken RI_T = const_cast<char*>("t");
-const RtToken RI_ST = const_cast<char*>("st");
+RtToken RI_CS = const_cast<char*>("Cs");
+RtToken RI_OS = const_cast<char*>("Os");
+RtToken RI_S = const_cast<char*>("s");
+RtToken RI_T = const_cast<char*>("t");
+RtToken RI_ST = const_cast<char*>("st");
 RtToken RI_BILINEAR,
         RI_BICUBIC;
 RtToken RI_LINEAR,
@@ -125,23 +132,23 @@ RtBasis RiBezierBasis,
 RtInt RiLastError;
 
 // RI subroutines
-RtFloat RiGaussianFilter(RtFloat x, RtFloat y, RtFloat xwidth, RtFloat ywidth) {
+RtFloat RiGaussianFilter(RtFloat /* x */, RtFloat /* y */, RtFloat /* xwidth */, RtFloat /* ywidth */) {
     return 0.0;
 }
 
-RtFloat RiBoxFilter(RtFloat x, RtFloat y, RtFloat xwidth, RtFloat ywidth) {
+RtFloat RiBoxFilter(RtFloat /* x */, RtFloat /* y */, RtFloat /* xwidth */, RtFloat /* ywidth */) {
     return 0.0;
 }
 
-RtFloat RiTriangleFilter(RtFloat x, RtFloat y, RtFloat xwidth, RtFloat ywidth) {
+RtFloat RiTriangleFilter(RtFloat /* x */, RtFloat /* y */, RtFloat /* xwidth */, RtFloat /* ywidth */) {
     return 0.0;
 }
 
-RtFloat RiCatmullRomFilter(RtFloat x, RtFloat y, RtFloat xwidth, RtFloat ywidth) {
+RtFloat RiCatmullRomFilter(RtFloat /* x */, RtFloat /* y */, RtFloat /* xwidth */, RtFloat /* ywidth */) {
     return 0.0;
 }
 
-RtFloat RiSincFilter(RtFloat x, RtFloat y, RtFloat xwidth, RtFloat ywidth) {
+RtFloat RiSincFilter(RtFloat /* x */, RtFloat /* y */, RtFloat /* xwidth */, RtFloat /* ywidth */) {
     return 0.0;
 }
 
@@ -170,10 +177,10 @@ RtContextHandle RiGetContext(void) {
     return 0;
 }
 
-RtVoid RiContext(RtContextHandle) {
+RtVoid RiContext(RtContextHandle /* handle */) {
 }
 
-RtToken RiDeclare(char *name, char *declaration) {
+RtToken RiDeclare(char * /* name */, char * /* declaration */) {
     return 0;
 }
 
@@ -194,7 +201,7 @@ RtVoid RiBegin(RtToken name) {
     if (name != RI_NULL) {
         str = name;
     }
-    renderer.createRenderContext(str);
+    renderer().createRenderContext(str);
 }
 
 
@@ -206,7 +213,7 @@ RtVoid RiBegin(RtToken name) {
  * (the only exceptions are RiErrorHandler, RiOption, and RiContext).
  */
 RtVoid RiEnd(void) {
-    renderer.destroyActiveRenderContext();
+    renderer().destroyActiveRenderContext();
 }
 
 RtVoid RiFrameBegin(RtInt frame) {
@@ -228,7 +235,7 @@ are defined, whereas other rendering programs may wait until the entire scene ha
 been defined.
 */
 RtVoid RiWorldBegin(void) {
-    renderer.activeRenderContext().prepareWorld();
+    renderer().activeRenderContext().prepareWorld();
 }
 
 /*
@@ -240,7 +247,7 @@ block are removed and their storage reclaimed when RiWorldEnd is called (thus in
 their handles).
 */
 RtVoid RiWorldEnd(void) {
-    renderer.activeRenderContext().render();
+    renderer().activeRenderContext().render();
 }
 
 /*
@@ -267,15 +274,15 @@ is specified as a nonpositive value, the resolution defaults to that of the
 display device for that particular parameter.
 */
 RtVoid RiFormat(RtInt xres, RtInt yres, RtFloat aspect) {
-    renderer.activeRenderContext().imageResolution(xres, yres, aspect);
+    renderer().activeRenderContext().imageResolution(xres, yres, aspect);
 }
 
 RtVoid RiFrameAspectRatio(RtFloat aspect) {
-    renderer.activeRenderContext().frameAspectRatio(aspect);
+    renderer().activeRenderContext().frameAspectRatio(aspect);
 }
 
 RtVoid RiScreenWindow(RtFloat left, RtFloat right, RtFloat bot, RtFloat top) {
-    renderer.activeRenderContext().screenWindow(left, right, bot, top);
+    renderer().activeRenderContext().screenWindow(left, right, bot, top);
 }
 
 RtVoid RiCropWindow(RtFloat xmin, RtFloat xmax, RtFloat ymin, RtFloat ymax) {
@@ -317,7 +324,7 @@ RtVoid RiProjection(RtToken name, ...) {
     std::string token;
     float fov = 90.;
     if (name == RI_NULL) {
-        renderer.activeRenderContext().projection("");
+        renderer().activeRenderContext().projection("");
     } else if (!strncmp(name, RI_PERSPECTIVE, 11)) {
         // perspective takes an optional fov parameter
         if (param != RI_NULL) {
@@ -326,9 +333,9 @@ RtVoid RiProjection(RtToken name, ...) {
                 fov = static_cast<float>(va_arg(ap, double));
             }
         }
-        renderer.activeRenderContext().projection(name, fov);
+        renderer().activeRenderContext().projection(name, fov);
     } else {
-        renderer.activeRenderContext().projection(name);
+        renderer().activeRenderContext().projection(name);
     }
     va_end(ap);
 }
@@ -349,7 +356,7 @@ For reasons of efficiency, it is generally a good idea to bound the scene tightl
 the near and far clipping planes.
 */
 RtVoid RiClipping(RtFloat hither, RtFloat yon) {
-    renderer.activeRenderContext().clipping(hither, yon);
+    renderer().activeRenderContext().clipping(hither, yon);
 }
 
 RtVoid RiClippingPlane(RtFloat x, RtFloat y, RtFloat z, RtFloat nx, RtFloat ny, RtFloat nz) {
@@ -409,7 +416,7 @@ display's coordinate system; by default the origin is set to (0,0). The default 
 device is renderer implementation-specific.
 */
 RtVoid RiDisplay(char *name, RtToken type, RtToken mode, ...) {
-    renderer.activeRenderContext().display(
+    renderer().activeRenderContext().display(
         name ? name : "",
         type ? type : "",
         mode ? mode : "");
@@ -437,11 +444,11 @@ RtVoid RiOptionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
 RtVoid RiAttributeBegin(void) {
-    renderer.activeRenderContext().attributeBegin();
+    renderer().activeRenderContext().attributeBegin();
 }
 
 RtVoid RiAttributeEnd(void) {
-    renderer.activeRenderContext().attributeEnd();
+    renderer().activeRenderContext().attributeEnd();
 }
 
 /*
@@ -449,11 +456,11 @@ Set the current color to color. Normally there are three components in the color
 green, and blue), but this may be changed with the colorsamples request.
 */
 RtVoid RiColor(RtColor color) {
-    renderer.activeRenderContext().color(glm::vec3(color[0], color[1], color[2]));
+    renderer().activeRenderContext().color(glm::vec3(color[0], color[1], color[2]));
 }
 
 RtVoid RiOpacity(RtColor color) {
-    renderer.activeRenderContext().opacity(glm::vec3(color[0], color[1], color[2]));
+    renderer().activeRenderContext().opacity(glm::vec3(color[0], color[1], color[2]));
 }
 
 RtVoid RiTextureCoordinates(RtFloat s1, RtFloat t1, RtFloat s2, RtFloat t2, RtFloat s3, RtFloat t3, RtFloat s4, RtFloat t4) {
@@ -464,23 +471,23 @@ shadername is the name of a light source shader. This procedure creates a non-ar
 light, turns it on, and adds it to the current light source list. An RtLightHandle value
 is returned that can be used to turn the light off or on again.
 */
-RtLightHandle RiLightSource(RtToken name, ...) {
+RtLightHandle RiLightSource(RtToken /* name */, ...) {
     return 0;
 }
 
-RtLightHandle RiLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
+RtLightHandle RiLightSourceV(RtToken /* name */, RtInt /* n */, RtToken /* tokens */[], RtPointer /* parms */[]) {
     return 0;
 }
 
-RtLightHandle RiAreaLightSource(RtToken name, ...) {
+RtLightHandle RiAreaLightSource(RtToken /* name */, ...) {
     return 0;
 }
 
-RtLightHandle RiAreaLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
+RtLightHandle RiAreaLightSourceV(RtToken /* name */, RtInt /* n */, RtToken /* tokens */[], RtPointer /* parms */[]) {
     return 0;
 }
 
-RtVoid RiIlluminate(RtLightHandle light, RtBoolean onoff) {
+RtVoid RiIlluminate(RtLightHandle /* light */, RtBoolean /* onoff */) {
 }
 
 /*
@@ -488,7 +495,7 @@ shadername is the name of a surface shader. This procedure sets the current surf
 shader to be shadername. If the surface shader shadername is not defined, some
 implementation-dependent default surface shader (but not "null") is used.
 */
-RtVoid RiSurface(const RtToken name, ...) {
+RtVoid RiSurface(RtToken /* name */, ...) {
 }
 
 RtVoid RiSurfaceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
@@ -513,7 +520,7 @@ RtVoid RiExteriorV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
 RtVoid RiShadingRate(RtFloat size) {
-    renderer.activeRenderContext().shadingRate(size);
+    renderer().activeRenderContext().shadingRate(size);
 }
 
 RtVoid RiShadingInterpolation(RtToken type) {
@@ -547,7 +554,7 @@ RtVoid RiSides(RtInt sides) {
 Set the current transformation to the identity.
 */
 RtVoid RiIdentity(void) {
-    renderer.activeRenderContext().setIdentityTransform();
+    renderer().activeRenderContext().setIdentityTransform();
 }
 
 namespace {
@@ -567,14 +574,14 @@ glm::mat4x4 matrix(RtMatrix transform) {
 Set the current transformation to the transformation transform.
 */
 RtVoid RiTransform(RtMatrix transform) {
-    renderer.activeRenderContext().setTransform(matrix(transform));
+    renderer().activeRenderContext().setTransform(matrix(transform));
 }
 
 /*
 Concatenate the transformation transform onto the current transformation.
 */
 RtVoid RiConcatTransform(RtMatrix transform) {
-    renderer.activeRenderContext().concatTransform(matrix(transform));
+    renderer().activeRenderContext().concatTransform(matrix(transform));
 }
 
 RtVoid RiPerspective(RtFloat fov) {
@@ -584,21 +591,21 @@ RtVoid RiPerspective(RtFloat fov) {
 Concatenate a translation onto the current transformation.
 */
 RtVoid RiTranslate(RtFloat dx, RtFloat dy, RtFloat dz) {
-    renderer.activeRenderContext().translate(dx, dy, dz);
+    renderer().activeRenderContext().translate(dx, dy, dz);
 }
 
 /*
 Concatenate a rotation of angle degrees about the given axis onto the current transformation.
 */
 RtVoid RiRotate(RtFloat angle, RtFloat dx, RtFloat dy, RtFloat dz) {
-    renderer.activeRenderContext().rotate(angle, dx, dy, dz);
+    renderer().activeRenderContext().rotate(angle, dx, dy, dz);
 }
 
 /*
 Concatenate a scaling onto the current transformation.
 */
 RtVoid RiScale(RtFloat sx, RtFloat sy, RtFloat sz) {
-    renderer.activeRenderContext().scale(sx, sy, sz);
+    renderer().activeRenderContext().scale(sx, sy, sz);
 }
 
 RtVoid RiSkew(RtFloat angle, RtFloat dx1, RtFloat dy1, RtFloat dz1, RtFloat dx2, RtFloat dy2, RtFloat dz2) {
@@ -624,14 +631,14 @@ RtVoid RiDisplacementV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[
 }
 
 RtVoid RiCoordinateSystem(RtToken space) {
-    renderer.activeRenderContext().saveCoordinateSystem(space);
+    renderer().activeRenderContext().saveCoordinateSystem(space);
 }
 
 RtVoid RiCoordSysTransform(RtToken space) {
-    renderer.activeRenderContext().setCoordinateSystem(space);
+    renderer().activeRenderContext().setCoordinateSystem(space);
 }
 
-RtPoint * RiTransformPoints(RtToken fromspace, RtToken tospace, RtInt n, RtPoint points[]) {
+RtPoint * RiTransformPoints(RtToken /* fromspace */, RtToken /* tospace */, RtInt /* n */, RtPoint /* points */[]) {
     return 0;
 }
 
@@ -640,11 +647,11 @@ Push and pop the current transformation. Pushing and popping must be properly
 nested with respect to the various begin-end constructs.
 */
 RtVoid RiTransformBegin(void) {
-    renderer.activeRenderContext().pushTransform();
+    renderer().activeRenderContext().pushTransform();
 }
 
 RtVoid RiTransformEnd(void) {
-    renderer.activeRenderContext().popTransform();
+    renderer().activeRenderContext().popTransform();
 }
 
 RtVoid RiAttribute(RtToken name, ...) {
@@ -722,16 +729,10 @@ RtVoid RiPolygon(RtInt nverts, ...) {
                 v.point(glm::vec3(points[i][0], points[i][1], points[i][2]));
                 poly->addVertex(v);
             }
-        } else if (token == RI_PZ) {
-        } else if (token == RI_PW) {
-        } else if (token == RI_N) {
-            // p contains RtPoint normals[nverts]
-        } else if (token == RI_CS) {
-            // p contains RtColor colors[nverts]
-        } else if (token == RI_OS) {
-        } else if (token == RI_S) {
-        } else if (token == RI_T) {
-        } else if (token == RI_ST) {
+        } else if (token == RI_PZ || token == RI_PW || token == RI_N || token == RI_CS ||
+                   token == RI_OS || token == RI_S || token == RI_T || token == RI_ST) {
+            // a standard parameter this renderer does not read: depth and homogeneous
+            // positions, normals, colours, opacities and texture coordinates
         }
         // else error
 
@@ -740,7 +741,7 @@ RtVoid RiPolygon(RtInt nverts, ...) {
     va_end(ap);
 
     // add poly to renderer
-    renderer.activeRenderContext().addPolygon(poly);
+    renderer().activeRenderContext().addPolygon(poly);
 }
 
 RtVoid RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], RtPointer parms[]) {

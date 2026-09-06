@@ -49,7 +49,7 @@ std::vector< boost::shared_ptr<style::Property>  > Style::getPropertySet(const s
     std::map<std::pair<std::string, std::string>, boost::shared_ptr<style::Property> >::const_iterator iter = properties_.begin();
     std::vector< boost::shared_ptr<style::Property> > props;
     for (; iter != properties_.end(); iter++) {
-        if ((name == "" || (*iter).first.first == name) && (class_name == "" || (*iter).first.second == class_name))
+        if ((name.empty() || (*iter).first.first == name) && (class_name.empty() || (*iter).first.second == class_name))
             props.push_back((*iter).second);
     }
     return props;

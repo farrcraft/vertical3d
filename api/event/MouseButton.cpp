@@ -8,7 +8,7 @@
 namespace v3d::event {
 /**
  **/
-MouseButton::MouseButton(unsigned int button, const boost::shared_ptr<Context>& context, bool pressed) noexcept :
+MouseButton::MouseButton(unsigned int button, const boost::shared_ptr<Context>& context, bool pressed) :
     Event("button", context),
     button_(button),
     pressed_(pressed) {

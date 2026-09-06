@@ -5,6 +5,7 @@
 
 #include "TextureAtlas.h"
 
+#include <algorithm>
 #include <string>
 
 #include <boost/shared_ptr.hpp>
@@ -109,7 +110,7 @@ glm::ivec4 TextureAtlas::region(unsigned int width, unsigned int height) {
         }
     }
     merge();
-    used_ += width * height;
+    used_ += static_cast<size_t>(width) * height;
     return region;
 }
 
@@ -126,9 +127,7 @@ int TextureAtlas::fit(unsigned int index, unsigned int width, unsigned int heigh
     unsigned int i = index;
     while (widthLeft > 0) {
         node = nodes_[i];
-        if (node.y > y) {
-            y = node.y;
-        }
+        y = std::max(y, node.y);
         if ((y + height) > (height_ - 1)) {
             return -1;
         }
@@ -159,8 +158,8 @@ void TextureAtlas::region(unsigned int x, unsigned int y, unsigned int width, un
     size_t charsize = sizeof(char);
     unsigned char* imgData = image_->data();
     for (unsigned int i = 0; i < height; ++i) {
-        memcpy(imgData + ((y + i) * width_ + x) * charsize * depth_,
-            data + (i * stride) * charsize, width * charsize * depth_);
+        memcpy(imgData + (static_cast<size_t>(y + i) * width_ + x) * charsize * depth_,
+            data + (static_cast<size_t>(i) * stride) * charsize, width * charsize * depth_);
     }
 }
 

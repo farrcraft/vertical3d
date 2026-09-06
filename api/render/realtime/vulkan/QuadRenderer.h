@@ -157,7 +157,7 @@ class QuadRenderer final {
     /**
      * The descriptor set that binds a texture at set 1, created on first use and kept.
      **/
-    MaterialHandle material(const TextureHandle& texture);
+    MaterialHandle material(const TextureHandle& handle);
 
     /**
      * Add a descriptor pool, because the last one is full or there is none.

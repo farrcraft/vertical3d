@@ -53,9 +53,9 @@ const char* const overlayPass = "overlay";
 
 const float fontSize = 18.0f;
 
-const glm::vec4 sky(0.4f, 0.6f, 0.9f, 1.0f);
-const glm::vec4 textColour(0.95f, 0.95f, 0.95f, 1.0f);
-const glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
+constexpr glm::vec4 sky(0.4f, 0.6f, 0.9f, 1.0f);
+constexpr glm::vec4 textColour(0.95f, 0.95f, 0.95f, 1.0f);
+constexpr glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
 
 /**
  * How many chunks are remeshed in one tick. Meshing waits for its staging copy, so the
@@ -67,7 +67,7 @@ const size_t chunkUpdatesPerTick = 16;
  * The block palette, indexed by Voxel::BlockType less one - air is never meshed, so the
  * table starts at dirt.
  **/
-const glm::vec3 palette[materialCount] = {
+constexpr glm::vec3 palette[materialCount] = {
     glm::vec3(0.9f, 0.5f, 0.3f),     // dirt
     glm::vec3(0.13f, 0.56f, 0.19f),  // grass
     glm::vec3(0.9f, 0.88f, 0.58f),   // sand
@@ -126,7 +126,7 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
 Renderer::~Renderer() {
     // the pipeline and the material belong to Resources - what is owned here is the
     // descriptor machinery the material's set was allocated out of
-    const VkDevice device = context_ ? context_->device()->handle() : VK_NULL_HANDLE;
+    VkDevice device = context_ ? context_->device()->handle() : VK_NULL_HANDLE;
     if (device != VK_NULL_HANDLE) {
         if (pool_ != VK_NULL_HANDLE) {
             vkDestroyDescriptorPool(device, pool_, nullptr);

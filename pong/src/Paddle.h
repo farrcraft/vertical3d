@@ -34,8 +34,8 @@ class Paddle final {
 
     void color(const glm::vec3 & color);
     void move(float delta);
-    void position(const float pos);
-    void offset(const float off);
+    void position(float pos);
+    void offset(float off);
     float offset() const;
     float position() const;
 

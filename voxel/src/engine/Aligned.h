@@ -26,7 +26,7 @@ class Aligned {
 
         ptr_bytes = static_cast<char*>(ptr);
         ptr_bytes -= sizeof(void*);
-        std::memcpy(ptr_bytes, &original_ptr, sizeof(void*));
+        std::memcpy(ptr_bytes, static_cast<const void*>(&original_ptr), sizeof(void*));
 
         return ptr;
     }
@@ -36,7 +36,7 @@ class Aligned {
         ptr_bytes -= sizeof(void*);
 
         void *original_ptr;
-        std::memcpy(&original_ptr, ptr_bytes, sizeof(void*));
+        std::memcpy(static_cast<void*>(&original_ptr), ptr_bytes, sizeof(void*));
 
         std::free(original_ptr);
     }

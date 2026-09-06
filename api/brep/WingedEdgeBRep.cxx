@@ -4,6 +4,8 @@
  **/
 
 #include <algorithm>
+
+#include <glm/common.hpp>
 #include <cassert>
 #include <vector>
 
@@ -34,10 +36,7 @@ void WingedEdgeBRep::edge_iterator::reset(WingedEdgeBRep * brep, Index faceID) {
     firstEdge_ = face->edge();
     edge_ = brep_->edge(firstEdge_);
 
-    if (edge_->nextFace() == faceID)  // ccw
-        winding_ = true;
-    else
-        winding_ = false;
+    winding_ = edge_->nextFace() == faceID;  // ccw
 }
 
 Edge * WingedEdgeBRep::edge_iterator::operator * () {
@@ -80,8 +79,7 @@ Vertex * WingedEdgeBRep::vertex_iterator::operator * () {
         return 0;
     if (nextVertex_)
         return (iterator_.brep()->vertex((*iterator_)->nextVertex()));
-    else
-        return (iterator_.brep()->vertex((*iterator_)->prevVertex()));
+    return (iterator_.brep()->vertex((*iterator_)->prevVertex()));
 }
 
 WingedEdgeBRep::vertex_iterator WingedEdgeBRep::vertex_iterator::operator++ (int) {
@@ -172,60 +170,38 @@ Index WingedEdgeBRep::addEdge(Index leftVertex, Index rightVertex) {
 void WingedEdgeBRep::addFace(const std::vector<glm::vec3> & vertices, const glm::vec3 & normal, bool winding) {
     // add vertices
     std::vector<Index> indices;
-    Index vertexID;
     std::vector<glm::vec3>::const_iterator it = vertices.begin();
     for (; it != vertices.end(); it++) {
-        vertexID = addVertex(*it);
-        indices.push_back(vertexID);
+        indices.push_back(addVertex(*it));
     }
-    // add edges
-    Index index = 0;
-    Index leftVertex, rightVertex;
-    Index edgeID;
+    // add edges, each from one vertex to the next and the last one back to the first
     std::vector<Index> edges;
-    for (; index < static_cast<Index>(indices.size()); index++) {
-        leftVertex = indices[index];
-        if (index == (indices.size() - 1))
-            rightVertex = indices[0];
-        else
-            rightVertex = indices[index + 1];
-
-        edgeID = addEdge(leftVertex, rightVertex);
-        edges.push_back(edgeID);
+    for (Index index = 0; index < static_cast<Index>(indices.size()); index++) {
+        const Index leftVertex = indices[index];
+        const Index rightVertex = (index == indices.size() - 1) ? indices[0] : indices[index + 1];
+        edges.push_back(addEdge(leftVertex, rightVertex));
     }
 
     // add face
-    Index faceID;
     Face f(normal, edges[0]);
     faces_.push_back(f);
-    faceID = static_cast<Index>(faces_.size() - 1);
+    const Index faceID = static_cast<Index>(faces_.size() - 1);
 
-    // finish constructing edges
-    Edge * ep;
-    for (index = 0; index < static_cast<Index>(edges.size()); index++) {
-        ep = edge(edges[index]);
+    // finish constructing edges. The two windings name the same two neighbours through
+    // their own half of the record: ccw fills the next side and cw the prev one.
+    for (Index index = 0; index < static_cast<Index>(edges.size()); index++) {
+        Edge * ep = edge(edges[index]);
         assert(ep != 0);
-        // ccw
+        const Index following = (index == edges.size() - 1) ? edges[0] : edges[index + 1];
+        const Index preceding = (index == 0) ? edges[edges.size() - 1] : edges[index - 1];
         if (winding) {
             ep->nextFace(faceID);
-            if (index == (edges.size() - 1))
-                ep->nextCCWEdge(edges[0]);
-            else
-                ep->nextCCWEdge(edges[index + 1]);
-            if (index == 0)
-                ep->nextCWEdge(edges[edges.size() - 1]);
-            else
-                ep->nextCWEdge(edges[index - 1]);
-        } else {  // cw
+            ep->nextCCWEdge(following);
+            ep->nextCWEdge(preceding);
+        } else {
             ep->prevFace(faceID);
-            if (index == (edges.size() - 1))
-                ep->prevCWEdge(edges[0]);
-            else
-                ep->prevCWEdge(edges[index + 1]);
-            if (index == 0)
-                ep->prevCCWEdge(edges[edges.size() - 1]);
-            else
-                ep->prevCCWEdge(edges[index - 1]);
+            ep->prevCWEdge(following);
+            ep->prevCCWEdge(preceding);
         }
     }
 }
@@ -300,27 +276,17 @@ void WingedEdgeBRep::splitEdge(Index edgeID, const glm::vec3 & point) {
 // calculate object-space bounds of mesh
 v3d::type::AABBox WingedEdgeBRep::bound(void) const {
     v3d::type::AABBox extents;
-    if (vertices_.size() == 0)
+    if (vertices_.empty())
         return extents;
-    glm::vec3 min, max;
+    glm::vec3 min;
+    glm::vec3 max;
     min = vertices_[0].point();
     max = min;
     glm::vec3 vt;
     for (Index index = 1; index < static_cast<Index>(vertices_.size()); index++) {
         vt = vertices_[index].point();
-        if (vt[0] < min[0])
-            min[0] = vt[0];
-        if (vt[1] < min[1])
-            min[1] = vt[1];
-        if (vt[2] < min[2])
-            min[2] = vt[2];
-
-        if (vt[0] > max[0])
-            max[0] = vt[0];
-        if (vt[1] > max[1])
-            max[1] = vt[1];
-        if (vt[2] > max[2])
-            max[2] = vt[2];
+        min = glm::min(min, vt);
+        max = glm::max(max, vt);
     }
     extents.extents(min, max);
     return extents;

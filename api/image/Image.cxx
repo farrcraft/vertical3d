@@ -17,7 +17,7 @@ Image::Image() : data_(0), width_(0), height_(0), bpp_(24), format_(Format::RGB)
 
 Image::Image(uint32_t w, uint32_t h, uint8_t b) : width_(w), height_(h), bpp_(b) {
     unsigned int bytesPerPixel = bpp_ / 8;
-    uint64_t size = width_ * height_ * bytesPerPixel;
+    uint64_t size = static_cast<uint64_t>(width_) * height_ * bytesPerPixel;
     if (bytesPerPixel == 3) {
         format_ = Format::RGB;
     } else if (bytesPerPixel == 4) {

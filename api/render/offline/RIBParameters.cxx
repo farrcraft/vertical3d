@@ -30,7 +30,7 @@ void ParameterList::add(const std::string & name, const RIBDeclaration & declara
 }
 
 bool ParameterList::has(const std::string & name) const {
-    return parameters_.find(name) != parameters_.end();
+    return parameters_.contains(name);
 }
 
 std::size_t ParameterList::size() const {

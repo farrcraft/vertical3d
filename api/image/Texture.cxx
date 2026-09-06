@@ -50,10 +50,7 @@ Texture& Texture::operator = (const Texture& t) {
 }
 
 bool Texture::operator == (const Texture& t) const {
-    if (texID_ == t.texID_)
-        return true;
-
-    return false;
+    return texID_ == t.texID_;
 }
 
 Texture::~Texture() {

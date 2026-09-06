@@ -32,12 +32,10 @@ void Bound2D::expand(float size) {
 }
 
 bool Bound2D::intersect(const glm::vec2& point) {
-    if ((point[0] >= position_[0]) &&
+    return (point[0] >= position_[0]) &&
         (point[1] >= position_[1]) &&
         (point[0] <= (position_[0] + size_[0])) &&
-        (point[1] <= (position_[1] + size_[1])))
-        return true;
-    return false;
+        (point[1] <= (position_[1] + size_[1]));
 }
 
 

@@ -45,7 +45,8 @@ glm::vec3 Camera::unproject(const glm::vec3& point, int viewport[4]) {
     p[3] = 1.0f;
 
     // get inverse transformation matrix
-    glm::mat4x4 m, inv;
+    glm::mat4x4 m;
+    glm::mat4x4 inv;
     m = projection() * view();
     inv = glm::inverse(m);
     float w = inv[0][3] * p[0] + inv[1][3] * p[1] + inv[2][3] * p[2] + inv[3][3];

@@ -11,16 +11,11 @@ Menu::Menu(const boost::shared_ptr<entt::dispatcher>& dispatcher) :
 }
 
 bool Menu::navigate(Navigation direction, bool /* wrap */) {
-    if (direction == Navigation::UnselectItem) {
-    } else if (direction == Navigation::SelectItem) {
-    } else if (direction == Navigation::NextItem) {
-    } else if (direction == Navigation::PreviousItem) {
-    } else if (direction == Navigation::HierarchyUp) {
-    } else if (direction == Navigation::HierarchyDown) {
-    } else {
-        return false;
-    }
-    return true;
+    // every direction the enum names is accepted and moves nothing; anything else is a
+    // value cast in from outside it, and is rejected
+    return direction == Navigation::UnselectItem || direction == Navigation::SelectItem ||
+        direction == Navigation::NextItem || direction == Navigation::PreviousItem ||
+        direction == Navigation::HierarchyUp || direction == Navigation::HierarchyDown;
 }
 
 /**
@@ -30,11 +25,7 @@ void Menu::parent(boost::weak_ptr<Menu> p) {
 }
 
 bool Menu::hasParent() const {
-    boost::shared_ptr<Menu> menu = parent_.lock();
-    if (menu) {
-        return true;
-    }
-    return false;
+    return !parent_.expired();
 }
 
 boost::shared_ptr<Menu> Menu::level() const {

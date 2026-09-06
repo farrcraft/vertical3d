@@ -368,78 +368,43 @@ void Camera::updatePosition(const glm::vec3 &direction, float elapsedTimeSec) {
     updateVelocity(direction, elapsedTimeSec);
 }
 
+namespace {
+
+/**
+ * One axis of the camera's velocity for one frame.
+ *
+ * A driven axis accelerates toward its limit and is clamped there. An axis that is not
+ * driven decelerates toward zero and stops there rather than crossing it, which is what
+ * the two signs of the deceleration are for.
+ **/
+float axisVelocity(float current, float direction, float acceleration, float limit, float elapsed) {
+    if (direction != 0.0f) {
+        current += direction * acceleration * elapsed;
+        if (current > limit) {
+            return limit;
+        }
+        if (current < -limit) {
+            return -limit;
+        }
+        return current;
+    }
+    if (current > 0.0f) {
+        current -= acceleration * elapsed;
+        return current < 0.0f ? 0.0f : current;
+    }
+    current += acceleration * elapsed;
+    return current > 0.0f ? 0.0f : current;
+}
+
+};  // namespace
+
 void Camera::updateVelocity(const glm::vec3 &direction, float elapsedTimeSec) {
     // Updates the camera's velocity based on the supplied movement direction
     // and the elapsed time (since this method was last called). The movement
-    // direction is in the range [-1,1].
-
-    if (direction.x != 0.0f) {
-        // Camera is moving along the x axis.
-        // Linearly accelerate up to the camera's max speed.
-
-        currentVelocity_.x += direction.x * acceleration_.x * elapsedTimeSec;
-
-        if (currentVelocity_.x > velocity_.x)
-            currentVelocity_.x = velocity_.x;
-        else if (currentVelocity_.x < -velocity_.x)
-            currentVelocity_.x = -velocity_.x;
-    } else {
-        // Camera is no longer moving along the x axis.
-        // Linearly decelerate back to stationary state.
-
-        if (currentVelocity_.x > 0.0f) {
-            if ((currentVelocity_.x -= acceleration_.x * elapsedTimeSec) < 0.0f)
-                currentVelocity_.x = 0.0f;
-        } else {
-            if ((currentVelocity_.x += acceleration_.x * elapsedTimeSec) > 0.0f)
-                currentVelocity_.x = 0.0f;
-        }
-    }
-
-    if (direction.y != 0.0f) {
-        // Camera is moving along the y axis.
-        // Linearly accelerate up to the camera's max speed.
-
-        currentVelocity_.y += direction.y * acceleration_.y * elapsedTimeSec;
-
-        if (currentVelocity_.y > velocity_.y)
-            currentVelocity_.y = velocity_.y;
-        else if (currentVelocity_.y < -velocity_.y)
-            currentVelocity_.y = -velocity_.y;
-    } else {
-        // Camera is no longer moving along the y axis.
-        // Linearly decelerate back to stationary state.
-
-        if (currentVelocity_.y > 0.0f) {
-            if ((currentVelocity_.y -= acceleration_.y * elapsedTimeSec) < 0.0f)
-                currentVelocity_.y = 0.0f;
-        } else {
-            if ((currentVelocity_.y += acceleration_.y * elapsedTimeSec) > 0.0f)
-                currentVelocity_.y = 0.0f;
-        }
-    }
-
-    if (direction.z != 0.0f) {
-        // Camera is moving along the z axis.
-        // Linearly accelerate up to the camera's max speed.
-
-        currentVelocity_.z += direction.z * acceleration_.z * elapsedTimeSec;
-
-        if (currentVelocity_.z > velocity_.z)
-            currentVelocity_.z = velocity_.z;
-        else if (currentVelocity_.z < -velocity_.z)
-            currentVelocity_.z = -velocity_.z;
-    } else {
-        // Camera is no longer moving along the z axis.
-        // Linearly decelerate back to stationary state.
-
-        if (currentVelocity_.z > 0.0f) {
-            if ((currentVelocity_.z -= acceleration_.z * elapsedTimeSec) < 0.0f)
-                currentVelocity_.z = 0.0f;
-        } else {
-            if ((currentVelocity_.z += acceleration_.z * elapsedTimeSec) > 0.0f)
-                currentVelocity_.z = 0.0f;
-        }
+    // direction is in the range [-1,1]. The three axes are independent of each other.
+    for (glm::length_t axis = 0; axis < 3; axis++) {
+        currentVelocity_[axis] = axisVelocity(currentVelocity_[axis], direction[axis],
+            acceleration_[axis], velocity_[axis], elapsedTimeSec);
     }
 }
 

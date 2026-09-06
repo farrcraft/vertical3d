@@ -3,6 +3,9 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <cstdio>
+#include <cstdlib>
+#include <exception>
 #include <iostream>
 #include <string>
 
@@ -11,8 +14,9 @@
 
 #include "../api/image/Factory.h"
 
+namespace {
 
-int main(int argc, char *argv[]) {
+int run(int argc, char *argv[]) {
     // setup option parser
     boost::program_options::options_description opts_desc("Allowed options");
     opts_desc.add_options()
@@ -29,7 +33,7 @@ int main(int argc, char *argv[]) {
 
     // process options
     if (var_map.count("help")) {
-        std::cout << opts_desc << std::endl;
+        std::cout << opts_desc << "\n";
         exit(EXIT_SUCCESS);
     }
 
@@ -53,7 +57,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (infile.empty()) {
-        std::cout << opts_desc << std::endl;
+        std::cout << opts_desc << "\n";
         exit(EXIT_SUCCESS);
     }
 
@@ -63,32 +67,52 @@ int main(int argc, char *argv[]) {
     boost::shared_ptr<v3d::image::Image> image;
 
     if (!silent) {
-        std::cout << "Reading: " << infile << std::endl;
+        std::cout << "Reading: " << infile << "\n";
         try {
             image = factory.read(infile);
         }
         catch (std::string & e) {
-            std::cout << "error reading image! - " << e << std::endl;
+            std::cout << "error reading image! - " << e << "\n";
             exit(EXIT_FAILURE);
         }
         if (!image) {
-            std::cout << "error reading file!" << std::endl;
+            std::cout << "error reading file!" << "\n";
             exit(EXIT_FAILURE);
         }
     }
     if (info) {
-        std::cout << "Source image width: " << image->width() << std::endl;
-        std::cout << "Source image height: " << image->height() << std::endl;
-        std::cout << "Source image bpp: " << image->bpp() << std::endl;
+        std::cout << "Source image width: " << image->width() << "\n";
+        std::cout << "Source image height: " << image->height() << "\n";
+        std::cout << "Source image bpp: " << static_cast<unsigned int>(image->bpp()) << "\n";
     }
 
     if (sync) {
-        std::cout << "Writing: " << outfile << std::endl;
+        std::cout << "Writing: " << outfile << "\n";
         if (!factory.write(outfile, image)) {
-            std::cout << "error writing file!" << std::endl;
+            std::cout << "error writing file!" << "\n";
             exit(EXIT_FAILURE);
         }
     }
 
     return EXIT_SUCCESS;
+}
+
+};  // namespace
+
+int main(int argc, char *argv[]) {
+    // the option parser and the image factory both report by throwing, and an exception
+    // leaving main is an abort with no message in it. The handler reports through stdio
+    // rather than the stream the rest of the file writes to: a last resort that can itself
+    // throw is not one
+    try {
+        return run(argc, argv);
+    } catch (const std::exception& error) {
+        std::fputs("error: ", stderr);
+        std::fputs(error.what(), stderr);
+        std::fputs("\n", stderr);
+        return EXIT_FAILURE;
+    } catch (...) {
+        std::fputs("error: unrecognised failure\n", stderr);
+        return EXIT_FAILURE;
+    }
 }
