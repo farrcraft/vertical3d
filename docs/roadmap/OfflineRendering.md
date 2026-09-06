@@ -12,7 +12,8 @@ flat colour per surface with no light and no material behind it, and one sample 
 
 State as of 2026-09-05, with phases 1 and 2 closed the same day as their own plans
 ([one](../plans/completed/OfflineRenderingPhase1.md),
-[two](../plans/completed/OfflineRenderingPhase2.md)). Nothing beyond them is scheduled; per
+[two](../plans/completed/OfflineRenderingPhase2.md)) and phase 3 taken up by
+[a plan of its own](../plans/OfflineRenderingPhase3.md). Nothing beyond that is scheduled; per
 [the modernization plan's conclusion](../plans/completed/Modernization.md) both renderers are
 deliberately kept out of the realtime work, and this roadmap does not change that.
 
@@ -211,23 +212,25 @@ renderers are fed until then, and is what a test fixture is either way.
 
 ### Phase 3 — light and surface
 
-Blocked by phase 2, which is done. It is the next phase that would earn a plan.
+**Open**, blocked by phase 2 which is done.
+[OfflineRenderingPhase3.md](../plans/OfflineRenderingPhase3.md) is the plan, and carries the step
+ordering; what follows is why the phase is third.
 
 A scene can now *say* "light" — `LightSource` and `Surface` reach both handlers, with their
 parameters typed by the declaration table, and both drop them.
 
 moya's `RiLightSource` returns 0, its `RiSurface` is empty, and neither renderer has a material
-of any kind. The RI standard shaders — matte, metal, plastic, paintedplastic — are the obvious
-target because the tokens are already declared. Shadow rays are talyn's version of the same
-step, and are cheap once primary rays work.
+of any kind. Neither has a surface normal either, which is the geometry half of the same gap.
+Shadow rays are talyn's version of the step, and are cheap once primary rays work.
 
-The large question sitting underneath this phase is whether shading is fixed-function C++ or a
-shading language. It is the one thing this roadmap opened that is still open, and it is picked
-up below.
+The large question sitting underneath this phase was whether shading is fixed-function C++ or a
+shading language. **It is answered as a language**, and the plan's first step is the record that
+weighs it. That answer is what makes this phase a subsystem rather than a weekend, and it is why
+phases 4 and 5 sit behind it rather than beside it.
 
 ### Phase 4 — sampling and quality
 
-Blocked by phase 3: antialiasing a flat-shaded scene measures nothing.
+Blocked by phase 3, which is open: antialiasing a flat-shaded scene measures nothing.
 
 The five `Ri*Filter` functions — box, triangle, gaussian, catmull-rom, sinc — all return `0.0`
 today, and they are the pixel filter half of this. The sampling half is supersampling, then
@@ -237,7 +240,7 @@ depth of field and motion blur are fields waiting for an implementation.
 
 ### Phase 5 — talyn's own list
 
-Blocked by phase 3. Reflection and refraction are the recursion the algorithm comment already
+Blocked by phase 3, which is open. Reflection and refraction are the recursion the algorithm comment already
 describes and are a day's work once shading exists; index of refraction and transparency come
 with them. Texture and bump mapping ride on `api/image`. An acceleration structure is worth
 nothing until there is a scene large enough to be slow, and should wait for one rather than be
@@ -274,10 +277,11 @@ The records hold the reasoning; these are pointers, not summaries.
 
 ## What this still needs decided
 
-**Fixed-function shading or a shading language.** Phase 3, and it reaches into phase 6: it
-decides whether talyn's raytracing is reached through `trace()` from a shader, which is the
-remaining half of whether the two renderers unify. It is the difference between a weekend and a
-subsystem, and it should not be answered by starting to write either one.
+**Nothing this roadmap opened is still open.** The fifth question — fixed-function shading or a
+shading language — is answered as a language, and phase 3's plan writes the record for it. What
+that answer does *not* settle is phase 6: a shader can call `trace()`, which is what makes the
+question of whether moya's raytracing is talyn answerable, and answering it is still that phase's
+own work.
 
 ## Verification
 
