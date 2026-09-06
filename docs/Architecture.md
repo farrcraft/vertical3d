@@ -118,8 +118,29 @@ that can be pointed at a buffer and `api/image` reads files only.
 **Meshes are owned by the app**, not by `Resources`
 ([ADR-0010](adr/0010-meshes-are-owned-by-the-app.md)).
 
+## The loop has two virtuals, and they mean different things
+
+Per [ADR-0032](adr/0032-the-loop-simulates-at-a-fixed-step.md), `eventLoop()` measures each
+frame in nanoseconds, hands it to `tick(unsigned int delta)` once, then drains however many
+whole 60 Hz steps that frame owes through `simulate(float step)`, then calls `render()`.
+
+**Simulation goes in `simulate()`.** What runs there produces the same result whatever the
+frame rate was; what runs in `tick()` does not. Per-frame work that is not simulation — input
+state, UI animation, camera smoothing — is what `tick()` is still for.
+
+`Engine::alpha()` is the fraction of a step held but not yet simulated, for a renderer that
+interpolates between two simulation states. Nothing reads it yet. `Engine::statistics()` is
+what the loop measured about its own pacing; steps-per-frame is the number worth watching.
+
+Pong and odyssey are on `simulate()`. Tetris and voxel are still on `tick(delta)`, which they
+scale by, so they are correct but on a different timing model.
+
 ## Invariants that bite
 
+- **Simulation belongs in `simulate()`, not `tick()`.** Both are called from the loop and
+  nothing enforces the split, so simulation left in `tick()` is frame-rate dependent and
+  compiles. `tick` is milliseconds and `simulate` is seconds, which is the only thing that
+  stops one being passed where the other belongs.
 - **A quit command calls `Engine::quit()`, never `shutdown()`.** `eventLoop` ticks and renders
   after a handler returns, so tearing the window down inside one leaves the next frame drawing
   into a destroyed window. `quit()` sets a flag the loop breaks on, and `main` calls

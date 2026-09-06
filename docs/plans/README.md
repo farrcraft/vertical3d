@@ -9,18 +9,21 @@ every phase is closed it moves to [completed/](completed/), and any open item it
 moves to [TODO.md](../TODO.md). The plan itself stays, because the reasoning behind an ordering
 outlives the schedule.
 
-[GameLoopFoundations.md](GameLoopFoundations.md) **is open**, drafted on 2026-09-05 against this
-tree from outside it and staged here on 2026-09-06. It takes up three gaps in the game loop that
-every app subclassing `v3d::engine::Engine` has worked around separately or has failed to: a fixed
-simulation step ([ADR-0032](../adr/0032-the-loop-simulates-at-a-fixed-step.md)), window focus as an
-event, and the camera profile loader moving out of the editor into `api/config`. The ordering
-matters because the capability and the two-app bug fix behind it are separate commits.
-
 [OfflineRenderingPhase3.md](OfflineRenderingPhase3.md) **is open**, drafted on 2026-09-05. It
 takes up phase 3 of [the offline rendering roadmap](../roadmap/OfflineRendering.md) — light and
 surface — and answers the question that roadmap left open: shading is a language rather than a
 fixed set of shaders. That answer makes it a subsystem rather than a weekend, and phases 4 and
 5 sit behind it.
+
+[completed/GameLoopFoundations.md](completed/GameLoopFoundations.md) was drafted on 2026-09-05
+against this tree from outside it, and staged and closed here on 2026-09-06. It took up three
+gaps in the game loop that every app subclassing `v3d::engine::Engine` had worked around
+separately or had failed to: a fixed simulation step
+([ADR-0032](../adr/0032-the-loop-simulates-at-a-fixed-step.md)), window focus as an event, and
+the camera profile loader moving out of the editor into `api/config`. Its ordering mattered
+because the capability and the two-app bug fix behind it are separate commits — pong and
+odyssey were advancing their worlds one increment per frame and so ran faster on a faster
+machine.
 
 [completed/ExternalApiConsumption.md](completed/ExternalApiConsumption.md) was drafted and
 closed on 2026-09-05. It made the `api/` libraries buildable inside another repository's tree,

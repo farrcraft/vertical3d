@@ -65,6 +65,11 @@ the 183 clang-tidy checks left enabled, so **every finding is a new one**.
   An app names the `v3dlib_*` targets it uses and nothing else. There is no OpenGL in the tree,
   and glm and EnTT have to be linked rather than assumed.
   [docs/Build.md](docs/Build.md#linking-rules).
+- **Simulation goes in `simulate(float step)`, not `tick(unsigned int delta)`.** Both are
+  called from the loop ([ADR-0032](docs/adr/0032-the-loop-simulates-at-a-fixed-step.md)) and
+  nothing enforces the split, so simulation left in `tick()` is frame-rate dependent and
+  compiles. `tick` is milliseconds, `simulate` is seconds.
+  [docs/Architecture.md](docs/Architecture.md) has the rest of the loop.
 - **A quit command calls `Engine::quit()`, never `shutdown()`**, and an app's `shutdown()`
   tears its renderer down before the base class runs. Either mistake leaves a destroyed window
   being drawn into.

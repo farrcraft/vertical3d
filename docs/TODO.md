@@ -73,6 +73,16 @@ that exists today.
 [] nothing catches a pipeline built against one colour format drawing into a target of another. It is a wrong picture rather than a validation error, because dynamic rendering takes the format from the pipeline
 [] `Frame::passBefore` exists because `Engine3D` creates the colour pass in its constructor. A frame that let a pass say where it belongs, or an engine that created its pass lazily, would not need it
 
+## The game loop
+
+The loop simulates at a fixed step as of 2026-09-06 —
+[ADR-0032](adr/0032-the-loop-simulates-at-a-fixed-step.md), and
+[plans/completed/GameLoopFoundations.md](plans/completed/GameLoopFoundations.md).
+
+[] tetris and voxel are still on `tick(delta)`. They are not wrong - both scale by the delta - so there is no forcing reason to move them, but two apps on a different timing model than the other two is the kind of split that is invisible until someone copies the wrong one
+[] nothing reads `Engine::alpha()`. A renderer that interpolated between the last two simulation states would use it; until one does, the world is drawn snapped to the last completed step and motion is quantised to 60 Hz however fast the display is
+[] nothing draws the frame statistics. `Engine::statistics()` reports steps-per-frame, which is what says the clamp is doing real work, and it is invisible without something to show it
+
 ## Ongoing workstreams
 
 **Tests.** Every library needing neither a window nor a GPU is covered as of 2026-09-04. What
