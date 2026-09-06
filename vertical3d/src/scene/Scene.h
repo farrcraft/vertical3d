@@ -19,7 +19,7 @@ namespace v3d::editor {
 /**
  * What the editor is editing: the meshes of one document.
  *
- * It holds no cameras. The views own theirs and CameraProfiles owns the table they are
+ * It holds no cameras. The views own theirs and config::CameraProfiles owns the table they are
  * built from, so a scene that also kept profiles would be a second place to look for
  * the same thing.
  *

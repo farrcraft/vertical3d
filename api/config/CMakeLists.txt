@@ -1,11 +1,14 @@
 v3d_add_api_library(config
 	"Config.h" "Config.cpp"
+	"CameraProfiles.h" "CameraProfiles.cpp"
  "Sounds.h" "Type.h")
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
 # v3dlib_asset: Config.h names an asset::Json, and load() resolves each file it lists
 # through the asset manager.
-target_link_libraries(v3dlib_config PUBLIC v3dlib_log v3dlib_asset)
+# v3dlib_type: CameraProfiles.h holds a table of type::CameraProfile and hands them out by
+# value.
+target_link_libraries(v3dlib_config PUBLIC v3dlib_log v3dlib_asset v3dlib_type)
 
 target_compile_options(v3dlib_config PRIVATE /EHsc)
 

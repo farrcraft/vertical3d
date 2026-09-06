@@ -3,3 +3,6 @@ out/build/*
 .vs*
 docs/ChangeLog.md
 vcpkg_installed/*
+
+# the logger writes beside whatever ran, and a test run leaves one in the tree root
+v3d.log

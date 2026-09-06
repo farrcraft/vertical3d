@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-namespace v3d::editor {
+namespace v3d::config {
 
 namespace {
 
@@ -131,4 +131,4 @@ const std::vector<std::string>& CameraProfiles::names() const noexcept {
     return names_;
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::config

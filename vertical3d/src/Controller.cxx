@@ -67,7 +67,7 @@ bool Controller::initialize() {
     project_ = boost::make_shared<Project>(logger_);
     commands_ = boost::make_shared<CommandStack>();
 
-    profiles_ = boost::make_shared<CameraProfiles>(logger_);
+    profiles_ = boost::make_shared<v3d::config::CameraProfiles>(logger_);
     if (!profiles_->load(config_->get(v3d::config::Type::Camera))) {
         return false;
     }

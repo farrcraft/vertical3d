@@ -2,7 +2,6 @@ v3d_add_test(vertical3d
 	"TestMain.cxx"
 
 	"view/ViewLayoutTest.cxx"
-	"view/CameraProfilesTest.cxx"
 	"view/ConstructionPlaneTest.cxx"
 
 	"scene/SceneTest.cxx"
@@ -22,7 +21,6 @@ v3d_add_test(vertical3d
 
 	"../src/view/ViewLayout.cxx"
 	"../src/view/ViewPort.cxx"
-	"../src/view/CameraProfiles.cxx"
 	"../src/view/ConstructionPlane.cxx"
 	"../src/scene/Scene.cxx"
 	"../src/scene/MeshTopology.cxx"

@@ -7,8 +7,8 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include "../../src/view/CameraProfiles.h"
-#include "../../../api/type/Camera.h"
+#include "../CameraProfiles.h"
+#include "../../type/Camera.h"
 
 #include <boost/make_shared.hpp>
 
@@ -39,7 +39,7 @@ const char* const cameras =
 };  // namespace
 
 BOOST_AUTO_TEST_CASE(cameraprofiles_load_test) {
-    v3d::editor::CameraProfiles profiles(logger());
+    v3d::config::CameraProfiles profiles(logger());
     BOOST_REQUIRE(profiles.load(config(cameras)));
 
     BOOST_REQUIRE_EQUAL(profiles.names().size(), 2u);
@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE(cameraprofiles_load_test) {
 BOOST_AUTO_TEST_CASE(cameraprofiles_orientation_test) {
     // the lookat is what orients a profile: the three normals and the rotation have to
     // agree, and a table naming each of them separately is a table that can disagree
-    v3d::editor::CameraProfiles profiles(logger());
+    v3d::config::CameraProfiles profiles(logger());
     BOOST_REQUIRE(profiles.load(config(cameras)));
 
     v3d::type::CameraProfile top = profiles.get("Top");
@@ -83,7 +83,7 @@ BOOST_AUTO_TEST_CASE(cameraprofiles_orientation_test) {
 
 BOOST_AUTO_TEST_CASE(cameraprofiles_defaults_test) {
     // every field but the name has a default, so a sparse profile loads rather than failing
-    v3d::editor::CameraProfiles profiles(logger());
+    v3d::config::CameraProfiles profiles(logger());
     BOOST_REQUIRE(profiles.load(config("{\"cameras\": [{\"name\": \"Bare\"}]}")));
 
     v3d::type::CameraProfile bare = profiles.get("Bare");
@@ -96,7 +96,7 @@ BOOST_AUTO_TEST_CASE(cameraprofiles_defaults_test) {
 }
 
 BOOST_AUTO_TEST_CASE(cameraprofiles_rejects_test) {
-    v3d::editor::CameraProfiles profiles(logger());
+    v3d::config::CameraProfiles profiles(logger());
 
     BOOST_CHECK(!profiles.load(config("{}")));
     BOOST_CHECK(!profiles.load(config("{\"cameras\": {}}")));

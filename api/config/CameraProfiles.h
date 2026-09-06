@@ -9,16 +9,17 @@
 #include <string>
 #include <vector>
 
-#include "../../../api/asset/Json.h"
-#include "../../../api/log/Logger.h"
-#include "../../../api/type/CameraProfile.h"
+#include "../asset/Json.h"
+#include "../log/Logger.h"
+#include "../type/CameraProfile.h"
 
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::editor {
+namespace v3d::config {
 
 /**
- * The editor's named camera profiles, loaded from data/cameras.json.
+ * Named camera profiles, loaded from a document the config names as Type::Camera - the
+ * editor's data/cameras.json is the one in the tree.
  *
  * A profile is described by where the camera is and what it looks at rather than by
  * its three normals: the basis and the rotation have to agree, and
@@ -41,7 +42,7 @@ class CameraProfiles final {
     bool load(const boost::shared_ptr<v3d::asset::Json>& config);
 
     /**
-     * @param name the profile name, as the layout names it
+     * @param name the profile name, as whatever names a view names it
      * @return the profile, or an unnamed default when there is no such profile
      **/
     v3d::type::CameraProfile get(const std::string& name) const;
@@ -62,4 +63,4 @@ class CameraProfiles final {
     std::vector<std::string> names_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::config
