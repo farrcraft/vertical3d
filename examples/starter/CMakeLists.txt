@@ -1,5 +1,5 @@
 # A windowed application outside the vertical3d tree, built the way
-# [docs/NewProject.md](../../NewProject.md) describes. It exists to be configured by CI: nothing
+# [docs/NewProject.md](../../docs/NewProject.md) describes. It exists to be configured by CI: nothing
 # inside the tree can tell a target that carries its own include path and its own dependencies
 # from one picking them up off the root's global or off an app that names all thirteen
 # libraries, because in this repository both are always there.
@@ -28,7 +28,7 @@ add_compile_options("/permissive-")
 # The path is relative here because the example travels with the tree it consumes.
 set(V3D_BUILD_APPS OFF)
 set(V3D_BUILD_TESTS OFF)
-get_filename_component(V3D_TREE "${CMAKE_CURRENT_LIST_DIR}/../../.." ABSOLUTE)
+get_filename_component(V3D_TREE "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
 add_subdirectory("${V3D_TREE}" v3d)
 
 add_executable(v3dstarter

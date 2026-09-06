@@ -147,7 +147,7 @@ jobs:
         shell: cmd
         run: |
           call "%RUNNER_TEMP%\vcvars.bat" >nul
-          cmake -S docs/examples/starter -B "%STARTER_BUILD_DIR%" -G Ninja ^
+          cmake -S examples/starter -B "%STARTER_BUILD_DIR%" -G Ninja ^
             -DCMAKE_BUILD_TYPE=Debug ^
             -DCMAKE_TOOLCHAIN_FILE="%VCPKG_INSTALLATION_ROOT%\scripts\buildsystems\vcpkg.cmake" ^
             -DVCPKG_TARGET_TRIPLET=x64-windows ^
