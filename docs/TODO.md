@@ -46,7 +46,6 @@ clang-tidy, `/analyze` and cpplint alike.
 `api/grid` arrived on 2026-09-06 as [ADR-0029](adr/0029-tile-grids-are-an-api-library.md).
 `odyssey` is its consumer as of the same day.
 
-[x] `odyssey` uses the library - done 2026-09-06. It reads a board from `odyssey/data/map.json`, draws it, and routes the player over it with `findPath` when a tile is clicked. The movement system walks the route a tile at a time on the fixed step of [ADR-0032](adr/0032-the-loop-simulates-at-a-fixed-step.md).
 [] `LineOfSight` still has no consumer. Odyssey's map carries cover - a crate is `Cover::Half` and a wall is `Cover::Full` - and nothing asks what can be seen from where, because odyssey has nothing to see yet
 [] odyssey's map format is its own and lives in `odyssey/tile/Map.cpp`. It earns a record and a home in the api the moment something other than that app reads or writes one, which a map editor or a generator would be
 [] there is no world space filled primitive, so `Overlay.h` outlines a tile and cannot fill one. A filled highlight wants a third primitive beside the quad ([ADR-0005](adr/0005-one-batched-quad-primitive.md)) and the line ([ADR-0011](adr/0011-lines-are-the-second-primitive.md)), which is a decision rather than an addition
