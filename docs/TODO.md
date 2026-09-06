@@ -12,6 +12,14 @@ left in a finished plan.
 [] factor out all SDL calls from apps and into the api instead - three left: `odyssey/Odyssey.cpp` and `odyssey/engine/Engine.cpp` include `SDL3/SDL.h` directly, and `voxel/src/Controller.cxx` reaches through `window_->sdl()` for `SDL_GetWindowFlags`
 [x] decide whether api/brep keeps Edge, HalfEdgeBRep and WingedEdgeBRep - decided 2026-09-04. `Edge` and `WingedEdgeBRep` are ported and built, with suites; `HalfEdgeBRep` is deleted, because `BRep` is what it became.
 
+## External api consumption
+
+Carried out of [plans/completed/ExternalApiConsumption.md](plans/completed/ExternalApiConsumption.md),
+which closed on 2026-09-05.
+
+[] make the Vulkan dependency conditional - find_package(Vulkan) is unconditional and add_subdirectory("api") builds v3dlib_render whatever else is off, so a consumer wanting only v3dlib_image still needs the Vulkan SDK. A per-library dependency block would fix it and is most of the installed-package work of [ADR-0027](adr/0027-the-api-is-consumed-as-source.md) Alternative 2 arriving early.
+[] decide what find_package(Boost) at the root does to a consumer cache - Boost_USE_STATIC_LIBS ON is a cache variable and is in force for the consumer own boost lookup. Either state it in the contract or set it scoped. The example consumer does not detect it, because it never looks boost up itself.
+
 ## Ongoing workstreams
 
 **Tests.** Every library needing neither a window nor a GPU is covered as of 2026-09-04. What

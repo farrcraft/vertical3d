@@ -15,10 +15,10 @@ Managed by `vcpkg`, through the manifest in [vcpkg.json](../vcpkg.json):
 
 Not from vcpkg:
 
-- **The Vulkan SDK**, which every configure needs whether or not it will draw: the root CMakeLists calls `find_package(Vulkan)` and looks for `glslc` with a `FATAL_ERROR`, because shaders are compiled at build time and embedded as SPIR-V. `VULKAN_SDK` has to point at an install.
+- **The Vulkan SDK**, which every configure needs whether or not it will draw: `find_package(Vulkan)` is unconditional, and `v3d_add_shader` looks for `glslc` with a `FATAL_ERROR` on the first shader it is asked to compile, because shaders are compiled at build time and embedded as SPIR-V. `VULKAN_SDK` has to point at an install.
 - [libnoise](https://github.com/eXpl0it3r/libnoise) - an unofficial fork that adds CMake support. A git submodule, built separately; only voxel links it, and it is the only submodule left.
 
-Submodules are configured in the `vendor/` directory, and need to be cloned and built individually. See the Submodules section below. `link_directories` expects their artefacts under `vendor/*/Debug`.
+Submodules are configured in the `vendor/` directory, and need to be cloned and built individually. See the Submodules section below. voxel's `target_link_directories` expects their artefacts under `vendor/*/Debug`.
 
 There is no OpenGL: `api/gl` was deleted on 2026-09-01, and the `find_package(OpenGL)` and `find_package(GLEW)` calls and the `glew` port went with it. See [adr/0001-vulkan-replaces-opengl.md](adr/0001-vulkan-replaces-opengl.md).
 
@@ -107,3 +107,20 @@ cmake --build vendor/libnoise/build-ninja
 ```
 
 libnoise is not prebuilt in the tree, and `voxel` will not link without it.
+
+## Consuming the api from another repository
+
+An application outside this tree takes it as source, per
+[adr/0027-the-api-is-consumed-as-source.md](adr/0027-the-api-is-consumed-as-source.md), and
+[NewProject.md](NewProject.md) is the walkthrough. Two things about it belong here rather than
+there, because they are what this document is:
+
+- **The consumer's `vcpkg.json` is the one that gets installed.** Manifest mode reads the root
+  project's manifest, and once vertical3d is nested that is the consumer's. Copy
+  [vcpkg.json](../vcpkg.json) across; the api's dependencies are not resolved from the tree's own.
+- **`vendor/vcpkg/` is gitignored here**, so cloning this repository does not bring a vcpkg with
+  it. A consumer clones its own.
+
+The baseline in [vcpkg-configuration.json](../vcpkg-configuration.json) has to be copied verbatim
+into the consumer's, and nothing checks that it was. Boost is static, so a drifted baseline is a
+link error rather than a warning.

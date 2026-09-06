@@ -15,10 +15,13 @@ leaving them to rot — a plan describing a tree that no longer exists is worse 
 When every phase is closed it moves to [`plans/completed/`](plans/completed/) and its open
 items move to [`TODO.md`](TODO.md).
 
-**No plan is open.**
+[`plans/OfflineRenderingPhase3.md`](plans/OfflineRenderingPhase3.md) **is open**, taking up
+phase 3 of the offline rendering roadmap.
+[`plans/completed/ExternalApiConsumption.md`](plans/completed/ExternalApiConsumption.md) closed on
+2026-09-05 and made the `api/` libraries buildable inside another repository's tree.
 [`plans/completed/OfflineRenderingPhase2.md`](plans/completed/OfflineRenderingPhase2.md) and
 [`plans/completed/OfflineRenderingPhase1.md`](plans/completed/OfflineRenderingPhase1.md) both
-closed on 2026-09-05 and took up the first two phases of the offline rendering roadmap.
+closed on 2026-09-05 and took up the first two phases of that roadmap.
 [`plans/completed/Modernization.md`](plans/completed/Modernization.md) closed on 2026-09-04 and
 covered the overlapping rewrites: SDL3, the legacy tree migration, Vulkan, the engine
 consolidation, and the per-app ports. Unphased work is in [`TODO.md`](TODO.md).

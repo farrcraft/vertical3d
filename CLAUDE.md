@@ -10,8 +10,10 @@ vertical3d, talyn, moya, imagetool, v3dshell. Every directory in the root builds
 
 Much of this code traces back to the early 2000s and is being modernised incrementally: C++17+, granular
 namespaces, CMake replacing autotools and VS solutions. Expect wide variance in how modern any given file
-is. MSVC/Windows only in practice; the root CMakeLists passes `/std:c++latest` and `/permissive-`
-unconditionally, and targets set `/EHsc` and `/utf-8` individually.
+is. MSVC/Windows only in practice; the root CMakeLists sets `CMAKE_CXX_STANDARD 23` — which CMake maps
+to `/std:c++latest` here, and which is stated as a standard rather than as the flag because glm and EnTT
+require `cxx_std_17` through their interfaces and MSVC reports D9025 for a command line naming two — plus
+`/permissive-` and `/W4` unconditionally. Targets set `/EHsc` and `/utf-8` individually.
 
 The legacy trees — `vault/`, `rigel/`, `luxa/`, `v3dlibs/` — are all deleted. [docs/audits/](docs/audits/)
 is the only account of what they held and carries the `git show` incantation to recover a file from each.
@@ -30,8 +32,9 @@ earns an ADR, and what "verified" currently means. Decisions are in [docs/adr/](
 README; most of the first twelve cover the Vulkan rewrite and are worth reading before touching `api/render`.
 Plans live in [docs/plans/](docs/plans/), surveys and audits in [docs/audits/](docs/audits/), roadmaps for
 areas nobody has taken up in [docs/roadmap/](docs/roadmap/), and unphased work in
-[docs/TODO.md](docs/TODO.md). No plan is open; phase 3 of
-[the offline rendering roadmap](docs/roadmap/OfflineRendering.md) is the next thing that would earn one.
+[docs/TODO.md](docs/TODO.md).
+[docs/plans/OfflineRenderingPhase3.md](docs/plans/OfflineRenderingPhase3.md) is the open plan, taking up
+light and surface in the two offline renderers as a shading language.
 
 ## Build
 
@@ -57,7 +60,7 @@ ninja -C out/build/x64-Debug pong         # one target
   <source>)` runs the Vulkan SDK's `glslc` over a GLSL file and writes SPIR-V as a C initialiser list into
   `<binary dir>/shaders/<name>.inc`, which the source `#include`s into a `uint32_t` array. The engine's
   shaders are in [api/render/shaders/](api/render/shaders/). `VULKAN_SDK` must point at an SDK install or
-  configuration fails with "glslc was not found".
+  the first call to that function fails with "glslc was not found".
 - **`sdl3` is requested with its `vulkan` feature**, and has to be. Without it SDL builds with
   `SDL_VULKAN=OFF` and `SDL_Vulkan_LoadLibrary` fails with "No dynamic Vulkan support in current SDL video
   driver (windows)" — which surfaces as an unhandled exception on startup, not as a build failure.
@@ -71,8 +74,8 @@ ninja -C out/build/x64-Debug pong         # one target
   and include `<boost/system/error_code.hpp>` and `<boost/system/system_error.hpp>` directly.
   [api/asset/JsonFile.h](api/asset/JsonFile.h) is where the tree's json error handling lives.
 - `vendor/libnoise` is the only submodule, is not prebuilt, and `voxel` will not link without it. Build it
-  out of source — see [docs/Dependencies.md](docs/Dependencies.md#building-libnoise); `link_directories`
-  expects its artefacts under `vendor/libnoise/Debug`.
+  out of source — see [docs/Dependencies.md](docs/Dependencies.md#building-libnoise); voxel's
+  `target_link_directories` expects its artefacts under `vendor/libnoise/Debug`.
 - **Assets shared by more than one app live in the root [data/](data/)**, copied next to an executable by
   `v3d_add_shared_data(<target>)`. An app's own `data/` is copied by `v3d_add_app_data(<target>)`, but
   **only tetris, voxel, odyssey and talyn call it** — everywhere else the `data/` under
@@ -80,8 +83,29 @@ ninja -C out/build/x64-Debug pong         # one target
   from the build tree until you copy it across.
 - `VCPKG_ROOT` in CMakeSettings.json has a doubled path segment and points nowhere. vcpkg works through
   the toolchain file regardless.
+- **The root is three files.** [cmake/v3dDependencies.cmake](cmake/v3dDependencies.cmake) holds every
+  `find_package`, [cmake/v3dHelpers.cmake](cmake/v3dHelpers.cmake) the five `v3d_add_*` functions, and
+  [CMakeLists.txt](CMakeLists.txt) the options and the subdirectory list. Paths into this repository go
+  through `V3D_ROOT`, never `CMAKE_SOURCE_DIR`, which names the consumer's root in a nested build.
+- **`V3D_BUILD_APPS` and `V3D_BUILD_TESTS` gate everything that is not the api**, and default to whether
+  this project is the top level one. The tests guard is on each `add_subdirectory("tests")` rather than
+  inside `v3d_add_test`, because a `tests/CMakeLists.txt` names its target again after calling it.
+- **An application in another repository takes this one as source**, nested with `add_subdirectory`.
+  [docs/NewProject.md](docs/NewProject.md) is the walkthrough and
+  [docs/examples/starter/](docs/examples/starter/) is a working app that CI builds on every push. It is
+  the only thing in the tree that can catch an api library relying on a global the root sets or on an
+  app naming every library — which is how `api/engine` and `api/render` were found not declaring the
+  api libraries they use.
 
 ### Linking rules
+
+Per [ADR-0027](docs/adr/0027-the-api-is-consumed-as-source.md), an api library carries its own
+dependencies — **including the other api libraries it uses**, so `v3dlib_engine` brings asset, config,
+event, input and render with it. An app names the `v3dlib_*` targets it uses and nothing else, except
+where the app itself uses a package directly — `Boost::program_options` in the three that parse a
+command line. A library declared with `v3d_add_api_library` gets the include root, the `v3d::` alias an
+external consumer links, `/EHsc` and `/utf-8` in its interface, and the boost winapi definitions. Adding a third-party package to an api
+library means naming it PUBLIC when a header of that library names its types and PRIVATE otherwise.
 
 - **Apps name neither spdlog nor fmt.** `v3dlib_log` links `spdlog::spdlog` PUBLIC so the
   `SPDLOG_COMPILED_LIB` definition propagates. Every `api/` library whose sources compile
@@ -92,6 +116,10 @@ ninja -C out/build/x64-Debug pong         # one target
   `v3dlib_audio` PUBLIC and `v3dlib_audio` links `SDL3_mixer::SDL3_mixer` PUBLIC, so it propagates.
 - **There is no OpenGL in the tree.** A target naming `OpenGL::GL`, `GLEW::GLEW` or `v3dlib_gl` will not
   configure.
+- **glm and EnTT have to be linked, not assumed.** They resolved for years without a `find_package`,
+  because `Boost_INCLUDE_DIRS` is the vcpkg installed include directory and the root put it on every
+  target's include path. That line is gone; `glm::glm` and `EnTT::EnTT` are named by the libraries whose
+  headers use them.
 
 ## Lint
 
