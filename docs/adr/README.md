@@ -35,3 +35,4 @@ old record's status and leave the file in place.
 | [0024](0024-api-type-serves-both-renderers.md) | Shared Types — `api/type` Serves Both Renderers, And A Convention Is A Parameter Rather Than A Fork | accepted | 2026-09-04 |
 | [0025](0025-the-rib-reader-dispatches-a-cpp-request-interface.md) | RIB Dispatch — The Reader Hands A Renderer C++ Requests With Typed Parameter Lists | accepted | 2026-09-05 |
 | [0027](0027-the-api-is-consumed-as-source.md) | External Consumption — The api Is Taken As Source Through An `add_subdirectory`-able Root, Not As An Installed Package | accepted | 2026-09-05 |
+| [0028](0028-an-apps-shell-belongs-to-the-api.md) | App Shell — What Every App Repeats Belongs To The api, Not To Each App | accepted | 2026-09-05 |

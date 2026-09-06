@@ -156,9 +156,9 @@ the working directory beside the executable so a suite's fixtures resolve. Link 
 yourself in `api/<lib>/tests/CMakeLists.txt`. `TestMain` carries the `BOOST_TEST_MODULE` define and
 nothing else.
 
-- Everything is covered except `api/render` below the recorder, `Feature::Window`, and
-  `audio::Engine::initialize()` — those need a window, a GPU or a sound device, and wait on
-  [ADR-0007](docs/adr/0007-ci-rendering-tests.md). `ctest -N` lists what exists; the test sources are the
+- Everything is covered except `api/render` below the recorder, `Feature::Window`,
+  `audio::Engine::initialize()` and `ui::TextRenderer` — those need a window, a GPU or a sound device,
+  and wait on [ADR-0007](docs/adr/0007-ci-rendering-tests.md). `ctest -N` lists what exists; the test sources are the
   record of what each suite asserts.
 - **The moya and talyn suites each render against a committed PNG** — `moya/tests/data/` and
   `talyn/tests/data/` — compared with `image::compare`, which reports the worst pixel and by how much
@@ -183,6 +183,15 @@ nothing else.
 loop, window, asset manager, config, input. Each app subclasses it as `Controller`.
 `v3d::render::realtime::Engine` (api/render) is the *render* engine, subclassed as `Engine3D`. Apps hold
 both.
+
+**The shell around a game is the api's, per [ADR-0028](docs/adr/0028-an-apps-shell-belongs-to-the-api.md)**,
+so an app carries only what makes it that game. `v3d::engine::run<T>(argv[0], "<name>")` *is* an app's
+`main` — it derives the app path, runs initialize/eventLoop inside the try that logs what a renderer threw,
+and shuts down outside it. `v3d::ui::TextRenderer` owns the font, the atlas and the glyphs, and hands
+`ComponentRenderer` the `measure()`/`write()` pair ADR-0019 keeps it built from. `v3d::ui::GameMenu` is the
+menu the escape key puts up, holding the pause as a `Suspend` callback. `Engine3D::beginFrame` is the
+minimized-window rule a `draw()` opens with. An app that reimplements one of these has diverged, not
+customised.
 
 **Render pipeline.** Window → Engine3D → Context3D → Frame → Pass → DrawItem, one of each. An app fills a
 `realtime::Canvas` during its tick, submits it, and calls `renderFrame()`. Drawing goes through dynamic

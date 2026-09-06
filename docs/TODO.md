@@ -9,7 +9,7 @@ left in a finished plan.
 
 [x] work out all of the size_t / unsigned int type issues - api/brep names an index with one type, `brep::Index`, as of 2026-09-04. It is uint32_t rather than uint64_t: a half edge holds four and a mesh is mostly half edges. Nothing else in the tree mixed the two.
 [x] fix all of the build warnings - a clean build reported 72 at MSVC's default /W1 and reports none as of 2026-09-04. Raising to /W3 or /W4 has never been tried and would find more.
-[] factor out all SDL calls from apps and into the api instead - three left: `odyssey/Odyssey.cpp` and `odyssey/engine/Engine.cpp` include `SDL3/SDL.h` directly, and `voxel/src/Controller.cxx` reaches through `window_->sdl()` for `SDL_GetWindowFlags`
+[x] factor out all SDL calls from apps and into the api instead - done 2026-09-05 under [ADR-0028](adr/0028-an-apps-shell-belongs-to-the-api.md). `Window::focused()` replaced voxel's `window_->sdl()` reach-through, and odyssey's two direct includes went with the shared `main`. What is left in an app is `SDL_main.h`, which is how a windows subsystem executable is entered.
 [x] decide whether api/brep keeps Edge, HalfEdgeBRep and WingedEdgeBRep - decided 2026-09-04. `Edge` and `WingedEdgeBRep` are ported and built, with suites; `HalfEdgeBRep` is deleted, because `BRep` is what it became.
 
 ## External api consumption

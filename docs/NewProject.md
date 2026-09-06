@@ -86,8 +86,6 @@ set(V3D_BUILD_APPS OFF)
 set(V3D_BUILD_TESTS OFF)
 add_subdirectory("vendor/vertical3d" v3d)
 
-find_package(Boost REQUIRED COMPONENTS filesystem)
-
 add_executable(myapp
 	"src/AppEngine.h" "src/AppEngine.cxx"
 	"src/main.cxx")
@@ -97,8 +95,7 @@ v3d_add_app_data(myapp)
 target_link_libraries(myapp PRIVATE
 	v3d::engine
 	v3d::log
-	v3d::render
-	Boost::filesystem)
+	v3d::render)
 ```
 
 Five things in that are worth knowing rather than copying.
@@ -120,12 +117,15 @@ each library declares what it needs, so `v3d::engine` brings `v3d::asset`, `v3d:
 `v3d::event`, `v3d::input` and `v3d::render` with it. The underlying `v3dlib_*` names are what the
 tree links internally and are not the interface.
 
-**Your own `find_package` calls go after the `add_subdirectory`, and you have to make them.**
-`find_package` creates imported targets in the directory that called it and below, so nothing
-vertical3d resolved is visible in your scope: naming `Boost::filesystem` without your own
-`find_package(Boost)` fails with *"Target myapp links to Boost::filesystem but the target was not
-found"*. Putting the call after the `add_subdirectory` means `Boost_USE_STATIC_LIBS` is already set
-to what the api was resolved against, so you resolve the same boost it did.
+**A third party package you name yourself needs your own `find_package`, after the
+`add_subdirectory`.** The list above has none, because everything these three targets need arrives
+through them — boost, glm, EnTT, SDL and Vulkan included. The moment you name one directly it is
+a different story: `find_package` creates imported targets in the directory that called it and
+below, so nothing vertical3d resolved is visible in your scope, and naming `Boost::program_options`
+without your own `find_package(Boost)` fails with *"Target myapp links to Boost::program_options
+but the target was not found"*. Make the call after the `add_subdirectory`, so that
+`Boost_USE_STATIC_LIBS` is already what the api was resolved against and you resolve the same boost
+it did.
 
 **`v3d_add_app_data` is available to you.** A CMake function is global once defined, so both data
 helpers work in your project. This one copies your `data/` beside the executable, which is where
@@ -138,6 +138,15 @@ want as soon as you draw text and not before.
 An app is a subclass of `v3d::engine::Engine` that overrides `tick`, `render` and `shutdown`, plus
 a `main` that drives it. [examples/starter/src/](examples/starter/src/) is the whole of a working
 one; the parts that are not obvious:
+
+**`main` is one line.** `v3d::engine::run<AppEngine>(argv[0], "myapp")` from
+`<api/engine/Application.h>` derives the path every asset resolves against from `argv[0]`, drives
+`initialize()` and `eventLoop()` inside a try that logs what a renderer threw, and calls
+`shutdown()` outside it — a windowed app has no console, so an uncaught exception is otherwise an
+abort dialog with nothing in it. See
+[ADR-0028](adr/0028-an-apps-shell-belongs-to-the-api.md) for what else an app does not have to
+write: `v3d::ui::TextRenderer` for a font and its glyphs, `v3d::ui::GameMenu` for a menu the escape
+key puts up.
 
 **Includes are angle-bracketed and start at `api/`** — `#include <api/engine/Engine.h>`. Files
 inside the tree reach each other by relative path (`../../api/engine/Engine.h`), so the same header
@@ -159,8 +168,11 @@ reports it leaked.
 returns, so tearing the window down inside one leaves the next frame drawing into a destroyed
 window.
 
-**Drawing is a canvas of quads submitted to a pass.** Build a `realtime::Canvas` during the frame,
-submit it with `renderer_->quads()->submit(canvas_, pass.get())`, then `renderFrame()`. There are
+**Drawing is a canvas of quads submitted to a pass.** Open the frame with
+`renderer_->beginFrame(&size)`, which is false while the window has no area — it has presented the
+frame empty, and a canvas with no area has no projection to build geometry against. Then build a
+`realtime::Canvas`, submit it with `renderer_->quads()->submit(canvas_, pass.get())`, and call
+`renderFrame()`. There are
 two primitives in the whole engine — the batched quad and the line — and a rectangle, a sprite, a
 glyph and a menu panel are all the first one.
 
