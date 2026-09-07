@@ -73,7 +73,7 @@ The loop simulates at a fixed step as of 2026-09-06 —
 [plans/completed/GameLoopFoundations.md](plans/completed/GameLoopFoundations.md).
 
 [] nothing reads `Engine::alpha()`. A renderer that interpolated between the last two simulation states would use it; until one does, the world is drawn snapped to the last completed step and motion is quantised to 60 Hz however fast the display is
-[] nothing draws the frame statistics. `Engine::statistics()` reports steps-per-frame, which is what says the clamp is doing real work, and it is invisible without something to show it
+[] only pong draws the frame statistics. `ui::StatisticsOverlay` is the api's, and tetris, voxel and vertical3d each already hold the `TextRenderer` it needs
 
 ## Ongoing workstreams
 

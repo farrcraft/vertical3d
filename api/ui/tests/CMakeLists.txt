@@ -5,6 +5,7 @@ v3d_add_test(ui
 	"ComponentRendererTest.cpp"
 	"GameMenuTest.cpp"
 	"MenuBarTest.cpp"
+	"StatisticsOverlayTest.cpp"
 	"ThemeTest.cpp"
 	"ToolbarTest.cpp")
 

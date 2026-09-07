@@ -97,7 +97,8 @@ bool PongEngine::simulate(float step) {
 }
 
 bool PongEngine::render() {
-    renderer_->draw();
+    const v3d::engine::Statistics& measured = statistics();
+    renderer_->draw({ measured.mean(), measured.last(), measured.steps() });
     return true;
 }
 
@@ -139,6 +140,8 @@ void PongEngine::handlePlayEvent(const v3d::event::Event& event) {
         }
     } else if (event.name() == "showGameMenu") {
         menu_->toggle();
+    } else if (event.name() == "toggleStatistics") {
+        renderer_->statistics()->toggle();
     }
 }
 

@@ -37,6 +37,8 @@ PongRenderer::PongRenderer(const boost::shared_ptr<v3d::render::realtime::Window
 
     text_ = boost::make_shared<v3d::ui::TextRenderer>(assetManager, logger, engine_.quads(), fontSize);
 
+    statistics_ = boost::make_shared<v3d::ui::StatisticsOverlay>(text_);
+
     uiRenderer_ = boost::make_shared<v3d::ui::ComponentRenderer>(text_->measure(), text_->write(&canvas_));
     uiRenderer_->style().lineHeight = fontSize * 1.4f;
 }
@@ -51,6 +53,12 @@ void PongRenderer::scene(const boost::shared_ptr<PongScene>& scene) {
  **/
 void PongRenderer::ui(const boost::shared_ptr<v3d::ui::Engine>& ui) {
     ui_ = ui;
+}
+
+/**
+ **/
+const boost::shared_ptr<v3d::ui::StatisticsOverlay>& PongRenderer::statistics() const {
+    return statistics_;
 }
 
 /**
@@ -70,7 +78,7 @@ void PongRenderer::resize(int width, int height) {
 
 /**
  **/
-void PongRenderer::draw() {
+void PongRenderer::draw(const v3d::ui::StatisticsOverlay::Sample& statistics) {
     if (!scene_) {
         return;
     }
@@ -94,6 +102,9 @@ void PongRenderer::draw() {
     if (ui_) {
         uiRenderer_->draw(&canvas_, *ui_);
     }
+
+    // last, so the numbers sit over the menu as well as the game
+    statistics_->draw(&canvas_, statistics);
 
     boost::shared_ptr<v3d::render::realtime::Pass> pass =
         engine_.frame()->pass(v3d::render::realtime::Engine3D::colourPass);

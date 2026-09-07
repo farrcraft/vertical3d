@@ -37,6 +37,7 @@ v3d_add_api_library(ui
 "component/menu/MenuItem.h" "component/menu/MenuItem.cpp"
 "ComponentRenderer.h" "ComponentRenderer.cpp"
 "GameMenu.h" "GameMenu.cpp"
+"StatisticsOverlay.h" "StatisticsOverlay.cpp"
 "TextRenderer.h" "TextRenderer.cpp"
 "Engine.h" "Engine.cpp" "component/menu/Type.h" "component/Type.h" "component/menu/MenuBar.cpp" "Navigation.h")
 

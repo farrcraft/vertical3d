@@ -26,7 +26,7 @@ Apps hold both.
 ## The shell around a game belongs to the api
 
 Per [ADR-0028](adr/0028-an-apps-shell-belongs-to-the-api.md), an app carries only what makes
-it that game. Four pieces live in the api:
+it that game. Five pieces live in the api:
 
 - `v3d::engine::run<T>(argv[0], "<name>")` is an app's `main`. It derives the app path, runs
   initialize and eventLoop inside a try block that logs what a renderer threw, and shuts down
@@ -36,6 +36,9 @@ it that game. Four pieces live in the api:
   [ADR-0019](adr/0019-the-ui-is-laid-out-by-what-draws-it.md) keeps it built from.
 - `v3d::ui::GameMenu` is the menu the escape key puts up. It holds the pause as a `Suspend`
   callback.
+- `v3d::ui::StatisticsOverlay` draws what the loop measured about its own pacing, hidden
+  until something shows it. It copies the numbers into a `Sample` rather than reading an
+  `engine::Statistics`, because `api/ui` sits below `api/engine` and cannot name that class.
 - `Engine3D::beginFrame` is the minimized-window check a `draw()` opens with.
 
 An app that reimplements one of these has diverged rather than customised.
