@@ -14,10 +14,14 @@
 #include "component/Bar.h"
 #include "component/Box.h"
 #include "component/Button.h"
+#include "component/CheckBox.h"
 #include "component/Icon.h"
 #include "component/Label.h"
 #include "component/Panel.h"
+#include "component/RadioButton.h"
 #include "component/Scrollbar.h"
+#include "component/SelectList.h"
+#include "component/TabBar.h"
 #include "component/Toolbar.h"
 #include "component/menu/Menu.h"
 #include "component/menu/MenuBar.h"
@@ -45,8 +49,8 @@ namespace v3d::ui {
  * Drawing is also what lays the ui out: every component is left holding the bounds it
  * was drawn in, which is what the cursor is tested against, per ADR-0019.
  *
- * Menus, menu bars, toolbars, buttons, labels, icons, panels, bars, scrollbars and the
- * two flow boxes are drawn. The rest of the components in this library are empty declarations with
+ * Menus, menu bars, toolbars, buttons, labels, icons, panels, bars, scrollbars, check
+ * boxes, radio buttons, select lists, tab bars and the two flow boxes are drawn. The rest of the components in this library are empty declarations with
  * no loader.
  *
  * A component holds other components, and drawing one is what works out where they go:
@@ -89,6 +93,7 @@ class ComponentRenderer {
         float iconSize;        /**< the side of the square an icon is drawn in **/
         float panelPadding;    /**< the gap above and below the items of a dropped panel **/
         float scrollbarWidth;  /**< how thick a scrollbar is across its direction **/
+        float markSize;        /**< the side of the box, or the width of the disc, a mark sits in **/
         float borderWidth;     /**< how thick a panel's or a bar's outline is drawn **/
         float radius;          /**< how far a panel's corners are rounded, 0 for square **/
         glm::vec4 panel;       /**< the background the menu is drawn on **/
@@ -96,6 +101,7 @@ class ComponentRenderer {
         glm::vec4 track;       /**< the unfilled part of a bar **/
         glm::vec4 fill;        /**< the filled part of a bar **/
         glm::vec4 thumb;       /**< the part of a scrollbar's track that is taken hold of **/
+        glm::vec4 mark;        /**< what a checked box or a chosen radio button is marked with **/
         glm::vec4 text;        /**< an ordinary item's label **/
         glm::vec4 activeText;  /**< the label of the item navigation is on **/
         glm::vec4 highlight;   /**< what is drawn behind that item **/
@@ -162,6 +168,31 @@ class ComponentRenderer {
      * shows. A bar with nothing to scroll draws the track alone.
      **/
     void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Scrollbar>& bar) const;
+
+    /**
+     * Draw a check box - the box, the mark when it is checked, and the label beside it.
+     * A radio button is the same call: the mark is round and the style class is its own.
+     **/
+    void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::CheckBox>& box) const;
+
+    /**
+     * Draw a select list - its plate, and as many of its rows as its box shows, with the
+     * chosen one highlighted.
+     *
+     * The rows are cut off at the plate and moved up by what the list is scrolled by, per
+     * ADR-0037, and the row height the style resolved to is left on the list so that it
+     * can say which row a point is on.
+     **/
+    void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::SelectList>& list) const;
+
+    /**
+     * Draw a tab bar - the strip of tabs across the top of its box, and the page the
+     * chosen tab holds under it.
+     *
+     * Only the chosen page is drawn, so nothing in the others is laid out or picked, and
+     * where each tab ended up is left on the bar for the cursor to be tested against.
+     **/
+    void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::TabBar>& bar) const;
 
     /**
      * Draw every visible container of a ui engine.

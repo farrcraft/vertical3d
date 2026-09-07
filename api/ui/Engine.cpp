@@ -199,12 +199,8 @@ bool Engine::loadThemes(const boost::json::object& doc) {
     return true;
 }
 
-boost::shared_ptr<Component> Engine::loadComponent(const boost::json::object& entry) {
-    std::string componentType = boost::json::value_to<std::string>(entry.at("type"));
-    std::string componentName = boost::json::value_to<std::string>(entry.at("name"));
-
+boost::shared_ptr<Component> Engine::buildComponent(const std::string& componentType, const boost::json::object& entry) {
     boost::shared_ptr<Component> component;
-    // read individual component types
     if (componentType == "menu") {
         boost::shared_ptr<component::Menu> menu = loadMenu(entry);
         if (!menu) {
@@ -227,6 +223,29 @@ boost::shared_ptr<Component> Engine::loadComponent(const boost::json::object& en
         component = loadPanel(entry);
     } else if (componentType == "bar") {
         component = loadBar(entry);
+    } else if (componentType == "scrollbar") {
+        component = loadScrollbar(entry);
+    } else if (componentType == "list") {
+        component = loadSelectList(entry);
+    } else if (componentType == "tabs") {
+        component = boost::make_shared<component::TabBar>();
+    } else if (componentType == "tab") {
+        boost::shared_ptr<component::TabPage> page = boost::make_shared<component::TabPage>();
+        if (entry.contains("label")) {
+            page->label(boost::json::value_to<std::string>(entry.at("label")));
+        }
+        component = page;
+    } else if (componentType == "checkbox") {
+        boost::shared_ptr<component::CheckBox> box = boost::make_shared<component::CheckBox>();
+        loadCheckBox(entry, box);
+        component = box;
+    } else if (componentType == "radio") {
+        boost::shared_ptr<component::RadioButton> radio = boost::make_shared<component::RadioButton>();
+        loadCheckBox(entry, radio);
+        if (entry.contains("group")) {
+            radio->group(boost::json::value_to<std::string>(entry.at("group")));
+        }
+        component = radio;
     } else if (componentType == "vbox" || componentType == "hbox") {
         boost::shared_ptr<component::Box> box = componentType == "vbox"
             ? boost::static_pointer_cast<component::Box>(boost::make_shared<component::VerticalBox>())
@@ -235,8 +254,15 @@ boost::shared_ptr<Component> Engine::loadComponent(const boost::json::object& en
         component = box;
     } else {
         logger_->get()->error("Unrecognized ui component type [{}]", componentType);
-        return nullptr;
     }
+    return component;
+}
+
+boost::shared_ptr<Component> Engine::loadComponent(const boost::json::object& entry) {
+    const std::string componentType = boost::json::value_to<std::string>(entry.at("type"));
+    const std::string componentName = boost::json::value_to<std::string>(entry.at("name"));
+
+    boost::shared_ptr<Component> component = buildComponent(componentType, entry);
     if (!component) {
         return nullptr;
     }
@@ -249,6 +275,12 @@ boost::shared_ptr<Component> Engine::loadComponent(const boost::json::object& en
     }
     if (!loadChildren(entry, component)) {
         return nullptr;
+    }
+    // which tab is up is a place in the pages, so it can only be read once the pages the
+    // children array named are there
+    if (componentType == "tabs" && entry.contains("selected")) {
+        boost::static_pointer_cast<component::TabBar>(component)->selected(
+            boost::json::value_to<int>(entry.at("selected")));
     }
     return component;
 }
@@ -452,6 +484,7 @@ void Engine::loadAttributes(const boost::json::object& entry, const boost::share
     }
     component->visible(flag(entry, "visible", component->visible()));
     component->pickable(flag(entry, "pickable", component->pickable()));
+    component->clip(flag(entry, "clip", component->clip()));
     if (entry.contains("depth")) {
         component->depth(boost::json::value_to<unsigned int>(entry.at("depth")));
     }
@@ -518,6 +551,69 @@ boost::shared_ptr<component::Bar> Engine::loadBar(const boost::json::object& ent
         bar->direction(component::Bar::Direction::Vertical);
     }
     return bar;
+}
+
+/**
+ **/
+boost::shared_ptr<component::Scrollbar> Engine::loadScrollbar(const boost::json::object& entry) {
+    boost::shared_ptr<component::Scrollbar> bar = boost::make_shared<component::Scrollbar>();
+    if (entry.contains("direction")
+        && boost::json::value_to<std::string>(entry.at("direction")) == "horizontal") {
+        bar->direction(component::Scrollbar::Direction::Horizontal);
+    }
+    // what there is to scroll is written by whatever fills the thing being scrolled, so a
+    // range in the config is a starting one rather than the truth
+    if (entry.contains("content") && entry.contains("page")) {
+        bar->range(static_cast<float>(boost::json::value_to<double>(entry.at("content"))),
+            static_cast<float>(boost::json::value_to<double>(entry.at("page"))));
+    }
+    if (entry.contains("offset")) {
+        bar->offset(static_cast<float>(boost::json::value_to<double>(entry.at("offset"))));
+    }
+    return bar;
+}
+
+/**
+ **/
+boost::shared_ptr<component::SelectList> Engine::loadSelectList(const boost::json::object& entry) {
+    boost::shared_ptr<component::SelectList> list = boost::make_shared<component::SelectList>();
+    if (entry.contains("items")) {
+        const auto& section = entry.at("items");
+        if (!section.is_array()) {
+            logger_->get()->error("The items of a list are not an array");
+            return nullptr;
+        }
+        std::vector<std::string> rows;
+        for (const auto& item : section.as_array()) {
+            rows.push_back(boost::json::value_to<std::string>(item));
+        }
+        list->items(rows);
+    }
+    // the rows a list holds are usually its app's rather than its config's, so a config
+    // that names none is a list something else fills
+    if (entry.contains("selected")) {
+        list->selected(boost::json::value_to<int>(entry.at("selected")));
+    }
+    const v3d::event::Event command = loadCommand(entry);
+    if (command.context()) {
+        list->event(command);
+    }
+    return list;
+}
+
+/**
+ **/
+void Engine::loadCheckBox(const boost::json::object& entry, const boost::shared_ptr<component::CheckBox>& box) {
+    if (entry.contains("label")) {
+        box->label(boost::json::value_to<std::string>(entry.at("label")));
+    }
+    // a mark in the config is the state the ui starts in; after that it is whatever
+    // answers the command that sets one, per ADR-0019
+    box->checked(flag(entry, "checked", false));
+    const v3d::event::Event command = loadCommand(entry);
+    if (command.context()) {
+        box->event(command);
+    }
 }
 
 /**

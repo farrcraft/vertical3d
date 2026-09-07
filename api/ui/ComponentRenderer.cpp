@@ -35,6 +35,18 @@ const float markColumn = 0.9f;
 const float ruleWidth = 1.0f;
 
 /**
+ * How many segments a radio button's disc is drawn with. Small enough to cost little at
+ * the size a mark is drawn, large enough that the rim does not read as a polygon.
+ **/
+const unsigned int markSides = 16;
+
+/**
+ * How much of the box, or of the disc, a mark fills. The rest is the gap that makes it
+ * read as a mark inside something rather than as a filled box.
+ **/
+const float markFill = 0.5f;
+
+/**
  * How far in from the edge of a skinned button the corner images reach, when the
  * style names no corner of its own. A texture carries no size a handle can be asked
  * for, so this is a number rather than something measured.
@@ -74,6 +86,7 @@ barHeight(28.0f),
 iconSize(22.0f),
 panelPadding(4.0f),
 scrollbarWidth(12.0f),
+markSize(16.0f),
 borderWidth(1.0f),
 radius(0.0f),
 panel(0.05f, 0.06f, 0.09f, 0.92f),
@@ -81,6 +94,7 @@ border(0.35f, 0.38f, 0.45f, 1.0f),
 track(0.12f, 0.13f, 0.17f, 1.0f),
 fill(0.30f, 0.62f, 0.36f, 1.0f),
 thumb(0.35f, 0.38f, 0.45f, 1.0f),
+mark(0.42f, 0.66f, 0.95f, 1.0f),
 text(0.78f, 0.80f, 0.84f, 1.0f),
 activeText(1.0f, 1.0f, 1.0f, 1.0f),
 highlight(0.16f, 0.34f, 0.58f, 1.0f),
@@ -118,6 +132,7 @@ void ComponentRenderer::theme(const boost::shared_ptr<style::Theme>& theme) {
     readColour(chrome, "track", &style_.track);
     readColour(chrome, "fill", &style_.fill);
     readColour(chrome, "thumb", &style_.thumb);
+    readColour(chrome, "mark", &style_.mark);
     readColour(chrome, "text", &style_.text);
     readColour(chrome, "active-text", &style_.activeText);
     readColour(chrome, "highlight", &style_.highlight);
@@ -129,6 +144,7 @@ void ComponentRenderer::theme(const boost::shared_ptr<style::Theme>& theme) {
     readMetric(chrome, "icon-size", &style_.iconSize);
     readMetric(chrome, "panel-padding", &style_.panelPadding);
     readMetric(chrome, "scrollbar-width", &style_.scrollbarWidth);
+    readMetric(chrome, "mark-size", &style_.markSize);
     readMetric(chrome, "border-width", &style_.borderWidth);
     readMetric(chrome, "radius", &style_.radius);
 }
@@ -388,6 +404,197 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
 
 /**
  **/
+void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::CheckBox>& box) const {
+    if (canvas == nullptr || !box) {
+        return;
+    }
+    const bool round = box->type() == component::Type::RADIO_BUTTON;
+    const std::string text(box->label());
+
+    glm::vec2 size = box->size();
+    if (size.x <= 0.0f || size.y <= 0.0f) {
+        size = natural(*box);
+    }
+    const glm::vec2 min = box->position();
+    place(*box, min, size);
+
+    glm::vec4 inside = style_.track;
+    glm::vec4 marked = style_.mark;
+    glm::vec4 outline = style_.border;
+    glm::vec4 ink = style_.text;
+    float width = style_.borderWidth;
+    float side = std::min(style_.markSize, size.y);
+    const boost::shared_ptr<v3d::ui::Style> dress = lookup(round ? "radio" : "checkbox", box->style());
+    if (dress) {
+        readColour(dress, "background", &inside);
+        readColour(dress, "mark", &marked);
+        readColour(dress, "border", &outline);
+        readColour(dress, "text", &ink);
+        readMetric(dress, "border-width", &width);
+        readMetric(dress, "mark-size", &side);
+    }
+
+    // the mark is centred in the row rather than sitting on its top edge, because the
+    // label beside it is centred too
+    const glm::vec2 corner(min.x, min.y + (size.y - side) * 0.5f);
+    if (round) {
+        const glm::vec2 centre = corner + glm::vec2(side, side) * 0.5f;
+        canvas->circle(centre, side * 0.5f, markSides, outline);
+        canvas->circle(centre, side * 0.5f - width, markSides, inside);
+        if (box->checked()) {
+            canvas->circle(centre, side * markFill * 0.5f, markSides, marked);
+        }
+    } else {
+        plateBox(canvas, corner, corner + glm::vec2(side, side), style_.radius, width, inside, outline);
+        if (box->checked()) {
+            const float inset = side * (1.0f - markFill) * 0.5f;
+            fillBox(canvas, corner + glm::vec2(inset, inset), corner + glm::vec2(side - inset, side - inset),
+                std::max(0.0f, style_.radius - width), marked);
+        }
+    }
+
+    if (text.empty()) {
+        return;
+    }
+    write_(text, glm::vec2(min.x + side + style_.padding * 0.5f, min.y + size.y * 0.7f), ink);
+}
+
+/**
+ **/
+void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::SelectList>& list) const {
+    if (canvas == nullptr || !list) {
+        return;
+    }
+    glm::vec2 size = list->size();
+    if (size.x <= 0.0f || size.y <= 0.0f) {
+        size = natural(*list);
+    }
+    const glm::vec2 min = list->position();
+    place(*list, min, size);
+
+    glm::vec4 inside = style_.panel;
+    glm::vec4 outline = style_.border;
+    glm::vec4 chosen = style_.highlight;
+    glm::vec4 ink = style_.text;
+    glm::vec4 chosenInk = style_.activeText;
+    float width = style_.borderWidth;
+    float radius = style_.radius;
+    float row = style_.lineHeight;
+    const boost::shared_ptr<v3d::ui::Style> dress = lookup("list", list->style());
+    if (dress) {
+        readColour(dress, "background", &inside);
+        readColour(dress, "border", &outline);
+        readColour(dress, "highlight", &chosen);
+        readColour(dress, "text", &ink);
+        readColour(dress, "active-text", &chosenInk);
+        readMetric(dress, "border-width", &width);
+        readMetric(dress, "radius", &radius);
+        readMetric(dress, "line-height", &row);
+    }
+
+    plateBox(canvas, min, min + size, radius, width, inside, outline);
+
+    // how tall a row is is the style's, and the list is what answers a point with it - so
+    // it is written on the way past, the way a box is
+    list->rowHeight(row);
+    if (list->items().empty() || row <= 0.0f) {
+        return;
+    }
+
+    const glm::vec2 low(min.x + width, min.y + width);
+    const glm::vec2 high(min.x + size.x - width, min.y + size.y - width);
+    canvas->clip(low, high);
+
+    const float scrolled = list->offset();
+    // only the rows the box shows are drawn - a list of a thousand costs the rows on screen
+    const std::size_t first = static_cast<std::size_t>(std::max(scrolled / row, 0.0f));
+    const std::size_t last = std::min(list->items().size(),
+        first + static_cast<std::size_t>(size.y / row) + 2U);
+
+    for (std::size_t index = first; index < last; index++) {
+        const float top = min.y + static_cast<float>(index) * row - scrolled;
+        const bool picked = static_cast<int>(index) == list->selected();
+        if (picked) {
+            fillBox(canvas, glm::vec2(low.x, top), glm::vec2(high.x, top + row), 0.0f, chosen);
+        }
+        write_(list->items()[index], glm::vec2(low.x + style_.padding * 0.5f, top + row * 0.7f),
+            picked ? chosenInk : ink);
+    }
+
+    canvas->unclip();
+}
+
+/**
+ **/
+void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::TabBar>& bar) const {
+    if (canvas == nullptr || !bar) {
+        return;
+    }
+    glm::vec2 size = bar->size();
+    if (size.x <= 0.0f || size.y <= 0.0f) {
+        size = natural(*bar);
+    }
+    const glm::vec2 min = bar->position();
+    place(*bar, min, size);
+
+    glm::vec4 inside = style_.panel;
+    glm::vec4 tab = style_.track;
+    glm::vec4 chosen = style_.highlight;
+    glm::vec4 ink = style_.text;
+    glm::vec4 chosenInk = style_.activeText;
+    glm::vec4 outline = style_.border;
+    float height = style_.barHeight;
+    float radius = style_.radius;
+    const boost::shared_ptr<v3d::ui::Style> dress = lookup("tabs", bar->style());
+    if (dress) {
+        readColour(dress, "background", &inside);
+        readColour(dress, "tab", &tab);
+        readColour(dress, "highlight", &chosen);
+        readColour(dress, "text", &ink);
+        readColour(dress, "active-text", &chosenInk);
+        readColour(dress, "border", &outline);
+        readMetric(dress, "bar-height", &height);
+        readMetric(dress, "radius", &radius);
+    }
+
+    const std::vector<boost::shared_ptr<component::TabPage>> pages = bar->pages();
+    std::vector<v3d::type::Bound2D> boxes;
+    boxes.reserve(pages.size());
+
+    float pen = min.x;
+    for (std::size_t index = 0; index < pages.size(); index++) {
+        const std::string label(pages[index]->label());
+        const float width = measure_(label) + style_.padding;
+        const glm::vec2 corner(pen, min.y);
+        const glm::vec2 extent(width, height);
+        boxes.push_back(v3d::type::Bound2D(corner, extent));
+
+        const bool picked = static_cast<int>(index) == bar->selected();
+        fillBox(canvas, corner, corner + extent, radius, picked ? chosen : tab);
+        write_(label, glm::vec2(corner.x + style_.padding * 0.5f, corner.y + height * 0.7f),
+            picked ? chosenInk : ink);
+        pen += width + style_.borderWidth;
+    }
+    // where each tab ended up, for the cursor to be tested against - the same rule as a
+    // component's own box, per ADR-0019
+    bar->tabs(boxes);
+
+    // the rule under the strip, which is what joins the chosen tab to the page below it
+    canvas->rect(glm::vec2(min.x, min.y + height), glm::vec2(min.x + size.x, min.y + height + ruleWidth), outline);
+
+    const boost::shared_ptr<component::TabPage> page = bar->page();
+    if (!page) {
+        return;
+    }
+    const glm::vec2 corner(min.x, min.y + height + ruleWidth);
+    const glm::vec2 extent(size.x, std::max(size.y - height - ruleWidth, 0.0f));
+    fillBox(canvas, corner, corner + extent, 0.0f, inside);
+    // a page is drawn where the strip left room, and what it holds is laid out inside that
+    walk(canvas, page, v3d::type::Bound2D(corner, extent));
+}
+
+/**
+ **/
 glm::vec2 ComponentRenderer::natural(const Component& component) const {
     switch (component.type()) {
         case component::Type::LABEL: {
@@ -403,6 +610,31 @@ glm::vec2 ComponentRenderer::natural(const Component& component) const {
             const auto* button = dynamic_cast<const component::Button*>(&component);
             return button == nullptr ? glm::vec2(0.0f, 0.0f)
                 : glm::vec2(extent(*button) + style_.padding, style_.barHeight);
+        }
+        case component::Type::CHECKBOX:
+        case component::Type::RADIO_BUTTON: {
+            // the mark, the gap after it and the label, on a row as tall as the taller of
+            // the mark and a line of text
+            const auto* box = dynamic_cast<const component::CheckBox*>(&component);
+            if (box == nullptr) {
+                return glm::vec2(0.0f, 0.0f);
+            }
+            const float text = box->label().empty() ? 0.0f
+                : style_.padding * 0.5f + measure_(std::string(box->label()));
+            return glm::vec2(style_.markSize + text, std::max(style_.markSize, style_.lineHeight));
+        }
+        case component::Type::SELECT_LIST: {
+            // a list decides how wide its widest row is and nothing about how tall it is:
+            // how many rows it shows is what it was given room for
+            const auto* list = dynamic_cast<const component::SelectList*>(&component);
+            if (list == nullptr) {
+                return glm::vec2(0.0f, 0.0f);
+            }
+            float widest = 0.0f;
+            for (const std::string& item : list->items()) {
+                widest = std::max(widest, measure_(item));
+            }
+            return glm::vec2(widest + style_.padding, component.size().y);
         }
         case component::Type::SCROLLBAR: {
             // a scrollbar decides how thick it is and nothing about how long: its length
@@ -477,6 +709,19 @@ void ComponentRenderer::walk(v3d::render::realtime::Canvas* canvas, const boost:
         case component::Type::SCROLLBAR:
             draw(canvas, boost::dynamic_pointer_cast<component::Scrollbar>(component));
             break;
+        case component::Type::CHECKBOX:
+        case component::Type::RADIO_BUTTON:
+            // a radio button is a check box with a round mark, so one call draws both
+            draw(canvas, boost::dynamic_pointer_cast<component::CheckBox>(component));
+            break;
+        case component::Type::SELECT_LIST:
+            draw(canvas, boost::dynamic_pointer_cast<component::SelectList>(component));
+            break;
+        case component::Type::TAB_BAR:
+            // a bar walks the one page it shows, so the pages behind it are not laid out
+            // and the generic walk below must not reach them
+            draw(canvas, boost::dynamic_pointer_cast<component::TabBar>(component));
+            return;
         case component::Type::BUTTON:
             draw(canvas, boost::dynamic_pointer_cast<component::Button>(component));
             break;

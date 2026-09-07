@@ -181,7 +181,10 @@ absolute result in `position()` and `size()`. That result is what `Container::pi
 cursor against, so nothing is clickable until it has been drawn, and a component answers the
 cursor only when it is `pickable()`. A `VerticalBox` or a `HorizontalBox` writes its
 children's boxes itself rather than resolving them, because their order along the line is
-what a flow list is for. `Panel`, `Bar` and `Scrollbar` round their corners with `Canvas::arc`,
+what a flow list is for. A `SelectList` shows as many rows as its box has room for and a
+`TabBar` walks only the page its chosen tab holds, so what is not on screen is neither drawn
+nor laid out - and a component that was not laid out cannot be picked, which is ADR-0019 read
+the other way round. `Panel`, `Bar` and `Scrollbar` round their corners with `Canvas::arc`,
 which is the same triangle fan `circle` is built from and so stays inside the one batched
 primitive of [ADR-0005](adr/0005-one-batched-quad-primitive.md). A component cuts what it holds
 off at its own box when it asks to, with `Component::clip(true)`; a `Scrollbar` is the

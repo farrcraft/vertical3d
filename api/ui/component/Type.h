@@ -18,7 +18,6 @@ enum class Type {
     BUTTON = 6,
     CHECKBOX = 7,
     DIALOG = 8,
-    FRAME = 9,
     HORIZONTAL_FRAME = 10,
     VERTICAL_FRAME = 11,
     ICON = 12,

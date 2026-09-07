@@ -14,9 +14,14 @@
 #include "component/Bar.h"
 #include "component/Box.h"
 #include "component/Button.h"
+#include "component/CheckBox.h"
 #include "component/Icon.h"
 #include "component/Label.h"
 #include "component/Panel.h"
+#include "component/RadioButton.h"
+#include "component/Scrollbar.h"
+#include "component/SelectList.h"
+#include "component/TabBar.h"
 #include "component/Toolbar.h"
 #include "component/menu/Menu.h"
 #include "component/menu/MenuBar.h"
@@ -119,6 +124,14 @@ class Engine {
       **/
      bool loadChildren(const boost::json::object& entry, const boost::shared_ptr<Component>& component);
 
+     /**
+      * Build the component one config entry names, before anything every component has -
+      * its name, its box, what it holds - has been read onto it.
+      *
+      * @return the component, or null for a type the loader does not know
+      **/
+     boost::shared_ptr<Component> buildComponent(const std::string& componentType, const boost::json::object& entry);
+
      boost::shared_ptr<component::Menu> loadMenu(const boost::json::object& entry);
      boost::shared_ptr<component::MenuBar> loadMenuBar(const boost::json::object& entry);
      boost::shared_ptr<component::Toolbar> loadToolbar(const boost::json::object& entry);
@@ -127,6 +140,14 @@ class Engine {
      boost::shared_ptr<component::Icon> loadIcon(const boost::json::object& entry);
      boost::shared_ptr<component::Panel> loadPanel(const boost::json::object& entry);
      boost::shared_ptr<component::Bar> loadBar(const boost::json::object& entry);
+     boost::shared_ptr<component::Scrollbar> loadScrollbar(const boost::json::object& entry);
+     boost::shared_ptr<component::SelectList> loadSelectList(const boost::json::object& entry);
+
+     /**
+      * Read a check box, or the radio button that is one with a group. Which of the two is
+      * built is the caller's, because the type is what tells them apart.
+      **/
+     void loadCheckBox(const boost::json::object& entry, const boost::shared_ptr<component::CheckBox>& box);
 
      /**
       * Read what a flow box carries beyond an ordinary component - the gap between its

@@ -78,9 +78,12 @@ of it yet: the editor's menu bar and toolbars are strips the renderer places its
 apps put up a menu and an overlay. All of it was built for the huds, plates and debug panels
 that need it.
 
-[] `TabBar`, `TabPage`, `TextBox`, `CheckBox`, `RadioButton`, `Dialog`, `SelectList`, `Spinner`, `ToolTip`, `PopupMenu` and `RadialMenu` are still empty declarations with no loader and no draw path
-[] `Frame` is an empty declaration that `Panel` now covers the drawing half of. Either it becomes the thing with a title bar that a dialog sits in, or it goes
-[] a retained `Scrollbar` scrolls nothing on its own: it is the arithmetic and the drawing, and what it scrolls is a clipping component whose children something has to translate. A scroll view that holds the two together is the next shape, and no app has asked for one
+A check box, a radio button, a select list and a tab bar landed on 2026-09-06 with a loader,
+a draw path and a style class each. `Frame` went the same day rather than growing a title bar:
+`Panel` draws the box it would have drawn, and nothing wanted the rest of it.
+
+[] `TextBox`, `Dialog`, `Spinner`, `ToolTip`, `PopupMenu` and `RadialMenu` are still empty declarations with no loader and no draw path. A text box is the one of them that needs something the library does not have: a key goes to the app's input engine and nothing routes one to a focused component
+[] a select list scrolls itself and a scrollbar scrolls nothing, so putting the two side by side is the app's arithmetic. It is one component - the bar reading the list's content and offset - and no app has asked for it
 [] nothing in the tree drives `ui::Immediate`, so the layer is covered by its cases and by nothing that draws. The editor's four viewports, voxel's chunk counts and odyssey's turn state are each a debug window waiting to be asked for
 [] a widget in `Immediate` is hovered a frame after it is drawn, so the first frame of a window that appears under the cursor answers nothing
 [] a percentage of a parent that has not been drawn is a percentage of zero, so the frame after a resize places a child against the previous size
