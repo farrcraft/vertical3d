@@ -10,14 +10,6 @@ Menu::Menu(const boost::shared_ptr<entt::dispatcher>& dispatcher) :
     Component(component::Type::MENU), dispatcher_(dispatcher), active_(-1) {
 }
 
-bool Menu::navigate(Navigation direction, bool /* wrap */) {
-    // every direction the enum names is accepted and moves nothing; anything else is a
-    // value cast in from outside it, and is rejected
-    return direction == Navigation::UnselectItem || direction == Navigation::SelectItem ||
-        direction == Navigation::NextItem || direction == Navigation::PreviousItem ||
-        direction == Navigation::HierarchyUp || direction == Navigation::HierarchyDown;
-}
-
 /**
  **/
 void Menu::parent(boost::weak_ptr<Menu> p) {

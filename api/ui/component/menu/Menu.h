@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "../../Component.h"
-#include "../../Navigation.h"
 #include "MenuItem.h"
 
 #include <boost/shared_ptr.hpp>
@@ -25,14 +24,6 @@ class Menu : public Component {
       * @param dispatcher the dispatcher activated menu items send their bound event to
       **/
      explicit Menu(const boost::shared_ptr<entt::dispatcher>& dispatcher);
-
-     /**
-      * Navigate changes the currently active menu item.
-      * @param Navigation direction of navigation
-      * @param wrap whether navigation can "wrap around"
-      * @return false when no navigation was possible
-      **/
-     bool navigate(Navigation direction, bool wrap);
 
     /**
         * Make the next item in the menu active.

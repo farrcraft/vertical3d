@@ -32,7 +32,6 @@ target_link_libraries(Odyssey
 		"v3dlib_log"
 		"v3dlib_image"
 		"v3dlib_type"
-		"v3dlib_ui"
 		"v3dlib_render"
 )
 
