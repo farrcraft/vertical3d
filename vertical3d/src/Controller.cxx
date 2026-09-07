@@ -140,6 +140,9 @@ bool Controller::buildUi() {
     if (!vgui_->load(config)) {
         return false;
     }
+    // the ui knows the order its own strips are drawn in, so it is what offers a cursor to
+    // them - ADR-0038
+    uiCursor_ = boost::make_shared<v3d::ui::Cursor>(vgui_, dispatcher_);
 
     boost::shared_ptr<v3d::ui::Container> container = vgui_->container(uiContainer);
     if (!container) {
@@ -408,32 +411,13 @@ void Controller::cameraMode(const std::string& name, bool pressed) {
 /**
  **/
 bool Controller::uiMotion(const glm::vec2& cursor) {
-    // the menu first, because an open panel is drawn over a toolbar and so takes the
-    // cursor where the two overlap
-    const bool overMenu = menu_ && menu_->motion(cursor);
-    bool taken = overMenu;
-    for (const boost::shared_ptr<v3d::ui::component::Toolbar>& bar : toolbars_) {
-        // every strip hears about it either way, so that a button the cursor has left -
-        // or that an open panel is now covering - stops drawing its hover
-        if (overMenu) {
-            bar->leave();
-        } else {
-            taken = bar->motion(cursor) || taken;
-        }
-    }
-    return taken;
+    return uiCursor_ && uiCursor_->motion(cursor);
 }
 
 /**
  **/
 bool Controller::uiPress(const glm::vec2& cursor) {
-    if (menu_ && menu_->press(cursor)) {
-        return true;
-    }
-    // any_of short circuits, so the first toolbar that takes the press is the last one offered it
-    return std::ranges::any_of(toolbars_, [&cursor](const boost::shared_ptr<v3d::ui::component::Toolbar>& bar) {
-        return bar->press(cursor);
-    });
+    return uiCursor_ && uiCursor_->press(cursor);
 }
 
 /**
@@ -448,6 +432,9 @@ void Controller::drag(bool pressed) {
         }
     } else if (uiGrab_) {
         uiGrab_ = false;
+        if (uiCursor_) {
+            uiCursor_->release(cursor_);
+        }
         return;
     }
 

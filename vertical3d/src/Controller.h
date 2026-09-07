@@ -25,6 +25,7 @@
 #include "../../api/event/MouseMotion.h"
 #include "../../api/event/WindowResize.h"
 #include "../../api/ui/Engine.h"
+#include "../../api/ui/Cursor.h"
 #include "../../api/ui/component/Toolbar.h"
 #include "../../api/ui/component/menu/MenuBar.h"
 
@@ -94,7 +95,8 @@ class Controller final : public v3d::engine::Engine {
     void syncUi();
 
     /**
-     * Offer the cursor to the ui before the tools see it.
+     * Offer the cursor to the ui before the tools see it. Which part of the ui is offered
+     * it first is the library's, per ADR-0038.
      * @return whether the ui took it
      **/
     bool uiMotion(const glm::vec2& cursor);
@@ -189,6 +191,7 @@ class Controller final : public v3d::engine::Engine {
     std::string path_;
     boost::shared_ptr<Scene> scene_;
     boost::shared_ptr<v3d::ui::Engine> vgui_;
+    boost::shared_ptr<v3d::ui::Cursor> uiCursor_;
     boost::shared_ptr<v3d::ui::component::MenuBar> menu_;
     std::vector<boost::shared_ptr<v3d::ui::component::Toolbar>> toolbars_;
     boost::shared_ptr<Project> project_;
