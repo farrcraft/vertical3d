@@ -30,13 +30,12 @@ namespace v3d::ui {
  */
 class Component {
  public:
-    static unsigned int lastID;
-
     explicit Component(component::Type type);
     virtual ~Component();
 
     /**
-     * Get the id of the component
+     * Get the id of the component, which is unique among the components built so far and
+     * means nothing beyond that.
      * @return the id
      */
     unsigned int id() const;

@@ -6,24 +6,35 @@
 #include "Component.h"
 
 #include <algorithm>
+#include <atomic>
 #include <string>
 #include <vector>
 
 namespace v3d::ui {
 
-unsigned int Component::lastID = 0;
+namespace {
 
+/**
+ * The next id to hand out. Atomic because a component may be built anywhere, and private
+ * because an id is only ever read back - nothing outside a constructor has a use for the
+ * counter itself.
+ **/
+std::atomic<unsigned int> nextID { 0 };
 
+};  // namespace
+
+// in declaration order, so that a member added later cannot quietly be initialised from
+// one that has not been yet
 Component::Component(component::Type type) :
     parent_(nullptr),
-    id_(lastID++),
+    position_(0.0f, 0.0f),
+    size_(0.0f, 0.0f),
+    zIndex_(0),
+    id_(nextID++),
     visible_(true),
     pickable_(false),
     clip_(false),
-    zIndex_(0),
-    type_(type),
-    size_(0.0f, 0.0f),
-    position_(0.0f, 0.0f) {
+    type_(type) {
 }
 
 Component::~Component() {
