@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <iomanip>
 #include <sstream>
 #include <string>
@@ -83,7 +84,7 @@ std::array<std::string, StatisticsOverlay::rows> StatisticsOverlay::lines(const 
     // a rate needs a duration to divide into, and there is none until the first frame has
     // been recorded, so the frame time is shown on its own until there is one
     if (sample.mean > 0) {
-        mean << "  " << static_cast<std::uint64_t>(nanosecondsPerSecond / static_cast<double>(sample.mean) + 0.5) << " fps";
+        mean << "  " << std::llround(nanosecondsPerSecond / static_cast<double>(sample.mean)) << " fps";
     }
 
     std::ostringstream steps;
