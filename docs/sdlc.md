@@ -14,11 +14,12 @@ A plan is a living document: update its state notes as things land. When every p
 it moves to [`plans/completed/`](plans/completed/), and its open items move to
 [`TODO.md`](TODO.md).
 
-[`plans/UiConsolidation.md`](plans/UiConsolidation.md) **is open**, taking up the shape of
-`api/ui` after four ADRs landed on it in a day: three defects that ship today, a draw path that
-allocates per component per frame, and a widget set whose cursor half has no consumer.
 [`plans/OfflineRenderingPhase3.md`](plans/OfflineRenderingPhase3.md) **is open**, taking up
 phase 3 of the offline rendering roadmap.
+[`plans/completed/UiConsolidation.md`](plans/completed/UiConsolidation.md) closed on 2026-09-07
+and took up the shape of `api/ui` after four ADRs landed on it in a day: three defects that
+shipped, a draw path that allocated per component per frame, and a widget set whose cursor half
+had no consumer.
 [`plans/completed/ExternalApiConsumption.md`](plans/completed/ExternalApiConsumption.md) closed
 on 2026-09-05 and made the `api/` libraries buildable inside another repository's tree.
 [`plans/completed/OfflineRenderingPhase2.md`](plans/completed/OfflineRenderingPhase2.md) and

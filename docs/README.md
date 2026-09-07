@@ -18,6 +18,7 @@ two of them say the same thing, one of them is wrong.
 | [Conventions.md](Conventions.md) | House style: file layout, namespaces, pointers, logging, and what a comment is for |
 | [RenderingPipeline.md](RenderingPipeline.md) | The realtime renderer from window to draw item, and what is not built yet |
 | [OfflineRenderers.md](OfflineRenderers.md) | talyn and moya, `api/render/offline`, and RIB |
+| [UserInterface.md](UserInterface.md) | `api/ui` — the two ways to write a ui, the box model, themes and the cursor |
 | [Editor.md](Editor.md) | `vertical3d/` — its layout, its meshes, and the records that settle it |
 | [ECSDesign.md](ECSDesign.md) | entt notes. Still mostly open questions |
 | [NewProject.md](NewProject.md) | Starting an application against the api from another repository |
@@ -30,7 +31,7 @@ Why things are as they are, what is planned, and what is loose.
 |---|---|
 | [sdlc.md](sdlc.md) | How work moves through the repo — plan, decide, build, verify, record |
 | [adr/](adr/) | Architecture decision records, indexed in [adr/README.md](adr/README.md) |
-| [plans/](plans/) | Phased workstreams. [UiConsolidation.md](plans/UiConsolidation.md) and [OfflineRenderingPhase3.md](plans/OfflineRenderingPhase3.md) are open |
+| [plans/](plans/) | Phased workstreams. [OfflineRenderingPhase3.md](plans/OfflineRenderingPhase3.md) is open |
 | [roadmap/](roadmap/) | What an area nobody has taken up would need, and in what order |
 | [audits/](audits/) | The only account of the four legacy trees, and how to recover a file from each |
 | [TODO.md](TODO.md) | Loose ends, and the clang-tidy backlog |

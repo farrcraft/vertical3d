@@ -82,15 +82,17 @@ A check box, a radio button, a select list and a tab bar landed on 2026-09-06 wi
 a draw path and a style class each. `Frame` went the same day rather than growing a title bar:
 `Panel` draws the box it would have drawn, and nothing wanted the rest of it.
 
-[plans/UiConsolidation.md](plans/UiConsolidation.md) is open against this library and carries
-what an architecture review found that is not written down here. It explicitly declines two of
-the entries below: joining a scrollbar to a select list still waits for an app to ask, and hover
-being a frame late is the mechanism that lets a window take the cursor from one under it.
+[plans/completed/UiConsolidation.md](plans/completed/UiConsolidation.md) closed on 2026-09-07,
+taking up what an architecture review found. What it declined is below: joining a scrollbar to a
+select list still waits for an app to ask, and hover being a frame late is the mechanism that
+lets a window take the cursor from one under it. [UserInterface.md](UserInterface.md) is now
+what owns this library.
 
 [] there is no text box, and it is the one missing component that needs something the library does not have: a key goes to the app's input engine and nothing routes one to a focused component. `TextBox`, `Dialog`, `Spinner`, `ToolTip`, `PopupMenu` and `RadialMenu` were empty declarations with no loader and no draw path until 2026-09-06, when they went - `git show 0f8daca^:api/ui/component/<name>.h` brings one back
 [] a select list scrolls itself and a scrollbar scrolls nothing, so putting the two side by side is the app's arithmetic. It is one component - the bar reading the list's content and offset - and no app has asked for it
 [] voxel's F3 readout is the only thing driving `ui::Immediate` as of 2026-09-07. The editor's four viewports and odyssey's turn state are each a debug window waiting to be asked for, and a game that owns the mouse has no cursor to give the layer, so voxel's window cannot be folded or scrolled
 [] a widget in `Immediate` is hovered a frame after it is drawn, so the first frame of a window that appears under the cursor answers nothing
+[] adding a component means editing five places - the type enum, the loader's branch, the draw walk's switch, `natural()` and `ui::Cursor`'s - and the compiler checks none of them against the others. Making `natural()` virtual on `Component` was weighed and left: it removes one of the five rather than the problem
 [] a percentage of a parent that has not been drawn is a percentage of zero, so the frame after a resize places a child against the previous size
 [] a clip is a scissor, so it is axis aligned and square: a panel with rounded corners clips to the box and not to the curve, and `LineCanvas` carries no clip at all
 
