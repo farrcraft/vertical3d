@@ -2,6 +2,7 @@ v3d_add_api_library(ui
 	"Component.h" "Component.cpp"
 	"ComponentRenderer.h" "ComponentRenderer.cpp"
 	"Container.h" "Container.cpp"
+	"Cursor.h" "Cursor.cpp"
 	"Dressing.h" "Dressing.cpp"
 	"Engine.h" "Engine.cpp"
 	"GameMenu.h" "GameMenu.cpp"
