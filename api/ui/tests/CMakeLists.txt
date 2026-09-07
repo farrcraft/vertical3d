@@ -2,6 +2,7 @@
 # realtime::Canvas, which is cpu side, and takes text measuring and writing as callbacks.
 v3d_add_test(ui
 	"TestMain.cpp"
+	"ArrangerTest.cpp"
 	"CheckBoxTest.cpp"
 	"ComponentRendererTest.cpp"
 	"CursorTest.cpp"

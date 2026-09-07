@@ -49,12 +49,6 @@ namespace {
 const float markColumn = 0.9f;
 
 /**
- * The rule drawn along the far edge of a strip, which is what makes it read as
- * something over the scene rather than as part of it.
- **/
-const float ruleWidth = 1.0f;
-
-/**
  * How many segments a radio button's disc is drawn with. Small enough to cost little at
  * the size a mark is drawn, large enough that the rim does not read as a polygon.
  **/
@@ -101,7 +95,8 @@ v3d::render::realtime::TextureHandle image(const boost::shared_ptr<Style>& targe
  **/
 ComponentRenderer::ComponentRenderer(const Measure& measure, const Write& write) :
     measure_(measure),
-    write_(write) {
+    write_(write),
+    arranger_(measure, styles_) {
 }
 
 // out of line, so that the header need not complete the types the members hold
@@ -132,6 +127,46 @@ boost::shared_ptr<style::Theme> ComponentRenderer::theme() const noexcept {
 
 /**
  **/
+void ComponentRenderer::paint(v3d::render::realtime::Canvas* canvas,
+    const boost::shared_ptr<Component>& component) const {
+    switch (component->type()) {
+        case component::Type::Panel:
+            draw(canvas, boost::dynamic_pointer_cast<component::Panel>(component));
+            break;
+        case component::Type::Bar:
+            draw(canvas, boost::dynamic_pointer_cast<component::Bar>(component));
+            break;
+        case component::Type::Scrollbar:
+            draw(canvas, boost::dynamic_pointer_cast<component::Scrollbar>(component));
+            break;
+        case component::Type::CheckBox:
+        case component::Type::RadioButton:
+            // a radio button is a check box with a round mark, so one call draws both
+            draw(canvas, boost::dynamic_pointer_cast<component::CheckBox>(component));
+            break;
+        case component::Type::SelectList:
+            draw(canvas, boost::dynamic_pointer_cast<component::SelectList>(component));
+            break;
+        case component::Type::TabBar:
+            draw(canvas, boost::dynamic_pointer_cast<component::TabBar>(component));
+            break;
+        case component::Type::Button:
+            draw(canvas, boost::dynamic_pointer_cast<component::Button>(component));
+            break;
+        case component::Type::Label:
+            draw(canvas, boost::dynamic_pointer_cast<component::Label>(component));
+            break;
+        case component::Type::Icon:
+            draw(canvas, boost::dynamic_pointer_cast<component::Icon>(component));
+            break;
+        default:
+            // a box draws nothing of its own - it is whatever it holds
+            break;
+    }
+}
+
+/**
+ **/
 void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const Engine& ui) const {
     for (const boost::shared_ptr<Container>& container : ui.containers()) {
         if (container && container->visible()) {
@@ -152,7 +187,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const Contai
 
     std::vector<std::pair<boost::shared_ptr<component::Toolbar>, glm::vec2>> strips;
     std::vector<boost::shared_ptr<component::MenuBar>> bars;
-    stack(container, &strips, &bars);
+    arranger_.stack(container, &strips, &bars);
 
     for (const boost::shared_ptr<Component>& component : container.ordered()) {
         if (!component || !component->visible()) {
@@ -168,7 +203,11 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const Contai
         } else {
             // everything else is a box: it is laid out against the canvas, and whatever it
             // holds is laid out against it
-            walk(canvas, component, component->layout().resolve(area, natural(*component), component->position()));
+            arranger_.walk(canvas, component,
+                component->layout().resolve(area, arranger_.natural(*component), component->position()),
+                [this](v3d::render::realtime::Canvas* target, const boost::shared_ptr<Component>& each) {
+                    paint(target, each);
+                });
         }
     }
 
@@ -227,7 +266,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
 
     glm::vec2 size = button->size();
     if (size.x <= 0.0f || size.y <= 0.0f) {
-        size = glm::vec2(extent(*button) + base().padding, base().barHeight);
+        size = glm::vec2(arranger_.extent(*button) + base().padding, base().barHeight);
     }
     const glm::vec2 min = button->position();
     place(*button, min, size);
@@ -335,7 +374,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
 
     glm::vec2 size = box->size();
     if (size.x <= 0.0f || size.y <= 0.0f) {
-        size = natural(*box);
+        size = arranger_.natural(*box);
     }
     const glm::vec2 min = box->position();
     place(*box, min, size);
@@ -378,7 +417,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     }
     glm::vec2 size = list->size();
     if (size.x <= 0.0f || size.y <= 0.0f) {
-        size = natural(*list);
+        size = arranger_.natural(*list);
     }
     const glm::vec2 min = list->position();
     place(*list, min, size);
@@ -427,7 +466,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     }
     glm::vec2 size = bar->size();
     if (size.x <= 0.0f || size.y <= 0.0f) {
-        size = natural(*bar);
+        size = arranger_.natural(*bar);
     }
     const glm::vec2 min = bar->position();
     place(*bar, min, size);
@@ -458,228 +497,15 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     bar->tabs(boxes);
 
     // the rule under the strip, which is what joins the chosen tab to the page below it
-    canvas->rect(glm::vec2(min.x, min.y + height), glm::vec2(min.x + size.x, min.y + height + ruleWidth), dress.border);
+    canvas->rect(glm::vec2(min.x, min.y + height), glm::vec2(min.x + size.x, min.y + height + Arranger::ruleWidth), dress.border);
 
     if (!bar->page()) {
         return;
     }
     // the plate the chosen page sits on. Descending into the page is the walk's, so that
     // painting never reaches back into layout
-    const v3d::type::Bound2D box = page(*bar);
+    const v3d::type::Bound2D box = arranger_.page(*bar);
     fillBox(canvas, box.position(), box.position() + box.size(), 0.0f, dress.panel);
-}
-
-/**
- **/
-v3d::type::Bound2D ComponentRenderer::page(const component::TabBar& bar) const {
-    const float height = styles_.resolve(style::Resolver::Class::Tabs, bar.style()).barHeight;
-    const glm::vec2 min = bar.position();
-    const glm::vec2 size = bar.size();
-    return v3d::type::Bound2D(glm::vec2(min.x, min.y + height + ruleWidth),
-        glm::vec2(size.x, std::max(size.y - height - ruleWidth, 0.0f)));
-}
-
-/**
- **/
-glm::vec2 ComponentRenderer::natural(Component& component) const {
-    switch (component.type()) {
-        case component::Type::Label: {
-            const auto* label = dynamic_cast<const component::Label*>(&component);
-            return label == nullptr ? glm::vec2(0.0f, 0.0f)
-                : glm::vec2(measure_(label->text()), base().lineHeight);
-        }
-        case component::Type::Icon:
-            // an icon given no size is a square the height of a strip, which is the one
-            // size the ui has that is not derived from a string
-            return glm::vec2(base().barHeight, base().barHeight);
-        case component::Type::Button: {
-            const auto* button = dynamic_cast<const component::Button*>(&component);
-            return button == nullptr ? glm::vec2(0.0f, 0.0f)
-                : glm::vec2(extent(*button) + base().padding, base().barHeight);
-        }
-        case component::Type::CheckBox:
-        case component::Type::RadioButton: {
-            // the mark, the gap after it and the label, on a row as tall as the taller of
-            // the mark and a line of text
-            const auto* box = dynamic_cast<const component::CheckBox*>(&component);
-            if (box == nullptr) {
-                return glm::vec2(0.0f, 0.0f);
-            }
-            const float text = box->label().empty() ? 0.0f
-                : base().padding * 0.5f + measure_(box->label());
-            return glm::vec2(base().markSize + text, std::max(base().markSize, base().lineHeight));
-        }
-        case component::Type::SelectList: {
-            // a list decides how wide its widest row is and nothing about how tall it is:
-            // how many rows it shows is what it was given room for
-            auto* list = dynamic_cast<component::SelectList*>(&component);
-            if (list == nullptr) {
-                return glm::vec2(0.0f, 0.0f);
-            }
-            // measuring every row is what this costs, and the answer only changes when the
-            // rows do - so the list keeps it and forgets it when it is given new ones
-            float widest = list->widest();
-            if (widest < 0.0f) {
-                widest = 0.0f;
-                for (const std::string& item : list->items()) {
-                    widest = std::max(widest, measure_(item));
-                }
-                list->widest(widest);
-            }
-            return glm::vec2(widest + base().padding, component.size().y);
-        }
-        case component::Type::Scrollbar: {
-            // a scrollbar decides how thick it is and nothing about how long: its length
-            // is the box it runs down, which is its parent's rather than its own
-            const auto* bar = dynamic_cast<const component::Scrollbar*>(&component);
-            if (bar == nullptr) {
-                return glm::vec2(0.0f, 0.0f);
-            }
-            return bar->direction() == component::Scrollbar::Direction::Vertical
-                ? glm::vec2(base().scrollbarWidth, component.size().y)
-                : glm::vec2(component.size().x, base().scrollbarWidth);
-        }
-        default:
-            // a panel, a bar and a box decide nothing for themselves, so an Auto extent on
-            // one is whatever it was last given
-            return component.size();
-    }
-}
-
-/**
- **/
-void ComponentRenderer::arrange(const component::Box& box, const v3d::type::Bound2D& bounds,
-    std::vector<v3d::type::Bound2D>* boxes) const {
-    const bool vertical = box.type() == component::Type::VerticalBox;
-    const glm::vec2 extent = bounds.size();
-    float pen = vertical ? bounds.position().y : bounds.position().x;
-
-    for (const boost::shared_ptr<Component>& child : box.children()) {
-        if (!child || !child->visible()) {
-            // a hidden row leaves no gap behind it, which is what makes a list of however
-            // many rows there are read as one
-            boxes->push_back(v3d::type::Bound2D(bounds.position(), glm::vec2(0.0f, 0.0f)));
-            continue;
-        }
-        const glm::vec2 own = natural(*child);
-        const Layout& layout = child->layout();
-        glm::vec2 size(layout.width.resolve(extent.x, own.x), layout.height.resolve(extent.y, own.y));
-        glm::vec2 corner;
-        if (vertical) {
-            if (box.stretch()) {
-                size.x = extent.x;
-            }
-            corner = glm::vec2(bounds.position().x + layout.x.resolve(extent.x, 0.0f), pen);
-            pen += size.y + box.spacing();
-        } else {
-            if (box.stretch()) {
-                size.y = extent.y;
-            }
-            corner = glm::vec2(pen, bounds.position().y + layout.y.resolve(extent.y, 0.0f));
-            pen += size.x + box.spacing();
-        }
-        boxes->push_back(v3d::type::Bound2D(corner, size));
-    }
-}
-
-/**
- **/
-void ComponentRenderer::walk(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<Component>& component,
-    const v3d::type::Bound2D& bounds) const {
-    if (canvas == nullptr || !component || !component->visible()) {
-        return;
-    }
-    place(*component, bounds.position(), bounds.size());
-
-    switch (component->type()) {
-        case component::Type::Panel:
-            draw(canvas, boost::dynamic_pointer_cast<component::Panel>(component));
-            break;
-        case component::Type::Bar:
-            draw(canvas, boost::dynamic_pointer_cast<component::Bar>(component));
-            break;
-        case component::Type::Scrollbar:
-            draw(canvas, boost::dynamic_pointer_cast<component::Scrollbar>(component));
-            break;
-        case component::Type::CheckBox:
-        case component::Type::RadioButton:
-            // a radio button is a check box with a round mark, so one call draws both
-            draw(canvas, boost::dynamic_pointer_cast<component::CheckBox>(component));
-            break;
-        case component::Type::SelectList:
-            draw(canvas, boost::dynamic_pointer_cast<component::SelectList>(component));
-            break;
-        case component::Type::TabBar: {
-            // only the chosen page is walked, so a page that is not up has no box and
-            // nothing in it can be picked - which is why this does not fall through to the
-            // generic descent below
-            const boost::shared_ptr<component::TabBar> tabs =
-                boost::dynamic_pointer_cast<component::TabBar>(component);
-            draw(canvas, tabs);
-            walk(canvas, tabs->page(), page(*tabs));
-            return;
-        }
-        case component::Type::Button:
-            draw(canvas, boost::dynamic_pointer_cast<component::Button>(component));
-            break;
-        case component::Type::Label:
-            draw(canvas, boost::dynamic_pointer_cast<component::Label>(component));
-            break;
-        case component::Type::Icon:
-            draw(canvas, boost::dynamic_pointer_cast<component::Icon>(component));
-            break;
-        default:
-            // a box draws nothing of its own - it is whatever it holds
-            break;
-    }
-
-    const std::vector<boost::shared_ptr<Component>>& children = component->children();
-    if (children.empty()) {
-        return;
-    }
-
-    // a component that holds more than it can show cuts what it holds off at its own box,
-    // per ADR-0037. It is what the component asked for rather than the default, because a
-    // menu drops a panel out of the strip it came from
-    const bool cut = component->clip();
-    if (cut) {
-        canvas->clip(component->position(), component->position() + component->size());
-    }
-
-    const auto* box = dynamic_cast<const component::Box*>(component.get());
-    if (box != nullptr) {
-        // a flow box places its children in the order it holds them, because that order is
-        // what it is for. A z index inside one changes nothing
-        std::vector<v3d::type::Bound2D> boxes;
-        boxes.reserve(children.size());
-        arrange(*box, component->bound(), &boxes);
-        for (std::size_t index = 0; index < children.size(); index++) {
-            walk(canvas, children[index], boxes[index]);
-        }
-    } else {
-        std::vector<boost::shared_ptr<Component>> sorted;
-        if (!inDrawOrder(children)) {
-            sorted = v3d::ui::ordered(children);
-        }
-        for (const boost::shared_ptr<Component>& child : sorted.empty() ? children : sorted) {
-            walk(canvas, child, child->layout().resolve(component->bound(), natural(*child), child->position()));
-        }
-    }
-
-    if (cut) {
-        canvas->unclip();
-    }
-}
-
-/**
- **/
-float ComponentRenderer::extent(const component::Button& button) const {
-    // what the button asks a strip for, which is the icon it names rather than the
-    // texture it holds - a strip is laid out before anything has been resolved
-    if (!button.icon().empty()) {
-        return base().iconSize;
-    }
-    return measure_(button.label());
 }
 
 /**
@@ -759,48 +585,7 @@ glm::vec2 ComponentRenderer::insets(const Engine& ui) const {
 /**
  **/
 glm::vec2 ComponentRenderer::insets(const Container& container) const {
-    return stack(container, nullptr, nullptr);
-}
-
-glm::vec2 ComponentRenderer::stack(const Container& container,
-    std::vector<std::pair<boost::shared_ptr<component::Toolbar>, glm::vec2>>* strips,
-    std::vector<boost::shared_ptr<component::MenuBar>>* bars) const {
-    // what the strips before this one have taken off the top and the left edges, which is
-    // where the next one starts
-    glm::vec2 taken(0.0f, 0.0f);
-    for (const boost::shared_ptr<Component>& component : container.ordered()) {
-        if (!component || !component->visible()) {
-            continue;
-        }
-        if (component->type() == component::Type::MenuBar) {
-            if (bars != nullptr) {
-                bars->push_back(boost::dynamic_pointer_cast<component::MenuBar>(component));
-            }
-            taken.y += base().barHeight + ruleWidth;
-            continue;
-        }
-        if (component->type() != component::Type::Toolbar) {
-            continue;
-        }
-        const boost::shared_ptr<component::Toolbar> bar =
-            boost::dynamic_pointer_cast<component::Toolbar>(component);
-        if (!bar) {
-            continue;
-        }
-        const glm::vec2 corner = bar->edge() == component::Toolbar::Edge::Top
-            ? glm::vec2(0.0f, taken.y) : taken;
-        if (strips != nullptr) {
-            strips->push_back(std::make_pair(bar, corner));
-        }
-        if (bar->edge() == component::Toolbar::Edge::Top) {
-            taken.y += base().barHeight + ruleWidth;
-        } else {
-            // what the strip will be drawn at rather than the box it was last drawn in,
-            // which is nothing until it has been drawn once
-            taken.x += widest(*bar) + base().padding + ruleWidth;
-        }
-    }
-    return taken;
+    return arranger_.stack(container, nullptr, nullptr);
 }
 
 /**
@@ -872,7 +657,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     canvas->rect(glm::vec2(0.0f, 0.0f), glm::vec2(width, base().barHeight), base().panel);
     // a rule along the bottom edge, so the strip reads as something over the scene rather
     // than as part of it
-    canvas->rect(glm::vec2(0.0f, base().barHeight), glm::vec2(width, base().barHeight + ruleWidth), base().border);
+    canvas->rect(glm::vec2(0.0f, base().barHeight), glm::vec2(width, base().barHeight + Arranger::ruleWidth), base().border);
 
     float pen = base().padding * 0.5f;
     for (std::size_t index = 0; index < bar->size(); index++) {
@@ -913,19 +698,6 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
 
 /**
  **/
-float ComponentRenderer::widest(const component::Toolbar& bar) const {
-    float widest = 0.0f;
-    for (std::size_t index = 0; index < bar.size(); index++) {
-        const boost::shared_ptr<component::Button> button = bar.button(index);
-        if (button) {
-            widest = std::max(widest, extent(*button));
-        }
-    }
-    return widest;
-}
-
-/**
- **/
 void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Toolbar>& bar,
     const glm::vec2& corner) const {
     if (canvas == nullptr || !bar) {
@@ -937,17 +709,17 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     // that the rule along a strip's far edge runs the whole way
     const glm::vec2 size = row
         ? glm::vec2(static_cast<float>(canvas->width()) - corner.x, base().barHeight)
-        : glm::vec2(widest(*bar) + base().padding, static_cast<float>(canvas->height()) - corner.y);
+        : glm::vec2(arranger_.widest(*bar) + base().padding, static_cast<float>(canvas->height()) - corner.y);
 
     place(*bar, corner, size);
 
     canvas->rect(corner, corner + size, base().panel);
     if (row) {
         canvas->rect(glm::vec2(corner.x, corner.y + size.y),
-            glm::vec2(corner.x + size.x, corner.y + size.y + ruleWidth), base().border);
+            glm::vec2(corner.x + size.x, corner.y + size.y + Arranger::ruleWidth), base().border);
     } else {
         canvas->rect(glm::vec2(corner.x + size.x, corner.y),
-            glm::vec2(corner.x + size.x + ruleWidth, corner.y + size.y), base().border);
+            glm::vec2(corner.x + size.x + Arranger::ruleWidth, corner.y + size.y), base().border);
     }
 
     glm::vec2 pen = corner;
@@ -960,7 +732,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
         // and a column's is as wide as the strip - and the button is then drawn at the
         // size it was given, the same way a button anywhere else is
         const glm::vec2 box = row
-            ? glm::vec2(extent(*button) + base().padding, size.y)
+            ? glm::vec2(arranger_.extent(*button) + base().padding, size.y)
             : glm::vec2(size.x, base().lineHeight);
 
         place(*button, pen, box);

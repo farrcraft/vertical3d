@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 
+#include "Arranger.h"
 #include "Dressing.h"
 #include "Text.h"
 #include "style/Resolver.h"
@@ -222,41 +223,6 @@ class ComponentRenderer {
 
  private:
     /**
-     * Draw one component and everything it holds, into a box that has already been
-     * resolved.
-     *
-     * @param bounds where this component goes, which its parent worked out
-     **/
-    void walk(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<Component>& component,
-        const v3d::type::Bound2D& bounds) const;
-
-    /**
-     * Write the boxes of a flow box's children - along the line by what each asks for,
-     * and across it by the box's width when it stretches them.
-     *
-     * @param bounds the box the children are laid out inside
-     * @param boxes filled with one box per child, in the order the children are held
-     **/
-    void arrange(const component::Box& box, const v3d::type::Bound2D& bounds,
-        std::vector<v3d::type::Bound2D>* boxes) const;
-
-    /**
-     * Where a tab bar's chosen page goes - the room the strip and its rule leave under
-     * them, which is what the walk lays the page out against.
-     **/
-    v3d::type::Bound2D page(const component::TabBar& bar) const;
-
-    /**
-     * The size a component makes of itself, which is what an Auto extent resolves to -
-     * the width of a label's text, the side of an icon, the room a button's label needs.
-     * A component that decides nothing for itself asks for nothing.
-     *
-     * Takes the component to write on rather than to read: a list is left holding how wide
-     * its widest row measured, the way the draw leaves every component holding its box.
-     **/
-    glm::vec2 natural(Component& component) const;
-
-    /**
      * Draw one dropped panel of a menu bar, leaving every item holding its own row.
      *
      * @param origin where the panel's top left corner would go, before it is moved to
@@ -266,39 +232,11 @@ class ComponentRenderer {
         const glm::vec2& origin) const;
 
     /**
-     * How wide a toolbar's widest button is, which is what sizes a column and what a row
-     * has no use for.
+     * Draw one component into the box the walk has just written onto it - the switch on
+     * what a component is, which is what the Arranger calls back.
      **/
-    float widest(const component::Toolbar& bar) const;
-
-    /**
-     * Where each strip of a container goes, and how much of the canvas they take between
-     * them.
-     *
-     * They stack in the order the container draws them: a menu bar takes the top, a top
-     * toolbar takes a band under whatever is already there, and a left toolbar runs down
-     * the side of what is left.
-     *
-     * One implementation, because draw() places the strips and insets() tells an app what
-     * area is left around them. The two disagreeing means a ui drawn over the room an app
-     * was told it had.
-     *
-     * @param strips filled with one toolbar and its top left corner per strip, in the
-     *      order they are drawn; null when only the total is wanted
-     * @param bars filled with the container's menu bars, which are drawn last because an
-     *      open menu drops a panel over the strips below it; null when only the total is
-     *      wanted
-     * @return the left inset in x and the top inset in y, in pixels
-     **/
-    glm::vec2 stack(const Container& container,
-        std::vector<std::pair<boost::shared_ptr<component::Toolbar>, glm::vec2>>* strips,
-        std::vector<boost::shared_ptr<component::MenuBar>>* bars) const;
-
-    /**
-     * How much room one button asks for along a strip - its icon's side when it names
-     * one, and otherwise its label's width.
-     **/
-    float extent(const component::Button& button) const;
+    void paint(v3d::render::realtime::Canvas* canvas,
+        const boost::shared_ptr<Component>& component) const;
 
     /**
      * Draw the nine images a button style names over the button's box - the four corners
@@ -320,6 +258,8 @@ class ComponentRenderer {
     Measure measure_;
     Write write_;
     style::Resolver styles_;
+    // the other half of the walk: it resolves the boxes and calls back here to fill them
+    Arranger arranger_;
 };
 
 };  // namespace v3d::ui
