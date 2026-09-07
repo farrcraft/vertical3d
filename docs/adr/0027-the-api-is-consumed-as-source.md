@@ -87,12 +87,11 @@ its own flags. Nothing is installed, exported, packaged or turned into a port.
   `<api/image/Image.h>` outside it. Rewriting every in-tree include to the second form is a
   whole-file diff across the tree for no build gain, so the asymmetry is kept and a reader has to
   learn it.
-- The root sets `Boost_USE_STATIC_LIBS` and `Boost_NO_WARN_NEW_VERSIONS` and calls `find_package`
-  for nine packages. Nested, those land in the consumer's cache and change what the consumer's own
-  `find_package(Boost)` finds. A consumer inherits this project's dependency resolution whether or
-  not it wants it.
+- The root calls `find_package` for nine packages, and nested those resolve into the consumer's
+  cache. A consumer inherits this project's dependency resolution whether or not it wants it: its
+  own `find_package(Boost)` hits the `Boost_DIR` the tree left behind.
 - The consumer must copy the vcpkg baseline verbatim, and nothing checks that it did. A different
-  baseline is a different boost, and boost here is static.
+  baseline is a different boost, and a boost library's file name carries its version.
 - A clean build of the consumer builds the api, the engine and the shaders. There is no cached
   artefact to skip that.
 

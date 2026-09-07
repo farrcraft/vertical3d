@@ -4,3 +4,11 @@
  **/
 
 #include "HorizontalBox.h"
+
+namespace v3d::ui::component {
+
+HorizontalBox::HorizontalBox() :
+    Box(Type::HorizontalBox) {
+}
+
+};  // namespace v3d::ui::component

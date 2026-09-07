@@ -9,6 +9,9 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+#include "style/property/Color.h"
+#include "style/property/Number.h"
 #include "style/Property.h"
 
 namespace v3d::ui {
@@ -53,6 +56,28 @@ std::vector< boost::shared_ptr<style::Property>  > Style::getPropertySet(const s
             props.push_back((*iter).second);
     }
     return props;
+}
+
+void readColour(const boost::shared_ptr<Style>& target, const std::string& name, glm::vec4* into) {
+    if (!target) {
+        return;
+    }
+    const boost::shared_ptr<style::property::Color> property =
+        boost::dynamic_pointer_cast<style::property::Color>(target->property(name, "color"));
+    if (property) {
+        *into = property->value();
+    }
+}
+
+void readMetric(const boost::shared_ptr<Style>& target, const std::string& name, float* into) {
+    if (!target) {
+        return;
+    }
+    const boost::shared_ptr<style::property::Number> property =
+        boost::dynamic_pointer_cast<style::property::Number>(target->property(name, "number"));
+    if (property) {
+        *into = property->value();
+    }
 }
 
 };  // namespace v3d::ui

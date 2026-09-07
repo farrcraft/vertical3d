@@ -7,6 +7,7 @@
 
 #include <SDL3/SDL.h>
 
+#include <map>
 #include <string>
 
 #include "Feature.h"
@@ -128,10 +129,32 @@ bool Engine::registerEventMappings() {
             !readMappingDestination(mapping, &destinationEvent)) {
             return false;
         }
+        // a rebound command keeps the context and the edge the config gave it, and takes
+        // only its name from what the player chose
+        const std::map<std::string, std::string>::const_iterator rebound =
+            rebindings_.find(destinationEvent.str());
+        if (rebound != rebindings_.end()) {
+            v3d::event::Event replacement(rebound->second, sourceEvent.context());
+            replacement.type(v3d::event::Type::Source);
+            replacement.state(sourceEvent.state());
+            sourceEvent = replacement;
+        }
+
         mapper->map(sourceEvent, destinationEvent);
     }
+    // addMapper stores by name, so this replaces the mapper rather than adding a second
     eventEngine_->addMapper(mapper);
     return true;
+}
+
+/**
+ **/
+bool Engine::rebind(const std::string& command, const std::string& key) {
+    if (!config_) {
+        return false;
+    }
+    rebindings_[command] = key;
+    return registerEventMappings();
 }
 
 /**
@@ -224,6 +247,36 @@ bool Engine::render() {
 
 /**
  **/
+void Engine::handleEvent(const SDL_Event& event) {
+    switch (event.type) {
+    case SDL_EVENT_QUIT:
+    // SDL turns the last window closing into a quit only once that window is destroyed,
+    // and nothing here destroys it, so the request is what to act on
+    case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+        quit();
+        break;
+    case SDL_EVENT_WINDOW_RESIZED:
+    case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+        if (window_) {
+            window_->resize(event.window.data1, event.window.data2);
+        }
+        dispatcher_->trigger(v3d::event::WindowResize(event.window.data1, event.window.data2));
+        break;
+    // a key released while the window is unfocused never arrives, so an app that wants
+    // held input dropped needs to be told focus went rather than poll for it
+    case SDL_EVENT_WINDOW_FOCUS_GAINED:
+        dispatcher_->trigger(v3d::event::WindowFocus(true));
+        break;
+    case SDL_EVENT_WINDOW_FOCUS_LOST:
+        dispatcher_->trigger(v3d::event::WindowFocus(false));
+        break;
+    default:
+        break;
+    }
+}
+
+/**
+ **/
 bool Engine::eventLoop() {
     SDL_Event event;
     // nanoseconds, not SDL_GetTicks(): a whole millisecond cannot express 60 Hz, and a frame
@@ -237,31 +290,7 @@ bool Engine::eventLoop() {
             if (inputEngine_ && inputEngine_->filterEvent(event)) {
                 continue;
             }
-            switch (event.type) {
-            case SDL_EVENT_QUIT:
-            // SDL turns the last window closing into a quit only once that window is
-            // destroyed, and nothing here destroys it, so the request is what to act on
-            case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
-                quit();
-                break;
-            case SDL_EVENT_WINDOW_RESIZED:
-            case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
-                if (window_) {
-                    window_->resize(event.window.data1, event.window.data2);
-                }
-                dispatcher_->trigger(v3d::event::WindowResize(event.window.data1, event.window.data2));
-                break;
-            // a key released while the window is unfocused never arrives, so an app that
-            // wants held input dropped needs to be told focus went rather than poll for it
-            case SDL_EVENT_WINDOW_FOCUS_GAINED:
-                dispatcher_->trigger(v3d::event::WindowFocus(true));
-                break;
-            case SDL_EVENT_WINDOW_FOCUS_LOST:
-                dispatcher_->trigger(v3d::event::WindowFocus(false));
-                break;
-            default:
-                break;
-            }
+            handleEvent(event);
         }
         // an event handler may have asked to stop, and the window it drew into can have
         // gone with it - so nothing after this point runs on the frame that quit

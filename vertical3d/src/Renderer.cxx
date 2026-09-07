@@ -38,10 +38,18 @@ const char* const handleSuffix = " handles";
 const char* const uiPass = "ui";
 
 /**
- * The size the font is rasterized at. Nothing scales a glyph, so it is also the size
- * the ui is drawn at, and what the bar and its rows are sized from.
+ * How large the whole ui is drawn, as a multiple of the size it was laid out at.
+ *
+ * Every metric below is a multiple of the text size and the text size is a multiple of
+ * this, so the editor scales by one number. That it is one number rather than a rebuilt
+ * atlas is what ADR-0036 bought.
  **/
-const float fontSize = 15.0f;
+const float uiScale = 1.0f;
+
+/**
+ * The size the ui text is drawn at, and what the bar and its rows are sized from.
+ **/
+const float fontSize = 15.0f * uiScale;
 
 };  // namespace
 
@@ -57,11 +65,11 @@ Renderer::Renderer(const boost::shared_ptr<v3d::render::realtime::Window>& windo
     engine_.initialize(window);
     engine_.clearColour(background_);
 
-    text_ = boost::make_shared<v3d::ui::TextRenderer>(assetManager, logger, engine_.quads(), fontSize);
+    text_ = boost::make_shared<v3d::ui::TextRenderer>(assetManager, logger, engine_.quads());
 
-    uiRenderer_ = boost::make_shared<v3d::ui::ComponentRenderer>(text_->measure(), text_->write(&canvas_));
+    uiRenderer_ = boost::make_shared<v3d::ui::ComponentRenderer>(text_->measure(fontSize), text_->write(&canvas_, fontSize));
 
-    v3d::ui::ComponentRenderer::Style& style = uiRenderer_->style();
+    v3d::ui::Dressing& style = uiRenderer_->dressing();
     style.lineHeight = fontSize * 1.5f;
     style.padding = fontSize * 1.4f;
     style.barHeight = fontSize * 1.8f;

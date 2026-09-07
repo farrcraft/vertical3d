@@ -75,6 +75,25 @@ class GameMenu {
      **/
     bool navigate(const std::string_view& command);
 
+    /**
+     * Whether an input item is capturing, so that the app can send what it captures here
+     * rather than acting on it itself.
+     **/
+    bool capturing() const;
+
+    /**
+     * Give the capturing item its value - a key name for a key input, per the table in
+     * api/input/Keyboard.cpp.
+     *
+     * An app feeds this from its key events while capturing() rather than binding them,
+     * which is what a rebinding screen is: the key that would normally do something is
+     * instead the answer to what should do it.
+     *
+     * @return whether a capture took it, which is false when the menu is down or when
+     *         nothing is capturing
+     **/
+    bool capture(const v3d::event::EventData& value);
+
  private:
     boost::shared_ptr<Container> container() const;
     boost::shared_ptr<component::Menu> menu() const;

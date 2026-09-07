@@ -80,6 +80,7 @@ BOOST_AUTO_TEST_CASE(accumulator_whole_step_test) {
 BOOST_AUTO_TEST_CASE(accumulator_jitter_test) {
     Accumulator accumulator;
     std::vector<std::uint64_t> frames;
+    frames.reserve(144);
     for (int i = 0; i < 144; ++i) {
         frames.push_back((i % 2 == 0) ? 6000000ULL : 7000000ULL);
     }

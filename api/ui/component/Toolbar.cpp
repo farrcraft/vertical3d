@@ -15,7 +15,7 @@ namespace v3d::ui::component {
 /**
  **/
 Toolbar::Toolbar(const boost::shared_ptr<entt::dispatcher>& dispatcher, Edge edge) :
-    Component(component::Type::TOOLBAR),
+    Component(component::Type::Toolbar),
     dispatcher_(dispatcher),
     edge_(edge) {
 }

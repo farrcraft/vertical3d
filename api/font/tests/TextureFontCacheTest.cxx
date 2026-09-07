@@ -12,6 +12,11 @@
 
 namespace {
 const char* kTypeface = "data/fonts/NotoSans-Regular.ttf";
+
+const wchar_t* const kPrintable =
+L" !\"#$%&'()*+,-./0123456789:;<=>?"
+L"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"
+L"`abcdefghijklmnopqrstuvwxyz{|}~";
 };  // namespace
 
 /**
@@ -87,4 +92,94 @@ BOOST_AUTO_TEST_CASE(texturefont_glyph_test) {
     BOOST_CHECK(glyph->st_[1][0] <= 1.0f);
     BOOST_CHECK(glyph->st_[0][1] >= 0.0f);
     BOOST_CHECK(glyph->st_[1][1] <= 1.0f);
+}
+
+/**
+ * An atlas too small for what it is given fails rather than reporting success.
+ *
+ * The 64x64 here is chosen to be hopeless rather than marginal: printable ascii at 48px
+ * wants far more than that, so the run packs some glyphs and then cannot. What is being
+ * asserted is that the partial success is reported as failure - the count of glyphs that
+ * did not fit used to be kept and never read, so a caller saw true and drew text with
+ * characters missing.
+ **/
+BOOST_AUTO_TEST_CASE(texturefont_atlas_overflow_test) {
+    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    v3d::font::TextureFontCache cache(64, 64, 1, logger);
+
+    boost::shared_ptr<v3d::font::TextureFont> font =
+        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 48.0f, logger);
+    font->atlas(cache.atlas());
+
+    BOOST_CHECK_EQUAL(font->loadGlyphs(kPrintable), false);
+
+    // and an atlas with room for the same charset still succeeds, so the failure is the
+    // packing rather than the face or the charset
+    v3d::font::TextureFontCache roomy(512, 512, 1, logger);
+    boost::shared_ptr<v3d::font::TextureFont> small =
+        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 12.0f, logger);
+    small->atlas(roomy.atlas());
+    BOOST_CHECK_EQUAL(small->loadGlyphs(kPrintable), true);
+}
+
+/**
+ * The atlas budget a distance field asks for, at the base size and spread ui::TextRenderer
+ * defaults to.
+ *
+ * A distance field glyph carries its spread on every side, so it is substantially larger
+ * than the coverage glyph of the same face and size, and the 512 square the tree has always
+ * packed into was the thing most likely to stop being enough. It is still enough at 48 with
+ * a spread of 8, and it is close: raising either knob one step overflows it, which is what
+ * the second half of this asserts and why the dimensions are an argument now.
+ **/
+BOOST_AUTO_TEST_CASE(texturefont_distance_field_packing_test) {
+    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+
+    v3d::font::TextureFontCache roomy(512, 512, 1, logger);
+    boost::shared_ptr<v3d::font::TextureFont> field =
+        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 48.0f, logger, 8);
+    field->atlas(roomy.atlas());
+    BOOST_CHECK_EQUAL(field->spread(), 8u);
+    BOOST_REQUIRE_EQUAL(field->loadGlyphs(kPrintable), true);
+
+    // the same charset one step wider does not fit the same square, and says so
+    v3d::font::TextureFontCache cramped(512, 512, 1, logger);
+    boost::shared_ptr<v3d::font::TextureFont> tooBig =
+        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 48.0f, logger, 12);
+    tooBig->atlas(cramped.atlas());
+    BOOST_CHECK_EQUAL(tooBig->loadGlyphs(kPrintable), false);
+
+    // and asking for the dimensions it needs is what makes it fit
+    v3d::font::TextureFontCache larger(1024, 1024, 1, logger);
+    boost::shared_ptr<v3d::font::TextureFont> wider =
+        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 48.0f, logger, 12);
+    wider->atlas(larger.atlas());
+    BOOST_CHECK_EQUAL(wider->loadGlyphs(kPrintable), true);
+
+    // a distance field glyph is the coverage one grown by the spread on each side, which
+    // is the whole of why the budget moved
+    boost::shared_ptr<v3d::font::TextureFontCache> plain =
+        boost::make_shared<v3d::font::TextureFontCache>(512, 512, 1, logger);
+    boost::shared_ptr<v3d::font::TextureFont> coverage =
+        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 48.0f, logger);
+    coverage->atlas(plain->atlas());
+    BOOST_CHECK_EQUAL(coverage->spread(), 0u);
+    BOOST_REQUIRE_EQUAL(coverage->loadGlyphs(kPrintable), true);
+
+    boost::shared_ptr<v3d::font::TextureFont::Glyph> wide = field->glyph(L'm');
+    boost::shared_ptr<v3d::font::TextureFont::Glyph> narrow = coverage->glyph(L'm');
+    BOOST_REQUIRE(wide != nullptr);
+    BOOST_REQUIRE(narrow != nullptr);
+    BOOST_CHECK(wide->width_ > narrow->width_);
+    BOOST_CHECK(wide->height_ > narrow->height_);
+
+    // the advance is the face's own metric and is not a bitmap dimension, so the spread
+    // must not have moved it - it is what a line of text is laid out along
+    BOOST_CHECK_CLOSE(wide->advance_.x, narrow->advance_.x, 0.01f);
+
+    // and the coordinates still land inside the atlas they were packed into
+    BOOST_CHECK(wide->st_[0][0] >= 0.0f);
+    BOOST_CHECK(wide->st_[1][0] <= 1.0f);
+    BOOST_CHECK(wide->st_[0][1] >= 0.0f);
+    BOOST_CHECK(wide->st_[1][1] <= 1.0f);
 }

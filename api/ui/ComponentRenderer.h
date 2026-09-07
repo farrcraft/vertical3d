@@ -5,26 +5,52 @@
 
 #pragma once
 
-#include <functional>
 #include <string>
+#include <utility>
+#include <vector>
 
-#include "Container.h"
-#include "Engine.h"
-#include "component/Button.h"
-#include "component/Icon.h"
-#include "component/Label.h"
-#include "component/Toolbar.h"
-#include "component/menu/Menu.h"
-#include "component/menu/MenuBar.h"
-#include "style/Theme.h"
+#include "Arranger.h"
+#include "Dressing.h"
+#include "Text.h"
+#include "style/Resolver.h"
 
-#include "../render/realtime/Canvas.h"
+#include "../type/Bound2D.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
+namespace v3d::render::realtime {
+class Canvas;
+};  // namespace v3d::render::realtime
+
 namespace v3d::ui {
+
+class Component;
+class Container;
+class Engine;
+class Style;
+
+namespace style {
+class Theme;
+};  // namespace style
+
+namespace component {
+class Bar;
+class Box;
+class Button;
+class CheckBox;
+class Icon;
+class Label;
+class Menu;
+class MenuBar;
+class Panel;
+class Scrollbar;
+class SelectList;
+class TabBar;
+class TextBox;
+class Toolbar;
+};  // namespace component
 
 /**
  * Draws the ui onto a canvas of quads.
@@ -40,8 +66,14 @@ namespace v3d::ui {
  * Drawing is also what lays the ui out: every component is left holding the bounds it
  * was drawn in, which is what the cursor is tested against, per ADR-0019.
  *
- * Menus, menu bars, toolbars, buttons, labels and icons are drawn. The rest of the
- * components in this library are empty declarations with no loader.
+ * Every component type this library has is drawn: menus, menu bars, toolbars, buttons,
+ * labels, icons, panels, bars, scrollbars, check boxes, radio buttons, select lists, tab
+ * bars and the two flow boxes.
+ *
+ * A component holds other components, and drawing one is what works out where they go:
+ * every box is resolved against the box around it as the walk reaches it, per ADR-0034.
+ * A flow box writes its children's boxes itself, because their positions are what it is
+ * for.
  *
  * The strips stack in the order a container lists them. A menu bar takes the top of the
  * canvas, a top toolbar takes a band under whatever is already there, and a left toolbar
@@ -54,50 +86,21 @@ namespace v3d::ui {
 class ComponentRenderer {
  public:
     /**
-     * How wide a string will be when it is drawn, in pixels.
-     **/
-    typedef std::function<float(const std::string&)> Measure;
-
-    /**
-     * Draw a string with its pen on the baseline at the given position.
-     **/
-    typedef std::function<void(const std::string&, const glm::vec2&, const glm::vec4&)> Write;
-
-    /**
-     * What the ui cannot work out from the components alone.
-     *
-     * These are what a theme's "ui" style names, and what is left here is the default a
-     * theme that names nothing draws in. theme() is what reads one in, per ADR-0020.
-     **/
-    struct Style final {
-        Style() noexcept;
-
-        float lineHeight;      /**< the baseline to baseline distance of one menu item **/
-        float padding;         /**< the gap between the text and the panel around it **/
-        float barHeight;       /**< how tall the strip of a menu bar or a toolbar is **/
-        float iconSize;        /**< the side of the square an icon is drawn in **/
-        float panelPadding;    /**< the gap above and below the items of a dropped panel **/
-        glm::vec4 panel;       /**< the background the menu is drawn on **/
-        glm::vec4 border;      /**< the panel's outline **/
-        glm::vec4 text;        /**< an ordinary item's label **/
-        glm::vec4 activeText;  /**< the label of the item navigation is on **/
-        glm::vec4 highlight;   /**< what is drawn behind that item **/
-        glm::vec4 hover;       /**< what is drawn behind a toolbar button the cursor is on **/
-    };
-
-    /**
      * @param measure how wide a string is when the app draws it
      * @param write how the app draws a string
      **/
     ComponentRenderer(const Measure& measure, const Write& write);
+    ~ComponentRenderer();
 
     /**
-     * @return the colours and metrics the ui is drawn with, to be changed in place
+     * @return the colours and metrics the ui is drawn with, to be changed in place.
+     *      Changing them drops what the resolver has worked out from them, so an app
+     *      that sets its metrics once at startup pays for that once
      **/
-    Style& style() noexcept;
+    Dressing& dressing() noexcept;
 
     /**
-     * Draw with a theme: read its "ui" style into style(), and keep it for the images a
+     * Draw with a theme: read its "ui" style into dressing(), and keep it for the images a
      * button is drawn from.
      *
      * Every colour and metric the style does not name keeps the value it had, so a theme
@@ -128,6 +131,58 @@ class ComponentRenderer {
      * container carries and what a toolbar writes on the ones in the strip.
      **/
     void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Button>& button) const;
+
+    /**
+     * Draw a panel - a filled box with a border, rounded by however much its style asks
+     * for, at the box it holds.
+     **/
+    void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Panel>& panel) const;
+
+    /**
+     * Draw a bar - the track it holds, and the fraction of it that is filled.
+     **/
+    void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Bar>& bar) const;
+
+    /**
+     * Draw a scrollbar - its track, and the thumb over the part of the content its page
+     * shows. A bar with nothing to scroll draws the track alone.
+     **/
+    void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Scrollbar>& bar) const;
+
+    /**
+     * Draw a check box - the box, the mark when it is checked, and the label beside it.
+     * A radio button is the same call: the mark is round and the style class is its own.
+     **/
+    void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::CheckBox>& box) const;
+
+    /**
+     * Draw a select list - its plate, and as many of its rows as its box shows, with the
+     * chosen one highlighted.
+     *
+     * The rows are cut off at the plate and moved up by what the list is scrolled by, per
+     * ADR-0037, and the row height the style resolved to is left on the list so that it
+     * can say which row a point is on.
+     **/
+    void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::SelectList>& list) const;
+
+    /**
+     * Draw a text box - its plate, the line it holds, and the caret when it has the
+     * keyboard.
+     *
+     * The line is cut off at the plate and slid left when the caret would be past the far
+     * edge, so a box goes on being typed into once it is full. Whether the caret is drawn
+     * is the component's focused() flag, which Engine::focus() wrote - ADR-0040.
+     **/
+    void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::TextBox>& box) const;
+
+    /**
+     * Draw a tab bar - the strip of tabs across the top of its box, and the page the
+     * chosen tab holds under it.
+     *
+     * Only the chosen page is drawn, so nothing in the others is laid out or picked, and
+     * where each tab ended up is left on the bar for the cursor to be tested against.
+     **/
+    void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::TabBar>& bar) const;
 
     /**
      * Draw every visible container of a ui engine.
@@ -188,16 +243,11 @@ class ComponentRenderer {
         const glm::vec2& origin) const;
 
     /**
-     * How wide a toolbar's widest button is, which is what sizes a column and what a row
-     * has no use for.
+     * Draw one component into the box the walk has just written onto it - the switch on
+     * what a component is, which is what the Arranger calls back.
      **/
-    float widest(const component::Toolbar& bar) const;
-
-    /**
-     * How much room one button asks for along a strip - its icon's side when it names
-     * one, and otherwise its label's width.
-     **/
-    float extent(const component::Button& button) const;
+    void paint(v3d::render::realtime::Canvas* canvas,
+        const boost::shared_ptr<Component>& component) const;
 
     /**
      * Draw the nine images a button style names over the button's box - the four corners
@@ -210,24 +260,17 @@ class ComponentRenderer {
         const glm::vec2& min, const glm::vec2& max) const;
 
     /**
-     * Find the style a component is drawn with.
-     *
-     * A component names a style; one that names none is drawn with whichever style of
-     * that class the theme holds first, so that a theme can dress every button without
-     * every button naming it.
-     *
-     * The return type is the library's Style and not this class's, which is the struct of
-     * colours and metrics above.
-     *
-     * @param className the style class - "button", "ui"
-     * @param name what the component's style() gives, which may be empty
+     * The colours and metrics before any component's own style class is applied over
+     * them, which is what the parts of the ui with no style class of their own are drawn
+     * with - a menu panel, a toolbar strip, a label.
      **/
-    boost::shared_ptr<v3d::ui::Style> lookup(const std::string& className, const std::string_view& name) const;
+    const Dressing& base() const noexcept;
 
     Measure measure_;
     Write write_;
-    Style style_;
-    boost::shared_ptr<style::Theme> theme_;
+    style::Resolver styles_;
+    // the other half of the walk: it resolves the boxes and calls back here to fill them
+    Arranger arranger_;
 };
 
 };  // namespace v3d::ui

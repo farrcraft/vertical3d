@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "../../Component.h"
-#include "../../Navigation.h"
 #include "MenuItem.h"
 
 #include <boost/shared_ptr.hpp>
@@ -25,14 +24,6 @@ class Menu : public Component {
       * @param dispatcher the dispatcher activated menu items send their bound event to
       **/
      explicit Menu(const boost::shared_ptr<entt::dispatcher>& dispatcher);
-
-     /**
-      * Navigate changes the currently active menu item.
-      * @param Navigation direction of navigation
-      * @param wrap whether navigation can "wrap around"
-      * @return false when no navigation was possible
-      **/
-     bool navigate(Navigation direction, bool wrap);
 
     /**
         * Make the next item in the menu active.
@@ -82,11 +73,42 @@ class Menu : public Component {
     void active(int idx);
     /**
       * Activate the active item of the current menu level.
-      * A submenu item descends a level; an action item dispatches its bound event.
-      * Input item types are not implemented yet - they need the ui to capture input
-      * until the next activation, which nothing does. See docs/LuxaAudit.md.
+      *
+      * A submenu item descends a level and an action item dispatches its bound event. An
+      * input item begins capturing instead: navigation stops moving, what is fed to
+      * capture() becomes the item's value, and the item's event is sent carrying it.
+      *
+      * An activation arriving while a capture is open is what ends the capture, so this
+      * is both the verb that starts one and the verb that finishes one.
       */
     void activate();
+
+    /**
+     * Give a capture in progress its value.
+     *
+     * A key input is finished by the first value it is given - a binding is one key, so
+     * there is nothing to wait for and the event goes out here. The other input types
+     * hold what they were last given and wait for the activation that ends them, because
+     * a string or a number is built up rather than pressed.
+     *
+     * What a value means is the app's: this takes whatever it is fed and puts it on the
+     * item, which is what the item's event carries as its data. For a key input that is a
+     * key name, per api/input/Keyboard.cpp's table, because a key name is what a binding
+     * document holds.
+     *
+     * @return whether a capture took it, which is false when none is open
+     **/
+    bool capture(const v3d::event::EventData& value);
+
+    /**
+     * @return whether an input item is capturing rather than the menu navigating
+     **/
+    bool capturing() const;
+
+    /**
+     * Abandon a capture without sending anything, leaving the item's value as it was.
+     **/
+    void cancel();
 
     void addItem(boost::shared_ptr<MenuItem> item);
 
@@ -123,6 +145,10 @@ class Menu : public Component {
     int active_;  // the active item in this menu, or -1 when there is none
     boost::weak_ptr<Menu> level_;
     boost::weak_ptr<Menu> parent_;  // if this is a submenu it will have a parent menu
+    // the item being captured into, held here rather than on the level it belongs to
+    // because level_ is, and both are state of the menu as a whole rather than of one of
+    // its levels
+    boost::shared_ptr<MenuItem> capture_;
 };
 
 };  // namespace v3d::ui::component

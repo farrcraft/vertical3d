@@ -44,3 +44,10 @@ old record's status and leave the file in place.
 | [0031](0031-a-pass-draws-into-a-target-it-names.md) | Offscreen Rendering — A Pass Draws Into A Target It Names, And The Recorder Leaves It Readable | accepted | 2026-09-06 |
 | [0032](0032-the-loop-simulates-at-a-fixed-step.md) | Game Loop — The Loop Simulates At A Fixed Step And Renders At A Variable One | accepted | 2026-09-06 |
 | [0033](0033-a-consumer-selects-the-api-libraries-it-wants.md) | API Selection — A Consumer Names The Libraries It Wants, And A Manifest Expands The Closure | accepted | 2026-09-06 |
+| [0034](0034-a-component-has-children-and-a-box.md) | UI Layout — A Component Has Children, And The Draw Walk Resolves Its Box | accepted | 2026-09-06 |
+| [0035](0035-an-immediate-mode-layer-over-the-same-canvas.md) | Immediate Mode — A Second Way To Draw A UI, Onto The Same Canvas | accepted | 2026-09-06 |
+| [0036](0036-text-is-a-distinct-kind-of-quad.md) | 2D Drawing — Text Is A Distinct Kind Of Quad, And The Primitive Carries Which | accepted | 2026-09-06 |
+| [0037](0037-clipping-is-a-scissor-the-batch-carries.md) | Clipping — A Clip Rectangle Is Batch State, And The Device Scissors The Draw | accepted | 2026-09-06 |
+| [0038](0038-a-cursor-is-routed-by-the-library-that-drew-it.md) | UI Input — A Cursor Is Routed By The Library That Drew It, And A Press Dispatches A Command | accepted | 2026-09-06 |
+| [0039](0039-layout-never-reads-the-box-it-wrote.md) | UI Layout — The Walk Never Reads The Box It Wrote, And Auto Is The Room A Component Is Offered | accepted | 2026-09-07 |
+| [0040](0040-a-key-goes-to-a-focused-component.md) | UI Input — A Key Goes To A Focused Component, And A Character Is Not A Key | accepted | 2026-09-07 |

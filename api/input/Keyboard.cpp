@@ -9,6 +9,7 @@
 
 #include "../event/KeyDown.h"
 #include "../event/KeyUp.h"
+#include "../event/TextInput.h"
 
 namespace v3d::input {
 
@@ -250,6 +251,12 @@ std::string keyEvent(SDL_Keycode key) {
     case SDLK_SPACE:
         evnt = "space";
         break;
+    case SDLK_BACKSPACE:
+        evnt = "backspace";
+        break;
+    case SDLK_END:
+        evnt = "end";
+        break;
     default:
         break;
     }
@@ -262,6 +269,12 @@ bool Keyboard::handleEvent(const SDL_Event& event) {
     std::string keyName;
     bool pressed = true;
     switch (event.type) {
+    case SDL_EVENT_TEXT_INPUT:
+        // what the platform composed rather than which key moved, because the two are not
+        // the same question - ADR-0040. It is not a source event: nothing binds a command
+        // to a letter being typed
+        dispatcher_->trigger<v3d::event::TextInput>(v3d::event::TextInput(event.text.text, context_));
+        return true;
     case SDL_EVENT_KEY_DOWN:
         keyName = keyEvent(event.key.key);
         if (!state_.pressed(keyName)) {

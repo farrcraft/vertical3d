@@ -18,6 +18,7 @@ two of them say the same thing, one of them is wrong.
 | [Conventions.md](Conventions.md) | House style: file layout, namespaces, pointers, logging, and what a comment is for |
 | [RenderingPipeline.md](RenderingPipeline.md) | The realtime renderer from window to draw item, and what is not built yet |
 | [OfflineRenderers.md](OfflineRenderers.md) | talyn and moya, `api/render/offline`, and RIB |
+| [UserInterface.md](UserInterface.md) | `api/ui` — the two ways to write a ui, the box model, themes and the cursor |
 | [Editor.md](Editor.md) | `vertical3d/` — its layout, its meshes, and the records that settle it |
 | [ECSDesign.md](ECSDesign.md) | entt notes. Still mostly open questions |
 | [NewProject.md](NewProject.md) | Starting an application against the api from another repository |

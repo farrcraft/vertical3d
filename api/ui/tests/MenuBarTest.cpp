@@ -5,11 +5,17 @@
 
 #include <cstddef>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
 
 #include "../ComponentRenderer.h"
+#include "../../render/realtime/Canvas.h"
+#include "../Container.h"
+#include "../component/menu/Menu.h"
+#include "../component/menu/MenuItem.h"
+#include <entt/entt.hpp>
 #include "../component/menu/MenuBar.h"
 
 #include <boost/make_shared.hpp>
@@ -39,8 +45,8 @@ struct Fixture final {
         context(boost::make_shared<v3d::event::Context>("test")),
         bar(boost::make_shared<v3d::ui::component::MenuBar>()),
         renderer(
-            [](const std::string& text) { return static_cast<float>(text.size()) * characterWidth; },
-            [this](const std::string& text, const glm::vec2& pen, const glm::vec4&) {
+            [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+            [this](std::string_view text, const glm::vec2& pen, const glm::vec4&) {
                 Written line;
                 line.text = text;
                 line.pen = pen;
@@ -57,7 +63,7 @@ struct Fixture final {
     /**
      * An item bound to "test::<name>", or to nothing when the name is empty.
      **/
-    boost::shared_ptr<v3d::ui::component::MenuItem> item(v3d::ui::menu::ItemType type,
+    boost::shared_ptr<v3d::ui::component::MenuItem> item(v3d::ui::component::menu::ItemType type,
         const std::string& label, const std::string& name) {
         boost::shared_ptr<v3d::ui::component::MenuItem> made =
             boost::make_shared<v3d::ui::component::MenuItem>(type, label);
@@ -110,14 +116,14 @@ struct Fixture final {
  **/
 void build(Fixture* fixture) {
     boost::shared_ptr<v3d::ui::component::Menu> file = fixture->menu();
-    file->addItem(fixture->item(v3d::ui::menu::ItemType::Action, "Open", "open"));
-    file->addItem(fixture->item(v3d::ui::menu::ItemType::Check, "Grid", "grid"));
+    file->addItem(fixture->item(v3d::ui::component::menu::ItemType::Action, "Open", "open"));
+    file->addItem(fixture->item(v3d::ui::component::menu::ItemType::Check, "Grid", "grid"));
 
     boost::shared_ptr<v3d::ui::component::Menu> shading = fixture->menu();
-    shading->addItem(fixture->item(v3d::ui::menu::ItemType::Action, "Flat", "flat"));
+    shading->addItem(fixture->item(v3d::ui::component::menu::ItemType::Action, "Flat", "flat"));
 
     boost::shared_ptr<v3d::ui::component::MenuItem> deeper =
-        fixture->item(v3d::ui::menu::ItemType::Submenu, "Shading", "");
+        fixture->item(v3d::ui::component::menu::ItemType::Submenu, "Shading", "");
     boost::shared_ptr<v3d::ui::component::Menu> view = fixture->menu();
     deeper->menu(view);
     deeper->submenu(shading);

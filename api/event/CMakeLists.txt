@@ -2,6 +2,7 @@ v3d_add_api_library(event
 	"Key.h" "Key.cpp"
 	"KeyDown.h" "KeyDown.cpp"
 	"KeyUp.h" "KeyUp.cpp"
+	"TextInput.h" "TextInput.cpp"
  "WindowResize.h" "WindowResize.cpp"
  "WindowFocus.h" "WindowFocus.cpp"
  "Sound.h" "Sound.cpp"

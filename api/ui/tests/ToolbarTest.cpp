@@ -5,11 +5,14 @@
 
 #include <cstddef>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
 
 #include "../ComponentRenderer.h"
+#include "../../render/realtime/Canvas.h"
+#include <entt/entt.hpp>
 #include "../Container.h"
 #include "../component/Toolbar.h"
 #include "../component/menu/MenuBar.h"
@@ -32,8 +35,8 @@ struct Fixture final {
         dispatcher(boost::make_shared<entt::dispatcher>()),
         context(boost::make_shared<v3d::event::Context>("test")),
         renderer(
-            [](const std::string& text) { return static_cast<float>(text.size()) * characterWidth; },
-            [](const std::string&, const glm::vec2&, const glm::vec4&) {}) {
+            [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+            [](std::string_view, const glm::vec2&, const glm::vec4&) {}) {
         dispatcher->sink<v3d::event::Event>().connect<&Fixture::receive>(*this);
         canvas.resize(800, 600);
     }
@@ -93,7 +96,7 @@ BOOST_AUTO_TEST_CASE(toolbar_row_layout) {
     Fixture fixture;
     boost::shared_ptr<v3d::ui::component::Toolbar> bar =
         fixture.bar(v3d::ui::component::Toolbar::Edge::Top);
-    const v3d::ui::ComponentRenderer::Style& style = fixture.renderer.style();
+    const v3d::ui::Dressing& style = fixture.renderer.dressing();
 
     fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0f, 30.0f));
 
@@ -120,7 +123,7 @@ BOOST_AUTO_TEST_CASE(toolbar_column_layout) {
     Fixture fixture;
     boost::shared_ptr<v3d::ui::component::Toolbar> bar =
         fixture.bar(v3d::ui::component::Toolbar::Edge::Left);
-    const v3d::ui::ComponentRenderer::Style& style = fixture.renderer.style();
+    const v3d::ui::Dressing& style = fixture.renderer.dressing();
 
     fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0f, 30.0f));
 
@@ -227,7 +230,7 @@ BOOST_AUTO_TEST_CASE(toolbar_marks_by_command) {
  **/
 BOOST_AUTO_TEST_CASE(toolbar_insets_match_what_is_drawn) {
     Fixture fixture;
-    const v3d::ui::ComponentRenderer::Style& style = fixture.renderer.style();
+    const v3d::ui::Dressing& style = fixture.renderer.dressing();
 
     boost::shared_ptr<v3d::ui::component::MenuBar> menu =
         boost::make_shared<v3d::ui::component::MenuBar>();
@@ -255,4 +258,38 @@ BOOST_AUTO_TEST_CASE(toolbar_insets_match_what_is_drawn) {
     BOOST_TEST(column.position().x == 0.0f);
     BOOST_TEST(column.position().y == band * 2.0f);
     BOOST_TEST(column.size().x + 1.0f == insets.x);
+}
+
+/**
+ * Two left strips stand side by side rather than on top of each other, on the first frame as
+ * well as the ones after it.
+ *
+ * The draw used to advance past a column by the box the strip was last drawn in, which is
+ * nothing until it has been drawn once - so on the first frame both strips were placed at the
+ * left edge, and insets() disagreed because it advanced by what the strip would be drawn at.
+ * One implementation of the rule is what makes the two agree.
+ **/
+BOOST_AUTO_TEST_CASE(toolbar_two_columns_stand_side_by_side_on_the_first_frame) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::Toolbar> first =
+        fixture.bar(v3d::ui::component::Toolbar::Edge::Left);
+    const boost::shared_ptr<v3d::ui::component::Toolbar> second =
+        fixture.bar(v3d::ui::component::Toolbar::Edge::Left);
+
+    v3d::ui::Container container("editor", true);
+    container.add(first);
+    container.add(second);
+
+    // what an app is told is left to it, before anything has been drawn
+    const float reserved = fixture.renderer.insets(container).x;
+
+    fixture.renderer.draw(&fixture.canvas, container);
+
+    // through the base, because a strip's own size() is its button count
+    const v3d::ui::Component& left = *first;
+    const v3d::ui::Component& right = *second;
+    BOOST_TEST(left.position().x == 0.0f);
+    BOOST_TEST(right.position().x == left.size().x + 1.0f);
+    // and the two together take exactly what the app was told they would
+    BOOST_TEST(right.position().x + right.size().x + 1.0f == reserved);
 }

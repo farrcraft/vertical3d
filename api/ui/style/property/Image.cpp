@@ -7,7 +7,7 @@
 
 #include <string>
 
-namespace v3d::ui::style::prop {
+namespace v3d::ui::style::property {
 
 Image::Image(const std::string& name, const std::string& src) : Property(name), source_(src) {
 }
@@ -27,4 +27,4 @@ std::string_view Image::source() const {
     return source_;
 }
 
-};  // namespace v3d::ui::style::prop
+};  // namespace v3d::ui::style::property

@@ -29,6 +29,7 @@ is SDL3.
 | Style, and what a comment is for | [docs/Conventions.md](docs/Conventions.md) |
 | `api/render/realtime` | [docs/RenderingPipeline.md](docs/RenderingPipeline.md) |
 | `talyn`, `moya`, `api/render/offline`, RIB | [docs/OfflineRenderers.md](docs/OfflineRenderers.md) |
+| `api/ui` | [docs/UserInterface.md](docs/UserInterface.md) |
 | `vertical3d/`, `api/brep` | [docs/Editor.md](docs/Editor.md) |
 | Why something is shaped as it is | [docs/adr/](docs/adr/), indexed in its README |
 | What is planned, and what is loose | [docs/plans/](docs/plans/), [docs/TODO.md](docs/TODO.md) |

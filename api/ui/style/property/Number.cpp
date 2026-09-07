@@ -7,7 +7,7 @@
 
 #include <string>
 
-namespace v3d::ui::style::prop {
+namespace v3d::ui::style::property {
 
 Number::Number(const std::string& name, float value) : Property(name), value_(value) {
 }
@@ -23,4 +23,4 @@ void Number::value(float v) noexcept {
     value_ = v;
 }
 
-};  // namespace v3d::ui::style::prop
+};  // namespace v3d::ui::style::property

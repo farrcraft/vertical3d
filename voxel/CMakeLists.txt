@@ -17,7 +17,6 @@ add_executable(voxel
 	"src/voxel/Voxel.h" "src/voxel/Voxel.cxx"
 	"src/voxel/World.h" "src/voxel/World.cxx"
 	"src/Controller.h" "src/Controller.cxx"
-	"src/DebugOverlay.h" "src/DebugOverlay.cxx"
 	"src/Renderer.h" "src/Renderer.cxx"
 	"src/Scene.h" "src/Scene.cxx"
 	"src/Version.h" "src/main.cxx")

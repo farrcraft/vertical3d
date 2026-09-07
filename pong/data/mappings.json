@@ -94,6 +94,17 @@
         "context": "pong",
         "name": "toggleFS"
       }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "f3",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "pong",
+        "name": "toggleStatistics"
+      }
     }
   ]
 }

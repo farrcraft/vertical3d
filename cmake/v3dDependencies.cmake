@@ -13,17 +13,20 @@
 
 # Boost is the one package resolved whatever is selected: v3d_add_api_library links
 # Boost::headers into every api library, so no selection avoids it. The components are all
-# found in one call because that is what FindBoost does - a second call naming a different
-# component set re-searches rather than adding to the first.
-
-# Must precede find_package(Boost) - the COMPONENTS stanza reads it.
-set(Boost_USE_STATIC_LIBS ON)
-
-# Don't emit warnings if boost version is newer than the cmake FindBoost definition
-set(Boost_NO_WARN_NEW_VERSIONS ON)
-
-# CMake already comes with a module for boost - https://cmake.org/cmake/help/latest/module/FindBoost.html
-find_package(Boost 1.76.0 REQUIRED COMPONENTS filesystem json locale log program_options unit_test_framework)
+# found in one call, because a second call naming a different component set re-searches
+# rather than adding to the first.
+#
+# This resolves in config mode, not through FindBoost: vcpkg ships boost's own
+# BoostConfig.cmake and its wrapper clears Boost_NO_BOOST_CMAKE, so FindBoost delegates and
+# returns before it reads a single one of its own input variables. Boost_USE_STATIC_LIBS is
+# one of those and would do nothing here. Static or shared is the triplet's to decide, and
+# x64-windows is dynamic - see docs/Dependencies.md.
+#
+# The components are the ones the tree includes and nothing else. Naming one it does not is
+# invisible here, because this repo's manifest installs the boost metapackage and every
+# component is already present; it is a consumer resolving boost for itself that pays, and the
+# difference between this list and one that also names locale and log is 79 ports against 194.
+find_package(Boost 1.76.0 REQUIRED COMPONENTS filesystem json program_options unit_test_framework)
 
 # Resolve the named packages.
 #

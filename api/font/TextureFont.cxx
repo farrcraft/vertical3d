@@ -9,6 +9,7 @@
 #include FT_FREETYPE_H
 #include FT_STROKER_H
 #include FT_LCD_FILTER_H
+#include FT_MODULE_H
 
 #include <algorithm>
 #include <cmath>
@@ -88,10 +89,12 @@ bool TextureFont::Freetype::loadFace(const std::string& filename, float size) {
     return true;
 }
 
-TextureFont::TextureFont(const std::string& filename, float size, const boost::shared_ptr<v3d::log::Logger> & logger) :
+TextureFont::TextureFont(const std::string& filename, float size, const boost::shared_ptr<v3d::log::Logger> & logger,
+    unsigned int spread) :
     atlas_(nullptr),
     filename_(filename),
     size_(size),
+    spread_(spread),
     height_(0),
     ascender_(0),
     descender_(0),
@@ -288,15 +291,30 @@ class GlyphHandle final {
 };
 
 /**
+ * Which of freetype's render modes a run of glyphs is rasterized through.
+ *
+ * A three channel atlas is subpixel filtered and has to stay so. A single channel one is a
+ * distance field when a spread was asked for - ADR-0036 - and coverage otherwise.
+ **/
+FT_Render_Mode glyphRenderMode(unsigned int depth, bool sdf) {
+    if (depth == 3) {
+        return FT_RENDER_MODE_LCD;
+    }
+    return sdf ? FT_RENDER_MODE_SDF : FT_RENDER_MODE_NORMAL;
+}
+
+/**
  * The FT_LOAD flags one glyph is asked for under, and the lcd filter that goes with them.
  *
  * Setting the filter is part of choosing the flags rather than a step of its own: it only
  * means anything alongside FT_LOAD_TARGET_LCD.
  **/
 FT_Int32 glyphLoadFlags(FT_Library library, TextureFont::OutlineType outline, bool hinting,
-    unsigned int depth, bool lcdFiltering, const unsigned char* lcdWeights) {
+    unsigned int depth, bool lcdFiltering, const unsigned char* lcdWeights, bool sdf) {
     FT_Int32 flags = 0;
-    if (outline != TextureFont::OUTLINE_TYPE_NONE) {
+    // a distance field is built from the outline, so the load must not have rendered one
+    // to a bitmap already - the caller renders it afterwards, in the mode it wants
+    if (outline != TextureFont::OUTLINE_TYPE_NONE || sdf) {
         flags |= FT_LOAD_NO_BITMAP;
     } else {
         flags |= FT_LOAD_RENDER;
@@ -327,7 +345,7 @@ FT_Int32 glyphLoadFlags(FT_Library library, TextureFont::OutlineType outline, bo
  * caller's, which is where the face was loaded.
  **/
 bool strokeGlyph(FT_Library library, FT_Face face, TextureFont::OutlineType outline, float thickness,
-    unsigned int depth, FT_Glyph* glyph, GlyphBitmap* out,
+    FT_Render_Mode mode, FT_Glyph* glyph, GlyphBitmap* out,
     const boost::shared_ptr<v3d::log::Logger>& logger) {
     FT_Stroker raw;
     FT_Error error = FT_Stroker_New(library, &raw);
@@ -360,7 +378,7 @@ bool strokeGlyph(FT_Library library, FT_Face face, TextureFont::OutlineType outl
         return false;
     }
 
-    error = FT_Glyph_To_Bitmap(glyph, depth == 1 ? FT_RENDER_MODE_NORMAL : FT_RENDER_MODE_LCD, 0, 1);
+    error = FT_Glyph_To_Bitmap(glyph, mode, 0, 1);
     if (error != 0) {
         logger->get()->error("Error converting glyph to bitmap!");
         return false;
@@ -385,11 +403,24 @@ bool TextureFont::loadGlyphs(const wchar_t* charcodes) {
     if (!freetype_->loadFace(filename_, size_)) {
         return false;
     }
+
+    // a distance field is only meaningful in the one channel case - the three channel one
+    // is subpixel coverage, where each channel is a different sample of the same edge
+    const bool sdf = spread_ > 0 && atlas_->depth() == 1;
+    const FT_Render_Mode mode = glyphRenderMode(atlas_->depth(), sdf);
+    if (sdf) {
+        // freetype clamps this to its own 2..32, and the spread is in pixels of the size
+        // the face was loaded at, which is why the base size and the spread are chosen
+        // together
+        FT_Int property = static_cast<FT_Int>(spread_);
+        FT_Property_Set(freetype_->library_, "sdf", "spread", &property);
+    }
+
     unsigned int missed = 0;
     for (unsigned int i = 0; i < wcslen(charcodes); ++i) {
         FT_UInt glyphIndex = FT_Get_Char_Index(freetype_->face_, charcodes[i]);
         const FT_Int32 flags = glyphLoadFlags(freetype_->library_, outline_, hinting_ != 0,
-            atlas_->depth(), lcdFiltering_ != 0, lcdWeights_);
+            atlas_->depth(), lcdFiltering_ != 0, lcdWeights_, sdf);
 
         FT_Error error = FT_Load_Glyph(freetype_->face_, glyphIndex, flags);
         if (error != 0) {
@@ -404,13 +435,23 @@ bool TextureFont::loadGlyphs(const wchar_t* charcodes) {
         GlyphBitmap rendered;
         if (outline_ == OUTLINE_TYPE_NONE) {
             FT_GlyphSlot loaded = freetype_->face_->glyph;
+            // the load left an outline rather than a bitmap when a distance field was
+            // asked for, so this is where it becomes one
+            if (sdf) {
+                error = FT_Render_Glyph(loaded, mode);
+                if (error != 0) {
+                    logger_->get()->error("Error rendering glyph to a distance field!");
+                    freetype_->release();
+                    return false;
+                }
+            }
             rendered.bitmap = loaded->bitmap;
             rendered.width = loaded->bitmap.width;
             rendered.rows = loaded->bitmap.rows;
             rendered.top = loaded->bitmap_top;
             rendered.left = loaded->bitmap_left;
         } else if (!strokeGlyph(freetype_->library_, freetype_->face_, outline_, outlineThickness_,
-                atlas_->depth(), stroked.address(), &rendered, logger_)) {
+                mode, stroked.address(), &rendered, logger_)) {
             freetype_->release();
             return false;
         }
@@ -421,7 +462,6 @@ bool TextureFont::loadGlyphs(const wchar_t* charcodes) {
         glm::ivec4 region = atlas_->region(w, h);
         if (region.x < 0) {
             missed++;
-            logger_->get()->error("Texture atlas is full!");
             continue;
         }
         w = w - 1;
@@ -456,6 +496,12 @@ bool TextureFont::loadGlyphs(const wchar_t* charcodes) {
 
     generateKerning();
     freetype_->release();
+
+    if (missed > 0) {
+        logger_->get()->error("{} of {} glyphs did not fit the {}x{} atlas at size {}",
+            missed, wcslen(charcodes), atlas_->width(), atlas_->height(), size_);
+        return false;
+    }
 
     return true;
 }
@@ -494,6 +540,10 @@ float TextureFont::kerning(boost::shared_ptr<Glyph> glyph, wchar_t charcode) {
 
 float TextureFont::size() const {
     return size_;
+}
+
+unsigned int TextureFont::spread() const {
+    return spread_;
 }
 
 std::string TextureFont::filename() const {

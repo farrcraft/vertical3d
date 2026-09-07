@@ -9,6 +9,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include "../Engine.h"
+#include "../../asset/Json.h"
 #include "../GameMenu.h"
 
 #include <boost/json/parse.hpp>
@@ -39,6 +40,30 @@ const char* const document = R"({
                 { "label": "Back", "command": "showGameMenu", "context": "ui", "type": "action" }
               ]
             }
+          ]
+        }
+      ]
+    }
+  ]
+})";
+
+/**
+ * A menu whose first item captures a key and whose second is an ordinary action, which is
+ * the shape pong's Options screen has.
+ **/
+const char* const bindings = R"({
+  "themes": [ { "name": "default" } ],
+  "containers": [
+    {
+      "name": "game-menu",
+      "visible": false,
+      "components": [
+        {
+          "name": "main-menu",
+          "type": "menu",
+          "items": [
+            { "label": "Player 1 Up: ", "command": "setLeftPaddleUpKey", "context": "ui", "type": "key_input" },
+            { "label": "Resume", "command": "showGameMenu", "context": "ui", "type": "action" }
           ]
         }
       ]
@@ -182,6 +207,89 @@ BOOST_AUTO_TEST_CASE(a_missing_container_leaves_the_menu_inert) {
     BOOST_TEST(!menu.visible());
     BOOST_TEST(!menu.navigate("menuNext"));
     BOOST_TEST(suspended.empty());
+}
+
+/**
+ * Activating a key input captures rather than dispatching, and the key it is then given is
+ * the whole answer.
+ *
+ * This is what pong's four Options items could not do: activating one used to fall through
+ * a branch that did nothing, so the screen was there and inert.
+ **/
+BOOST_AUTO_TEST_CASE(a_key_input_item_captures_a_key_and_sends_it) {
+    boost::shared_ptr<v3d::ui::Engine> ui = load(bindings);
+    v3d::ui::GameMenu menu(ui, v3d::ui::GameMenu::Suspend());
+
+    menu.toggle();
+    BOOST_TEST(active(ui) == "Player 1 Up: ");
+    BOOST_TEST(!menu.capturing());
+
+    // activating it opens the capture rather than sending the command
+    BOOST_TEST(menu.navigate("selectMenu"));
+    BOOST_TEST(menu.capturing());
+
+    // and while it is open the menu does not move under it
+    BOOST_TEST(menu.navigate("menuNext"));
+    BOOST_TEST(active(ui) == "Player 1 Up: ");
+
+    // one key is the whole of a binding, so giving it closes the capture
+    BOOST_TEST(menu.capture(std::string("w")));
+    BOOST_TEST(!menu.capturing());
+
+    // the item carries what it captured, which is what its event goes out with
+    boost::shared_ptr<v3d::ui::component::Menu> component =
+        boost::dynamic_pointer_cast<v3d::ui::component::Menu>(ui->container("game-menu")->get("main-menu"));
+    boost::optional<v3d::event::EventData> value = (*component)[0]->value();
+    BOOST_REQUIRE(value);
+    BOOST_TEST(std::get<std::string>(value.get()) == "w");
+
+    // and the label shows it, which is what makes a rebinding screen readable
+    BOOST_TEST((*component)[0]->text() == "Player 1 Up: w");
+}
+
+/**
+ * Nothing takes a value when no capture is open, so a key pressed over an action item is
+ * not quietly recorded onto it.
+ **/
+BOOST_AUTO_TEST_CASE(a_capture_takes_nothing_until_it_is_open) {
+    boost::shared_ptr<v3d::ui::Engine> ui = load(bindings);
+    v3d::ui::GameMenu menu(ui, v3d::ui::GameMenu::Suspend());
+
+    // not even while the menu is down
+    BOOST_TEST(!menu.capture(std::string("w")));
+
+    menu.toggle();
+    BOOST_TEST(!menu.capture(std::string("w")));
+
+    boost::shared_ptr<v3d::ui::component::Menu> component =
+        boost::dynamic_pointer_cast<v3d::ui::component::Menu>(ui->container("game-menu")->get("main-menu"));
+    BOOST_TEST(!(*component)[0]->value());
+}
+
+/**
+ * Backing out of a capture abandons it, and leaves the menu where it was rather than
+ * leaving the level the item sits on.
+ **/
+BOOST_AUTO_TEST_CASE(a_toggle_during_a_capture_abandons_it) {
+    boost::shared_ptr<v3d::ui::Engine> ui = load(bindings);
+    v3d::ui::GameMenu menu(ui, v3d::ui::GameMenu::Suspend());
+
+    menu.toggle();
+    BOOST_TEST(menu.navigate("selectMenu"));
+    BOOST_REQUIRE(menu.capturing());
+
+    menu.toggle();
+    BOOST_TEST(!menu.capturing());
+    // the menu is still up, and nothing was captured
+    BOOST_TEST(menu.visible());
+
+    boost::shared_ptr<v3d::ui::component::Menu> component =
+        boost::dynamic_pointer_cast<v3d::ui::component::Menu>(ui->container("game-menu")->get("main-menu"));
+    BOOST_TEST(!(*component)[0]->value());
+
+    // and navigation moves again
+    BOOST_TEST(menu.navigate("menuNext"));
+    BOOST_TEST(active(ui) == "Resume");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

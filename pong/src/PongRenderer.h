@@ -14,6 +14,7 @@
 #include "../../api/render/realtime/Engine3D.h"
 #include "../../api/ui/ComponentRenderer.h"
 #include "../../api/ui/Engine.h"
+#include "../../api/ui/StatisticsOverlay.h"
 #include "../../api/ui/TextRenderer.h"
 
 #include <boost/shared_ptr.hpp>
@@ -32,7 +33,10 @@ class PongRenderer final {
     PongRenderer(const boost::shared_ptr<v3d::render::realtime::Window>& window, const boost::shared_ptr<v3d::log::Logger>& logger,
         const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry);
 
-    void draw();
+    /**
+     * @param statistics what the loop measured about the frame being drawn
+     **/
+    void draw(const v3d::ui::StatisticsOverlay::Sample& statistics);
     void resize(int width, int height);
 
     void scene(const boost::shared_ptr<PongScene>& scene);
@@ -41,6 +45,11 @@ class PongRenderer final {
      * The ui whose containers are drawn over the game, or null to draw none.
      **/
     void ui(const boost::shared_ptr<v3d::ui::Engine>& ui);
+
+    /**
+     * The frame statistics drawn over the game, for whatever shows and hides them.
+     **/
+    const boost::shared_ptr<v3d::ui::StatisticsOverlay>& statistics() const;
 
     /**
      * Wait for everything in flight, before the window the device draws to goes away.
@@ -60,5 +69,6 @@ class PongRenderer final {
     v3d::render::realtime::Engine3D engine_;
 
     boost::shared_ptr<v3d::ui::TextRenderer> text_;
+    boost::shared_ptr<v3d::ui::StatisticsOverlay> statistics_;
     boost::shared_ptr<v3d::ui::ComponentRenderer> uiRenderer_;
 };

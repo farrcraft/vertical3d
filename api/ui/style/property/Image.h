@@ -13,7 +13,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::ui::style::prop {
+namespace v3d::ui::style::property {
 
 /**
  * A style property that defines an image.
@@ -44,4 +44,4 @@ class Image : public Property {
     v3d::render::realtime::TextureHandle texture_;
 };
 
-};  // end namespace v3d::ui::style::prop
+};  // end namespace v3d::ui::style::property

@@ -10,26 +10,35 @@
 #include <string>
 #include <vector>
 
-#include "Container.h"
-#include "component/Button.h"
-#include "component/Icon.h"
-#include "component/Label.h"
-#include "component/Toolbar.h"
-#include "component/menu/Menu.h"
-#include "component/menu/MenuBar.h"
-#include "style/Theme.h"
-
-#include "../asset/Json.h"
 #include "../event/Engine.h"
 #include "../log/Logger.h"
 #include "../render/realtime/Handle.h"
 
-#include <boost/json/object.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 #include <entt/entt.hpp>
+
+namespace v3d::asset {
+class Json;
+};  // namespace v3d::asset
 
 namespace v3d::ui {
 
+class Component;
+class Container;
+
+namespace style {
+class Theme;
+};  // namespace style
+
+/**
+ * A loaded ui: the containers a config named, the themes it carried, and which of them is
+ * active.
+ *
+ * Reading the document is ui::Loader's - a loader runs once and this is asked questions for
+ * as long as the app lives, and keeping the two together put every component header and
+ * boost::json in front of every app that draws a ui.
+ **/
 class Engine {
  public:
     /**
@@ -69,6 +78,24 @@ class Engine {
     const std::vector<boost::shared_ptr<Container>>& containers() const noexcept;
 
     /**
+     * Put the keyboard on one component, taking it off whatever had it.
+     *
+     * One component at a time, and the engine is where that is decided because both
+     * routers reach it: ui::Cursor gives the focus as a press lands and ui::Keys reads it
+     * to know where a key goes. ADR-0040.
+     *
+     * @param component what to focus, or null for nothing. A component that did not ask
+     *      to be focusable is nothing, so a press on a panel takes the focus off rather
+     *      than moving it onto the panel
+     **/
+    void focus(const boost::shared_ptr<Component>& component);
+
+    /**
+     * @return the component the keyboard is on, or null
+     **/
+    boost::shared_ptr<Component> focused() const;
+
+    /**
      * Get a loaded theme by name.
      * @param name the theme name
      * @return the named theme, or null when no theme of that name was loaded
@@ -86,95 +113,33 @@ class Engine {
      **/
     bool activeTheme(const std::string_view& name);
 
- protected:
-     /**
-      * Read the themes array, and the name of the one that starts active.
-      **/
-     bool loadThemes(const boost::json::object& doc);
+    /**
+     * Resolve the images the loaded themes name, and the ones the loaded components do.
+     * @return how many handles were set
+     **/
+    std::size_t resolveThemeImages(const Resolve& resolve);
+    std::size_t resolveContainerImages(const Resolve& resolve);
+    std::size_t resolveComponentImages(const Resolve& resolve, const boost::shared_ptr<Component>& component);
 
-     /**
-      * Read one theme and the styles in it. A theme holding no styles is legal and draws
-      * in the defaults.
-      **/
-     bool loadTheme(const boost::json::object& entry);
+    /**
+     * Resolve one component's image and write the handle onto it.
+     *
+     * @param target anything with a texture(handle) setter - an icon or a button
+     * @return whether a handle was set, which naming no image is not
+     **/
+    template <typename T>
+    bool resolveIcon(const Resolve& resolve, const std::string& source, const boost::shared_ptr<T>& target);
 
-     /**
-      * Read one container and the components in it.
-      **/
-     bool loadContainer(const boost::json::object& entry);
-
-     /**
-      * Build one component from the type it names and add it to its container.
-      **/
-     bool loadComponent(const boost::json::object& entry, const boost::shared_ptr<Container>& container);
-
-     boost::shared_ptr<component::Menu> loadMenu(const boost::json::object& entry);
-     boost::shared_ptr<component::MenuBar> loadMenuBar(const boost::json::object& entry);
-     boost::shared_ptr<component::Toolbar> loadToolbar(const boost::json::object& entry);
-     boost::shared_ptr<component::Button> loadButton(const boost::json::object& entry);
-     boost::shared_ptr<component::Label> loadLabel(const boost::json::object& entry);
-     boost::shared_ptr<component::Icon> loadIcon(const boost::json::object& entry);
-
-     /**
-      * Read one style and everything in it into a theme.
-      * @return false when the style names a class it cannot be built as
-      **/
-     bool loadStyle(const boost::json::object& entry, const boost::shared_ptr<style::Theme>& theme);
-
-     /**
-      * Read the four kinds of property a style may hold - colours, numbers, fonts and
-      * images - each from its own array.
-      **/
-     bool loadProperties(const boost::json::object& entry, const boost::shared_ptr<Style>& target);
-
-     /**
-      * Build one style property as the class of the array it was written in.
-      *
-      * @param section which of the four arrays the property came out of
-      * @param propertyClass what the built property is filed under, which is the singular
-      *        of the section
-      * @return the property, or null when it does not carry what its class needs
-      **/
-     boost::shared_ptr<style::Property> loadProperty(const std::string& section,
-         const boost::json::object& property, const std::string& name, std::string* propertyClass);
-
-     /**
-      * Read what every component may carry whatever its type: where it is, how big it is,
-      * which style draws it, and whether it is drawn at all.
-      **/
-     void loadAttributes(const boost::json::object& entry, const boost::shared_ptr<Component>& component);
-
-     /**
-      * Resolve the images the loaded themes name, and the ones the loaded components do.
-      * @return how many handles were set
-      **/
-     std::size_t resolveThemeImages(const Resolve& resolve);
-     std::size_t resolveContainerImages(const Resolve& resolve);
-     std::size_t resolveComponentImages(const Resolve& resolve, const boost::shared_ptr<Component>& component);
-
-     /**
-      * Resolve one component's image and write the handle onto it.
-      *
-      * @param target anything with a texture(handle) setter - an icon or a button
-      * @return whether a handle was set, which naming no image is not
-      **/
-     template <typename T>
-     bool resolveIcon(const Resolve& resolve, const std::string& source, const boost::shared_ptr<T>& target);
-
-     /**
-      * Read the "context" and "command" pair a menu item or a toolbar button names, and
-      * resolve the context.
-      * @return the event, or one with no context when the config gave neither
-      **/
-     v3d::event::Event loadCommand(const boost::json::object& entry);
-
- private:
     boost::shared_ptr<v3d::log::Logger> logger_;
     boost::shared_ptr<v3d::event::Engine> eventEngine_;
     boost::shared_ptr<entt::dispatcher> dispatcher_;
     std::vector<boost::shared_ptr<Container>> containers_;
     std::vector<boost::shared_ptr<style::Theme>> themes_;
     boost::shared_ptr<style::Theme> activeTheme_;
+    // held rather than owned, for the reason ui::Cursor holds a press that way: the
+    // component belongs to its container, and a focus outliving one that was unloaded
+    // should not keep it alive
+    boost::weak_ptr<Component> focused_;
 };
 
 };  // namespace v3d::ui

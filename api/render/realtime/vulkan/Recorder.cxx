@@ -5,7 +5,9 @@
 
 #include "Recorder.h"
 
+#include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 
 #include "RenderTarget.h"
@@ -106,7 +108,10 @@ set(VK_NULL_HANDLE),
 vertexBuffer(VK_NULL_HANDLE),
 vertexBufferOffset(0),
 indexBuffer(VK_NULL_HANDLE),
-indexBufferOffset(0) {
+indexBufferOffset(0),
+area{},
+scissor{},
+scissorSet(false) {
 }
 
 /**
@@ -222,6 +227,10 @@ void Recorder::record(VkCommandBuffer commands, const Pass& pass, const Target& 
     pass.ordered(&ordered);
 
     Bound bound;
+    // an item that names no clip of its own draws into the whole of this, per ADR-0037
+    bound.area = area;
+    bound.scissor = area;
+    bound.scissorSet = true;
     for (const DrawItem* item : ordered) {
         record(commands, *item, resources, frameSet, &bound);
     }
@@ -236,9 +245,14 @@ void Recorder::record(VkCommandBuffer commands, const DrawItem& item, const Reso
     // records whatever it likes, so nothing about what is bound survives it
     if (item.record) {
         item.record(commands);
+        const VkRect2D area = bound->area;
         *bound = Bound();
+        // what it did to the scissor is its own business, so the next item sets one again
+        bound->area = area;
         return;
     }
+
+    scissor(commands, item, bound);
 
     const Pipeline* pipeline = resources.pipeline(item.pipeline);
     if (pipeline == nullptr || pipeline->pipeline == VK_NULL_HANDLE) {
@@ -294,6 +308,35 @@ void Recorder::record(VkCommandBuffer commands, const DrawItem& item, const Reso
     if (item.vertices > 0) {
         vkCmdDraw(commands, item.vertices, item.instances, item.firstVertex, item.firstInstance);
     }
+}
+
+/**
+ **/
+void Recorder::scissor(VkCommandBuffer commands, const DrawItem& item, Bound* bound) {
+    VkRect2D wanted = bound->area;
+    if (item.scissored) {
+        // clamped to the pass rather than trusted: an offset outside the image, or an
+        // extent running past its edge, is a validation error and not a wrong picture
+        const int32_t left = std::max(item.scissor.offset.x, bound->area.offset.x);
+        const int32_t top = std::max(item.scissor.offset.y, bound->area.offset.y);
+        const int64_t right = std::min(static_cast<int64_t>(item.scissor.offset.x) + item.scissor.extent.width,
+            static_cast<int64_t>(bound->area.offset.x) + bound->area.extent.width);
+        const int64_t bottom = std::min(static_cast<int64_t>(item.scissor.offset.y) + item.scissor.extent.height,
+            static_cast<int64_t>(bound->area.offset.y) + bound->area.extent.height);
+
+        wanted.offset.x = left;
+        wanted.offset.y = top;
+        wanted.extent.width = right > left ? static_cast<uint32_t>(right - left) : 0;
+        wanted.extent.height = bottom > top ? static_cast<uint32_t>(bottom - top) : 0;
+    }
+
+    if (bound->scissorSet && wanted.offset.x == bound->scissor.offset.x && wanted.offset.y == bound->scissor.offset.y &&
+        wanted.extent.width == bound->scissor.extent.width && wanted.extent.height == bound->scissor.extent.height) {
+        return;
+    }
+    vkCmdSetScissor(commands, 0, 1, &wanted);
+    bound->scissor = wanted;
+    bound->scissorSet = true;
 }
 
 /**

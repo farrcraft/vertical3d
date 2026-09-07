@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <map>
 #include <string>
 
 #include "Accumulator.h"
@@ -129,7 +130,37 @@ class Engine {
     Accumulator accumulator_;
     Statistics statistics_;
 
+    /**
+     * Point a command at a different key than the config bound it to.
+     *
+     * The bindings are held as one mapper named "global" that has no way to be edited in
+     * place, so this rebuilds it from the config document with the overrides applied.
+     * That keeps one code path reading a binding rather than two that could disagree, and
+     * it is why the override is remembered rather than written straight into the mapper:
+     * the next rebind rebuilds from config again and would otherwise lose this one.
+     *
+     * Only the source's name changes. Whatever context and edge the config bound the
+     * command under it keeps, so rebinding a key that fires on press does not silently
+     * start firing on release too.
+     *
+     * What is not done here is remembering it across runs. A binding lives as long as the
+     * process unless the app writes it somewhere, which engine::userPath() says where.
+     *
+     * @param command the destination the binding drives, as "context::name"
+     * @param key the source event name to bind it to, which for a keyboard binding is a
+     *        key name from api/input/Keyboard.cpp's table
+     * @return whether the bindings were rebuilt
+     **/
+    bool rebind(const std::string& command, const std::string& key);
+
  private:
+     /**
+      * Answer one event the input devices did not take - a quit, a resize, a focus
+      * change. What the engine itself does with an event, as against when it looks for
+      * one, which is eventLoop()'s.
+      **/
+     void handleEvent(const SDL_Event& event);
+
      bool registerEventMappings();
 
      /**
@@ -140,6 +171,10 @@ class Engine {
       **/
      bool readMappingSource(const boost::json::object& mapping, v3d::event::Event* event);
      bool readMappingDestination(const boost::json::object& mapping, v3d::event::Event* event);
+
+     // destination identity -> the source name it should bind to instead of the
+     // config's, applied every time the global mapper is rebuilt
+     std::map<std::string, std::string> rebindings_;
 
      std::string appPath_;
      int features_;

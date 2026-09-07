@@ -68,9 +68,9 @@ SDL video driver (windows)", which surfaces as an unhandled exception rather tha
 failure.
 
 [vcpkg-configuration.json](../vcpkg-configuration.json) matters more, and getting it wrong
-produces no clear error: **copy the `baseline` commit verbatim.** Boost is built static, so a
-baseline that has drifted from the tree's is a different boost, and the result is a link error
-a long way from its cause. Nothing checks that the two agree.
+produces no clear error: **copy the `baseline` commit verbatim.** A boost library's file name
+carries its version, so a baseline that has drifted from the tree's is a different boost, and
+the result is a link error a long way from its cause. Nothing checks that the two agree.
 
 ## 3. The CMakeLists
 
@@ -133,8 +133,10 @@ different. `find_package` creates imported targets in the directory that called 
 so nothing vertical3d resolved is visible in your scope, and naming `Boost::program_options`
 without your own `find_package(Boost)` fails with *"Target myapp links to
 Boost::program_options but the target was not found"*. Make the call after the
-`add_subdirectory`, so `Boost_USE_STATIC_LIBS` is already what the api was resolved against and
-you resolve the same boost it did.
+`add_subdirectory`, so you resolve the boost the api already did: the tree's `find_package`
+leaves `Boost_DIR` in the cache and yours then hits that same package. Nothing else about the
+tree's resolution reaches you - its variables are set in its own directory scope, which is a
+child of yours.
 
 **`v3d_add_app_data` is available to you.** A CMake function is global once defined, so both
 data helpers work in your project. This one copies your `data/` beside the executable, which is

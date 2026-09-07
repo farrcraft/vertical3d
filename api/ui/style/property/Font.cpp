@@ -7,7 +7,7 @@
 
 #include <string>
 
-namespace v3d::ui::style::prop {
+namespace v3d::ui::style::property {
 
 Font::Font(const std::string& name, const std::string& src) : Property(name), source_(src), italics_(false), bold_(false), size_(0) {
 }
@@ -51,4 +51,4 @@ void Font::size(unsigned int points) {
     size_ = points;
 }
 
-}  // namespace v3d::ui::style::prop
+}  // namespace v3d::ui::style::property

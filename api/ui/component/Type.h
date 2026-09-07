@@ -6,32 +6,33 @@
 #pragma once
 
 namespace v3d::ui::component {
+
 /**
+ * What a component is, which is what the draw walk switches on and what the loader builds.
+ *
+ * Every one of these has a loader and a draw path. A type with neither is a claim the
+ * library does not answer for, so it is not listed here until it does.
  **/
 enum class Type {
-    TYPE_UNDEFINED = 0,
-    MENU = 1,
-    MENUBAR = 2,
-    MENU_ITEM = 3,
-    POPUP_MENU = 4,
-    RADIAL_MENU = 5,
-    BUTTON = 6,
-    CHECKBOX = 7,
-    DIALOG = 8,
-    FRAME = 9,
-    HORIZONTAL_FRAME = 10,
-    VERTICAL_FRAME = 11,
-    ICON = 12,
-    INPUT_BOX = 13,
-    LABEL = 14,
-    RADIO_BUTTON = 15,
-    SCROLLBAR = 16,
-    SELECT_LIST = 17,
-    SPINNER = 18,
-    TAB_BAR = 19,
-    TAB_PAGE = 20,
-    TEXT_BOX = 21,
-    TOOLTIP = 22,
-    TOOLBAR = 23
+    Undefined,
+    Bar,
+    Button,
+    CheckBox,
+    HorizontalBox,
+    Icon,
+    Label,
+    Menu,
+    MenuBar,
+    MenuItem,
+    Panel,
+    RadioButton,
+    Scrollbar,
+    SelectList,
+    TabBar,
+    TabPage,
+    TextBox,
+    Toolbar,
+    VerticalBox
 };
+
 }  // namespace v3d::ui::component

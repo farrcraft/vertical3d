@@ -64,8 +64,22 @@ class Window final {
     boost::shared_ptr<vulkan::Surface> surface() const;
 
     /**
+     * Record a size the window has already been given.
+     *
+     * This is the answer rather than the request: the loop calls it when SDL reports a
+     * resize that has happened, so it updates what width() and height() report and does
+     * not touch the window. Asking for a size is the other verb.
      **/
     void resize(int width, int height) noexcept;
+
+    /**
+     * Ask the window to become a size, which is what restoring a remembered one needs.
+     *
+     * The recorded size is not written here. SDL answers with a resize event and the loop
+     * calls resize() with it, so a size the window manager refused or adjusted is never
+     * reported as one the window has - which it would be if this wrote both.
+     **/
+    void request(int width, int height);
 
     /**
      **/

@@ -146,5 +146,5 @@ the walkthrough. Two points about it belong here, because they are about depende
   it. A consumer clones its own.
 
 The baseline in [vcpkg-configuration.json](../vcpkg-configuration.json) has to be copied
-verbatim into the consumer's, and nothing checks that it was. Boost is static, so a drifted
-baseline shows up as a link error rather than a warning.
+verbatim into the consumer's, and nothing checks that it was. A boost library's file name
+carries its version, so a drifted baseline shows up as a link error rather than a warning.

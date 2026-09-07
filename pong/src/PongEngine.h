@@ -53,6 +53,11 @@ class PongEngine final : public v3d::engine::Engine {
     void handlePlayEvent(const v3d::event::Event& event);
     void handleUiEvent(const v3d::event::Event& event);
 
+    /**
+     * Point one of the four paddle commands at the key an Options item captured.
+     **/
+    void rebindPaddleKey(const v3d::event::Event& event);
+
     boost::shared_ptr<v3d::audio::Engine> soundEngine_;
 
     boost::shared_ptr<PongScene> scene_;

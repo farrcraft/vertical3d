@@ -13,8 +13,8 @@
 namespace {
 
 /**
- * The size the font is rasterized at. Nothing scales a glyph, so this is also the size
- * everything is drawn at.
+ * The size the ui and the scores are drawn at, which the one atlas is scaled to per
+ * ADR-0036 rather than rasterized at.
  **/
 const float fontSize = 28.0f;
 
@@ -35,10 +35,12 @@ PongRenderer::PongRenderer(const boost::shared_ptr<v3d::render::realtime::Window
     engine_(logger, assetManager, registry) {
     engine_.initialize(window);
 
-    text_ = boost::make_shared<v3d::ui::TextRenderer>(assetManager, logger, engine_.quads(), fontSize);
+    text_ = boost::make_shared<v3d::ui::TextRenderer>(assetManager, logger, engine_.quads());
 
-    uiRenderer_ = boost::make_shared<v3d::ui::ComponentRenderer>(text_->measure(), text_->write(&canvas_));
-    uiRenderer_->style().lineHeight = fontSize * 1.4f;
+    statistics_ = boost::make_shared<v3d::ui::StatisticsOverlay>(text_);
+
+    uiRenderer_ = boost::make_shared<v3d::ui::ComponentRenderer>(text_->measure(fontSize), text_->write(&canvas_, fontSize));
+    uiRenderer_->dressing().lineHeight = fontSize * 1.4f;
 }
 
 /**
@@ -51,6 +53,12 @@ void PongRenderer::scene(const boost::shared_ptr<PongScene>& scene) {
  **/
 void PongRenderer::ui(const boost::shared_ptr<v3d::ui::Engine>& ui) {
     ui_ = ui;
+}
+
+/**
+ **/
+const boost::shared_ptr<v3d::ui::StatisticsOverlay>& PongRenderer::statistics() const {
+    return statistics_;
 }
 
 /**
@@ -70,7 +78,7 @@ void PongRenderer::resize(int width, int height) {
 
 /**
  **/
-void PongRenderer::draw() {
+void PongRenderer::draw(const v3d::ui::StatisticsOverlay::Sample& statistics) {
     if (!scene_) {
         return;
     }
@@ -94,6 +102,9 @@ void PongRenderer::draw() {
     if (ui_) {
         uiRenderer_->draw(&canvas_, *ui_);
     }
+
+    // last, so the numbers sit over the menu as well as the game
+    statistics_->draw(&canvas_, statistics);
 
     boost::shared_ptr<v3d::render::realtime::Pass> pass =
         engine_.frame()->pass(v3d::render::realtime::Engine3D::colourPass);
@@ -126,8 +137,8 @@ void PongRenderer::drawScores() {
     const std::string left = boost::lexical_cast<std::string>(scene_->left().score());
     const std::string right = boost::lexical_cast<std::string>(scene_->right().score());
 
-    text_->draw(&canvas_, left, glm::vec2(width * 0.25f, height * 0.25f), scoreColour);
-    text_->draw(&canvas_, right, glm::vec2(width * 0.75f, height * 0.25f), scoreColour);
+    text_->draw(&canvas_, left, glm::vec2(width * 0.25f, height * 0.25f), scoreColour, fontSize);
+    text_->draw(&canvas_, right, glm::vec2(width * 0.75f, height * 0.25f), scoreColour, fontSize);
 }
 
 /**
