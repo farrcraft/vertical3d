@@ -49,3 +49,4 @@ old record's status and leave the file in place.
 | [0036](0036-text-is-a-distinct-kind-of-quad.md) | 2D Drawing — Text Is A Distinct Kind Of Quad, And The Primitive Carries Which | accepted | 2026-09-06 |
 | [0037](0037-clipping-is-a-scissor-the-batch-carries.md) | Clipping — A Clip Rectangle Is Batch State, And The Device Scissors The Draw | accepted | 2026-09-06 |
 | [0038](0038-a-cursor-is-routed-by-the-library-that-drew-it.md) | UI Input — A Cursor Is Routed By The Library That Drew It, And A Press Dispatches A Command | accepted | 2026-09-06 |
+| [0039](0039-layout-never-reads-the-box-it-wrote.md) | UI Layout — The Walk Never Reads The Box It Wrote, And Auto Is The Room A Component Is Offered | accepted | 2026-09-07 |

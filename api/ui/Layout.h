@@ -15,9 +15,10 @@ namespace v3d::ui {
  * How far, or how big, in one axis.
  *
  * Percent is of the parent's extent in the same axis, so a width of 50% is half as wide as
- * the box around it. Auto hands the number back to whatever asked: for a size that is the
- * component's own extent - the width of a label's text, the side of an icon - and for a
- * position it is wherever the component was last placed.
+ * the box around it. Auto hands the number back to whatever asked: for a size that is what
+ * the component makes of the axis - the width of a label's text, the side of an icon, the
+ * room it was offered when it makes nothing - and for a position it is the anchored corner
+ * itself. ADR-0039.
  **/
 class Length final {
  public:
@@ -57,6 +58,10 @@ class Length final {
  * percentage survives being resolved: a component that stored only the resolved number
  * would forget what it asked for the moment its parent changed size.
  *
+ * Nothing here reads the output. A box is worked out from the box around it and from what
+ * the component makes of itself, so the answer is the same however many times it is asked
+ * and whatever was on the screen before - ADR-0039.
+ *
  * x and y are measured from the anchored corner and grow inwards, so a bottom right
  * anchor with an x of 8 sits eight pixels in from the right edge whatever the parent's
  * width is.
@@ -78,11 +83,8 @@ struct Layout final {
      * @param parent the box the component sits in, which is the canvas for a component
      *      with no parent
      * @param own the size the component makes of itself, for an Auto extent
-     * @param placed where the component already is, for an Auto position - a box that
-     *      arranges its children writes their positions and leaves this unread
      **/
-    v3d::type::Bound2D resolve(const v3d::type::Bound2D& parent, const glm::vec2& own,
-        const glm::vec2& placed) const;
+    v3d::type::Bound2D resolve(const v3d::type::Bound2D& parent, const glm::vec2& own) const;
 
     Length x;
     Length y;

@@ -104,8 +104,9 @@ void Arranger::walk(v3d::render::realtime::Canvas* canvas, const boost::shared_p
         if (!inDrawOrder(children)) {
             sorted = v3d::ui::ordered(children);
         }
+        const v3d::type::Bound2D room = component->bound();
         for (const boost::shared_ptr<Component>& child : sorted.empty() ? children : sorted) {
-            walk(canvas, child, child->layout().resolve(component->bound(), natural(*child), child->position()), paint);
+            walk(canvas, child, child->layout().resolve(room, natural(*child, room)), paint);
         }
     }
 
@@ -116,7 +117,7 @@ void Arranger::walk(v3d::render::realtime::Canvas* canvas, const boost::shared_p
 
 /**
  **/
-glm::vec2 Arranger::natural(Component& component) const {
+glm::vec2 Arranger::natural(Component& component, const v3d::type::Bound2D& room) const {
     switch (component.type()) {
         case component::Type::Label: {
             const auto* label = dynamic_cast<const component::Label*>(&component);
@@ -170,7 +171,7 @@ glm::vec2 Arranger::natural(Component& component) const {
             }
             return glm::vec2(
                 widest + styles_.resolve(style::Resolver::Class::List, component.style()).padding,
-                component.size().y);
+                room.size().y);
         }
         case component::Type::Scrollbar: {
             // a scrollbar decides how thick it is and nothing about how long: its length
@@ -180,13 +181,13 @@ glm::vec2 Arranger::natural(Component& component) const {
                 return glm::vec2(0.0f, 0.0f);
             }
             return bar->direction() == component::Scrollbar::Direction::Vertical
-                ? glm::vec2(styles_.base().scrollbarWidth, component.size().y)
-                : glm::vec2(component.size().x, styles_.base().scrollbarWidth);
+                ? glm::vec2(styles_.base().scrollbarWidth, room.size().y)
+                : glm::vec2(room.size().x, styles_.base().scrollbarWidth);
         }
         default:
             // a panel, a bar and a box decide nothing for themselves, so an Auto extent on
-            // one is whatever it was last given
-            return component.size();
+            // one is the room it is in
+            return room.size();
     }
 }
 
@@ -198,6 +199,13 @@ void Arranger::arrange(const component::Box& box, const v3d::type::Bound2D& boun
     const glm::vec2 extent = bounds.size();
     float pen = vertical ? bounds.position().y : bounds.position().x;
 
+    // along the line the children share the room, so none of them is offered any of it: an
+    // Auto extent there is what the child makes of itself, and a child that makes nothing of
+    // itself asks for nothing. Across the line each is offered the whole of it, which is what
+    // stretch() then insists on
+    const v3d::type::Bound2D room(bounds.position(),
+        vertical ? glm::vec2(extent.x, 0.0f) : glm::vec2(0.0f, extent.y));
+
     for (const boost::shared_ptr<Component>& child : box.children()) {
         if (!child || !child->visible()) {
             // a hidden row leaves no gap behind it, which is what makes a list of however
@@ -205,7 +213,7 @@ void Arranger::arrange(const component::Box& box, const v3d::type::Bound2D& boun
             boxes->push_back(v3d::type::Bound2D(bounds.position(), glm::vec2(0.0f, 0.0f)));
             continue;
         }
-        const glm::vec2 own = natural(*child);
+        const glm::vec2 own = natural(*child, room);
         const Layout& layout = child->layout();
         glm::vec2 size(layout.width.resolve(extent.x, own.x), layout.height.resolve(extent.y, own.y));
         glm::vec2 corner;

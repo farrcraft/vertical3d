@@ -92,13 +92,19 @@ class Arranger final {
 
     /**
      * The size a component makes of itself, which is what an Auto extent resolves to - the
-     * width of a label's text, the side of an icon, the room a button's label needs. A
-     * component that decides nothing for itself asks for nothing.
+     * width of a label's text, the side of an icon, the room a button's label needs.
+     *
+     * A component that decides nothing for itself takes the room it was offered. Nothing
+     * here is answered from a box an earlier walk wrote, per ADR-0039.
      *
      * Takes the component to write on rather than to read: a list is left holding how wide
      * its widest row measured, the way the walk leaves every component holding its box.
+     *
+     * @param room what the component is being offered. A flow box offers no room along the
+     *      line it lays out, because the line is shared, so an Auto extent there is what
+     *      the component makes of itself and nothing more
      **/
-    glm::vec2 natural(Component& component) const;
+    glm::vec2 natural(Component& component, const v3d::type::Bound2D& room) const;
 
     /**
      * Where each strip of a container goes, and how much of the canvas they take between

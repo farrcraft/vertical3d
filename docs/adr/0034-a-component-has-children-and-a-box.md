@@ -89,15 +89,20 @@ and remain what the cursor is tested against.
   reaching it.
 
 ### Negative
-- **Two units resolve to nothing useful before the first frame.** A percentage of a parent that
-  has never been drawn is a percentage of zero, so the frame after a resize places a child
-  against the previous size — ADR-0019 already had this for one component and it now applies to
-  a subtree.
+- **`Auto` resolves to nothing useful before the first frame.** An `Auto` extent is the box the
+  component was last drawn in, which is nothing until it has been drawn once, and an `Auto`
+  position is wherever it already was — ADR-0019 already had this for one component and it now
+  applies to a subtree. Superseded by
+  [ADR-0039](0039-layout-never-reads-the-box-it-wrote.md), which took the last box out of
+  layout altogether. A percentage was never affected: the walk resolves top down and hands each
+  child a parent box worked out on the same frame.
 - Sorting a container by z-index happens every frame rather than on insertion, because a
   component's depth can change after it was added. It is a stable sort of a handful of
   pointers, and add order is what a container with no z-indices keeps.
 - `Auto` means two different things by axis — for a size it is the component's natural extent,
   for a position it is wherever the component was last placed — and nothing in the type says so.
+  [ADR-0039](0039-layout-never-reads-the-box-it-wrote.md) changed what the second one means and
+  not that there are two.
 
 ### Risks
 - **A component takes no press unless it is marked pickable**, which is the opposite default

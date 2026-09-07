@@ -76,19 +76,19 @@ BOOST_AUTO_TEST_CASE(an_anchor_measures_from_the_corner_it_names) {
     layout.width = v3d::ui::Length(40.0f, v3d::ui::Length::Unit::Pixels);
     layout.height = v3d::ui::Length(30.0f, v3d::ui::Length::Unit::Pixels);
 
-    v3d::type::Bound2D box = layout.resolve(parent, glm::vec2(0.0f, 0.0f), glm::vec2(0.0f, 0.0f));
+    v3d::type::Bound2D box = layout.resolve(parent, glm::vec2(0.0f, 0.0f));
     BOOST_CHECK_CLOSE(box.position().x, 10.0f, 0.001f);
     BOOST_CHECK_CLOSE(box.position().y, 20.0f, 0.001f);
 
     layout.anchor = v3d::ui::Layout::Anchor::BottomRight;
-    box = layout.resolve(parent, glm::vec2(0.0f, 0.0f), glm::vec2(0.0f, 0.0f));
+    box = layout.resolve(parent, glm::vec2(0.0f, 0.0f));
     BOOST_CHECK_CLOSE(box.position().x, 200.0f - 10.0f - 40.0f, 0.001f);
     BOOST_CHECK_CLOSE(box.position().y, 100.0f - 20.0f - 30.0f, 0.001f);
 
     layout.anchor = v3d::ui::Layout::Anchor::Centre;
     layout.x = v3d::ui::Length(0.0f, v3d::ui::Length::Unit::Pixels);
     layout.y = v3d::ui::Length(0.0f, v3d::ui::Length::Unit::Pixels);
-    box = layout.resolve(parent, glm::vec2(0.0f, 0.0f), glm::vec2(0.0f, 0.0f));
+    box = layout.resolve(parent, glm::vec2(0.0f, 0.0f));
     BOOST_CHECK_CLOSE(box.position().x, 80.0f, 0.001f);
     BOOST_CHECK_CLOSE(box.position().y, 35.0f, 0.001f);
 }

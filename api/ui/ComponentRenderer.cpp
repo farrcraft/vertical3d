@@ -204,7 +204,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const Contai
             // everything else is a box: it is laid out against the canvas, and whatever it
             // holds is laid out against it
             arranger_.walk(canvas, component,
-                component->layout().resolve(area, arranger_.natural(*component), component->position()),
+                component->layout().resolve(area, arranger_.natural(*component, area)),
                 [this](v3d::render::realtime::Canvas* target, const boost::shared_ptr<Component>& each) {
                     paint(target, each);
                 });
@@ -374,7 +374,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
 
     glm::vec2 size = box->size();
     if (size.x <= 0.0f || size.y <= 0.0f) {
-        size = arranger_.natural(*box);
+        size = arranger_.natural(*box, box->bound());
     }
     const glm::vec2 min = box->position();
     place(*box, min, size);
@@ -417,7 +417,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     }
     glm::vec2 size = list->size();
     if (size.x <= 0.0f || size.y <= 0.0f) {
-        size = arranger_.natural(*list);
+        size = arranger_.natural(*list, list->bound());
     }
     const glm::vec2 min = list->position();
     place(*list, min, size);
@@ -466,7 +466,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     }
     glm::vec2 size = bar->size();
     if (size.x <= 0.0f || size.y <= 0.0f) {
-        size = arranger_.natural(*bar);
+        size = arranger_.natural(*bar, bar->bound());
     }
     const glm::vec2 min = bar->position();
     place(*bar, min, size);

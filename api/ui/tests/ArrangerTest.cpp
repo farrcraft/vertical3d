@@ -17,6 +17,7 @@
 #include "../component/CheckBox.h"
 #include "../component/Label.h"
 #include "../component/Panel.h"
+#include "../component/Scrollbar.h"
 #include "../component/VerticalBox.h"
 #include "../style/Resolver.h"
 #include "../style/Theme.h"
@@ -70,7 +71,7 @@ BOOST_AUTO_TEST_CASE(a_tree_is_laid_out_without_being_drawn) {
 
     // no canvas, no paint
     arranger.walk(nullptr, plate,
-        plate->layout().resolve(canvasArea(400.0f, 200.0f), arranger.natural(*plate), plate->position()),
+        plate->layout().resolve(canvasArea(400.0f, 200.0f), arranger.natural(*plate, canvasArea(400.0f, 200.0f))),
         v3d::ui::Arranger::Paint());
 
     BOOST_CHECK_CLOSE(plate->position().x, 10.0f, 0.001f);
@@ -99,7 +100,7 @@ BOOST_AUTO_TEST_CASE(the_paint_is_called_once_per_component_parent_first) {
 
     std::vector<std::string> painted;
     arranger.walk(nullptr, box,
-        box->layout().resolve(canvasArea(400.0f, 200.0f), arranger.natural(*box), box->position()),
+        box->layout().resolve(canvasArea(400.0f, 200.0f), arranger.natural(*box, canvasArea(400.0f, 200.0f))),
         [&painted](v3d::render::realtime::Canvas*, const boost::shared_ptr<v3d::ui::Component>& each) {
             painted.push_back(std::string(each->name()));
         });
@@ -152,14 +153,137 @@ BOOST_AUTO_TEST_CASE(a_check_box_asks_for_room_from_its_own_class) {
     // with no theme, the base is all there is
     v3d::ui::style::Resolver bare;
     bare.base().markSize = 16.0f;
-    BOOST_CHECK_CLOSE(v3d::ui::Arranger(measure(), bare).natural(*box).x, 16.0f, 0.001f);
+    BOOST_CHECK_CLOSE(v3d::ui::Arranger(measure(), bare).natural(*box, canvasArea(400.0f, 200.0f)).x, 16.0f, 0.001f);
 
     // with one, the row is sized for the mark that will be drawn in it rather than for the
     // base - which is what a themed box laid out one way and drawn another used to do
     v3d::ui::style::Resolver styles;
     styles.base().markSize = 16.0f;
     styles.theme(theme);
-    BOOST_CHECK_CLOSE(v3d::ui::Arranger(measure(), styles).natural(*box).x, 40.0f, 0.001f);
+    BOOST_CHECK_CLOSE(v3d::ui::Arranger(measure(), styles).natural(*box, canvasArea(400.0f, 200.0f)).x, 40.0f, 0.001f);
+}
+
+/**
+ * A component that makes nothing of itself takes the room it is in, and takes it on the very
+ * first walk - nothing here is answered from a box an earlier walk wrote, per ADR-0039.
+ **/
+BOOST_AUTO_TEST_CASE(an_auto_extent_is_the_room_on_the_first_walk) {
+    v3d::ui::style::Resolver styles;
+    const v3d::ui::Arranger arranger(measure(), styles);
+
+    const boost::shared_ptr<v3d::ui::component::Panel> plate =
+        boost::make_shared<v3d::ui::component::Panel>();
+
+    arranger.walk(nullptr, plate, canvasArea(400.0f, 200.0f), v3d::ui::Arranger::Paint());
+
+    BOOST_CHECK_CLOSE(plate->size().x, 400.0f, 0.001f);
+    BOOST_CHECK_CLOSE(plate->size().y, 200.0f, 0.001f);
+}
+
+/**
+ * A component that names neither x nor y sits at the corner it is anchored to, which is its
+ * parent's rather than the canvas's - so a child of a panel away from the origin is inside
+ * that panel. ADR-0039.
+ **/
+BOOST_AUTO_TEST_CASE(an_auto_position_is_the_corner_of_the_parent) {
+    v3d::ui::style::Resolver styles;
+    const v3d::ui::Arranger arranger(measure(), styles);
+
+    const boost::shared_ptr<v3d::ui::component::Panel> plate =
+        boost::make_shared<v3d::ui::component::Panel>();
+    plate->layout().x = v3d::ui::Length(100.0f, v3d::ui::Length::Unit::Pixels);
+    plate->layout().y = v3d::ui::Length(50.0f, v3d::ui::Length::Unit::Pixels);
+    plate->layout().width = v3d::ui::Length(200.0f, v3d::ui::Length::Unit::Pixels);
+    plate->layout().height = v3d::ui::Length(100.0f, v3d::ui::Length::Unit::Pixels);
+
+    const boost::shared_ptr<v3d::ui::component::Label> inner = label("inner", "abc");
+    plate->add(inner);
+
+    arranger.walk(nullptr, plate,
+        plate->layout().resolve(canvasArea(400.0f, 200.0f), arranger.natural(*plate, canvasArea(400.0f, 200.0f))),
+        v3d::ui::Arranger::Paint());
+
+    BOOST_CHECK_CLOSE(inner->position().x, 100.0f, 0.001f);
+    BOOST_CHECK_CLOSE(inner->position().y, 50.0f, 0.001f);
+}
+
+/**
+ * A scrollbar decides how thick it is and nothing about how long, so its Auto length is the
+ * box it runs down, and it is that on the first walk.
+ **/
+BOOST_AUTO_TEST_CASE(a_scrollbar_is_as_long_as_the_box_it_runs_down) {
+    v3d::ui::style::Resolver styles;
+    styles.base().scrollbarWidth = 12.0f;
+    const v3d::ui::Arranger arranger(measure(), styles);
+
+    const boost::shared_ptr<v3d::ui::component::Panel> plate =
+        boost::make_shared<v3d::ui::component::Panel>();
+    const boost::shared_ptr<v3d::ui::component::Scrollbar> bar =
+        boost::make_shared<v3d::ui::component::Scrollbar>();
+    bar->layout().anchor = v3d::ui::Layout::Anchor::TopRight;
+    plate->add(bar);
+
+    arranger.walk(nullptr, plate, canvasArea(400.0f, 200.0f), v3d::ui::Arranger::Paint());
+
+    BOOST_CHECK_CLOSE(bar->size().x, 12.0f, 0.001f);
+    BOOST_CHECK_CLOSE(bar->size().y, 200.0f, 0.001f);
+}
+
+/**
+ * Along the line a flow box lays out, the children share the room, so an Auto extent there
+ * is what the child makes of itself and a panel that makes nothing of itself asks for
+ * nothing. Across the line it is offered the whole width.
+ **/
+BOOST_AUTO_TEST_CASE(an_auto_extent_along_a_flow_is_not_the_whole_line) {
+    v3d::ui::style::Resolver styles;
+    const v3d::ui::Arranger arranger(measure(), styles);
+
+    const boost::shared_ptr<v3d::ui::component::VerticalBox> column =
+        boost::make_shared<v3d::ui::component::VerticalBox>();
+    const boost::shared_ptr<v3d::ui::component::Panel> first =
+        boost::make_shared<v3d::ui::component::Panel>();
+    first->layout().height = v3d::ui::Length(30.0f, v3d::ui::Length::Unit::Pixels);
+    const boost::shared_ptr<v3d::ui::component::Panel> second =
+        boost::make_shared<v3d::ui::component::Panel>();
+    column->add(first);
+    column->add(second);
+
+    arranger.walk(nullptr, column, canvasArea(400.0f, 200.0f), v3d::ui::Arranger::Paint());
+
+    BOOST_CHECK_CLOSE(first->size().y, 30.0f, 0.001f);
+    // the second asks for nothing along the line rather than for the whole of it
+    BOOST_CHECK_SMALL(second->size().y, 0.001f);
+    BOOST_CHECK_CLOSE(second->position().y, 30.0f, 0.001f);
+    // and across it, each is offered the whole width
+    BOOST_CHECK_CLOSE(second->size().x, 400.0f, 0.001f);
+}
+
+/**
+ * The walk never reads the box a previous walk wrote, so the same tree laid out twice lands
+ * in the same place - and a tree laid out against a new canvas lands against that one
+ * rather than against the size before it. ADR-0039.
+ **/
+BOOST_AUTO_TEST_CASE(a_second_walk_lands_where_the_first_did) {
+    v3d::ui::style::Resolver styles;
+    const v3d::ui::Arranger arranger(measure(), styles);
+
+    const boost::shared_ptr<v3d::ui::component::Panel> plate =
+        boost::make_shared<v3d::ui::component::Panel>();
+    plate->layout().width = v3d::ui::Length(50.0f, v3d::ui::Length::Unit::Percent);
+    const boost::shared_ptr<v3d::ui::component::Panel> inner =
+        boost::make_shared<v3d::ui::component::Panel>();
+    plate->add(inner);
+
+    arranger.walk(nullptr, plate, canvasArea(400.0f, 200.0f), v3d::ui::Arranger::Paint());
+    const glm::vec2 once = inner->size();
+    arranger.walk(nullptr, plate, canvasArea(400.0f, 200.0f), v3d::ui::Arranger::Paint());
+
+    BOOST_CHECK_CLOSE(inner->size().x, once.x, 0.001f);
+    BOOST_CHECK_CLOSE(inner->size().y, once.y, 0.001f);
+
+    // and the frame after a resize is against the new canvas, not the one before it
+    arranger.walk(nullptr, plate, canvasArea(800.0f, 200.0f), v3d::ui::Arranger::Paint());
+    BOOST_CHECK_CLOSE(inner->size().x, 800.0f, 0.001f);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
