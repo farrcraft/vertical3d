@@ -25,6 +25,15 @@ namespace v3d::ui::style {
 class Theme;
 
 /**
+ * The style of a class a component names, or the first of that class the theme holds when
+ * it names none - so that a theme can dress every panel without every panel naming one.
+ *
+ * @return the style, or null when the theme holds none of that class
+ **/
+boost::shared_ptr<v3d::ui::Style> lookup(const boost::shared_ptr<Theme>& theme,
+    const std::string& className, const std::string_view& name);
+
+/**
  * Turns a theme into the colours and metrics a component is drawn with, once per style
  * rather than once per frame.
  *
@@ -97,6 +106,21 @@ class Resolver final {
      **/
     boost::shared_ptr<v3d::ui::Style> lookup(const std::string& className,
         const std::string_view& name) const;
+
+    /**
+     * The style class a theme names the immediate layer's colours and metrics in.
+     *
+     * Its own rather than the retained side's "ui", because the two want the same keys at
+     * different sizes: a hud is read at a glance and a tool panel is read closely, so
+     * their line heights and paddings differ by about a factor of two. One class for both
+     * means a theme cannot set either without breaking the other.
+     **/
+    static const char* const tools;
+
+    /**
+     * The style class the retained components are dressed by.
+     **/
+    static const char* const chromeClass;
 
  private:
     /**

@@ -114,8 +114,12 @@ class Immediate {
     Dressing& dressing() noexcept;
 
     /**
-     * Read a theme's "ui" style into dressing(), per ADR-0020. The same style the retained
-     * components are dressed by, so the two ways of writing a ui look like one.
+     * Read a theme's "tools" style into dressing(), per ADR-0020.
+     *
+     * Its own style class rather than the "ui" the retained components read, because the
+     * two want the same keys at different sizes: a hud is read at a glance and a tool
+     * panel is read closely, so a line height that suits one is wrong for the other. A
+     * theme dresses both, in two classes.
      **/
     void theme(const boost::shared_ptr<style::Theme>& theme);
 

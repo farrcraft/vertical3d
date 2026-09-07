@@ -10,6 +10,8 @@
 
 #include "../style/Resolver.h"
 
+#include "../Immediate.h"
+
 #include "../Style.h"
 #include "../style/Theme.h"
 #include "../style/property/Color.h"
@@ -182,6 +184,52 @@ BOOST_AUTO_TEST_CASE(a_scrollbar_does_not_take_a_bars_style) {
 
     BOOST_CHECK(resolver.resolve(Resolver::Class::Bar, "health").track == green);
     BOOST_CHECK(resolver.resolve(Resolver::Class::Scrollbar, "health").track == red);
+}
+
+/**
+ * The immediate layer reads its own style class, not the retained side's.
+ *
+ * The two want the same keys at different sizes - a hud is read at a glance and a tool panel
+ * is read closely - so a theme that set "line-height" for one used to break the other.
+ **/
+BOOST_AUTO_TEST_CASE(the_two_ways_of_writing_a_ui_read_different_classes) {
+    const boost::shared_ptr<v3d::ui::style::Theme> theme =
+        boost::make_shared<v3d::ui::style::Theme>("dark");
+    const boost::shared_ptr<v3d::ui::Style> chrome = style("default", Resolver::chromeClass);
+    metric(chrome, "line-height", 34.0f);
+    theme->addStyle(chrome);
+    const boost::shared_ptr<v3d::ui::Style> tools = style("default", Resolver::tools);
+    metric(tools, "line-height", 18.0f);
+    theme->addStyle(tools);
+
+    Resolver resolver;
+    resolver.theme(theme);
+    BOOST_CHECK_CLOSE(resolver.base().lineHeight, 34.0f, 0.001f);
+
+    v3d::ui::Immediate ui(
+        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0f; },
+        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    ui.theme(theme);
+    BOOST_CHECK_CLOSE(ui.dressing().lineHeight, 18.0f, 0.001f);
+}
+
+/**
+ * A theme naming only the retained side's class leaves the immediate layer in its own
+ * defaults, rather than dressing it in metrics meant for a hud.
+ **/
+BOOST_AUTO_TEST_CASE(a_theme_that_dresses_one_side_leaves_the_other_alone) {
+    const boost::shared_ptr<v3d::ui::style::Theme> theme =
+        boost::make_shared<v3d::ui::style::Theme>("dark");
+    const boost::shared_ptr<v3d::ui::Style> chrome = style("default", Resolver::chromeClass);
+    metric(chrome, "line-height", 34.0f);
+    theme->addStyle(chrome);
+
+    v3d::ui::Immediate ui(
+        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0f; },
+        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    const float before = ui.dressing().lineHeight;
+    ui.theme(theme);
+    BOOST_CHECK_CLOSE(ui.dressing().lineHeight, before, 0.001f);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

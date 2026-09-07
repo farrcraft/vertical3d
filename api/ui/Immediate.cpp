@@ -16,6 +16,7 @@
 #include "Painter.h"
 #include "Style.h"
 #include "component/Scrollbar.h"
+#include "style/Resolver.h"
 #include "style/Theme.h"
 
 #include "../render/realtime/Canvas.h"
@@ -193,11 +194,11 @@ void Immediate::theme(const boost::shared_ptr<style::Theme>& theme) {
     if (!theme_) {
         return;
     }
-    const std::vector<boost::shared_ptr<v3d::ui::Style>> styles = theme_->getStyleSet(std::string(), "ui");
-    if (styles.empty()) {
+    const boost::shared_ptr<v3d::ui::Style> chrome =
+        style::lookup(theme_, style::Resolver::tools, std::string_view());
+    if (!chrome) {
         return;
     }
-    const boost::shared_ptr<v3d::ui::Style>& chrome = styles.front();
 
     readColour(chrome, "panel", &dressing_.panel);
     readColour(chrome, "border", &dressing_.border);

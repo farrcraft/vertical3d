@@ -80,7 +80,15 @@ recompute — a tab bar's selected tab and a window's collapsed flag.
   separator, a scrubbable int and a progress bar exist in the tree for the first time. The
   editor, `voxel` and `odyssey` can each have a debug panel for the cost of calling for one.
 - `fillBox` and `plateBox` are the box drawing both ways share, so a rounded panel is the same
-  rounded panel whichever side drew it, and a theme's "ui" style dresses both.
+  rounded panel whichever side drew it, and a theme dresses both.
+
+  **Corrected on 2026-09-07.** Both sides did read the one "ui" style, and that was the defect
+  rather than the benefit: they read the same key names into different structs whose sensible
+  defaults differ by about a factor of two, because a hud is read at a glance and a tool panel
+  is read closely. A theme setting `line-height` for either broke the other. The layer reads a
+  "tools" class of its own as of step 13 of
+  [plans/UiConsolidation.md](../plans/UiConsolidation.md); the box drawing is still shared, which
+  is the part of this that was true.
 - The layer needs no window, no device and no font to be tested: it takes `Measure` and `Write`
   as callbacks like `ComponentRenderer`, so a case can drive a cursor over a button and assert
   what it answered.
