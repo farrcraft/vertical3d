@@ -82,19 +82,28 @@ A check box, a radio button, a select list and a tab bar landed on 2026-09-06 wi
 a draw path and a style class each. `Frame` went the same day rather than growing a title bar:
 `Panel` draws the box it would have drawn, and nothing wanted the rest of it.
 
+A text box landed on 2026-09-07 with the focus and the key routing it needed -
+[ADR-0040](adr/0040-a-key-goes-to-a-focused-component.md) - so every type in `component::Type`
+has a loader and a draw path again. Layout stopped reading the box a previous walk wrote the
+same day, [ADR-0039](adr/0039-layout-never-reads-the-box-it-wrote.md), and a button in a tree
+now lights up under the cursor rather than only one on a strip.
+
 [plans/completed/UiConsolidation.md](plans/completed/UiConsolidation.md) closed on 2026-09-07,
 taking up what an architecture review found. What it declined is below: joining a scrollbar to a
 select list still waits for an app to ask, and hover being a frame late is the mechanism that
 lets a window take the cursor from one under it. [UserInterface.md](UserInterface.md) is now
 what owns this library.
 
-[] there is no text box, and it is the one missing component that needs something the library does not have: a key goes to the app's input engine and nothing routes one to a focused component. `TextBox`, `Dialog`, `Spinner`, `ToolTip`, `PopupMenu` and `RadialMenu` were empty declarations with no loader and no draw path until 2026-09-06, when they went - `git show 0f8daca^:api/ui/component/<name>.h` brings one back
 [] a select list scrolls itself and a scrollbar scrolls nothing, so putting the two side by side is the app's arithmetic. It is one component - the bar reading the list's content and offset - and no app has asked for it
 [] voxel's F3 readout is the only thing driving `ui::Immediate` as of 2026-09-07. The editor's four viewports and odyssey's turn state are each a debug window waiting to be asked for, and a game that owns the mouse has no cursor to give the layer, so voxel's window cannot be folded or scrolled
 [] a widget in `Immediate` is hovered a frame after it is drawn, so the first frame of a window that appears under the cursor answers nothing
 [] adding a component means editing five places - `component::Type`, `ui::Loader`'s branch, `ComponentRenderer::paint`, `Arranger::natural` and `ui::Cursor`'s - and the compiler checks none of them against the others. Making `natural()` virtual on `Component` was weighed and left: it removes one of the five rather than the problem. Splitting the renderer moved two of them into their own files and did not reduce the count
-[] a percentage of a parent that has not been drawn is a percentage of zero, so the frame after a resize places a child against the previous size
-[] a clip is a scissor, so it is axis aligned and square: a panel with rounded corners clips to the box and not to the curve, and `LineCanvas` carries no clip at all
+[] a clip is a scissor, so it is axis aligned and square: a panel with rounded corners clips to the box and not to the curve
+[] the focus moves by press and by press alone, so there is no tab order and a form cannot be filled in without the mouse
+[] a caret cannot be placed by clicking: a press focuses a text box and leaves the caret where it was. `ui::Cursor` names no text, so finding the character under a point would mean giving it the `Measure` callback - a change to what a cursor is rather than an addition to it
+[] there is no selection in a text box, so no cut, copy or paste over a range. `TextBox::insert()` takes a run of characters, so a paste is expressible the moment something delivers one
+[] `SDL_StartTextInput` is on for the life of the window rather than for as long as something is focused, which is free on a desktop and would raise an on screen keyboard and never lower it anywhere else
+[] nothing draws into a `LineCanvas` clip. The mechanism landed on 2026-09-07 with the rest of ADR-0037, and the viewport panes that would want it are the editor's
 
 ## The game loop
 

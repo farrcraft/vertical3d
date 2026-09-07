@@ -154,8 +154,12 @@ described below. The quad is split across the cpu/gpu line:
 rectangle, in the coordinates being drawn in and intersected with whatever is already clipped;
 the batch carries it, `QuadRenderer` puts it on the `DrawItem`, and the recorder sets a dynamic
 scissor per item and puts the pass's own region back for an item that names none. Nothing is
-clipped on the cpu, so a quad straddling the edge is drawn whole and half of it lands. A clip
-reaches the quad primitive alone — `LineCanvas` carries none.
+clipped on the cpu, so a quad straddling the edge is drawn whole and half of it lands.
+
+`LineCanvas` clips on different terms. It cuts its stream into batches the same way, but the
+rectangle is in the pixels of the image drawn into and the modelview does not apply to it: a
+line canvas is world space, so there is no transform there that a screen rectangle could go
+through.
 
 The buffers are per frame in flight because the device may still be reading the previous
 frame's geometry. `submit` calls `Presenter::waitFrame()` before writing. That is the same
@@ -209,10 +213,11 @@ construction grid, axis decoration, wireframe display, selected-edge highlight a
 manipulators are all made of it. It splits across the cpu/gpu line the same way:
 
 - **`realtime::LineCanvas`** accumulates segments — `line`, `polyline`, `box` and `circle` over
-  a modelview stack that applies as vertices are added. There is no index stream and no
-  batching, because there is no texture to cut a batch on: a whole canvas is one draw.
+  a modelview stack that applies as vertices are added. There is no index stream, and the only
+  thing that cuts a batch is a clip changing, since there is no texture: an uncut canvas is one
+  batch and one draw.
 - **`vulkan::LineRenderer`** owns two pipelines and a vertex buffer per frame in flight.
-  `submit(canvas, pass)` uploads and adds one `DrawItem`.
+  `submit(canvas, pass)` uploads and adds one `DrawItem` per batch.
 
 Two things differ from the quad. Positions are in **world space**, and the transform is the
 camera the pass carries at set 0 rather than a projection in a push constant — lines are the

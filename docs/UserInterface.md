@@ -7,9 +7,10 @@ The decisions behind its shape are [ADR-0019](adr/0019-the-ui-is-laid-out-by-wha
 [ADR-0034](adr/0034-a-component-has-children-and-a-box.md),
 [ADR-0035](adr/0035-an-immediate-mode-layer-over-the-same-canvas.md),
 [ADR-0036](adr/0036-text-is-a-distinct-kind-of-quad.md),
-[ADR-0037](adr/0037-clipping-is-a-scissor-the-batch-carries.md) and
-[ADR-0038](adr/0038-a-cursor-is-routed-by-the-library-that-drew-it.md). Those say why; this
-says what.
+[ADR-0037](adr/0037-clipping-is-a-scissor-the-batch-carries.md),
+[ADR-0038](adr/0038-a-cursor-is-routed-by-the-library-that-drew-it.md),
+[ADR-0039](adr/0039-layout-never-reads-the-box-it-wrote.md) and
+[ADR-0040](adr/0040-a-key-goes-to-a-focused-component.md). Those say why; this says what.
 
 ## Two ways to write a ui, and which to reach for
 
@@ -42,7 +43,8 @@ ComponentRenderer   paints a component, and owns the two below
   style::Resolver   turns a theme into the Dressing a component is drawn with
 
 Immediate     the other way to write a ui - layout and paint in one pass
-Cursor        turns a point into a command
+Cursor        turns a point into a command, and moves the focus
+Keys          turns a key into an edit on whatever has the focus
 TextRenderer  one font, one atlas, and the Measure/Write pair both renderers take
 Painter.h     fillBox, strokeBox and plateBox, which both ways draw out of
 ```
@@ -96,8 +98,14 @@ Length { value, unit }   unit = Auto | Pixels | Percent
 - **Pixels** is itself.
 - **Percent** is of the parent's extent in the same axis.
 - **Auto** hands the number back to the component: for a size that is what it makes of itself
-  — the width of a label's text, the side of an icon, the room a button's label needs — and
-  for a position it is wherever it was last placed.
+  — the width of a label's text, the side of an icon, the room a button's label needs — and a
+  component that makes nothing of itself takes the room it is offered. For a position it is no
+  offset at all, so the component sits at the corner it is anchored to.
+
+Nothing in layout reads a box a previous walk wrote —
+[ADR-0039](adr/0039-layout-never-reads-the-box-it-wrote.md). A tree laid out twice lands in the
+same place, the first frame is the same as the tenth, and a resize places every child against
+the new size rather than the old one.
 
 `anchor` says which corner of the parent `x` and `y` are measured from, and they always grow
 inwards, so a bottom-right anchor with an `x` of 8 sits eight pixels in from the right edge
@@ -111,7 +119,9 @@ child of a component that was skipped is unplaced too.
 
 `HorizontalBox` and `VerticalBox` arrange what they hold in a line, with a gap and an optional
 stretch across the line. A hidden child leaves no gap behind it. A z index changes nothing
-inside a flow box, because the order it holds them in is what it is for.
+inside a flow box, because the order it holds them in is what it is for. Along the line the
+children share the room, so an Auto extent there is what the child makes of itself and a panel
+that makes nothing of itself asks for nothing; across the line each is offered the whole of it.
 
 ## What a container draws, and in what order
 
@@ -141,13 +151,15 @@ Every type in `component::Type` has a loader and a draw path; there are no empty
 | `Scrollbar` | a track and a thumb | its range and offset |
 | `SelectList` | a plate and as many rows as it shows | its rows and which is chosen |
 | `TabBar`, `TabPage` | a strip of tabs and the one page chosen | which page is up |
+| `TextBox` | a plate, one line of text, and a caret when it is focused | its text and its caret |
 | `HorizontalBox`, `VerticalBox` | nothing — they place what they hold | spacing and stretch |
 | `Menu`, `MenuItem`, `MenuBar` | a panel of items, or a strip that drops one | which item is active, and any capture |
 
 A component that does not own the state it shows is deliberate: a click sends a command and
 marks nothing, and whatever answers the command sets `checked()`, so the mark cannot disagree
-with what the app believes. A `SelectList` and a `TabBar` are the exceptions, because which
-row is chosen is a place in their own contents rather than a fact about the app.
+with what the app believes. A `SelectList`, a `TabBar` and a `TextBox` are the exceptions,
+because which row is chosen, which page is up and what has been half typed are places in their
+own contents rather than facts about the app.
 
 ## Themes
 
@@ -172,7 +184,7 @@ The style classes:
 |---|---|
 | `ui` | the retained components — the defaults every other class is applied over |
 | `tools` | `ui::Immediate` |
-| `panel`, `bar`, `scrollbar`, `checkbox`, `radio`, `list`, `tabs` | the component of that kind |
+| `panel`, `bar`, `scrollbar`, `checkbox`, `radio`, `list`, `tabs`, `textbox` | the component of that kind |
 | `button` | `ComponentRenderer::skin()`, chosen by button state as well as by name |
 
 `ui` and `tools` are separate on purpose: they want the same key names at about twice the
@@ -190,8 +202,38 @@ press on anything else is not consumed, so a HUD of labels over a scene leaves t
 clickable — which is why `pickable()` is false by default. A press is remembered until it comes
 up, which is what drags a scrollbar's thumb across frames.
 
+A press also moves the focus — onto what it landed on when that component asked to be
+focusable, and off whatever had it otherwise — which is what makes clicking into a box mean
+"type here". A button lights up under the cursor whether it sits on a strip or in the tree, and
+only ever the one a press would land on, so a hud of unpickable labels does not flicker as the
+cursor crosses it.
+
 Everything is tested against the boxes the last draw left, so an app that routes input before
 it draws sees a dead ui for one frame.
+
+## The keyboard
+
+`ui::Keys` is the cursor's counterpart —
+[ADR-0040](adr/0040-a-key-goes-to-a-focused-component.md). The focus lives on `ui::Engine`, one
+component at a time, and a key goes there or nowhere: a ui with nothing focused takes no key,
+so a game's movement bindings go on working until something is clicked into.
+
+Two calls, because **a character is not a key**.
+
+```
+Keys::press("backspace")   what api/input named - an operation, or a key to swallow
+Keys::text("e")            what the platform composed - utf-8, straight in at the caret
+```
+
+A key names an operation: backspace, delete, the caret moves, a return that sends the box's
+command, an escape that leaves it. A key that will arrive again as a character is taken as well
+and does nothing, so typing "w" into a box does not also walk the player forward.
+
+The characters come from `event::TextInput`, which `input::Keyboard` raises from SDL's text
+input — shift already applied, a dead key and the one after it already one character, an input
+method's several keys already however many characters it decided on.
+`realtime::Window` starts text input with the window, because SDL sends none until it is asked
+to.
 
 ## Clipping
 
@@ -203,6 +245,10 @@ from. A `SelectList` and an `Immediate` window clip themselves.
 A clip is axis aligned and square, so a panel with rounded corners clips to the box and not to
 the curve.
 
+`LineCanvas` cuts its stream the same way, on different terms: its rectangle is in the pixels
+of the image drawn into and the modelview does not apply to it, because a line canvas is world
+space and no transform there would carry a screen rectangle.
+
 ## Testing it
 
 `api/ui/tests/` needs no window, no device and no font: `Canvas` is CPU side and the text
@@ -211,17 +257,17 @@ boxes the draw left or on the primitives it emitted. [Testing.md](Testing.md) ha
 
 ## What is not built yet
 
-- **There is no text box**, and it is the one missing component that needs something the
-  library does not have: a key goes to the app's input engine and nothing routes one to a
-  focused component.
-- **A hover is the strips'.** `Toolbar` writes a hover state onto its buttons and no other
-  component has one, so a button in a tree does not light up under the cursor.
 - **A scrollbar scrolls nothing.** It is the arithmetic, and putting one beside a `SelectList`
   is still the app's.
 - **An `Immediate` widget is hovered a frame after it is drawn**, which is what lets a window
   drawn later take the cursor from one under it.
-- **A percentage of a parent that has not been drawn is a percentage of zero**, so the frame
-  after a resize places a child against the previous size.
+- **There is no tab order.** The focus moves by press and by press alone, so a form cannot be
+  filled in without the mouse.
+- **A caret cannot be placed by clicking.** A press focuses a text box and leaves the caret
+  where it was, because `ui::Cursor` names no text and would need the `Measure` callback to
+  find the character under a point.
+- **There is no selection in a text box**, so no cut, copy or paste over a range. `insert()`
+  takes a run of characters, so a paste is expressible the moment something delivers one.
 
 [TODO.md](TODO.md) carries these, and
 [plans/UiConsolidation.md](plans/UiConsolidation.md) is what closed the ones that are gone.
