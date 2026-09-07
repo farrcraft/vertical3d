@@ -57,7 +57,7 @@ struct Fixture final {
     /**
      * An item bound to "test::<name>", or to nothing when the name is empty.
      **/
-    boost::shared_ptr<v3d::ui::component::MenuItem> item(v3d::ui::menu::ItemType type,
+    boost::shared_ptr<v3d::ui::component::MenuItem> item(v3d::ui::component::menu::ItemType type,
         const std::string& label, const std::string& name) {
         boost::shared_ptr<v3d::ui::component::MenuItem> made =
             boost::make_shared<v3d::ui::component::MenuItem>(type, label);
@@ -110,14 +110,14 @@ struct Fixture final {
  **/
 void build(Fixture* fixture) {
     boost::shared_ptr<v3d::ui::component::Menu> file = fixture->menu();
-    file->addItem(fixture->item(v3d::ui::menu::ItemType::Action, "Open", "open"));
-    file->addItem(fixture->item(v3d::ui::menu::ItemType::Check, "Grid", "grid"));
+    file->addItem(fixture->item(v3d::ui::component::menu::ItemType::Action, "Open", "open"));
+    file->addItem(fixture->item(v3d::ui::component::menu::ItemType::Check, "Grid", "grid"));
 
     boost::shared_ptr<v3d::ui::component::Menu> shading = fixture->menu();
-    shading->addItem(fixture->item(v3d::ui::menu::ItemType::Action, "Flat", "flat"));
+    shading->addItem(fixture->item(v3d::ui::component::menu::ItemType::Action, "Flat", "flat"));
 
     boost::shared_ptr<v3d::ui::component::MenuItem> deeper =
-        fixture->item(v3d::ui::menu::ItemType::Submenu, "Shading", "");
+        fixture->item(v3d::ui::component::menu::ItemType::Submenu, "Shading", "");
     boost::shared_ptr<v3d::ui::component::Menu> view = fixture->menu();
     deeper->menu(view);
     deeper->submenu(shading);

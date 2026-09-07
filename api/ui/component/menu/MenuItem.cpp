@@ -13,7 +13,7 @@
 namespace v3d::ui::component {
 
 MenuItem::MenuItem(menu::ItemType type, const std::string& label) :
-    Component(component::Type::MENU_ITEM),
+    Component(component::Type::MenuItem),
     label_(label), type_(type), checked_(false), hasValue_(false) {
 }
 

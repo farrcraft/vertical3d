@@ -10,7 +10,7 @@
 namespace v3d::ui::component {
 
 Bar::Bar() :
-    Component(Type::BAR),
+    Component(Type::Bar),
     fraction_(0.0f),
     direction_(Direction::Horizontal) {
 }

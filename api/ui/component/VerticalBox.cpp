@@ -8,7 +8,7 @@
 namespace v3d::ui::component {
 
 VerticalBox::VerticalBox() :
-    Box(Type::VERTICAL_FRAME) {
+    Box(Type::VerticalBox) {
 }
 
 };  // namespace v3d::ui::component

@@ -79,9 +79,12 @@ class Immediate {
     /**
      * The colours and metrics the layer draws with. What a theme's "ui" style does not
      * name keeps the value here, so a theme carrying nothing changes nothing.
+     *
+     * Not a Style, which is the bag of properties a theme holds. This is what one resolves
+     * to.
      **/
-    struct Style final {
-        Style() noexcept;
+    struct Dressing final {
+        Dressing() noexcept;
 
         float lineHeight;      /**< the height of one row of text **/
         float padding;         /**< the gap between a widget's edge and the text in it **/
@@ -113,10 +116,10 @@ class Immediate {
     /**
      * @return the colours and metrics, to be changed in place
      **/
-    Style& style() noexcept;
+    Dressing& dressing() noexcept;
 
     /**
-     * Read a theme's "ui" style into style(), per ADR-0020. The same style the retained
+     * Read a theme's "ui" style into dressing(), per ADR-0020. The same style the retained
      * components are dressed by, so the two ways of writing a ui look like one.
      **/
     void theme(const boost::shared_ptr<style::Theme>& theme);
@@ -384,7 +387,7 @@ class Immediate {
  private:
     Measure measure_;
     Write write_;
-    Style style_;
+    Dressing dressing_;
     boost::shared_ptr<style::Theme> theme_;
 
     v3d::render::realtime::Canvas* canvas_;

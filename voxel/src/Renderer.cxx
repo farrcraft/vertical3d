@@ -122,7 +122,7 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
     debugOverlay_ = boost::make_shared<DebugOverlay>(scene_);
 
     uiRenderer_ = boost::make_shared<v3d::ui::ComponentRenderer>(text_->measure(fontSize), text_->write(&canvas_, fontSize));
-    uiRenderer_->style().lineHeight = fontSize * 1.4f;
+    uiRenderer_->dressing().lineHeight = fontSize * 1.4f;
 }
 
 /**

@@ -14,24 +14,24 @@ namespace v3d::ui::component {
  * library does not answer for, so it is not listed here until it does.
  **/
 enum class Type {
-    TYPE_UNDEFINED,
-    MENU,
-    MENUBAR,
-    MENU_ITEM,
-    BUTTON,
-    CHECKBOX,
-    HORIZONTAL_FRAME,
-    VERTICAL_FRAME,
-    ICON,
-    LABEL,
-    RADIO_BUTTON,
-    SCROLLBAR,
-    SELECT_LIST,
-    TAB_BAR,
-    TAB_PAGE,
-    TOOLBAR,
-    PANEL,
-    BAR
+    Undefined,
+    Bar,
+    Button,
+    CheckBox,
+    HorizontalBox,
+    Icon,
+    Label,
+    Menu,
+    MenuBar,
+    MenuItem,
+    Panel,
+    RadioButton,
+    Scrollbar,
+    SelectList,
+    TabBar,
+    TabPage,
+    Toolbar,
+    VerticalBox
 };
 
 }  // namespace v3d::ui::component

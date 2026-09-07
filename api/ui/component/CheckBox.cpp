@@ -10,7 +10,7 @@
 namespace v3d::ui::component {
 
 CheckBox::CheckBox() :
-    Component(Type::CHECKBOX),
+    Component(Type::CheckBox),
     checked_(false) {
 }
 

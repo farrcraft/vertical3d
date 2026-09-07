@@ -16,7 +16,7 @@ namespace v3d::ui::component {
 const int TabBar::none;
 
 TabBar::TabBar() :
-    Component(Type::TAB_BAR),
+    Component(Type::TabBar),
     selected_(0) {
 }
 

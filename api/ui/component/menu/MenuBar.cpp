@@ -15,7 +15,7 @@ namespace v3d::ui::component {
 
 /**
  **/
-MenuBar::MenuBar() : Component(component::Type::MENUBAR), hover_(-1), open_(-1) {
+MenuBar::MenuBar() : Component(component::Type::MenuBar), hover_(-1), open_(-1) {
 }
 
 /**

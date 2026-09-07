@@ -9,7 +9,7 @@
 
 #include "../Property.h"
 
-namespace v3d::ui::style::prop {
+namespace v3d::ui::style::property {
 
 /**
  * A style property that defines a font.
@@ -38,4 +38,4 @@ class Font : public Property {
     unsigned int size_;
 };
 
-};  // end namespace v3d::ui::style::prop
+};  // end namespace v3d::ui::style::property

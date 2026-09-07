@@ -62,8 +62,8 @@ void readColour(const boost::shared_ptr<Style>& target, const std::string& name,
     if (!target) {
         return;
     }
-    const boost::shared_ptr<style::prop::Color> property =
-        boost::dynamic_pointer_cast<style::prop::Color>(target->property(name, "color"));
+    const boost::shared_ptr<style::property::Color> property =
+        boost::dynamic_pointer_cast<style::property::Color>(target->property(name, "color"));
     if (property) {
         *into = property->value();
     }
@@ -73,8 +73,8 @@ void readMetric(const boost::shared_ptr<Style>& target, const std::string& name,
     if (!target) {
         return;
     }
-    const boost::shared_ptr<style::prop::Number> property =
-        boost::dynamic_pointer_cast<style::prop::Number>(target->property(name, "number"));
+    const boost::shared_ptr<style::property::Number> property =
+        boost::dynamic_pointer_cast<style::property::Number>(target->property(name, "number"));
     if (property) {
         *into = property->value();
     }

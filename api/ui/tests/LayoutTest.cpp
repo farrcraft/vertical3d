@@ -148,7 +148,7 @@ BOOST_AUTO_TEST_CASE(a_vertical_box_stacks_what_it_holds) {
     v3d::ui::ComponentRenderer renderer = build();
     renderer.draw(&canvas, container);
 
-    const float rowHeight = renderer.style().lineHeight;
+    const float rowHeight = renderer.dressing().lineHeight;
     for (int index = 0; index < 3; index++) {
         const boost::shared_ptr<v3d::ui::Component> row = container.get("row" + std::to_string(index));
         BOOST_REQUIRE(row);
@@ -184,7 +184,7 @@ BOOST_AUTO_TEST_CASE(a_hidden_row_closes_the_gap_behind_it) {
     v3d::ui::ComponentRenderer renderer = build();
     renderer.draw(&canvas, container);
 
-    BOOST_CHECK_CLOSE(last->position().y, first->position().y + renderer.style().lineHeight, 0.001f);
+    BOOST_CHECK_CLOSE(last->position().y, first->position().y + renderer.dressing().lineHeight, 0.001f);
 }
 
 /**
@@ -319,12 +319,12 @@ BOOST_AUTO_TEST_CASE(a_rounded_panel_is_bands_and_wedges_in_one_batch) {
     v3d::ui::Container container("hud", true);
     container.add(plate);
     v3d::ui::ComponentRenderer renderer = build();
-    renderer.style().borderWidth = 0.0f;
+    renderer.dressing().borderWidth = 0.0f;
 
     renderer.draw(&canvas, container);
     BOOST_CHECK_EQUAL(canvas.indices().size(), 6U);
 
-    renderer.style().radius = 6.0f;
+    renderer.dressing().radius = 6.0f;
     canvas.clear();
     renderer.draw(&canvas, container);
     // three quads and four six segment wedges

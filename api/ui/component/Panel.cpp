@@ -8,7 +8,7 @@
 namespace v3d::ui::component {
 
 Panel::Panel() :
-    Component(Type::PANEL) {
+    Component(Type::Panel) {
 }
 
 };  // namespace v3d::ui::component

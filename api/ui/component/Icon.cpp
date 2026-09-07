@@ -9,7 +9,7 @@
 
 namespace v3d::ui::component {
 
-Icon::Icon(const std::string& source) : Component(component::Type::ICON), source_(source) {
+Icon::Icon(const std::string& source) : Component(component::Type::Icon), source_(source) {
 }
 
 Icon::~Icon() {

@@ -406,7 +406,7 @@ boost::shared_ptr<style::Property> Engine::loadProperty(const std::string& secti
     const boost::json::object& property, const std::string& name, std::string* propertyClass) {
     if (section == "colors") {
         *propertyClass = "color";
-        return boost::make_shared<style::prop::Color>(name,
+        return boost::make_shared<style::property::Color>(name,
             numbers<glm::vec4, 4>(property, "value", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
     }
     if (section == "numbers") {
@@ -415,11 +415,11 @@ boost::shared_ptr<style::Property> Engine::loadProperty(const std::string& secti
             return nullptr;
         }
         *propertyClass = "number";
-        return boost::make_shared<style::prop::Number>(name,
+        return boost::make_shared<style::property::Number>(name,
             static_cast<float>(boost::json::value_to<double>(property.at("value"))));
     }
     if (section == "fonts") {
-        boost::shared_ptr<style::prop::Font> font = boost::make_shared<style::prop::Font>(name,
+        boost::shared_ptr<style::property::Font> font = boost::make_shared<style::property::Font>(name,
             property.contains("source") ? boost::json::value_to<std::string>(property.at("source")) : std::string());
         if (property.contains("face")) {
             font->face(boost::json::value_to<std::string>(property.at("face")));
@@ -437,7 +437,7 @@ boost::shared_ptr<style::Property> Engine::loadProperty(const std::string& secti
         return nullptr;
     }
     *propertyClass = "image";
-    return boost::make_shared<style::prop::Image>(name,
+    return boost::make_shared<style::property::Image>(name,
         boost::json::value_to<std::string>(property.at("source")));
 }
 
@@ -652,8 +652,8 @@ std::size_t Engine::resolveThemeImages(const Resolve& resolve) {
     for (const boost::shared_ptr<style::Theme>& theme : themes_) {
         for (const boost::shared_ptr<Style>& target : theme->getStyleSet("", "")) {
             for (const boost::shared_ptr<style::Property>& property : target->getPropertySet("", "image")) {
-                boost::shared_ptr<style::prop::Image> image =
-                    boost::dynamic_pointer_cast<style::prop::Image>(property);
+                boost::shared_ptr<style::property::Image> image =
+                    boost::dynamic_pointer_cast<style::property::Image>(property);
                 if (!image) {
                     continue;
                 }
@@ -759,7 +759,7 @@ boost::shared_ptr<component::Menu> Engine::loadMenu(const boost::json::object& e
 
         const v3d::event::Event command = loadCommand(menuItemConfig);
 
-        boost::shared_ptr<component::MenuItem> menuItem = boost::make_shared<component::MenuItem>(menu::stringToType(itemType), label);
+        boost::shared_ptr<component::MenuItem> menuItem = boost::make_shared<component::MenuItem>(component::menu::stringToType(itemType), label);
         // the owning menu has to be set before the submenu below, which reads it to find its parent
         menuItem->menu(menu);
         if (command.context()) {
@@ -768,7 +768,7 @@ boost::shared_ptr<component::Menu> Engine::loadMenu(const boost::json::object& e
 
         menu->addItem(menuItem);
 
-        if (menuItem->type() == menu::ItemType::Submenu) {
+        if (menuItem->type() == component::menu::ItemType::Submenu) {
             boost::shared_ptr<component::Menu> submenu = loadMenu(menuItemConfig);
             if (!submenu) {  // submenu(null) would fault setting the parent
                 return nullptr;

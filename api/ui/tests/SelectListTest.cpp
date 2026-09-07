@@ -81,12 +81,12 @@ BOOST_AUTO_TEST_CASE(the_rows_are_cut_off_at_the_list) {
     container.add(saves);
     renderer.draw(&canvas, container);
 
-    BOOST_CHECK_CLOSE(saves->rowHeight(), renderer.style().lineHeight, 0.001f);
-    BOOST_CHECK_CLOSE(saves->content(), renderer.style().lineHeight * 40.0f, 0.001f);
+    BOOST_CHECK_CLOSE(saves->rowHeight(), renderer.dressing().lineHeight, 0.001f);
+    BOOST_CHECK_CLOSE(saves->content(), renderer.dressing().lineHeight * 40.0f, 0.001f);
 
     const v3d::render::realtime::Canvas::Batch& rows = canvas.batches().back();
     BOOST_REQUIRE(rows.clipped);
-    BOOST_CHECK_CLOSE(rows.clip.w, saves->position().y + 100.0f - renderer.style().borderWidth, 0.001f);
+    BOOST_CHECK_CLOSE(rows.clip.w, saves->position().y + 100.0f - renderer.dressing().borderWidth, 0.001f);
 
     // and only the rows the box has room for are written, not all forty
     BOOST_CHECK(!written.empty());
@@ -111,12 +111,12 @@ BOOST_AUTO_TEST_CASE(an_offset_starts_the_rows_further_down) {
     BOOST_CHECK_EQUAL(written.front().text, "row 0");
 
     written.clear();
-    saves->offset(renderer.style().lineHeight * 5.0f);
+    saves->offset(renderer.dressing().lineHeight * 5.0f);
     renderer.draw(&canvas, container);
 
     BOOST_REQUIRE(!written.empty());
     BOOST_CHECK_EQUAL(written.front().text, "row 5");
-    BOOST_CHECK_CLOSE(written.front().pen.y, saves->position().y + renderer.style().lineHeight * 0.7f, 0.001f);
+    BOOST_CHECK_CLOSE(written.front().pen.y, saves->position().y + renderer.dressing().lineHeight * 0.7f, 0.001f);
 }
 
 /**

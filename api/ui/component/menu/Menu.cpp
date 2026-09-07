@@ -7,7 +7,7 @@
 
 namespace v3d::ui::component {
 Menu::Menu(const boost::shared_ptr<entt::dispatcher>& dispatcher) :
-    Component(component::Type::MENU), dispatcher_(dispatcher), active_(-1) {
+    Component(component::Type::Menu), dispatcher_(dispatcher), active_(-1) {
 }
 
 /**

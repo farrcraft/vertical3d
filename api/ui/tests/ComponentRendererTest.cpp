@@ -38,7 +38,7 @@ boost::shared_ptr<v3d::ui::component::Menu> buildMenu(const std::vector<std::str
     boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
     boost::shared_ptr<v3d::ui::component::Menu> menu = boost::make_shared<v3d::ui::component::Menu>(dispatcher);
     for (const std::string& label : labels) {
-        menu->addItem(boost::make_shared<v3d::ui::component::MenuItem>(v3d::ui::menu::ItemType::Action, label));
+        menu->addItem(boost::make_shared<v3d::ui::component::MenuItem>(v3d::ui::component::menu::ItemType::Action, label));
     }
     menu->level(menu);
     menu->active(0);
@@ -104,7 +104,7 @@ BOOST_AUTO_TEST_CASE(only_the_active_item_is_drawn_highlighted) {
     renderer.draw(&canvas, menu);
 
     BOOST_REQUIRE_EQUAL(written.size(), 3);
-    const glm::vec4 active = renderer.style().activeText;
+    const glm::vec4 active = renderer.dressing().activeText;
     BOOST_CHECK(written[0].colour != active);
     BOOST_CHECK(written[1].colour == active);
     BOOST_CHECK(written[2].colour != active);
@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE(a_submenu_replaces_what_is_drawn) {
     boost::shared_ptr<v3d::ui::component::Menu> menu = buildMenu({"Options", "Quit"});
     boost::shared_ptr<v3d::ui::component::Menu> submenu = buildMenu({"Rounds", "Keys"});
     submenu->parent(menu);
-    (*menu)[0] = boost::make_shared<v3d::ui::component::MenuItem>(v3d::ui::menu::ItemType::Submenu, "Options");
+    (*menu)[0] = boost::make_shared<v3d::ui::component::MenuItem>(v3d::ui::component::menu::ItemType::Submenu, "Options");
     (*menu)[0]->submenu(submenu);
     submenu->level(submenu);
 
@@ -159,7 +159,7 @@ BOOST_AUTO_TEST_CASE(the_panel_is_sized_to_the_widest_label_and_centred) {
 
     BOOST_REQUIRE(canvas.vertices().size() >= 8);
     // vertices 4..7 are the panel, drawn over the border: min at [4], max at [6]
-    const float padding = renderer.style().padding;
+    const float padding = renderer.dressing().padding;
     const float expectedWidth = 10.0f * characterWidth + padding * 2.0f;
     const float left = canvas.vertices()[4].position.x;
     const float right = canvas.vertices()[6].position.x;

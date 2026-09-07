@@ -10,7 +10,7 @@
 namespace v3d::ui::component {
 
 TabPage::TabPage() :
-    Component(Type::TAB_PAGE) {
+    Component(Type::TabPage) {
 }
 
 void TabPage::label(const std::string& str) {

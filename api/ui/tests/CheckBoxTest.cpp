@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE(a_check_box_asks_for_its_mark_and_its_label) {
     container.add(box);
     renderer.draw(&canvas, container);
 
-    const v3d::ui::ComponentRenderer::Style& style = build(nullptr).style();
+    const v3d::ui::ComponentRenderer::Dressing& style = build(nullptr).dressing();
     BOOST_CHECK_CLOSE(box->size().x,
         style.markSize + style.padding * 0.5f + 7.0f * characterWidth, 0.001f);
     BOOST_CHECK_CLOSE(box->size().y, std::max(style.markSize, style.lineHeight), 0.001f);
@@ -140,7 +140,7 @@ BOOST_AUTO_TEST_CASE(a_radio_button_is_a_check_box_with_a_round_mark) {
     radio->group("difficulty");
     renderer.draw(&round, radio);
 
-    BOOST_CHECK(radio->type() == v3d::ui::component::Type::RADIO_BUTTON);
+    BOOST_CHECK(radio->type() == v3d::ui::component::Type::RadioButton);
     BOOST_CHECK_EQUAL(std::string(radio->group()), "difficulty");
     BOOST_CHECK(round.indices().size() != square.indices().size());
     // both stay in the one batched primitive, fans and quads together

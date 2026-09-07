@@ -7,7 +7,7 @@
 
 #include <string_view>
 
-namespace v3d::ui::menu {
+namespace v3d::ui::component::menu {
 enum class ItemType {
     Unknown,
     Action,
@@ -43,4 +43,4 @@ constexpr ItemType stringToType(const std::string_view& typeName) {
     }
     return  ItemType::Unknown;
 }
-};  // namespace v3d::ui::menu
+};  // namespace v3d::ui::component::menu

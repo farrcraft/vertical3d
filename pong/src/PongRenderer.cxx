@@ -40,7 +40,7 @@ PongRenderer::PongRenderer(const boost::shared_ptr<v3d::render::realtime::Window
     statistics_ = boost::make_shared<v3d::ui::StatisticsOverlay>(text_);
 
     uiRenderer_ = boost::make_shared<v3d::ui::ComponentRenderer>(text_->measure(fontSize), text_->write(&canvas_, fontSize));
-    uiRenderer_->style().lineHeight = fontSize * 1.4f;
+    uiRenderer_->dressing().lineHeight = fontSize * 1.4f;
 }
 
 /**

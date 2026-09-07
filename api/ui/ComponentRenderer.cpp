@@ -70,8 +70,8 @@ void place(Component& component, const glm::vec2& position, const glm::vec2& siz
  *      names no such image or nothing has resolved it
  **/
 v3d::render::realtime::TextureHandle image(const boost::shared_ptr<Style>& target, const std::string& name) {
-    boost::shared_ptr<style::prop::Image> property =
-        boost::dynamic_pointer_cast<style::prop::Image>(target->property(name, "image"));
+    boost::shared_ptr<style::property::Image> property =
+        boost::dynamic_pointer_cast<style::property::Image>(target->property(name, "image"));
     return property ? property->texture() : v3d::render::realtime::TextureHandle();
 }
 
@@ -79,7 +79,7 @@ v3d::render::realtime::TextureHandle image(const boost::shared_ptr<Style>& targe
 
 /**
  **/
-ComponentRenderer::Style::Style() noexcept :
+ComponentRenderer::Dressing::Dressing() noexcept :
 lineHeight(34.0f),
 padding(24.0f),
 barHeight(28.0f),
@@ -110,8 +110,8 @@ ComponentRenderer::ComponentRenderer(const Measure& measure, const Write& write)
 
 /**
  **/
-ComponentRenderer::Style& ComponentRenderer::style() noexcept {
-    return style_;
+ComponentRenderer::Dressing& ComponentRenderer::dressing() noexcept {
+    return dressing_;
 }
 
 /**
@@ -127,26 +127,26 @@ void ComponentRenderer::theme(const boost::shared_ptr<style::Theme>& theme) {
         return;
     }
 
-    readColour(chrome, "panel", &style_.panel);
-    readColour(chrome, "border", &style_.border);
-    readColour(chrome, "track", &style_.track);
-    readColour(chrome, "fill", &style_.fill);
-    readColour(chrome, "thumb", &style_.thumb);
-    readColour(chrome, "mark", &style_.mark);
-    readColour(chrome, "text", &style_.text);
-    readColour(chrome, "active-text", &style_.activeText);
-    readColour(chrome, "highlight", &style_.highlight);
-    readColour(chrome, "hover", &style_.hover);
+    readColour(chrome, "panel", &dressing_.panel);
+    readColour(chrome, "border", &dressing_.border);
+    readColour(chrome, "track", &dressing_.track);
+    readColour(chrome, "fill", &dressing_.fill);
+    readColour(chrome, "thumb", &dressing_.thumb);
+    readColour(chrome, "mark", &dressing_.mark);
+    readColour(chrome, "text", &dressing_.text);
+    readColour(chrome, "active-text", &dressing_.activeText);
+    readColour(chrome, "highlight", &dressing_.highlight);
+    readColour(chrome, "hover", &dressing_.hover);
 
-    readMetric(chrome, "line-height", &style_.lineHeight);
-    readMetric(chrome, "padding", &style_.padding);
-    readMetric(chrome, "bar-height", &style_.barHeight);
-    readMetric(chrome, "icon-size", &style_.iconSize);
-    readMetric(chrome, "panel-padding", &style_.panelPadding);
-    readMetric(chrome, "scrollbar-width", &style_.scrollbarWidth);
-    readMetric(chrome, "mark-size", &style_.markSize);
-    readMetric(chrome, "border-width", &style_.borderWidth);
-    readMetric(chrome, "radius", &style_.radius);
+    readMetric(chrome, "line-height", &dressing_.lineHeight);
+    readMetric(chrome, "padding", &dressing_.padding);
+    readMetric(chrome, "bar-height", &dressing_.barHeight);
+    readMetric(chrome, "icon-size", &dressing_.iconSize);
+    readMetric(chrome, "panel-padding", &dressing_.panelPadding);
+    readMetric(chrome, "scrollbar-width", &dressing_.scrollbarWidth);
+    readMetric(chrome, "mark-size", &dressing_.markSize);
+    readMetric(chrome, "border-width", &dressing_.borderWidth);
+    readMetric(chrome, "radius", &dressing_.radius);
 }
 
 /**
@@ -193,14 +193,14 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const Contai
         if (!component || !component->visible()) {
             continue;
         }
-        if (component->type() == component::Type::MENU) {
+        if (component->type() == component::Type::Menu) {
             draw(canvas, boost::dynamic_pointer_cast<component::Menu>(component));
-        } else if (component->type() == component::Type::MENUBAR) {
+        } else if (component->type() == component::Type::MenuBar) {
             // held back to the end: an open menu drops a panel over whatever the strips
             // below it occupy, so it has to be drawn after them
             bars.push_back(boost::dynamic_pointer_cast<component::MenuBar>(component));
-            taken.y += style_.barHeight + ruleWidth;
-        } else if (component->type() == component::Type::TOOLBAR) {
+            taken.y += dressing_.barHeight + ruleWidth;
+        } else if (component->type() == component::Type::Toolbar) {
             const boost::shared_ptr<component::Toolbar> bar =
                 boost::dynamic_pointer_cast<component::Toolbar>(component);
             if (!bar) {
@@ -208,7 +208,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const Contai
             }
             if (bar->edge() == component::Toolbar::Edge::Top) {
                 draw(canvas, bar, glm::vec2(0.0f, taken.y));
-                taken.y += style_.barHeight + ruleWidth;
+                taken.y += dressing_.barHeight + ruleWidth;
             } else {
                 draw(canvas, bar, glm::vec2(taken.x, taken.y));
                 taken.x += bar->bound().size().x + ruleWidth;
@@ -233,12 +233,12 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     const std::string text(label->text());
     glm::vec2 size = label->size();
     if (size.x <= 0.0f || size.y <= 0.0f) {
-        size = glm::vec2(measure_(text), style_.lineHeight);
+        size = glm::vec2(measure_(text), dressing_.lineHeight);
     }
     place(*label, label->position(), size);
 
-    const glm::vec2 pen(label->position().x, label->position().y + style_.lineHeight * 0.75f);
-    write_(text, pen, style_.text);
+    const glm::vec2 pen(label->position().x, label->position().y + dressing_.lineHeight * 0.75f);
+    write_(text, pen, dressing_.text);
 }
 
 /**
@@ -251,7 +251,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     // ui has that is not derived from a string
     glm::vec2 size = icon->size();
     if (size.x <= 0.0f || size.y <= 0.0f) {
-        size = glm::vec2(style_.barHeight, style_.barHeight);
+        size = glm::vec2(dressing_.barHeight, dressing_.barHeight);
     }
     place(*icon, icon->position(), size);
 
@@ -269,7 +269,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
 
     glm::vec2 size = button->size();
     if (size.x <= 0.0f || size.y <= 0.0f) {
-        size = glm::vec2(extent(*button) + style_.padding, style_.barHeight);
+        size = glm::vec2(extent(*button) + dressing_.padding, dressing_.barHeight);
     }
     const glm::vec2 min = button->position();
     place(*button, min, size);
@@ -278,13 +278,13 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     // what says which mask and which tool are in force
     const bool lit = button->checked() || button->state() == component::Button::STATE_HOVER;
     if (!skin(canvas, *button, min, min + size) && lit) {
-        canvas->rect(min, min + size, button->checked() ? style_.highlight : style_.hover);
+        canvas->rect(min, min + size, button->checked() ? dressing_.highlight : dressing_.hover);
     }
 
     // an icon is what the button says instead of its label, not as well as it. The label
     // stays on the component for whatever measures it before an image has been resolved
     if (button->texture().valid()) {
-        const float side = std::min(style_.iconSize, std::min(size.x, size.y));
+        const float side = std::min(dressing_.iconSize, std::min(size.x, size.y));
         const glm::vec2 corner = min + (size - glm::vec2(side, side)) * 0.5f;
         canvas->rect(corner, corner + glm::vec2(side, side),
             glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), button->texture());
@@ -292,7 +292,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     }
 
     const glm::vec2 baseline(min.x + (size.x - measure_(label)) * 0.5f, min.y + size.y * 0.7f);
-    write_(label, baseline, lit ? style_.activeText : style_.text);
+    write_(label, baseline, lit ? dressing_.activeText : dressing_.text);
 }
 
 /**
@@ -301,10 +301,10 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     if (canvas == nullptr || !panel) {
         return;
     }
-    glm::vec4 inside = style_.panel;
-    glm::vec4 outline = style_.border;
-    float width = style_.borderWidth;
-    float radius = style_.radius;
+    glm::vec4 inside = dressing_.panel;
+    glm::vec4 outline = dressing_.border;
+    float width = dressing_.borderWidth;
+    float radius = dressing_.radius;
     const boost::shared_ptr<v3d::ui::Style> dress = lookup("panel", panel->style());
     if (dress) {
         readColour(dress, "background", &inside);
@@ -322,11 +322,11 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     if (canvas == nullptr || !bar) {
         return;
     }
-    glm::vec4 empty = style_.track;
-    glm::vec4 filled = style_.fill;
-    glm::vec4 outline = style_.border;
-    float width = style_.borderWidth;
-    float radius = style_.radius;
+    glm::vec4 empty = dressing_.track;
+    glm::vec4 filled = dressing_.fill;
+    glm::vec4 outline = dressing_.border;
+    float width = dressing_.borderWidth;
+    float radius = dressing_.radius;
     const boost::shared_ptr<v3d::ui::Style> dress = lookup("bar", bar->style());
     if (dress) {
         readColour(dress, "track", &empty);
@@ -363,11 +363,11 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     if (canvas == nullptr || !bar) {
         return;
     }
-    glm::vec4 empty = style_.track;
-    glm::vec4 grip = style_.thumb;
-    glm::vec4 outline = style_.border;
-    float width = style_.borderWidth;
-    float radius = style_.radius;
+    glm::vec4 empty = dressing_.track;
+    glm::vec4 grip = dressing_.thumb;
+    glm::vec4 outline = dressing_.border;
+    float width = dressing_.borderWidth;
+    float radius = dressing_.radius;
     // a scrollbar is not a progress bar: it dresses from its own style class, so a theme
     // that paints a health bar green does not paint a scrollbar green as well
     const boost::shared_ptr<v3d::ui::Style> dress = lookup("scrollbar", bar->style());
@@ -408,7 +408,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     if (canvas == nullptr || !box) {
         return;
     }
-    const bool round = box->type() == component::Type::RADIO_BUTTON;
+    const bool round = box->type() == component::Type::RadioButton;
     const std::string text(box->label());
 
     glm::vec2 size = box->size();
@@ -418,12 +418,12 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     const glm::vec2 min = box->position();
     place(*box, min, size);
 
-    glm::vec4 inside = style_.track;
-    glm::vec4 marked = style_.mark;
-    glm::vec4 outline = style_.border;
-    glm::vec4 ink = style_.text;
-    float width = style_.borderWidth;
-    float side = std::min(style_.markSize, size.y);
+    glm::vec4 inside = dressing_.track;
+    glm::vec4 marked = dressing_.mark;
+    glm::vec4 outline = dressing_.border;
+    glm::vec4 ink = dressing_.text;
+    float width = dressing_.borderWidth;
+    float side = std::min(dressing_.markSize, size.y);
     const boost::shared_ptr<v3d::ui::Style> dress = lookup(round ? "radio" : "checkbox", box->style());
     if (dress) {
         readColour(dress, "background", &inside);
@@ -445,18 +445,18 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
             canvas->circle(centre, side * markFill * 0.5f, markSides, marked);
         }
     } else {
-        plateBox(canvas, corner, corner + glm::vec2(side, side), style_.radius, width, inside, outline);
+        plateBox(canvas, corner, corner + glm::vec2(side, side), dressing_.radius, width, inside, outline);
         if (box->checked()) {
             const float inset = side * (1.0f - markFill) * 0.5f;
             fillBox(canvas, corner + glm::vec2(inset, inset), corner + glm::vec2(side - inset, side - inset),
-                std::max(0.0f, style_.radius - width), marked);
+                std::max(0.0f, dressing_.radius - width), marked);
         }
     }
 
     if (text.empty()) {
         return;
     }
-    write_(text, glm::vec2(min.x + side + style_.padding * 0.5f, min.y + size.y * 0.7f), ink);
+    write_(text, glm::vec2(min.x + side + dressing_.padding * 0.5f, min.y + size.y * 0.7f), ink);
 }
 
 /**
@@ -472,14 +472,14 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     const glm::vec2 min = list->position();
     place(*list, min, size);
 
-    glm::vec4 inside = style_.panel;
-    glm::vec4 outline = style_.border;
-    glm::vec4 chosen = style_.highlight;
-    glm::vec4 ink = style_.text;
-    glm::vec4 chosenInk = style_.activeText;
-    float width = style_.borderWidth;
-    float radius = style_.radius;
-    float row = style_.lineHeight;
+    glm::vec4 inside = dressing_.panel;
+    glm::vec4 outline = dressing_.border;
+    glm::vec4 chosen = dressing_.highlight;
+    glm::vec4 ink = dressing_.text;
+    glm::vec4 chosenInk = dressing_.activeText;
+    float width = dressing_.borderWidth;
+    float radius = dressing_.radius;
+    float row = dressing_.lineHeight;
     const boost::shared_ptr<v3d::ui::Style> dress = lookup("list", list->style());
     if (dress) {
         readColour(dress, "background", &inside);
@@ -517,7 +517,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
         if (picked) {
             fillBox(canvas, glm::vec2(low.x, top), glm::vec2(high.x, top + row), 0.0f, chosen);
         }
-        write_(list->items()[index], glm::vec2(low.x + style_.padding * 0.5f, top + row * 0.7f),
+        write_(list->items()[index], glm::vec2(low.x + dressing_.padding * 0.5f, top + row * 0.7f),
             picked ? chosenInk : ink);
     }
 
@@ -537,14 +537,14 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     const glm::vec2 min = bar->position();
     place(*bar, min, size);
 
-    glm::vec4 inside = style_.panel;
-    glm::vec4 tab = style_.track;
-    glm::vec4 chosen = style_.highlight;
-    glm::vec4 ink = style_.text;
-    glm::vec4 chosenInk = style_.activeText;
-    glm::vec4 outline = style_.border;
-    float height = style_.barHeight;
-    float radius = style_.radius;
+    glm::vec4 inside = dressing_.panel;
+    glm::vec4 tab = dressing_.track;
+    glm::vec4 chosen = dressing_.highlight;
+    glm::vec4 ink = dressing_.text;
+    glm::vec4 chosenInk = dressing_.activeText;
+    glm::vec4 outline = dressing_.border;
+    float height = dressing_.barHeight;
+    float radius = dressing_.radius;
     const boost::shared_ptr<v3d::ui::Style> dress = lookup("tabs", bar->style());
     if (dress) {
         readColour(dress, "background", &inside);
@@ -564,16 +564,16 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     float pen = min.x;
     for (std::size_t index = 0; index < pages.size(); index++) {
         const std::string label(pages[index]->label());
-        const float width = measure_(label) + style_.padding;
+        const float width = measure_(label) + dressing_.padding;
         const glm::vec2 corner(pen, min.y);
         const glm::vec2 extent(width, height);
         boxes.push_back(v3d::type::Bound2D(corner, extent));
 
         const bool picked = static_cast<int>(index) == bar->selected();
         fillBox(canvas, corner, corner + extent, radius, picked ? chosen : tab);
-        write_(label, glm::vec2(corner.x + style_.padding * 0.5f, corner.y + height * 0.7f),
+        write_(label, glm::vec2(corner.x + dressing_.padding * 0.5f, corner.y + height * 0.7f),
             picked ? chosenInk : ink);
-        pen += width + style_.borderWidth;
+        pen += width + dressing_.borderWidth;
     }
     // where each tab ended up, for the cursor to be tested against - the same rule as a
     // component's own box, per ADR-0019
@@ -597,22 +597,22 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
  **/
 glm::vec2 ComponentRenderer::natural(const Component& component) const {
     switch (component.type()) {
-        case component::Type::LABEL: {
+        case component::Type::Label: {
             const auto* label = dynamic_cast<const component::Label*>(&component);
             return label == nullptr ? glm::vec2(0.0f, 0.0f)
-                : glm::vec2(measure_(std::string(label->text())), style_.lineHeight);
+                : glm::vec2(measure_(std::string(label->text())), dressing_.lineHeight);
         }
-        case component::Type::ICON:
+        case component::Type::Icon:
             // an icon given no size is a square the height of a strip, which is the one
             // size the ui has that is not derived from a string
-            return glm::vec2(style_.barHeight, style_.barHeight);
-        case component::Type::BUTTON: {
+            return glm::vec2(dressing_.barHeight, dressing_.barHeight);
+        case component::Type::Button: {
             const auto* button = dynamic_cast<const component::Button*>(&component);
             return button == nullptr ? glm::vec2(0.0f, 0.0f)
-                : glm::vec2(extent(*button) + style_.padding, style_.barHeight);
+                : glm::vec2(extent(*button) + dressing_.padding, dressing_.barHeight);
         }
-        case component::Type::CHECKBOX:
-        case component::Type::RADIO_BUTTON: {
+        case component::Type::CheckBox:
+        case component::Type::RadioButton: {
             // the mark, the gap after it and the label, on a row as tall as the taller of
             // the mark and a line of text
             const auto* box = dynamic_cast<const component::CheckBox*>(&component);
@@ -620,10 +620,10 @@ glm::vec2 ComponentRenderer::natural(const Component& component) const {
                 return glm::vec2(0.0f, 0.0f);
             }
             const float text = box->label().empty() ? 0.0f
-                : style_.padding * 0.5f + measure_(std::string(box->label()));
-            return glm::vec2(style_.markSize + text, std::max(style_.markSize, style_.lineHeight));
+                : dressing_.padding * 0.5f + measure_(std::string(box->label()));
+            return glm::vec2(dressing_.markSize + text, std::max(dressing_.markSize, dressing_.lineHeight));
         }
-        case component::Type::SELECT_LIST: {
+        case component::Type::SelectList: {
             // a list decides how wide its widest row is and nothing about how tall it is:
             // how many rows it shows is what it was given room for
             const auto* list = dynamic_cast<const component::SelectList*>(&component);
@@ -634,9 +634,9 @@ glm::vec2 ComponentRenderer::natural(const Component& component) const {
             for (const std::string& item : list->items()) {
                 widest = std::max(widest, measure_(item));
             }
-            return glm::vec2(widest + style_.padding, component.size().y);
+            return glm::vec2(widest + dressing_.padding, component.size().y);
         }
-        case component::Type::SCROLLBAR: {
+        case component::Type::Scrollbar: {
             // a scrollbar decides how thick it is and nothing about how long: its length
             // is the box it runs down, which is its parent's rather than its own
             const auto* bar = dynamic_cast<const component::Scrollbar*>(&component);
@@ -644,8 +644,8 @@ glm::vec2 ComponentRenderer::natural(const Component& component) const {
                 return glm::vec2(0.0f, 0.0f);
             }
             return bar->direction() == component::Scrollbar::Direction::Vertical
-                ? glm::vec2(style_.scrollbarWidth, component.size().y)
-                : glm::vec2(component.size().x, style_.scrollbarWidth);
+                ? glm::vec2(dressing_.scrollbarWidth, component.size().y)
+                : glm::vec2(component.size().x, dressing_.scrollbarWidth);
         }
         default:
             // a panel, a bar and a box decide nothing for themselves, so an Auto extent on
@@ -658,7 +658,7 @@ glm::vec2 ComponentRenderer::natural(const Component& component) const {
  **/
 void ComponentRenderer::arrange(const component::Box& box, const v3d::type::Bound2D& bounds,
     std::vector<v3d::type::Bound2D>* boxes) const {
-    const bool vertical = box.type() == component::Type::VERTICAL_FRAME;
+    const bool vertical = box.type() == component::Type::VerticalBox;
     const glm::vec2 extent = bounds.size();
     float pen = vertical ? bounds.position().y : bounds.position().x;
 
@@ -700,35 +700,35 @@ void ComponentRenderer::walk(v3d::render::realtime::Canvas* canvas, const boost:
     place(*component, bounds.position(), bounds.size());
 
     switch (component->type()) {
-        case component::Type::PANEL:
+        case component::Type::Panel:
             draw(canvas, boost::dynamic_pointer_cast<component::Panel>(component));
             break;
-        case component::Type::BAR:
+        case component::Type::Bar:
             draw(canvas, boost::dynamic_pointer_cast<component::Bar>(component));
             break;
-        case component::Type::SCROLLBAR:
+        case component::Type::Scrollbar:
             draw(canvas, boost::dynamic_pointer_cast<component::Scrollbar>(component));
             break;
-        case component::Type::CHECKBOX:
-        case component::Type::RADIO_BUTTON:
+        case component::Type::CheckBox:
+        case component::Type::RadioButton:
             // a radio button is a check box with a round mark, so one call draws both
             draw(canvas, boost::dynamic_pointer_cast<component::CheckBox>(component));
             break;
-        case component::Type::SELECT_LIST:
+        case component::Type::SelectList:
             draw(canvas, boost::dynamic_pointer_cast<component::SelectList>(component));
             break;
-        case component::Type::TAB_BAR:
+        case component::Type::TabBar:
             // a bar walks the one page it shows, so the pages behind it are not laid out
             // and the generic walk below must not reach them
             draw(canvas, boost::dynamic_pointer_cast<component::TabBar>(component));
             return;
-        case component::Type::BUTTON:
+        case component::Type::Button:
             draw(canvas, boost::dynamic_pointer_cast<component::Button>(component));
             break;
-        case component::Type::LABEL:
+        case component::Type::Label:
             draw(canvas, boost::dynamic_pointer_cast<component::Label>(component));
             break;
-        case component::Type::ICON:
+        case component::Type::Icon:
             draw(canvas, boost::dynamic_pointer_cast<component::Icon>(component));
             break;
         default:
@@ -776,7 +776,7 @@ float ComponentRenderer::extent(const component::Button& button) const {
     // what the button asks a strip for, which is the icon it names rather than the
     // texture it holds - a strip is laid out before anything has been resolved
     if (!button.icon().empty()) {
-        return style_.iconSize;
+        return dressing_.iconSize;
     }
     return measure_(std::string(button.label()));
 }
@@ -864,18 +864,18 @@ glm::vec2 ComponentRenderer::insets(const Container& container) const {
         if (!component || !component->visible()) {
             continue;
         }
-        if (component->type() == component::Type::MENUBAR) {
-            taken.y += style_.barHeight + ruleWidth;
-        } else if (component->type() == component::Type::TOOLBAR) {
+        if (component->type() == component::Type::MenuBar) {
+            taken.y += dressing_.barHeight + ruleWidth;
+        } else if (component->type() == component::Type::Toolbar) {
             const boost::shared_ptr<component::Toolbar> bar =
                 boost::dynamic_pointer_cast<component::Toolbar>(component);
             if (!bar) {
                 continue;
             }
             if (bar->edge() == component::Toolbar::Edge::Top) {
-                taken.y += style_.barHeight + ruleWidth;
+                taken.y += dressing_.barHeight + ruleWidth;
             } else {
-                taken.x += widest(*bar) + style_.padding + ruleWidth;
+                taken.x += widest(*bar) + dressing_.padding + ruleWidth;
             }
         }
     }
@@ -908,33 +908,33 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
         labels.push_back(label);
     }
 
-    const float width = widest + style_.padding * 2.0f;
-    const float height = style_.lineHeight * static_cast<float>(count) + style_.padding * 2.0f;
+    const float width = widest + dressing_.padding * 2.0f;
+    const float height = dressing_.lineHeight * static_cast<float>(count) + dressing_.padding * 2.0f;
     const glm::vec2 origin(
         (static_cast<float>(canvas->width()) - width) * 0.5f,
         (static_cast<float>(canvas->height()) - height) * 0.5f);
 
     // a one pixel border, as a filled rectangle with the panel drawn over it
-    canvas->rect(origin - glm::vec2(1.0f, 1.0f), origin + glm::vec2(width + 1.0f, height + 1.0f), style_.border);
-    canvas->rect(origin, origin + glm::vec2(width, height), style_.panel);
+    canvas->rect(origin - glm::vec2(1.0f, 1.0f), origin + glm::vec2(width + 1.0f, height + 1.0f), dressing_.border);
+    canvas->rect(origin, origin + glm::vec2(width, height), dressing_.panel);
 
     const boost::shared_ptr<component::MenuItem> active = level->active();
 
     for (std::size_t index = 0; index < count; index++) {
-        const float top = origin.y + style_.padding + style_.lineHeight * static_cast<float>(index);
+        const float top = origin.y + dressing_.padding + dressing_.lineHeight * static_cast<float>(index);
         const bool selected = active && (*level)[index] == active;
 
         if (selected) {
             canvas->rect(
-                glm::vec2(origin.x + style_.padding * 0.5f, top),
-                glm::vec2(origin.x + width - style_.padding * 0.5f, top + style_.lineHeight),
-                style_.highlight);
+                glm::vec2(origin.x + dressing_.padding * 0.5f, top),
+                glm::vec2(origin.x + width - dressing_.padding * 0.5f, top + dressing_.lineHeight),
+                dressing_.highlight);
         }
 
         // the pen sits on the baseline, which is most of the way down the line box - the
         // remainder is where descenders go
-        const glm::vec2 pen(origin.x + style_.padding, top + style_.lineHeight * 0.75f);
-        write_(labels[index], pen, selected ? style_.activeText : style_.text);
+        const glm::vec2 pen(origin.x + dressing_.padding, top + dressing_.lineHeight * 0.75f);
+        write_(labels[index], pen, selected ? dressing_.activeText : dressing_.text);
     }
 }
 
@@ -946,30 +946,30 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     }
 
     const float width = static_cast<float>(canvas->width());
-    place(*bar, glm::vec2(0.0f, 0.0f), glm::vec2(width, style_.barHeight));
+    place(*bar, glm::vec2(0.0f, 0.0f), glm::vec2(width, dressing_.barHeight));
 
-    canvas->rect(glm::vec2(0.0f, 0.0f), glm::vec2(width, style_.barHeight), style_.panel);
+    canvas->rect(glm::vec2(0.0f, 0.0f), glm::vec2(width, dressing_.barHeight), dressing_.panel);
     // a rule along the bottom edge, so the strip reads as something over the scene rather
     // than as part of it
-    canvas->rect(glm::vec2(0.0f, style_.barHeight), glm::vec2(width, style_.barHeight + ruleWidth), style_.border);
+    canvas->rect(glm::vec2(0.0f, dressing_.barHeight), glm::vec2(width, dressing_.barHeight + ruleWidth), dressing_.border);
 
-    float pen = style_.padding * 0.5f;
+    float pen = dressing_.padding * 0.5f;
     for (std::size_t index = 0; index < bar->size(); index++) {
         const boost::shared_ptr<component::Menu> menu = bar->menu(index);
         if (!menu) {
             continue;
         }
         const std::string& label = bar->label(index);
-        const float extent = measure_(label) + style_.padding;
+        const float extent = measure_(label) + dressing_.padding;
 
         // on the bar rather than on the menu, whose own bounds are the panel it drops
-        bar->place(index, glm::vec2(pen, 0.0f), glm::vec2(extent, style_.barHeight));
+        bar->place(index, glm::vec2(pen, 0.0f), glm::vec2(extent, dressing_.barHeight));
 
         const bool lit = bar->open() == static_cast<int>(index) || bar->hover() == static_cast<int>(index);
         if (lit) {
-            canvas->rect(glm::vec2(pen, 0.0f), glm::vec2(pen + extent, style_.barHeight), style_.highlight);
+            canvas->rect(glm::vec2(pen, 0.0f), glm::vec2(pen + extent, dressing_.barHeight), dressing_.highlight);
         }
-        write_(label, glm::vec2(pen + style_.padding * 0.5f, style_.barHeight * 0.7f), lit ? style_.activeText : style_.text);
+        write_(label, glm::vec2(pen + dressing_.padding * 0.5f, dressing_.barHeight * 0.7f), lit ? dressing_.activeText : dressing_.text);
         pen += extent;
     }
 
@@ -978,7 +978,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     for (std::size_t depth = 0; depth < panels.size(); depth++) {
         glm::vec2 origin;
         if (depth == 0) {
-            origin = glm::vec2(bar->bound(static_cast<std::size_t>(bar->open())).position().x, style_.barHeight);
+            origin = glm::vec2(bar->bound(static_cast<std::size_t>(bar->open())).position().x, dressing_.barHeight);
         } else {
             // out of the right hand edge of the parent, level with the item it came from
             const v3d::type::Bound2D bounds = panels[depth - 1]->bound();
@@ -1015,18 +1015,18 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     // a row spans the canvas and a column spans what is under the strips above it, so
     // that the rule along a strip's far edge runs the whole way
     const glm::vec2 size = row
-        ? glm::vec2(static_cast<float>(canvas->width()) - corner.x, style_.barHeight)
-        : glm::vec2(widest(*bar) + style_.padding, static_cast<float>(canvas->height()) - corner.y);
+        ? glm::vec2(static_cast<float>(canvas->width()) - corner.x, dressing_.barHeight)
+        : glm::vec2(widest(*bar) + dressing_.padding, static_cast<float>(canvas->height()) - corner.y);
 
     place(*bar, corner, size);
 
-    canvas->rect(corner, corner + size, style_.panel);
+    canvas->rect(corner, corner + size, dressing_.panel);
     if (row) {
         canvas->rect(glm::vec2(corner.x, corner.y + size.y),
-            glm::vec2(corner.x + size.x, corner.y + size.y + ruleWidth), style_.border);
+            glm::vec2(corner.x + size.x, corner.y + size.y + ruleWidth), dressing_.border);
     } else {
         canvas->rect(glm::vec2(corner.x + size.x, corner.y),
-            glm::vec2(corner.x + size.x + ruleWidth, corner.y + size.y), style_.border);
+            glm::vec2(corner.x + size.x + ruleWidth, corner.y + size.y), dressing_.border);
     }
 
     glm::vec2 pen = corner;
@@ -1039,8 +1039,8 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
         // and a column's is as wide as the strip - and the button is then drawn at the
         // size it was given, the same way a button anywhere else is
         const glm::vec2 box = row
-            ? glm::vec2(extent(*button) + style_.padding, size.y)
-            : glm::vec2(size.x, style_.lineHeight);
+            ? glm::vec2(extent(*button) + dressing_.padding, size.y)
+            : glm::vec2(size.x, dressing_.lineHeight);
 
         place(*button, pen, box);
         draw(canvas, button);
@@ -1058,7 +1058,7 @@ void ComponentRenderer::panel(v3d::render::realtime::Canvas* canvas, const boost
         return;
     }
 
-    const float column = style_.lineHeight * markColumn;
+    const float column = dressing_.lineHeight * markColumn;
 
     std::vector<std::string> labels;
     labels.reserve(count);
@@ -1073,8 +1073,8 @@ void ComponentRenderer::panel(v3d::render::realtime::Canvas* canvas, const boost
     // a column either side of the labels: the mark on the left and the submenu arrow on
     // the right, both of which are there whether or not this menu uses them, so that
     // every label in one panel starts at the same place
-    const glm::vec2 size(widest + column * 2.0f + style_.padding * 0.5f,
-        style_.lineHeight * static_cast<float>(count) + style_.panelPadding * 2.0f);
+    const glm::vec2 size(widest + column * 2.0f + dressing_.padding * 0.5f,
+        dressing_.lineHeight * static_cast<float>(count) + dressing_.panelPadding * 2.0f);
 
     // a panel that would hang off an edge is moved back onto the canvas rather than
     // clipped, which is what puts the last menu of a bar's flyouts back inside the window
@@ -1085,39 +1085,39 @@ void ComponentRenderer::panel(v3d::render::realtime::Canvas* canvas, const boost
 
     place(*menu, corner, size);
 
-    canvas->rect(corner - glm::vec2(1.0f, 1.0f), corner + size + glm::vec2(1.0f, 1.0f), style_.border);
-    canvas->rect(corner, corner + size, style_.panel);
+    canvas->rect(corner - glm::vec2(1.0f, 1.0f), corner + size + glm::vec2(1.0f, 1.0f), dressing_.border);
+    canvas->rect(corner, corner + size, dressing_.panel);
 
     const boost::shared_ptr<component::MenuItem> active = menu->active();
 
     for (std::size_t index = 0; index < count; index++) {
         const boost::shared_ptr<component::MenuItem>& item = (*menu)[index];
-        const float top = corner.y + style_.panelPadding + style_.lineHeight * static_cast<float>(index);
+        const float top = corner.y + dressing_.panelPadding + dressing_.lineHeight * static_cast<float>(index);
         const bool selected = active && item == active;
 
         if (item) {
-            place(*item, glm::vec2(corner.x, top), glm::vec2(size.x, style_.lineHeight));
+            place(*item, glm::vec2(corner.x, top), glm::vec2(size.x, dressing_.lineHeight));
         }
 
         if (selected) {
-            canvas->rect(glm::vec2(corner.x, top), glm::vec2(corner.x + size.x, top + style_.lineHeight), style_.highlight);
+            canvas->rect(glm::vec2(corner.x, top), glm::vec2(corner.x + size.x, top + dressing_.lineHeight), dressing_.highlight);
         }
 
         if (item && item->checked()) {
-            const glm::vec2 centre(corner.x + column * 0.5f, top + style_.lineHeight * 0.5f);
-            const float mark = style_.lineHeight * 0.15f;
-            canvas->rect(centre - glm::vec2(mark, mark), centre + glm::vec2(mark, mark), style_.activeText);
+            const glm::vec2 centre(corner.x + column * 0.5f, top + dressing_.lineHeight * 0.5f);
+            const float mark = dressing_.lineHeight * 0.15f;
+            canvas->rect(centre - glm::vec2(mark, mark), centre + glm::vec2(mark, mark), dressing_.activeText);
         }
 
-        if (item && item->type() == menu::ItemType::Submenu) {
+        if (item && item->type() == component::menu::ItemType::Submenu) {
             // a three sided circle is a triangle with a vertex at zero degrees, which
             // points along +x
-            canvas->circle(glm::vec2(corner.x + size.x - column * 0.5f, top + style_.lineHeight * 0.5f),
-                style_.lineHeight * 0.18f, 3, selected ? style_.activeText : style_.text);
+            canvas->circle(glm::vec2(corner.x + size.x - column * 0.5f, top + dressing_.lineHeight * 0.5f),
+                dressing_.lineHeight * 0.18f, 3, selected ? dressing_.activeText : dressing_.text);
         }
 
-        const glm::vec2 pen(corner.x + column, top + style_.lineHeight * 0.75f);
-        write_(labels[index], pen, selected ? style_.activeText : style_.text);
+        const glm::vec2 pen(corner.x + column, top + dressing_.lineHeight * 0.75f);
+        write_(labels[index], pen, selected ? dressing_.activeText : dressing_.text);
     }
 }
 

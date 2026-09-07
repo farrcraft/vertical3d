@@ -7,7 +7,7 @@
 
 #include <string>
 
-namespace v3d::ui::style::prop {
+namespace v3d::ui::style::property {
 
 Color::Color(const std::string& name, const glm::vec4& value) : Property(name), value_(value) {
 }
@@ -23,4 +23,4 @@ void Color::value(const glm::vec4& v) noexcept {
     value_ = v;
 }
 
-};  // namespace v3d::ui::style::prop
+};  // namespace v3d::ui::style::property

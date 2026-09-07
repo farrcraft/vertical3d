@@ -14,7 +14,7 @@ namespace v3d::ui::component {
 const int SelectList::none;
 
 SelectList::SelectList() :
-    Component(Type::SELECT_LIST),
+    Component(Type::SelectList),
     offset_(0.0f),
     rowHeight_(0.0f),
     selected_(none) {

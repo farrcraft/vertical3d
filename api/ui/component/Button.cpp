@@ -10,7 +10,7 @@
 namespace v3d::ui::component {
 
 Button::Button() :
-    Component(component::Type::BUTTON),
+    Component(component::Type::Button),
     state_(STATE_NORMAL),
     toggle_(false),
     checked_(false) {

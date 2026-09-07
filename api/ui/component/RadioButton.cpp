@@ -10,7 +10,7 @@
 namespace v3d::ui::component {
 
 RadioButton::RadioButton() :
-    CheckBox(Type::RADIO_BUTTON) {
+    CheckBox(Type::RadioButton) {
 }
 
 void RadioButton::group(const std::string& name) {

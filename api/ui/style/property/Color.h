@@ -11,7 +11,7 @@
 
 #include <glm/vec4.hpp>
 
-namespace v3d::ui::style::prop {
+namespace v3d::ui::style::property {
 
 /**
  * A vGUI style property that defines a single color.
@@ -41,4 +41,4 @@ class Color : public Property {
     glm::vec4 value_;
 };
 
-};  // namespace v3d::ui::style::prop
+};  // namespace v3d::ui::style::property

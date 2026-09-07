@@ -120,20 +120,20 @@ BOOST_AUTO_TEST_CASE(a_theme_loads_its_styles_and_their_properties) {
     const std::vector<boost::shared_ptr<v3d::ui::Style>> chrome = dark->getStyleSet("", "ui");
     BOOST_REQUIRE_EQUAL(chrome.size(), 1U);
 
-    const boost::shared_ptr<v3d::ui::style::prop::Color> panel =
-        boost::dynamic_pointer_cast<v3d::ui::style::prop::Color>(chrome.front()->property("panel", "color"));
+    const boost::shared_ptr<v3d::ui::style::property::Color> panel =
+        boost::dynamic_pointer_cast<v3d::ui::style::property::Color>(chrome.front()->property("panel", "color"));
     BOOST_REQUIRE(panel);
     BOOST_CHECK_CLOSE(panel->value().a, 0.5f, 0.001f);
 
-    const boost::shared_ptr<v3d::ui::style::prop::Number> height =
-        boost::dynamic_pointer_cast<v3d::ui::style::prop::Number>(chrome.front()->property("bar-height", "number"));
+    const boost::shared_ptr<v3d::ui::style::property::Number> height =
+        boost::dynamic_pointer_cast<v3d::ui::style::property::Number>(chrome.front()->property("bar-height", "number"));
     BOOST_REQUIRE(height);
     BOOST_CHECK_CLOSE(height->value(), 40.0f, 0.001f);
 
     const std::vector<boost::shared_ptr<v3d::ui::Style>> labels = dark->getStyleSet("", "label");
     BOOST_REQUIRE_EQUAL(labels.size(), 1U);
-    const boost::shared_ptr<v3d::ui::style::prop::Font> font =
-        boost::dynamic_pointer_cast<v3d::ui::style::prop::Font>(labels.front()->property("label", "font"));
+    const boost::shared_ptr<v3d::ui::style::property::Font> font =
+        boost::dynamic_pointer_cast<v3d::ui::style::property::Font>(labels.front()->property("label", "font"));
     BOOST_REQUIRE(font);
     BOOST_CHECK_EQUAL(font->face(), "Vera");
     BOOST_CHECK_EQUAL(font->size(), 18U);
@@ -158,8 +158,8 @@ BOOST_AUTO_TEST_CASE(a_button_style_carries_a_state_and_its_images) {
     BOOST_REQUIRE(styled);
     BOOST_CHECK((styled->state() == v3d::ui::component::Button::STATE_NORMAL));
 
-    const boost::shared_ptr<v3d::ui::style::prop::Image> corner =
-        boost::dynamic_pointer_cast<v3d::ui::style::prop::Image>(styled->property("top-left", "image"));
+    const boost::shared_ptr<v3d::ui::style::property::Image> corner =
+        boost::dynamic_pointer_cast<v3d::ui::style::property::Image>(styled->property("top-left", "image"));
     BOOST_REQUIRE(corner);
     BOOST_CHECK_EQUAL(corner->source(), "skins/tl.tga");
     BOOST_CHECK((corner->align() == v3d::ui::style::Property::TOP_LEFT));
@@ -204,15 +204,15 @@ BOOST_AUTO_TEST_CASE(a_theme_overrides_what_it_names_and_no_more) {
     BOOST_REQUIRE(loaded);
 
     v3d::ui::ComponentRenderer drawing = renderer();
-    const v3d::ui::ComponentRenderer::Style defaults;
+    const v3d::ui::ComponentRenderer::Dressing defaults;
 
     drawing.theme(ui->theme("dark"));
 
-    BOOST_CHECK_CLOSE(drawing.style().panel.b, 0.3f, 0.001f);
-    BOOST_CHECK_CLOSE(drawing.style().barHeight, 40.0f, 0.001f);
+    BOOST_CHECK_CLOSE(drawing.dressing().panel.b, 0.3f, 0.001f);
+    BOOST_CHECK_CLOSE(drawing.dressing().barHeight, 40.0f, 0.001f);
     // the style named neither, so both are what they were
-    BOOST_CHECK_CLOSE(drawing.style().lineHeight, defaults.lineHeight, 0.001f);
-    BOOST_CHECK_CLOSE(drawing.style().border.r, defaults.border.r, 0.001f);
+    BOOST_CHECK_CLOSE(drawing.dressing().lineHeight, defaults.lineHeight, 0.001f);
+    BOOST_CHECK_CLOSE(drawing.dressing().border.r, defaults.border.r, 0.001f);
 }
 
 /**
@@ -226,11 +226,11 @@ BOOST_AUTO_TEST_CASE(a_nameless_theme_changes_nothing) {
     BOOST_REQUIRE(loaded);
 
     v3d::ui::ComponentRenderer drawing = renderer();
-    const v3d::ui::ComponentRenderer::Style defaults;
+    const v3d::ui::ComponentRenderer::Dressing defaults;
     drawing.theme(ui->activeTheme());
 
-    BOOST_CHECK_CLOSE(drawing.style().barHeight, defaults.barHeight, 0.001f);
-    BOOST_CHECK_CLOSE(drawing.style().panel.a, defaults.panel.a, 0.001f);
+    BOOST_CHECK_CLOSE(drawing.dressing().barHeight, defaults.barHeight, 0.001f);
+    BOOST_CHECK_CLOSE(drawing.dressing().panel.a, defaults.panel.a, 0.001f);
 }
 
 /**
@@ -261,8 +261,8 @@ BOOST_AUTO_TEST_CASE(the_image_pass_resolves_every_source_the_config_named) {
     BOOST_CHECK_EQUAL(uploader.asked[0], "skins/center.tga");
     BOOST_CHECK_EQUAL(uploader.asked[1], "skins/logo.tga");
 
-    const boost::shared_ptr<v3d::ui::style::prop::Image> centre =
-        boost::dynamic_pointer_cast<v3d::ui::style::prop::Image>(
+    const boost::shared_ptr<v3d::ui::style::property::Image> centre =
+        boost::dynamic_pointer_cast<v3d::ui::style::property::Image>(
             ui->theme("dark")->getStyleSet("", "button").front()->property("center", "image"));
     BOOST_REQUIRE(centre);
     BOOST_CHECK(centre->texture().valid());
@@ -466,7 +466,7 @@ BOOST_AUTO_TEST_CASE(a_toolbar_button_draws_the_icon_it_names) {
         [&written](const std::string& text, const glm::vec2& pen, const glm::vec4& colour) {
             written.push_back(Written{ text, pen, colour });
         });
-    drawing.style().iconSize = 20.0f;
+    drawing.dressing().iconSize = 20.0f;
 
     v3d::render::realtime::Canvas canvas;
     canvas.resize(800, 600);
@@ -481,14 +481,14 @@ BOOST_AUTO_TEST_CASE(a_toolbar_button_draws_the_icon_it_names) {
     BOOST_REQUIRE(bar);
 
     // the column is as wide as the icon, not as the label it would otherwise draw
-    const v3d::ui::ComponentRenderer::Style& style = drawing.style();
-    BOOST_CHECK_CLOSE(bar->bound().size().x, style.iconSize + style.padding, 0.001f);
-    BOOST_CHECK_CLOSE(drawing.insets(*ui).x, style.iconSize + style.padding + 1.0f, 0.001f);
+    const v3d::ui::ComponentRenderer::Dressing& dressing = drawing.dressing();
+    BOOST_CHECK_CLOSE(bar->bound().size().x, dressing.iconSize + dressing.padding, 0.001f);
+    BOOST_CHECK_CLOSE(drawing.insets(*ui).x, dressing.iconSize + dressing.padding + 1.0f, 0.001f);
 
     // and the icon is centred in the button's own box
     const v3d::type::Bound2D box = bar->button(0)->bound();
     BOOST_CHECK_CLOSE(canvas.vertices()[8].position.x,
-        box.position().x + (box.size().x - style.iconSize) * 0.5f, 0.001f);
+        box.position().x + (box.size().x - dressing.iconSize) * 0.5f, 0.001f);
 }
 
 /**

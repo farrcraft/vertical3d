@@ -9,7 +9,7 @@
 
 #include "../Property.h"
 
-namespace v3d::ui::style::prop {
+namespace v3d::ui::style::property {
 
 /**
  * A style property that defines a single number - a height, a padding, a width.
@@ -40,4 +40,4 @@ class Number : public Property {
     float value_;
 };
 
-};  // namespace v3d::ui::style::prop
+};  // namespace v3d::ui::style::property

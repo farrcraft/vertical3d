@@ -12,7 +12,7 @@ namespace v3d::ui::component {
 const float Scrollbar::minimumThumb = 16.0f;
 
 Scrollbar::Scrollbar() :
-    Component(Type::SCROLLBAR),
+    Component(Type::Scrollbar),
     content_(0.0f),
     page_(0.0f),
     offset_(0.0f),

@@ -8,7 +8,7 @@
 #include <string>
 
 namespace v3d::ui::component {
-Label::Label() : Component(component::Type::LABEL) {
+Label::Label() : Component(component::Type::Label) {
 }
 
 Label::~Label() {

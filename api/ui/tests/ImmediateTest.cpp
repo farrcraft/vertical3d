@@ -196,7 +196,7 @@ BOOST_AUTO_TEST_CASE(a_disabled_widget_answers_nothing) {
 
     // and it is drawn in the dim colour while it is off
     BOOST_REQUIRE(!written.empty());
-    BOOST_CHECK(written.back().colour == ui.style().dimText);
+    BOOST_CHECK(written.back().colour == ui.dressing().dimText);
 }
 
 /**
@@ -276,7 +276,7 @@ BOOST_AUTO_TEST_CASE(a_window_holds_its_contents_and_folds_away) {
     BOOST_REQUIRE_EQUAL(written.size(), 2U);
     BOOST_CHECK_EQUAL(written[0].text, "Encounter");
     BOOST_CHECK(written[1].pen.x > corner.x);
-    BOOST_CHECK(written[1].pen.y > corner.y + ui.style().barHeight);
+    BOOST_CHECK(written[1].pen.y > corner.y + ui.dressing().barHeight);
 
     ui.begin(&canvas, press(onTitle));
     ui.window("Encounter", corner, size, 1.0f);
@@ -461,7 +461,7 @@ BOOST_AUTO_TEST_CASE(a_progress_bar_fills_what_it_was_given) {
     v3d::render::realtime::Canvas canvas;
     canvas.resize(400, 300);
     v3d::ui::Immediate ui = build(&written);
-    ui.style().radius = 0.0f;
+    ui.dressing().radius = 0.0f;
 
     ui.begin(&canvas, hover(glm::vec2(-1.0f, -1.0f)));
     ui.progressBar(0.0f, std::string());
@@ -535,10 +535,10 @@ BOOST_AUTO_TEST_CASE(a_window_cuts_what_it_holds_off_at_its_edges) {
     BOOST_CHECK(!batches.front().clipped);
     const v3d::render::realtime::Canvas::Batch& cut = batches.back();
     BOOST_REQUIRE(cut.clipped);
-    BOOST_CHECK_CLOSE(cut.clip.x, corner.x + ui.style().borderWidth, 0.001f);
-    BOOST_CHECK_CLOSE(cut.clip.y, corner.y + ui.style().barHeight, 0.001f);
-    BOOST_CHECK_CLOSE(cut.clip.z, corner.x + size.x - ui.style().borderWidth, 0.001f);
-    BOOST_CHECK_CLOSE(cut.clip.w, corner.y + size.y - ui.style().borderWidth, 0.001f);
+    BOOST_CHECK_CLOSE(cut.clip.x, corner.x + ui.dressing().borderWidth, 0.001f);
+    BOOST_CHECK_CLOSE(cut.clip.y, corner.y + ui.dressing().barHeight, 0.001f);
+    BOOST_CHECK_CLOSE(cut.clip.z, corner.x + size.x - ui.dressing().borderWidth, 0.001f);
+    BOOST_CHECK_CLOSE(cut.clip.w, corner.y + size.y - ui.dressing().borderWidth, 0.001f);
 }
 
 /**
@@ -577,7 +577,7 @@ BOOST_AUTO_TEST_CASE(a_window_scrolls_when_it_holds_more_than_it_shows) {
 
     BOOST_REQUIRE_EQUAL(written.size(), 21U);
     // two notches towards the reader, which is two notches further down the content
-    BOOST_CHECK_CLOSE(before - written[1].pen.y, ui.style().lineHeight * 3.0f * 2.0f, 0.001f);
+    BOOST_CHECK_CLOSE(before - written[1].pen.y, ui.dressing().lineHeight * 3.0f * 2.0f, 0.001f);
 }
 
 /**

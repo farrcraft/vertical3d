@@ -112,7 +112,7 @@ content(0.0f),
 collapsed(false) {
 }
 
-Immediate::Style::Style() noexcept :
+Immediate::Dressing::Dressing() noexcept :
 lineHeight(18.0f),
 padding(6.0f),
 spacing(4.0f),
@@ -176,8 +176,8 @@ Immediate::Immediate(const Measure& measure, const Write& write) :
     columnIndex_(0) {
 }
 
-Immediate::Style& Immediate::style() noexcept {
-    return style_;
+Immediate::Dressing& Immediate::dressing() noexcept {
+    return dressing_;
 }
 
 void Immediate::theme(const boost::shared_ptr<style::Theme>& theme) {
@@ -191,25 +191,25 @@ void Immediate::theme(const boost::shared_ptr<style::Theme>& theme) {
     }
     const boost::shared_ptr<v3d::ui::Style>& chrome = styles.front();
 
-    readColour(chrome, "panel", &style_.panel);
-    readColour(chrome, "border", &style_.border);
-    readColour(chrome, "title-bar", &style_.titleBar);
-    readColour(chrome, "text", &style_.text);
-    readColour(chrome, "active-text", &style_.activeText);
-    readColour(chrome, "dim-text", &style_.dimText);
-    readColour(chrome, "widget", &style_.widget);
-    readColour(chrome, "highlight", &style_.highlight);
-    readColour(chrome, "hover", &style_.hover);
-    readColour(chrome, "fill", &style_.fill);
-    readColour(chrome, "rule", &style_.rule);
+    readColour(chrome, "panel", &dressing_.panel);
+    readColour(chrome, "border", &dressing_.border);
+    readColour(chrome, "title-bar", &dressing_.titleBar);
+    readColour(chrome, "text", &dressing_.text);
+    readColour(chrome, "active-text", &dressing_.activeText);
+    readColour(chrome, "dim-text", &dressing_.dimText);
+    readColour(chrome, "widget", &dressing_.widget);
+    readColour(chrome, "highlight", &dressing_.highlight);
+    readColour(chrome, "hover", &dressing_.hover);
+    readColour(chrome, "fill", &dressing_.fill);
+    readColour(chrome, "rule", &dressing_.rule);
 
-    readMetric(chrome, "line-height", &style_.lineHeight);
-    readMetric(chrome, "padding", &style_.padding);
-    readMetric(chrome, "spacing", &style_.spacing);
-    readMetric(chrome, "bar-height", &style_.barHeight);
-    readMetric(chrome, "border-width", &style_.borderWidth);
-    readMetric(chrome, "radius", &style_.radius);
-    readMetric(chrome, "scrollbar-width", &style_.scrollbarWidth);
+    readMetric(chrome, "line-height", &dressing_.lineHeight);
+    readMetric(chrome, "padding", &dressing_.padding);
+    readMetric(chrome, "spacing", &dressing_.spacing);
+    readMetric(chrome, "bar-height", &dressing_.barHeight);
+    readMetric(chrome, "border-width", &dressing_.borderWidth);
+    readMetric(chrome, "radius", &dressing_.radius);
+    readMetric(chrome, "scrollbar-width", &dressing_.scrollbarWidth);
 }
 
 void Immediate::begin(v3d::render::realtime::Canvas* canvas, const Input& input) {
@@ -285,7 +285,7 @@ void Immediate::popId() {
 glm::vec2 Immediate::place(const glm::vec2& size) {
     glm::vec2 corner;
     if (sameLine_) {
-        corner = glm::vec2(lastRight_ + style_.spacing, rowTop_);
+        corner = glm::vec2(lastRight_ + dressing_.spacing, rowTop_);
         sameLine_ = false;
     } else {
         rowTop_ = penY_;
@@ -294,7 +294,7 @@ glm::vec2 Immediate::place(const glm::vec2& size) {
     }
     lastRight_ = corner.x + size.x;
     rowHeight_ = std::max(rowHeight_, size.y);
-    penY_ = rowTop_ + rowHeight_ + style_.spacing;
+    penY_ = rowTop_ + rowHeight_ + dressing_.spacing;
     return corner;
 }
 
@@ -317,24 +317,24 @@ Immediate::Reaction Immediate::interact(Id id, const glm::vec2& min, const glm::
 }
 
 glm::vec4 Immediate::ink(const glm::vec4& colour) const {
-    return disabled_ > 0 ? style_.dimText : colour;
+    return disabled_ > 0 ? dressing_.dimText : colour;
 }
 
 glm::vec4 Immediate::face(bool lit, bool hovered) const {
     if (disabled_ > 0) {
-        return style_.widget;
+        return dressing_.widget;
     }
     if (lit) {
-        return style_.highlight;
+        return dressing_.highlight;
     }
-    return hovered ? style_.hover : style_.widget;
+    return hovered ? dressing_.hover : dressing_.widget;
 }
 
 void Immediate::label(const std::string& line, const glm::vec2& min, const glm::vec2& size,
     const glm::vec4& colour) const {
     // the baseline sits three quarters of the way down a row, which is where a font with
     // ordinary descenders looks centred
-    const glm::vec2 pen(min.x, min.y + (size.y + style_.lineHeight * 0.5f) * 0.5f);
+    const glm::vec2 pen(min.x, min.y + (size.y + dressing_.lineHeight * 0.5f) * 0.5f);
     write_(line, pen, colour);
 }
 
@@ -347,15 +347,15 @@ bool Immediate::window(const std::string& title, const glm::vec2& position, cons
     Retained& retained = retain(id);
 
     const glm::vec2 min = position;
-    const glm::vec2 barMax(position.x + size.x, position.y + style_.barHeight);
+    const glm::vec2 barMax(position.x + size.x, position.y + dressing_.barHeight);
     const glm::vec2 max = retained.collapsed ? barMax : position + size;
 
-    glm::vec4 background = style_.panel;
+    glm::vec4 background = dressing_.panel;
     background.a *= std::clamp(alpha, 0.0f, 1.0f);
-    plateBox(canvas_, min, max, style_.radius, style_.borderWidth, background, style_.border);
-    fillBox(canvas_, min + glm::vec2(style_.borderWidth, style_.borderWidth),
-        glm::vec2(barMax.x - style_.borderWidth, barMax.y), style_.radius, style_.titleBar);
-    label(title, min + glm::vec2(style_.padding, 0.0f), glm::vec2(size.x, style_.barHeight), style_.text);
+    plateBox(canvas_, min, max, dressing_.radius, dressing_.borderWidth, background, dressing_.border);
+    fillBox(canvas_, min + glm::vec2(dressing_.borderWidth, dressing_.borderWidth),
+        glm::vec2(barMax.x - dressing_.borderWidth, barMax.y), dressing_.radius, dressing_.titleBar);
+    label(title, min + glm::vec2(dressing_.padding, 0.0f), glm::vec2(size.x, dressing_.barHeight), dressing_.text);
 
     // the title bar is what folds the window away, which is the only thing this layer lets
     // a window be dragged or resized by
@@ -375,9 +375,9 @@ bool Immediate::window(const std::string& title, const glm::vec2& position, cons
     windowRight_ = right_;
     window_ = id;
     windowScroll_ = identify(title + " scrollbar");
-    margin_ = min.x + style_.padding;
-    right_ = max.x - style_.padding;
-    penY_ = barMax.y + style_.spacing;
+    margin_ = min.x + dressing_.padding;
+    right_ = max.x - dressing_.padding;
+    penY_ = barMax.y + dressing_.spacing;
     sameLine_ = false;
     windowClipped_ = false;
     windowScrolls_ = false;
@@ -385,16 +385,16 @@ bool Immediate::window(const std::string& title, const glm::vec2& position, cons
         return false;
     }
 
-    bodyMin_ = glm::vec2(min.x + style_.borderWidth, barMax.y);
-    bodyMax_ = glm::vec2(max.x - style_.borderWidth, max.y - style_.borderWidth);
-    contentTop_ = barMax.y + style_.spacing;
+    bodyMin_ = glm::vec2(min.x + dressing_.borderWidth, barMax.y);
+    bodyMax_ = glm::vec2(max.x - dressing_.borderWidth, max.y - dressing_.borderWidth);
+    contentTop_ = barMax.y + dressing_.spacing;
 
     // whether there is a bar is decided by what the frame before this one drew, because how
     // tall the content is is only known once it has been drawn
     const float view = std::max(bodyMax_.y - contentTop_, 0.0f);
     windowScrolls_ = retained.content > view;
     if (windowScrolls_) {
-        right_ -= style_.scrollbarWidth + style_.spacing;
+        right_ -= dressing_.scrollbarWidth + dressing_.spacing;
         retained.scroll = std::clamp(retained.scroll, 0.0f, retained.content - view);
     } else {
         retained.scroll = 0.0f;
@@ -423,7 +423,7 @@ void Immediate::endWindow() {
         Retained& retained = retain(window_);
         // how tall what was drawn came to. The pen has the scroll taken out of it and the
         // gap after the last row left in, so both go back before it is a height
-        retained.content = std::max(penY_ + retained.scroll - style_.spacing - contentTop_, 0.0f);
+        retained.content = std::max(penY_ + retained.scroll - dressing_.spacing - contentTop_, 0.0f);
 
         const float view = std::max(bodyMax_.y - contentTop_, 0.0f);
         const float span = std::max(retained.content - view, 0.0f);
@@ -432,7 +432,7 @@ void Immediate::endWindow() {
         }
         if (wheeled_ == window_ && input_.wheel != 0.0f) {
             // a notch away from the reader shows what is above, which is a smaller offset
-            retained.scroll = std::clamp(retained.scroll - input_.wheel * style_.lineHeight * wheelRows,
+            retained.scroll = std::clamp(retained.scroll - input_.wheel * dressing_.lineHeight * wheelRows,
                 0.0f, span);
         }
     }
@@ -444,7 +444,7 @@ void Immediate::endWindow() {
 }
 
 void Immediate::scrollbar(float view, float span, float* scroll) {
-    const glm::vec2 min(bodyMax_.x - style_.scrollbarWidth, contentTop_);
+    const glm::vec2 min(bodyMax_.x - dressing_.scrollbarWidth, contentTop_);
     const glm::vec2 max(bodyMax_.x, bodyMax_.y);
     const float track = max.y - min.y;
     if (track <= 0.0f || view <= 0.0f) {
@@ -465,33 +465,33 @@ void Immediate::scrollbar(float view, float span, float* scroll) {
 
     // the thumb rests in the rule colour rather than the widget one, so that it reads
     // against the track under it
-    glm::vec4 grip = style_.rule;
+    glm::vec4 grip = dressing_.rule;
     if (reaction.held) {
-        grip = style_.highlight;
+        grip = dressing_.highlight;
     } else if (reaction.hovered) {
-        grip = style_.hover;
+        grip = dressing_.hover;
     }
 
     const float start = span > 0.0f ? room * (*scroll / span) : 0.0f;
-    fillBox(canvas_, min, max, style_.radius, style_.widget);
+    fillBox(canvas_, min, max, dressing_.radius, dressing_.widget);
     fillBox(canvas_, glm::vec2(min.x, min.y + start), glm::vec2(max.x, min.y + start + length),
-        style_.radius, grip);
+        dressing_.radius, grip);
 }
 
 void Immediate::text(const std::string& line) {
     if (canvas_ == nullptr) {
         return;
     }
-    const glm::vec2 size(measure_(line), style_.lineHeight);
-    label(line, place(size), size, ink(style_.text));
+    const glm::vec2 size(measure_(line), dressing_.lineHeight);
+    label(line, place(size), size, ink(dressing_.text));
 }
 
 void Immediate::textDisabled(const std::string& line) {
     if (canvas_ == nullptr) {
         return;
     }
-    const glm::vec2 size(measure_(line), style_.lineHeight);
-    label(line, place(size), size, style_.dimText);
+    const glm::vec2 size(measure_(line), dressing_.lineHeight);
+    label(line, place(size), size, dressing_.dimText);
 }
 
 void Immediate::textWrapped(const std::string& line) {
@@ -507,26 +507,26 @@ void Immediate::bulletText(const std::string& line) {
     if (canvas_ == nullptr) {
         return;
     }
-    const glm::vec2 size(style_.indent + measure_(line), style_.lineHeight);
+    const glm::vec2 size(dressing_.indent + measure_(line), dressing_.lineHeight);
     const glm::vec2 corner = place(size);
-    const float radius = style_.lineHeight * bulletScale * 0.5f;
-    canvas_->circle(glm::vec2(corner.x + style_.indent * 0.5f, corner.y + style_.lineHeight * 0.5f),
-        radius, bulletSides, ink(style_.text));
-    label(line, corner + glm::vec2(style_.indent, 0.0f), glm::vec2(size.x, size.y), ink(style_.text));
+    const float radius = dressing_.lineHeight * bulletScale * 0.5f;
+    canvas_->circle(glm::vec2(corner.x + dressing_.indent * 0.5f, corner.y + dressing_.lineHeight * 0.5f),
+        radius, bulletSides, ink(dressing_.text));
+    label(line, corner + glm::vec2(dressing_.indent, 0.0f), glm::vec2(size.x, size.y), ink(dressing_.text));
 }
 
 bool Immediate::button(const std::string& label) {
     if (canvas_ == nullptr) {
         return false;
     }
-    const glm::vec2 size(measure_(label) + style_.padding * 2.0f, style_.barHeight);
+    const glm::vec2 size(measure_(label) + dressing_.padding * 2.0f, dressing_.barHeight);
     const glm::vec2 min = place(size);
     const Id id = identify(label);
     const Reaction reaction = interact(id, min, min + size);
 
-    fillBox(canvas_, min, min + size, style_.radius, face(reaction.held, reaction.hovered));
-    this->label(label, min + glm::vec2(style_.padding, 0.0f), size,
-        ink(reaction.hovered ? style_.activeText : style_.text));
+    fillBox(canvas_, min, min + size, dressing_.radius, face(reaction.held, reaction.hovered));
+    this->label(label, min + glm::vec2(dressing_.padding, 0.0f), size,
+        ink(reaction.hovered ? dressing_.activeText : dressing_.text));
     return reaction.clicked;
 }
 
@@ -534,14 +534,14 @@ bool Immediate::smallButton(const std::string& label) {
     if (canvas_ == nullptr) {
         return false;
     }
-    const glm::vec2 size(measure_(label) + style_.padding, style_.lineHeight);
+    const glm::vec2 size(measure_(label) + dressing_.padding, dressing_.lineHeight);
     const glm::vec2 min = place(size);
     const Id id = identify(label);
     const Reaction reaction = interact(id, min, min + size);
 
-    fillBox(canvas_, min, min + size, style_.radius, face(reaction.held, reaction.hovered));
-    this->label(label, min + glm::vec2(style_.padding * 0.5f, 0.0f), size,
-        ink(reaction.hovered ? style_.activeText : style_.text));
+    fillBox(canvas_, min, min + size, dressing_.radius, face(reaction.held, reaction.hovered));
+    this->label(label, min + glm::vec2(dressing_.padding * 0.5f, 0.0f), size,
+        ink(reaction.hovered ? dressing_.activeText : dressing_.text));
     return reaction.clicked;
 }
 
@@ -549,18 +549,18 @@ bool Immediate::selectable(const std::string& label, bool selected) {
     if (canvas_ == nullptr) {
         return false;
     }
-    const glm::vec2 size(right_ - margin_, style_.lineHeight);
+    const glm::vec2 size(right_ - margin_, dressing_.lineHeight);
     const glm::vec2 min = place(size);
     const Id id = identify(label);
     const Reaction reaction = interact(id, min, min + size);
 
     if (selected) {
-        fillBox(canvas_, min, min + size, 0.0f, style_.highlight);
+        fillBox(canvas_, min, min + size, 0.0f, dressing_.highlight);
     } else if (reaction.hovered) {
-        fillBox(canvas_, min, min + size, 0.0f, style_.hover);
+        fillBox(canvas_, min, min + size, 0.0f, dressing_.hover);
     }
-    this->label(label, min + glm::vec2(style_.padding * 0.5f, 0.0f), size,
-        ink(selected ? style_.activeText : style_.text));
+    this->label(label, min + glm::vec2(dressing_.padding * 0.5f, 0.0f), size,
+        ink(selected ? dressing_.activeText : dressing_.text));
     return reaction.clicked;
 }
 
@@ -568,7 +568,7 @@ bool Immediate::dragInt(const std::string& label, int* value, int low, int high)
     if (canvas_ == nullptr || value == nullptr) {
         return false;
     }
-    const glm::vec2 size(right_ - margin_, style_.barHeight);
+    const glm::vec2 size(right_ - margin_, dressing_.barHeight);
     const glm::vec2 min = place(size);
     const Id id = identify(label);
     const Reaction reaction = interact(id, min, min + size);
@@ -583,10 +583,10 @@ bool Immediate::dragInt(const std::string& label, int* value, int low, int high)
         }
     }
 
-    fillBox(canvas_, min, min + size, style_.radius, face(reaction.held, reaction.hovered));
+    fillBox(canvas_, min, min + size, dressing_.radius, face(reaction.held, reaction.hovered));
     std::string shown(label);
     shown.append("  ").append(std::to_string(*value));
-    this->label(shown, min + glm::vec2(style_.padding, 0.0f), size, ink(style_.text));
+    this->label(shown, min + glm::vec2(dressing_.padding, 0.0f), size, ink(dressing_.text));
     return changed;
 }
 
@@ -594,18 +594,18 @@ void Immediate::progressBar(float fraction, const std::string& overlay) {
     if (canvas_ == nullptr) {
         return;
     }
-    const glm::vec2 size(right_ - margin_, style_.lineHeight);
+    const glm::vec2 size(right_ - margin_, dressing_.lineHeight);
     const glm::vec2 min = place(size);
     const glm::vec2 max = min + size;
 
-    fillBox(canvas_, min, max, style_.radius, style_.widget);
+    fillBox(canvas_, min, max, dressing_.radius, dressing_.widget);
     const float part = std::clamp(fraction, 0.0f, 1.0f);
     if (part > 0.0f) {
-        fillBox(canvas_, min, glm::vec2(min.x + size.x * part, max.y), style_.radius, ink(style_.fill));
+        fillBox(canvas_, min, glm::vec2(min.x + size.x * part, max.y), dressing_.radius, ink(dressing_.fill));
     }
     if (!overlay.empty()) {
         const glm::vec2 corner(min.x + (size.x - measure_(overlay)) * 0.5f, min.y);
-        label(overlay, corner, size, ink(style_.activeText));
+        label(overlay, corner, size, ink(dressing_.activeText));
     }
 }
 
@@ -613,10 +613,10 @@ void Immediate::separator() {
     if (canvas_ == nullptr) {
         return;
     }
-    const glm::vec2 size(right_ - margin_, ruleWidth + style_.spacing);
+    const glm::vec2 size(right_ - margin_, ruleWidth + dressing_.spacing);
     const glm::vec2 min = place(size);
-    const float middle = min.y + style_.spacing * 0.5f;
-    canvas_->rect(glm::vec2(min.x, middle), glm::vec2(min.x + size.x, middle + ruleWidth), style_.rule);
+    const float middle = min.y + dressing_.spacing * 0.5f;
+    canvas_->rect(glm::vec2(min.x, middle), glm::vec2(min.x + size.x, middle + ruleWidth), dressing_.rule);
 }
 
 void Immediate::sameLine() {
@@ -646,9 +646,9 @@ bool Immediate::tabBar(const std::string& id) {
     // holds is drawn under the whole strip rather than beside the next tab
     tabTop_ = penY_;
     tabPen_ = margin_;
-    penY_ = tabTop_ + style_.barHeight;
-    canvas_->rect(glm::vec2(margin_, penY_), glm::vec2(right_, penY_ + ruleWidth), style_.rule);
-    penY_ += ruleWidth + style_.spacing;
+    penY_ = tabTop_ + dressing_.barHeight;
+    canvas_->rect(glm::vec2(margin_, penY_), glm::vec2(right_, penY_ + ruleWidth), dressing_.rule);
+    penY_ += ruleWidth + dressing_.spacing;
     sameLine_ = false;
     return true;
 }
@@ -659,9 +659,9 @@ bool Immediate::tab(const std::string& label) {
     }
     Retained& retained = retain(tabBar_);
     const unsigned int index = tabIndex_++;
-    const glm::vec2 size(measure_(label) + style_.padding * 2.0f, style_.barHeight);
+    const glm::vec2 size(measure_(label) + dressing_.padding * 2.0f, dressing_.barHeight);
     const glm::vec2 min(tabPen_, tabTop_);
-    tabPen_ += size.x + style_.spacing;
+    tabPen_ += size.x + dressing_.spacing;
 
     const Id id = identify(label);
     const Reaction reaction = interact(id, min, min + size);
@@ -672,9 +672,9 @@ bool Immediate::tab(const std::string& label) {
     const bool selected = retained.tab == index;
     tabTaken_ = tabTaken_ || selected;
 
-    fillBox(canvas_, min, min + size, style_.radius, face(selected, reaction.hovered));
-    this->label(label, min + glm::vec2(style_.padding, 0.0f), size,
-        selected ? style_.activeText : style_.text);
+    fillBox(canvas_, min, min + size, dressing_.radius, face(selected, reaction.hovered));
+    this->label(label, min + glm::vec2(dressing_.padding, 0.0f), size,
+        selected ? dressing_.activeText : dressing_.text);
     return selected;
 }
 
@@ -740,13 +740,13 @@ void Immediate::headerRow() {
         return;
     }
     const glm::vec2 min(tableLeft_, penY_);
-    const glm::vec2 max(right_, penY_ + style_.lineHeight);
-    fillBox(canvas_, min, max, 0.0f, style_.titleBar);
+    const glm::vec2 max(right_, penY_ + dressing_.lineHeight);
+    fillBox(canvas_, min, max, 0.0f, dressing_.titleBar);
     for (std::size_t index = 0; index < headers_.size(); index++) {
-        const glm::vec2 corner(columnStart(static_cast<unsigned int>(index)) + style_.padding * 0.5f, min.y);
-        label(headers_[index], corner, glm::vec2(0.0f, style_.lineHeight), style_.dimText);
+        const glm::vec2 corner(columnStart(static_cast<unsigned int>(index)) + dressing_.padding * 0.5f, min.y);
+        label(headers_[index], corner, glm::vec2(0.0f, dressing_.lineHeight), dressing_.dimText);
     }
-    penY_ = max.y + style_.spacing;
+    penY_ = max.y + dressing_.spacing;
     nextRow();
 }
 
@@ -767,7 +767,7 @@ void Immediate::nextColumn() {
     // staying on the row is what sameLine() already does; the column start is where the
     // next widget lands rather than wherever the last one ended
     sameLine_ = true;
-    lastRight_ = columnStart(columnIndex_) - style_.spacing;
+    lastRight_ = columnStart(columnIndex_) - dressing_.spacing;
 }
 
 void Immediate::endTable() {

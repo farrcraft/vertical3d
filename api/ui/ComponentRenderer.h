@@ -79,13 +79,17 @@ class ComponentRenderer {
     typedef std::function<void(const std::string&, const glm::vec2&, const glm::vec4&)> Write;
 
     /**
-     * What the ui cannot work out from the components alone.
+     * What the ui cannot work out from the components alone: the colours and metrics a
+     * component is drawn with.
      *
      * These are what a theme's "ui" style names, and what is left here is the default a
      * theme that names nothing draws in. theme() is what reads one in, per ADR-0020.
+     *
+     * Not a Style, which is the bag of properties a theme holds. This is what one resolves
+     * to.
      **/
-    struct Style final {
-        Style() noexcept;
+    struct Dressing final {
+        Dressing() noexcept;
 
         float lineHeight;      /**< the baseline to baseline distance of one menu item **/
         float padding;         /**< the gap between the text and the panel around it **/
@@ -117,10 +121,10 @@ class ComponentRenderer {
     /**
      * @return the colours and metrics the ui is drawn with, to be changed in place
      **/
-    Style& style() noexcept;
+    Dressing& dressing() noexcept;
 
     /**
-     * Draw with a theme: read its "ui" style into style(), and keep it for the images a
+     * Draw with a theme: read its "ui" style into dressing(), and keep it for the images a
      * button is drawn from.
      *
      * Every colour and metric the style does not name keeps the value it had, so a theme
@@ -307,9 +311,6 @@ class ComponentRenderer {
      * that class the theme holds first, so that a theme can dress every button without
      * every button naming it.
      *
-     * The return type is the library's Style and not this class's, which is the struct of
-     * colours and metrics above.
-     *
      * @param className the style class - "button", "ui"
      * @param name what the component's style() gives, which may be empty
      **/
@@ -317,7 +318,7 @@ class ComponentRenderer {
 
     Measure measure_;
     Write write_;
-    Style style_;
+    Dressing dressing_;
     boost::shared_ptr<style::Theme> theme_;
 };
 
