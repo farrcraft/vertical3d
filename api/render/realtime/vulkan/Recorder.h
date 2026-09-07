@@ -70,6 +70,9 @@ class Recorder final {
         VkDeviceSize vertexBufferOffset;
         VkBuffer indexBuffer;
         VkDeviceSize indexBufferOffset;
+        VkRect2D area;      /**< the whole of what the pass draws into, which an unclipped item wants **/
+        VkRect2D scissor;   /**< what is set now, so an unchanged clip costs nothing **/
+        bool scissorSet;    /**< false until one is known, which is what an escape hatch leaves behind **/
     };
 
     /**
@@ -93,6 +96,13 @@ class Recorder final {
      * Bind what the item needs that is not bound already, and issue its draw.
      **/
     static void record(VkCommandBuffer commands, const DrawItem& item, const Resources& resources, VkDescriptorSet frameSet, Bound* bound);
+
+    /**
+     * Cut the draw down to what the item asks for, or back to the whole pass when it asks
+     * for nothing, per ADR-0037. The rectangle is clamped to the pass's own, so an item
+     * clipped against a canvas larger than the image cannot name a region outside it.
+     **/
+    static void scissor(VkCommandBuffer commands, const DrawItem& item, Bound* bound);
 };
 
 };  // namespace v3d::render::realtime::vulkan

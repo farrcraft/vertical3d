@@ -150,6 +150,16 @@ class Component {
     bool pickable() const;
     void pickable(bool pick);
 
+    /**
+     * Get whether what this component holds is cut off at its box.
+     *
+     * False by default, and deliberately: a menu drops a panel out of the strip it came
+     * from, and a badge sits half outside the plate it belongs to. A component that holds
+     * more than it can show - a list, a scrolled panel - asks for it. ADR-0037.
+     **/
+    bool clip() const;
+    void clip(bool cut);
+
  private:
     Layout layout_;
     std::vector<boost::shared_ptr<Component>> children_;
@@ -162,6 +172,7 @@ class Component {
     std::string name_;
     bool visible_;
     bool pickable_;
+    bool clip_;
     component::Type type_;
 };
 

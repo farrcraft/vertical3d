@@ -70,6 +70,16 @@ v3d::ui::Immediate::Input hover(const glm::vec2& at) {
 }
 
 /**
+ * The wheel turned, with the cursor resting where it is.
+ **/
+v3d::ui::Immediate::Input wheel(const glm::vec2& at, float notches) {
+    v3d::ui::Immediate::Input input;
+    input.cursor = at;
+    input.wheel = notches;
+    return input;
+}
+
+/**
  * @return whether anything written carried this string
  **/
 bool wrote(const std::vector<Written>& written, const std::string& text) {
@@ -498,6 +508,148 @@ BOOST_AUTO_TEST_CASE(the_window_drawn_last_takes_the_cursor) {
     ui.end();
 
     BOOST_CHECK(!beneath);
+}
+
+/**
+ * What a window holds is cut off at the window rather than drawn over what is beside it, so
+ * the rows go into a batch carrying the window's body - ADR-0037.
+ **/
+BOOST_AUTO_TEST_CASE(a_window_cuts_what_it_holds_off_at_its_edges) {
+    std::vector<Written> written;
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(400, 300);
+    v3d::ui::Immediate ui = build(&written);
+    const glm::vec2 corner(50.0f, 40.0f);
+    const glm::vec2 size(200.0f, 150.0f);
+
+    ui.begin(&canvas, hover(glm::vec2(-1.0f, -1.0f)));
+    BOOST_REQUIRE(ui.window("Encounter", corner, size, 1.0f));
+    ui.button("Go");
+    ui.endWindow();
+    ui.end();
+
+    // the plate and the title bar are drawn before the clip opens, and what goes in it after
+    const std::vector<v3d::render::realtime::Canvas::Batch>& batches = canvas.batches();
+    BOOST_REQUIRE(batches.size() >= 2U);
+    BOOST_CHECK(!batches.front().clipped);
+    const v3d::render::realtime::Canvas::Batch& cut = batches.back();
+    BOOST_REQUIRE(cut.clipped);
+    BOOST_CHECK_CLOSE(cut.clip.x, corner.x + ui.style().borderWidth, 0.001f);
+    BOOST_CHECK_CLOSE(cut.clip.y, corner.y + ui.style().barHeight, 0.001f);
+    BOOST_CHECK_CLOSE(cut.clip.z, corner.x + size.x - ui.style().borderWidth, 0.001f);
+    BOOST_CHECK_CLOSE(cut.clip.w, corner.y + size.y - ui.style().borderWidth, 0.001f);
+}
+
+/**
+ * A window that held more than it shows scrolls on the wheel, and the rows move up by what
+ * it was scrolled by. The bar is decided from what the frame before drew, so the first
+ * frame of an overflowing window still draws it unscrolled.
+ **/
+BOOST_AUTO_TEST_CASE(a_window_scrolls_when_it_holds_more_than_it_shows) {
+    std::vector<Written> written;
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(400, 300);
+    v3d::ui::Immediate ui = build(&written);
+    const glm::vec2 corner(20.0f, 20.0f);
+    const glm::vec2 size(200.0f, 100.0f);
+    const glm::vec2 inside(60.0f, 80.0f);
+
+    // the frame that overflows, and turns the wheel
+    ui.begin(&canvas, wheel(inside, -2.0f));
+    BOOST_REQUIRE(ui.window("Log", corner, size, 1.0f));
+    for (int row = 0; row < 20; row++) {
+        ui.text("row");
+    }
+    ui.endWindow();
+    ui.end();
+    BOOST_REQUIRE_EQUAL(written.size(), 21U);
+    const float before = written[1].pen.y;
+
+    written.clear();
+    ui.begin(&canvas, hover(inside));
+    BOOST_REQUIRE(ui.window("Log", corner, size, 1.0f));
+    for (int row = 0; row < 20; row++) {
+        ui.text("row");
+    }
+    ui.endWindow();
+    ui.end();
+
+    BOOST_REQUIRE_EQUAL(written.size(), 21U);
+    // two notches towards the reader, which is two notches further down the content
+    BOOST_CHECK_CLOSE(before - written[1].pen.y, ui.style().lineHeight * 3.0f * 2.0f, 0.001f);
+}
+
+/**
+ * The wheel turns the window the cursor is over and leaves the one beside it where it was.
+ **/
+BOOST_AUTO_TEST_CASE(the_wheel_turns_only_the_window_under_the_cursor) {
+    std::vector<Written> written;
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(400, 300);
+    v3d::ui::Immediate ui = build(&written);
+    const glm::vec2 size(120.0f, 80.0f);
+    const glm::vec2 left(10.0f, 10.0f);
+    const glm::vec2 right(200.0f, 10.0f);
+
+    for (int frame = 0; frame < 2; frame++) {
+        written.clear();
+        // the cursor is over the left window, and only the second frame has a bar to move
+        ui.begin(&canvas, wheel(glm::vec2(40.0f, 60.0f), -1.0f));
+        BOOST_REQUIRE(ui.window("Left", left, size, 1.0f));
+        for (int row = 0; row < 12; row++) {
+            ui.text("left");
+        }
+        ui.endWindow();
+        BOOST_REQUIRE(ui.window("Right", right, size, 1.0f));
+        for (int row = 0; row < 12; row++) {
+            ui.text("right");
+        }
+        ui.endWindow();
+        ui.end();
+    }
+
+    const float leftTop = written[1].pen.y;
+    const float rightTop = written[14].pen.y;
+    BOOST_CHECK_EQUAL(written[1].text, "left");
+    BOOST_CHECK_EQUAL(written[14].text, "right");
+    // the left one has been scrolled off its first row and the right one has not
+    BOOST_CHECK(leftTop < rightTop);
+}
+
+/**
+ * A bar appears on the frame after the one that overflowed, because how tall the content is
+ * is only known once it has been drawn.
+ **/
+BOOST_AUTO_TEST_CASE(a_bar_appears_the_frame_after_a_window_overflows) {
+    std::vector<Written> written;
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(400, 300);
+    v3d::ui::Immediate ui = build(&written);
+    const glm::vec2 corner(20.0f, 20.0f);
+    const glm::vec2 size(200.0f, 100.0f);
+
+    // one long line, wrapped to whatever width the window leaves
+    ui.begin(&canvas, hover(glm::vec2(-1.0f, -1.0f)));
+    BOOST_REQUIRE(ui.window("Log", corner, size, 1.0f));
+    for (int row = 0; row < 20; row++) {
+        ui.text("row");
+    }
+    ui.endWindow();
+    ui.end();
+    const std::size_t unscrolled = canvas.indices().size();
+
+    canvas.clear();
+    written.clear();
+    ui.begin(&canvas, hover(glm::vec2(-1.0f, -1.0f)));
+    BOOST_REQUIRE(ui.window("Log", corner, size, 1.0f));
+    for (int row = 0; row < 20; row++) {
+        ui.text("row");
+    }
+    ui.endWindow();
+    ui.end();
+
+    // the second frame knows it overflowed, so it draws a track and a thumb the first had not
+    BOOST_CHECK(canvas.indices().size() > unscrolled);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

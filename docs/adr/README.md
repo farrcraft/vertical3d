@@ -47,3 +47,4 @@ old record's status and leave the file in place.
 | [0034](0034-a-component-has-children-and-a-box.md) | UI Layout — A Component Has Children, And The Draw Walk Resolves Its Box | accepted | 2026-09-06 |
 | [0035](0035-an-immediate-mode-layer-over-the-same-canvas.md) | Immediate Mode — A Second Way To Draw A UI, Onto The Same Canvas | accepted | 2026-09-06 |
 | [0036](0036-text-is-a-distinct-kind-of-quad.md) | 2D Drawing — Text Is A Distinct Kind Of Quad, And The Primitive Carries Which | accepted | 2026-09-06 |
+| [0037](0037-clipping-is-a-scissor-the-batch-carries.md) | Clipping — A Clip Rectangle Is Batch State, And The Device Scissors The Draw | accepted | 2026-09-06 |

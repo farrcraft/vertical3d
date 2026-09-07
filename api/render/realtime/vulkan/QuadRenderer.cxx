@@ -7,7 +7,9 @@
 
 #include "RenderTarget.h"
 
+#include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <map>
 #include <sstream>
@@ -327,6 +329,18 @@ void QuadRenderer::submit(const Canvas& canvas, Pass* pass, uint16_t layer) {
         item.indices = batch.indices;
         item.firstIndex = batch.firstIndex;
         item.instances = 1;
+
+        if (batch.clipped) {
+            // the canvas clips in its own pixels, which are the image's because the ui is
+            // drawn into a pass covering the whole of it - ADR-0037
+            const float left = std::max(batch.clip.x, 0.0f);
+            const float top = std::max(batch.clip.y, 0.0f);
+            item.scissored = true;
+            item.scissor.offset.x = static_cast<int32_t>(left);
+            item.scissor.offset.y = static_cast<int32_t>(top);
+            item.scissor.extent.width = static_cast<uint32_t>(std::max(batch.clip.z - left, 0.0f));
+            item.scissor.extent.height = static_cast<uint32_t>(std::max(batch.clip.w - top, 0.0f));
+        }
 
         if (pipeline != nullptr && pipeline->pushStages != 0) {
             Push constants;

@@ -46,7 +46,9 @@ firstVertex(0),
 indices(0),
 firstIndex(0),
 instances(1),
-firstInstance(0) {
+firstInstance(0),
+scissored(false),
+scissor{} {
 }
 
 };  // namespace v3d::render::realtime

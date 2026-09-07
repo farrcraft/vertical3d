@@ -53,13 +53,15 @@ class Canvas final {
 
     /**
      * A run of indices that can be drawn with one call, because everything in it samples
-     * the same texture the same way.
+     * the same texture the same way and is cut to the same rectangle.
      **/
     struct Batch final {
         Batch() noexcept;
 
         TextureHandle texture;  /**< unset for the untextured quads drawn against white **/
         bool text;              /**< whether the run samples a distance field - ADR-0036 **/
+        bool clipped;           /**< whether clip cuts the run down, per ADR-0037 **/
+        glm::vec4 clip;         /**< the rectangle it is cut to - min x, min y, max x, max y **/
         uint32_t firstIndex;    /**< where the run starts in indices() **/
         uint32_t indices;       /**< how long the run is **/
     };
@@ -113,6 +115,32 @@ class Canvas final {
      * Translate the current transform.
      **/
     void translate(const glm::vec2& offset);
+
+    /**
+     * Scale the current transform about the origin it is already translated to.
+     **/
+    void scale(const glm::vec2& factor);
+
+    /**
+     * Cut everything drawn until the matching unclip() to a rectangle.
+     *
+     * The rectangle is in the coordinates being drawn in - the current transform applies
+     * to it the same way it applies to a vertex, and it is resolved once, here, so
+     * translating afterwards moves what is drawn rather than what it is cut to. It is
+     * intersected with whatever is already clipped, so an inner clip can only take room
+     * away.
+     *
+     * Clipping is per batch and not per vertex: the stream cuts where the rectangle
+     * changes and the device scissors the draw, so a quad straddling the edge is drawn
+     * whole and half of it lands. ADR-0037.
+     **/
+    void clip(const glm::vec2& min, const glm::vec2& max);
+
+    /**
+     * Go back to what was clipped before the matching clip(). Clipping nothing at the
+     * bottom of the stack means the whole canvas.
+     **/
+    void unclip();
 
     /**
      * An untextured rectangle, drawn against the renderer's white texture.
@@ -185,9 +213,10 @@ class Canvas final {
     /**
      * Start a batch, or extend the open one when it already draws the same way.
      *
-     * Both the texture and the text flag have to match: the fragment shader treats a text
-     * batch's texels as distances, so merging one with a run of sprites would threshold
-     * the sprites.
+     * The texture, the text flag and the clip rectangle all have to match: the fragment
+     * shader treats a text batch's texels as distances, so merging one with a run of
+     * sprites would threshold the sprites, and a scissor belongs to a whole draw, so two
+     * runs cut differently cannot be one.
      **/
     void open(const TextureHandle& texture, bool text = false);
 
@@ -204,6 +233,8 @@ class Canvas final {
     uint32_t width_;
     uint32_t height_;
     std::deque<glm::mat4> transforms_;
+    /**< what each open clip cuts to, already transformed and intersected; empty is uncut **/
+    std::deque<glm::vec4> clips_;
     std::vector<Vertex> vertices_;
     std::vector<uint32_t> indices_;
     std::vector<Batch> batches_;

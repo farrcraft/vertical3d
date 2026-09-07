@@ -71,19 +71,20 @@ that exists today.
 A component holds other components and asks for a box as of 2026-09-06 -
 [ADR-0034](adr/0034-a-component-has-children-and-a-box.md) - and `ui::Immediate` is a second
 way to write one, driven by calls rather than by a tree -
-[ADR-0035](adr/0035-an-immediate-mode-layer-over-the-same-canvas.md). Nothing in the tree
-uses either yet: the editor's menu bar and toolbars are strips the renderer places itself,
-and the apps put up a menu and an overlay. Both were built for the huds, plates and debug
-panels that need them.
+[ADR-0035](adr/0035-an-immediate-mode-layer-over-the-same-canvas.md). A box is cut off at the
+one holding it as of the same day, which is a scissor the batch carries -
+[ADR-0037](adr/0037-clipping-is-a-scissor-the-batch-carries.md). Nothing in the tree uses any
+of it yet: the editor's menu bar and toolbars are strips the renderer places itself, and the
+apps put up a menu and an overlay. All of it was built for the huds, plates and debug panels
+that need it.
 
-[] nothing clips a child to its parent, and a box that overflows draws outside the one holding it. A scrollbar needs clipping before it needs anything else, which is why `Scrollbar.h` is still an empty declaration
 [] `TabBar`, `TabPage`, `TextBox`, `CheckBox`, `RadioButton`, `Dialog`, `SelectList`, `Spinner`, `ToolTip`, `PopupMenu` and `RadialMenu` are still empty declarations with no loader and no draw path
 [] `Frame` is an empty declaration that `Panel` now covers the drawing half of. Either it becomes the thing with a title bar that a dialog sits in, or it goes
+[] a retained `Scrollbar` scrolls nothing on its own: it is the arithmetic and the drawing, and what it scrolls is a clipping component whose children something has to translate. A scroll view that holds the two together is the next shape, and no app has asked for one
 [] nothing in the tree drives `ui::Immediate`, so the layer is covered by its cases and by nothing that draws. The editor's four viewports, voxel's chunk counts and odyssey's turn state are each a debug window waiting to be asked for
-[] `Immediate` keeps no scroll, so a panel longer than its window runs off the bottom of it. This is the clipping item above, met from the other side
 [] a widget in `Immediate` is hovered a frame after it is drawn, so the first frame of a window that appears under the cursor answers nothing
 [] a percentage of a parent that has not been drawn is a percentage of zero, so the frame after a resize places a child against the previous size
-[] `Canvas` has `push`, `pop` and `translate` and no scale, so anything wanting to draw at a size scales its own coordinates before handing them over - which is what `TextureTextBuffer` does for a glyph. Carried out of the ui foundations plan, which met the gap from one direction and did not need to close it
+[] a clip is a scissor, so it is axis aligned and square: a panel with rounded corners clips to the box and not to the curve, and `LineCanvas` carries no clip at all
 
 ## The game loop
 

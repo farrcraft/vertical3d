@@ -37,6 +37,10 @@ namespace v3d::ui {
  * Which widget the cursor is on is decided as a frame is drawn and used by the next one,
  * so a widget drawn later takes the cursor from one under it. A widget that moved is
  * therefore hovered a frame late.
+ *
+ * A window cuts what it holds off at its own edges and scrolls it, which is the canvas's
+ * clip of ADR-0037. How tall the content is is measured as it is drawn, so a window
+ * decides whether it needs a scrollbar from what the frame before it held.
  **/
 class Immediate {
  public:
@@ -68,6 +72,7 @@ class Immediate {
         bool down;
         bool pressed;
         bool released;
+        float wheel;  /**< notches turned since the last frame, away from the reader first **/
     };
 
     /**
@@ -84,6 +89,7 @@ class Immediate {
         float borderWidth;     /**< how thick a window's outline is **/
         float radius;          /**< how far a window's corners are rounded **/
         float indent;          /**< how far a bullet pushes its text in **/
+        float scrollbarWidth;  /**< how wide the bar down a window that scrolls is **/
         glm::vec4 panel;       /**< a window's background **/
         glm::vec4 border;      /**< its outline **/
         glm::vec4 titleBar;    /**< the band across the top of one **/
@@ -126,6 +132,11 @@ class Immediate {
 
     /**
      * Open a window at a place the caller decides - this layer does not drag one.
+     *
+     * What goes in it is cut off at the window's edges and scrolls when there is more of
+     * it than fits, per ADR-0037. How much there is is what last frame's content came to,
+     * so the bar appears on the frame after the one that overflowed and a window whose
+     * content changes every frame sizes its thumb a frame behind.
      *
      * Pair every call with endWindow() whatever it answered: a collapsed window returns
      * false and still has to be closed.
@@ -280,6 +291,8 @@ class Immediate {
         Retained() noexcept;
 
         unsigned int tab;  /**< which tab of a strip is selected **/
+        float scroll;      /**< how far the window's content is scrolled up, in pixels **/
+        float content;     /**< how tall what it held came to last frame **/
         bool collapsed;    /**< whether a window is folded to its title bar **/
     };
 
@@ -312,6 +325,16 @@ class Immediate {
      * Draw a line of text with its box already worked out, vertically centred in it.
      **/
     void label(const std::string& line, const glm::vec2& min, const glm::vec2& size, const glm::vec4& colour) const;
+
+    /**
+     * Draw the bar down the right of a window that has more content than it shows, and
+     * scroll it where the cursor drags the thumb to.
+     *
+     * @param view how much of the content the window shows, in pixels
+     * @param span how much of it it does not, which is the furthest it can be scrolled
+     * @param scroll read and written - where the window is scrolled to
+     **/
+    void scrollbar(float view, float span, float* scroll);
 
     /**
      * @return how far along the row a column starts
@@ -363,6 +386,14 @@ class Immediate {
     bool inWindow_;
     float windowMargin_;
     float windowRight_;
+    Id window_;          /**< whose scroll and content the one being written are **/
+    Id windowScroll_;    /**< the id its scrollbar answers the cursor as **/
+    glm::vec2 bodyMin_;  /**< the part of it below the title bar, which is what is cut to **/
+    glm::vec2 bodyMax_;
+    float contentTop_;   /**< where its content would start if it were not scrolled **/
+    bool windowScrolls_;
+    bool windowClipped_;
+    Id wheeled_;         /**< the topmost window the cursor is over, which the wheel turns **/
 
     /**< the tab strip being written **/
     Id tabBar_;

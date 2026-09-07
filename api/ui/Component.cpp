@@ -19,6 +19,7 @@ Component::Component(component::Type type) :
     id_(lastID++),
     visible_(true),
     pickable_(false),
+    clip_(false),
     zIndex_(0),
     type_(type),
     size_(0.0f, 0.0f),
@@ -94,6 +95,14 @@ bool Component::pickable() const {
 
 void Component::pickable(bool pick) {
     pickable_ = pick;
+}
+
+bool Component::clip() const {
+    return clip_;
+}
+
+void Component::clip(bool cut) {
+    clip_ = cut;
 }
 
 v3d::type::Bound2D Component::bound() const {

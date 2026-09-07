@@ -15,7 +15,7 @@ v3d_add_api_library(ui
 "component/HorizontalBox.h" "component/HorizontalBox.cpp"
 "component/InputBox.h"
 "component/RadioButton.h"
-"component/Scrollbar.h"
+"component/Scrollbar.h" "component/Scrollbar.cpp"
 "component/SelectList.h"
 "component/Spinner.h"
 "component/TabBar.h"

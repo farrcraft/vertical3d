@@ -5,6 +5,7 @@
 
 #include "Canvas.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <vector>
@@ -17,6 +18,8 @@ namespace v3d::render::realtime {
  **/
 Canvas::Batch::Batch() noexcept :
 text(false),
+clipped(false),
+clip(0.0f),
 firstIndex(0),
 indices(0) {
 }
@@ -37,6 +40,7 @@ void Canvas::clear() {
     batches_.clear();
     transforms_.clear();
     transforms_.push_back(glm::mat4(1.0f));
+    clips_.clear();
 }
 
 /**
@@ -99,13 +103,68 @@ void Canvas::translate(const glm::vec2& offset) {
 
 /**
  **/
+void Canvas::scale(const glm::vec2& factor) {
+    glm::mat4& current = transforms_.back();
+    current[0][0] *= factor.x;
+    current[0][1] *= factor.x;
+    current[1][0] *= factor.y;
+    current[1][1] *= factor.y;
+}
+
+/**
+ **/
+void Canvas::clip(const glm::vec2& min, const glm::vec2& max) {
+    const glm::mat4& transform = transforms_.back();
+    const glm::vec2 first(
+        transform[0][0] * min.x + transform[1][0] * min.y + transform[3][0],
+        transform[0][1] * min.x + transform[1][1] * min.y + transform[3][1]);
+    const glm::vec2 second(
+        transform[0][0] * max.x + transform[1][0] * max.y + transform[3][0],
+        transform[0][1] * max.x + transform[1][1] * max.y + transform[3][1]);
+
+    // a negative scale swaps the corners, so which is the smaller is worked out after the
+    // transform rather than assumed from the arguments
+    glm::vec4 rect(std::min(first.x, second.x), std::min(first.y, second.y),
+        std::max(first.x, second.x), std::max(first.y, second.y));
+
+    if (!clips_.empty()) {
+        const glm::vec4& outer = clips_.back();
+        rect.x = std::max(rect.x, outer.x);
+        rect.y = std::max(rect.y, outer.y);
+        rect.z = std::min(rect.z, outer.z);
+        rect.w = std::min(rect.w, outer.w);
+    }
+    // two clips that miss each other leave nothing rather than an inverted rectangle,
+    // which is a validation error by the time it reaches a scissor
+    rect.z = std::max(rect.x, rect.z);
+    rect.w = std::max(rect.y, rect.w);
+
+    clips_.push_back(rect);
+}
+
+/**
+ **/
+void Canvas::unclip() {
+    if (!clips_.empty()) {
+        clips_.pop_back();
+    }
+}
+
+/**
+ **/
 void Canvas::open(const TextureHandle& texture, bool text) {
-    if (!batches_.empty() && batches_.back().texture == texture && batches_.back().text == text) {
+    const bool clipped = !clips_.empty();
+    const glm::vec4 clip = clipped ? clips_.back() : glm::vec4(0.0f);
+
+    if (!batches_.empty() && batches_.back().texture == texture && batches_.back().text == text &&
+        batches_.back().clipped == clipped && batches_.back().clip == clip) {
         return;
     }
     Batch batch;
     batch.texture = texture;
     batch.text = text;
+    batch.clipped = clipped;
+    batch.clip = clip;
     batch.firstIndex = static_cast<uint32_t>(indices_.size());
     batch.indices = 0;
     batches_.push_back(batch);

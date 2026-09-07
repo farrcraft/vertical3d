@@ -332,4 +332,66 @@ BOOST_AUTO_TEST_CASE(a_rounded_panel_is_bands_and_wedges_in_one_batch) {
     BOOST_CHECK_EQUAL(canvas.batches().size(), 1U);
 }
 
+/**
+ * A component that asks to clip cuts what it holds off at its own box, so the batch its
+ * children are drawn in carries that box for the device to scissor to - ADR-0037. The
+ * parent's own quads are not cut: a panel draws inside itself already.
+ **/
+BOOST_AUTO_TEST_CASE(a_component_that_clips_cuts_its_children_to_its_box) {
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(400, 200);
+
+    const boost::shared_ptr<v3d::ui::component::Panel> outer = panel("outer");
+    outer->layout().width = v3d::ui::Length(100.0f, v3d::ui::Length::Unit::Pixels);
+    outer->layout().height = v3d::ui::Length(50.0f, v3d::ui::Length::Unit::Pixels);
+    outer->layout().x = v3d::ui::Length(20.0f, v3d::ui::Length::Unit::Pixels);
+    outer->layout().y = v3d::ui::Length(30.0f, v3d::ui::Length::Unit::Pixels);
+    outer->clip(true);
+
+    const boost::shared_ptr<v3d::ui::component::Panel> inner = panel("inner");
+    inner->layout().width = v3d::ui::Length(400.0f, v3d::ui::Length::Unit::Pixels);
+    inner->layout().height = v3d::ui::Length(400.0f, v3d::ui::Length::Unit::Pixels);
+    outer->add(inner);
+
+    v3d::ui::Container container("hud", true);
+    container.add(outer);
+    build().draw(&canvas, container);
+
+    // the parent's plate, then the child's under the clip
+    BOOST_REQUIRE(canvas.batches().size() >= 2U);
+    BOOST_CHECK(!canvas.batches().front().clipped);
+    const v3d::render::realtime::Canvas::Batch& cut = canvas.batches().back();
+    BOOST_REQUIRE(cut.clipped);
+    BOOST_CHECK_CLOSE(cut.clip.x, 20.0f, 0.001f);
+    BOOST_CHECK_CLOSE(cut.clip.y, 30.0f, 0.001f);
+    BOOST_CHECK_CLOSE(cut.clip.z, 120.0f, 0.001f);
+    BOOST_CHECK_CLOSE(cut.clip.w, 80.0f, 0.001f);
+    // and the child is left holding the box it asked for rather than the one it can show,
+    // which is what the cursor is still tested against
+    BOOST_CHECK_CLOSE(inner->size().x, 400.0f, 0.001f);
+}
+
+/**
+ * Clipping is what a component asked for and not the default, because a menu drops a panel
+ * out of the strip it came from and a badge sits half outside its plate.
+ **/
+BOOST_AUTO_TEST_CASE(a_component_that_does_not_ask_is_not_clipped) {
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(400, 200);
+
+    const boost::shared_ptr<v3d::ui::component::Panel> outer = panel("outer");
+    outer->layout().width = v3d::ui::Length(100.0f, v3d::ui::Length::Unit::Pixels);
+    outer->layout().height = v3d::ui::Length(50.0f, v3d::ui::Length::Unit::Pixels);
+    outer->add(panel("inner"));
+
+    v3d::ui::Container container("hud", true);
+    container.add(outer);
+    build().draw(&canvas, container);
+
+    BOOST_REQUIRE(!canvas.batches().empty());
+    for (const v3d::render::realtime::Canvas::Batch& batch : canvas.batches()) {
+        BOOST_CHECK(!batch.clipped);
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()

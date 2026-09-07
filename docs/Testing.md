@@ -37,6 +37,11 @@ font library, and a strip is hit tested against the bounds a draw left on it, pe
 cannot. The same is true of an app's own rules: `odyssey`'s suite covers its map format and the
 route across it, and stands up neither a window nor a device to do it.
 
+Clipping is asserted where it is decided rather than where it takes effect: the cases check the
+rectangle a batch carries out of `Canvas` and out of a ui draw, per
+[ADR-0037](adr/0037-clipping-is-a-scissor-the-batch-carries.md), and the `vkCmdSetScissor` that
+acts on it is in the recorder and needs a device like everything else there.
+
 ## Suites with something to know about them
 
 - **The moya and talyn suites each render against a committed PNG**, in `moya/tests/data/` and

@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "Painter.h"
+#include "component/Scrollbar.h"
 
 namespace v3d::ui {
 
@@ -35,6 +36,12 @@ const float ruleWidth = 1.0f;
  * is the compromise every tool of this kind settles on.
  **/
 const float scrubRate = 0.25f;
+
+/**
+ * How far one notch of the wheel scrolls a window, as a multiple of a row. Three rows is
+ * what a desktop scrolls by, and reads as a deliberate move rather than a nudge.
+ **/
+const float wheelRows = 3.0f;
 
 /**
  * The side of the square a bullet is drawn in, as a fraction of a row.
@@ -85,7 +92,8 @@ Immediate::Input::Input() noexcept :
 cursor(0.0f, 0.0f),
 down(false),
 pressed(false),
-released(false) {
+released(false),
+wheel(0.0f) {
 }
 
 Immediate::Reaction::Reaction() noexcept :
@@ -96,6 +104,8 @@ clicked(false) {
 
 Immediate::Retained::Retained() noexcept :
 tab(0),
+scroll(0.0f),
+content(0.0f),
 collapsed(false) {
 }
 
@@ -107,6 +117,7 @@ barHeight(22.0f),
 borderWidth(1.0f),
 radius(3.0f),
 indent(14.0f),
+scrollbarWidth(10.0f),
 panel(0.05f, 0.06f, 0.09f, 0.92f),
 border(0.35f, 0.38f, 0.45f, 1.0f),
 titleBar(0.12f, 0.14f, 0.19f, 1.0f),
@@ -140,6 +151,14 @@ Immediate::Immediate(const Measure& measure, const Write& write) :
     inWindow_(false),
     windowMargin_(0.0f),
     windowRight_(0.0f),
+    window_(0),
+    windowScroll_(0),
+    bodyMin_(0.0f, 0.0f),
+    bodyMax_(0.0f, 0.0f),
+    contentTop_(0.0f),
+    windowScrolls_(false),
+    windowClipped_(false),
+    wheeled_(0),
     tabBar_(0),
     inTabBar_(false),
     tabPen_(0.0f),
@@ -186,6 +205,7 @@ void Immediate::theme(const boost::shared_ptr<style::Theme>& theme) {
     readMetric(chrome, "bar-height", &style_.barHeight);
     readMetric(chrome, "border-width", &style_.borderWidth);
     readMetric(chrome, "radius", &style_.radius);
+    readMetric(chrome, "scrollbar-width", &style_.scrollbarWidth);
 }
 
 void Immediate::begin(v3d::render::realtime::Canvas* canvas, const Input& input) {
@@ -196,6 +216,8 @@ void Immediate::begin(v3d::render::realtime::Canvas* canvas, const Input& input)
     ids_.clear();
     disabled_ = 0;
     inWindow_ = false;
+    windowClipped_ = false;
+    wheeled_ = 0;
     inTabBar_ = false;
     inTable_ = false;
     sameLine_ = false;
@@ -330,21 +352,109 @@ bool Immediate::window(const std::string& title, const glm::vec2& position, cons
     inWindow_ = true;
     windowMargin_ = margin_;
     windowRight_ = right_;
+    window_ = id;
+    windowScroll_ = identify(title + " scrollbar");
     margin_ = min.x + style_.padding;
     right_ = max.x - style_.padding;
     penY_ = barMax.y + style_.spacing;
     sameLine_ = false;
-    return !retained.collapsed;
+    windowClipped_ = false;
+    windowScrolls_ = false;
+    if (retained.collapsed) {
+        return false;
+    }
+
+    bodyMin_ = glm::vec2(min.x + style_.borderWidth, barMax.y);
+    bodyMax_ = glm::vec2(max.x - style_.borderWidth, max.y - style_.borderWidth);
+    contentTop_ = barMax.y + style_.spacing;
+
+    // whether there is a bar is decided by what the frame before this one drew, because how
+    // tall the content is is only known once it has been drawn
+    const float view = std::max(bodyMax_.y - contentTop_, 0.0f);
+    windowScrolls_ = retained.content > view;
+    if (windowScrolls_) {
+        right_ -= style_.scrollbarWidth + style_.spacing;
+        retained.scroll = std::clamp(retained.scroll, 0.0f, retained.content - view);
+    } else {
+        retained.scroll = 0.0f;
+    }
+
+    penY_ = contentTop_ - retained.scroll;
+    canvas_->clip(bodyMin_, bodyMax_);
+    windowClipped_ = true;
+
+    // the wheel turns the window the cursor is over, and a window drawn later is over one
+    // drawn before it, so the last to claim the cursor keeps it
+    if (inside(min, max, input_.cursor)) {
+        wheeled_ = id;
+    }
+    return true;
 }
 
 void Immediate::endWindow() {
     if (!inWindow_) {
         return;
     }
+    if (windowClipped_) {
+        canvas_->unclip();
+        windowClipped_ = false;
+
+        Retained& retained = state_[window_];
+        // how tall what was drawn came to. The pen has the scroll taken out of it and the
+        // gap after the last row left in, so both go back before it is a height
+        retained.content = std::max(penY_ + retained.scroll - style_.spacing - contentTop_, 0.0f);
+
+        const float view = std::max(bodyMax_.y - contentTop_, 0.0f);
+        const float span = std::max(retained.content - view, 0.0f);
+        if (windowScrolls_) {
+            scrollbar(view, span, &retained.scroll);
+        }
+        if (wheeled_ == window_ && input_.wheel != 0.0f) {
+            // a notch away from the reader shows what is above, which is a smaller offset
+            retained.scroll = std::clamp(retained.scroll - input_.wheel * style_.lineHeight * wheelRows,
+                0.0f, span);
+        }
+    }
     margin_ = windowMargin_;
     right_ = windowRight_;
     inWindow_ = false;
+    windowScrolls_ = false;
     sameLine_ = false;
+}
+
+void Immediate::scrollbar(float view, float span, float* scroll) {
+    const glm::vec2 min(bodyMax_.x - style_.scrollbarWidth, contentTop_);
+    const glm::vec2 max(bodyMax_.x, bodyMax_.y);
+    const float track = max.y - min.y;
+    if (track <= 0.0f || view <= 0.0f) {
+        return;
+    }
+
+    // as much of the track as the window shows of its content, so the thumb reads as how
+    // much there is as well as where in it the window is
+    const float length = std::clamp(track * (view / (view + span)),
+        std::min(component::Scrollbar::minimumThumb, track), track);
+    const float room = track - length;
+
+    const Reaction reaction = interact(windowScroll_, min, max);
+    if (reaction.held && room > 0.0f) {
+        // the cursor holds the middle of the thumb, so what is under it stays under it
+        *scroll = span * std::clamp((input_.cursor.y - min.y - length * 0.5f) / room, 0.0f, 1.0f);
+    }
+
+    // the thumb rests in the rule colour rather than the widget one, so that it reads
+    // against the track under it
+    glm::vec4 grip = style_.rule;
+    if (reaction.held) {
+        grip = style_.highlight;
+    } else if (reaction.hovered) {
+        grip = style_.hover;
+    }
+
+    const float start = span > 0.0f ? room * (*scroll / span) : 0.0f;
+    fillBox(canvas_, min, max, style_.radius, style_.widget);
+    fillBox(canvas_, glm::vec2(min.x, min.y + start), glm::vec2(max.x, min.y + start + length),
+        style_.radius, grip);
 }
 
 void Immediate::text(const std::string& line) {

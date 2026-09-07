@@ -92,6 +92,9 @@ struct DrawItem final {
     uint32_t instances;        /**< how many instances to draw **/
     uint32_t firstInstance;    /**< the first instance **/
 
+    bool scissored;            /**< whether the draw is cut down, rather than covering the pass **/
+    VkRect2D scissor;          /**< what it is cut to, in the pixels of the image drawn into - ADR-0037 **/
+
     /**
      * Records the item itself, for work the fields above cannot describe.
      * The engine calls it in place of issuing its own draw.

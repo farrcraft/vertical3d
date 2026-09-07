@@ -139,14 +139,23 @@ per [ADR-0005](adr/0005-one-batched-quad-primitive.md). Lines are the other prim
 described below. The quad is split across the cpu/gpu line:
 
 - **`realtime::Canvas`** accumulates the quads. It holds a vertex stream of position, uv and
-  colour, an index stream, and the batches those are cut into; it cuts a batch only where the
-  bound texture changes. It has a modelview stack that applies as vertices are added, and it
-  produces the pixels-to-clip-space projection the pipeline is pushed. None of it touches
-  vulkan, so the batching has unit tests.
+  colour, an index stream, and the batches those are cut into; it cuts a batch where the bound
+  texture, the text flag or the clip rectangle changes. It has a modelview stack of translates
+  and scales that applies as vertices are added, and it produces the pixels-to-clip-space
+  projection the pipeline is pushed. None of it touches vulkan, so the batching has unit
+  tests.
 - **`vulkan::QuadRenderer`** owns the one pipeline, the descriptor pool and layouts, the 1x1
   white texture an untextured quad is drawn against, and a vertex and index buffer per frame
   in flight. `submit(canvas, pass)` uploads the canvas into the buffers belonging to the frame
   about to be recorded, and turns each batch into a `DrawItem`.
+
+**A clip is batch state and the device scissors the draw**, per
+[ADR-0037](adr/0037-clipping-is-a-scissor-the-batch-carries.md). `Canvas::clip` pushes a
+rectangle, in the coordinates being drawn in and intersected with whatever is already clipped;
+the batch carries it, `QuadRenderer` puts it on the `DrawItem`, and the recorder sets a dynamic
+scissor per item and puts the pass's own region back for an item that names none. Nothing is
+clipped on the cpu, so a quad straddling the edge is drawn whole and half of it lands. A clip
+reaches the quad primitive alone — `LineCanvas` carries none.
 
 The buffers are per frame in flight because the device may still be reading the previous
 frame's geometry. `submit` calls `Presenter::waitFrame()` before writing. That is the same
@@ -172,9 +181,11 @@ absolute result in `position()` and `size()`. That result is what `Container::pi
 cursor against, so nothing is clickable until it has been drawn, and a component answers the
 cursor only when it is `pickable()`. A `VerticalBox` or a `HorizontalBox` writes its
 children's boxes itself rather than resolving them, because their order along the line is
-what a flow list is for. `Panel` and `Bar` round their corners with `Canvas::arc`, which is
-the same triangle fan `circle` is built from and so stays inside the one batched primitive of
-[ADR-0005](adr/0005-one-batched-quad-primitive.md).
+what a flow list is for. `Panel`, `Bar` and `Scrollbar` round their corners with `Canvas::arc`,
+which is the same triangle fan `circle` is built from and so stays inside the one batched
+primitive of [ADR-0005](adr/0005-one-batched-quad-primitive.md). A component cuts what it holds
+off at its own box when it asks to, with `Component::clip(true)`; a `Scrollbar` is the
+arithmetic of how far something is scrolled and leaves the input to whoever picked it.
 
 **There is a second way to write a ui, onto the same canvas**, per
 [ADR-0035](adr/0035-an-immediate-mode-layer-over-the-same-canvas.md). `v3d::ui::Immediate`
@@ -184,7 +195,9 @@ each placed where a layout pen has got to and hit tested against the box it was 
 in. It is the shape a tool wants, because a panel written that way is a function of the state
 it reads and cannot show something stale; a hud is the other shape and stays retained. Which
 widget the cursor is on is settled at `end()` and used by the next frame, which is what lets
-a window drawn later take the cursor from one under it.
+a window drawn later take the cursor from one under it. A window cuts what it holds off at its
+own edges and scrolls it on the wheel; how tall the content is is measured as it is drawn, so
+the bar appears on the frame after the one that overflowed.
 
 ## Line drawing
 
@@ -231,7 +244,8 @@ match. A lit 3D scene will have to revisit this.
 1. `Presenter::acquire` waits on the frame's fence, takes the next swapchain image, and
    begins that frame's command buffer.
 2. `Recorder::record` transitions the image to `COLOR_ATTACHMENT_OPTIMAL`, walks the passes —
-   `vkCmdBeginRendering`, viewport and scissor, the items, `vkCmdEndRendering` — then
+   `vkCmdBeginRendering`, viewport and scissor, the items and the scissor any of them asks
+   for, `vkCmdEndRendering` — then
    transitions the image to `PRESENT_SRC_KHR`. Both transitions are synchronization2 barriers.
 3. `Presenter::present` ends the buffer, submits it with `vkQueueSubmit2`, and presents.
 

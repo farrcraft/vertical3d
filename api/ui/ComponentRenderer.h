@@ -17,6 +17,7 @@
 #include "component/Icon.h"
 #include "component/Label.h"
 #include "component/Panel.h"
+#include "component/Scrollbar.h"
 #include "component/Toolbar.h"
 #include "component/menu/Menu.h"
 #include "component/menu/MenuBar.h"
@@ -44,8 +45,8 @@ namespace v3d::ui {
  * Drawing is also what lays the ui out: every component is left holding the bounds it
  * was drawn in, which is what the cursor is tested against, per ADR-0019.
  *
- * Menus, menu bars, toolbars, buttons, labels, icons, panels, bars and the two flow
- * boxes are drawn. The rest of the components in this library are empty declarations with
+ * Menus, menu bars, toolbars, buttons, labels, icons, panels, bars, scrollbars and the
+ * two flow boxes are drawn. The rest of the components in this library are empty declarations with
  * no loader.
  *
  * A component holds other components, and drawing one is what works out where they go:
@@ -87,12 +88,14 @@ class ComponentRenderer {
         float barHeight;       /**< how tall the strip of a menu bar or a toolbar is **/
         float iconSize;        /**< the side of the square an icon is drawn in **/
         float panelPadding;    /**< the gap above and below the items of a dropped panel **/
+        float scrollbarWidth;  /**< how thick a scrollbar is across its direction **/
         float borderWidth;     /**< how thick a panel's or a bar's outline is drawn **/
         float radius;          /**< how far a panel's corners are rounded, 0 for square **/
         glm::vec4 panel;       /**< the background the menu is drawn on **/
         glm::vec4 border;      /**< the panel's outline **/
         glm::vec4 track;       /**< the unfilled part of a bar **/
         glm::vec4 fill;        /**< the filled part of a bar **/
+        glm::vec4 thumb;       /**< the part of a scrollbar's track that is taken hold of **/
         glm::vec4 text;        /**< an ordinary item's label **/
         glm::vec4 activeText;  /**< the label of the item navigation is on **/
         glm::vec4 highlight;   /**< what is drawn behind that item **/
@@ -153,6 +156,12 @@ class ComponentRenderer {
      * Draw a bar - the track it holds, and the fraction of it that is filled.
      **/
     void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Bar>& bar) const;
+
+    /**
+     * Draw a scrollbar - its track, and the thumb over the part of the content its page
+     * shows. A bar with nothing to scroll draws the track alone.
+     **/
+    void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Scrollbar>& bar) const;
 
     /**
      * Draw every visible container of a ui engine.

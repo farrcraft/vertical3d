@@ -73,12 +73,14 @@ padding(24.0f),
 barHeight(28.0f),
 iconSize(22.0f),
 panelPadding(4.0f),
+scrollbarWidth(12.0f),
 borderWidth(1.0f),
 radius(0.0f),
 panel(0.05f, 0.06f, 0.09f, 0.92f),
 border(0.35f, 0.38f, 0.45f, 1.0f),
 track(0.12f, 0.13f, 0.17f, 1.0f),
 fill(0.30f, 0.62f, 0.36f, 1.0f),
+thumb(0.35f, 0.38f, 0.45f, 1.0f),
 text(0.78f, 0.80f, 0.84f, 1.0f),
 activeText(1.0f, 1.0f, 1.0f, 1.0f),
 highlight(0.16f, 0.34f, 0.58f, 1.0f),
@@ -115,6 +117,7 @@ void ComponentRenderer::theme(const boost::shared_ptr<style::Theme>& theme) {
     readColour(chrome, "border", &style_.border);
     readColour(chrome, "track", &style_.track);
     readColour(chrome, "fill", &style_.fill);
+    readColour(chrome, "thumb", &style_.thumb);
     readColour(chrome, "text", &style_.text);
     readColour(chrome, "active-text", &style_.activeText);
     readColour(chrome, "highlight", &style_.highlight);
@@ -125,6 +128,7 @@ void ComponentRenderer::theme(const boost::shared_ptr<style::Theme>& theme) {
     readMetric(chrome, "bar-height", &style_.barHeight);
     readMetric(chrome, "icon-size", &style_.iconSize);
     readMetric(chrome, "panel-padding", &style_.panelPadding);
+    readMetric(chrome, "scrollbar-width", &style_.scrollbarWidth);
     readMetric(chrome, "border-width", &style_.borderWidth);
     readMetric(chrome, "radius", &style_.radius);
 }
@@ -339,6 +343,51 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
 
 /**
  **/
+void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Scrollbar>& bar) const {
+    if (canvas == nullptr || !bar) {
+        return;
+    }
+    glm::vec4 empty = style_.track;
+    glm::vec4 grip = style_.thumb;
+    glm::vec4 outline = style_.border;
+    float width = style_.borderWidth;
+    float radius = style_.radius;
+    // a scrollbar is not a progress bar: it dresses from its own style class, so a theme
+    // that paints a health bar green does not paint a scrollbar green as well
+    const boost::shared_ptr<v3d::ui::Style> dress = lookup("scrollbar", bar->style());
+    if (dress) {
+        readColour(dress, "track", &empty);
+        readColour(dress, "thumb", &grip);
+        readColour(dress, "border", &outline);
+        readMetric(dress, "border-width", &width);
+        readMetric(dress, "radius", &radius);
+    }
+
+    const glm::vec2 min = bar->position();
+    const glm::vec2 max = min + bar->size();
+    plateBox(canvas, min, max, radius, width, empty, outline);
+    if (!bar->scrollable()) {
+        // a page showing all of its content has a thumb the length of the track, which
+        // would read as a bar scrolled nowhere rather than as one with nowhere to go
+        return;
+    }
+
+    // the thumb sits inside the border, the way a bar's fill does
+    const glm::vec2 inset(width, width);
+    glm::vec2 low = min + inset;
+    glm::vec2 high = max - inset;
+    if (bar->direction() == component::Scrollbar::Direction::Vertical) {
+        low.y = min.y + bar->thumbStart();
+        high.y = low.y + bar->thumb();
+    } else {
+        low.x = min.x + bar->thumbStart();
+        high.x = low.x + bar->thumb();
+    }
+    fillBox(canvas, low, high, std::max(0.0f, radius - width), grip);
+}
+
+/**
+ **/
 glm::vec2 ComponentRenderer::natural(const Component& component) const {
     switch (component.type()) {
         case component::Type::LABEL: {
@@ -354,6 +403,17 @@ glm::vec2 ComponentRenderer::natural(const Component& component) const {
             const auto* button = dynamic_cast<const component::Button*>(&component);
             return button == nullptr ? glm::vec2(0.0f, 0.0f)
                 : glm::vec2(extent(*button) + style_.padding, style_.barHeight);
+        }
+        case component::Type::SCROLLBAR: {
+            // a scrollbar decides how thick it is and nothing about how long: its length
+            // is the box it runs down, which is its parent's rather than its own
+            const auto* bar = dynamic_cast<const component::Scrollbar*>(&component);
+            if (bar == nullptr) {
+                return glm::vec2(0.0f, 0.0f);
+            }
+            return bar->direction() == component::Scrollbar::Direction::Vertical
+                ? glm::vec2(style_.scrollbarWidth, component.size().y)
+                : glm::vec2(component.size().x, style_.scrollbarWidth);
         }
         default:
             // a panel, a bar and a box decide nothing for themselves, so an Auto extent on
@@ -414,6 +474,9 @@ void ComponentRenderer::walk(v3d::render::realtime::Canvas* canvas, const boost:
         case component::Type::BAR:
             draw(canvas, boost::dynamic_pointer_cast<component::Bar>(component));
             break;
+        case component::Type::SCROLLBAR:
+            draw(canvas, boost::dynamic_pointer_cast<component::Scrollbar>(component));
+            break;
         case component::Type::BUTTON:
             draw(canvas, boost::dynamic_pointer_cast<component::Button>(component));
             break;
@@ -432,6 +495,15 @@ void ComponentRenderer::walk(v3d::render::realtime::Canvas* canvas, const boost:
     if (children.empty()) {
         return;
     }
+
+    // a component that holds more than it can show cuts what it holds off at its own box,
+    // per ADR-0037. It is what the component asked for rather than the default, because a
+    // menu drops a panel out of the strip it came from
+    const bool cut = component->clip();
+    if (cut) {
+        canvas->clip(component->position(), component->position() + component->size());
+    }
+
     const auto* box = dynamic_cast<const component::Box*>(component.get());
     if (box != nullptr) {
         // a flow box places its children in the order it holds them, because that order is
@@ -442,10 +514,14 @@ void ComponentRenderer::walk(v3d::render::realtime::Canvas* canvas, const boost:
         for (std::size_t index = 0; index < children.size(); index++) {
             walk(canvas, children[index], boxes[index]);
         }
-        return;
+    } else {
+        for (const boost::shared_ptr<Component>& child : v3d::ui::ordered(children)) {
+            walk(canvas, child, child->layout().resolve(component->bound(), natural(*child), child->position()));
+        }
     }
-    for (const boost::shared_ptr<Component>& child : v3d::ui::ordered(children)) {
-        walk(canvas, child, child->layout().resolve(component->bound(), natural(*child), child->position()));
+
+    if (cut) {
+        canvas->unclip();
     }
 }
 
