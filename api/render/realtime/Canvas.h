@@ -178,6 +178,20 @@ class Canvas final {
         const glm::vec4& colour);
 
     /**
+     * A filled band between two radii, as a strip of triangles.
+     *
+     * The arc that traces a rounded corner rather than the wedge that fills one, so an
+     * outline around a rounded box costs no second shape and covers nothing inside it.
+     * Angles are as arc() takes them. An inner radius of zero or less is a wedge, and
+     * this is arc().
+     *
+     * @param outer the radius the band ends at
+     * @param inner the radius it starts at, which is the hole it leaves
+     **/
+    void ring(const glm::vec2& centre, float outer, float inner, unsigned int sides, float start,
+        float sweep, const glm::vec4& colour);
+
+    /**
      * Append text that a font's text buffer has already laid out.
      *
      * The buffer holds positions, atlas coordinates and colours, so this copies them

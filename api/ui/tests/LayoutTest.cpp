@@ -272,8 +272,8 @@ BOOST_AUTO_TEST_CASE(a_point_is_picked_by_the_deepest_pickable_component) {
 }
 
 /**
- * A bar is a track with a fraction of it filled. A square one is two quads for the plate and
- * one for the fill; an empty one draws no fill at all.
+ * A bar is a track with a fraction of it filled. A square one is four runs of outline around
+ * one quad of track, and one more for the fill; an empty one draws no fill at all.
  **/
 BOOST_AUTO_TEST_CASE(a_bar_fills_a_fraction_of_its_track) {
     v3d::render::realtime::Canvas canvas;
@@ -291,13 +291,13 @@ BOOST_AUTO_TEST_CASE(a_bar_fills_a_fraction_of_its_track) {
     v3d::ui::ComponentRenderer renderer = build();
 
     renderer.draw(&canvas, container);
-    // the outline and the track, and nothing filled
-    BOOST_CHECK_EQUAL(canvas.indices().size(), 2U * 6U);
+    // the four runs of the outline and the track, and nothing filled
+    BOOST_CHECK_EQUAL(canvas.indices().size(), 5U * 6U);
 
     bar->fraction(0.5f);
     canvas.clear();
     renderer.draw(&canvas, container);
-    BOOST_CHECK_EQUAL(canvas.indices().size(), 3U * 6U);
+    BOOST_CHECK_EQUAL(canvas.indices().size(), 6U * 6U);
 
     // a fraction is a fraction, however it was given
     bar->fraction(4.0f);

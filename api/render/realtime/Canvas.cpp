@@ -221,6 +221,39 @@ void Canvas::circle(const glm::vec2& centre, float radius, unsigned int sides, c
     arc(centre, radius, sides, 0.0f, 6.283185307179586f, colour);
 }
 
+void Canvas::ring(const glm::vec2& centre, float outer, float inner, unsigned int sides, float start,
+    float sweep, const glm::vec4& colour) {
+    if (sides < 1 || outer <= 0.0f) {
+        return;
+    }
+    if (inner <= 0.0f) {
+        arc(centre, outer, sides, start, sweep, colour);
+        return;
+    }
+    open(TextureHandle());
+
+    const uint32_t first = static_cast<uint32_t>(vertices_.size());
+    const float step = sweep / static_cast<float>(sides);
+    for (unsigned int side = 0; side <= sides; side++) {
+        const float angle = start + step * static_cast<float>(side);
+        const glm::vec2 direction(std::cos(angle), std::sin(angle));
+        vertex(centre + direction * outer, glm::vec2(0.5f, 0.5f), colour);
+        vertex(centre + direction * inner, glm::vec2(0.5f, 0.5f), colour);
+    }
+
+    // two triangles per segment, over the pair of vertices at each end of it
+    for (unsigned int side = 0; side < sides; side++) {
+        const uint32_t edge = first + side * 2;
+        indices_.push_back(edge);
+        indices_.push_back(edge + 2);
+        indices_.push_back(edge + 1);
+        indices_.push_back(edge + 1);
+        indices_.push_back(edge + 2);
+        indices_.push_back(edge + 3);
+    }
+    batches_.back().indices += sides * 6;
+}
+
 void Canvas::arc(const glm::vec2& centre, float radius, unsigned int sides, float start, float sweep,
     const glm::vec4& colour) {
     if (sides < 3) {

@@ -30,12 +30,25 @@ void fillBox(v3d::render::realtime::Canvas* canvas, const glm::vec2& min, const 
     float radius, const glm::vec4& colour);
 
 /**
+ * Trace a box's edges, with its corners rounded by a radius.
+ *
+ * Four straight runs and four bands turning between them, none of them covering anything
+ * inside the outline. An outline thicker than the radius it turns squares its corners off
+ * rather than folding them.
+ *
+ * @param width how thick the outline is, clamped to half the shorter side
+ **/
+void strokeBox(v3d::render::realtime::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
+    float radius, float width, const glm::vec4& colour);
+
+/**
  * Fill a box inside an outline, both rounded.
  *
- * The outline is the same box drawn behind rather than four edges around it, so a rounded
- * corner needs no second shape to trace it.
+ * The outline is traced around the fill rather than drawn as a box behind it, because
+ * what is inside usually carries an alpha: an outline behind it would show through as a
+ * tint over the whole plate, and whatever the plate covers would not show through at all.
  *
- * @param width how thick the outline is; nothing is drawn behind when it is zero
+ * @param width how thick the outline is; nothing is traced when it is zero
  **/
 void plateBox(v3d::render::realtime::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
     float radius, float width, const glm::vec4& inside, const glm::vec4& outline);

@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <cmath>
 #include <cstddef>
 
 #include <boost/test/unit_test.hpp>
@@ -205,6 +206,43 @@ BOOST_AUTO_TEST_CASE(a_circle_is_a_fan_that_batches_with_untextured_quads) {
     BOOST_CHECK_EQUAL(canvas.indices().size(), 6 + 8 * 3);
     // the centre, one vertex per side, and a repeat of the first so the wrap needs no case
     BOOST_CHECK_EQUAL(canvas.vertices().size(), 4 + 1 + 9);
+}
+
+/**
+ * A ring is a strip between two radii - two triangles per segment over a pair of vertices at
+ * each end of it - and it batches with the untextured quads around it.
+ **/
+BOOST_AUTO_TEST_CASE(a_ring_is_a_strip_between_two_radii) {
+    v3d::render::realtime::Canvas canvas;
+
+    canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), white);
+    canvas.ring(glm::vec2(50.0f, 50.0f), 10.0f, 6.0f, 8, 0.0f, 6.283185307179586f, white);
+
+    BOOST_CHECK_EQUAL(canvas.batches().size(), 1);
+    BOOST_CHECK_EQUAL(canvas.indices().size(), 6 + 8 * 6);
+    // a pair per side, and a repeat of the first pair so the wrap needs no case
+    BOOST_CHECK_EQUAL(canvas.vertices().size(), 4 + 9 * 2);
+
+    // nothing lands in the hole the ring leaves
+    for (std::size_t index = 4; index < canvas.vertices().size(); index++) {
+        const glm::vec2 offset = glm::vec2(canvas.vertices()[index].position) - glm::vec2(50.0f, 50.0f);
+        BOOST_CHECK_GE(std::sqrt(offset.x * offset.x + offset.y * offset.y), 6.0f - 0.001f);
+    }
+}
+
+/**
+ * A ring with no hole is the wedge that fills one, so a caller need not test the radius it
+ * was given before asking for a band.
+ **/
+BOOST_AUTO_TEST_CASE(a_ring_with_no_hole_is_a_wedge) {
+    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::Canvas wedge;
+
+    canvas.ring(glm::vec2(50.0f, 50.0f), 10.0f, 0.0f, 8, 0.0f, 1.5f, white);
+    wedge.arc(glm::vec2(50.0f, 50.0f), 10.0f, 8, 0.0f, 1.5f, white);
+
+    BOOST_CHECK_EQUAL(canvas.indices().size(), wedge.indices().size());
+    BOOST_CHECK_EQUAL(canvas.vertices().size(), wedge.vertices().size());
 }
 
 /**
