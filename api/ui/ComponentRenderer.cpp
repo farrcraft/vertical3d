@@ -460,15 +460,23 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     // the rule under the strip, which is what joins the chosen tab to the page below it
     canvas->rect(glm::vec2(min.x, min.y + height), glm::vec2(min.x + size.x, min.y + height + ruleWidth), dress.border);
 
-    const boost::shared_ptr<component::TabPage> page = bar->page();
-    if (!page) {
+    if (!bar->page()) {
         return;
     }
-    const glm::vec2 corner(min.x, min.y + height + ruleWidth);
-    const glm::vec2 extent(size.x, std::max(size.y - height - ruleWidth, 0.0f));
-    fillBox(canvas, corner, corner + extent, 0.0f, dress.panel);
-    // a page is drawn where the strip left room, and what it holds is laid out inside that
-    walk(canvas, page, v3d::type::Bound2D(corner, extent));
+    // the plate the chosen page sits on. Descending into the page is the walk's, so that
+    // painting never reaches back into layout
+    const v3d::type::Bound2D box = page(*bar);
+    fillBox(canvas, box.position(), box.position() + box.size(), 0.0f, dress.panel);
+}
+
+/**
+ **/
+v3d::type::Bound2D ComponentRenderer::page(const component::TabBar& bar) const {
+    const float height = styles_.resolve(style::Resolver::Class::Tabs, bar.style()).barHeight;
+    const glm::vec2 min = bar.position();
+    const glm::vec2 size = bar.size();
+    return v3d::type::Bound2D(glm::vec2(min.x, min.y + height + ruleWidth),
+        glm::vec2(size.x, std::max(size.y - height - ruleWidth, 0.0f)));
 }
 
 /**
@@ -601,11 +609,16 @@ void ComponentRenderer::walk(v3d::render::realtime::Canvas* canvas, const boost:
         case component::Type::SelectList:
             draw(canvas, boost::dynamic_pointer_cast<component::SelectList>(component));
             break;
-        case component::Type::TabBar:
-            // a bar walks the one page it shows, so the pages behind it are not laid out
-            // and the generic walk below must not reach them
-            draw(canvas, boost::dynamic_pointer_cast<component::TabBar>(component));
+        case component::Type::TabBar: {
+            // only the chosen page is walked, so a page that is not up has no box and
+            // nothing in it can be picked - which is why this does not fall through to the
+            // generic descent below
+            const boost::shared_ptr<component::TabBar> tabs =
+                boost::dynamic_pointer_cast<component::TabBar>(component);
+            draw(canvas, tabs);
+            walk(canvas, tabs->page(), page(*tabs));
             return;
+        }
         case component::Type::Button:
             draw(canvas, boost::dynamic_pointer_cast<component::Button>(component));
             break;

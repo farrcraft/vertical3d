@@ -241,6 +241,12 @@ class ComponentRenderer {
         std::vector<v3d::type::Bound2D>* boxes) const;
 
     /**
+     * Where a tab bar's chosen page goes - the room the strip and its rule leave under
+     * them, which is what the walk lays the page out against.
+     **/
+    v3d::type::Bound2D page(const component::TabBar& bar) const;
+
+    /**
      * The size a component makes of itself, which is what an Auto extent resolves to -
      * the width of a label's text, the side of an icon, the room a button's label needs.
      * A component that decides nothing for itself asks for nothing.
