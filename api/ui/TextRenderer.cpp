@@ -6,6 +6,7 @@
 #include "TextRenderer.h"
 
 #include <string>
+#include <string_view>
 
 #include "../asset/TextureFont.h"
 #include "../asset/Type.h"
@@ -115,7 +116,7 @@ float TextRenderer::ratio(float size) const noexcept {
 
 /**
  **/
-float TextRenderer::width(const std::string& text, float size) const {
+float TextRenderer::width(std::string_view text, float size) const {
     if (!loaded()) {
         return 0.0f;
     }
@@ -131,7 +132,7 @@ float TextRenderer::width(const std::string& text, float size) const {
 
 /**
  **/
-void TextRenderer::draw(v3d::render::realtime::Canvas* canvas, const std::string& text, const glm::vec2& pen, const glm::vec4& colour,
+void TextRenderer::draw(v3d::render::realtime::Canvas* canvas, std::string_view text, const glm::vec2& pen, const glm::vec4& colour,
     float size) {
     if (text.empty() || !canvas || !loaded()) {
         return;
@@ -151,7 +152,7 @@ void TextRenderer::draw(v3d::render::realtime::Canvas* canvas, const std::string
 /**
  **/
 Measure TextRenderer::measure(float size) const {
-    return [this, size](const std::string& text) -> float {
+    return [this, size](std::string_view text) -> float {
         return width(text, size);
     };
 }
@@ -159,7 +160,7 @@ Measure TextRenderer::measure(float size) const {
 /**
  **/
 Write TextRenderer::write(v3d::render::realtime::Canvas* canvas, float size) {
-    return [this, canvas, size](const std::string& text, const glm::vec2& pen, const glm::vec4& colour) {
+    return [this, canvas, size](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
         draw(canvas, text, pen, colour, size);
     };
 }

@@ -85,9 +85,14 @@ boost::shared_ptr<Component> Container::pick(const glm::vec2& point) const {
         return nullptr;
     }
     // the last thing drawn is the first thing offered the point, and a container draws in
-    // depth order
-    const std::vector<boost::shared_ptr<Component>> sorted = ordered();
-    for (auto it = sorted.rbegin(); it != sorted.rend(); ++it) {
+    // depth order - which is add order until something is given a depth, and then costs
+    // no copy at all
+    std::vector<boost::shared_ptr<Component>> sorted;
+    if (!inDrawOrder(components_)) {
+        sorted = ordered();
+    }
+    const std::vector<boost::shared_ptr<Component>>& drawn = sorted.empty() ? components_ : sorted;
+    for (auto it = drawn.rbegin(); it != drawn.rend(); ++it) {
         const boost::shared_ptr<Component> found = probe(*it, point);
         if (found) {
             return found;

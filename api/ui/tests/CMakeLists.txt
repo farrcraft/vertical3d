@@ -9,6 +9,7 @@ v3d_add_test(ui
 	"LayoutTest.cpp"
 	"MenuBarTest.cpp"
 	"PainterTest.cpp"
+	"ResolverTest.cpp"
 	"ScrollbarTest.cpp"
 	"SelectListTest.cpp"
 	"StatisticsOverlayTest.cpp"

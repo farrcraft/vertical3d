@@ -74,6 +74,16 @@ class SelectList : public Component {
     float rowHeight() const noexcept;
 
     /**
+     * How wide the widest row is when it is drawn, left here by whatever measured it.
+     *
+     * Measuring every row is what sizing a list to its content costs, and the answer only
+     * changes when the rows do - so items() forgets it and whatever draws the list works
+     * it out again. Negative until something has.
+     **/
+    void widest(float width) noexcept;
+    float widest() const noexcept;
+
+    /**
      * @return how tall all the rows come to, which is what a scrollbar's content is
      **/
     float content() const noexcept;
@@ -98,6 +108,7 @@ class SelectList : public Component {
     v3d::event::Event event_;
     float offset_;
     float rowHeight_;
+    float widest_;
     int selected_;
 };
 

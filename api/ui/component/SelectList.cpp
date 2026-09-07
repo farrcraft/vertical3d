@@ -17,13 +17,23 @@ SelectList::SelectList() :
     Component(Type::SelectList),
     offset_(0.0f),
     rowHeight_(0.0f),
+    widest_(-1.0f),
     selected_(none) {
 }
 
 void SelectList::items(const std::vector<std::string>& rows) {
     items_ = rows;
+    widest_ = -1.0f;
     selected(selected_);
     offset(offset_);
+}
+
+void SelectList::widest(float width) noexcept {
+    widest_ = width;
+}
+
+float SelectList::widest() const noexcept {
+    return widest_;
 }
 
 const std::vector<std::string>& SelectList::items() const noexcept {

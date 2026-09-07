@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -39,10 +40,10 @@ struct Written final {
 
 v3d::ui::ComponentRenderer build(std::vector<Written>* written) {
     return v3d::ui::ComponentRenderer(
-        [](const std::string& text) { return static_cast<float>(text.size()) * characterWidth; },
-        [written](const std::string& text, const glm::vec2& pen, const glm::vec4& colour) {
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+        [written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
             if (written != nullptr) {
-                written->push_back(Written{text, pen, colour});
+                written->push_back(Written{std::string(text), pen, colour});
             }
         });
 }
@@ -86,7 +87,7 @@ BOOST_AUTO_TEST_CASE(a_check_box_asks_for_its_mark_and_its_label) {
     container.add(box);
     renderer.draw(&canvas, container);
 
-    const v3d::ui::ComponentRenderer::Dressing& style = build(nullptr).dressing();
+    const v3d::ui::Dressing& style = build(nullptr).dressing();
     BOOST_CHECK_CLOSE(box->size().x,
         style.markSize + style.padding * 0.5f + 7.0f * characterWidth, 0.001f);
     BOOST_CHECK_CLOSE(box->size().y, std::max(style.markSize, style.lineHeight), 0.001f);

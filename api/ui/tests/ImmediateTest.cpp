@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <initializer_list>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -36,9 +37,9 @@ struct Written final {
  **/
 v3d::ui::Immediate build(std::vector<Written>* written) {
     return v3d::ui::Immediate(
-        [](const std::string& text) { return static_cast<float>(text.size()) * characterWidth; },
-        [written](const std::string& text, const glm::vec2& pen, const glm::vec4& colour) {
-            written->push_back(Written{text, pen, colour});
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+        [written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
+            written->push_back(Written{std::string(text), pen, colour});
         });
 }
 

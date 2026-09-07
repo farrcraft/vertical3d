@@ -8,7 +8,9 @@
 #include <string>
 #include <vector>
 
+#include "Dressing.h"
 #include "Text.h"
+#include "style/Resolver.h"
 
 #include "../type/Bound2D.h"
 
@@ -81,40 +83,6 @@ class Toolbar;
 class ComponentRenderer {
  public:
     /**
-     * What the ui cannot work out from the components alone: the colours and metrics a
-     * component is drawn with.
-     *
-     * These are what a theme's "ui" style names, and what is left here is the default a
-     * theme that names nothing draws in. theme() is what reads one in, per ADR-0020.
-     *
-     * Not a Style, which is the bag of properties a theme holds. This is what one resolves
-     * to.
-     **/
-    struct Dressing final {
-        Dressing() noexcept;
-
-        float lineHeight;      /**< the baseline to baseline distance of one menu item **/
-        float padding;         /**< the gap between the text and the panel around it **/
-        float barHeight;       /**< how tall the strip of a menu bar or a toolbar is **/
-        float iconSize;        /**< the side of the square an icon is drawn in **/
-        float panelPadding;    /**< the gap above and below the items of a dropped panel **/
-        float scrollbarWidth;  /**< how thick a scrollbar is across its direction **/
-        float markSize;        /**< the side of the box, or the width of the disc, a mark sits in **/
-        float borderWidth;     /**< how thick a panel's or a bar's outline is drawn **/
-        float radius;          /**< how far a panel's corners are rounded, 0 for square **/
-        glm::vec4 panel;       /**< the background the menu is drawn on **/
-        glm::vec4 border;      /**< the panel's outline **/
-        glm::vec4 track;       /**< the unfilled part of a bar **/
-        glm::vec4 fill;        /**< the filled part of a bar **/
-        glm::vec4 thumb;       /**< the part of a scrollbar's track that is taken hold of **/
-        glm::vec4 mark;        /**< what a checked box or a chosen radio button is marked with **/
-        glm::vec4 text;        /**< an ordinary item's label **/
-        glm::vec4 activeText;  /**< the label of the item navigation is on **/
-        glm::vec4 highlight;   /**< what is drawn behind that item **/
-        glm::vec4 hover;       /**< what is drawn behind a toolbar button the cursor is on **/
-    };
-
-    /**
      * @param measure how wide a string is when the app draws it
      * @param write how the app draws a string
      **/
@@ -122,7 +90,9 @@ class ComponentRenderer {
     ~ComponentRenderer();
 
     /**
-     * @return the colours and metrics the ui is drawn with, to be changed in place
+     * @return the colours and metrics the ui is drawn with, to be changed in place.
+     *      Changing them drops what the resolver has worked out from them, so an app
+     *      that sets its metrics once at startup pays for that once
      **/
     Dressing& dressing() noexcept;
 
@@ -273,8 +243,11 @@ class ComponentRenderer {
      * The size a component makes of itself, which is what an Auto extent resolves to -
      * the width of a label's text, the side of an icon, the room a button's label needs.
      * A component that decides nothing for itself asks for nothing.
+     *
+     * Takes the component to write on rather than to read: a list is left holding how wide
+     * its widest row measured, the way the draw leaves every component holding its box.
      **/
-    glm::vec2 natural(const Component& component) const;
+    glm::vec2 natural(Component& component) const;
 
     /**
      * Draw one dropped panel of a menu bar, leaving every item holding its own row.
@@ -308,21 +281,15 @@ class ComponentRenderer {
         const glm::vec2& min, const glm::vec2& max) const;
 
     /**
-     * Find the style a component is drawn with.
-     *
-     * A component names a style; one that names none is drawn with whichever style of
-     * that class the theme holds first, so that a theme can dress every button without
-     * every button naming it.
-     *
-     * @param className the style class - "button", "ui"
-     * @param name what the component's style() gives, which may be empty
+     * The colours and metrics before any component's own style class is applied over
+     * them, which is what the parts of the ui with no style class of their own are drawn
+     * with - a menu panel, a toolbar strip, a label.
      **/
-    boost::shared_ptr<Style> lookup(const std::string& className, const std::string_view& name) const;
+    const Dressing& base() const noexcept;
 
     Measure measure_;
     Write write_;
-    Dressing dressing_;
-    boost::shared_ptr<style::Theme> theme_;
+    style::Resolver styles_;
 };
 
 };  // namespace v3d::ui

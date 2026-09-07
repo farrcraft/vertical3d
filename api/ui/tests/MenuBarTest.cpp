@@ -5,6 +5,7 @@
 
 #include <cstddef>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -44,8 +45,8 @@ struct Fixture final {
         context(boost::make_shared<v3d::event::Context>("test")),
         bar(boost::make_shared<v3d::ui::component::MenuBar>()),
         renderer(
-            [](const std::string& text) { return static_cast<float>(text.size()) * characterWidth; },
-            [this](const std::string& text, const glm::vec2& pen, const glm::vec4&) {
+            [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+            [this](std::string_view text, const glm::vec2& pen, const glm::vec4&) {
                 Written line;
                 line.text = text;
                 line.pen = pen;

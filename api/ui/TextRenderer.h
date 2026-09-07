@@ -6,6 +6,7 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 
 #include "Text.h"
 
@@ -125,7 +126,7 @@ class TextRenderer {
      *
      * @param size the size it will be drawn at, defaulting to the one the atlas holds
      **/
-    float width(const std::string& text, float size = 0.0f) const;
+    float width(std::string_view text, float size = 0.0f) const;
 
     /**
      * Lay a string out at the pen and append its glyphs to a canvas.
@@ -133,7 +134,7 @@ class TextRenderer {
      * @param pen where the baseline of the first glyph goes
      * @param size the size to draw at, defaulting to the one the atlas holds
      **/
-    void draw(v3d::render::realtime::Canvas* canvas, const std::string& text, const glm::vec2& pen, const glm::vec4& colour,
+    void draw(v3d::render::realtime::Canvas* canvas, std::string_view text, const glm::vec2& pen, const glm::vec4& colour,
         float size = 0.0f);
 
     /**

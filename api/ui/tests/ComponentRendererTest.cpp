@@ -5,6 +5,7 @@
 
 #include <cstddef>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -63,8 +64,8 @@ BOOST_AUTO_TEST_SUITE(component_renderer_test)
 BOOST_AUTO_TEST_CASE(a_menu_draws_a_panel_a_highlight_and_a_label_per_item) {
     std::vector<Written> written;
     v3d::ui::ComponentRenderer renderer(
-        [](const std::string& text) { return static_cast<float>(text.size()) * characterWidth; },
-        [&written](const std::string& text, const glm::vec2& pen, const glm::vec4& colour) {
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+        [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
             Written line;
             line.text = text;
             line.pen = pen;
@@ -92,8 +93,8 @@ BOOST_AUTO_TEST_CASE(a_menu_draws_a_panel_a_highlight_and_a_label_per_item) {
 BOOST_AUTO_TEST_CASE(only_the_active_item_is_drawn_highlighted) {
     std::vector<Written> written;
     v3d::ui::ComponentRenderer renderer(
-        [](const std::string& text) { return static_cast<float>(text.size()) * characterWidth; },
-        [&written](const std::string& text, const glm::vec2& pen, const glm::vec4& colour) {
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+        [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
             Written line;
             line.text = text;
             line.pen = pen;
@@ -123,8 +124,8 @@ BOOST_AUTO_TEST_CASE(only_the_active_item_is_drawn_highlighted) {
 BOOST_AUTO_TEST_CASE(a_submenu_replaces_what_is_drawn) {
     std::vector<Written> written;
     v3d::ui::ComponentRenderer renderer(
-        [](const std::string& text) { return static_cast<float>(text.size()) * characterWidth; },
-        [&written](const std::string& text, const glm::vec2& pen, const glm::vec4& colour) {
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+        [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
             Written line;
             line.text = text;
             line.pen = pen;
@@ -155,8 +156,8 @@ BOOST_AUTO_TEST_CASE(a_submenu_replaces_what_is_drawn) {
  **/
 BOOST_AUTO_TEST_CASE(the_panel_is_sized_to_the_widest_label_and_centred) {
     v3d::ui::ComponentRenderer renderer(
-        [](const std::string& text) { return static_cast<float>(text.size()) * characterWidth; },
-        [](const std::string&, const glm::vec2&, const glm::vec4&) {});
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 
     v3d::render::realtime::Canvas canvas;
     canvas.resize(800, 600);
@@ -180,8 +181,8 @@ BOOST_AUTO_TEST_CASE(the_panel_is_sized_to_the_widest_label_and_centred) {
  **/
 BOOST_AUTO_TEST_CASE(an_invisible_container_draws_nothing) {
     v3d::ui::ComponentRenderer renderer(
-        [](const std::string& text) { return static_cast<float>(text.size()) * characterWidth; },
-        [](const std::string&, const glm::vec2&, const glm::vec4&) {});
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 
     v3d::render::realtime::Canvas canvas;
     canvas.resize(800, 600);
@@ -212,8 +213,8 @@ BOOST_AUTO_TEST_CASE(an_invisible_container_draws_nothing) {
  **/
 BOOST_AUTO_TEST_CASE(an_empty_menu_draws_nothing) {
     v3d::ui::ComponentRenderer renderer(
-        [](const std::string& text) { return static_cast<float>(text.size()) * characterWidth; },
-        [](const std::string&, const glm::vec2&, const glm::vec4&) {});
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 
     v3d::render::realtime::Canvas canvas;
     canvas.resize(800, 600);

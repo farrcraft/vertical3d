@@ -5,6 +5,7 @@
 
 #include <cstddef>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -34,8 +35,8 @@ struct Fixture final {
         dispatcher(boost::make_shared<entt::dispatcher>()),
         context(boost::make_shared<v3d::event::Context>("test")),
         renderer(
-            [](const std::string& text) { return static_cast<float>(text.size()) * characterWidth; },
-            [](const std::string&, const glm::vec2&, const glm::vec4&) {}) {
+            [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+            [](std::string_view, const glm::vec2&, const glm::vec4&) {}) {
         dispatcher->sink<v3d::event::Event>().connect<&Fixture::receive>(*this);
         canvas.resize(800, 600);
     }
@@ -95,7 +96,7 @@ BOOST_AUTO_TEST_CASE(toolbar_row_layout) {
     Fixture fixture;
     boost::shared_ptr<v3d::ui::component::Toolbar> bar =
         fixture.bar(v3d::ui::component::Toolbar::Edge::Top);
-    const v3d::ui::ComponentRenderer::Dressing& style = fixture.renderer.dressing();
+    const v3d::ui::Dressing& style = fixture.renderer.dressing();
 
     fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0f, 30.0f));
 
@@ -122,7 +123,7 @@ BOOST_AUTO_TEST_CASE(toolbar_column_layout) {
     Fixture fixture;
     boost::shared_ptr<v3d::ui::component::Toolbar> bar =
         fixture.bar(v3d::ui::component::Toolbar::Edge::Left);
-    const v3d::ui::ComponentRenderer::Dressing& style = fixture.renderer.dressing();
+    const v3d::ui::Dressing& style = fixture.renderer.dressing();
 
     fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0f, 30.0f));
 
@@ -229,7 +230,7 @@ BOOST_AUTO_TEST_CASE(toolbar_marks_by_command) {
  **/
 BOOST_AUTO_TEST_CASE(toolbar_insets_match_what_is_drawn) {
     Fixture fixture;
-    const v3d::ui::ComponentRenderer::Dressing& style = fixture.renderer.dressing();
+    const v3d::ui::Dressing& style = fixture.renderer.dressing();
 
     boost::shared_ptr<v3d::ui::component::MenuBar> menu =
         boost::make_shared<v3d::ui::component::MenuBar>();

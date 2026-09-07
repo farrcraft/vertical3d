@@ -140,6 +140,20 @@ component::Type Component::type() const {
     return type_;
 }
 
+bool inDrawOrder(const std::vector<boost::shared_ptr<Component>>& components) noexcept {
+    unsigned int deepest = 0;
+    for (const boost::shared_ptr<Component>& component : components) {
+        if (!component) {
+            continue;
+        }
+        if (component->depth() < deepest) {
+            return false;
+        }
+        deepest = component->depth();
+    }
+    return true;
+}
+
 std::vector<boost::shared_ptr<Component>> ordered(const std::vector<boost::shared_ptr<Component>>& components) {
     std::vector<boost::shared_ptr<Component>> sorted(components);
     std::stable_sort(sorted.begin(), sorted.end(),

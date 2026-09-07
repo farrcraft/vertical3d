@@ -5,6 +5,7 @@
 
 #include <cstddef>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -50,8 +51,8 @@ boost::shared_ptr<v3d::ui::Engine> load(const std::string& document, bool* loade
  **/
 v3d::ui::ComponentRenderer renderer() {
     return v3d::ui::ComponentRenderer(
-        [](const std::string& text) { return static_cast<float>(text.size()) * 10.0f; },
-        [](const std::string&, const glm::vec2&, const glm::vec4&) {});
+        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0f; },
+        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 }
 
 /**
@@ -209,7 +210,7 @@ BOOST_AUTO_TEST_CASE(a_theme_overrides_what_it_names_and_no_more) {
     BOOST_REQUIRE(loaded);
 
     v3d::ui::ComponentRenderer drawing = renderer();
-    const v3d::ui::ComponentRenderer::Dressing defaults;
+    const v3d::ui::Dressing defaults;
 
     drawing.theme(ui->theme("dark"));
 
@@ -231,7 +232,7 @@ BOOST_AUTO_TEST_CASE(a_nameless_theme_changes_nothing) {
     BOOST_REQUIRE(loaded);
 
     v3d::ui::ComponentRenderer drawing = renderer();
-    const v3d::ui::ComponentRenderer::Dressing defaults;
+    const v3d::ui::Dressing defaults;
     drawing.theme(ui->activeTheme());
 
     BOOST_CHECK_CLOSE(drawing.dressing().barHeight, defaults.barHeight, 0.001f);
@@ -467,9 +468,9 @@ BOOST_AUTO_TEST_CASE(a_toolbar_button_draws_the_icon_it_names) {
 
     std::vector<Written> written;
     v3d::ui::ComponentRenderer drawing(
-        [](const std::string& text) { return static_cast<float>(text.size()) * 10.0f; },
-        [&written](const std::string& text, const glm::vec2& pen, const glm::vec4& colour) {
-            written.push_back(Written{ text, pen, colour });
+        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0f; },
+        [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
+            written.push_back(Written{ std::string(text), pen, colour });
         });
     drawing.dressing().iconSize = 20.0f;
 
@@ -486,7 +487,7 @@ BOOST_AUTO_TEST_CASE(a_toolbar_button_draws_the_icon_it_names) {
     BOOST_REQUIRE(bar);
 
     // the column is as wide as the icon, not as the label it would otherwise draw
-    const v3d::ui::ComponentRenderer::Dressing& dressing = drawing.dressing();
+    const v3d::ui::Dressing& dressing = drawing.dressing();
     BOOST_CHECK_CLOSE(bar->bound().size().x, dressing.iconSize + dressing.padding, 0.001f);
     BOOST_CHECK_CLOSE(drawing.insets(*ui).x, dressing.iconSize + dressing.padding + 1.0f, 0.001f);
 
@@ -503,9 +504,9 @@ BOOST_AUTO_TEST_CASE(a_toolbar_button_draws_the_icon_it_names) {
 BOOST_AUTO_TEST_CASE(an_unresolved_icon_leaves_the_label_drawn) {
     std::vector<Written> written;
     v3d::ui::ComponentRenderer drawing(
-        [](const std::string& text) { return static_cast<float>(text.size()) * 10.0f; },
-        [&written](const std::string& text, const glm::vec2& pen, const glm::vec4& colour) {
-            written.push_back(Written{ text, pen, colour });
+        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0f; },
+        [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
+            written.push_back(Written{ std::string(text), pen, colour });
         });
 
     v3d::render::realtime::Canvas canvas;

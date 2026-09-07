@@ -4,6 +4,7 @@
  **/
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -34,10 +35,10 @@ struct Written final {
 
 v3d::ui::ComponentRenderer build(std::vector<Written>* written) {
     return v3d::ui::ComponentRenderer(
-        [](const std::string& text) { return static_cast<float>(text.size()) * characterWidth; },
-        [written](const std::string& text, const glm::vec2& pen, const glm::vec4& colour) {
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+        [written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
             if (written != nullptr) {
-                written->push_back(Written{text, pen, colour});
+                written->push_back(Written{std::string(text), pen, colour});
             }
         });
 }

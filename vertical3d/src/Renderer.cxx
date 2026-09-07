@@ -69,7 +69,7 @@ Renderer::Renderer(const boost::shared_ptr<v3d::render::realtime::Window>& windo
 
     uiRenderer_ = boost::make_shared<v3d::ui::ComponentRenderer>(text_->measure(fontSize), text_->write(&canvas_, fontSize));
 
-    v3d::ui::ComponentRenderer::Dressing& style = uiRenderer_->dressing();
+    v3d::ui::Dressing& style = uiRenderer_->dressing();
     style.lineHeight = fontSize * 1.5f;
     style.padding = fontSize * 1.4f;
     style.barHeight = fontSize * 1.8f;

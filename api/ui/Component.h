@@ -183,4 +183,14 @@ class Component {
  **/
 std::vector<boost::shared_ptr<Component>> ordered(const std::vector<boost::shared_ptr<Component>>& components);
 
+/**
+ * Whether components are already in the order they are drawn, so that a walk over them
+ * needs no sorted copy of its own.
+ *
+ * True whenever nothing has been given a depth, which is every container in the tree
+ * today - so the common case costs a scan rather than an allocation and a sort, once per
+ * parent per frame.
+ **/
+bool inDrawOrder(const std::vector<boost::shared_ptr<Component>>& components) noexcept;
+
 };  // end namespace v3d::ui

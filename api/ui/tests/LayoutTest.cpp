@@ -4,6 +4,7 @@
  **/
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -32,8 +33,8 @@ const float characterWidth = 10.0f;
  **/
 v3d::ui::ComponentRenderer build() {
     return v3d::ui::ComponentRenderer(
-        [](const std::string& text) { return static_cast<float>(text.size()) * characterWidth; },
-        [](const std::string&, const glm::vec2&, const glm::vec4&) {});
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 }
 
 boost::shared_ptr<v3d::ui::component::Panel> panel(const std::string& name) {
