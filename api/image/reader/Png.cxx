@@ -61,8 +61,10 @@ boost::shared_ptr<Image> Png::read(std::string_view filename) {
     png_read_info(png_ptr, info_ptr);
 
     // get width, height, bit-depth and color-type
-    png_uint_32 width, height;
-    int bpp, colors;
+    png_uint_32 width;
+    png_uint_32 height;
+    int bpp;
+    int colors;
     png_get_IHDR(png_ptr, info_ptr, &width, &height, &bpp, &colors, 0, 0, 0);
 
     // convert to 3x8 RGB if necessary

@@ -57,7 +57,33 @@ class RIBReader final {
     const std::vector<std::string> & unrecognised() const;
 
  private:
+    /**
+     * What one group of requests made of a name it was offered.
+     *
+     * Unhandled is not a failure: it means the name belongs to another group, and the next
+     * one is asked. Only the last group's Unhandled is a request this reader does not know.
+     **/
+    enum class Result {
+        Unhandled,
+        Handled,
+        Failed
+    };
+
     bool request(const std::string & name, RIBLexer * lexer, RIBHandler * handler);
+
+    /**
+     * The request set, split the way the RI standard groups it. Each takes the name a
+     * request began with and either recognises it or passes.
+     **/
+    Result optionRequest(const std::string & name, RIBLexer * lexer, RIBHandler * handler);
+    Result cameraRequest(const std::string & name, RIBLexer * lexer, RIBHandler * handler);
+    Result displayRequest(const std::string & name, RIBLexer * lexer, RIBHandler * handler);
+    Result blockRequest(const std::string & name, RIBHandler * handler);
+    Result transformRequest(const std::string & name, RIBLexer * lexer, RIBHandler * handler);
+    Result attributeRequest(const std::string & name, RIBLexer * lexer, RIBHandler * handler);
+    Result shaderRequest(const std::string & name, RIBLexer * lexer, RIBHandler * handler);
+    Result primitiveRequest(const std::string & name, RIBLexer * lexer, RIBHandler * handler);
+
     void skipArguments(RIBLexer * lexer);
 
     /**

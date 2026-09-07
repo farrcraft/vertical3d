@@ -15,20 +15,8 @@
 #include "../../api/config/Type.h"
 #include "../../api/engine/Feature.h"
 #include "../../api/render/realtime/Window.h"
-#include "../../api/ui/component/menu/Menu.h"
 
 #include <boost/make_shared.hpp>
-
-namespace {
-
-/**
- * The container the escape key shows and hides, and the menu inside it. Both are named
- * by data/vgui.json, so the two have to be changed together.
- **/
-const char* const menuContainerName = "game-menu";
-const char* const menuName = "main-menu";
-
-};  // namespace
 
 Controller::Controller(const std::string& appPath) :
     v3d::engine::Engine(appPath),
@@ -53,6 +41,9 @@ bool Controller::initialize() {
     window_->warpCursor(window_->width() / 2, window_->height() / 2);
 
     vgui_ = boost::make_shared<v3d::ui::Engine>(eventEngine_, dispatcher_, logger_);
+    menu_ = boost::make_shared<v3d::ui::GameMenu>(vgui_, [this](bool suspended) {
+        suspend(suspended);
+    });
     if (config_) {
         boost::shared_ptr<v3d::asset::Json> uiConfig = config_->get(v3d::config::Type::Ui);
         if (uiConfig) {
@@ -86,10 +77,21 @@ bool Controller::tick(unsigned int delta) {
     if (!v3d::engine::Engine::tick(delta)) {
         return false;
     }
-    if (!scene_->state()->paused()) {
-        scene_->tick(delta);
-    }
+    // the renderer's per-frame work stays here rather than moving to simulate(): remeshing
+    // is a budget of chunks per frame, and the debug overlay averages how long a frame took
     renderer_->tick(delta);
+    return true;
+}
+
+/**
+ **/
+bool Controller::simulate(float step) {
+    if (!v3d::engine::Engine::simulate(step)) {
+        return false;
+    }
+    if (!scene_->state()->paused()) {
+        scene_->tick(step);
+    }
     return true;
 }
 
@@ -115,41 +117,10 @@ bool Controller::shutdown() {
 
 /**
  **/
-bool Controller::menuVisible() const {
-    if (!vgui_) {
-        return false;
-    }
-    boost::shared_ptr<v3d::ui::Container> container = vgui_->container(menuContainerName);
-    return container && container->visible();
-}
-
-/**
- **/
-void Controller::toggleMenu() {
-    if (!vgui_) {
-        return;
-    }
-    boost::shared_ptr<v3d::ui::Container> container = vgui_->container(menuContainerName);
-    if (!container) {
-        return;
-    }
-    boost::shared_ptr<v3d::ui::component::Menu> menu =
-        boost::dynamic_pointer_cast<v3d::ui::component::Menu>(container->get(menuName));
-
-    // the container is what is shown and hidden. A component is visible from the moment it
-    // is built, so the menu itself is not the thing to ask
-    if (!container->visible()) {
-        scene_->state()->pause(true);
-        container->visible(true);
-        window_->cursor(true);
-        return;
-    }
-    // going back up out of a submenu leaves the menu open - it is only closing the top
-    // level that puts the player back in the world
-    if (!menu || !menu->up()) {
-        scene_->state()->pause(false);
-        container->visible(false);
-        window_->cursor(false);
+void Controller::suspend(bool suspended) {
+    scene_->state()->pause(suspended);
+    window_->cursor(suspended);
+    if (!suspended) {
         window_->warpCursor(window_->width() / 2, window_->height() / 2);
     }
 }
@@ -157,7 +128,7 @@ void Controller::toggleMenu() {
 void Controller::handleEvent(const v3d::event::Event& event) {
     if (event.context()->name() == "ui") {
         if (event.name() == "showGameMenu") {
-            toggleMenu();
+            menu_->toggle();
             return;
         }
         if (event.name() == "quit") {
@@ -166,23 +137,7 @@ void Controller::handleEvent(const v3d::event::Event& event) {
             quit();
             return;
         }
-
-        if (!menuVisible()) {
-            return;
-        }
-        boost::shared_ptr<v3d::ui::Container> container = vgui_->container(menuContainerName);
-        boost::shared_ptr<v3d::ui::component::Menu> menu =
-            boost::dynamic_pointer_cast<v3d::ui::component::Menu>(container->get(menuName));
-        if (!menu) {
-            return;
-        }
-        if (event.name() == "menuPrevious") {
-            menu->previous();
-        } else if (event.name() == "menuNext") {
-            menu->next();
-        } else if (event.name() == "selectMenu") {
-            menu->activate();
-        }
+        menu_->navigate(event.name());
         return;
     }
 
@@ -198,7 +153,7 @@ void Controller::handleEvent(const v3d::event::Event& event) {
     }
 
     // nothing moves while the menu is up
-    if (menuVisible()) {
+    if (menu_->visible()) {
         return;
     }
 
@@ -219,11 +174,11 @@ void Controller::handleEvent(const v3d::event::Event& event) {
 }
 
 void Controller::handleMotion(const v3d::event::MouseMotion& event) {
-    if ((SDL_GetWindowFlags(window_->sdl()) & SDL_WINDOW_INPUT_FOCUS) == 0) {
+    if (!window_->focused()) {
         return;
     }
     // the menu owns the pointer while it is up, so it is not warped back to the centre
-    if (menuVisible()) {
+    if (menu_->visible()) {
         return;
     }
     const int centerX = window_->width() / 2;

@@ -5,7 +5,7 @@ different repository, by the route [ADR-0027](../../adr/0027-the-api-is-consumed
 settles: the consumer takes this repository as a submodule or through `FetchContent` and builds it
 with its own compiler. Nothing is installed, exported or packaged.
 
-**All seven steps landed.** [docs/examples/starter/](../../examples/starter/) is a project of its own
+**All seven steps landed.** [examples/starter/](../../../examples/starter/) is a project of its own
 that subclasses the game engine, opens a window, draws a quad and is built on every push. Five things
 turned up that this plan did not anticipate, and are in the step notes below: glm and EnTT were never
 resolved at all, **the api libraries did not declare their dependencies on each other**, a stated
@@ -203,7 +203,7 @@ it up off the root's global, because the root's global is always there. Only an 
 configure separates them, so one lives here and runs on every push. Without this step the previous
 five describe a build that worked once.
 
-- **[docs/examples/starter/](../../examples/starter/)** is a complete CMake project that reaches the
+- **[examples/starter/](../../../examples/starter/)** is a complete CMake project that reaches the
   tree through `add_subdirectory` with both options off, subclasses `v3d::engine::Engine`, reads a
   window config, opens a window and draws a quad through the realtime engine. It sets its own
   language standard and `/permissive-` and nothing else — every other flag it needs arrives through
@@ -223,7 +223,7 @@ putting it in the same job: a second runner would install the Vulkan SDK and bui
 prove one link line. It runs after the test step, reuses that job's `vcpkg_installed`, and takes a
 couple of minutes.
 
-**Landed.** `docs/examples/starter` configures and builds against the tree, and the executable opens
+**Landed.** `examples/starter` configures and builds against the tree, and the executable opens
 its window with a clean validation log.
 
 ## Verification

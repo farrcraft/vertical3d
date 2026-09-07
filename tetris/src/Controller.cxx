@@ -29,6 +29,9 @@ bool Controller::initialize() {
     window_->caption("Tetris!");
 
     vgui_ = boost::make_shared<v3d::ui::Engine>(eventEngine_, dispatcher_, logger_);
+    menu_ = boost::make_shared<v3d::ui::GameMenu>(vgui_, [this](bool suspended) {
+        scene_->pause(suspended);
+    });
     if (config_) {
         boost::shared_ptr<v3d::asset::Json> uiConfig = config_->get(v3d::config::Type::Ui);
         if (uiConfig) {
@@ -61,11 +64,11 @@ bool Controller::initialize() {
 
 /**
  **/
-bool Controller::tick(unsigned int delta) {
-    if (!v3d::engine::Engine::tick(delta)) {
+bool Controller::simulate(float step) {
+    if (!v3d::engine::Engine::simulate(step)) {
         return false;
     }
-    scene_->tick(delta);
+    scene_->tick(step);
     return true;
 }
 
@@ -124,35 +127,10 @@ void Controller::rotate(Tetrad::RotationDirection direction) {
     }
 }
 
-/**
- **/
-void Controller::toggleMenu() {
-    boost::shared_ptr<v3d::ui::Container> menuContainer = vgui_->container("game-menu");
-    if (!menuContainer) {
-        return;
-    }
-    boost::shared_ptr<v3d::ui::component::Menu> menu =
-        boost::dynamic_pointer_cast<v3d::ui::component::Menu>(menuContainer->get("main-menu"));
-
-    // the container is what is shown and hidden. A component is visible from the moment it
-    // is built, so the menu itself is not the thing to ask
-    if (!menuContainer->visible()) {
-        scene_->pause(true);
-        menuContainer->visible(true);
-        return;
-    }
-    // going back up out of a submenu leaves the menu open - it is only closing the top
-    // level that resumes the game
-    if (!menu || !menu->up()) {
-        scene_->pause(false);
-        menuContainer->visible(false);
-    }
-}
-
 void Controller::handleEvent(const v3d::event::Event& event) {
     if (event.context()->name() == "tetris") {
         if (event.name() == "toggleMenu") {
-            toggleMenu();
+            menu_->toggle();
             return;
         }
         if (event.name() == "debugMode") {
@@ -181,7 +159,7 @@ void Controller::handleEvent(const v3d::event::Event& event) {
     if (event.context()->name() == "ui") {
         if (event.name() == "newGame") {
             scene_->reset();
-            toggleMenu();
+            menu_->toggle();
             return;
         }
         if (event.name() == "quit") {
@@ -191,25 +169,9 @@ void Controller::handleEvent(const v3d::event::Event& event) {
             return;
         }
         if (event.name() == "toggleMenu") {
-            toggleMenu();
+            menu_->toggle();
             return;
         }
-
-        boost::shared_ptr<v3d::ui::Container> menuContainer = vgui_->container("game-menu");
-        if (!menuContainer || !menuContainer->visible()) {
-            return;
-        }
-        boost::shared_ptr<v3d::ui::component::Menu> menu =
-            boost::dynamic_pointer_cast<v3d::ui::component::Menu>(menuContainer->get("main-menu"));
-        if (!menu) {
-            return;
-        }
-        if (event.name() == "menuPrevious") {
-            menu->previous();
-        } else if (event.name() == "menuNext") {
-            menu->next();
-        } else if (event.name() == "selectMenu") {
-            menu->activate();
-        }
+        menu_->navigate(event.name());
     }
 }

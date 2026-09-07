@@ -146,7 +146,7 @@ the combination of the projection and screen transformation matrices
 move between camera and screen coordinate space
 */
 void RenderContext::projection(std::string name, float fov) {
-    if (name.size() == 0) {
+    if (name.empty()) {
         name = "orthographic";
     }
 
@@ -412,6 +412,24 @@ void RenderContext::scale(float sx, float sy, float sz) {
     maps to RiPolygon()
     this covers the initial pass of the reyes architecture
 */
+namespace {
+
+/**
+ * Put a bound's two corners back the right way round.
+ *
+ * A transform reverses an axis whenever it scales it negatively or turns the box past a
+ * right angle, and the corner named min then holds the larger value on that axis.
+ **/
+void orderBound(glm::vec3* min, glm::vec3* max) {
+    for (glm::length_t axis = 0; axis < 3; axis++) {
+        if ((*min)[axis] > (*max)[axis]) {
+            std::swap((*min)[axis], (*max)[axis]);
+        }
+    }
+}
+
+};  // namespace
+
 void RenderContext::addPolygon(boost::shared_ptr<Polygon> poly) {
     // if an output stream exists
     // echo RiPolygon RIB command to output stream
@@ -462,15 +480,7 @@ void RenderContext::addPolygon(boost::shared_ptr<Polygon> poly) {
     bound_min = glm::vec3(toEye * glm::vec4(bound_min, 1.0f));
 
     // camera transform might've flipped some components of min & max
-    if (bound_min[0] > bound_max[0])  {
-        std::swap(bound_min[0], bound_max[0]);
-    }
-    if (bound_min[1] > bound_max[1]) {
-        std::swap(bound_min[1], bound_max[1]);
-    }
-    if (bound_min[2] > bound_max[2]) {
-        std::swap(bound_min[2], bound_max[2]);
-    }
+    orderBound(&bound_min, &bound_max);
 
     // do hither-yon cull
     if ((bound_max[2] > far_ && bound_min[2] > far_)  // bound is completely outside far plane (too far away for the camera to see)
@@ -540,12 +550,7 @@ void RenderContext::addPolygon(boost::shared_ptr<Polygon> poly) {
     bound_max = project(screen, bound_max);
 
     // screen transform might've flipped some components of min & max
-    if (bound_min[0] > bound_max[0])
-        std::swap(bound_min[0], bound_max[0]);
-    if (bound_min[1] > bound_max[1])
-        std::swap(bound_min[1], bound_max[1]);
-    if (bound_min[2] > bound_max[2])
-        std::swap(bound_min[2], bound_max[2]);
+    orderBound(&bound_min, &bound_max);
 
     bound.extents(bound_min, bound_max);
 

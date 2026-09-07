@@ -21,8 +21,6 @@
 #include "voxel/ChunkMeshPool.h"
 #include "voxel/MeshBuilder.h"
 
-#include "../../api/asset/TextureFont.h"
-#include "../../api/asset/Type.h"
 #include "../../api/render/realtime/vulkan/PipelineBuilder.h"
 #include "../../api/render/realtime/vulkan/Result.h"
 
@@ -53,20 +51,11 @@ const char* const terrainPass = v3d::render::realtime::Engine3D::colourPass;
  **/
 const char* const overlayPass = "overlay";
 
-/**
- * The glyphs voxel ever draws - printable ascii. The atlas goes to the device once at
- * load, so everything that will be drawn has to be packed into it before then.
- **/
-const wchar_t* const charcodes =
-L" !\"#$%&'()*+,-./0123456789:;<=>?"
-L"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"
-L"`abcdefghijklmnopqrstuvwxyz{|}~";
-
 const float fontSize = 18.0f;
 
-const glm::vec4 sky(0.4f, 0.6f, 0.9f, 1.0f);
-const glm::vec4 textColour(0.95f, 0.95f, 0.95f, 1.0f);
-const glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
+constexpr glm::vec4 sky(0.4f, 0.6f, 0.9f, 1.0f);
+constexpr glm::vec4 textColour(0.95f, 0.95f, 0.95f, 1.0f);
+constexpr glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
 
 /**
  * How many chunks are remeshed in one tick. Meshing waits for its staging copy, so the
@@ -78,7 +67,7 @@ const size_t chunkUpdatesPerTick = 16;
  * The block palette, indexed by Voxel::BlockType less one - air is never meshed, so the
  * table starts at dirt.
  **/
-const glm::vec3 palette[materialCount] = {
+constexpr glm::vec3 palette[materialCount] = {
     glm::vec3(0.9f, 0.5f, 0.3f),     // dirt
     glm::vec3(0.13f, 0.56f, 0.19f),  // grass
     glm::vec3(0.9f, 0.88f, 0.58f),   // sand
@@ -120,7 +109,7 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
     createLayout();
     createUniforms();
     createPipeline();
-    loadFont(assetManager, logger);
+    text_ = boost::make_shared<v3d::ui::TextRenderer>(assetManager, logger, engine_.quads(), fontSize);
 
     meshes_ = boost::make_shared<ChunkMeshPool>();
     builder_ = boost::make_shared<MeshBuilder>(scene_->chunks(),
@@ -128,13 +117,7 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
 
     debugOverlay_ = boost::make_shared<DebugOverlay>(scene_);
 
-    uiRenderer_ = boost::make_shared<v3d::ui::ComponentRenderer>(
-        [this](const std::string& text) -> float {
-            return measureText(text);
-        },
-        [this](const std::string& text, const glm::vec2& pen, const glm::vec4& colour) {
-            drawText(text, pen, colour);
-        });
+    uiRenderer_ = boost::make_shared<v3d::ui::ComponentRenderer>(text_->measure(), text_->write(&canvas_));
     uiRenderer_->style().lineHeight = fontSize * 1.4f;
 }
 
@@ -143,7 +126,7 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
 Renderer::~Renderer() {
     // the pipeline and the material belong to Resources - what is owned here is the
     // descriptor machinery the material's set was allocated out of
-    const VkDevice device = context_ ? context_->device()->handle() : VK_NULL_HANDLE;
+    VkDevice device = context_ ? context_->device()->handle() : VK_NULL_HANDLE;
     if (device != VK_NULL_HANDLE) {
         if (pool_ != VK_NULL_HANDLE) {
             vkDestroyDescriptorPool(device, pool_, nullptr);
@@ -276,80 +259,8 @@ void Renderer::createPipeline() {
 
 /**
  **/
-void Renderer::loadFont(const boost::shared_ptr<v3d::asset::Manager>& assetManager, const boost::shared_ptr<v3d::log::Logger>& logger) {
-    // a one channel atlas: the glyph's coverage becomes its alpha, which is what lets text
-    // go through the quad shader
-    fontCache_ = boost::make_shared<v3d::font::TextureFontCache>(512, 512, v3d::font::TextureTextBuffer::LCD_FILTERING_OFF, logger);
-    fontCache_->charcodes(charcodes);
-
-    markup_.family_ = "sans";
-    markup_.bold_ = false;
-    markup_.italic_ = false;
-    markup_.rise_ = 0.0f;
-    markup_.spacing_ = 0.0f;
-    markup_.gamma_ = 1.0f;
-    markup_.outline_ = false;
-    markup_.underline_ = false;
-    markup_.overline_ = false;
-    markup_.strikethrough_ = false;
-    markup_.foregroundColor_ = white;
-    // transparent, so no background quad is emitted behind each glyph
-    markup_.backgroundColor_ = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
-    markup_.size_ = fontSize;
-
-    boost::shared_ptr<v3d::asset::Loader> loader = assetManager->resolveLoader(v3d::asset::Type::TextureFont);
-    v3d::asset::ParameterValue value = markup_.size_;
-    loader->parameter("fontSize", value);
-    boost::shared_ptr<v3d::asset::TextureFont> font = boost::dynamic_pointer_cast<v3d::asset::TextureFont>(
-        assetManager->load("fonts/NotoSans-Regular.ttf", v3d::asset::Type::TextureFont));
-
-    font->font()->atlas(fontCache_->atlas());
-    font->font()->loadGlyphs(charcodes);
-    fontCache_->add(font->font());
-    markup_.font_ = font->font();
-
-    // every glyph is packed by now, so the atlas can go to the device once and stay there
-    atlas_ = engine_.quads()->texture(fontCache_->atlas()->image());
-
-    text_ = boost::make_shared<v3d::font::TextureTextBuffer>();
-}
-
-/**
- **/
 void Renderer::ui(const boost::shared_ptr<v3d::ui::Engine>& engine) {
     ui_ = engine;
-}
-
-/**
- **/
-float Renderer::measureText(const std::string& text) const {
-    if (!markup_.font_) {
-        return 0.0f;
-    }
-    float width = 0.0f;
-    for (char character : text) {
-        boost::shared_ptr<v3d::font::TextureFont::Glyph> glyph = markup_.font_->glyph(static_cast<wchar_t>(character));
-        if (glyph) {
-            width += glyph->advance_.x;
-        }
-    }
-    return width;
-}
-
-/**
- **/
-void Renderer::drawText(const std::string& text, const glm::vec2& pen, const glm::vec4& colour) {
-    if (text.empty() || !markup_.font_) {
-        return;
-    }
-    text_->clear();
-    markup_.foregroundColor_ = colour;
-
-    glm::vec2 cursor = pen;
-    const std::wstring wide(text.begin(), text.end());
-    text_->addText(&cursor, markup_, wide);
-
-    canvas_.text(*text_, atlas_);
 }
 
 /**
@@ -388,18 +299,12 @@ void Renderer::drawTerrain(v3d::render::realtime::Pass* pass) {
 /**
  **/
 void Renderer::draw() {
-    const int width = engine_.window()->width();
-    const int height = engine_.window()->height();
-    if (width <= 0 || height <= 0) {
-        // a minimized window: the engine skips the frame, and a canvas with no area has no
-        // projection to build geometry against
-        engine_.renderFrame();
+    glm::ivec2 size;
+    if (!engine_.beginFrame(&size)) {
         return;
     }
-
-    // no resize event reaches the renderer, so the window is the only thing that knows
-    if (canvas_.width() != static_cast<uint32_t>(width) || canvas_.height() != static_cast<uint32_t>(height)) {
-        resize(width, height);
+    if (canvas_.width() != static_cast<uint32_t>(size.x) || canvas_.height() != static_cast<uint32_t>(size.y)) {
+        resize(size.x, size.y);
     }
 
     boost::shared_ptr<v3d::render::realtime::Pass> terrain = engine_.frame()->pass(terrainPass);
@@ -415,7 +320,7 @@ void Renderer::draw() {
     if (debug_) {
         glm::vec2 pen(20.0f, fontSize * 2.0f);
         for (const std::string& line : debugOverlay_->lines()) {
-            drawText(line, pen, textColour);
+            text_->draw(&canvas_, line, pen, textColour);
             pen.y += fontSize * 1.4f;
         }
     }

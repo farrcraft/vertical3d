@@ -71,14 +71,16 @@ bool Font2D::build() {
     // initialize freetype library
     FT_Library library;
     FT_Error error;
-    if ((error = FT_Init_FreeType(&library)) != 0) {
+    error = FT_Init_FreeType(&library);
+    if (error != 0) {
         logger_->get()->debug("Font2D::build - Error initializing freetype library!");
         return false;
     }
     // load font file
     FT_Face face;
     std::string filename(typeface_);
-    if ((error = FT_New_Face(library, filename.c_str(), 0, &face)) != 0) {
+    error = FT_New_Face(library, filename.c_str(), 0, &face);
+    if (error != 0) {
         logger_->get()->debug("Font2D::build - Error creating new freetype face!");
         return false;
     }
@@ -89,7 +91,8 @@ bool Font2D::build() {
     }
 
     // set the font size
-    if ((error = FT_Set_Pixel_Sizes(face, size_, 0)) != 0) {
+    error = FT_Set_Pixel_Sizes(face, size_, 0);
+    if (error != 0) {
         logger_->get()->debug("Font2D::build - Error setting font pixel size!");
         return false;
     }
@@ -110,13 +113,14 @@ bool Font2D::build() {
 
     // iterate over each character we want to use in the font
     for (size_t i = 0; i < charset.size(); i++) {
-        unsigned int charcode = charset[i];
+        unsigned int charcode = static_cast<unsigned char>(charset[i]);
         if (charset[i] == '\xFF') {
             charcode = 0;
         }
 
         // load the glyph and render the bitmap
-        if ((error = FT_Load_Char(face, charcode, FT_LOAD_RENDER)) != 0) {
+        error = FT_Load_Char(face, charcode, FT_LOAD_RENDER);
+        if (error != 0) {
             logger_->get()->debug("Font2D::build - Error loading character {} from typeface!", charcode);
             return false;
         }
@@ -154,7 +158,8 @@ bool Font2D::build() {
         }
 
         // load the glyph and render the bitmap
-        if ((error = FT_Load_Char(face, charcode, FT_LOAD_RENDER)) != 0) {
+        error = FT_Load_Char(face, charcode, FT_LOAD_RENDER);
+        if (error != 0) {
             logger_->get()->debug("Font2D::build - Error loading character {} !", charcode);
             return false;
         }

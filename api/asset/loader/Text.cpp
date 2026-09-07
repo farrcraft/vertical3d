@@ -35,7 +35,7 @@ boost::shared_ptr<Asset> Text::load(std::string_view name) {
     file.seekg(0, std::ios::end);
     content.resize(static_cast<unsigned int>(file.tellg()));
     file.seekg(0, std::ios::beg);
-    file.read(&content[0], content.size());
+    file.read(content.data(), content.size());
     file.close();
     boost::shared_ptr<Asset> text = boost::make_shared<v3d::asset::Text>(std::string(name), Type::Text, content);
 

@@ -22,18 +22,18 @@ namespace {
 /**
  * An unselected mesh.
  **/
-const glm::vec4 wire(0.78f, 0.80f, 0.84f, 1.0f);
+constexpr glm::vec4 wire(0.78f, 0.80f, 0.84f, 1.0f);
 
 /**
  * A mesh selected as a whole, which is object mode selection.
  **/
-const glm::vec4 object(0.35f, 0.72f, 1.0f, 1.0f);
+constexpr glm::vec4 object(0.35f, 0.72f, 1.0f, 1.0f);
 
 /**
  * A selected component: an edge, the boundary of a selected face, or the marker
  * drawn at a selected vertex.
  **/
-const glm::vec4 component(1.0f, 0.62f, 0.19f, 1.0f);
+constexpr glm::vec4 component(1.0f, 0.62f, 0.19f, 1.0f);
 
 /**
  * How big a selected vertex's marker is, as a fraction of the mesh's largest
@@ -83,7 +83,8 @@ void WireframeVisitor::visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
                 continue;
             }
 
-            glm::vec3 from, to;
+            glm::vec3 from;
+            glm::vec3 to;
             if (!loopSegment(mesh, loop, entry, &from, &to)) {
                 continue;
             }

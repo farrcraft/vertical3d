@@ -137,9 +137,13 @@ jobs:
 
       # Nothing inside the tree can tell a target that carries its own include path and its
       # own dependencies from one picking them up off the root's global or off an app that
-      # names all thirteen libraries, because in this repository both are always there. Only a
-      # root project of its own separates them, which is what this builds - and it is what
-      # found api/engine and api/render not declaring the api libraries they use.
+      # names every library, because in this repository both are always there. Only a root
+      # project of its own separates them, which is what this builds - and it is what found
+      # api/engine and api/render not declaring the api libraries they use.
+      #
+      # It also names its three libraries in V3D_LIBRARIES rather than taking all of them, so
+      # this is where the closure of ADR-0033 is exercised: a library that links something its
+      # manifest entry does not declare stops this configure.
       #
       # It reuses this job's vcpkg install rather than resolving from its own manifest, which
       # would build boost a second time to install the same package set.
@@ -147,7 +151,7 @@ jobs:
         shell: cmd
         run: |
           call "%RUNNER_TEMP%\vcvars.bat" >nul
-          cmake -S docs/examples/starter -B "%STARTER_BUILD_DIR%" -G Ninja ^
+          cmake -S examples/starter -B "%STARTER_BUILD_DIR%" -G Ninja ^
             -DCMAKE_BUILD_TYPE=Debug ^
             -DCMAKE_TOOLCHAIN_FILE="%VCPKG_INSTALLATION_ROOT%\scripts\buildsystems\vcpkg.cmake" ^
             -DVCPKG_TARGET_TRIPLET=x64-windows ^

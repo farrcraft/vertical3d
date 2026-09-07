@@ -38,7 +38,7 @@ BOOST_AUTO_TEST_CASE(compare_dimensions_test) {
     v3d::image::Difference difference = v3d::image::compare(a, b, 255);
     // a tolerance wide enough to admit anything still does not admit a different picture
     BOOST_CHECK_EQUAL(difference.match, false);
-    BOOST_CHECK(difference.reason.find("dimensions") != std::string::npos);
+    BOOST_CHECK(difference.reason.contains("dimensions"));
 }
 
 BOOST_AUTO_TEST_CASE(compare_format_test) {
@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE(compare_format_test) {
 
     v3d::image::Difference difference = v3d::image::compare(a, b, 255);
     BOOST_CHECK_EQUAL(difference.match, false);
-    BOOST_CHECK(difference.reason.find("formats") != std::string::npos);
+    BOOST_CHECK(difference.reason.contains("formats"));
 }
 
 BOOST_AUTO_TEST_CASE(compare_tolerance_test) {
@@ -80,6 +80,6 @@ BOOST_AUTO_TEST_CASE(compare_worst_pixel_test) {
     BOOST_CHECK_EQUAL(difference.channel, 1u);
 
     // and says so in one line, rather than only that the images differed
-    BOOST_CHECK(difference.description().find("column 1") != std::string::npos);
-    BOOST_CHECK(difference.description().find("row 1") != std::string::npos);
+    BOOST_CHECK(difference.description().contains("column 1"));
+    BOOST_CHECK(difference.description().contains("row 1"));
 }

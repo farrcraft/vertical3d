@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-namespace v3d::editor {
+namespace v3d::config {
 
 namespace {
 
@@ -100,7 +100,7 @@ bool CameraProfiles::load(const boost::shared_ptr<v3d::asset::Json>& config) {
         profile.up(vector(entry, "up", glm::vec3(0.0f, 1.0f, 0.0f)));
         profile.lookat(vector(entry, "lookat", glm::vec3(0.0f, 0.0f, 0.0f)));
 
-        if (profiles_.find(name) == profiles_.end()) {
+        if (!profiles_.contains(name)) {
             names_.push_back(name);
         }
         profiles_.insert_or_assign(name, profile);
@@ -122,7 +122,7 @@ v3d::type::CameraProfile CameraProfiles::get(const std::string& name) const {
 /**
  **/
 bool CameraProfiles::has(const std::string& name) const {
-    return profiles_.find(name) != profiles_.end();
+    return profiles_.contains(name);
 }
 
 /**
@@ -131,4 +131,4 @@ const std::vector<std::string>& CameraProfiles::names() const noexcept {
     return names_;
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::config

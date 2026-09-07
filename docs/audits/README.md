@@ -1,12 +1,12 @@
 # Audits and surveys
 
-A survey or an audit is written before a tree is folded into the current layout or deleted:
-what it holds, what is worth keeping, and an itemised list of what has to land elsewhere
-first. The document is the only account of that tree once it is gone, so it stays in the repo
-after the list is worked off — the source itself comes back with `git show <commit>^:<path>`.
+A survey or an audit is written before a tree is folded into the current layout or deleted: what
+it holds, what is worth keeping, and an itemised list of what has to land elsewhere first. The
+document is the only account of that tree once it is gone, so it stays in the repo after the
+list is worked off. The source itself comes back with `git show <commit>^:<path>`.
 
-An audit sits here while its list is open and moves to [completed/](completed/) when every
-item is closed. All four are complete.
+An audit sits here while its list is open and moves to [completed/](completed/) when every item
+is closed. All four are complete.
 
 ## The records
 
@@ -30,6 +30,6 @@ Trees that were archived rather than carried forward. **All of them are deleted*
 * **Rigel** — an experimental v3d app implementation, and the earlier prototype of the editor.
   Not simply archived: its behaviour was folded into `vertical3d/` across Phase 6 of
   [plans/completed/Modernization.md](../plans/completed/Modernization.md).
-* **Hookah** — the HAL library providing window, keyboard and mouse services. Covered by
-  `api/render/realtime/Window` and `api/input`; it went with `v3dlibs/`, whose SDL2 driver was
+* **Hookah** — the HAL library providing window, keyboard and mouse services. Covered now by
+  `api/render/realtime/Window` and `api/input`. It went with `v3dlibs/`, whose SDL2 driver was
   the last SDL2 code in the tree.

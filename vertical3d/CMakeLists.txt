@@ -5,7 +5,6 @@ add_executable("vertical3d"
 
 	"src/view/ViewLayout.h" "src/view/ViewLayout.cxx"
 	"src/view/ViewPort.h" "src/view/ViewPort.cxx"
-	"src/view/CameraProfiles.h" "src/view/CameraProfiles.cxx"
 	"src/view/ConstructionPlane.h" "src/view/ConstructionPlane.cxx"
 
 	"src/scene/Scene.h" "src/scene/Scene.cxx"

@@ -9,7 +9,7 @@
  * Once a relatively complete and playable implementation was finished, much of
  * the common reusable code was extracted out into a separate library - libhookah.
  * Subsequent iterations of this source have been to support testing the evolving
- * design of that library. The core game logic has not otherwise significantly 
+ * design of that library. The core game logic has not otherwise significantly
  * changed since then.
  *
  *
@@ -25,42 +25,10 @@
 // the WinMain a windows subsystem executable is entered through, which calls this main
 #include <SDL3/SDL_main.h>
 
-#include <cstdlib>
-#include <exception>
-#include <string>
-
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
-
 #include "PongEngine.h"
 
-#include "../../api/log/Logger.h"
+#include "../../api/engine/Application.h"
 
 int main(int /* argc */, char *argv[]) {
-    // extract exe path from argv (needed for loading file assets with relative paths)
-    std::string appPath =
-        boost::filesystem::path(boost::filesystem::system_complete(boost::filesystem::path(argv[0])).remove_filename()).string() +
-        boost::filesystem::path("/").make_preferred().string();
-
-    PongEngine engine(appPath);
-
-    // the renderer reports what it cannot do by throwing, and an uncaught exception on
-    // windows is an abort dialog with no message in it. A windowed app has no console,
-    // so the log is the only place what went wrong is readable
-    int exitStatus = EXIT_SUCCESS;
-    try {
-        if (!engine.initialize() || !engine.eventLoop()) {
-            exitStatus = EXIT_FAILURE;
-        }
-    } catch (const std::exception& error) {
-        v3d::log::Logger logger;
-        logger.get()->error("pong failed: {}", error.what());
-        exitStatus = EXIT_FAILURE;
-    }
-
-    if (!engine.shutdown()) {
-        exitStatus = EXIT_FAILURE;
-    }
-
-    return exitStatus;
+    return v3d::engine::run<PongEngine>(argv[0], "pong");
 }

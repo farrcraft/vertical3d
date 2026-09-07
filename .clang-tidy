@@ -1,0 +1,89 @@
+# The check list clang-tidy runs under -DV3D_CLANG_TIDY=ON. Four families are enabled and
+# named checks are subtracted, rather than the live checks being listed one by one: a name
+# clang-tidy does not recognise is not an error, so a list that has gone stale turns findings
+# on and fails loudly instead of quietly covering less. 183 of the 206 checks in these families
+# are live, and the tree is clean at all of them.
+#
+# The cppcoreguidelines, modernize and google families are not enabled at all. Each argues with
+# a convention this tree has settled - boost::shared_ptr over the std equivalents, a namespace
+# body that is not indented, .h for every header - and a gate is worth nothing if reading it
+# means deciding which findings to believe.
+#
+# Seven of the subtractions are settled rather than pending, and are not backlog:
+#
+#  - bugprone-invalid-enum-default-initialization fires on every VkSomethingCreateInfo x{},
+#    because a Vulkan flag bits enum has no zero enumerator. Value initialising the struct and
+#    then filling the fields that matter is how the whole API is written, and every field this
+#    tree leaves at zero is either a flags mask, where zero means none, or an out parameter.
+#  - readability-ambiguous-smartptr-reset-call wants (*p).reset() wherever a pointee has a
+#    reset() of its own - scene_, frame_, mesh_. The only spelling that satisfies it is worse
+#    to read than the one it replaces, and the case it exists to catch is handled where it
+#    arises: Engine3D releases its frame by assigning nullptr, not by reset().
+#  - misc-no-recursion reports a menu and its submenus, a viewport layout and its children, and
+#    a json value and its members. Each is a tree whose depth is a document's, and recursion is
+#    what walking one looks like.
+#  - misc-multiple-inheritance reports BRep and WingedEdgeBRep, which are a dag::Node and a
+#    dag::Transform. That is ADR-0013, not an oversight.
+#  - readability-make-member-function-const reports Menu::next and Menu::previous, which move
+#    the active item of the level they lock out of a weak_ptr. Nothing in *this* changes, so
+#    the check is right about the physics and wrong about the meaning.
+#  - readability-non-const-parameter reports the RI entry points in moya's RenderMan.cxx.
+#    RtToken is char*, and the signature is the standard's rather than this tree's to choose.
+#  - readability-container-contains cannot be satisfied for the three command line tools.
+#    boost::program_options::variables_map inherits contains() from std::map, but the built
+#    boost does not export that instantiation - the call compiles and then fails to link
+#    with an unresolved __declspec(dllimport). count() is what those three keep.
+#
+# Every other subtraction is a backlog entry; docs/TODO.md carries what each one reports. The
+# way to remove one is to fix what it reports, not to widen the exclusion.
+Checks: >
+  -*,
+  bugprone-*,
+  performance-*,
+  misc-*,
+  readability-*,
+  -bugprone-derived-method-shadowing-base-method,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-invalid-enum-default-initialization,
+  -bugprone-narrowing-conversions,
+  -misc-const-correctness,
+  -misc-include-cleaner,
+  -misc-multiple-inheritance,
+  -misc-no-recursion,
+  -misc-non-private-member-variables-in-classes,
+  -misc-use-internal-linkage,
+  -performance-enum-size,
+  -performance-unnecessary-value-param,
+  -readability-ambiguous-smartptr-reset-call,
+  -readability-braces-around-statements,
+  -readability-container-contains,
+  -readability-convert-member-functions-to-static,
+  -readability-identifier-length,
+  -readability-implicit-bool-conversion,
+  -readability-magic-numbers,
+  -readability-make-member-function-const,
+  -readability-math-missing-parentheses,
+  -readability-non-const-parameter,
+  -readability-uppercase-literal-suffix
+
+# A header is diagnosed wherever it is included from, so an api header is covered by whichever
+# library compiles it. The third party trees are not this repository's to fix, and each would
+# be reported once per source that reaches it. noiseutils.h is among them because it is vendored
+# where the tree's own sources are: SKIP_LINTING takes noiseutils.cpp out of the run and does
+# nothing for the header, which voxel's own sources include.
+#
+# The pattern is matched against the include as spelled rather than against a resolved path, so
+# the vendored header is named by its own last two segments - what reaches the filter is
+# voxel\src\voxel\../noise/noiseutils.h, which no directory prefix matches.
+HeaderFilterRegex: '.*'
+ExcludeHeaderFilterRegex: '(.*[\\/](vcpkg_installed|vendor|VulkanSDK|Microsoft Visual Studio|Windows Kits)[\\/].*)|(.*[\\/]noise[\\/]noiseutils\.h)'
+
+# clang-tidy would otherwise print a fix reformatted to LLVM's brace and indent style, which is
+# not this tree's. Nothing here applies one - -fix is not passed.
+FormatStyle: none
+
+CheckOptions:
+  # A Boost.Test case scores on what BOOST_CHECK_EQUAL expands to rather than on anything its
+  # author wrote: a straight run of assertions with no branch in it reaches 37. Nothing in this
+  # tree's own macros branches, so counting them buys nothing anywhere else either.
+  readability-function-cognitive-complexity.IgnoreMacros: 'true'

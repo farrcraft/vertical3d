@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE(render_context_reserved_coordinate_systems_test) {
     glm::mat4x4 identity(1.0f);
 
     const char* reserved[] = { "object", "world", "camera", "screen", "raster", "NDC" };
-    for (auto name : reserved) {
+    for (const auto* name : reserved) {
         BOOST_TEST((rc.coordinateSystem(name) == identity));
     }
 }

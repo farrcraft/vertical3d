@@ -28,7 +28,8 @@ Texture::Texture() noexcept :
     memory(VK_NULL_HANDLE),
     view(VK_NULL_HANDLE),
     sampler(VK_NULL_HANDLE),
-    extent{0, 0} {
+    extent(),
+    owned(true) {
 }
 
 /**
@@ -55,6 +56,11 @@ Resources::~Resources() {
     // of its own to destroy
 
     for (const Texture& texture : textures_.resources()) {
+        // a texture that only names someone else's images - a render target's - is a
+        // reference rather than a resource, and freeing it here would free it twice
+        if (!texture.owned) {
+            continue;
+        }
         if (texture.sampler != VK_NULL_HANDLE) {
             vkDestroySampler(device, texture.sampler, nullptr);
         }

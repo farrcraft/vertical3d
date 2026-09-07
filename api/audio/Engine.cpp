@@ -69,7 +69,7 @@ bool Engine::load(const boost::shared_ptr<v3d::asset::Json>& config, const Resol
         return false;
     }
     auto const items = doc.at("sounds").as_array();
-    auto it = items.begin();
+    const auto* it = items.begin();
     bool loaded = true;
     for (; it != items.end(); ++it) {
         if (!it->is_object()) {

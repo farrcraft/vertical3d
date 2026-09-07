@@ -3,6 +3,9 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <cstdio>
+#include <cstdlib>
+#include <exception>
 #include <iostream>
 #include <string>
 
@@ -19,18 +22,35 @@
 #include <boost/make_shared.hpp>
 
 void usage() {
-    std::cout << "usage:" << std::endl;
-    std::cout << "talyn --file filename --outfile filename --silent -q --debug -w 640 -h 480" << std::endl;
-    std::cout << "  --debug     - enable debugging output" << std::endl;
-    std::cout << "  --silent    - don't print the render progress" << std::endl;
-    std::cout << "  --quiet     - don't print informational messages" << std::endl;
-    std::cout << "  --file      - input filename of scene to be rendered" << std::endl;
-    std::cout << "  --outfile   - target filename of rendered image" << std::endl;
-    std::cout << "  --width     - override scene formatting for the width of the target rendered image" << std::endl;
-    std::cout << "  --height    - override scene formatting for the height of the target rendered image" << std::endl;
+    std::cout << "usage:" << "\n";
+    std::cout << "talyn --file filename --outfile filename --silent -q --debug -w 640 -h 480" << "\n";
+    std::cout << "  --debug     - enable debugging output" << "\n";
+    std::cout << "  --silent    - don't print the render progress" << "\n";
+    std::cout << "  --quiet     - don't print informational messages" << "\n";
+    std::cout << "  --file      - input filename of scene to be rendered" << "\n";
+    std::cout << "  --outfile   - target filename of rendered image" << "\n";
+    std::cout << "  --width     - override scene formatting for the width of the target rendered image" << "\n";
+    std::cout << "  --height    - override scene formatting for the height of the target rendered image" << "\n";
 }
 
-int main(int argc, char * argv[]) {
+namespace {
+
+/**
+ * What the command line asked for. --debug and --quiet are accepted and read nowhere:
+ * nothing in this renderer varies on them.
+ **/
+struct Options final {
+    bool silent = false;
+    std::string infile;
+    std::string outfile;
+    unsigned int width = 0;
+    unsigned int height = 0;
+};
+
+/**
+ * @return false when the command line asked for the usage rather than for a render
+ **/
+bool parseOptions(int argc, char * argv[], Options * options) {
     // setup option parser
     boost::program_options::options_description opts_desc("Allowed options");
     opts_desc.add_options()
@@ -50,44 +70,43 @@ int main(int argc, char * argv[]) {
 
     // process options
     if (var_map.count("help")) {
-        std::cout << opts_desc << std::endl;
-        exit(EXIT_SUCCESS);
+        std::cout << opts_desc << "\n";
+        return false;
     }
-
-    bool debug = false;
-    bool silent = false;
-    bool quiet = false;
-    std::string infile;
-    std::string outfile;
-    unsigned int height = 0;
-    unsigned int width = 0;
 
     if (var_map.count("silent")) {
-        silent = true;
-    }
-    if (var_map.count("quiet")) {
-        quiet = true;
-    }
-    if (var_map.count("debug")) {
-        debug = true;
+        options->silent = true;
     }
     if (var_map.count("file")) {
-        infile = var_map["file"].as<std::string>();
+        options->infile = var_map["file"].as<std::string>();
     }
     if (var_map.count("outfile")) {
-        outfile = var_map["outfile"].as<std::string>();
+        options->outfile = var_map["outfile"].as<std::string>();
     }
     if (var_map.count("width")) {
-        width = var_map["width"].as<unsigned int>();
+        options->width = var_map["width"].as<unsigned int>();
     }
     if (var_map.count("height")) {
-        height = var_map["height"].as<unsigned int>();
+        options->height = var_map["height"].as<unsigned int>();
     }
 
-    if (infile.empty()) {
+    if (options->infile.empty()) {
         usage();
-        exit(EXIT_SUCCESS);
+        return false;
     }
+    return true;
+}
+
+int run(int argc, char * argv[]) {
+    Options options;
+    if (!parseOptions(argc, argv, &options)) {
+        return EXIT_SUCCESS;
+    }
+    const bool silent = options.silent;
+    const std::string& infile = options.infile;
+    const std::string& outfile = options.outfile;
+    const unsigned int width = options.width;
+    const unsigned int height = options.height;
 
     // establish new render context
     boost::shared_ptr<v3d::talyn::RenderContext> rc(new v3d::talyn::RenderContext());
@@ -105,16 +124,16 @@ int main(int argc, char * argv[]) {
         v3d::talyn::RIBHandler handler(rc);
         v3d::render::offline::RIBReader reader(logger);
         if (!reader.read(filepath, &handler)) {
-            std::cout << "error reading rib file - " << reader.error() << std::endl;
+            std::cout << "error reading rib file - " << reader.error() << "\n";
             exit(EXIT_FAILURE);
         }
         // the file parsed, but it may have asked for a camera this renderer cannot build
         if (!handler.error().empty()) {
-            std::cout << "cannot render this scene - " << handler.error() << std::endl;
+            std::cout << "cannot render this scene - " << handler.error() << "\n";
             exit(EXIT_FAILURE);
         }
     } else {
-        std::cout << "unable to determine file type!" << std::endl;
+        std::cout << "unable to determine file type!" << "\n";
         exit(EXIT_FAILURE);
     }
 
@@ -124,11 +143,13 @@ int main(int argc, char * argv[]) {
     } else if (width > 0 || height > 0) {
         // format() sizes both dimensions at once and the scene's own value for the other one
         // is not readable back, so a lone override cannot be honoured
-        std::cout << "--width and --height must be given together to override the scene" << std::endl;
+        std::cout << "--width and --height must be given together to override the scene" << "\n";
     }
 
     if (!silent) {
-        std::cout << "Rendering scene file: " << filepath << std::endl;
+        // flushed rather than left to the buffer: the render that follows it is the
+        // whole run, and a progress line nobody sees until it ends is not one
+        std::cout << "Rendering scene file: " << filepath << "\n" << std::flush;
     }
 
     // actually do the rendering
@@ -138,25 +159,45 @@ int main(int argc, char * argv[]) {
     if (!fb) {
         // the framebuffer is allocated by the scene's Format request, and a scene that names
         // no format leaves nothing to write
-        std::cout << "scene did not set an image format!" << std::endl;
+        std::cout << "scene did not set an image format!" << "\n";
         exit(EXIT_FAILURE);
     }
 
     if (!silent) {
-        std::cout << "Rendering framebuffer..." << std::endl;
+        std::cout << "Rendering framebuffer..." << "\n" << std::flush;
     }
     // framebuffer conversion to a writable image
     boost::shared_ptr<v3d::image::Image> image = fb->image(4);
     if (!outfile.empty()) {
         if (!silent) {
-            std::cout << "Writing image file: " << outfile << std::endl;
+            std::cout << "Writing image file: " << outfile << "\n";
         }
         v3d::image::Factory factory(logger);
         if (!factory.write(outfile, image)) {
-            std::cout << "error writing file!" << std::endl;
+            std::cout << "error writing file!" << "\n";
             exit(EXIT_FAILURE);
         }
     }
     return EXIT_SUCCESS;
+}
+
+};  // namespace
+
+int main(int argc, char * argv[]) {
+    // the option parser and the reader both report by throwing, and an exception leaving
+    // main is an abort with no message in it. The handler reports through stdio rather
+    // than the stream the rest of the file writes to: a last resort that can itself throw
+    // is not one
+    try {
+        return run(argc, argv);
+    } catch (const std::exception& error) {
+        std::fputs("error: ", stderr);
+        std::fputs(error.what(), stderr);
+        std::fputs("\n", stderr);
+        return EXIT_FAILURE;
+    } catch (...) {
+        std::fputs("error: unrecognised failure\n", stderr);
+        return EXIT_FAILURE;
+    }
 }
 

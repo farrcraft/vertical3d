@@ -7,6 +7,9 @@
 
 #include <string>
 
+#include "Accumulator.h"
+#include "Statistics.h"
+
 #include "../log/Logger.h"
 #include "../asset/Manager.h"
 #include "../config/Config.h"
@@ -14,6 +17,7 @@
 #include "../event/Engine.h"
 #include "../render/realtime/Window.h"
 
+#include <boost/json.hpp>
 #include <entt/entt.hpp>
 
 namespace v3d::engine {
@@ -58,6 +62,30 @@ class Engine {
     virtual bool tick(unsigned int delta);
 
     /**
+     * Advance the simulation by one fixed step.
+     *
+     * Called zero or more times per frame, however many whole steps the real time since the
+     * last frame owes, per ADR-0032. Simulation belongs here and not in tick(): what runs
+     * on a fixed step produces the same result whatever the frame rate was, and what runs
+     * in tick() does not.
+     *
+     * @param step seconds of simulated time, always Accumulator::seconds
+     * @return bool
+     **/
+    virtual bool simulate(float step);
+
+    /**
+     * The fraction of a simulation step elapsed but not yet simulated, in [0, 1).
+     * A renderer that interpolates between the last two simulation states blends by this.
+     **/
+    float alpha() const noexcept;
+
+    /**
+     * What the loop measured about its own pacing, per frame.
+     **/
+    const Statistics& statistics() const noexcept;
+
+    /**
      * Render the current frame.
      * This will be called after each tick within the event loop to draw the current frame
      * 
@@ -98,9 +126,20 @@ class Engine {
     boost::shared_ptr<entt::dispatcher> dispatcher_;
     boost::shared_ptr<v3d::event::Engine> eventEngine_;
     entt::registry registry_;
+    Accumulator accumulator_;
+    Statistics statistics_;
 
  private:
      bool registerEventMappings();
+
+     /**
+      * One end of a binding: the name and context it fires under, plus what that end
+      * alone carries - the edge a source matches, and the parameter a destination
+      * arrives with.
+      * @return false when the mapping does not describe that end, which is logged
+      **/
+     bool readMappingSource(const boost::json::object& mapping, v3d::event::Event* event);
+     bool readMappingDestination(const boost::json::object& mapping, v3d::event::Event* event);
 
      std::string appPath_;
      int features_;

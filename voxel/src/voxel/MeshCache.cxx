@@ -31,15 +31,9 @@ MeshCache::MeshCache(size_t vertices, size_t tris, size_t faces) :
 }
 
 MeshCache::~MeshCache() {
-    if (vertices_) {
-        delete [] vertices_;
-    }
-    if (tris_) {
-        delete [] tris_;
-    }
-    if (faces_) {
-        delete [] faces_;
-    }
+    delete [] vertices_;
+    delete [] tris_;
+    delete [] faces_;
 }
 
 glm::vec3 * MeshCache::vertices() {

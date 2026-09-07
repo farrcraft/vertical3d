@@ -13,8 +13,7 @@
 #include "../../api/audio/Engine.h"
 #include "../../api/event/Event.h"
 #include "../../api/ui/Engine.h"
-
-#include <entt/entt.hpp>
+#include "../../api/ui/GameMenu.h"
 
 class PongRenderer;
 
@@ -33,7 +32,7 @@ class PongEngine final : public v3d::engine::Engine {
     /**
      * @return bool
      **/
-    bool tick(unsigned int delta);
+    bool simulate(float step) override;
 
     /**
      **/
@@ -47,11 +46,17 @@ class PongEngine final : public v3d::engine::Engine {
     void handleEvent(const v3d::event::Event& event);
 
  private:
+    /**
+     * The two contexts an event reaches this engine from: the game's own commands,
+     * and the menu's.
+     **/
+    void handlePlayEvent(const v3d::event::Event& event);
+    void handleUiEvent(const v3d::event::Event& event);
+
     boost::shared_ptr<v3d::audio::Engine> soundEngine_;
 
     boost::shared_ptr<PongScene> scene_;
     boost::shared_ptr<PongRenderer> renderer_;
     boost::shared_ptr<v3d::ui::Engine> vgui_;
-
-    entt::registry registry_;
+    boost::shared_ptr<v3d::ui::GameMenu> menu_;
 };

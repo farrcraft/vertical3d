@@ -36,7 +36,7 @@ boost::shared_ptr<v3d::editor::ViewPort> frontView() {
 /**
  * The middle of that view, which is where an untranslated mesh sits.
  **/
-const glm::vec2 centre(200.0f, 200.0f);
+constexpr glm::vec2 centre(200.0f, 200.0f);
 
 };  // namespace
 

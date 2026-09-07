@@ -40,7 +40,7 @@ bool Config::load(const boost::shared_ptr<v3d::asset::Manager>& assetManager) {
     }
     // for each context
     auto const items = configs.as_array();
-    auto it = items.begin();
+    const auto* it = items.begin();
     for (; it != items.end(); ++it) {
         if (!it->is_object()) {
             logger_->get()->error("Unrecognized config");

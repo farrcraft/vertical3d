@@ -39,7 +39,7 @@ boost::shared_ptr<v3d::editor::TransformTool> tool(const boost::shared_ptr<v3d::
     return transform;
 }
 
-const glm::vec2 centre(200.0f, 200.0f);
+constexpr glm::vec2 centre(200.0f, 200.0f);
 
 };  // namespace
 

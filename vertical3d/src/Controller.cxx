@@ -67,7 +67,7 @@ bool Controller::initialize() {
     project_ = boost::make_shared<Project>(logger_);
     commands_ = boost::make_shared<CommandStack>();
 
-    profiles_ = boost::make_shared<CameraProfiles>(logger_);
+    profiles_ = boost::make_shared<v3d::config::CameraProfiles>(logger_);
     if (!profiles_->load(config_->get(v3d::config::Type::Camera))) {
         return false;
     }
@@ -430,12 +430,10 @@ bool Controller::uiPress(const glm::vec2& cursor) {
     if (menu_ && menu_->press(cursor)) {
         return true;
     }
-    for (const boost::shared_ptr<v3d::ui::component::Toolbar>& bar : toolbars_) {
-        if (bar->press(cursor)) {
-            return true;
-        }
-    }
-    return false;
+    // any_of short circuits, so the first toolbar that takes the press is the last one offered it
+    return std::ranges::any_of(toolbars_, [&cursor](const boost::shared_ptr<v3d::ui::component::Toolbar>& bar) {
+        return bar->press(cursor);
+    });
 }
 
 /**

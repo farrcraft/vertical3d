@@ -23,10 +23,10 @@ Renderer::~Renderer() {
 */
 void Renderer::createRenderContext(const std::string & name) {
     // should probably go somewhere else since it could be displayed multiple times here...
-    if (contexts_.size() == 0) {
-        std::cout << "The RenderMan (R) Interface Procedures and Protocol are:" << std::endl <<
-                     "Copyright 1988, 1989, Pixar" << std::endl <<
-                     "All Rights Reserved" << std::endl;
+    if (contexts_.empty()) {
+        std::cout << "The RenderMan (R) Interface Procedures and Protocol are:" << "\n" <<
+                     "Copyright 1988, 1989, Pixar" << "\n" <<
+                     "All Rights Reserved" << "\n";
     }
 
     RenderContext context(name);
@@ -38,7 +38,7 @@ void Renderer::destroyActiveRenderContext(void) {
 }
 
 RenderContext & Renderer::activeRenderContext(void) {
-    if (contexts_.size() == 0) {
+    if (contexts_.empty()) {
         createRenderContext("");
     }
     return contexts_[contexts_.size() - 1];

@@ -3,6 +3,8 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <algorithm>
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -27,16 +29,26 @@ struct Sounds final {
     }
 
     bool has(const std::string& clip) const {
-        for (const auto& played : clips_) {
-            if (played == clip) {
-                return true;
-            }
-        }
-        return false;
+        return std::ranges::any_of(clips_, [&clip](const std::string& played) { return played == clip; });
     }
 
     std::vector<std::string> clips_;
 };
+
+/**
+ * The step the engine drains at, which is what every scene speed below is expressed
+ * against. Repeated here rather than taken from v3d::engine::Accumulator, because the scene
+ * is where pong's rules are and this test links neither the engine nor a device.
+ **/
+constexpr float STEP = 1.0f / 60.0f;
+
+/**
+ * Speeds are per second and a sixtieth is not exactly representable, so a position is
+ * asserted to within a hundredth of a pixel rather than exactly.
+ **/
+bool near(const glm::vec2& lhs, const glm::vec2& rhs) {
+    return std::abs(lhs.x - rhs.x) < 0.01f && std::abs(lhs.y - rhs.y) < 0.01f;
+}
 
 /**
  * A scene the size of pong's own window, reset and listening. Everything below measures
@@ -67,7 +79,7 @@ BOOST_AUTO_TEST_CASE(pong_scene_reset_test) {
     Fixture fixture;
 
     BOOST_TEST((fixture.scene_.ball().position() == glm::vec2(400.0f, 300.0f)));
-    BOOST_TEST((fixture.scene_.ball().direction() == glm::vec2(-1.0f, 0.0f)));
+    BOOST_TEST((fixture.scene_.ball().direction() == glm::vec2(-60.0f, 0.0f)));
     BOOST_TEST(fixture.scene_.ball().size() == 10.0f);
     BOOST_TEST(fixture.scene_.left().position() == 300.0f);
     BOOST_TEST(fixture.scene_.right().position() == 300.0f);
@@ -76,14 +88,15 @@ BOOST_AUTO_TEST_CASE(pong_scene_reset_test) {
 }
 
 /**
- * A tick with nothing in reach moves the ball by its direction and fires nothing.
+ * A tick with nothing in reach moves the ball by one step of its velocity and fires
+ * nothing. Sixty pixels a second over a sixtieth of a second is one pixel.
  **/
 BOOST_AUTO_TEST_CASE(pong_scene_tick_moves_the_ball_test) {
     Fixture fixture;
 
-    fixture.scene_.tick();
+    fixture.scene_.tick(STEP);
 
-    BOOST_TEST((fixture.scene_.ball().position() == glm::vec2(399.0f, 300.0f)));
+    BOOST_TEST(near(fixture.scene_.ball().position(), glm::vec2(399.0f, 300.0f)));
     BOOST_TEST(fixture.sounds_.clips_.empty());
 }
 
@@ -94,7 +107,7 @@ BOOST_AUTO_TEST_CASE(pong_scene_paused_test) {
     Fixture fixture;
     fixture.scene_.state().pause(true);
 
-    fixture.scene_.tick();
+    fixture.scene_.tick(STEP);
 
     BOOST_TEST((fixture.scene_.ball().position() == glm::vec2(400.0f, 300.0f)));
     BOOST_TEST(fixture.sounds_.clips_.empty());
@@ -107,22 +120,22 @@ BOOST_AUTO_TEST_CASE(pong_scene_paused_test) {
 BOOST_AUTO_TEST_CASE(pong_scene_left_paddle_collision_test) {
     Fixture fixture;
     fixture.scene_.ball().position(glm::vec2(20.0f, 300.0f));
-    fixture.scene_.ball().direction(glm::vec2(-1.0f, 0.0f));
+    fixture.scene_.ball().direction(glm::vec2(-60.0f, 0.0f));
 
-    fixture.scene_.tick();
+    fixture.scene_.tick(STEP);
 
-    BOOST_TEST((fixture.scene_.ball().direction() == glm::vec2(1.0f, 0.0f)));
+    BOOST_TEST((fixture.scene_.ball().direction() == glm::vec2(60.0f, 0.0f)));
     BOOST_TEST(fixture.sounds_.has("hit"));
 }
 
 BOOST_AUTO_TEST_CASE(pong_scene_right_paddle_collision_test) {
     Fixture fixture;
     fixture.scene_.ball().position(glm::vec2(780.0f, 300.0f));
-    fixture.scene_.ball().direction(glm::vec2(1.0f, 0.0f));
+    fixture.scene_.ball().direction(glm::vec2(60.0f, 0.0f));
 
-    fixture.scene_.tick();
+    fixture.scene_.tick(STEP);
 
-    BOOST_TEST((fixture.scene_.ball().direction() == glm::vec2(-1.0f, 0.0f)));
+    BOOST_TEST((fixture.scene_.ball().direction() == glm::vec2(-60.0f, 0.0f)));
     BOOST_TEST(fixture.sounds_.has("hit"));
 }
 
@@ -133,11 +146,11 @@ BOOST_AUTO_TEST_CASE(pong_scene_right_paddle_collision_test) {
 BOOST_AUTO_TEST_CASE(pong_scene_paddle_miss_test) {
     Fixture fixture;
     fixture.scene_.ball().position(glm::vec2(20.0f, 100.0f));
-    fixture.scene_.ball().direction(glm::vec2(-1.0f, 0.0f));
+    fixture.scene_.ball().direction(glm::vec2(-60.0f, 0.0f));
 
-    fixture.scene_.tick();
+    fixture.scene_.tick(STEP);
 
-    BOOST_TEST((fixture.scene_.ball().direction() == glm::vec2(-1.0f, 0.0f)));
+    BOOST_TEST((fixture.scene_.ball().direction() == glm::vec2(-60.0f, 0.0f)));
     BOOST_TEST(!fixture.sounds_.has("hit"));
 }
 
@@ -148,13 +161,13 @@ BOOST_AUTO_TEST_CASE(pong_scene_paddle_miss_test) {
 BOOST_AUTO_TEST_CASE(pong_scene_paddle_travel_angles_the_return_test) {
     Fixture fixture;
     fixture.scene_.ball().position(glm::vec2(20.0f, 300.0f));
-    fixture.scene_.ball().direction(glm::vec2(-1.0f, 0.0f));
+    fixture.scene_.ball().direction(glm::vec2(-60.0f, 0.0f));
     fixture.scene_.left().up(true);
 
-    fixture.scene_.tick();
+    fixture.scene_.tick(STEP);
 
-    BOOST_TEST(fixture.scene_.ball().direction().x == 1.0f);
-    BOOST_TEST(fixture.scene_.ball().direction().y == 0.015f);
+    BOOST_TEST(fixture.scene_.ball().direction().x == 60.0f);
+    BOOST_TEST(fixture.scene_.ball().direction().y == 0.9f);
 }
 
 /**
@@ -164,13 +177,13 @@ BOOST_AUTO_TEST_CASE(pong_scene_paddle_travel_angles_the_return_test) {
 BOOST_AUTO_TEST_CASE(pong_scene_left_edge_scores_test) {
     Fixture fixture;
     fixture.scene_.ball().position(glm::vec2(5.0f, 100.0f));
-    fixture.scene_.ball().direction(glm::vec2(-1.0f, 0.0f));
+    fixture.scene_.ball().direction(glm::vec2(-60.0f, 0.0f));
 
-    fixture.scene_.tick();
+    fixture.scene_.tick(STEP);
 
     BOOST_TEST(fixture.scene_.right().score() == 1);
     BOOST_TEST(fixture.scene_.left().score() == 0);
-    BOOST_TEST((fixture.scene_.ball().direction() == glm::vec2(-1.0f, 0.0f)));
+    BOOST_TEST((fixture.scene_.ball().direction() == glm::vec2(-60.0f, 0.0f)));
     BOOST_TEST(fixture.scene_.left().position() == 300.0f);
     BOOST_TEST(fixture.sounds_.has("score"));
 }
@@ -178,13 +191,13 @@ BOOST_AUTO_TEST_CASE(pong_scene_left_edge_scores_test) {
 BOOST_AUTO_TEST_CASE(pong_scene_right_edge_scores_test) {
     Fixture fixture;
     fixture.scene_.ball().position(glm::vec2(795.0f, 100.0f));
-    fixture.scene_.ball().direction(glm::vec2(1.0f, 0.0f));
+    fixture.scene_.ball().direction(glm::vec2(60.0f, 0.0f));
 
-    fixture.scene_.tick();
+    fixture.scene_.tick(STEP);
 
     BOOST_TEST(fixture.scene_.left().score() == 1);
     BOOST_TEST(fixture.scene_.right().score() == 0);
-    BOOST_TEST((fixture.scene_.ball().direction() == glm::vec2(1.0f, 0.0f)));
+    BOOST_TEST((fixture.scene_.ball().direction() == glm::vec2(60.0f, 0.0f)));
     BOOST_TEST(fixture.sounds_.has("score"));
 }
 
@@ -195,24 +208,24 @@ BOOST_AUTO_TEST_CASE(pong_scene_right_edge_scores_test) {
 BOOST_AUTO_TEST_CASE(pong_scene_bounces_off_the_top_test) {
     Fixture fixture;
     fixture.scene_.ball().position(glm::vec2(400.0f, 10.0f));
-    fixture.scene_.ball().direction(glm::vec2(1.0f, -2.0f));
+    fixture.scene_.ball().direction(glm::vec2(60.0f, -120.0f));
 
-    fixture.scene_.tick();
+    fixture.scene_.tick(STEP);
 
-    BOOST_TEST(fixture.scene_.ball().direction().x == 1.0f);
-    BOOST_TEST(fixture.scene_.ball().direction().y == 2.0f);
+    BOOST_TEST(fixture.scene_.ball().direction().x == 60.0f);
+    BOOST_TEST(fixture.scene_.ball().direction().y == 120.0f);
     BOOST_TEST(fixture.sounds_.has("bounce"));
 }
 
 BOOST_AUTO_TEST_CASE(pong_scene_bounces_off_the_bottom_test) {
     Fixture fixture;
     fixture.scene_.ball().position(glm::vec2(400.0f, 580.0f));
-    fixture.scene_.ball().direction(glm::vec2(1.0f, 2.0f));
+    fixture.scene_.ball().direction(glm::vec2(60.0f, 120.0f));
 
-    fixture.scene_.tick();
+    fixture.scene_.tick(STEP);
 
-    BOOST_TEST(fixture.scene_.ball().direction().x == 1.0f);
-    BOOST_TEST(fixture.scene_.ball().direction().y == -2.0f);
+    BOOST_TEST(fixture.scene_.ball().direction().x == 60.0f);
+    BOOST_TEST(fixture.scene_.ball().direction().y == -120.0f);
     BOOST_TEST(fixture.sounds_.has("bounce"));
 }
 
@@ -224,7 +237,7 @@ BOOST_AUTO_TEST_CASE(pong_scene_victory_test) {
     Fixture fixture;
     fixture.scene_.left().score(fixture.scene_.state().maxScore());
 
-    fixture.scene_.tick();
+    fixture.scene_.tick(STEP);
 
     BOOST_TEST(fixture.scene_.left().score() == 0);
     BOOST_TEST(fixture.scene_.right().score() == 0);
@@ -239,13 +252,13 @@ BOOST_AUTO_TEST_CASE(pong_scene_paddle_travel_test) {
     Fixture fixture;
     fixture.scene_.left().up(true);
 
-    fixture.scene_.tick();
-    BOOST_TEST(fixture.scene_.left().position() == 298.5f);
+    fixture.scene_.tick(STEP);
+    BOOST_TEST(fixture.scene_.left().position() == 298.5f, boost::test_tools::tolerance(0.0001f));
 
     fixture.scene_.left().up(false);
     fixture.scene_.left().down(true);
-    fixture.scene_.tick();
-    BOOST_TEST(fixture.scene_.left().position() == 300.0f);
+    fixture.scene_.tick(STEP);
+    BOOST_TEST(fixture.scene_.left().position() == 300.0f, boost::test_tools::tolerance(0.0001f));
 }
 
 BOOST_AUTO_TEST_CASE(pong_scene_paddle_travel_is_bounded_test) {
@@ -253,13 +266,13 @@ BOOST_AUTO_TEST_CASE(pong_scene_paddle_travel_is_bounded_test) {
     fixture.scene_.left().position(40.0f);
     fixture.scene_.left().up(true);
 
-    fixture.scene_.tick();
+    fixture.scene_.tick(STEP);
 
     BOOST_TEST(fixture.scene_.left().position() == 40.0f);
 
     fixture.scene_.right().position(560.0f);
     fixture.scene_.right().down(true);
-    fixture.scene_.tick();
+    fixture.scene_.tick(STEP);
 
     BOOST_TEST(fixture.scene_.right().position() == 560.0f);
 }
@@ -274,7 +287,7 @@ BOOST_AUTO_TEST_CASE(pong_scene_ai_follows_the_ball_test) {
     fixture.scene_.ball().position(glm::vec2(400.0f, 100.0f));
     fixture.scene_.ball().direction(glm::vec2(1.0f, 0.0f));
 
-    fixture.scene_.tick();
+    fixture.scene_.tick(STEP);
 
     BOOST_TEST(fixture.scene_.right().up());
     BOOST_TEST(!fixture.scene_.right().down());
@@ -287,7 +300,7 @@ BOOST_AUTO_TEST_CASE(pong_scene_ai_follows_the_ball_downwards_test) {
     fixture.scene_.ball().position(glm::vec2(400.0f, 500.0f));
     fixture.scene_.ball().direction(glm::vec2(1.0f, 0.0f));
 
-    fixture.scene_.tick();
+    fixture.scene_.tick(STEP);
 
     BOOST_TEST(!fixture.scene_.right().up());
     BOOST_TEST(fixture.scene_.right().down());
@@ -305,7 +318,7 @@ BOOST_AUTO_TEST_CASE(pong_scene_ai_rests_when_the_ball_leaves_test) {
     fixture.scene_.ball().position(glm::vec2(400.0f, 100.0f));
     fixture.scene_.ball().direction(glm::vec2(-1.0f, 0.0f));
 
-    fixture.scene_.tick();
+    fixture.scene_.tick(STEP);
 
     BOOST_TEST(!fixture.scene_.right().up());
     BOOST_TEST(!fixture.scene_.right().down());
@@ -320,9 +333,35 @@ BOOST_AUTO_TEST_CASE(pong_scene_coop_leaves_the_right_paddle_alone_test) {
     fixture.scene_.ball().position(glm::vec2(400.0f, 100.0f));
     fixture.scene_.ball().direction(glm::vec2(1.0f, 0.0f));
 
-    fixture.scene_.tick();
+    fixture.scene_.tick(STEP);
 
     BOOST_TEST(!fixture.scene_.right().up());
     BOOST_TEST(!fixture.scene_.right().down());
     BOOST_TEST(fixture.scene_.right().position() == 300.0f);
+}
+
+/**
+ * The bug this scene was carrying: a tick advanced the world by one increment whatever the
+ * frame had taken, so the ball and the paddles ran faster on a faster machine. Every speed
+ * is now per second, so the same simulated duration produces the same result however it was
+ * chopped up - sixty steps of a sixtieth land where a hundred and twenty of a hundred and
+ * twentieth do.
+ **/
+BOOST_AUTO_TEST_CASE(pong_scene_is_frame_rate_independent_test) {
+    Fixture slow;
+    Fixture fast;
+    slow.scene_.state().coop(true);
+    fast.scene_.state().coop(true);
+    slow.scene_.left().up(true);
+    fast.scene_.left().up(true);
+
+    for (int i = 0; i < 60; ++i) {
+        slow.scene_.tick(1.0f / 60.0f);
+    }
+    for (int i = 0; i < 120; ++i) {
+        fast.scene_.tick(1.0f / 120.0f);
+    }
+
+    BOOST_TEST(near(slow.scene_.ball().position(), fast.scene_.ball().position()));
+    BOOST_TEST(slow.scene_.left().position() == fast.scene_.left().position(), boost::test_tools::tolerance(0.01f));
 }

@@ -69,6 +69,18 @@ bool Pass::depth() const noexcept {
 
 /**
  **/
+void Pass::target(const boost::shared_ptr<vulkan::RenderTarget>& target) noexcept {
+    target_ = target;
+}
+
+/**
+ **/
+const boost::shared_ptr<vulkan::RenderTarget>& Pass::target() const noexcept {
+    return target_;
+}
+
+/**
+ **/
 void Pass::viewport(const glm::vec4& region) noexcept {
     viewport_ = region;
 }

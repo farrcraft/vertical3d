@@ -25,6 +25,7 @@ v3d_add_api_library(render
 	"realtime/vulkan/DeviceBuffer.h" "realtime/vulkan/DeviceBuffer.cxx"
 	"realtime/vulkan/Mesh.h" "realtime/vulkan/Mesh.cxx"
 	"realtime/vulkan/DepthBuffer.h" "realtime/vulkan/DepthBuffer.cxx"
+	"realtime/vulkan/RenderTarget.h" "realtime/vulkan/RenderTarget.cxx"
 	"realtime/vulkan/FrameUniforms.h" "realtime/vulkan/FrameUniforms.cxx"
 	"realtime/vulkan/PipelineBuilder.h" "realtime/vulkan/PipelineBuilder.cxx"
 	"realtime/vulkan/TextureFactory.h" "realtime/vulkan/TextureFactory.cxx"
@@ -54,11 +55,6 @@ target_compile_options(v3dlib_render PRIVATE /EHsc)
 
 set(CMAKE_CXX_FLAGS "/utf-8")
 set(CMAKE_C_FLAGS "/utf-8")
-
-# offline is added below the flags above for the same reason tests is - a subdirectory added
-# over them does not inherit /utf-8, and spdlog's bundled fmt has a static_assert that fails
-# without it.
-add_subdirectory("offline")
 
 if(V3D_BUILD_TESTS)
 	add_subdirectory("tests")

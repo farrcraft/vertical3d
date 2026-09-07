@@ -44,7 +44,8 @@ bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     iheader.bits_ = img->bpp();
     iheader.compression_ = 0;
 
-    int32_t width, pad;
+    int32_t width;
+    int32_t pad;
     width = pad = iheader.width_ * (iheader.bits_ / 8);
     // adjust pad width to dword boundary alignment
     while (pad % 4 != 0) {

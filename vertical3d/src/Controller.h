@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "tool/CameraControlTool.h"
-#include "view/CameraProfiles.h"
+#include "../../api/config/CameraProfiles.h"
 #include "command/CommandDirectory.h"
 #include "command/CommandStack.h"
 #include "scene/Project.h"
@@ -194,7 +194,7 @@ class Controller final : public v3d::engine::Engine {
     boost::shared_ptr<Project> project_;
     CommandDirectory directory_;
     boost::shared_ptr<CommandStack> commands_;
-    boost::shared_ptr<CameraProfiles> profiles_;
+    boost::shared_ptr<v3d::config::CameraProfiles> profiles_;
     boost::shared_ptr<ViewLayout> layout_;
     std::vector<boost::shared_ptr<ViewPort>> views_;
     boost::shared_ptr<ViewPort> activeView_;

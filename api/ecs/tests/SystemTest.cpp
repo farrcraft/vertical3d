@@ -22,7 +22,7 @@ class CountingSystem final : public v3d::ecs::System {
  public:
     using System::System;
 
-    bool tick() override {
+    bool simulate(float /* step */) override {
         ticks_++;
         registry_->view<v3d::ecs::component::Position1D>().each(
             [](v3d::ecs::component::Position1D& position) {
@@ -43,7 +43,7 @@ class FailingSystem final : public v3d::ecs::System {
  public:
     using System::System;
 
-    bool tick() override {
+    bool simulate(float /* step */) override {
         return false;
     }
 };
@@ -51,9 +51,9 @@ class FailingSystem final : public v3d::ecs::System {
 };  // namespace
 
 /**
- * A tick reaches every entity carrying the component it views, and nothing else.
+ * A step reaches every entity carrying the component it views, and nothing else.
  **/
-BOOST_AUTO_TEST_CASE(system_tick_test) {
+BOOST_AUTO_TEST_CASE(system_simulate_test) {
     entt::registry registry;
     const entt::entity moving = registry.create();
     const entt::entity still = registry.create();
@@ -62,8 +62,8 @@ BOOST_AUTO_TEST_CASE(system_tick_test) {
     CountingSystem system(&registry);
     BOOST_TEST(system.ticks() == 0);
 
-    BOOST_TEST(system.tick());
-    BOOST_TEST(system.tick());
+    BOOST_TEST(system.simulate(1.0f / 60.0f));
+    BOOST_TEST(system.simulate(1.0f / 60.0f));
 
     BOOST_TEST(system.ticks() == 2);
     BOOST_TEST(registry.get<v3d::ecs::component::Position1D>(moving).value() == 2.0f);
@@ -71,13 +71,13 @@ BOOST_AUTO_TEST_CASE(system_tick_test) {
 }
 
 /**
- * The return is what an engine's tick loop reads to stop, so a system that fails has to be
- * able to say so through the base.
+ * The return is what the engine's loop reads to stop, so a system that fails has to be able
+ * to say so through the base.
  **/
-BOOST_AUTO_TEST_CASE(system_tick_failure_test) {
+BOOST_AUTO_TEST_CASE(system_simulate_failure_test) {
     entt::registry registry;
     const std::unique_ptr<v3d::ecs::System> system =
         std::make_unique<FailingSystem>(&registry);
 
-    BOOST_TEST(!system->tick());
+    BOOST_TEST(!system->simulate(1.0f / 60.0f));
 }

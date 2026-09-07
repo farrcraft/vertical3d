@@ -44,7 +44,7 @@ boost::shared_ptr<Image> Tga::read(std::string_view filename) {
     }
 
     file.read(reinterpret_cast<char*>(&TGAcompare), sizeof(TGAcompare));
-    if (memcmp(rgbTGAheader, TGAcompare, sizeof(rgbTGAheader)) != 0 && memcmp(bwTGAheader, TGAcompare, sizeof(bwTGAheader))) {
+    if (memcmp(rgbTGAheader, TGAcompare, sizeof(rgbTGAheader)) != 0 && memcmp(bwTGAheader, TGAcompare, sizeof(bwTGAheader)) != 0) {
         file.close();
         return empty_ptr;
     }
@@ -92,8 +92,8 @@ boost::shared_ptr<Image> Tga::read(std::string_view filename) {
         const unsigned int stride = width * bytespp;
         std::vector<unsigned char> row(stride);
         for (unsigned int i = 0; i < height / 2; ++i) {
-            unsigned char* top = data + i * stride;
-            unsigned char* bottom = data + (height - 1 - i) * stride;
+            unsigned char* top = data + static_cast<size_t>(i) * stride;
+            unsigned char* bottom = data + static_cast<size_t>(height - 1 - i) * stride;
             memcpy(row.data(), top, stride);
             memcpy(top, bottom, stride);
             memcpy(bottom, row.data(), stride);

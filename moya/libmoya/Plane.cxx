@@ -133,7 +133,9 @@ float & Plane::operator[] (unsigned int i) {
 */
 void Plane::clip(const boost::shared_ptr<Polygon> & poly) {
     Polygon clippedPoly;
-    Vertex s, p, i;
+    Vertex s;
+    Vertex p;
+    Vertex i;
     glm::vec3 hit;
     size_t nverts;
 

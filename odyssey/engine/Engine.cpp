@@ -4,18 +4,28 @@
  **/
 
 #include "Engine.h"
+#include "Path.h"
 #include "Unit.h"
-
-#include <SDL3/SDL.h>
 
 #include <string>
 
+#include "../../api/ecs/component/PositionFixed2D.h"
 #include "../../api/engine/Feature.h"
+#include "../../api/grid/Pathfinding.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/make_shared.hpp>
 
 namespace odyssey::engine {
+
+namespace {
+/**
+ * The board, read through the asset manager like any other file the app names.
+ **/
+const char* const mapName = "map.json";
+
+};  // namespace
+
 /**
  **/
 Engine::Engine(const std::string& appPath) :
@@ -35,16 +45,29 @@ bool Engine::initialize() {
 
     window_->caption("Odyssey");
 
+    map_ = boost::make_shared<odyssey::tile::Map>(logger_);
+    if (!map_->load(boost::dynamic_pointer_cast<v3d::asset::Json>(
+            assetManager_->loadTypeFromExt(mapName)))) {
+        // the map is the board and the collision rules both, so there is no sensible game
+        // without one - the loader has already said what it could not read
+        return false;
+    }
+
     player_ = boost::make_shared<Player>(&registry_);
+    const v3d::grid::TileCoord start = map_->start();
+    registry_.replace<v3d::ecs::component::PositionFixed2D>(player_->entity(), start.x, start.y);
+    registry_.emplace<odyssey::engine::Path>(player_->entity());
 
     movementSystem_ = boost::make_shared<odyssey::system::Movement>(&registry_);
 
     renderer_ = boost::make_shared<odyssey::render::Renderer>(window(), logger_, assetManager_, &registry_);
     renderer_->player(player_);
+    renderer_->map(map_);
 
     // one sink for every mapped event: a device event is resolved to an action by the
     // bindings before it gets here, so nothing subscribes to a key
     dispatcher_->sink<v3d::event::Event>().connect<&Engine::handleEvent>(*this);
+    dispatcher_->sink<v3d::event::MouseMotion>().connect<&Engine::handleMotion>(*this);
 
     return true;
 }
@@ -59,7 +82,73 @@ void Engine::handleEvent(const v3d::event::Event& event) {
         // not shutdown() - the event loop ticks and renders once more after a handler
         // returns, and that frame would be drawn into a destroyed window
         quit();
+        return;
     }
+    // the movement bindings name no state, so both edges arrive here and only the press
+    // is a move - a release would otherwise take a second step off every key
+    if (event.state() == v3d::event::State::Released) {
+        return;
+    }
+    if (event.name() == "use") {
+        walkToCursor();
+    } else if (event.name() == "moveForward") {
+        step(0, -1);
+    } else if (event.name() == "moveBackward") {
+        step(0, 1);
+    } else if (event.name() == "moveLeft") {
+        step(-1, 0);
+    } else if (event.name() == "moveRight") {
+        step(1, 0);
+    }
+}
+
+/**
+ **/
+void Engine::handleMotion(const v3d::event::MouseMotion& event) {
+    cursor_ = event.position();
+}
+
+/**
+ **/
+v3d::grid::TileCoord Engine::playerTile() const {
+    const v3d::ecs::component::PositionFixed2D& position =
+        registry_.get<v3d::ecs::component::PositionFixed2D>(player_->entity());
+    return v3d::grid::TileCoord{position.x(), position.y()};
+}
+
+/**
+ **/
+void Engine::walkToCursor() {
+    const v3d::grid::TileCoord goal{
+        static_cast<int>(cursor_.x) / unit::tile_width,
+        static_cast<int>(cursor_.y) / unit::tile_height};
+    if (!map_->grid()->passable(goal)) {
+        return;
+    }
+    odyssey::engine::Path& path = registry_.get<odyssey::engine::Path>(player_->entity());
+    path.tiles = v3d::grid::findPath(*map_->grid(), playerTile(), goal);
+    // findPath returns the tile the mover is standing on first, so the walk starts at 1
+    path.next = 1;
+    path.elapsed = 0.0f;
+}
+
+/**
+ **/
+void Engine::step(int dx, int dy) {
+    odyssey::engine::Path& path = registry_.get<odyssey::engine::Path>(player_->entity());
+    if (!path.tiles.empty()) {
+        // a key interrupts a walk rather than fighting it for the next tile
+        path.tiles.clear();
+        path.next = 0;
+        path.elapsed = 0.0f;
+        return;
+    }
+    const v3d::grid::TileCoord from = playerTile();
+    const v3d::grid::TileCoord to{from.x + dx, from.y + dy};
+    if (!map_->grid()->passable(to)) {
+        return;
+    }
+    registry_.replace<v3d::ecs::component::PositionFixed2D>(player_->entity(), to.x, to.y);
 }
 
 /**
@@ -87,12 +176,12 @@ bool Engine::render() {
 
 /**
  **/
-bool Engine::tick(unsigned int delta) {
-    if (!v3d::engine::Engine::tick(delta)) {
+bool Engine::simulate(float step) {
+    if (!v3d::engine::Engine::simulate(step)) {
         return false;
     }
-    // Tick various systems, e.g. Movement System, Collision System, Combat System, etc
-    if (!movementSystem_->tick()) {
+    // Step various systems, e.g. Movement System, Collision System, Combat System, etc
+    if (!movementSystem_->simulate(step)) {
         return false;
     }
     return true;

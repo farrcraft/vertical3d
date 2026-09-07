@@ -9,7 +9,6 @@ add_executable(tetris
 
 target_link_libraries(tetris PRIVATE
 	v3dlib_asset
-	v3dlib_audio
 	v3dlib_config
 	v3dlib_ecs
 	v3dlib_engine

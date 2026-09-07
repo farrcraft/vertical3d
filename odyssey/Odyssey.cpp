@@ -1,44 +1,15 @@
-﻿  // Vertical3D
-  // Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+/**
+ * The Untitled Adventure / Odyssey
+ * Copyright (c) 2022 Joshua Farr (josh@farrcraft.com)
+ **/
 
-#include <SDL3/SDL.h>
+// the WinMain a windows subsystem executable is entered through, which calls this main
 #include <SDL3/SDL_main.h>
-
-#include <cstdlib>
-#include <exception>
-#include <string>
 
 #include "engine/Engine.h"
 
-#include "../api/log/Logger.h"
+#include "../api/engine/Application.h"
 
-/**
- **/
 int main(int /* argc */, char* argv[]) {
-    // extract exe path from argv (needed for loading file assets with relative paths)
-    std::string appPath =
-        boost::filesystem::path(boost::filesystem::system_complete(boost::filesystem::path(argv[0])).remove_filename()).string() +
-        boost::filesystem::path("/").make_preferred().string();
-
-    odyssey::engine::Engine engine(appPath);
-
-    // the renderer reports what it cannot do by throwing, and an uncaught exception on
-    // windows is an abort dialog with no message in it. A windowed app has no console,
-    // so the log is the only place what went wrong is readable
-    int exitStatus = EXIT_SUCCESS;
-    try {
-        if (!engine.initialize() || !engine.eventLoop()) {
-            exitStatus = EXIT_FAILURE;
-        }
-    } catch (const std::exception& error) {
-        v3d::log::Logger logger;
-        logger.get()->error("odyssey failed: {}", error.what());
-        exitStatus = EXIT_FAILURE;
-    }
-
-    if (!engine.shutdown()) {
-        exitStatus = EXIT_FAILURE;
-    }
-
-    return exitStatus;
+    return v3d::engine::run<odyssey::engine::Engine>(argv[0], "odyssey");
 }

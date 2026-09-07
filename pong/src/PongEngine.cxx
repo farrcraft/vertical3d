@@ -41,6 +41,9 @@ bool::PongEngine::initialize() {
     soundEngine_->initialize();
 
     vgui_ = boost::make_shared<v3d::ui::Engine>(eventEngine_, dispatcher_, logger_);
+    menu_ = boost::make_shared<v3d::ui::GameMenu>(vgui_, [this](bool suspended) {
+        scene_->state().pause(suspended);
+    });
 
     if (config_) {
         boost::shared_ptr<v3d::asset::Json> soundConfig = config_->get(v3d::config::Type::Sound);
@@ -85,11 +88,11 @@ bool::PongEngine::initialize() {
 
 /**
  **/
-bool PongEngine::tick(unsigned int delta) {
-    if (!v3d::engine::Engine::tick(delta)) {
+bool PongEngine::simulate(float step) {
+    if (!v3d::engine::Engine::simulate(step)) {
         return false;
     }
-    scene_->tick();
+    scene_->tick(step);
     return true;
 }
 
@@ -113,98 +116,71 @@ bool PongEngine::shutdown() {
     }
     return true;
 }
-void PongEngine::handleEvent(const v3d::event::Event& event) {
-    boost::shared_ptr<v3d::ui::Container> menuContainer = vgui_->container("game-menu");
-    boost::shared_ptr<v3d::ui::component::Menu> menu = boost::dynamic_pointer_cast<v3d::ui::component::Menu>(menuContainer->get("main-menu"));
-    // the container is what is shown and hidden. A component is visible from the moment it
-    // is built, so the menu itself is not the thing to ask
-    bool vis = menuContainer->visible();
-    if (event.context()->name() == "pong") {
-        // play commands
-        // the paddle moves while its key is held, so these follow the event's edge
-        bool held = (event.state() == v3d::event::State::Pressed);
-        if (event.name() == "leftPaddleUp") {
-            if (!scene_->state().paused()) {
-                scene_->left().up(held);
-            }
-        } else if (event.name() == "leftPaddleDown") {
-            if (!scene_->state().paused()) {
-                scene_->left().down(held);
-            }
-        } else if (event.name() == "rightPaddleUp") {
-            if (!scene_->state().paused() && scene_->state().coop()) {
-                scene_->right().up(held);
-            }
-        } else if (event.name() == "rightPaddleDown") {
-            if (!scene_->state().paused() && scene_->state().coop()) {
-                scene_->right().down(held);
-            }
-        } else if (event.name() == "showGameMenu") {
-            if (!vis) {
-                scene_->state().pause(true);
-                menuContainer->visible(true);
-            } else {
-                // going back up out of a submenu leaves the menu open - it is only closing
-                // the top level that resumes the game
-                if (!menu->up()) {
-                    scene_->state().pause(false);
-                    menuContainer->visible(false);
-                }
-            }
+
+void PongEngine::handlePlayEvent(const v3d::event::Event& event) {
+    // play commands
+    // the paddle moves while its key is held, so these follow the event's edge
+    bool held = (event.state() == v3d::event::State::Pressed);
+    if (event.name() == "leftPaddleUp") {
+        if (!scene_->state().paused()) {
+            scene_->left().up(held);
         }
+    } else if (event.name() == "leftPaddleDown") {
+        if (!scene_->state().paused()) {
+            scene_->left().down(held);
+        }
+    } else if (event.name() == "rightPaddleUp") {
+        if (!scene_->state().paused() && scene_->state().coop()) {
+            scene_->right().up(held);
+        }
+    } else if (event.name() == "rightPaddleDown") {
+        if (!scene_->state().paused() && scene_->state().coop()) {
+            scene_->right().down(held);
+        }
+    } else if (event.name() == "showGameMenu") {
+        menu_->toggle();
+    }
+}
+
+void PongEngine::handleUiEvent(const v3d::event::Event& event) {
+    if (event.name() == "setMaxScore") {
+        boost::optional<v3d::event::EventData> data = event.data();
+        if (data) {
+            unsigned int maxScore = std::get<int>(data.get());
+            scene_->state().maxScore(maxScore);
+        }
+    } else if (event.name() == "setLeftPaddleUpKey" || event.name() == "setLeftPaddleDownKey" ||
+               event.name() == "setRightPaddleUpKey" || event.name() == "setRightPaddleDownKey") {
+        // a key binding carries the captured key as its data, and input capture for an
+        // input menu item is unbuilt, so these four arrive with nothing to bind
+    } else if (event.name() == "setSingleplayerMode" || event.name() == "setMultiplayerMode") {
+        // coop is the only mode that differs; the second paddle is the same opponent
+        scene_->state().coop(false);
+        scene_->reset();
+    } else if (event.name() == "setCoopMode") {
+        scene_->state().coop(true);
+        scene_->reset();
+    } else if (event.name() == "quit") {
+        // not shutdown() - this is running inside the event loop, which would tick and
+        // render one more frame against the window shutdown() had destroyed
+        quit();
         return;
-    } else if (event.context()->name() == "ui") {
-        if (event.name() == "setMaxScore") {
-            boost::optional<v3d::event::EventData> data = event.data();
-            if (data) {
-                unsigned int maxScore = std::get<int>(data.get());
-                scene_->state().maxScore(maxScore);
-            }
-        } else if (event.name() == "setLeftPaddleUpKey") {
-        } else if (event.name() == "setLeftPaddleDownKey") {
-        } else if (event.name() == "setRightPaddleUpKey") {
-        } else if (event.name() == "setRightPaddleDownKey") {
-        } else if (event.name() == "setSingleplayerMode") {
-            scene_->state().coop(false);
-            scene_->reset();
-        } else if (event.name() == "setCoopMode") {
-            scene_->state().coop(true);
-            scene_->reset();
-        } else if (event.name() == "setMultiplayerMode") {
-            scene_->state().coop(false);
-            scene_->reset();
-        } else if (event.name() == "quit") {
-            // not shutdown() - this is running inside the event loop, which would tick and
-            // render one more frame against the window shutdown() had destroyed
-            quit();
-            return;
-        }
+    }
 
-        if (event.name() == "showGameMenu") {
-            if (!vis) {
-                scene_->state().pause(true);
-                menuContainer->visible(true);
-            } else {
-                // if we're at the top-level menu and not in a submenu, make the game active again
-                if (!menu->up()) {
-                    scene_->state().pause(false);
-                    menuContainer->visible(false);
-                }
-            }
-            return;
-        }
+    if (event.name() == "showGameMenu") {
+        menu_->toggle();
+        return;
+    }
 
-        // the remaining ui commands only work when menu is visible
-        if (!vis) {
-            return;
-        }
+    menu_->navigate(event.name());
+}
 
-        if (event.name() == "menuPrevious") {  // select the previous menu item
-            menu->previous();
-        } else if (event.name() == "menuNext") {  // select the next menu item
-            menu->next();
-        } else if (event.name() == "selectMenu") {  // select the current menu item
-            menu->activate();
-        }
+void PongEngine::handleEvent(const v3d::event::Event& event) {
+    if (event.context()->name() == "pong") {
+        handlePlayEvent(event);
+        return;
+    }
+    if (event.context()->name() == "ui") {
+        handleUiEvent(event);
     }
 }

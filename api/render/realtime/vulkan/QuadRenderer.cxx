@@ -5,6 +5,8 @@
 
 #include "QuadRenderer.h"
 
+#include "RenderTarget.h"
+
 #include <cstddef>
 #include <cstring>
 #include <map>
@@ -46,8 +48,8 @@ const uint32_t poolSize = 64;
  * What each geometry buffer starts at, in bytes. A screen of quads fits without
  * growing, and the buffers double from here when something does not.
  **/
-const VkDeviceSize initialVertexBytes = 64 * 1024;
-const VkDeviceSize initialIndexBytes = 32 * 1024;
+const VkDeviceSize initialVertexBytes = 64ULL * 1024;
+const VkDeviceSize initialIndexBytes = 32ULL * 1024;
 
 };  // namespace
 
@@ -171,6 +173,12 @@ TextureHandle QuadRenderer::texture(const boost::shared_ptr<v3d::image::Image>& 
  **/
 TextureHandle QuadRenderer::texture(const unsigned char* pixels, uint32_t width, uint32_t height, uint32_t channels) {
     return resources_->add(factory_->create(pixels, width, height, channels));
+}
+
+/**
+ **/
+TextureHandle QuadRenderer::texture(const RenderTarget& target) {
+    return resources_->add(target.texture());
 }
 
 /**

@@ -7,6 +7,9 @@ v3d_add_api_library(asset
 "Loader.h" "Loader.cpp"
 "Manager.h" "Manager.cpp"
 "Type.h"
+"Model.h" "Model.cpp"
+"loader/Gltf.h" "loader/Gltf.cpp"
+"loader/CgltfImpl.cpp"
 "loader/Jpeg.h" "loader/Jpeg.cpp"
 "loader/Json.h" "loader/Json.cpp"
 "loader/Png.h" "loader/Png.cpp"
@@ -23,11 +26,25 @@ v3d_add_api_library(asset
 # library needs the audio one whether or not it plays a sound.
 # v3dlib_font and v3dlib_image: Font2D.h and Image.h name the types those libraries
 # define, and the loaders build them.
-target_link_libraries(v3dlib_asset PUBLIC v3dlib_log v3dlib_audio v3dlib_font v3dlib_image)
+# v3dlib_type: Model.h names v3d::type::Model, which the gltf loader builds.
+target_link_libraries(v3dlib_asset PUBLIC v3dlib_log v3dlib_audio v3dlib_font v3dlib_image v3dlib_type)
 
 # PUBLIC: Manager.h names a boost::filesystem::path, and Json.h, JsonFile.h and Text.h each
 # name a boost::json type.
 target_link_libraries(v3dlib_asset PUBLIC Boost::filesystem Boost::json)
+
+# PRIVATE: only the gltf loader and the translation unit owning cgltf's implementation
+# include the header, and neither api/asset header names a cgltf type.
+target_include_directories(v3dlib_asset PRIVATE "${V3D_CGLTF_INCLUDE_DIR}")
+
+# cgltf is a third party header compiled here rather than vendored into the tree, and its
+# implementation half is not this repository's to hold to /W4 or to either analyser -
+# a local fix is lost the next time the port moves. The pragma in the file drops the
+# warning level, /analyze- takes it out of MSVC's analysis and SKIP_LINTING out of
+# clang-tidy's.
+set_source_files_properties("loader/CgltfImpl.cpp" PROPERTIES
+	COMPILE_OPTIONS "/analyze-"
+	SKIP_LINTING TRUE)
 
 target_compile_options(v3dlib_asset PRIVATE /EHsc)
 

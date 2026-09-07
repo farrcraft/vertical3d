@@ -87,12 +87,33 @@ class Engine {
     bool activeTheme(const std::string_view& name);
 
  protected:
-     boost::shared_ptr<component::Menu> loadMenu(const boost::json::object& component);
-     boost::shared_ptr<component::MenuBar> loadMenuBar(const boost::json::object& component);
-     boost::shared_ptr<component::Toolbar> loadToolbar(const boost::json::object& component);
-     boost::shared_ptr<component::Button> loadButton(const boost::json::object& component);
-     boost::shared_ptr<component::Label> loadLabel(const boost::json::object& component);
-     boost::shared_ptr<component::Icon> loadIcon(const boost::json::object& component);
+     /**
+      * Read the themes array, and the name of the one that starts active.
+      **/
+     bool loadThemes(const boost::json::object& doc);
+
+     /**
+      * Read one theme and the styles in it. A theme holding no styles is legal and draws
+      * in the defaults.
+      **/
+     bool loadTheme(const boost::json::object& entry);
+
+     /**
+      * Read one container and the components in it.
+      **/
+     bool loadContainer(const boost::json::object& entry);
+
+     /**
+      * Build one component from the type it names and add it to its container.
+      **/
+     bool loadComponent(const boost::json::object& entry, const boost::shared_ptr<Container>& container);
+
+     boost::shared_ptr<component::Menu> loadMenu(const boost::json::object& entry);
+     boost::shared_ptr<component::MenuBar> loadMenuBar(const boost::json::object& entry);
+     boost::shared_ptr<component::Toolbar> loadToolbar(const boost::json::object& entry);
+     boost::shared_ptr<component::Button> loadButton(const boost::json::object& entry);
+     boost::shared_ptr<component::Label> loadLabel(const boost::json::object& entry);
+     boost::shared_ptr<component::Icon> loadIcon(const boost::json::object& entry);
 
      /**
       * Read one style and everything in it into a theme.
@@ -107,10 +128,29 @@ class Engine {
      bool loadProperties(const boost::json::object& entry, const boost::shared_ptr<Style>& target);
 
      /**
+      * Build one style property as the class of the array it was written in.
+      *
+      * @param section which of the four arrays the property came out of
+      * @param propertyClass what the built property is filed under, which is the singular
+      *        of the section
+      * @return the property, or null when it does not carry what its class needs
+      **/
+     boost::shared_ptr<style::Property> loadProperty(const std::string& section,
+         const boost::json::object& property, const std::string& name, std::string* propertyClass);
+
+     /**
       * Read what every component may carry whatever its type: where it is, how big it is,
       * which style draws it, and whether it is drawn at all.
       **/
      void loadAttributes(const boost::json::object& entry, const boost::shared_ptr<Component>& component);
+
+     /**
+      * Resolve the images the loaded themes name, and the ones the loaded components do.
+      * @return how many handles were set
+      **/
+     std::size_t resolveThemeImages(const Resolve& resolve);
+     std::size_t resolveContainerImages(const Resolve& resolve);
+     std::size_t resolveComponentImages(const Resolve& resolve, const boost::shared_ptr<Component>& component);
 
      /**
       * Resolve one component's image and write the handle onto it.

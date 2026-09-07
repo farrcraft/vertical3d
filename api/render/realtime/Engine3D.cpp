@@ -44,7 +44,8 @@ bool Engine3D::shutdown() {
     // the window's surface alive, and the window's teardown unloads the vulkan library -
     // a surface destroyed after that is not destroyed at all, and the instance reports
     // it as leaked
-    frame_.reset();
+    // released, not Frame::reset() - the assignment is what tells the two apart at a glance
+    frame_ = nullptr;
     context_.reset();
     return Engine::shutdown();
 }
@@ -80,6 +81,22 @@ void Engine3D::clearColour(const glm::vec4& colour) {
     if (frame_) {
         frame_->pass(colourPass)->clearColour(colour);
     }
+}
+
+/**
+ **/
+bool Engine3D::beginFrame(glm::ivec2* size) {
+    const boost::shared_ptr<Window> target = window();
+    const int width = target ? target->width() : 0;
+    const int height = target ? target->height() : 0;
+    if (width <= 0 || height <= 0) {
+        renderFrame();
+        return false;
+    }
+    if (size != nullptr) {
+        *size = glm::ivec2(width, height);
+    }
+    return true;
 }
 
 /**

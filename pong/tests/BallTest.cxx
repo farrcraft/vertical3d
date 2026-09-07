@@ -32,8 +32,9 @@ BOOST_AUTO_TEST_CASE(ball_components_test) {
 }
 
 /**
- * A move is one step of the direction, so direction carries the speed as well as the heading -
- * which is why the scene multiplies it to speed the ball up rather than scaling anything else.
+ * The direction is a velocity in units per second, so a move scales it by the step - which
+ * is why the scene multiplies the direction to speed the ball up rather than scaling
+ * anything else.
  **/
 BOOST_AUTO_TEST_CASE(ball_move_test) {
     entt::registry registry;
@@ -42,11 +43,34 @@ BOOST_AUTO_TEST_CASE(ball_move_test) {
     ball.position(glm::vec2(10.0f, 10.0f));
     ball.direction(glm::vec2(2.0f, -1.0f));
 
-    ball.move();
+    ball.move(1.0f);
     BOOST_TEST((ball.position() == glm::vec2(12.0f, 9.0f)));
 
-    ball.move();
+    ball.move(1.0f);
     BOOST_TEST((ball.position() == glm::vec2(14.0f, 8.0f)));
+}
+
+/**
+ * Half the step is half the distance. Two moves of half a step land where one whole one
+ * would, which is what makes the ball's speed a property of the ball rather than of how
+ * often the loop got round to it.
+ **/
+BOOST_AUTO_TEST_CASE(ball_move_scales_by_the_step_test) {
+    entt::registry registry;
+    Ball whole(&registry);
+    Ball halves(&registry);
+
+    whole.position(glm::vec2(0.0f, 0.0f));
+    whole.direction(glm::vec2(60.0f, -30.0f));
+    halves.position(glm::vec2(0.0f, 0.0f));
+    halves.direction(glm::vec2(60.0f, -30.0f));
+
+    whole.move(1.0f / 60.0f);
+    halves.move(1.0f / 120.0f);
+    halves.move(1.0f / 120.0f);
+
+    BOOST_TEST(whole.position().x == halves.position().x, boost::test_tools::tolerance(0.0001f));
+    BOOST_TEST(whole.position().y == halves.position().y, boost::test_tools::tolerance(0.0001f));
 }
 
 /**

@@ -206,7 +206,7 @@ BOOST_AUTO_TEST_CASE(talyn_ribhandler_unsupported_camera_test) {
         "ScreenWindow 0 2 -1 1\n"
         "WorldBegin\n"
         "WorldEnd\n", &first));
-    BOOST_CHECK(first.error().find("off centre") != std::string::npos);
+    BOOST_CHECK(first.error().contains("off centre"));
 
     auto mirrored = boost::make_shared<v3d::talyn::RenderContext>();
     v3d::talyn::RIBHandler second(mirrored);
@@ -215,7 +215,7 @@ BOOST_AUTO_TEST_CASE(talyn_ribhandler_unsupported_camera_test) {
         "Transform [-1 0 0 0  0 1 0 0  0 0 1 0  0 0 4 1]\n"
         "WorldBegin\n"
         "WorldEnd\n", &second));
-    BOOST_CHECK(second.error().find("rotation and a translation") != std::string::npos);
+    BOOST_CHECK(second.error().contains("rotation and a translation"));
 
     auto scaled = boost::make_shared<v3d::talyn::RenderContext>();
     v3d::talyn::RIBHandler third(scaled);
@@ -224,7 +224,7 @@ BOOST_AUTO_TEST_CASE(talyn_ribhandler_unsupported_camera_test) {
         "Transform [2 0 0 0  0 2 0 0  0 0 2 0  0 0 4 1]\n"
         "WorldBegin\n"
         "WorldEnd\n", &third));
-    BOOST_CHECK(third.error().find("rotation and a translation") != std::string::npos);
+    BOOST_CHECK(third.error().contains("rotation and a translation"));
 }
 
 /**

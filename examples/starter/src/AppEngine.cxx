@@ -43,22 +43,19 @@ bool AppEngine::tick(unsigned int /* delta */) {
 }
 
 bool AppEngine::render() {
-    const int width = window_->width();
-    const int height = window_->height();
-    if (width <= 0 || height <= 0) {
-        // a minimized window has no area for a projection to be built against
-        renderer_->renderFrame();
+    // beginFrame is false while the window has no area: it has presented the frame empty,
+    // because a canvas with no area has no projection to build geometry against
+    glm::ivec2 size;
+    if (!renderer_->beginFrame(&size)) {
         return true;
     }
-
-    // no resize event reaches the renderer, so the window is the only thing that knows
-    if (canvas_.width() != static_cast<uint32_t>(width) || canvas_.height() != static_cast<uint32_t>(height)) {
-        canvas_.resize(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+    if (canvas_.width() != static_cast<uint32_t>(size.x) || canvas_.height() != static_cast<uint32_t>(size.y)) {
+        canvas_.resize(static_cast<uint32_t>(size.x), static_cast<uint32_t>(size.y));
     }
 
     canvas_.clear();
     canvas_.rect(glm::vec2(40.0f, 40.0f),
-        glm::vec2(static_cast<float>(width) - 40.0f, static_cast<float>(height) - 40.0f),
+        glm::vec2(static_cast<float>(size.x) - 40.0f, static_cast<float>(size.y) - 40.0f),
         glm::vec4(0.9f, 0.4f, 0.2f, 1.0f));
 
     boost::shared_ptr<v3d::render::realtime::Pass> pass = renderer_->frame()->pass(v3d::render::realtime::Engine3D::colourPass);

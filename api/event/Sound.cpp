@@ -3,13 +3,11 @@
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
-#pragma once
-
 #include "Sound.h"
 
 namespace v3d::event {
 
-Sound::Sound(const std::string_view& clip) noexcept : clip_(clip) {
+Sound::Sound(const std::string_view& clip) : clip_(clip) {
 }
 
 std::string_view Sound::clip() const noexcept {

@@ -7,10 +7,12 @@ add_executable(Odyssey
 	"Odyssey.cpp"
 	"actor/Actor.h"
 	"engine/Engine.h" "engine/Engine.cpp"
+	"engine/Path.h"
 	"engine/Player.h" "engine/Player.cpp"
 	"engine/Sprite.h" "engine/SpriteSheet.h" "engine/Unit.h"
 	"render/Renderer.h" "render/Renderer.cpp"
 	"system/Movement.h" "system/Movement.cpp"
+	"tile/Map.h" "tile/Map.cpp"
 	"tile/Tile.h" "tile/Size.h"
 	"ui/Screen.h" "ui/Screen.cpp"
 )
@@ -25,6 +27,7 @@ target_link_libraries(Odyssey
 		"v3dlib_engine"
 		"v3dlib_event"
 		"v3dlib_font"
+		"v3dlib_grid"
 		"v3dlib_input"
 		"v3dlib_log"
 		"v3dlib_image"
@@ -34,6 +37,10 @@ target_link_libraries(Odyssey
 )
 
 v3d_add_app_data(Odyssey)
+
+if(V3D_BUILD_TESTS)
+	add_subdirectory("tests")
+endif()
 
 # a console subsystem executable is given a console of its own alongside the app's window.
 # main is reached through the WinMain that SDL_main.h supplies.

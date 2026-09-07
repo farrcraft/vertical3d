@@ -6,4 +6,4 @@
 
 #pragma once
 
-const char * VOXEL_VERSION = "0.0.1";
+inline constexpr const char * VOXEL_VERSION = "0.0.1";

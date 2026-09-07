@@ -5,6 +5,8 @@ v3d_add_api_library(type
 "Bound2D.h" "Bound2D.cxx"
 "Camera.h" "Camera.cxx"
 "CameraProfile.h" "CameraProfile.cxx"
+"IsometricCamera.h" "IsometricCamera.cxx"
+"Model.h" "Model.cxx"
 "Ray.h" "Ray.cxx"
 "String.h" "String.cxx"
 )

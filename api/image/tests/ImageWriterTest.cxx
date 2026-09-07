@@ -150,7 +150,7 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_jpeg_orientation_test, OutputDirectory) {
         jpeg_read_header(&cinfo, TRUE);
         jpeg_start_decompress(&cinfo);
 
-        std::vector<unsigned char> scanline(cinfo.output_width * cinfo.output_components);
+        std::vector<unsigned char> scanline(static_cast<size_t>(cinfo.output_width) * cinfo.output_components);
         unsigned char* rows[1] = { scanline.data() };
         jpeg_read_scanlines(&cinfo, rows, 1);
         BOOST_CHECK_GT(scanline[0], scanline[1]);
@@ -183,7 +183,7 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_jpeg_orientation_test, OutputDirectory) {
         jpeg_set_defaults(&cinfo);
         jpeg_start_compress(&cinfo, TRUE);
 
-        std::vector<unsigned char> scanline(side * 3);
+        std::vector<unsigned char> scanline(static_cast<size_t>(side) * 3);
         while (cinfo.next_scanline < cinfo.image_height) {
             const bool top = cinfo.next_scanline < side / 2;
             for (unsigned int column = 0; column < side; ++column) {

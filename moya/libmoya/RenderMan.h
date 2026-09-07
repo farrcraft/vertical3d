@@ -51,11 +51,11 @@ typedef RtPointer RtContextHandle;
 
 extern RtToken RI_FRAMEBUFFER, RI_FILE;
 extern RtToken RI_RGB, RI_RGBA, RI_RGBZ, RI_RGBAZ, RI_A, RI_Z, RI_AZ;
-extern const RtToken RI_PERSPECTIVE, RI_ORTHOGRAPHIC;
+extern RtToken RI_PERSPECTIVE, RI_ORTHOGRAPHIC;
 extern RtToken RI_HIDDEN, RI_PAINT;
 extern RtToken RI_CONSTANT, RI_SMOOTH;
 extern RtToken RI_FLATNESS;
-extern const RtToken RI_FOV;
+extern RtToken RI_FOV;
 extern RtToken RI_AMBIENTLIGHT, RI_POINTLIGHT, RI_DISTANTLIGHT, RI_SPOTLIGHT;
 extern RtToken RI_INTENSITY, RI_LIGHTCOLOR, RI_FROM, RI_TO, RI_CONEANGLE, RI_CONEDELTAANGLE, RI_BEAMDISTRIBUTION;
 extern RtToken RI_MATTE, RI_METAL, RI_SHINYMETAL, RI_PLASTIC, RI_PAINTEDPLASTIC;
@@ -64,7 +64,7 @@ extern RtToken RI_DEPTHCUE, RI_FOG, RI_BUMPY;
 extern RtToken RI_MINDISTANCE, RI_MAXDISTANCE, RI_BACKGROUND, RI_DISTANCE, RI_AMPLITUDE;
 extern RtToken RI_RASTER, RI_SCREEN, RI_CAMERA, RI_WORLD, RI_OBJECT;
 extern RtToken RI_INSIDE, RI_OUTSIDE, RI_LH, RI_RH;
-extern const RtToken RI_P, RI_PZ, RI_PW, RI_N, RI_CS, RI_OS, RI_S, RI_T, RI_ST;
+extern RtToken RI_P, RI_PZ, RI_PW, RI_N, RI_CS, RI_OS, RI_S, RI_T, RI_ST;
 extern RtToken RI_NP;
 extern RtToken RI_BILINEAR, RI_BICUBIC;
 extern RtToken RI_LINEAR, RI_CUBIC;
@@ -102,7 +102,7 @@ extern RtVoid RiProcRunProgram(RtPointer data, RtFloat detail);
 extern RtVoid RiProcDynamicLoad(RtPointer data, RtFloat detail);
 
 extern RtContextHandle RiGetContext(void);
-extern RtVoid RiContext(RtContextHandle);
+extern RtVoid RiContext(RtContextHandle /* handle */);
 
 extern RtToken RiDeclare(char *name, char *declaration);
 
@@ -152,7 +152,7 @@ extern RtLightHandle
     RiAreaLightSource(RtToken name, ...),
     RiAreaLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
 extern RtVoid RiIlluminate(RtLightHandle light, RtBoolean onoff),
-    RiSurface(const RtToken name, ...),
+    RiSurface(RtToken name, ...),
     RiSurfaceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]),
     RiAtmosphere(RtToken name, ...),
     RiAtmosphereV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]),

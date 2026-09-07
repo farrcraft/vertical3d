@@ -65,7 +65,8 @@ void TranslateManipulator::draw(const boost::shared_ptr<v3d::brep::BRep>& mesh, 
         // its edges
         const glm::vec3 base = tip - unit * (seat.size * headLength);
         const float radius = seat.size * headRadius;
-        glm::vec3 first, second;
+        glm::vec3 first;
+        glm::vec3 second;
         perpendiculars(unit, &first, &second);
         canvas->circle(base, first, second, radius, headSides, tint);
         for (unsigned int spoke = 0; spoke < headSpokes; spoke++) {

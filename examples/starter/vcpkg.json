@@ -1,6 +1,7 @@
 {
   "dependencies": [
     "boost",
+    "cgltf",
     "entt",
     "freetype",
     "glm",

@@ -13,12 +13,12 @@ namespace v3d::ecs::component {
  **/
 class Position2D final {
  public:
-    Position2D(const float x, const float y) noexcept;
+    Position2D(float x, float y) noexcept;
 
     /**
      * Move constructor
      **/
-    Position2D(Position2D&&) noexcept;
+    Position2D(Position2D&& p) noexcept;
 
     /**
      * Default destructor
@@ -44,7 +44,7 @@ class Position2D final {
     /**
      * Move assignment
      **/
-    Position2D& operator=(Position2D&&) noexcept;
+    Position2D& operator=(Position2D&& p) noexcept;
 
  private:
     glm::vec2 position_;

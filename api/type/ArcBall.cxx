@@ -5,6 +5,7 @@
 
 #include "ArcBall.h"
 
+#include <algorithm>
 #include <cmath>
 
 #include <glm/gtc/constants.hpp>
@@ -74,10 +75,8 @@ void ArcBall::bounds(float width, float height) {
     // the scale below divides by (extent - 1), so clamping at 1 still leaves a zero
     // divisor and every mapped point comes back as a NaN. Two is the narrowest
     // viewport this mapping means anything for.
-    if (width < 2.0f)
-        width = 2.0f;
-    if (height < 2.0f)
-        height = 2.0f;
+    width = std::max(width, 2.0f);
+    height = std::max(height, 2.0f);
     width_ = 1.0f / ((width - 1.0f) * 0.5f);
     height_ = 1.0f / ((height - 1.0f) * 0.5f);
 }

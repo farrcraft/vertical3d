@@ -6,6 +6,7 @@
 #include "Bmp.h"
 
 #include <string>
+#include <vector>
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -22,6 +23,96 @@ namespace v3d::image::reader {
  **/
 Bmp::Bmp(const boost::shared_ptr<v3d::log::Logger>& logger) : Reader(logger) {
 }
+
+namespace {
+
+void logHeaders(const boost::shared_ptr<v3d::log::Logger>& logger, const bmp_file_header& fheader,
+    const bmp_info_header& iheader, int num_colors) {
+    logger->get()->debug("BMPReader::read - bmp type: {}", fheader.type_);
+    logger->get()->debug("BMPReader::read - bmp size: {}", fheader.size_);
+    logger->get()->debug("BMPReader::read - bmp reserved1: {}", fheader.reserved1_);
+    logger->get()->debug("BMPReader::read - bmp reserved2: {}", fheader.reserved2_);
+    logger->get()->debug("BMPReader::read - bmp offset: {}", fheader.offset_);
+    logger->get()->debug("BMPReader::read - info size: {}", iheader.size_);
+    logger->get()->debug("BMPReader::read - info width: {}", iheader.width_);
+    logger->get()->debug("BMPReader::read - info height: {}", iheader.height_);
+    logger->get()->debug("BMPReader::read - info planes: {}", iheader.planes_);
+    logger->get()->debug("BMPReader::read - info bits: {}", iheader.bits_);
+    logger->get()->debug("BMPReader::read - info compression: {}", iheader.compression_);
+    logger->get()->debug("BMPReader::read - info image size: {}", iheader.imageSize_);
+    logger->get()->debug("BMPReader::read - info xppm: {}", iheader.xppm_);
+    logger->get()->debug("BMPReader::read - info yppm: {}", iheader.yppm_);
+    logger->get()->debug("BMPReader::read - info used: {}", iheader.used_);
+    logger->get()->debug("BMPReader::read - info important: {}", iheader.important_);
+    logger->get()->debug("BMPReader::read - num colors: {}", num_colors);
+}
+
+/**
+ * A palettised image, one index a pixel into the table the file carried.
+ *
+ * @param bottomUp whether the rows are stored the way a bmp usually stores them, which is
+ *        last row first
+ **/
+void convertPalette(const unsigned char* temp, unsigned char* data, const bmp_rgb_quad* colors,
+    uint64_t size, int64_t pad, int64_t offset, bool bottomUp) {
+    // count backwards so you start at the front of the image
+    uint64_t j = bottomUp ? 0 : size - 1;
+    for (uint64_t i = 0; i < size * 3; i += 3) {
+        // jump over the padding at the start of a new line
+        if ((i + 1) % pad == 0) {
+            i += offset;
+        }
+        // transfer the data
+        *(data + i) = colors[*(temp + j)].red_;
+        *(data + i + 1) = colors[*(temp + j)].green_;
+        *(data + i + 2) = colors[*(temp + j)].blue_;
+        if (bottomUp) {
+            j++;
+        } else {
+            j--;
+        }
+    }
+}
+
+/**
+ * 5-6-5 packed colour, widened back out to a byte a channel.
+ **/
+void convert16(const unsigned char* temp, unsigned char* data, uint64_t size, int64_t pad, int64_t offset) {
+    for (uint64_t i = 0; i < size; i += 2) {
+        // jump over the padding at the start of a new line
+        if ((i + 1) % pad == 0) {
+            i += offset;
+        }
+        // 0123 4567 0123 4567
+        // 1234 5678 1234 5678
+        // RRRR RGGG GGBB BBB0
+        *(data + i) = ((*(temp + i) >> 3) << 3);  // R
+        *(data + i + 1) = (*(temp + i) << 5) | ((*(temp + i + 1) >> 6) << 6);  // G
+        *(data + i + 2) = ((*(temp + i + 1) >> 1) << 3);  // B
+    }
+}
+
+/**
+ * Rows come off the disk padded to a dword boundary and go into the image without that
+ * padding, so each is copied on its own. Walking both buffers with one index and a modulo
+ * test for the padding read past the end of the data and misplaced every row after the
+ * first - it only ever looked right because every fixture is a single flat colour.
+ **/
+void convert24(const unsigned char* temp, unsigned char* data, uint64_t rows, int64_t pad,
+    int64_t width, int64_t columns) {
+    for (uint64_t row = 0; row < rows; ++row) {
+        const unsigned char* src = temp + row * pad;
+        unsigned char* dest = data + row * width;
+        for (int64_t column = 0; column < columns; ++column) {
+            // bgr on disk, rgb in memory
+            dest[column * 3 + 0] = src[column * 3 + 2];
+            dest[column * 3 + 1] = src[column * 3 + 1];
+            dest[column * 3 + 2] = src[column * 3 + 0];
+        }
+    }
+}
+
+};  // namespace
 
 /**
  **/
@@ -65,36 +156,20 @@ boost::shared_ptr<Image> Bmp::read(std::string_view filename) {
     }
 
     int num_colors = 1 << iheader.bits_;
+    logHeaders(logger_, fheader, iheader, num_colors);
 
-    logger_->get()->debug("BMPReader::read - bmp type: {}", fheader.type_);
-    logger_->get()->debug("BMPReader::read - bmp size: {}", fheader.size_);
-    logger_->get()->debug("BMPReader::read - bmp reserved1: {}", fheader.reserved1_);
-    logger_->get()->debug("BMPReader::read - bmp reserved2: {}", fheader.reserved2_);
-    logger_->get()->debug("BMPReader::read - bmp offset: {}", fheader.offset_);
-    logger_->get()->debug("BMPReader::read - info size: {}", iheader.size_);
-    logger_->get()->debug("BMPReader::read - info width: {}", iheader.width_);
-    logger_->get()->debug("BMPReader::read - info height: {}", iheader.height_);
-    logger_->get()->debug("BMPReader::read - info planes: {}", iheader.planes_);
-    logger_->get()->debug("BMPReader::read - info bits: {}", iheader.bits_);
-    logger_->get()->debug("BMPReader::read - info compression: {}", iheader.compression_);
-    logger_->get()->debug("BMPReader::read - info image size: {}", iheader.imageSize_);
-    logger_->get()->debug("BMPReader::read - info xppm: {}", iheader.xppm_);
-    logger_->get()->debug("BMPReader::read - info yppm: {}", iheader.yppm_);
-    logger_->get()->debug("BMPReader::read - info used: {}", iheader.used_);
-    logger_->get()->debug("BMPReader::read - info important: {}", iheader.important_);
-    logger_->get()->debug("BMPReader::read - num colors: {}", num_colors);
-
-    bmp_rgb_quad* colors = 0;
+    std::vector<bmp_rgb_quad> colors;
     if (iheader.bits_ == 8) {  // load 8 bit color palette
-        colors = new bmp_rgb_quad[num_colors];
-        file.read(reinterpret_cast<char*>(&colors), sizeof(bmp_rgb_quad) * num_colors);
+        colors.resize(static_cast<std::size_t>(num_colors));
+        file.read(reinterpret_cast<char*>(colors.data()), sizeof(bmp_rgb_quad) * num_colors);
     }
 
     if (!file) {
         throw std::runtime_error("error reading bmp colors!");
     }
-    int64_t width, pad;
-    width = pad = iheader.width_ * (iheader.bits_ / 8);
+    int64_t width;
+    int64_t pad;
+    width = pad = static_cast<int64_t>(iheader.width_) * (iheader.bits_ / 8);
     // adjust pad width to dword boundary alignment
     while (pad % 4 != 0) {
         pad++;
@@ -114,18 +189,6 @@ boost::shared_ptr<Image> Bmp::read(std::string_view filename) {
     boost::shared_ptr<Image> img = boost::make_shared<Image>(storedSize);
     unsigned char* temp = img->data();
 
-    /*
-    if (debug)
-    {
-        int pos = file.tellg();
-        file.seekg(0, std::ios::end);
-        int length = file.tellg();
-        file.seekg(pos, std::ios::beg);
-        std::cout << "file pointer: " << file.tellg() << std::endl;
-        std::cout << "file length: " << length << std::endl;
-    }
-    */
-
     // read image data
     file.read(reinterpret_cast<char*>(temp), storedSize);
 
@@ -138,76 +201,18 @@ boost::shared_ptr<Image> Bmp::read(std::string_view filename) {
     // done reading in file
     file.close();
 
-    auto offset = pad - width;
+    const int64_t offset = pad - width;
 
     boost::shared_ptr<Image> image(new Image(iheader.width_, static_cast<uint32_t>(rows), 24));
     unsigned char* data = image->data();
 
-    // convert 8/24bit image from bgr to rgb
+    // convert 8/16/24 bit image from bgr to rgb
     if (iheader.bits_ == 8) {
-        // diff = iheader._width * iheader._height * 3;
-        // allocate the buffer for the final image data
-        // data = new char[diff];
-
-        if (iheader.height_ > 0) {
-            int j = 0;
-            // count backwards so you start at the front of the image
-            for (uint64_t i = 0; i < size * 3; i += 3) {
-                // jump over the padding at the start of a new line
-                if ((i + 1) % pad == 0) {
-                    i += offset;
-                }
-                // transfer the data
-                *(data + i) = colors[*(temp + j)].red_;
-                *(data + i + 1) = colors[*(temp + j)].green_;
-                *(data + i + 2) = colors[*(temp + j)].blue_;
-                j++;
-            }
-        } else {  // image parser for a forward image
-            auto j = size - 1;
-            // count backwards so you start at the front of the image
-            for (uint64_t i = 0; i < size * 3; i += 3) {
-                // jump over the padding at the start of a new line
-                if ((i + 1) % pad == 0) {
-                    i += offset;
-                }
-                // transfer the data
-                *(data + i) = colors[*(temp + j)].red_;
-                *(data + i + 1) = colors[*(temp + j)].green_;
-                *(data + i + 2) = colors[*(temp + j)].blue_;
-                j--;
-            }
-        }
-        delete[] colors;
+        convertPalette(temp, data, colors.data(), size, pad, offset, iheader.height_ > 0);
     } else if (iheader.bits_ == 16) {
-        for (uint64_t i = 0; i < size; i += 2) {
-            // jump over the padding at the start of a new line
-            if ((i + 1) % pad == 0) {
-                i += offset;
-            }
-            // 0123 4567 0123 4567
-            // 1234 5678 1234 5678
-            // RRRR RGGG GGBB BBB0
-            *(data + i) = ((*(temp + i) >> 3) << 3);  // R
-            *(data + i + 1) = (*(temp + i) << 5) | ((*(temp + i + 1) >> 6) << 6);  // G
-            *(data + i + 2) = ((*(temp + i + 1) >> 1) << 3);  // B
-        }
+        convert16(temp, data, size, pad, offset);
     } else if (iheader.bits_ == 24) {
-        // rows come off the disk padded to a dword boundary and go into the image
-        // without that padding, so each is copied on its own. Walking both buffers with
-        // one index and a modulo test for the padding read past the end of the data and
-        // misplaced every row after the first - it only ever looked right because every
-        // fixture is a single flat colour.
-        for (uint64_t row = 0; row < rows; ++row) {
-            const unsigned char* src = temp + row * pad;
-            unsigned char* dest = data + row * width;
-            for (int64_t column = 0; column < iheader.width_; ++column) {
-                // bgr on disk, rgb in memory
-                dest[column * 3 + 0] = src[column * 3 + 2];
-                dest[column * 3 + 1] = src[column * 3 + 1];
-                dest[column * 3 + 2] = src[column * 3 + 0];
-            }
-        }
+        convert24(temp, data, rows, pad, width, iheader.width_);
     } else {
         std::stringstream ss;
         ss << iheader.bits_;

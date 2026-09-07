@@ -36,21 +36,30 @@ v3d_add_api_library(ui
 "component/menu/Menu.h" "component/menu/Menu.cpp"
 "component/menu/MenuItem.h" "component/menu/MenuItem.cpp"
 "ComponentRenderer.h" "ComponentRenderer.cpp"
+"GameMenu.h" "GameMenu.cpp"
+"TextRenderer.h" "TextRenderer.cpp"
 "Engine.h" "Engine.cpp" "component/menu/Type.h" "component/Type.h" "component/menu/MenuBar.cpp" "Navigation.h")
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
 # v3dlib_render: ComponentRenderer draws onto a realtime::Canvas. The dependency is one way -
 # nothing in the renderer knows about a ui component - and Canvas carries no vulkan of its own.
+# TextRenderer.h keeps that true by forward declaring the QuadRenderer it uploads an atlas
+# through, rather than including it.
+# v3dlib_font: TextRenderer.h holds a TextureFontCache and a TextureTextBuffer::Markup.
 # Boost::json: Engine.h names a boost::json::object for the theme it is handed.
 target_link_libraries(v3dlib_ui PUBLIC
 	v3dlib_log
 	v3dlib_render
 	v3dlib_asset
 	v3dlib_event
+	v3dlib_font
 	v3dlib_type
 	Boost::json
 	glm::glm
 	EnTT::EnTT)
+
+# PRIVATE: TextRenderer packs its glyphs into an image::TextureAtlas, which no ui header names.
+target_link_libraries(v3dlib_ui PRIVATE v3dlib_image)
 
 target_compile_options(v3dlib_ui PRIVATE /EHsc)
 

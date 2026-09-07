@@ -21,15 +21,20 @@ enum class Type {
 constexpr Type stringToType(const std::string_view& typeName) {
     if (typeName == "window") {
         return Type::Window;
-    } else if (typeName == "binding") {
+    }
+    if (typeName == "binding") {
         return Type::Binding;
-    } else if (typeName == "ui") {
+    }
+    if (typeName == "ui") {
         return Type::Ui;
-    } else if (typeName == "sound") {
+    }
+    if (typeName == "sound") {
         return Type::Sound;
-    } else if (typeName == "camera") {
+    }
+    if (typeName == "camera") {
         return Type::Camera;
-    } else if (typeName == "layout") {
+    }
+    if (typeName == "layout") {
         return Type::Layout;
     }
     return  Type::Unknown;

@@ -17,7 +17,9 @@ v3d_add_test(voxel
 
 # A source file property is scoped to the directory that sets it, so the exemption the app
 # gives the vendored noise utility does not reach the suite that shares the file.
-set_source_files_properties("../src/noise/noiseutils.cpp" PROPERTIES COMPILE_OPTIONS "/wd4100;/wd4189;/wd4244")
+set_source_files_properties("../src/noise/noiseutils.cpp" PROPERTIES
+	COMPILE_OPTIONS "/wd4100;/wd4189;/wd4244;/analyze-"
+	SKIP_LINTING TRUE)
 
 # libnoise reaches the suite the same way it reaches the app - named by the target that
 # compiles its headers, rather than by the root for the whole tree.

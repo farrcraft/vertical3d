@@ -8,6 +8,7 @@
 #include <stdint.h>
 
 #include <map>
+#include <sstream>
 #include <string>
 
 #include <boost/shared_ptr.hpp>
@@ -54,6 +55,15 @@ class BitmapFont {
 
  protected:
     void loadCharset(const std::string & filename);
+
+    /**
+     * One line of the .fnt file, read as the type its first token named. The info and
+     * chars lines carry nothing this reader keeps, so neither has one of these.
+     **/
+    void readCommonLine(std::stringstream* line);
+    void readPageLine(std::stringstream* line);
+    void readCharLine(std::stringstream* line);
+
     bool loadTexture(const std::string & filename);
 
  private:

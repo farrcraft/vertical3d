@@ -201,221 +201,299 @@ bool RIBReader::parameters(RIBLexer * lexer, unsigned int vertices, ParameterLis
     return true;
 }
 
-bool RIBReader::request(const std::string & name, RIBLexer * lexer, RIBHandler * handler) {
+/**
+ * Reads the RI options: what the picture is and what the scene calls things.
+ **/
+RIBReader::Result RIBReader::optionRequest(const std::string & name, RIBLexer * lexer, RIBHandler * handler) {
     float a = 0.0f;
     float b = 0.0f;
     float c = 0.0f;
-    float d = 0.0f;
     std::string first;
     std::string second;
-    std::string third;
     ParameterList list;
-    glm::mat4x4 m(1.0f);
-    std::vector<float> triple;
 
     if (name == "version") {
         if (!number(lexer, &a)) {
-            return false;
+            return Result::Failed;
         }
         handler->version(a);
-        return true;
+        return Result::Handled;
     }
     if (name == "Declare") {
         if (!text(lexer, &first) || !text(lexer, &second)) {
-            return false;
+            return Result::Failed;
         }
         if (!declarations_.declare(first, second)) {
             logger_->get()->warn("RIB declaration of '{}' does not name a type", first);
         }
         handler->declare(first, second);
-        return true;
+        return Result::Handled;
     }
     if (name == "Option") {
         if (!text(lexer, &first) || !parameters(lexer, 1, &list)) {
-            return false;
+            return Result::Failed;
         }
         handler->option(first, list);
-        return true;
+        return Result::Handled;
     }
     if (name == "Format") {
         if (!number(lexer, &a) || !number(lexer, &b) || !number(lexer, &c)) {
-            return false;
+            return Result::Failed;
         }
         handler->format(static_cast<unsigned int>(a), static_cast<unsigned int>(b), c);
-        return true;
+        return Result::Handled;
     }
+    return Result::Unhandled;
+}
+
+/**
+ * Reads the camera: what the projection is and what of it reaches the picture.
+ **/
+RIBReader::Result RIBReader::cameraRequest(const std::string & name, RIBLexer * lexer, RIBHandler * handler) {
+    float a = 0.0f;
+    float b = 0.0f;
+    float c = 0.0f;
+    float d = 0.0f;
+    std::string first;
+    ParameterList list;
+
     if (name == "FrameAspectRatio") {
         if (!number(lexer, &a)) {
-            return false;
+            return Result::Failed;
         }
         handler->frameAspectRatio(a);
-        return true;
+        return Result::Handled;
     }
     if (name == "ScreenWindow") {
         if (!number(lexer, &a) || !number(lexer, &b) || !number(lexer, &c) || !number(lexer, &d)) {
-            return false;
+            return Result::Failed;
         }
         handler->screenWindow(a, b, c, d);
-        return true;
+        return Result::Handled;
     }
     if (name == "CropWindow") {
         if (!number(lexer, &a) || !number(lexer, &b) || !number(lexer, &c) || !number(lexer, &d)) {
-            return false;
+            return Result::Failed;
         }
         handler->cropWindow(a, b, c, d);
-        return true;
+        return Result::Handled;
     }
     if (name == "Projection") {
         if (!text(lexer, &first) || !parameters(lexer, 1, &list)) {
-            return false;
+            return Result::Failed;
         }
         handler->projection(first, list);
-        return true;
+        return Result::Handled;
     }
     if (name == "Clipping") {
         if (!number(lexer, &a) || !number(lexer, &b)) {
-            return false;
+            return Result::Failed;
         }
         handler->clipping(a, b);
-        return true;
+        return Result::Handled;
     }
+    return Result::Unhandled;
+}
+
+/**
+ * Reads where the picture goes and the frame it belongs to.
+ **/
+RIBReader::Result RIBReader::displayRequest(const std::string & name, RIBLexer * lexer, RIBHandler * handler) {
+    float a = 0.0f;
+    std::string first;
+    std::string second;
+    std::string third;
+    ParameterList list;
+
     if (name == "Display") {
         if (!text(lexer, &first) || !text(lexer, &second) || !text(lexer, &third)) {
-            return false;
+            return Result::Failed;
         }
         if (!parameters(lexer, 1, &list)) {
-            return false;
+            return Result::Failed;
         }
         handler->display(first, second, third, list);
-        return true;
+        return Result::Handled;
     }
     if (name == "FrameBegin") {
         if (!number(lexer, &a)) {
-            return false;
+            return Result::Failed;
         }
         handler->frameBegin(static_cast<int>(a));
-        return true;
+        return Result::Handled;
     }
     if (name == "FrameEnd") {
         handler->frameEnd();
-        return true;
+        return Result::Handled;
     }
+    return Result::Unhandled;
+}
+
+/**
+ * Reads the blocks a scene is nested out of. None of them carries an argument.
+ **/
+RIBReader::Result RIBReader::blockRequest(const std::string & name, RIBHandler * handler) {
     if (name == "WorldBegin") {
         handler->worldBegin();
-        return true;
+        return Result::Handled;
     }
     if (name == "WorldEnd") {
         handler->worldEnd();
-        return true;
+        return Result::Handled;
     }
     if (name == "AttributeBegin") {
         handler->attributeBegin();
-        return true;
+        return Result::Handled;
     }
     if (name == "AttributeEnd") {
         handler->attributeEnd();
-        return true;
+        return Result::Handled;
     }
     if (name == "TransformBegin") {
         handler->transformBegin();
-        return true;
+        return Result::Handled;
     }
     if (name == "TransformEnd") {
         handler->transformEnd();
-        return true;
+        return Result::Handled;
     }
+    return Result::Unhandled;
+}
+
+/**
+ * Reads the current transformation.
+ **/
+RIBReader::Result RIBReader::transformRequest(const std::string & name, RIBLexer * lexer, RIBHandler * handler) {
+    glm::mat4x4 m(1.0f);
+    std::vector<float> triple;
+
     if (name == "Identity") {
         handler->identity();
-        return true;
+        return Result::Handled;
     }
     if (name == "Transform") {
         if (!matrix(lexer, &m)) {
-            return false;
+            return Result::Failed;
         }
         handler->transform(m);
-        return true;
+        return Result::Handled;
     }
     if (name == "ConcatTransform") {
         if (!matrix(lexer, &m)) {
-            return false;
+            return Result::Failed;
         }
         handler->concatTransform(m);
-        return true;
+        return Result::Handled;
     }
     if (name == "Translate") {
         if (!numbers(lexer, 3, &triple)) {
-            return false;
+            return Result::Failed;
         }
         handler->translate(triple[0], triple[1], triple[2]);
-        return true;
+        return Result::Handled;
     }
     if (name == "Rotate") {
         if (!numbers(lexer, 4, &triple)) {
-            return false;
+            return Result::Failed;
         }
         handler->rotate(triple[0], triple[1], triple[2], triple[3]);
-        return true;
+        return Result::Handled;
     }
     if (name == "Scale") {
         if (!numbers(lexer, 3, &triple)) {
-            return false;
+            return Result::Failed;
         }
         handler->scale(triple[0], triple[1], triple[2]);
-        return true;
+        return Result::Handled;
     }
+    return Result::Unhandled;
+}
+
+/**
+ * Reads the attributes a primitive is submitted under.
+ **/
+RIBReader::Result RIBReader::attributeRequest(const std::string & name, RIBLexer * lexer, RIBHandler * handler) {
+    float a = 0.0f;
+    std::string first;
+    ParameterList list;
+    std::vector<float> triple;
+
     if (name == "Color") {
         if (!numbers(lexer, 3, &triple)) {
-            return false;
+            return Result::Failed;
         }
         handler->color(glm::vec3(triple[0], triple[1], triple[2]));
-        return true;
+        return Result::Handled;
     }
     if (name == "Opacity") {
         if (!numbers(lexer, 3, &triple)) {
-            return false;
+            return Result::Failed;
         }
         handler->opacity(glm::vec3(triple[0], triple[1], triple[2]));
-        return true;
+        return Result::Handled;
     }
     if (name == "ShadingRate") {
         if (!number(lexer, &a)) {
-            return false;
+            return Result::Failed;
         }
         handler->shadingRate(a);
-        return true;
+        return Result::Handled;
     }
     if (name == "Attribute") {
         if (!text(lexer, &first) || !parameters(lexer, 1, &list)) {
-            return false;
+            return Result::Failed;
         }
         handler->attribute(first, list);
-        return true;
+        return Result::Handled;
     }
+    return Result::Unhandled;
+}
+
+/**
+ * Reads the shaders a surface and a light are shaded by.
+ **/
+RIBReader::Result RIBReader::shaderRequest(const std::string & name, RIBLexer * lexer, RIBHandler * handler) {
+    std::string first;
+    ParameterList list;
+
     if (name == "Surface") {
         if (!text(lexer, &first) || !parameters(lexer, 1, &list)) {
-            return false;
+            return Result::Failed;
         }
         handler->surface(first, list);
-        return true;
+        return Result::Handled;
     }
     if (name == "LightSource") {
         if (!text(lexer, &first)) {
-            return false;
+            return Result::Failed;
         }
         // the handle follows the shader name and is a sequence number in RIB 3.x
         if (lexer->peek().kind() == Kind::NUMBER) {
             lexer->next();
         }
         if (!parameters(lexer, 1, &list)) {
-            return false;
+            return Result::Failed;
         }
         handler->lightSource(first, list);
-        return true;
+        return Result::Handled;
     }
+    return Result::Unhandled;
+}
+
+/**
+ * Reads the geometry.
+ **/
+RIBReader::Result RIBReader::primitiveRequest(const std::string & name, RIBLexer * lexer, RIBHandler * handler) {
+    float a = 0.0f;
+    float b = 0.0f;
+    float c = 0.0f;
+    float d = 0.0f;
+    ParameterList list;
+
     if (name == "Polygon") {
         // RIB carries no vertex count: it is the length of the position array
         if (!parameters(lexer, 0, &list)) {
-            return false;
+            return Result::Failed;
         }
         unsigned int vertices = static_cast<unsigned int>(list.floats("P").size() / 3);
         if (vertices == 0) {
@@ -425,26 +503,57 @@ bool RIBReader::request(const std::string & name, RIBLexer * lexer, RIBHandler *
             vertices = static_cast<unsigned int>(list.floats("Pz").size());
         }
         handler->polygon(vertices, list);
-        return true;
+        return Result::Handled;
     }
     if (name == "PointsPolygons") {
         std::vector<unsigned int> perPolygon;
         std::vector<unsigned int> indices;
         if (!counts(lexer, &perPolygon) || !counts(lexer, &indices) || !parameters(lexer, 0, &list)) {
-            return false;
+            return Result::Failed;
         }
         handler->pointsPolygons(perPolygon, indices, list);
-        return true;
+        return Result::Handled;
     }
     if (name == "Sphere") {
         if (!number(lexer, &a) || !number(lexer, &b) || !number(lexer, &c) || !number(lexer, &d)) {
-            return false;
+            return Result::Failed;
         }
         if (!parameters(lexer, 1, &list)) {
-            return false;
+            return Result::Failed;
         }
         handler->sphere(a, b, c, d, list);
-        return true;
+        return Result::Handled;
+    }
+    return Result::Unhandled;
+}
+
+bool RIBReader::request(const std::string & name, RIBLexer * lexer, RIBHandler * handler) {
+    // the groups are asked in turn, and the first that recognises the name consumes the
+    // request's arguments. Order is not significant - no name belongs to two of them.
+    Result result = optionRequest(name, lexer, handler);
+    if (result == Result::Unhandled) {
+        result = cameraRequest(name, lexer, handler);
+    }
+    if (result == Result::Unhandled) {
+        result = displayRequest(name, lexer, handler);
+    }
+    if (result == Result::Unhandled) {
+        result = blockRequest(name, handler);
+    }
+    if (result == Result::Unhandled) {
+        result = transformRequest(name, lexer, handler);
+    }
+    if (result == Result::Unhandled) {
+        result = attributeRequest(name, lexer, handler);
+    }
+    if (result == Result::Unhandled) {
+        result = shaderRequest(name, lexer, handler);
+    }
+    if (result == Result::Unhandled) {
+        result = primitiveRequest(name, lexer, handler);
+    }
+    if (result != Result::Unhandled) {
+        return result == Result::Handled;
     }
 
     if (reported_.insert("request " + name).second) {

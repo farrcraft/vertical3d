@@ -76,7 +76,7 @@ inline std::string read_file(char const* path, const boost::system::error_code& 
     }
     std::string s;
     s.resize(f.size());
-    s.resize(f.read(&s[0], s.size(), ec));
+    s.resize(f.read(s.data(), s.size(), ec));
     if (ec) {
         return {};
     }

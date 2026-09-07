@@ -13,10 +13,10 @@ the right one.
 
 ## Before anything else: is it already broken?
 
-`CLAUDE.md` has a Build health section saying what the tree's state was at the last full
-build, and which failures predate whatever you are working on. **Check that list before
-assuming a failure is yours.** Fixing a pre-existing break is a different task from fixing a
-regression, and conflating them produces a large diff nobody asked for.
+Everything in the tree compiles, links and passes cpplint, `/W4` with `/WX`, `/analyze` and
+the enabled clang-tidy checks - `docs/Linting.md` states that and `docs/TODO.md` carries what
+is deliberately left open. **So a failure is the change's until shown otherwise**, and the
+thing to rule out first is a stale CMake cache rather than known breakage.
 
 ## The one rule that outranks finishing
 
@@ -137,7 +137,8 @@ Rendering is not covered: it needs a window and a GPU, which is
 
 ## Workflow
 
-1. **Check the Build health list in `CLAUDE.md`.** Is this failure already known?
+1. **Rule out the environment.** A stale cache after a toolset update, a missing
+   `VULKAN_SDK`, an unbuilt libnoise - `docs/Build.md` has each of them.
 2. **Read the failure.** Redirect the build, find the first error, read around it.
 3. **Name the cause before touching anything.** If you cannot say why in one sentence, keep
    reading. A guessed fix that happens to compile is worse than no fix.

@@ -127,8 +127,8 @@ Texture TextureFactory::create(const unsigned char* pixels, uint32_t width, uint
         throw std::runtime_error(msg.str());
     }
 
-    const VkBuffer source = staging.handle();
-    const VkImage image = texture.image;
+    VkBuffer source = staging.handle();
+    VkImage image = texture.image;
     uploader_->oneShot([source, image, width, height](VkCommandBuffer commands) {
         transition(commands, image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 

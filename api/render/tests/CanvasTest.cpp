@@ -15,8 +15,8 @@
 
 namespace {
 
-const glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
-const glm::vec4 red(1.0f, 0.0f, 0.0f, 1.0f);
+constexpr glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
+constexpr glm::vec4 red(1.0f, 0.0f, 0.0f, 1.0f);
 
 /**
  * The point one corner of the canvas maps to, for checking the projection without

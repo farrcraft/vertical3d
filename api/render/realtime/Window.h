@@ -82,6 +82,18 @@ class Window final {
     void caption(const std::string_view& cap);
 
     /**
+     * Whether the window has keyboard focus.
+     *
+     * An app that steers with the pointer has to know: mouselook warps the cursor back to
+     * the centre after every move, which would drag it out of whatever the player alt
+     * tabbed to.
+     *
+     * @return false when the window is not the one being typed into, and while there is
+     *         no window at all
+     */
+    bool focused() const;
+
+    /**
      * Toggle mouse cursor visibility
      * @param state whether to enable or disable
      */

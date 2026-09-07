@@ -1,8 +1,8 @@
 # A windowed application outside the vertical3d tree, built the way
-# [docs/NewProject.md](../../NewProject.md) describes. It exists to be configured by CI: nothing
+# [docs/NewProject.md](../../docs/NewProject.md) describes. It exists to be configured by CI: nothing
 # inside the tree can tell a target that carries its own include path and its own dependencies
-# from one picking them up off the root's global or off an app that names all thirteen
-# libraries, because in this repository both are always there.
+# from one picking them up off the root's global or off an app that names every library,
+# because in this repository both are always there.
 #
 # It is a root project of its own rather than a subdirectory of vertical3d, which is what makes
 # CMAKE_SOURCE_DIR differ from V3D_ROOT.
@@ -28,14 +28,14 @@ add_compile_options("/permissive-")
 # The path is relative here because the example travels with the tree it consumes.
 set(V3D_BUILD_APPS OFF)
 set(V3D_BUILD_TESTS OFF)
-get_filename_component(V3D_TREE "${CMAKE_CURRENT_LIST_DIR}/../../.." ABSOLUTE)
-add_subdirectory("${V3D_TREE}" v3d)
 
-# A package this project names itself has to be found in this scope. find_package creates
-# imported targets in the directory that calls it and below, so nothing vertical3d resolved is
-# visible here. After the add_subdirectory, so that Boost_USE_STATIC_LIBS is already what the
-# api was resolved against.
-find_package(Boost REQUIRED COMPONENTS filesystem)
+# The three libraries this app links, per ADR-0033. Their closure is what gets built and what
+# decides which packages are looked for, so naming them here rather than leaving V3D_LIBRARIES
+# at "all" is also what makes CI check that the closure is right: an api library that does not
+# declare something it links fails this configure and no other.
+set(V3D_LIBRARIES engine log render)
+get_filename_component(V3D_TREE "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
+add_subdirectory("${V3D_TREE}" v3d)
 
 add_executable(v3dstarter
 	"src/AppEngine.h" "src/AppEngine.cxx"
@@ -47,8 +47,11 @@ add_executable(v3dstarter
 # - which this app does not draw and so does not ask for.
 v3d_add_app_data(v3dstarter)
 
+# Three targets and no third party package of its own. boost::filesystem is compiled by these
+# sources - asset/Manager.h names a path - but it arrives through v3d::asset, so nothing here
+# has to name it. A consumer that does name a package itself has to find_package it in its own
+# scope; see docs/NewProject.md.
 target_link_libraries(v3dstarter PRIVATE
 	v3d::engine
 	v3d::log
-	v3d::render
-	Boost::filesystem)
+	v3d::render)

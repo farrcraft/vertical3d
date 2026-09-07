@@ -35,6 +35,21 @@ class Frame {
     boost::shared_ptr<Pass> pass(const std::string& name);
 
     /**
+     * The pass of that name, added immediately ahead of another one if the frame has none.
+     *
+     * A pass drawing into a target has to be recorded before the passes that sample it -
+     * ADR-0031 - and the colour pass every frame carries is created by Engine3D before an
+     * app has said anything, so a pass added at the end would be recorded too late. This is
+     * how an offscreen pass gets in front of it.
+     *
+     * @param name the pass to find or create
+     * @param before the pass it goes ahead of; it is appended if the frame has no pass of
+     *        that name, so ordering against something that is not there is not an error
+     * @return the pass, which stays valid until the frame is destroyed
+     **/
+    boost::shared_ptr<Pass> passBefore(const std::string& name, const std::string& before);
+
+    /**
      * @return the passes, in the order they will be recorded
      **/
     const std::vector<boost::shared_ptr<Pass>>& passes() const noexcept;

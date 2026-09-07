@@ -37,7 +37,7 @@ bool CommandDirectory::addPress(const std::string& name, const PressHandler& han
 /**
  **/
 bool CommandDirectory::has(const std::string& name) const {
-    return handlers_.find(name) != handlers_.end();
+    return handlers_.contains(name);
 }
 
 /**

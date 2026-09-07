@@ -228,7 +228,13 @@ Presenter::Status Presenter::present(const Acquisition& acquisition) {
     VkSemaphoreSubmitInfo signal{};
     signal.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
     signal.semaphore = renderFinished_[acquisition.image];
-    signal.stageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+    // every stage, not the colour attachment one: the last thing the command buffer does to
+    // the image is the layout transition into PRESENT_SRC, whose destination scope is the
+    // bottom of the pipe. A semaphore signalled at COLOR_ATTACHMENT_OUTPUT does not wait for
+    // that transition, so the presentation engine reads an image still being moved - which
+    // synchronization validation reports as PRESENT_AFTER_WRITE. Presentation is not a
+    // pipeline stage, so there is no narrower stage that is the right one here.
+    signal.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
 
     VkCommandBufferSubmitInfo commands{};
     commands.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;

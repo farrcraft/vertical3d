@@ -9,6 +9,7 @@
 
 #include "loader/Jpeg.h"
 #include "loader/Json.h"
+#include "loader/Gltf.h"
 #include "loader/Png.h"
 #include "loader/Tga.h"
 #include "loader/Text.h"
@@ -29,6 +30,7 @@ Manager::Manager(std::string_view path, const boost::shared_ptr<v3d::log::Logger
     loaders_[asset::Type::ImageJpeg] = boost::make_shared<v3d::asset::loader::Jpeg>(this, logger_);
     loaders_[asset::Type::ImagePng] = boost::make_shared<v3d::asset::loader::Png>(this, logger_);
     loaders_[asset::Type::ImageTga] = boost::make_shared<v3d::asset::loader::Tga>(this, logger_);
+    loaders_[asset::Type::ModelGltf] = boost::make_shared<v3d::asset::loader::Gltf>(this, logger_);
     loaders_[asset::Type::JsonDocument] = boost::make_shared<v3d::asset::loader::Json>(this, logger_);
     loaders_[asset::Type::AudioWav] = boost::make_shared<v3d::asset::loader::Wav>(this, logger_);
     loaders_[asset::Type::Text] = boost::make_shared<v3d::asset::loader::Text>(this, logger_);
@@ -73,6 +75,8 @@ boost::shared_ptr<Asset> Manager::loadTypeFromExt(std::string_view name) {
         asset = load(name, asset::Type::ImageJpeg);
     } else if (ext == ".tga") {
         asset = load(name, asset::Type::ImageTga);
+    } else if (ext == ".gltf" || ext == ".glb") {
+        asset = load(name, asset::Type::ModelGltf);
     } else if (ext == ".json") {
         asset = load(name, asset::Type::JsonDocument);
     } else if (ext == ".wav") {

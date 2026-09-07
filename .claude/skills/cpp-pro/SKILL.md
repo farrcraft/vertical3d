@@ -41,8 +41,8 @@ Load detailed guidance based on context:
 ## In this repository
 
 The guidance below is generic modern C++. Where it disagrees with Vertical3D's own
-conventions, **the repository wins** — `CLAUDE.md` is the authority and consistency with the
-surrounding code matters more than idiom.
+conventions, **the repository wins** — `docs/Conventions.md` is the authority and consistency
+with the surrounding code matters more than idiom.
 
 What differs here:
 

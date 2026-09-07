@@ -16,7 +16,8 @@ class Sound final {
  public:
     /**
      **/
-    Sound(const std::string_view &clip) noexcept;
+    // not noexcept: clip_ is a std::string built from the view, which allocates
+    Sound(const std::string_view &clip);
     std::string_view clip() const noexcept;
 
  private:
