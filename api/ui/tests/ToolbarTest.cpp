@@ -10,6 +10,8 @@
 #include <boost/test/unit_test.hpp>
 
 #include "../ComponentRenderer.h"
+#include "../../render/realtime/Canvas.h"
+#include <entt/entt.hpp>
 #include "../Container.h"
 #include "../component/Toolbar.h"
 #include "../component/menu/MenuBar.h"

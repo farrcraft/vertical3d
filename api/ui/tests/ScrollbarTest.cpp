@@ -8,6 +8,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include "../ComponentRenderer.h"
+#include "../../render/realtime/Canvas.h"
 #include "../Container.h"
 #include "../component/Scrollbar.h"
 

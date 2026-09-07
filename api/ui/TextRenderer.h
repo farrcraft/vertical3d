@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "ComponentRenderer.h"
+#include "Text.h"
 
 #include "../asset/Manager.h"
 #include "../font/TextureFontCache.h"
@@ -137,21 +137,21 @@ class TextRenderer {
         float size = 0.0f);
 
     /**
-     * @return width() at a size, as the callback ComponentRenderer takes
+     * @return width() at a size, as the callback both ways of writing a ui take
      **/
-    ComponentRenderer::Measure measure(float size = 0.0f) const;
+    Measure measure(float size = 0.0f) const;
 
     /**
-     * @return draw() at a size, as the callback ComponentRenderer takes, against one canvas
+     * @return draw() at a size, as the callback both ways of writing a ui take, against one canvas
      *
      * The canvas is held by the returned callback rather than copied, so it has to outlive
-     * the ComponentRenderer it is given to.
+     * whatever it is given to.
      *
      * Per ADR-0019 the pair names no font type, so the size is closed over here rather
      * than travelling with each string: a ui at one size and a heading at another are two
      * callback pairs from one TextRenderer, and one atlas serves both.
      **/
-    ComponentRenderer::Write write(v3d::render::realtime::Canvas* canvas, float size = 0.0f);
+    Write write(v3d::render::realtime::Canvas* canvas, float size = 0.0f);
 
  private:
     /**

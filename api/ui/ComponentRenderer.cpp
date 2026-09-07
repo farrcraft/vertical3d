@@ -10,9 +10,28 @@
 #include <string>
 #include <vector>
 
+#include "Container.h"
+#include "Engine.h"
 #include "Painter.h"
+#include "Style.h"
+#include "component/Bar.h"
+#include "component/Box.h"
+#include "component/Button.h"
+#include "component/CheckBox.h"
+#include "component/Icon.h"
+#include "component/Label.h"
+#include "component/Panel.h"
+#include "component/RadioButton.h"
+#include "component/Scrollbar.h"
+#include "component/SelectList.h"
+#include "component/TabBar.h"
+#include "component/TabPage.h"
+#include "component/Toolbar.h"
 #include "component/Type.h"
+#include "component/menu/Menu.h"
+#include "component/menu/MenuBar.h"
 #include "style/Button.h"
+#include "style/Theme.h"
 #include "style/property/Color.h"
 #include "style/property/Image.h"
 #include "style/property/Number.h"
@@ -106,6 +125,10 @@ hover(0.16f, 0.18f, 0.24f, 1.0f) {
 ComponentRenderer::ComponentRenderer(const Measure& measure, const Write& write) :
     measure_(measure),
     write_(write) {
+}
+
+// out of line, so that the header need not complete the types the members hold
+ComponentRenderer::~ComponentRenderer() {
 }
 
 /**

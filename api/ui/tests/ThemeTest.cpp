@@ -10,6 +10,11 @@
 #include <boost/test/unit_test.hpp>
 
 #include "../ComponentRenderer.h"
+#include "../../render/realtime/Canvas.h"
+#include "../Container.h"
+#include "../Style.h"
+#include "../style/Theme.h"
+#include <entt/entt.hpp>
 #include "../Engine.h"
 #include "../style/Button.h"
 #include "../style/property/Color.h"

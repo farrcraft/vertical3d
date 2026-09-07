@@ -5,35 +5,47 @@
 
 #pragma once
 
-#include <functional>
 #include <string>
 #include <vector>
 
-#include "Container.h"
-#include "Engine.h"
-#include "component/Bar.h"
-#include "component/Box.h"
-#include "component/Button.h"
-#include "component/CheckBox.h"
-#include "component/Icon.h"
-#include "component/Label.h"
-#include "component/Panel.h"
-#include "component/RadioButton.h"
-#include "component/Scrollbar.h"
-#include "component/SelectList.h"
-#include "component/TabBar.h"
-#include "component/Toolbar.h"
-#include "component/menu/Menu.h"
-#include "component/menu/MenuBar.h"
-#include "style/Theme.h"
+#include "Text.h"
 
-#include "../render/realtime/Canvas.h"
+#include "../type/Bound2D.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
+namespace v3d::render::realtime {
+class Canvas;
+};  // namespace v3d::render::realtime
+
 namespace v3d::ui {
+
+class Component;
+class Container;
+class Engine;
+class Style;
+
+namespace style {
+class Theme;
+};  // namespace style
+
+namespace component {
+class Bar;
+class Box;
+class Button;
+class CheckBox;
+class Icon;
+class Label;
+class Menu;
+class MenuBar;
+class Panel;
+class Scrollbar;
+class SelectList;
+class TabBar;
+class Toolbar;
+};  // namespace component
 
 /**
  * Draws the ui onto a canvas of quads.
@@ -49,9 +61,9 @@ namespace v3d::ui {
  * Drawing is also what lays the ui out: every component is left holding the bounds it
  * was drawn in, which is what the cursor is tested against, per ADR-0019.
  *
- * Menus, menu bars, toolbars, buttons, labels, icons, panels, bars, scrollbars, check
- * boxes, radio buttons, select lists, tab bars and the two flow boxes are drawn. The rest of the components in this library are empty declarations with
- * no loader.
+ * Every component type this library has is drawn: menus, menu bars, toolbars, buttons,
+ * labels, icons, panels, bars, scrollbars, check boxes, radio buttons, select lists, tab
+ * bars and the two flow boxes.
  *
  * A component holds other components, and drawing one is what works out where they go:
  * every box is resolved against the box around it as the walk reaches it, per ADR-0034.
@@ -68,16 +80,6 @@ namespace v3d::ui {
  **/
 class ComponentRenderer {
  public:
-    /**
-     * How wide a string will be when it is drawn, in pixels.
-     **/
-    typedef std::function<float(const std::string&)> Measure;
-
-    /**
-     * Draw a string with its pen on the baseline at the given position.
-     **/
-    typedef std::function<void(const std::string&, const glm::vec2&, const glm::vec4&)> Write;
-
     /**
      * What the ui cannot work out from the components alone: the colours and metrics a
      * component is drawn with.
@@ -117,6 +119,7 @@ class ComponentRenderer {
      * @param write how the app draws a string
      **/
     ComponentRenderer(const Measure& measure, const Write& write);
+    ~ComponentRenderer();
 
     /**
      * @return the colours and metrics the ui is drawn with, to be changed in place
@@ -314,7 +317,7 @@ class ComponentRenderer {
      * @param className the style class - "button", "ui"
      * @param name what the component's style() gives, which may be empty
      **/
-    boost::shared_ptr<v3d::ui::Style> lookup(const std::string& className, const std::string_view& name) const;
+    boost::shared_ptr<Style> lookup(const std::string& className, const std::string_view& name) const;
 
     Measure measure_;
     Write write_;

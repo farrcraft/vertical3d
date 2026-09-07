@@ -12,6 +12,8 @@
 
 #include "../StatisticsOverlay.h"
 
+#include "../../render/realtime/Canvas.h"
+
 namespace {
 
 const std::uint64_t millisecond = 1000000;

@@ -12,6 +12,8 @@
 
 #include "../Immediate.h"
 
+#include "../../render/realtime/Canvas.h"
+
 namespace {
 
 /**

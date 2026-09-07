@@ -7,21 +7,25 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <map>
 #include <string>
 #include <vector>
 
-#include "Style.h"
-#include "style/Theme.h"
-
-#include "../render/realtime/Canvas.h"
+#include "Text.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
+namespace v3d::render::realtime {
+class Canvas;
+};  // namespace v3d::render::realtime
+
 namespace v3d::ui {
+
+namespace style {
+class Theme;
+};  // namespace style
 
 /**
  * A ui written as calls rather than as a tree, per ADR-0035.
@@ -45,16 +49,6 @@ namespace v3d::ui {
  **/
 class Immediate {
  public:
-    /**
-     * How wide a string will be when it is drawn, in pixels.
-     **/
-    typedef std::function<float(const std::string&)> Measure;
-
-    /**
-     * Draw a string with its pen on the baseline at the given position.
-     **/
-    typedef std::function<void(const std::string&, const glm::vec2&, const glm::vec4&)> Write;
-
     /**
      * What a widget is known by. A label hashed with whatever pushId() has put on the
      * stack, so two widgets with the same label in the same scope are one widget as far
@@ -112,6 +106,7 @@ class Immediate {
      * @param write how the app draws a string
      **/
     Immediate(const Measure& measure, const Write& write);
+    ~Immediate();
 
     /**
      * @return the colours and metrics, to be changed in place

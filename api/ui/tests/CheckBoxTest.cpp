@@ -10,6 +10,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include "../ComponentRenderer.h"
+#include "../../render/realtime/Canvas.h"
 #include "../Container.h"
 #include "../Engine.h"
 #include "../component/CheckBox.h"

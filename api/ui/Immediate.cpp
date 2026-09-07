@@ -14,7 +14,11 @@
 #include <vector>
 
 #include "Painter.h"
+#include "Style.h"
 #include "component/Scrollbar.h"
+#include "style/Theme.h"
+
+#include "../render/realtime/Canvas.h"
 
 namespace v3d::ui {
 
@@ -174,6 +178,10 @@ Immediate::Immediate(const Measure& measure, const Write& write) :
     inTable_(false),
     tableLeft_(0.0f),
     columnIndex_(0) {
+}
+
+// out of line, so that the header need not complete the types the members hold
+Immediate::~Immediate() {
 }
 
 Immediate::Dressing& Immediate::dressing() noexcept {

@@ -10,6 +10,12 @@
 #include <boost/test/unit_test.hpp>
 
 #include "../ComponentRenderer.h"
+#include "../../render/realtime/Canvas.h"
+#include "../Container.h"
+#include "../component/menu/Menu.h"
+#include "../component/menu/MenuBar.h"
+#include "../component/menu/MenuItem.h"
+#include <entt/entt.hpp>
 
 #include <boost/make_shared.hpp>
 

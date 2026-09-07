@@ -150,7 +150,7 @@ void TextRenderer::draw(v3d::render::realtime::Canvas* canvas, const std::string
 
 /**
  **/
-ComponentRenderer::Measure TextRenderer::measure(float size) const {
+Measure TextRenderer::measure(float size) const {
     return [this, size](const std::string& text) -> float {
         return width(text, size);
     };
@@ -158,7 +158,7 @@ ComponentRenderer::Measure TextRenderer::measure(float size) const {
 
 /**
  **/
-ComponentRenderer::Write TextRenderer::write(v3d::render::realtime::Canvas* canvas, float size) {
+Write TextRenderer::write(v3d::render::realtime::Canvas* canvas, float size) {
     return [this, canvas, size](const std::string& text, const glm::vec2& pen, const glm::vec4& colour) {
         draw(canvas, text, pen, colour, size);
     };
