@@ -5,13 +5,6 @@ done. It is kept at [plans/completed/Modernization.md](plans/completed/Moderniza
 the reasoning behind each phase, and the items it closed around are collected here rather than
 left in a finished plan.
 
-## External api consumption
-
-Carried out of [plans/completed/ExternalApiConsumption.md](plans/completed/ExternalApiConsumption.md),
-which closed on 2026-09-05.
-
-[] decide what find_package(Boost) at the root does to a consumer cache - Boost_USE_STATIC_LIBS ON is a cache variable and is in force for the consumer own boost lookup. Either state it in the contract or set it scoped. The example consumer does not detect it, because it never looks boost up itself.
-
 ## The clang-tidy backlog
 
 [.clang-tidy](../.clang-tidy) enables bugprone, performance, misc and readability and subtracts
