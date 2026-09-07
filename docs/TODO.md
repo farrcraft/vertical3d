@@ -92,7 +92,7 @@ what owns this library.
 [] a select list scrolls itself and a scrollbar scrolls nothing, so putting the two side by side is the app's arithmetic. It is one component - the bar reading the list's content and offset - and no app has asked for it
 [] voxel's F3 readout is the only thing driving `ui::Immediate` as of 2026-09-07. The editor's four viewports and odyssey's turn state are each a debug window waiting to be asked for, and a game that owns the mouse has no cursor to give the layer, so voxel's window cannot be folded or scrolled
 [] a widget in `Immediate` is hovered a frame after it is drawn, so the first frame of a window that appears under the cursor answers nothing
-[] adding a component means editing five places - the type enum, the loader's branch, the draw walk's switch, `natural()` and `ui::Cursor`'s - and the compiler checks none of them against the others. Making `natural()` virtual on `Component` was weighed and left: it removes one of the five rather than the problem
+[] adding a component means editing five places - `component::Type`, `ui::Loader`'s branch, `ComponentRenderer::paint`, `Arranger::natural` and `ui::Cursor`'s - and the compiler checks none of them against the others. Making `natural()` virtual on `Component` was weighed and left: it removes one of the five rather than the problem. Splitting the renderer moved two of them into their own files and did not reduce the count
 [] a percentage of a parent that has not been drawn is a percentage of zero, so the frame after a resize places a child against the previous size
 [] a clip is a scissor, so it is axis aligned and square: a panel with rounded corners clips to the box and not to the curve, and `LineCanvas` carries no clip at all
 

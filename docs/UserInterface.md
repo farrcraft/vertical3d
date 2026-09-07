@@ -29,6 +29,31 @@ worst case and the layer's best one, which is why it is the layer's first consum
 Both draw onto the same `realtime::Canvas`, share `Painter`'s box drawing, and take the same
 text callbacks, so the two look like one ui. They read different style classes — see below.
 
+## The classes
+
+```
+Engine        the loaded ui: containers, themes, which theme is active
+  Loader      builds one out of a JSON document, and is then done with
+Container     what a document named, and what a point is picked out of
+Component     a box, children, and what a draw leaves on it
+
+ComponentRenderer   paints a component, and owns the two below
+  Arranger          resolves every box and calls back to paint each one
+  style::Resolver   turns a theme into the Dressing a component is drawn with
+
+Immediate     the other way to write a ui - layout and paint in one pass
+Cursor        turns a point into a command
+TextRenderer  one font, one atlas, and the Measure/Write pair both renderers take
+Painter.h     fillBox, strokeBox and plateBox, which both ways draw out of
+```
+
+Two of those splits are worth knowing about. **The walk is the Arranger's and the painting
+is the renderer's**, joined by a `Paint` callback: one walk still decides both what is drawn
+and what is clicked, per ADR-0019, but it will run with no canvas and nothing to paint, so
+layout can be asked for on its own. And **reading a config is the Loader's**, so `Engine.h`
+names `Container` and `style::Theme` rather than including every component header and
+`boost::json`.
+
 ## Everything is a quad on somebody else's canvas
 
 Nothing here owns a device, a pass or a draw. A panel, a highlight and a line of text are all
@@ -206,6 +231,7 @@ boxes the draw left or on the primitives it emitted. [Testing.md](Testing.md) ha
 - **Nothing enforces which of the two ways to use.** The rule above is a rule of thumb in a
   document, and a reader who wants a HUD out of `Immediate` will get one that flickers under
   the cursor rather than an error.
-- **Adding a component means editing five places** — the enum, the loader's branch, the draw
-  walk's switch, `natural()`, and the cursor's — and the compiler checks none of them against
-  the others.
+- **Adding a component means editing five places** — `component::Type`, the loader's branch,
+  the renderer's paint switch, the Arranger's `natural()`, and the cursor's — and the compiler
+  checks none of them against the others. The split between layout and paint moved two of
+  those into their own files; it did not reduce the count.
