@@ -21,7 +21,12 @@
 # returns before it reads a single one of its own input variables. Boost_USE_STATIC_LIBS is
 # one of those and would do nothing here. Static or shared is the triplet's to decide, and
 # x64-windows is dynamic - see docs/Dependencies.md.
-find_package(Boost 1.76.0 REQUIRED COMPONENTS filesystem json locale log program_options unit_test_framework)
+#
+# The components are the ones the tree includes and nothing else. Naming one it does not is
+# invisible here, because this repo's manifest installs the boost metapackage and every
+# component is already present; it is a consumer resolving boost for itself that pays, and the
+# difference between this list and one that also names locale and log is 79 ports against 194.
+find_package(Boost 1.76.0 REQUIRED COMPONENTS filesystem json program_options unit_test_framework)
 
 # Resolve the named packages.
 #
