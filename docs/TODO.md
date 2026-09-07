@@ -1,9 +1,8 @@
 # TODO
 
-Loose ends and open work. The modernization plan closed on 2026-09-04 with all six phases
-done. It is kept at [plans/completed/Modernization.md](plans/completed/Modernization.md) for
-the reasoning behind each phase, and the items it closed around are collected here rather than
-left in a finished plan.
+Loose ends and open work: what is missing or unfinished and is not covered by an open plan in
+[plans/](plans/). An entry is deleted when it is done rather than marked, so everything here is
+live.
 
 ## The clang-tidy backlog
 
@@ -36,8 +35,8 @@ clang-tidy, `/analyze` and cpplint alike.
 
 ## Tile grids
 
-`api/grid` arrived on 2026-09-06 as [ADR-0029](adr/0029-tile-grids-are-an-api-library.md).
-`odyssey` is its consumer as of the same day.
+`api/grid` is a library of its own - [ADR-0029](adr/0029-tile-grids-are-an-api-library.md) - and
+`odyssey` is its only consumer.
 
 [] `LineOfSight` still has no consumer. Odyssey's map carries cover - a crate is `Cover::Half` and a wall is `Cover::Full` - and nothing asks what can be seen from where, because odyssey has nothing to see yet
 [] odyssey's map format is its own and lives in `odyssey/tile/Map.cpp`. It earns a record and a home in the api the moment something other than that app reads or writes one, which a map editor or a generator would be
@@ -46,9 +45,9 @@ clang-tidy, `/analyze` and cpplint alike.
 
 ## Models
 
-`api/asset` reads glTF 2.0 into a `v3d::type::Model` as of 2026-09-06, which is the first geometry
-anything in the tree loads from a file. No app uses it yet - `voxel` builds its terrain
-procedurally and the editor models with `brep::BRep`.
+`api/asset` reads glTF 2.0 into a `v3d::type::Model`, which is the only geometry anything in the
+tree loads from a file. No app uses it: `voxel` builds its terrain procedurally and the editor
+models with `brep::BRep`.
 
 [] `image::Reader` reads a file and nothing else, so a texture embedded in a `.glb` cannot be decoded and the loader reports it instead. A memory source is `png_set_read_fn` and `jpeg_mem_src`, plus the setjmp the png reader does not have today, which is why it is its own change rather than an overload
 [] a `type::Model` has no path onto the device. `vulkan::Mesh` takes bytes, a stride-free count and indices, so the step is an app's four lines; a helper on the render side would need a vertex layout the api does not own
@@ -57,9 +56,9 @@ procedurally and the editor models with `brep::BRep`.
 
 ## Offscreen rendering
 
-`Pass` gained a target on 2026-09-06 - [ADR-0031](adr/0031-a-pass-draws-into-a-target-it-names.md). No app
-in the tree draws into one yet. It was built for the features that need it rather than for a picture
-that exists today.
+A pass draws into a target it names -
+[ADR-0031](adr/0031-a-pass-draws-into-a-target-it-names.md). No app in the tree draws into one:
+it is there for the features that need it rather than for a picture that exists today.
 
 [] a depth target is allocated but never sampled. `RenderTarget` can carry a depth image and a pass writes it, but the image has no sampled usage and no view a descriptor set can bind, so a shadow map is written and cannot be read
 [] a target is single-buffered, so a pass wanting the previous frame's contents needs two and has to swap them itself. A double-buffered target would be the natural next shape
@@ -68,56 +67,40 @@ that exists today.
 
 ## User interface
 
-A component holds other components and asks for a box as of 2026-09-06 -
-[ADR-0034](adr/0034-a-component-has-children-and-a-box.md) - and `ui::Immediate` is a second
-way to write one, driven by calls rather than by a tree -
-[ADR-0035](adr/0035-an-immediate-mode-layer-over-the-same-canvas.md). A box is cut off at the
-one holding it as of the same day, which is a scissor the batch carries -
-[ADR-0037](adr/0037-clipping-is-a-scissor-the-batch-carries.md). Nothing in the tree uses any
-of it yet: the editor's menu bar and toolbars are strips the renderer places itself, and the
-apps put up a menu and an overlay. All of it was built for the huds, plates and debug panels
-that need it.
+`api/ui` is two ways to write a ui - a tree of components
+([ADR-0034](adr/0034-a-component-has-children-and-a-box.md)) and a layer of calls
+([ADR-0035](adr/0035-an-immediate-mode-layer-over-the-same-canvas.md)) - and
+[UserInterface.md](UserInterface.md) is what owns it. Nothing in the tree uses the component
+tree: the editor's menu bar and toolbars are strips the renderer places itself, and the apps put
+up a menu and an overlay.
 
-A check box, a radio button, a select list and a tab bar landed on 2026-09-06 with a loader,
-a draw path and a style class each. `Frame` went the same day rather than growing a title bar:
-`Panel` draws the box it would have drawn, and nothing wanted the rest of it.
-
-A text box landed on 2026-09-07 with the focus and the key routing it needed -
-[ADR-0040](adr/0040-a-key-goes-to-a-focused-component.md) - so every type in `component::Type`
-has a loader and a draw path again. Layout stopped reading the box a previous walk wrote the
-same day, [ADR-0039](adr/0039-layout-never-reads-the-box-it-wrote.md), and a button in a tree
-now lights up under the cursor rather than only one on a strip.
-
-[plans/completed/UiConsolidation.md](plans/completed/UiConsolidation.md) closed on 2026-09-07,
-taking up what an architecture review found. What it declined is below: joining a scrollbar to a
-select list still waits for an app to ask, and hover being a frame late is the mechanism that
-lets a window take the cursor from one under it. [UserInterface.md](UserInterface.md) is now
-what owns this library.
+Two of the entries below were weighed and declined rather than left undone. Joining a scrollbar
+to a select list waits for an app to ask for it, and a widget being hovered a frame late is the
+mechanism that lets a window take the cursor from one under it.
 
 [] a select list scrolls itself and a scrollbar scrolls nothing, so putting the two side by side is the app's arithmetic. It is one component - the bar reading the list's content and offset - and no app has asked for it
-[] voxel's F3 readout is the only thing driving `ui::Immediate` as of 2026-09-07. The editor's four viewports and odyssey's turn state are each a debug window waiting to be asked for, and a game that owns the mouse has no cursor to give the layer, so voxel's window cannot be folded or scrolled
+[] voxel's F3 readout is the only thing driving `ui::Immediate`. The editor's four viewports and odyssey's turn state are each a debug window waiting to be asked for, and a game that owns the mouse has no cursor to give the layer, so voxel's window cannot be folded or scrolled
 [] a widget in `Immediate` is hovered a frame after it is drawn, so the first frame of a window that appears under the cursor answers nothing
-[] adding a component means editing five places - `component::Type`, `ui::Loader`'s branch, `ComponentRenderer::paint`, `Arranger::natural` and `ui::Cursor`'s - and the compiler checks none of them against the others. Making `natural()` virtual on `Component` was weighed and left: it removes one of the five rather than the problem. Splitting the renderer moved two of them into their own files and did not reduce the count
+[] adding a component means editing five places - `component::Type`, `ui::Loader`'s branch, `ComponentRenderer::paint`, `Arranger::natural` and `ui::Cursor`'s - plus `style::Resolver`'s class when it is dressed by one of its own, and the compiler checks none of them against the others. Making `natural()` virtual on `Component` was weighed and left: it removes one of the five rather than the problem. Splitting the renderer moved two of them into their own files and did not reduce the count
 [] a clip is a scissor, so it is axis aligned and square: a panel with rounded corners clips to the box and not to the curve
 [] the focus moves by press and by press alone, so there is no tab order and a form cannot be filled in without the mouse
 [] a caret cannot be placed by clicking: a press focuses a text box and leaves the caret where it was. `ui::Cursor` names no text, so finding the character under a point would mean giving it the `Measure` callback - a change to what a cursor is rather than an addition to it
 [] there is no selection in a text box, so no cut, copy or paste over a range. `TextBox::insert()` takes a run of characters, so a paste is expressible the moment something delivers one
 [] `SDL_StartTextInput` is on for the life of the window rather than for as long as something is focused, which is free on a desktop and would raise an on screen keyboard and never lower it anywhere else
-[] nothing draws into a `LineCanvas` clip. The mechanism landed on 2026-09-07 with the rest of ADR-0037, and the viewport panes that would want it are the editor's
+[] nothing draws into a `LineCanvas` clip ([ADR-0037](adr/0037-clipping-is-a-scissor-the-batch-carries.md)). The viewport panes that would want one are the editor's
 
 ## The game loop
 
-The loop simulates at a fixed step as of 2026-09-06 —
-[ADR-0032](adr/0032-the-loop-simulates-at-a-fixed-step.md), and
-[plans/completed/GameLoopFoundations.md](plans/completed/GameLoopFoundations.md).
+The loop simulates at a fixed step and renders at a variable one -
+[ADR-0032](adr/0032-the-loop-simulates-at-a-fixed-step.md).
 
 [] nothing reads `Engine::alpha()`. A renderer that interpolated between the last two simulation states would use it; until one does, the world is drawn snapped to the last completed step and motion is quantised to 60 Hz however fast the display is
 [] only pong draws the frame statistics. `ui::StatisticsOverlay` is the api's, and tetris, voxel and vertical3d each already hold the `TextRenderer` it needs
 
 ## Ongoing workstreams
 
-**Tests.** Every library needing neither a window nor a GPU is covered as of 2026-09-04. What
-is left needs one: everything below the recorder in `api/render`, `Feature::Window`, and
+**Tests.** Every library needing neither a window nor a GPU is covered. What is left needs one:
+everything below the recorder in `api/render`, `Feature::Window`, and
 `audio::Engine::initialize()` — all of it waiting on
 [ADR-0007](adr/0007-ci-rendering-tests.md).
 
@@ -134,7 +117,7 @@ like is the live question in it, and
 
 Open work, for when the app is what moves forward rather than the platform.
 
-[] 55 of the menu's 75 commands have no handler and log themselves
+[] 55 of the menu's 76 commands have no handler and log themselves
 [] there is no modelling operation, so a component mode selects a face and then moves the whole object
 [] one thing is selected at a time - no rubber band and no shift-click
 [] there is no file chooser, no "save as" and no dirty flag
