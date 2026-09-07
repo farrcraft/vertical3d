@@ -139,6 +139,46 @@ fill(0.30f, 0.62f, 0.36f, 1.0f),
 rule(0.24f, 0.26f, 0.32f, 1.0f) {
 }
 
+Immediate::Row::Row() noexcept :
+margin(0.0f),
+right(0.0f),
+penY(0.0f),
+top(0.0f),
+height(0.0f),
+lastRight(0.0f),
+sameLine(false) {
+}
+
+Immediate::Window::Window() noexcept :
+open(false),
+margin(0.0f),
+right(0.0f),
+id(0),
+scroll(0),
+bodyMin(0.0f, 0.0f),
+bodyMax(0.0f, 0.0f),
+contentTop(0.0f),
+scrolls(false),
+clipped(false) {
+}
+
+Immediate::TabStrip::TabStrip() noexcept :
+id(0),
+open(false),
+pen(0.0f),
+top(0.0f),
+index(0),
+wanted(0),
+changed(false),
+taken(false) {
+}
+
+Immediate::Table::Table() noexcept :
+open(false),
+left(0.0f),
+column(0) {
+}
+
 Immediate::Immediate(const Measure& measure, const Write& write) :
     measure_(measure),
     write_(write),
@@ -149,36 +189,8 @@ Immediate::Immediate(const Measure& measure, const Write& write) :
     hovering_(0),
     active_(0),
     frame_(0),
-    margin_(0.0f),
-    right_(0.0f),
-    penY_(0.0f),
-    rowTop_(0.0f),
-    rowHeight_(0.0f),
-    lastRight_(0.0f),
-    sameLine_(false),
     disabled_(0),
-    inWindow_(false),
-    windowMargin_(0.0f),
-    windowRight_(0.0f),
-    window_(0),
-    windowScroll_(0),
-    bodyMin_(0.0f, 0.0f),
-    bodyMax_(0.0f, 0.0f),
-    contentTop_(0.0f),
-    windowScrolls_(false),
-    windowClipped_(false),
-    wheeled_(0),
-    tabBar_(0),
-    inTabBar_(false),
-    tabPen_(0.0f),
-    tabTop_(0.0f),
-    tabIndex_(0),
-    tabWanted_(0),
-    tabChanged_(false),
-    tabTaken_(false),
-    inTable_(false),
-    tableLeft_(0.0f),
-    columnIndex_(0) {
+    wheeled_(0) {
 }
 
 // out of line, so that the header need not complete the types the members hold
@@ -229,15 +241,15 @@ void Immediate::begin(v3d::render::realtime::Canvas* canvas, const Input& input)
     hovering_ = 0;
     ids_.clear();
     disabled_ = 0;
-    inWindow_ = false;
-    windowClipped_ = false;
+    window_.open = false;
+    window_.clipped = false;
     wheeled_ = 0;
-    inTabBar_ = false;
-    inTable_ = false;
-    sameLine_ = false;
-    margin_ = 0.0f;
-    penY_ = 0.0f;
-    right_ = canvas == nullptr ? 0.0f : static_cast<float>(canvas->width());
+    tabs_.open = false;
+    table_.open = false;
+    row_.sameLine = false;
+    row_.margin = 0.0f;
+    row_.penY = 0.0f;
+    row_.right = canvas == nullptr ? 0.0f : static_cast<float>(canvas->width());
 }
 
 void Immediate::end() {
@@ -293,17 +305,17 @@ void Immediate::popId() {
 
 glm::vec2 Immediate::place(const glm::vec2& size) {
     glm::vec2 corner;
-    if (sameLine_) {
-        corner = glm::vec2(lastRight_ + dressing_.spacing, rowTop_);
-        sameLine_ = false;
+    if (row_.sameLine) {
+        corner = glm::vec2(row_.lastRight + dressing_.spacing, row_.top);
+        row_.sameLine = false;
     } else {
-        rowTop_ = penY_;
-        rowHeight_ = 0.0f;
-        corner = glm::vec2(margin_, rowTop_);
+        row_.top = row_.penY;
+        row_.height = 0.0f;
+        corner = glm::vec2(row_.margin, row_.top);
     }
-    lastRight_ = corner.x + size.x;
-    rowHeight_ = std::max(rowHeight_, size.y);
-    penY_ = rowTop_ + rowHeight_ + dressing_.spacing;
+    row_.lastRight = corner.x + size.x;
+    row_.height = std::max(row_.height, size.y);
+    row_.penY = row_.top + row_.height + dressing_.spacing;
     return corner;
 }
 
@@ -379,39 +391,39 @@ bool Immediate::window(const std::string& title, const glm::vec2& position, cons
         hovering_ = id;
     }
 
-    inWindow_ = true;
-    windowMargin_ = margin_;
-    windowRight_ = right_;
-    window_ = id;
-    windowScroll_ = identify(title + " scrollbar");
-    margin_ = min.x + dressing_.padding;
-    right_ = max.x - dressing_.padding;
-    penY_ = barMax.y + dressing_.spacing;
-    sameLine_ = false;
-    windowClipped_ = false;
-    windowScrolls_ = false;
+    window_.open = true;
+    window_.margin = row_.margin;
+    window_.right = row_.right;
+    window_.id = id;
+    window_.scroll = identify(title + " scrollbar");
+    row_.margin = min.x + dressing_.padding;
+    row_.right = max.x - dressing_.padding;
+    row_.penY = barMax.y + dressing_.spacing;
+    row_.sameLine = false;
+    window_.clipped = false;
+    window_.scrolls = false;
     if (retained.collapsed) {
         return false;
     }
 
-    bodyMin_ = glm::vec2(min.x + dressing_.borderWidth, barMax.y);
-    bodyMax_ = glm::vec2(max.x - dressing_.borderWidth, max.y - dressing_.borderWidth);
-    contentTop_ = barMax.y + dressing_.spacing;
+    window_.bodyMin = glm::vec2(min.x + dressing_.borderWidth, barMax.y);
+    window_.bodyMax = glm::vec2(max.x - dressing_.borderWidth, max.y - dressing_.borderWidth);
+    window_.contentTop = barMax.y + dressing_.spacing;
 
     // whether there is a bar is decided by what the frame before this one drew, because how
     // tall the content is is only known once it has been drawn
-    const float view = std::max(bodyMax_.y - contentTop_, 0.0f);
-    windowScrolls_ = retained.content > view;
-    if (windowScrolls_) {
-        right_ -= dressing_.scrollbarWidth + dressing_.spacing;
+    const float view = std::max(window_.bodyMax.y - window_.contentTop, 0.0f);
+    window_.scrolls = retained.content > view;
+    if (window_.scrolls) {
+        row_.right -= dressing_.scrollbarWidth + dressing_.spacing;
         retained.scroll = std::clamp(retained.scroll, 0.0f, retained.content - view);
     } else {
         retained.scroll = 0.0f;
     }
 
-    penY_ = contentTop_ - retained.scroll;
-    canvas_->clip(bodyMin_, bodyMax_);
-    windowClipped_ = true;
+    row_.penY = window_.contentTop - retained.scroll;
+    canvas_->clip(window_.bodyMin, window_.bodyMax);
+    window_.clipped = true;
 
     // the wheel turns the window the cursor is over, and a window drawn later is over one
     // drawn before it, so the last to claim the cursor keeps it
@@ -422,39 +434,39 @@ bool Immediate::window(const std::string& title, const glm::vec2& position, cons
 }
 
 void Immediate::endWindow() {
-    if (!inWindow_) {
+    if (!window_.open) {
         return;
     }
-    if (windowClipped_) {
+    if (window_.clipped) {
         canvas_->unclip();
-        windowClipped_ = false;
+        window_.clipped = false;
 
-        Retained& retained = retain(window_);
+        Retained& retained = retain(window_.id);
         // how tall what was drawn came to. The pen has the scroll taken out of it and the
         // gap after the last row left in, so both go back before it is a height
-        retained.content = std::max(penY_ + retained.scroll - dressing_.spacing - contentTop_, 0.0f);
+        retained.content = std::max(row_.penY + retained.scroll - dressing_.spacing - window_.contentTop, 0.0f);
 
-        const float view = std::max(bodyMax_.y - contentTop_, 0.0f);
+        const float view = std::max(window_.bodyMax.y - window_.contentTop, 0.0f);
         const float span = std::max(retained.content - view, 0.0f);
-        if (windowScrolls_) {
+        if (window_.scrolls) {
             scrollbar(view, span, &retained.scroll);
         }
-        if (wheeled_ == window_ && input_.wheel != 0.0f) {
+        if (wheeled_ == window_.id && input_.wheel != 0.0f) {
             // a notch away from the reader shows what is above, which is a smaller offset
             retained.scroll = std::clamp(retained.scroll - input_.wheel * dressing_.lineHeight * wheelRows,
                 0.0f, span);
         }
     }
-    margin_ = windowMargin_;
-    right_ = windowRight_;
-    inWindow_ = false;
-    windowScrolls_ = false;
-    sameLine_ = false;
+    row_.margin = window_.margin;
+    row_.right = window_.right;
+    window_.open = false;
+    window_.scrolls = false;
+    row_.sameLine = false;
 }
 
 void Immediate::scrollbar(float view, float span, float* scroll) {
-    const glm::vec2 min(bodyMax_.x - dressing_.scrollbarWidth, contentTop_);
-    const glm::vec2 max(bodyMax_.x, bodyMax_.y);
+    const glm::vec2 min(window_.bodyMax.x - dressing_.scrollbarWidth, window_.contentTop);
+    const glm::vec2 max(window_.bodyMax.x, window_.bodyMax.y);
     const float track = max.y - min.y;
     if (track <= 0.0f || view <= 0.0f) {
         return;
@@ -466,7 +478,7 @@ void Immediate::scrollbar(float view, float span, float* scroll) {
         std::min(component::Scrollbar::minimumThumb, track), track);
     const float room = track - length;
 
-    const Reaction reaction = interact(windowScroll_, min, max);
+    const Reaction reaction = interact(window_.scroll, min, max);
     if (reaction.held && room > 0.0f) {
         // the cursor holds the middle of the thumb, so what is under it stays under it
         *scroll = span * std::clamp((input_.cursor.y - min.y - length * 0.5f) / room, 0.0f, 1.0f);
@@ -507,7 +519,7 @@ void Immediate::textWrapped(const std::string& line) {
     if (canvas_ == nullptr) {
         return;
     }
-    for (const std::string& row : wrap(line, right_ - margin_, measure_)) {
+    for (const std::string& row : wrap(line, row_.right - row_.margin, measure_)) {
         text(row);
     }
 }
@@ -558,7 +570,7 @@ bool Immediate::selectable(const std::string& label, bool selected) {
     if (canvas_ == nullptr) {
         return false;
     }
-    const glm::vec2 size(right_ - margin_, dressing_.lineHeight);
+    const glm::vec2 size(row_.right - row_.margin, dressing_.lineHeight);
     const glm::vec2 min = place(size);
     const Id id = identify(label);
     const Reaction reaction = interact(id, min, min + size);
@@ -577,7 +589,7 @@ bool Immediate::dragInt(const std::string& label, int* value, int low, int high)
     if (canvas_ == nullptr || value == nullptr) {
         return false;
     }
-    const glm::vec2 size(right_ - margin_, dressing_.barHeight);
+    const glm::vec2 size(row_.right - row_.margin, dressing_.barHeight);
     const glm::vec2 min = place(size);
     const Id id = identify(label);
     const Reaction reaction = interact(id, min, min + size);
@@ -603,7 +615,7 @@ void Immediate::progressBar(float fraction, const std::string& overlay) {
     if (canvas_ == nullptr) {
         return;
     }
-    const glm::vec2 size(right_ - margin_, dressing_.lineHeight);
+    const glm::vec2 size(row_.right - row_.margin, dressing_.lineHeight);
     const glm::vec2 min = place(size);
     const glm::vec2 max = min + size;
 
@@ -622,14 +634,14 @@ void Immediate::separator() {
     if (canvas_ == nullptr) {
         return;
     }
-    const glm::vec2 size(right_ - margin_, ruleWidth + dressing_.spacing);
+    const glm::vec2 size(row_.right - row_.margin, ruleWidth + dressing_.spacing);
     const glm::vec2 min = place(size);
     const float middle = min.y + dressing_.spacing * 0.5f;
     canvas_->rect(glm::vec2(min.x, middle), glm::vec2(min.x + size.x, middle + ruleWidth), dressing_.rule);
 }
 
 void Immediate::sameLine() {
-    sameLine_ = true;
+    row_.sameLine = true;
 }
 
 void Immediate::beginDisabled() {
@@ -646,40 +658,40 @@ bool Immediate::tabBar(const std::string& id) {
     if (canvas_ == nullptr) {
         return false;
     }
-    tabBar_ = identify(id);
-    inTabBar_ = true;
-    tabIndex_ = 0;
-    tabChanged_ = false;
-    tabTaken_ = false;
+    tabs_.id = identify(id);
+    tabs_.open = true;
+    tabs_.index = 0;
+    tabs_.changed = false;
+    tabs_.taken = false;
     // the strip takes a row of its own and the pen goes past it, so what a selected tab
     // holds is drawn under the whole strip rather than beside the next tab
-    tabTop_ = penY_;
-    tabPen_ = margin_;
-    penY_ = tabTop_ + dressing_.barHeight;
-    canvas_->rect(glm::vec2(margin_, penY_), glm::vec2(right_, penY_ + ruleWidth), dressing_.rule);
-    penY_ += ruleWidth + dressing_.spacing;
-    sameLine_ = false;
+    tabs_.top = row_.penY;
+    tabs_.pen = row_.margin;
+    row_.penY = tabs_.top + dressing_.barHeight;
+    canvas_->rect(glm::vec2(row_.margin, row_.penY), glm::vec2(row_.right, row_.penY + ruleWidth), dressing_.rule);
+    row_.penY += ruleWidth + dressing_.spacing;
+    row_.sameLine = false;
     return true;
 }
 
 bool Immediate::tab(const std::string& label) {
-    if (canvas_ == nullptr || !inTabBar_) {
+    if (canvas_ == nullptr || !tabs_.open) {
         return false;
     }
-    Retained& retained = retain(tabBar_);
-    const unsigned int index = tabIndex_++;
+    Retained& retained = retain(tabs_.id);
+    const unsigned int index = tabs_.index++;
     const glm::vec2 size(measure_(label) + dressing_.padding * 2.0f, dressing_.barHeight);
-    const glm::vec2 min(tabPen_, tabTop_);
-    tabPen_ += size.x + dressing_.spacing;
+    const glm::vec2 min(tabs_.pen, tabs_.top);
+    tabs_.pen += size.x + dressing_.spacing;
 
     const Id id = identify(label);
     const Reaction reaction = interact(id, min, min + size);
     if (reaction.clicked) {
-        tabWanted_ = index;
-        tabChanged_ = true;
+        tabs_.wanted = index;
+        tabs_.changed = true;
     }
     const bool selected = retained.tab == index;
-    tabTaken_ = tabTaken_ || selected;
+    tabs_.taken = tabs_.taken || selected;
 
     fillBox(canvas_, min, min + size, dressing_.radius, face(selected, reaction.hovered));
     this->label(label, min + glm::vec2(dressing_.padding, 0.0f), size,
@@ -688,17 +700,17 @@ bool Immediate::tab(const std::string& label) {
 }
 
 void Immediate::endTabBar() {
-    if (!inTabBar_) {
+    if (!tabs_.open) {
         return;
     }
-    if (tabChanged_) {
-        retain(tabBar_).tab = tabWanted_;
-    } else if (!tabTaken_ && tabIndex_ > 0) {
+    if (tabs_.changed) {
+        retain(tabs_.id).tab = tabs_.wanted;
+    } else if (!tabs_.taken && tabs_.index > 0) {
         // a strip whose selected tab is no longer there falls back to the first, so a bar
         // is never drawn with nothing chosen
-        retain(tabBar_).tab = 0;
+        retain(tabs_.id).tab = 0;
     }
-    inTabBar_ = false;
+    tabs_.open = false;
 }
 
 bool Immediate::table(const std::string& id, unsigned int columns) {
@@ -706,28 +718,28 @@ bool Immediate::table(const std::string& id, unsigned int columns) {
         return false;
     }
     pushId(id);
-    inTable_ = true;
-    headers_.clear();
-    widths_.assign(columns, 0.0f);
-    tableLeft_ = margin_;
-    columnIndex_ = 0;
-    sameLine_ = false;
+    table_.open = true;
+    table_.headers.clear();
+    table_.widths.assign(columns, 0.0f);
+    table_.left = row_.margin;
+    table_.column = 0;
+    row_.sameLine = false;
     return true;
 }
 
 void Immediate::column(const std::string& label, float width) {
-    if (!inTable_ || headers_.size() >= widths_.size()) {
+    if (!table_.open || table_.headers.size() >= table_.widths.size()) {
         return;
     }
-    widths_[headers_.size()] = width;
-    headers_.push_back(label);
+    table_.widths[table_.headers.size()] = width;
+    table_.headers.push_back(label);
 }
 
 float Immediate::columnStart(unsigned int index) const {
     // a column given no width of its own shares out what the named ones left
     float named = 0.0f;
     unsigned int unnamed = 0;
-    for (const float width : widths_) {
+    for (const float width : table_.widths) {
         if (width > 0.0f) {
             named += width;
         } else {
@@ -735,57 +747,57 @@ float Immediate::columnStart(unsigned int index) const {
         }
     }
     const float spare = unnamed == 0 ? 0.0f
-        : std::max(0.0f, (right_ - tableLeft_ - named) / static_cast<float>(unnamed));
+        : std::max(0.0f, (row_.right - table_.left - named) / static_cast<float>(unnamed));
 
-    float start = tableLeft_;
-    for (unsigned int column = 0; column < index && column < widths_.size(); column++) {
-        start += widths_[column] > 0.0f ? widths_[column] : spare;
+    float start = table_.left;
+    for (unsigned int column = 0; column < index && column < table_.widths.size(); column++) {
+        start += table_.widths[column] > 0.0f ? table_.widths[column] : spare;
     }
     return start;
 }
 
 void Immediate::headerRow() {
-    if (canvas_ == nullptr || !inTable_) {
+    if (canvas_ == nullptr || !table_.open) {
         return;
     }
-    const glm::vec2 min(tableLeft_, penY_);
-    const glm::vec2 max(right_, penY_ + dressing_.lineHeight);
+    const glm::vec2 min(table_.left, row_.penY);
+    const glm::vec2 max(row_.right, row_.penY + dressing_.lineHeight);
     fillBox(canvas_, min, max, 0.0f, dressing_.titleBar);
-    for (std::size_t index = 0; index < headers_.size(); index++) {
+    for (std::size_t index = 0; index < table_.headers.size(); index++) {
         const glm::vec2 corner(columnStart(static_cast<unsigned int>(index)) + dressing_.padding * 0.5f, min.y);
-        label(headers_[index], corner, glm::vec2(0.0f, dressing_.lineHeight), dressing_.dimText);
+        label(table_.headers[index], corner, glm::vec2(0.0f, dressing_.lineHeight), dressing_.dimText);
     }
-    penY_ = max.y + dressing_.spacing;
+    row_.penY = max.y + dressing_.spacing;
     nextRow();
 }
 
 void Immediate::nextRow() {
-    if (!inTable_) {
+    if (!table_.open) {
         return;
     }
-    columnIndex_ = 0;
-    margin_ = columnStart(0);
-    sameLine_ = false;
+    table_.column = 0;
+    row_.margin = columnStart(0);
+    row_.sameLine = false;
 }
 
 void Immediate::nextColumn() {
-    if (!inTable_) {
+    if (!table_.open) {
         return;
     }
-    columnIndex_++;
+    table_.column++;
     // staying on the row is what sameLine() already does; the column start is where the
     // next widget lands rather than wherever the last one ended
-    sameLine_ = true;
-    lastRight_ = columnStart(columnIndex_) - dressing_.spacing;
+    row_.sameLine = true;
+    row_.lastRight = columnStart(table_.column) - dressing_.spacing;
 }
 
 void Immediate::endTable() {
-    if (!inTable_) {
+    if (!table_.open) {
         return;
     }
-    inTable_ = false;
-    margin_ = tableLeft_;
-    sameLine_ = false;
+    table_.open = false;
+    row_.margin = table_.left;
+    row_.sameLine = false;
     popId();
 }
 

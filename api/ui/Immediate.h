@@ -326,6 +326,68 @@ class Immediate {
     Retained& retain(Id id);
 
     /**
+     * Where the next widget goes, and what the row being written has come to.
+     **/
+    struct Row final {
+        Row() noexcept;
+
+        float margin;     /**< where a new row starts **/
+        float right;      /**< where the room a widget may take ends **/
+        float penY;       /**< where the next row starts **/
+        float top;        /**< the top of the row being written **/
+        float height;     /**< the tallest thing on it so far **/
+        float lastRight;  /**< just past the last widget, which sameLine() starts from **/
+        bool sameLine;
+    };
+
+    /**
+     * The window being written, and the row state it interrupted.
+     **/
+    struct Window final {
+        Window() noexcept;
+
+        bool open;           /**< whether a window is being written at all **/
+        float margin;        /**< the row margin to go back to at endWindow() **/
+        float right;         /**< and the right edge **/
+        Id id;               /**< whose scroll and content the one being written are **/
+        Id scroll;           /**< the id its scrollbar answers the cursor as **/
+        glm::vec2 bodyMin;   /**< the part of it below the title bar, which is what is cut to **/
+        glm::vec2 bodyMax;
+        float contentTop;    /**< where its content would start if it were not scrolled **/
+        bool scrolls;
+        bool clipped;
+    };
+
+    /**
+     * The tab strip being written.
+     **/
+    struct TabStrip final {
+        TabStrip() noexcept;
+
+        Id id;
+        bool open;
+        float pen;              /**< how far along the strip the next tab goes **/
+        float top;
+        unsigned int index;     /**< which tab of the strip this one is **/
+        unsigned int wanted;    /**< the tab a click asked for, taken at endTabBar() **/
+        bool changed;
+        bool taken;             /**< whether the selected tab was drawn at all **/
+    };
+
+    /**
+     * The table being written.
+     **/
+    struct Table final {
+        Table() noexcept;
+
+        bool open;
+        std::vector<std::string> headers;
+        std::vector<float> widths;
+        float left;             /**< where the row starts, which columns are measured from **/
+        unsigned int column;    /**< which column the pen is in **/
+    };
+
+    /**
      * Hash a label with the top of the id stack.
      **/
     Id identify(const std::string& label) const;
@@ -402,45 +464,12 @@ class Immediate {
     std::map<Id, Retained> state_;
     std::uint64_t frame_;
 
-    float margin_;      /**< where a new row starts **/
-    float right_;       /**< where the room a widget may take ends **/
-    float penY_;        /**< where the next row starts **/
-    float rowTop_;      /**< the top of the row being written **/
-    float rowHeight_;   /**< the tallest thing on it so far **/
-    float lastRight_;   /**< just past the last widget, which sameLine() starts from **/
-    bool sameLine_;
-
+    Row row_;
+    Window window_;
+    TabStrip tabs_;
+    Table table_;
     unsigned int disabled_;
-
-    /**< the window being written, and what it interrupted **/
-    bool inWindow_;
-    float windowMargin_;
-    float windowRight_;
-    Id window_;          /**< whose scroll and content the one being written are **/
-    Id windowScroll_;    /**< the id its scrollbar answers the cursor as **/
-    glm::vec2 bodyMin_;  /**< the part of it below the title bar, which is what is cut to **/
-    glm::vec2 bodyMax_;
-    float contentTop_;   /**< where its content would start if it were not scrolled **/
-    bool windowScrolls_;
-    bool windowClipped_;
-    Id wheeled_;         /**< the topmost window the cursor is over, which the wheel turns **/
-
-    /**< the tab strip being written **/
-    Id tabBar_;
-    bool inTabBar_;
-    float tabPen_;
-    float tabTop_;
-    unsigned int tabIndex_;
-    unsigned int tabWanted_;
-    bool tabChanged_;
-    bool tabTaken_;
-
-    /**< the table being written **/
-    bool inTable_;
-    std::vector<std::string> headers_;
-    std::vector<float> widths_;
-    float tableLeft_;
-    unsigned int columnIndex_;
+    Id wheeled_;  /**< the topmost window the cursor is over, which the wheel turns **/
 };
 
 };  // namespace v3d::ui
