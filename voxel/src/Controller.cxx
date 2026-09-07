@@ -98,7 +98,8 @@ bool Controller::simulate(float step) {
 /**
  **/
 bool Controller::render() {
-    renderer_->draw();
+    const v3d::engine::Statistics& measured = statistics();
+    renderer_->draw({ measured.mean(), measured.last(), measured.steps() });
     return true;
 }
 

@@ -12,8 +12,9 @@
 #include <string>
 #include <vector>
 
-#include "DebugOverlay.h"
 #include "Scene.h"
+#include "Version.h"
+#include "game/Player.h"
 
 #include "engine/Camera.h"
 #include "engine/ChunkMeshBuilder.h"
@@ -55,6 +56,11 @@ const char* const overlayPass = "overlay";
  * The size the ui and the debug overlay are drawn at, which the one atlas is scaled to per
  * ADR-0036 rather than rasterized at.
  **/
+/**
+ * What the debug readout's window is titled, which is also the id the layer knows it by.
+ **/
+const char* const debugTitle = "Debug";
+
 const float fontSize = 18.0f;
 
 constexpr glm::vec4 sky(0.4f, 0.6f, 0.9f, 1.0f);
@@ -119,10 +125,13 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
     builder_ = boost::make_shared<MeshBuilder>(scene_->chunks(),
         ChunkMeshBuilder(context_->device(), context_->uploader()));
 
-    debugOverlay_ = boost::make_shared<DebugOverlay>(scene_);
-
     uiRenderer_ = boost::make_shared<v3d::ui::ComponentRenderer>(text_->measure(fontSize), text_->write(&canvas_, fontSize));
     uiRenderer_->dressing().lineHeight = fontSize * 1.4f;
+
+    // the debug readout is a panel written as calls rather than a tree kept in step with
+    // what it shows, per ADR-0035 - it is a function of the frame it is drawn in
+    tools_ = boost::make_shared<v3d::ui::Immediate>(text_->measure(fontSize), text_->write(&canvas_, fontSize));
+    tools_->dressing().lineHeight = fontSize * 1.4f;
 }
 
 /**
@@ -302,7 +311,29 @@ void Renderer::drawTerrain(v3d::render::realtime::Pass* pass) {
 
 /**
  **/
-void Renderer::draw() {
+void Renderer::drawDebug(const v3d::ui::StatisticsOverlay::Sample& statistics) {
+    const glm::vec3 position = scene_->player()->position();
+
+    // the game owns the mouse - it is warped back to the centre of the window every frame
+    // for mouselook - so there is no cursor to offer the layer, and the window is a
+    // readout rather than something to fold
+    tools_->begin(&canvas_, v3d::ui::Immediate::Input());
+    if (tools_->window(debugTitle, glm::vec2(20.0f, 20.0f), glm::vec2(260.0f, 132.0f), 0.85f)) {
+        tools_->text(std::string("Voxel ") + VOXEL_VERSION);
+        // the loop already keeps a rolling mean, so nothing here averages anything
+        tools_->text(std::to_string(statistics.mean / 1000000U) + " ms");
+        std::stringstream where;
+        where.precision(1);
+        where << std::fixed << "x " << position.x << "  y " << position.y << "  z " << position.z;
+        tools_->text(where.str());
+    }
+    tools_->endWindow();
+    tools_->end();
+}
+
+/**
+ **/
+void Renderer::draw(const v3d::ui::StatisticsOverlay::Sample& statistics) {
     glm::ivec2 size;
     if (!engine_.beginFrame(&size)) {
         return;
@@ -322,11 +353,7 @@ void Renderer::draw() {
 
     canvas_.clear();
     if (debug_) {
-        glm::vec2 pen(20.0f, fontSize * 2.0f);
-        for (const std::string& line : debugOverlay_->lines()) {
-            text_->draw(&canvas_, line, pen, textColour, fontSize);
-            pen.y += fontSize * 1.4f;
-        }
+        drawDebug(statistics);
     }
     if (ui_) {
         uiRenderer_->draw(&canvas_, *ui_);
@@ -344,12 +371,10 @@ void Renderer::draw() {
 
 /**
  **/
-void Renderer::tick(unsigned int delta) {
+void Renderer::tick(unsigned int /* delta */) {
+    // the chunk build has a budget per tick rather than a duration, so how long the last
+    // frame took is nothing to it - the loop keeps that, and the debug readout asks
     builder_->build(meshes_, chunkUpdatesPerTick);
-
-    if (debug_) {
-        debugOverlay_->update(delta);
-    }
 }
 
 /**
@@ -371,7 +396,6 @@ void Renderer::resize(int width, int height) {
  **/
 void Renderer::debug(bool status) {
     debug_ = status;
-    debugOverlay_->enable(status);
 }
 
 /**
