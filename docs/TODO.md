@@ -19,7 +19,7 @@ clang-tidy, `/analyze` and cpplint alike.
 |---|---|---|
 | `readability-convert-member-functions-to-static` | 26 |  |
 | `performance-unnecessary-value-param` | 31 | the fix is a const reference, not the by-value-and-move the check suggests |
-| `bugprone-derived-method-shadowing-base-method` | 6 | `size()` on a strip and on a component mean different things |
+| `bugprone-derived-method-shadowing-base-method` | 7 | `size()` on a strip and on a component mean different things, and a toolbar holds buttons where a component holds components |
 | `readability-implicit-bool-conversion` | 69 |  |
 | `bugprone-narrowing-conversions` | 111 |  |
 | `readability-braces-around-statements` | 111 |  |
@@ -65,6 +65,19 @@ that exists today.
 [] a target is single-buffered, so a pass wanting the previous frame's contents needs two and has to swap them itself. A double-buffered target would be the natural next shape
 [] nothing catches a pipeline built against one colour format drawing into a target of another. It is a wrong picture rather than a validation error, because dynamic rendering takes the format from the pipeline
 [] `Frame::passBefore` exists because `Engine3D` creates the colour pass in its constructor. A frame that let a pass say where it belongs, or an engine that created its pass lazily, would not need it
+
+## User interface
+
+A component holds other components and asks for a box as of 2026-09-06 -
+[ADR-0034](adr/0034-a-component-has-children-and-a-box.md). Nothing in the tree draws one
+yet: the editor's menu bar and toolbars are strips the renderer places itself, and the apps
+put up a menu and an overlay. It was built for the huds and plates that need it.
+
+[] nothing clips a child to its parent, and a box that overflows draws outside the one holding it. A scrollbar needs clipping before it needs anything else, which is why `Scrollbar.h` is still an empty declaration
+[] `TabBar`, `TabPage`, `TextBox`, `CheckBox`, `RadioButton`, `Dialog`, `SelectList`, `Spinner`, `ToolTip`, `PopupMenu` and `RadialMenu` are still empty declarations with no loader and no draw path
+[] `Frame` is an empty declaration that `Panel` now covers the drawing half of. Either it becomes the thing with a title bar that a dialog sits in, or it goes
+[] there is no immediate mode layer, so a panel whose contents change every frame is a tree to keep in step by hand. A window, a tab bar and a table over the same canvas would be the shape of one
+[] a percentage of a parent that has not been drawn is a percentage of zero, so the frame after a resize places a child against the previous size
 
 ## The game loop
 

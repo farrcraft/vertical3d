@@ -162,6 +162,20 @@ The ui draws through the same canvas rather than a pass of its own.
 `v3d::ui::ComponentRenderer` adds its panels and highlights as quads and asks the app to write
 its labels, so a game and its menu cost one upload and a draw per texture.
 
+**Drawing the ui is also what lays it out**, per
+[ADR-0019](adr/0019-the-ui-is-laid-out-by-what-draws-it.md) and
+[ADR-0034](adr/0034-a-component-has-children-and-a-box.md). A component holds other
+components; `Component::layout()` says where it sits in the one holding it, as a length per
+axis that is either pixels, a percentage of the parent or `Auto`; and the walk that draws a
+container resolves each box against the box around it and leaves the component holding the
+absolute result in `position()` and `size()`. That result is what `Container::pick` tests a
+cursor against, so nothing is clickable until it has been drawn, and a component answers the
+cursor only when it is `pickable()`. A `VerticalBox` or a `HorizontalBox` writes its
+children's boxes itself rather than resolving them, because their order along the line is
+what a flow list is for. `Panel` and `Bar` round their corners with `Canvas::arc`, which is
+the same triangle fan `circle` is built from and so stays inside the one batched primitive of
+[ADR-0005](adr/0005-one-batched-quad-primitive.md).
+
 ## Line drawing
 
 The second primitive, per [ADR-0011](adr/0011-lines-are-the-second-primitive.md). The editor's

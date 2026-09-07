@@ -298,8 +298,9 @@ BOOST_AUTO_TEST_CASE(an_unresolved_source_leaves_the_handle_unset) {
 }
 
 /**
- * A button, a label and an icon are components a container can hold, and each carries where
- * it is and how big it is.
+ * A button, a label and an icon are components a container can hold, and each carries the
+ * box it asks for. position() and size() stay empty until something draws them, per
+ * ADR-0034.
  **/
 BOOST_AUTO_TEST_CASE(a_container_holds_buttons_labels_and_icons) {
     bool loaded = false;
@@ -324,8 +325,10 @@ BOOST_AUTO_TEST_CASE(a_container_holds_buttons_labels_and_icons) {
     BOOST_CHECK_EQUAL(button->label(), "Go");
     BOOST_CHECK(button->toggle());
     BOOST_CHECK_EQUAL(button->style(), "flat");
-    BOOST_CHECK_CLOSE(button->position().x, 10.0f, 0.001f);
-    BOOST_CHECK_CLOSE(button->size().y, 30.0f, 0.001f);
+    BOOST_CHECK(button->layout().x.unit() == v3d::ui::Length::Unit::Pixels);
+    BOOST_CHECK_CLOSE(button->layout().x.value(), 10.0f, 0.001f);
+    BOOST_CHECK_CLOSE(button->layout().height.value(), 30.0f, 0.001f);
+    BOOST_CHECK_CLOSE(button->position().x, 0.0f, 0.001f);
     BOOST_CHECK_EQUAL(button->event().str(), "ui::quit");
 
     const boost::shared_ptr<v3d::ui::component::Label> label =

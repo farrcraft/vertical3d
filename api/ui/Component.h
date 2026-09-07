@@ -6,9 +6,12 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
+#include <boost/shared_ptr.hpp>
 #include <glm/glm.hpp>
 
+#include "Layout.h"
 #include "component/Type.h"
 #include "style/Theme.h"
 
@@ -19,6 +22,11 @@ namespace v3d::ui {
 /**
  * A vGUI Component
  * All UI components are all derived from this class.
+ *
+ * A component holds other components, and layout() says where it sits in the one holding
+ * it. position() and size() are the box it was last drawn in - the output of the walk
+ * that resolves layout(), and what the cursor is tested against, per ADR-0019 and
+ * ADR-0034.
  */
 class Component {
  public:
@@ -100,7 +108,52 @@ class Component {
      **/
     component::Type type() const;
 
+    /**
+     * Set the component's z index depth value, which is what a container draws in order
+     * of. Equal depths keep the order they were added in.
+     * @param index the new depth
+     **/
+    void depth(unsigned int index);
+
+    /**
+     * @return where this component asks to be, to be changed in place
+     **/
+    Layout& layout() noexcept;
+    const Layout& layout() const noexcept;
+
+    /**
+     * Hold another component inside this one. The child is laid out against this
+     * component's box and drawn after it.
+     *
+     * A component is held by exactly one parent; adding one that already has another
+     * leaves it in the first.
+     **/
+    void add(const boost::shared_ptr<Component>& child);
+
+    /**
+     * @return what this component holds, in the order it was added
+     **/
+    const std::vector<boost::shared_ptr<Component>>& children() const noexcept;
+
+    /**
+     * @return the component this one is laid out inside, or null when it is a root
+     **/
+    Component* parent() const noexcept;
+
+    /**
+     * Get whether the component answers the cursor.
+     *
+     * False by default, and deliberately: a hud is mostly labels and bars drawn over a
+     * scene that has to stay clickable, so a component takes a press only when it was
+     * asked to. ADR-0034.
+     **/
+    bool pickable() const;
+    void pickable(bool pick);
+
  private:
+    Layout layout_;
+    std::vector<boost::shared_ptr<Component>> children_;
+    Component* parent_;
     glm::vec2 position_;
     glm::vec2 size_;
     unsigned int zIndex_;
@@ -108,7 +161,16 @@ class Component {
     std::string style_;
     std::string name_;
     bool visible_;
+    bool pickable_;
     component::Type type_;
 };
+
+/**
+ * Sort components into the order they are drawn: by z index, keeping the order they were
+ * added in between equal depths.
+ *
+ * @return a sorted copy, deepest first
+ **/
+std::vector<boost::shared_ptr<Component>> ordered(const std::vector<boost::shared_ptr<Component>>& components);
 
 };  // end namespace v3d::ui

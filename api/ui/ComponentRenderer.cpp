@@ -41,6 +41,17 @@ const float ruleWidth = 1.0f;
 const float defaultCorner = 8.0f;
 
 /**
+ * How many segments one rounded corner is approximated with. A corner is a small arc and
+ * a handful of triangles is enough of one; the cost is per panel per frame.
+ **/
+const unsigned int cornerSides = 6;
+
+/**
+ * A quarter turn, which is what each corner of a rounded box sweeps.
+ **/
+const float quarterTurn = 1.5707963267948966f;
+
+/**
  * Leave a component holding the bounds it was drawn in, which is what the cursor is
  * tested against per ADR-0019.
  *
@@ -94,8 +105,12 @@ padding(24.0f),
 barHeight(28.0f),
 iconSize(22.0f),
 panelPadding(4.0f),
+borderWidth(1.0f),
+radius(0.0f),
 panel(0.05f, 0.06f, 0.09f, 0.92f),
 border(0.35f, 0.38f, 0.45f, 1.0f),
+track(0.12f, 0.13f, 0.17f, 1.0f),
+fill(0.30f, 0.62f, 0.36f, 1.0f),
 text(0.78f, 0.80f, 0.84f, 1.0f),
 activeText(1.0f, 1.0f, 1.0f, 1.0f),
 highlight(0.16f, 0.34f, 0.58f, 1.0f),
@@ -130,6 +145,8 @@ void ComponentRenderer::theme(const boost::shared_ptr<style::Theme>& theme) {
 
     colour(chrome, "panel", &style_.panel);
     colour(chrome, "border", &style_.border);
+    colour(chrome, "track", &style_.track);
+    colour(chrome, "fill", &style_.fill);
     colour(chrome, "text", &style_.text);
     colour(chrome, "active-text", &style_.activeText);
     colour(chrome, "highlight", &style_.highlight);
@@ -140,6 +157,8 @@ void ComponentRenderer::theme(const boost::shared_ptr<style::Theme>& theme) {
     metric(chrome, "bar-height", &style_.barHeight);
     metric(chrome, "icon-size", &style_.iconSize);
     metric(chrome, "panel-padding", &style_.panelPadding);
+    metric(chrome, "border-width", &style_.borderWidth);
+    metric(chrome, "radius", &style_.radius);
 }
 
 /**
@@ -172,11 +191,17 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const Engine
 /**
  **/
 void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const Container& container) const {
+    if (canvas == nullptr) {
+        return;
+    }
     // what the strips drawn so far have taken off the top and the left edges, which is
     // where the next one starts
     glm::vec2 taken(0.0f, 0.0f);
+    // the box every root component is laid out against
+    const v3d::type::Bound2D area(glm::vec2(0.0f, 0.0f),
+        glm::vec2(static_cast<float>(canvas->width()), static_cast<float>(canvas->height())));
     std::vector<boost::shared_ptr<component::MenuBar>> bars;
-    for (const boost::shared_ptr<Component>& component : container.components()) {
+    for (const boost::shared_ptr<Component>& component : container.ordered()) {
         if (!component || !component->visible()) {
             continue;
         }
@@ -200,12 +225,10 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const Contai
                 draw(canvas, bar, glm::vec2(taken.x, taken.y));
                 taken.x += bar->bound().size().x + ruleWidth;
             }
-        } else if (component->type() == component::Type::BUTTON) {
-            draw(canvas, boost::dynamic_pointer_cast<component::Button>(component));
-        } else if (component->type() == component::Type::LABEL) {
-            draw(canvas, boost::dynamic_pointer_cast<component::Label>(component));
-        } else if (component->type() == component::Type::ICON) {
-            draw(canvas, boost::dynamic_pointer_cast<component::Icon>(component));
+        } else {
+            // everything else is a box: it is laid out against the canvas, and whatever it
+            // holds is laid out against it
+            walk(canvas, component, component->layout().resolve(area, natural(*component), component->position()));
         }
     }
     for (const boost::shared_ptr<component::MenuBar>& bar : bars) {
@@ -220,7 +243,11 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
         return;
     }
     const std::string text(label->text());
-    place(*label, label->position(), glm::vec2(measure_(text), style_.lineHeight));
+    glm::vec2 size = label->size();
+    if (size.x <= 0.0f || size.y <= 0.0f) {
+        size = glm::vec2(measure_(text), style_.lineHeight);
+    }
+    place(*label, label->position(), size);
 
     const glm::vec2 pen(label->position().x, label->position().y + style_.lineHeight * 0.75f);
     write_(text, pen, style_.text);
@@ -278,6 +305,222 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
 
     const glm::vec2 baseline(min.x + (size.x - measure_(label)) * 0.5f, min.y + size.y * 0.7f);
     write_(label, baseline, lit ? style_.activeText : style_.text);
+}
+
+/**
+ **/
+void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Panel>& panel) const {
+    if (canvas == nullptr || !panel) {
+        return;
+    }
+    glm::vec4 inside = style_.panel;
+    glm::vec4 outline = style_.border;
+    float width = style_.borderWidth;
+    float radius = style_.radius;
+    const boost::shared_ptr<v3d::ui::Style> dress = lookup("panel", panel->style());
+    if (dress) {
+        colour(dress, "background", &inside);
+        colour(dress, "border", &outline);
+        metric(dress, "border-width", &width);
+        metric(dress, "radius", &radius);
+    }
+    const glm::vec2 min = panel->position();
+    plate(canvas, min, min + panel->size(), radius, width, inside, outline);
+}
+
+/**
+ **/
+void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Bar>& bar) const {
+    if (canvas == nullptr || !bar) {
+        return;
+    }
+    glm::vec4 empty = style_.track;
+    glm::vec4 filled = style_.fill;
+    glm::vec4 outline = style_.border;
+    float width = style_.borderWidth;
+    float radius = style_.radius;
+    const boost::shared_ptr<v3d::ui::Style> dress = lookup("bar", bar->style());
+    if (dress) {
+        colour(dress, "track", &empty);
+        colour(dress, "fill", &filled);
+        colour(dress, "border", &outline);
+        metric(dress, "border-width", &width);
+        metric(dress, "radius", &radius);
+    }
+
+    const glm::vec2 min = bar->position();
+    const glm::vec2 max = min + bar->size();
+    plate(canvas, min, max, radius, width, empty, outline);
+    if (bar->fraction() <= 0.0f) {
+        return;
+    }
+
+    // the fill sits inside the border rather than under it, so a bar at full still reads
+    // as something in a track
+    const glm::vec2 inset(width, width);
+    glm::vec2 low = min + inset;
+    glm::vec2 high = max - inset;
+    if (bar->direction() == component::Bar::Direction::Horizontal) {
+        high.x = low.x + (high.x - low.x) * bar->fraction();
+    } else {
+        // a vertical bar fills from the bottom, which is the way one is read
+        low.y = high.y - (high.y - low.y) * bar->fraction();
+    }
+    fill(canvas, low, high, std::max(0.0f, radius - width), filled);
+}
+
+/**
+ **/
+void ComponentRenderer::fill(v3d::render::realtime::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
+    float radius, const glm::vec4& colour) const {
+    const glm::vec2 size = max - min;
+    if (canvas == nullptr || size.x <= 0.0f || size.y <= 0.0f || colour.a <= 0.0f) {
+        return;
+    }
+    // a radius past half the shorter side would fold the box over itself
+    const float corner = std::min(radius, std::min(size.x, size.y) * 0.5f);
+    if (corner <= 0.0f) {
+        canvas->rect(min, max, colour);
+        return;
+    }
+
+    // three bands and four wedges, none of them overlapping - which matters because a
+    // panel is usually drawn with an alpha, and anything drawn twice under one would show
+    canvas->rect(glm::vec2(min.x + corner, min.y), glm::vec2(max.x - corner, max.y), colour);
+    canvas->rect(glm::vec2(min.x, min.y + corner), glm::vec2(min.x + corner, max.y - corner), colour);
+    canvas->rect(glm::vec2(max.x - corner, min.y + corner), glm::vec2(max.x, max.y - corner), colour);
+
+    canvas->arc(glm::vec2(min.x + corner, min.y + corner), corner, cornerSides, quarterTurn * 2.0f, quarterTurn, colour);
+    canvas->arc(glm::vec2(max.x - corner, min.y + corner), corner, cornerSides, quarterTurn * 3.0f, quarterTurn, colour);
+    canvas->arc(glm::vec2(max.x - corner, max.y - corner), corner, cornerSides, 0.0f, quarterTurn, colour);
+    canvas->arc(glm::vec2(min.x + corner, max.y - corner), corner, cornerSides, quarterTurn, quarterTurn, colour);
+}
+
+/**
+ **/
+void ComponentRenderer::plate(v3d::render::realtime::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
+    float radius, float width, const glm::vec4& inside, const glm::vec4& outline) const {
+    if (width <= 0.0f || outline.a <= 0.0f) {
+        fill(canvas, min, max, radius, inside);
+        return;
+    }
+    // the outline is the same box drawn behind, rather than four edges around, so a
+    // rounded corner needs no second shape to trace it
+    fill(canvas, min, max, radius, outline);
+    const glm::vec2 inset(width, width);
+    fill(canvas, min + inset, max - inset, std::max(0.0f, radius - width), inside);
+}
+
+/**
+ **/
+glm::vec2 ComponentRenderer::natural(const Component& component) const {
+    switch (component.type()) {
+        case component::Type::LABEL: {
+            const auto* label = dynamic_cast<const component::Label*>(&component);
+            return label == nullptr ? glm::vec2(0.0f, 0.0f)
+                : glm::vec2(measure_(std::string(label->text())), style_.lineHeight);
+        }
+        case component::Type::ICON:
+            // an icon given no size is a square the height of a strip, which is the one
+            // size the ui has that is not derived from a string
+            return glm::vec2(style_.barHeight, style_.barHeight);
+        case component::Type::BUTTON: {
+            const auto* button = dynamic_cast<const component::Button*>(&component);
+            return button == nullptr ? glm::vec2(0.0f, 0.0f)
+                : glm::vec2(extent(*button) + style_.padding, style_.barHeight);
+        }
+        default:
+            // a panel, a bar and a box decide nothing for themselves, so an Auto extent on
+            // one is whatever it was last given
+            return component.size();
+    }
+}
+
+/**
+ **/
+void ComponentRenderer::arrange(const component::Box& box, const v3d::type::Bound2D& bounds,
+    std::vector<v3d::type::Bound2D>* boxes) const {
+    const bool vertical = box.type() == component::Type::VERTICAL_FRAME;
+    const glm::vec2 extent = bounds.size();
+    float pen = vertical ? bounds.position().y : bounds.position().x;
+
+    for (const boost::shared_ptr<Component>& child : box.children()) {
+        if (!child || !child->visible()) {
+            // a hidden row leaves no gap behind it, which is what makes a list of however
+            // many rows there are read as one
+            boxes->push_back(v3d::type::Bound2D(bounds.position(), glm::vec2(0.0f, 0.0f)));
+            continue;
+        }
+        const glm::vec2 own = natural(*child);
+        const Layout& layout = child->layout();
+        glm::vec2 size(layout.width.resolve(extent.x, own.x), layout.height.resolve(extent.y, own.y));
+        glm::vec2 corner;
+        if (vertical) {
+            if (box.stretch()) {
+                size.x = extent.x;
+            }
+            corner = glm::vec2(bounds.position().x + layout.x.resolve(extent.x, 0.0f), pen);
+            pen += size.y + box.spacing();
+        } else {
+            if (box.stretch()) {
+                size.y = extent.y;
+            }
+            corner = glm::vec2(pen, bounds.position().y + layout.y.resolve(extent.y, 0.0f));
+            pen += size.x + box.spacing();
+        }
+        boxes->push_back(v3d::type::Bound2D(corner, size));
+    }
+}
+
+/**
+ **/
+void ComponentRenderer::walk(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<Component>& component,
+    const v3d::type::Bound2D& bounds) const {
+    if (canvas == nullptr || !component || !component->visible()) {
+        return;
+    }
+    place(*component, bounds.position(), bounds.size());
+
+    switch (component->type()) {
+        case component::Type::PANEL:
+            draw(canvas, boost::dynamic_pointer_cast<component::Panel>(component));
+            break;
+        case component::Type::BAR:
+            draw(canvas, boost::dynamic_pointer_cast<component::Bar>(component));
+            break;
+        case component::Type::BUTTON:
+            draw(canvas, boost::dynamic_pointer_cast<component::Button>(component));
+            break;
+        case component::Type::LABEL:
+            draw(canvas, boost::dynamic_pointer_cast<component::Label>(component));
+            break;
+        case component::Type::ICON:
+            draw(canvas, boost::dynamic_pointer_cast<component::Icon>(component));
+            break;
+        default:
+            // a box draws nothing of its own - it is whatever it holds
+            break;
+    }
+
+    const std::vector<boost::shared_ptr<Component>>& children = component->children();
+    if (children.empty()) {
+        return;
+    }
+    const auto* box = dynamic_cast<const component::Box*>(component.get());
+    if (box != nullptr) {
+        // a flow box places its children in the order it holds them, because that order is
+        // what it is for. A z index inside one changes nothing
+        std::vector<v3d::type::Bound2D> boxes;
+        boxes.reserve(children.size());
+        arrange(*box, component->bound(), &boxes);
+        for (std::size_t index = 0; index < children.size(); index++) {
+            walk(canvas, children[index], boxes[index]);
+        }
+        return;
+    }
+    for (const boost::shared_ptr<Component>& child : v3d::ui::ordered(children)) {
+        walk(canvas, child, child->layout().resolve(component->bound(), natural(*child), child->position()));
+    }
 }
 
 /**

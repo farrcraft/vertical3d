@@ -32,6 +32,8 @@ enum class Type {
     TAB_PAGE = 20,
     TEXT_BOX = 21,
     TOOLTIP = 22,
-    TOOLBAR = 23
+    TOOLBAR = 23,
+    PANEL = 24,
+    BAR = 25
 };
 }  // namespace v3d::ui::component

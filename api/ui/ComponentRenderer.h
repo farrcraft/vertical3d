@@ -7,12 +7,16 @@
 
 #include <functional>
 #include <string>
+#include <vector>
 
 #include "Container.h"
 #include "Engine.h"
+#include "component/Bar.h"
+#include "component/Box.h"
 #include "component/Button.h"
 #include "component/Icon.h"
 #include "component/Label.h"
+#include "component/Panel.h"
 #include "component/Toolbar.h"
 #include "component/menu/Menu.h"
 #include "component/menu/MenuBar.h"
@@ -40,8 +44,14 @@ namespace v3d::ui {
  * Drawing is also what lays the ui out: every component is left holding the bounds it
  * was drawn in, which is what the cursor is tested against, per ADR-0019.
  *
- * Menus, menu bars, toolbars, buttons, labels and icons are drawn. The rest of the
- * components in this library are empty declarations with no loader.
+ * Menus, menu bars, toolbars, buttons, labels, icons, panels, bars and the two flow
+ * boxes are drawn. The rest of the components in this library are empty declarations with
+ * no loader.
+ *
+ * A component holds other components, and drawing one is what works out where they go:
+ * every box is resolved against the box around it as the walk reaches it, per ADR-0034.
+ * A flow box writes its children's boxes itself, because their positions are what it is
+ * for.
  *
  * The strips stack in the order a container lists them. A menu bar takes the top of the
  * canvas, a top toolbar takes a band under whatever is already there, and a left toolbar
@@ -77,8 +87,12 @@ class ComponentRenderer {
         float barHeight;       /**< how tall the strip of a menu bar or a toolbar is **/
         float iconSize;        /**< the side of the square an icon is drawn in **/
         float panelPadding;    /**< the gap above and below the items of a dropped panel **/
+        float borderWidth;     /**< how thick a panel's or a bar's outline is drawn **/
+        float radius;          /**< how far a panel's corners are rounded, 0 for square **/
         glm::vec4 panel;       /**< the background the menu is drawn on **/
         glm::vec4 border;      /**< the panel's outline **/
+        glm::vec4 track;       /**< the unfilled part of a bar **/
+        glm::vec4 fill;        /**< the filled part of a bar **/
         glm::vec4 text;        /**< an ordinary item's label **/
         glm::vec4 activeText;  /**< the label of the item navigation is on **/
         glm::vec4 highlight;   /**< what is drawn behind that item **/
@@ -130,6 +144,17 @@ class ComponentRenderer {
     void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Button>& button) const;
 
     /**
+     * Draw a panel - a filled box with a border, rounded by however much its style asks
+     * for, at the box it holds.
+     **/
+    void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Panel>& panel) const;
+
+    /**
+     * Draw a bar - the track it holds, and the fraction of it that is filled.
+     **/
+    void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Bar>& bar) const;
+
+    /**
      * Draw every visible container of a ui engine.
      **/
     void draw(v3d::render::realtime::Canvas* canvas, const Engine& ui) const;
@@ -178,6 +203,48 @@ class ComponentRenderer {
     glm::vec2 insets(const Engine& ui) const;
 
  private:
+    /**
+     * Draw one component and everything it holds, into a box that has already been
+     * resolved.
+     *
+     * @param bounds where this component goes, which its parent worked out
+     **/
+    void walk(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<Component>& component,
+        const v3d::type::Bound2D& bounds) const;
+
+    /**
+     * Write the boxes of a flow box's children - along the line by what each asks for,
+     * and across it by the box's width when it stretches them.
+     *
+     * @param bounds the box the children are laid out inside
+     * @param boxes filled with one box per child, in the order the children are held
+     **/
+    void arrange(const component::Box& box, const v3d::type::Bound2D& bounds,
+        std::vector<v3d::type::Bound2D>* boxes) const;
+
+    /**
+     * The size a component makes of itself, which is what an Auto extent resolves to -
+     * the width of a label's text, the side of an icon, the room a button's label needs.
+     * A component that decides nothing for itself asks for nothing.
+     **/
+    glm::vec2 natural(const Component& component) const;
+
+    /**
+     * Fill a box, with its corners rounded by a radius. A radius of zero is one quad, and
+     * anything else is three quads and four fans - all of them the one batched primitive
+     * of ADR-0005, so a rounded corner costs no draw of its own.
+     **/
+    void fill(v3d::render::realtime::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
+        float radius, const glm::vec4& colour) const;
+
+    /**
+     * Draw a filled box inside an outline, both rounded.
+     *
+     * @param width how thick the outline is; nothing is drawn under it when it is zero
+     **/
+    void plate(v3d::render::realtime::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
+        float radius, float width, const glm::vec4& inside, const glm::vec4& outline) const;
+
     /**
      * Draw one dropped panel of a menu bar, leaving every item holding its own row.
      *

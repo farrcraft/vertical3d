@@ -4,3 +4,11 @@
  **/
 
 #include "VerticalBox.h"
+
+namespace v3d::ui::component {
+
+VerticalBox::VerticalBox() :
+    Box(Type::VERTICAL_FRAME) {
+}
+
+};  // namespace v3d::ui::component

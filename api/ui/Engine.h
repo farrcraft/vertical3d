@@ -11,9 +11,12 @@
 #include <vector>
 
 #include "Container.h"
+#include "component/Bar.h"
+#include "component/Box.h"
 #include "component/Button.h"
 #include "component/Icon.h"
 #include "component/Label.h"
+#include "component/Panel.h"
 #include "component/Toolbar.h"
 #include "component/menu/Menu.h"
 #include "component/menu/MenuBar.h"
@@ -104,9 +107,17 @@ class Engine {
      bool loadContainer(const boost::json::object& entry);
 
      /**
-      * Build one component from the type it names and add it to its container.
+      * Build one component from the type it names, read what it holds, and hand it back
+      * for whatever is holding it.
+      *
+      * @return the component, or null when the entry names a type there is no loader for
       **/
-     bool loadComponent(const boost::json::object& entry, const boost::shared_ptr<Container>& container);
+     boost::shared_ptr<Component> loadComponent(const boost::json::object& entry);
+
+     /**
+      * Read a component's "children" array, if it has one, into the component.
+      **/
+     bool loadChildren(const boost::json::object& entry, const boost::shared_ptr<Component>& component);
 
      boost::shared_ptr<component::Menu> loadMenu(const boost::json::object& entry);
      boost::shared_ptr<component::MenuBar> loadMenuBar(const boost::json::object& entry);
@@ -114,6 +125,14 @@ class Engine {
      boost::shared_ptr<component::Button> loadButton(const boost::json::object& entry);
      boost::shared_ptr<component::Label> loadLabel(const boost::json::object& entry);
      boost::shared_ptr<component::Icon> loadIcon(const boost::json::object& entry);
+     boost::shared_ptr<component::Panel> loadPanel(const boost::json::object& entry);
+     boost::shared_ptr<component::Bar> loadBar(const boost::json::object& entry);
+
+     /**
+      * Read what a flow box carries beyond an ordinary component - the gap between its
+      * children, and whether they are widened to it.
+      **/
+     void loadBox(const boost::json::object& entry, const boost::shared_ptr<component::Box>& box);
 
      /**
       * Read one style and everything in it into a theme.
@@ -140,9 +159,20 @@ class Engine {
 
      /**
       * Read what every component may carry whatever its type: where it is, how big it is,
-      * which style draws it, and whether it is drawn at all.
+      * which style draws it, whether it is drawn at all, whether it answers the cursor,
+      * and what it is drawn in front of.
       **/
      void loadAttributes(const boost::json::object& entry, const boost::shared_ptr<Component>& component);
+
+     /**
+      * Read a component's box - "position" and "size" as two lengths each, and the corner
+      * of the parent they are measured from.
+      *
+      * A number is pixels and a string ending in % is a fraction of the parent, so
+      * "position": [10, "50%"] is ten pixels in and half way down. A component naming
+      * neither is left Auto, which is the size it makes of itself where it has one.
+      **/
+     void loadLayout(const boost::json::object& entry, Layout* layout);
 
      /**
       * Resolve the images the loaded themes name, and the ones the loaded components do.

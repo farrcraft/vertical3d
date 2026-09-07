@@ -6,9 +6,12 @@
 #include "Engine.h"
 
 #include <cstddef>
+#include <exception>
 #include <string>
 #include <vector>
 
+#include "component/HorizontalBox.h"
+#include "component/VerticalBox.h"
 #include "component/menu/MenuBar.h"
 #include "component/menu/MenuItem.h"
 #include "style/Button.h"
@@ -43,6 +46,43 @@ T numbers(const boost::json::object& entry, const std::string& field, const T& f
         result[static_cast<int>(index)] = static_cast<float>(boost::json::value_to<double>(values[index]));
     }
     return result;
+}
+
+/**
+ * Read one length: a number is pixels, and a string ending in % is a fraction of the
+ * parent. Anything else is left as it was, which is Auto for a component naming nothing.
+ **/
+Length length(const boost::json::value& value, const Length& fallback) {
+    if (value.is_string()) {
+        const std::string text(value.as_string().c_str());
+        if (text.size() > 1 && text.back() == '%') {
+            try {
+                return Length(std::stof(text.substr(0, text.size() - 1)), Length::Unit::Percent);
+            } catch (const std::exception&) {
+                return fallback;
+            }
+        }
+        return fallback;
+    }
+    if (value.is_number()) {
+        return Length(static_cast<float>(boost::json::value_to<double>(value)), Length::Unit::Pixels);
+    }
+    return fallback;
+}
+
+/**
+ * Read a pair of lengths out of a two element array - a position or a size.
+ **/
+void lengths(const boost::json::object& entry, const std::string& field, Length* first, Length* second) {
+    if (!entry.contains(field) || !entry.at(field).is_array()) {
+        return;
+    }
+    const boost::json::array values = entry.at(field).as_array();
+    if (values.size() != 2) {
+        return;
+    }
+    *first = length(values[0], *first);
+    *second = length(values[1], *second);
 }
 
 /**
@@ -159,56 +199,80 @@ bool Engine::loadThemes(const boost::json::object& doc) {
     return true;
 }
 
-bool Engine::loadComponent(const boost::json::object& entry, const boost::shared_ptr<Container>& container) {
+boost::shared_ptr<Component> Engine::loadComponent(const boost::json::object& entry) {
     std::string componentType = boost::json::value_to<std::string>(entry.at("type"));
     std::string componentName = boost::json::value_to<std::string>(entry.at("name"));
 
+    boost::shared_ptr<Component> component;
     // read individual component types
     if (componentType == "menu") {
         boost::shared_ptr<component::Menu> menu = loadMenu(entry);
         if (!menu) {
-            return false;
+            return nullptr;
         }
-        menu->name(componentName);
         // this is the menu the app navigates, so it starts as its own active level
         menu->level(menu);
-        container->add(menu);
+        component = menu;
     } else if (componentType == "menubar") {
-        boost::shared_ptr<component::MenuBar> bar = loadMenuBar(entry);
-        if (!bar) {
-            return false;
-        }
-        bar->name(componentName);
-        container->add(bar);
+        component = loadMenuBar(entry);
     } else if (componentType == "toolbar") {
-        boost::shared_ptr<component::Toolbar> bar = loadToolbar(entry);
-        if (!bar) {
-            return false;
-        }
-        bar->name(componentName);
-        loadAttributes(entry, bar);
-        container->add(bar);
+        component = loadToolbar(entry);
     } else if (componentType == "button") {
-        boost::shared_ptr<component::Button> button = loadButton(entry);
-        button->name(componentName);
-        loadAttributes(entry, button);
-        container->add(button);
+        component = loadButton(entry);
     } else if (componentType == "label") {
-        boost::shared_ptr<component::Label> label = loadLabel(entry);
-        label->name(componentName);
-        loadAttributes(entry, label);
-        container->add(label);
+        component = loadLabel(entry);
     } else if (componentType == "icon") {
-        boost::shared_ptr<component::Icon> icon = loadIcon(entry);
-        if (!icon) {
-            return false;
-        }
-        icon->name(componentName);
-        loadAttributes(entry, icon);
-        container->add(icon);
+        component = loadIcon(entry);
+    } else if (componentType == "panel") {
+        component = loadPanel(entry);
+    } else if (componentType == "bar") {
+        component = loadBar(entry);
+    } else if (componentType == "vbox" || componentType == "hbox") {
+        boost::shared_ptr<component::Box> box = componentType == "vbox"
+            ? boost::static_pointer_cast<component::Box>(boost::make_shared<component::VerticalBox>())
+            : boost::static_pointer_cast<component::Box>(boost::make_shared<component::HorizontalBox>());
+        loadBox(entry, box);
+        component = box;
     } else {
         logger_->get()->error("Unrecognized ui component type [{}]", componentType);
+        return nullptr;
+    }
+    if (!component) {
+        return nullptr;
+    }
+
+    component->name(componentName);
+    // a menu and a menu bar are placed entirely by the renderer, so reading a box onto one
+    // would be read and then written over
+    if (componentType != "menu" && componentType != "menubar") {
+        loadAttributes(entry, component);
+    }
+    if (!loadChildren(entry, component)) {
+        return nullptr;
+    }
+    return component;
+}
+
+bool Engine::loadChildren(const boost::json::object& entry, const boost::shared_ptr<Component>& component) {
+    if (!entry.contains("children")) {
+        return true;
+    }
+    auto const section = entry.at("children");
+    if (!section.is_array()) {
+        logger_->get()->error("The children of [{}] are not an array", std::string(component->name()));
         return false;
+    }
+    auto const children = section.as_array();
+    for (const auto* it = children.begin(); it != children.end(); ++it) {
+        if (!it->is_object()) {
+            logger_->get()->error("Unrecognized component config");
+            return false;
+        }
+        const boost::shared_ptr<Component> child = loadComponent(it->as_object());
+        if (!child) {
+            return false;
+        }
+        component->add(child);
     }
     return true;
 }
@@ -231,9 +295,11 @@ bool Engine::loadContainer(const boost::json::object& entry) {
             logger_->get()->error("Unrecognized component config");
             return false;
         }
-        if (!loadComponent(it->as_object(), container)) {
+        const boost::shared_ptr<Component> component = loadComponent(it->as_object());
+        if (!component) {
             return false;
         }
+        container->add(component);
     }
     return true;
 }
@@ -380,15 +446,37 @@ bool Engine::loadProperties(const boost::json::object& entry, const boost::share
 /**
  **/
 void Engine::loadAttributes(const boost::json::object& entry, const boost::shared_ptr<Component>& component) {
-    // a strip is placed by the renderer per ADR-0019, so a position and a size on one are
-    // read and then written over. They are read for everything the same way regardless,
-    // because which components lay themselves out is the renderer's business
-    component->position(numbers<glm::vec2, 2>(entry, "position", component->position()));
-    component->size(numbers<glm::vec2, 2>(entry, "size", component->size()));
+    loadLayout(entry, &component->layout());
     if (entry.contains("style")) {
         component->style(boost::json::value_to<std::string>(entry.at("style")));
     }
     component->visible(flag(entry, "visible", component->visible()));
+    component->pickable(flag(entry, "pickable", component->pickable()));
+    if (entry.contains("depth")) {
+        component->depth(boost::json::value_to<unsigned int>(entry.at("depth")));
+    }
+}
+
+/**
+ **/
+void Engine::loadLayout(const boost::json::object& entry, Layout* layout) {
+    lengths(entry, "position", &layout->x, &layout->y);
+    lengths(entry, "size", &layout->width, &layout->height);
+    if (!entry.contains("anchor")) {
+        return;
+    }
+    const std::string name = boost::json::value_to<std::string>(entry.at("anchor"));
+    if (name == "top-right") {
+        layout->anchor = Layout::Anchor::TopRight;
+    } else if (name == "bottom-left") {
+        layout->anchor = Layout::Anchor::BottomLeft;
+    } else if (name == "bottom-right") {
+        layout->anchor = Layout::Anchor::BottomRight;
+    } else if (name == "centre" || name == "center") {
+        layout->anchor = Layout::Anchor::Centre;
+    } else if (name != "top-left") {
+        logger_->get()->error("A component has no anchor [{}]", name);
+    }
 }
 
 /**
@@ -407,6 +495,37 @@ boost::shared_ptr<component::Button> Engine::loadButton(const boost::json::objec
         button->event(command);
     }
     return button;
+}
+
+/**
+ **/
+boost::shared_ptr<component::Panel> Engine::loadPanel(const boost::json::object&) {
+    // everything a panel is drawn with is its style's, per ADR-0020, so there is nothing
+    // of its own to read
+    return boost::make_shared<component::Panel>();
+}
+
+/**
+ **/
+boost::shared_ptr<component::Bar> Engine::loadBar(const boost::json::object& entry) {
+    boost::shared_ptr<component::Bar> bar = boost::make_shared<component::Bar>();
+    if (entry.contains("fraction")) {
+        bar->fraction(static_cast<float>(boost::json::value_to<double>(entry.at("fraction"))));
+    }
+    if (entry.contains("direction")
+        && boost::json::value_to<std::string>(entry.at("direction")) == "vertical") {
+        bar->direction(component::Bar::Direction::Vertical);
+    }
+    return bar;
+}
+
+/**
+ **/
+void Engine::loadBox(const boost::json::object& entry, const boost::shared_ptr<component::Box>& box) {
+    if (entry.contains("spacing")) {
+        box->spacing(static_cast<float>(boost::json::value_to<double>(entry.at("spacing"))));
+    }
+    box->stretch(flag(entry, "stretch", box->stretch()));
 }
 
 /**
