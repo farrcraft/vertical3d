@@ -5,6 +5,7 @@
 
 #include "LineRenderer.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <vector>
 
@@ -121,16 +122,35 @@ void LineRenderer::submit(const LineCanvas& canvas, Pass* pass, uint16_t layer) 
     // is drawn with follows from whether the pass has a depth buffer
     const PipelineHandle handle = pass->depth() ? depthPipeline_ : pipeline_;
 
-    DrawItem item;
-    item.key.layer = layer;
-    item.key.pipeline = static_cast<uint16_t>(handle.id());
-    item.pipeline = handle;
-    item.vertexBuffer = vertices->handle();
-    // a line list is not indexed
-    item.vertices = static_cast<uint32_t>(canvas.vertices().size());
-    item.instances = 1;
+    for (const LineCanvas::Batch& batch : canvas.batches()) {
+        if (batch.vertices == 0) {
+            continue;
+        }
 
-    pass->submit(item);
+        DrawItem item;
+        item.key.layer = layer;
+        item.key.pipeline = static_cast<uint16_t>(handle.id());
+        item.pipeline = handle;
+        item.vertexBuffer = vertices->handle();
+        // a line list is not indexed
+        item.vertices = batch.vertices;
+        item.firstVertex = batch.firstVertex;
+        item.instances = 1;
+
+        if (batch.clipped) {
+            // the canvas clips in the image's pixels already, since a world space stream
+            // has no transform that would carry a rectangle to the screen - ADR-0037
+            const float left = std::max(batch.clip.x, 0.0f);
+            const float top = std::max(batch.clip.y, 0.0f);
+            item.scissored = true;
+            item.scissor.offset.x = static_cast<int32_t>(left);
+            item.scissor.offset.y = static_cast<int32_t>(top);
+            item.scissor.extent.width = static_cast<uint32_t>(std::max(batch.clip.z - left, 0.0f));
+            item.scissor.extent.height = static_cast<uint32_t>(std::max(batch.clip.w - top, 0.0f));
+        }
+
+        pass->submit(item);
+    }
 }
 
 };  // namespace v3d::render::realtime::vulkan

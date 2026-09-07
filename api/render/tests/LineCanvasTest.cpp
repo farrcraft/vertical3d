@@ -215,4 +215,117 @@ BOOST_AUTO_TEST_CASE(popping_past_the_bottom_of_the_stack_is_harmless) {
     BOOST_CHECK_EQUAL(canvas.vertices()[1].position.x, 1.0f);
 }
 
+/**
+ * A stream nothing clipped is one batch covering the whole of it, so the common case is
+ * still the single draw the line primitive was built as - ADR-0011.
+ **/
+BOOST_AUTO_TEST_CASE(an_uncut_stream_is_one_batch) {
+    v3d::render::realtime::LineCanvas canvas;
+
+    canvas.box(glm::vec3(0.0f), glm::vec3(1.0f), white);
+
+    BOOST_REQUIRE_EQUAL(canvas.batches().size(), 1);
+    BOOST_CHECK(!canvas.batches()[0].clipped);
+    BOOST_CHECK_EQUAL(canvas.batches()[0].firstVertex, 0);
+    BOOST_CHECK_EQUAL(canvas.batches()[0].vertices, canvas.vertices().size());
+}
+
+/**
+ * A clip cuts the stream where it opens and where it closes, and the batch between them
+ * carries the rectangle the device is to scissor to - ADR-0037. Nothing is dropped on the
+ * cpu: the segment inside the clip is still two vertices.
+ **/
+BOOST_AUTO_TEST_CASE(a_clip_cuts_the_batch_and_carries_its_rectangle) {
+    v3d::render::realtime::LineCanvas canvas;
+
+    canvas.line(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), white);
+    canvas.clip(glm::vec2(4.0f, 5.0f), glm::vec2(20.0f, 30.0f));
+    canvas.line(glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f), red);
+    canvas.unclip();
+    canvas.line(glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 1.0f), white);
+
+    BOOST_REQUIRE_EQUAL(canvas.batches().size(), 3);
+    BOOST_CHECK(!canvas.batches()[0].clipped);
+    BOOST_CHECK(canvas.batches()[1].clipped);
+    BOOST_CHECK_CLOSE(canvas.batches()[1].clip.x, 4.0f, 0.001f);
+    BOOST_CHECK_CLOSE(canvas.batches()[1].clip.y, 5.0f, 0.001f);
+    BOOST_CHECK_CLOSE(canvas.batches()[1].clip.z, 20.0f, 0.001f);
+    BOOST_CHECK_CLOSE(canvas.batches()[1].clip.w, 30.0f, 0.001f);
+    BOOST_CHECK_EQUAL(canvas.batches()[1].firstVertex, 2);
+    BOOST_CHECK_EQUAL(canvas.batches()[1].vertices, 2);
+    BOOST_CHECK(!canvas.batches()[2].clipped);
+    BOOST_CHECK_EQUAL(canvas.vertices().size(), 6);
+}
+
+/**
+ * The clip is in the pixels of the image drawn into and the modelview does not apply to it,
+ * unlike Canvas's: a line canvas is world space, so the transform a vertex goes through is
+ * not one a screen rectangle could go through.
+ **/
+BOOST_AUTO_TEST_CASE(a_clip_is_not_moved_by_the_transform) {
+    v3d::render::realtime::LineCanvas canvas;
+
+    canvas.translate(glm::vec3(100.0f, 100.0f, 0.0f));
+    canvas.clip(glm::vec2(4.0f, 5.0f), glm::vec2(20.0f, 30.0f));
+    canvas.line(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), white);
+
+    BOOST_REQUIRE_EQUAL(canvas.batches().size(), 1);
+    BOOST_CHECK_CLOSE(canvas.batches()[0].clip.x, 4.0f, 0.001f);
+    BOOST_CHECK_CLOSE(canvas.batches()[0].clip.w, 30.0f, 0.001f);
+    // the vertex did move, so the transform is being applied to what is drawn
+    BOOST_CHECK_CLOSE(canvas.vertices()[0].position.x, 100.0f, 0.001f);
+}
+
+/**
+ * An inner clip can only take room away from the one around it, which is what makes a
+ * clipped box inside a clipped box behave.
+ **/
+BOOST_AUTO_TEST_CASE(an_inner_clip_only_takes_room_away) {
+    v3d::render::realtime::LineCanvas canvas;
+
+    canvas.clip(glm::vec2(10.0f, 10.0f), glm::vec2(50.0f, 50.0f));
+    canvas.clip(glm::vec2(0.0f, 20.0f), glm::vec2(100.0f, 30.0f));
+    canvas.line(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), white);
+
+    BOOST_REQUIRE_EQUAL(canvas.batches().size(), 1);
+    BOOST_CHECK_CLOSE(canvas.batches()[0].clip.x, 10.0f, 0.001f);
+    BOOST_CHECK_CLOSE(canvas.batches()[0].clip.y, 20.0f, 0.001f);
+    BOOST_CHECK_CLOSE(canvas.batches()[0].clip.z, 50.0f, 0.001f);
+    BOOST_CHECK_CLOSE(canvas.batches()[0].clip.w, 30.0f, 0.001f);
+}
+
+/**
+ * Two clips that miss each other leave an empty rectangle rather than an inverted one. An
+ * inverted scissor is a validation error by the time it reaches the device, where an empty
+ * one simply draws nothing.
+ **/
+BOOST_AUTO_TEST_CASE(clips_that_miss_leave_nothing_rather_than_an_inverted_rectangle) {
+    v3d::render::realtime::LineCanvas canvas;
+
+    canvas.clip(glm::vec2(0.0f, 0.0f), glm::vec2(10.0f, 10.0f));
+    canvas.clip(glm::vec2(40.0f, 40.0f), glm::vec2(50.0f, 50.0f));
+    canvas.line(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), white);
+
+    BOOST_REQUIRE_EQUAL(canvas.batches().size(), 1);
+    const glm::vec4& clip = canvas.batches()[0].clip;
+    BOOST_CHECK(clip.z >= clip.x);
+    BOOST_CHECK(clip.w >= clip.y);
+}
+
+/**
+ * A clip left open at the end of a frame does not carry into the next one, since the whole
+ * stream is rebuilt every frame and the stack is part of it.
+ **/
+BOOST_AUTO_TEST_CASE(clearing_drops_the_clip_stack_with_the_stream) {
+    v3d::render::realtime::LineCanvas canvas;
+
+    canvas.clip(glm::vec2(4.0f, 5.0f), glm::vec2(20.0f, 30.0f));
+    canvas.line(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), white);
+    canvas.clear();
+    canvas.line(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), white);
+
+    BOOST_REQUIRE_EQUAL(canvas.batches().size(), 1);
+    BOOST_CHECK(!canvas.batches()[0].clipped);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

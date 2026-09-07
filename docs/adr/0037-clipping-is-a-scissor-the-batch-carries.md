@@ -92,9 +92,11 @@ that drops out of its strip must keep doing so.
 - The rectangle is resolved against the transform at the moment it is pushed, so translating
   after a clip moves what is drawn and not what it is cut to. That is what a scroll view wants
   and it is the opposite of what a naive reading expects.
-- **A clip only reaches the quad primitive.** `LineCanvas` builds its own draw items
-  ([ADR-0011](0011-lines-are-the-second-primitive.md)) and carries no clip, so a ui drawn in
-  lines is not cut. Nothing in the tree draws one.
+- **A clip reaches the line primitive on different terms.** `LineCanvas`
+  ([ADR-0011](0011-lines-are-the-second-primitive.md)) cuts its stream into batches the same
+  way, but its rectangle is given in the pixels of the image drawn into and the modelview does
+  not apply to it: a line canvas is world space, so there is no transform there that a screen
+  rectangle could go through.
 
 ### Risks
 - The canvas is in pixels and a scissor is in framebuffer pixels, and the two agree only because

@@ -33,9 +33,9 @@ namespace v3d::render::realtime::vulkan {
  *
  * A canvas is filled on the cpu during a tick and handed here, which uploads it into a
  * buffer belonging to the frame about to be recorded. There is no texture, no material
- * and no index buffer, so a whole canvas becomes one draw. The buffers are per frame in
- * flight, because the device may still be reading the previous frame's out of the
- * previous slot.
+ * and no index buffer, so an uncut canvas becomes one draw and a clipped one becomes a
+ * draw per rectangle it is cut to. The buffers are per frame in flight, because the
+ * device may still be reading the previous frame's out of the previous slot.
  *
  * A frame may submit any number of canvases, and each submission takes a buffer of its
  * own out of the frame's ring. They cannot share one: growing a buffer replaces the
@@ -72,7 +72,7 @@ class LineRenderer final {
     LineRenderer& operator=(const LineRenderer&) = delete;
 
     /**
-     * Upload a canvas and add one draw item to the pass for the whole of it.
+     * Upload a canvas and add one draw item to the pass per batch of it.
      *
      * An empty canvas costs neither an upload nor a draw.
      *
