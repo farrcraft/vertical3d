@@ -268,4 +268,65 @@ BOOST_AUTO_TEST_CASE(only_the_topmost_component_takes_a_press) {
     BOOST_CHECK_EQUAL(fixture.sent.front(), "test::over");
 }
 
+/**
+ * A button lights up under the cursor wherever it sits, so one in a tree is highlighted the
+ * way one on a strip is.
+ **/
+BOOST_AUTO_TEST_CASE(a_button_in_a_tree_is_hovered_under_the_cursor) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::Button> button =
+        boost::make_shared<v3d::ui::component::Button>();
+    button->label("Start");
+    fixture.place(button, glm::vec2(100.0f, 50.0f), glm::vec2(120.0f, 30.0f));
+    fixture.draw();
+
+    BOOST_CHECK(fixture.cursor->motion(glm::vec2(160.0f, 65.0f)));
+    BOOST_CHECK_EQUAL(fixture.cursor->hovered(), button);
+    BOOST_CHECK_EQUAL(button->state(), v3d::ui::component::Button::STATE_HOVER);
+
+    // and it goes back to normal the moment the cursor leaves it
+    BOOST_CHECK(!fixture.cursor->motion(glm::vec2(400.0f, 400.0f)));
+    BOOST_CHECK(!fixture.cursor->hovered());
+    BOOST_CHECK_EQUAL(button->state(), v3d::ui::component::Button::STATE_NORMAL);
+}
+
+/**
+ * Only one thing is hovered at a time, and it is the one a press would land on - so moving
+ * between two overlapping buttons takes the highlight off the one underneath.
+ **/
+BOOST_AUTO_TEST_CASE(the_hover_follows_the_component_a_press_would_land_on) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::Button> under =
+        boost::make_shared<v3d::ui::component::Button>();
+    fixture.place(under, glm::vec2(0.0f, 0.0f), glm::vec2(200.0f, 200.0f));
+    const boost::shared_ptr<v3d::ui::component::Button> over =
+        boost::make_shared<v3d::ui::component::Button>();
+    fixture.place(over, glm::vec2(50.0f, 50.0f), glm::vec2(100.0f, 100.0f));
+    fixture.draw();
+
+    fixture.cursor->motion(glm::vec2(20.0f, 20.0f));
+    BOOST_CHECK_EQUAL(under->state(), v3d::ui::component::Button::STATE_HOVER);
+
+    fixture.cursor->motion(glm::vec2(100.0f, 100.0f));
+    BOOST_CHECK_EQUAL(over->state(), v3d::ui::component::Button::STATE_HOVER);
+    BOOST_CHECK_EQUAL(under->state(), v3d::ui::component::Button::STATE_NORMAL);
+}
+
+/**
+ * A component that takes no press takes no hover either, so a label laid over a scene does
+ * not flicker as the cursor crosses it - ADR-0034's pickable() decides both.
+ **/
+BOOST_AUTO_TEST_CASE(a_component_that_is_not_pickable_is_not_hovered) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::Button> button =
+        boost::make_shared<v3d::ui::component::Button>();
+    fixture.place(button, glm::vec2(0.0f, 0.0f), glm::vec2(200.0f, 200.0f));
+    button->pickable(false);
+    fixture.draw();
+
+    BOOST_CHECK(!fixture.cursor->motion(glm::vec2(100.0f, 100.0f)));
+    BOOST_CHECK(!fixture.cursor->hovered());
+    BOOST_CHECK_EQUAL(button->state(), v3d::ui::component::Button::STATE_NORMAL);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

@@ -45,6 +45,24 @@ void strips(const boost::shared_ptr<Container>& container,
     }
 }
 
+/**
+ * Light a component up, or put it back to normal.
+ *
+ * A button is the only component that has a state to write, and it is the state a
+ * Toolbar writes onto the buttons it holds, so a button in a tree lights up the way one
+ * on a strip does rather than by a second mechanism.
+ **/
+void lit(const boost::shared_ptr<Component>& component, bool on) {
+    if (!component || component->type() != component::Type::Button) {
+        return;
+    }
+    const boost::shared_ptr<component::Button> button =
+        boost::dynamic_pointer_cast<component::Button>(component);
+    if (button) {
+        button->state(on ? component::Button::STATE_HOVER : component::Button::STATE_NORMAL);
+    }
+}
+
 };  // namespace
 
 Cursor::Cursor(const boost::shared_ptr<Engine>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher) :
@@ -54,6 +72,20 @@ Cursor::Cursor(const boost::shared_ptr<Engine>& ui, const boost::shared_ptr<entt
 
 boost::shared_ptr<Component> Cursor::held() const {
     return held_.lock();
+}
+
+boost::shared_ptr<Component> Cursor::hovered() const {
+    return hovered_.lock();
+}
+
+void Cursor::hover(const boost::shared_ptr<Component>& component) {
+    const boost::shared_ptr<Component> was = hovered_.lock();
+    if (was == component) {
+        return;
+    }
+    lit(was, false);
+    lit(component, true);
+    hovered_ = component;
 }
 
 bool Cursor::motion(const glm::vec2& point) {
@@ -71,6 +103,7 @@ bool Cursor::motion(const glm::vec2& point) {
         return false;
     }
     bool taken = false;
+    boost::shared_ptr<Component> over;
     for (const boost::shared_ptr<Container>& container : ui_->containers()) {
         if (!container || !container->visible()) {
             continue;
@@ -94,10 +127,14 @@ bool Cursor::motion(const glm::vec2& point) {
                 taken = bar->motion(point) || taken;
             }
         }
-        if (!taken && container->pick(point)) {
-            taken = true;
+        if (!taken) {
+            over = container->pick(point);
+            taken = static_cast<bool>(over);
         }
     }
+    // a strip that took the point covers whatever is under it, so the tree is left with
+    // nothing hovered rather than with what the cursor would have been over
+    hover(over);
     return taken;
 }
 

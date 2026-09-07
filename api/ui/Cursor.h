@@ -44,7 +44,8 @@ class Cursor final {
      * The cursor moved.
      *
      * A press being held goes on being followed wherever the cursor is, which is what
-     * drags a scrollbar's thumb; otherwise this is what leaves a strip's button hovered.
+     * drags a scrollbar's thumb; otherwise this is what leaves a button hovered, whether
+     * it sits on a strip or in the tree.
      *
      * @return whether the ui took it, which is what stops it reaching the scene under it
      **/
@@ -68,7 +69,21 @@ class Cursor final {
      **/
     boost::shared_ptr<Component> held() const;
 
+    /**
+     * @return the component in the tree the cursor is over, or null
+     **/
+    boost::shared_ptr<Component> hovered() const;
+
  private:
+    /**
+     * Light one component up and put back whatever was lit before it.
+     *
+     * A component is hovered when it is the one a press would land on, so the same
+     * pickable() that decides what takes a click decides what lights up - which is what
+     * keeps a hud of labels from flickering as the cursor crosses it. ADR-0034.
+     **/
+    void hover(const boost::shared_ptr<Component>& component);
+
     /**
      * Offer a press to one container's strips, then to what it holds.
      * @return whether anything took it
@@ -91,6 +106,7 @@ class Cursor final {
     // held rather than owned: the component belongs to the container it was loaded into,
     // and a press outliving one that was unloaded should not keep it alive
     boost::weak_ptr<Component> held_;
+    boost::weak_ptr<Component> hovered_;
 };
 
 };  // namespace v3d::ui
