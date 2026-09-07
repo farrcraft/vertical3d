@@ -24,8 +24,8 @@ constexpr glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
  **/
 constexpr glm::vec4 translucent(0.1f, 0.1f, 0.1f, 0.5f);
 
-const glm::vec2 low(20.0f, 30.0f);
-const glm::vec2 high(140.0f, 90.0f);
+constexpr glm::vec2 low(20.0f, 30.0f);
+constexpr glm::vec2 high(140.0f, 90.0f);
 
 /**
  * @return whether a point is inside a rounded box, by more than a tolerance
@@ -58,12 +58,10 @@ bool within(const glm::vec2& min, const glm::vec2& max, float radius, const glm:
  **/
 bool anythingInside(const v3d::render::realtime::Canvas& canvas, const glm::vec2& min,
     const glm::vec2& max, float radius) {
-    for (const v3d::render::realtime::Canvas::Vertex& vertex : canvas.vertices()) {
-        if (within(min, max, radius, glm::vec2(vertex.position))) {
-            return true;
-        }
-    }
-    return false;
+    return std::ranges::any_of(canvas.vertices(),
+        [&](const v3d::render::realtime::Canvas::Vertex& vertex) {
+            return within(min, max, radius, glm::vec2(vertex.position));
+        });
 }
 
 };  // namespace

@@ -154,6 +154,13 @@ class Engine {
     bool rebind(const std::string& command, const std::string& key);
 
  private:
+     /**
+      * Answer one event the input devices did not take - a quit, a resize, a focus
+      * change. What the engine itself does with an event, as against when it looks for
+      * one, which is eventLoop()'s.
+      **/
+     void handleEvent(const SDL_Event& event);
+
      bool registerEventMappings();
 
      /**

@@ -5,6 +5,7 @@
 
 #include "Cursor.h"
 
+#include <algorithm>
 #include <vector>
 
 #include "Component.h"
@@ -104,12 +105,12 @@ bool Cursor::press(const glm::vec2& point) {
     if (!ui_) {
         return false;
     }
-    for (const boost::shared_ptr<Container>& container : ui_->containers()) {
-        if (container && container->visible() && press(container, point)) {
-            return true;
-        }
-    }
-    return false;
+    // any_of stops at the first container that takes the press, which is what keeps a
+    // press from reaching more than one ui
+    return std::ranges::any_of(ui_->containers(),
+        [this, &point](const boost::shared_ptr<Container>& container) {
+            return container && container->visible() && press(container, point);
+        });
 }
 
 bool Cursor::press(const boost::shared_ptr<Container>& container, const glm::vec2& point) {
