@@ -387,10 +387,25 @@ if the numbers say so, because the allocation removal stands on its own and the 
 (class, name) returns the same `Dressing`, that `theme()` invalidates, and that an unnamed style
 falls back to the first of its class as `lookup()` does today.
 
-### Step 8 — The layout walk comes out of `ComponentRenderer`
+### Step 8 — The strip arithmetic has one implementation
 
-**Open.** New `api/ui/Layouter.{h,cpp}` (name to settle), plus
-[`ComponentRenderer.{h,cpp}`](../../api/ui/ComponentRenderer.h).
+**Closed, and narrower than it was drafted.** `stack()` places the strips and `insets()` asks
+it what they took, so the rule exists once. That closed a defect neither half had been blamed
+for: `draw()` advanced past a left toolbar by the box it was *last* drawn in, which is nothing
+until it has been drawn once, so two left strips were placed on top of each other on the first
+frame - while `insets()`, advancing by what the strip would be drawn at, reported the right
+answer and disagreed. `draw()` also walked `ordered()` where `insets()` walked `components()`,
+so a depth would have made them disagree again.
+
+**The class split was not done, and should not be.** Layout and paint in this library are
+mutually recursive by design: the walk resolves a box and paints it, and painting a tab bar
+walks the page it holds. Splitting them means a callback through the hottest walk in the
+library to buy a smaller file - and the specific defect the split was meant to close, the two
+implementations of the strip rule, is closed without it. `natural()` and `arrange()` stay
+where the walk that calls them is. Reopen it if a test ever needs layout without paint, which
+is the one benefit that would have been real; nothing has asked.
+
+In [`ComponentRenderer.{h,cpp}`](../../api/ui/ComponentRenderer.h).
 
 `natural()`, `arrange()`, `walk()` and `insets()` become a class that resolves boxes and writes
 them onto components, and `ComponentRenderer` becomes the paint half that it calls. This does not

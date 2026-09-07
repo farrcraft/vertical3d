@@ -6,6 +6,7 @@
 #pragma once
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "Dressing.h"
@@ -263,6 +264,29 @@ class ComponentRenderer {
      * has no use for.
      **/
     float widest(const component::Toolbar& bar) const;
+
+    /**
+     * Where each strip of a container goes, and how much of the canvas they take between
+     * them.
+     *
+     * They stack in the order the container draws them: a menu bar takes the top, a top
+     * toolbar takes a band under whatever is already there, and a left toolbar runs down
+     * the side of what is left.
+     *
+     * One implementation, because draw() places the strips and insets() tells an app what
+     * area is left around them. The two disagreeing means a ui drawn over the room an app
+     * was told it had.
+     *
+     * @param strips filled with one toolbar and its top left corner per strip, in the
+     *      order they are drawn; null when only the total is wanted
+     * @param bars filled with the container's menu bars, which are drawn last because an
+     *      open menu drops a panel over the strips below it; null when only the total is
+     *      wanted
+     * @return the left inset in x and the top inset in y, in pixels
+     **/
+    glm::vec2 stack(const Container& container,
+        std::vector<std::pair<boost::shared_ptr<component::Toolbar>, glm::vec2>>* strips,
+        std::vector<boost::shared_ptr<component::MenuBar>>* bars) const;
 
     /**
      * How much room one button asks for along a strip - its icon's side when it names

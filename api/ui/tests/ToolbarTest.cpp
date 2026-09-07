@@ -259,3 +259,37 @@ BOOST_AUTO_TEST_CASE(toolbar_insets_match_what_is_drawn) {
     BOOST_TEST(column.position().y == band * 2.0f);
     BOOST_TEST(column.size().x + 1.0f == insets.x);
 }
+
+/**
+ * Two left strips stand side by side rather than on top of each other, on the first frame as
+ * well as the ones after it.
+ *
+ * The draw used to advance past a column by the box the strip was last drawn in, which is
+ * nothing until it has been drawn once - so on the first frame both strips were placed at the
+ * left edge, and insets() disagreed because it advanced by what the strip would be drawn at.
+ * One implementation of the rule is what makes the two agree.
+ **/
+BOOST_AUTO_TEST_CASE(toolbar_two_columns_stand_side_by_side_on_the_first_frame) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::Toolbar> first =
+        fixture.bar(v3d::ui::component::Toolbar::Edge::Left);
+    const boost::shared_ptr<v3d::ui::component::Toolbar> second =
+        fixture.bar(v3d::ui::component::Toolbar::Edge::Left);
+
+    v3d::ui::Container container("editor", true);
+    container.add(first);
+    container.add(second);
+
+    // what an app is told is left to it, before anything has been drawn
+    const float reserved = fixture.renderer.insets(container).x;
+
+    fixture.renderer.draw(&fixture.canvas, container);
+
+    // through the base, because a strip's own size() is its button count
+    const v3d::ui::Component& left = *first;
+    const v3d::ui::Component& right = *second;
+    BOOST_TEST(left.position().x == 0.0f);
+    BOOST_TEST(right.position().x == left.size().x + 1.0f);
+    // and the two together take exactly what the app was told they would
+    BOOST_TEST(right.position().x + right.size().x + 1.0f == reserved);
+}

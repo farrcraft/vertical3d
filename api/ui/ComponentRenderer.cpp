@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "Container.h"
@@ -145,43 +146,37 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const Contai
     if (canvas == nullptr) {
         return;
     }
-    // what the strips drawn so far have taken off the top and the left edges, which is
-    // where the next one starts
-    glm::vec2 taken(0.0f, 0.0f);
     // the box every root component is laid out against
     const v3d::type::Bound2D area(glm::vec2(0.0f, 0.0f),
         glm::vec2(static_cast<float>(canvas->width()), static_cast<float>(canvas->height())));
+
+    std::vector<std::pair<boost::shared_ptr<component::Toolbar>, glm::vec2>> strips;
     std::vector<boost::shared_ptr<component::MenuBar>> bars;
+    stack(container, &strips, &bars);
+
     for (const boost::shared_ptr<Component>& component : container.ordered()) {
         if (!component || !component->visible()) {
             continue;
         }
+        // the strips were placed by stack() and the menu bars are held back to the end
+        if (component->type() == component::Type::MenuBar ||
+            component->type() == component::Type::Toolbar) {
+            continue;
+        }
         if (component->type() == component::Type::Menu) {
             draw(canvas, boost::dynamic_pointer_cast<component::Menu>(component));
-        } else if (component->type() == component::Type::MenuBar) {
-            // held back to the end: an open menu drops a panel over whatever the strips
-            // below it occupy, so it has to be drawn after them
-            bars.push_back(boost::dynamic_pointer_cast<component::MenuBar>(component));
-            taken.y += base().barHeight + ruleWidth;
-        } else if (component->type() == component::Type::Toolbar) {
-            const boost::shared_ptr<component::Toolbar> bar =
-                boost::dynamic_pointer_cast<component::Toolbar>(component);
-            if (!bar) {
-                continue;
-            }
-            if (bar->edge() == component::Toolbar::Edge::Top) {
-                draw(canvas, bar, glm::vec2(0.0f, taken.y));
-                taken.y += base().barHeight + ruleWidth;
-            } else {
-                draw(canvas, bar, glm::vec2(taken.x, taken.y));
-                taken.x += bar->bound().size().x + ruleWidth;
-            }
         } else {
             // everything else is a box: it is laid out against the canvas, and whatever it
             // holds is laid out against it
             walk(canvas, component, component->layout().resolve(area, natural(*component), component->position()));
         }
     }
+
+    for (const std::pair<boost::shared_ptr<component::Toolbar>, glm::vec2>& strip : strips) {
+        draw(canvas, strip.first, strip.second);
+    }
+    // an open menu drops a panel over whatever the strips below it occupy, so a menu bar
+    // is drawn after them
     for (const boost::shared_ptr<component::MenuBar>& bar : bars) {
         draw(canvas, bar);
     }
@@ -751,26 +746,45 @@ glm::vec2 ComponentRenderer::insets(const Engine& ui) const {
 /**
  **/
 glm::vec2 ComponentRenderer::insets(const Container& container) const {
-    // the same walk draw() makes, and it has to stay the same: an app shrinks what it
-    // draws by this and the ui is then drawn over the strip it was told about
+    return stack(container, nullptr, nullptr);
+}
+
+glm::vec2 ComponentRenderer::stack(const Container& container,
+    std::vector<std::pair<boost::shared_ptr<component::Toolbar>, glm::vec2>>* strips,
+    std::vector<boost::shared_ptr<component::MenuBar>>* bars) const {
+    // what the strips before this one have taken off the top and the left edges, which is
+    // where the next one starts
     glm::vec2 taken(0.0f, 0.0f);
-    for (const boost::shared_ptr<Component>& component : container.components()) {
+    for (const boost::shared_ptr<Component>& component : container.ordered()) {
         if (!component || !component->visible()) {
             continue;
         }
         if (component->type() == component::Type::MenuBar) {
+            if (bars != nullptr) {
+                bars->push_back(boost::dynamic_pointer_cast<component::MenuBar>(component));
+            }
             taken.y += base().barHeight + ruleWidth;
-        } else if (component->type() == component::Type::Toolbar) {
-            const boost::shared_ptr<component::Toolbar> bar =
-                boost::dynamic_pointer_cast<component::Toolbar>(component);
-            if (!bar) {
-                continue;
-            }
-            if (bar->edge() == component::Toolbar::Edge::Top) {
-                taken.y += base().barHeight + ruleWidth;
-            } else {
-                taken.x += widest(*bar) + base().padding + ruleWidth;
-            }
+            continue;
+        }
+        if (component->type() != component::Type::Toolbar) {
+            continue;
+        }
+        const boost::shared_ptr<component::Toolbar> bar =
+            boost::dynamic_pointer_cast<component::Toolbar>(component);
+        if (!bar) {
+            continue;
+        }
+        const glm::vec2 corner = bar->edge() == component::Toolbar::Edge::Top
+            ? glm::vec2(0.0f, taken.y) : taken;
+        if (strips != nullptr) {
+            strips->push_back(std::make_pair(bar, corner));
+        }
+        if (bar->edge() == component::Toolbar::Edge::Top) {
+            taken.y += base().barHeight + ruleWidth;
+        } else {
+            // what the strip will be drawn at rather than the box it was last drawn in,
+            // which is nothing until it has been drawn once
+            taken.x += widest(*bar) + base().padding + ruleWidth;
         }
     }
     return taken;
