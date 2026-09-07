@@ -1,7 +1,7 @@
 # ADR-0034: UI Layout — A Component Has Children, And The Draw Walk Resolves Its Box
 
 **Date**: 2026-09-06
-**Status**: proposed
+**Status**: accepted
 **Deciders**: Joshua Farr
 
 ## Context
