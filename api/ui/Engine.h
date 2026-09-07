@@ -15,6 +15,7 @@
 #include "../render/realtime/Handle.h"
 
 #include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 #include <entt/entt.hpp>
 
 namespace v3d::asset {
@@ -77,6 +78,24 @@ class Engine {
     const std::vector<boost::shared_ptr<Container>>& containers() const noexcept;
 
     /**
+     * Put the keyboard on one component, taking it off whatever had it.
+     *
+     * One component at a time, and the engine is where that is decided because both
+     * routers reach it: ui::Cursor gives the focus as a press lands and ui::Keys reads it
+     * to know where a key goes. ADR-0040.
+     *
+     * @param component what to focus, or null for nothing. A component that did not ask
+     *      to be focusable is nothing, so a press on a panel takes the focus off rather
+     *      than moving it onto the panel
+     **/
+    void focus(const boost::shared_ptr<Component>& component);
+
+    /**
+     * @return the component the keyboard is on, or null
+     **/
+    boost::shared_ptr<Component> focused() const;
+
+    /**
      * Get a loaded theme by name.
      * @param name the theme name
      * @return the named theme, or null when no theme of that name was loaded
@@ -117,6 +136,10 @@ class Engine {
     std::vector<boost::shared_ptr<Container>> containers_;
     std::vector<boost::shared_ptr<style::Theme>> themes_;
     boost::shared_ptr<style::Theme> activeTheme_;
+    // held rather than owned, for the reason ui::Cursor holds a press that way: the
+    // component belongs to its container, and a focus outliving one that was unloaded
+    // should not keep it alive
+    boost::weak_ptr<Component> focused_;
 };
 
 };  // namespace v3d::ui

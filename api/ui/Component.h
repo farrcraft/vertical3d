@@ -150,6 +150,27 @@ class Component {
     void pickable(bool pick);
 
     /**
+     * Get whether the component takes the keyboard.
+     *
+     * False by default, for the reason pickable() is: most of a ui has nothing to type
+     * into, and a press that took the keyboard off a text box every time it landed on a
+     * panel would make one unusable. A component that reads keys - a text box - asks for
+     * it. ADR-0040.
+     **/
+    bool focusable() const;
+    void focusable(bool takes);
+
+    /**
+     * Get whether the keyboard is on this component.
+     *
+     * Written by Engine::focus(), which is what keeps one component focused at a time.
+     * It is a flag here rather than a question for the engine so that drawing a component
+     * reads the component, per ADR-0019.
+     **/
+    bool focused() const;
+    void focused(bool on);
+
+    /**
      * Get whether what this component holds is cut off at its box.
      *
      * False by default, and deliberately: a menu drops a panel out of the strip it came
@@ -171,6 +192,8 @@ class Component {
     std::string name_;
     bool visible_;
     bool pickable_;
+    bool focusable_;
+    bool focused_;
     bool clip_;
     component::Type type_;
 };

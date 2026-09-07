@@ -27,6 +27,7 @@
 #include "component/SelectList.h"
 #include "component/TabBar.h"
 #include "component/TabPage.h"
+#include "component/TextBox.h"
 #include "component/Toolbar.h"
 #include "component/Type.h"
 #include "component/menu/Menu.h"
@@ -146,6 +147,9 @@ void ComponentRenderer::paint(v3d::render::realtime::Canvas* canvas,
             break;
         case component::Type::SelectList:
             draw(canvas, boost::dynamic_pointer_cast<component::SelectList>(component));
+            break;
+        case component::Type::TextBox:
+            draw(canvas, boost::dynamic_pointer_cast<component::TextBox>(component));
             break;
         case component::Type::TabBar:
             draw(canvas, boost::dynamic_pointer_cast<component::TabBar>(component));
@@ -453,6 +457,56 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
         }
         write_(list->items()[index], glm::vec2(low.x + dress.padding * 0.5f, top + row * 0.7f),
             picked ? dress.activeText : dress.text);
+    }
+
+    canvas->unclip();
+}
+
+/**
+ **/
+void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::TextBox>& box) const {
+    if (canvas == nullptr || !box) {
+        return;
+    }
+    glm::vec2 size = box->size();
+    if (size.x <= 0.0f || size.y <= 0.0f) {
+        size = arranger_.natural(*box, box->bound());
+    }
+    const glm::vec2 min = box->position();
+    place(*box, min, size);
+
+    const Dressing& dress = styles_.resolve(style::Resolver::Class::TextBox, box->style());
+    const float width = dress.borderWidth;
+    plateBox(canvas, min, min + size, dress.radius, width, dress.panel, dress.border);
+
+    const glm::vec2 low(min.x + width + dress.padding * 0.5f, min.y + width);
+    const glm::vec2 high(min.x + size.x - width, min.y + size.y - width);
+    if (high.x <= low.x) {
+        return;
+    }
+    canvas->clip(low, high);
+
+    const std::string text(box->text());
+    if (text.empty() && !box->focused()) {
+        // the placeholder says what the box is for and is not what it holds, so it is
+        // dropped the moment there is something to type into
+        write_(box->placeholder(), glm::vec2(low.x, min.y + size.y * 0.7f), dress.track);
+        canvas->unclip();
+        return;
+    }
+
+    // where the caret falls in the line, which is also how far the line has to slide left
+    // for the caret to stay inside the box
+    const float caret = measure_(std::string_view(text).substr(0, box->caret()));
+    const float room = high.x - low.x;
+    const float slid = caret > room ? caret - room : 0.0f;
+
+    const glm::vec2 pen(low.x - slid, min.y + size.y * 0.7f);
+    write_(text, pen, dress.text);
+
+    if (box->focused()) {
+        const float stem = std::max(width, 1.0f);
+        canvas->rect(glm::vec2(pen.x + caret, low.y), glm::vec2(pen.x + caret + stem, high.y), dress.mark);
     }
 
     canvas->unclip();

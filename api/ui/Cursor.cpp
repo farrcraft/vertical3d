@@ -142,6 +142,9 @@ bool Cursor::press(const glm::vec2& point) {
     if (!ui_) {
         return false;
     }
+    // a press is what says "type here", so it moves the focus wherever it lands - onto a
+    // component that asked to be focusable, and off whatever had it otherwise. ADR-0040
+    ui_->focus(boost::shared_ptr<Component>());
     // any_of stops at the first container that takes the press, which is what keeps a
     // press from reaching more than one ui
     return std::ranges::any_of(ui_->containers(),
@@ -171,6 +174,7 @@ bool Cursor::press(const boost::shared_ptr<Container>& container, const glm::vec
         return false;
     }
     held_ = picked;
+    ui_->focus(picked);
     act(picked, point);
     return true;
 }

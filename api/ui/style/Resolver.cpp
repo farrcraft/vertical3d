@@ -93,6 +93,7 @@ const char* Resolver::named(Class className) noexcept {
         case Class::Radio:     return "radio";
         case Class::List:      return "list";
         case Class::Tabs:      return "tabs";
+        case Class::TextBox:   return "textbox";
     }
     return "";
 }
@@ -162,6 +163,18 @@ Dressing Resolver::dress(Class className, const std::string_view& name) const {
             readColour(style, "border", &dressing.border);
             readMetric(style, "bar-height", &dressing.barHeight);
             readMetric(style, "radius", &dressing.radius);
+            break;
+        case Class::TextBox:
+            readColour(style, "background", &dressing.panel);
+            readColour(style, "border", &dressing.border);
+            readColour(style, "text", &dressing.text);
+            // the caret is the mark of a text box: the one thing drawn over the text that
+            // is the component's own rather than the app's
+            readColour(style, "caret", &dressing.mark);
+            readColour(style, "placeholder", &dressing.track);
+            readMetric(style, "border-width", &dressing.borderWidth);
+            readMetric(style, "radius", &dressing.radius);
+            readMetric(style, "line-height", &dressing.lineHeight);
             break;
     }
     return dressing;

@@ -59,7 +59,8 @@ class Resolver final {
         CheckBox,
         Radio,
         List,
-        Tabs
+        Tabs,
+        TextBox
     };
 
     Resolver();
@@ -126,7 +127,7 @@ class Resolver final {
     /**
      * How many classes there are, which is how many maps of resolved answers are held.
      **/
-    static constexpr std::size_t classes = 7;
+    static constexpr std::size_t classes = 8;
 
     /**
      * @return the class's name as a theme writes it

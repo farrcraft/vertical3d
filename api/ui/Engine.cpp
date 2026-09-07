@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 
+#include "Component.h"
 #include "Container.h"
 #include "Loader.h"
 #include "Style.h"
@@ -150,6 +151,30 @@ boost::shared_ptr<style::Theme> Engine::theme(const std::string_view& name) cons
         }
     }
     return nullptr;
+}
+
+/**
+ **/
+void Engine::focus(const boost::shared_ptr<Component>& component) {
+    const boost::shared_ptr<Component> wanted =
+        component && component->focusable() ? component : boost::shared_ptr<Component>();
+    const boost::shared_ptr<Component> was = focused_.lock();
+    if (was == wanted) {
+        return;
+    }
+    if (was) {
+        was->focused(false);
+    }
+    if (wanted) {
+        wanted->focused(true);
+    }
+    focused_ = wanted;
+}
+
+/**
+ **/
+boost::shared_ptr<Component> Engine::focused() const {
+    return focused_.lock();
 }
 
 /**

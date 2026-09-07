@@ -40,7 +40,10 @@ class Menu;
 class MenuBar;
 class Panel;
 class Scrollbar;
+class RadioButton;
 class SelectList;
+class TabPage;
+class TextBox;
 class Toolbar;
 };  // namespace component
 
@@ -136,6 +139,15 @@ class Loader final {
     boost::shared_ptr<component::Bar> loadBar(const boost::json::object& entry);
     boost::shared_ptr<component::Scrollbar> loadScrollbar(const boost::json::object& entry);
     boost::shared_ptr<component::SelectList> loadSelectList(const boost::json::object& entry);
+    boost::shared_ptr<component::TextBox> loadTextBox(const boost::json::object& entry);
+    boost::shared_ptr<component::TabPage> loadTabPage(const boost::json::object& entry);
+    boost::shared_ptr<component::RadioButton> loadRadioButton(const boost::json::object& entry);
+
+    /**
+     * Read a flow box, whose direction is the only thing the two kinds differ by.
+     **/
+    boost::shared_ptr<component::Box> loadFlowBox(const std::string& componentType,
+        const boost::json::object& entry);
 
     /**
      * Read a check box, or the radio button that is one with a group. Which of the two is

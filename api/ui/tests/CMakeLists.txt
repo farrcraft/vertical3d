@@ -16,6 +16,7 @@ v3d_add_test(ui
 	"SelectListTest.cpp"
 	"StatisticsOverlayTest.cpp"
 	"TabBarTest.cpp"
+	"TextBoxTest.cpp"
 	"ThemeTest.cpp"
 	"ToolbarTest.cpp")
 

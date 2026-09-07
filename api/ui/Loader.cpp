@@ -24,6 +24,7 @@
 #include "component/RadioButton.h"
 #include "component/Scrollbar.h"
 #include "component/SelectList.h"
+#include "component/TextBox.h"
 #include "component/TabBar.h"
 #include "component/TabPage.h"
 #include "component/Toolbar.h"
@@ -290,31 +291,20 @@ boost::shared_ptr<Component> Loader::buildComponent(const std::string& component
         component = loadScrollbar(entry);
     } else if (componentType == "list") {
         component = loadSelectList(entry);
+    } else if (componentType == "textbox") {
+        component = loadTextBox(entry);
     } else if (componentType == "tabs") {
         component = boost::make_shared<component::TabBar>();
     } else if (componentType == "tab") {
-        boost::shared_ptr<component::TabPage> page = boost::make_shared<component::TabPage>();
-        if (entry.contains("label")) {
-            page->label(boost::json::value_to<std::string>(entry.at("label")));
-        }
-        component = page;
+        component = loadTabPage(entry);
     } else if (componentType == "checkbox") {
         boost::shared_ptr<component::CheckBox> box = boost::make_shared<component::CheckBox>();
         loadCheckBox(entry, box);
         component = box;
     } else if (componentType == "radio") {
-        boost::shared_ptr<component::RadioButton> radio = boost::make_shared<component::RadioButton>();
-        loadCheckBox(entry, radio);
-        if (entry.contains("group")) {
-            radio->group(boost::json::value_to<std::string>(entry.at("group")));
-        }
-        component = radio;
+        component = loadRadioButton(entry);
     } else if (componentType == "vbox" || componentType == "hbox") {
-        boost::shared_ptr<component::Box> box = componentType == "vbox"
-            ? boost::static_pointer_cast<component::Box>(boost::make_shared<component::VerticalBox>())
-            : boost::static_pointer_cast<component::Box>(boost::make_shared<component::HorizontalBox>());
-        loadBox(entry, box);
-        component = box;
+        component = loadFlowBox(componentType, entry);
     } else {
         logger_->get()->error("Unrecognized ui component type [{}]", componentType);
     }
@@ -522,6 +512,7 @@ void Loader::loadAttributes(const boost::json::object& entry, const boost::share
     }
     component->visible(flag(entry, "visible", component->visible()));
     component->pickable(flag(entry, "pickable", component->pickable()));
+    component->focusable(flag(entry, "focusable", component->focusable()));
     component->clip(flag(entry, "clip", component->clip()));
     if (entry.contains("depth")) {
         component->depth(boost::json::value_to<unsigned int>(entry.at("depth")));
@@ -637,6 +628,58 @@ boost::shared_ptr<component::SelectList> Loader::loadSelectList(const boost::jso
         list->event(command);
     }
     return list;
+}
+
+/**
+ **/
+boost::shared_ptr<component::TextBox> Loader::loadTextBox(const boost::json::object& entry) {
+    boost::shared_ptr<component::TextBox> box = boost::make_shared<component::TextBox>();
+    if (entry.contains("text")) {
+        box->text(boost::json::value_to<std::string>(entry.at("text")));
+    }
+    if (entry.contains("placeholder")) {
+        box->placeholder(boost::json::value_to<std::string>(entry.at("placeholder")));
+    }
+    if (entry.contains("limit")) {
+        box->limit(static_cast<std::size_t>(boost::json::value_to<int>(entry.at("limit"))));
+    }
+    const v3d::event::Event command = loadCommand(entry);
+    if (command.context()) {
+        box->event(command);
+    }
+    return box;
+}
+
+/**
+ **/
+boost::shared_ptr<component::TabPage> Loader::loadTabPage(const boost::json::object& entry) {
+    boost::shared_ptr<component::TabPage> page = boost::make_shared<component::TabPage>();
+    if (entry.contains("label")) {
+        page->label(boost::json::value_to<std::string>(entry.at("label")));
+    }
+    return page;
+}
+
+/**
+ **/
+boost::shared_ptr<component::RadioButton> Loader::loadRadioButton(const boost::json::object& entry) {
+    boost::shared_ptr<component::RadioButton> radio = boost::make_shared<component::RadioButton>();
+    loadCheckBox(entry, radio);
+    if (entry.contains("group")) {
+        radio->group(boost::json::value_to<std::string>(entry.at("group")));
+    }
+    return radio;
+}
+
+/**
+ **/
+boost::shared_ptr<component::Box> Loader::loadFlowBox(const std::string& componentType,
+    const boost::json::object& entry) {
+    boost::shared_ptr<component::Box> box = componentType == "vbox"
+        ? boost::static_pointer_cast<component::Box>(boost::make_shared<component::VerticalBox>())
+        : boost::static_pointer_cast<component::Box>(boost::make_shared<component::HorizontalBox>());
+    loadBox(entry, box);
+    return box;
 }
 
 /**

@@ -22,6 +22,7 @@
 #include "component/SelectList.h"
 #include "component/TabBar.h"
 #include "component/TabPage.h"
+#include "component/TextBox.h"
 #include "component/Toolbar.h"
 #include "component/Type.h"
 #include "component/menu/MenuBar.h"
@@ -172,6 +173,13 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::Bound2D& room
             return glm::vec2(
                 widest + styles_.resolve(style::Resolver::Class::List, component.style()).padding,
                 room.size().y);
+        }
+        case component::Type::TextBox: {
+            // a box is as wide as the room it is in and as tall as the line it holds: the
+            // text it will be typed into is not what should size it, or it would grow
+            // under the caret
+            const Dressing& dress = styles_.resolve(style::Resolver::Class::TextBox, component.style());
+            return glm::vec2(room.size().x, dress.lineHeight + dress.padding);
         }
         case component::Type::Scrollbar: {
             // a scrollbar decides how thick it is and nothing about how long: its length

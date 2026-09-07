@@ -48,6 +48,7 @@ class Panel;
 class Scrollbar;
 class SelectList;
 class TabBar;
+class TextBox;
 class Toolbar;
 };  // namespace component
 
@@ -163,6 +164,16 @@ class ComponentRenderer {
      * can say which row a point is on.
      **/
     void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::SelectList>& list) const;
+
+    /**
+     * Draw a text box - its plate, the line it holds, and the caret when it has the
+     * keyboard.
+     *
+     * The line is cut off at the plate and slid left when the caret would be past the far
+     * edge, so a box goes on being typed into once it is full. Whether the caret is drawn
+     * is the component's focused() flag, which Engine::focus() wrote - ADR-0040.
+     **/
+    void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::TextBox>& box) const;
 
     /**
      * Draw a tab bar - the strip of tabs across the top of its box, and the page the

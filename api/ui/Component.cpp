@@ -33,6 +33,8 @@ Component::Component(component::Type type) :
     id_(nextID++),
     visible_(true),
     pickable_(false),
+    focusable_(false),
+    focused_(false),
     clip_(false),
     type_(type) {
 }
@@ -106,6 +108,22 @@ bool Component::pickable() const {
 
 void Component::pickable(bool pick) {
     pickable_ = pick;
+}
+
+bool Component::focusable() const {
+    return focusable_;
+}
+
+void Component::focusable(bool takes) {
+    focusable_ = takes;
+}
+
+bool Component::focused() const {
+    return focused_;
+}
+
+void Component::focused(bool on) {
+    focused_ = on;
 }
 
 bool Component::clip() const {

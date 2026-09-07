@@ -30,6 +30,7 @@ enum class Type {
     SelectList,
     TabBar,
     TabPage,
+    TextBox,
     Toolbar,
     VerticalBox
 };
