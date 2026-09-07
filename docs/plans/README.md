@@ -9,6 +9,16 @@ every phase is closed it moves to [completed/](completed/), and any open item it
 moves to [TODO.md](../TODO.md). The plan itself stays, because the reasoning behind an ordering
 outlives the schedule.
 
+[UiConsolidation.md](UiConsolidation.md) **is open**, drafted on 2026-09-06 out of an
+architecture review of `api/ui`. Twelve steps over a library that grew four ADRs in a day and has
+not had a pass over its shape since. Its ordering matters for two reasons. Three of its steps are
+defects shipping today — an opaque "translucent" panel, an `Immediate` state map that grows
+without bound against an ADR that says it does not, and an `alpha` argument that does nothing —
+and those are separable one-line-ish fixes that should not wait behind the structural work. And
+the structural work has a strict order the other way: the names and the headers before the draw
+path, because the draw path would otherwise be written twice, and the style resolver before the
+renderer is split, because the resolver *is* one half of that split.
+
 [OfflineRenderingPhase3.md](OfflineRenderingPhase3.md) **is open**, drafted on 2026-09-05. It
 takes up phase 3 of [the offline rendering roadmap](../roadmap/OfflineRendering.md) — light and
 surface — and answers the question that roadmap left open: shading is a language rather than a

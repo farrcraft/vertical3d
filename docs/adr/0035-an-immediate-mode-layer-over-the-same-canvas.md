@@ -102,5 +102,12 @@ recompute — a tab bar's selected tab and a window's collapsed flag.
   is `pushId`/`popId`; it will nonetheless be met the first time a table has two "Kill" buttons
   in it.
 - A widget's box is stored per frame in a map keyed by id, and an id that stops being drawn
-  leaves an entry behind. The map is cleared of anything not drawn for a frame, so the cost is
+  leaves an entry behind. The map is cleared of anything not drawn for a while, so the cost is
   bounded, but a panel that generates ids from changing text churns it.
+
+  **Corrected on 2026-09-06.** As built, the map was never swept at all, so it only grew; and
+  the sweep this consequence described - clearing anything not drawn for a single frame - would
+  have lost the scroll and the fold of any panel behind a toggle. `Immediate::retention` is the
+  number of frames a widget keeps what it was holding after it stops being drawn, and
+  `Immediate::retained()` is what it is holding. Step 3 of
+  [plans/UiConsolidation.md](../plans/UiConsolidation.md).

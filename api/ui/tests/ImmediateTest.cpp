@@ -4,6 +4,7 @@
  **/
 
 #include <algorithm>
+#include <initializer_list>
 #include <string>
 #include <vector>
 
@@ -650,6 +651,70 @@ BOOST_AUTO_TEST_CASE(a_bar_appears_the_frame_after_a_window_overflows) {
 
     // the second frame knows it overflowed, so it draws a track and a thumb the first had not
     BOOST_CHECK(canvas.indices().size() > unscrolled);
+}
+
+/**
+ * A widget that stops being drawn is aged out, so a panel whose ids come from changing text
+ * costs what it drew recently rather than everything it has ever drawn.
+ *
+ * ADR-0035 named this as the bound on the layer's state. Without it the map only grows.
+ **/
+BOOST_AUTO_TEST_CASE(what_stops_being_drawn_is_aged_out) {
+    std::vector<Written> written;
+    v3d::ui::Immediate ui = build(&written);
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(400, 300);
+
+    // a new window every frame, which is the churn the bound is for
+    for (unsigned int frame = 0; frame < 400; frame++) {
+        ui.begin(&canvas, v3d::ui::Immediate::Input());
+        ui.window("panel " + std::to_string(frame), glm::vec2(10.0f, 10.0f), glm::vec2(200.0f, 100.0f), 1.0f);
+        ui.endWindow();
+        ui.end();
+        canvas.clear();
+    }
+
+    BOOST_CHECK_LE(ui.retained(), v3d::ui::Immediate::retention + 1);
+}
+
+/**
+ * A window put away for a moment comes back as it was left. Ageing out on the first frame a
+ * widget is missing would lose the scroll and the fold of anything behind a toggle.
+ **/
+BOOST_AUTO_TEST_CASE(a_window_hidden_for_a_moment_keeps_what_it_held) {
+    std::vector<Written> written;
+    v3d::ui::Immediate ui = build(&written);
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(400, 300);
+
+    const glm::vec2 corner(10.0f, 10.0f);
+    const glm::vec2 size(200.0f, 100.0f);
+
+    // fold it by clicking its title bar, which is the only thing this layer folds one by.
+    // Hover is a frame behind, so the cursor has to arrive before the press does
+    const glm::vec2 onBar = corner + glm::vec2(size.x * 0.5f, 4.0f);
+    bool folded = false;
+    for (const v3d::ui::Immediate::Input& input : { hover(onBar), press(onBar), release(onBar) }) {
+        ui.begin(&canvas, input);
+        folded = !ui.window("tools", corner, size, 1.0f);
+        ui.endWindow();
+        ui.end();
+        canvas.clear();
+    }
+    BOOST_CHECK(folded);
+
+    // away for a few frames, and back
+    for (unsigned int frame = 0; frame < 5; frame++) {
+        ui.begin(&canvas, v3d::ui::Immediate::Input());
+        ui.end();
+        canvas.clear();
+    }
+
+    ui.begin(&canvas, v3d::ui::Immediate::Input());
+    const bool stillFolded = !ui.window("tools", corner, size, 1.0f);
+    ui.endWindow();
+    ui.end();
+    BOOST_CHECK(stillFolded);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -7,6 +7,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <iterator>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -103,6 +105,7 @@ clicked(false) {
 }
 
 Immediate::Retained::Retained() noexcept :
+frame(0),
 tab(0),
 scroll(0.0f),
 content(0.0f),
@@ -140,6 +143,7 @@ Immediate::Immediate(const Measure& measure, const Write& write) :
     hovered_(0),
     hovering_(0),
     active_(0),
+    frame_(0),
     margin_(0.0f),
     right_(0.0f),
     penY_(0.0f),
@@ -211,6 +215,7 @@ void Immediate::theme(const boost::shared_ptr<style::Theme>& theme) {
 void Immediate::begin(v3d::render::realtime::Canvas* canvas, const Input& input) {
     canvas_ = canvas;
     input_ = input;
+    frame_++;
     drag_ = input.cursor - previousCursor_;
     hovering_ = 0;
     ids_.clear();
@@ -235,6 +240,22 @@ void Immediate::end() {
     }
     previousCursor_ = input_.cursor;
     canvas_ = nullptr;
+
+    // what nothing has asked for in a while goes, so that a caller building ids out of
+    // changing text costs a bounded amount rather than a growing one
+    for (auto entry = state_.begin(); entry != state_.end();) {
+        entry = entry->second.frame + retention < frame_ ? state_.erase(entry) : std::next(entry);
+    }
+}
+
+std::size_t Immediate::retained() const noexcept {
+    return state_.size();
+}
+
+Immediate::Retained& Immediate::retain(Id id) {
+    Retained& retained = state_[id];
+    retained.frame = frame_;
+    return retained;
 }
 
 Immediate::Id Immediate::identify(const std::string& label) const {
@@ -323,7 +344,7 @@ bool Immediate::window(const std::string& title, const glm::vec2& position, cons
         return false;
     }
     const Id id = identify(title);
-    Retained& retained = state_[id];
+    Retained& retained = retain(id);
 
     const glm::vec2 min = position;
     const glm::vec2 barMax(position.x + size.x, position.y + style_.barHeight);
@@ -399,7 +420,7 @@ void Immediate::endWindow() {
         canvas_->unclip();
         windowClipped_ = false;
 
-        Retained& retained = state_[window_];
+        Retained& retained = retain(window_);
         // how tall what was drawn came to. The pen has the scroll taken out of it and the
         // gap after the last row left in, so both go back before it is a height
         retained.content = std::max(penY_ + retained.scroll - style_.spacing - contentTop_, 0.0f);
@@ -636,7 +657,7 @@ bool Immediate::tab(const std::string& label) {
     if (canvas_ == nullptr || !inTabBar_) {
         return false;
     }
-    Retained& retained = state_[tabBar_];
+    Retained& retained = retain(tabBar_);
     const unsigned int index = tabIndex_++;
     const glm::vec2 size(measure_(label) + style_.padding * 2.0f, style_.barHeight);
     const glm::vec2 min(tabPen_, tabTop_);
@@ -662,11 +683,11 @@ void Immediate::endTabBar() {
         return;
     }
     if (tabChanged_) {
-        state_[tabBar_].tab = tabWanted_;
+        retain(tabBar_).tab = tabWanted_;
     } else if (!tabTaken_ && tabIndex_ > 0) {
         // a strip whose selected tab is no longer there falls back to the first, so a bar
         // is never drawn with nothing chosen
-        state_[tabBar_].tab = 0;
+        retain(tabBar_).tab = 0;
     }
     inTabBar_ = false;
 }

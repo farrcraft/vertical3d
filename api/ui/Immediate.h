@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <map>
@@ -126,9 +127,28 @@ class Immediate {
     void begin(v3d::render::realtime::Canvas* canvas, const Input& input);
 
     /**
-     * Finish a frame, which is what settles who has the cursor for the next one.
+     * Finish a frame, which is what settles who has the cursor for the next one, and ages
+     * out what nothing has drawn for retention frames.
      **/
     void end();
+
+    /**
+     * How many widgets the layer is holding something for.
+     *
+     * A window's scroll and fold and a tab strip's selection are all it keeps, so this is
+     * a handful in a running app and is here to say so - a caller building ids out of
+     * changing text can watch it rather than discover the cost later.
+     **/
+    std::size_t retained() const noexcept;
+
+    /**
+     * How many frames a widget that stops being drawn keeps what it was holding.
+     *
+     * Long enough that a panel behind a toggle comes back scrolled and folded as it was,
+     * and short enough that a caller building ids out of changing text is bounded by what
+     * it drew in the last second rather than by how long it has been running.
+     **/
+    static const std::uint64_t retention = 60;
 
     /**
      * Open a window at a place the caller decides - this layer does not drag one.
@@ -290,11 +310,18 @@ class Immediate {
     struct Retained final {
         Retained() noexcept;
 
+        std::uint64_t frame;  /**< the last frame that asked for it, which is what ages it out **/
         unsigned int tab;  /**< which tab of a strip is selected **/
         float scroll;      /**< how far the window's content is scrolled up, in pixels **/
         float content;     /**< how tall what it held came to last frame **/
         bool collapsed;    /**< whether a window is folded to its title bar **/
     };
+
+
+    /**
+     * What a widget is holding, marked as still wanted so that end() does not age it out.
+     **/
+    Retained& retain(Id id);
 
     /**
      * Hash a label with the top of the id stack.
@@ -371,6 +398,7 @@ class Immediate {
 
     std::vector<Id> ids_;
     std::map<Id, Retained> state_;
+    std::uint64_t frame_;
 
     float margin_;      /**< where a new row starts **/
     float right_;       /**< where the room a widget may take ends **/
