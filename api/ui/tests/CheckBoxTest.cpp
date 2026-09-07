@@ -14,6 +14,7 @@
 #include "../../render/realtime/Canvas.h"
 #include "../Container.h"
 #include "../Engine.h"
+#include "../component/Scrollbar.h"
 #include "../component/CheckBox.h"
 #include "../component/RadioButton.h"
 

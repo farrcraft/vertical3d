@@ -14,6 +14,7 @@
 #include "../ComponentRenderer.h"
 #include "../Container.h"
 #include "../Engine.h"
+#include "../../asset/Json.h"
 #include "../component/Button.h"
 #include "../component/CheckBox.h"
 #include "../component/Panel.h"

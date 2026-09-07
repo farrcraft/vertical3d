@@ -9,6 +9,7 @@ v3d_add_api_library(ui
 	"GameMenu.h" "GameMenu.cpp"
 	"Immediate.h" "Immediate.cpp"
 	"Layout.h" "Layout.cpp"
+	"Loader.h" "Loader.cpp"
 	"Painter.h" "Painter.cpp"
 	"StatisticsOverlay.h" "StatisticsOverlay.cpp"
 	"Style.h" "Style.cpp"

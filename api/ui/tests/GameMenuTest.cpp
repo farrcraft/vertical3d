@@ -9,6 +9,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include "../Engine.h"
+#include "../../asset/Json.h"
 #include "../GameMenu.h"
 
 #include <boost/json/parse.hpp>

@@ -17,6 +17,10 @@
 #include "../style/Theme.h"
 #include <entt/entt.hpp>
 #include "../Engine.h"
+#include "../component/Icon.h"
+#include "../component/Label.h"
+#include "../component/Toolbar.h"
+#include "../../asset/Json.h"
 #include "../style/Button.h"
 #include "../style/property/Color.h"
 #include "../style/property/Font.h"
