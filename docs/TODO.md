@@ -69,14 +69,19 @@ that exists today.
 ## User interface
 
 A component holds other components and asks for a box as of 2026-09-06 -
-[ADR-0034](adr/0034-a-component-has-children-and-a-box.md). Nothing in the tree draws one
-yet: the editor's menu bar and toolbars are strips the renderer places itself, and the apps
-put up a menu and an overlay. It was built for the huds and plates that need it.
+[ADR-0034](adr/0034-a-component-has-children-and-a-box.md) - and `ui::Immediate` is a second
+way to write one, driven by calls rather than by a tree -
+[ADR-0035](adr/0035-an-immediate-mode-layer-over-the-same-canvas.md). Nothing in the tree
+uses either yet: the editor's menu bar and toolbars are strips the renderer places itself,
+and the apps put up a menu and an overlay. Both were built for the huds, plates and debug
+panels that need them.
 
 [] nothing clips a child to its parent, and a box that overflows draws outside the one holding it. A scrollbar needs clipping before it needs anything else, which is why `Scrollbar.h` is still an empty declaration
 [] `TabBar`, `TabPage`, `TextBox`, `CheckBox`, `RadioButton`, `Dialog`, `SelectList`, `Spinner`, `ToolTip`, `PopupMenu` and `RadialMenu` are still empty declarations with no loader and no draw path
 [] `Frame` is an empty declaration that `Panel` now covers the drawing half of. Either it becomes the thing with a title bar that a dialog sits in, or it goes
-[] there is no immediate mode layer, so a panel whose contents change every frame is a tree to keep in step by hand. A window, a tab bar and a table over the same canvas would be the shape of one
+[] nothing in the tree drives `ui::Immediate`, so the layer is covered by its cases and by nothing that draws. The editor's four viewports, voxel's chunk counts and odyssey's turn state are each a debug window waiting to be asked for
+[] `Immediate` keeps no scroll, so a panel longer than its window runs off the bottom of it. This is the clipping item above, met from the other side
+[] a widget in `Immediate` is hovered a frame after it is drawn, so the first frame of a window that appears under the cursor answers nothing
 [] a percentage of a parent that has not been drawn is a percentage of zero, so the frame after a resize places a child against the previous size
 
 ## The game loop

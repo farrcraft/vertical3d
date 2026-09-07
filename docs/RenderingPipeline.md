@@ -176,6 +176,16 @@ what a flow list is for. `Panel` and `Bar` round their corners with `Canvas::arc
 the same triangle fan `circle` is built from and so stays inside the one batched primitive of
 [ADR-0005](adr/0005-one-batched-quad-primitive.md).
 
+**There is a second way to write a ui, onto the same canvas**, per
+[ADR-0035](adr/0035-an-immediate-mode-layer-over-the-same-canvas.md). `v3d::ui::Immediate`
+takes the same `Measure` and `Write` callbacks and is driven by calls rather than by a tree:
+a window, a tab strip, a table, a button and a scrubbable int between `begin()` and `end()`,
+each placed where a layout pen has got to and hit tested against the box it was just drawn
+in. It is the shape a tool wants, because a panel written that way is a function of the state
+it reads and cannot show something stale; a hud is the other shape and stays retained. Which
+widget the cursor is on is settled at `end()` and used by the next frame, which is what lets
+a window drawn later take the cursor from one under it.
+
 ## Line drawing
 
 The second primitive, per [ADR-0011](adr/0011-lines-are-the-second-primitive.md). The editor's

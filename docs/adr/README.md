@@ -45,3 +45,4 @@ old record's status and leave the file in place.
 | [0032](0032-the-loop-simulates-at-a-fixed-step.md) | Game Loop — The Loop Simulates At A Fixed Step And Renders At A Variable One | accepted | 2026-09-06 |
 | [0033](0033-a-consumer-selects-the-api-libraries-it-wants.md) | API Selection — A Consumer Names The Libraries It Wants, And A Manifest Expands The Closure | accepted | 2026-09-06 |
 | [0034](0034-a-component-has-children-and-a-box.md) | UI Layout — A Component Has Children, And The Draw Walk Resolves Its Box | accepted | 2026-09-06 |
+| [0035](0035-an-immediate-mode-layer-over-the-same-canvas.md) | Immediate Mode — A Second Way To Draw A UI, Onto The Same Canvas | accepted | 2026-09-06 |

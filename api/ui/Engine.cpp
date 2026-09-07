@@ -499,7 +499,8 @@ boost::shared_ptr<component::Button> Engine::loadButton(const boost::json::objec
 
 /**
  **/
-boost::shared_ptr<component::Panel> Engine::loadPanel(const boost::json::object&) {
+boost::shared_ptr<component::Panel> Engine::loadPanel(const boost::json::object& entry) {
+    static_cast<void>(entry);
     // everything a panel is drawn with is its style's, per ADR-0020, so there is nothing
     // of its own to read
     return boost::make_shared<component::Panel>();
