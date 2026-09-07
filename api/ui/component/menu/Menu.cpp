@@ -56,6 +56,10 @@ void Menu::active(int idx) {
 }
 
 bool Menu::next() {
+    // a capture has the input, so navigation does not move under it
+    if (capture_) {
+        return false;
+    }
     boost::shared_ptr<Menu> lvl = level();
     if (!lvl || lvl->items_.empty()) {
         return false;
@@ -69,6 +73,10 @@ bool Menu::next() {
 }
 
 bool Menu::previous() {
+    // a capture has the input, so navigation does not move under it
+    if (capture_) {
+        return false;
+    }
     boost::shared_ptr<Menu> lvl = level();
     if (!lvl || lvl->items_.empty()) {
         return false;
@@ -86,6 +94,12 @@ bool Menu::previous() {
 }
 
 bool Menu::up() {
+    // backing out of a capture is what it means here, rather than leaving the level the
+    // item being captured into sits on
+    if (capture_) {
+        cancel();
+        return true;
+    }
     boost::shared_ptr<Menu> lvl = level();
     if (!lvl) {
         return false;
@@ -98,6 +112,9 @@ bool Menu::up() {
 }
 
 bool Menu::down() {
+    if (capture_) {
+        return false;
+    }
     boost::shared_ptr<Menu> lvl = level();
     if (!lvl) {
         return false;
@@ -140,7 +157,45 @@ bool Menu::dispatch(const boost::shared_ptr<MenuItem>& item) const {
     return true;
 }
 
+bool Menu::capturing() const {
+    return capture_ != nullptr;
+}
+
+/**
+ **/
+void Menu::cancel() {
+    capture_.reset();
+}
+
+/**
+ **/
+bool Menu::capture(const v3d::event::EventData& value) {
+    if (!capture_) {
+        return false;
+    }
+    capture_->value(value);
+
+    // a binding is one key, so the first one given is the whole answer
+    if (capture_->type() == menu::ItemType::KeyInput) {
+        const boost::shared_ptr<MenuItem> item = capture_;
+        capture_.reset();
+        dispatch(item);
+    }
+    return true;
+}
+
+/**
+ **/
 void Menu::activate() {
+    // an activation arriving while one is open is what ends a capture, whichever level
+    // the item being captured into belongs to
+    if (capture_) {
+        const boost::shared_ptr<MenuItem> item = capture_;
+        capture_.reset();
+        dispatch(item);
+        return;
+    }
+
     boost::shared_ptr<Menu> lvl = level();
     if (!lvl) {
         return;
@@ -156,9 +211,7 @@ void Menu::activate() {
         } else if (item->type() == menu::ItemType::Input ||
             item->type() == menu::ItemType::NumericInput ||
             item->type() == menu::ItemType::KeyInput) {
-            // the ui needs to capture all input until the next ui activation (e.g. another select menu command bound
-            // event is received), and then dispatch(item) with the captured value. Nothing captures input yet, so
-            // activating an input item does nothing rather than sending a stale value.
+            capture_ = item;
         }
     }
 }

@@ -47,7 +47,18 @@ class StatisticsOverlay final {
     /**
      * @param text the renderer the lines are drawn with, which decides their size
      **/
-    explicit StatisticsOverlay(const boost::shared_ptr<TextRenderer>& text);
+    /**
+     * @param text the font the readout is drawn with, whose atlas is at a base size rather
+     *        than at the size this draws - ADR-0036
+     * @param size the size to draw the readout at. A frame time is a thing to glance at
+     *        rather than read, so it defaults smaller than a ui's own text
+     **/
+    explicit StatisticsOverlay(const boost::shared_ptr<TextRenderer>& text, float size = defaultSize);
+
+    /**
+     * The size the readout is drawn at when the caller names none.
+     **/
+    static const float defaultSize;
 
     /**
      * Show the overlay if it is hidden, hide it if it is shown.
@@ -79,6 +90,7 @@ class StatisticsOverlay final {
 
  private:
     boost::shared_ptr<TextRenderer> text_;
+    float size_;
     bool visible_;
 };
 

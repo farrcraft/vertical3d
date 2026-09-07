@@ -7,6 +7,7 @@
 
 #include <SDL3/SDL.h>
 
+#include <map>
 #include <string>
 
 #include "Feature.h"
@@ -128,10 +129,32 @@ bool Engine::registerEventMappings() {
             !readMappingDestination(mapping, &destinationEvent)) {
             return false;
         }
+        // a rebound command keeps the context and the edge the config gave it, and takes
+        // only its name from what the player chose
+        const std::map<std::string, std::string>::const_iterator rebound =
+            rebindings_.find(destinationEvent.str());
+        if (rebound != rebindings_.end()) {
+            v3d::event::Event replacement(rebound->second, sourceEvent.context());
+            replacement.type(v3d::event::Type::Source);
+            replacement.state(sourceEvent.state());
+            sourceEvent = replacement;
+        }
+
         mapper->map(sourceEvent, destinationEvent);
     }
+    // addMapper stores by name, so this replaces the mapper rather than adding a second
     eventEngine_->addMapper(mapper);
     return true;
+}
+
+/**
+ **/
+bool Engine::rebind(const std::string& command, const std::string& key) {
+    if (!config_) {
+        return false;
+    }
+    rebindings_[command] = key;
+    return registerEventMappings();
 }
 
 /**

@@ -25,6 +25,27 @@ namespace v3d::engine {
 std::string appPath(const char* executable);
 
 /**
+ * The directory this user's own files for an app belong in, with a trailing separator.
+ *
+ * The symmetric question to the one appPath() answers. That one says where an app reads
+ * the assets it shipped with; this one says where it writes what the player chose - a
+ * settings document, a key binding, a saved game. They are different directories because
+ * the first is overwritten from source on every build and is not reliably writable at all.
+ *
+ * Nothing else is needed to read or write there: asset::Manager takes its root as a
+ * constructor argument, so a second manager on this path loads through the same loaders.
+ *
+ * A platform that cannot answer gives an empty string and a log line rather than throwing,
+ * because a game that cannot find a settings directory should still run on its defaults.
+ * The directory is created if it does not exist.
+ *
+ * @param org the organization the app belongs to, the same for every app that shares it
+ * @param app what this app is called, and never changed once it has been chosen
+ * @return the directory, ending in a separator, or an empty string
+ **/
+std::string userPath(const std::string& org, const std::string& app);
+
+/**
  * Build an engine, run it to completion and shut it down - the whole of an app's main.
  *
  * shutdown() runs outside the loop and outside the catch, because it has to run whether

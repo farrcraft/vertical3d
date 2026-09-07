@@ -77,6 +77,29 @@ void GameMenu::toggle() {
 
 /**
  **/
+bool GameMenu::capturing() const {
+    if (!visible()) {
+        return false;
+    }
+    boost::shared_ptr<component::Menu> active = menu();
+    return active && active->capturing();
+}
+
+/**
+ **/
+bool GameMenu::capture(const v3d::event::EventData& value) {
+    if (!visible()) {
+        return false;
+    }
+    boost::shared_ptr<component::Menu> active = menu();
+    if (!active) {
+        return false;
+    }
+    return active->capture(value);
+}
+
+/**
+ **/
 bool GameMenu::navigate(const std::string_view& command) {
     if (!visible()) {
         return false;

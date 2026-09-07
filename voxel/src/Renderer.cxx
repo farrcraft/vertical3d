@@ -51,6 +51,10 @@ const char* const terrainPass = v3d::render::realtime::Engine3D::colourPass;
  **/
 const char* const overlayPass = "overlay";
 
+/**
+ * The size the ui and the debug overlay are drawn at, which the one atlas is scaled to per
+ * ADR-0036 rather than rasterized at.
+ **/
 const float fontSize = 18.0f;
 
 constexpr glm::vec4 sky(0.4f, 0.6f, 0.9f, 1.0f);
@@ -109,7 +113,7 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
     createLayout();
     createUniforms();
     createPipeline();
-    text_ = boost::make_shared<v3d::ui::TextRenderer>(assetManager, logger, engine_.quads(), fontSize);
+    text_ = boost::make_shared<v3d::ui::TextRenderer>(assetManager, logger, engine_.quads());
 
     meshes_ = boost::make_shared<ChunkMeshPool>();
     builder_ = boost::make_shared<MeshBuilder>(scene_->chunks(),
@@ -117,7 +121,7 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
 
     debugOverlay_ = boost::make_shared<DebugOverlay>(scene_);
 
-    uiRenderer_ = boost::make_shared<v3d::ui::ComponentRenderer>(text_->measure(), text_->write(&canvas_));
+    uiRenderer_ = boost::make_shared<v3d::ui::ComponentRenderer>(text_->measure(fontSize), text_->write(&canvas_, fontSize));
     uiRenderer_->style().lineHeight = fontSize * 1.4f;
 }
 
@@ -320,7 +324,7 @@ void Renderer::draw() {
     if (debug_) {
         glm::vec2 pen(20.0f, fontSize * 2.0f);
         for (const std::string& line : debugOverlay_->lines()) {
-            text_->draw(&canvas_, line, pen, textColour);
+            text_->draw(&canvas_, line, pen, textColour, fontSize);
             pen.y += fontSize * 1.4f;
         }
     }

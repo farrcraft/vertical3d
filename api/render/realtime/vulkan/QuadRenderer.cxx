@@ -51,6 +51,17 @@ const uint32_t poolSize = 64;
 const VkDeviceSize initialVertexBytes = 64ULL * 1024;
 const VkDeviceSize initialIndexBytes = 32ULL * 1024;
 
+/**
+ * The push constant block, laid out as quad.vert and quad.frag declare it.
+ *
+ * One range covers both stages: the projection is the vertex stage's and text is the
+ * fragment stage's, and a batch is one or the other for all of its fragments.
+ **/
+struct Push final {
+    glm::mat4 projection;
+    uint32_t text;
+};
+
 };  // namespace
 
 /**
@@ -128,7 +139,7 @@ void QuadRenderer::createPipelines(VkFormat colour, VkFormat depth) {
         .cull(VK_CULL_MODE_NONE)
         .set(uniforms_->layout())
         .set(materialLayout_)
-        .push(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4))
+        .push(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(Push))
         .colourFormat(colour);
 
     pipeline_ = resources_->add(builder.build(cache_));
@@ -318,8 +329,11 @@ void QuadRenderer::submit(const Canvas& canvas, Pass* pass, uint16_t layer) {
         item.instances = 1;
 
         if (pipeline != nullptr && pipeline->pushStages != 0) {
-            std::memcpy(item.push.data(), &projection, sizeof(projection));
-            item.pushSize = sizeof(projection);
+            Push constants;
+            constants.projection = projection;
+            constants.text = batch.text ? 1u : 0u;
+            std::memcpy(item.push.data(), &constants, sizeof(constants));
+            item.pushSize = sizeof(constants);
         }
 
         pass->submit(item);

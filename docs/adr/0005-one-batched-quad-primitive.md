@@ -7,6 +7,10 @@
 Extended by [ADR-0011](0011-lines-are-the-second-primitive.md): the one primitive here is the
 one primitive for 2D. Lines are a second, for the editor.
 
+Amended by [ADR-0036](0036-text-is-a-distinct-kind-of-quad.md): the decision below holds, but
+the fragment shader branches once, on whether a batch is text. Distance field glyphs need a
+threshold that would corrupt every other quad.
+
 ## Context
 
 `v3d::gl::Canvas` batches coloured quads, but its vertices carry position and rgba only —

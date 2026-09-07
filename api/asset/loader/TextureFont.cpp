@@ -28,7 +28,16 @@ boost::shared_ptr<Asset> TextureFont::load(std::string_view name) {
         return nullptr;
     }
     float fontSize = std::get<float>(param.get());
-    boost::shared_ptr<v3d::font::TextureFont> font = boost::make_shared<v3d::font::TextureFont>(std::string(name), fontSize, logger_);
+
+    // a face asked for without one is rasterized as coverage, which is what everything
+    // that is not drawing a scalable glyph wants
+    unsigned int spread = 0;
+    boost::optional<ParameterValue> field = parameter("spread");
+    if (field) {
+        spread = static_cast<unsigned int>(std::get<float>(field.get()));
+    }
+
+    boost::shared_ptr<v3d::font::TextureFont> font = boost::make_shared<v3d::font::TextureFont>(std::string(name), fontSize, logger_, spread);
     boost::shared_ptr<Asset> asset = boost::make_shared<v3d::asset::TextureFont>(std::string(name), type(), font);
     return asset;
 }

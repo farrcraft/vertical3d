@@ -30,6 +30,10 @@ namespace v3d::render::realtime {
  * changes. An untextured quad names no texture and is drawn against the renderer's 1x1
  * white one, so it never cuts a batch of its own.
  *
+ * A glyph is the exception ADR-0036 adds: its atlas holds distances rather than coverage,
+ * so a batch also records whether it is text and the stream cuts where that changes. A
+ * sprite drawn from a glyph atlas and a label sample the same texture and must not merge.
+ *
  * Nothing here touches vulkan. The canvas is filled during a tick and handed to
  * vulkan::QuadRenderer, which uploads it and turns each batch into a draw item.
  *
@@ -49,12 +53,13 @@ class Canvas final {
 
     /**
      * A run of indices that can be drawn with one call, because everything in it samples
-     * the same texture.
+     * the same texture the same way.
      **/
     struct Batch final {
         Batch() noexcept;
 
         TextureHandle texture;  /**< unset for the untextured quads drawn against white **/
+        bool text;              /**< whether the run samples a distance field - ADR-0036 **/
         uint32_t firstIndex;    /**< where the run starts in indices() **/
         uint32_t indices;       /**< how long the run is **/
     };
@@ -178,9 +183,13 @@ class Canvas final {
 
  private:
     /**
-     * Start a batch, or extend the open one when it already draws with this texture.
+     * Start a batch, or extend the open one when it already draws the same way.
+     *
+     * Both the texture and the text flag have to match: the fragment shader treats a text
+     * batch's texels as distances, so merging one with a run of sprites would threshold
+     * the sprites.
      **/
-    void open(const TextureHandle& texture);
+    void open(const TextureHandle& texture, bool text = false);
 
     /**
      * Add a vertex with the current transform applied.

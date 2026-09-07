@@ -16,9 +16,11 @@ layout(location = 2) in vec4 colour;
 layout(location = 0) out vec2 fragmentUv;
 layout(location = 1) out vec4 fragmentColour;
 
-// per object, per the binding convention in docs/RenderingPipeline.md
+// per object, per the binding convention in docs/RenderingPipeline.md. text is the
+// fragment stage's, and is declared here because the range is one and covers both
 layout(push_constant) uniform Push {
     mat4 projection;
+    uint text;
 } push;
 
 void main() {

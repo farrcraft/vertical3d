@@ -83,6 +83,7 @@ panels that need them.
 [] `Immediate` keeps no scroll, so a panel longer than its window runs off the bottom of it. This is the clipping item above, met from the other side
 [] a widget in `Immediate` is hovered a frame after it is drawn, so the first frame of a window that appears under the cursor answers nothing
 [] a percentage of a parent that has not been drawn is a percentage of zero, so the frame after a resize places a child against the previous size
+[] `Canvas` has `push`, `pop` and `translate` and no scale, so anything wanting to draw at a size scales its own coordinates before handing them over - which is what `TextureTextBuffer` does for a glyph. Carried out of the ui foundations plan, which met the gap from one direction and did not need to close it
 
 ## The game loop
 
@@ -118,4 +119,3 @@ Open work, for when the app is what moves forward rather than the platform.
 [] one thing is selected at a time - no rubber band and no shift-click
 [] there is no file chooser, no "save as" and no dirty flag
 [] the viewport panes are not draggable
-[] input capture for input-type menu items is unbuilt, so the five in `pong/data/vgui.json` are unreachable

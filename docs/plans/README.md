@@ -15,6 +15,21 @@ surface — and answers the question that roadmap left open: shading is a langua
 fixed set of shaders. That answer makes it a subsystem rather than a weekend, and phases 4 and
 5 sit behind it.
 
+[completed/UiFoundations.md](completed/UiFoundations.md) was drafted on 2026-09-06 against this
+tree from outside it, and staged and closed here the same day. Nine steps taking up what a ui
+needs from the engine before it can have more than one text size: signed distance field glyphs
+([ADR-0036](../adr/0036-text-is-a-distinct-kind-of-quad.md), which amends
+[0005](../adr/0005-one-batched-quad-primitive.md)), menu input capture, a user settings path, and
+a window that can be told its size. Its ordering mattered because two of its steps were defects
+that shipped — pong's rebinding menu did nothing when activated, and an overflowing glyph atlas
+reported success — and because four apps each hardcoded a font size around a constraint that was
+the library's rather than theirs.
+
+Two things came out differently. Step 4 could not be the additive step it was drafted as, so it
+landed with step 2; and step 5 gave its size argument a default, which meant the four call sites
+it was expected to break did not break, and step 6 became four apps choosing a size rather than
+four apps being repaired.
+
 [completed/GameLoopFoundations.md](completed/GameLoopFoundations.md) was drafted on 2026-09-05
 against this tree from outside it, and staged and closed here on 2026-09-06. It took up three
 gaps in the game loop that every app subclassing `v3d::engine::Engine` had worked around

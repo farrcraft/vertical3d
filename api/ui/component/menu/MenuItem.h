@@ -38,9 +38,10 @@ class Menu;
  * An input type item's value is appended to its label by text(), so a label ending in a separator
  * ("Rounds: ") reads as 'Rounds: 5'.
  *
- * Input capture is not implemented. The intent is that input is terminated by the ui::selectMenu key
- * binding, but nothing captures it yet, so activating an input item currently does nothing. See
- * docs/LuxaAudit.md.
+ * Activating an input type item puts its menu into capture rather than dispatching: what
+ * Menu::capture() is then given becomes the item's value, and the item's event carries it.
+ * A key input ends at the first key it is given, because a binding is one key; the other two
+ * end at the next activation, which the ui::selectMenu binding is what sends.
  **/
 class MenuItem : public Component {
  public:

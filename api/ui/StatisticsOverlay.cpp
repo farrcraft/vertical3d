@@ -53,8 +53,13 @@ namespace v3d::ui {
 
 /**
  **/
-StatisticsOverlay::StatisticsOverlay(const boost::shared_ptr<TextRenderer>& text) :
+const float StatisticsOverlay::defaultSize = 16.0f;
+
+/**
+ **/
+StatisticsOverlay::StatisticsOverlay(const boost::shared_ptr<TextRenderer>& text, float size) :
     text_(text),
+    size_(size),
     visible_(false) {
 }
 
@@ -104,11 +109,10 @@ void StatisticsOverlay::draw(v3d::render::realtime::Canvas* canvas, const Sample
 
     float widest = 0.0f;
     for (const std::string& line : content) {
-        widest = std::max(widest, text_->width(line));
+        widest = std::max(widest, text_->width(line, size_));
     }
 
-    const float size = text_->size();
-    const float lineHeight = size * lineSpacing;
+    const float lineHeight = size_ * lineSpacing;
 
     // the box goes on before the glyphs do: the canvas is drawn in the order it is filled,
     // so a background added after the text it backs would cover it
@@ -117,9 +121,9 @@ void StatisticsOverlay::draw(v3d::render::realtime::Canvas* canvas, const Sample
         background);
 
     // the pen is the baseline of the line, which sits one font size below the top of it
-    float pen = margin + padding + size;
+    float pen = margin + padding + size_;
     for (const std::string& line : content) {
-        text_->draw(canvas, line, glm::vec2(margin + padding, pen), foreground);
+        text_->draw(canvas, line, glm::vec2(margin + padding, pen), foreground, size_);
         pen += lineHeight;
     }
 }

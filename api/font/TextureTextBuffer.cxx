@@ -23,7 +23,8 @@ TextureTextBuffer::TextureTextBuffer() :
 void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar_t current, wchar_t /* previous */) {
     if (current == L'\n') {
         pen->x = origin_.x;
-        pen->y += markup.font_->height() - markup.font_->descender();
+        const float lineScale = markup.font_->size() > 0.0f ? markup.size_ / markup.font_->size() : 1.0f;
+        pen->y += (markup.font_->height() - markup.font_->descender()) * lineScale;
         /*
         descender_ = 0.0f;
         ascender_ = 0.0f;
@@ -37,14 +38,26 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
     if (!glyph) {
         return;
     }
+
+    // every metric below is in pixels of the size the face was rasterized at, so asking
+    // for another size is asking for them at a ratio of it - ADR-0036. A markup whose
+    // size is the font's own leaves this at one, which is every caller that has not asked
+    const float scale = markup.font_->size() > 0.0f ? markup.size_ / markup.font_->size() : 1.0f;
+    const float advance = glyph->advance_.x * scale;
+    const float height = markup.font_->height() * scale;
+    const float descender = markup.font_->descender() * scale;
+    const float ascender = markup.font_->ascender() * scale;
+    const float linegap = markup.font_->linegap() * scale;
+    const float underlinePosition = markup.font_->underlinePosition() * scale;
+    const float underlineThickness = markup.font_->underlineThickness() * scale;
     unsigned int vcount = 0;
     unsigned int icount = 0;
     size_t istart = indices().size();
     size_t vstart = vertices().size();
 
     if (markup.backgroundColor_.a > 0.0f) {
-        glm::vec2 xy0(pen->x, pen->y + markup.font_->descender());
-        glm::vec2 xy1(pen->x + glyph->advance_.x, xy0.y + markup.font_->height() + markup.font_->linegap());
+        glm::vec2 xy0(pen->x, pen->y + descender);
+        glm::vec2 xy1(pen->x + advance, xy0.y + height + linegap);
 
         addQuad(xy0, xy1, black->st_[0], black->st_[1], markup.backgroundColor_, markup.gamma_);
 
@@ -53,8 +66,8 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
     }
 
     if (markup.underline_) {
-        glm::vec2 xy0(pen->x, pen->y + markup.font_->underlinePosition());
-        glm::vec2 xy1(pen->x + glyph->advance_.x, xy0.y + markup.font_->underlineThickness());
+        glm::vec2 xy0(pen->x, pen->y + underlinePosition);
+        glm::vec2 xy1(pen->x + advance, xy0.y + underlineThickness);
 
         addQuad(xy0, xy1, black->st_[0], black->st_[1], markup.underlineColor_, markup.gamma_);
 
@@ -63,8 +76,8 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
     }
 
     if (markup.overline_) {
-        glm::vec2 xy0(pen->x, pen->y + markup.font_->ascender());
-        glm::vec2 xy1(pen->x + glyph->advance_.x, xy0.y + markup.font_->underlineThickness());
+        glm::vec2 xy0(pen->x, pen->y + ascender);
+        glm::vec2 xy1(pen->x + advance, xy0.y + underlineThickness);
 
         addQuad(xy0, xy1, black->st_[0], black->st_[1], markup.overlineColor_, markup.gamma_);
 
@@ -73,8 +86,8 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
     }
 
     if (markup.strikethrough_) {
-        glm::vec2 xy0(pen->x, pen->y + markup.font_->ascender() * .33f);
-        glm::vec2 xy1(pen->x + glyph->advance_.x, xy0.y + markup.font_->underlineThickness());
+        glm::vec2 xy0(pen->x, pen->y + ascender * .33f);
+        glm::vec2 xy1(pen->x + advance, xy0.y + underlineThickness);
 
         addQuad(xy0, xy1, black->st_[0], black->st_[1], markup.overlineColor_, markup.gamma_);
 
@@ -85,15 +98,17 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
     // actual glyph. y grows downwards and the pen sits on the baseline, so the bottom of
     // the quad is however far the bitmap reaches below the baseline - its height less the
     // bearing - and the top is one bitmap height above that
-    glm::vec2 xy0(pen->x + glyph->offset_.x, static_cast<float>(static_cast<int>(pen->y + glyph->height_ - glyph->offset_.y)));
-    glm::vec2 xy1(xy0.x + glyph->width_, static_cast<float>(static_cast<int>(xy0.y - glyph->height_)));
+    const float glyphWidth = glyph->width_ * scale;
+    const float glyphHeight = glyph->height_ * scale;
+    glm::vec2 xy0(pen->x + glyph->offset_.x * scale, static_cast<float>(static_cast<int>(pen->y + glyphHeight - glyph->offset_.y * scale)));
+    glm::vec2 xy1(xy0.x + glyphWidth, static_cast<float>(static_cast<int>(xy0.y - glyphHeight)));
 
     addQuad(xy0, xy1, glyph->st_[0], glyph->st_[1], markup.foregroundColor_, markup.gamma_);
 
     vcount += 4;
     icount += 6;
 
-    pen->x += glyph->advance_.x;
+    pen->x += advance;
     items_.push_back(glm::ivec4(vstart, vcount, istart, icount));
 }
 

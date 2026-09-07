@@ -6,7 +6,10 @@
 #include "PongEngine.h"
 
 #include <iostream>
+#include <map>
 #include <string>
+#include <string_view>
+#include <variant>
 
 #include "PongRenderer.h"
 #include "PongScene.h"
@@ -154,8 +157,7 @@ void PongEngine::handleUiEvent(const v3d::event::Event& event) {
         }
     } else if (event.name() == "setLeftPaddleUpKey" || event.name() == "setLeftPaddleDownKey" ||
                event.name() == "setRightPaddleUpKey" || event.name() == "setRightPaddleDownKey") {
-        // a key binding carries the captured key as its data, and input capture for an
-        // input menu item is unbuilt, so these four arrive with nothing to bind
+        rebindPaddleKey(event);
     } else if (event.name() == "setSingleplayerMode" || event.name() == "setMultiplayerMode") {
         // coop is the only mode that differs; the second paddle is the same opponent
         scene_->state().coop(false);
@@ -178,7 +180,43 @@ void PongEngine::handleUiEvent(const v3d::event::Event& event) {
     menu_->navigate(event.name());
 }
 
+/**
+ **/
+void PongEngine::rebindPaddleKey(const v3d::event::Event& event) {
+    boost::optional<v3d::event::EventData> data = event.data();
+    if (!data || !std::holds_alternative<std::string>(data.get())) {
+        return;
+    }
+    const std::string key = std::get<std::string>(data.get());
+
+    // the menu item names the command to rebind; the command it drives is the paddle one
+    static const std::map<std::string_view, std::string> commands = {
+        {"setLeftPaddleUpKey", "pong::leftPaddleUp"},
+        {"setLeftPaddleDownKey", "pong::leftPaddleDown"},
+        {"setRightPaddleUpKey", "pong::rightPaddleUp"},
+        {"setRightPaddleDownKey", "pong::rightPaddleDown"}
+    };
+    const std::map<std::string_view, std::string>::const_iterator found = commands.find(event.name());
+    if (found == commands.end()) {
+        return;
+    }
+    if (rebind(found->second, key)) {
+        logger_->get()->info("bound {} to {}", found->second, key);
+    }
+}
+
+/**
+ **/
 void PongEngine::handleEvent(const v3d::event::Event& event) {
+    // a menu item capturing a key wants the key rather than what it is bound to, so a
+    // source event goes to the capture and no further while one is open
+    if (event.type() == v3d::event::Type::Source && menu_ && menu_->capturing()) {
+        if (event.state() == v3d::event::State::Pressed) {
+            menu_->capture(std::string(event.name()));
+        }
+        return;
+    }
+
     if (event.context()->name() == "pong") {
         handlePlayEvent(event);
         return;

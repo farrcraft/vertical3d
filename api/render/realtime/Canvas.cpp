@@ -16,6 +16,7 @@ namespace v3d::render::realtime {
 /**
  **/
 Canvas::Batch::Batch() noexcept :
+text(false),
 firstIndex(0),
 indices(0) {
 }
@@ -98,12 +99,13 @@ void Canvas::translate(const glm::vec2& offset) {
 
 /**
  **/
-void Canvas::open(const TextureHandle& texture) {
-    if (!batches_.empty() && batches_.back().texture == texture) {
+void Canvas::open(const TextureHandle& texture, bool text) {
+    if (!batches_.empty() && batches_.back().texture == texture && batches_.back().text == text) {
         return;
     }
     Batch batch;
     batch.texture = texture;
+    batch.text = text;
     batch.firstIndex = static_cast<uint32_t>(indices_.size());
     batch.indices = 0;
     batches_.push_back(batch);
@@ -203,7 +205,7 @@ void Canvas::text(const v3d::font::TextBuffer& text, const TextureHandle& atlas)
         return;
     }
 
-    open(atlas);
+    open(atlas, true);
 
     const uint32_t first = static_cast<uint32_t>(vertices_.size());
     for (std::size_t index = 0; index < positions.size(); index++) {

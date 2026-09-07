@@ -122,6 +122,15 @@ void Window::resize(int width, int height) noexcept {
 
 /**
  **/
+void Window::request(int width, int height) {
+    if (window_ == nullptr || width <= 0 || height <= 0) {
+        return;
+    }
+    SDL_SetWindowSize(window_, width, height);
+}
+
+/**
+ **/
 void Window::caption(const std::string_view& cap) {
     caption_ = cap;
     SDL_SetWindowTitle(window_, caption_.c_str());

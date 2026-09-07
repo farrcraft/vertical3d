@@ -21,8 +21,8 @@
 namespace {
 
 /**
- * The size the font is rasterized at. Nothing scales a glyph, so this is also the size
- * everything is drawn at.
+ * The size the ui and the side panel are drawn at, which the one atlas is scaled to per
+ * ADR-0036 rather than rasterized at.
  **/
 const float fontSize = 22.0f;
 
@@ -62,9 +62,9 @@ TetrisRenderer::TetrisRenderer(const boost::shared_ptr<v3d::render::realtime::Wi
     engine_.clearColour(glm::vec4(0.09f, 0.09f, 0.11f, 1.0f));
 
     loadPieces(assetManager, logger);
-    text_ = boost::make_shared<v3d::ui::TextRenderer>(assetManager, logger, engine_.quads(), fontSize);
+    text_ = boost::make_shared<v3d::ui::TextRenderer>(assetManager, logger, engine_.quads());
 
-    uiRenderer_ = boost::make_shared<v3d::ui::ComponentRenderer>(text_->measure(), text_->write(&canvas_));
+    uiRenderer_ = boost::make_shared<v3d::ui::ComponentRenderer>(text_->measure(fontSize), text_->write(&canvas_, fontSize));
     uiRenderer_->style().lineHeight = fontSize * 1.4f;
 }
 
@@ -261,16 +261,16 @@ void TetrisRenderer::drawPanel(const Layout& metrics) {
     const float line = fontSize * 1.4f;
     const glm::vec2 panel = metrics.origin + glm::vec2(metrics.cell * (board->columns() + 1.0f), line);
 
-    text_->draw(&canvas_, "SCORE", panel, textColour);
-    text_->draw(&canvas_, boost::lexical_cast<std::string>(scene_->score()), panel + glm::vec2(0.0f, line), textColour);
+    text_->draw(&canvas_, "SCORE", panel, textColour, fontSize);
+    text_->draw(&canvas_, boost::lexical_cast<std::string>(scene_->score()), panel + glm::vec2(0.0f, line), textColour, fontSize);
 
-    text_->draw(&canvas_, "NEXT", panel + glm::vec2(0.0f, line * 3.0f), textColour);
+    text_->draw(&canvas_, "NEXT", panel + glm::vec2(0.0f, line * 3.0f), textColour, fontSize);
     // the preview is drawn a little smaller than the well, so a four wide tetrad fits the
     // panel it was given
     drawTetrad(board->nextTetrad(), panel + glm::vec2(0.0f, line * 3.5f), metrics.cell * 0.75f);
 
     if (board->over()) {
-        text_->draw(&canvas_, "GAME OVER", panel + glm::vec2(0.0f, line * 7.0f), textColour);
+        text_->draw(&canvas_, "GAME OVER", panel + glm::vec2(0.0f, line * 7.0f), textColour, fontSize);
     }
 
     if (scene_->debug()) {
@@ -279,6 +279,6 @@ void TetrisRenderer::drawPanel(const Layout& metrics) {
         const std::string state =
             boost::lexical_cast<std::string>(position.first) + "," + boost::lexical_cast<std::string>(position.second) +
             " " + boost::lexical_cast<std::string>(current.width()) + "x" + boost::lexical_cast<std::string>(current.height());
-        text_->draw(&canvas_, state, panel + glm::vec2(0.0f, line * 9.0f), textColour);
+        text_->draw(&canvas_, state, panel + glm::vec2(0.0f, line * 9.0f), textColour, fontSize);
     }
 }
