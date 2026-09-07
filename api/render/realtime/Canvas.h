@@ -132,6 +132,19 @@ class Canvas final {
     void circle(const glm::vec2& centre, float radius, unsigned int sides, const glm::vec4& colour);
 
     /**
+     * A filled wedge of a circle, as a fan of triangles.
+     *
+     * Angles are radians and turn the way the canvas does, which is clockwise on screen
+     * because y grows downwards: zero points right, a quarter turn points down.
+     *
+     * @param sides how many segments to approximate the sweep with
+     * @param start where the wedge begins
+     * @param sweep how far round it goes
+     **/
+    void arc(const glm::vec2& centre, float radius, unsigned int sides, float start, float sweep,
+        const glm::vec4& colour);
+
+    /**
      * Append text that a font's text buffer has already laid out.
      *
      * The buffer holds positions, atlas coordinates and colours, so this copies them

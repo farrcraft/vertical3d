@@ -157,6 +157,11 @@ void Canvas::rect(const glm::vec2& min, const glm::vec2& max, const glm::vec2& u
 /**
  **/
 void Canvas::circle(const glm::vec2& centre, float radius, unsigned int sides, const glm::vec4& colour) {
+    arc(centre, radius, sides, 0.0f, 6.283185307179586f, colour);
+}
+
+void Canvas::arc(const glm::vec2& centre, float radius, unsigned int sides, float start, float sweep,
+    const glm::vec4& colour) {
     if (sides < 3) {
         return;
     }
@@ -165,14 +170,14 @@ void Canvas::circle(const glm::vec2& centre, float radius, unsigned int sides, c
     const uint32_t centreIndex = static_cast<uint32_t>(vertices_.size());
     vertex(centre, glm::vec2(0.5f, 0.5f), colour);
 
-    const float step = 6.283185307179586f / static_cast<float>(sides);
+    const float step = sweep / static_cast<float>(sides);
     for (unsigned int side = 0; side <= sides; side++) {
-        const float angle = step * static_cast<float>(side);
+        const float angle = start + step * static_cast<float>(side);
         vertex(centre + glm::vec2(std::cos(angle) * radius, std::sin(angle) * radius), glm::vec2(0.5f, 0.5f), colour);
     }
 
-    // a fan written out as triangles, so it batches with the quads around it. The last
-    // rim vertex repeats the first, so the wrap needs no special case
+    // a fan written out as triangles, so it batches with the quads around it. A full turn
+    // repeats its first rim vertex last, so the wrap needs no special case
     for (unsigned int side = 0; side < sides; side++) {
         indices_.push_back(centreIndex);
         indices_.push_back(centreIndex + 1 + side);
