@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "Painter.h"
 #include "component/Type.h"
 #include "style/Button.h"
 #include "style/property/Color.h"
@@ -41,17 +42,6 @@ const float ruleWidth = 1.0f;
 const float defaultCorner = 8.0f;
 
 /**
- * How many segments one rounded corner is approximated with. A corner is a small arc and
- * a handful of triangles is enough of one; the cost is per panel per frame.
- **/
-const unsigned int cornerSides = 6;
-
-/**
- * A quarter turn, which is what each corner of a rounded box sweeps.
- **/
-const float quarterTurn = 1.5707963267948966f;
-
-/**
  * Leave a component holding the bounds it was drawn in, which is what the cursor is
  * tested against per ADR-0019.
  *
@@ -61,28 +51,6 @@ const float quarterTurn = 1.5707963267948966f;
 void place(Component& component, const glm::vec2& position, const glm::vec2& size) {
     component.position(position);
     component.size(size);
-}
-
-/**
- * Read a colour out of a style, leaving what is there when the style does not name it.
- **/
-void colour(const boost::shared_ptr<Style>& target, const std::string& name, glm::vec4* into) {
-    boost::shared_ptr<style::prop::Color> property =
-        boost::dynamic_pointer_cast<style::prop::Color>(target->property(name, "color"));
-    if (property) {
-        *into = property->value();
-    }
-}
-
-/**
- * Read a metric out of a style, leaving what is there when the style does not name it.
- **/
-void metric(const boost::shared_ptr<Style>& target, const std::string& name, float* into) {
-    boost::shared_ptr<style::prop::Number> property =
-        boost::dynamic_pointer_cast<style::prop::Number>(target->property(name, "number"));
-    if (property) {
-        *into = property->value();
-    }
 }
 
 /**
@@ -143,22 +111,22 @@ void ComponentRenderer::theme(const boost::shared_ptr<style::Theme>& theme) {
         return;
     }
 
-    colour(chrome, "panel", &style_.panel);
-    colour(chrome, "border", &style_.border);
-    colour(chrome, "track", &style_.track);
-    colour(chrome, "fill", &style_.fill);
-    colour(chrome, "text", &style_.text);
-    colour(chrome, "active-text", &style_.activeText);
-    colour(chrome, "highlight", &style_.highlight);
-    colour(chrome, "hover", &style_.hover);
+    readColour(chrome, "panel", &style_.panel);
+    readColour(chrome, "border", &style_.border);
+    readColour(chrome, "track", &style_.track);
+    readColour(chrome, "fill", &style_.fill);
+    readColour(chrome, "text", &style_.text);
+    readColour(chrome, "active-text", &style_.activeText);
+    readColour(chrome, "highlight", &style_.highlight);
+    readColour(chrome, "hover", &style_.hover);
 
-    metric(chrome, "line-height", &style_.lineHeight);
-    metric(chrome, "padding", &style_.padding);
-    metric(chrome, "bar-height", &style_.barHeight);
-    metric(chrome, "icon-size", &style_.iconSize);
-    metric(chrome, "panel-padding", &style_.panelPadding);
-    metric(chrome, "border-width", &style_.borderWidth);
-    metric(chrome, "radius", &style_.radius);
+    readMetric(chrome, "line-height", &style_.lineHeight);
+    readMetric(chrome, "padding", &style_.padding);
+    readMetric(chrome, "bar-height", &style_.barHeight);
+    readMetric(chrome, "icon-size", &style_.iconSize);
+    readMetric(chrome, "panel-padding", &style_.panelPadding);
+    readMetric(chrome, "border-width", &style_.borderWidth);
+    readMetric(chrome, "radius", &style_.radius);
 }
 
 /**
@@ -319,13 +287,13 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     float radius = style_.radius;
     const boost::shared_ptr<v3d::ui::Style> dress = lookup("panel", panel->style());
     if (dress) {
-        colour(dress, "background", &inside);
-        colour(dress, "border", &outline);
-        metric(dress, "border-width", &width);
-        metric(dress, "radius", &radius);
+        readColour(dress, "background", &inside);
+        readColour(dress, "border", &outline);
+        readMetric(dress, "border-width", &width);
+        readMetric(dress, "radius", &radius);
     }
     const glm::vec2 min = panel->position();
-    plate(canvas, min, min + panel->size(), radius, width, inside, outline);
+    plateBox(canvas, min, min + panel->size(), radius, width, inside, outline);
 }
 
 /**
@@ -341,16 +309,16 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     float radius = style_.radius;
     const boost::shared_ptr<v3d::ui::Style> dress = lookup("bar", bar->style());
     if (dress) {
-        colour(dress, "track", &empty);
-        colour(dress, "fill", &filled);
-        colour(dress, "border", &outline);
-        metric(dress, "border-width", &width);
-        metric(dress, "radius", &radius);
+        readColour(dress, "track", &empty);
+        readColour(dress, "fill", &filled);
+        readColour(dress, "border", &outline);
+        readMetric(dress, "border-width", &width);
+        readMetric(dress, "radius", &radius);
     }
 
     const glm::vec2 min = bar->position();
     const glm::vec2 max = min + bar->size();
-    plate(canvas, min, max, radius, width, empty, outline);
+    plateBox(canvas, min, max, radius, width, empty, outline);
     if (bar->fraction() <= 0.0f) {
         return;
     }
@@ -366,49 +334,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
         // a vertical bar fills from the bottom, which is the way one is read
         low.y = high.y - (high.y - low.y) * bar->fraction();
     }
-    fill(canvas, low, high, std::max(0.0f, radius - width), filled);
-}
-
-/**
- **/
-void ComponentRenderer::fill(v3d::render::realtime::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
-    float radius, const glm::vec4& colour) const {
-    const glm::vec2 size = max - min;
-    if (canvas == nullptr || size.x <= 0.0f || size.y <= 0.0f || colour.a <= 0.0f) {
-        return;
-    }
-    // a radius past half the shorter side would fold the box over itself
-    const float corner = std::min(radius, std::min(size.x, size.y) * 0.5f);
-    if (corner <= 0.0f) {
-        canvas->rect(min, max, colour);
-        return;
-    }
-
-    // three bands and four wedges, none of them overlapping - which matters because a
-    // panel is usually drawn with an alpha, and anything drawn twice under one would show
-    canvas->rect(glm::vec2(min.x + corner, min.y), glm::vec2(max.x - corner, max.y), colour);
-    canvas->rect(glm::vec2(min.x, min.y + corner), glm::vec2(min.x + corner, max.y - corner), colour);
-    canvas->rect(glm::vec2(max.x - corner, min.y + corner), glm::vec2(max.x, max.y - corner), colour);
-
-    canvas->arc(glm::vec2(min.x + corner, min.y + corner), corner, cornerSides, quarterTurn * 2.0f, quarterTurn, colour);
-    canvas->arc(glm::vec2(max.x - corner, min.y + corner), corner, cornerSides, quarterTurn * 3.0f, quarterTurn, colour);
-    canvas->arc(glm::vec2(max.x - corner, max.y - corner), corner, cornerSides, 0.0f, quarterTurn, colour);
-    canvas->arc(glm::vec2(min.x + corner, max.y - corner), corner, cornerSides, quarterTurn, quarterTurn, colour);
-}
-
-/**
- **/
-void ComponentRenderer::plate(v3d::render::realtime::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
-    float radius, float width, const glm::vec4& inside, const glm::vec4& outline) const {
-    if (width <= 0.0f || outline.a <= 0.0f) {
-        fill(canvas, min, max, radius, inside);
-        return;
-    }
-    // the outline is the same box drawn behind, rather than four edges around, so a
-    // rounded corner needs no second shape to trace it
-    fill(canvas, min, max, radius, outline);
-    const glm::vec2 inset(width, width);
-    fill(canvas, min + inset, max - inset, std::max(0.0f, radius - width), inside);
+    fillBox(canvas, low, high, std::max(0.0f, radius - width), filled);
 }
 
 /**
@@ -557,7 +483,7 @@ bool ComponentRenderer::skin(v3d::render::realtime::Canvas* canvas, const compon
     }
 
     float corner = defaultCorner;
-    metric(target, "corner", &corner);
+    readMetric(target, "corner", &corner);
     corner = std::min(corner, std::min((max.x - min.x) * 0.5f, (max.y - min.y) * 0.5f));
 
     const glm::vec2 uv0(0.0f, 0.0f);

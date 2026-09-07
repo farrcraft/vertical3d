@@ -11,6 +11,7 @@
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
+#include <glm/vec4.hpp>
 
 namespace v3d::ui {
 namespace style {
@@ -79,5 +80,17 @@ class Style {
     std::string className_;
     std::map <std::pair<std::string, std::string>, boost::shared_ptr<style::Property> > properties_;  // key is pair<name, class>
 };
+
+/**
+ * Read a colour property out of a style, leaving what is there when the style does not
+ * name it. Both ways of writing a ui dress themselves from a theme this way, per ADR-0020.
+ **/
+void readColour(const boost::shared_ptr<Style>& target, const std::string& name, glm::vec4* into);
+
+/**
+ * Read a number property out of a style, leaving what is there when the style does not
+ * name it.
+ **/
+void readMetric(const boost::shared_ptr<Style>& target, const std::string& name, float* into);
 
 };  // end namespace v3d::ui

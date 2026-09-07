@@ -2,6 +2,8 @@ v3d_add_api_library(ui
  "component/Button.h" "component/Button.cpp"
  "Component.h" "Component.cpp"
  "Layout.h" "Layout.cpp"
+ "Painter.h" "Painter.cpp"
+ "Immediate.h" "Immediate.cpp"
  "component/Bar.h" "component/Bar.cpp"
  "component/Box.h" "component/Box.cpp"
  "component/Panel.h" "component/Panel.cpp"

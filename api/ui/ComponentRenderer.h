@@ -230,22 +230,6 @@ class ComponentRenderer {
     glm::vec2 natural(const Component& component) const;
 
     /**
-     * Fill a box, with its corners rounded by a radius. A radius of zero is one quad, and
-     * anything else is three quads and four fans - all of them the one batched primitive
-     * of ADR-0005, so a rounded corner costs no draw of its own.
-     **/
-    void fill(v3d::render::realtime::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
-        float radius, const glm::vec4& colour) const;
-
-    /**
-     * Draw a filled box inside an outline, both rounded.
-     *
-     * @param width how thick the outline is; nothing is drawn under it when it is zero
-     **/
-    void plate(v3d::render::realtime::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
-        float radius, float width, const glm::vec4& inside, const glm::vec4& outline) const;
-
-    /**
      * Draw one dropped panel of a menu bar, leaving every item holding its own row.
      *
      * @param origin where the panel's top left corner would go, before it is moved to
