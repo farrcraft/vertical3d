@@ -452,6 +452,10 @@ is focused.
 
 ### Step 9 — A scrollbar scrolls a list
 
+**Landed.** No `Scrollable` interface: `Scrollbar::scrolls()` names `SelectList`, which is the
+one relationship there is. The draw path and `ui::Cursor` needed no change — both already went
+through `content()`, `page()`, `thumb()` and `drag()`, and those now answer from the list.
+
 In [`api/ui/component/Scrollbar.h`](../../api/ui/component/Scrollbar.h) and the renderer's draw path
 for it.
 

@@ -148,7 +148,7 @@ Every type in `component::Type` has a loader and a draw path; there are no empty
 | `Bar` | a track and the fraction of it that is filled | its fraction |
 | `Button` | a label, or an icon, or a nine-slice skin | nothing — a toggle's mark is set by whatever answers its command |
 | `CheckBox`, `RadioButton` | a mark and a label beside it | nothing, for the same reason |
-| `Scrollbar` | a track and a thumb | its range and offset |
+| `Scrollbar` | a track and a thumb | its range and offset, or nothing at all when it was told which `SelectList` it scrolls |
 | `SelectList` | a plate and as many rows as it shows | its rows and which is chosen |
 | `TabBar`, `TabPage` | a strip of tabs and the one page chosen | which page is up |
 | `TextBox` | a plate, one line of text, and a caret when it is focused | its text and its caret |

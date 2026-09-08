@@ -74,11 +74,9 @@ it is there for the features that need it rather than for a picture that exists 
 tree: the editor's menu bar and toolbars are strips the renderer places itself, and the apps put
 up a menu and an overlay.
 
-Two of the entries below were weighed and declined rather than left undone. Joining a scrollbar
-to a select list waits for an app to ask for it, and a widget being hovered a frame late is the
-mechanism that lets a window take the cursor from one under it.
+One of the entries below was weighed and declined rather than left undone: a widget being
+hovered a frame late is the mechanism that lets a window take the cursor from one under it.
 
-[] a select list scrolls itself and a scrollbar scrolls nothing, so putting the two side by side is the app's arithmetic. It is one component - the bar reading the list's content and offset - and no app has asked for it
 [] voxel's F3 readout is the only thing driving `ui::Immediate`. The editor's four viewports and odyssey's turn state are each a debug window waiting to be asked for, and a game that owns the mouse has no cursor to give the layer, so voxel's window cannot be folded or scrolled
 [] a widget in `Immediate` is hovered a frame after it is drawn, so the first frame of a window that appears under the cursor answers nothing
 [] adding a component means editing five places - `component::Type`, `ui::Loader`'s branch, `ComponentRenderer::paint`, `Arranger::natural` and `ui::Cursor`'s - plus `style::Resolver`'s class when it is dressed by one of its own, and the compiler checks none of them against the others. Making `natural()` virtual on `Component` was weighed and left: it removes one of the five rather than the problem. Splitting the renderer moved two of them into their own files and did not reduce the count

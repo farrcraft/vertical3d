@@ -7,7 +7,12 @@
 
 #include "../Component.h"
 
+#include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
+
 namespace v3d::ui::component {
+
+class SelectList;
 
 /**
  * A track with a thumb on it, saying which part of something taller than its box is shown.
@@ -17,6 +22,11 @@ namespace v3d::ui::component {
  * scrolls. What it scrolls is a component of its own that clips its children, per
  * ADR-0037 - the bar does not hold it, because the two are laid out side by side rather
  * than one inside the other.
+ *
+ * A bar can instead be told which list it scrolls, and then it holds no range of its own:
+ * the content, the page and the offset are the list's, and dragging the thumb moves the
+ * list. An unbound bar is unchanged, which is what keeps it useful as a progress shaped
+ * control for something with no component behind it.
  *
  * The track and the thumb are drawn in the "bar" style class the component names, per
  * ADR-0020.
@@ -41,8 +51,26 @@ class Scrollbar : public Component {
     Direction direction() const noexcept;
 
     /**
+     * Scroll a list rather than a range of its own.
+     *
+     * The bar then reports the list's content, its box as the page and its offset, and
+     * drag() and scroll() move the list. Pass nothing to unbind it, which puts back
+     * whatever range it was last given.
+     *
+     * Held weakly, the way ui::Engine holds the focus: the list belongs to its container,
+     * and a bar outliving one that was unloaded should not keep it alive. A bar whose list
+     * has gone reads as its own range again rather than crashing.
+     **/
+    void scrolls(const boost::shared_ptr<SelectList>& list);
+
+    /**
+     * @return the list this scrolls, or null when it scrolls a range of its own
+     **/
+    boost::shared_ptr<SelectList> scrolls() const;
+
+    /**
      * What there is to scroll through and how much of it is shown, both in pixels along
-     * the bar's direction.
+     * the bar's direction. Ignored while a list is bound, which answers both itself.
      *
      * The offset is clamped to what the new range leaves, so a list that shrank while
      * scrolled to its end comes back to the end of what is left rather than past it.
@@ -108,6 +136,7 @@ class Scrollbar : public Component {
     float page_;
     float offset_;
     Direction direction_;
+    boost::weak_ptr<SelectList> scrolled_;
 };
 
 };  // namespace v3d::ui::component
