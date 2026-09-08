@@ -9,6 +9,29 @@ every phase is closed it moves to [completed/](completed/), and any open item it
 moves to [TODO.md](../TODO.md). The plan itself stays, because the reasoning behind an ordering
 outlives the schedule.
 
+[completed/EmbeddingSeams.md](completed/EmbeddingSeams.md) was drafted and closed on
+2026-09-07. Seven steps over the places where an `api/` library assumed the app it was hosting
+was one of the four in this tree: a loop that offered an app no event of its own
+([ADR-0043](../adr/0043-an-app-sees-an-event-before-the-bindings-do.md)), a text renderer that
+was device-free in every line but one, an immediate layer that could not be asked whether it
+wanted the cursor, an image reader that could only be pointed at a path, and a depth target
+that was written and could not be sampled
+([ADR-0044](../adr/0044-a-sampled-depth-target-is-read-only.md)). Its ordering mattered because
+only one of the seven blocked anything — the event seam — while a different one was the only
+one whose cost was growing, since a copy of `ui::TextRenderer` existed downstream for the sake
+of a single line. Two entries the list was drafted from had closed before it was written, in
+[GameFoundations](completed/GameFoundations.md).
+
+Four things came out differently. Step 6's decoded image went on `asset::Model` rather than on
+`type::Model::Material`, because `v3dlib_type` links glm alone and a material holding an image
+would take `api/image` into both offline renderers. That step also found what nothing had: the
+png reader installed no libpng error handler, so a truncated file aborted the process — which
+did not matter while every png came from a file the tree shipped, and does once a reader can be
+pointed at arbitrary bytes. Step 5 turned out to be a wrong measurement as well as a missing
+control, since a widget's room was measured from the row margin even on a shared row. And step
+7 has no headless case after all: `chooseFormat` asks a physical device for format properties,
+so it needs one like everything else below the recorder.
+
 [completed/GameFoundations.md](completed/GameFoundations.md) was drafted on 2026-09-07 against
 this tree from outside it, and staged and closed here the same day. Thirteen steps taking up
 what a game needs from these libraries that a demo does not: a document written whole or not at

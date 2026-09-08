@@ -14,6 +14,9 @@ A plan is a living document: update its state notes as things land. When every p
 it moves to [`plans/completed/`](plans/completed/), and its open items move to
 [`TODO.md`](TODO.md).
 
+[`plans/completed/EmbeddingSeams.md`](plans/completed/EmbeddingSeams.md) closed on 2026-09-07
+and took up the seams an app that brings its own ui, renderer and `main` needs from
+`api/engine`, `api/ui`, `api/image`, `api/asset` and `api/render`.
 [`plans/OfflineRenderingPhase3.md`](plans/OfflineRenderingPhase3.md) **is open**, taking up
 phase 3 of the offline rendering roadmap.
 [`plans/completed/GameFoundations.md`](plans/completed/GameFoundations.md) closed on 2026-09-07
