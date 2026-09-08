@@ -55,6 +55,24 @@ class Engine {
     bool eventLoop();
 
     /**
+     * Offered every SDL event before the input devices see it.
+     *
+     * This is where an app puts a ui it did not write. A ui toolkit an app did not write
+     * wants the events themselves rather than the commands the bindings turn them into,
+     * and polling the keyboard instead is not the same thing: a press and a release inside
+     * one frame poll as nothing having happened.
+     *
+     * Returning true consumes the event, so the input engine never maps it to a command -
+     * a click that both presses a button and gives an order is what that prevents, and it
+     * is the rule ui::Cursor::press() already applies inside api/ui. Per ADR-0043 the app
+     * is asked first, and the engine's own handling of quit, resize and focus runs
+     * whatever this returns.
+     *
+     * @return whether the app took the event
+     **/
+    virtual bool onEvent(const SDL_Event& event);
+
+    /**
      * Advance the game world time
      * @param delta milliseconds elapsed since the previous tick. Simulation that scales by
      *              this stays frame rate independent; simulation that ignores it does not.
@@ -152,6 +170,14 @@ class Engine {
      * @return whether the bindings were rebuilt
      **/
     bool rebind(const std::string& command, const std::string& key);
+
+    /**
+     * Offer one polled event to the app, the input devices and the engine, in that order.
+     *
+     * Separate from eventLoop() because that one renders and so cannot be driven in a
+     * test, and the order the three are offered in is the part worth testing.
+     **/
+    void route(const SDL_Event& event);
 
  private:
      /**

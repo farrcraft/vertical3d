@@ -37,6 +37,22 @@ class TestEngine final : public v3d::engine::Engine {
     const boost::shared_ptr<v3d::asset::Manager>& assets() const {
         return assetManager_;
     }
+
+    /**
+     * route() is where the order of ADR-0043 lives, and eventLoop() renders, so a test
+     * drives the one and never the other.
+     **/
+    void offer(const SDL_Event& event) {
+        route(event);
+    }
+
+    bool onEvent(const SDL_Event& event) override {
+        offered_.push_back(event.type);
+        return take_;
+    }
+
+    bool take_ = false;
+    std::vector<Uint32> offered_;
 };
 
 /**
@@ -69,6 +85,18 @@ std::string appPath(const std::string& fixture) {
 }
 
 const int configFeature = static_cast<int>(v3d::engine::Feature::Config);
+const int boundFeature = configFeature | static_cast<int>(v3d::engine::Feature::KeyboardInput);
+
+/**
+ * A key going down, as SDL delivers it - the only event in this file the input devices
+ * have anything to say about.
+ **/
+SDL_Event keyDown(SDL_Keycode key) {
+    SDL_Event event{};
+    event.type = SDL_EVENT_KEY_DOWN;
+    event.key.key = key;
+    return event;
+}
 
 };  // namespace
 
@@ -175,6 +203,74 @@ BOOST_AUTO_TEST_CASE(engine_mapping_param_test) {
     BOOST_REQUIRE_EQUAL(recorder.events_.size(), 3u);
     BOOST_REQUIRE(recorder.events_[2].data());
     BOOST_CHECK(std::get<bool>(recorder.events_[2].data().get()));
+}
+
+/**
+ * The app is offered every event before the bindings are, per ADR-0043, and what it
+ * declines goes on to be mapped exactly as it was before there was anywhere else for it
+ * to go.
+ **/
+BOOST_AUTO_TEST_CASE(engine_declined_event_reaches_the_bindings_test) {
+    TestEngine engine(appPath("good"));
+    BOOST_REQUIRE(engine.initialize(boundFeature));
+
+    Recorder recorder;
+    engine.dispatcher()->sink<v3d::event::Event>().connect<&Recorder::handle>(recorder);
+
+    engine.offer(keyDown(SDLK_W));
+
+    BOOST_REQUIRE_EQUAL(engine.offered_.size(), 1u);
+    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1u);
+    BOOST_CHECK_EQUAL(recorder.events_[0].name(), "leftPaddleUp");
+}
+
+/**
+ * And what it takes stops there. This is the whole point of the seam: a click that both
+ * presses a button the app drew and gives an order is the bug it exists to prevent.
+ **/
+BOOST_AUTO_TEST_CASE(engine_taken_event_is_not_mapped_test) {
+    TestEngine engine(appPath("good"));
+    BOOST_REQUIRE(engine.initialize(boundFeature));
+    engine.take_ = true;
+
+    Recorder recorder;
+    engine.dispatcher()->sink<v3d::event::Event>().connect<&Recorder::handle>(recorder);
+
+    engine.offer(keyDown(SDLK_W));
+
+    BOOST_CHECK_EQUAL(engine.offered_.size(), 1u);
+    BOOST_CHECK_EQUAL(recorder.events_.size(), 0u);
+}
+
+/**
+ * A close request is a window fact rather than input, so it is not an app's to decline -
+ * an app that could swallow one would be a window that could not be closed.
+ **/
+BOOST_AUTO_TEST_CASE(engine_quit_survives_a_taken_event_test) {
+    SDL_Event quit{};
+    quit.type = SDL_EVENT_QUIT;
+
+    TestEngine declining(appPath("good"));
+    BOOST_REQUIRE(declining.initialize(boundFeature));
+    declining.offer(quit);
+    BOOST_CHECK(declining.quitting());
+
+    TestEngine taking(appPath("good"));
+    BOOST_REQUIRE(taking.initialize(boundFeature));
+    taking.take_ = true;
+    taking.offer(quit);
+    BOOST_CHECK(taking.quitting());
+}
+
+/**
+ * The default takes nothing, which is what makes the seam additive: the four apps in this
+ * tree do not override it and see the events they always saw.
+ **/
+BOOST_AUTO_TEST_CASE(engine_default_takes_no_event_test) {
+    v3d::engine::Engine engine(appPath("good"));
+    SDL_Event event{};
+    event.type = SDL_EVENT_KEY_DOWN;
+    BOOST_CHECK(!engine.onEvent(event));
 }
 
 /**

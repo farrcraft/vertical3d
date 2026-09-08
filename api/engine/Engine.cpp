@@ -247,6 +247,28 @@ bool Engine::render() {
 
 /**
  **/
+void Engine::route(const SDL_Event& event) {
+    // the app is the outer layer - it drew over the scene, so it is what the cursor is
+    // pointing at - and what it takes never reaches the bindings, per ADR-0043
+    if (!onEvent(event) && inputEngine_ && inputEngine_->filterEvent(event)) {
+        return;
+    }
+    // quit, resize and focus are window facts rather than input, so they are not an app's
+    // to decline and not a binding's to consume
+    handleEvent(event);
+}
+
+/**
+ **/
+bool Engine::onEvent(const SDL_Event& event) {
+    (void)event;
+    return false;
+}
+
+/**
+ **/
+/**
+ **/
 void Engine::handleEvent(const SDL_Event& event) {
     switch (event.type) {
     case SDL_EVENT_QUIT:
@@ -286,11 +308,7 @@ bool Engine::eventLoop() {
     while (!quitting_) {
         // Handle events on queue
         while (SDL_PollEvent(&event) != 0 && !quitting_) {
-            // check for input device events first
-            if (inputEngine_ && inputEngine_->filterEvent(event)) {
-                continue;
-            }
-            handleEvent(event);
+            route(event);
         }
         // an event handler may have asked to stop, and the window it drew into can have
         // gone with it - so nothing after this point runs on the frame that quit

@@ -57,6 +57,11 @@ Input is asserted the same way, against the boxes a draw left: `CursorTest` pres
 `TextBoxTest` types, and neither needs a window because `ui::Cursor` and `ui::Keys` are handed
 a point and a key name rather than an SDL event.
 
+`Engine::eventLoop()` renders and so cannot be driven at all, which is why the order of
+[ADR-0043](adr/0043-an-app-sees-an-event-before-the-bindings-do.md) lives in
+`Engine::route()`: one polled event offered to the app, the bindings and the engine, callable
+from a subclass with no window in sight. `EngineTest` drives it directly.
+
 ## Suites with something to know about them
 
 - **The moya and talyn suites each render against a committed PNG**, in `moya/tests/data/` and

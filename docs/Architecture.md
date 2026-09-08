@@ -156,6 +156,11 @@ Per [ADR-0032](adr/0032-the-loop-simulates-at-a-fixed-step.md), `eventLoop()` me
 frame in nanoseconds, hands it to `tick(unsigned int delta)` once, then drains however many
 whole 60 Hz steps that frame owes through `simulate(float step)`, then calls `render()`.
 
+Before any of that it polls, and `Engine::route()` offers each event to three places in a
+fixed order: `onEvent()` first, then the input engine's bindings, then the engine's own
+`handleEvent`. That order is [ADR-0043](adr/0043-an-app-sees-an-event-before-the-bindings-do.md)
+and is what lets an app host a ui toolkit it did not write.
+
 **Simulation goes in `simulate()`.** What runs there produces the same result whatever the
 frame rate was; what runs in `tick()` does not. Per-frame work that is not simulation — input
 state, UI animation, camera smoothing — is what `tick()` is still for.
@@ -175,6 +180,10 @@ because neither is simulation and neither wants to run twice on a slow frame.
   nothing enforces the split, so simulation left in `tick()` is frame-rate dependent and
   compiles. `tick` is milliseconds and `simulate` is seconds, which is the only thing that
   stops one being passed where the other belongs.
+- **`onEvent()` returning true consumes the event, and the bindings never see it.** That is
+  what it is for — a click that both presses a button the app drew and gives an order to the
+  scene is the bug it prevents — and it is also how an app silently disables its own
+  `mappings.json` by taking everything. Quit, resize and focus run whatever it returns.
 - **A quit command calls `Engine::quit()`, never `shutdown()`.** `eventLoop` ticks and renders
   after a handler returns, so tearing the window down inside one leaves the next frame drawing
   into a destroyed window. `quit()` sets a flag the loop breaks on, and `main` calls
