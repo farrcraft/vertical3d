@@ -259,6 +259,11 @@ What it has to settle:
 
 ### Step 2 — `api/asset` writes a JSON document, atomically and readably
 
+**Landed** as `api/asset/Writer.h`, free functions rather than a class: there is no state to
+hold, and the atomic byte write is not JSON's, so `JsonFile` was left alone. The serializer is
+`serializeDocument` rather than `serialize`, because an unqualified `serialize` on a
+`boost::json::value` resolves to boost's one-line one through ADL.
+
 In [`api/asset/`](../../api/asset/), beside `Json.h` and `JsonFile.h`.
 
 Two things, and they belong in one step because either alone is half a writer:
