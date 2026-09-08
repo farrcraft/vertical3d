@@ -48,7 +48,6 @@ clang-tidy, `/analyze` and cpplint alike.
 tree loads from a file. No app uses it: `voxel` builds its terrain procedurally and the editor
 models with `brep::BRep`.
 
-[] `image::Reader` reads a file and nothing else, so a texture embedded in a `.glb` cannot be decoded and the loader reports it instead. A memory source is `png_set_read_fn` and `jpeg_mem_src`, plus the setjmp the png reader does not have today, which is why it is its own change rather than an overload
 [] a `type::Model` has no path onto the device. `vulkan::Mesh` takes bytes, a stride-free count and indices, so the step is an app's four lines; a helper on the render side would need a vertex layout the api does not own
 [] only the first material in a file is kept, because a merge is one draw. A file whose parts need different surfaces has to become several models, and nothing splits one yet
 [] `.gltf` with external buffers resolves them relative to the file, which is cgltf's own behaviour rather than the asset manager's path handling. The two agree today because the manager hands over a full path

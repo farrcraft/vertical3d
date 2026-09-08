@@ -11,11 +11,43 @@
 
 #pragma pack(pop)
 
-#include <iostream>
-#include <cstdio>
+#include <csetjmp>
+#include <cstddef>
+#include <cstring>
 #include <string>
+#include <vector>
 
 namespace v3d::image::reader {
+
+namespace {
+
+/**
+ * How far into the buffer libpng has read, since it walks rather than seeks.
+ **/
+struct Cursor final {
+    const unsigned char* data;
+    std::size_t size;
+    std::size_t at;
+};
+
+/**
+ * libpng's own read, over memory instead of a FILE.
+ *
+ * A short buffer is an error rather than a short read: png_error longjmps out of the
+ * decode, which is what stops the rows below being written from whatever was on the stack.
+ **/
+void readFromBuffer(png_structp png, png_bytep into, png_size_t wanted) {
+    Cursor* cursor = static_cast<Cursor*>(png_get_io_ptr(png));
+    if (cursor == nullptr || cursor->at + wanted > cursor->size) {
+        png_error(png, "the png ended before it said it would");
+        return;
+    }
+    memcpy(into, cursor->data + cursor->at, wanted);
+    cursor->at += wanted;
+}
+
+};  // namespace
+
 /**
  **/
 Png::Png(const boost::shared_ptr<v3d::log::Logger>& logger) : Reader(logger) {
@@ -23,22 +55,15 @@ Png::Png(const boost::shared_ptr<v3d::log::Logger>& logger) : Reader(logger) {
 
 /**
  **/
-boost::shared_ptr<Image> Png::read(std::string_view filename) {
+boost::shared_ptr<Image> Png::read(const unsigned char* encoded, std::size_t size) {
     boost::shared_ptr<Image> empty_ptr;
 
-    // open the file
-    FILE* fp;
-    errno_t err = fopen_s(&fp, static_cast<std::string>(filename).c_str(), "rb");
-    if (err != 0) {
+    // make sure it's really a png file. png_sig_cmp rather than png_check_sig: the same
+    // test, and the one that takes the bytes as const
+    if (encoded == nullptr || size < 8 || png_sig_cmp(encoded, 0, 8) != 0) {
         return empty_ptr;
     }
-
-    // make sure it's really a png file
-    png_byte sig[8];
-    fread(sig, 1, 8, fp);
-    if (!png_check_sig(sig, 8)) {
-        return empty_ptr;
-    }
+    Cursor cursor{ encoded, size, 8 };
 
     png_structp png_ptr = 0;
     png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, 0, 0, 0);
@@ -53,7 +78,23 @@ boost::shared_ptr<Image> Png::read(std::string_view filename) {
         return empty_ptr;
     }
 
-    png_init_io(png_ptr, fp);
+    // longjmp does not destroy anything constructed after the setjmp point, so every
+    // object below that owns memory is declared above it. Without this libpng's default
+    // error handler aborts the process, which a reader pointed at bytes it did not open
+    // itself cannot afford - a truncated png is an ordinary thing to be handed.
+    boost::shared_ptr<Image> img;
+    std::vector<png_bytep> rowpointers;
+    // C4611 flags the mix of setjmp with C++ object destruction, which the declarations
+    // above satisfy: no owning object is constructed after this point.
+#pragma warning(push)
+#pragma warning(disable : 4611)
+    if (setjmp(png_jmpbuf(png_ptr))) {
+        png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+        return empty_ptr;
+    }
+#pragma warning(pop)
+
+    png_set_read_fn(png_ptr, &cursor, readFromBuffer);
 
     png_set_sig_bytes(png_ptr, 8);
 
@@ -92,28 +133,24 @@ boost::shared_ptr<Image> Png::read(std::string_view filename) {
     channels = png_get_channels(png_ptr, info_ptr);
 
     // now we can allocate memory to store the image
-    boost::shared_ptr<Image> img(new Image(width, height, static_cast<uint8_t>(channels * bpp)));
+    img.reset(new Image(width, height, static_cast<uint8_t>(channels * bpp)));
     unsigned char* data = img->data();
-
-    // and allocate memory for an array of row-pointers
-    png_byte** rowpointers = 0;
-    rowpointers = new png_bytep[height];
 
     // set the individual row-pointers to point at the correct offsets. A png file stores
     // its rows top down and so does Image, so row i of the file is row i of the buffer
+    rowpointers.resize(height);
     for (unsigned int i = 0; i < height; i++) {
         rowpointers[i] = data + (i * rowbytes);
     }
 
     // now we can go ahead and just read the whole image
-    png_read_image(png_ptr, rowpointers);
+    png_read_image(png_ptr, rowpointers.data());
 
     // read the additional chunks in the PNG file (not really needed)
     png_read_end(png_ptr, 0);
 
-    delete[] rowpointers;
+    png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
 
-    fclose(fp);
     return img;
 }
 
