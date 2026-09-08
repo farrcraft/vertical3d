@@ -85,26 +85,6 @@ hovered a frame late is the mechanism that lets a window take the cursor from on
 [] `SDL_StartTextInput` is on for the life of the window rather than for as long as something is focused, which is free on a desktop and would raise an on screen keyboard and never lower it anywhere else
 [] nothing draws into a `LineCanvas` clip ([ADR-0037](adr/0037-clipping-is-a-scissor-the-batch-carries.md)). The viewport panes that would want one are the editor's
 
-## Audio
-
-`audio::Engine` plays a clip on a track it holds, so a sound can be looped, faded, stopped and
-mixed on a named bus - [ADR-0021](adr/0021-sdl3-mixer-replaces-soloud.md) for what the backend
-is, and `api/audio/Engine.h` for the surface.
-
-[] **pong plays no sound at all, and has not for some time.** The cause is narrowed to one
-line: `audio::Engine::initialize()` reaches
-`dispatcher_->sink<v3d::event::Sound>().connect<&Engine::soundEvent>(*this)`, `PongScene`
-triggers `event::Sound` on the same dispatcher object, and `soundEvent` is never called - while
-a free function connected to that same sink on the next line, in the same translation unit,
-receives every event. So it is neither the dispatcher, the event type nor the trigger, but the
-member-function-and-instance binding. Nothing else in the tree connects a member of an api
-library to a dispatcher sink, which is why nothing else shows it
-
-## Assets
-
-[] there is no hot reload. `asset::Manager` owns the cache and the paths, so noticing a file changed is the easy half; the hard half is what a live `render::realtime::TextureHandle` does when the image behind it is replaced, and that is a question about what a texture is used for rather than about the manager
-[] `asset::JsonFile::open` uses `fopen_s`, which is MSVC's, and so do all four image readers and writers. The tree is Windows only and this is not urgent; it is worth knowing before a sixth is added
-
 ## The game loop
 
 The loop simulates at a fixed step and renders at a variable one -

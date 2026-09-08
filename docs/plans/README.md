@@ -19,13 +19,10 @@ independent — four of them, and only two with an order inside — so the one d
 editor save that truncated the previous project before writing the new one, did not wait behind
 the structural work.
 
-Three things came out differently. Step 8 gave `Keys::press` an argument for whether shift is
+Two things came out differently. Step 8 gave `Keys::press` an argument for whether shift is
 held, because a key name carries no modifier and `api/ui` cannot ask `api/input` for one without
-taking SDL into a library that needs no window to test. Step 12 landed wholly in `api/config`,
-because what a sprite sheet resolves to is a texture handle the app already holds. And step 13
-found, while verifying that pong still played its sounds, that pong has not played a sound in
-some time and did not before the change either — carried to [TODO.md](../TODO.md) rather than
-fixed here.
+taking SDL into a library that needs no window to test. And step 12 landed wholly in
+`api/config`, because what a sprite sheet resolves to is a texture handle the app already holds.
 
 [completed/UiConsolidation.md](completed/UiConsolidation.md) was drafted on 2026-09-06 out of an
 architecture review of `api/ui` and closed on 2026-09-07. Fourteen steps over a library that

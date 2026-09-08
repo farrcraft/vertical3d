@@ -580,10 +580,10 @@ starts, which is the only moment the engine is asked for anything. A `Voice` is 
 so a handle to a sound that has ended is refused rather than controlling the one that took its
 track.
 
-**Found while verifying, and not this step's:** pong plays no sound at all and did not before
-this change either. Carried to [TODO.md](../../TODO.md) with what the probing established — the
-dispatcher, the event type and the trigger are all fine, and it is the member-function binding
-in `audio::Engine::initialize()` that never fires.
+**Verified by running pong**: a paddle hit reaches `soundEvent`, which starts a track, and the
+track is back in the pool by the next hit. A `debug` log line is the wrong instrument for this -
+the logger flushes from `info` up, so anything logged below that during play is still in the
+buffer when the process is killed, and reads as if the code never ran.
 
 In [`api/audio/`](../../../api/audio/).
 
