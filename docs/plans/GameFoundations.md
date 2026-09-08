@@ -309,6 +309,12 @@ is made to fail.
 
 ### Step 4 — `engine::Settings`, a user's overlay over the shipped defaults
 
+**Landed.** Two departures from the draft. The settings sit under a `settings` key rather than
+at the root, so `version` belongs to the format and an app can still have a setting called
+version. And `set()` takes a `boost::json::value` rather than an overload per type, because a
+`const char*` argument binds to `bool` before it binds to `std::string`; the reads keep
+distinct names — `text`, `number`, `integer`, `flag` — for the same reason.
+
 In [`api/engine/`](../../api/engine/), beside [`Application.h`](../../api/engine/Application.h),
 because that is where `userPath()` already is and because `api/engine` already names SDL3 as a
 package where `api/asset` deliberately does not.
