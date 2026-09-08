@@ -82,6 +82,12 @@ field glyphs, with the drawn size closed over per
 [ADR-0036](adr/0036-text-is-a-distinct-kind-of-quad.md). A ui at one size and a heading at
 another are two callback pairs from one `TextRenderer`, and one atlas serves both.
 
+It takes its atlas upload as a `TextRenderer::Upload` callback rather than a `QuadRenderer`,
+so the one thing in the class that needs a device is the one thing handed in and an app
+drawing this canvas with a renderer of its own can use the class rather than copy it. `api/ui`
+names no vulkan type anywhere as a result, which is what ADR-0019's seam was always claiming.
+An app on `Engine3D` passes `quads->texture(image)`.
+
 Both take a `std::string_view`. A component already holds its text, so measuring one must not
 cost an allocation per label per frame.
 

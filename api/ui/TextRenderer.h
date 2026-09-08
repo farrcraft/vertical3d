@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <functional>
 #include <string>
 #include <string_view>
 
@@ -13,16 +14,13 @@
 #include "../asset/Manager.h"
 #include "../font/TextureFontCache.h"
 #include "../font/TextureTextBuffer.h"
+#include "../image/Image.h"
 #include "../log/Logger.h"
 #include "../render/realtime/Canvas.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
-
-namespace v3d::render::realtime::vulkan {
-class QuadRenderer;
-};  // namespace v3d::render::realtime::vulkan
 
 namespace v3d::ui {
 
@@ -39,6 +37,18 @@ namespace v3d::ui {
  **/
 class TextRenderer {
  public:
+    /**
+     * How an atlas image becomes a texture the canvas can name.
+     *
+     * The one thing in this class that needs a device, so it is the one thing handed in.
+     * Everything else here is cpu side - the cache packs into an image::TextureAtlas and
+     * the buffer lays a string out - and taking the upload as a callback is what lets an
+     * app drawing this canvas with a renderer of its own use the class rather than copy
+     * it. Engine3D's is quads->texture(image).
+     **/
+    typedef std::function<v3d::render::realtime::TextureHandle(
+        const boost::shared_ptr<v3d::image::Image>&)> Upload;
+
     /**
      * Printable ascii - the glyphs an app draws unless it names its own set.
      **/
@@ -83,7 +93,7 @@ class TextRenderer {
      * fit the atlas, both leave this measuring zero and drawing nothing - the log already
      * says which - so either costs the app its labels rather than its frame.
      *
-     * @param quads the renderer the atlas is uploaded through - Engine3D::quads()
+     * @param upload what puts the packed atlas on the device and names it
      * @param size the size the font is rasterized at, which per ADR-0036 is the base every
      *        drawn size is a ratio of rather than the only size available
      * @param font the asset to load, resolved against the manager's path
@@ -95,7 +105,7 @@ class TextRenderer {
      **/
     TextRenderer(const boost::shared_ptr<v3d::asset::Manager>& assetManager,
         const boost::shared_ptr<v3d::log::Logger>& logger,
-        const boost::shared_ptr<v3d::render::realtime::vulkan::QuadRenderer>& quads,
+        const Upload& upload,
         float size = baseSize,
         const std::string& font = defaultFont,
         const wchar_t* charcodes = ascii,
