@@ -58,7 +58,6 @@ A pass draws into a target it names -
 [ADR-0031](adr/0031-a-pass-draws-into-a-target-it-names.md). No app in the tree draws into one:
 it is there for the features that need it rather than for a picture that exists today.
 
-[] a depth target is allocated but never sampled. `RenderTarget` can carry a depth image and a pass writes it, but the image has no sampled usage and no view a descriptor set can bind, so a shadow map is written and cannot be read
 [] a target is single-buffered, so a pass wanting the previous frame's contents needs two and has to swap them itself. A double-buffered target would be the natural next shape
 [] nothing catches a pipeline built against one colour format drawing into a target of another. It is a wrong picture rather than a validation error, because dynamic rendering takes the format from the pipeline
 [] `Frame::passBefore` exists because `Engine3D` creates the colour pass in its constructor. A frame that let a pass say where it belongs, or an engine that created its pass lazily, would not need it
