@@ -9,6 +9,15 @@ every phase is closed it moves to [completed/](completed/), and any open item it
 moves to [TODO.md](../TODO.md). The plan itself stays, because the reasoning behind an ordering
 outlives the schedule.
 
+[GameFoundations.md](GameFoundations.md) **is open**, drafted on 2026-09-07 against this tree from
+outside it and staged here the same day. Thirteen steps taking up what a game needs from these
+libraries that a demo does not: a document written whole or not at all
+([ADR-0041](../adr/0041-a-document-is-written-whole-or-not-at-all.md)), a textured quad in world
+space ([ADR-0042](../adr/0042-a-textured-quad-in-world-space.md)), and the halves of `api/ui` and
+`api/audio` that stop short. Its ordering matters because the groups are largely independent — four
+of them, and only two have an order inside — so the one defect it carries, an editor save that
+truncates the previous project before writing the new one, does not wait behind the structural work.
+
 [completed/UiConsolidation.md](completed/UiConsolidation.md) was drafted on 2026-09-06 out of an
 architecture review of `api/ui` and closed on 2026-09-07. Fourteen steps over a library that
 grew four ADRs in a day and had not had a pass over its shape since. Its ordering mattered for
