@@ -290,6 +290,10 @@ rename is made to fail, and leaves no `.tmp` behind either way.
 
 ### Step 3 — The editor's project save stops truncating
 
+**Landed.** Verified as the plan asked: a project written by the old path and by the new one
+are byte for byte the same 2180-byte document, and the untouched-on-failure half is a case in
+`ProjectTest` rather than a one-off check.
+
 In [`editor/scene/Project.cxx`](../../vertical3d/src/scene/Project.cxx).
 
 `Project::write` drops its `std::ofstream` and its copy of the printer and calls step 2. The diff

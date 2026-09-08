@@ -5,19 +5,16 @@
 
 #include "Project.h"
 
-#include <algorithm>
-#include <charconv>
 #include <cstddef>
 #include <cstdint>
-#include <fstream>
 #include <limits>
 #include <string>
-#include <system_error>
 #include <vector>
 
 #include "SceneVisitor.h"
 
 #include "../../../api/asset/JsonFile.h"
+#include "../../../api/asset/Writer.h"
 #include "../../../api/brep/BRep.h"
 #include "../../../api/brep/Face.h"
 #include "../../../api/brep/HalfEdge.h"
@@ -101,142 +98,6 @@ bool refers(v3d::brep::Index id, std::size_t count, bool optional) {
  **/
 boost::json::array vector(const glm::vec3& v) {
     return boost::json::array{ v.x, v.y, v.z };
-}
-
-void print(std::string* out, const boost::json::value& value, int depth);
-
-/**
- **/
-bool scalar(const boost::json::value& value) {
-    return !value.is_object() && !value.is_array();
-}
-
-/**
- * A point, a vector or a quaternion - the one shape kept on a line of its own.
- **/
-bool scalarArray(const boost::json::value& value) {
-    if (!value.is_array()) {
-        return false;
-    }
-    return std::ranges::all_of(value.as_array(), scalar);
-}
-
-/**
- * Whether a value is kept on one line: a scalar, a vector, or a record of those -
- * an edge or a face. A mesh broken a number to a line is unreadable and its diff
- * is noise.
- **/
-bool compact(const boost::json::value& value) {
-    if (scalar(value) || scalarArray(value)) {
-        return true;
-    }
-    if (!value.is_object()) {
-        return false;
-    }
-    return std::ranges::all_of(value.as_object(), [](const auto& entry) {
-        return scalar(entry.value()) || scalarArray(entry.value());
-    });
-}
-
-/**
- **/
-void indent(std::string* out, int depth) {
-    out->append(static_cast<std::size_t>(depth) * 2, ' ');
-}
-
-/**
- * Write a number as a float.
- *
- * Everything a project file holds is one, and boost::json serializes a double as
- * 0E0 rather than as 0 - a form that is valid, unreadable, and impossible to hand
- * edit. The narrowing is exact because a float is what was widened to make it.
- **/
-void printNumber(std::string* out, const boost::json::value& value) {
-    if (!value.is_double()) {
-        out->append(boost::json::serialize(value));
-        return;
-    }
-    char buffer[32];
-    const std::to_chars_result result =
-        std::to_chars(buffer, buffer + sizeof(buffer), static_cast<float>(value.as_double()));
-    if (result.ec != std::errc()) {
-        out->append(boost::json::serialize(value));
-        return;
-    }
-    out->append(buffer, static_cast<std::size_t>(result.ptr - buffer));
-}
-
-/**
- **/
-void printArray(std::string* out, const boost::json::array& values, int depth) {
-    if (values.empty()) {
-        out->append("[]");
-        return;
-    }
-    const bool oneLine = scalarArray(boost::json::value(values));
-    out->append("[");
-    for (std::size_t item = 0; item < values.size(); item++) {
-        if (item > 0) {
-            out->append(oneLine ? ", " : ",");
-        }
-        if (!oneLine) {
-            out->append("\n");
-            indent(out, depth + 1);
-        }
-        print(out, values[item], depth + 1);
-    }
-    if (!oneLine) {
-        out->append("\n");
-        indent(out, depth);
-    }
-    out->append("]");
-}
-
-/**
- **/
-void printObject(std::string* out, const boost::json::object& entries, int depth) {
-    if (entries.empty()) {
-        out->append("{}");
-        return;
-    }
-    const bool oneLine = compact(boost::json::value(entries));
-    out->append("{");
-    std::size_t item = 0;
-    for (const auto& entry : entries) {
-        if (item++ > 0) {
-            out->append(",");
-        }
-        if (oneLine) {
-            out->append(" ");
-        } else {
-            out->append("\n");
-            indent(out, depth + 1);
-        }
-        out->append(boost::json::serialize(boost::json::value(entry.key())));
-        out->append(": ");
-        print(out, entry.value(), depth + 1);
-    }
-    if (oneLine) {
-        out->append(" ");
-    } else {
-        out->append("\n");
-        indent(out, depth);
-    }
-    out->append("}");
-}
-
-/**
- * Serialize indented. boost::json writes a document on one line, which makes a
- * project file unreadable and its diff useless.
- **/
-void print(std::string* out, const boost::json::value& value, int depth) {
-    if (value.is_object()) {
-        printObject(out, value.as_object(), depth);
-    } else if (value.is_array()) {
-        printArray(out, value.as_array(), depth);
-    } else {
-        printNumber(out, value);
-    }
 }
 
 /**
@@ -519,17 +380,7 @@ bool Project::write(const std::string& path, const boost::shared_ptr<Scene>& sce
     root["name"] = name_;
     root["meshes"] = visitor.meshes;
 
-    std::string text;
-    print(&text, root, 0);
-    text.append("\n");
-
-    std::ofstream file(path, std::ios::binary | std::ios::trunc);
-    if (!file) {
-        logger_->get()->error("Cannot write a project to {}", path);
-        return false;
-    }
-    file.write(text.data(), static_cast<std::streamsize>(text.size()));
-    if (!file) {
+    if (!v3d::asset::writeDocument(path, root)) {
         logger_->get()->error("Failed writing the project to {}", path);
         return false;
     }

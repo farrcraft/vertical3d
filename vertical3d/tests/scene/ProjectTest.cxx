@@ -192,6 +192,36 @@ BOOST_AUTO_TEST_CASE(project_written_form_test) {
     boost::filesystem::remove(path);
 }
 
+/**
+ * The project already on disk survives a save that does not complete, per ADR-0041. The write
+ * is made to fail by leaving a directory where the document should go, which nothing will
+ * rename onto.
+ **/
+BOOST_AUTO_TEST_CASE(project_failed_write_keeps_the_previous_project_test) {
+    const std::string path = scratch("v3d_kept.json");
+
+    boost::shared_ptr<v3d::editor::Scene> written = boost::make_shared<v3d::editor::Scene>();
+    written->add(v3d::editor::create_poly_plane());
+    v3d::editor::Project project(logger());
+    project.name("kept");
+    BOOST_REQUIRE_EQUAL(project.write(path, written), true);
+    const std::string before = get(path);
+
+    const std::string blocked = scratch("v3d_blocked.json");
+    boost::filesystem::create_directories(boost::filesystem::path(blocked) / "occupied");
+    v3d::editor::Project doomed(logger());
+    doomed.name("lost");
+    BOOST_CHECK_EQUAL(doomed.write(blocked, written), false);
+    BOOST_CHECK(boost::filesystem::is_directory(blocked));
+    BOOST_CHECK(!boost::filesystem::exists(blocked + ".tmp"));
+
+    // and the one that did land is byte for byte what it was
+    BOOST_CHECK_EQUAL(get(path), before);
+
+    boost::filesystem::remove_all(blocked);
+    boost::filesystem::remove(path);
+}
+
 BOOST_AUTO_TEST_CASE(project_missing_file_test) {
     boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
     scene->add(v3d::editor::create_poly_cube());
