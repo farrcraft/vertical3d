@@ -53,3 +53,5 @@ old record's status and leave the file in place.
 | [0040](0040-a-key-goes-to-a-focused-component.md) | UI Input — A Key Goes To A Focused Component, And A Character Is Not A Key | accepted | 2026-09-07 |
 | [0041](0041-a-document-is-written-whole-or-not-at-all.md) | Writing A File — A Document Is Written Whole Or Not At All, And Readably | accepted | 2026-09-07 |
 | [0042](0042-a-textured-quad-in-world-space.md) | 2D Drawing — A Textured Quad In World Space Is A Third Primitive, Ordered By Its Caller | accepted | 2026-09-07 |
+| [0043](0043-an-app-sees-an-event-before-the-bindings-do.md) | Event Routing — An App Sees An Event Before The Bindings Do, And The Window Facts Are Not Its To Decline | accepted | 2026-09-07 |
+| [0044](0044-a-sampled-depth-target-is-read-only.md) | Sampled Depth — Asking For A Readable Depth Target Chooses The Format, And The Recorder Leaves It Read Only | accepted | 2026-09-07 |
