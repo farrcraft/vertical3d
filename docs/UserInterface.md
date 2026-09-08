@@ -143,7 +143,7 @@ Every type in `component::Type` has a loader and a draw path; there are no empty
 | | draws | owns |
 |---|---|---|
 | `Panel` | a filled box with a border | nothing |
-| `Label` | one line of text | its text |
+| `Label` | its text, wrapped to the width it was given, or one line when that width is `Auto` | its text |
 | `Icon` | a texture at the component's size | its source and handle |
 | `Bar` | a track and the fraction of it that is filled | its fraction |
 | `Button` | a label, or an icon, or a nine-slice skin | nothing — a toggle's mark is set by whatever answers its command |

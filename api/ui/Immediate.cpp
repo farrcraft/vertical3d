@@ -9,7 +9,6 @@
 #include <cmath>
 #include <cstddef>
 #include <iterator>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -59,39 +58,6 @@ const float bulletScale = 0.28f;
  * How many segments a bullet is drawn with.
  **/
 const unsigned int bulletSides = 8;
-
-/**
- * Break a line at the spaces that do not fit a width.
- *
- * Greedy: a word goes on the current line if it fits, and starts a new one if it does not.
- * A single word wider than the whole width is left over the edge rather than split, which
- * is the lesser of the two wrong answers for a name or a path.
- **/
-std::vector<std::string> wrap(const std::string& line, float width,
-    const std::function<float(const std::string&)>& measure) {
-    std::vector<std::string> rows;
-    std::istringstream words(line);
-    std::string word;
-    std::string row;
-    while (words >> word) {
-        if (row.empty()) {
-            row = word;
-            continue;
-        }
-        std::string wider(row);
-        wider.append(" ").append(word);
-        if (measure(wider) <= width) {
-            row = wider;
-        } else {
-            rows.push_back(row);
-            row = word;
-        }
-    }
-    if (!row.empty()) {
-        rows.push_back(row);
-    }
-    return rows;
-}
 
 };  // namespace
 

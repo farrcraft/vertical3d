@@ -393,6 +393,11 @@ a field silently going back to being dropped.
 
 ### Step 7 — `wrap()` is the library's, and a label can be more than one line
 
+**Landed.** `wrap()` is in `Text.h` beside `Measure` and `Write`, taking a `Measure` rather
+than the `std::function<float(const std::string&)>` the private one took. A width that is not
+positive is one row rather than a row per word, which is what a percentage of a zero width
+parent would otherwise produce.
+
 In [`api/ui/`](../../api/ui/), out of [`Immediate.cpp`](../../api/ui/Immediate.cpp)'s anonymous
 namespace, and then [`component/Label.h`](../../api/ui/component/Label.h) and the label's draw path
 in [`ComponentRenderer`](../../api/ui/ComponentRenderer.cpp).

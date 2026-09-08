@@ -238,8 +238,17 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     }
     place(*label, label->position(), size);
 
-    const glm::vec2 pen(label->position().x, label->position().y + base().lineHeight * 0.75f);
-    write_(text, pen, base().text);
+    glm::vec2 pen(label->position().x, label->position().y + base().lineHeight * 0.75f);
+    if (label->layout().width.unit() == Length::Unit::Auto) {
+        write_(text, pen, base().text);
+        return;
+    }
+    // a label with a width to wrap to draws the rows the arranger sized it for, so the two
+    // agree about how tall it is
+    for (const std::string& row : wrap(text, size.x, measure_)) {
+        write_(row, pen, base().text);
+        pen.y += base().lineHeight;
+    }
 }
 
 /**

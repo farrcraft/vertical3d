@@ -13,6 +13,8 @@
 #include "../ComponentRenderer.h"
 #include "../../render/realtime/Canvas.h"
 #include "../Container.h"
+#include "../component/Label.h"
+#include "../style/Resolver.h"
 #include "../component/menu/Menu.h"
 #include "../component/menu/MenuBar.h"
 #include "../component/menu/MenuItem.h"
@@ -222,6 +224,47 @@ BOOST_AUTO_TEST_CASE(an_empty_menu_draws_nothing) {
     renderer.draw(&canvas, buildMenu({}));
 
     BOOST_CHECK(canvas.empty());
+}
+
+/**
+ * A label given a width draws a row per line, each a line below the last. One that was given
+ * no width is one line however long it is, which is what every label in the tree is today.
+ **/
+BOOST_AUTO_TEST_CASE(a_label_with_a_width_draws_a_row_per_line) {
+    std::vector<Written> written;
+    v3d::ui::ComponentRenderer renderer(
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+        [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
+            Written line;
+            line.text = text;
+            line.pen = pen;
+            line.colour = colour;
+            written.push_back(line);
+        });
+
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(800, 600);
+
+    boost::shared_ptr<v3d::ui::component::Label> wrapped =
+        boost::make_shared<v3d::ui::component::Label>();
+    wrapped->text("one two three four");
+    wrapped->layout().width = v3d::ui::Length(100.0f, v3d::ui::Length::Unit::Pixels);
+    wrapped->size(glm::vec2(100.0f, 40.0f));
+
+    renderer.draw(&canvas, wrapped);
+    BOOST_REQUIRE_EQUAL(written.size(), 2);
+    BOOST_CHECK_EQUAL(written[0].text, "one two");
+    BOOST_CHECK_EQUAL(written[1].text, "three four");
+    const v3d::ui::style::Resolver styles;
+    BOOST_CHECK_CLOSE(written[1].pen.y - written[0].pen.y, styles.base().lineHeight, 0.001f);
+
+    written.clear();
+    boost::shared_ptr<v3d::ui::component::Label> single =
+        boost::make_shared<v3d::ui::component::Label>();
+    single->text("one two three four");
+    renderer.draw(&canvas, single);
+    BOOST_REQUIRE_EQUAL(written.size(), 1);
+    BOOST_CHECK_EQUAL(written[0].text, "one two three four");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
