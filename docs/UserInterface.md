@@ -217,6 +217,11 @@ cursor crosses it.
 Everything is tested against the boxes the last draw left, so an app that routes input before
 it draws sees a dead ui for one frame.
 
+`Immediate::capturing()` is the immediate layer's half of the same rule: whether the cursor is
+over something that layer drew, or is dragging something it drew, so an app can ask whether a
+click has already been spent before acting on one of its own. It answers from the previous
+frame for the same reason a widget's hover does.
+
 ## The keyboard
 
 `ui::Keys` is the cursor's counterpart —

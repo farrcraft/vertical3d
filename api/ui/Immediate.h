@@ -227,6 +227,21 @@ class Immediate {
     void separator();
 
     /**
+     * Whether the cursor is over something this layer drew, or is dragging something it
+     * drew.
+     *
+     * What an app asks before it acts on a click of its own, so that a press which
+     * already pressed a button here does not also give an order to the scene behind it.
+     * ui::Cursor answers the same question for the retained tree (ADR-0038); this is the
+     * immediate layer's half of that rule.
+     *
+     * Answered from what the previous frame found, the same way a widget's own hover is:
+     * an app asks this before it draws, and what it is asking about has not been drawn
+     * yet.
+     **/
+    bool capturing() const noexcept;
+
+    /**
      * Put the next widget beside the last one rather than under it.
      **/
     void sameLine();

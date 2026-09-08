@@ -720,4 +720,65 @@ BOOST_AUTO_TEST_CASE(a_window_hidden_for_a_moment_keeps_what_it_held) {
     BOOST_CHECK(stillFolded);
 }
 
+/**
+ * An app asks the layer whether a click has already been spent before it acts on one of its
+ * own - the immediate half of the rule ADR-0038 states for the retained tree.
+ **/
+BOOST_AUTO_TEST_CASE(the_layer_says_when_it_wants_the_cursor) {
+    std::vector<Written> written;
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(400, 300);
+    v3d::ui::Immediate ui = build(&written);
+
+    // nothing has been drawn, so nothing is wanted
+    BOOST_CHECK(!ui.capturing());
+
+    // a frame with the cursor inside a window claims it for the next one, which is when an
+    // app asks
+    ui.begin(&canvas, hover(glm::vec2(50.0f, 30.0f)));
+    ui.window("panel", glm::vec2(10.0f, 10.0f), glm::vec2(200.0f, 100.0f), 1.0f);
+    ui.endWindow();
+    ui.end();
+    BOOST_CHECK(ui.capturing());
+
+    // and a frame with the cursor outside it gives it back
+    ui.begin(&canvas, hover(glm::vec2(350.0f, 250.0f)));
+    ui.window("panel", glm::vec2(10.0f, 10.0f), glm::vec2(200.0f, 100.0f), 1.0f);
+    ui.endWindow();
+    ui.end();
+    BOOST_CHECK(!ui.capturing());
+}
+
+/**
+ * And it keeps wanting it through a drag that has left the widget, because the release that
+ * ends the drag is still the layer's and not the scene's.
+ **/
+BOOST_AUTO_TEST_CASE(the_layer_keeps_the_cursor_through_a_drag) {
+    std::vector<Written> written;
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(400, 300);
+    v3d::ui::Immediate ui = build(&written);
+    int value = 5;
+
+    // a press only lands on a widget the frame before found the cursor on, so the hover
+    // frame is what makes the press frame a press on this one
+    ui.begin(&canvas, hover(glm::vec2(100.0f, 8.0f)));
+    ui.dragInt("scrub", &value, 0, 10);
+    ui.end();
+
+    ui.begin(&canvas, press(glm::vec2(100.0f, 8.0f)));
+    ui.dragInt("scrub", &value, 0, 10);
+    ui.end();
+    BOOST_REQUIRE(ui.capturing());
+
+    // held, with the cursor dragged well clear of the widget
+    v3d::ui::Immediate::Input held;
+    held.cursor = glm::vec2(380.0f, 280.0f);
+    held.down = true;
+    ui.begin(&canvas, held);
+    ui.dragInt("scrub", &value, 0, 10);
+    ui.end();
+    BOOST_CHECK(ui.capturing());
+}
+
 BOOST_AUTO_TEST_SUITE_END()

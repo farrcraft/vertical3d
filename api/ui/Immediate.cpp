@@ -235,6 +235,12 @@ void Immediate::end() {
     }
 }
 
+bool Immediate::capturing() const noexcept {
+    // the held half matters as much as the hovered one: a scrubber being dragged keeps the
+    // cursor after the drag has left its box, and a click that lands there is still spent
+    return hovered_ != 0 || active_ != 0;
+}
+
 std::size_t Immediate::retained() const noexcept {
     return state_.size();
 }
