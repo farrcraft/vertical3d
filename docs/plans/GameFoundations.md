@@ -235,6 +235,8 @@ and every day it is not done is a day another app writes the workaround.
 
 ### Step 1 — ADR-0041, a document is written whole or not at all
 
+**Landed** as [ADR-0041](../adr/0041-a-document-is-written-whole-or-not-at-all.md).
+
 The record comes first, per [sdlc.md](../sdlc.md).
 
 Small as decisions go, and worth one because it is a rule about every file this tree will ever
