@@ -227,6 +227,18 @@ class Immediate {
     void separator();
 
     /**
+     * How wide the next widget should be, instead of the rest of the row.
+     *
+     * Consumed by the widget that follows and forgotten after it, so it is set again for
+     * each one - which is what lets two scrubbers share a row without either of them
+     * owning a width. A separator is not one of the widgets it applies to: a rule that
+     * stops halfway across is not a narrower rule, it is a wrong one.
+     *
+     * @param width in pixels, or nothing at all to go back to the rest of the row
+     **/
+    void nextItemWidth(float width);
+
+    /**
      * Whether the cursor is over something this layer drew, or is dragging something it
      * drew.
      *
@@ -415,6 +427,14 @@ class Immediate {
     glm::vec2 place(const glm::vec2& size);
 
     /**
+     * How wide the widget being written may be, and forget what asked for it.
+     *
+     * The rest of the row unless nextItemWidth() named something else, so a caller that
+     * never names one never pays for the question.
+     **/
+    float itemWidth();
+
+    /**
      * Offer a box to the cursor.
      *
      * Two things have to agree for a widget to be hovered: the cursor is in its box now,
@@ -474,6 +494,7 @@ class Immediate {
     Id hovered_;   /**< what the cursor was on last frame, which is what answers this one **/
     Id hovering_;  /**< what it is on this frame, which the next one will use **/
     Id active_;    /**< what a press went down on **/
+    float nextWidth_;  /**< what the next widget was told to be, or nothing **/
 
     std::vector<Id> ids_;
     std::map<Id, Retained> state_;

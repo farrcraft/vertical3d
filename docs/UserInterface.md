@@ -282,6 +282,9 @@ boxes the draw left or on the primitives it emitted. [Testing.md](Testing.md) ha
   is still the app's.
 - **An `Immediate` widget is hovered a frame after it is drawn**, which is what lets a window
   drawn later take the cursor from one under it.
+- **An `Immediate` widget takes the rest of its row unless told otherwise.**
+  `nextItemWidth(float)` is what tells it, spent by the widget that follows and forgotten
+  after it, which is what lets two scrubbers share a row. A separator always takes the row.
 - **There is no tab order.** The focus moves by press and by press alone, so a form cannot be
   filled in without the mouse.
 - **A caret cannot be placed by clicking.** A press focuses a text box and leaves the caret

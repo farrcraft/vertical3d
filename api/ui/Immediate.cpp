@@ -154,6 +154,7 @@ Immediate::Immediate(const Measure& measure, const Write& write) :
     hovered_(0),
     hovering_(0),
     active_(0),
+    nextWidth_(0.0f),
     frame_(0),
     disabled_(0),
     wheeled_(0) {
@@ -205,6 +206,7 @@ void Immediate::begin(v3d::render::realtime::Canvas* canvas, const Input& input)
     frame_++;
     drag_ = input.cursor - previousCursor_;
     hovering_ = 0;
+    nextWidth_ = 0.0f;
     ids_.clear();
     disabled_ = 0;
     window_.open = false;
@@ -273,6 +275,21 @@ void Immediate::popId() {
     if (!ids_.empty()) {
         ids_.pop_back();
     }
+}
+
+void Immediate::nextItemWidth(float width) {
+    nextWidth_ = width;
+}
+
+float Immediate::itemWidth() {
+    // measured from where the widget will actually be placed, which on a shared row is
+    // past the last one rather than at the margin - place() has not run yet, so this
+    // works out the same corner it will
+    const float left = row_.sameLine ? row_.lastRight + dressing_.spacing : row_.margin;
+    const float rest = std::max(row_.right - left, 0.0f);
+    const float width = nextWidth_ > 0.0f ? std::min(nextWidth_, rest) : rest;
+    nextWidth_ = 0.0f;
+    return width;
 }
 
 glm::vec2 Immediate::place(const glm::vec2& size) {
@@ -542,7 +559,7 @@ bool Immediate::selectable(const std::string& label, bool selected) {
     if (canvas_ == nullptr) {
         return false;
     }
-    const glm::vec2 size(row_.right - row_.margin, dressing_.lineHeight);
+    const glm::vec2 size(itemWidth(), dressing_.lineHeight);
     const glm::vec2 min = place(size);
     const Id id = identify(label);
     const Reaction reaction = interact(id, min, min + size);
@@ -561,7 +578,7 @@ bool Immediate::dragInt(const std::string& label, int* value, int low, int high)
     if (canvas_ == nullptr || value == nullptr) {
         return false;
     }
-    const glm::vec2 size(row_.right - row_.margin, dressing_.barHeight);
+    const glm::vec2 size(itemWidth(), dressing_.barHeight);
     const glm::vec2 min = place(size);
     const Id id = identify(label);
     const Reaction reaction = interact(id, min, min + size);
@@ -587,7 +604,7 @@ void Immediate::progressBar(float fraction, const std::string& overlay) {
     if (canvas_ == nullptr) {
         return;
     }
-    const glm::vec2 size(row_.right - row_.margin, dressing_.lineHeight);
+    const glm::vec2 size(itemWidth(), dressing_.lineHeight);
     const glm::vec2 min = place(size);
     const glm::vec2 max = min + size;
 

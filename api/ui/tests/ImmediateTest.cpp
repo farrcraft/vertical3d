@@ -721,6 +721,87 @@ BOOST_AUTO_TEST_CASE(a_window_hidden_for_a_moment_keeps_what_it_held) {
 }
 
 /**
+ * A widget told a width takes that much and no more, so two scrubbers fit one row.
+ *
+ * The failure this guards against is silent: a widget placed past the right edge is clipped
+ * away and nothing reports it, so the second scrubber is simply not on screen.
+ **/
+BOOST_AUTO_TEST_CASE(a_widget_takes_the_width_it_was_given) {
+    std::vector<Written> written;
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(400, 300);
+    v3d::ui::Immediate ui = build(&written);
+    int left = 1;
+    int right = 2;
+
+    ui.begin(&canvas, hover(glm::vec2(-1.0f, -1.0f)));
+    ui.nextItemWidth(120.0f);
+    ui.dragInt("left", &left, 0, 10);
+    ui.sameLine();
+    ui.nextItemWidth(120.0f);
+    ui.dragInt("right", &right, 0, 10);
+    ui.end();
+
+    // both labels were drawn, and the second starts to the right of the first rather than
+    // on the row below it
+    BOOST_REQUIRE_EQUAL(written.size(), 2U);
+    BOOST_CHECK_GT(written[1].pen.x, written[0].pen.x);
+    BOOST_CHECK_EQUAL(written[1].pen.y, written[0].pen.y);
+    // and neither ran off the canvas
+    BOOST_CHECK_LT(written[1].pen.x, 400.0f);
+}
+
+/**
+ * The width is spent by the widget after it and forgotten, so the one after that is back to
+ * the rest of the row.
+ **/
+BOOST_AUTO_TEST_CASE(a_given_width_is_spent_once) {
+    std::vector<Written> written;
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(400, 300);
+    v3d::ui::Immediate ui = build(&written);
+    int narrow = 1;
+    int wide = 2;
+
+    ui.begin(&canvas, hover(glm::vec2(-1.0f, -1.0f)));
+    ui.nextItemWidth(80.0f);
+    ui.dragInt("narrow", &narrow, 0, 10);
+    ui.dragInt("wide", &wide, 0, 10);
+    ui.end();
+
+    // the second is on its own row and took all of it, so a press at the far right lands
+    // on it and a press at the same x on the first row does not
+    written.clear();
+    ui.begin(&canvas, press(glm::vec2(300.0f, 8.0f)));
+    ui.nextItemWidth(80.0f);
+    ui.dragInt("narrow", &narrow, 0, 10);
+    ui.dragInt("wide", &wide, 0, 10);
+    ui.end();
+    BOOST_CHECK(!ui.capturing());
+}
+
+/**
+ * A width wider than the room left is clamped to it rather than drawn off the edge.
+ **/
+BOOST_AUTO_TEST_CASE(a_given_width_cannot_exceed_the_row) {
+    std::vector<Written> written;
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(200, 300);
+    v3d::ui::Immediate ui = build(&written);
+    float fraction = 0.5f;
+
+    ui.begin(&canvas, hover(glm::vec2(-1.0f, -1.0f)));
+    ui.nextItemWidth(10000.0f);
+    ui.progressBar(fraction, "half");
+    ui.end();
+
+    // the overlay is centred in the bar, so a bar wider than the canvas would centre it
+    // off the right edge
+    BOOST_REQUIRE_EQUAL(written.size(), 1U);
+    BOOST_CHECK_LT(written[0].pen.x, 200.0f);
+}
+
+/**
  * An app asks the layer whether a click has already been spent before it acts on one of its
  * own - the immediate half of the rule ADR-0038 states for the retained tree.
  **/
