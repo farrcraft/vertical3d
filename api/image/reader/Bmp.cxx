@@ -5,12 +5,11 @@
 
 #include "Bmp.h"
 
+#include <cstddef>
+#include <cstring>
+#include <sstream>
 #include <string>
 #include <vector>
-#include <fstream>
-#include <sstream>
-#include <iostream>
-#include <cstring>
 // needed for runtime_error
 #include <stdexcept>
 
@@ -116,28 +115,26 @@ void convert24(const unsigned char* temp, unsigned char* data, uint64_t rows, in
 
 /**
  **/
-boost::shared_ptr<Image> Bmp::read(std::string_view filename) {
-    logger_->get()->debug("BMPReader::read - reading file: {}", filename);
-
-    std::fstream file;
-    file.open(static_cast<std::string>(filename).c_str(), std::fstream::in | std::fstream::binary);
-
+boost::shared_ptr<Image> Bmp::read(const unsigned char* encoded, std::size_t length) {
     boost::shared_ptr<Image> empty_ptr;
 
-    if (!file) {
-        logger_->get()->error("BMPReader::read - error opening file: {}", filename);
+    if (encoded == nullptr) {
         return empty_ptr;
     }
+    // the file is walked rather than seeked: every part of it is read in the order it is
+    // stored, and the offset the file header carries is not consulted
+    std::size_t at = 0;
 
     bmp_file_header fheader;
     memset(&fheader, 0, sizeof(bmp_file_header));
 
     // read file header
-    file.read(reinterpret_cast<char*>(&fheader), sizeof(bmp_file_header));
-    if (!file) {
+    if (length - at < sizeof(bmp_file_header)) {
         logger_->get()->error("BMPReader::read - error reading bmp file header!");
         throw std::runtime_error("error reading bmp file header!");
     }
+    memcpy(&fheader, encoded + at, sizeof(bmp_file_header));
+    at += sizeof(bmp_file_header);
 
     // check magic number
     if (fheader.type_ != 19778) {
@@ -149,23 +146,25 @@ boost::shared_ptr<Image> Bmp::read(std::string_view filename) {
     memset(&iheader, 0, sizeof(bmp_info_header));
 
     // read info header
-    file.read(reinterpret_cast<char*>(&iheader), sizeof(bmp_info_header));
-    if (!file) {
+    if (length - at < sizeof(bmp_info_header)) {
         logger_->get()->error("BMPReader::read - error reading bmp info header!");
         throw std::runtime_error("error reading bmp info header!");
     }
+    memcpy(&iheader, encoded + at, sizeof(bmp_info_header));
+    at += sizeof(bmp_info_header);
 
     int num_colors = 1 << iheader.bits_;
     logHeaders(logger_, fheader, iheader, num_colors);
 
     std::vector<bmp_rgb_quad> colors;
     if (iheader.bits_ == 8) {  // load 8 bit color palette
+        const std::size_t table = sizeof(bmp_rgb_quad) * static_cast<std::size_t>(num_colors);
+        if (length - at < table) {
+            throw std::runtime_error("error reading bmp colors!");
+        }
         colors.resize(static_cast<std::size_t>(num_colors));
-        file.read(reinterpret_cast<char*>(colors.data()), sizeof(bmp_rgb_quad) * num_colors);
-    }
-
-    if (!file) {
-        throw std::runtime_error("error reading bmp colors!");
+        memcpy(colors.data(), encoded + at, table);
+        at += table;
     }
     int64_t width;
     int64_t pad;
@@ -190,16 +189,10 @@ boost::shared_ptr<Image> Bmp::read(std::string_view filename) {
     unsigned char* temp = img->data();
 
     // read image data
-    file.read(reinterpret_cast<char*>(temp), storedSize);
-
-    logger_->get()->debug("BMPReader::read - done reading file..");
-
-    if (!file) {
+    if (length - at < storedSize) {
         throw std::runtime_error("error reading bmp data!");
     }
-
-    // done reading in file
-    file.close();
+    memcpy(temp, encoded + at, storedSize);
 
     const int64_t offset = pad - width;
 

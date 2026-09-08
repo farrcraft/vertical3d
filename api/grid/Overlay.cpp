@@ -7,6 +7,7 @@
 
 #include <array>
 #include <cstddef>
+#include <vector>
 
 namespace v3d::grid {
 
@@ -31,6 +32,23 @@ void outlineTile(const TileGrid& grid, TileCoord tile, const glm::vec4& colour, 
     const std::array<glm::vec3, 4> corners = tileCorners(grid, tile);
     for (std::size_t corner = 0; corner < corners.size(); ++corner) {
         sink(corners[corner], corners[(corner + 1) % corners.size()], colour);
+    }
+}
+
+void fillTile(const TileGrid& grid, TileCoord tile, const glm::vec4& colour, const QuadSink& sink) {
+    if (!sink || !grid.contains(tile)) {
+        return;
+    }
+    sink(tileCorners(grid, tile), colour);
+}
+
+void fillTiles(const TileGrid& grid, const std::vector<TileCoord>& tiles, const glm::vec4& colour,
+    const QuadSink& sink) {
+    if (!sink) {
+        return;
+    }
+    for (const TileCoord& tile : tiles) {
+        fillTile(grid, tile, colour, sink);
     }
 }
 

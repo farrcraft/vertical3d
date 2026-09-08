@@ -117,6 +117,22 @@ bool Context3D::hasLines() const noexcept {
 
 /**
  **/
+boost::shared_ptr<vulkan::WorldRenderer> Context3D::worldQuads() {
+    if (!worldQuads_) {
+        worldQuads_ = boost::make_shared<vulkan::WorldRenderer>(logger_, device_, pipelineCache_, resources_,
+            presenter_, frameUniforms_, quads_, swapchain_->format(), depthFormat_);
+    }
+    return worldQuads_;
+}
+
+/**
+ **/
+bool Context3D::hasWorldQuads() const noexcept {
+    return static_cast<bool>(worldQuads_);
+}
+
+/**
+ **/
 boost::shared_ptr<vulkan::DepthBuffer> Context3D::depth() {
     if (!depth_) {
         // the chain's extent rather than the window's - the surface is allowed to dictate

@@ -5,8 +5,10 @@
 
 #include "PongEngine.h"
 
+#include <array>
 #include <iostream>
 #include <map>
+#include <utility>
 #include <string>
 #include <string_view>
 #include <variant>
@@ -23,6 +25,43 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
 
+namespace {
+
+/**
+ * The organization and app userPath() resolves against. Never changed: every player's
+ * settings live under this pair and a new one orphans them.
+ **/
+const char* const ORGANIZATION = "Vertical3D";
+const char* const APPLICATION = "Pong";
+
+/**
+ * The menu item that captures a key, against the paddle command it drives. The item name is
+ * also the settings key, so what is stored says which menu wrote it.
+ **/
+// an array of views rather than a map of strings, because a map with static storage
+// duration allocates during static initialization and can throw where nothing can catch it
+constexpr std::array<std::pair<std::string_view, std::string_view>, 4> PADDLE_COMMANDS = {{
+    {"setLeftPaddleUpKey", "pong::leftPaddleUp"},
+    {"setLeftPaddleDownKey", "pong::leftPaddleDown"},
+    {"setRightPaddleUpKey", "pong::rightPaddleUp"},
+    {"setRightPaddleDownKey", "pong::rightPaddleDown"}
+}};
+
+/**
+ * @return the command the named menu item drives, or an empty view for an item that drives
+ *         no paddle
+ **/
+std::string_view paddleCommand(std::string_view item) {
+    for (const auto& binding : PADDLE_COMMANDS) {
+        if (binding.first == item) {
+            return binding.second;
+        }
+    }
+    return std::string_view();
+}
+
+};  // namespace
+
 
 PongEngine::PongEngine(const std::string & path) : v3d::engine::Engine(path) {
 }
@@ -37,6 +76,11 @@ bool::PongEngine::initialize() {
     }
 
     window_->caption("Pong!");
+
+    // after Engine::initialize(), because rebinding rebuilds the mapper the config built
+    settings_ = boost::make_shared<v3d::engine::Settings>(ORGANIZATION, APPLICATION, logger_);
+    settings_->load();
+    applyStoredBindings();
 
     soundEngine_ = boost::make_shared<v3d::audio::Engine>(logger_, dispatcher_);
     // the return is not read: a device that will not open leaves the engine silent, and the
@@ -189,19 +233,32 @@ void PongEngine::rebindPaddleKey(const v3d::event::Event& event) {
     }
     const std::string key = std::get<std::string>(data.get());
 
-    // the menu item names the command to rebind; the command it drives is the paddle one
-    static const std::map<std::string_view, std::string> commands = {
-        {"setLeftPaddleUpKey", "pong::leftPaddleUp"},
-        {"setLeftPaddleDownKey", "pong::leftPaddleDown"},
-        {"setRightPaddleUpKey", "pong::rightPaddleUp"},
-        {"setRightPaddleDownKey", "pong::rightPaddleDown"}
-    };
-    const std::map<std::string_view, std::string>::const_iterator found = commands.find(event.name());
-    if (found == commands.end()) {
+    const std::string_view command = paddleCommand(event.name());
+    if (command.empty()) {
         return;
     }
-    if (rebind(found->second, key)) {
-        logger_->get()->info("bound {} to {}", found->second, key);
+    if (!rebind(std::string(command), key)) {
+        return;
+    }
+    logger_->get()->info("bound {} to {}", command, key);
+
+    // stored as it is made rather than on the way out: there is no exit path that reliably
+    // runs, and a crash after a rebinding should not lose the rebinding
+    settings_->set(std::string(event.name()), key);
+    settings_->save();
+}
+
+/**
+ **/
+void PongEngine::applyStoredBindings() {
+    for (const auto& binding : PADDLE_COMMANDS) {
+        const std::string key = settings_->text(std::string(binding.first), std::string());
+        if (key.empty()) {  // untouched, so it keeps tracking whatever the config binds
+            continue;
+        }
+        if (rebind(std::string(binding.second), key)) {
+            logger_->get()->info("bound {} to {} from settings", binding.second, key);
+        }
     }
 }
 

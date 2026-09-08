@@ -84,6 +84,16 @@ v3d::ui::Immediate::Input wheel(const glm::vec2& at, float notches) {
 }
 
 /**
+ * A press already down, resting where it has been dragged to.
+ **/
+v3d::ui::Immediate::Input hold(const glm::vec2& at) {
+    v3d::ui::Immediate::Input input;
+    input.cursor = at;
+    input.down = true;
+    return input;
+}
+
+/**
  * @return whether anything written carried this string
  **/
 bool wrote(const std::vector<Written>& written, const std::string& text) {
@@ -718,6 +728,383 @@ BOOST_AUTO_TEST_CASE(a_window_hidden_for_a_moment_keeps_what_it_held) {
     ui.endWindow();
     ui.end();
     BOOST_CHECK(stillFolded);
+}
+
+/**
+ * A widget told a width takes that much and no more, so two scrubbers fit one row.
+ *
+ * The failure this guards against is silent: a widget placed past the right edge is clipped
+ * away and nothing reports it, so the second scrubber is simply not on screen.
+ **/
+BOOST_AUTO_TEST_CASE(a_widget_takes_the_width_it_was_given) {
+    std::vector<Written> written;
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(400, 300);
+    v3d::ui::Immediate ui = build(&written);
+    int left = 1;
+    int right = 2;
+
+    ui.begin(&canvas, hover(glm::vec2(-1.0f, -1.0f)));
+    ui.nextItemWidth(120.0f);
+    ui.dragInt("left", &left, 0, 10);
+    ui.sameLine();
+    ui.nextItemWidth(120.0f);
+    ui.dragInt("right", &right, 0, 10);
+    ui.end();
+
+    // both labels were drawn, and the second starts to the right of the first rather than
+    // on the row below it
+    BOOST_REQUIRE_EQUAL(written.size(), 2U);
+    BOOST_CHECK_GT(written[1].pen.x, written[0].pen.x);
+    BOOST_CHECK_EQUAL(written[1].pen.y, written[0].pen.y);
+    // and neither ran off the canvas
+    BOOST_CHECK_LT(written[1].pen.x, 400.0f);
+}
+
+/**
+ * The width is spent by the widget after it and forgotten, so the one after that is back to
+ * the rest of the row.
+ **/
+BOOST_AUTO_TEST_CASE(a_given_width_is_spent_once) {
+    std::vector<Written> written;
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(400, 300);
+    v3d::ui::Immediate ui = build(&written);
+    int narrow = 1;
+    int wide = 2;
+
+    ui.begin(&canvas, hover(glm::vec2(-1.0f, -1.0f)));
+    ui.nextItemWidth(80.0f);
+    ui.dragInt("narrow", &narrow, 0, 10);
+    ui.dragInt("wide", &wide, 0, 10);
+    ui.end();
+
+    // the second is on its own row and took all of it, so a press at the far right lands
+    // on it and a press at the same x on the first row does not
+    written.clear();
+    ui.begin(&canvas, press(glm::vec2(300.0f, 8.0f)));
+    ui.nextItemWidth(80.0f);
+    ui.dragInt("narrow", &narrow, 0, 10);
+    ui.dragInt("wide", &wide, 0, 10);
+    ui.end();
+    BOOST_CHECK(!ui.capturing());
+}
+
+/**
+ * A width wider than the room left is clamped to it rather than drawn off the edge.
+ **/
+BOOST_AUTO_TEST_CASE(a_given_width_cannot_exceed_the_row) {
+    std::vector<Written> written;
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(200, 300);
+    v3d::ui::Immediate ui = build(&written);
+    float fraction = 0.5f;
+
+    ui.begin(&canvas, hover(glm::vec2(-1.0f, -1.0f)));
+    ui.nextItemWidth(10000.0f);
+    ui.progressBar(fraction, "half");
+    ui.end();
+
+    // the overlay is centred in the bar, so a bar wider than the canvas would centre it
+    // off the right edge
+    BOOST_REQUIRE_EQUAL(written.size(), 1U);
+    BOOST_CHECK_LT(written[0].pen.x, 200.0f);
+}
+
+/**
+ * An app asks the layer whether a click has already been spent before it acts on one of its
+ * own - the immediate half of the rule ADR-0038 states for the retained tree.
+ **/
+BOOST_AUTO_TEST_CASE(the_layer_says_when_it_wants_the_cursor) {
+    std::vector<Written> written;
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(400, 300);
+    v3d::ui::Immediate ui = build(&written);
+
+    // nothing has been drawn, so nothing is wanted
+    BOOST_CHECK(!ui.capturing());
+
+    // a frame with the cursor inside a window claims it for the next one, which is when an
+    // app asks
+    ui.begin(&canvas, hover(glm::vec2(50.0f, 30.0f)));
+    ui.window("panel", glm::vec2(10.0f, 10.0f), glm::vec2(200.0f, 100.0f), 1.0f);
+    ui.endWindow();
+    ui.end();
+    BOOST_CHECK(ui.capturing());
+
+    // and a frame with the cursor outside it gives it back
+    ui.begin(&canvas, hover(glm::vec2(350.0f, 250.0f)));
+    ui.window("panel", glm::vec2(10.0f, 10.0f), glm::vec2(200.0f, 100.0f), 1.0f);
+    ui.endWindow();
+    ui.end();
+    BOOST_CHECK(!ui.capturing());
+}
+
+/**
+ * And it keeps wanting it through a drag that has left the widget, because the release that
+ * ends the drag is still the layer's and not the scene's.
+ **/
+BOOST_AUTO_TEST_CASE(the_layer_keeps_the_cursor_through_a_drag) {
+    std::vector<Written> written;
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(400, 300);
+    v3d::ui::Immediate ui = build(&written);
+    int value = 5;
+
+    // a press only lands on a widget the frame before found the cursor on, so the hover
+    // frame is what makes the press frame a press on this one
+    ui.begin(&canvas, hover(glm::vec2(100.0f, 8.0f)));
+    ui.dragInt("scrub", &value, 0, 10);
+    ui.end();
+
+    ui.begin(&canvas, press(glm::vec2(100.0f, 8.0f)));
+    ui.dragInt("scrub", &value, 0, 10);
+    ui.end();
+    BOOST_REQUIRE(ui.capturing());
+
+    // held, with the cursor dragged well clear of the widget
+    v3d::ui::Immediate::Input held;
+    held.cursor = glm::vec2(380.0f, 280.0f);
+    held.down = true;
+    ui.begin(&canvas, held);
+    ui.dragInt("scrub", &value, 0, 10);
+    ui.end();
+    BOOST_CHECK(ui.capturing());
+}
+
+/**
+ * A press on a title bar that travels moves the window and does not fold it; one that stays
+ * put folds it. ADR-0045.
+ **/
+BOOST_AUTO_TEST_CASE(a_press_that_travels_moves_the_window_instead_of_folding_it) {
+    std::vector<Written> written;
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(400, 300);
+    v3d::ui::Immediate ui = build(&written);
+    const glm::vec2 corner(50.0f, 40.0f);
+    const glm::vec2 size(200.0f, 150.0f);
+    const glm::vec2 onTitle(60.0f, 45.0f);
+    const float travel = 40.0f;
+
+    // the frame that finds the cursor, then the press that goes down on the bar
+    ui.begin(&canvas, hover(onTitle));
+    ui.window("Encounter", corner, size, 1.0f);
+    ui.endWindow();
+    ui.end();
+    ui.begin(&canvas, press(onTitle));
+    ui.window("Encounter", corner, size, 1.0f);
+    ui.endWindow();
+    ui.end();
+
+    written.clear();
+    ui.begin(&canvas, hold(onTitle + glm::vec2(travel, 0.0f)));
+    BOOST_REQUIRE(ui.window("Encounter", corner, size, 1.0f));
+    ui.endWindow();
+    ui.end();
+
+    // the window has moved by what the cursor did: the travel spent deciding is taken out
+    // of the frame that decided rather than added to the window
+    BOOST_REQUIRE(!written.empty());
+    const float moved = written[0].pen.x - (corner.x + ui.dressing().padding);
+    BOOST_CHECK_CLOSE(moved, travel, 0.001f);
+
+    // and the release that ends the drag does not also fold it
+    written.clear();
+    ui.begin(&canvas, release(onTitle + glm::vec2(travel, 0.0f)));
+    BOOST_CHECK(ui.window("Encounter", corner, size, 1.0f));
+    ui.endWindow();
+    ui.end();
+
+    // still open, and still where it was dragged to
+    BOOST_REQUIRE(!written.empty());
+    BOOST_CHECK_CLOSE(written[0].pen.x, corner.x + ui.dressing().padding + travel, 0.001f);
+}
+
+/**
+ * A window cannot be dragged off the canvas, because its title bar is the only thing that
+ * would drag it back.
+ **/
+BOOST_AUTO_TEST_CASE(a_dragged_window_keeps_its_title_bar_on_the_canvas) {
+    std::vector<Written> written;
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(400, 300);
+    v3d::ui::Immediate ui = build(&written);
+    const glm::vec2 corner(50.0f, 40.0f);
+    const glm::vec2 size(200.0f, 150.0f);
+    const glm::vec2 onTitle(60.0f, 45.0f);
+
+    ui.begin(&canvas, hover(onTitle));
+    ui.window("Encounter", corner, size, 1.0f);
+    ui.endWindow();
+    ui.end();
+    ui.begin(&canvas, press(onTitle));
+    ui.window("Encounter", corner, size, 1.0f);
+    ui.endWindow();
+    ui.end();
+
+    // far past the top left corner, and then far past the bottom right
+    written.clear();
+    ui.begin(&canvas, hold(glm::vec2(-500.0f, -500.0f)));
+    ui.window("Encounter", corner, size, 1.0f);
+    ui.endWindow();
+    ui.end();
+    BOOST_REQUIRE(!written.empty());
+    BOOST_CHECK_CLOSE(written[0].pen.x, ui.dressing().padding, 0.001f);
+
+    written.clear();
+    ui.begin(&canvas, hold(glm::vec2(5000.0f, 5000.0f)));
+    ui.window("Encounter", corner, size, 1.0f);
+    ui.endWindow();
+    ui.end();
+    BOOST_REQUIRE(!written.empty());
+    // the whole window fits across, so it stops with its right edge on the canvas; down,
+    // it stops with the bar on it
+    BOOST_CHECK_CLOSE(written[0].pen.x,
+        static_cast<float>(canvas.width()) - size.x + ui.dressing().padding, 0.001f);
+    BOOST_CHECK(written[0].pen.y < static_cast<float>(canvas.height()));
+}
+
+/**
+ * A table given a height scrolls its rows inside it and leaves its header above them, per
+ * ADR-0046.
+ **/
+BOOST_AUTO_TEST_CASE(a_table_given_a_height_keeps_its_header_above_its_rows) {
+    std::vector<Written> written;
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(400, 300);
+    v3d::ui::Immediate ui = build(&written);
+    const glm::vec2 over(50.0f, 60.0f);
+
+    const auto roster = [&ui]() {
+        BOOST_REQUIRE(ui.table("units", 2, 100.0f));
+        ui.column("Name", 120.0f);
+        ui.column("HP", 60.0f);
+        ui.headerRow();
+        for (int row = 0; row < 20; row++) {
+            if (row > 0) {
+                ui.nextRow();
+            }
+            ui.text("unit");
+            ui.nextColumn();
+            ui.text("hp");
+        }
+        ui.endTable();
+    };
+
+    // the frame that turns the wheel over the table
+    ui.begin(&canvas, wheel(over, -2.0f));
+    roster();
+    ui.end();
+    BOOST_REQUIRE_EQUAL(written.size(), 42U);
+    const float header = written[0].pen.y;
+    const float firstRow = written[2].pen.y;
+
+    written.clear();
+    ui.begin(&canvas, hover(over));
+    roster();
+    ui.end();
+
+    BOOST_REQUIRE_EQUAL(written.size(), 42U);
+    // the header has not moved and the rows have, which is the whole of the feature
+    BOOST_CHECK_CLOSE(written[0].pen.y, header, 0.001f);
+    BOOST_CHECK_CLOSE(firstRow - written[2].pen.y, ui.dressing().lineHeight * 3.0f * 2.0f, 0.001f);
+}
+
+/**
+ * A table given a height is that tall whatever it holds, so what follows it does not move
+ * when a row arrives.
+ **/
+BOOST_AUTO_TEST_CASE(a_table_given_a_height_is_that_tall_whatever_it_holds) {
+    std::vector<Written> written;
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(400, 300);
+    v3d::ui::Immediate ui = build(&written);
+
+    const auto roster = [&ui](int rows) {
+        BOOST_REQUIRE(ui.table("units", 1, 100.0f));
+        ui.column("Name", 0.0f);
+        ui.headerRow();
+        for (int row = 0; row < rows; row++) {
+            if (row > 0) {
+                ui.nextRow();
+            }
+            ui.text("unit");
+        }
+        ui.endTable();
+        ui.text("after");
+    };
+
+    ui.begin(&canvas, hover(glm::vec2(-1.0f, -1.0f)));
+    roster(3);
+    ui.end();
+    BOOST_REQUIRE(!written.empty());
+    const float few = written.back().pen.y;
+
+    written.clear();
+    ui.begin(&canvas, hover(glm::vec2(-1.0f, -1.0f)));
+    roster(40);
+    ui.end();
+
+    BOOST_REQUIRE(!written.empty());
+    BOOST_CHECK_CLOSE(written.back().pen.y, few, 0.001f);
+}
+
+/**
+ * The wheel turns the innermost region under the cursor, so a table inside a window takes
+ * it from the window rather than turning both.
+ **/
+BOOST_AUTO_TEST_CASE(the_wheel_turns_a_table_rather_than_the_window_holding_it) {
+    std::vector<Written> written;
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(400, 300);
+    v3d::ui::Immediate ui = build(&written);
+    const glm::vec2 corner(20.0f, 20.0f);
+    const glm::vec2 size(220.0f, 160.0f);
+    const glm::vec2 overTable(60.0f, 100.0f);
+
+    const auto panel = [&ui, &corner, &size]() {
+        BOOST_REQUIRE(ui.window("Roster", corner, size, 1.0f));
+        ui.text("above");
+        BOOST_REQUIRE(ui.table("units", 1, 80.0f));
+        ui.column("Name", 0.0f);
+        ui.headerRow();
+        for (int row = 0; row < 20; row++) {
+            if (row > 0) {
+                ui.nextRow();
+            }
+            ui.text("unit");
+        }
+        ui.endTable();
+        for (int line = 0; line < 10; line++) {
+            ui.text("below");
+        }
+        ui.endWindow();
+    };
+
+    // a frame that measures, then the one that turns the wheel over the table
+    ui.begin(&canvas, hover(overTable));
+    panel();
+    ui.end();
+    written.clear();
+    ui.begin(&canvas, wheel(overTable, -2.0f));
+    panel();
+    ui.end();
+    BOOST_REQUIRE(written.size() > 3U);
+    const float above = written[1].pen.y;
+    const float header = written[2].pen.y;
+    const float firstRow = written[3].pen.y;
+
+    written.clear();
+    ui.begin(&canvas, hover(overTable));
+    panel();
+    ui.end();
+
+    BOOST_REQUIRE(written.size() > 3U);
+    // the window kept its place, so what is above the table and the header are where they
+    // were, and only the rows moved
+    BOOST_CHECK_CLOSE(written[1].pen.y, above, 0.001f);
+    BOOST_CHECK_CLOSE(written[2].pen.y, header, 0.001f);
+    BOOST_CHECK(written[3].pen.y < firstRow);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

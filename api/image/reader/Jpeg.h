@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <cstddef>
+
 #include "../Reader.h"
 
 namespace v3d::image::reader {
@@ -15,7 +17,10 @@ class Jpeg final : public v3d::image::Reader {
     Jpeg(const boost::shared_ptr<v3d::log::Logger> & logger);
     ~Jpeg() = default;
 
-    virtual boost::shared_ptr<Image> read(std::string_view filename);
+    // the path form is the base's, written in terms of this one
+    using v3d::image::Reader::read;
+
+    boost::shared_ptr<Image> read(const unsigned char* encoded, std::size_t size) override;
 };
 
 };  // namespace v3d::image::reader

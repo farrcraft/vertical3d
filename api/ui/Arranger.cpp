@@ -122,8 +122,19 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::Bound2D& room
     switch (component.type()) {
         case component::Type::Label: {
             const auto* label = dynamic_cast<const component::Label*>(&component);
-            return label == nullptr ? glm::vec2(0.0f, 0.0f)
-                : glm::vec2(measure_(label->text()), styles_.base().lineHeight);
+            if (label == nullptr) {
+                return glm::vec2(0.0f, 0.0f);
+            }
+            const float line = measure_(label->text());
+            // a label given a width wraps to it, and what it makes of the other axis is the
+            // rows it came to - which is what an Auto height is offered, per ADR-0039
+            if (component.layout().width.unit() == Length::Unit::Auto) {
+                return glm::vec2(line, styles_.base().lineHeight);
+            }
+            const float width = component.layout().width.resolve(room.size().x, line);
+            const std::size_t rows = wrap(label->text(), width, measure_).size();
+            return glm::vec2(line,
+                styles_.base().lineHeight * static_cast<float>(std::max<std::size_t>(rows, 1)));
         }
         case component::Type::Icon:
             // an icon given no size is a square the height of a strip, which is the one

@@ -46,10 +46,14 @@ class RenderTarget final {
      * @param height in pixels
      * @param colour the format of the colour image
      * @param depth whether to allocate a depth image the same size, for a pass that tests
+     * @param sampledDepth whether that depth image is also read by a later pass, which is
+     *        what a shadow map is. It costs a sampler and can change which depth format
+     *        the device gives, so a pipeline drawing into this has to be built against
+     *        depthFormat() rather than against DepthBuffer::chooseFormat's default
      * @throw std::runtime_error if allocation fails, or if either dimension is zero
      **/
     RenderTarget(const boost::shared_ptr<Device>& device, uint32_t width, uint32_t height,
-        VkFormat colour, bool depth = false);
+        VkFormat colour, bool depth = false, bool sampledDepth = false);
 
     /**
      **/
@@ -112,6 +116,24 @@ class RenderTarget final {
     VkFormat depthFormat() const noexcept;
 
     /**
+     * @return whether the depth image can be read as well as written, which is what
+     *         decides whether the recorder leaves it in a readable layout
+     **/
+    bool sampledDepth() const noexcept;
+
+    /**
+     * The depth image described as something Resources can own, so that a draw item can
+     * name it as a material's texture and sample what was rendered into it - which is the
+     * whole of a shadow map's read side.
+     *
+     * The same borrowed-rather-than-owned contract texture() has. Its images are empty
+     * when the target carries no depth or was not built to have it sampled, because a
+     * descriptor set written against those would be a read of an image with no sampled
+     * usage - which the validation layer says, and nothing else does.
+     **/
+    Texture depthTexture() const;
+
+    /**
      * The target described as something Resources can own, so that a draw item can name it
      * as a material's texture and sample what was rendered into it.
      *
@@ -139,6 +161,7 @@ class RenderTarget final {
     VkSampler sampler_;
     VkExtent2D extent_;
     bool wantsDepth_;
+    bool sampledDepth_;
     boost::shared_ptr<DepthBuffer> depth_;
 };
 

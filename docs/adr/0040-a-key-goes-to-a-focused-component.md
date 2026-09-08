@@ -96,8 +96,9 @@ so that typing "w" into a box does not also walk the player forward.
   raise one and never lower it.
 - A key that composes text is consumed while a box has the focus even when the box then refuses
   the character, so an app cannot bind a letter to anything that should work while typing.
-- Nothing walks the tree for the next focusable component, so there is no tab order: the focus
-  moves by press and by press alone.
+- A press was the only thing that moved the focus, so there was no tab order. This decision has
+  since been extended rather than replaced: `Engine::focusNext()` is a second caller of
+  `focus()`, walking the tree in draw order, and `Keys::press()` routes tab to it.
 - `Cursor` and `Keys` are two objects an app has to hold and two calls it has to make, and
   nothing enforces that it makes both.
 

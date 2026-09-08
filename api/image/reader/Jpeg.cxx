@@ -7,13 +7,7 @@
 
 #include <jpeglib.h>
 
-#include <fstream>
-#include <iostream>
-#include <cstdio>
-// for errno
-#include <cerrno>
-// for strerror
-#include <cstring>
+#include <cstddef>
 // for setjmp/longjmp used in jpeg error handling
 #include <csetjmp>
 #include <string>
@@ -59,21 +53,13 @@ void my_error_exit(j_common_ptr cinfo) {
 
 };  // namespace
 
-boost::shared_ptr<Image> Jpeg::read(std::string_view filename) {
-    logger_->get()->debug("JPEGReader::read - Reading jpeg file {}", filename);
-
+boost::shared_ptr<Image> Jpeg::read(const unsigned char* encoded, std::size_t size) {
     boost::shared_ptr<Image> empty_ptr;
-    struct jpeg_decompress_struct cinfo;
-
-    // open the file
-    FILE* fp;
-    errno_t err = fopen_s(&fp, static_cast<std::string>(filename).c_str(), "rb");
-    if (err != 0) {
-        char reason[256] = {};
-        strerror_s(reason, sizeof(reason), err);
-        logger_->get()->error("JPEGReader::read - failed opening file {} with errno {}", filename, reason);
+    if (encoded == nullptr || size == 0) {
         return empty_ptr;
     }
+
+    struct jpeg_decompress_struct cinfo;
 
     struct my_error_mgr jerr;
     // We set up the normal JPEG error routines, then override error_exit.
@@ -93,15 +79,16 @@ boost::shared_ptr<Image> Jpeg::read(std::string_view filename) {
             * We need to clean up the JPEG object, close the input file, and return.
             */
         jpeg_destroy_decompress(&cinfo);
-        fclose(fp);
         return empty_ptr;
     }
 #pragma warning(pop)
     // Initialize the JPEG decompression object
     jpeg_create_decompress(&cinfo);
 
-    // Specify data source for decompression
-    jpeg_stdio_src(&cinfo, fp);
+    // Specify data source for decompression. The buffer is not copied, so it has to
+    // outlive the decode - it is the caller's and outlives the whole call.
+    // unsigned long is jpeg_mem_src's own parameter type, not a choice made here
+    jpeg_mem_src(&cinfo, encoded, static_cast<unsigned long>(size));  // NOLINT(runtime/int)
 
     // Read file header, set default decompression parameters
     jpeg_read_header(&cinfo, TRUE);
@@ -151,7 +138,6 @@ boost::shared_ptr<Image> Jpeg::read(std::string_view filename) {
     jpeg_finish_decompress(&cinfo);
     jpeg_destroy_decompress(&cinfo);
 
-    fclose(fp);
     return img;
 }
 

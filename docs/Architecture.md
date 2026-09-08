@@ -46,11 +46,34 @@ An app that reimplements one of these has diverged rather than customised.
 **Feature flags decide what exists.** `Engine::initialize(int features)` takes a bitmask of
 `v3d::engine::Feature` and constructs only what was asked for. `Feature::Config` loads
 `data/config.json`, which must use the indirect form:
-`{"configs": [{"type": "...", "file": "..."}]}`. Pong's `data/` is the reference.
+`{"configs": [{"type": "...", "file": "..."}]}`. Pong's `data/` is the reference. The types are
+`window`, `binding`, `ui`, `sound`, `camera`, `layout` and `sprite`; the last is a table of
+names over pixel rectangles in an image, read by `config::SpriteSheets`.
+
+**A config document names an image and never loads one**, per
+[ADR-0020](adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md): a theme's images and a
+sprite sheet's are both resolved by the app through its own asset manager and renderer.
 
 `Config::load` and `registerEventMappings` guard every lookup and log a `false`, but **a
 window config is not guarded**: `initialize` reads `width` and `height` with `at()`, so a
 `window.json` naming neither throws.
+
+## Where a player's files go
+
+`v3d::engine::appPath(argv[0])` is where an app reads what it shipped with;
+`v3d::engine::userPath(org, app)` is where it writes what the player chose, and it creates
+the directory. `engine::Settings` is the document in there: an overlay of what was changed,
+so deleting it is a reset and a setting nobody touched keeps tracking the shipped value.
+Written whole or not at all, per
+[ADR-0041](adr/0041-a-document-is-written-whole-or-not-at-all.md).
+
+**The org is `Vertical3D` and the app is its own name**, as pong uses them. Neither can change
+once an app has shipped: they are the directory, and a new pair orphans every existing
+player's settings.
+
+The schema of the document is the app's. `Settings` knows a key, a value and a version;
+applying a setting is `Engine::rebind()` or `Window::request()`, and pong's
+`applyStoredBindings()` is the reference for what an app does with what it read.
 
 ## Rendering
 
@@ -121,8 +144,10 @@ colour and the name the file gave its image, and the app resolves that name thro
 manager. This is the same shape
 [ADR-0020](adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md) settles for themes; see
 [ADR-0030](adr/0030-a-model-is-an-interleaved-array-that-names-its-texture.md). A glTF whose
-image is *embedded* is reported and left empty, because decoding one needs an image reader
-that can be pointed at a buffer and `api/image` reads files only.
+image is *embedded* — a `.glb`'s own buffer, or a data uri — has no name to give, so it
+arrives decoded instead, on `asset::Model::baseColourImage()`. That is on the asset rather
+than on the material because `api/type` is built against glm alone and a material holding an
+image would take `api/image` into every consumer of a mesh.
 
 **Meshes are owned by the app**, not by `Resources`
 ([ADR-0010](adr/0010-meshes-are-owned-by-the-app.md)).
@@ -132,6 +157,11 @@ that can be pointed at a buffer and `api/image` reads files only.
 Per [ADR-0032](adr/0032-the-loop-simulates-at-a-fixed-step.md), `eventLoop()` measures each
 frame in nanoseconds, hands it to `tick(unsigned int delta)` once, then drains however many
 whole 60 Hz steps that frame owes through `simulate(float step)`, then calls `render()`.
+
+Before any of that it polls, and `Engine::route()` offers each event to three places in a
+fixed order: `onEvent()` first, then the input engine's bindings, then the engine's own
+`handleEvent`. That order is [ADR-0043](adr/0043-an-app-sees-an-event-before-the-bindings-do.md)
+and is what lets an app host a ui toolkit it did not write.
 
 **Simulation goes in `simulate()`.** What runs there produces the same result whatever the
 frame rate was; what runs in `tick()` does not. Per-frame work that is not simulation — input
@@ -152,6 +182,10 @@ because neither is simulation and neither wants to run twice on a slow frame.
   nothing enforces the split, so simulation left in `tick()` is frame-rate dependent and
   compiles. `tick` is milliseconds and `simulate` is seconds, which is the only thing that
   stops one being passed where the other belongs.
+- **`onEvent()` returning true consumes the event, and the bindings never see it.** That is
+  what it is for — a click that both presses a button the app drew and gives an order to the
+  scene is the bug it prevents — and it is also how an app silently disables its own
+  `mappings.json` by taking everything. Quit, resize and focus run whatever it returns.
 - **A quit command calls `Engine::quit()`, never `shutdown()`.** `eventLoop` ticks and renders
   after a handler returns, so tearing the window down inside one leaves the next frame drawing
   into a destroyed window. `quit()` sets a flag the loop breaks on, and `main` calls

@@ -40,7 +40,6 @@ clang-tidy, `/analyze` and cpplint alike.
 
 [] `LineOfSight` still has no consumer. Odyssey's map carries cover - a crate is `Cover::Half` and a wall is `Cover::Full` - and nothing asks what can be seen from where, because odyssey has nothing to see yet
 [] odyssey's map format is its own and lives in `odyssey/tile/Map.cpp`. It earns a record and a home in the api the moment something other than that app reads or writes one, which a map editor or a generator would be
-[] there is no world space filled primitive, so `Overlay.h` outlines a tile and cannot fill one. A filled highlight wants a third primitive beside the quad ([ADR-0005](adr/0005-one-batched-quad-primitive.md)) and the line ([ADR-0011](adr/0011-lines-are-the-second-primitive.md)), which is a decision rather than an addition
 [] `TileFilter` is a `std::function` called for every neighbour of every visited tile, which is the first thing to templatise if a board is ever large enough to notice
 
 ## Models
@@ -49,7 +48,6 @@ clang-tidy, `/analyze` and cpplint alike.
 tree loads from a file. No app uses it: `voxel` builds its terrain procedurally and the editor
 models with `brep::BRep`.
 
-[] `image::Reader` reads a file and nothing else, so a texture embedded in a `.glb` cannot be decoded and the loader reports it instead. A memory source is `png_set_read_fn` and `jpeg_mem_src`, plus the setjmp the png reader does not have today, which is why it is its own change rather than an overload
 [] a `type::Model` has no path onto the device. `vulkan::Mesh` takes bytes, a stride-free count and indices, so the step is an app's four lines; a helper on the render side would need a vertex layout the api does not own
 [] only the first material in a file is kept, because a merge is one draw. A file whose parts need different surfaces has to become several models, and nothing splits one yet
 [] `.gltf` with external buffers resolves them relative to the file, which is cgltf's own behaviour rather than the asset manager's path handling. The two agree today because the manager hands over a full path
@@ -60,7 +58,6 @@ A pass draws into a target it names -
 [ADR-0031](adr/0031-a-pass-draws-into-a-target-it-names.md). No app in the tree draws into one:
 it is there for the features that need it rather than for a picture that exists today.
 
-[] a depth target is allocated but never sampled. `RenderTarget` can carry a depth image and a pass writes it, but the image has no sampled usage and no view a descriptor set can bind, so a shadow map is written and cannot be read
 [] a target is single-buffered, so a pass wanting the previous frame's contents needs two and has to swap them itself. A double-buffered target would be the natural next shape
 [] nothing catches a pipeline built against one colour format drawing into a target of another. It is a wrong picture rather than a validation error, because dynamic rendering takes the format from the pipeline
 [] `Frame::passBefore` exists because `Engine3D` creates the colour pass in its constructor. A frame that let a pass say where it belongs, or an engine that created its pass lazily, would not need it
@@ -74,16 +71,13 @@ it is there for the features that need it rather than for a picture that exists 
 tree: the editor's menu bar and toolbars are strips the renderer places itself, and the apps put
 up a menu and an overlay.
 
-Two of the entries below were weighed and declined rather than left undone. Joining a scrollbar
-to a select list waits for an app to ask for it, and a widget being hovered a frame late is the
-mechanism that lets a window take the cursor from one under it.
+One of the entries below was weighed and declined rather than left undone: a widget being
+hovered a frame late is the mechanism that lets a window take the cursor from one under it.
 
-[] a select list scrolls itself and a scrollbar scrolls nothing, so putting the two side by side is the app's arithmetic. It is one component - the bar reading the list's content and offset - and no app has asked for it
 [] voxel's F3 readout is the only thing driving `ui::Immediate`. The editor's four viewports and odyssey's turn state are each a debug window waiting to be asked for, and a game that owns the mouse has no cursor to give the layer, so voxel's window cannot be folded or scrolled
 [] a widget in `Immediate` is hovered a frame after it is drawn, so the first frame of a window that appears under the cursor answers nothing
 [] adding a component means editing five places - `component::Type`, `ui::Loader`'s branch, `ComponentRenderer::paint`, `Arranger::natural` and `ui::Cursor`'s - plus `style::Resolver`'s class when it is dressed by one of its own, and the compiler checks none of them against the others. Making `natural()` virtual on `Component` was weighed and left: it removes one of the five rather than the problem. Splitting the renderer moved two of them into their own files and did not reduce the count
 [] a clip is a scissor, so it is axis aligned and square: a panel with rounded corners clips to the box and not to the curve
-[] the focus moves by press and by press alone, so there is no tab order and a form cannot be filled in without the mouse
 [] a caret cannot be placed by clicking: a press focuses a text box and leaves the caret where it was. `ui::Cursor` names no text, so finding the character under a point would mean giving it the `Measure` callback - a change to what a cursor is rather than an addition to it
 [] there is no selection in a text box, so no cut, copy or paste over a range. `TextBox::insert()` takes a run of characters, so a paste is expressible the moment something delivers one
 [] `SDL_StartTextInput` is on for the life of the window rather than for as long as something is focused, which is free on a desktop and would raise an on screen keyboard and never lower it anywhere else

@@ -1,6 +1,6 @@
 # The User Interface
 
-What `api/ui` does, as of 2026-09-07. Open questions are at the end.
+What `api/ui` does, as of 2026-09-08. Open questions are at the end.
 
 The decisions behind its shape are [ADR-0019](adr/0019-the-ui-is-laid-out-by-what-draws-it.md),
 [ADR-0020](adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md),
@@ -9,8 +9,11 @@ The decisions behind its shape are [ADR-0019](adr/0019-the-ui-is-laid-out-by-wha
 [ADR-0036](adr/0036-text-is-a-distinct-kind-of-quad.md),
 [ADR-0037](adr/0037-clipping-is-a-scissor-the-batch-carries.md),
 [ADR-0038](adr/0038-a-cursor-is-routed-by-the-library-that-drew-it.md),
-[ADR-0039](adr/0039-layout-never-reads-the-box-it-wrote.md) and
-[ADR-0040](adr/0040-a-key-goes-to-a-focused-component.md). Those say why; this says what.
+[ADR-0039](adr/0039-layout-never-reads-the-box-it-wrote.md),
+[ADR-0040](adr/0040-a-key-goes-to-a-focused-component.md),
+[ADR-0045](adr/0045-a-window-is-dragged-by-the-bar-that-folds-it.md) and
+[ADR-0046](adr/0046-a-table-given-a-height-scrolls-in-its-own-right.md). Those say why; this
+says what.
 
 ## Two ways to write a ui, and which to reach for
 
@@ -82,6 +85,12 @@ field glyphs, with the drawn size closed over per
 [ADR-0036](adr/0036-text-is-a-distinct-kind-of-quad.md). A ui at one size and a heading at
 another are two callback pairs from one `TextRenderer`, and one atlas serves both.
 
+It takes its atlas upload as a `TextRenderer::Upload` callback rather than a `QuadRenderer`,
+so the one thing in the class that needs a device is the one thing handed in and an app
+drawing this canvas with a renderer of its own can use the class rather than copy it. `api/ui`
+names no vulkan type anywhere as a result, which is what ADR-0019's seam was always claiming.
+An app on `Engine3D` passes `quads->texture(image)`.
+
 Both take a `std::string_view`. A component already holds its text, so measuring one must not
 cost an allocation per label per frame.
 
@@ -143,12 +152,12 @@ Every type in `component::Type` has a loader and a draw path; there are no empty
 | | draws | owns |
 |---|---|---|
 | `Panel` | a filled box with a border | nothing |
-| `Label` | one line of text | its text |
+| `Label` | its text, wrapped to the width it was given, or one line when that width is `Auto` | its text |
 | `Icon` | a texture at the component's size | its source and handle |
 | `Bar` | a track and the fraction of it that is filled | its fraction |
 | `Button` | a label, or an icon, or a nine-slice skin | nothing — a toggle's mark is set by whatever answers its command |
 | `CheckBox`, `RadioButton` | a mark and a label beside it | nothing, for the same reason |
-| `Scrollbar` | a track and a thumb | its range and offset |
+| `Scrollbar` | a track and a thumb | its range and offset, or nothing at all when it was told which `SelectList` it scrolls |
 | `SelectList` | a plate and as many rows as it shows | its rows and which is chosen |
 | `TabBar`, `TabPage` | a strip of tabs and the one page chosen | which page is up |
 | `TextBox` | a plate, one line of text, and a caret when it is focused | its text and its caret |
@@ -211,6 +220,19 @@ cursor crosses it.
 Everything is tested against the boxes the last draw left, so an app that routes input before
 it draws sees a dead ui for one frame.
 
+An `Immediate` window is moved by its title bar, which is also what folds it —
+[ADR-0045](adr/0045-a-window-is-dragged-by-the-bar-that-folds-it.md). A press that stays put
+folds the window as it always did; one that travels past a few pixels drags it instead and does
+not fold it. The position `window()` is given stays the anchor: the drag is kept as a
+displacement from it, so a window the caller repositions every frame follows and keeps the nudge
+it was given. The bar is held on the canvas, because the bar is the only thing that drags one
+back.
+
+`Immediate::capturing()` is the immediate layer's half of the same rule: whether the cursor is
+over something that layer drew, or is dragging something it drew, so an app can ask whether a
+click has already been spent before acting on one of its own. It answers from the previous
+frame for the same reason a widget's hover does.
+
 ## The keyboard
 
 `ui::Keys` is the cursor's counterpart —
@@ -224,6 +246,16 @@ Two calls, because **a character is not a key**.
 Keys::press("backspace")   what api/input named - an operation, or a key to swallow
 Keys::text("e")            what the platform composed - utf-8, straight in at the caret
 ```
+
+**Tab is the second way the focus moves.** `Engine::focusNext()` walks to the next focusable
+component in the order the tree is drawn in - containers as the config listed them, components
+by depth with add order between equal depths, a flow box's children in the order it holds them -
+and wraps at each end, skipping a hidden subtree whole. A ui author wanting a different tab
+order reorders the document; there is no `tabIndex`.
+
+`press()` takes a second argument saying whether shift is held, because a key name carries no
+modifier and this library cannot ask `api/input` for one without taking SDL with it. It matters
+for tab alone. A ui with nothing focused is left alone by tab as it is by every other key.
 
 A key names an operation: backspace, delete, the caret moves, a return that sends the box's
 command, an escape that leaves it. A key that will arrive again as a character is taken as well
@@ -245,6 +277,20 @@ from. A `SelectList` and an `Immediate` window clip themselves.
 A clip is axis aligned and square, so a panel with rounded corners clips to the box and not to
 the curve.
 
+The immediate layer has two things that clip and scroll, and they nest. An `Immediate` window
+cuts its body and scrolls it, deciding from last frame's content whether it needs a bar — so
+the bar arrives the frame after the one that overflowed. A table **given a height** does the
+same for its own rows, per
+[ADR-0046](adr/0046-a-table-given-a-height-scrolls-in-its-own-right.md): it clips to that
+height, draws a bar down its own right and keeps `headerRow()`'s band above the region rather
+than in it, so the column names stay put while the rows pass under them. Its gutter is reserved
+whether or not there is anything to scroll, which is what lets its bar appear the same frame
+the content overflows and stops the columns re-flowing when a row arrives. A table given no
+height is as tall as its rows and scrolls with whatever holds it.
+
+The wheel turns the innermost region under the cursor, so a table takes it from the window it
+is drawn in — the same rule that lets a window drawn later take the cursor from one under it.
+
 `LineCanvas` cuts its stream the same way, on different terms: its rectangle is in the pixels
 of the image drawn into and the modelview does not apply to it, because a line canvas is world
 space and no transform there would carry a screen rectangle.
@@ -261,6 +307,9 @@ boxes the draw left or on the primitives it emitted. [Testing.md](Testing.md) ha
   is still the app's.
 - **An `Immediate` widget is hovered a frame after it is drawn**, which is what lets a window
   drawn later take the cursor from one under it.
+- **An `Immediate` widget takes the rest of its row unless told otherwise.**
+  `nextItemWidth(float)` is what tells it, spent by the widget that follows and forgotten
+  after it, which is what lets two scrubbers share a row. A separator always takes the row.
 - **There is no tab order.** The focus moves by press and by press alone, so a form cannot be
   filled in without the mouse.
 - **A caret cannot be placed by clicking.** A press focuses a text box and leaves the caret

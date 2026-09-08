@@ -50,7 +50,11 @@ class Project final {
     bool read(const std::string& path, const boost::shared_ptr<Scene>& scene);
 
     /**
-     * @param path the file to write, overwritten if it exists
+     * Write the scene as a project document.
+     *
+     * The file already there survives a write that does not complete, per ADR-0041.
+     *
+     * @param path the file to write, replaced if it exists
      * @param scene what to write
      * @return whether the file was written
      **/

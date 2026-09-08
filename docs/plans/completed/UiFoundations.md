@@ -393,7 +393,6 @@ this plan is for.
   with a spread of 8. Both halves are asserted in `texturefont_distance_field_packing_test`, so the
   margin is a thing a change trips over rather than a thing it discovers in a screenshot.
 - **Whether `Canvas` should expose a scale** on its modelview stack, independently of any of this.
-  It has `push`, `pop` and `translate` and no scale. Still open, and still not this plan's — the
-  glyph metrics scale on the cpu in `TextureTextBuffer::addCharacter`, which is the layout's own
-  business, so nothing here needed the transform to do it. Carried to
-  [TODO.md](../../TODO.md).
+  Not this plan's — the glyph metrics scale on the cpu in `TextureTextBuffer::addCharacter`, which
+  is the layout's own business, so nothing here needed the transform to do it. It has one now:
+  `Canvas::scale(const glm::vec2&)`, landed elsewhere.

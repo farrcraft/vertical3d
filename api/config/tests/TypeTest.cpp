@@ -18,10 +18,11 @@ BOOST_AUTO_TEST_CASE(config_string_to_type_test) {
     BOOST_TEST((v3d::config::stringToType("sound") == v3d::config::Type::Sound));
     BOOST_TEST((v3d::config::stringToType("camera") == v3d::config::Type::Camera));
     BOOST_TEST((v3d::config::stringToType("layout") == v3d::config::Type::Layout));
+    BOOST_TEST((v3d::config::stringToType("sprite") == v3d::config::Type::Sprite));
 }
 
 /**
- * Unknown is what load() rejects an entry on, so anything that is not one of the six above -
+ * Unknown is what load() rejects an entry on, so anything that is not one of the seven above -
  * a case difference included - has to land there rather than on a neighbouring type.
  **/
 BOOST_AUTO_TEST_CASE(config_unknown_type_name_test) {

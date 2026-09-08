@@ -119,7 +119,11 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
     createLayout();
     createUniforms();
     createPipeline();
-    text_ = boost::make_shared<v3d::ui::TextRenderer>(assetManager, logger, engine_.quads());
+    const boost::shared_ptr<v3d::render::realtime::vulkan::QuadRenderer> quads = engine_.quads();
+    text_ = boost::make_shared<v3d::ui::TextRenderer>(assetManager, logger,
+        [quads](const boost::shared_ptr<v3d::image::Image>& atlas) {
+            return quads->texture(atlas);
+        });
 
     meshes_ = boost::make_shared<ChunkMeshPool>();
     builder_ = boost::make_shared<MeshBuilder>(scene_->chunks(),

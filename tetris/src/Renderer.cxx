@@ -62,7 +62,11 @@ TetrisRenderer::TetrisRenderer(const boost::shared_ptr<v3d::render::realtime::Wi
     engine_.clearColour(glm::vec4(0.09f, 0.09f, 0.11f, 1.0f));
 
     loadPieces(assetManager, logger);
-    text_ = boost::make_shared<v3d::ui::TextRenderer>(assetManager, logger, engine_.quads());
+    const boost::shared_ptr<v3d::render::realtime::vulkan::QuadRenderer> quads = engine_.quads();
+    text_ = boost::make_shared<v3d::ui::TextRenderer>(assetManager, logger,
+        [quads](const boost::shared_ptr<v3d::image::Image>& atlas) {
+            return quads->texture(atlas);
+        });
 
     uiRenderer_ = boost::make_shared<v3d::ui::ComponentRenderer>(text_->measure(fontSize), text_->write(&canvas_, fontSize));
     uiRenderer_->dressing().lineHeight = fontSize * 1.4f;

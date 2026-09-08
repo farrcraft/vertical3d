@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <exception>
 #include <string>
+#include <utility>
 
 #include "../log/Logger.h"
 
@@ -58,11 +59,15 @@ std::string userPath(const std::string& org, const std::string& app);
  *          names the features it wants
  * @param executable argv[0]
  * @param name what the app is called, for the one line a failure is reported on
+ * @param args whatever else the app's engine is built from, forwarded after the path. An
+ *        app that parses its command line into options before the engine exists has
+ *        nowhere else to hand them over, and writing its own main to do it means writing
+ *        this function's ordering out a second time
  * @return the process exit status
  **/
-template <typename T>
-int run(const char* executable, const std::string& name) {
-    T engine(appPath(executable));
+template <typename T, typename... Args>
+int run(const char* executable, const std::string& name, Args&&... args) {
+    T engine(appPath(executable), std::forward<Args>(args)...);
 
     // the renderer reports what it cannot do by throwing, and an uncaught exception on
     // windows is an abort dialog with no message in it. A windowed app has no console,

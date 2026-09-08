@@ -286,4 +286,48 @@ BOOST_AUTO_TEST_CASE(a_second_walk_lands_where_the_first_did) {
     BOOST_CHECK_CLOSE(inner->size().x, 800.0f, 0.001f);
 }
 
+/**
+ * A label given a width wraps to it, and its Auto height becomes the rows it came to. A
+ * measure of one unit per character makes where the breaks fall arithmetic.
+ **/
+BOOST_AUTO_TEST_CASE(a_label_with_a_width_wraps_to_it) {
+    v3d::ui::style::Resolver styles;
+    const v3d::ui::Arranger arranger(measure(), styles);
+    const float line = styles.base().lineHeight;
+
+    // "one two three four" is 18 characters; at 10 a character, 100 pixels holds "one two"
+    // and then "three four"
+    const boost::shared_ptr<v3d::ui::component::Label> wrapped = label("wrapped", "one two three four");
+    wrapped->layout().width = v3d::ui::Length(100.0f, v3d::ui::Length::Unit::Pixels);
+
+    const v3d::type::Bound2D room = canvasArea(400.0f, 200.0f);
+    arranger.walk(nullptr, wrapped, wrapped->layout().resolve(room, arranger.natural(*wrapped, room)),
+        v3d::ui::Arranger::Paint());
+    BOOST_CHECK_CLOSE(wrapped->size().x, 100.0f, 0.001f);
+    BOOST_CHECK_CLOSE(wrapped->size().y, 2.0f * line, 0.001f);
+
+    // an Auto width is one line, exactly as before
+    const boost::shared_ptr<v3d::ui::component::Label> single = label("single", "one two three four");
+    arranger.walk(nullptr, single, single->layout().resolve(room, arranger.natural(*single, room)),
+        v3d::ui::Arranger::Paint());
+    BOOST_CHECK_CLOSE(single->size().x, 18.0f * characterWidth, 0.001f);
+    BOOST_CHECK_CLOSE(single->size().y, line, 0.001f);
+
+    // a percentage is a width like any other, and narrowing it takes more rows
+    const boost::shared_ptr<v3d::ui::component::Label> shared = label("shared", "one two three four");
+    shared->layout().width = v3d::ui::Length(10.0f, v3d::ui::Length::Unit::Percent);
+    arranger.walk(nullptr, shared, shared->layout().resolve(room, arranger.natural(*shared, room)),
+        v3d::ui::Arranger::Paint());
+    BOOST_CHECK_CLOSE(shared->size().x, 40.0f, 0.001f);
+    BOOST_CHECK_CLOSE(shared->size().y, 4.0f * line, 0.001f);
+
+    // a named height is still the height it named - wrapping decides what Auto is offered
+    const boost::shared_ptr<v3d::ui::component::Label> fixed = label("fixed", "one two three four");
+    fixed->layout().width = v3d::ui::Length(100.0f, v3d::ui::Length::Unit::Pixels);
+    fixed->layout().height = v3d::ui::Length(9.0f, v3d::ui::Length::Unit::Pixels);
+    arranger.walk(nullptr, fixed, fixed->layout().resolve(room, arranger.natural(*fixed, room)),
+        v3d::ui::Arranger::Paint());
+    BOOST_CHECK_CLOSE(fixed->size().y, 9.0f, 0.001f);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

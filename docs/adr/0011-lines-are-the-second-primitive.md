@@ -99,6 +99,8 @@ its own orthographic projection. Lines are one pixel wide.
 ### Negative
 - ADR-0005's "one primitive" is now "one primitive for 2D". The claim was always about the 2D
   content four games draw, but it read as a claim about the engine, and it no longer is.
+  [ADR-0042](0042-a-textured-quad-in-world-space.md) narrowed it once more, to the content
+  drawn in canvas pixels.
 - One pixel wide, everywhere, on every display. A 4K editor will look thin.
 - A `LineCanvas` in a pass whose camera was never set draws in clip space and looks like
   nothing at all, because an unset pass camera is the identity. That is the 2D default, so a

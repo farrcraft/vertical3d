@@ -3,12 +3,36 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <cstddef>
+#include <fstream>
 #include <string>
+#include <vector>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
 
+#include "../Compare.h"
 #include "../Factory.h"
+
+namespace {
+
+/**
+ * A fixture as its encoded bytes, which is what an image embedded in another file arrives
+ * as - there is no path to hand a reader.
+ **/
+std::vector<unsigned char> bytes(const std::string& path) {
+    std::ifstream file(path.c_str(), std::ifstream::in | std::ifstream::binary);
+    file.seekg(0, std::ifstream::end);
+    const std::streamoff length = file.tellg();
+    file.seekg(0, std::ifstream::beg);
+    std::vector<unsigned char> encoded(length > 0 ? static_cast<std::size_t>(length) : 0u);
+    if (!encoded.empty()) {
+        file.read(reinterpret_cast<char*>(encoded.data()), length);
+    }
+    return encoded;
+}
+
+};  // namespace
 
 BOOST_AUTO_TEST_CASE(imagereader_test) {
     boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
@@ -121,4 +145,56 @@ BOOST_AUTO_TEST_CASE(imagereader_tga_orientation_test) {
     BOOST_CHECK_EQUAL((*image)[6], 0);
     BOOST_CHECK_EQUAL((*image)[7], 0xff);
     BOOST_CHECK_EQUAL((*image)[8], 0);
+}
+
+/**
+ * The path is written in terms of the buffer, so the two have to agree pixel for pixel in
+ * every format - an image embedded in a .glb decodes to what the same bytes on disk would.
+ **/
+BOOST_AUTO_TEST_CASE(imagereader_buffer_matches_the_path) {
+    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    v3d::image::Factory factory(logger);
+
+    const std::string fixtures[][2] = {
+        { "data/2x2x24_red.bmp", "bmp" },
+        { "data/2x2x24_green.jpg", "jpg" },
+        { "data/2x2x24_blue.png", "png" },
+        { "data/2x2x24_blue.tga", "tga" },
+        { "data/2x2x24_rows.tga", "tga" },
+    };
+
+    for (const std::string* fixture : fixtures) {
+        const std::string& path = fixture[0];
+        const std::string& kind = fixture[1];
+
+        boost::shared_ptr<v3d::image::Image> fromPath = factory.read(path);
+        BOOST_REQUIRE_MESSAGE(fromPath, "no image read from " + path);
+
+        const std::vector<unsigned char> encoded = bytes(path);
+        BOOST_REQUIRE(!encoded.empty());
+        boost::shared_ptr<v3d::image::Image> fromBuffer = factory.read(encoded.data(), encoded.size(), kind);
+        BOOST_REQUIRE_MESSAGE(fromBuffer, "no image read from the bytes of " + path);
+
+        const v3d::image::Difference difference = v3d::image::compare(*fromPath, *fromBuffer, 0);
+        BOOST_CHECK_MESSAGE(difference.match, path + ": " + difference.description());
+    }
+}
+
+/**
+ * Bytes that are not the format they were said to be decode to nothing rather than to
+ * whatever was next to them - a reader walking a buffer has no end of file to stop at.
+ **/
+BOOST_AUTO_TEST_CASE(imagereader_rejects_bytes_that_are_not_the_format) {
+    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    v3d::image::Factory factory(logger);
+
+    const std::vector<unsigned char> png = bytes("data/2x2x24_blue.png");
+    BOOST_REQUIRE(!png.empty());
+
+    BOOST_CHECK(!factory.read(png.data(), png.size(), "tga"));
+    BOOST_CHECK(!factory.read(png.data(), png.size(), "qwe"));
+    BOOST_CHECK(!factory.read(nullptr, 0, "png"));
+
+    // and a png cut short is refused rather than read as far as it goes
+    BOOST_CHECK(!factory.read(png.data(), 16, "png"));
 }

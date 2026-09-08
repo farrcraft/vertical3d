@@ -4,6 +4,7 @@
  **/
 
 #include <string>
+#include <utility>
 
 #include <boost/test/unit_test.hpp>
 
@@ -11,6 +12,47 @@
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
+
+namespace {
+
+/**
+ * What run<T> built its engine with. run<T> builds it on the stack and lets it go, so this
+ * is recorded as the engine is constructed rather than read back off an object that is gone
+ * by the time the call returns.
+ **/
+struct Built final {
+    std::string path;
+    int option = 0;
+    std::string label;
+};
+
+Built* built = nullptr;
+
+/**
+ * What run<T> actually requires of an engine, which is three methods and a constructor -
+ * not a v3d::engine::Engine, which cannot be built in a test without a window.
+ **/
+struct StubEngine final {
+    StubEngine(const std::string& path, int option = 0, std::string label = std::string()) {
+        if (built != nullptr) {
+            built->path = path;
+            built->option = option;
+            built->label = std::move(label);
+        }
+    }
+
+    bool initialize() {
+        return true;
+    }
+    bool eventLoop() {
+        return true;
+    }
+    bool shutdown() {
+        return true;
+    }
+};
+
+};  // namespace
 
 BOOST_AUTO_TEST_SUITE(application_test)
 
@@ -81,6 +123,38 @@ BOOST_AUTO_TEST_CASE(a_user_path_is_per_app) {
     BOOST_REQUIRE(!one.empty());
     BOOST_REQUIRE(!other.empty());
     BOOST_TEST(one != other);
+}
+
+/**
+ * An app whose engine is built from more than a path - a command line parsed into options
+ * before the engine exists - hands them over here rather than writing its own main.
+ **/
+BOOST_AUTO_TEST_CASE(run_forwards_what_the_engine_is_built_from) {
+    Built record;
+    built = &record;
+
+    BOOST_TEST(v3d::engine::run<StubEngine>("stub.exe", "stub", 7, std::string("scene.gltf")) == EXIT_SUCCESS);
+    built = nullptr;
+
+    BOOST_CHECK_EQUAL(record.option, 7);
+    BOOST_CHECK_EQUAL(record.label, "scene.gltf");
+    BOOST_CHECK(!record.path.empty());
+}
+
+/**
+ * And an app that is built from nothing else still calls it the way it always did.
+ **/
+BOOST_AUTO_TEST_CASE(run_still_takes_a_path_alone) {
+    Built record;
+    record.option = 9;
+    record.label = "stale";
+    built = &record;
+
+    BOOST_TEST(v3d::engine::run<StubEngine>("stub.exe", "stub") == EXIT_SUCCESS);
+    built = nullptr;
+
+    BOOST_CHECK_EQUAL(record.option, 0);
+    BOOST_CHECK(record.label.empty());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

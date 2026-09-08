@@ -96,6 +96,26 @@ class Engine {
     boost::shared_ptr<Component> focused() const;
 
     /**
+     * Move the focus to the next focusable component, or to the one before it, extending
+     * ADR-0040 with a second way for the focus to move.
+     *
+     * The order is the order the tree holds them in, which is the order they are drawn in:
+     * containers as the config listed them, components by depth with add order between
+     * equal depths, and a flow box's children in the order it was given them. A ui author
+     * wanting a different tab order reorders the document. A hidden component is skipped,
+     * and so is everything it holds.
+     *
+     * **A ui with nothing focused is left alone**, which is what keeps a game's movement
+     * keys working: tab must not take the focus onto the first widget of a hud nobody is
+     * looking at.
+     *
+     * @param forward whether to move to the next one rather than the previous one
+     * @return whether the focus moved, which a ui holding one focusable component and a ui
+     *         holding none both answer false
+     **/
+    bool focusNext(bool forward);
+
+    /**
      * Get a loaded theme by name.
      * @param name the theme name
      * @return the named theme, or null when no theme of that name was loaded

@@ -82,6 +82,15 @@ class Engine3D : public Engine {
     boost::shared_ptr<vulkan::LineRenderer> lines();
 
     /**
+     * The world space quad primitive of ADR-0042. An app fills a WorldCanvas during its
+     * tick and hands both to this.
+     *
+     * Built on the first call rather than at startup, so an app that draws none pays
+     * nothing for it.
+     **/
+    boost::shared_ptr<vulkan::WorldRenderer> worldQuads();
+
+    /**
      * The name of the pass every frame has, for an app adding items to it directly.
      **/
     static const char* const colourPass;

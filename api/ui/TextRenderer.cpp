@@ -11,7 +11,6 @@
 #include "../asset/TextureFont.h"
 #include "../asset/Type.h"
 #include "../image/TextureAtlas.h"
-#include "../render/realtime/vulkan/QuadRenderer.h"
 
 #include <boost/make_shared.hpp>
 
@@ -36,7 +35,7 @@ const unsigned int TextRenderer::defaultAtlas = 512;
  **/
 TextRenderer::TextRenderer(const boost::shared_ptr<v3d::asset::Manager>& assetManager,
     const boost::shared_ptr<v3d::log::Logger>& logger,
-    const boost::shared_ptr<v3d::render::realtime::vulkan::QuadRenderer>& quads,
+    const Upload& upload,
     float size,
     const std::string& font,
     const wchar_t* charcodes,
@@ -88,7 +87,7 @@ TextRenderer::TextRenderer(const boost::shared_ptr<v3d::asset::Manager>& assetMa
     markup_.font_ = asset->font();
 
     // every glyph is packed by now, so the atlas can go to the device once and stay there
-    atlas_ = quads->texture(cache_->atlas()->image());
+    atlas_ = upload(cache_->atlas()->image());
 
     buffer_ = boost::make_shared<v3d::font::TextureTextBuffer>();
 }

@@ -108,6 +108,20 @@ class QuadRenderer final {
     TextureHandle texture(const RenderTarget& target);
 
     /**
+     * Register a render target's depth image, so that a draw can sample what a pass tested
+     * against rather than what it painted - which is the read half of a shadow map.
+     *
+     * The same borrowed contract, and the same rule about registering again after a
+     * recreate(). A target built without a depth image, or with one it was not told would
+     * be sampled, has nothing to register: it comes back as the white texture, because a
+     * descriptor set written against an image with no sampled usage is undefined and a
+     * flat white shadow map is a scene that is merely unshadowed.
+     *
+     * @return the handle to draw with
+     **/
+    TextureHandle depthTexture(const RenderTarget& target);
+
+    /**
      * @return the 1x1 white texture an untextured quad is drawn against
      **/
     TextureHandle white() const noexcept;
@@ -130,6 +144,23 @@ class QuadRenderer final {
      * the front of the ring again. The engine calls this once a frame has been recorded.
      **/
     void endFrame() noexcept;
+
+    /**
+     * The descriptor set that binds a texture at set 1, created on first use and kept.
+     *
+     * Public because the world space quad of ADR-0042 samples through the same layout, so
+     * an atlas uploaded once serves both primitives out of one descriptor pool.
+     *
+     * @return the material to name on a draw item, or an unset handle for a texture this
+     *         does not hold
+     **/
+    MaterialHandle material(const TextureHandle& handle);
+
+    /**
+     * @return set 1's layout, which a second pipeline sampling a texture the same way
+     *         declares so that a material allocated here is compatible with it
+     **/
+    VkDescriptorSetLayout materialLayout() const noexcept;
 
  private:
     /**
@@ -167,11 +198,6 @@ class QuadRenderer final {
      * The 1x1 white texture, so that an untextured quad needs no second pipeline.
      **/
     void createWhite();
-
-    /**
-     * The descriptor set that binds a texture at set 1, created on first use and kept.
-     **/
-    MaterialHandle material(const TextureHandle& handle);
 
     /**
      * Add a descriptor pool, because the last one is full or there is none.

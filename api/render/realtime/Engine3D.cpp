@@ -76,6 +76,12 @@ boost::shared_ptr<vulkan::LineRenderer> Engine3D::lines() {
 
 /**
  **/
+boost::shared_ptr<vulkan::WorldRenderer> Engine3D::worldQuads() {
+    return context_ ? context_->worldQuads() : boost::shared_ptr<vulkan::WorldRenderer>();
+}
+
+/**
+ **/
 void Engine3D::clearColour(const glm::vec4& colour) {
     clearColour_ = colour;
     if (frame_) {
@@ -176,6 +182,9 @@ void Engine3D::endFrame() {
         context_->quads()->endFrame();
         if (context_->hasLines()) {
             context_->lines()->endFrame();
+        }
+        if (context_->hasWorldQuads()) {
+            context_->worldQuads()->endFrame();
         }
     }
 }

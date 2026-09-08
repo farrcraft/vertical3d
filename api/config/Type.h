@@ -16,6 +16,7 @@ enum class Type {
     Sound,
     Camera,
     Layout,
+    Sprite,
 };
 
 constexpr Type stringToType(const std::string_view& typeName) {
@@ -36,6 +37,9 @@ constexpr Type stringToType(const std::string_view& typeName) {
     }
     if (typeName == "layout") {
         return Type::Layout;
+    }
+    if (typeName == "sprite") {
+        return Type::Sprite;
     }
     return  Type::Unknown;
 }

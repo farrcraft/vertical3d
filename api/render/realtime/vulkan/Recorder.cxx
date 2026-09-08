@@ -61,6 +61,7 @@ Recorder::Target resolve(const Pass& pass, const Recorder::Target& frame) {
     into.extent = offscreen->extent();
     into.depthImage = offscreen->depthImage();
     into.depthView = offscreen->depthView();
+    into.sampledDepth = offscreen->sampledDepth();
     return into;
 }
 
@@ -96,7 +97,8 @@ image(VK_NULL_HANDLE),
 view(VK_NULL_HANDLE),
 extent{0, 0},
 depthImage(VK_NULL_HANDLE),
-depthView(VK_NULL_HANDLE) {
+depthView(VK_NULL_HANDLE),
+sampledDepth(false) {
 }
 
 /**
@@ -159,6 +161,11 @@ void Recorder::record(VkCommandBuffer commands, const Frame& frame, const Target
         if (offscreen && lastWrite(passes, index)) {
             transition(commands, into.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            // and the same for its depth, where anything is going to read that - a shadow
+            // map has no colour worth reading and is only ever this half
+            if (pass->depth() && into.sampledDepth && into.depthImage != VK_NULL_HANDLE) {
+                transitionDepthForReading(commands, into.depthImage);
+            }
         }
     }
 
@@ -389,6 +396,36 @@ void Recorder::transition(VkCommandBuffer commands, VkImage image, VkImageLayout
         barrier.dstStageMask = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT;
         barrier.dstAccessMask = VK_ACCESS_2_NONE;
     }
+
+    VkDependencyInfo dependency{};
+    dependency.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+    dependency.imageMemoryBarrierCount = 1;
+    dependency.pImageMemoryBarriers = &barrier;
+
+    vkCmdPipelineBarrier2(commands, &dependency);
+}
+
+/**
+ **/
+void Recorder::transitionDepthForReading(VkCommandBuffer commands, VkImage image) {
+    VkImageMemoryBarrier2 barrier{};
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+    barrier.oldLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+    barrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.image = image;
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+    barrier.subresourceRange.baseMipLevel = 0;
+    barrier.subresourceRange.levelCount = 1;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = 1;
+    // the writes being waited on are the depth tests of the pass that just ran, and what
+    // waits on them is a fragment shader sampling the result
+    barrier.srcStageMask = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
+    barrier.srcAccessMask = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    barrier.dstStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+    barrier.dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
 
     VkDependencyInfo dependency{};
     dependency.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;

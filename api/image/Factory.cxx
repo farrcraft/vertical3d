@@ -5,7 +5,7 @@
 
 #include "Factory.h"
 
-#include <iostream>
+#include <cstddef>
 #include <map>
 #include <string>
 
@@ -73,6 +73,17 @@ boost::shared_ptr<Image> Factory::read(std::string_view filename) {
     }
     boost::shared_ptr<Image> empty_ptr;
     logger_->get()->error("ImageFactory::read - no reader exists for detected image format!");
+    return empty_ptr;
+}
+
+boost::shared_ptr<Image> Factory::read(const unsigned char* data, std::size_t size, std::string_view kind) {
+    const std::string format = static_cast<std::string>(kind);
+    std::map<std::string, boost::shared_ptr<Reader> >::iterator it = readers_.find(format);
+    if (it != readers_.end()) {
+        return (*it).second->read(data, size);
+    }
+    boost::shared_ptr<Image> empty_ptr;
+    logger_->get()->error("ImageFactory::read - no reader exists for the format {}", format);
     return empty_ptr;
 }
 

@@ -37,7 +37,7 @@ set(V3D_API_brep_PACKAGES glm)
 
 set(V3D_API_config_PATH "config")
 set(V3D_API_config_REQUIRES log asset type)
-set(V3D_API_config_PACKAGES)
+set(V3D_API_config_PACKAGES glm)
 
 set(V3D_API_dag_PATH "dag")
 set(V3D_API_dag_REQUIRES)

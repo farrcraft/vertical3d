@@ -5,7 +5,8 @@ v3d_add_test(config
 	"TestMain.cpp"
 	"ConfigTest.cpp"
 	"TypeTest.cpp"
-	"CameraProfilesTest.cpp")
+	"CameraProfilesTest.cpp"
+	"SpriteSheetsTest.cpp")
 
 # SDL3: v3dlib_config reaches the mixer through v3dlib_asset and v3dlib_audio.
 target_link_libraries(v3dtest_config PRIVATE

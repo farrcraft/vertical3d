@@ -44,6 +44,7 @@ class Recorder final {
         VkExtent2D extent;     /**< the size of the image **/
         VkImage depthImage;    /**< the depth buffer, or null when there is none **/
         VkImageView depthView; /**< the attachment a pass that depth tests draws into **/
+        bool sampledDepth;     /**< whether a later pass reads that depth image **/
     };
 
     /**
@@ -85,6 +86,17 @@ class Recorder final {
      * discarded, which is why the first pass to use it in a frame has to clear.
      **/
     static void transitionDepth(VkCommandBuffer commands, VkImage image);
+
+    /**
+     * Leave a sampled depth image where a descriptor set can read it.
+     *
+     * DEPTH_READ_ONLY_OPTIMAL rather than SHADER_READ_ONLY_OPTIMAL: it is the layout a
+     * depth aspect is both sampled and tested in, and it is what makes the promise a pass
+     * sampling this depends on - that nothing writes the image while it is being read. A
+     * pass that both samples a target's depth and draws into it is the hazard that
+     * forbids rather than detects.
+     **/
+    static void transitionDepthForReading(VkCommandBuffer commands, VkImage image);
 
     /**
      * @param frameSet what the pass binds at set 0, or null if it binds nothing there

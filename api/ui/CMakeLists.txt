@@ -14,7 +14,7 @@ v3d_add_api_library(ui
 	"Painter.h" "Painter.cpp"
 	"StatisticsOverlay.h" "StatisticsOverlay.cpp"
 	"Style.h" "Style.cpp"
-	"Text.h"
+	"Text.h" "Text.cpp"
 	"TextRenderer.h" "TextRenderer.cpp"
 	"component/Bar.h" "component/Bar.cpp"
 	"component/Box.h" "component/Box.cpp"

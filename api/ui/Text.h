@@ -6,7 +6,9 @@
 #pragma once
 
 #include <functional>
+#include <string>
 #include <string_view>
+#include <vector>
 
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
@@ -38,5 +40,18 @@ typedef std::function<float(std::string_view)> Measure;
  * Draw a string with its pen on the baseline at the given position.
  **/
 typedef std::function<void(std::string_view, const glm::vec2&, const glm::vec4&)> Write;
+
+/**
+ * Break a line at the spaces that do not fit a width.
+ *
+ * Greedy: a word goes on the current line if it fits, and starts a new one if it does not.
+ * A single word wider than the whole width is left over the edge rather than split, which
+ * is the lesser of the two wrong answers for a name or a path.
+ *
+ * @param width the room a row has, or nothing at all when it is not positive, which is one
+ *        row holding the whole line
+ * @return one row per line, and no rows at all for a line holding nothing but spaces
+ **/
+std::vector<std::string> wrap(std::string_view line, float width, const Measure& measure);
 
 };  // namespace v3d::ui

@@ -171,6 +171,12 @@ void QuadRenderer::endFrame() noexcept {
 
 /**
  **/
+VkDescriptorSetLayout QuadRenderer::materialLayout() const noexcept {
+    return materialLayout_;
+}
+
+/**
+ **/
 void QuadRenderer::createWhite() {
     const unsigned char pixel[4] = {0xFF, 0xFF, 0xFF, 0xFF};
     white_ = texture(pixel, 1, 1, 4);
@@ -192,6 +198,15 @@ TextureHandle QuadRenderer::texture(const unsigned char* pixels, uint32_t width,
  **/
 TextureHandle QuadRenderer::texture(const RenderTarget& target) {
     return resources_->add(target.texture());
+}
+
+/**
+ **/
+TextureHandle QuadRenderer::depthTexture(const RenderTarget& target) {
+    if (!target.sampledDepth()) {
+        return white_;
+    }
+    return resources_->add(target.depthTexture());
 }
 
 /**

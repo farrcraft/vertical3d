@@ -9,6 +9,8 @@
 #include <boost/make_shared.hpp>
 
 #include "../Event.h"
+#include "../MouseButton.h"
+#include "../MouseMotion.h"
 
 /**
  * The replacement for EventInfo: a name, the context it belongs to, the edge it happened on
@@ -104,4 +106,26 @@ BOOST_AUTO_TEST_CASE(event_state_name_test) {
     // anything else, including nothing at all, binds both edges
     BOOST_CHECK(v3d::event::stringToState("") == v3d::event::State::Any);
     BOOST_CHECK(v3d::event::stringToState("sideways") == v3d::event::State::Any);
+}
+
+/**
+ * Both mouse events carry a position. The assertion is thin on purpose: what it prevents is a
+ * field going back to being dropped between the SDL event and the one dispatched from it.
+ **/
+BOOST_AUTO_TEST_CASE(mouse_event_position_test) {
+    boost::shared_ptr<v3d::event::Context> mouse = boost::make_shared<v3d::event::Context>("mouse");
+
+    const v3d::event::MouseButton press(1, glm::vec2(4.0f, 9.0f), mouse, true);
+    BOOST_CHECK_EQUAL(press.button(), 1u);
+    BOOST_CHECK_EQUAL(press.position()[0], 4.0f);
+    BOOST_CHECK_EQUAL(press.position()[1], 9.0f);
+    BOOST_CHECK_EQUAL(press.pressed(), true);
+    BOOST_CHECK(press.state() == v3d::event::State::Pressed);
+
+    const v3d::event::MouseButton release(1, glm::vec2(4.0f, 9.0f), mouse, false);
+    BOOST_CHECK(release.state() == v3d::event::State::Released);
+
+    const v3d::event::MouseMotion moved(glm::vec2(4.0f, 9.0f), glm::vec2(1.0f, -1.0f), mouse);
+    BOOST_CHECK_EQUAL(moved.position()[0], press.position()[0]);
+    BOOST_CHECK_EQUAL(moved.motion()[1], -1.0f);
 }

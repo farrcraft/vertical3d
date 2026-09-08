@@ -9,6 +9,7 @@
 
 #include <array>
 #include <functional>
+#include <vector>
 
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -36,6 +37,16 @@ constexpr float OVERLAY_LIFT = 0.01f;
 typedef std::function<void(const glm::vec3& from, const glm::vec3& to, const glm::vec4& colour)> LineSink;
 
 /**
+ * Where a filled quad of the overlay goes, and in what colour.
+ *
+ * The counterpart of LineSink for the world space quad of
+ * [ADR-0042](../../docs/adr/0042-a-textured-quad-in-world-space.md), and here for the same
+ * reason: nothing in this library names a renderer. The corners arrive in the order
+ * tileCorners() gives them, which is the order realtime::WorldCanvas takes them in.
+ **/
+typedef std::function<void(const std::array<glm::vec3, 4>& corners, const glm::vec4& colour)> QuadSink;
+
+/**
  * The four corners of a tile, in order around its perimeter and lifted clear of the ground
  * plane by OVERLAY_LIFT.
  *
@@ -49,6 +60,22 @@ std::array<glm::vec3, 4> tileCorners(const TileGrid& grid, TileCoord tile);
  * drawn as. A tile off the grid emits nothing.
  **/
 void outlineTile(const TileGrid& grid, TileCoord tile, const glm::vec4& colour, const LineSink& sink);
+
+/**
+ * One tile filled, which is what a highlight under a cursor, a movement range or a
+ * threatened square is drawn as. A tile off the grid emits nothing.
+ *
+ * The colour is what reaches the sink whole, alpha included: a highlight over ground that
+ * has to stay visible is a translucent fill, and whether that blends is the pass's.
+ **/
+void fillTile(const TileGrid& grid, TileCoord tile, const glm::vec4& colour, const QuadSink& sink);
+
+/**
+ * Every tile of a run filled in one colour - a movement range, an area of effect, a
+ * selection. Tiles off the grid are skipped rather than refusing the whole run.
+ **/
+void fillTiles(const TileGrid& grid, const std::vector<TileCoord>& tiles, const glm::vec4& colour,
+    const QuadSink& sink);
 
 /**
  * Every tile boundary of a grid, with the four outer edges in a colour of their own so the

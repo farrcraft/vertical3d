@@ -5,6 +5,7 @@
 
 #include "Engine.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <string>
 #include <utility>
@@ -14,6 +15,7 @@
 #include "Container.h"
 #include "Loader.h"
 #include "Style.h"
+#include "component/Box.h"
 #include "component/Button.h"
 #include "component/Icon.h"
 #include "component/Toolbar.h"
@@ -175,6 +177,67 @@ void Engine::focus(const boost::shared_ptr<Component>& component) {
  **/
 boost::shared_ptr<Component> Engine::focused() const {
     return focused_.lock();
+}
+
+namespace {
+
+/**
+ * Collect what can be focused, in the order the draw walk reaches it.
+ *
+ * A flow box holds its children in the order it places them and a z index inside one
+ * changes nothing, which is the rule Arranger::walk follows and the reason this cannot
+ * simply sort everything by depth.
+ **/
+void focusable(const boost::shared_ptr<Component>& component,
+    std::vector<boost::shared_ptr<Component>>* found) {
+    if (!component || !component->visible()) {
+        return;  // a hidden subtree is skipped whole, not just its root
+    }
+    if (component->focusable()) {
+        found->push_back(component);
+    }
+    const std::vector<boost::shared_ptr<Component>>& children = component->children();
+    if (dynamic_cast<const component::Box*>(component.get()) != nullptr ||
+        inDrawOrder(children)) {
+        for (const boost::shared_ptr<Component>& child : children) {
+            focusable(child, found);
+        }
+        return;
+    }
+    for (const boost::shared_ptr<Component>& child : ordered(children)) {
+        focusable(child, found);
+    }
+}
+
+};  // namespace
+
+/**
+ **/
+bool Engine::focusNext(bool forward) {
+    const boost::shared_ptr<Component> was = focused_.lock();
+    if (!was) {
+        return false;
+    }
+
+    std::vector<boost::shared_ptr<Component>> order;
+    for (const boost::shared_ptr<Container>& holder : containers_) {
+        if (!holder || !holder->visible()) {
+            continue;
+        }
+        for (const boost::shared_ptr<Component>& component : holder->ordered()) {
+            focusable(component, &order);
+        }
+    }
+
+    const auto here = std::find(order.begin(), order.end(), was);
+    if (here == order.end() || order.size() < 2) {
+        return false;
+    }
+    const std::size_t at = static_cast<std::size_t>(here - order.begin());
+    const std::size_t next = forward ? (at + 1) % order.size()
+        : (at + order.size() - 1) % order.size();
+    focus(order[next]);
+    return true;
 }
 
 /**
