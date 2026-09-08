@@ -202,6 +202,15 @@ TextureHandle QuadRenderer::texture(const RenderTarget& target) {
 
 /**
  **/
+TextureHandle QuadRenderer::depthTexture(const RenderTarget& target) {
+    if (!target.sampledDepth()) {
+        return white_;
+    }
+    return resources_->add(target.depthTexture());
+}
+
+/**
+ **/
 TextureHandle QuadRenderer::white() const noexcept {
     return white_;
 }

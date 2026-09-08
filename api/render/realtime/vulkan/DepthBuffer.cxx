@@ -30,14 +30,17 @@ const VkFormat candidates[3] = {
 
 /**
  **/
-DepthBuffer::DepthBuffer(const boost::shared_ptr<Device>& device, uint32_t width, uint32_t height) :
+DepthBuffer::DepthBuffer(const boost::shared_ptr<Device>& device, uint32_t width, uint32_t height,
+    bool sampled) :
     device_(device),
     format_(VK_FORMAT_UNDEFINED),
     image_(VK_NULL_HANDLE),
     memory_(VK_NULL_HANDLE),
     view_(VK_NULL_HANDLE),
-    extent_{0, 0} {
-    format_ = chooseFormat(device_->physical());
+    sampler_(VK_NULL_HANDLE),
+    extent_(),
+    sampled_(sampled) {
+    format_ = chooseFormat(device_->physical(), sampled_);
     create(width, height);
 }
 
@@ -49,13 +52,22 @@ DepthBuffer::~DepthBuffer() {
 
 /**
  **/
-VkFormat DepthBuffer::chooseFormat(VkPhysicalDevice device) {
+VkFormat DepthBuffer::chooseFormat(VkPhysicalDevice device, bool sampled) {
+    VkFormatFeatureFlags wanted = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    if (sampled) {
+        // a format a device will draw depth into is not necessarily one it will let a
+        // shader read, so asking for both narrows the list rather than only the usage
+        wanted |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
+    }
     for (VkFormat format : candidates) {
         VkFormatProperties properties{};
         vkGetPhysicalDeviceFormatProperties(device, format, &properties);
-        if ((properties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0) {
+        if ((properties.optimalTilingFeatures & wanted) == wanted) {
             return format;
         }
+    }
+    if (sampled) {
+        throw std::runtime_error("No vulkan depth format the device offers can be both drawn into and sampled");
     }
     throw std::runtime_error("No vulkan depth format the device offers can be used as an attachment");
 }
@@ -80,6 +92,9 @@ void DepthBuffer::create(uint32_t width, uint32_t height) {
     info.samples = VK_SAMPLE_COUNT_1_BIT;
     info.tiling = VK_IMAGE_TILING_OPTIMAL;
     info.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    if (sampled_) {
+        info.usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+    }
     info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
@@ -136,6 +151,32 @@ void DepthBuffer::create(uint32_t width, uint32_t height) {
         throw std::runtime_error(msg.str());
     }
 
+    if (sampled_) {
+        VkSamplerCreateInfo sampler{};
+        sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        // linear, so that a shadow comparison across a texel boundary softens rather than
+        // stepping. Nothing here enables the compare mode: a caller that wants a hardware
+        // pcf sampler wants its own, and this is the one a plain read uses
+        sampler.magFilter = VK_FILTER_LINEAR;
+        sampler.minFilter = VK_FILTER_LINEAR;
+        sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+        // outside what was rendered is lit, not shadowed, so the border is the far plane
+        sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+        sampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+        sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+        sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+        sampler.maxLod = 1.0f;
+
+        result = vkCreateSampler(device_->handle(), &sampler, nullptr, &sampler_);
+        if (result != VK_SUCCESS) {
+            sampler_ = VK_NULL_HANDLE;
+            destroy();
+            std::stringstream msg;
+            msg << "Unable to create the vulkan depth sampler - " << resultString(result);
+            throw std::runtime_error(msg.str());
+        }
+    }
+
     extent_.width = width;
     extent_.height = height;
 }
@@ -143,6 +184,10 @@ void DepthBuffer::create(uint32_t width, uint32_t height) {
 /**
  **/
 void DepthBuffer::destroy() {
+    if (sampler_ != VK_NULL_HANDLE) {
+        vkDestroySampler(device_->handle(), sampler_, nullptr);
+        sampler_ = VK_NULL_HANDLE;
+    }
     if (view_ != VK_NULL_HANDLE) {
         vkDestroyImageView(device_->handle(), view_, nullptr);
         view_ = VK_NULL_HANDLE;
@@ -202,6 +247,18 @@ const VkExtent2D& DepthBuffer::extent() const noexcept {
  **/
 bool DepthBuffer::stencil() const noexcept {
     return format_ == VK_FORMAT_D32_SFLOAT_S8_UINT || format_ == VK_FORMAT_D24_UNORM_S8_UINT;
+}
+
+/**
+ **/
+bool DepthBuffer::sampled() const noexcept {
+    return sampled_;
+}
+
+/**
+ **/
+VkSampler DepthBuffer::sampler() const noexcept {
+    return sampler_;
 }
 
 };  // namespace v3d::render::realtime::vulkan

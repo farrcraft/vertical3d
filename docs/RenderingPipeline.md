@@ -87,6 +87,22 @@ keeps that pass's depth too. The image is transitioned to `DEPTH_ATTACHMENT_OPTI
 frame, from `UNDEFINED`: nothing carries depth between frames, so preserving the last frame's
 contents is not worth a barrier, and the first pass to use it must clear.
 
+### A depth image that is read as well as written
+
+A `RenderTarget` built with `sampledDepth` allocates its depth image with sampled usage and a
+sampler, and the recorder leaves it in `DEPTH_READ_ONLY_OPTIMAL` after the last pass that wrote
+it — which is a shadow map, and is
+[ADR-0044](adr/0044-a-sampled-depth-target-is-read-only.md). `QuadRenderer::depthTexture()`
+registers it, the same borrowed-rather-than-owned way a target's colour is registered.
+
+**Asking for it changes the format.** A format the device will draw depth into is not
+necessarily one it will let a shader read, so `DepthBuffer::chooseFormat(device, true)` walks
+a shorter list, and a pipeline drawing into a sampled target has to be built against that
+target's `depthFormat()`. The swapchain's depth buffer is unsampled and unchanged.
+
+Nothing in this tree draws into a target at all, so this half is exercised only by a consumer
+outside it.
+
 Dynamic rendering matches a pipeline to the attachments of the pass it draws into, so a
 pipeline built with no depth format cannot draw into a pass that has one. `QuadRenderer`
 therefore compiles its pipeline twice, once each way, and picks between them from

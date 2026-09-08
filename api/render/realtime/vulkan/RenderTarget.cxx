@@ -18,7 +18,7 @@ namespace v3d::render::realtime::vulkan {
 /**
  **/
 RenderTarget::RenderTarget(const boost::shared_ptr<Device>& device, uint32_t width, uint32_t height,
-    VkFormat colour, bool depth) :
+    VkFormat colour, bool depth, bool sampledDepth) :
     device_(device),
     format_(colour),
     image_(VK_NULL_HANDLE),
@@ -26,7 +26,8 @@ RenderTarget::RenderTarget(const boost::shared_ptr<Device>& device, uint32_t wid
     view_(VK_NULL_HANDLE),
     sampler_(VK_NULL_HANDLE),
     extent_(),
-    wantsDepth_(depth) {
+    wantsDepth_(depth),
+    sampledDepth_(sampledDepth) {
     create(width, height);
 }
 
@@ -147,7 +148,7 @@ void RenderTarget::create(uint32_t width, uint32_t height) {
     if (wantsDepth_) {
         // a depth buffer is the same image at the same size whoever is drawing into it, so
         // a target's is one of those rather than a second implementation of the same thing
-        depth_ = boost::make_shared<DepthBuffer>(device_, width, height);
+        depth_ = boost::make_shared<DepthBuffer>(device_, width, height, sampledDepth_);
     }
 
     extent_.width = width;
@@ -224,6 +225,30 @@ VkImageView RenderTarget::depthView() const noexcept {
  **/
 VkFormat RenderTarget::depthFormat() const noexcept {
     return depth_ ? depth_->format() : VK_FORMAT_UNDEFINED;
+}
+
+/**
+ **/
+bool RenderTarget::sampledDepth() const noexcept {
+    return sampledDepth_ && depth_ && depth_->sampled();
+}
+
+/**
+ **/
+Texture RenderTarget::depthTexture() const {
+    Texture texture;
+    if (!sampledDepth()) {
+        return texture;
+    }
+    texture.image = depth_->image();
+    texture.view = depth_->view();
+    texture.sampler = depth_->sampler();
+    texture.extent = depth_->extent();
+    // borrowed the same way the colour image is - the buffer owns them and rebuilds them
+    // whenever the target is resized
+    texture.memory = VK_NULL_HANDLE;
+    texture.owned = false;
+    return texture;
 }
 
 /**

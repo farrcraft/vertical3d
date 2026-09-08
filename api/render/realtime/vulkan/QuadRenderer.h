@@ -108,6 +108,20 @@ class QuadRenderer final {
     TextureHandle texture(const RenderTarget& target);
 
     /**
+     * Register a render target's depth image, so that a draw can sample what a pass tested
+     * against rather than what it painted - which is the read half of a shadow map.
+     *
+     * The same borrowed contract, and the same rule about registering again after a
+     * recreate(). A target built without a depth image, or with one it was not told would
+     * be sampled, has nothing to register: it comes back as the white texture, because a
+     * descriptor set written against an image with no sampled usage is undefined and a
+     * flat white shadow map is a scene that is merely unshadowed.
+     *
+     * @return the handle to draw with
+     **/
+    TextureHandle depthTexture(const RenderTarget& target);
+
+    /**
      * @return the 1x1 white texture an untextured quad is drawn against
      **/
     TextureHandle white() const noexcept;
