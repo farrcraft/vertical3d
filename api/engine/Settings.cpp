@@ -177,7 +177,31 @@ bool Settings::flag(const std::string& key, bool fallback) const {
 
 /**
  **/
-void Settings::set(const std::string& key, const boost::json::value& value) {
+void Settings::set(const std::string& key, const std::string& value) {
+    entries_[key] = value;
+}
+
+/**
+ **/
+void Settings::set(const std::string& key, const char* value) {
+    entries_[key] = value;
+}
+
+/**
+ **/
+void Settings::set(const std::string& key, double value) {
+    entries_[key] = value;
+}
+
+/**
+ **/
+void Settings::set(const std::string& key, int value) {
+    entries_[key] = value;
+}
+
+/**
+ **/
+void Settings::set(const std::string& key, bool value) {
     entries_[key] = value;
 }
 

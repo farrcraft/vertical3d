@@ -349,6 +349,11 @@ it.
 
 ### Step 5 — Pong remembers what it was told
 
+**Landed**, with the org and app recorded in
+[Architecture.md](../Architecture.md) where the next app will look. Verified by running it:
+rebound Player 1 Up to `j` through the menu, confirmed the document, restarted and confirmed
+`j` moves the paddle and `w` no longer does, deleted the document and confirmed `w` does again.
+
 In [`pong/src/PongEngine.cxx`](../../pong/src/PongEngine.cxx).
 
 `rebindPaddleKey` already calls `rebind()`. It gains a `set()` and a `save()`; `initialize()` gains

@@ -52,6 +52,23 @@ An app that reimplements one of these has diverged rather than customised.
 window config is not guarded**: `initialize` reads `width` and `height` with `at()`, so a
 `window.json` naming neither throws.
 
+## Where a player's files go
+
+`v3d::engine::appPath(argv[0])` is where an app reads what it shipped with;
+`v3d::engine::userPath(org, app)` is where it writes what the player chose, and it creates
+the directory. `engine::Settings` is the document in there: an overlay of what was changed,
+so deleting it is a reset and a setting nobody touched keeps tracking the shipped value.
+Written whole or not at all, per
+[ADR-0041](adr/0041-a-document-is-written-whole-or-not-at-all.md).
+
+**The org is `Vertical3D` and the app is its own name**, as pong uses them. Neither can change
+once an app has shipped: they are the directory, and a new pair orphans every existing
+player's settings.
+
+The schema of the document is the app's. `Settings` knows a key, a value and a version;
+applying a setting is `Engine::rebind()` or `Window::request()`, and pong's
+`applyStoredBindings()` is the reference for what an app does with what it read.
+
 ## Rendering
 
 Window → Engine3D → Context3D → Frame → Pass → DrawItem, one of each. An app fills a

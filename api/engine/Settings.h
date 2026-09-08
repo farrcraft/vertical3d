@@ -98,10 +98,29 @@ class Settings final {
     bool flag(const std::string& key, bool fallback) const;
 
     /**
-     * Store one setting. Takes a json value rather than an overload per type because a
-     * const char* argument binds to a bool before it binds to a std::string.
+     * Store one setting, in the kind the matching read gives back.
+     *
+     * The const char* overload is not redundant: without it a string literal binds to the
+     * bool one, because a pointer converts to bool by a standard conversion and to a
+     * std::string only by a user defined one.
      **/
-    void set(const std::string& key, const boost::json::value& value);
+    void set(const std::string& key, const std::string& value);
+
+    /**
+     **/
+    void set(const std::string& key, const char* value);
+
+    /**
+     **/
+    void set(const std::string& key, double value);
+
+    /**
+     **/
+    void set(const std::string& key, int value);
+
+    /**
+     **/
+    void set(const std::string& key, bool value);
 
     /**
      * Forget one setting, so it tracks the shipped default again.
