@@ -9,14 +9,23 @@ every phase is closed it moves to [completed/](completed/), and any open item it
 moves to [TODO.md](../TODO.md). The plan itself stays, because the reasoning behind an ordering
 outlives the schedule.
 
-[GameFoundations.md](GameFoundations.md) **is open**, drafted on 2026-09-07 against this tree from
-outside it and staged here the same day. Thirteen steps taking up what a game needs from these
-libraries that a demo does not: a document written whole or not at all
-([ADR-0041](../adr/0041-a-document-is-written-whole-or-not-at-all.md)), a textured quad in world
-space ([ADR-0042](../adr/0042-a-textured-quad-in-world-space.md)), and the halves of `api/ui` and
-`api/audio` that stop short. Its ordering matters because the groups are largely independent — four
-of them, and only two have an order inside — so the one defect it carries, an editor save that
-truncates the previous project before writing the new one, does not wait behind the structural work.
+[completed/GameFoundations.md](completed/GameFoundations.md) was drafted on 2026-09-07 against
+this tree from outside it, and staged and closed here the same day. Thirteen steps taking up
+what a game needs from these libraries that a demo does not: a document written whole or not at
+all ([ADR-0041](../adr/0041-a-document-is-written-whole-or-not-at-all.md)), a textured quad in
+world space ([ADR-0042](../adr/0042-a-textured-quad-in-world-space.md)), and the halves of
+`api/ui` and `api/audio` that stop short. Its ordering mattered because the groups were largely
+independent — four of them, and only two with an order inside — so the one defect it carried, an
+editor save that truncated the previous project before writing the new one, did not wait behind
+the structural work.
+
+Three things came out differently. Step 8 gave `Keys::press` an argument for whether shift is
+held, because a key name carries no modifier and `api/ui` cannot ask `api/input` for one without
+taking SDL into a library that needs no window to test. Step 12 landed wholly in `api/config`,
+because what a sprite sheet resolves to is a texture handle the app already holds. And step 13
+found, while verifying that pong still played its sounds, that pong has not played a sound in
+some time and did not before the change either — carried to [TODO.md](../TODO.md) rather than
+fixed here.
 
 [completed/UiConsolidation.md](completed/UiConsolidation.md) was drafted on 2026-09-06 out of an
 architecture review of `api/ui` and closed on 2026-09-07. Fourteen steps over a library that

@@ -1,13 +1,13 @@
 # Game Foundations — Writing A Document, A Quad In World Space, And The Halves That Stop Short
 
-Drafted 2026-09-07 against this tree from outside it, and staged here the same day, **open**. Thirteen
+Drafted 2026-09-07 against this tree from outside it, and staged and **closed** here the same day. Thirteen
 steps across `api/asset`, `api/engine`, `api/event`, `api/render`, `api/ui` and `api/audio`. One of
 them is a defect in an app that ships in this tree today, one is a feature this tree shipped and
 cannot finish, and the rest are the shape of what a *game* needs from these libraries that a demo
 does not.
 
 The prompting case is the same game as
-[UiFoundations](completed/UiFoundations.md) — cozy, built against the api in another repository —
+[UiFoundations](UiFoundations.md) — cozy, built against the api in another repository —
 now planning the milestones after its menus. **But the reason to do this here rather than there is
 that almost none of it is that game's alone.** The editor writes a project file with
 `std::ios::trunc` and no temp file, so an interrupted save destroys the previous project. Pong's
@@ -26,12 +26,12 @@ linked from here, because those paths do not resolve from this one.
 
 ### Nothing in the api writes a document
 
-[`asset::Json`](../../api/asset/Json.h) holds a parsed `boost::json::object` and hands it out.
-[`asset::JsonFile`](../../api/asset/JsonFile.h) opens a file and reads it. `config::Config` resolves
+[`asset::Json`](../../../api/asset/Json.h) holds a parsed `boost::json::object` and hands it out.
+[`asset::JsonFile`](../../../api/asset/JsonFile.h) opens a file and reads it. `config::Config` resolves
 a document by type. **There is no write path anywhere in `api/asset`**, and the tree has one
 consumer that needs one and has built its own:
 
-[`editor/scene/Project.cxx`](../../vertical3d/src/scene/Project.cxx) writes a versioned JSON
+[`editor/scene/Project.cxx`](../../../vertical3d/src/scene/Project.cxx) writes a versioned JSON
 project — a `version` field, a name, a mesh array — through 133 lines of pretty-printer in an
 anonymous namespace and then:
 
@@ -53,7 +53,7 @@ because inspectability was worth more to it than throughput. A third copy is wha
 
 ### A player's settings have a path and no store
 
-[UiFoundations](completed/UiFoundations.md) closed the first half: `engine::userPath(org, app)`
+[UiFoundations](UiFoundations.md) closed the first half: `engine::userPath(org, app)`
 says where a player's files go, creates the directory, and is safe before `SDL_Init`. Nothing uses
 it.
 
@@ -62,7 +62,7 @@ will answer it the same way: read one small document, apply what it holds over t
 defaults, write it back when something changes. **Pong is the proof that the missing half is
 missing.** Its Options menu has four `key_input` items; since UiFoundations they capture a key and
 `engine::Engine::rebind()` makes it take effect; quit the app and all four are gone. The
-[rebind() docstring says so itself](../../api/engine/Engine.h) — *"What is not done here is
+[rebind() docstring says so itself](../../../api/engine/Engine.h) — *"What is not done here is
 remembering it across runs. A binding lives as long as the process unless the app writes it
 somewhere, which engine::userPath() says where."*
 
@@ -70,9 +70,9 @@ That is not a game's problem. It is a sentence in an api header describing a hol
 
 ### `MouseButton` drops the position SDL gave it
 
-[`ui::Cursor::press(point)`](../../api/ui/Cursor.h) takes a point.
-[`event::MouseButton`](../../api/event/MouseButton.h) carries a button index and an edge and no
-position. [`input::Mouse::handleEvent`](../../api/input/Mouse.cpp) reads `event.button.x` and
+[`ui::Cursor::press(point)`](../../../api/ui/Cursor.h) takes a point.
+[`event::MouseButton`](../../../api/event/MouseButton.h) carries a button index and an edge and no
+position. [`input::Mouse::handleEvent`](../../../api/input/Mouse.cpp) reads `event.button.x` and
 `event.button.y` — the position SDL puts on every button event — writes them into its own
 `MouseState`, and then constructs the dispatched event without them:
 
@@ -88,18 +88,18 @@ must track the last `event::MouseMotion` itself** to reconstruct a number this l
 stored and discarded three lines earlier. There are no such consumers in this tree yet, which is
 exactly why it should be fixed before there are several.
 
-[`MouseMotion`](../../api/event/MouseMotion.h) already carries a position and a delta. The
+[`MouseMotion`](../../../api/event/MouseMotion.h) already carries a position and a delta. The
 asymmetry is an oversight rather than a design.
 
 ### A ui with no tab order and a scrollbar that scrolls nothing
 
-Two entries on [TODO.md](../TODO.md), both declined for want of an app asking, and both now asked
+Two entries on [TODO.md](../../TODO.md), both declined for want of an app asking, and both now asked
 for by the same settings screen:
 
 - **The focus moves by press and by press alone**, so there is no tab order and a form cannot be
   filled in without a mouse. That is not only a gamepad problem: it is a text box a keyboard user
   cannot leave, and a check box a screen reader has no path to.
-- **A `Scrollbar` scrolls nothing.** [`SelectList`](../../api/ui/component/SelectList.h) owns an
+- **A `Scrollbar` scrolls nothing.** [`SelectList`](../../../api/ui/component/SelectList.h) owns an
   `offset()` and a `content()` and scrolls itself; `Scrollbar` owns a range and a thumb and knows
   about no list. Joining them is a dozen lines of arithmetic, and the tree left it as the app's
   *"until an app asks upstream for the component"*. A resolution list and a key bindings list are
@@ -110,13 +110,13 @@ containers the app does not own. The scrollbar half can be, twice, badly.
 
 ### Word wrap exists once, privately, in the wrong library half
 
-[`Immediate.cpp`](../../api/ui/Immediate.cpp) has a 25-line greedy `wrap()` in an anonymous
+[`Immediate.cpp`](../../../api/ui/Immediate.cpp) has a 25-line greedy `wrap()` in an anonymous
 namespace, tested through `ImmediateTest`, and documented down to which of the two wrong answers it
 gives for a word wider than the line. It is good code and the retained component tree cannot reach
-it: [`component::Label`](../../api/ui/component/Label.h) holds a `std::string` and
+it: [`component::Label`](../../../api/ui/component/Label.h) holds a `std::string` and
 `ComponentRenderer` draws *"one line of text at the position it holds"*.
 
-[UserInterface.md](../UserInterface.md) says the two ways to write a ui are for different jobs and
+[UserInterface.md](../../UserInterface.md) says the two ways to write a ui are for different jobs and
 that a hud belongs to the retained one. A hud, a tooltip, an item description and a line of
 dialogue are all more than one line, and all four are on the consuming game's roadmap. This is a
 helper moving up a level, not a feature.
@@ -128,13 +128,13 @@ game drawn in a projection:
 
 | | space | drawn through |
 |---|---|---|
-| [`Canvas`](../../api/render/realtime/Canvas.h) | canvas pixels | its own orthographic projection, ignoring the pass camera |
-| [`LineCanvas`](../../api/render/realtime/LineCanvas.h) | world | the camera the pass carries |
+| [`Canvas`](../../../api/render/realtime/Canvas.h) | canvas pixels | its own orthographic projection, ignoring the pass camera |
+| [`LineCanvas`](../../../api/render/realtime/LineCanvas.h) | world | the camera the pass carries |
 
 So a rectangle can be textured or it can be in the world, and not both.
-[ADR-0005](../adr/0005-one-batched-quad-primitive.md) is the reason — one batched quad primitive,
+[ADR-0005](../../adr/0005-one-batched-quad-primitive.md) is the reason — one batched quad primitive,
 and the primitive was built for a ui. It has held well: a panel, a sprite and a glyph are one
-pipeline, and [ADR-0036](../adr/0036-text-is-a-distinct-kind-of-quad.md) amended it without
+pipeline, and [ADR-0036](../../adr/0036-text-is-a-distinct-kind-of-quad.md) amended it without
 splitting it.
 
 What it does not cover is a sprite standing on a ground plane. The consuming game has settled, in a
@@ -143,7 +143,7 @@ in it is a textured quad at a world position, sorted by depth. Today that app wo
 world to screen itself, every frame, per sprite, and then hand the result to a canvas that has its
 own idea of what the projection is — reimplementing the camera it already has.
 
-This tree wants the same thing from the other direction and says so on [TODO.md](../TODO.md):
+This tree wants the same thing from the other direction and says so on [TODO.md](../../TODO.md):
 *"there is no world space filled primitive, so `Overlay.h` outlines a tile and cannot fill one. A
 filled highlight wants a third primitive beside the quad and the line, which is a decision rather
 than an addition."* `grid::Overlay` has no consumer today and odyssey draws no highlight, so this
@@ -152,8 +152,8 @@ rather than from a sprite, and that is the argument for settling it once.
 
 ### A sprite sheet has a packer and no reader
 
-[`image::TextureAtlas`](../../api/image/TextureAtlas.h) packs regions and is what `api/font` builds
-a glyph atlas with. [`QuadRenderer::texture(image)`](../../api/render/realtime/vulkan/QuadRenderer.h)
+[`image::TextureAtlas`](../../../api/image/TextureAtlas.h) packs regions and is what `api/font` builds
+a glyph atlas with. [`QuadRenderer::texture(image)`](../../../api/render/realtime/vulkan/QuadRenderer.h)
 uploads one. `Canvas::rect` takes a uv pair. Every piece of drawing a sprite out of a sheet is
 present.
 
@@ -164,7 +164,7 @@ are three.
 
 ### Audio can start a sound and cannot stop it
 
-[`audio::Engine`](../../api/audio/Engine.h) is `initialize`, `load`, `addClip`, `playClip`. That is
+[`audio::Engine`](../../../api/audio/Engine.h) is `initialize`, `load`, `addClip`, `playClip`. That is
 the whole surface, and `playClip` is:
 
 ```cpp
@@ -187,18 +187,18 @@ reaches past all of it to `MIX_PlayAudio`, the convenience call the header descr
 
 ## Decisions
 
-Recorded in [adr/](../adr/), not here. Two new records; the numbers are the next free at drafting
-and [adr/README.md](../adr/README.md) is the authority if something takes them first.
+Recorded in [adr/](../../adr/), not here. Two new records; the numbers are the next free at drafting
+and [adr/README.md](../../adr/README.md) is the authority if something takes them first.
 
 | ADR | Decision |
 |---|---|
 | **0041** | A document is written whole or not at all — written by step 1 |
 | **0042** | A textured quad in world space, and how it relates to ADR-0005 — written by step 10 |
-| [0005](../adr/0005-one-batched-quad-primitive.md) | One batched quad primitive — **amended or extended** by 0042, and step 10 is where which of the two is settled |
-| [0019](../adr/0019-the-ui-is-laid-out-by-what-draws-it.md) | The ui is laid out by what draws it — unchanged; steps 7 and 9 keep the `Measure`/`Write` seam |
-| [0020](../adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md) | An app resolves what a config names — unchanged; step 12's sheet resolves its image the same way a theme does |
-| [0027](../adr/0027-the-api-is-consumed-as-source.md) | The api is consumed as source — unchanged, and why a consuming game can be planned against unreleased api |
-| [0040](../adr/0040-a-key-goes-to-a-focused-component.md) | A key goes to a focused component — **extended** by step 8, which gives the focus a second way to move |
+| [0005](../../adr/0005-one-batched-quad-primitive.md) | One batched quad primitive — **amended or extended** by 0042, and step 10 is where which of the two is settled |
+| [0019](../../adr/0019-the-ui-is-laid-out-by-what-draws-it.md) | The ui is laid out by what draws it — unchanged; steps 7 and 9 keep the `Measure`/`Write` seam |
+| [0020](../../adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md) | An app resolves what a config names — unchanged; step 12's sheet resolves its image the same way a theme does |
+| [0027](../../adr/0027-the-api-is-consumed-as-source.md) | The api is consumed as source — unchanged, and why a consuming game can be planned against unreleased api |
+| [0040](../../adr/0040-a-key-goes-to-a-focused-component.md) | A key goes to a focused component — **extended** by step 8, which gives the focus a second way to move |
 
 ## What blocks what
 
@@ -222,7 +222,7 @@ nothing else; 13 touches only `api/audio`.
 **Step 3 is the defect and should not wait behind the rest of its group.** It needs step 2 and
 nothing after it, and until it lands the editor destroys a project on an interrupted save. Steps 4
 and 5 are the capability, and step 5 is the behaviour change that proves it, kept separate for the
-reason [UiFoundations](completed/UiFoundations.md) kept its step 6 separate: one concern per commit,
+reason [UiFoundations](UiFoundations.md) kept its step 6 separate: one concern per commit,
 and *the library can now do this* is a different concern from *this app now does it*.
 
 **Steps 10 to 12 are one concern in three commits**, the way that plan's steps 2, 4 and 5 were:
@@ -235,9 +235,9 @@ and every day it is not done is a day another app writes the workaround.
 
 ### Step 1 — ADR-0041, a document is written whole or not at all
 
-**Landed** as [ADR-0041](../adr/0041-a-document-is-written-whole-or-not-at-all.md).
+**Landed** as [ADR-0041](../../adr/0041-a-document-is-written-whole-or-not-at-all.md).
 
-The record comes first, per [sdlc.md](../sdlc.md).
+The record comes first, per [sdlc.md](../../sdlc.md).
 
 Small as decisions go, and worth one because it is a rule about every file this tree will ever
 write — a project, a settings document, a save — and because the wrong answer is the one that is
@@ -264,13 +264,13 @@ hold, and the atomic byte write is not JSON's, so `JsonFile` was left alone. The
 `serializeDocument` rather than `serialize`, because an unqualified `serialize` on a
 `boost::json::value` resolves to boost's one-line one through ADL.
 
-In [`api/asset/`](../../api/asset/), beside `Json.h` and `JsonFile.h`.
+In [`api/asset/`](../../../api/asset/), beside `Json.h` and `JsonFile.h`.
 
 Two things, and they belong in one step because either alone is half a writer:
 
 - **The atomic write.** A `write(path, bytes)` that goes to `path.tmp` and renames, per step 1.
 - **The readable serializer.** Move the printer out of
-  [`editor/scene/Project.cxx`](../../vertical3d/src/scene/Project.cxx) verbatim — `scalar`,
+  [`editor/scene/Project.cxx`](../../../vertical3d/src/scene/Project.cxx) verbatim — `scalar`,
   `scalarArray`, `compact`, `indent`, `printNumber`, `printArray` and `print` — and give it a name
   in `v3d::asset`. It is already good and already has the reasoning in its comments; this is a move,
   not a rewrite, and reviewing it as a move is what keeps it one.
@@ -294,7 +294,7 @@ rename is made to fail, and leaves no `.tmp` behind either way.
 are byte for byte the same 2180-byte document, and the untouched-on-failure half is a case in
 `ProjectTest` rather than a one-off check.
 
-In [`editor/scene/Project.cxx`](../../vertical3d/src/scene/Project.cxx).
+In [`editor/scene/Project.cxx`](../../../vertical3d/src/scene/Project.cxx).
 
 `Project::write` drops its `std::ofstream` and its copy of the printer and calls step 2. The diff
 should be almost entirely deletions.
@@ -303,7 +303,7 @@ should be almost entirely deletions.
 and because this one deserves to be findable later by somebody asking when the editor stopped
 eating projects.
 
-**Verify by running it**, per [sdlc.md](../sdlc.md#4-verify): save a project, confirm the document
+**Verify by running it**, per [sdlc.md](../../sdlc.md#4-verify): save a project, confirm the document
 is byte-identical to what the old path produced, and confirm the file is untouched when the write
 is made to fail.
 
@@ -315,7 +315,7 @@ version. And `set()` takes a `boost::json::value` rather than an overload per ty
 `const char*` argument binds to `bool` before it binds to `std::string`; the reads keep
 distinct names — `text`, `number`, `integer`, `flag` — for the same reason.
 
-In [`api/engine/`](../../api/engine/), beside [`Application.h`](../../api/engine/Application.h),
+In [`api/engine/`](../../../api/engine/), beside [`Application.h`](../../../api/engine/Application.h),
 because that is where `userPath()` already is and because `api/engine` already names SDL3 as a
 package where `api/asset` deliberately does not.
 
@@ -350,11 +350,11 @@ it.
 ### Step 5 — Pong remembers what it was told
 
 **Landed**, with the org and app recorded in
-[Architecture.md](../Architecture.md) where the next app will look. Verified by running it:
+[Architecture.md](../../Architecture.md) where the next app will look. Verified by running it:
 rebound Player 1 Up to `j` through the menu, confirmed the document, restarted and confirmed
 `j` moves the paddle and `w` no longer does, deleted the document and confirmed `w` does again.
 
-In [`pong/src/PongEngine.cxx`](../../pong/src/PongEngine.cxx).
+In [`pong/src/PongEngine.cxx`](../../../pong/src/PongEngine.cxx).
 
 `rebindPaddleKey` already calls `rebind()`. It gains a `set()` and a `save()`; `initialize()` gains
 a `load()` and a `rebind()` per stored entry, immediately after `Engine::initialize()` returns.
@@ -374,8 +374,8 @@ answers the new key, delete the file, restart, confirm it answers the shipped on
 **Landed.** The constructor takes the point and the button case in `Mouse::handleEvent` was
 braced so it can be a `const` local rather than a member of the enclosing function.
 
-In [`api/event/MouseButton.h`](../../api/event/MouseButton.h) and
-[`api/input/Mouse.cpp`](../../api/input/Mouse.cpp).
+In [`api/event/MouseButton.h`](../../../api/event/MouseButton.h) and
+[`api/input/Mouse.cpp`](../../../api/input/Mouse.cpp).
 
 A `glm::vec2 position()` beside `button()` and `pressed()`, filled from the `event.button.x`/`y`
 that `Mouse::handleEvent` already reads two lines above where it builds the event.
@@ -398,9 +398,9 @@ than the `std::function<float(const std::string&)>` the private one took. A widt
 positive is one row rather than a row per word, which is what a percentage of a zero width
 parent would otherwise produce.
 
-In [`api/ui/`](../../api/ui/), out of [`Immediate.cpp`](../../api/ui/Immediate.cpp)'s anonymous
-namespace, and then [`component/Label.h`](../../api/ui/component/Label.h) and the label's draw path
-in [`ComponentRenderer`](../../api/ui/ComponentRenderer.cpp).
+In [`api/ui/`](../../../api/ui/), out of [`Immediate.cpp`](../../../api/ui/Immediate.cpp)'s anonymous
+namespace, and then [`component/Label.h`](../../../api/ui/component/Label.h) and the label's draw path
+in [`ComponentRenderer`](../../../api/ui/ComponentRenderer.cpp).
 
 Two halves:
 
@@ -410,7 +410,7 @@ Two halves:
 - **A label wraps when it has a width to wrap to.** A `Label` whose layout gives it an `Auto` width
   is one line, exactly as today. One that was given a width or a percentage wraps to it, and its
   `Auto` *height* becomes the rows it came to — which is the shape
-  [ADR-0039](../adr/0039-layout-never-reads-the-box-it-wrote.md) already describes for a component
+  [ADR-0039](../../adr/0039-layout-never-reads-the-box-it-wrote.md) already describes for a component
   that makes something of an axis itself, so nothing about layout changes to accommodate it.
 
 **Do not add a rich-text component.** A run of text with per-span colour, a link, an inline icon —
@@ -428,8 +428,8 @@ A key name carries no modifier, `api/ui` cannot reach `api/input` without taking
 and there is no key name for shift-tab — so the app that saw the key says. It defaults to
 false, which is forward-only tab for a caller that ignores it. No `tabIndex` was added.
 
-In [`api/ui/Engine.h`](../../api/ui/Engine.h) and [`Keys.cpp`](../../api/ui/Keys.cpp), extending
-[ADR-0040](../adr/0040-a-key-goes-to-a-focused-component.md).
+In [`api/ui/Engine.h`](../../../api/ui/Engine.h) and [`Keys.cpp`](../../../api/ui/Keys.cpp), extending
+[ADR-0040](../../adr/0040-a-key-goes-to-a-focused-component.md).
 
 `Engine::focus()` holds one component at a time and a press is the only thing that calls it. It
 needs a second caller: a traversal that finds the next `focusable()` component after the one that
@@ -456,12 +456,12 @@ is focused.
 one relationship there is. The draw path and `ui::Cursor` needed no change — both already went
 through `content()`, `page()`, `thumb()` and `drag()`, and those now answer from the list.
 
-In [`api/ui/component/Scrollbar.h`](../../api/ui/component/Scrollbar.h) and the renderer's draw path
+In [`api/ui/component/Scrollbar.h`](../../../api/ui/component/Scrollbar.h) and the renderer's draw path
 for it.
 
 A `Scrollbar` that has been told which component it scrolls reads that component's content extent
 and offset instead of its own, and writes the offset back when its thumb is dragged.
-[`SelectList`](../../api/ui/component/SelectList.h) already has both — `content()` is *"how tall all
+[`SelectList`](../../../api/ui/component/SelectList.h) already has both — `content()` is *"how tall all
 the rows come to, which is what a scrollbar's content is"*, which is a sentence written for a
 consumer that did not exist.
 
@@ -480,7 +480,7 @@ with nothing to scroll draws a track and no thumb, and a bar whose list has gone
 
 ### Step 10 — ADR-0042, a textured quad in world space
 
-**Landed** as [ADR-0042](../adr/0042-a-textured-quad-in-world-space.md): a third primitive,
+**Landed** as [ADR-0042](../../adr/0042-a-textured-quad-in-world-space.md): a third primitive,
 `realtime::WorldCanvas`, ordered by its caller, with a depth pipeline that tests and does not
 write. ADR-0005 is narrowed rather than amended, the way ADR-0011 narrowed it.
 
@@ -490,11 +490,11 @@ What it has to settle:
 
 - **A third primitive, or a mode of the quad.** `LineCanvas` is the precedent for the first: a
   separate canvas, world coordinates, drawn through the pass camera, and
-  [ADR-0011](../adr/0011-lines-are-the-second-primitive.md) is the record that made it a peer rather
+  [ADR-0011](../../adr/0011-lines-are-the-second-primitive.md) is the record that made it a peer rather
   than a variant. The second is `Canvas` learning that a batch is world space and taking its
   projection from the pass, which is a smaller change and a larger claim, since `Canvas` currently
   *is* the definition of screen space in this tree.
-- **Whether it amends [ADR-0005](../adr/0005-one-batched-quad-primitive.md) or sits beside it.**
+- **Whether it amends [ADR-0005](../../adr/0005-one-batched-quad-primitive.md) or sits beside it.**
   0005 says one batched quad primitive draws every 2D thing; 0036 amended it once already, for text.
   A world space quad is either the third amendment or the honest admission that 0005 was about the
   ui.
@@ -508,7 +508,7 @@ What it has to settle:
   with four world corners.
 
 Both of the tree's own wants should be in the context: a filled tile highlight for
-[`grid::Overlay`](../../api/grid/Overlay.h), and a sprite at a world position for the game this plan
+[`grid::Overlay`](../../../api/grid/Overlay.h), and a sprite at a world position for the game this plan
 came from.
 
 ### Step 11 — The world space quad
@@ -520,7 +520,7 @@ plane through all four view cameras, swapping two quads' submission order swaps 
 which while the geometry stays put, and voxel's terrain cuts the hills out of a wall of quads
 standing behind it. The validation layer was silent in every run.
 
-In [`api/render/realtime/`](../../api/render/realtime/), as step 10 settled it.
+In [`api/render/realtime/`](../../../api/render/realtime/), as step 10 settled it.
 
 The vertex format already carries position, uv and colour; the pipeline already samples a texture;
 the pass already carries a camera at set 0 because `LineCanvas` draws through it. Most of this step
@@ -533,11 +533,11 @@ is deciding it, which is why step 10 is separate and comes first.
   true.
 - A textured quad standing on a ground plane, drawn through a 3/4 isometric orthographic profile —
   which `config::CameraProfiles` reads and
-  [`vertical3d/data/cameras.json`](../../vertical3d/data/cameras.json) can carry — sorts correctly
+  [`vertical3d/data/cameras.json`](../../../vertical3d/data/cameras.json) can carry — sorts correctly
   behind and in front of another one.
 
 CI renders nothing, so this is a run-and-look step with the validation layer through the logger, per
-[sdlc.md](../sdlc.md#4-verify). The cpu half — the batching, the sort key, the geometry — is
+[sdlc.md](../../sdlc.md#4-verify). The cpu half — the batching, the sort key, the geometry — is
 testable without a device the way `Canvas` is, and should be.
 
 ### Step 12 — A sprite sheet is a document
@@ -550,14 +550,14 @@ the document survive the sheet being rescaled — the pixels are of the size wri
 document, not of whatever the file on disk turns out to be — and it is what lets a region
 running off the sheet be refused at load rather than sampling whatever the wrap mode decides.
 
-In [`api/config/`](../../api/config/) for the type, and `api/render` or `api/image` for what it
+In [`api/config/`](../../../api/config/) for the type, and `api/render` or `api/image` for what it
 resolves to — decide by which one can name the other without a new dependency edge, the way
-[`config::CameraProfiles`](../../api/config/CameraProfiles.h) was placed.
+[`config::CameraProfiles`](../../../api/config/CameraProfiles.h) was placed.
 
 A `sprite` config type beside `window`, `binding`, `ui`, `sound`, `camera` and `layout`: an image,
 and a table of names over pixel rectangles in it. Loaded like every other config, resolved to a
 texture by the app the way a theme's images are, per
-[ADR-0020](../adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md) — the library reads the
+[ADR-0020](../../adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md) — the library reads the
 document and never touches the asset manager.
 
 **Pixels in the document, uv at the call.** An author reads a sprite sheet in pixels and a shader
@@ -581,11 +581,11 @@ so a handle to a sound that has ended is refused rather than controlling the one
 track.
 
 **Found while verifying, and not this step's:** pong plays no sound at all and did not before
-this change either. Carried to [TODO.md](../TODO.md) with what the probing established — the
+this change either. Carried to [TODO.md](../../TODO.md) with what the probing established — the
 dispatcher, the event type and the trigger are all fine, and it is the member-function binding
 in `audio::Engine::initialize()` that never fires.
 
-In [`api/audio/`](../../api/audio/).
+In [`api/audio/`](../../../api/audio/).
 
 `playClip` moves off `MIX_PlayAudio` onto a track, and the four things a game needs follow from
 having one:
@@ -608,12 +608,12 @@ that nobody holds a handle to is still the common case — it just gets a track 
 
 **Tests.** `api/audio/tests/` exists and cannot open a device in CI, which bounds this: the clip
 table, the tag bookkeeping and the id lifetime are testable, and whether a sound is audible is not.
-That is the same line [Testing.md](../Testing.md) already draws around `audio::Engine::initialize()`.
+That is the same line [Testing.md](../../Testing.md) already draws around `audio::Engine::initialize()`.
 
 ## Considered and not done
 
 **Promoting `CommandDirectory` to `api/event`.**
-[ADR-0017](../adr/0017-a-command-is-a-name-in-a-context.md) rejected this with a stated condition —
+[ADR-0017](../../adr/0017-a-command-is-a-name-in-a-context.md) rejected this with a stated condition —
 *"it moves when a second app wants it"* — and the consuming game's M1 plan predicted its M2 would be
 the trigger. It read the code and concluded not yet: about twelve commands in two contexts that do
 not overlap, answered by two `if` chains, where the editor's directory exists to serve 76 commands
@@ -635,7 +635,7 @@ serve a case nobody has is the definition of speculative, and adding one later i
 builds"*, and it is genuinely library-shaped — `asset::Manager` owns the cache and the paths. It is left out
 because the hard half is not noticing a file changed, it is what a live `TextureHandle` does when
 the image behind it is replaced, and that question belongs after step 11 has settled what a texture
-is used for. Carry it to [TODO.md](../TODO.md) if this plan closes without it.
+is used for. Carry it to [TODO.md](../../TODO.md) if this plan closes without it.
 
 **Gamepad input.** `api/input` has a keyboard and a mouse. Step 8 removes the reason a gamepad
 *could not* drive a ui, which is the part that is this tree's; nothing on the consuming game's
@@ -650,8 +650,8 @@ answered and it should be answered there.
 
 Two corrections found while reading, neither of which is a step:
 
-- **`Canvas` has a `scale()` now.** [TODO.md](../TODO.md) and
-  [completed/UiFoundations.md](completed/UiFoundations.md) both carry *"`Canvas` still exposes
+- **`Canvas` has a `scale()` now.** [TODO.md](../../TODO.md) and
+  [completed/UiFoundations.md](UiFoundations.md) both carry *"`Canvas` still exposes
   `translate()` and no scale"* as an open item. `Canvas.h` declares `void scale(const glm::vec2&)`.
   Whichever landed it did not close the note.
 - **`JsonFile::open` uses `fopen_s`**, which is MSVC's, as do all four image readers and writers.
