@@ -153,7 +153,12 @@ class Immediate {
     static const std::uint64_t retention = 60;
 
     /**
-     * Open a window at a place the caller decides - this layer does not drag one.
+     * Open a window at a place the caller decides, and that its title bar moves it from.
+     *
+     * The position is the anchor rather than the answer: a drag is kept as a displacement
+     * from it, so a window the caller repositions every frame follows and keeps the nudge
+     * it was given. A press on the bar that stays put folds the window and one that
+     * travels drags it, per ADR-0045.
      *
      * What goes in it is cut off at the window's edges and scrolls when there is more of
      * it than fits, per ADR-0037. How much there is is what last frame's content came to,
@@ -296,8 +301,18 @@ class Immediate {
     /**
      * Open a table of a fixed number of columns. Name each with column() before the first
      * headerRow() or nextRow().
+     *
+     * A table given a height scrolls its rows inside it and keeps its header above them,
+     * per ADR-0046: it clips to that height, takes the wheel from whatever it is drawn in
+     * and draws a bar down its own right. One given no height is as tall as its rows and
+     * scrolls with whatever holds it, which is what a short table wants.
+     *
+     * The room a bar would take is reserved whether or not there is anything to scroll,
+     * so the columns of a table that gains a row do not re-flow.
+     *
+     * @param height how tall the table is, or zero to be as tall as its rows
      **/
-    bool table(const std::string& id, unsigned int columns);
+    bool table(const std::string& id, unsigned int columns, float height = 0.0f);
 
     /**
      * Name a column and say how wide it is. A width of zero shares out what the other
@@ -307,6 +322,9 @@ class Immediate {
 
     /**
      * Draw the header row - the column names on a band of their own.
+     *
+     * In a table that scrolls, the band is drawn above the region rather than in it, so
+     * the rows pass under it rather than over it.
      **/
     void headerRow();
 
@@ -341,9 +359,11 @@ class Immediate {
 
         std::uint64_t frame;  /**< the last frame that asked for it, which is what ages it out **/
         unsigned int tab;  /**< which tab of a strip is selected **/
-        float scroll;      /**< how far the window's content is scrolled up, in pixels **/
+        float scroll;      /**< how far the content is scrolled up, in pixels **/
         float content;     /**< how tall what it held came to last frame **/
+        glm::vec2 offset;  /**< how far a window has been dragged from where the caller put it **/
         bool collapsed;    /**< whether a window is folded to its title bar **/
+        bool dragging;     /**< whether the press on its bar has travelled far enough to move it **/
     };
 
 
@@ -412,6 +432,13 @@ class Immediate {
         std::vector<float> widths;
         float left;             /**< where the row starts, which columns are measured from **/
         unsigned int column;    /**< which column the pen is in **/
+        Id id;                  /**< whose scroll and content its rows are **/
+        Id scroll;              /**< the id its bar answers the cursor as **/
+        float right;            /**< the row right to go back to, and the region's right edge **/
+        float height;           /**< how tall it is, or zero for a table that does not scroll **/
+        float top;              /**< where it starts, which its height is measured from **/
+        float contentTop;       /**< where its rows start, below the header **/
+        bool clipped;
     };
 
     /**
@@ -453,14 +480,29 @@ class Immediate {
     void label(const std::string& line, const glm::vec2& min, const glm::vec2& size, const glm::vec4& colour) const;
 
     /**
-     * Draw the bar down the right of a window that has more content than it shows, and
+     * Draw the bar down the right of a region that has more content than it shows, and
      * scroll it where the cursor drags the thumb to.
      *
-     * @param view how much of the content the window shows, in pixels
+     * A window and a table each have one, so the region is passed rather than read: the
+     * bar is drawn inside the rectangle given, against the right of it.
+     *
+     * @param id what the thumb answers the cursor as
+     * @param min the top left of the region the bar runs down
+     * @param max its bottom right, which the bar is drawn against
+     * @param view how much of the content the region shows, in pixels
      * @param span how much of it it does not, which is the furthest it can be scrolled
-     * @param scroll read and written - where the window is scrolled to
+     * @param scroll read and written - where the region is scrolled to
      **/
-    void scrollbar(float view, float span, float* scroll);
+    void scrollbar(Id id, const glm::vec2& min, const glm::vec2& max, float view, float span,
+        float* scroll);
+
+    /**
+     * Open a scrolling table's region, at the pen, the first time a row asks for one.
+     *
+     * Called from nextRow() rather than from table(), because that is what a header row
+     * and a table without one have in common: the region starts wherever the rows do.
+     **/
+    void tableBody();
 
     /**
      * @return how far along the row a column starts
@@ -494,6 +536,7 @@ class Immediate {
     Id hovered_;   /**< what the cursor was on last frame, which is what answers this one **/
     Id hovering_;  /**< what it is on this frame, which the next one will use **/
     Id active_;    /**< what a press went down on **/
+    glm::vec2 pressAt_;  /**< and where it went down, which is what a travel is measured from **/
     float nextWidth_;  /**< what the next widget was told to be, or nothing **/
 
     std::vector<Id> ids_;

@@ -20,6 +20,9 @@
 
 #include "../render/realtime/Canvas.h"
 
+#include <glm/common.hpp>
+#include <glm/geometric.hpp>
+
 namespace v3d::ui {
 
 namespace {
@@ -48,6 +51,13 @@ const float scrubRate = 0.25f;
  * what a desktop scrolls by, and reads as a deliberate move rather than a nudge.
  **/
 const float wheelRows = 3.0f;
+
+/**
+ * How far a press on a title bar has to travel before it moves the window instead of
+ * folding it, per ADR-0045. Wide enough that a hand resting on the button does not drag,
+ * and narrow enough that a move that was meant is never read as a fold.
+ **/
+const float dragThreshold = 3.0f;
 
 /**
  * The side of the square a bullet is drawn in, as a fraction of a row.
@@ -80,7 +90,9 @@ frame(0),
 tab(0),
 scroll(0.0f),
 content(0.0f),
-collapsed(false) {
+offset(0.0f, 0.0f),
+collapsed(false),
+dragging(false) {
 }
 
 Immediate::Dressing::Dressing() noexcept :
@@ -142,7 +154,14 @@ taken(false) {
 Immediate::Table::Table() noexcept :
 open(false),
 left(0.0f),
-column(0) {
+column(0),
+id(0),
+scroll(0),
+right(0.0f),
+height(0.0f),
+top(0.0f),
+contentTop(0.0f),
+clipped(false) {
 }
 
 Immediate::Immediate(const Measure& measure, const Write& write) :
@@ -154,6 +173,7 @@ Immediate::Immediate(const Measure& measure, const Write& write) :
     hovered_(0),
     hovering_(0),
     active_(0),
+    pressAt_(0.0f, 0.0f),
     nextWidth_(0.0f),
     frame_(0),
     disabled_(0),
@@ -214,6 +234,7 @@ void Immediate::begin(v3d::render::realtime::Canvas* canvas, const Input& input)
     wheeled_ = 0;
     tabs_.open = false;
     table_.open = false;
+    table_.clipped = false;
     row_.sameLine = false;
     row_.margin = 0.0f;
     row_.penY = 0.0f;
@@ -320,6 +341,7 @@ Immediate::Reaction Immediate::interact(Id id, const glm::vec2& min, const glm::
     reaction.hovered = within && hovered_ == id;
     if (reaction.hovered && input_.pressed) {
         active_ = id;
+        pressAt_ = input_.cursor;
     }
     reaction.held = active_ == id;
     reaction.clicked = reaction.held && reaction.hovered && input_.released;
@@ -356,9 +378,31 @@ bool Immediate::window(const std::string& title, const glm::vec2& position, cons
     const Id id = identify(title);
     Retained& retained = retain(id);
 
-    const glm::vec2 min = position;
-    const glm::vec2 barMax(position.x + size.x, position.y + dressing_.barHeight);
-    const glm::vec2 max = retained.collapsed ? barMax : position + size;
+    // the title bar both folds the window and moves it, told apart by whether the press
+    // travelled - ADR-0045. The move is applied before the window is placed, so a dragged
+    // window is under the cursor on the frame it moved rather than the one after. The
+    // pixels spent deciding are not applied, so a drag lags by the threshold once
+    if (active_ != id) {
+        retained.dragging = false;
+    } else {
+        if (!retained.dragging && glm::length(input_.cursor - pressAt_) > dragThreshold) {
+            retained.dragging = true;
+        }
+        if (retained.dragging) {
+            retained.offset += drag_;
+        }
+    }
+
+    // the drag is kept as a displacement rather than a position, so a caller that moves its
+    // window every frame is followed rather than fought. The bar is kept on the canvas
+    // because the bar is the only thing that drags one back
+    const glm::vec2 room = glm::max(glm::vec2(static_cast<float>(canvas_->width()) - size.x,
+        static_cast<float>(canvas_->height()) - dressing_.barHeight), glm::vec2(0.0f, 0.0f));
+    const glm::vec2 min = glm::clamp(position + retained.offset, glm::vec2(0.0f, 0.0f), room);
+    retained.offset = min - position;
+
+    const glm::vec2 barMax(min.x + size.x, min.y + dressing_.barHeight);
+    const glm::vec2 max = retained.collapsed ? barMax : min + size;
 
     glm::vec4 background = dressing_.panel;
     background.a *= std::clamp(alpha, 0.0f, 1.0f);
@@ -367,10 +411,10 @@ bool Immediate::window(const std::string& title, const glm::vec2& position, cons
         glm::vec2(barMax.x - dressing_.borderWidth, barMax.y), dressing_.radius, dressing_.titleBar);
     label(title, min + glm::vec2(dressing_.padding, 0.0f), glm::vec2(size.x, dressing_.barHeight), dressing_.text);
 
-    // the title bar is what folds the window away, which is the only thing this layer lets
-    // a window be dragged or resized by
+    // a press that stayed put folds; one that moved has already moved the window this
+    // frame and does not fold it as well
     const Reaction reaction = interact(id, min, barMax);
-    if (reaction.clicked) {
+    if (reaction.clicked && !retained.dragging) {
         retained.collapsed = !retained.collapsed;
     }
     // a window takes the cursor from everything drawn before it, so a click meant for the
@@ -438,7 +482,9 @@ void Immediate::endWindow() {
         const float view = std::max(window_.bodyMax.y - window_.contentTop, 0.0f);
         const float span = std::max(retained.content - view, 0.0f);
         if (window_.scrolls) {
-            scrollbar(view, span, &retained.scroll);
+            scrollbar(window_.scroll,
+                glm::vec2(window_.bodyMax.x - dressing_.scrollbarWidth, window_.contentTop),
+                window_.bodyMax, view, span, &retained.scroll);
         }
         if (wheeled_ == window_.id && input_.wheel != 0.0f) {
             // a notch away from the reader shows what is above, which is a smaller offset
@@ -453,9 +499,8 @@ void Immediate::endWindow() {
     row_.sameLine = false;
 }
 
-void Immediate::scrollbar(float view, float span, float* scroll) {
-    const glm::vec2 min(window_.bodyMax.x - dressing_.scrollbarWidth, window_.contentTop);
-    const glm::vec2 max(window_.bodyMax.x, window_.bodyMax.y);
+void Immediate::scrollbar(Id id, const glm::vec2& min, const glm::vec2& max, float view,
+    float span, float* scroll) {
     const float track = max.y - min.y;
     if (track <= 0.0f || view <= 0.0f) {
         return;
@@ -467,7 +512,7 @@ void Immediate::scrollbar(float view, float span, float* scroll) {
         std::min(component::Scrollbar::minimumThumb, track), track);
     const float room = track - length;
 
-    const Reaction reaction = interact(window_.scroll, min, max);
+    const Reaction reaction = interact(id, min, max);
     if (reaction.held && room > 0.0f) {
         // the cursor holds the middle of the thumb, so what is under it stays under it
         *scroll = span * std::clamp((input_.cursor.y - min.y - length * 0.5f) / room, 0.0f, 1.0f);
@@ -702,18 +747,56 @@ void Immediate::endTabBar() {
     tabs_.open = false;
 }
 
-bool Immediate::table(const std::string& id, unsigned int columns) {
+bool Immediate::table(const std::string& id, unsigned int columns, float height) {
     if (canvas_ == nullptr || columns == 0) {
         return false;
     }
+    table_.id = identify(id);
     pushId(id);
     table_.open = true;
     table_.headers.clear();
     table_.widths.assign(columns, 0.0f);
     table_.left = row_.margin;
+    table_.right = row_.right;
     table_.column = 0;
+    table_.height = std::max(height, 0.0f);
+    table_.top = row_.penY;
+    table_.contentTop = row_.penY;
+    table_.clipped = false;
+    table_.scroll = identify("scrollbar");
     row_.sameLine = false;
+
+    // the gutter is reserved for as long as the table has a height, whether or not there
+    // is anything to scroll yet, so that the columns do not re-flow when a row arrives -
+    // and so that the bar can be drawn the frame the content overflows rather than the one
+    // after, which is what a window's has to do. ADR-0046
+    if (table_.height > 0.0f) {
+        row_.right -= dressing_.scrollbarWidth + dressing_.spacing;
+    }
     return true;
+}
+
+void Immediate::tableBody() {
+    if (!table_.open || table_.height <= 0.0f || table_.clipped) {
+        return;
+    }
+    Retained& retained = retain(table_.id);
+    table_.contentTop = row_.penY;
+
+    const glm::vec2 min(table_.left, table_.contentTop);
+    const glm::vec2 max(table_.right, table_.top + table_.height);
+    const float view = std::max(max.y - min.y, 0.0f);
+    retained.scroll = std::clamp(retained.scroll, 0.0f, std::max(retained.content - view, 0.0f));
+
+    canvas_->clip(min, max);
+    table_.clipped = true;
+    row_.penY = table_.contentTop - retained.scroll;
+
+    // the wheel turns the innermost region under the cursor, so a table takes it from the
+    // window it is drawn in - the same rule that lets a window take it from one under it
+    if (inside(glm::vec2(table_.left, table_.top), max, input_.cursor)) {
+        wheeled_ = table_.id;
+    }
 }
 
 void Immediate::column(const std::string& label, float width) {
@@ -749,8 +832,11 @@ void Immediate::headerRow() {
     if (canvas_ == nullptr || !table_.open) {
         return;
     }
+    // the band runs the whole width of the table rather than the width its columns were
+    // given, so that a scrolling table's gutter is banded beside the names rather than
+    // notched out of them. The two are the same edge for a table that does not scroll
     const glm::vec2 min(table_.left, row_.penY);
-    const glm::vec2 max(row_.right, row_.penY + dressing_.lineHeight);
+    const glm::vec2 max(table_.right, row_.penY + dressing_.lineHeight);
     fillBox(canvas_, min, max, 0.0f, dressing_.titleBar);
     for (std::size_t index = 0; index < table_.headers.size(); index++) {
         const glm::vec2 corner(columnStart(static_cast<unsigned int>(index)) + dressing_.padding * 0.5f, min.y);
@@ -764,6 +850,9 @@ void Immediate::nextRow() {
     if (!table_.open) {
         return;
     }
+    // the rows are what the region holds, so the first of them is where it starts - which
+    // is below the header when there is one and at the top of the table when there is not
+    tableBody();
     table_.column = 0;
     row_.margin = columnStart(0);
     row_.sameLine = false;
@@ -784,8 +873,35 @@ void Immediate::endTable() {
     if (!table_.open) {
         return;
     }
+    if (table_.clipped) {
+        canvas_->unclip();
+        table_.clipped = false;
+
+        Retained& retained = retain(table_.id);
+        // the pen has the scroll taken out of it and the gap after the last row left in,
+        // so both go back before it is a height
+        retained.content = std::max(
+            row_.penY + retained.scroll - dressing_.spacing - table_.contentTop, 0.0f);
+
+        const float bottom = table_.top + table_.height;
+        const float view = std::max(bottom - table_.contentTop, 0.0f);
+        const float span = std::max(retained.content - view, 0.0f);
+        if (span > 0.0f) {
+            scrollbar(table_.scroll,
+                glm::vec2(table_.right - dressing_.scrollbarWidth, table_.contentTop),
+                glm::vec2(table_.right, bottom), view, span, &retained.scroll);
+        }
+        if (wheeled_ == table_.id && input_.wheel != 0.0f) {
+            retained.scroll = std::clamp(
+                retained.scroll - input_.wheel * dressing_.lineHeight * wheelRows, 0.0f, span);
+        }
+        // what follows the table is under the region rather than under the rows, which are
+        // as tall as they are however tall the table was asked to be
+        row_.penY = bottom + dressing_.spacing;
+    }
     table_.open = false;
     row_.margin = table_.left;
+    row_.right = table_.right;
     row_.sameLine = false;
     popId();
 }
