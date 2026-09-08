@@ -14,6 +14,7 @@
 #include "vulkan/PipelineCache.h"
 #include "vulkan/Presenter.h"
 #include "vulkan/QuadRenderer.h"
+#include "vulkan/WorldRenderer.h"
 #include "vulkan/Resources.h"
 #include "vulkan/Swapchain.h"
 #include "vulkan/Uploader.h"
@@ -87,6 +88,20 @@ class Context3D : public Context {
     bool hasLines() const noexcept;
 
     /**
+     * The world space quad primitive of ADR-0042, built on the first call and kept from
+     * then on. Lazy for the same reason the line renderer is.
+     *
+     * @return the renderer, which every world space quad draws through
+     * @throw std::runtime_error if its pipelines cannot be created
+     **/
+    boost::shared_ptr<vulkan::WorldRenderer> worldQuads();
+
+    /**
+     * @return whether a world quad renderer has been built, without building one
+     **/
+    bool hasWorldQuads() const noexcept;
+
+    /**
      * @return set 0, where each pass's camera is written and bound from - ADR-0008
      **/
     boost::shared_ptr<vulkan::FrameUniforms> frameUniforms() const;
@@ -139,6 +154,7 @@ class Context3D : public Context {
     VkFormat depthFormat_;
     boost::shared_ptr<vulkan::QuadRenderer> quads_;
     boost::shared_ptr<vulkan::LineRenderer> lines_;
+    boost::shared_ptr<vulkan::WorldRenderer> worldQuads_;
     // last, so that it is torn down first - nothing else may go away while a frame it
     // submitted is still in flight
     boost::shared_ptr<vulkan::Presenter> presenter_;

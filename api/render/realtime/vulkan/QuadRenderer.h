@@ -131,6 +131,23 @@ class QuadRenderer final {
      **/
     void endFrame() noexcept;
 
+    /**
+     * The descriptor set that binds a texture at set 1, created on first use and kept.
+     *
+     * Public because the world space quad of ADR-0042 samples through the same layout, so
+     * an atlas uploaded once serves both primitives out of one descriptor pool.
+     *
+     * @return the material to name on a draw item, or an unset handle for a texture this
+     *         does not hold
+     **/
+    MaterialHandle material(const TextureHandle& handle);
+
+    /**
+     * @return set 1's layout, which a second pipeline sampling a texture the same way
+     *         declares so that a material allocated here is compatible with it
+     **/
+    VkDescriptorSetLayout materialLayout() const noexcept;
+
  private:
     /**
      * Build the per material descriptor set layout. Set 0's belongs to FrameUniforms,
@@ -167,11 +184,6 @@ class QuadRenderer final {
      * The 1x1 white texture, so that an untextured quad needs no second pipeline.
      **/
     void createWhite();
-
-    /**
-     * The descriptor set that binds a texture at set 1, created on first use and kept.
-     **/
-    MaterialHandle material(const TextureHandle& handle);
 
     /**
      * Add a descriptor pool, because the last one is full or there is none.

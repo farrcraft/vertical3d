@@ -7,8 +7,9 @@ The decisions behind its shape are [ADR-0001](adr/0001-vulkan-replaces-opengl.md
 [ADR-0008](adr/0008-binding-by-update-frequency.md),
 [ADR-0009](adr/0009-colour-authored-in-display-space.md),
 [ADR-0010](adr/0010-meshes-are-owned-by-the-app.md),
-[ADR-0011](adr/0011-lines-are-the-second-primitive.md) and
-[ADR-0031](adr/0031-a-pass-draws-into-a-target-it-names.md). Those say why; this says what.
+[ADR-0011](adr/0011-lines-are-the-second-primitive.md),
+[ADR-0031](adr/0031-a-pass-draws-into-a-target-it-names.md) and
+[ADR-0042](adr/0042-a-textured-quad-in-world-space.md). Those say why; this says what.
 
 ## The chain of objects
 
@@ -230,6 +231,31 @@ without depth. That is the pass model choosing, not a flag on the renderer.
 Lines are one pixel wide. `wideLines` is an optional device feature and the device does not
 ask for it. The renderer is built on the first call to `Context3D::lines()`, the way the depth
 buffer is, so an app that draws no lines pays nothing for it.
+
+## World space quads
+
+The third primitive, per [ADR-0042](adr/0042-a-textured-quad-in-world-space.md): a textured
+rectangle with four world corners, for a sprite standing on a ground plane and for a filled
+tile highlight.
+
+- **`realtime::WorldCanvas`** accumulates quads over a modelview stack of `glm::mat4`, which
+  applies as vertices are added. A quad takes its four corners in perimeter order — the order
+  `grid::tileCorners` hands them out in — and is fanned from the first, so any convex quad
+  comes out whole. The stream cuts where the bound texture changes and nowhere else.
+- **`vulkan::WorldRenderer`** owns two pipelines and a pair of buffers per frame in flight, and
+  takes its textures and its set 1 descriptors from the `QuadRenderer` so that an atlas
+  uploaded once serves both primitives out of one descriptor pool.
+
+Positions are in world space through the pass camera at set 0, as lines are. **The order is
+the caller's**: quads are drawn in the order they were added, because what a quad's depth means
+is the game's — in an isometric projection a sprite is behind another when its feet are further
+up the ground plane, not when it is further from the camera. The depth variant therefore
+**tests without writing**, which is the third of the three answers the engine now has: lines
+test and write, ui quads do neither, world quads test only. So solid geometry hides a world
+quad and a world quad never hides another.
+
+There is no clip and no text branch. The renderer is built on the first call to
+`Context3D::worldQuads()`, the way the line renderer is.
 
 ## Shaders
 

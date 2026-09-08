@@ -7,6 +7,7 @@ v3d_add_api_library(render
 	"realtime/Handle.h" "realtime/Registry.h"
 	"realtime/Canvas.h" "realtime/Canvas.cpp"
 	"realtime/LineCanvas.h" "realtime/LineCanvas.cpp"
+	"realtime/WorldCanvas.h" "realtime/WorldCanvas.cpp"
 	"realtime/DrawItem.h" "realtime/DrawItem.cpp"
 	"realtime/Pass.h" "realtime/Pass.cpp"
 	"realtime/vulkan/Result.h" "realtime/vulkan/Result.cxx" 
@@ -30,7 +31,8 @@ v3d_add_api_library(render
 	"realtime/vulkan/PipelineBuilder.h" "realtime/vulkan/PipelineBuilder.cxx"
 	"realtime/vulkan/TextureFactory.h" "realtime/vulkan/TextureFactory.cxx"
 	"realtime/vulkan/QuadRenderer.h" "realtime/vulkan/QuadRenderer.cxx"
-	"realtime/vulkan/LineRenderer.h" "realtime/vulkan/LineRenderer.cxx")
+	"realtime/vulkan/LineRenderer.h" "realtime/vulkan/LineRenderer.cxx"
+	"realtime/vulkan/WorldRenderer.h" "realtime/vulkan/WorldRenderer.cxx")
 
 # The one batched quad primitive of ADR-0005. Compiled to SPIR-V and embedded rather than
 # loaded from disk - see v3d_add_shader in the root CMakeLists.
@@ -40,6 +42,10 @@ v3d_add_shader(v3dlib_render "shaders/quad.frag")
 # The line primitive of ADR-0011.
 v3d_add_shader(v3dlib_render "shaders/line.vert")
 v3d_add_shader(v3dlib_render "shaders/line.frag")
+
+# The world space quad primitive of ADR-0042.
+v3d_add_shader(v3dlib_render "shaders/world.vert")
+v3d_add_shader(v3dlib_render "shaders/world.frag")
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
 # Vulkan and SDL3 are PUBLIC because the realtime headers name their types outright -

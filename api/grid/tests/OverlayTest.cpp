@@ -15,8 +15,11 @@
 #include "../TileGrid.h"
 
 using v3d::grid::LineSink;
+using v3d::grid::QuadSink;
 using v3d::grid::TileCoord;
 using v3d::grid::TileGrid;
+using v3d::grid::fillTile;
+using v3d::grid::fillTiles;
 using v3d::grid::outlineGrid;
 using v3d::grid::outlineTile;
 using v3d::grid::tileCorners;
@@ -63,8 +66,34 @@ class Recorder {
     std::vector<Segment> segments_;
 };
 
+/**
+ * The quad counterpart of Recorder, for the filled half of the overlay.
+ **/
+class QuadRecorder {
+ public:
+    QuadSink sink() {
+        return [this](const std::array<glm::vec3, 4>& corners, const glm::vec4& colour) {
+            quads_.push_back(corners);
+            colours_.push_back(colour);
+        };
+    }
+
+    const std::vector<std::array<glm::vec3, 4>>& quads() const {
+        return quads_;
+    }
+
+    const std::vector<glm::vec4>& colours() const {
+        return colours_;
+    }
+
+ private:
+    std::vector<std::array<glm::vec3, 4>> quads_;
+    std::vector<glm::vec4> colours_;
+};
+
 constexpr glm::vec4 INTERIOR(0.3f, 0.3f, 0.3f, 1.0f);
 constexpr glm::vec4 BORDER(0.8f, 0.8f, 0.9f, 1.0f);
+constexpr glm::vec4 HIGHLIGHT(0.2f, 0.6f, 1.0f, 0.4f);
 
 };  // namespace
 
@@ -184,4 +213,45 @@ BOOST_AUTO_TEST_CASE(overlay_a_default_sink_draws_nothing_test) {
     // an empty std::function would be called through if it were not guarded
     outlineTile(grid, at(0, 0), BORDER, LineSink());
     outlineGrid(grid, INTERIOR, BORDER, LineSink());
+}
+
+/**
+ * A filled tile is the four corners the outline is drawn from, in the same order and at the
+ * same lift, so a fill and an outline of one tile land on each other rather than beside.
+ **/
+BOOST_AUTO_TEST_CASE(overlay_fills_a_tile_with_the_corners_it_outlines_test) {
+    const TileGrid grid(4, 4);
+    QuadRecorder recorder;
+
+    fillTile(grid, at(2, 1), HIGHLIGHT, recorder.sink());
+    BOOST_REQUIRE_EQUAL(recorder.quads().size(), 1u);
+    BOOST_CHECK(recorder.colours()[0] == HIGHLIGHT);
+
+    const std::array<glm::vec3, 4> expected = tileCorners(grid, at(2, 1));
+    for (std::size_t corner = 0; corner < expected.size(); ++corner) {
+        BOOST_CHECK_CLOSE(recorder.quads()[0][corner].x, expected[corner].x, 0.01f);
+        BOOST_CHECK_CLOSE(recorder.quads()[0][corner].y, expected[corner].y, 0.01f);
+        BOOST_CHECK_CLOSE(recorder.quads()[0][corner].z, expected[corner].z, 0.01f);
+    }
+}
+
+/**
+ * A tile off the grid fills nothing, and a run of them skips the ones that are rather than
+ * refusing the whole run - a movement range clipped by the board's edge is the common case.
+ **/
+BOOST_AUTO_TEST_CASE(overlay_fill_skips_tiles_off_the_grid_test) {
+    const TileGrid grid(4, 4);
+    QuadRecorder recorder;
+
+    fillTile(grid, at(-1, 0), HIGHLIGHT, recorder.sink());
+    fillTile(grid, at(4, 4), HIGHLIGHT, recorder.sink());
+    BOOST_CHECK_EQUAL(recorder.quads().size(), 0u);
+
+    const std::vector<TileCoord> range = { at(0, 0), at(-1, 0), at(1, 1), at(9, 9), at(2, 2) };
+    fillTiles(grid, range, HIGHLIGHT, recorder.sink());
+    BOOST_CHECK_EQUAL(recorder.quads().size(), 3u);
+
+    // an empty std::function would be called through if it were not guarded
+    fillTile(grid, at(0, 0), HIGHLIGHT, QuadSink());
+    fillTiles(grid, range, HIGHLIGHT, QuadSink());
 }

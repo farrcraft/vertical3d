@@ -37,6 +37,13 @@ font library, and a strip is hit tested against the bounds a draw left on it, pe
 cannot. The same is true of an app's own rules: `odyssey`'s suite covers its map format and the
 route across it, and stands up neither a window nor a device to do it.
 
+All three canvases are cpu side and are covered as such: `CanvasTest`, `LineCanvasTest` and
+`WorldCanvasTest` assert the batching, the transform stack and the geometry without a device.
+What none of them can assert is what the pipeline then does with it - that a world quad is
+hidden behind solid geometry and never behind another world quad, per
+[ADR-0042](adr/0042-a-textured-quad-in-world-space.md), is a run-and-look check like every
+other question below the recorder.
+
 Clipping is asserted where it is decided rather than where it takes effect: the cases check the
 rectangle a batch carries out of `Canvas`, out of `LineCanvas` and out of a ui draw, per
 [ADR-0037](adr/0037-clipping-is-a-scissor-the-batch-carries.md), and the `vkCmdSetScissor` that

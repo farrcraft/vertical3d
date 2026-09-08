@@ -171,6 +171,12 @@ void QuadRenderer::endFrame() noexcept {
 
 /**
  **/
+VkDescriptorSetLayout QuadRenderer::materialLayout() const noexcept {
+    return materialLayout_;
+}
+
+/**
+ **/
 void QuadRenderer::createWhite() {
     const unsigned char pixel[4] = {0xFF, 0xFF, 0xFF, 0xFF};
     white_ = texture(pixel, 1, 1, 4);

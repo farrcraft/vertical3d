@@ -513,6 +513,13 @@ came from.
 
 ### Step 11 — The world space quad
 
+**Landed** as `realtime::WorldCanvas` and `vulkan::WorldRenderer`, with `grid::fillTile` and
+`grid::fillTiles` beside the outline pair as the second consumer. Verified against both by
+running the editor and voxel with a throwaway probe: filled tiles lie on the editor's ground
+plane through all four view cameras, swapping two quads' submission order swaps which covers
+which while the geometry stays put, and voxel's terrain cuts the hills out of a wall of quads
+standing behind it. The validation layer was silent in every run.
+
 In [`api/render/realtime/`](../../api/render/realtime/), as step 10 settled it.
 
 The vertex format already carries position, uv and colour; the pipeline already samples a texture;
