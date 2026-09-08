@@ -542,6 +542,14 @@ testable without a device the way `Canvas` is, and should be.
 
 ### Step 12 — A sprite sheet is a document
 
+**Landed** wholly in `api/config`: neither `api/render` nor `api/image` was needed, because
+what the document resolves to is a `TextureHandle` the app already holds per ADR-0020 and the
+type itself names only a string. One departure from the draft: **the sheet states its own
+size**, and `uv()` divides the pixels by that rather than by the image's. That is what makes
+the document survive the sheet being rescaled — the pixels are of the size written in the
+document, not of whatever the file on disk turns out to be — and it is what lets a region
+running off the sheet be refused at load rather than sampling whatever the wrap mode decides.
+
 In [`api/config/`](../../api/config/) for the type, and `api/render` or `api/image` for what it
 resolves to — decide by which one can name the other without a new dependency edge, the way
 [`config::CameraProfiles`](../../api/config/CameraProfiles.h) was placed.

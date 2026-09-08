@@ -46,7 +46,13 @@ An app that reimplements one of these has diverged rather than customised.
 **Feature flags decide what exists.** `Engine::initialize(int features)` takes a bitmask of
 `v3d::engine::Feature` and constructs only what was asked for. `Feature::Config` loads
 `data/config.json`, which must use the indirect form:
-`{"configs": [{"type": "...", "file": "..."}]}`. Pong's `data/` is the reference.
+`{"configs": [{"type": "...", "file": "..."}]}`. Pong's `data/` is the reference. The types are
+`window`, `binding`, `ui`, `sound`, `camera`, `layout` and `sprite`; the last is a table of
+names over pixel rectangles in an image, read by `config::SpriteSheets`.
+
+**A config document names an image and never loads one**, per
+[ADR-0020](adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md): a theme's images and a
+sprite sheet's are both resolved by the app through its own asset manager and renderer.
 
 `Config::load` and `registerEventMappings` guard every lookup and log a `false`, but **a
 window config is not guarded**: `initialize` reads `width` and `height` with `at()`, so a
