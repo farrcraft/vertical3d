@@ -49,6 +49,10 @@ rectangle a batch carries out of `Canvas`, out of `LineCanvas` and out of a ui d
 [ADR-0037](adr/0037-clipping-is-a-scissor-the-batch-carries.md), and the `vkCmdSetScissor` that
 acts on it is in the recorder and needs a device like everything else there.
 
+`api/audio` draws the same line around the device: the clip table, the `Play` defaults and the
+voice bookkeeping are asserted, and whether a sound is audible is not. An engine that opened no
+device gives back no voice, so every case in `EngineTest` runs in CI.
+
 Input is asserted the same way, against the boxes a draw left: `CursorTest` presses and moves,
 `TextBoxTest` types, and neither needs a window because `ui::Cursor` and `ui::Keys` are handed
 a point and a key name rather than an SDL event.

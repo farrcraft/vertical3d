@@ -5,7 +5,11 @@
 
 #include "Engine.h"
 
+#include <map>
 #include <string>
+#include <utility>
+#include <vector>
+
 #include "../event/Sound.h"
 
 #include <boost/foreach.hpp>
@@ -13,12 +17,29 @@
 
 namespace v3d::audio {
 
+/**
+ **/
+Play::Play() noexcept :
+loops(0),
+fadeInMs(0),
+gain(1.0f) {
+}
+
 Engine::Engine(const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<entt::dispatcher> &dispatcher) :
     dispatcher_(dispatcher), logger_(logger) {
 }
 
 void Engine::shutdown() {
-    // the clips go before the mixer they were played through
+    // the tracks go before the mixer that handed them out, and the clips before the tracks
+    // that were playing them
+    for (const std::pair<const Voice, Playing>& playing : voices_) {
+        MIX_DestroyTrack(playing.second.track);
+    }
+    voices_.clear();
+    for (MIX_Track* track : free_) {
+        MIX_DestroyTrack(track);
+    }
+    free_.clear();
     sounds_.clear();
     if (mixer_) {
         MIX_DestroyMixer(mixer_);
@@ -108,17 +129,133 @@ bool Engine::addClip(const boost::shared_ptr<AudioClip>& clip, const std::string
 }
 
 bool Engine::playClip(const std::string_view & clip) {
+    // a one shot nobody holds is still a track underneath, so that it can be stopped by
+    // stopAll() and mixed on whatever the master gain is
+    return play(clip, Play()) != 0;
+}
+
+void Engine::reap() {
+    for (std::map<Voice, Playing>::iterator playing = voices_.begin(); playing != voices_.end();) {
+        if (MIX_TrackPlaying(playing->second.track)) {
+            ++playing;
+            continue;
+        }
+        if (!playing->second.bus.empty()) {
+            // an untagged track, so that being played again on another bus does not leave
+            // it mixed on both
+            MIX_UntagTrack(playing->second.track, playing->second.bus.c_str());
+        }
+        free_.push_back(playing->second.track);
+        playing = voices_.erase(playing);
+    }
+}
+
+MIX_Track* Engine::claim() {
+    if (!free_.empty()) {
+        MIX_Track* track = free_.back();
+        free_.pop_back();
+        return track;
+    }
+    return MIX_CreateTrack(mixer_);
+}
+
+Voice Engine::play(const std::string_view & clip, const Play & how) {
     // an engine whose initialize() opened no device has nothing to play into
     if (!mixer_) {
-        return false;
+        return 0;
     }
     const std::string clipId(clip);
-    auto const found = sounds_.find(clipId);
+    const std::map<std::string, boost::shared_ptr<AudioClip>>::const_iterator found = sounds_.find(clipId);
     if (found == sounds_.end()) {
+        return 0;
+    }
+
+    reap();
+    MIX_Track* track = claim();
+    if (track == nullptr) {
+        logger_->get()->error("no track to play clip [{}] on: {}", clipId, SDL_GetError());
+        return 0;
+    }
+    if (!MIX_SetTrackAudio(track, found->second->audio())) {
+        logger_->get()->error("unable to put clip [{}] on a track: {}", clipId, SDL_GetError());
+        free_.push_back(track);
+        return 0;
+    }
+
+    if (!how.bus.empty()) {
+        MIX_TagTrack(track, how.bus.c_str());
+    }
+    MIX_SetTrackGain(track, how.gain);
+
+    // the properties are the only way to name a loop count or a fade, and the id belongs to
+    // this call rather than to the track
+    const SDL_PropertiesID options = SDL_CreateProperties();
+    if (options != 0) {
+        if (how.loops != 0) {
+            SDL_SetNumberProperty(options, MIX_PROP_PLAY_LOOPS_NUMBER, how.loops);
+        }
+        if (how.fadeInMs > 0) {
+            SDL_SetNumberProperty(options, MIX_PROP_PLAY_FADE_IN_MILLISECONDS_NUMBER, how.fadeInMs);
+        }
+    }
+    const bool started = MIX_PlayTrack(track, options);
+    if (options != 0) {
+        SDL_DestroyProperties(options);
+    }
+    if (!started) {
+        logger_->get()->error("unable to play clip [{}]: {}", clipId, SDL_GetError());
+        if (!how.bus.empty()) {
+            MIX_UntagTrack(track, how.bus.c_str());
+        }
+        free_.push_back(track);
+        return 0;
+    }
+
+    const Voice voice = nextVoice_++;
+    Playing playing;
+    playing.track = track;
+    playing.bus = how.bus;
+    voices_[voice] = playing;
+    return voice;
+}
+
+bool Engine::stop(Voice voice, int fadeOutMs) {
+    const std::map<Voice, Playing>::const_iterator found = voices_.find(voice);
+    if (found == voices_.end()) {
         return false;
     }
-    // fire and forget: the mixer owns the playback, and a clip may overlap itself
-    return MIX_PlayAudio(mixer_, found->second->audio());
+    // MIX_StopTrack counts a fade in sample frames, which is the track's own rate
+    const Sint64 frames = fadeOutMs > 0 ? MIX_TrackMSToFrames(found->second.track, fadeOutMs) : 0;
+    return MIX_StopTrack(found->second.track, frames > 0 ? frames : 0);
+}
+
+void Engine::stopAll(int fadeOutMs) {
+    if (!mixer_) {
+        return;
+    }
+    MIX_StopAllTracks(mixer_, fadeOutMs > 0 ? fadeOutMs : 0);
+    // not reaped here: a fade is still playing, and a track taken back mid fade would be
+    // handed to the next sound before it had finished
+}
+
+bool Engine::playing(Voice voice) const {
+    const std::map<Voice, Playing>::const_iterator found = voices_.find(voice);
+    return found != voices_.end() && MIX_TrackPlaying(found->second.track);
+}
+
+bool Engine::gain(Voice voice, float level) {
+    const std::map<Voice, Playing>::const_iterator found = voices_.find(voice);
+    if (found == voices_.end()) {
+        return false;
+    }
+    return MIX_SetTrackGain(found->second.track, level);
+}
+
+bool Engine::busGain(const std::string & bus, float level) {
+    if (!mixer_ || bus.empty()) {
+        return false;
+    }
+    return MIX_SetTagGain(mixer_, bus.c_str(), level);
 }
 
 };  // namespace v3d::audio

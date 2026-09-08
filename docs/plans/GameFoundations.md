@@ -571,6 +571,20 @@ then see what asks for more.
 
 ### Step 13 — A clip loops, stops, and has a volume
 
+**Landed.** `play()` returns a `Voice`, which `stop()`, `playing()` and `gain()` take; a bus is
+a tag, and `busGain()` is `MIX_SetTagGain`. `playClip()` is unchanged as a call and is now a
+track underneath, so it can be caught by `stopAll()` and mixed on the master gain.
+
+Tracks are pooled rather than created per sound: a finished one is reaped as the next sound
+starts, which is the only moment the engine is asked for anything. A `Voice` is never reused,
+so a handle to a sound that has ended is refused rather than controlling the one that took its
+track.
+
+**Found while verifying, and not this step's:** pong plays no sound at all and did not before
+this change either. Carried to [TODO.md](../TODO.md) with what the probing established — the
+dispatcher, the event type and the trigger are all fine, and it is the member-function binding
+in `audio::Engine::initialize()` that never fires.
+
 In [`api/audio/`](../../api/audio/).
 
 `playClip` moves off `MIX_PlayAudio` onto a track, and the four things a game needs follow from
