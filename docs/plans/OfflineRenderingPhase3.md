@@ -104,6 +104,25 @@ re-deriving it.
 
 ### Step 2 — a surface normal, geometric with `"N"` honoured
 
+**Landed.** `type::Ray::intersects` has the six argument overload, and the four argument one
+delegates to it so there is one Moller-Trumbore rather than two. moya carries both normals on
+`Vertex`: `addPolygon()` writes the primitive's plane onto every vertex as Ng and onto those that
+brought no varying `"N"` as N, and the diceable branch moves both into eye space by the inverse
+transpose beside the points it moves by the matrix. `ReyesPrimitive::place()` takes the normal as
+a third argument, which is how a split piece inherits it. talyn's `Triangle` has a second
+constructor taking a normal per corner, `geometricNormal()` for Ng and `shadingNormal(u, v)` for
+N; `RIBHandler::fan` transforms a given `"N"` by the inverse transpose of the current
+transformation.
+
+One thing in the done-when is **not** here: the fixture that shades the normal as a colour. There
+is nothing in either renderer that shades anything yet, so drawing that picture would mean a debug
+path through `Bucket::render` and talyn's inner loop that step 9 then deletes. The picture is a
+one line surface shader once there is a language, and it belongs to step 9 rather than to a
+temporary switch here. Everything else in the done-when is covered by unit cases: the barycentric
+overload in `v3dtest_type` against a hand worked triangle, a face normal, an `"N"` override and a
+scale of one axis in each renderer's suite, and moya's grid interpolation and split inheritance
+besides.
+
 Independent of the language and blocking all of it. Neither renderer has a normal today: moya's
 `Vertex` declares `normal_` and nothing writes it, and talyn's `Triangle` has no notion of one.
 

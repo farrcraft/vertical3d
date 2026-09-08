@@ -75,6 +75,24 @@ class Ray final {
      **/
     bool intersects(const glm::vec3& a, const glm::vec3& b, const glm::vec3& c, float* distance) const;
 
+    /**
+     * The same test, also reporting where in the triangle the hit landed.
+     *
+     * Moller-Trumbore solves for the barycentric coordinates on its way to the distance,
+     * so anything that interpolates a per vertex value across a triangle - a normal, a
+     * texture coordinate - gets them for nothing here rather than solving again.
+     *
+     * The weights are of b and c: the hit is a + u * (b - a) + v * (c - a), so a carries
+     * 1 - u - v.
+     *
+     * @param distance where the hit is, if there is one - may be null
+     * @param u the weight of b, if there is a hit - may be null
+     * @param v the weight of c, if there is a hit - may be null
+     * @return whether the ray meets the triangle at a non negative distance
+     **/
+    bool intersects(const glm::vec3& a, const glm::vec3& b, const glm::vec3& c, float* distance,
+        float* u, float* v) const;
+
  private:
     glm::vec3 origin_;
     glm::vec3 direction_;

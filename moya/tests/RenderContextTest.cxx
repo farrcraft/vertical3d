@@ -185,3 +185,173 @@ BOOST_AUTO_TEST_CASE(render_context_split_terminates_test) {
     */
     BOOST_TEST(rc.framebuffer()->primitiveCount() == 256u);
 }
+
+namespace {
+
+/**
+ * A triangle small enough that the first pass measures it as diceable, so its vertices are
+ * moved into eye space rather than handed to the splitter. Its plane is (1, 1, 0)
+ * normalised, which is a normal no axis aligned scale leaves alone.
+ **/
+boost::shared_ptr<v3d::moya::Polygon> diagonal() {
+    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    polygon->addVertex(vertex(0.01f, 0.0f, 5.0f));
+    polygon->addVertex(vertex(0.0f, 0.01f, 5.0f));
+    polygon->addVertex(vertex(0.0f, 0.01f, 5.01f));
+    return polygon;
+}
+
+};  // namespace
+
+/**
+ * A polygon that says nothing about its normals gets its own plane on every vertex, as both Ng
+ * and N - which is what makes such a surface faceted.
+ **/
+BOOST_AUTO_TEST_CASE(render_context_face_normal_test) {
+    v3d::moya::RenderContext rc;
+    rc.prepareWorld();
+
+    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    polygon->addVertex(vertex(-0.01f, -0.01f, 5.0f));
+    polygon->addVertex(vertex(0.01f, -0.01f, 5.0f));
+    polygon->addVertex(vertex(0.01f, 0.01f, 5.0f));
+    // nothing has written a shading normal yet, which is what the fill in is for
+    BOOST_TEST(!polygon->vertex(0).hasNormal());
+
+    rc.addPolygon(polygon);
+
+    BOOST_REQUIRE(polygon->diceable());
+    for (size_t i = 0; i < polygon->vertexCount(); i++) {
+        BOOST_TEST((polygon->vertex(i).geometricNormal() == glm::vec3(0.0f, 0.0f, 1.0f)));
+        BOOST_TEST((polygon->vertex(i).normal() == glm::vec3(0.0f, 0.0f, 1.0f)));
+    }
+}
+
+/**
+ * A varying "N" is the shading normal and overrides the plane; Ng stays the plane, because SL
+ * defines faceforward() and calculatenormal() in terms of the pair.
+ **/
+BOOST_AUTO_TEST_CASE(render_context_normal_override_test) {
+    v3d::moya::RenderContext rc;
+    rc.prepareWorld();
+
+    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    for (int i = 0; i < 3; i++) {
+        v3d::moya::Vertex v = vertex(i == 1 ? 0.01f : -0.01f, i == 2 ? 0.01f : -0.01f, 5.0f);
+        v.normal(glm::vec3(0.0f, 1.0f, 0.0f));
+        polygon->addVertex(v);
+    }
+    rc.addPolygon(polygon);
+
+    BOOST_REQUIRE(polygon->diceable());
+    for (size_t i = 0; i < polygon->vertexCount(); i++) {
+        BOOST_TEST((polygon->vertex(i).normal() == glm::vec3(0.0f, 1.0f, 0.0f)));
+        BOOST_TEST((polygon->vertex(i).geometricNormal() == glm::vec3(0.0f, 0.0f, 1.0f)));
+    }
+}
+
+/**
+ * A normal transforms by the inverse transpose. Under a rotation or a uniform scale that is
+ * the same matrix that moves the points, so only a scale of one axis tells the two apart: the
+ * normal of the transformed plane leans the opposite way to the points.
+ **/
+BOOST_AUTO_TEST_CASE(render_context_normal_inverse_transpose_test) {
+    v3d::moya::RenderContext rc;
+    rc.prepareWorld();
+    rc.scale(1.0f, 2.0f, 1.0f);
+
+    boost::shared_ptr<v3d::moya::Polygon> polygon = diagonal();
+    rc.addPolygon(polygon);
+
+    BOOST_REQUIRE(polygon->diceable());
+    // the object plane is (1, 1, 0) normalised; the inverse transpose of a scale of two in y
+    // halves that component, which is the plane the doubled points actually lie in
+    const glm::vec3 expected = glm::normalize(glm::vec3(1.0f, 0.5f, 0.0f));
+    for (size_t i = 0; i < polygon->vertexCount(); i++) {
+        const glm::vec3 normal = polygon->vertex(i).geometricNormal();
+        BOOST_TEST(normal.x == expected.x, boost::test_tools::tolerance(0.0001f));
+        BOOST_TEST(normal.y == expected.y, boost::test_tools::tolerance(0.0001f));
+        BOOST_TEST(normal.z == expected.z, boost::test_tools::tolerance(0.0001f));
+    }
+
+    // and the transformed vertices agree: the plane the normal names is the plane they are in
+    const glm::vec3 a = polygon->vertex(0).point();
+    const glm::vec3 b = polygon->vertex(1).point();
+    const glm::vec3 c = polygon->vertex(2).point();
+    const glm::vec3 measured = glm::normalize(glm::cross(b - a, c - a));
+    BOOST_TEST(measured.x == expected.x, boost::test_tools::tolerance(0.0001f));
+    BOOST_TEST(measured.y == expected.y, boost::test_tools::tolerance(0.0001f));
+}
+
+/**
+ * Dicing interpolates the shading normal onto the grid the way it interpolates the position and
+ * the colour, which is what makes a surface given a varying "N" come out smooth. The geometric
+ * normal is one value across the primitive and is copied rather than interpolated.
+ **/
+BOOST_AUTO_TEST_CASE(render_context_dice_interpolates_normal_test) {
+    v3d::moya::RenderContext rc;
+    rc.prepareWorld();
+
+    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    const glm::vec3 corners[4] = {
+        glm::vec3(-0.01f, -0.01f, 5.0f), glm::vec3(0.01f, -0.01f, 5.0f),
+        glm::vec3(0.01f, 0.01f, 5.0f), glm::vec3(-0.01f, 0.01f, 5.0f)
+    };
+    for (int i = 0; i < 4; i++) {
+        v3d::moya::Vertex v;
+        v.point(corners[i]);
+        // the first corner leans one way and the rest face front, so a midpoint of the grid
+        // has to be between the two rather than either
+        v.normal(i == 0 ? glm::normalize(glm::vec3(1.0f, 0.0f, 1.0f)) : glm::vec3(0.0f, 0.0f, 1.0f));
+        polygon->addVertex(v);
+    }
+    rc.addPolygon(polygon);
+    BOOST_REQUIRE(polygon->diceable());
+
+    boost::shared_ptr<v3d::moya::MicroPolygonGrid> grid;
+    BOOST_REQUIRE(polygon->dice(grid, rc));
+    BOOST_REQUIRE(grid);
+
+    const unsigned int last = grid->size() - 1;
+    // the corner that leans keeps its own normal, and one diagonally across from it does not
+    BOOST_TEST(grid->vertex(0, 0).normal().x > 0.7f);
+    BOOST_TEST(grid->vertex(last, last).normal().x == 0.0f, boost::test_tools::tolerance(0.0001f));
+    // between them the normal is neither, and is still a unit vector
+    const glm::vec3 middle = grid->vertex(last / 2, last / 2).normal();
+    BOOST_TEST(middle.x > 0.0f);
+    BOOST_TEST(middle.x < 0.7f);
+    BOOST_TEST(glm::length(middle) == 1.0f, boost::test_tools::tolerance(0.0001f));
+
+    // Ng is the plane, everywhere on the grid
+    BOOST_TEST((grid->vertex(0, 0).geometricNormal() == glm::vec3(0.0f, 0.0f, 1.0f)));
+    BOOST_TEST((grid->vertex(last, last).geometricNormal() == glm::vec3(0.0f, 0.0f, 1.0f)));
+}
+
+/**
+ * A split builds its pieces from intersection points, which carry no normal any more than they
+ * carry a colour, so a piece takes the whole primitive's plane through place() - the same route
+ * the colour takes. A surface large enough to split is therefore faceted per piece, and the
+ * phase that gives the edge split an interpolating clip is what would change that.
+ **/
+BOOST_AUTO_TEST_CASE(render_context_split_carries_the_normal_test) {
+    v3d::moya::RenderContext rc;
+    rc.prepareWorld();
+
+    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    polygon->addVertex(vertex(-0.9f, -0.9f, 5.0f));
+    polygon->addVertex(vertex(0.9f, -0.9f, 5.0f));
+    polygon->addVertex(vertex(0.9f, 0.9f, 5.0f));
+    polygon->addVertex(vertex(-0.9f, 0.9f, 5.0f));
+    rc.addPolygon(polygon);
+
+    // too large for one grid, so the second pass splits it rather than dicing it - and the
+    // plane it hands its pieces is the one it was placed with
+    BOOST_REQUIRE(!polygon->diceable());
+    BOOST_TEST((polygon->normal() == glm::vec3(0.0f, 0.0f, 1.0f)));
+
+    // the pieces reach the first pass again already placed, so they keep it: the render
+    // terminates with every piece bucketed, which it could not do if a piece were re-measured
+    // against the state of whatever came last
+    rc.render();
+    BOOST_TEST(rc.framebuffer()->primitiveCount() == 256u);
+}

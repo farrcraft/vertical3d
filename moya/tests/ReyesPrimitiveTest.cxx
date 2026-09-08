@@ -5,6 +5,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <glm/gtc/matrix_transform.hpp>
+
 #include "../libmoya/Polygon.h"
 #include "../libmoya/ReyesPrimitive.h"
 
@@ -58,4 +60,24 @@ BOOST_AUTO_TEST_CASE(reyes_primitive_polygon_is_a_primitive_test) {
     primitive->diceable(true);
     BOOST_TEST(primitive->diceable());
     BOOST_TEST((primitive->bound().max() == glm::vec3(2.0f, 3.0f, 4.0f)));
+}
+
+/**
+ * A primitive carries the state it was submitted under so that a split can hand it to its
+ * pieces: the object to eye transformation, the colour that was current, and the plane it lies
+ * in. Nothing has placed a fresh one, and its normal names no plane until something does.
+ **/
+BOOST_AUTO_TEST_CASE(reyes_primitive_place_test) {
+    v3d::moya::ReyesPrimitive primitive;
+
+    BOOST_TEST(!primitive.placed());
+    BOOST_TEST((primitive.normal() == glm::vec3(0.0f)));
+
+    const glm::mat4x4 toEye = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, -4.0f));
+    primitive.place(toEye, glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+    BOOST_TEST(primitive.placed());
+    BOOST_TEST((primitive.placement() == toEye));
+    BOOST_TEST((primitive.color() == glm::vec3(1.0f, 0.0f, 0.0f)));
+    BOOST_TEST((primitive.normal() == glm::vec3(0.0f, 1.0f, 0.0f)));
 }

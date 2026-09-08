@@ -112,6 +112,11 @@ bool Ray::intersects(const AABBox& box, float* distance) const {
 /**
  **/
 bool Ray::intersects(const glm::vec3& a, const glm::vec3& b, const glm::vec3& c, float* distance) const {
+    return intersects(a, b, c, distance, nullptr, nullptr);
+}
+
+bool Ray::intersects(const glm::vec3& a, const glm::vec3& b, const glm::vec3& c, float* distance,
+    float* u, float* v) const {
     const glm::vec3 ab = b - a;
     const glm::vec3 ac = c - a;
     const glm::vec3 perpendicular = glm::cross(direction_, ac);
@@ -125,14 +130,14 @@ bool Ray::intersects(const glm::vec3& a, const glm::vec3& b, const glm::vec3& c,
 
     const float inverse = 1.0f / determinant;
     const glm::vec3 offset = origin_ - a;
-    const float u = glm::dot(offset, perpendicular) * inverse;
-    if (u < 0.0f || u > 1.0f) {
+    const float weightB = glm::dot(offset, perpendicular) * inverse;
+    if (weightB < 0.0f || weightB > 1.0f) {
         return false;
     }
 
     const glm::vec3 across = glm::cross(offset, ab);
-    const float v = glm::dot(direction_, across) * inverse;
-    if (v < 0.0f || u + v > 1.0f) {
+    const float weightC = glm::dot(direction_, across) * inverse;
+    if (weightC < 0.0f || weightB + weightC > 1.0f) {
         return false;
     }
 
@@ -143,6 +148,12 @@ bool Ray::intersects(const glm::vec3& a, const glm::vec3& b, const glm::vec3& c,
 
     if (distance != nullptr) {
         *distance = hit;
+    }
+    if (u != nullptr) {
+        *u = weightB;
+    }
+    if (v != nullptr) {
+        *v = weightC;
     }
     return true;
 }

@@ -76,6 +76,51 @@ BOOST_AUTO_TEST_CASE(ray_triangle_test) {
     BOOST_CHECK_EQUAL(edgeOn.intersects(a, b, c, nullptr), false);
 }
 
+BOOST_AUTO_TEST_CASE(ray_triangle_barycentric_test) {
+    // a right triangle on the z = 0 plane, so a weight reads straight off a coordinate
+    const glm::vec3 a(0.0f, 0.0f, 0.0f);
+    const glm::vec3 b(4.0f, 0.0f, 0.0f);
+    const glm::vec3 c(0.0f, 4.0f, 0.0f);
+
+    float distance = 0.0f;
+    float u = 0.0f;
+    float v = 0.0f;
+
+    // a hit at b itself weighs b alone
+    v3d::type::Ray corner(glm::vec3(4.0f, 0.0f, -2.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    BOOST_CHECK_EQUAL(corner.intersects(a, b, c, &distance, &u, &v), true);
+    BOOST_CHECK_CLOSE(distance, 2.0f, 0.01f);
+    BOOST_CHECK_CLOSE(u, 1.0f, 0.01f);
+    BOOST_CHECK_SMALL(v, 0.0001f);
+
+    // (1, 2) is a + (1/4)(b - a) + (1/2)(c - a), so a carries the remaining quarter
+    v3d::type::Ray inside(glm::vec3(1.0f, 2.0f, -2.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    BOOST_CHECK_EQUAL(inside.intersects(a, b, c, &distance, &u, &v), true);
+    BOOST_CHECK_CLOSE(u, 0.25f, 0.01f);
+    BOOST_CHECK_CLOSE(v, 0.5f, 0.01f);
+    BOOST_CHECK_CLOSE(1.0f - u - v, 0.25f, 0.01f);
+
+    // the weights are of b and c in that order, not of the two the ray happens to be
+    // nearer: swapping the triangle's last two corners swaps them
+    BOOST_CHECK_EQUAL(inside.intersects(a, c, b, &distance, &u, &v), true);
+    BOOST_CHECK_CLOSE(u, 0.5f, 0.01f);
+    BOOST_CHECK_CLOSE(v, 0.25f, 0.01f);
+
+    // a miss writes nothing, so what the caller had stands
+    u = -1.0f;
+    v = -1.0f;
+    v3d::type::Ray beside(glm::vec3(5.0f, 5.0f, -2.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    BOOST_CHECK_EQUAL(beside.intersects(a, b, c, &distance, &u, &v), false);
+    BOOST_CHECK_EQUAL(u, -1.0f);
+    BOOST_CHECK_EQUAL(v, -1.0f);
+
+    // the overload without them answers what the overload with them answers
+    v3d::type::Ray same(glm::vec3(1.0f, 2.0f, -2.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    float plain = 0.0f;
+    BOOST_CHECK_EQUAL(same.intersects(a, b, c, &plain), true);
+    BOOST_CHECK_CLOSE(plain, 2.0f, 0.01f);
+}
+
 BOOST_AUTO_TEST_CASE(ray_box_test) {
     v3d::type::AABBox box;
     box.extents(glm::vec3(-1.0f, -1.0f, -1.0f), glm::vec3(1.0f, 1.0f, 1.0f));

@@ -62,8 +62,31 @@ implements it as `<renderer>::RIBHandler`. RIB is also what the editor exports t
   produces exactly those. `RIBHandler::error()` says which one it was, and the reader still
   succeeds, because the request was understood.
 
+## Normals
+
+Both renderers carry two, because SL's `faceforward` and `calculatenormal` are defined in terms
+of the pair: **`Ng` is the geometric normal** - the plane the primitive lies in, one value across
+it, wound the way its vertices are - and **`N` is the shading normal**, which a scene sets per
+vertex with a varying `"N"` and which is `Ng` when it does not.
+
+- **A normal transforms by the inverse transpose**, never by the matrix that moves the points.
+  The two agree under a rotation and a uniform scale, which is every fixture in the tree bar the
+  two that scale one axis, so this is a fault that hides until a scene does.
+- moya's `Vertex` holds both. `RenderContext::addPolygon` fills them from
+  `Polygon::geometricNormal()` before it moves anything, and the diceable branch is where both go
+  into eye space. Dicing interpolates `N` and renormalises; `Ng` is copied, since there is one.
+- **A split does not carry a per-vertex normal**, for the reason it does not carry a colour: its
+  pieces are built from intersection points, which have neither. A piece inherits the whole
+  primitive's plane through `ReyesPrimitive::place()`, so a surface large enough to split is
+  faceted per piece.
+- talyn's `Triangle` has a constructor per case, and `shadingNormal(u, v)` interpolates over the
+  barycentric coordinates `type::Ray::intersects` reports - `u` weighs `b` and `v` weighs `c`, so
+  `a` carries the rest. The overload that reports them exists because Moller-Trumbore solves for
+  them on its way to the distance and the four argument form throws them away.
+
 ## Reyes
 
-**A `ReyesPrimitive` carries the transform and colour it was submitted under.** Splitting
-resubmits pieces through the first pass during the second one, when neither is current, and a
-split builds its pieces from intersection points that carry no colour at all.
+**A `ReyesPrimitive` carries the transform, colour and geometric normal it was submitted under.**
+Splitting resubmits pieces through the first pass during the second one, when none of it is
+current, and a split builds its pieces from intersection points that carry no colour and no
+normal at all.

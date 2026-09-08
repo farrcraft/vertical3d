@@ -13,6 +13,8 @@
 #include <boost/make_shared.hpp>
 
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/mat3x3.hpp>
+#include <glm/matrix.hpp>
 
 #include "Frustum.h"
 
@@ -445,15 +447,23 @@ void RenderContext::addPolygon(boost::shared_ptr<Polygon> poly) {
     // a primitive carries the state it was submitted under - see ReyesPrimitive::place().
     // A piece handed back by a split is already placed and keeps its parent's
     if (!poly->placed()) {
-        poly->place(coordinateSystems_["camera"] * transform_, color_);
+        poly->place(coordinateSystems_["camera"] * transform_, color_, poly->geometricNormal());
     }
 
     // a vertex that brought no "Cs" of its own takes the primitive's colour. There is no
     // light and no material behind it - RiSurface is still empty - so this is the
-    // geometry's colour rather than a shaded one
+    // geometry's colour rather than a shaded one.
+    //
+    // The normals go the same way: Ng is the primitive's plane on every vertex, and a
+    // vertex that brought no varying "N" shades with it, which is what makes a polygon
+    // that says nothing about its normals faceted
     for (unsigned int i = 0; i < poly->vertexCount(); i++) {
         if (!(*poly)[i].hasColor()) {
             (*poly)[i].color(poly->color());
+        }
+        (*poly)[i].geometricNormal(poly->normal());
+        if (!(*poly)[i].hasNormal()) {
+            (*poly)[i].normal(poly->normal());
         }
     }
 
@@ -578,9 +588,15 @@ void RenderContext::addPolygon(boost::shared_ptr<Polygon> poly) {
         vertices now.
      */
     if (poly->diceable()) {
+        // a normal transforms by the inverse transpose rather than by the matrix that
+        // moves the points. The two agree under a rotation and a uniform scale, and part
+        // company the moment a scene scales one axis, which tilts a normal off its surface
+        const glm::mat3x3 toEyeNormal = glm::transpose(glm::inverse(glm::mat3x3(toEye)));
         for (unsigned int i = 0; i < poly->vertexCount(); i++) {
             Vertex pv = poly->vertex(i);
             pv.point(glm::vec3(toEye * glm::vec4(pv.point(), 1.0f)));
+            pv.normal(glm::normalize(toEyeNormal * pv.normal()));
+            pv.geometricNormal(glm::normalize(toEyeNormal * pv.geometricNormal()));
             (*poly)[i] = pv;
         }
     }

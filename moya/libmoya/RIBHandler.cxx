@@ -17,11 +17,13 @@ namespace {
 typedef v3d::render::offline::ParameterList ParameterList;
 
 /**
- * One polygon from a run of the position array, with whatever colour the scene gave
- * each corner. A vertex left without one takes the current colour in addPolygon().
+ * One polygon from a run of the position array, with whatever colour and shading normal
+ * the scene gave each corner. A vertex left without either takes the primitive's in
+ * addPolygon() - the current colour, and the plane the polygon lies in.
  **/
 boost::shared_ptr<Polygon> build(const std::vector<glm::vec3> & points,
-    const std::vector<glm::vec3> & colors, const std::vector<unsigned int> & indices) {
+    const std::vector<glm::vec3> & colors, const std::vector<glm::vec3> & normals,
+    const std::vector<unsigned int> & indices) {
     boost::shared_ptr<Polygon> polygon = boost::make_shared<Polygon>();
     for (unsigned int index : indices) {
         if (index >= points.size()) {
@@ -31,6 +33,9 @@ boost::shared_ptr<Polygon> build(const std::vector<glm::vec3> & points,
         vertex.point(points[index]);
         if (index < colors.size()) {
             vertex.color(colors[index]);
+        }
+        if (index < normals.size()) {
+            vertex.normal(normals[index]);
         }
         polygon->addVertex(vertex);
     }
@@ -162,6 +167,7 @@ void RIBHandler::shadingRate(float size) {
 void RIBHandler::polygon(unsigned int vertices, const ParameterList & parameters) {
     const std::vector<glm::vec3> points = parameters.points("P");
     const std::vector<glm::vec3> colors = parameters.points("Cs");
+    const std::vector<glm::vec3> normals = parameters.points("N");
     std::vector<unsigned int> indices;
     for (unsigned int i = 0; i < vertices && i < points.size(); i++) {
         indices.push_back(i);
@@ -169,13 +175,14 @@ void RIBHandler::polygon(unsigned int vertices, const ParameterList & parameters
     if (indices.size() < 3) {
         return;
     }
-    context().addPolygon(build(points, colors, indices));
+    context().addPolygon(build(points, colors, normals, indices));
 }
 
 void RIBHandler::pointsPolygons(const std::vector<unsigned int> & counts, const std::vector<unsigned int> & indices,
     const ParameterList & parameters) {
     const std::vector<glm::vec3> points = parameters.points("P");
     const std::vector<glm::vec3> colors = parameters.points("Cs");
+    const std::vector<glm::vec3> normals = parameters.points("N");
     std::size_t offset = 0;
     for (unsigned int count : counts) {
         if (offset + count > indices.size()) {
@@ -183,7 +190,7 @@ void RIBHandler::pointsPolygons(const std::vector<unsigned int> & counts, const 
         }
         if (count >= 3) {
             const std::vector<unsigned int> face(indices.begin() + offset, indices.begin() + offset + count);
-            context().addPolygon(build(points, colors, face));
+            context().addPolygon(build(points, colors, normals, face));
         }
         offset += count;
     }

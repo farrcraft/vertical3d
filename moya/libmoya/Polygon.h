@@ -46,6 +46,15 @@ class Polygon : public ReyesPrimitive {
      **/
     void clear(void);
 
+    /**
+     * The plane the polygon lies in, from its first three non collinear vertices, wound
+     * the way the vertices are.
+     *
+     * One value for the whole polygon - SL's Ng. A polygon whose vertices are collinear,
+     * or which has fewer than three of them, has no plane and answers zero.
+     **/
+    glm::vec3 geometricNormal(void) const;
+
     // reyes methods
     // virtual bool diceable(void) const;
     virtual v3d::type::AABBox bound(void) const;

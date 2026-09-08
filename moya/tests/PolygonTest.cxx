@@ -103,3 +103,55 @@ BOOST_AUTO_TEST_CASE(polygon_empty_bound_test) {
     BOOST_TEST((bound.min() == glm::vec3(0.0f, 0.0f, 0.0f)));
     BOOST_TEST((bound.max() == glm::vec3(0.0f, 0.0f, 0.0f)));
 }
+
+/**
+ * The plane a polygon lies in, wound the way its vertices are - SL's Ng, and the normal every
+ * vertex of it takes when the scene supplies no varying "N".
+ **/
+BOOST_AUTO_TEST_CASE(polygon_geometric_normal_test) {
+    v3d::moya::Polygon polygon;
+    polygon.addVertex(vertex(0.0f, 0.0f, 0.0f));
+    polygon.addVertex(vertex(1.0f, 0.0f, 0.0f));
+    polygon.addVertex(vertex(0.0f, 1.0f, 0.0f));
+
+    BOOST_TEST((polygon.geometricNormal() == glm::vec3(0.0f, 0.0f, 1.0f)));
+
+    // the winding is what decides which way it faces, so reversing it reverses the normal
+    v3d::moya::Polygon reversed;
+    reversed.addVertex(vertex(0.0f, 0.0f, 0.0f));
+    reversed.addVertex(vertex(0.0f, 1.0f, 0.0f));
+    reversed.addVertex(vertex(1.0f, 0.0f, 0.0f));
+
+    BOOST_TEST((reversed.geometricNormal() == glm::vec3(0.0f, 0.0f, -1.0f)));
+}
+
+/**
+ * The first three vertices need not be the three that name the plane. A repeated vertex or a
+ * collinear run at the head of the polygon spans no area, and the walk goes on rather than
+ * answering with the nothing it found.
+ **/
+BOOST_AUTO_TEST_CASE(polygon_geometric_normal_skips_collinear_test) {
+    v3d::moya::Polygon polygon;
+    polygon.addVertex(vertex(0.0f, 0.0f, 0.0f));
+    polygon.addVertex(vertex(1.0f, 0.0f, 0.0f));
+    polygon.addVertex(vertex(2.0f, 0.0f, 0.0f));
+    polygon.addVertex(vertex(0.0f, 1.0f, 0.0f));
+
+    BOOST_TEST((polygon.geometricNormal() == glm::vec3(0.0f, 0.0f, 1.0f)));
+}
+
+/**
+ * A polygon with no area lies in no plane, and answers zero rather than a normalised nothing.
+ **/
+BOOST_AUTO_TEST_CASE(polygon_degenerate_normal_test) {
+    v3d::moya::Polygon collinear;
+    collinear.addVertex(vertex(0.0f, 0.0f, 0.0f));
+    collinear.addVertex(vertex(1.0f, 0.0f, 0.0f));
+    collinear.addVertex(vertex(2.0f, 0.0f, 0.0f));
+
+    BOOST_TEST((collinear.geometricNormal() == glm::vec3(0.0f)));
+
+    v3d::moya::Polygon empty;
+
+    BOOST_TEST((empty.geometricNormal() == glm::vec3(0.0f)));
+}

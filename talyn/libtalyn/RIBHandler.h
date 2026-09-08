@@ -75,7 +75,8 @@ class RIBHandler final : public v3d::render::offline::RIBHandler {
      * A face of the current polygon soup, fanned into triangles through the current
      * transformation. RI says a polygon is planar and convex, so a fan is the whole of it.
      **/
-    void fan(const std::vector<glm::vec3> & points, const std::vector<unsigned int> & indices);
+    void fan(const std::vector<glm::vec3> & points, const std::vector<glm::vec3> & normals,
+        const std::vector<unsigned int> & indices);
 
     /**
      * What RiAttributeBegin saves and RiAttributeEnd puts back.

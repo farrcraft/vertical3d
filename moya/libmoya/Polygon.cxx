@@ -72,6 +72,21 @@ Vertex& Polygon::operator[] (size_t idx) {
     return vertices_[idx];
 }
 
+glm::vec3 Polygon::geometricNormal(void) const {
+    // the first pair of edges that spans an area. A repeated vertex or a collinear run at
+    // the head of the polygon gives a zero cross product, which names no plane, so the
+    // walk goes on rather than answering with it
+    for (size_t i = 1; i + 1 < vertices_.size(); i++) {
+        const glm::vec3 across = glm::cross(vertices_[i].point() - vertices_[0].point(),
+                                            vertices_[i + 1].point() - vertices_[0].point());
+        const float area = glm::length(across);
+        if (area > 1.0e-8f) {
+            return across / area;
+        }
+    }
+    return glm::vec3(0.0f);
+}
+
 // return an object space bound of the polygon
 v3d::type::AABBox Polygon::bound(void) const {
     v3d::type::AABBox bound;
@@ -229,13 +244,13 @@ void Polygon::split(RenderContext & rc) {
         return;
     }
 
-    // calculate polygon's normal from the polygon's first two vertices
-    glm::vec3 v0;
-    glm::vec3 v1;
-    glm::vec3 n;
-    v0 = vertices_[0].point() - vertices_[1].point();
-    v1 = vertices_[2].point() - vertices_[1].point();
-    n = glm::normalize(glm::cross(v1, v0));
+    // the plane of the polygon, and an edge in it: the cutting plane is perpendicular to
+    // both. A polygon with no plane - every vertex on one line - has no area to divide
+    const glm::vec3 n = geometricNormal();
+    if (n == glm::vec3(0.0f)) {
+        return;
+    }
+    const glm::vec3 v0 = vertices_[0].point() - vertices_[1].point();
 
     // calculate plane's normal
     glm::vec3 pn;
@@ -280,7 +295,7 @@ void Polygon::split(RenderContext & rc) {
             // a piece is measured with the state its parent was submitted under, not with
             // whatever the current transformation and colour have since become
             if (placed()) {
-                piece->place(placement(), color());
+                piece->place(placement(), color(), normal());
             }
             rc.addPolygon(piece);
         }
@@ -328,6 +343,17 @@ bool Polygon::dice(boost::shared_ptr<MicroPolygonGrid> & grid, RenderContext & r
         vertices_[2].color(),
         vertices_[fourth].color()
     };
+    // and so does the shading normal, which is what makes a surface given a varying "N"
+    // come out smooth rather than faceted
+    glm::vec3 normals[4] = {
+        vertices_[0].normal(),
+        vertices_[1].normal(),
+        vertices_[2].normal(),
+        vertices_[fourth].normal()
+    };
+    // the geometric normal is one value across the primitive, so there is nothing to
+    // interpolate: addPolygon() wrote the same one onto every vertex
+    const glm::vec3 geometric = vertices_[0].geometricNormal();
 
     const unsigned int size = grid->size();
     const float span = static_cast<float>(size - 1);
@@ -344,6 +370,14 @@ bool Polygon::dice(boost::shared_ptr<MicroPolygonGrid> & grid, RenderContext & r
                        colors[1] * (u * (1.0f - w)) +
                        colors[2] * (u * w) +
                        colors[3] * ((1.0f - u) * w));
+            const glm::vec3 normal = normals[0] * ((1.0f - u) * (1.0f - w)) +
+                                     normals[1] * (u * (1.0f - w)) +
+                                     normals[2] * (u * w) +
+                                     normals[3] * ((1.0f - u) * w);
+            // interpolating unit normals does not give a unit one back
+            const float length = glm::length(normal);
+            vert.normal(length > 0.0f ? normal / length : geometric);
+            vert.geometricNormal(geometric);
             grid->addVertex(vert, i, j);
         }
     }
