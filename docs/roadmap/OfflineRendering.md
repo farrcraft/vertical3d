@@ -224,9 +224,10 @@ of any kind. Neither has a surface normal either, which is the geometry half of 
 Shadow rays are talyn's version of the step, and are cheap once primary rays work.
 
 The large question sitting underneath this phase was whether shading is fixed-function C++ or a
-shading language. **It is answered as a language**, and the plan's first step is the record that
-weighs it. That answer is what makes this phase a subsystem rather than a weekend, and it is why
-phases 4 and 5 sit behind it rather than beside it.
+shading language. **It is answered as a language** by
+[ADR-0026](../adr/0026-shading-is-a-language-over-a-batch.md). That answer is what makes this
+phase a subsystem rather than a weekend, and it is why phases 4 and 5 sit behind it rather than
+beside it.
 
 ### Phase 4 — sampling and quality
 
@@ -259,9 +260,9 @@ once both actually shade something, and on whether shading is a language. Delibe
 
 ## What is decided
 
-Four of the five questions this roadmap opened are settled, on 2026-09-04, in three records —
-where the shared code lives and whether talyn stays an executable turned out to be one decision.
-The records hold the reasoning; these are pointers, not summaries.
+All five questions this roadmap opened are settled, in four records — where the shared code lives
+and whether talyn stays an executable turned out to be one decision. The records hold the
+reasoning; these are pointers, not summaries.
 
 * **Where the shared offline code lives** — `api/render/offline`, a second library beside
   `v3dlib_render` that links neither Vulkan nor SDL, and talyn splits into a library, a driver
@@ -274,14 +275,18 @@ The records hold the reasoning; these are pointers, not summaries.
   needs becomes a parameter of the type rather than a second copy of it, starting with the clip
   space `Camera` builds: [ADR-0024](../adr/0024-api-type-serves-both-renderers.md), which
   narrows [ADR-0012](../adr/0012-camera-builds-vulkan-clip-space.md) without reversing it.
+* **Fixed-function shading or a shading language** — a language, a subset of SL compiled at
+  runtime, run by a machine that operates over a batch of shading points so that moya's grid and
+  talyn's single hit are one code path:
+  [ADR-0026](../adr/0026-shading-is-a-language-over-a-batch.md).
 
 ## What this still needs decided
 
-**Nothing this roadmap opened is still open.** The fifth question — fixed-function shading or a
-shading language — is answered as a language, and phase 3's plan writes the record for it. What
-that answer does *not* settle is phase 6: a shader can call `trace()`, which is what makes the
-question of whether moya's raytracing is talyn answerable, and answering it is still that phase's
-own work.
+**Nothing this roadmap opened is still open.** The last of them — fixed-function shading or a
+shading language — is answered as a language by
+[ADR-0026](../adr/0026-shading-is-a-language-over-a-batch.md). What that answer does *not* settle
+is phase 6: a shader can call `trace()`, which is what makes the question of whether moya's
+raytracing is talyn answerable, and answering it is still that phase's own work.
 
 ## Verification
 

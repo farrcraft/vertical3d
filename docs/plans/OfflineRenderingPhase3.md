@@ -27,7 +27,7 @@ Recorded in [docs/adr/](../adr/), not here. The ones that shape this plan:
 
 | ADR | Decision |
 |---|---|
-| 0026 | Shading is a language, and it runs over a batch of shading points — **step 1 writes it** |
+| [0026](../adr/0026-shading-is-a-language-over-a-batch.md) | Shading is a language, and it runs over a batch of shading points |
 | [0022](../adr/0022-offline-rendering-shares-an-api-library.md) | Shared offline code is `api/render/offline`; each renderer is a library with a driver |
 | [0023](../adr/0023-rib-is-the-offline-scene-description.md) | RIB is what both renderers read; the editor exports to it, one way |
 | [0024](../adr/0024-api-type-serves-both-renderers.md) | `api/type` serves both, and a convention is a parameter rather than a fork |
@@ -61,6 +61,13 @@ the phase.
 ## Steps
 
 ### Step 1 — ADR-0026, shading is a language
+
+**Landed.** [ADR-0026](../adr/0026-shading-is-a-language-over-a-batch.md) is accepted and in the
+index, and the reserved-number note in that index is gone. It weighs five alternatives rather than
+the two the roadmap named: the two extra are an existing language embedded instead of one written,
+and a `.slo`-style compiled shader file, both of which the plan settled in passing and neither of
+which a reader would otherwise find argued anywhere.
+
 
 The roadmap has carried this question open since it was written, and it reaches past this phase:
 it decides whether talyn is reached from a shader's `trace()`, which is the remaining half of
