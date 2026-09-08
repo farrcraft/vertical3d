@@ -44,10 +44,14 @@ class Keys final {
     /**
      * A key went down.
      *
-     * @param key the name api/input gives it - "backspace", "arrow_left", "return"
+     * @param key the name api/input gives it - "backspace", "arrow_left", "return", "tab"
+     * @param shifted whether a shift key is held. A key name carries no modifier and this
+     *        library cannot ask api/input for one without taking SDL with it, so the app
+     *        that saw the key says. It matters for one key: shift and tab is the focus
+     *        moving backwards, and a caller that never passes it gets forward only
      * @return whether the ui took it, which is what stops it reaching the app's bindings
      **/
-    bool press(std::string_view key);
+    bool press(std::string_view key, bool shifted = false);
 
     /**
      * Characters the platform composed.

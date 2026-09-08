@@ -6,6 +6,7 @@ v3d_add_test(ui
 	"CheckBoxTest.cpp"
 	"ComponentRendererTest.cpp"
 	"CursorTest.cpp"
+	"FocusTest.cpp"
 	"GameMenuTest.cpp"
 	"ImmediateTest.cpp"
 	"LayoutTest.cpp"

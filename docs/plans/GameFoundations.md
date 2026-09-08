@@ -423,6 +423,11 @@ left holding.
 
 ### Step 8 — The focus moves without the mouse
 
+**Landed.** One departure: `Keys::press` takes a second argument saying whether shift is held.
+A key name carries no modifier, `api/ui` cannot reach `api/input` without taking SDL with it,
+and there is no key name for shift-tab — so the app that saw the key says. It defaults to
+false, which is forward-only tab for a caller that ignores it. No `tabIndex` was added.
+
 In [`api/ui/Engine.h`](../../api/ui/Engine.h) and [`Keys.cpp`](../../api/ui/Keys.cpp), extending
 [ADR-0040](../adr/0040-a-key-goes-to-a-focused-component.md).
 

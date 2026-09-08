@@ -225,6 +225,16 @@ Keys::press("backspace")   what api/input named - an operation, or a key to swal
 Keys::text("e")            what the platform composed - utf-8, straight in at the caret
 ```
 
+**Tab is the second way the focus moves.** `Engine::focusNext()` walks to the next focusable
+component in the order the tree is drawn in - containers as the config listed them, components
+by depth with add order between equal depths, a flow box's children in the order it holds them -
+and wraps at each end, skipping a hidden subtree whole. A ui author wanting a different tab
+order reorders the document; there is no `tabIndex`.
+
+`press()` takes a second argument saying whether shift is held, because a key name carries no
+modifier and this library cannot ask `api/input` for one without taking SDL with it. It matters
+for tab alone. A ui with nothing focused is left alone by tab as it is by every other key.
+
 A key names an operation: backspace, delete, the caret moves, a return that sends the box's
 command, an escape that leaves it. A key that will arrive again as a character is taken as well
 and does nothing, so typing "w" into a box does not also walk the player forward.

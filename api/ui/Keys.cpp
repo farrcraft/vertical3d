@@ -19,13 +19,19 @@ Keys::Keys(const boost::shared_ptr<Engine>& ui, const boost::shared_ptr<entt::di
     dispatcher_(dispatcher) {
 }
 
-bool Keys::press(std::string_view key) {
+bool Keys::press(std::string_view key, bool shifted) {
     if (!ui_ || key.empty()) {
         return false;
     }
     const boost::shared_ptr<Component> focused = ui_->focused();
     if (!focused) {
         return false;
+    }
+    if (key == "tab") {
+        // taken whether or not it moved: a form holding one field still swallows the tab
+        // rather than letting it reach a binding while somebody is typing
+        ui_->focusNext(!shifted);
+        return true;
     }
     if (key == "escape") {
         // leaving the box is what escape means everywhere else, and it is the only way
