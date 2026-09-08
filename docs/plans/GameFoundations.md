@@ -480,6 +480,10 @@ with nothing to scroll draws a track and no thumb, and a bar whose list has gone
 
 ### Step 10 — ADR-0042, a textured quad in world space
 
+**Landed** as [ADR-0042](../adr/0042-a-textured-quad-in-world-space.md): a third primitive,
+`realtime::WorldCanvas`, ordered by its caller, with a depth pipeline that tests and does not
+write. ADR-0005 is narrowed rather than amended, the way ADR-0011 narrowed it.
+
 The record comes first, and this is the one in the plan that genuinely could go either way.
 
 What it has to settle:

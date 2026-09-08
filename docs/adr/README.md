@@ -52,3 +52,4 @@ old record's status and leave the file in place.
 | [0039](0039-layout-never-reads-the-box-it-wrote.md) | UI Layout — The Walk Never Reads The Box It Wrote, And Auto Is The Room A Component Is Offered | accepted | 2026-09-07 |
 | [0040](0040-a-key-goes-to-a-focused-component.md) | UI Input — A Key Goes To A Focused Component, And A Character Is Not A Key | accepted | 2026-09-07 |
 | [0041](0041-a-document-is-written-whole-or-not-at-all.md) | Writing A File — A Document Is Written Whole Or Not At All, And Readably | accepted | 2026-09-07 |
+| [0042](0042-a-textured-quad-in-world-space.md) | 2D Drawing — A Textured Quad In World Space Is A Third Primitive, Ordered By Its Caller | accepted | 2026-09-07 |

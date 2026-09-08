@@ -11,6 +11,10 @@ Amended by [ADR-0036](0036-text-is-a-distinct-kind-of-quad.md): the decision bel
 the fragment shader branches once, on whether a batch is text. Distance field glyphs need a
 threshold that would corrupt every other quad.
 
+Narrowed again by [ADR-0042](0042-a-textured-quad-in-world-space.md): a textured quad in world
+space is a third primitive, so the one primitive here is the one primitive for content in
+canvas pixels.
+
 ## Context
 
 `v3d::gl::Canvas` batches coloured quads, but its vertices carry position and rgba only —
