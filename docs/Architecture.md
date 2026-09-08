@@ -144,8 +144,10 @@ colour and the name the file gave its image, and the app resolves that name thro
 manager. This is the same shape
 [ADR-0020](adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md) settles for themes; see
 [ADR-0030](adr/0030-a-model-is-an-interleaved-array-that-names-its-texture.md). A glTF whose
-image is *embedded* is reported and left empty, because decoding one needs an image reader
-that can be pointed at a buffer and `api/image` reads files only.
+image is *embedded* — a `.glb`'s own buffer, or a data uri — has no name to give, so it
+arrives decoded instead, on `asset::Model::baseColourImage()`. That is on the asset rather
+than on the material because `api/type` is built against glm alone and a material holding an
+image would take `api/image` into every consumer of a mesh.
 
 **Meshes are owned by the app**, not by `Resources`
 ([ADR-0010](adr/0010-meshes-are-owned-by-the-app.md)).

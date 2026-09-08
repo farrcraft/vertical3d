@@ -15,6 +15,8 @@
 #include "../Model.h"
 #include "../Type.h"
 #include "../loader/Gltf.h"
+#include "../../image/Compare.h"
+#include "../../image/Factory.h"
 
 namespace {
 
@@ -22,8 +24,18 @@ namespace {
 // api/asset/tests/data/make_model_fixture.py generates it and says why it is shaped that way
 const char* FIXTURE = "three_primitives.glb";
 
+// one triangle whose base colour texture is a bufferView holding pixel.png, which is the
+// case the named-texture fixture cannot cover - api/asset/tests/data/make_embedded_fixture.py
+const char* EMBEDDED = "embedded_texture.glb";
+
 boost::shared_ptr<v3d::log::Logger> logger() {
     return boost::make_shared<v3d::log::Logger>();
+}
+
+boost::shared_ptr<v3d::asset::Model> loadAsset(const char* name) {
+    v3d::asset::Manager manager("data", logger());
+    boost::shared_ptr<v3d::asset::Asset> asset = manager.load(name, v3d::asset::Type::ModelGltf);
+    return boost::dynamic_pointer_cast<v3d::asset::Model>(asset);
 }
 
 boost::shared_ptr<v3d::type::Model> load(const char* name) {
@@ -113,6 +125,40 @@ BOOST_AUTO_TEST_CASE(gltf_names_the_texture_rather_than_decoding_it_test) {
     // the material names its image and the app resolves it, which is ADR-0020's shape. The
     // fixture ships no albedo.png at all, and loading it still succeeds
     BOOST_CHECK_EQUAL(model->material().baseColourTexture, "albedo.png");
+}
+
+/**
+ * An image the file carries has no name to hand over, so it arrives decoded - and decoded
+ * to exactly what the png reader makes of the same bytes on disk.
+ **/
+BOOST_AUTO_TEST_CASE(gltf_decodes_a_texture_the_file_carries_test) {
+    boost::shared_ptr<v3d::asset::Model> asset = loadAsset(EMBEDDED);
+    BOOST_REQUIRE(asset);
+    BOOST_REQUIRE(asset->model());
+
+    // there is no name, because there is no file to name
+    BOOST_CHECK(asset->model()->material().baseColourTexture.empty());
+
+    boost::shared_ptr<v3d::image::Image> embedded = asset->baseColourImage();
+    BOOST_REQUIRE(embedded);
+
+    v3d::image::Factory factory(logger());
+    boost::shared_ptr<v3d::image::Image> onDisk = factory.read("data/pixel.png");
+    BOOST_REQUIRE(onDisk);
+
+    const v3d::image::Difference difference = v3d::image::compare(*embedded, *onDisk, 0);
+    BOOST_CHECK_MESSAGE(difference.match, difference.description());
+}
+
+/**
+ * And a model whose texture was named carries no pixels, so an app can tell the two apart
+ * by asking rather than by knowing which packaging it loaded.
+ **/
+BOOST_AUTO_TEST_CASE(gltf_a_named_texture_carries_no_pixels_test) {
+    boost::shared_ptr<v3d::asset::Model> asset = loadAsset(FIXTURE);
+    BOOST_REQUIRE(asset);
+
+    BOOST_CHECK(!asset->baseColourImage());
 }
 
 BOOST_AUTO_TEST_CASE(gltf_a_missing_file_is_no_asset_test) {

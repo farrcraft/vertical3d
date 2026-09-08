@@ -5,12 +5,15 @@
 
 #include "Gltf.h"
 
+#include <cstddef>
+#include <cstdlib>
 #include <cstring>
 #include <numeric>
 #include <string>
 
 #include "../Model.h"
 #include "../Type.h"
+#include "../../image/Factory.h"
 
 // cgltf.h is a C header, and cpplint sorts it with the C system headers rather than with
 // the third party ones. Its implementation half is compiled once, in CgltfImpl.cpp.
@@ -99,10 +102,10 @@ void appendPrimitive(const cgltf_primitive& primitive, const Attributes& attribu
 /**
  * The base colour and the name of the image tinting it.
  *
- * @param embedded set when the material names a texture the file carries rather than one it
- *        names, which is reported by the caller rather than dropped
+ * @param embedded set to the image the file carries, where it carries one rather than
+ *        naming it - decoded by the caller, which has the readers
  **/
-v3d::type::Model::Material readMaterial(const cgltf_material& source, bool* embedded) {
+v3d::type::Model::Material readMaterial(const cgltf_material& source, const cgltf_image** embedded) {
     v3d::type::Model::Material material;
     if (source.has_pbr_metallic_roughness == 0) {
         return material;
@@ -121,8 +124,30 @@ v3d::type::Model::Material readMaterial(const cgltf_material& source, bool* embe
         return material;
     }
 
-    *embedded = true;
+    *embedded = texture->image;
     return material;
+}
+
+/**
+ * Which reader decodes an embedded image, from the mime type the file gave it.
+ *
+ * glTF allows only png and jpeg for an embedded image, so an empty answer is a file
+ * outside the specification rather than a format worth guessing at from the bytes.
+ *
+ * @return the key api/image registers its readers under, or nothing
+ **/
+std::string readerFor(const cgltf_image& image) {
+    if (image.mime_type == nullptr) {
+        return std::string();
+    }
+    const std::string mime(image.mime_type);
+    if (mime == "image/png") {
+        return "png";
+    }
+    if (mime == "image/jpeg") {
+        return "jpg";
+    }
+    return std::string();
 }
 
 };  // namespace
@@ -156,7 +181,7 @@ boost::shared_ptr<Asset> Gltf::load(std::string_view name) {
 
     boost::shared_ptr<v3d::type::Model> model = boost::make_shared<v3d::type::Model>();
     bool haveMaterial = false;
-    bool embedded = false;
+    const cgltf_image* embedded = nullptr;
 
     for (cgltf_size meshIndex = 0; meshIndex < data->meshes_count; ++meshIndex) {
         const cgltf_mesh& mesh = data->meshes[meshIndex];
@@ -176,18 +201,83 @@ boost::shared_ptr<Asset> Gltf::load(std::string_view name) {
         }
     }
 
+    // decoded before the file is freed, because the bytes are the file's
+    boost::shared_ptr<v3d::image::Image> baseColour;
+    if (embedded != nullptr) {
+        baseColour = decodeEmbedded(*embedded, name);
+    }
+
     cgltf_free(data);
 
-    if (embedded) {
-        logger_->get()->warn("The base colour texture of {} is embedded in the file and was not read - "
-            "an image reader that takes a buffer is what that needs", name);
-    }
     if (model->empty()) {
         logger_->get()->error("No geometry in gltf asset: {}", name);
         return boost::shared_ptr<Asset>();
     }
 
-    return boost::make_shared<Model>(std::string(name), Type::ModelGltf, model);
+    return boost::make_shared<Model>(std::string(name), Type::ModelGltf, model, baseColour);
+}
+
+/**
+ **/
+boost::shared_ptr<v3d::image::Image> Gltf::decodeEmbedded(const cgltf_image& image, std::string_view model) {
+    boost::shared_ptr<v3d::image::Image> empty;
+
+    const std::string kind = readerFor(image);
+    if (kind.empty()) {
+        logger_->get()->warn("The base colour texture of {} is embedded as {}, which is not a format glTF "
+            "allows embedded, so the model has no texture", model,
+            image.mime_type == nullptr ? "nothing in particular" : image.mime_type);
+        return empty;
+    }
+
+    v3d::image::Factory factory(logger_);
+
+    // a .glb keeps its images in its own buffer, which cgltf_load_buffers has already
+    // resolved by the time this runs
+    if (image.buffer_view != nullptr) {
+        const unsigned char* bytes = cgltf_buffer_view_data(image.buffer_view);
+        if (bytes == nullptr) {
+            logger_->get()->error("The embedded base colour texture of {} has no bytes behind it", model);
+            return empty;
+        }
+        return factory.read(bytes, static_cast<std::size_t>(image.buffer_view->size), kind);
+    }
+
+    // and a .gltf may inline one as a data uri instead, which nothing has decoded yet -
+    // cgltf_load_buffers resolves the file's buffers and an image is not one of them
+    if (image.uri == nullptr) {
+        return empty;
+    }
+    const char* comma = std::strchr(image.uri, ',');
+    if (comma == nullptr || comma - image.uri < 7 || std::strncmp(comma - 7, ";base64", 7) != 0) {
+        logger_->get()->error("The base colour texture of {} is a data uri that is not base64", model);
+        return empty;
+    }
+    // four base64 characters carry three bytes, less however many the padding stands in for
+    const std::size_t encoded = std::strlen(comma + 1);
+    if (encoded == 0 || encoded % 4 != 0) {
+        logger_->get()->error("The base colour texture of {} is a data uri of the wrong length", model);
+        return empty;
+    }
+    std::size_t decoded = encoded / 4 * 3;
+    if (comma[encoded] == '=') {
+        decoded--;
+    }
+    if (comma[encoded - 1] == '=') {
+        decoded--;
+    }
+
+    cgltf_options options{};
+    void* bytes = nullptr;
+    if (cgltf_load_buffer_base64(&options, decoded, comma + 1, &bytes) != cgltf_result_success || bytes == nullptr) {
+        logger_->get()->error("The base colour texture of {} could not be decoded out of its data uri", model);
+        return empty;
+    }
+    boost::shared_ptr<v3d::image::Image> result =
+        factory.read(static_cast<const unsigned char*>(bytes), decoded, kind);
+    // allocated by cgltf's default allocator, which is malloc
+    free(bytes);
+    return result;
 }
 
 };  // namespace v3d::asset::loader

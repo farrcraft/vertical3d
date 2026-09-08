@@ -5,7 +5,12 @@
 
 #pragma once
 
+#include <string>
+
 #include "../Loader.h"
+#include "../../image/Image.h"
+
+struct cgltf_image;
 
 namespace v3d::asset::loader {
 /**
@@ -21,11 +26,10 @@ namespace v3d::asset::loader {
  * Positions are required; normals and texture coordinates are taken where a primitive has
  * them and left at zero where it does not.
  *
- * Only the base colour of the metallic-roughness model is read, and its texture arrives as
- * the name the file gave it rather than as pixels - see v3d::type::Model::Material. An
- * image embedded in a .glb has no name to hand over and is reported rather than dropped
- * quietly: decoding one needs an image reader that can be pointed at a buffer, which
- * api/image does not have.
+ * Only the base colour of the metallic-roughness model is read. A texture the file names
+ * arrives as that name, on v3d::type::Model::Material; one the file carries - a .glb's own
+ * buffer, or a data uri - has no name to hand over and arrives decoded, on
+ * v3d::asset::Model::baseColourImage().
  **/
 class Gltf final : public Loader {
  public:
@@ -39,5 +43,16 @@ class Gltf final : public Loader {
      *         the same way every other loader in the tree reports a failure
      **/
     boost::shared_ptr<Asset> load(std::string_view name) override;
+
+ private:
+    /**
+     * Decode an image the file carried rather than named.
+     *
+     * @param model the asset being loaded, for the line a failure is reported on
+     * @return the pixels, or null where the format is one glTF does not allow embedded or
+     *         the bytes do not decode - either of which is a texture the model loses and
+     *         not a model that fails to load
+     **/
+    boost::shared_ptr<v3d::image::Image> decodeEmbedded(const cgltf_image& image, std::string_view model);
 };
 };  // namespace v3d::asset::loader
