@@ -16,6 +16,17 @@ v3d_add_api_library(render_offline
 	"RIBParameters.h" "RIBParameters.cxx"
 	"RIBHandler.h"
 	"RIBReader.h" "RIBReader.cxx"
+	"SLLexer.h" "SLLexer.cxx"
+	"SLSyntax.h" "SLSyntax.cxx"
+	"SLParser.h" "SLParser.cxx"
+	"SLTypes.h" "SLTypes.cxx"
+	"SLBuiltins.h" "SLBuiltins.cxx"
+	"SLCompiler.h" "SLCompiler.cxx"
+	"SLValue.h" "SLValue.cxx"
+	"SLProgram.h" "SLProgram.cxx"
+	"SLRenderer.h"
+	"SLEmitter.h" "SLEmitter.cxx"
+	"SLMachine.h" "SLMachine.cxx"
 )
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.

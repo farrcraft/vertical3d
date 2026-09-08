@@ -62,6 +62,46 @@ implements it as `<renderer>::RIBHandler`. RIB is also what the editor exports t
   produces exactly those. `RIBHandler::error()` says which one it was, and the reader still
   succeeds, because the request was understood.
 
+## The shading language
+
+Shading is a language rather than a set of built-in models, per
+[ADR-0026](adr/0026-shading-is-a-language-over-a-batch.md), and it lives in
+`api/render/offline` beside the RIB one: `SLLexer`, `SLSyntax` and `SLParser` read a shader,
+`SLTypes` and `SLCompiler` check it, and `SLBuiltins` says what the standard library provides.
+The phase that builds the rest of it is open, so what follows is where the seams are rather
+than a tour.
+
+- **The `SL*` files are to a `.sl` file what the `RIB*` ones are to a `.rib` file**, and are
+  shaped the same way on purpose - a `peek`/`next` lexer over an `std::istream`, an `error()`
+  that ends the stream, and a line and column on every token.
+- **A keyword is a closed set**: the five shader types, the eight data types, the two storage
+  classes, the control flow and the three lighting constructs. Everything else that looks like
+  a name is an identifier, so a shader may declare a variable called `output` or write its own
+  `noise`.
+- **`.` is a dot product and `^` is a cross product**, and both bind tighter than a multiply.
+  Neither is what a reader coming from another language expects, which is the one part of the
+  grammar worth checking before assuming a shader means what it looks like.
+- **All five shader types parse and three of them run.** A `displacement` or a `volume` shader
+  comes back from the parser answering false to `SLShader::supported()`, so a scene carrying
+  one is told what is unsupported rather than what is malformed - the same distinction the RIB
+  reader draws between a request that is recognised and one that is unparsed.
+- **The C preprocessor is not run.** A `#` is a diagnostic naming the missing tool, not a
+  comment, and there is no compiled-shader file: a shader is source, compiled when it is first
+  named.
+- **The compiler annotates the tree in place.** Every expression comes out with a type and a
+  storage class and every variable with a symbol index, rather than a second structure keyed by
+  node. `SLCompiler::symbols()` is then the list a machine allocates registers against - a
+  local declared twice in nested scopes is two of them.
+- **The varying inference runs to a fixed point**, because a loop carries a varying value back
+  to a name that was read before it was written. Inferring uniform where varying was right
+  gives a whole grid one point's answer, which reads as a shading bug and is a compiler bug.
+  Anything assigned under a varying condition is varying, and a value declared `uniform` that a
+  varying one reaches is a fault rather than a quiet widening.
+- **A signature is the declared interface, not a claim about the implementation.** `ambient`,
+  `diffuse` and `specular` are in `SLBuiltins` beside `pow` and `normalize`, and are shader
+  source written over `illuminance` rather than C++ - which is what the standard says and what
+  makes them testable. A caller cannot tell, and neither can the type checker.
+
 ## Normals
 
 Both renderers carry two, because SL's `faceforward` and `calculatenormal` are defined in terms

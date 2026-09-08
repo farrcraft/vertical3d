@@ -68,7 +68,6 @@ the two the roadmap named: the two extra are an existing language embedded inste
 and a `.slo`-style compiled shader file, both of which the plan settled in passing and neither of
 which a reader would otherwise find argued anywhere.
 
-
 The roadmap has carried this question open since it was written, and it reaches past this phase:
 it decides whether talyn is reached from a shader's `trace()`, which is the remaining half of
 [phase 6](../roadmap/OfflineRendering.md). The record has to exist before step 3, because every
@@ -153,6 +152,26 @@ and a fixture that shades the normal as a colour renders the picture a normal ma
 
 ### Step 3 — the SL lexer
 
+**Landed.** `SLLexer` and `SLToken` are in `api/render/offline`, beside `RIBLexer` and shaped
+like it - a `peek`/`next` pair over an `std::istream`, an `error()` that ends the stream, and a
+line and column on every token.
+
+Three things the RIB lexer does not have to do:
+
+- **A number carries no sign.** RIB has no unary minus so its lexer takes one; here a `-` is
+  always the subtraction or the negation, and `a-1` is three tokens. A `.` is the dot product
+  unless a digit follows it.
+- **A one character pushback lives in the lexer**, not in the stream. Deciding whether a `/`
+  opens a comment takes the character after it, and `std::istream::putback` fails once the
+  stream has hit its end - which is exactly what a shader ending in a `/` produces.
+- **`&` and `|` alone are diagnostics** naming the doubled form, rather than falling through to
+  "unexpected character" and reporting the identifier after them.
+
+`output` is an identifier rather than a keyword, per this step's rule that the keyword set is
+the five groups and nothing else. Step 4 matches it by text in the one position it can appear,
+and a shader may name a variable `output`, `noise` or `diffuse` and have it mean what it
+declared.
+
 `api/render/offline`, following the `RIB*` precedent that is already there: `SLLexer` beside
 `RIBLexer`, taking an `std::istream` so a case is a string literal.
 
@@ -175,6 +194,33 @@ containing a `//`, an unterminated string and an unterminated block comment as e
 where, and a `#` line rejected by name.
 
 ### Step 4 — the grammar, and the syntax tree
+
+**Landed.** `SLSyntax.h` holds the nodes and `SLParser` the recursive descent over them. All
+eight standard shaders parse, all five shader types parse, and a `displacement` or a `volume`
+comes back answering false to `SLShader::supported()` rather than being refused.
+
+Four decisions the step's own text left open:
+
+- **A syntax node is data, not an object.** The members are public and there are no accessors,
+  which is the shape `ParameterList::Parameter` already has. A consumer reads `kind` and casts
+  to the class it names; step 5 and step 6 both walk this, and neither wants a visitor for a
+  tree with no behaviour in it.
+- **A failure is thrown and caught in `parse()`.** Every production would otherwise return a
+  nullable pointer that every caller checks, and the grammar would stop being legible in the
+  code that implements it. The type is private to the parser and never crosses the interface.
+- **A parenthesised list is a tuple of any length**, not a triple. A triple is three of them and
+  a matrix is sixteen, and whether the count suits the cast is a question about the type - which
+  is step 5's.
+- **`float x` and `float f(` are told apart by the token after the name**, so the shader body
+  loop consumes the type and the name itself and hands both to whichever production follows.
+  That is cheaper than a second token of lookahead in the lexer, and it is the only place in the
+  grammar that needs it.
+
+Two things the step did not name and the code now settles: a shader's parameters are separated
+by semicolons and a function's formals by commas, and **either separator is accepted in either
+list** rather than refusing a file written the other way round; and a function may be defined
+only at the top of a shader body, with a message that says so rather than a message about a
+missing semicolon.
 
 `SLParser` producing `SLSyntax` nodes. Recursive descent, because the grammar is small and the
 error messages are the reason anyone will read this code.
@@ -210,6 +256,35 @@ unsupported rather than failing, and a syntax error reports a position.
 
 ### Step 5 — symbols, types, and the varying inference
 
+**Landed.** `SLCompiler` annotates the tree in place - every expression comes out with a type
+and a storage class, every variable with the index of the symbol it resolved to - and hands
+back the symbol list in the order a machine should allocate it. Two files came with it:
+`SLTypes` for the coercions and the three transforms, and `SLBuiltins` for the standard
+library's **signatures**, which the checker needs before step 7 writes a single body. The
+signature is the declared interface either way, so nothing there is rewritten when some of
+those turn out to be shader source rather than C++.
+
+The two things worth knowing beyond the step's own text:
+
+- **The inference runs to a fixed point.** One pass in source order is unsound, because a loop
+  carries a varying value back to a name that was read before it was written - and the failure
+  is the quiet one this step warns about, a whole grid with one point's answer. Nothing ever
+  moves from varying back to uniform, so the walk is monotone and settles; a case pins it with
+  a loop that reads before it writes. The same iteration carries a function's formals: a formal
+  takes the storage of every argument any call site passes it, so a function called once with a
+  varying value is varying wherever it is called.
+- **A uniform that a varying value reaches is faulted, not quietly widened.** A shader that
+  declares `uniform` and then assigns something varying is saying two things at once, and
+  keeping either one silently is the failure mode. The report waits for the fixed point to
+  settle, since a symbol may become varying on a later round than the one that read it.
+
+Three diagnostics the step did not ask for and the code gives anyway, because each is the
+difference between a useful message and a confusing one: a global of another shader type is
+reported as belonging to that type rather than as undeclared, which is what a light shader
+writing `Ci` gets; a surface shader's `L` and `Cl` outside an `illuminance` body are reported
+as what a light sets rather than as ordinary reads; and a function that reaches itself is
+reported at the call graph, which is where step 4 said the check belonged.
+
 `SLCompiler`, the pass between the tree and the program. Three jobs, and the third is the one that
 decides whether the machine is fast or is an interpreter call per vertex.
 
@@ -240,6 +315,37 @@ makes an assignment inside it varying, a light shader writing `Ci` is an error, 
 identifier is reported with a position.
 
 ### Step 6 — the value model and the virtual machine
+
+**Landed.** `SLValue`, `SLProgram` and `SLMachine` as the step names them, plus two the step
+implied: `SLEmitter`, which turns the annotated tree into the flat program - "a uniform
+condition compiles to a jump" needs something that compiles - and `SLRenderer`, the interface
+the machine asks for what it does not hold. It carries one method so far, the matrix for a
+named coordinate space; step 7 grows it and steps 9 and 10 implement it.
+
+**A loop is masked whether its condition varies or not.** A uniform condition narrows every
+lane together, so it behaves as the jump it would have compiled to, and one form means `break`
+and `continue` have one meaning rather than two. The jump form is kept for `if`, which is where
+the step's own case looks for it.
+
+Writing the machine found three faults, two of them in step 5's inference and one in the
+semantics of a `for` loop:
+
+- **A `break` or a `continue` under a varying condition makes the whole loop body varying.**
+  The statements after the escape run for some lanes and not others, however uniform the values
+  reaching them are. Without this a counter comes out uniform, one lane's exit stops it for
+  every lane, and the loop never ends - which is how the fault announced itself.
+- **A uniform value is written while any lane is running**, not while lane zero is. A lane that
+  broke out of a loop must not stop a uniform counter that the lanes beside it are still
+  advancing.
+- **A `continue` goes to a `for` loop's step, not past it.** Carrying the step away with the
+  lane is C's rule broken, and it leaves a counter that never advances.
+
+Two things are named as not here rather than left to be found: a shader's own function, which
+has no instructions until there is an inliner - a run has no call stack, so a call is inlined,
+and the inliner arrives with the library's own SL-source functions in step 7 - and a lighting
+construct, which runs another shader's program over the same batch and is step 7's message
+passing rather than an instruction. A `CALL` is emitted and the machine reports that no library
+is attached, which is the seam step 7 fills.
 
 `SLValue`, `SLProgram` and `SLMachine`. The heart of ADR-0026's execution model.
 
