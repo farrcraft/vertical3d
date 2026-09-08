@@ -5,8 +5,10 @@
 
 #include "PongEngine.h"
 
+#include <array>
 #include <iostream>
 #include <map>
+#include <utility>
 #include <string>
 #include <string_view>
 #include <variant>
@@ -36,12 +38,27 @@ const char* const APPLICATION = "Pong";
  * The menu item that captures a key, against the paddle command it drives. The item name is
  * also the settings key, so what is stored says which menu wrote it.
  **/
-const std::map<std::string_view, std::string> PADDLE_COMMANDS = {
+// an array of views rather than a map of strings, because a map with static storage
+// duration allocates during static initialization and can throw where nothing can catch it
+constexpr std::array<std::pair<std::string_view, std::string_view>, 4> PADDLE_COMMANDS = {{
     {"setLeftPaddleUpKey", "pong::leftPaddleUp"},
     {"setLeftPaddleDownKey", "pong::leftPaddleDown"},
     {"setRightPaddleUpKey", "pong::rightPaddleUp"},
     {"setRightPaddleDownKey", "pong::rightPaddleDown"}
-};
+}};
+
+/**
+ * @return the command the named menu item drives, or an empty view for an item that drives
+ *         no paddle
+ **/
+std::string_view paddleCommand(std::string_view item) {
+    for (const auto& binding : PADDLE_COMMANDS) {
+        if (binding.first == item) {
+            return binding.second;
+        }
+    }
+    return std::string_view();
+}
 
 };  // namespace
 
@@ -216,15 +233,14 @@ void PongEngine::rebindPaddleKey(const v3d::event::Event& event) {
     }
     const std::string key = std::get<std::string>(data.get());
 
-    const std::map<std::string_view, std::string>::const_iterator found =
-        PADDLE_COMMANDS.find(event.name());
-    if (found == PADDLE_COMMANDS.end()) {
+    const std::string_view command = paddleCommand(event.name());
+    if (command.empty()) {
         return;
     }
-    if (!rebind(found->second, key)) {
+    if (!rebind(std::string(command), key)) {
         return;
     }
-    logger_->get()->info("bound {} to {}", found->second, key);
+    logger_->get()->info("bound {} to {}", command, key);
 
     // stored as it is made rather than on the way out: there is no exit path that reliably
     // runs, and a crash after a rebinding should not lose the rebinding
@@ -235,13 +251,13 @@ void PongEngine::rebindPaddleKey(const v3d::event::Event& event) {
 /**
  **/
 void PongEngine::applyStoredBindings() {
-    for (const auto& command : PADDLE_COMMANDS) {
-        const std::string key = settings_->text(std::string(command.first), std::string());
+    for (const auto& binding : PADDLE_COMMANDS) {
+        const std::string key = settings_->text(std::string(binding.first), std::string());
         if (key.empty()) {  // untouched, so it keeps tracking whatever the config binds
             continue;
         }
-        if (rebind(command.second, key)) {
-            logger_->get()->info("bound {} to {} from settings", command.second, key);
+        if (rebind(std::string(binding.second), key)) {
+            logger_->get()->info("bound {} to {} from settings", binding.second, key);
         }
     }
 }

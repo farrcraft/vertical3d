@@ -100,6 +100,11 @@ receives every event. So it is neither the dispatcher, the event type nor the tr
 member-function-and-instance binding. Nothing else in the tree connects a member of an api
 library to a dispatcher sink, which is why nothing else shows it
 
+## Assets
+
+[] there is no hot reload. `asset::Manager` owns the cache and the paths, so noticing a file changed is the easy half; the hard half is what a live `render::realtime::TextureHandle` does when the image behind it is replaced, and that is a question about what a texture is used for rather than about the manager
+[] `asset::JsonFile::open` uses `fopen_s`, which is MSVC's, and so do all four image readers and writers. The tree is Windows only and this is not urgent; it is worth knowing before a sixth is added
+
 ## The game loop
 
 The loop simulates at a fixed step and renders at a variable one -

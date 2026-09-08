@@ -125,7 +125,7 @@ bool Settings::writable() const noexcept {
 /**
  **/
 const boost::json::value* Settings::find(const std::string& key) const {
-    const auto entry = entries_.find(key);
+    const auto* const entry = entries_.find(key);
     return entry == entries_.end() ? nullptr : &entry->value();
 }
 

@@ -48,7 +48,7 @@ height(0) {
 
 /**
  **/
-SpriteSheet::SpriteSheet() noexcept :
+SpriteSheet::SpriteSheet() :
 width_(0),
 height_(0) {
 }
@@ -118,9 +118,63 @@ bool SpriteSheet::uv(const std::string& sprite, glm::vec2* uv0, glm::vec2* uv1) 
 
 /**
  **/
+bool SpriteSheet::place(const std::string& sprite, const SpriteRegion& region) {
+    // a region running off the sheet would give a uv outside 0..1, which samples whatever the
+    // wrap mode decides rather than reporting anything
+    if (sprite.empty() || region.width <= 0 || region.height <= 0 ||
+        region.x < 0 || region.y < 0 ||
+        region.x + region.width > width_ || region.y + region.height > height_) {
+        return false;
+    }
+    if (regions_.emplace(sprite, region).second) {
+        sprites_.push_back(sprite);
+    }
+    return true;
+}
+
+/**
+ **/
 SpriteSheets::SpriteSheets(const boost::shared_ptr<v3d::log::Logger>& logger) :
     logger_(logger) {
 }
+
+namespace {
+
+/**
+ * Read one sheet's sprites into it.
+ *
+ * @return whether every one of them was understood
+ **/
+bool readSprites(const boost::json::object& entry, SpriteSheet* sheet,
+    const boost::shared_ptr<v3d::log::Logger>& logger) {
+    if (!entry.contains("sprites") || !entry.at("sprites").is_array()) {
+        return true;  // a sheet naming an image and no sprites is empty rather than wrong
+    }
+
+    bool understood = true;
+    for (const boost::json::value& item : entry.at("sprites").as_array()) {
+        if (!item.is_object()) {
+            logger->get()->error("Unrecognized sprite in sheet {}", sheet->name());
+            understood = false;
+            continue;
+        }
+        const boost::json::object record = item.as_object();
+        const std::string named = text(record, "name");
+        SpriteRegion region;
+        region.x = whole(record, "x", 0);
+        region.y = whole(record, "y", 0);
+        region.width = whole(record, "width", 0);
+        region.height = whole(record, "height", 0);
+
+        if (!sheet->place(named, region)) {
+            logger->get()->error("Sprite {} does not fit sheet {}", named, sheet->name());
+            understood = false;
+        }
+    }
+    return understood;
+}
+
+};  // namespace
 
 /**
  **/
@@ -154,36 +208,7 @@ bool SpriteSheets::load(const boost::shared_ptr<v3d::asset::Json>& config) {
             continue;
         }
 
-        if (entry.contains("sprites") && entry.at("sprites").is_array()) {
-            for (const boost::json::value& item : entry.at("sprites").as_array()) {
-                if (!item.is_object()) {
-                    logger_->get()->error("Unrecognized sprite in sheet {}", sheet.name_);
-                    understood = false;
-                    continue;
-                }
-                const boost::json::object record = item.as_object();
-                const std::string named = text(record, "name");
-                SpriteRegion region;
-                region.x = whole(record, "x", 0);
-                region.y = whole(record, "y", 0);
-                region.width = whole(record, "width", 0);
-                region.height = whole(record, "height", 0);
-
-                // a region running off the sheet would give a uv outside 0..1, which samples
-                // whatever the wrap mode decides rather than reporting anything
-                if (named.empty() || region.width <= 0 || region.height <= 0 ||
-                    region.x < 0 || region.y < 0 ||
-                    region.x + region.width > sheet.width_ ||
-                    region.y + region.height > sheet.height_) {
-                    logger_->get()->error("Sprite {} does not fit sheet {}", named, sheet.name_);
-                    understood = false;
-                    continue;
-                }
-                if (sheet.regions_.emplace(named, region).second) {
-                    sheet.sprites_.push_back(named);
-                }
-            }
-        }
+        understood = readSprites(entry, &sheet, logger_) && understood;
 
         if (sheets_.emplace(sheet.name_, sheet).second) {
             names_.push_back(sheet.name_);

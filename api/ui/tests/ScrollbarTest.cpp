@@ -42,6 +42,7 @@ boost::shared_ptr<v3d::ui::component::SelectList> list(std::size_t rows, float r
         boost::make_shared<v3d::ui::component::SelectList>();
     component->name("list");
     std::vector<std::string> items;
+    items.reserve(rows);
     for (std::size_t row = 0; row < rows; row++) {
         items.push_back("row " + std::to_string(row));
     }

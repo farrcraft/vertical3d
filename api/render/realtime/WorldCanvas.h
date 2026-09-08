@@ -92,7 +92,7 @@ class WorldCanvas final {
      * Apply a transform on top of the current one, so geometry can be described at the
      * origin and placed where it is drawn.
      **/
-    void transform(const glm::mat4& transform);  // NOLINT(build/include_what_you_use) - the name, not std::transform
+    void transform(const glm::mat4& applied);  // NOLINT(build/include_what_you_use) - the name, not std::transform
 
     /**
      * Translate the current transform.

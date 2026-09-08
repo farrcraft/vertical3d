@@ -43,7 +43,7 @@ struct SpriteRegion final {
  **/
 class SpriteSheet final {
  public:
-    SpriteSheet() noexcept;
+    SpriteSheet();
 
     /**
      * @return what the sheet is called, as whatever names one names it
@@ -86,6 +86,16 @@ class SpriteSheet final {
      *         by, leaving both outputs alone
      **/
     bool uv(const std::string& sprite, glm::vec2* uv0, glm::vec2* uv1) const;
+
+    /**
+     * Put one sprite in the sheet, which is where a region's own validity is decided: a
+     * region running off the sheet would give a uv outside 0..1, and that samples whatever
+     * the wrap mode decides rather than reporting anything.
+     *
+     * @return whether the region is one this sheet can hold. A name already in the sheet is
+     *         kept as it was and is not an error
+     **/
+    bool place(const std::string& sprite, const SpriteRegion& region);
 
  private:
     friend class SpriteSheets;
