@@ -73,6 +73,11 @@ BOOST_AUTO_TEST_CASE(mouse_button_test) {
     BOOST_CHECK_EQUAL(recorder.buttons_[0].button(), static_cast<unsigned int>(SDL_BUTTON_LEFT));
     BOOST_CHECK_EQUAL(recorder.buttons_[0].pressed(), true);
 
+    // the event carries the point SDL put on it, so a cursor can be driven from the press
+    // alone rather than from a motion the consumer tracked itself
+    BOOST_CHECK_EQUAL(recorder.buttons_[0].position()[0], 10.0f);
+    BOOST_CHECK_EQUAL(recorder.buttons_[0].position()[1], 20.0f);
+
     // the button is held, and the click moved the cursor with it
     BOOST_CHECK_EQUAL(mouse.state().pressed(SDL_BUTTON_LEFT), true);
     BOOST_CHECK_EQUAL(mouse.state().position()[0], 10.0f);
@@ -84,8 +89,11 @@ BOOST_AUTO_TEST_CASE(mouse_button_test) {
     BOOST_CHECK(recorder.source_[0].state() == v3d::event::State::Pressed);
 
     // releasing is the other edge, and drops the hold
-    BOOST_CHECK_EQUAL(mouse.handleEvent(buttonEvent(SDL_EVENT_MOUSE_BUTTON_UP, SDL_BUTTON_LEFT, 10.0f, 20.0f)), true);
+    BOOST_CHECK_EQUAL(mouse.handleEvent(buttonEvent(SDL_EVENT_MOUSE_BUTTON_UP, SDL_BUTTON_LEFT, 12.0f, 22.0f)), true);
     BOOST_CHECK_EQUAL(mouse.state().pressed(SDL_BUTTON_LEFT), false);
+    BOOST_REQUIRE_EQUAL(recorder.buttons_.size(), 2u);
+    BOOST_CHECK_EQUAL(recorder.buttons_[1].position()[0], 12.0f);
+    BOOST_CHECK_EQUAL(recorder.buttons_[1].position()[1], 22.0f);
     BOOST_REQUIRE_EQUAL(recorder.source_.size(), 2u);
     BOOST_CHECK(recorder.source_[1].state() == v3d::event::State::Released);
 

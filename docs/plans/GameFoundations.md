@@ -349,6 +349,9 @@ answers the new key, delete the file, restart, confirm it answers the shipped on
 
 ### Step 6 — `MouseButton` carries the point SDL gave it
 
+**Landed.** The constructor takes the point and the button case in `Mouse::handleEvent` was
+braced so it can be a `const` local rather than a member of the enclosing function.
+
 In [`api/event/MouseButton.h`](../../api/event/MouseButton.h) and
 [`api/input/Mouse.cpp`](../../api/input/Mouse.cpp).
 

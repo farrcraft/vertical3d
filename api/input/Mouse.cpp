@@ -41,7 +41,7 @@ bool Mouse::handleEvent(const SDL_Event& event) {
     bool pressed = true;
     switch (event.type) {
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
-    case SDL_EVENT_MOUSE_BUTTON_UP:
+    case SDL_EVENT_MOUSE_BUTTON_UP: {
         pressed = (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN);
         buttonName = buttonEvent(event.button.button);
         if (buttonName.empty()) {  // a button we have no name for cannot be bound to anything
@@ -50,10 +50,12 @@ bool Mouse::handleEvent(const SDL_Event& event) {
         if (state_.pressed(event.button.button) != pressed) {
             state_(event.button.button);
         }
-        state_(glm::vec2(event.button.x, event.button.y));
+        const glm::vec2 position(event.button.x, event.button.y);
+        state_(position);
         dispatcher_->trigger<v3d::event::MouseButton>(
-            v3d::event::MouseButton(event.button.button, context_, pressed));
+            v3d::event::MouseButton(event.button.button, position, context_, pressed));
         break;
+    }
     case SDL_EVENT_MOUSE_MOTION: {
         glm::vec2 position(event.motion.x, event.motion.y);
         state_(position);
