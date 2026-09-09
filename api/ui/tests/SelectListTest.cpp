@@ -5,10 +5,10 @@
 
 #include <api/asset/Json.h>
 #include <api/render/realtime/Canvas.h>
-#include <api/ui/ComponentRenderer.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
 #include <api/ui/component/SelectList.h>
+#include <api/ui/paint/ComponentRenderer.h>
 
 #include <string>
 #include <string_view>
@@ -32,8 +32,8 @@ struct Written final {
     glm::vec4 colour;
 };
 
-v3d::ui::ComponentRenderer build(std::vector<Written>* written) {
-    return v3d::ui::ComponentRenderer(
+v3d::ui::paint::ComponentRenderer build(std::vector<Written>* written) {
+    return v3d::ui::paint::ComponentRenderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
             if (written != nullptr) {
@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_SUITE(select_list_test)
  **/
 BOOST_AUTO_TEST_CASE(the_rows_are_cut_off_at_the_list) {
     std::vector<Written> written;
-    v3d::ui::ComponentRenderer renderer = build(&written);
+    v3d::ui::paint::ComponentRenderer renderer = build(&written);
     v3d::render::realtime::Canvas canvas;
     canvas.resize(400, 300);
 
@@ -100,7 +100,7 @@ BOOST_AUTO_TEST_CASE(the_rows_are_cut_off_at_the_list) {
  **/
 BOOST_AUTO_TEST_CASE(an_offset_starts_the_rows_further_down) {
     std::vector<Written> written;
-    v3d::ui::ComponentRenderer renderer = build(&written);
+    v3d::ui::paint::ComponentRenderer renderer = build(&written);
     v3d::render::realtime::Canvas canvas;
     canvas.resize(400, 300);
 
@@ -125,7 +125,7 @@ BOOST_AUTO_TEST_CASE(an_offset_starts_the_rows_further_down) {
  * scrolled at all.
  **/
 BOOST_AUTO_TEST_CASE(the_offset_is_clamped_to_what_the_box_does_not_show) {
-    v3d::ui::ComponentRenderer renderer = build(nullptr);
+    v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
     v3d::render::realtime::Canvas canvas;
     canvas.resize(400, 300);
 
@@ -151,7 +151,7 @@ BOOST_AUTO_TEST_CASE(the_offset_is_clamped_to_what_the_box_does_not_show) {
  * unscrolled. A list that has never been drawn answers nothing, per ADR-0019.
  **/
 BOOST_AUTO_TEST_CASE(a_point_names_the_row_under_it) {
-    v3d::ui::ComponentRenderer renderer = build(nullptr);
+    v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
     v3d::render::realtime::Canvas canvas;
     canvas.resize(400, 300);
 
@@ -205,7 +205,7 @@ BOOST_AUTO_TEST_CASE(replacing_the_rows_keeps_a_choice_that_survives) {
  **/
 BOOST_AUTO_TEST_CASE(the_chosen_row_is_drawn_differently) {
     std::vector<Written> written;
-    v3d::ui::ComponentRenderer renderer = build(&written);
+    v3d::ui::paint::ComponentRenderer renderer = build(&written);
     v3d::render::realtime::Canvas canvas;
     canvas.resize(400, 300);
 

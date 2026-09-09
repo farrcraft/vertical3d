@@ -42,7 +42,7 @@ bool Controller::initialize() {
     window_->warpCursor(window_->width() / 2, window_->height() / 2);
 
     vgui_ = boost::make_shared<v3d::ui::Engine>(eventEngine_, dispatcher_, logger_);
-    menu_ = boost::make_shared<v3d::ui::GameMenu>(vgui_, [this](bool suspended) {
+    menu_ = boost::make_shared<v3d::ui::shell::GameMenu>(vgui_, [this](bool suspended) {
         suspend(suspended);
     });
     if (config_) {

@@ -28,7 +28,7 @@ namespace {
 
 const float characterWidth = 10.0f;
 
-v3d::ui::Measure measure() {
+v3d::ui::paint::Measure measure() {
     return [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; };
 }
 

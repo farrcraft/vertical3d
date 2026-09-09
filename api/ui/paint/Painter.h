@@ -10,7 +10,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::ui {
+namespace v3d::ui::paint {
 
 /**
  * The boxes this library is drawn out of, shared by the two ways of writing a ui: the
@@ -58,4 +58,4 @@ void plateBox(v3d::render::realtime::Canvas* canvas, const glm::vec2& min, const
  **/
 bool inside(const glm::vec2& min, const glm::vec2& max, const glm::vec2& point) noexcept;
 
-};  // namespace v3d::ui
+};  // namespace v3d::ui::paint

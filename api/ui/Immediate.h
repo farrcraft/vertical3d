@@ -5,13 +5,13 @@
 
 #pragma once
 
+#include <api/ui/paint/Text.h>
+
 #include <cstddef>
 #include <cstdint>
 #include <map>
 #include <string>
 #include <vector>
-
-#include "Text.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
@@ -105,7 +105,7 @@ class Immediate {
      * @param measure how wide a string is when the app draws it
      * @param write how the app draws a string
      **/
-    Immediate(const Measure& measure, const Write& write);
+    Immediate(const paint::Measure& measure, const paint::Write& write);
     ~Immediate();
 
     /**
@@ -523,8 +523,8 @@ class Immediate {
     glm::vec4 face(bool lit, bool hovered) const;
 
  private:
-    Measure measure_;
-    Write write_;
+    paint::Measure measure_;
+    paint::Write write_;
     Dressing dressing_;
     boost::shared_ptr<style::Theme> theme_;
 

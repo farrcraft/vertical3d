@@ -30,7 +30,7 @@ bool Controller::initialize() {
     window_->caption("Tetris!");
 
     vgui_ = boost::make_shared<v3d::ui::Engine>(eventEngine_, dispatcher_, logger_);
-    menu_ = boost::make_shared<v3d::ui::GameMenu>(vgui_, [this](bool suspended) {
+    menu_ = boost::make_shared<v3d::ui::shell::GameMenu>(vgui_, [this](bool suspended) {
         scene_->pause(suspended);
     });
     if (config_) {

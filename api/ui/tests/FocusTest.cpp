@@ -6,10 +6,10 @@
 #include <api/asset/Json.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
-#include <api/ui/Keys.h>
 #include <api/ui/component/Panel.h>
 #include <api/ui/component/TextBox.h>
 #include <api/ui/component/VerticalBox.h>
+#include <api/ui/input/Keys.h>
 
 #include <string>
 #include <string_view>
@@ -35,12 +35,12 @@ struct Fixture final {
             boost::make_shared<v3d::log::Logger>());
         BOOST_REQUIRE(ui->load(boost::make_shared<v3d::asset::Json>("vgui",
             v3d::asset::Type::JsonDocument, boost::json::parse(document).as_object())));
-        keys = boost::make_shared<v3d::ui::Keys>(ui, dispatcher);
+        keys = boost::make_shared<v3d::ui::input::Keys>(ui, dispatcher);
     }
 
     boost::shared_ptr<entt::dispatcher> dispatcher;
     boost::shared_ptr<v3d::ui::Engine> ui;
-    boost::shared_ptr<v3d::ui::Keys> keys;
+    boost::shared_ptr<v3d::ui::input::Keys> keys;
 };
 
 const char* const ONE_CONTAINER =

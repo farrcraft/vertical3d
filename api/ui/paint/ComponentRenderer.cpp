@@ -5,6 +5,8 @@
 
 #include "ComponentRenderer.h"
 
+#include <api/ui/Container.h>
+#include <api/ui/Engine.h>
 #include <api/ui/component/Bar.h>
 #include <api/ui/component/Box.h>
 #include <api/ui/component/Button.h>
@@ -35,11 +37,9 @@
 #include <utility>
 #include <vector>
 
-#include "Container.h"
-#include "Engine.h"
 #include "Painter.h"
 
-namespace v3d::ui {
+namespace v3d::ui::paint {
 
 namespace {
 
@@ -913,4 +913,4 @@ void ComponentRenderer::panel(v3d::render::realtime::Canvas* canvas, const boost
     }
 }
 
-};  // namespace v3d::ui
+};  // namespace v3d::ui::paint

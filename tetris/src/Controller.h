@@ -9,7 +9,7 @@
 #include <api/event/Event.h>
 #include <api/log/Logger.h>
 #include <api/ui/Engine.h>
-#include <api/ui/GameMenu.h>
+#include <api/ui/shell/GameMenu.h>
 
 #include <string>
 
@@ -57,5 +57,5 @@ class Controller final : public v3d::engine::Engine {
     boost::shared_ptr<TetrisScene> scene_;
     boost::shared_ptr<TetrisRenderer> renderer_;
     boost::shared_ptr<v3d::ui::Engine> vgui_;
-    boost::shared_ptr<v3d::ui::GameMenu> menu_;
+    boost::shared_ptr<v3d::ui::shell::GameMenu> menu_;
 };

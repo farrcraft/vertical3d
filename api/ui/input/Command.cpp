@@ -5,6 +5,7 @@
 
 #include "Command.h"
 
+#include <api/ui/Component.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/CheckBox.h>
 #include <api/ui/component/SelectList.h>
@@ -12,9 +13,7 @@
 
 #include <boost/pointer_cast.hpp>
 
-#include "Component.h"
-
-namespace v3d::ui {
+namespace v3d::ui::input {
 
 v3d::event::Event command(const boost::shared_ptr<Component>& component) {
     if (!component) {
@@ -66,4 +65,4 @@ v3d::event::Event command(const boost::shared_ptr<Component>& component) {
     return v3d::event::Event();
 }
 
-};  // namespace v3d::ui
+};  // namespace v3d::ui::input

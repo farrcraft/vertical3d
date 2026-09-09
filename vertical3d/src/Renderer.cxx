@@ -66,14 +66,14 @@ Renderer::Renderer(const boost::shared_ptr<v3d::render::realtime::Window>& windo
     engine_.clearColour(background_);
 
     const boost::shared_ptr<v3d::render::realtime::vulkan::QuadRenderer> quads = engine_.quads();
-    text_ = boost::make_shared<v3d::ui::TextRenderer>(assetManager, logger,
+    text_ = boost::make_shared<v3d::ui::paint::TextRenderer>(assetManager, logger,
         [quads](const boost::shared_ptr<v3d::image::Image>& atlas) {
             return quads->texture(atlas);
         });
 
-    uiRenderer_ = boost::make_shared<v3d::ui::ComponentRenderer>(text_->measure(fontSize), text_->write(&canvas_, fontSize));
+    uiRenderer_ = boost::make_shared<v3d::ui::paint::ComponentRenderer>(text_->measure(fontSize), text_->write(&canvas_, fontSize));
 
-    v3d::ui::Dressing& style = uiRenderer_->dressing();
+    v3d::ui::paint::Dressing& style = uiRenderer_->dressing();
     style.lineHeight = fontSize * 1.5f;
     style.padding = fontSize * 1.4f;
     style.barHeight = fontSize * 1.8f;

@@ -24,6 +24,10 @@ class TabBar;
 class TextBox;
 };  // namespace component
 
+};  // namespace v3d::ui
+
+namespace v3d::ui::input {
+
 /**
  * Turns a key into an edit on whatever has the focus, per ADR-0040.
  *
@@ -120,4 +124,4 @@ class Keys final {
     boost::shared_ptr<entt::dispatcher> dispatcher_;
 };
 
-};  // namespace v3d::ui
+};  // namespace v3d::ui::input

@@ -5,7 +5,7 @@
 
 #include "TabBar.h"
 
-#include <api/ui/Painter.h>
+#include <api/ui/paint/Painter.h>
 
 #include <vector>
 
@@ -67,7 +67,7 @@ const std::vector<v3d::type::Bound2D>& TabBar::tabs() const noexcept {
 
 int TabBar::at(const glm::vec2& point) const {
     for (std::size_t index = 0; index < tabs_.size(); index++) {
-        if (inside(tabs_[index].position(), tabs_[index].position() + tabs_[index].size(), point)) {
+        if (paint::inside(tabs_[index].position(), tabs_[index].position() + tabs_[index].size(), point)) {
             return static_cast<int>(index);
         }
     }

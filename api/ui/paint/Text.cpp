@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-namespace v3d::ui {
+namespace v3d::ui::paint {
 
 /**
  **/
@@ -42,4 +42,4 @@ std::vector<std::string> wrap(std::string_view line, float width, const Measure&
     return rows;
 }
 
-};  // namespace v3d::ui
+};  // namespace v3d::ui::paint

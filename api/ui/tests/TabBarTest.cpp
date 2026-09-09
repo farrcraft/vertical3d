@@ -5,11 +5,11 @@
 
 #include <api/asset/Json.h>
 #include <api/render/realtime/Canvas.h>
-#include <api/ui/ComponentRenderer.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
 #include <api/ui/component/Label.h>
 #include <api/ui/component/TabBar.h>
+#include <api/ui/paint/ComponentRenderer.h>
 
 #include <string>
 #include <string_view>
@@ -30,8 +30,8 @@ struct Written final {
     glm::vec4 colour;
 };
 
-v3d::ui::ComponentRenderer build(std::vector<Written>* written) {
-    return v3d::ui::ComponentRenderer(
+v3d::ui::paint::ComponentRenderer build(std::vector<Written>* written) {
+    return v3d::ui::paint::ComponentRenderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
             if (written != nullptr) {
@@ -80,7 +80,7 @@ BOOST_AUTO_TEST_SUITE(tab_bar_test)
  **/
 BOOST_AUTO_TEST_CASE(only_the_chosen_page_is_drawn) {
     std::vector<Written> written;
-    v3d::ui::ComponentRenderer renderer = build(&written);
+    v3d::ui::paint::ComponentRenderer renderer = build(&written);
     v3d::render::realtime::Canvas canvas;
     canvas.resize(400, 300);
 
@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE(only_the_chosen_page_is_drawn) {
  * than behind them.
  **/
 BOOST_AUTO_TEST_CASE(the_page_is_laid_out_under_the_strip) {
-    v3d::ui::ComponentRenderer renderer = build(nullptr);
+    v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
     v3d::render::realtime::Canvas canvas;
     canvas.resize(400, 300);
 
@@ -136,7 +136,7 @@ BOOST_AUTO_TEST_CASE(the_page_is_laid_out_under_the_strip) {
  * draw put them. A bar that has never been drawn answers nothing, per ADR-0019.
  **/
 BOOST_AUTO_TEST_CASE(a_point_names_the_tab_under_it) {
-    v3d::ui::ComponentRenderer renderer = build(nullptr);
+    v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
     v3d::render::realtime::Canvas canvas;
     canvas.resize(400, 300);
 
@@ -165,7 +165,7 @@ BOOST_AUTO_TEST_CASE(a_point_names_the_tab_under_it) {
  * and nothing under it.
  **/
 BOOST_AUTO_TEST_CASE(a_bar_with_no_pages_shows_nothing) {
-    v3d::ui::ComponentRenderer renderer = build(nullptr);
+    v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
     v3d::render::realtime::Canvas canvas;
     canvas.resize(400, 300);
 

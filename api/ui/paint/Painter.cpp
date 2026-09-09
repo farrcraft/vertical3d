@@ -7,7 +7,7 @@
 
 #include <algorithm>
 
-namespace v3d::ui {
+namespace v3d::ui::paint {
 
 namespace {
 
@@ -134,4 +134,4 @@ bool inside(const glm::vec2& min, const glm::vec2& max, const glm::vec2& point) 
     return point.x >= min.x && point.y >= min.y && point.x < max.x && point.y < max.y;
 }
 
-};  // namespace v3d::ui
+};  // namespace v3d::ui::paint

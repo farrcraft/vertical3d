@@ -392,18 +392,37 @@ qualification change.
 
 ### Step 6 — `api/ui` regroups
 
+**Landed 2026-09-08, as three new directories rather than four.** Build clean, `ctest` 24 of 24,
+cpplint clean.
+
 ```
-ui/            Engine Loader Component Container Layout Arranger
+ui/            Engine Loader Component Container Layout Arranger Immediate
 ui/paint/      ComponentRenderer Painter TextRenderer Text Dressing    v3d::ui::paint
 ui/input/      Cursor Keys Command                                     v3d::ui::input
-ui/immediate/  Immediate                                              v3d::ui::immediate
 ui/shell/      GameMenu StatisticsOverlay                             v3d::ui::shell
 ui/style/      Style Theme Resolver Property + property/              (step 5)
 ui/component/  unchanged
 ```
 
-Six pairs left at the top, which is the library's public shape: what a ui *is*, what builds one,
-and the two types a component is made of.
+**`ui/immediate/` was not made.** It would have given `v3d::ui::immediate::Immediate`, and the
+stutter is a symptom rather than the objection: `Immediate` is not a *concern* of this library
+the way paint and input are, it is one of its two entry points — the immediate counterpart to
+`Engine` for the retained side, per
+[ADR-0035](../adr/0035-an-immediate-mode-layer-over-the-same-canvas.md). It belongs in the
+top-level list with `Engine` and `Loader`. The same reasoning settles the open question below
+about `Layout` and `Arranger`, which stay for the same reason.
+
+Seven pairs left at the top, which is the library's public shape: what a ui *is*, the two ways
+of writing one, what builds them, and the two types a component is made of.
+
+Two things the step turned up. **`style::Resolver` returns a `paint::Dressing`**, which is the
+one cross-directory reference the split created and is the right one to have made explicit — it
+is the seam where a theme becomes the colours a component is drawn with. And **`Immediate` has
+its own nested `Dressing`**, distinct from `paint::Dressing`, which is the immediate layer's
+colours at its own sizes; the two are unrelated types that shared a flat namespace and now do
+not. Repeated names in this library are deliberate — see
+[UiConsolidation](completed/UiConsolidation.md) step 5 on the three `Style`s — so a rename by
+name alone is not safe here, and the compiler is what settles each one.
 
 `ui/component` stays flat at 34 files. They are seventeen instances of one concept and a
 `layout/` versus `widget/` split there would be arbitrary — a `Panel` is both.
@@ -588,11 +607,10 @@ subdirectories would hide exactly the dependency information the split exists to
 
 ## Open questions
 
-- **Whether `Layout` and `Arranger` stay at `api/ui`'s top level.** They are the layout half of
-  [ADR-0039](../adr/0039-layout-never-reads-the-box-it-wrote.md) and could be a `ui/layout/`. The
-  plan leaves them up because `Layout` is a value type a caller writes into a component and
-  `Arranger` is the walk that reads it — closer to the library's shape than to a concern of it.
-  Settle it while doing step 6.
+- ~~**Whether `Layout` and `Arranger` stay at `api/ui`'s top level.**~~ **Settled in step 6: they
+  stay.** `Layout` is a value type a caller writes into a component and `Arranger` is the walk
+  that reads it, which is the library's shape rather than a concern within it — the same test
+  that kept `Immediate` at the top.
 - **Whether `vulkan/frame/` is one directory or two.** Seven files is the largest of the five
   groups, and `CommandPool` plus `Recorder` are arguably a `command/` of their own. Two is not a
   directory, which is why the plan does not split it; a third file would change the answer.

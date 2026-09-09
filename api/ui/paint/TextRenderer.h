@@ -22,7 +22,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::ui {
+namespace v3d::ui::paint {
 
 /**
  * One font, packed into one atlas, and the text drawn with it.
@@ -178,4 +178,4 @@ class TextRenderer {
     float size_;
 };
 
-};  // namespace v3d::ui
+};  // namespace v3d::ui::paint

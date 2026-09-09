@@ -5,6 +5,8 @@
 
 #include "Keys.h"
 
+#include <api/ui/Component.h>
+#include <api/ui/Engine.h>
 #include <api/ui/component/SelectList.h>
 #include <api/ui/component/TabBar.h>
 #include <api/ui/component/TextBox.h>
@@ -13,10 +15,8 @@
 #include <string_view>
 
 #include "Command.h"
-#include "Component.h"
-#include "Engine.h"
 
-namespace v3d::ui {
+namespace v3d::ui::input {
 
 namespace {
 
@@ -236,4 +236,4 @@ void Keys::send(const v3d::event::Event& event) const {
     }
 }
 
-};  // namespace v3d::ui
+};  // namespace v3d::ui::input

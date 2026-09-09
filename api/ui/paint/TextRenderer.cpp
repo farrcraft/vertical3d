@@ -14,7 +14,7 @@
 
 #include <boost/make_shared.hpp>
 
-namespace v3d::ui {
+namespace v3d::ui::paint {
 
 const wchar_t* const TextRenderer::ascii =
 L" !\"#$%&'()*+,-./0123456789:;<=>?"
@@ -164,4 +164,4 @@ Write TextRenderer::write(v3d::render::realtime::Canvas* canvas, float size) {
     };
 }
 
-};  // namespace v3d::ui
+};  // namespace v3d::ui::paint

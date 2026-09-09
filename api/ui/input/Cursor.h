@@ -17,6 +17,10 @@ class Component;
 class Container;
 class Engine;
 
+};  // namespace v3d::ui
+
+namespace v3d::ui::input {
+
 /**
  * Turns a cursor into a command, per ADR-0038.
  *
@@ -109,4 +113,4 @@ class Cursor final {
     boost::weak_ptr<Component> hovered_;
 };
 
-};  // namespace v3d::ui
+};  // namespace v3d::ui::input

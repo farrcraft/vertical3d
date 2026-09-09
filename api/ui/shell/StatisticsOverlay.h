@@ -6,16 +6,15 @@
 #pragma once
 
 #include <api/render/realtime/Canvas.h>
+#include <api/ui/paint/TextRenderer.h>
 
 #include <array>
 #include <cstdint>
 #include <string>
 
-#include "TextRenderer.h"
-
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::ui {
+namespace v3d::ui::shell {
 
 /**
  * What the loop measured about its own pacing, drawn in the corner of the frame.
@@ -53,7 +52,7 @@ class StatisticsOverlay final {
      * @param size the size to draw the readout at. A frame time is a thing to glance at
      *        rather than read, so it defaults smaller than a ui's own text
      **/
-    explicit StatisticsOverlay(const boost::shared_ptr<TextRenderer>& text, float size = defaultSize);
+    explicit StatisticsOverlay(const boost::shared_ptr<paint::TextRenderer>& text, float size = defaultSize);
 
     /**
      * The size the readout is drawn at when the caller names none.
@@ -89,9 +88,9 @@ class StatisticsOverlay final {
     static std::array<std::string, rows> lines(const Sample& sample);
 
  private:
-    boost::shared_ptr<TextRenderer> text_;
+    boost::shared_ptr<paint::TextRenderer> text_;
     float size_;
     bool visible_;
 };
 
-};  // namespace v3d::ui
+};  // namespace v3d::ui::shell

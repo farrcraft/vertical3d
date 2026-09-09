@@ -4,11 +4,11 @@
  **/
 
 #include <api/render/realtime/Canvas.h>
-#include <api/ui/ComponentRenderer.h>
 #include <api/ui/Container.h>
 #include <api/ui/component/menu/Menu.h>
 #include <api/ui/component/menu/MenuBar.h>
 #include <api/ui/component/menu/MenuItem.h>
+#include <api/ui/paint/ComponentRenderer.h>
 
 #include <cstddef>
 #include <string>
@@ -108,7 +108,7 @@ struct Fixture final {
     v3d::render::realtime::Canvas canvas;
     std::vector<Written> written;
     std::vector<std::string> sent;
-    v3d::ui::ComponentRenderer renderer;
+    v3d::ui::paint::ComponentRenderer renderer;
 };
 
 /**

@@ -5,13 +5,13 @@
 
 #include <api/asset/Json.h>
 #include <api/render/realtime/Canvas.h>
-#include <api/ui/ComponentRenderer.h>
 #include <api/ui/Container.h>
-#include <api/ui/Cursor.h>
 #include <api/ui/Engine.h>
-#include <api/ui/Keys.h>
 #include <api/ui/component/Panel.h>
 #include <api/ui/component/TextBox.h>
+#include <api/ui/input/Cursor.h>
+#include <api/ui/input/Keys.h>
+#include <api/ui/paint/ComponentRenderer.h>
 
 #include <string>
 #include <string_view>
@@ -48,8 +48,8 @@ struct Fixture final {
             boost::json::parse(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [] } ] })").as_object())));
         container = ui->container("hud");
         BOOST_REQUIRE(container);
-        cursor = boost::make_shared<v3d::ui::Cursor>(ui, dispatcher);
-        keys = boost::make_shared<v3d::ui::Keys>(ui, dispatcher);
+        cursor = boost::make_shared<v3d::ui::input::Cursor>(ui, dispatcher);
+        keys = boost::make_shared<v3d::ui::input::Keys>(ui, dispatcher);
     }
 
     void receive(const v3d::event::Event& event) {
@@ -74,11 +74,11 @@ struct Fixture final {
     boost::shared_ptr<v3d::event::Context> context;
     v3d::render::realtime::Canvas canvas;
     std::vector<std::string> sent;
-    v3d::ui::ComponentRenderer renderer;
+    v3d::ui::paint::ComponentRenderer renderer;
     boost::shared_ptr<v3d::ui::Engine> ui;
     boost::shared_ptr<v3d::ui::Container> container;
-    boost::shared_ptr<v3d::ui::Cursor> cursor;
-    boost::shared_ptr<v3d::ui::Keys> keys;
+    boost::shared_ptr<v3d::ui::input::Cursor> cursor;
+    boost::shared_ptr<v3d::ui::input::Keys> keys;
 };
 
 boost::shared_ptr<v3d::ui::component::TextBox> box(const std::string& text) {

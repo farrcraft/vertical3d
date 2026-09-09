@@ -7,7 +7,7 @@
 
 #include <glm/vec4.hpp>
 
-namespace v3d::ui {
+namespace v3d::ui::paint {
 
 /**
  * What the ui cannot work out from the components alone: the colours and metrics a
@@ -47,4 +47,4 @@ struct Dressing final {
     glm::vec4 focus;       /**< the ring around whatever the keyboard is on **/
 };
 
-};  // namespace v3d::ui
+};  // namespace v3d::ui::paint

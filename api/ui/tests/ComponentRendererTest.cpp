@@ -4,13 +4,13 @@
  **/
 
 #include <api/render/realtime/Canvas.h>
-#include <api/ui/ComponentRenderer.h>
 #include <api/ui/Container.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/Label.h>
 #include <api/ui/component/menu/Menu.h>
 #include <api/ui/component/menu/MenuBar.h>
 #include <api/ui/component/menu/MenuItem.h>
+#include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/style/Resolver.h>
 
 #include <cstddef>
@@ -67,7 +67,7 @@ BOOST_AUTO_TEST_SUITE(component_renderer_test)
  **/
 BOOST_AUTO_TEST_CASE(a_menu_draws_a_panel_a_highlight_and_a_label_per_item) {
     std::vector<Written> written;
-    v3d::ui::ComponentRenderer renderer(
+    v3d::ui::paint::ComponentRenderer renderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
             Written line;
@@ -96,7 +96,7 @@ BOOST_AUTO_TEST_CASE(a_menu_draws_a_panel_a_highlight_and_a_label_per_item) {
  **/
 BOOST_AUTO_TEST_CASE(only_the_active_item_is_drawn_highlighted) {
     std::vector<Written> written;
-    v3d::ui::ComponentRenderer renderer(
+    v3d::ui::paint::ComponentRenderer renderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
             Written line;
@@ -127,7 +127,7 @@ BOOST_AUTO_TEST_CASE(only_the_active_item_is_drawn_highlighted) {
  **/
 BOOST_AUTO_TEST_CASE(a_submenu_replaces_what_is_drawn) {
     std::vector<Written> written;
-    v3d::ui::ComponentRenderer renderer(
+    v3d::ui::paint::ComponentRenderer renderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
             Written line;
@@ -159,7 +159,7 @@ BOOST_AUTO_TEST_CASE(a_submenu_replaces_what_is_drawn) {
  * The panel is as wide as its widest label and no wider, and it is centred on the canvas.
  **/
 BOOST_AUTO_TEST_CASE(the_panel_is_sized_to_the_widest_label_and_centred) {
-    v3d::ui::ComponentRenderer renderer(
+    v3d::ui::paint::ComponentRenderer renderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 
@@ -184,7 +184,7 @@ BOOST_AUTO_TEST_CASE(the_panel_is_sized_to_the_widest_label_and_centred) {
  * whole ui without taking it apart.
  **/
 BOOST_AUTO_TEST_CASE(an_invisible_container_draws_nothing) {
-    v3d::ui::ComponentRenderer renderer(
+    v3d::ui::paint::ComponentRenderer renderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 
@@ -216,7 +216,7 @@ BOOST_AUTO_TEST_CASE(an_invisible_container_draws_nothing) {
  * A menu with no items draws no panel either.
  **/
 BOOST_AUTO_TEST_CASE(an_empty_menu_draws_nothing) {
-    v3d::ui::ComponentRenderer renderer(
+    v3d::ui::paint::ComponentRenderer renderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 
@@ -234,7 +234,7 @@ BOOST_AUTO_TEST_CASE(an_empty_menu_draws_nothing) {
  **/
 BOOST_AUTO_TEST_CASE(a_label_with_a_width_draws_a_row_per_line) {
     std::vector<Written> written;
-    v3d::ui::ComponentRenderer renderer(
+    v3d::ui::paint::ComponentRenderer renderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
             Written line;
@@ -279,7 +279,7 @@ BOOST_AUTO_TEST_CASE(a_label_with_a_width_draws_a_row_per_line) {
  * whatever the component drew.
  **/
 BOOST_AUTO_TEST_CASE(a_focused_component_is_ringed) {
-    v3d::ui::ComponentRenderer renderer(
+    v3d::ui::paint::ComponentRenderer renderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 

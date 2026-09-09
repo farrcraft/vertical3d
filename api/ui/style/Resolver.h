@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/ui/Dressing.h>
+#include <api/ui/paint/Dressing.h>
 
 #include <array>
 #include <cstddef>
@@ -78,8 +78,8 @@ class Resolver final {
      * metrics once at startup pays for that once; one calling this every frame has
      * turned the cache off, which is why the const overload exists.
      **/
-    Dressing& base() noexcept;
-    const Dressing& base() const noexcept;
+    paint::Dressing& base() noexcept;
+    const paint::Dressing& base() const noexcept;
 
     /**
      * Read a theme's "ui" style into the base, per ADR-0020.
@@ -93,7 +93,7 @@ class Resolver final {
      *      naming no style is dressed by whichever style of the class the theme holds
      *      first, so that a theme can dress every button without every button naming it
      **/
-    const Dressing& resolve(Class className, const std::string_view& name) const;
+    const paint::Dressing& resolve(Class className, const std::string_view& name) const;
 
     /**
      * The style itself, for what a Dressing does not carry - the nine images a button is
@@ -134,14 +134,14 @@ class Resolver final {
     /**
      * Work out one class's answer from a style, over the base.
      **/
-    Dressing dress(Class className, const std::string_view& name) const;
+    paint::Dressing dress(Class className, const std::string_view& name) const;
 
     boost::shared_ptr<Theme> theme_;
-    Dressing base_;
+    paint::Dressing base_;
 
     // keyed by the style name a component gave, which is usually empty. std::less<> so
     // that a string_view finds an entry without building a string to look it up with
-    mutable std::array<std::map<std::string, Dressing, std::less<>>, classes> resolved_;
+    mutable std::array<std::map<std::string, paint::Dressing, std::less<>>, classes> resolved_;
 };
 
 };  // namespace v3d::ui::style

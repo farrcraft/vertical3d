@@ -142,7 +142,7 @@ bool Controller::buildUi() {
     }
     // the ui knows the order its own strips are drawn in, so it is what offers a cursor to
     // them - ADR-0038
-    uiCursor_ = boost::make_shared<v3d::ui::Cursor>(vgui_, dispatcher_);
+    uiCursor_ = boost::make_shared<v3d::ui::input::Cursor>(vgui_, dispatcher_);
 
     boost::shared_ptr<v3d::ui::Container> container = vgui_->container(uiContainer);
     if (!container) {

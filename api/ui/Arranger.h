@@ -6,12 +6,11 @@
 #pragma once
 
 #include <api/type/Bound2D.h>
+#include <api/ui/paint/Text.h>
 
 #include <functional>
 #include <utility>
 #include <vector>
-
-#include "Text.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
@@ -73,7 +72,7 @@ class Arranger final {
      * @param styles where a component's colours and metrics come from - held by reference
      *      because the renderer owns it and a theme change has to reach here
      **/
-    Arranger(const Measure& measure, const style::Resolver& styles);
+    Arranger(const paint::Measure& measure, const style::Resolver& styles);
 
     /**
      * Lay a component out inside a box that has already been resolved, and draw it and
@@ -158,7 +157,7 @@ class Arranger final {
     void arrange(const component::Box& box, const v3d::type::Bound2D& bounds,
         std::vector<v3d::type::Bound2D>* boxes) const;
 
-    Measure measure_;
+    paint::Measure measure_;
     const style::Resolver& styles_;
 };
 

@@ -50,7 +50,7 @@ void place(Component& component, const glm::vec2& position, const glm::vec2& siz
 
 };  // namespace
 
-Arranger::Arranger(const Measure& measure, const style::Resolver& styles) :
+Arranger::Arranger(const paint::Measure& measure, const style::Resolver& styles) :
     measure_(measure),
     styles_(styles) {
 }
@@ -132,7 +132,7 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::Bound2D& room
                 return glm::vec2(line, styles_.base().lineHeight);
             }
             const float width = component.layout().width.resolve(room.size().x, line);
-            const std::size_t rows = wrap(label->text(), width, measure_).size();
+            const std::size_t rows = paint::wrap(label->text(), width, measure_).size();
             return glm::vec2(line,
                 styles_.base().lineHeight * static_cast<float>(std::max<std::size_t>(rows, 1)));
         }
@@ -156,7 +156,7 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::Bound2D& room
             // its own style class, because the mark it is asking room for is drawn at the
             // size that class names - laying out against the base would size the row for a
             // mark of a different size than the one drawn in it
-            const Dressing& dress = styles_.resolve(
+            const paint::Dressing& dress = styles_.resolve(
                 component.type() == component::Type::RadioButton
                     ? style::Resolver::Class::Radio : style::Resolver::Class::CheckBox,
                 component.style());
@@ -189,7 +189,7 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::Bound2D& room
             // a box is as wide as the room it is in and as tall as the line it holds: the
             // text it will be typed into is not what should size it, or it would grow
             // under the caret
-            const Dressing& dress = styles_.resolve(style::Resolver::Class::TextBox, component.style());
+            const paint::Dressing& dress = styles_.resolve(style::Resolver::Class::TextBox, component.style());
             return glm::vec2(room.size().x, dress.lineHeight + dress.padding);
         }
         case component::Type::Scrollbar: {

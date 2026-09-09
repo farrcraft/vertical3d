@@ -119,7 +119,7 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
     createUniforms();
     createPipeline();
     const boost::shared_ptr<v3d::render::realtime::vulkan::QuadRenderer> quads = engine_.quads();
-    text_ = boost::make_shared<v3d::ui::TextRenderer>(assetManager, logger,
+    text_ = boost::make_shared<v3d::ui::paint::TextRenderer>(assetManager, logger,
         [quads](const boost::shared_ptr<v3d::image::Image>& atlas) {
             return quads->texture(atlas);
         });
@@ -128,7 +128,7 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
     builder_ = boost::make_shared<MeshBuilder>(scene_->chunks(),
         ChunkMeshBuilder(context_->device(), context_->uploader()));
 
-    uiRenderer_ = boost::make_shared<v3d::ui::ComponentRenderer>(text_->measure(fontSize), text_->write(&canvas_, fontSize));
+    uiRenderer_ = boost::make_shared<v3d::ui::paint::ComponentRenderer>(text_->measure(fontSize), text_->write(&canvas_, fontSize));
     uiRenderer_->dressing().lineHeight = fontSize * 1.4f;
 
     // the debug readout is a panel written as calls rather than a tree kept in step with
@@ -314,7 +314,7 @@ void Renderer::drawTerrain(v3d::render::realtime::Pass* pass) {
 
 /**
  **/
-void Renderer::drawDebug(const v3d::ui::StatisticsOverlay::Sample& statistics) {
+void Renderer::drawDebug(const v3d::ui::shell::StatisticsOverlay::Sample& statistics) {
     const glm::vec3 position = scene_->player()->position();
 
     // the game owns the mouse - it is warped back to the centre of the window every frame
@@ -336,7 +336,7 @@ void Renderer::drawDebug(const v3d::ui::StatisticsOverlay::Sample& statistics) {
 
 /**
  **/
-void Renderer::draw(const v3d::ui::StatisticsOverlay::Sample& statistics) {
+void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics) {
     glm::ivec2 size;
     if (!engine_.beginFrame(&size)) {
         return;

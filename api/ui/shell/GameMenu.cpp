@@ -8,7 +8,7 @@
 #include <string>
 #include <string_view>
 
-namespace v3d::ui {
+namespace v3d::ui::shell {
 
 const char* const GameMenu::defaultContainer = "game-menu";
 const char* const GameMenu::defaultMenu = "main-menu";
@@ -121,4 +121,4 @@ bool GameMenu::navigate(const std::string_view& command) {
     return true;
 }
 
-};  // namespace v3d::ui
+};  // namespace v3d::ui::shell

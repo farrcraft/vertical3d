@@ -6,13 +6,13 @@
 #pragma once
 
 #include <api/type/Bound2D.h>
+#include <api/ui/Arranger.h>
 #include <api/ui/style/Resolver.h>
 
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "Arranger.h"
 #include "Dressing.h"
 #include "Text.h"
 
@@ -51,6 +51,10 @@ class TabBar;
 class TextBox;
 class Toolbar;
 };  // namespace component
+
+};  // namespace v3d::ui
+
+namespace v3d::ui::paint {
 
 /**
  * Draws the ui onto a canvas of quads.
@@ -280,4 +284,4 @@ class ComponentRenderer {
     Arranger arranger_;
 };
 
-};  // namespace v3d::ui
+};  // namespace v3d::ui::paint

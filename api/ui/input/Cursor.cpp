@@ -5,6 +5,9 @@
 
 #include "Cursor.h"
 
+#include <api/ui/Component.h>
+#include <api/ui/Container.h>
+#include <api/ui/Engine.h>
 #include <api/ui/component/Bar.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/Scrollbar.h>
@@ -19,11 +22,8 @@
 #include <vector>
 
 #include "Command.h"
-#include "Component.h"
-#include "Container.h"
-#include "Engine.h"
 
-namespace v3d::ui {
+namespace v3d::ui::input {
 
 namespace {
 
@@ -258,4 +258,4 @@ void Cursor::dispatch(const boost::shared_ptr<Component>& component) const {
     }
 }
 
-};  // namespace v3d::ui
+};  // namespace v3d::ui::input

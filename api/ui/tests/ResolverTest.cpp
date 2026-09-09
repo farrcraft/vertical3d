@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE(no_theme_resolves_to_the_base) {
     Resolver resolver;
     resolver.base().panel = red;
 
-    const v3d::ui::Dressing& dressing = resolver.resolve(Resolver::Class::Panel, std::string_view());
+    const v3d::ui::paint::Dressing& dressing = resolver.resolve(Resolver::Class::Panel, std::string_view());
     BOOST_CHECK(dressing.panel == red);
 }
 
@@ -71,7 +71,7 @@ BOOST_AUTO_TEST_CASE(a_class_style_is_applied_over_the_base) {
     resolver.base().radius = 0.0f;
     resolver.theme(theme);
 
-    const v3d::ui::Dressing& dressing = resolver.resolve(Resolver::Class::Panel, "plate");
+    const v3d::ui::paint::Dressing& dressing = resolver.resolve(Resolver::Class::Panel, "plate");
     BOOST_CHECK(dressing.panel == green);
     BOOST_CHECK_CLOSE(dressing.radius, 6.0f, 0.001f);
     // named nothing, so unchanged
@@ -101,8 +101,8 @@ BOOST_AUTO_TEST_CASE(a_component_naming_no_style_takes_the_first_of_its_class) {
  **/
 BOOST_AUTO_TEST_CASE(the_same_ask_is_worked_out_once) {
     Resolver resolver;
-    const v3d::ui::Dressing& first = resolver.resolve(Resolver::Class::Panel, "plate");
-    const v3d::ui::Dressing& second = resolver.resolve(Resolver::Class::Panel, "plate");
+    const v3d::ui::paint::Dressing& first = resolver.resolve(Resolver::Class::Panel, "plate");
+    const v3d::ui::paint::Dressing& second = resolver.resolve(Resolver::Class::Panel, "plate");
     BOOST_CHECK_EQUAL(&first, &second);
 }
 
@@ -160,7 +160,7 @@ BOOST_AUTO_TEST_CASE(the_ui_style_is_read_into_the_base) {
 
     BOOST_CHECK(resolver.base().border == green);
     // and a class that names no border of its own draws in it
-    const v3d::ui::Dressing& dressing = resolver.resolve(Resolver::Class::Bar, std::string_view());
+    const v3d::ui::paint::Dressing& dressing = resolver.resolve(Resolver::Class::Bar, std::string_view());
     BOOST_CHECK(dressing.border == green);
     BOOST_CHECK_CLOSE(dressing.borderWidth, 3.0f, 0.001f);
 }

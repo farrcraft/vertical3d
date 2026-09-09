@@ -13,6 +13,10 @@ namespace v3d::ui {
 
 class Component;
 
+};  // namespace v3d::ui
+
+namespace v3d::ui::input {
+
 /**
  * The command a component sends when it is activated, per ADR-0040.
  *
@@ -36,4 +40,4 @@ class Component;
  **/
 v3d::event::Event command(const boost::shared_ptr<Component>& component);
 
-};  // namespace v3d::ui
+};  // namespace v3d::ui::input

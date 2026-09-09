@@ -5,7 +5,7 @@
 
 #include "Dressing.h"
 
-namespace v3d::ui {
+namespace v3d::ui::paint {
 
 Dressing::Dressing() noexcept :
 lineHeight(34.0f),
@@ -31,4 +31,4 @@ hover(0.16f, 0.18f, 0.24f, 1.0f),
 focus(0.42f, 0.66f, 0.95f, 1.0f) {
 }
 
-};  // namespace v3d::ui
+};  // namespace v3d::ui::paint

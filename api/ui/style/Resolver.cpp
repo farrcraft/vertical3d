@@ -34,7 +34,7 @@ Resolver::Resolver() {
 
 void Resolver::theme(const boost::shared_ptr<Theme>& theme) {
     theme_ = theme;
-    for (std::map<std::string, Dressing, std::less<>>& entries : resolved_) {
+    for (std::map<std::string, paint::Dressing, std::less<>>& entries : resolved_) {
         entries.clear();
     }
     chrome();
@@ -44,15 +44,15 @@ boost::shared_ptr<Theme> Resolver::theme() const noexcept {
     return theme_;
 }
 
-Dressing& Resolver::base() noexcept {
+paint::Dressing& Resolver::base() noexcept {
     // the caller is about to write what every answer was worked out from
-    for (std::map<std::string, Dressing, std::less<>>& entries : resolved_) {
+    for (std::map<std::string, paint::Dressing, std::less<>>& entries : resolved_) {
         entries.clear();
     }
     return base_;
 }
 
-const Dressing& Resolver::base() const noexcept {
+const paint::Dressing& Resolver::base() const noexcept {
     return base_;
 }
 
@@ -105,8 +105,8 @@ boost::shared_ptr<Style> Resolver::lookup(const std::string& className,
     return style::lookup(theme_, className, name);
 }
 
-Dressing Resolver::dress(Class className, const std::string_view& name) const {
-    Dressing dressing = base_;
+paint::Dressing Resolver::dress(Class className, const std::string_view& name) const {
+    paint::Dressing dressing = base_;
     const boost::shared_ptr<Style> style = lookup(named(className), name);
     if (!style) {
         return dressing;
@@ -182,8 +182,8 @@ Dressing Resolver::dress(Class className, const std::string_view& name) const {
     return dressing;
 }
 
-const Dressing& Resolver::resolve(Class className, const std::string_view& name) const {
-    std::map<std::string, Dressing, std::less<>>& entries =
+const paint::Dressing& Resolver::resolve(Class className, const std::string_view& name) const {
+    std::map<std::string, paint::Dressing, std::less<>>& entries =
         resolved_[static_cast<std::size_t>(className)];
     const auto found = entries.find(name);
     if (found != entries.end()) {

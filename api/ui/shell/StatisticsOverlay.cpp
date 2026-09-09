@@ -51,7 +51,7 @@ std::string milliseconds(std::uint64_t nanoseconds) {
 
 };  // namespace
 
-namespace v3d::ui {
+namespace v3d::ui::shell {
 
 /**
  **/
@@ -59,7 +59,7 @@ const float StatisticsOverlay::defaultSize = 16.0f;
 
 /**
  **/
-StatisticsOverlay::StatisticsOverlay(const boost::shared_ptr<TextRenderer>& text, float size) :
+StatisticsOverlay::StatisticsOverlay(const boost::shared_ptr<paint::TextRenderer>& text, float size) :
     text_(text),
     size_(size),
     visible_(false) {
@@ -130,4 +130,4 @@ void StatisticsOverlay::draw(v3d::render::realtime::Canvas* canvas, const Sample
     }
 }
 
-};  // namespace v3d::ui
+};  // namespace v3d::ui::shell

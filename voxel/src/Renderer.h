@@ -10,11 +10,11 @@
 #include <api/render/realtime/Canvas.h>
 #include <api/render/realtime/Engine3D.h>
 #include <api/render/realtime/vulkan/DeviceBuffer.h>
-#include <api/ui/ComponentRenderer.h>
+#include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/Engine.h>
 #include <api/ui/Immediate.h>
-#include <api/ui/StatisticsOverlay.h>
-#include <api/ui/TextRenderer.h>
+#include <api/ui/shell/StatisticsOverlay.h>
+#include <api/ui/paint/TextRenderer.h>
 
 #include <vulkan/vulkan.h>
 
@@ -60,7 +60,7 @@ class Renderer {
      * @param statistics what the loop measured about its own pacing, which the debug
      *        window reads - the app hands it over because api/ui sits below api/engine
      **/
-    void draw(const v3d::ui::StatisticsOverlay::Sample& statistics);
+    void draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics);
     /**
      * Resize the frame
      */
@@ -105,7 +105,7 @@ class Renderer {
     /**
      * The F3 readout - the build, what the loop measured, and where the player is standing.
      **/
-    void drawDebug(const v3d::ui::StatisticsOverlay::Sample& statistics);
+    void drawDebug(const v3d::ui::shell::StatisticsOverlay::Sample& statistics);
 
     boost::shared_ptr<Scene> scene_;
     boost::shared_ptr<v3d::log::Logger> logger_;
@@ -127,9 +127,9 @@ class Renderer {
     bool debug_;
 
     v3d::render::realtime::Canvas canvas_;
-    boost::shared_ptr<v3d::ui::TextRenderer> text_;
+    boost::shared_ptr<v3d::ui::paint::TextRenderer> text_;
 
     boost::shared_ptr<v3d::ui::Engine> ui_;
-    boost::shared_ptr<v3d::ui::ComponentRenderer> uiRenderer_;
+    boost::shared_ptr<v3d::ui::paint::ComponentRenderer> uiRenderer_;
     boost::shared_ptr<v3d::ui::Immediate> tools_;
 };

@@ -6,7 +6,6 @@
 #include <api/asset/Json.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
-#include <api/ui/Keys.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/CheckBox.h>
 #include <api/ui/component/Panel.h>
@@ -15,6 +14,7 @@
 #include <api/ui/component/TabBar.h>
 #include <api/ui/component/TabPage.h>
 #include <api/ui/component/TextBox.h>
+#include <api/ui/input/Keys.h>
 
 #include <string>
 #include <string_view>
@@ -46,7 +46,7 @@ struct Fixture final {
             boost::json::parse(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [] } ] })").as_object())));
         container = ui->container("hud");
         BOOST_REQUIRE(container);
-        keys = boost::make_shared<v3d::ui::Keys>(ui, dispatcher);
+        keys = boost::make_shared<v3d::ui::input::Keys>(ui, dispatcher);
     }
 
     void receive(const v3d::event::Event& event) {
@@ -58,7 +58,7 @@ struct Fixture final {
     std::vector<std::string> sent;
     boost::shared_ptr<v3d::ui::Engine> ui;
     boost::shared_ptr<v3d::ui::Container> container;
-    boost::shared_ptr<v3d::ui::Keys> keys;
+    boost::shared_ptr<v3d::ui::input::Keys> keys;
 };
 
 boost::shared_ptr<v3d::ui::component::Button> button(Fixture* fixture, const std::string& name) {

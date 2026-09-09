@@ -13,7 +13,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::ui {
+namespace v3d::ui::paint {
 
 /**
  * The seam between this library and whatever draws its text, per ADR-0019.
@@ -54,4 +54,4 @@ typedef std::function<void(std::string_view, const glm::vec2&, const glm::vec4&)
  **/
 std::vector<std::string> wrap(std::string_view line, float width, const Measure& measure);
 
-};  // namespace v3d::ui
+};  // namespace v3d::ui::paint

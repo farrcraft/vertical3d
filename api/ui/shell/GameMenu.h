@@ -5,18 +5,17 @@
 
 #pragma once
 
+#include <api/ui/Container.h>
+#include <api/ui/Engine.h>
 #include <api/ui/component/menu/Menu.h>
 
 #include <functional>
 #include <string>
 #include <string_view>
 
-#include "Container.h"
-#include "Engine.h"
-
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::ui {
+namespace v3d::ui::shell {
 
 /**
  * The menu a game puts up over itself, and the commands that drive it.
@@ -105,4 +104,4 @@ class GameMenu {
     std::string menuName_;
 };
 
-};  // namespace v3d::ui
+};  // namespace v3d::ui::shell
