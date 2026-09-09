@@ -295,14 +295,33 @@ after the build passes.
 
 ### Step 3 — The apps convert
 
-301 includes across the nine apps, all of the `"../../../api/…"` shape. Same mapping, same
-one-commit rule, and independent of step 2 — an app converted while `api/` still uses relative
-includes builds fine, because the two never resolve through each other.
+**Landed 2026-09-08.** 301 includes in 122 files. Build clean, `ctest` 24 of 24, cpplint clean
+over the whole tree. No relative parent include survives anywhere in the repository.
+
+**They were not all api includes.** 191 point at `api/`; the other 110 are an app reaching its
+own other directories — `vertical3d/src/view` including `../scene/WireframeVisitor.h`. Those are
+converted too, so `<vertical3d/src/scene/WireframeVisitor.h>` is how an app names its own header
+and no `../` survives. The alternative was to convert only the api ones and leave an app file
+holding both spellings, which is the problem [ADR-0048](../adr/0048-an-api-header-is-named-from-the-repository-root.md)
+exists to remove, in miniature. It also makes the editor's own directories movable, which is what
+the open question below was waiting on.
+
+**It is not purely an include rewrite, and this is the exception.**
+[`v3d_add_test`](../../cmake/v3dHelpers.cmake) never put the repository root on a test target's
+include path. Every api suite had been getting it by accident, from the PUBLIC include directory
+of the library it links; `v3dtest_voxel` links only boost and libnoise, so it had no source for
+it and all seven of its files failed at once. Relative includes need no include directory at all,
+which is what hid it. Fixed in the helper rather than in
+[`voxel/tests/CMakeLists.txt`](../../voxel/tests/CMakeLists.txt), so the next suite that links no
+api library is not caught by it.
+
+Same mapping and same one-commit rule as step 2, and independent of it — an app converted while
+`api/` still uses relative includes builds fine, because the two never resolve through each other.
 
 Worth doing even without the rest of the plan: an app is the thing a person copies when starting
-a new one, and today what they copy disagrees with [`examples/starter`](../../examples/starter/).
+a new one, and what they copied disagreed with [`examples/starter`](../../examples/starter/).
 
-**Additive.**
+**Additive** in behaviour; one build file changed.
 
 ### Step 4 — `api/render/offline` splits into the reader and the language
 
@@ -556,6 +575,7 @@ subdirectories would hide exactly the dependency information the split exists to
   allocates and uploads, but it is the only member of that group an app calls directly. If
   `renderer/` grows a texture concern it may follow it there.
 - **Whether the apps' own `src/` directories want the same treatment.**
-  [`vertical3d/src`](../../vertical3d/src/) is the editor and is the largest of them. Out of
-  scope here — this plan is about `api/` — but step 3 converts every app's includes, which is the
-  prerequisite for asking.
+  [`vertical3d/src`](../../vertical3d/src/) is the editor and is the largest of them. Splitting
+  them is out of scope here — this plan is about `api/` — but step 3 converted their internal
+  includes along with the api ones, so an editor directory is now as movable as an api one and
+  the question can be asked whenever someone wants to.

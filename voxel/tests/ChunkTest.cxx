@@ -3,10 +3,10 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <boost/test/unit_test.hpp>
+#include <voxel/src/engine/MortonCode.h>
+#include <voxel/src/voxel/Chunk.h>
 
-#include "../src/engine/MortonCode.h"
-#include "../src/voxel/Chunk.h"
+#include <boost/test/unit_test.hpp>
 
 namespace {
 

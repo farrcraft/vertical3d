@@ -5,17 +5,17 @@
 
 #pragma once
 
+#include <api/asset/Manager.h>
+#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/Engine3D.h>
+#include <api/ui/ComponentRenderer.h>
+#include <api/ui/Engine.h>
+#include <api/ui/StatisticsOverlay.h>
+#include <api/ui/TextRenderer.h>
+
 #include <string>
 
 #include "PongScene.h"
-
-#include "../../api/asset/Manager.h"
-#include "../../api/render/realtime/Canvas.h"
-#include "../../api/render/realtime/Engine3D.h"
-#include "../../api/ui/ComponentRenderer.h"
-#include "../../api/ui/Engine.h"
-#include "../../api/ui/StatisticsOverlay.h"
-#include "../../api/ui/TextRenderer.h"
 
 #include <boost/shared_ptr.hpp>
 #include <entt/entt.hpp>

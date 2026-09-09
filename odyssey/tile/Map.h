@@ -5,13 +5,13 @@
 
 #pragma once
 
+#include <api/asset/Json.h>
+#include <api/grid/TileGrid.h>
+#include <api/log/Logger.h>
+
 #include <vector>
 
 #include "Tile.h"
-
-#include "../../api/asset/Json.h"
-#include "../../api/grid/TileGrid.h"
-#include "../../api/log/Logger.h"
 
 #include <boost/shared_ptr.hpp>
 

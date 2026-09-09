@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include "MicroPolygonGrid.h"
+#include <api/type/AABBox.h>
 
-#include "../../api/type/AABBox.h"
+#include "MicroPolygonGrid.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>

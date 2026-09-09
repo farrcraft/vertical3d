@@ -5,10 +5,10 @@
 
 #include "Picker.h"
 
+#include <vertical3d/src/scene/MeshTopology.h>
+
 #include <cstddef>
 #include <vector>
-
-#include "../scene/MeshTopology.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/geometric.hpp>

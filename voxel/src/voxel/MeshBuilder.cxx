@@ -4,11 +4,13 @@
  **/
 
 #include "MeshBuilder.h"
+
+#include <voxel/src/engine/MortonCode.h>
+
 #include "Chunk.h"
 #include "FaceCulling.h"
 #include "MeshCache.h"
 #include "ChunkMeshPool.h"
-#include "../engine/MortonCode.h"
 
 MeshBuilder::MeshBuilder(const boost::unordered_map<unsigned int, boost::shared_ptr<Chunk > > & chunks, const ChunkMeshBuilder & meshes) :
     chunks_(chunks),

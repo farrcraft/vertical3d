@@ -5,19 +5,19 @@
 
 #pragma once
 
+#include <api/asset/Manager.h>
+#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/Engine3D.h>
+#include <api/ui/ComponentRenderer.h>
+#include <api/ui/Engine.h>
+#include <api/ui/TextRenderer.h>
+
 #include <map>
 #include <string>
 
 #include "Piece.h"
 #include "Tetrad.h"
 #include "TetrisScene.h"
-
-#include "../../api/asset/Manager.h"
-#include "../../api/render/realtime/Canvas.h"
-#include "../../api/render/realtime/Engine3D.h"
-#include "../../api/ui/ComponentRenderer.h"
-#include "../../api/ui/Engine.h"
-#include "../../api/ui/TextRenderer.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>

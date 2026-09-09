@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include "Bucket.h"
+#include <api/render/offline/FrameBuffer.h>
 
-#include "../../api/render/offline/FrameBuffer.h"
+#include "Bucket.h"
 
 #include <vector>
 

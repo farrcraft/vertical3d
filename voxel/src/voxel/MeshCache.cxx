@@ -5,9 +5,9 @@
 
 #include "MeshCache.h"
 
-#include <stdexcept>
+#include <voxel/src/voxel/Voxel.h>
 
-#include "../voxel/Voxel.h"
+#include <stdexcept>
 
 MeshCache::MeshCache(size_t vertices, size_t tris, size_t faces) :
     vertices_(0),

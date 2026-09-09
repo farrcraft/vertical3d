@@ -5,11 +5,11 @@
 
 #pragma once
 
+#include <api/log/Logger.h>
+
 #include <string>
 
 #include "Scene.h"
-
-#include "../../../api/log/Logger.h"
 
 #include <boost/shared_ptr.hpp>
 

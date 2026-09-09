@@ -5,20 +5,20 @@
 
 #pragma once
 
+#include <api/asset/Manager.h>
+#include <api/config/Config.h>
+#include <api/engine/Engine.h>
+#include <api/event/Event.h>
+#include <api/event/MouseMotion.h>
+#include <api/input/Engine.h>
+#include <api/log/Logger.h>
+#include <odyssey/render/Renderer.h>
+#include <odyssey/system/Movement.h>
+#include <odyssey/tile/Map.h>
+
 #include <string>
 
-#include "../../api/log/Logger.h"
 #include "Player.h"
-
-#include "../../api/engine/Engine.h"
-#include "../../api/asset/Manager.h"
-#include "../../api/event/Event.h"
-#include "../../api/event/MouseMotion.h"
-#include "../../api/config/Config.h"
-#include "../../api/input/Engine.h"
-#include "../render/Renderer.h"
-#include "../system/Movement.h"
-#include "../tile/Map.h"
 
 #include <glm/vec2.hpp>
 

@@ -3,16 +3,15 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/offline/RIBReader.h>
+#include <moya/libmoya/RIBHandler.h>
+#include <moya/libmoya/Renderer.h>
+
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
 #include <iostream>
 #include <string>
-
-#include "../libmoya/RIBHandler.h"
-#include "../libmoya/Renderer.h"
-
-#include "../../api/render/offline/RIBReader.h"
 
 #include <boost/make_shared.hpp>
 #include <boost/program_options.hpp>

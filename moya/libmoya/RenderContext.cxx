@@ -5,6 +5,9 @@
 
 #include "RenderContext.h"
 
+#include <api/image/Factory.h>
+#include <api/type/3dtypes.h>
+
 #include <cmath>
 #include <iostream>
 #include <string>
@@ -17,10 +20,6 @@
 #include <glm/matrix.hpp>
 
 #include "Frustum.h"
-
-#include "../../api/image/Factory.h"
-
-#include "../../api/type/3dtypes.h"
 
 namespace v3d::moya {
 

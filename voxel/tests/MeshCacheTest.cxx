@@ -3,10 +3,10 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <boost/test/unit_test.hpp>
+#include <voxel/src/voxel/MeshCache.h>
+#include <voxel/src/voxel/Voxel.h>
 
-#include "../src/voxel/MeshCache.h"
-#include "../src/voxel/Voxel.h"
+#include <boost/test/unit_test.hpp>
 
 #include <boost/make_shared.hpp>
 #include <glm/geometric.hpp>

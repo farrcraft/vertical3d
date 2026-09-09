@@ -3,11 +3,11 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <vertical3d/src/view/ConstructionPlane.h>
+
 #include <algorithm>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../../src/view/ConstructionPlane.h"
 
 BOOST_AUTO_TEST_CASE(constructionplane_geometry_test) {
     v3d::editor::ConstructionPlane grid;

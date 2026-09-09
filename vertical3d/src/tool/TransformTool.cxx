@@ -5,11 +5,11 @@
 
 #include "TransformTool.h"
 
-#include <string>
+#include <vertical3d/src/manipulator/RotateManipulator.h>
+#include <vertical3d/src/manipulator/ScaleManipulator.h>
+#include <vertical3d/src/manipulator/TranslateManipulator.h>
 
-#include "../manipulator/RotateManipulator.h"
-#include "../manipulator/ScaleManipulator.h"
-#include "../manipulator/TranslateManipulator.h"
+#include <string>
 
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>

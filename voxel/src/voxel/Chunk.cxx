@@ -5,7 +5,8 @@
 
 
 #include "Chunk.h"
-#include "../engine/MortonCode.h"
+
+#include <voxel/src/engine/MortonCode.h>
 
 Chunk::Chunk(TerrainMap * terrain, glm::ivec3 chunkPosition, unsigned int ceiling) :
     position_(chunkPosition),

@@ -5,6 +5,10 @@
 
 #include "Controller.h"
 
+#include <api/config/Type.h>
+#include <api/engine/Feature.h>
+#include <api/render/realtime/Window.h>
+
 #include <functional>
 #include <string>
 
@@ -12,9 +16,6 @@
 #include "Scene.h"
 #include "game/GameState.h"
 #include "game/Player.h"
-#include "../../api/config/Type.h"
-#include "../../api/engine/Feature.h"
-#include "../../api/render/realtime/Window.h"
 
 #include <boost/make_shared.hpp>
 

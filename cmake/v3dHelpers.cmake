@@ -67,6 +67,11 @@ function(v3d_add_test lib)
 	set(target "v3dtest_${lib}")
 	add_executable(${target} ${ARGN})
 	target_link_libraries(${target} PRIVATE Boost::unit_test_framework)
+	# A suite names its subject from the repository root, per ADR-0048. Most get the root
+	# from the api library they cover, whose include directory is PUBLIC; a suite that links
+	# no api library - voxel's meshing tests link only boost and libnoise - has no other
+	# source for it, and every one of its includes fails to resolve without this.
+	target_include_directories(${target} PRIVATE ${V3D_ROOT})
 	target_compile_options(${target} PRIVATE /EHsc /utf-8)
 	# Boost.Test's CRT leak check reports at exit, before spdlog's global registry is torn
 	# down, so any test that builds a Logger reports the same permanent false positive.

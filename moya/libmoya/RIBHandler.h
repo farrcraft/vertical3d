@@ -5,12 +5,12 @@
 
 #pragma once
 
+#include <api/render/offline/RIBHandler.h>
+
 #include <string>
 #include <vector>
 
 #include "Renderer.h"
-
-#include "../../api/render/offline/RIBHandler.h"
 
 namespace v3d::moya {
 

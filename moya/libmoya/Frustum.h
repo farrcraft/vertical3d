@@ -5,12 +5,12 @@
 
 #pragma once
 
+#include <api/type/AABBox.h>
+
 #include <string>
 #include <map>
 
 #include "Plane.h"
-
-#include "../../api/type/AABBox.h"
 
 namespace v3d::moya {
 class Frustum {

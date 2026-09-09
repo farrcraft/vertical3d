@@ -5,13 +5,13 @@
 
 #include "WireframeVisitor.h"
 
+#include <api/type/AABBox.h>
+
 #include <algorithm>
 #include <cstddef>
 #include <vector>
 
 #include "MeshTopology.h"
-
-#include "../../../api/type/AABBox.h"
 
 #include <boost/shared_ptr.hpp>
 

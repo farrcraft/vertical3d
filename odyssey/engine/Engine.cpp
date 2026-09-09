@@ -4,14 +4,15 @@
  **/
 
 #include "Engine.h"
+
+#include <api/ecs/component/PositionFixed2D.h>
+#include <api/engine/Feature.h>
+#include <api/grid/Pathfinding.h>
+
 #include "Path.h"
 #include "Unit.h"
 
 #include <string>
-
-#include "../../api/ecs/component/PositionFixed2D.h"
-#include "../../api/engine/Feature.h"
-#include "../../api/grid/Pathfinding.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/make_shared.hpp>

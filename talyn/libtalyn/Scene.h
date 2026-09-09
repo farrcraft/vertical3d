@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include <vector>
+#include <api/type/Camera.h>
 
-#include "../../api/type/Camera.h"
+#include <vector>
 
 #include <glm/vec3.hpp>
 

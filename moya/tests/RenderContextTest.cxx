@@ -3,14 +3,14 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <moya/libmoya/RenderContext.h>
+
 #include <string>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
 
 #include <glm/glm.hpp>
-
-#include "../libmoya/RenderContext.h"
 
 namespace {
 

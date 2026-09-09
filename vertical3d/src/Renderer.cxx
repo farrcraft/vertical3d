@@ -5,15 +5,15 @@
 
 #include "Renderer.h"
 
+#include <api/asset/Image.h>
+#include <api/asset/Type.h>
+#include <api/render/realtime/Frame.h>
+#include <api/render/realtime/Pass.h>
+
 #include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
-
-#include "../../api/asset/Image.h"
-#include "../../api/asset/Type.h"
-#include "../../api/render/realtime/Frame.h"
-#include "../../api/render/realtime/Pass.h"
 
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>

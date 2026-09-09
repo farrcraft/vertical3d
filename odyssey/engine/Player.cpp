@@ -4,7 +4,8 @@
  **/
 
 #include "Player.h"
-#include "../../api/ecs/component/PositionFixed2D.h"
+
+#include <api/ecs/component/PositionFixed2D.h>
 
 namespace odyssey::engine {
 

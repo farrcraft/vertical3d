@@ -5,15 +5,14 @@
 
 #pragma once
 
+#include <api/asset/Manager.h>
+#include <api/log/Logger.h>
+#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/Engine3D.h>
+#include <odyssey/engine/Player.h>
+#include <odyssey/tile/Map.h>
+
 #include <string>
-
-#include "../engine/Player.h"
-#include "../tile/Map.h"
-
-#include "../../api/asset/Manager.h"
-#include "../../api/log/Logger.h"
-#include "../../api/render/realtime/Canvas.h"
-#include "../../api/render/realtime/Engine3D.h"
 
 #include <boost/shared_ptr.hpp>
 #include <entt/entt.hpp>

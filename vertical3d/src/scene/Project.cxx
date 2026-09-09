@@ -5,6 +5,13 @@
 
 #include "Project.h"
 
+#include <api/asset/JsonFile.h>
+#include <api/asset/Writer.h>
+#include <api/brep/BRep.h>
+#include <api/brep/Face.h>
+#include <api/brep/HalfEdge.h>
+#include <api/brep/Vertex.h>
+
 #include <cstddef>
 #include <cstdint>
 #include <limits>
@@ -12,13 +19,6 @@
 #include <vector>
 
 #include "SceneVisitor.h"
-
-#include "../../../api/asset/JsonFile.h"
-#include "../../../api/asset/Writer.h"
-#include "../../../api/brep/BRep.h"
-#include "../../../api/brep/Face.h"
-#include "../../../api/brep/HalfEdge.h"
-#include "../../../api/brep/Vertex.h"
 
 #include <boost/json.hpp>
 #include <boost/make_shared.hpp>

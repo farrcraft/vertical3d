@@ -3,12 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <pong/src/Paddle.h>
+
 #include <boost/test/unit_test.hpp>
 
 #include <entt/entt.hpp>
 #include <glm/glm.hpp>
-
-#include "../src/Paddle.h"
 
 BOOST_AUTO_TEST_CASE(paddle_components_test) {
     entt::registry registry;

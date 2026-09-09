@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "../../../api/render/realtime/LineCanvas.h"
-#include "../../../api/type/Camera.h"
+#include <api/render/realtime/LineCanvas.h>
+#include <api/type/Camera.h>
 
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>

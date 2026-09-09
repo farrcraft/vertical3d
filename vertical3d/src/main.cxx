@@ -6,6 +6,8 @@
 // the WinMain a windows subsystem executable is entered through, which calls this main
 #include <SDL3/SDL_main.h>
 
+#include <api/log/Logger.h>
+
 #include <cstdlib>
 #include <string>
 
@@ -13,9 +15,6 @@
 #include <boost/filesystem/path.hpp>
 
 #include "Controller.h"
-
-#include "../../api/log/Logger.h"
-
 
 int main(int /* argc */, char *argv[]) {
     // extract exe path from argv (needed for loading file assets with relative paths)

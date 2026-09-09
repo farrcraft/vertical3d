@@ -5,11 +5,12 @@
 
 #include "Controller.h"
 
+#include <api/engine/Feature.h>
+
 #include <string>
 
 #include "TetrisScene.h"
 #include "Renderer.h"
-#include "../../api/engine/Feature.h"
 
 #include <boost/make_shared.hpp>
 

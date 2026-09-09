@@ -3,11 +3,11 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <vertical3d/src/view/ViewLayout.h>
+
 #include <string>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../../src/view/ViewLayout.h"
 
 #include <boost/make_shared.hpp>
 

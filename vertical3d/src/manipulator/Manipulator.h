@@ -5,10 +5,9 @@
 
 #pragma once
 
-#include "../view/ViewPort.h"
-
-#include "../../../api/brep/BRep.h"
-#include "../../../api/render/realtime/LineCanvas.h"
+#include <api/brep/BRep.h>
+#include <api/render/realtime/LineCanvas.h>
+#include <vertical3d/src/view/ViewPort.h>
 
 #include <boost/shared_ptr.hpp>
 #include <glm/ext/quaternion_float.hpp>

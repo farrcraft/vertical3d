@@ -5,13 +5,13 @@
 
 #pragma once
 
+#include <api/asset/Manager.h>
+#include <api/log/Logger.h>
+
 #include <vector>
 
 #include "Piece.h"
 #include "Tetrad.h"
-
-#include "../../api/asset/Manager.h"
-#include "../../api/log/Logger.h"
 
 #include <boost/shared_ptr.hpp>
 

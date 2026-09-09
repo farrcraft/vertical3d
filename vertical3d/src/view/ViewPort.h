@@ -5,13 +5,13 @@
 
 #pragma once
 
+#include <api/render/realtime/LineCanvas.h>
+#include <api/type/Camera.h>
+#include <vertical3d/src/scene/Scene.h>
+
 #include <string>
 
 #include "ConstructionPlane.h"
-#include "../scene/Scene.h"
-
-#include "../../../api/render/realtime/LineCanvas.h"
-#include "../../../api/type/Camera.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec4.hpp>

@@ -5,12 +5,12 @@
 
 #pragma once
 
+#include <api/type/Camera.h>
+
 #include <iosfwd>
 #include <string>
 
 #include "SceneVisitor.h"
-
-#include "../../../api/type/Camera.h"
 
 #include <boost/shared_ptr.hpp>
 

@@ -5,15 +5,15 @@
 
 #include "Renderer.h"
 
+#include <api/asset/Image.h>
+#include <api/asset/Type.h>
+#include <api/image/Image.h>
+#include <api/image/TextureAtlas.h>
+
 #include <algorithm>
 #include <map>
 #include <string>
 #include <vector>
-
-#include "../../api/asset/Image.h"
-#include "../../api/asset/Type.h"
-#include "../../api/image/Image.h"
-#include "../../api/image/TextureAtlas.h"
 
 #include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>

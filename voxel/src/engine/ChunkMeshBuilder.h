@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include "../../../api/render/realtime/vulkan/Device.h"
-#include "../../../api/render/realtime/vulkan/Mesh.h"
-#include "../../../api/render/realtime/vulkan/Uploader.h"
+#include <api/render/realtime/vulkan/Device.h>
+#include <api/render/realtime/vulkan/Mesh.h>
+#include <api/render/realtime/vulkan/Uploader.h>
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>

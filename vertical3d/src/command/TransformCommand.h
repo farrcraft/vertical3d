@@ -5,12 +5,12 @@
 
 #pragma once
 
+#include <api/brep/BRep.h>
+#include <api/dag/Transform.h>
+
 #include <string>
 
 #include "Command.h"
-
-#include "../../../api/brep/BRep.h"
-#include "../../../api/dag/Transform.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/ext/quaternion_float.hpp>

@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include "SceneVisitor.h"
+#include <api/render/realtime/LineCanvas.h>
 
-#include "../../../api/render/realtime/LineCanvas.h"
+#include "SceneVisitor.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec4.hpp>

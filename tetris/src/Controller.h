@@ -5,15 +5,15 @@
 
 #pragma once
 
+#include <api/engine/Engine.h>
+#include <api/event/Event.h>
+#include <api/log/Logger.h>
+#include <api/ui/Engine.h>
+#include <api/ui/GameMenu.h>
+
 #include <string>
 
 #include "Tetrad.h"
-
-#include "../../api/engine/Engine.h"
-#include "../../api/log/Logger.h"
-#include "../../api/event/Event.h"
-#include "../../api/ui/Engine.h"
-#include "../../api/ui/GameMenu.h"
 
 class TetrisScene;
 class TetrisRenderer;

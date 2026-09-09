@@ -5,22 +5,22 @@
 
 #pragma once
 
+#include <api/asset/Manager.h>
+#include <api/log/Logger.h>
+#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/Engine3D.h>
+#include <api/render/realtime/LineCanvas.h>
+#include <api/render/realtime/Window.h>
+#include <api/ui/ComponentRenderer.h>
+#include <api/ui/Engine.h>
+#include <api/ui/TextRenderer.h>
+
 #include <string>
 #include <vector>
 
 #include "manipulator/Manipulator.h"
 #include "scene/Scene.h"
 #include "view/ViewPort.h"
-
-#include "../../api/asset/Manager.h"
-#include "../../api/log/Logger.h"
-#include "../../api/render/realtime/Canvas.h"
-#include "../../api/render/realtime/Engine3D.h"
-#include "../../api/render/realtime/LineCanvas.h"
-#include "../../api/render/realtime/Window.h"
-#include "../../api/ui/ComponentRenderer.h"
-#include "../../api/ui/Engine.h"
-#include "../../api/ui/TextRenderer.h"
 
 #include <boost/shared_ptr.hpp>
 #include <entt/entt.hpp>

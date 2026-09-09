@@ -3,12 +3,12 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <moya/libmoya/Polygon.h>
+#include <moya/libmoya/ReyesPrimitive.h>
+
 #include <boost/test/unit_test.hpp>
 
 #include <glm/gtc/matrix_transform.hpp>
-
-#include "../libmoya/Polygon.h"
-#include "../libmoya/ReyesPrimitive.h"
 
 /**
  * A primitive is undiceable until the first pass has measured it against the grid size, so an

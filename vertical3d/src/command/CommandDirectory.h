@@ -5,13 +5,13 @@
 
 #pragma once
 
+#include <api/event/Event.h>
+
 #include <cstddef>
 #include <functional>
 #include <map>
 #include <string>
 #include <vector>
-
-#include "../../../api/event/Event.h"
 
 namespace v3d::editor {
 

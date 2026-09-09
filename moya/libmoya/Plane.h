@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../../api/type/AABBox.h"
+#include <api/type/AABBox.h>
 
 #include "Polygon.h"
 

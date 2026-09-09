@@ -5,14 +5,14 @@
 
 #include "GameBoard.h"
 
+#include <api/asset/Text.h>
+#include <api/asset/Type.h>
+
 #include <cstdlib>
 #include <ctime>
 #include <sstream>
 #include <string>
 #include <vector>
-
-#include "../../api/asset/Text.h"
-#include "../../api/asset/Type.h"
 
 namespace {
 

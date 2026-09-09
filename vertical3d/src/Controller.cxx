@@ -5,6 +5,11 @@
 
 #include "Controller.h"
 
+#include <api/config/Type.h>
+#include <api/engine/Feature.h>
+#include <api/render/realtime/Window.h>
+#include <api/ui/Container.h>
+
 #include <algorithm>
 #include <cstddef>
 #include <string>
@@ -15,11 +20,6 @@
 #include "scene/CreatePoly.h"
 #include "scene/RIBExportVisitor.h"
 #include "Renderer.h"
-
-#include "../../api/config/Type.h"
-#include "../../api/engine/Feature.h"
-#include "../../api/render/realtime/Window.h"
-#include "../../api/ui/Container.h"
 
 #include <boost/make_shared.hpp>
 

@@ -3,6 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/MeshTopology.h>
+#include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/tool/Picker.h>
+#include <vertical3d/src/view/ViewPort.h>
+
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -13,12 +19,6 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
-
-#include "../../src/scene/CreatePoly.h"
-#include "../../src/scene/MeshTopology.h"
-#include "../../src/tool/Picker.h"
-#include "../../src/scene/Scene.h"
-#include "../../src/view/ViewPort.h"
 
 namespace {
 

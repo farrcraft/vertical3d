@@ -3,11 +3,11 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <moya/libmoya/Polygon.h>
+
 #include <boost/test/unit_test.hpp>
 
 #include <glm/glm.hpp>
-
-#include "../libmoya/Polygon.h"
 
 namespace {
 

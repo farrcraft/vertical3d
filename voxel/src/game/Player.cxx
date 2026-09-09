@@ -4,7 +4,8 @@
 **/
 
 #include "Player.h"
-#include "../engine/Camera.h"
+
+#include <voxel/src/engine/Camera.h>
 
 typedef struct Moves {
     Player::Movement move_;  // movement flag

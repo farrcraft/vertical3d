@@ -3,9 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <boost/test/unit_test.hpp>
+#include <voxel/src/voxel/FaceCulling.h>
 
-#include "../src/voxel/FaceCulling.h"
+#include <boost/test/unit_test.hpp>
 
 namespace {
 

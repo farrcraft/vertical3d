@@ -31,6 +31,11 @@ A header outside the including file's own directory is named by its path from th
 root: `#include <api/render/realtime/Canvas.h>`. A header in the same directory stays
 `"Neighbour.h"`. This holds for api library sources, their tests, and the apps, so there is one
 spelling of an api header everywhere rather than one inside the tree and another outside it.
+
+It holds for an app's own headers too — `<vertical3d/src/scene/WireframeVisitor.h>`, not
+`"../scene/WireframeVisitor.h"` — so that no relative parent include survives anywhere. An app
+file that named api headers one way and its own the other would carry the same two spellings
+this record removes, one directory down.
 ADR-0027's decision is unchanged; this record reverses the trade-off in its fourth Negative
 bullet, which should carry a note pointing here.
 

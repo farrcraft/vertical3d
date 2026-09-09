@@ -5,11 +5,11 @@
 
 #pragma once
 
+#include <api/render/offline/FrameBuffer.h>
+
 #include <boost/shared_ptr.hpp>
 
 #include "Scene.h"
-
-#include "../../api/render/offline/FrameBuffer.h"
 
 namespace v3d::talyn {
 /**

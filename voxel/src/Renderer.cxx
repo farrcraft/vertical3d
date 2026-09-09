@@ -5,6 +5,9 @@
 
 #include "Renderer.h"
 
+#include <api/render/realtime/vulkan/PipelineBuilder.h>
+#include <api/render/realtime/vulkan/Result.h>
+
 #include <cstddef>
 #include <cstring>
 #include <sstream>
@@ -21,9 +24,6 @@
 #include "engine/SceneUniforms.h"
 #include "voxel/ChunkMeshPool.h"
 #include "voxel/MeshBuilder.h"
-
-#include "../../api/render/realtime/vulkan/PipelineBuilder.h"
-#include "../../api/render/realtime/vulkan/Result.h"
 
 #include <boost/make_shared.hpp>
 #include <glm/vec3.hpp>

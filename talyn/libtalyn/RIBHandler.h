@@ -5,12 +5,12 @@
 
 #pragma once
 
+#include <api/render/offline/RIBHandler.h>
+
 #include <string>
 #include <vector>
 
 #include "RenderContext.h"
-
-#include "../../api/render/offline/RIBHandler.h"
 
 #include <boost/shared_ptr.hpp>
 

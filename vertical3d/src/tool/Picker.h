@@ -5,14 +5,14 @@
 
 #pragma once
 
-#include "../scene/Scene.h"
-#include "../scene/SceneVisitor.h"
-#include "SelectMask.h"
-#include "../view/ViewPort.h"
+#include <api/brep/BRep.h>
+#include <api/type/Camera.h>
+#include <api/type/Ray.h>
+#include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/scene/SceneVisitor.h>
+#include <vertical3d/src/view/ViewPort.h>
 
-#include "../../../api/brep/BRep.h"
-#include "../../../api/type/Camera.h"
-#include "../../../api/type/Ray.h"
+#include "SelectMask.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>

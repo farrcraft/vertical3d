@@ -3,6 +3,8 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/image/Factory.h>
+
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
@@ -11,8 +13,6 @@
 
 #include <boost/program_options.hpp>
 #include <boost/make_shared.hpp>
-
-#include "../api/image/Factory.h"
 
 namespace {
 

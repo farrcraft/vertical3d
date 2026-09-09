@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../../../api/render/realtime/vulkan/Mesh.h"
+#include <api/render/realtime/vulkan/Mesh.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>

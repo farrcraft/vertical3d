@@ -5,10 +5,10 @@
 
 #include "PongScene.h"
 
+#include <api/event/Sound.h>
+
 #include <iostream>
 #include <string>
-
-#include "../../api/event/Sound.h"
 
 namespace {
 

@@ -3,6 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <vertical3d/src/command/CommandStack.h>
+#include <vertical3d/src/command/CreateCommand.h>
+#include <vertical3d/src/command/TransformCommand.h>
+#include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/Scene.h>
+
 #include <string>
 
 #include <boost/test/unit_test.hpp>
@@ -12,12 +18,6 @@
 #include <glm/ext/quaternion_float.hpp>
 #include <glm/ext/quaternion_trigonometric.hpp>
 #include <glm/vec3.hpp>
-
-#include "../../src/command/CommandStack.h"
-#include "../../src/command/CreateCommand.h"
-#include "../../src/scene/CreatePoly.h"
-#include "../../src/scene/Scene.h"
-#include "../../src/command/TransformCommand.h"
 
 namespace {
 

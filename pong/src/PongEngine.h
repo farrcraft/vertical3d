@@ -5,16 +5,16 @@
 
 #pragma once
 
+#include <api/audio/Engine.h>
+#include <api/engine/Engine.h>
+#include <api/engine/Settings.h>
+#include <api/event/Event.h>
+#include <api/ui/Engine.h>
+#include <api/ui/GameMenu.h>
+
 #include <string>
 
 #include "PongScene.h"
-
-#include "../../api/engine/Engine.h"
-#include "../../api/engine/Settings.h"
-#include "../../api/audio/Engine.h"
-#include "../../api/event/Event.h"
-#include "../../api/ui/Engine.h"
-#include "../../api/ui/GameMenu.h"
 
 class PongRenderer;
 

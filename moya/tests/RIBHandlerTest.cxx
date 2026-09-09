@@ -3,6 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/offline/RIBReader.h>
+#include <moya/libmoya/RIBHandler.h>
+
 #include <sstream>
 #include <string>
 
@@ -10,10 +13,6 @@
 #include <boost/make_shared.hpp>
 
 #include <glm/glm.hpp>
-
-#include "../libmoya/RIBHandler.h"
-
-#include "../../api/render/offline/RIBReader.h"
 
 namespace {
 

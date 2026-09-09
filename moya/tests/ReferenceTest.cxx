@@ -3,6 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/image/Compare.h>
+#include <api/image/Factory.h>
+#include <api/render/offline/RIBReader.h>
+#include <moya/libmoya/RIBHandler.h>
+#include <moya/libmoya/RenderContext.h>
+
 #include <string>
 
 #include <boost/test/unit_test.hpp>
@@ -10,14 +16,6 @@
 #include <boost/filesystem/operations.hpp>
 
 #include <glm/glm.hpp>
-
-#include "../libmoya/RenderContext.h"
-#include "../libmoya/RIBHandler.h"
-
-#include "../../api/render/offline/RIBReader.h"
-
-#include "../../api/image/Compare.h"
-#include "../../api/image/Factory.h"
 
 namespace {
 

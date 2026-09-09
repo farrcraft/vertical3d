@@ -3,11 +3,11 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <talyn/libtalyn/Scene.h>
+
 #include <boost/test/unit_test.hpp>
 
 #include <glm/geometric.hpp>
-
-#include "../libtalyn/Scene.h"
 
 BOOST_AUTO_TEST_CASE(scene_test) {
     v3d::talyn::Scene scene;

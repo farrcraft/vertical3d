@@ -3,6 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/offline/RIBReader.h>
+#include <talyn/libtalyn/RIBHandler.h>
+
 #include <sstream>
 #include <string>
 
@@ -10,10 +13,6 @@
 #include <boost/make_shared.hpp>
 
 #include <glm/geometric.hpp>
-
-#include "../libtalyn/RIBHandler.h"
-
-#include "../../api/render/offline/RIBReader.h"
 
 namespace {
 

@@ -5,12 +5,11 @@
 
 #include "Renderer.h"
 
+#include <api/asset/Image.h>
+#include <api/ecs/component/PositionFixed2D.h>
+#include <odyssey/engine/Unit.h>
+
 #include <string>
-
-#include "../engine/Unit.h"
-
-#include "../../api/asset/Image.h"
-#include "../../api/ecs/component/PositionFixed2D.h"
 
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>

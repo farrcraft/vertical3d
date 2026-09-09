@@ -3,6 +3,11 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/offline/RIBReader.h>
+#include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/RIBExportVisitor.h>
+#include <vertical3d/src/scene/Scene.h>
+
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -11,12 +16,6 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/filesystem/operations.hpp>
-
-#include "../../src/scene/RIBExportVisitor.h"
-#include "../../src/scene/Scene.h"
-#include "../../src/scene/CreatePoly.h"
-
-#include "../../../api/render/offline/RIBReader.h"
 
 namespace {
 

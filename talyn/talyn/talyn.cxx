@@ -3,17 +3,16 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/image/Factory.h>
+#include <api/render/offline/RIBReader.h>
+#include <talyn/libtalyn/RIBHandler.h>
+#include <talyn/libtalyn/RenderContext.h>
+
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
 #include <iostream>
 #include <string>
-
-#include "../libtalyn/RIBHandler.h"
-#include "../libtalyn/RenderContext.h"
-
-#include "../../api/image/Factory.h"
-#include "../../api/render/offline/RIBReader.h"
 
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem/operations.hpp>

@@ -5,12 +5,12 @@
 
 #pragma once
 
+#include <api/brep/BRep.h>
+#include <vertical3d/src/scene/Scene.h>
+
 #include <string>
 
 #include "Command.h"
-#include "../scene/Scene.h"
-
-#include "../../../api/brep/BRep.h"
 
 #include <boost/shared_ptr.hpp>
 

@@ -5,12 +5,12 @@
 
 #pragma once
 
+#include <api/type/ArcBall.h>
+#include <vertical3d/src/view/ViewPort.h>
+
 #include <string>
 
 #include "Tool.h"
-#include "../view/ViewPort.h"
-
-#include "../../../api/type/ArcBall.h"
 
 #include <boost/shared_ptr.hpp>
 

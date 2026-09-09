@@ -5,12 +5,12 @@
 
 #pragma once
 
+#include <api/brep/BRep.h>
+
 #include <cstddef>
 #include <vector>
 
 #include "SceneVisitor.h"
-
-#include "../../../api/brep/BRep.h"
 
 #include <boost/shared_ptr.hpp>
 

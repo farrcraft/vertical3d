@@ -5,6 +5,12 @@
 
 #include "PongEngine.h"
 
+#include <api/asset/Sound.h>
+#include <api/ecs/component/Color3.h>
+#include <api/ecs/component/Position1D.h>
+#include <api/ecs/component/Position2D.h>
+#include <api/engine/Feature.h>
+
 #include <array>
 #include <iostream>
 #include <map>
@@ -15,12 +21,6 @@
 
 #include "PongRenderer.h"
 #include "PongScene.h"
-
-#include "../../api/asset/Sound.h"
-#include "../../api/engine/Feature.h"
-#include "../../api/ecs/component/Position1D.h"
-#include "../../api/ecs/component/Position2D.h"
-#include "../../api/ecs/component/Color3.h"
 
 #include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>

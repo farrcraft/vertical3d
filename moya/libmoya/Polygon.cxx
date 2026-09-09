@@ -5,6 +5,8 @@
 
 #include "Polygon.h"
 
+#include <api/type/3dtypes.h>
+
 #include <cmath>
 #include <cassert>
 #include <iostream>
@@ -15,8 +17,6 @@
 
 #include "Plane.h"
 #include "RenderContext.h"
-
-#include "../../api/type/3dtypes.h"
 
 namespace v3d::moya {
 

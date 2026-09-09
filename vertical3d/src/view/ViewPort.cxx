@@ -5,10 +5,10 @@
 
 #include "ViewPort.h"
 
-#include <string>
+#include <vertical3d/src/manipulator/Manipulator.h>
+#include <vertical3d/src/scene/WireframeVisitor.h>
 
-#include "../manipulator/Manipulator.h"
-#include "../scene/WireframeVisitor.h"
+#include <string>
 
 #include <boost/make_shared.hpp>
 

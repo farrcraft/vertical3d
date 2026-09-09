@@ -5,11 +5,20 @@
 
 #pragma once
 
+#include <api/config/CameraProfiles.h>
+#include <api/engine/Engine.h>
+#include <api/event/Event.h>
+#include <api/event/MouseMotion.h>
+#include <api/event/WindowResize.h>
+#include <api/ui/Cursor.h>
+#include <api/ui/Engine.h>
+#include <api/ui/component/Toolbar.h>
+#include <api/ui/component/menu/MenuBar.h>
+
 #include <string>
 #include <vector>
 
 #include "tool/CameraControlTool.h"
-#include "../../api/config/CameraProfiles.h"
 #include "command/CommandDirectory.h"
 #include "command/CommandStack.h"
 #include "scene/Project.h"
@@ -19,15 +28,6 @@
 #include "tool/TransformTool.h"
 #include "view/ViewLayout.h"
 #include "view/ViewPort.h"
-
-#include "../../api/engine/Engine.h"
-#include "../../api/event/Event.h"
-#include "../../api/event/MouseMotion.h"
-#include "../../api/event/WindowResize.h"
-#include "../../api/ui/Engine.h"
-#include "../../api/ui/Cursor.h"
-#include "../../api/ui/component/Toolbar.h"
-#include "../../api/ui/component/menu/MenuBar.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>

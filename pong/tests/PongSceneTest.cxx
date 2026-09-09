@@ -3,6 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/event/Sound.h>
+#include <pong/src/PongScene.h>
+
 #include <algorithm>
 #include <cmath>
 #include <string>
@@ -13,9 +16,6 @@
 
 #include <entt/entt.hpp>
 #include <glm/glm.hpp>
-
-#include "../src/PongScene.h"
-#include "../../api/event/Sound.h"
 
 namespace {
 

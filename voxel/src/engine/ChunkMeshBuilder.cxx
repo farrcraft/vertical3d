@@ -5,10 +5,10 @@
 
 #include "ChunkMeshBuilder.h"
 
+#include <voxel/src/voxel/MeshCache.h>
+
 #include <cstdint>
 #include <vector>
-
-#include "../voxel/MeshCache.h"
 
 #include <boost/make_shared.hpp>
 
