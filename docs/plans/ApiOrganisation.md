@@ -485,9 +485,12 @@ That is the last name `api/` puts in the global namespace.
 
 ### Step 11 — The documents catch up
 
-- **[Conventions.md](../Conventions.md)** gains the include rule from step 1 as a convention with
-  its two cases, and the rule this plan applied for when a directory splits: when its files stop
-  sharing a reader, not when it passes a file count. `api/dag` is the worked counter-example.
+- **[Conventions.md](../Conventions.md)** took the include rule with step 3 rather than waiting
+  for this step: it binds every file in the tree from the moment step 2 landed, and nothing in
+  the build or the linter enforces it, so a week of it being undocumented is a week in which a
+  new `../` is nobody's fault. What it still needs from this step is the rule for when a
+  directory splits — when its files stop sharing a reader, not when it passes a file count, with
+  `api/dag` as the worked counter-example.
 - **[Architecture.md](../Architecture.md)** describes the shape of `api/`, so the six changed
   libraries change in it.
 - **[v3dHelpers.cmake](../../cmake/v3dHelpers.cmake)**'s include-root comment currently states
