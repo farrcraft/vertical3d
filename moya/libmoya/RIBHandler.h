@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/offline/RIBHandler.h>
+#include <api/render/offline/rib/Handler.h>
 
 #include <string>
 #include <vector>
@@ -25,20 +25,20 @@ namespace v3d::moya {
  * Neither goes through the other: a va_list cannot be built at runtime, so a reader
  * holding a parsed parameter list could not call them.
  **/
-class RIBHandler final : public v3d::render::offline::RIBHandler {
+class RIBHandler final : public v3d::render::offline::rib::Handler {
  public:
     explicit RIBHandler(Renderer * renderer);
     ~RIBHandler();
 
-    void option(const std::string & name, const v3d::render::offline::ParameterList & parameters) override;
+    void option(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
 
     void format(unsigned int width, unsigned int height, float pixelAspect) override;
     void frameAspectRatio(float aspect) override;
     void screenWindow(float left, float right, float bottom, float top) override;
-    void projection(const std::string & name, const v3d::render::offline::ParameterList & parameters) override;
+    void projection(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
     void clipping(float hither, float yon) override;
     void display(const std::string & name, const std::string & type, const std::string & mode,
-        const v3d::render::offline::ParameterList & parameters) override;
+        const v3d::render::offline::rib::ParameterList & parameters) override;
 
     void worldBegin() override;
     void worldEnd() override;
@@ -58,9 +58,9 @@ class RIBHandler final : public v3d::render::offline::RIBHandler {
     void opacity(const glm::vec3 & value) override;
     void shadingRate(float size) override;
 
-    void polygon(unsigned int vertices, const v3d::render::offline::ParameterList & parameters) override;
+    void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override;
     void pointsPolygons(const std::vector<unsigned int> & counts, const std::vector<unsigned int> & indices,
-        const v3d::render::offline::ParameterList & parameters) override;
+        const v3d::render::offline::rib::ParameterList & parameters) override;
 
     /**
      * The context the requests are landing in, which is where a driver reads the

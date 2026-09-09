@@ -110,7 +110,7 @@ brought no varying `"N"` as N, and the diceable branch moves both into eye space
 transpose beside the points it moves by the matrix. `ReyesPrimitive::place()` takes the normal as
 a third argument, which is how a split piece inherits it. talyn's `Triangle` has a second
 constructor taking a normal per corner, `geometricNormal()` for Ng and `shadingNormal(u, v)` for
-N; `RIBHandler::fan` transforms a given `"N"` by the inverse transpose of the current
+N; the handler's `fan` transforms a given `"N"` by the inverse transpose of the current
 transformation.
 
 One thing in the done-when is **not** here: the fixture that shades the normal as a colour. There
@@ -152,7 +152,7 @@ and a fixture that shades the normal as a colour renders the picture a normal ma
 
 ### Step 3 — the SL lexer
 
-**Landed.** `SLLexer` and `SLToken` are in `api/render/offline`, beside `RIBLexer` and shaped
+**Landed.** `sl::Lexer` and `sl::Token` are in `api/render/offline`, beside `rib::Lexer` and shaped
 like it - a `peek`/`next` pair over an `std::istream`, an `error()` that ends the stream, and a
 line and column on every token.
 
@@ -172,8 +172,8 @@ the five groups and nothing else. Step 4 matches it by text in the one position 
 and a shader may name a variable `output`, `noise` or `diffuse` and have it mean what it
 declared.
 
-`api/render/offline`, following the `RIB*` precedent that is already there: `SLLexer` beside
-`RIBLexer`, taking an `std::istream` so a case is a string literal.
+`api/render/offline`, following the `RIB*` precedent that is already there: `sl::Lexer` beside
+`rib::Lexer`, taking an `std::istream` so a case is a string literal.
 
 - Token kinds: identifier, keyword, number, string, operator, punctuation. The keyword set is the
   shader types, the data types, the storage classes, the control flow, and the three lighting
@@ -195,9 +195,9 @@ where, and a `#` line rejected by name.
 
 ### Step 4 — the grammar, and the syntax tree
 
-**Landed.** `SLSyntax.h` holds the nodes and `SLParser` the recursive descent over them. All
+**Landed.** `sl::Syntax.h` holds the nodes and `sl::Parser` the recursive descent over them. All
 eight standard shaders parse, all five shader types parse, and a `displacement` or a `volume`
-comes back answering false to `SLShader::supported()` rather than being refused.
+comes back answering false to `sl::Shader::supported()` rather than being refused.
 
 Four decisions the step's own text left open:
 
@@ -222,7 +222,7 @@ list** rather than refusing a file written the other way round; and a function m
 only at the top of a shader body, with a message that says so rather than a message about a
 missing semicolon.
 
-`SLParser` producing `SLSyntax` nodes. Recursive descent, because the grammar is small and the
+`sl::Parser` producing `sl::Syntax` nodes. Recursive descent, because the grammar is small and the
 error messages are the reason anyone will read this code.
 
 - **Five shader types are parsed: `surface`, `light`, `displacement`, `volume`, `imager`.** Three
@@ -256,10 +256,10 @@ unsupported rather than failing, and a syntax error reports a position.
 
 ### Step 5 — symbols, types, and the varying inference
 
-**Landed.** `SLCompiler` annotates the tree in place - every expression comes out with a type
+**Landed.** `sl::Compiler` annotates the tree in place - every expression comes out with a type
 and a storage class, every variable with the index of the symbol it resolved to - and hands
 back the symbol list in the order a machine should allocate it. Two files came with it:
-`SLTypes` for the coercions and the three transforms, and `SLBuiltins` for the standard
+`sl::Types` for the coercions and the three transforms, and `sl::Builtins` for the standard
 library's **signatures**, which the checker needs before step 7 writes a single body. The
 signature is the declared interface either way, so nothing there is rewritten when some of
 those turn out to be shader source rather than C++.
@@ -285,7 +285,7 @@ writing `Ci` gets; a surface shader's `L` and `Cl` outside an `illuminance` body
 as what a light sets rather than as ordinary reads; and a function that reaches itself is
 reported at the call graph, which is where step 4 said the check belonged.
 
-`SLCompiler`, the pass between the tree and the program. Three jobs, and the third is the one that
+`sl::Compiler`, the pass between the tree and the program. Three jobs, and the third is the one that
 decides whether the machine is fast or is an interpreter call per vertex.
 
 - **Symbols and scopes.** A shader's parameters, its globals, its locals, and its functions. The
@@ -316,9 +316,9 @@ identifier is reported with a position.
 
 ### Step 6 — the value model and the virtual machine
 
-**Landed.** `SLValue`, `SLProgram` and `SLMachine` as the step names them, plus two the step
-implied: `SLEmitter`, which turns the annotated tree into the flat program - "a uniform
-condition compiles to a jump" needs something that compiles - and `SLRenderer`, the interface
+**Landed.** `sl::runtime::Value`, `sl::runtime::Program` and `sl::runtime::Machine` as the step names them, plus two the step
+implied: `sl::Emitter`, which turns the annotated tree into the flat program - "a uniform
+condition compiles to a jump" needs something that compiles - and `sl::runtime::Renderer`, the interface
 the machine asks for what it does not hold. It carries one method so far, the matrix for a
 named coordinate space; step 7 grows it and steps 9 and 10 implement it.
 
@@ -347,7 +347,7 @@ construct, which runs another shader's program over the same batch and is step 7
 passing rather than an instruction. A `CALL` is emitted and the machine reports that no library
 is attached, which is the seam step 7 fills.
 
-`SLValue`, `SLProgram` and `SLMachine`. The heart of ADR-0026's execution model.
+`sl::runtime::Value`, `sl::runtime::Program` and `sl::runtime::Machine`. The heart of ADR-0026's execution model.
 
 - **A value is a type, a storage class and a buffer** — one element wide when uniform, one element
   per shading point when varying. A program is a flat list of instructions over register indices
@@ -376,7 +376,7 @@ compiles to a jump rather than a mask.
 
 ### Step 7 — the standard library
 
-`SLBuiltins`, and the renderer interface the interesting half of it calls through.
+`sl::Builtins`, and the renderer interface the interesting half of it calls through.
 
 The plain built-ins, which are arithmetic over the value model and are cheap once step 6 is real:
 

@@ -3,8 +3,8 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/offline/RIBDeclarations.h>
-#include <api/render/offline/RIBParameters.h>
+#include <api/render/offline/rib/Declarations.h>
+#include <api/render/offline/rib/Parameters.h>
 
 #include <string>
 #include <vector>
@@ -13,7 +13,7 @@
 
 namespace {
 
-typedef v3d::render::offline::RIBDeclaration Declaration;
+typedef v3d::render::offline::rib::Declaration Declaration;
 
 };  // namespace
 
@@ -87,7 +87,7 @@ BOOST_AUTO_TEST_CASE(ribdeclaration_defaults_and_arrays_test) {
  * The standard variables are declared before a file says anything.
  **/
 BOOST_AUTO_TEST_CASE(ribdeclarations_standard_variables_test) {
-    v3d::render::offline::RIBDeclarations declarations;
+    v3d::render::offline::rib::Declarations declarations;
     std::string name;
     Declaration declaration;
 
@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE(ribdeclarations_standard_variables_test) {
 }
 
 BOOST_AUTO_TEST_CASE(ribdeclarations_declare_then_use_test) {
-    v3d::render::offline::RIBDeclarations declarations;
+    v3d::render::offline::rib::Declarations declarations;
     std::string name;
     Declaration declaration;
 
@@ -125,7 +125,7 @@ BOOST_AUTO_TEST_CASE(ribdeclarations_declare_then_use_test) {
  * The inline form types a parameter where it is used and does not enter the table.
  **/
 BOOST_AUTO_TEST_CASE(ribdeclarations_inline_form_test) {
-    v3d::render::offline::RIBDeclarations declarations;
+    v3d::render::offline::rib::Declarations declarations;
     std::string name;
     Declaration declaration;
 
@@ -144,7 +144,7 @@ BOOST_AUTO_TEST_CASE(ribdeclarations_inline_form_test) {
 }
 
 BOOST_AUTO_TEST_CASE(parameterlist_reads_back_typed_test) {
-    v3d::render::offline::ParameterList parameters;
+    v3d::render::offline::rib::ParameterList parameters;
     Declaration point;
     BOOST_REQUIRE(Declaration::parse("vertex point", &point));
     Declaration text;
@@ -180,7 +180,7 @@ BOOST_AUTO_TEST_CASE(parameterlist_reads_back_typed_test) {
  * match its declaration produces.
  **/
 BOOST_AUTO_TEST_CASE(parameterlist_partial_point_test) {
-    v3d::render::offline::ParameterList parameters;
+    v3d::render::offline::rib::ParameterList parameters;
     Declaration point;
     BOOST_REQUIRE(Declaration::parse("uniform point", &point));
 
@@ -198,7 +198,7 @@ BOOST_AUTO_TEST_CASE(parameterlist_partial_point_test) {
  * convention. A transpose here would undo it, which is why this applies the result to a point.
  **/
 BOOST_AUTO_TEST_CASE(parameterlist_matrix_convention_test) {
-    v3d::render::offline::ParameterList parameters;
+    v3d::render::offline::rib::ParameterList parameters;
     Declaration matrix;
     BOOST_REQUIRE(Declaration::parse("uniform matrix", &matrix));
 

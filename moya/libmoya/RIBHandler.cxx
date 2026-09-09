@@ -14,7 +14,7 @@ namespace v3d::moya {
 
 namespace {
 
-typedef v3d::render::offline::ParameterList ParameterList;
+typedef v3d::render::offline::rib::ParameterList ParameterList;
 
 /**
  * One polygon from a run of the position array, with whatever colour and shading normal

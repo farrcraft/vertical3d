@@ -4,7 +4,7 @@
  **/
 
 #include <api/image/Factory.h>
-#include <api/render/offline/RIBReader.h>
+#include <api/render/offline/rib/Reader.h>
 #include <talyn/libtalyn/RIBHandler.h>
 #include <talyn/libtalyn/RenderContext.h>
 
@@ -121,7 +121,7 @@ int run(int argc, char * argv[]) {
 
     if (ext == "rib") {  // .rib for renderman formatted files.
         v3d::talyn::RIBHandler handler(rc);
-        v3d::render::offline::RIBReader reader(logger);
+        v3d::render::offline::rib::Reader reader(logger);
         if (!reader.read(filepath, &handler)) {
             std::cout << "error reading rib file - " << reader.error() << "\n";
             exit(EXIT_FAILURE);

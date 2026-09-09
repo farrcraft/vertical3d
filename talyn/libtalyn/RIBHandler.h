@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/offline/RIBHandler.h>
+#include <api/render/offline/rib/Handler.h>
 
 #include <string>
 #include <vector>
@@ -25,14 +25,14 @@ namespace v3d::talyn {
  * built from it there - every camera option is frozen at WorldBegin, which is what the
  * standard says happens.
  **/
-class RIBHandler final : public v3d::render::offline::RIBHandler {
+class RIBHandler final : public v3d::render::offline::rib::Handler {
  public:
     explicit RIBHandler(const boost::shared_ptr<RenderContext> & rc);
 
     void format(unsigned int width, unsigned int height, float pixelAspect) override;
     void frameAspectRatio(float aspect) override;
     void screenWindow(float left, float right, float bottom, float top) override;
-    void projection(const std::string & name, const v3d::render::offline::ParameterList & parameters) override;
+    void projection(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
     void clipping(float hither, float yon) override;
 
     void worldBegin() override;
@@ -50,9 +50,9 @@ class RIBHandler final : public v3d::render::offline::RIBHandler {
 
     void color(const glm::vec3 & value) override;
 
-    void polygon(unsigned int vertices, const v3d::render::offline::ParameterList & parameters) override;
+    void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override;
     void pointsPolygons(const std::vector<unsigned int> & counts, const std::vector<unsigned int> & indices,
-        const v3d::render::offline::ParameterList & parameters) override;
+        const v3d::render::offline::rib::ParameterList & parameters) override;
 
     /**
      * What the scene asked for that a raytracer built on v3d::type::camera::Camera cannot do, or

@@ -35,8 +35,8 @@ where `tests` already is. A subdirectory added above that line does not inherit 
 
 ## RIB
 
-**One reader serves both renderers.** `offline::RIBReader` dispatches onto
-`offline::RIBHandler`, a C++ interface with typed parameter lists rather than the RI C ABI, per
+**One reader serves both renderers.** `offline::rib::Reader` dispatches onto
+`offline::rib::Handler`, a C++ interface with typed parameter lists rather than the RI C ABI, per
 [ADR-0025](adr/0025-the-rib-reader-dispatches-a-cpp-request-interface.md). Each renderer
 implements it as `<renderer>::RIBHandler`. RIB is also what the editor exports to, one way, per
 [ADR-0023](adr/0023-rib-is-the-offline-scene-description.md).
@@ -59,15 +59,15 @@ implements it as `<renderer>::RIBHandler`. RIB is also what the editor exports t
   *is* the world to camera one. A transpose or an inverse is right only when it is a rotation.
 - **talyn refuses a camera `type::camera::Profile` cannot hold**: an off centre `ScreenWindow`, a
   non-rigid matrix, or one that reverses handedness. RI's camera basis for a general lookat
-  produces exactly those. `RIBHandler::error()` says which one it was, and the reader still
+  produces exactly those. `rib::Handler::error()` says which one it was, and the reader still
   succeeds, because the request was understood.
 
 ## The shading language
 
 Shading is a language rather than a set of built-in models, per
 [ADR-0026](adr/0026-shading-is-a-language-over-a-batch.md), and it lives in
-`api/render/offline` beside the RIB one: `SLLexer`, `SLSyntax` and `SLParser` read a shader,
-`SLTypes` and `SLCompiler` check it, and `SLBuiltins` says what the standard library provides.
+`api/render/offline` beside the RIB one: `sl::Lexer`, `sl::Syntax` and `sl::Parser` read a shader,
+`sl::Types` and `sl::Compiler` check it, and `sl::Builtins` says what the standard library provides.
 The phase that builds the rest of it is open, so what follows is where the seams are rather
 than a tour.
 
@@ -82,7 +82,7 @@ than a tour.
   Neither is what a reader coming from another language expects, which is the one part of the
   grammar worth checking before assuming a shader means what it looks like.
 - **All five shader types parse and three of them run.** A `displacement` or a `volume` shader
-  comes back from the parser answering false to `SLShader::supported()`, so a scene carrying
+  comes back from the parser answering false to `sl::Shader::supported()`, so a scene carrying
   one is told what is unsupported rather than what is malformed - the same distinction the RIB
   reader draws between a request that is recognised and one that is unparsed.
 - **The C preprocessor is not run.** A `#` is a diagnostic naming the missing tool, not a
@@ -90,7 +90,7 @@ than a tour.
   named.
 - **The compiler annotates the tree in place.** Every expression comes out with a type and a
   storage class and every variable with a symbol index, rather than a second structure keyed by
-  node. `SLCompiler::symbols()` is then the list a machine allocates registers against - a
+  node. `sl::Compiler::symbols()` is then the list a machine allocates registers against - a
   local declared twice in nested scopes is two of them.
 - **The varying inference runs to a fixed point**, because a loop carries a varying value back
   to a name that was read before it was written. Inferring uniform where varying was right
@@ -98,7 +98,7 @@ than a tour.
   Anything assigned under a varying condition is varying, and a value declared `uniform` that a
   varying one reaches is a fault rather than a quiet widening.
 - **A signature is the declared interface, not a claim about the implementation.** `ambient`,
-  `diffuse` and `specular` are in `SLBuiltins` beside `pow` and `normalize`, and are shader
+  `diffuse` and `specular` are in `sl::Builtins` beside `pow` and `normalize`, and are shader
   source written over `illuminance` rather than C++ - which is what the standard says and what
   makes them testable. A caller cannot tell, and neither can the type checker.
 

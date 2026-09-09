@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/offline/RIBReader.h>
+#include <api/render/offline/rib/Reader.h>
 #include <talyn/libtalyn/RIBHandler.h>
 
 #include <sstream>
@@ -17,7 +17,7 @@
 namespace {
 
 bool read(const std::string & source, v3d::talyn::RIBHandler * handler) {
-    v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
     std::istringstream stream(source);
     return reader.read(stream, handler);
 }
@@ -48,7 +48,7 @@ BOOST_AUTO_TEST_CASE(talyn_ribhandler_format_test) {
 BOOST_AUTO_TEST_CASE(talyn_ribhandler_missing_file_test) {
     auto rc = boost::make_shared<v3d::talyn::RenderContext>();
     v3d::talyn::RIBHandler handler(rc);
-    v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_CHECK(!reader.read("data/no-such-scene.rib", &handler));
 }
@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE(talyn_ribhandler_missing_file_test) {
 BOOST_AUTO_TEST_CASE(talyn_ribhandler_fixture_test) {
     auto rc = boost::make_shared<v3d::talyn::RenderContext>();
     v3d::talyn::RIBHandler handler(rc);
-    v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(reader.read("data/format.rib", &handler));
     BOOST_REQUIRE(rc->framebuffer());

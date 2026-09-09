@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/offline/SLTypes.h>
+#include <api/render/offline/sl/Types.h>
 
 #include <boost/test/unit_test.hpp>
 
@@ -11,7 +11,7 @@
 
 namespace {
 
-typedef v3d::render::offline::SLType Type;
+typedef v3d::render::offline::sl::Type Type;
 
 /**
  * A matrix that both rotates and translates, which is the only kind that tells the three
@@ -26,12 +26,12 @@ glm::mat4x4 placed() {
 };  // namespace
 
 BOOST_AUTO_TEST_CASE(sltypes_components_test) {
-    BOOST_CHECK_EQUAL(v3d::render::offline::components(Type::FLOAT), 1u);
-    BOOST_CHECK_EQUAL(v3d::render::offline::components(Type::POINT), 3u);
-    BOOST_CHECK_EQUAL(v3d::render::offline::components(Type::COLOR), 3u);
-    BOOST_CHECK_EQUAL(v3d::render::offline::components(Type::MATRIX), 16u);
+    BOOST_CHECK_EQUAL(v3d::render::offline::sl::components(Type::FLOAT), 1u);
+    BOOST_CHECK_EQUAL(v3d::render::offline::sl::components(Type::POINT), 3u);
+    BOOST_CHECK_EQUAL(v3d::render::offline::sl::components(Type::COLOR), 3u);
+    BOOST_CHECK_EQUAL(v3d::render::offline::sl::components(Type::MATRIX), 16u);
     // a string names a space, a texture or a message: there is no arithmetic to do on it
-    BOOST_CHECK_EQUAL(v3d::render::offline::components(Type::STRING), 0u);
+    BOOST_CHECK_EQUAL(v3d::render::offline::sl::components(Type::STRING), 0u);
 }
 
 /**
@@ -40,40 +40,40 @@ BOOST_AUTO_TEST_CASE(sltypes_components_test) {
  * that has drifted into one is a mistake worth catching.
  **/
 BOOST_AUTO_TEST_CASE(sltypes_coercion_test) {
-    BOOST_CHECK(v3d::render::offline::coercible(Type::FLOAT, Type::POINT));
-    BOOST_CHECK(v3d::render::offline::coercible(Type::FLOAT, Type::COLOR));
-    BOOST_CHECK(v3d::render::offline::coercible(Type::FLOAT, Type::MATRIX));
+    BOOST_CHECK(v3d::render::offline::sl::coercible(Type::FLOAT, Type::POINT));
+    BOOST_CHECK(v3d::render::offline::sl::coercible(Type::FLOAT, Type::COLOR));
+    BOOST_CHECK(v3d::render::offline::sl::coercible(Type::FLOAT, Type::MATRIX));
 
-    BOOST_CHECK(v3d::render::offline::coercible(Type::POINT, Type::VECTOR));
-    BOOST_CHECK(v3d::render::offline::coercible(Type::VECTOR, Type::NORMAL));
-    BOOST_CHECK(v3d::render::offline::coercible(Type::NORMAL, Type::POINT));
+    BOOST_CHECK(v3d::render::offline::sl::coercible(Type::POINT, Type::VECTOR));
+    BOOST_CHECK(v3d::render::offline::sl::coercible(Type::VECTOR, Type::NORMAL));
+    BOOST_CHECK(v3d::render::offline::sl::coercible(Type::NORMAL, Type::POINT));
 
-    BOOST_CHECK(!v3d::render::offline::coercible(Type::COLOR, Type::POINT));
-    BOOST_CHECK(!v3d::render::offline::coercible(Type::POINT, Type::COLOR));
-    BOOST_CHECK(!v3d::render::offline::coercible(Type::POINT, Type::FLOAT));
-    BOOST_CHECK(!v3d::render::offline::coercible(Type::STRING, Type::FLOAT));
-    BOOST_CHECK(!v3d::render::offline::coercible(Type::FLOAT, Type::STRING));
-    BOOST_CHECK(v3d::render::offline::coercible(Type::STRING, Type::STRING));
+    BOOST_CHECK(!v3d::render::offline::sl::coercible(Type::COLOR, Type::POINT));
+    BOOST_CHECK(!v3d::render::offline::sl::coercible(Type::POINT, Type::COLOR));
+    BOOST_CHECK(!v3d::render::offline::sl::coercible(Type::POINT, Type::FLOAT));
+    BOOST_CHECK(!v3d::render::offline::sl::coercible(Type::STRING, Type::FLOAT));
+    BOOST_CHECK(!v3d::render::offline::sl::coercible(Type::FLOAT, Type::STRING));
+    BOOST_CHECK(v3d::render::offline::sl::coercible(Type::STRING, Type::STRING));
 }
 
 BOOST_AUTO_TEST_CASE(sltypes_arithmetic_test) {
-    BOOST_CHECK(v3d::render::offline::arithmetic(Type::FLOAT, Type::FLOAT) == Type::FLOAT);
+    BOOST_CHECK(v3d::render::offline::sl::arithmetic(Type::FLOAT, Type::FLOAT) == Type::FLOAT);
     // a float is a scale over anything else, whichever side it is on
-    BOOST_CHECK(v3d::render::offline::arithmetic(Type::FLOAT, Type::COLOR) == Type::COLOR);
-    BOOST_CHECK(v3d::render::offline::arithmetic(Type::POINT, Type::FLOAT) == Type::POINT);
+    BOOST_CHECK(v3d::render::offline::sl::arithmetic(Type::FLOAT, Type::COLOR) == Type::COLOR);
+    BOOST_CHECK(v3d::render::offline::sl::arithmetic(Type::POINT, Type::FLOAT) == Type::POINT);
     // and the point-like types mix, taking the left operand's
-    BOOST_CHECK(v3d::render::offline::arithmetic(Type::POINT, Type::VECTOR) == Type::POINT);
-    BOOST_CHECK(v3d::render::offline::arithmetic(Type::VECTOR, Type::NORMAL) == Type::VECTOR);
+    BOOST_CHECK(v3d::render::offline::sl::arithmetic(Type::POINT, Type::VECTOR) == Type::POINT);
+    BOOST_CHECK(v3d::render::offline::sl::arithmetic(Type::VECTOR, Type::NORMAL) == Type::VECTOR);
     // a colour and a position have none between them
-    BOOST_CHECK(v3d::render::offline::arithmetic(Type::COLOR, Type::POINT) == Type::VOID);
-    BOOST_CHECK(v3d::render::offline::arithmetic(Type::STRING, Type::STRING) == Type::VOID);
+    BOOST_CHECK(v3d::render::offline::sl::arithmetic(Type::COLOR, Type::POINT) == Type::VOID);
+    BOOST_CHECK(v3d::render::offline::sl::arithmetic(Type::STRING, Type::STRING) == Type::VOID);
 }
 
 /**
  * A point has a position, so a translation moves it.
  **/
 BOOST_AUTO_TEST_CASE(sltypes_ptransform_test) {
-    const glm::vec3 moved = v3d::render::offline::ptransform(placed(), glm::vec3(1.0f, 0.0f, 0.0f));
+    const glm::vec3 moved = v3d::render::offline::sl::ptransform(placed(), glm::vec3(1.0f, 0.0f, 0.0f));
 
     // the rotation takes +x to +y, and the translation then carries it
     BOOST_CHECK_CLOSE(moved.x, 10.0f, 0.01f);
@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE(sltypes_ptransform_test) {
  * what tells a vector from a point, and it is invisible until a scene translates.
  **/
 BOOST_AUTO_TEST_CASE(sltypes_vtransform_test) {
-    const glm::vec3 turned = v3d::render::offline::vtransform(placed(), glm::vec3(1.0f, 0.0f, 0.0f));
+    const glm::vec3 turned = v3d::render::offline::sl::vtransform(placed(), glm::vec3(1.0f, 0.0f, 0.0f));
 
     BOOST_CHECK_SMALL(turned.x, 0.0001f);
     BOOST_CHECK_CLOSE(turned.y, 1.0f, 0.01f);
@@ -100,7 +100,7 @@ BOOST_AUTO_TEST_CASE(sltypes_vtransform_test) {
  **/
 BOOST_AUTO_TEST_CASE(sltypes_ntransform_test) {
     // under a rotation and a translation the three agree about direction
-    const glm::vec3 turned = v3d::render::offline::ntransform(placed(), glm::vec3(1.0f, 0.0f, 0.0f));
+    const glm::vec3 turned = v3d::render::offline::sl::ntransform(placed(), glm::vec3(1.0f, 0.0f, 0.0f));
     BOOST_CHECK_SMALL(turned.x, 0.0001f);
     BOOST_CHECK_CLOSE(turned.y, 1.0f, 0.01f);
     BOOST_CHECK_SMALL(turned.z, 0.0001f);
@@ -110,10 +110,10 @@ BOOST_AUTO_TEST_CASE(sltypes_ntransform_test) {
     const glm::mat4x4 stretched = glm::scale(glm::mat4x4(1.0f), glm::vec3(1.0f, 2.0f, 1.0f));
     const glm::vec3 normal(1.0f, 1.0f, 0.0f);
 
-    const glm::vec3 asVector = v3d::render::offline::vtransform(stretched, normal);
+    const glm::vec3 asVector = v3d::render::offline::sl::vtransform(stretched, normal);
     BOOST_CHECK_CLOSE(asVector.y, 2.0f, 0.01f);
 
-    const glm::vec3 asNormal = v3d::render::offline::ntransform(stretched, normal);
+    const glm::vec3 asNormal = v3d::render::offline::sl::ntransform(stretched, normal);
     BOOST_CHECK_CLOSE(asNormal.x, 1.0f, 0.01f);
     BOOST_CHECK_CLOSE(asNormal.y, 0.5f, 0.01f);
 }

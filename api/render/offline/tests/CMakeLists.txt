@@ -3,14 +3,14 @@
 v3d_add_test(render_offline
 	"TestMain.cxx"
 	"FrameBufferTest.cxx"
-	"RIBLexerTest.cxx"
-	"RIBDeclarationsTest.cxx"
-	"RIBReaderTest.cxx"
-	"SLLexerTest.cxx"
-	"SLParserTest.cxx"
-	"SLTypesTest.cxx"
-	"SLCompilerTest.cxx"
-	"SLMachineTest.cxx")
+	"RibLexerTest.cxx"
+	"RibDeclarationsTest.cxx"
+	"RibReaderTest.cxx"
+	"SlLexerTest.cxx"
+	"SlParserTest.cxx"
+	"SlTypesTest.cxx"
+	"SlCompilerTest.cxx"
+	"SlMachineTest.cxx")
 
 target_link_libraries(v3dtest_render_offline PRIVATE v3dlib_render_offline ${Boost_LIBRARIES})
 

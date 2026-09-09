@@ -31,7 +31,7 @@ Why things are as they are, what is planned, and what is loose.
 |---|---|
 | [sdlc.md](sdlc.md) | How work moves through the repo — plan, decide, build, verify, record |
 | [adr/](adr/) | Architecture decision records, indexed in [adr/README.md](adr/README.md) |
-| [plans/](plans/) | Phased workstreams. [OfflineRenderingPhase3.md](plans/OfflineRenderingPhase3.md) and [ApiOrganisation.md](plans/ApiOrganisation.md) are open |
+| [plans/](plans/) | Phased workstreams. [OfflineRenderingPhase3.md](plans/OfflineRenderingPhase3.md) is open |
 | [roadmap/](roadmap/) | What an area nobody has taken up would need, and in what order |
 | [audits/](audits/) | The only account of the four legacy trees, and how to recover a file from each |
 | [TODO.md](TODO.md) | Loose ends, and the clang-tidy backlog |

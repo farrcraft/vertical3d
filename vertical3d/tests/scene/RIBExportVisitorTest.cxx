@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/offline/RIBReader.h>
+#include <api/render/offline/rib/Reader.h>
 #include <vertical3d/src/scene/CreatePoly.h>
 #include <vertical3d/src/scene/RIBExportVisitor.h>
 #include <vertical3d/src/scene/Scene.h>
@@ -23,14 +23,14 @@ namespace {
  * What the reader made of the file, which is a stronger assertion than what the text
  * looked like: the export is only worth anything if a renderer can read it back.
  **/
-class ImportHandler final : public v3d::render::offline::RIBHandler {
+class ImportHandler final : public v3d::render::offline::rib::Handler {
  public:
     void format(unsigned int width, unsigned int height, float pixelAspect) override {
         (void)pixelAspect;
         width_ = width;
         height_ = height;
     }
-    void projection(const std::string & name, const v3d::render::offline::ParameterList & parameters) override {
+    void projection(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override {
         (void)parameters;
         projection_ = name;
     }
@@ -53,11 +53,11 @@ class ImportHandler final : public v3d::render::offline::RIBHandler {
     void worldBegin() override { worlds_++; }
     void worldEnd() override { worlds_++; }
     void attributeBegin() override { blocks_++; }
-    void attribute(const std::string & name, const v3d::render::offline::ParameterList & parameters) override {
+    void attribute(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override {
         (void)name;
         names_.push_back(parameters.string("name", ""));
     }
-    void polygon(unsigned int vertices, const v3d::render::offline::ParameterList & parameters) override {
+    void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override {
         faces_++;
         corners_ += vertices;
         points_ = parameters.points("P");
@@ -107,7 +107,7 @@ std::string exportScene(const boost::shared_ptr<v3d::editor::Scene> & scene, boo
 }
 
 bool reimport(const std::string & source, ImportHandler * handler) {
-    v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
     std::istringstream stream(source);
     return reader.read(stream, handler);
 }

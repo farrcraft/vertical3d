@@ -17,7 +17,7 @@ namespace v3d::talyn {
 
 namespace {
 
-typedef v3d::render::offline::ParameterList ParameterList;
+typedef v3d::render::offline::rib::ParameterList ParameterList;
 
 const float TOLERANCE = 1.0e-4f;
 

@@ -5,7 +5,7 @@
 
 #include <api/image/Compare.h>
 #include <api/image/Factory.h>
-#include <api/render/offline/RIBReader.h>
+#include <api/render/offline/rib/Reader.h>
 #include <talyn/libtalyn/RIBHandler.h>
 #include <talyn/libtalyn/RenderContext.h>
 
@@ -94,7 +94,7 @@ BOOST_AUTO_TEST_CASE(talyn_reference_test) {
 BOOST_AUTO_TEST_CASE(talyn_reference_from_rib_test) {
     auto rc = boost::make_shared<v3d::talyn::RenderContext>();
     v3d::talyn::RIBHandler handler(rc);
-    v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(reader.read(RIB_SCENE, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");

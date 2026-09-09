@@ -3,8 +3,8 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/offline/SLCompiler.h>
-#include <api/render/offline/SLParser.h>
+#include <api/render/offline/sl/Compiler.h>
+#include <api/render/offline/sl/Parser.h>
 
 #include <sstream>
 #include <string>
@@ -14,8 +14,8 @@
 
 namespace {
 
-typedef v3d::render::offline::SLStorage Storage;
-typedef v3d::render::offline::SLSymbol Symbol;
+typedef v3d::render::offline::sl::Storage Storage;
+typedef v3d::render::offline::sl::Symbol Symbol;
 
 /**
  * Parse one shader and compile it, answering what the compiler said. An empty answer is a
@@ -23,12 +23,12 @@ typedef v3d::render::offline::SLSymbol Symbol;
  **/
 std::string compile(const std::string & source, std::vector<Symbol>* symbols = nullptr) {
     std::istringstream stream(source);
-    v3d::render::offline::SLParser parser(stream);
-    std::vector<v3d::render::offline::SLShaderPtr> shaders = parser.parse();
+    v3d::render::offline::sl::Parser parser(stream);
+    std::vector<v3d::render::offline::sl::ShaderPtr> shaders = parser.parse();
     if (shaders.size() != 1) {
         return parser.error().empty() ? "no shader" : parser.error();
     }
-    v3d::render::offline::SLCompiler compiler(shaders[0]);
+    v3d::render::offline::sl::Compiler compiler(shaders[0]);
     const bool compiled = compiler.compile();
     if (symbols) {
         *symbols = compiler.symbols();

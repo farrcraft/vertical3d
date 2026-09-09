@@ -3,7 +3,7 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/offline/RIBReader.h>
+#include <api/render/offline/rib/Reader.h>
 #include <moya/libmoya/RIBHandler.h>
 #include <moya/libmoya/Renderer.h>
 
@@ -87,7 +87,7 @@ int run(int argc, char *argv[]) {
     // run, and a progress line nobody sees until the picture is written is not one
     std::cout << "Rendering scene file: " << infile << "\n" << std::flush;
 
-    v3d::render::offline::RIBReader reader(logger);
+    v3d::render::offline::rib::Reader reader(logger);
     if (!reader.read(infile, &handler)) {
         std::cout << "error reading rib file - " << reader.error() << "\n";
         exit(EXIT_FAILURE);

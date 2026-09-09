@@ -5,7 +5,7 @@
 
 #include <api/image/Compare.h>
 #include <api/image/Factory.h>
-#include <api/render/offline/RIBReader.h>
+#include <api/render/offline/rib/Reader.h>
 #include <moya/libmoya/RIBHandler.h>
 #include <moya/libmoya/RenderContext.h>
 
@@ -123,7 +123,7 @@ BOOST_AUTO_TEST_CASE(moya_reference_test) {
 BOOST_AUTO_TEST_CASE(moya_reference_from_rib_test) {
     v3d::moya::Renderer renderer;
     v3d::moya::RIBHandler handler(&renderer);
-    v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(reader.read(RIB_SCENE, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");
