@@ -65,7 +65,7 @@ Renderer::Renderer(const boost::shared_ptr<v3d::render::realtime::Window>& windo
     engine_.initialize(window);
     engine_.clearColour(background_);
 
-    const boost::shared_ptr<v3d::render::realtime::vulkan::QuadRenderer> quads = engine_.quads();
+    const boost::shared_ptr<v3d::render::realtime::vulkan::renderer::Quad> quads = engine_.quads();
     text_ = boost::make_shared<v3d::ui::paint::TextRenderer>(assetManager, logger,
         [quads](const boost::shared_ptr<v3d::image::Image>& atlas) {
             return quads->texture(atlas);
@@ -148,7 +148,7 @@ void Renderer::draw() {
         return;
     }
 
-    boost::shared_ptr<v3d::render::realtime::vulkan::LineRenderer> lines = engine_.lines();
+    boost::shared_ptr<v3d::render::realtime::vulkan::renderer::Line> lines = engine_.lines();
 
     // a view with no scene still draws its grid, which is what an empty document looks
     // like rather than an error

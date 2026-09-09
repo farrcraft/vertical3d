@@ -35,7 +35,7 @@ PongRenderer::PongRenderer(const boost::shared_ptr<v3d::render::realtime::Window
     engine_(logger, assetManager, registry) {
     engine_.initialize(window);
 
-    const boost::shared_ptr<v3d::render::realtime::vulkan::QuadRenderer> quads = engine_.quads();
+    const boost::shared_ptr<v3d::render::realtime::vulkan::renderer::Quad> quads = engine_.quads();
     text_ = boost::make_shared<v3d::ui::paint::TextRenderer>(assetManager, logger,
         [quads](const boost::shared_ptr<v3d::image::Image>& atlas) {
             return quads->texture(atlas);

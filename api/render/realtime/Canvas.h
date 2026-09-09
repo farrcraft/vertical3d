@@ -35,7 +35,7 @@ namespace v3d::render::realtime {
  * sprite drawn from a glyph atlas and a label sample the same texture and must not merge.
  *
  * Nothing here touches vulkan. The canvas is filled during a tick and handed to
- * vulkan::QuadRenderer, which uploads it and turns each batch into a draw item.
+ * vulkan::renderer::Quad, which uploads it and turns each batch into a draw item.
  *
  * Coordinates are in pixels with the origin at the top left, and the modelview stack
  * applies on the cpu as vertices are added.

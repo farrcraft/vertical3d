@@ -5,8 +5,8 @@
 
 #include "Renderer.h"
 
-#include <api/render/realtime/vulkan/PipelineBuilder.h>
-#include <api/render/realtime/vulkan/Result.h>
+#include <api/render/realtime/vulkan/pipeline/Builder.h>
+#include <api/render/realtime/vulkan/device/Result.h>
 #include <voxel/src/engine/Camera.h>
 #include <voxel/src/engine/ChunkMeshBuilder.h>
 #include <voxel/src/engine/SceneUniforms.h>
@@ -118,7 +118,7 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
     createLayout();
     createUniforms();
     createPipeline();
-    const boost::shared_ptr<v3d::render::realtime::vulkan::QuadRenderer> quads = engine_.quads();
+    const boost::shared_ptr<v3d::render::realtime::vulkan::renderer::Quad> quads = engine_.quads();
     text_ = boost::make_shared<v3d::ui::paint::TextRenderer>(assetManager, logger,
         [quads](const boost::shared_ptr<v3d::image::Image>& atlas) {
             return quads->texture(atlas);
@@ -171,7 +171,7 @@ void Renderer::createLayout() {
     const VkResult result = vkCreateDescriptorSetLayout(context_->device()->handle(), &info, nullptr, &sceneLayout_);
     if (result != VK_SUCCESS) {
         std::stringstream msg;
-        msg << "Unable to create the voxel scene descriptor set layout - " << v3d::render::realtime::vulkan::resultString(result);
+        msg << "Unable to create the voxel scene descriptor set layout - " << v3d::render::realtime::vulkan::device::resultString(result);
         throw std::runtime_error(msg.str());
     }
 }
@@ -193,7 +193,7 @@ void Renderer::createUniforms() {
         uniforms.materials[i].specular = glm::vec4(0.8f, 0.8f, 0.8f, 100.0f);
     }
 
-    uniforms_ = boost::make_shared<v3d::render::realtime::vulkan::DeviceBuffer>(
+    uniforms_ = boost::make_shared<v3d::render::realtime::vulkan::memory::DeviceBuffer>(
         context_->device(), context_->uploader(), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, &uniforms, sizeof(uniforms));
 
     VkDescriptorPoolSize size{};
@@ -210,7 +210,7 @@ void Renderer::createUniforms() {
     VkResult result = vkCreateDescriptorPool(context_->device()->handle(), &poolInfo, nullptr, &pool_);
     if (result != VK_SUCCESS) {
         std::stringstream msg;
-        msg << "Unable to create the voxel descriptor pool - " << v3d::render::realtime::vulkan::resultString(result);
+        msg << "Unable to create the voxel descriptor pool - " << v3d::render::realtime::vulkan::device::resultString(result);
         throw std::runtime_error(msg.str());
     }
 
@@ -224,7 +224,7 @@ void Renderer::createUniforms() {
     result = vkAllocateDescriptorSets(context_->device()->handle(), &allocation, &set);
     if (result != VK_SUCCESS) {
         std::stringstream msg;
-        msg << "Unable to allocate the voxel scene descriptor set - " << v3d::render::realtime::vulkan::resultString(result);
+        msg << "Unable to allocate the voxel scene descriptor set - " << v3d::render::realtime::vulkan::device::resultString(result);
         throw std::runtime_error(msg.str());
     }
 
@@ -243,7 +243,7 @@ void Renderer::createUniforms() {
     vkUpdateDescriptorSets(context_->device()->handle(), 1, &write, 0, nullptr);
 
     // a material here is a descriptor set and no texture, which is all the recorder binds
-    v3d::render::realtime::vulkan::Material material;
+    v3d::render::realtime::vulkan::pipeline::Material material;
     material.set = set;
     material_ = context_->resources()->add(material);
 }
@@ -251,7 +251,7 @@ void Renderer::createUniforms() {
 /**
  **/
 void Renderer::createPipeline() {
-    v3d::render::realtime::vulkan::PipelineBuilder builder(context_->device());
+    v3d::render::realtime::vulkan::pipeline::Builder builder(context_->device());
     builder.name("voxel-terrain")
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
         .shader(VK_SHADER_STAGE_FRAGMENT_BIT, fragmentShader, sizeof(fragmentShader))

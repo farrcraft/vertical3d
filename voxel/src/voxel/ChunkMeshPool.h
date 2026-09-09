@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/realtime/vulkan/Mesh.h>
+#include <api/render/realtime/vulkan/memory/Mesh.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
@@ -27,7 +27,7 @@ class ChunkMeshPool {
     struct Entry {
         Entry();
 
-        boost::shared_ptr<v3d::render::realtime::vulkan::Mesh> mesh;
+        boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh> mesh;
         glm::vec3 origin;  /**< the chunk's corner in blocks, which its vertices are relative to **/
     };
 
@@ -36,7 +36,7 @@ class ChunkMeshPool {
     /**
      * Take a chunk's mesh, replacing whatever was there.
      **/
-    void add(size_t chunkId, const boost::shared_ptr<v3d::render::realtime::vulkan::Mesh>& mesh, const glm::vec3& origin);
+    void add(size_t chunkId, const boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh>& mesh, const glm::vec3& origin);
 
     /**
      * @return the meshes, for a caller building a draw item out of each

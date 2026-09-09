@@ -64,20 +64,20 @@ boost::shared_ptr<Frame> Engine3D::frame() const {
 
 /**
  **/
-boost::shared_ptr<vulkan::QuadRenderer> Engine3D::quads() const {
-    return context_ ? context_->quads() : boost::shared_ptr<vulkan::QuadRenderer>();
+boost::shared_ptr<vulkan::renderer::Quad> Engine3D::quads() const {
+    return context_ ? context_->quads() : boost::shared_ptr<vulkan::renderer::Quad>();
 }
 
 /**
  **/
-boost::shared_ptr<vulkan::LineRenderer> Engine3D::lines() {
-    return context_ ? context_->lines() : boost::shared_ptr<vulkan::LineRenderer>();
+boost::shared_ptr<vulkan::renderer::Line> Engine3D::lines() {
+    return context_ ? context_->lines() : boost::shared_ptr<vulkan::renderer::Line>();
 }
 
 /**
  **/
-boost::shared_ptr<vulkan::WorldRenderer> Engine3D::worldQuads() {
-    return context_ ? context_->worldQuads() : boost::shared_ptr<vulkan::WorldRenderer>();
+boost::shared_ptr<vulkan::renderer::World> Engine3D::worldQuads() {
+    return context_ ? context_->worldQuads() : boost::shared_ptr<vulkan::renderer::World>();
 }
 
 /**
@@ -112,12 +112,12 @@ void Engine3D::renderFrame() {
         return;
     }
 
-    boost::shared_ptr<vulkan::Presenter> presenter = context_->presenter();
+    boost::shared_ptr<vulkan::frame::Presenter> presenter = context_->presenter();
 
-    vulkan::Presenter::Acquisition acquisition;
-    const vulkan::Presenter::Status status = presenter->acquire(&acquisition);
+    vulkan::frame::Presenter::Acquisition acquisition;
+    const vulkan::frame::Presenter::Status status = presenter->acquire(&acquisition);
 
-    if (status == vulkan::Presenter::Status::OutOfDate) {
+    if (status == vulkan::frame::Presenter::Status::OutOfDate) {
         // the window changed size between the last present and this acquire - rebuild
         // the chain and let the next frame draw into it
         context_->resize();
@@ -125,7 +125,7 @@ void Engine3D::renderFrame() {
         return;
     }
 
-    if (status == vulkan::Presenter::Status::Skip) {
+    if (status == vulkan::frame::Presenter::Status::Skip) {
         // there is no chain, which means the window had no area when it was last built.
         // if it has one again - a minimized window that came back - build one for it
         if (window() && window()->width() > 0 && window()->height() > 0) {
@@ -135,9 +135,9 @@ void Engine3D::renderFrame() {
         return;
     }
 
-    const boost::shared_ptr<vulkan::Swapchain> swapchain = context_->swapchain();
+    const boost::shared_ptr<vulkan::frame::Swapchain> swapchain = context_->swapchain();
 
-    vulkan::Recorder::Target target;
+    vulkan::frame::Recorder::Target target;
     target.image = swapchain->images()[acquisition.image];
     target.view = swapchain->views()[acquisition.image];
     target.extent = swapchain->extent();
@@ -152,20 +152,20 @@ void Engine3D::renderFrame() {
         }
     }
     if (depth) {
-        const boost::shared_ptr<vulkan::DepthBuffer> buffer = context_->depth();
+        const boost::shared_ptr<vulkan::frame::DepthBuffer> buffer = context_->depth();
         if (buffer->valid()) {
             target.depthImage = buffer->image();
             target.depthView = buffer->view();
         }
     }
 
-    const boost::shared_ptr<vulkan::FrameUniforms> uniforms = context_->frameUniforms();
+    const boost::shared_ptr<vulkan::frame::FrameUniforms> uniforms = context_->frameUniforms();
     // the slots of the frame about to be recorded are free - acquire() waited on its fence
     uniforms->begin(presenter->frame());
 
     recorder_.record(acquisition.commands, *frame_, target, *context_->resources(), uniforms.get());
 
-    if (presenter->present(acquisition) == vulkan::Presenter::Status::OutOfDate) {
+    if (presenter->present(acquisition) == vulkan::frame::Presenter::Status::OutOfDate) {
         context_->resize();
     }
 

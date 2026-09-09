@@ -439,15 +439,46 @@ includes and a namespace qualification.
 
 ### Step 7 — `api/render/realtime/vulkan` regroups
 
-46 files, and the alphabet is currently the only organising principle.
+**Landed 2026-09-08, as a move *and* a rename.** Build clean, `ctest` 24 of 24, cpplint clean.
+
+46 files, and the alphabet was the only organising principle.
 
 ```
 vulkan/device/    Result Instance Surface Device
 vulkan/memory/    Memory Buffer DeviceBuffer Uploader Mesh TextureFactory
 vulkan/frame/     Swapchain Presenter RenderTarget DepthBuffer CommandPool Recorder FrameUniforms
-vulkan/pipeline/  PipelineBuilder PipelineCache Resources
-vulkan/renderer/  QuadRenderer LineRenderer WorldRenderer
+vulkan/pipeline/  Builder Cache Resources          <- was PipelineBuilder, PipelineCache
+vulkan/renderer/  Quad Line World                  <- was QuadRenderer, LineRenderer, WorldRenderer
 ```
+
+**Five classes lost the prefix that a flat directory had forced on them.** A group segment on
+top of an already deep namespace made `v3d::render::realtime::vulkan::pipeline::PipelineBuilder`
+— 56 characters and a stutter at every use site. `pipeline::Builder` and `renderer::Quad` are
+what the directory was going to say anyway. `device::Device` and `memory::Memory` keep their
+names: the group is the noun there rather than an adjective on it.
+
+This step cost more than the rest of the plan put together, and every defect in it was
+introduced by the change rather than found by it. Worth knowing before attempting the same
+shape again:
+
+- **`PipelineCache` is a substring of `VkPipelineCache`.** An unconditional rename turned the
+  Vulkan type into `VkCache`, along with `vkCreatePipelineCache` and `vkDestroyPipelineCache`.
+  A rename whose old name is a substring of a third-party API name has to be checked against
+  that API explicitly; the build catches it only by luck of the new name not existing.
+- **`Device` is a prefix of `DeviceBuffer`**, and `Texture` of `TextureFactory`. Qualifying
+  `vulkan::Device` before `vulkan::DeviceBuffer` produces `vulkan::device::DeviceBuffer`. One
+  of those landed in a comment in
+  [`voxel/src/engine/ChunkMeshBuilder.h`](../../voxel/src/engine/ChunkMeshBuilder.h), where no
+  compiler would ever have found it.
+- **A file holds more types than its name.** `pipeline/Resources.h` also declares `Pipeline`,
+  `Material` and `Texture`, all named from other groups; `Device` carries a nested
+  `QueueFamilies`; `device/Result.h` and `memory/Memory.h` are free functions rather than
+  classes. Enumerate what a header declares, not what it is called.
+- **Forward declarations are the recurring hazard of this whole plan.**
+  [`Pass.h`](../../api/render/realtime/Pass.h) and `renderer/Quad.h` each declared
+  `class RenderTarget;` inside `namespace vulkan`, which after the split would have declared a
+  second, unrelated type rather than naming `frame::RenderTarget`. They are invisible to
+  include-based tooling because avoiding an include is the whole point of them.
 
 `renderer/` earns the split on its own. Those three are the primitives of
 [ADR-0005](../adr/0005-one-batched-quad-primitive.md),

@@ -20,7 +20,7 @@ namespace v3d::type {
  * is drawn with.
  *
  * The third thing in the tree called a mesh, and the one that is neither of the others. A
- * brep::BRep is topology the editor models with, and a render::realtime::vulkan::Mesh is
+ * brep::BRep is topology the editor models with, and a render::realtime::vulkan::memory::Mesh is
  * two device buffers; this is what a file on disk turns into on the way from one to the
  * other. It holds no handle and no device type, so a renderer that never opens a window
  * can read one.
@@ -32,7 +32,7 @@ class Model final {
  public:
     /**
      * The interleaved attributes, in the order a pipeline declaring this layout expects
-     * them. A vertex buffer is bytes and a stride to the device - vulkan::Mesh says the
+     * them. A vertex buffer is bytes and a stride to the device - vulkan::memory::Mesh says the
      * stride is the pipeline's - so this layout is a contract between a loader and
      * whatever pipeline an app writes to draw with it, and not something the device
      * enforces.

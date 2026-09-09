@@ -20,19 +20,19 @@ Context3D::Context3D(const boost::shared_ptr<v3d::log::Logger>& logger, const bo
     if (!window_ || !window_->instance() || !window_->surface()) {
         throw std::runtime_error("A 3D context needs a created window to render to");
     }
-    device_ = boost::make_shared<vulkan::Device>(logger, window_->instance(), window_->surface());
-    swapchain_ = boost::make_shared<vulkan::Swapchain>(logger, device_, static_cast<uint32_t>(window_->width()), static_cast<uint32_t>(window_->height()));
-    pipelineCache_ = boost::make_shared<vulkan::PipelineCache>(device_);
-    resources_ = boost::make_shared<vulkan::Resources>(device_);
-    presenter_ = boost::make_shared<vulkan::Presenter>(logger, device_, swapchain_);
-    uploader_ = boost::make_shared<vulkan::Uploader>(device_);
-    frameUniforms_ = boost::make_shared<vulkan::FrameUniforms>(device_, presenter_->framesInFlight());
+    device_ = boost::make_shared<vulkan::device::Device>(logger, window_->instance(), window_->surface());
+    swapchain_ = boost::make_shared<vulkan::frame::Swapchain>(logger, device_, static_cast<uint32_t>(window_->width()), static_cast<uint32_t>(window_->height()));
+    pipelineCache_ = boost::make_shared<vulkan::pipeline::Cache>(device_);
+    resources_ = boost::make_shared<vulkan::pipeline::Resources>(device_);
+    presenter_ = boost::make_shared<vulkan::frame::Presenter>(logger, device_, swapchain_);
+    uploader_ = boost::make_shared<vulkan::memory::Uploader>(device_);
+    frameUniforms_ = boost::make_shared<vulkan::frame::FrameUniforms>(device_, presenter_->framesInFlight());
     // the format is settled here even though the image may never be built, because every
     // pipeline that could draw into a depth pass is built against it
-    depthFormat_ = vulkan::DepthBuffer::chooseFormat(device_->physical());
+    depthFormat_ = vulkan::frame::DepthBuffer::chooseFormat(device_->physical());
     // dynamic rendering has no render pass to take the target format from, so a pipeline
     // is built against the chain's. Recreating the chain keeps that format
-    quads_ = boost::make_shared<vulkan::QuadRenderer>(logger, device_, pipelineCache_, resources_, presenter_,
+    quads_ = boost::make_shared<vulkan::renderer::Quad>(logger, device_, pipelineCache_, resources_, presenter_,
         frameUniforms_, swapchain_->format(), depthFormat_);
 }
 
@@ -47,49 +47,49 @@ Context3D::~Context3D() {
 
 /**
  **/
-boost::shared_ptr<vulkan::Device> Context3D::device() const {
+boost::shared_ptr<vulkan::device::Device> Context3D::device() const {
     return device_;
 }
 
 /**
  **/
-boost::shared_ptr<vulkan::Swapchain> Context3D::swapchain() const {
+boost::shared_ptr<vulkan::frame::Swapchain> Context3D::swapchain() const {
     return swapchain_;
 }
 
 /**
  **/
-boost::shared_ptr<vulkan::Presenter> Context3D::presenter() const {
+boost::shared_ptr<vulkan::frame::Presenter> Context3D::presenter() const {
     return presenter_;
 }
 
 /**
  **/
-boost::shared_ptr<vulkan::PipelineCache> Context3D::pipelineCache() const {
+boost::shared_ptr<vulkan::pipeline::Cache> Context3D::pipelineCache() const {
     return pipelineCache_;
 }
 
 /**
  **/
-boost::shared_ptr<vulkan::Resources> Context3D::resources() const {
+boost::shared_ptr<vulkan::pipeline::Resources> Context3D::resources() const {
     return resources_;
 }
 
 /**
  **/
-boost::shared_ptr<vulkan::QuadRenderer> Context3D::quads() const {
+boost::shared_ptr<vulkan::renderer::Quad> Context3D::quads() const {
     return quads_;
 }
 
 /**
  **/
-boost::shared_ptr<vulkan::FrameUniforms> Context3D::frameUniforms() const {
+boost::shared_ptr<vulkan::frame::FrameUniforms> Context3D::frameUniforms() const {
     return frameUniforms_;
 }
 
 /**
  **/
-boost::shared_ptr<vulkan::Uploader> Context3D::uploader() const {
+boost::shared_ptr<vulkan::memory::Uploader> Context3D::uploader() const {
     return uploader_;
 }
 
@@ -101,9 +101,9 @@ VkFormat Context3D::depthFormat() const noexcept {
 
 /**
  **/
-boost::shared_ptr<vulkan::LineRenderer> Context3D::lines() {
+boost::shared_ptr<vulkan::renderer::Line> Context3D::lines() {
     if (!lines_) {
-        lines_ = boost::make_shared<vulkan::LineRenderer>(logger_, device_, pipelineCache_, resources_, presenter_,
+        lines_ = boost::make_shared<vulkan::renderer::Line>(logger_, device_, pipelineCache_, resources_, presenter_,
             frameUniforms_, swapchain_->format(), depthFormat_);
     }
     return lines_;
@@ -117,9 +117,9 @@ bool Context3D::hasLines() const noexcept {
 
 /**
  **/
-boost::shared_ptr<vulkan::WorldRenderer> Context3D::worldQuads() {
+boost::shared_ptr<vulkan::renderer::World> Context3D::worldQuads() {
     if (!worldQuads_) {
-        worldQuads_ = boost::make_shared<vulkan::WorldRenderer>(logger_, device_, pipelineCache_, resources_,
+        worldQuads_ = boost::make_shared<vulkan::renderer::World>(logger_, device_, pipelineCache_, resources_,
             presenter_, frameUniforms_, quads_, swapchain_->format(), depthFormat_);
     }
     return worldQuads_;
@@ -133,11 +133,11 @@ bool Context3D::hasWorldQuads() const noexcept {
 
 /**
  **/
-boost::shared_ptr<vulkan::DepthBuffer> Context3D::depth() {
+boost::shared_ptr<vulkan::frame::DepthBuffer> Context3D::depth() {
     if (!depth_) {
         // the chain's extent rather than the window's - the surface is allowed to dictate
         // one that is not what was asked for, and the two attachments have to agree
-        depth_ = boost::make_shared<vulkan::DepthBuffer>(device_, swapchain_->extent().width, swapchain_->extent().height);
+        depth_ = boost::make_shared<vulkan::frame::DepthBuffer>(device_, swapchain_->extent().width, swapchain_->extent().height);
     }
     return depth_;
 }

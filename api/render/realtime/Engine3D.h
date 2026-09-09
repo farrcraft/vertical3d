@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/realtime/vulkan/Recorder.h>
+#include <api/render/realtime/vulkan/frame/Recorder.h>
 
 #include "Context.h"
 #include "Context3D.h"
@@ -71,7 +71,7 @@ class Engine3D : public Engine {
      * The batched quad primitive every 2D thing draws through - ADR-0005. An app fills a
      * Canvas during its tick and hands both to this.
      **/
-    boost::shared_ptr<vulkan::QuadRenderer> quads() const;
+    boost::shared_ptr<vulkan::renderer::Quad> quads() const;
 
     /**
      * The line primitive of ADR-0011. An app fills a LineCanvas during its tick and
@@ -80,7 +80,7 @@ class Engine3D : public Engine {
      * Built on the first call rather than at startup, so an app that draws no lines pays
      * nothing for it.
      **/
-    boost::shared_ptr<vulkan::LineRenderer> lines();
+    boost::shared_ptr<vulkan::renderer::Line> lines();
 
     /**
      * The world space quad primitive of ADR-0042. An app fills a WorldCanvas during its
@@ -89,7 +89,7 @@ class Engine3D : public Engine {
      * Built on the first call rather than at startup, so an app that draws none pays
      * nothing for it.
      **/
-    boost::shared_ptr<vulkan::WorldRenderer> worldQuads();
+    boost::shared_ptr<vulkan::renderer::World> worldQuads();
 
     /**
      * The name of the pass every frame has, for an app adding items to it directly.
@@ -107,7 +107,7 @@ class Engine3D : public Engine {
 
     boost::shared_ptr<Context3D> context_;
     boost::shared_ptr<Frame> frame_;
-    vulkan::Recorder recorder_;
+    vulkan::frame::Recorder recorder_;
     glm::vec4 clearColour_;
 };
 };  // namespace v3d::render::realtime
