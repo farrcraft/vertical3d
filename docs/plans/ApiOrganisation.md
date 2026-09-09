@@ -1,8 +1,22 @@
 # API Organisation — One Include Root, And The Six Directories That Outgrew Themselves
 
-Drafted 2026-09-08 from a survey of `api/`, and **open**. Eleven steps: three that change how a
-header is named, seven that move files, and one that writes down what moved. No behaviour
-changes anywhere in it.
+Drafted 2026-09-08 from a survey of `api/`, and **open at step 4 alone**. Eleven steps: three
+that change how a header is named, seven that move files, and one that writes down what moved.
+No behaviour changes anywhere in it, and none observed: the build, `ctest` at 24 of 24 and
+cpplint were clean at every step.
+
+| Step | | Step | |
+|---|---|---|---|
+| 1 ADR-0048 | landed | 7 `vulkan` | landed |
+| 2 `api/` converts | landed | 8 `event/kind` | landed |
+| 3 apps convert | landed | 9 `asset/kind` | landed |
+| 4 `render/offline` | **open** — waits for [OfflineRenderingPhase3](OfflineRenderingPhase3.md) | 10 `type` | landed |
+| 5 `ui::style::Style` | landed | 11 documents | landed for 1-3 and 5-10 |
+| 6 `api/ui` | landed | | |
+
+Step 4 is the one this plan called its strongest case and it is the one still to do, because the
+phase rewriting those files is open. When it lands, step 11 takes
+[OfflineRenderers.md](../OfflineRenderers.md) with it and this plan closes.
 
 `api/` is sixteen libraries and ~45,400 lines. Most of them are the right size and want nothing
 done to them — `api/dag` is eighteen files and 493 lines total, and splitting it would buy a
