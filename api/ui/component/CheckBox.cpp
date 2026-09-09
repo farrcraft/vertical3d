@@ -37,6 +37,10 @@ bool CheckBox::checked() const {
 
 void CheckBox::event(const v3d::event::Event& destination) {
     event_ = destination;
+    // stamped here rather than by whoever built it, the way Button and MenuItem do it: an
+    // app applying ADR-0017's destination guard drops anything that is not marked, so a
+    // command that is not stamped is a command that never arrives
+    event_.type(v3d::event::Type::Destination);
 }
 
 v3d::event::Event CheckBox::event() const {

@@ -8,6 +8,10 @@
 #include <string>
 #include <vector>
 
+#include "component/TabBar.h"
+#include "component/TabPage.h"
+#include "component/Type.h"
+
 namespace v3d::ui {
 
 namespace {
@@ -39,6 +43,24 @@ boost::shared_ptr<Component> probe(const boost::shared_ptr<Component>& component
     if (!component || !component->visible()) {
         return nullptr;
     }
+
+    // A tab bar's pages are its children, and only the chosen one was laid out. The rest
+    // keep the boxes they held when they were last up, so walking all of them lets a page
+    // the player has left go on answering for the page they are looking at - which is what
+    // TabBar's header says does not happen, and what Arranger::walk already does not do.
+    if (component->type() == component::Type::TabBar) {
+        const boost::shared_ptr<component::TabPage> page =
+            boost::static_pointer_cast<component::TabBar>(component)->page();
+        if (page) {
+            const boost::shared_ptr<Component> found = probe(page, point);
+            if (found) {
+                return found;
+            }
+        }
+        // the strip itself, which is what a press on a tab reaches
+        return component->pickable() && component->bound().intersect(point) ? component : nullptr;
+    }
+
     const std::vector<boost::shared_ptr<Component>>& children = component->children();
     for (auto it = children.rbegin(); it != children.rend(); ++it) {
         const boost::shared_ptr<Component> found = probe(*it, point);
