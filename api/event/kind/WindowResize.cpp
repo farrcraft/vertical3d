@@ -5,7 +5,7 @@
 
 #include "WindowResize.h"
 
-namespace v3d::event {
+namespace v3d::event::kind {
 
 WindowResize::WindowResize(int width, int height) noexcept : width_(width), height_(height) {
 }
@@ -17,4 +17,4 @@ int WindowResize::width() const noexcept {
 int WindowResize::height() const noexcept {
     return height_;
 }
-};  // namespace v3d::event
+};  // namespace v3d::event::kind

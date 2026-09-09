@@ -4,8 +4,8 @@
  **/
 
 #include <api/event/Event.h>
-#include <api/event/MouseButton.h>
-#include <api/event/MouseMotion.h>
+#include <api/event/kind/MouseButton.h>
+#include <api/event/kind/MouseMotion.h>
 
 #include <string>
 
@@ -115,17 +115,17 @@ BOOST_AUTO_TEST_CASE(event_state_name_test) {
 BOOST_AUTO_TEST_CASE(mouse_event_position_test) {
     boost::shared_ptr<v3d::event::Context> mouse = boost::make_shared<v3d::event::Context>("mouse");
 
-    const v3d::event::MouseButton press(1, glm::vec2(4.0f, 9.0f), mouse, true);
+    const v3d::event::kind::MouseButton press(1, glm::vec2(4.0f, 9.0f), mouse, true);
     BOOST_CHECK_EQUAL(press.button(), 1u);
     BOOST_CHECK_EQUAL(press.position()[0], 4.0f);
     BOOST_CHECK_EQUAL(press.position()[1], 9.0f);
     BOOST_CHECK_EQUAL(press.pressed(), true);
     BOOST_CHECK(press.state() == v3d::event::State::Pressed);
 
-    const v3d::event::MouseButton release(1, glm::vec2(4.0f, 9.0f), mouse, false);
+    const v3d::event::kind::MouseButton release(1, glm::vec2(4.0f, 9.0f), mouse, false);
     BOOST_CHECK(release.state() == v3d::event::State::Released);
 
-    const v3d::event::MouseMotion moved(glm::vec2(4.0f, 9.0f), glm::vec2(1.0f, -1.0f), mouse);
+    const v3d::event::kind::MouseMotion moved(glm::vec2(4.0f, 9.0f), glm::vec2(1.0f, -1.0f), mouse);
     BOOST_CHECK_EQUAL(moved.position()[0], press.position()[0]);
     BOOST_CHECK_EQUAL(moved.motion()[1], -1.0f);
 }

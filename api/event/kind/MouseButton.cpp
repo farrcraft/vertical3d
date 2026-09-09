@@ -5,7 +5,7 @@
 
 #include "MouseButton.h"
 
-namespace v3d::event {
+namespace v3d::event::kind {
 /**
  **/
 MouseButton::MouseButton(unsigned int button, const glm::vec2& position,
@@ -36,4 +36,4 @@ bool MouseButton::pressed() const noexcept {
     return pressed_;
 }
 
-};  // namespace v3d::event
+};  // namespace v3d::event::kind

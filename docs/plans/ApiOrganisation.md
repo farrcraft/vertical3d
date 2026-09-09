@@ -500,6 +500,13 @@ the start.
 
 ### Step 8 — `api/event`'s event kinds move to `event/kind/`
 
+**Landed 2026-09-08.** Build clean, `ctest` 24 of 24, cpplint clean, and one retry rather than
+step 7's eight. The difference was method: only the fully-qualified `v3d::event::X` form and the
+include paths were rewritten, with no sweep over bare identifiers. `Sound` is a name this tree
+uses three times — `asset::Sound`, `event::Sound`, and a clip in `api/audio` — so a name-based
+replace was the wrong tool, and the blast radius outside `api/` was 20 references rather than
+step 7's 25 plus every internal one.
+
 `Key`, `KeyDown`, `KeyUp`, `TextInput`, `MouseButton`, `MouseMotion`, `WindowFocus`,
 `WindowResize` and `Sound` move to `event/kind/`, namespace `v3d::event::kind`. `Engine`,
 `Context`, `Event`, `Mapper`, `State` and `Type` stay.

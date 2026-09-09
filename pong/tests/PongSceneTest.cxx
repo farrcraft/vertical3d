@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/event/Sound.h>
+#include <api/event/kind/Sound.h>
 #include <pong/src/PongScene.h>
 
 #include <algorithm>
@@ -24,7 +24,7 @@ namespace {
  * only account of which branch it took.
  **/
 struct Sounds final {
-    void heard(const v3d::event::Sound& sound) {
+    void heard(const v3d::event::kind::Sound& sound) {
         clips_.push_back(std::string(sound.clip()));
     }
 
@@ -58,7 +58,7 @@ struct Fixture final {
     Fixture() :
         dispatcher_(boost::make_shared<entt::dispatcher>()),
         scene_(&registry_, dispatcher_) {
-        dispatcher_->sink<v3d::event::Sound>().connect<&Sounds::heard>(sounds_);
+        dispatcher_->sink<v3d::event::kind::Sound>().connect<&Sounds::heard>(sounds_);
         scene_.resize(800, 600);
         scene_.reset();
     }

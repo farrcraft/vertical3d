@@ -7,7 +7,7 @@
 
 #include <api/engine/Engine.h>
 #include <api/event/Event.h>
-#include <api/event/MouseMotion.h>
+#include <api/event/kind/MouseMotion.h>
 #include <api/ui/Engine.h>
 #include <api/ui/shell/GameMenu.h>
 
@@ -64,7 +64,7 @@ class Controller final : public v3d::engine::Engine {
          * The cursor is warped back to the centre of the window after each move, so the
          * offset from the centre is the amount to turn by.
          **/
-        void handleMotion(const v3d::event::MouseMotion& event);
+        void handleMotion(const v3d::event::kind::MouseMotion& event);
 
  private:
         /**

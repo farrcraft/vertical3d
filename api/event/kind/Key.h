@@ -5,11 +5,11 @@
 
 #pragma once
 
-#include "Event.h"
+#include <api/event/Event.h>
 
 #include <string>
 
-namespace v3d::event {
+namespace v3d::event::kind {
 
 /**
  **/
@@ -26,4 +26,4 @@ class Key : public Event {
  private:
     bool pressed_;
 };
-};  // namespace v3d::event
+};  // namespace v3d::event::kind

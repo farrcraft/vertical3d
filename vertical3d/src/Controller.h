@@ -8,8 +8,8 @@
 #include <api/config/CameraProfiles.h>
 #include <api/engine/Engine.h>
 #include <api/event/Event.h>
-#include <api/event/MouseMotion.h>
-#include <api/event/WindowResize.h>
+#include <api/event/kind/MouseMotion.h>
+#include <api/event/kind/WindowResize.h>
 #include <api/ui/input/Cursor.h>
 #include <api/ui/Engine.h>
 #include <api/ui/component/Toolbar.h>
@@ -72,12 +72,12 @@ class Controller final : public v3d::engine::Engine {
      * The cursor moved. Which view it is over is what decides which camera a drag
      * drives, so this is where the active view is chosen.
      **/
-    void handleMotion(const v3d::event::MouseMotion& event);
+    void handleMotion(const v3d::event::kind::MouseMotion& event);
 
     /**
      * The window changed size, so the layout divides a different area between the views.
      **/
-    void handleResize(const v3d::event::WindowResize& event);
+    void handleResize(const v3d::event::kind::WindowResize& event);
 
  private:
     /**

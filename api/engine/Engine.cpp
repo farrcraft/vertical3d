@@ -5,8 +5,8 @@
 
 #include "Engine.h"
 
-#include <api/event/WindowFocus.h>
-#include <api/event/WindowResize.h>
+#include <api/event/kind/WindowFocus.h>
+#include <api/event/kind/WindowResize.h>
 #include <api/input/DeviceType.h>
 
 #include <SDL3/SDL.h>
@@ -283,15 +283,15 @@ void Engine::handleEvent(const SDL_Event& event) {
         if (window_) {
             window_->resize(event.window.data1, event.window.data2);
         }
-        dispatcher_->trigger(v3d::event::WindowResize(event.window.data1, event.window.data2));
+        dispatcher_->trigger(v3d::event::kind::WindowResize(event.window.data1, event.window.data2));
         break;
     // a key released while the window is unfocused never arrives, so an app that wants
     // held input dropped needs to be told focus went rather than poll for it
     case SDL_EVENT_WINDOW_FOCUS_GAINED:
-        dispatcher_->trigger(v3d::event::WindowFocus(true));
+        dispatcher_->trigger(v3d::event::kind::WindowFocus(true));
         break;
     case SDL_EVENT_WINDOW_FOCUS_LOST:
-        dispatcher_->trigger(v3d::event::WindowFocus(false));
+        dispatcher_->trigger(v3d::event::kind::WindowFocus(false));
         break;
     default:
         break;

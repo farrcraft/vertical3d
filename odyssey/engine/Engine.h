@@ -9,7 +9,7 @@
 #include <api/config/Config.h>
 #include <api/engine/Engine.h>
 #include <api/event/Event.h>
-#include <api/event/MouseMotion.h>
+#include <api/event/kind/MouseMotion.h>
 #include <api/input/Engine.h>
 #include <api/log/Logger.h>
 #include <odyssey/render/Renderer.h>
@@ -74,7 +74,7 @@ class Engine final : public v3d::engine::Engine {
      * Track the cursor. A click carries no position of its own, so the last motion is
      * where the click happened - which is how the editor reads a pick too.
      **/
-    void handleMotion(const v3d::event::MouseMotion& event);
+    void handleMotion(const v3d::event::kind::MouseMotion& event);
 
     /**
      * Route the player to the tile under the cursor, replacing whatever it was walking.

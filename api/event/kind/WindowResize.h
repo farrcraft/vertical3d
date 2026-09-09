@@ -5,7 +5,7 @@
 
 #pragma once
 
-namespace v3d::event {
+namespace v3d::event::kind {
 
 /**
  **/
@@ -21,4 +21,4 @@ class WindowResize final {
      int width_;
      int height_;
 };
-};  // namespace v3d::event
+};  // namespace v3d::event::kind

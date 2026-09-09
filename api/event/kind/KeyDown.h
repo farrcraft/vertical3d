@@ -9,7 +9,7 @@
 
 #include <string>
 
-namespace v3d::event {
+namespace v3d::event::kind {
 
 /**
  **/
@@ -19,4 +19,4 @@ class KeyDown final : public Key {
      **/
     KeyDown(const std::string& name, const boost::shared_ptr<Context>& context);
 };
-};  // namespace v3d::event
+};  // namespace v3d::event::kind

@@ -5,7 +5,7 @@
 
 #include "WindowFocus.h"
 
-namespace v3d::event {
+namespace v3d::event::kind {
 
 WindowFocus::WindowFocus(bool gained) noexcept : gained_(gained) {
 }
@@ -13,4 +13,4 @@ WindowFocus::WindowFocus(bool gained) noexcept : gained_(gained) {
 bool WindowFocus::gained() const noexcept {
     return gained_;
 }
-};  // namespace v3d::event
+};  // namespace v3d::event::kind

@@ -7,7 +7,7 @@
 
 #include <string>
 
-namespace v3d::event {
+namespace v3d::event::kind {
 
 /**
  **/
@@ -23,4 +23,4 @@ std::string_view TextInput::text() const noexcept {
     return text_;
 }
 
-};  // namespace v3d::event
+};  // namespace v3d::event::kind

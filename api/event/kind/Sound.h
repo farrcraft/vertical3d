@@ -8,7 +8,7 @@
 #include <string>
 #include <string_view>
 
-namespace v3d::event {
+namespace v3d::event::kind {
 
 /**
  **/
@@ -23,4 +23,4 @@ class Sound final {
  private:
     std::string clip_;
 };
-};  // namespace v3d::event
+};  // namespace v3d::event::kind

@@ -7,7 +7,7 @@
 
 #include <string>
 
-namespace v3d::event {
+namespace v3d::event::kind {
 /**
  **/
 Key::Key(const std::string& name, const boost::shared_ptr<Context>& context, bool pressed) noexcept :
@@ -23,4 +23,4 @@ bool Key::pressed() const noexcept {
     return pressed_;
 }
 
-};  // namespace v3d::event
+};  // namespace v3d::event::kind

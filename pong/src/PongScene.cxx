@@ -5,7 +5,7 @@
 
 #include "PongScene.h"
 
-#include <api/event/Sound.h>
+#include <api/event/kind/Sound.h>
 
 #include <iostream>
 #include <string>
@@ -44,7 +44,7 @@ void PongScene::checkVictory() {
     if (left_.score() == gameState_.maxScore() ||
         right_.score() == gameState_.maxScore()) {
         reset();
-        dispatcher_->trigger(v3d::event::Sound("victory"));
+        dispatcher_->trigger(v3d::event::kind::Sound("victory"));
     }
 }
 
@@ -96,7 +96,7 @@ void PongScene::bouncePaddles(const glm::vec2& ballPosition) {
         ball_dir *= gameState_.ballSpeedup();
 
         ball_.direction(ball_dir);
-        dispatcher_->trigger(v3d::event::Sound("hit"));
+        dispatcher_->trigger(v3d::event::kind::Sound("hit"));
     } else if (((ballPosition[1] + (gameState_.ballSize() / 2.0f)) >= (right_.position() - paddle_mid)) &&
             ((ballPosition[1] - (gameState_.ballSize() / 2.0f)) <= (right_.position() + paddle_mid)) &&
             (ballPosition[0] >= (width_ - ((gameState_.ballSize() / 2.0f) + paddle_size)))) {
@@ -111,7 +111,7 @@ void PongScene::bouncePaddles(const glm::vec2& ballPosition) {
         ball_dir *= gameState_.ballSpeedup();
 
         ball_.direction(ball_dir);
-        dispatcher_->trigger(v3d::event::Sound("hit"));
+        dispatcher_->trigger(v3d::event::kind::Sound("hit"));
     }
 }
 
@@ -124,12 +124,12 @@ void PongScene::scorePoint(const glm::vec2& ballPosition) {
         right_.score(right_.score() + 1);
         victor = -1.0f;
         reset_ball = true;
-        dispatcher_->trigger(v3d::event::Sound("score"));
+        dispatcher_->trigger(v3d::event::kind::Sound("score"));
     } else if (ballPosition[0] >= (width_ - (gameState_.ballSize() / 2.0f))) {
         left_.score(left_.score() + 1);
         victor = 1.0f;
         reset_ball = true;
-        dispatcher_->trigger(v3d::event::Sound("score"));
+        dispatcher_->trigger(v3d::event::kind::Sound("score"));
     }
     if (!reset_ball) {
         return;
@@ -160,7 +160,7 @@ void PongScene::bounceWalls(const glm::vec2& ballPosition) {
         glm::vec2 ball_dir = ball_.direction();
         ball_dir[1] = -ball_dir[1];
         ball_.direction(ball_dir);
-        dispatcher_->trigger(v3d::event::Sound("bounce"));
+        dispatcher_->trigger(v3d::event::kind::Sound("bounce"));
     }
 }
 

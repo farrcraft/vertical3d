@@ -5,7 +5,7 @@
 
 #pragma once
 
-namespace v3d::event {
+namespace v3d::event::kind {
 
 /**
  * The window gained or lost keyboard focus.
@@ -24,4 +24,4 @@ class WindowFocus final {
  private:
      bool gained_;
 };
-};  // namespace v3d::event
+};  // namespace v3d::event::kind

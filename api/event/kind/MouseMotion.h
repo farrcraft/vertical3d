@@ -5,11 +5,11 @@
 
 #pragma once
 
-#include "Event.h"
+#include <api/event/Event.h>
 
 #include <glm/glm.hpp>
 
-namespace v3d::event {
+namespace v3d::event::kind {
 
 /**
  * The cursor moved. Carries where it moved to and how far it moved, both in window
@@ -36,4 +36,4 @@ class MouseMotion final : public Event {
     glm::vec2 position_;
     glm::vec2 motion_;
 };
-};  // namespace v3d::event
+};  // namespace v3d::event::kind

@@ -58,7 +58,7 @@ bool Controller::initialize() {
     dispatcher_->sink<v3d::event::Event>().connect<&Controller::handleEvent>(*this);
     // this is actually the game controller
     // maybe we need a separate player controller class to intercept mouse events?
-    dispatcher_->sink<v3d::event::MouseMotion>().connect<&Controller::handleMotion>(*this);
+    dispatcher_->sink<v3d::event::kind::MouseMotion>().connect<&Controller::handleMotion>(*this);
 
     scene_ = boost::make_shared<Scene>();
 
@@ -175,7 +175,7 @@ void Controller::handleEvent(const v3d::event::Event& event) {
     }
 }
 
-void Controller::handleMotion(const v3d::event::MouseMotion& event) {
+void Controller::handleMotion(const v3d::event::kind::MouseMotion& event) {
     if (!window_->focused()) {
         return;
     }

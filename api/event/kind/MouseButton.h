@@ -5,13 +5,13 @@
 
 #pragma once
 
-#include "Event.h"
+#include <api/event/Event.h>
 
 #include <string>
 
 #include <glm/glm.hpp>
 
-namespace v3d::event {
+namespace v3d::event::kind {
 
 /**
  * A mouse button changed edge. Carries where the cursor was when it did, in window
@@ -42,4 +42,4 @@ class MouseButton : public Event {
     glm::vec2 position_;
     bool pressed_;
 };
-};  // namespace v3d::event
+};  // namespace v3d::event::kind

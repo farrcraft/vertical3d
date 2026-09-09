@@ -5,11 +5,11 @@
 
 #pragma once
 
-#include "Event.h"
+#include <api/event/Event.h>
 
 #include <string>
 
-namespace v3d::event {
+namespace v3d::event::kind {
 
 /**
  * Characters the platform composed, as utf-8.
@@ -36,4 +36,4 @@ class TextInput final : public Event {
     std::string text_;
 };
 
-};  // namespace v3d::event
+};  // namespace v3d::event::kind

@@ -7,7 +7,7 @@
 
 #include <string>
 
-namespace v3d::event {
+namespace v3d::event::kind {
 
 /**
  **/
@@ -15,4 +15,4 @@ KeyDown::KeyDown(const std::string& name, const boost::shared_ptr<Context>& cont
     Key(name, context, true) {
 }
 
-};  // namespace v3d::event
+};  // namespace v3d::event::kind

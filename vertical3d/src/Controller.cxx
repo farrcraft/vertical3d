@@ -87,8 +87,8 @@ bool Controller::initialize() {
     transformTool_->commands(commands_);
 
     dispatcher_->sink<v3d::event::Event>().connect<&Controller::handleEvent>(*this);
-    dispatcher_->sink<v3d::event::MouseMotion>().connect<&Controller::handleMotion>(*this);
-    dispatcher_->sink<v3d::event::WindowResize>().connect<&Controller::handleResize>(*this);
+    dispatcher_->sink<v3d::event::kind::MouseMotion>().connect<&Controller::handleMotion>(*this);
+    dispatcher_->sink<v3d::event::kind::WindowResize>().connect<&Controller::handleResize>(*this);
 
     renderer_ = boost::make_shared<Renderer>(window(), logger_, assetManager_, &registry_);
     renderer_->views(views_);
@@ -491,13 +491,13 @@ bool Controller::shutdown() {
 
 /**
  **/
-void Controller::handleResize(const v3d::event::WindowResize& event) {
+void Controller::handleResize(const v3d::event::kind::WindowResize& event) {
     layoutViews(event.width(), event.height());
 }
 
 /**
  **/
-void Controller::handleMotion(const v3d::event::MouseMotion& event) {
+void Controller::handleMotion(const v3d::event::kind::MouseMotion& event) {
     cursor_ = event.position();
 
     const bool dragging = (cameraTool_ && cameraTool_->dragging()) || (transformTool_ && transformTool_->dragging());

@@ -11,7 +11,7 @@
 #endif
 
 #include <api/asset/Json.h>
-#include <api/event/Sound.h>
+#include <api/event/kind/Sound.h>
 #include <api/log/Logger.h>
 
 #include <SDL3_mixer/SDL_mixer.h>
@@ -165,7 +165,7 @@ class Engine final {
      **/
     bool busGain(const std::string & bus, float level);
 
-    void soundEvent(const v3d::event::Sound & sound);
+    void soundEvent(const v3d::event::kind::Sound & sound);
 
  private:
     /**
