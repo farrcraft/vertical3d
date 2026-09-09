@@ -16,12 +16,9 @@
 
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::ui {
-class Style;
-};  // namespace v3d::ui
-
 namespace v3d::ui::style {
 
+class Style;
 class Theme;
 
 /**
@@ -30,7 +27,7 @@ class Theme;
  *
  * @return the style, or null when the theme holds none of that class
  **/
-boost::shared_ptr<v3d::ui::Style> lookup(const boost::shared_ptr<Theme>& theme,
+boost::shared_ptr<Style> lookup(const boost::shared_ptr<Theme>& theme,
     const std::string& className, const std::string_view& name);
 
 /**
@@ -105,7 +102,7 @@ class Resolver final {
      * Not cached: it is asked for once per button rather than once per component, and a
      * button's style is chosen by state as well as by name.
      **/
-    boost::shared_ptr<v3d::ui::Style> lookup(const std::string& className,
+    boost::shared_ptr<Style> lookup(const std::string& className,
         const std::string_view& name) const;
 
     /**

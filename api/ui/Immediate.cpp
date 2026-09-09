@@ -6,6 +6,7 @@
 #include "Immediate.h"
 
 #include <api/render/realtime/Canvas.h>
+#include <api/ui/style/Style.h>
 
 #include <algorithm>
 #include <cmath>
@@ -15,7 +16,6 @@
 #include <vector>
 
 #include "Painter.h"
-#include "Style.h"
 #include "component/Scrollbar.h"
 #include "style/Resolver.h"
 #include "style/Theme.h"
@@ -193,31 +193,31 @@ void Immediate::theme(const boost::shared_ptr<style::Theme>& theme) {
     if (!theme_) {
         return;
     }
-    const boost::shared_ptr<v3d::ui::Style> chrome =
+    const boost::shared_ptr<style::Style> chrome =
         style::lookup(theme_, style::Resolver::tools, std::string_view());
     if (!chrome) {
         return;
     }
 
-    readColour(chrome, "panel", &dressing_.panel);
-    readColour(chrome, "border", &dressing_.border);
-    readColour(chrome, "title-bar", &dressing_.titleBar);
-    readColour(chrome, "text", &dressing_.text);
-    readColour(chrome, "active-text", &dressing_.activeText);
-    readColour(chrome, "dim-text", &dressing_.dimText);
-    readColour(chrome, "widget", &dressing_.widget);
-    readColour(chrome, "highlight", &dressing_.highlight);
-    readColour(chrome, "hover", &dressing_.hover);
-    readColour(chrome, "fill", &dressing_.fill);
-    readColour(chrome, "rule", &dressing_.rule);
+    style::readColour(chrome, "panel", &dressing_.panel);
+    style::readColour(chrome, "border", &dressing_.border);
+    style::readColour(chrome, "title-bar", &dressing_.titleBar);
+    style::readColour(chrome, "text", &dressing_.text);
+    style::readColour(chrome, "active-text", &dressing_.activeText);
+    style::readColour(chrome, "dim-text", &dressing_.dimText);
+    style::readColour(chrome, "widget", &dressing_.widget);
+    style::readColour(chrome, "highlight", &dressing_.highlight);
+    style::readColour(chrome, "hover", &dressing_.hover);
+    style::readColour(chrome, "fill", &dressing_.fill);
+    style::readColour(chrome, "rule", &dressing_.rule);
 
-    readMetric(chrome, "line-height", &dressing_.lineHeight);
-    readMetric(chrome, "padding", &dressing_.padding);
-    readMetric(chrome, "spacing", &dressing_.spacing);
-    readMetric(chrome, "bar-height", &dressing_.barHeight);
-    readMetric(chrome, "border-width", &dressing_.borderWidth);
-    readMetric(chrome, "radius", &dressing_.radius);
-    readMetric(chrome, "scrollbar-width", &dressing_.scrollbarWidth);
+    style::readMetric(chrome, "line-height", &dressing_.lineHeight);
+    style::readMetric(chrome, "padding", &dressing_.padding);
+    style::readMetric(chrome, "spacing", &dressing_.spacing);
+    style::readMetric(chrome, "bar-height", &dressing_.barHeight);
+    style::readMetric(chrome, "border-width", &dressing_.borderWidth);
+    style::readMetric(chrome, "radius", &dressing_.radius);
+    style::readMetric(chrome, "scrollbar-width", &dressing_.scrollbarWidth);
 }
 
 void Immediate::begin(v3d::render::realtime::Canvas* canvas, const Input& input) {

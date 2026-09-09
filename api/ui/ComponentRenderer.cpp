@@ -5,6 +5,8 @@
 
 #include "ComponentRenderer.h"
 
+#include <api/ui/style/Style.h>
+
 #include <algorithm>
 #include <cstddef>
 #include <string>
@@ -14,7 +16,6 @@
 #include "Container.h"
 #include "Engine.h"
 #include "Painter.h"
-#include "Style.h"
 #include "component/Bar.h"
 #include "component/Box.h"
 #include "component/Button.h"
@@ -84,7 +85,7 @@ void place(Component& component, const glm::vec2& position, const glm::vec2& siz
  * @return the texture a style's image property was resolved to, unset when the style
  *      names no such image or nothing has resolved it
  **/
-v3d::render::realtime::TextureHandle image(const boost::shared_ptr<Style>& target, const std::string& name) {
+v3d::render::realtime::TextureHandle image(const boost::shared_ptr<style::Style>& target, const std::string& name) {
     boost::shared_ptr<style::property::Image> property =
         boost::dynamic_pointer_cast<style::property::Image>(target->property(name, "image"));
     return property ? property->texture() : v3d::render::realtime::TextureHandle();
@@ -617,8 +618,8 @@ bool ComponentRenderer::skin(v3d::render::realtime::Canvas* canvas, const compon
 
     // a button's styles are told apart by state as well as by name, so the set is walked
     // rather than asked for one
-    boost::shared_ptr<v3d::ui::Style> target;
-    for (const boost::shared_ptr<v3d::ui::Style>& candidate : theme->getStyleSet(std::string(button.style()), "button")) {
+    boost::shared_ptr<style::Style> target;
+    for (const boost::shared_ptr<style::Style>& candidate : theme->getStyleSet(std::string(button.style()), "button")) {
         const boost::shared_ptr<style::Button> styled = boost::dynamic_pointer_cast<style::Button>(candidate);
         if (styled && styled->state() == button.state()) {
             target = styled;
@@ -630,7 +631,7 @@ bool ComponentRenderer::skin(v3d::render::realtime::Canvas* canvas, const compon
     }
 
     float corner = defaultCorner;
-    readMetric(target, "corner", &corner);
+    style::readMetric(target, "corner", &corner);
     corner = std::min(corner, std::min((max.x - min.x) * 0.5f, (max.y - min.y) * 0.5f));
 
     const glm::vec2 uv0(0.0f, 0.0f);

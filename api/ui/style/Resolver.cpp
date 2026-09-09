@@ -5,7 +5,7 @@
 
 #include "Resolver.h"
 
-#include <api/ui/Style.h>
+#include <api/ui/style/Style.h>
 
 #include <functional>
 #include <map>
@@ -19,12 +19,12 @@ namespace v3d::ui::style {
 const char* const Resolver::tools = "tools";
 const char* const Resolver::chromeClass = "ui";
 
-boost::shared_ptr<v3d::ui::Style> lookup(const boost::shared_ptr<Theme>& theme,
+boost::shared_ptr<Style> lookup(const boost::shared_ptr<Theme>& theme,
     const std::string& className, const std::string_view& name) {
     if (!theme) {
         return nullptr;
     }
-    const std::vector<boost::shared_ptr<v3d::ui::Style>> styles =
+    const std::vector<boost::shared_ptr<Style>> styles =
         theme->getStyleSet(std::string(name), className);
     return styles.empty() ? nullptr : styles.front();
 }
@@ -57,7 +57,7 @@ const Dressing& Resolver::base() const noexcept {
 }
 
 void Resolver::chrome() {
-    const boost::shared_ptr<v3d::ui::Style> style = lookup(chromeClass, std::string_view());
+    const boost::shared_ptr<Style> style = lookup(chromeClass, std::string_view());
     if (!style) {
         return;
     }
@@ -100,14 +100,14 @@ const char* Resolver::named(Class className) noexcept {
     return "";
 }
 
-boost::shared_ptr<v3d::ui::Style> Resolver::lookup(const std::string& className,
+boost::shared_ptr<Style> Resolver::lookup(const std::string& className,
     const std::string_view& name) const {
     return style::lookup(theme_, className, name);
 }
 
 Dressing Resolver::dress(Class className, const std::string_view& name) const {
     Dressing dressing = base_;
-    const boost::shared_ptr<v3d::ui::Style> style = lookup(named(className), name);
+    const boost::shared_ptr<Style> style = lookup(named(className), name);
     if (!style) {
         return dressing;
     }

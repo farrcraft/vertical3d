@@ -7,6 +7,7 @@
 
 #include <api/asset/Json.h>
 #include <api/log/Logger.h>
+#include <api/ui/style/Style.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -17,7 +18,6 @@
 #include "Component.h"
 #include "Container.h"
 #include "Loader.h"
-#include "Style.h"
 #include "component/Box.h"
 #include "component/Button.h"
 #include "component/Icon.h"
@@ -57,7 +57,7 @@ bool Engine::load(const boost::shared_ptr<v3d::asset::Json>& config) {
 std::size_t Engine::resolveThemeImages(const Resolve& resolve) {
     std::size_t resolved = 0;
     for (const boost::shared_ptr<style::Theme>& theme : themes_) {
-        for (const boost::shared_ptr<Style>& target : theme->getStyleSet("", "")) {
+        for (const boost::shared_ptr<style::Style>& target : theme->getStyleSet("", "")) {
             for (const boost::shared_ptr<style::Property>& property : target->getPropertySet("", "image")) {
                 boost::shared_ptr<style::property::Image> image =
                     boost::dynamic_pointer_cast<style::property::Image>(property);

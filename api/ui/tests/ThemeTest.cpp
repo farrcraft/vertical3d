@@ -8,7 +8,7 @@
 #include <api/ui/ComponentRenderer.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
-#include <api/ui/Style.h>
+#include <api/ui/style/Style.h>
 #include <api/ui/component/Icon.h>
 #include <api/ui/component/Label.h>
 #include <api/ui/component/Toolbar.h>
@@ -128,7 +128,7 @@ BOOST_AUTO_TEST_CASE(a_theme_loads_its_styles_and_their_properties) {
     BOOST_REQUIRE(dark);
     BOOST_CHECK_EQUAL(dark->getStyleSet("", "").size(), 3U);
 
-    const std::vector<boost::shared_ptr<v3d::ui::Style>> chrome = dark->getStyleSet("", "ui");
+    const std::vector<boost::shared_ptr<v3d::ui::style::Style>> chrome = dark->getStyleSet("", "ui");
     BOOST_REQUIRE_EQUAL(chrome.size(), 1U);
 
     const boost::shared_ptr<v3d::ui::style::property::Color> panel =
@@ -141,7 +141,7 @@ BOOST_AUTO_TEST_CASE(a_theme_loads_its_styles_and_their_properties) {
     BOOST_REQUIRE(height);
     BOOST_CHECK_CLOSE(height->value(), 40.0f, 0.001f);
 
-    const std::vector<boost::shared_ptr<v3d::ui::Style>> labels = dark->getStyleSet("", "label");
+    const std::vector<boost::shared_ptr<v3d::ui::style::Style>> labels = dark->getStyleSet("", "label");
     BOOST_REQUIRE_EQUAL(labels.size(), 1U);
     const boost::shared_ptr<v3d::ui::style::property::Font> font =
         boost::dynamic_pointer_cast<v3d::ui::style::property::Font>(labels.front()->property("label", "font"));
@@ -161,7 +161,7 @@ BOOST_AUTO_TEST_CASE(a_button_style_carries_a_state_and_its_images) {
     const boost::shared_ptr<v3d::ui::Engine> ui = load(themedDocument, &loaded);
     BOOST_REQUIRE(loaded);
 
-    const std::vector<boost::shared_ptr<v3d::ui::Style>> buttons = ui->theme("dark")->getStyleSet("", "button");
+    const std::vector<boost::shared_ptr<v3d::ui::style::Style>> buttons = ui->theme("dark")->getStyleSet("", "button");
     BOOST_REQUIRE_EQUAL(buttons.size(), 1U);
 
     const boost::shared_ptr<v3d::ui::style::Button> styled =

@@ -22,10 +22,10 @@ namespace v3d::ui {
 
 class Component;
 class Container;
-class Style;
 
 namespace style {
 class Property;
+class Style;
 class Theme;
 };  // namespace style
 
@@ -171,7 +171,7 @@ class Loader final {
      * Read the four kinds of property a style may hold - colours, numbers, fonts and images
      * - each from its own array.
      **/
-    bool loadProperties(const boost::json::object& entry, const boost::shared_ptr<Style>& target);
+    bool loadProperties(const boost::json::object& entry, const boost::shared_ptr<style::Style>& target);
 
     /**
      * Build one style property as the class of the array it was written in.

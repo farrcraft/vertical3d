@@ -13,26 +13,17 @@
 #include <boost/shared_ptr.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::ui {
-namespace style {
+namespace v3d::ui::style {
+
 class Property;
-};
 
 /**
- * A vGUI Style.
- * An example of a style (in the XML Configuration Language):
- *	\<style class="button" name="default" state="normal">
- *		\<image name="top-left" source="top-left.png" />
- *		\<image name="top-right" source="top-right.png" />
- *		\<image name="bottom-left" source="bottom-left.png" />
- *		\<image name="bottom-right" source="bottom-right.png" />
- *		\<image name="left" source="left.png" />
- *		\<image name="right" source="right.png" />
- *		\<image name="top" source="top.png" />
- *		\<image name="bottom" source="bottom.png" />
- *		\<image name="center" source="bg.png" />
- *		\<font face="Courier" size="18" bold="true" italics="true" align="center" />
- *	\</style>
+ * One entry of a theme: the properties a component of a given class and name is drawn with.
+ *
+ * A style is keyed by the pair rather than by either half, which is what lets a theme carry
+ * a default for every button and an override for one of them. The properties themselves are
+ * typed - a colour, a number, a font, an image - and are read back through the free
+ * functions below rather than by casting at the call site.
  */
 class Style {
  public:
@@ -55,13 +46,13 @@ class Style {
      * @param class_name the property class
      * @return a pointer to the named style property
      */
-    boost::shared_ptr<style::Property> property(const std::string& name, const std::string& class_name) const;
+    boost::shared_ptr<Property> property(const std::string& name, const std::string& class_name) const;
     /**
      * Add a style property to the style
      * @param prop the new property to be added
      * @param class_name the class of the new property
      */
-    void addProperty(boost::shared_ptr<style::Property> prop, const std::string& class_name);
+    void addProperty(boost::shared_ptr<Property> prop, const std::string& class_name);
     /**
      * Get a collection of style properties
      * If no name or class is specified then no filtering of that parameter will be done. This allows getting the
@@ -70,7 +61,7 @@ class Style {
      * @param class_name the class of the properties to get
      * @return a collection of matching properties
      */
-    std::vector< boost::shared_ptr<style::Property>  > getPropertySet(const std::string& name, const std::string& class_name) const;
+    std::vector< boost::shared_ptr<Property>  > getPropertySet(const std::string& name, const std::string& class_name) const;
 
  protected:
     void className(const std::string& str);
@@ -78,7 +69,7 @@ class Style {
  private:
     std::string name_;
     std::string className_;
-    std::map <std::pair<std::string, std::string>, boost::shared_ptr<style::Property> > properties_;  // key is pair<name, class>
+    std::map <std::pair<std::string, std::string>, boost::shared_ptr<Property> > properties_;  // key is pair<name, class>
 };
 
 /**
@@ -93,4 +84,4 @@ void readColour(const boost::shared_ptr<Style>& target, const std::string& name,
  **/
 void readMetric(const boost::shared_ptr<Style>& target, const std::string& name, float* into);
 
-};  // end namespace v3d::ui
+};  // namespace v3d::ui::style

@@ -6,7 +6,7 @@
 #include <api/ui/Arranger.h>
 #include <api/ui/Component.h>
 #include <api/ui/Container.h>
-#include <api/ui/Style.h>
+#include <api/ui/style/Style.h>
 #include <api/ui/component/CheckBox.h>
 #include <api/ui/component/Label.h>
 #include <api/ui/component/Panel.h>
@@ -140,8 +140,8 @@ BOOST_AUTO_TEST_CASE(a_hidden_component_is_not_walked) {
 BOOST_AUTO_TEST_CASE(a_check_box_asks_for_room_from_its_own_class) {
     const boost::shared_ptr<v3d::ui::style::Theme> theme =
         boost::make_shared<v3d::ui::style::Theme>("dark");
-    const boost::shared_ptr<v3d::ui::Style> styled =
-        boost::make_shared<v3d::ui::Style>("big", "checkbox");
+    const boost::shared_ptr<v3d::ui::style::Style> styled =
+        boost::make_shared<v3d::ui::style::Style>("big", "checkbox");
     styled->addProperty(boost::make_shared<v3d::ui::style::property::Number>("mark-size", 40.0f), "number");
     theme->addStyle(styled);
 

@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/ui/Style.h>
+#include <api/ui/style/Style.h>
 
 #include <string>
 

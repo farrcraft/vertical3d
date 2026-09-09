@@ -351,6 +351,19 @@ unchanged is the check that the move was a move.
 
 ### Step 5 — `ui::Style` becomes `ui::style::Style`
 
+**Landed 2026-09-08.** Build clean, `ctest` 24 of 24, cpplint clean.
+
+Three forward declarations moved with it rather than one: `Loader.h` and `ComponentRenderer.h`
+each declared `class Style;` in `v3d::ui`, and `Resolver.h` declared it and never included the
+header, so removing the declaration left `Style` undeclared in a file that had compiled for
+months without ever seeing its definition. That is the shape of what this step was for — three
+files reaching across a namespace boundary for a type that belonged on their side of it.
+
+`Style.cpp` also carried `style::property::Number` and `style::property::Color`, which resolve
+to nothing once the file is inside `v3d::ui::style`; they are `property::` now. The class comment
+described an XML configuration language the tree has not read since the JSON loader landed, and
+describes the class instead.
+
 [`Style.{h,cpp}`](../../api/ui/Style.h) moves into [`api/ui/style/`](../../api/ui/style/) and
 joins the namespace its own return types are already in. Four files include it —
 `ComponentRenderer.cpp`, `Engine.cpp`, `Immediate.cpp`, `Loader.cpp` — plus `Theme`, which holds

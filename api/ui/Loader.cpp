@@ -7,6 +7,7 @@
 
 #include <api/event/Engine.h>
 #include <api/log/Logger.h>
+#include <api/ui/style/Style.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -15,7 +16,6 @@
 
 #include "Component.h"
 #include "Container.h"
-#include "Style.h"
 #include "component/Bar.h"
 #include "component/Box.h"
 #include "component/Button.h"
@@ -410,7 +410,7 @@ bool Loader::loadStyle(const boost::json::object& entry, const boost::shared_ptr
     const std::string className = boost::json::value_to<std::string>(entry.at("class"));
     const std::string styleName = boost::json::value_to<std::string>(entry.at("name"));
 
-    boost::shared_ptr<Style> target;
+    boost::shared_ptr<style::Style> target;
     if (className == "button") {
         // a button is drawn differently in each of its states, so its styles are told
         // apart by the state as well as by the name
@@ -429,7 +429,7 @@ bool Loader::loadStyle(const boost::json::object& entry, const boost::shared_ptr
         }
         target = boost::make_shared<style::Button>(styleName, state);
     } else {
-        target = boost::make_shared<Style>(styleName, className);
+        target = boost::make_shared<style::Style>(styleName, className);
     }
 
     if (!loadProperties(entry, target)) {
@@ -439,7 +439,7 @@ bool Loader::loadStyle(const boost::json::object& entry, const boost::shared_ptr
     return true;
 }
 
-bool Loader::loadProperties(const boost::json::object& entry, const boost::shared_ptr<Style>& target) {
+bool Loader::loadProperties(const boost::json::object& entry, const boost::shared_ptr<style::Style>& target) {
     // the four arrays are the four property classes a style is asked for by, so what a
     // property is read as is where it was written rather than a field it carries
     static const char* const classes[] = { "colors", "numbers", "fonts", "images" };

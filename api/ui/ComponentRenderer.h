@@ -29,9 +29,9 @@ namespace v3d::ui {
 class Component;
 class Container;
 class Engine;
-class Style;
 
 namespace style {
+class Style;
 class Theme;
 };  // namespace style
 
