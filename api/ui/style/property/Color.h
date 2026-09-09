@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include <string>
+#include <api/ui/style/Property.h>
 
-#include "../Property.h"
+#include <string>
 
 #include <glm/vec4.hpp>
 

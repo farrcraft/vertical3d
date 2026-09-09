@@ -3,15 +3,15 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/event/KeyDown.h>
+#include <api/event/KeyUp.h>
+#include <api/input/Keyboard.h>
+
 #include <string>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
-
-#include "../Keyboard.h"
-#include "../../event/KeyDown.h"
-#include "../../event/KeyUp.h"
 
 /**
  * The device this replaces was v3D::KeyboardDevice, which pushed key names at registered

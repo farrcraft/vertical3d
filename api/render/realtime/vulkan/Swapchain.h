@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <api/log/Logger.h>
+
 #include <vulkan/vulkan.h>
 
 #include <cstddef>
@@ -12,8 +14,6 @@
 #include <vector>
 
 #include "Device.h"
-
-#include "../../../log/Logger.h"
 
 #include <boost/shared_ptr.hpp>
 

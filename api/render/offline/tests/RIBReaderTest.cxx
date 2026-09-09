@@ -3,6 +3,8 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/offline/RIBReader.h>
+
 #include <map>
 #include <sstream>
 #include <string>
@@ -10,8 +12,6 @@
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
-
-#include "../RIBReader.h"
 
 namespace {
 

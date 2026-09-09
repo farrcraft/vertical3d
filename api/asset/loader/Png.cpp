@@ -5,11 +5,11 @@
 
 #include "Png.h"
 
-#include <string>
+#include <api/asset/Image.h>
+#include <api/asset/Type.h>
+#include <api/image/reader/Png.h>
 
-#include "../Image.h"
-#include "../Type.h"
-#include "../../image/reader/Png.h"
+#include <string>
 
 #include <boost/make_shared.hpp>
 

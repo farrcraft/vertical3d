@@ -3,20 +3,20 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/realtime/Canvas.h>
+#include <api/ui/ComponentRenderer.h>
+#include <api/ui/Container.h>
+#include <api/ui/component/Bar.h>
+#include <api/ui/component/HorizontalBox.h>
+#include <api/ui/component/Label.h>
+#include <api/ui/component/Panel.h>
+#include <api/ui/component/VerticalBox.h>
+
 #include <string>
 #include <string_view>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../ComponentRenderer.h"
-#include "../../render/realtime/Canvas.h"
-#include "../Container.h"
-#include "../component/Bar.h"
-#include "../component/HorizontalBox.h"
-#include "../component/Label.h"
-#include "../component/Panel.h"
-#include "../component/VerticalBox.h"
 
 #include <boost/make_shared.hpp>
 

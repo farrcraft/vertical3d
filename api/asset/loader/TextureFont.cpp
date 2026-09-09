@@ -5,11 +5,11 @@
 
 #include "TextureFont.h"
 
-#include <string>
+#include <api/asset/TextureFont.h>
+#include <api/asset/Type.h>
+#include <api/font/TextureFont.h>
 
-#include "../Type.h"
-#include "../TextureFont.h"
-#include "../../font/TextureFont.h"
+#include <string>
 
 #include <boost/make_shared.hpp>
 

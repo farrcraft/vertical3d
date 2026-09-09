@@ -5,15 +5,15 @@
 
 #pragma once
 
+#include <api/type/Bound2D.h>
+#include <api/ui/Component.h>
+
 #include <cstddef>
 #include <string>
 #include <vector>
 
-#include "../../Component.h"
 #include "Menu.h"
 #include "MenuItem.h"
-
-#include "../../../type/Bound2D.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>

@@ -5,13 +5,13 @@
 
 #include "LineRenderer.h"
 
+#include <api/render/realtime/DrawItem.h>
+
 #include <algorithm>
 #include <cstddef>
 #include <vector>
 
 #include "PipelineBuilder.h"
-
-#include "../DrawItem.h"
 
 #include <boost/make_shared.hpp>
 

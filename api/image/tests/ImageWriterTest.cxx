@@ -4,6 +4,9 @@
  **/
 
 // jpeglib.h names FILE in its stdio helpers without including stdio itself
+
+#include <api/image/Factory.h>
+
 #include <stdio.h>
 #include <jpeglib.h>
 
@@ -13,8 +16,6 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/filesystem/operations.hpp>
-
-#include "../Factory.h"
 
 namespace {
 /**

@@ -5,11 +5,12 @@
 
 #pragma once
 
+#include <api/event/Event.h>
+#include <api/ui/Component.h>
+
 #include <string>
 
-#include "../../Component.h"
 #include "Type.h"
-#include "../../../event/Event.h"
 
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>

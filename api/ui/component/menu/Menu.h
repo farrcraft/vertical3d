@@ -5,9 +5,10 @@
 
 #pragma once
 
+#include <api/ui/Component.h>
+
 #include <vector>
 
-#include "../../Component.h"
 #include "MenuItem.h"
 
 #include <boost/shared_ptr.hpp>

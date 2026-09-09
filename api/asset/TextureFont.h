@@ -5,10 +5,11 @@
 
 #pragma once
 
+#include <api/font/TextureFont.h>
+
 #include <string>
 
 #include "Asset.h"
-#include "../font/TextureFont.h"
 
 #include <boost/shared_ptr.hpp>
 

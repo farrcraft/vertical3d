@@ -3,6 +3,8 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/audio/Engine.h>
+
 #include <string>
 #include <vector>
 
@@ -10,7 +12,6 @@
 #include <boost/json.hpp>
 #include <boost/make_shared.hpp>
 
-#include "../Engine.h"
 #include "Wav.h"
 
 namespace {

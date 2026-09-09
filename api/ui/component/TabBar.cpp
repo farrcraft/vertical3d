@@ -5,11 +5,11 @@
 
 #include "TabBar.h"
 
+#include <api/ui/Painter.h>
+
 #include <vector>
 
 #include <boost/make_shared.hpp>
-
-#include "../Painter.h"
 
 namespace v3d::ui::component {
 

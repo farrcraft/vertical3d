@@ -5,15 +5,14 @@
 
 #pragma once
 
+#include <api/image/TextureAtlas.h>
+#include <api/log/Logger.h>
+
 #include <vector>
 #include <string>
 
-#include "../image/TextureAtlas.h"
-
 #include <glm/glm.hpp>
 #include <boost/shared_ptr.hpp>
-
-#include "../log/Logger.h"
 
 namespace v3d::font {
 

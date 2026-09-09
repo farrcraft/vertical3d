@@ -5,12 +5,12 @@
 
 #include "WorldRenderer.h"
 
+#include <api/render/realtime/DrawItem.h>
+
 #include <cstddef>
 #include <vector>
 
 #include "PipelineBuilder.h"
-
-#include "../DrawItem.h"
 
 #include <boost/make_shared.hpp>
 

@@ -5,14 +5,14 @@
 
 #include "Resolver.h"
 
+#include <api/ui/Style.h>
+
 #include <functional>
 #include <map>
 #include <string>
 #include <vector>
 
 #include "Theme.h"
-
-#include "../Style.h"
 
 namespace v3d::ui::style {
 

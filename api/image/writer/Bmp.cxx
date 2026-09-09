@@ -5,13 +5,13 @@
 
 #include "Bmp.h"
 
+#include <api/image/BmpHeader.h>
+
 #include <cstring>
 #include <fstream>
 #include <string>
 
 #include <boost/make_shared.hpp>
-
-#include "../BmpHeader.h"
 
 namespace v3d::image::writer {
 /**

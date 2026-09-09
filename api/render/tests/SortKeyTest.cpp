@@ -3,12 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/realtime/DrawItem.h>
+
 #include <algorithm>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../realtime/DrawItem.h"
 
 BOOST_AUTO_TEST_SUITE(sortkey_test)
 

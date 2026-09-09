@@ -3,9 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <boost/test/unit_test.hpp>
+#include <api/dag/Node.h>
 
-#include "../Node.h"
+#include <boost/test/unit_test.hpp>
 
 BOOST_AUTO_TEST_CASE(node_id_test) {
     v3d::dag::Node first;

@@ -5,11 +5,11 @@
 
 #include "Font2D.h"
 
-#include <string>
+#include <api/asset/Font2D.h>
+#include <api/asset/Type.h>
+#include <api/font/Font2D.h>
 
-#include "../Font2D.h"
-#include "../Type.h"
-#include "../../font/Font2D.h"
+#include <string>
 
 #include <boost/make_shared.hpp>
 

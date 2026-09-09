@@ -5,15 +5,16 @@
 
 #include "Engine.h"
 
+#include <api/event/WindowFocus.h>
+#include <api/event/WindowResize.h>
+#include <api/input/DeviceType.h>
+
 #include <SDL3/SDL.h>
 
 #include <map>
 #include <string>
 
 #include "Feature.h"
-#include "../input/DeviceType.h"
-#include "../event/WindowResize.h"
-#include "../event/WindowFocus.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/make_shared.hpp>

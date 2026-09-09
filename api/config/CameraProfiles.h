@@ -5,13 +5,13 @@
 
 #pragma once
 
+#include <api/asset/Json.h>
+#include <api/log/Logger.h>
+#include <api/type/CameraProfile.h>
+
 #include <map>
 #include <string>
 #include <vector>
-
-#include "../asset/Json.h"
-#include "../log/Logger.h"
-#include "../type/CameraProfile.h"
 
 #include <boost/shared_ptr.hpp>
 

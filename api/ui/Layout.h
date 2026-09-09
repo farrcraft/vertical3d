@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include <glm/vec2.hpp>
+#include <api/type/Bound2D.h>
 
-#include "../type/Bound2D.h"
+#include <glm/vec2.hpp>
 
 namespace v3d::ui {
 

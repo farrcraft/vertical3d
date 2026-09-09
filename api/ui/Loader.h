@@ -5,14 +5,14 @@
 
 #pragma once
 
+#include <api/event/Engine.h>
+#include <api/event/Event.h>
+#include <api/log/Logger.h>
+
 #include <string>
 #include <vector>
 
 #include "Layout.h"
-
-#include "../event/Engine.h"
-#include "../event/Event.h"
-#include "../log/Logger.h"
 
 #include <boost/json/object.hpp>
 #include <boost/shared_ptr.hpp>

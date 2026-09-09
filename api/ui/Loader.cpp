@@ -5,6 +5,9 @@
 
 #include "Loader.h"
 
+#include <api/event/Engine.h>
+#include <api/log/Logger.h>
+
 #include <algorithm>
 #include <cstddef>
 #include <string>
@@ -40,9 +43,6 @@
 #include "style/property/Font.h"
 #include "style/property/Image.h"
 #include "style/property/Number.h"
-
-#include "../event/Engine.h"
-#include "../log/Logger.h"
 
 #include <boost/json/value_to.hpp>
 #include <boost/make_shared.hpp>

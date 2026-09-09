@@ -5,15 +5,14 @@
 
 #pragma once
 
+#include <api/type/Bound2D.h>
+#include <api/ui/Component.h>
+
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
 
 #include "TabPage.h"
-
-#include "../Component.h"
-
-#include "../../type/Bound2D.h"
 
 namespace v3d::ui::component {
 

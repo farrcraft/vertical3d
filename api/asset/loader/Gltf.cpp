@@ -5,15 +5,15 @@
 
 #include "Gltf.h"
 
+#include <api/asset/Model.h>
+#include <api/asset/Type.h>
+#include <api/image/Factory.h>
+
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
 #include <numeric>
 #include <string>
-
-#include "../Model.h"
-#include "../Type.h"
-#include "../../image/Factory.h"
 
 // cgltf.h is a C header, and cpplint sorts it with the C system headers rather than with
 // the third party ones. Its implementation half is compiled once, in CgltfImpl.cpp.

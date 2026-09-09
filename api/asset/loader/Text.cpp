@@ -5,11 +5,11 @@
 
 #include "Text.h"
 
+#include <api/asset/Text.h>
+#include <api/asset/Type.h>
+
 #include <fstream>
 #include <string>
-
-#include "../Text.h"
-#include "../Type.h"
 
 #include <boost/make_shared.hpp>
 

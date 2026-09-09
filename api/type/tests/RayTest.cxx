@@ -3,12 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/type/AABBox.h>
+#include <api/type/Ray.h>
+
 #include <boost/test/unit_test.hpp>
 
 #include <glm/gtc/matrix_transform.hpp>
-
-#include "../AABBox.h"
-#include "../Ray.h"
 
 BOOST_AUTO_TEST_CASE(ray_direction_test) {
     // the constructor normalises, so a distance along the ray is in the units its origin

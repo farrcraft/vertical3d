@@ -3,14 +3,14 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/type/Camera.h>
+#include <api/type/IsometricCamera.h>
+
 #include <cmath>
 
 #include <boost/test/unit_test.hpp>
 
 #include <glm/geometric.hpp>
-
-#include "../Camera.h"
-#include "../IsometricCamera.h"
 
 namespace {
 

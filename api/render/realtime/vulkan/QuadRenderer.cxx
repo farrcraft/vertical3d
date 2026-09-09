@@ -5,6 +5,8 @@
 
 #include "QuadRenderer.h"
 
+#include <api/render/realtime/DrawItem.h>
+
 #include "RenderTarget.h"
 
 #include <algorithm>
@@ -18,8 +20,6 @@
 
 #include "PipelineBuilder.h"
 #include "Result.h"
-
-#include "../DrawItem.h"
 
 #include <boost/make_shared.hpp>
 

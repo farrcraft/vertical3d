@@ -3,9 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <boost/test/unit_test.hpp>
+#include <api/render/offline/FrameBuffer.h>
 
-#include "../FrameBuffer.h"
+#include <boost/test/unit_test.hpp>
 
 BOOST_AUTO_TEST_CASE(framebuffer_plane_test) {
     v3d::render::offline::FrameBuffer buffer(4, 3, 4);

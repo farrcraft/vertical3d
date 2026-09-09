@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../render/realtime/Canvas.h"
+#include <api/render/realtime/Canvas.h>
 
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>

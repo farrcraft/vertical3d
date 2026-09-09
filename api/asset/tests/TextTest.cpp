@@ -3,15 +3,15 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/asset/Manager.h>
+#include <api/asset/Text.h>
+#include <api/asset/Type.h>
+
 #include <stdexcept>
 #include <string>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
-
-#include "../Manager.h"
-#include "../Text.h"
-#include "../Type.h"
 
 namespace {
 

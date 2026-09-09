@@ -5,10 +5,10 @@
 
 #pragma once
 
+#include <api/ui/Style.h>
+
 #include <string>
 #include <vector>
-
-#include "../Style.h"
 
 #include <boost/shared_ptr.hpp>
 

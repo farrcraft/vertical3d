@@ -3,11 +3,11 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/brep/WingedEdgeBRep.h>
+
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../WingedEdgeBRep.h"
 
 namespace {
 /**

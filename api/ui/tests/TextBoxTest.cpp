@@ -3,23 +3,21 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/asset/Json.h>
+#include <api/render/realtime/Canvas.h>
+#include <api/ui/ComponentRenderer.h>
+#include <api/ui/Container.h>
+#include <api/ui/Cursor.h>
+#include <api/ui/Engine.h>
+#include <api/ui/Keys.h>
+#include <api/ui/component/Panel.h>
+#include <api/ui/component/TextBox.h>
+
 #include <string>
 #include <string_view>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../Keys.h"
-
-#include "../ComponentRenderer.h"
-#include "../Container.h"
-#include "../Cursor.h"
-#include "../Engine.h"
-#include "../../asset/Json.h"
-#include "../component/Panel.h"
-#include "../component/TextBox.h"
-
-#include "../../render/realtime/Canvas.h"
 
 #include <boost/json/parse.hpp>
 #include <boost/make_shared.hpp>

@@ -5,14 +5,14 @@
 
 #pragma once
 
+#include <api/event/Engine.h>
+#include <api/log/Logger.h>
+#include <api/render/realtime/Handle.h>
+
 #include <cstddef>
 #include <functional>
 #include <string>
 #include <vector>
-
-#include "../event/Engine.h"
-#include "../log/Logger.h"
-#include "../render/realtime/Handle.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>

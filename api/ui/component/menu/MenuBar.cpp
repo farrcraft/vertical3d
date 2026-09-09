@@ -5,11 +5,11 @@
 
 #include "MenuBar.h"
 
+#include <api/ui/component/Type.h>
+
 #include <cstddef>
 #include <string>
 #include <vector>
-
-#include "../Type.h"
 
 namespace v3d::ui::component {
 

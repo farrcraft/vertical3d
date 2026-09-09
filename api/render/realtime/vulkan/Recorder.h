@@ -5,13 +5,13 @@
 
 #pragma once
 
+#include <api/render/realtime/Frame.h>
+#include <api/render/realtime/Pass.h>
+
 #include <vulkan/vulkan.h>
 
 #include "FrameUniforms.h"
 #include "Resources.h"
-
-#include "../Frame.h"
-#include "../Pass.h"
 
 namespace v3d::render::realtime::vulkan {
 

@@ -5,6 +5,8 @@
 
 #include "Font2D.h"
 
+#include <api/type/3dtypes.h>
+
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
@@ -14,8 +16,6 @@
 #include <map>
 
 #include <boost/make_shared.hpp>
-
-#include "../type/3dtypes.h"
 
 namespace v3d::font {
 Font2D::Font2D(const boost::shared_ptr<v3d::log::Logger>& logger) :

@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 namespace v3d::engine {
 /*
 Features are portions of engine configuration that can be opted into/out of on a per-application basis.

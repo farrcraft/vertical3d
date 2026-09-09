@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <api/log/Logger.h>
+
 #include "Context.h"
 #include "Window.h"
 #include "vulkan/DepthBuffer.h"
@@ -18,8 +20,6 @@
 #include "vulkan/Resources.h"
 #include "vulkan/Swapchain.h"
 #include "vulkan/Uploader.h"
-
-#include "../../log/Logger.h"
 
 #include <boost/shared_ptr.hpp>
 

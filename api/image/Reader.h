@@ -5,12 +5,12 @@
 
 #pragma once
 
+#include <api/log/Logger.h>
+
 #include "Image.h"
 
 #include <cstddef>
 #include <string>
-
-#include "../log/Logger.h"
 
 #include <boost/shared_ptr.hpp>
 

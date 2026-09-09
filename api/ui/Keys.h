@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include <string_view>
+#include <api/event/Event.h>
 
-#include "../event/Event.h"
+#include <string_view>
 
 #include <boost/shared_ptr.hpp>
 

@@ -5,11 +5,12 @@
 
 #pragma once
 
+#include <api/image/Image.h>
+#include <api/type/Model.h>
+
 #include <string>
 
 #include "Asset.h"
-#include "../image/Image.h"
-#include "../type/Model.h"
 
 #include <boost/shared_ptr.hpp>
 

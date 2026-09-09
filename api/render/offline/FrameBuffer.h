@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include <vector>
+#include <api/image/Image.h>
 
-#include "../../image/Image.h"
+#include <vector>
 
 #include <boost/shared_ptr.hpp>
 

@@ -5,13 +5,13 @@
 
 #pragma once
 
+#include <api/type/Bound2D.h>
+
 #include <functional>
 #include <utility>
 #include <vector>
 
 #include "Text.h"
-
-#include "../type/Bound2D.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>

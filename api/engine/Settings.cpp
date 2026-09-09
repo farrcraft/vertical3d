@@ -5,13 +5,13 @@
 
 #include "Settings.h"
 
+#include <api/asset/Json.h>
+#include <api/asset/Manager.h>
+#include <api/asset/Writer.h>
+
 #include <string>
 
 #include "Application.h"
-
-#include "../asset/Json.h"
-#include "../asset/Manager.h"
-#include "../asset/Writer.h"
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>

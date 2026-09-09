@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <api/type/Bound2D.h>
+
 #include <string>
 #include <utility>
 #include <vector>
@@ -13,8 +15,6 @@
 #include "Dressing.h"
 #include "Text.h"
 #include "style/Resolver.h"
-
-#include "../type/Bound2D.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>

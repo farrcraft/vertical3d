@@ -3,6 +3,16 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/realtime/Canvas.h>
+#include <api/ui/ComponentRenderer.h>
+#include <api/ui/Container.h>
+#include <api/ui/component/Button.h>
+#include <api/ui/component/Label.h>
+#include <api/ui/component/menu/Menu.h>
+#include <api/ui/component/menu/MenuBar.h>
+#include <api/ui/component/menu/MenuItem.h>
+#include <api/ui/style/Resolver.h>
+
 #include <cstddef>
 #include <string>
 #include <string_view>
@@ -10,15 +20,6 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include "../ComponentRenderer.h"
-#include "../../render/realtime/Canvas.h"
-#include "../Container.h"
-#include "../component/Button.h"
-#include "../component/Label.h"
-#include "../style/Resolver.h"
-#include "../component/menu/Menu.h"
-#include "../component/menu/MenuBar.h"
-#include "../component/menu/MenuItem.h"
 #include <entt/entt.hpp>
 
 #include <boost/make_shared.hpp>

@@ -5,12 +5,12 @@
 
 #pragma once
 
+#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/Registry.h>
+
 #include <vulkan/vulkan.h>
 
 #include "Device.h"
-
-#include "../Handle.h"
-#include "../Registry.h"
 
 #include <boost/shared_ptr.hpp>
 

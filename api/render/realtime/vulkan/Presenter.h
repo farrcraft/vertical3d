@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <api/log/Logger.h>
+
 #include <vulkan/vulkan.h>
 
 #include <cstdint>
@@ -13,8 +15,6 @@
 #include "CommandPool.h"
 #include "Device.h"
 #include "Swapchain.h"
-
-#include "../../../log/Logger.h"
 
 #include <boost/shared_ptr.hpp>
 

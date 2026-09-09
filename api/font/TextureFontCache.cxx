@@ -5,8 +5,9 @@
 
 #include "TextureFontCache.h"
 
+#include <api/image/TextureAtlas.h>
+
 #include <string>
-#include "../image/TextureAtlas.h"
 #include "TextureFont.h"
 
 namespace v3d::font {

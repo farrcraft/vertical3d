@@ -3,20 +3,19 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/asset/Json.h>
+#include <api/ui/Container.h>
+#include <api/ui/Engine.h>
+#include <api/ui/Keys.h>
+#include <api/ui/component/Panel.h>
+#include <api/ui/component/TextBox.h>
+#include <api/ui/component/VerticalBox.h>
+
 #include <string>
 #include <string_view>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../Engine.h"
-#include "../Keys.h"
-
-#include "../Container.h"
-#include "../component/Panel.h"
-#include "../component/TextBox.h"
-#include "../component/VerticalBox.h"
-#include "../../asset/Json.h"
 
 #include <boost/json/parse.hpp>
 #include <boost/make_shared.hpp>

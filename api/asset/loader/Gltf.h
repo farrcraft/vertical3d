@@ -5,10 +5,10 @@
 
 #pragma once
 
-#include <string>
+#include <api/asset/Loader.h>
+#include <api/image/Image.h>
 
-#include "../Loader.h"
-#include "../../image/Image.h"
+#include <string>
 
 struct cgltf_image;
 

@@ -5,6 +5,11 @@
 
 #pragma once
 
+#include <api/log/Logger.h>
+#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/LineCanvas.h>
+#include <api/render/realtime/Pass.h>
+
 #include <vulkan/vulkan.h>
 
 #include <cstddef>
@@ -17,12 +22,6 @@
 #include "PipelineCache.h"
 #include "Presenter.h"
 #include "Resources.h"
-
-#include "../Handle.h"
-#include "../LineCanvas.h"
-#include "../Pass.h"
-
-#include "../../../log/Logger.h"
 
 #include <boost/shared_ptr.hpp>
 

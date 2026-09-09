@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <api/log/Logger.h>
+
 #include <iosfwd>
 #include <set>
 #include <string>
@@ -14,8 +16,6 @@
 #include "RIBHandler.h"
 #include "RIBLexer.h"
 #include "RIBParameters.h"
-
-#include "../../log/Logger.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/mat4x4.hpp>

@@ -3,6 +3,13 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/asset/Manager.h>
+#include <api/asset/Model.h>
+#include <api/asset/Type.h>
+#include <api/asset/loader/Gltf.h>
+#include <api/image/Compare.h>
+#include <api/image/Factory.h>
+
 #include <algorithm>
 #include <cstdint>
 #include <string>
@@ -10,13 +17,6 @@
 
 #include <boost/make_shared.hpp>
 #include <boost/test/unit_test.hpp>
-
-#include "../Manager.h"
-#include "../Model.h"
-#include "../Type.h"
-#include "../loader/Gltf.h"
-#include "../../image/Compare.h"
-#include "../../image/Factory.h"
 
 namespace {
 

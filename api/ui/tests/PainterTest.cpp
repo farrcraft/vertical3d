@@ -3,13 +3,13 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/ui/Painter.h>
+
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../Painter.h"
 
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>

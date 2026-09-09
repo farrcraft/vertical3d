@@ -5,10 +5,10 @@
 
 #include "Mouse.h"
 
-#include <string>
+#include <api/event/MouseButton.h>
+#include <api/event/MouseMotion.h>
 
-#include "../event/MouseButton.h"
-#include "../event/MouseMotion.h"
+#include <string>
 
 namespace v3d::input {
 

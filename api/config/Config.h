@@ -5,13 +5,14 @@
 
 #pragma once
 
+#include <api/asset/Json.h>
+#include <api/asset/Manager.h>
+
 #include <unordered_map>
 #include <string>
 #include <string_view>
 
 #include "Type.h"
-#include "../asset/Json.h"
-#include "../asset/Manager.h"
 
 #include <boost/shared_ptr.hpp>
 

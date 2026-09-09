@@ -5,6 +5,8 @@
 
 #include "Immediate.h"
 
+#include <api/render/realtime/Canvas.h>
+
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -17,8 +19,6 @@
 #include "component/Scrollbar.h"
 #include "style/Resolver.h"
 #include "style/Theme.h"
-
-#include "../render/realtime/Canvas.h"
 
 #include <glm/common.hpp>
 #include <glm/geometric.hpp>

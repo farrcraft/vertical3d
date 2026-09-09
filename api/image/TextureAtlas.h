@@ -5,13 +5,13 @@
 
 #pragma once
 
+#include <api/log/Logger.h>
+
 #include <string>
 #include <vector>
 
 #include <glm/glm.hpp>
 #include <boost/shared_ptr.hpp>
-
-#include "../log/Logger.h"
 
 namespace v3d::image {
 class Image;

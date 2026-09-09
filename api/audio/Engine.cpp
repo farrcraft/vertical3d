@@ -5,12 +5,12 @@
 
 #include "Engine.h"
 
+#include <api/event/Sound.h>
+
 #include <map>
 #include <string>
 #include <utility>
 #include <vector>
-
-#include "../event/Sound.h"
 
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>

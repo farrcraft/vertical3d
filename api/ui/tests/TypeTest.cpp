@@ -3,13 +3,13 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/ui/component/Type.h>
+
 #include <set>
 #include <string>
 #include <string_view>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../component/Type.h"
 
 namespace {
 

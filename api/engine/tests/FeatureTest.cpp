@@ -3,9 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <boost/test/unit_test.hpp>
+#include <api/engine/Feature.h>
 
-#include "../Feature.h"
+#include <boost/test/unit_test.hpp>
 
 /**
  * The bitmask an app hands initialize(). Combining is done over the enum and testing over the

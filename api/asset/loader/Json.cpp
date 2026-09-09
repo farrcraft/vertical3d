@@ -5,12 +5,12 @@
 
 #include "Json.h"
 
+#include <api/asset/Json.h>
+#include <api/asset/JsonFile.h>
+#include <api/asset/Type.h>
+
 #include <iostream>
 #include <string>
-
-#include "../Json.h"
-#include "../Type.h"
-#include "../JsonFile.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/json.hpp>

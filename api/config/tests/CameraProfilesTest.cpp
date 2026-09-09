@@ -3,12 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/config/CameraProfiles.h>
+#include <api/type/Camera.h>
+
 #include <string>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../CameraProfiles.h"
-#include "../../type/Camera.h"
 
 #include <boost/make_shared.hpp>
 

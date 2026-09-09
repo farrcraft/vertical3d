@@ -5,10 +5,10 @@
 
 #include "Jpeg.h"
 
-#include <string>
+#include <api/asset/Image.h>
+#include <api/image/reader/Jpeg.h>
 
-#include "../Image.h"
-#include "../../image/reader/Jpeg.h"
+#include <string>
 
 #include <boost/make_shared.hpp>
 

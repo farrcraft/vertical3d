@@ -3,6 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/asset/Writer.h>
+#include <api/engine/Settings.h>
+
 #include <string>
 
 #include <boost/test/unit_test.hpp>
@@ -10,9 +13,6 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/json.hpp>
 #include <boost/make_shared.hpp>
-
-#include "../Settings.h"
-#include "../../asset/Writer.h"
 
 namespace {
 

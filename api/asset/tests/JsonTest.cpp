@@ -3,14 +3,14 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/asset/Json.h>
+#include <api/asset/Manager.h>
+#include <api/asset/Type.h>
+
 #include <string>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
-
-#include "../Json.h"
-#include "../Manager.h"
-#include "../Type.h"
 
 namespace {
 

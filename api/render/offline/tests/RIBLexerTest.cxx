@@ -3,14 +3,14 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/offline/RIBLexer.h>
+
 #include <fstream>
 #include <sstream>
 #include <string>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../RIBLexer.h"
 
 namespace {
 

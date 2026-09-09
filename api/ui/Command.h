@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include <boost/shared_ptr.hpp>
+#include <api/event/Event.h>
 
-#include "../event/Event.h"
+#include <boost/shared_ptr.hpp>
 
 namespace v3d::ui {
 

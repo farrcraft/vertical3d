@@ -3,6 +3,8 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/asset/Writer.h>
+
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -10,8 +12,6 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/json.hpp>
-
-#include "../Writer.h"
 
 namespace {
 

@@ -5,6 +5,11 @@
 
 #pragma once
 
+#include <api/log/Logger.h>
+#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/Pass.h>
+
 #include <vulkan/vulkan.h>
 
 #include <cstddef>
@@ -19,12 +24,6 @@
 #include "Presenter.h"
 #include "Resources.h"
 #include "TextureFactory.h"
-
-#include "../Canvas.h"
-#include "../Handle.h"
-#include "../Pass.h"
-
-#include "../../../log/Logger.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/mat4x4.hpp>

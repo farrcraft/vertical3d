@@ -5,18 +5,18 @@
 
 #pragma once
 
+#include <api/asset/Manager.h>
+#include <api/font/TextureFontCache.h>
+#include <api/font/TextureTextBuffer.h>
+#include <api/image/Image.h>
+#include <api/log/Logger.h>
+#include <api/render/realtime/Canvas.h>
+
 #include <functional>
 #include <string>
 #include <string_view>
 
 #include "Text.h"
-
-#include "../asset/Manager.h"
-#include "../font/TextureFontCache.h"
-#include "../font/TextureTextBuffer.h"
-#include "../image/Image.h"
-#include "../log/Logger.h"
-#include "../render/realtime/Canvas.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>

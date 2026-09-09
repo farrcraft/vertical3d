@@ -5,10 +5,10 @@
 
 #pragma once
 
-#include <string>
+#include <api/ui/Style.h>
+#include <api/ui/component/Button.h>
 
-#include "../Style.h"
-#include "../component/Button.h"
+#include <string>
 
 namespace v3d::ui::style {
 

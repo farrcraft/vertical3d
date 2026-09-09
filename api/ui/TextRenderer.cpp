@@ -5,12 +5,12 @@
 
 #include "TextRenderer.h"
 
+#include <api/asset/TextureFont.h>
+#include <api/asset/Type.h>
+#include <api/image/TextureAtlas.h>
+
 #include <string>
 #include <string_view>
-
-#include "../asset/TextureFont.h"
-#include "../asset/Type.h"
-#include "../image/TextureAtlas.h"
 
 #include <boost/make_shared.hpp>
 

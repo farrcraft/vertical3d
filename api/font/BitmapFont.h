@@ -5,6 +5,9 @@
 
 #pragma once
 
+#include <api/image/Texture.h>
+#include <api/log/Logger.h>
+
 #include <stdint.h>
 
 #include <map>
@@ -12,9 +15,6 @@
 #include <string>
 
 #include <boost/shared_ptr.hpp>
-
-#include "../image/Texture.h"
-#include "../log/Logger.h"
 
 namespace v3d::font {
 class BitmapFont {

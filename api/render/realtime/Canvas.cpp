@@ -5,12 +5,12 @@
 
 #include "Canvas.h"
 
+#include <api/font/TextBuffer.h>
+
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <vector>
-
-#include "../../font/TextBuffer.h"
 
 namespace v3d::render::realtime {
 

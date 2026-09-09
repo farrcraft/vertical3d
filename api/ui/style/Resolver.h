@@ -5,14 +5,14 @@
 
 #pragma once
 
+#include <api/ui/Dressing.h>
+
 #include <array>
 #include <cstddef>
 #include <functional>
 #include <map>
 #include <string>
 #include <string_view>
-
-#include "../Dressing.h"
 
 #include <boost/shared_ptr.hpp>
 

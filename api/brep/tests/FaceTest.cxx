@@ -3,9 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <boost/test/unit_test.hpp>
+#include <api/brep/Face.h>
 
-#include "../Face.h"
+#include <boost/test/unit_test.hpp>
 
 BOOST_AUTO_TEST_CASE(face_test) {
     v3d::brep::Face face;

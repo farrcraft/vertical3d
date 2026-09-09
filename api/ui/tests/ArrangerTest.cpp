@@ -3,25 +3,24 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/ui/Arranger.h>
+#include <api/ui/Component.h>
+#include <api/ui/Container.h>
+#include <api/ui/Style.h>
+#include <api/ui/component/CheckBox.h>
+#include <api/ui/component/Label.h>
+#include <api/ui/component/Panel.h>
+#include <api/ui/component/Scrollbar.h>
+#include <api/ui/component/VerticalBox.h>
+#include <api/ui/style/Resolver.h>
+#include <api/ui/style/Theme.h>
+#include <api/ui/style/property/Number.h>
+
 #include <string>
 #include <string_view>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../Arranger.h"
-
-#include "../Component.h"
-#include "../Container.h"
-#include "../Style.h"
-#include "../component/CheckBox.h"
-#include "../component/Label.h"
-#include "../component/Panel.h"
-#include "../component/Scrollbar.h"
-#include "../component/VerticalBox.h"
-#include "../style/Resolver.h"
-#include "../style/Theme.h"
-#include "../style/property/Number.h"
 
 #include <boost/make_shared.hpp>
 

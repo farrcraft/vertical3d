@@ -3,14 +3,14 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/ecs/System.h>
+#include <api/ecs/component/Position1D.h>
+
 #include <memory>
 
 #include <boost/test/unit_test.hpp>
 
 #include <entt/entt.hpp>
-
-#include "../System.h"
-#include "../component/Position1D.h"
 
 namespace {
 

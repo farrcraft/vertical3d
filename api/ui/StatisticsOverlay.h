@@ -5,13 +5,13 @@
 
 #pragma once
 
+#include <api/render/realtime/Canvas.h>
+
 #include <array>
 #include <cstdint>
 #include <string>
 
 #include "TextRenderer.h"
-
-#include "../render/realtime/Canvas.h"
 
 #include <boost/shared_ptr.hpp>
 

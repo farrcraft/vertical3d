@@ -3,15 +3,15 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/event/MouseButton.h>
+#include <api/event/MouseMotion.h>
+#include <api/input/Mouse.h>
+
 #include <string>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
-
-#include "../Mouse.h"
-#include "../../event/MouseButton.h"
-#include "../../event/MouseMotion.h"
 
 /**
  * The device this replaces was v3D::MouseDevice. Mouse::handleEvent was an empty stub that

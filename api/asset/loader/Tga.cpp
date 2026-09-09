@@ -5,11 +5,11 @@
 
 #include "Tga.h"
 
-#include <string>
+#include <api/asset/Image.h>
+#include <api/asset/Type.h>
+#include <api/image/reader/Tga.h>
 
-#include "../Image.h"
-#include "../Type.h"
-#include "../../image/reader/Tga.h"
+#include <string>
 
 #include <boost/make_shared.hpp>
 

@@ -3,9 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <boost/test/unit_test.hpp>
+#include <api/type/Bound2D.h>
 
-#include "../Bound2D.h"
+#include <boost/test/unit_test.hpp>
 
 BOOST_AUTO_TEST_CASE(bound2d_test) {
     v3d::type::Bound2D bound(2.0f, 5.0f, 10.0f, 20.0f);

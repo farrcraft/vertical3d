@@ -5,12 +5,12 @@
 
 #pragma once
 
+#include <api/image/Texture.h>
+#include <api/log/Logger.h>
+
 #include <string>
 #include <vector>
 #include <map>
-
-#include "../log/Logger.h"
-#include "../image/Texture.h"
 
 #include <boost/shared_ptr.hpp>
 

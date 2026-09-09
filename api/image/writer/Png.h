@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../Writer.h"
+#include <api/image/Writer.h>
 
 namespace v3d::image::writer {
 /** 

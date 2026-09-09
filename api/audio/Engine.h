@@ -10,6 +10,10 @@
 #define NOMINMAX
 #endif
 
+#include <api/asset/Json.h>
+#include <api/event/Sound.h>
+#include <api/log/Logger.h>
+
 #include <SDL3_mixer/SDL_mixer.h>
 
 #include <cstdint>
@@ -19,9 +23,6 @@
 #include <vector>
 
 #include "AudioClip.h"
-#include "../asset/Json.h"
-#include "../log/Logger.h"
-#include "../event/Sound.h"
 
 #include <boost/shared_ptr.hpp>
 

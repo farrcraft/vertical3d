@@ -3,16 +3,16 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/ecs/component/Color3.h>
+#include <api/ecs/component/Position1D.h>
+#include <api/ecs/component/Position2D.h>
+#include <api/ecs/component/PositionFixed2D.h>
+
 #include <utility>
 
 #include <boost/test/unit_test.hpp>
 
 #include <entt/entt.hpp>
-
-#include "../component/Color3.h"
-#include "../component/Position1D.h"
-#include "../component/Position2D.h"
-#include "../component/PositionFixed2D.h"
 
 /**
  * Each channel reads back the argument it was named for. The three values are distinct

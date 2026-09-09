@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include <string>
+#include <api/ui/Component.h>
 
-#include "../Component.h"
+#include <string>
 
 namespace v3d::ui::component {
 

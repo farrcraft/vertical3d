@@ -3,12 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/engine/Accumulator.h>
+#include <api/engine/Statistics.h>
+
 #include <cstdint>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../Accumulator.h"
-#include "../Statistics.h"
 
 namespace {
 

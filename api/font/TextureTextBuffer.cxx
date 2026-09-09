@@ -5,9 +5,10 @@
 
 #include "TextureTextBuffer.h"
 
+#include <api/image/TextureAtlas.h>
+
 #include <vector>
 
-#include "../image/TextureAtlas.h"
 #include "TextureFont.h"
 
 #include <glm/gtc/matrix_transform.hpp>

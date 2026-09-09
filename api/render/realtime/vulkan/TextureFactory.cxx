@@ -5,6 +5,8 @@
 
 #include "TextureFactory.h"
 
+#include <api/image/Image.h>
+
 #include <cstddef>
 #include <sstream>
 #include <stdexcept>
@@ -13,8 +15,6 @@
 #include "Buffer.h"
 #include "Memory.h"
 #include "Result.h"
-
-#include "../../../image/Image.h"
 
 #include <boost/make_shared.hpp>
 

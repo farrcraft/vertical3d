@@ -3,6 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/realtime/Canvas.h>
+#include <api/ui/ComponentRenderer.h>
+#include <api/ui/Container.h>
+#include <api/ui/component/Toolbar.h>
+#include <api/ui/component/menu/MenuBar.h>
+
 #include <cstddef>
 #include <string>
 #include <string_view>
@@ -10,12 +16,7 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include "../ComponentRenderer.h"
-#include "../../render/realtime/Canvas.h"
 #include <entt/entt.hpp>
-#include "../Container.h"
-#include "../component/Toolbar.h"
-#include "../component/menu/MenuBar.h"
 
 #include <boost/make_shared.hpp>
 

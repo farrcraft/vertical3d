@@ -5,12 +5,12 @@
 
 #pragma once
 
+#include <api/asset/Json.h>
+#include <api/log/Logger.h>
+
 #include <map>
 #include <string>
 #include <vector>
-
-#include "../asset/Json.h"
-#include "../log/Logger.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>

@@ -5,11 +5,11 @@
 
 #include "Keyboard.h"
 
-#include <string>
+#include <api/event/KeyDown.h>
+#include <api/event/KeyUp.h>
+#include <api/event/TextInput.h>
 
-#include "../event/KeyDown.h"
-#include "../event/KeyUp.h"
-#include "../event/TextInput.h"
+#include <string>
 
 namespace v3d::input {
 

@@ -5,10 +5,11 @@
 
 #pragma once
 
+#include <api/font/Font2D.h>
+
 #include <string>
 
 #include "Asset.h"
-#include "../font/Font2D.h"
 
 #include <boost/shared_ptr.hpp>
 

@@ -3,6 +3,22 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/asset/Json.h>
+#include <api/render/realtime/Canvas.h>
+#include <api/ui/ComponentRenderer.h>
+#include <api/ui/Container.h>
+#include <api/ui/Engine.h>
+#include <api/ui/Style.h>
+#include <api/ui/component/Icon.h>
+#include <api/ui/component/Label.h>
+#include <api/ui/component/Toolbar.h>
+#include <api/ui/style/Button.h>
+#include <api/ui/style/Theme.h>
+#include <api/ui/style/property/Color.h>
+#include <api/ui/style/property/Font.h>
+#include <api/ui/style/property/Image.h>
+#include <api/ui/style/property/Number.h>
+
 #include <cstddef>
 #include <string>
 #include <string_view>
@@ -10,22 +26,7 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include "../ComponentRenderer.h"
-#include "../../render/realtime/Canvas.h"
-#include "../Container.h"
-#include "../Style.h"
-#include "../style/Theme.h"
 #include <entt/entt.hpp>
-#include "../Engine.h"
-#include "../component/Icon.h"
-#include "../component/Label.h"
-#include "../component/Toolbar.h"
-#include "../../asset/Json.h"
-#include "../style/Button.h"
-#include "../style/property/Color.h"
-#include "../style/property/Font.h"
-#include "../style/property/Image.h"
-#include "../style/property/Number.h"
 
 #include <boost/json/parse.hpp>
 #include <boost/make_shared.hpp>

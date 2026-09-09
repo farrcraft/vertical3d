@@ -5,10 +5,10 @@
 
 #include "Wav.h"
 
-#include <string>
+#include <api/asset/Sound.h>
+#include <api/asset/Type.h>
 
-#include "../Type.h"
-#include "../Sound.h"
+#include <string>
 
 #include <boost/make_shared.hpp>
 

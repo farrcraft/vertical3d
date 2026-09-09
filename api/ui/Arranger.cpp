@@ -5,6 +5,8 @@
 
 #include "Arranger.h"
 
+#include <api/render/realtime/Canvas.h>
+
 #include <algorithm>
 #include <cstddef>
 #include <string>
@@ -27,8 +29,6 @@
 #include "component/Type.h"
 #include "component/menu/MenuBar.h"
 #include "style/Resolver.h"
-
-#include "../render/realtime/Canvas.h"
 
 namespace v3d::ui {
 

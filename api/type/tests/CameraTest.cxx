@@ -3,6 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/type/Camera.h>
+#include <api/type/Ray.h>
+
 #include <cmath>
 
 #include <boost/test/unit_test.hpp>
@@ -10,9 +13,6 @@
 #include <glm/geometric.hpp>
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/quaternion.hpp>
-
-#include "../Camera.h"
-#include "../Ray.h"
 
 BOOST_AUTO_TEST_CASE(camera_orthographic_test) {
     v3d::type::Camera camera;

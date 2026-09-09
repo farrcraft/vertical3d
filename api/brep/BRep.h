@@ -5,15 +5,15 @@
 
 #pragma once
 
+#include <api/dag/Node.h>
+#include <api/dag/Transform.h>
+#include <api/type/AABBox.h>
+
 #include <vector>
 
 #include "Vertex.h"
 #include "HalfEdge.h"
 #include "Face.h"
-
-#include "../type/AABBox.h"
-#include "../dag/Node.h"
-#include "../dag/Transform.h"
 
 #include <boost/shared_ptr.hpp>
 

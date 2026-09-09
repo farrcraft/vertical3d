@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../Loader.h"
+#include <api/asset/Loader.h>
 
 namespace v3d::asset::loader {
 /**

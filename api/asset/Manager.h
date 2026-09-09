@@ -5,13 +5,13 @@
 
 #pragma once
 
+#include <api/log/Logger.h>
+
 #include <unordered_map>
 
 #include "Asset.h"
 #include "Loader.h"
 #include "Type.h"
-
-#include "../log/Logger.h"
 
 #include <boost/filesystem.hpp>
 

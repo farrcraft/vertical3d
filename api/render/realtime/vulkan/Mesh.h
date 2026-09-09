@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <api/render/realtime/DrawItem.h>
+
 #include <vulkan/vulkan.h>
 
 #include <cstdint>
@@ -12,8 +14,6 @@
 #include "DeviceBuffer.h"
 #include "Device.h"
 #include "Uploader.h"
-
-#include "../DrawItem.h"
 
 #include <boost/shared_ptr.hpp>
 

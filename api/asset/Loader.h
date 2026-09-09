@@ -4,6 +4,8 @@
  **/
 #pragma once
 
+#include <api/log/Logger.h>
+
 #include <map>
 #include <string>
 #include <string_view>
@@ -11,7 +13,6 @@
 
 #include "Asset.h"
 #include "Type.h"
-#include "../log/Logger.h"
 
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>

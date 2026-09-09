@@ -3,10 +3,10 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <boost/test/unit_test.hpp>
+#include <api/type/Camera.h>
+#include <api/type/CameraProfile.h>
 
-#include "../Camera.h"
-#include "../CameraProfile.h"
+#include <boost/test/unit_test.hpp>
 
 BOOST_AUTO_TEST_CASE(cameraprofile_test) {
     v3d::type::CameraProfile profile("test");

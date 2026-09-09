@@ -5,14 +5,14 @@
 
 #include "StatisticsOverlay.h"
 
+#include <api/render/realtime/Canvas.h>
+
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <iomanip>
 #include <sstream>
 #include <string>
-
-#include "../render/realtime/Canvas.h"
 
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
