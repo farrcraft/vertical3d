@@ -14,9 +14,9 @@
 
 namespace {
 
-boost::shared_ptr<v3d::asset::Json> document(const std::string& text) {
+boost::shared_ptr<v3d::asset::kind::Json> document(const std::string& text) {
     boost::json::value parsed = boost::json::parse(text);
-    return boost::make_shared<v3d::asset::Json>("map", v3d::asset::Type::JsonDocument, parsed.as_object());
+    return boost::make_shared<v3d::asset::kind::Json>("map", v3d::asset::Type::JsonDocument, parsed.as_object());
 }
 
 boost::shared_ptr<odyssey::tile::Map> map() {

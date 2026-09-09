@@ -12,7 +12,7 @@
 #include <boost/system/error_code.hpp>
 #include <boost/system/system_error.hpp>
 
-namespace v3d::asset {
+namespace v3d::asset::kind {
 
 /**
  * This is based on the example JSON loading code in the boost library
@@ -92,4 +92,4 @@ inline std::string read_file(char const* path) {
     return s;
 }
 
-};  // namespace v3d::asset
+};  // namespace v3d::asset::kind

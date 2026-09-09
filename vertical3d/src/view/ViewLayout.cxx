@@ -32,7 +32,7 @@ ViewLayout::ViewLayout(const boost::shared_ptr<v3d::log::Logger>& logger) :
 
 /**
  **/
-bool ViewLayout::load(const boost::shared_ptr<v3d::asset::Json>& config) {
+bool ViewLayout::load(const boost::shared_ptr<v3d::asset::kind::Json>& config) {
     if (!config) {
         return false;
     }

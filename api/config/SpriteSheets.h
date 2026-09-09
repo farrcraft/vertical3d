@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/asset/Json.h>
+#include <api/asset/kind/Json.h>
 #include <api/log/Logger.h>
 
 #include <map>
@@ -133,7 +133,7 @@ class SpriteSheets final {
      * @param config the parsed sprites document
      * @return whether every sheet in it was understood
      **/
-    bool load(const boost::shared_ptr<v3d::asset::Json>& config);
+    bool load(const boost::shared_ptr<v3d::asset::kind::Json>& config);
 
     /**
      * @param name the sheet name

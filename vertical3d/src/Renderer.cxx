@@ -5,7 +5,7 @@
 
 #include "Renderer.h"
 
-#include <api/asset/Image.h>
+#include <api/asset/kind/Image.h>
 #include <api/asset/Type.h>
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Pass.h>
@@ -118,8 +118,8 @@ void Renderer::ui(const boost::shared_ptr<v3d::ui::Engine>& ui) {
     ui_->resolveImages([this](const std::string& source) -> v3d::render::realtime::TextureHandle {
         const v3d::asset::Type type = source.ends_with(".png")
             ? v3d::asset::Type::ImagePng : v3d::asset::Type::ImageTga;
-        boost::shared_ptr<v3d::asset::Image> asset =
-            boost::dynamic_pointer_cast<v3d::asset::Image>(assetManager_->load(source, type));
+        boost::shared_ptr<v3d::asset::kind::Image> asset =
+            boost::dynamic_pointer_cast<v3d::asset::kind::Image>(assetManager_->load(source, type));
         if (!asset || !asset->image()) {
             return v3d::render::realtime::TextureHandle();
         }

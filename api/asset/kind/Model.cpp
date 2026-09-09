@@ -7,7 +7,7 @@
 
 #include <string>
 
-namespace v3d::asset {
+namespace v3d::asset::kind {
 
 /**
  **/
@@ -30,4 +30,4 @@ boost::shared_ptr<v3d::image::Image> Model::baseColourImage() const {
     return baseColour_;
 }
 
-};  // namespace v3d::asset
+};  // namespace v3d::asset::kind

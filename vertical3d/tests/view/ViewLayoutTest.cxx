@@ -17,9 +17,9 @@ namespace {
  * A layout config built straight from a json string, the way the asset loader would
  * hand one over.
  **/
-boost::shared_ptr<v3d::asset::Json> config(const std::string& text) {
+boost::shared_ptr<v3d::asset::kind::Json> config(const std::string& text) {
     boost::json::value parsed = boost::json::parse(text);
-    return boost::make_shared<v3d::asset::Json>("layout", v3d::asset::Type::JsonDocument, parsed.as_object());
+    return boost::make_shared<v3d::asset::kind::Json>("layout", v3d::asset::Type::JsonDocument, parsed.as_object());
 }
 
 boost::shared_ptr<v3d::log::Logger> logger() {

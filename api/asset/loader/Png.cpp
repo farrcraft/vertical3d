@@ -5,8 +5,8 @@
 
 #include "Png.h"
 
-#include <api/asset/Image.h>
 #include <api/asset/Type.h>
+#include <api/asset/kind/Image.h>
 #include <api/image/reader/Png.h>
 
 #include <string>
@@ -33,7 +33,7 @@ boost::shared_ptr<Asset> Png::load(std::string_view name) {
         return boost::shared_ptr<Asset>();
     }
 
-    boost::shared_ptr<Image> asset = boost::make_shared<Image>(std::string(name), Type::ImagePng, image);
+    boost::shared_ptr<kind::Image> asset = boost::make_shared<kind::Image>(std::string(name), Type::ImagePng, image);
 
     return asset;
 }

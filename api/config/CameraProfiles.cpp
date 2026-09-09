@@ -60,7 +60,7 @@ CameraProfiles::CameraProfiles(const boost::shared_ptr<v3d::log::Logger>& logger
 
 /**
  **/
-bool CameraProfiles::load(const boost::shared_ptr<v3d::asset::Json>& config) {
+bool CameraProfiles::load(const boost::shared_ptr<v3d::asset::kind::Json>& config) {
     if (!config) {
         return false;
     }

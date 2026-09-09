@@ -5,7 +5,7 @@
 
 #include "Renderer.h"
 
-#include <api/asset/Image.h>
+#include <api/asset/kind/Image.h>
 #include <api/ecs/component/PositionFixed2D.h>
 #include <odyssey/engine/Unit.h>
 
@@ -60,8 +60,8 @@ Renderer::Renderer(const boost::shared_ptr<v3d::render::realtime::Window>& windo
     engine_.initialize(window);
     engine_.clearColour(clearColour);
 
-    boost::shared_ptr<v3d::asset::Image> asset =
-        boost::dynamic_pointer_cast<v3d::asset::Image>(assetManager->loadTypeFromExt(spriteName));
+    boost::shared_ptr<v3d::asset::kind::Image> asset =
+        boost::dynamic_pointer_cast<v3d::asset::kind::Image>(assetManager->loadTypeFromExt(spriteName));
     if (!asset || !asset->image()) {
         // the loader has already said which file it could not read. An unset handle draws
         // against the renderer's white texture rather than nothing at all, so the sprite

@@ -13,9 +13,9 @@
 
 namespace {
 
-boost::shared_ptr<v3d::asset::Json> config(const std::string& text) {
+boost::shared_ptr<v3d::asset::kind::Json> config(const std::string& text) {
     boost::json::value parsed = boost::json::parse(text);
-    return boost::make_shared<v3d::asset::Json>("sprites", v3d::asset::Type::JsonDocument, parsed.as_object());
+    return boost::make_shared<v3d::asset::kind::Json>("sprites", v3d::asset::Type::JsonDocument, parsed.as_object());
 }
 
 boost::shared_ptr<v3d::log::Logger> logger() {
@@ -131,7 +131,7 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_reject_what_they_cannot_use_test) {
 BOOST_AUTO_TEST_CASE(sprite_sheets_missing_document_test) {
     v3d::config::SpriteSheets loaded(logger());
     BOOST_CHECK_EQUAL(loaded.load(config("{\"something\": 1}")), false);
-    BOOST_CHECK_EQUAL(loaded.load(boost::shared_ptr<v3d::asset::Json>()), false);
+    BOOST_CHECK_EQUAL(loaded.load(boost::shared_ptr<v3d::asset::kind::Json>()), false);
     BOOST_CHECK_EQUAL(loaded.names().size(), 0u);
 
     const v3d::config::SpriteSheet absent = loaded.get("nothing");

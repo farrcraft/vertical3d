@@ -1,14 +1,14 @@
 v3d_add_api_library(asset
 "Asset.h" "Asset.cpp"
 "Cache.h" "Cache.cpp"
-"Image.h" "Image.cpp"
-"Json.h" "Json.cpp"
-"JsonFile.h" "JsonFile.cpp"
+"kind/Image.h" "kind/Image.cpp"
+"kind/Json.h" "kind/Json.cpp"
+"kind/JsonFile.h" "kind/JsonFile.cpp"
 "Writer.h" "Writer.cpp"
 "Loader.h" "Loader.cpp"
 "Manager.h" "Manager.cpp"
 "Type.h"
-"Model.h" "Model.cpp"
+"kind/Model.h" "kind/Model.cpp"
 "loader/Gltf.h" "loader/Gltf.cpp"
 "loader/CgltfImpl.cpp"
 "loader/Jpeg.h" "loader/Jpeg.cpp"
@@ -16,11 +16,11 @@ v3d_add_api_library(asset
 "loader/Png.h" "loader/Png.cpp"
 "loader/Tga.h" "loader/Tga.cpp"
  "loader/Wav.h" "loader/Wav.cpp"
- "Sound.h" "Sound.cpp"
- "Text.h" "Text.cpp"
+ "kind/Sound.h" "kind/Sound.cpp"
+ "kind/Text.h" "kind/Text.cpp"
  "loader/Text.h" "loader/Text.cpp"
- "Font2D.h" "Font2D.cpp"
-"loader/Font2D.h" "loader/Font2D.cpp" "loader/TextureFont.h" "loader/TextureFont.cpp" "TextureFont.h" "TextureFont.cpp")
+ "kind/Font2D.h" "kind/Font2D.cpp"
+"loader/Font2D.h" "loader/Font2D.cpp" "loader/TextureFont.h" "loader/TextureFont.cpp" "kind/TextureFont.h" "kind/TextureFont.cpp")
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
 # v3dlib_audio: the Wav loader calls v3d::audio::AudioClip::load, so an app that links this

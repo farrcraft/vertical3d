@@ -46,7 +46,7 @@ bool Controller::initialize() {
         suspend(suspended);
     });
     if (config_) {
-        boost::shared_ptr<v3d::asset::Json> uiConfig = config_->get(v3d::config::Type::Ui);
+        boost::shared_ptr<v3d::asset::kind::Json> uiConfig = config_->get(v3d::config::Type::Ui);
         if (uiConfig) {
             if (!vgui_->load(uiConfig)) {
                 return false;

@@ -5,7 +5,7 @@
 
 #include "Engine.h"
 
-#include <api/asset/Json.h>
+#include <api/asset/kind/Json.h>
 #include <api/log/Logger.h>
 #include <api/ui/component/Box.h>
 #include <api/ui/component/Button.h>
@@ -35,7 +35,7 @@ Engine::Engine(const boost::shared_ptr<v3d::event::Engine>& eventEngine, const b
     eventEngine_(eventEngine), dispatcher_(dispatcher), logger_(logger) {
 }
 
-bool Engine::load(const boost::shared_ptr<v3d::asset::Json>& config) {
+bool Engine::load(const boost::shared_ptr<v3d::asset::kind::Json>& config) {
     Loader loader(eventEngine_, dispatcher_, logger_);
     if (!loader.load(config->document())) {
         return false;

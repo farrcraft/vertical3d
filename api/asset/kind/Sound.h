@@ -5,15 +5,14 @@
 
 #pragma once
 
+#include <api/asset/Asset.h>
 #include <api/audio/AudioClip.h>
 
 #include <string>
 
-#include "Asset.h"
-
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::asset {
+namespace v3d::asset::kind {
 /**
  **/
 class Sound : public Asset {
@@ -29,4 +28,4 @@ class Sound : public Asset {
  private:
     boost::shared_ptr<v3d::audio::AudioClip> clip_;
 };
-};  // namespace v3d::asset
+};  // namespace v3d::asset::kind

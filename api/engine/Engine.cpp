@@ -101,7 +101,7 @@ bool Engine::readMappingDestination(const boost::json::object& mapping, v3d::eve
 }
 
 bool Engine::registerEventMappings() {
-    boost::shared_ptr<v3d::asset::Json> mappingConfig = config_->get(v3d::config::Type::Binding);
+    boost::shared_ptr<v3d::asset::kind::Json> mappingConfig = config_->get(v3d::config::Type::Binding);
     if (!mappingConfig) {
         return true;
     }
@@ -211,7 +211,7 @@ bool Engine::initialize(int features) {
         int width = -1;
         int height = -1;
         if (features_ & Feature::Config) {
-            boost::shared_ptr<v3d::asset::Json> windowConfig = config_->get(v3d::config::Type::Window);
+            boost::shared_ptr<v3d::asset::kind::Json> windowConfig = config_->get(v3d::config::Type::Window);
             if (windowConfig) {
                 auto const doc = windowConfig->document();
                 auto const window = doc.at("window");

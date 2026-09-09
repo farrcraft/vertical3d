@@ -5,15 +5,14 @@
 
 #pragma once
 
+#include <api/asset/Asset.h>
 #include <api/font/Font2D.h>
 
 #include <string>
 
-#include "Asset.h"
-
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::asset {
+namespace v3d::asset::kind {
 /**
  **/
 class Font2D : public Asset {
@@ -29,4 +28,4 @@ class Font2D : public Asset {
  private:
     boost::shared_ptr<v3d::font::Font2D> font_;
 };
-};  // namespace v3d::asset
+};  // namespace v3d::asset::kind

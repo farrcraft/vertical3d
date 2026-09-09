@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include <api/asset/Json.h>
 #include <api/asset/Manager.h>
+#include <api/asset/kind/Json.h>
 
 #include <unordered_map>
 #include <string>
@@ -38,11 +38,11 @@ class Config final {
     /**
      * Get a loaded config
      **/
-    boost::shared_ptr<v3d::asset::Json> get(Type configType);
+    boost::shared_ptr<v3d::asset::kind::Json> get(Type configType);
 
  private:
     boost::shared_ptr<v3d::log::Logger> logger_;
-    std::unordered_map<Type, boost::shared_ptr<v3d::asset::Json> > configs_;
+    std::unordered_map<Type, boost::shared_ptr<v3d::asset::kind::Json> > configs_;
 };
 };  // namespace v3d::config
 

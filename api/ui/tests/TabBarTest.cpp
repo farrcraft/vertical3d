@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/asset/Json.h>
+#include <api/asset/kind/Json.h>
 #include <api/render/realtime/Canvas.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
@@ -219,7 +219,7 @@ BOOST_AUTO_TEST_CASE(the_loader_reads_a_strip_of_pages) {
     boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
         boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,
         boost::make_shared<v3d::log::Logger>());
-    BOOST_REQUIRE(ui->load(boost::make_shared<v3d::asset::Json>(
+    BOOST_REQUIRE(ui->load(boost::make_shared<v3d::asset::kind::Json>(
         "vgui", v3d::asset::Type::JsonDocument, boost::json::parse(document).as_object())));
 
     const boost::shared_ptr<v3d::ui::component::TabBar> panels =

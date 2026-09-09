@@ -10,7 +10,7 @@
 #define NOMINMAX
 #endif
 
-#include <api/asset/Json.h>
+#include <api/asset/kind/Json.h>
 #include <api/event/kind/Sound.h>
 #include <api/log/Logger.h>
 
@@ -103,7 +103,7 @@ class Engine final {
      * @return false when the document is malformed, or when a clip it named would not
      *         load - the clips that did load are kept either way
      **/
-    bool load(const boost::shared_ptr<v3d::asset::Json> & config, const Resolve & resolve);
+    bool load(const boost::shared_ptr<v3d::asset::kind::Json> & config, const Resolve & resolve);
 
     /**
      * File an already loaded clip under the id a sound event will name.

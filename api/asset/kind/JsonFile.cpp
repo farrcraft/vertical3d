@@ -8,7 +8,7 @@
 #include <cstdio>
 #include <string>
 
-namespace v3d::asset {
+namespace v3d::asset::kind {
 
 /**
  **/
@@ -108,4 +108,4 @@ std::size_t JsonFile::read(char* data, std::size_t size) {
     return nread;
 }
 
-};  // namespace v3d::asset
+};  // namespace v3d::asset::kind

@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/asset/Json.h>
+#include <api/asset/kind/Json.h>
 #include <api/log/Logger.h>
 #include <api/type/CameraProfile.h>
 
@@ -39,7 +39,7 @@ class CameraProfiles final {
      * @param config the parsed cameras.json
      * @return whether the table was understood
      **/
-    bool load(const boost::shared_ptr<v3d::asset::Json>& config);
+    bool load(const boost::shared_ptr<v3d::asset::kind::Json>& config);
 
     /**
      * @param name the profile name, as whatever names a view names it

@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/asset/Json.h>
+#include <api/asset/kind/Json.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
 #include <api/ui/component/Panel.h>
@@ -33,7 +33,7 @@ struct Fixture final {
         ui = boost::make_shared<v3d::ui::Engine>(
             boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,
             boost::make_shared<v3d::log::Logger>());
-        BOOST_REQUIRE(ui->load(boost::make_shared<v3d::asset::Json>("vgui",
+        BOOST_REQUIRE(ui->load(boost::make_shared<v3d::asset::kind::Json>("vgui",
             v3d::asset::Type::JsonDocument, boost::json::parse(document).as_object())));
         keys = boost::make_shared<v3d::ui::input::Keys>(ui, dispatcher);
     }

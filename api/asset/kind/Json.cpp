@@ -7,7 +7,7 @@
 
 #include <string>
 
-namespace v3d::asset {
+namespace v3d::asset::kind {
 
 /**
  **/
@@ -22,4 +22,4 @@ boost::json::object const& Json::document() {
     return document_;
 }
 
-};  // namespace v3d::asset
+};  // namespace v3d::asset::kind

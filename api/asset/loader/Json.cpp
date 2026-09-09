@@ -5,9 +5,9 @@
 
 #include "Json.h"
 
-#include <api/asset/Json.h>
-#include <api/asset/JsonFile.h>
 #include <api/asset/Type.h>
+#include <api/asset/kind/Json.h>
+#include <api/asset/kind/JsonFile.h>
 
 #include <iostream>
 #include <string>
@@ -25,10 +25,10 @@ loader::Json::Json(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& 
 /**
  **/
 boost::shared_ptr<Asset> loader::Json::load(std::string_view name) {
-    boost::shared_ptr<v3d::asset::Json> asset;
+    boost::shared_ptr<v3d::asset::kind::Json> asset;
     try {
         logger_->get()->info("Looking for json asset at: {}", name);
-        JsonFile file(static_cast<std::string>(name).c_str(), "r");
+        kind::JsonFile file(static_cast<std::string>(name).c_str(), "r");
         boost::json::stream_parser parser;
         boost::system::error_code err;
         do {
@@ -46,7 +46,7 @@ boost::shared_ptr<Asset> loader::Json::load(std::string_view name) {
         auto const document = parser.release();
         //  boost::json::object const& object = document.as_object();
 
-        asset = boost::make_shared<v3d::asset::Json>(std::string(name), Type::JsonDocument, document.as_object());
+        asset = boost::make_shared<v3d::asset::kind::Json>(std::string(name), Type::JsonDocument, document.as_object());
     }
     catch (std::exception const& e) {
         logger_->get()->error("Caught exception loading JSON asset: {}", e.what());

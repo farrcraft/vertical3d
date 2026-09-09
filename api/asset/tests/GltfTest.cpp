@@ -4,8 +4,8 @@
  **/
 
 #include <api/asset/Manager.h>
-#include <api/asset/Model.h>
 #include <api/asset/Type.h>
+#include <api/asset/kind/Model.h>
 #include <api/asset/loader/Gltf.h>
 #include <api/image/Compare.h>
 #include <api/image/Factory.h>
@@ -32,10 +32,10 @@ boost::shared_ptr<v3d::log::Logger> logger() {
     return boost::make_shared<v3d::log::Logger>();
 }
 
-boost::shared_ptr<v3d::asset::Model> loadAsset(const char* name) {
+boost::shared_ptr<v3d::asset::kind::Model> loadAsset(const char* name) {
     v3d::asset::Manager manager("data", logger());
     boost::shared_ptr<v3d::asset::Asset> asset = manager.load(name, v3d::asset::Type::ModelGltf);
-    return boost::dynamic_pointer_cast<v3d::asset::Model>(asset);
+    return boost::dynamic_pointer_cast<v3d::asset::kind::Model>(asset);
 }
 
 boost::shared_ptr<v3d::type::Model> load(const char* name) {
@@ -44,7 +44,7 @@ boost::shared_ptr<v3d::type::Model> load(const char* name) {
     if (!asset) {
         return boost::shared_ptr<v3d::type::Model>();
     }
-    boost::shared_ptr<v3d::asset::Model> model = boost::dynamic_pointer_cast<v3d::asset::Model>(asset);
+    boost::shared_ptr<v3d::asset::kind::Model> model = boost::dynamic_pointer_cast<v3d::asset::kind::Model>(asset);
     return model ? model->model() : boost::shared_ptr<v3d::type::Model>();
 }
 
@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE(gltf_names_the_texture_rather_than_decoding_it_test) {
  * to exactly what the png reader makes of the same bytes on disk.
  **/
 BOOST_AUTO_TEST_CASE(gltf_decodes_a_texture_the_file_carries_test) {
-    boost::shared_ptr<v3d::asset::Model> asset = loadAsset(EMBEDDED);
+    boost::shared_ptr<v3d::asset::kind::Model> asset = loadAsset(EMBEDDED);
     BOOST_REQUIRE(asset);
     BOOST_REQUIRE(asset->model());
 
@@ -155,7 +155,7 @@ BOOST_AUTO_TEST_CASE(gltf_decodes_a_texture_the_file_carries_test) {
  * by asking rather than by knowing which packaging it loaded.
  **/
 BOOST_AUTO_TEST_CASE(gltf_a_named_texture_carries_no_pixels_test) {
-    boost::shared_ptr<v3d::asset::Model> asset = loadAsset(FIXTURE);
+    boost::shared_ptr<v3d::asset::kind::Model> asset = loadAsset(FIXTURE);
     BOOST_REQUIRE(asset);
 
     BOOST_CHECK(!asset->baseColourImage());
@@ -177,7 +177,7 @@ BOOST_AUTO_TEST_CASE(gltf_resolves_by_extension_test) {
     // .glb and .gltf both reach the model loader, so an app naming a file gets one without
     // naming the type
     boost::shared_ptr<v3d::asset::Asset> asset = manager.loadTypeFromExt(FIXTURE);
-    BOOST_CHECK_EQUAL(static_cast<bool>(boost::dynamic_pointer_cast<v3d::asset::Model>(asset)), true);
+    BOOST_CHECK_EQUAL(static_cast<bool>(boost::dynamic_pointer_cast<v3d::asset::kind::Model>(asset)), true);
 }
 
 BOOST_AUTO_TEST_CASE(gltf_vertex_bytes_is_the_array_size_test) {

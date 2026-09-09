@@ -7,7 +7,7 @@
 
 #include <string>
 
-namespace v3d::asset {
+namespace v3d::asset::kind {
 
 /**
  **/
@@ -22,4 +22,4 @@ std::string const& Text::content() {
     return content_;
 }
 
-};  // namespace v3d::asset
+};  // namespace v3d::asset::kind

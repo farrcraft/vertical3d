@@ -47,7 +47,7 @@ bool Engine::initialize() {
     window_->caption("Odyssey");
 
     map_ = boost::make_shared<odyssey::tile::Map>(logger_);
-    if (!map_->load(boost::dynamic_pointer_cast<v3d::asset::Json>(
+    if (!map_->load(boost::dynamic_pointer_cast<v3d::asset::kind::Json>(
             assetManager_->loadTypeFromExt(mapName)))) {
         // the map is the board and the collision rules both, so there is no sensible game
         // without one - the loader has already said what it could not read

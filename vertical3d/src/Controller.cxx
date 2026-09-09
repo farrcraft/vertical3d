@@ -130,7 +130,7 @@ bool Controller::buildViews() {
 /**
  **/
 bool Controller::buildUi() {
-    boost::shared_ptr<v3d::asset::Json> config = config_->get(v3d::config::Type::Ui);
+    boost::shared_ptr<v3d::asset::kind::Json> config = config_->get(v3d::config::Type::Ui);
     if (!config) {
         logger_->get()->error("The editor has no ui config, so it would have no menus");
         return false;

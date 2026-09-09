@@ -5,13 +5,13 @@
 
 #pragma once
 
-#include <string>
+#include <api/asset/Asset.h>
 
-#include "Asset.h"
+#include <string>
 
 #include <boost/json.hpp>
 
-namespace v3d::asset {
+namespace v3d::asset::kind {
 /**
  * A JSON document asset
  **/
@@ -28,4 +28,4 @@ class Json final : public Asset {
  private:
     boost::json::object document_;
 };
-};  // namespace v3d::asset
+};  // namespace v3d::asset::kind

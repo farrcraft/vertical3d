@@ -5,8 +5,8 @@
 
 #include "Gltf.h"
 
-#include <api/asset/Model.h>
 #include <api/asset/Type.h>
+#include <api/asset/kind/Model.h>
 #include <api/image/Factory.h>
 
 #include <cstddef>
@@ -214,7 +214,7 @@ boost::shared_ptr<Asset> Gltf::load(std::string_view name) {
         return boost::shared_ptr<Asset>();
     }
 
-    return boost::make_shared<Model>(std::string(name), Type::ModelGltf, model, baseColour);
+    return boost::make_shared<kind::Model>(std::string(name), Type::ModelGltf, model, baseColour);
 }
 
 /**

@@ -178,7 +178,7 @@ bool readSprites(const boost::json::object& entry, SpriteSheet* sheet,
 
 /**
  **/
-bool SpriteSheets::load(const boost::shared_ptr<v3d::asset::Json>& config) {
+bool SpriteSheets::load(const boost::shared_ptr<v3d::asset::kind::Json>& config) {
     if (!config) {
         return false;
     }

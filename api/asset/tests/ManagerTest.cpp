@@ -3,12 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/asset/Image.h>
-#include <api/asset/Json.h>
 #include <api/asset/Manager.h>
-#include <api/asset/Sound.h>
-#include <api/asset/Text.h>
 #include <api/asset/Type.h>
+#include <api/asset/kind/Image.h>
+#include <api/asset/kind/Json.h>
+#include <api/asset/kind/Sound.h>
+#include <api/asset/kind/Text.h>
 
 #include <stdexcept>
 #include <string>
@@ -63,13 +63,13 @@ BOOST_AUTO_TEST_CASE(manager_type_from_extension_test) {
     auto assets = manager();
 
     auto document = assets->loadTypeFromExt("document.json");
-    BOOST_TEST(static_cast<bool>(boost::dynamic_pointer_cast<v3d::asset::Json>(document)));
+    BOOST_TEST(static_cast<bool>(boost::dynamic_pointer_cast<v3d::asset::kind::Json>(document)));
 
     auto picture = assets->loadTypeFromExt("pixel.png");
-    BOOST_TEST(static_cast<bool>(boost::dynamic_pointer_cast<v3d::asset::Image>(picture)));
+    BOOST_TEST(static_cast<bool>(boost::dynamic_pointer_cast<v3d::asset::kind::Image>(picture)));
 
     auto sound = assets->loadTypeFromExt("tone.wav");
-    auto clip = boost::dynamic_pointer_cast<v3d::asset::Sound>(sound);
+    auto clip = boost::dynamic_pointer_cast<v3d::asset::kind::Sound>(sound);
     BOOST_REQUIRE(clip);
     BOOST_TEST(static_cast<bool>(clip->clip()));
     BOOST_TEST(clip->clip()->audio() != nullptr);

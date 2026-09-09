@@ -527,9 +527,26 @@ directory is the one to take.
 `Type` stay.
 
 That leaves `asset/`, `asset/kind/` and `asset/loader/` as three layers that read in order: the
-framework, the things it holds, and the readers that produce them. It also stops `Loader.h` from
-sitting on top of `loader/`, and it separates the two `Font2D`s and the two `TextureFont`s inside
-this library — which is three of each name across the tree today, counting `api/font`.
+framework, the things it holds, and the readers that produce them.
+
+**Two of this step's three stated reasons were wrong, and it was done anyway for the third.**
+
+- **`Loader.h` above `loader/` is not a wart.** `asset::Loader` is the base class and
+  `asset::loader::Png` derives from it, which is the same shape
+  [`api/image`](../../api/image/) uses for `image::Reader` and `image::reader::Png`. It is a
+  pattern in this tree, not a mistake, and this plan was wrong to call it one.
+- **The three `Font2D.h` were already told apart** by steps 2 and 3 — an include reads
+  `<api/asset/Font2D.h>` or `<api/font/Font2D.h>` and says which it means. That reason expired
+  before this step was reached.
+- **What remains is the real one**: 27 files interleaving a caching framework with the eight
+  things it caches, alphabetically. The cost was `asset::kind::Json` at 54 call sites.
+
+**It found something the plan had not predicted.** `api/asset` holds **four pairs of same-named
+types** — `loader::Json` and `kind::Json`, and the same for `Text`, `Font2D` and `TextureFont`.
+Before the move they were `loader::Json` and `asset::Json`, related by an enclosing namespace, so
+inside `loader/Json.cpp` a bare `Json` meant the loader and the payload was reached by scoping.
+Both halves are now named explicitly, which is a better argument for this step than either of the
+two that failed.
 
 **Additive.**
 

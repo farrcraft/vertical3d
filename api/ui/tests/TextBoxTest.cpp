@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/asset/Json.h>
+#include <api/asset/kind/Json.h>
 #include <api/render/realtime/Canvas.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
@@ -44,7 +44,7 @@ struct Fixture final {
         ui = boost::make_shared<v3d::ui::Engine>(
             boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,
             boost::make_shared<v3d::log::Logger>());
-        BOOST_REQUIRE(ui->load(boost::make_shared<v3d::asset::Json>("vgui", v3d::asset::Type::JsonDocument,
+        BOOST_REQUIRE(ui->load(boost::make_shared<v3d::asset::kind::Json>("vgui", v3d::asset::Type::JsonDocument,
             boost::json::parse(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [] } ] })").as_object())));
         container = ui->container("hud");
         BOOST_REQUIRE(container);
@@ -310,7 +310,7 @@ BOOST_AUTO_TEST_CASE(a_box_is_sized_by_its_room_and_not_by_its_text) {
  **/
 BOOST_AUTO_TEST_CASE(a_loaded_box_asks_for_the_press_and_the_keyboard) {
     Fixture fixture;
-    BOOST_REQUIRE(fixture.ui->load(boost::make_shared<v3d::asset::Json>("vgui", v3d::asset::Type::JsonDocument,
+    BOOST_REQUIRE(fixture.ui->load(boost::make_shared<v3d::asset::kind::Json>("vgui", v3d::asset::Type::JsonDocument,
         boost::json::parse(R"({ "themes": [], "containers": [ { "name": "form", "visible": true, "components": [
             { "name": "search", "type": "textbox", "text": "abc", "placeholder": "Search", "limit": 8 } ] } ] })").as_object())));
 

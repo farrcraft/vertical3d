@@ -5,7 +5,7 @@
 
 #include "Project.h"
 
-#include <api/asset/JsonFile.h>
+#include <api/asset/kind/JsonFile.h>
 #include <api/asset/Writer.h>
 #include <api/brep/BRep.h>
 #include <api/brep/Face.h>
@@ -314,7 +314,7 @@ bool Project::read(const std::string& path, const boost::shared_ptr<Scene>& scen
         return false;
     }
 
-    const std::string text = v3d::asset::read_file(path.c_str());
+    const std::string text = v3d::asset::kind::read_file(path.c_str());
     if (text.empty()) {
         logger_->get()->error("No project to read at {}", path);
         return false;

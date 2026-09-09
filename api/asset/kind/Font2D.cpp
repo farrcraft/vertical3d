@@ -7,7 +7,7 @@
 
 #include <string>
 
-namespace v3d::asset {
+namespace v3d::asset::kind {
 /**
  **/
 Font2D::Font2D(const std::string& name, Type t, boost::shared_ptr<v3d::font::Font2D> font) :
@@ -21,4 +21,4 @@ boost::shared_ptr<v3d::font::Font2D> Font2D::font() {
     return font_;
 }
 
-};  // namespace v3d::asset
+};  // namespace v3d::asset::kind

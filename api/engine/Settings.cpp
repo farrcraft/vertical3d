@@ -5,9 +5,9 @@
 
 #include "Settings.h"
 
-#include <api/asset/Json.h>
 #include <api/asset/Manager.h>
 #include <api/asset/Writer.h>
+#include <api/asset/kind/Json.h>
 
 #include <string>
 
@@ -66,8 +66,8 @@ bool Settings::load() {
     // through the loader every other document is read with; it answers null for one it
     // could not parse
     v3d::asset::Manager assets(directory_, logger_);
-    const boost::shared_ptr<v3d::asset::Json> document =
-        boost::dynamic_pointer_cast<v3d::asset::Json>(assets.loadTypeFromExt(DOCUMENT));
+    const boost::shared_ptr<v3d::asset::kind::Json> document =
+        boost::dynamic_pointer_cast<v3d::asset::kind::Json>(assets.loadTypeFromExt(DOCUMENT));
     if (!document) {
         logger_->get()->error("{} is not a settings document - running on defaults", path_);
         return false;
