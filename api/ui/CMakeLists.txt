@@ -32,7 +32,7 @@ v3d_add_api_library(ui
 	"component/TabPage.h" "component/TabPage.cpp"
 	"component/TextBox.h" "component/TextBox.cpp"
 	"component/Toolbar.h" "component/Toolbar.cpp"
-	"component/Type.h"
+	"component/Type.h" "component/Type.cpp"
 	"component/VerticalBox.h" "component/VerticalBox.cpp"
 	"component/menu/Menu.h" "component/menu/Menu.cpp"
 	"component/menu/MenuBar.h" "component/menu/MenuBar.cpp"

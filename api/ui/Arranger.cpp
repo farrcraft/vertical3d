@@ -203,11 +203,24 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::Bound2D& room
                 ? glm::vec2(styles_.base().scrollbarWidth, room.size().y)
                 : glm::vec2(room.size().x, styles_.base().scrollbarWidth);
         }
-        default:
+        case component::Type::Bar:
+        case component::Type::HorizontalBox:
+        case component::Type::Menu:
+        case component::Type::MenuBar:
+        case component::Type::MenuItem:
+        case component::Type::Panel:
+        case component::Type::TabBar:
+        case component::Type::TabPage:
+        case component::Type::Toolbar:
+        case component::Type::Undefined:
+        case component::Type::VerticalBox:
             // a panel, a bar and a box decide nothing for themselves, so an Auto extent on
             // one is the room it is in
-            return room.size();
+            break;
     }
+    // every enumerator is handled above and the switch carries no default, so C4062 names
+    // this function when a component type is added - see ADR-0047
+    return room.size();
 }
 
 /**

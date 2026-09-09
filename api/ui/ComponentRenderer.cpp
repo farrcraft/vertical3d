@@ -163,8 +163,19 @@ void ComponentRenderer::paint(v3d::render::realtime::Canvas* canvas,
         case component::Type::Icon:
             draw(canvas, boost::dynamic_pointer_cast<component::Icon>(component));
             break;
-        default:
-            // a box draws nothing of its own - it is whatever it holds
+        case component::Type::HorizontalBox:
+        case component::Type::VerticalBox:
+        case component::Type::TabPage:
+        case component::Type::Undefined:
+        case component::Type::Menu:
+        case component::Type::MenuBar:
+        case component::Type::MenuItem:
+        case component::Type::Toolbar:
+            // two kinds of nothing, drawn by one branch because they are the same nothing to
+            // the walk. A box draws nothing of its own - it is whatever it holds - and a tab
+            // page is a box whose bar draws the strip above it. A strip places and draws what
+            // it holds itself, so the walk is handed nothing to do: ComponentRenderer::draw
+            // has an overload per strip that the ui engine calls instead
             break;
     }
     ring(canvas, component);

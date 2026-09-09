@@ -118,7 +118,25 @@ bool Keys::act(const boost::shared_ptr<Component>& component, std::string_view k
             return choose(boost::dynamic_pointer_cast<component::SelectList>(component), key);
         case component::Type::TabBar:
             return turn(boost::dynamic_pointer_cast<component::TabBar>(component), key);
-        default:
+        case component::Type::Bar:
+        case component::Type::Button:
+        case component::Type::CheckBox:
+        case component::Type::HorizontalBox:
+        case component::Type::Icon:
+        case component::Type::Label:
+        case component::Type::Menu:
+        case component::Type::MenuBar:
+        case component::Type::MenuItem:
+        case component::Type::Panel:
+        case component::Type::RadioButton:
+        case component::Type::Scrollbar:
+        case component::Type::TabPage:
+        case component::Type::Toolbar:
+        case component::Type::Undefined:
+        case component::Type::VerticalBox:
+            // nothing here steps through anything it holds, so the only key it answers is the
+            // one that activates it - which is what falls out of the switch. A scrollbar is
+            // the exception worth naming: it holds a position a key could move, and takes none
             break;
     }
     if (!activates(key)) {

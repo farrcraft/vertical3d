@@ -37,13 +37,32 @@ v3d::event::Event command(const boost::shared_ptr<Component>& component) {
                 boost::dynamic_pointer_cast<component::SelectList>(component);
             return list ? list->event() : v3d::event::Event();
         }
-        default:
-            // a panel, a label, a bar, a tab bar - pickable and focusable so that they take
-            // a press or a key off whatever is under them, and carrying no command of their own.
-            // A text box is here too: it carries a command, but a click into one is somebody
-            // starting to type rather than saying they are done, so only a return sends it
+        case component::Type::Bar:
+        case component::Type::HorizontalBox:
+        case component::Type::Icon:
+        case component::Type::Label:
+        case component::Type::Menu:
+        case component::Type::MenuBar:
+        case component::Type::MenuItem:
+        case component::Type::Panel:
+        case component::Type::Scrollbar:
+        case component::Type::TabBar:
+        case component::Type::TabPage:
+        case component::Type::Toolbar:
+        case component::Type::Undefined:
+        case component::Type::VerticalBox:
+            // nothing here carries a command. A box is whatever it holds, a strip routes its
+            // own press, a bar and a tab bar own what they show rather than sending it, and a
+            // panel or a label is pickable only so that it takes a press off what is under it.
+            // A text box is here for a different reason: it carries a command, but a click into
+            // one is somebody starting to type rather than saying they are done, so only a
+            // return sends it and ui::Keys reaches for the event itself
+        case component::Type::TextBox:
             return v3d::event::Event();
     }
+    // every enumerator is handled above and the switch carries no default, so C4062 names
+    // this function when a component type is added - see ADR-0047
+    return v3d::event::Event();
 }
 
 };  // namespace v3d::ui

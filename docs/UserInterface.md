@@ -349,7 +349,9 @@ boxes the draw left or on the primitives it emitted. [Testing.md](Testing.md) ha
 - **Nothing enforces which of the two ways to use.** The rule above is a rule of thumb in a
   document, and a reader who wants a HUD out of `Immediate` will get one that flickers under
   the cursor rather than an error.
-- **Adding a component means editing five places** — `component::Type`, the loader's branch,
-  the renderer's paint switch, the Arranger's `natural()`, and the cursor's — and the compiler
-  checks none of them against the others. The split between layout and paint moved two of
-  those into their own files; it did not reduce the count.
+- **Adding a component means editing seven places** — `component::Type`, `component::name()`,
+  the loader's branch, the renderer's paint switch, the Arranger's `natural()`, the cursor's
+  and the keys'. The compiler now names all seven
+  ([ADR-0047](adr/0047-a-component-type-is-checked-by-the-compiler.md)), so forgetting one is
+  a build error rather than a component that silently is not there — but the count is
+  unchanged, and a registry is the only thing that would reduce it.

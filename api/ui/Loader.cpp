@@ -264,51 +264,61 @@ bool Loader::loadTheme(const boost::json::object& entry) {
 }
 
 boost::shared_ptr<Component> Loader::buildComponent(const std::string& componentType, const boost::json::object& entry) {
-    boost::shared_ptr<Component> component;
-    if (componentType == "menu") {
-        boost::shared_ptr<component::Menu> menu = loadMenu(entry);
-        if (!menu) {
-            return nullptr;
+    // the config's vocabulary is component::name()'s, so this switches on what a type is
+    // rather than on what it was spelled. An exhaustive switch, per ADR-0047: a component
+    // added to the enum names this function until it is given a way to be built
+    switch (component::parse(componentType)) {
+        case component::Type::Menu: {
+            boost::shared_ptr<component::Menu> menu = loadMenu(entry);
+            if (!menu) {
+                return nullptr;
+            }
+            // this is the menu the app navigates, so it starts as its own active level
+            menu->level(menu);
+            return menu;
         }
-        // this is the menu the app navigates, so it starts as its own active level
-        menu->level(menu);
-        component = menu;
-    } else if (componentType == "menubar") {
-        component = loadMenuBar(entry);
-    } else if (componentType == "toolbar") {
-        component = loadToolbar(entry);
-    } else if (componentType == "button") {
-        component = loadButton(entry);
-    } else if (componentType == "label") {
-        component = loadLabel(entry);
-    } else if (componentType == "icon") {
-        component = loadIcon(entry);
-    } else if (componentType == "panel") {
-        component = loadPanel(entry);
-    } else if (componentType == "bar") {
-        component = loadBar(entry);
-    } else if (componentType == "scrollbar") {
-        component = loadScrollbar(entry);
-    } else if (componentType == "list") {
-        component = loadSelectList(entry);
-    } else if (componentType == "textbox") {
-        component = loadTextBox(entry);
-    } else if (componentType == "tabs") {
-        component = boost::make_shared<component::TabBar>();
-    } else if (componentType == "tab") {
-        component = loadTabPage(entry);
-    } else if (componentType == "checkbox") {
-        boost::shared_ptr<component::CheckBox> box = boost::make_shared<component::CheckBox>();
-        loadCheckBox(entry, box);
-        component = box;
-    } else if (componentType == "radio") {
-        component = loadRadioButton(entry);
-    } else if (componentType == "vbox" || componentType == "hbox") {
-        component = loadFlowBox(componentType, entry);
-    } else {
-        logger_->get()->error("Unrecognized ui component type [{}]", componentType);
+        case component::Type::MenuBar:
+            return loadMenuBar(entry);
+        case component::Type::Toolbar:
+            return loadToolbar(entry);
+        case component::Type::Button:
+            return loadButton(entry);
+        case component::Type::Label:
+            return loadLabel(entry);
+        case component::Type::Icon:
+            return loadIcon(entry);
+        case component::Type::Panel:
+            return loadPanel(entry);
+        case component::Type::Bar:
+            return loadBar(entry);
+        case component::Type::Scrollbar:
+            return loadScrollbar(entry);
+        case component::Type::SelectList:
+            return loadSelectList(entry);
+        case component::Type::TextBox:
+            return loadTextBox(entry);
+        case component::Type::TabBar:
+            return boost::make_shared<component::TabBar>();
+        case component::Type::TabPage:
+            return loadTabPage(entry);
+        case component::Type::CheckBox: {
+            boost::shared_ptr<component::CheckBox> box = boost::make_shared<component::CheckBox>();
+            loadCheckBox(entry, box);
+            return box;
+        }
+        case component::Type::RadioButton:
+            return loadRadioButton(entry);
+        case component::Type::HorizontalBox:
+        case component::Type::VerticalBox:
+            return loadFlowBox(componentType, entry);
+        case component::Type::MenuItem:
+            // built by the menu that holds it rather than named as a component of its own, so
+            // parse() never answers this and a config that spelled it lands on Undefined below
+        case component::Type::Undefined:
+            break;
     }
-    return component;
+    logger_->get()->error("Unrecognized ui component type [{}]", componentType);
+    return nullptr;
 }
 
 boost::shared_ptr<Component> Loader::loadComponent(const boost::json::object& entry) {
@@ -323,7 +333,8 @@ boost::shared_ptr<Component> Loader::loadComponent(const boost::json::object& en
     component->name(componentName);
     // a menu and a menu bar are placed entirely by the renderer, so reading a box onto one
     // would be read and then written over
-    if (componentType != "menu" && componentType != "menubar") {
+    const component::Type type = component::parse(componentType);
+    if (type != component::Type::Menu && type != component::Type::MenuBar) {
         loadAttributes(entry, component);
     }
     if (!loadChildren(entry, component)) {

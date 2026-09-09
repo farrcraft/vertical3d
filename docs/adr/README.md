@@ -55,3 +55,4 @@ old record's status and leave the file in place.
 | [0044](0044-a-sampled-depth-target-is-read-only.md) | Sampled Depth — Asking For A Readable Depth Target Chooses The Format, And The Recorder Leaves It Read Only | accepted | 2026-09-07 |
 | [0045](0045-a-window-is-dragged-by-the-bar-that-folds-it.md) | Window Dragging — The Title Bar Both Folds And Moves, And The Caller Still Owns Where A Window Starts | accepted | 2026-09-08 |
 | [0046](0046-a-table-given-a-height-scrolls-in-its-own-right.md) | Table Scrolling — A Table Given A Height Scrolls Its Own Rows, And Its Header Stays Above Them | accepted | 2026-09-08 |
+| [0047](0047-a-component-type-is-checked-by-the-compiler.md) | UI Components — A Switch Over A Component Type Is Exhaustive, And The Compiler Names Every Place One Was Forgotten | accepted | 2026-09-08 |

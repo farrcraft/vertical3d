@@ -74,6 +74,13 @@ repository and no build of a consumer that has nested it. The tree is clean at `
 warning is a new one. Use `-DV3D_WARNINGS_AS_ERRORS=OFF` to get past it rather than editing the
 flag.
 
+**`/w14062` is on**, which is not a `/W4` default. It reports an enumerator a switch does not
+handle, and only for a switch carrying no `default:` label — so it bites exactly where the
+author meant the switch to be complete, and a switch that wants a catch-all keeps one by
+writing `default:`. `api/ui` depends on it: a switch over `component::Type` is exhaustive so
+that adding a component fails the build in every place that has to decide about it, per
+[ADR-0047](adr/0047-a-component-type-is-checked-by-the-compiler.md).
+
 **`/analyze`** is `-DV3D_ANALYZE=ON`, off by default because it costs several times a plain
 compile of the tree. Its findings are the C6xxx and C26xxx numbers, and they reach `/WX` like
 any other warning. Nothing in the tree reports at it.

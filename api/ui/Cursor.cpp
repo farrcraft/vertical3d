@@ -221,7 +221,24 @@ void Cursor::act(const boost::shared_ptr<Component>& component, const glm::vec2&
             // what was clicked and then follows the cursor until the press comes up
             boost::dynamic_pointer_cast<component::Scrollbar>(component)->drag(point);
             return;
-        default:
+        case component::Type::Bar:
+        case component::Type::Button:
+        case component::Type::CheckBox:
+        case component::Type::HorizontalBox:
+        case component::Type::Icon:
+        case component::Type::Label:
+        case component::Type::Menu:
+        case component::Type::MenuBar:
+        case component::Type::MenuItem:
+        case component::Type::Panel:
+        case component::Type::RadioButton:
+        case component::Type::TabPage:
+        case component::Type::TextBox:
+        case component::Type::Toolbar:
+        case component::Type::Undefined:
+        case component::Type::VerticalBox:
+            // nothing here owns a place a press moves it to, so the press is the command and
+            // nothing else - which is what falls out of the switch into dispatch()
             break;
     }
     dispatch(component);
