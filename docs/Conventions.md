@@ -39,6 +39,12 @@ where this document does not say otherwise.
 - Third-party includes in angle brackets — boost, glm — go last, below the project's own. They
   are exempt from the rule above because their names do not end in `.h`, so the linter files
   them with the project's headers rather than with the system's.
+- **A directory splits when its files stop sharing a reader, not when it passes a file count.**
+  `api/dag` is eighteen files and 493 lines and wants nothing done to it, because they are one
+  concept; `api/ui` had 36 files above its subdirectories doing five different jobs, and they
+  are `paint/`, `input/`, `shell/` and `style/` now. A namespace follows the directory, so a
+  class whose name already carries the group word drops it — `pipeline::Builder`, not
+  `pipeline::PipelineBuilder`. Where the group *is* the noun, the name stays: `device::Device`.
 - [.gitattributes](../.gitattributes) enforces LF (`* text=auto eol=lf`). An editor that saves
   CRLF turns a small change into a whole-file diff, so strip the CRs rather than committing
   them.

@@ -57,7 +57,7 @@ implements it as `<renderer>::RIBHandler`. RIB is also what the editor exports t
 - **moya's world-to-camera transform applies as it stands.** `prepareWorld` saves the current
   transformation as the camera coordinate system, and by the RI standard that transformation
   *is* the world to camera one. A transpose or an inverse is right only when it is a rotation.
-- **talyn refuses a camera `type::CameraProfile` cannot hold**: an off centre `ScreenWindow`, a
+- **talyn refuses a camera `type::camera::Profile` cannot hold**: an off centre `ScreenWindow`, a
   non-rigid matrix, or one that reverses handedness. RI's camera basis for a general lookat
   produces exactly those. `RIBHandler::error()` says which one it was, and the reader still
   succeeds, because the request was understood.

@@ -600,6 +600,14 @@ That is the last name `api/` puts in the global namespace.
 
 ### Step 11 — The documents catch up
 
+**Landed 2026-09-08**, for every step except 4, which has not been done.
+
+**The ADRs are deliberately not updated.** [ADR-0011](../adr/0011-lines-are-the-second-primitive.md)
+names `vulkan::LineRenderer` and [ADR-0012](../adr/0012-camera-builds-vulkan-clip-space.md) names
+`v3d::type::Camera` in its title. A record says what was decided when it was decided, and
+rewriting the names inside one to match a later move falsifies it. The rename is recorded here
+and in the commits, which is where a reader following a stale name should end up.
+
 - **[Conventions.md](../Conventions.md)** took the include rule with step 3 rather than waiting
   for this step: it binds every file in the tree from the moment step 2 landed, and nothing in
   the build or the linter enforces it, so a week of it being undocumented is a week in which a

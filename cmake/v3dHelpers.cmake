@@ -7,10 +7,12 @@
 # Every library under api/ is declared with this, which gives it the four things a target
 # has to carry to be linkable from outside this tree:
 #
-#  - an include root, so a consumer writes #include <api/image/Image.h>. The root is the
-#    repository rather than api/, because api headers reach each other by relative path and
-#    no other prefix leaves those resolving unchanged. There is no INSTALL_INTERFACE half:
-#    ADR-0027 installs nothing, and a half-written export is worse than none.
+#  - an include root, so every file writes #include <api/image/Image.h> - a consumer's and
+#    this repository's alike, per ADR-0048. The root is the repository rather than api/ so
+#    that the prefix says which repository a header came from, and because sixteen per-library
+#    roots would put names like <type/Camera.h> on every consumer's search path. There is no
+#    INSTALL_INTERFACE half: ADR-0027 installs nothing, and a half-written export is worse
+#    than none.
 #  - a v3d:: alias, which is the name a consumer links and the one that would survive a
 #    later move to an installed package.
 #  - /EHsc and /utf-8 in the interface. Both are carried by the directory's own flags for

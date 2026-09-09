@@ -155,8 +155,8 @@ working one. The parts that are not obvious:
 drives `initialize()` and `eventLoop()` inside a try block that logs what a renderer threw, and
 calls `shutdown()` outside it. A windowed app has no console, so an uncaught exception is
 otherwise an abort dialog with nothing in it. [ADR-0028](adr/0028-an-apps-shell-belongs-to-the-api.md)
-covers what else an app does not have to write: `v3d::ui::TextRenderer` for a font and its
-glyphs, and `v3d::ui::GameMenu` for a menu the escape key puts up.
+covers what else an app does not have to write: `v3d::ui::paint::TextRenderer` for a font and its
+glyphs, and `v3d::ui::shell::GameMenu` for a menu the escape key puts up.
 
 **Includes are angle-bracketed and start at `api/`**: `#include <api/engine/Engine.h>`. Files
 inside the tree reach each other by relative path (`../../api/engine/Engine.h`), so the same

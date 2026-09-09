@@ -75,7 +75,7 @@ An app submits that canvas through `Engine3D::quads()` when it is done with it.
 
 ## Text is the caller's
 
-`v3d::ui::Measure` and `v3d::ui::Write` in [`Text.h`](../api/ui/Text.h) are the seam. Both
+`v3d::ui::paint::Measure` and `v3d::ui::paint::Write` in [`paint/Text.h`](../api/ui/paint/Text.h) are the seam. Both
 renderers take the pair and name no font type, which is why drawing a ui costs no device and
 why the whole library is testable without a window — per
 [ADR-0019](adr/0019-the-ui-is-laid-out-by-what-draws-it.md).
@@ -85,7 +85,7 @@ field glyphs, with the drawn size closed over per
 [ADR-0036](adr/0036-text-is-a-distinct-kind-of-quad.md). A ui at one size and a heading at
 another are two callback pairs from one `TextRenderer`, and one atlas serves both.
 
-It takes its atlas upload as a `TextRenderer::Upload` callback rather than a `QuadRenderer`,
+It takes its atlas upload as a `TextRenderer::Upload` callback rather than a `vulkan::renderer::Quad`,
 so the one thing in the class that needs a device is the one thing handed in and an app
 drawing this canvas with a renderer of its own can use the class rather than copy it. `api/ui`
 names no vulkan type anywhere as a result, which is what ADR-0019's seam was always claiming.
