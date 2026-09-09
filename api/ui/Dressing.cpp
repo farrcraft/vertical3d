@@ -16,6 +16,7 @@ panelPadding(4.0f),
 scrollbarWidth(12.0f),
 markSize(16.0f),
 borderWidth(1.0f),
+focusWidth(2.0f),
 radius(0.0f),
 panel(0.05f, 0.06f, 0.09f, 0.92f),
 border(0.35f, 0.38f, 0.45f, 1.0f),
@@ -26,7 +27,8 @@ mark(0.42f, 0.66f, 0.95f, 1.0f),
 text(0.78f, 0.80f, 0.84f, 1.0f),
 activeText(1.0f, 1.0f, 1.0f, 1.0f),
 highlight(0.16f, 0.34f, 0.58f, 1.0f),
-hover(0.16f, 0.18f, 0.24f, 1.0f) {
+hover(0.16f, 0.18f, 0.24f, 1.0f),
+focus(0.42f, 0.66f, 0.95f, 1.0f) {
 }
 
 };  // namespace v3d::ui

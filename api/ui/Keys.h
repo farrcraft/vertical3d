@@ -7,6 +7,8 @@
 
 #include <string_view>
 
+#include "../event/Event.h"
+
 #include <boost/shared_ptr.hpp>
 
 #include <entt/entt.hpp>
@@ -16,13 +18,19 @@ namespace v3d::ui {
 class Component;
 class Engine;
 
+namespace component {
+class SelectList;
+class TabBar;
+class TextBox;
+};  // namespace component
+
 /**
  * Turns a key into an edit on whatever has the focus, per ADR-0040.
  *
  * The keyboard's ui::Cursor, and the same shape: it is handed what the app's input engine
  * saw, it answers whether the ui took it, and it names the operation while the component
  * carries it out. Nothing here reaches for a component by walking the tree - the focus is
- * the ui's, given by a press, so a key goes to one place or to nowhere.
+ * the ui's, so a key goes to one place or to nowhere.
  *
  * Two kinds of input, because a key is not a character. A key names an operation - a
  * backspace, a caret move, a return that sends the command - and comes from the key names
@@ -30,8 +38,14 @@ class Engine;
  * has already been applied to it, a dead key and the one after it are one character, and
  * an input method's several keys are however many characters it decided on.
  *
- * A ui with nothing focused takes neither, which is what leaves a game's movement keys
- * working until the moment something is clicked into.
+ * Every control is driven, not only a text box. Return and space activate whatever holds
+ * the focus, sending the command a click sends because both ask ui::command() for it; the
+ * arrows step through a list's rows and a bar's pages. Only a text box takes the keys that
+ * compose text - a letter reaching a focused button goes on to the app's bindings, because
+ * a button is not something a player is typing into.
+ *
+ * A ui with nothing focused takes neither kind, which is what leaves a game's movement keys
+ * working until something is clicked into or Engine::focusFirst() starts a screen off.
  **/
 class Keys final {
  public:
@@ -64,11 +78,43 @@ class Keys final {
  private:
     /**
      * Act on a key that reached a focused component: move the caret, take a character
-     * out, or send whatever command the component carries.
+     * out, step through what the component holds, or send whatever command it carries.
      *
      * @return whether the component had anything to do with the key
      **/
     bool act(const boost::shared_ptr<Component>& component, std::string_view key);
+
+    /**
+     * A key that reached a text box: the caret moves, a character goes, or a return sends.
+     *
+     * The one component that takes every key that composes text, because a box is the one
+     * place a letter is being typed rather than played.
+     **/
+    bool edit(const boost::shared_ptr<component::TextBox>& box, std::string_view key);
+
+    /**
+     * A key that reached a select list: the arrows step through the rows and send the
+     * command, the way clicking a row does.
+     **/
+    bool choose(const boost::shared_ptr<component::SelectList>& list, std::string_view key);
+
+    /**
+     * A key that reached a tab bar: the arrows change which page is up. A bar carries no
+     * command, so nothing is sent - which is what a click on a tab does too.
+     **/
+    bool turn(const boost::shared_ptr<component::TabBar>& bar, std::string_view key);
+
+    /**
+     * Send whatever command activating a component sends, per ui::command(). A component
+     * carrying none is left alone rather than being an error.
+     **/
+    void send(const boost::shared_ptr<Component>& component) const;
+
+    /**
+     * Send one event. An event with no context is not dispatchable and is dropped, which
+     * is what a component nobody gave a command to carries.
+     **/
+    void send(const v3d::event::Event& event) const;
 
     boost::shared_ptr<Engine> ui_;
     boost::shared_ptr<entt::dispatcher> dispatcher_;

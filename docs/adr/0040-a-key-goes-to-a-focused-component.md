@@ -34,6 +34,37 @@ puts it in. `Keys::press()` handles the keys that name an operation — backspac
 caret moves, return, escape — and also consumes the keys that will arrive again as characters,
 so that typing "w" into a box does not also walk the player forward.
 
+### Amendment: every control is driven, not only a text box
+
+The decision above was implemented for `TextBox` alone, which left a screen of buttons
+unreachable: `Keys::act()` answered no other component, nothing but `TextBox` set
+`focusable()`, and a focused component was drawn exactly like an unfocused one. Three further
+decisions close that, none of them replacing the shape above.
+
+**A key activates what a press activates, through one lookup.** `ui::command()` answers which
+event a component sends when it is activated, and both routers ask it — `ui::Cursor` for a
+press, `ui::Keys` for a return or a space. A component a press activates and a key does not is
+then unrepresentable, which is the defect this is preventing rather than a tidiness argument.
+A `TextBox` is deliberately not in that list: a click into one is somebody starting to type
+rather than saying they are done, so only a return sends its command and `ui::Keys` reaches for
+the event itself.
+
+**Only a text box swallows the keys that compose text.** A letter reaching a focused button
+goes on to the app's bindings. The consumption rule above exists so that typing into a box does
+not also play the game; a button is not something a player types into, and a control that ate
+every key would stop a game being played for as long as anything was focused — which on a menu
+screen is always.
+
+**A screen says it is keyboard driven by calling `Engine::focusFirst()`.** `focusNext()`
+deliberately leaves a ui with nothing focused alone, so a press was the only thing that ever
+gave out a first focus — exactly the mouse a keyboard-driven screen does not have. Seeding the
+focus automatically was rejected for the reason `focusNext()` does not: it would put a ring on
+the first widget of a hud nobody is looking at. Making it the app's one call keeps that
+choice where the app already makes it, as the screen goes up.
+
+The components that answer a press now ask for `pickable()` and `focusable()` in their own
+constructors, the way `TextBox` always did, rather than waiting for a config flag nobody set.
+
 ## Alternatives Considered
 
 ### Alternative 1: A focus on the ui, a `Keys` router, and text separate from keys — **chosen**
@@ -89,8 +120,22 @@ so that typing "w" into a box does not also walk the player forward.
   go on working until something is clicked into.
 - `event::TextInput` is the ui's today and anybody's tomorrow — a console, a chat line and a
   rename field all want composed characters rather than key names.
+- A screen of controls is drivable without a mouse: tab and shift-tab reach every one of them,
+  return and space activate whatever is reached, the arrows step through a list's rows and a
+  bar's pages, and a ring says where the keyboard is. Which is also most of what a gamepad
+  would need, whenever one arrives.
+- `ui::command()` is one list of which components carry a command, so a component added later
+  is activatable by both routers or by neither.
 
 ### Negative
+- **Every control is now in the tab order by default**, so a screen that wants a widget skipped
+  says `focusable(false)` rather than saying nothing. That is the reverse of what it was, and a
+  hud built before this gains a tab order it never asked for — harmless while nothing focuses
+  it, and the reason `focusFirst()` is a call rather than something the engine does itself.
+- **A focus ring is drawn from the base dressing rather than per component**, so a theme cannot
+  ring a button differently from a list. One ring for every control is most of the point of
+  one, but it does mean `focus` and `focus-width` are chrome properties with no per-class
+  override.
 - `SDL_StartTextInput` is called for the life of the window rather than as a box takes the
   focus. On a desktop that costs nothing; on a platform with an on-screen keyboard it would
   raise one and never lower it.
@@ -98,11 +143,15 @@ so that typing "w" into a box does not also walk the player forward.
   the character, so an app cannot bind a letter to anything that should work while typing.
 - A press was the only thing that moved the focus, so there was no tab order. This decision has
   since been extended rather than replaced: `Engine::focusNext()` is a second caller of
-  `focus()`, walking the tree in draw order, and `Keys::press()` routes tab to it.
+  `focus()`, walking the tree in draw order, `Engine::focusFirst()` is a third, and
+  `Keys::press()` routes tab to `focusNext()`.
 - `Cursor` and `Keys` are two objects an app has to hold and two calls it has to make, and
   nothing enforces that it makes both.
 
 ### Risks
+- **A list and a tab bar do not wrap under the arrows**, while tab wraps at each end. Running
+  off the last row is how a keyboard reaches it and stays there, but the two behaviours sit
+  next to each other on the same screen and read as an inconsistency until the reason is known.
 - **A press moves the focus before the component acts on it**, so a component that wanted the
   focus left alone cannot say so. The escape hatch is `focusable(false)`, which is the default.
 - A caret cannot be placed by clicking: a press focuses the box and leaves the caret where it

@@ -80,6 +80,9 @@ hovered a frame late is the mechanism that lets a window take the cursor from on
 [] a clip is a scissor, so it is axis aligned and square: a panel with rounded corners clips to the box and not to the curve
 [] a caret cannot be placed by clicking: a press focuses a text box and leaves the caret where it was. `ui::Cursor` names no text, so finding the character under a point would mean giving it the `Measure` callback - a change to what a cursor is rather than an addition to it
 [] there is no selection in a text box, so no cut, copy or paste over a range. `TextBox::insert()` takes a run of characters, so a paste is expressible the moment something delivers one
+[] nothing in the tree constructs a `ui::Keys`, so the keyboard router has no consumer: the editor builds a `ui::Cursor` and no app builds either a `Keys` or calls `Engine::focusFirst()`. Every case for it is in `api/ui/tests`, which is a library proven and an app seam unbuilt
+[] a scrollbar takes no key, so it is the one control that still needs a mouse. Every other one is driven from the keyboard per [ADR-0040](adr/0040-a-key-goes-to-a-focused-component.md), and paging the thing a bar scrolls is still the app's rather than the bar's
+[] a focus ring is drawn from the base dressing, so a theme cannot ring a button differently from a list. `focus` and `focus-width` are chrome properties with no per class override, which is what one ring for every control buys
 [] `SDL_StartTextInput` is on for the life of the window rather than for as long as something is focused, which is free on a desktop and would raise an on screen keyboard and never lower it anywhere else
 [] nothing draws into a `LineCanvas` clip ([ADR-0037](adr/0037-clipping-is-a-scissor-the-batch-carries.md)). The viewport panes that would want one are the editor's
 

@@ -208,8 +208,11 @@ the reverse of the order the ui was drawn — menu bars, then toolbars, then the
 
 A press on a `pickable()` component sends that component's bound event and is consumed. A
 press on anything else is not consumed, so a HUD of labels over a scene leaves the scene
-clickable — which is why `pickable()` is false by default. A press is remembered until it comes
-up, which is what drags a scrollbar's thumb across frames.
+clickable — which is why `Component` leaves `pickable()` false. A control sets it, and
+`focusable()` with it, in its own constructor: a button, a check box, a radio button, a select
+list, a tab bar and a text box exist to be driven, and a panel or a label laid over a scene
+does not. A press is remembered until it comes up, which is what drags a scrollbar's thumb
+across frames.
 
 A press also moves the focus — onto what it landed on when that component asked to be
 focusable, and off whatever had it otherwise — which is what makes clicking into a box mean
@@ -259,7 +262,27 @@ for tab alone. A ui with nothing focused is left alone by tab as it is by every 
 
 A key names an operation: backspace, delete, the caret moves, a return that sends the box's
 command, an escape that leaves it. A key that will arrive again as a character is taken as well
-and does nothing, so typing "w" into a box does not also walk the player forward.
+and does nothing, so typing "w" into a box does not also walk the player forward — **in a text
+box only**. The same letter reaching a focused button goes on to the app's bindings, because a
+button is not something a player types into.
+
+**Every control is driven, not only a text box.** Return and space activate whatever holds the
+focus, sending the command a click sends — both routers ask `ui::command()` which event a
+component carries, so a component a press activates and a key does not cannot happen. The
+arrows step through a `SelectList`'s rows and a `TabBar`'s pages, with `home` and `end` at the
+ends; neither wraps, because running off the last row is how a keyboard reaches it and stays
+there. A component does not own the state it shows, so activating a check box sends its command
+and marks nothing — [ADR-0019](adr/0019-the-ui-is-laid-out-by-what-draws-it.md).
+
+**Something has to give out the first focus.** `Engine::focusFirst()` puts it on the first
+focusable component, and is how a screen says it is keyboard driven — an app calls it as the
+screen goes up. `focusNext()` will not do it, on purpose: tab must not take the focus onto the
+first widget of a hud nobody is looking at, so a ui with nothing focused stays that way.
+
+**A focused component is ringed**, traced around its box after it is drawn, in the base
+dressing's `focus` colour at `focus-width` thick. The draw walk does it rather than any one
+component, because where the keyboard is is the ui's business and one ring for every control is
+the point of it.
 
 The characters come from `event::TextInput`, which `input::Keyboard` raises from SDL's text
 input — shift already applied, a dead key and the one after it already one character, an input
@@ -310,8 +333,8 @@ boxes the draw left or on the primitives it emitted. [Testing.md](Testing.md) ha
 - **An `Immediate` widget takes the rest of its row unless told otherwise.**
   `nextItemWidth(float)` is what tells it, spent by the widget that follows and forgotten
   after it, which is what lets two scrubbers share a row. A separator always takes the row.
-- **There is no tab order.** The focus moves by press and by press alone, so a form cannot be
-  filled in without the mouse.
+- **A scrollbar takes no key.** Every other control is driven from the keyboard; a scrollbar is
+  dragged, and paging the thing it scrolls is still the app's.
 - **A caret cannot be placed by clicking.** A press focuses a text box and leaves the caret
   where it was, because `ui::Cursor` names no text and would need the `Measure` callback to
   find the character under a point.

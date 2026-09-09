@@ -213,12 +213,7 @@ void focusable(const boost::shared_ptr<Component>& component,
 
 /**
  **/
-bool Engine::focusNext(bool forward) {
-    const boost::shared_ptr<Component> was = focused_.lock();
-    if (!was) {
-        return false;
-    }
-
+std::vector<boost::shared_ptr<Component>> Engine::tabOrder() const {
     std::vector<boost::shared_ptr<Component>> order;
     for (const boost::shared_ptr<Container>& holder : containers_) {
         if (!holder || !holder->visible()) {
@@ -228,7 +223,29 @@ bool Engine::focusNext(bool forward) {
             focusable(component, &order);
         }
     }
+    return order;
+}
 
+/**
+ **/
+bool Engine::focusFirst() {
+    const std::vector<boost::shared_ptr<Component>> order = tabOrder();
+    if (order.empty()) {
+        return false;
+    }
+    focus(order.front());
+    return true;
+}
+
+/**
+ **/
+bool Engine::focusNext(bool forward) {
+    const boost::shared_ptr<Component> was = focused_.lock();
+    if (!was) {
+        return false;
+    }
+
+    const std::vector<boost::shared_ptr<Component>> order = tabOrder();
     const auto here = std::find(order.begin(), order.end(), was);
     if (here == order.end() || order.size() < 2) {
         return false;

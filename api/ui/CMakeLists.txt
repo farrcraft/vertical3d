@@ -1,5 +1,6 @@
 v3d_add_api_library(ui
 	"Arranger.h" "Arranger.cpp"
+	"Command.h" "Command.cpp"
 	"Component.h" "Component.cpp"
 	"ComponentRenderer.h" "ComponentRenderer.cpp"
 	"Container.h" "Container.cpp"

@@ -19,6 +19,10 @@ SelectList::SelectList() :
     rowHeight_(0.0f),
     widest_(-1.0f),
     selected_(none) {
+    // a control exists to be driven, so it asks for the press and the focus that a panel
+    // laid over a scene must not take - ADR-0034 and ADR-0040
+    pickable(true);
+    focusable(true);
 }
 
 void SelectList::items(const std::vector<std::string>& rows) {

@@ -250,6 +250,13 @@ class ComponentRenderer {
         const boost::shared_ptr<Component>& component) const;
 
     /**
+     * Trace the ring that says where the keyboard is, over a component that has just been
+     * drawn. Nothing is traced for a component that is not focused, per ADR-0040.
+     **/
+    void ring(v3d::render::realtime::Canvas* canvas,
+        const boost::shared_ptr<Component>& component) const;
+
+    /**
      * Draw the nine images a button style names over the button's box - the four corners
      * at their own size, the four edges stretched along it, and the centre over the rest.
      *

@@ -167,6 +167,30 @@ void ComponentRenderer::paint(v3d::render::realtime::Canvas* canvas,
             // a box draws nothing of its own - it is whatever it holds
             break;
     }
+    ring(canvas, component);
+}
+
+/**
+ **/
+void ComponentRenderer::ring(v3d::render::realtime::Canvas* canvas,
+    const boost::shared_ptr<Component>& component) const {
+    if (canvas == nullptr || !component->focused()) {
+        return;
+    }
+    const float width = base().focusWidth;
+    if (width <= 0.0f || base().focus.a <= 0.0f) {
+        return;
+    }
+    // drawn here rather than in each component's draw, because where the keyboard is is
+    // the ui's business rather than any one component's - and a ring every control shows
+    // the same way is the point of it. Traced around the box it was drawn in, after that
+    // draw, so it sits over the component rather than under whatever the component filled
+    const glm::vec2 min = component->position();
+    const glm::vec2 size = component->size();
+    if (size.x <= 0.0f || size.y <= 0.0f) {
+        return;  // never laid out, so there is no box to ring
+    }
+    strokeBox(canvas, min, min + size, base().radius, width, base().focus);
 }
 
 /**

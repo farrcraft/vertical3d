@@ -72,6 +72,7 @@ void Resolver::chrome() {
     readColour(style, "active-text", &base_.activeText);
     readColour(style, "highlight", &base_.highlight);
     readColour(style, "hover", &base_.hover);
+    readColour(style, "focus", &base_.focus);
 
     readMetric(style, "line-height", &base_.lineHeight);
     readMetric(style, "padding", &base_.padding);
@@ -81,6 +82,7 @@ void Resolver::chrome() {
     readMetric(style, "scrollbar-width", &base_.scrollbarWidth);
     readMetric(style, "mark-size", &base_.markSize);
     readMetric(style, "border-width", &base_.borderWidth);
+    readMetric(style, "focus-width", &base_.focusWidth);
     readMetric(style, "radius", &base_.radius);
 }
 

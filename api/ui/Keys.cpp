@@ -7,12 +7,61 @@
 
 #include <string_view>
 
+#include "Command.h"
 #include "Component.h"
 #include "Engine.h"
+#include "component/SelectList.h"
+#include "component/TabBar.h"
 #include "component/TextBox.h"
 #include "component/Type.h"
 
 namespace v3d::ui {
+
+namespace {
+
+/**
+ * Where a key moves a cursor through count things, starting from where.
+ *
+ * A list and a tab bar step through what they hold the same way and differ only in which
+ * arrows read as "along": down and up for rows stacked vertically, right and left for
+ * tabs laid out across. Neither wraps - running off the end of a list is how a keyboard
+ * reaches the end of it, and a wrap would take the user back to the top instead.
+ *
+ * @param along the key that steps towards the end, and back the one that steps towards the start
+ * @return where to move to, or `where` when the key moves nothing
+ **/
+int step(std::string_view key, int where, int count, std::string_view along, std::string_view back) {
+    if (count <= 0) {
+        return where;
+    }
+    if (key == along) {
+        // nothing chosen steps onto the first rather than the second, which is what makes
+        // one press of an arrow reach a list nobody has clicked in
+        if (where < 0) {
+            return 0;
+        }
+        return where + 1 < count ? where + 1 : where;
+    }
+    if (key == back) {
+        return where <= 0 ? 0 : where - 1;
+    }
+    if (key == "home") {
+        return 0;
+    }
+    if (key == "end") {
+        return count - 1;
+    }
+    return where;
+}
+
+/**
+ * @return whether a key is the one that activates whatever holds the focus
+ **/
+bool activates(std::string_view key) noexcept {
+    return key == "return" || key == "space";
+}
+
+};  // namespace
 
 Keys::Keys(const boost::shared_ptr<Engine>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher) :
     ui_(ui),
@@ -62,11 +111,30 @@ bool Keys::text(std::string_view utf8) {
 }
 
 bool Keys::act(const boost::shared_ptr<Component>& component, std::string_view key) {
-    if (component->type() != component::Type::TextBox) {
+    switch (component->type()) {
+        case component::Type::TextBox:
+            return edit(boost::dynamic_pointer_cast<component::TextBox>(component), key);
+        case component::Type::SelectList:
+            return choose(boost::dynamic_pointer_cast<component::SelectList>(component), key);
+        case component::Type::TabBar:
+            return turn(boost::dynamic_pointer_cast<component::TabBar>(component), key);
+        default:
+            break;
+    }
+    if (!activates(key)) {
+        // a letter reaching a focused button is not being typed, so it goes on to the app's
+        // bindings - unlike the same letter reaching a text box. Only a control that eats
+        // every key can stop a game being played, and a button is not one
         return false;
     }
-    const boost::shared_ptr<component::TextBox> box =
-        boost::dynamic_pointer_cast<component::TextBox>(component);
+    // a component does not own the state it shows, so activating one sends its command and
+    // marks nothing - ADR-0019. Taken either way, because a control that answers a click
+    // and lets the same activation through to a binding is worse than one that does neither
+    send(component);
+    return true;
+}
+
+bool Keys::edit(const boost::shared_ptr<component::TextBox>& box, std::string_view key) {
     if (!box) {
         return false;
     }
@@ -85,10 +153,10 @@ bool Keys::act(const boost::shared_ptr<Component>& component, std::string_view k
         box->end();
     } else if (key == "return") {
         // the box owns its text and the app owns what the text means, so a return says
-        // the user is done and whatever answers the command reads text() - ADR-0038
-        if (dispatcher_ && box->event().context()) {
-            dispatcher_->trigger(box->event());
-        }
+        // the user is done and whatever answers the command reads text() - ADR-0038. The
+        // event is read off the box rather than through ui::command(), which deliberately
+        // does not answer for one: a click into a box must not submit it
+        send(box->event());
     } else if (key.size() == 1 || key == "space") {
         // a key that will arrive again as a character is taken here as well, so that it
         // does not also reach the app's bindings - typing "w" into a box must not walk
@@ -101,6 +169,52 @@ bool Keys::act(const boost::shared_ptr<Component>& component, std::string_view k
         return false;
     }
     return true;
+}
+
+bool Keys::choose(const boost::shared_ptr<component::SelectList>& list, std::string_view key) {
+    if (!list) {
+        return false;
+    }
+    if (activates(key)) {
+        send(list);
+        return true;
+    }
+
+    const int was = list->selected();
+    const int now = step(key, was, static_cast<int>(list->items().size()), "arrow_down", "arrow_up");
+    if (now == was) {
+        return false;
+    }
+    // the list owns which row is chosen and the app owns what being on it means, so moving
+    // sends the command the same way clicking a row does - ADR-0019 and Cursor::act
+    list->selected(now);
+    send(list);
+    return true;
+}
+
+bool Keys::turn(const boost::shared_ptr<component::TabBar>& bar, std::string_view key) {
+    if (!bar) {
+        return false;
+    }
+    const int was = bar->selected();
+    const int now = step(key, was, static_cast<int>(bar->pages().size()), "arrow_right", "arrow_left");
+    if (now == was) {
+        // a bar carries no command, so a return on one has nothing to send and nothing to
+        // take - which leaves the return for whatever the page holds
+        return false;
+    }
+    bar->selected(now);
+    return true;
+}
+
+void Keys::send(const boost::shared_ptr<Component>& component) const {
+    send(command(component));
+}
+
+void Keys::send(const v3d::event::Event& event) const {
+    if (dispatcher_ && event.context()) {
+        dispatcher_->trigger(event);
+    }
 }
 
 };  // namespace v3d::ui

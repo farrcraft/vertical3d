@@ -8,12 +8,12 @@
 #include <algorithm>
 #include <vector>
 
+#include "Command.h"
 #include "Component.h"
 #include "Container.h"
 #include "Engine.h"
 #include "component/Bar.h"
 #include "component/Button.h"
-#include "component/CheckBox.h"
 #include "component/Scrollbar.h"
 #include "component/SelectList.h"
 #include "component/TabBar.h"
@@ -232,37 +232,11 @@ void Cursor::dispatch(const boost::shared_ptr<Component>& component) const {
         return;
     }
     // a component does not own the state it shows: the click sends the command and marks
-    // nothing, and whatever answers it sets checked() - ADR-0019
-    switch (component->type()) {
-        case component::Type::Button: {
-            const boost::shared_ptr<component::Button> button =
-                boost::dynamic_pointer_cast<component::Button>(component);
-            if (button->event().context()) {
-                dispatcher_->trigger(button->event());
-            }
-            break;
-        }
-        case component::Type::CheckBox:
-        case component::Type::RadioButton: {
-            const boost::shared_ptr<component::CheckBox> box =
-                boost::dynamic_pointer_cast<component::CheckBox>(component);
-            if (box->event().context()) {
-                dispatcher_->trigger(box->event());
-            }
-            break;
-        }
-        case component::Type::SelectList: {
-            const boost::shared_ptr<component::SelectList> list =
-                boost::dynamic_pointer_cast<component::SelectList>(component);
-            if (list->event().context()) {
-                dispatcher_->trigger(list->event());
-            }
-            break;
-        }
-        default:
-            // a panel, a label, a bar - pickable so that it takes a press off whatever is
-            // under it, and carrying no command of its own
-            break;
+    // nothing, and whatever answers it sets checked() - ADR-0019. Which components carry
+    // one is ui::command()'s to know, shared with the key that activates the same thing
+    const v3d::event::Event sent = command(component);
+    if (sent.context()) {
+        dispatcher_->trigger(sent);
     }
 }
 
