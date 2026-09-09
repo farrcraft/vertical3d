@@ -11,7 +11,7 @@
 
 BOOST_AUTO_TEST_CASE(constructionplane_geometry_test) {
     v3d::editor::ConstructionPlane grid;
-    v3d::type::Camera camera;
+    v3d::type::camera::Camera camera;
     v3d::render::realtime::LineCanvas canvas;
 
     grid.lines(4);
@@ -25,7 +25,7 @@ BOOST_AUTO_TEST_CASE(constructionplane_geometry_test) {
 
 BOOST_AUTO_TEST_CASE(constructionplane_extent_test) {
     v3d::editor::ConstructionPlane grid;
-    v3d::type::Camera camera;
+    v3d::type::camera::Camera camera;
     v3d::render::realtime::LineCanvas canvas;
 
     // the grid is centred on the origin, so a grid four lines across at unit spacing runs
@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE(constructionplane_extent_test) {
 
 BOOST_AUTO_TEST_CASE(constructionplane_perspective_plane_test) {
     v3d::editor::ConstructionPlane grid;
-    v3d::type::Camera camera;
+    v3d::type::camera::Camera camera;
     v3d::render::realtime::LineCanvas canvas;
 
     // a perspective view gets the ground plane instead, so nothing leaves y = 0
@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE(constructionplane_perspective_plane_test) {
 
 BOOST_AUTO_TEST_CASE(constructionplane_emphasis_test) {
     v3d::editor::ConstructionPlane grid;
-    v3d::type::Camera camera;
+    v3d::type::camera::Camera camera;
     v3d::render::realtime::LineCanvas canvas;
 
     // the two lines through the origin are drawn in the origin colour, the ones on a major
@@ -93,7 +93,7 @@ BOOST_AUTO_TEST_CASE(constructionplane_emphasis_test) {
 
 BOOST_AUTO_TEST_CASE(constructionplane_degenerate_test) {
     v3d::editor::ConstructionPlane grid;
-    v3d::type::Camera camera;
+    v3d::type::camera::Camera camera;
     v3d::render::realtime::LineCanvas canvas;
 
     // a grid of no lines, or one whose lines are zero apart, is nothing rather than an

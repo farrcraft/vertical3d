@@ -6,7 +6,7 @@
 #pragma once
 
 #include <api/render/realtime/LineCanvas.h>
-#include <api/type/Camera.h>
+#include <api/type/camera/Camera.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <string>
@@ -47,12 +47,12 @@ class ViewPort final {
      * @param name what the view is called, which is also its pass name
      * @param profile the camera profile the view starts from
      **/
-    ViewPort(const std::string& name, const v3d::type::CameraProfile& profile);
+    ViewPort(const std::string& name, const v3d::type::camera::Profile& profile);
 
     /**
      * @return the camera the view draws through, which the camera tools drive
      **/
-    boost::shared_ptr<v3d::type::Camera> camera() const;
+    boost::shared_ptr<v3d::type::camera::Camera> camera() const;
 
     /**
      * @return the view's name, which is also the name of the pass it draws into
@@ -124,7 +124,7 @@ class ViewPort final {
 
  private:
     std::string name_;
-    boost::shared_ptr<v3d::type::Camera> camera_;
+    boost::shared_ptr<v3d::type::camera::Camera> camera_;
     ConstructionPlane grid_;
     glm::vec4 region_;
     unsigned int showFlags_;

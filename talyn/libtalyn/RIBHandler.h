@@ -55,7 +55,7 @@ class RIBHandler final : public v3d::render::offline::RIBHandler {
         const v3d::render::offline::ParameterList & parameters) override;
 
     /**
-     * What the scene asked for that a raytracer built on v3d::type::Camera cannot do, or
+     * What the scene asked for that a raytracer built on v3d::type::camera::Camera cannot do, or
      * empty. The reader still succeeds - the request was understood - so a caller that
      * wants a picture rather than a parse has to look here.
      **/
@@ -65,7 +65,7 @@ class RIBHandler final : public v3d::render::offline::RIBHandler {
     /**
      * What the camera options add up to, applied at WorldBegin.
      *
-     * @return false, with error() set, when they name a camera a CameraProfile cannot
+     * @return false, with error() set, when they name a camera a Profile cannot
      *         hold: an off centre screen window, or a world to camera matrix that is not
      *         a rotation and a translation.
      **/

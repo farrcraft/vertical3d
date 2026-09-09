@@ -17,8 +17,8 @@ bool ReyesPrimitive::diceable(void) const {
     return diceable_;
 }
 
-v3d::type::AABBox ReyesPrimitive::bound(void) const {
-    return v3d::type::AABBox();
+v3d::type::geometry::AABBox ReyesPrimitive::bound(void) const {
+    return v3d::type::geometry::AABBox();
 }
 
 void ReyesPrimitive::split(RenderContext & rc) {

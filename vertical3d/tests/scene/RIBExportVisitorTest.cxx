@@ -80,8 +80,8 @@ class ImportHandler final : public v3d::render::offline::RIBHandler {
     unsigned int blocks_ = 0;
 };
 
-v3d::type::Camera camera(bool orthographic) {
-    v3d::type::CameraProfile profile("export");
+v3d::type::camera::Camera camera(bool orthographic) {
+    v3d::type::camera::Profile profile("export");
     profile.orthographic(orthographic);
     profile.orthoZoom(2.0f);
     profile.pixelAspect(4.0f / 3.0f);
@@ -89,7 +89,7 @@ v3d::type::Camera camera(bool orthographic) {
     profile.clipping(0.5f, 250.0f);
     profile.eye(glm::vec3(0.0f, 0.0f, -8.0f));
 
-    v3d::type::Camera result(profile);
+    v3d::type::camera::Camera result(profile);
     result.profile().size(320, 240);
     result.createProjection();
     result.createView();
@@ -99,7 +99,7 @@ v3d::type::Camera camera(bool orthographic) {
 std::string exportScene(const boost::shared_ptr<v3d::editor::Scene> & scene, bool orthographic) {
     std::ostringstream stream;
     v3d::editor::RIBExportVisitor visitor(&stream);
-    const v3d::type::Camera view = camera(orthographic);
+    const v3d::type::camera::Camera view = camera(orthographic);
     visitor.begin(view, 320, 240);
     scene->accept(&visitor);
     visitor.end();

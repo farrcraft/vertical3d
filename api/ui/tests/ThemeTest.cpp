@@ -497,7 +497,7 @@ BOOST_AUTO_TEST_CASE(a_toolbar_button_draws_the_icon_it_names) {
     BOOST_CHECK_CLOSE(drawing.insets(*ui).x, dressing.iconSize + dressing.padding + 1.0f, 0.001f);
 
     // and the icon is centred in the button's own box
-    const v3d::type::Bound2D box = bar->button(0)->bound();
+    const v3d::type::geometry::Bound2D box = bar->button(0)->bound();
     BOOST_CHECK_CLOSE(canvas.vertices()[8].position.x,
         box.position().x + (box.size().x - dressing.iconSize) * 0.5f, 0.001f);
 }

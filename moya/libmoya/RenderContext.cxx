@@ -6,7 +6,6 @@
 #include "RenderContext.h"
 
 #include <api/image/Factory.h>
-#include <api/type/3dtypes.h>
 
 #include <cmath>
 #include <iostream>
@@ -466,7 +465,7 @@ void RenderContext::addPolygon(boost::shared_ptr<Polygon> poly) {
         }
     }
 
-    v3d::type::AABBox bound = poly->bound();
+    v3d::type::geometry::AABBox bound = poly->bound();
 
     glm::vec3 bound_max = bound.max();
     glm::vec3 bound_min = bound.min();
@@ -542,7 +541,7 @@ void RenderContext::addPolygon(boost::shared_ptr<Polygon> poly) {
         matrix asks whether pixel coordinates fall inside a volume measured in eye units.
     */
     Frustum frustum(coordinateSystems_["screen"]);
-    v3d::type::AABBox eyeBound;
+    v3d::type::geometry::AABBox eyeBound;
     eyeBound.extents(bound_min, bound_max);
     if (frustum.intersect(eyeBound) == Frustum::OUTSIDE) {  // poly is entirely outside frustum
         return;

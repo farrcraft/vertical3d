@@ -40,8 +40,8 @@ boost::shared_ptr<v3d::ui::component::Label> label(const std::string& name, cons
     return made;
 }
 
-v3d::type::Bound2D canvasArea(float width, float height) {
-    return v3d::type::Bound2D(glm::vec2(0.0f, 0.0f), glm::vec2(width, height));
+v3d::type::geometry::Bound2D canvasArea(float width, float height) {
+    return v3d::type::geometry::Bound2D(glm::vec2(0.0f, 0.0f), glm::vec2(width, height));
 }
 
 };  // namespace
@@ -299,7 +299,7 @@ BOOST_AUTO_TEST_CASE(a_label_with_a_width_wraps_to_it) {
     const boost::shared_ptr<v3d::ui::component::Label> wrapped = label("wrapped", "one two three four");
     wrapped->layout().width = v3d::ui::Length(100.0f, v3d::ui::Length::Unit::Pixels);
 
-    const v3d::type::Bound2D room = canvasArea(400.0f, 200.0f);
+    const v3d::type::geometry::Bound2D room = canvasArea(400.0f, 200.0f);
     arranger.walk(nullptr, wrapped, wrapped->layout().resolve(room, arranger.natural(*wrapped, room)),
         v3d::ui::Arranger::Paint());
     BOOST_CHECK_CLOSE(wrapped->size().x, 100.0f, 0.001f);

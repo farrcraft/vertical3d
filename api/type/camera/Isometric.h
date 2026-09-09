@@ -10,7 +10,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::type {
+namespace v3d::type::camera {
 
 /**
  * An orthographic camera that orbits a point on the ground at a fixed elevation, snapping
@@ -26,7 +26,7 @@ namespace v3d::type {
  * them has to be. pan() is measured in the view's own axes rather than the world's, so
  * dragging right moves the scene right whichever corner the camera is at.
  **/
-class IsometricCamera {
+class Isometric {
  public:
     /**
      * The number of azimuths the orbit snaps to. Four right angles, so the ground plane's
@@ -62,7 +62,7 @@ class IsometricCamera {
     static constexpr float MINIMUM_ZOOM = 2.0f;
     static constexpr float MAXIMUM_ZOOM = 40.0f;
 
-    IsometricCamera();
+    Isometric();
 
     /**
      * Turn the orbit by whole azimuth steps, positive counterclockwise. Wraps, so any
@@ -149,4 +149,4 @@ class IsometricCamera {
     float distance_{DEFAULT_DISTANCE};
 };
 
-};  // namespace v3d::type
+};  // namespace v3d::type::camera

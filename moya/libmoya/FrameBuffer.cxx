@@ -79,7 +79,7 @@ unsigned int * FrameBuffer::imageSize() const {
     return const_cast<unsigned int*>(imageSize_);
 }
 
-void FrameBuffer::addPrimitive(const boost::shared_ptr<ReyesPrimitive> & primitive, const v3d::type::AABBox & bound) {
+void FrameBuffer::addPrimitive(const boost::shared_ptr<ReyesPrimitive> & primitive, const v3d::type::geometry::AABBox & bound) {
     assert(bucketColumns_ > 0 && bucketRows_ > 0);
 
     // bound should be in raster space

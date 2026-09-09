@@ -8,7 +8,7 @@
 #include <glm/glm.hpp>
 #include <glm/ext/quaternion_float.hpp>
 
-namespace v3d::type {
+namespace v3d::type::camera {
 /**
  * ArcBall camera rotation utility.
  */
@@ -29,4 +29,4 @@ class ArcBall final {
     float height_;
 };
 
-};  // namespace v3d::type
+};  // namespace v3d::type::camera

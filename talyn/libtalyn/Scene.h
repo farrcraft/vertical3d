@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/type/Camera.h>
+#include <api/type/camera/Camera.h>
 
 #include <vector>
 
@@ -78,8 +78,8 @@ class Scene final {
      * aspect is not: a frame that is not square needs one that matches, or the
      * picture is stretched across it.
      **/
-    v3d::type::Camera & camera();
-    const v3d::type::Camera & camera() const;
+    v3d::type::camera::Camera & camera();
+    const v3d::type::camera::Camera & camera() const;
 
     void add(const Triangle & triangle);
     const std::vector<Triangle> & triangles() const;
@@ -88,7 +88,7 @@ class Scene final {
     void background(const glm::vec3 & colour);
 
  private:
-    v3d::type::Camera camera_;
+    v3d::type::camera::Camera camera_;
     std::vector<Triangle> triangles_;
     glm::vec3 background_ = glm::vec3(0.0f);
 };

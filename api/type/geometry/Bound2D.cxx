@@ -5,7 +5,7 @@
 
 #include "Bound2D.h"
 
-namespace v3d::type {
+namespace v3d::type::geometry {
 
 Bound2D::Bound2D(float x, float y, float width, float height) : size_(width, height), position_(x, y) {
 }
@@ -53,4 +53,4 @@ glm::vec2 Bound2D::position() const {
     return position_;
 }
 
-};  // namespace v3d::type
+};  // namespace v3d::type::geometry

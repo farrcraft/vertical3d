@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/type/ArcBall.h>
+#include <api/type/camera/ArcBall.h>
 
 #include <boost/test/unit_test.hpp>
 
@@ -17,7 +17,7 @@ const float kCentreY = (kHeight - 1.0f) * 0.5f;
 };  // namespace
 
 BOOST_AUTO_TEST_CASE(arcball_test) {
-    v3d::type::ArcBall ball;
+    v3d::type::camera::ArcBall ball;
     ball.bounds(kWidth, kHeight);
 
     // the centre of the viewport maps to the pole of the sphere
@@ -57,7 +57,7 @@ BOOST_AUTO_TEST_CASE(arcball_test) {
     BOOST_CHECK_EQUAL(repeated[3], 0.0f);
 
     // bounds clamps a degenerate viewport rather than dividing by zero
-    v3d::type::ArcBall degenerate;
+    v3d::type::camera::ArcBall degenerate;
     degenerate.bounds(0.0f, 0.0f);
     glm::vec3 mapped = degenerate.map(glm::vec2(0.0f, 0.0f));
     BOOST_CHECK(std::isfinite(mapped[0]));

@@ -74,7 +74,7 @@ Picker::Hit Picker::pick(const Scene& scene, const ViewPort& view, const glm::ve
     cursor_ = cursor;
     nearest_ = 0.0f;
 
-    boost::shared_ptr<v3d::type::Camera> camera = view.camera();
+    boost::shared_ptr<v3d::type::camera::Camera> camera = view.camera();
     const glm::vec4& region = view.region();
     if (!camera || region.z <= 0.0f || region.w <= 0.0f) {
         return hit_;
@@ -133,7 +133,7 @@ void Picker::visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
 void Picker::surface(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
     // transformed() does not renormalise, so this distance is the same number it would
     // be in world space and hits on differently scaled meshes stay comparable
-    const v3d::type::Ray local = ray_.transformed(glm::inverse(model_));
+    const v3d::type::geometry::Ray local = ray_.transformed(glm::inverse(model_));
 
     float distance = 0.0f;
     if (!local.intersects(mesh->bound(), &distance)) {

@@ -3,17 +3,17 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/type/Camera.h>
-#include <api/type/CameraProfile.h>
+#include <api/type/camera/Camera.h>
+#include <api/type/camera/Profile.h>
 
 #include <boost/test/unit_test.hpp>
 
 BOOST_AUTO_TEST_CASE(cameraprofile_test) {
-    v3d::type::CameraProfile profile("test");
+    v3d::type::camera::Profile profile("test");
     profile.eye(glm::vec3(4.0f, 5.0f, 6.0f));
 
     // a camera constructed from a profile takes a copy of it
-    v3d::type::Camera camera(profile);
+    v3d::type::camera::Camera camera(profile);
     camera.createView();
     BOOST_CHECK_CLOSE(camera.view()[3][0], -4.0f, 0.01f);
     BOOST_CHECK_CLOSE(camera.view()[3][1], -5.0f, 0.01f);
@@ -23,22 +23,22 @@ BOOST_AUTO_TEST_CASE(cameraprofile_test) {
     camera.truck(10.0f);
     camera.createView();
     BOOST_CHECK_CLOSE(camera.view()[3][0], -14.0f, 0.01f);
-    v3d::type::Camera untouched(profile);
+    v3d::type::camera::Camera untouched(profile);
     untouched.createView();
     BOOST_CHECK_CLOSE(untouched.view()[3][0], -4.0f, 0.01f);
 
     // clipping planes reach the projection, which maps them onto the [0, 1] depth range
     // vulkan clips against - ADR-0012
     profile.clipping(1.0f, 3.0f);
-    v3d::type::Camera clipped(profile);
+    v3d::type::camera::Camera clipped(profile);
     clipped.createProjection();
     BOOST_CHECK_CLOSE(clipped.projection()[2][2], 1.0f / (3.0f - 1.0f), 0.01f);
     BOOST_CHECK_CLOSE(clipped.projection()[3][2], -1.0f / (3.0f - 1.0f), 0.01f);
 
     // assignment copies every field, so a camera on the copy sees the same view
-    v3d::type::CameraProfile duplicate("duplicate");
+    v3d::type::camera::Profile duplicate("duplicate");
     duplicate = profile;
-    v3d::type::Camera copied(duplicate);
+    v3d::type::camera::Camera copied(duplicate);
     copied.createView();
     BOOST_CHECK_CLOSE(copied.view()[3][0], -4.0f, 0.01f);
     BOOST_CHECK_CLOSE(copied.view()[3][1], -5.0f, 0.01f);
@@ -46,10 +46,10 @@ BOOST_AUTO_TEST_CASE(cameraprofile_test) {
 
     // lookat orients the camera at a target: looking down -z from the origin leaves the
     // rotation alone, so the view matrix stays a pure translation
-    v3d::type::CameraProfile facing("facing");
+    v3d::type::camera::Profile facing("facing");
     facing.eye(glm::vec3(0.0f, 0.0f, 0.0f));
     facing.lookat(glm::vec3(0.0f, 0.0f, 1.0f));
-    v3d::type::Camera looking(facing);
+    v3d::type::camera::Camera looking(facing);
     looking.createView();
     BOOST_CHECK_CLOSE(looking.view()[0][0], 1.0f, 0.01f);
     BOOST_CHECK_CLOSE(looking.view()[1][1], 1.0f, 0.01f);
@@ -57,7 +57,7 @@ BOOST_AUTO_TEST_CASE(cameraprofile_test) {
 }
 
 BOOST_AUTO_TEST_CASE(cameraprofile_accessor_test) {
-    v3d::type::CameraProfile profile("test");
+    v3d::type::camera::Profile profile("test");
 
     // the defaults, which are what a partly described profile falls back to
     BOOST_CHECK_EQUAL(profile.name(), "test");
@@ -112,7 +112,7 @@ BOOST_AUTO_TEST_CASE(cameraprofile_accessor_test) {
 
     // clone copies the viewport size along with everything else, which the ortho factors
     // divide by
-    v3d::type::CameraProfile assigned("assigned");
+    v3d::type::camera::Profile assigned("assigned");
     assigned = profile;
     BOOST_CHECK_EQUAL(assigned.name(), "front");
     BOOST_CHECK_EQUAL(assigned.size()[0], 1024u);
@@ -121,7 +121,7 @@ BOOST_AUTO_TEST_CASE(cameraprofile_accessor_test) {
 
 BOOST_AUTO_TEST_CASE(cameraprofile_basis_test) {
     // name plus the four basis vectors, with every other field left at its default
-    v3d::type::CameraProfile profile("Top",
+    v3d::type::camera::Profile profile("Top",
         glm::vec3(0.0f, 10.0f, 0.0f),
         glm::vec3(0.0f, 0.0f, 1.0f),
         glm::vec3(1.0f, 0.0f, 0.0f),

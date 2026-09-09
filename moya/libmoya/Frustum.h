@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/type/AABBox.h>
+#include <api/type/geometry/AABBox.h>
 
 #include <string>
 #include <map>
@@ -31,7 +31,7 @@ class Frustum {
     // normalize all planes in frustum
     void normalize(void);
 
-    int intersect(const v3d::type::AABBox & aabb);
+    int intersect(const v3d::type::geometry::AABBox & aabb);
     // int intersect(const Sphere & sphere);
     /*
         clip polygon against frustum - modifies passed polygon structure

@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/type/Bound2D.h>
+#include <api/type/geometry/Bound2D.h>
 #include <api/ui/component/Type.h>
 #include <api/ui/style/Theme.h>
 
@@ -64,7 +64,7 @@ class Component {
      * Get the component's bounding volume
      * @return the component's bounding box
      */
-    v3d::type::Bound2D bound() const;
+    v3d::type::geometry::Bound2D bound() const;
     /**
      * Get the component's z index depth value
      * @return the component's zindex

@@ -68,7 +68,7 @@ boost::shared_ptr<Component> probe(const boost::shared_ptr<Component>& component
             return found;
         }
     }
-    v3d::type::Bound2D bound = component->bound();
+    v3d::type::geometry::Bound2D bound = component->bound();
     if (component->pickable() && bound.intersect(point)) {
         return component;
     }

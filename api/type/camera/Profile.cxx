@@ -3,7 +3,7 @@
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
 **/
 
-#include "CameraProfile.h"
+#include "Profile.h"
 
 #include <iostream>
 #include <cmath>
@@ -11,9 +11,9 @@
 
 #include <glm/gtc/quaternion.hpp>
 
-namespace v3d::type {
+namespace v3d::type::camera {
 
-CameraProfile::CameraProfile(const std::string& name) :
+Profile::Profile(const std::string& name) :
     name_(name),
     eye_(0.0f, 0.0f, -1.0f),
     direction_(0.0f, 0.0f, 1.0f),
@@ -31,7 +31,7 @@ size_{ 0, 0 },
 rotation_(1.0f, 0.0f, 0.0f, 0.0f) {
 }
 
-CameraProfile::CameraProfile(const std::string& name, const glm::vec3& eye, const glm::vec3& up,
+Profile::Profile(const std::string& name, const glm::vec3& eye, const glm::vec3& up,
     const glm::vec3& right, const glm::vec3& direction) :
     name_(name),
     eye_(eye),
@@ -48,87 +48,87 @@ size_{ 0, 0 },
     rotation_(1.0f, 0.0f, 0.0f, 0.0f) {
 }
 
-CameraProfile::~CameraProfile() {
+Profile::~Profile() {
 }
 
-std::string CameraProfile::name() const {
+std::string Profile::name() const {
     return name_;
 }
 
-glm::vec2 CameraProfile::clipping() const {
+glm::vec2 Profile::clipping() const {
     return glm::vec2(near_, far_);
 }
 
-float CameraProfile::fov() const {
+float Profile::fov() const {
     return fov_;
 }
 
-float CameraProfile::orthoZoom() const {
+float Profile::orthoZoom() const {
     return orthoZoom_;
 }
 
-float CameraProfile::pixelAspect() const {
+float Profile::pixelAspect() const {
     return pixelAspect_;
 }
 
-bool CameraProfile::orthographic() const {
+bool Profile::orthographic() const {
     return (options_ & OPTION_ORTHOGRAPHIC) != 0;
 }
 
-bool CameraProfile::adaptiveProjection() const {
+bool Profile::adaptiveProjection() const {
     return (options_ & OPTION_ADAPTIVE_PROJECTION) != 0;
 }
 
-bool CameraProfile::adaptivePosition() const {
+bool Profile::adaptivePosition() const {
     return (options_ & OPTION_ADAPTIVE_POSITION) != 0;
 }
 
-glm::vec3 CameraProfile::eye() const {
+glm::vec3 Profile::eye() const {
     return eye_;
 }
 
-glm::vec3 CameraProfile::up() const {
+glm::vec3 Profile::up() const {
     return up_;
 }
 
-glm::vec3 CameraProfile::right() const {
+glm::vec3 Profile::right() const {
     return right_;
 }
 
-glm::vec3 CameraProfile::direction() const {
+glm::vec3 Profile::direction() const {
     return direction_;
 }
 
-glm::quat CameraProfile::rotation() const {
+glm::quat Profile::rotation() const {
     return rotation_;
 }
 
-glm::uvec2 CameraProfile::size() const {
+glm::uvec2 Profile::size() const {
     return glm::uvec2(size_[0], size_[1]);
 }
 
-void CameraProfile::name(const std::string& name) {
+void Profile::name(const std::string& name) {
     name_ = name;
 }
 
-void CameraProfile::clipping(float near, float far) {
+void Profile::clipping(float near, float far) {
     near_ = near;
     far_ = far;
 }
 
-void CameraProfile::fov(float fov) {
+void Profile::fov(float fov) {
     fov_ = fov;
 }
 
-void CameraProfile::orthoZoom(float zoom) {
+void Profile::orthoZoom(float zoom) {
     orthoZoom_ = zoom;
 }
 
-void CameraProfile::pixelAspect(float aspect) {
+void Profile::pixelAspect(float aspect) {
     pixelAspect_ = aspect;
 }
 
-void CameraProfile::orthographic(bool ortho) {
+void Profile::orthographic(bool ortho) {
     if (ortho) {
         options_ |= OPTION_ORTHOGRAPHIC;
     } else {
@@ -136,7 +136,7 @@ void CameraProfile::orthographic(bool ortho) {
     }
 }
 
-void CameraProfile::adaptiveProjection(bool adaptive) {
+void Profile::adaptiveProjection(bool adaptive) {
     if (adaptive) {
         options_ |= OPTION_ADAPTIVE_PROJECTION;
     } else {
@@ -144,7 +144,7 @@ void CameraProfile::adaptiveProjection(bool adaptive) {
     }
 }
 
-void CameraProfile::adaptivePosition(bool adaptive) {
+void Profile::adaptivePosition(bool adaptive) {
     if (adaptive) {
         options_ |= OPTION_ADAPTIVE_POSITION;
     } else {
@@ -152,32 +152,32 @@ void CameraProfile::adaptivePosition(bool adaptive) {
     }
 }
 
-void CameraProfile::eye(const glm::vec3& position) {
+void Profile::eye(const glm::vec3& position) {
     eye_ = position;
 }
 
-void CameraProfile::up(const glm::vec3& up) {
+void Profile::up(const glm::vec3& up) {
     up_ = up;
 }
 
-void CameraProfile::right(const glm::vec3& right) {
+void Profile::right(const glm::vec3& right) {
     right_ = right;
 }
 
-void CameraProfile::direction(const glm::vec3& direction) {
+void Profile::direction(const glm::vec3& direction) {
     direction_ = direction;
 }
 
-void CameraProfile::rotation(const glm::quat& rotation) {
+void Profile::rotation(const glm::quat& rotation) {
     rotation_ = rotation;
 }
 
-void CameraProfile::size(unsigned int width, unsigned int height) {
+void Profile::size(unsigned int width, unsigned int height) {
     size_[0] = width;
     size_[1] = height;
 }
 
-void CameraProfile::lookat(const glm::vec3& center) {
+void Profile::lookat(const glm::vec3& center) {
     glm::vec3 x;
     glm::vec3 y;
     glm::vec3 z;
@@ -231,7 +231,7 @@ void CameraProfile::lookat(const glm::vec3& center) {
     right_ = x;
 }
 
-void CameraProfile::clone(const CameraProfile& profile) {
+void Profile::clone(const Profile& profile) {
     near_ = profile.near_;
     far_ = profile.far_;
     fov_ = profile.fov_;
@@ -248,11 +248,11 @@ void CameraProfile::clone(const CameraProfile& profile) {
     size_[1] = profile.size_[1];
 }
 
-CameraProfile& CameraProfile::operator = (const CameraProfile& p) {
+Profile& Profile::operator = (const Profile& p) {
     if (this != &p) {
         clone(p);
     }
     return *this;
 }
 
-};  // namespace v3d::type
+};  // namespace v3d::type::camera

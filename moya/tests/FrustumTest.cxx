@@ -12,8 +12,8 @@
 
 namespace {
 
-v3d::type::AABBox box(const glm::vec3 & min, const glm::vec3 & max) {
-    v3d::type::AABBox b;
+v3d::type::geometry::AABBox box(const glm::vec3 & min, const glm::vec3 & max) {
+    v3d::type::geometry::AABBox b;
     b.extents(min, max);
     return b;
 }

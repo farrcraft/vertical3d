@@ -5,8 +5,6 @@
 
 #include "Polygon.h"
 
-#include <api/type/3dtypes.h>
-
 #include <cmath>
 #include <cassert>
 #include <iostream>
@@ -27,12 +25,12 @@ namespace {
  * than what it came from on some axis. A split that does not shrink its input would be
  * measured as undiceable again and split again, without end.
  **/
-bool progress(const boost::shared_ptr<Polygon> & piece, const v3d::type::AABBox & parent) {
+bool progress(const boost::shared_ptr<Polygon> & piece, const v3d::type::geometry::AABBox & parent) {
     if (piece->vertexCount() < 3) {
         return false;
     }
     glm::vec3 was = parent.max() - parent.min();
-    v3d::type::AABBox bound = piece->bound();
+    v3d::type::geometry::AABBox bound = piece->bound();
     glm::vec3 is = bound.max() - bound.min();
     return is[0] < was[0] || is[1] < was[1] || is[2] < was[2];
 }
@@ -88,8 +86,8 @@ glm::vec3 Polygon::geometricNormal(void) const {
 }
 
 // return an object space bound of the polygon
-v3d::type::AABBox Polygon::bound(void) const {
-    v3d::type::AABBox bound;
+v3d::type::geometry::AABBox Polygon::bound(void) const {
+    v3d::type::geometry::AABBox bound;
 
     if (vertices_.empty()) {
         return bound;
@@ -256,7 +254,7 @@ void Polygon::split(RenderContext & rc) {
     glm::vec3 pn;
     pn = glm::normalize(glm::cross(n, v0));
     // find a point on the plane
-    v3d::type::AABBox bounds;
+    v3d::type::geometry::AABBox bounds;
     glm::vec3 mp;
     glm::vec3 pop;
     bounds = bound();

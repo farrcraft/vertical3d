@@ -5,7 +5,7 @@
 
 #include "WireframeVisitor.h"
 
-#include <api/type/AABBox.h>
+#include <api/type/geometry/AABBox.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -127,7 +127,7 @@ void WireframeVisitor::markers(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
     }
 
     float size = 0.0f;
-    const v3d::type::AABBox bound = mesh->bound();
+    const v3d::type::geometry::AABBox bound = mesh->bound();
     const glm::vec3 extent = bound.max() - bound.min();
     size = std::max(std::max(extent.x, extent.y), extent.z) * markerScale;
     if (size <= 0.0f) {

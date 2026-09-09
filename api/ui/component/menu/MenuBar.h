@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/type/Bound2D.h>
+#include <api/type/geometry/Bound2D.h>
 #include <api/ui/Component.h>
 
 #include <cstddef>
@@ -74,7 +74,7 @@ class MenuBar : public Component {
      * @param index which menu, which must be less than size()
      * @return the label's bounds as the last draw left them
      **/
-    v3d::type::Bound2D bound(std::size_t index) const;
+    v3d::type::geometry::Bound2D bound(std::size_t index) const;
 
     /**
      * @return the menu the cursor is over, or -1 when it is over none
@@ -168,7 +168,7 @@ class MenuBar : public Component {
     static boost::shared_ptr<MenuItem> find(const boost::shared_ptr<Menu>& menu, const std::string& command);
 
     std::vector<std::string> labels_;
-    std::vector<v3d::type::Bound2D> bounds_;  // where each label was drawn in the strip
+    std::vector<v3d::type::geometry::Bound2D> bounds_;  // where each label was drawn in the strip
     std::vector<boost::shared_ptr<Menu>> menus_;
     std::vector<boost::shared_ptr<Menu>> panels_;
     int hover_;  // the menu the cursor is over, or -1

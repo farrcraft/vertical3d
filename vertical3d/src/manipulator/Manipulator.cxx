@@ -105,7 +105,7 @@ Manipulator::Placement Manipulator::placement(const boost::shared_ptr<v3d::brep:
         return placement;
     }
 
-    boost::shared_ptr<v3d::type::Camera> camera = view.camera();
+    boost::shared_ptr<v3d::type::camera::Camera> camera = view.camera();
     const glm::vec4& region = view.region();
     if (!camera || region.z <= 0.0f || region.w <= 0.0f) {
         return placement;
@@ -165,7 +165,7 @@ glm::vec4 Manipulator::colour(Axis axis) const {
 /**
  **/
 bool Manipulator::project(const ViewPort& view, const glm::vec3& point, glm::vec2* position) {
-    boost::shared_ptr<v3d::type::Camera> camera = view.camera();
+    boost::shared_ptr<v3d::type::camera::Camera> camera = view.camera();
     const glm::vec4& region = view.region();
     if (!camera || region.z <= 0.0f || region.w <= 0.0f) {
         return false;
@@ -193,7 +193,7 @@ bool Manipulator::project(const ViewPort& view, const glm::vec3& point, glm::vec
 /**
  **/
 float Manipulator::unitsPerPixel(const ViewPort& view, const glm::vec3& at) {
-    boost::shared_ptr<v3d::type::Camera> camera = view.camera();
+    boost::shared_ptr<v3d::type::camera::Camera> camera = view.camera();
     const glm::vec4& region = view.region();
     if (!camera || region.z <= 0.0f || region.w <= 0.0f) {
         return 0.0f;
@@ -214,7 +214,7 @@ float Manipulator::unitsPerPixel(const ViewPort& view, const glm::vec3& at) {
 /**
  **/
 void Manipulator::basis(const ViewPort& view, glm::vec3* right, glm::vec3* up, glm::vec3* forward) {
-    boost::shared_ptr<v3d::type::Camera> camera = view.camera();
+    boost::shared_ptr<v3d::type::camera::Camera> camera = view.camera();
     if (!camera) {
         return;
     }

@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE(polygon_bound_test) {
     polygon.addVertex(vertex(3.0f, -2.0f, 5.0f));
     polygon.addVertex(vertex(0.0f, 1.0f, -7.0f));
 
-    v3d::type::AABBox bound = polygon.bound();
+    v3d::type::geometry::AABBox bound = polygon.bound();
 
     BOOST_TEST((bound.min() == glm::vec3(-1.0f, -2.0f, -7.0f)));
     BOOST_TEST((bound.max() == glm::vec3(3.0f, 4.0f, 5.0f)));
@@ -98,7 +98,7 @@ BOOST_AUTO_TEST_CASE(polygon_bound_test) {
 BOOST_AUTO_TEST_CASE(polygon_empty_bound_test) {
     v3d::moya::Polygon polygon;
 
-    v3d::type::AABBox bound = polygon.bound();
+    v3d::type::geometry::AABBox bound = polygon.bound();
 
     BOOST_TEST((bound.min() == glm::vec3(0.0f, 0.0f, 0.0f)));
     BOOST_TEST((bound.max() == glm::vec3(0.0f, 0.0f, 0.0f)));

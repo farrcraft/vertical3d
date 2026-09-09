@@ -18,7 +18,7 @@ const unsigned int SIZE = 16;
 
 void frame(v3d::talyn::RenderContext & rc) {
     rc.format(SIZE, SIZE);
-    v3d::type::CameraProfile & profile = rc.scene().camera().profile();
+    v3d::type::camera::Profile & profile = rc.scene().camera().profile();
     profile.orthographic(true);
     profile.pixelAspect(1.0f);
     profile.orthoZoom(1.0f);

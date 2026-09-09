@@ -6,8 +6,8 @@
 #pragma once
 
 #include <api/brep/BRep.h>
-#include <api/type/Camera.h>
-#include <api/type/Ray.h>
+#include <api/type/camera/Camera.h>
+#include <api/type/geometry/Ray.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/SceneVisitor.h>
 #include <vertical3d/src/view/ViewPort.h>
@@ -114,8 +114,8 @@ class Picker final : public SceneVisitor {
 
     // the state of one pick, valid only for the duration of the walk
     SelectMask mask_;
-    v3d::type::Ray ray_;
-    v3d::type::Camera* camera_;
+    v3d::type::geometry::Ray ray_;
+    v3d::type::camera::Camera* camera_;
     int viewport_[4];
     glm::vec2 cursor_;
     glm::mat4 model_;

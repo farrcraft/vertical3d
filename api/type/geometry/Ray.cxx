@@ -13,7 +13,7 @@
 #include <glm/geometric.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::type {
+namespace v3d::type::geometry {
 
 namespace {
 
@@ -158,4 +158,4 @@ bool Ray::intersects(const glm::vec3& a, const glm::vec3& b, const glm::vec3& c,
     return true;
 }
 
-};  // namespace v3d::type
+};  // namespace v3d::type::geometry

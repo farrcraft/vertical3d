@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/type/Bound2D.h>
+#include <api/type/geometry/Bound2D.h>
 #include <api/ui/paint/Text.h>
 
 #include <functional>
@@ -87,7 +87,7 @@ class Arranger final {
      * @param paint what fills each box as it is written, or empty to place and not draw
      **/
     void walk(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<Component>& component,
-        const v3d::type::Bound2D& bounds, const Paint& paint) const;
+        const v3d::type::geometry::Bound2D& bounds, const Paint& paint) const;
 
     /**
      * The size a component makes of itself, which is what an Auto extent resolves to - the
@@ -103,7 +103,7 @@ class Arranger final {
      *      line it lays out, because the line is shared, so an Auto extent there is what
      *      the component makes of itself and nothing more
      **/
-    glm::vec2 natural(Component& component, const v3d::type::Bound2D& room) const;
+    glm::vec2 natural(Component& component, const v3d::type::geometry::Bound2D& room) const;
 
     /**
      * Where each strip of a container goes, and how much of the canvas they take between
@@ -132,7 +132,7 @@ class Arranger final {
      * Where a tab bar's chosen page goes - the room the strip and its rule leave under
      * them.
      **/
-    v3d::type::Bound2D page(const component::TabBar& bar) const;
+    v3d::type::geometry::Bound2D page(const component::TabBar& bar) const;
 
     /**
      * How much room one button asks for along a strip - its icon's side when it names one,
@@ -154,8 +154,8 @@ class Arranger final {
      * @param bounds the box the children are laid out inside
      * @param boxes filled with one box per child, in the order the children are held
      **/
-    void arrange(const component::Box& box, const v3d::type::Bound2D& bounds,
-        std::vector<v3d::type::Bound2D>* boxes) const;
+    void arrange(const component::Box& box, const v3d::type::geometry::Bound2D& bounds,
+        std::vector<v3d::type::geometry::Bound2D>* boxes) const;
 
     paint::Measure measure_;
     const style::Resolver& styles_;

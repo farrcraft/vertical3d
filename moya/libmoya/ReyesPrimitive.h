@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/type/AABBox.h>
+#include <api/type/geometry/AABBox.h>
 
 #include "MicroPolygonGrid.h"
 
@@ -23,7 +23,7 @@ class ReyesPrimitive {
         virtual ~ReyesPrimitive();
 
         virtual bool diceable(void) const;
-        virtual v3d::type::AABBox bound(void) const;
+        virtual v3d::type::geometry::AABBox bound(void) const;
         /**
          * Break the primitive into smaller ones and submit each back to the first pass,
          * which is what decides the bucket and the diceability of each piece. The caller

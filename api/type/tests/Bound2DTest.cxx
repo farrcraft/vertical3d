@@ -3,12 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/type/Bound2D.h>
+#include <api/type/geometry/Bound2D.h>
 
 #include <boost/test/unit_test.hpp>
 
 BOOST_AUTO_TEST_CASE(bound2d_test) {
-    v3d::type::Bound2D bound(2.0f, 5.0f, 10.0f, 20.0f);
+    v3d::type::geometry::Bound2D bound(2.0f, 5.0f, 10.0f, 20.0f);
 
     // test constructor & get position
     glm::vec2 position = bound.position();
@@ -20,7 +20,7 @@ BOOST_AUTO_TEST_CASE(bound2d_test) {
     BOOST_CHECK_EQUAL(size[0], 10.0f);
     BOOST_CHECK_EQUAL(size[1], 20.0f);
 
-    v3d::type::Bound2D bound2(position, size);
+    v3d::type::geometry::Bound2D bound2(position, size);
 
     // test 2nd constructor form
     glm::vec2 position2 = bound2.position();

@@ -111,7 +111,7 @@ void CameraControlTool::zoom(const glm::vec2& position) {
     if (!view_) {
         return;
     }
-    boost::shared_ptr<v3d::type::Camera> camera = view_->camera();
+    boost::shared_ptr<v3d::type::camera::Camera> camera = view_->camera();
     if (!camera) {
         return;
     }
@@ -136,7 +136,7 @@ void CameraControlTool::truck(const glm::vec2& position) {
     if (!view_) {
         return;
     }
-    boost::shared_ptr<v3d::type::Camera> camera = view_->camera();
+    boost::shared_ptr<v3d::type::camera::Camera> camera = view_->camera();
     if (!camera) {
         return;
     }
@@ -170,7 +170,7 @@ void CameraControlTool::pan(const glm::vec2& position) {
     if (!view_) {
         return;
     }
-    boost::shared_ptr<v3d::type::Camera> camera = view_->camera();
+    boost::shared_ptr<v3d::type::camera::Camera> camera = view_->camera();
     if (!camera) {
         return;
     }

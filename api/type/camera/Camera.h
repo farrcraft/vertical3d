@@ -5,12 +5,13 @@
 
 #pragma once
 
-#include "CameraProfile.h"
-#include "Ray.h"
+#include <api/type/geometry/Ray.h>
+
+#include "Profile.h"
 
 #include <glm/vec2.hpp>
 
-namespace v3d::type {
+namespace v3d::type::camera {
 
 /**
  *	A 3D viewing camera.
@@ -18,7 +19,7 @@ namespace v3d::type {
 class Camera {
  public:
         Camera();
-        explicit Camera(const CameraProfile & profile);
+        explicit Camera(const Profile & profile);
         virtual ~Camera();
 
         // get
@@ -28,12 +29,12 @@ class Camera {
         /**
          * Access the underlying camera profile
          */
-        CameraProfile & profile();
+        Profile & profile();
 
         /**
          * Access the underlying camera profile read only.
          */
-        const CameraProfile & profile() const;
+        const Profile & profile() const;
 
         glm::vec3 unproject(const glm::vec3 & point, int viewport[4]);
         glm::vec3 project(const glm::vec3 & point, int viewport[4]);
@@ -49,7 +50,7 @@ class Camera {
          *	@param point where the click was, in window pixels
          *	@param viewport the region the camera draws into, as x, y, width, height
          */
-        Ray ray(const glm::vec2 & point, int viewport[4]);
+        geometry::Ray ray(const glm::vec2 & point, int viewport[4]);
 
         /**
          *	Create a projection matrix.
@@ -136,7 +137,7 @@ class Camera {
         glm::vec3 lookAt_;
         glm::mat4x4 projection_;
         glm::mat4x4 view_;  // viewing transformation
-        CameraProfile profile_;
+        Profile profile_;
 };
 
-};  // namespace v3d::type
+};  // namespace v3d::type::camera

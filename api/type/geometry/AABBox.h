@@ -11,7 +11,7 @@
 
 // #include "Polygon.h"
 
-namespace v3d::type {
+namespace v3d::type::geometry {
 /**
  * A class defining a 3D Axis Aligned Bounding Box.
  */
@@ -74,4 +74,4 @@ class AABBox final {
     glm::vec3 max_;
 };
 
-};  // namespace v3d::type
+};  // namespace v3d::type::geometry

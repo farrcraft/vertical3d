@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/type/Bound2D.h>
+#include <api/type/geometry/Bound2D.h>
 
 #include <glm/vec2.hpp>
 
@@ -84,7 +84,7 @@ struct Layout final {
      *      with no parent
      * @param own the size the component makes of itself, for an Auto extent
      **/
-    v3d::type::Bound2D resolve(const v3d::type::Bound2D& parent, const glm::vec2& own) const;
+    v3d::type::geometry::Bound2D resolve(const v3d::type::geometry::Bound2D& parent, const glm::vec2& own) const;
 
     Length x;
     Length y;

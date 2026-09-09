@@ -31,7 +31,7 @@ boost::shared_ptr<v3d::image::Image> render() {
     v3d::talyn::RenderContext rc;
     rc.format(64, 48);
 
-    v3d::type::CameraProfile & profile = rc.scene().camera().profile();
+    v3d::type::camera::Profile & profile = rc.scene().camera().profile();
     profile.orthographic(true);
     // the frame is 4:3, so the pixel has to be, or the picture is stretched across it
     profile.pixelAspect(4.0f / 3.0f);

@@ -3,8 +3,8 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/type/Camera.h>
-#include <api/type/IsometricCamera.h>
+#include <api/type/camera/Camera.h>
+#include <api/type/camera/Isometric.h>
 
 #include <cmath>
 
@@ -21,8 +21,8 @@ const int VIEWPORT_HEIGHT = 600;
  * A camera the orbit has been written onto, with its matrices built and a viewport that is
  * not square - a square one would hide an aspect ratio applied to the wrong axis.
  **/
-v3d::type::Camera applied(const v3d::type::IsometricCamera& orbit) {
-    v3d::type::Camera camera;
+v3d::type::camera::Camera applied(const v3d::type::camera::Isometric& orbit) {
+    v3d::type::camera::Camera camera;
     camera.profile().pixelAspect(static_cast<float>(VIEWPORT_WIDTH) / static_cast<float>(VIEWPORT_HEIGHT));
     camera.profile().clipping(0.1f, 200.0f);
     orbit.apply(&camera);
@@ -31,7 +31,7 @@ v3d::type::Camera applied(const v3d::type::IsometricCamera& orbit) {
     return camera;
 }
 
-glm::vec3 screen(v3d::type::Camera* camera, const glm::vec3& point) {
+glm::vec3 screen(v3d::type::camera::Camera* camera, const glm::vec3& point) {
     int viewport[4] = { 0, 0, VIEWPORT_WIDTH, VIEWPORT_HEIGHT };
     return camera->project(point, viewport);
 }
@@ -39,21 +39,21 @@ glm::vec3 screen(v3d::type::Camera* camera, const glm::vec3& point) {
 };  // namespace
 
 BOOST_AUTO_TEST_CASE(isometriccamera_defaults_test) {
-    const v3d::type::IsometricCamera orbit;
+    const v3d::type::camera::Isometric orbit;
 
     BOOST_CHECK_EQUAL(orbit.azimuth(), 0);
-    BOOST_CHECK_CLOSE(orbit.zoom(), v3d::type::IsometricCamera::DEFAULT_ZOOM, 0.01f);
-    BOOST_CHECK_CLOSE(orbit.elevation(), v3d::type::IsometricCamera::DEFAULT_ELEVATION, 0.01f);
-    BOOST_CHECK_CLOSE(orbit.distance(), v3d::type::IsometricCamera::DEFAULT_DISTANCE, 0.01f);
+    BOOST_CHECK_CLOSE(orbit.zoom(), v3d::type::camera::Isometric::DEFAULT_ZOOM, 0.01f);
+    BOOST_CHECK_CLOSE(orbit.elevation(), v3d::type::camera::Isometric::DEFAULT_ELEVATION, 0.01f);
+    BOOST_CHECK_CLOSE(orbit.distance(), v3d::type::camera::Isometric::DEFAULT_DISTANCE, 0.01f);
     BOOST_CHECK_EQUAL(orbit.target().x, 0.0f);
     BOOST_CHECK_EQUAL(orbit.target().y, 0.0f);
     BOOST_CHECK_EQUAL(orbit.target().z, 0.0f);
 }
 
 BOOST_AUTO_TEST_CASE(isometriccamera_rotation_wraps_test) {
-    v3d::type::IsometricCamera orbit;
+    v3d::type::camera::Isometric orbit;
 
-    for (int step = 1; step < v3d::type::IsometricCamera::AZIMUTHS; ++step) {
+    for (int step = 1; step < v3d::type::camera::Isometric::AZIMUTHS; ++step) {
         orbit.rotate(1);
         BOOST_CHECK_EQUAL(orbit.azimuth(), step);
     }
@@ -72,10 +72,10 @@ BOOST_AUTO_TEST_CASE(isometriccamera_rotation_wraps_test) {
 }
 
 BOOST_AUTO_TEST_CASE(isometriccamera_eye_is_on_the_orbit_test) {
-    v3d::type::IsometricCamera orbit;
+    v3d::type::camera::Isometric orbit;
     orbit.target(glm::vec3(3.0f, 0.0f, -4.0f));
 
-    for (int index = 0; index < v3d::type::IsometricCamera::AZIMUTHS; ++index) {
+    for (int index = 0; index < v3d::type::camera::Isometric::AZIMUTHS; ++index) {
         orbit.azimuth(index);
         const glm::vec3 offset = orbit.eye() - orbit.target();
 
@@ -87,9 +87,9 @@ BOOST_AUTO_TEST_CASE(isometriccamera_eye_is_on_the_orbit_test) {
 }
 
 BOOST_AUTO_TEST_CASE(isometriccamera_axes_are_on_the_ground_test) {
-    v3d::type::IsometricCamera orbit;
+    v3d::type::camera::Isometric orbit;
 
-    for (int index = 0; index < v3d::type::IsometricCamera::AZIMUTHS; ++index) {
+    for (int index = 0; index < v3d::type::camera::Isometric::AZIMUTHS; ++index) {
         orbit.azimuth(index);
 
         // both axes lie in the ground plane, are unit length and are at right angles, so a
@@ -103,7 +103,7 @@ BOOST_AUTO_TEST_CASE(isometriccamera_axes_are_on_the_ground_test) {
 }
 
 BOOST_AUTO_TEST_CASE(isometriccamera_a_quarter_turn_turns_the_axes_test) {
-    v3d::type::IsometricCamera orbit;
+    v3d::type::camera::Isometric orbit;
 
     const glm::vec3 forward = orbit.forward();
     const glm::vec3 right = orbit.right();
@@ -120,11 +120,11 @@ BOOST_AUTO_TEST_CASE(isometriccamera_a_quarter_turn_turns_the_axes_test) {
 }
 
 BOOST_AUTO_TEST_CASE(isometriccamera_right_is_to_the_right_on_screen_test) {
-    v3d::type::IsometricCamera orbit;
+    v3d::type::camera::Isometric orbit;
 
-    for (int index = 0; index < v3d::type::IsometricCamera::AZIMUTHS; ++index) {
+    for (int index = 0; index < v3d::type::camera::Isometric::AZIMUTHS; ++index) {
         orbit.azimuth(index);
-        v3d::type::Camera camera = applied(orbit);
+        v3d::type::camera::Camera camera = applied(orbit);
 
         const glm::vec3 centre = screen(&camera, orbit.target());
         const glm::vec3 toRight = screen(&camera, orbit.target() + orbit.right() * 2.0f);
@@ -143,9 +143,9 @@ BOOST_AUTO_TEST_CASE(isometriccamera_right_is_to_the_right_on_screen_test) {
 }
 
 BOOST_AUTO_TEST_CASE(isometriccamera_the_target_is_the_centre_of_the_view_test) {
-    v3d::type::IsometricCamera orbit;
+    v3d::type::camera::Isometric orbit;
     orbit.target(glm::vec3(-6.0f, 0.0f, 2.0f));
-    v3d::type::Camera camera = applied(orbit);
+    v3d::type::camera::Camera camera = applied(orbit);
 
     const glm::vec3 centre = screen(&camera, orbit.target());
 
@@ -154,7 +154,7 @@ BOOST_AUTO_TEST_CASE(isometriccamera_the_target_is_the_centre_of_the_view_test) 
 }
 
 BOOST_AUTO_TEST_CASE(isometriccamera_pan_moves_along_the_view_axes_test) {
-    v3d::type::IsometricCamera orbit;
+    v3d::type::camera::Isometric orbit;
     orbit.azimuth(1);
 
     const glm::vec3 expected = orbit.right() * 3.0f + orbit.forward() * -2.0f;
@@ -166,32 +166,32 @@ BOOST_AUTO_TEST_CASE(isometriccamera_pan_moves_along_the_view_axes_test) {
 }
 
 BOOST_AUTO_TEST_CASE(isometriccamera_zoom_is_clamped_test) {
-    v3d::type::IsometricCamera orbit;
+    v3d::type::camera::Isometric orbit;
 
     orbit.zoom(12.0f);
     BOOST_CHECK_CLOSE(orbit.zoom(), 12.0f, 0.01f);
 
-    orbit.zoom(v3d::type::IsometricCamera::MINIMUM_ZOOM - 100.0f);
-    BOOST_CHECK_CLOSE(orbit.zoom(), v3d::type::IsometricCamera::MINIMUM_ZOOM, 0.01f);
+    orbit.zoom(v3d::type::camera::Isometric::MINIMUM_ZOOM - 100.0f);
+    BOOST_CHECK_CLOSE(orbit.zoom(), v3d::type::camera::Isometric::MINIMUM_ZOOM, 0.01f);
 
-    orbit.zoom(v3d::type::IsometricCamera::MAXIMUM_ZOOM + 100.0f);
-    BOOST_CHECK_CLOSE(orbit.zoom(), v3d::type::IsometricCamera::MAXIMUM_ZOOM, 0.01f);
+    orbit.zoom(v3d::type::camera::Isometric::MAXIMUM_ZOOM + 100.0f);
+    BOOST_CHECK_CLOSE(orbit.zoom(), v3d::type::camera::Isometric::MAXIMUM_ZOOM, 0.01f);
 
     // the relative form clamps the same way, so holding a key down cannot walk past the end
-    orbit.zoom(v3d::type::IsometricCamera::MINIMUM_ZOOM);
+    orbit.zoom(v3d::type::camera::Isometric::MINIMUM_ZOOM);
     orbit.zoomBy(-5.0f);
-    BOOST_CHECK_CLOSE(orbit.zoom(), v3d::type::IsometricCamera::MINIMUM_ZOOM, 0.01f);
+    BOOST_CHECK_CLOSE(orbit.zoom(), v3d::type::camera::Isometric::MINIMUM_ZOOM, 0.01f);
     orbit.zoomBy(3.0f);
-    BOOST_CHECK_CLOSE(orbit.zoom(), v3d::type::IsometricCamera::MINIMUM_ZOOM + 3.0f, 0.01f);
+    BOOST_CHECK_CLOSE(orbit.zoom(), v3d::type::camera::Isometric::MINIMUM_ZOOM + 3.0f, 0.01f);
 }
 
 BOOST_AUTO_TEST_CASE(isometriccamera_apply_writes_the_profile_test) {
-    v3d::type::IsometricCamera orbit;
+    v3d::type::camera::Isometric orbit;
     orbit.azimuth(2);
     orbit.zoom(7.0f);
     orbit.target(glm::vec3(1.0f, 0.0f, 5.0f));
 
-    v3d::type::Camera camera;
+    v3d::type::camera::Camera camera;
     camera.orthographic(false);
     camera.profile().clipping(0.1f, 200.0f);
     orbit.apply(&camera);
@@ -214,7 +214,7 @@ BOOST_AUTO_TEST_CASE(isometriccamera_apply_writes_the_profile_test) {
 }
 
 BOOST_AUTO_TEST_CASE(isometriccamera_apply_ignores_a_null_camera_test) {
-    const v3d::type::IsometricCamera orbit;
+    const v3d::type::camera::Isometric orbit;
 
     orbit.apply(nullptr);
 }

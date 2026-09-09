@@ -552,11 +552,30 @@ two that failed.
 
 ### Step 10 — `api/type` keeps types, and two files leave
 
+**Landed 2026-09-08.** Build clean, `ctest` 24 of 24, cpplint clean.
+
 ```
 type/           Model
-type/camera/    Camera CameraProfile IsometricCamera ArcBall     v3d::type::camera
-type/geometry/  AABBox Bound2D Ray                               v3d::type::geometry
+type/camera/    Camera Profile Isometric ArcBall     <- was CameraProfile, IsometricCamera
+type/geometry/  AABBox Bound2D Ray
 ```
+
+Two classes lose the prefix the flat directory forced on them, by the rule step 7 settled:
+`camera::Profile` and `camera::Isometric`. `camera::Camera` keeps its name for the reason
+`device::Device` did.
+
+**`npot` was replaced rather than moved.** It is `std::bit_ceil` from `<bit>`, which this tree
+already compiles against, so `api/font/Font2D.cxx` calls the standard library and nothing is
+left to test. The two differ at zero — `npot(0)` is 0 and `bit_ceil(0)` is 1 — which cannot
+arise here, since the argument is `(ascent + descent + pad) * rows + pad` with `pad` a const 3
+and `rows` at least 1.
+
+**A blanket rename reached a class in another library.** `CameraProfile` → `Profile` also
+renamed `v3d::config::CameraProfiles`, plural and unrelated, across eight files including a doc
+comment in `SpriteSheets.h`. It failed loudly only because an include path stopped resolving; a
+class merely *used* under a wrong name would have compiled. That is the third substring
+collision in this plan, after `VkPipelineCache` and `DeviceBuffer`, and the pattern is worth
+stating: **before a rename, grep the old name and read every hit that is not the class itself.**
 
 `Model` stays at the top: it is the ADR-0024 seam both renderers read and ADR-0030's interleaved
 array, and it is the one thing in this library that is not a camera or a shape.

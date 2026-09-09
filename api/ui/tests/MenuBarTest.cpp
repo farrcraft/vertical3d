@@ -98,7 +98,7 @@ struct Fixture final {
      * The middle of a menu's label in the strip, which the bar holds rather than the menu.
      **/
     glm::vec2 label(std::size_t index) const {
-        const v3d::type::Bound2D bounds = bar->bound(index);
+        const v3d::type::geometry::Bound2D bounds = bar->bound(index);
         return bounds.position() + bounds.size() * 0.5f;
     }
 
@@ -251,7 +251,7 @@ BOOST_AUTO_TEST_CASE(the_cursor_opens_a_flyout_from_a_submenu_item) {
     fixture.draw();
     const boost::shared_ptr<v3d::ui::component::Menu>& flyout = fixture.bar->panels().back();
     // through the bound, because a menu's own size() is its item count
-    const v3d::type::Bound2D bounds = panel->bound();
+    const v3d::type::geometry::Bound2D bounds = panel->bound();
     BOOST_CHECK_CLOSE(flyout->position().x, bounds.position().x + bounds.size().x, 0.01f);
     BOOST_CHECK_CLOSE(flyout->position().y, shading->position().y, 0.01f);
 

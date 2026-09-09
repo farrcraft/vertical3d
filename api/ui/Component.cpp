@@ -134,8 +134,8 @@ void Component::clip(bool cut) {
     clip_ = cut;
 }
 
-v3d::type::Bound2D Component::bound() const {
-    v3d::type::Bound2D bound(position_, size_);
+v3d::type::geometry::Bound2D Component::bound() const {
+    v3d::type::geometry::Bound2D bound(position_, size_);
     return bound;
 }
 

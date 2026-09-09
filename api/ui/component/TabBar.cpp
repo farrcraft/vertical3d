@@ -57,11 +57,11 @@ boost::shared_ptr<TabPage> TabBar::page() const {
     return held[static_cast<std::size_t>(selected_)];
 }
 
-void TabBar::tabs(const std::vector<v3d::type::Bound2D>& boxes) {
+void TabBar::tabs(const std::vector<v3d::type::geometry::Bound2D>& boxes) {
     tabs_ = boxes;
 }
 
-const std::vector<v3d::type::Bound2D>& TabBar::tabs() const noexcept {
+const std::vector<v3d::type::geometry::Bound2D>& TabBar::tabs() const noexcept {
     return tabs_;
 }
 

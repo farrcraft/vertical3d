@@ -7,7 +7,7 @@
 
 #include <glm/glm.hpp>
 
-namespace v3d::type {
+namespace v3d::type::geometry {
 
 /**
  * A 2 dimensional clipped bounding plane object
@@ -75,4 +75,4 @@ class Bound2D {
     glm::vec2 position_;
 };
 
-};  // namespace v3d::type
+};  // namespace v3d::type::geometry

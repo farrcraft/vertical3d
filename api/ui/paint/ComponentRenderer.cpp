@@ -222,7 +222,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const Contai
         return;
     }
     // the box every root component is laid out against
-    const v3d::type::Bound2D area(glm::vec2(0.0f, 0.0f),
+    const v3d::type::geometry::Bound2D area(glm::vec2(0.0f, 0.0f),
         glm::vec2(static_cast<float>(canvas->width()), static_cast<float>(canvas->height())));
 
     std::vector<std::pair<boost::shared_ptr<component::Toolbar>, glm::vec2>> strips;
@@ -574,7 +574,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     const float height = dress.barHeight;
 
     const std::vector<boost::shared_ptr<component::TabPage>> pages = bar->pages();
-    std::vector<v3d::type::Bound2D> boxes;
+    std::vector<v3d::type::geometry::Bound2D> boxes;
     boxes.reserve(pages.size());
 
     float pen = min.x;
@@ -583,7 +583,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
         const float width = measure_(label) + dress.padding;
         const glm::vec2 corner(pen, min.y);
         const glm::vec2 extent(width, height);
-        boxes.push_back(v3d::type::Bound2D(corner, extent));
+        boxes.push_back(v3d::type::geometry::Bound2D(corner, extent));
 
         const bool picked = static_cast<int>(index) == bar->selected();
         fillBox(canvas, corner, corner + extent, dress.radius, picked ? dress.highlight : dress.track);
@@ -603,7 +603,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     }
     // the plate the chosen page sits on. Descending into the page is the walk's, so that
     // painting never reaches back into layout
-    const v3d::type::Bound2D box = arranger_.page(*bar);
+    const v3d::type::geometry::Bound2D box = arranger_.page(*bar);
     fillBox(canvas, box.position(), box.position() + box.size(), 0.0f, dress.panel);
 }
 
@@ -786,7 +786,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
             origin = glm::vec2(bar->bound(static_cast<std::size_t>(bar->open())).position().x, base().barHeight);
         } else {
             // out of the right hand edge of the parent, level with the item it came from
-            const v3d::type::Bound2D bounds = panels[depth - 1]->bound();
+            const v3d::type::geometry::Bound2D bounds = panels[depth - 1]->bound();
             const boost::shared_ptr<component::MenuItem> item = panels[depth - 1]->active();
             origin = glm::vec2(bounds.position().x + bounds.size().x,
                 item ? item->position().y : bounds.position().y);

@@ -10,13 +10,13 @@
 #include <glm/glm.hpp>
 #include <glm/ext/quaternion_float.hpp>
 
-namespace v3d::type {
+namespace v3d::type::camera {
 /**
  * A class containing the common camera settings.
  */
-class CameraProfile {
+class Profile {
  public:
-        explicit CameraProfile(const std::string & name);
+        explicit Profile(const std::string & name);
         /**
         *	Construct a profile with an explicit basis.
         *	The basis vectors are taken as given and the rotation is left at identity,
@@ -27,9 +27,9 @@ class CameraProfile {
         *	@param right the camera right vector.
         *	@param direction the direction of view.
         */
-        CameraProfile(const std::string & name, const glm::vec3 & eye, const glm::vec3 & up,
+        Profile(const std::string & name, const glm::vec3 & eye, const glm::vec3 & up,
             const glm::vec3 & right, const glm::vec3 & direction);
-        virtual ~CameraProfile();
+        virtual ~Profile();
 
         // get
         std::string name() const;
@@ -103,7 +103,7 @@ class CameraProfile {
         *	Copy camera settings.
         *	@param profile the camera profile to copy settings from.
         */
-        void clone(const CameraProfile & profile);
+        void clone(const Profile & profile);
         /**
         *	Assignment operator.
         *	Copy the camera settings from one profile and assign them to another.
@@ -111,7 +111,7 @@ class CameraProfile {
         *	@param p the camera profile to copy settings from.
         *	@return the camera profile with the new settings copied to it.
         */
-        CameraProfile & operator = (const CameraProfile & p);
+        Profile & operator = (const Profile & p);
 
  protected:
         friend class Camera;
@@ -138,4 +138,4 @@ class CameraProfile {
         glm::quat rotation_;
 };
 
-};  // namespace v3d::type
+};  // namespace v3d::type::camera

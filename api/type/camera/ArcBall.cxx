@@ -10,7 +10,7 @@
 
 #include <glm/gtc/constants.hpp>
 
-namespace v3d::type {
+namespace v3d::type::camera {
 
 ArcBall::ArcBall() {
 }
@@ -81,4 +81,4 @@ void ArcBall::bounds(float width, float height) {
     height_ = 1.0f / ((height - 1.0f) * 0.5f);
 }
 
-};  // namespace v3d::type
+};  // namespace v3d::type::camera

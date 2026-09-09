@@ -92,7 +92,7 @@ void RIBHandler::clipping(float hither, float yon) {
 }
 
 bool RIBHandler::buildCamera() {
-    // a centred screen window is what a CameraProfile can hold: it carries a field of
+    // a centred screen window is what a Profile can hold: it carries a field of
     // view and a pixel aspect, not four edges
     if (std::fabs(screen_[0] + screen_[1]) > TOLERANCE || std::fabs(screen_[2] + screen_[3]) > TOLERANCE) {
         error_ = "an off centre ScreenWindow is not supported";
@@ -120,7 +120,7 @@ bool RIBHandler::buildCamera() {
         return false;
     }
 
-    v3d::type::CameraProfile & profile = rc_->scene().camera().profile();
+    v3d::type::camera::Profile & profile = rc_->scene().camera().profile();
     profile.rotation(glm::quat_cast(glm::transpose(basis)));
     profile.eye(-glm::transpose(basis) * glm::vec3(transform_[3]));
     profile.orthographic(projection_ != "perspective");

@@ -41,7 +41,7 @@ Layout::Layout() noexcept :
     anchor(Anchor::TopLeft) {
 }
 
-v3d::type::Bound2D Layout::resolve(const v3d::type::Bound2D& parent, const glm::vec2& own) const {
+v3d::type::geometry::Bound2D Layout::resolve(const v3d::type::geometry::Bound2D& parent, const glm::vec2& own) const {
     const glm::vec2 extent = parent.size();
     const glm::vec2 size(width.resolve(extent.x, own.x), height.resolve(extent.y, own.y));
 
@@ -68,7 +68,7 @@ v3d::type::Bound2D Layout::resolve(const v3d::type::Bound2D& parent, const glm::
         default:
             break;
     }
-    return v3d::type::Bound2D(corner, size);
+    return v3d::type::geometry::Bound2D(corner, size);
 }
 
 };  // namespace v3d::ui

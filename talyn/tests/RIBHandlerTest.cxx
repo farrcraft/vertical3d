@@ -164,7 +164,7 @@ BOOST_AUTO_TEST_CASE(talyn_ribhandler_camera_placement_test) {
         "WorldEnd\n", &handler));
 
     BOOST_CHECK_EQUAL(handler.error(), "");
-    const v3d::type::CameraProfile & profile = rc->scene().camera().profile();
+    const v3d::type::camera::Profile & profile = rc->scene().camera().profile();
     BOOST_CHECK_CLOSE(profile.eye().z, -4.0f, 0.01f);
     BOOST_CHECK_EQUAL(profile.eye().x, 0.0f);
     BOOST_CHECK(!profile.orthographic());
@@ -188,14 +188,14 @@ BOOST_AUTO_TEST_CASE(talyn_ribhandler_orthographic_test) {
         "WorldEnd\n", &handler));
 
     BOOST_CHECK_EQUAL(handler.error(), "");
-    const v3d::type::CameraProfile & profile = rc->scene().camera().profile();
+    const v3d::type::camera::Profile & profile = rc->scene().camera().profile();
     BOOST_CHECK(profile.orthographic());
     BOOST_CHECK_CLOSE(profile.orthoZoom(), 1.0f, 0.01f);
     BOOST_CHECK_CLOSE(profile.pixelAspect(), 4.0f / 3.0f, 0.01f);
 }
 
 /**
- * What a CameraProfile cannot hold is refused rather than rendered as something else. An off
+ * What a Profile cannot hold is refused rather than rendered as something else. An off
  * centre window has no field of view to state, and a matrix that reverses handedness is not a
  * rotation and a translation - the standard's own example camera is one of those.
  **/

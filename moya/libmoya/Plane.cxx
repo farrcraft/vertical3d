@@ -98,7 +98,7 @@ int Plane::classify(const glm::vec3 & point) const {
     classify the 8 points of the aabb against the plane
     see: http://www.flipcode.com/articles/article_frustumculling.shtml
 */
-int Plane::classify(const v3d::type::AABBox & aabb) const {
+int Plane::classify(const v3d::type::geometry::AABBox & aabb) const {
     glm::vec3 corners[8];
     aabb.vertices(corners);
     int inside = 8;  // start with all 8 points inside

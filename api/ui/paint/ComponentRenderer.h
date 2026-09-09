@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/type/Bound2D.h>
+#include <api/type/geometry/Bound2D.h>
 #include <api/ui/Arranger.h>
 #include <api/ui/style/Resolver.h>
 

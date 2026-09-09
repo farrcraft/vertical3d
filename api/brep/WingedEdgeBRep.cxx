@@ -274,8 +274,8 @@ void WingedEdgeBRep::splitEdge(Index edgeID, const glm::vec3 & point) {
 }
 
 // calculate object-space bounds of mesh
-v3d::type::AABBox WingedEdgeBRep::bound(void) const {
-    v3d::type::AABBox extents;
+v3d::type::geometry::AABBox WingedEdgeBRep::bound(void) const {
+    v3d::type::geometry::AABBox extents;
     if (vertices_.empty())
         return extents;
     glm::vec3 min;

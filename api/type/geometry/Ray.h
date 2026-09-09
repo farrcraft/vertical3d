@@ -10,7 +10,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::type {
+namespace v3d::type::geometry {
 
 /**
  * A half line: an origin and a direction, and the things it can be intersected with.
@@ -98,4 +98,4 @@ class Ray final {
     glm::vec3 direction_;
 };
 
-};  // namespace v3d::type
+};  // namespace v3d::type::geometry

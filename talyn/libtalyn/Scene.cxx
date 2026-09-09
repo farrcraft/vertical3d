@@ -68,11 +68,11 @@ glm::vec3 Triangle::shadingNormal(float u, float v) const {
 Scene::Scene() {
 }
 
-v3d::type::Camera & Scene::camera() {
+v3d::type::camera::Camera & Scene::camera() {
     return camera_;
 }
 
-const v3d::type::Camera & Scene::camera() const {
+const v3d::type::camera::Camera & Scene::camera() const {
     return camera_;
 }
 

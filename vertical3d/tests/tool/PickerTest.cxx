@@ -29,7 +29,7 @@ namespace {
  * hundred pixels.
  **/
 boost::shared_ptr<v3d::editor::ViewPort> frontView() {
-    v3d::type::CameraProfile profile("front");
+    v3d::type::camera::Profile profile("front");
     boost::shared_ptr<v3d::editor::ViewPort> view = boost::make_shared<v3d::editor::ViewPort>("front", profile);
     view->resize(glm::vec4(0.0f, 0.0f, 400.0f, 400.0f));
     return view;
@@ -40,7 +40,7 @@ boost::shared_ptr<v3d::editor::ViewPort> frontView() {
  * particular piece of geometry.
  **/
 glm::vec2 screen(const boost::shared_ptr<v3d::editor::ViewPort>& view, const glm::vec3& point) {
-    boost::shared_ptr<v3d::type::Camera> camera = view->camera();
+    boost::shared_ptr<v3d::type::camera::Camera> camera = view->camera();
     camera->createProjection();
     camera->createView();
     int viewport[4] = { 0, 0, 400, 400 };
@@ -224,7 +224,7 @@ BOOST_AUTO_TEST_CASE(picker_empty_test) {
         v3d::editor::SelectMask::Object).valid, false);
 
     // a view that has never been given a region divides by zero if it is picked in
-    v3d::type::CameraProfile profile("unsized");
+    v3d::type::camera::Profile profile("unsized");
     v3d::editor::ViewPort unsized("unsized", profile);
     scene.add(v3d::editor::create_poly_cube());
     BOOST_CHECK_EQUAL(picker.pick(scene, unsized, glm::vec2(0.0f, 0.0f),

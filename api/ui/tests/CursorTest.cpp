@@ -212,7 +212,7 @@ BOOST_AUTO_TEST_CASE(a_tab_bar_changes_its_page_and_sends_nothing) {
     fixture.draw();
 
     BOOST_REQUIRE_EQUAL(bar->tabs().size(), 2U);
-    const v3d::type::Bound2D& tab = bar->tabs()[1];
+    const v3d::type::geometry::Bound2D& tab = bar->tabs()[1];
     BOOST_CHECK(fixture.cursor->press(tab.position() + tab.size() * 0.5f));
     BOOST_CHECK_EQUAL(bar->selected(), 1);
     BOOST_CHECK(fixture.sent.empty());

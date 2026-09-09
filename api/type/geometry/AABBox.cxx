@@ -7,7 +7,7 @@
 
 #include <glm/common.hpp>
 
-namespace v3d::type {
+namespace v3d::type::geometry {
 
 // an empty box sits at the origin rather than wherever the stack left it - BRep::bound
 // returns a default-constructed box for a mesh with no vertices, and its caller reads it
@@ -80,4 +80,4 @@ void AABBox::extend(const glm::vec3& point) {
     max_ = glm::max(max_, point);
 }
 
-};  // namespace v3d::type
+};  // namespace v3d::type::geometry

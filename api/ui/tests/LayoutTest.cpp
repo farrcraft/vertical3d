@@ -69,14 +69,14 @@ BOOST_AUTO_TEST_CASE(a_length_resolves_against_an_extent) {
  * always grows inwards from it.
  **/
 BOOST_AUTO_TEST_CASE(an_anchor_measures_from_the_corner_it_names) {
-    const v3d::type::Bound2D parent(glm::vec2(0.0f, 0.0f), glm::vec2(200.0f, 100.0f));
+    const v3d::type::geometry::Bound2D parent(glm::vec2(0.0f, 0.0f), glm::vec2(200.0f, 100.0f));
     v3d::ui::Layout layout;
     layout.x = v3d::ui::Length(10.0f, v3d::ui::Length::Unit::Pixels);
     layout.y = v3d::ui::Length(20.0f, v3d::ui::Length::Unit::Pixels);
     layout.width = v3d::ui::Length(40.0f, v3d::ui::Length::Unit::Pixels);
     layout.height = v3d::ui::Length(30.0f, v3d::ui::Length::Unit::Pixels);
 
-    v3d::type::Bound2D box = layout.resolve(parent, glm::vec2(0.0f, 0.0f));
+    v3d::type::geometry::Bound2D box = layout.resolve(parent, glm::vec2(0.0f, 0.0f));
     BOOST_CHECK_CLOSE(box.position().x, 10.0f, 0.001f);
     BOOST_CHECK_CLOSE(box.position().y, 20.0f, 0.001f);
 

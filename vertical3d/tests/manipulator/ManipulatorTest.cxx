@@ -27,7 +27,7 @@ namespace {
  * along +z, so world x runs right across the view and world y runs up it.
  **/
 boost::shared_ptr<v3d::editor::ViewPort> frontView() {
-    v3d::type::CameraProfile profile("front");
+    v3d::type::camera::Profile profile("front");
     boost::shared_ptr<v3d::editor::ViewPort> view = boost::make_shared<v3d::editor::ViewPort>("front", profile);
     view->resize(glm::vec4(0.0f, 0.0f, 400.0f, 400.0f));
     return view;
