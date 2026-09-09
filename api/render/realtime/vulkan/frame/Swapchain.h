@@ -24,6 +24,9 @@ namespace v3d::render::realtime::vulkan::frame {
  * A window with no area - a minimized one, typically - has no chain that can be
  * built for it. Rather than fail, the chain is left empty in that case and valid()
  * says so, leaving the caller to skip drawing and try again after the next resize.
+ *
+ * The colour format is UNORM unless the caller names one - ADR-0009 and ADR-0049. What was
+ * settled on is format(), and a pipeline drawing into the chain is built against it.
  **/
 class Swapchain final {
  public:
@@ -32,8 +35,13 @@ class Swapchain final {
      * @param device the device whose queues will draw to and present the images
      * @param width the width to size the images to, when the surface leaves us the choice
      * @param height the height to size the images to, when the surface leaves us the choice
+     * @param preferred the colour format to present through, where the surface offers it.
+     *        VK_FORMAT_UNDEFINED leaves the choice to ADR-0009, and so does a format the
+     *        surface does not offer - a chain is built either way. Ask format() for what
+     *        was settled on.
      **/
-    Swapchain(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<device::Device>& device, uint32_t width, uint32_t height);
+    Swapchain(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<device::Device>& device, uint32_t width, uint32_t height,
+        VkFormat preferred = VK_FORMAT_UNDEFINED);
 
     /**
      **/
@@ -45,6 +53,9 @@ class Swapchain final {
     /**
      * Throw the chain away and build a new one, sized for a window that has changed.
      * Waits for the device to go idle first, so nothing is still reading the old images.
+     *
+     * The format the chain was created with is asked for again, so a pipeline built
+     * against it does not have to be rebuilt.
      **/
     void recreate(uint32_t width, uint32_t height);
 
@@ -83,6 +94,20 @@ class Swapchain final {
      **/
     std::size_t length() const noexcept;
 
+    /**
+     * Which of the formats a surface offers the chain is built with.
+     *
+     * Public because it decides nothing else and needs no device, so a machine with no gpu
+     * can still test the rule.
+     *
+     * @param formats what the surface offers, as vulkan reported them
+     * @param preferred the caller's choice, or VK_FORMAT_UNDEFINED for none
+     * @return the preferred format in a non linear srgb colour space where it is offered,
+     *         otherwise a 32 bit UNORM one per ADR-0009, otherwise the first offered
+     **/
+    static VkSurfaceFormatKHR chooseFormat(const std::vector<VkSurfaceFormatKHR>& formats,
+        VkFormat preferred = VK_FORMAT_UNDEFINED);
+
  private:
     /**
      * What the surface will let us build, on the device we settled on.
@@ -96,11 +121,6 @@ class Swapchain final {
     /**
      **/
     Support querySupport() const;
-
-    /**
-     * @return a 32 bit srgb format where one is offered, otherwise whatever comes first
-     **/
-    static VkSurfaceFormatKHR chooseFormat(const std::vector<VkSurfaceFormatKHR>& formats);
 
     /**
      * @return mailbox where the device offers it, otherwise fifo, which always is
@@ -127,6 +147,7 @@ class Swapchain final {
     boost::shared_ptr<device::Device> device_;
     boost::shared_ptr<v3d::log::Logger> logger_;
     VkSwapchainKHR swapchain_;
+    VkFormat preferred_;
     VkFormat format_;
     VkExtent2D extent_;
     std::vector<VkImage> images_;

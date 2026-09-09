@@ -13,7 +13,8 @@
 namespace v3d::render::realtime {
 /**
  **/
-Context3D::Context3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Window>& window) :
+Context3D::Context3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Window>& window,
+    VkFormat preferred) :
     logger_(logger),
     window_(window),
     depthFormat_(VK_FORMAT_UNDEFINED) {
@@ -21,7 +22,8 @@ Context3D::Context3D(const boost::shared_ptr<v3d::log::Logger>& logger, const bo
         throw std::runtime_error("A 3D context needs a created window to render to");
     }
     device_ = boost::make_shared<vulkan::device::Device>(logger, window_->instance(), window_->surface());
-    swapchain_ = boost::make_shared<vulkan::frame::Swapchain>(logger, device_, static_cast<uint32_t>(window_->width()), static_cast<uint32_t>(window_->height()));
+    swapchain_ = boost::make_shared<vulkan::frame::Swapchain>(logger, device_, static_cast<uint32_t>(window_->width()), static_cast<uint32_t>(window_->height()),
+        preferred);
     pipelineCache_ = boost::make_shared<vulkan::pipeline::Cache>(device_);
     resources_ = boost::make_shared<vulkan::pipeline::Resources>(device_);
     presenter_ = boost::make_shared<vulkan::frame::Presenter>(logger, device_, swapchain_);

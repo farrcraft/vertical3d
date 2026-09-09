@@ -19,10 +19,12 @@ namespace v3d::render::realtime::vulkan::frame {
 
 /**
  **/
-Swapchain::Swapchain(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<device::Device>& device, uint32_t width, uint32_t height) :
+Swapchain::Swapchain(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<device::Device>& device, uint32_t width, uint32_t height,
+    VkFormat preferred) :
     device_(device),
     logger_(logger),
     swapchain_(VK_NULL_HANDLE),
+    preferred_(preferred),
     format_(VK_FORMAT_UNDEFINED),
     extent_{0, 0} {
     try {
@@ -140,7 +142,17 @@ Swapchain::Support Swapchain::querySupport() const {
 
 /**
  **/
-VkSurfaceFormatKHR Swapchain::chooseFormat(const std::vector<VkSurfaceFormatKHR>& formats) {
+VkSurfaceFormatKHR Swapchain::chooseFormat(const std::vector<VkSurfaceFormatKHR>& formats, VkFormat preferred) {
+    // a caller's format wins where the surface offers it, and falls through where it does
+    // not - ADR-0049
+    if (preferred != VK_FORMAT_UNDEFINED) {
+        for (const VkSurfaceFormatKHR& format : formats) {
+            if (format.format == preferred && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+                return format;
+            }
+        }
+    }
+
     // a UNORM format rather than an SRGB one, so a colour a shader writes is the colour
     // that appears - see ADR-0009. An _SRGB target encodes on write, taking every colour
     // in the engine as linear and brightening it
@@ -184,7 +196,7 @@ VkExtent2D Swapchain::chooseExtent(const VkSurfaceCapabilitiesKHR& capabilities,
 void Swapchain::create(uint32_t width, uint32_t height) {
     const Support support = querySupport();
 
-    const VkSurfaceFormatKHR surfaceFormat = chooseFormat(support.formats);
+    const VkSurfaceFormatKHR surfaceFormat = chooseFormat(support.formats, preferred_);
     const VkPresentModeKHR presentMode = choosePresentMode(support.presentModes);
     const VkExtent2D extent = chooseExtent(support.capabilities, width, height);
 
@@ -258,6 +270,13 @@ void Swapchain::create(uint32_t width, uint32_t height) {
     }
 
     logger_->get()->info("Created a vulkan swapchain of {} images at {} x {}", images_.size(), extent_.width, extent_.height);
+
+    // silent when there was no preference or it was met; a caller whose colours depend on
+    // the format would otherwise have to work out that it did not get one - ADR-0049
+    if (preferred_ != VK_FORMAT_UNDEFINED && format_ != preferred_) {
+        logger_->get()->warn("The surface does not offer swapchain format {}, so {} is what the chain was built with",
+            static_cast<int>(preferred_), static_cast<int>(format_));
+    }
 }
 
 /**

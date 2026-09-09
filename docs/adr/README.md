@@ -57,3 +57,4 @@ old record's status and leave the file in place.
 | [0046](0046-a-table-given-a-height-scrolls-in-its-own-right.md) | Table Scrolling — A Table Given A Height Scrolls Its Own Rows, And Its Header Stays Above Them | accepted | 2026-09-08 |
 | [0047](0047-a-component-type-is-checked-by-the-compiler.md) | UI Components — A Switch Over A Component Type Is Exhaustive, And The Compiler Names Every Place One Was Forgotten | accepted | 2026-09-08 |
 | [0048](0048-an-api-header-is-named-from-the-repository-root.md) | Include Paths — An api Header Is Named By Its Path From The Repository Root, Inside The Tree As Well As Outside | accepted | 2026-09-08 |
+| [0049](0049-a-consumer-chooses-the-swapchain-format.md) | Presentation — A Consumer Names The Swapchain Format, And UNORM Stays The Default | accepted | 2026-09-08 |

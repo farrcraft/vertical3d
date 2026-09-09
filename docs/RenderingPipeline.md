@@ -287,7 +287,15 @@ includes into a `uint32_t` array. See [Build.md](Build.md#shaders).
 The swapchain is a `UNORM` format rather than an `_SRGB` one, so the colour a shader writes is
 the colour that appears — see [ADR-0009](adr/0009-colour-authored-in-display-space.md). Every
 colour in the tree is authored in display space, and textures are uploaded as `UNORM` to
-match. A lit 3D scene will have to revisit this.
+match.
+
+**A consumer that writes linear light names its own format**, per
+[ADR-0049](adr/0049-a-consumer-chooses-the-swapchain-format.md). `Swapchain` and `Context3D`
+take a preferred format, defaulting to none and therefore to the rule above; a format the
+surface does not offer in a non-linear sRGB colour space falls back to it. Nothing in this
+tree passes one. **Build a pipeline against `Swapchain::format()` rather than against the
+default** — that was always the contract under dynamic rendering, and it is now the only way
+to be right.
 
 ## What renderFrame does
 

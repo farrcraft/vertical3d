@@ -59,6 +59,7 @@ it is there for the features that need it rather than for a picture that exists 
 
 [] a target is single-buffered, so a pass wanting the previous frame's contents needs two and has to swap them itself. A double-buffered target would be the natural next shape
 [] nothing catches a pipeline built against one colour format drawing into a target of another. It is a wrong picture rather than a validation error, because dynamic rendering takes the format from the pipeline
+[] `Engine3D::initialize` builds its `Context3D` without a preferred swapchain format, so an app on the engine shell cannot ask for one - only an app that builds its own context can ([ADR-0049](adr/0049-a-consumer-chooses-the-swapchain-format.md)). Threading it through `initialize` and `engine::run` is the shape, and no app in the tree wants one yet
 [] `Frame::passBefore` exists because `Engine3D` creates the colour pass in its constructor. A frame that let a pass say where it belongs, or an engine that created its pass lazily, would not need it
 
 ## User interface
