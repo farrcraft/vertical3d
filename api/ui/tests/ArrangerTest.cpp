@@ -6,13 +6,13 @@
 #include <api/ui/Arranger.h>
 #include <api/ui/Component.h>
 #include <api/ui/Container.h>
-#include <api/ui/style/Style.h>
 #include <api/ui/component/CheckBox.h>
 #include <api/ui/component/Label.h>
 #include <api/ui/component/Panel.h>
 #include <api/ui/component/Scrollbar.h>
 #include <api/ui/component/VerticalBox.h>
 #include <api/ui/style/Resolver.h>
+#include <api/ui/style/Style.h>
 #include <api/ui/style/Theme.h>
 #include <api/ui/style/property/Number.h>
 

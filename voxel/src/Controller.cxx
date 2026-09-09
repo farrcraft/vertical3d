@@ -8,14 +8,14 @@
 #include <api/config/Type.h>
 #include <api/engine/Feature.h>
 #include <api/render/realtime/Window.h>
+#include <voxel/src/game/GameState.h>
+#include <voxel/src/game/Player.h>
 
 #include <functional>
 #include <string>
 
 #include "Renderer.h"
 #include "Scene.h"
-#include "game/GameState.h"
-#include "game/Player.h"
 
 #include <boost/make_shared.hpp>
 

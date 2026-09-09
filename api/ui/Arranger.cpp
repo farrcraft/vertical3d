@@ -6,6 +6,20 @@
 #include "Arranger.h"
 
 #include <api/render/realtime/Canvas.h>
+#include <api/ui/component/Box.h>
+#include <api/ui/component/Button.h>
+#include <api/ui/component/CheckBox.h>
+#include <api/ui/component/Icon.h>
+#include <api/ui/component/Label.h>
+#include <api/ui/component/Scrollbar.h>
+#include <api/ui/component/SelectList.h>
+#include <api/ui/component/TabBar.h>
+#include <api/ui/component/TabPage.h>
+#include <api/ui/component/TextBox.h>
+#include <api/ui/component/Toolbar.h>
+#include <api/ui/component/Type.h>
+#include <api/ui/component/menu/MenuBar.h>
+#include <api/ui/style/Resolver.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -15,20 +29,6 @@
 
 #include "Component.h"
 #include "Container.h"
-#include "component/Box.h"
-#include "component/Button.h"
-#include "component/CheckBox.h"
-#include "component/Icon.h"
-#include "component/Label.h"
-#include "component/Scrollbar.h"
-#include "component/SelectList.h"
-#include "component/TabBar.h"
-#include "component/TabPage.h"
-#include "component/TextBox.h"
-#include "component/Toolbar.h"
-#include "component/Type.h"
-#include "component/menu/MenuBar.h"
-#include "style/Resolver.h"
 
 namespace v3d::ui {
 

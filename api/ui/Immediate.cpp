@@ -6,7 +6,10 @@
 #include "Immediate.h"
 
 #include <api/render/realtime/Canvas.h>
+#include <api/ui/component/Scrollbar.h>
+#include <api/ui/style/Resolver.h>
 #include <api/ui/style/Style.h>
+#include <api/ui/style/Theme.h>
 
 #include <algorithm>
 #include <cmath>
@@ -16,9 +19,6 @@
 #include <vector>
 
 #include "Painter.h"
-#include "component/Scrollbar.h"
-#include "style/Resolver.h"
-#include "style/Theme.h"
 
 #include <glm/common.hpp>
 #include <glm/geometric.hpp>

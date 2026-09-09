@@ -5,6 +5,16 @@
 
 #include "Cursor.h"
 
+#include <api/ui/component/Bar.h>
+#include <api/ui/component/Button.h>
+#include <api/ui/component/Scrollbar.h>
+#include <api/ui/component/SelectList.h>
+#include <api/ui/component/TabBar.h>
+#include <api/ui/component/Toolbar.h>
+#include <api/ui/component/Type.h>
+#include <api/ui/component/menu/Menu.h>
+#include <api/ui/component/menu/MenuBar.h>
+
 #include <algorithm>
 #include <vector>
 
@@ -12,15 +22,6 @@
 #include "Component.h"
 #include "Container.h"
 #include "Engine.h"
-#include "component/Bar.h"
-#include "component/Button.h"
-#include "component/Scrollbar.h"
-#include "component/SelectList.h"
-#include "component/TabBar.h"
-#include "component/Toolbar.h"
-#include "component/Type.h"
-#include "component/menu/Menu.h"
-#include "component/menu/MenuBar.h"
 
 namespace v3d::ui {
 

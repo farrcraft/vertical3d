@@ -262,6 +262,15 @@ reasoning rather than around it. The corrected comment in
 **Landed 2026-09-08.** 462 includes in 215 files, none unresolved — every relative include in
 `api/` named a real file inside `api/`. Build clean, `ctest` 24 of 24, cpplint clean.
 
+**It was incomplete, and a third commit finished it.** The conversion matched only includes
+containing `../`, but a subdirectory is outside the including file's own directory too, so
+`#include "component/Bar.h"` in `api/ui/ComponentRenderer.cpp` was equally in scope and was
+left alone — 159 of them across 24 files, 134 in `api/`. Nothing failed, because the quoted
+form compiles and lints exactly as well; the completeness grep asked whether `../` was gone,
+which is what the script did rather than what the record says. It surfaced only when step 5
+went to add an api include to `ComponentRenderer.cpp` and found no api block to add it to.
+The check in [Conventions.md](../Conventions.md) is now the one that would have caught it.
+
 **Where `<api/…>` goes was not a choice.** cpplint reads an angle-bracket include ending in `.h`
 as a *C* system header, so it must precede every C++ system header; leaving the converted lines
 where the relative ones sat is 438 `build/include_order` errors. The position that lints is the

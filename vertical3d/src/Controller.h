@@ -14,20 +14,19 @@
 #include <api/ui/Engine.h>
 #include <api/ui/component/Toolbar.h>
 #include <api/ui/component/menu/MenuBar.h>
+#include <vertical3d/src/command/CommandDirectory.h>
+#include <vertical3d/src/command/CommandStack.h>
+#include <vertical3d/src/scene/Project.h>
+#include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/tool/CameraControlTool.h>
+#include <vertical3d/src/tool/SelectMask.h>
+#include <vertical3d/src/tool/SelectTool.h>
+#include <vertical3d/src/tool/TransformTool.h>
+#include <vertical3d/src/view/ViewLayout.h>
+#include <vertical3d/src/view/ViewPort.h>
 
 #include <string>
 #include <vector>
-
-#include "tool/CameraControlTool.h"
-#include "command/CommandDirectory.h"
-#include "command/CommandStack.h"
-#include "scene/Project.h"
-#include "scene/Scene.h"
-#include "tool/SelectMask.h"
-#include "tool/SelectTool.h"
-#include "tool/TransformTool.h"
-#include "view/ViewLayout.h"
-#include "view/ViewPort.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>

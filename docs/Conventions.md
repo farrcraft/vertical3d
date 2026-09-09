@@ -20,11 +20,18 @@ where this document does not say otherwise.
 
 - **A header outside the including file's own directory is named by its path from the
   repository root**, in angle brackets: `#include <api/render/realtime/Canvas.h>`, and
-  `<vertical3d/src/scene/Node.h>` for an app's own header one directory over. A header in the
-  same directory stays `"Neighbour.h"`. There is no `../` in an include anywhere in the tree;
-  [ADR-0048](adr/0048-an-api-header-is-named-from-the-repository-root.md) says why, and
-  `grep -rn '#include "\.\./'` is the check, because nothing in the build or the linter
-  enforces it.
+  `<vertical3d/src/scene/Node.h>` for an app's own header one directory over. **A subdirectory
+  is outside it too** — `<api/ui/component/Bar.h>` from `api/ui`, not `"component/Bar.h"`. Only
+  a header in the same directory stays `"Neighbour.h"`.
+  [ADR-0048](adr/0048-an-api-header-is-named-from-the-repository-root.md) says why.
+- **The check is `grep -rn '#include "[^"]*/'`**, which should return only the generated shader
+  headers below. Nothing in the build or the linter enforces this: a quoted relative include
+  resolves exactly as well as a rooted one, so the only thing that finds a lapse is looking for
+  it. Grepping for `../` alone is not enough — it misses every `"subdirectory/Header.h"`.
+- **A generated header is the exception, and stays quoted.**
+  `#include "shaders/quad.vert.inc"` names a file `v3d_add_shader` writes into
+  `${CMAKE_CURRENT_BINARY_DIR}`, which is on that target's include path and is not in the source
+  tree at all, so it has no repository-root path to be named by.
 - **Where that block goes is not a preference.** cpplint reads an angle-bracket include ending
   in `.h` as a *C* system header, so the project block precedes every C++ system header — after
   the file's own header or its `#pragma once`, above `<string>`. That is also where

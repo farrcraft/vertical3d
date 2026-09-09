@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/type/Bound2D.h>
+#include <api/ui/style/Resolver.h>
 
 #include <string>
 #include <utility>
@@ -14,7 +15,6 @@
 #include "Arranger.h"
 #include "Dressing.h"
 #include "Text.h"
-#include "style/Resolver.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>

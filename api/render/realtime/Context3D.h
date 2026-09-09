@@ -6,20 +6,20 @@
 #pragma once
 
 #include <api/log/Logger.h>
+#include <api/render/realtime/vulkan/DepthBuffer.h>
+#include <api/render/realtime/vulkan/Device.h>
+#include <api/render/realtime/vulkan/FrameUniforms.h>
+#include <api/render/realtime/vulkan/LineRenderer.h>
+#include <api/render/realtime/vulkan/PipelineCache.h>
+#include <api/render/realtime/vulkan/Presenter.h>
+#include <api/render/realtime/vulkan/QuadRenderer.h>
+#include <api/render/realtime/vulkan/Resources.h>
+#include <api/render/realtime/vulkan/Swapchain.h>
+#include <api/render/realtime/vulkan/Uploader.h>
+#include <api/render/realtime/vulkan/WorldRenderer.h>
 
 #include "Context.h"
 #include "Window.h"
-#include "vulkan/DepthBuffer.h"
-#include "vulkan/Device.h"
-#include "vulkan/FrameUniforms.h"
-#include "vulkan/LineRenderer.h"
-#include "vulkan/PipelineCache.h"
-#include "vulkan/Presenter.h"
-#include "vulkan/QuadRenderer.h"
-#include "vulkan/WorldRenderer.h"
-#include "vulkan/Resources.h"
-#include "vulkan/Swapchain.h"
-#include "vulkan/Uploader.h"
 
 #include <boost/shared_ptr.hpp>
 

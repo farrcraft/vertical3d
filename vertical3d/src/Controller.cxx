@@ -9,6 +9,9 @@
 #include <api/engine/Feature.h>
 #include <api/render/realtime/Window.h>
 #include <api/ui/Container.h>
+#include <vertical3d/src/command/CreateCommand.h>
+#include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/RIBExportVisitor.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -16,9 +19,6 @@
 #include <vector>
 #include <fstream>
 
-#include "command/CreateCommand.h"
-#include "scene/CreatePoly.h"
-#include "scene/RIBExportVisitor.h"
 #include "Renderer.h"
 
 #include <boost/make_shared.hpp>

@@ -3,7 +3,6 @@
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
 **/
 
-
 #include "Chunk.h"
 
 #include <voxel/src/engine/MortonCode.h>

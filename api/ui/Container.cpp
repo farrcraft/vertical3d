@@ -5,12 +5,12 @@
 
 #include "Container.h"
 
+#include <api/ui/component/TabBar.h>
+#include <api/ui/component/TabPage.h>
+#include <api/ui/component/Type.h>
+
 #include <string>
 #include <vector>
-
-#include "component/TabBar.h"
-#include "component/TabPage.h"
-#include "component/Type.h"
 
 namespace v3d::ui {
 

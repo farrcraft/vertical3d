@@ -5,15 +5,16 @@
 
 #include "Keys.h"
 
+#include <api/ui/component/SelectList.h>
+#include <api/ui/component/TabBar.h>
+#include <api/ui/component/TextBox.h>
+#include <api/ui/component/Type.h>
+
 #include <string_view>
 
 #include "Command.h"
 #include "Component.h"
 #include "Engine.h"
-#include "component/SelectList.h"
-#include "component/TabBar.h"
-#include "component/TextBox.h"
-#include "component/Type.h"
 
 namespace v3d::ui {
 

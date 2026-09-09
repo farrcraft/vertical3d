@@ -6,6 +6,8 @@
 #pragma once
 
 #include <api/type/Bound2D.h>
+#include <api/ui/component/Type.h>
+#include <api/ui/style/Theme.h>
 
 #include <string>
 #include <vector>
@@ -14,8 +16,6 @@
 #include <glm/glm.hpp>
 
 #include "Layout.h"
-#include "component/Type.h"
-#include "style/Theme.h"
 
 namespace v3d::ui {
 

@@ -6,14 +6,13 @@
 #pragma once
 
 #include <api/log/Logger.h>
+#include <api/render/realtime/vulkan/Instance.h>
+#include <api/render/realtime/vulkan/Surface.h>
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
 
 #include <string>
-
-#include "vulkan/Instance.h"
-#include "vulkan/Surface.h"
 
 #include <boost/shared_ptr.hpp>
 

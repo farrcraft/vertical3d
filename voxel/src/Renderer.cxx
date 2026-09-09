@@ -7,6 +7,12 @@
 
 #include <api/render/realtime/vulkan/PipelineBuilder.h>
 #include <api/render/realtime/vulkan/Result.h>
+#include <voxel/src/engine/Camera.h>
+#include <voxel/src/engine/ChunkMeshBuilder.h>
+#include <voxel/src/engine/SceneUniforms.h>
+#include <voxel/src/game/Player.h>
+#include <voxel/src/voxel/ChunkMeshPool.h>
+#include <voxel/src/voxel/MeshBuilder.h>
 
 #include <cstddef>
 #include <cstring>
@@ -17,13 +23,6 @@
 
 #include "Scene.h"
 #include "Version.h"
-#include "game/Player.h"
-
-#include "engine/Camera.h"
-#include "engine/ChunkMeshBuilder.h"
-#include "engine/SceneUniforms.h"
-#include "voxel/ChunkMeshPool.h"
-#include "voxel/MeshBuilder.h"
 
 #include <boost/make_shared.hpp>
 #include <glm/vec3.hpp>

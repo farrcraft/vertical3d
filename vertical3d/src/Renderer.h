@@ -14,13 +14,12 @@
 #include <api/ui/ComponentRenderer.h>
 #include <api/ui/Engine.h>
 #include <api/ui/TextRenderer.h>
+#include <vertical3d/src/manipulator/Manipulator.h>
+#include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/view/ViewPort.h>
 
 #include <string>
 #include <vector>
-
-#include "manipulator/Manipulator.h"
-#include "scene/Scene.h"
-#include "view/ViewPort.h"
 
 #include <boost/shared_ptr.hpp>
 #include <entt/entt.hpp>

@@ -5,13 +5,14 @@
 
 #include "Command.h"
 
+#include <api/ui/component/Button.h>
+#include <api/ui/component/CheckBox.h>
+#include <api/ui/component/SelectList.h>
+#include <api/ui/component/Type.h>
+
 #include <boost/pointer_cast.hpp>
 
 #include "Component.h"
-#include "component/Button.h"
-#include "component/CheckBox.h"
-#include "component/SelectList.h"
-#include "component/Type.h"
 
 namespace v3d::ui {
 

@@ -3,7 +3,6 @@
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
 **/
 
-
 #pragma once
 
 #include <voxel/src/engine/ChunkMeshBuilder.h>

@@ -7,7 +7,14 @@
 
 #include <api/asset/Json.h>
 #include <api/log/Logger.h>
+#include <api/ui/component/Box.h>
+#include <api/ui/component/Button.h>
+#include <api/ui/component/Icon.h>
+#include <api/ui/component/Toolbar.h>
+#include <api/ui/component/Type.h>
 #include <api/ui/style/Style.h>
+#include <api/ui/style/Theme.h>
+#include <api/ui/style/property/Image.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -18,13 +25,6 @@
 #include "Component.h"
 #include "Container.h"
 #include "Loader.h"
-#include "component/Box.h"
-#include "component/Button.h"
-#include "component/Icon.h"
-#include "component/Toolbar.h"
-#include "component/Type.h"
-#include "style/Theme.h"
-#include "style/property/Image.h"
 
 #include <boost/make_shared.hpp>
 

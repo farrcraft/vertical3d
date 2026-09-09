@@ -5,14 +5,12 @@
 
 #include "Scene.h"
 
-#include "game/GameState.h"
-#include "game/Player.h"
-
-#include "engine/Camera.h"
-#include "engine/MortonCode.h"
-
-#include "voxel/Chunk.h"
-#include "voxel/TerrainMap.h"
+#include <voxel/src/engine/Camera.h>
+#include <voxel/src/engine/MortonCode.h>
+#include <voxel/src/game/GameState.h>
+#include <voxel/src/game/Player.h>
+#include <voxel/src/voxel/Chunk.h>
+#include <voxel/src/voxel/TerrainMap.h>
 
 #define GLM_ENABLE_EXPERIMENTAL 1
 

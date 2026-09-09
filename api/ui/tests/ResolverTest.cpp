@@ -4,8 +4,8 @@
  **/
 
 #include <api/ui/Immediate.h>
-#include <api/ui/style/Style.h>
 #include <api/ui/style/Resolver.h>
+#include <api/ui/style/Style.h>
 #include <api/ui/style/Theme.h>
 #include <api/ui/style/property/Color.h>
 #include <api/ui/style/property/Number.h>

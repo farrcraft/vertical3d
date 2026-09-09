@@ -5,7 +5,29 @@
 
 #include "ComponentRenderer.h"
 
+#include <api/ui/component/Bar.h>
+#include <api/ui/component/Box.h>
+#include <api/ui/component/Button.h>
+#include <api/ui/component/CheckBox.h>
+#include <api/ui/component/Icon.h>
+#include <api/ui/component/Label.h>
+#include <api/ui/component/Panel.h>
+#include <api/ui/component/RadioButton.h>
+#include <api/ui/component/Scrollbar.h>
+#include <api/ui/component/SelectList.h>
+#include <api/ui/component/TabBar.h>
+#include <api/ui/component/TabPage.h>
+#include <api/ui/component/TextBox.h>
+#include <api/ui/component/Toolbar.h>
+#include <api/ui/component/Type.h>
+#include <api/ui/component/menu/Menu.h>
+#include <api/ui/component/menu/MenuBar.h>
+#include <api/ui/style/Button.h>
 #include <api/ui/style/Style.h>
+#include <api/ui/style/Theme.h>
+#include <api/ui/style/property/Color.h>
+#include <api/ui/style/property/Image.h>
+#include <api/ui/style/property/Number.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -16,28 +38,6 @@
 #include "Container.h"
 #include "Engine.h"
 #include "Painter.h"
-#include "component/Bar.h"
-#include "component/Box.h"
-#include "component/Button.h"
-#include "component/CheckBox.h"
-#include "component/Icon.h"
-#include "component/Label.h"
-#include "component/Panel.h"
-#include "component/RadioButton.h"
-#include "component/Scrollbar.h"
-#include "component/SelectList.h"
-#include "component/TabBar.h"
-#include "component/TabPage.h"
-#include "component/TextBox.h"
-#include "component/Toolbar.h"
-#include "component/Type.h"
-#include "component/menu/Menu.h"
-#include "component/menu/MenuBar.h"
-#include "style/Button.h"
-#include "style/Theme.h"
-#include "style/property/Color.h"
-#include "style/property/Image.h"
-#include "style/property/Number.h"
 
 namespace v3d::ui {
 
