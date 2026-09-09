@@ -9,6 +9,18 @@ every phase is closed it moves to [completed/](completed/), and any open item it
 moves to [TODO.md](../TODO.md). The plan itself stays, because the reasoning behind an ordering
 outlives the schedule.
 
+[ApiOrganisation.md](ApiOrganisation.md) **is open**, drafted on 2026-09-08 from a survey of
+`api/`. Eleven steps, none of which changes behaviour: three that change how a header is named
+and seven that move files, plus the documents. Its ordering matters more than most, because the
+first group is a barrier rather than a preference — the tree has 763 relative includes across 337
+files and no use at all of the include root [ADR-0027](../adr/0027-the-api-is-consumed-as-source.md)
+put there, so every move done before the conversion rewrites `../` counts in libraries and apps
+that had nothing to do with it. Afterwards a move is a `git mv`, a `CMakeLists.txt` edit and a
+namespace line. The seven moves are independent of each other, with two exceptions: `ui::Style`
+joins `ui/style/` before `api/ui` regroups, and the `api/render/offline` split waits for
+[OfflineRenderingPhase3](OfflineRenderingPhase3.md) to close, since that phase is rewriting most
+of the files it renames.
+
 [completed/EmbeddingSeams.md](completed/EmbeddingSeams.md) was drafted and closed on
 2026-09-07. Seven steps over the places where an `api/` library assumed the app it was hosting
 was one of the four in this tree: a loop that offered an app no event of its own
