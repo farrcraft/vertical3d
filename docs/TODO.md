@@ -7,7 +7,7 @@ live.
 ## The clang-tidy backlog
 
 [.clang-tidy](../.clang-tidy) enables bugprone, performance, misc and readability and subtracts
-23 checks by name. The tree is clean at the 183 that are left. Seven of the subtractions are
+22 checks by name. The tree is clean at the 184 that are left. Seven of the subtractions are
 settled rather than pending and are not listed here - the file says why. The rest are this
 table: what the tree reports at that check, counted once per distinct site over a full
 `-DV3D_CLANG_TIDY=ON` build. Removing a line means fixing what it reports, never widening the
@@ -16,7 +16,6 @@ clang-tidy, `/analyze` and cpplint alike.
 
 | Check | Sites | Note |
 |---|---|---|
-| `readability-convert-member-functions-to-static` | 26 |  |
 | `performance-unnecessary-value-param` | 31 | the fix is a const reference, not the by-value-and-move the check suggests |
 | `bugprone-derived-method-shadowing-base-method` | 7 | `size()` on a strip and on a component mean different things, and a toolbar holds buttons where a component holds components |
 | `readability-implicit-bool-conversion` | 69 |  |

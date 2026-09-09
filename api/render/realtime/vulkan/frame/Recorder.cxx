@@ -119,7 +119,7 @@ scissorSet(false) {
 /**
  **/
 void Recorder::record(VkCommandBuffer commands, const Frame& frame, const Target& target, const pipeline::Resources& resources,
-    FrameUniforms* uniforms) const {
+    FrameUniforms* uniforms) {
     // the acquired image comes back in whatever layout it was left in, and nothing in the
     // frame reads it, so undefined is the honest source layout and the cheapest one
     transition(commands, target.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);

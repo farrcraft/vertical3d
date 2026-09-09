@@ -221,15 +221,15 @@ class Manipulator {
      * handle points. A handle pointing at the viewer projects to nothing and answers
      * with zero rather than with a division by it.
      **/
-    float along(const ViewPort& view, const Placement& placement, Axis axis,
-        const glm::vec2& from, const glm::vec2& to) const;
+    static float along(const ViewPort& view, const Placement& placement, Axis axis,
+        const glm::vec2& from, const glm::vec2& to);
 
     /**
      * The box drawn at the centre handle and at the tip of a scale handle, oriented
      * with the placement.
      **/
-    void marker(v3d::render::realtime::LineCanvas* canvas, const Placement& placement,
-        const glm::vec3& at, float size, const glm::vec4& colour) const;
+    static void marker(v3d::render::realtime::LineCanvas* canvas, const Placement& placement,
+        const glm::vec3& at, float size, const glm::vec4& colour);
 
  private:
     Axis axis_;

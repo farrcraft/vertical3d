@@ -13,7 +13,7 @@ bool Item::equipped() const {
     return equipped_;
 }
 
-bool Item::equipable() const {
+bool Item::equipable() {
     return false;
 }
 
@@ -22,6 +22,6 @@ void Item::equip() {
     equipped_ = !equipped_;
 }
 
-bool Item::wearable() const {
+bool Item::wearable() {
     return false;
 }

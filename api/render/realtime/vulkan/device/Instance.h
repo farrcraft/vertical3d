@@ -53,7 +53,7 @@ class Instance final {
      * Check the requested extensions against the ones the loader advertises.
      * @throw std::runtime_error if any of them are unavailable
      **/
-    void requireExtensions(const std::vector<const char*>& extensions) const;
+    static void requireExtensions(const std::vector<const char*>& extensions);
 
     /**
      * @return whether the loader advertises an instance extension

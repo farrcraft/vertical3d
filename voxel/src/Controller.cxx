@@ -37,7 +37,7 @@ bool Controller::initialize() {
     window_->caption("Voxel");
 
     // hide the mouse cursor in the window
-    window_->cursor(false);
+    v3d::render::realtime::Window::cursor(false);
     // move mouse cursor to center of window
     window_->warpCursor(window_->width() / 2, window_->height() / 2);
 
@@ -121,7 +121,7 @@ bool Controller::shutdown() {
  **/
 void Controller::suspend(bool suspended) {
     scene_->state()->pause(suspended);
-    window_->cursor(suspended);
+    v3d::render::realtime::Window::cursor(suspended);
     if (!suspended) {
         window_->warpCursor(window_->width() / 2, window_->height() / 2);
     }

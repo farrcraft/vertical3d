@@ -163,7 +163,7 @@ void Engine3D::renderFrame() {
     // the slots of the frame about to be recorded are free - acquire() waited on its fence
     uniforms->begin(presenter->frame());
 
-    recorder_.record(acquisition.commands, *frame_, target, *context_->resources(), uniforms.get());
+    vulkan::frame::Recorder::record(acquisition.commands, *frame_, target, *context_->resources(), uniforms.get());
 
     if (presenter->present(acquisition) == vulkan::frame::Presenter::Status::OutOfDate) {
         context_->resize();

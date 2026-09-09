@@ -41,7 +41,7 @@ class WireframeVisitor final : public SceneVisitor {
     /**
      * Whether either half of an edge is selected.
      **/
-    bool edgeSelected(const boost::shared_ptr<v3d::brep::BRep>& mesh, unsigned int edge) const;
+    static bool edgeSelected(const boost::shared_ptr<v3d::brep::BRep>& mesh, unsigned int edge);
 
     /**
      * A box at each selected vertex, sized against the mesh.

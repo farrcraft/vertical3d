@@ -142,7 +142,7 @@ Device::QueueFamilies Device::findFamilies(VkPhysicalDevice device) const {
 
 /**
  **/
-bool Device::hasRequiredExtensions(VkPhysicalDevice device) const {
+bool Device::hasRequiredExtensions(VkPhysicalDevice device) {
     uint32_t count = 0;
     VkResult result = vkEnumerateDeviceExtensionProperties(device, nullptr, &count, nullptr);
     if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
@@ -175,7 +175,7 @@ bool Device::hasRequiredExtensions(VkPhysicalDevice device) const {
 
 /**
  **/
-bool Device::hasRequiredFeatures(VkPhysicalDevice device) const {
+bool Device::hasRequiredFeatures(VkPhysicalDevice device) {
     VkPhysicalDeviceVulkan13Features features13{};
     features13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
 

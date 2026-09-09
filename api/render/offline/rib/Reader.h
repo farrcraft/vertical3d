@@ -78,13 +78,13 @@ class Reader final {
     Result optionRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result cameraRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result displayRequest(const std::string & name, Lexer * lexer, Handler * handler);
-    Result blockRequest(const std::string & name, Handler * handler);
+    static Result blockRequest(const std::string & name, Handler * handler);
     Result transformRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result attributeRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result shaderRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result primitiveRequest(const std::string & name, Lexer * lexer, Handler * handler);
 
-    void skipArguments(Lexer * lexer);
+    static void skipArguments(Lexer * lexer);
 
     /**
      * The token-value pairs that close a request.
@@ -97,7 +97,7 @@ class Reader final {
     bool parameters(Lexer * lexer, unsigned int vertices, ParameterList * list);
     bool values(Lexer * lexer, const Declaration & declaration, unsigned int vertices,
         const std::string & name, std::vector<float> * floats, std::vector<std::string> * strings);
-    void skipArray(Lexer * lexer);
+    static void skipArray(Lexer * lexer);
 
     bool number(Lexer * lexer, float * value);
     bool text(Lexer * lexer, std::string * value);

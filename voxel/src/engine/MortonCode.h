@@ -11,9 +11,9 @@
 
 class MortonCode {
  public:
-    unsigned int encode(const glm::ivec2 & vec) const;
-    unsigned int encode(const glm::ivec3 & vec) const;
+    static unsigned int encode(const glm::ivec2 & vec);
+    static unsigned int encode(const glm::ivec3 & vec);
 
-    glm::ivec2 decode2(unsigned int code) const;
-    glm::ivec3 decode3(unsigned int code) const;
+    static glm::ivec2 decode2(unsigned int code);
+    static glm::ivec3 decode3(unsigned int code);
 };

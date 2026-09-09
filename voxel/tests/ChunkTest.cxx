@@ -95,8 +95,7 @@ BOOST_AUTO_TEST_CASE(chunk_positions_its_blocks_in_the_world_test) {
 
     // the block at the chunk's own corner sits at the corner of the chunk in world blocks,
     // which is what MeshCache subtracts back off to make the mesh chunk local
-    MortonCode codec;
-    const boost::shared_ptr<Voxel> corner = chunk.blocks()[codec.encode(glm::ivec3(0, 0, 0))];
+    const boost::shared_ptr<Voxel> corner = chunk.blocks()[MortonCode::encode(glm::ivec3(0, 0, 0))];
     BOOST_REQUIRE(corner);
     BOOST_CHECK_EQUAL(corner->position().x, static_cast<float>(position.x * chunkSize));
     BOOST_CHECK_EQUAL(corner->position().y, static_cast<float>(position.y * chunkSize));

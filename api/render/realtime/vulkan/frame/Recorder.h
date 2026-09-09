@@ -54,8 +54,8 @@ class Recorder final {
      * @param uniforms where each pass's camera is written and bound from, or null for a
      *        frame whose pipelines declare nothing at set 0
      **/
-    void record(VkCommandBuffer commands, const Frame& frame, const Target& target, const pipeline::Resources& resources,
-        FrameUniforms* uniforms = nullptr) const;
+    static void record(VkCommandBuffer commands, const Frame& frame, const Target& target, const pipeline::Resources& resources,
+        FrameUniforms* uniforms = nullptr);
 
  private:
     /**

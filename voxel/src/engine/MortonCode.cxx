@@ -65,22 +65,22 @@ unsigned int DecodeMorton3Z(unsigned int code) {
   return Compact1By2(code >> 2);
 }
 
-unsigned int MortonCode::encode(const glm::ivec2 & vec) const {
+unsigned int MortonCode::encode(const glm::ivec2 & vec) {
   return (Part1By1(vec.y) << 1) + Part1By1(vec.x);
 }
 
-unsigned int MortonCode::encode(const glm::ivec3 & vec) const {
+unsigned int MortonCode::encode(const glm::ivec3 & vec) {
   return (Part1By2(vec.z) << 2) + (Part1By2(vec.y) << 1) + Part1By2(vec.x);
 }
 
-glm::ivec2 MortonCode::decode2(unsigned int code) const {
+glm::ivec2 MortonCode::decode2(unsigned int code) {
     glm::ivec2 vec;
     vec.x = DecodeMorton2X(code);
     vec.y = DecodeMorton2Y(code);
     return vec;
 }
 
-glm::ivec3 MortonCode::decode3(unsigned int code) const {
+glm::ivec3 MortonCode::decode3(unsigned int code) {
     glm::ivec3 vec;
     vec.x = DecodeMorton3X(code);
     vec.y = DecodeMorton3Y(code);

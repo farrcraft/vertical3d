@@ -54,7 +54,7 @@ cpplint --linelength=180 --exclude=out --exclude=vendor --exclude=vcpkg_installe
 
 [docs/Build.md](docs/Build.md) covers configuring from a cold tree, the options, and what has
 to be installed first. The tree is clean at cpplint, at `/W4` with `/WX`, at `/analyze` and at
-the 183 clang-tidy checks left enabled, so **every finding is a new one**.
+the 184 clang-tidy checks left enabled, so **every finding is a new one**.
 
 ## Rules that cost the most when broken
 

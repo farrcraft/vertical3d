@@ -71,7 +71,7 @@ RotateManipulator::RotateManipulator() {
 /**
  **/
 float RotateManipulator::ringDistance(const Placement& placement, const glm::vec3& unit,
-    const ViewPort& view, const glm::vec2& cursor) const {
+    const ViewPort& view, const glm::vec2& cursor) {
     glm::vec3 first;
     glm::vec3 second;
     perpendiculars(unit, &first, &second);
@@ -185,7 +185,7 @@ void RotateManipulator::draw(const boost::shared_ptr<v3d::brep::BRep>& mesh, con
 /**
  **/
 float RotateManipulator::swept(const ViewPort& view, const Placement& placement, Axis axis,
-    const glm::vec2& from, const glm::vec2& to) const {
+    const glm::vec2& from, const glm::vec2& to) {
     glm::vec2 root;
     if (!project(view, placement.origin, &root)) {
         return 0.0f;

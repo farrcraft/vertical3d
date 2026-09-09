@@ -106,7 +106,7 @@ class Keys final {
      * A key that reached a tab bar: the arrows change which page is up. A bar carries no
      * command, so nothing is sent - which is what a click on a tab does too.
      **/
-    bool turn(const boost::shared_ptr<component::TabBar>& bar, std::string_view key);
+    static bool turn(const boost::shared_ptr<component::TabBar>& bar, std::string_view key);
 
     /**
      * Send whatever command activating a component sends, per ui::command(). A component

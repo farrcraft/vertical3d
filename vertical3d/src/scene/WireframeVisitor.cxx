@@ -100,7 +100,7 @@ void WireframeVisitor::visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
 
 /**
  **/
-bool WireframeVisitor::edgeSelected(const boost::shared_ptr<v3d::brep::BRep>& mesh, unsigned int edge) const {
+bool WireframeVisitor::edgeSelected(const boost::shared_ptr<v3d::brep::BRep>& mesh, unsigned int edge) {
     v3d::brep::HalfEdge* half = mesh->edge(edge);
     if (half == nullptr) {
         return false;

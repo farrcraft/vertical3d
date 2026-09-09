@@ -110,7 +110,7 @@ class Window final {
      * Toggle mouse cursor visibility
      * @param state whether to enable or disable
      */
-    void cursor(bool state);
+    static void cursor(bool state);
 
     /**
      * Move the mouse cursor to a new position in the window

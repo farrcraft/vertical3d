@@ -55,7 +55,7 @@ class TextureFont {
         unsigned int spread = 0);
 
     boost::shared_ptr<Glyph> glyph(wchar_t charcode);
-    float kerning(boost::shared_ptr<Glyph> glyph, wchar_t charcode);
+    static float kerning(boost::shared_ptr<Glyph> glyph, wchar_t charcode);
 
     /**
      **/
@@ -91,7 +91,7 @@ class TextureFont {
 
  protected:
     void generateKerning();
-    boost::shared_ptr<Glyph> createGlyph();
+    static boost::shared_ptr<Glyph> createGlyph();
 
  private:
     std::vector<boost::shared_ptr<Glyph> > glyphs_;

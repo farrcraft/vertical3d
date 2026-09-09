@@ -133,20 +133,20 @@ class Loader final {
     boost::shared_ptr<component::MenuBar> loadMenuBar(const boost::json::object& entry);
     boost::shared_ptr<component::Toolbar> loadToolbar(const boost::json::object& entry);
     boost::shared_ptr<component::Button> loadButton(const boost::json::object& entry);
-    boost::shared_ptr<component::Label> loadLabel(const boost::json::object& entry);
+    static boost::shared_ptr<component::Label> loadLabel(const boost::json::object& entry);
     boost::shared_ptr<component::Icon> loadIcon(const boost::json::object& entry);
-    boost::shared_ptr<component::Panel> loadPanel(const boost::json::object& entry);
-    boost::shared_ptr<component::Bar> loadBar(const boost::json::object& entry);
-    boost::shared_ptr<component::Scrollbar> loadScrollbar(const boost::json::object& entry);
+    static boost::shared_ptr<component::Panel> loadPanel(const boost::json::object& entry);
+    static boost::shared_ptr<component::Bar> loadBar(const boost::json::object& entry);
+    static boost::shared_ptr<component::Scrollbar> loadScrollbar(const boost::json::object& entry);
     boost::shared_ptr<component::SelectList> loadSelectList(const boost::json::object& entry);
     boost::shared_ptr<component::TextBox> loadTextBox(const boost::json::object& entry);
-    boost::shared_ptr<component::TabPage> loadTabPage(const boost::json::object& entry);
+    static boost::shared_ptr<component::TabPage> loadTabPage(const boost::json::object& entry);
     boost::shared_ptr<component::RadioButton> loadRadioButton(const boost::json::object& entry);
 
     /**
      * Read a flow box, whose direction is the only thing the two kinds differ by.
      **/
-    boost::shared_ptr<component::Box> loadFlowBox(const std::string& componentType,
+    static boost::shared_ptr<component::Box> loadFlowBox(const std::string& componentType,
         const boost::json::object& entry);
 
     /**
@@ -159,7 +159,7 @@ class Loader final {
      * Read what a flow box carries beyond an ordinary component - the gap between its
      * children, and whether they are widened to it.
      **/
-    void loadBox(const boost::json::object& entry, const boost::shared_ptr<component::Box>& box);
+    static void loadBox(const boost::json::object& entry, const boost::shared_ptr<component::Box>& box);
 
     /**
      * Read one style and everything in it into a theme.

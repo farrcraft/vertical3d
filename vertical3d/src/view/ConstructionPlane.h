@@ -76,7 +76,7 @@ class ConstructionPlane final {
      * The two axes the grid is spanned by, which are the camera's own right and up under
      * an orthographic view and the ground plane under a perspective one.
      **/
-    void axes(const v3d::type::camera::Camera& camera, glm::vec3* right, glm::vec3* up) const;
+    static void axes(const v3d::type::camera::Camera& camera, glm::vec3* right, glm::vec3* up);
 
     float spacing_;
     unsigned int intervals_;

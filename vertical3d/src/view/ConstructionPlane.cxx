@@ -56,7 +56,7 @@ unsigned int ConstructionPlane::lines() const noexcept {
 
 /**
  **/
-void ConstructionPlane::axes(const v3d::type::camera::Camera& camera, glm::vec3* right, glm::vec3* up) const {
+void ConstructionPlane::axes(const v3d::type::camera::Camera& camera, glm::vec3* right, glm::vec3* up) {
     if (camera.orthographic()) {
         // an orthographic view looks straight down an axis, so the grid in the plane of
         // the camera's own right and up is the one that reads as a drafting elevation

@@ -271,7 +271,7 @@ float Manipulator::distanceToSegment(const glm::vec2& from, const glm::vec2& to,
 /**
  **/
 float Manipulator::along(const ViewPort& view, const Placement& placement, Axis axis,
-    const glm::vec2& from, const glm::vec2& to) const {
+    const glm::vec2& from, const glm::vec2& to) {
     const glm::vec3 unit = direction(placement, axis);
     glm::vec2 root;
     glm::vec2 tip;
@@ -293,7 +293,7 @@ float Manipulator::along(const ViewPort& view, const Placement& placement, Axis 
 /**
  **/
 void Manipulator::marker(v3d::render::realtime::LineCanvas* canvas, const Placement& placement,
-    const glm::vec3& at, float size, const glm::vec4& colour) const {
+    const glm::vec3& at, float size, const glm::vec4& colour) {
     const glm::vec3 corner(size, size, size);
     canvas->push();
     canvas->transform(glm::translate(glm::mat4(1.0f), at) * glm::mat4_cast(placement.orientation));

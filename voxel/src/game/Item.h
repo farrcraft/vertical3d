@@ -32,9 +32,9 @@ class Item {
 
     bool equipped() const;
     void equip();
-    bool equipable() const;
+    static bool equipable();
 
-    bool wearable() const;
+    static bool wearable();
 
  private:
     bool equipped_;

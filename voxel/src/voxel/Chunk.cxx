@@ -14,7 +14,6 @@ Chunk::Chunk(TerrainMap * terrain, glm::ivec3 chunkPosition, unsigned int ceilin
     size_(16) {
     float maxTerrainHeight = 255.0f;
     float voxelHeight = static_cast<float>(ceiling);
-    MortonCode encoder;
     unsigned int hash = 0;
     chunkPosition *= size_;
     unsigned int allocated = 0;
@@ -37,7 +36,7 @@ Chunk::Chunk(TerrainMap * terrain, glm::ivec3 chunkPosition, unsigned int ceilin
             for (unsigned y = 0; y < size_; y++) {
                 float posY = static_cast<float>(y + chunkPosition.y);
                 if ((y + chunkPosition.y) <= blockHeight) {
-                    hash = encoder.encode(glm::ivec3(x, y, z));
+                    hash = MortonCode::encode(glm::ivec3(x, y, z));
                     glm::vec3 position(posX, posY, posZ);
                     // Voxel::BlockType type = Voxel::BLOCK_TYPE_DIRT;
 
@@ -60,8 +59,7 @@ glm::ivec3 Chunk::position() const {
 }
 
 bool Chunk::active(glm::ivec3 blockPosition) const {
-    MortonCode codec;
-    unsigned int hash = codec.encode(blockPosition);
+    unsigned int hash = MortonCode::encode(blockPosition);
     return blocks_.contains(hash);
 }
 
@@ -69,7 +67,6 @@ bool Chunk::active(glm::ivec3 blockPosition) const {
 bool Chunk::hidden(Voxel::BlockFace face, const glm::ivec3 & position) {
     unsigned int neighborHash = 0;
     glm::ivec3 neighborPosition = position;
-    MortonCode codec;
     switch (face) {
         case Voxel::BLOCK_FACE_BACK:
             neighborPosition.z -= 1;
@@ -96,7 +93,7 @@ bool Chunk::hidden(Voxel::BlockFace face, const glm::ivec3 & position) {
             // turned an ALL into them, so neither reaches here
             break;
     }
-    neighborHash = codec.encode(neighborPosition);
+    neighborHash = MortonCode::encode(neighborPosition);
     return blocks_.contains(neighborHash);
 }
 

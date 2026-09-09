@@ -41,13 +41,13 @@ struct StubEngine final {
         }
     }
 
-    bool initialize() {
+    static bool initialize() {
         return true;
     }
-    bool eventLoop() {
+    static bool eventLoop() {
         return true;
     }
-    bool shutdown() {
+    static bool shutdown() {
         return true;
     }
 };

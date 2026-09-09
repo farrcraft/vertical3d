@@ -31,7 +31,6 @@ Scene::Scene() {
     unsigned int worldWidth = 256 / chunkSize;
     unsigned int worldDepth = 256 / chunkSize;
 
-    MortonCode encoder;
     unsigned int hash = 0;
 
     // populate world chunks
@@ -43,7 +42,7 @@ Scene::Scene() {
                 // Chunk scales the heightmap against a ceiling measured in blocks, so it
                 // wants the world's block height, not its chunk count.
                 chunk.reset(new Chunk(&terrain, pos, static_cast<unsigned int>(worldHeight * chunkSize)));
-                hash = encoder.encode(pos);
+                hash = MortonCode::encode(pos);
                 chunks_[hash] = chunk;
             }
         }

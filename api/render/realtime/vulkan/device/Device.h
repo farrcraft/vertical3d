@@ -102,12 +102,12 @@ class Device final {
     /**
      * @return whether a physical device advertises every extension the renderer needs
      **/
-    bool hasRequiredExtensions(VkPhysicalDevice device) const;
+    static bool hasRequiredExtensions(VkPhysicalDevice device);
 
     /**
      * @return whether a physical device offers the 1.3 features the renderer draws with
      **/
-    bool hasRequiredFeatures(VkPhysicalDevice device) const;
+    static bool hasRequiredFeatures(VkPhysicalDevice device);
 
     /**
      **/

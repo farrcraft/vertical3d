@@ -51,7 +51,7 @@ class Player {
     void move(Movement direction);
     void look(float heading, float pitch);
 
-    bool checkWorldCollision(const glm::vec3 & position);
+    static bool checkWorldCollision(const glm::vec3 & position);
 
  private:
     glm::vec3 position_;

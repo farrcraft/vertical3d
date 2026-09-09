@@ -107,7 +107,6 @@ class Engine3D : public Engine {
 
     boost::shared_ptr<Context3D> context_;
     boost::shared_ptr<Frame> frame_;
-    vulkan::frame::Recorder recorder_;
     glm::vec4 clearColour_;
 };
 };  // namespace v3d::render::realtime

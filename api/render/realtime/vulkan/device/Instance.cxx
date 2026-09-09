@@ -201,7 +201,7 @@ bool Instance::hasExtension(const char* extension) {
 
 /**
  **/
-void Instance::requireExtensions(const std::vector<const char*>& extensions) const {
+void Instance::requireExtensions(const std::vector<const char*>& extensions) {
     uint32_t count = 0;
     VkResult result = vkEnumerateInstanceExtensionProperties(nullptr, &count, nullptr);
     if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
