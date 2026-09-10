@@ -74,7 +74,8 @@ BOOST_AUTO_TEST_CASE(reyes_primitive_place_test) {
     BOOST_TEST((primitive.normal() == glm::vec3(0.0f)));
 
     const glm::mat4x4 toEye = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, -4.0f));
-    primitive.place(toEye, glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    primitive.place(toEye, glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f),
+        v3d::moya::Shading());
 
     BOOST_TEST(primitive.placed());
     BOOST_TEST((primitive.placement() == toEye));

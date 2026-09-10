@@ -7,10 +7,12 @@
 
 #include <api/image/Factory.h>
 
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <boost/make_shared.hpp>
 
@@ -19,6 +21,7 @@
 #include <glm/matrix.hpp>
 
 #include "Frustum.h"
+#include "GridShader.h"
 
 namespace v3d::moya {
 
@@ -42,6 +45,9 @@ RenderContext::~RenderContext() {
 }
 
 void RenderContext::initialize() {
+    shaders_ = boost::make_shared<v3d::render::offline::sl::ShaderLibrary>(
+        boost::make_shared<v3d::log::Logger>());
+
     // initialize the predefined coordinate systems to defaults (identity matrix)
     glm::mat4x4 def(1.0f);
     coordinateSystems_["object"] = def;
@@ -324,6 +330,9 @@ void RenderContext::attributeBegin() {
     saved.color = color_;
     saved.opacity = opacity_;
     saved.shadingRate = shadingRate_;
+    saved.surface = surface_;
+    saved.surfacePlacement = surfacePlacement_;
+    saved.lit = lit_;
     attributes_.push_back(saved);
 }
 
@@ -336,6 +345,11 @@ void RenderContext::attributeEnd() {
     color_ = saved.color;
     opacity_ = saved.opacity;
     shadingRate_ = saved.shadingRate;
+    surface_ = saved.surface;
+    surfacePlacement_ = saved.surfacePlacement;
+    // which lights are on comes back; the lights themselves do not, because a light
+    // belongs to the frame rather than to the block that created it
+    lit_ = saved.lit;
     attributes_.pop_back();
 }
 
@@ -430,6 +444,82 @@ void orderBound(glm::vec3* min, glm::vec3* max) {
 
 };  // namespace
 
+void RenderContext::surface(const std::string & name,
+    const v3d::render::offline::rib::ParameterList & parameters) {
+    surface_ = shaders_->instance(name, v3d::render::offline::sl::ShaderType::SURFACE, parameters);
+    // RI says a shader's own space is the transform in force when the scene instanced it,
+    // which is what a "point \"shader\" (0, 0, 1)" in it is stated against
+    surfacePlacement_ = coordinateSystems_["camera"] * transform_;
+}
+
+void RenderContext::lightSource(const std::string & name, const std::string & handle,
+    const v3d::render::offline::rib::ParameterList & parameters) {
+    LightSource light;
+    light.handle = handle;
+    light.shader = shaders_->instance(name, v3d::render::offline::sl::ShaderType::LIGHT, parameters);
+    light.placement = coordinateSystems_["camera"] * transform_;
+    if (!light.shader) {
+        // the library has already said why, and a light that will not compile is one
+        // fewer light rather than a light of some other kind
+        return;
+    }
+    lights_.push_back(light);
+    // RiLightSource creates the light and switches it on, which is why this is not two
+    // requests in a scene that wants one light
+    illuminate(handle, true);
+}
+
+void RenderContext::illuminate(const std::string & handle, bool on) {
+    const std::vector<std::string>::iterator found = std::find(lit_.begin(), lit_.end(), handle);
+    if (on && found == lit_.end()) {
+        lit_.push_back(handle);
+    } else if (!on && found != lit_.end()) {
+        lit_.erase(found);
+    }
+}
+
+void RenderContext::imager(const std::string & name,
+    const v3d::render::offline::rib::ParameterList & parameters) {
+    imager_ = shaders_->instance(name, v3d::render::offline::sl::ShaderType::IMAGER, parameters);
+}
+
+void RenderContext::searchpath(const std::string & path) {
+    shaders_->searchpath(path);
+}
+
+Shading RenderContext::shading() {
+    Shading state;
+    state.surface = surface_;
+    state.placement = surfacePlacement_;
+    state.opacity = opacity_;
+    if (!state.surface) {
+        // a scene that names no surface draws the shader that means no shading, which is
+        // the picture this renderer drew before there was a language. RI leaves the
+        // default to the renderer and forbids only "null"
+        state.surface = shaders_->instance("constant",
+            v3d::render::offline::sl::ShaderType::SURFACE,
+            v3d::render::offline::rib::ParameterList());
+        state.placement = coordinateSystems_["camera"] * transform_;
+    }
+    for (const LightSource & light : lights_) {
+        if (std::find(lit_.begin(), lit_.end(), light.handle) == lit_.end()) {
+            continue;
+        }
+        Light shining;
+        shining.shader = light.shader;
+        shining.placement = light.placement;
+        state.lights.push_back(shining);
+    }
+    return state;
+}
+
+GridShader & RenderContext::shader() {
+    if (!shader_) {
+        shader_ = boost::make_shared<GridShader>(this);
+    }
+    return *shader_;
+}
+
 void RenderContext::addPolygon(boost::shared_ptr<Polygon> poly) {
     // if an output stream exists
     // echo RiPolygon RIB command to output stream
@@ -445,7 +535,8 @@ void RenderContext::addPolygon(boost::shared_ptr<Polygon> poly) {
     // a primitive carries the state it was submitted under - see ReyesPrimitive::place().
     // A piece handed back by a split is already placed and keeps its parent's
     if (!poly->placed()) {
-        poly->place(coordinateSystems_["camera"] * transform_, color_, poly->geometricNormal());
+        poly->place(coordinateSystems_["camera"] * transform_, color_, poly->geometricNormal(),
+            shading());
     }
 
     // a vertex that brought no "Cs" of its own takes the primitive's colour. There is no

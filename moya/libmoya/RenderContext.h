@@ -5,14 +5,20 @@
 
 #pragma once
 
+#include <api/render/offline/sl/ShaderLibrary.h>
+
 #include "Polygon.h"
 #include "FrameBuffer.h"
+#include "Shading.h"
 
 #include <vector>
 #include <map>
 #include <string>
 
 namespace v3d::moya {
+
+class GridShader;
+
 /**
     *	holds the current graphics state
     *	multiple contexts may exist at once, but only one is ever active at any
@@ -149,6 +155,48 @@ class RenderContext {
         void gridSize(unsigned int size);
 
         /**
+            *	maps to RiSurface()
+            *	the shader a primitive added from here on is shaded by. A scene that names
+            *	none draws "constant", which is the shader that means no shading and is
+            *	the picture this renderer drew before there was a language.
+            */
+        void surface(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters);
+        /**
+            *	maps to RiLightSource()
+            *	creates a light and switches it on in the current attribute state. The
+            *	light itself belongs to the frame; which lights are on is an attribute,
+            *	which is what makes Illuminate inside an AttributeBegin block local to it.
+            */
+        void lightSource(const std::string & name, const std::string & handle,
+            const v3d::render::offline::rib::ParameterList & parameters);
+        /**
+            *	maps to RiIlluminate()
+            */
+        void illuminate(const std::string & handle, bool on);
+        /**
+            *	maps to RiImager()
+            */
+        void imager(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters);
+        /**
+            *	Where a .sl file that is not built in is looked for, from
+            *	Option "searchpath" "shader".
+            */
+        void searchpath(const std::string & path);
+
+        /**
+            *	The surface shader and the lights a primitive submitted now is shaded by.
+            */
+        Shading shading();
+
+        /**
+            *	What runs a surface shader over a grid.
+            *
+            *	Kept for the render rather than made per grid, because it holds the
+            *	register files: a thousand grids over one program size one once.
+            */
+        GridShader & shader();
+
+        /**
             *	maps to RiPolygon()
             *	polygon will be placed into a starting bucket when it is initially added
             */
@@ -189,12 +237,37 @@ class RenderContext {
             glm::vec3 color = glm::vec3(1.0f);
             glm::vec3 opacity = glm::vec3(1.0f);
             float shadingRate = 1.0f;
+            v3d::render::offline::sl::InstancePtr surface;
+            glm::mat4x4 surfacePlacement = glm::mat4x4(1.0f);
+            /**
+                *	Which lights are switched on, by handle. The lights themselves are the
+                *	frame's; this is the part of them an AttributeEnd puts back.
+                */
+            std::vector<std::string> lit;
+        };
+
+        /**
+            *	A light the scene created, kept for the frame under the handle a later
+            *	Illuminate names it by.
+            */
+        class LightSource {
+         public:
+            std::string handle;
+            v3d::render::offline::sl::InstancePtr shader;
+            glm::mat4x4 placement = glm::mat4x4(1.0f);
         };
 
         std::string name_;
         std::vector<glm::mat4x4> transforms_;
         std::vector<Attributes> attributes_;
         std::map<std::string, glm::mat4x4> coordinateSystems_;
+        boost::shared_ptr<v3d::render::offline::sl::ShaderLibrary> shaders_;
+        boost::shared_ptr<GridShader> shader_;
+        std::vector<LightSource> lights_;
+        v3d::render::offline::sl::InstancePtr surface_;
+        glm::mat4x4 surfacePlacement_ = glm::mat4x4(1.0f);
+        std::vector<std::string> lit_;
+        v3d::render::offline::sl::InstancePtr imager_;
         boost::shared_ptr<FrameBuffer> frameBuffer_;
         // camera options
         unsigned int xres_ = 320;

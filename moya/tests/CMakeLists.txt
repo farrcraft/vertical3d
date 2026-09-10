@@ -4,6 +4,7 @@ v3d_add_test(moya
 	"TestMain.cxx"
 	"FrameBufferTest.cxx"
 	"FrustumTest.cxx"
+	"GridShaderTest.cxx"
 	"MicroPolygonGridTest.cxx"
 	"PlaneTest.cxx"
 	"PolygonTest.cxx"

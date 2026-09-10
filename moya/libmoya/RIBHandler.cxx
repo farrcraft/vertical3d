@@ -57,6 +57,14 @@ RenderContext & RIBHandler::context() {
 }
 
 void RIBHandler::option(const std::string & name, const ParameterList & parameters) {
+    if (name == "searchpath") {
+        // RI writes it as Option "searchpath" "shader" ["./shaders:&"], and the shader
+        // path is the only one this renderer looks anything up on
+        if (parameters.has("shader")) {
+            context().searchpath(parameters.string("shader", std::string()));
+        }
+        return;
+    }
     if (name != "limits") {
         return;
     }
@@ -67,6 +75,23 @@ void RIBHandler::option(const std::string & name, const ParameterList & paramete
     if (parameters.has("gridsize")) {
         context().gridSize(static_cast<unsigned int>(parameters.number("gridsize", 256.0f)));
     }
+}
+
+void RIBHandler::surface(const std::string & name, const ParameterList & parameters) {
+    context().surface(name, parameters);
+}
+
+void RIBHandler::lightSource(const std::string & name, const std::string & handle,
+    const ParameterList & parameters) {
+    context().lightSource(name, handle, parameters);
+}
+
+void RIBHandler::illuminate(const std::string & handle, bool on) {
+    context().illuminate(handle, on);
+}
+
+void RIBHandler::imager(const std::string & name, const ParameterList & parameters) {
+    context().imager(name, parameters);
 }
 
 void RIBHandler::format(unsigned int width, unsigned int height, float pixelAspect) {

@@ -16,6 +16,8 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <glm/mat4x4.hpp>
+
 namespace v3d::render::offline::sl {
 
 typedef boost::shared_ptr<runtime::Program> ProgramPtr;
@@ -65,30 +67,39 @@ class Instance final {
     void bind(const rib::ParameterList & parameters);
 
     /**
-     * Write the bound values into a machine already prepared for this program. Called
-     * after every `prepare`, since sizing the register file empties it.
+     * Put the parameters into a machine already prepared for this program: the declared
+     * defaults first, then whatever a scene bound over them. Called after every `prepare`,
+     * since sizing the register file empties it.
+     *
+     * The defaults are **run** rather than remembered, because a default may name a
+     * coordinate space - `point "shader" (0, 0, 1)` is how three of the four standard
+     * lights aim themselves - and what a space comes to is the renderer's answer, which is
+     * not known until the machine has one attached.
+     *
+     * @param placement the shader's own space to the machine's current one, which is the
+     *        transform that was in force when the scene instanced this shader. A position
+     *        a scene binds is stated in that space, and arrives in this one.
      **/
-    void write(runtime::Machine* machine) const;
+    void write(runtime::Machine* machine,
+        const glm::mat4x4 & placement = glm::mat4x4(1.0f)) const;
 
  private:
     /**
-     * One parameter's value as the machine wants it: the register it goes in, and the
-     * floats or the string it holds.
+     * One parameter of the shader, and the value a scene bound onto it if one did.
+     *
+     * A parameter nothing bound is not written at all: the prologue has already left the
+     * register holding what the shader declared.
      **/
     class Binding final {
      public:
         std::string name;
         int reg = -1;
         Type type = Type::FLOAT;
+        bool bound = false;
         std::vector<float> values;
         std::string text;
     };
 
-    /**
-     * Run the program's prologue and read each parameter out of it, which is how a default
-     * written as an expression - `point "shader" (0, 0, 1)` - becomes a value.
-     **/
-    void defaults();
     Binding* binding(const std::string & wanted);
 
     ProgramPtr program_;

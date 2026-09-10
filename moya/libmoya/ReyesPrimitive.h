@@ -8,6 +8,7 @@
 #include <api/type/geometry/AABBox.h>
 
 #include "MicroPolygonGrid.h"
+#include "Shading.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
@@ -56,15 +57,22 @@ class ReyesPrimitive {
          * plane it lies in too.
          */
         bool placed(void) const;
-        void place(const glm::mat4x4 & toEye, const glm::vec3 & color, const glm::vec3 & normal);
+        void place(const glm::mat4x4 & toEye, const glm::vec3 & color, const glm::vec3 & normal,
+            const Shading & shading);
         const glm::mat4x4 & placement(void) const;
         const glm::vec3 & color(void) const;
         const glm::vec3 & normal(void) const;
+        /**
+         * The surface shader and the lights that were on. Carried across a split for the
+         * same reason the colour is, and read by the second pass rather than the first.
+         */
+        const Shading & shading(void) const;
 
  private:
         glm::mat4x4 placement_ = glm::mat4x4(1.0f);
         glm::vec3 color_ = glm::vec3(1.0f);
         glm::vec3 normal_ = glm::vec3(0.0f);
+        Shading shading_;
         bool placed_ = false;
         /*
             False until the first pass has measured the primitive against the grid size.

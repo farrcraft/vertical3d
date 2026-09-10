@@ -291,9 +291,9 @@ void Polygon::split(RenderContext & rc) {
     for (const boost::shared_ptr<Polygon> & piece : pieces) {
         if (progress(piece, bounds)) {
             // a piece is measured with the state its parent was submitted under, not with
-            // whatever the current transformation and colour have since become
+            // whatever the current transformation, colour and shader have since become
             if (placed()) {
-                piece->place(placement(), color(), normal());
+                piece->place(placement(), color(), normal(), shading());
             }
             rc.addPolygon(piece);
         }

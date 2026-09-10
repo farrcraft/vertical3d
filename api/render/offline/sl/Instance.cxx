@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+#include <glm/vec3.hpp>
+
 namespace v3d::render::offline::sl {
 
 namespace {
@@ -41,6 +43,27 @@ Type declared(rib::Declaration::Type type) {
     return Type::VOID;
 }
 
+/**
+ * A position or a direction out of the space it was stated in and into the machine's.
+ *
+ * Which of the three transforms it takes is what tells the point-like types apart, and
+ * getting it wrong is invisible under every uniform scale.
+ **/
+glm::vec3 moved(Type type, const glm::mat4x4 & placement, const glm::vec3 & given) {
+    switch (type) {
+        case Type::POINT:
+            return ptransform(placement, given);
+        case Type::VECTOR:
+            return vtransform(placement, given);
+        case Type::NORMAL:
+            return ntransform(placement, given);
+        default:
+            // a colour has no space to be in, and a matrix is written component by
+            // component below rather than through this
+            return given;
+    }
+}
+
 };  // namespace
 
 Instance::Instance(const ProgramPtr & program, const boost::shared_ptr<v3d::log::Logger> & logger) :
@@ -53,7 +76,17 @@ Instance::Instance(const ProgramPtr & program, const boost::shared_ptr<v3d::log:
             return instruction.opcode == runtime::Opcode::ILLUMINATE ||
                 instruction.opcode == runtime::Opcode::SOLAR;
         });
-    defaults();
+    for (std::size_t i = 0; i < program_->symbols; i++) {
+        const runtime::Register & reg = program_->registers[i];
+        if (!reg.parameter) {
+            continue;
+        }
+        Binding held;
+        held.name = reg.name;
+        held.reg = static_cast<int>(i);
+        held.type = reg.type;
+        bindings_.push_back(held);
+    }
 }
 
 const runtime::Program & Instance::program() const {
@@ -81,38 +114,6 @@ Instance::Binding* Instance::binding(const std::string & wanted) {
     return nullptr;
 }
 
-void Instance::defaults() {
-    /*
-        The prologue is a run of its own over a batch of one. A default is one value
-        whatever storage the parameter has: there is no shading point yet for it to differ
-        at, and a scene binds one value per parameter in any case.
-    */
-    runtime::Machine machine;
-    machine.prepare(*program_, 1);
-    machine.initialise(*program_);
-    for (const std::string & report : machine.reports()) {
-        // a default written as "point \"shader\" (0, 0, 1)" is one of these: what a
-        // shader's own space is has no answer until a renderer has placed the instance
-        logger_->get()->warn("the defaults of the shader '{}' - {}", program_->name, report);
-    }
-
-    for (std::size_t i = 0; i < program_->symbols; i++) {
-        const runtime::Register & reg = program_->registers[i];
-        if (!reg.parameter) {
-            continue;
-        }
-        Binding held;
-        held.name = reg.name;
-        held.reg = static_cast<int>(i);
-        held.type = reg.type;
-        held.text = machine.value(held.reg).text();
-        for (unsigned int component = 0; component < components(reg.type); component++) {
-            held.values.push_back(machine.value(held.reg).component(0, component));
-        }
-        bindings_.push_back(held);
-    }
-}
-
 void Instance::bind(const rib::ParameterList & parameters) {
     for (const std::string & given : parameters.names()) {
         Binding* held = binding(given);
@@ -131,11 +132,13 @@ void Instance::bind(const rib::ParameterList & parameters) {
                 type == Type::VOID ? "something with no reading" : sl::name(type));
             continue;
         }
+        held->bound = true;
         if (held->type == Type::STRING) {
-            held->text = parameters.string(given, held->text);
+            held->text = parameters.string(given, std::string());
             continue;
         }
         const std::vector<float> & values = parameters.floats(given);
+        held->values.assign(components(held->type), 0.0f);
         for (unsigned int component = 0; component < held->values.size(); component++) {
             // a float bound onto a colour replicates, which is RI's promotion and is what
             // "Color [1]" and a one value "specularcolor" both mean
@@ -147,15 +150,32 @@ void Instance::bind(const rib::ParameterList & parameters) {
     }
 }
 
-void Instance::write(runtime::Machine* machine) const {
+void Instance::write(runtime::Machine* machine, const glm::mat4x4 & placement) const {
+    // the declared defaults, run rather than remembered: what a coordinate space in one
+    // comes to is the renderer's answer, and the machine has one now
+    machine->initialise(*program_);
+
     for (const Binding & held : bindings_) {
+        if (!held.bound) {
+            continue;
+        }
         runtime::Value & value = machine->value(held.reg);
-        value.text(held.text);
+        if (held.type == Type::STRING) {
+            value.text(held.text);
+            continue;
+        }
+        // a position or a direction a scene binds is stated in the space that was in
+        // force when it instanced the shader, and the machine works in the current one
+        const bool triple = held.values.size() == 3;
+        const glm::vec3 place = triple ?
+            moved(held.type, placement, glm::vec3(held.values[0], held.values[1], held.values[2])) :
+            glm::vec3(0.0f);
         // a uniform parameter is one element and a varying one is the batch, and a scene
         // binds one value either way: every point of the batch gets it
         for (unsigned int point = 0; point < value.width(); point++) {
             for (unsigned int component = 0; component < held.values.size(); component++) {
-                value.component(point, component, held.values[component]);
+                value.component(point, component,
+                    triple ? place[component] : held.values[component]);
             }
         }
     }

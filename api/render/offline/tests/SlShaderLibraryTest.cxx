@@ -15,6 +15,8 @@
 #include <boost/make_shared.hpp>
 #include <boost/test/unit_test.hpp>
 
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
 namespace {
@@ -200,4 +202,54 @@ BOOST_AUTO_TEST_CASE(slshaderlibrary_searchpath_test) {
     BOOST_CHECK_CLOSE(bound(again, "Kd").x, 7.0f, 0.01f);
 
     std::remove("matte.sl");
+}
+
+namespace {
+
+/**
+ * A renderer that has placed the shader two units up, which is what a scene's transform
+ * in force at the `LightSource` request amounts to.
+ **/
+class Placed final : public v3d::render::offline::sl::runtime::Renderer {
+ public:
+    bool space(const std::string & name, glm::mat4x4* matrix) override {
+        if (name != "shader") {
+            return false;
+        }
+        *matrix = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 2.0f, 0.0f));
+        return true;
+    }
+};
+
+};  // namespace
+
+/**
+ * A shader's own space is the transform that was in force when the scene instanced it,
+ * which is the open question step 8 left and this is the answer to.
+ *
+ * The defaults are run rather than remembered, so `point "shader" (0, 0, 1)` arrives where
+ * the renderer says that space is; and a position the scene bound is stated in the same
+ * space and takes the same transform. A distant light aimed down that a scene lifted two
+ * units still points down, and is two units up.
+ **/
+BOOST_AUTO_TEST_CASE(slshaderlibrary_shader_space_test) {
+    Placed renderer;
+    ShaderLibrary library(logger());
+    ParameterList list;
+    add(&list, "from", Declaration::Type::POINT, { 1.0f, 0.0f, 0.0f });
+
+    const InstancePtr shader = library.instance("distantlight", ShaderType::LIGHT, list);
+    BOOST_REQUIRE(shader);
+
+    v3d::render::offline::sl::runtime::Machine machine;
+    machine.renderer(&renderer);
+    machine.prepare(shader->program(), 1);
+    shader->write(&machine, glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 2.0f, 0.0f)));
+
+    // the default, computed against the renderer rather than against the identity
+    BOOST_CHECK_CLOSE(machine.value(shader->program().symbol("to")).triple(0).y, 2.0f, 0.01f);
+    BOOST_CHECK_CLOSE(machine.value(shader->program().symbol("to")).triple(0).z, 1.0f, 0.01f);
+    // and the bound one, which the scene stated in the same space
+    BOOST_CHECK_CLOSE(machine.value(shader->program().symbol("from")).triple(0).x, 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(machine.value(shader->program().symbol("from")).triple(0).y, 2.0f, 0.01f);
 }
