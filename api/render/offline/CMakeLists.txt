@@ -24,7 +24,7 @@ v3d_add_api_library(render_offline
 	"sl/Compiler.h" "sl/Compiler.cxx"
 	"sl/runtime/Value.h" "sl/runtime/Value.cxx"
 	"sl/runtime/Program.h" "sl/runtime/Program.cxx"
-	"sl/runtime/Renderer.h"
+	"sl/runtime/Renderer.h" "sl/runtime/Renderer.cxx"
 	"sl/Emitter.h" "sl/Emitter.cxx"
 	"sl/runtime/Machine.h" "sl/runtime/Machine.cxx"
 	"sl/runtime/Library.cxx"

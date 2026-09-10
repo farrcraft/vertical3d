@@ -165,6 +165,128 @@ bool suits(const Signature & signature, const std::vector<Type> & given) {
     return true;
 }
 
+bool defines(const std::vector<Function> & functions, const std::string & name) {
+    return std::ranges::any_of(functions,
+        [&name](const Function & function) { return function.name == name; });
+}
+
+void gather(const StatementPtr & statement, std::vector<std::string>* called);
+
+/**
+ * Every name an expression calls, added once. What adopt() walks the tree for, before any
+ * name has been resolved to anything.
+ **/
+void gather(const ExpressionPtr & expression, std::vector<std::string>* called) {
+    if (!expression) {
+        return;
+    }
+    switch (expression->kind) {
+        case Expression::Kind::CALL: {
+            const Call & call = static_cast<const Call &>(*expression);
+            if (std::ranges::find(*called, call.name) == called->end()) {
+                called->push_back(call.name);
+            }
+            for (const ExpressionPtr & argument : call.arguments) {
+                gather(argument, called);
+            }
+            return;
+        }
+        case Expression::Kind::UNARY:
+            gather(static_cast<const Unary &>(*expression).operand, called);
+            return;
+        case Expression::Kind::BINARY: {
+            const Binary & binary = static_cast<const Binary &>(*expression);
+            gather(binary.left, called);
+            gather(binary.right, called);
+            return;
+        }
+        case Expression::Kind::TERNARY: {
+            const Ternary & ternary = static_cast<const Ternary &>(*expression);
+            gather(ternary.condition, called);
+            gather(ternary.whenTrue, called);
+            gather(ternary.whenFalse, called);
+            return;
+        }
+        case Expression::Kind::CAST:
+            gather(static_cast<const Cast &>(*expression).operand, called);
+            return;
+        case Expression::Kind::TUPLE:
+            for (const ExpressionPtr & element : static_cast<const Tuple &>(*expression).elements) {
+                gather(element, called);
+            }
+            return;
+        case Expression::Kind::INDEX: {
+            const Index & index = static_cast<const Index &>(*expression);
+            gather(index.array, called);
+            gather(index.index, called);
+            return;
+        }
+        case Expression::Kind::NUMBER:
+        case Expression::Kind::STRING:
+        case Expression::Kind::VARIABLE:
+            return;
+    }
+}
+
+void gather(const StatementPtr & statement, std::vector<std::string>* called) {
+    if (!statement) {
+        return;
+    }
+    switch (statement->kind) {
+        case Statement::Kind::BLOCK:
+            for (const StatementPtr & inner : static_cast<const Block &>(*statement).statements) {
+                gather(inner, called);
+            }
+            return;
+        case Statement::Kind::DECLARATION:
+            for (const Declarator & declarator : static_cast<const Declaration &>(*statement).declarators) {
+                gather(declarator.initialiser, called);
+            }
+            return;
+        case Statement::Kind::ASSIGNMENT: {
+            const Assignment & assignment = static_cast<const Assignment &>(*statement);
+            gather(assignment.target, called);
+            gather(assignment.value, called);
+            return;
+        }
+        case Statement::Kind::CONDITIONAL: {
+            const Conditional & conditional = static_cast<const Conditional &>(*statement);
+            gather(conditional.condition, called);
+            gather(conditional.whenTrue, called);
+            gather(conditional.whenFalse, called);
+            return;
+        }
+        case Statement::Kind::WHILE: {
+            const While & loop = static_cast<const While &>(*statement);
+            gather(loop.condition, called);
+            gather(loop.body, called);
+            return;
+        }
+        case Statement::Kind::FOR: {
+            const For & loop = static_cast<const For &>(*statement);
+            gather(loop.initialiser, called);
+            gather(loop.condition, called);
+            gather(loop.step, called);
+            gather(loop.body, called);
+            return;
+        }
+        case Statement::Kind::JUMP:
+            gather(static_cast<const Jump &>(*statement).value, called);
+            return;
+        case Statement::Kind::EXPRESSION:
+            gather(static_cast<const ExpressionStatement &>(*statement).expression, called);
+            return;
+        case Statement::Kind::LIGHTING: {
+            const Lighting & lighting = static_cast<const Lighting &>(*statement);
+            for (const ExpressionPtr & argument : lighting.arguments) {
+                gather(argument, called);
+            }
+            gather(lighting.body, called);
+            return;
+        }
+    }
+}
+
 Storage join(Storage left, Storage right) {
     return left == Storage::VARYING || right == Storage::VARYING ?
         Storage::VARYING : Storage::UNIFORM;
@@ -268,6 +390,7 @@ bool Compiler::compile() {
         }
         declareGlobals();
         declareParameters();
+        adopt();
         results_.assign(shader_->functions.size(), Storage::UNIFORM);
         calls_.assign(shader_->functions.size(), std::vector<int>());
         checkFunctions();
@@ -282,6 +405,35 @@ bool Compiler::compile() {
         return false;
     }
     return error_.empty();
+}
+
+void Compiler::adopt() {
+    // a call to diffuse or specular names a function written in the language, which the
+    // shader takes on as its own so that nothing after this pass sees two kinds of function
+    std::vector<std::string> called;
+    gather(boost::static_pointer_cast<Statement>(shader_->body), &called);
+    for (const Function & function : shader_->functions) {
+        gather(boost::static_pointer_cast<Statement>(function.body), &called);
+    }
+    if (called.empty()) {
+        return;
+    }
+    const std::vector<Function> library = sources();
+    for (std::size_t i = 0; i < called.size(); i++) {
+        if (defines(shader_->functions, called[i])) {
+            // the shader's own wins, which is how a scene overrides one of these
+            continue;
+        }
+        for (const Function & candidate : library) {
+            if (candidate.name != called[i]) {
+                continue;
+            }
+            shader_->functions.push_back(candidate);
+            // and whatever it calls in turn, which is how specular reaches specularbrdf
+            gather(boost::static_pointer_cast<Statement>(candidate.body), &called);
+            break;
+        }
+    }
 }
 
 void Compiler::checkFunctions() {

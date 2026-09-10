@@ -53,6 +53,8 @@ enum class Body {
     PTRANSFORM, VTRANSFORM, NTRANSFORM, CTRANSFORM, MTRANSFORM, DEPTH,
     // a matrix
     DETERMINANT, TRANSLATE, ROTATE, SCALE,
+    // what the renderer answers rather than the machine
+    AMBIENT, TRANSMISSION, TRACE,
     PRINTF
 };
 
@@ -78,7 +80,9 @@ Body lookup(const std::string & name) {
         { "ntransform", Body::NTRANSFORM }, { "ctransform", Body::CTRANSFORM },
         { "mtransform", Body::MTRANSFORM }, { "depth", Body::DEPTH },
         { "determinant", Body::DETERMINANT }, { "translate", Body::TRANSLATE },
-        { "rotate", Body::ROTATE }, { "scale", Body::SCALE }, { "printf", Body::PRINTF }
+        { "rotate", Body::ROTATE }, { "scale", Body::SCALE },
+        { "ambient", Body::AMBIENT }, { "transmission", Body::TRANSMISSION },
+        { "trace", Body::TRACE }, { "printf", Body::PRINTF }
     };
     for (const auto & entry : table) {
         if (name == entry.name) {
@@ -485,6 +489,11 @@ void Machine::builtin(const Instruction & instruction) {
         report("'" + table[index].name + "' is declared and does nothing yet, so it answers its default");
         return;
     }
+    Value & answer = file_[static_cast<std::size_t>(instruction.target)];
+    if (body == Body::AMBIENT) {
+        ambient(&answer);
+        return;
+    }
     if (instruction.arguments.empty()) {
         return;
     }
@@ -497,7 +506,11 @@ void Machine::builtin(const Instruction & instruction) {
         given.push_back(&file_[static_cast<std::size_t>(reg)]);
     }
     site.given = &given;
-    site.target = &file_[static_cast<std::size_t>(instruction.target)];
+    site.target = &answer;
+    if (body == Body::TRANSMISSION || body == Body::TRACE) {
+        shadowed(body == Body::TRACE, *given[0], *given[1], &answer);
+        return;
+    }
     site.written = setter(body) ? &file_[static_cast<std::size_t>(instruction.arguments[0])] : site.target;
 
     // a named space is one matrix for the whole batch, since a string is uniform - which is
@@ -529,6 +542,57 @@ void Machine::builtin(const Instruction & instruction) {
         }
         apply(site, point);
     }
+}
+
+void Machine::ambient(Value* target) {
+    const unsigned int wide = target->storage() == Storage::VARYING ? batch_ : 1;
+    for (unsigned int point = 0; point < wide; point++) {
+        if (writable(*target, point)) {
+            target->triple(point, glm::vec3(0.0f));
+        }
+    }
+    const unsigned int count = renderer_ == nullptr ? 0 : renderer_->lights();
+    if (count == 0) {
+        return;
+    }
+    const Value & surface = point_ >= 0 ? file_[static_cast<std::size_t>(point_)] : direction_;
+    for (unsigned int index = 0; index < count; index++) {
+        std::vector<char> reached(batch_, 1);
+        bool isAmbient = false;
+        if (!renderer_->light(index, surface, &direction_, &colour_, &reached, &isAmbient)) {
+            continue;
+        }
+        if (!isAmbient) {
+            // a light with a direction is an illuminance loop's, not ambient()'s
+            continue;
+        }
+        for (unsigned int point = 0; point < wide; point++) {
+            if (reached[point] != 0 && writable(*target, point)) {
+                target->triple(point, target->triple(point) + colour_.triple(point));
+            }
+        }
+    }
+}
+
+void Machine::shadowed(bool ray, const Value & from, const Value & to, Value* target) {
+    if (renderer_ != nullptr &&
+        (ray ? renderer_->trace(from, to, target) : renderer_->transmission(from, to, target))) {
+        return;
+    }
+    /*
+        The answer a renderer that cannot do it gives. All the light gets through, which is
+        moya without a shadow map, and a ray comes back black, which is what makes trace()
+        the phase 6 hook rather than phase 6.
+    */
+    const unsigned int wide = target->storage() == Storage::VARYING ? batch_ : 1;
+    const float answer = ray ? 0.0f : 1.0f;
+    for (unsigned int point = 0; point < wide; point++) {
+        if (writable(*target, point)) {
+            target->triple(point, glm::vec3(answer));
+        }
+    }
+    report(ray ? "'trace' is not answered by this renderer, so a ray comes back black"
+        : "'transmission' has nothing to cast a shadow here, so all the light gets through");
 }
 
 };  // namespace v3d::render::offline::sl::runtime

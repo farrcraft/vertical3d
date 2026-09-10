@@ -189,10 +189,8 @@ void Emitter::emitStatement(const StatementPtr & statement) {
             emitExpression(static_cast<const ExpressionStatement &>(*statement).expression);
             return;
         case Statement::Kind::LIGHTING:
-            // illuminance runs another shader's program over the same batch, which is the
-            // standard library's message passing rather than an instruction
-            throw fail("a lighting construct has no instructions yet",
-                statement->line, statement->column);
+            emitLighting(statement);
+            return;
     }
 }
 
@@ -410,6 +408,66 @@ int Emitter::emitCall(const ExpressionPtr & expression) {
     }
     program_->instructions.push_back(instruction);
     return instruction.target;
+}
+
+int Emitter::global(const char* name) const {
+    for (std::size_t i = 0; i < symbols_.size(); i++) {
+        if (symbols_[i].role == Symbol::Role::GLOBAL && symbols_[i].name == name) {
+            return static_cast<int>(i);
+        }
+    }
+    return -1;
+}
+
+void Emitter::emitLighting(const StatementPtr & statement) {
+    const Lighting & lighting = static_cast<const Lighting &>(*statement);
+    ExpressionPtr where;
+    std::vector<int> given;
+    given.reserve(lighting.arguments.size());
+    for (const ExpressionPtr & argument : lighting.arguments) {
+        given.push_back(emitExpression(argument));
+        where = argument;
+    }
+
+    runtime::Instruction open;
+    open.arguments = given;
+    open.line = statement->line;
+    open.column = statement->column;
+    if (lighting.construct != Lighting::Construct::ILLUMINANCE) {
+        /*
+            A light shader's end of the message passing. L and Ps are its own globals: the
+            construct writes the first for every point it lights and reads the second to
+            know where each of those points is.
+        */
+        open.opcode = lighting.construct == Lighting::Construct::ILLUMINATE
+            ? runtime::Opcode::ILLUMINATE : runtime::Opcode::SOLAR;
+        open.left = global("L");
+        open.right = global("Ps");
+        program_->instructions.push_back(open);
+        const int skip = here() - 1;
+        emitStatement(lighting.body);
+        put(runtime::Opcode::POP_MASK, -1, -1, -1, where);
+        patch(skip, here());
+        return;
+    }
+
+    /*
+        A surface shader's end. The body is a loop over the lights rather than over a
+        condition, so it is its own opcode rather than the LOOP the machine already has:
+        what narrows the batch is which points a light reaches, and that arrives from the
+        renderer one light at a time.
+    */
+    open.opcode = runtime::Opcode::ILLUMINANCE;
+    open.left = global("L");
+    open.right = global("Cl");
+    program_->instructions.push_back(open);
+    const int top = here();
+    const int done = put(runtime::Opcode::ILLUMINANCE_NEXT, -1, -1, -1, where);
+    emitStatement(lighting.body);
+    put(runtime::Opcode::POP_MASK, -1, -1, -1, where);
+    put(runtime::Opcode::JUMP, top, -1, -1, where);
+    patch(done, here());
+    put(runtime::Opcode::POP_ILLUMINANCE, -1, -1, -1, where);
 }
 
 int Emitter::emitInline(const ExpressionPtr & expression) {

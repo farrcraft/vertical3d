@@ -6,8 +6,11 @@
 #include "Builtins.h"
 
 #include <algorithm>
+#include <sstream>
 #include <string>
 #include <vector>
+
+#include "Parser.h"
 
 namespace v3d::render::offline::sl {
 
@@ -143,7 +146,59 @@ std::vector<Signature> build() {
     return table;
 }
 
+/*
+    The light model, in the language. L points from the point being shaded toward the
+    light - the same direction in a light shader's illuminate and in a surface shader's
+    illuminance body - so a cosine falloff is L . N and no term here negates anything.
+
+    A cone of PI/2 is the front of the surface, which is what keeps a light behind it out
+    of the sum.
+*/
+const char* const SOURCE = R"(
+surface library() {
+    color diffuse(normal Nn) {
+        color C = 0;
+        illuminance(P, Nn, 1.5707963) {
+            C += Cl * (normalize(L) . Nn);
+        }
+        return C;
+    }
+    color specularbrdf(vector Ln; normal Nn; vector V; float roughness) {
+        vector H = normalize(Ln + V);
+        return color (pow(max(0, Nn . H), 1 / roughness));
+    }
+    color specular(normal Nn; vector V; float roughness) {
+        color C = 0;
+        illuminance(P, Nn, 1.5707963) {
+            C += Cl * specularbrdf(normalize(L), Nn, V, roughness);
+        }
+        return C;
+    }
+    color phong(normal Nn; vector V; float size) {
+        color C = 0;
+        illuminance(P, Nn, 1.5707963) {
+            vector R = reflect(-normalize(L), Nn);
+            C += Cl * pow(max(0, R . V), size);
+        }
+        return C;
+    }
+}
+)";
+
+std::vector<Function> read() {
+    std::istringstream stream(SOURCE);
+    Parser parser(stream);
+    const std::vector<ShaderPtr> shaders = parser.parse();
+    // the wrapper is a shader only because a function is parsed inside one; nothing but its
+    // function list is kept
+    return shaders.size() == 1 ? shaders[0]->functions : std::vector<Function>();
+}
+
 };  // namespace
+
+std::vector<Function> sources() {
+    return read();
+}
 
 const std::vector<Signature> & builtins() {
     static const std::vector<Signature> table = build();

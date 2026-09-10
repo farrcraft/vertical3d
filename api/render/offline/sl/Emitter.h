@@ -59,6 +59,14 @@ class Emitter final {
     void emitLoop(const ExpressionPtr & condition, const StatementPtr & body,
         const StatementPtr & step);
     void emitJump(const StatementPtr & statement);
+    /**
+     * The three message passing constructs. Each is a loop or a mask over registers the
+     * shader's own globals already are, which is why they are instructions rather than
+     * calls into the library.
+     **/
+    void emitLighting(const StatementPtr & statement);
+    /** The register a shader global is, which the lighting constructs read and write. **/
+    int global(const char* name) const;
 
     int emitExpression(const ExpressionPtr & expression);
     int emitBinary(const ExpressionPtr & expression);

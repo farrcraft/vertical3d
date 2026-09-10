@@ -9,6 +9,7 @@
 #include <vector>
 
 #include <glm/mat4x4.hpp>
+#include <glm/vec3.hpp>
 
 #include "Program.h"
 #include "Renderer.h"
@@ -79,6 +80,15 @@ class Machine final {
      **/
     const std::vector<std::string> & printed() const;
 
+    /**
+     * Which points a light shader's run lit, for the renderer to hand back to the surface
+     * shader's illuminance loop.
+     *
+     * Every point until an `illuminate` or a `solar` narrows it, which is what makes a
+     * light shader with neither - `ambientlight` - light the whole batch.
+     **/
+    const std::vector<char> & lit() const;
+
  private:
     /**
      * A loop in progress: the lanes still going round it, and how deep the mask stack was
@@ -102,6 +112,19 @@ class Machine final {
         std::size_t loops = 0;
     };
 
+    /**
+     * An illuminance loop in progress: which light the body runs for next, the lanes the
+     * loop opened with, and the registers the construct named.
+     **/
+    class Illumination final {
+     public:
+        unsigned int light = 0;
+        std::vector<char> base;
+        int direction = -1;
+        int colour = -1;
+        std::vector<int> arguments;
+    };
+
     bool live(unsigned int point) const;
     bool anyLive() const;
     /** Whether an instruction writing this value should write this point of it. **/
@@ -122,6 +145,18 @@ class Machine final {
      **/
     void builtin(const Instruction & instruction);
     /**
+     * The sum of what every ambient light adds to the batch. Its own body rather than one
+     * of Library.cxx's, because it is the one built-in that runs the lights itself: an
+     * ambient light has no direction, so an illuminance loop cannot reach it.
+     **/
+    void ambient(Value* target);
+    /**
+     * transmission and trace, which are the two the renderer answers about a line between
+     * two points. A renderer that cannot lets all the light through and traces nothing,
+     * and says which.
+     **/
+    void shadowed(bool ray, const Value & from, const Value & to, Value* target);
+    /**
      * The matrix into a named coordinate space, the identity and a report when no renderer
      * knows it - a scene that named a space nothing knows renders in the wrong place rather
      * than not at all, and says so.
@@ -131,6 +166,27 @@ class Machine final {
     void mask(const Instruction & instruction, bool wanted);
     /** Narrow a loop to the lanes its condition still holds. **/
     void narrow(const Instruction & instruction);
+    /**
+     * Narrow the batch to the points one light reaches, whichever end of the message
+     * passing asked. False when there is no such point, and the body is left over.
+     **/
+    bool admit(const Instruction & instruction);
+    /**
+     * Set L and Cl from the next light that reaches any point of the batch, and push the
+     * lanes it reaches. False when the lights have run out.
+     **/
+    bool nextLight();
+    /**
+     * The lanes a light shader's illuminate or solar admits, having written L for each of
+     * them. False when it admits none, which is a light aimed away from this batch.
+     **/
+    bool illuminate(const Instruction & instruction, bool solar);
+    /**
+     * Whether a direction lies inside the cone an axis and a half angle name. A cone that
+     * named neither takes everything.
+     **/
+    bool inside(const glm::vec3 & direction, const std::vector<int> & cone,
+        std::size_t first, unsigned int point) const;
     /**
      * Take the live lanes out of the innermost inlined body, or out of everything when
      * there is none.
@@ -142,6 +198,16 @@ class Machine final {
     std::vector<std::vector<char> > masks_;
     std::vector<Loop> loops_;
     std::vector<Frame> frames_;
+    std::vector<Illumination> illuminations_;
+    /**
+     * Where an ambient light's answer lands before it is added in. Members rather than
+     * locals so that a grid summing the same two lights a thousand times allocates once.
+     **/
+    Value direction_;
+    Value colour_;
+    /** The register P is, for the built-in that asks the lights about the batch. **/
+    int point_ = -1;
+    std::vector<char> lit_;
     std::vector<std::string> reports_;
     std::vector<std::string> printed_;
     Renderer* renderer_ = nullptr;
