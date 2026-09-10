@@ -287,20 +287,22 @@ void Machine::narrow(const Instruction & instruction) {
 }
 
 void Machine::finish() {
-    // these lanes are done with the shader, so they come out of every mask and out of every
-    // loop still going round them
+    // a return goes as far as the function it is in and no further, so the stacks are
+    // cleared from where that body opened rather than from the bottom
+    const std::size_t mask = frames_.empty() ? 0 : frames_.back().masks;
+    const std::size_t loop = frames_.empty() ? 0 : frames_.back().loops;
     const std::vector<char> going = masks_.back();
-    for (std::vector<char> & mask : masks_) {
+    for (std::size_t i = mask; i < masks_.size(); i++) {
         for (unsigned int point = 0; point < batch_; point++) {
             if (going[point] != 0) {
-                mask[point] = 0;
+                masks_[i][point] = 0;
             }
         }
     }
-    for (Loop & loop : loops_) {
+    for (std::size_t i = loop; i < loops_.size(); i++) {
         for (unsigned int point = 0; point < batch_; point++) {
             if (going[point] != 0) {
-                loop.lanes[point] = 0;
+                loops_[i].lanes[point] = 0;
             }
         }
     }
@@ -336,6 +338,7 @@ bool Machine::run(const Program & program) {
     error_.clear();
     masks_.assign(1, std::vector<char>(batch_, 1));
     loops_.clear();
+    frames_.clear();
 
     std::size_t pc = 0;
     std::size_t steps = 0;
@@ -444,7 +447,25 @@ bool Machine::run(const Program & program) {
             case Opcode::CONTINUE:
                 leave(false);
                 break;
+            case Opcode::ENTER: {
+                Frame frame;
+                frame.masks = masks_.size();
+                frame.loops = loops_.size();
+                frames_.push_back(frame);
+                masks_.push_back(masks_.back());
+                break;
+            }
+            case Opcode::LEAVE:
+                // the lanes that returned are live again: they are done with the function,
+                // not with the shader
+                masks_.resize(frames_.back().masks);
+                loops_.resize(frames_.back().loops);
+                frames_.pop_back();
+                break;
             case Opcode::RETURN:
+                // like a break it does not jump: the masks and the loops between here and
+                // the body's own instruction are what has to be unwound, and each of them
+                // unwinds itself once no lane is left inside it
                 finish();
                 break;
         }

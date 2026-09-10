@@ -100,7 +100,21 @@ enum class Opcode {
      **/
     BREAK,
     CONTINUE,
-    /** Take the live lanes out of everything: they are done with this shader. **/
+    /**
+     * Open an inlined function body.
+     *
+     * A call is inlined because a run has no call stack, and the body is bracketed rather
+     * than merely pasted in because a `return` inside it means "these lanes are done with
+     * this function", not "done with this shader".
+     **/
+    ENTER,
+    /** Close an inlined body: the lanes that returned from it are live again. **/
+    LEAVE,
+    /**
+     * Take the live lanes out of the innermost inlined body, or out of everything when the
+     * shader body is what is running. Like BREAK it does not jump, because the lanes beside
+     * it have not finished.
+     **/
     RETURN
 };
 

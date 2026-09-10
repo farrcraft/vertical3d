@@ -80,6 +80,17 @@ class Machine final {
         int exit = 0;
     };
 
+    /**
+     * An inlined function body in progress: how deep the mask and loop stacks were when it
+     * opened, so that a return clears the lanes out of everything inside it and out of
+     * nothing beyond it.
+     **/
+    class Frame final {
+     public:
+        std::size_t masks = 0;
+        std::size_t loops = 0;
+    };
+
     bool live(unsigned int point) const;
     bool anyLive() const;
     /** Whether an instruction writing this value should write this point of it. **/
@@ -97,13 +108,17 @@ class Machine final {
     void mask(const Instruction & instruction, bool wanted);
     /** Narrow a loop to the lanes its condition still holds. **/
     void narrow(const Instruction & instruction);
-    /** Take the live lanes out of everything: they are done with this shader. **/
+    /**
+     * Take the live lanes out of the innermost inlined body, or out of everything when
+     * there is none.
+     **/
     void finish();
     void leave(bool loop);
 
     std::vector<Value> file_;
     std::vector<std::vector<char> > masks_;
     std::vector<Loop> loops_;
+    std::vector<Frame> frames_;
     std::vector<std::string> reports_;
     Renderer* renderer_ = nullptr;
     unsigned int batch_ = 1;

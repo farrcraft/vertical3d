@@ -303,6 +303,10 @@ void Emitter::emitJump(const StatementPtr & statement) {
             put(runtime::Opcode::CONTINUE, -1, -1, -1, ExpressionPtr());
             return;
         case Jump::Where::RETURN:
+            if (jump.value && !returns_.empty()) {
+                const int value = emitExpression(jump.value);
+                put(runtime::Opcode::MOVE, returns_.back(), value, -1, jump.value);
+            }
             put(runtime::Opcode::RETURN, -1, -1, -1, jump.value);
             return;
     }
@@ -392,10 +396,7 @@ int Emitter::emitCast(const ExpressionPtr & expression) {
 int Emitter::emitCall(const ExpressionPtr & expression) {
     const Call & call = static_cast<const Call &>(*expression);
     if (call.function >= 0) {
-        // a shader's own function is inlined rather than called, since a run has no call
-        // stack - and the inliner comes with the library's own SL-source functions
-        throw fail("'" + call.name + "' is a shader function, which has no instructions yet",
-            expression->line, expression->column);
+        return emitInline(expression);
     }
     runtime::Instruction instruction;
     instruction.opcode = runtime::Opcode::CALL;
@@ -409,6 +410,28 @@ int Emitter::emitCall(const ExpressionPtr & expression) {
     }
     program_->instructions.push_back(instruction);
     return instruction.target;
+}
+
+int Emitter::emitInline(const ExpressionPtr & expression) {
+    const Call & call = static_cast<const Call &>(*expression);
+    const Function & function = shader_->functions[static_cast<std::size_t>(call.function)];
+    // every argument is evaluated before any formal is written, so that an argument which
+    // is itself a call cannot land on a formal this one has already filled
+    std::vector<int> given;
+    given.reserve(call.arguments.size());
+    for (const ExpressionPtr & argument : call.arguments) {
+        given.push_back(emitExpression(argument));
+    }
+    for (std::size_t i = 0; i < given.size() && i < function.parameters.size(); i++) {
+        put(runtime::Opcode::MOVE, function.parameters[i].symbol, given[i], -1, call.arguments[i]);
+    }
+    const int result = temporary(expression->type, expression->storage);
+    put(runtime::Opcode::ENTER, -1, -1, -1, expression);
+    returns_.push_back(result);
+    emitBlock(function.body);
+    returns_.pop_back();
+    put(runtime::Opcode::LEAVE, -1, -1, -1, expression);
+    return result;
 }
 
 };  // namespace v3d::render::offline::sl
