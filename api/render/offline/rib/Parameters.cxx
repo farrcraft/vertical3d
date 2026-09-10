@@ -33,6 +33,15 @@ bool ParameterList::has(const std::string & name) const {
     return parameters_.contains(name);
 }
 
+std::vector<std::string> ParameterList::names() const {
+    std::vector<std::string> found;
+    found.reserve(parameters_.size());
+    for (const auto & entry : parameters_) {
+        found.push_back(entry.first);
+    }
+    return found;
+}
+
 std::size_t ParameterList::size() const {
     return parameters_.size();
 }

@@ -5,6 +5,7 @@
 
 #include "Reader.h"
 
+#include <cstdint>
 #include <fstream>
 #include <istream>
 #include <string>
@@ -454,6 +455,7 @@ Reader::Result Reader::attributeRequest(const std::string & name, Lexer * lexer,
  **/
 Reader::Result Reader::shaderRequest(const std::string & name, Lexer * lexer, Handler * handler) {
     std::string first;
+    std::string second;
     ParameterList list;
 
     if (name == "Surface") {
@@ -463,21 +465,48 @@ Reader::Result Reader::shaderRequest(const std::string & name, Lexer * lexer, Ha
         handler->surface(first, list);
         return Result::Handled;
     }
-    if (name == "LightSource") {
-        if (!text(lexer, &first)) {
+    if (name == "Imager") {
+        if (!text(lexer, &first) || !parameters(lexer, 1, &list)) {
             return Result::Failed;
         }
-        // the handle follows the shader name and is a sequence number in RIB 3.x
-        if (lexer->peek().kind() == Kind::NUMBER) {
-            lexer->next();
+        handler->imager(first, list);
+        return Result::Handled;
+    }
+    if (name == "LightSource" || name == "AreaLightSource") {
+        if (!text(lexer, &first) || !handle(lexer, &second)) {
+            return Result::Failed;
         }
         if (!parameters(lexer, 1, &list)) {
             return Result::Failed;
         }
-        handler->lightSource(first, list);
+        // an area light is a light whose shape matters, and sampling one is phase 4. It
+        // reaches the handler as an ordinary light so that a scene using one still lights
+        // rather than going dark
+        handler->lightSource(first, second, list);
+        return Result::Handled;
+    }
+    if (name == "Illuminate") {
+        float on = 0.0f;
+        if (!handle(lexer, &first) || !number(lexer, &on)) {
+            return Result::Failed;
+        }
+        handler->illuminate(first, on != 0.0f);
         return Result::Handled;
     }
     return Result::Unhandled;
+}
+
+bool Reader::handle(Lexer * lexer, std::string * value) {
+    // RIB 3.03 writes a light handle as a sequence number and later RIB writes a string.
+    // Both are read, and it is a string to the handler either way: a renderer keying a map
+    // on it should not have to know which the file used
+    const Token token = lexer->peek();
+    if (token.kind() == Kind::NUMBER) {
+        lexer->next();
+        *value = std::to_string(static_cast<std::int64_t>(token.value()));
+        return true;
+    }
+    return text(lexer, value);
 }
 
 /**

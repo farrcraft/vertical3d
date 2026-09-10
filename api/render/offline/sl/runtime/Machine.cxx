@@ -451,7 +451,15 @@ void Machine::leave(bool loop) {
     }
 }
 
+bool Machine::initialise(const Program & program) {
+    return execute(program, 0, program.prologue);
+}
+
 bool Machine::run(const Program & program) {
+    return execute(program, program.prologue, program.instructions.size());
+}
+
+bool Machine::execute(const Program & program, std::size_t from, std::size_t until) {
     error_.clear();
     printed_.clear();
     masks_.assign(1, std::vector<char>(batch_, 1));
@@ -462,9 +470,9 @@ bool Machine::run(const Program & program) {
     // light shader with neither light the whole batch
     lit_.assign(batch_, 1);
 
-    std::size_t pc = 0;
+    std::size_t pc = from;
     std::size_t steps = 0;
-    while (pc < program.instructions.size()) {
+    while (pc < until) {
         if (++steps > LIMIT) {
             error_ = "the shader '" + program.name + "' ran without end";
             return false;

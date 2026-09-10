@@ -43,8 +43,17 @@ class Machine final {
 
     /**
      * Run it. False when something went wrong, which error() names.
+     *
+     * Starts after the program's prologue, which is the declared parameter defaults:
+     * running those again per grid would overwrite whatever a scene bound.
      **/
     bool run(const Program & program);
+
+    /**
+     * Run only the prologue, which leaves each parameter register holding the default the
+     * shader declared. What `Shader` reads its defaults out of, once.
+     **/
+    bool initialise(const Program & program);
 
     /**
      * A register, by the index the program gave it. The first `Program::symbols` of them
@@ -124,6 +133,9 @@ class Machine final {
         int colour = -1;
         std::vector<int> arguments;
     };
+
+    /** One pass over a range of the instructions, which is what both entry points are. **/
+    bool execute(const Program & program, std::size_t from, std::size_t until);
 
     bool live(unsigned int point) const;
     bool anyLive() const;

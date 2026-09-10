@@ -118,7 +118,34 @@ class Handler {
         (void)name;
         (void)parameters;
     }
-    virtual void lightSource(const std::string & name, const ParameterList & parameters) {
+    /**
+     * @param handle what a later Illuminate names this light by
+     *
+     * RIB 3.03 writes the handle as a sequence number and later RIB writes a string. Both
+     * are read and it is a string here either way, because a renderer keying a map on it
+     * should not have to know which the file used.
+     **/
+    virtual void lightSource(const std::string & name, const std::string & handle,
+        const ParameterList & parameters) {
+        (void)name;
+        (void)handle;
+        (void)parameters;
+    }
+    /**
+     * Turn a light on or off in the current attribute state.
+     *
+     * The reader recognised the handle and threw it away until now, which was correct only
+     * while nothing could turn a light off.
+     **/
+    virtual void illuminate(const std::string & handle, bool on) {
+        (void)handle;
+        (void)on;
+    }
+    /**
+     * The shader run over the finished framebuffer, which is how a scene says what a pixel
+     * nothing was drawn into is worth.
+     **/
+    virtual void imager(const std::string & name, const ParameterList & parameters) {
         (void)name;
         (void)parameters;
     }

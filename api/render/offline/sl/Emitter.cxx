@@ -138,13 +138,25 @@ bool Emitter::emit(runtime::Program* program) {
         reg.type = symbol.type;
         reg.storage = symbol.storage;
         reg.name = symbol.name;
+        reg.parameter = symbol.role == Symbol::Role::PARAMETER;
         program_->registers.push_back(reg);
     }
     program_->symbols = symbols_.size();
     try {
+        // the declared defaults come first and are their own run: a default the body
+        // computed would overwrite whatever a scene bound, once per grid
+        for (const Parameter & parameter : shader_->parameters) {
+            if (!parameter.defaultValue || parameter.symbol < 0) {
+                continue;
+            }
+            const int value = emitExpression(parameter.defaultValue);
+            put(runtime::Opcode::MOVE, parameter.symbol, value, -1, parameter.defaultValue);
+        }
+        program_->prologue = program_->instructions.size();
         emitBlock(shader_->body);
     } catch (const Failure &) {
         program_->instructions.clear();
+        program_->prologue = 0;
         return false;
     }
     return true;

@@ -171,6 +171,11 @@ class Register final {
     /** The symbol's name, or empty for a temporary. **/
     std::string name;
     /**
+     * Whether the symbol is a shader parameter, which is what a scene may bind and what
+     * the prologue leaves holding a declared default.
+     **/
+    bool parameter = false;
+    /**
      * Whether the register holds a literal the machine writes once at the start of a run
      * rather than something the program computes.
      **/
@@ -194,6 +199,14 @@ class Program final {
     std::vector<Instruction> instructions;
     /** How many of the registers are symbols. **/
     std::size_t symbols = 0;
+    /**
+     * How many of the instructions compute the shader's declared parameter defaults.
+     *
+     * They are at the front and a run starts after them, because a default written as an
+     * instruction the body runs would overwrite the value a scene bound on every pass over
+     * a grid. `Shader` runs them once and reads the answers out.
+     **/
+    std::size_t prologue = 0;
 
     /**
      * The register a named symbol is, or -1. What a renderer binds a parameter or reads Ci

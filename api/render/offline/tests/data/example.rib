@@ -14,6 +14,7 @@ Option "limits" "gridsize" [18]  #renderer specific
 Format 1024 768 1  #mandatory resolution
 Projection "perspective"
 Clipping 10 1000.0
+Imager "background" "background" [0 0 .2]
 FrameBegin 1
 ##Shaders MyUserShader, PIXARmarble, PIXARwood
 ##CameraOrientation 10.0 10.0 10.0 0.0 0.0 0.0
@@ -22,6 +23,9 @@ Transform  [.707107  -.408248  -.57735 0
             -.707107  -.408248  -.57735  0
             0  0  17.3205  1 ]
 WorldBegin
+LightSource "ambientlight" 1 "intensity" [.2]
+LightSource "distantlight" 2 "intensity" [1]
+Illuminate 1 0
 AttributeBegin
 Attribute "identifier" "name" "myball"
 Displacement "MyUserShader" "squish" 5
@@ -54,6 +58,8 @@ Transform [.707107  -.57735  -.408248  0
            -.707107  -.57735  -.408248  0
            0  0  24.4949 1 ]
 WorldBegin
+LightSource "distantlight" "key" "intensity" [1]
+Illuminate "key" 1
 AttributeBegin
 Attribute "identifier" "name" ["myball"]
 AttributeBegin
