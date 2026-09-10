@@ -376,6 +376,54 @@ compiles to a jump rather than a mask.
 
 ### Step 7 — the standard library
 
+**Landed.** The plain bodies are in `sl/runtime/Library.cxx`, a second translation unit for
+`Machine` rather than a class of its own — every body reads the live mask, writes the register
+file and says what it could not do, and all three of those are the machine's own state. The
+three that are not arithmetic are `Renderer::lights`, `light`, `transmission` and `trace`, each
+with a default a renderer that cannot do it inherits.
+
+Four things the step's own text left open, and one it was wrong about:
+
+- **A call is inlined, and an inlined body is bracketed.** Step 6 named the inliner as missing;
+  it is `ENTER`/`LEAVE` around the pasted body, because a `return` inside a function means the
+  lanes are done with the function rather than with the shader. Like `break` it does not jump —
+  jumping to the body's end from inside a mask or a loop would skip the `POP_MASK` and
+  `POP_LOOP` that unwind them, and each of those unwinds itself once no lane is left inside it.
+- **`L` points from the point being shaded toward the light**, in a light shader's `illuminate`
+  and in a surface shader's `illuminance` body alike. RI's own text can be read both ways —
+  `illuminate`'s says the vector runs from the light to the surface and the standard `diffuse`
+  in the same document reads as though it runs the other way — and the two ends have to agree.
+  It is fixed here rather than left to whoever writes the second shader: a cosine falloff is
+  `L . N` and nothing in the library negates it. A `.sl` file from elsewhere that assumed the
+  other reading renders its lights inside out, which is the cost of the choice and is why it is
+  written down.
+- **The message passing is instructions, not calls.** `illuminance` is a loop over the lights the
+  renderer names rather than over a condition, and `illuminate` and `solar` are the light's own
+  end of the same mask, so all three are opcodes over registers the shader's globals already
+  are. Running a light is the renderer's, because the renderer is what holds the shader
+  instances a scene named.
+- **`ambient()` is the one that stays C++.** The step calls it an ordinary function over
+  `illuminance`, and it cannot be: a light using neither `illuminate` nor `solar` has no
+  direction to test against a cone, which is exactly what makes it ambient and exactly why an
+  illuminance loop cannot reach it. `diffuse`, `specular`, `specularbrdf` and `phong` are SL
+  source as the step says, adopted into the calling shader's own function list before anything
+  else runs — so the checker, the inference and the inliner see one kind of function rather than
+  two, and a shader's own definition of the name wins because it is already there. The source is
+  read fresh per shader rather than held, since the compiler annotates a tree in place.
+- **`calculatenormal` is a stub** beside texture, shadow and noise. It is the derivatives of the
+  grid it is shading, and no renderer supplies those; a plausible answer instead of a report is
+  the failure mode phase 1 named.
+
+This step also settles how loud a stub is, which the plan carried as an open question: `reports()`
+is one line per distinct message for the life of a machine, so it is once per name, and a renderer
+shading a thousand grids over one machine hears each thing once. `printf` is the exception and has
+its own list, because a person who wrote one asked to be told at every shading point.
+
+Not here, and belonging to step 8 rather than being missed: **a parameter's declared default is
+not applied.** The emitter emits the shader body and nothing else, because a default written as
+instructions would overwrite a renderer's binding on every run — so it is `Shader`'s to write
+into the register file after `prepare`, which is what step 8's binding is.
+
 `sl::Builtins`, and the renderer interface the interesting half of it calls through.
 
 The plain built-ins, which are arithmetic over the value model and are cheap once step 6 is real:
@@ -591,9 +639,6 @@ settled deliberately rather than by whoever types first.
 - **Whether `Cs` on a primitive beats `Cs` in the graphics state.** RI says the primitive's own
   varying `"Cs"` wins, which is what moya's dicing already does; talyn has no per-vertex colour at
   all and will take the graphics state's. State the asymmetry in a comment or close it.
-- **How loud a stub is.** Once per shader, once per program, or once per name. Too quiet and a
-  scene renders wrong silently, which is the failure mode phase 1 named; too loud and a
-  640 by 480 render prints a million lines. Once per program name is the intended answer.
 - **`RiRotate`'s sign**, carried forward from phase 2 and now with something at stake. RI states
   its rotations in a left handed system and both renderers hand the angle to `glm::rotate`, which
   is counter-clockwise by the right hand rule. Nothing in the tree can tell the difference, because

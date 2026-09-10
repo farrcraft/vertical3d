@@ -7,6 +7,7 @@
 #include <api/render/offline/sl/Emitter.h>
 #include <api/render/offline/sl/Parser.h>
 #include <api/render/offline/sl/runtime/Machine.h>
+#include <api/render/offline/sl/runtime/Renderer.h>
 
 #include <sstream>
 #include <string>
@@ -14,6 +15,7 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <glm/gtc/matrix_transform.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
@@ -29,7 +31,8 @@ typedef v3d::render::offline::sl::runtime::Program Program;
  **/
 class Shaded final {
  public:
-    explicit Shaded(const std::string & body, unsigned int batch = 1) {
+    explicit Shaded(const std::string & body, unsigned int batch = 1,
+        v3d::render::offline::sl::runtime::Renderer* renderer = nullptr) {
         const std::string source = "surface test() {\n" + body + "\n}\n";
         std::istringstream stream(source);
         v3d::render::offline::sl::Parser parser(stream);
@@ -39,6 +42,7 @@ class Shaded final {
         BOOST_REQUIRE_MESSAGE(compiler.compile(), compiler.error() + " in: " + body);
         v3d::render::offline::sl::Emitter emitter(shaders[0], compiler.symbols());
         BOOST_REQUIRE_MESSAGE(emitter.emit(&program_), emitter.error() + " in: " + body);
+        machine_.renderer(renderer);
         machine_.prepare(program_, batch);
         BOOST_REQUIRE_MESSAGE(machine_.run(program_), machine_.error());
     }
@@ -303,4 +307,108 @@ BOOST_AUTO_TEST_CASE(sllibrary_stubs_report_once_test) {
         "'texture' is declared and does nothing yet, so it answers its default");
     BOOST_CHECK_EQUAL(reports[2],
         "'shadow' is declared and does nothing yet, so it answers its default");
+}
+
+namespace {
+
+/**
+ * A renderer that knows two spaces, so that the transforming built-ins have something to
+ * transform through.
+ *
+ * "world" both scales one axis and translates, which is the shape that tells the three
+ * apart: under a rotation or a uniform scale a normal and a vector answer the same thing,
+ * and the moment one axis is scaled they do not.
+ **/
+class Spaces final : public v3d::render::offline::sl::runtime::Renderer {
+ public:
+    bool space(const std::string & name, glm::mat4x4* matrix) override {
+        if (name == "world") {
+            *matrix = glm::translate(glm::mat4x4(1.0f), glm::vec3(2.0f, 3.0f, 4.0f)) *
+                glm::scale(glm::mat4x4(1.0f), glm::vec3(1.0f, 1.0f, 2.0f));
+            return true;
+        }
+        if (name == "NDC") {
+            *matrix = glm::scale(glm::mat4x4(1.0f), glm::vec3(1.0f, 1.0f, 0.1f));
+            return true;
+        }
+        return false;
+    }
+};
+
+};  // namespace
+
+/**
+ * The three transforms against one matrix that scales an axis and translates. A point
+ * translates, a vector does not, and a normal goes by the inverse transpose - which is the
+ * same class of fault as step 2's, and is invisible under every uniform scale.
+ **/
+BOOST_AUTO_TEST_CASE(sllibrary_transforms_test) {
+    Spaces renderer;
+    const Shaded shaded(
+        "point moved = ptransform(\"world\", point (1, 1, 1));\n"
+        "vector turned = vtransform(\"world\", vector (1, 1, 1));\n"
+        "normal tilted = ntransform(\"world\", normal (0, 0, 1));\n"
+        "float away = depth(point (0, 0, 5));", 1, &renderer);
+
+    // scaled to (1, 1, 2) and then moved by (2, 3, 4)
+    BOOST_CHECK_CLOSE(shaded.triple("moved").x, 3.0f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("moved").z, 6.0f, 0.01f);
+    // the same scale with no move, because a direction has no position to move
+    BOOST_CHECK_CLOSE(shaded.triple("turned").x, 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("turned").z, 2.0f, 0.01f);
+    // and the inverse transpose, which is the reciprocal of that scale rather than the scale
+    BOOST_CHECK_CLOSE(shaded.triple("tilted").z, 0.5f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.number("away"), 0.5f, 0.01f);
+    BOOST_CHECK(shaded.machine().reports().empty());
+}
+
+/**
+ * Two space names is out of the first and into the second, so naming one space twice is
+ * the identity however far from the shader's own space it is.
+ **/
+BOOST_AUTO_TEST_CASE(sllibrary_transform_between_two_spaces_test) {
+    Spaces renderer;
+    const Shaded shaded(
+        "point same = ptransform(\"world\", \"world\", point (1, 1, 1));\n"
+        "point out = ptransform(\"world\", \"current\", point (3, 4, 6));", 1, &renderer);
+
+    BOOST_CHECK_CLOSE(shaded.triple("same").x, 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("same").z, 1.0f, 0.01f);
+    // and back the other way, which undoes the case above
+    BOOST_CHECK_CLOSE(shaded.triple("out").x, 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("out").z, 1.0f, 0.01f);
+}
+
+/**
+ * A matrix through a space is the two composed, and a colour through one is the colour:
+ * there is one colour space here and it is the one a framebuffer holds, so a scene asking
+ * for another gets its colours back unchanged and is told.
+ **/
+BOOST_AUTO_TEST_CASE(sllibrary_matrix_and_colour_spaces_test) {
+    Spaces renderer;
+    const Shaded shaded(
+        "float bulk = determinant(mtransform(\"world\", matrix 1));\n"
+        "color kept = ctransform(\"rgb\", color (0.25, 0.5, 0.75));\n"
+        "color other = ctransform(\"hsv\", color (0.25, 0.5, 0.75));", 1, &renderer);
+
+    // the world matrix scales one axis by two and nothing else changes a volume
+    BOOST_CHECK_CLOSE(shaded.number("bulk"), 2.0f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("kept").g, 0.5f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("other").g, 0.5f, 0.01f);
+    BOOST_REQUIRE_EQUAL(shaded.machine().reports().size(), 1u);
+    BOOST_CHECK_EQUAL(shaded.machine().reports()[0],
+        "the colour space \"hsv\" is not one this renderer knows");
+}
+
+/**
+ * calculatenormal needs the derivatives of the grid it is shading, which no renderer
+ * supplies yet. It is a stub like the other three rather than a plausible answer, because
+ * a plausible answer is what makes a scene render wrong quietly.
+ **/
+BOOST_AUTO_TEST_CASE(sllibrary_calculatenormal_is_a_stub_test) {
+    const Shaded shaded("normal answer = calculatenormal(P);", 4);
+    BOOST_CHECK_SMALL(shaded.triple("answer").z, 0.0001f);
+    BOOST_REQUIRE_EQUAL(shaded.machine().reports().size(), 1u);
+    BOOST_CHECK_EQUAL(shaded.machine().reports()[0],
+        "'calculatenormal' is declared and does nothing yet, so it answers its default");
 }
