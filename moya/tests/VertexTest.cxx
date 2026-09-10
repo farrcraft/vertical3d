@@ -3,11 +3,11 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <moya/libmoya/Vertex.h>
+
 #include <boost/test/unit_test.hpp>
 
 #include <glm/glm.hpp>
-
-#include "../libmoya/Vertex.h"
 
 BOOST_AUTO_TEST_CASE(vertex_test) {
     v3d::moya::Vertex vertex;

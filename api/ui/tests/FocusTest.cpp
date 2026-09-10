@@ -3,20 +3,19 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/asset/kind/Json.h>
+#include <api/ui/Container.h>
+#include <api/ui/Engine.h>
+#include <api/ui/component/Panel.h>
+#include <api/ui/component/TextBox.h>
+#include <api/ui/component/VerticalBox.h>
+#include <api/ui/input/Keys.h>
+
 #include <string>
 #include <string_view>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../Engine.h"
-#include "../Keys.h"
-
-#include "../Container.h"
-#include "../component/Panel.h"
-#include "../component/TextBox.h"
-#include "../component/VerticalBox.h"
-#include "../../asset/Json.h"
 
 #include <boost/json/parse.hpp>
 #include <boost/make_shared.hpp>
@@ -34,14 +33,14 @@ struct Fixture final {
         ui = boost::make_shared<v3d::ui::Engine>(
             boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,
             boost::make_shared<v3d::log::Logger>());
-        BOOST_REQUIRE(ui->load(boost::make_shared<v3d::asset::Json>("vgui",
+        BOOST_REQUIRE(ui->load(boost::make_shared<v3d::asset::kind::Json>("vgui",
             v3d::asset::Type::JsonDocument, boost::json::parse(document).as_object())));
-        keys = boost::make_shared<v3d::ui::Keys>(ui, dispatcher);
+        keys = boost::make_shared<v3d::ui::input::Keys>(ui, dispatcher);
     }
 
     boost::shared_ptr<entt::dispatcher> dispatcher;
     boost::shared_ptr<v3d::ui::Engine> ui;
-    boost::shared_ptr<v3d::ui::Keys> keys;
+    boost::shared_ptr<v3d::ui::input::Keys> keys;
 };
 
 const char* const ONE_CONTAINER =

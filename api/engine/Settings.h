@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include <string>
+#include <api/log/Logger.h>
 
-#include "../log/Logger.h"
+#include <string>
 
 #include <boost/json.hpp>
 #include <boost/shared_ptr.hpp>

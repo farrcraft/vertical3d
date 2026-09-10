@@ -5,29 +5,28 @@
 
 #pragma once
 
+#include <api/config/CameraProfiles.h>
+#include <api/engine/Engine.h>
+#include <api/event/Event.h>
+#include <api/event/kind/MouseMotion.h>
+#include <api/event/kind/WindowResize.h>
+#include <api/ui/input/Cursor.h>
+#include <api/ui/Engine.h>
+#include <api/ui/component/Toolbar.h>
+#include <api/ui/component/menu/MenuBar.h>
+#include <vertical3d/src/command/CommandDirectory.h>
+#include <vertical3d/src/command/CommandStack.h>
+#include <vertical3d/src/scene/Project.h>
+#include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/tool/CameraControlTool.h>
+#include <vertical3d/src/tool/SelectMask.h>
+#include <vertical3d/src/tool/SelectTool.h>
+#include <vertical3d/src/tool/TransformTool.h>
+#include <vertical3d/src/view/ViewLayout.h>
+#include <vertical3d/src/view/ViewPort.h>
+
 #include <string>
 #include <vector>
-
-#include "tool/CameraControlTool.h"
-#include "../../api/config/CameraProfiles.h"
-#include "command/CommandDirectory.h"
-#include "command/CommandStack.h"
-#include "scene/Project.h"
-#include "scene/Scene.h"
-#include "tool/SelectMask.h"
-#include "tool/SelectTool.h"
-#include "tool/TransformTool.h"
-#include "view/ViewLayout.h"
-#include "view/ViewPort.h"
-
-#include "../../api/engine/Engine.h"
-#include "../../api/event/Event.h"
-#include "../../api/event/MouseMotion.h"
-#include "../../api/event/WindowResize.h"
-#include "../../api/ui/Engine.h"
-#include "../../api/ui/Cursor.h"
-#include "../../api/ui/component/Toolbar.h"
-#include "../../api/ui/component/menu/MenuBar.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
@@ -73,12 +72,12 @@ class Controller final : public v3d::engine::Engine {
      * The cursor moved. Which view it is over is what decides which camera a drag
      * drives, so this is where the active view is chosen.
      **/
-    void handleMotion(const v3d::event::MouseMotion& event);
+    void handleMotion(const v3d::event::kind::MouseMotion& event);
 
     /**
      * The window changed size, so the layout divides a different area between the views.
      **/
-    void handleResize(const v3d::event::WindowResize& event);
+    void handleResize(const v3d::event::kind::WindowResize& event);
 
  private:
     /**
@@ -191,7 +190,7 @@ class Controller final : public v3d::engine::Engine {
     std::string path_;
     boost::shared_ptr<Scene> scene_;
     boost::shared_ptr<v3d::ui::Engine> vgui_;
-    boost::shared_ptr<v3d::ui::Cursor> uiCursor_;
+    boost::shared_ptr<v3d::ui::input::Cursor> uiCursor_;
     boost::shared_ptr<v3d::ui::component::MenuBar> menu_;
     std::vector<boost::shared_ptr<v3d::ui::component::Toolbar>> toolbars_;
     boost::shared_ptr<Project> project_;

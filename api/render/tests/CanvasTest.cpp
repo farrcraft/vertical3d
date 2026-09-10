@@ -3,14 +3,13 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/font/TextBuffer.h>
+#include <api/render/realtime/Canvas.h>
+
 #include <cmath>
 #include <cstddef>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../realtime/Canvas.h"
-
-#include "../../font/TextBuffer.h"
 
 #include <glm/vec4.hpp>
 

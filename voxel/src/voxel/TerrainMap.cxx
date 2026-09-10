@@ -5,8 +5,9 @@
 
 #include "TerrainMap.h"
 
+#include <voxel/src/noise/noiseutils.h>
+
 #include <noise.h>
-#include "../noise/noiseutils.h"
 
 class TerrainMap::Noise {
  public:

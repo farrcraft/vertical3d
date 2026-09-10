@@ -5,10 +5,10 @@
 
 #pragma once
 
-#include "Manipulator.h"
+#include <api/brep/BRep.h>
+#include <api/render/realtime/LineCanvas.h>
 
-#include "../../../api/brep/BRep.h"
-#include "../../../api/render/realtime/LineCanvas.h"
+#include "Manipulator.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
@@ -51,11 +51,11 @@ class RotateManipulator final : public Manipulator {
      * as. Nothing within tolerance of any of them, and nothing that projects at all,
      * both come back negative.
      **/
-    float ringDistance(const Placement& placement, const glm::vec3& unit,
-        const ViewPort& view, const glm::vec2& cursor) const;
+    static float ringDistance(const Placement& placement, const glm::vec3& unit,
+        const ViewPort& view, const glm::vec2& cursor);
 
-    float swept(const ViewPort& view, const Placement& placement, Axis axis,
-        const glm::vec2& from, const glm::vec2& to) const;
+    static float swept(const ViewPort& view, const Placement& placement, Axis axis,
+        const glm::vec2& from, const glm::vec2& to);
 };
 
 };  // namespace v3d::editor

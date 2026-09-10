@@ -9,13 +9,12 @@
 #include FT_FREETYPE_H
 
 #include <string>
+#include <bit>
 #include <cmath>
 #include <algorithm>
 #include <map>
 
 #include <boost/make_shared.hpp>
-
-#include "../type/3dtypes.h"
 
 namespace v3d::font {
 Font2D::Font2D(const boost::shared_ptr<v3d::log::Logger>& logger) :
@@ -144,7 +143,7 @@ bool Font2D::build() {
     // calculate final texture size
     unsigned int requested_height = (max_ascent + max_descent + pad) * rows + pad;
     // the size must be a power of two
-    image_height = npot(requested_height);
+    image_height = std::bit_ceil(requested_height);
 
     boost::shared_ptr<v3d::image::Image> image = boost::make_shared<v3d::image::Image>(image_width, image_height, 8);
 

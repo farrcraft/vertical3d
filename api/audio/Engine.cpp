@@ -5,12 +5,12 @@
 
 #include "Engine.h"
 
+#include <api/event/kind/Sound.h>
+
 #include <map>
 #include <string>
 #include <utility>
 #include <vector>
-
-#include "../event/Sound.h"
 
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
@@ -71,17 +71,17 @@ bool Engine::initialize() {
         SDL_QuitSubSystem(SDL_INIT_AUDIO);
     }
 
-    dispatcher_->sink<v3d::event::Sound>().connect<&Engine::soundEvent>(*this);
+    dispatcher_->sink<v3d::event::kind::Sound>().connect<&Engine::soundEvent>(*this);
     return mixer_ != nullptr;
 }
 
-void Engine::soundEvent(const v3d::event::Sound& sound) {
+void Engine::soundEvent(const v3d::event::kind::Sound& sound) {
     if (!playClip(sound.clip())) {
         logger_->get()->error("unable to play clip: {}", sound.clip());
     }
 }
 
-bool Engine::load(const boost::shared_ptr<v3d::asset::Json>& config, const Resolve& resolve) {
+bool Engine::load(const boost::shared_ptr<v3d::asset::kind::Json>& config, const Resolve& resolve) {
     auto const doc = config->document();
     // every lookup is guarded, because boost::json::object::at throws for a key it does
     // not hold and a rejected config has to reach the caller as a false return

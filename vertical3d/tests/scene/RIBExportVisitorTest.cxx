@@ -3,6 +3,11 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/offline/rib/Reader.h>
+#include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/RIBExportVisitor.h>
+#include <vertical3d/src/scene/Scene.h>
+
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -12,26 +17,20 @@
 #include <boost/make_shared.hpp>
 #include <boost/filesystem/operations.hpp>
 
-#include "../../src/scene/RIBExportVisitor.h"
-#include "../../src/scene/Scene.h"
-#include "../../src/scene/CreatePoly.h"
-
-#include "../../../api/render/offline/RIBReader.h"
-
 namespace {
 
 /**
  * What the reader made of the file, which is a stronger assertion than what the text
  * looked like: the export is only worth anything if a renderer can read it back.
  **/
-class ImportHandler final : public v3d::render::offline::RIBHandler {
+class ImportHandler final : public v3d::render::offline::rib::Handler {
  public:
     void format(unsigned int width, unsigned int height, float pixelAspect) override {
         (void)pixelAspect;
         width_ = width;
         height_ = height;
     }
-    void projection(const std::string & name, const v3d::render::offline::ParameterList & parameters) override {
+    void projection(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override {
         (void)parameters;
         projection_ = name;
     }
@@ -54,11 +53,11 @@ class ImportHandler final : public v3d::render::offline::RIBHandler {
     void worldBegin() override { worlds_++; }
     void worldEnd() override { worlds_++; }
     void attributeBegin() override { blocks_++; }
-    void attribute(const std::string & name, const v3d::render::offline::ParameterList & parameters) override {
+    void attribute(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override {
         (void)name;
         names_.push_back(parameters.string("name", ""));
     }
-    void polygon(unsigned int vertices, const v3d::render::offline::ParameterList & parameters) override {
+    void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override {
         faces_++;
         corners_ += vertices;
         points_ = parameters.points("P");
@@ -81,8 +80,8 @@ class ImportHandler final : public v3d::render::offline::RIBHandler {
     unsigned int blocks_ = 0;
 };
 
-v3d::type::Camera camera(bool orthographic) {
-    v3d::type::CameraProfile profile("export");
+v3d::type::camera::Camera camera(bool orthographic) {
+    v3d::type::camera::Profile profile("export");
     profile.orthographic(orthographic);
     profile.orthoZoom(2.0f);
     profile.pixelAspect(4.0f / 3.0f);
@@ -90,7 +89,7 @@ v3d::type::Camera camera(bool orthographic) {
     profile.clipping(0.5f, 250.0f);
     profile.eye(glm::vec3(0.0f, 0.0f, -8.0f));
 
-    v3d::type::Camera result(profile);
+    v3d::type::camera::Camera result(profile);
     result.profile().size(320, 240);
     result.createProjection();
     result.createView();
@@ -100,7 +99,7 @@ v3d::type::Camera camera(bool orthographic) {
 std::string exportScene(const boost::shared_ptr<v3d::editor::Scene> & scene, bool orthographic) {
     std::ostringstream stream;
     v3d::editor::RIBExportVisitor visitor(&stream);
-    const v3d::type::Camera view = camera(orthographic);
+    const v3d::type::camera::Camera view = camera(orthographic);
     visitor.begin(view, 320, 240);
     scene->accept(&visitor);
     visitor.end();
@@ -108,7 +107,7 @@ std::string exportScene(const boost::shared_ptr<v3d::editor::Scene> & scene, boo
 }
 
 bool reimport(const std::string & source, ImportHandler * handler) {
-    v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
     std::istringstream stream(source);
     return reader.read(stream, handler);
 }

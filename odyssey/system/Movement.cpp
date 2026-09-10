@@ -5,9 +5,8 @@
 
 #include "Movement.h"
 
-#include "../engine/Path.h"
-
-#include "../../api/ecs/component/PositionFixed2D.h"
+#include <api/ecs/component/PositionFixed2D.h>
+#include <odyssey/engine/Path.h>
 
 namespace odyssey::system {
 

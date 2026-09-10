@@ -3,15 +3,15 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/event/kind/KeyDown.h>
+#include <api/event/kind/KeyUp.h>
+#include <api/input/Keyboard.h>
+
 #include <string>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
-
-#include "../Keyboard.h"
-#include "../../event/KeyDown.h"
-#include "../../event/KeyUp.h"
 
 /**
  * The device this replaces was v3D::KeyboardDevice, which pushed key names at registered
@@ -20,11 +20,11 @@
  **/
 namespace {
 struct Recorder {
-    void down(const v3d::event::KeyDown& event) {
+    void down(const v3d::event::kind::KeyDown& event) {
         down_.push_back(std::string(event.name()));
     }
 
-    void up(const v3d::event::KeyUp& event) {
+    void up(const v3d::event::kind::KeyUp& event) {
         up_.push_back(std::string(event.name()));
     }
 
@@ -53,8 +53,8 @@ BOOST_AUTO_TEST_CASE(keyboard_test) {
     v3d::input::Keyboard keyboard(context, dispatcher);
 
     Recorder recorder;
-    dispatcher->sink<v3d::event::KeyDown>().connect<&Recorder::down>(recorder);
-    dispatcher->sink<v3d::event::KeyUp>().connect<&Recorder::up>(recorder);
+    dispatcher->sink<v3d::event::kind::KeyDown>().connect<&Recorder::down>(recorder);
+    dispatcher->sink<v3d::event::kind::KeyUp>().connect<&Recorder::up>(recorder);
     dispatcher->sink<v3d::event::Event>().connect<&Recorder::sourceEvent>(recorder);
 
     // a key press is a KeyDown, plus a source event any mapper can bind

@@ -5,12 +5,11 @@
 
 #pragma once
 
+#include <api/event/Event.h>
+#include <api/render/realtime/Handle.h>
+#include <api/ui/Component.h>
+
 #include <string>
-
-#include "../Component.h"
-
-#include "../../event/Event.h"
-#include "../../render/realtime/Handle.h"
 
 namespace v3d::ui::component {
 /**

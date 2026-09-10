@@ -3,9 +3,9 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <boost/test/unit_test.hpp>
+#include <moya/libmoya/Renderer.h>
 
-#include "../libmoya/Renderer.h"
+#include <boost/test/unit_test.hpp>
 
 /**
  * activeRenderContext hands back a reference into the stack, so a caller writing an option

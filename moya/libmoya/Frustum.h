@@ -5,12 +5,12 @@
 
 #pragma once
 
+#include <api/type/geometry/AABBox.h>
+
 #include <string>
 #include <map>
 
 #include "Plane.h"
-
-#include "../../api/type/AABBox.h"
 
 namespace v3d::moya {
 class Frustum {
@@ -31,7 +31,7 @@ class Frustum {
     // normalize all planes in frustum
     void normalize(void);
 
-    int intersect(const v3d::type::AABBox & aabb);
+    int intersect(const v3d::type::geometry::AABBox & aabb);
     // int intersect(const Sphere & sphere);
     /*
         clip polygon against frustum - modifies passed polygon structure

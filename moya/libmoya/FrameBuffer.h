@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include "Bucket.h"
+#include <api/render/offline/FrameBuffer.h>
 
-#include "../../api/render/offline/FrameBuffer.h"
+#include "Bucket.h"
 
 #include <vector>
 
@@ -55,7 +55,7 @@ class FrameBuffer {
      * The image planes the hider writes samples into, indexed by Plane.
      */
     boost::shared_ptr<v3d::render::offline::FrameBuffer> planes(void) const;
-    void addPrimitive(const boost::shared_ptr<ReyesPrimitive> & primitive, const v3d::type::AABBox & bound);
+    void addPrimitive(const boost::shared_ptr<ReyesPrimitive> & primitive, const v3d::type::geometry::AABBox & bound);
     void render(RenderContext & rc);
 
     typedef std::vector< std::vector<Bucket> > BucketGrid;

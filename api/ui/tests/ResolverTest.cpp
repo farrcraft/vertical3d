@@ -3,19 +3,17 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/ui/Immediate.h>
+#include <api/ui/style/Resolver.h>
+#include <api/ui/style/Style.h>
+#include <api/ui/style/Theme.h>
+#include <api/ui/style/property/Color.h>
+#include <api/ui/style/property/Number.h>
+
 #include <string>
 #include <string_view>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../style/Resolver.h"
-
-#include "../Immediate.h"
-
-#include "../Style.h"
-#include "../style/Theme.h"
-#include "../style/property/Color.h"
-#include "../style/property/Number.h"
 
 #include <boost/make_shared.hpp>
 
@@ -23,16 +21,16 @@ namespace {
 
 using v3d::ui::style::Resolver;
 
-boost::shared_ptr<v3d::ui::Style> style(const std::string& name, const std::string& className) {
-    return boost::make_shared<v3d::ui::Style>(name, className);
+boost::shared_ptr<v3d::ui::style::Style> style(const std::string& name, const std::string& className) {
+    return boost::make_shared<v3d::ui::style::Style>(name, className);
 }
 
-void colour(const boost::shared_ptr<v3d::ui::Style>& target, const std::string& name,
+void colour(const boost::shared_ptr<v3d::ui::style::Style>& target, const std::string& name,
     const glm::vec4& value) {
     target->addProperty(boost::make_shared<v3d::ui::style::property::Color>(name, value), "color");
 }
 
-void metric(const boost::shared_ptr<v3d::ui::Style>& target, const std::string& name, float value) {
+void metric(const boost::shared_ptr<v3d::ui::style::Style>& target, const std::string& name, float value) {
     target->addProperty(boost::make_shared<v3d::ui::style::property::Number>(name, value), "number");
 }
 
@@ -51,7 +49,7 @@ BOOST_AUTO_TEST_CASE(no_theme_resolves_to_the_base) {
     Resolver resolver;
     resolver.base().panel = red;
 
-    const v3d::ui::Dressing& dressing = resolver.resolve(Resolver::Class::Panel, std::string_view());
+    const v3d::ui::paint::Dressing& dressing = resolver.resolve(Resolver::Class::Panel, std::string_view());
     BOOST_CHECK(dressing.panel == red);
 }
 
@@ -62,7 +60,7 @@ BOOST_AUTO_TEST_CASE(no_theme_resolves_to_the_base) {
 BOOST_AUTO_TEST_CASE(a_class_style_is_applied_over_the_base) {
     const boost::shared_ptr<v3d::ui::style::Theme> theme =
         boost::make_shared<v3d::ui::style::Theme>("dark");
-    const boost::shared_ptr<v3d::ui::Style> panel = style("plate", "panel");
+    const boost::shared_ptr<v3d::ui::style::Style> panel = style("plate", "panel");
     colour(panel, "background", green);
     metric(panel, "radius", 6.0f);
     theme->addStyle(panel);
@@ -73,7 +71,7 @@ BOOST_AUTO_TEST_CASE(a_class_style_is_applied_over_the_base) {
     resolver.base().radius = 0.0f;
     resolver.theme(theme);
 
-    const v3d::ui::Dressing& dressing = resolver.resolve(Resolver::Class::Panel, "plate");
+    const v3d::ui::paint::Dressing& dressing = resolver.resolve(Resolver::Class::Panel, "plate");
     BOOST_CHECK(dressing.panel == green);
     BOOST_CHECK_CLOSE(dressing.radius, 6.0f, 0.001f);
     // named nothing, so unchanged
@@ -87,7 +85,7 @@ BOOST_AUTO_TEST_CASE(a_class_style_is_applied_over_the_base) {
 BOOST_AUTO_TEST_CASE(a_component_naming_no_style_takes_the_first_of_its_class) {
     const boost::shared_ptr<v3d::ui::style::Theme> theme =
         boost::make_shared<v3d::ui::style::Theme>("dark");
-    const boost::shared_ptr<v3d::ui::Style> panel = style("first", "panel");
+    const boost::shared_ptr<v3d::ui::style::Style> panel = style("first", "panel");
     colour(panel, "background", green);
     theme->addStyle(panel);
 
@@ -103,8 +101,8 @@ BOOST_AUTO_TEST_CASE(a_component_naming_no_style_takes_the_first_of_its_class) {
  **/
 BOOST_AUTO_TEST_CASE(the_same_ask_is_worked_out_once) {
     Resolver resolver;
-    const v3d::ui::Dressing& first = resolver.resolve(Resolver::Class::Panel, "plate");
-    const v3d::ui::Dressing& second = resolver.resolve(Resolver::Class::Panel, "plate");
+    const v3d::ui::paint::Dressing& first = resolver.resolve(Resolver::Class::Panel, "plate");
+    const v3d::ui::paint::Dressing& second = resolver.resolve(Resolver::Class::Panel, "plate");
     BOOST_CHECK_EQUAL(&first, &second);
 }
 
@@ -115,13 +113,13 @@ BOOST_AUTO_TEST_CASE(the_same_ask_is_worked_out_once) {
 BOOST_AUTO_TEST_CASE(a_new_theme_drops_what_was_resolved) {
     const boost::shared_ptr<v3d::ui::style::Theme> dark =
         boost::make_shared<v3d::ui::style::Theme>("dark");
-    const boost::shared_ptr<v3d::ui::Style> darkPanel = style("plate", "panel");
+    const boost::shared_ptr<v3d::ui::style::Style> darkPanel = style("plate", "panel");
     colour(darkPanel, "background", green);
     dark->addStyle(darkPanel);
 
     const boost::shared_ptr<v3d::ui::style::Theme> light =
         boost::make_shared<v3d::ui::style::Theme>("light");
-    const boost::shared_ptr<v3d::ui::Style> lightPanel = style("plate", "panel");
+    const boost::shared_ptr<v3d::ui::style::Style> lightPanel = style("plate", "panel");
     colour(lightPanel, "background", red);
     light->addStyle(lightPanel);
 
@@ -152,7 +150,7 @@ BOOST_AUTO_TEST_CASE(changing_the_base_drops_what_was_resolved) {
 BOOST_AUTO_TEST_CASE(the_ui_style_is_read_into_the_base) {
     const boost::shared_ptr<v3d::ui::style::Theme> theme =
         boost::make_shared<v3d::ui::style::Theme>("dark");
-    const boost::shared_ptr<v3d::ui::Style> chrome = style("default", "ui");
+    const boost::shared_ptr<v3d::ui::style::Style> chrome = style("default", "ui");
     colour(chrome, "border", green);
     metric(chrome, "border-width", 3.0f);
     theme->addStyle(chrome);
@@ -162,7 +160,7 @@ BOOST_AUTO_TEST_CASE(the_ui_style_is_read_into_the_base) {
 
     BOOST_CHECK(resolver.base().border == green);
     // and a class that names no border of its own draws in it
-    const v3d::ui::Dressing& dressing = resolver.resolve(Resolver::Class::Bar, std::string_view());
+    const v3d::ui::paint::Dressing& dressing = resolver.resolve(Resolver::Class::Bar, std::string_view());
     BOOST_CHECK(dressing.border == green);
     BOOST_CHECK_CLOSE(dressing.borderWidth, 3.0f, 0.001f);
 }
@@ -174,7 +172,7 @@ BOOST_AUTO_TEST_CASE(the_ui_style_is_read_into_the_base) {
 BOOST_AUTO_TEST_CASE(a_scrollbar_does_not_take_a_bars_style) {
     const boost::shared_ptr<v3d::ui::style::Theme> theme =
         boost::make_shared<v3d::ui::style::Theme>("dark");
-    const boost::shared_ptr<v3d::ui::Style> bar = style("health", "bar");
+    const boost::shared_ptr<v3d::ui::style::Style> bar = style("health", "bar");
     colour(bar, "track", green);
     theme->addStyle(bar);
 
@@ -195,10 +193,10 @@ BOOST_AUTO_TEST_CASE(a_scrollbar_does_not_take_a_bars_style) {
 BOOST_AUTO_TEST_CASE(the_two_ways_of_writing_a_ui_read_different_classes) {
     const boost::shared_ptr<v3d::ui::style::Theme> theme =
         boost::make_shared<v3d::ui::style::Theme>("dark");
-    const boost::shared_ptr<v3d::ui::Style> chrome = style("default", Resolver::chromeClass);
+    const boost::shared_ptr<v3d::ui::style::Style> chrome = style("default", Resolver::chromeClass);
     metric(chrome, "line-height", 34.0f);
     theme->addStyle(chrome);
-    const boost::shared_ptr<v3d::ui::Style> tools = style("default", Resolver::tools);
+    const boost::shared_ptr<v3d::ui::style::Style> tools = style("default", Resolver::tools);
     metric(tools, "line-height", 18.0f);
     theme->addStyle(tools);
 
@@ -220,7 +218,7 @@ BOOST_AUTO_TEST_CASE(the_two_ways_of_writing_a_ui_read_different_classes) {
 BOOST_AUTO_TEST_CASE(a_theme_that_dresses_one_side_leaves_the_other_alone) {
     const boost::shared_ptr<v3d::ui::style::Theme> theme =
         boost::make_shared<v3d::ui::style::Theme>("dark");
-    const boost::shared_ptr<v3d::ui::Style> chrome = style("default", Resolver::chromeClass);
+    const boost::shared_ptr<v3d::ui::style::Style> chrome = style("default", Resolver::chromeClass);
     metric(chrome, "line-height", 34.0f);
     theme->addStyle(chrome);
 

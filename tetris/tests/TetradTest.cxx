@@ -3,11 +3,11 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <tetris/src/Tetrad.h>
+
 #include <string>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../src/Tetrad.h"
 
 namespace {
 

@@ -5,13 +5,12 @@
 
 #include "Jpeg.h"
 
+#include <api/asset/kind/Image.h>
+#include <api/image/reader/Jpeg.h>
+
 #include <string>
 
-#include "../Image.h"
-#include "../../image/reader/Jpeg.h"
-
 #include <boost/make_shared.hpp>
-
 
 namespace v3d::asset::loader {
 
@@ -33,7 +32,7 @@ boost::shared_ptr<Asset> Jpeg::load(std::string_view name) {
         return boost::shared_ptr<Asset>();
     }
 
-    boost::shared_ptr<Image> asset = boost::make_shared<Image>(std::string(name), Type::ImageJpeg, image);
+    boost::shared_ptr<kind::Image> asset = boost::make_shared<kind::Image>(std::string(name), Type::ImageJpeg, image);
 
     return asset;
 }

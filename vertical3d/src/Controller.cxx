@@ -5,21 +5,21 @@
 
 #include "Controller.h"
 
+#include <api/config/Type.h>
+#include <api/engine/Feature.h>
+#include <api/render/realtime/Window.h>
+#include <api/ui/Container.h>
+#include <vertical3d/src/command/CreateCommand.h>
+#include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/RIBExportVisitor.h>
+
 #include <algorithm>
 #include <cstddef>
 #include <string>
 #include <vector>
 #include <fstream>
 
-#include "command/CreateCommand.h"
-#include "scene/CreatePoly.h"
-#include "scene/RIBExportVisitor.h"
 #include "Renderer.h"
-
-#include "../../api/config/Type.h"
-#include "../../api/engine/Feature.h"
-#include "../../api/render/realtime/Window.h"
-#include "../../api/ui/Container.h"
 
 #include <boost/make_shared.hpp>
 
@@ -87,8 +87,8 @@ bool Controller::initialize() {
     transformTool_->commands(commands_);
 
     dispatcher_->sink<v3d::event::Event>().connect<&Controller::handleEvent>(*this);
-    dispatcher_->sink<v3d::event::MouseMotion>().connect<&Controller::handleMotion>(*this);
-    dispatcher_->sink<v3d::event::WindowResize>().connect<&Controller::handleResize>(*this);
+    dispatcher_->sink<v3d::event::kind::MouseMotion>().connect<&Controller::handleMotion>(*this);
+    dispatcher_->sink<v3d::event::kind::WindowResize>().connect<&Controller::handleResize>(*this);
 
     renderer_ = boost::make_shared<Renderer>(window(), logger_, assetManager_, &registry_);
     renderer_->views(views_);
@@ -130,7 +130,7 @@ bool Controller::buildViews() {
 /**
  **/
 bool Controller::buildUi() {
-    boost::shared_ptr<v3d::asset::Json> config = config_->get(v3d::config::Type::Ui);
+    boost::shared_ptr<v3d::asset::kind::Json> config = config_->get(v3d::config::Type::Ui);
     if (!config) {
         logger_->get()->error("The editor has no ui config, so it would have no menus");
         return false;
@@ -142,7 +142,7 @@ bool Controller::buildUi() {
     }
     // the ui knows the order its own strips are drawn in, so it is what offers a cursor to
     // them - ADR-0038
-    uiCursor_ = boost::make_shared<v3d::ui::Cursor>(vgui_, dispatcher_);
+    uiCursor_ = boost::make_shared<v3d::ui::input::Cursor>(vgui_, dispatcher_);
 
     boost::shared_ptr<v3d::ui::Container> container = vgui_->container(uiContainer);
     if (!container) {
@@ -491,13 +491,13 @@ bool Controller::shutdown() {
 
 /**
  **/
-void Controller::handleResize(const v3d::event::WindowResize& event) {
+void Controller::handleResize(const v3d::event::kind::WindowResize& event) {
     layoutViews(event.width(), event.height());
 }
 
 /**
  **/
-void Controller::handleMotion(const v3d::event::MouseMotion& event) {
+void Controller::handleMotion(const v3d::event::kind::MouseMotion& event) {
     cursor_ = event.position();
 
     const bool dragging = (cameraTool_ && cameraTool_->dragging()) || (transformTool_ && transformTool_->dragging());

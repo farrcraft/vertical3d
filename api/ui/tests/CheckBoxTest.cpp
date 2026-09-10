@@ -3,22 +3,21 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/asset/kind/Json.h>
+#include <api/render/realtime/Canvas.h>
+#include <api/ui/Container.h>
+#include <api/ui/Engine.h>
+#include <api/ui/component/CheckBox.h>
+#include <api/ui/component/RadioButton.h>
+#include <api/ui/component/Scrollbar.h>
+#include <api/ui/paint/ComponentRenderer.h>
+
 #include <algorithm>
 #include <string>
 #include <string_view>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../ComponentRenderer.h"
-#include "../../render/realtime/Canvas.h"
-#include "../Container.h"
-#include "../Engine.h"
-#include "../component/Scrollbar.h"
-#include "../component/CheckBox.h"
-#include "../component/RadioButton.h"
-
-#include "../../asset/Json.h"
 
 #include <boost/json/parse.hpp>
 #include <boost/make_shared.hpp>
@@ -39,8 +38,8 @@ struct Written final {
     glm::vec4 colour;
 };
 
-v3d::ui::ComponentRenderer build(std::vector<Written>* written) {
-    return v3d::ui::ComponentRenderer(
+v3d::ui::paint::ComponentRenderer build(std::vector<Written>* written) {
+    return v3d::ui::paint::ComponentRenderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
             if (written != nullptr) {
@@ -60,7 +59,7 @@ boost::shared_ptr<v3d::ui::Engine> load(const std::string& config) {
         dispatcher,
         boost::make_shared<v3d::log::Logger>());
 
-    BOOST_REQUIRE(ui->load(boost::make_shared<v3d::asset::Json>(
+    BOOST_REQUIRE(ui->load(boost::make_shared<v3d::asset::kind::Json>(
         "vgui", v3d::asset::Type::JsonDocument, boost::json::parse(config).as_object())));
     return ui;
 }
@@ -75,7 +74,7 @@ BOOST_AUTO_TEST_SUITE(check_box_test)
  **/
 BOOST_AUTO_TEST_CASE(a_check_box_asks_for_its_mark_and_its_label) {
     std::vector<Written> written;
-    v3d::ui::ComponentRenderer renderer = build(&written);
+    v3d::ui::paint::ComponentRenderer renderer = build(&written);
     v3d::render::realtime::Canvas canvas;
     canvas.resize(400, 300);
 
@@ -88,7 +87,7 @@ BOOST_AUTO_TEST_CASE(a_check_box_asks_for_its_mark_and_its_label) {
     container.add(box);
     renderer.draw(&canvas, container);
 
-    const v3d::ui::Dressing& style = build(nullptr).dressing();
+    const v3d::ui::paint::Dressing& style = build(nullptr).dressing();
     BOOST_CHECK_CLOSE(box->size().x,
         style.markSize + style.padding * 0.5f + 7.0f * characterWidth, 0.001f);
     BOOST_CHECK_CLOSE(box->size().y, std::max(style.markSize, style.lineHeight), 0.001f);
@@ -104,7 +103,7 @@ BOOST_AUTO_TEST_CASE(a_check_box_asks_for_its_mark_and_its_label) {
  * is the plate and the mark over it.
  **/
 BOOST_AUTO_TEST_CASE(the_mark_is_drawn_only_when_the_box_is_checked) {
-    v3d::ui::ComponentRenderer renderer = build(nullptr);
+    v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
     v3d::render::realtime::Canvas canvas;
     canvas.resize(400, 300);
 
@@ -126,7 +125,7 @@ BOOST_AUTO_TEST_CASE(the_mark_is_drawn_only_when_the_box_is_checked) {
  * the same state as a check box.
  **/
 BOOST_AUTO_TEST_CASE(a_radio_button_is_a_check_box_with_a_round_mark) {
-    v3d::ui::ComponentRenderer renderer = build(nullptr);
+    v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
     v3d::render::realtime::Canvas square;
     v3d::render::realtime::Canvas round;
     square.resize(400, 300);

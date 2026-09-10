@@ -3,12 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/Registry.h>
+
 #include <string>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../realtime/Handle.h"
-#include "../realtime/Registry.h"
 
 BOOST_AUTO_TEST_SUITE(registry_test)
 

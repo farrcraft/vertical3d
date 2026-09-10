@@ -10,6 +10,10 @@
 #define NOMINMAX
 #endif
 
+#include <api/asset/kind/Json.h>
+#include <api/event/kind/Sound.h>
+#include <api/log/Logger.h>
+
 #include <SDL3_mixer/SDL_mixer.h>
 
 #include <cstdint>
@@ -19,9 +23,6 @@
 #include <vector>
 
 #include "AudioClip.h"
-#include "../asset/Json.h"
-#include "../log/Logger.h"
-#include "../event/Sound.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -102,7 +103,7 @@ class Engine final {
      * @return false when the document is malformed, or when a clip it named would not
      *         load - the clips that did load are kept either way
      **/
-    bool load(const boost::shared_ptr<v3d::asset::Json> & config, const Resolve & resolve);
+    bool load(const boost::shared_ptr<v3d::asset::kind::Json> & config, const Resolve & resolve);
 
     /**
      * File an already loaded clip under the id a sound event will name.
@@ -164,7 +165,7 @@ class Engine final {
      **/
     bool busGain(const std::string & bus, float level);
 
-    void soundEvent(const v3d::event::Sound & sound);
+    void soundEvent(const v3d::event::kind::Sound & sound);
 
  private:
     /**

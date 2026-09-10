@@ -5,16 +5,17 @@
 
 #include "Controller.h"
 
+#include <api/config/Type.h>
+#include <api/engine/Feature.h>
+#include <api/render/realtime/Window.h>
+#include <voxel/src/game/GameState.h>
+#include <voxel/src/game/Player.h>
+
 #include <functional>
 #include <string>
 
 #include "Renderer.h"
 #include "Scene.h"
-#include "game/GameState.h"
-#include "game/Player.h"
-#include "../../api/config/Type.h"
-#include "../../api/engine/Feature.h"
-#include "../../api/render/realtime/Window.h"
 
 #include <boost/make_shared.hpp>
 
@@ -36,16 +37,16 @@ bool Controller::initialize() {
     window_->caption("Voxel");
 
     // hide the mouse cursor in the window
-    window_->cursor(false);
+    v3d::render::realtime::Window::cursor(false);
     // move mouse cursor to center of window
     window_->warpCursor(window_->width() / 2, window_->height() / 2);
 
     vgui_ = boost::make_shared<v3d::ui::Engine>(eventEngine_, dispatcher_, logger_);
-    menu_ = boost::make_shared<v3d::ui::GameMenu>(vgui_, [this](bool suspended) {
+    menu_ = boost::make_shared<v3d::ui::shell::GameMenu>(vgui_, [this](bool suspended) {
         suspend(suspended);
     });
     if (config_) {
-        boost::shared_ptr<v3d::asset::Json> uiConfig = config_->get(v3d::config::Type::Ui);
+        boost::shared_ptr<v3d::asset::kind::Json> uiConfig = config_->get(v3d::config::Type::Ui);
         if (uiConfig) {
             if (!vgui_->load(uiConfig)) {
                 return false;
@@ -57,7 +58,7 @@ bool Controller::initialize() {
     dispatcher_->sink<v3d::event::Event>().connect<&Controller::handleEvent>(*this);
     // this is actually the game controller
     // maybe we need a separate player controller class to intercept mouse events?
-    dispatcher_->sink<v3d::event::MouseMotion>().connect<&Controller::handleMotion>(*this);
+    dispatcher_->sink<v3d::event::kind::MouseMotion>().connect<&Controller::handleMotion>(*this);
 
     scene_ = boost::make_shared<Scene>();
 
@@ -120,7 +121,7 @@ bool Controller::shutdown() {
  **/
 void Controller::suspend(bool suspended) {
     scene_->state()->pause(suspended);
-    window_->cursor(suspended);
+    v3d::render::realtime::Window::cursor(suspended);
     if (!suspended) {
         window_->warpCursor(window_->width() / 2, window_->height() / 2);
     }
@@ -174,7 +175,7 @@ void Controller::handleEvent(const v3d::event::Event& event) {
     }
 }
 
-void Controller::handleMotion(const v3d::event::MouseMotion& event) {
+void Controller::handleMotion(const v3d::event::kind::MouseMotion& event) {
     if (!window_->focused()) {
         return;
     }

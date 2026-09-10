@@ -5,10 +5,10 @@
 
 #pragma once
 
-#include <string>
+#include <api/asset/Loader.h>
+#include <api/image/Image.h>
 
-#include "../Loader.h"
-#include "../../image/Image.h"
+#include <string>
 
 struct cgltf_image;
 
@@ -29,7 +29,7 @@ namespace v3d::asset::loader {
  * Only the base colour of the metallic-roughness model is read. A texture the file names
  * arrives as that name, on v3d::type::Model::Material; one the file carries - a .glb's own
  * buffer, or a data uri - has no name to hand over and arrives decoded, on
- * v3d::asset::Model::baseColourImage().
+ * v3d::asset::kind::Model::baseColourImage().
  **/
 class Gltf final : public Loader {
  public:

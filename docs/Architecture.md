@@ -31,12 +31,12 @@ it that game. Five pieces live in the api:
 - `v3d::engine::run<T>(argv[0], "<name>")` is an app's `main`. It derives the app path, runs
   initialize and eventLoop inside a try block that logs what a renderer threw, and shuts down
   outside it.
-- `v3d::ui::TextRenderer` owns the font, the atlas and the glyphs. It hands
+- `v3d::ui::paint::TextRenderer` owns the font, the atlas and the glyphs. It hands
   `ComponentRenderer` the `measure()` and `write()` callbacks that
   [ADR-0019](adr/0019-the-ui-is-laid-out-by-what-draws-it.md) keeps it built from.
-- `v3d::ui::GameMenu` is the menu the escape key puts up. It holds the pause as a `Suspend`
+- `v3d::ui::shell::GameMenu` is the menu the escape key puts up. It holds the pause as a `Suspend`
   callback.
-- `v3d::ui::StatisticsOverlay` draws what the loop measured about its own pacing, hidden
+- `v3d::ui::shell::StatisticsOverlay` draws what the loop measured about its own pacing, hidden
   until something shows it. It copies the numbers into a `Sample` rather than reading an
   `engine::Statistics`, because `api/ui` sits below `api/engine` and cannot name that class.
 - `Engine3D::beginFrame` is the minimized-window check a `draw()` opens with.
@@ -203,11 +203,11 @@ because neither is simulation and neither wants to run twice on a slow frame.
   invalidates the handle every draw item recorded before it is holding.
 - **The swapchain is UNORM, not sRGB**, so colour is authored in display space
   ([ADR-0009](adr/0009-colour-authored-in-display-space.md)). A lit 3D scene will revisit this.
-- **`v3d::type::Camera` builds Vulkan clip space**, and `project()` and `unproject()` are
+- **`v3d::type::camera::Camera` builds Vulkan clip space**, and `project()` and `unproject()` are
   inverses ([ADR-0012](adr/0012-camera-builds-vulkan-clip-space.md)). **Its basis is
   `right = up x direction`**, the opposite hand to `glm::lookAt`'s. Screen right is
-  `CameraProfile::right()`. A camera behaviour that names a world axis copied from a `lookAt`
-  moves the scene the wrong way with nothing else looking wrong. `type::IsometricCamera` takes
+  `camera::Profile::right()`. A camera behaviour that names a world axis copied from a `lookAt`
+  moves the scene the wrong way with nothing else looking wrong. `type::camera::Isometric` takes
   the cross product instead of naming the vector for that reason, and asserts the direction
   through `project()`.
 - **`image::Image` row 0 is the top of the picture.** Every consumer downstream reads them that

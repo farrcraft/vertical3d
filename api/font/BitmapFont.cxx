@@ -5,15 +5,15 @@
 
 #include "BitmapFont.h"
 
+#include <api/image/Factory.h>
+#include <api/image/Texture.h>
+
 #include <fstream>
 #include <sstream>
 #include <string>
 #include <utility>
 
 #include <boost/make_shared.hpp>
-
-#include "../image/Factory.h"
-#include "../image/Texture.h"
 
 namespace v3d::font {
 std::pair<std::string, std::string> tokenize(const std::string& token) {

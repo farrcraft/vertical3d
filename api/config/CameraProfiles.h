@@ -5,13 +5,13 @@
 
 #pragma once
 
+#include <api/asset/kind/Json.h>
+#include <api/log/Logger.h>
+#include <api/type/camera/Profile.h>
+
 #include <map>
 #include <string>
 #include <vector>
-
-#include "../asset/Json.h"
-#include "../log/Logger.h"
-#include "../type/CameraProfile.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -23,7 +23,7 @@ namespace v3d::config {
  *
  * A profile is described by where the camera is and what it looks at rather than by
  * its three normals: the basis and the rotation have to agree, and
- * CameraProfile::lookat() is the one call that writes all four consistently.
+ * Profile::lookat() is the one call that writes all four consistently.
  **/
 class CameraProfiles final {
  public:
@@ -39,13 +39,13 @@ class CameraProfiles final {
      * @param config the parsed cameras.json
      * @return whether the table was understood
      **/
-    bool load(const boost::shared_ptr<v3d::asset::Json>& config);
+    bool load(const boost::shared_ptr<v3d::asset::kind::Json>& config);
 
     /**
      * @param name the profile name, as whatever names a view names it
      * @return the profile, or an unnamed default when there is no such profile
      **/
-    v3d::type::CameraProfile get(const std::string& name) const;
+    v3d::type::camera::Profile get(const std::string& name) const;
 
     /**
      * @return whether a profile of that name was loaded
@@ -59,7 +59,7 @@ class CameraProfiles final {
 
  private:
     boost::shared_ptr<v3d::log::Logger> logger_;
-    std::map<std::string, v3d::type::CameraProfile> profiles_;
+    std::map<std::string, v3d::type::camera::Profile> profiles_;
     std::vector<std::string> names_;
 };
 

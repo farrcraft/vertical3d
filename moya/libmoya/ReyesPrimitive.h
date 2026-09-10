@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include "MicroPolygonGrid.h"
+#include <api/type/geometry/AABBox.h>
 
-#include "../../api/type/AABBox.h"
+#include "MicroPolygonGrid.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
@@ -23,7 +23,7 @@ class ReyesPrimitive {
         virtual ~ReyesPrimitive();
 
         virtual bool diceable(void) const;
-        virtual v3d::type::AABBox bound(void) const;
+        virtual v3d::type::geometry::AABBox bound(void) const;
         /**
          * Break the primitive into smaller ones and submit each back to the first pass,
          * which is what decides the bucket and the diceability of each piece. The caller
@@ -44,22 +44,27 @@ class ReyesPrimitive {
 
         /**
          * The graphics state this primitive was submitted under: the object to eye
-         * transformation the first pass measured it with, and the colour that was current.
+         * transformation the first pass measured it with, the colour that was current, and
+         * the geometric normal of the plane it lies in, all in the space its vertices are.
          *
-         * A primitive keeps both because splitting resubmits its pieces through that pass
-         * during the second one, when neither is current any more - a scene that places
+         * A primitive keeps them because splitting resubmits its pieces through that pass
+         * during the second one, when none of it is current any more - a scene that places
          * and colours two objects would otherwise measure a split piece of the first
-         * against the state of the last. The pieces need the colour for a second reason:
-         * a split builds its vertices from intersection points, so they carry none.
+         * against the state of the last. The pieces need the colour and the normal for a
+         * second reason: a split builds its vertices from intersection points, so they
+         * carry neither. A piece therefore takes the whole primitive's plane, which is the
+         * plane it lies in too.
          */
         bool placed(void) const;
-        void place(const glm::mat4x4 & toEye, const glm::vec3 & color);
+        void place(const glm::mat4x4 & toEye, const glm::vec3 & color, const glm::vec3 & normal);
         const glm::mat4x4 & placement(void) const;
         const glm::vec3 & color(void) const;
+        const glm::vec3 & normal(void) const;
 
  private:
         glm::mat4x4 placement_ = glm::mat4x4(1.0f);
         glm::vec3 color_ = glm::vec3(1.0f);
+        glm::vec3 normal_ = glm::vec3(0.0f);
         bool placed_ = false;
         /*
             False until the first pass has measured the primitive against the grid size.

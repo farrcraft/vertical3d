@@ -3,9 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <boost/test/unit_test.hpp>
+#include <pong/src/GameState.h>
 
-#include "../src/GameState.h"
+#include <boost/test/unit_test.hpp>
 
 /**
  * The values a round starts on. The ball size is what the collision tests measure against,

@@ -5,15 +5,15 @@
 
 #pragma once
 
+#include <api/dag/Node.h>
+#include <api/dag/Transform.h>
+#include <api/type/geometry/AABBox.h>
+
 #include <vector>
 
 #include "Vertex.h"
 #include "HalfEdge.h"
 #include "Face.h"
-
-#include "../type/AABBox.h"
-#include "../dag/Node.h"
-#include "../dag/Transform.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -70,7 +70,7 @@ class BRep : public v3d::dag::Node, public v3d::dag::Transform {
         Face * face(Index f);
         Vertex * vertex(Index vert);
 
-        v3d::type::AABBox bound(void) const;
+        v3d::type::geometry::AABBox bound(void) const;
 
         /**
          * Whether the mesh as a whole is selected, which is object mode selection.

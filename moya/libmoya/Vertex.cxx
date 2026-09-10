@@ -34,4 +34,25 @@ bool Vertex::hasColor(void) const {
      return (bits_ & HAS_COLOR) != 0;
 }
 
+glm::vec3 Vertex::normal(void) const {
+     return normal_;
+}
+
+void Vertex::normal(const glm::vec3 & n) {
+     normal_ = n;
+     bits_ |= HAS_NORMAL;
+}
+
+bool Vertex::hasNormal(void) const {
+     return (bits_ & HAS_NORMAL) != 0;
+}
+
+glm::vec3 Vertex::geometricNormal(void) const {
+     return geometric_;
+}
+
+void Vertex::geometricNormal(const glm::vec3 & n) {
+     geometric_ = n;
+}
+
 };  // namespace v3d::moya

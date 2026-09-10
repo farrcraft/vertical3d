@@ -3,9 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <boost/test/unit_test.hpp>
+#include <api/brep/Vertex.h>
 
-#include "../Vertex.h"
+#include <boost/test/unit_test.hpp>
 
 BOOST_AUTO_TEST_CASE(vertex_test) {
     v3d::brep::Vertex vertex;

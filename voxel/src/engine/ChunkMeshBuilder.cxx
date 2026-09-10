@@ -5,24 +5,24 @@
 
 #include "ChunkMeshBuilder.h"
 
+#include <voxel/src/voxel/MeshCache.h>
+
 #include <cstdint>
 #include <vector>
 
-#include "../voxel/MeshCache.h"
-
 #include <boost/make_shared.hpp>
 
-ChunkMeshBuilder::ChunkMeshBuilder(const boost::shared_ptr<v3d::render::realtime::vulkan::Device>& device,
-    const boost::shared_ptr<v3d::render::realtime::vulkan::Uploader>& uploader) :
+ChunkMeshBuilder::ChunkMeshBuilder(const boost::shared_ptr<v3d::render::realtime::vulkan::device::Device>& device,
+    const boost::shared_ptr<v3d::render::realtime::vulkan::memory::Uploader>& uploader) :
     device_(device),
     uploader_(uploader) {
 }
 
-boost::shared_ptr<v3d::render::realtime::vulkan::Mesh> ChunkMeshBuilder::build(const boost::shared_ptr<MeshCache>& mesh) const {
+boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh> ChunkMeshBuilder::build(const boost::shared_ptr<MeshCache>& mesh) const {
     const size_t vertexCount = mesh->vertexCount();
     const size_t triCount = mesh->triCount();
     if (vertexCount == 0 || triCount == 0) {
-        return boost::shared_ptr<v3d::render::realtime::vulkan::Mesh>();
+        return boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh>();
     }
 
     // the face a vertex belongs to is what carries its normal and its material, and a vertex
@@ -59,7 +59,7 @@ boost::shared_ptr<v3d::render::realtime::vulkan::Mesh> ChunkMeshBuilder::build(c
         indices.push_back(static_cast<uint32_t>(tris[i].z));
     }
 
-    return boost::make_shared<v3d::render::realtime::vulkan::Mesh>(device_, uploader_,
+    return boost::make_shared<v3d::render::realtime::vulkan::memory::Mesh>(device_, uploader_,
         vertices.data(), static_cast<VkDeviceSize>(vertices.size() * sizeof(ChunkVertex)),
         static_cast<uint32_t>(vertices.size()),
         indices.data(), static_cast<uint32_t>(indices.size()));

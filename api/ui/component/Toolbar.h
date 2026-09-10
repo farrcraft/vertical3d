@@ -5,11 +5,12 @@
 
 #pragma once
 
+#include <api/ui/Component.h>
+
 #include <cstddef>
 #include <string>
 #include <vector>
 
-#include "../Component.h"
 #include "Button.h"
 
 #include <boost/shared_ptr.hpp>

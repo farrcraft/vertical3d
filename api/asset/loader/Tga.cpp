@@ -5,11 +5,11 @@
 
 #include "Tga.h"
 
-#include <string>
+#include <api/asset/Type.h>
+#include <api/asset/kind/Image.h>
+#include <api/image/reader/Tga.h>
 
-#include "../Image.h"
-#include "../Type.h"
-#include "../../image/reader/Tga.h"
+#include <string>
 
 #include <boost/make_shared.hpp>
 
@@ -33,7 +33,7 @@ boost::shared_ptr<Asset> Tga::load(std::string_view name) {
         return boost::shared_ptr<Asset>();
     }
 
-    boost::shared_ptr<Image> asset = boost::make_shared<Image>(std::string(name), Type::ImageTga, image);
+    boost::shared_ptr<kind::Image> asset = boost::make_shared<kind::Image>(std::string(name), Type::ImageTga, image);
 
     return asset;
 }

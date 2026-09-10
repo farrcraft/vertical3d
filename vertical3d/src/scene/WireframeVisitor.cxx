@@ -5,13 +5,13 @@
 
 #include "WireframeVisitor.h"
 
+#include <api/type/geometry/AABBox.h>
+
 #include <algorithm>
 #include <cstddef>
 #include <vector>
 
 #include "MeshTopology.h"
-
-#include "../../../api/type/AABBox.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -100,7 +100,7 @@ void WireframeVisitor::visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
 
 /**
  **/
-bool WireframeVisitor::edgeSelected(const boost::shared_ptr<v3d::brep::BRep>& mesh, unsigned int edge) const {
+bool WireframeVisitor::edgeSelected(const boost::shared_ptr<v3d::brep::BRep>& mesh, unsigned int edge) {
     v3d::brep::HalfEdge* half = mesh->edge(edge);
     if (half == nullptr) {
         return false;
@@ -127,7 +127,7 @@ void WireframeVisitor::markers(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
     }
 
     float size = 0.0f;
-    const v3d::type::AABBox bound = mesh->bound();
+    const v3d::type::geometry::AABBox bound = mesh->bound();
     const glm::vec3 extent = bound.max() - bound.min();
     size = std::max(std::max(extent.x, extent.y), extent.z) * markerScale;
     if (size <= 0.0f) {

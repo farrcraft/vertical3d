@@ -78,7 +78,7 @@ void RenderContext::render() {
     const unsigned int width = framebuffer_->width();
     const unsigned int height = framebuffer_->height();
 
-    v3d::type::Camera & camera = scene_.camera();
+    v3d::type::camera::Camera & camera = scene_.camera();
     camera.profile().size(width, height);
     camera.createProjection();
     camera.createView();
@@ -92,7 +92,7 @@ void RenderContext::render() {
             // the camera measures y downward from the top of the viewport and image row 0
             // is the top of the picture, so a pixel index is a screen point as it stands
             glm::vec2 point(static_cast<float>(column) + 0.5f, static_cast<float>(row) + 0.5f);
-            v3d::type::Ray ray = camera.ray(point, viewport);
+            v3d::type::geometry::Ray ray = camera.ray(point, viewport);
 
             glm::vec3 colour = scene_.background();
             float nearest = std::numeric_limits<float>::max();

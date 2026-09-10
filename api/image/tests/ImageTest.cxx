@@ -3,9 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <boost/test/unit_test.hpp>
+#include <api/image/Image.h>
 
-#include "../Image.h"
+#include <boost/test/unit_test.hpp>
 
 BOOST_AUTO_TEST_CASE(image_test) {
     v3d::image::Image img24(2, 4, 24);

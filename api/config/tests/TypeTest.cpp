@@ -3,9 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <boost/test/unit_test.hpp>
+#include <api/config/Type.h>
 
-#include "../Type.h"
+#include <boost/test/unit_test.hpp>
 
 /**
  * These are the names a config.json entry's "type" is written as. camera and layout are the

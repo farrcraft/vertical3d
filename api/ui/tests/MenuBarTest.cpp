@@ -3,6 +3,13 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/realtime/Canvas.h>
+#include <api/ui/Container.h>
+#include <api/ui/component/menu/Menu.h>
+#include <api/ui/component/menu/MenuBar.h>
+#include <api/ui/component/menu/MenuItem.h>
+#include <api/ui/paint/ComponentRenderer.h>
+
 #include <cstddef>
 #include <string>
 #include <string_view>
@@ -10,13 +17,7 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include "../ComponentRenderer.h"
-#include "../../render/realtime/Canvas.h"
-#include "../Container.h"
-#include "../component/menu/Menu.h"
-#include "../component/menu/MenuItem.h"
 #include <entt/entt.hpp>
-#include "../component/menu/MenuBar.h"
 
 #include <boost/make_shared.hpp>
 
@@ -97,7 +98,7 @@ struct Fixture final {
      * The middle of a menu's label in the strip, which the bar holds rather than the menu.
      **/
     glm::vec2 label(std::size_t index) const {
-        const v3d::type::Bound2D bounds = bar->bound(index);
+        const v3d::type::geometry::Bound2D bounds = bar->bound(index);
         return bounds.position() + bounds.size() * 0.5f;
     }
 
@@ -107,7 +108,7 @@ struct Fixture final {
     v3d::render::realtime::Canvas canvas;
     std::vector<Written> written;
     std::vector<std::string> sent;
-    v3d::ui::ComponentRenderer renderer;
+    v3d::ui::paint::ComponentRenderer renderer;
 };
 
 /**
@@ -250,7 +251,7 @@ BOOST_AUTO_TEST_CASE(the_cursor_opens_a_flyout_from_a_submenu_item) {
     fixture.draw();
     const boost::shared_ptr<v3d::ui::component::Menu>& flyout = fixture.bar->panels().back();
     // through the bound, because a menu's own size() is its item count
-    const v3d::type::Bound2D bounds = panel->bound();
+    const v3d::type::geometry::Bound2D bounds = panel->bound();
     BOOST_CHECK_CLOSE(flyout->position().x, bounds.position().x + bounds.size().x, 0.01f);
     BOOST_CHECK_CLOSE(flyout->position().y, shading->position().y, 0.01f);
 

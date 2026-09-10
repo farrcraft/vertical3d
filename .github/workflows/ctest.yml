@@ -44,7 +44,12 @@ jobs:
           # links it. It is the only one left - the mixer comes from vcpkg per ADR-0021.
           submodules: true
 
+      # The toolset version is an output because the vcpkg binary cache is keyed on it. vcpkg
+      # hashes the compiler into every package's ABI, so a package built by one toolset is
+      # never reused by another, and the runner image carries whichever toolset it was built
+      # with. Read from the install rather than from vcvars, which no cache key can see.
       - name: Locate the MSVC toolchain
+        id: msvc
         shell: pwsh
         run: |
           $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
@@ -52,13 +57,27 @@ jobs:
           if (-not $install) { throw "no MSVC toolchain on this image" }
           $line = 'call "' + $install + '\VC\Auxiliary\Build\vcvars64.bat"'
           Set-Content -Path "$env:RUNNER_TEMP\vcvars.bat" -Value $line -Encoding ascii
+          $toolset = (Get-Content "$install\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt" -Raw).Trim()
+          if (-not $toolset) { throw "the toolchain at $install names no default tools version" }
+          "toolset=$toolset" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      # The version is resolved before the cache is asked for one, because a key naming
+      # "latest" pins whichever SDK was installed first and then never picks up another - the
+      # opposite of what the word says. Naming the version means a new SDK is a new key.
+      - name: Resolve the Vulkan SDK version
+        id: sdk
+        shell: pwsh
+        run: |
+          $version = (Invoke-RestMethod -Uri "https://vulkan.lunarg.com/sdk/latest/windows.json").windows
+          if (-not $version) { throw "LunarG named no latest Windows SDK" }
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       - name: Restore the Vulkan SDK
         id: vulkan-cache
         uses: actions/cache@v4
         with:
           path: ${{ env.VULKAN_SDK_ROOT }}
-          key: vulkan-sdk-${{ runner.os }}-latest
+          key: vulkan-sdk-${{ runner.os }}-${{ steps.sdk.outputs.version }}
 
       # The root CMakeLists calls find_package(Vulkan) and looks for glslc with a
       # FATAL_ERROR, so every configure needs the SDK - including one that only builds the
@@ -66,9 +85,11 @@ jobs:
       - name: Install the Vulkan SDK
         if: steps.vulkan-cache.outputs.cache-hit != 'true'
         shell: pwsh
+        env:
+          SDK_VERSION: ${{ steps.sdk.outputs.version }}
         run: |
           $installer = "$env:RUNNER_TEMP\vulkan-sdk.exe"
-          Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/latest/windows/vulkan_sdk.exe" -OutFile $installer
+          Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/$env:SDK_VERSION/windows/vulkan_sdk.exe" -OutFile $installer
           $arguments = @(
             "--root", "$env:VULKAN_SDK_ROOT",
             "--accept-licenses", "--default-answer", "--confirm-command", "install"
@@ -86,12 +107,23 @@ jobs:
 
       # vcpkg builds boost from source, which is most of an hour cold. The binary cache is
       # what makes a second run cheap, and vcpkg refuses a cache directory that is not there.
-      - name: Cache the vcpkg binaries
-        uses: actions/cache@v4
+      #
+      # The key names everything vcpkg hashes into a package's ABI that this job can vary:
+      # vcpkg.json for which ports, vcpkg-configuration.json for the registry baseline that
+      # fixes their versions, and the toolset that compiles them. The baseline is the one
+      # easiest to leave out, because it is pinned in the file the manifest never mentions.
+      # An archive restored under a key missing any of the three is not a cheaper build, it
+      # is a download whose every entry misses.
+      #
+      # There is no rung below the toolset in restore-keys for the same reason: a cache built
+      # by another compiler cannot be reused by this one, so fetching it only costs time.
+      - name: Restore the vcpkg binaries
+        id: vcpkg-cache
+        uses: actions/cache/restore@v4
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
-          restore-keys: vcpkg-${{ runner.os }}-
+          key: vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
+          restore-keys: vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-
 
       - name: Make the vcpkg cache directory
         shell: pwsh
@@ -122,6 +154,17 @@ jobs:
             -DCMAKE_BUILD_TYPE=Debug ^
             -DCMAKE_TOOLCHAIN_FILE="%VCPKG_INSTALLATION_ROOT%\scripts\buildsystems\vcpkg.cmake" ^
             -DVCPKG_TARGET_TRIPLET=x64-windows || exit /b 1
+
+      # Saved here rather than from a post step so that a run whose build or tests fail still
+      # keeps the packages the configure just spent the time building - a failing test is not
+      # a reason to make the next run pay for boost again. Skipped where the restore was an
+      # exact hit, which leaves nothing this configure could have added.
+      - name: Save the vcpkg binaries
+        if: steps.vcpkg-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
 
       - name: Build
         shell: cmd

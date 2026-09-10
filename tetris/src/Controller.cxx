@@ -5,11 +5,12 @@
 
 #include "Controller.h"
 
+#include <api/engine/Feature.h>
+
 #include <string>
 
 #include "TetrisScene.h"
 #include "Renderer.h"
-#include "../../api/engine/Feature.h"
 
 #include <boost/make_shared.hpp>
 
@@ -29,11 +30,11 @@ bool Controller::initialize() {
     window_->caption("Tetris!");
 
     vgui_ = boost::make_shared<v3d::ui::Engine>(eventEngine_, dispatcher_, logger_);
-    menu_ = boost::make_shared<v3d::ui::GameMenu>(vgui_, [this](bool suspended) {
+    menu_ = boost::make_shared<v3d::ui::shell::GameMenu>(vgui_, [this](bool suspended) {
         scene_->pause(suspended);
     });
     if (config_) {
-        boost::shared_ptr<v3d::asset::Json> uiConfig = config_->get(v3d::config::Type::Ui);
+        boost::shared_ptr<v3d::asset::kind::Json> uiConfig = config_->get(v3d::config::Type::Ui);
         if (uiConfig) {
             if (!vgui_->load(uiConfig)) {
                 return false;

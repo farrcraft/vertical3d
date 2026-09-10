@@ -5,10 +5,10 @@
 
 #pragma once
 
-#include "Manipulator.h"
+#include <api/brep/BRep.h>
+#include <api/render/realtime/LineCanvas.h>
 
-#include "../../../api/brep/BRep.h"
-#include "../../../api/render/realtime/LineCanvas.h"
+#include "Manipulator.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>

@@ -5,10 +5,10 @@
 
 #include "Mouse.h"
 
-#include <string>
+#include <api/event/kind/MouseButton.h>
+#include <api/event/kind/MouseMotion.h>
 
-#include "../event/MouseButton.h"
-#include "../event/MouseMotion.h"
+#include <string>
 
 namespace v3d::input {
 
@@ -52,15 +52,15 @@ bool Mouse::handleEvent(const SDL_Event& event) {
         }
         const glm::vec2 position(event.button.x, event.button.y);
         state_(position);
-        dispatcher_->trigger<v3d::event::MouseButton>(
-            v3d::event::MouseButton(event.button.button, position, context_, pressed));
+        dispatcher_->trigger<v3d::event::kind::MouseButton>(
+            v3d::event::kind::MouseButton(event.button.button, position, context_, pressed));
         break;
     }
     case SDL_EVENT_MOUSE_MOTION: {
         glm::vec2 position(event.motion.x, event.motion.y);
         state_(position);
-        dispatcher_->trigger<v3d::event::MouseMotion>(
-            v3d::event::MouseMotion(position, glm::vec2(event.motion.xrel, event.motion.yrel), context_));
+        dispatcher_->trigger<v3d::event::kind::MouseMotion>(
+            v3d::event::kind::MouseMotion(position, glm::vec2(event.motion.xrel, event.motion.yrel), context_));
         return true;  // motion is not a bindable source event - it has no discrete name
     }
     default:

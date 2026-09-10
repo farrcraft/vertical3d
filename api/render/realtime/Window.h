@@ -5,15 +5,14 @@
 
 #pragma once
 
+#include <api/log/Logger.h>
+#include <api/render/realtime/vulkan/device/Instance.h>
+#include <api/render/realtime/vulkan/device/Surface.h>
+
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
 
 #include <string>
-
-#include "vulkan/Instance.h"
-#include "vulkan/Surface.h"
-
-#include "../../log/Logger.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -56,12 +55,12 @@ class Window final {
     /**
      * @return the vulkan instance the window was created against
      **/
-    boost::shared_ptr<vulkan::Instance> instance() const;
+    boost::shared_ptr<vulkan::device::Instance> instance() const;
 
     /**
      * @return the vulkan surface the window presents to
      **/
-    boost::shared_ptr<vulkan::Surface> surface() const;
+    boost::shared_ptr<vulkan::device::Surface> surface() const;
 
     /**
      * Record a size the window has already been given.
@@ -111,7 +110,7 @@ class Window final {
      * Toggle mouse cursor visibility
      * @param state whether to enable or disable
      */
-    void cursor(bool state);
+    static void cursor(bool state);
 
     /**
      * Move the mouse cursor to a new position in the window
@@ -120,8 +119,8 @@ class Window final {
 
  private:
     SDL_Window* window_;
-    boost::shared_ptr<vulkan::Instance> instance_;
-    boost::shared_ptr<vulkan::Surface> surface_;
+    boost::shared_ptr<vulkan::device::Instance> instance_;
+    boost::shared_ptr<vulkan::device::Surface> surface_;
     std::string caption_;
     int width_;
     int height_;

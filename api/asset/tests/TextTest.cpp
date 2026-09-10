@@ -3,15 +3,15 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/asset/Manager.h>
+#include <api/asset/Type.h>
+#include <api/asset/kind/Text.h>
+
 #include <stdexcept>
 #include <string>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
-
-#include "../Manager.h"
-#include "../Text.h"
-#include "../Type.h"
 
 namespace {
 
@@ -26,7 +26,7 @@ boost::shared_ptr<v3d::asset::Manager> manager() {
  * is on disk - a shader source is the caller this matters to.
  **/
 BOOST_AUTO_TEST_CASE(text_content_test) {
-    auto asset = boost::dynamic_pointer_cast<v3d::asset::Text>(
+    auto asset = boost::dynamic_pointer_cast<v3d::asset::kind::Text>(
         manager()->load("plain.txt", v3d::asset::Type::Text));
 
     BOOST_TEST(static_cast<bool>(asset));

@@ -3,6 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/grid/Pathfinding.h>
+#include <api/grid/TileGrid.h>
+
 #include <algorithm>
 #include <cstddef>
 #include <stdexcept>
@@ -10,9 +13,6 @@
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../Pathfinding.h"
-#include "../TileGrid.h"
 
 using v3d::grid::Cover;
 using v3d::grid::DistanceField;

@@ -3,10 +3,9 @@
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
 **/
 
-
 #pragma once
 
-#include "../engine/ChunkMeshBuilder.h"
+#include <voxel/src/engine/ChunkMeshBuilder.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>

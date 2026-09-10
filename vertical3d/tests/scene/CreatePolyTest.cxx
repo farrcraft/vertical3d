@@ -3,11 +3,10 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/type/geometry/AABBox.h>
+#include <vertical3d/src/scene/CreatePoly.h>
+
 #include <boost/test/unit_test.hpp>
-
-#include "../../src/scene/CreatePoly.h"
-
-#include "../../../api/type/AABBox.h"
 
 namespace {
 
@@ -16,7 +15,7 @@ namespace {
  * transform lands where the transform says rather than where its geometry was built.
  **/
 void checkUnitCentred(const boost::shared_ptr<v3d::brep::BRep>& mesh, bool flat) {
-    v3d::type::AABBox bound = mesh->bound();
+    v3d::type::geometry::AABBox bound = mesh->bound();
     glm::vec3 min = bound.min();
     glm::vec3 max = bound.max();
 

@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include <cstddef>
+#include <api/image/Reader.h>
 
-#include "../Reader.h"
+#include <cstddef>
 
 namespace v3d::image::reader {
 /**

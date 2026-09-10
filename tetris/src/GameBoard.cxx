@@ -5,14 +5,14 @@
 
 #include "GameBoard.h"
 
+#include <api/asset/kind/Text.h>
+#include <api/asset/Type.h>
+
 #include <cstdlib>
 #include <ctime>
 #include <sstream>
 #include <string>
 #include <vector>
-
-#include "../../api/asset/Text.h"
-#include "../../api/asset/Type.h"
 
 namespace {
 
@@ -34,9 +34,9 @@ GameBoard::GameBoard(const boost::shared_ptr<v3d::log::Logger>& logger) :
 }
 
 bool GameBoard::load(const boost::shared_ptr<v3d::asset::Manager>& assetManager) {
-    boost::shared_ptr<v3d::asset::Text> file;
+    boost::shared_ptr<v3d::asset::kind::Text> file;
     try {
-        file = boost::dynamic_pointer_cast<v3d::asset::Text>(assetManager->load("pieces/shapes.txt", v3d::asset::Type::Text));
+        file = boost::dynamic_pointer_cast<v3d::asset::kind::Text>(assetManager->load("pieces/shapes.txt", v3d::asset::Type::Text));
     } catch (const std::exception& error) {
         logger_->get()->error("unable to read the tetrad shapes - {}", error.what());
         return false;

@@ -5,11 +5,11 @@
 
 #include "TextureFont.h"
 
-#include <string>
+#include <api/asset/Type.h>
+#include <api/asset/kind/TextureFont.h>
+#include <api/font/TextureFont.h>
 
-#include "../Type.h"
-#include "../TextureFont.h"
-#include "../../font/TextureFont.h"
+#include <string>
 
 #include <boost/make_shared.hpp>
 
@@ -38,7 +38,7 @@ boost::shared_ptr<Asset> TextureFont::load(std::string_view name) {
     }
 
     boost::shared_ptr<v3d::font::TextureFont> font = boost::make_shared<v3d::font::TextureFont>(std::string(name), fontSize, logger_, spread);
-    boost::shared_ptr<Asset> asset = boost::make_shared<v3d::asset::TextureFont>(std::string(name), type(), font);
+    boost::shared_ptr<Asset> asset = boost::make_shared<v3d::asset::kind::TextureFont>(std::string(name), type(), font);
     return asset;
 }
 

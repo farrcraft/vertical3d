@@ -35,15 +35,15 @@ PongRenderer::PongRenderer(const boost::shared_ptr<v3d::render::realtime::Window
     engine_(logger, assetManager, registry) {
     engine_.initialize(window);
 
-    const boost::shared_ptr<v3d::render::realtime::vulkan::QuadRenderer> quads = engine_.quads();
-    text_ = boost::make_shared<v3d::ui::TextRenderer>(assetManager, logger,
+    const boost::shared_ptr<v3d::render::realtime::vulkan::renderer::Quad> quads = engine_.quads();
+    text_ = boost::make_shared<v3d::ui::paint::TextRenderer>(assetManager, logger,
         [quads](const boost::shared_ptr<v3d::image::Image>& atlas) {
             return quads->texture(atlas);
         });
 
-    statistics_ = boost::make_shared<v3d::ui::StatisticsOverlay>(text_);
+    statistics_ = boost::make_shared<v3d::ui::shell::StatisticsOverlay>(text_);
 
-    uiRenderer_ = boost::make_shared<v3d::ui::ComponentRenderer>(text_->measure(fontSize), text_->write(&canvas_, fontSize));
+    uiRenderer_ = boost::make_shared<v3d::ui::paint::ComponentRenderer>(text_->measure(fontSize), text_->write(&canvas_, fontSize));
     uiRenderer_->dressing().lineHeight = fontSize * 1.4f;
 }
 
@@ -61,7 +61,7 @@ void PongRenderer::ui(const boost::shared_ptr<v3d::ui::Engine>& ui) {
 
 /**
  **/
-const boost::shared_ptr<v3d::ui::StatisticsOverlay>& PongRenderer::statistics() const {
+const boost::shared_ptr<v3d::ui::shell::StatisticsOverlay>& PongRenderer::statistics() const {
     return statistics_;
 }
 
@@ -82,7 +82,7 @@ void PongRenderer::resize(int width, int height) {
 
 /**
  **/
-void PongRenderer::draw(const v3d::ui::StatisticsOverlay::Sample& statistics) {
+void PongRenderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics) {
     if (!scene_) {
         return;
     }

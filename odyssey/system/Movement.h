@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../../api/ecs/System.h"
+#include <api/ecs/System.h>
 
 namespace odyssey::system {
 /**

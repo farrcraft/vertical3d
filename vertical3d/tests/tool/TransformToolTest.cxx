@@ -3,18 +3,18 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <vertical3d/src/command/CommandStack.h>
+#include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/tool/TransformTool.h>
+#include <vertical3d/src/view/ViewPort.h>
+
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
 
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
-
-#include "../../src/command/CommandStack.h"
-#include "../../src/scene/CreatePoly.h"
-#include "../../src/scene/Scene.h"
-#include "../../src/tool/TransformTool.h"
-#include "../../src/view/ViewPort.h"
 
 namespace {
 
@@ -23,7 +23,7 @@ namespace {
  * pixels and the middle of the view is the middle of a unit primitive.
  **/
 boost::shared_ptr<v3d::editor::ViewPort> frontView() {
-    v3d::type::CameraProfile profile("front");
+    v3d::type::camera::Profile profile("front");
     boost::shared_ptr<v3d::editor::ViewPort> view = boost::make_shared<v3d::editor::ViewPort>("front", profile);
     view->resize(glm::vec4(0.0f, 0.0f, 400.0f, 400.0f));
     return view;

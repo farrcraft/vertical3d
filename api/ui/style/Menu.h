@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include <string>
+#include <api/ui/style/Style.h>
 
-#include "../Style.h"
+#include <string>
 
 namespace v3d::ui::style {
 

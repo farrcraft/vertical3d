@@ -5,15 +5,15 @@
 
 #include "Renderer.h"
 
+#include <api/asset/kind/Image.h>
+#include <api/asset/Type.h>
+#include <api/image/Image.h>
+#include <api/image/TextureAtlas.h>
+
 #include <algorithm>
 #include <map>
 #include <string>
 #include <vector>
-
-#include "../../api/asset/Image.h"
-#include "../../api/asset/Type.h"
-#include "../../api/image/Image.h"
-#include "../../api/image/TextureAtlas.h"
 
 #include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
@@ -62,13 +62,13 @@ TetrisRenderer::TetrisRenderer(const boost::shared_ptr<v3d::render::realtime::Wi
     engine_.clearColour(glm::vec4(0.09f, 0.09f, 0.11f, 1.0f));
 
     loadPieces(assetManager, logger);
-    const boost::shared_ptr<v3d::render::realtime::vulkan::QuadRenderer> quads = engine_.quads();
-    text_ = boost::make_shared<v3d::ui::TextRenderer>(assetManager, logger,
+    const boost::shared_ptr<v3d::render::realtime::vulkan::renderer::Quad> quads = engine_.quads();
+    text_ = boost::make_shared<v3d::ui::paint::TextRenderer>(assetManager, logger,
         [quads](const boost::shared_ptr<v3d::image::Image>& atlas) {
             return quads->texture(atlas);
         });
 
-    uiRenderer_ = boost::make_shared<v3d::ui::ComponentRenderer>(text_->measure(fontSize), text_->write(&canvas_, fontSize));
+    uiRenderer_ = boost::make_shared<v3d::ui::paint::ComponentRenderer>(text_->measure(fontSize), text_->write(&canvas_, fontSize));
     uiRenderer_->dressing().lineHeight = fontSize * 1.4f;
 }
 
@@ -81,8 +81,8 @@ void TetrisRenderer::loadPieces(const boost::shared_ptr<v3d::asset::Manager>& as
 
     for (const char* const colour : colours) {
         const std::string name = std::string("pieces/") + colour + ".tga";
-        boost::shared_ptr<v3d::asset::Image> asset =
-            boost::dynamic_pointer_cast<v3d::asset::Image>(assetManager->load(name, v3d::asset::Type::ImageTga));
+        boost::shared_ptr<v3d::asset::kind::Image> asset =
+            boost::dynamic_pointer_cast<v3d::asset::kind::Image>(assetManager->load(name, v3d::asset::Type::ImageTga));
         if (!asset || !asset->image()) {
             logger_->get()->error("unable to load the piece texture {}", name);
             continue;

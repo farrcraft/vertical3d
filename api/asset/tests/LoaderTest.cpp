@@ -3,15 +3,15 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/asset/Loader.h>
+#include <api/asset/Manager.h>
+#include <api/asset/Type.h>
+
 #include <string>
 #include <variant>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
-
-#include "../Loader.h"
-#include "../Manager.h"
-#include "../Type.h"
 
 namespace {
 

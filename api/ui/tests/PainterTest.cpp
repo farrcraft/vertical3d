@@ -3,13 +3,13 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/ui/paint/Painter.h>
+
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../Painter.h"
 
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
@@ -80,19 +80,19 @@ BOOST_AUTO_TEST_CASE(an_outline_covers_nothing_inside_it) {
     const glm::vec2 inset(width, width);
 
     v3d::render::realtime::Canvas square;
-    v3d::ui::strokeBox(&square, low, high, 0.0f, width, white);
+    v3d::ui::paint::strokeBox(&square, low, high, 0.0f, width, white);
     BOOST_CHECK(!square.empty());
     BOOST_CHECK(!anythingInside(square, low + inset, high - inset, 0.0f));
 
     v3d::render::realtime::Canvas rounded;
-    v3d::ui::strokeBox(&rounded, low, high, 8.0f, width, white);
+    v3d::ui::paint::strokeBox(&rounded, low, high, 8.0f, width, white);
     BOOST_CHECK(!rounded.empty());
     BOOST_CHECK(!anythingInside(rounded, low + inset, high - inset, 4.0f));
 
     // and one whose outline is thicker than the corner it turns, which squares its corners
     // off rather than folding them over
     v3d::render::realtime::Canvas blunt;
-    v3d::ui::strokeBox(&blunt, low, high, 2.0f, width, white);
+    v3d::ui::paint::strokeBox(&blunt, low, high, 2.0f, width, white);
     BOOST_CHECK(!blunt.empty());
     BOOST_CHECK(!anythingInside(blunt, low + inset, high - inset, 0.0f));
 }
@@ -103,11 +103,11 @@ BOOST_AUTO_TEST_CASE(an_outline_covers_nothing_inside_it) {
  **/
 BOOST_AUTO_TEST_CASE(a_square_outline_is_four_runs) {
     v3d::render::realtime::Canvas square;
-    v3d::ui::strokeBox(&square, low, high, 0.0f, 2.0f, white);
+    v3d::ui::paint::strokeBox(&square, low, high, 0.0f, 2.0f, white);
     BOOST_CHECK_EQUAL(square.indices().size(), 4U * 6U);
 
     v3d::render::realtime::Canvas rounded;
-    v3d::ui::strokeBox(&rounded, low, high, 6.0f, 2.0f, white);
+    v3d::ui::paint::strokeBox(&rounded, low, high, 6.0f, 2.0f, white);
     BOOST_CHECK_GT(rounded.indices().size(), 4U * 6U);
     // all of it is untextured, so none of it costs a draw of its own
     BOOST_CHECK_EQUAL(rounded.batches().size(), 1U);
@@ -123,13 +123,13 @@ BOOST_AUTO_TEST_CASE(a_plate_draws_its_interior_once) {
     const glm::vec2 inset(width, width);
 
     v3d::render::realtime::Canvas plate;
-    v3d::ui::plateBox(&plate, low, high, 0.0f, width, translucent, white);
+    v3d::ui::paint::plateBox(&plate, low, high, 0.0f, width, translucent, white);
 
     v3d::render::realtime::Canvas outline;
-    v3d::ui::strokeBox(&outline, low, high, 0.0f, width, white);
+    v3d::ui::paint::strokeBox(&outline, low, high, 0.0f, width, white);
 
     v3d::render::realtime::Canvas fill;
-    v3d::ui::fillBox(&fill, low + inset, high - inset, 0.0f, translucent);
+    v3d::ui::paint::fillBox(&fill, low + inset, high - inset, 0.0f, translucent);
 
     BOOST_CHECK_EQUAL(plate.indices().size(), outline.indices().size() + fill.indices().size());
 }
@@ -146,7 +146,7 @@ BOOST_AUTO_TEST_CASE(an_outline_thicker_than_the_box_is_the_box) {
     v3d::render::realtime::Canvas canvas;
     const glm::vec2 max(low.x + 40.0f, low.y + 20.0f);
 
-    v3d::ui::plateBox(&canvas, low, max, 0.0f, 40.0f, translucent, white);
+    v3d::ui::paint::plateBox(&canvas, low, max, 0.0f, 40.0f, translucent, white);
 
     // the outline took all of it, so there is no interior left to fill
     BOOST_CHECK_EQUAL(canvas.indices().size(), 2U * 6U);
@@ -157,7 +157,7 @@ BOOST_AUTO_TEST_CASE(an_outline_thicker_than_the_box_is_the_box) {
  **/
 BOOST_AUTO_TEST_CASE(a_plate_with_no_border_is_one_shape) {
     v3d::render::realtime::Canvas canvas;
-    v3d::ui::plateBox(&canvas, low, high, 0.0f, 0.0f, translucent, white);
+    v3d::ui::paint::plateBox(&canvas, low, high, 0.0f, 0.0f, translucent, white);
 
     BOOST_CHECK_EQUAL(canvas.indices().size(), 6U);
 }

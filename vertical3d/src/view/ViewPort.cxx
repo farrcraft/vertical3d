@@ -5,10 +5,10 @@
 
 #include "ViewPort.h"
 
-#include <string>
+#include <vertical3d/src/manipulator/Manipulator.h>
+#include <vertical3d/src/scene/WireframeVisitor.h>
 
-#include "../manipulator/Manipulator.h"
-#include "../scene/WireframeVisitor.h"
+#include <string>
 
 #include <boost/make_shared.hpp>
 
@@ -16,16 +16,16 @@ namespace v3d::editor {
 
 /**
  **/
-ViewPort::ViewPort(const std::string& name, const v3d::type::CameraProfile& profile) :
+ViewPort::ViewPort(const std::string& name, const v3d::type::camera::Profile& profile) :
     name_(name),
     region_(0.0f, 0.0f, 0.0f, 0.0f),
     showFlags_(SHOW_GRID | SHOW_MESH | SHOW_HANDLE) {
-    camera_ = boost::make_shared<v3d::type::Camera>(profile);
+    camera_ = boost::make_shared<v3d::type::camera::Camera>(profile);
 }
 
 /**
  **/
-boost::shared_ptr<v3d::type::Camera> ViewPort::camera() const {
+boost::shared_ptr<v3d::type::camera::Camera> ViewPort::camera() const {
     return camera_;
 }
 

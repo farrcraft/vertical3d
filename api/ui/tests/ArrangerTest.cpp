@@ -3,25 +3,24 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/ui/Arranger.h>
+#include <api/ui/Component.h>
+#include <api/ui/Container.h>
+#include <api/ui/component/CheckBox.h>
+#include <api/ui/component/Label.h>
+#include <api/ui/component/Panel.h>
+#include <api/ui/component/Scrollbar.h>
+#include <api/ui/component/VerticalBox.h>
+#include <api/ui/style/Resolver.h>
+#include <api/ui/style/Style.h>
+#include <api/ui/style/Theme.h>
+#include <api/ui/style/property/Number.h>
+
 #include <string>
 #include <string_view>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../Arranger.h"
-
-#include "../Component.h"
-#include "../Container.h"
-#include "../Style.h"
-#include "../component/CheckBox.h"
-#include "../component/Label.h"
-#include "../component/Panel.h"
-#include "../component/Scrollbar.h"
-#include "../component/VerticalBox.h"
-#include "../style/Resolver.h"
-#include "../style/Theme.h"
-#include "../style/property/Number.h"
 
 #include <boost/make_shared.hpp>
 
@@ -29,7 +28,7 @@ namespace {
 
 const float characterWidth = 10.0f;
 
-v3d::ui::Measure measure() {
+v3d::ui::paint::Measure measure() {
     return [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; };
 }
 
@@ -41,8 +40,8 @@ boost::shared_ptr<v3d::ui::component::Label> label(const std::string& name, cons
     return made;
 }
 
-v3d::type::Bound2D canvasArea(float width, float height) {
-    return v3d::type::Bound2D(glm::vec2(0.0f, 0.0f), glm::vec2(width, height));
+v3d::type::geometry::Bound2D canvasArea(float width, float height) {
+    return v3d::type::geometry::Bound2D(glm::vec2(0.0f, 0.0f), glm::vec2(width, height));
 }
 
 };  // namespace
@@ -141,8 +140,8 @@ BOOST_AUTO_TEST_CASE(a_hidden_component_is_not_walked) {
 BOOST_AUTO_TEST_CASE(a_check_box_asks_for_room_from_its_own_class) {
     const boost::shared_ptr<v3d::ui::style::Theme> theme =
         boost::make_shared<v3d::ui::style::Theme>("dark");
-    const boost::shared_ptr<v3d::ui::Style> styled =
-        boost::make_shared<v3d::ui::Style>("big", "checkbox");
+    const boost::shared_ptr<v3d::ui::style::Style> styled =
+        boost::make_shared<v3d::ui::style::Style>("big", "checkbox");
     styled->addProperty(boost::make_shared<v3d::ui::style::property::Number>("mark-size", 40.0f), "number");
     theme->addStyle(styled);
 
@@ -300,7 +299,7 @@ BOOST_AUTO_TEST_CASE(a_label_with_a_width_wraps_to_it) {
     const boost::shared_ptr<v3d::ui::component::Label> wrapped = label("wrapped", "one two three four");
     wrapped->layout().width = v3d::ui::Length(100.0f, v3d::ui::Length::Unit::Pixels);
 
-    const v3d::type::Bound2D room = canvasArea(400.0f, 200.0f);
+    const v3d::type::geometry::Bound2D room = canvasArea(400.0f, 200.0f);
     arranger.walk(nullptr, wrapped, wrapped->layout().resolve(room, arranger.natural(*wrapped, room)),
         v3d::ui::Arranger::Paint());
     BOOST_CHECK_CLOSE(wrapped->size().x, 100.0f, 0.001f);

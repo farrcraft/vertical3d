@@ -3,12 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <pong/src/Ball.h>
+
 #include <boost/test/unit_test.hpp>
 
 #include <entt/entt.hpp>
 #include <glm/glm.hpp>
-
-#include "../src/Ball.h"
 
 /**
  * A ball is an entity in the app's registry rather than a value, so everything it holds is a

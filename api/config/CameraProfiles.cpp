@@ -60,7 +60,7 @@ CameraProfiles::CameraProfiles(const boost::shared_ptr<v3d::log::Logger>& logger
 
 /**
  **/
-bool CameraProfiles::load(const boost::shared_ptr<v3d::asset::Json>& config) {
+bool CameraProfiles::load(const boost::shared_ptr<v3d::asset::kind::Json>& config) {
     if (!config) {
         return false;
     }
@@ -82,7 +82,7 @@ bool CameraProfiles::load(const boost::shared_ptr<v3d::asset::Json>& config) {
         }
         std::string name = boost::json::value_to<std::string>(entry.at("name"));
 
-        v3d::type::CameraProfile profile(name);
+        v3d::type::camera::Profile profile(name);
         profile.orthographic(flag(entry, "orthographic", true));
         profile.orthoZoom(number(entry, "zoom", 10.0f));
         profile.fov(number(entry, "fov", 60.0f));
@@ -111,10 +111,10 @@ bool CameraProfiles::load(const boost::shared_ptr<v3d::asset::Json>& config) {
 
 /**
  **/
-v3d::type::CameraProfile CameraProfiles::get(const std::string& name) const {
+v3d::type::camera::Profile CameraProfiles::get(const std::string& name) const {
     auto entry = profiles_.find(name);
     if (entry == profiles_.end()) {
-        return v3d::type::CameraProfile(name);
+        return v3d::type::camera::Profile(name);
     }
     return entry->second;
 }

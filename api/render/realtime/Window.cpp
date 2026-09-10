@@ -63,8 +63,8 @@ bool Window::create(int width, int height) {
     }
     const std::vector<const char*> extensions(extensionNames, extensionNames + extensionCount);
 
-    instance_ = boost::make_shared<vulkan::Instance>(logger_, extensions);
-    surface_ = boost::make_shared<vulkan::Surface>(instance_, window_);
+    instance_ = boost::make_shared<vulkan::device::Instance>(logger_, extensions);
+    surface_ = boost::make_shared<vulkan::device::Surface>(instance_, window_);
 
     created_ = true;
     return true;
@@ -99,13 +99,13 @@ SDL_Window* Window::sdl() noexcept {
 
 /**
  **/
-boost::shared_ptr<vulkan::Instance> Window::instance() const {
+boost::shared_ptr<vulkan::device::Instance> Window::instance() const {
     return instance_;
 }
 
 /**
  **/
-boost::shared_ptr<vulkan::Surface> Window::surface() const {
+boost::shared_ptr<vulkan::device::Surface> Window::surface() const {
     return surface_;
 }
 

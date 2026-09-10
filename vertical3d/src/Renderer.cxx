@@ -5,15 +5,15 @@
 
 #include "Renderer.h"
 
+#include <api/asset/kind/Image.h>
+#include <api/asset/Type.h>
+#include <api/render/realtime/Frame.h>
+#include <api/render/realtime/Pass.h>
+
 #include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
-
-#include "../../api/asset/Image.h"
-#include "../../api/asset/Type.h"
-#include "../../api/render/realtime/Frame.h"
-#include "../../api/render/realtime/Pass.h"
 
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
@@ -65,15 +65,15 @@ Renderer::Renderer(const boost::shared_ptr<v3d::render::realtime::Window>& windo
     engine_.initialize(window);
     engine_.clearColour(background_);
 
-    const boost::shared_ptr<v3d::render::realtime::vulkan::QuadRenderer> quads = engine_.quads();
-    text_ = boost::make_shared<v3d::ui::TextRenderer>(assetManager, logger,
+    const boost::shared_ptr<v3d::render::realtime::vulkan::renderer::Quad> quads = engine_.quads();
+    text_ = boost::make_shared<v3d::ui::paint::TextRenderer>(assetManager, logger,
         [quads](const boost::shared_ptr<v3d::image::Image>& atlas) {
             return quads->texture(atlas);
         });
 
-    uiRenderer_ = boost::make_shared<v3d::ui::ComponentRenderer>(text_->measure(fontSize), text_->write(&canvas_, fontSize));
+    uiRenderer_ = boost::make_shared<v3d::ui::paint::ComponentRenderer>(text_->measure(fontSize), text_->write(&canvas_, fontSize));
 
-    v3d::ui::Dressing& style = uiRenderer_->dressing();
+    v3d::ui::paint::Dressing& style = uiRenderer_->dressing();
     style.lineHeight = fontSize * 1.5f;
     style.padding = fontSize * 1.4f;
     style.barHeight = fontSize * 1.8f;
@@ -118,8 +118,8 @@ void Renderer::ui(const boost::shared_ptr<v3d::ui::Engine>& ui) {
     ui_->resolveImages([this](const std::string& source) -> v3d::render::realtime::TextureHandle {
         const v3d::asset::Type type = source.ends_with(".png")
             ? v3d::asset::Type::ImagePng : v3d::asset::Type::ImageTga;
-        boost::shared_ptr<v3d::asset::Image> asset =
-            boost::dynamic_pointer_cast<v3d::asset::Image>(assetManager_->load(source, type));
+        boost::shared_ptr<v3d::asset::kind::Image> asset =
+            boost::dynamic_pointer_cast<v3d::asset::kind::Image>(assetManager_->load(source, type));
         if (!asset || !asset->image()) {
             return v3d::render::realtime::TextureHandle();
         }
@@ -148,7 +148,7 @@ void Renderer::draw() {
         return;
     }
 
-    boost::shared_ptr<v3d::render::realtime::vulkan::LineRenderer> lines = engine_.lines();
+    boost::shared_ptr<v3d::render::realtime::vulkan::renderer::Line> lines = engine_.lines();
 
     // a view with no scene still draws its grid, which is what an empty document looks
     // like rather than an error

@@ -3,6 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/realtime/Canvas.h>
+#include <api/ui/Container.h>
+#include <api/ui/component/Toolbar.h>
+#include <api/ui/component/menu/MenuBar.h>
+#include <api/ui/paint/ComponentRenderer.h>
+
 #include <cstddef>
 #include <string>
 #include <string_view>
@@ -10,12 +16,7 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include "../ComponentRenderer.h"
-#include "../../render/realtime/Canvas.h"
 #include <entt/entt.hpp>
-#include "../Container.h"
-#include "../component/Toolbar.h"
-#include "../component/menu/MenuBar.h"
 
 #include <boost/make_shared.hpp>
 
@@ -83,7 +84,7 @@ struct Fixture final {
     boost::shared_ptr<v3d::event::Context> context;
     v3d::render::realtime::Canvas canvas;
     std::vector<std::string> sent;
-    v3d::ui::ComponentRenderer renderer;
+    v3d::ui::paint::ComponentRenderer renderer;
 };
 
 };  // namespace
@@ -96,7 +97,7 @@ BOOST_AUTO_TEST_CASE(toolbar_row_layout) {
     Fixture fixture;
     boost::shared_ptr<v3d::ui::component::Toolbar> bar =
         fixture.bar(v3d::ui::component::Toolbar::Edge::Top);
-    const v3d::ui::Dressing& style = fixture.renderer.dressing();
+    const v3d::ui::paint::Dressing& style = fixture.renderer.dressing();
 
     fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0f, 30.0f));
 
@@ -123,7 +124,7 @@ BOOST_AUTO_TEST_CASE(toolbar_column_layout) {
     Fixture fixture;
     boost::shared_ptr<v3d::ui::component::Toolbar> bar =
         fixture.bar(v3d::ui::component::Toolbar::Edge::Left);
-    const v3d::ui::Dressing& style = fixture.renderer.dressing();
+    const v3d::ui::paint::Dressing& style = fixture.renderer.dressing();
 
     fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0f, 30.0f));
 
@@ -230,7 +231,7 @@ BOOST_AUTO_TEST_CASE(toolbar_marks_by_command) {
  **/
 BOOST_AUTO_TEST_CASE(toolbar_insets_match_what_is_drawn) {
     Fixture fixture;
-    const v3d::ui::Dressing& style = fixture.renderer.dressing();
+    const v3d::ui::paint::Dressing& style = fixture.renderer.dressing();
 
     boost::shared_ptr<v3d::ui::component::MenuBar> menu =
         boost::make_shared<v3d::ui::component::MenuBar>();

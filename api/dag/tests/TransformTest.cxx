@@ -3,9 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <boost/test/unit_test.hpp>
+#include <api/dag/Transform.h>
 
-#include "../Transform.h"
+#include <boost/test/unit_test.hpp>
 
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/quaternion.hpp>

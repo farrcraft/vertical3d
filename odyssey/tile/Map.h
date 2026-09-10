@@ -5,13 +5,13 @@
 
 #pragma once
 
+#include <api/asset/kind/Json.h>
+#include <api/grid/TileGrid.h>
+#include <api/log/Logger.h>
+
 #include <vector>
 
 #include "Tile.h"
-
-#include "../../api/asset/Json.h"
-#include "../../api/grid/TileGrid.h"
-#include "../../api/log/Logger.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -52,7 +52,7 @@ class Map final {
      *
      * @return whether the document was understood
      **/
-    bool load(const boost::shared_ptr<v3d::asset::Json>& document);
+    bool load(const boost::shared_ptr<v3d::asset::kind::Json>& document);
 
     /**
      * @return whether a map has been loaded, and so whether grid() may be dereferenced

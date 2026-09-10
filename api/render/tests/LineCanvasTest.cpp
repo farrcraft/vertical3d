@@ -3,13 +3,13 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/realtime/LineCanvas.h>
+
 #include <cmath>
 #include <cstdlib>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../realtime/LineCanvas.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/vec4.hpp>

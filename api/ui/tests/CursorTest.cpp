@@ -3,27 +3,26 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/asset/kind/Json.h>
+#include <api/render/realtime/Canvas.h>
+#include <api/ui/Container.h>
+#include <api/ui/Engine.h>
+#include <api/ui/component/Button.h>
+#include <api/ui/component/CheckBox.h>
+#include <api/ui/component/Panel.h>
+#include <api/ui/component/Scrollbar.h>
+#include <api/ui/component/SelectList.h>
+#include <api/ui/component/TabBar.h>
+#include <api/ui/component/TabPage.h>
+#include <api/ui/component/TextBox.h>
+#include <api/ui/input/Cursor.h>
+#include <api/ui/paint/ComponentRenderer.h>
+
 #include <string>
 #include <string_view>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../Cursor.h"
-
-#include "../ComponentRenderer.h"
-#include "../Container.h"
-#include "../Engine.h"
-#include "../../asset/Json.h"
-#include "../component/Button.h"
-#include "../component/CheckBox.h"
-#include "../component/Panel.h"
-#include "../component/Scrollbar.h"
-#include "../component/SelectList.h"
-#include "../component/TabBar.h"
-#include "../component/TabPage.h"
-
-#include "../../render/realtime/Canvas.h"
 
 #include <boost/json/parse.hpp>
 #include <boost/make_shared.hpp>
@@ -54,12 +53,12 @@ struct Fixture final {
             boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,
             boost::make_shared<v3d::log::Logger>());
         bool loaded = false;
-        loaded = ui->load(boost::make_shared<v3d::asset::Json>("vgui", v3d::asset::Type::JsonDocument,
+        loaded = ui->load(boost::make_shared<v3d::asset::kind::Json>("vgui", v3d::asset::Type::JsonDocument,
             boost::json::parse(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [] } ] })").as_object()));
         BOOST_REQUIRE(loaded);
         container = ui->container("hud");
         BOOST_REQUIRE(container);
-        cursor = boost::make_shared<v3d::ui::Cursor>(ui, dispatcher);
+        cursor = boost::make_shared<v3d::ui::input::Cursor>(ui, dispatcher);
     }
 
     void receive(const v3d::event::Event& event) {
@@ -88,10 +87,10 @@ struct Fixture final {
     boost::shared_ptr<v3d::event::Context> context;
     v3d::render::realtime::Canvas canvas;
     std::vector<std::string> sent;
-    v3d::ui::ComponentRenderer renderer;
+    v3d::ui::paint::ComponentRenderer renderer;
     boost::shared_ptr<v3d::ui::Engine> ui;
     boost::shared_ptr<v3d::ui::Container> container;
-    boost::shared_ptr<v3d::ui::Cursor> cursor;
+    boost::shared_ptr<v3d::ui::input::Cursor> cursor;
 };
 
 };  // namespace
@@ -213,7 +212,7 @@ BOOST_AUTO_TEST_CASE(a_tab_bar_changes_its_page_and_sends_nothing) {
     fixture.draw();
 
     BOOST_REQUIRE_EQUAL(bar->tabs().size(), 2U);
-    const v3d::type::Bound2D& tab = bar->tabs()[1];
+    const v3d::type::geometry::Bound2D& tab = bar->tabs()[1];
     BOOST_CHECK(fixture.cursor->press(tab.position() + tab.size() * 0.5f));
     BOOST_CHECK_EQUAL(bar->selected(), 1);
     BOOST_CHECK(fixture.sent.empty());
@@ -327,6 +326,98 @@ BOOST_AUTO_TEST_CASE(a_component_that_is_not_pickable_is_not_hovered) {
     BOOST_CHECK(!fixture.cursor->motion(glm::vec2(100.0f, 100.0f)));
     BOOST_CHECK(!fixture.cursor->hovered());
     BOOST_CHECK_EQUAL(button->state(), v3d::ui::component::Button::STATE_NORMAL);
+}
+
+/**
+ * A page the player has left keeps the box it held while it was up, so offering a point to
+ * every page of a bar lets a component nobody can see answer for the one they are looking
+ * at. Only the chosen page is walked, which is what TabBar's header says and what
+ * Arranger::walk already does.
+ **/
+BOOST_AUTO_TEST_CASE(a_page_that_is_not_up_is_not_picked) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::TabBar> bar =
+        boost::make_shared<v3d::ui::component::TabBar>();
+    const boost::shared_ptr<v3d::ui::component::TabPage> first =
+        boost::make_shared<v3d::ui::component::TabPage>();
+    first->label("One");
+    const boost::shared_ptr<v3d::ui::component::TabPage> second =
+        boost::make_shared<v3d::ui::component::TabPage>();
+    second->label("Two");
+
+    // one button on each page, in the same place, which is what a settings screen with two
+    // pages of controls looks like
+    const boost::shared_ptr<v3d::ui::component::Button> onFirst =
+        boost::make_shared<v3d::ui::component::Button>();
+    onFirst->event(v3d::event::Event("first", fixture.context));
+    onFirst->pickable(true);
+    onFirst->layout().x = v3d::ui::Length(20.0f, v3d::ui::Length::Unit::Pixels);
+    onFirst->layout().y = v3d::ui::Length(20.0f, v3d::ui::Length::Unit::Pixels);
+    onFirst->layout().width = v3d::ui::Length(100.0f, v3d::ui::Length::Unit::Pixels);
+    onFirst->layout().height = v3d::ui::Length(30.0f, v3d::ui::Length::Unit::Pixels);
+    first->add(onFirst);
+
+    const boost::shared_ptr<v3d::ui::component::Button> onSecond =
+        boost::make_shared<v3d::ui::component::Button>();
+    onSecond->event(v3d::event::Event("second", fixture.context));
+    onSecond->pickable(true);
+    onSecond->layout() = onFirst->layout();
+    second->add(onSecond);
+
+    bar->add(first);
+    bar->add(second);
+    fixture.place(bar, glm::vec2(0.0f, 0.0f), glm::vec2(400.0f, 300.0f));
+
+    // the second page is up long enough to be laid out, and then the first is chosen again
+    bar->selected(1);
+    fixture.draw();
+    bar->selected(0);
+    fixture.draw();
+
+    const glm::vec2 point = onFirst->position() + onFirst->size() * 0.5f;
+    BOOST_CHECK(fixture.cursor->press(point));
+    BOOST_REQUIRE_EQUAL(fixture.sent.size(), 1U);
+    BOOST_CHECK_EQUAL(fixture.sent.front(), "test::first");
+
+    // and the hover half answers the same way, once the press has come up - a press that
+    // is still down is a drag, and a drag follows what it took hold of rather than picking
+    fixture.cursor->release(point);
+    fixture.sent.clear();
+    BOOST_CHECK(fixture.cursor->motion(point));
+    BOOST_CHECK_EQUAL(fixture.cursor->hovered(), onFirst);
+}
+
+/**
+ * Every component that carries a command sends it as a destination event.
+ *
+ * ADR-0017 splits a sink's traffic into the source half and the destination half, and an app
+ * that drops everything that is not a destination - which is what the ADR asks for - never
+ * sees a command that was not stamped. Button and MenuItem stamped theirs from the start and
+ * the rest did not, so a check box worked in a test that read the event and did nothing in
+ * an app that routed it.
+ **/
+BOOST_AUTO_TEST_CASE(a_command_is_sent_as_a_destination) {
+    Fixture fixture;
+
+    const boost::shared_ptr<v3d::ui::component::Button> button =
+        boost::make_shared<v3d::ui::component::Button>();
+    button->event(v3d::event::Event("start", fixture.context));
+    BOOST_CHECK(button->event().type() == v3d::event::Type::Destination);
+
+    const boost::shared_ptr<v3d::ui::component::CheckBox> box =
+        boost::make_shared<v3d::ui::component::CheckBox>();
+    box->event(v3d::event::Event("toggle", fixture.context));
+    BOOST_CHECK(box->event().type() == v3d::event::Type::Destination);
+
+    const boost::shared_ptr<v3d::ui::component::SelectList> list =
+        boost::make_shared<v3d::ui::component::SelectList>();
+    list->event(v3d::event::Event("choose", fixture.context));
+    BOOST_CHECK(list->event().type() == v3d::event::Type::Destination);
+
+    const boost::shared_ptr<v3d::ui::component::TextBox> text =
+        boost::make_shared<v3d::ui::component::TextBox>();
+    text->event(v3d::event::Event("accept", fixture.context));
+    BOOST_CHECK(text->event().type() == v3d::event::Type::Destination);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

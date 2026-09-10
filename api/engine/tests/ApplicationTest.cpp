@@ -3,12 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/engine/Application.h>
+
 #include <string>
 #include <utility>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../Application.h"
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -41,13 +41,13 @@ struct StubEngine final {
         }
     }
 
-    bool initialize() {
+    static bool initialize() {
         return true;
     }
-    bool eventLoop() {
+    static bool eventLoop() {
         return true;
     }
-    bool shutdown() {
+    static bool shutdown() {
         return true;
     }
 };

@@ -20,7 +20,7 @@ namespace v3d::render::realtime {
  * Everything the engine draws as lines, accumulated as one stream of segments.
  *
  * The cpu half of the line primitive of ADR-0011, and the counterpart of Canvas: filled
- * during a tick and handed to vulkan::LineRenderer, which draws the whole stream as one
+ * during a tick and handed to vulkan::renderer::Line, which draws the whole stream as one
  * line list. There is no index buffer - segments rarely share a vertex, so indexing a
  * line list costs more than it saves.
  *

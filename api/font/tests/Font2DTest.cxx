@@ -3,12 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/font/Font2D.h>
+
 #include <string>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
-
-#include "../Font2D.h"
 
 namespace {
 // the shared font, copied next to the executable by this directory's CMakeLists

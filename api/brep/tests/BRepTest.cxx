@@ -3,12 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/brep/BRep.h>
+
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
-
-#include "../BRep.h"
 
 namespace {
 /**
@@ -37,7 +37,7 @@ BOOST_AUTO_TEST_CASE(brep_empty_test) {
     BOOST_CHECK(mesh.face(0) == nullptr);
 
     // and an empty mesh bounds an empty box at the origin
-    v3d::type::AABBox bound = mesh.bound();
+    v3d::type::geometry::AABBox bound = mesh.bound();
     BOOST_CHECK_EQUAL((bound.min() == glm::vec3(0.0f)), true);
     BOOST_CHECK_EQUAL((bound.max() == glm::vec3(0.0f)), true);
 }
@@ -71,7 +71,7 @@ BOOST_AUTO_TEST_CASE(brep_face_test) {
     BOOST_CHECK_EQUAL(v3d::brep::BRep::INVALID_ID, v3d::brep::INVALID_ID);
 
     // the bound spans the quad
-    v3d::type::AABBox bound = mesh->bound();
+    v3d::type::geometry::AABBox bound = mesh->bound();
     BOOST_CHECK_EQUAL((bound.min() == glm::vec3(0.0f, 0.0f, 0.0f)), true);
     BOOST_CHECK_EQUAL((bound.max() == glm::vec3(1.0f, 1.0f, 0.0f)), true);
 }
@@ -123,7 +123,7 @@ BOOST_AUTO_TEST_CASE(brep_shared_vertex_test) {
     BOOST_CHECK_EQUAL(mesh->vertexCount(), 8u);
     BOOST_CHECK_EQUAL(mesh->faceCount(), 3u);
 
-    v3d::type::AABBox bound = mesh->bound();
+    v3d::type::geometry::AABBox bound = mesh->bound();
     BOOST_CHECK_EQUAL((bound.min() == glm::vec3(0.0f, 0.0f, 0.0f)), true);
     BOOST_CHECK_EQUAL((bound.max() == glm::vec3(1.0f, 1.0f, 2.0f)), true);
 }

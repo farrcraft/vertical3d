@@ -11,7 +11,6 @@
 
 #include <glm/common.hpp>
 
-
 namespace v3d::brep {
 const Index BRep::INVALID_ID = v3d::brep::INVALID_ID;
 
@@ -380,8 +379,8 @@ void BRep::deselectComponents(void) noexcept {
 }
 
 // calculate object-space bounds of mesh
-v3d::type::AABBox BRep::bound(void) const {
-    v3d::type::AABBox extents;
+v3d::type::geometry::AABBox BRep::bound(void) const {
+    v3d::type::geometry::AABBox extents;
     if (vertices_.empty())
         return extents;
     glm::vec3 min;

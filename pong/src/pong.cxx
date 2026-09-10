@@ -23,11 +23,12 @@
  **/
 
 // the WinMain a windows subsystem executable is entered through, which calls this main
+
+#include <api/engine/Application.h>
+
 #include <SDL3/SDL_main.h>
 
 #include "PongEngine.h"
-
-#include "../../api/engine/Application.h"
 
 int main(int /* argc */, char *argv[]) {
     return v3d::engine::run<PongEngine>(argv[0], "pong");

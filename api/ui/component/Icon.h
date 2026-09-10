@@ -5,11 +5,10 @@
 
 #pragma once
 
+#include <api/render/realtime/Handle.h>
+#include <api/ui/Component.h>
+
 #include <string>
-
-#include "../Component.h"
-
-#include "../../render/realtime/Handle.h"
 
 #include <boost/shared_ptr.hpp>
 

@@ -5,6 +5,17 @@
 
 #include "Engine.h"
 
+#include <api/asset/kind/Json.h>
+#include <api/log/Logger.h>
+#include <api/ui/component/Box.h>
+#include <api/ui/component/Button.h>
+#include <api/ui/component/Icon.h>
+#include <api/ui/component/Toolbar.h>
+#include <api/ui/component/Type.h>
+#include <api/ui/style/Style.h>
+#include <api/ui/style/Theme.h>
+#include <api/ui/style/property/Image.h>
+
 #include <algorithm>
 #include <cstddef>
 #include <string>
@@ -14,17 +25,6 @@
 #include "Component.h"
 #include "Container.h"
 #include "Loader.h"
-#include "Style.h"
-#include "component/Box.h"
-#include "component/Button.h"
-#include "component/Icon.h"
-#include "component/Toolbar.h"
-#include "component/Type.h"
-#include "style/Theme.h"
-#include "style/property/Image.h"
-
-#include "../asset/Json.h"
-#include "../log/Logger.h"
 
 #include <boost/make_shared.hpp>
 
@@ -35,7 +35,7 @@ Engine::Engine(const boost::shared_ptr<v3d::event::Engine>& eventEngine, const b
     eventEngine_(eventEngine), dispatcher_(dispatcher), logger_(logger) {
 }
 
-bool Engine::load(const boost::shared_ptr<v3d::asset::Json>& config) {
+bool Engine::load(const boost::shared_ptr<v3d::asset::kind::Json>& config) {
     Loader loader(eventEngine_, dispatcher_, logger_);
     if (!loader.load(config->document())) {
         return false;
@@ -57,7 +57,7 @@ bool Engine::load(const boost::shared_ptr<v3d::asset::Json>& config) {
 std::size_t Engine::resolveThemeImages(const Resolve& resolve) {
     std::size_t resolved = 0;
     for (const boost::shared_ptr<style::Theme>& theme : themes_) {
-        for (const boost::shared_ptr<Style>& target : theme->getStyleSet("", "")) {
+        for (const boost::shared_ptr<style::Style>& target : theme->getStyleSet("", "")) {
             for (const boost::shared_ptr<style::Property>& property : target->getPropertySet("", "image")) {
                 boost::shared_ptr<style::property::Image> image =
                     boost::dynamic_pointer_cast<style::property::Image>(property);
@@ -213,12 +213,7 @@ void focusable(const boost::shared_ptr<Component>& component,
 
 /**
  **/
-bool Engine::focusNext(bool forward) {
-    const boost::shared_ptr<Component> was = focused_.lock();
-    if (!was) {
-        return false;
-    }
-
+std::vector<boost::shared_ptr<Component>> Engine::tabOrder() const {
     std::vector<boost::shared_ptr<Component>> order;
     for (const boost::shared_ptr<Container>& holder : containers_) {
         if (!holder || !holder->visible()) {
@@ -228,7 +223,29 @@ bool Engine::focusNext(bool forward) {
             focusable(component, &order);
         }
     }
+    return order;
+}
 
+/**
+ **/
+bool Engine::focusFirst() {
+    const std::vector<boost::shared_ptr<Component>> order = tabOrder();
+    if (order.empty()) {
+        return false;
+    }
+    focus(order.front());
+    return true;
+}
+
+/**
+ **/
+bool Engine::focusNext(bool forward) {
+    const boost::shared_ptr<Component> was = focused_.lock();
+    if (!was) {
+        return false;
+    }
+
+    const std::vector<boost::shared_ptr<Component>> order = tabOrder();
     const auto here = std::find(order.begin(), order.end(), was);
     if (here == order.end() || order.size() < 2) {
         return false;

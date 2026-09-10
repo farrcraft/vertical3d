@@ -38,6 +38,12 @@ add_compile_options("/permissive-")
 string(REGEX REPLACE "/W[0-4]" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 add_compile_options("/W4")
 
+# C4062 - an enumerator a switch does not handle - is off at /W4 and is what api/ui leans on to
+# check that a component added to component::Type is decided about everywhere it has to be, per
+# ADR-0047. It reports only for a switch carrying no default label, so it bites where the author
+# meant the switch to be complete and leaves a switch that wants a catch-all alone.
+add_compile_options("/w14062")
+
 # The three static analysis gates. /WX follows whether this project is the top level one: a
 # consumer that has nested this tree builds it with whatever toolset it happens to have, and a
 # newer one inventing a warning is not that consumer's build to stop.

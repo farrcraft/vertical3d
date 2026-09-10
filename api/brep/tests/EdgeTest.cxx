@@ -3,11 +3,11 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/brep/Edge.h>
+
 #include <algorithm>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../Edge.h"
 
 /**
  * A winged edge names eight things: a vertex at each end, a face on each side, and the four

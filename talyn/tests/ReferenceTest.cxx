@@ -3,19 +3,17 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/image/Compare.h>
+#include <api/image/Factory.h>
+#include <api/render/offline/rib/Reader.h>
+#include <talyn/libtalyn/RIBHandler.h>
+#include <talyn/libtalyn/RenderContext.h>
+
 #include <string>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/filesystem/operations.hpp>
-
-#include "../libtalyn/RenderContext.h"
-#include "../libtalyn/RIBHandler.h"
-
-#include "../../api/render/offline/RIBReader.h"
-
-#include "../../api/image/Compare.h"
-#include "../../api/image/Factory.h"
 
 namespace {
 
@@ -33,7 +31,7 @@ boost::shared_ptr<v3d::image::Image> render() {
     v3d::talyn::RenderContext rc;
     rc.format(64, 48);
 
-    v3d::type::CameraProfile & profile = rc.scene().camera().profile();
+    v3d::type::camera::Profile & profile = rc.scene().camera().profile();
     profile.orthographic(true);
     // the frame is 4:3, so the pixel has to be, or the picture is stretched across it
     profile.pixelAspect(4.0f / 3.0f);
@@ -96,7 +94,7 @@ BOOST_AUTO_TEST_CASE(talyn_reference_test) {
 BOOST_AUTO_TEST_CASE(talyn_reference_from_rib_test) {
     auto rc = boost::make_shared<v3d::talyn::RenderContext>();
     v3d::talyn::RIBHandler handler(rc);
-    v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(reader.read(RIB_SCENE, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");

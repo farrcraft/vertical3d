@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../Component.h"
+#include <api/ui/Component.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>

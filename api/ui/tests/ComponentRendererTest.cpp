@@ -3,6 +3,16 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/realtime/Canvas.h>
+#include <api/ui/Container.h>
+#include <api/ui/component/Button.h>
+#include <api/ui/component/Label.h>
+#include <api/ui/component/menu/Menu.h>
+#include <api/ui/component/menu/MenuBar.h>
+#include <api/ui/component/menu/MenuItem.h>
+#include <api/ui/paint/ComponentRenderer.h>
+#include <api/ui/style/Resolver.h>
+
 #include <cstddef>
 #include <string>
 #include <string_view>
@@ -10,14 +20,6 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include "../ComponentRenderer.h"
-#include "../../render/realtime/Canvas.h"
-#include "../Container.h"
-#include "../component/Label.h"
-#include "../style/Resolver.h"
-#include "../component/menu/Menu.h"
-#include "../component/menu/MenuBar.h"
-#include "../component/menu/MenuItem.h"
 #include <entt/entt.hpp>
 
 #include <boost/make_shared.hpp>
@@ -65,7 +67,7 @@ BOOST_AUTO_TEST_SUITE(component_renderer_test)
  **/
 BOOST_AUTO_TEST_CASE(a_menu_draws_a_panel_a_highlight_and_a_label_per_item) {
     std::vector<Written> written;
-    v3d::ui::ComponentRenderer renderer(
+    v3d::ui::paint::ComponentRenderer renderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
             Written line;
@@ -94,7 +96,7 @@ BOOST_AUTO_TEST_CASE(a_menu_draws_a_panel_a_highlight_and_a_label_per_item) {
  **/
 BOOST_AUTO_TEST_CASE(only_the_active_item_is_drawn_highlighted) {
     std::vector<Written> written;
-    v3d::ui::ComponentRenderer renderer(
+    v3d::ui::paint::ComponentRenderer renderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
             Written line;
@@ -125,7 +127,7 @@ BOOST_AUTO_TEST_CASE(only_the_active_item_is_drawn_highlighted) {
  **/
 BOOST_AUTO_TEST_CASE(a_submenu_replaces_what_is_drawn) {
     std::vector<Written> written;
-    v3d::ui::ComponentRenderer renderer(
+    v3d::ui::paint::ComponentRenderer renderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
             Written line;
@@ -157,7 +159,7 @@ BOOST_AUTO_TEST_CASE(a_submenu_replaces_what_is_drawn) {
  * The panel is as wide as its widest label and no wider, and it is centred on the canvas.
  **/
 BOOST_AUTO_TEST_CASE(the_panel_is_sized_to_the_widest_label_and_centred) {
-    v3d::ui::ComponentRenderer renderer(
+    v3d::ui::paint::ComponentRenderer renderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 
@@ -182,7 +184,7 @@ BOOST_AUTO_TEST_CASE(the_panel_is_sized_to_the_widest_label_and_centred) {
  * whole ui without taking it apart.
  **/
 BOOST_AUTO_TEST_CASE(an_invisible_container_draws_nothing) {
-    v3d::ui::ComponentRenderer renderer(
+    v3d::ui::paint::ComponentRenderer renderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 
@@ -214,7 +216,7 @@ BOOST_AUTO_TEST_CASE(an_invisible_container_draws_nothing) {
  * A menu with no items draws no panel either.
  **/
 BOOST_AUTO_TEST_CASE(an_empty_menu_draws_nothing) {
-    v3d::ui::ComponentRenderer renderer(
+    v3d::ui::paint::ComponentRenderer renderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 
@@ -232,7 +234,7 @@ BOOST_AUTO_TEST_CASE(an_empty_menu_draws_nothing) {
  **/
 BOOST_AUTO_TEST_CASE(a_label_with_a_width_draws_a_row_per_line) {
     std::vector<Written> written;
-    v3d::ui::ComponentRenderer renderer(
+    v3d::ui::paint::ComponentRenderer renderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
             Written line;
@@ -265,6 +267,44 @@ BOOST_AUTO_TEST_CASE(a_label_with_a_width_draws_a_row_per_line) {
     renderer.draw(&canvas, single);
     BOOST_REQUIRE_EQUAL(written.size(), 1);
     BOOST_CHECK_EQUAL(written[0].text, "one two three four");
+}
+
+/**
+ * A focused component is ringed, and an unfocused one is not.
+ *
+ * Drawn by the walk rather than by any one component's draw, because where the keyboard is
+ * is the ui's business: a ring every control shows the same way is the point of it, and a
+ * control that looks no different focused is a screen tabbed through blind. At the default
+ * radius of zero the ring is four straight runs, so it is one quad per edge on top of
+ * whatever the component drew.
+ **/
+BOOST_AUTO_TEST_CASE(a_focused_component_is_ringed) {
+    v3d::ui::paint::ComponentRenderer renderer(
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(800, 600);
+
+    const boost::shared_ptr<v3d::ui::component::Button> button =
+        boost::make_shared<v3d::ui::component::Button>();
+    button->label("Start");
+    button->layout().width = v3d::ui::Length(120.0f, v3d::ui::Length::Unit::Pixels);
+    button->layout().height = v3d::ui::Length(30.0f, v3d::ui::Length::Unit::Pixels);
+
+    v3d::ui::Container container("screen", true);
+    container.add(button);
+
+    renderer.draw(&canvas, container);
+    const std::size_t plain = canvas.vertices().size();
+
+    canvas.clear();
+    button->focused(true);
+    renderer.draw(&canvas, container);
+
+    BOOST_CHECK_EQUAL(canvas.vertices().size(), plain + static_cast<std::size_t>(4 * 4));
+    // untextured like everything else the ui draws, so the ring costs no batch of its own
+    BOOST_CHECK_EQUAL(canvas.batches().size(), 1);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

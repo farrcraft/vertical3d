@@ -3,14 +3,14 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/asset/kind/Json.h>
+#include <api/ui/Engine.h>
+#include <api/ui/shell/GameMenu.h>
+
 #include <string>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../Engine.h"
-#include "../../asset/Json.h"
-#include "../GameMenu.h"
 
 #include <boost/json/parse.hpp>
 #include <boost/make_shared.hpp>
@@ -82,7 +82,7 @@ boost::shared_ptr<v3d::ui::Engine> load(const std::string& config) {
         dispatcher,
         boost::make_shared<v3d::log::Logger>());
 
-    BOOST_REQUIRE(ui->load(boost::make_shared<v3d::asset::Json>(
+    BOOST_REQUIRE(ui->load(boost::make_shared<v3d::asset::kind::Json>(
         "vgui", v3d::asset::Type::JsonDocument, boost::json::parse(config).as_object())));
     return ui;
 }
@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_SUITE(game_menu_test)
 BOOST_AUTO_TEST_CASE(a_toggle_shows_the_container_and_suspends_the_game) {
     boost::shared_ptr<v3d::ui::Engine> ui = load(document);
     std::vector<bool> suspended;
-    v3d::ui::GameMenu menu(ui, [&suspended](bool state) { suspended.push_back(state); });
+    v3d::ui::shell::GameMenu menu(ui, [&suspended](bool state) { suspended.push_back(state); });
 
     BOOST_TEST(!menu.visible());
 
@@ -135,7 +135,7 @@ BOOST_AUTO_TEST_CASE(a_toggle_shows_the_container_and_suspends_the_game) {
 BOOST_AUTO_TEST_CASE(a_toggle_inside_a_submenu_only_goes_up_a_level) {
     boost::shared_ptr<v3d::ui::Engine> ui = load(document);
     std::vector<bool> suspended;
-    v3d::ui::GameMenu menu(ui, [&suspended](bool state) { suspended.push_back(state); });
+    v3d::ui::shell::GameMenu menu(ui, [&suspended](bool state) { suspended.push_back(state); });
 
     menu.toggle();
     BOOST_TEST(menu.navigate("menuNext"));
@@ -161,7 +161,7 @@ BOOST_AUTO_TEST_CASE(a_toggle_inside_a_submenu_only_goes_up_a_level) {
  **/
 BOOST_AUTO_TEST_CASE(navigation_moves_the_active_item) {
     boost::shared_ptr<v3d::ui::Engine> ui = load(document);
-    v3d::ui::GameMenu menu(ui, v3d::ui::GameMenu::Suspend());
+    v3d::ui::shell::GameMenu menu(ui, v3d::ui::shell::GameMenu::Suspend());
     menu.toggle();
 
     BOOST_TEST(active(ui) == "Resume");
@@ -176,7 +176,7 @@ BOOST_AUTO_TEST_CASE(navigation_moves_the_active_item) {
  **/
 BOOST_AUTO_TEST_CASE(an_unrelated_command_is_not_taken) {
     boost::shared_ptr<v3d::ui::Engine> ui = load(document);
-    v3d::ui::GameMenu menu(ui, v3d::ui::GameMenu::Suspend());
+    v3d::ui::shell::GameMenu menu(ui, v3d::ui::shell::GameMenu::Suspend());
     menu.toggle();
 
     BOOST_TEST(!menu.navigate("moveForward"));
@@ -188,7 +188,7 @@ BOOST_AUTO_TEST_CASE(an_unrelated_command_is_not_taken) {
  **/
 BOOST_AUTO_TEST_CASE(nothing_is_navigated_while_the_menu_is_down) {
     boost::shared_ptr<v3d::ui::Engine> ui = load(document);
-    v3d::ui::GameMenu menu(ui, v3d::ui::GameMenu::Suspend());
+    v3d::ui::shell::GameMenu menu(ui, v3d::ui::shell::GameMenu::Suspend());
 
     BOOST_TEST(!menu.navigate("menuNext"));
     BOOST_TEST(active(ui) == "Resume");
@@ -201,7 +201,7 @@ BOOST_AUTO_TEST_CASE(nothing_is_navigated_while_the_menu_is_down) {
 BOOST_AUTO_TEST_CASE(a_missing_container_leaves_the_menu_inert) {
     boost::shared_ptr<v3d::ui::Engine> ui = load(R"({"themes": [], "containers": []})");
     std::vector<bool> suspended;
-    v3d::ui::GameMenu menu(ui, [&suspended](bool state) { suspended.push_back(state); });
+    v3d::ui::shell::GameMenu menu(ui, [&suspended](bool state) { suspended.push_back(state); });
 
     menu.toggle();
     BOOST_TEST(!menu.visible());
@@ -218,7 +218,7 @@ BOOST_AUTO_TEST_CASE(a_missing_container_leaves_the_menu_inert) {
  **/
 BOOST_AUTO_TEST_CASE(a_key_input_item_captures_a_key_and_sends_it) {
     boost::shared_ptr<v3d::ui::Engine> ui = load(bindings);
-    v3d::ui::GameMenu menu(ui, v3d::ui::GameMenu::Suspend());
+    v3d::ui::shell::GameMenu menu(ui, v3d::ui::shell::GameMenu::Suspend());
 
     menu.toggle();
     BOOST_TEST(active(ui) == "Player 1 Up: ");
@@ -253,7 +253,7 @@ BOOST_AUTO_TEST_CASE(a_key_input_item_captures_a_key_and_sends_it) {
  **/
 BOOST_AUTO_TEST_CASE(a_capture_takes_nothing_until_it_is_open) {
     boost::shared_ptr<v3d::ui::Engine> ui = load(bindings);
-    v3d::ui::GameMenu menu(ui, v3d::ui::GameMenu::Suspend());
+    v3d::ui::shell::GameMenu menu(ui, v3d::ui::shell::GameMenu::Suspend());
 
     // not even while the menu is down
     BOOST_TEST(!menu.capture(std::string("w")));
@@ -272,7 +272,7 @@ BOOST_AUTO_TEST_CASE(a_capture_takes_nothing_until_it_is_open) {
  **/
 BOOST_AUTO_TEST_CASE(a_toggle_during_a_capture_abandons_it) {
     boost::shared_ptr<v3d::ui::Engine> ui = load(bindings);
-    v3d::ui::GameMenu menu(ui, v3d::ui::GameMenu::Suspend());
+    v3d::ui::shell::GameMenu menu(ui, v3d::ui::shell::GameMenu::Suspend());
 
     menu.toggle();
     BOOST_TEST(menu.navigate("selectMenu"));

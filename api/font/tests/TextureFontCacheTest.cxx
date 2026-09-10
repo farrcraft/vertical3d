@@ -3,12 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/font/TextureFontCache.h>
+
 #include <string>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
-
-#include "../TextureFontCache.h"
 
 namespace {
 const char* kTypeface = "data/fonts/NotoSans-Regular.ttf";

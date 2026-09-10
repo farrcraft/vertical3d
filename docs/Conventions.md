@@ -18,7 +18,33 @@ where this document does not say otherwise.
    **/
   ```
 
-- Third-party includes in angle brackets — boost, glm — go last, below the project's own.
+- **A header outside the including file's own directory is named by its path from the
+  repository root**, in angle brackets: `#include <api/render/realtime/Canvas.h>`, and
+  `<vertical3d/src/scene/Node.h>` for an app's own header one directory over. **A subdirectory
+  is outside it too** — `<api/ui/component/Bar.h>` from `api/ui`, not `"component/Bar.h"`. Only
+  a header in the same directory stays `"Neighbour.h"`.
+  [ADR-0048](adr/0048-an-api-header-is-named-from-the-repository-root.md) says why.
+- **The check is `grep -rn '#include "[^"]*/'`**, which should return only the generated shader
+  headers below. Nothing in the build or the linter enforces this: a quoted relative include
+  resolves exactly as well as a rooted one, so the only thing that finds a lapse is looking for
+  it. Grepping for `../` alone is not enough — it misses every `"subdirectory/Header.h"`.
+- **A generated header is the exception, and stays quoted.**
+  `#include "shaders/quad.vert.inc"` names a file `v3d_add_shader` writes into
+  `${CMAKE_CURRENT_BINARY_DIR}`, which is on that target's include path and is not in the source
+  tree at all, so it has no repository-root path to be named by.
+- **Where that block goes is not a preference.** cpplint reads an angle-bracket include ending
+  in `.h` as a *C* system header, so the project block precedes every C++ system header — after
+  the file's own header or its `#pragma once`, above `<string>`. That is also where
+  `<vulkan/vulkan.h>` sits.
+- Third-party includes in angle brackets — boost, glm — go last, below the project's own. They
+  are exempt from the rule above because their names do not end in `.h`, so the linter files
+  them with the project's headers rather than with the system's.
+- **A directory splits when its files stop sharing a reader, not when it passes a file count.**
+  `api/dag` is eighteen files and 493 lines and wants nothing done to it, because they are one
+  concept; `api/ui` had 36 files above its subdirectories doing five different jobs, and they
+  are `paint/`, `input/`, `shell/` and `style/` now. A namespace follows the directory, so a
+  class whose name already carries the group word drops it — `pipeline::Builder`, not
+  `pipeline::PipelineBuilder`. Where the group *is* the noun, the name stays: `device::Device`.
 - [.gitattributes](../.gitattributes) enforces LF (`* text=auto eol=lf`). An editor that saves
   CRLF turns a small change into a whole-file diff, so strip the CRs rather than committing
   them.

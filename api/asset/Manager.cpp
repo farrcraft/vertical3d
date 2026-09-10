@@ -5,17 +5,17 @@
 
 #include "Manager.h"
 
-#include <string>
+#include <api/asset/loader/Font2D.h>
+#include <api/asset/loader/Gltf.h>
+#include <api/asset/loader/Jpeg.h>
+#include <api/asset/loader/Json.h>
+#include <api/asset/loader/Png.h>
+#include <api/asset/loader/Text.h>
+#include <api/asset/loader/TextureFont.h>
+#include <api/asset/loader/Tga.h>
+#include <api/asset/loader/Wav.h>
 
-#include "loader/Jpeg.h"
-#include "loader/Json.h"
-#include "loader/Gltf.h"
-#include "loader/Png.h"
-#include "loader/Tga.h"
-#include "loader/Text.h"
-#include "loader/Wav.h"
-#include "loader/Font2D.h"
-#include "loader/TextureFont.h"
+#include <string>
 
 #include <boost/make_shared.hpp>
 

@@ -25,8 +25,8 @@ void RIBExportVisitor::matrix(const glm::mat4x4& m) {
     *stream_ << " ]";
 }
 
-void RIBExportVisitor::begin(const v3d::type::Camera& camera, unsigned int width, unsigned int height) {
-    const v3d::type::CameraProfile& profile = camera.profile();
+void RIBExportVisitor::begin(const v3d::type::camera::Camera& camera, unsigned int width, unsigned int height) {
+    const v3d::type::camera::Profile& profile = camera.profile();
     const glm::vec2 clipping = profile.clipping();
 
     *stream_ << "##RenderMan RIB-Structure 1.1\n";

@@ -3,6 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/image/Compare.h>
+#include <api/image/Factory.h>
+
 #include <cstddef>
 #include <fstream>
 #include <string>
@@ -10,9 +13,6 @@
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
-
-#include "../Compare.h"
-#include "../Factory.h"
 
 namespace {
 

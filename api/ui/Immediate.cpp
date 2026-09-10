@@ -5,20 +5,19 @@
 
 #include "Immediate.h"
 
+#include <api/render/realtime/Canvas.h>
+#include <api/ui/component/Scrollbar.h>
+#include <api/ui/paint/Painter.h>
+#include <api/ui/style/Resolver.h>
+#include <api/ui/style/Style.h>
+#include <api/ui/style/Theme.h>
+
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <iterator>
 #include <string>
 #include <vector>
-
-#include "Painter.h"
-#include "Style.h"
-#include "component/Scrollbar.h"
-#include "style/Resolver.h"
-#include "style/Theme.h"
-
-#include "../render/realtime/Canvas.h"
 
 #include <glm/common.hpp>
 #include <glm/geometric.hpp>
@@ -164,7 +163,7 @@ contentTop(0.0f),
 clipped(false) {
 }
 
-Immediate::Immediate(const Measure& measure, const Write& write) :
+Immediate::Immediate(const paint::Measure& measure, const paint::Write& write) :
     measure_(measure),
     write_(write),
     canvas_(nullptr),
@@ -193,31 +192,31 @@ void Immediate::theme(const boost::shared_ptr<style::Theme>& theme) {
     if (!theme_) {
         return;
     }
-    const boost::shared_ptr<v3d::ui::Style> chrome =
+    const boost::shared_ptr<style::Style> chrome =
         style::lookup(theme_, style::Resolver::tools, std::string_view());
     if (!chrome) {
         return;
     }
 
-    readColour(chrome, "panel", &dressing_.panel);
-    readColour(chrome, "border", &dressing_.border);
-    readColour(chrome, "title-bar", &dressing_.titleBar);
-    readColour(chrome, "text", &dressing_.text);
-    readColour(chrome, "active-text", &dressing_.activeText);
-    readColour(chrome, "dim-text", &dressing_.dimText);
-    readColour(chrome, "widget", &dressing_.widget);
-    readColour(chrome, "highlight", &dressing_.highlight);
-    readColour(chrome, "hover", &dressing_.hover);
-    readColour(chrome, "fill", &dressing_.fill);
-    readColour(chrome, "rule", &dressing_.rule);
+    style::readColour(chrome, "panel", &dressing_.panel);
+    style::readColour(chrome, "border", &dressing_.border);
+    style::readColour(chrome, "title-bar", &dressing_.titleBar);
+    style::readColour(chrome, "text", &dressing_.text);
+    style::readColour(chrome, "active-text", &dressing_.activeText);
+    style::readColour(chrome, "dim-text", &dressing_.dimText);
+    style::readColour(chrome, "widget", &dressing_.widget);
+    style::readColour(chrome, "highlight", &dressing_.highlight);
+    style::readColour(chrome, "hover", &dressing_.hover);
+    style::readColour(chrome, "fill", &dressing_.fill);
+    style::readColour(chrome, "rule", &dressing_.rule);
 
-    readMetric(chrome, "line-height", &dressing_.lineHeight);
-    readMetric(chrome, "padding", &dressing_.padding);
-    readMetric(chrome, "spacing", &dressing_.spacing);
-    readMetric(chrome, "bar-height", &dressing_.barHeight);
-    readMetric(chrome, "border-width", &dressing_.borderWidth);
-    readMetric(chrome, "radius", &dressing_.radius);
-    readMetric(chrome, "scrollbar-width", &dressing_.scrollbarWidth);
+    style::readMetric(chrome, "line-height", &dressing_.lineHeight);
+    style::readMetric(chrome, "padding", &dressing_.padding);
+    style::readMetric(chrome, "spacing", &dressing_.spacing);
+    style::readMetric(chrome, "bar-height", &dressing_.barHeight);
+    style::readMetric(chrome, "border-width", &dressing_.borderWidth);
+    style::readMetric(chrome, "radius", &dressing_.radius);
+    style::readMetric(chrome, "scrollbar-width", &dressing_.scrollbarWidth);
 }
 
 void Immediate::begin(v3d::render::realtime::Canvas* canvas, const Input& input) {
@@ -334,7 +333,7 @@ Immediate::Reaction Immediate::interact(Id id, const glm::vec2& min, const glm::
     if (disabled_ > 0) {
         return reaction;
     }
-    const bool within = inside(min, max, input_.cursor);
+    const bool within = paint::inside(min, max, input_.cursor);
     if (within) {
         hovering_ = id;
     }
@@ -406,8 +405,8 @@ bool Immediate::window(const std::string& title, const glm::vec2& position, cons
 
     glm::vec4 background = dressing_.panel;
     background.a *= std::clamp(alpha, 0.0f, 1.0f);
-    plateBox(canvas_, min, max, dressing_.radius, dressing_.borderWidth, background, dressing_.border);
-    fillBox(canvas_, min + glm::vec2(dressing_.borderWidth, dressing_.borderWidth),
+    paint::plateBox(canvas_, min, max, dressing_.radius, dressing_.borderWidth, background, dressing_.border);
+    paint::fillBox(canvas_, min + glm::vec2(dressing_.borderWidth, dressing_.borderWidth),
         glm::vec2(barMax.x - dressing_.borderWidth, barMax.y), dressing_.radius, dressing_.titleBar);
     label(title, min + glm::vec2(dressing_.padding, 0.0f), glm::vec2(size.x, dressing_.barHeight), dressing_.text);
 
@@ -420,7 +419,7 @@ bool Immediate::window(const std::string& title, const glm::vec2& position, cons
     // a window takes the cursor from everything drawn before it, so a click meant for the
     // window on top does not reach what it covers. What goes in this one is drawn after
     // and takes it back
-    if (inside(min, max, input_.cursor)) {
+    if (paint::inside(min, max, input_.cursor)) {
         hovering_ = id;
     }
 
@@ -460,7 +459,7 @@ bool Immediate::window(const std::string& title, const glm::vec2& position, cons
 
     // the wheel turns the window the cursor is over, and a window drawn later is over one
     // drawn before it, so the last to claim the cursor keeps it
-    if (inside(min, max, input_.cursor)) {
+    if (paint::inside(min, max, input_.cursor)) {
         wheeled_ = id;
     }
     return true;
@@ -528,8 +527,8 @@ void Immediate::scrollbar(Id id, const glm::vec2& min, const glm::vec2& max, flo
     }
 
     const float start = span > 0.0f ? room * (*scroll / span) : 0.0f;
-    fillBox(canvas_, min, max, dressing_.radius, dressing_.widget);
-    fillBox(canvas_, glm::vec2(min.x, min.y + start), glm::vec2(max.x, min.y + start + length),
+    paint::fillBox(canvas_, min, max, dressing_.radius, dressing_.widget);
+    paint::fillBox(canvas_, glm::vec2(min.x, min.y + start), glm::vec2(max.x, min.y + start + length),
         dressing_.radius, grip);
 }
 
@@ -553,7 +552,7 @@ void Immediate::textWrapped(const std::string& line) {
     if (canvas_ == nullptr) {
         return;
     }
-    for (const std::string& row : wrap(line, row_.right - row_.margin, measure_)) {
+    for (const std::string& row : paint::wrap(line, row_.right - row_.margin, measure_)) {
         text(row);
     }
 }
@@ -579,7 +578,7 @@ bool Immediate::button(const std::string& label) {
     const Id id = identify(label);
     const Reaction reaction = interact(id, min, min + size);
 
-    fillBox(canvas_, min, min + size, dressing_.radius, face(reaction.held, reaction.hovered));
+    paint::fillBox(canvas_, min, min + size, dressing_.radius, face(reaction.held, reaction.hovered));
     this->label(label, min + glm::vec2(dressing_.padding, 0.0f), size,
         ink(reaction.hovered ? dressing_.activeText : dressing_.text));
     return reaction.clicked;
@@ -594,7 +593,7 @@ bool Immediate::smallButton(const std::string& label) {
     const Id id = identify(label);
     const Reaction reaction = interact(id, min, min + size);
 
-    fillBox(canvas_, min, min + size, dressing_.radius, face(reaction.held, reaction.hovered));
+    paint::fillBox(canvas_, min, min + size, dressing_.radius, face(reaction.held, reaction.hovered));
     this->label(label, min + glm::vec2(dressing_.padding * 0.5f, 0.0f), size,
         ink(reaction.hovered ? dressing_.activeText : dressing_.text));
     return reaction.clicked;
@@ -610,9 +609,9 @@ bool Immediate::selectable(const std::string& label, bool selected) {
     const Reaction reaction = interact(id, min, min + size);
 
     if (selected) {
-        fillBox(canvas_, min, min + size, 0.0f, dressing_.highlight);
+        paint::fillBox(canvas_, min, min + size, 0.0f, dressing_.highlight);
     } else if (reaction.hovered) {
-        fillBox(canvas_, min, min + size, 0.0f, dressing_.hover);
+        paint::fillBox(canvas_, min, min + size, 0.0f, dressing_.hover);
     }
     this->label(label, min + glm::vec2(dressing_.padding * 0.5f, 0.0f), size,
         ink(selected ? dressing_.activeText : dressing_.text));
@@ -638,7 +637,7 @@ bool Immediate::dragInt(const std::string& label, int* value, int low, int high)
         }
     }
 
-    fillBox(canvas_, min, min + size, dressing_.radius, face(reaction.held, reaction.hovered));
+    paint::fillBox(canvas_, min, min + size, dressing_.radius, face(reaction.held, reaction.hovered));
     std::string shown(label);
     shown.append("  ").append(std::to_string(*value));
     this->label(shown, min + glm::vec2(dressing_.padding, 0.0f), size, ink(dressing_.text));
@@ -653,10 +652,10 @@ void Immediate::progressBar(float fraction, const std::string& overlay) {
     const glm::vec2 min = place(size);
     const glm::vec2 max = min + size;
 
-    fillBox(canvas_, min, max, dressing_.radius, dressing_.widget);
+    paint::fillBox(canvas_, min, max, dressing_.radius, dressing_.widget);
     const float part = std::clamp(fraction, 0.0f, 1.0f);
     if (part > 0.0f) {
-        fillBox(canvas_, min, glm::vec2(min.x + size.x * part, max.y), dressing_.radius, ink(dressing_.fill));
+        paint::fillBox(canvas_, min, glm::vec2(min.x + size.x * part, max.y), dressing_.radius, ink(dressing_.fill));
     }
     if (!overlay.empty()) {
         const glm::vec2 corner(min.x + (size.x - measure_(overlay)) * 0.5f, min.y);
@@ -727,7 +726,7 @@ bool Immediate::tab(const std::string& label) {
     const bool selected = retained.tab == index;
     tabs_.taken = tabs_.taken || selected;
 
-    fillBox(canvas_, min, min + size, dressing_.radius, face(selected, reaction.hovered));
+    paint::fillBox(canvas_, min, min + size, dressing_.radius, face(selected, reaction.hovered));
     this->label(label, min + glm::vec2(dressing_.padding, 0.0f), size,
         selected ? dressing_.activeText : dressing_.text);
     return selected;
@@ -794,7 +793,7 @@ void Immediate::tableBody() {
 
     // the wheel turns the innermost region under the cursor, so a table takes it from the
     // window it is drawn in - the same rule that lets a window take it from one under it
-    if (inside(glm::vec2(table_.left, table_.top), max, input_.cursor)) {
+    if (paint::inside(glm::vec2(table_.left, table_.top), max, input_.cursor)) {
         wheeled_ = table_.id;
     }
 }
@@ -837,7 +836,7 @@ void Immediate::headerRow() {
     // notched out of them. The two are the same edge for a table that does not scroll
     const glm::vec2 min(table_.left, row_.penY);
     const glm::vec2 max(table_.right, row_.penY + dressing_.lineHeight);
-    fillBox(canvas_, min, max, 0.0f, dressing_.titleBar);
+    paint::fillBox(canvas_, min, max, 0.0f, dressing_.titleBar);
     for (std::size_t index = 0; index < table_.headers.size(); index++) {
         const glm::vec2 corner(columnStart(static_cast<unsigned int>(index)) + dressing_.padding * 0.5f, min.y);
         label(table_.headers[index], corner, glm::vec2(0.0f, dressing_.lineHeight), dressing_.dimText);

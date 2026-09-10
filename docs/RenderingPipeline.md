@@ -19,12 +19,12 @@ Window    ->  Context3D  ->  Frame  ->  Pass  ->  DrawItem
                   +-- vulkan::Device      the gpu, its queues, and the 1.3 features
                   +-- vulkan::Swapchain   the images presented to the window
                   +-- vulkan::Presenter   acquire, submit, present, and the sync between them
-                  +-- vulkan::PipelineCache
+                  +-- vulkan::pipeline::Cache
                   +-- vulkan::Resources   pipelines, materials and textures, addressed by handle
                   +-- vulkan::FrameUniforms  set 0 - a camera per pass per frame in flight
                   +-- vulkan::Uploader    the one-shot queue everything device local is copied by
                   +-- vulkan::DepthBuffer the depth image, allocated the first frame a pass asks
-                  +-- vulkan::QuadRenderer the 2D pipelines, and the geometry buffers they upload through
+                  +-- vulkan::renderer::Quad the 2D pipelines, and the geometry buffers they upload through
 ```
 
 `realtime::Window` creates an `SDL_WINDOW_VULKAN` window and owns the `vulkan::Instance` and
@@ -92,7 +92,7 @@ contents is not worth a barrier, and the first pass to use it must clear.
 A `RenderTarget` built with `sampledDepth` allocates its depth image with sampled usage and a
 sampler, and the recorder leaves it in `DEPTH_READ_ONLY_OPTIMAL` after the last pass that wrote
 it — which is a shadow map, and is
-[ADR-0044](adr/0044-a-sampled-depth-target-is-read-only.md). `QuadRenderer::depthTexture()`
+[ADR-0044](adr/0044-a-sampled-depth-target-is-read-only.md). `renderer::Quad::depthTexture()`
 registers it, the same borrowed-rather-than-owned way a target's colour is registered.
 
 **Asking for it changes the format.** A format the device will draw depth into is not
@@ -104,21 +104,21 @@ Nothing in this tree draws into a target at all, so this half is exercised only 
 outside it.
 
 Dynamic rendering matches a pipeline to the attachments of the pass it draws into, so a
-pipeline built with no depth format cannot draw into a pass that has one. `QuadRenderer`
+pipeline built with no depth format cannot draw into a pass that has one. `renderer::Quad`
 therefore compiles its pipeline twice, once each way, and picks between them from
 `Pass::depth()`. Neither variant tests or writes depth: a ui drawn over a scene has to stay
 on top of it whatever the scene left in the buffer.
 
 ## Building a pipeline
 
-`vulkan::PipelineBuilder` describes a graphics pipeline one chained call at a time. Its
+`vulkan::pipeline::Builder` describes a graphics pipeline one chained call at a time. Its
 defaults are what every pipeline in this engine has agreed on: a dynamic viewport and scissor
 so a resize costs no rebuild, one sample, one colour attachment, no culling, alpha blending,
 and dynamic rendering rather than a render pass. Shader modules belong to the builder and are
 destroyed with it; the pipeline and its layout are handed back for `Resources` to own.
 
 ```
-PipelineBuilder(device)
+pipeline::Builder(device)
     .name("quad")
     .shader(VK_SHADER_STAGE_VERTEX_BIT, code, sizeof(code))
     .vertexBinding(0, sizeof(Vertex))
@@ -161,7 +161,7 @@ described below. The quad is split across the cpu/gpu line:
   and scales that applies as vertices are added, and it produces the pixels-to-clip-space
   projection the pipeline is pushed. None of it touches vulkan, so the batching has unit
   tests.
-- **`vulkan::QuadRenderer`** owns the one pipeline, the descriptor pool and layouts, the 1x1
+- **`vulkan::renderer::Quad`** owns the one pipeline, the descriptor pool and layouts, the 1x1
   white texture an untextured quad is drawn against, and a vertex and index buffer per frame
   in flight. `submit(canvas, pass)` uploads the canvas into the buffers belonging to the frame
   about to be recorded, and turns each batch into a `DrawItem`.
@@ -169,7 +169,7 @@ described below. The quad is split across the cpu/gpu line:
 **A clip is batch state and the device scissors the draw**, per
 [ADR-0037](adr/0037-clipping-is-a-scissor-the-batch-carries.md). `Canvas::clip` pushes a
 rectangle, in the coordinates being drawn in and intersected with whatever is already clipped;
-the batch carries it, `QuadRenderer` puts it on the `DrawItem`, and the recorder sets a dynamic
+the batch carries it, `renderer::Quad` puts it on the `DrawItem`, and the recorder sets a dynamic
 scissor per item and puts the pass's own region back for an item that names none. Nothing is
 clipped on the cpu, so a quad straddling the edge is drawn whole and half of it lands.
 
@@ -189,7 +189,7 @@ into alpha and ones into rgb, so the glyph samples as white with coverage and th
 needs no branch for text.
 
 The ui draws through the same canvas rather than a pass of its own.
-`v3d::ui::ComponentRenderer` adds its panels and highlights as quads and asks the app to write
+`v3d::ui::paint::ComponentRenderer` adds its panels and highlights as quads and asks the app to write
 its labels, so a game and its menu cost one upload and a draw per texture.
 
 **Drawing the ui is also what lays it out**, per
@@ -233,7 +233,7 @@ manipulators are all made of it. It splits across the cpu/gpu line the same way:
   a modelview stack that applies as vertices are added. There is no index stream, and the only
   thing that cuts a batch is a clip changing, since there is no texture: an uncut canvas is one
   batch and one draw.
-- **`vulkan::LineRenderer`** owns two pipelines and a vertex buffer per frame in flight.
+- **`vulkan::renderer::Line`** owns two pipelines and a vertex buffer per frame in flight.
   `submit(canvas, pass)` uploads and adds one `DrawItem` per batch.
 
 Two things differ from the quad. Positions are in **world space**, and the transform is the
@@ -258,8 +258,8 @@ tile highlight.
   applies as vertices are added. A quad takes its four corners in perimeter order — the order
   `grid::tileCorners` hands them out in — and is fanned from the first, so any convex quad
   comes out whole. The stream cuts where the bound texture changes and nowhere else.
-- **`vulkan::WorldRenderer`** owns two pipelines and a pair of buffers per frame in flight, and
-  takes its textures and its set 1 descriptors from the `QuadRenderer` so that an atlas
+- **`vulkan::renderer::World`** owns two pipelines and a pair of buffers per frame in flight, and
+  takes its textures and its set 1 descriptors from the `renderer::Quad` so that an atlas
   uploaded once serves both primitives out of one descriptor pool.
 
 Positions are in world space through the pass camera at set 0, as lines are. **The order is
@@ -287,7 +287,15 @@ includes into a `uint32_t` array. See [Build.md](Build.md#shaders).
 The swapchain is a `UNORM` format rather than an `_SRGB` one, so the colour a shader writes is
 the colour that appears — see [ADR-0009](adr/0009-colour-authored-in-display-space.md). Every
 colour in the tree is authored in display space, and textures are uploaded as `UNORM` to
-match. A lit 3D scene will have to revisit this.
+match.
+
+**A consumer that writes linear light names its own format**, per
+[ADR-0049](adr/0049-a-consumer-chooses-the-swapchain-format.md). `Swapchain` and `Context3D`
+take a preferred format, defaulting to none and therefore to the rule above; a format the
+surface does not offer in a non-linear sRGB colour space falls back to it. Nothing in this
+tree passes one. **Build a pipeline against `Swapchain::format()` rather than against the
+default** — that was always the contract under dynamic rendering, and it is now the only way
+to be right.
 
 ## What renderFrame does
 
@@ -359,7 +367,7 @@ pixels rather than by the window.
 `Recorder` scans the pass list and moves a target into the attachment layout before the first
 pass that writes it, then into `SHADER_READ_ONLY_OPTIMAL` after the last. A target therefore
 costs one pair of barriers however many passes draw into it, and every later pass can read it.
-Register it with `QuadRenderer::texture(target)` to get a texture handle a canvas can
+Register it with `renderer::Quad::texture(target)` to get a texture handle a canvas can
 composite. Ordering the passes is the caller's job: a pass that reads a target it also draws
 into, or one a later pass writes, reads whatever happens to be there.
 

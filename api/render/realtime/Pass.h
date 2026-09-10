@@ -17,9 +17,9 @@
 
 namespace v3d::render::realtime {
 
-namespace vulkan {
+namespace vulkan::frame {
 class RenderTarget;
-};  // namespace vulkan
+};  // namespace vulkan::frame
 
 /**
  * One pass of a frame - a target, what to do with what is already in it, a camera, and
@@ -97,12 +97,12 @@ class Pass final {
      *
      * Passing an empty pointer puts the pass back on the swapchain image.
      **/
-    void target(const boost::shared_ptr<vulkan::RenderTarget>& target) noexcept;
+    void target(const boost::shared_ptr<vulkan::frame::RenderTarget>& target) noexcept;
 
     /**
      * @return the target the pass draws into, or an empty pointer for the swapchain image
      **/
-    const boost::shared_ptr<vulkan::RenderTarget>& target() const noexcept;
+    const boost::shared_ptr<vulkan::frame::RenderTarget>& target() const noexcept;
 
     /**
      * The region of the target the pass draws into, as x, y, width, height in pixels.
@@ -189,7 +189,7 @@ class Pass final {
     glm::mat4 view_;
     glm::mat4 projection_;
     std::vector<DrawItem> items_;
-    boost::shared_ptr<vulkan::RenderTarget> target_;
+    boost::shared_ptr<vulkan::frame::RenderTarget> target_;
     bool clears_;
     bool depth_;
     bool sorts_;

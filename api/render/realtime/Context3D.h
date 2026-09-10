@@ -5,21 +5,21 @@
 
 #pragma once
 
+#include <api/log/Logger.h>
+#include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/frame/DepthBuffer.h>
+#include <api/render/realtime/vulkan/frame/FrameUniforms.h>
+#include <api/render/realtime/vulkan/frame/Presenter.h>
+#include <api/render/realtime/vulkan/frame/Swapchain.h>
+#include <api/render/realtime/vulkan/memory/Uploader.h>
+#include <api/render/realtime/vulkan/pipeline/Cache.h>
+#include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/vulkan/renderer/Line.h>
+#include <api/render/realtime/vulkan/renderer/Quad.h>
+#include <api/render/realtime/vulkan/renderer/World.h>
+
 #include "Context.h"
 #include "Window.h"
-#include "vulkan/DepthBuffer.h"
-#include "vulkan/Device.h"
-#include "vulkan/FrameUniforms.h"
-#include "vulkan/LineRenderer.h"
-#include "vulkan/PipelineCache.h"
-#include "vulkan/Presenter.h"
-#include "vulkan/QuadRenderer.h"
-#include "vulkan/WorldRenderer.h"
-#include "vulkan/Resources.h"
-#include "vulkan/Swapchain.h"
-#include "vulkan/Uploader.h"
-
-#include "../../log/Logger.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -33,8 +33,12 @@ class Context3D : public Context {
     /**
      * @param logger
      * @param window the window the context renders to
+     * @param preferred the colour format to present through - Swapchain, ADR-0049. What
+     *        was settled on is swapchain()->format(), which is what the quad renderer and
+     *        every other pipeline drawing into the chain is built against.
      **/
-    Context3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Window>& window);
+    Context3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Window>& window,
+        VkFormat preferred = VK_FORMAT_UNDEFINED);
 
     /**
      **/
@@ -43,32 +47,32 @@ class Context3D : public Context {
     /**
      * @return the device backing the context
      **/
-    boost::shared_ptr<vulkan::Device> device() const;
+    boost::shared_ptr<vulkan::device::Device> device() const;
 
     /**
      * @return the chain of images being presented to the window
      **/
-    boost::shared_ptr<vulkan::Swapchain> swapchain() const;
+    boost::shared_ptr<vulkan::frame::Swapchain> swapchain() const;
 
     /**
      * @return the acquire, submit and present loop the frames go through
      **/
-    boost::shared_ptr<vulkan::Presenter> presenter() const;
+    boost::shared_ptr<vulkan::frame::Presenter> presenter() const;
 
     /**
      * @return the cache every pipeline built on this device is compiled against
      **/
-    boost::shared_ptr<vulkan::PipelineCache> pipelineCache() const;
+    boost::shared_ptr<vulkan::pipeline::Cache> pipelineCache() const;
 
     /**
      * @return the pipelines, materials and textures a draw item can name by handle
      **/
-    boost::shared_ptr<vulkan::Resources> resources() const;
+    boost::shared_ptr<vulkan::pipeline::Resources> resources() const;
 
     /**
      * @return the batched quad primitive of ADR-0005, which every 2D thing draws through
      **/
-    boost::shared_ptr<vulkan::QuadRenderer> quads() const;
+    boost::shared_ptr<vulkan::renderer::Quad> quads() const;
 
     /**
      * The line primitive of ADR-0011, built on the first call and kept from then on.
@@ -80,7 +84,7 @@ class Context3D : public Context {
      * @return the renderer, which every line in the engine draws through
      * @throw std::runtime_error if its pipelines cannot be created
      **/
-    boost::shared_ptr<vulkan::LineRenderer> lines();
+    boost::shared_ptr<vulkan::renderer::Line> lines();
 
     /**
      * @return whether a line renderer has been built, without building one
@@ -94,7 +98,7 @@ class Context3D : public Context {
      * @return the renderer, which every world space quad draws through
      * @throw std::runtime_error if its pipelines cannot be created
      **/
-    boost::shared_ptr<vulkan::WorldRenderer> worldQuads();
+    boost::shared_ptr<vulkan::renderer::World> worldQuads();
 
     /**
      * @return whether a world quad renderer has been built, without building one
@@ -104,12 +108,12 @@ class Context3D : public Context {
     /**
      * @return set 0, where each pass's camera is written and bound from - ADR-0008
      **/
-    boost::shared_ptr<vulkan::FrameUniforms> frameUniforms() const;
+    boost::shared_ptr<vulkan::frame::FrameUniforms> frameUniforms() const;
 
     /**
      * @return the one-shot queue everything reaching device local memory is copied by
      **/
-    boost::shared_ptr<vulkan::Uploader> uploader() const;
+    boost::shared_ptr<vulkan::memory::Uploader> uploader() const;
 
     /**
      * The format a pipeline that depth tests has to be built against.
@@ -128,7 +132,7 @@ class Context3D : public Context {
      *
      * @return the buffer, which may be invalid if the window has no area
      **/
-    boost::shared_ptr<vulkan::DepthBuffer> depth();
+    boost::shared_ptr<vulkan::frame::DepthBuffer> depth();
 
     /**
      * @return whether a depth buffer has been allocated, without allocating one
@@ -144,19 +148,19 @@ class Context3D : public Context {
  private:
     boost::shared_ptr<v3d::log::Logger> logger_;
     boost::shared_ptr<Window> window_;
-    boost::shared_ptr<vulkan::Device> device_;
-    boost::shared_ptr<vulkan::Swapchain> swapchain_;
-    boost::shared_ptr<vulkan::PipelineCache> pipelineCache_;
-    boost::shared_ptr<vulkan::Resources> resources_;
-    boost::shared_ptr<vulkan::Uploader> uploader_;
-    boost::shared_ptr<vulkan::FrameUniforms> frameUniforms_;
-    boost::shared_ptr<vulkan::DepthBuffer> depth_;
+    boost::shared_ptr<vulkan::device::Device> device_;
+    boost::shared_ptr<vulkan::frame::Swapchain> swapchain_;
+    boost::shared_ptr<vulkan::pipeline::Cache> pipelineCache_;
+    boost::shared_ptr<vulkan::pipeline::Resources> resources_;
+    boost::shared_ptr<vulkan::memory::Uploader> uploader_;
+    boost::shared_ptr<vulkan::frame::FrameUniforms> frameUniforms_;
+    boost::shared_ptr<vulkan::frame::DepthBuffer> depth_;
     VkFormat depthFormat_;
-    boost::shared_ptr<vulkan::QuadRenderer> quads_;
-    boost::shared_ptr<vulkan::LineRenderer> lines_;
-    boost::shared_ptr<vulkan::WorldRenderer> worldQuads_;
+    boost::shared_ptr<vulkan::renderer::Quad> quads_;
+    boost::shared_ptr<vulkan::renderer::Line> lines_;
+    boost::shared_ptr<vulkan::renderer::World> worldQuads_;
     // last, so that it is torn down first - nothing else may go away while a frame it
     // submitted is still in flight
-    boost::shared_ptr<vulkan::Presenter> presenter_;
+    boost::shared_ptr<vulkan::frame::Presenter> presenter_;
 };
 };  // namespace v3d::render::realtime

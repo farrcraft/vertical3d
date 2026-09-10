@@ -5,6 +5,9 @@
 
 #include "TextureFont.h"
 
+#include <api/image/TextureAtlas.h>
+#include <api/log/Logger.h>
+
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include FT_STROKER_H
@@ -16,9 +19,6 @@
 #include <string>
 
 #include <boost/make_shared.hpp>
-
-#include "../image/TextureAtlas.h"
-#include "../log/Logger.h"
 
 namespace v3d::font {
 class TextureFont::Freetype {

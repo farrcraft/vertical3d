@@ -3,10 +3,10 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/image/Texture.h>
+
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
-
-#include "../Texture.h"
 
 BOOST_AUTO_TEST_CASE(texture_test) {
     v3d::image::Texture texture1;

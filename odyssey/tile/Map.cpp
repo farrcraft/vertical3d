@@ -70,7 +70,7 @@ Map::Map(const boost::shared_ptr<v3d::log::Logger>& logger) :
 
 /**
  **/
-bool Map::load(const boost::shared_ptr<v3d::asset::Json>& document) {
+bool Map::load(const boost::shared_ptr<v3d::asset::kind::Json>& document) {
     if (!document) {
         logger_->get()->error("there is no map document to read");
         return false;

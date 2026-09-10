@@ -5,11 +5,11 @@
 
 #include "TabBar.h"
 
+#include <api/ui/paint/Painter.h>
+
 #include <vector>
 
 #include <boost/make_shared.hpp>
-
-#include "../Painter.h"
 
 namespace v3d::ui::component {
 
@@ -18,6 +18,10 @@ const int TabBar::none;
 TabBar::TabBar() :
     Component(Type::TabBar),
     selected_(0) {
+    // a control exists to be driven, so it asks for the press and the focus that a panel
+    // laid over a scene must not take - ADR-0034 and ADR-0040
+    pickable(true);
+    focusable(true);
 }
 
 std::vector<boost::shared_ptr<TabPage>> TabBar::pages() const {
@@ -53,17 +57,17 @@ boost::shared_ptr<TabPage> TabBar::page() const {
     return held[static_cast<std::size_t>(selected_)];
 }
 
-void TabBar::tabs(const std::vector<v3d::type::Bound2D>& boxes) {
+void TabBar::tabs(const std::vector<v3d::type::geometry::Bound2D>& boxes) {
     tabs_ = boxes;
 }
 
-const std::vector<v3d::type::Bound2D>& TabBar::tabs() const noexcept {
+const std::vector<v3d::type::geometry::Bound2D>& TabBar::tabs() const noexcept {
     return tabs_;
 }
 
 int TabBar::at(const glm::vec2& point) const {
     for (std::size_t index = 0; index < tabs_.size(); index++) {
-        if (inside(tabs_[index].position(), tabs_[index].position() + tabs_[index].size(), point)) {
+        if (paint::inside(tabs_[index].position(), tabs_[index].position() + tabs_[index].size(), point)) {
             return static_cast<int>(index);
         }
     }

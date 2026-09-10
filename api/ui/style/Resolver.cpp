@@ -5,6 +5,8 @@
 
 #include "Resolver.h"
 
+#include <api/ui/style/Style.h>
+
 #include <functional>
 #include <map>
 #include <string>
@@ -12,19 +14,17 @@
 
 #include "Theme.h"
 
-#include "../Style.h"
-
 namespace v3d::ui::style {
 
 const char* const Resolver::tools = "tools";
 const char* const Resolver::chromeClass = "ui";
 
-boost::shared_ptr<v3d::ui::Style> lookup(const boost::shared_ptr<Theme>& theme,
+boost::shared_ptr<Style> lookup(const boost::shared_ptr<Theme>& theme,
     const std::string& className, const std::string_view& name) {
     if (!theme) {
         return nullptr;
     }
-    const std::vector<boost::shared_ptr<v3d::ui::Style>> styles =
+    const std::vector<boost::shared_ptr<Style>> styles =
         theme->getStyleSet(std::string(name), className);
     return styles.empty() ? nullptr : styles.front();
 }
@@ -34,7 +34,7 @@ Resolver::Resolver() {
 
 void Resolver::theme(const boost::shared_ptr<Theme>& theme) {
     theme_ = theme;
-    for (std::map<std::string, Dressing, std::less<>>& entries : resolved_) {
+    for (std::map<std::string, paint::Dressing, std::less<>>& entries : resolved_) {
         entries.clear();
     }
     chrome();
@@ -44,20 +44,20 @@ boost::shared_ptr<Theme> Resolver::theme() const noexcept {
     return theme_;
 }
 
-Dressing& Resolver::base() noexcept {
+paint::Dressing& Resolver::base() noexcept {
     // the caller is about to write what every answer was worked out from
-    for (std::map<std::string, Dressing, std::less<>>& entries : resolved_) {
+    for (std::map<std::string, paint::Dressing, std::less<>>& entries : resolved_) {
         entries.clear();
     }
     return base_;
 }
 
-const Dressing& Resolver::base() const noexcept {
+const paint::Dressing& Resolver::base() const noexcept {
     return base_;
 }
 
 void Resolver::chrome() {
-    const boost::shared_ptr<v3d::ui::Style> style = lookup(chromeClass, std::string_view());
+    const boost::shared_ptr<Style> style = lookup(chromeClass, std::string_view());
     if (!style) {
         return;
     }
@@ -72,6 +72,7 @@ void Resolver::chrome() {
     readColour(style, "active-text", &base_.activeText);
     readColour(style, "highlight", &base_.highlight);
     readColour(style, "hover", &base_.hover);
+    readColour(style, "focus", &base_.focus);
 
     readMetric(style, "line-height", &base_.lineHeight);
     readMetric(style, "padding", &base_.padding);
@@ -81,6 +82,7 @@ void Resolver::chrome() {
     readMetric(style, "scrollbar-width", &base_.scrollbarWidth);
     readMetric(style, "mark-size", &base_.markSize);
     readMetric(style, "border-width", &base_.borderWidth);
+    readMetric(style, "focus-width", &base_.focusWidth);
     readMetric(style, "radius", &base_.radius);
 }
 
@@ -98,14 +100,14 @@ const char* Resolver::named(Class className) noexcept {
     return "";
 }
 
-boost::shared_ptr<v3d::ui::Style> Resolver::lookup(const std::string& className,
+boost::shared_ptr<Style> Resolver::lookup(const std::string& className,
     const std::string_view& name) const {
     return style::lookup(theme_, className, name);
 }
 
-Dressing Resolver::dress(Class className, const std::string_view& name) const {
-    Dressing dressing = base_;
-    const boost::shared_ptr<v3d::ui::Style> style = lookup(named(className), name);
+paint::Dressing Resolver::dress(Class className, const std::string_view& name) const {
+    paint::Dressing dressing = base_;
+    const boost::shared_ptr<Style> style = lookup(named(className), name);
     if (!style) {
         return dressing;
     }
@@ -180,8 +182,8 @@ Dressing Resolver::dress(Class className, const std::string_view& name) const {
     return dressing;
 }
 
-const Dressing& Resolver::resolve(Class className, const std::string_view& name) const {
-    std::map<std::string, Dressing, std::less<>>& entries =
+const paint::Dressing& Resolver::resolve(Class className, const std::string_view& name) const {
+    std::map<std::string, paint::Dressing, std::less<>>& entries =
         resolved_[static_cast<std::size_t>(className)];
     const auto found = entries.find(name);
     if (found != entries.end()) {

@@ -1,0 +1,18 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#include "KeyUp.h"
+
+#include <string>
+
+namespace v3d::event::kind {
+
+/**
+ **/
+KeyUp::KeyUp(const std::string& name, const boost::shared_ptr<Context>& context) :
+    Key(name, context, false) {
+}
+
+};  // namespace v3d::event::kind

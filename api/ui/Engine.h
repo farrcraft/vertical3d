@@ -5,22 +5,22 @@
 
 #pragma once
 
+#include <api/event/Engine.h>
+#include <api/log/Logger.h>
+#include <api/render/realtime/Handle.h>
+
 #include <cstddef>
 #include <functional>
 #include <string>
 #include <vector>
 
-#include "../event/Engine.h"
-#include "../log/Logger.h"
-#include "../render/realtime/Handle.h"
-
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <entt/entt.hpp>
 
-namespace v3d::asset {
+namespace v3d::asset::kind {
 class Json;
-};  // namespace v3d::asset
+};  // namespace v3d::asset::kind
 
 namespace v3d::ui {
 
@@ -54,7 +54,7 @@ class Engine {
     Engine(const boost::shared_ptr<v3d::event::Engine>& eventEngine, const boost::shared_ptr<entt::dispatcher>& dispatcher,
         const boost::shared_ptr<v3d::log::Logger>& logger);
 
-    bool load(const boost::shared_ptr<v3d::asset::Json>& config);
+    bool load(const boost::shared_ptr<v3d::asset::kind::Json>& config);
 
     /**
      * Hand every image the config named to a resolver and keep what comes back - the
@@ -116,6 +116,22 @@ class Engine {
     bool focusNext(bool forward);
 
     /**
+     * Put the focus on the first focusable component, which is what starts a screen being
+     * driven from the keyboard.
+     *
+     * focusNext() deliberately leaves a ui with nothing focused alone, so a press was the
+     * only thing that ever gave out a first focus and a screen nobody clicks on could not
+     * be tabbed through at all. This is how a screen says it is keyboard driven: the app
+     * calls it as the screen goes up, and a hud that would rather keep the movement keys
+     * working simply does not.
+     *
+     * The order is focusNext()'s order - the order things are drawn in.
+     *
+     * @return whether anything was focused, false when the ui holds nothing focusable
+     **/
+    bool focusFirst();
+
+    /**
      * Get a loaded theme by name.
      * @param name the theme name
      * @return the named theme, or null when no theme of that name was loaded
@@ -149,6 +165,12 @@ class Engine {
      **/
     template <typename T>
     bool resolveIcon(const Resolve& resolve, const std::string& source, const boost::shared_ptr<T>& target);
+
+    /**
+     * What can be focused, in the order the draw walk reaches it - the one order both
+     * focusFirst() and focusNext() move through.
+     **/
+    std::vector<boost::shared_ptr<Component>> tabOrder() const;
 
     boost::shared_ptr<v3d::log::Logger> logger_;
     boost::shared_ptr<v3d::event::Engine> eventEngine_;

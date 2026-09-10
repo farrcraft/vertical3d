@@ -66,7 +66,7 @@ void Frustum::normalize(void) {
     tests aabb against all of the frustum's clipping planes 
     aabb is either inside, outside, or intersecting the frustum
 */
-int Frustum::intersect(const v3d::type::AABBox & aabb) {
+int Frustum::intersect(const v3d::type::geometry::AABBox & aabb) {
     // one plane excluding the box excludes it from the frustum: the half spaces are
     // intersected, not unioned, so a box outside any one of them is outside all six
     bool crossing = false;

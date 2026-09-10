@@ -3,15 +3,15 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/event/kind/MouseButton.h>
+#include <api/event/kind/MouseMotion.h>
+#include <api/input/Mouse.h>
+
 #include <string>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
-
-#include "../Mouse.h"
-#include "../../event/MouseButton.h"
-#include "../../event/MouseMotion.h"
 
 /**
  * The device this replaces was v3D::MouseDevice. Mouse::handleEvent was an empty stub that
@@ -20,11 +20,11 @@
  **/
 namespace {
 struct Recorder {
-    void button(const v3d::event::MouseButton& event) {
+    void button(const v3d::event::kind::MouseButton& event) {
         buttons_.push_back(event);
     }
 
-    void motion(const v3d::event::MouseMotion& event) {
+    void motion(const v3d::event::kind::MouseMotion& event) {
         motion_.push_back(event);
     }
 
@@ -34,8 +34,8 @@ struct Recorder {
         }
     }
 
-    std::vector<v3d::event::MouseButton> buttons_;
-    std::vector<v3d::event::MouseMotion> motion_;
+    std::vector<v3d::event::kind::MouseButton> buttons_;
+    std::vector<v3d::event::kind::MouseMotion> motion_;
     std::vector<v3d::event::Event> source_;
 };
 
@@ -65,7 +65,7 @@ BOOST_AUTO_TEST_CASE(mouse_button_test) {
     v3d::input::Mouse mouse(context, dispatcher);
 
     Recorder recorder;
-    dispatcher->sink<v3d::event::MouseButton>().connect<&Recorder::button>(recorder);
+    dispatcher->sink<v3d::event::kind::MouseButton>().connect<&Recorder::button>(recorder);
     dispatcher->sink<v3d::event::Event>().connect<&Recorder::sourceEvent>(recorder);
 
     BOOST_CHECK_EQUAL(mouse.handleEvent(buttonEvent(SDL_EVENT_MOUSE_BUTTON_DOWN, SDL_BUTTON_LEFT, 10.0f, 20.0f)), true);
@@ -115,7 +115,7 @@ BOOST_AUTO_TEST_CASE(mouse_motion_test) {
     v3d::input::Mouse mouse(context, dispatcher);
 
     Recorder recorder;
-    dispatcher->sink<v3d::event::MouseMotion>().connect<&Recorder::motion>(recorder);
+    dispatcher->sink<v3d::event::kind::MouseMotion>().connect<&Recorder::motion>(recorder);
     dispatcher->sink<v3d::event::Event>().connect<&Recorder::sourceEvent>(recorder);
 
     BOOST_CHECK_EQUAL(mouse.handleEvent(motionEvent(3.0f, 0.0f, 3.0f, 0.0f)), true);

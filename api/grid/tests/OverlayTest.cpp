@@ -3,6 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/grid/Overlay.h>
+#include <api/grid/TileGrid.h>
+
 #include <array>
 #include <cstddef>
 #include <vector>
@@ -10,9 +13,6 @@
 #include <boost/test/unit_test.hpp>
 
 #include <glm/geometric.hpp>
-
-#include "../Overlay.h"
-#include "../TileGrid.h"
 
 using v3d::grid::LineSink;
 using v3d::grid::QuadSink;

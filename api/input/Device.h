@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include <SDL3/SDL.h>
+#include <api/event/Context.h>
 
-#include "../event/Context.h"
+#include <SDL3/SDL.h>
 
 #include <entt/entt.hpp>
 #include <boost/shared_ptr.hpp>

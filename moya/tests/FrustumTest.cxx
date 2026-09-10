@@ -3,17 +3,17 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <moya/libmoya/Frustum.h>
+
 #include <boost/test/unit_test.hpp>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "../libmoya/Frustum.h"
-
 namespace {
 
-v3d::type::AABBox box(const glm::vec3 & min, const glm::vec3 & max) {
-    v3d::type::AABBox b;
+v3d::type::geometry::AABBox box(const glm::vec3 & min, const glm::vec3 & max) {
+    v3d::type::geometry::AABBox b;
     b.extents(min, max);
     return b;
 }

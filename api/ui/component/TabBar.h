@@ -5,15 +5,14 @@
 
 #pragma once
 
+#include <api/type/geometry/Bound2D.h>
+#include <api/ui/Component.h>
+
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
 
 #include "TabPage.h"
-
-#include "../Component.h"
-
-#include "../../type/Bound2D.h"
 
 namespace v3d::ui::component {
 
@@ -61,8 +60,8 @@ class TabBar : public Component {
      * Where each tab was drawn, in the order the pages are held. Written by the draw, and
      * what at() answers a point with.
      **/
-    void tabs(const std::vector<v3d::type::Bound2D>& boxes);
-    const std::vector<v3d::type::Bound2D>& tabs() const noexcept;
+    void tabs(const std::vector<v3d::type::geometry::Bound2D>& boxes);
+    const std::vector<v3d::type::geometry::Bound2D>& tabs() const noexcept;
 
     /**
      * @return the tab a point is on, or none when it is on the strip's empty part or
@@ -71,7 +70,7 @@ class TabBar : public Component {
     int at(const glm::vec2& point) const;
 
  private:
-    std::vector<v3d::type::Bound2D> tabs_;
+    std::vector<v3d::type::geometry::Bound2D> tabs_;
     int selected_;
 };
 

@@ -5,11 +5,11 @@
 
 #include "Keyboard.h"
 
-#include <string>
+#include <api/event/kind/KeyDown.h>
+#include <api/event/kind/KeyUp.h>
+#include <api/event/kind/TextInput.h>
 
-#include "../event/KeyDown.h"
-#include "../event/KeyUp.h"
-#include "../event/TextInput.h"
+#include <string>
 
 namespace v3d::input {
 
@@ -273,14 +273,14 @@ bool Keyboard::handleEvent(const SDL_Event& event) {
         // what the platform composed rather than which key moved, because the two are not
         // the same question - ADR-0040. It is not a source event: nothing binds a command
         // to a letter being typed
-        dispatcher_->trigger<v3d::event::TextInput>(v3d::event::TextInput(event.text.text, context_));
+        dispatcher_->trigger<v3d::event::kind::TextInput>(v3d::event::kind::TextInput(event.text.text, context_));
         return true;
     case SDL_EVENT_KEY_DOWN:
         keyName = keyEvent(event.key.key);
         if (!state_.pressed(keyName)) {
             state_(keyName);
         }
-        dispatcher_->trigger<v3d::event::KeyDown>(v3d::event::KeyDown(keyName, context_));
+        dispatcher_->trigger<v3d::event::kind::KeyDown>(v3d::event::kind::KeyDown(keyName, context_));
         break;
     case SDL_EVENT_KEY_UP:
         keyName = keyEvent(event.key.key);
@@ -288,7 +288,7 @@ bool Keyboard::handleEvent(const SDL_Event& event) {
             state_(keyName);
         }
         pressed = false;
-        dispatcher_->trigger<v3d::event::KeyUp>(v3d::event::KeyUp(keyName, context_));
+        dispatcher_->trigger<v3d::event::kind::KeyUp>(v3d::event::kind::KeyUp(keyName, context_));
         break;
     default:
         return false;

@@ -86,7 +86,9 @@ its own flags. Nothing is installed, exported, packaged or turned into a port.
 - The same header has two spellings: `../../api/image/Image.h` inside the tree and
   `<api/image/Image.h>` outside it. Rewriting every in-tree include to the second form is a
   whole-file diff across the tree for no build gain, so the asymmetry is kept and a reader has to
-  learn it.
+  learn it. **Reversed by [ADR-0048](0048-an-api-header-is-named-from-the-repository-root.md)**,
+  which found a gain that is not a build gain: a `../` count is a fact about where both files
+  sit, so the asymmetry prices every later directory move at this same diff.
 - The root calls `find_package` for nine packages, and nested those resolve into the consumer's
   cache. A consumer inherits this project's dependency resolution whether or not it wants it: its
   own `find_package(Boost)` hits the `Boost_DIR` the tree left behind.

@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include "SceneVisitor.h"
+#include <api/render/realtime/LineCanvas.h>
 
-#include "../../../api/render/realtime/LineCanvas.h"
+#include "SceneVisitor.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec4.hpp>
@@ -41,7 +41,7 @@ class WireframeVisitor final : public SceneVisitor {
     /**
      * Whether either half of an edge is selected.
      **/
-    bool edgeSelected(const boost::shared_ptr<v3d::brep::BRep>& mesh, unsigned int edge) const;
+    static bool edgeSelected(const boost::shared_ptr<v3d::brep::BRep>& mesh, unsigned int edge);
 
     /**
      * A box at each selected vertex, sized against the mesh.

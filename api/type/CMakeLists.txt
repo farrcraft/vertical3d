@@ -1,14 +1,12 @@
 v3d_add_api_library(type
-"3dtypes.h"
-"AABBox.h" "AABBox.cxx"
-"ArcBall.h" "ArcBall.cxx"
-"Bound2D.h" "Bound2D.cxx"
-"Camera.h" "Camera.cxx"
-"CameraProfile.h" "CameraProfile.cxx"
-"IsometricCamera.h" "IsometricCamera.cxx"
 "Model.h" "Model.cxx"
-"Ray.h" "Ray.cxx"
-"String.h" "String.cxx"
+"camera/ArcBall.h" "camera/ArcBall.cxx"
+"camera/Camera.h" "camera/Camera.cxx"
+"camera/Isometric.h" "camera/Isometric.cxx"
+"camera/Profile.h" "camera/Profile.cxx"
+"geometry/AABBox.h" "geometry/AABBox.cxx"
+"geometry/Bound2D.h" "geometry/Bound2D.cxx"
+"geometry/Ray.h" "geometry/Ray.cxx"
 )
 
 target_link_libraries(v3dlib_type PUBLIC glm::glm)

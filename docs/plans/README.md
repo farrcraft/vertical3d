@@ -9,6 +9,30 @@ every phase is closed it moves to [completed/](completed/), and any open item it
 moves to [TODO.md](../TODO.md). The plan itself stays, because the reasoning behind an ordering
 outlives the schedule.
 
+[completed/ApiOrganisation.md](completed/ApiOrganisation.md) was drafted and closed on
+2026-09-08, out of a survey of `api/`. Eleven steps, none of which changed behaviour: three that
+changed how a header is named and seven that moved files, plus the documents. Its ordering was
+the point — the first three steps were a barrier rather than a preference, because the tree had
+763 relative includes across 337 files and no use at all of the include root
+[ADR-0027](../adr/0027-the-api-is-consumed-as-source.md) had created, so every move made before
+the conversion would have rewritten `../` counts in libraries and apps that had nothing to do
+with it. Afterwards a move was a `git mv`, a `CMakeLists.txt` edit and a namespace line.
+
+Four things came out differently. Step 4 was drafted to wait for
+[OfflineRenderingPhase3](OfflineRenderingPhase3.md) and did not need to, because both are
+sequential commits on one branch rather than concurrent ones. `ui/immediate/` was not made:
+`Immediate` is one of the library's two entry points rather than a concern within it, which is
+the same test that kept `Layout` and `Arranger` at the top. Steps 7 and 10 became moves *and*
+renames, because a group segment on an already deep namespace gave
+`vulkan::pipeline::PipelineBuilder`. And two of step 9's three stated reasons turned out to be
+wrong — `Loader.h` above `loader/` is a base class above its implementations, the same shape
+`api/image` uses — while the step justified itself on a reason the plan had not predicted: it
+separated four pairs of same-named types that had been told apart by scoping alone.
+
+The plan also carries what the renames cost, which is the part worth reading before attempting
+the same shape again: three substring collisions, one of which rewrote Vulkan's own
+`VkPipelineCache`, and a forward declaration in the wrong namespace at nearly every step.
+
 [completed/EmbeddingSeams.md](completed/EmbeddingSeams.md) was drafted and closed on
 2026-09-07. Seven steps over the places where an `api/` library assumed the app it was hosting
 was one of the four in this tree: a loop that offered an app no event of its own

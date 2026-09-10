@@ -5,6 +5,37 @@
 
 #include "Loader.h"
 
+#include <api/event/Engine.h>
+#include <api/log/Logger.h>
+#include <api/ui/component/Bar.h>
+#include <api/ui/component/Box.h>
+#include <api/ui/component/Button.h>
+#include <api/ui/component/CheckBox.h>
+#include <api/ui/component/HorizontalBox.h>
+#include <api/ui/component/Icon.h>
+#include <api/ui/component/Label.h>
+#include <api/ui/component/Panel.h>
+#include <api/ui/component/RadioButton.h>
+#include <api/ui/component/Scrollbar.h>
+#include <api/ui/component/SelectList.h>
+#include <api/ui/component/TabBar.h>
+#include <api/ui/component/TabPage.h>
+#include <api/ui/component/TextBox.h>
+#include <api/ui/component/Toolbar.h>
+#include <api/ui/component/Type.h>
+#include <api/ui/component/VerticalBox.h>
+#include <api/ui/component/menu/Menu.h>
+#include <api/ui/component/menu/MenuBar.h>
+#include <api/ui/component/menu/MenuItem.h>
+#include <api/ui/style/Button.h>
+#include <api/ui/style/Property.h>
+#include <api/ui/style/Style.h>
+#include <api/ui/style/Theme.h>
+#include <api/ui/style/property/Color.h>
+#include <api/ui/style/property/Font.h>
+#include <api/ui/style/property/Image.h>
+#include <api/ui/style/property/Number.h>
+
 #include <algorithm>
 #include <cstddef>
 #include <string>
@@ -12,37 +43,6 @@
 
 #include "Component.h"
 #include "Container.h"
-#include "Style.h"
-#include "component/Bar.h"
-#include "component/Box.h"
-#include "component/Button.h"
-#include "component/CheckBox.h"
-#include "component/HorizontalBox.h"
-#include "component/Icon.h"
-#include "component/Label.h"
-#include "component/Panel.h"
-#include "component/RadioButton.h"
-#include "component/Scrollbar.h"
-#include "component/SelectList.h"
-#include "component/TextBox.h"
-#include "component/TabBar.h"
-#include "component/TabPage.h"
-#include "component/Toolbar.h"
-#include "component/Type.h"
-#include "component/VerticalBox.h"
-#include "component/menu/Menu.h"
-#include "component/menu/MenuBar.h"
-#include "component/menu/MenuItem.h"
-#include "style/Button.h"
-#include "style/Property.h"
-#include "style/Theme.h"
-#include "style/property/Color.h"
-#include "style/property/Font.h"
-#include "style/property/Image.h"
-#include "style/property/Number.h"
-
-#include "../event/Engine.h"
-#include "../log/Logger.h"
 
 #include <boost/json/value_to.hpp>
 #include <boost/make_shared.hpp>
@@ -264,51 +264,61 @@ bool Loader::loadTheme(const boost::json::object& entry) {
 }
 
 boost::shared_ptr<Component> Loader::buildComponent(const std::string& componentType, const boost::json::object& entry) {
-    boost::shared_ptr<Component> component;
-    if (componentType == "menu") {
-        boost::shared_ptr<component::Menu> menu = loadMenu(entry);
-        if (!menu) {
-            return nullptr;
+    // the config's vocabulary is component::name()'s, so this switches on what a type is
+    // rather than on what it was spelled. An exhaustive switch, per ADR-0047: a component
+    // added to the enum names this function until it is given a way to be built
+    switch (component::parse(componentType)) {
+        case component::Type::Menu: {
+            boost::shared_ptr<component::Menu> menu = loadMenu(entry);
+            if (!menu) {
+                return nullptr;
+            }
+            // this is the menu the app navigates, so it starts as its own active level
+            menu->level(menu);
+            return menu;
         }
-        // this is the menu the app navigates, so it starts as its own active level
-        menu->level(menu);
-        component = menu;
-    } else if (componentType == "menubar") {
-        component = loadMenuBar(entry);
-    } else if (componentType == "toolbar") {
-        component = loadToolbar(entry);
-    } else if (componentType == "button") {
-        component = loadButton(entry);
-    } else if (componentType == "label") {
-        component = loadLabel(entry);
-    } else if (componentType == "icon") {
-        component = loadIcon(entry);
-    } else if (componentType == "panel") {
-        component = loadPanel(entry);
-    } else if (componentType == "bar") {
-        component = loadBar(entry);
-    } else if (componentType == "scrollbar") {
-        component = loadScrollbar(entry);
-    } else if (componentType == "list") {
-        component = loadSelectList(entry);
-    } else if (componentType == "textbox") {
-        component = loadTextBox(entry);
-    } else if (componentType == "tabs") {
-        component = boost::make_shared<component::TabBar>();
-    } else if (componentType == "tab") {
-        component = loadTabPage(entry);
-    } else if (componentType == "checkbox") {
-        boost::shared_ptr<component::CheckBox> box = boost::make_shared<component::CheckBox>();
-        loadCheckBox(entry, box);
-        component = box;
-    } else if (componentType == "radio") {
-        component = loadRadioButton(entry);
-    } else if (componentType == "vbox" || componentType == "hbox") {
-        component = loadFlowBox(componentType, entry);
-    } else {
-        logger_->get()->error("Unrecognized ui component type [{}]", componentType);
+        case component::Type::MenuBar:
+            return loadMenuBar(entry);
+        case component::Type::Toolbar:
+            return loadToolbar(entry);
+        case component::Type::Button:
+            return loadButton(entry);
+        case component::Type::Label:
+            return loadLabel(entry);
+        case component::Type::Icon:
+            return loadIcon(entry);
+        case component::Type::Panel:
+            return loadPanel(entry);
+        case component::Type::Bar:
+            return loadBar(entry);
+        case component::Type::Scrollbar:
+            return loadScrollbar(entry);
+        case component::Type::SelectList:
+            return loadSelectList(entry);
+        case component::Type::TextBox:
+            return loadTextBox(entry);
+        case component::Type::TabBar:
+            return boost::make_shared<component::TabBar>();
+        case component::Type::TabPage:
+            return loadTabPage(entry);
+        case component::Type::CheckBox: {
+            boost::shared_ptr<component::CheckBox> box = boost::make_shared<component::CheckBox>();
+            loadCheckBox(entry, box);
+            return box;
+        }
+        case component::Type::RadioButton:
+            return loadRadioButton(entry);
+        case component::Type::HorizontalBox:
+        case component::Type::VerticalBox:
+            return loadFlowBox(componentType, entry);
+        case component::Type::MenuItem:
+            // built by the menu that holds it rather than named as a component of its own, so
+            // parse() never answers this and a config that spelled it lands on Undefined below
+        case component::Type::Undefined:
+            break;
     }
-    return component;
+    logger_->get()->error("Unrecognized ui component type [{}]", componentType);
+    return nullptr;
 }
 
 boost::shared_ptr<Component> Loader::loadComponent(const boost::json::object& entry) {
@@ -323,7 +333,8 @@ boost::shared_ptr<Component> Loader::loadComponent(const boost::json::object& en
     component->name(componentName);
     // a menu and a menu bar are placed entirely by the renderer, so reading a box onto one
     // would be read and then written over
-    if (componentType != "menu" && componentType != "menubar") {
+    const component::Type type = component::parse(componentType);
+    if (type != component::Type::Menu && type != component::Type::MenuBar) {
         loadAttributes(entry, component);
     }
     if (!loadChildren(entry, component)) {
@@ -399,7 +410,7 @@ bool Loader::loadStyle(const boost::json::object& entry, const boost::shared_ptr
     const std::string className = boost::json::value_to<std::string>(entry.at("class"));
     const std::string styleName = boost::json::value_to<std::string>(entry.at("name"));
 
-    boost::shared_ptr<Style> target;
+    boost::shared_ptr<style::Style> target;
     if (className == "button") {
         // a button is drawn differently in each of its states, so its styles are told
         // apart by the state as well as by the name
@@ -418,7 +429,7 @@ bool Loader::loadStyle(const boost::json::object& entry, const boost::shared_ptr
         }
         target = boost::make_shared<style::Button>(styleName, state);
     } else {
-        target = boost::make_shared<Style>(styleName, className);
+        target = boost::make_shared<style::Style>(styleName, className);
     }
 
     if (!loadProperties(entry, target)) {
@@ -428,7 +439,7 @@ bool Loader::loadStyle(const boost::json::object& entry, const boost::shared_ptr
     return true;
 }
 
-bool Loader::loadProperties(const boost::json::object& entry, const boost::shared_ptr<Style>& target) {
+bool Loader::loadProperties(const boost::json::object& entry, const boost::shared_ptr<style::Style>& target) {
     // the four arrays are the four property classes a style is asked for by, so what a
     // property is read as is where it was written rather than a field it carries
     static const char* const classes[] = { "colors", "numbers", "fonts", "images" };

@@ -1,0 +1,24 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
+**/
+
+#include "Sound.h"
+
+#include <string>
+
+namespace v3d::asset::kind {
+/**
+ **/
+Sound::Sound(const std::string& name, Type t, boost::shared_ptr<v3d::audio::AudioClip> clip) :
+    Asset(name, t),
+    clip_(clip) {
+}
+
+/**
+ **/
+boost::shared_ptr<v3d::audio::AudioClip> Sound::clip() {
+    return clip_;
+}
+
+};  // namespace v3d::asset::kind

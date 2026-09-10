@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../../api/type/AABBox.h"
+#include <api/type/geometry/AABBox.h>
 
 #include "Polygon.h"
 
@@ -52,7 +52,7 @@ class Plane {
     * signed distance to point
     */
     float distance(const glm::vec3 & point) const;
-    int classify(const v3d::type::AABBox & aabb) const;
+    int classify(const v3d::type::geometry::AABBox & aabb) const;
     int classify(const glm::vec3 & point) const;
     bool intersect(const glm::vec3 & start, const glm::vec3 & direction, glm::vec3 * hitPoint) const;
     bool intersectEdge(const glm::vec3 & A, const glm::vec3 & B, glm::vec3 * hitPoint) const;

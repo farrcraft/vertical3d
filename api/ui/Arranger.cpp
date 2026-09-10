@@ -5,6 +5,22 @@
 
 #include "Arranger.h"
 
+#include <api/render/realtime/Canvas.h>
+#include <api/ui/component/Box.h>
+#include <api/ui/component/Button.h>
+#include <api/ui/component/CheckBox.h>
+#include <api/ui/component/Icon.h>
+#include <api/ui/component/Label.h>
+#include <api/ui/component/Scrollbar.h>
+#include <api/ui/component/SelectList.h>
+#include <api/ui/component/TabBar.h>
+#include <api/ui/component/TabPage.h>
+#include <api/ui/component/TextBox.h>
+#include <api/ui/component/Toolbar.h>
+#include <api/ui/component/Type.h>
+#include <api/ui/component/menu/MenuBar.h>
+#include <api/ui/style/Resolver.h>
+
 #include <algorithm>
 #include <cstddef>
 #include <string>
@@ -13,22 +29,6 @@
 
 #include "Component.h"
 #include "Container.h"
-#include "component/Box.h"
-#include "component/Button.h"
-#include "component/CheckBox.h"
-#include "component/Icon.h"
-#include "component/Label.h"
-#include "component/Scrollbar.h"
-#include "component/SelectList.h"
-#include "component/TabBar.h"
-#include "component/TabPage.h"
-#include "component/TextBox.h"
-#include "component/Toolbar.h"
-#include "component/Type.h"
-#include "component/menu/MenuBar.h"
-#include "style/Resolver.h"
-
-#include "../render/realtime/Canvas.h"
 
 namespace v3d::ui {
 
@@ -50,7 +50,7 @@ void place(Component& component, const glm::vec2& position, const glm::vec2& siz
 
 };  // namespace
 
-Arranger::Arranger(const Measure& measure, const style::Resolver& styles) :
+Arranger::Arranger(const paint::Measure& measure, const style::Resolver& styles) :
     measure_(measure),
     styles_(styles) {
 }
@@ -58,7 +58,7 @@ Arranger::Arranger(const Measure& measure, const style::Resolver& styles) :
 /**
  **/
 void Arranger::walk(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<Component>& component,
-    const v3d::type::Bound2D& bounds, const Paint& paint) const {
+    const v3d::type::geometry::Bound2D& bounds, const Paint& paint) const {
     if (!component || !component->visible()) {
         return;
     }
@@ -94,7 +94,7 @@ void Arranger::walk(v3d::render::realtime::Canvas* canvas, const boost::shared_p
     if (box != nullptr) {
         // a flow box places its children in the order it holds them, because that order is
         // what it is for. A z index inside one changes nothing
-        std::vector<v3d::type::Bound2D> boxes;
+        std::vector<v3d::type::geometry::Bound2D> boxes;
         boxes.reserve(children.size());
         arrange(*box, component->bound(), &boxes);
         for (std::size_t index = 0; index < children.size(); index++) {
@@ -105,7 +105,7 @@ void Arranger::walk(v3d::render::realtime::Canvas* canvas, const boost::shared_p
         if (!inDrawOrder(children)) {
             sorted = v3d::ui::ordered(children);
         }
-        const v3d::type::Bound2D room = component->bound();
+        const v3d::type::geometry::Bound2D room = component->bound();
         for (const boost::shared_ptr<Component>& child : sorted.empty() ? children : sorted) {
             walk(canvas, child, child->layout().resolve(room, natural(*child, room)), paint);
         }
@@ -118,7 +118,7 @@ void Arranger::walk(v3d::render::realtime::Canvas* canvas, const boost::shared_p
 
 /**
  **/
-glm::vec2 Arranger::natural(Component& component, const v3d::type::Bound2D& room) const {
+glm::vec2 Arranger::natural(Component& component, const v3d::type::geometry::Bound2D& room) const {
     switch (component.type()) {
         case component::Type::Label: {
             const auto* label = dynamic_cast<const component::Label*>(&component);
@@ -132,7 +132,7 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::Bound2D& room
                 return glm::vec2(line, styles_.base().lineHeight);
             }
             const float width = component.layout().width.resolve(room.size().x, line);
-            const std::size_t rows = wrap(label->text(), width, measure_).size();
+            const std::size_t rows = paint::wrap(label->text(), width, measure_).size();
             return glm::vec2(line,
                 styles_.base().lineHeight * static_cast<float>(std::max<std::size_t>(rows, 1)));
         }
@@ -156,7 +156,7 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::Bound2D& room
             // its own style class, because the mark it is asking room for is drawn at the
             // size that class names - laying out against the base would size the row for a
             // mark of a different size than the one drawn in it
-            const Dressing& dress = styles_.resolve(
+            const paint::Dressing& dress = styles_.resolve(
                 component.type() == component::Type::RadioButton
                     ? style::Resolver::Class::Radio : style::Resolver::Class::CheckBox,
                 component.style());
@@ -189,7 +189,7 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::Bound2D& room
             // a box is as wide as the room it is in and as tall as the line it holds: the
             // text it will be typed into is not what should size it, or it would grow
             // under the caret
-            const Dressing& dress = styles_.resolve(style::Resolver::Class::TextBox, component.style());
+            const paint::Dressing& dress = styles_.resolve(style::Resolver::Class::TextBox, component.style());
             return glm::vec2(room.size().x, dress.lineHeight + dress.padding);
         }
         case component::Type::Scrollbar: {
@@ -203,17 +203,30 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::Bound2D& room
                 ? glm::vec2(styles_.base().scrollbarWidth, room.size().y)
                 : glm::vec2(room.size().x, styles_.base().scrollbarWidth);
         }
-        default:
+        case component::Type::Bar:
+        case component::Type::HorizontalBox:
+        case component::Type::Menu:
+        case component::Type::MenuBar:
+        case component::Type::MenuItem:
+        case component::Type::Panel:
+        case component::Type::TabBar:
+        case component::Type::TabPage:
+        case component::Type::Toolbar:
+        case component::Type::Undefined:
+        case component::Type::VerticalBox:
             // a panel, a bar and a box decide nothing for themselves, so an Auto extent on
             // one is the room it is in
-            return room.size();
+            break;
     }
+    // every enumerator is handled above and the switch carries no default, so C4062 names
+    // this function when a component type is added - see ADR-0047
+    return room.size();
 }
 
 /**
  **/
-void Arranger::arrange(const component::Box& box, const v3d::type::Bound2D& bounds,
-    std::vector<v3d::type::Bound2D>* boxes) const {
+void Arranger::arrange(const component::Box& box, const v3d::type::geometry::Bound2D& bounds,
+    std::vector<v3d::type::geometry::Bound2D>* boxes) const {
     const bool vertical = box.type() == component::Type::VerticalBox;
     const glm::vec2 extent = bounds.size();
     float pen = vertical ? bounds.position().y : bounds.position().x;
@@ -222,14 +235,14 @@ void Arranger::arrange(const component::Box& box, const v3d::type::Bound2D& boun
     // Auto extent there is what the child makes of itself, and a child that makes nothing of
     // itself asks for nothing. Across the line each is offered the whole of it, which is what
     // stretch() then insists on
-    const v3d::type::Bound2D room(bounds.position(),
+    const v3d::type::geometry::Bound2D room(bounds.position(),
         vertical ? glm::vec2(extent.x, 0.0f) : glm::vec2(0.0f, extent.y));
 
     for (const boost::shared_ptr<Component>& child : box.children()) {
         if (!child || !child->visible()) {
             // a hidden row leaves no gap behind it, which is what makes a list of however
             // many rows there are read as one
-            boxes->push_back(v3d::type::Bound2D(bounds.position(), glm::vec2(0.0f, 0.0f)));
+            boxes->push_back(v3d::type::geometry::Bound2D(bounds.position(), glm::vec2(0.0f, 0.0f)));
             continue;
         }
         const glm::vec2 own = natural(*child, room);
@@ -249,7 +262,7 @@ void Arranger::arrange(const component::Box& box, const v3d::type::Bound2D& boun
             corner = glm::vec2(pen, bounds.position().y + layout.y.resolve(extent.y, 0.0f));
             pen += size.x + box.spacing();
         }
-        boxes->push_back(v3d::type::Bound2D(corner, size));
+        boxes->push_back(v3d::type::geometry::Bound2D(corner, size));
     }
 }
 
@@ -298,11 +311,11 @@ glm::vec2 Arranger::stack(const Container& container,
 
 /**
  **/
-v3d::type::Bound2D Arranger::page(const component::TabBar& bar) const {
+v3d::type::geometry::Bound2D Arranger::page(const component::TabBar& bar) const {
     const float height = styles_.resolve(style::Resolver::Class::Tabs, bar.style()).barHeight;
     const glm::vec2 min = bar.position();
     const glm::vec2 size = bar.size();
-    return v3d::type::Bound2D(glm::vec2(min.x, min.y + height + ruleWidth),
+    return v3d::type::geometry::Bound2D(glm::vec2(min.x, min.y + height + ruleWidth),
         glm::vec2(size.x, std::max(size.y - height - ruleWidth, 0.0f)));
 }
 

@@ -27,7 +27,7 @@ Recorded in [docs/adr/](../adr/), not here. The ones that shape this plan:
 
 | ADR | Decision |
 |---|---|
-| 0026 | Shading is a language, and it runs over a batch of shading points — **step 1 writes it** |
+| [0026](../adr/0026-shading-is-a-language-over-a-batch.md) | Shading is a language, and it runs over a batch of shading points |
 | [0022](../adr/0022-offline-rendering-shares-an-api-library.md) | Shared offline code is `api/render/offline`; each renderer is a library with a driver |
 | [0023](../adr/0023-rib-is-the-offline-scene-description.md) | RIB is what both renderers read; the editor exports to it, one way |
 | [0024](../adr/0024-api-type-serves-both-renderers.md) | `api/type` serves both, and a convention is a parameter rather than a fork |
@@ -61,6 +61,12 @@ the phase.
 ## Steps
 
 ### Step 1 — ADR-0026, shading is a language
+
+**Landed.** [ADR-0026](../adr/0026-shading-is-a-language-over-a-batch.md) is accepted and in the
+index, and the reserved-number note in that index is gone. It weighs five alternatives rather than
+the two the roadmap named: the two extra are an existing language embedded instead of one written,
+and a `.slo`-style compiled shader file, both of which the plan settled in passing and neither of
+which a reader would otherwise find argued anywhere.
 
 The roadmap has carried this question open since it was written, and it reaches past this phase:
 it decides whether talyn is reached from a shader's `trace()`, which is the remaining half of
@@ -97,6 +103,25 @@ re-deriving it.
 
 ### Step 2 — a surface normal, geometric with `"N"` honoured
 
+**Landed.** `type::Ray::intersects` has the six argument overload, and the four argument one
+delegates to it so there is one Moller-Trumbore rather than two. moya carries both normals on
+`Vertex`: `addPolygon()` writes the primitive's plane onto every vertex as Ng and onto those that
+brought no varying `"N"` as N, and the diceable branch moves both into eye space by the inverse
+transpose beside the points it moves by the matrix. `ReyesPrimitive::place()` takes the normal as
+a third argument, which is how a split piece inherits it. talyn's `Triangle` has a second
+constructor taking a normal per corner, `geometricNormal()` for Ng and `shadingNormal(u, v)` for
+N; the handler's `fan` transforms a given `"N"` by the inverse transpose of the current
+transformation.
+
+One thing in the done-when is **not** here: the fixture that shades the normal as a colour. There
+is nothing in either renderer that shades anything yet, so drawing that picture would mean a debug
+path through `Bucket::render` and talyn's inner loop that step 9 then deletes. The picture is a
+one line surface shader once there is a language, and it belongs to step 9 rather than to a
+temporary switch here. Everything else in the done-when is covered by unit cases: the barycentric
+overload in `v3dtest_type` against a hand worked triangle, a face normal, an `"N"` override and a
+scale of one axis in each renderer's suite, and moya's grid interpolation and split inheritance
+besides.
+
 Independent of the language and blocking all of it. Neither renderer has a normal today: moya's
 `Vertex` declares `normal_` and nothing writes it, and talyn's `Triangle` has no notion of one.
 
@@ -127,8 +152,28 @@ and a fixture that shades the normal as a colour renders the picture a normal ma
 
 ### Step 3 — the SL lexer
 
-`api/render/offline`, following the `RIB*` precedent that is already there: `SLLexer` beside
-`RIBLexer`, taking an `std::istream` so a case is a string literal.
+**Landed.** `sl::Lexer` and `sl::Token` are in `api/render/offline`, beside `rib::Lexer` and shaped
+like it - a `peek`/`next` pair over an `std::istream`, an `error()` that ends the stream, and a
+line and column on every token.
+
+Three things the RIB lexer does not have to do:
+
+- **A number carries no sign.** RIB has no unary minus so its lexer takes one; here a `-` is
+  always the subtraction or the negation, and `a-1` is three tokens. A `.` is the dot product
+  unless a digit follows it.
+- **A one character pushback lives in the lexer**, not in the stream. Deciding whether a `/`
+  opens a comment takes the character after it, and `std::istream::putback` fails once the
+  stream has hit its end - which is exactly what a shader ending in a `/` produces.
+- **`&` and `|` alone are diagnostics** naming the doubled form, rather than falling through to
+  "unexpected character" and reporting the identifier after them.
+
+`output` is an identifier rather than a keyword, per this step's rule that the keyword set is
+the five groups and nothing else. Step 4 matches it by text in the one position it can appear,
+and a shader may name a variable `output`, `noise` or `diffuse` and have it mean what it
+declared.
+
+`api/render/offline`, following the `RIB*` precedent that is already there: `sl::Lexer` beside
+`rib::Lexer`, taking an `std::istream` so a case is a string literal.
 
 - Token kinds: identifier, keyword, number, string, operator, punctuation. The keyword set is the
   shader types, the data types, the storage classes, the control flow, and the three lighting
@@ -150,7 +195,34 @@ where, and a `#` line rejected by name.
 
 ### Step 4 — the grammar, and the syntax tree
 
-`SLParser` producing `SLSyntax` nodes. Recursive descent, because the grammar is small and the
+**Landed.** `sl::Syntax.h` holds the nodes and `sl::Parser` the recursive descent over them. All
+eight standard shaders parse, all five shader types parse, and a `displacement` or a `volume`
+comes back answering false to `sl::Shader::supported()` rather than being refused.
+
+Four decisions the step's own text left open:
+
+- **A syntax node is data, not an object.** The members are public and there are no accessors,
+  which is the shape `ParameterList::Parameter` already has. A consumer reads `kind` and casts
+  to the class it names; step 5 and step 6 both walk this, and neither wants a visitor for a
+  tree with no behaviour in it.
+- **A failure is thrown and caught in `parse()`.** Every production would otherwise return a
+  nullable pointer that every caller checks, and the grammar would stop being legible in the
+  code that implements it. The type is private to the parser and never crosses the interface.
+- **A parenthesised list is a tuple of any length**, not a triple. A triple is three of them and
+  a matrix is sixteen, and whether the count suits the cast is a question about the type - which
+  is step 5's.
+- **`float x` and `float f(` are told apart by the token after the name**, so the shader body
+  loop consumes the type and the name itself and hands both to whichever production follows.
+  That is cheaper than a second token of lookahead in the lexer, and it is the only place in the
+  grammar that needs it.
+
+Two things the step did not name and the code now settles: a shader's parameters are separated
+by semicolons and a function's formals by commas, and **either separator is accepted in either
+list** rather than refusing a file written the other way round; and a function may be defined
+only at the top of a shader body, with a message that says so rather than a message about a
+missing semicolon.
+
+`sl::Parser` producing `sl::Syntax` nodes. Recursive descent, because the grammar is small and the
 error messages are the reason anyone will read this code.
 
 - **Five shader types are parsed: `surface`, `light`, `displacement`, `volume`, `imager`.** Three
@@ -184,7 +256,36 @@ unsupported rather than failing, and a syntax error reports a position.
 
 ### Step 5 — symbols, types, and the varying inference
 
-`SLCompiler`, the pass between the tree and the program. Three jobs, and the third is the one that
+**Landed.** `sl::Compiler` annotates the tree in place - every expression comes out with a type
+and a storage class, every variable with the index of the symbol it resolved to - and hands
+back the symbol list in the order a machine should allocate it. Two files came with it:
+`sl::Types` for the coercions and the three transforms, and `sl::Builtins` for the standard
+library's **signatures**, which the checker needs before step 7 writes a single body. The
+signature is the declared interface either way, so nothing there is rewritten when some of
+those turn out to be shader source rather than C++.
+
+The two things worth knowing beyond the step's own text:
+
+- **The inference runs to a fixed point.** One pass in source order is unsound, because a loop
+  carries a varying value back to a name that was read before it was written - and the failure
+  is the quiet one this step warns about, a whole grid with one point's answer. Nothing ever
+  moves from varying back to uniform, so the walk is monotone and settles; a case pins it with
+  a loop that reads before it writes. The same iteration carries a function's formals: a formal
+  takes the storage of every argument any call site passes it, so a function called once with a
+  varying value is varying wherever it is called.
+- **A uniform that a varying value reaches is faulted, not quietly widened.** A shader that
+  declares `uniform` and then assigns something varying is saying two things at once, and
+  keeping either one silently is the failure mode. The report waits for the fixed point to
+  settle, since a symbol may become varying on a later round than the one that read it.
+
+Three diagnostics the step did not ask for and the code gives anyway, because each is the
+difference between a useful message and a confusing one: a global of another shader type is
+reported as belonging to that type rather than as undeclared, which is what a light shader
+writing `Ci` gets; a surface shader's `L` and `Cl` outside an `illuminance` body are reported
+as what a light sets rather than as ordinary reads; and a function that reaches itself is
+reported at the call graph, which is where step 4 said the check belonged.
+
+`sl::Compiler`, the pass between the tree and the program. Three jobs, and the third is the one that
 decides whether the machine is fast or is an interpreter call per vertex.
 
 - **Symbols and scopes.** A shader's parameters, its globals, its locals, and its functions. The
@@ -215,7 +316,38 @@ identifier is reported with a position.
 
 ### Step 6 — the value model and the virtual machine
 
-`SLValue`, `SLProgram` and `SLMachine`. The heart of ADR-0026's execution model.
+**Landed.** `sl::runtime::Value`, `sl::runtime::Program` and `sl::runtime::Machine` as the step names them, plus two the step
+implied: `sl::Emitter`, which turns the annotated tree into the flat program - "a uniform
+condition compiles to a jump" needs something that compiles - and `sl::runtime::Renderer`, the interface
+the machine asks for what it does not hold. It carries one method so far, the matrix for a
+named coordinate space; step 7 grows it and steps 9 and 10 implement it.
+
+**A loop is masked whether its condition varies or not.** A uniform condition narrows every
+lane together, so it behaves as the jump it would have compiled to, and one form means `break`
+and `continue` have one meaning rather than two. The jump form is kept for `if`, which is where
+the step's own case looks for it.
+
+Writing the machine found three faults, two of them in step 5's inference and one in the
+semantics of a `for` loop:
+
+- **A `break` or a `continue` under a varying condition makes the whole loop body varying.**
+  The statements after the escape run for some lanes and not others, however uniform the values
+  reaching them are. Without this a counter comes out uniform, one lane's exit stops it for
+  every lane, and the loop never ends - which is how the fault announced itself.
+- **A uniform value is written while any lane is running**, not while lane zero is. A lane that
+  broke out of a loop must not stop a uniform counter that the lanes beside it are still
+  advancing.
+- **A `continue` goes to a `for` loop's step, not past it.** Carrying the step away with the
+  lane is C's rule broken, and it leaves a counter that never advances.
+
+Two things are named as not here rather than left to be found: a shader's own function, which
+has no instructions until there is an inliner - a run has no call stack, so a call is inlined,
+and the inliner arrives with the library's own SL-source functions in step 7 - and a lighting
+construct, which runs another shader's program over the same batch and is step 7's message
+passing rather than an instruction. A `CALL` is emitted and the machine reports that no library
+is attached, which is the seam step 7 fills.
+
+`sl::runtime::Value`, `sl::runtime::Program` and `sl::runtime::Machine`. The heart of ADR-0026's execution model.
 
 - **A value is a type, a storage class and a buffer** — one element wide when uniform, one element
   per shading point when varying. A program is a flat list of instructions over register indices
@@ -244,7 +376,7 @@ compiles to a jump rather than a mask.
 
 ### Step 7 — the standard library
 
-`SLBuiltins`, and the renderer interface the interesting half of it calls through.
+`sl::Builtins`, and the renderer interface the interesting half of it calls through.
 
 The plain built-ins, which are arithmetic over the value model and are cheap once step 6 is real:
 

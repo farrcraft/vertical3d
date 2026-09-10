@@ -5,11 +5,11 @@
 
 #include "MenuBar.h"
 
+#include <api/ui/component/Type.h>
+
 #include <cstddef>
 #include <string>
 #include <vector>
-
-#include "../Type.h"
 
 namespace v3d::ui::component {
 
@@ -23,19 +23,19 @@ MenuBar::MenuBar() : Component(component::Type::MenuBar), hover_(-1), open_(-1) 
 void MenuBar::add(const std::string& label, const boost::shared_ptr<Menu>& menu) {
     labels_.push_back(label);
     // nothing is hit until a renderer has said where the label went
-    bounds_.push_back(v3d::type::Bound2D(0.0f, 0.0f, 0.0f, 0.0f));
+    bounds_.push_back(v3d::type::geometry::Bound2D(0.0f, 0.0f, 0.0f, 0.0f));
     menus_.push_back(menu);
 }
 
 /**
  **/
 void MenuBar::place(std::size_t index, const glm::vec2& position, const glm::vec2& size) {
-    bounds_[index] = v3d::type::Bound2D(position, size);
+    bounds_[index] = v3d::type::geometry::Bound2D(position, size);
 }
 
 /**
  **/
-v3d::type::Bound2D MenuBar::bound(std::size_t index) const {
+v3d::type::geometry::Bound2D MenuBar::bound(std::size_t index) const {
     return bounds_[index];
 }
 
@@ -105,7 +105,7 @@ const std::vector<boost::shared_ptr<Menu>>& MenuBar::panels() const noexcept {
 /**
  **/
 bool MenuBar::within(const Component& component, const glm::vec2& cursor) {
-    v3d::type::Bound2D bound = component.bound();
+    v3d::type::geometry::Bound2D bound = component.bound();
     return bound.intersect(cursor);
 }
 
@@ -113,7 +113,7 @@ bool MenuBar::within(const Component& component, const glm::vec2& cursor) {
  **/
 int MenuBar::labelAt(const glm::vec2& cursor) const {
     for (std::size_t index = 0; index < bounds_.size(); index++) {
-        v3d::type::Bound2D bound = bounds_[index];
+        v3d::type::geometry::Bound2D bound = bounds_[index];
         if (bound.intersect(cursor)) {
             return static_cast<int>(index);
         }

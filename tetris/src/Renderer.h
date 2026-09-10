@@ -5,19 +5,19 @@
 
 #pragma once
 
+#include <api/asset/Manager.h>
+#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/Engine3D.h>
+#include <api/ui/paint/ComponentRenderer.h>
+#include <api/ui/Engine.h>
+#include <api/ui/paint/TextRenderer.h>
+
 #include <map>
 #include <string>
 
 #include "Piece.h"
 #include "Tetrad.h"
 #include "TetrisScene.h"
-
-#include "../../api/asset/Manager.h"
-#include "../../api/render/realtime/Canvas.h"
-#include "../../api/render/realtime/Engine3D.h"
-#include "../../api/ui/ComponentRenderer.h"
-#include "../../api/ui/Engine.h"
-#include "../../api/ui/TextRenderer.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
@@ -101,6 +101,6 @@ class TetrisRenderer final {
     v3d::render::realtime::TextureHandle pieces_;
     std::map<std::string, Sprite> sprites_;
 
-    boost::shared_ptr<v3d::ui::TextRenderer> text_;
-    boost::shared_ptr<v3d::ui::ComponentRenderer> uiRenderer_;
+    boost::shared_ptr<v3d::ui::paint::TextRenderer> text_;
+    boost::shared_ptr<v3d::ui::paint::ComponentRenderer> uiRenderer_;
 };

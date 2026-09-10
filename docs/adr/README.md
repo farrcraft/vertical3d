@@ -7,9 +7,6 @@ it done this way". Anything smaller belongs in a comment beside the thing it exp
 Copy [template.md](template.md) and add a row below. Superseding does not delete: set the
 old record's status and leave the file in place.
 
-0026 is missing from the sequence rather than lost: it is reserved by
-[the open shading plan](../plans/OfflineRenderingPhase3.md), whose first step writes it.
-
 | ADR | Title | Status | Date |
 |---|---|---|---|
 | [0001](0001-vulkan-replaces-opengl.md) | Rendering Backend — Vulkan Replaces OpenGL Outright | accepted | 2026-08-30 |
@@ -37,6 +34,7 @@ old record's status and leave the file in place.
 | [0023](0023-rib-is-the-offline-scene-description.md) | Offline Scene Description — RIB Is What Both Renderers Read, And The Editor Exports To It | accepted | 2026-09-04 |
 | [0024](0024-api-type-serves-both-renderers.md) | Shared Types — `api/type` Serves Both Renderers, And A Convention Is A Parameter Rather Than A Fork | accepted | 2026-09-04 |
 | [0025](0025-the-rib-reader-dispatches-a-cpp-request-interface.md) | RIB Dispatch — The Reader Hands A Renderer C++ Requests With Typed Parameter Lists | accepted | 2026-09-05 |
+| [0026](0026-shading-is-a-language-over-a-batch.md) | Offline Shading — Shading Is A Language, And A Shader Runs Over A Batch Of Shading Points | accepted | 2026-09-08 |
 | [0027](0027-the-api-is-consumed-as-source.md) | External Consumption — The api Is Taken As Source Through An `add_subdirectory`-able Root, Not As An Installed Package | accepted | 2026-09-05 |
 | [0028](0028-an-apps-shell-belongs-to-the-api.md) | App Shell — What Every App Repeats Belongs To The api, Not To Each App | accepted | 2026-09-05 |
 | [0029](0029-tile-grids-are-an-api-library.md) | Tile Grids — A Library Of Their Own, 8-Way On The Ground Plane, Asked Rather Than Told What Blocks | accepted | 2026-09-06 |
@@ -57,3 +55,6 @@ old record's status and leave the file in place.
 | [0044](0044-a-sampled-depth-target-is-read-only.md) | Sampled Depth — Asking For A Readable Depth Target Chooses The Format, And The Recorder Leaves It Read Only | accepted | 2026-09-07 |
 | [0045](0045-a-window-is-dragged-by-the-bar-that-folds-it.md) | Window Dragging — The Title Bar Both Folds And Moves, And The Caller Still Owns Where A Window Starts | accepted | 2026-09-08 |
 | [0046](0046-a-table-given-a-height-scrolls-in-its-own-right.md) | Table Scrolling — A Table Given A Height Scrolls Its Own Rows, And Its Header Stays Above Them | accepted | 2026-09-08 |
+| [0047](0047-a-component-type-is-checked-by-the-compiler.md) | UI Components — A Switch Over A Component Type Is Exhaustive, And The Compiler Names Every Place One Was Forgotten | accepted | 2026-09-08 |
+| [0048](0048-an-api-header-is-named-from-the-repository-root.md) | Include Paths — An api Header Is Named By Its Path From The Repository Root, Inside The Tree As Well As Outside | accepted | 2026-09-08 |
+| [0049](0049-a-consumer-chooses-the-swapchain-format.md) | Presentation — A Consumer Names The Swapchain Format, And UNORM Stays The Default | accepted | 2026-09-08 |

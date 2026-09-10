@@ -5,11 +5,11 @@
 
 #include "Font2D.h"
 
-#include <string>
+#include <api/asset/Type.h>
+#include <api/asset/kind/Font2D.h>
+#include <api/font/Font2D.h>
 
-#include "../Font2D.h"
-#include "../Type.h"
-#include "../../font/Font2D.h"
+#include <string>
 
 #include <boost/make_shared.hpp>
 
@@ -31,7 +31,7 @@ boost::shared_ptr<Asset> Font2D::load(std::string_view name) {
     boost::shared_ptr<v3d::font::Font2D> font = boost::make_shared<v3d::font::Font2D>(std::string(name), fontSize, logger_);
     font->build();
 
-    boost::shared_ptr<Asset> asset = boost::make_shared<v3d::asset::Font2D>(std::string(name), type(), font);
+    boost::shared_ptr<Asset> asset = boost::make_shared<v3d::asset::kind::Font2D>(std::string(name), type(), font);
     return asset;
 }
 

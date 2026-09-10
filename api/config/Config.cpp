@@ -20,7 +20,7 @@ Config::Config(const boost::shared_ptr<v3d::log::Logger>& logger) :
 /**
  **/
 bool Config::load(const boost::shared_ptr<v3d::asset::Manager>& assetManager) {
-    boost::shared_ptr<v3d::asset::Json> config = boost::dynamic_pointer_cast<v3d::asset::Json>(assetManager->loadTypeFromExt("config.json"));
+    boost::shared_ptr<v3d::asset::kind::Json> config = boost::dynamic_pointer_cast<v3d::asset::kind::Json>(assetManager->loadTypeFromExt("config.json"));
     if (!config) {
         return false;
     }
@@ -60,9 +60,9 @@ bool Config::load(const boost::shared_ptr<v3d::asset::Manager>& assetManager) {
         }
         // loadTypeFromExt throws for an extension it has no loader for, which is the one
         // way a config file can reject this function rather than being rejected by it.
-        boost::shared_ptr<v3d::asset::Json> asset;
+        boost::shared_ptr<v3d::asset::kind::Json> asset;
         try {
-            asset = boost::dynamic_pointer_cast<v3d::asset::Json>(assetManager->loadTypeFromExt(fileName));
+            asset = boost::dynamic_pointer_cast<v3d::asset::kind::Json>(assetManager->loadTypeFromExt(fileName));
         }
         catch (std::exception const& e) {
             logger_->get()->error("Config file could not be loaded: {} - {}", fileName, e.what());
@@ -79,7 +79,7 @@ bool Config::load(const boost::shared_ptr<v3d::asset::Manager>& assetManager) {
 
 /**
  **/
-boost::shared_ptr<v3d::asset::Json> Config::get(Type configType) {
+boost::shared_ptr<v3d::asset::kind::Json> Config::get(Type configType) {
     auto entry = configs_.find(configType);
     if (entry == configs_.end()) {
         return nullptr;

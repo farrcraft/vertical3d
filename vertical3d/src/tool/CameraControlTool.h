@@ -5,12 +5,12 @@
 
 #pragma once
 
+#include <api/type/camera/ArcBall.h>
+#include <vertical3d/src/view/ViewPort.h>
+
 #include <string>
 
 #include "Tool.h"
-#include "../view/ViewPort.h"
-
-#include "../../../api/type/ArcBall.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -78,7 +78,7 @@ class CameraControlTool final : public Tool {
     CameraMode mode_;
     bool dragging_;
     boost::shared_ptr<ViewPort> view_;
-    v3d::type::ArcBall arcball_;
+    v3d::type::camera::ArcBall arcball_;
 };
 
 };  // namespace v3d::editor

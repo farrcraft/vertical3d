@@ -5,6 +5,15 @@
 
 #include "Factory.h"
 
+#include <api/image/reader/Bmp.h>
+#include <api/image/reader/Jpeg.h>
+#include <api/image/reader/Png.h>
+#include <api/image/reader/Tga.h>
+#include <api/image/writer/Bmp.h>
+#include <api/image/writer/Jpeg.h>
+#include <api/image/writer/Png.h>
+#include <api/image/writer/Tga.h>
+
 #include <cstddef>
 #include <map>
 #include <string>
@@ -12,16 +21,6 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/make_shared.hpp>
-
-#include "reader/Tga.h"
-#include "reader/Bmp.h"
-#include "reader/Png.h"
-#include "reader/Jpeg.h"
-
-#include "writer/Tga.h"
-#include "writer/Bmp.h"
-#include "writer/Png.h"
-#include "writer/Jpeg.h"
 
 namespace v3d::image {
 /**

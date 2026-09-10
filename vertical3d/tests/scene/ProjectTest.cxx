@@ -3,6 +3,10 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/Project.h>
+#include <vertical3d/src/scene/Scene.h>
+
 #include <cstddef>
 #include <fstream>
 #include <iterator>
@@ -12,10 +16,6 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/test/unit_test.hpp>
-
-#include "../../src/scene/CreatePoly.h"
-#include "../../src/scene/Project.h"
-#include "../../src/scene/Scene.h"
 
 #include <boost/make_shared.hpp>
 #include <glm/gtc/quaternion.hpp>

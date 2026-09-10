@@ -5,10 +5,10 @@
 
 #pragma once
 
+#include <api/grid/TileGrid.h>
+
 #include <cstddef>
 #include <vector>
-
-#include "../../api/grid/TileGrid.h"
 
 namespace odyssey::engine {
 

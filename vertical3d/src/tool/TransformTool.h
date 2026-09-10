@@ -5,16 +5,16 @@
 
 #pragma once
 
+#include <api/log/Logger.h>
+#include <vertical3d/src/command/CommandStack.h>
+#include <vertical3d/src/command/TransformCommand.h>
+#include <vertical3d/src/manipulator/Manipulator.h>
+#include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/view/ViewPort.h>
+
 #include <string>
 
-#include "../command/CommandStack.h"
-#include "../manipulator/Manipulator.h"
-#include "../scene/Scene.h"
 #include "Tool.h"
-#include "../command/TransformCommand.h"
-#include "../view/ViewPort.h"
-
-#include "../../../api/log/Logger.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>

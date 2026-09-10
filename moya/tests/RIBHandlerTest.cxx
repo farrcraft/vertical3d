@@ -3,6 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/offline/rib/Reader.h>
+#include <moya/libmoya/RIBHandler.h>
+
 #include <sstream>
 #include <string>
 
@@ -11,14 +14,10 @@
 
 #include <glm/glm.hpp>
 
-#include "../libmoya/RIBHandler.h"
-
-#include "../../api/render/offline/RIBReader.h"
-
 namespace {
 
 bool read(const std::string & source, v3d::moya::RIBHandler * handler) {
-    v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
     std::istringstream stream(source);
     return reader.read(stream, handler);
 }

@@ -5,10 +5,10 @@
 
 #include "Wav.h"
 
-#include <string>
+#include <api/asset/Type.h>
+#include <api/asset/kind/Sound.h>
 
-#include "../Type.h"
-#include "../Sound.h"
+#include <string>
 
 #include <boost/make_shared.hpp>
 
@@ -30,7 +30,7 @@ boost::shared_ptr<Asset> Wav::load(std::string_view name) {
         logger_->get()->error("Could not read wav asset: {}", name);
         return boost::shared_ptr<Asset>();
     }
-    boost::shared_ptr<Sound> asset = boost::make_shared<Sound>(std::string(name), Type::AudioWav, clip);
+    boost::shared_ptr<kind::Sound> asset = boost::make_shared<kind::Sound>(std::string(name), Type::AudioWav, clip);
 
     return asset;
 }

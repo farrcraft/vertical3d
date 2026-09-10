@@ -17,7 +17,7 @@ namespace v3d::talyn {
 
 namespace {
 
-typedef v3d::render::offline::ParameterList ParameterList;
+typedef v3d::render::offline::rib::ParameterList ParameterList;
 
 const float TOLERANCE = 1.0e-4f;
 
@@ -92,7 +92,7 @@ void RIBHandler::clipping(float hither, float yon) {
 }
 
 bool RIBHandler::buildCamera() {
-    // a centred screen window is what a CameraProfile can hold: it carries a field of
+    // a centred screen window is what a Profile can hold: it carries a field of
     // view and a pixel aspect, not four edges
     if (std::fabs(screen_[0] + screen_[1]) > TOLERANCE || std::fabs(screen_[2] + screen_[3]) > TOLERANCE) {
         error_ = "an off centre ScreenWindow is not supported";
@@ -120,7 +120,7 @@ bool RIBHandler::buildCamera() {
         return false;
     }
 
-    v3d::type::CameraProfile & profile = rc_->scene().camera().profile();
+    v3d::type::camera::Profile & profile = rc_->scene().camera().profile();
     profile.rotation(glm::quat_cast(glm::transpose(basis)));
     profile.eye(-glm::transpose(basis) * glm::vec3(transform_[3]));
     profile.orthographic(projection_ != "perspective");
@@ -205,10 +205,20 @@ void RIBHandler::color(const glm::vec3 & value) {
     color_ = value;
 }
 
-void RIBHandler::fan(const std::vector<glm::vec3> & points, const std::vector<unsigned int> & indices) {
+void RIBHandler::fan(const std::vector<glm::vec3> & points, const std::vector<glm::vec3> & normals,
+    const std::vector<unsigned int> & indices) {
     if (indices.size() < 3) {
         return;
     }
+    /*
+        A normal transforms by the inverse transpose rather than by the matrix that moves
+        the points. The two agree under a rotation and a uniform scale, and part company the
+        moment a scene scales one axis, which tilts a normal off its surface.
+
+        A scene that gives no varying "N" falls through to the constructor that takes the
+        triangle's own plane, which is built from points already in world space.
+    */
+    const glm::mat3 toWorldNormal = glm::transpose(glm::inverse(glm::mat3(transform_)));
     for (std::size_t i = 1; i + 1 < indices.size(); i++) {
         if (indices[0] >= points.size() || indices[i] >= points.size() || indices[i + 1] >= points.size()) {
             continue;
@@ -216,29 +226,38 @@ void RIBHandler::fan(const std::vector<glm::vec3> & points, const std::vector<un
         const glm::vec3 a(transform_ * glm::vec4(points[indices[0]], 1.0f));
         const glm::vec3 b(transform_ * glm::vec4(points[indices[i]], 1.0f));
         const glm::vec3 c(transform_ * glm::vec4(points[indices[i + 1]], 1.0f));
-        rc_->scene().add(Triangle(a, b, c, color_));
+        if (indices[0] < normals.size() && indices[i] < normals.size() && indices[i + 1] < normals.size()) {
+            rc_->scene().add(Triangle(a, b, c, color_,
+                glm::normalize(toWorldNormal * normals[indices[0]]),
+                glm::normalize(toWorldNormal * normals[indices[i]]),
+                glm::normalize(toWorldNormal * normals[indices[i + 1]])));
+        } else {
+            rc_->scene().add(Triangle(a, b, c, color_));
+        }
     }
 }
 
 void RIBHandler::polygon(unsigned int vertices, const ParameterList & parameters) {
     const std::vector<glm::vec3> points = parameters.points("P");
+    const std::vector<glm::vec3> normals = parameters.points("N");
     std::vector<unsigned int> indices;
     for (unsigned int i = 0; i < vertices && i < points.size(); i++) {
         indices.push_back(i);
     }
-    fan(points, indices);
+    fan(points, normals, indices);
 }
 
 void RIBHandler::pointsPolygons(const std::vector<unsigned int> & counts, const std::vector<unsigned int> & indices,
     const ParameterList & parameters) {
     const std::vector<glm::vec3> points = parameters.points("P");
+    const std::vector<glm::vec3> normals = parameters.points("N");
     std::size_t offset = 0;
     for (unsigned int count : counts) {
         if (offset + count > indices.size()) {
             return;
         }
         const std::vector<unsigned int> face(indices.begin() + offset, indices.begin() + offset + count);
-        fan(points, face);
+        fan(points, normals, face);
         offset += count;
     }
 }

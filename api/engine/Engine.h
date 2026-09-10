@@ -5,18 +5,18 @@
 
 #pragma once
 
+#include <api/asset/Manager.h>
+#include <api/config/Config.h>
+#include <api/event/Engine.h>
+#include <api/input/Engine.h>
+#include <api/log/Logger.h>
+#include <api/render/realtime/Window.h>
+
 #include <map>
 #include <string>
 
 #include "Accumulator.h"
 #include "Statistics.h"
-
-#include "../log/Logger.h"
-#include "../asset/Manager.h"
-#include "../config/Config.h"
-#include "../input/Engine.h"
-#include "../event/Engine.h"
-#include "../render/realtime/Window.h"
 
 #include <boost/json.hpp>
 #include <entt/entt.hpp>

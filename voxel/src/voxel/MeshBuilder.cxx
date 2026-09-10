@@ -4,11 +4,13 @@
  **/
 
 #include "MeshBuilder.h"
+
+#include <voxel/src/engine/MortonCode.h>
+
 #include "Chunk.h"
 #include "FaceCulling.h"
 #include "MeshCache.h"
 #include "ChunkMeshPool.h"
-#include "../engine/MortonCode.h"
 
 MeshBuilder::MeshBuilder(const boost::unordered_map<unsigned int, boost::shared_ptr<Chunk > > & chunks, const ChunkMeshBuilder & meshes) :
     chunks_(chunks),
@@ -39,13 +41,12 @@ void MeshBuilder::build(const boost::shared_ptr<ChunkMeshPool> & pool, size_t li
 void MeshBuilder::generateChunk(const boost::shared_ptr<ChunkMeshPool> & pool, const boost::shared_ptr<Chunk> & chunk) {
     unsigned int hash = 0;
     glm::ivec3 pos;
-    MortonCode codec;
     unsigned int faces = 0;
 
     glm::ivec3 chunkPosition = chunk->position();
     unsigned int chunkSize = chunk->size();
 
-    size_t chunkId = codec.encode(chunkPosition);
+    size_t chunkId = MortonCode::encode(chunkPosition);
     // the mesh is built around the chunk's own corner, so the world position it is drawn at
     // is a push constant rather than something baked into every vertex
     glm::vec3 origin(chunkPosition * static_cast<int>(chunkSize));
@@ -63,7 +64,7 @@ void MeshBuilder::generateChunk(const boost::shared_ptr<ChunkMeshPool> & pool, c
         faces = Voxel::BLOCK_FACE_FRONT|Voxel::BLOCK_FACE_BACK|Voxel::BLOCK_FACE_LEFT|Voxel::BLOCK_FACE_RIGHT|Voxel::BLOCK_FACE_TOP|Voxel::BLOCK_FACE_BOTTOM;
 
         hash = (*it).first;
-        pos = codec.decode3(hash);
+        pos = MortonCode::decode3(hash);
 
         for (unsigned int i = 0; i < 6; i++) {
             // check for face occlusion from other blocks within the same chunk
@@ -72,7 +73,7 @@ void MeshBuilder::generateChunk(const boost::shared_ptr<ChunkMeshPool> & pool, c
             } else {  // check for face occlusion from blocks in adjacent chunks
                 Neighbour neighbor = neighbourAcrossSeam(checkFaces[i], pos, chunkPosition, static_cast<int>(chunkSize));
                 if (neighbor.crosses) {
-                    unsigned int neighborChunkHash = codec.encode(neighbor.chunk);
+                    unsigned int neighborChunkHash = MortonCode::encode(neighbor.chunk);
                     boost::unordered_map<unsigned int, boost::shared_ptr<Chunk > >::iterator neighborChunk = chunks_.find(neighborChunkHash);
                     if (neighborChunk != chunks_.end()) {
                         if ((*neighborChunk).second->active(neighbor.block)) {

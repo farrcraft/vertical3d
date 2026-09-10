@@ -6,13 +6,12 @@
 // the WinMain a windows subsystem executable is entered through, which calls this main
 #include <SDL3/SDL_main.h>
 
+#include <api/engine/Application.h>
+
 #include <cstdlib>
 #include <random>
 
 #include "Controller.h"
-
-#include "../../api/engine/Application.h"
-
 
 int main(int /* argc */, char *argv[]) {
     // Chunk generation draws its block types from rand(). The seed comes from the platform's

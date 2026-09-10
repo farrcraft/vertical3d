@@ -3,20 +3,21 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/offline/rib/Reader.h>
+#include <talyn/libtalyn/RIBHandler.h>
+
 #include <sstream>
 #include <string>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
 
-#include "../libtalyn/RIBHandler.h"
-
-#include "../../api/render/offline/RIBReader.h"
+#include <glm/geometric.hpp>
 
 namespace {
 
 bool read(const std::string & source, v3d::talyn::RIBHandler * handler) {
-    v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
     std::istringstream stream(source);
     return reader.read(stream, handler);
 }
@@ -47,7 +48,7 @@ BOOST_AUTO_TEST_CASE(talyn_ribhandler_format_test) {
 BOOST_AUTO_TEST_CASE(talyn_ribhandler_missing_file_test) {
     auto rc = boost::make_shared<v3d::talyn::RenderContext>();
     v3d::talyn::RIBHandler handler(rc);
-    v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_CHECK(!reader.read("data/no-such-scene.rib", &handler));
 }
@@ -55,7 +56,7 @@ BOOST_AUTO_TEST_CASE(talyn_ribhandler_missing_file_test) {
 BOOST_AUTO_TEST_CASE(talyn_ribhandler_fixture_test) {
     auto rc = boost::make_shared<v3d::talyn::RenderContext>();
     v3d::talyn::RIBHandler handler(rc);
-    v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(reader.read("data/format.rib", &handler));
     BOOST_REQUIRE(rc->framebuffer());
@@ -163,7 +164,7 @@ BOOST_AUTO_TEST_CASE(talyn_ribhandler_camera_placement_test) {
         "WorldEnd\n", &handler));
 
     BOOST_CHECK_EQUAL(handler.error(), "");
-    const v3d::type::CameraProfile & profile = rc->scene().camera().profile();
+    const v3d::type::camera::Profile & profile = rc->scene().camera().profile();
     BOOST_CHECK_CLOSE(profile.eye().z, -4.0f, 0.01f);
     BOOST_CHECK_EQUAL(profile.eye().x, 0.0f);
     BOOST_CHECK(!profile.orthographic());
@@ -187,14 +188,14 @@ BOOST_AUTO_TEST_CASE(talyn_ribhandler_orthographic_test) {
         "WorldEnd\n", &handler));
 
     BOOST_CHECK_EQUAL(handler.error(), "");
-    const v3d::type::CameraProfile & profile = rc->scene().camera().profile();
+    const v3d::type::camera::Profile & profile = rc->scene().camera().profile();
     BOOST_CHECK(profile.orthographic());
     BOOST_CHECK_CLOSE(profile.orthoZoom(), 1.0f, 0.01f);
     BOOST_CHECK_CLOSE(profile.pixelAspect(), 4.0f / 3.0f, 0.01f);
 }
 
 /**
- * What a CameraProfile cannot hold is refused rather than rendered as something else. An off
+ * What a Profile cannot hold is refused rather than rendered as something else. An off
  * centre window has no field of view to state, and a matrix that reverses handedness is not a
  * rotation and a translation - the standard's own example camera is one of those.
  **/
@@ -253,4 +254,78 @@ BOOST_AUTO_TEST_CASE(talyn_ribhandler_renders_test) {
     BOOST_CHECK_CLOSE(planes->value(0, 32, 28), 0.9f, 0.01f);
     // and a corner of the frame, which nothing covers
     BOOST_CHECK_EQUAL(planes->value(0, 1, 1), 0.0f);
+}
+
+/**
+ * A polygon that says nothing about its normals takes its own plane, in world space.
+ **/
+BOOST_AUTO_TEST_CASE(talyn_ribhandler_face_normal_test) {
+    auto rc = boost::make_shared<v3d::talyn::RenderContext>();
+    v3d::talyn::RIBHandler handler(rc);
+
+    BOOST_REQUIRE(read(
+        "Format 32 16 1\n"
+        "Projection \"orthographic\"\n"
+        "WorldBegin\n"
+        "Polygon \"P\" [0 0 0  1 0 0  0 1 0]\n"
+        "WorldEnd\n", &handler));
+
+    BOOST_REQUIRE_EQUAL(rc->scene().triangles().size(), 1u);
+    const v3d::talyn::Triangle & triangle = rc->scene().triangles()[0];
+    BOOST_TEST((triangle.geometricNormal() == glm::vec3(0.0f, 0.0f, 1.0f)));
+    BOOST_TEST((triangle.shadingNormal(0.25f, 0.25f) == glm::vec3(0.0f, 0.0f, 1.0f)));
+}
+
+/**
+ * A varying "N" is the shading normal and overrides the plane. Ng stays the plane, so a hit
+ * has both.
+ **/
+BOOST_AUTO_TEST_CASE(talyn_ribhandler_normal_override_test) {
+    auto rc = boost::make_shared<v3d::talyn::RenderContext>();
+    v3d::talyn::RIBHandler handler(rc);
+
+    BOOST_REQUIRE(read(
+        "Format 32 16 1\n"
+        "Projection \"orthographic\"\n"
+        "WorldBegin\n"
+        "Polygon \"P\" [0 0 0  1 0 0  0 1 0] \"N\" [0 1 0  0 1 0  0 1 0]\n"
+        "WorldEnd\n", &handler));
+
+    BOOST_REQUIRE_EQUAL(rc->scene().triangles().size(), 1u);
+    const v3d::talyn::Triangle & triangle = rc->scene().triangles()[0];
+    BOOST_TEST((triangle.shadingNormal(0.25f, 0.25f) == glm::vec3(0.0f, 1.0f, 0.0f)));
+    BOOST_TEST((triangle.geometricNormal() == glm::vec3(0.0f, 0.0f, 1.0f)));
+}
+
+/**
+ * A normal transforms by the inverse transpose of the current transformation, not by the matrix
+ * that moves the points. The two agree under a rotation and a uniform scale, so only a scene
+ * that scales one axis tells them apart - and there the normal leans the opposite way to the
+ * points.
+ **/
+BOOST_AUTO_TEST_CASE(talyn_ribhandler_normal_inverse_transpose_test) {
+    auto rc = boost::make_shared<v3d::talyn::RenderContext>();
+    v3d::talyn::RIBHandler handler(rc);
+
+    BOOST_REQUIRE(read(
+        "Format 32 16 1\n"
+        "Projection \"orthographic\"\n"
+        "WorldBegin\n"
+        "Scale 1 2 1\n"
+        "Polygon \"P\" [1 0 0  0 1 0  0 1 1] \"N\" [1 1 0  1 1 0  1 1 0]\n"
+        "WorldEnd\n", &handler));
+
+    BOOST_REQUIRE_EQUAL(rc->scene().triangles().size(), 1u);
+    const v3d::talyn::Triangle & triangle = rc->scene().triangles()[0];
+
+    // (1, 1, 0) under the inverse transpose of a scale of two in y has its y halved
+    const glm::vec3 expected = glm::normalize(glm::vec3(1.0f, 0.5f, 0.0f));
+    const glm::vec3 shading = triangle.shadingNormal(0.25f, 0.25f);
+    BOOST_TEST(shading.x == expected.x, boost::test_tools::tolerance(0.0001f));
+    BOOST_TEST(shading.y == expected.y, boost::test_tools::tolerance(0.0001f));
+
+    // the "N" given was the polygon's own plane, so the transformed one is the plane the
+    // transformed points lie in - which the geometric normal, built in world space, agrees with
+    BOOST_TEST(triangle.geometricNormal().x == expected.x, boost::test_tools::tolerance(0.0001f));
+    BOOST_TEST(triangle.geometricNormal().y == expected.y, boost::test_tools::tolerance(0.0001f));
 }

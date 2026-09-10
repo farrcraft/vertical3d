@@ -5,10 +5,10 @@
 
 #pragma once
 
-#include "GameBoard.h"
+#include <api/asset/Manager.h>
+#include <api/log/Logger.h>
 
-#include "../../api/asset/Manager.h"
-#include "../../api/log/Logger.h"
+#include "GameBoard.h"
 
 #include <boost/shared_ptr.hpp>
 

@@ -3,11 +3,11 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <moya/libmoya/MicroPolygonGrid.h>
+
 #include <boost/test/unit_test.hpp>
 
 #include <glm/glm.hpp>
-
-#include "../libmoya/MicroPolygonGrid.h"
 
 namespace {
 

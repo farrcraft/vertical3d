@@ -14,6 +14,10 @@ Button::Button() :
     state_(STATE_NORMAL),
     toggle_(false),
     checked_(false) {
+    // a control exists to be driven, so it asks for the press and the focus that a panel
+    // laid over a scene must not take - ADR-0034 and ADR-0040
+    pickable(true);
+    focusable(true);
 }
 
 void Button::label(const std::string& str) {

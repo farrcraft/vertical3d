@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <api/ui/paint/Dressing.h>
+
 #include <array>
 #include <cstddef>
 #include <functional>
@@ -12,16 +14,11 @@
 #include <string>
 #include <string_view>
 
-#include "../Dressing.h"
-
 #include <boost/shared_ptr.hpp>
-
-namespace v3d::ui {
-class Style;
-};  // namespace v3d::ui
 
 namespace v3d::ui::style {
 
+class Style;
 class Theme;
 
 /**
@@ -30,7 +27,7 @@ class Theme;
  *
  * @return the style, or null when the theme holds none of that class
  **/
-boost::shared_ptr<v3d::ui::Style> lookup(const boost::shared_ptr<Theme>& theme,
+boost::shared_ptr<Style> lookup(const boost::shared_ptr<Theme>& theme,
     const std::string& className, const std::string_view& name);
 
 /**
@@ -81,8 +78,8 @@ class Resolver final {
      * metrics once at startup pays for that once; one calling this every frame has
      * turned the cache off, which is why the const overload exists.
      **/
-    Dressing& base() noexcept;
-    const Dressing& base() const noexcept;
+    paint::Dressing& base() noexcept;
+    const paint::Dressing& base() const noexcept;
 
     /**
      * Read a theme's "ui" style into the base, per ADR-0020.
@@ -96,7 +93,7 @@ class Resolver final {
      *      naming no style is dressed by whichever style of the class the theme holds
      *      first, so that a theme can dress every button without every button naming it
      **/
-    const Dressing& resolve(Class className, const std::string_view& name) const;
+    const paint::Dressing& resolve(Class className, const std::string_view& name) const;
 
     /**
      * The style itself, for what a Dressing does not carry - the nine images a button is
@@ -105,7 +102,7 @@ class Resolver final {
      * Not cached: it is asked for once per button rather than once per component, and a
      * button's style is chosen by state as well as by name.
      **/
-    boost::shared_ptr<v3d::ui::Style> lookup(const std::string& className,
+    boost::shared_ptr<Style> lookup(const std::string& className,
         const std::string_view& name) const;
 
     /**
@@ -137,14 +134,14 @@ class Resolver final {
     /**
      * Work out one class's answer from a style, over the base.
      **/
-    Dressing dress(Class className, const std::string_view& name) const;
+    paint::Dressing dress(Class className, const std::string_view& name) const;
 
     boost::shared_ptr<Theme> theme_;
-    Dressing base_;
+    paint::Dressing base_;
 
     // keyed by the style name a component gave, which is usually empty. std::less<> so
     // that a string_view finds an entry without building a string to look it up with
-    mutable std::array<std::map<std::string, Dressing, std::less<>>, classes> resolved_;
+    mutable std::array<std::map<std::string, paint::Dressing, std::less<>>, classes> resolved_;
 };
 
 };  // namespace v3d::ui::style

@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <string_view>
+
 namespace v3d::ui::component {
 
 /**
@@ -34,5 +36,23 @@ enum class Type {
     Toolbar,
     VerticalBox
 };
+
+/**
+ * What a ui config's "type" calls this component, per ADR-0047.
+ *
+ * The one place the config's vocabulary is written down, and an exhaustive switch, so a type
+ * added to the enum above names this function until it is given a name here. A type a config
+ * cannot ask for answers empty - a menu item is built by the menu that holds it, and Undefined
+ * is not a component.
+ **/
+std::string_view name(Type type);
+
+/**
+ * The reverse: what a config asked for.
+ *
+ * @return the type, or Undefined for a name no component answers to - which is what the
+ *         loader reports as an unrecognised type rather than building nothing quietly
+ **/
+Type parse(std::string_view text);
 
 }  // namespace v3d::ui::component

@@ -5,11 +5,11 @@
 
 #pragma once
 
+#include <api/asset/kind/Json.h>
+#include <api/log/Logger.h>
+
 #include <string>
 #include <vector>
-
-#include "../../../api/asset/Json.h"
-#include "../../../api/log/Logger.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec4.hpp>
@@ -49,7 +49,7 @@ class ViewLayout final {
      * @param config the parsed layout.json
      * @return whether the tree was understood
      **/
-    bool load(const boost::shared_ptr<v3d::asset::Json>& config);
+    bool load(const boost::shared_ptr<v3d::asset::kind::Json>& config);
 
     /**
      * Divide a window of this size between the views.

@@ -3,6 +3,8 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/offline/rib/Reader.h>
+
 #include <map>
 #include <sstream>
 #include <string>
@@ -11,14 +13,12 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
 
-#include "../RIBReader.h"
-
 namespace {
 
 /**
  * Counts what it was handed, which is what proves the parser without either renderer.
  **/
-class CountingHandler final : public v3d::render::offline::RIBHandler {
+class CountingHandler final : public v3d::render::offline::rib::Handler {
  public:
     void version(float number) override {
         version_ = number;
@@ -29,7 +29,7 @@ class CountingHandler final : public v3d::render::offline::RIBHandler {
         declared_.push_back(name);
         counts_["Declare"]++;
     }
-    void option(const std::string & name, const v3d::render::offline::ParameterList & parameters) override {
+    void option(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override {
         (void)name;
         bucket_ = parameters.floats("bucketsize");
         counts_["Option"]++;
@@ -40,7 +40,7 @@ class CountingHandler final : public v3d::render::offline::RIBHandler {
         pixelAspect_ = pixelAspect;
         counts_["Format"]++;
     }
-    void projection(const std::string & name, const v3d::render::offline::ParameterList & parameters) override {
+    void projection(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override {
         projection_ = name;
         fov_ = parameters.number("fov", 90.0f);
         counts_["Projection"]++;
@@ -51,7 +51,7 @@ class CountingHandler final : public v3d::render::offline::RIBHandler {
         counts_["Clipping"]++;
     }
     void display(const std::string & name, const std::string & type, const std::string & mode,
-        const v3d::render::offline::ParameterList & parameters) override {
+        const v3d::render::offline::rib::ParameterList & parameters) override {
         (void)parameters;
         display_ = name + "|" + type + "|" + mode;
         counts_["Display"]++;
@@ -81,31 +81,31 @@ class CountingHandler final : public v3d::render::offline::RIBHandler {
         color_ = value;
         counts_["Color"]++;
     }
-    void surface(const std::string & name, const v3d::render::offline::ParameterList & parameters) override {
+    void surface(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override {
         surface_ = name;
         roughness_ = parameters.number("roughness", -1.0f);
         counts_["Surface"]++;
     }
-    void attribute(const std::string & name, const v3d::render::offline::ParameterList & parameters) override {
+    void attribute(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override {
         (void)name;
         identifier_ = parameters.string("name", "");
         counts_["Attribute"]++;
     }
-    void polygon(unsigned int vertices, const v3d::render::offline::ParameterList & parameters) override {
+    void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override {
         vertices_ = vertices;
         points_ = parameters.points("P");
         colors_ = parameters.points("Cs");
         counts_["Polygon"]++;
     }
     void pointsPolygons(const std::vector<unsigned int> & perPolygon, const std::vector<unsigned int> & indices,
-        const v3d::render::offline::ParameterList & parameters) override {
+        const v3d::render::offline::rib::ParameterList & parameters) override {
         perPolygon_ = perPolygon;
         indices_ = indices;
         points_ = parameters.points("P");
         counts_["PointsPolygons"]++;
     }
     void sphere(float radius, float zmin, float zmax, float thetamax,
-        const v3d::render::offline::ParameterList & parameters) override {
+        const v3d::render::offline::rib::ParameterList & parameters) override {
         (void)zmin;
         (void)zmax;
         (void)thetamax;
@@ -146,7 +146,7 @@ class CountingHandler final : public v3d::render::offline::RIBHandler {
     int frame_ = 0;
 };
 
-bool read(const std::string & source, CountingHandler * handler, v3d::render::offline::RIBReader * reader) {
+bool read(const std::string & source, CountingHandler * handler, v3d::render::offline::rib::Reader * reader) {
     std::istringstream stream(source);
     return reader->read(stream, handler);
 }
@@ -155,7 +155,7 @@ bool read(const std::string & source, CountingHandler * handler, v3d::render::of
 
 BOOST_AUTO_TEST_CASE(ribreader_camera_requests_test) {
     CountingHandler handler;
-    v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(read(
         "version 3.03\n"
@@ -187,7 +187,7 @@ BOOST_AUTO_TEST_CASE(ribreader_camera_requests_test) {
  **/
 BOOST_AUTO_TEST_CASE(ribreader_polygon_test) {
     CountingHandler handler;
-    v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(read(
         "Polygon \"P\" [-1 -1 5  1 -1 5  1 1 5  -1 1 5]\n", &handler, &reader));
@@ -206,7 +206,7 @@ BOOST_AUTO_TEST_CASE(ribreader_polygon_test) {
  **/
 BOOST_AUTO_TEST_CASE(ribreader_varying_parameter_test) {
     CountingHandler handler;
-    v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(read(
         "Polygon \"P\" [0 0 1  1 0 1  1 1 1]\n"
@@ -219,7 +219,7 @@ BOOST_AUTO_TEST_CASE(ribreader_varying_parameter_test) {
 
 BOOST_AUTO_TEST_CASE(ribreader_points_polygons_test) {
     CountingHandler handler;
-    v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(read(
         "PointsPolygons [3 3] [0 1 2  0 2 3] \"P\" [0 0 0  1 0 0  1 1 0  0 1 0]\n", &handler, &reader));
@@ -237,7 +237,7 @@ BOOST_AUTO_TEST_CASE(ribreader_points_polygons_test) {
  **/
 BOOST_AUTO_TEST_CASE(ribreader_unbracketed_parameter_test) {
     CountingHandler handler;
-    v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(read("Surface \"plastic\" \"roughness\" .3\n", &handler, &reader));
 
@@ -247,7 +247,7 @@ BOOST_AUTO_TEST_CASE(ribreader_unbracketed_parameter_test) {
 
 BOOST_AUTO_TEST_CASE(ribreader_declare_then_use_test) {
     CountingHandler handler;
-    v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(read(
         "Declare \"squish\" \"uniform float\"\n"
@@ -265,13 +265,13 @@ BOOST_AUTO_TEST_CASE(ribreader_declare_then_use_test) {
  **/
 BOOST_AUTO_TEST_CASE(ribreader_undeclared_parameter_test) {
     CountingHandler bracketed;
-    v3d::render::offline::RIBReader first(boost::make_shared<v3d::log::Logger>());
+    v3d::render::offline::rib::Reader first(boost::make_shared<v3d::log::Logger>());
     BOOST_CHECK(read("Surface \"marble\" \"veins\" [1 2 3]\nWorldBegin\n", &bracketed, &first));
     BOOST_CHECK_EQUAL(bracketed.count("Surface"), 1u);
     BOOST_CHECK_EQUAL(bracketed.count("WorldBegin"), 1u);
 
     CountingHandler bare;
-    v3d::render::offline::RIBReader second(boost::make_shared<v3d::log::Logger>());
+    v3d::render::offline::rib::Reader second(boost::make_shared<v3d::log::Logger>());
     BOOST_CHECK(!read("Surface \"marble\" \"veins\" 3\n", &bare, &second));
     BOOST_CHECK(second.error().contains("undeclared parameter 'veins'"));
 }
@@ -283,7 +283,7 @@ BOOST_AUTO_TEST_CASE(ribreader_undeclared_parameter_test) {
  **/
 BOOST_AUTO_TEST_CASE(ribreader_unrecognised_request_test) {
     CountingHandler handler;
-    v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(read(
         "Sides 2\n"
@@ -308,7 +308,7 @@ BOOST_AUTO_TEST_CASE(ribreader_unrecognised_request_test) {
  **/
 BOOST_AUTO_TEST_CASE(ribreader_transform_convention_test) {
     CountingHandler handler;
-    v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(read(
         "Transform [1 0 0 0  0 1 0 0  0 0 1 0  2 3 4 1]\n", &handler, &reader));
@@ -321,7 +321,7 @@ BOOST_AUTO_TEST_CASE(ribreader_transform_convention_test) {
 
 BOOST_AUTO_TEST_CASE(ribreader_graphics_state_test) {
     CountingHandler handler;
-    v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(read(
         "AttributeBegin\n"
@@ -344,7 +344,7 @@ BOOST_AUTO_TEST_CASE(ribreader_graphics_state_test) {
  **/
 BOOST_AUTO_TEST_CASE(ribreader_error_position_test) {
     CountingHandler handler;
-    v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_CHECK(!read("Format 640 480 1\nClipping 1 \"near\"\n", &handler, &reader));
     BOOST_CHECK(reader.error().contains("expected a number"));
@@ -353,7 +353,7 @@ BOOST_AUTO_TEST_CASE(ribreader_error_position_test) {
 
 BOOST_AUTO_TEST_CASE(ribreader_missing_file_test) {
     CountingHandler handler;
-    v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_CHECK(!reader.read("data/no-such-scene.rib", &handler));
     BOOST_CHECK(reader.error().contains("could not open"));
@@ -365,7 +365,7 @@ BOOST_AUTO_TEST_CASE(ribreader_missing_file_test) {
  **/
 BOOST_AUTO_TEST_CASE(ribreader_example_file_test) {
     CountingHandler handler;
-    v3d::render::offline::RIBReader reader(boost::make_shared<v3d::log::Logger>());
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(reader.read("data/example.rib", &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");

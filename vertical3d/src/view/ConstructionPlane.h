@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "../../../api/render/realtime/LineCanvas.h"
-#include "../../../api/type/Camera.h"
+#include <api/render/realtime/LineCanvas.h>
+#include <api/type/camera/Camera.h>
 
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -69,14 +69,14 @@ class ConstructionPlane final {
      * @param camera the view the grid is being drawn for, which decides its plane
      * @param canvas where the segments are appended - nothing is cleared
      **/
-    void draw(const v3d::type::Camera& camera, v3d::render::realtime::LineCanvas* canvas) const;
+    void draw(const v3d::type::camera::Camera& camera, v3d::render::realtime::LineCanvas* canvas) const;
 
  private:
     /**
      * The two axes the grid is spanned by, which are the camera's own right and up under
      * an orthographic view and the ground plane under a perspective one.
      **/
-    void axes(const v3d::type::Camera& camera, glm::vec3* right, glm::vec3* up) const;
+    static void axes(const v3d::type::camera::Camera& camera, glm::vec3* right, glm::vec3* up);
 
     float spacing_;
     unsigned int intervals_;

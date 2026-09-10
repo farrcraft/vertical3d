@@ -5,8 +5,8 @@
 
 #include "Paddle.h"
 
-#include "../../api/ecs/component/Color3.h"
-#include "../../api/ecs/component/Position1D.h"
+#include <api/ecs/component/Color3.h>
+#include <api/ecs/component/Position1D.h>
 
 Paddle::Paddle(entt::registry* registry) :
     registry_(registry) {

@@ -3,11 +3,11 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/brep/WingedEdgeBRep.h>
+
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../WingedEdgeBRep.h"
 
 namespace {
 /**
@@ -35,7 +35,7 @@ BOOST_AUTO_TEST_CASE(winged_empty_test) {
     BOOST_CHECK(mesh.edge(0) == nullptr);
     BOOST_CHECK(mesh.face(0) == nullptr);
 
-    const v3d::type::AABBox bound = mesh.bound();
+    const v3d::type::geometry::AABBox bound = mesh.bound();
     BOOST_CHECK_EQUAL((bound.min() == glm::vec3(0.0f)), true);
     BOOST_CHECK_EQUAL((bound.max() == glm::vec3(0.0f)), true);
 }
@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE(winged_bound_test) {
     v3d::brep::WingedEdgeBRep mesh;
     mesh.addFace(quad(2.0f), glm::vec3(0.0f, 0.0f, 1.0f), true);
 
-    const v3d::type::AABBox bound = mesh.bound();
+    const v3d::type::geometry::AABBox bound = mesh.bound();
     BOOST_CHECK_EQUAL((bound.min() == glm::vec3(0.0f, 0.0f, 2.0f)), true);
     BOOST_CHECK_EQUAL((bound.max() == glm::vec3(1.0f, 1.0f, 2.0f)), true);
 }

@@ -3,6 +3,22 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/asset/kind/Json.h>
+#include <api/render/realtime/Canvas.h>
+#include <api/ui/Container.h>
+#include <api/ui/Engine.h>
+#include <api/ui/component/Icon.h>
+#include <api/ui/component/Label.h>
+#include <api/ui/component/Toolbar.h>
+#include <api/ui/paint/ComponentRenderer.h>
+#include <api/ui/style/Button.h>
+#include <api/ui/style/Style.h>
+#include <api/ui/style/Theme.h>
+#include <api/ui/style/property/Color.h>
+#include <api/ui/style/property/Font.h>
+#include <api/ui/style/property/Image.h>
+#include <api/ui/style/property/Number.h>
+
 #include <cstddef>
 #include <string>
 #include <string_view>
@@ -10,22 +26,7 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include "../ComponentRenderer.h"
-#include "../../render/realtime/Canvas.h"
-#include "../Container.h"
-#include "../Style.h"
-#include "../style/Theme.h"
 #include <entt/entt.hpp>
-#include "../Engine.h"
-#include "../component/Icon.h"
-#include "../component/Label.h"
-#include "../component/Toolbar.h"
-#include "../../asset/Json.h"
-#include "../style/Button.h"
-#include "../style/property/Color.h"
-#include "../style/property/Font.h"
-#include "../style/property/Image.h"
-#include "../style/property/Number.h"
 
 #include <boost/json/parse.hpp>
 #include <boost/make_shared.hpp>
@@ -43,7 +44,7 @@ boost::shared_ptr<v3d::ui::Engine> load(const std::string& document, bool* loade
         dispatcher,
         boost::make_shared<v3d::log::Logger>());
 
-    const boost::shared_ptr<v3d::asset::Json> config = boost::make_shared<v3d::asset::Json>(
+    const boost::shared_ptr<v3d::asset::kind::Json> config = boost::make_shared<v3d::asset::kind::Json>(
         "vgui", v3d::asset::Type::JsonDocument, boost::json::parse(document).as_object());
     *loaded = ui->load(config);
     return ui;
@@ -53,8 +54,8 @@ boost::shared_ptr<v3d::ui::Engine> load(const std::string& document, bool* loade
  * A renderer that records nothing but the geometry, since none of these cases is about
  * where a label went.
  **/
-v3d::ui::ComponentRenderer renderer() {
-    return v3d::ui::ComponentRenderer(
+v3d::ui::paint::ComponentRenderer renderer() {
+    return v3d::ui::paint::ComponentRenderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * 10.0f; },
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 }
@@ -127,7 +128,7 @@ BOOST_AUTO_TEST_CASE(a_theme_loads_its_styles_and_their_properties) {
     BOOST_REQUIRE(dark);
     BOOST_CHECK_EQUAL(dark->getStyleSet("", "").size(), 3U);
 
-    const std::vector<boost::shared_ptr<v3d::ui::Style>> chrome = dark->getStyleSet("", "ui");
+    const std::vector<boost::shared_ptr<v3d::ui::style::Style>> chrome = dark->getStyleSet("", "ui");
     BOOST_REQUIRE_EQUAL(chrome.size(), 1U);
 
     const boost::shared_ptr<v3d::ui::style::property::Color> panel =
@@ -140,7 +141,7 @@ BOOST_AUTO_TEST_CASE(a_theme_loads_its_styles_and_their_properties) {
     BOOST_REQUIRE(height);
     BOOST_CHECK_CLOSE(height->value(), 40.0f, 0.001f);
 
-    const std::vector<boost::shared_ptr<v3d::ui::Style>> labels = dark->getStyleSet("", "label");
+    const std::vector<boost::shared_ptr<v3d::ui::style::Style>> labels = dark->getStyleSet("", "label");
     BOOST_REQUIRE_EQUAL(labels.size(), 1U);
     const boost::shared_ptr<v3d::ui::style::property::Font> font =
         boost::dynamic_pointer_cast<v3d::ui::style::property::Font>(labels.front()->property("label", "font"));
@@ -160,7 +161,7 @@ BOOST_AUTO_TEST_CASE(a_button_style_carries_a_state_and_its_images) {
     const boost::shared_ptr<v3d::ui::Engine> ui = load(themedDocument, &loaded);
     BOOST_REQUIRE(loaded);
 
-    const std::vector<boost::shared_ptr<v3d::ui::Style>> buttons = ui->theme("dark")->getStyleSet("", "button");
+    const std::vector<boost::shared_ptr<v3d::ui::style::Style>> buttons = ui->theme("dark")->getStyleSet("", "button");
     BOOST_REQUIRE_EQUAL(buttons.size(), 1U);
 
     const boost::shared_ptr<v3d::ui::style::Button> styled =
@@ -213,8 +214,8 @@ BOOST_AUTO_TEST_CASE(a_theme_overrides_what_it_names_and_no_more) {
     const boost::shared_ptr<v3d::ui::Engine> ui = load(themedDocument, &loaded);
     BOOST_REQUIRE(loaded);
 
-    v3d::ui::ComponentRenderer drawing = renderer();
-    const v3d::ui::Dressing defaults;
+    v3d::ui::paint::ComponentRenderer drawing = renderer();
+    const v3d::ui::paint::Dressing defaults;
 
     drawing.theme(ui->theme("dark"));
 
@@ -235,8 +236,8 @@ BOOST_AUTO_TEST_CASE(a_nameless_theme_changes_nothing) {
         R"({ "themes": [ { "name": "plain" } ], "containers": [] })", &loaded);
     BOOST_REQUIRE(loaded);
 
-    v3d::ui::ComponentRenderer drawing = renderer();
-    const v3d::ui::Dressing defaults;
+    v3d::ui::paint::ComponentRenderer drawing = renderer();
+    const v3d::ui::paint::Dressing defaults;
     drawing.theme(ui->activeTheme());
 
     BOOST_CHECK_CLOSE(drawing.dressing().barHeight, defaults.barHeight, 0.001f);
@@ -376,7 +377,7 @@ BOOST_AUTO_TEST_CASE(a_button_is_drawn_from_the_images_its_style_names) {
     BOOST_REQUIRE(loaded);
     ui->resolveImages([](const std::string&) { return v3d::render::realtime::TextureHandle(3); });
 
-    v3d::ui::ComponentRenderer drawing = renderer();
+    v3d::ui::paint::ComponentRenderer drawing = renderer();
     drawing.theme(ui->theme("dark"));
 
     v3d::render::realtime::Canvas canvas;
@@ -404,7 +405,7 @@ BOOST_AUTO_TEST_CASE(a_button_is_drawn_from_the_images_its_style_names) {
  * an unlit flat button is only its label.
  **/
 BOOST_AUTO_TEST_CASE(a_button_with_no_skin_is_drawn_flat) {
-    v3d::ui::ComponentRenderer drawing = renderer();
+    v3d::ui::paint::ComponentRenderer drawing = renderer();
     v3d::render::realtime::Canvas canvas;
     canvas.resize(800, 600);
 
@@ -426,7 +427,7 @@ BOOST_AUTO_TEST_CASE(a_button_with_no_skin_is_drawn_flat) {
  * never resolved draws nothing at all.
  **/
 BOOST_AUTO_TEST_CASE(an_icon_draws_the_texture_it_was_resolved_to) {
-    v3d::ui::ComponentRenderer drawing = renderer();
+    v3d::ui::paint::ComponentRenderer drawing = renderer();
     v3d::render::realtime::Canvas canvas;
     canvas.resize(800, 600);
 
@@ -471,7 +472,7 @@ BOOST_AUTO_TEST_CASE(a_toolbar_button_draws_the_icon_it_names) {
     BOOST_CHECK_EQUAL(uploader.asked[0], "icons/select.png");
 
     std::vector<Written> written;
-    v3d::ui::ComponentRenderer drawing(
+    v3d::ui::paint::ComponentRenderer drawing(
         [](std::string_view text) { return static_cast<float>(text.size()) * 10.0f; },
         [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
             written.push_back(Written{ std::string(text), pen, colour });
@@ -491,12 +492,12 @@ BOOST_AUTO_TEST_CASE(a_toolbar_button_draws_the_icon_it_names) {
     BOOST_REQUIRE(bar);
 
     // the column is as wide as the icon, not as the label it would otherwise draw
-    const v3d::ui::Dressing& dressing = drawing.dressing();
+    const v3d::ui::paint::Dressing& dressing = drawing.dressing();
     BOOST_CHECK_CLOSE(bar->bound().size().x, dressing.iconSize + dressing.padding, 0.001f);
     BOOST_CHECK_CLOSE(drawing.insets(*ui).x, dressing.iconSize + dressing.padding + 1.0f, 0.001f);
 
     // and the icon is centred in the button's own box
-    const v3d::type::Bound2D box = bar->button(0)->bound();
+    const v3d::type::geometry::Bound2D box = bar->button(0)->bound();
     BOOST_CHECK_CLOSE(canvas.vertices()[8].position.x,
         box.position().x + (box.size().x - dressing.iconSize) * 0.5f, 0.001f);
 }
@@ -507,7 +508,7 @@ BOOST_AUTO_TEST_CASE(a_toolbar_button_draws_the_icon_it_names) {
  **/
 BOOST_AUTO_TEST_CASE(an_unresolved_icon_leaves_the_label_drawn) {
     std::vector<Written> written;
-    v3d::ui::ComponentRenderer drawing(
+    v3d::ui::paint::ComponentRenderer drawing(
         [](std::string_view text) { return static_cast<float>(text.size()) * 10.0f; },
         [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
             written.push_back(Written{ std::string(text), pen, colour });
@@ -543,7 +544,7 @@ BOOST_AUTO_TEST_CASE(a_container_draws_its_labels_and_icons) {
     BOOST_REQUIRE(loaded);
     ui->resolveImages([](const std::string&) { return v3d::render::realtime::TextureHandle(2); });
 
-    v3d::ui::ComponentRenderer drawing = renderer();
+    v3d::ui::paint::ComponentRenderer drawing = renderer();
     v3d::render::realtime::Canvas canvas;
     canvas.resize(800, 600);
     drawing.draw(&canvas, *ui);

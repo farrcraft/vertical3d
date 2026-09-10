@@ -5,15 +5,16 @@
 
 #include "Engine.h"
 
+#include <api/event/kind/WindowFocus.h>
+#include <api/event/kind/WindowResize.h>
+#include <api/input/DeviceType.h>
+
 #include <SDL3/SDL.h>
 
 #include <map>
 #include <string>
 
 #include "Feature.h"
-#include "../input/DeviceType.h"
-#include "../event/WindowResize.h"
-#include "../event/WindowFocus.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/make_shared.hpp>
@@ -100,7 +101,7 @@ bool Engine::readMappingDestination(const boost::json::object& mapping, v3d::eve
 }
 
 bool Engine::registerEventMappings() {
-    boost::shared_ptr<v3d::asset::Json> mappingConfig = config_->get(v3d::config::Type::Binding);
+    boost::shared_ptr<v3d::asset::kind::Json> mappingConfig = config_->get(v3d::config::Type::Binding);
     if (!mappingConfig) {
         return true;
     }
@@ -210,7 +211,7 @@ bool Engine::initialize(int features) {
         int width = -1;
         int height = -1;
         if (features_ & Feature::Config) {
-            boost::shared_ptr<v3d::asset::Json> windowConfig = config_->get(v3d::config::Type::Window);
+            boost::shared_ptr<v3d::asset::kind::Json> windowConfig = config_->get(v3d::config::Type::Window);
             if (windowConfig) {
                 auto const doc = windowConfig->document();
                 auto const window = doc.at("window");
@@ -282,15 +283,15 @@ void Engine::handleEvent(const SDL_Event& event) {
         if (window_) {
             window_->resize(event.window.data1, event.window.data2);
         }
-        dispatcher_->trigger(v3d::event::WindowResize(event.window.data1, event.window.data2));
+        dispatcher_->trigger(v3d::event::kind::WindowResize(event.window.data1, event.window.data2));
         break;
     // a key released while the window is unfocused never arrives, so an app that wants
     // held input dropped needs to be told focus went rather than poll for it
     case SDL_EVENT_WINDOW_FOCUS_GAINED:
-        dispatcher_->trigger(v3d::event::WindowFocus(true));
+        dispatcher_->trigger(v3d::event::kind::WindowFocus(true));
         break;
     case SDL_EVENT_WINDOW_FOCUS_LOST:
-        dispatcher_->trigger(v3d::event::WindowFocus(false));
+        dispatcher_->trigger(v3d::event::kind::WindowFocus(false));
         break;
     default:
         break;

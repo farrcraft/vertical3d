@@ -3,20 +3,20 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/realtime/Canvas.h>
+#include <api/ui/Container.h>
+#include <api/ui/component/Bar.h>
+#include <api/ui/component/HorizontalBox.h>
+#include <api/ui/component/Label.h>
+#include <api/ui/component/Panel.h>
+#include <api/ui/component/VerticalBox.h>
+#include <api/ui/paint/ComponentRenderer.h>
+
 #include <string>
 #include <string_view>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../ComponentRenderer.h"
-#include "../../render/realtime/Canvas.h"
-#include "../Container.h"
-#include "../component/Bar.h"
-#include "../component/HorizontalBox.h"
-#include "../component/Label.h"
-#include "../component/Panel.h"
-#include "../component/VerticalBox.h"
 
 #include <boost/make_shared.hpp>
 
@@ -31,8 +31,8 @@ const float characterWidth = 10.0f;
  * A renderer that measures a string at ten pixels a character and writes nothing, which is
  * enough to lay a tree out without a font, an atlas or a device.
  **/
-v3d::ui::ComponentRenderer build() {
-    return v3d::ui::ComponentRenderer(
+v3d::ui::paint::ComponentRenderer build() {
+    return v3d::ui::paint::ComponentRenderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 }
@@ -69,14 +69,14 @@ BOOST_AUTO_TEST_CASE(a_length_resolves_against_an_extent) {
  * always grows inwards from it.
  **/
 BOOST_AUTO_TEST_CASE(an_anchor_measures_from_the_corner_it_names) {
-    const v3d::type::Bound2D parent(glm::vec2(0.0f, 0.0f), glm::vec2(200.0f, 100.0f));
+    const v3d::type::geometry::Bound2D parent(glm::vec2(0.0f, 0.0f), glm::vec2(200.0f, 100.0f));
     v3d::ui::Layout layout;
     layout.x = v3d::ui::Length(10.0f, v3d::ui::Length::Unit::Pixels);
     layout.y = v3d::ui::Length(20.0f, v3d::ui::Length::Unit::Pixels);
     layout.width = v3d::ui::Length(40.0f, v3d::ui::Length::Unit::Pixels);
     layout.height = v3d::ui::Length(30.0f, v3d::ui::Length::Unit::Pixels);
 
-    v3d::type::Bound2D box = layout.resolve(parent, glm::vec2(0.0f, 0.0f));
+    v3d::type::geometry::Bound2D box = layout.resolve(parent, glm::vec2(0.0f, 0.0f));
     BOOST_CHECK_CLOSE(box.position().x, 10.0f, 0.001f);
     BOOST_CHECK_CLOSE(box.position().y, 20.0f, 0.001f);
 
@@ -147,7 +147,7 @@ BOOST_AUTO_TEST_CASE(a_vertical_box_stacks_what_it_holds) {
 
     v3d::ui::Container container("hud", true);
     container.add(box);
-    v3d::ui::ComponentRenderer renderer = build();
+    v3d::ui::paint::ComponentRenderer renderer = build();
     renderer.draw(&canvas, container);
 
     const float rowHeight = renderer.dressing().lineHeight;
@@ -183,7 +183,7 @@ BOOST_AUTO_TEST_CASE(a_hidden_row_closes_the_gap_behind_it) {
 
     v3d::ui::Container container("hud", true);
     container.add(box);
-    v3d::ui::ComponentRenderer renderer = build();
+    v3d::ui::paint::ComponentRenderer renderer = build();
     renderer.draw(&canvas, container);
 
     BOOST_CHECK_CLOSE(last->position().y, first->position().y + renderer.dressing().lineHeight, 0.001f);
@@ -290,7 +290,7 @@ BOOST_AUTO_TEST_CASE(a_bar_fills_a_fraction_of_its_track) {
 
     v3d::ui::Container container("hud", true);
     container.add(bar);
-    v3d::ui::ComponentRenderer renderer = build();
+    v3d::ui::paint::ComponentRenderer renderer = build();
 
     renderer.draw(&canvas, container);
     // the four runs of the outline and the track, and nothing filled
@@ -320,7 +320,7 @@ BOOST_AUTO_TEST_CASE(a_rounded_panel_is_bands_and_wedges_in_one_batch) {
 
     v3d::ui::Container container("hud", true);
     container.add(plate);
-    v3d::ui::ComponentRenderer renderer = build();
+    v3d::ui::paint::ComponentRenderer renderer = build();
     renderer.dressing().borderWidth = 0.0f;
 
     renderer.draw(&canvas, container);

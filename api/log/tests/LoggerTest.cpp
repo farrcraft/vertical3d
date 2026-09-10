@@ -3,14 +3,14 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/log/Logger.h>
+
 #include <spdlog/spdlog.h>
 
 #include <memory>
 #include <string>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../Logger.h"
 
 /**
  * One name in spdlog's global registry, and the levels a wrapper sets that a default logger

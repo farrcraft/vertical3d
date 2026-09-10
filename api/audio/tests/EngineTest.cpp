@@ -3,6 +3,8 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/audio/Engine.h>
+
 #include <string>
 #include <vector>
 
@@ -10,7 +12,6 @@
 #include <boost/json.hpp>
 #include <boost/make_shared.hpp>
 
-#include "../Engine.h"
 #include "Wav.h"
 
 namespace {
@@ -21,8 +22,8 @@ boost::shared_ptr<v3d::audio::Engine> engine() {
         boost::make_shared<entt::dispatcher>());
 }
 
-boost::shared_ptr<v3d::asset::Json> config(const std::string& text) {
-    return boost::make_shared<v3d::asset::Json>(
+boost::shared_ptr<v3d::asset::kind::Json> config(const std::string& text) {
+    return boost::make_shared<v3d::asset::kind::Json>(
         "sounds", v3d::asset::Type::JsonDocument, boost::json::parse(text).as_object());
 }
 

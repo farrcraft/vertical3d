@@ -5,12 +5,12 @@
 
 #pragma once
 
+#include <api/type/camera/Camera.h>
+
 #include <iosfwd>
 #include <string>
 
 #include "SceneVisitor.h"
-
-#include "../../../api/type/Camera.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -43,7 +43,7 @@ class RIBExportVisitor final : public SceneVisitor {
      * @param camera the view the scene is rendered from
      * @param width the image size to ask the renderer for
      **/
-    void begin(const v3d::type::Camera& camera, unsigned int width, unsigned int height);
+    void begin(const v3d::type::camera::Camera& camera, unsigned int width, unsigned int height);
 
     /**
      * Close the world block. A file without this renders nothing.

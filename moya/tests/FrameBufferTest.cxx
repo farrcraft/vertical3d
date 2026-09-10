@@ -3,18 +3,18 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <moya/libmoya/FrameBuffer.h>
+#include <moya/libmoya/Polygon.h>
+
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
 
 #include <glm/glm.hpp>
 
-#include "../libmoya/FrameBuffer.h"
-#include "../libmoya/Polygon.h"
-
 namespace {
 
-v3d::type::AABBox box(const glm::vec3 & min, const glm::vec3 & max) {
-    v3d::type::AABBox b;
+v3d::type::geometry::AABBox box(const glm::vec3 & min, const glm::vec3 & max) {
+    v3d::type::geometry::AABBox b;
     b.extents(min, max);
     return b;
 }

@@ -3,6 +3,8 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/offline/rib/Lexer.h>
+
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -10,15 +12,13 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include "../RIBLexer.h"
-
 namespace {
 
-typedef v3d::render::offline::RIBToken Token;
+typedef v3d::render::offline::rib::Token Token;
 
 std::vector<Token> lex(const std::string & source, std::string * error = nullptr) {
     std::istringstream stream(source);
-    v3d::render::offline::RIBLexer lexer(stream);
+    v3d::render::offline::rib::Lexer lexer(stream);
     std::vector<Token> tokens;
     for (;;) {
         Token token = lexer.next();
@@ -154,7 +154,7 @@ BOOST_AUTO_TEST_CASE(riblexer_example_file_test) {
     std::ifstream file("data/example.rib");
     BOOST_REQUIRE(file.is_open());
 
-    v3d::render::offline::RIBLexer lexer(file);
+    v3d::render::offline::rib::Lexer lexer(file);
     unsigned int identifiers = 0;
     unsigned int count = 0;
     for (Token token = lexer.next(); token.kind() != Token::Kind::END; token = lexer.next()) {
@@ -176,7 +176,7 @@ BOOST_AUTO_TEST_CASE(riblexer_example_file_test) {
  **/
 BOOST_AUTO_TEST_CASE(riblexer_peek_test) {
     std::istringstream stream("Format 640");
-    v3d::render::offline::RIBLexer lexer(stream);
+    v3d::render::offline::rib::Lexer lexer(stream);
 
     BOOST_CHECK_EQUAL(lexer.peek().text(), "Format");
     BOOST_CHECK_EQUAL(lexer.peek().text(), "Format");

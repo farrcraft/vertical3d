@@ -5,6 +5,8 @@
 
 #include "Bmp.h"
 
+#include <api/image/BmpHeader.h>
+
 #include <cstddef>
 #include <cstring>
 #include <sstream>
@@ -12,8 +14,6 @@
 #include <vector>
 // needed for runtime_error
 #include <stdexcept>
-
-#include "../BmpHeader.h"
 
 #include <boost/make_shared.hpp>
 

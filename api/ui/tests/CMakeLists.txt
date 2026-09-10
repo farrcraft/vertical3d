@@ -9,6 +9,7 @@ v3d_add_test(ui
 	"FocusTest.cpp"
 	"GameMenuTest.cpp"
 	"ImmediateTest.cpp"
+	"KeyboardDriveTest.cpp"
 	"LayoutTest.cpp"
 	"MenuBarTest.cpp"
 	"PainterTest.cpp"
@@ -19,7 +20,8 @@ v3d_add_test(ui
 	"TabBarTest.cpp"
 	"TextBoxTest.cpp"
 	"ThemeTest.cpp"
-	"ToolbarTest.cpp")
+	"ToolbarTest.cpp"
+	"TypeTest.cpp")
 
 target_link_libraries(v3dtest_ui PRIVATE
 	v3dlib_ui

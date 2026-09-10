@@ -69,13 +69,13 @@ bool Pass::depth() const noexcept {
 
 /**
  **/
-void Pass::target(const boost::shared_ptr<vulkan::RenderTarget>& target) noexcept {
+void Pass::target(const boost::shared_ptr<vulkan::frame::RenderTarget>& target) noexcept {
     target_ = target;
 }
 
 /**
  **/
-const boost::shared_ptr<vulkan::RenderTarget>& Pass::target() const noexcept {
+const boost::shared_ptr<vulkan::frame::RenderTarget>& Pass::target() const noexcept {
     return target_;
 }
 

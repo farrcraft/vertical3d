@@ -3,18 +3,17 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/event/Context.h>
+#include <api/event/Event.h>
+#include <api/event/State.h>
+#include <vertical3d/src/command/CommandDirectory.h>
+
 #include <string>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
-
-#include "../../src/command/CommandDirectory.h"
-
-#include "../../../api/event/Context.h"
-#include "../../../api/event/Event.h"
-#include "../../../api/event/State.h"
 
 namespace {
 

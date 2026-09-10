@@ -3,12 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/type/geometry/AABBox.h>
+
 #include <boost/test/unit_test.hpp>
 
-#include "../AABBox.h"
-
 BOOST_AUTO_TEST_CASE(aabbox_test) {
-    v3d::type::AABBox box;
+    v3d::type::geometry::AABBox box;
 
     // set box minimum
     glm::vec3 minimum(5.0f, 4.0f, 3.0f);

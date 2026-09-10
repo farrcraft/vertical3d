@@ -5,15 +5,15 @@
 
 #pragma once
 
+#include <api/dag/Node.h>
+#include <api/dag/Transform.h>
+#include <api/type/geometry/AABBox.h>
+
 #include <vector>
 
 #include "Vertex.h"
 #include "Edge.h"
 #include "Face.h"
-
-#include "../type/AABBox.h"
-#include "../dag/Node.h"
-#include "../dag/Transform.h"
 
 namespace v3d::brep {
 
@@ -94,7 +94,7 @@ class WingedEdgeBRep : public v3d::dag::Node, public v3d::dag::Transform {
     Face * face(Index faceID);
     Vertex * vertex(Index vertexID);
 
-    v3d::type::AABBox bound(void) const;
+    v3d::type::geometry::AABBox bound(void) const;
 
     bool selected(void) const noexcept;
     void selected(bool sel) noexcept;

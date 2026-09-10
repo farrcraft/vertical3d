@@ -5,10 +5,10 @@
 
 #pragma once
 
-#include "Window.h"
+#include <api/asset/Manager.h>
+#include <api/log/Logger.h>
 
-#include "../../log/Logger.h"
-#include "../../asset/Manager.h"
+#include "Window.h"
 
 #include <entt/entt.hpp>
 

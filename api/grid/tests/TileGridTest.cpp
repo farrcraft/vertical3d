@@ -3,11 +3,11 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/grid/TileGrid.h>
+
 #include <stdexcept>
 
 #include <boost/test/unit_test.hpp>
-
-#include "../TileGrid.h"
 
 using v3d::grid::Cover;
 using v3d::grid::TileCoord;

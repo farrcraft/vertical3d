@@ -4,14 +4,15 @@
  **/
 
 #include "Engine.h"
+
+#include <api/ecs/component/PositionFixed2D.h>
+#include <api/engine/Feature.h>
+#include <api/grid/Pathfinding.h>
+
 #include "Path.h"
 #include "Unit.h"
 
 #include <string>
-
-#include "../../api/ecs/component/PositionFixed2D.h"
-#include "../../api/engine/Feature.h"
-#include "../../api/grid/Pathfinding.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/make_shared.hpp>
@@ -46,7 +47,7 @@ bool Engine::initialize() {
     window_->caption("Odyssey");
 
     map_ = boost::make_shared<odyssey::tile::Map>(logger_);
-    if (!map_->load(boost::dynamic_pointer_cast<v3d::asset::Json>(
+    if (!map_->load(boost::dynamic_pointer_cast<v3d::asset::kind::Json>(
             assetManager_->loadTypeFromExt(mapName)))) {
         // the map is the board and the collision rules both, so there is no sensible game
         // without one - the loader has already said what it could not read
@@ -67,7 +68,7 @@ bool Engine::initialize() {
     // one sink for every mapped event: a device event is resolved to an action by the
     // bindings before it gets here, so nothing subscribes to a key
     dispatcher_->sink<v3d::event::Event>().connect<&Engine::handleEvent>(*this);
-    dispatcher_->sink<v3d::event::MouseMotion>().connect<&Engine::handleMotion>(*this);
+    dispatcher_->sink<v3d::event::kind::MouseMotion>().connect<&Engine::handleMotion>(*this);
 
     return true;
 }
@@ -104,7 +105,7 @@ void Engine::handleEvent(const v3d::event::Event& event) {
 
 /**
  **/
-void Engine::handleMotion(const v3d::event::MouseMotion& event) {
+void Engine::handleMotion(const v3d::event::kind::MouseMotion& event) {
     cursor_ = event.position();
 }
 
