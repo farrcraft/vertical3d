@@ -100,6 +100,10 @@ const std::vector<std::string> & Machine::reports() const {
     return reports_;
 }
 
+const std::vector<std::string> & Machine::printed() const {
+    return printed_;
+}
+
 void Machine::report(const std::string & message) {
     // once per distinct message: a 640 by 480 render would otherwise print a million lines
     // to say one thing
@@ -230,17 +234,20 @@ void Machine::unary(const Instruction & instruction) {
     }
 }
 
+glm::mat4x4 Machine::space(const std::string & name) {
+    glm::mat4x4 matrix(1.0f);
+    if (renderer_ == nullptr || !renderer_->space(name, &matrix)) {
+        // the value still arrives, in the space it was already in: a scene that named a space
+        // nothing knows renders in the wrong place rather than not at all, and says so
+        report("the coordinate space \"" + name + "\" is not one this renderer knows");
+    }
+    return matrix;
+}
+
 void Machine::transform(const Instruction & instruction) {
     Value & target = file_[static_cast<std::size_t>(instruction.target)];
     const Value & source = file_[static_cast<std::size_t>(instruction.left)];
-    const std::string & space = file_[static_cast<std::size_t>(instruction.right)].text();
-
-    glm::mat4x4 matrix(1.0f);
-    if (renderer_ == nullptr || !renderer_->space(space, &matrix)) {
-        // the value still arrives, in the space it was already in: a scene that named a space
-        // nothing knows renders in the wrong place rather than not at all, and says so
-        report("the coordinate space \"" + space + "\" is not one this renderer knows");
-    }
+    const glm::mat4x4 matrix = space(file_[static_cast<std::size_t>(instruction.right)].text());
     const unsigned int count = target.storage() == Storage::VARYING ? batch_ : 1;
     for (unsigned int point = 0; point < count; point++) {
         if (!writable(target, point)) {
@@ -336,6 +343,7 @@ void Machine::leave(bool loop) {
 
 bool Machine::run(const Program & program) {
     error_.clear();
+    printed_.clear();
     masks_.assign(1, std::vector<char>(batch_, 1));
     loops_.clear();
     frames_.clear();
@@ -383,9 +391,7 @@ bool Machine::run(const Program & program) {
                 transform(instruction);
                 break;
             case Opcode::CALL:
-                // the standard library is what a call runs, and it is handed to the machine
-                // rather than held by it
-                report("the standard library is not attached, so a call answers its default");
+                builtin(instruction);
                 break;
             case Opcode::JUMP:
                 pc = static_cast<std::size_t>(instruction.target);

@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+#include <glm/mat4x4.hpp>
+
 #include "Program.h"
 #include "Renderer.h"
 #include "Value.h"
@@ -68,6 +70,15 @@ class Machine final {
      **/
     const std::vector<std::string> & reports() const;
 
+    /**
+     * What a `printf` in the shader wrote, in the order it wrote it, cleared at the start
+     * of every run. A renderer drains it into its log and a case reads it.
+     *
+     * Not reports(), which says one thing once: a person who wrote a printf is asking to be
+     * told every time, and a line per shading point is what they asked for.
+     **/
+    const std::vector<std::string> & printed() const;
+
  private:
     /**
      * A loop in progress: the lanes still going round it, and how deep the mask stack was
@@ -104,6 +115,18 @@ class Machine final {
     void product(const Instruction & instruction);
     void unary(const Instruction & instruction);
     void transform(const Instruction & instruction);  // NOLINT(build/include_what_you_use) - the name, not std::transform
+    /**
+     * A standard library call. Defined in Library.cxx, which is most of the language by
+     * volume and none of it by mechanism: every body there is arithmetic over the value
+     * model, and the four that are not ask the renderer.
+     **/
+    void builtin(const Instruction & instruction);
+    /**
+     * The matrix into a named coordinate space, the identity and a report when no renderer
+     * knows it - a scene that named a space nothing knows renders in the wrong place rather
+     * than not at all, and says so.
+     **/
+    glm::mat4x4 space(const std::string & name);
     /** Push the lanes of the condition that are, or are not, non-zero. **/
     void mask(const Instruction & instruction, bool wanted);
     /** Narrow a loop to the lanes its condition still holds. **/
@@ -120,6 +143,7 @@ class Machine final {
     std::vector<Loop> loops_;
     std::vector<Frame> frames_;
     std::vector<std::string> reports_;
+    std::vector<std::string> printed_;
     Renderer* renderer_ = nullptr;
     unsigned int batch_ = 1;
     std::string error_;
