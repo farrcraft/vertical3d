@@ -467,6 +467,48 @@ time, `diffuse` over one distant light gives the cosine, and each stub reports e
 
 ### Step 8 — a shader instance, and how a scene names one
 
+**Landed, less the C API.** `sl::Instance` is the binding and `sl::ShaderLibrary` is the name
+lookup. All nine standard shaders are source strings in the library and every one of them
+compiles, which a case asserts by name — that is the whole of what says steps 3 to 7 can carry
+a real shader rather than the ones their own cases were written around.
+
+The name is the first thing the step's text was wrong about: **`Shader` was taken.**
+`sl::Shader` is already the syntax node a file parses to, and the distinction the step turns on
+is exactly the one the two names have to keep — a program is compiled once per *name* and
+instanced once per *request* — so the instance is `sl::Instance`.
+
+Four things worth knowing beyond the step's own text:
+
+- **A declared default is a prologue.** Step 7 named this as step 8's, and the shape it takes is
+  that the instructions computing the defaults sit at the front of the program and a run starts
+  after them. Emitting them into the body instead would overwrite whatever a scene bound, once
+  per grid. An instance runs the prologue once and reads the answers out, so a default written
+  as an expression — `point "shader" (0, 0, 1)`, which is how three of the four standard lights
+  aim themselves — is a value like any other.
+- **The prologue is also where the `"shader"` space open question surfaces.** There is no
+  renderer attached when a default is evaluated, so `point "shader" (0, 0, 0)` is reported and
+  comes through untransformed. The instance logs it by shader name rather than swallowing it.
+  That is one warning per light instance until step 9 answers the space, and it is the open
+  question at the bottom of this plan being visible rather than being decided by silence.
+- **A light has no substitute.** RI asks for a default surface and says nothing about a default
+  light, and a light of some other kind is a worse answer than one fewer light — so a surface
+  that will not compile becomes `matte` and a light that will not becomes nothing, both loudly.
+- **A search path is colon separated and this is Windows.** `C:\shaders` has a colon in it, so a
+  lone letter before one does not end a directory. `&` is whatever the path was before, which is
+  how a scene adds to what a driver put there.
+
+**Not here: the four C API bodies**, and the reason is not that they were missed. `RiSurface`,
+`RiLightSource`, `RiIlluminate` and `RiImager` are declared in `moya/libmoya/RenderMan.h` — talyn
+has no C API at all, so "both renderers" does not apply to this bullet — and a body for any of
+them would call a `RenderContext` method that step 9 adds. Three of the four also carry a
+parameter list, and turning the C API's token and pointer arrays into a `ParameterList` is a
+piece of work no request has yet: `RiPolygonV`, `RiAttributeV` and `RiProjectionV` are all empty
+for the same reason phase 2 left them so. Writing that conversion for three requests while a
+dozen others stay empty, ahead of the step that has something to hand it to, is worse than
+saying where it goes. **It moves to step 9**, where the context methods it would call are
+written, and the drift the step's text is worried about closes there in one go rather than half
+here.
+
 The binding, needed identically by both renderers, and the point at which RIB reaches the language.
 
 - **`Shader` is a compiled program plus bound parameter values.** `Surface "plastic" "Ks" [0.8]`
@@ -507,6 +549,13 @@ Where the machine meets the renderer it was designed for.
 - **A primitive carries both across a split**, on `ReyesPrimitive::place()` beside the placement and
   the colour, for the reason phase 2 found: splitting resubmits pieces during the second pass, when
   neither is current any more.
+- **The C API's four bodies, moved here from step 8.** `RiSurface`, `RiLightSource`, `RiIlluminate`
+  and `RiImager` call the `RenderContext` methods this step writes, so they are written with them
+  rather than before them. Three of the four carry a parameter list, and the token and pointer
+  arrays that a C caller passes have to become a `ParameterList` first — a conversion no request
+  has, which is why `RiPolygonV` and `RiAttributeV` are empty too. It belongs in
+  `api/render/offline/rib` beside the reader that builds the same thing from a file, and doing it
+  once gives every V-form a body rather than four.
 - **The shading points are the grid's vertices.** `P` is the vertex in the shader's current space,
   `N` and `Ng` come from step 2, `Cs` and `Os` from the graphics state or the primitive's own, `I`
   is `P - E`, and `s`, `t`, `u`, `v` are the grid parameters dicing already computes. `du` and `dv`
