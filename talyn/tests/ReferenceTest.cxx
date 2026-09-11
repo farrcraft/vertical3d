@@ -116,3 +116,34 @@ BOOST_AUTO_TEST_CASE(talyn_reference_from_rib_test) {
     BOOST_CHECK_MESSAGE(difference.match,
         difference.description() + " - what the rib scene rendered instead is in " + RIB_RENDERED);
 }
+
+/**
+ * A lit scene, read from a file and rendered.
+ *
+ * This is the first talyn picture with any shading in it: a surface shader, a light, and a
+ * value that is neither the geometry's colour nor black. It asserts the number rather than
+ * a committed image, because what a lit picture should look like is step 12's question and
+ * what the wiring does is this step's.
+ **/
+BOOST_AUTO_TEST_CASE(talyn_renders_a_lit_scene_test) {
+    auto rc = boost::make_shared<v3d::talyn::RenderContext>();
+    v3d::talyn::RIBHandler handler(rc);
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(reader.read("data/lit-quad.rib", &handler));
+    BOOST_CHECK_EQUAL(reader.error(), "");
+    BOOST_REQUIRE_EQUAL(handler.error(), "");
+
+    rc->render();
+    boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = rc->framebuffer();
+
+    /*
+        The light is forty five degrees off the surface, so a white quad under it comes out
+        at the cosine of that - which is a value the geometry's own colour could not have
+        produced and neither could no shading at all.
+    */
+    BOOST_CHECK_CLOSE(planes->value(0, 32, 24), 0.70710678f, 0.5f);
+    BOOST_CHECK_CLOSE(planes->value(2, 32, 24), 0.70710678f, 0.5f);
+    // and nothing outside the quad, which is the background
+    BOOST_CHECK_SMALL(planes->value(0, 2, 2), 0.0001f);
+}

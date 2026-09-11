@@ -5,8 +5,9 @@
 
 #include "RenderContext.h"
 
-#include <limits>
 #include <vector>
+
+#include "HitShader.h"
 
 namespace v3d::talyn {
 
@@ -85,7 +86,9 @@ void RenderContext::render() {
 
     int viewport[4] = { 0, 0, static_cast<int>(width), static_cast<int>(height) };
 
-    const std::vector<Triangle> & triangles = scene_.triangles();
+    // one of these for the render rather than one per pixel: it holds the register files,
+    // and sizing one per pixel is the one allocation a tracer would notice
+    HitShader shader(&scene_);
 
     for (unsigned int row = 0; row < height; row++) {
         for (unsigned int column = 0; column < width; column++) {
@@ -95,13 +98,10 @@ void RenderContext::render() {
             v3d::type::geometry::Ray ray = camera.ray(point, viewport);
 
             glm::vec3 colour = scene_.background();
-            float nearest = std::numeric_limits<float>::max();
-            for (const Triangle & triangle : triangles) {
-                float distance = 0.0f;
-                if (ray.intersects(triangle.a(), triangle.b(), triangle.c(), &distance) && distance < nearest) {
-                    nearest = distance;
-                    colour = triangle.colour();
-                }
+            Hit hit;
+            if (scene_.nearest(ray, 0.0f, &hit)) {
+                // the nearest hit is the batch, and the surface shader's Ci is the pixel
+                colour = shader.shade(hit);
             }
 
             framebuffer_->value(RED, column, row, colour.r);

@@ -505,7 +505,7 @@ Shading RenderContext::shading() {
         if (std::find(lit_.begin(), lit_.end(), light.handle) == lit_.end()) {
             continue;
         }
-        Light shining;
+        v3d::render::offline::sl::Placed shining;
         shining.shader = light.shader;
         shining.placement = light.placement;
         state.lights.push_back(shining);

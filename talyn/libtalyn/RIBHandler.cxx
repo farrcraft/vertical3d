@@ -5,9 +5,12 @@
 
 #include "RIBHandler.h"
 
+#include <algorithm>
 #include <cmath>
 #include <string>
 #include <vector>
+
+#include <boost/make_shared.hpp>
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -40,6 +43,8 @@ bool rotation(const glm::mat3 & m) {
 };  // namespace
 
 RIBHandler::RIBHandler(const boost::shared_ptr<RenderContext> & rc) : rc_(rc) {
+    shaders_ = boost::make_shared<v3d::render::offline::sl::ShaderLibrary>(
+        boost::make_shared<v3d::log::Logger>());
 }
 
 const std::string & RIBHandler::error() const {
@@ -151,6 +156,9 @@ void RIBHandler::attributeBegin() {
     Attributes saved;
     saved.transform = transform_;
     saved.color = color_;
+    saved.opacity = opacity_;
+    saved.surface = surface_;
+    saved.lit = lit_;
     attributes_.push_back(saved);
 }
 
@@ -160,7 +168,76 @@ void RIBHandler::attributeEnd() {
     }
     transform_ = attributes_.back().transform;
     color_ = attributes_.back().color;
+    opacity_ = attributes_.back().opacity;
+    surface_ = attributes_.back().surface;
+    // which lights are on comes back; the lights themselves do not, because a light
+    // belongs to the frame rather than to the block that created it
+    lit_ = attributes_.back().lit;
     attributes_.pop_back();
+}
+
+void RIBHandler::option(const std::string & name, const ParameterList & parameters) {
+    // RI writes it as Option "searchpath" "shader" ["./shaders:&"], and the shader path
+    // is the only one this renderer looks anything up on
+    if (name == "searchpath" && parameters.has("shader")) {
+        shaders_->searchpath(parameters.string("shader", std::string()));
+    }
+}
+
+void RIBHandler::opacity(const glm::vec3 & value) {
+    opacity_ = value;
+}
+
+void RIBHandler::surface(const std::string & name, const ParameterList & parameters) {
+    surface_.shader = shaders_->instance(name,
+        v3d::render::offline::sl::ShaderType::SURFACE, parameters);
+    // a shader's own space is the transform that was in force when the scene named it,
+    // and talyn's scene is in world space, so the current transformation is that space
+    surface_.placement = transform_;
+}
+
+void RIBHandler::lightSource(const std::string & name, const std::string & handle,
+    const ParameterList & parameters) {
+    LightSource made;
+    made.handle = handle;
+    made.light.shader = shaders_->instance(name,
+        v3d::render::offline::sl::ShaderType::LIGHT, parameters);
+    made.light.placement = transform_;
+    if (!made.light.shader) {
+        // the library has said why, and a light that will not compile is one fewer light
+        return;
+    }
+    lights_.push_back(made);
+    // RiLightSource creates the light and switches it on, which is why a scene that wants
+    // one light writes one request rather than two
+    illuminate(handle, true);
+}
+
+void RIBHandler::illuminate(const std::string & handle, bool on) {
+    const std::vector<std::string>::iterator found = std::find(lit_.begin(), lit_.end(), handle);
+    if (on && found == lit_.end()) {
+        lit_.push_back(handle);
+    } else if (!on && found != lit_.end()) {
+        lit_.erase(found);
+    }
+}
+
+v3d::render::offline::sl::Placed RIBHandler::shading() {
+    if (!lit_given_) {
+        /*
+            A raytracer shades every triangle against one light list, so which lights are
+            on stops being a question at the first primitive. A scene that switches one
+            off after its geometry is not something the standard describes, and this
+            renderer draws what was on when the geometry arrived.
+        */
+        lit_given_ = true;
+        for (const LightSource & made : lights_) {
+            if (std::find(lit_.begin(), lit_.end(), made.handle) != lit_.end()) {
+                rc_->scene().add(made.light);
+            }
+        }
+    }
+    return surface_;
 }
 
 void RIBHandler::transformBegin() {
@@ -226,14 +303,17 @@ void RIBHandler::fan(const std::vector<glm::vec3> & points, const std::vector<gl
         const glm::vec3 a(transform_ * glm::vec4(points[indices[0]], 1.0f));
         const glm::vec3 b(transform_ * glm::vec4(points[indices[i]], 1.0f));
         const glm::vec3 c(transform_ * glm::vec4(points[indices[i + 1]], 1.0f));
-        if (indices[0] < normals.size() && indices[i] < normals.size() && indices[i + 1] < normals.size()) {
-            rc_->scene().add(Triangle(a, b, c, color_,
+        Triangle triangle = indices[0] < normals.size() && indices[i] < normals.size() &&
+            indices[i + 1] < normals.size() ?
+            Triangle(a, b, c, color_,
                 glm::normalize(toWorldNormal * normals[indices[0]]),
                 glm::normalize(toWorldNormal * normals[indices[i]]),
-                glm::normalize(toWorldNormal * normals[indices[i + 1]])));
-        } else {
-            rc_->scene().add(Triangle(a, b, c, color_));
-        }
+                glm::normalize(toWorldNormal * normals[indices[i + 1]])) :
+            Triangle(a, b, c, color_);
+        // the colour is the triangle's Cs and the shader is what multiplies it
+        triangle.surface(shading());
+        triangle.opacity(opacity_);
+        rc_->scene().add(triangle);
     }
 }
 

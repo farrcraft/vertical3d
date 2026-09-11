@@ -15,21 +15,6 @@
 namespace v3d::moya {
 
 /**
- * One light shining on a primitive: the shader instance a `LightSource` request made, and
- * where the scene put it.
- *
- * The placement is the light's own space into eye space - the transform that was in force
- * when the scene instanced it. A light shader states `from` and `to` in that space and
- * shades points in this one, so the pair is what makes a light placed by a transform land
- * where the scene put it rather than at the origin.
- **/
-class Light final {
- public:
-    v3d::render::offline::sl::InstancePtr shader;
-    glm::mat4x4 placement = glm::mat4x4(1.0f);
-};
-
-/**
  * What a primitive is shaded by: its surface shader and the lights that were switched on
  * when it was submitted.
  *
@@ -48,7 +33,12 @@ class Shading final {
      * this one value is the whole of it.
      **/
     glm::vec3 opacity = glm::vec3(1.0f);
-    std::vector<Light> lights;
+    /**
+     * The lights that were switched on, each with the space the scene instanced it in: a
+     * light shader states `from` and `to` in that space and shades points in eye space,
+     * so the pair is what puts a light where the scene put it rather than at the origin.
+     **/
+    std::vector<v3d::render::offline::sl::Placed> lights;
 };
 
 };  // namespace v3d::moya

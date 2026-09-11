@@ -112,7 +112,7 @@ bool GridShader::light(unsigned int index, const Value & surface, Value* directi
     if (shading_ == nullptr || index >= shading_->lights.size()) {
         return false;
     }
-    const Light & shining = shading_->lights[index];
+    const v3d::render::offline::sl::Placed & shining = shading_->lights[index];
     Run & held = run(shining.shader, batch_);
     const v3d::render::offline::sl::runtime::Program & program = shining.shader->program();
 

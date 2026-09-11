@@ -27,6 +27,11 @@ namespace {
     They are RI's own, written in this tree's reading of the language: L points from the
     point being shaded toward the light, so a spotlight tests its cone against -L, which is
     the way the light travels.
+
+    Each of the three directional ones asks transmission() how much of its light arrives,
+    which is where a shadow lives. A renderer that cannot answer lets all of it through, so
+    this is the whole of the difference between a renderer that casts shadows and one that
+    does not - moya draws exactly what it drew before and talyn traces.
 */
 const char* const STANDARD = R"(
 surface constant() {
@@ -63,14 +68,23 @@ light ambientlight(float intensity = 1; color lightcolor = 1) {
 light distantlight(float intensity = 1; color lightcolor = 1;
         point from = point "shader" (0, 0, 0); point to = point "shader" (0, 0, 1)) {
     solar(to - from, 0) {
-        Cl = intensity * lightcolor;
+        /*
+            A light at infinity has no position for a shadow ray to end at, so the ray runs
+            a long way back along L, which points at the light. Far enough is a scene sized
+            question and this answer is a constant: a scene larger than this shadows itself
+            wrongly, and the alternative is a ray with no end, which the tracer has no
+            reading for.
+        */
+        Cl = intensity * lightcolor * transmission(Ps, Ps + L * 100000);
     }
 }
 
 light pointlight(float intensity = 1; color lightcolor = 1;
         point from = point "shader" (0, 0, 0)) {
     illuminate(from) {
-        Cl = intensity * lightcolor / (L . L);
+        // L points at the light, so Ps + L is where it is: the shadow ray ends there
+        // rather than going past it, and a surface behind the light does not block it
+        Cl = intensity * lightcolor * transmission(Ps, Ps + L) / (L . L);
     }
 }
 
@@ -83,7 +97,7 @@ light spotlight(float intensity = 1; color lightcolor = 1;
         float cosangle = ((-L) . A) / length(L);
         float atten = pow(cosangle, beamdistribution) / (L . L);
         atten *= smoothstep(cos(coneangle), cos(coneangle - conedeltaangle), cosangle);
-        Cl = atten * intensity * lightcolor;
+        Cl = atten * intensity * lightcolor * transmission(Ps, Ps + L);
     }
 }
 
