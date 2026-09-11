@@ -28,6 +28,7 @@ v3d_add_api_library(render
 	"realtime/vulkan/frame/DepthBuffer.h" "realtime/vulkan/frame/DepthBuffer.cxx"
 	"realtime/vulkan/frame/RenderTarget.h" "realtime/vulkan/frame/RenderTarget.cxx"
 	"realtime/vulkan/frame/FrameUniforms.h" "realtime/vulkan/frame/FrameUniforms.cxx"
+	"realtime/vulkan/frame/Capture.h" "realtime/vulkan/frame/Capture.cxx"
 	"realtime/vulkan/pipeline/Builder.h" "realtime/vulkan/pipeline/Builder.cxx"
 	"realtime/vulkan/memory/TextureFactory.h" "realtime/vulkan/memory/TextureFactory.cxx"
 	"realtime/vulkan/renderer/Quad.h" "realtime/vulkan/renderer/Quad.cxx"
