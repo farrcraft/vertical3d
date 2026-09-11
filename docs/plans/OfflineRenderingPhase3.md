@@ -541,6 +541,39 @@ example file still reads with the new requests in it.
 
 ### Step 9 — moya shades a grid
 
+**Landed.** `moya::GridShader` implements `sl::runtime::Renderer` and runs a surface shader
+over every vertex of a grid at once; `moya::Shading` is the surface shader, the opacity and
+the lights a primitive was submitted under, and it rides on `ReyesPrimitive::place()` beside
+the placement and the colour. The C API bullet moved here from step 8 landed with it.
+
+Four things beyond the step's own text:
+
+- **A scene that names no surface draws `constant`.** RI leaves the default to the renderer
+  and forbids only "null", and `constant` is the shader that means no shading: `Ci = Os * Cs`
+  is exactly what `hide` sampled before there was a language. That is why the phase 2
+  reference still matches without being regenerated — the strongest thing the step could say,
+  and it says it without a new picture. It is deliberately **not** the substitute for a shader
+  that failed to compile, which is `matte`: a scene whose shader failed and a scene that named
+  no shader must not look the same.
+- **The `"shader"` space open question is answered, and answering it changed step 8.** A shader
+  instance no longer remembers its defaults; it *runs* them, through the space table of the
+  machine it is writing into, and a position a scene bound is transformed by the same
+  placement. Without that, every light in every scene sits at the camera origin pointing down
+  one axis, because `point "shader" (0, 0, 1)` had nothing to ask.
+- **Which lights are on is an attribute; the lights are the frame's.** `RiLightSource` creates
+  a light and switches it on, an `Illuminate` inside an `AttributeBegin` block is local to it,
+  and a light created inside a block goes on lighting after it. That asymmetry is RI's and is
+  worth a case, because restoring the whole light list on `AttributeEnd` would compile.
+- **`"object"` space is not answered.** It is the transform in force at the *primitive* and a
+  primitive does not carry one — only the shader's. Answering with the shader's would be wrong
+  for any scene that transforms between `Surface` and `Polygon`, so the machine reports it
+  instead.
+
+**The analysis gates had never covered an app.** `out/build/verify` was configured with
+`V3D_BUILD_APPS=OFF`, so `/analyze` and clang-tidy had only ever seen `api/`. It is on now and
+moya is clean under both; CLAUDE.md's claim that the tree is clean at those gates was true of
+less of the tree than it reads.
+
 Where the machine meets the renderer it was designed for.
 
 - **The graphics state gains a surface shader and a light list**, pushed and popped by
@@ -681,10 +714,6 @@ whether it works is a phase that will not be finished.
 Small enough to settle in the code with a comment rather than in a record, but named so they are
 settled deliberately rather than by whoever types first.
 
-- **What a shader's `"shader"` space is.** RI says it is the transform in force when the shader was
-  instanced, which means the graphics state has to save one per `Surface` request. moya can; talyn
-  attaches shaders to triangles already in world space and has nowhere to put it. Probably a
-  per-shader-instance matrix on both, settled when step 8 writes the instance.
 - **Whether `Cs` on a primitive beats `Cs` in the graphics state.** RI says the primitive's own
   varying `"Cs"` wins, which is what moya's dicing already does; talyn has no per-vertex colour at
   all and will take the graphics state's. State the asymmetry in a comment or close it.
