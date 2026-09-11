@@ -12,6 +12,10 @@ Imager "background" "background" [0.15 0.25 0.45]
 # world origin one unit in front of the camera
 Transform [1 0 0 0  0 1 0 0  0 0 1 0  0 0 1 1]
 WorldBegin
+# the shader that means no shading, named rather than defaulted to: this picture is what
+# the tree drew before there was a language, and naming it is what says the language draws
+# the same thing
+Surface "constant"
 # asymmetric about both axes, so a flipped picture is a failing one
 Color [0.9 0.2 0.2]
 Polygon "P" [-0.8 -0.6 2  0.8 -0.6 2  0 0.7 2]

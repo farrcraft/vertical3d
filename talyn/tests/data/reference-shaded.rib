@@ -1,0 +1,39 @@
+##RenderMan RIB-Structure 1.1
+##Scene Two surfaces under two lights, one casting a shadow across the other
+version 3.03
+Format 64 48 1
+Projection "orthographic"
+# an ortho zoom of one and a pixel aspect of 4:3, which is what the code built scene sets
+ScreenWindow -1.333333 1.333333 -1 1
+Clipping 0.001 100
+# what a ray that hits nothing is worth, said with a request rather than with geometry
+Imager "background" "background" [0.05 0.06 0.1]
+# the eye one unit back along -z, the same camera the phase 1 reference uses
+Transform [1 0 0 0  0 1 0 0  0 0 1 0  0 0 1 1]
+WorldBegin
+# a little ambient light, so a point both the others are blocked from is dark rather than
+# black - and so that ambient(), which an illuminance loop cannot reach, is in a picture
+LightSource "ambientlight" 0 "intensity" [0.18]
+# a distant light down and to the right, which is the direction the shadow falls in
+LightSource "distantlight" 1 "intensity" [0.9] "to" [0.7 -0.7 1]
+# and a point light close in front of the floor, whose falloff shows across it
+TransformBegin
+Translate -0.6 0.5 1.2
+LightSource "pointlight" 2 "intensity" [1.2]
+TransformEnd
+
+# the floor, matte and narrower than the frame so that the imager's background is part
+# of the picture rather than something no ray reaches
+AttributeBegin
+Color [0.8 0.75 0.6]
+Surface "matte"
+Polygon "P" [-1.15 -1.2 3  1.15 -1.2 3  1.15 1.2 3  -1.15 1.2 3]
+AttributeEnd
+
+# a plastic panel in front of it, whose shadow falls across the floor
+AttributeBegin
+Color [0.2 0.45 0.8]
+Surface "plastic" "roughness" [0.1] "Ks" [0.5]
+Polygon "P" [-0.5 -0.45 2.2  0.35 -0.45 2.2  0.35 0.4 2.2  -0.5 0.4 2.2]
+AttributeEnd
+WorldEnd

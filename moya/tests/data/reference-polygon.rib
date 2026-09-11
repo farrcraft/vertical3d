@@ -7,6 +7,10 @@ Projection "orthographic"
 # about 2e-38 and collapse every z onto the near plane
 Clipping 1 100
 WorldBegin
+# the shader that means no shading, named rather than defaulted to: this picture is what
+# the tree drew before there was a language, and naming it is what says the language draws
+# the same thing
+Surface "constant"
 # asymmetric about both axes, so a flipped picture is a failing one. No Color, so it takes the
 # RI default of white - which is what the code built scene renders
 Polygon "P" [-0.7 -0.2 5  0.3 -0.2 5  0.3 0.8 5  -0.7 0.8 5]
