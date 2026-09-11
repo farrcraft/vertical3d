@@ -222,6 +222,16 @@ void RIBHandler::illuminate(const std::string & handle, bool on) {
     }
 }
 
+void RIBHandler::imager(const std::string & name, const ParameterList & parameters) {
+    v3d::render::offline::sl::Placed made;
+    made.shader = shaders_->instance(name,
+        v3d::render::offline::sl::ShaderType::IMAGER, parameters);
+    made.placement = transform_;
+    if (made.shader) {
+        rc_->imager(made);
+    }
+}
+
 v3d::render::offline::sl::Placed RIBHandler::shading() {
     if (!lit_given_) {
         /*

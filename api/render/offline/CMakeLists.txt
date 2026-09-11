@@ -31,6 +31,7 @@ v3d_add_api_library(render_offline
 	"sl/runtime/Library.cxx"
 	"sl/Instance.h" "sl/Instance.cxx"
 	"sl/ShaderLibrary.h" "sl/ShaderLibrary.cxx"
+	"sl/Imager.h" "sl/Imager.cxx"
 )
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.

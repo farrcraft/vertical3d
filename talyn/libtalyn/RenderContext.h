@@ -40,11 +40,18 @@ class RenderContext {
     Scene & scene();
     const Scene & scene() const;
 
+    /**
+     * The imager shader run over the finished frame, which is how a scene says what a
+     * ray that hit nothing is worth. Empty until a scene names one.
+     */
+    void imager(const v3d::render::offline::sl::Placed & shader);
+
     boost::shared_ptr<v3d::render::offline::FrameBuffer> framebuffer() const;
 
  private:
     boost::shared_ptr<v3d::render::offline::FrameBuffer> framebuffer_;
     Scene scene_;
+    v3d::render::offline::sl::Placed imager_;
 };
 
 

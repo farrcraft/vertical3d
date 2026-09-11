@@ -29,7 +29,15 @@ class FrameBuffer {
         RED = 0,
         GREEN = 1,
         BLUE = 2,
-        DEPTH = 3
+        DEPTH = 3,
+        /**
+         * How much of the pixel was drawn into, which is SL's alpha.
+         *
+         * One or nothing while there is one sample per pixel centre; a sampler that
+         * takes more than one is what would put a fraction here. It is what an imager
+         * reads to tell a pixel nothing was drawn into from a black one.
+         */
+        COVERAGE = 4
     };
     /**
      * How many of the planes are the picture.

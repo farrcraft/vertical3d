@@ -60,7 +60,9 @@ const Global GLOBALS[] = {
     { "Ci", Type::COLOR, Storage::VARYING, SURFACE | IMAGER, SURFACE | IMAGER, false },
     { "Oi", Type::COLOR, Storage::VARYING, SURFACE | IMAGER, SURFACE | IMAGER, false },
     { "Ps", Type::POINT, Storage::VARYING, LIGHT, 0, false },
-    { "alpha", Type::FLOAT, Storage::VARYING, IMAGER, 0, false },
+    // an imager writes alpha as well as reading it: a pixel it has painted is no longer
+    // one that nothing was drawn into, and "background" says so
+    { "alpha", Type::FLOAT, Storage::VARYING, IMAGER, IMAGER, false },
     // a light writes these; a surface reads them, and only inside an illuminance body
     { "L", Type::VECTOR, Storage::VARYING, SURFACE | LIGHT, LIGHT, true },
     { "Cl", Type::COLOR, Storage::VARYING, SURFACE | LIGHT, LIGHT, true }

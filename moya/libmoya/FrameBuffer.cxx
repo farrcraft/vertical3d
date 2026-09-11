@@ -43,7 +43,7 @@ void FrameBuffer::allocate() {
         buckets_.push_back(vb);
     }
 
-    planes_.reset(new v3d::render::offline::FrameBuffer(imageSize_[0], imageSize_[1], DEPTH + 1));
+    planes_.reset(new v3d::render::offline::FrameBuffer(imageSize_[0], imageSize_[1], COVERAGE + 1));
     // a sample wins its pixel by being nearer than what the depth plane already holds, so an
     // untouched pixel has to start further away than anything the hider can produce
     planes_->clear(DEPTH, std::numeric_limits<float>::max());

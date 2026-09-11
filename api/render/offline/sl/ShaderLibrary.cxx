@@ -103,6 +103,7 @@ light spotlight(float intensity = 1; color lightcolor = 1;
 
 imager background(color background = 0) {
     Ci = Ci + (1 - alpha) * background;
+    alpha = 1;
 }
 )";
 

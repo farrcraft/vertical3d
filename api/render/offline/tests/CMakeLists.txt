@@ -14,7 +14,8 @@ v3d_add_test(render_offline
 	"SlMachineTest.cxx"
 	"SlLibraryTest.cxx"
 	"SlLightingTest.cxx"
-	"SlShaderLibraryTest.cxx")
+	"SlShaderLibraryTest.cxx"
+	"SlImagerTest.cxx")
 
 target_link_libraries(v3dtest_render_offline PRIVATE v3dlib_render_offline ${Boost_LIBRARIES})
 

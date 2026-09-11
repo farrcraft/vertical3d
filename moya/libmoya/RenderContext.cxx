@@ -6,6 +6,7 @@
 #include "RenderContext.h"
 
 #include <api/image/Factory.h>
+#include <api/render/offline/sl/Imager.h>
 
 #include <algorithm>
 #include <cmath>
@@ -743,6 +744,13 @@ void RenderContext::render() {
     }
 
     frameBuffer_->render(*this);
+
+    if (imager_) {
+        // after the last bucket, which is where every sample the frame will ever hold is
+        // in it: an imager is a function of the finished picture rather than of a piece
+        v3d::render::offline::sl::Imager imager(imager_, &shader());
+        imager.run(frameBuffer_->planes().get(), FrameBuffer::COVERAGE);
+    }
 
     // a display named nothing, or one that is not a file, leaves the samples in the
     // planes rather than writing them

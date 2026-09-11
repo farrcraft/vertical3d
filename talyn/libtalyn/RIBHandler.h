@@ -59,6 +59,8 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
     void lightSource(const std::string & name, const std::string & handle,
         const v3d::render::offline::rib::ParameterList & parameters) override;
     void illuminate(const std::string & handle, bool on) override;
+    void imager(const std::string & name,
+        const v3d::render::offline::rib::ParameterList & parameters) override;
 
     void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override;
     void pointsPolygons(const std::vector<unsigned int> & counts, const std::vector<unsigned int> & indices,

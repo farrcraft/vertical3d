@@ -6,15 +6,12 @@ Projection "orthographic"
 # an ortho zoom of one and a pixel aspect of 4:3, which is what the code built scene sets
 ScreenWindow -1.333333 1.333333 -1 1
 Clipping 0.001 100
+# what a ray that hits nothing is worth, which phase 2 had to say with geometry
+Imager "background" "background" [0.15 0.25 0.45]
 # the eye four thirds of nothing back along -z: a world to camera transformation puts the
 # world origin one unit in front of the camera
 Transform [1 0 0 0  0 1 0 0  0 0 1 0  0 0 1 1]
 WorldBegin
-# A scene has no background colour to set - RiImager is not implemented - so the backdrop is
-# geometry. It is far enough back to sit behind everything and large enough to fill the frame,
-# which makes it exactly the background the code built scene names.
-Color [0.15 0.25 0.45]
-Polygon "P" [-100 -100 90  100 -100 90  100 100 90  -100 100 90]
 # asymmetric about both axes, so a flipped picture is a failing one
 Color [0.9 0.2 0.2]
 Polygon "P" [-0.8 -0.6 2  0.8 -0.6 2  0 0.7 2]

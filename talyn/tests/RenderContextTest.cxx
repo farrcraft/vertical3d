@@ -50,8 +50,9 @@ BOOST_AUTO_TEST_CASE(rendercontext_background_test) {
     // every ray misses, so the whole frame is the background
     checkPixel(*buffer, 0, 0, background);
     checkPixel(*buffer, 8, 8, background);
-    // and it is opaque, which an unwritten alpha plane would not be
-    BOOST_CHECK_EQUAL(buffer->value(3, 8, 8), 1.0f);
+    // and every pixel says nothing was drawn into it, which is what lets an imager tell
+    // a pixel the scene never reached from a black one
+    BOOST_CHECK_EQUAL(buffer->value(3, 8, 8), 0.0f);
 }
 
 BOOST_AUTO_TEST_CASE(rendercontext_triangle_test) {

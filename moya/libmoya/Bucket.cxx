@@ -71,6 +71,8 @@ void hide(MicroPolygonGrid & grid, RenderContext & rc) {
                     planes->value(FrameBuffer::GREEN, x, y, color.g);
                     planes->value(FrameBuffer::BLUE, x, y, color.b);
                     planes->value(FrameBuffer::DEPTH, x, y, depth);
+                    // one sample per pixel centre, so a pixel is covered or it is not
+                    planes->value(FrameBuffer::COVERAGE, x, y, 1.0f);
                 }
             }
         }
