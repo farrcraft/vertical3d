@@ -1,0 +1,16 @@
+##RenderMan RIB-Structure 1.1
+##Scene A quad under one distant light, which is the first talyn picture with shading in it
+version 3.03
+Format 64 48 1
+Projection "orthographic"
+ScreenWindow -1.333333 1.333333 -1 1
+Clipping 0.001 100
+# the eye one unit back along -z, the same camera the phase 1 reference uses
+Transform [1 0 0 0  0 1 0 0  0 0 1 0  0 0 1 1]
+WorldBegin
+# aimed down and away from the camera, so the light arrives at forty five degrees
+LightSource "distantlight" 1 "to" [1 0 1]
+Color [1 1 1]
+Surface "matte"
+Polygon "P" [-0.8 -0.8 2  0.8 -0.8 2  0.8 0.8 2  -0.8 0.8 2]
+WorldEnd

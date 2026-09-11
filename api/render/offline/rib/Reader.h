@@ -100,6 +100,10 @@ class Reader final {
     static void skipArray(Lexer * lexer);
 
     bool number(Lexer * lexer, float * value);
+    /**
+     * A light handle, which RIB 3.03 writes as a number and later RIB writes as a string.
+     **/
+    bool handle(Lexer * lexer, std::string * value);
     bool text(Lexer * lexer, std::string * value);
     bool numbers(Lexer * lexer, unsigned int count, std::vector<float> * out);
     bool matrix(Lexer * lexer, glm::mat4x4 * out);

@@ -20,7 +20,7 @@ std::string_view Theme::name() const {
     return name_;
 }
 
-void Theme::addStyle(boost::shared_ptr<Style> style) {
+void Theme::addStyle(const boost::shared_ptr<Style>& style) {
     styles_.push_back(style);
 }
 

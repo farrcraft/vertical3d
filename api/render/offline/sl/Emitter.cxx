@@ -138,13 +138,25 @@ bool Emitter::emit(runtime::Program* program) {
         reg.type = symbol.type;
         reg.storage = symbol.storage;
         reg.name = symbol.name;
+        reg.parameter = symbol.role == Symbol::Role::PARAMETER;
         program_->registers.push_back(reg);
     }
     program_->symbols = symbols_.size();
     try {
+        // the declared defaults come first and are their own run: a default the body
+        // computed would overwrite whatever a scene bound, once per grid
+        for (const Parameter & parameter : shader_->parameters) {
+            if (!parameter.defaultValue || parameter.symbol < 0) {
+                continue;
+            }
+            const int value = emitExpression(parameter.defaultValue);
+            put(runtime::Opcode::MOVE, parameter.symbol, value, -1, parameter.defaultValue);
+        }
+        program_->prologue = program_->instructions.size();
         emitBlock(shader_->body);
     } catch (const Failure &) {
         program_->instructions.clear();
+        program_->prologue = 0;
         return false;
     }
     return true;
@@ -189,10 +201,8 @@ void Emitter::emitStatement(const StatementPtr & statement) {
             emitExpression(static_cast<const ExpressionStatement &>(*statement).expression);
             return;
         case Statement::Kind::LIGHTING:
-            // illuminance runs another shader's program over the same batch, which is the
-            // standard library's message passing rather than an instruction
-            throw fail("a lighting construct has no instructions yet",
-                statement->line, statement->column);
+            emitLighting(statement);
+            return;
     }
 }
 
@@ -303,6 +313,10 @@ void Emitter::emitJump(const StatementPtr & statement) {
             put(runtime::Opcode::CONTINUE, -1, -1, -1, ExpressionPtr());
             return;
         case Jump::Where::RETURN:
+            if (jump.value && !returns_.empty()) {
+                const int value = emitExpression(jump.value);
+                put(runtime::Opcode::MOVE, returns_.back(), value, -1, jump.value);
+            }
             put(runtime::Opcode::RETURN, -1, -1, -1, jump.value);
             return;
     }
@@ -392,10 +406,7 @@ int Emitter::emitCast(const ExpressionPtr & expression) {
 int Emitter::emitCall(const ExpressionPtr & expression) {
     const Call & call = static_cast<const Call &>(*expression);
     if (call.function >= 0) {
-        // a shader's own function is inlined rather than called, since a run has no call
-        // stack - and the inliner comes with the library's own SL-source functions
-        throw fail("'" + call.name + "' is a shader function, which has no instructions yet",
-            expression->line, expression->column);
+        return emitInline(expression);
     }
     runtime::Instruction instruction;
     instruction.opcode = runtime::Opcode::CALL;
@@ -409,6 +420,88 @@ int Emitter::emitCall(const ExpressionPtr & expression) {
     }
     program_->instructions.push_back(instruction);
     return instruction.target;
+}
+
+int Emitter::global(const char* name) const {
+    for (std::size_t i = 0; i < symbols_.size(); i++) {
+        if (symbols_[i].role == Symbol::Role::GLOBAL && symbols_[i].name == name) {
+            return static_cast<int>(i);
+        }
+    }
+    return -1;
+}
+
+void Emitter::emitLighting(const StatementPtr & statement) {
+    const Lighting & lighting = static_cast<const Lighting &>(*statement);
+    ExpressionPtr where;
+    std::vector<int> given;
+    given.reserve(lighting.arguments.size());
+    for (const ExpressionPtr & argument : lighting.arguments) {
+        given.push_back(emitExpression(argument));
+        where = argument;
+    }
+
+    runtime::Instruction open;
+    open.arguments = given;
+    open.line = statement->line;
+    open.column = statement->column;
+    if (lighting.construct != Lighting::Construct::ILLUMINANCE) {
+        /*
+            A light shader's end of the message passing. L and Ps are its own globals: the
+            construct writes the first for every point it lights and reads the second to
+            know where each of those points is.
+        */
+        open.opcode = lighting.construct == Lighting::Construct::ILLUMINATE
+            ? runtime::Opcode::ILLUMINATE : runtime::Opcode::SOLAR;
+        open.left = global("L");
+        open.right = global("Ps");
+        program_->instructions.push_back(open);
+        const int skip = here() - 1;
+        emitStatement(lighting.body);
+        put(runtime::Opcode::POP_MASK, -1, -1, -1, where);
+        patch(skip, here());
+        return;
+    }
+
+    /*
+        A surface shader's end. The body is a loop over the lights rather than over a
+        condition, so it is its own opcode rather than the LOOP the machine already has:
+        what narrows the batch is which points a light reaches, and that arrives from the
+        renderer one light at a time.
+    */
+    open.opcode = runtime::Opcode::ILLUMINANCE;
+    open.left = global("L");
+    open.right = global("Cl");
+    program_->instructions.push_back(open);
+    const int top = here();
+    const int done = put(runtime::Opcode::ILLUMINANCE_NEXT, -1, -1, -1, where);
+    emitStatement(lighting.body);
+    put(runtime::Opcode::POP_MASK, -1, -1, -1, where);
+    put(runtime::Opcode::JUMP, top, -1, -1, where);
+    patch(done, here());
+    put(runtime::Opcode::POP_ILLUMINANCE, -1, -1, -1, where);
+}
+
+int Emitter::emitInline(const ExpressionPtr & expression) {
+    const Call & call = static_cast<const Call &>(*expression);
+    const Function & function = shader_->functions[static_cast<std::size_t>(call.function)];
+    // every argument is evaluated before any formal is written, so that an argument which
+    // is itself a call cannot land on a formal this one has already filled
+    std::vector<int> given;
+    given.reserve(call.arguments.size());
+    for (const ExpressionPtr & argument : call.arguments) {
+        given.push_back(emitExpression(argument));
+    }
+    for (std::size_t i = 0; i < given.size() && i < function.parameters.size(); i++) {
+        put(runtime::Opcode::MOVE, function.parameters[i].symbol, given[i], -1, call.arguments[i]);
+    }
+    const int result = temporary(expression->type, expression->storage);
+    put(runtime::Opcode::ENTER, -1, -1, -1, expression);
+    returns_.push_back(result);
+    emitBlock(function.body);
+    returns_.pop_back();
+    put(runtime::Opcode::LEAVE, -1, -1, -1, expression);
+    return result;
 }
 
 };  // namespace v3d::render::offline::sl

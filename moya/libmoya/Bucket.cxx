@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "FrameBuffer.h"
+#include "GridShader.h"
 #include "RenderContext.h"
 
 namespace v3d::moya {
@@ -57,6 +58,7 @@ void hide(MicroPolygonGrid & grid, RenderContext & rc) {
             int top = std::max(0, static_cast<int>(std::ceil(min.y - 0.5f)));
             int bottom = std::min(height - 1, static_cast<int>(std::floor(max.y - 0.5f)));
 
+            // the shaded colour, which is what the surface shader left on the vertex
             const glm::vec3 color = poly[0].color();
             for (int row = top; row <= bottom; row++) {
                 for (int column = left; column <= right; column++) {
@@ -69,6 +71,8 @@ void hide(MicroPolygonGrid & grid, RenderContext & rc) {
                     planes->value(FrameBuffer::GREEN, x, y, color.g);
                     planes->value(FrameBuffer::BLUE, x, y, color.b);
                     planes->value(FrameBuffer::DEPTH, x, y, depth);
+                    // one sample per pixel centre, so a pixel is covered or it is not
+                    planes->value(FrameBuffer::COVERAGE, x, y, 1.0f);
                 }
             }
         }
@@ -83,7 +87,7 @@ Bucket::Bucket() {
 Bucket::~Bucket() {
 }
 
-void Bucket::addPrimitive(boost::shared_ptr<ReyesPrimitive> primitive) {
+void Bucket::addPrimitive(const boost::shared_ptr<ReyesPrimitive>& primitive) {
     primitives_.push_back(primitive);
 }
 
@@ -102,8 +106,9 @@ bool Bucket::render(RenderContext & rc) {
         if (prim->diceable()) {
             boost::shared_ptr<MicroPolygonGrid> grid;
             while (prim->dice(grid, rc)) {
-                // dicing carries the primitive's own colour onto the grid, which is the
-                // whole of shading until RiSurface has an implementation
+                // dicing carries the primitive's own colour onto the grid as Cs, and the
+                // surface shader runs over every vertex of it at once and leaves Ci there
+                rc.shader().shade(prim->shading(), grid.get());
                 hide(*grid, rc);
             }
         } else {

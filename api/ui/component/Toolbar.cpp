@@ -34,7 +34,7 @@ void Toolbar::add(const boost::shared_ptr<Button>& button) {
 
 /**
  **/
-std::size_t Toolbar::size() const noexcept {
+std::size_t Toolbar::count() const noexcept {
     return buttons_.size();
 }
 

@@ -100,7 +100,50 @@ enum class Opcode {
      **/
     BREAK,
     CONTINUE,
-    /** Take the live lanes out of everything: they are done with this shader. **/
+    /**
+     * Open an inlined function body.
+     *
+     * A call is inlined because a run has no call stack, and the body is bracketed rather
+     * than merely pasted in because a `return` inside it means "these lanes are done with
+     * this function", not "done with this shader".
+     **/
+    ENTER,
+    /** Close an inlined body: the lanes that returned from it are live again. **/
+    LEAVE,
+    /**
+     * Open an illuminance loop. `left` and `right` are the surface shader's L and Cl, and
+     * `arguments` are the construct's own - the point being shaded, and a cone axis and
+     * half angle when it named one.
+     *
+     * The message passing of ADR-0026, from the side the surface is on: the body runs once
+     * per light, over the same batch, with L and Cl set by that light's own program.
+     **/
+    ILLUMINANCE,
+    /**
+     * Set L and Cl from the next light the body has not run for, and narrow the batch to
+     * the points that light reaches inside the cone. Jump to `target` when the lights run
+     * out - and skip a light no point of this batch sees, which is what keeps a scene with
+     * a hundred lights from running the body a hundred times over an empty mask.
+     **/
+    ILLUMINANCE_NEXT,
+    POP_ILLUMINANCE,
+    /**
+     * The other end of the message passing, in a light shader with a position: L is from
+     * the point being lit toward `arguments[0]`, and the batch narrows to the points inside
+     * the cone `arguments[1]` and `arguments[2]` name. `left` and `right` are the light
+     * shader's L and Ps. Jump to `target` when the light reaches no point at all.
+     **/
+    ILLUMINATE,
+    /**
+     * The same for a light at infinity, where every point is lit from one direction: L is
+     * against `arguments[0]`, which is the direction the light travels in.
+     **/
+    SOLAR,
+    /**
+     * Take the live lanes out of the innermost inlined body, or out of everything when the
+     * shader body is what is running. Like BREAK it does not jump, because the lanes beside
+     * it have not finished.
+     **/
     RETURN
 };
 
@@ -128,6 +171,11 @@ class Register final {
     /** The symbol's name, or empty for a temporary. **/
     std::string name;
     /**
+     * Whether the symbol is a shader parameter, which is what a scene may bind and what
+     * the prologue leaves holding a declared default.
+     **/
+    bool parameter = false;
+    /**
      * Whether the register holds a literal the machine writes once at the start of a run
      * rather than something the program computes.
      **/
@@ -151,6 +199,14 @@ class Program final {
     std::vector<Instruction> instructions;
     /** How many of the registers are symbols. **/
     std::size_t symbols = 0;
+    /**
+     * How many of the instructions compute the shader's declared parameter defaults.
+     *
+     * They are at the front and a run starts after them, because a default written as an
+     * instruction the body runs would overwrite the value a scene bound on every pass over
+     * a grid. `Shader` runs them once and reads the answers out.
+     **/
+    std::size_t prologue = 0;
 
     /**
      * The register a named symbol is, or -1. What a renderer binds a parameter or reads Ci

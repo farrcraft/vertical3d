@@ -26,7 +26,7 @@ class Piece {
     } ColorType;
 
     explicit Piece(ColorType type = COLOR_EMPTY);
-    explicit Piece(std::string color_name);
+    explicit Piece(const std::string& color_name);
 
     /**
      * Get the enumerated color value for this piece.

@@ -10,7 +10,7 @@
 namespace v3d::asset::kind {
 /**
  **/
-Sound::Sound(const std::string& name, Type t, boost::shared_ptr<v3d::audio::AudioClip> clip) :
+Sound::Sound(const std::string& name, Type t, const boost::shared_ptr<v3d::audio::AudioClip>& clip) :
     Asset(name, t),
     clip_(clip) {
 }

@@ -25,7 +25,7 @@ class BitmapTextBuffer : public TextBuffer {
         * @param font the bitmap font to be rendered with this buffer
         * @param program the text GL shader program used for bitmap font rendering
         */
-    explicit BitmapTextBuffer(boost::shared_ptr<BitmapFont> font);
+    explicit BitmapTextBuffer(const boost::shared_ptr<BitmapFont>& font);
 
     /**
         * Allocate the text buffer with a string of text

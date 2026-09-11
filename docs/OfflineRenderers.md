@@ -11,8 +11,9 @@ or a swapchain, so their suites render in CI where everything below the recorder
 `api/render` cannot.
 
 [roadmap/OfflineRendering.md](roadmap/OfflineRendering.md) says where they stand and what each
-would need next. [plans/OfflineRenderingPhase3.md](plans/OfflineRenderingPhase3.md) is the open
-plan, taking up light and surface as a shading language.
+would need next. No plan is open against them;
+[plans/completed/OfflineRenderingPhase3.md](plans/completed/OfflineRenderingPhase3.md) closed on
+2026-09-10 and is the account of how the shading language got here.
 
 ## Building
 
@@ -23,8 +24,11 @@ where `tests` already is. A subdirectory added above that line does not inherit 
 
 - **The plane count is not the channel count.** `offline::FrameBuffer` is a stack of float
   planes. `image(channels)` takes the leading planes as the picture and leaves the rest to the
-  renderer. moya's are RGB plus a depth, named by `moya::FrameBuffer::Plane`; talyn's four are
-  RGBA.
+  renderer. moya's are RGB, a depth and a coverage, named by `moya::FrameBuffer::Plane`;
+  talyn's four are RGBA, where the alpha is that same coverage.
+- **Coverage is what an imager reads as `alpha`**, and it is the difference between a pixel
+  nothing was drawn into and a black one. One or nothing while there is one sample per pixel
+  centre; a sampler that takes more would put a fraction there.
 - **moya's raster space counts y downward from the upper left**, which is RI's convention and
   `image::Image`'s row order. The composition is `raster * screen`, since a matrix applies to
   what is on its right. Reversing either would write a correct render upside down, or in eye
@@ -67,9 +71,10 @@ implements it as `<renderer>::RIBHandler`. RIB is also what the editor exports t
 Shading is a language rather than a set of built-in models, per
 [ADR-0026](adr/0026-shading-is-a-language-over-a-batch.md), and it lives in
 `api/render/offline` beside the RIB one: `sl::Lexer`, `sl::Syntax` and `sl::Parser` read a shader,
-`sl::Types` and `sl::Compiler` check it, and `sl::Builtins` says what the standard library provides.
-The phase that builds the rest of it is open, so what follows is where the seams are rather
-than a tour.
+`sl::Types` and `sl::Compiler` check it, `sl::Emitter` flattens it into a `sl::runtime::Program`,
+and `sl::runtime::Machine` runs that over a batch. `sl::ShaderLibrary` maps a name to a program
+and `sl::Instance` binds a scene's parameters onto one. What follows is where the seams are
+rather than a tour.
 
 - **The `SL*` files are to a `.sl` file what the `RIB*` ones are to a `.rib` file**, and are
   shaped the same way on purpose - a `peek`/`next` lexer over an `std::istream`, an `error()`
@@ -97,10 +102,42 @@ than a tour.
   gives a whole grid one point's answer, which reads as a shading bug and is a compiler bug.
   Anything assigned under a varying condition is varying, and a value declared `uniform` that a
   varying one reaches is a fault rather than a quiet widening.
-- **A signature is the declared interface, not a claim about the implementation.** `ambient`,
-  `diffuse` and `specular` are in `sl::Builtins` beside `pow` and `normalize`, and are shader
+- **A signature is the declared interface, not a claim about the implementation.** `diffuse`,
+  `specular` and `phong` are in `sl::Builtins` beside `pow` and `normalize`, and are shader
   source written over `illuminance` rather than C++ - which is what the standard says and what
-  makes them testable. A caller cannot tell, and neither can the type checker.
+  makes them testable. A shader that calls one has it adopted into its own function list before
+  anything else runs, so nothing downstream of the compiler sees two kinds of function, and a
+  shader's own definition of the name wins. `ambient()` is the exception and is C++: a light
+  using neither `illuminate` nor `solar` has no direction to test against a cone, which is
+  exactly what makes it ambient and what an illuminance loop cannot reach.
+- **A run is a batch, and a batch of one is not a special case.** `sl::runtime::Machine` runs a
+  flat program under a stack of execution masks: a condition every point agrees about is a
+  jump, one they disagree about runs both arms with the lanes that took each, and `break`,
+  `continue` and `return` clear lanes rather than jumping. moya's batch is a micropolygon grid,
+  talyn's is one hit, and an imager's is a row of pixels.
+- **A call is inlined.** A run has no register file per call and no call stack, so a shader's
+  own function is pasted in where it was called, bracketed so that a `return` inside it means
+  the lanes are done with the function rather than with the shader. Recursion is rejected at
+  the call graph, which is what makes pasting terminate.
+- **L points from the point being shaded toward the light**, in a light shader's `illuminate`
+  and in a surface shader's `illuminance` body alike. RI's own text can be read both ways and
+  the two ends have to agree, so it is fixed here: a cosine falloff is `L . N` and nothing in
+  the library negates it. A `.sl` file written against the other reading renders its lights
+  inside out.
+- **A shader's own space is where the scene instanced it.** `sl::Placed` is an instance and
+  that transform, and the declared defaults are *run* through the renderer's space table rather
+  than remembered - which is what makes `point "shader" (0, 0, 1)` in the standard lights aim
+  where the scene put them. A position a scene binds is stated in the same space.
+- **The two renderers' current spaces differ.** moya works in camera space and talyn in world
+  space, which is why the space table is a callback each implements rather than a constant the
+  library holds. `"object"` is the one moya declines to answer: it is the transform at the
+  primitive rather than at the shader, and a primitive does not carry one.
+- **`transmission()` is where a shadow lives**, and the three standard directional lights call
+  it. A renderer that cannot answer lets all the light through, so that one call is the whole
+  of the difference between moya, which draws what it drew before, and talyn, which traces. A
+  ray leaving a surface is offset along the geometric normal and toward the light: started on
+  the surface it meets the surface it left, and every lit pixel comes out black in a pattern
+  that reads as a normal fault rather than a numerical one.
 
 ## Normals
 

@@ -27,7 +27,7 @@ class Engine {
      **/
     ~Engine();
 
-    bool initialize(const boost::shared_ptr<Window>& window);
+    virtual bool initialize(const boost::shared_ptr<Window>& window);
 
     /**
      **/

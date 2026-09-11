@@ -51,11 +51,11 @@ boost::shared_ptr<TextureFont> TextureFontCache::find(const std::string& filenam
 
 /**
  **/
-void TextureFontCache::add(boost::shared_ptr<TextureFont> font) {
+void TextureFontCache::add(const boost::shared_ptr<TextureFont>& font) {
     fonts_.push_back(font);
 }
 
-bool TextureFontCache::remove(boost::shared_ptr<TextureFont> font) {
+bool TextureFontCache::remove(const boost::shared_ptr<TextureFont>& font) {
     for (unsigned int i = 0; i < fonts_.size(); ++i) {
         if (fonts_[i]->filename() == font->filename() && fonts_[i]->size() == font->size()) {
             fonts_.erase(fonts_.begin() + i);

@@ -5,6 +5,7 @@
 
 #include "Scene.h"
 
+#include <limits>
 #include <vector>
 
 #include <glm/geometric.hpp>
@@ -84,12 +85,70 @@ const std::vector<Triangle> & Scene::triangles() const {
     return triangles_;
 }
 
+void Scene::add(const v3d::render::offline::sl::Placed & light) {
+    lights_.push_back(light);
+}
+
+const std::vector<v3d::render::offline::sl::Placed> & Scene::lights() const {
+    return lights_;
+}
+
+bool Scene::nearest(const v3d::type::geometry::Ray & ray, float from, Hit* hit) const {
+    float closest = std::numeric_limits<float>::max();
+    const Triangle* found = nullptr;
+    float bestU = 0.0f;
+    float bestV = 0.0f;
+    for (const Triangle & triangle : triangles_) {
+        float distance = 0.0f;
+        float u = 0.0f;
+        float v = 0.0f;
+        if (!ray.intersects(triangle.a(), triangle.b(), triangle.c(), &distance, &u, &v)) {
+            continue;
+        }
+        if (distance <= from || distance >= closest) {
+            continue;
+        }
+        closest = distance;
+        found = &triangle;
+        bestU = u;
+        bestV = v;
+    }
+    if (found == nullptr || hit == nullptr) {
+        return found != nullptr;
+    }
+    hit->triangle = found;
+    hit->distance = closest;
+    hit->point = ray.origin() + ray.direction() * closest;
+    hit->normal = found->shadingNormal(bestU, bestV);
+    hit->geometric = found->geometricNormal();
+    hit->incident = ray.direction();
+    hit->u = bestU;
+    hit->v = bestV;
+    return true;
+}
+
 const glm::vec3 & Scene::background() const {
     return background_;
 }
 
 void Scene::background(const glm::vec3 & colour) {
     background_ = colour;
+}
+
+const v3d::render::offline::sl::Placed & Triangle::surface() const {
+    return surface_;
+}
+
+void Triangle::surface(const v3d::render::offline::sl::Placed & shader) {
+    surface_ = shader;
+}
+
+const glm::vec3 & Triangle::opacity() const {
+    return opacity_;
+}
+
+void Triangle::opacity(const glm::vec3 & value) {
+    opacity_ = value;
 }
 
 };  // namespace v3d::talyn

@@ -334,7 +334,7 @@ float Arranger::extent(const component::Button& button) const {
  **/
 float Arranger::widest(const component::Toolbar& bar) const {
     float widest = 0.0f;
-    for (std::size_t index = 0; index < bar.size(); index++) {
+    for (std::size_t index = 0; index < bar.count(); index++) {
         const boost::shared_ptr<component::Button> button = bar.button(index);
         if (button) {
             widest = std::max(widest, extent(*button));

@@ -73,6 +73,22 @@ const std::vector<Signature> & builtins();
 std::vector<Signature> builtin(const std::string & name);
 
 /**
+ * The library's own functions, written in the language rather than in C++.
+ *
+ * `diffuse`, `specular` and `phong` are ordinary functions over `illuminance` rather than
+ * built-ins with privileged access to the lights - which is both what the standard says
+ * and what makes them testable, since a case can write the same three lines and compare.
+ * A shader that calls one has it adopted into its own function list and inlined from
+ * there, so nothing downstream of the compiler knows the difference.
+ *
+ * A shader's own function of the same name wins, which is how a scene overrides one.
+ *
+ * Read fresh every call rather than held: the compiler annotates a tree in place, so two
+ * shaders that both call `diffuse` need two trees rather than one they take turns writing.
+ **/
+std::vector<Function> sources();
+
+/**
  * Whether the built-in is declared but does nothing yet - texture, shadow and noise, each of
  * which returns its default and is reported once.
  *

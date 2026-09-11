@@ -801,7 +801,7 @@ boost::shared_ptr<component::Menu> Loader::loadMenu(const boost::json::object& e
 
         menu->addItem(menuItem);
 
-        if (menuItem->type() == component::menu::ItemType::Submenu) {
+        if (menuItem->itemType() == component::menu::ItemType::Submenu) {
             boost::shared_ptr<component::Menu> submenu = loadMenu(menuItemConfig);
             if (!submenu) {  // submenu(null) would fault setting the parent
                 return nullptr;

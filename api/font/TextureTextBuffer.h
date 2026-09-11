@@ -49,7 +49,7 @@ class TextureTextBuffer : public TextBuffer {
     TextureTextBuffer();
 
     void addText(glm::vec2 * pen, const Markup & markup, const std::wstring & text);
-    void clear();
+    void clear() override;
 
     std::vector<float> & shift();
     std::vector<float> & gamma();

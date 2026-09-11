@@ -5,7 +5,9 @@
 
 #pragma once
 
+#include <api/render/offline/sl/Instance.h>
 #include <api/type/camera/Camera.h>
+#include <api/type/geometry/Ray.h>
 
 #include <vector>
 
@@ -52,7 +54,23 @@ class Triangle final {
      **/
     glm::vec3 shadingNormal(float u, float v) const;
 
+    /**
+     * The surface shader a scene named, and the space it named it in.
+     *
+     * Empty for a triangle built in code without one, which is then its own flat colour:
+     * a scene that said nothing about shading is drawn the way it was before there was a
+     * language to say it in.
+     **/
+    const v3d::render::offline::sl::Placed & surface() const;
+    void surface(const v3d::render::offline::sl::Placed & shader);
+
+    /** The opacity that was current, which is SL's Os. **/
+    const glm::vec3 & opacity() const;
+    void opacity(const glm::vec3 & value);
+
  private:
+    v3d::render::offline::sl::Placed surface_;
+    glm::vec3 opacity_ = glm::vec3(1.0f);
     glm::vec3 a_;
     glm::vec3 b_;
     glm::vec3 c_;
@@ -64,8 +82,33 @@ class Triangle final {
 };
 
 /**
- * What a render context draws: a camera, the triangles it sees, and what a ray that
- * misses all of them is worth.
+ * Where a ray met a triangle, and everything a shader is a function of there.
+ *
+ * talyn's batch is this, one point of it: the same program and the same instructions that
+ * run over a grid of a hundred in moya, with a mask one bit wide.
+ **/
+class Hit final {
+ public:
+    const Triangle* triangle = nullptr;
+    float distance = 0.0f;
+    /** SL's P, in world space, which is talyn's current space. **/
+    glm::vec3 point = glm::vec3(0.0f);
+    /** SL's N and Ng: the interpolated shading normal and the triangle's plane. **/
+    glm::vec3 normal = glm::vec3(0.0f);
+    glm::vec3 geometric = glm::vec3(0.0f);
+    /** SL's I, the direction the surface was seen along. **/
+    glm::vec3 incident = glm::vec3(0.0f);
+    /**
+     * The barycentric weights, which stand in for s and t until there is a real surface
+     * parameterisation to read them off.
+     **/
+    float u = 0.0f;
+    float v = 0.0f;
+};
+
+/**
+ * What a render context draws: a camera, the triangles it sees, the lights on them, and
+ * what a ray that misses all of them is worth.
  **/
 class Scene final {
  public:
@@ -84,12 +127,31 @@ class Scene final {
     void add(const Triangle & triangle);
     const std::vector<Triangle> & triangles() const;
 
+    /**
+     * The lights shining on the scene, each with the space it was instanced in.
+     *
+     * A light belongs to the frame rather than to the attribute block that made it, which
+     * is RI's rule and is why these are the scene's rather than a triangle's.
+     **/
+    void add(const v3d::render::offline::sl::Placed & light);
+    const std::vector<v3d::render::offline::sl::Placed> & lights() const;
+
+    /**
+     * The nearest triangle a ray meets beyond `from`, or false.
+     *
+     * @param from how far along the ray to start looking. A ray leaving a surface would
+     *        otherwise meet the surface it left: that is the self intersection every
+     *        tracer has, and it is why a shadow ray is offset rather than started at zero
+     **/
+    bool nearest(const v3d::type::geometry::Ray & ray, float from, Hit* hit) const;
+
     const glm::vec3 & background() const;
     void background(const glm::vec3 & colour);
 
  private:
     v3d::type::camera::Camera camera_;
     std::vector<Triangle> triangles_;
+    std::vector<v3d::render::offline::sl::Placed> lights_;
     glm::vec3 background_ = glm::vec3(0.0f);
 };
 

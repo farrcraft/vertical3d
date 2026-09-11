@@ -18,14 +18,14 @@ const Index BRep::INVALID_ID = v3d::brep::INVALID_ID;
 BRep::edge_iterator::edge_iterator() : firstEdge_(INVALID_ID), edge_(0) {
 }
 
-BRep::edge_iterator::edge_iterator(boost::shared_ptr<BRep> brep, Index face) {
+BRep::edge_iterator::edge_iterator(const boost::shared_ptr<BRep>& brep, Index face) {
     reset(brep, face);
 }
 
 BRep::edge_iterator::~edge_iterator() {
 }
 
-void BRep::edge_iterator::reset(boost::shared_ptr<BRep> brep, Index face_id) {
+void BRep::edge_iterator::reset(const boost::shared_ptr<BRep>& brep, Index face_id) {
     brep_ = brep;
     Face* face = brep_->face(face_id);
     if (!face) {
@@ -60,7 +60,7 @@ boost::shared_ptr<BRep> BRep::edge_iterator::brep(void) const {
 BRep::vertex_iterator::vertex_iterator() {
 }
 
-BRep::vertex_iterator::vertex_iterator(boost::shared_ptr<BRep> brep, Index faceID) {
+BRep::vertex_iterator::vertex_iterator(const boost::shared_ptr<BRep>& brep, Index faceID) {
     reset(brep, faceID);
 }
 
@@ -80,7 +80,7 @@ BRep::vertex_iterator BRep::vertex_iterator::operator++ (int) {
     return *this;
 }
 
-void BRep::vertex_iterator::reset(boost::shared_ptr<BRep> brep, Index face) {
+void BRep::vertex_iterator::reset(const boost::shared_ptr<BRep>& brep, Index face) {
     iterator_.reset(brep, face);
 }
 
@@ -91,7 +91,7 @@ BRep::BRep() : selected_(false) {
 BRep::~BRep() {
 }
 
-glm::vec3 center(boost::shared_ptr<BRep> mesh, Index face) {
+glm::vec3 center(const boost::shared_ptr<BRep>& mesh, Index face) {
     float nverts = 0.0;
     glm::vec3 mid(0.0, 0.0, 0.0);
 
@@ -111,7 +111,7 @@ glm::vec3 center(boost::shared_ptr<BRep> mesh, Index face) {
     return mid;
 }
 
-void faceUV(boost::shared_ptr<BRep> mesh, Index face, glm::vec3* u, glm::vec3* v) {
+void faceUV(const boost::shared_ptr<BRep>& mesh, Index face, glm::vec3* u, glm::vec3* v) {
     BRep::edge_iterator it(mesh, face);
     if (*it == 0)
         return;

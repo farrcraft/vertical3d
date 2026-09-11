@@ -16,7 +16,7 @@ class Asset {
  public:
     /**
      **/
-    Asset(std::string name, Type t);
+    Asset(const std::string& name, Type t);
 
     /**
      * Default destructor

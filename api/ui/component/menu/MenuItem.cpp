@@ -21,7 +21,7 @@ void MenuItem::label(const std::string& str) {
     label_ = str;
 }
 
-void MenuItem::submenu(boost::shared_ptr<Menu> sub) {
+void MenuItem::submenu(const boost::shared_ptr<Menu>& sub) {
     submenu_ = sub;
     sub->parent(menu_);
 }
@@ -78,7 +78,7 @@ v3d::event::Event MenuItem::event() const {
     return event_;
 }
 
-void MenuItem::menu(boost::weak_ptr<Menu> m) {
+void MenuItem::menu(const boost::weak_ptr<Menu>& m) {
     menu_ = m;
 }
 
@@ -86,7 +86,7 @@ boost::weak_ptr<Menu> MenuItem::menu() {
     return menu_;
 }
 
-menu::ItemType MenuItem::type() const {
+menu::ItemType MenuItem::itemType() const {
     return type_;
 }
 

@@ -1,6 +1,6 @@
 # Offline Rendering, Phase 3 — Light And Surface
 
-Drafted 2026-09-05, **open**. Takes up phase 3 of
+Drafted 2026-09-05, **closed 2026-09-10**. Takes up phase 3 of
 [the offline rendering roadmap](../roadmap/OfflineRendering.md), which stays the account of where
 both renderers stand and what the later phases are; this plan does not repeat it.
 
@@ -376,6 +376,54 @@ compiles to a jump rather than a mask.
 
 ### Step 7 — the standard library
 
+**Landed.** The plain bodies are in `sl/runtime/Library.cxx`, a second translation unit for
+`Machine` rather than a class of its own — every body reads the live mask, writes the register
+file and says what it could not do, and all three of those are the machine's own state. The
+three that are not arithmetic are `Renderer::lights`, `light`, `transmission` and `trace`, each
+with a default a renderer that cannot do it inherits.
+
+Four things the step's own text left open, and one it was wrong about:
+
+- **A call is inlined, and an inlined body is bracketed.** Step 6 named the inliner as missing;
+  it is `ENTER`/`LEAVE` around the pasted body, because a `return` inside a function means the
+  lanes are done with the function rather than with the shader. Like `break` it does not jump —
+  jumping to the body's end from inside a mask or a loop would skip the `POP_MASK` and
+  `POP_LOOP` that unwind them, and each of those unwinds itself once no lane is left inside it.
+- **`L` points from the point being shaded toward the light**, in a light shader's `illuminate`
+  and in a surface shader's `illuminance` body alike. RI's own text can be read both ways —
+  `illuminate`'s says the vector runs from the light to the surface and the standard `diffuse`
+  in the same document reads as though it runs the other way — and the two ends have to agree.
+  It is fixed here rather than left to whoever writes the second shader: a cosine falloff is
+  `L . N` and nothing in the library negates it. A `.sl` file from elsewhere that assumed the
+  other reading renders its lights inside out, which is the cost of the choice and is why it is
+  written down.
+- **The message passing is instructions, not calls.** `illuminance` is a loop over the lights the
+  renderer names rather than over a condition, and `illuminate` and `solar` are the light's own
+  end of the same mask, so all three are opcodes over registers the shader's globals already
+  are. Running a light is the renderer's, because the renderer is what holds the shader
+  instances a scene named.
+- **`ambient()` is the one that stays C++.** The step calls it an ordinary function over
+  `illuminance`, and it cannot be: a light using neither `illuminate` nor `solar` has no
+  direction to test against a cone, which is exactly what makes it ambient and exactly why an
+  illuminance loop cannot reach it. `diffuse`, `specular`, `specularbrdf` and `phong` are SL
+  source as the step says, adopted into the calling shader's own function list before anything
+  else runs — so the checker, the inference and the inliner see one kind of function rather than
+  two, and a shader's own definition of the name wins because it is already there. The source is
+  read fresh per shader rather than held, since the compiler annotates a tree in place.
+- **`calculatenormal` is a stub** beside texture, shadow and noise. It is the derivatives of the
+  grid it is shading, and no renderer supplies those; a plausible answer instead of a report is
+  the failure mode phase 1 named.
+
+This step also settles how loud a stub is, which the plan carried as an open question: `reports()`
+is one line per distinct message for the life of a machine, so it is once per name, and a renderer
+shading a thousand grids over one machine hears each thing once. `printf` is the exception and has
+its own list, because a person who wrote one asked to be told at every shading point.
+
+Not here, and belonging to step 8 rather than being missed: **a parameter's declared default is
+not applied.** The emitter emits the shader body and nothing else, because a default written as
+instructions would overwrite a renderer's binding on every run — so it is `Shader`'s to write
+into the register file after `prepare`, which is what step 8's binding is.
+
 `sl::Builtins`, and the renderer interface the interesting half of it calls through.
 
 The plain built-ins, which are arithmetic over the value model and are cheap once step 6 is real:
@@ -419,6 +467,48 @@ time, `diffuse` over one distant light gives the cosine, and each stub reports e
 
 ### Step 8 — a shader instance, and how a scene names one
 
+**Landed, less the C API.** `sl::Instance` is the binding and `sl::ShaderLibrary` is the name
+lookup. All nine standard shaders are source strings in the library and every one of them
+compiles, which a case asserts by name — that is the whole of what says steps 3 to 7 can carry
+a real shader rather than the ones their own cases were written around.
+
+The name is the first thing the step's text was wrong about: **`Shader` was taken.**
+`sl::Shader` is already the syntax node a file parses to, and the distinction the step turns on
+is exactly the one the two names have to keep — a program is compiled once per *name* and
+instanced once per *request* — so the instance is `sl::Instance`.
+
+Four things worth knowing beyond the step's own text:
+
+- **A declared default is a prologue.** Step 7 named this as step 8's, and the shape it takes is
+  that the instructions computing the defaults sit at the front of the program and a run starts
+  after them. Emitting them into the body instead would overwrite whatever a scene bound, once
+  per grid. An instance runs the prologue once and reads the answers out, so a default written
+  as an expression — `point "shader" (0, 0, 1)`, which is how three of the four standard lights
+  aim themselves — is a value like any other.
+- **The prologue is also where the `"shader"` space open question surfaces.** There is no
+  renderer attached when a default is evaluated, so `point "shader" (0, 0, 0)` is reported and
+  comes through untransformed. The instance logs it by shader name rather than swallowing it.
+  That is one warning per light instance until step 9 answers the space, and it is the open
+  question at the bottom of this plan being visible rather than being decided by silence.
+- **A light has no substitute.** RI asks for a default surface and says nothing about a default
+  light, and a light of some other kind is a worse answer than one fewer light — so a surface
+  that will not compile becomes `matte` and a light that will not becomes nothing, both loudly.
+- **A search path is colon separated and this is Windows.** `C:\shaders` has a colon in it, so a
+  lone letter before one does not end a directory. `&` is whatever the path was before, which is
+  how a scene adds to what a driver put there.
+
+**Not here: the four C API bodies**, and the reason is not that they were missed. `RiSurface`,
+`RiLightSource`, `RiIlluminate` and `RiImager` are declared in `moya/libmoya/RenderMan.h` — talyn
+has no C API at all, so "both renderers" does not apply to this bullet — and a body for any of
+them would call a `RenderContext` method that step 9 adds. Three of the four also carry a
+parameter list, and turning the C API's token and pointer arrays into a `ParameterList` is a
+piece of work no request has yet: `RiPolygonV`, `RiAttributeV` and `RiProjectionV` are all empty
+for the same reason phase 2 left them so. Writing that conversion for three requests while a
+dozen others stay empty, ahead of the step that has something to hand it to, is worse than
+saying where it goes. **It moves to step 9**, where the context methods it would call are
+written, and the drift the step's text is worried about closes there in one go rather than half
+here.
+
 The binding, needed identically by both renderers, and the point at which RIB reaches the language.
 
 - **`Shader` is a compiled program plus bound parameter values.** `Surface "plastic" "Ks" [0.8]`
@@ -451,6 +541,39 @@ example file still reads with the new requests in it.
 
 ### Step 9 — moya shades a grid
 
+**Landed.** `moya::GridShader` implements `sl::runtime::Renderer` and runs a surface shader
+over every vertex of a grid at once; `moya::Shading` is the surface shader, the opacity and
+the lights a primitive was submitted under, and it rides on `ReyesPrimitive::place()` beside
+the placement and the colour. The C API bullet moved here from step 8 landed with it.
+
+Four things beyond the step's own text:
+
+- **A scene that names no surface draws `constant`.** RI leaves the default to the renderer
+  and forbids only "null", and `constant` is the shader that means no shading: `Ci = Os * Cs`
+  is exactly what `hide` sampled before there was a language. That is why the phase 2
+  reference still matches without being regenerated — the strongest thing the step could say,
+  and it says it without a new picture. It is deliberately **not** the substitute for a shader
+  that failed to compile, which is `matte`: a scene whose shader failed and a scene that named
+  no shader must not look the same.
+- **The `"shader"` space open question is answered, and answering it changed step 8.** A shader
+  instance no longer remembers its defaults; it *runs* them, through the space table of the
+  machine it is writing into, and a position a scene bound is transformed by the same
+  placement. Without that, every light in every scene sits at the camera origin pointing down
+  one axis, because `point "shader" (0, 0, 1)` had nothing to ask.
+- **Which lights are on is an attribute; the lights are the frame's.** `RiLightSource` creates
+  a light and switches it on, an `Illuminate` inside an `AttributeBegin` block is local to it,
+  and a light created inside a block goes on lighting after it. That asymmetry is RI's and is
+  worth a case, because restoring the whole light list on `AttributeEnd` would compile.
+- **`"object"` space is not answered.** It is the transform in force at the *primitive* and a
+  primitive does not carry one — only the shader's. Answering with the shader's would be wrong
+  for any scene that transforms between `Surface` and `Polygon`, so the machine reports it
+  instead.
+
+**The analysis gates had never covered an app.** `out/build/verify` was configured with
+`V3D_BUILD_APPS=OFF`, so `/analyze` and clang-tidy had only ever seen `api/`. It is on now and
+moya is clean under both; CLAUDE.md's claim that the tree is clean at those gates was true of
+less of the tree than it reads.
+
 Where the machine meets the renderer it was designed for.
 
 - **The graphics state gains a surface shader and a light list**, pushed and popped by
@@ -459,6 +582,13 @@ Where the machine meets the renderer it was designed for.
 - **A primitive carries both across a split**, on `ReyesPrimitive::place()` beside the placement and
   the colour, for the reason phase 2 found: splitting resubmits pieces during the second pass, when
   neither is current any more.
+- **The C API's four bodies, moved here from step 8.** `RiSurface`, `RiLightSource`, `RiIlluminate`
+  and `RiImager` call the `RenderContext` methods this step writes, so they are written with them
+  rather than before them. Three of the four carry a parameter list, and the token and pointer
+  arrays that a C caller passes have to become a `ParameterList` first — a conversion no request
+  has, which is why `RiPolygonV` and `RiAttributeV` are empty too. It belongs in
+  `api/render/offline/rib` beside the reader that builds the same thing from a file, and doing it
+  once gives every V-form a body rather than four.
 - **The shading points are the grid's vertices.** `P` is the vertex in the shader's current space,
   `N` and `Ng` come from step 2, `Cs` and `Os` from the graphics state or the primitive's own, `I`
   is `P - E`, and `s`, `t`, `u`, `v` are the grid parameters dicing already computes. `du` and `dv`
@@ -477,6 +607,41 @@ falloff at each vertex, `constant` reproduces the flat colour the current code w
 two lights sums them, and `Illuminate` turning one off changes the picture.
 
 ### Step 10 — talyn shades a hit, and casts a shadow ray
+
+**Landed.** `talyn::HitShader` is the other implementation of `sl::runtime::Renderer`, and
+`talyn::Hit` is the batch: one point of it, over the same program and the same instructions
+moya runs over a hundred. A quad under one distant light renders through
+`talyn --file ... --outfile ...` at the cosine the maths gives, which is the first talyn
+picture with any shading in it.
+
+Three things beyond the step's own text:
+
+- **Something has to call `transmission`, and it is the light shaders.** The step says talyn
+  traces and moya answers that all the light gets through, and leaves open who asks. RI's own
+  standard lights ask nothing, so `distantlight`, `pointlight` and `spotlight` here each
+  multiply `Cl` by `transmission(Ps, ...)`. That one call is the whole of the difference
+  between a renderer that casts shadows and one that does not — moya inherits the default,
+  answers that the light arrives, and draws exactly what it drew before. A light at infinity
+  has no position for the ray to end at, so its ray runs a fixed long way back along `L`; a
+  scene larger than that constant shadows itself wrongly, which is stated where it is written.
+- **The epsilon is offset toward the light, not just along the normal.** The step says along
+  the geometric normal, and a ray leaving the *back* of a surface then starts inside it. The
+  sign comes from which side the ray is going.
+- **`sl::Placed` is shared rather than written twice.** A shader instance and the space it was
+  instanced in travel together everywhere — a surface on a primitive, a light in a scene, in
+  both renderers — so they are one thing in `api/render/offline` per
+  [ADR-0022](../adr/0022-offline-rendering-shares-an-api-library.md) rather than a pair of
+  fields repeated in each.
+
+`trace()` is implemented as the step's phase 6 hook asks, with a depth of one: a ray a traced
+ray traced answers the background. No shader this phase ships calls it, and a depth a scene can
+set belongs with the shaders in phase 5 that would use it.
+
+The step also settles the plan's open question about `Cs`, exactly as that question predicted:
+moya's dicing interpolates a primitive's own varying `"Cs"` onto the grid and the shader reads
+it there, and talyn's triangle has no per-vertex colour and carries the graphics state's. The
+asymmetry is the two renderers' geometry rather than a choice either made, and it is stated at
+both ends.
 
 - **`Scene` gains a light list and a triangle gains a shader.** A triangle's flat colour becomes
   its `Cs`, which is what `Color` already sets and what `matte` multiplies.
@@ -500,6 +665,30 @@ and a case pins the epsilon by putting a light directly above a large polygon.
 
 ### Step 11 — the imager, and talyn's background
 
+**Landed.** `sl::Imager` is shared rather than written twice: moya runs it after its last
+bucket and talyn after its last ray, over the one structure they already have in common. A
+batch is a row of pixels, which is neither a grid nor a hit and needed no special case to be
+either — the step's own claim about the batch model, tested by a one line imager that varies
+across the row.
+
+**The picture is bit-identical.** The backdrop polygon is out of the talyn reference and
+`Imager "background"` is in its place, and the committed png is not regenerated: what phase 2
+had to say with geometry the scene now says with a request, and the pixels are the same ones.
+
+Two things the step did not name and that had to be settled for any of it to mean anything:
+
+- **Neither renderer could tell a pixel nothing was drawn into from a black one.** moya's
+  planes were colour and depth, and talyn wrote alpha as one everywhere — which was the right
+  answer to phase 1's black png and the wrong one for an imager. moya's framebuffer gains a
+  coverage plane the hider writes, talyn writes zero where a ray hit nothing, and `alpha` is
+  what the shared runner reads out of whichever plane the renderer says holds it. A sampler
+  that takes more than one sample per pixel is what would one day put a fraction there.
+- **An imager writes `alpha`, not only `Ci` and `Oi`.** The globals table had it read-only, and
+  `background` cannot work that way: a pixel the imager has painted is no longer one that
+  nothing was drawn into. `Oi` is the coverage replicated, because a framebuffer here holds
+  what was drawn and how much of the pixel it covered, and with one sample those are one
+  number.
+
 The roadmap put `RiImager` in this phase for one reason: it is how a RIB file says what a ray that
 hits nothing is worth, and phase 2's talyn reference works around its absence with a backdrop
 polygon.
@@ -518,6 +707,32 @@ polygon.
 the pixels the backdrop polygon gave, and a scene naming no imager is unchanged.
 
 ### Step 12 — the reference scenes grow light and surface
+
+**Landed, and the phase closes with it.** The two phase 2 pictures name `Surface "constant"`
+in their `.rib` and build one in their code case, and **neither picture changed** — which is
+the strongest thing in the phase, because it says every pass from the lexer to the hider
+carries a scene through and gives back what the tree drew before any of them existed. Each
+renderer now matches four references: two unchanged and two new, each reached by both routes
+and rendered the same bytes by each.
+
+The new scenes are worth the name. moya has a matte surface and a plastic one under a distant
+light and a point light, with normals swept across each quad so the falloff is a gradient
+rather than one value. talyn has a matte floor and a plastic panel under three lights of three
+kinds, the panel's shadow across the floor, and the imager's background at the frame's edges —
+`ambient()`, `transmission()` and an imager all visible in one picture, and no unit case can
+see any of them.
+
+Two things worth keeping:
+
+- **The moya scene took two passes to be worth committing.** An orthographic camera and a light
+  on the same axis put the specular highlight over the whole surface and the picture came out
+  white. The light is off axis now: a highlight where the viewer and the light agree is not a
+  highlight. A reference scene has to be *looked at* before it is committed, which is the one
+  step of making one that no gate performs.
+- **A `ParameterList` returned by value is a copy.** Building one in a test helper and answering
+  with it instantiates its implicit move constructor, which clang-tidy will not accept as
+  nothrow; marking it `noexcept` is a claim the analyser disputes and a terminate if it is
+  wrong. The helpers take an out parameter, which is what `rib::arguments` does beside them.
 
 Phase 1 established that a picture is what tells a regression from the status quo, and phase 2
 established that each picture is reached by two routes — a `.rib` file and a code-built scene. This
@@ -582,20 +797,14 @@ whether it works is a phase that will not be finished.
 ## Open questions
 
 Small enough to settle in the code with a comment rather than in a record, but named so they are
-settled deliberately rather than by whoever types first.
+settled deliberately rather than by whoever types first. Three of the four were settled by the
+steps that ran into them, and each says so where it was settled: a shader's `"shader"` space by
+step 9, whether a primitive's `Cs` beats the graphics state's by step 10, and how loud a stub is
+by step 7.
 
-- **What a shader's `"shader"` space is.** RI says it is the transform in force when the shader was
-  instanced, which means the graphics state has to save one per `Surface` request. moya can; talyn
-  attaches shaders to triangles already in world space and has nowhere to put it. Probably a
-  per-shader-instance matrix on both, settled when step 8 writes the instance.
-- **Whether `Cs` on a primitive beats `Cs` in the graphics state.** RI says the primitive's own
-  varying `"Cs"` wins, which is what moya's dicing already does; talyn has no per-vertex colour at
-  all and will take the graphics state's. State the asymmetry in a comment or close it.
-- **How loud a stub is.** Once per shader, once per program, or once per name. Too quiet and a
-  scene renders wrong silently, which is the failure mode phase 1 named; too loud and a
-  640 by 480 render prints a million lines. Once per program name is the intended answer.
-- **`RiRotate`'s sign**, carried forward from phase 2 and now with something at stake. RI states
-  its rotations in a left handed system and both renderers hand the angle to `glm::rotate`, which
-  is counter-clockwise by the right hand rule. Nothing in the tree can tell the difference, because
-  both renderers agree with each other — but a light placed by a rotation is the first thing whose
-  wrongness is visible rather than merely mirrored.
+The fourth outlived the phase and is in [TODO.md](../TODO.md):
+
+- **`RiRotate`'s sign**, carried forward from phase 2 and still not decidable from inside the
+  tree. A light placed by a rotation was expected to be the thing that made it visible, and it
+  was not: both renderers hand the angle to the same `glm::rotate`, so they agree with each
+  other whichever of them is right, and a reference picture agreeing with itself says nothing.

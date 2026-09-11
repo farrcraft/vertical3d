@@ -18,7 +18,7 @@ Texture::Texture(const Texture& t) :
     type_(t.type_), texID_(t.texID_), wrap_(t.wrap_), width_(t.width_), height_(t.height_), image_(t.image_) {
 }
 
-Texture::Texture(boost::shared_ptr<Image> image) : wrap_(false) {
+Texture::Texture(const boost::shared_ptr<Image>& image) : wrap_(false) {
     bool ok;
     ok = create(image);
     assert(ok);
@@ -84,7 +84,7 @@ void Texture::wrap(bool repeat) {
     wrap_ = repeat;
 }
 
-bool Texture::create(boost::shared_ptr<Image> image) {
+bool Texture::create(const boost::shared_ptr<Image>& image) {
     type_ = LINEAR;
 
     image_ = image;

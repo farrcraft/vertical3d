@@ -59,10 +59,24 @@ class Emitter final {
     void emitLoop(const ExpressionPtr & condition, const StatementPtr & body,
         const StatementPtr & step);
     void emitJump(const StatementPtr & statement);
+    /**
+     * The three message passing constructs. Each is a loop or a mask over registers the
+     * shader's own globals already are, which is why they are instructions rather than
+     * calls into the library.
+     **/
+    void emitLighting(const StatementPtr & statement);
+    /** The register a shader global is, which the lighting constructs read and write. **/
+    int global(const char* name) const;
 
     int emitExpression(const ExpressionPtr & expression);
     int emitBinary(const ExpressionPtr & expression);
     int emitCall(const ExpressionPtr & expression);
+    /**
+     * A shader's own function, pasted in where it was called. A run has no call stack, so
+     * there is nowhere for a call to return to; the recursion the compiler rejects at the
+     * call graph is what makes pasting terminate.
+     **/
+    int emitInline(const ExpressionPtr & expression);
     int emitCast(const ExpressionPtr & expression);
 
     Failure fail(const std::string & message, unsigned int line, unsigned int column);
@@ -70,6 +84,11 @@ class Emitter final {
     ShaderPtr shader_;
     const std::vector<Symbol> & symbols_;
     runtime::Program* program_ = nullptr;
+    /**
+     * The register each inlined body in progress returns through, innermost last. Empty
+     * while the shader body itself is being emitted, where a return returns nothing.
+     **/
+    std::vector<int> returns_;
     std::string error_;
 };
 

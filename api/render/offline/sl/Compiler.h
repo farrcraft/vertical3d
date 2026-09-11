@@ -96,6 +96,17 @@ class Compiler final {
         bool writable, unsigned int line, unsigned int column);
     int lookup(const std::string & name) const;
 
+    /**
+     * Take on the library functions the shader calls, and the ones those call in turn.
+     *
+     * `diffuse` and its siblings are written in the language, so a shader that names one
+     * gets it added to its own function list before anything else runs. Everything
+     * downstream - the checker, the inference and the inliner - then sees one kind of
+     * function rather than two, and a shader's own definition of the name wins because it
+     * is already there.
+     **/
+    void adopt();
+
     void checkFunctions();
     /**
      * Reject a function that reaches itself. The machine has a register file per shader run

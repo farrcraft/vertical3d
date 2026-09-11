@@ -52,7 +52,7 @@ class Style {
      * @param prop the new property to be added
      * @param class_name the class of the new property
      */
-    void addProperty(boost::shared_ptr<Property> prop, const std::string& class_name);
+    void addProperty(const boost::shared_ptr<Property>& prop, const std::string& class_name);
     /**
      * Get a collection of style properties
      * If no name or class is specified then no filtering of that parameter will be done. This allows getting the

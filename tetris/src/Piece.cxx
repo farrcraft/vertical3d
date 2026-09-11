@@ -11,7 +11,7 @@
 Piece::Piece(ColorType type) : color_(type) {
 }
 
-Piece::Piece(std::string color_name) {
+Piece::Piece(const std::string& color_name) {
     if (color_name == "red")
         color_ = COLOR_RED;
     else if (color_name == "cyan")

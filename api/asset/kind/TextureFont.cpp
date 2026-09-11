@@ -10,7 +10,7 @@
 namespace v3d::asset::kind {
 /**
  **/
-TextureFont::TextureFont(const std::string& name, Type t, boost::shared_ptr<v3d::font::TextureFont> font) :
+TextureFont::TextureFont(const std::string& name, Type t, const boost::shared_ptr<v3d::font::TextureFont>& font) :
     Asset(name, t),
     font_(font) {
 }

@@ -5,8 +5,11 @@
 
 #include "RenderContext.h"
 
-#include <limits>
+#include <api/render/offline/sl/Imager.h>
+
 #include <vector>
+
+#include "HitShader.h"
 
 namespace v3d::talyn {
 
@@ -85,7 +88,9 @@ void RenderContext::render() {
 
     int viewport[4] = { 0, 0, static_cast<int>(width), static_cast<int>(height) };
 
-    const std::vector<Triangle> & triangles = scene_.triangles();
+    // one of these for the render rather than one per pixel: it holds the register files,
+    // and sizing one per pixel is the one allocation a tracer would notice
+    HitShader shader(&scene_);
 
     for (unsigned int row = 0; row < height; row++) {
         for (unsigned int column = 0; column < width; column++) {
@@ -95,23 +100,32 @@ void RenderContext::render() {
             v3d::type::geometry::Ray ray = camera.ray(point, viewport);
 
             glm::vec3 colour = scene_.background();
-            float nearest = std::numeric_limits<float>::max();
-            for (const Triangle & triangle : triangles) {
-                float distance = 0.0f;
-                if (ray.intersects(triangle.a(), triangle.b(), triangle.c(), &distance) && distance < nearest) {
-                    nearest = distance;
-                    colour = triangle.colour();
-                }
+            Hit hit;
+            const bool covered = scene_.nearest(ray, 0.0f, &hit);
+            if (covered) {
+                // the nearest hit is the batch, and the surface shader's Ci is the pixel
+                colour = shader.shade(hit);
             }
 
             framebuffer_->value(RED, column, row, colour.r);
             framebuffer_->value(GREEN, column, row, colour.g);
             framebuffer_->value(BLUE, column, row, colour.b);
-            // the whole frame is covered, background included, so nothing here is
-            // transparent - an unwritten alpha plane is what made the old black png
-            framebuffer_->value(ALPHA, column, row, 1.0f);
+            // a ray that hit nothing covered nothing, which is what lets an imager tell
+            // a pixel the scene never reached from a black one
+            framebuffer_->value(ALPHA, column, row, covered ? 1.0f : 0.0f);
         }
     }
+
+    if (imager_.shader) {
+        // after the last ray, which is where every sample the frame will ever hold is in
+        // it - and it is the same place moya runs one, after its last bucket
+        v3d::render::offline::sl::Imager imager(imager_.shader, &shader);
+        imager.run(framebuffer_.get(), ALPHA);
+    }
+}
+
+void RenderContext::imager(const v3d::render::offline::sl::Placed & shader) {
+    imager_ = shader;
 }
 
 boost::shared_ptr<v3d::render::offline::FrameBuffer> RenderContext::framebuffer() const {

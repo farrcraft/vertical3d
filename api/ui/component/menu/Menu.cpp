@@ -12,7 +12,7 @@ Menu::Menu(const boost::shared_ptr<entt::dispatcher>& dispatcher) :
 
 /**
  **/
-void Menu::parent(boost::weak_ptr<Menu> p) {
+void Menu::parent(const boost::weak_ptr<Menu>& p) {
     parent_ = p;
 }
 
@@ -24,11 +24,11 @@ boost::shared_ptr<Menu> Menu::level() const {
     return level_.lock();
 }
 
-void Menu::level(boost::weak_ptr<Menu> m) {
+void Menu::level(const boost::weak_ptr<Menu>& m) {
     level_ = m;
 }
 
-void Menu::addItem(boost::shared_ptr<MenuItem> item) {
+void Menu::addItem(const boost::shared_ptr<MenuItem>& item) {
     items_.push_back(item);
 }
 
@@ -123,7 +123,7 @@ bool Menu::down() {
     return false;
 }
 
-size_t Menu::size() const {
+size_t Menu::count() const {
     return items_.size();
 }
 
@@ -168,7 +168,7 @@ bool Menu::capture(const v3d::event::EventData& value) {
     capture_->value(value);
 
     // a binding is one key, so the first one given is the whole answer
-    if (capture_->type() == menu::ItemType::KeyInput) {
+    if (capture_->itemType() == menu::ItemType::KeyInput) {
         const boost::shared_ptr<MenuItem> item = capture_;
         capture_.reset();
         dispatch(item);
@@ -194,15 +194,15 @@ void Menu::activate() {
     }
     boost::shared_ptr<MenuItem> item = lvl->active();
     if (item) {
-        if (item->type() == menu::ItemType::Submenu && item->submenu()) {  // menu item has a submenu so activate the submenu
+        if (item->itemType() == menu::ItemType::Submenu && item->submenu()) {  // menu item has a submenu so activate the submenu
             down();
-        } else if (item->type() == menu::ItemType::Action ||
-            item->type() == menu::ItemType::Check ||
-            item->type() == menu::ItemType::Radio) {  // menu item represents a command so send the bound event
+        } else if (item->itemType() == menu::ItemType::Action ||
+            item->itemType() == menu::ItemType::Check ||
+            item->itemType() == menu::ItemType::Radio) {  // menu item represents a command so send the bound event
             dispatch(item);
-        } else if (item->type() == menu::ItemType::Input ||
-            item->type() == menu::ItemType::NumericInput ||
-            item->type() == menu::ItemType::KeyInput) {
+        } else if (item->itemType() == menu::ItemType::Input ||
+            item->itemType() == menu::ItemType::NumericInput ||
+            item->itemType() == menu::ItemType::KeyInput) {
             capture_ = item;
         }
     }

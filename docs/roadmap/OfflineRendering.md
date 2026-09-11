@@ -1,21 +1,22 @@
 # Offline Rendering
 
 Two of the applications in this tree are offline renderers. `talyn` is a raytracer; `moya` is a
-reyes renderer behind the RenderMan interface. **As of 2026-09-05 both read a scene from a RIB
-file and draw it**, each compared against a committed reference in ctest, and the editor exports
-to the same format.
+reyes renderer behind the RenderMan interface. **As of 2026-09-10 both shade a scene read from a
+RIB file with a shading language**, each compared against committed references in ctest, and the
+editor exports to the same format.
 
-Before that, neither had ever rendered anything: talyn wrote a black PNG of the size the scene
-file asked for and moya wrote no file at all. That was the shape of the problem — in both, the
-scaffolding around the renderer was further along than the renderer. What is left of it is one
-flat colour per surface with no light and no material behind it, and one sample per pixel.
+Before any of it, neither had ever rendered anything: talyn wrote a black PNG of the size the
+scene file asked for and moya wrote no file at all. That was the shape of the problem — in both,
+the scaffolding around the renderer was further along than the renderer. What is left of it is
+one sample per pixel centre.
 
-State as of 2026-09-05, with phases 1 and 2 closed the same day as their own plans
+State as of 2026-09-10. Phases 1 and 2 closed on 2026-09-05, the same day as their own plans
 ([one](../plans/completed/OfflineRenderingPhase1.md),
-[two](../plans/completed/OfflineRenderingPhase2.md)) and phase 3 taken up by
-[a plan of its own](../plans/OfflineRenderingPhase3.md). Nothing beyond that is scheduled; per
-[the modernization plan's conclusion](../plans/completed/Modernization.md) both renderers are
-deliberately kept out of the realtime work, and this roadmap does not change that.
+[two](../plans/completed/OfflineRenderingPhase2.md)), and phase 3 closed on 2026-09-10 with
+[a plan of its own](../plans/completed/OfflineRenderingPhase3.md). Nothing beyond that is
+scheduled; per [the modernization plan's conclusion](../plans/completed/Modernization.md) both
+renderers are deliberately kept out of the realtime work, and this roadmap does not change
+that.
 
 ## What exists
 
@@ -212,26 +213,33 @@ renderers are fed until then, and is what a test fixture is either way.
 
 ### Phase 3 — light and surface
 
-**Open**, blocked by phase 2 which is done.
-[OfflineRenderingPhase3.md](../plans/OfflineRenderingPhase3.md) is the plan, and carries the step
-ordering; what follows is why the phase is third.
+**Closed 2026-09-10.**
+[OfflineRenderingPhase3.md](../plans/completed/OfflineRenderingPhase3.md) is the plan and holds
+what came out differently; this is what the tree now has.
 
-A scene can now *say* "light" — `LightSource` and `Surface` reach both handlers, with their
-parameters typed by the declaration table, and both drop them.
+The large question sitting underneath the phase was whether shading is fixed-function C++ or a
+shading language, and it is answered as a language by
+[ADR-0026](../adr/0026-shading-is-a-language-over-a-batch.md). `api/render/offline/sl` is that
+language: a lexer, a parser, a checker with a varying inference, and a machine that runs a
+compiled program over a **batch** of shading points under an execution mask. moya's batch is a
+micropolygon grid, talyn's is a single hit, and an imager's is a row of pixels — the same
+program and the same instructions for all three, which is what the batch model bought.
 
-moya's `RiLightSource` returns 0, its `RiSurface` is empty, and neither renderer has a material
-of any kind. Neither has a surface normal either, which is the geometry half of the same gap.
-Shadow rays are talyn's version of the step, and are cheap once primary rays work.
+The standard library is there, the eight standard shaders and a `background` imager are
+compiled into it as source strings, and `diffuse`, `specular` and `phong` are written in the
+language rather than in C++. A scene names a shader with `Surface` or `LightSource`, binds
+parameters onto it, switches a light with `Illuminate`, and finds a `.sl` file of its own
+through `Option "searchpath" "shader"`. Both renderers have surface normals, both run light
+shaders over the batch they are shading, and talyn casts shadow rays through `transmission()`.
+`trace()` exists and talyn implements it, which is what makes phase 6 answerable.
 
-The large question sitting underneath this phase was whether shading is fixed-function C++ or a
-shading language. **It is answered as a language** by
-[ADR-0026](../adr/0026-shading-is-a-language-over-a-batch.md). That answer is what makes this
-phase a subsystem rather than a weekend, and it is why phases 4 and 5 sit behind it rather than
-beside it.
+What the phase deliberately did not do is listed in its plan. The largest are that nothing is
+sampled more than once per pixel, that `texture`, `shadow` and `noise` are declared and stubbed,
+and that displacement and volume shaders parse and are reported as unsupported.
 
 ### Phase 4 — sampling and quality
 
-Blocked by phase 3, which is open: antialiasing a flat-shaded scene measures nothing.
+**Unblocked** — phase 3 closed, and there is now something worth antialiasing.
 
 The five `Ri*Filter` functions — box, triangle, gaussian, catmull-rom, sinc — all return `0.0`
 today, and they are the pixel filter half of this. The sampling half is supersampling, then
@@ -241,9 +249,11 @@ depth of field and motion blur are fields waiting for an implementation.
 
 ### Phase 5 — talyn's own list
 
-Blocked by phase 3, which is open. Reflection and refraction are the recursion the algorithm comment already
-describes and are a day's work once shading exists; index of refraction and transparency come
-with them. Texture and bump mapping ride on `api/image`. An acceleration structure is worth
+**Unblocked** — phase 3 closed. Reflection and refraction are the recursion the algorithm
+comment already describes, and the hook is in: `trace()` is a built-in talyn answers, with a
+depth of one and no shipped shader calling it. Index of refraction and transparency come with
+them, and `refract` is already in the library. Texture and bump mapping ride on `api/image`,
+and `texture` is declared and stubbed against that day. An acceleration structure is worth
 nothing until there is a scene large enough to be slow, and should wait for one rather than be
 built on principle.
 
@@ -255,8 +265,9 @@ libraries. Sharing libraries is settled —
 [ADR-0022](../adr/0022-offline-rendering-shares-an-api-library.md) gives them one, and
 [ADR-0023](../adr/0023-rib-is-the-offline-scene-description.md) gives them one way in — so what
 is left is whether talyn becomes moya's raytracing component, reached from a shader's `trace()`.
-That cannot be answered before phase 3, because it depends on how much the two turn out to share
-once both actually shade something, and on whether shading is a language. Deliberately last.
+Phase 3 was the precondition and it has closed: shading is a language, `trace()` is a built-in
+both renderers see, and the two now share the library, the reader, the shader instance and the
+imager. What they do not share is a hider. Still deliberately last.
 
 ## What is decided
 

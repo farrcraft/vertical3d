@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/render/offline/rib/Handler.h>
+#include <api/render/offline/sl/ShaderLibrary.h>
 
 #include <string>
 #include <vector>
@@ -48,7 +49,18 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
     void rotate(float angle, float dx, float dy, float dz) override;
     void scale(float sx, float sy, float sz) override;
 
+    void option(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
+
     void color(const glm::vec3 & value) override;
+    void opacity(const glm::vec3 & value) override;
+
+    void surface(const std::string & name,
+        const v3d::render::offline::rib::ParameterList & parameters) override;
+    void lightSource(const std::string & name, const std::string & handle,
+        const v3d::render::offline::rib::ParameterList & parameters) override;
+    void illuminate(const std::string & handle, bool on) override;
+    void imager(const std::string & name,
+        const v3d::render::offline::rib::ParameterList & parameters) override;
 
     void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override;
     void pointsPolygons(const std::vector<unsigned int> & counts, const std::vector<unsigned int> & indices,
@@ -85,13 +97,51 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
      public:
         glm::mat4x4 transform = glm::mat4x4(1.0f);
         glm::vec3 color = glm::vec3(1.0f);
+        glm::vec3 opacity = glm::vec3(1.0f);
+        v3d::render::offline::sl::Placed surface;
+        /**
+         * Which lights are switched on, by handle. The lights themselves belong to the
+         * scene, because a light belongs to the frame rather than to the block that made
+         * it - so an AttributeEnd puts this back and not them.
+         **/
+        std::vector<std::string> lit;
     };
 
+    /**
+     * A light the scene created, under the handle a later Illuminate names it by.
+     *
+     * They are held here rather than in the scene because the scene is given only the
+     * ones that are on when a primitive needs them: a raytracer shades every triangle
+     * against one light list, so there is one moment - the first primitive - at which
+     * which lights are on stops being a question and becomes an answer.
+     **/
+    class LightSource {
+     public:
+        std::string handle;
+        v3d::render::offline::sl::Placed light;
+    };
+
+    /**
+     * The surface a triangle added now is shaded by, and the lights on it.
+     *
+     * The lights reach the scene here, the first time a primitive asks for them. A scene
+     * that switches a light off after its geometry is a scene the standard does not
+     * describe, and this renderer draws the lights that were on at the first primitive.
+     **/
+    v3d::render::offline::sl::Placed shading();
+
     boost::shared_ptr<RenderContext> rc_;
+    boost::shared_ptr<v3d::render::offline::sl::ShaderLibrary> shaders_;
     std::vector<glm::mat4x4> transforms_;
     std::vector<Attributes> attributes_;
+    std::vector<LightSource> lights_;
+    std::vector<std::string> lit_;
+    v3d::render::offline::sl::Placed surface_;
     glm::mat4x4 transform_ = glm::mat4x4(1.0f);
     glm::vec3 color_ = glm::vec3(1.0f);
+    glm::vec3 opacity_ = glm::vec3(1.0f);
+    /** Whether the scene's lights have been handed over, which happens once. **/
+    bool lit_given_ = false;
     std::string error_;
     std::string projection_ = "orthographic";
     // the RI defaults, and the same chain moya's render context follows: a format sets the

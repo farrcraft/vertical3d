@@ -36,10 +36,12 @@ bool ReyesPrimitive::placed(void) const {
     return placed_;
 }
 
-void ReyesPrimitive::place(const glm::mat4x4 & toEye, const glm::vec3 & color, const glm::vec3 & normal) {
+void ReyesPrimitive::place(const glm::mat4x4 & toEye, const glm::vec3 & color,
+    const glm::vec3 & normal, const Shading & shading) {
     placement_ = toEye;
     color_ = color;
     normal_ = normal;
+    shading_ = shading;
     placed_ = true;
 }
 
@@ -53,6 +55,10 @@ const glm::vec3 & ReyesPrimitive::color(void) const {
 
 const glm::vec3 & ReyesPrimitive::normal(void) const {
     return normal_;
+}
+
+const Shading & ReyesPrimitive::shading(void) const {
+    return shading_;
 }
 
 };  // namespace v3d::moya

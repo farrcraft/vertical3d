@@ -19,7 +19,7 @@ the conversion would have rewritten `../` counts in libraries and apps that had 
 with it. Afterwards a move was a `git mv`, a `CMakeLists.txt` edit and a namespace line.
 
 Four things came out differently. Step 4 was drafted to wait for
-[OfflineRenderingPhase3](OfflineRenderingPhase3.md) and did not need to, because both are
+[OfflineRenderingPhase3](completed/OfflineRenderingPhase3.md) and did not need to, because both are
 sequential commits on one branch rather than concurrent ones. `ui/immediate/` was not made:
 `Immediate` is one of the library's two entry points rather than a concern within it, which is
 the same test that kept `Layout` and `Arranger` at the top. Steps 7 and 10 became moves *and*
@@ -87,11 +87,34 @@ close - two implementations of the strip rule, which disagreed about a left tool
 the first frame - was closed without it. And step 12 found what nothing had: a game that owns
 the mouse has no cursor to give the immediate layer, so voxel's debug window cannot be folded.
 
-[OfflineRenderingPhase3.md](OfflineRenderingPhase3.md) **is open**, drafted on 2026-09-05. It
-takes up phase 3 of [the offline rendering roadmap](../roadmap/OfflineRendering.md) — light and
-surface — and answers the question that roadmap left open: shading is a language rather than a
-fixed set of shaders. That answer makes it a subsystem rather than a weekend, and phases 4 and
-5 sit behind it.
+[completed/OfflineRenderingPhase3.md](completed/OfflineRenderingPhase3.md) was drafted on
+2026-09-05 and closed on 2026-09-10. Twelve steps taking up phase 3 of
+[the offline rendering roadmap](../roadmap/OfflineRendering.md) — light and surface — and
+answering the question that roadmap had left open since it was written: shading is a language
+([ADR-0026](../adr/0026-shading-is-a-language-over-a-batch.md)) rather than a fixed set of
+shaders. That answer made it a subsystem rather than a weekend, and the plan states the
+ordering cost rather than hiding it: phases 4 and 5 sat behind it.
+
+Its ordering was almost entirely forced. One step — the surface normal — blocked everything and
+depended on nothing, and the five that are the language are strictly sequential, because there
+is no type checking an AST that does not parse and no running a program that has not been
+compiled. Only the last four had any slack in them.
+
+Four things came out differently, and each was a step's own text being wrong rather than the
+ordering. `ambient()` cannot be a function over `illuminance` as step 7 assumed — a light with
+no direction is one an illuminance loop cannot reach, which is exactly what makes it ambient.
+`Shader` was already the syntax node, so step 8's shader instance is `sl::Instance`. Step 8's C
+API bodies moved to step 9, because a body for any of them calls a render context method step 9
+wrote. And step 10 had to decide something the plan left open — who calls `transmission` — since
+RI's own standard lights ask nothing, so the three directional ones here do.
+
+Two things it found that nothing else had. The analysis gates had never covered an app at all:
+`out/build/verify` was configured with `V3D_BUILD_APPS=OFF`, so `/analyze` and clang-tidy had
+only ever seen `api/`. And neither renderer could tell a pixel nothing was drawn into from a
+black one, which an imager needs and which phase 1's fix for a black png had quietly cemented.
+
+The phase closed the way it was meant to: the two pictures the tree drew before there was a
+language are the pictures the language draws, unchanged, through every pass of it.
 
 [completed/UiFoundations.md](completed/UiFoundations.md) was drafted on 2026-09-06 against this
 tree from outside it, and staged and closed here the same day. Nine steps taking up what a ui

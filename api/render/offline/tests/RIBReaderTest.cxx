@@ -86,6 +86,21 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
         roughness_ = parameters.number("roughness", -1.0f);
         counts_["Surface"]++;
     }
+    void lightSource(const std::string & name, const std::string & handle,
+        const v3d::render::offline::rib::ParameterList & parameters) override {
+        lights_.push_back(name + "|" + handle + "|" +
+            std::to_string(parameters.number("intensity", -1.0f)));
+        counts_["LightSource"]++;
+    }
+    void illuminate(const std::string & handle, bool on) override {
+        illuminated_.push_back(handle + (on ? "|on" : "|off"));
+        counts_["Illuminate"]++;
+    }
+    void imager(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override {
+        imager_ = name;
+        background_ = parameters.points("background");
+        counts_["Imager"]++;
+    }
     void attribute(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override {
         (void)name;
         identifier_ = parameters.string("name", "");
@@ -121,6 +136,9 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
 
     std::map<std::string, unsigned int> counts_;
     std::vector<std::string> declared_;
+    std::vector<std::string> lights_;
+    std::vector<std::string> illuminated_;
+    std::vector<glm::vec3> background_;
     std::vector<float> bucket_;
     std::vector<glm::vec3> points_;
     std::vector<glm::vec3> colors_;
@@ -132,6 +150,7 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
     std::string projection_;
     std::string display_;
     std::string surface_;
+    std::string imager_;
     std::string identifier_;
     float version_ = 0.0f;
     float pixelAspect_ = 0.0f;
@@ -378,9 +397,63 @@ BOOST_AUTO_TEST_CASE(ribreader_example_file_test) {
     BOOST_CHECK_EQUAL(handler.count("Polygon"), 1u);
     BOOST_CHECK_EQUAL(handler.count("Option"), 2u);
     BOOST_CHECK_EQUAL(handler.count("Declare"), 2u);
+    BOOST_CHECK_EQUAL(handler.count("LightSource"), 3u);
+    BOOST_CHECK_EQUAL(handler.count("Illuminate"), 2u);
+    BOOST_CHECK_EQUAL(handler.count("Imager"), 1u);
     // the floor polygon is the only geometry with vertices in the file
     BOOST_CHECK_EQUAL(handler.vertices_, 4u);
 
     // Displacement and ShadingRate are recognised by the standard and not by this reader
     BOOST_CHECK(!reader.unrecognised().empty());
+}
+
+/**
+ * A light carries a handle, and a later Illuminate names it by that handle. RIB 3.03
+ * writes it as a sequence number and later RIB writes a string; both are read, and it is a
+ * string to the handler either way - a renderer keying a map on it should not have to know
+ * which the file used.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_light_handles_test) {
+    CountingHandler handler;
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(read(
+        "LightSource \"distantlight\" 1 \"intensity\" [2]\n"
+        "LightSource \"pointlight\" \"fill\" \"intensity\" [0.5]\n"
+        "Illuminate 1 0\n"
+        "Illuminate \"fill\" 1\n", &handler, &reader));
+
+    BOOST_REQUIRE_EQUAL(handler.lights_.size(), 2u);
+    BOOST_CHECK_EQUAL(handler.lights_[0], "distantlight|1|2.000000");
+    BOOST_CHECK_EQUAL(handler.lights_[1], "pointlight|fill|0.500000");
+    BOOST_REQUIRE_EQUAL(handler.illuminated_.size(), 2u);
+    BOOST_CHECK_EQUAL(handler.illuminated_[0], "1|off");
+    BOOST_CHECK_EQUAL(handler.illuminated_[1], "fill|on");
+}
+
+/**
+ * An area light reaches the handler as an ordinary light. Sampling its shape is phase 4,
+ * and a scene using one lighting nothing at all would be the worse answer.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_area_light_test) {
+    CountingHandler handler;
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(read("AreaLightSource \"arealight\" 3 \"intensity\" [4]\n", &handler, &reader));
+    BOOST_REQUIRE_EQUAL(handler.lights_.size(), 1u);
+    BOOST_CHECK_EQUAL(handler.lights_[0], "arealight|3|4.000000");
+}
+
+/**
+ * Imager is how a scene says what a pixel nothing was drawn into is worth, which is what
+ * phase 2's talyn reference worked around with a backdrop polygon.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_imager_test) {
+    CountingHandler handler;
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(read("Imager \"background\" \"background\" [0.1 0.2 0.3]\n", &handler, &reader));
+    BOOST_CHECK_EQUAL(handler.imager_, "background");
+    BOOST_REQUIRE_EQUAL(handler.background_.size(), 1u);
+    BOOST_CHECK_CLOSE(handler.background_[0].b, 0.3f, 0.01f);
 }

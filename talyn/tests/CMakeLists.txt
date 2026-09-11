@@ -2,6 +2,7 @@
 # neither a window nor a device.
 v3d_add_test(talyn
 	"TestMain.cxx"
+	"HitShaderTest.cxx"
 	"RenderContextTest.cxx"
 	"RIBHandlerTest.cxx"
 	"ReferenceTest.cxx"

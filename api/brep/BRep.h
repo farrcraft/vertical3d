@@ -36,13 +36,13 @@ class BRep : public v3d::dag::Node, public v3d::dag::Transform {
         class edge_iterator {
          public:
                 edge_iterator();
-                edge_iterator(boost::shared_ptr<BRep> brep, Index face);
+                edge_iterator(const boost::shared_ptr<BRep>& brep, Index face);
                 ~edge_iterator();
 
                 HalfEdge * operator * ();
                 edge_iterator operator++ (int);
 
-                void reset(boost::shared_ptr<BRep> brep, Index face);
+                void reset(const boost::shared_ptr<BRep>& brep, Index face);
                 boost::shared_ptr<BRep> brep(void) const;
 
          private:
@@ -54,13 +54,13 @@ class BRep : public v3d::dag::Node, public v3d::dag::Transform {
         class vertex_iterator {
          public:
                 vertex_iterator();
-                vertex_iterator(boost::shared_ptr<BRep> brep, Index face);
+                vertex_iterator(const boost::shared_ptr<BRep>& brep, Index face);
                 ~vertex_iterator();
 
                 Vertex * operator * ();
                 vertex_iterator operator++ (int);
 
-                void reset(boost::shared_ptr<BRep> brep, Index face);
+                void reset(const boost::shared_ptr<BRep>& brep, Index face);
 
          private:
                 edge_iterator iterator_;
@@ -118,7 +118,7 @@ class BRep : public v3d::dag::Node, public v3d::dag::Transform {
  * @param face the face number to get the center of
  * @return the point located in the middle of the face
  */
-glm::vec3 center(boost::shared_ptr<BRep> mesh, Index face);
+glm::vec3 center(const boost::shared_ptr<BRep>& mesh, Index face);
 /**
  * Get the UV vectors for a mesh face
  * @param mesh the mesh to use
@@ -126,6 +126,6 @@ glm::vec3 center(boost::shared_ptr<BRep> mesh, Index face);
  * @param u the address of a vector to store the results in
  * @param v the address of a vector to store the results in
  */
-void faceUV(boost::shared_ptr<BRep> mesh, Index face, glm::vec3* u, glm::vec3* v);
+void faceUV(const boost::shared_ptr<BRep>& mesh, Index face, glm::vec3* u, glm::vec3* v);
 
 };  // namespace v3d::brep

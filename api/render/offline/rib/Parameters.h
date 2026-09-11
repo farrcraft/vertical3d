@@ -34,6 +34,12 @@ class ParameterList final {
     std::size_t size() const;
 
     /**
+     * Every parameter the request carried, in name order. What a consumer that binds onto
+     * something of its own walks, rather than asking for the names it already knows.
+     **/
+    std::vector<std::string> names() const;
+
+    /**
      * How the parameter was typed, or null if it is not here.
      **/
     const Declaration * declaration(const std::string & name) const;

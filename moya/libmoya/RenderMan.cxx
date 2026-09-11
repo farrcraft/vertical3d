@@ -7,10 +7,16 @@
 // #include "Polygon.h"
 #include "Renderer.h"
 
+#include <api/render/offline/rib/Arguments.h>
+
 #include <stdarg.h>
 #include <string.h>
 
+#include <deque>
 #include <string>
+#include <vector>
+
+#include "RenderContext.h"
 
 #include <glm/gtc/type_ptr.hpp>
 
@@ -26,6 +32,59 @@ v3d::moya::Renderer& renderer() {
     static v3d::moya::Renderer instance;
     return instance;
 }
+
+/**
+ * Read a variadic parameter list into the two arrays the vector form takes.
+ *
+ * RI terminates one with RI_NULL, which is the only thing that bounds it: a va_list
+ * carries no count. A variadic entry point therefore has no body of its own - it reads
+ * its arguments and hands them on, so that the two forms of a request cannot drift.
+ **/
+void collect(va_list arguments, std::vector<RtToken>* tokens, std::vector<RtPointer>* parms) {
+    for (;;) {
+        RtToken token = va_arg(arguments, RtToken);
+        if (token == RI_NULL) {
+            return;
+        }
+        tokens->push_back(token);
+        parms->push_back(va_arg(arguments, RtPointer));
+    }
+}
+
+/**
+ * The parameter list of a shader request, typed by what the context has declared.
+ *
+ * A shader's parameters are uniform, so one vertex is the count that bounds every value
+ * array: a uniform value is one element whatever it is attached to.
+ **/
+void parameters(v3d::moya::RenderContext & rc, RtInt n, RtToken tokens[], RtPointer parms[],
+    v3d::render::offline::rib::ParameterList* list) {
+    std::vector<std::string> unresolved;
+    v3d::render::offline::rib::arguments(rc.declarations(), n, tokens, parms, 1, list,
+        &unresolved);
+    for (const std::string & name : unresolved) {
+        // a name with no declaration has no length either, so it is dropped rather than
+        // read past - the same answer the reader gives a file
+        rc.logger()->get()->warn("RI parameter '{}' was not declared and was skipped", name);
+    }
+}
+
+/**
+ * A light handle a C caller can hold on to.
+ *
+ * RtLightHandle is an untyped pointer, so the characters it points at have to outlive the
+ * call that made it - a caller may pass one back to RiIlluminate at any later point. A
+ * deque rather than a vector because an element of one does not move when another is
+ * added, and a handle already given out must not become a pointer to somewhere else.
+ **/
+RtLightHandle keep(const std::string & value) {
+    static std::deque<std::string> handles;
+    handles.push_back(value);
+    return const_cast<char*>(handles.back().c_str());
+}
+
+/** How many lights the C interface has made, which is the sequence their handles are. **/
+unsigned int made = 0;
 
 };  // namespace
 
@@ -174,14 +233,21 @@ RtVoid RiProcDynamicLoad(RtPointer data, RtFloat detail) {
 RiGetContext and RiContext have no RIB equivalents
 */
 RtContextHandle RiGetContext(void) {
-    return 0;
+    // the handle is the context, which is what makes it something RiContext could make
+    // active again. RI says nothing about what one is, only that it names a context
+    return &renderer().activeRenderContext();
 }
 
 RtVoid RiContext(RtContextHandle /* handle */) {
 }
 
-RtToken RiDeclare(char * /* name */, char * /* declaration */) {
-    return 0;
+RtToken RiDeclare(char * name, char * declaration) {
+    if (name == nullptr || declaration == nullptr) {
+        return 0;
+    }
+    renderer().activeRenderContext().declarations().declare(name, declaration);
+    // RI answers the token the name now stands for, which for this renderer is the name
+    return name;
 }
 
 
@@ -378,9 +444,25 @@ RtVoid RiExposure(RtFloat gain, RtFloat gamma) {
 }
 
 RtVoid RiImager(RtToken name, ...) {
+    // a va_list cannot be built at runtime, so the variadic form reads its own arguments
+    // and hands them to the vector form rather than the two having separate bodies
+    va_list arguments;
+    va_start(arguments, name);
+    std::vector<RtToken> tokens;
+    std::vector<RtPointer> parms;
+    collect(arguments, &tokens, &parms);
+    va_end(arguments);
+    RiImagerV(name, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
 
 RtVoid RiImagerV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
+    if (name == nullptr) {
+        return;
+    }
+    v3d::moya::RenderContext & rc = renderer().activeRenderContext();
+    v3d::render::offline::rib::ParameterList list;
+    parameters(rc, n, tokens, parms, &list);
+    rc.imager(name, list);
 }
 
 RtVoid RiQuantize(RtToken type, RtInt one, RtInt min, RtInt max, RtFloat ampl) {
@@ -471,23 +553,55 @@ shadername is the name of a light source shader. This procedure creates a non-ar
 light, turns it on, and adds it to the current light source list. An RtLightHandle value
 is returned that can be used to turn the light off or on again.
 */
-RtLightHandle RiLightSource(RtToken /* name */, ...) {
-    return 0;
+RtLightHandle RiLightSource(RtToken name, ...) {
+    va_list arguments;
+    va_start(arguments, name);
+    std::vector<RtToken> tokens;
+    std::vector<RtPointer> parms;
+    collect(arguments, &tokens, &parms);
+    va_end(arguments);
+    return RiLightSourceV(name, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
 
-RtLightHandle RiLightSourceV(RtToken /* name */, RtInt /* n */, RtToken /* tokens */[], RtPointer /* parms */[]) {
-    return 0;
+RtLightHandle RiLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
+    if (name == nullptr) {
+        return 0;
+    }
+    v3d::moya::RenderContext & rc = renderer().activeRenderContext();
+    /*
+        A C caller has no handle to give, so the interface hands one back. The handle is a
+        string to the render context, because RIB writes it as a number in 3.03 and as a
+        string later and a context keyed on it should not have to know which; here it is
+        the count of the lights made so far, which is the same sequence a 3.03 file writes.
+    */
+    const std::string handle = std::to_string(made++);
+    v3d::render::offline::rib::ParameterList list;
+    parameters(rc, n, tokens, parms, &list);
+    rc.lightSource(name, handle, list);
+    return keep(handle);
 }
 
-RtLightHandle RiAreaLightSource(RtToken /* name */, ...) {
-    return 0;
+RtLightHandle RiAreaLightSource(RtToken name, ...) {
+    va_list arguments;
+    va_start(arguments, name);
+    std::vector<RtToken> tokens;
+    std::vector<RtPointer> parms;
+    collect(arguments, &tokens, &parms);
+    va_end(arguments);
+    return RiAreaLightSourceV(name, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
 
-RtLightHandle RiAreaLightSourceV(RtToken /* name */, RtInt /* n */, RtToken /* tokens */[], RtPointer /* parms */[]) {
-    return 0;
+RtLightHandle RiAreaLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
+    // an area light is a light whose shape matters, and sampling one is phase 4. It
+    // reaches the context as an ordinary light so that a scene using one still lights
+    return RiLightSourceV(name, n, tokens, parms);
 }
 
-RtVoid RiIlluminate(RtLightHandle /* light */, RtBoolean /* onoff */) {
+RtVoid RiIlluminate(RtLightHandle light, RtBoolean onoff) {
+    if (light == nullptr) {
+        return;
+    }
+    renderer().activeRenderContext().illuminate(static_cast<const char*>(light), onoff != RI_FALSE);
 }
 
 /*
@@ -495,10 +609,24 @@ shadername is the name of a surface shader. This procedure sets the current surf
 shader to be shadername. If the surface shader shadername is not defined, some
 implementation-dependent default surface shader (but not "null") is used.
 */
-RtVoid RiSurface(RtToken /* name */, ...) {
+RtVoid RiSurface(RtToken name, ...) {
+    va_list arguments;
+    va_start(arguments, name);
+    std::vector<RtToken> tokens;
+    std::vector<RtPointer> parms;
+    collect(arguments, &tokens, &parms);
+    va_end(arguments);
+    RiSurfaceV(name, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
 
 RtVoid RiSurfaceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
+    if (name == nullptr) {
+        return;
+    }
+    v3d::moya::RenderContext & rc = renderer().activeRenderContext();
+    v3d::render::offline::rib::ParameterList list;
+    parameters(rc, n, tokens, parms, &list);
+    rc.surface(name, list);
 }
 
 RtVoid RiAtmosphere(RtToken name, ...) {

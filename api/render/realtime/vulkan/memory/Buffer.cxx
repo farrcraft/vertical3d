@@ -147,4 +147,16 @@ void Buffer::write(const void* data, VkDeviceSize bytes, VkDeviceSize offset) {
     std::memcpy(static_cast<unsigned char*>(mapped_) + offset, data, static_cast<std::size_t>(bytes));
 }
 
+/**
+ **/
+void Buffer::read(void* data, VkDeviceSize bytes, VkDeviceSize offset) const {
+    if (bytes == 0) {
+        return;
+    }
+    if (offset + bytes > size_) {
+        throw std::runtime_error("A read ran off the end of a vulkan buffer");
+    }
+    std::memcpy(data, static_cast<const unsigned char*>(mapped_) + offset, static_cast<std::size_t>(bytes));
+}
+
 };  // namespace v3d::render::realtime::vulkan::memory

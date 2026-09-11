@@ -1,0 +1,34 @@
+##RenderMan RIB-Structure 1.1
+##Scene Two surfaces under two lights - the first moya picture with shading in it
+version 3.03
+Format 64 48 1
+Projection "orthographic"
+Clipping 1 100
+WorldBegin
+# a distant light aimed away from the camera and off to one side, so L - which points at
+# the light - comes back toward it. Off axis rather than straight on, because a highlight
+# where the viewer and the light agree covers the whole surface instead of banding it
+LightSource "distantlight" 1 "intensity" [0.8] "to" [0.6 -0.4 1]
+# and a point light between the camera and the surfaces, close enough that its falloff
+# with the square of the distance shows across them
+TransformBegin
+Translate -1 1 2
+LightSource "pointlight" 2 "intensity" [4]
+TransformEnd
+
+AttributeBegin
+Color [0.9 0.4 0.2]
+Surface "matte"
+# the normals sweep across the quad, so the cosine falloff is a gradient rather than one
+# value - which is also what says a varying "N" reached the shader
+Polygon "P" [-1.2 -0.8 5  -0.1 -0.8 5  -0.1 0.8 5  -1.2 0.8 5]
+        "N" [-0.9 0 -0.436  0 0 -1  0 0 -1  -0.9 0 -0.436]
+AttributeEnd
+
+AttributeBegin
+Color [0.3 0.5 0.9]
+Surface "plastic" "roughness" [0.08] "Ks" [0.6]
+Polygon "P" [0.1 -0.8 5  1.2 -0.8 5  1.2 0.8 5  0.1 0.8 5]
+        "N" [0 0 -1  0.9 0 -0.436  0.9 0 -0.436  0 0 -1]
+AttributeEnd
+WorldEnd

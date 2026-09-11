@@ -11,7 +11,7 @@
 
 namespace v3d::font {
 
-BitmapTextBuffer::BitmapTextBuffer(boost::shared_ptr<BitmapFont> font) :
+BitmapTextBuffer::BitmapTextBuffer(const boost::shared_ptr<BitmapFont>& font) :
     font_(font) {
     dirty(true);
 }

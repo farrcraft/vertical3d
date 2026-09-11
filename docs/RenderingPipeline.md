@@ -311,6 +311,17 @@ Two frames are in flight. Each owns a command buffer, an image-available semapho
 fence. The render-finished semaphore is per swapchain image rather than per frame, because
 presentation waits on it and presentation is tied to the image.
 
+### Reading a frame back
+
+`vulkan::frame::Capture` copies a presented frame into a host visible buffer and writes it as
+a png, between step 2 and step 3 above: the image is in `PRESENT_SRC_KHR` and still acquired,
+which is the only point it may legally be read. It is two calls because the submit sits
+between them — `record()` into the frame's own command buffer, `write()` once whatever the
+caller synchronises with says that submit has completed
+([ADR-0050](adr/0050-a-frame-is-read-back-in-two-calls.md)). Nothing in this tree calls it;
+[ADR-0007](adr/0007-ci-rendering-tests.md) still asserts on validation errors rather than on
+pixels.
+
 ### Resize and minimize
 
 The swapchain is rebuilt when presenting or acquiring reports it out of date. That is the only

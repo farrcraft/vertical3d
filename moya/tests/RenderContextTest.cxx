@@ -6,6 +6,7 @@
 #include <moya/libmoya/RenderContext.h>
 
 #include <string>
+#include <vector>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
@@ -354,4 +355,44 @@ BOOST_AUTO_TEST_CASE(render_context_split_carries_the_normal_test) {
     // against the state of whatever came last
     rc.render();
     BOOST_TEST(rc.framebuffer()->primitiveCount() == 256u);
+}
+
+/**
+ * An imager runs after the last bucket, over the finished frame, and gives a pixel nothing
+ * was drawn into what the scene said it is worth.
+ *
+ * It is the same shader and the same runner talyn uses after its last ray, which is what
+ * the coverage plane is for: without it a pixel the hider never reached and a black one
+ * are the same number.
+ **/
+BOOST_AUTO_TEST_CASE(rendercontext_imager_test) {
+    v3d::moya::RenderContext rc;
+    rc.imageResolution(64, 48, 1.0f);
+    rc.clipping(1.0f, 100.0f);
+    rc.prepareWorld();
+
+    v3d::render::offline::rib::ParameterList list;
+    list.add("background",
+        v3d::render::offline::rib::Declaration(
+            v3d::render::offline::rib::Declaration::Storage::UNIFORM,
+            v3d::render::offline::rib::Declaration::Type::COLOR, 1),
+        { 0.15f, 0.25f, 0.45f }, std::vector<std::string>());
+    rc.imager("background", list);
+
+    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    polygon->addVertex(vertex(-0.7f, -0.2f, 5.0f));
+    polygon->addVertex(vertex(0.3f, -0.2f, 5.0f));
+    polygon->addVertex(vertex(0.3f, 0.8f, 5.0f));
+    polygon->addVertex(vertex(-0.7f, 0.8f, 5.0f));
+    rc.addPolygon(polygon);
+    rc.render();
+
+    boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = rc.framebuffer()->planes();
+    // the quad covers raster x over [15.2, 39.2] and y over [4.8, 28.8], so this is inside
+    // it and keeps the colour the hider wrote
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::RED, 24, 16), 1.0f, 0.01f);
+    // and this is outside it, where the imager is the whole of the pixel
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::RED, 55, 40), 0.15f, 0.01f);
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::BLUE, 55, 40), 0.45f, 0.01f);
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::COVERAGE, 55, 40), 1.0f, 0.01f);
 }

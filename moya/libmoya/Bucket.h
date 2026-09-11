@@ -26,7 +26,7 @@ class Bucket final {
     Bucket();
     ~Bucket();
 
-    void addPrimitive(boost::shared_ptr<ReyesPrimitive> primitive);
+    void addPrimitive(const boost::shared_ptr<ReyesPrimitive>& primitive);
     /**
      * Render every primitive in the bucket: dice it into micropolygon grids, shade
      * them and sample them into the framebuffer's planes. A primitive too large to

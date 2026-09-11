@@ -65,12 +65,12 @@ class MenuItem : public Component {
       * Set the submenu
       * @param sub the new sub menu
       */
-    void submenu(boost::shared_ptr<Menu> sub);
+    void submenu(const boost::shared_ptr<Menu>& sub);
     /**
       * Set the parent owner menu
       * @param m the new parent
       */
-    void menu(boost::weak_ptr<Menu> m);
+    void menu(const boost::weak_ptr<Menu>& m);
     /**
       * Get the current menu item label text
       * @return the label text
@@ -114,7 +114,7 @@ class MenuItem : public Component {
       **/
     boost::weak_ptr<Menu> menu();
 
-    menu::ItemType type() const;
+    menu::ItemType itemType() const;
 
     /**
       * Set whether a check or radio item draws its mark.

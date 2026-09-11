@@ -8,10 +8,12 @@
 #include <api/render/offline/sl/Types.h>
 
 #include <algorithm>
+#include <cmath>
 #include <string>
 #include <vector>
 
 #include <glm/geometric.hpp>
+#include <glm/vec3.hpp>
 
 namespace v3d::render::offline::sl::runtime {
 
@@ -61,6 +63,9 @@ float combine(Opcode opcode, float left, float right) {
 
 void Machine::prepare(const Program & program, unsigned int batch) {
     batch_ = batch == 0 ? 1 : batch;
+    point_ = program.symbol("P");
+    direction_.reset(Type::VECTOR, Storage::VARYING, batch_);
+    colour_.reset(Type::COLOR, Storage::VARYING, batch_);
     file_.resize(program.registers.size());
     for (std::size_t i = 0; i < program.registers.size(); i++) {
         const Register & reg = program.registers[i];
@@ -98,6 +103,14 @@ const std::string & Machine::error() const {
 
 const std::vector<std::string> & Machine::reports() const {
     return reports_;
+}
+
+const std::vector<std::string> & Machine::printed() const {
+    return printed_;
+}
+
+const std::vector<char> & Machine::lit() const {
+    return lit_;
 }
 
 void Machine::report(const std::string & message) {
@@ -230,17 +243,20 @@ void Machine::unary(const Instruction & instruction) {
     }
 }
 
+glm::mat4x4 Machine::space(const std::string & name) {
+    glm::mat4x4 matrix(1.0f);
+    if (renderer_ == nullptr || !renderer_->space(name, &matrix)) {
+        // the value still arrives, in the space it was already in: a scene that named a space
+        // nothing knows renders in the wrong place rather than not at all, and says so
+        report("the coordinate space \"" + name + "\" is not one this renderer knows");
+    }
+    return matrix;
+}
+
 void Machine::transform(const Instruction & instruction) {
     Value & target = file_[static_cast<std::size_t>(instruction.target)];
     const Value & source = file_[static_cast<std::size_t>(instruction.left)];
-    const std::string & space = file_[static_cast<std::size_t>(instruction.right)].text();
-
-    glm::mat4x4 matrix(1.0f);
-    if (renderer_ == nullptr || !renderer_->space(space, &matrix)) {
-        // the value still arrives, in the space it was already in: a scene that named a space
-        // nothing knows renders in the wrong place rather than not at all, and says so
-        report("the coordinate space \"" + space + "\" is not one this renderer knows");
-    }
+    const glm::mat4x4 matrix = space(file_[static_cast<std::size_t>(instruction.right)].text());
     const unsigned int count = target.storage() == Storage::VARYING ? batch_ : 1;
     for (unsigned int point = 0; point < count; point++) {
         if (!writable(target, point)) {
@@ -262,6 +278,107 @@ void Machine::transform(const Instruction & instruction) {
                 break;
         }
     }
+}
+
+bool Machine::inside(const glm::vec3 & direction, const std::vector<int> & cone,
+    std::size_t first, unsigned int point) const {
+    if (cone.size() < first + 2) {
+        return true;
+    }
+    const glm::vec3 axis = file_[static_cast<std::size_t>(cone[first])].triple(point);
+    const float angle = file_[static_cast<std::size_t>(cone[first + 1])].number(point);
+    const float length = glm::length(direction) * glm::length(axis);
+    if (length == 0.0f) {
+        return true;
+    }
+    return glm::dot(direction, axis) / length >= std::cos(angle);
+}
+
+bool Machine::nextLight() {
+    Illumination & round = illuminations_.back();
+    const unsigned int count = renderer_ == nullptr ? 0 : renderer_->lights();
+    const Value & surface = file_[static_cast<std::size_t>(round.arguments[0])];
+    Value & direction = file_[static_cast<std::size_t>(round.direction)];
+    Value & colour = file_[static_cast<std::size_t>(round.colour)];
+
+    while (round.light < count) {
+        const unsigned int index = round.light++;
+        std::vector<char> reached(batch_, 1);
+        bool ambient = false;
+        if (!renderer_->light(index, surface, &direction, &colour, &reached, &ambient) || ambient) {
+            // an ambient light is not one an illuminance loop sees: it has no direction to
+            // test against the cone, and ambient() is where it is summed instead
+            continue;
+        }
+        std::vector<char> lanes = round.base;
+        bool any = false;
+        for (unsigned int point = 0; point < batch_; point++) {
+            if (lanes[point] == 0) {
+                continue;
+            }
+            // the cone opens along the axis from the point being shaded, and L points at
+            // the light, so it is L itself that is tested rather than the way light travels
+            if (reached[point] == 0 || !inside(direction.triple(point), round.arguments, 1, point)) {
+                lanes[point] = 0;
+                continue;
+            }
+            any = true;
+        }
+        if (any) {
+            masks_.push_back(lanes);
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Machine::admit(const Instruction & instruction) {
+    if (instruction.opcode == Opcode::ILLUMINANCE_NEXT) {
+        return nextLight();
+    }
+    return illuminate(instruction, instruction.opcode == Opcode::SOLAR);
+}
+
+bool Machine::illuminate(const Instruction & instruction, bool solar) {
+    Value & direction = file_[static_cast<std::size_t>(instruction.left)];
+    const Value & surface = file_[static_cast<std::size_t>(instruction.right)];
+    const std::vector<int> & given = instruction.arguments;
+    std::vector<char> lanes = masks_.back();
+    bool any = false;
+
+    for (unsigned int point = 0; point < batch_; point++) {
+        if (lanes[point] == 0) {
+            continue;
+        }
+        glm::vec3 toward(0.0f);
+        if (given.empty()) {
+            // solar with no axis is light from every direction at once, which has no L
+            direction.triple(point, toward);
+        } else if (solar) {
+            // the argument is the way the light travels, and L points back along it
+            toward = -file_[static_cast<std::size_t>(given[0])].triple(point);
+            direction.triple(point, toward);
+        } else {
+            toward = file_[static_cast<std::size_t>(given[0])].triple(point) - surface.triple(point);
+            direction.triple(point, toward);
+        }
+        // a light's own cone is stated from the light outward, so it is the way the light
+        // travels that is tested rather than L
+        if (!solar && !inside(-toward, given, 1, point)) {
+            lanes[point] = 0;
+            continue;
+        }
+        any = true;
+    }
+    for (unsigned int point = 0; point < batch_; point++) {
+        if (lanes[point] == 0) {
+            lit_[point] = 0;
+        }
+    }
+    if (any) {
+        masks_.push_back(lanes);
+    }
+    return any;
 }
 
 void Machine::mask(const Instruction & instruction, bool wanted) {
@@ -287,20 +404,22 @@ void Machine::narrow(const Instruction & instruction) {
 }
 
 void Machine::finish() {
-    // these lanes are done with the shader, so they come out of every mask and out of every
-    // loop still going round them
+    // a return goes as far as the function it is in and no further, so the stacks are
+    // cleared from where that body opened rather than from the bottom
+    const std::size_t mask = frames_.empty() ? 0 : frames_.back().masks;
+    const std::size_t loop = frames_.empty() ? 0 : frames_.back().loops;
     const std::vector<char> going = masks_.back();
-    for (std::vector<char> & mask : masks_) {
+    for (std::size_t i = mask; i < masks_.size(); i++) {
         for (unsigned int point = 0; point < batch_; point++) {
             if (going[point] != 0) {
-                mask[point] = 0;
+                masks_[i][point] = 0;
             }
         }
     }
-    for (Loop & loop : loops_) {
+    for (std::size_t i = loop; i < loops_.size(); i++) {
         for (unsigned int point = 0; point < batch_; point++) {
             if (going[point] != 0) {
-                loop.lanes[point] = 0;
+                loops_[i].lanes[point] = 0;
             }
         }
     }
@@ -332,14 +451,28 @@ void Machine::leave(bool loop) {
     }
 }
 
+bool Machine::initialise(const Program & program) {
+    return execute(program, 0, program.prologue);
+}
+
 bool Machine::run(const Program & program) {
+    return execute(program, program.prologue, program.instructions.size());
+}
+
+bool Machine::execute(const Program & program, std::size_t from, std::size_t until) {
     error_.clear();
+    printed_.clear();
     masks_.assign(1, std::vector<char>(batch_, 1));
     loops_.clear();
+    frames_.clear();
+    illuminations_.clear();
+    // every point until an illuminate or a solar says otherwise, which is what makes a
+    // light shader with neither light the whole batch
+    lit_.assign(batch_, 1);
 
-    std::size_t pc = 0;
+    std::size_t pc = from;
     std::size_t steps = 0;
-    while (pc < program.instructions.size()) {
+    while (pc < until) {
         if (++steps > LIMIT) {
             error_ = "the shader '" + program.name + "' ran without end";
             return false;
@@ -380,9 +513,7 @@ bool Machine::run(const Program & program) {
                 transform(instruction);
                 break;
             case Opcode::CALL:
-                // the standard library is what a call runs, and it is handed to the machine
-                // rather than held by it
-                report("the standard library is not attached, so a call answers its default");
+                builtin(instruction);
                 break;
             case Opcode::JUMP:
                 pc = static_cast<std::size_t>(instruction.target);
@@ -444,7 +575,47 @@ bool Machine::run(const Program & program) {
             case Opcode::CONTINUE:
                 leave(false);
                 break;
+            case Opcode::ENTER: {
+                Frame frame;
+                frame.masks = masks_.size();
+                frame.loops = loops_.size();
+                frames_.push_back(frame);
+                masks_.push_back(masks_.back());
+                break;
+            }
+            case Opcode::LEAVE:
+                // the lanes that returned are live again: they are done with the function,
+                // not with the shader
+                masks_.resize(frames_.back().masks);
+                loops_.resize(frames_.back().loops);
+                frames_.pop_back();
+                break;
+            case Opcode::ILLUMINANCE: {
+                Illumination round;
+                round.base = masks_.back();
+                round.direction = instruction.left;
+                round.colour = instruction.right;
+                round.arguments = instruction.arguments;
+                illuminations_.push_back(round);
+                break;
+            }
+            case Opcode::ILLUMINANCE_NEXT:
+            case Opcode::ILLUMINATE:
+            case Opcode::SOLAR:
+                // all three narrow the batch to the points one light reaches, and all
+                // three leave over the body when that is none of them
+                if (!admit(instruction)) {
+                    pc = static_cast<std::size_t>(instruction.target);
+                    continue;
+                }
+                break;
+            case Opcode::POP_ILLUMINANCE:
+                illuminations_.pop_back();
+                break;
             case Opcode::RETURN:
+                // like a break it does not jump: the masks and the loops between here and
+                // the body's own instruction are what has to be unwound, and each of them
+                // unwinds itself once no lane is left inside it
                 finish();
                 break;
         }

@@ -698,7 +698,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     if (!level) {
         level = menu;
     }
-    const std::size_t count = level->size();
+    const std::size_t count = level->count();
     if (count == 0) {
         return;
     }
@@ -759,7 +759,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     canvas->rect(glm::vec2(0.0f, base().barHeight), glm::vec2(width, base().barHeight + Arranger::ruleWidth), base().border);
 
     float pen = base().padding * 0.5f;
-    for (std::size_t index = 0; index < bar->size(); index++) {
+    for (std::size_t index = 0; index < bar->count(); index++) {
         const boost::shared_ptr<component::Menu> menu = bar->menu(index);
         if (!menu) {
             continue;
@@ -822,7 +822,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     }
 
     glm::vec2 pen = corner;
-    for (std::size_t index = 0; index < bar->size(); index++) {
+    for (std::size_t index = 0; index < bar->count(); index++) {
         const boost::shared_ptr<component::Button> button = bar->button(index);
         if (!button) {
             continue;
@@ -845,7 +845,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
  **/
 void ComponentRenderer::panel(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Menu>& menu,
     const glm::vec2& origin) const {
-    const std::size_t count = menu->size();
+    const std::size_t count = menu->count();
     if (count == 0) {
         return;
     }
@@ -901,7 +901,7 @@ void ComponentRenderer::panel(v3d::render::realtime::Canvas* canvas, const boost
             canvas->rect(centre - glm::vec2(mark, mark), centre + glm::vec2(mark, mark), base().activeText);
         }
 
-        if (item && item->type() == component::menu::ItemType::Submenu) {
+        if (item && item->itemType() == component::menu::ItemType::Submenu) {
             // a three sided circle is a triangle with a vertex at zero degrees, which
             // points along +x
             canvas->circle(glm::vec2(corner.x + size.x - column * 0.5f, top + base().lineHeight * 0.5f),

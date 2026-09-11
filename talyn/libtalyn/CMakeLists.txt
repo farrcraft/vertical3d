@@ -1,4 +1,5 @@
 add_library("v3dlib_talyn"
+	"HitShader.h" "HitShader.cxx"
 	"RenderContext.h" "RenderContext.cxx"
 	"RIBHandler.h" "RIBHandler.cxx"
 	"Scene.h" "Scene.cxx"

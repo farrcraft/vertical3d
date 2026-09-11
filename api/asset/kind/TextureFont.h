@@ -19,7 +19,7 @@ class TextureFont : public Asset {
  public:
     /**
      **/
-    TextureFont(const std::string& name, Type t, boost::shared_ptr<v3d::font::TextureFont> font);
+    TextureFont(const std::string& name, Type t, const boost::shared_ptr<v3d::font::TextureFont>& font);
 
     /**
      **/

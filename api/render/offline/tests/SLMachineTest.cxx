@@ -500,3 +500,94 @@ BOOST_AUTO_TEST_CASE(slmachine_prepare_once_test) {
             static_cast<float>(round) * 2.0f);
     }
 }
+
+/**
+ * A shader's own function is pasted in where it was called, because a run has no call stack
+ * to return over. The arguments land on the formals, and the answer comes back in a register
+ * of the caller's own.
+ **/
+BOOST_AUTO_TEST_CASE(slmachine_function_is_inlined_test) {
+    std::string error;
+    Program program;
+    BOOST_REQUIRE_MESSAGE(build(
+        "surface s() {\n"
+        "    float twice(float x) { return x * 2; }\n"
+        "    Ci = color (twice(3) + twice(10), 0, 0);\n"
+        "}\n", &program, &error), error);
+
+    // pasted in twice rather than called twice
+    BOOST_CHECK_EQUAL(count(program, Opcode::CALL), 0u);
+    BOOST_CHECK_EQUAL(count(program, Opcode::ENTER), 2u);
+    BOOST_CHECK_EQUAL(count(program, Opcode::LEAVE), 2u);
+
+    v3d::render::offline::sl::runtime::Machine machine;
+    machine.prepare(program, 1);
+    BOOST_REQUIRE(machine.run(program));
+    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(0).r, 26.0f);
+}
+
+/**
+ * A return means "this lane is done with the function", not "done with the shader". Under a
+ * varying condition each lane leaves by its own arm and the shader carries on for all of
+ * them, which is the whole reason an inlined body is bracketed rather than merely pasted.
+ **/
+BOOST_AUTO_TEST_CASE(slmachine_return_leaves_the_function_test) {
+    std::string error;
+    Program program;
+    BOOST_REQUIRE_MESSAGE(build(
+        "surface s() {\n"
+        "    float clip(float x) {\n"
+        "        if (x > 0.5) { return 1; }\n"
+        "        return 0;\n"
+        "    }\n"
+        "    Ci = color (clip(s), 7, 0);\n"
+        "}\n", &program, &error), error);
+
+    v3d::render::offline::sl::runtime::Machine machine;
+    machine.prepare(program, 2);
+    const int texture = program.symbol("s");
+    machine.value(texture).number(0, 0.2f);
+    machine.value(texture).number(1, 0.8f);
+    BOOST_REQUIRE(machine.run(program));
+
+    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(0).r, 0.0f);
+    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(1).r, 1.0f);
+    // the statement after the call ran for both lanes, so neither returned from the shader
+    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(0).g, 7.0f);
+    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(1).g, 7.0f);
+}
+
+/**
+ * A return inside a loop inside a function leaves both, and leaves nothing outside the
+ * function: the lanes come out of every mask and every loop the body opened, and out of none
+ * that the caller did.
+ **/
+BOOST_AUTO_TEST_CASE(slmachine_return_out_of_a_loop_test) {
+    std::string error;
+    Program program;
+    BOOST_REQUIRE_MESSAGE(build(
+        "surface s() {\n"
+        "    float upto(float n) {\n"
+        "        float i = 0;\n"
+        "        while (i < 10) {\n"
+        "            i += 1;\n"
+        "            if (i >= n) { return i; }\n"
+        "        }\n"
+        "        return 99;\n"
+        "    }\n"
+        "    Ci = color (upto(s), 0, 0);\n"
+        "}\n", &program, &error), error);
+
+    v3d::render::offline::sl::runtime::Machine machine;
+    machine.prepare(program, 3);
+    const int texture = program.symbol("s");
+    machine.value(texture).number(0, 3.0f);
+    machine.value(texture).number(1, 7.0f);
+    // no iteration reaches it, so this lane falls out of the loop and takes the last return
+    machine.value(texture).number(2, 50.0f);
+    BOOST_REQUIRE(machine.run(program));
+
+    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(0).r, 3.0f);
+    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(1).r, 7.0f);
+    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(2).r, 99.0f);
+}

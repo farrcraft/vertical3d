@@ -207,8 +207,11 @@ BOOST_AUTO_TEST_CASE(slcompiler_global_writability_test) {
         "'P' cannot be assigned in a surface shader at line 1, column 15");
     BOOST_CHECK_EQUAL(compile("surface s() { Cs = 1; Ci = Cs; }"),
         "'Cs' cannot be assigned in a surface shader at line 1, column 15");
-    BOOST_CHECK_EQUAL(compile("imager i() { alpha = 1; }"),
-        "'alpha' cannot be assigned in an imager shader at line 1, column 14");
+    BOOST_CHECK_EQUAL(compile("imager i() { P = point (0, 0, 0); }"),
+        "'P' cannot be assigned in an imager shader at line 1, column 14");
+    // an imager writes alpha as well as reading it: a pixel it has painted is no longer
+    // one that nothing was drawn into, and "background" says so
+    BOOST_CHECK_EQUAL(compile("imager i() { alpha = 1; }"), "");
 }
 
 /**

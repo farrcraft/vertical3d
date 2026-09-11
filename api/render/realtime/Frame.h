@@ -26,7 +26,7 @@ class Frame {
  public:
     /**
      **/
-    explicit Frame(boost::shared_ptr<Context> context);
+    explicit Frame(const boost::shared_ptr<Context>& context);
 
     /**
      * The pass of that name, added to the end of the list if the frame has none.

@@ -54,7 +54,7 @@ Recorded in [adr/](../../adr/), not here.
 | [0012](../../adr/0012-camera-builds-vulkan-clip-space.md) | `v3d::type::Camera` builds Vulkan clip space — unchanged; step 5's loader produces profiles for it |
 | [0016](../../adr/0016-undo-records-what-has-already-happened.md), [0017](../../adr/0017-a-command-is-a-name-in-a-context.md) | One consumer is not a library, and it moves when a second app wants it — **step 5 applies it**, and needs no record of its own |
 
-`0026` is a deliberate gap, reserved by [the open shading plan](OfflineRenderingPhase3.md) —
+`0026` is a deliberate gap, reserved by [the shading plan](OfflineRenderingPhase3.md) —
 [adr/README.md](../../adr/README.md) says so above its table. 0028 through 0031 have been taken since
 this plan was drafted, so the record here is **0032**.
 
