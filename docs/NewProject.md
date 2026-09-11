@@ -249,3 +249,15 @@ error in your own build. Two things to re-check when you do:
 
 The api is still moving — see [the roadmap](roadmap/) and whatever is open in
 [plans/](plans/) — so expect to fix a call site occasionally rather than to pin a version.
+
+## Changing the tree from a consumer
+
+Don't - not in `vendor/vertical3d`, anyway. A submodule is a full clone and will happily take a
+commit, but the change is then invisible to both projects, the sha you pin may not exist
+anywhere else, and **it has not been tested**: `V3D_BUILD_APPS` and `V3D_BUILD_TESTS` follow
+`PROJECT_IS_TOP_LEVEL`, so your build configured the api libraries you selected and neither the
+applications nor a single test suite.
+
+Fix it here instead, on a branch, and check that branch out in your submodule to try it against
+your app without committing the pointer. [CONTRIBUTING.md](../CONTRIBUTING.md) is the procedure,
+including how to move a commit between two local clones rather than re-typing it.
