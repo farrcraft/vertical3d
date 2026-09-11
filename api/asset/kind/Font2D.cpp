@@ -10,7 +10,7 @@
 namespace v3d::asset::kind {
 /**
  **/
-Font2D::Font2D(const std::string& name, Type t, boost::shared_ptr<v3d::font::Font2D> font) :
+Font2D::Font2D(const std::string& name, Type t, const boost::shared_ptr<v3d::font::Font2D>& font) :
     Asset(name, t),
     font_(font) {
 }

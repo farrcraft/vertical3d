@@ -10,7 +10,7 @@
 namespace v3d::asset::kind {
 /**
  **/
-Image::Image(const std::string& name, Type t, boost::shared_ptr<v3d::image::Image> img) :
+Image::Image(const std::string& name, Type t, const boost::shared_ptr<v3d::image::Image>& img) :
     Asset(name, t),
     image_(img) {
 }

@@ -60,6 +60,9 @@ where this document does not say otherwise.
   column 0 with it. [Linting.md](Linting.md#namespace-indentation) has the detail and the
   reason.
 - Use `boost::shared_ptr` and `boost::make_shared`, not the `std` equivalents.
+- A `boost::shared_ptr`, a `std::string` or any other non-trivial type is a parameter by `const`
+  reference. `performance-unnecessary-value-param` is satisfied by a by-value parameter that is
+  moved from as well, and this tree takes the reference in both cases.
 - Log through the spdlog wrapper: `logger_->get()->info("... {}", value)`. The older
   `LOG_INFO` and `LOG_ERROR` macros survive only in commented-out or non-compiling code. Do
   not add new uses.

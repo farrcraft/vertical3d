@@ -202,7 +202,7 @@ class RenderContext {
             *	maps to RiPolygon()
             *	polygon will be placed into a starting bucket when it is initially added
             */
-        void addPolygon(boost::shared_ptr<Polygon> poly);
+        void addPolygon(const boost::shared_ptr<Polygon>& poly);
 
         /**
             *	Get the matrix for a named coordinate system.

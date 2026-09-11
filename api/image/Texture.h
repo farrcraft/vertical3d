@@ -18,7 +18,7 @@ namespace v3d::image {
 class Texture {
  public:
     Texture();
-    explicit Texture(boost::shared_ptr<Image> image);
+    explicit Texture(const boost::shared_ptr<Image>& image);
     explicit Texture(const Texture &t);
     virtual ~Texture();
 
@@ -55,7 +55,7 @@ class Texture {
         * @param image the texture source image
         * @return true if the texture was sucessfully created
         */
-    bool create(boost::shared_ptr<Image> image);
+    bool create(const boost::shared_ptr<Image>& image);
     /**
         * Get the texture id
         * @return texture id

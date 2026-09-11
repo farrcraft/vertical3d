@@ -87,7 +87,7 @@ Bucket::Bucket() {
 Bucket::~Bucket() {
 }
 
-void Bucket::addPrimitive(boost::shared_ptr<ReyesPrimitive> primitive) {
+void Bucket::addPrimitive(const boost::shared_ptr<ReyesPrimitive>& primitive) {
     primitives_.push_back(primitive);
 }
 

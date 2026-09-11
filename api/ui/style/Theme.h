@@ -31,7 +31,7 @@ class Theme {
         * Add a style to the theme
         * @param style the style to add
         */
-    void addStyle(boost::shared_ptr<Style> style);
+    void addStyle(const boost::shared_ptr<Style>& style);
     /**
         * Get a set of styles with the matching name and class.
         * If no name or class is specified then no filtering of that parameter will be done. This allows getting the

@@ -19,7 +19,7 @@ class Font2D : public Asset {
  public:
     /**
      **/
-    Font2D(const std::string& name, Type t, boost::shared_ptr<v3d::font::Font2D> font);
+    Font2D(const std::string& name, Type t, const boost::shared_ptr<v3d::font::Font2D>& font);
 
     /**
      **/

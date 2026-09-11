@@ -529,7 +529,7 @@ GridShader & RenderContext::shader() {
     return *shader_;
 }
 
-void RenderContext::addPolygon(boost::shared_ptr<Polygon> poly) {
+void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     // if an output stream exists
     // echo RiPolygon RIB command to output stream
 

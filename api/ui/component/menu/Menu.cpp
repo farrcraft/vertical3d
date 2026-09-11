@@ -12,7 +12,7 @@ Menu::Menu(const boost::shared_ptr<entt::dispatcher>& dispatcher) :
 
 /**
  **/
-void Menu::parent(boost::weak_ptr<Menu> p) {
+void Menu::parent(const boost::weak_ptr<Menu>& p) {
     parent_ = p;
 }
 
@@ -24,11 +24,11 @@ boost::shared_ptr<Menu> Menu::level() const {
     return level_.lock();
 }
 
-void Menu::level(boost::weak_ptr<Menu> m) {
+void Menu::level(const boost::weak_ptr<Menu>& m) {
     level_ = m;
 }
 
-void Menu::addItem(boost::shared_ptr<MenuItem> item) {
+void Menu::addItem(const boost::shared_ptr<MenuItem>& item) {
     items_.push_back(item);
 }
 

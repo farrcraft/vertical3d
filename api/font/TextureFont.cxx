@@ -142,7 +142,7 @@ TextureFont::TextureFont(const std::string& filename, float size, const boost::s
 
 /**
  **/
-void TextureFont::atlas(boost::shared_ptr<v3d::image::TextureAtlas> atlas) {
+void TextureFont::atlas(const boost::shared_ptr<v3d::image::TextureAtlas>& atlas) {
     atlas_ = atlas;
 }
 
@@ -529,7 +529,7 @@ void TextureFont::generateKerning() {
     }
 }
 
-float TextureFont::kerning(boost::shared_ptr<Glyph> glyph, wchar_t charcode) {
+float TextureFont::kerning(const boost::shared_ptr<Glyph>& glyph, wchar_t charcode) {
     for (unsigned int i = 0; i < glyph->kerning_.size(); ++i) {
         if (glyph->kerning_[i].charcode_ == charcode) {
             return glyph->kerning_[i].kerning_;

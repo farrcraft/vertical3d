@@ -44,7 +44,7 @@ boost::shared_ptr<Property> Style::property(const std::string& name, const std::
     return prop;
 }
 
-void Style::addProperty(boost::shared_ptr<Property> prop, const std::string& class_name) {
+void Style::addProperty(const boost::shared_ptr<Property>& prop, const std::string& class_name) {
     std::pair<std::string, std::string> key(prop->name(), class_name);
     properties_[key] = prop;
 }

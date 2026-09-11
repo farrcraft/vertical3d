@@ -31,7 +31,7 @@ class KeyState final {
      * 
      * @return bool true if the resulting state is a pressed key
      **/
-    bool operator() (std::string c);
+    bool operator() (const std::string& c);
 
  private:
     std::vector<std::string> keys_;

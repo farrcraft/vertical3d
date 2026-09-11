@@ -1,7 +1,7 @@
 # The check list clang-tidy runs under -DV3D_CLANG_TIDY=ON. Four families are enabled and
 # named checks are subtracted, rather than the live checks being listed one by one: a name
 # clang-tidy does not recognise is not an error, so a list that has gone stale turns findings
-# on and fails loudly instead of quietly covering less. 185 of the 206 checks in these families
+# on and fails loudly instead of quietly covering less. 186 of the 206 checks in these families
 # are live, and the tree is clean at all of them.
 #
 # The cppcoreguidelines, modernize and google families are not enabled at all. Each argues with
@@ -52,7 +52,6 @@ Checks: >
   -misc-non-private-member-variables-in-classes,
   -misc-use-internal-linkage,
   -performance-enum-size,
-  -performance-unnecessary-value-param,
   -readability-ambiguous-smartptr-reset-call,
   -readability-braces-around-statements,
   -readability-container-contains,

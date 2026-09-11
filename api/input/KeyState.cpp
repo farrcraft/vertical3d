@@ -20,7 +20,7 @@ bool KeyState::pressed(std::string_view c) const {
 
 /**
  **/
-bool KeyState::operator() (std::string c) {
+bool KeyState::operator() (const std::string& c) {
     std::vector<std::string>::const_iterator iter = std::find(keys_.begin(), keys_.end(), c);
     bool pressed = true;
     if (iter != keys_.end()) {

@@ -55,11 +55,11 @@ class TextureFont {
         unsigned int spread = 0);
 
     boost::shared_ptr<Glyph> glyph(wchar_t charcode);
-    static float kerning(boost::shared_ptr<Glyph> glyph, wchar_t charcode);
+    static float kerning(const boost::shared_ptr<Glyph>& glyph, wchar_t charcode);
 
     /**
      **/
-    void atlas(boost::shared_ptr<v3d::image::TextureAtlas> atlas);
+    void atlas(const boost::shared_ptr<v3d::image::TextureAtlas>& atlas);
 
     /**
      * Rasterize each charcode and pack it into the atlas.

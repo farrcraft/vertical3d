@@ -111,7 +111,7 @@ class Menu : public Component {
      **/
     void cancel();
 
-    void addItem(boost::shared_ptr<MenuItem> item);
+    void addItem(const boost::shared_ptr<MenuItem>& item);
 
     /**
      * Get the currently active menu level.
@@ -119,12 +119,12 @@ class Menu : public Component {
      * all the way to the lowest active submenu.  Level points to that menu.
      **/
     boost::shared_ptr<Menu> level() const;
-    void level(boost::weak_ptr<Menu> m);
+    void level(const boost::weak_ptr<Menu>& m);
 
     /**
      * Set this menu's parent if it is a submenu 
      **/
-    void parent(boost::weak_ptr<Menu> p);
+    void parent(const boost::weak_ptr<Menu>& p);
 
     /**
      * Send a menu item's bound event, carrying its value as event data when it has one.

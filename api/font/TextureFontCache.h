@@ -21,8 +21,8 @@ class TextureFontCache {
     void charcodes(const wchar_t * charcodes);
 
     boost::shared_ptr<TextureFont> find(const std::string & filename, float size);
-    void add(boost::shared_ptr<TextureFont> font);
-    bool remove(boost::shared_ptr<TextureFont> font);
+    void add(const boost::shared_ptr<TextureFont>& font);
+    bool remove(const boost::shared_ptr<TextureFont>& font);
 
     boost::shared_ptr<v3d::image::TextureAtlas> atlas();
 

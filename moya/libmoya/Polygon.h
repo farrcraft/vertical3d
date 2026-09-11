@@ -24,7 +24,7 @@ class Polygon : public ReyesPrimitive {
 
     /**
      **/
-    void addVertex(Vertex vert);
+    void addVertex(const Vertex& vert);
 
     /**
      **/

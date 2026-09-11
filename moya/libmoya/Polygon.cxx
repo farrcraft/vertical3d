@@ -43,7 +43,7 @@ Polygon::Polygon() {
 Polygon::~Polygon() {
 }
 
-void Polygon::addVertex(Vertex vert) {
+void Polygon::addVertex(const Vertex& vert) {
     vertices_.push_back(vert);
 }
 
