@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE(toolbar_row_layout) {
     BOOST_TEST(strip.size().y == style.barHeight);
 
     float pen = 0.0f;
-    for (std::size_t index = 0; index < bar->size(); index++) {
+    for (std::size_t index = 0; index < bar->count(); index++) {
         const boost::shared_ptr<v3d::ui::component::Button> button = bar->button(index);
         BOOST_TEST(button->position().x == pen);
         BOOST_TEST(button->position().y == 30.0f);
@@ -134,7 +134,7 @@ BOOST_AUTO_TEST_CASE(toolbar_column_layout) {
     BOOST_TEST(strip.size().x == width);
     BOOST_TEST(strip.size().y == static_cast<float>(fixture.canvas.height()) - 30.0f);
 
-    for (std::size_t index = 0; index < bar->size(); index++) {
+    for (std::size_t index = 0; index < bar->count(); index++) {
         const boost::shared_ptr<v3d::ui::component::Button> button = bar->button(index);
         BOOST_TEST(button->size().x == width);
         BOOST_TEST(button->size().y == style.lineHeight);

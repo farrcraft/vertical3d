@@ -58,10 +58,10 @@ class Toolbar : public Component {
     /**
      * @return how many buttons are in the strip
      **/
-    std::size_t size() const noexcept;
+    std::size_t count() const noexcept;
 
     /**
-     * @param index which button, which must be less than size()
+     * @param index which button, which must be less than count()
      **/
     boost::shared_ptr<Button> button(std::size_t index) const;
 

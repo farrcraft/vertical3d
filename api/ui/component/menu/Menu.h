@@ -54,7 +54,7 @@ class Menu : public Component {
         * Get the number of items in this menu.
         * @return the item count
         */
-    size_t size() const;
+    size_t count() const;
 
     // use a [] operator to get individual items instead
     boost::shared_ptr<MenuItem> & operator[](size_t i);

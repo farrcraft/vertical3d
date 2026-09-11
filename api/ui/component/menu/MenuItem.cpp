@@ -86,7 +86,7 @@ boost::weak_ptr<Menu> MenuItem::menu() {
     return menu_;
 }
 
-menu::ItemType MenuItem::type() const {
+menu::ItemType MenuItem::itemType() const {
     return type_;
 }
 

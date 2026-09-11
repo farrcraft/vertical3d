@@ -100,7 +100,7 @@ std::size_t Engine::resolveComponentImages(const Resolve& resolve, const boost::
     if (!bar) {
         return resolved;
     }
-    for (std::size_t index = 0; index < bar->size(); index++) {
+    for (std::size_t index = 0; index < bar->count(); index++) {
         const boost::shared_ptr<component::Button> held = bar->button(index);
         if (held && resolveIcon(resolve, std::string(held->icon()), held)) {
             resolved++;

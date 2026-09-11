@@ -27,7 +27,7 @@ class Engine3D : public Engine {
 
     /**
      **/
-    bool initialize(const boost::shared_ptr<Window>& window);
+    bool initialize(const boost::shared_ptr<Window>& window) override;
 
     /**
      * Wait for everything in flight before the device and the window go away.

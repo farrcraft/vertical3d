@@ -16,11 +16,12 @@ namespace v3d::font {
 class TextBuffer {
  public:
     TextBuffer();
+    virtual ~TextBuffer() = default;
 
     /**
         * Clear the existing text buffer
         */
-    void clear();
+    virtual void clear();
     void invalidate();
     bool dirty() const;
 

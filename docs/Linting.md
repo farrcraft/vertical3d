@@ -102,7 +102,7 @@ file would be lost the next time the port moves.
 [.clang-tidy](../.clang-tidy). The binary ships with the MSVC install, under
 `VC/Tools/Llvm/x64/bin`.
 
-Four families are enabled and 22 checks subtracted. The tree is clean at the 184 left.
+Four families are enabled and 21 checks subtracted. The tree is clean at the 185 left.
 [TODO.md](TODO.md#the-clang-tidy-backlog) carries what each subtraction reports, except the
 seven the `.clang-tidy` comment records as settled rather than pending. Removing a line from
 that table means fixing what it reports, never widening the exclusion.

@@ -41,7 +41,7 @@ v3d::type::geometry::Bound2D MenuBar::bound(std::size_t index) const {
 
 /**
  **/
-std::size_t MenuBar::size() const noexcept {
+std::size_t MenuBar::count() const noexcept {
     return menus_.size();
 }
 
@@ -124,7 +124,7 @@ int MenuBar::labelAt(const glm::vec2& cursor) const {
 /**
  **/
 int MenuBar::itemAt(const boost::shared_ptr<Menu>& panel, const glm::vec2& cursor) {
-    for (std::size_t index = 0; index < panel->size(); index++) {
+    for (std::size_t index = 0; index < panel->count(); index++) {
         const boost::shared_ptr<MenuItem>& item = (*panel)[index];
         if (item && within(*item, cursor)) {
             return static_cast<int>(index);
@@ -146,7 +146,7 @@ void MenuBar::truncate(std::size_t depth) {
  **/
 void MenuBar::descend(std::size_t depth, const boost::shared_ptr<MenuItem>& item) {
     truncate(depth + 1);
-    if (item->type() != menu::ItemType::Submenu || !item->submenu()) {
+    if (item->itemType() != menu::ItemType::Submenu || !item->submenu()) {
         return;
     }
     panels_.push_back(item->submenu());
@@ -204,7 +204,7 @@ bool MenuBar::press(const glm::vec2& cursor) {
         // a press can arrive without a motion having crossed the item first, so the
         // highlight and the flyout's placement are set here rather than assumed
         panel->active(index);
-        if (item->type() == menu::ItemType::Submenu) {
+        if (item->itemType() == menu::ItemType::Submenu) {
             descend(depth - 1, item);
         } else {
             panel->dispatch(item);
@@ -231,7 +231,7 @@ bool MenuBar::press(const glm::vec2& cursor) {
 /**
  **/
 boost::shared_ptr<MenuItem> MenuBar::find(const boost::shared_ptr<Menu>& menu, const std::string& command) {
-    for (std::size_t index = 0; index < menu->size(); index++) {
+    for (std::size_t index = 0; index < menu->count(); index++) {
         const boost::shared_ptr<MenuItem>& item = (*menu)[index];
         if (!item) {
             continue;

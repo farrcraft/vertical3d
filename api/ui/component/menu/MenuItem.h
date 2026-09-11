@@ -114,7 +114,7 @@ class MenuItem : public Component {
       **/
     boost::weak_ptr<Menu> menu();
 
-    menu::ItemType type() const;
+    menu::ItemType itemType() const;
 
     /**
       * Set whether a check or radio item draws its mark.

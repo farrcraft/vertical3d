@@ -45,16 +45,16 @@ class MenuBar : public Component {
     /**
      * @return how many menus are in the row
      **/
-    std::size_t size() const noexcept;
+    std::size_t count() const noexcept;
 
     /**
-     * @param index which menu, which must be less than size()
+     * @param index which menu, which must be less than count()
      * @return the label the bar shows for it
      **/
     const std::string& label(std::size_t index) const;
 
     /**
-     * @param index which menu, which must be less than size()
+     * @param index which menu, which must be less than count()
      * @return the menu that drops down from it
      **/
     boost::shared_ptr<Menu> menu(std::size_t index) const;
@@ -66,12 +66,12 @@ class MenuBar : public Component {
      * menu is drawn twice - once as a label up here and again as the panel it drops - and
      * its own bounds are the panel.
      *
-     * @param index which menu, which must be less than size()
+     * @param index which menu, which must be less than count()
      **/
     void place(std::size_t index, const glm::vec2& position, const glm::vec2& size);
 
     /**
-     * @param index which menu, which must be less than size()
+     * @param index which menu, which must be less than count()
      * @return the label's bounds as the last draw left them
      **/
     v3d::type::geometry::Bound2D bound(std::size_t index) const;
