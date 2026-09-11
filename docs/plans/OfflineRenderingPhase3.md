@@ -608,6 +608,41 @@ two lights sums them, and `Illuminate` turning one off changes the picture.
 
 ### Step 10 — talyn shades a hit, and casts a shadow ray
 
+**Landed.** `talyn::HitShader` is the other implementation of `sl::runtime::Renderer`, and
+`talyn::Hit` is the batch: one point of it, over the same program and the same instructions
+moya runs over a hundred. A quad under one distant light renders through
+`talyn --file ... --outfile ...` at the cosine the maths gives, which is the first talyn
+picture with any shading in it.
+
+Three things beyond the step's own text:
+
+- **Something has to call `transmission`, and it is the light shaders.** The step says talyn
+  traces and moya answers that all the light gets through, and leaves open who asks. RI's own
+  standard lights ask nothing, so `distantlight`, `pointlight` and `spotlight` here each
+  multiply `Cl` by `transmission(Ps, ...)`. That one call is the whole of the difference
+  between a renderer that casts shadows and one that does not — moya inherits the default,
+  answers that the light arrives, and draws exactly what it drew before. A light at infinity
+  has no position for the ray to end at, so its ray runs a fixed long way back along `L`; a
+  scene larger than that constant shadows itself wrongly, which is stated where it is written.
+- **The epsilon is offset toward the light, not just along the normal.** The step says along
+  the geometric normal, and a ray leaving the *back* of a surface then starts inside it. The
+  sign comes from which side the ray is going.
+- **`sl::Placed` is shared rather than written twice.** A shader instance and the space it was
+  instanced in travel together everywhere — a surface on a primitive, a light in a scene, in
+  both renderers — so they are one thing in `api/render/offline` per
+  [ADR-0022](../adr/0022-offline-rendering-shares-an-api-library.md) rather than a pair of
+  fields repeated in each.
+
+`trace()` is implemented as the step's phase 6 hook asks, with a depth of one: a ray a traced
+ray traced answers the background. No shader this phase ships calls it, and a depth a scene can
+set belongs with the shaders in phase 5 that would use it.
+
+The step also settles the plan's open question about `Cs`, exactly as that question predicted:
+moya's dicing interpolates a primitive's own varying `"Cs"` onto the grid and the shader reads
+it there, and talyn's triangle has no per-vertex colour and carries the graphics state's. The
+asymmetry is the two renderers' geometry rather than a choice either made, and it is stated at
+both ends.
+
 - **`Scene` gains a light list and a triangle gains a shader.** A triangle's flat colour becomes
   its `Cs`, which is what `Color` already sets and what `matte` multiplies.
 - **The batch is one point.** The nearest hit builds it: `P` is the hit, `N` and `Ng` from step 2's
@@ -714,9 +749,6 @@ whether it works is a phase that will not be finished.
 Small enough to settle in the code with a comment rather than in a record, but named so they are
 settled deliberately rather than by whoever types first.
 
-- **Whether `Cs` on a primitive beats `Cs` in the graphics state.** RI says the primitive's own
-  varying `"Cs"` wins, which is what moya's dicing already does; talyn has no per-vertex colour at
-  all and will take the graphics state's. State the asymmetry in a comment or close it.
 - **`RiRotate`'s sign**, carried forward from phase 2 and now with something at stake. RI states
   its rotations in a left handed system and both renderers hand the angle to `glm::rotate`, which
   is counter-clockwise by the right hand rule. Nothing in the tree can tell the difference, because
