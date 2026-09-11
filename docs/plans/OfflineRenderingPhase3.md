@@ -665,6 +665,30 @@ and a case pins the epsilon by putting a light directly above a large polygon.
 
 ### Step 11 — the imager, and talyn's background
 
+**Landed.** `sl::Imager` is shared rather than written twice: moya runs it after its last
+bucket and talyn after its last ray, over the one structure they already have in common. A
+batch is a row of pixels, which is neither a grid nor a hit and needed no special case to be
+either — the step's own claim about the batch model, tested by a one line imager that varies
+across the row.
+
+**The picture is bit-identical.** The backdrop polygon is out of the talyn reference and
+`Imager "background"` is in its place, and the committed png is not regenerated: what phase 2
+had to say with geometry the scene now says with a request, and the pixels are the same ones.
+
+Two things the step did not name and that had to be settled for any of it to mean anything:
+
+- **Neither renderer could tell a pixel nothing was drawn into from a black one.** moya's
+  planes were colour and depth, and talyn wrote alpha as one everywhere — which was the right
+  answer to phase 1's black png and the wrong one for an imager. moya's framebuffer gains a
+  coverage plane the hider writes, talyn writes zero where a ray hit nothing, and `alpha` is
+  what the shared runner reads out of whichever plane the renderer says holds it. A sampler
+  that takes more than one sample per pixel is what would one day put a fraction there.
+- **An imager writes `alpha`, not only `Ci` and `Oi`.** The globals table had it read-only, and
+  `background` cannot work that way: a pixel the imager has painted is no longer one that
+  nothing was drawn into. `Oi` is the coverage replicated, because a framebuffer here holds
+  what was drawn and how much of the pixel it covered, and with one sample those are one
+  number.
+
 The roadmap put `RiImager` in this phase for one reason: it is how a RIB file says what a ray that
 hits nothing is worth, and phase 2's talyn reference works around its absence with a backdrop
 polygon.
