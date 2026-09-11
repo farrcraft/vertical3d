@@ -118,7 +118,10 @@ The loop simulates at a fixed step and renders at a variable one -
 **Tests.** Every library needing neither a window nor a GPU is covered. What is left needs one:
 everything below the recorder in `api/render`, `Feature::Window`, and
 `audio::Engine::initialize()` — all of it waiting on
-[ADR-0007](adr/0007-ci-rendering-tests.md).
+[ADR-0007](adr/0007-ci-rendering-tests.md). The mechanism that decision's fifth alternative
+went without now exists: `vulkan::frame::Capture` reads a presented frame back
+([ADR-0050](adr/0050-a-frame-is-read-back-in-two-calls.md)). Nothing blesses a reference
+picture or compares one against it, which is the rest of what a golden image needs.
 
 **Documentation.** Reference material lives in this directory, one document per subject and
 [README.md](README.md) as the index; `CLAUDE.md` routes into them rather than holding a copy.
