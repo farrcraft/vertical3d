@@ -32,31 +32,72 @@ function(v3d_add_api_library name)
 	target_link_libraries(${target} PUBLIC Boost::headers)
 endfunction()
 
-# Assets shared by more than one app live in the root data/ directory, so there is one
-# committed copy rather than one per app. v3d_add_shared_data copies them into an app's
-# runtime data directory after it links, alongside whatever that app keeps in <app>/data.
-# The engine resolves assets relative to the executable, so the destination has to be
-# beside the exe rather than in the source tree.
-function(v3d_add_shared_data target)
-	add_custom_command(TARGET ${target} POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy_directory
-			"${V3D_ROOT}/data"
-			"$<TARGET_FILE_DIR:${target}>/data"
-		COMMENT "Copying shared data for ${target}"
+# Copy a directory of assets beside a target's executable, as a build rule that the assets
+# themselves are the inputs to.
+#
+# **Not a POST_BUILD step on the target**, which is what this was until it was found to do
+# the opposite of what its own comment claimed. POST_BUILD runs only when the target itself
+# relinks, so editing a document and rebuilding left the previous copy in place and the app
+# went on reading it - the silent drift between source tree and build tree that copying is
+# supposed to prevent. Ninja reports "no work to do" while the running app disagrees with
+# the file on disk, and the wrong conclusion to draw from that is that the edit had no
+# effect.
+#
+# A stamp file is the rule's output because a directory is not a dependency a generator can
+# compare timestamps on. CONFIGURE_DEPENDS re-globs when the build runs rather than only at
+# configure time, so a document that is added rather than edited is picked up as well - the
+# case that is easiest to miss, because it looks exactly like the edit case from outside.
+#
+# The stamp is per configuration. A multi-config generator gives each configuration its own
+# TARGET_FILE_DIR, and one shared stamp would leave the second configuration's data
+# directory unwritten.
+#
+# **A deleted asset is still left behind**, because copy_directory merges rather than
+# mirrors. Clearing the destination first is not available here: an app takes the shared
+# data and its own into the same directory, so whichever copy ran second would clear what
+# the first had just written, and re-running only the copy whose own glob changed would not
+# put the other back. The failure is a file nothing reads rather than an app reading the
+# wrong one, which is the difference between this and the case above - a stale data
+# directory is cleared by deleting it, and the next build fills it.
+#
+# @param target the executable the data is copied beside
+# @param name what this set of data is, which separates one call's stamp from another's
+# @param source the directory to copy
+function(v3d_copy_data target name source)
+	file(GLOB_RECURSE files CONFIGURE_DEPENDS "${source}/*")
+	set(copier "${target}_${name}_data")
+	set(stamp "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${copier}.stamp")
+	add_custom_command(OUTPUT "${stamp}"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${source}" "$<TARGET_FILE_DIR:${target}>/data"
+		COMMAND ${CMAKE_COMMAND} -E touch "${stamp}"
+		DEPENDS ${files}
+		COMMENT "Copying ${name} data for ${target}"
 		VERBATIM)
+	add_custom_target(${copier} DEPENDS "${stamp}")
+	add_dependencies(${target} ${copier})
+	# An app that takes both the shared data and its own copies two directories into one
+	# destination, and nothing orders those against each other - so they are chained in the
+	# order they were asked for rather than left to run at the same time.
+	get_target_property(previous ${target} V3D_LAST_DATA_TARGET)
+	if(previous)
+		add_dependencies(${copier} ${previous})
+	endif()
+	set_target_properties(${target} PROPERTIES V3D_LAST_DATA_TARGET ${copier})
 endfunction()
 
-# An app's own assets are committed under <app>/data. They are copied beside the executable
-# after it links for the same reason the shared ones are - the engine resolves every asset
-# relative to the exe - and because a build tree that is not refreshed from the source tree
-# drifts silently: editing <app>/data then appears to do nothing.
+# Assets shared by more than one app live in the root data/ directory, so there is one
+# committed copy rather than one per app. v3d_add_shared_data copies them into an app's
+# runtime data directory, alongside whatever that app keeps in <app>/data. The engine
+# resolves assets relative to the executable, so the destination has to be beside the exe
+# rather than in the source tree.
+function(v3d_add_shared_data target)
+	v3d_copy_data(${target} shared "${V3D_ROOT}/data")
+endfunction()
+
+# An app's own assets are committed under <app>/data, and are copied beside the executable
+# for the same reason the shared ones are.
 function(v3d_add_app_data target)
-	add_custom_command(TARGET ${target} POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy_directory
-			"${CMAKE_CURRENT_SOURCE_DIR}/data"
-			"$<TARGET_FILE_DIR:${target}>/data"
-		COMMENT "Copying data for ${target}"
-		VERBATIM)
+	v3d_copy_data(${target} app "${CMAKE_CURRENT_SOURCE_DIR}/data")
 endfunction()
 
 # Tests live next to the library they cover, in api/<lib>/tests, and each directory builds
