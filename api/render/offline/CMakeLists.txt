@@ -14,6 +14,7 @@ v3d_add_api_library(render_offline
 	"rib/Lexer.h" "rib/Lexer.cxx"
 	"rib/Declarations.h" "rib/Declarations.cxx"
 	"rib/Parameters.h" "rib/Parameters.cxx"
+	"rib/Arguments.h" "rib/Arguments.cxx"
 	"rib/Handler.h"
 	"rib/Reader.h" "rib/Reader.cxx"
 	"sl/Lexer.h" "sl/Lexer.cxx"

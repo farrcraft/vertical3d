@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <api/log/Logger.h>
+#include <api/render/offline/rib/Declarations.h>
 #include <api/render/offline/sl/ShaderLibrary.h>
 
 #include "Polygon.h"
@@ -208,6 +210,20 @@ class RenderContext {
         glm::mat4x4 coordinateSystem(const std::string & name);
 
         /**
+            *	maps to RiDeclare()
+            *	What the C entry points type a parameter by. The reader keeps its own for
+            *	the file it is reading; this one is the other path's, and the two are
+            *	separate because a file and a program are separate scenes.
+            */
+        v3d::render::offline::rib::Declarations & declarations();
+
+        /**
+            *	Where this context says what it could not do. The reader has its own for
+            *	what it reads; this one is for what happens after that.
+            */
+        const boost::shared_ptr<v3d::log::Logger> & logger() const;
+
+        /**
             *	The buckets the world was prepared into. Null until prepareWorld().
             */
         boost::shared_ptr<FrameBuffer> framebuffer() const;
@@ -261,6 +277,8 @@ class RenderContext {
         std::vector<glm::mat4x4> transforms_;
         std::vector<Attributes> attributes_;
         std::map<std::string, glm::mat4x4> coordinateSystems_;
+        v3d::render::offline::rib::Declarations declarations_;
+        boost::shared_ptr<v3d::log::Logger> logger_;
         boost::shared_ptr<v3d::render::offline::sl::ShaderLibrary> shaders_;
         boost::shared_ptr<GridShader> shader_;
         std::vector<LightSource> lights_;

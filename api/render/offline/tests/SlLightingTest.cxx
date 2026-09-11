@@ -106,7 +106,7 @@ class Scene final : public v3d::render::offline::sl::runtime::Renderer {
         lamps_.push_back(boost::make_shared<Lamp>(source, batch));
     }
 
-    bool space(const std::string &, glm::mat4x4*) override {
+    bool space(const std::string & /* name */, glm::mat4x4* /* matrix */) override {
         return false;
     }
 

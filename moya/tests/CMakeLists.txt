@@ -11,6 +11,7 @@ v3d_add_test(moya
 	"ReferenceTest.cxx"
 	"RenderContextTest.cxx"
 	"RIBHandlerTest.cxx"
+	"RenderManTest.cxx"
 	"RendererTest.cxx"
 	"ReyesPrimitiveTest.cxx"
 	"VertexTest.cxx")

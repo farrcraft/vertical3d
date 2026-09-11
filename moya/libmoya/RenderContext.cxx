@@ -45,8 +45,8 @@ RenderContext::~RenderContext() {
 }
 
 void RenderContext::initialize() {
-    shaders_ = boost::make_shared<v3d::render::offline::sl::ShaderLibrary>(
-        boost::make_shared<v3d::log::Logger>());
+    logger_ = boost::make_shared<v3d::log::Logger>();
+    shaders_ = boost::make_shared<v3d::render::offline::sl::ShaderLibrary>(logger_);
 
     // initialize the predefined coordinate systems to defaults (identity matrix)
     glm::mat4x4 def(1.0f);
@@ -511,6 +511,14 @@ Shading RenderContext::shading() {
         state.lights.push_back(shining);
     }
     return state;
+}
+
+v3d::render::offline::rib::Declarations & RenderContext::declarations() {
+    return declarations_;
+}
+
+const boost::shared_ptr<v3d::log::Logger> & RenderContext::logger() const {
+    return logger_;
 }
 
 GridShader & RenderContext::shader() {
