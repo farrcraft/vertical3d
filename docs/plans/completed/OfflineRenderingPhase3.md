@@ -1,6 +1,6 @@
 # Offline Rendering, Phase 3 — Light And Surface
 
-Drafted 2026-09-05, **open**. Takes up phase 3 of
+Drafted 2026-09-05, **closed 2026-09-10**. Takes up phase 3 of
 [the offline rendering roadmap](../roadmap/OfflineRendering.md), which stays the account of where
 both renderers stand and what the later phases are; this plan does not repeat it.
 
@@ -708,6 +708,32 @@ the pixels the backdrop polygon gave, and a scene naming no imager is unchanged.
 
 ### Step 12 — the reference scenes grow light and surface
 
+**Landed, and the phase closes with it.** The two phase 2 pictures name `Surface "constant"`
+in their `.rib` and build one in their code case, and **neither picture changed** — which is
+the strongest thing in the phase, because it says every pass from the lexer to the hider
+carries a scene through and gives back what the tree drew before any of them existed. Each
+renderer now matches four references: two unchanged and two new, each reached by both routes
+and rendered the same bytes by each.
+
+The new scenes are worth the name. moya has a matte surface and a plastic one under a distant
+light and a point light, with normals swept across each quad so the falloff is a gradient
+rather than one value. talyn has a matte floor and a plastic panel under three lights of three
+kinds, the panel's shadow across the floor, and the imager's background at the frame's edges —
+`ambient()`, `transmission()` and an imager all visible in one picture, and no unit case can
+see any of them.
+
+Two things worth keeping:
+
+- **The moya scene took two passes to be worth committing.** An orthographic camera and a light
+  on the same axis put the specular highlight over the whole surface and the picture came out
+  white. The light is off axis now: a highlight where the viewer and the light agree is not a
+  highlight. A reference scene has to be *looked at* before it is committed, which is the one
+  step of making one that no gate performs.
+- **A `ParameterList` returned by value is a copy.** Building one in a test helper and answering
+  with it instantiates its implicit move constructor, which clang-tidy will not accept as
+  nothrow; marking it `noexcept` is a claim the analyser disputes and a terminate if it is
+  wrong. The helpers take an out parameter, which is what `rib::arguments` does beside them.
+
 Phase 1 established that a picture is what tells a regression from the status quo, and phase 2
 established that each picture is reached by two routes — a `.rib` file and a code-built scene. This
 step keeps both properties across a change that alters what every renderer writes.
@@ -771,10 +797,14 @@ whether it works is a phase that will not be finished.
 ## Open questions
 
 Small enough to settle in the code with a comment rather than in a record, but named so they are
-settled deliberately rather than by whoever types first.
+settled deliberately rather than by whoever types first. Three of the four were settled by the
+steps that ran into them, and each says so where it was settled: a shader's `"shader"` space by
+step 9, whether a primitive's `Cs` beats the graphics state's by step 10, and how loud a stub is
+by step 7.
 
-- **`RiRotate`'s sign**, carried forward from phase 2 and now with something at stake. RI states
-  its rotations in a left handed system and both renderers hand the angle to `glm::rotate`, which
-  is counter-clockwise by the right hand rule. Nothing in the tree can tell the difference, because
-  both renderers agree with each other — but a light placed by a rotation is the first thing whose
-  wrongness is visible rather than merely mirrored.
+The fourth outlived the phase and is in [TODO.md](../TODO.md):
+
+- **`RiRotate`'s sign**, carried forward from phase 2 and still not decidable from inside the
+  tree. A light placed by a rotation was expected to be the thing that made it visible, and it
+  was not: both renderers hand the angle to the same `glm::rotate`, so they agree with each
+  other whichever of them is right, and a reference picture agreeing with itself says nothing.

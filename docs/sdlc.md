@@ -21,8 +21,11 @@ and took up the seams an app that brings its own ui, renderer and `main` needs f
 It settled the include convention every file in the tree had disagreed with `examples/starter`
 about ([ADR-0048](adr/0048-an-api-header-is-named-from-the-repository-root.md)) and split the six
 `api/` directories that held more than one thing.
-[`plans/OfflineRenderingPhase3.md`](plans/OfflineRenderingPhase3.md) **is open**, taking up
-phase 3 of the offline rendering roadmap.
+[`plans/completed/OfflineRenderingPhase3.md`](plans/completed/OfflineRenderingPhase3.md)
+closed on 2026-09-10. It took up phase 3 of the offline rendering roadmap and answered the
+question that roadmap had left open since it was written: shading is a language
+([ADR-0026](adr/0026-shading-is-a-language-over-a-batch.md)) rather than a fixed set of
+shaders.
 [`plans/completed/GameFoundations.md`](plans/completed/GameFoundations.md) closed on 2026-09-07
 and took up what a game needs from `api/asset`, `api/engine`, `api/event`, `api/render`,
 `api/ui` and `api/audio` that a demo does not.

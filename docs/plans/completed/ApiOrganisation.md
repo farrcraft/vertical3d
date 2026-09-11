@@ -14,7 +14,7 @@ cpplint were clean at every step.
 | 5 `ui::style::Style` | landed | 11 documents | landed |
 | 6 `api/ui` | landed | | |
 
-Step 4 was drafted to wait for [OfflineRenderingPhase3](../OfflineRenderingPhase3.md) and did not
+Step 4 was drafted to wait for [OfflineRenderingPhase3](OfflineRenderingPhase3.md) and did not
 need to: that phase's remaining steps are sequential commits on the same branch rather than a
 concurrent one, so there was nothing to conflict with. It was done last instead of not at all.
 
@@ -214,10 +214,10 @@ them, except that step 5 comes before step 6 — `ui::Style` moving into `ui/sty
 change, and doing it after the regroup means moving the same file twice.
 
 **Step 4 has a schedule constraint the others do not.**
-[OfflineRenderingPhase3](../OfflineRenderingPhase3.md) is open and is rewriting most of the `SL*`
-files this step renames. Step 4 does not start until that phase closes. It is listed first among
-the moves because it is the strongest case, not because it is the first one to do — if this plan
-is started while phase 3 is open, start at step 5.
+[OfflineRenderingPhase3](OfflineRenderingPhase3.md) was open when this was written and was
+rewriting most of the `SL*` files this step renames, so step 4 was drafted to wait for it. It is
+listed first among the moves because it is the strongest case, not because it was the first one
+to do. That phase has since closed and the constraint is gone.
 
 **Step 11 is the record**, and needs every move that lands to be in it.
 
@@ -348,7 +348,7 @@ a new one, and what they copied disagreed with [`examples/starter`](../../../exa
 
 ### Step 4 — `api/render/offline` splits into the reader and the language
 
-**Landed 2026-09-08**, without waiting for [OfflineRenderingPhase3](../OfflineRenderingPhase3.md).
+**Landed 2026-09-08**, without waiting for [OfflineRenderingPhase3](OfflineRenderingPhase3.md).
 Build clean, `ctest` 24 of 24, cpplint clean.
 
 The wait was for conflict with that phase's remaining steps 7 to 12, which still edit these

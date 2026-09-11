@@ -247,5 +247,5 @@ error in your own build. Two things to re-check when you do:
 - **The vcpkg baseline**, if `vcpkg-configuration.json` changed in the tree. Copy it again.
 - **The package list**, if `vcpkg.json` changed. Yours is the one that gets installed.
 
-The api is still moving — see [the roadmap](roadmap/) and the open plan in [plans/](plans/) —
-so expect to fix a call site occasionally rather than to pin a version.
+The api is still moving — see [the roadmap](roadmap/) and whatever is open in
+[plans/](plans/) — so expect to fix a call site occasionally rather than to pin a version.

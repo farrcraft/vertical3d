@@ -32,6 +32,18 @@ clang-tidy, `/analyze` and cpplint alike.
 | `misc-include-cleaner` | 3346 |  |
 | `readability-uppercase-literal-suffix` | 4156 |  |
 
+## RiRotate's sign
+
+Carried out of [OfflineRenderingPhase3](plans/completed/OfflineRenderingPhase3.md), which named
+it as an open question and could not settle it.
+
+[] RI states its rotations in a left handed system and both offline renderers hand the angle
+   straight to `glm::rotate`, which is counter-clockwise by the right hand rule. Nothing in the
+   tree can tell the difference: the two renderers agree with each other whichever of them is
+   right, so a reference picture agreeing with itself says nothing. A light placed by a
+   rotation was expected to make it visible and did not. What would settle it is a scene whose
+   correct picture is known from outside this tree
+
 ## Tile grids
 
 `api/grid` is a library of its own - [ADR-0029](adr/0029-tile-grids-are-an-api-library.md) - and
