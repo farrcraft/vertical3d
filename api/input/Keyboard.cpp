@@ -149,6 +149,21 @@ std::string keyEvent(SDL_Keycode key) {
     case SDLK_SEMICOLON:
         evnt = ";";
         break;
+    case SDLK_EQUALS:
+        evnt = "=";
+        break;
+    case SDLK_APOSTROPHE:
+        evnt = "'";
+        break;
+    case SDLK_LEFTBRACKET:
+        evnt = "[";
+        break;
+    case SDLK_RIGHTBRACKET:
+        evnt = "]";
+        break;
+    case SDLK_BACKSLASH:
+        evnt = "\\";
+        break;
     case SDLK_CAPSLOCK:
         evnt = "capslock";
         break;
@@ -276,19 +291,22 @@ bool Keyboard::handleEvent(const SDL_Event& event) {
         dispatcher_->trigger<v3d::event::kind::TextInput>(v3d::event::kind::TextInput(event.text.text, context_));
         return true;
     case SDL_EVENT_KEY_DOWN:
-        keyName = keyEvent(event.key.key);
-        if (!state_.pressed(keyName)) {
-            state_(keyName);
-        }
-        dispatcher_->trigger<v3d::event::kind::KeyDown>(v3d::event::kind::KeyDown(keyName, context_));
-        break;
     case SDL_EVENT_KEY_UP:
+        pressed = (event.type == SDL_EVENT_KEY_DOWN);
         keyName = keyEvent(event.key.key);
-        if (state_.pressed(keyName)) {
+        // a key we have no name for cannot be bound to anything, and must not reach
+        // KeyState either - it would be held under an empty name that nothing can ask for
+        if (keyName.empty()) {
+            return true;
+        }
+        if (state_.held(keyName) != pressed) {
             state_(keyName);
         }
-        pressed = false;
-        dispatcher_->trigger<v3d::event::kind::KeyUp>(v3d::event::kind::KeyUp(keyName, context_));
+        if (pressed) {
+            dispatcher_->trigger<v3d::event::kind::KeyDown>(v3d::event::kind::KeyDown(keyName, context_));
+        } else {
+            dispatcher_->trigger<v3d::event::kind::KeyUp>(v3d::event::kind::KeyUp(keyName, context_));
+        }
         break;
     default:
         return false;

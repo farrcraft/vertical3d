@@ -18,18 +18,18 @@ namespace v3d::input {
 class KeyState final {
  public:
     /**
-     * Update the state to indicate that a key is currently being pressed
-     * 
+     * Is a key currently held?
+     *
      * @return bool
      **/
-    bool pressed(std::string_view c) const;
+    bool held(std::string_view c) const;
 
     /**
      * Toggle the state of the key
-     * 
+     *
      * @param c The key being toggled
-     * 
-     * @return bool true if the resulting state is a pressed key
+     *
+     * @return bool true if the resulting state is a held key
      **/
     bool operator() (const std::string& c);
 

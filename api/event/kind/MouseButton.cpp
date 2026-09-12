@@ -5,13 +5,15 @@
 
 #include "MouseButton.h"
 
+#include <string>
+#include <string_view>
+
 namespace v3d::event::kind {
 /**
  **/
-MouseButton::MouseButton(unsigned int button, const glm::vec2& position,
+MouseButton::MouseButton(const std::string& button, const glm::vec2& position,
     const boost::shared_ptr<Context>& context, bool pressed) :
-    Event("button", context),
-    button_(button),
+    Event(button, context),
     position_(position),
     pressed_(pressed) {
     // the edge belongs in the event's state; data is reserved for a parameter
@@ -20,8 +22,8 @@ MouseButton::MouseButton(unsigned int button, const glm::vec2& position,
 
 /**
  **/
-unsigned int MouseButton::button() const noexcept {
-    return button_;
+std::string_view MouseButton::button() const {
+    return name();
 }
 
 /**
