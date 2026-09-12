@@ -64,8 +64,11 @@ void RenderTarget::create(uint32_t width, uint32_t height) {
     info.arrayLayers = 1;
     info.samples = VK_SAMPLE_COUNT_1_BIT;
     info.tiling = VK_IMAGE_TILING_OPTIMAL;
-    // both halves of what a target is for: a pass draws into it and a later pass reads it
-    info.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    // both halves of what a target is for: a pass draws into it and a later pass reads it.
+    // TRANSFER_SRC is what lets frame::Capture copy one out, and is granted rather than asked
+    // for on the same terms SAMPLED is - a colour image that cannot be read is the narrower
+    // thing to be, and the only cost here is whichever compression a desktop driver declines
+    info.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
