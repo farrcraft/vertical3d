@@ -8,7 +8,6 @@
 #include "Result.h"
 
 #include <cstring>
-#include <iterator>
 #include <set>
 #include <sstream>
 #include <stdexcept>
@@ -19,11 +18,20 @@ namespace v3d::render::realtime::vulkan::device {
 
 namespace {
 /**
- * The device extensions the renderer cannot do without.
+ * The device extensions the renderer cannot do without. This is where both the check against
+ * a candidate device and the list the logical device is created with come from, because a
+ * device selected on one list and created with another is selected on terms it is not given.
+ *
+ * @param presenting whether the device presents, which is all the swapchain extension is for.
+ *        A headless device needs nothing beyond 1.3 core
  **/
-const char* const requiredExtensions[] = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME
-};
+std::vector<const char*> deviceExtensions(bool presenting) {
+    std::vector<const char*> extensions;
+    if (presenting) {
+        extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+    }
+    return extensions;
+}
 
 /**
  * The vulkan version the renderer is written against.
@@ -42,8 +50,8 @@ hasPresent(false) {
 
 /**
  **/
-bool Device::QueueFamilies::complete() const noexcept {
-    return hasGraphics && hasPresent;
+bool Device::QueueFamilies::complete(bool presenting) const noexcept {
+    return hasGraphics && (hasPresent || !presenting);
 }
 
 /**
@@ -89,6 +97,12 @@ boost::shared_ptr<Surface> Device::surface() const noexcept {
 
 /**
  **/
+bool Device::presenting() const noexcept {
+    return static_cast<bool>(surface_);
+}
+
+/**
+ **/
 const Device::QueueFamilies& Device::families() const noexcept {
     return families_;
 }
@@ -123,7 +137,8 @@ Device::QueueFamilies Device::findFamilies(VkPhysicalDevice device) const {
             families.hasGraphics = true;
         }
 
-        if (!families.hasPresent) {
+        // without a surface there is nothing to be presentable to, and no handle to ask with
+        if (surface_ && !families.hasPresent) {
             VkBool32 presentable = VK_FALSE;
             VkResult result = vkGetPhysicalDeviceSurfaceSupportKHR(device, index, surface_->handle(), &presentable);
             if (result == VK_SUCCESS && presentable == VK_TRUE) {
@@ -132,7 +147,7 @@ Device::QueueFamilies Device::findFamilies(VkPhysicalDevice device) const {
             }
         }
 
-        if (families.complete()) {
+        if (families.complete(presenting())) {
             break;
         }
     }
@@ -142,7 +157,7 @@ Device::QueueFamilies Device::findFamilies(VkPhysicalDevice device) const {
 
 /**
  **/
-bool Device::hasRequiredExtensions(VkPhysicalDevice device) {
+bool Device::hasRequiredExtensions(VkPhysicalDevice device, bool presenting) {
     uint32_t count = 0;
     VkResult result = vkEnumerateDeviceExtensionProperties(device, nullptr, &count, nullptr);
     if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
@@ -157,7 +172,7 @@ bool Device::hasRequiredExtensions(VkPhysicalDevice device) {
         }
     }
 
-    for (const char* extension : requiredExtensions) {
+    for (const char* extension : deviceExtensions(presenting)) {
         bool found = false;
         for (const VkExtensionProperties& candidate : available) {
             if (std::strcmp(extension, candidate.extensionName) == 0) {
@@ -221,7 +236,7 @@ void Device::selectPhysical() {
             continue;
         }
 
-        if (!hasRequiredExtensions(device)) {
+        if (!hasRequiredExtensions(device, presenting())) {
             continue;
         }
 
@@ -230,7 +245,7 @@ void Device::selectPhysical() {
         }
 
         QueueFamilies families = findFamilies(device);
-        if (!families.complete()) {
+        if (!families.complete(presenting())) {
             continue;
         }
 
@@ -249,7 +264,8 @@ void Device::selectPhysical() {
     if (physical_ == VK_NULL_HANDLE) {
         std::stringstream msg;
         msg << "No physical vulkan device supports " << VK_API_VERSION_MAJOR(requiredApiVersion) << "." << VK_API_VERSION_MINOR(requiredApiVersion)
-            << " with dynamic rendering and synchronization2, and can both render to and present to the window";
+            << " with dynamic rendering and synchronization2, and can render"
+            << (presenting() ? " to and present to the window" : "");
         throw std::runtime_error(msg.str());
     }
 
@@ -262,7 +278,9 @@ void Device::createLogical() {
     const float priority = 1.0f;
     std::set<uint32_t> uniqueFamilies;
     uniqueFamilies.insert(families_.graphics);
-    uniqueFamilies.insert(families_.present);
+    if (presenting()) {
+        uniqueFamilies.insert(families_.present);
+    }
 
     std::vector<VkDeviceQueueCreateInfo> queueInfos;
     for (uint32_t family : uniqueFamilies) {
@@ -287,14 +305,16 @@ void Device::createLogical() {
     features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
     features.pNext = &features13;
 
+    const std::vector<const char*> extensions = deviceExtensions(presenting());
+
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     createInfo.pNext = &features;
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueInfos.size());
     createInfo.pQueueCreateInfos = queueInfos.data();
     createInfo.pEnabledFeatures = nullptr;
-    createInfo.enabledExtensionCount = static_cast<uint32_t>(std::size(requiredExtensions));
-    createInfo.ppEnabledExtensionNames = requiredExtensions;
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+    createInfo.ppEnabledExtensionNames = extensions.data();
 
     VkResult result = vkCreateDevice(physical_, &createInfo, nullptr, &device_);
     if (result != VK_SUCCESS) {
@@ -304,7 +324,9 @@ void Device::createLogical() {
     }
 
     vkGetDeviceQueue(device_, families_.graphics, 0, &graphicsQueue_);
-    vkGetDeviceQueue(device_, families_.present, 0, &presentQueue_);
+    if (presenting()) {
+        vkGetDeviceQueue(device_, families_.present, 0, &presentQueue_);
+    }
 }
 
 };  // namespace v3d::render::realtime::vulkan::device
