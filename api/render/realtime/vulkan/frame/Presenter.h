@@ -13,7 +13,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "CommandPool.h"
+#include "Ring.h"
 #include "Swapchain.h"
 
 #include <boost/shared_ptr.hpp>
@@ -23,10 +23,12 @@ namespace v3d::render::realtime::vulkan::frame {
 /**
  * The acquire / record / submit / present loop, and the synchronization it needs.
  *
- * Several frames are recorded ahead of the one the device is still drawing, so each
- * frame in flight owns a command buffer, an image-available semaphore and a fence.
- * The render-finished semaphore is per swapchain image rather than per frame, because
+ * The frames recorded ahead of the device are a Ring, which this drives rather than owns -
+ * ADR-0051. What is left here is what needs the chain: an image-available semaphore per
+ * frame, and a render-finished semaphore per swapchain image rather than per frame, because
  * it is presentation that waits on it and presentation is tied to the image.
+ *
+ * The submit made by present() is what signals the ring's fence for the frame it recorded.
  *
  * Nothing here recreates the swapchain - a caller that is told the chain is out of date
  * recreates it and calls reset(), because only the caller knows the window's new size.
@@ -54,12 +56,11 @@ class Presenter final {
 
     /**
      * @param logger
-     * @param device the device that draws and presents
      * @param swapchain the chain images are acquired from
-     * @param framesInFlight how many frames may be recorded ahead of the device
+     * @param ring the frames to pace against, whose device is the one that presents
      **/
-    Presenter(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<device::Device>& device,
-        const boost::shared_ptr<Swapchain>& swapchain, uint32_t framesInFlight = 2);
+    Presenter(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Swapchain>& swapchain,
+        const boost::shared_ptr<Ring>& ring);
 
     /**
      **/
@@ -90,30 +91,10 @@ class Presenter final {
     void reset();
 
     /**
-     * Wait until the device has finished everything that was submitted to it.
+     * @return the frames this paces against, which is what anything keeping a resource per
+     *         frame in flight indexes by
      **/
-    void waitIdle() const;
-
-    /**
-     * @return how many frames may be recorded ahead of the device
-     **/
-    uint32_t framesInFlight() const noexcept;
-
-    /**
-     * @return which of those frames the next acquire() will record, and so which slot of
-     *         any per-frame resource the caller keeps is the one to write into
-     **/
-    uint32_t frame() const noexcept;
-
-    /**
-     * Wait until the frame that will be recorded next has finished its last submission.
-     *
-     * acquire() does this itself. It is exposed for anything else keeping a resource per
-     * frame in flight - a geometry buffer a batcher rewrites, typically - which has to
-     * write into that slot before the frame is recorded, while the device may still be
-     * reading what was in it two frames ago.
-     **/
-    void waitFrame() const;
+    boost::shared_ptr<Ring> ring() const noexcept;
 
  private:
     /**
@@ -127,13 +108,9 @@ class Presenter final {
     boost::shared_ptr<v3d::log::Logger> logger_;
     boost::shared_ptr<device::Device> device_;
     boost::shared_ptr<Swapchain> swapchain_;
-    boost::shared_ptr<CommandPool> pool_;
-    std::vector<VkCommandBuffer> commands_;
+    boost::shared_ptr<Ring> ring_;
     std::vector<VkSemaphore> imageAvailable_;
-    std::vector<VkFence> inFlight_;
     std::vector<VkSemaphore> renderFinished_;
-    uint32_t framesInFlight_;
-    uint32_t frame_;
     bool suboptimal_;
 };
 

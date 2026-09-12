@@ -80,6 +80,10 @@ one, so each gap below is one a consumer meets before this tree does.
 [] `Engine3D::initialize` builds its `Context3D` without a preferred swapchain format, so an app on the engine shell cannot ask for one - only an app that builds its own context can. That is the shell withholding what the layer under it offers, and [ADR-0049](adr/0049-a-consumer-chooses-the-swapchain-format.md) was decided for an app that needs it. Threading the preference through `initialize` and `engine::run` is the shape
 [] `Frame::passBefore` exists because `Engine3D` creates the colour pass in its constructor. A frame that let a pass say where it belongs, or an engine that created its pass lazily, would not need it
 
+## A depth image shared by two frames in flight
+
+[] there is one depth buffer and two frames in flight, and each frame transitions it from `UNDEFINED` with a barrier whose source scope names nothing. Synchronization validation reports a `WRITE_AFTER_WRITE` between that barrier and the previous frame's `storeOp`, ten times before the layer stops repeating itself, in every app that asks for depth - voxel and vertical3d here. The layer names the fix: the transition's `srcStageMask` has to include `LATE_FRAGMENT_TESTS` and its `srcAccessMask` `DEPTH_STENCIL_ATTACHMENT_WRITE`, since it is the source side of a barrier that protects a layout transition from prior writes. It is invisible without `VK_LAYER_VALIDATE_SYNC=1` ([Testing.md](Testing.md)), which is why it has been shipping
+
 ## User interface
 
 `api/ui` is two ways to write a ui - a tree of components
@@ -115,13 +119,22 @@ The loop simulates at a fixed step and renders at a variable one -
 
 ## Ongoing workstreams
 
-**Tests.** Every library needing neither a window nor a GPU is covered. What is left needs one:
-everything below the recorder in `api/render`, `Feature::Window`, and
-`audio::Engine::initialize()` — all of it waiting on
-[ADR-0007](adr/0007-ci-rendering-tests.md). The mechanism that decision's fifth alternative
-went without now exists: `vulkan::frame::Capture` reads a presented frame back
-([ADR-0050](adr/0050-a-frame-is-read-back-in-two-calls.md)). Nothing blesses a reference
-picture or compares one against it, which is the rest of what a golden image needs.
+**Tests.** Every library needing neither a window nor a GPU is covered. The GPU half —
+everything below the recorder in `api/render` — is
+[RenderTestsInCI](plans/RenderTestsInCI.md) and is not listed here while that plan is open.
+
+What that plan leaves is what needs a window or a sound device rather than a device to draw
+with: `Feature::Window`, `ui::TextRenderer` and `audio::Engine::initialize()`. They are named
+beside `api/render` in [Testing.md](Testing.md) and were waiting on the same
+[ADR-0007](adr/0007-ci-rendering-tests.md), but a software Vulkan implementation answers none of
+them, so they outlive it.
+
+A golden image also outlives it, by that decision's own fifth alternative: a reference generated
+by a software rasterizer says nothing about hardware, so the comparison is worth building after
+the plan rather than inside it. Half of what it needs exists — `vulkan::frame::Capture` reads a
+presented frame back ([ADR-0050](adr/0050-a-frame-is-read-back-in-two-calls.md)), and
+`image::compare` already pins both offline renderers to a committed png — and nothing yet
+blesses a realtime reference or compares one against it.
 
 **Documentation.** Reference material lives in this directory, one document per subject and
 [README.md](README.md) as the index; `CLAUDE.md` routes into them rather than holding a copy.

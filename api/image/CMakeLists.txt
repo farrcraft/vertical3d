@@ -9,7 +9,7 @@ v3d_add_api_library(image
 target_link_libraries(v3dlib_image PUBLIC v3dlib_log)
 
 # Factory resolves paths through boost::filesystem, so anything linking this library needs
-# it too - the apps were picking it up by accident, through boost log's own dependencies.
+# it too.
 target_link_libraries(v3dlib_image PUBLIC Boost::filesystem)
 
 # glm is named by Texture.h and TextureAtlas.h.

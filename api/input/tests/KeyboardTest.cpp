@@ -7,6 +7,7 @@
 #include <api/event/kind/KeyUp.h>
 #include <api/input/Keyboard.h>
 
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -84,32 +85,47 @@ BOOST_AUTO_TEST_CASE(keyboard_test) {
     BOOST_CHECK_EQUAL(recorder.down_[3], "escape");
     BOOST_CHECK_EQUAL(recorder.down_[4], "f1");
 
+    // including the punctuation, which a binding config names as the character it types
+    keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_EQUALS));
+    keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_LEFTBRACKET));
+    keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_BACKSLASH));
+    BOOST_REQUIRE_EQUAL(recorder.down_.size(), 8u);
+    BOOST_CHECK_EQUAL(recorder.down_[5], "=");
+    BOOST_CHECK_EQUAL(recorder.down_[6], "[");
+    BOOST_CHECK_EQUAL(recorder.down_[7], "\\");
+
+    // a key with no name is still the keyboard's event, but nothing can bind to it
+    const std::size_t named = recorder.source_.size();
+    BOOST_CHECK_EQUAL(keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_PRINTSCREEN)), true);
+    BOOST_CHECK_EQUAL(recorder.down_.size(), 8u);
+    BOOST_CHECK_EQUAL(recorder.source_.size(), named);
+
     // anything that is not a key event belongs to some other device
     SDL_Event motion{};
     motion.type = SDL_EVENT_MOUSE_MOTION;
     BOOST_CHECK_EQUAL(keyboard.handleEvent(motion), false);
-    BOOST_CHECK_EQUAL(recorder.down_.size(), 5u);
+    BOOST_CHECK_EQUAL(recorder.down_.size(), 8u);
 }
 
 BOOST_AUTO_TEST_CASE(keystate_test) {
     v3d::input::KeyState state;
 
     // nothing is held to begin with
-    BOOST_CHECK_EQUAL(state.pressed("w"), false);
+    BOOST_CHECK_EQUAL(state.held("w"), false);
 
     // the call operator toggles, returning the state it arrived at
     BOOST_CHECK_EQUAL(state("w"), true);
-    BOOST_CHECK_EQUAL(state.pressed("w"), true);
-    BOOST_CHECK_EQUAL(state.pressed("s"), false);
+    BOOST_CHECK_EQUAL(state.held("w"), true);
+    BOOST_CHECK_EQUAL(state.held("s"), false);
 
     BOOST_CHECK_EQUAL(state("s"), true);
-    BOOST_CHECK_EQUAL(state.pressed("w"), true);
-    BOOST_CHECK_EQUAL(state.pressed("s"), true);
+    BOOST_CHECK_EQUAL(state.held("w"), true);
+    BOOST_CHECK_EQUAL(state.held("s"), true);
 
     // and toggling a held key releases it, leaving the others alone
     BOOST_CHECK_EQUAL(state("w"), false);
-    BOOST_CHECK_EQUAL(state.pressed("w"), false);
-    BOOST_CHECK_EQUAL(state.pressed("s"), true);
+    BOOST_CHECK_EQUAL(state.held("w"), false);
+    BOOST_CHECK_EQUAL(state.held("s"), true);
 }
 
 BOOST_AUTO_TEST_CASE(keyboard_held_key_test) {

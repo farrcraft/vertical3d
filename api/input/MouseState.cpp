@@ -6,6 +6,8 @@
 #include "MouseState.h"
 
 #include <algorithm>
+#include <string>
+#include <string_view>
 #include <vector>
 
 namespace v3d::input {
@@ -17,23 +19,23 @@ MouseState::MouseState() : position_(0.0f, 0.0f) {
 
 /**
  **/
-bool MouseState::pressed(unsigned int button) const {
-    std::vector<unsigned int>::const_iterator iter = std::find(buttons_.begin(), buttons_.end(), button);
+bool MouseState::held(std::string_view button) const {
+    std::vector<std::string>::const_iterator iter = std::find(buttons_.begin(), buttons_.end(), button);
     return iter != buttons_.end();
 }
 
 /**
  **/
-bool MouseState::operator() (unsigned int button) {
-    std::vector<unsigned int>::const_iterator iter = std::find(buttons_.begin(), buttons_.end(), button);
-    bool pressed = true;
+bool MouseState::operator() (const std::string& button) {
+    std::vector<std::string>::const_iterator iter = std::find(buttons_.begin(), buttons_.end(), button);
+    bool held = true;
     if (iter != buttons_.end()) {
         buttons_.erase(iter);
-        pressed = false;
+        held = false;
     } else {
         buttons_.push_back(button);
     }
-    return pressed;
+    return held;
 }
 
 /**

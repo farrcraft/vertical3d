@@ -59,3 +59,4 @@ old record's status and leave the file in place.
 | [0048](0048-an-api-header-is-named-from-the-repository-root.md) | Include Paths — An api Header Is Named By Its Path From The Repository Root, Inside The Tree As Well As Outside | accepted | 2026-09-08 |
 | [0049](0049-a-consumer-chooses-the-swapchain-format.md) | Presentation — A Consumer Names The Swapchain Format, And UNORM Stays The Default | accepted | 2026-09-08 |
 | [0050](0050-a-frame-is-read-back-in-two-calls.md) | Frame Capture — A Presented Frame Is Read Back In Two Calls, And Nothing In The Tree Compares It | accepted | 2026-09-10 |
+| [0051](0051-the-in-flight-ring-is-not-the-swapchain.md) | Frame Pacing — The In-Flight Ring Is Its Own Class, And Presenting Is What Needs A Chain | accepted | 2026-09-11 |

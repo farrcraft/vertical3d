@@ -38,7 +38,7 @@ bool Engine3D::shutdown() {
     if (context_) {
         // the swapchain, the device and the window all outlive the frames that were
         // submitted against them, but only just
-        context_->presenter()->waitIdle();
+        context_->ring()->waitIdle();
     }
     // the context has to go before the window does. It owns the device, which holds
     // the window's surface alive, and the window's teardown unloads the vulkan library -
@@ -161,7 +161,7 @@ void Engine3D::renderFrame() {
 
     const boost::shared_ptr<vulkan::frame::FrameUniforms> uniforms = context_->frameUniforms();
     // the slots of the frame about to be recorded are free - acquire() waited on its fence
-    uniforms->begin(presenter->frame());
+    uniforms->begin(context_->ring()->frame());
 
     vulkan::frame::Recorder::record(acquisition.commands, *frame_, target, *context_->resources(), uniforms.get());
 

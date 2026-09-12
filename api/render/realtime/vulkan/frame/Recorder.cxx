@@ -98,7 +98,8 @@ view(VK_NULL_HANDLE),
 extent{0, 0},
 depthImage(VK_NULL_HANDLE),
 depthView(VK_NULL_HANDLE),
-sampledDepth(false) {
+sampledDepth(false),
+finalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
 }
 
 /**
@@ -169,7 +170,7 @@ void Recorder::record(VkCommandBuffer commands, const Frame& frame, const Target
         }
     }
 
-    transition(commands, target.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+    transition(commands, target.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, target.finalLayout);
 }
 
 /**

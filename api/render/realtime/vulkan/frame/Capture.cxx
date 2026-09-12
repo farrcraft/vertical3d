@@ -45,7 +45,7 @@ void transition(VkCommandBuffer commands, VkImage image, VkImageLayout from, VkI
         barrier.srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
         barrier.dstStageMask = VK_PIPELINE_STAGE_2_COPY_BIT;
         barrier.dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT;
-    } else {
+    } else if (to == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
         // presentation is not a pipeline stage - the semaphore it waits on is what orders
         // it, so the barrier only has to put the image back in the layout it expects. A
         // transition is a write and the copy was a read, so what this needs is for the read
@@ -54,6 +54,15 @@ void transition(VkCommandBuffer commands, VkImage image, VkImageLayout from, VkI
         barrier.srcAccessMask = VK_ACCESS_2_NONE;
         barrier.dstStageMask = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT;
         barrier.dstAccessMask = VK_ACCESS_2_NONE;
+    } else {
+        // anything else is going back to a layout something in this same submit may sample
+        // or draw into, and unlike presentation that use has no semaphore of its own to
+        // order it. The transition is a write, so it has to be complete and visible before
+        // any of them rather than merely before the end of the buffer.
+        barrier.srcStageMask = VK_PIPELINE_STAGE_2_COPY_BIT;
+        barrier.srcAccessMask = VK_ACCESS_2_NONE;
+        barrier.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+        barrier.dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT;
     }
 
     VkDependencyInfo dependency{};
@@ -78,10 +87,19 @@ Capture::Capture(const boost::shared_ptr<device::Device>& device, const boost::s
 
 /**
  **/
-void Capture::record(VkCommandBuffer commands, const Swapchain& swapchain, uint32_t image) {
-    width_ = swapchain.extent().width;
-    height_ = swapchain.extent().height;
-    format_ = swapchain.format();
+Capture::Source::Source() noexcept :
+image(VK_NULL_HANDLE),
+extent{0, 0},
+format(VK_FORMAT_UNDEFINED),
+layout(VK_IMAGE_LAYOUT_UNDEFINED) {
+}
+
+/**
+ **/
+void Capture::record(VkCommandBuffer commands, const Source& source) {
+    width_ = source.extent.width;
+    height_ = source.extent.height;
+    format_ = source.format;
 
     const VkDeviceSize bytes = static_cast<VkDeviceSize>(width_) * height_ * 4;
     if (!readback_) {
@@ -90,9 +108,7 @@ void Capture::record(VkCommandBuffer commands, const Swapchain& swapchain, uint3
         readback_->grow(bytes);
     }
 
-    VkImage handle = swapchain.images()[image];
-
-    transition(commands, handle, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+    transition(commands, source.image, source.layout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
     VkBufferImageCopy region{};
     region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -101,9 +117,20 @@ void Capture::record(VkCommandBuffer commands, const Swapchain& swapchain, uint3
     region.imageSubresource.layerCount = 1;
     region.imageOffset = {0, 0, 0};
     region.imageExtent = {width_, height_, 1};
-    vkCmdCopyImageToBuffer(commands, handle, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, readback_->handle(), 1, &region);
+    vkCmdCopyImageToBuffer(commands, source.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, readback_->handle(), 1, &region);
 
-    transition(commands, handle, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+    transition(commands, source.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, source.layout);
+}
+
+/**
+ **/
+void Capture::record(VkCommandBuffer commands, const Swapchain& swapchain, uint32_t image) {
+    Source source;
+    source.image = swapchain.images()[image];
+    source.extent = swapchain.extent();
+    source.format = swapchain.format();
+    source.layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    record(commands, source);
 }
 
 /**

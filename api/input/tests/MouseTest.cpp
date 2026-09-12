@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE(mouse_button_test) {
 
     BOOST_CHECK_EQUAL(mouse.handleEvent(buttonEvent(SDL_EVENT_MOUSE_BUTTON_DOWN, SDL_BUTTON_LEFT, 10.0f, 20.0f)), true);
     BOOST_REQUIRE_EQUAL(recorder.buttons_.size(), 1u);
-    BOOST_CHECK_EQUAL(recorder.buttons_[0].button(), static_cast<unsigned int>(SDL_BUTTON_LEFT));
+    BOOST_CHECK_EQUAL(recorder.buttons_[0].button(), "left");
     BOOST_CHECK_EQUAL(recorder.buttons_[0].pressed(), true);
 
     // the event carries the point SDL put on it, so a cursor can be driven from the press
@@ -79,7 +79,7 @@ BOOST_AUTO_TEST_CASE(mouse_button_test) {
     BOOST_CHECK_EQUAL(recorder.buttons_[0].position()[1], 20.0f);
 
     // the button is held, and the click moved the cursor with it
-    BOOST_CHECK_EQUAL(mouse.state().pressed(SDL_BUTTON_LEFT), true);
+    BOOST_CHECK_EQUAL(mouse.state().held("left"), true);
     BOOST_CHECK_EQUAL(mouse.state().position()[0], 10.0f);
     BOOST_CHECK_EQUAL(mouse.state().position()[1], 20.0f);
 
@@ -90,7 +90,7 @@ BOOST_AUTO_TEST_CASE(mouse_button_test) {
 
     // releasing is the other edge, and drops the hold
     BOOST_CHECK_EQUAL(mouse.handleEvent(buttonEvent(SDL_EVENT_MOUSE_BUTTON_UP, SDL_BUTTON_LEFT, 12.0f, 22.0f)), true);
-    BOOST_CHECK_EQUAL(mouse.state().pressed(SDL_BUTTON_LEFT), false);
+    BOOST_CHECK_EQUAL(mouse.state().held("left"), false);
     BOOST_REQUIRE_EQUAL(recorder.buttons_.size(), 2u);
     BOOST_CHECK_EQUAL(recorder.buttons_[1].position()[0], 12.0f);
     BOOST_CHECK_EQUAL(recorder.buttons_[1].position()[1], 22.0f);
@@ -140,16 +140,16 @@ BOOST_AUTO_TEST_CASE(mousestate_test) {
     v3d::input::MouseState state;
 
     // nothing is held, and the cursor starts at the origin
-    BOOST_CHECK_EQUAL(state.pressed(SDL_BUTTON_LEFT), false);
+    BOOST_CHECK_EQUAL(state.held("left"), false);
     BOOST_CHECK_EQUAL(state.position()[0], 0.0f);
     BOOST_CHECK_EQUAL(state.position()[1], 0.0f);
 
     // the call operator toggles a button, returning the state it arrived at
-    BOOST_CHECK_EQUAL(state(SDL_BUTTON_LEFT), true);
-    BOOST_CHECK_EQUAL(state.pressed(SDL_BUTTON_LEFT), true);
-    BOOST_CHECK_EQUAL(state.pressed(SDL_BUTTON_RIGHT), false);
-    BOOST_CHECK_EQUAL(state(SDL_BUTTON_LEFT), false);
-    BOOST_CHECK_EQUAL(state.pressed(SDL_BUTTON_LEFT), false);
+    BOOST_CHECK_EQUAL(state("left"), true);
+    BOOST_CHECK_EQUAL(state.held("left"), true);
+    BOOST_CHECK_EQUAL(state.held("right"), false);
+    BOOST_CHECK_EQUAL(state("left"), false);
+    BOOST_CHECK_EQUAL(state.held("left"), false);
 
     // and moving the cursor hands back where it was
     glm::vec2 previous = state(glm::vec2(5.0f, 7.0f));

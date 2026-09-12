@@ -22,20 +22,27 @@ namespace v3d::render::realtime::vulkan::device {
 /**
  * A logical device selected from the physical devices the instance can see,
  * together with the queues the renderer draws and presents with.
+ *
+ * A device given no surface is headless. It is selected on its graphics family alone, asks
+ * for no swapchain extension, and has no present queue, because presenting is the only thing
+ * a surface is needed for. Everything that draws works on one; everything that presents - a
+ * Swapchain, a Presenter - needs a device that was given a surface.
  **/
 class Device final {
  public:
     /**
-     * The queue families a device has to provide before we can render to a window with it.
-     * The same family often serves both roles.
+     * The queue families a device has to provide before we can draw with it, and present
+     * from it when there is a surface. The same family often serves both roles.
      **/
     struct QueueFamilies {
         QueueFamilies() noexcept;
 
         /**
-         * @return whether both of the families we need were found
+         * @param presenting whether a present family is one of the ones needed, which it is
+         *        only for a device that was given a surface
+         * @return whether the families we need were found
          **/
-        bool complete() const noexcept;
+        bool complete(bool presenting) const noexcept;
 
         uint32_t graphics;
         uint32_t present;
@@ -46,9 +53,11 @@ class Device final {
     /**
      * @param logger
      * @param instance the instance to select a physical device from
-     * @param surface the surface the device has to be able to present to
+     * @param surface the surface the device has to be able to present to, or null for a
+     *        headless device that only draws
      **/
-    Device(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Instance>& instance, const boost::shared_ptr<Surface>& surface);
+    Device(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Instance>& instance,
+        const boost::shared_ptr<Surface>& surface = nullptr);
 
     /**
      **/
@@ -68,9 +77,14 @@ class Device final {
     VkPhysicalDevice physical() const noexcept;
 
     /**
-     * @return the surface the device was selected to present to
+     * @return the surface the device was selected to present to, or null on a headless one
      **/
     boost::shared_ptr<Surface> surface() const noexcept;
+
+    /**
+     * @return whether the device was given a surface, and so has a present queue
+     **/
+    bool presenting() const noexcept;
 
     /**
      * @return the queue families backing the device
@@ -83,26 +97,29 @@ class Device final {
     VkQueue graphicsQueue() const noexcept;
 
     /**
-     * @return the queue finished images are presented on
+     * @return the queue finished images are presented on, or null on a headless device
      **/
     VkQueue presentQueue() const noexcept;
 
  private:
     /**
-     * Pick the first physical device that can both render and present, preferring a discrete gpu.
+     * Pick the first physical device that can draw, and present when there is a surface,
+     * preferring a discrete gpu.
      * @throw std::runtime_error if none of them can
      **/
     void selectPhysical();
 
     /**
-     * @return the graphics and present families a physical device offers for our surface
+     * @return the graphics family a physical device offers, and the present family it offers
+     *         for our surface when there is one
      **/
     QueueFamilies findFamilies(VkPhysicalDevice device) const;
 
     /**
+     * @param presenting whether the swapchain extension is among the ones needed
      * @return whether a physical device advertises every extension the renderer needs
      **/
-    static bool hasRequiredExtensions(VkPhysicalDevice device);
+    static bool hasRequiredExtensions(VkPhysicalDevice device, bool presenting);
 
     /**
      * @return whether a physical device offers the 1.3 features the renderer draws with

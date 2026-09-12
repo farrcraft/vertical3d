@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <string>
+#include <string_view>
 #include <vector>
 
 #include <glm/glm.hpp>
@@ -15,6 +17,10 @@ namespace v3d::input {
  * MouseState keeps track of the cursor position and of which buttons are currently held,
  * based on all of the motion and button events we've seen. It is the mouse counterpart of
  * KeyState.
+ *
+ * A button is named rather than numbered, the way a key is. The names are the ones a
+ * binding config uses - "left", "middle", "right", "x1", "x2" - so a consumer asking
+ * whether the left button is down needs no SDL header to say which one that is.
  **/
 class MouseState final {
  public:
@@ -23,20 +29,20 @@ class MouseState final {
     /**
      * Is a button currently held?
      *
-     * @param button the SDL button index
+     * @param button the button's name
      *
      * @return bool
      **/
-    bool pressed(unsigned int button) const;
+    bool held(std::string_view button) const;
 
     /**
      * Toggle the state of a button
      *
-     * @param button the button being toggled
+     * @param button the name of the button being toggled
      *
-     * @return bool true if the resulting state is a pressed button
+     * @return bool true if the resulting state is a held button
      **/
-    bool operator() (unsigned int button);
+    bool operator() (const std::string& button);
 
     /**
      * Move the cursor
@@ -53,7 +59,7 @@ class MouseState final {
     glm::vec2 position() const;
 
  private:
-    std::vector<unsigned int> buttons_;
+    std::vector<std::string> buttons_;
     glm::vec2 position_;
 };
 

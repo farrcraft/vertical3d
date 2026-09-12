@@ -6,7 +6,7 @@ Through the manifest in [vcpkg.json](../vcpkg.json):
 
 | Port | |
 |---|---|
-| boost | See the note below on `boost::json` |
+| boost-filesystem, boost-foreach, boost-headers, boost-json, boost-lexical-cast, boost-optional, boost-program-options, boost-smart-ptr, boost-system, boost-test, boost-unordered | The boost libraries the tree includes, named one port each rather than through the `boost` metapackage. See the note below on `boost::json`, and [adding a boost library](#adding-a-boost-library) |
 | cgltf | A single header the port copies into `include/`, with no CMake config of its own. [Build.md](Build.md#traps) covers how it is found and where its implementation half is compiled |
 | entt | |
 | freetype | |
@@ -40,9 +40,6 @@ There is no OpenGL. `api/gl` was deleted on 2026-09-01, and the `find_package(Op
 
 ## Setting up vcpkg
 
-vcpkg needs a small triplet patch first, for a boost log ABI problem. The bug and the origin of
-the workaround are discussed at https://github.com/microsoft/vcpkg/discussions/22762.
-
 Clone it:
 
 ```
@@ -51,22 +48,7 @@ cd vendor
 git clone https://github.com/Microsoft/vcpkg.git
 ```
 
-Apply this diff in the vcpkg directory before anything else:
-
-```
-diff --git a/triplets/x64-windows.cmake b/triplets/x64-windows.cmake
-index d0be7297f..86fcd4207 100644
---- a/triplets/x64-windows.cmake
-+++ b/triplets/x64-windows.cmake
-@@ -2,3 +2,5 @@ set(VCPKG_TARGET_ARCHITECTURE x64)
- set(VCPKG_CRT_LINKAGE dynamic)
- set(VCPKG_LIBRARY_LINKAGE dynamic)
-
-+set(VCPKG_C_FLAGS "${VCPKG_C_FLAGS} /DBOOST_ALL_DYN_LINK /DBOOST_USE_WINAPI_VERSION=0x0A00 /D_WIN32_WINNT=0x0A00 /DWINVER=0x0A00")
-+set(VCPKG_CXX_FLAGS "${VCPKG_CXX_FLAGS} /DBOOST_ALL_DYN_LINK /DBOOST_USE_WINAPI_VERSION=0x0A00 /D_WIN32_WINNT=0x0A00 /DWINVER=0x0A00")
-```
-
-Then carry on as normal:
+Then:
 
 ```
 # Prepare to use vcpkg
@@ -85,10 +67,25 @@ cd ..
 Open a developer command prompt and run, for example:
 
 ```
-.\vendor\vcpkg\vcpkg.exe add port boost
+.\vendor\vcpkg\vcpkg.exe add port libpng
 ```
 
 Packages are installed during CMake generation.
+
+### Adding a boost library
+
+The manifest names one `boost-*` port per boost library the tree includes, not the `boost`
+metapackage, so a boost header that no port covers does not compile. Including
+`<boost/signals2.hpp>` means adding `boost-signals2` to [vcpkg.json](../vcpkg.json) and to
+[examples/starter/vcpkg.json](../examples/starter/vcpkg.json), which the example keeps in step
+with the root.
+
+A compiled boost library needs a second entry: the `COMPONENTS` list in
+[cmake/v3dDependencies.cmake](../cmake/v3dDependencies.cmake), which is what creates the
+`Boost::<component>` target a `target_link_libraries` can then name. Header-only libraries need
+no component, because [v3d_add_api_library](../cmake/v3dHelpers.cmake) links `Boost::headers`
+into every api library, and that target carries the include directory the whole of boost is
+found through.
 
 ## Updating versions
 

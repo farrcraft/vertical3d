@@ -19,33 +19,38 @@ namespace {
 
 const char* const validationLayer = "VK_LAYER_KHRONOS_validation";
 
+};  // namespace
+
 /**
  * What the validation layer has to say, put through the logger at a severity that
  * matches its own. An error here is a real one: the layer only speaks when the api
  * has been used in a way that is undefined or about to be.
  **/
-VKAPI_ATTR VkBool32 VKAPI_CALL report(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
+VKAPI_ATTR VkBool32 VKAPI_CALL Instance::report(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
     VkDebugUtilsMessageTypeFlagsEXT types, const VkDebugUtilsMessengerCallbackDataEXT* data, void* user) {
     static_cast<void>(types);
 
-    v3d::log::Logger* logger = static_cast<v3d::log::Logger*>(user);
-    if (logger == nullptr || data == nullptr || data->pMessage == nullptr) {
+    Instance* instance = static_cast<Instance*>(user);
+    if (instance == nullptr || data == nullptr || data->pMessage == nullptr) {
         return VK_FALSE;
     }
 
     if ((severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) != 0) {
-        logger->get()->error("vulkan: {}", data->pMessage);
+        instance->logger_->get()->error("vulkan: {}", data->pMessage);
+        instance->errors_++;
+        if (instance->firstError_.empty()) {
+            instance->firstError_ = data->pMessage;
+        }
     } else if ((severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) != 0) {
-        logger->get()->warn("vulkan: {}", data->pMessage);
+        instance->logger_->get()->warn("vulkan: {}", data->pMessage);
+        instance->warnings_++;
     } else {
-        logger->get()->info("vulkan: {}", data->pMessage);
+        instance->logger_->get()->info("vulkan: {}", data->pMessage);
     }
 
     // false: the call the layer is complaining about still goes through
     return VK_FALSE;
 }
-
-};  // namespace
 
 /**
  **/
@@ -53,7 +58,9 @@ Instance::Instance(const boost::shared_ptr<v3d::log::Logger>& logger, const std:
     instance_(VK_NULL_HANDLE),
     messenger_(VK_NULL_HANDLE),
     logger_(logger),
-    validating_(false) {
+    validating_(false),
+    errors_(0),
+    warnings_(0) {
     requireExtensions(extensions);
 
     VkApplicationInfo appInfo{};
@@ -127,6 +134,24 @@ bool Instance::validating() const noexcept {
 
 /**
  **/
+uint32_t Instance::errors() const noexcept {
+    return errors_;
+}
+
+/**
+ **/
+uint32_t Instance::warnings() const noexcept {
+    return warnings_;
+}
+
+/**
+ **/
+const std::string& Instance::firstError() const noexcept {
+    return firstError_;
+}
+
+/**
+ **/
 void Instance::createMessenger() {
     if (!validating_) {
         return;
@@ -148,7 +173,7 @@ void Instance::createMessenger() {
         VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
         VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
     info.pfnUserCallback = report;
-    info.pUserData = logger_.get();
+    info.pUserData = this;
 
     VkResult result = create(instance_, &info, nullptr, &messenger_);
     if (result != VK_SUCCESS) {

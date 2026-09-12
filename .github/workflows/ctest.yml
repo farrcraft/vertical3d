@@ -36,6 +36,12 @@ jobs:
       # LOCALAPPDATA, because the actions/cache path has to name it too and the runner's own
       # environment is not readable from a workflow expression.
       VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\out\build\vcpkg-cache
+      # Mesa's software Vulkan implementation, which is what gives the render tests a device on
+      # a runner that has no gpu - ADR-0007. Pinned rather than resolved the way the SDK above
+      # is: this comes from a third-party release rather than a package manager, so "latest"
+      # would let the driver under the tests change with no commit here to blame it on.
+      MESA_VERSION: "26.2.0"
+      MESA_ROOT: ${{ github.workspace }}\out\build\mesa
 
     steps:
       - uses: actions/checkout@v4
@@ -43,6 +49,27 @@ jobs:
           # libnoise is a submodule and is needed: voxel compiles its headers and its suite
           # links it. It is the only one left - the mixer comes from vcpkg per ADR-0021.
           submodules: true
+
+      # Defender holds a file while it scans it. Files this job writes are often opened again
+      # immediately: the linker's output to embed a manifest, and again by the applocal copy
+      # the Configure step describes. Those opens fail while a scan holds the file, so the two
+      # directories the job writes into are excluded.
+      #
+      # This step runs first so that the exclusion covers the downloads and the archives
+      # unpacked from them, not only the build.
+      #
+      # A refused exclusion is a warning rather than a failure.
+      - name: Keep Defender out of the build directories
+        shell: pwsh
+        run: |
+          foreach ($path in @($env:GITHUB_WORKSPACE, $env:RUNNER_TEMP)) {
+            try {
+              Add-MpPreference -ExclusionPath $path -ErrorAction Stop
+              Write-Host "excluded $path"
+            } catch {
+              Write-Warning "Defender refused an exclusion for ${path}: $($_.Exception.Message)"
+            }
+          }
 
       # The toolset version is an output because the vcpkg binary cache is keyed on it. vcpkg
       # hashes the compiler into every package's ABI, so a package built by one toolset is
@@ -104,6 +131,90 @@ jobs:
             throw "glslc is not under $env:VULKAN_SDK_ROOT - the SDK install or its cache is incomplete"
           }
           "VULKAN_SDK=$env:VULKAN_SDK_ROOT" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          # The SDK is installed under a root of its own rather than to the default location,
+          # so the loader has no registry entry telling it where the validation layer is. The
+          # render tests assert that the layer was on as well as that it said nothing, because
+          # a layer that is not there reports no errors exactly like a clean run does.
+          "VK_LAYER_PATH=$env:VULKAN_SDK_ROOT\Bin" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      # Lavapipe, so that everything below the recorder has a device to draw with. Without it
+      # the render suite skips, which ctest reports rather than passing over - see
+      # api/render/tests/device/TestMain.cpp.
+      - name: Restore lavapipe
+        id: mesa-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.MESA_ROOT }}
+          key: mesa-${{ runner.os }}-${{ env.MESA_VERSION }}
+
+      - name: Install lavapipe
+        if: steps.mesa-cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          $archive = "$env:RUNNER_TEMP\mesa.7z"
+          $url = "https://github.com/pal1000/mesa-dist-win/releases/download/$env:MESA_VERSION/mesa3d-$env:MESA_VERSION-release-msvc.7z"
+          Invoke-WebRequest -Uri $url -OutFile $archive
+          New-Item -ItemType Directory -Force -Path "$env:MESA_ROOT" | Out-Null
+          # 7z is on the runner image; -y because the archive has nested directories
+          & 7z x $archive "-o$env:MESA_ROOT" -y | Out-Null
+          if ($LASTEXITCODE -ne 0) { throw "unpacking mesa $env:MESA_VERSION exited $LASTEXITCODE" }
+
+      # VK_DRIVER_FILES is the whole of what the loader will consider, so this runner offers
+      # lavapipe and nothing else, and a test that draws cannot quietly pick up something it was
+      # not meant to. An elevated process ignores it - the step that registers the ICD covers
+      # that case, and registers only this one driver.
+      - name: Point the loader at lavapipe
+        shell: pwsh
+        run: |
+          $icd = Get-ChildItem -Path "$env:MESA_ROOT" -Recurse -Filter "lvp_icd.*.json" | Select-Object -First 1
+          if (-not $icd) { throw "no lavapipe ICD under $env:MESA_ROOT - the mesa layout has changed" }
+          "VK_DRIVER_FILES=$($icd.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+          # The loader ignores an ICD whose library_path leads nowhere, and then reports the
+          # same incompatible driver it reports where there is no driver at all. The dll is
+          # checked here, where the directory that should hold it can still be listed.
+          $library = (Get-Content $icd.FullName -Raw | ConvertFrom-Json).ICD.library_path
+          $driver = if ([System.IO.Path]::IsPathRooted($library)) { $library } else { Join-Path $icd.DirectoryName $library }
+          if (-not (Test-Path $driver)) {
+            Get-ChildItem $icd.DirectoryName | Format-Table Name, Length | Out-String | Write-Host
+            throw "the lavapipe ICD names $library, which is not at $driver - the archive is incomplete or something removed it"
+          }
+
+          # An ICD is not a loader. vulkan-1.dll is what an application actually links, and the
+          # SDK does not carry one - on a developer's machine it arrives in System32 with the
+          # gpu driver, which is exactly what a runner has none of. Checked here rather than
+          # left to the tests, because its absence is a process that will not start rather than
+          # a device that is not found, and that reads as neither a failure nor a skip.
+          $loader = Join-Path $env:WINDIR "System32\vulkan-1.dll"
+          if (-not (Test-Path $loader)) {
+            throw "there is no vulkan loader at $loader - the SDK installs one only where it can write System32, and nothing else on this image provides it"
+          }
+          Write-Host "lavapipe ICD: $($icd.FullName)"
+          Write-Host "loader:       $loader"
+
+      # This job runs elevated, and the loader ignores VK_DRIVER_FILES and VK_LAYER_PATH in an
+      # elevated process. It reads the registry instead, which is why it reported "Found no
+      # drivers!" with both of them set. Each manifest is registered the way the SDK and mesa's
+      # own installer register theirs: a DWORD of zero named by the manifest's full path.
+      #
+      # Only these two are registered, so an elevated run sees the same one driver and one layer
+      # that the environment variables name for a run that is not.
+      - name: Register the driver and the layer where the loader looks
+        shell: pwsh
+        run: |
+          $layer = Get-ChildItem (Join-Path $env:VULKAN_SDK "Bin") -Filter "VkLayer_khronos_validation.json" | Select-Object -First 1
+          if (-not $layer) {
+            throw "no validation layer manifest under $env:VULKAN_SDK\Bin - the render suite asserts the layer was on, not only that it was silent"
+          }
+          $manifests = @{
+            "HKLM:\SOFTWARE\Khronos\Vulkan\Drivers" = $env:VK_DRIVER_FILES
+            "HKLM:\SOFTWARE\Khronos\Vulkan\ExplicitLayers" = $layer.FullName
+          }
+          foreach ($key in $manifests.Keys) {
+            New-Item -Path $key -Force | Out-Null
+            New-ItemProperty -Path $key -Name $manifests[$key] -Value 0 -PropertyType DWord -Force | Out-Null
+            Write-Host "$key <- $($manifests[$key])"
+          }
 
       # vcpkg builds boost from source, which is most of an hour cold. The binary cache is
       # what makes a second run cheap, and vcpkg refuses a cache directory that is not there.
@@ -144,6 +255,10 @@ jobs:
             -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY="%GITHUB_WORKSPACE%\vendor\libnoise\Debug" || exit /b 1
           cmake --build "%RUNNER_TEMP%\libnoise" || exit /b 1
 
+      # The job pool holds linking to one edge at a time. A link edge does more than link:
+      # vcpkg's applocal deployment runs in the same edge, reopening the binary just linked and
+      # copying dlls out of the installed bin directory the other link edges are reading. Only
+      # linking is pooled, so compilation still uses the whole machine.
       - name: Configure
         shell: cmd
         run: |
@@ -152,6 +267,8 @@ jobs:
           ninja --version || exit /b 1
           cmake -S . -B "%BUILD_DIR%" -G Ninja ^
             -DCMAKE_BUILD_TYPE=Debug ^
+            -DCMAKE_JOB_POOLS="link=1" ^
+            -DCMAKE_JOB_POOL_LINK=link ^
             -DCMAKE_TOOLCHAIN_FILE="%VCPKG_INSTALLATION_ROOT%\scripts\buildsystems\vcpkg.cmake" ^
             -DVCPKG_TARGET_TRIPLET=x64-windows || exit /b 1
 
@@ -172,11 +289,60 @@ jobs:
           call "%RUNNER_TEMP%\vcvars.bat" >nul
           cmake --build "%BUILD_DIR%" || exit /b 1
 
+      # Synchronization validation is off by default and is a separate net from ordinary
+      # validation - it reports the hazards a barrier's scopes are wrong about, which are the
+      # ones hardest to see by eye and the ones a rendering change is most likely to introduce.
+      # The render suite is silent under it; the apps are not, and are not run here.
       - name: Test
         shell: cmd
+        env:
+          VK_LAYER_VALIDATE_SYNC: "1"
         run: |
           call "%RUNNER_TEMP%\vcvars.bat" >nul
           ctest --test-dir "%BUILD_DIR%" --output-on-failure || exit /b 1
+
+      # A skipped render suite is a failure here even though it is not one locally. The whole
+      # point of the suite is that CI draws something, and a run where it skipped is green
+      # while having asserted nothing about the renderer at all - which is the same trap as a
+      # validation layer that was never installed reporting no errors. Locally the skip is
+      # right, because a machine may legitimately have no device; on this runner lavapipe was
+      # just installed, so a skip means the loader is not seeing it.
+      - name: The render suite ran rather than skipped
+        shell: pwsh
+        env:
+          VK_LAYER_VALIDATE_SYNC: "1"
+        run: |
+          $tests = "$env:BUILD_DIR\api\render\tests"
+          & "$tests\v3dtest_render_device.exe" --detect_memory_leaks=0
+          $exit = $LASTEXITCODE
+          # The suite logs to v3d.log beside the executable rather than to the console, so a
+          # run that failed says nothing here on its own. That log and vulkaninfo's view of the
+          # loader are printed when it exits non-zero.
+          if ($exit -ne 0) {
+            $log = Join-Path $tests "v3d.log"
+            if (Test-Path $log) {
+              Write-Host "--- $log"
+              Get-Content $log
+            }
+            # VK_LOADER_DEBUG makes the loader list the ICDs it found and say what it did with
+            # each, which neither the suite nor vulkaninfo reports. The suite is run a second
+            # time for it, because the output is long and a run that worked does not need it.
+            Write-Host "--- the loader's account"
+            $env:VK_LOADER_DEBUG = "error,warn"
+            & "$tests\v3dtest_render_device.exe" --detect_memory_leaks=0
+            Remove-Item env:VK_LOADER_DEBUG
+
+            # the SDK names it vulkaninfoSDK where it is installed under a root of its own
+            $vulkaninfo = Get-ChildItem (Join-Path $env:VULKAN_SDK "Bin") -Filter "vulkaninfo*.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($vulkaninfo) {
+              Write-Host "--- $($vulkaninfo.Name) --summary"
+              & $vulkaninfo.FullName --summary
+            }
+          }
+          if ($exit -eq 77) {
+            throw "the render suite found no device and skipped - VK_DRIVER_FILES is $env:VK_DRIVER_FILES"
+          }
+          if ($exit -ne 0) { throw "the render suite exited $exit" }
 
       # Nothing inside the tree can tell a target that carries its own include path and its
       # own dependencies from one picking them up off the root's global or off an app that
@@ -196,6 +362,8 @@ jobs:
           call "%RUNNER_TEMP%\vcvars.bat" >nul
           cmake -S examples/starter -B "%STARTER_BUILD_DIR%" -G Ninja ^
             -DCMAKE_BUILD_TYPE=Debug ^
+            -DCMAKE_JOB_POOLS="link=1" ^
+            -DCMAKE_JOB_POOL_LINK=link ^
             -DCMAKE_TOOLCHAIN_FILE="%VCPKG_INSTALLATION_ROOT%\scripts\buildsystems\vcpkg.cmake" ^
             -DVCPKG_TARGET_TRIPLET=x64-windows ^
             -DVCPKG_INSTALLED_DIR="%GITHUB_WORKSPACE%\out\build\ci\vcpkg_installed" ^

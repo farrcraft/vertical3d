@@ -24,7 +24,8 @@ namespace v3d::render::realtime::vulkan::frame {
 class Swapchain;
 
 /**
- * A presented frame read back off the swapchain and written out as a png.
+ * A drawn image read back off the device and written out as a png - a presented frame off the
+ * swapchain, or an offscreen target a pass drew into per ADR-0031.
  *
  * Copying and writing are two calls because a queue submit sits between them: record() adds
  * the copy to the command buffer the frame is already being drawn into, and write() reads
@@ -37,6 +38,19 @@ class Swapchain;
 class Capture final {
  public:
     /**
+     * What a capture reads from. A swapchain image and a render target differ only in these
+     * four things, which is why record() takes them rather than either class.
+     **/
+    struct Source {
+        Source() noexcept;
+
+        VkImage image;         /**< the image to copy out of **/
+        VkExtent2D extent;     /**< its size **/
+        VkFormat format;       /**< its colour format, which decides the channel order **/
+        VkImageLayout layout;  /**< what it is in when record() is called, and what it is left in **/
+    };
+
+    /**
      * @param device the device to allocate the readback buffer on
      * @param logger where a written file is reported
      **/
@@ -48,10 +62,18 @@ class Capture final {
     Capture& operator=(const Capture&) = delete;
 
     /**
-     * Copy an acquired swapchain image into the readback buffer.
+     * Copy an image into the readback buffer.
      *
-     * The image is handed back in the layout it arrived in, so a frame that is captured
-     * presents exactly as one that is not.
+     * The image is handed back in the layout it arrived in, so an image that is captured is
+     * used afterwards exactly as one that is not.
+     *
+     * @param commands a command buffer that is still recording
+     * @pre the image is in source.layout, and what wrote it is a colour attachment write
+     **/
+    void record(VkCommandBuffer commands, const Source& source);
+
+    /**
+     * Copy an acquired swapchain image into the readback buffer.
      *
      * @param commands the buffer the frame was recorded into, still recording
      * @param image which of the chain's images was acquired
@@ -69,7 +91,7 @@ class Capture final {
     bool write(std::string_view filename);
 
     /**
-     * Turn a copied swapchain image into one the writers understand.
+     * Turn a copied image into one the writers understand.
      *
      * A chain is commonly BGRA and a png is RGBA, and the alpha a chain presents is not
      * meaningful once the image has been composited, so it is written opaque.

@@ -43,17 +43,17 @@ const VkDeviceSize initialVertexBytes = 64ULL * 1024;
  **/
 Line::Line(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<device::Device>& device,
     const boost::shared_ptr<pipeline::Cache>& cache, const boost::shared_ptr<pipeline::Resources>& resources,
-    const boost::shared_ptr<frame::Presenter>& presenter, const boost::shared_ptr<frame::FrameUniforms>& uniforms,
+    const boost::shared_ptr<frame::Ring>& ring, const boost::shared_ptr<frame::FrameUniforms>& uniforms,
     VkFormat colour, VkFormat depth) :
     logger_(logger),
     device_(device),
     cache_(cache),
     resources_(resources),
-    presenter_(presenter),
+    ring_(ring),
     uniforms_(uniforms),
     cursor_(0) {
     createPipelines(colour, depth);
-    vertices_.resize(presenter_->framesInFlight() > 0 ? presenter_->framesInFlight() : 1);
+    vertices_.resize(ring_->framesInFlight() > 0 ? ring_->framesInFlight() : 1);
 }
 
 /**
@@ -88,7 +88,7 @@ void Line::createPipelines(VkFormat colour, VkFormat depth) {
 /**
  **/
 boost::shared_ptr<memory::Buffer> Line::claim() {
-    std::vector<boost::shared_ptr<memory::Buffer>>& ring = vertices_[presenter_->frame()];
+    std::vector<boost::shared_ptr<memory::Buffer>>& ring = vertices_[ring_->frame()];
     if (cursor_ >= ring.size()) {
         ring.push_back(boost::make_shared<memory::Buffer>(device_, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, initialVertexBytes));
     }
@@ -109,7 +109,7 @@ void Line::submit(const LineCanvas& canvas, Pass* pass, uint16_t layer) {
     }
 
     // the device may still be reading what this frame's slots held two frames ago
-    presenter_->waitFrame();
+    ring_->waitFrame();
 
     const boost::shared_ptr<memory::Buffer> vertices = claim();
     const VkDeviceSize vertexBytes = canvas.vertices().size() * sizeof(LineCanvas::Vertex);
