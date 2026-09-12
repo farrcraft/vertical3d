@@ -8,11 +8,6 @@ add_executable(pong
 	"src/pong.cxx"
 )
 
-# Workaround for a boost log ABI bug - https://github.com/microsoft/vcpkg/discussions/22762
-target_compile_definitions(pong PUBLIC BOOST_USE_WINAPI_VERSION=0x0A00)
-target_compile_definitions(pong PUBLIC _WIN32_WINNT=0x0A00)
-target_compile_definitions(pong PUBLIC WINVER=0x0A00)
-
 target_link_libraries(pong PRIVATE
 	v3dlib_asset
 	v3dlib_audio

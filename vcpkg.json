@@ -1,6 +1,16 @@
 {
   "dependencies": [
-    "boost",
+    "boost-filesystem",
+    "boost-foreach",
+    "boost-headers",
+    "boost-json",
+    "boost-lexical-cast",
+    "boost-optional",
+    "boost-program-options",
+    "boost-smart-ptr",
+    "boost-system",
+    "boost-test",
+    "boost-unordered",
     "cgltf",
     "entt",
     "freetype",

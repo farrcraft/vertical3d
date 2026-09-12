@@ -4,7 +4,7 @@
 # Paths into this repository go through V3D_ROOT rather than CMAKE_SOURCE_DIR, which names
 # the consumer's root once another project adds this one - see ADR-0027.
 
-# Every library under api/ is declared with this, which gives it the four things a target
+# Every library under api/ is declared with this, which gives it the three things a target
 # has to carry to be linkable from outside this tree:
 #
 #  - an include root, so every file writes #include <api/image/Image.h> - a consumer's and
@@ -18,16 +18,12 @@
 #  - /EHsc and /utf-8 in the interface. Both are carried by the directory's own flags for
 #    this tree's compilation and reach nothing beyond it; a consumer that compiles Logger.h
 #    without /utf-8 hits the static_assert in spdlog's bundled fmt.
-#  - the boost log ABI workaround - https://github.com/microsoft/vcpkg/discussions/22762 -
-#    which was on nine of the sixteen libraries and is a Windows API version selection, so
-#    the ones it was missing from were the inconsistency it exists to prevent.
 function(v3d_add_api_library name)
 	set(target "v3dlib_${name}")
 	add_library(${target} ${ARGN})
 	add_library(v3d::${name} ALIAS ${target})
 	target_include_directories(${target} PUBLIC $<BUILD_INTERFACE:${V3D_ROOT}>)
 	target_compile_options(${target} INTERFACE /EHsc /utf-8)
-	target_compile_definitions(${target} PUBLIC BOOST_USE_WINAPI_VERSION=0x0A00 _WIN32_WINNT=0x0A00 WINVER=0x0A00)
 	# Every library names boost in a header, if only for shared_ptr.
 	target_link_libraries(${target} PUBLIC Boost::headers)
 endfunction()
