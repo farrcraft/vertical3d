@@ -36,6 +36,26 @@ class MouseState final {
     bool held(std::string_view button) const;
 
     /**
+     * Did a button go down since the last flush?
+     *
+     * @param button the button's name
+     **/
+    bool pressed(std::string_view button) const;
+
+    /**
+     * Did a button come up since the last flush?
+     *
+     * @param button the button's name
+     **/
+    bool released(std::string_view button) const;
+
+    /**
+     * Forget this frame's edges, leaving what is held and where the cursor is alone. Called
+     * once per frame by the loop, after everything that reads them has run.
+     **/
+    void flush();
+
+    /**
      * Toggle the state of a button
      *
      * @param button the name of the button being toggled
@@ -60,6 +80,9 @@ class MouseState final {
 
  private:
     std::vector<std::string> buttons_;
+    /**< what went down since the last flush, and what came up **/
+    std::vector<std::string> pressed_;
+    std::vector<std::string> released_;
     glm::vec2 position_;
 };
 

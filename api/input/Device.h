@@ -36,6 +36,12 @@ class Device {
      **/
     virtual bool handleEvent(const SDL_Event& event) = 0;
 
+    /**
+     * Forget the edges this frame recorded. Called once per frame by the loop, after
+     * everything that reads them has run - a device with no edge state does nothing.
+     **/
+    virtual void flush() {}
+
  protected:
     boost::shared_ptr<v3d::event::Context> context_;
     boost::shared_ptr<entt::dispatcher> dispatcher_;

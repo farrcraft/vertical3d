@@ -81,6 +81,12 @@ bool Mouse::handleEvent(const SDL_Event& event) {
 
 /**
  **/
+void Mouse::flush() {
+    state_.flush();
+}
+
+/**
+ **/
 const MouseState& Mouse::state() const {
     return state_;
 }

@@ -28,6 +28,10 @@ class Mouse : public Device {
      **/
     const MouseState& state() const;
 
+    /**
+     **/
+    void flush() override;
+
  private:
     MouseState state_;
 };

@@ -128,6 +128,61 @@ BOOST_AUTO_TEST_CASE(keystate_test) {
     BOOST_CHECK_EQUAL(state.held("s"), true);
 }
 
+/**
+ * An edge is a fact about a frame, which is the thing polling cannot answer: a key pressed
+ * and released between two flushes was never held when anything looked, and both of its
+ * edges are still true of that frame.
+ **/
+BOOST_AUTO_TEST_CASE(keystate_edge_test) {
+    v3d::input::KeyState state;
+
+    BOOST_CHECK_EQUAL(state.pressed("w"), false);
+    BOOST_CHECK_EQUAL(state.released("w"), false);
+
+    // going down is an edge and a held key both
+    state("w");
+    BOOST_CHECK_EQUAL(state.pressed("w"), true);
+    BOOST_CHECK_EQUAL(state.released("w"), false);
+    BOOST_CHECK_EQUAL(state.held("w"), true);
+
+    // and coming up in the same frame leaves both edges true and nothing held
+    state("w");
+    BOOST_CHECK_EQUAL(state.pressed("w"), true);
+    BOOST_CHECK_EQUAL(state.released("w"), true);
+    BOOST_CHECK_EQUAL(state.held("w"), false);
+
+    // the flush ends the frame, and what is held survives it
+    state("s");
+    state.flush();
+    BOOST_CHECK_EQUAL(state.pressed("w"), false);
+    BOOST_CHECK_EQUAL(state.released("w"), false);
+    BOOST_CHECK_EQUAL(state.pressed("s"), false);
+    BOOST_CHECK_EQUAL(state.held("s"), true);
+}
+
+/**
+ * The device clears its own state when the loop flushes it, so an app reading through
+ * Keyboard::state() sees the same frame the events arrived in.
+ **/
+BOOST_AUTO_TEST_CASE(keyboard_flush_clears_the_edge_it_recorded) {
+    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    boost::shared_ptr<v3d::event::Context> context = boost::make_shared<v3d::event::Context>("keyboard");
+    v3d::input::Keyboard keyboard(context, dispatcher);
+
+    keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_Q));
+    BOOST_CHECK_EQUAL(keyboard.state().pressed("q"), true);
+    BOOST_CHECK_EQUAL(keyboard.state().held("q"), true);
+
+    keyboard.flush();
+    BOOST_CHECK_EQUAL(keyboard.state().pressed("q"), false);
+    // still down: a flush ends a frame, it does not release anything
+    BOOST_CHECK_EQUAL(keyboard.state().held("q"), true);
+
+    keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_UP, SDLK_Q));
+    BOOST_CHECK_EQUAL(keyboard.state().released("q"), true);
+    BOOST_CHECK_EQUAL(keyboard.state().held("q"), false);
+}
+
 BOOST_AUTO_TEST_CASE(keyboard_held_key_test) {
     boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
     boost::shared_ptr<v3d::event::Context> context = boost::make_shared<v3d::event::Context>("keyboard");
