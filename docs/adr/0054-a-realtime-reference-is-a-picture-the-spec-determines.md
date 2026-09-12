@@ -1,7 +1,7 @@
 # ADR-0054: Golden Images — A Realtime Reference Is A Picture The Specification Determines, Compared At Zero Tolerance
 
 **Date**: 2026-09-12
-**Status**: proposed
+**Status**: accepted
 **Deciders**: Joshua Farr
 
 ## Context

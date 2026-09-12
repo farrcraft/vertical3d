@@ -48,7 +48,7 @@ CI before any other is blessed.
 
 | | What | Where | ADR | State |
 |---|---|---|---|---|
-| [1](#step-1--what-a-reference-is) | The rule for what may be pinned | `docs/adr` | **0054** | ☐ proposed |
+| [1](#step-1--what-a-reference-is) | The rule for what may be pinned | `docs/adr` | **0054** | ✓ landed |
 | [2](#step-2--the-comparison-seam) | A case compares a captured png against a committed one | `api/render/tests` | cites 0054 | ✓ landed |
 | [3](#step-3--the-probe) | The quad case's spot checks become a picture | `api/render/tests` | cites 0054 | ✓ landed, unmeasured |
 | [4](#step-4--the-upload-path) | A textured quad, which is what asserts the uploader | `api/render/tests` | cites 0054 | ☐ |
