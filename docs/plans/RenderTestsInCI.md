@@ -52,8 +52,8 @@ are what the first three steps cut.
 | [2](#step-2--a-capture-reads-any-image-not-only-a-chains) | `frame::Capture` reads any image, not only a chain's | `api/render/realtime` | cites 0050 | ✓ landed |
 | [3](#step-3--the-validation-layer-is-something-a-test-can-assert-on) | A validation sink a test can assert against | `api/render/realtime` | cites 0007 | ✓ landed |
 | [4](#step-4--a-context-with-no-window-under-it) | A headless context, and what it costs `Context3D` | `api/render/realtime` | **0051** | ✓ landed |
-| [5](#step-5--the-first-suite-that-draws) | The suite: draw offscreen, assert silence, read back | `api/render/tests` | — | drafted |
-| [6](#step-6--lavapipe-on-the-runner) | A pinned software ICD, and the guard that skips without one | `.github/workflows` | cites 0007 | drafted |
+| [5](#step-5--the-first-suite-that-draws) | The suite: draw offscreen, assert silence, read back | `api/render/tests` | — | ✓ landed |
+| [6](#step-6--lavapipe-on-the-runner) | A pinned software ICD, and the guard that skips without one | `.github/workflows` | cites 0007 | written, unproven |
 
 ### What blocks what
 
@@ -381,6 +381,37 @@ than fails. `v3d_add_test` registers with ctest directly, so the guard is either
 code the ctest entry knows about or a CMake condition — resolve it against how `v3d_add_test`
 is written rather than assuming.
 
+**Landed** as `v3dtest_render_device`, built from `api/render/tests/device/` by a second
+`v3d_add_test` call. Two cases: a pass that clears, and a pass with a quad in it, each drawn
+into a `RenderTarget`, captured, and asserted twice over — the validation layer said nothing,
+and the pixels are what was drawn. The quad case reads five texels, one inside and one outside
+on each side, because a quad at the wrong scale or flipped in y passes a single check in the
+middle. It came out at exactly 512 red texels of 2048, which is the rect it was asked for.
+
+**The guard is a skip return code, and the probe is in `main`.** ctest is told
+`SKIP_RETURN_CODE 77`, and a tree with no device exits with it before Boost.Test starts. Per
+case skipping was the obvious alternative and is wrong for the same reason a validation layer
+with nowhere to report is: a binary whose every case skipped exits zero and reads as a pass, so
+a runner with no ICD would go green having asserted nothing. Verified both ways — with a device
+ctest reports `Passed`, and with `VK_DRIVER_FILES` pointed at a file that does not exist it
+reports `Skipped` and lists it under "did not run".
+
+**The step found a fourth defect, and this one it could not work around.**
+`Recorder::record` ended every frame by transitioning its target to `PRESENT_SRC_KHR`, which is
+not a layout a device with no swapchain extension has — so a headless frame was a validation
+error by construction, and no amount of arranging the test differently avoided it.
+`Recorder::Target` carries a `finalLayout` now, defaulting to `PRESENT_SRC_KHR` so that nothing
+presenting changes, and a headless frame names `SHADER_READ_ONLY_OPTIMAL` instead.
+
+Two smaller things the writing turned up. `DeviceContext::describe()` was protected, so the
+headless context 4b was built for had no way to be told what it drew into; it takes the colour
+format and extent as constructor arguments now, which makes it correct by construction rather
+than correct if you remember. And the first draft of the cases made one image both the frame's
+destination and a pass's own target, which transitions it twice and leaves the second barrier
+with the wrong source layout — the frame's destination is the target, the way a swapchain image
+is for `Engine3D`. A pass drawing into a target *of its own* while the frame draws elsewhere is
+the ADR-0031 path and still has no case; it is the obvious next one.
+
 ## Step 6 — Lavapipe on the runner
 
 [ctest.yml](../../.github/workflows/ctest.yml) already does most of this: it runs on
@@ -392,6 +423,15 @@ the exact version** — ADR-0007 names this as a risk in as many words, because 
 from a third-party release rather than a package manager and CI will drift silently otherwise.
 The existing SDK step is the pattern to copy: it resolves a version, keys a cache on it, and
 fails loudly when the install is incomplete rather than proceeding with a missing binary.
+
+**Doing the pre-flight locally ran into something the plan had not considered.** Windows
+Defender flags the `mesa-dist-win` release build as `Trojan:Win32/Suschil!rfn` and removes the
+archive mid-download, so the local check the paragraph below recommends does not simply run on a
+Windows machine. Whether that detection is a true positive is not a judgement this document
+should make; what it settles is that the check cannot be assumed cheap, and that anyone told to
+run these tests against lavapipe locally will meet the same thing. The ephemeral runner ADR-0007
+already accepts fetching Mesa onto is the other place the same question can be answered, and a
+CI run on a branch costs runner minutes rather than a decision about a developer's machine.
 
 ADR-0007 flags lavapipe's Vulkan 1.3 and dynamic rendering support as something that has to be
 confirmed, since [ADR-0002](../adr/0002-target-vulkan-1-3.md) makes both mandatory. **That risk
@@ -408,6 +448,33 @@ with no swapchain and no dynamic rendering that still covers instance, device an
 lifetime. Worth stating plainly either way: **steps 1 through 5 have value even if step 6 fails
 entirely**, because they run against a real driver on a development machine, which is where a
 rendering change is verified today by hand.
+
+### Written, and not yet proven
+
+[ctest.yml](../../.github/workflows/ctest.yml) fetches Mesa 26.2.0, names the lavapipe ICD in
+`VK_DRIVER_FILES`, and caches it the way the SDK is cached. Three things it does beyond that,
+each because of something the earlier steps found:
+
+- **A skipped render suite fails the job.** Locally a skip is right, because a machine may have
+  no device. On this runner lavapipe was just installed, so a skip means the loader is not
+  seeing it - and a green run that asserted nothing about the renderer is the trap the whole
+  plan is built to avoid. The check runs the binary directly and reads exit 77.
+- **`VK_LAYER_PATH` is set to the SDK's `Bin`.** The SDK is installed under a root of its own,
+  so nothing registers the validation layer where the loader looks. A suite that asserts the
+  layer said nothing is worthless if the layer was never there, which is why the suite asserts
+  it was on as well.
+- **The vulkan loader is checked for, and its absence is a named failure.** An ICD is not a
+  loader. `vulkan-1.dll` is what an application links, the SDK does not ship one, and on a
+  developer's machine it arrives in System32 with the gpu driver - which is the one thing this
+  runner certainly has not got. If it is missing the tests do not fail or skip, they fail to
+  start, so the workflow says so in words instead.
+
+**None of this has run.** The local pre-flight the step above recommends is what would have
+retired the risk first, and it is what Defender stopped. So the open questions stay open, and
+the first push is the experiment: whether lavapipe advertises 1.3 with dynamic rendering and
+synchronization2 per [ADR-0002](../adr/0002-target-vulkan-1-3.md), whether the image carries a
+loader at all, and whether a software rasterizer draws the two pictures the suite asserts. The
+fallbacks if it does not are ADR-0007's own, and steps 1 to 5 keep their value either way.
 
 ---
 
