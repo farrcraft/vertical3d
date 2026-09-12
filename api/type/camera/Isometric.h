@@ -91,11 +91,22 @@ class Isometric {
     /**
      * The ground plane direction that is to the right on screen at the current azimuth.
      *
-     * Derived from the camera basis rather than from the azimuth alone, because which way
-     * a basis hands is a convention - see ADR-0012 - and a pan built on the other one
-     * moves the scene the wrong way with nothing else looking wrong.
+     * Crossed the way this orbit's hand names, because which way a basis hands is a
+     * convention - see ADR-0012 - and a pan built on the other one moves the scene the
+     * wrong way with nothing else looking wrong.
      **/
     glm::vec3 right() const;
+
+    /**
+     * Which basis this orbit is driving, which decides which way right() points and is
+     * what apply() puts on the camera.
+     *
+     * The orbit owns it rather than the profile, because pan() and right() have to agree
+     * with what is drawn and neither of them is handed a camera. A caller sets it here
+     * once and the two cannot disagree.
+     **/
+    Profile::Hand hand() const;
+    void hand(Profile::Hand hand);
 
     /**
      * The ground plane direction that is away from the eye on screen at the current
@@ -139,14 +150,14 @@ class Isometric {
      * not rebuilt here either, so a frame that moves the camera several times builds them
      * once, which is what ViewPort does.
      *
-     * The profile's Hand stays the caller's too, and lookat() here honours whichever one it
-     * is - so an application whose geometry was wound for glm::lookAt sets that hand on its
-     * camera once and gets this orbit in the basis it draws through.
+     * The profile's Hand does not stay the caller's: this writes its own, so that the basis
+     * the camera draws through is the one right() and pan() were measured in.
      **/
     void apply(Camera* camera) const;
 
  private:
     glm::vec3 target_;
+    Profile::Hand hand_{Profile::Hand::UpCrossDirection};
     int azimuth_{0};
     float zoom_{DEFAULT_ZOOM};
     float elevation_{DEFAULT_ELEVATION};

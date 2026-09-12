@@ -12,6 +12,8 @@
 
 #include <glm/geometric.hpp>
 #include <glm/gtc/constants.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/mat3x3.hpp>
 #include <glm/gtc/quaternion.hpp>
 
 BOOST_AUTO_TEST_CASE(camera_orthographic_test) {
@@ -146,6 +148,68 @@ BOOST_AUTO_TEST_CASE(camera_profile_hand_test) {
     v3d::type::camera::Profile copied("copy");
     copied.clone(mirrored);
     BOOST_CHECK(copied.hand() == v3d::type::camera::Profile::Hand::DirectionCrossUp);
+}
+
+/**
+ * The two hands are mirrors of each other through the matrix a caller draws with, which is
+ * the thing that makes one of them usable rather than merely different: the same world point
+ * lands at the same height and the same depth in both, and at the negated x.
+ *
+ * Asserting the normals is not enough and was the gap that shipped. lookat() writes those
+ * from the cross products directly, so they are right whatever the rotation carries, and the
+ * mirrored basis is improper - no quaternion represents it. The rotation is the right handed
+ * half and createView() applies the mirror, so this also checks the rotation is still a
+ * rotation: a quat_cast of a mirror comes back with columns that are not unit length.
+ **/
+BOOST_AUTO_TEST_CASE(camera_hands_build_mirrored_views_test) {
+    const glm::vec3 eye(6.0f, 8.0f, 10.0f);
+    const glm::vec3 centre(1.0f, 0.0f, -2.0f);
+
+    v3d::type::camera::Camera camera;
+    camera.profile().eye(eye);
+    camera.profile().up(glm::vec3(0.0f, 1.0f, 0.0f));
+    camera.profile().lookat(centre);
+    camera.createView();
+
+    v3d::type::camera::Camera mirrored;
+    mirrored.profile().hand(v3d::type::camera::Profile::Hand::DirectionCrossUp);
+    mirrored.profile().eye(eye);
+    mirrored.profile().up(glm::vec3(0.0f, 1.0f, 0.0f));
+    mirrored.profile().lookat(centre);
+    mirrored.createView();
+
+    // both rotations are rotations, which is what the mirrored one was not while lookat()
+    // built it out of an improper basis
+    const glm::mat3 basis(glm::mat3_cast(camera.profile().rotation()));
+    const glm::mat3 mirroredBasis(glm::mat3_cast(mirrored.profile().rotation()));
+    BOOST_CHECK_CLOSE(glm::determinant(basis), 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(glm::determinant(mirroredBasis), 1.0f, 0.01f);
+    for (int column = 0; column < 3; column++) {
+        BOOST_CHECK_CLOSE(glm::length(mirroredBasis[column]), 1.0f, 0.01f);
+    }
+
+    // and the two views are the same picture reflected: points off both axes and off the
+    // centre, so a view that merely happened to agree about one of them does not pass
+    const glm::vec3 points[] = {
+        glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::vec3(3.0f, 1.0f, -4.0f),
+        glm::vec3(-5.0f, 2.0f, 7.0f),
+        glm::vec3(1.0f, -6.0f, 2.0f)
+    };
+    for (const glm::vec3& point : points) {
+        const glm::vec4 through = camera.view() * glm::vec4(point, 1.0f);
+        const glm::vec4 reflected = mirrored.view() * glm::vec4(point, 1.0f);
+        BOOST_CHECK_CLOSE(reflected[0], -through[0], 0.01f);
+        BOOST_CHECK_CLOSE(reflected[1], through[1], 0.01f);
+        BOOST_CHECK_CLOSE(reflected[2], through[2], 0.01f);
+    }
+
+    // the eye is still the origin of view space in the mirrored basis - a mirror through the
+    // rotation moved it, because what came back was not a rigid transform
+    const glm::vec4 origin = mirrored.view() * glm::vec4(eye, 1.0f);
+    BOOST_CHECK_SMALL(origin[0], 0.001f);
+    BOOST_CHECK_SMALL(origin[1], 0.001f);
+    BOOST_CHECK_SMALL(origin[2], 0.001f);
 }
 
 BOOST_AUTO_TEST_CASE(camera_perspective_view_test) {

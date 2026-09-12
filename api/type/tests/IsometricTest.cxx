@@ -119,27 +119,70 @@ BOOST_AUTO_TEST_CASE(isometriccamera_a_quarter_turn_turns_the_axes_test) {
     BOOST_CHECK_SMALL(glm::length(orbit.right() + forward), 0.0001f);
 }
 
+/**
+ * right() is to the right on screen and forward() is away, at every azimuth and in either
+ * hand. The hand turns the ground vector and the view together, so what a caller sees is the
+ * invariant and the basis underneath it is not - an orbit whose right() followed one hand
+ * while apply() drew in the other passes every assertion above this one and moves the scene
+ * the wrong way here.
+ **/
 BOOST_AUTO_TEST_CASE(isometriccamera_right_is_to_the_right_on_screen_test) {
+    const v3d::type::camera::Profile::Hand hands[] = {
+        v3d::type::camera::Profile::Hand::UpCrossDirection,
+        v3d::type::camera::Profile::Hand::DirectionCrossUp
+    };
+
+    for (const v3d::type::camera::Profile::Hand hand : hands) {
+        v3d::type::camera::Isometric orbit;
+        orbit.hand(hand);
+
+        for (int index = 0; index < v3d::type::camera::Isometric::AZIMUTHS; ++index) {
+            orbit.azimuth(index);
+            v3d::type::camera::Camera camera = applied(orbit);
+            // the orbit's hand is what the camera is drawing through, rather than whatever
+            // the profile was left at
+            BOOST_CHECK(camera.profile().hand() == hand);
+
+            const glm::vec3 centre = screen(&camera, orbit.target());
+            const glm::vec3 toRight = screen(&camera, orbit.target() + orbit.right() * 2.0f);
+            const glm::vec3 away = screen(&camera, orbit.target() + orbit.forward() * 2.0f);
+
+            // which way a camera basis hands is a convention, and a pan built on the other
+            // one moves the scene the wrong way with nothing else looking wrong. this is the
+            // assertion that says the axes are the screen's and not a cross product's
+            BOOST_CHECK_EQUAL(toRight.x > centre.x, true);
+            BOOST_CHECK_SMALL(toRight.y - centre.y, 0.01f);
+
+            // away from the eye is up the screen, and clip space points y down - ADR-0012
+            BOOST_CHECK_EQUAL(away.y < centre.y, true);
+            BOOST_CHECK_SMALL(away.x - centre.x, 0.01f);
+        }
+    }
+}
+
+/**
+ * The two hands' ground axes are the horizontal mirror of each other, which is what a pan
+ * measured in one and drawn through the other gets wrong: forward() is shared and right()
+ * is negated.
+ **/
+BOOST_AUTO_TEST_CASE(isometriccamera_the_hand_turns_the_pan_axis_test) {
     v3d::type::camera::Isometric orbit;
+    v3d::type::camera::Isometric mirrored;
+    mirrored.hand(v3d::type::camera::Profile::Hand::DirectionCrossUp);
 
     for (int index = 0; index < v3d::type::camera::Isometric::AZIMUTHS; ++index) {
         orbit.azimuth(index);
-        v3d::type::camera::Camera camera = applied(orbit);
+        mirrored.azimuth(index);
 
-        const glm::vec3 centre = screen(&camera, orbit.target());
-        const glm::vec3 toRight = screen(&camera, orbit.target() + orbit.right() * 2.0f);
-        const glm::vec3 away = screen(&camera, orbit.target() + orbit.forward() * 2.0f);
-
-        // which way a camera basis hands is a convention, and a pan built on the other one
-        // moves the scene the wrong way with nothing else looking wrong. this is the
-        // assertion that says the axes are the screen's and not glm::lookAt's
-        BOOST_CHECK_EQUAL(toRight.x > centre.x, true);
-        BOOST_CHECK_SMALL(toRight.y - centre.y, 0.01f);
-
-        // away from the eye is up the screen, and clip space points y down - ADR-0012
-        BOOST_CHECK_EQUAL(away.y < centre.y, true);
-        BOOST_CHECK_SMALL(away.x - centre.x, 0.01f);
+        BOOST_CHECK_SMALL(glm::length(mirrored.forward() - orbit.forward()), 0.0001f);
+        BOOST_CHECK_SMALL(glm::length(mirrored.right() + orbit.right()), 0.0001f);
     }
+
+    orbit.pan(glm::vec2(3.0f, 0.0f));
+    mirrored.pan(glm::vec2(3.0f, 0.0f));
+    // and so a pan the same way in both moves the target the other way in world space, which
+    // is the same place on screen
+    BOOST_CHECK_SMALL(glm::length(mirrored.target() + orbit.target()), 0.0001f);
 }
 
 BOOST_AUTO_TEST_CASE(isometriccamera_the_target_is_the_centre_of_the_view_test) {

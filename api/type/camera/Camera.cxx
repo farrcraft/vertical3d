@@ -190,6 +190,14 @@ void Camera::createView() {
     glm::vec3 e = -profile_.eye_;
     view_ = glm::transpose(glm::mat4_cast(profile_.rotation_));
     view_ = glm::translate(view_, e);
+    if (profile_.hand_ == Profile::Hand::DirectionCrossUp) {
+        // the mirrored basis is the rotation with view x negated, and this is where that
+        // happens rather than in the rotation, which carries no mirror - ADR-0052. Applied
+        // on the left, so it mirrors the view rather than the world the rotation is turning
+        glm::mat4x4 mirror(1.0f);
+        mirror[0][0] = -1.0f;
+        view_ = mirror * view_;
+    }
 }
 
 /*

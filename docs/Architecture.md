@@ -224,11 +224,12 @@ because neither is simulation and neither wants to run twice on a slow frame.
   inverses ([ADR-0012](adr/0012-camera-builds-vulkan-clip-space.md)). **Its basis is
   `right = up x direction`**, the opposite hand to `glm::lookAt`'s. Screen right is
   `camera::Profile::right()`. A camera behaviour that names a world axis copied from a `lookAt`
-  moves the scene the wrong way with nothing else looking wrong. `type::camera::Isometric` takes
-  the cross product instead of naming the vector for that reason, and asserts the direction
-  through `project()`. A consumer whose geometry is wound for `glm::lookAt` names the other
-  hand on its profile ([ADR-0052](adr/0052-a-consumer-names-the-camera-hand.md)); nothing in
-  this tree does, so `right()` here always means the first one.
+  moves the scene the wrong way with nothing else looking wrong, so `type::camera::Isometric`
+  carries a hand and crosses by it, and asserts the direction through `project()`. A consumer
+  whose geometry is wound for `glm::lookAt` names the other hand
+  ([ADR-0052](adr/0052-a-consumer-names-the-camera-hand.md)); that basis is a mirror rather than
+  a second rotation, so the profile's quaternion is the proper one either way and `createView()`
+  negates view x. Nothing in this tree names it, so `right()` here always means the first one.
 - **`image::Image` row 0 is the top of the picture.** Every consumer downstream reads them that
   way: the canvas, the texture factory, the atlas packer. The jpeg reader also asks the decoder
   for RGB whatever the file holds, because it builds a 24 bit `Image` and copies three bytes a
