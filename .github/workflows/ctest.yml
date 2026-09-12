@@ -312,7 +312,12 @@ jobs:
         env:
           VK_LAYER_VALIDATE_SYNC: "1"
         run: |
-          $tests = "$env:BUILD_DIR\api\render\tests"
+          # Absolute before anything moves, since every path below is built from it.
+          $tests = (Resolve-Path "$env:BUILD_DIR\api\render\tests").Path
+          # Run from beside the executable, which is where ctest runs it from and where its
+          # committed reference pictures are: a fixture path resolves against the working
+          # directory and against nothing else.
+          Push-Location $tests
           & "$tests\v3dtest_render_device.exe" --detect_memory_leaks=0
           $exit = $LASTEXITCODE
           # The suite logs to v3d.log beside the executable rather than to the console, so a
@@ -339,6 +344,7 @@ jobs:
               & $vulkaninfo.FullName --summary
             }
           }
+          Pop-Location
           if ($exit -eq 77) {
             throw "the render suite found no device and skipped - VK_DRIVER_FILES is $env:VK_DRIVER_FILES"
           }

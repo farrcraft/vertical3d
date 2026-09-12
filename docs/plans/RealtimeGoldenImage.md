@@ -50,7 +50,7 @@ CI before any other is blessed.
 |---|---|---|---|---|
 | [1](#step-1--what-a-reference-is) | The rule for what may be pinned | `docs/adr` | **0054** | ✓ landed |
 | [2](#step-2--the-comparison-seam) | A case compares a captured png against a committed one | `api/render/tests` | cites 0054 | ✓ landed |
-| [3](#step-3--the-probe) | The quad case's spot checks become a picture | `api/render/tests` | cites 0054 | ✓ landed, unmeasured |
+| [3](#step-3--the-probe) | The quad case's spot checks become a picture | `api/render/tests` | cites 0054 | ✓ landed |
 | [4](#step-4--the-upload-path) | A textured quad, which is what asserts the uploader | `api/render/tests` | cites 0054 | ☐ |
 | [5](#step-5--depth-and-order) | Overlapping world quads, which is what asserts the depth test | `api/render/tests` | cites 0042 | ☐ |
 
@@ -59,12 +59,9 @@ CI before any other is blessed.
 Step 1 blocks 3, 4 and 5 and not 2: the seam is the same mechanism whatever the rule turns out
 to be, and the rule is what decides which pictures are allowed through it.
 
-Step 3 is the barrier, and it is a barrier in wall clock rather than in code. It is one case and
-half an hour, and until CI has run it against lavapipe the claim under steps 4 and 5 is
-unmeasured. **A red run there is the plan working**: it says the rule is wrong about what it
-admits, and it says so over one committed png rather than over four.
-
-Steps 4 and 5 are independent of each other and both wait on 3.
+Step 3 was the barrier, and it is closed: the rule is measured across two implementations rather
+than argued. **Steps 4 and 5 are independent of each other and neither waits on anything now**,
+though each is a new picture and so a new claim under the same rule.
 
 ### What this does not take up
 
@@ -106,11 +103,17 @@ draw — one flat red rect on black, at integer boundaries — so that a disagre
 machine and lavapipe is a disagreement about rasterization itself rather than about anything
 this plan chose.
 
-**State.** Blessed on a Radeon RX 6600, and identical across runs. The picture holds two colours
-and no others, every channel of each is 0 or 255, and the red covers exactly x over [16, 47] and
-y over [8, 23] — so it contains no partially covered texel for two implementations to disagree
-about, which is the whole of what ADR-0054 asks. What is unmeasured is lavapipe: it is the
-runner's, and CI runs on a pull request rather than on a branch.
+**State — the rule holds.** The picture was blessed on a Radeon RX 6600 and compares clean on
+Mesa llvmpipe 26.2.0, exactly, on the first run that reached it. It holds two colours and no
+others, every channel of each is 0 or 255, and the red covers exactly x over [16, 47] and y over
+[8, 23] — no partially covered texel exists in it for two implementations to disagree about,
+which is the whole of what ADR-0054 asks of a reference.
+
+That run did fail, and on something else: the workflow step that re-runs the suite to turn a
+skip into a failure ran the executable from the workspace root rather than from beside itself,
+so `data/quad.png` resolved to nothing. Nothing in that suite had read a file before, so no
+previous run could have caught it. ctest, which sets the working directory the way
+`v3d_add_test` asks, passed the case in the same job.
 
 ## Step 4 — The upload path
 
