@@ -9,6 +9,17 @@ every phase is closed it moves to [completed/](completed/), and any open item it
 moves to [TODO.md](../TODO.md). The plan itself stays, because the reasoning behind an ordering
 outlives the schedule.
 
+[RenderTestsInCI.md](RenderTestsInCI.md) **is open**, drafted on 2026-09-11 against `88711c0`.
+Six steps building what [ADR-0007](../adr/0007-ci-rendering-tests.md) decided on 2026-08-30 and
+nothing has since implemented: the device half of `api/render/realtime` asserted by something
+other than a person running an app and reading the validation log. Its ordering matters because
+only one of the six blocks anything — a device cannot be selected without a surface today, and
+every headless object needs one that can be — while the two smallest are independent of it and
+useful to an app on their own. The last step is last on purpose: the suites run against a real
+driver before they are asked to run against a software one, so that a failure is the test's
+fault or lavapipe's but never both at once. Steps 1 to 5 keep their value even if the runner
+never gets an ICD.
+
 [completed/ApiOrganisation.md](completed/ApiOrganisation.md) was drafted and closed on
 2026-09-08, out of a survey of `api/`. Eleven steps, none of which changed behaviour: three that
 changed how a header is named and seven that moved files, plus the documents. Its ordering was
