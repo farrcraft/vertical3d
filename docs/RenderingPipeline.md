@@ -139,6 +139,21 @@ pipeline::Builder(device)
     .build(cache);
 ```
 
+## Memory
+
+Every buffer and image gets its memory from `memory::Allocator`, which the `Device` owns and
+builds once the logical device exists. It finds memory one of two ways
+([ADR-0053](adr/0053-a-consumer-chooses-how-memory-is-found.md)): `Kind::Direct` is one device
+allocation per resource and is what everything here uses, and `Kind::Suballocated` hands out
+regions of larger blocks through the Vulkan Memory Allocator, which is what an application with
+per-frame resources needs — `maxMemoryAllocationCount` is a real limit. A consumer names the
+kind when it constructs its `Device`.
+
+A resource therefore holds an `Allocation` rather than a `VkDeviceMemory`: a suballocated region
+starts part way into its block and several share one, so mapping and freeing go through the
+allocator that made it. **`Allocator::bind()` allocates and binds in one call** — a resource
+creates itself, hands the handle over, and never sees a memory type.
+
 ## Buffers
 
 There are two. Which one to use follows from how often the contents change.

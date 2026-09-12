@@ -58,7 +58,8 @@ bool Device::QueueFamilies::complete(bool presenting) const noexcept {
 
 /**
  **/
-Device::Device(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Instance>& instance, const boost::shared_ptr<Surface>& surface) :
+Device::Device(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Instance>& instance, const boost::shared_ptr<Surface>& surface,
+    memory::Allocator::Kind allocations) :
     instance_(instance),
     surface_(surface),
     logger_(logger),
@@ -68,12 +69,15 @@ Device::Device(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::s
     presentQueue_(VK_NULL_HANDLE) {
     selectPhysical();
     createLogical();
-    allocator_ = boost::make_shared<memory::Allocator>(device_, physical_);
+    allocator_ = boost::make_shared<memory::Allocator>(device_, physical_, instance_->handle(), allocations);
 }
 
 /**
  **/
 Device::~Device() {
+    // before the device, not after it: a member is destroyed once this body has run, and an
+    // allocator holding blocks of its own frees them against a device that is already gone
+    allocator_.reset();
     if (device_ != VK_NULL_HANDLE) {
         vkDestroyDevice(device_, nullptr);
         device_ = VK_NULL_HANDLE;

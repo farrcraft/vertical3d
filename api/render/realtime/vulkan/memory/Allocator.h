@@ -9,6 +9,12 @@
 
 #include <cstdint>
 
+// the allocator's own handles, declared rather than included: vk_mem_alloc.h is large and
+// this header is reached from most of the renderer. Repeating the library's own typedef is
+// what keeps that header in the one translation unit that implements it - VmaImpl.cxx
+VK_DEFINE_HANDLE(VmaAllocator)
+VK_DEFINE_HANDLE(VmaAllocation)
+
 namespace v3d::render::realtime::vulkan::memory {
 
 /**
@@ -29,6 +35,8 @@ struct Allocation final {
     VkDeviceMemory memory;  /**< the block the resource lives in **/
     VkDeviceSize offset;    /**< where in that block it starts **/
     VkDeviceSize size;      /**< how much of it the resource was given **/
+    /**< what the suballocator calls this region, and null when nothing suballocated it **/
+    VmaAllocation handle;
 };
 
 /**
@@ -46,10 +54,29 @@ struct Allocation final {
 class Allocator final {
  public:
     /**
+     * How the memory behind a resource is found.
+     **/
+    enum class Kind {
+        /**< one device allocation per resource, which is every app in this tree **/
+        Direct,
+        /**< regions of larger blocks, through the Vulkan Memory Allocator **/
+        Suballocated
+    };
+
+    /**
      * @param device the logical device allocations are made on
      * @param physical the physical device whose memory types are chosen from
+     * @param instance the instance the device came from, which a suballocator needs to load
+     *        the entry points it calls
+     * @param kind how to find memory - Direct unless the consumer asked otherwise
+     * @throw std::runtime_error if a suballocator was asked for and could not be created
      **/
-    Allocator(VkDevice device, VkPhysicalDevice physical) noexcept;
+    Allocator(VkDevice device, VkPhysicalDevice physical, VkInstance instance, Kind kind = Kind::Direct);
+
+    /**
+     * @return how this finds memory
+     **/
+    Kind kind() const noexcept;
 
     ~Allocator();
 
@@ -93,8 +120,16 @@ class Allocator final {
     void unmap(const Allocation& allocation) noexcept;
 
  private:
+    /**
+     * Allocate through the suballocator and bind, for whichever of the two is not null.
+     * One function because the two differ only in which pair of vma calls they make.
+     **/
+    VkResult suballocate(VkBuffer buffer, VkImage image, VkMemoryPropertyFlags properties, Allocation* allocation);
+
     VkDevice device_;
     VkPhysicalDevice physical_;
+    Kind kind_;
+    VmaAllocator suballocator_;  /**< null unless kind_ is Suballocated **/
 };
 
 };  // namespace v3d::render::realtime::vulkan::memory

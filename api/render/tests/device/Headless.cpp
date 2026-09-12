@@ -38,14 +38,15 @@ bool deviceAvailable() {
 
 /**
  **/
-Headless::Headless(VkFormat colour, uint32_t width, uint32_t height) {
+Headless::Headless(VkFormat colour, uint32_t width, uint32_t height,
+    render::realtime::vulkan::memory::Allocator::Kind allocations) {
     // where a captured frame is written, beside the executable. The suites that render against
     // a committed reference do the same, and nothing creates it for them either
     boost::filesystem::create_directory("data_out");
 
     logger = boost::make_shared<v3d::log::Logger>();
     instance = boost::make_shared<render::realtime::vulkan::device::Instance>(logger, std::vector<const char*>());
-    device = boost::make_shared<render::realtime::vulkan::device::Device>(logger, instance);
+    device = boost::make_shared<render::realtime::vulkan::device::Device>(logger, instance, nullptr, allocations);
     context = boost::make_shared<render::realtime::DeviceContext>(logger, device, colour, VkExtent2D{width, height});
 }
 

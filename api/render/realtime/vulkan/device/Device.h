@@ -56,9 +56,13 @@ class Device final {
      * @param instance the instance to select a physical device from
      * @param surface the surface the device has to be able to present to, or null for a
      *        headless device that only draws
+     * @param allocations how the memory behind every buffer and image on this device is
+     *        found. One allocation per resource unless a consumer asks otherwise, which is
+     *        what an application with per-frame resources wants - ADR-0053
      **/
     Device(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Instance>& instance,
-        const boost::shared_ptr<Surface>& surface = nullptr);
+        const boost::shared_ptr<Surface>& surface = nullptr,
+        memory::Allocator::Kind allocations = memory::Allocator::Kind::Direct);
 
     /**
      **/

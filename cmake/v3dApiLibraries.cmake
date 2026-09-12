@@ -77,7 +77,7 @@ set(V3D_API_log_PACKAGES spdlog)
 
 set(V3D_API_render_PATH "render")
 set(V3D_API_render_REQUIRES log asset font image)
-set(V3D_API_render_PACKAGES Vulkan SDL3 glm EnTT)
+set(V3D_API_render_PACKAGES Vulkan VulkanMemoryAllocator SDL3 glm EnTT)
 
 # Under api/render but not part of it: the offline renderers of ADR-0022 share this and it
 # names neither Vulkan nor SDL, which is the whole reason it is selectable on its own.
@@ -98,6 +98,7 @@ set(V3D_API_ui_PACKAGES glm EnTT)
 # cgltf is the only one - has no target and so cannot be checked this way.
 set(V3D_PACKAGE_TARGETS
 	"Vulkan::Vulkan=Vulkan"
+	"GPUOpen::VulkanMemoryAllocator=VulkanMemoryAllocator"
 	"SDL3::SDL3=SDL3"
 	"SDL3_mixer::SDL3_mixer=SDL3_mixer"
 	"Freetype::Freetype=Freetype"

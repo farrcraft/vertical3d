@@ -25,6 +25,7 @@
     },
     "sdl3-mixer",
     "spdlog",
-    "vulkan"
+    "vulkan",
+    "vulkan-memory-allocator"
   ]
 }
