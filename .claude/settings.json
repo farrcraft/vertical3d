@@ -5,7 +5,7 @@
       "Bash(./scripts/test.cmd:*)",
       "Bash(cmd //c \"scripts\\\\build.cmd\":*)",
       "Bash(cmd //c \"scripts\\\\test.cmd\":*)",
-      "Bash(cpplint:*)",
+      "Bash(python -m cpplint:*)",
       "Bash(grep:*)",
       "Bash(head:*)",
       "Bash(tail:*)",
