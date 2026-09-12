@@ -184,6 +184,25 @@ jobs:
         shell: pwsh
         run: New-Item -ItemType Directory -Force -Path "$env:VCPKG_DEFAULT_BINARY_CACHE" | Out-Null
 
+      # Defender holds a file while it scans it. A binary is scanned as the linker writes it
+      # and is opened again immediately afterwards - to embed its manifest, and by the applocal
+      # copy the step below describes - and those opens fail while the scan has it. The
+      # directories this job writes into are excluded so that they do not.
+      #
+      # A refused exclusion warns rather than failing the job: without it the build is less
+      # reliable, not incorrect.
+      - name: Keep Defender out of the build directories
+        shell: pwsh
+        run: |
+          foreach ($path in @($env:GITHUB_WORKSPACE, $env:RUNNER_TEMP)) {
+            try {
+              Add-MpPreference -ExclusionPath $path -ErrorAction Stop
+              Write-Host "excluded $path"
+            } catch {
+              Write-Warning "Defender refused an exclusion for ${path}: $($_.Exception.Message)"
+            }
+          }
+
       # libnoise is built out of source: it commits a CMakeCache.txt naming a generator that
       # is not on this image, and its cmake_minimum_required predates what current CMake
       # accepts on its own. The archive lands where voxel's target_link_directories expects
@@ -199,6 +218,10 @@ jobs:
             -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY="%GITHUB_WORKSPACE%\vendor\libnoise\Debug" || exit /b 1
           cmake --build "%RUNNER_TEMP%\libnoise" || exit /b 1
 
+      # The job pool holds linking to one edge at a time. A link edge does not stop at the
+      # linker: vcpkg's applocal deployment runs in the same edge, reopening the binary just
+      # linked and copying dlls out of the installed bin directory that every other link edge
+      # is reading. Only linking is pooled, so compilation still uses the whole machine.
       - name: Configure
         shell: cmd
         run: |
@@ -207,6 +230,8 @@ jobs:
           ninja --version || exit /b 1
           cmake -S . -B "%BUILD_DIR%" -G Ninja ^
             -DCMAKE_BUILD_TYPE=Debug ^
+            -DCMAKE_JOB_POOLS="link=1" ^
+            -DCMAKE_JOB_POOL_LINK=link ^
             -DCMAKE_TOOLCHAIN_FILE="%VCPKG_INSTALLATION_ROOT%\scripts\buildsystems\vcpkg.cmake" ^
             -DVCPKG_TARGET_TRIPLET=x64-windows || exit /b 1
 
@@ -274,6 +299,8 @@ jobs:
           call "%RUNNER_TEMP%\vcvars.bat" >nul
           cmake -S examples/starter -B "%STARTER_BUILD_DIR%" -G Ninja ^
             -DCMAKE_BUILD_TYPE=Debug ^
+            -DCMAKE_JOB_POOLS="link=1" ^
+            -DCMAKE_JOB_POOL_LINK=link ^
             -DCMAKE_TOOLCHAIN_FILE="%VCPKG_INSTALLATION_ROOT%\scripts\buildsystems\vcpkg.cmake" ^
             -DVCPKG_TARGET_TRIPLET=x64-windows ^
             -DVCPKG_INSTALLED_DIR="%GITHUB_WORKSPACE%\out\build\ci\vcpkg_installed" ^
