@@ -52,9 +52,11 @@ cpplint --linelength=180 --exclude=out --exclude=vendor --exclude=vcpkg_installe
   --exclude=voxel/src/noise --recursive .
 ```
 
-[docs/Build.md](docs/Build.md) covers configuring from a cold tree, the options, and what has
-to be installed first. The tree is clean at cpplint, at `/W4` with `/WX`, at `/analyze` and at
-the 186 clang-tidy checks left enabled, so **every finding is a new one**.
+Neither `ninja` nor `ctest` is on a plain shell's PATH: those two lines need a developer
+environment, and `scripts\build.cmd` and `scripts\test.cmd` are the same commands with one
+entered. [docs/Build.md](docs/Build.md) covers configuring from a cold tree, the options, and
+what has to be installed first. The tree is clean at cpplint, at `/W4` with `/WX`, at
+`/analyze` and at the 186 clang-tidy checks left enabled, so **every finding is a new one**.
 
 ## Rules that cost the most when broken
 

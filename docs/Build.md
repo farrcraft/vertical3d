@@ -13,6 +13,17 @@ ninja -C out/build/x64-Debug              # everything
 ninja -C out/build/x64-Debug pong         # one target
 ```
 
+[scripts/build.cmd](../scripts/build.cmd) and [scripts/test.cmd](../scripts/test.cmd) are the
+same two commands with the developer environment already entered, for a shell that is not one:
+
+```
+scripts\build.cmd                         # everything; or one target by name
+scripts\test.cmd -R input                 # ctest, arguments passed through
+```
+
+They build a tree that is already configured rather than configuring one, and they find
+`vcvars64.bat` under Visual Studio 18 or 2022. Set `V3D_VCVARS` to it for anything else.
+
 Everything in the tree compiles and links. MSVC and Windows in practice.
 [Dependencies.md](Dependencies.md) covers what has to be installed first and how a dependency
 is added or updated. This document covers what the build does with them.
