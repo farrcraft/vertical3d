@@ -469,23 +469,25 @@ each because of something the earlier steps found:
   runner certainly has not got. If it is missing the tests do not fail or skip, they fail to
   start, so the workflow says so in words instead.
 
-**The first run skipped.** One of the three open questions is answered: the image carries a
-loader, and vcpkg's is deployed beside the suite as well. The other two are not. Mesa was
-fetched, the ICD was found and named in `VK_DRIVER_FILES`, and `v3dtest_render_device` exited 77
-on a runner where lavapipe had just been installed, which is the case the step calls a failure.
+**The runs so far have not reached lavapipe at all.** The suite skipped, `vkCreateInstance`
+returning `VK_ERROR_INCOMPATIBLE_DRIVER` with Mesa fetched, its ICD on disk and
+`VK_DRIVER_FILES` naming it. What the loader was doing took three runs to see, because the suite
+logs to a file beside the executable rather than to the console, its probe returned false
+without reporting what it caught, and the job printed neither.
 
-Why it found no device the run could not say. The suite logs to a file beside the executable
-rather than to the console, its probe caught the exception and returned false without reporting
-it, and the job printed neither. The probe prints what it caught now, and the step prints the
-log and `vulkaninfo --summary` on a bad exit, which is what separates an instance that could not
-be created from a device that was rejected. Locally, with the loader pointed at an ICD that does
-not exist, that reads `no device to draw with: Unable to create vulkan instance - incompatible
-driver`.
+**The loader ignores `VK_DRIVER_FILES` and `VK_LAYER_PATH` in an elevated process**, and a
+GitHub runner is one - `Add-MpPreference` succeeding in the same job is the other half of that
+proof. It read the registry instead and found nothing there:
+`windows_read_data_files_in_registry: Registry lookup failed to get ICD manifest files`,
+then `vkCreateInstance: Found no drivers!`. The layer lookup failed the same way, which would
+have cost the suite its `validating()` assertion even had a device been found. The workflow
+registers both manifests under `HKLM\SOFTWARE\Khronos\Vulkan` and keeps the environment
+variables for a run that is not elevated.
 
-So whether lavapipe advertises 1.3 with dynamic rendering and synchronization2 per
-[ADR-0002](../adr/0002-target-vulkan-1-3.md), and whether a software rasterizer draws the two
-pictures the suite asserts, stay open. The fallbacks if it cannot are ADR-0007's own, and steps
-1 to 5 keep their value either way.
+So the question ADR-0007 flagged - whether lavapipe advertises 1.3 with dynamic rendering and
+synchronization2 per [ADR-0002](../adr/0002-target-vulkan-1-3.md), and draws the two pictures
+the suite asserts - is still unanswered, because nothing has yet reached it. The fallbacks if it
+cannot are ADR-0007's own, and steps 1 to 5 keep their value either way.
 
 ---
 

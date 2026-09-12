@@ -159,9 +159,10 @@ jobs:
           & 7z x $archive "-o$env:MESA_ROOT" -y | Out-Null
           if ($LASTEXITCODE -ne 0) { throw "unpacking mesa $env:MESA_VERSION exited $LASTEXITCODE" }
 
-      # The ICD is named rather than registered: VK_DRIVER_FILES is the whole of what the loader
-      # will consider, so this runner offers lavapipe and nothing else, and a test that draws
-      # cannot quietly pick up something it was not meant to.
+      # VK_DRIVER_FILES is the whole of what the loader will consider, so this runner offers
+      # lavapipe and nothing else, and a test that draws cannot quietly pick up something it was
+      # not meant to. An elevated process ignores it - the step that registers the ICD covers
+      # that case, and registers only this one driver.
       - name: Point the loader at lavapipe
         shell: pwsh
         run: |
@@ -190,6 +191,30 @@ jobs:
           }
           Write-Host "lavapipe ICD: $($icd.FullName)"
           Write-Host "loader:       $loader"
+
+      # This job runs elevated, and the loader ignores VK_DRIVER_FILES and VK_LAYER_PATH in an
+      # elevated process. It reads the registry instead, which is why it reported "Found no
+      # drivers!" with both of them set. Each manifest is registered the way the SDK and mesa's
+      # own installer register theirs: a DWORD of zero named by the manifest's full path.
+      #
+      # Only these two are registered, so an elevated run sees the same one driver and one layer
+      # that the environment variables name for a run that is not.
+      - name: Register the driver and the layer where the loader looks
+        shell: pwsh
+        run: |
+          $layer = Get-ChildItem (Join-Path $env:VULKAN_SDK "Bin") -Filter "VkLayer_khronos_validation.json" | Select-Object -First 1
+          if (-not $layer) {
+            throw "no validation layer manifest under $env:VULKAN_SDK\Bin - the render suite asserts the layer was on, not only that it was silent"
+          }
+          $manifests = @{
+            "HKLM:\SOFTWARE\Khronos\Vulkan\Drivers" = $env:VK_DRIVER_FILES
+            "HKLM:\SOFTWARE\Khronos\Vulkan\ExplicitLayers" = $layer.FullName
+          }
+          foreach ($key in $manifests.Keys) {
+            New-Item -Path $key -Force | Out-Null
+            New-ItemProperty -Path $key -Name $manifests[$key] -Value 0 -PropertyType DWord -Force | Out-Null
+            Write-Host "$key <- $($manifests[$key])"
+          }
 
       # vcpkg builds boost from source, which is most of an hour cold. The binary cache is
       # what makes a second run cheap, and vcpkg refuses a cache directory that is not there.
