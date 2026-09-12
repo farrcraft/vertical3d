@@ -53,7 +53,7 @@ are what the first three steps cut.
 | [3](#step-3--the-validation-layer-is-something-a-test-can-assert-on) | A validation sink a test can assert against | `api/render/realtime` | cites 0007 | ✓ landed |
 | [4](#step-4--a-context-with-no-window-under-it) | A headless context, and what it costs `Context3D` | `api/render/realtime` | **0051** | ✓ landed |
 | [5](#step-5--the-first-suite-that-draws) | The suite: draw offscreen, assert silence, read back | `api/render/tests` | — | ✓ landed |
-| [6](#step-6--lavapipe-on-the-runner) | A pinned software ICD, and the guard that skips without one | `.github/workflows` | cites 0007 | written, unproven |
+| [6](#step-6--lavapipe-on-the-runner) | A pinned software ICD, and the guard that skips without one | `.github/workflows` | cites 0007 | run, no device yet |
 
 ### What blocks what
 
@@ -449,7 +449,7 @@ lifetime. Worth stating plainly either way: **steps 1 through 5 have value even 
 entirely**, because they run against a real driver on a development machine, which is where a
 rendering change is verified today by hand.
 
-### Written, and not yet proven
+### Run, and not yet drawing
 
 [ctest.yml](../../.github/workflows/ctest.yml) fetches Mesa 26.2.0, names the lavapipe ICD in
 `VK_DRIVER_FILES`, and caches it the way the SDK is cached. Three things it does beyond that,
@@ -469,12 +469,23 @@ each because of something the earlier steps found:
   runner certainly has not got. If it is missing the tests do not fail or skip, they fail to
   start, so the workflow says so in words instead.
 
-**None of this has run.** The local pre-flight the step above recommends is what would have
-retired the risk first, and it is what Defender stopped. So the open questions stay open, and
-the first push is the experiment: whether lavapipe advertises 1.3 with dynamic rendering and
-synchronization2 per [ADR-0002](../adr/0002-target-vulkan-1-3.md), whether the image carries a
-loader at all, and whether a software rasterizer draws the two pictures the suite asserts. The
-fallbacks if it does not are ADR-0007's own, and steps 1 to 5 keep their value either way.
+**The first run skipped.** One of the three open questions is answered: the image carries a
+loader, and vcpkg's is deployed beside the suite as well. The other two are not. Mesa was
+fetched, the ICD was found and named in `VK_DRIVER_FILES`, and `v3dtest_render_device` exited 77
+on a runner where lavapipe had just been installed, which is the case the step calls a failure.
+
+Why it found no device the run could not say. The suite logs to a file beside the executable
+rather than to the console, its probe caught the exception and returned false without reporting
+it, and the job printed neither. The probe prints what it caught now, and the step prints the
+log and `vulkaninfo --summary` on a bad exit, which is what separates an instance that could not
+be created from a device that was rejected. Locally, with the loader pointed at an ICD that does
+not exist, that reads `no device to draw with: Unable to create vulkan instance - incompatible
+driver`.
+
+So whether lavapipe advertises 1.3 with dynamic rendering and synchronization2 per
+[ADR-0002](../adr/0002-target-vulkan-1-3.md), and whether a software rasterizer draws the two
+pictures the suite asserts, stay open. The fallbacks if it cannot are ADR-0007's own, and steps
+1 to 5 keep their value either way.
 
 ---
 

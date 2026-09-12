@@ -5,6 +5,7 @@
 
 #include "Headless.h"
 
+#include <iostream>
 #include <sstream>
 #include <stdexcept>
 #include <vector>
@@ -26,7 +27,12 @@ bool deviceAvailable() {
             boost::make_shared<render::realtime::vulkan::device::Instance>(logger, std::vector<const char*>());
         render::realtime::vulkan::device::Device device(logger, instance);
         return device.handle() != VK_NULL_HANDLE;
-    } catch (const std::exception&) {
+    } catch (const std::exception& error) {
+        // the console rather than the logger: the logger writes to a file beside the
+        // executable, and what this message answers is why a run skipped, which is read from
+        // the run's output. A machine with no gpu and a machine whose loader cannot find the
+        // one it has both end up here, and the two are told apart by what is printed
+        std::cerr << "no device to draw with: " << error.what() << "\n";
         return false;
     }
 }

@@ -275,11 +275,29 @@ jobs:
         env:
           VK_LAYER_VALIDATE_SYNC: "1"
         run: |
-          & "$env:BUILD_DIR\api\render\tests\v3dtest_render_device.exe" --detect_memory_leaks=0
-          if ($LASTEXITCODE -eq 77) {
+          $tests = "$env:BUILD_DIR\api\render\tests"
+          & "$tests\v3dtest_render_device.exe" --detect_memory_leaks=0
+          $exit = $LASTEXITCODE
+          # A run that did not draw leaves its account in two places the job would otherwise
+          # throw away: the suite logs to a file beside itself rather than to the console, and
+          # vulkaninfo reports what the loader found. Printed only on a bad exit, since that is
+          # the run that has a question to answer.
+          if ($exit -ne 0) {
+            $log = Join-Path $tests "v3d.log"
+            if (Test-Path $log) {
+              Write-Host "--- $log"
+              Get-Content $log
+            }
+            $vulkaninfo = Join-Path $env:VULKAN_SDK "Bin\vulkaninfo.exe"
+            if (Test-Path $vulkaninfo) {
+              Write-Host "--- vulkaninfo --summary"
+              & $vulkaninfo --summary
+            }
+          }
+          if ($exit -eq 77) {
             throw "the render suite found no device and skipped - VK_DRIVER_FILES is $env:VK_DRIVER_FILES"
           }
-          if ($LASTEXITCODE -ne 0) { throw "the render suite exited $LASTEXITCODE" }
+          if ($exit -ne 0) { throw "the render suite exited $exit" }
 
       # Nothing inside the tree can tell a target that carries its own include path and its
       # own dependencies from one picking them up off the root's global or off an app that
