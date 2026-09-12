@@ -70,7 +70,8 @@ Renderers and `FrameUniforms` take a `Ring`.
 
 ### Positive
 - A headless context can build every renderer, which is what
-  [RenderTestsInCI](../plans/RenderTestsInCI.md) needs before a suite can draw anything real.
+  [RenderTestsInCI](../plans/completed/RenderTestsInCI.md) needed before a suite could draw
+  anything real.
 - The dependency a renderer declares becomes the dependency it has. `Quad` asking for a
   `Presenter` was always a claim that it presents, which it does not.
 - `FrameUniforms` needs a frame count rather than a presenter, which was already true and was

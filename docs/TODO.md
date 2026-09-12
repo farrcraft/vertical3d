@@ -120,10 +120,13 @@ The loop simulates at a fixed step and renders at a variable one -
 ## Ongoing workstreams
 
 **Tests.** Every library needing neither a window nor a GPU is covered. The GPU half —
-everything below the recorder in `api/render` — is
-[RenderTestsInCI](plans/RenderTestsInCI.md) and is not listed here while that plan is open.
+everything below the recorder in `api/render` — now has a suite that draws:
+`v3dtest_render_device` runs against lavapipe on the runner, which
+[RenderTestsInCI](plans/completed/RenderTestsInCI.md) built and closed. That suite is two cases,
+a clear and a quad, so what it establishes is the path rather than the coverage. The renderers
+themselves, the pipeline cache and the upload path are still asserted by nothing that draws.
 
-What that plan leaves is what needs a window or a sound device rather than a device to draw
+What the plan left is what needs a window or a sound device rather than a device to draw
 with: `Feature::Window`, `ui::TextRenderer` and `audio::Engine::initialize()`. They are named
 beside `api/render` in [Testing.md](Testing.md) and were waiting on the same
 [ADR-0007](adr/0007-ci-rendering-tests.md), but a software Vulkan implementation answers none of

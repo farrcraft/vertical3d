@@ -39,8 +39,9 @@ running where there is no GPU. **A run with no device exits 77 and ctest reports
 `Skipped`**, which `set_tests_properties(render_device PROPERTIES SKIP_RETURN_CODE 77)` is
 what arranges. The probe is in `main` rather than a per-case skip on purpose: a binary whose
 every case skipped exits zero and reads as a pass, which is the same trap as a validation layer
-that was never installed reporting no errors. Until ADR-0007 puts lavapipe on the runner, CI
-skips this suite and says so.
+that was never installed reporting no errors. CI installs lavapipe per ADR-0007, so a skip there
+is a failure rather than a pass: locally a machine may have no device, but the runner was given
+one.
 
 `ctest -N` lists what exists, and the test sources are the record of what each suite asserts. A
 change with a testable cpu half is expected to bring cases with it.
@@ -103,9 +104,10 @@ from a subclass with no window in sight. `EngineTest` drives it directly.
 
 ## Verifying a rendering change
 
-CI renders nothing **yet** - `render_device` is skipped there until ADR-0007's runner has a
-software implementation - so a change below the recorder is still verified by running the app
-and reading the log, and `render_device` is what catches it first locally.
+CI renders, against lavapipe on the runner per ADR-0007. What it renders is two cases, a clear
+and a quad, so a change below the recorder is still verified by running the app and reading the
+log: the suite catches a frame that cannot be drawn or read back at all, not a frame that is
+drawn wrongly.
 
 The Khronos validation layer is enabled when installed and `vulkan::Instance` routes it through
 the logger, so a silent run is the signal. Without that messenger a loaded layer is silent,

@@ -1,24 +1,24 @@
 # Render Tests In CI — The Device Half Of The Tree, Under A Software Vulkan
 
 Drafted 2026-09-11 against `88711c0`. Six steps across `api/render/realtime` and
-`.github/workflows`, building what [ADR-0007](../adr/0007-ci-rendering-tests.md) decided on
+`.github/workflows`, building what [ADR-0007](../../adr/0007-ci-rendering-tests.md) decided on
 2026-08-30 and nothing has since implemented.
 
 ## Why now, and why this is the largest hole
 
 `api/render/realtime` is roughly 4,600 lines across 71 files, and it is the newest body of code
-in the tree. [api/render/tests/](../../api/render/tests/) has ten files, and every one of them
+in the tree. [api/render/tests/](../../../api/render/tests/) has ten files, and every one of them
 covers the half that needs no device: the batching in `CanvasTest`, `LineCanvasTest` and
 `WorldCanvasTest`, the channel order in `CaptureConvertTest`, the choice in
 `SwapchainFormatTest`, the ordering in `SortKeyTest`. Everything below the recorder is asserted
 by nothing.
 
-[sdlc.md](../sdlc.md) is explicit about what stands in for those tests today: *"a rendering
+[sdlc.md](../../sdlc.md) is explicit about what stands in for those tests today: *"a rendering
 change is verified by running the app and reading the log"*, and it names ADR-0007 as the
 automation that has not been done. That is a human in the loop for every change to the newest
 and least covered code in the repository.
 
-**What raises this above the other open work is [CONTRIBUTING.md](../../CONTRIBUTING.md).** The
+**What raises this above the other open work is [CONTRIBUTING.md](../../../CONTRIBUTING.md).** The
 argument there is that engine changes must be made and verified *in this tree*, because
 `V3D_BUILD_APPS` and `V3D_BUILD_TESTS` follow `PROJECT_IS_TOP_LEVEL` and a consumer reaching
 this tree through `add_subdirectory` configures neither the applications nor one suite. That
@@ -29,15 +29,15 @@ frame.
 ## What the tree already has
 
 The survey behind this plan found the architecture much closer to headless than
-[TODO.md](../TODO.md) suggests. Four of the five pieces a render test needs are already
+[TODO.md](../../TODO.md) suggests. Four of the five pieces a render test needs are already
 device-agnostic or window-agnostic, and were built that way for other reasons:
 
 | Piece | State |
 |---|---|
-| [`device::Instance`](../../api/render/realtime/vulkan/device/Instance.h#L32) | Takes a list of extensions and nothing else. Already knows nothing about a window, and already routes the validation layer through the logger |
-| [`frame::RenderTarget`](../../api/render/realtime/vulkan/frame/RenderTarget.h#L56) | Device, extent and format. Needs no swapchain — [ADR-0031](../adr/0031-a-pass-draws-into-a-target-it-names.md) |
-| [`frame::Recorder::record`](../../api/render/realtime/vulkan/frame/Recorder.h#L57) | A static function over a `Target` struct of raw handles. No presenter, no chain |
-| [`Frame`](../../api/render/realtime/Frame.cpp#L18) and `Pass` | `Frame` holds a `shared_ptr<Context>` and never dereferences it — it stores it and hands it back. The base [`Context`](../../api/render/realtime/Context.h) is an empty class with a virtual destructor |
+| [`device::Instance`](../../../api/render/realtime/vulkan/device/Instance.h#L32) | Takes a list of extensions and nothing else. Already knows nothing about a window, and already routes the validation layer through the logger |
+| [`frame::RenderTarget`](../../../api/render/realtime/vulkan/frame/RenderTarget.h#L56) | Device, extent and format. Needs no swapchain — [ADR-0031](../../adr/0031-a-pass-draws-into-a-target-it-names.md) |
+| [`frame::Recorder::record`](../../../api/render/realtime/vulkan/frame/Recorder.h#L57) | A static function over a `Target` struct of raw handles. No presenter, no chain |
+| [`Frame`](../../../api/render/realtime/Frame.cpp#L18) and `Pass` | `Frame` holds a `shared_ptr<Context>` and never dereferences it — it stores it and hands it back. The base [`Context`](../../../api/render/realtime/Context.h) is an empty class with a virtual destructor |
 
 So the untested code is not structurally window-bound. Three specific couplings are, and they
 are what the first three steps cut.
@@ -53,7 +53,7 @@ are what the first three steps cut.
 | [3](#step-3--the-validation-layer-is-something-a-test-can-assert-on) | A validation sink a test can assert against | `api/render/realtime` | cites 0007 | ✓ landed |
 | [4](#step-4--a-context-with-no-window-under-it) | A headless context, and what it costs `Context3D` | `api/render/realtime` | **0051** | ✓ landed |
 | [5](#step-5--the-first-suite-that-draws) | The suite: draw offscreen, assert silence, read back | `api/render/tests` | — | ✓ landed |
-| [6](#step-6--lavapipe-on-the-runner) | A pinned software ICD, and the guard that skips without one | `.github/workflows` | cites 0007 | run, no device yet |
+| [6](#step-6--lavapipe-on-the-runner) | A pinned software ICD, and the guard that skips without one | `.github/workflows` | cites 0007 | ✓ landed |
 
 ### What blocks what
 
@@ -76,7 +76,7 @@ it the other way round debugs two unknowns at once — whether the test is wrong
 lavapipe is.
 
 **But step 6's risk should be checked first, out of order.** Whether lavapipe satisfies
-[ADR-0002](../adr/0002-target-vulkan-1-3.md) is the one thing here that could invalidate a whole
+[ADR-0002](../../adr/0002-target-vulkan-1-3.md) is the one thing here that could invalidate a whole
 step after the work is done, and it costs an hour and no code to find out — step 6 says how. Do
 that before step 1, then order the rest as above.
 
@@ -87,17 +87,17 @@ reference picture is real, and it is the workstream *after* this one. Step 2 is 
 workstream will stand on. Worth knowing when it comes: the machinery already exists in the
 offline renderers, where moya and talyn each compare against a committed PNG with
 `image::compare` and write what they rendered to `data_out/` on a failure — see
-[Testing.md](../Testing.md). A realtime golden image should reuse that convention rather than
+[Testing.md](../../Testing.md). A realtime golden image should reuse that convention rather than
 invent a second one.
 
 ---
 
 ## Step 1 — A device selected without a surface
 
-[`Device`](../../api/render/realtime/vulkan/device/Device.h#L51) takes a `Surface` and uses it
+[`Device`](../../../api/render/realtime/vulkan/device/Device.h#L51) takes a `Surface` and uses it
 in three places that all assume it is there:
 
-- [`findFamilies`](../../api/render/realtime/vulkan/device/Device.cxx#L128) calls
+- [`findFamilies`](../../../api/render/realtime/vulkan/device/Device.cxx#L128) calls
   `vkGetPhysicalDeviceSurfaceSupportKHR(device, index, surface_->handle(), ...)` unconditionally,
   so a null surface is a null dereference rather than a device with no present queue.
 - `QueueFamilies::complete()` requires both graphics and present, so selection would reject
@@ -132,7 +132,7 @@ says the swapchain extension is genuinely not needed rather than merely not aske
 
 ## Step 2 — A capture reads any image, not only a chain's
 
-[`Capture::record`](../../api/render/realtime/vulkan/frame/Capture.cxx#L81) takes
+[`Capture::record`](../../../api/render/realtime/vulkan/frame/Capture.cxx#L81) takes
 `const Swapchain&` and an image index, and uses exactly three things from it: `extent()`,
 `format()` and `images()[image]`. It also hardcodes `VK_IMAGE_LAYOUT_PRESENT_SRC_KHR` as the
 layout to transition from and back to.
@@ -179,7 +179,7 @@ order, and a capture that quietly read nothing would also be silent.
 
 This is the assertion ADR-0007 chose: *"assert the absence of validation-layer errors rather
 than comparing rendered pixels"*. Nothing in the tree can currently make that assertion.
-[`Instance::createMessenger`](../../api/render/realtime/vulkan/device/Instance.h#L72) routes
+[`Instance::createMessenger`](../../../api/render/realtime/vulkan/device/Instance.h#L72) routes
 messages to the logger, which is right for a person reading a run and useless to a test, which
 would have to scrape a log sink.
 
@@ -195,7 +195,7 @@ Two things to get right, both of which are traps rather than decisions:
   this point about the messenger: a layer with nowhere to report to is silent, and silence is
   indistinguishable from a clean run.
 - **Synchronization validation is a separate net and is off by default.** `VK_LAYER_VALIDATE_SYNC=1`
-  turns it on, per [Testing.md](../Testing.md), and it catches the class of defect — a barrier
+  turns it on, per [Testing.md](../../Testing.md), and it catches the class of defect — a barrier
   whose first scope misses a stage, a present not ordered after its transition — that is hardest
   to find by eye and most worth having in CI. Whether CI sets it is a decision for step 6; the
   sink in this step is what makes it observable either way.
@@ -222,7 +222,7 @@ was only possible because step 1 landed first — it needs a device, and there i
 
 This is the step with real design risk, and the plan does not pretend to have settled it.
 
-[`Context3D`](../../api/render/realtime/Context3D.cpp#L16) throws without a created window, and
+[`Context3D`](../../../api/render/realtime/Context3D.cpp#L16) throws without a created window, and
 then builds eleven things from it. Most need only the device: the pipeline cache, the pipeline
 resources, the uploader, the depth format. Three need the chain or the window: the swapchain
 itself, the presenter, and `resize()`. And the three renderers — `Quad`, `Line`, `World` — are
@@ -236,7 +236,7 @@ Two shapes, and the plan recommends the second:
    changes. But the eleven-line constructor is duplicated, and the two will drift — the next
    member added to one is missing from the other, silently, because nothing links them.
 2. **Lift what needs only a device into a shared base, with `Context3D` adding the chain and the
-   presenter.** The base [`Context`](../../api/render/realtime/Context.h) exists and is empty,
+   presenter.** The base [`Context`](../../../api/render/realtime/Context.h) exists and is empty,
    so there is a place to put it. `Frame` already holds the base and never dereferences it, so
    the seam is free on that side.
 
@@ -281,7 +281,7 @@ context that could not construct a single renderer.
 
 ### 4a — the ring, split out ✓ landed
 
-[ADR-0051](../adr/0051-the-in-flight-ring-is-not-the-swapchain.md) settles it, and
+[ADR-0051](../../adr/0051-the-in-flight-ring-is-not-the-swapchain.md) settles it, and
 `vulkan::frame::Ring` now owns the command pool, the per-frame command buffers and the
 per-frame fences. `Presenter` holds a ring and keeps the swapchain, the semaphores and
 `acquire`/`present`. `Quad`, `Line` and `World` take a ring, and `FrameUniforms` takes the
@@ -321,7 +321,7 @@ Three things the draft had not settled:
   `Frame` holds one and never dereferences it - but `FrameTest` constructs a bare `Context`, and
   that suite runs in CI on a runner with no device. `Frame::context()` also has no callers
   anywhere in the tree, which argued for deleting it outright; it is public api and this tree is
-  consumed as source by apps that are not in it ([ADR-0027](../adr/0027-the-api-is-consumed-as-source.md)),
+  consumed as source by apps that are not in it ([ADR-0027](../../adr/0027-the-api-is-consumed-as-source.md)),
   so "nothing here calls it" is not the same as "nothing calls it". Three levels, and the
   cheapest of them is the one a device-free test can build.
 - **`depth()` is sized by `extent()`**, which is a description the context is given rather than
@@ -336,7 +336,7 @@ casts to `DeviceContext` and asks it for `colourFormat()`, where it used to need
 so that it could ask the chain. Nothing else in the tree changed, which is what the survey
 predicted.
 
-**A pre-existing defect turned up, and is [in the TODO](../TODO.md) rather than fixed here.**
+**A pre-existing defect turned up, and is [in the TODO](../../TODO.md) rather than fixed here.**
 Both apps that ask for depth report ten `WRITE_AFTER_WRITE` hazards under
 `VK_LAYER_VALIDATE_SYNC=1`: one depth image, two frames in flight, and a transition from
 `UNDEFINED` whose source scope names nothing. It is not this step's - the baseline at `72ebb79`
@@ -353,7 +353,7 @@ was built against it.
 **This step likely earns an ADR**, on the second shape rather than the first: what a context is
 for, and where the line between "needs a device" and "needs a window" falls, is a decision a
 future reader will ask about, and it constrains where every later renderer is built. That is two
-of the three tests [adr/README.md](../adr/README.md) sets. Write it once the survey above has
+of the three tests [adr/README.md](../../adr/README.md) sets. Write it once the survey above has
 been done and the line is actually known — an ADR drafted before then would be recording a guess
 at the shape rather than the reasoning behind it.
 
@@ -369,11 +369,11 @@ tests small, and the first suite's value is in proving the harness, not in cover
 
 What to cover once the harness holds, roughly in order of what is hardest to see by eye: the
 layout transitions either side of a frame, a pass drawing into a target that a later pass
-samples ([ADR-0031](../adr/0031-a-pass-draws-into-a-target-it-names.md)), the scissor that
+samples ([ADR-0031](../../adr/0031-a-pass-draws-into-a-target-it-names.md)), the scissor that
 `vkCmdSetScissor` applies from a batch's clip rectangle
-([ADR-0037](../adr/0037-clipping-is-a-scissor-the-batch-carries.md)), and the depth ordering of
+([ADR-0037](../../adr/0037-clipping-is-a-scissor-the-batch-carries.md)), and the depth ordering of
 a world quad against solid geometry
-([ADR-0042](../adr/0042-a-textured-quad-in-world-space.md)) — which Testing.md currently calls a
+([ADR-0042](../../adr/0042-a-textured-quad-in-world-space.md)) — which Testing.md currently calls a
 run-and-look check.
 
 The suite needs a guard so that a machine or a runner with no Vulkan device at all skips rather
@@ -414,7 +414,7 @@ the ADR-0031 path and still has no case; it is the obvious next one.
 
 ## Step 6 — Lavapipe on the runner
 
-[ctest.yml](../../.github/workflows/ctest.yml) already does most of this: it runs on
+[ctest.yml](../../../.github/workflows/ctest.yml) already does most of this: it runs on
 `windows-latest`, installs a version-pinned Vulkan SDK with a cache keyed on the resolved
 version, builds with vcpkg's binary cache, and runs ctest. What is missing is an ICD.
 
@@ -434,11 +434,11 @@ already accepts fetching Mesa onto is the other place the same question can be a
 CI run on a branch costs runner minutes rather than a decision about a developer's machine.
 
 ADR-0007 flags lavapipe's Vulkan 1.3 and dynamic rendering support as something that has to be
-confirmed, since [ADR-0002](../adr/0002-target-vulkan-1-3.md) makes both mandatory. **That risk
+confirmed, since [ADR-0002](../../adr/0002-target-vulkan-1-3.md) makes both mandatory. **That risk
 can be retired before a line of this plan is written**, and should be. `Device::selectPhysical` already
 rejects a physical device on exactly the three grounds that matter — `apiVersion` below
 `VK_API_VERSION_1_3`, a missing required extension, and a missing required feature — at
-[Device.cxx:220](../../api/render/realtime/vulkan/device/Device.cxx#L220). So the whole question
+[Device.cxx:220](../../../api/render/realtime/vulkan/device/Device.cxx#L220). So the whole question
 is answered by installing lavapipe locally, pointing the loader at it, and running any app in
 the tree: either it selects a device or it finds none, and the log says which. An hour, no code,
 and it is the only thing in this plan that could invalidate the last step.
@@ -449,9 +449,9 @@ lifetime. Worth stating plainly either way: **steps 1 through 5 have value even 
 entirely**, because they run against a real driver on a development machine, which is where a
 rendering change is verified today by hand.
 
-### Run, and not yet drawing
+### Landed, and drawing on the runner
 
-[ctest.yml](../../.github/workflows/ctest.yml) fetches Mesa 26.2.0, names the lavapipe ICD in
+[ctest.yml](../../../.github/workflows/ctest.yml) fetches Mesa 26.2.0, names the lavapipe ICD in
 `VK_DRIVER_FILES`, and caches it the way the SDK is cached. Three things it does beyond that,
 each because of something the earlier steps found:
 
@@ -484,10 +484,16 @@ have cost the suite its `validating()` assertion even had a device been found. T
 registers both manifests under `HKLM\SOFTWARE\Khronos\Vulkan` and keeps the environment
 variables for a run that is not elevated.
 
-So the question ADR-0007 flagged - whether lavapipe advertises 1.3 with dynamic rendering and
-synchronization2 per [ADR-0002](../adr/0002-target-vulkan-1-3.md), and draws the two pictures
-the suite asserts - is still unanswered, because nothing has yet reached it. The fallbacks if it
-cannot are ADR-0007's own, and steps 1 to 5 keep their value either way.
+**Lavapipe then answered the question ADR-0007 flagged, in the affirmative.** With the manifests
+registered, `render_device` runs rather than skips: two cases, each asserting that the layer was
+on and silent and that the pixels are what was drawn. So a software rasterizer does advertise
+1.3 with dynamic rendering and synchronization2 per
+[ADR-0002](../../adr/0002-target-vulkan-1-3.md), and does draw them. ADR-0007's fallbacks are not
+needed.
+
+Nothing about lavapipe was ever the problem. Three runs of `VK_ERROR_INCOMPATIBLE_DRIVER` were
+the loader finding no driver registered, and the driver it was pointed at was never loaded to
+be judged.
 
 ---
 
