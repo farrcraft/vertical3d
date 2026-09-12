@@ -285,6 +285,45 @@ BOOST_AUTO_TEST_CASE(the_image_pass_resolves_every_source_the_config_named) {
 }
 
 /**
+ * An icon inside a panel inside a box is resolved, which is where an icon in a real
+ * document actually is.
+ *
+ * Loader hands a nested component to its parent rather than to the container, so the
+ * container's own list reaches only what nothing laid out. Container::get searches the whole
+ * tree and the image pass has to as well, or the two disagree about what a document holds.
+ * The case earns its place because every image in this tree's own documents is a toolbar's,
+ * and a strip's buttons are held separately - so nothing here exercises the ordinary shape.
+ **/
+BOOST_AUTO_TEST_CASE(an_image_nested_in_a_layout_is_resolved) {
+    bool loaded = false;
+    const boost::shared_ptr<v3d::ui::Engine> ui = load(R"({
+        "themes": [ { "name": "dark" } ],
+        "containers": [ { "name": "hud", "visible": true, "components": [
+            { "type": "panel", "name": "frame", "children": [
+                { "type": "icon", "name": "mark", "source": "art/mark.png" },
+                { "type": "hbox", "name": "hotbar", "children": [
+                    { "type": "icon", "name": "slot-one", "source": "art/slot.png" },
+                    { "type": "button", "name": "use", "label": "Use", "icon": "art/use.png" }
+                ] }
+            ] }
+        ] } ]
+    })", &loaded);
+    BOOST_REQUIRE(loaded);
+
+    Uploader uploader;
+    BOOST_CHECK_EQUAL(ui->resolveImages([&uploader](const std::string& source) { return uploader(source); }), 3U);
+    BOOST_REQUIRE_EQUAL(uploader.asked.size(), 3U);
+    BOOST_CHECK_EQUAL(uploader.asked[0], "art/mark.png");
+    BOOST_CHECK_EQUAL(uploader.asked[1], "art/slot.png");
+    BOOST_CHECK_EQUAL(uploader.asked[2], "art/use.png");
+
+    const boost::shared_ptr<v3d::ui::component::Icon> deepest =
+        boost::dynamic_pointer_cast<v3d::ui::component::Icon>(ui->container("hud")->get("slot-one"));
+    BOOST_REQUIRE(deepest);
+    BOOST_CHECK_EQUAL(deepest->texture().id(), 7U);
+}
+
+/**
  * A source the app cannot resolve leaves the handle unset rather than a handle to nothing,
  * and the rest of the pass carries on.
  **/
