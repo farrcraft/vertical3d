@@ -10,6 +10,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 namespace v3d::render::realtime::vulkan::pipeline {
 
@@ -28,7 +29,7 @@ Builder::Builder(const boost::shared_ptr<device::Device>& device) :
     blend_(true),
     pushStages_(0),
     pushBytes_(0),
-    colour_(VK_FORMAT_UNDEFINED),
+    colours_(1, VK_FORMAT_UNDEFINED),
     depthFormat_(VK_FORMAT_UNDEFINED) {
 }
 
@@ -154,7 +155,14 @@ Builder& Builder::push(VkShaderStageFlags stages, uint32_t bytes) {
 /**
  **/
 Builder& Builder::colourFormat(VkFormat format) {
-    colour_ = format;
+    colours_.assign(1, format);
+    return *this;
+}
+
+/**
+ **/
+Builder& Builder::colourFormats(const std::vector<VkFormat>& formats) {
+    colours_ = formats;
     return *this;
 }
 
@@ -173,10 +181,14 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
         msg << "The " << name_ << " pipeline was built with no shader stages";
         throw std::runtime_error(msg.str());
     }
-    if (colour_ == VK_FORMAT_UNDEFINED) {
-        std::stringstream msg;
-        msg << "The " << name_ << " pipeline was built with no colour attachment format";
-        throw std::runtime_error(msg.str());
+    // an empty list is a pipeline that writes no colour, which a shadow pass is. An entry
+    // left undefined is one nobody named, which is the default and is still a mistake
+    for (const VkFormat format : colours_) {
+        if (format == VK_FORMAT_UNDEFINED) {
+            std::stringstream msg;
+            msg << "The " << name_ << " pipeline was built with an undefined colour attachment format";
+            throw std::runtime_error(msg.str());
+        }
     }
     if ((depthTest_ || depthWrite_) && depthFormat_ == VK_FORMAT_UNDEFINED) {
         std::stringstream msg;
@@ -252,10 +264,12 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
     attachment.alphaBlendOp = VK_BLEND_OP_ADD;
     attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 
+    // blend() is one answer for the pipeline, so every attachment blends the same way
+    const std::vector<VkPipelineColorBlendAttachmentState> attachments(colours_.size(), attachment);
     VkPipelineColorBlendStateCreateInfo blending{};
     blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    blending.attachmentCount = 1;
-    blending.pAttachments = &attachment;
+    blending.attachmentCount = static_cast<uint32_t>(attachments.size());
+    blending.pAttachments = attachments.empty() ? nullptr : attachments.data();
 
     // the viewport is dynamic so that a window resize costs no pipeline rebuild
     const VkDynamicState dynamics[2] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
@@ -267,8 +281,8 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
     // dynamic rendering, so the formats come from here rather than from a render pass
     VkPipelineRenderingCreateInfo rendering{};
     rendering.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
-    rendering.colorAttachmentCount = 1;
-    rendering.pColorAttachmentFormats = &colour_;
+    rendering.colorAttachmentCount = static_cast<uint32_t>(colours_.size());
+    rendering.pColorAttachmentFormats = colours_.empty() ? nullptr : colours_.data();
     rendering.depthAttachmentFormat = depthFormat_;
 
     VkGraphicsPipelineCreateInfo info{};

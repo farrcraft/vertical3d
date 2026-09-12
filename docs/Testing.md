@@ -32,7 +32,9 @@ stay that way: a software Vulkan implementation answers none of them.
 ([ADR-0051](adr/0051-the-in-flight-ring-is-not-the-swapchain.md)), a frame recorded into a
 `RenderTarget`, and `vulkan::frame::Capture` reading it back
 ([ADR-0050](adr/0050-a-frame-is-read-back-in-two-calls.md)). Each case asserts both halves:
-that the validation layer had nothing to say, and that the pixels are what was drawn.
+that the validation layer had nothing to say, and that the pixels are what was drawn. What a
+case compiles rather than draws is here for the same reason - a pipeline shape no renderer in
+this tree builds needs a device to reject it.
 
 It is a second binary rather than more cases in `v3dtest_render`, because that one must keep
 running where there is no GPU. **A run with no device exits 77 and ctest reports the suite as

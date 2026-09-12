@@ -113,8 +113,8 @@ The loop simulates at a fixed step and renders at a variable one -
 **Tests.** Every library needing neither a window nor a GPU is covered. The GPU half —
 everything below the recorder in `api/render` — now has a suite that draws:
 `v3dtest_render_device` runs against lavapipe on the runner, which
-[RenderTestsInCI](plans/completed/RenderTestsInCI.md) built and closed. That suite is two cases,
-a clear and a quad, so what it establishes is the path rather than the coverage. The renderers
+[RenderTestsInCI](plans/completed/RenderTestsInCI.md) built and closed. That suite draws two
+cases, a clear and a quad, so what it establishes is the path rather than the coverage. The renderers
 themselves, the pipeline cache and the upload path are still asserted by nothing that draws.
 
 What the plan left is what needs a window or a sound device rather than a device to draw

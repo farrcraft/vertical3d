@@ -120,7 +120,10 @@ on top of it whatever the scene left in the buffer.
 `vulkan::pipeline::Builder` describes a graphics pipeline one chained call at a time. Its
 defaults are what every pipeline in this engine has agreed on: a dynamic viewport and scissor
 so a resize costs no rebuild, one sample, one colour attachment, no culling, alpha blending,
-and dynamic rendering rather than a render pass. Shader modules belong to the builder and are
+and dynamic rendering rather than a render pass. How many colour attachments there are is a
+property of the pass, so `colourFormats()` takes 0..N of them and an empty list is a pipeline
+that writes depth and no colour - a shadow pass. `colourFormat()` is the one-attachment
+spelling and is what everything here uses. Shader modules belong to the builder and are
 destroyed with it; the pipeline and its layout are handed back for `Resources` to own.
 
 ```
