@@ -68,13 +68,13 @@ struct Push final {
  **/
 Quad::Quad(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<device::Device>& device,
     const boost::shared_ptr<pipeline::Cache>& cache, const boost::shared_ptr<pipeline::Resources>& resources,
-    const boost::shared_ptr<frame::Presenter>& presenter, const boost::shared_ptr<frame::FrameUniforms>& uniforms,
+    const boost::shared_ptr<frame::Ring>& ring, const boost::shared_ptr<frame::FrameUniforms>& uniforms,
     VkFormat colour, VkFormat depth) :
     logger_(logger),
     device_(device),
     cache_(cache),
     resources_(resources),
-    presenter_(presenter),
+    ring_(ring),
     uniforms_(uniforms),
     materialLayout_(VK_NULL_HANDLE),
     remaining_(0),
@@ -82,7 +82,7 @@ Quad::Quad(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::share
     factory_ = boost::make_shared<memory::TextureFactory>(device_);
     createLayouts();
     createPipelines(colour, depth);
-    geometry_.resize(presenter_->framesInFlight() > 0 ? presenter_->framesInFlight() : 1);
+    geometry_.resize(ring_->framesInFlight() > 0 ? ring_->framesInFlight() : 1);
     createWhite();
 }
 
@@ -151,7 +151,7 @@ void Quad::createPipelines(VkFormat colour, VkFormat depth) {
 /**
  **/
 Quad::Geometry Quad::claim() {
-    std::vector<Geometry>& ring = geometry_[presenter_->frame()];
+    std::vector<Geometry>& ring = geometry_[ring_->frame()];
     if (cursor_ >= ring.size()) {
         Geometry geometry;
         geometry.vertices = boost::make_shared<memory::Buffer>(device_, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, initialVertexBytes);
@@ -302,7 +302,7 @@ void Quad::submit(const Canvas& canvas, Pass* pass, uint16_t layer) {
     }
 
     // the device may still be reading what this frame's slots held two frames ago
-    presenter_->waitFrame();
+    ring_->waitFrame();
 
     const Geometry claimed = claim();
     const boost::shared_ptr<memory::Buffer>& vertices = claimed.vertices;

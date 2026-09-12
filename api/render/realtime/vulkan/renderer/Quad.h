@@ -11,7 +11,7 @@
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
-#include <api/render/realtime/vulkan/frame/Presenter.h>
+#include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/memory/Buffer.h>
 #include <api/render/realtime/vulkan/memory/TextureFactory.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
@@ -63,7 +63,7 @@ class Quad final {
      * @param device the device to build the pipeline and buffers on
      * @param cache the pipeline cache every pipeline is compiled against
      * @param resources where the pipeline, textures and materials are registered
-     * @param presenter which frame in flight is being recorded, and when its buffers are free
+     * @param ring which frame in flight is being recorded, and when its buffers are free
      * @param uniforms set 0, whose layout the quad pipelines declare so that a pass can
      *        bind one camera across them and every other pipeline in the engine
      * @param colour the format of the image the pass draws into, which dynamic rendering
@@ -73,7 +73,7 @@ class Quad final {
      **/
     Quad(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<device::Device>& device,
         const boost::shared_ptr<pipeline::Cache>& cache, const boost::shared_ptr<pipeline::Resources>& resources,
-        const boost::shared_ptr<frame::Presenter>& presenter, const boost::shared_ptr<frame::FrameUniforms>& uniforms,
+        const boost::shared_ptr<frame::Ring>& ring, const boost::shared_ptr<frame::FrameUniforms>& uniforms,
         VkFormat colour, VkFormat depth);
 
     /**
@@ -208,7 +208,7 @@ class Quad final {
     boost::shared_ptr<device::Device> device_;
     boost::shared_ptr<pipeline::Cache> cache_;
     boost::shared_ptr<pipeline::Resources> resources_;
-    boost::shared_ptr<frame::Presenter> presenter_;
+    boost::shared_ptr<frame::Ring> ring_;
     boost::shared_ptr<frame::FrameUniforms> uniforms_;
     boost::shared_ptr<memory::TextureFactory> factory_;
 

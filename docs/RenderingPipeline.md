@@ -16,9 +16,12 @@ The decisions behind its shape are [ADR-0001](adr/0001-vulkan-replaces-opengl.md
 ```
 Window    ->  Context3D  ->  Frame  ->  Pass  ->  DrawItem
                   |
-                  +-- vulkan::Device      the gpu, its queues, and the 1.3 features
                   +-- vulkan::Swapchain   the images presented to the window
                   +-- vulkan::Presenter   acquire, submit, present, and the sync between them
+                  |
+              DeviceContext, the base - everything that needs only a device
+                  +-- vulkan::Device      the gpu, its queues, and the 1.3 features
+                  +-- vulkan::frame::Ring the frames in flight, and their buffers and fences
                   +-- vulkan::pipeline::Cache
                   +-- vulkan::Resources   pipelines, materials and textures, addressed by handle
                   +-- vulkan::FrameUniforms  set 0 - a camera per pass per frame in flight
@@ -30,9 +33,11 @@ Window    ->  Context3D  ->  Frame  ->  Pass  ->  DrawItem
 `realtime::Window` creates an `SDL_WINDOW_VULKAN` window and owns the `vulkan::Instance` and
 `vulkan::Surface`. There is one window class, not a 2D one and a 3D one: every app has
 presented through a swapchain since odyssey's port on 2026-09-01, and a 2D game differs only
-in what its passes ask for, an orthographic projection and no depth. `Context3D` is built
-from a created window and owns everything that belongs to the device. `Engine3D` drives one
-frame per tick.
+in what its passes ask for, an orthographic projection and no depth. Everything that belongs
+to the device is `DeviceContext`, and `Context3D` is that plus the window's chain and presenter
+([ADR-0051](adr/0051-the-in-flight-ring-is-not-the-swapchain.md)). A context is told what it
+draws into rather than asking a chain for it, which is what lets one exist with no window under
+it at all. `Engine3D` drives one frame per tick.
 
 There is no `VkRenderPass` and no `VkFramebuffer` anywhere. Passes draw through dynamic
 rendering, straight into the swapchain image views, per
@@ -77,7 +82,8 @@ did, so a run of quads sharing a texture costs one bind between them.
 
 ## Depth
 
-`Context3D` owns one depth image beside the swapchain, sized with it and rebuilt with it. It
+`DeviceContext` owns one depth image, sized by what the context draws into and rebuilt with
+it. It
 is **allocated the first frame a pass asks for depth**, and not at all otherwise, so pong and
 tetris pay nothing for it.
 
@@ -245,7 +251,7 @@ quad's depth variant does neither. Lines drawn over a scene rather than into it 
 without depth. That is the pass model choosing, not a flag on the renderer.
 
 Lines are one pixel wide. `wideLines` is an optional device feature and the device does not
-ask for it. The renderer is built on the first call to `Context3D::lines()`, the way the depth
+ask for it. The renderer is built on the first call to `DeviceContext::lines()`, the way the depth
 buffer is, so an app that draws no lines pays nothing for it.
 
 ## World space quads
@@ -271,7 +277,8 @@ test and write, ui quads do neither, world quads test only. So solid geometry hi
 quad and a world quad never hides another.
 
 There is no clip and no text branch. The renderer is built on the first call to
-`Context3D::worldQuads()`, the way the line renderer is.
+`DeviceContext::worldQuads()`, the way the line renderer is. So is the quad renderer, since a
+context is built before it has been told the format its pipelines compile against.
 
 ## Shaders
 
@@ -307,9 +314,22 @@ to be right.
    transitions the image to `PRESENT_SRC_KHR`. Both transitions are synchronization2 barriers.
 3. `Presenter::present` ends the buffer, submits it with `vkQueueSubmit2`, and presents.
 
-Two frames are in flight. Each owns a command buffer, an image-available semaphore and a
-fence. The render-finished semaphore is per swapchain image rather than per frame, because
-presentation waits on it and presentation is tied to the image.
+Two frames are in flight. What they are is a `vulkan::frame::Ring`, which needs a device and
+nothing else ([ADR-0051](adr/0051-the-in-flight-ring-is-not-the-swapchain.md)): a command
+buffer and a fence per frame, `frame()` to say which slot is being recorded, and `waitFrame()`
+for anything else keeping a resource per frame in flight. Every renderer is built on the ring
+rather than on the presenter, because sizing and indexing a geometry ring is pacing rather than
+presenting.
+
+What stays on the `Presenter` is what needs the chain: an image-available semaphore per frame,
+and a render-finished semaphore per swapchain image rather than per frame, because presentation
+waits on it and presentation is tied to the image.
+
+The seam between them is the fence. The ring creates it and waits on it; the submit in
+`present()` is what signals it. `acquire()` waits the ring's fence *before* acquiring rather
+than leaving it to `Ring::begin()`, because the image-available semaphore is per frame and this
+slot's may still be pending from its last turn — and it is `begin()` that unsignals the fence,
+so a chain found out of date in between leaves the ring exactly as it was found.
 
 ### Reading a frame back
 

@@ -110,9 +110,9 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
     engine_.initialize(window);
     engine_.clearColour(sky);
 
-    context_ = boost::dynamic_pointer_cast<v3d::render::realtime::Context3D>(engine_.context());
+    context_ = boost::dynamic_pointer_cast<v3d::render::realtime::DeviceContext>(engine_.context());
     if (!context_) {
-        throw std::runtime_error("The voxel renderer needs a 3D context to build its pipeline against");
+        throw std::runtime_error("The voxel renderer needs a context on a device to build its pipeline against");
     }
 
     createLayout();
@@ -267,7 +267,7 @@ void Renderer::createPipeline() {
         .set(context_->frameUniforms()->layout())
         .set(sceneLayout_)
         .push(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::vec4))
-        .colourFormat(context_->swapchain()->format())
+        .colourFormat(context_->colourFormat())
         .depthFormat(context_->depthFormat());
 
     pipeline_ = context_->resources()->add(builder.build(context_->pipelineCache()));

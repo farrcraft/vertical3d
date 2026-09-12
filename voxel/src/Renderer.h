@@ -114,7 +114,7 @@ class Renderer {
     // context that owns the device is
     v3d::render::realtime::Engine3D engine_;
 
-    boost::shared_ptr<v3d::render::realtime::Context3D> context_;
+    boost::shared_ptr<v3d::render::realtime::DeviceContext> context_;
     VkDescriptorSetLayout sceneLayout_;
     VkDescriptorPool pool_;
     boost::shared_ptr<v3d::render::realtime::vulkan::memory::DeviceBuffer> uniforms_;

@@ -25,24 +25,22 @@ commands(VK_NULL_HANDLE) {
 
 /**
  **/
-Presenter::Presenter(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<device::Device>& device,
-    const boost::shared_ptr<Swapchain>& swapchain, uint32_t framesInFlight) :
+Presenter::Presenter(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Swapchain>& swapchain,
+    const boost::shared_ptr<Ring>& ring) :
     logger_(logger),
-    device_(device),
+    device_(ring->device()),
     swapchain_(swapchain),
-    framesInFlight_(framesInFlight > 0 ? framesInFlight : 1),
-    frame_(0),
+    ring_(ring),
     suboptimal_(false) {
-    pool_ = boost::make_shared<CommandPool>(device_, device_->families().graphics);
-    commands_ = pool_->allocate(framesInFlight_);
     createSync();
 }
 
 /**
  **/
 Presenter::~Presenter() {
-    // nothing may be waiting on a semaphore or a fence when it is destroyed
-    waitIdle();
+    // nothing may be waiting on a semaphore when it is destroyed. The ring's fences are the
+    // ring's to wait on, and it outlives this because this holds it
+    ring_->waitIdle();
 
     destroyImageSync();
 
@@ -50,11 +48,6 @@ Presenter::~Presenter() {
         vkDestroySemaphore(device_->handle(), semaphore, nullptr);
     }
     imageAvailable_.clear();
-
-    for (VkFence fence : inFlight_) {
-        vkDestroyFence(device_->handle(), fence, nullptr);
-    }
-    inFlight_.clear();
 }
 
 /**
@@ -63,12 +56,9 @@ void Presenter::createSync() {
     VkSemaphoreCreateInfo semaphoreInfo{};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-    VkFenceCreateInfo fenceInfo{};
-    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    // signalled, so the first frame does not wait on a submission that never happened
-    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-    for (uint32_t index = 0; index < framesInFlight_; index++) {
+    // one per frame rather than per image: a frame waits on it before drawing, which is the
+    // ring's turn rather than the chain's
+    for (uint32_t index = 0; index < ring_->framesInFlight(); index++) {
         VkSemaphore semaphore = VK_NULL_HANDLE;
         VkResult result = vkCreateSemaphore(device_->handle(), &semaphoreInfo, nullptr, &semaphore);
         if (result != VK_SUCCESS) {
@@ -77,15 +67,6 @@ void Presenter::createSync() {
             throw std::runtime_error(msg.str());
         }
         imageAvailable_.push_back(semaphore);
-
-        VkFence fence = VK_NULL_HANDLE;
-        result = vkCreateFence(device_->handle(), &fenceInfo, nullptr, &fence);
-        if (result != VK_SUCCESS) {
-            std::stringstream msg;
-            msg << "Unable to create a vulkan fence - " << device::resultString(result);
-            throw std::runtime_error(msg.str());
-        }
-        inFlight_.push_back(fence);
     }
 
     reset();
@@ -124,32 +105,8 @@ void Presenter::reset() {
 
 /**
  **/
-void Presenter::waitIdle() const {
-    vkDeviceWaitIdle(device_->handle());
-}
-
-/**
- **/
-uint32_t Presenter::framesInFlight() const noexcept {
-    return framesInFlight_;
-}
-
-/**
- **/
-uint32_t Presenter::frame() const noexcept {
-    return frame_;
-}
-
-/**
- **/
-void Presenter::waitFrame() const {
-    VkFence fence = inFlight_[frame_];
-    VkResult result = vkWaitForFences(device_->handle(), 1, &fence, VK_TRUE, UINT64_MAX);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to wait on a vulkan frame fence - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+boost::shared_ptr<Ring> Presenter::ring() const noexcept {
+    return ring_;
 }
 
 /**
@@ -160,11 +117,16 @@ Presenter::Status Presenter::acquire(Acquisition* acquisition) {
         return Status::Skip;
     }
 
-    waitFrame();
-    VkFence fence = inFlight_[frame_];
+    // the wait belongs here rather than being left to begin(): the semaphore the acquire
+    // signals is one per frame, and this slot's may still be pending from its last turn until
+    // that submission completes. begin() waits again, which costs nothing on a fence that is
+    // already signalled, and it is begin() that unsignals - so a chain found out of date below
+    // leaves the ring exactly as it was found
+    ring_->waitFrame();
 
     uint32_t image = 0;
-    VkResult result = vkAcquireNextImageKHR(device_->handle(), swapchain_->handle(), UINT64_MAX, imageAvailable_[frame_], VK_NULL_HANDLE, &image);
+    VkResult result = vkAcquireNextImageKHR(device_->handle(), swapchain_->handle(), UINT64_MAX, imageAvailable_[ring_->frame()],
+        VK_NULL_HANDLE, &image);
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         // the semaphore was not signalled, so nothing is left waiting by giving up here
         return Status::OutOfDate;
@@ -177,35 +139,8 @@ Presenter::Status Presenter::acquire(Acquisition* acquisition) {
     // a suboptimal image can still be drawn and presented - rebuild the chain afterwards
     suboptimal_ = result == VK_SUBOPTIMAL_KHR;
 
-    // only reset the fence once the frame is definitely going to be submitted
-    result = vkResetFences(device_->handle(), 1, &fence);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to reset a vulkan frame fence - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
-
-    VkCommandBuffer commands = commands_[frame_];
-    result = vkResetCommandBuffer(commands, 0);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to reset a vulkan command buffer - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
-
-    VkCommandBufferBeginInfo beginInfo{};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-    result = vkBeginCommandBuffer(commands, &beginInfo);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to begin a vulkan command buffer - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
-
     acquisition->image = image;
-    acquisition->commands = commands;
+    acquisition->commands = ring_->begin();
     return Status::Ready;
 }
 
@@ -221,7 +156,7 @@ Presenter::Status Presenter::present(const Acquisition& acquisition) {
 
     VkSemaphoreSubmitInfo wait{};
     wait.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
-    wait.semaphore = imageAvailable_[frame_];
+    wait.semaphore = imageAvailable_[ring_->frame()];
     // nothing before the colour attachment write needs the image, so only that stage waits
     wait.stageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
 
@@ -249,7 +184,8 @@ Presenter::Status Presenter::present(const Acquisition& acquisition) {
     submit.signalSemaphoreInfoCount = 1;
     submit.pSignalSemaphoreInfos = &signal;
 
-    result = vkQueueSubmit2(device_->graphicsQueue(), 1, &submit, inFlight_[frame_]);
+    // the ring's fence, which is what its next turn around waits on - ADR-0051
+    result = vkQueueSubmit2(device_->graphicsQueue(), 1, &submit, ring_->fence());
     if (result != VK_SUCCESS) {
         std::stringstream msg;
         msg << "Unable to submit a vulkan frame - " << device::resultString(result);
@@ -267,7 +203,7 @@ Presenter::Status Presenter::present(const Acquisition& acquisition) {
 
     result = vkQueuePresentKHR(device_->presentQueue(), &presentInfo);
 
-    frame_ = (frame_ + 1) % framesInFlight_;
+    ring_->advance();
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || suboptimal_) {
         // the submission stands either way - the chain is rebuilt before the next frame

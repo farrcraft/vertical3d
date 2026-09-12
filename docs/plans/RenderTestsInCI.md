@@ -51,7 +51,7 @@ are what the first three steps cut.
 | [1](#step-1--a-device-selected-without-a-surface) | `device::Device` takes an optional surface | `api/render/realtime` | cites 0007 | ✓ landed |
 | [2](#step-2--a-capture-reads-any-image-not-only-a-chains) | `frame::Capture` reads any image, not only a chain's | `api/render/realtime` | cites 0050 | ✓ landed |
 | [3](#step-3--the-validation-layer-is-something-a-test-can-assert-on) | A validation sink a test can assert against | `api/render/realtime` | cites 0007 | ✓ landed |
-| [4](#step-4--a-context-with-no-window-under-it) | A headless context, and what it costs `Context3D` | `api/render/realtime` | **likely** | drafted |
+| [4](#step-4--a-context-with-no-window-under-it) | A headless context, and what it costs `Context3D` | `api/render/realtime` | **0051** | ✓ landed |
 | [5](#step-5--the-first-suite-that-draws) | The suite: draw offscreen, assert silence, read back | `api/render/tests` | — | drafted |
 | [6](#step-6--lavapipe-on-the-runner) | A pinned software ICD, and the guard that skips without one | `.github/workflows` | cites 0007 | drafted |
 
@@ -246,6 +246,109 @@ pattern an app follows to reach the renderers. If the renderers move to the base
 cast should be reaching the base instead — and finding the ones that should *not* move is the
 actual work. **Do the survey of what each app reaches through its context before committing to
 the split**, not after.
+
+### The survey, done
+
+Two findings, and the second one moves this step somewhere the draft above did not reach.
+
+**What apps reach through a context is almost nothing, and almost all of it is device-only.**
+`voxel/src/Renderer.cxx` is the only place in the tree that takes a context at all. It uses
+`device()`, `uploader()`, `resources()`, `frameUniforms()`, `pipelineCache()` and
+`depthFormat()` — every one of which needs a device and nothing more — and exactly one thing
+that needs a chain: `swapchain()->format()`, read to build a pipeline against the colour format
+it draws into. Under dynamic rendering that is "the format of whatever I am drawing into", which
+for a headless context is its target's. So the app-facing half of the split is clean, and the
+cast at line 113 would reach a base that carries a colour format instead of a chain.
+
+**`Presenter` is what actually blocks a headless context, and it is two classes wearing one
+name.** `Context3D` builds `Quad`, `Line`, `World` and `FrameUniforms` with the presenter, so
+none of them can exist without a swapchain today. But what they use it for is only
+`framesInFlight()`, `frame()` and `waitFrame()` — the in-flight ring, which is about pacing the
+device and has nothing to do with presenting. The other half — `swapchain_`, `imageAvailable_`,
+`renderFinished_`, `acquire()`, `present()`, `reset()`, `suboptimal_` — is the chain, and no
+renderer touches it. The ring half is `pool_`, `commands_`, `inFlight_`, `framesInFlight_` and
+`frame_`, and it needs a device and nothing else.
+
+That is the line, and it falls one class lower than this step assumed. A headless context is
+not reachable by adding a class beside `Context3D`; it is reachable by separating the ring from
+the chain, after which the base context is almost free and `Context3D` is the base plus a
+swapchain and a presenter.
+
+**This is the ADR**, and it is a larger and riskier change than the step was drafted as, because
+the ring is on the path every frame in the tree goes through. It is also the finding that says
+why the step was worth surveying rather than starting: the draft would have built a second
+context that could not construct a single renderer.
+
+### 4a — the ring, split out ✓ landed
+
+[ADR-0051](../adr/0051-the-in-flight-ring-is-not-the-swapchain.md) settles it, and
+`vulkan::frame::Ring` now owns the command pool, the per-frame command buffers and the
+per-frame fences. `Presenter` holds a ring and keeps the swapchain, the semaphores and
+`acquire`/`present`. `Quad`, `Line` and `World` take a ring, and `FrameUniforms` takes the
+ring's frame count — which it already wanted, having only ever been passed a number.
+
+Nothing about the frame loop changes, so the whole of this step is a rewiring that has to be
+proven not to have changed anything. Two details were worth getting right rather than moving:
+
+- **`acquire()` waits the ring's fence before acquiring**, rather than leaving it to
+  `Ring::begin()` which waits again. The image-available semaphore is per frame, so this slot's
+  may still be pending from its last turn until that submission completes. `begin()` is what
+  unsignals, so a chain found out of date in between leaves the ring as it was found — which is
+  the invariant the old code kept by resetting the fence only after a successful acquire.
+- **The fence is the seam.** The ring creates and waits it; `present()`'s submit signals it.
+  That is the one thing about this split a reader has to be told, and it is why `fence()` is
+  public at all.
+
+Verified by running rather than by building, because the failure this risks is a hang and not a
+compile error. A compile proves nothing here, and neither does an app that survives being killed
+after six seconds — a ring whose fence is never signalled blocks on its third frame and looks
+identical from outside. So the check was a temporary frame counter: pong presented **360 frames
+in six seconds**, steady at 60, which is the ring wrapping 180 times with every turn waiting on
+a fence the previous submit signalled across the new boundary. Zero validation messages of
+either kind, with `VK_LAYER_VALIDATE_SYNC=1` on. voxel, which drives quads, lines and world
+quads, is silent the same way.
+
+### 4b — the context split ✓ landed
+
+`DeviceContext` owns everything that needs only a device: the ring, the pipeline cache and
+resources, the uploader, set 0, the depth format, the depth buffer, and all three renderers.
+`Context3D` is that plus a window, a chain, a presenter and `resize()`. It is usable on its own,
+so a headless context is `DeviceContext` told what it draws into rather than a fourth class.
+
+Three things the draft had not settled:
+
+- **The empty `Context` stays.** It was tempting to make it the device-owning base, since
+  `Frame` holds one and never dereferences it - but `FrameTest` constructs a bare `Context`, and
+  that suite runs in CI on a runner with no device. `Frame::context()` also has no callers
+  anywhere in the tree, which argued for deleting it outright; it is public api and this tree is
+  consumed as source by apps that are not in it ([ADR-0027](../adr/0027-the-api-is-consumed-as-source.md)),
+  so "nothing here calls it" is not the same as "nothing calls it". Three levels, and the
+  cheapest of them is the one a device-free test can build.
+- **`depth()` is sized by `extent()`**, which is a description the context is given rather than
+  a chain it asks. `Context3D` calls `describe()` after building its chain and again in
+  `resize()`, which is the one place a chain is rebuilt. A headless context passes its target's
+  size once.
+- **Every renderer is lazy now**, `quads()` included, because a context is constructed before
+  it has been told what it draws into and a pipeline is built against that format.
+
+The payoff is visible in the one place that reaches into a context: `voxel/src/Renderer` now
+casts to `DeviceContext` and asks it for `colourFormat()`, where it used to need a `Context3D`
+so that it could ask the chain. Nothing else in the tree changed, which is what the survey
+predicted.
+
+**A pre-existing defect turned up, and is [in the TODO](../TODO.md) rather than fixed here.**
+Both apps that ask for depth report ten `WRITE_AFTER_WRITE` hazards under
+`VK_LAYER_VALIDATE_SYNC=1`: one depth image, two frames in flight, and a transition from
+`UNDEFINED` whose source scope names nothing. It is not this step's - the baseline at `72ebb79`
+reports the same ten with the same signature, which is worth stating plainly because a
+refactor of the frame loop is exactly the change such a hazard would be blamed on.
+
+Verified the same way 4a was, and the check mattered twice. A seven second run of voxel showed
+zero errors and looked like a pass; it had drawn no frames at all, because terrain generation
+had not finished. Given twenty seconds it draws 480 and reports the pre-existing ten. pong
+draws 360 in six seconds with none, and the instrumentation also confirmed what a lazy renderer
+puts at risk: `colourFormat` is 37 rather than `UNDEFINED`, so `describe()` ran before anything
+was built against it.
 
 **This step likely earns an ADR**, on the second shape rather than the first: what a context is
 for, and where the line between "needs a device" and "needs a window" falls, is a decision a
