@@ -13,9 +13,11 @@ const char* const Engine3D::colourPass = "colour";
 
 /**
  **/
-Engine3D::Engine3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry) :
+Engine3D::Engine3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry,
+    VkFormat preferred) :
     Engine(logger, assetManager, registry),
-    clearColour_(0.06f, 0.07f, 0.10f, 1.0f) {
+    clearColour_(0.06f, 0.07f, 0.10f, 1.0f),
+    preferred_(preferred) {
 }
 
 /**
@@ -24,7 +26,7 @@ bool Engine3D::initialize(const boost::shared_ptr<Window>& window) {
     Engine::initialize(window);
 
     // the context can only be built once there is a created window to take a device from
-    context_ = boost::make_shared<Context3D>(logger(), window);
+    context_ = boost::make_shared<Context3D>(logger(), window, preferred_);
 
     frame_ = boost::make_shared<Frame>(context_);
     frame_->pass(colourPass)->clearColour(clearColour_);

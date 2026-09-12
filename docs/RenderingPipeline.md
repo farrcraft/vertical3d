@@ -297,10 +297,12 @@ colour in the tree is authored in display space, and textures are uploaded as `U
 match.
 
 **A consumer that writes linear light names its own format**, per
-[ADR-0049](adr/0049-a-consumer-chooses-the-swapchain-format.md). `Swapchain` and `Context3D`
-take a preferred format, defaulting to none and therefore to the rule above; a format the
-surface does not offer in a non-linear sRGB colour space falls back to it. Nothing in this
-tree passes one. **Build a pipeline against `Swapchain::format()` rather than against the
+[ADR-0049](adr/0049-a-consumer-chooses-the-swapchain-format.md). `Swapchain`, `Context3D` and
+`Engine3D` take a preferred format, defaulting to none and therefore to the rule above; a
+format the surface does not offer in a non-linear sRGB colour space falls back to it, with a
+warning, so silence means the preference was met. An app on the engine shell names one where
+it constructs its `Engine3D`, which is the whole of what it has to do. Nothing in this tree
+passes one. **Build a pipeline against `Swapchain::format()` rather than against the
 default** — that was always the contract under dynamic rendering, and it is now the only way
 to be right.
 

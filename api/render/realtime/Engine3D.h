@@ -22,8 +22,15 @@ namespace v3d::render::realtime {
 class Engine3D : public Engine {
  public:
     /**
+     * @param logger
+     * @param assetManager
+     * @param registry
+     * @param preferred the colour format to present through - ADR-0049. An app whose
+     *        shaders write linear light names one here; leaving it undefined is the
+     *        display space default every app in this tree presents through.
      **/
-    Engine3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry);
+    Engine3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry,
+        VkFormat preferred = VK_FORMAT_UNDEFINED);
 
     /**
      **/
@@ -108,5 +115,7 @@ class Engine3D : public Engine {
     boost::shared_ptr<Context3D> context_;
     boost::shared_ptr<Frame> frame_;
     glm::vec4 clearColour_;
+    /**< what initialize() asks the chain for; the chain settles what it gets **/
+    VkFormat preferred_;
 };
 };  // namespace v3d::render::realtime
