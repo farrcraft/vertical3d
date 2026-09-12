@@ -223,7 +223,9 @@ because neither is simulation and neither wants to run twice on a slow frame.
   `camera::Profile::right()`. A camera behaviour that names a world axis copied from a `lookAt`
   moves the scene the wrong way with nothing else looking wrong. `type::camera::Isometric` takes
   the cross product instead of naming the vector for that reason, and asserts the direction
-  through `project()`.
+  through `project()`. A consumer whose geometry is wound for `glm::lookAt` names the other
+  hand on its profile ([ADR-0052](adr/0052-a-consumer-names-the-camera-hand.md)); nothing in
+  this tree does, so `right()` here always means the first one.
 - **`image::Image` row 0 is the top of the picture.** Every consumer downstream reads them that
   way: the canvas, the texture factory, the atlas packer. The jpeg reader also asks the decoder
   for RGB whatever the file holds, because it builds a 24 bit `Image` and copies three bytes a

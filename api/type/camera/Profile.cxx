@@ -19,6 +19,7 @@ Profile::Profile(const std::string& name) :
     direction_(0.0f, 0.0f, 1.0f),
     right_(1.0f, 0.0f, 0.0f),
     up_(0.0f, 1.0f, 0.0f),
+    hand_(Hand::UpCrossDirection),
     orthoZoom_(1.0f),
     pixelAspect_(1.33f),
     near_(0.001f),
@@ -38,6 +39,7 @@ Profile::Profile(const std::string& name, const glm::vec3& eye, const glm::vec3&
     direction_(direction),
     right_(right),
     up_(up),
+    hand_(Hand::UpCrossDirection),
     orthoZoom_(1.0f),
     pixelAspect_(1.33f),
     near_(0.001f),
@@ -188,11 +190,15 @@ void Profile::lookat(const glm::vec3& center) {
     // start with original up vector
     y = up_;
 
-    // normal of yz plane is new right vector
-    x = glm::cross(y, z);
+    // normal of the yz plane is the new right vector. Which way round the two are crossed
+    // is what the hand names: the two answers are negatives of each other, so a scene drawn
+    // through one is the mirror of the same scene drawn through the other
+    x = hand_ == Hand::DirectionCrossUp ? glm::cross(z, y) : glm::cross(y, z);
     x = glm::normalize(x);
-    // normal of the xy plane is the new up vector
-    y = glm::cross(z, x);
+    // normal of the xy plane is the new up vector, crossed the same way round as the right
+    // was. Both orders give the component of the original up perpendicular to the direction,
+    // so the two hands mirror horizontally and agree about which way is up
+    y = hand_ == Hand::DirectionCrossUp ? glm::cross(x, z) : glm::cross(z, x);
     y = glm::normalize(y);
 
     /*
@@ -239,6 +245,7 @@ void Profile::clone(const Profile& profile) {
     pixelAspect_ = profile.pixelAspect_;
     eye_ = profile.eye_;
     up_ = profile.up_;
+    hand_ = profile.hand_;
     right_ = profile.right_;
     direction_ = profile.direction_;
     name_ = profile.name_;
@@ -246,6 +253,14 @@ void Profile::clone(const Profile& profile) {
     options_ = profile.options_;
     size_[0] = profile.size_[0];
     size_[1] = profile.size_[1];
+}
+
+Profile::Hand Profile::hand() const {
+    return hand_;
+}
+
+void Profile::hand(Hand hand) {
+    hand_ = hand;
 }
 
 Profile& Profile::operator = (const Profile& p) {

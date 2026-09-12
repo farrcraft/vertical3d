@@ -111,6 +111,43 @@ BOOST_AUTO_TEST_CASE(camera_lookat_test) {
     BOOST_CHECK_CLOSE(camera.profile().up()[2], 1.0f, 0.01f);
 }
 
+/**
+ * The two hands mirror each other horizontally and agree about which way is up. The default
+ * is what every profile in this tree has always meant, and the other one is the basis
+ * glm::lookAt builds from the same eye, up and centre - so an application whose geometry was
+ * wound for that one can be handed this camera instead of writing a second.
+ **/
+BOOST_AUTO_TEST_CASE(camera_profile_hand_test) {
+    v3d::type::camera::Profile profile("top");
+    BOOST_CHECK(profile.hand() == v3d::type::camera::Profile::Hand::UpCrossDirection);
+
+    profile.eye(glm::vec3(0.0f, 10.0f, 0.0f));
+    profile.up(glm::vec3(0.0f, 0.0f, 1.0f));
+    profile.lookat(glm::vec3(0.0f, 0.0f, 0.0f));
+
+    // right = up x direction, which is what the rest of this suite asserts
+    BOOST_CHECK_CLOSE(profile.right()[0], 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(profile.up()[2], 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(profile.direction()[1], -1.0f, 0.01f);
+
+    v3d::type::camera::Profile mirrored("top");
+    mirrored.hand(v3d::type::camera::Profile::Hand::DirectionCrossUp);
+    mirrored.eye(glm::vec3(0.0f, 10.0f, 0.0f));
+    mirrored.up(glm::vec3(0.0f, 0.0f, 1.0f));
+    mirrored.lookat(glm::vec3(0.0f, 0.0f, 0.0f));
+
+    // the same direction and the same up, and the right the other way round - the whole of
+    // the difference, and the reason the winding a front face presents reverses with it
+    BOOST_CHECK_CLOSE(mirrored.right()[0], -1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(mirrored.up()[2], 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(mirrored.direction()[1], -1.0f, 0.01f);
+
+    // the hand travels with the profile, so a clone keeps building the basis it was built for
+    v3d::type::camera::Profile copied("copy");
+    copied.clone(mirrored);
+    BOOST_CHECK(copied.hand() == v3d::type::camera::Profile::Hand::DirectionCrossUp);
+}
+
 BOOST_AUTO_TEST_CASE(camera_perspective_view_test) {
     // a perspective camera's view matrix is built the same way an orthographic one's is:
     // translate by the negated eye, then rotate into the camera's axes. Doing it the other
