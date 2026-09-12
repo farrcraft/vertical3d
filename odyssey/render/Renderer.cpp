@@ -12,6 +12,7 @@
 #include <string>
 
 #include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
 namespace odyssey::render {
@@ -41,6 +42,14 @@ glm::vec4 tileColour(odyssey::tile::Kind kind) {
         return glm::vec4(0.14f, 0.15f, 0.18f, 1.0f);
     }
 }
+
+/**
+ * How much of a tile's colour is left when it is drawn from memory rather than from sight.
+ *
+ * Dimmed rather than recoloured, so a wall remembered still reads as a wall: what is out of
+ * sight is known rather than current.
+ **/
+constexpr float rememberedLight = 0.4f;
 
 /**
  * A hairline of the clear colour around each tile, so a board of flat quads reads as a
@@ -86,6 +95,12 @@ void Renderer::map(const boost::shared_ptr<odyssey::tile::Map>& map) {
 
 /**
  **/
+void Renderer::sight(const boost::shared_ptr<odyssey::tile::Sight>& sight) {
+    sight_ = sight;
+}
+
+/**
+ **/
 void Renderer::shutdown() {
     engine_.shutdown();
 }
@@ -122,13 +137,20 @@ void Renderer::drawMap() {
     for (int y = 0; y < grid.height(); y++) {
         for (int x = 0; x < grid.width(); x++) {
             const v3d::grid::TileCoord tile{x, y};
+            glm::vec4 colour = tileColour(map_->kind(tile));
+            if (sight_ && !sight_->visible(tile)) {
+                if (!sight_->remembered(tile)) {
+                    continue;
+                }
+                colour = glm::vec4(glm::vec3(colour) * rememberedLight, colour.a);
+            }
             const glm::vec2 min(
                 static_cast<float>(x * odyssey::engine::unit::tile_width) + tileGap,
                 static_cast<float>(y * odyssey::engine::unit::tile_height) + tileGap);
             const glm::vec2 max = min + glm::vec2(
                 static_cast<float>(odyssey::engine::unit::tile_width) - (2.0f * tileGap),
                 static_cast<float>(odyssey::engine::unit::tile_height) - (2.0f * tileGap));
-            canvas_.rect(min, max, tileColour(map_->kind(tile)));
+            canvas_.rect(min, max, colour);
         }
     }
 }

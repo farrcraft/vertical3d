@@ -54,7 +54,6 @@ it as an open question and could not settle it.
 `api/grid` is a library of its own - [ADR-0029](adr/0029-tile-grids-are-an-api-library.md) - and
 `odyssey` is what consumes it here.
 
-[] `LineOfSight` is proven by its own tests and by nothing else: nothing in this tree calls it. Odyssey's map carries cover - a crate is `Cover::Half` and a wall is `Cover::Full` - and nothing asks what can be seen from where
 [] nothing in the api reads or writes a map. The one format that exists is odyssey's own, in `odyssey/tile/Map.cpp`, so anything wanting to load a grid - a map editor, a generator, a second game - writes its own loader or lifts that file. A format in the api earns a record when a second consumer reads one
 [] `TileFilter` is a `std::function` called for every neighbour of every visited tile, which is the first thing to templatise if a board is ever large enough to notice
 

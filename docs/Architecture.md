@@ -120,10 +120,13 @@ symmetric because the endpoints are ordered before the line is traced.
   primitive in the tree, so only outlines come across; a filled tile has no home yet.
 
 **`odyssey` is the consumer.** It reads a board from `data/map.json` — rows of characters, one
-per tile — into a `TileGrid`, and a click routes the player there with `findPath`. The app's own
+per tile — into a `TileGrid`, a click routes the player there with `findPath`, and
+`tile::Sight` asks `hasLineOfSight` what the player can see from where it stands. The app's own
 `tile::Kind` is what decides passability and cover together; the grid holds both and has an
-opinion about neither, which is the split ADR-0029 is built on. The map format is odyssey's and
-is deliberately not in the api: one consumer is not a library.
+opinion about neither, which is the split ADR-0029 is built on. How far the player can see and
+what it remembers seeing are the app's for the same reason the map format is - the grid answers
+about two tiles and knows nothing of a viewer - and the format is deliberately not in the api:
+one consumer is not a library.
 
 ## Geometry
 

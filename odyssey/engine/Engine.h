@@ -15,6 +15,7 @@
 #include <odyssey/render/Renderer.h>
 #include <odyssey/system/Movement.h>
 #include <odyssey/tile/Map.h>
+#include <odyssey/tile/Sight.h>
 
 #include <string>
 
@@ -95,6 +96,7 @@ class Engine final : public v3d::engine::Engine {
 
     boost::shared_ptr<Player> player_;
     boost::shared_ptr<odyssey::tile::Map> map_;
+    boost::shared_ptr<odyssey::tile::Sight> sight_;
     glm::vec2 cursor_{0.0f, 0.0f};
     boost::shared_ptr<odyssey::render::Renderer> renderer_;
     boost::shared_ptr<odyssey::system::Movement> movementSystem_;
