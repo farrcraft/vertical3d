@@ -23,8 +23,19 @@ target_link_libraries(v3dtest_render PRIVATE v3dlib_render v3dlib_font v3dlib_im
 v3d_add_test(render_device
 	"device/TestMain.cpp"
 	"device/Headless.cpp"
+	"device/Reference.cpp"
 	"device/OffscreenFrameTest.cpp"
 	"device/PipelineBuilderTest.cpp")
+
+# A committed picture is resolved against the working directory, which v3d_add_test points at
+# the executable, so the references have to sit beside it - the same copy moya and talyn make
+# for theirs. What may be in one is ADR-0054.
+add_custom_command(TARGET v3dtest_render_device POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+		"${CMAKE_CURRENT_SOURCE_DIR}/device/data"
+		"$<TARGET_FILE_DIR:v3dtest_render_device>/data"
+	COMMENT "Copying render device references"
+	VERBATIM)
 
 # a depth only pipeline is the one shape the builder could not express, so the case that
 # compiles one needs a vertex stage of its own - the renderers' shaders are v3dlib_render's

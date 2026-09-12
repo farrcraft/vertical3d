@@ -32,7 +32,13 @@ stay that way: a software Vulkan implementation answers none of them.
 ([ADR-0051](adr/0051-the-in-flight-ring-is-not-the-swapchain.md)), a frame recorded into a
 `RenderTarget`, and `vulkan::frame::Capture` reading it back
 ([ADR-0050](adr/0050-a-frame-is-read-back-in-two-calls.md)). Each case asserts both halves:
-that the validation layer had nothing to say, and that the pixels are what was drawn. What a
+that the validation layer had nothing to say, and that the pixels are what was drawn. The quad
+case asserts the second half against a picture committed in `api/render/tests/device/data/`,
+compared exactly. What a reference may contain is
+[ADR-0054](adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md) — only what the
+specification determines pixel-for-pixel, so that the same file is owed by a driver and by the
+software implementation CI draws with. A case outside that rule asserts texels by hand and has
+no reference. What a
 case compiles rather than draws is here for the same reason - a pipeline shape no renderer in
 this tree builds needs a device to reject it.
 
@@ -107,10 +113,11 @@ from a subclass with no window in sight. `EngineTest` drives it directly.
 
 ## Verifying a rendering change
 
-CI renders, against lavapipe on the runner per ADR-0007. What it renders is two cases, a clear
-and a quad, so a change below the recorder is still verified by running the app and reading the
-log: the suite catches a frame that cannot be drawn or read back at all, not a frame that is
-drawn wrongly.
+CI renders, against lavapipe on the runner per ADR-0007. What it renders is three cases, and one
+of them is now pinned to a picture rather than to texels chosen by hand — so a quad drawn in the
+wrong colour, at the wrong scale or a pixel out fails there. What no reference can cover is
+anything blended, filtered or antialiased, per ADR-0054, which is most of what a renderer does.
+A change below the recorder is still verified by running the app and reading the log.
 
 The Khronos validation layer is enabled when installed and `vulkan::Instance` routes it through
 the logger, so a silent run is the signal. Without that messenger a loaded layer is silent,

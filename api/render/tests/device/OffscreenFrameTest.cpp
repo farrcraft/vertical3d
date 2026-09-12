@@ -19,6 +19,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include "Headless.h"
+#include "Reference.h"
 
 using v3d::render::realtime::Canvas;
 using v3d::render::realtime::Frame;
@@ -50,8 +51,8 @@ Recorder::Target describe(const boost::shared_ptr<RenderTarget>& target) {
  * Read back what a capture wrote.
  *
  * Going through the file rather than asking the capture for its pixels is deliberate: it is
- * the same round trip moya and talyn make against their committed references, and it is what a
- * golden image comparison will do when there is one to compare against.
+ * the same round trip the reference comparison makes, so a case asserting a colour by hand and
+ * one asserting a picture are reading the same bytes.
  **/
 boost::shared_ptr<v3d::image::Image> written(const boost::shared_ptr<v3d::log::Logger>& logger, const std::string& path) {
     v3d::image::reader::Png png(logger);
@@ -131,8 +132,13 @@ BOOST_AUTO_TEST_CASE(a_cleared_pass_is_silent_and_is_the_colour_it_cleared_to) {
  * The same frame with a quad in it, which is the first case that reaches a pipeline: the
  * renderer compiles one against the target's format rather than a chain's, and the recorder
  * binds and draws it.
+ *
+ * This is the case the committed picture is checked against, and it is the dullest one the
+ * suite can draw on purpose - one flat rect on a cleared target, at integer boundaries, in
+ * channels at the ends of their range. Under ADR-0054 every conformant implementation owes
+ * the same bytes for it, so the reference is the specification's rather than this machine's.
  **/
-BOOST_AUTO_TEST_CASE(a_drawn_quad_is_silent) {
+BOOST_AUTO_TEST_CASE(a_drawn_quad_is_silent_and_is_the_committed_picture) {
     v3d::test::Headless headless(colourFormat, width, height);
 
     boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, width, height, colourFormat);
@@ -168,16 +174,9 @@ BOOST_AUTO_TEST_CASE(a_drawn_quad_is_silent) {
 
     BOOST_CHECK(headless.silent());
 
-    BOOST_REQUIRE(capture.write("data_out/offscreen_quad.png"));
-    boost::shared_ptr<v3d::image::Image> picture = written(headless.logger, "data_out/offscreen_quad.png");
-    BOOST_REQUIRE(picture);
-    // inside the quad, and outside it on all four sides. A quad drawn at the wrong scale or
-    // flipped in y passes a single check in the middle and fails one of these
-    BOOST_CHECK(texel(picture, 32, 16) == rgba(255, 0, 0, 255));
-    BOOST_CHECK(texel(picture, 32, 2) == rgba(0, 0, 0, 255));
-    BOOST_CHECK(texel(picture, 32, 29) == rgba(0, 0, 0, 255));
-    BOOST_CHECK(texel(picture, 2, 16) == rgba(0, 0, 0, 255));
-    BOOST_CHECK(texel(picture, 61, 16) == rgba(0, 0, 0, 255));
+    // every texel rather than the five a spot check reached: a quad drawn at the wrong scale,
+    // flipped in y or off by a pixel differs from the reference wherever it differs
+    v3d::test::checkReference(headless.logger, &capture, "quad");
 }
 
 
