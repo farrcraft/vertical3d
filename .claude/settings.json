@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./scripts/build.cmd:*)",
+      "Bash(./scripts/test.cmd:*)",
+      "Bash(cmd //c \"scripts\\\\build.cmd\":*)",
+      "Bash(cmd //c \"scripts\\\\test.cmd\":*)",
+      "Bash(cpplint:*)",
+      "Bash(grep:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(sed:*)",
+      "Bash(sort:*)",
+      "Bash(wc:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)"
+    ]
+  }
+}
