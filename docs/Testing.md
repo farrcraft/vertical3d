@@ -32,9 +32,11 @@ stay that way: a software Vulkan implementation answers none of them.
 ([ADR-0051](adr/0051-the-in-flight-ring-is-not-the-swapchain.md)), a frame recorded into a
 `RenderTarget`, and `vulkan::frame::Capture` reading it back
 ([ADR-0050](adr/0050-a-frame-is-read-back-in-two-calls.md)). Each case asserts both halves:
-that the validation layer had nothing to say, and that the pixels are what was drawn. The quad
-case asserts the second half against a picture committed in `api/render/tests/device/data/`,
-compared exactly. What a reference may contain is
+that the validation layer had nothing to say, and that the pixels are what was drawn. Four of
+them assert the second half against a picture committed in `api/render/tests/device/data/`,
+compared exactly: a flat quad, a quad drawn with a texture the case uploads, and two overlapping
+world quads in each submission order - which is what says a world quad is ordered by its caller
+and not by its depth ([ADR-0042](adr/0042-a-textured-quad-in-world-space.md)). What a reference may contain is
 [ADR-0054](adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md) — only what the
 specification determines pixel-for-pixel, so that the same file is owed by a driver and by the
 software implementation CI draws with. A case outside that rule asserts texels by hand and has
@@ -90,6 +92,10 @@ from a subclass with no window in sight. `EngineTest` drives it directly.
 
 ## Suites with something to know about them
 
+- **A new reference reaches the executable only when its target relinks.** The suites copy their
+  fixture directory in a `POST_BUILD` command, so adding a picture and rebuilding copies
+  nothing - the target was already up to date. Touch a source of the suite, or rebuild it from
+  clean; a fresh CI checkout never sees this.
 - **The moya and talyn suites each render against a committed PNG**, in `moya/tests/data/` and
   `talyn/tests/data/`. They compare with `image::compare`, which reports the worst pixel and by
   how much rather than only that two images differ. A failing case, or a missing reference,

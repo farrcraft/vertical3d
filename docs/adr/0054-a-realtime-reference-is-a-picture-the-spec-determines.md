@@ -23,10 +23,20 @@ near a rounding boundary are not: each is specified to a precision rather than t
 ## Decision
 
 A committed realtime reference may contain only what the Vulkan specification determines
-pixel-for-pixel — axis aligned geometry on integer pixel boundaries, channel values of 0.0 or
-1.0 or sampled unchanged from a texel, nearest filtering at one texel per pixel, no blending, no
-multisampling — and is compared at a tolerance of zero. A case that wants anything else asserts
+pixel-for-pixel, and is compared at a tolerance of zero. A case that wants anything else asserts
 it by validation silence and spot checks, as ADR-0007 has it, and is not given a reference.
+
+What that admits is every stage of the pipeline being exact rather than merely precise:
+
+- **Geometry** axis aligned and on integer pixel boundaries, so no pixel is partially covered.
+- **Colour** from channel values of 0.0 or 1.0, or sampled unchanged from a texel at one texel
+  per pixel, which is what makes the filter weights whole.
+- **A blend that is the identity**, which an opaque source over anything is, whatever blend
+  state the pipeline carries.
+
+And what it excludes is anything the specification states to a precision instead of to a value:
+a partially covered pixel, a partial alpha, a magnified or minified sample, a multisample
+resolve, and an interpolated channel value away from the ends of its range.
 
 ## Alternatives Considered
 
@@ -83,6 +93,10 @@ it by validation silence and spot checks, as ADR-0007 has it, and is not given a
   that builds on this says so rather than implying a later phase reaches them.
 - A case is authored around what may be pinned — integer boundaries and full-range colours —
   which is not what the renderer is asked for anywhere else in the tree.
+- Every sampler in the tree is `VK_FILTER_LINEAR` and nothing can ask for another, so a
+  reference's texture is drawn at one texel per pixel or it is not drawn at all. A nearest
+  sampler would widen what can be pinned; it would also be a decision about who chooses
+  filtering, which is not this one.
 - Any picture is one more binary file per case in the repository, and a deliberate change to a
   renderer regenerates them.
 

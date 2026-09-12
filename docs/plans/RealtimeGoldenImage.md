@@ -51,8 +51,8 @@ CI before any other is blessed.
 | [1](#step-1--what-a-reference-is) | The rule for what may be pinned | `docs/adr` | **0054** | ✓ landed |
 | [2](#step-2--the-comparison-seam) | A case compares a captured png against a committed one | `api/render/tests` | cites 0054 | ✓ landed |
 | [3](#step-3--the-probe) | The quad case's spot checks become a picture | `api/render/tests` | cites 0054 | ✓ landed |
-| [4](#step-4--the-upload-path) | A textured quad, which is what asserts the uploader | `api/render/tests` | cites 0054 | ☐ |
-| [5](#step-5--depth-and-order) | Overlapping world quads, which is what asserts the depth test | `api/render/tests` | cites 0042 | ☐ |
+| [4](#step-4--the-upload-path) | A textured quad, which is what asserts the uploader | `api/render/tests` | cites 0054 | ✓ landed |
+| [5](#step-5--depth-and-order) | Overlapping world quads, which is what asserts the ordering | `api/render/tests` | cites 0042 | ✓ landed, **not as drafted** |
 
 ### What blocks what
 
@@ -125,9 +125,29 @@ The texture is generated in the case rather than committed beside the reference:
 a second thing to keep in step with the picture, and an asymmetric pattern built in four lines
 says the same thing about orientation.
 
+**State.** Landed. Four quadrants of full range colour over a 32 by 16 texture, drawn at one
+texel per pixel. The picture holds five colours and no others and every channel of each is 0 or
+255, which is the measurement that matters: the tree's sampler is `VK_FILTER_LINEAR` and has no
+nearest to ask for, and at one texel per pixel it returned every texel unchanged with no blended
+value at any quadrant seam. ADR-0054 was amended to say that in terms of what the sampler
+returns rather than which filter it is.
+
 ## Step 5 — Depth and order
 
-Two opaque world quads that overlap, drawn back to front and then front to back, per
-[ADR-0042](../adr/0042-a-textured-quad-in-world-space.md). The picture is the same both times or
-the depth test is not doing what the ADR says it does. This is the only case here that draws
-through `renderer::World`, which is otherwise reached by nothing that runs.
+Two opaque world quads that overlap, drawn near first and then far first, per
+[ADR-0042](../adr/0042-a-textured-quad-in-world-space.md). This is the only case here that draws
+through `renderer::World` or puts a depth attachment on a render target, so it is what says
+either works at all.
+
+**State. Landed, and the step as drafted asserted the opposite of the ADR it cites.** The text
+above said the picture should be the same both times "or the depth test is not doing what the
+ADR says it does". ADR-0042 says the caller supplies the order: the depth tested pipeline
+`depth(true, false)` tests and does not write, so solid geometry occludes a quad and one quad
+never occludes another. The drafted assertion would have failed against a renderer that is
+correct, and it did — the first run of it put the far quad over the near one, which is the
+specified behaviour.
+
+What landed pins that instead: a picture per submission order, and a direct assertion that the
+two differ. A pipeline that wrote depth would make them one picture, which is the regression the
+case now fails on. The other half of ADR-0042 — the solid geometry that does occlude a quad — is
+not drawn, because nothing in this tree writes depth; it needs a consumer's own pipeline.

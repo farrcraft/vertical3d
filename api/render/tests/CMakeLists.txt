@@ -25,6 +25,7 @@ v3d_add_test(render_device
 	"device/Headless.cpp"
 	"device/Reference.cpp"
 	"device/OffscreenFrameTest.cpp"
+	"device/WorldDepthTest.cpp"
 	"device/PipelineBuilderTest.cpp")
 
 # A committed picture is resolved against the working directory, which v3d_add_test points at

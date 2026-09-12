@@ -181,6 +181,78 @@ BOOST_AUTO_TEST_CASE(a_drawn_quad_is_silent_and_is_the_committed_picture) {
 
 
 /**
+ * A quad drawn with a texture the case uploads, which is the only thing in the tree that
+ * asserts the upload path: a texture that arrived transposed, mirrored, in the wrong channel
+ * order or in the wrong mip is a picture rather than a validation error.
+ *
+ * The texture is built here rather than committed beside the reference, because a file would
+ * be a second thing to keep in step with the picture. Its four quadrants are four different
+ * full range colours over a rectangle that is wider than it is tall, so a transpose and a
+ * flip in either axis are all different pictures.
+ *
+ * It is drawn at one texel per pixel on integer boundaries, which is what ADR-0054 requires
+ * of a sampled reference: every sampler in the tree is linear and at that scale the filter
+ * lands on texel centres, so what reaches the target is the texel unchanged.
+ **/
+BOOST_AUTO_TEST_CASE(a_textured_quad_is_the_texture_that_was_uploaded) {
+    v3d::test::Headless headless(colourFormat, width, height);
+
+    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, width, height, colourFormat);
+
+    // 32 by 16, which is the size the quad below covers in pixels
+    const uint32_t textureWidth = 32;
+    const uint32_t textureHeight = 16;
+    std::vector<unsigned char> texels(static_cast<std::size_t>(textureWidth) * textureHeight * 4);
+    for (uint32_t y = 0; y < textureHeight; y++) {
+        for (uint32_t x = 0; x < textureWidth; x++) {
+            const bool right = x >= textureWidth / 2;
+            const bool lower = y >= textureHeight / 2;
+            const std::size_t at = (static_cast<std::size_t>(y) * textureWidth + x) * 4;
+            texels[at + 0] = static_cast<unsigned char>(right && !lower ? 0 : 255);
+            texels[at + 1] = static_cast<unsigned char>(lower ? 255 : 0);
+            texels[at + 2] = static_cast<unsigned char>(right ? 255 : 0);
+            texels[at + 3] = 255;
+        }
+    }
+    const v3d::render::realtime::TextureHandle uploaded =
+        headless.context->quads()->texture(texels.data(), textureWidth, textureHeight, 4);
+    BOOST_REQUIRE(uploaded.valid());
+
+    Canvas canvas;
+    canvas.resize(width, height);
+    canvas.clear();
+    // white, so the vertex colour multiplies the texel by one and the picture is the texture
+    canvas.rect(glm::vec2(16.0f, 8.0f), glm::vec2(48.0f, 24.0f),
+        glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), uploaded);
+
+    Frame frame(headless.context);
+    boost::shared_ptr<Pass> pass = frame.pass("colour");
+    pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+
+    headless.context->quads()->submit(canvas, pass.get());
+
+    Capture capture(headless.device, headless.logger);
+
+    VkCommandBuffer commands = headless.context->ring()->begin();
+    Recorder::Target described = describe(target);
+    Recorder::record(commands, frame, described, *headless.context->resources(), headless.context->frameUniforms().get());
+
+    Capture::Source source;
+    source.image = target->image();
+    source.extent = target->extent();
+    source.format = target->format();
+    source.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    capture.record(commands, source);
+
+    headless.submitAndWait(commands);
+    headless.context->quads()->endFrame();
+
+    BOOST_CHECK(headless.silent());
+
+    v3d::test::checkReference(headless.logger, &capture, "textured_quad");
+}
+
+/**
  * The same clear, on a device whose memory comes from a suballocator rather than from one
  * device allocation per resource - ADR-0053. Nothing in this tree asks for that allocator, so
  * this case is the only thing that runs it: without one the second path would compile and
