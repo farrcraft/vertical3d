@@ -30,6 +30,10 @@ namespace v3d::render::realtime::vulkan::pipeline {
  * has agreed on: a dynamic viewport and scissor so a resize costs no rebuild, one
  * sample, one colour attachment, and dynamic rendering rather than a render pass.
  *
+ * The colour attachments are a list of 0..N formats, because how many there are is a
+ * property of the pass rather than of the builder. A shadow pass draws depth and no
+ * colour at all, which is colourFormats({}).
+ *
  * The shader modules belong to the builder and are destroyed with it, since a module is
  * only needed while the pipeline is being compiled. The pipeline and its layout do not -
  * they are handed back for the caller to register with Resources, which is what destroys
@@ -125,8 +129,18 @@ class Builder final {
     /**
      * The format of the image the pass draws into. Dynamic rendering has no render pass
      * to take it from, so this is not optional.
+     *
+     * The same thing as colourFormats() with one format in it, which is what a pipeline
+     * drawing into a single image wants to say.
      **/
     Builder& colourFormat(VkFormat format);
+
+    /**
+     * The formats of every image the pass draws into, in attachment order. An empty list
+     * is a pipeline that writes no colour - a shadow pass - and each format gets the same
+     * blend state, since blend() is one answer for the pipeline.
+     **/
+    Builder& colourFormats(const std::vector<VkFormat>& formats);
 
     /**
      * The format of the depth image, for a pipeline that tests or writes depth.
@@ -161,7 +175,7 @@ class Builder final {
     bool blend_;
     VkShaderStageFlags pushStages_;
     uint32_t pushBytes_;
-    VkFormat colour_;
+    std::vector<VkFormat> colours_;
     VkFormat depthFormat_;
 };
 

@@ -280,6 +280,18 @@ std::string keyEvent(SDL_Keycode key) {
 
 /**
  **/
+void Keyboard::flush() {
+    state_.flush();
+}
+
+/**
+ **/
+const KeyState& Keyboard::state() const {
+    return state_;
+}
+
+/**
+ **/
 bool Keyboard::handleEvent(const SDL_Event& event) {
     std::string keyName;
     bool pressed = true;

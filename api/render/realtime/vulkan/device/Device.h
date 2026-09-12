@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/log/Logger.h>
+#include <api/render/realtime/vulkan/memory/Allocator.h>
 
 #include <vulkan/vulkan.h>
 
@@ -55,9 +56,13 @@ class Device final {
      * @param instance the instance to select a physical device from
      * @param surface the surface the device has to be able to present to, or null for a
      *        headless device that only draws
+     * @param allocations how the memory behind every buffer and image on this device is
+     *        found. One allocation per resource unless a consumer asks otherwise, which is
+     *        what an application with per-frame resources wants - ADR-0053
      **/
     Device(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Instance>& instance,
-        const boost::shared_ptr<Surface>& surface = nullptr);
+        const boost::shared_ptr<Surface>& surface = nullptr,
+        memory::Allocator::Kind allocations = memory::Allocator::Kind::Direct);
 
     /**
      **/
@@ -75,6 +80,11 @@ class Device final {
      * @return the physical device the logical one was created from
      **/
     VkPhysicalDevice physical() const noexcept;
+
+    /**
+     * @return what gives every buffer and image on this device the memory it lives in
+     **/
+    memory::Allocator& allocator() const noexcept;
 
     /**
      * @return the surface the device was selected to present to, or null on a headless one
@@ -138,6 +148,8 @@ class Device final {
     QueueFamilies families_;
     VkQueue graphicsQueue_;
     VkQueue presentQueue_;
+    /**< built once the logical device exists, and outlived by nothing it allocated for **/
+    boost::shared_ptr<memory::Allocator> allocator_;
 };
 
 };  // namespace v3d::render::realtime::vulkan::device

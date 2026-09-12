@@ -16,6 +16,22 @@ namespace v3d::type::camera {
  */
 class Profile {
  public:
+        /**
+        *	Which way round lookat() crosses its normals, and so which world direction
+        *	ends up on the right of the screen. Both are right handed bases and both
+        *	render; they mirror each other horizontally, which also reverses the winding
+        *	a front face presents - see ADR-0012.
+        *
+        *	A profile in this tree is UpCrossDirection and says nothing, which is what
+        *	every camera here has always meant. DirectionCrossUp exists for an
+        *	application whose geometry was authored against glm::lookAt: adopting this
+        *	camera is otherwise a decision about that application's whole renderer.
+        */
+        enum class Hand {
+                UpCrossDirection,       /**< right = up x direction **/
+                DirectionCrossUp        /**< right = direction x up, which glm::lookAt builds **/
+        };
+
         explicit Profile(const std::string & name);
         /**
         *	Construct a profile with an explicit basis.
@@ -49,6 +65,10 @@ class Profile {
         glm::vec3 right() const;
         glm::vec3 direction() const;
         glm::quat rotation() const;
+        /**
+        *	@return which basis lookat() builds, UpCrossDirection unless it was set
+        */
+        Hand hand() const;
         /**
         *	Access the size in pixels of the viewport the camera draws into.
         *	Zero until something that owns a viewport sets it, which is what
@@ -91,6 +111,12 @@ class Profile {
         */
         void rotation(const glm::quat & rotation);
         void size(unsigned int width, unsigned int height);
+        /**
+        *	Choose which basis lookat() builds. It changes nothing until lookat() runs,
+        *	since the normals are state rather than a derivation, so set it before.
+        *	@param hand the basis to build
+        */
+        void hand(Hand hand);
 
         /**
         *	Orient the camera to look at a point in space.
@@ -127,6 +153,7 @@ class Profile {
         glm::vec3 direction_;
         glm::vec3 right_;
         glm::vec3 up_;
+        Hand hand_;
         float orthoZoom_;
         float pixelAspect_;  // pixel aspect ratio w:h e.g. 4/3 = 1.33
         float near_;

@@ -9,16 +9,29 @@ every phase is closed it moves to [completed/](completed/), and any open item it
 moves to [TODO.md](../TODO.md). The plan itself stays, because the reasoning behind an ordering
 outlives the schedule.
 
-[RenderTestsInCI.md](RenderTestsInCI.md) **is open**, drafted on 2026-09-11 against `88711c0`.
-Six steps building what [ADR-0007](../adr/0007-ci-rendering-tests.md) decided on 2026-08-30 and
-nothing has since implemented: the device half of `api/render/realtime` asserted by something
-other than a person running an app and reading the validation log. Its ordering matters because
-only one of the six blocks anything — a device cannot be selected without a surface today, and
-every headless object needs one that can be — while the two smallest are independent of it and
-useful to an app on their own. The last step is last on purpose: the suites run against a real
-driver before they are asked to run against a software one, so that a failure is the test's
-fault or lavapipe's but never both at once. Steps 1 to 5 keep their value even if the runner
-never gets an ICD.
+[completed/RenderTestsInCI.md](completed/RenderTestsInCI.md) was drafted on 2026-09-11 against
+`88711c0` and closed the next day. Six steps building what
+[ADR-0007](../adr/0007-ci-rendering-tests.md) decided on 2026-08-30 and nothing had since
+implemented: the device half of `api/render/realtime` asserted by something other than a person
+running an app and reading the validation log. Its ordering mattered because only one of the six
+blocked anything — a device could not be selected without a surface, and every headless object
+needs one that can be — while the two smallest were independent of it and useful to an app on
+their own. The last step was last on purpose: the suites run against a real driver before they
+are asked to run against a software one, so that a failure is the test's fault or lavapipe's but
+never both at once.
+
+Four defects came out of it, none of them the thing the step was looking for, and every one
+found by running the code rather than by reading it — the plan lists them. The one that changed
+the shape of the work was step 4's survey finding `Presenter` to be two classes wearing one
+name, which earned [ADR-0051](../adr/0051-the-in-flight-ring-is-not-the-swapchain.md).
+
+The last step is the one worth reading before writing CI against a driver again. Lavapipe was
+never the obstacle it was expected to be, and the four red runs said nothing about it: a GitHub
+runner is elevated, the Vulkan loader ignores `VK_DRIVER_FILES` and `VK_LAYER_PATH` in an
+elevated process, and the driver it was pointed at was never loaded to be judged. What made that
+visible was giving the failure a voice — the probe reporting the exception it caught, and the
+job printing the log and the loader's own account — which took three runs to build and one to
+answer.
 
 [completed/ApiOrganisation.md](completed/ApiOrganisation.md) was drafted and closed on
 2026-09-08, out of a survey of `api/`. Eleven steps, none of which changed behaviour: three that

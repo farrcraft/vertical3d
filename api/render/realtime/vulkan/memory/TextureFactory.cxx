@@ -102,28 +102,11 @@ pipeline::Texture TextureFactory::create(const unsigned char* pixels, uint32_t w
         throw std::runtime_error(msg.str());
     }
 
-    VkMemoryRequirements requirements{};
-    vkGetImageMemoryRequirements(device_->handle(), texture.image, &requirements);
-
-    VkMemoryAllocateInfo allocation{};
-    allocation.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocation.allocationSize = requirements.size;
-    allocation.memoryTypeIndex = memoryType(device_->physical(), requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-    result = vkAllocateMemory(device_->handle(), &allocation, nullptr, &texture.memory);
+    result = device_->allocator().bind(texture.image, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &texture.memory);
     if (result != VK_SUCCESS) {
         vkDestroyImage(device_->handle(), texture.image, nullptr);
         std::stringstream msg;
         msg << "Unable to allocate memory for a vulkan image - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
-
-    result = vkBindImageMemory(device_->handle(), texture.image, texture.memory, 0);
-    if (result != VK_SUCCESS) {
-        vkFreeMemory(device_->handle(), texture.memory, nullptr);
-        vkDestroyImage(device_->handle(), texture.image, nullptr);
-        std::stringstream msg;
-        msg << "Unable to bind memory to a vulkan image - " << device::resultString(result);
         throw std::runtime_error(msg.str());
     }
 
@@ -162,7 +145,7 @@ pipeline::Texture TextureFactory::create(const unsigned char* pixels, uint32_t w
 
     result = vkCreateImageView(device_->handle(), &view, nullptr, &texture.view);
     if (result != VK_SUCCESS) {
-        vkFreeMemory(device_->handle(), texture.memory, nullptr);
+        device_->allocator().free(&texture.memory);
         vkDestroyImage(device_->handle(), texture.image, nullptr);
         std::stringstream msg;
         msg << "Unable to create a vulkan image view - " << device::resultString(result);
@@ -187,7 +170,7 @@ pipeline::Texture TextureFactory::create(const unsigned char* pixels, uint32_t w
     result = vkCreateSampler(device_->handle(), &sampler, nullptr, &texture.sampler);
     if (result != VK_SUCCESS) {
         vkDestroyImageView(device_->handle(), texture.view, nullptr);
-        vkFreeMemory(device_->handle(), texture.memory, nullptr);
+        device_->allocator().free(&texture.memory);
         vkDestroyImage(device_->handle(), texture.image, nullptr);
         std::stringstream msg;
         msg << "Unable to create a vulkan sampler - " << device::resultString(result);

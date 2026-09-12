@@ -44,9 +44,13 @@ struct Headless {
      * @param colour the format of what the cases will draw into
      * @param width in pixels
      * @param height in pixels
+     * @param allocations how the device finds memory, for a case that asserts on the
+     *        allocator rather than on what was drawn
      * @throw std::runtime_error if there is no device, which main() has already ruled out
      **/
-    Headless(VkFormat colour, uint32_t width, uint32_t height);
+    Headless(VkFormat colour, uint32_t width, uint32_t height,
+        render::realtime::vulkan::memory::Allocator::Kind allocations =
+            render::realtime::vulkan::memory::Allocator::Kind::Direct);
 
     ~Headless();
 

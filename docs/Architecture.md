@@ -163,6 +163,20 @@ fixed order: `onEvent()` first, then the input engine's bindings, then the engin
 `handleEvent`. That order is [ADR-0043](adr/0043-an-app-sees-an-event-before-the-bindings-do.md)
 and is what lets an app host a ui toolkit it did not write.
 
+**Three places, but the bindings are not the only way to hear about input.** A device
+publishes its `event::kind::*` — `KeyDown`, `MouseButton`, `MouseMotion` — through the
+dispatcher whichever mappers exist, and the mapper subscribes to a separate source event
+alongside them. So an app subscribes to the abstracted event directly and adopts no
+`mappings.json`, which is what voxel and the editor already do for motion and resize; a
+binding document is a convenience, not the price of admission. What the bindings buy is a
+command named in config rather than in a switch.
+
+`Engine::keys()` and `Engine::mouse()` are the polled half of the same thing, and answer
+`held()` for what is down now plus `pressed()` and `released()` for what changed edge during
+this frame's events. The loop clears the edges after `render()`, so a key pressed and released
+inside one frame answers both and is never seen held — the distinction polling SDL directly
+cannot make. Either is null when the app did not ask for that device's `Feature`.
+
 **Simulation goes in `simulate()`.** What runs there produces the same result whatever the
 frame rate was; what runs in `tick()` does not. Per-frame work that is not simulation — input
 state, UI animation, camera smoothing — is what `tick()` is still for.
@@ -209,7 +223,9 @@ because neither is simulation and neither wants to run twice on a slow frame.
   `camera::Profile::right()`. A camera behaviour that names a world axis copied from a `lookAt`
   moves the scene the wrong way with nothing else looking wrong. `type::camera::Isometric` takes
   the cross product instead of naming the vector for that reason, and asserts the direction
-  through `project()`.
+  through `project()`. A consumer whose geometry is wound for `glm::lookAt` names the other
+  hand on its profile ([ADR-0052](adr/0052-a-consumer-names-the-camera-hand.md)); nothing in
+  this tree does, so `right()` here always means the first one.
 - **`image::Image` row 0 is the top of the picture.** Every consumer downstream reads them that
   way: the canvas, the texture factory, the atlas packer. The jpeg reader also asks the decoder
   for RGB whatever the file holds, because it builds a 24 bit `Image` and copies three bytes a

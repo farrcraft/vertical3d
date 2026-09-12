@@ -120,7 +120,10 @@ on top of it whatever the scene left in the buffer.
 `vulkan::pipeline::Builder` describes a graphics pipeline one chained call at a time. Its
 defaults are what every pipeline in this engine has agreed on: a dynamic viewport and scissor
 so a resize costs no rebuild, one sample, one colour attachment, no culling, alpha blending,
-and dynamic rendering rather than a render pass. Shader modules belong to the builder and are
+and dynamic rendering rather than a render pass. How many colour attachments there are is a
+property of the pass, so `colourFormats()` takes 0..N of them and an empty list is a pipeline
+that writes depth and no colour - a shadow pass. `colourFormat()` is the one-attachment
+spelling and is what everything here uses. Shader modules belong to the builder and are
 destroyed with it; the pipeline and its layout are handed back for `Resources` to own.
 
 ```
@@ -135,6 +138,21 @@ pipeline::Builder(device)
     .colourFormat(swapchain->format())
     .build(cache);
 ```
+
+## Memory
+
+Every buffer and image gets its memory from `memory::Allocator`, which the `Device` owns and
+builds once the logical device exists. It finds memory one of two ways
+([ADR-0053](adr/0053-a-consumer-chooses-how-memory-is-found.md)): `Kind::Direct` is one device
+allocation per resource and is what everything here uses, and `Kind::Suballocated` hands out
+regions of larger blocks through the Vulkan Memory Allocator, which is what an application with
+per-frame resources needs — `maxMemoryAllocationCount` is a real limit. A consumer names the
+kind when it constructs its `Device`.
+
+A resource therefore holds an `Allocation` rather than a `VkDeviceMemory`: a suballocated region
+starts part way into its block and several share one, so mapping and freeing go through the
+allocator that made it. **`Allocator::bind()` allocates and binds in one call** — a resource
+creates itself, hands the handle over, and never sees a memory type.
 
 ## Buffers
 
@@ -297,10 +315,12 @@ colour in the tree is authored in display space, and textures are uploaded as `U
 match.
 
 **A consumer that writes linear light names its own format**, per
-[ADR-0049](adr/0049-a-consumer-chooses-the-swapchain-format.md). `Swapchain` and `Context3D`
-take a preferred format, defaulting to none and therefore to the rule above; a format the
-surface does not offer in a non-linear sRGB colour space falls back to it. Nothing in this
-tree passes one. **Build a pipeline against `Swapchain::format()` rather than against the
+[ADR-0049](adr/0049-a-consumer-chooses-the-swapchain-format.md). `Swapchain`, `Context3D` and
+`Engine3D` take a preferred format, defaulting to none and therefore to the rule above; a
+format the surface does not offer in a non-linear sRGB colour space falls back to it, with a
+warning, so silence means the preference was met. An app on the engine shell names one where
+it constructs its `Engine3D`, which is the whole of what it has to do. Nothing in this tree
+passes one. **Build a pipeline against `Swapchain::format()` rather than against the
 default** — that was always the contract under dynamic rendering, and it is now the only way
 to be right.
 

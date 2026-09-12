@@ -25,7 +25,6 @@ Material::Material() noexcept :
  **/
 Texture::Texture() noexcept :
     image(VK_NULL_HANDLE),
-    memory(VK_NULL_HANDLE),
     view(VK_NULL_HANDLE),
     sampler(VK_NULL_HANDLE),
     extent(),
@@ -70,10 +69,11 @@ Resources::~Resources() {
         if (texture.image != VK_NULL_HANDLE) {
             vkDestroyImage(device, texture.image, nullptr);
         }
-        // the memory outlives the image it backs, so it goes last
-        if (texture.memory != VK_NULL_HANDLE) {
-            vkFreeMemory(device, texture.memory, nullptr);
-        }
+        // the memory outlives the image it backs, so it goes last. The registry hands out
+        // what it holds by const reference and everything in it is being destroyed, so the
+        // handle is freed through a copy rather than cleared in place
+        memory::Allocation allocation = texture.memory;
+        device_->allocator().free(&allocation);
     }
 }
 

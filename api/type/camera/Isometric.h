@@ -138,6 +138,10 @@ class Isometric {
      * they belong to whoever owns the viewport rather than to the orbit. The matrices are
      * not rebuilt here either, so a frame that moves the camera several times builds them
      * once, which is what ViewPort does.
+     *
+     * The profile's Hand stays the caller's too, and lookat() here honours whichever one it
+     * is - so an application whose geometry was wound for glm::lookAt sets that hand on its
+     * camera once and gets this orbit in the basis it draws through.
      **/
     void apply(Camera* camera) const;
 

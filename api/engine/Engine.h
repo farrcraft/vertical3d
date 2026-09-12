@@ -137,6 +137,22 @@ class Engine {
      **/
     boost::shared_ptr<v3d::render::realtime::Window> window() const;
 
+    /**
+     * What the keyboard holds, and what changed edge during this frame's events. The loop
+     * clears the edges after render(), so a tick or a simulate step sees the frame it is
+     * part of and never the one before.
+     *
+     * @return nullptr when the app did not ask for Feature::KeyboardInput
+     **/
+    const v3d::input::KeyState* keys() const;
+
+    /**
+     * The same for the mouse, plus where the cursor is.
+     *
+     * @return nullptr when the app did not ask for Feature::MouseInput
+     **/
+    const v3d::input::MouseState* mouse() const;
+
  protected:
     boost::shared_ptr<v3d::log::Logger> logger_;
     boost::shared_ptr<v3d::config::Config> config_;

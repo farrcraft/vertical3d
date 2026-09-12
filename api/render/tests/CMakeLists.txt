@@ -23,7 +23,12 @@ target_link_libraries(v3dtest_render PRIVATE v3dlib_render v3dlib_font v3dlib_im
 v3d_add_test(render_device
 	"device/TestMain.cpp"
 	"device/Headless.cpp"
-	"device/OffscreenFrameTest.cpp")
+	"device/OffscreenFrameTest.cpp"
+	"device/PipelineBuilderTest.cpp")
+
+# a depth only pipeline is the one shape the builder could not express, so the case that
+# compiles one needs a vertex stage of its own - the renderers' shaders are v3dlib_render's
+v3d_add_shader(v3dtest_render_device "shaders/depth.vert")
 
 target_link_libraries(v3dtest_render_device PRIVATE v3dlib_render v3dlib_image Boost::filesystem EnTT::EnTT ${SDL3_LIBRARIES} ${Vulkan_LIBRARIES})
 set_tests_properties(render_device PROPERTIES SKIP_RETURN_CODE 77)

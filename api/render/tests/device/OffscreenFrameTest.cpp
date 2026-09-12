@@ -180,4 +180,57 @@ BOOST_AUTO_TEST_CASE(a_drawn_quad_is_silent) {
     BOOST_CHECK(texel(picture, 61, 16) == rgba(0, 0, 0, 255));
 }
 
+
+/**
+ * The same clear, on a device whose memory comes from a suballocator rather than from one
+ * device allocation per resource - ADR-0053. Nothing in this tree asks for that allocator, so
+ * this case is the only thing that runs it: without one the second path would compile and
+ * never execute, which is the failure mode of keeping the first as the default.
+ *
+ * It asserts the picture as well as the silence, because an allocation bound at the wrong
+ * offset is a wrong picture rather than a reported error - a suballocated region starts part
+ * way into its block, and the direct path's offset is always zero.
+ **/
+BOOST_AUTO_TEST_CASE(a_suballocated_device_clears_the_same_way) {
+    v3d::test::Headless headless(colourFormat, width, height,
+        v3d::render::realtime::vulkan::memory::Allocator::Kind::Suballocated);
+    BOOST_REQUIRE(headless.device->allocator().kind() ==
+        v3d::render::realtime::vulkan::memory::Allocator::Kind::Suballocated);
+
+    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, width, height, colourFormat);
+
+    Frame frame(headless.context);
+    boost::shared_ptr<Pass> pass = frame.pass("colour");
+    pass->clearColour(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+
+    Capture capture(headless.device, headless.logger);
+
+    VkCommandBuffer commands = headless.context->ring()->begin();
+    Recorder::Target described = describe(target);
+    Recorder::record(commands, frame, described, *headless.context->resources(), headless.context->frameUniforms().get());
+
+    Capture::Source source;
+    source.image = target->image();
+    source.extent = target->extent();
+    source.format = target->format();
+    source.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    capture.record(commands, source);
+
+    headless.submitAndWait(commands);
+
+    BOOST_CHECK(headless.silent());
+
+    BOOST_REQUIRE(capture.write("data_out/offscreen_suballocated.png"));
+    boost::shared_ptr<v3d::image::Image> picture = written(headless.logger, "data_out/offscreen_suballocated.png");
+    BOOST_REQUIRE(picture);
+    for (uint32_t y = 0; y < height; y++) {
+        for (uint32_t x = 0; x < width; x++) {
+            if (texel(picture, x, y) != rgba(0, 255, 0, 255)) {
+                BOOST_ERROR("texel " << x << "," << y << " is not the colour the pass cleared to");
+                return;
+            }
+        }
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()

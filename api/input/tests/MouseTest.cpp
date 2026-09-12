@@ -136,6 +136,37 @@ BOOST_AUTO_TEST_CASE(mouse_motion_test) {
     BOOST_CHECK_EQUAL(mouse.handleEvent(key), false);
 }
 
+/**
+ * A click and its release inside one frame are both edges of one button, and a flush ends
+ * the frame without releasing what is still down or moving the cursor.
+ **/
+BOOST_AUTO_TEST_CASE(mousestate_edge_test) {
+    v3d::input::MouseState state;
+
+    BOOST_CHECK_EQUAL(state.pressed("left"), false);
+    BOOST_CHECK_EQUAL(state.released("left"), false);
+
+    state("left");
+    BOOST_CHECK_EQUAL(state.pressed("left"), true);
+    BOOST_CHECK_EQUAL(state.held("left"), true);
+
+    state("left");
+    BOOST_CHECK_EQUAL(state.pressed("left"), true);
+    BOOST_CHECK_EQUAL(state.released("left"), true);
+    BOOST_CHECK_EQUAL(state.held("left"), false);
+
+    state("right");
+    state(glm::vec2(4.0f, 2.0f));
+    state.flush();
+    BOOST_CHECK_EQUAL(state.pressed("left"), false);
+    BOOST_CHECK_EQUAL(state.released("left"), false);
+    BOOST_CHECK_EQUAL(state.pressed("right"), false);
+    // what is held and where the cursor is are facts about now, not about the frame
+    BOOST_CHECK_EQUAL(state.held("right"), true);
+    BOOST_CHECK_EQUAL(state.position()[0], 4.0f);
+    BOOST_CHECK_EQUAL(state.position()[1], 2.0f);
+}
+
 BOOST_AUTO_TEST_CASE(mousestate_test) {
     v3d::input::MouseState state;
 

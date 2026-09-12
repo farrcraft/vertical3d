@@ -23,6 +23,15 @@ class Keyboard final : public Device {
      **/
     bool handleEvent(const SDL_Event& event);
 
+    /**
+     **/
+    void flush() override;
+
+    /**
+     * @return what is held and what changed edge this frame
+     **/
+    const KeyState& state() const;
+
  private:
     KeyState state_;
 };

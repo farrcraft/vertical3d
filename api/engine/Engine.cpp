@@ -335,8 +335,26 @@ bool Engine::eventLoop() {
         if (!render()) {
             return false;
         }
+        // the edges belonged to this frame, and everything that reads them has now run. The
+        // loop is what clears them, so "exactly once per frame" is not a precondition an app
+        // has to honour
+        if (inputEngine_) {
+            inputEngine_->flush();
+        }
     }
     return true;
+}
+
+/**
+ **/
+const v3d::input::KeyState* Engine::keys() const {
+    return inputEngine_ ? inputEngine_->keys() : nullptr;
+}
+
+/**
+ **/
+const v3d::input::MouseState* Engine::mouse() const {
+    return inputEngine_ ? inputEngine_->mouse() : nullptr;
 }
 
 /**

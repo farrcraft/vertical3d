@@ -50,6 +50,10 @@ macro(v3d_find_packages)
 		elseif(v3d_package STREQUAL "SDL3_mixer")
 			# The mixer is what api/audio is built on, per ADR-0021.
 			find_package(SDL3_mixer CONFIG REQUIRED)
+		elseif(v3d_package STREQUAL "VulkanMemoryAllocator")
+			# What memory::Allocator suballocates through - ADR-0053. Header only, and it wants the
+			# include directory holding vulkan.h, which Vulkan::Vulkan already carries.
+			find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 		elseif(v3d_package MATCHES "^(glm|EnTT|spdlog)$")
 			find_package(${v3d_package} CONFIG REQUIRED)
 		else()

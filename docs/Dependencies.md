@@ -17,6 +17,7 @@ Through the manifest in [vcpkg.json](../vcpkg.json):
 | sdl3-mixer | What `v3dlib_audio` is built on, per [ADR-0021](adr/0021-sdl3-mixer-replaces-soloud.md). It needs SDL >= 3.4.0, which is why the vcpkg baseline moved |
 | spdlog | |
 | vulkan | |
+| vulkan-memory-allocator | What `memory::Allocator` suballocates through when a consumer asks for it, per [ADR-0053](adr/0053-a-consumer-chooses-how-memory-is-found.md). One header that is both declaration and implementation, compiled in `realtime/vulkan/memory/VmaImpl.cxx` the way cgltf is, and linked PRIVATE because `Allocator.h` declares the two handles it names rather than including it |
 
 **boost 1.91 removed `boost::json::error_code` and `boost::json::system_error`.** Name
 `boost::system` and include `<boost/system/error_code.hpp>` and

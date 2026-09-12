@@ -77,12 +77,7 @@ one, so each gap below is one a consumer meets before this tree does.
 
 [] a target is single-buffered, so a pass wanting the previous frame's contents needs two and has to swap them itself. A double-buffered target would be the natural next shape
 [] nothing catches a pipeline built against one colour format drawing into a target of another. It is a wrong picture rather than a validation error, because dynamic rendering takes the format from the pipeline
-[] `Engine3D::initialize` builds its `Context3D` without a preferred swapchain format, so an app on the engine shell cannot ask for one - only an app that builds its own context can. That is the shell withholding what the layer under it offers, and [ADR-0049](adr/0049-a-consumer-chooses-the-swapchain-format.md) was decided for an app that needs it. Threading the preference through `initialize` and `engine::run` is the shape
 [] `Frame::passBefore` exists because `Engine3D` creates the colour pass in its constructor. A frame that let a pass say where it belongs, or an engine that created its pass lazily, would not need it
-
-## A depth image shared by two frames in flight
-
-[] there is one depth buffer and two frames in flight, and each frame transitions it from `UNDEFINED` with a barrier whose source scope names nothing. Synchronization validation reports a `WRITE_AFTER_WRITE` between that barrier and the previous frame's `storeOp`, ten times before the layer stops repeating itself, in every app that asks for depth - voxel and vertical3d here. The layer names the fix: the transition's `srcStageMask` has to include `LATE_FRAGMENT_TESTS` and its `srcAccessMask` `DEPTH_STENCIL_ATTACHMENT_WRITE`, since it is the source side of a barrier that protects a layout transition from prior writes. It is invisible without `VK_LAYER_VALIDATE_SYNC=1` ([Testing.md](Testing.md)), which is why it has been shipping
 
 ## User interface
 
@@ -94,11 +89,7 @@ this tree rather than inside it: ADR-0034 was decided for a game HUD nesting fou
 and here the editor's menu bar and toolbars are strips the renderer places itself while the apps
 put up a menu and an overlay.
 
-One of the entries below was weighed and declined rather than left undone: a widget being
-hovered a frame late is the mechanism that lets a window take the cursor from one under it.
-
 [] a game that owns the mouse has no cursor to hand `ui::Immediate`, so a window it puts up cannot be folded, dragged or scrolled - a cursor position is the layer's only input. That is why the one thing driving the layer here is voxel's F3 readout, which needs none of them
-[] a widget in `Immediate` is hovered a frame after it is drawn, so the first frame of a window that appears under the cursor answers nothing
 [] adding a component still means editing seven places - `component::Type`, `component::name`, `ui::Loader`'s branch, `ComponentRenderer::paint`, `Arranger::natural`, `ui::Cursor`'s switch and `ui::Keys`'s - plus `style::Resolver`'s class when it is dressed by one of its own. The compiler now names all seven ([ADR-0047](adr/0047-a-component-type-is-checked-by-the-compiler.md)), so an omission is a build error rather than a component that silently is not there, but the count is unchanged. A registry is the only thing that would reduce it, and it was weighed and left: `paint()` and `natural()` read the renderer's and the arranger's own state, so a table of free functions would make two private members public. `style::Resolver::Class` is a second enum and is not checked against `Type`
 [] a clip is a scissor, so it is axis aligned and square: a panel with rounded corners clips to the box and not to the curve
 [] a caret cannot be placed by clicking: a press focuses a text box and leaves the caret where it was. `ui::Cursor` names no text, so finding the character under a point would mean giving it the `Measure` callback - a change to what a cursor is rather than an addition to it
@@ -120,10 +111,13 @@ The loop simulates at a fixed step and renders at a variable one -
 ## Ongoing workstreams
 
 **Tests.** Every library needing neither a window nor a GPU is covered. The GPU half —
-everything below the recorder in `api/render` — is
-[RenderTestsInCI](plans/RenderTestsInCI.md) and is not listed here while that plan is open.
+everything below the recorder in `api/render` — now has a suite that draws:
+`v3dtest_render_device` runs against lavapipe on the runner, which
+[RenderTestsInCI](plans/completed/RenderTestsInCI.md) built and closed. That suite draws two
+cases, a clear and a quad, so what it establishes is the path rather than the coverage. The renderers
+themselves, the pipeline cache and the upload path are still asserted by nothing that draws.
 
-What that plan leaves is what needs a window or a sound device rather than a device to draw
+What the plan left is what needs a window or a sound device rather than a device to draw
 with: `Feature::Window`, `ui::TextRenderer` and `audio::Engine::initialize()`. They are named
 beside `api/render` in [Testing.md](Testing.md) and were waiting on the same
 [ADR-0007](adr/0007-ci-rendering-tests.md), but a software Vulkan implementation answers none of

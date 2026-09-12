@@ -8,6 +8,7 @@
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Registry.h>
 #include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/memory/Allocator.h>
 
 #include <vulkan/vulkan.h>
 
@@ -46,7 +47,7 @@ struct Texture final {
     Texture() noexcept;
 
     VkImage image;
-    VkDeviceMemory memory;
+    memory::Allocation memory;
     VkImageView view;
     VkSampler sampler;
     VkExtent2D extent;

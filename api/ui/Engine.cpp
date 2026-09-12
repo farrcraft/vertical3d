@@ -81,30 +81,32 @@ std::size_t Engine::resolveComponentImages(const Resolve& resolve, const boost::
     std::size_t resolved = 0;
 
     boost::shared_ptr<component::Icon> icon = boost::dynamic_pointer_cast<component::Icon>(component);
+    boost::shared_ptr<component::Button> button = boost::dynamic_pointer_cast<component::Button>(component);
+    // a strip's buttons are its own rather than children, so they are not reached by the
+    // walk below and are taken here
+    boost::shared_ptr<component::Toolbar> bar = boost::dynamic_pointer_cast<component::Toolbar>(component);
     if (icon) {
         if (resolveIcon(resolve, std::string(icon->source()), icon)) {
             resolved++;
         }
-        return resolved;
-    }
-    boost::shared_ptr<component::Button> button = boost::dynamic_pointer_cast<component::Button>(component);
-    if (button) {
+    } else if (button) {
         if (resolveIcon(resolve, std::string(button->icon()), button)) {
             resolved++;
         }
-        return resolved;
-    }
-    // a strip's buttons are its own rather than the container's, so they are not
-    // reached by walking what the container holds
-    boost::shared_ptr<component::Toolbar> bar = boost::dynamic_pointer_cast<component::Toolbar>(component);
-    if (!bar) {
-        return resolved;
-    }
-    for (std::size_t index = 0; index < bar->count(); index++) {
-        const boost::shared_ptr<component::Button> held = bar->button(index);
-        if (held && resolveIcon(resolve, std::string(held->icon()), held)) {
-            resolved++;
+    } else if (bar) {
+        for (std::size_t index = 0; index < bar->count(); index++) {
+            const boost::shared_ptr<component::Button> held = bar->button(index);
+            if (held && resolveIcon(resolve, std::string(held->icon()), held)) {
+                resolved++;
+            }
         }
+    }
+
+    // a container holds only what was added to it, and Loader gives a nested component to its
+    // parent rather than to the container, so an icon inside a panel or a box is reached from
+    // here and from nowhere else
+    for (const boost::shared_ptr<Component>& child : component->children()) {
+        resolved += resolveComponentImages(resolve, child);
     }
     return resolved;
 }

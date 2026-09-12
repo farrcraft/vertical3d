@@ -32,15 +32,18 @@ stay that way: a software Vulkan implementation answers none of them.
 ([ADR-0051](adr/0051-the-in-flight-ring-is-not-the-swapchain.md)), a frame recorded into a
 `RenderTarget`, and `vulkan::frame::Capture` reading it back
 ([ADR-0050](adr/0050-a-frame-is-read-back-in-two-calls.md)). Each case asserts both halves:
-that the validation layer had nothing to say, and that the pixels are what was drawn.
+that the validation layer had nothing to say, and that the pixels are what was drawn. What a
+case compiles rather than draws is here for the same reason - a pipeline shape no renderer in
+this tree builds needs a device to reject it.
 
 It is a second binary rather than more cases in `v3dtest_render`, because that one must keep
 running where there is no GPU. **A run with no device exits 77 and ctest reports the suite as
 `Skipped`**, which `set_tests_properties(render_device PROPERTIES SKIP_RETURN_CODE 77)` is
 what arranges. The probe is in `main` rather than a per-case skip on purpose: a binary whose
 every case skipped exits zero and reads as a pass, which is the same trap as a validation layer
-that was never installed reporting no errors. Until ADR-0007 puts lavapipe on the runner, CI
-skips this suite and says so.
+that was never installed reporting no errors. CI installs lavapipe per ADR-0007, so a skip there
+is a failure rather than a pass: locally a machine may have no device, but the runner was given
+one.
 
 `ctest -N` lists what exists, and the test sources are the record of what each suite asserts. A
 change with a testable cpu half is expected to bring cases with it.
@@ -103,9 +106,10 @@ from a subclass with no window in sight. `EngineTest` drives it directly.
 
 ## Verifying a rendering change
 
-CI renders nothing **yet** - `render_device` is skipped there until ADR-0007's runner has a
-software implementation - so a change below the recorder is still verified by running the app
-and reading the log, and `render_device` is what catches it first locally.
+CI renders, against lavapipe on the runner per ADR-0007. What it renders is two cases, a clear
+and a quad, so a change below the recorder is still verified by running the app and reading the
+log: the suite catches a frame that cannot be drawn or read back at all, not a frame that is
+drawn wrongly.
 
 The Khronos validation layer is enabled when installed and `vulkan::Instance` routes it through
 the logger, so a silent run is the signal. Without that messenger a loaded layer is silent,
@@ -114,7 +118,8 @@ counted, which is what `render_device` asserts on rather than scraping the log.
 
 **Synchronization validation is off by default and is a separate net.** Set
 `VK_LAYER_VALIDATE_SYNC=1` in the environment to turn it on. It reports hazards ordinary
-validation does not: a barrier whose first scope misses the stage a semaphore is waited at, or
-a present that is not ordered after the transition into `PRESENT_SRC`. Both of those were in
-the tree and are fixed. Run it after touching a barrier, a layout or a semaphore stage, because
-nothing else sees them.
+validation does not: a barrier whose first scope misses the stage a semaphore is waited at, a
+present that is not ordered after the transition into `PRESENT_SRC`, or a layout transition
+whose first scope names a stage and no access bit, so the write it performs is not ordered
+after the last frame's write to the same image. All three were in the tree and are fixed. Run
+it after touching a barrier, a layout or a semaphore stage, because nothing else sees them.
