@@ -35,7 +35,6 @@ DepthBuffer::DepthBuffer(const boost::shared_ptr<device::Device>& device, uint32
     device_(device),
     format_(VK_FORMAT_UNDEFINED),
     image_(VK_NULL_HANDLE),
-    memory_(VK_NULL_HANDLE),
     view_(VK_NULL_HANDLE),
     sampler_(VK_NULL_HANDLE),
     extent_(),
@@ -106,28 +105,11 @@ void DepthBuffer::create(uint32_t width, uint32_t height) {
         throw std::runtime_error(msg.str());
     }
 
-    VkMemoryRequirements requirements{};
-    vkGetImageMemoryRequirements(device_->handle(), image_, &requirements);
-
-    VkMemoryAllocateInfo allocation{};
-    allocation.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocation.allocationSize = requirements.size;
-    allocation.memoryTypeIndex = memory::memoryType(device_->physical(), requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-    result = vkAllocateMemory(device_->handle(), &allocation, nullptr, &memory_);
+    result = device_->allocator().bind(image_, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &memory_);
     if (result != VK_SUCCESS) {
-        memory_ = VK_NULL_HANDLE;
         destroy();
         std::stringstream msg;
         msg << "Unable to allocate memory for the vulkan depth image - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
-
-    result = vkBindImageMemory(device_->handle(), image_, memory_, 0);
-    if (result != VK_SUCCESS) {
-        destroy();
-        std::stringstream msg;
-        msg << "Unable to bind memory to the vulkan depth image - " << device::resultString(result);
         throw std::runtime_error(msg.str());
     }
 
@@ -196,10 +178,7 @@ void DepthBuffer::destroy() {
         vkDestroyImage(device_->handle(), image_, nullptr);
         image_ = VK_NULL_HANDLE;
     }
-    if (memory_ != VK_NULL_HANDLE) {
-        vkFreeMemory(device_->handle(), memory_, nullptr);
-        memory_ = VK_NULL_HANDLE;
-    }
+    device_->allocator().free(&memory_);
     extent_.width = 0;
     extent_.height = 0;
 }

@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/log/Logger.h>
+#include <api/render/realtime/vulkan/memory/Allocator.h>
 
 #include <vulkan/vulkan.h>
 
@@ -77,6 +78,11 @@ class Device final {
     VkPhysicalDevice physical() const noexcept;
 
     /**
+     * @return what gives every buffer and image on this device the memory it lives in
+     **/
+    memory::Allocator& allocator() const noexcept;
+
+    /**
      * @return the surface the device was selected to present to, or null on a headless one
      **/
     boost::shared_ptr<Surface> surface() const noexcept;
@@ -138,6 +144,8 @@ class Device final {
     QueueFamilies families_;
     VkQueue graphicsQueue_;
     VkQueue presentQueue_;
+    /**< built once the logical device exists, and outlived by nothing it allocated for **/
+    boost::shared_ptr<memory::Allocator> allocator_;
 };
 
 };  // namespace v3d::render::realtime::vulkan::device

@@ -21,7 +21,6 @@ Buffer::Buffer(const boost::shared_ptr<device::Device>& device, VkBufferUsageFla
     device_(device),
     usage_(usage),
     buffer_(VK_NULL_HANDLE),
-    memory_(VK_NULL_HANDLE),
     size_(0),
     mapped_(nullptr) {
     create(bytes > 0 ? bytes : 1);
@@ -49,16 +48,7 @@ void Buffer::create(VkDeviceSize bytes) {
         throw std::runtime_error(msg.str());
     }
 
-    VkMemoryRequirements requirements{};
-    vkGetBufferMemoryRequirements(device_->handle(), buffer_, &requirements);
-
-    VkMemoryAllocateInfo allocation{};
-    allocation.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocation.allocationSize = requirements.size;
-    allocation.memoryTypeIndex = memoryType(device_->physical(), requirements.memoryTypeBits,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-    result = vkAllocateMemory(device_->handle(), &allocation, nullptr, &memory_);
+    result = device_->allocator().bind(buffer_, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &memory_);
     if (result != VK_SUCCESS) {
         vkDestroyBuffer(device_->handle(), buffer_, nullptr);
         buffer_ = VK_NULL_HANDLE;
@@ -67,15 +57,7 @@ void Buffer::create(VkDeviceSize bytes) {
         throw std::runtime_error(msg.str());
     }
 
-    result = vkBindBufferMemory(device_->handle(), buffer_, memory_, 0);
-    if (result != VK_SUCCESS) {
-        destroy();
-        std::stringstream msg;
-        msg << "Unable to bind memory to a vulkan buffer - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
-
-    result = vkMapMemory(device_->handle(), memory_, 0, bytes, 0, &mapped_);
+    result = device_->allocator().map(memory_, &mapped_);
     if (result != VK_SUCCESS) {
         destroy();
         std::stringstream msg;
@@ -90,17 +72,14 @@ void Buffer::create(VkDeviceSize bytes) {
  **/
 void Buffer::destroy() {
     if (mapped_ != nullptr) {
-        vkUnmapMemory(device_->handle(), memory_);
+        device_->allocator().unmap(memory_);
         mapped_ = nullptr;
     }
     if (buffer_ != VK_NULL_HANDLE) {
         vkDestroyBuffer(device_->handle(), buffer_, nullptr);
         buffer_ = VK_NULL_HANDLE;
     }
-    if (memory_ != VK_NULL_HANDLE) {
-        vkFreeMemory(device_->handle(), memory_, nullptr);
-        memory_ = VK_NULL_HANDLE;
-    }
+    device_->allocator().free(&memory_);
     size_ = 0;
 }
 

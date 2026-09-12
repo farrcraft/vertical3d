@@ -23,6 +23,7 @@ v3d_add_api_library(render
 	"realtime/vulkan/frame/Recorder.h" "realtime/vulkan/frame/Recorder.cxx"
 	"realtime/vulkan/pipeline/Resources.h" "realtime/vulkan/pipeline/Resources.cxx"
 	"realtime/vulkan/memory/Memory.h" "realtime/vulkan/memory/Memory.cxx"
+	"realtime/vulkan/memory/Allocator.h" "realtime/vulkan/memory/Allocator.cxx"
 	"realtime/vulkan/memory/Buffer.h" "realtime/vulkan/memory/Buffer.cxx"
 	"realtime/vulkan/memory/Uploader.h" "realtime/vulkan/memory/Uploader.cxx"
 	"realtime/vulkan/memory/DeviceBuffer.h" "realtime/vulkan/memory/DeviceBuffer.cxx"

@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/memory/Allocator.h>
 
 #include <vulkan/vulkan.h>
 
@@ -90,7 +91,7 @@ class Buffer final {
     boost::shared_ptr<device::Device> device_;
     VkBufferUsageFlags usage_;
     VkBuffer buffer_;
-    VkDeviceMemory memory_;
+    Allocation memory_;
     VkDeviceSize size_;
     void* mapped_;
 };

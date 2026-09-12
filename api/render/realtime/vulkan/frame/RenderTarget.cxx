@@ -22,7 +22,6 @@ RenderTarget::RenderTarget(const boost::shared_ptr<device::Device>& device, uint
     device_(device),
     format_(colour),
     image_(VK_NULL_HANDLE),
-    memory_(VK_NULL_HANDLE),
     view_(VK_NULL_HANDLE),
     sampler_(VK_NULL_HANDLE),
     extent_(),
@@ -80,29 +79,11 @@ void RenderTarget::create(uint32_t width, uint32_t height) {
         throw std::runtime_error(msg.str());
     }
 
-    VkMemoryRequirements requirements{};
-    vkGetImageMemoryRequirements(device_->handle(), image_, &requirements);
-
-    VkMemoryAllocateInfo allocation{};
-    allocation.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocation.allocationSize = requirements.size;
-    allocation.memoryTypeIndex =
-        memory::memoryType(device_->physical(), requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-    result = vkAllocateMemory(device_->handle(), &allocation, nullptr, &memory_);
+    result = device_->allocator().bind(image_, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &memory_);
     if (result != VK_SUCCESS) {
-        memory_ = VK_NULL_HANDLE;
         destroy();
         std::stringstream msg;
         msg << "Unable to allocate memory for a vulkan render target - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
-
-    result = vkBindImageMemory(device_->handle(), image_, memory_, 0);
-    if (result != VK_SUCCESS) {
-        destroy();
-        std::stringstream msg;
-        msg << "Unable to bind memory to a vulkan render target - " << device::resultString(result);
         throw std::runtime_error(msg.str());
     }
 
@@ -170,10 +151,7 @@ void RenderTarget::destroy() {
         vkDestroyImageView(device_->handle(), view_, nullptr);
         view_ = VK_NULL_HANDLE;
     }
-    if (memory_ != VK_NULL_HANDLE) {
-        vkFreeMemory(device_->handle(), memory_, nullptr);
-        memory_ = VK_NULL_HANDLE;
-    }
+    device_->allocator().free(&memory_);
     if (image_ != VK_NULL_HANDLE) {
         vkDestroyImage(device_->handle(), image_, nullptr);
         image_ = VK_NULL_HANDLE;
@@ -248,8 +226,7 @@ pipeline::Texture RenderTarget::depthTexture() const {
     texture.sampler = depth_->sampler();
     texture.extent = depth_->extent();
     // borrowed the same way the colour image is - the buffer owns them and rebuilds them
-    // whenever the target is resized
-    texture.memory = VK_NULL_HANDLE;
+    // whenever the target is resized, so the allocation stays the empty one
     texture.owned = false;
     return texture;
 }
@@ -264,7 +241,6 @@ pipeline::Texture RenderTarget::texture() const {
     texture.extent = extent_;
     // the allocation, the view and the sampler are the target's and are thrown away every
     // time it is resized, so what is registered names them rather than taking them over
-    texture.memory = VK_NULL_HANDLE;
     texture.owned = false;
     return texture;
 }

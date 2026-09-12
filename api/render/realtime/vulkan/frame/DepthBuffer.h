@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/memory/Allocator.h>
 
 #include <vulkan/vulkan.h>
 
@@ -130,7 +131,7 @@ class DepthBuffer final {
     boost::shared_ptr<device::Device> device_;
     VkFormat format_;
     VkImage image_;
-    VkDeviceMemory memory_;
+    memory::Allocation memory_;
     VkImageView view_;
     VkSampler sampler_;
     VkExtent2D extent_;

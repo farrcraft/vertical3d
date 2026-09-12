@@ -14,6 +14,8 @@
 #include <string>
 #include <vector>
 
+#include <boost/make_shared.hpp>
+
 namespace v3d::render::realtime::vulkan::device {
 
 namespace {
@@ -66,6 +68,7 @@ Device::Device(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::s
     presentQueue_(VK_NULL_HANDLE) {
     selectPhysical();
     createLogical();
+    allocator_ = boost::make_shared<memory::Allocator>(device_, physical_);
 }
 
 /**
@@ -87,6 +90,12 @@ VkDevice Device::handle() const noexcept {
  **/
 VkPhysicalDevice Device::physical() const noexcept {
     return physical_;
+}
+
+/**
+ **/
+memory::Allocator& Device::allocator() const noexcept {
+    return *allocator_;
 }
 
 /**
