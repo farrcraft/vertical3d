@@ -94,11 +94,7 @@ this tree rather than inside it: ADR-0034 was decided for a game HUD nesting fou
 and here the editor's menu bar and toolbars are strips the renderer places itself while the apps
 put up a menu and an overlay.
 
-One of the entries below was weighed and declined rather than left undone: a widget being
-hovered a frame late is the mechanism that lets a window take the cursor from one under it.
-
 [] a game that owns the mouse has no cursor to hand `ui::Immediate`, so a window it puts up cannot be folded, dragged or scrolled - a cursor position is the layer's only input. That is why the one thing driving the layer here is voxel's F3 readout, which needs none of them
-[] a widget in `Immediate` is hovered a frame after it is drawn, so the first frame of a window that appears under the cursor answers nothing
 [] adding a component still means editing seven places - `component::Type`, `component::name`, `ui::Loader`'s branch, `ComponentRenderer::paint`, `Arranger::natural`, `ui::Cursor`'s switch and `ui::Keys`'s - plus `style::Resolver`'s class when it is dressed by one of its own. The compiler now names all seven ([ADR-0047](adr/0047-a-component-type-is-checked-by-the-compiler.md)), so an omission is a build error rather than a component that silently is not there, but the count is unchanged. A registry is the only thing that would reduce it, and it was weighed and left: `paint()` and `natural()` read the renderer's and the arranger's own state, so a table of free functions would make two private members public. `style::Resolver::Class` is a second enum and is not checked against `Type`
 [] a clip is a scissor, so it is axis aligned and square: a panel with rounded corners clips to the box and not to the curve
 [] a caret cannot be placed by clicking: a press focuses a text box and leaves the caret where it was. `ui::Cursor` names no text, so finding the character under a point would mean giving it the `Measure` callback - a change to what a cursor is rather than an addition to it
