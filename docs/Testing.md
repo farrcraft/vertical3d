@@ -116,7 +116,8 @@ counted, which is what `render_device` asserts on rather than scraping the log.
 
 **Synchronization validation is off by default and is a separate net.** Set
 `VK_LAYER_VALIDATE_SYNC=1` in the environment to turn it on. It reports hazards ordinary
-validation does not: a barrier whose first scope misses the stage a semaphore is waited at, or
-a present that is not ordered after the transition into `PRESENT_SRC`. Both of those were in
-the tree and are fixed. Run it after touching a barrier, a layout or a semaphore stage, because
-nothing else sees them.
+validation does not: a barrier whose first scope misses the stage a semaphore is waited at, a
+present that is not ordered after the transition into `PRESENT_SRC`, or a layout transition
+whose first scope names a stage and no access bit, so the write it performs is not ordered
+after the last frame's write to the same image. All three were in the tree and are fixed. Run
+it after touching a barrier, a layout or a semaphore stage, because nothing else sees them.
