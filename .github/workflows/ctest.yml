@@ -50,6 +50,27 @@ jobs:
           # links it. It is the only one left - the mixer comes from vcpkg per ADR-0021.
           submodules: true
 
+      # Defender holds a file while it scans it. Files this job writes are often opened again
+      # immediately: the linker's output to embed a manifest, and again by the applocal copy
+      # the Configure step describes. Those opens fail while a scan holds the file, so the two
+      # directories the job writes into are excluded.
+      #
+      # This step runs first so that the exclusion covers the downloads and the archives
+      # unpacked from them, not only the build.
+      #
+      # A refused exclusion is a warning rather than a failure.
+      - name: Keep Defender out of the build directories
+        shell: pwsh
+        run: |
+          foreach ($path in @($env:GITHUB_WORKSPACE, $env:RUNNER_TEMP)) {
+            try {
+              Add-MpPreference -ExclusionPath $path -ErrorAction Stop
+              Write-Host "excluded $path"
+            } catch {
+              Write-Warning "Defender refused an exclusion for ${path}: $($_.Exception.Message)"
+            }
+          }
+
       # The toolset version is an output because the vcpkg binary cache is keyed on it. vcpkg
       # hashes the compiler into every package's ABI, so a package built by one toolset is
       # never reused by another, and the runner image carries whichever toolset it was built
@@ -148,6 +169,16 @@ jobs:
           if (-not $icd) { throw "no lavapipe ICD under $env:MESA_ROOT - the mesa layout has changed" }
           "VK_DRIVER_FILES=$($icd.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
+          # The loader ignores an ICD whose library_path leads nowhere, and then reports the
+          # same incompatible driver it reports where there is no driver at all. The dll is
+          # checked here, where the directory that should hold it can still be listed.
+          $library = (Get-Content $icd.FullName -Raw | ConvertFrom-Json).ICD.library_path
+          $driver = if ([System.IO.Path]::IsPathRooted($library)) { $library } else { Join-Path $icd.DirectoryName $library }
+          if (-not (Test-Path $driver)) {
+            Get-ChildItem $icd.DirectoryName | Format-Table Name, Length | Out-String | Write-Host
+            throw "the lavapipe ICD names $library, which is not at $driver - the archive is incomplete or something removed it"
+          }
+
           # An ICD is not a loader. vulkan-1.dll is what an application actually links, and the
           # SDK does not carry one - on a developer's machine it arrives in System32 with the
           # gpu driver, which is exactly what a runner has none of. Checked here rather than
@@ -184,25 +215,6 @@ jobs:
         shell: pwsh
         run: New-Item -ItemType Directory -Force -Path "$env:VCPKG_DEFAULT_BINARY_CACHE" | Out-Null
 
-      # Defender holds a file while it scans it. A binary is scanned as the linker writes it
-      # and is opened again immediately afterwards - to embed its manifest, and by the applocal
-      # copy the step below describes - and those opens fail while the scan has it. The
-      # directories this job writes into are excluded so that they do not.
-      #
-      # A refused exclusion warns rather than failing the job: without it the build is less
-      # reliable, not incorrect.
-      - name: Keep Defender out of the build directories
-        shell: pwsh
-        run: |
-          foreach ($path in @($env:GITHUB_WORKSPACE, $env:RUNNER_TEMP)) {
-            try {
-              Add-MpPreference -ExclusionPath $path -ErrorAction Stop
-              Write-Host "excluded $path"
-            } catch {
-              Write-Warning "Defender refused an exclusion for ${path}: $($_.Exception.Message)"
-            }
-          }
-
       # libnoise is built out of source: it commits a CMakeCache.txt naming a generator that
       # is not on this image, and its cmake_minimum_required predates what current CMake
       # accepts on its own. The archive lands where voxel's target_link_directories expects
@@ -218,10 +230,10 @@ jobs:
             -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY="%GITHUB_WORKSPACE%\vendor\libnoise\Debug" || exit /b 1
           cmake --build "%RUNNER_TEMP%\libnoise" || exit /b 1
 
-      # The job pool holds linking to one edge at a time. A link edge does not stop at the
-      # linker: vcpkg's applocal deployment runs in the same edge, reopening the binary just
-      # linked and copying dlls out of the installed bin directory that every other link edge
-      # is reading. Only linking is pooled, so compilation still uses the whole machine.
+      # The job pool holds linking to one edge at a time. A link edge does more than link:
+      # vcpkg's applocal deployment runs in the same edge, reopening the binary just linked and
+      # copying dlls out of the installed bin directory the other link edges are reading. Only
+      # linking is pooled, so compilation still uses the whole machine.
       - name: Configure
         shell: cmd
         run: |
@@ -278,20 +290,28 @@ jobs:
           $tests = "$env:BUILD_DIR\api\render\tests"
           & "$tests\v3dtest_render_device.exe" --detect_memory_leaks=0
           $exit = $LASTEXITCODE
-          # A run that did not draw leaves its account in two places the job would otherwise
-          # throw away: the suite logs to a file beside itself rather than to the console, and
-          # vulkaninfo reports what the loader found. Printed only on a bad exit, since that is
-          # the run that has a question to answer.
+          # The suite logs to v3d.log beside the executable rather than to the console, so a
+          # run that failed says nothing here on its own. That log and vulkaninfo's view of the
+          # loader are printed when it exits non-zero.
           if ($exit -ne 0) {
             $log = Join-Path $tests "v3d.log"
             if (Test-Path $log) {
               Write-Host "--- $log"
               Get-Content $log
             }
-            $vulkaninfo = Join-Path $env:VULKAN_SDK "Bin\vulkaninfo.exe"
-            if (Test-Path $vulkaninfo) {
-              Write-Host "--- vulkaninfo --summary"
-              & $vulkaninfo --summary
+            # VK_LOADER_DEBUG makes the loader list the ICDs it found and say what it did with
+            # each, which neither the suite nor vulkaninfo reports. The suite is run a second
+            # time for it, because the output is long and a run that worked does not need it.
+            Write-Host "--- the loader's account"
+            $env:VK_LOADER_DEBUG = "error,warn"
+            & "$tests\v3dtest_render_device.exe" --detect_memory_leaks=0
+            Remove-Item env:VK_LOADER_DEBUG
+
+            # the SDK names it vulkaninfoSDK where it is installed under a root of its own
+            $vulkaninfo = Get-ChildItem (Join-Path $env:VULKAN_SDK "Bin") -Filter "vulkaninfo*.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($vulkaninfo) {
+              Write-Host "--- $($vulkaninfo.Name) --summary"
+              & $vulkaninfo.FullName --summary
             }
           }
           if ($exit -eq 77) {

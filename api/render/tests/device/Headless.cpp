@@ -28,10 +28,9 @@ bool deviceAvailable() {
         render::realtime::vulkan::device::Device device(logger, instance);
         return device.handle() != VK_NULL_HANDLE;
     } catch (const std::exception& error) {
-        // the console rather than the logger: the logger writes to a file beside the
-        // executable, and what this message answers is why a run skipped, which is read from
-        // the run's output. A machine with no gpu and a machine whose loader cannot find the
-        // one it has both end up here, and the two are told apart by what is printed
+        // the console rather than the logger, which writes to a file beside the executable.
+        // A machine with no gpu and one whose loader found no driver both reach here, and
+        // this message is what tells them apart
         std::cerr << "no device to draw with: " << error.what() << "\n";
         return false;
     }
