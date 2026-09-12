@@ -14,17 +14,33 @@ out/build/x64-Debug/api/image/tests/v3dtest_image.exe --run_test=texture_test
 `v3d_add_test(<lib> <sources>)` builds `v3dtest_<lib>`, links the framework, and adds the ctest
 entry with the working directory beside the executable so a suite's fixtures resolve. Link the
 library under test yourself in `api/<lib>/tests/CMakeLists.txt`. `TestMain` carries the
-`BOOST_TEST_MODULE` define and nothing else.
+`BOOST_TEST_MODULE` define and nothing else - except `render_device`'s, which needs a `main` of
+its own so that it can decide whether to run at all.
 
 `add_test` passes `--detect_memory_leaks=0`. Boost.Test otherwise reports a permanent false
 positive for any suite that builds a `Logger`, because spdlog's registry outlives the report.
 
 ## What is covered
 
-Everything except what needs a window, a GPU or a sound device. That leaves `api/render` below
-the recorder, `Feature::Window`, `audio::Engine::initialize()` and `ui::TextRenderer`
-uncovered, all of them waiting on [ADR-0007](adr/0007-ci-rendering-tests.md), which would
-render against a software Vulkan implementation on a CI runner.
+Everything except what needs a window or a sound device, and the beginnings of what needs a
+GPU. `Feature::Window`, `audio::Engine::initialize()` and `ui::TextRenderer` are uncovered and
+stay that way: a software Vulkan implementation answers none of them.
+
+**`api/render` below the recorder has its own binary, `v3dtest_render_device`**, from
+`api/render/tests/device/`. It draws for real - a surface-free device
+([ADR-0007](adr/0007-ci-rendering-tests.md)), a `DeviceContext` with no window under it
+([ADR-0051](adr/0051-the-in-flight-ring-is-not-the-swapchain.md)), a frame recorded into a
+`RenderTarget`, and `vulkan::frame::Capture` reading it back
+([ADR-0050](adr/0050-a-frame-is-read-back-in-two-calls.md)). Each case asserts both halves:
+that the validation layer had nothing to say, and that the pixels are what was drawn.
+
+It is a second binary rather than more cases in `v3dtest_render`, because that one must keep
+running where there is no GPU. **A run with no device exits 77 and ctest reports the suite as
+`Skipped`**, which `set_tests_properties(render_device PROPERTIES SKIP_RETURN_CODE 77)` is
+what arranges. The probe is in `main` rather than a per-case skip on purpose: a binary whose
+every case skipped exits zero and reads as a pass, which is the same trap as a validation layer
+that was never installed reporting no errors. Until ADR-0007 puts lavapipe on the runner, CI
+skips this suite and says so.
 
 `ctest -N` lists what exists, and the test sources are the record of what each suite asserts. A
 change with a testable cpu half is expected to bring cases with it.
@@ -87,10 +103,14 @@ from a subclass with no window in sight. `EngineTest` drives it directly.
 
 ## Verifying a rendering change
 
-CI renders nothing, so a change below the recorder is verified by running the app and reading
-the log. The Khronos validation layer is enabled when installed and `vulkan::Instance` routes
-it through the logger, so a silent run is the signal. Without that messenger a loaded layer is
-silent, which looks exactly like a clean run.
+CI renders nothing **yet** - `render_device` is skipped there until ADR-0007's runner has a
+software implementation - so a change below the recorder is still verified by running the app
+and reading the log, and `render_device` is what catches it first locally.
+
+The Khronos validation layer is enabled when installed and `vulkan::Instance` routes it through
+the logger, so a silent run is the signal. Without that messenger a loaded layer is silent,
+which looks exactly like a clean run. `Instance::errors()` and `firstError()` are the same thing
+counted, which is what `render_device` asserts on rather than scraping the log.
 
 **Synchronization validation is off by default and is a separate net.** Set
 `VK_LAYER_VALIDATE_SYNC=1` in the environment to turn it on. It reports hazards ordinary

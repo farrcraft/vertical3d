@@ -41,10 +41,14 @@ class DeviceContext : public Context {
     /**
      * @param logger
      * @param device the device everything here is built on
+     * @param colour the colour format of what this draws into, and what every pipeline built
+     *        here is built against. A destination known when the context is built says so
+     *        here; Context3D cannot, because its chain does not exist yet
+     * @param extent the size of that destination
      * @param framesInFlight how many frames may be recorded ahead of the device
      **/
     DeviceContext(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<vulkan::device::Device>& device,
-        uint32_t framesInFlight = 2);
+        VkFormat colour = VK_FORMAT_UNDEFINED, const VkExtent2D& extent = VkExtent2D{0, 0}, uint32_t framesInFlight = 2);
 
     /**
      **/

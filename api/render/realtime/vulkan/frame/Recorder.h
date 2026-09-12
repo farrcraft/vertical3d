@@ -39,12 +39,24 @@ class Recorder final {
     struct Target {
         Target() noexcept;
 
-        VkImage image;         /**< transitioned for drawing and then for presenting **/
+        VkImage image;         /**< transitioned for drawing and then into finalLayout **/
         VkImageView view;      /**< the colour attachment the passes draw into **/
         VkExtent2D extent;     /**< the size of the image **/
         VkImage depthImage;    /**< the depth buffer, or null when there is none **/
         VkImageView depthView; /**< the attachment a pass that depth tests draws into **/
         bool sampledDepth;     /**< whether a later pass reads that depth image **/
+
+        /**
+         * What the frame leaves the image in.
+         *
+         * PRESENT_SRC by default, because a frame is usually drawn to be presented and that
+         * is the layout the presentation engine reads. A frame with no chain under it is not
+         * presented and cannot use it - the layout is only valid where VK_KHR_swapchain is
+         * enabled, so asking for it on a headless device is a validation error rather than a
+         * pointless transition. Such a frame names what it is drawn for instead, which for
+         * one that is captured or sampled afterwards is SHADER_READ_ONLY_OPTIMAL.
+         **/
+        VkImageLayout finalLayout;
     };
 
     /**

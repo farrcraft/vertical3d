@@ -11,11 +11,11 @@ namespace v3d::render::realtime {
 /**
  **/
 DeviceContext::DeviceContext(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<vulkan::device::Device>& device,
-    uint32_t framesInFlight) :
+    VkFormat colour, const VkExtent2D& extent, uint32_t framesInFlight) :
 logger_(logger),
 device_(device),
-colourFormat_(VK_FORMAT_UNDEFINED),
-extent_{0, 0},
+colourFormat_(colour),
+extent_(extent),
 depthFormat_(VK_FORMAT_UNDEFINED) {
     ring_ = boost::make_shared<vulkan::frame::Ring>(device_, framesInFlight);
     pipelineCache_ = boost::make_shared<vulkan::pipeline::Cache>(device_);
