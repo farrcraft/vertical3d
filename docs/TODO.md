@@ -57,6 +57,17 @@ it as an open question and could not settle it.
 [] nothing in the api reads or writes a map. The one format that exists is odyssey's own, in `odyssey/tile/Map.cpp`, so anything wanting to load a grid - a map editor, a generator, a second game - writes its own loader or lifts that file. A format in the api earns a record when a second consumer reads one
 [] `TileFilter` is a `std::function` called for every neighbour of every visited tile, which is the first thing to templatise if a board is ever large enough to notice
 
+## Sprite sheets
+
+`image::TextureAtlas` places regions, `config::SpriteSheets` reads and writes the document that
+names them, and `image::crop` cuts one back out of a sheet. Every half of a packer's round trip
+is in the tree.
+
+[] nothing in the tree packs a sheet or unpacks one. The pieces are all here and there is no
+tool over them, so an app adopting a packer with an existing hand-packed sheet still writes its
+own explode step outside the tree - which means an image codec outside the tree. Whether that
+tool is `imagetool`'s, its own `spritetool`'s, or stays with whoever needs it is undecided
+
 ## Models
 
 `api/asset` reads glTF 2.0 into a `v3d::type::Model`, which is the only geometry the api loads

@@ -5,7 +5,8 @@ v3d_add_test(image
 	"ImageReaderTest.cxx"
 	"ImageWriterTest.cxx"
 	"TextureTest.cxx"
-	"TextureAtlasTest.cxx")
+	"TextureAtlasTest.cxx"
+	"CropTest.cxx")
 
 target_link_libraries(v3dtest_image PRIVATE v3dlib_image ${Boost_LIBRARIES} ${PNG_LIBRARIES} JPEG::JPEG)
 
