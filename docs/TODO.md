@@ -63,11 +63,6 @@ it as an open question and could not settle it.
 names them, and `image::crop` cuts one back out of a sheet. Every half of a packer's round trip
 is in the tree.
 
-[] no writer encodes a one channel image. `Image::Format::Grey` is a format the tree makes -
-every font atlas is one - and all four writers refuse it, so a depth 1 atlas cannot be dumped
-to disk to be looked at. png and tga both have a grey form; bmp and jpeg would need a palette
-or a colour space
-
 [] nothing in the tree packs a sheet or unpacks one. The pieces are all here and there is no
 tool over them, so an app adopting a packer with an existing hand-packed sheet still writes its
 own explode step outside the tree - which means an image codec outside the tree. Whether that

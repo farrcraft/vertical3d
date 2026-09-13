@@ -270,25 +270,67 @@ BOOST_FIXTURE_TEST_CASE(imagereader_greyscale_jpeg_test, OutputDirectory) {
     }
 }
 
+
 /**
- * Every writer encodes three channels or four, and each reads a row as though it held that
- * many: the bmp writer takes src[column * channels + 2] per pixel, which on a one channel
- * image is two bytes past where that pixel ends. So a grey image is refused, and refused
- * before the file is opened rather than after an empty one is left behind.
+ * A one channel image goes out as the grey form of each format that has one, and the picture
+ * survives being read back.
+ *
+ * **What comes back is not always grey, and the three disagree about it**: the png reader
+ * asks libpng for gray_to_rgb and the bmp reader resolves every index through the palette, so
+ * both hand back RGB; the tga reader builds an image at the file's own depth and hands the
+ * grey back as grey. That is pinned per format below rather than averaged over, because it is
+ * the sort of thing a caller writes an assumption about.
+ *
+ * The values are a ramp, so a stride or a palette index that is out by one shows up as a
+ * shifted picture rather than as a plausible wrong colour.
  **/
-BOOST_FIXTURE_TEST_CASE(imagewriter_refuses_a_grey_image, OutputDirectory) {
-    boost::shared_ptr<v3d::image::Image> grey = boost::make_shared<v3d::image::Image>(2, 2, 8);
+BOOST_FIXTURE_TEST_CASE(imagewriter_grey_test, OutputDirectory) {
+    const unsigned int side = 4;
+    boost::shared_ptr<v3d::image::Image> grey =
+        boost::make_shared<v3d::image::Image>(side, side, 8);
     BOOST_REQUIRE((grey->format() == v3d::image::Image::Format::Grey));
+    for (unsigned int i = 0; i < side * side; ++i) {
+        (*grey)[i] = static_cast<unsigned char>(i * 16);
+    }
 
     boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::Factory factory(logger);
 
-    const char* const names[] = {
-        "data_out/grey.png", "data_out/grey.bmp", "data_out/grey.jpg", "data_out/grey.tga"
+    struct Expectation {
+        const char* name;
+        v3d::image::Image::Format format;
     };
-    for (const char* const name : names) {
-        boost::filesystem::remove(name);
-        BOOST_CHECK_EQUAL(factory.write(name, grey), false);
-        BOOST_CHECK_EQUAL(boost::filesystem::exists(name), false);
+    const Expectation lossless[] = {
+        { "data_out/grey.png", v3d::image::Image::Format::RGB },
+        { "data_out/grey.bmp", v3d::image::Image::Format::RGB },
+        { "data_out/grey.tga", v3d::image::Image::Format::Grey }
+    };
+
+    for (const Expectation& expected : lossless) {
+        BOOST_REQUIRE_EQUAL(factory.write(expected.name, grey), true);
+
+        const boost::shared_ptr<v3d::image::Image> back = factory.read(expected.name);
+        BOOST_REQUIRE(back);
+        BOOST_CHECK_EQUAL(back->width(), side);
+        BOOST_CHECK_EQUAL(back->height(), side);
+        BOOST_CHECK((back->format() == expected.format));
+
+        // every colour channel of a grey pixel is that grey, whether there is one of them
+        // or three
+        const unsigned int channels = static_cast<unsigned int>(back->format());
+        for (unsigned int pixel = 0; pixel < side * side; ++pixel) {
+            for (unsigned int channel = 0; channel < channels && channel < 3; ++channel) {
+                BOOST_CHECK_EQUAL(static_cast<int>((*back)[pixel * channels + channel]),
+                    static_cast<int>((*grey)[pixel]));
+            }
+        }
     }
+
+    // jpeg is lossy, so this says the grey was encoded and decodes to the right shape rather
+    // than to the right bytes
+    BOOST_REQUIRE_EQUAL(factory.write("data_out/grey.jpg", grey), true);
+    const boost::shared_ptr<v3d::image::Image> decoded = factory.read("data_out/grey.jpg");
+    BOOST_REQUIRE(decoded);
+    BOOST_CHECK_EQUAL(decoded->width(), side);
+    BOOST_CHECK_EQUAL(decoded->height(), side);
 }

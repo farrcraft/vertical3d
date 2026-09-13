@@ -47,9 +47,7 @@ Png::Png(const boost::shared_ptr<v3d::log::Logger>& logger) : Writer(logger) {
 /**
  **/
 bool Png::write(std::string_view filename, const boost::shared_ptr<Image>& img) {
-    // this encodes three channels or four and reads every row as though it held that many,
-    // so a one channel image is refused rather than read past the end of each of its rows
-    if (!img || img->format() == Image::Format::Grey) {
+    if (!img) {
         return false;
     }
 
@@ -86,14 +84,20 @@ bool Png::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     // writer does not set have to be zero rather than indeterminate.
     png_color_8 sig_bit = {};
     const png_byte bytes = static_cast<png_byte>(img->bpp() / static_cast<int>(img->format()));
-    sig_bit.red = bytes;
-    sig_bit.green = bytes;
-    sig_bit.blue = bytes;
 
     int color_type = PNG_COLOR_TYPE_RGB;
-    if (img->format() == Image::Format::RGBA) {
-        color_type = PNG_COLOR_TYPE_RGB_ALPHA;
-        sig_bit.alpha = bytes;
+    if (img->format() == Image::Format::Grey) {
+        // a grey png carries its depth in the gray member and has no colour members at all
+        color_type = PNG_COLOR_TYPE_GRAY;
+        sig_bit.gray = bytes;
+    } else {
+        sig_bit.red = bytes;
+        sig_bit.green = bytes;
+        sig_bit.blue = bytes;
+        if (img->format() == Image::Format::RGBA) {
+            color_type = PNG_COLOR_TYPE_RGB_ALPHA;
+            sig_bit.alpha = bytes;
+        }
     }
     png_set_IHDR(png_ptr, info_ptr, img->width(), img->height(), bytes, color_type,
         PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
