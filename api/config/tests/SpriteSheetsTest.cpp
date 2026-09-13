@@ -4,6 +4,7 @@
  **/
 
 #include <api/config/SpriteSheets.h>
+#include <api/asset/Writer.h>
 
 #include <string>
 
@@ -143,4 +144,123 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_missing_document_test) {
     glm::vec2 uv0(0.0f, 0.0f);
     glm::vec2 uv1(0.0f, 0.0f);
     BOOST_CHECK(!absent.uv("anything", &uv0, &uv1));
+}
+
+/**
+ * The document write() emits is the document load() reads, through the text form that
+ * actually reaches a file.
+ *
+ * This is the case the write side exists for. A packer that emitted the format from its own
+ * code would be a second implementation of it, and the two would drift the way this format
+ * specialises in: place() drops a region it does not like and keeps the sheet, get() answers
+ * a missing name with an empty region, and uv() answers false - so a sheet that stopped
+ * being emitted correctly draws as nothing and reports nothing.
+ **/
+BOOST_AUTO_TEST_CASE(sprite_sheets_round_trip_test) {
+    v3d::config::SpriteSheets loaded(logger());
+    BOOST_REQUIRE_EQUAL(loaded.load(config(sheets)), true);
+
+    // through serializeDocument rather than straight back, because the text form is what a
+    // file holds and a number that widened on the way out would only show up here
+    const std::string text = v3d::asset::serializeDocument(loaded.document());
+    v3d::config::SpriteSheets reloaded(logger());
+    BOOST_REQUIRE_EQUAL(reloaded.load(config(text)), true);
+
+    BOOST_REQUIRE_EQUAL(reloaded.names().size(), loaded.names().size());
+    for (size_t i = 0; i < loaded.names().size(); ++i) {
+        // the order sheets were written in is the order they come back in, so re-packing
+        // one sheet does not move the others in the diff
+        BOOST_REQUIRE_EQUAL(reloaded.names()[i], loaded.names()[i]);
+
+        const v3d::config::SpriteSheet before = loaded.get(loaded.names()[i]);
+        const v3d::config::SpriteSheet after = reloaded.get(reloaded.names()[i]);
+        BOOST_CHECK_EQUAL(after.image(), before.image());
+        BOOST_CHECK_EQUAL(after.width(), before.width());
+        BOOST_CHECK_EQUAL(after.height(), before.height());
+
+        BOOST_REQUIRE_EQUAL(after.sprites().size(), before.sprites().size());
+        for (size_t j = 0; j < before.sprites().size(); ++j) {
+            BOOST_REQUIRE_EQUAL(after.sprites()[j], before.sprites()[j]);
+            const v3d::config::SpriteRegion one = before.get(before.sprites()[j]);
+            const v3d::config::SpriteRegion two = after.get(after.sprites()[j]);
+            BOOST_CHECK_EQUAL(two.x, one.x);
+            BOOST_CHECK_EQUAL(two.y, one.y);
+            BOOST_CHECK_EQUAL(two.width, one.width);
+            BOOST_CHECK_EQUAL(two.height, one.height);
+        }
+    }
+}
+
+/**
+ * A sheet built to be written refuses exactly what a sheet read from a document refuses, so
+ * a packer cannot emit a region the reader would drop on the way back in.
+ **/
+BOOST_AUTO_TEST_CASE(sprite_sheets_build_a_document_test) {
+    v3d::config::SpriteSheet packed("hud", "art/hud.png", 128, 64);
+    BOOST_CHECK(packed.place("heart", v3d::config::SpriteRegion()) == false);
+
+    v3d::config::SpriteRegion heart;
+    heart.x = 0;
+    heart.y = 0;
+    heart.width = 16;
+    heart.height = 16;
+    BOOST_CHECK(packed.place("heart", heart));
+
+    // the same validation place() applies to a region read out of a document
+    v3d::config::SpriteRegion overruns;
+    overruns.x = 120;
+    overruns.y = 0;
+    overruns.width = 16;
+    overruns.height = 16;
+    BOOST_CHECK(!packed.place("overruns", overruns));
+
+    v3d::config::SpriteSheets built(logger());
+    BOOST_REQUIRE(built.add(packed));
+
+    v3d::config::SpriteSheets reloaded(logger());
+    BOOST_REQUIRE_EQUAL(reloaded.load(config(v3d::asset::serializeDocument(built.document()))), true);
+    BOOST_REQUIRE_EQUAL(reloaded.names().size(), 1u);
+
+    const v3d::config::SpriteSheet hud = reloaded.get("hud");
+    BOOST_CHECK_EQUAL(hud.image(), "art/hud.png");
+    BOOST_REQUIRE_EQUAL(hud.sprites().size(), 1u);
+    BOOST_CHECK_EQUAL(hud.sprites()[0], "heart");
+    BOOST_CHECK_EQUAL(hud.get("heart").width, 16);
+}
+
+/**
+ * Packing one sheet of several replaces that sheet and leaves the rest alone, which is the
+ * whole of what a tool needs to keep a document it only partly owns.
+ **/
+BOOST_AUTO_TEST_CASE(sprite_sheets_add_replaces_one_sheet_test) {
+    v3d::config::SpriteSheets loaded(logger());
+    BOOST_REQUIRE_EQUAL(loaded.load(config(sheets)), true);
+    BOOST_REQUIRE_EQUAL(loaded.names().size(), 2u);
+
+    v3d::config::SpriteSheet repacked("terrain", "terrain.png", 512, 512);
+    v3d::config::SpriteRegion grass;
+    grass.x = 0;
+    grass.y = 0;
+    grass.width = 128;
+    grass.height = 128;
+    BOOST_REQUIRE(repacked.place("grass", grass));
+    BOOST_REQUIRE(loaded.add(repacked));
+
+    // replaced rather than merged into, and it kept its place in the order
+    BOOST_REQUIRE_EQUAL(loaded.names().size(), 2u);
+    BOOST_CHECK_EQUAL(loaded.names()[0], "terrain");
+    const v3d::config::SpriteSheet terrain = loaded.get("terrain");
+    BOOST_CHECK_EQUAL(terrain.width(), 512);
+    BOOST_REQUIRE_EQUAL(terrain.sprites().size(), 1u);
+    BOOST_CHECK(!terrain.has("water"));
+
+    // and the sheet nobody packed is untouched, which is what loading before writing buys
+    const v3d::config::SpriteSheet actors = loaded.get("actors");
+    BOOST_CHECK_EQUAL(actors.image(), "actors.png");
+    BOOST_CHECK(actors.has("player"));
+
+    // a sheet that could not be read back is not one that can be put in
+    BOOST_CHECK(!loaded.add(v3d::config::SpriteSheet()));
+    BOOST_CHECK(!loaded.add(v3d::config::SpriteSheet("sizeless", "sizeless.png", 0, 0)));
+    BOOST_CHECK_EQUAL(loaded.names().size(), 2u);
 }

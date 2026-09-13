@@ -113,6 +113,10 @@ from a subclass with no window in sight. `EngineTest` drives it directly.
   `imagereader_buffer_matches_the_path` reads each fixture both ways and compares them pixel
   for pixel. That is the case that would catch a format whose two entry points drifted apart -
   which cannot happen while there is only one, and is why there is only one.
+- **The sprite sheet round trip goes through the text form, not straight back.**
+  `sprite_sheets_round_trip_test` serializes what `document()` emits and parses it again before
+  loading, because the file is what a packer and an app actually share - a number that widened
+  on the way out, or a key emitted under the wrong name, shows up there and nowhere else.
 - **The atlas suite states its invariant without knowing where the packer put anything.**
   `textureatlas_regions_do_not_touch` fills every region it allocates and then reads the ring of
   texels around each one: a gutter still at zero was written by nobody, since the atlas clears

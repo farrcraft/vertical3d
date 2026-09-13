@@ -46,6 +46,16 @@ class SpriteSheet final {
     SpriteSheet();
 
     /**
+     * Build a sheet to put sprites in, for a packer emitting a document rather than a
+     * reader filling one out.
+     *
+     * The size is given here and not per sprite because it is what place() measures a
+     * region against - so a sheet built this way refuses exactly what a sheet read from a
+     * document refuses, and a tool cannot emit a region the reader will drop.
+     **/
+    SpriteSheet(const std::string& name, const std::string& image, int width, int height);
+
+    /**
      * @return what the sheet is called, as whatever names one names it
      **/
     const std::string& name() const noexcept;
@@ -114,6 +124,14 @@ class SpriteSheet final {
  * The same shape as CameraProfiles: one document holds every sheet an app has, each named,
  * and this hands them out by name. What a sprite *means* - whether it animates, what it
  * stands on, how big it is drawn - is the app's, exactly as what a camera profile means is.
+ *
+ * **Unlike the other config readers this one also writes**, because a sprite sheet is the
+ * only one of these documents a tool produces rather than a person: it is packed, and a
+ * packer that emits the format from its own code is a second implementation of it that
+ * drifts from this one silently - a sheet that stopped being emitted correctly draws as
+ * nothing and says nothing, since get() answers a missing name with an empty region and
+ * uv() answers false. load() and document() are the same table read and written, so there
+ * is nothing for the two halves to disagree about.
  **/
 class SpriteSheets final {
  public:
@@ -150,6 +168,32 @@ class SpriteSheets final {
      * @return the sheet names, in the order the document listed them
      **/
     const std::vector<std::string>& names() const noexcept;
+
+    /**
+     * Put a sheet in, replacing any sheet of the same name.
+     *
+     * **Replacing is what packing one sheet of several means**, and it is why there is no
+     * merge here: a tool that wants to keep the sheets it did not pack load()s the document
+     * first and writes back what it then holds, and one that does not, does not. The
+     * decision stays where the tool's other decisions are rather than being a mode on this.
+     *
+     * @return whether the sheet is one a document can hold - it needs a name, an image and
+     *         a size, which is what load() requires of one it reads
+     **/
+    bool add(const SpriteSheet& sheet);
+
+    /**
+     * Every sheet held, as the document load() reads.
+     *
+     * Sheets come out in the order they went in and so do the sprites within them, so
+     * re-packing a sheet moves only what actually moved and the diff is one a person can
+     * read. Writing it to a file is asset::writeDocument's, per ADR-0041: what a document
+     * holds is decided here and how it reaches the disk is not.
+     *
+     * A caller is free to add keys of its own to what comes back - a note saying which tool
+     * generated the file, say. load() ignores what it does not recognise.
+     **/
+    boost::json::value document() const;
 
  private:
     boost::shared_ptr<v3d::log::Logger> logger_;

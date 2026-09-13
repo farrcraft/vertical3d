@@ -48,7 +48,10 @@ An app that reimplements one of these has diverged rather than customised.
 `data/config.json`, which must use the indirect form:
 `{"configs": [{"type": "...", "file": "..."}]}`. Pong's `data/` is the reference. The types are
 `window`, `binding`, `ui`, `sound`, `camera`, `layout` and `sprite`; the last is a table of
-names over pixel rectangles in an image, read by `config::SpriteSheets`.
+names over pixel rectangles in an image, read by `config::SpriteSheets`. **That one is also
+the only config document the tree writes**: a sprite sheet is packed by a tool rather than
+typed by a person, so `SpriteSheets::document()` emits what `load()` reads and a packer does
+not carry a second implementation of the format.
 
 **A config document names an image and never loads one**, per
 [ADR-0020](adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md): a theme's images and a
