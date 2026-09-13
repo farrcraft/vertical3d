@@ -1,6 +1,6 @@
 # The User Interface
 
-What `api/ui` does, as of 2026-09-08. Open questions are at the end.
+What `api/ui` does, as of 2026-09-13. Open questions are at the end.
 
 The decisions behind its shape are [ADR-0019](adr/0019-the-ui-is-laid-out-by-what-draws-it.md),
 [ADR-0020](adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md),
@@ -362,8 +362,10 @@ boxes the draw left or on the primitives it emitted. [Testing.md](Testing.md) ha
 
 ## What is not built yet
 
-- **A scrollbar scrolls nothing.** It is the arithmetic, and putting one beside a `SelectList`
-  is still the app's.
+- **A scrollbar bound to no list scrolls nothing.** It is the arithmetic: a bar told which
+  `SelectList` it scrolls moves that list, and one given a range of its own leaves the app to
+  read `offset()` and translate whatever it scrolls. Laying one out beside the thing it scrolls
+  is the app's either way.
 - **An `Immediate` widget is hovered a frame after it is drawn**, which is what lets a window
   drawn later take the cursor from one under it.
 - **An `Immediate` widget takes the rest of its row unless told otherwise.**
