@@ -47,14 +47,6 @@ bool Window::create(int width, int height) {
         return false;
     }
 
-    // SDL3 sends no SDL_EVENT_TEXT_INPUT until text input is started, so a ui text box
-    // would hear the keys and never the characters - ADR-0040. It is started for the life
-    // of the window rather than as a box takes the focus: on a desktop it costs nothing,
-    // and stopping it is what would raise and lower an on screen keyboard elsewhere
-    if (!SDL_StartTextInput(window_)) {
-        logger_->get()->warn("Text input could not be started, so typing will not reach a ui: {}", SDL_GetError());
-    }
-
     // the extensions SDL needs to be able to present to this window
     uint32_t extensionCount = 0;
     const char* const* extensionNames = SDL_Vulkan_GetInstanceExtensions(&extensionCount);
@@ -151,6 +143,26 @@ bool Window::focused() const {
         return false;
     }
     return (SDL_GetWindowFlags(window_) & SDL_WINDOW_INPUT_FOCUS) != 0;
+}
+
+/**
+ **/
+bool Window::textInput(bool on) {
+    if (window_ == nullptr) {
+        return false;
+    }
+    const bool ok = on ? SDL_StartTextInput(window_) : SDL_StopTextInput(window_);
+    if (!ok) {
+        logger_->get()->warn("Text input could not be turned {}, so typing may not reach a ui: {}",
+            on ? "on" : "off", SDL_GetError());
+    }
+    return ok;
+}
+
+/**
+ **/
+bool Window::textInput() const {
+    return window_ != nullptr && SDL_TextInputActive(window_);
 }
 
 /**

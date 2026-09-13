@@ -138,7 +138,9 @@ constructors, the way `TextBox` always did, rather than waiting for a config fla
   override.
 - `SDL_StartTextInput` is called for the life of the window rather than as a box takes the
   focus. On a desktop that costs nothing; on a platform with an on-screen keyboard it would
-  raise one and never lower it.
+  raise one and never lower it. Taken up by
+  [ADR-0058](0058-the-platform-half-of-a-ui-router-is-the-apis.md), which made text input
+  follow the focus.
 - A key that composes text is consumed while a box has the focus even when the box then refuses
   the character, so an app cannot bind a letter to anything that should work while typing.
 - A press was the only thing that moved the focus, so there was no tab order. This decision has
@@ -146,7 +148,9 @@ constructors, the way `TextBox` always did, rather than waiting for a config fla
   `focus()`, walking the tree in draw order, `Engine::focusFirst()` is a third, and
   `Keys::press()` routes tab to `focusNext()`.
 - `Cursor` and `Keys` are two objects an app has to hold and two calls it has to make, and
-  nothing enforces that it makes both.
+  nothing enforces that it makes both. Still true of the cursor:
+  [ADR-0058](0058-the-platform-half-of-a-ui-router-is-the-apis.md) gave the keyboard half a
+  seam of its own and deliberately left the mouse to the app.
 
 ### Risks
 - **A list and a tab bar do not wrap under the arrows**, while tab wraps at each end. Running

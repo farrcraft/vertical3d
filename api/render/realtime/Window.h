@@ -107,6 +107,29 @@ class Window final {
     bool focused() const;
 
     /**
+     * Start or stop the platform composing text, which is what decides whether
+     * SDL_EVENT_TEXT_INPUT arrives at all.
+     *
+     * SDL3 sends none until it is asked to, so a ui text box would otherwise hear the keys
+     * and never the characters - ADR-0040. It is off with the window and turned on for as
+     * long as something is focused that takes typing, rather than for the life of the
+     * window: on a desktop either costs nothing, but starting it is what raises an on
+     * screen keyboard, and one that is never stopped is one that never lowers.
+     *
+     * ui::shell::Keyboard is what follows the focus and calls this, so an app that routes
+     * its keyboard through that seam does not call it itself.
+     *
+     * @param on whether to compose
+     * @return whether the platform agreed, which a window that has not been created is not
+     **/
+    bool textInput(bool on);
+
+    /**
+     * @return whether the platform is composing text
+     **/
+    bool textInput() const;
+
+    /**
      * Toggle mouse cursor visibility
      * @param state whether to enable or disable
      */

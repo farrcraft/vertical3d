@@ -173,6 +173,17 @@ void Engine::focus(const boost::shared_ptr<Component>& component) {
         wanted->focused(true);
     }
     focused_ = wanted;
+    // after both components have been told, so that a listener asking focused() is answered
+    // the move rather than the middle of it
+    if (moved_) {
+        moved_(wanted);
+    }
+}
+
+/**
+ **/
+void Engine::onFocus(const Focused& moved) {
+    moved_ = moved;
 }
 
 /**

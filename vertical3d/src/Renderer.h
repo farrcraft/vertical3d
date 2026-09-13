@@ -84,6 +84,16 @@ class Renderer final {
     void ui(const boost::shared_ptr<v3d::ui::Engine>& ui);
 
     /**
+     * How wide a run of text is at the size the ui is drawn in.
+     *
+     * The cursor routing a press needs the same one this draws with, or a click inside a
+     * text box would place the caret somewhere other than under the pointer - ADR-0057.
+     * Asking the renderer is what keeps them the same callback rather than two built from
+     * the same font and trusted to agree.
+     **/
+    v3d::ui::paint::Measure measure() const;
+
+    /**
      * How much of the window's edges the ui covers - the menu bar and the toolbars - which
      * is what the views are not given. Left in x and top in y.
      **/

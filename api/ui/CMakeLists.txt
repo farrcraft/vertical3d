@@ -36,6 +36,7 @@ v3d_add_api_library(ui
 	"paint/Text.h" "paint/Text.cpp"
 	"paint/TextRenderer.h" "paint/TextRenderer.cpp"
 	"shell/GameMenu.h" "shell/GameMenu.cpp"
+	"shell/Keyboard.h" "shell/Keyboard.cpp"
 	"shell/StatisticsOverlay.h" "shell/StatisticsOverlay.cpp"
 	"style/Button.h" "style/Button.cpp"
 	"style/Menu.h" "style/Menu.cpp"
@@ -67,7 +68,10 @@ target_link_libraries(v3dlib_ui PUBLIC
 	EnTT::EnTT)
 
 # PRIVATE: TextRenderer packs its glyphs into an image::TextureAtlas, which no ui header names.
-target_link_libraries(v3dlib_ui PRIVATE v3dlib_image)
+# v3dlib_input: shell/Keyboard.cpp decodes an SDL key through input::keyName, so that the name
+# a binding is written against and the name a text box answers come from one table. The header
+# names neither the device nor SDL_Event beyond a forward declaration.
+target_link_libraries(v3dlib_ui PRIVATE v3dlib_image v3dlib_input)
 
 target_compile_options(v3dlib_ui PRIVATE /EHsc)
 

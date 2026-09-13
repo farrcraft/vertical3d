@@ -107,6 +107,15 @@ void Renderer::manipulator(const boost::shared_ptr<Manipulator>& manipulator) {
 
 /**
  **/
+v3d::ui::paint::Measure Renderer::measure() const {
+    if (!text_) {
+        return v3d::ui::paint::Measure();
+    }
+    return text_->measure(fontSize);
+}
+
+/**
+ **/
 void Renderer::ui(const boost::shared_ptr<v3d::ui::Engine>& ui) {
     ui_ = ui;
     if (!ui_ || !uiRenderer_) {

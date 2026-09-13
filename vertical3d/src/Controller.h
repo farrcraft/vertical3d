@@ -11,6 +11,7 @@
 #include <api/event/kind/MouseMotion.h>
 #include <api/event/kind/WindowResize.h>
 #include <api/ui/input/Cursor.h>
+#include <api/ui/shell/Keyboard.h>
 #include <api/ui/Engine.h>
 #include <api/ui/component/Toolbar.h>
 #include <api/ui/component/menu/MenuBar.h>
@@ -61,6 +62,15 @@ class Controller final : public v3d::engine::Engine {
     /**
      **/
     bool shutdown() override;
+
+    /**
+     * Offer every event to the ui before the bindings map it, per ADR-0043.
+     *
+     * Only the keyboard goes this way. A press has to interleave with the camera and the
+     * transform tools - drag() offers the ui the press and drives a camera with the one it
+     * did not take - so the cursor is routed from a mapped command as it always was.
+     **/
+    bool onEvent(const SDL_Event& event) override;
 
     /**
      * A mapped event. Its identity is a command name, so this is a lookup in the
@@ -191,6 +201,7 @@ class Controller final : public v3d::engine::Engine {
     boost::shared_ptr<Scene> scene_;
     boost::shared_ptr<v3d::ui::Engine> vgui_;
     boost::shared_ptr<v3d::ui::input::Cursor> uiCursor_;
+    boost::shared_ptr<v3d::ui::shell::Keyboard> uiKeys_;
     boost::shared_ptr<v3d::ui::component::MenuBar> menu_;
     std::vector<boost::shared_ptr<v3d::ui::component::Toolbar>> toolbars_;
     boost::shared_ptr<Project> project_;

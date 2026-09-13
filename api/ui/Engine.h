@@ -96,6 +96,34 @@ class Engine {
     boost::shared_ptr<Component> focused() const;
 
     /**
+     * What the focus having moved is announced to.
+     *
+     * @param focused what the keyboard is now on, or null for nothing
+     **/
+    typedef std::function<void(const boost::shared_ptr<Component>& focused)> Focused;
+
+    /**
+     * Be told when the focus moves, which is how anything outside this library follows it.
+     *
+     * Three things move it and an app sees none of them directly - a press through
+     * ui::Cursor, tab through ui::Keys, and focusFirst() - so polling would be the only
+     * other way and it would be a frame late. A frame is the whole difference here: the
+     * platform composes no text until it is asked to, so a box clicked into and typed
+     * into in the same frame would lose the first character.
+     *
+     * Announced only when the focus actually changed, and after both components have been
+     * told, so what is handed over is what focused() would answer - a component that did
+     * not ask to be focusable is nothing, and nothing is what is announced.
+     *
+     * One listener, and the last caller wins. ui::shell::Keyboard is what this exists for
+     * and it gives the callback back as it goes, so an app wanting one of its own sets it
+     * after the seam is built and clears it before the seam goes.
+     *
+     * @param moved what to call, or an empty function to stop being told
+     **/
+    void onFocus(const Focused& moved);
+
+    /**
      * Move the focus to the next focusable component, or to the one before it, extending
      * ADR-0040 with a second way for the focus to move.
      *
@@ -182,6 +210,7 @@ class Engine {
     // component belongs to its container, and a focus outliving one that was unloaded
     // should not keep it alive
     boost::weak_ptr<Component> focused_;
+    Focused moved_;
 };
 
 };  // namespace v3d::ui

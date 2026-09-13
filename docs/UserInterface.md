@@ -12,8 +12,9 @@ The decisions behind its shape are [ADR-0019](adr/0019-the-ui-is-laid-out-by-wha
 [ADR-0039](adr/0039-layout-never-reads-the-box-it-wrote.md),
 [ADR-0040](adr/0040-a-key-goes-to-a-focused-component.md),
 [ADR-0045](adr/0045-a-window-is-dragged-by-the-bar-that-folds-it.md),
-[ADR-0046](adr/0046-a-table-given-a-height-scrolls-in-its-own-right.md) and
-[ADR-0057](adr/0057-a-selection-is-an-anchor-the-caret-moved-from.md). Those say why; this
+[ADR-0046](adr/0046-a-table-given-a-height-scrolls-in-its-own-right.md),
+[ADR-0057](adr/0057-a-selection-is-an-anchor-the-caret-moved-from.md) and
+[ADR-0058](adr/0058-the-platform-half-of-a-ui-router-is-the-apis.md). Those say why; this
 says what.
 
 ## Two ways to write a ui, and which to reach for
@@ -49,6 +50,7 @@ ComponentRenderer   paints a component, and owns the two below
 Immediate     the other way to write a ui - layout and paint in one pass
 Cursor        turns a point into a command, moves the focus, and places a caret
 Keys          turns a key into an edit on whatever has the focus
+  shell::Keyboard  the platform half of it: an SDL event in, and text input following the focus
 TextRenderer  one font, one atlas, and the Measure/Write pair both renderers take
 Painter.h     fillBox, strokeBox and plateBox, which both ways draw out of
 ```
@@ -320,11 +322,52 @@ component, and a component dressed by the base alone is ringed out of it. The dr
 it rather than any one component, because where the keyboard is is the ui's business and one
 ring drawn one way is the point of it.
 
-The characters come from `event::TextInput`, which `input::Keyboard` raises from SDL's text
-input — shift already applied, a dead key and the one after it already one character, an input
-method's several keys already however many characters it decided on.
-`realtime::Window` starts text input with the window, because SDL sends none until it is asked
-to.
+The characters come from SDL's text input — shift already applied, a dead key and the one after
+it already one character, an input method's several keys already however many characters it
+decided on. `input::Keyboard` raises them as `event::TextInput` for anything that wants them as
+an event; the ui gets them through the seam below, ahead of the bindings.
+
+## The seam an app writes
+
+`ui::Keys` names no platform type, which is what leaves it testable without a window and leaves
+an app four things to do before it runs: decode the event, read the modifiers off it, find a
+clipboard, and get the platform composing at all. That is the same work in every app, so it is
+the api's — `ui::shell::Keyboard`, per
+[ADR-0058](adr/0058-the-platform-half-of-a-ui-router-is-the-apis.md).
+
+```cpp
+uiKeys_ = boost::make_shared<v3d::ui::shell::Keyboard>(vgui_, dispatcher_, window());
+
+bool App::onEvent(const SDL_Event& event) {
+    return uiKeys_->event(event);
+}
+```
+
+It goes in `onEvent()` because [ADR-0043](adr/0043-an-app-sees-an-event-before-the-bindings-do.md)
+puts the app ahead of the bindings: a key the ui took must not also fire the command bound to
+it, and returning true is what stops it. **Only a key going down is ever taken.** A release
+always goes through, so a key held when a box took the focus is still seen to come up and
+`input::KeyState` is not left holding it down. A key `api/input` has no name for is not taken
+either, since it is nothing the ui could have acted on.
+
+The key name is `input::keyName()`'s — the same table the device binding that key reads — so a
+binding written against backspace and what a text box answers cannot drift apart. Shift and
+control come off the event rather than from the keyboard's held state, because what a key meant
+is what was down as it arrived.
+
+**Text input follows the focus.** The platform composes nothing until it is asked to, so the
+seam turns `Window::textInput()` on while a text box holds the keyboard and off again after. It
+follows `Engine::onFocus()` rather than checking per event, because the focus also moves under a
+press the seam never sees — a box clicked into and typed into in one frame would otherwise lose
+its first character. `onFocus()` holds one listener and the last caller wins.
+
+The clipboard is SDL's, wired in by the seam; `shell::Keyboard::clipboard()` is public so a
+`ui::Keys` built directly can have the same pair.
+
+**The cursor stays the app's.** `ui::Cursor` takes points rather than events, and a press has to
+interleave with whatever else an app does with one — the editor offers the ui a press and drives
+a camera with the one the ui did not take — so a seam that consumed mouse events would decide
+that for every app.
 
 ## Clipping
 

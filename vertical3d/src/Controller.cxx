@@ -141,8 +141,11 @@ bool Controller::buildUi() {
         return false;
     }
     // the ui knows the order its own strips are drawn in, so it is what offers a cursor to
-    // them - ADR-0038
-    uiCursor_ = boost::make_shared<v3d::ui::input::Cursor>(vgui_, dispatcher_);
+    // them - ADR-0038. The measure is the renderer's own, so that a press inside a text box
+    // lands on the character it looks like it landed on - ADR-0057
+    uiCursor_ = boost::make_shared<v3d::ui::input::Cursor>(vgui_, dispatcher_, renderer_->measure());
+    // the keyboard half, which is the seam an app writes rather than the routing - ADR-0028
+    uiKeys_ = boost::make_shared<v3d::ui::shell::Keyboard>(vgui_, dispatcher_, window());
 
     boost::shared_ptr<v3d::ui::Container> container = vgui_->container(uiContainer);
     if (!container) {
@@ -406,6 +409,12 @@ void Controller::cameraMode(const std::string& name, bool pressed) {
     } else {
         cameraTool_->deactivate(name);
     }
+}
+
+/**
+ **/
+bool Controller::onEvent(const SDL_Event& event) {
+    return uiKeys_ && uiKeys_->event(event);
 }
 
 /**
