@@ -65,3 +65,4 @@ old record's status and leave the file in place.
 | [0054](0054-a-realtime-reference-is-a-picture-the-spec-determines.md) | Golden Images — A Realtime Reference Is A Picture The Specification Determines, Compared At Zero Tolerance | accepted | 2026-09-12 |
 | [0055](0055-a-texture-atlas-gutters-its-own-regions.md) | Atlas Packing — A Texture Atlas Reserves The Gutter Around Every Region, And A Caller Asks For The Size It Will Blit | accepted | 2026-09-12 |
 | [0056](0056-a-look-at-keeps-the-basis-it-built.md) | Camera Precision — `lookat()` Keeps The Basis It Built, And Every Other Writer Of The Rotation Clears It | accepted | 2026-09-12 |
+| [0057](0057-a-selection-is-an-anchor-the-caret-moved-from.md) | Text Editing — A Selection Is An Anchor The Caret Moved From, And The Cursor Measures Text To Place One | accepted | 2026-09-13 |

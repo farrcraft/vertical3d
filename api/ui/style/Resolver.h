@@ -57,7 +57,8 @@ class Resolver final {
         Radio,
         List,
         Tabs,
-        TextBox
+        TextBox,
+        Button
     };
 
     Resolver();
@@ -100,7 +101,10 @@ class Resolver final {
      * skinned from, which are handles rather than colours.
      *
      * Not cached: it is asked for once per button rather than once per component, and a
-     * button's style is chosen by state as well as by name.
+     * button's style is chosen by state as well as by name. Class::Button resolves the one
+     * thing a button does read as a Dressing - its focus ring - and takes the first style
+     * of the class the way every other class does, because a ring says where the keyboard
+     * is rather than what state the button is in.
      **/
     boost::shared_ptr<Style> lookup(const std::string& className,
         const std::string_view& name) const;
@@ -124,7 +128,7 @@ class Resolver final {
     /**
      * How many classes there are, which is how many maps of resolved answers are held.
      **/
-    static constexpr std::size_t classes = 8;
+    static constexpr std::size_t classes = 9;
 
     /**
      * @return the class's name as a theme writes it

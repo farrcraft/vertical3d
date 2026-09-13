@@ -164,6 +164,34 @@ class Builder final {
     Builder& push(VkShaderStageFlags stages, uint32_t bytes);
 
     /**
+     * Compile against a layout the caller already owns, rather than building one.
+     *
+     * The default is to build one from set() and push(), which is what a pipeline that is
+     * the only thing bound through its layout wants, and it is what every renderer in this
+     * tree does. A pass that binds a descriptor set once and then draws with several
+     * pipelines under it wants the other arrangement: one layout, compiled into each of
+     * them, so that the set bound through it stays bound across the switch. Building a
+     * layout per pipeline would work - layouts declaring the same sets and the same push
+     * range are compatible, so the binding survives either way - but it makes a pass that
+     * means to share one hold several that differ in nothing.
+     *
+     * The layout stays the caller's: it is not destroyed with the builder, and it is
+     * handed straight back in the Pipeline so that registering the result still names the
+     * layout its draws bind through. It must outlive them, which is the caller's half of
+     * the arrangement.
+     *
+     * set() then has nothing to describe and is ignored. push() is still read, but only
+     * for the stage flags the returned Pipeline carries so that a draw can push through
+     * the layout given here - the range itself is the caller's, declared when they created
+     * it, and a push() that disagrees with it is a difference Vulkan cannot see and
+     * validation will not report.
+     *
+     * @param layout a layout the caller created and destroys, or VK_NULL_HANDLE to go back
+     *        to building one
+     **/
+    Builder& layout(VkPipelineLayout layout);
+
+    /**
      * The format of the image the pass draws into. Dynamic rendering has no render pass
      * to take it from, so this is not optional.
      *
@@ -230,6 +258,7 @@ class Builder final {
     bool depthBias_;
     VkShaderStageFlags pushStages_;
     uint32_t pushBytes_;
+    VkPipelineLayout layout_;
     std::vector<VkFormat> colours_;
     VkFormat depthFormat_;
 };

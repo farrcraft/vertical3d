@@ -185,6 +185,59 @@ BOOST_AUTO_TEST_CASE(a_scrollbar_does_not_take_a_bars_style) {
 }
 
 /**
+ * A class rings its own control, so a theme can mark a focused text box differently from a
+ * focused list - and a class naming neither keeps the base's ring, which is the one ring every
+ * control showed before a class could ask for its own.
+ **/
+BOOST_AUTO_TEST_CASE(a_class_can_ring_its_own_control) {
+    const boost::shared_ptr<v3d::ui::style::Theme> theme =
+        boost::make_shared<v3d::ui::style::Theme>("dark");
+    const boost::shared_ptr<v3d::ui::style::Style> field = style("default", "textbox");
+    colour(field, "focus", green);
+    metric(field, "focus-width", 4.0f);
+    theme->addStyle(field);
+    // named so that the class is found, and naming no ring of its own
+    theme->addStyle(style("default", "list"));
+
+    Resolver resolver;
+    resolver.base().focus = red;
+    resolver.base().focusWidth = 1.0f;
+    resolver.theme(theme);
+
+    const v3d::ui::paint::Dressing& box = resolver.resolve(Resolver::Class::TextBox, std::string_view());
+    BOOST_CHECK(box.focus == green);
+    BOOST_CHECK_CLOSE(box.focusWidth, 4.0f, 0.001f);
+
+    const v3d::ui::paint::Dressing& list = resolver.resolve(Resolver::Class::List, std::string_view());
+    BOOST_CHECK(list.focus == red);
+    BOOST_CHECK_CLOSE(list.focusWidth, 1.0f, 0.001f);
+}
+
+/**
+ * A button's ring comes out of the "button" class, which is the only thing a button reads as a
+ * Dressing - its fill is nine images and its label is the base's.
+ *
+ * A button's styles are told apart by state as well as by name, and the first of the set is
+ * what answers here, because a ring says where the keyboard is rather than what state the
+ * button is in.
+ **/
+BOOST_AUTO_TEST_CASE(a_buttons_ring_comes_out_of_the_button_class) {
+    const boost::shared_ptr<v3d::ui::style::Theme> theme =
+        boost::make_shared<v3d::ui::style::Theme>("dark");
+    const boost::shared_ptr<v3d::ui::style::Style> pressed = style("default", "button");
+    colour(pressed, "focus", green);
+    theme->addStyle(pressed);
+
+    Resolver resolver;
+    resolver.base().focus = red;
+    resolver.theme(theme);
+
+    BOOST_CHECK(resolver.resolve(Resolver::Class::Button, std::string_view()).focus == green);
+    // and a class the theme says nothing about is still ringed out of the base
+    BOOST_CHECK(resolver.resolve(Resolver::Class::Tabs, std::string_view()).focus == red);
+}
+
+/**
  * The immediate layer reads its own style class, not the retained side's.
  *
  * The two want the same keys at different sizes - a hud is read at a glance and a tool panel

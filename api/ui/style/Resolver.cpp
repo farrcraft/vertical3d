@@ -96,6 +96,7 @@ const char* Resolver::named(Class className) noexcept {
         case Class::List:      return "list";
         case Class::Tabs:      return "tabs";
         case Class::TextBox:   return "textbox";
+        case Class::Button:    return "button";
     }
     return "";
 }
@@ -174,11 +175,21 @@ paint::Dressing Resolver::dress(Class className, const std::string_view& name) c
             // is the component's own rather than the app's
             readColour(style, "caret", &dressing.mark);
             readColour(style, "placeholder", &dressing.track);
+            // what is drawn behind the selected run, the way a list highlights a chosen row
+            readColour(style, "highlight", &dressing.highlight);
             readMetric(style, "border-width", &dressing.borderWidth);
             readMetric(style, "radius", &dressing.radius);
             readMetric(style, "line-height", &dressing.lineHeight);
             break;
+        case Class::Button:
+            // a button's fill is its skin's and its label is the base's, so the ring below
+            // is the whole of what it reads as a Dressing
+            break;
     }
+    // the ring is chrome every class may override, read here rather than in nine branches
+    // that would all say the same thing. A class naming neither is ringed out of the base
+    readColour(style, "focus", &dressing.focus);
+    readMetric(style, "focus-width", &dressing.focusWidth);
     return dressing;
 }
 

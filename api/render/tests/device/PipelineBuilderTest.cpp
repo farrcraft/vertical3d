@@ -237,4 +237,86 @@ BOOST_AUTO_TEST_CASE(blend_factors_reach_the_attachment_as_named) {
     BOOST_CHECK_EQUAL(straight.srcAlphaBlendFactor, VK_BLEND_FACTOR_ONE);
 }
 
+/**
+ * One layout the caller owns is compiled into every pipeline given it, and comes back in each
+ * of them so that registering the result names the layout its draws bind through.
+ *
+ * **This is the arrangement a pass wants when it binds a set once and then draws with several
+ * pipelines under it**, which is where a layout built per pipeline stops being an obvious
+ * equivalent: layouts declaring the same sets and the same push range are compatible, so the
+ * binding would survive either way, but a pass that means to share one would hold several that
+ * differ in nothing.
+ *
+ * **The second half of the assertion is the destroy at the end.** The builder must not free a
+ * layout it was handed - it is destroyed once here, after both pipelines were built from it and
+ * after the builders are gone, and a builder that had freed it would make that a double free
+ * the layer reports rather than a leak nobody sees.
+ **/
+BOOST_AUTO_TEST_CASE(one_layout_the_caller_owns_serves_every_pipeline_given_it) {
+    v3d::test::Headless headless(colourFormat, width, height);
+
+    const boost::shared_ptr<Cache> cache = boost::make_shared<Cache>(headless.device);
+
+    VkPipelineLayoutCreateInfo info{};
+    info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    VkPipelineLayout mine = VK_NULL_HANDLE;
+    BOOST_REQUIRE_EQUAL(vkCreatePipelineLayout(headless.device->handle(), &info, nullptr, &mine), VK_SUCCESS);
+
+    Pipeline first;
+    Pipeline second;
+    {
+        Builder lines(headless.device);
+        describe(&lines);
+        lines.layout(mine).topology(VK_PRIMITIVE_TOPOLOGY_LINE_LIST).colourFormat(colourFormat);
+        first = lines.build(cache);
+
+        Builder triangles(headless.device);
+        describe(&triangles);
+        triangles.layout(mine).colourFormat(colourFormat);
+        second = triangles.build(cache);
+    }
+
+    BOOST_CHECK(first.pipeline != VK_NULL_HANDLE);
+    BOOST_CHECK(second.pipeline != VK_NULL_HANDLE);
+    BOOST_CHECK_EQUAL(first.layout, mine);
+    BOOST_CHECK_EQUAL(second.layout, mine);
+    BOOST_CHECK(first.pipeline != second.pipeline);
+    BOOST_CHECK(headless.silent());
+
+    vkDestroyPipeline(headless.device->handle(), second.pipeline, nullptr);
+    vkDestroyPipeline(headless.device->handle(), first.pipeline, nullptr);
+    vkDestroyPipelineLayout(headless.device->handle(), mine, nullptr);
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * A builder nobody hands a layout still builds its own, and two of them are two layouts - so
+ * the default this adds a door beside is exactly where it was.
+ **/
+BOOST_AUTO_TEST_CASE(a_builder_given_no_layout_still_builds_its_own) {
+    v3d::test::Headless headless(colourFormat, width, height);
+
+    const boost::shared_ptr<Cache> cache = boost::make_shared<Cache>(headless.device);
+
+    Builder first(headless.device);
+    describe(&first);
+    first.colourFormat(colourFormat);
+    const Pipeline one = first.build(cache);
+
+    Builder second(headless.device);
+    describe(&second);
+    second.colourFormat(colourFormat);
+    const Pipeline two = second.build(cache);
+
+    BOOST_CHECK(one.layout != VK_NULL_HANDLE);
+    BOOST_CHECK(two.layout != VK_NULL_HANDLE);
+    BOOST_CHECK(one.layout != two.layout);
+    BOOST_CHECK(headless.silent());
+
+    vkDestroyPipeline(headless.device->handle(), one.pipeline, nullptr);
+    vkDestroyPipeline(headless.device->handle(), two.pipeline, nullptr);
+    vkDestroyPipelineLayout(headless.device->handle(), one.layout, nullptr);
+    vkDestroyPipelineLayout(headless.device->handle(), two.layout, nullptr);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

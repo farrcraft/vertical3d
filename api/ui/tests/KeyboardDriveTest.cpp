@@ -10,6 +10,7 @@
 #include <api/ui/component/CheckBox.h>
 #include <api/ui/component/Panel.h>
 #include <api/ui/component/RadioButton.h>
+#include <api/ui/component/Scrollbar.h>
 #include <api/ui/component/SelectList.h>
 #include <api/ui/component/TabBar.h>
 #include <api/ui/component/TabPage.h>
@@ -83,12 +84,14 @@ BOOST_AUTO_TEST_CASE(a_control_is_focusable_and_pickable_without_being_asked) {
     BOOST_CHECK(boost::make_shared<v3d::ui::component::Button>()->focusable());
     BOOST_CHECK(boost::make_shared<v3d::ui::component::CheckBox>()->focusable());
     BOOST_CHECK(boost::make_shared<v3d::ui::component::RadioButton>()->focusable());
+    BOOST_CHECK(boost::make_shared<v3d::ui::component::Scrollbar>()->focusable());
     BOOST_CHECK(boost::make_shared<v3d::ui::component::SelectList>()->focusable());
     BOOST_CHECK(boost::make_shared<v3d::ui::component::TabBar>()->focusable());
     BOOST_CHECK(boost::make_shared<v3d::ui::component::TextBox>()->focusable());
 
     BOOST_CHECK(boost::make_shared<v3d::ui::component::Button>()->pickable());
     BOOST_CHECK(boost::make_shared<v3d::ui::component::CheckBox>()->pickable());
+    BOOST_CHECK(boost::make_shared<v3d::ui::component::Scrollbar>()->pickable());
 
     // a panel is what a control is not: laid over a scene, and taking neither
     BOOST_CHECK(!boost::make_shared<v3d::ui::component::Panel>()->focusable());
@@ -269,6 +272,105 @@ BOOST_AUTO_TEST_CASE(the_arrows_turn_the_pages_of_a_tab_bar) {
     // a bar has no command, so a return has nothing to send and is left for the page
     BOOST_CHECK(!fixture.keys->press("return"));
     BOOST_CHECK(fixture.sent.empty());
+}
+
+/**
+ * A scrollbar is driven from the keyboard like everything else: the arrows move it by a
+ * line, the page keys by what the page shows, and home and end run to the ends.
+ *
+ * It was the one control that still needed a mouse, which is what made paging the thing it
+ * scrolls the app's rather than the bar's.
+ **/
+BOOST_AUTO_TEST_CASE(the_keys_move_a_scrollbar_by_a_line_and_by_a_page) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::Scrollbar> bar =
+        boost::make_shared<v3d::ui::component::Scrollbar>();
+    bar->range(1000.0f, 200.0f);
+    fixture.container->add(bar);
+    fixture.ui->focus(bar);
+
+    BOOST_CHECK(fixture.keys->press("arrow_down"));
+    BOOST_CHECK_CLOSE(bar->offset(), v3d::ui::component::Scrollbar::lineStep, 0.001f);
+    BOOST_CHECK(fixture.keys->press("arrow_up"));
+    BOOST_CHECK_CLOSE(bar->offset(), 0.0f, 0.001f);
+
+    BOOST_CHECK(fixture.keys->press("pagedown"));
+    BOOST_CHECK_CLOSE(bar->offset(), 200.0f, 0.001f);
+    BOOST_CHECK(fixture.keys->press("pageup"));
+    BOOST_CHECK_CLOSE(bar->offset(), 0.0f, 0.001f);
+
+    BOOST_CHECK(fixture.keys->press("end"));
+    BOOST_CHECK_CLOSE(bar->offset(), bar->maximum(), 0.001f);
+    BOOST_CHECK(fixture.keys->press("home"));
+    BOOST_CHECK_CLOSE(bar->offset(), 0.0f, 0.001f);
+
+    // a bar carries no command, so a return and a space are left for whatever it scrolls
+    BOOST_CHECK(!fixture.keys->press("return"));
+    BOOST_CHECK(!fixture.keys->press("space"));
+    BOOST_CHECK(fixture.sent.empty());
+}
+
+/**
+ * A horizontal bar reads the other pair of arrows as "along", the way a tab bar does.
+ **/
+BOOST_AUTO_TEST_CASE(a_horizontal_scrollbar_takes_the_sideways_arrows) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::Scrollbar> bar =
+        boost::make_shared<v3d::ui::component::Scrollbar>();
+    bar->direction(v3d::ui::component::Scrollbar::Direction::Horizontal);
+    bar->range(500.0f, 100.0f);
+    fixture.container->add(bar);
+    fixture.ui->focus(bar);
+
+    BOOST_CHECK(fixture.keys->press("arrow_right"));
+    BOOST_CHECK_CLOSE(bar->offset(), v3d::ui::component::Scrollbar::lineStep, 0.001f);
+    BOOST_CHECK(fixture.keys->press("arrow_left"));
+    BOOST_CHECK_CLOSE(bar->offset(), 0.0f, 0.001f);
+
+    // and the pair it does not read as along is not its, so it reaches the app
+    BOOST_CHECK(!fixture.keys->press("arrow_down"));
+    BOOST_CHECK_CLOSE(bar->offset(), 0.0f, 0.001f);
+}
+
+/**
+ * A bar bound to a list moves it by a row rather than by the stand-in line, because a list
+ * says how tall a row is drawn and a range of pixels cannot.
+ **/
+BOOST_AUTO_TEST_CASE(a_bound_bar_steps_by_a_row_of_the_list_it_scrolls) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::SelectList> list =
+        boost::make_shared<v3d::ui::component::SelectList>();
+    list->items({"one", "two", "three", "four", "five", "six"});
+    list->rowHeight(20.0f);
+    list->size(glm::vec2(100.0f, 40.0f));
+    const boost::shared_ptr<v3d::ui::component::Scrollbar> bar =
+        boost::make_shared<v3d::ui::component::Scrollbar>();
+    bar->scrolls(list);
+    fixture.container->add(bar);
+    fixture.ui->focus(bar);
+
+    BOOST_CHECK(fixture.keys->press("arrow_down"));
+    BOOST_CHECK_CLOSE(list->offset(), 20.0f, 0.001f);
+    BOOST_CHECK(fixture.keys->press("end"));
+    BOOST_CHECK_CLOSE(list->offset(), list->content() - list->size().y, 0.001f);
+}
+
+/**
+ * A bar showing all of its content takes no key. A control that swallows a key it could not
+ * have acted on is one that stops a game being played while it holds the focus.
+ **/
+BOOST_AUTO_TEST_CASE(a_bar_with_nothing_to_scroll_takes_no_key) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::Scrollbar> bar =
+        boost::make_shared<v3d::ui::component::Scrollbar>();
+    bar->range(100.0f, 100.0f);
+    fixture.container->add(bar);
+    fixture.ui->focus(bar);
+
+    BOOST_CHECK(!bar->scrollable());
+    BOOST_CHECK(!fixture.keys->press("arrow_down"));
+    BOOST_CHECK(!fixture.keys->press("pagedown"));
+    BOOST_CHECK(!fixture.keys->press("end"));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

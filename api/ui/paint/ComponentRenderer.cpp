@@ -33,6 +33,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -49,6 +50,42 @@ namespace {
  * item draws on the right.
  **/
 const float markColumn = 0.9f;
+
+/**
+ * The style class a component is dressed by, which is the class its focus ring is read
+ * off - or nothing for one drawn out of the base alone.
+ *
+ * The one place the two enums meet: Resolver::Class is not checked against Type, so this
+ * switch is what says which type reads which class. Every enumerator is named and there is
+ * no default, so a component added to Type lands here as a build error - ADR-0047.
+ **/
+std::optional<style::Resolver::Class> ringed(component::Type type) noexcept {
+    switch (type) {
+        case component::Type::Panel:       return style::Resolver::Class::Panel;
+        case component::Type::Bar:         return style::Resolver::Class::Bar;
+        case component::Type::Scrollbar:   return style::Resolver::Class::Scrollbar;
+        case component::Type::CheckBox:    return style::Resolver::Class::CheckBox;
+        case component::Type::RadioButton: return style::Resolver::Class::Radio;
+        case component::Type::SelectList:  return style::Resolver::Class::List;
+        case component::Type::TabBar:
+        case component::Type::TabPage:     return style::Resolver::Class::Tabs;
+        case component::Type::TextBox:     return style::Resolver::Class::TextBox;
+        case component::Type::Button:      return style::Resolver::Class::Button;
+        case component::Type::HorizontalBox:
+        case component::Type::Icon:
+        case component::Type::Label:
+        case component::Type::Menu:
+        case component::Type::MenuBar:
+        case component::Type::MenuItem:
+        case component::Type::Toolbar:
+        case component::Type::Undefined:
+        case component::Type::VerticalBox:
+            // a label, an icon, a box and the strips have no class of their own: the base
+            // is what dresses them, and the base is what rings them
+            break;
+    }
+    return std::nullopt;
+}
 
 /**
  * How many segments a radio button's disc is drawn with. Small enough to cost little at
@@ -189,8 +226,13 @@ void ComponentRenderer::ring(v3d::render::realtime::Canvas* canvas,
     if (canvas == nullptr || !component->focused()) {
         return;
     }
-    const float width = base().focusWidth;
-    if (width <= 0.0f || base().focus.a <= 0.0f) {
+    // the class the component is drawn in, so a theme can ring a text box differently from
+    // a list; one dressed by the base alone is ringed out of the base
+    const std::optional<style::Resolver::Class> className = ringed(component->type());
+    const Dressing& dress = className.has_value()
+        ? styles_.resolve(*className, component->style()) : base();
+    const float width = dress.focusWidth;
+    if (width <= 0.0f || dress.focus.a <= 0.0f) {
         return;
     }
     // drawn here rather than in each component's draw, because where the keyboard is is
@@ -202,7 +244,7 @@ void ComponentRenderer::ring(v3d::render::realtime::Canvas* canvas,
     if (size.x <= 0.0f || size.y <= 0.0f) {
         return;  // never laid out, so there is no box to ring
     }
-    strokeBox(canvas, min, min + size, base().radius, width, base().focus);
+    strokeBox(canvas, min, min + size, dress.radius, width, dress.focus);
 }
 
 /**
@@ -535,6 +577,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     if (text.empty() && !box->focused()) {
         // the placeholder says what the box is for and is not what it holds, so it is
         // dropped the moment there is something to type into
+        box->pen(low.x);
         write_(box->placeholder(), glm::vec2(low.x, min.y + size.y * 0.7f), dress.track);
         canvas->unclip();
         return;
@@ -547,6 +590,19 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     const float slid = caret > room ? caret - room : 0.0f;
 
     const glm::vec2 pen(low.x - slid, min.y + size.y * 0.7f);
+    // left on the box so that a press can find the character under it, the way a list is
+    // left holding the height of a row - ADR-0019 and ADR-0057
+    box->pen(pen.x);
+
+    if (box->selected()) {
+        // behind the line, which is still drawn whole in one colour: three runs would be
+        // measured as three, and where a caret falls is the measure of one prefix
+        const std::string_view line(text);
+        const float from = measure_(line.substr(0, std::min(box->anchor(), box->caret())));
+        const float to = measure_(line.substr(0, std::max(box->anchor(), box->caret())));
+        fillBox(canvas, glm::vec2(pen.x + from, low.y), glm::vec2(pen.x + to, high.y),
+            0.0f, dress.highlight);
+    }
     write_(text, pen, dress.text);
 
     if (box->focused()) {

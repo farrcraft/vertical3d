@@ -1,6 +1,6 @@
 # The User Interface
 
-What `api/ui` does, as of 2026-09-08. Open questions are at the end.
+What `api/ui` does, as of 2026-09-13. Open questions are at the end.
 
 The decisions behind its shape are [ADR-0019](adr/0019-the-ui-is-laid-out-by-what-draws-it.md),
 [ADR-0020](adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md),
@@ -11,8 +11,9 @@ The decisions behind its shape are [ADR-0019](adr/0019-the-ui-is-laid-out-by-wha
 [ADR-0038](adr/0038-a-cursor-is-routed-by-the-library-that-drew-it.md),
 [ADR-0039](adr/0039-layout-never-reads-the-box-it-wrote.md),
 [ADR-0040](adr/0040-a-key-goes-to-a-focused-component.md),
-[ADR-0045](adr/0045-a-window-is-dragged-by-the-bar-that-folds-it.md) and
-[ADR-0046](adr/0046-a-table-given-a-height-scrolls-in-its-own-right.md). Those say why; this
+[ADR-0045](adr/0045-a-window-is-dragged-by-the-bar-that-folds-it.md),
+[ADR-0046](adr/0046-a-table-given-a-height-scrolls-in-its-own-right.md) and
+[ADR-0057](adr/0057-a-selection-is-an-anchor-the-caret-moved-from.md). Those say why; this
 says what.
 
 ## Two ways to write a ui, and which to reach for
@@ -46,7 +47,7 @@ ComponentRenderer   paints a component, and owns the two below
   style::Resolver   turns a theme into the Dressing a component is drawn with
 
 Immediate     the other way to write a ui - layout and paint in one pass
-Cursor        turns a point into a command, and moves the focus
+Cursor        turns a point into a command, moves the focus, and places a caret
 Keys          turns a key into an edit on whatever has the focus
 TextRenderer  one font, one atlas, and the Measure/Write pair both renderers take
 Painter.h     fillBox, strokeBox and plateBox, which both ways draw out of
@@ -160,7 +161,7 @@ Every type in `component::Type` has a loader and a draw path; there are no empty
 | `Scrollbar` | a track and a thumb | its range and offset, or nothing at all when it was told which `SelectList` it scrolls |
 | `SelectList` | a plate and as many rows as it shows | its rows and which is chosen |
 | `TabBar`, `TabPage` | a strip of tabs and the one page chosen | which page is up |
-| `TextBox` | a plate, one line of text, and a caret when it is focused | its text and its caret |
+| `TextBox` | a plate, one line of text, a highlight behind the selected run, and a caret when it is focused | its text, its caret and its anchor |
 | `HorizontalBox`, `VerticalBox` | nothing — they place what they hold | spacing and stretch |
 | `Menu`, `MenuItem`, `MenuBar` | a panel of items, or a strip that drops one | which item is active, and any capture |
 
@@ -196,6 +197,12 @@ The style classes:
 | `panel`, `bar`, `scrollbar`, `checkbox`, `radio`, `list`, `tabs`, `textbox` | the component of that kind |
 | `button` | `ComponentRenderer::skin()`, chosen by button state as well as by name |
 
+Every one of them may also name `focus` and `focus-width`, which is the ring around the control
+when it holds the keyboard. `button` is the one class a `Dressing` reads nothing else out of: a
+button's fill is its nine images and its label is the base's, and the first style of the set
+answers for the ring whatever state it was written for, because a ring says where the keyboard is
+rather than what state the button is in.
+
 `ui` and `tools` are separate on purpose: they want the same key names at about twice the
 size, because a HUD is read at a glance and a tool panel is read closely.
 
@@ -209,14 +216,19 @@ the reverse of the order the ui was drawn — menu bars, then toolbars, then the
 A press on a `pickable()` component sends that component's bound event and is consumed. A
 press on anything else is not consumed, so a HUD of labels over a scene leaves the scene
 clickable — which is why `Component` leaves `pickable()` false. A control sets it, and
-`focusable()` with it, in its own constructor: a button, a check box, a radio button, a select
-list, a tab bar and a text box exist to be driven, and a panel or a label laid over a scene
-does not. A press is remembered until it comes up, which is what drags a scrollbar's thumb
+`focusable()` with it, in its own constructor: a button, a check box, a radio button, a
+scrollbar, a select list, a tab bar and a text box exist to be driven, and a panel or a label
+laid over a scene does not. A press is remembered until it comes up, which is what drags a scrollbar's thumb
 across frames.
 
 A press also moves the focus — onto what it landed on when that component asked to be
 focusable, and off whatever had it otherwise — which is what makes clicking into a box mean
-"type here". A button lights up under the cursor whether it sits on a strip or in the tree, and
+"type here". In a text box it says where as well: the caret goes to the character under the
+point and the anchor with it, so following the cursor selects the run between the two —
+[ADR-0057](adr/0057-a-selection-is-an-anchor-the-caret-moved-from.md). That is what the
+`paint::Measure` a cursor is given is for, and it should be the same one the renderer drawing
+that ui was given; a cursor given none routes every press as before and leaves the caret where
+it was. A button lights up under the cursor whether it sits on a strip or in the tree, and
 only ever the one a press would land on, so a hud of unpickable labels does not flicker as the
 cursor crosses it.
 
@@ -256,9 +268,11 @@ by depth with add order between equal depths, a flow box's children in the order
 and wraps at each end, skipping a hidden subtree whole. A ui author wanting a different tab
 order reorders the document; there is no `tabIndex`.
 
-`press()` takes a second argument saying whether shift is held, because a key name carries no
-modifier and this library cannot ask `api/input` for one without taking SDL with it. It matters
-for tab alone. A ui with nothing focused is left alone by tab as it is by every other key.
+`press()` takes two more arguments saying whether shift and control are held, because a key
+name carries no modifier and this library cannot ask `api/input` for one without taking SDL with
+it. Shift and tab is the focus moving backwards, shift and a caret key selects, and control
+names the four chords a text box answers. A ui with nothing focused is left alone by tab as it
+is by every other key.
 
 A key names an operation: backspace, delete, the caret moves, a return that sends the box's
 command, an escape that leaves it. A key that will arrive again as a character is taken as well
@@ -271,18 +285,40 @@ focus, sending the command a click sends — both routers ask `ui::command()` wh
 component carries, so a component a press activates and a key does not cannot happen. The
 arrows step through a `SelectList`'s rows and a `TabBar`'s pages, with `home` and `end` at the
 ends; neither wraps, because running off the last row is how a keyboard reaches it and stays
-there. A component does not own the state it shows, so activating a check box sends its command
-and marks nothing — [ADR-0019](adr/0019-the-ui-is-laid-out-by-what-draws-it.md).
+there. A `Scrollbar` is moved rather than stepped: an arrow by a line — a bound list's row, or
+`Scrollbar::lineStep` for a range of pixels that says nothing about what a line of it is —
+`pageup` and `pagedown` by what the page shows, and `home` and `end` to the ends of the content.
+A bar showing all of its content takes no key at all, because a control that swallows a key it
+could not have acted on stops a game being played while it holds the focus. A component does not
+own the state it shows, so activating a check box sends its command and marks nothing —
+[ADR-0019](adr/0019-the-ui-is-laid-out-by-what-draws-it.md).
+
+**A selection is an anchor the caret moved away from** —
+[ADR-0057](adr/0057-a-selection-is-an-anchor-the-caret-moved-from.md). Nothing is selected
+exactly when the two are in the same place, so every operation that moves the caret says one
+thing: whether the anchor comes with it. Shift and a caret key selects the run it travelled, and
+an arrow with nothing held lands on an end of the selection rather than a character past it.
+Typing, a backspace, a delete and a paste all replace a selected run.
+
+Cut, copy, paste and select all are `control` and `x`, `c`, `v`, `a`, and the clipboard behind
+them is the app's: `Keys::Clipboard` is a pair of callbacks, for the reason text measuring is a
+callback. A router given neither still edits — a cut with nowhere to hand the run does not
+take it out, because a cut that loses the text is worse than one that did not happen, and a paste
+with nothing to read puts nothing in. Every other chord goes on to the app, so a `ctrl-s` still
+saves while somebody is typing.
 
 **Something has to give out the first focus.** `Engine::focusFirst()` puts it on the first
 focusable component, and is how a screen says it is keyboard driven — an app calls it as the
 screen goes up. `focusNext()` will not do it, on purpose: tab must not take the focus onto the
 first widget of a hud nobody is looking at, so a ui with nothing focused stays that way.
 
-**A focused component is ringed**, traced around its box after it is drawn, in the base
-dressing's `focus` colour at `focus-width` thick. The draw walk does it rather than any one
-component, because where the keyboard is is the ui's business and one ring for every control is
-the point of it.
+**A focused component is ringed**, traced around its box after it is drawn, in the `focus`
+colour at `focus-width` thick of the style class the component is drawn in — so a theme can mark
+a focused text box differently from a focused list, and one naming neither rings every control
+out of the base. `ComponentRenderer`'s `ringed()` is what says which class rings which
+component, and a component dressed by the base alone is ringed out of it. The draw walk traces
+it rather than any one component, because where the keyboard is is the ui's business and one
+ring drawn one way is the point of it.
 
 The characters come from `event::TextInput`, which `input::Keyboard` raises from SDL's text
 input — shift already applied, a dead key and the one after it already one character, an input
@@ -326,20 +362,15 @@ boxes the draw left or on the primitives it emitted. [Testing.md](Testing.md) ha
 
 ## What is not built yet
 
-- **A scrollbar scrolls nothing.** It is the arithmetic, and putting one beside a `SelectList`
-  is still the app's.
+- **A scrollbar bound to no list scrolls nothing.** It is the arithmetic: a bar told which
+  `SelectList` it scrolls moves that list, and one given a range of its own leaves the app to
+  read `offset()` and translate whatever it scrolls. Laying one out beside the thing it scrolls
+  is the app's either way.
 - **An `Immediate` widget is hovered a frame after it is drawn**, which is what lets a window
   drawn later take the cursor from one under it.
 - **An `Immediate` widget takes the rest of its row unless told otherwise.**
   `nextItemWidth(float)` is what tells it, spent by the widget that follows and forgotten
   after it, which is what lets two scrubbers share a row. A separator always takes the row.
-- **A scrollbar takes no key.** Every other control is driven from the keyboard; a scrollbar is
-  dragged, and paging the thing it scrolls is still the app's.
-- **A caret cannot be placed by clicking.** A press focuses a text box and leaves the caret
-  where it was, because `ui::Cursor` names no text and would need the `Measure` callback to
-  find the character under a point.
-- **There is no selection in a text box**, so no cut, copy or paste over a range. `insert()`
-  takes a run of characters, so a paste is expressible the moment something delivers one.
 
 [TODO.md](TODO.md) carries these, and
 [plans/UiConsolidation.md](plans/UiConsolidation.md) is what closed the ones that are gone.
@@ -349,9 +380,9 @@ boxes the draw left or on the primitives it emitted. [Testing.md](Testing.md) ha
 - **Nothing enforces which of the two ways to use.** The rule above is a rule of thumb in a
   document, and a reader who wants a HUD out of `Immediate` will get one that flickers under
   the cursor rather than an error.
-- **Adding a component means editing seven places** — `component::Type`, `component::name()`,
-  the loader's branch, the renderer's paint switch, the Arranger's `natural()`, the cursor's
-  and the keys'. The compiler now names all seven
+- **Adding a component means editing eight places** — `component::Type`, `component::name()`,
+  the loader's branch, the renderer's paint switch, its `ringed()`, the Arranger's `natural()`,
+  the cursor's and the keys'. The compiler names all eight
   ([ADR-0047](adr/0047-a-component-type-is-checked-by-the-compiler.md)), so forgetting one is
-  a build error rather than a component that silently is not there — but the count is
-  unchanged, and a registry is the only thing that would reduce it.
+  a build error rather than a component that silently is not there — but a registry is the only
+  thing that would reduce the count.

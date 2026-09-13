@@ -13,6 +13,7 @@
 #include <api/ui/component/Scrollbar.h>
 #include <api/ui/component/SelectList.h>
 #include <api/ui/component/TabBar.h>
+#include <api/ui/component/TextBox.h>
 #include <api/ui/component/Toolbar.h>
 #include <api/ui/component/Type.h>
 #include <api/ui/component/menu/Menu.h>
@@ -66,9 +67,11 @@ void lit(const boost::shared_ptr<Component>& component, bool on) {
 
 };  // namespace
 
-Cursor::Cursor(const boost::shared_ptr<Engine>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher) :
+Cursor::Cursor(const boost::shared_ptr<Engine>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
+    const paint::Measure& measure) :
     ui_(ui),
-    dispatcher_(dispatcher) {
+    dispatcher_(dispatcher),
+    measure_(measure) {
 }
 
 boost::shared_ptr<Component> Cursor::held() const {
@@ -96,6 +99,10 @@ bool Cursor::motion(const glm::vec2& point) {
     if (holding) {
         if (holding->type() == component::Type::Scrollbar) {
             boost::dynamic_pointer_cast<component::Scrollbar>(holding)->drag(point);
+        } else if (holding->type() == component::Type::TextBox) {
+            // the press left the anchor where it landed, so following the cursor selects
+            // the run between the two - ADR-0057
+            place(boost::dynamic_pointer_cast<component::TextBox>(holding), point, true);
         }
         return true;
     }
@@ -188,6 +195,8 @@ bool Cursor::release(const glm::vec2& point) {
     }
     if (holding->type() == component::Type::Scrollbar) {
         boost::dynamic_pointer_cast<component::Scrollbar>(holding)->drag(point);
+    } else if (holding->type() == component::Type::TextBox) {
+        place(boost::dynamic_pointer_cast<component::TextBox>(holding), point, true);
     }
     return true;
 }
@@ -222,6 +231,11 @@ void Cursor::act(const boost::shared_ptr<Component>& component, const glm::vec2&
             // what was clicked and then follows the cursor until the press comes up
             boost::dynamic_pointer_cast<component::Scrollbar>(component)->drag(point);
             return;
+        case component::Type::TextBox:
+            // a press says "type here", and where in the text it landed says where - so the
+            // caret goes there and the anchor with it, leaving a drag to select from it
+            place(boost::dynamic_pointer_cast<component::TextBox>(component), point, false);
+            return;
         case component::Type::Bar:
         case component::Type::Button:
         case component::Type::CheckBox:
@@ -234,7 +248,6 @@ void Cursor::act(const boost::shared_ptr<Component>& component, const glm::vec2&
         case component::Type::Panel:
         case component::Type::RadioButton:
         case component::Type::TabPage:
-        case component::Type::TextBox:
         case component::Type::Toolbar:
         case component::Type::Undefined:
         case component::Type::VerticalBox:
@@ -243,6 +256,15 @@ void Cursor::act(const boost::shared_ptr<Component>& component, const glm::vec2&
             break;
     }
     dispatch(component);
+}
+
+void Cursor::place(const boost::shared_ptr<component::TextBox>& box, const glm::vec2& point,
+    bool extend) const {
+    if (!box || !measure_) {
+        // a cursor with no Measure names no text, which leaves the caret where it was
+        return;
+    }
+    box->caret(box->at(point, measure_), extend);
 }
 
 void Cursor::dispatch(const boost::shared_ptr<Component>& component) const {
