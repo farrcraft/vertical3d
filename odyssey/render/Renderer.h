@@ -11,6 +11,7 @@
 #include <api/render/realtime/Engine3D.h>
 #include <odyssey/engine/Player.h>
 #include <odyssey/tile/Map.h>
+#include <odyssey/tile/Sight.h>
 
 #include <string>
 
@@ -54,6 +55,12 @@ class Renderer final {
     void map(const boost::shared_ptr<odyssey::tile::Map>& map);
 
     /**
+     * What the player can see, or null to draw the whole board lit. A tile out of sight is
+     * drawn from memory and one never seen is not drawn at all.
+     **/
+    void sight(const boost::shared_ptr<odyssey::tile::Sight>& sight);
+
+    /**
      * Wait for everything in flight, before the window the device draws to goes away.
      **/
     void shutdown();
@@ -62,6 +69,9 @@ class Renderer final {
     /**
      * The board, one untextured quad per tile. They are drawn first and the pass is in
      * submission order, so everything else lands on top of them.
+     *
+     * A tile never seen is left undrawn rather than drawn black, so the clear colour is
+     * what unexplored ground looks like and one less quad reaches the device for it.
      **/
     void drawMap();
 
@@ -73,6 +83,7 @@ class Renderer final {
     boost::shared_ptr<v3d::log::Logger> logger_;
     boost::shared_ptr<odyssey::engine::Player> player_;
     boost::shared_ptr<odyssey::tile::Map> map_;
+    boost::shared_ptr<odyssey::tile::Sight> sight_;
     entt::registry* registry_;
 
     v3d::render::realtime::Canvas canvas_;

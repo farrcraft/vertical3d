@@ -61,9 +61,13 @@ bool Engine::initialize() {
 
     movementSystem_ = boost::make_shared<odyssey::system::Movement>(&registry_);
 
+    sight_ = boost::make_shared<odyssey::tile::Sight>();
+    sight_->look(*map_->grid(), start);
+
     renderer_ = boost::make_shared<odyssey::render::Renderer>(window(), logger_, assetManager_, &registry_);
     renderer_->player(player_);
     renderer_->map(map_);
+    renderer_->sight(sight_);
 
     // one sink for every mapped event: a device event is resolved to an action by the
     // bindings before it gets here, so nothing subscribes to a key
@@ -185,6 +189,9 @@ bool Engine::simulate(float step) {
     if (!movementSystem_->simulate(step)) {
         return false;
     }
+    // after the systems have moved anything, and before the frame that draws what the
+    // player can see from where it now stands
+    sight_->look(*map_->grid(), playerTile());
     return true;
 }
 

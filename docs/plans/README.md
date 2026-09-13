@@ -9,6 +9,16 @@ every phase is closed it moves to [completed/](completed/), and any open item it
 moves to [TODO.md](../TODO.md). The plan itself stays, because the reasoning behind an ordering
 outlives the schedule.
 
+[RealtimeGoldenImage.md](RealtimeGoldenImage.md) was drafted on 2026-09-12 against `0662778`,
+out of what [RenderTestsInCI](completed/RenderTestsInCI.md) left when it closed. Five steps
+pinning what the device suite draws to committed pictures, on the rule that a reference may hold
+only what the specification determines
+([ADR-0054](../adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md)) — which is
+what answers ADR-0007's objection that a golden image is one rasterizer's output and so says
+nothing about another's. Its ordering is built around a claim this machine cannot test: there is
+one gpu here and the second implementation is the runner's, so the first picture committed is a
+probe and the rest wait on what CI says about it.
+
 [completed/RenderTestsInCI.md](completed/RenderTestsInCI.md) was drafted on 2026-09-11 against
 `88711c0` and closed the next day. Six steps building what
 [ADR-0007](../adr/0007-ci-rendering-tests.md) decided on 2026-08-30 and nothing had since

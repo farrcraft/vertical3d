@@ -1,10 +1,13 @@
-# The map is where odyssey's own rules meet api/grid - what a tile kind means for
-# passability and cover, and what the file format admits. It holds neither a window nor a
-# device, so it is covered here; the engine and the renderer are not.
+# The map and what can be seen over it are where odyssey's own rules meet api/grid - what a
+# tile kind means for passability and cover, what the file format admits, and how far sight
+# reaches. Neither holds a window nor a device, so both are covered here; the engine and the
+# renderer are not.
 v3d_add_test(odyssey
 	"TestMain.cxx"
 	"MapTest.cxx"
-	"../tile/Map.cpp")
+	"SightTest.cxx"
+	"../tile/Map.cpp"
+	"../tile/Sight.cpp")
 
 target_link_libraries(v3dtest_odyssey PRIVATE
 	v3dlib_asset

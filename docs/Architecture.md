@@ -120,10 +120,13 @@ symmetric because the endpoints are ordered before the line is traced.
   primitive in the tree, so only outlines come across; a filled tile has no home yet.
 
 **`odyssey` is the consumer.** It reads a board from `data/map.json` — rows of characters, one
-per tile — into a `TileGrid`, and a click routes the player there with `findPath`. The app's own
+per tile — into a `TileGrid`, a click routes the player there with `findPath`, and
+`tile::Sight` asks `hasLineOfSight` what the player can see from where it stands. The app's own
 `tile::Kind` is what decides passability and cover together; the grid holds both and has an
-opinion about neither, which is the split ADR-0029 is built on. The map format is odyssey's and
-is deliberately not in the api: one consumer is not a library.
+opinion about neither, which is the split ADR-0029 is built on. How far the player can see and
+what it remembers seeing are the app's for the same reason the map format is - the grid answers
+about two tiles and knows nothing of a viewer - and the format is deliberately not in the api:
+one consumer is not a library.
 
 ## Geometry
 
@@ -221,11 +224,12 @@ because neither is simulation and neither wants to run twice on a slow frame.
   inverses ([ADR-0012](adr/0012-camera-builds-vulkan-clip-space.md)). **Its basis is
   `right = up x direction`**, the opposite hand to `glm::lookAt`'s. Screen right is
   `camera::Profile::right()`. A camera behaviour that names a world axis copied from a `lookAt`
-  moves the scene the wrong way with nothing else looking wrong. `type::camera::Isometric` takes
-  the cross product instead of naming the vector for that reason, and asserts the direction
-  through `project()`. A consumer whose geometry is wound for `glm::lookAt` names the other
-  hand on its profile ([ADR-0052](adr/0052-a-consumer-names-the-camera-hand.md)); nothing in
-  this tree does, so `right()` here always means the first one.
+  moves the scene the wrong way with nothing else looking wrong, so `type::camera::Isometric`
+  carries a hand and crosses by it, and asserts the direction through `project()`. A consumer
+  whose geometry is wound for `glm::lookAt` names the other hand
+  ([ADR-0052](adr/0052-a-consumer-names-the-camera-hand.md)); that basis is a mirror rather than
+  a second rotation, so the profile's quaternion is the proper one either way and `createView()`
+  negates view x. Nothing in this tree names it, so `right()` here always means the first one.
 - **`image::Image` row 0 is the top of the picture.** Every consumer downstream reads them that
   way: the canvas, the texture factory, the atlas packer. The jpeg reader also asks the decoder
   for RGB whatever the file holds, because it builds a 24 bit `Image` and copies three bytes a

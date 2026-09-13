@@ -32,7 +32,15 @@ stay that way: a software Vulkan implementation answers none of them.
 ([ADR-0051](adr/0051-the-in-flight-ring-is-not-the-swapchain.md)), a frame recorded into a
 `RenderTarget`, and `vulkan::frame::Capture` reading it back
 ([ADR-0050](adr/0050-a-frame-is-read-back-in-two-calls.md)). Each case asserts both halves:
-that the validation layer had nothing to say, and that the pixels are what was drawn. What a
+that the validation layer had nothing to say, and that the pixels are what was drawn. Four of
+them assert the second half against a picture committed in `api/render/tests/device/data/`,
+compared exactly: a flat quad, a quad drawn with a texture the case uploads, and two overlapping
+world quads in each submission order - which is what says a world quad is ordered by its caller
+and not by its depth ([ADR-0042](adr/0042-a-textured-quad-in-world-space.md)). What a reference may contain is
+[ADR-0054](adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md) — only what the
+specification determines pixel-for-pixel, so that the same file is owed by a driver and by the
+software implementation CI draws with. A case outside that rule asserts texels by hand and has
+no reference. What a
 case compiles rather than draws is here for the same reason - a pipeline shape no renderer in
 this tree builds needs a device to reject it.
 
@@ -53,8 +61,9 @@ Two seams keep the api libraries testable without a window, and both are worth p
 font library, and a strip is hit tested against the bounds a draw left on it, per
 [ADR-0019](adr/0019-the-ui-is-laid-out-by-what-draws-it.md). `api/grid` and
 `api/render/offline` name no device at all, so their suites run in CI where the realtime stack
-cannot. The same is true of an app's own rules: `odyssey`'s suite covers its map format and the
-route across it, and stands up neither a window nor a device to do it.
+cannot. The same is true of an app's own rules: `odyssey`'s suite covers its map format, the
+route across it and how far sight reaches over it, and stands up neither a window nor a device
+to do it.
 
 All three canvases are cpu side and are covered as such: `CanvasTest`, `LineCanvasTest` and
 `WorldCanvasTest` assert the batching, the transform stack and the geometry without a device.
@@ -83,6 +92,10 @@ from a subclass with no window in sight. `EngineTest` drives it directly.
 
 ## Suites with something to know about them
 
+- **A new reference reaches the executable only when its target relinks.** The suites copy their
+  fixture directory in a `POST_BUILD` command, so adding a picture and rebuilding copies
+  nothing - the target was already up to date. Touch a source of the suite, or rebuild it from
+  clean; a fresh CI checkout never sees this.
 - **The moya and talyn suites each render against a committed PNG**, in `moya/tests/data/` and
   `talyn/tests/data/`. They compare with `image::compare`, which reports the worst pixel and by
   how much rather than only that two images differ. A failing case, or a missing reference,
@@ -106,10 +119,11 @@ from a subclass with no window in sight. `EngineTest` drives it directly.
 
 ## Verifying a rendering change
 
-CI renders, against lavapipe on the runner per ADR-0007. What it renders is two cases, a clear
-and a quad, so a change below the recorder is still verified by running the app and reading the
-log: the suite catches a frame that cannot be drawn or read back at all, not a frame that is
-drawn wrongly.
+CI renders, against lavapipe on the runner per ADR-0007. What it renders is three cases, and one
+of them is now pinned to a picture rather than to texels chosen by hand — so a quad drawn in the
+wrong colour, at the wrong scale or a pixel out fails there. What no reference can cover is
+anything blended, filtered or antialiased, per ADR-0054, which is most of what a renderer does.
+A change below the recorder is still verified by running the app and reading the log.
 
 The Khronos validation layer is enabled when installed and `vulkan::Instance` routes it through
 the logger, so a silent run is the signal. Without that messenger a loaded layer is silent,

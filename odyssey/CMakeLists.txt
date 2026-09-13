@@ -13,6 +13,7 @@ add_executable(Odyssey
 	"render/Renderer.h" "render/Renderer.cpp"
 	"system/Movement.h" "system/Movement.cpp"
 	"tile/Map.h" "tile/Map.cpp"
+	"tile/Sight.h" "tile/Sight.cpp"
 	"tile/Tile.h" "tile/Size.h"
 	"ui/Screen.h" "ui/Screen.cpp"
 )

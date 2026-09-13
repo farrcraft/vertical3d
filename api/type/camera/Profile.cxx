@@ -190,21 +190,25 @@ void Profile::lookat(const glm::vec3& center) {
     // start with original up vector
     y = up_;
 
-    // normal of the yz plane is the new right vector. Which way round the two are crossed
-    // is what the hand names: the two answers are negatives of each other, so a scene drawn
-    // through one is the mirror of the same scene drawn through the other
-    x = hand_ == Hand::DirectionCrossUp ? glm::cross(z, y) : glm::cross(y, z);
-    x = glm::normalize(x);
-    // normal of the xy plane is the new up vector, crossed the same way round as the right
-    // was. Both orders give the component of the original up perpendicular to the direction,
-    // so the two hands mirror horizontally and agree about which way is up
-    y = hand_ == Hand::DirectionCrossUp ? glm::cross(x, z) : glm::cross(z, x);
-    y = glm::normalize(y);
+    // normal of the yz plane is the right vector, crossed the way this tree has always
+    // crossed it, and the normal of the xy plane is the up vector. The result is a right
+    // handed basis: the only one of the two a quaternion can carry
+    x = glm::normalize(glm::cross(y, z));
+    // the component of the original up perpendicular to the direction, which is the same
+    // vector whichever way round the right was taken - the two hands mirror horizontally
+    // and agree about which way is up
+    y = glm::normalize(glm::cross(z, x));
 
     /*
         the rotation takes the camera out of the default basis and into the one its three
         normals define, so the normals are its columns. Camera::createView() transposes it
         to get the world to view transform.
+
+        The rotation is always built from the right handed basis, never from the mirrored
+        one. A mirror is an improper transform and no quaternion represents one, so a
+        quat_cast of it returns something that is not a rotation at all and the view matrix
+        that comes out of it is not rigid. The hand is applied by Camera::createView()
+        instead, which negates view x - ADR-0052.
 
         glm indexes [column][row]:
         [  0,  4,  8,  12 ]
@@ -234,7 +238,10 @@ void Profile::lookat(const glm::vec3& center) {
     rotation_ = glm::quat_cast(m);
     up_ = y;
     direction_ = z;
-    right_ = x;
+    // the normals are what the hand names, and the mirrored one reports the right the other
+    // way round. It is the basis a caller reads and draws its own geometry against; what the
+    // rotation carries is the proper half of it
+    right_ = hand_ == Hand::DirectionCrossUp ? -x : x;
 }
 
 void Profile::clone(const Profile& profile) {

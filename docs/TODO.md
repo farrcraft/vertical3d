@@ -54,7 +54,6 @@ it as an open question and could not settle it.
 `api/grid` is a library of its own - [ADR-0029](adr/0029-tile-grids-are-an-api-library.md) - and
 `odyssey` is what consumes it here.
 
-[] `LineOfSight` is proven by its own tests and by nothing else: nothing in this tree calls it. Odyssey's map carries cover - a crate is `Cover::Half` and a wall is `Cover::Full` - and nothing asks what can be seen from where
 [] nothing in the api reads or writes a map. The one format that exists is odyssey's own, in `odyssey/tile/Map.cpp`, so anything wanting to load a grid - a map editor, a generator, a second game - writes its own loader or lifts that file. A format in the api earns a record when a second consumer reads one
 [] `TileFilter` is a `std::function` called for every neighbour of every visited tile, which is the first thing to templatise if a board is ever large enough to notice
 
@@ -113,9 +112,9 @@ The loop simulates at a fixed step and renders at a variable one -
 **Tests.** Every library needing neither a window nor a GPU is covered. The GPU half —
 everything below the recorder in `api/render` — now has a suite that draws:
 `v3dtest_render_device` runs against lavapipe on the runner, which
-[RenderTestsInCI](plans/completed/RenderTestsInCI.md) built and closed. That suite draws two
-cases, a clear and a quad, so what it establishes is the path rather than the coverage. The renderers
-themselves, the pipeline cache and the upload path are still asserted by nothing that draws.
+[RenderTestsInCI](plans/completed/RenderTestsInCI.md) built and closed. What that suite covers
+is the path rather than the renderers: the pipeline cache is asserted by nothing that draws, and
+the renderers and the upload path are what the open plan below takes up.
 
 What the plan left is what needs a window or a sound device rather than a device to draw
 with: `Feature::Window`, `ui::TextRenderer` and `audio::Engine::initialize()`. They are named
@@ -123,12 +122,8 @@ beside `api/render` in [Testing.md](Testing.md) and were waiting on the same
 [ADR-0007](adr/0007-ci-rendering-tests.md), but a software Vulkan implementation answers none of
 them, so they outlive it.
 
-A golden image also outlives it, by that decision's own fifth alternative: a reference generated
-by a software rasterizer says nothing about hardware, so the comparison is worth building after
-the plan rather than inside it. Half of what it needs exists — `vulkan::frame::Capture` reads a
-presented frame back ([ADR-0050](adr/0050-a-frame-is-read-back-in-two-calls.md)), and
-`image::compare` already pins both offline renderers to a committed png — and nothing yet
-blesses a realtime reference or compares one against it.
+A golden image is no longer here: it is [RealtimeGoldenImage](plans/RealtimeGoldenImage.md),
+open, which answers that decision's fifth alternative rather than deferring it again.
 
 **Documentation.** Reference material lives in this directory, one document per subject and
 [README.md](README.md) as the index; `CLAUDE.md` routes into them rather than holding a copy.
