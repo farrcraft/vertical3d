@@ -27,6 +27,14 @@ whatever answers its commands. `ui::ComponentRenderer` draws it.
 a sequence between `Immediate::begin()` and `end()`, with nothing to keep in step because it
 is recomputed every frame. `ui::Immediate` is both the layout and the draw.
 
+A cursor position is the layer's only input, so **whether there is one to offer is the app's to
+say**. A game that owns the mouse has none — mouselook warps the pointer back to the centre
+every frame, so where it is says nothing — and a window it puts up is a readout rather than
+something to fold, drag or scroll. `voxel` is that case and answers it the way a game does: the
+menu going up is what hands the pointer back, so its F3 readout takes a real `Input` exactly
+while the menu is up and a default one otherwise. The five fields come off
+`input::MouseState` — the cursor, the primary button and its two edges, and the wheel.
+
 The rule is what owns the truth. A retained tree that shows a number has to be told when the
 number changes, and the characteristic defect is a readout two frames stale; an immediate
 panel cannot be stale and cannot be looked up by name. `voxel`'s F3 readout is the tree's
@@ -392,6 +400,9 @@ height is as tall as its rows and scrolls with whatever holds it.
 
 The wheel turns the innermost region under the cursor, so a table takes it from the window it
 is drawn in — the same rule that lets a window drawn later take the cursor from one under it.
+It comes from `input::MouseState::wheel()`, which accumulates the notches a frame saw and is
+cleared with the button edges: a wheel sends one event per notch, so a flick that turned three
+has to read as three rather than as the last of them.
 
 `LineCanvas` cuts its stream the same way, on different terms: its rectangle is in the pixels
 of the image drawn into and the modelview does not apply to it, because a line canvas is world

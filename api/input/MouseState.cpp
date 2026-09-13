@@ -14,7 +14,7 @@ namespace v3d::input {
 
 /**
  **/
-MouseState::MouseState() : position_(0.0f, 0.0f) {
+MouseState::MouseState() : position_(0.0f, 0.0f), wheel_(0.0f) {
 }
 
 /**
@@ -41,6 +41,7 @@ bool MouseState::released(std::string_view button) const {
 void MouseState::flush() {
     pressed_.clear();
     released_.clear();
+    wheel_ = 0.0f;
 }
 
 /**
@@ -76,6 +77,18 @@ glm::vec2 MouseState::operator() (const glm::vec2& p) {
  **/
 glm::vec2 MouseState::position() const {
     return position_;
+}
+
+/**
+ **/
+void MouseState::wheel(float notches) {
+    wheel_ += notches;
+}
+
+/**
+ **/
+float MouseState::wheel() const noexcept {
+    return wheel_;
 }
 
 };  // namespace v3d::input

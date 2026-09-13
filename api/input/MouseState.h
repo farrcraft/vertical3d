@@ -78,12 +78,34 @@ class MouseState final {
      **/
     glm::vec2 position() const;
 
+    /**
+     * Turn the wheel.
+     *
+     * Accumulated rather than replaced, because a wheel sends one event per notch and
+     * several can land in one frame - a flick that turned three notches has to read as
+     * three, not as the last one.
+     *
+     * @param notches how far it turned, away from the reader first
+     **/
+    void wheel(float notches);
+
+    /**
+     * How far the wheel turned since the last flush, away from the reader first.
+     *
+     * An edge rather than a position: there is no such thing as where a wheel is, so this
+     * is cleared with the button edges and a frame that reads it late reads zero. That is
+     * the sign convention ui::Immediate::Input takes.
+     **/
+    float wheel() const noexcept;
+
  private:
     std::vector<std::string> buttons_;
     /**< what went down since the last flush, and what came up **/
     std::vector<std::string> pressed_;
     std::vector<std::string> released_;
     glm::vec2 position_;
+    /**< notches turned since the last flush, which is an edge and not a position **/
+    float wheel_;
 };
 
 };  // namespace v3d::input
