@@ -92,6 +92,13 @@ that drops out of its strip must keep doing so.
 - The rectangle is resolved against the transform at the moment it is pushed, so translating
   after a clip moves what is drawn and not what it is cut to. That is what a scroll view wants
   and it is the opposite of what a naive reading expects.
+- **A clip is axis aligned and square, because a scissor is.** A panel with rounded corners is
+  drawn through `Painter::fillBox`'s radius but clips what it holds to its box and not to its
+  curve, so a child reaching a corner is cut square against a rounded plate. Nothing in this
+  tree shows it — `ui::paint::Dressing::radius` defaults to 0 and no theme here sets one — and
+  lifting it is a change to what a clip *is* rather than an addition to it: the batch would
+  carry a radius beside its rectangle and the quad shader would mask by a rounded rect, with
+  the scissor left as the cheap outer bound.
 - **A clip reaches the line primitive on different terms.** `LineCanvas`
   ([ADR-0011](0011-lines-are-the-second-primitive.md)) cuts its stream into batches the same
   way, but its rectangle is given in the pixels of the image drawn into and the modelview does

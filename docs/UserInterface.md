@@ -322,6 +322,11 @@ focusable component, and is how a screen says it is keyboard driven — an app c
 screen goes up. `focusNext()` will not do it, on purpose: tab must not take the focus onto the
 first widget of a hud nobody is looking at, so a ui with nothing focused stays that way.
 
+Nothing in this tree calls it, because nothing here is that kind of screen: the editor would be
+taking the keyboard off the viewport to put it on a toolbar button, and a game's menu is
+`MenuItem`s, which are not focusable. So the call is covered by `api/ui/tests` and by no app
+here — worth knowing before trusting it in one.
+
 **A focused component is ringed**, traced around its box after it is drawn, in the `focus`
 colour at `focus-width` thick of the style class the component is drawn in — so a theme can mark
 a focused text box differently from a focused list, and one naming neither rings every control
@@ -406,7 +411,10 @@ has to read as three rather than as the last of them.
 
 `LineCanvas` cuts its stream the same way, on different terms: its rectangle is in the pixels
 of the image drawn into and the modelview does not apply to it, because a line canvas is world
-space and no transform there would carry a screen rectangle.
+space and no transform there would carry a screen rectangle. Nothing in this tree asks it to.
+The editor's viewport panes look like the case for it and are not: each pane is a pass of its
+own and the recorder sets the scissor to the pass's viewport, so a pane is already cut to its
+region without the canvas asking. What a `LineCanvas` clip is for is a cut *inside* one pass.
 
 ## Testing it
 
@@ -426,7 +434,8 @@ boxes the draw left or on the primitives it emitted. [Testing.md](Testing.md) ha
   `nextItemWidth(float)` is what tells it, spent by the widget that follows and forgotten
   after it, which is what lets two scrubbers share a row. A separator always takes the row.
 
-[TODO.md](TODO.md) carries these, and
+None of those is unfinished, which is why [TODO.md](TODO.md) carries none of them - each is
+what the design came to, recorded here so a reader meets it before the code does.
 [plans/UiConsolidation.md](plans/UiConsolidation.md) is what closed the ones that are gone.
 
 ## Still open
@@ -436,7 +445,10 @@ boxes the draw left or on the primitives it emitted. [Testing.md](Testing.md) ha
   the cursor rather than an error.
 - **Adding a component means editing eight places** — `component::Type`, `component::name()`,
   the loader's branch, the renderer's paint switch, its `ringed()`, the Arranger's `natural()`,
-  the cursor's and the keys'. The compiler names all eight
-  ([ADR-0047](adr/0047-a-component-type-is-checked-by-the-compiler.md)), so forgetting one is
-  a build error rather than a component that silently is not there — but a registry is the only
-  thing that would reduce the count.
+  the cursor's and the keys'. The compiler names all eight, so forgetting one is a build error
+  rather than a component that silently is not there.
+  [ADR-0047](adr/0047-a-component-type-is-checked-by-the-compiler.md) has why a registry was
+  weighed and left, and it is a trade to revisit rather than work waiting to be done.
+- **A clip is square**, so a rounded panel cuts what it holds to its box and not to its curve.
+  [ADR-0037](adr/0037-clipping-is-a-scissor-the-batch-carries.md) has what lifting that would
+  cost. No theme here rounds anything, so nothing in this tree shows it.

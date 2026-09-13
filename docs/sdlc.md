@@ -12,7 +12,10 @@ interesting question is *what blocks what*, not *what needs doing*.
 
 A plan is a living document: update its state notes as things land. When every phase is closed
 it moves to [`plans/completed/`](plans/completed/), and its open items move to
-[`TODO.md`](TODO.md).
+[`TODO.md`](TODO.md) — the ones that are still work. A plan's open questions as often close as
+*decided against* or *complete, and nothing needs it yet*; the first belongs in the ADR that
+settled it and the second in the document that owns the subject. `TODO.md` holds what is missing
+or unfinished, and neither of those is.
 
 [`plans/completed/EmbeddingSeams.md`](plans/completed/EmbeddingSeams.md) closed on 2026-09-07
 and took up the seams an app that brings its own ui, renderer and `main` needs from
