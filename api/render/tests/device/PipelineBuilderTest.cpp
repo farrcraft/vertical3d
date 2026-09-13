@@ -97,6 +97,60 @@ BOOST_AUTO_TEST_CASE(a_pipeline_with_two_colour_attachments_compiles) {
 }
 
 /**
+ * A depth only pipeline that offsets what it writes compiles - which is what a shadow pass
+ * actually is, and what the attachment list alone was not enough to express.
+ *
+ * The compile is the whole assertion, and it is a narrow one. Validation has nothing to say
+ * at this point about VK_DYNAMIC_STATE_DEPTH_BIAS being left out of the dynamic list - the
+ * create info's own factors are zero and a zero bias is a no-op - so what would catch that
+ * is a draw that calls vkCmdSetDepthBias, which nothing in this tree does. Measured rather
+ * than assumed: this case passes unchanged with the dynamic state removed.
+ **/
+BOOST_AUTO_TEST_CASE(a_depth_only_pipeline_with_a_bias_compiles) {
+    v3d::test::Headless headless(colourFormat, width, height);
+
+    const boost::shared_ptr<Cache> cache = boost::make_shared<Cache>(headless.device);
+    Builder builder(headless.device);
+    describe(&builder);
+    builder.depth(true, true).depthBias(true).depthFormat(depthFormat).colourFormats({});
+
+    const Pipeline built = builder.build(cache);
+    BOOST_CHECK(built.pipeline != VK_NULL_HANDLE);
+    BOOST_CHECK(headless.silent());
+
+    vkDestroyPipeline(headless.device->handle(), built.pipeline, nullptr);
+    vkDestroyPipelineLayout(headless.device->handle(), built.layout, nullptr);
+}
+
+/**
+ * Blend factors of the caller's own compile, and a pipeline given none still blends the way
+ * it always has - the struct's defaults are what blend(true) has always meant.
+ *
+ * A destination alpha of ZERO is the case this exists for: a pass compositing into something
+ * that is itself composited later keeps the source's alpha, where the straight alpha default
+ * erodes it. What it comes out looking like is not asserted here and cannot be - a blend is
+ * specified to a precision rather than to a value, so ADR-0054 gives it no reference.
+ **/
+BOOST_AUTO_TEST_CASE(a_pipeline_with_named_blend_factors_compiles) {
+    v3d::test::Headless headless(colourFormat, width, height);
+
+    const boost::shared_ptr<Cache> cache = boost::make_shared<Cache>(headless.device);
+    Builder builder(headless.device);
+    describe(&builder);
+
+    Builder::Blend compositing;
+    compositing.destinationAlpha = VK_BLEND_FACTOR_ZERO;
+    builder.colourFormat(colourFormat).blend(compositing);
+
+    const Pipeline built = builder.build(cache);
+    BOOST_CHECK(built.pipeline != VK_NULL_HANDLE);
+    BOOST_CHECK(headless.silent());
+
+    vkDestroyPipeline(headless.device->handle(), built.pipeline, nullptr);
+    vkDestroyPipelineLayout(headless.device->handle(), built.layout, nullptr);
+}
+
+/**
  * A builder nobody told about colour still fails, which is the guard colourFormat() has
  * always had. An empty list is a pipeline that writes no colour; the default is one nobody
  * filled in, and the two must not read the same.

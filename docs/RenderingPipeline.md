@@ -126,6 +126,16 @@ that writes depth and no colour - a shadow pass. `colourFormat()` is the one-att
 spelling and is what everything here uses. Shader modules belong to the builder and are
 destroyed with it; the pipeline and its layout are handed back for `Resources` to own.
 
+Two knobs exist for consumers rather than for this tree, both defaulting to what it already
+did. `blend()` also takes a `Builder::Blend` of four factors, whose defaults are the straight
+alpha it has always applied — a pass compositing into something composited later names a
+destination alpha of `ZERO`, where the default erodes the source's. And `depthBias(true)` sets
+`depthBiasEnable` and puts `VK_DYNAMIC_STATE_DEPTH_BIAS` in the dynamic list, so the constant
+and the slope are a scene's numbers set with `vkCmdSetDepthBias` rather than a pipeline's:
+that is what a shadow pass needs to separate its own geometry from the surface tested against
+it. Nothing here draws with either, so both are covered by a pipeline that compiles rather than
+by one that draws.
+
 ```
 pipeline::Builder(device)
     .name("quad")

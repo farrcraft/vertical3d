@@ -27,6 +27,7 @@ Builder::Builder(const boost::shared_ptr<device::Device>& device) :
     depthWrite_(false),
     depthCompare_(VK_COMPARE_OP_LESS),
     blend_(true),
+    depthBias_(false),
     pushStages_(0),
     pushBytes_(0),
     colours_(1, VK_FORMAT_UNDEFINED),
@@ -132,8 +133,23 @@ Builder& Builder::depth(bool test, bool write, VkCompareOp compare) {
 
 /**
  **/
+Builder& Builder::depthBias(bool enabled) {
+    depthBias_ = enabled;
+    return *this;
+}
+
+/**
+ **/
 Builder& Builder::blend(bool enabled) {
     blend_ = enabled;
+    return *this;
+}
+
+/**
+ **/
+Builder& Builder::blend(const Blend& factors) {
+    blend_ = true;
+    factors_ = factors;
     return *this;
 }
 
@@ -242,6 +258,8 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
     raster.cullMode = cull_;
     raster.frontFace = front_;
     raster.lineWidth = 1.0f;
+    // the factors are dynamic, so this enables the bias without saying what it is
+    raster.depthBiasEnable = depthBias_ ? VK_TRUE : VK_FALSE;
 
     VkPipelineMultisampleStateCreateInfo multisample{};
     multisample.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -256,11 +274,11 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
 
     VkPipelineColorBlendAttachmentState attachment{};
     attachment.blendEnable = blend_ ? VK_TRUE : VK_FALSE;
-    attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-    attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    attachment.srcColorBlendFactor = factors_.sourceColour;
+    attachment.dstColorBlendFactor = factors_.destinationColour;
     attachment.colorBlendOp = VK_BLEND_OP_ADD;
-    attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-    attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    attachment.srcAlphaBlendFactor = factors_.sourceAlpha;
+    attachment.dstAlphaBlendFactor = factors_.destinationAlpha;
     attachment.alphaBlendOp = VK_BLEND_OP_ADD;
     attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 
@@ -271,12 +289,17 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
     blending.attachmentCount = static_cast<uint32_t>(attachments.size());
     blending.pAttachments = attachments.empty() ? nullptr : attachments.data();
 
-    // the viewport is dynamic so that a window resize costs no pipeline rebuild
-    const VkDynamicState dynamics[2] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+    // the viewport is dynamic so that a window resize costs no pipeline rebuild, and the
+    // depth bias is dynamic for a pipeline that asked for one - its numbers belong to the
+    // scene rather than to the pipeline
+    std::vector<VkDynamicState> dynamics{VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+    if (depthBias_) {
+        dynamics.push_back(VK_DYNAMIC_STATE_DEPTH_BIAS);
+    }
     VkPipelineDynamicStateCreateInfo dynamic{};
     dynamic.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    dynamic.dynamicStateCount = 2;
-    dynamic.pDynamicStates = dynamics;
+    dynamic.dynamicStateCount = static_cast<uint32_t>(dynamics.size());
+    dynamic.pDynamicStates = dynamics.data();
 
     // dynamic rendering, so the formats come from here rather than from a render pass
     VkPipelineRenderingCreateInfo rendering{};
