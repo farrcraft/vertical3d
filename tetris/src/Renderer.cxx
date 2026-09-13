@@ -70,6 +70,14 @@ TetrisRenderer::TetrisRenderer(const boost::shared_ptr<v3d::render::realtime::Wi
 
     uiRenderer_ = boost::make_shared<v3d::ui::paint::ComponentRenderer>(text_->measure(fontSize), text_->write(&canvas_, fontSize));
     uiRenderer_->dressing().lineHeight = fontSize * 1.4f;
+
+    statistics_ = boost::make_shared<v3d::ui::shell::StatisticsOverlay>(text_);
+}
+
+/**
+ **/
+const boost::shared_ptr<v3d::ui::shell::StatisticsOverlay>& TetrisRenderer::statistics() const {
+    return statistics_;
 }
 
 /**
@@ -158,7 +166,7 @@ TetrisRenderer::Layout TetrisRenderer::layout() const {
 
 /**
  **/
-void TetrisRenderer::draw() {
+void TetrisRenderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics) {
     if (!scene_) {
         return;
     }
@@ -182,6 +190,9 @@ void TetrisRenderer::draw() {
     if (ui_) {
         uiRenderer_->draw(&canvas_, *ui_);
     }
+
+    // last, so the numbers are over whatever the menu put up rather than under it
+    statistics_->draw(&canvas_, statistics);
 
     boost::shared_ptr<v3d::render::realtime::Pass> pass =
         engine_.frame()->pass(v3d::render::realtime::Engine3D::colourPass);

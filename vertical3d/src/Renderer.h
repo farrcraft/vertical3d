@@ -14,6 +14,7 @@
 #include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/Engine.h>
 #include <api/ui/paint/TextRenderer.h>
+#include <api/ui/shell/StatisticsOverlay.h>
 #include <vertical3d/src/manipulator/Manipulator.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/view/ViewPort.h>
@@ -101,8 +102,16 @@ class Renderer final {
 
     /**
      * Draw one frame - a pass per view.
+     *
+     * @param statistics what the loop measured about the frame being drawn, which the
+     *        overlay reads - the app hands it over because api/ui sits below api/engine
      **/
-    void draw();
+    void draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics);
+
+    /**
+     * The frame statistics drawn over the views, for whatever shows and hides them.
+     **/
+    const boost::shared_ptr<v3d::ui::shell::StatisticsOverlay>& statistics() const;
 
     /**
      * Wait for everything in flight, before the window the device draws to goes away.
@@ -113,7 +122,8 @@ class Renderer final {
     /**
      * Fill the ui canvas and give the frame the one pass that draws it.
      **/
-    void drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& frame);
+    void drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& frame,
+        const v3d::ui::shell::StatisticsOverlay::Sample& statistics);
 
     boost::shared_ptr<v3d::log::Logger> logger_;
     // kept for the images a ui theme names, which are resolved when the ui arrives
@@ -136,6 +146,7 @@ class Renderer final {
     boost::shared_ptr<v3d::ui::paint::ComponentRenderer> uiRenderer_;
     v3d::render::realtime::Canvas canvas_;
     boost::shared_ptr<v3d::ui::paint::TextRenderer> text_;
+    boost::shared_ptr<v3d::ui::shell::StatisticsOverlay> statistics_;
 
     glm::vec4 background_;
 };

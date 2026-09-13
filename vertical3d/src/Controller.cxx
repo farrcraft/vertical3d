@@ -247,6 +247,9 @@ void Controller::registerCommands() {
     press("view::show::grid", [this]() { toggleShow(ViewPort::SHOW_GRID); });
     press("view::show::mesh", [this]() { toggleShow(ViewPort::SHOW_MESH); });
     press("view::show::handle", [this]() { toggleShow(ViewPort::SHOW_HANDLE); });
+    // not a view flag - the readout is over the window rather than in any one pane, so it
+    // is the renderer's to show and nothing here reads it back
+    press("view::show::statistics", [this]() { renderer_->statistics()->toggle(); });
 
     // the three camera moves are held rather than latched: the modifier going down
     // chooses what a drag performs and it coming up puts the tool back to none
@@ -484,7 +487,8 @@ void Controller::layoutViews(int width, int height) {
 /**
  **/
 bool Controller::render() {
-    renderer_->draw();
+    const v3d::engine::Statistics& measured = statistics();
+    renderer_->draw({ measured.mean(), measured.last(), measured.steps() });
     return true;
 }
 

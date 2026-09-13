@@ -76,6 +76,17 @@
     {
       "source": {
         "context": "keyboard",
+        "name": "f3",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "view",
+        "name": "show::statistics"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
         "name": "1",
         "state": "pressed"
       },

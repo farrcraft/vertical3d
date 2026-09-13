@@ -74,7 +74,8 @@ bool Controller::simulate(float step) {
 }
 
 bool Controller::render() {
-    renderer_->draw();
+    const v3d::engine::Statistics& measured = statistics();
+    renderer_->draw({ measured.mean(), measured.last(), measured.steps() });
     return true;
 }
 
@@ -132,6 +133,10 @@ void Controller::handleEvent(const v3d::event::Event& event) {
     if (event.context()->name() == "tetris") {
         if (event.name() == "toggleMenu") {
             menu_->toggle();
+            return;
+        }
+        if (event.name() == "toggleStatistics") {
+            renderer_->statistics()->toggle();
             return;
         }
         if (event.name() == "debugMode") {
