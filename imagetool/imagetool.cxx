@@ -4,17 +4,50 @@
  **/
 
 #include <api/image/Factory.h>
+#include <api/image/Crop.h>
 
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
 #include <iostream>
+#include <sstream>
 #include <string>
 
 #include <boost/program_options.hpp>
 #include <boost/make_shared.hpp>
 
 namespace {
+
+/**
+ * Read the four whole numbers of a "x,y,width,height" rectangle.
+ *
+ * Each is read as a signed number wider than the one it is stored in, so that a negative
+ * offset is refused rather than wrapping into an enormous positive one that no image
+ * contains - which crop() would then reject for the wrong reason.
+ *
+ * @param values filled with x, y, width and height when true is returned
+ * @return whether the text was exactly four comma separated non negative numbers
+ **/
+bool rectangle(const std::string& text, unsigned int* values) {
+    std::istringstream stream(text);
+    for (unsigned int field = 0; field < 4; ++field) {
+        if (field > 0) {
+            char comma = 0;
+            if (!(stream >> comma) || comma != ',') {
+                return false;
+            }
+        }
+        int64_t value = 0;
+        if (!(stream >> value) || value < 0 || value > UINT32_MAX) {
+            return false;
+        }
+        values[field] = static_cast<unsigned int>(value);
+    }
+    // a trailing field is a typo rather than something to ignore
+    char extra = 0;
+    return !(stream >> extra);
+}
 
 int run(int argc, char *argv[]) {
     // setup option parser
@@ -24,7 +57,8 @@ int run(int argc, char *argv[]) {
         ("info", "display image info")
         ("silent", "don't display any output")
         ("file", boost::program_options::value<std::string>(), "input image filename to be read")
-        ("outfile", boost::program_options::value<std::string>(), "image filename to be written");
+        ("outfile", boost::program_options::value<std::string>(), "image filename to be written")
+        ("crop", boost::program_options::value<std::string>(), "cut a rectangle out before writing, as x,y,width,height");
 
     // parse options
     boost::program_options::variables_map var_map;
@@ -53,6 +87,18 @@ int run(int argc, char *argv[]) {
     }
     if (var_map.count("outfile")) {
         outfile = var_map["outfile"].as<std::string>();
+    }
+
+    unsigned int cut[4] = { 0, 0, 0, 0 };
+    const bool cropping = var_map.count("crop") > 0;
+    if (cropping && !rectangle(var_map["crop"].as<std::string>(), cut)) {
+        std::cout << "error: a crop is four whole numbers, x,y,width,height\n";
+        return EXIT_FAILURE;
+    }
+    // a crop with nowhere to go is a mistyped command rather than a read
+    if (cropping && outfile.empty()) {
+        std::cout << "error: a crop needs an outfile to write the cut image to\n";
+        return EXIT_FAILURE;
     }
 
     if (infile.empty()) {
@@ -85,6 +131,19 @@ int run(int argc, char *argv[]) {
         std::cout << "Source image width: " << image->width() << "\n";
         std::cout << "Source image height: " << image->height() << "\n";
         std::cout << "Source image bpp: " << static_cast<unsigned int>(image->bpp()) << "\n";
+    }
+
+    // the crop happens after info, so that info describes the file that was read whatever
+    // else the run does to it
+    if (cropping) {
+        if (!silent) {
+            std::cout << "Cropping: " << cut[2] << "x" << cut[3] << " at " << cut[0] << "," << cut[1] << "\n";
+        }
+        image = v3d::image::crop(*image, cut[0], cut[1], cut[2], cut[3]);
+        if (!image) {
+            std::cout << "error: that rectangle is not inside the image!" << "\n";
+            return EXIT_FAILURE;
+        }
     }
 
     if (!outfile.empty()) {

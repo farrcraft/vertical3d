@@ -63,10 +63,10 @@ it as an open question and could not settle it.
 names them, and `image::crop` cuts one back out of a sheet. Every half of a packer's round trip
 is in the tree.
 
-[] nothing in the tree packs a sheet or unpacks one. The pieces are all here and there is no
-tool over them, so an app adopting a packer with an existing hand-packed sheet still writes its
-own explode step outside the tree - which means an image codec outside the tree. Whether that
-tool is `imagetool`'s, its own `spritetool`'s, or stays with whoever needs it is undecided
+[] nothing in the tree packs a sheet, and unpacking one is a rectangle at a time. `imagetool
+--crop` cuts one region, so a sheet can be exploded by a caller that already knows where its
+sprites are; nothing reads a `sprites.json` and cuts out everything it names. Whether that
+belongs to `imagetool`, to a `spritetool` beside it, or to whoever needs it is undecided
 
 ## Models
 
