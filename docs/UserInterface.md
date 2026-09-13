@@ -209,9 +209,9 @@ the reverse of the order the ui was drawn — menu bars, then toolbars, then the
 A press on a `pickable()` component sends that component's bound event and is consumed. A
 press on anything else is not consumed, so a HUD of labels over a scene leaves the scene
 clickable — which is why `Component` leaves `pickable()` false. A control sets it, and
-`focusable()` with it, in its own constructor: a button, a check box, a radio button, a select
-list, a tab bar and a text box exist to be driven, and a panel or a label laid over a scene
-does not. A press is remembered until it comes up, which is what drags a scrollbar's thumb
+`focusable()` with it, in its own constructor: a button, a check box, a radio button, a
+scrollbar, a select list, a tab bar and a text box exist to be driven, and a panel or a label
+laid over a scene does not. A press is remembered until it comes up, which is what drags a scrollbar's thumb
 across frames.
 
 A press also moves the focus — onto what it landed on when that component asked to be
@@ -271,7 +271,11 @@ focus, sending the command a click sends — both routers ask `ui::command()` wh
 component carries, so a component a press activates and a key does not cannot happen. The
 arrows step through a `SelectList`'s rows and a `TabBar`'s pages, with `home` and `end` at the
 ends; neither wraps, because running off the last row is how a keyboard reaches it and stays
-there. A component does not own the state it shows, so activating a check box sends its command
+there. A `Scrollbar` is moved rather than stepped: an arrow by a line — a bound list's row, or
+`Scrollbar::lineStep` for a range of pixels that says nothing about what a line of it is —
+`pageup` and `pagedown` by what the page shows, and `home` and `end` to the ends of the content.
+A bar showing all of its content takes no key at all, because a control that swallows a key it
+could not have acted on stops a game being played while it holds the focus. A component does not own the state it shows, so activating a check box sends its command
 and marks nothing — [ADR-0019](adr/0019-the-ui-is-laid-out-by-what-draws-it.md).
 
 **Something has to give out the first focus.** `Engine::focusFirst()` puts it on the first
@@ -333,8 +337,6 @@ boxes the draw left or on the primitives it emitted. [Testing.md](Testing.md) ha
 - **An `Immediate` widget takes the rest of its row unless told otherwise.**
   `nextItemWidth(float)` is what tells it, spent by the widget that follows and forgotten
   after it, which is what lets two scrubbers share a row. A separator always takes the row.
-- **A scrollbar takes no key.** Every other control is driven from the keyboard; a scrollbar is
-  dragged, and paging the thing it scrolls is still the app's.
 - **A caret cannot be placed by clicking.** A press focuses a text box and leaves the caret
   where it was, because `ui::Cursor` names no text and would need the `Measure` callback to
   find the character under a point.

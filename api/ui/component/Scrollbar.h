@@ -44,6 +44,15 @@ class Scrollbar : public Component {
      **/
     static const float minimumThumb;
 
+    /**
+     * How far an arrow key moves a bar that scrolls a range rather than a list, in pixels.
+     *
+     * A range is pixels of something the bar knows nothing about, so there is nothing in it
+     * to read a line off - unlike a bound list, which is rows and says how tall one is. One
+     * line of ordinary text is the useful answer and this is a stand-in for it.
+     **/
+    static const float lineStep;
+
     Scrollbar();
     ~Scrollbar() = default;
 
@@ -102,6 +111,12 @@ class Scrollbar : public Component {
      *      of the content
      **/
     bool scrollable() const noexcept;
+
+    /**
+     * @return how far an arrow key moves the bar: the row height of the list it scrolls,
+     *      or lineStep when it scrolls a range of its own or the list has not been drawn
+     **/
+    float line() const noexcept;
 
     /**
      * @return how long the thumb is, in pixels along the bar's direction

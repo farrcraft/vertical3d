@@ -7,6 +7,7 @@
 
 #include <api/ui/Component.h>
 #include <api/ui/Engine.h>
+#include <api/ui/component/Scrollbar.h>
 #include <api/ui/component/SelectList.h>
 #include <api/ui/component/TabBar.h>
 #include <api/ui/component/TextBox.h>
@@ -119,6 +120,8 @@ bool Keys::act(const boost::shared_ptr<Component>& component, std::string_view k
             return choose(boost::dynamic_pointer_cast<component::SelectList>(component), key);
         case component::Type::TabBar:
             return turn(boost::dynamic_pointer_cast<component::TabBar>(component), key);
+        case component::Type::Scrollbar:
+            return nudge(boost::dynamic_pointer_cast<component::Scrollbar>(component), key);
         case component::Type::Bar:
         case component::Type::Button:
         case component::Type::CheckBox:
@@ -130,14 +133,12 @@ bool Keys::act(const boost::shared_ptr<Component>& component, std::string_view k
         case component::Type::MenuItem:
         case component::Type::Panel:
         case component::Type::RadioButton:
-        case component::Type::Scrollbar:
         case component::Type::TabPage:
         case component::Type::Toolbar:
         case component::Type::Undefined:
         case component::Type::VerticalBox:
-            // nothing here steps through anything it holds, so the only key it answers is the
-            // one that activates it - which is what falls out of the switch. A scrollbar is
-            // the exception worth naming: it holds a position a key could move, and takes none
+            // nothing here holds a place a key moves through, so the only key it answers is
+            // the one that activates it - which is what falls out of the switch
             break;
     }
     if (!activates(key)) {
@@ -223,6 +224,33 @@ bool Keys::turn(const boost::shared_ptr<component::TabBar>& bar, std::string_vie
         return false;
     }
     bar->selected(now);
+    return true;
+}
+
+bool Keys::nudge(const boost::shared_ptr<component::Scrollbar>& bar, std::string_view key) {
+    if (!bar || !bar->scrollable()) {
+        // a bar showing all of its content has nowhere to go, and a control that swallows a
+        // key it could not act on is one that stops a game being played
+        return false;
+    }
+    const bool vertical = bar->direction() == component::Scrollbar::Direction::Vertical;
+    if (key == (vertical ? "arrow_down" : "arrow_right")) {
+        bar->scroll(bar->line());
+    } else if (key == (vertical ? "arrow_up" : "arrow_left")) {
+        bar->scroll(-bar->line());
+    } else if (key == "pagedown") {
+        bar->scroll(bar->page());
+    } else if (key == "pageup") {
+        bar->scroll(-bar->page());
+    } else if (key == "home") {
+        bar->offset(0.0f);
+    } else if (key == "end") {
+        bar->offset(bar->maximum());
+    } else {
+        // a bar carries no command, so a return and a space have nothing to send and are
+        // left for whatever the bar scrolls to answer
+        return false;
+    }
     return true;
 }
 

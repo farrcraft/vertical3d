@@ -19,6 +19,7 @@ class Component;
 class Engine;
 
 namespace component {
+class Scrollbar;
 class SelectList;
 class TabBar;
 class TextBox;
@@ -44,7 +45,8 @@ namespace v3d::ui::input {
  *
  * Every control is driven, not only a text box. Return and space activate whatever holds
  * the focus, sending the command a click sends because both ask ui::command() for it; the
- * arrows step through a list's rows and a bar's pages. Only a text box takes the keys that
+ * arrows step through a list's rows and a tab bar's pages and move a scrollbar by a line.
+ * Only a text box takes the keys that
  * compose text - a letter reaching a focused button goes on to the app's bindings, because
  * a button is not something a player is typing into.
  *
@@ -107,6 +109,20 @@ class Keys final {
      * command, so nothing is sent - which is what a click on a tab does too.
      **/
     static bool turn(const boost::shared_ptr<component::TabBar>& bar, std::string_view key);
+
+    /**
+     * A key that reached a scrollbar: the arrows move it by a line, page up and page down
+     * by what the page shows, and home and end to the ends of the content.
+     *
+     * The bar is the arithmetic and not the input, so what a line and a page come to is
+     * its to say and this only names which of them a key asked for. Which arrows read as
+     * "along" is the bar's direction, the way it is for a list and for a tab bar.
+     *
+     * A bar with nothing to scroll takes no key, so an arrow reaching one that shows all
+     * of its content goes on to the app's bindings rather than being swallowed by a
+     * control that could not have moved.
+     **/
+    static bool nudge(const boost::shared_ptr<component::Scrollbar>& bar, std::string_view key);
 
     /**
      * Send whatever command activating a component sends, per ui::command(). A component

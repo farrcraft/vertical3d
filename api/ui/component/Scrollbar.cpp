@@ -12,6 +12,7 @@
 namespace v3d::ui::component {
 
 const float Scrollbar::minimumThumb = 16.0f;
+const float Scrollbar::lineStep = 16.0f;
 
 Scrollbar::Scrollbar() :
     Component(Type::Scrollbar),
@@ -19,6 +20,10 @@ Scrollbar::Scrollbar() :
     page_(0.0f),
     offset_(0.0f),
     direction_(Direction::Vertical) {
+    // a bar exists to be driven, so it asks for the press its drag needs and for the focus
+    // its keys go to - ADR-0034 and ADR-0040
+    pickable(true);
+    focusable(true);
 }
 
 void Scrollbar::direction(Direction along) {
@@ -79,6 +84,12 @@ float Scrollbar::maximum() const noexcept {
 
 bool Scrollbar::scrollable() const noexcept {
     return maximum() > 0.0f;
+}
+
+float Scrollbar::line() const noexcept {
+    const boost::shared_ptr<SelectList> list = scrolled_.lock();
+    const float row = list ? list->rowHeight() : 0.0f;
+    return row > 0.0f ? row : lineStep;
 }
 
 float Scrollbar::track() const noexcept {
