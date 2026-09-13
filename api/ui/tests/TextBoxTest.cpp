@@ -13,6 +13,7 @@
 #include <api/ui/input/Keys.h>
 #include <api/ui/paint/ComponentRenderer.h>
 
+#include <cstddef>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -28,6 +29,15 @@ namespace {
 const float characterWidth = 10.0f;
 
 /**
+ * A fixed width per byte, so where a character falls is arithmetic rather than a font. The
+ * cursor and the renderer are given the same one, which is what makes a click land where the
+ * caret is drawn.
+ **/
+float measured(std::string_view text) {
+    return static_cast<float>(text.size()) * characterWidth;
+}
+
+/**
  * A ui engine holding one container, the renderer that places what it holds, and both
  * routers - the cursor that gives the focus and the keys that follow it.
  **/
@@ -35,9 +45,7 @@ struct Fixture final {
     Fixture() :
         dispatcher(boost::make_shared<entt::dispatcher>()),
         context(boost::make_shared<v3d::event::Context>("test")),
-        renderer(
-            [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-            [](std::string_view, const glm::vec2&, const glm::vec4&) {}) {
+        renderer(&measured, [](std::string_view, const glm::vec2&, const glm::vec4&) {}) {
         dispatcher->sink<v3d::event::Event>().connect<&Fixture::receive>(*this);
         canvas.resize(800, 600);
 
@@ -48,8 +56,12 @@ struct Fixture final {
             boost::json::parse(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [] } ] })").as_object())));
         container = ui->container("hud");
         BOOST_REQUIRE(container);
-        cursor = boost::make_shared<v3d::ui::input::Cursor>(ui, dispatcher);
-        keys = boost::make_shared<v3d::ui::input::Keys>(ui, dispatcher);
+        cursor = boost::make_shared<v3d::ui::input::Cursor>(ui, dispatcher, &measured);
+
+        v3d::ui::input::Keys::Clipboard board;
+        board.read = [this]() { return clipboard; };
+        board.write = [this](std::string_view text) { clipboard = std::string(text); };
+        keys = boost::make_shared<v3d::ui::input::Keys>(ui, dispatcher, board);
     }
 
     void receive(const v3d::event::Event& event) {
@@ -79,6 +91,7 @@ struct Fixture final {
     boost::shared_ptr<v3d::ui::Container> container;
     boost::shared_ptr<v3d::ui::input::Cursor> cursor;
     boost::shared_ptr<v3d::ui::input::Keys> keys;
+    std::string clipboard;  /**< what a cut or a copy handed over, and what a paste reads **/
 };
 
 boost::shared_ptr<v3d::ui::component::TextBox> box(const std::string& text) {
@@ -324,6 +337,298 @@ BOOST_AUTO_TEST_CASE(a_loaded_box_asks_for_the_press_and_the_keyboard) {
     BOOST_CHECK_EQUAL(field->limit(), 8U);
     BOOST_CHECK(field->pickable());
     BOOST_CHECK(field->focusable());
+}
+
+/**
+ * A selection is the run between the anchor and the caret, and nothing is selected exactly
+ * when the two are in the same place - ADR-0057. There is no third piece of state, so a
+ * selection cannot point into text that has been retyped.
+ **/
+BOOST_AUTO_TEST_CASE(a_selection_is_the_run_between_the_anchor_and_the_caret) {
+    const boost::shared_ptr<v3d::ui::component::TextBox> field = box("abcde");
+    BOOST_CHECK(!field->selected());
+    BOOST_CHECK_EQUAL(field->anchor(), field->caret());
+    BOOST_CHECK(field->selection().empty());
+
+    field->select(1, 4);
+    BOOST_CHECK(field->selected());
+    BOOST_CHECK_EQUAL(field->selection(), "bcd");
+    // the caret is left at the end a shift and an arrow moves
+    BOOST_CHECK_EQUAL(field->caret(), 4U);
+    BOOST_CHECK_EQUAL(field->anchor(), 1U);
+
+    field->deselect();
+    BOOST_CHECK(!field->selected());
+    BOOST_CHECK_EQUAL(field->caret(), 4U);
+
+    field->selectAll();
+    BOOST_CHECK_EQUAL(field->selection(), "abcde");
+}
+
+/**
+ * An arrow with nothing held lands on an end of the selection rather than a character past
+ * it, which is what a first arrow out of a selected run means everywhere else.
+ **/
+BOOST_AUTO_TEST_CASE(an_arrow_out_of_a_selection_lands_on_its_edge) {
+    const boost::shared_ptr<v3d::ui::component::TextBox> field = box("abcde");
+
+    field->select(1, 4);
+    BOOST_CHECK(field->left());
+    BOOST_CHECK_EQUAL(field->caret(), 1U);
+    BOOST_CHECK(!field->selected());
+
+    field->select(1, 4);
+    BOOST_CHECK(field->right());
+    BOOST_CHECK_EQUAL(field->caret(), 4U);
+    BOOST_CHECK(!field->selected());
+
+    // and the anchor stays put when the arrow is shifted, which is what selects
+    field->caret(2);
+    BOOST_CHECK(field->right(true));
+    BOOST_CHECK(field->right(true));
+    BOOST_CHECK_EQUAL(field->selection(), "cd");
+    BOOST_CHECK_EQUAL(field->anchor(), 2U);
+}
+
+/**
+ * Typing over a selected run replaces it, and so does a backspace, a delete and a paste -
+ * every one of them through removeSelection(), so there is one answer rather than four.
+ **/
+BOOST_AUTO_TEST_CASE(an_edit_over_a_selection_replaces_the_run) {
+    const boost::shared_ptr<v3d::ui::component::TextBox> typed = box("abcde");
+    typed->select(1, 4);
+    BOOST_CHECK(typed->insert("X"));
+    BOOST_CHECK_EQUAL(typed->text(), "aXe");
+    BOOST_CHECK_EQUAL(typed->caret(), 2U);
+    BOOST_CHECK(!typed->selected());
+
+    const boost::shared_ptr<v3d::ui::component::TextBox> erased = box("abcde");
+    erased->select(1, 4);
+    BOOST_CHECK(erased->backspace());
+    BOOST_CHECK_EQUAL(erased->text(), "ae");
+    BOOST_CHECK_EQUAL(erased->caret(), 1U);
+
+    const boost::shared_ptr<v3d::ui::component::TextBox> deleted = box("abcde");
+    deleted->select(1, 4);
+    BOOST_CHECK(deleted->erase());
+    BOOST_CHECK_EQUAL(deleted->text(), "ae");
+    BOOST_CHECK_EQUAL(deleted->caret(), 1U);
+}
+
+/**
+ * The limit is measured against what the text would become, so a paste may be as long as the
+ * run it replaces plus whatever room was left - and one byte longer than that is refused
+ * whole, the way it always was.
+ **/
+BOOST_AUTO_TEST_CASE(a_selection_makes_room_for_what_replaces_it) {
+    const boost::shared_ptr<v3d::ui::component::TextBox> field = box("abcde");
+    field->limit(5);
+    BOOST_CHECK(!field->insert("f"));
+
+    field->select(1, 4);
+    BOOST_CHECK(field->insert("XYZ"));
+    BOOST_CHECK_EQUAL(field->text(), "aXYZe");
+
+    field->select(1, 4);
+    BOOST_CHECK(!field->insert("WXYZ"));
+    BOOST_CHECK_EQUAL(field->text(), "aXYZe");
+}
+
+/**
+ * A selection is moved to a character boundary like everything else, so a multi-byte
+ * character is selected, copied and replaced whole.
+ **/
+BOOST_AUTO_TEST_CASE(a_selection_lands_on_character_boundaries) {
+    // "aeb", with a two byte e acute in the middle
+    const boost::shared_ptr<v3d::ui::component::TextBox> field = box("aéb");
+    BOOST_CHECK_EQUAL(field->text().size(), 4U);
+
+    // an offset inside the character is not expressible, so the run starts before it
+    field->select(2, 3);
+    BOOST_CHECK_EQUAL(field->anchor(), 1U);
+    BOOST_CHECK_EQUAL(field->selection(), "é");
+
+    BOOST_CHECK(field->insert("e"));
+    BOOST_CHECK_EQUAL(field->text(), "aeb");
+}
+
+/**
+ * A press puts the caret where it landed, which is what ADR-0057 gave ui::Cursor a Measure
+ * for. It is answered against the pen the last draw left on the box, so a ui routed before it
+ * is drawn places nothing - the same rule as picking one, per ADR-0019.
+ **/
+BOOST_AUTO_TEST_CASE(a_press_puts_the_caret_where_it_landed) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::TextBox> field = box("abcde");
+    fixture.place(field, glm::vec2(0.0f, 0.0f), glm::vec2(200.0f, 24.0f));
+    fixture.draw();
+
+    const float pen = field->pen();
+    BOOST_CHECK(fixture.cursor->press(glm::vec2(pen + 22.0f, 12.0f)));
+    BOOST_CHECK_EQUAL(field->caret(), 2U);
+    BOOST_CHECK(!field->selected());
+    BOOST_CHECK(fixture.cursor->release(glm::vec2(pen + 22.0f, 12.0f)));
+
+    // left of the first character is the start of the text, and past the last is the end
+    BOOST_CHECK(fixture.cursor->press(glm::vec2(pen - 5.0f, 12.0f)));
+    BOOST_CHECK_EQUAL(field->caret(), 0U);
+    fixture.cursor->release(glm::vec2(pen - 5.0f, 12.0f));
+
+    BOOST_CHECK(fixture.cursor->press(glm::vec2(pen + 100.0f, 12.0f)));
+    BOOST_CHECK_EQUAL(field->caret(), 5U);
+}
+
+/**
+ * A press leaves the anchor where it landed, so following the cursor selects the run between
+ * the two - which is what makes a drag a selection rather than a caret being dragged.
+ **/
+BOOST_AUTO_TEST_CASE(a_drag_selects_the_run_it_crosses) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::TextBox> field = box("abcde");
+    fixture.place(field, glm::vec2(0.0f, 0.0f), glm::vec2(200.0f, 24.0f));
+    fixture.draw();
+
+    const float pen = field->pen();
+    BOOST_CHECK(fixture.cursor->press(glm::vec2(pen + 2.0f, 12.0f)));
+    BOOST_CHECK_EQUAL(field->caret(), 0U);
+
+    BOOST_CHECK(fixture.cursor->motion(glm::vec2(pen + 32.0f, 12.0f)));
+    BOOST_CHECK_EQUAL(field->selection(), "abc");
+    BOOST_CHECK_EQUAL(field->anchor(), 0U);
+
+    // and the release settles it where the cursor ended rather than dropping the run
+    BOOST_CHECK(fixture.cursor->release(glm::vec2(pen + 22.0f, 12.0f)));
+    BOOST_CHECK_EQUAL(field->selection(), "ab");
+}
+
+/**
+ * A cursor given no Measure names no text, so a press focuses the box and leaves the caret
+ * where it was - which is every caller's behaviour before one could be given.
+ **/
+BOOST_AUTO_TEST_CASE(a_cursor_with_no_measure_leaves_the_caret_alone) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::input::Cursor> blind =
+        boost::make_shared<v3d::ui::input::Cursor>(fixture.ui, fixture.dispatcher);
+    const boost::shared_ptr<v3d::ui::component::TextBox> field = box("abcde");
+    fixture.place(field, glm::vec2(0.0f, 0.0f), glm::vec2(200.0f, 24.0f));
+    fixture.draw();
+
+    field->caret(1);
+    BOOST_CHECK(blind->press(glm::vec2(field->pen() + 42.0f, 12.0f)));
+    BOOST_CHECK_EQUAL(fixture.ui->focused(), field);
+    BOOST_CHECK_EQUAL(field->caret(), 1U);
+}
+
+/**
+ * Cut, copy, paste and select all, over the clipboard the app hands in - api/ui names no SDL
+ * type, so the two calls come from outside it, per ADR-0057.
+ **/
+BOOST_AUTO_TEST_CASE(the_chords_cut_copy_and_paste_the_selection) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::TextBox> field = box("abcde");
+    fixture.container->add(field);
+    fixture.ui->focus(field);
+
+    field->select(1, 4);
+    BOOST_CHECK(fixture.keys->press("c", false, true));
+    BOOST_CHECK_EQUAL(fixture.clipboard, "bcd");
+    BOOST_CHECK_EQUAL(field->text(), "abcde");
+
+    BOOST_CHECK(fixture.keys->press("x", false, true));
+    BOOST_CHECK_EQUAL(fixture.clipboard, "bcd");
+    BOOST_CHECK_EQUAL(field->text(), "ae");
+    BOOST_CHECK_EQUAL(field->caret(), 1U);
+
+    BOOST_CHECK(fixture.keys->press("v", false, true));
+    BOOST_CHECK_EQUAL(field->text(), "abcde");
+    BOOST_CHECK_EQUAL(field->caret(), 4U);
+
+    BOOST_CHECK(fixture.keys->press("a", false, true));
+    BOOST_CHECK_EQUAL(field->selection(), "abcde");
+    // and a paste over the whole of it replaces it
+    BOOST_CHECK(fixture.keys->press("v", false, true));
+    BOOST_CHECK_EQUAL(field->text(), "bcd");
+}
+
+/**
+ * A cut with nowhere to hand the run does not take it out, because a cut that loses the text
+ * is worse than one that did not happen - and a paste with nothing to read puts nothing in.
+ **/
+BOOST_AUTO_TEST_CASE(a_router_with_no_clipboard_still_edits_everything_else) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::input::Keys> alone =
+        boost::make_shared<v3d::ui::input::Keys>(fixture.ui, fixture.dispatcher);
+    const boost::shared_ptr<v3d::ui::component::TextBox> field = box("abcde");
+    fixture.container->add(field);
+    fixture.ui->focus(field);
+
+    field->select(1, 4);
+    BOOST_CHECK(alone->press("x", false, true));
+    BOOST_CHECK_EQUAL(field->text(), "abcde");
+    BOOST_CHECK(alone->press("v", false, true));
+    BOOST_CHECK_EQUAL(field->text(), "abcde");
+
+    // select all needs no clipboard, so it still answers
+    BOOST_CHECK(alone->press("a", false, true));
+    BOOST_CHECK_EQUAL(field->selection(), "abcde");
+}
+
+/**
+ * A chord the box does not answer goes on to the app, so a ctrl-s still saves while somebody
+ * is typing. Only a control that eats every key can stop an app being driven.
+ **/
+BOOST_AUTO_TEST_CASE(a_chord_the_box_does_not_answer_reaches_the_app) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::TextBox> field = box("abcde");
+    fixture.container->add(field);
+    fixture.ui->focus(field);
+
+    BOOST_CHECK(!fixture.keys->press("s", false, true));
+    BOOST_CHECK(!fixture.keys->press("z", false, true));
+    // and the letter is taken when no chord is held, because it is being typed
+    BOOST_CHECK(fixture.keys->press("s"));
+}
+
+/**
+ * Shift and a caret key selects the run it travelled, which is the keyboard's half of a drag.
+ **/
+BOOST_AUTO_TEST_CASE(shift_and_a_caret_key_selects) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::TextBox> field = box("abcde");
+    fixture.container->add(field);
+    fixture.ui->focus(field);
+
+    field->home();
+    BOOST_CHECK(fixture.keys->press("arrow_right", true));
+    BOOST_CHECK(fixture.keys->press("arrow_right", true));
+    BOOST_CHECK_EQUAL(field->selection(), "ab");
+
+    BOOST_CHECK(fixture.keys->press("end", true));
+    BOOST_CHECK_EQUAL(field->selection(), "abcde");
+
+    // unshifted, the same key drops the selection
+    BOOST_CHECK(fixture.keys->press("home"));
+    BOOST_CHECK(!field->selected());
+}
+
+/**
+ * The selected run is drawn behind the line, so it can be seen: one more quad than the same
+ * box with nothing selected, and no batch of its own - the box's own clip is what splits the
+ * batches, and the highlight is drawn inside the one the text is.
+ **/
+BOOST_AUTO_TEST_CASE(the_selected_run_is_drawn_behind_the_text) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::TextBox> field = box("abcde");
+    field->focused(true);
+    fixture.place(field, glm::vec2(0.0f, 0.0f), glm::vec2(200.0f, 24.0f));
+    fixture.draw();
+    const std::size_t plain = fixture.canvas.vertices().size();
+    const std::size_t batches = fixture.canvas.batches().size();
+
+    field->select(1, 4);
+    fixture.draw();
+    BOOST_CHECK_EQUAL(fixture.canvas.vertices().size(), plain + 4U);
+    BOOST_CHECK_EQUAL(fixture.canvas.batches().size(), batches);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

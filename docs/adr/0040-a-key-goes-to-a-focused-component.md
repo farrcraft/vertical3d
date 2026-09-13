@@ -156,6 +156,8 @@ constructors, the way `TextBox` always did, rather than waiting for a config fla
   focus left alone cannot say so. The escape hatch is `focusable(false)`, which is the default.
 - A caret cannot be placed by clicking: a press focuses the box and leaves the caret where it
   was. Doing it needs the `Measure` callback in `ui::Cursor`, which today names no text at all,
-  and that is a change to what `Cursor` is rather than an addition to it.
+  and that is a change to what `Cursor` is rather than an addition to it. Taken up by
+  [ADR-0057](0057-a-selection-is-an-anchor-the-caret-moved-from.md), which made that change.
 - There is no selection, so there is no cut, copy or paste over a range. `insert()` takes a run
-  of characters, so a paste is expressible the moment something delivers one.
+  of characters, so a paste is expressible the moment something delivers one. Also taken up by
+  [ADR-0057](0057-a-selection-is-an-anchor-the-caret-moved-from.md).

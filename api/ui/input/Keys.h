@@ -7,6 +7,8 @@
 
 #include <api/event/Event.h>
 
+#include <functional>
+#include <string>
 #include <string_view>
 
 #include <boost/shared_ptr.hpp>
@@ -46,9 +48,12 @@ namespace v3d::ui::input {
  * Every control is driven, not only a text box. Return and space activate whatever holds
  * the focus, sending the command a click sends because both ask ui::command() for it; the
  * arrows step through a list's rows and a tab bar's pages and move a scrollbar by a line.
- * Only a text box takes the keys that
- * compose text - a letter reaching a focused button goes on to the app's bindings, because
- * a button is not something a player is typing into.
+ * Only a text box takes the keys that compose text - a letter reaching a focused button goes
+ * on to the app's bindings, because a button is not something a player is typing into.
+ *
+ * A box also takes the four chords an editor is expected to answer - cut, copy, paste and
+ * select all - over the selection ADR-0057 gave it. The clipboard behind them is the app's,
+ * for the reason the text measuring is.
  *
  * A ui with nothing focused takes neither kind, which is what leaves a game's movement keys
  * working until something is clicked into or Engine::focusFirst() starts a screen off.
@@ -56,10 +61,26 @@ namespace v3d::ui::input {
 class Keys final {
  public:
     /**
+     * The platform's clipboard, which this library cannot reach for itself without taking
+     * SDL with it - the same kind of seam text measuring is, per ADR-0019 and ADR-0057.
+     *
+     * A router given neither call still edits everything else. A cut with nowhere to hand
+     * the run does not take it out, because a cut that loses the text is worse than one
+     * that did not happen, and a paste with nothing to read puts nothing in.
+     **/
+    struct Clipboard final {
+        std::function<std::string()> read;
+        std::function<void(std::string_view)> write;
+    };
+
+    /**
      * @param ui where the focus lives
      * @param dispatcher where a focused component's event is sent
+     * @param clipboard where a cut and a copy hand the selected run, and where a paste
+     *        reads one from
      **/
-    Keys(const boost::shared_ptr<Engine>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher);
+    Keys(const boost::shared_ptr<Engine>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
+        const Clipboard& clipboard = Clipboard());
 
     /**
      * A key went down.
@@ -67,11 +88,14 @@ class Keys final {
      * @param key the name api/input gives it - "backspace", "arrow_left", "return", "tab"
      * @param shifted whether a shift key is held. A key name carries no modifier and this
      *        library cannot ask api/input for one without taking SDL with it, so the app
-     *        that saw the key says. It matters for one key: shift and tab is the focus
-     *        moving backwards, and a caller that never passes it gets forward only
+     *        that saw the key says. Shift and tab is the focus moving backwards, and shift
+     *        and a caret key selects the run it travelled
+     * @param controlled whether a control key is held, which names the four chords a text
+     *        box answers - cut, copy, paste and select all. Every other chord goes on to
+     *        the app, so a ctrl-s still saves while somebody is typing
      * @return whether the ui took it, which is what stops it reaching the app's bindings
      **/
-    bool press(std::string_view key, bool shifted = false);
+    bool press(std::string_view key, bool shifted = false, bool controlled = false);
 
     /**
      * Characters the platform composed.
@@ -88,7 +112,8 @@ class Keys final {
      *
      * @return whether the component had anything to do with the key
      **/
-    bool act(const boost::shared_ptr<Component>& component, std::string_view key);
+    bool act(const boost::shared_ptr<Component>& component, std::string_view key,
+        bool shifted, bool controlled);
 
     /**
      * A key that reached a text box: the caret moves, a character goes, or a return sends.
@@ -96,7 +121,23 @@ class Keys final {
      * The one component that takes every key that composes text, because a box is the one
      * place a letter is being typed rather than played.
      **/
-    bool edit(const boost::shared_ptr<component::TextBox>& box, std::string_view key);
+    bool edit(const boost::shared_ptr<component::TextBox>& box, std::string_view key,
+        bool shifted, bool controlled);
+
+    /**
+     * Hand the selected run to the clipboard, and take it out of the box for a cut.
+     *
+     * Neither does anything without a selection, because a copy of nothing would leave the
+     * clipboard holding an empty string in place of whatever was in it.
+     **/
+    void copySelection(const boost::shared_ptr<component::TextBox>& box) const;
+    void cutSelection(const boost::shared_ptr<component::TextBox>& box) const;
+
+    /**
+     * Put whatever the clipboard holds in over the selection, which is what TextBox::insert
+     * already does with a run of characters the platform composed.
+     **/
+    void paste(const boost::shared_ptr<component::TextBox>& box) const;
 
     /**
      * A key that reached a select list: the arrows step through the rows and send the
@@ -138,6 +179,7 @@ class Keys final {
 
     boost::shared_ptr<Engine> ui_;
     boost::shared_ptr<entt::dispatcher> dispatcher_;
+    Clipboard clipboard_;
 };
 
 };  // namespace v3d::ui::input

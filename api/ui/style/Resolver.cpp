@@ -175,6 +175,8 @@ paint::Dressing Resolver::dress(Class className, const std::string_view& name) c
             // is the component's own rather than the app's
             readColour(style, "caret", &dressing.mark);
             readColour(style, "placeholder", &dressing.track);
+            // what is drawn behind the selected run, the way a list highlights a chosen row
+            readColour(style, "highlight", &dressing.highlight);
             readMetric(style, "border-width", &dressing.borderWidth);
             readMetric(style, "radius", &dressing.radius);
             readMetric(style, "line-height", &dressing.lineHeight);
@@ -185,8 +187,7 @@ paint::Dressing Resolver::dress(Class className, const std::string_view& name) c
             break;
     }
     // the ring is chrome every class may override, read here rather than in nine branches
-    // that would all say the same thing. A theme naming neither keeps the base's, which is
-    // the one ring every control showed before a class could ask for its own
+    // that would all say the same thing. A class naming neither is ringed out of the base
     readColour(style, "focus", &dressing.focus);
     readMetric(style, "focus-width", &dressing.focusWidth);
     return dressing;

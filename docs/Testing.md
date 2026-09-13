@@ -83,7 +83,10 @@ device gives back no voice, so every case in `EngineTest` runs in CI.
 
 Input is asserted the same way, against the boxes a draw left: `CursorTest` presses and moves,
 `TextBoxTest` types, and neither needs a window because `ui::Cursor` and `ui::Keys` are handed
-a point and a key name rather than an SDL event.
+a point and a key name rather than an SDL event. The two seams a text box needs beyond that are
+callbacks for the same reason: `TextBoxTest` measures a character as ten pixels and keeps its
+clipboard in a `std::string`, so a click lands on a known character and a cut is asserted
+without a platform.
 
 `Engine::eventLoop()` renders and so cannot be driven at all, which is why the order of
 [ADR-0043](adr/0043-an-app-sees-an-event-before-the-bindings-do.md) lives in

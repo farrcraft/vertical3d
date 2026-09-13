@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <api/ui/paint/Text.h>
+
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <glm/vec2.hpp>
@@ -16,6 +18,10 @@ namespace v3d::ui {
 class Component;
 class Container;
 class Engine;
+
+namespace component {
+class TextBox;
+};  // namespace component
 
 };  // namespace v3d::ui
 
@@ -35,14 +41,23 @@ namespace v3d::ui::input {
  *
  * Everything is tested against the boxes the last draw left on the components, per
  * ADR-0019, so nothing is picked until something has been drawn.
+ *
+ * A cursor measures text, because the one thing a press can land in the middle of is a line
+ * of it - ADR-0057. That is the same Measure both renderers take, and a cursor given none
+ * still routes every press: a text box then keeps the caret it had rather than taking one
+ * from where it was clicked.
  **/
 class Cursor final {
  public:
     /**
      * @param ui the containers to offer a point to, in the order they were loaded
      * @param dispatcher where a picked component's event is sent
+     * @param measure how wide a run of text is when the app draws it, which is what turns
+     *        a point inside a text box into a caret. The same callback the renderer drawing
+     *        this ui was given, so that the two agree about where a character is
      **/
-    Cursor(const boost::shared_ptr<Engine>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher);
+    Cursor(const boost::shared_ptr<Engine>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
+        const paint::Measure& measure = paint::Measure());
 
     /**
      * The cursor moved.
@@ -105,8 +120,20 @@ class Cursor final {
      **/
     void dispatch(const boost::shared_ptr<Component>& component) const;
 
+    /**
+     * Put a box's caret where a point landed, or take the selection out to there when the
+     * press that started it is still down.
+     *
+     * A cursor with no Measure names no text and leaves the box alone.
+     *
+     * @param extend whether the anchor stays where it was, which is what a drag does
+     **/
+    void place(const boost::shared_ptr<component::TextBox>& box, const glm::vec2& point,
+        bool extend) const;
+
     boost::shared_ptr<Engine> ui_;
     boost::shared_ptr<entt::dispatcher> dispatcher_;
+    paint::Measure measure_;
     // held rather than owned: the component belongs to the container it was loaded into,
     // and a press outliving one that was unloaded should not keep it alive
     boost::weak_ptr<Component> held_;

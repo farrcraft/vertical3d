@@ -577,6 +577,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     if (text.empty() && !box->focused()) {
         // the placeholder says what the box is for and is not what it holds, so it is
         // dropped the moment there is something to type into
+        box->pen(low.x);
         write_(box->placeholder(), glm::vec2(low.x, min.y + size.y * 0.7f), dress.track);
         canvas->unclip();
         return;
@@ -589,6 +590,19 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     const float slid = caret > room ? caret - room : 0.0f;
 
     const glm::vec2 pen(low.x - slid, min.y + size.y * 0.7f);
+    // left on the box so that a press can find the character under it, the way a list is
+    // left holding the height of a row - ADR-0019 and ADR-0057
+    box->pen(pen.x);
+
+    if (box->selected()) {
+        // behind the line, which is still drawn whole in one colour: three runs would be
+        // measured as three, and where a caret falls is the measure of one prefix
+        const std::string_view line(text);
+        const float from = measure_(line.substr(0, std::min(box->anchor(), box->caret())));
+        const float to = measure_(line.substr(0, std::max(box->anchor(), box->caret())));
+        fillBox(canvas, glm::vec2(pen.x + from, low.y), glm::vec2(pen.x + to, high.y),
+            0.0f, dress.highlight);
+    }
     write_(text, pen, dress.text);
 
     if (box->focused()) {

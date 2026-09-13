@@ -13,6 +13,7 @@
 #include <api/ui/component/TextBox.h>
 #include <api/ui/component/Type.h>
 
+#include <string>
 #include <string_view>
 
 #include "Command.h"
@@ -65,12 +66,14 @@ bool activates(std::string_view key) noexcept {
 
 };  // namespace
 
-Keys::Keys(const boost::shared_ptr<Engine>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher) :
+Keys::Keys(const boost::shared_ptr<Engine>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
+    const Clipboard& clipboard) :
     ui_(ui),
-    dispatcher_(dispatcher) {
+    dispatcher_(dispatcher),
+    clipboard_(clipboard) {
 }
 
-bool Keys::press(std::string_view key, bool shifted) {
+bool Keys::press(std::string_view key, bool shifted, bool controlled) {
     if (!ui_ || key.empty()) {
         return false;
     }
@@ -90,7 +93,7 @@ bool Keys::press(std::string_view key, bool shifted) {
         ui_->focus(boost::shared_ptr<Component>());
         return true;
     }
-    return act(focused, key);
+    return act(focused, key, shifted, controlled);
 }
 
 bool Keys::text(std::string_view utf8) {
@@ -112,10 +115,12 @@ bool Keys::text(std::string_view utf8) {
     return true;
 }
 
-bool Keys::act(const boost::shared_ptr<Component>& component, std::string_view key) {
+bool Keys::act(const boost::shared_ptr<Component>& component, std::string_view key,
+    bool shifted, bool controlled) {
     switch (component->type()) {
         case component::Type::TextBox:
-            return edit(boost::dynamic_pointer_cast<component::TextBox>(component), key);
+            return edit(boost::dynamic_pointer_cast<component::TextBox>(component), key,
+                shifted, controlled);
         case component::Type::SelectList:
             return choose(boost::dynamic_pointer_cast<component::SelectList>(component), key);
         case component::Type::TabBar:
@@ -141,6 +146,11 @@ bool Keys::act(const boost::shared_ptr<Component>& component, std::string_view k
             // the one that activates it - which is what falls out of the switch
             break;
     }
+    if (controlled) {
+        // a text box is the only thing here that answers a chord, so every other control
+        // leaves one for the app - a ctrl-space must not press a focused button
+        return false;
+    }
     if (!activates(key)) {
         // a letter reaching a focused button is not being typed, so it goes on to the app's
         // bindings - unlike the same letter reaching a text box. Only a control that eats
@@ -154,9 +164,29 @@ bool Keys::act(const boost::shared_ptr<Component>& component, std::string_view k
     return true;
 }
 
-bool Keys::edit(const boost::shared_ptr<component::TextBox>& box, std::string_view key) {
+bool Keys::edit(const boost::shared_ptr<component::TextBox>& box, std::string_view key,
+    bool shifted, bool controlled) {
     if (!box) {
         return false;
+    }
+
+    if (controlled) {
+        // the four chords an editor is expected to answer, and no others: a chord the box
+        // does not act on goes on to the app, so a ctrl-s still saves while it has the focus
+        if (key == "c") {
+            copySelection(box);
+        } else if (key == "x") {
+            cutSelection(box);
+        } else if (key == "v") {
+            paste(box);
+        } else if (key == "a") {
+            box->selectAll();
+        } else {
+            return false;
+        }
+        // taken whether or not it did anything, for the reason a refused paste is: a chord
+        // the box answers must not also reach a binding
+        return true;
     }
 
     if (key == "backspace") {
@@ -164,13 +194,14 @@ bool Keys::edit(const boost::shared_ptr<component::TextBox>& box, std::string_vi
     } else if (key == "delete") {
         box->erase();
     } else if (key == "arrow_left") {
-        box->left();
+        // shift keeps the anchor where it is, so the run travelled ends up selected
+        box->left(shifted);
     } else if (key == "arrow_right") {
-        box->right();
+        box->right(shifted);
     } else if (key == "home") {
-        box->home();
+        box->home(shifted);
     } else if (key == "end") {
-        box->end();
+        box->end(shifted);
     } else if (key == "return") {
         // the box owns its text and the app owns what the text means, so a return says
         // the user is done and whatever answers the command reads text() - ADR-0038. The
@@ -252,6 +283,30 @@ bool Keys::nudge(const boost::shared_ptr<component::Scrollbar>& bar, std::string
         return false;
     }
     return true;
+}
+
+void Keys::copySelection(const boost::shared_ptr<component::TextBox>& box) const {
+    if (clipboard_.write && box->selected()) {
+        clipboard_.write(box->selection());
+    }
+}
+
+void Keys::cutSelection(const boost::shared_ptr<component::TextBox>& box) const {
+    // handed over before it is taken out, and not taken out at all when there is nowhere to
+    // hand it: a cut that loses the run is worse than one that did not happen
+    if (!clipboard_.write || !box->selected()) {
+        return;
+    }
+    clipboard_.write(box->selection());
+    box->removeSelection();
+}
+
+void Keys::paste(const boost::shared_ptr<component::TextBox>& box) const {
+    if (clipboard_.read) {
+        // over the selection, which is what insert() does with a run of characters - so a
+        // paste and a typed character land the same way
+        box->insert(clipboard_.read());
+    }
 }
 
 void Keys::send(const boost::shared_ptr<Component>& component) const {

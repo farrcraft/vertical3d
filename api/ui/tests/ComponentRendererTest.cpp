@@ -350,8 +350,9 @@ BOOST_AUTO_TEST_CASE(a_theme_rings_a_class_in_its_own_colour) {
     renderer.draw(&canvas, container);
 
     // the ring is traced after the component it rings, so the last four quads are its
-    BOOST_REQUIRE(canvas.vertices().size() >= 4 * 4);
-    for (std::size_t back = canvas.vertices().size() - (4 * 4); back < canvas.vertices().size(); back++) {
+    const std::size_t ringVertices = static_cast<std::size_t>(4 * 4);
+    BOOST_REQUIRE(canvas.vertices().size() >= ringVertices);
+    for (std::size_t back = canvas.vertices().size() - ringVertices; back < canvas.vertices().size(); back++) {
         BOOST_CHECK(canvas.vertices()[back].colour == ringColour);
     }
 }
