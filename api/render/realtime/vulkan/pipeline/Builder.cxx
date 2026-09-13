@@ -30,6 +30,7 @@ Builder::Builder(const boost::shared_ptr<device::Device>& device) :
     depthBias_(false),
     pushStages_(0),
     pushBytes_(0),
+    layout_(VK_NULL_HANDLE),
     colours_(1, VK_FORMAT_UNDEFINED),
     depthFormat_(VK_FORMAT_UNDEFINED) {
 }
@@ -170,6 +171,13 @@ Builder& Builder::push(VkShaderStageFlags stages, uint32_t bytes) {
 
 /**
  **/
+Builder& Builder::layout(VkPipelineLayout layout) {
+    layout_ = layout;
+    return *this;
+}
+
+/**
+ **/
 Builder& Builder::colourFormat(VkFormat format) {
     colours_.assign(1, format);
     return *this;
@@ -259,6 +267,11 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
     Pipeline built;
     built.pushStages = pushBytes_ > 0 ? pushStages_ : 0;
 
+    // a layout the caller owns is compiled into the pipeline and handed straight back, so
+    // that registering the result names the layout its draws bind through. It is theirs to
+    // destroy, which is why the failure path below is the only one that frees one
+    const bool ownsLayout = layout_ == VK_NULL_HANDLE;
+
     VkPushConstantRange push{};
     push.stageFlags = pushStages_;
     push.offset = 0;
@@ -271,11 +284,15 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
     layout.pushConstantRangeCount = built.pushStages != 0 ? 1 : 0;
     layout.pPushConstantRanges = built.pushStages != 0 ? &push : nullptr;
 
-    VkResult result = vkCreatePipelineLayout(device, &layout, nullptr, &built.layout);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to create the " << name_ << " pipeline layout - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
+    if (ownsLayout) {
+        VkResult result = vkCreatePipelineLayout(device, &layout, nullptr, &built.layout);
+        if (result != VK_SUCCESS) {
+            std::stringstream msg;
+            msg << "Unable to create the " << name_ << " pipeline layout - " << device::resultString(result);
+            throw std::runtime_error(msg.str());
+        }
+    } else {
+        built.layout = layout_;
     }
 
     VkPipelineVertexInputStateCreateInfo input{};
@@ -344,9 +361,11 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
     info.pDynamicState = &dynamic;
     info.layout = built.layout;
 
-    result = vkCreateGraphicsPipelines(device, cache ? cache->handle() : VK_NULL_HANDLE, 1, &info, nullptr, &built.pipeline);
+    const VkResult result = vkCreateGraphicsPipelines(device, cache ? cache->handle() : VK_NULL_HANDLE, 1, &info, nullptr, &built.pipeline);
     if (result != VK_SUCCESS) {
-        vkDestroyPipelineLayout(device, built.layout, nullptr);
+        if (ownsLayout) {
+            vkDestroyPipelineLayout(device, built.layout, nullptr);
+        }
         std::stringstream msg;
         msg << "Unable to create the " << name_ << " pipeline - " << device::resultString(result);
         throw std::runtime_error(msg.str());
