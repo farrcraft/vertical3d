@@ -39,7 +39,6 @@ int run(int argc, char *argv[]) {
 
     bool info = false;
     bool silent = false;
-    bool sync = false;
     std::string infile;
     std::string outfile;
 
@@ -66,28 +65,32 @@ int run(int argc, char *argv[]) {
     v3d::image::Factory factory(logger);
     boost::shared_ptr<v3d::image::Image> image;
 
+    // silent covers the progress lines. Info was asked for by name and prints regardless
     if (!silent) {
         std::cout << "Reading: " << infile << "\n";
-        try {
-            image = factory.read(infile);
-        }
-        catch (std::string & e) {
-            std::cout << "error reading image! - " << e << "\n";
-            exit(EXIT_FAILURE);
-        }
-        if (!image) {
-            std::cout << "error reading file!" << "\n";
-            exit(EXIT_FAILURE);
-        }
     }
+    try {
+        image = factory.read(infile);
+    }
+    catch (std::string & e) {
+        std::cout << "error reading image! - " << e << "\n";
+        exit(EXIT_FAILURE);
+    }
+    if (!image) {
+        std::cout << "error reading file!" << "\n";
+        exit(EXIT_FAILURE);
+    }
+
     if (info) {
         std::cout << "Source image width: " << image->width() << "\n";
         std::cout << "Source image height: " << image->height() << "\n";
         std::cout << "Source image bpp: " << static_cast<unsigned int>(image->bpp()) << "\n";
     }
 
-    if (sync) {
-        std::cout << "Writing: " << outfile << "\n";
+    if (!outfile.empty()) {
+        if (!silent) {
+            std::cout << "Writing: " << outfile << "\n";
+        }
         if (!factory.write(outfile, image)) {
             std::cout << "error writing file!" << "\n";
             exit(EXIT_FAILURE);
