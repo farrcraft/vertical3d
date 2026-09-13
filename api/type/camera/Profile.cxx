@@ -29,7 +29,8 @@ Profile::Profile(const std::string& name) :
 size_{ 0, 0 },
     // glm leaves the quaternion uninitialized, and Camera::createView casts it before
     // anything else has a chance to set it
-rotation_(1.0f, 0.0f, 0.0f, 0.0f) {
+rotation_(1.0f, 0.0f, 0.0f, 0.0f),
+basisValid_(false) {
 }
 
 Profile::Profile(const std::string& name, const glm::vec3& eye, const glm::vec3& up,
@@ -47,7 +48,8 @@ Profile::Profile(const std::string& name, const glm::vec3& eye, const glm::vec3&
     fov_(60.0f),
     options_(OPTION_ORTHOGRAPHIC),
 size_{ 0, 0 },
-    rotation_(1.0f, 0.0f, 0.0f, 0.0f) {
+    rotation_(1.0f, 0.0f, 0.0f, 0.0f),
+    basisValid_(false) {
 }
 
 Profile::~Profile() {
@@ -172,6 +174,8 @@ void Profile::direction(const glm::vec3& direction) {
 
 void Profile::rotation(const glm::quat& rotation) {
     rotation_ = rotation;
+    // whatever lookat() built is not this rotation, so createView() goes back to casting
+    basisValid_ = false;
 }
 
 void Profile::size(unsigned int width, unsigned int height) {
@@ -196,8 +200,12 @@ void Profile::lookat(const glm::vec3& center) {
     x = glm::normalize(glm::cross(y, z));
     // the component of the original up perpendicular to the direction, which is the same
     // vector whichever way round the right was taken - the two hands mirror horizontally
-    // and agree about which way is up
-    y = glm::normalize(glm::cross(z, x));
+    // and agree about which way is up.
+    //
+    // Not normalized, because z and x are unit and perpendicular so their cross already is
+    // to within rounding - and normalizing it again is a rounding step glm::lookAt does not
+    // take. Taking it moved the last bits of every view built here away from glm's
+    y = glm::cross(z, x);
 
     /*
         the rotation takes the camera out of the default basis and into the one its three
@@ -236,6 +244,10 @@ void Profile::lookat(const glm::vec3& center) {
     m[3][3] = 1.0;
 
     rotation_ = glm::quat_cast(m);
+    // and the matrix itself is kept, so createView() does not have to rebuild it out of
+    // the quaternion it was just cast to
+    basis_ = m;
+    basisValid_ = true;
     up_ = y;
     direction_ = z;
     // the normals are what the hand names, and the mirrored one reports the right the other
@@ -257,6 +269,10 @@ void Profile::clone(const Profile& profile) {
     direction_ = profile.direction_;
     name_ = profile.name_;
     rotation_ = profile.rotation_;
+    // the cache travels with the rotation it describes, or a clone of a profile built by
+    // lookat() would quietly build its view the other way
+    basis_ = profile.basis_;
+    basisValid_ = profile.basisValid_;
     options_ = profile.options_;
     size_[0] = profile.size_[0];
     size_[1] = profile.size_[1];

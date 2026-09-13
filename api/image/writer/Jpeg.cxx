@@ -21,6 +21,10 @@ Jpeg::Jpeg(const boost::shared_ptr<v3d::log::Logger>& logger) : Writer(logger) {
 /**
  **/
 bool Jpeg::write(std::string_view filename, const boost::shared_ptr<Image>& img) {
+    if (!img) {
+        return false;
+    }
+
     struct jpeg_compress_struct cinfo;
     struct jpeg_error_mgr jerr;
 
@@ -35,9 +39,9 @@ bool Jpeg::write(std::string_view filename, const boost::shared_ptr<Image>& img)
     cinfo.err = jpeg_std_error(&jerr);
     jpeg_create_compress(&cinfo);
 
-    // Initialize JPEG parameters.
-    // we don't yet know the input file's color space, but we need to provide some value for jpeg_set_defaults() to work.
-    cinfo.in_color_space = JCS_RGB;  /// arbitrary guess
+    // Initialize JPEG parameters. The colour space has to be set before jpeg_set_defaults(),
+    // which reads it to decide the rest - including how many components a scanline has.
+    cinfo.in_color_space = img->format() == Image::Format::Grey ? JCS_GRAYSCALE : JCS_RGB;
 
     jpeg_set_defaults(&cinfo);
 

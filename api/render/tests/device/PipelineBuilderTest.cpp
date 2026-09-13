@@ -7,6 +7,7 @@
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
 #include <api/render/realtime/vulkan/pipeline/Resources.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <stdexcept>
 #include <vector>
@@ -97,6 +98,60 @@ BOOST_AUTO_TEST_CASE(a_pipeline_with_two_colour_attachments_compiles) {
 }
 
 /**
+ * A depth only pipeline that offsets what it writes compiles - which is what a shadow pass
+ * actually is, and what the attachment list alone was not enough to express.
+ *
+ * The compile is the whole assertion, and it is a narrow one: validation has nothing to say
+ * here about VK_DYNAMIC_STATE_DEPTH_BIAS being left out of the dynamic list, because the
+ * create info's own factors are zero and a zero bias is a no-op. Measured rather than
+ * assumed - this case passes unchanged with the dynamic state removed, which is what
+ * a_depth_bias_reaches_vulkan_as_state_and_as_dynamic_state is below for.
+ **/
+BOOST_AUTO_TEST_CASE(a_depth_only_pipeline_with_a_bias_compiles) {
+    v3d::test::Headless headless(colourFormat, width, height);
+
+    const boost::shared_ptr<Cache> cache = boost::make_shared<Cache>(headless.device);
+    Builder builder(headless.device);
+    describe(&builder);
+    builder.depth(true, true).depthBias(true).depthFormat(depthFormat).colourFormats({});
+
+    const Pipeline built = builder.build(cache);
+    BOOST_CHECK(built.pipeline != VK_NULL_HANDLE);
+    BOOST_CHECK(headless.silent());
+
+    vkDestroyPipeline(headless.device->handle(), built.pipeline, nullptr);
+    vkDestroyPipelineLayout(headless.device->handle(), built.layout, nullptr);
+}
+
+/**
+ * Blend factors of the caller's own compile, and a pipeline given none still blends the way
+ * it always has - the struct's defaults are what blend(true) has always meant.
+ *
+ * A destination alpha of ZERO is the case this exists for: a pass compositing into something
+ * that is itself composited later keeps the source's alpha, where the straight alpha default
+ * erodes it. What it comes out looking like is not asserted here and cannot be - a blend is
+ * specified to a precision rather than to a value, so ADR-0054 gives it no reference.
+ **/
+BOOST_AUTO_TEST_CASE(a_pipeline_with_named_blend_factors_compiles) {
+    v3d::test::Headless headless(colourFormat, width, height);
+
+    const boost::shared_ptr<Cache> cache = boost::make_shared<Cache>(headless.device);
+    Builder builder(headless.device);
+    describe(&builder);
+
+    Builder::Blend compositing;
+    compositing.destinationAlpha = VK_BLEND_FACTOR_ZERO;
+    builder.colourFormat(colourFormat).blend(compositing);
+
+    const Pipeline built = builder.build(cache);
+    BOOST_CHECK(built.pipeline != VK_NULL_HANDLE);
+    BOOST_CHECK(headless.silent());
+
+    vkDestroyPipeline(headless.device->handle(), built.pipeline, nullptr);
+    vkDestroyPipelineLayout(headless.device->handle(), built.layout, nullptr);
+}
+
+/**
  * A builder nobody told about colour still fails, which is the guard colourFormat() has
  * always had. An empty list is a pipeline that writes no colour; the default is one nobody
  * filled in, and the two must not read the same.
@@ -109,6 +164,77 @@ BOOST_AUTO_TEST_CASE(a_colour_format_nobody_named_is_still_an_error) {
     describe(&builder);
 
     BOOST_CHECK_THROW(builder.build(cache), std::runtime_error);
+}
+
+/**
+ * A depth bias reaches Vulkan as both halves of what it takes, and neither half arrives
+ * unasked.
+ *
+ * **This is the assertion a consumer needs and a compile cannot make.** A pipeline that
+ * enables the bias but leaves VK_DYNAMIC_STATE_DEPTH_BIAS out of the dynamic list compiles
+ * silently and validates silently - the create info's own factors are zero, so
+ * vkCmdSetDepthBias then does nothing and a shadow does not shift. Nothing about a compiled
+ * VkPipeline says which of the two it got, so the state is read from the builder that will
+ * hand it over.
+ **/
+BOOST_AUTO_TEST_CASE(a_depth_bias_reaches_vulkan_as_state_and_as_dynamic_state) {
+    v3d::test::Headless headless(colourFormat, width, height);
+
+    Builder biased(headless.device);
+    describe(&biased);
+    biased.depth(true, true).depthBias(true).depthFormat(depthFormat).colourFormats({});
+
+    BOOST_CHECK_EQUAL(biased.rasterization().depthBiasEnable, VK_TRUE);
+    const std::vector<VkDynamicState> dynamics = biased.dynamics();
+    BOOST_CHECK(std::find(dynamics.begin(), dynamics.end(), VK_DYNAMIC_STATE_DEPTH_BIAS) != dynamics.end());
+
+    // and the default disturbs neither, so the rest of the tree is provably where it was
+    Builder plain(headless.device);
+    describe(&plain);
+    plain.depth(true, true).depthFormat(depthFormat).colourFormats({});
+
+    BOOST_CHECK_EQUAL(plain.rasterization().depthBiasEnable, VK_FALSE);
+    const std::vector<VkDynamicState> untouched = plain.dynamics();
+    BOOST_CHECK(std::find(untouched.begin(), untouched.end(), VK_DYNAMIC_STATE_DEPTH_BIAS) == untouched.end());
+    BOOST_REQUIRE_EQUAL(untouched.size(), 2u);
+    BOOST_CHECK_EQUAL(untouched[0], VK_DYNAMIC_STATE_VIEWPORT);
+    BOOST_CHECK_EQUAL(untouched[1], VK_DYNAMIC_STATE_SCISSOR);
+}
+
+/**
+ * Named blend factors arrive in the attachment state as named, and the ones nobody names are
+ * the straight alpha the tree has always applied.
+ *
+ * A destination alpha of ZERO is the case this exists for, and it is the field that cannot be
+ * checked any other way: ADR-0054 gives a blend no reference picture, because a blend is
+ * specified to a precision rather than to a value.
+ **/
+BOOST_AUTO_TEST_CASE(blend_factors_reach_the_attachment_as_named) {
+    v3d::test::Headless headless(colourFormat, width, height);
+
+    Builder named(headless.device);
+    describe(&named);
+    Builder::Blend compositing;
+    compositing.destinationAlpha = VK_BLEND_FACTOR_ZERO;
+    named.blend(true).blend(compositing).colourFormat(colourFormat);
+
+    const VkPipelineColorBlendAttachmentState state = named.colourBlend();
+    BOOST_CHECK_EQUAL(state.blendEnable, VK_TRUE);
+    BOOST_CHECK_EQUAL(state.dstAlphaBlendFactor, VK_BLEND_FACTOR_ZERO);
+    // the three nobody moved are still what they were
+    BOOST_CHECK_EQUAL(state.srcColorBlendFactor, VK_BLEND_FACTOR_SRC_ALPHA);
+    BOOST_CHECK_EQUAL(state.dstColorBlendFactor, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA);
+    BOOST_CHECK_EQUAL(state.srcAlphaBlendFactor, VK_BLEND_FACTOR_ONE);
+
+    Builder plain(headless.device);
+    describe(&plain);
+    plain.blend(true).colourFormat(colourFormat);
+
+    const VkPipelineColorBlendAttachmentState straight = plain.colourBlend();
+    BOOST_CHECK_EQUAL(straight.dstAlphaBlendFactor, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA);
+    BOOST_CHECK_EQUAL(straight.srcColorBlendFactor, VK_BLEND_FACTOR_SRC_ALPHA);
+    BOOST_CHECK_EQUAL(straight.dstColorBlendFactor, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA);
+    BOOST_CHECK_EQUAL(straight.srcAlphaBlendFactor, VK_BLEND_FACTOR_ONE);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

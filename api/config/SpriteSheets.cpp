@@ -55,6 +55,15 @@ height_(0) {
 
 /**
  **/
+SpriteSheet::SpriteSheet(const std::string& name, const std::string& image, int width, int height) :
+name_(name),
+image_(image),
+width_(width),
+height_(height) {
+}
+
+/**
+ **/
 const std::string& SpriteSheet::name() const noexcept {
     return name_;
 }
@@ -234,6 +243,57 @@ bool SpriteSheets::has(const std::string& name) const {
  **/
 const std::vector<std::string>& SpriteSheets::names() const noexcept {
     return names_;
+}
+
+/**
+ **/
+bool SpriteSheets::add(const SpriteSheet& sheet) {
+    if (sheet.name().empty() || sheet.image().empty() || sheet.width() <= 0 || sheet.height() <= 0) {
+        logger_->get()->error("A sprite sheet needs a name, an image and a size");
+        return false;
+    }
+    if (sheets_.find(sheet.name()) == sheets_.end()) {
+        names_.push_back(sheet.name());
+    }
+    sheets_[sheet.name()] = sheet;
+    return true;
+}
+
+/**
+ **/
+boost::json::value SpriteSheets::document() const {
+    boost::json::array entries;
+    for (const std::string& name : names_) {
+        const std::map<std::string, SpriteSheet>::const_iterator found = sheets_.find(name);
+        if (found == sheets_.end()) {
+            continue;
+        }
+        const SpriteSheet& sheet = found->second;
+
+        boost::json::array regions;
+        for (const std::string& sprite : sheet.sprites()) {
+            const SpriteRegion region = sheet.get(sprite);
+            boost::json::object record;
+            record["name"] = sprite;
+            record["x"] = region.x;
+            record["y"] = region.y;
+            record["width"] = region.width;
+            record["height"] = region.height;
+            regions.push_back(record);
+        }
+
+        boost::json::object entry;
+        entry["name"] = sheet.name();
+        entry["image"] = sheet.image();
+        entry["width"] = sheet.width();
+        entry["height"] = sheet.height();
+        entry["sprites"] = regions;
+        entries.push_back(entry);
+    }
+
+    boost::json::object document;
+    document["sheets"] = entries;
+    return document;
 }
 
 };  // namespace v3d::config

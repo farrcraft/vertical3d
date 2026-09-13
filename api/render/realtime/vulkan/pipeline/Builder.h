@@ -108,10 +108,47 @@ class Builder final {
     Builder& depth(bool test, bool write, VkCompareOp compare = VK_COMPARE_OP_LESS);
 
     /**
+     * Whether the depth this pipeline writes is offset as it is written, which is what
+     * separates a shadow map's own geometry from the surface tested against it.
+     *
+     * The bias itself is dynamic rather than built in: the constant and the slope factor
+     * are a scene's numbers rather than a pipeline's, so a pipeline that asks for one is
+     * told what it is by vkCmdSetDepthBias before it draws. Asking for none - the default -
+     * leaves the dynamic state out, and a pipeline that never set one would be drawn with
+     * whatever the last caller left behind.
+     **/
+    Builder& depthBias(bool enabled);
+
+    /**
      * Defaults to straight alpha blending. Opaque geometry should turn it off - blending
      * costs bandwidth on every fragment whether or not any of them is transparent.
      **/
     Builder& blend(bool enabled);
+
+    /**
+     * How a blending pipeline combines what it draws with what is already there.
+     *
+     * The defaults are straight alpha over an opaque destination, which is what blend(true)
+     * means and what everything presenting in this tree wants. A pipeline compositing into
+     * something that is itself composited later wants a different destination alpha: a
+     * factor of ZERO keeps the source's, where ONE_MINUS_SRC_ALPHA erodes it.
+     *
+     * The operation is VK_BLEND_OP_ADD either way. Nothing has wanted subtract or min, and
+     * a caller that does is asking for a second thing rather than a different value of this
+     * one.
+     **/
+    struct Blend {
+        VkBlendFactor sourceColour{VK_BLEND_FACTOR_SRC_ALPHA};
+        VkBlendFactor destinationColour{VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA};
+        VkBlendFactor sourceAlpha{VK_BLEND_FACTOR_ONE};
+        VkBlendFactor destinationAlpha{VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA};
+    };
+
+    /**
+     * Blend with factors of the caller's own, which also turns blending on. Every colour
+     * attachment gets them, since this is one answer for the pipeline the way blend() is.
+     **/
+    Builder& blend(const Blend& factors);
 
     /**
      * Add a descriptor set layout. They are numbered in the order they are added, so
@@ -155,6 +192,22 @@ class Builder final {
      **/
     Pipeline build(const boost::shared_ptr<Cache>& cache) const;
 
+    /**
+     * The three pieces of state a caller cannot otherwise check, each exactly as build()
+     * will hand it to Vulkan - build() calls these rather than assembling its own, so what
+     * is read here is what is compiled.
+     *
+     * **They exist because a VkPipeline cannot be read back.** Nothing about a compiled
+     * pipeline says what it was built from, and a wrong answer in any of the three is a
+     * picture rather than an error: a depth bias left out of the dynamic list silently
+     * becomes the zero in the create info, so vkCmdSetDepthBias does nothing and a shadow
+     * simply does not shift. Validation has nothing to say about any of that, so a consumer
+     * that needs to know asks here.
+     **/
+    VkPipelineRasterizationStateCreateInfo rasterization() const;
+    VkPipelineColorBlendAttachmentState colourBlend() const;
+    std::vector<VkDynamicState> dynamics() const;
+
  private:
     boost::shared_ptr<device::Device> device_;
     std::string name_;
@@ -173,6 +226,8 @@ class Builder final {
     bool depthWrite_;
     VkCompareOp depthCompare_;
     bool blend_;
+    Blend factors_;
+    bool depthBias_;
     VkShaderStageFlags pushStages_;
     uint32_t pushBytes_;
     std::vector<VkFormat> colours_;

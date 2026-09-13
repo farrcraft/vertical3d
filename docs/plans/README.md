@@ -9,15 +9,41 @@ every phase is closed it moves to [completed/](completed/), and any open item it
 moves to [TODO.md](../TODO.md). The plan itself stays, because the reasoning behind an ordering
 outlives the schedule.
 
-[RealtimeGoldenImage.md](RealtimeGoldenImage.md) was drafted on 2026-09-12 against `0662778`,
-out of what [RenderTestsInCI](completed/RenderTestsInCI.md) left when it closed. Five steps
+[completed/RealtimeGoldenImage.md](completed/RealtimeGoldenImage.md) was drafted and closed on
+2026-09-12, out of what [RenderTestsInCI](completed/RenderTestsInCI.md) left behind. Five steps
 pinning what the device suite draws to committed pictures, on the rule that a reference may hold
-only what the specification determines
+only what the specification determines pixel-for-pixel
 ([ADR-0054](../adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md)) — which is
-what answers ADR-0007's objection that a golden image is one rasterizer's output and so says
-nothing about another's. Its ordering is built around a claim this machine cannot test: there is
-one gpu here and the second implementation is the runner's, so the first picture committed is a
-probe and the rest wait on what CI says about it.
+what answers [ADR-0007](../adr/0007-ci-rendering-tests.md)'s objection that a golden image is one
+rasterizer's output and so says nothing about another's. Four pictures are pinned and every one
+of them is byte-exact on a Radeon and on the runner's lavapipe.
+
+Its ordering was built around a claim the authoring machine cannot test: there is one gpu here,
+the second implementation is the runner's, and CI runs on a pull request rather than on a branch.
+So the first picture was a probe — the dullest one the suite could draw — and the rest waited on
+what CI said about it. That is the shape to reuse for anything else blessed here: one artefact
+through the whole loop before four of them are.
+
+Three things came out differently. **Step 5's own text asserted the opposite of the ADR it
+cites**: it said two overlapping world quads should give the same picture in either submission
+order, while [ADR-0042](../adr/0042-a-textured-quad-in-world-space.md) says the caller supplies
+the order and the depth-tested pipeline tests without writing, so one quad never occludes
+another. The drafted assertion would have failed a correct renderer, and on its first run it
+did. What landed pins a picture per order and asserts that the two differ, which is the
+assertion a pipeline that started writing depth would fail.
+
+**ADR-0054 had to be amended before step 4 could be written at all.** It required nearest
+filtering; every sampler in the tree is `VK_FILTER_LINEAR` and nothing can ask for another, so
+as written the rule admitted no textured picture. It now states the principle by stage — no
+partially covered pixel, a texel returned unchanged at one texel per pixel, and a blend that is
+the identity — which also covers the fact that the quad pipeline blends and an opaque source
+makes that blend exact. The first probe picture had been accepted under wording that excluded
+it.
+
+**And the one red CI run was not the picture.** The step that re-runs the suite to turn a skip
+into a failure ran the executable from the workspace root rather than from beside itself, so the
+reference resolved to nothing while ctest, in the same job, passed the case. Nothing in that
+suite had read a file before, so no earlier run could have caught it.
 
 [completed/RenderTestsInCI.md](completed/RenderTestsInCI.md) was drafted on 2026-09-11 against
 `88711c0` and closed the next day. Six steps building what

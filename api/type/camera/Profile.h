@@ -163,6 +163,19 @@ class Profile {
         unsigned int size_[2];
 
         glm::quat rotation_;
+
+        /**
+        *	The basis matrix lookat() built, kept so that createView() does not rebuild it
+        *	out of the quaternion - a round trip that costs about 2e-6 of a view element.
+        *
+        *	**Every writer of rotation_ has to clear this**, because a rotation set any
+        *	other way is not the one this matrix carries. There are three - rotation(),
+        *	Camera::pan() and Camera::tilt() - and a fourth added later has to join them.
+        *	When it is clear, createView() rebuilds from the quaternion as it always did,
+        *	which is what keeps a directly rotated camera working.
+        */
+        glm::mat4x4 basis_;
+        bool basisValid_;
 };
 
 };  // namespace v3d::type::camera

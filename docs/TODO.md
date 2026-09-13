@@ -57,6 +57,17 @@ it as an open question and could not settle it.
 [] nothing in the api reads or writes a map. The one format that exists is odyssey's own, in `odyssey/tile/Map.cpp`, so anything wanting to load a grid - a map editor, a generator, a second game - writes its own loader or lifts that file. A format in the api earns a record when a second consumer reads one
 [] `TileFilter` is a `std::function` called for every neighbour of every visited tile, which is the first thing to templatise if a board is ever large enough to notice
 
+## Sprite sheets
+
+`image::TextureAtlas` places regions, `config::SpriteSheets` reads and writes the document that
+names them, and `image::crop` cuts one back out of a sheet. Every half of a packer's round trip
+is in the tree.
+
+[] nothing in the tree packs a sheet, and unpacking one is a rectangle at a time. `imagetool
+--crop` cuts one region, so a sheet can be exploded by a caller that already knows where its
+sprites are; nothing reads a `sprites.json` and cuts out everything it names. Whether that
+belongs to `imagetool`, to a `spritetool` beside it, or to whoever needs it is undecided
+
 ## Models
 
 `api/asset` reads glTF 2.0 into a `v3d::type::Model`, which is the only geometry the api loads
@@ -112,9 +123,11 @@ The loop simulates at a fixed step and renders at a variable one -
 **Tests.** Every library needing neither a window nor a GPU is covered. The GPU half —
 everything below the recorder in `api/render` — now has a suite that draws:
 `v3dtest_render_device` runs against lavapipe on the runner, which
-[RenderTestsInCI](plans/completed/RenderTestsInCI.md) built and closed. What that suite covers
-is the path rather than the renderers: the pipeline cache is asserted by nothing that draws, and
-the renderers and the upload path are what the open plan below takes up.
+[RenderTestsInCI](plans/completed/RenderTestsInCI.md) built and closed, and four of its cases
+are pinned to committed pictures by
+[RealtimeGoldenImage](plans/completed/RealtimeGoldenImage.md). The pipeline cache is what is
+left there: nothing that draws asserts it, and what would is a count of what was compiled
+rather than a picture.
 
 What the plan left is what needs a window or a sound device rather than a device to draw
 with: `Feature::Window`, `ui::TextRenderer` and `audio::Engine::initialize()`. They are named
@@ -122,8 +135,12 @@ beside `api/render` in [Testing.md](Testing.md) and were waiting on the same
 [ADR-0007](adr/0007-ci-rendering-tests.md), but a software Vulkan implementation answers none of
 them, so they outlive it.
 
-A golden image is no longer here: it is [RealtimeGoldenImage](plans/RealtimeGoldenImage.md),
-open, which answers that decision's fifth alternative rather than deferring it again.
+What a picture cannot cover outlives that plan too, by
+[ADR-0054](adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md): a reference holds
+only what the specification determines, so blending, filtered sampling, multisampling and text
+are asserted by validation silence and spot checks and by nothing stronger. Widening that needs
+a second implementation to compare against rather than a second rule, and there is none in this
+tree.
 
 **Documentation.** Reference material lives in this directory, one document per subject and
 [README.md](README.md) as the index; `CLAUDE.md` routes into them rather than holding a copy.

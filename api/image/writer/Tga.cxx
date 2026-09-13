@@ -49,6 +49,10 @@ Tga::Tga(const boost::shared_ptr<v3d::log::Logger> & logger) : Writer(logger) {
 /**
  **/
 bool Tga::write(std::string_view filename, const boost::shared_ptr<Image>& img) {
+    if (!img) {
+        return false;
+    }
+
     std::fstream file;
     file.open(static_cast<std::string>(filename).c_str(), std::fstream::out | std::fstream::binary);
     if (file.fail()) {
@@ -66,7 +70,8 @@ bool Tga::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     fheader.width_ = static_cast<uint16_t>(img->width());
     fheader.height_ = static_cast<uint16_t>(img->height());
     fheader.bpp_ = img->bpp();
-    fheader.type_ = 2;  // rgb
+    const bool grey = img->format() == Image::Format::Grey;
+    fheader.type_ = grey ? 3 : 2;
     // bit 5 of the descriptor is the vertical origin, and the rows below go out top down
     // because that is the order Image holds them in. Leaving it clear claims bottom up,
     // which a reader is entitled to act on by turning the picture over
@@ -85,10 +90,16 @@ bool Tga::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
         return false;
     }
 
-    for (unsigned int i = 0; i < static_cast<int>(size); i += bytespp) {  // Swaps The 1st And 3rd Bytes ('R'ed and 'B'lue)
-        tmp_data[i] = data[i + 2];
-        tmp_data[i + 1] = data[i + 1];
-        tmp_data[i + 2] = data[i];
+    if (grey) {
+        // one channel is one channel in either order, so there is nothing to swap - and
+        // the swap below reads three bytes of every pixel, which this depth does not have
+        memcpy(tmp_data, data, size);
+    } else {
+        for (unsigned int i = 0; i < static_cast<int>(size); i += bytespp) {  // Swaps The 1st And 3rd Bytes ('R'ed and 'B'lue)
+            tmp_data[i] = data[i + 2];
+            tmp_data[i + 1] = data[i + 1];
+            tmp_data[i + 2] = data[i];
+        }
     }
 
     file.write(reinterpret_cast<char*>(tmp_data), size);

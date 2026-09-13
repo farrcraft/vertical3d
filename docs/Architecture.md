@@ -48,7 +48,10 @@ An app that reimplements one of these has diverged rather than customised.
 `data/config.json`, which must use the indirect form:
 `{"configs": [{"type": "...", "file": "..."}]}`. Pong's `data/` is the reference. The types are
 `window`, `binding`, `ui`, `sound`, `camera`, `layout` and `sprite`; the last is a table of
-names over pixel rectangles in an image, read by `config::SpriteSheets`.
+names over pixel rectangles in an image, read by `config::SpriteSheets`. **That one is also
+the only config document the tree writes**: a sprite sheet is packed by a tool rather than
+typed by a person, so `SpriteSheets::document()` emits what `load()` reads and a packer does
+not carry a second implementation of the format.
 
 **A config document names an image and never loads one**, per
 [ADR-0020](adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md): a theme's images and a
@@ -230,7 +233,22 @@ because neither is simulation and neither wants to run twice on a slow frame.
   ([ADR-0052](adr/0052-a-consumer-names-the-camera-hand.md)); that basis is a mirror rather than
   a second rotation, so the profile's quaternion is the proper one either way and `createView()`
   negates view x. Nothing in this tree names it, so `right()` here always means the first one.
+  **With the hand named, a view built through `lookat()` is `glm::lookAt`'s element for element**
+  ([ADR-0056](adr/0056-a-look-at-keeps-the-basis-it-built.md)) — `lookat()` keeps the basis it
+  built rather than rebuilding it from the quaternion, which is worth 2e-6 of an element to a
+  consumer comparing reference frames at zero tolerance. The cost is a rule: **anything that
+  writes `Profile::rotation_` has to clear `basisValid_`**, and the three things that do are
+  `rotation()`, `Camera::pan()` and `Camera::tilt()`.
 - **`image::Image` row 0 is the top of the picture.** Every consumer downstream reads them that
   way: the canvas, the texture factory, the atlas packer. The jpeg reader also asks the decoder
   for RGB whatever the file holds, because it builds a 24 bit `Image` and copies three bytes a
   pixel.
+- **An `image::Image` cannot be copied, and `format()` is its channel count.** It owns its
+  buffer, so the copy constructor is deleted rather than freeing that buffer twice - a
+  consumer holds a `boost::shared_ptr<Image>`, and `image::crop()` is how a copy is actually
+  made. `format()` follows the depth wherever the depth is set, and `Format::Grey` is one
+  channel: a texture atlas at depth 1 and a `Font2D` bitmap are both that. Every writer
+  encodes one - png as `GRAY`, tga as type 3, jpeg as `JCS_GRAYSCALE`, bmp as 8 bit indices
+  into a 256 entry ramp. **The readers do not agree about what comes back**: png and bmp hand
+  back RGB, because one asks libpng for `gray_to_rgb` and the other resolves indices through
+  the palette, while tga builds at the file's own depth and hands the grey back as grey.

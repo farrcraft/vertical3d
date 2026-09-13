@@ -188,7 +188,11 @@ void Camera::createView() {
     // The rotation applied is the profile's inverse, which for a pure rotation is its
     // transpose, and it has to come after the translation or it turns the eye offset too
     glm::vec3 e = -profile_.eye_;
-    view_ = glm::transpose(glm::mat4_cast(profile_.rotation_));
+    // the basis lookat() built when it is still the rotation in force, and the rotation
+    // cast back to a matrix when anything else has set it since. The two agree to about
+    // 2e-6 of an element; the cached one is the same arithmetic glm::lookAt does, so a
+    // view built through lookat() matches one built through glm::lookAt exactly
+    view_ = glm::transpose(profile_.basisValid_ ? profile_.basis_ : glm::mat4_cast(profile_.rotation_));
     view_ = glm::translate(view_, e);
     if (profile_.hand_ == Profile::Hand::DirectionCrossUp) {
         // the mirrored basis is the rotation with view x negated, and this is where that
@@ -213,6 +217,8 @@ void Camera::pan(float angle) {
     total = profile_.rotation_;
     total = total * local_rotation;
     profile_.rotation_ = total;
+    // composing onto the rotation leaves the basis lookat() cached describing the old one
+    profile_.basisValid_ = false;
 }
 
 /*
@@ -226,6 +232,8 @@ void Camera::tilt(float angle) {
     total = profile_.rotation_;
     total = total * local_rotation;
     profile_.rotation_ = total;
+    // composing onto the rotation leaves the basis lookat() cached describing the old one
+    profile_.basisValid_ = false;
 }
 
 /*
