@@ -21,6 +21,12 @@ Jpeg::Jpeg(const boost::shared_ptr<v3d::log::Logger>& logger) : Writer(logger) {
 /**
  **/
 bool Jpeg::write(std::string_view filename, const boost::shared_ptr<Image>& img) {
+    // this encodes three channels or four and reads every row as though it held that many,
+    // so a one channel image is refused rather than read past the end of each of its rows
+    if (!img || img->format() == Image::Format::Grey) {
+        return false;
+    }
+
     struct jpeg_compress_struct cinfo;
     struct jpeg_error_mgr jerr;
 

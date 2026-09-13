@@ -49,6 +49,13 @@ Tga::Tga(const boost::shared_ptr<v3d::log::Logger> & logger) : Writer(logger) {
 /**
  **/
 bool Tga::write(std::string_view filename, const boost::shared_ptr<Image>& img) {
+    // the swap below writes three bytes per pixel whatever the depth is, so a one channel
+    // image runs two bytes past the end of its buffer on the last pixel. The header this
+    // writes says type 2, rgb, for the same reason: grey is not a picture it can describe
+    if (!img || img->format() == Image::Format::Grey) {
+        return false;
+    }
+
     std::fstream file;
     file.open(static_cast<std::string>(filename).c_str(), std::fstream::out | std::fstream::binary);
     if (file.fail()) {

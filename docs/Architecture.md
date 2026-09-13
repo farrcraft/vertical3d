@@ -237,3 +237,10 @@ because neither is simulation and neither wants to run twice on a slow frame.
   way: the canvas, the texture factory, the atlas packer. The jpeg reader also asks the decoder
   for RGB whatever the file holds, because it builds a 24 bit `Image` and copies three bytes a
   pixel.
+- **An `image::Image` cannot be copied, and `format()` is its channel count.** It owns its
+  buffer, so the copy constructor is deleted rather than freeing that buffer twice - a
+  consumer holds a `boost::shared_ptr<Image>`, and `image::crop()` is how a copy is actually
+  made. `format()` follows the depth wherever the depth is set, and `Format::Grey` is one
+  channel: a texture atlas at depth 1 and a `Font2D` bitmap are both that. **No writer encodes
+  one** - all four read a row as though it held three channels or four - so writing a grey
+  image is refused rather than running off the end of each row.

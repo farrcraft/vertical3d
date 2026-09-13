@@ -269,3 +269,26 @@ BOOST_FIXTURE_TEST_CASE(imagereader_greyscale_jpeg_test, OutputDirectory) {
         }
     }
 }
+
+/**
+ * Every writer encodes three channels or four, and each reads a row as though it held that
+ * many: the bmp writer takes src[column * channels + 2] per pixel, which on a one channel
+ * image is two bytes past where that pixel ends. So a grey image is refused, and refused
+ * before the file is opened rather than after an empty one is left behind.
+ **/
+BOOST_FIXTURE_TEST_CASE(imagewriter_refuses_a_grey_image, OutputDirectory) {
+    boost::shared_ptr<v3d::image::Image> grey = boost::make_shared<v3d::image::Image>(2, 2, 8);
+    BOOST_REQUIRE((grey->format() == v3d::image::Image::Format::Grey));
+
+    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    v3d::image::Factory factory(logger);
+
+    const char* const names[] = {
+        "data_out/grey.png", "data_out/grey.bmp", "data_out/grey.jpg", "data_out/grey.tga"
+    };
+    for (const char* const name : names) {
+        boost::filesystem::remove(name);
+        BOOST_CHECK_EQUAL(factory.write(name, grey), false);
+        BOOST_CHECK_EQUAL(boost::filesystem::exists(name), false);
+    }
+}
