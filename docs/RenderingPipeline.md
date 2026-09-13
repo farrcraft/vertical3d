@@ -133,8 +133,16 @@ destination alpha of `ZERO`, where the default erodes the source's. And `depthBi
 `depthBiasEnable` and puts `VK_DYNAMIC_STATE_DEPTH_BIAS` in the dynamic list, so the constant
 and the slope are a scene's numbers set with `vkCmdSetDepthBias` rather than a pipeline's:
 that is what a shadow pass needs to separate its own geometry from the surface tested against
-it. Nothing here draws with either, so both are covered by a pipeline that compiles rather than
-by one that draws.
+it. Nothing here draws with either.
+
+**Which is why the builder reports what it will build.** `rasterization()`, `colourBlend()` and
+`dynamics()` return the three pieces of state a caller cannot otherwise see, and `build()`
+assembles the pipeline out of those same three calls, so what is read is what is compiled. They
+exist because nothing about a compiled `VkPipeline` says what it was built from, and a wrong
+answer in any of them is a picture rather than an error: a depth bias left out of the dynamic
+list compiles and validates in silence, then silently uses the zero in the create info, so
+`vkCmdSetDepthBias` does nothing and a shadow does not shift. A compile cannot catch that and
+neither can the validation layer, so the state is asserted directly.
 
 ```
 pipeline::Builder(device)

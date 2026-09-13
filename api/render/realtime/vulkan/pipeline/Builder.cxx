@@ -191,6 +191,48 @@ Builder& Builder::depthFormat(VkFormat format) {
 
 /**
  **/
+VkPipelineRasterizationStateCreateInfo Builder::rasterization() const {
+    VkPipelineRasterizationStateCreateInfo raster{};
+    raster.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    raster.polygonMode = polygon_;
+    raster.cullMode = cull_;
+    raster.frontFace = front_;
+    raster.lineWidth = 1.0f;
+    // the factors are dynamic, so this enables the bias without saying what it is
+    raster.depthBiasEnable = depthBias_ ? VK_TRUE : VK_FALSE;
+    return raster;
+}
+
+/**
+ **/
+VkPipelineColorBlendAttachmentState Builder::colourBlend() const {
+    VkPipelineColorBlendAttachmentState attachment{};
+    attachment.blendEnable = blend_ ? VK_TRUE : VK_FALSE;
+    attachment.srcColorBlendFactor = factors_.sourceColour;
+    attachment.dstColorBlendFactor = factors_.destinationColour;
+    attachment.colorBlendOp = VK_BLEND_OP_ADD;
+    attachment.srcAlphaBlendFactor = factors_.sourceAlpha;
+    attachment.dstAlphaBlendFactor = factors_.destinationAlpha;
+    attachment.alphaBlendOp = VK_BLEND_OP_ADD;
+    attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    return attachment;
+}
+
+/**
+ **/
+std::vector<VkDynamicState> Builder::dynamics() const {
+    // the viewport is dynamic so that a window resize costs no pipeline rebuild, and the
+    // depth bias is dynamic for a pipeline that asked for one - its numbers belong to the
+    // scene rather than to the pipeline
+    std::vector<VkDynamicState> dynamics{VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+    if (depthBias_) {
+        dynamics.push_back(VK_DYNAMIC_STATE_DEPTH_BIAS);
+    }
+    return dynamics;
+}
+
+/**
+ **/
 Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
     if (stages_.empty()) {
         std::stringstream msg;
@@ -252,14 +294,7 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
     viewport.viewportCount = 1;
     viewport.scissorCount = 1;
 
-    VkPipelineRasterizationStateCreateInfo raster{};
-    raster.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    raster.polygonMode = polygon_;
-    raster.cullMode = cull_;
-    raster.frontFace = front_;
-    raster.lineWidth = 1.0f;
-    // the factors are dynamic, so this enables the bias without saying what it is
-    raster.depthBiasEnable = depthBias_ ? VK_TRUE : VK_FALSE;
+    const VkPipelineRasterizationStateCreateInfo raster = rasterization();
 
     VkPipelineMultisampleStateCreateInfo multisample{};
     multisample.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -272,15 +307,7 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
     depth.depthCompareOp = depthCompare_;
     depth.maxDepthBounds = 1.0f;
 
-    VkPipelineColorBlendAttachmentState attachment{};
-    attachment.blendEnable = blend_ ? VK_TRUE : VK_FALSE;
-    attachment.srcColorBlendFactor = factors_.sourceColour;
-    attachment.dstColorBlendFactor = factors_.destinationColour;
-    attachment.colorBlendOp = VK_BLEND_OP_ADD;
-    attachment.srcAlphaBlendFactor = factors_.sourceAlpha;
-    attachment.dstAlphaBlendFactor = factors_.destinationAlpha;
-    attachment.alphaBlendOp = VK_BLEND_OP_ADD;
-    attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    const VkPipelineColorBlendAttachmentState attachment = colourBlend();
 
     // blend() is one answer for the pipeline, so every attachment blends the same way
     const std::vector<VkPipelineColorBlendAttachmentState> attachments(colours_.size(), attachment);
@@ -289,13 +316,7 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
     blending.attachmentCount = static_cast<uint32_t>(attachments.size());
     blending.pAttachments = attachments.empty() ? nullptr : attachments.data();
 
-    // the viewport is dynamic so that a window resize costs no pipeline rebuild, and the
-    // depth bias is dynamic for a pipeline that asked for one - its numbers belong to the
-    // scene rather than to the pipeline
-    std::vector<VkDynamicState> dynamics{VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
-    if (depthBias_) {
-        dynamics.push_back(VK_DYNAMIC_STATE_DEPTH_BIAS);
-    }
+    const std::vector<VkDynamicState> dynamics = this->dynamics();
     VkPipelineDynamicStateCreateInfo dynamic{};
     dynamic.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
     dynamic.dynamicStateCount = static_cast<uint32_t>(dynamics.size());

@@ -192,6 +192,22 @@ class Builder final {
      **/
     Pipeline build(const boost::shared_ptr<Cache>& cache) const;
 
+    /**
+     * The three pieces of state a caller cannot otherwise check, each exactly as build()
+     * will hand it to Vulkan - build() calls these rather than assembling its own, so what
+     * is read here is what is compiled.
+     *
+     * **They exist because a VkPipeline cannot be read back.** Nothing about a compiled
+     * pipeline says what it was built from, and a wrong answer in any of the three is a
+     * picture rather than an error: a depth bias left out of the dynamic list silently
+     * becomes the zero in the create info, so vkCmdSetDepthBias does nothing and a shadow
+     * simply does not shift. Validation has nothing to say about any of that, so a consumer
+     * that needs to know asks here.
+     **/
+    VkPipelineRasterizationStateCreateInfo rasterization() const;
+    VkPipelineColorBlendAttachmentState colourBlend() const;
+    std::vector<VkDynamicState> dynamics() const;
+
  private:
     boost::shared_ptr<device::Device> device_;
     std::string name_;
