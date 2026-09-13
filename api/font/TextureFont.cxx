@@ -180,7 +180,7 @@ boost::shared_ptr<TextureFont::Glyph> TextureFont::glyph(wchar_t charcode) {
     boost::shared_ptr<Glyph> glyph;
     // -1 is used for line drawing (overline, underline, strikethrough) and background
     if (charcode == lineCode) {
-        glm::ivec4 region = atlas_->region(5, 5);
+        glm::ivec4 region = atlas_->region(4, 4);
 
         if (region.x < 0) {
             logger_->get()->error("Texture atlas is full!");
@@ -456,16 +456,13 @@ bool TextureFont::loadGlyphs(const wchar_t* charcodes) {
             return false;
         }
 
-        // We want each glyph to be separated by at least one black pixel
-        unsigned int w = rendered.width / atlas_->depth() + 1;
-        unsigned int h = rendered.rows + 1;
+        const unsigned int w = rendered.width / atlas_->depth();
+        const unsigned int h = rendered.rows;
         glm::ivec4 region = atlas_->region(w, h);
         if (region.x < 0) {
             missed++;
             continue;
         }
-        w = w - 1;
-        h = h - 1;
         unsigned int x = region.x;
         unsigned int y = region.y;
         atlas_->region(x, y, w, h, rendered.bitmap.buffer, rendered.bitmap.pitch);

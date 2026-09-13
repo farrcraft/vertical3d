@@ -63,3 +63,4 @@ old record's status and leave the file in place.
 | [0052](0052-a-consumer-names-the-camera-hand.md) | Camera Basis — A Consumer Names Which Way `lookat()` Crosses, And Today's Hand Stays The Default | accepted | 2026-09-12 |
 | [0053](0053-a-consumer-chooses-how-memory-is-found.md) | Allocation — A Consumer Chooses Whether Memory Is Suballocated, And One Allocation Per Resource Stays The Default | accepted | 2026-09-12 |
 | [0054](0054-a-realtime-reference-is-a-picture-the-spec-determines.md) | Golden Images — A Realtime Reference Is A Picture The Specification Determines, Compared At Zero Tolerance | accepted | 2026-09-12 |
+| [0055](0055-a-texture-atlas-gutters-its-own-regions.md) | Atlas Packing — A Texture Atlas Reserves The Gutter Around Every Region, And A Caller Asks For The Size It Will Blit | accepted | 2026-09-12 |

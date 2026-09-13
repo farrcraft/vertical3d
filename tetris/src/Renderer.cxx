@@ -100,8 +100,8 @@ void TetrisRenderer::loadPieces(const boost::shared_ptr<v3d::asset::Manager>& as
         }
         atlas.region(region.x, region.y, region.z, region.w, image->data(), image->width() * 3);
 
-        // half a texel in on every side, so that filtering a block down to a cell cannot
-        // reach across the packer's border into its neighbour
+        // half a texel in on every side, so that filtering a block down to a cell samples
+        // texel centres rather than the empty gutter the atlas packs around a region
         const float size = static_cast<float>(atlasSize);
         Sprite sprite;
         sprite.uv0 = glm::vec2((region.x + 0.5f) / size, (region.y + 0.5f) / size);

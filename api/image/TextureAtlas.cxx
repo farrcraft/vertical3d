@@ -13,6 +13,18 @@
 #include "Image.h"
 #include "Factory.h"
 
+namespace {
+
+/**
+ * Texels held empty around every region, so that a sampler reading a region's edge texel
+ * cannot reach into whatever was packed beside it. One is enough for the bilinear filtering
+ * the tree's atlases are read with; mipmapping one would need the gutter to grow with the
+ * chain, and would be the thing that makes this an argument rather than a constant.
+ **/
+constexpr unsigned int gutter = 1;
+
+};  // namespace
+
 namespace v3d::image {
 TextureAtlas::TextureAtlas(unsigned int width, unsigned int height, unsigned int depth, const boost::shared_ptr<v3d::log::Logger>& logger) :
     width_(width),
@@ -58,6 +70,14 @@ unsigned int TextureAtlas::id() const {
 }
 
 glm::ivec4 TextureAtlas::region(unsigned int width, unsigned int height) {
+    const glm::ivec4 cell = allocate(width + gutter * 2, height + gutter * 2);
+    if (cell.x < 0) {
+        return cell;
+    }
+    return glm::ivec4(cell.x + gutter, cell.y + gutter, width, height);
+}
+
+glm::ivec4 TextureAtlas::allocate(unsigned int width, unsigned int height) {
     glm::ivec3 node;
     int bestHeight = INT_MAX;
     int bestWidth = INT_MAX;
