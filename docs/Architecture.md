@@ -233,6 +233,12 @@ because neither is simulation and neither wants to run twice on a slow frame.
   ([ADR-0052](adr/0052-a-consumer-names-the-camera-hand.md)); that basis is a mirror rather than
   a second rotation, so the profile's quaternion is the proper one either way and `createView()`
   negates view x. Nothing in this tree names it, so `right()` here always means the first one.
+  **With the hand named, a view built through `lookat()` is `glm::lookAt`'s element for element**
+  ([ADR-0056](adr/0056-a-look-at-keeps-the-basis-it-built.md)) — `lookat()` keeps the basis it
+  built rather than rebuilding it from the quaternion, which is worth 2e-6 of an element to a
+  consumer comparing reference frames at zero tolerance. The cost is a rule: **anything that
+  writes `Profile::rotation_` has to clear `basisValid_`**, and the three things that do are
+  `rotation()`, `Camera::pan()` and `Camera::tilt()`.
 - **`image::Image` row 0 is the top of the picture.** Every consumer downstream reads them that
   way: the canvas, the texture factory, the atlas packer. The jpeg reader also asks the decoder
   for RGB whatever the file holds, because it builds a 24 bit `Image` and copies three bytes a

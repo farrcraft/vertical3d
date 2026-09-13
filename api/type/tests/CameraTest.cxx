@@ -333,3 +333,101 @@ BOOST_AUTO_TEST_CASE(camera_ortho_factor_test) {
     BOOST_CHECK_CLOSE(camera.orthoFactorHorizontal(), (2.0f * 2.0f * 1.33f) / 640.0f, 0.01f);
     BOOST_CHECK_CLOSE(camera.orthoFactorVertical(), (2.0f * 2.0f) / 480.0f, 0.01f);
 }
+
+/**
+ * A view built through lookat() is the one glm::lookAt builds, element for element and with
+ * no tolerance at all.
+ *
+ * **This is the assertion the cached basis exists for**, and it is why it is asserted exactly:
+ * a consumer holding its own reference frames re-baselines them for a difference of one unit
+ * in the last place, so "close enough" is the thing that costs rather than the thing that
+ * passes. Reported by retcon as U18, whose capture moved 153 of 891600 pixels when it adopted
+ * this camera.
+ *
+ * Two conventions have to be undone before the two are comparable, neither of them a
+ * difference in the arithmetic: this tree looks along +z where glm looks along -z, so row 2
+ * is negated, and ADR-0052's mirrored hand is the basis glm crosses for. Equality is checked
+ * with == rather than by comparing bits, because the mirror turns some zeros negative and
+ * -0.0f == 0.0f while their bits differ.
+ **/
+BOOST_AUTO_TEST_CASE(camera_lookat_matches_glm_exactly_test) {
+    const glm::vec3 eyes[] = {
+        glm::vec3(10.0f, 10.0f, 10.0f),
+        glm::vec3(-10.0f, 10.0f, 10.0f),
+        glm::vec3(-10.0f, 10.0f, -10.0f),
+        glm::vec3(10.0f, 10.0f, -10.0f),
+        glm::vec3(3.5f, 2.25f, -7.125f),
+        glm::vec3(1234.5f, -67.125f, 0.03125f)
+    };
+    const glm::vec3 centres[] = {
+        glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::vec3(1.5f, 0.5f, 2.0f),
+        glm::vec3(-9.5f, 4.0f, 11.0f)
+    };
+
+    for (unsigned int which = 0; which < 6; ++which) {
+        const glm::vec3 up(0.0f, 1.0f, 0.0f);
+
+        v3d::type::camera::Camera camera;
+        camera.profile().hand(v3d::type::camera::Profile::Hand::DirectionCrossUp);
+        camera.profile().eye(eyes[which]);
+        camera.profile().up(up);
+        camera.profile().lookat(centres[which]);
+        camera.createView();
+
+        glm::mat4x4 expected = glm::lookAt(eyes[which], centres[which], up);
+        for (int column = 0; column < 4; ++column) {
+            expected[column][2] = -expected[column][2];
+        }
+
+        const glm::mat4x4 built = camera.view();
+        for (int column = 0; column < 4; ++column) {
+            for (int row = 0; row < 4; ++row) {
+                BOOST_CHECK_EQUAL(built[column][row], expected[column][row]);
+            }
+        }
+    }
+}
+
+/**
+ * A rotation set directly still builds its own view, which is the half a cached basis can
+ * break: the matrix lookat() kept describes the rotation lookat() built, and any other writer
+ * of the rotation has to put it back to being cast from the quaternion.
+ **/
+BOOST_AUTO_TEST_CASE(camera_a_set_rotation_outlives_a_cached_basis_test) {
+    v3d::type::camera::Camera camera;
+    camera.profile().eye(glm::vec3(0.0f, 0.0f, 5.0f));
+    camera.profile().lookat(glm::vec3(0.0f, 0.0f, 0.0f));
+    camera.createView();
+
+    // a quarter turn about y, set rather than looked at, is the view that has to win
+    const glm::quat turned = glm::angleAxis(glm::pi<float>() / 2.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+    camera.profile().rotation(turned);
+    camera.createView();
+
+    glm::mat4x4 cast = glm::transpose(glm::mat4_cast(turned));
+    cast = glm::translate(cast, -camera.profile().eye());
+    for (int column = 0; column < 4; ++column) {
+        for (int row = 0; row < 4; ++row) {
+            BOOST_CHECK_EQUAL(camera.view()[column][row], cast[column][row]);
+        }
+    }
+
+    // and panning after a lookat() is the same: the basis it cached is not this rotation
+    v3d::type::camera::Camera panned;
+    panned.profile().eye(glm::vec3(0.0f, 0.0f, 5.0f));
+    panned.profile().lookat(glm::vec3(0.0f, 0.0f, 0.0f));
+    panned.pan(glm::pi<float>() / 4.0f);
+    panned.createView();
+
+    glm::mat4x4 expected = glm::transpose(glm::mat4_cast(panned.profile().rotation()));
+    expected = glm::translate(expected, -panned.profile().eye());
+    for (int column = 0; column < 4; ++column) {
+        for (int row = 0; row < 4; ++row) {
+            BOOST_CHECK_EQUAL(panned.view()[column][row], expected[column][row]);
+        }
+    }
+}
