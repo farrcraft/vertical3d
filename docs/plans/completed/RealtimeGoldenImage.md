@@ -1,24 +1,29 @@
 # Realtime Golden Image — A Reference The Specification Determines
 
-Drafted 2026-09-12 against `0662778`. Five steps across `api/render/tests` and the documents,
-taking up what [RenderTestsInCI](completed/RenderTestsInCI.md) left when it closed: the device
-half of `api/render/realtime` now draws in CI, and what it asserts about the picture is five
-texels checked by hand.
+Drafted 2026-09-12 against `0662778` and closed the same day at `a4274ba`. Five steps across
+`api/render/tests` and the documents, taking up what [RenderTestsInCI](RenderTestsInCI.md) left
+when it closed: the device half of `api/render/realtime` now draws in CI, and what it asserted
+about the picture was five texels checked by hand.
+
+**Closed with four pictures pinned** - a flat quad, a quad drawn with an uploaded texture, and
+two overlapping world quads in each submission order - each byte-exact on a Radeon RX 6600 and
+on the runner's Mesa llvmpipe 26.2.0. That is the claim ADR-0007's fifth alternative said could
+not be had, measured rather than argued.
 
 ## Why now
 
-[ADR-0007](../adr/0007-ci-rendering-tests.md) chose validation silence over pixels and deferred
+[ADR-0007](../../adr/0007-ci-rendering-tests.md) chose validation silence over pixels and deferred
 golden images in its fifth alternative rather than rejecting them.
-[ADR-0050](../adr/0050-a-frame-is-read-back-in-two-calls.md) built the half that was missing and
+[ADR-0050](../../adr/0050-a-frame-is-read-back-in-two-calls.md) built the half that was missing and
 said outright that ADR-0007 stands until something blesses a reference. Nothing has.
 
-What that leaves uncovered is named in [TODO.md](../TODO.md): the renderers themselves, the
+What that leaves uncovered is named in [TODO.md](../../TODO.md): the renderers themselves, the
 pipeline cache and the upload path are asserted by nothing that draws. `v3dtest_render_device`
 draws a clear and a quad, so what it establishes is that a frame can be recorded, submitted and
 read back at all. A quad drawn in the wrong colour, at the wrong scale, or with the wrong
 texture reaches the same five texels and passes four of them.
 
-The other half of the argument is [sdlc.md](../sdlc.md)'s: *"a rendering change is verified by
+The other half of the argument is [sdlc.md](../../sdlc.md)'s: *"a rendering change is verified by
 running the app and reading the log"*. That is a person, per change, for the newest code in the
 tree.
 
@@ -35,7 +40,7 @@ The answer is to bless only pictures the specification determines — axis align
 integer pixel boundaries, flat colours at the ends of the channel range, nearest sampling, no
 blending and no multisampling — so that every conformant implementation owes the same bytes and
 the file stops being any one rasterizer's. What may be in a reference, and what a case that
-wants more does instead, is [ADR-0054](../adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md).
+wants more does instead, is [ADR-0054](../../adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md).
 
 **This is also what the ordering below is built around.** The claim is not provable on this
 machine: there is one gpu here, and the runner's lavapipe is the second implementation. So the
@@ -135,7 +140,7 @@ returns rather than which filter it is.
 ## Step 5 — Depth and order
 
 Two opaque world quads that overlap, drawn near first and then far first, per
-[ADR-0042](../adr/0042-a-textured-quad-in-world-space.md). This is the only case here that draws
+[ADR-0042](../../adr/0042-a-textured-quad-in-world-space.md). This is the only case here that draws
 through `renderer::World` or puts a depth attachment on a render target, so it is what says
 either works at all.
 

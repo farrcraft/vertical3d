@@ -112,9 +112,11 @@ The loop simulates at a fixed step and renders at a variable one -
 **Tests.** Every library needing neither a window nor a GPU is covered. The GPU half —
 everything below the recorder in `api/render` — now has a suite that draws:
 `v3dtest_render_device` runs against lavapipe on the runner, which
-[RenderTestsInCI](plans/completed/RenderTestsInCI.md) built and closed. What that suite covers
-is the path rather than the renderers: the pipeline cache is asserted by nothing that draws, and
-the renderers and the upload path are what the open plan below takes up.
+[RenderTestsInCI](plans/completed/RenderTestsInCI.md) built and closed, and four of its cases
+are pinned to committed pictures by
+[RealtimeGoldenImage](plans/completed/RealtimeGoldenImage.md). The pipeline cache is what is
+left there: nothing that draws asserts it, and what would is a count of what was compiled
+rather than a picture.
 
 What the plan left is what needs a window or a sound device rather than a device to draw
 with: `Feature::Window`, `ui::TextRenderer` and `audio::Engine::initialize()`. They are named
@@ -122,8 +124,12 @@ beside `api/render` in [Testing.md](Testing.md) and were waiting on the same
 [ADR-0007](adr/0007-ci-rendering-tests.md), but a software Vulkan implementation answers none of
 them, so they outlive it.
 
-A golden image is no longer here: it is [RealtimeGoldenImage](plans/RealtimeGoldenImage.md),
-open, which answers that decision's fifth alternative rather than deferring it again.
+What a picture cannot cover outlives that plan too, by
+[ADR-0054](adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md): a reference holds
+only what the specification determines, so blending, filtered sampling, multisampling and text
+are asserted by validation silence and spot checks and by nothing stronger. Widening that needs
+a second implementation to compare against rather than a second rule, and there is none in this
+tree.
 
 **Documentation.** Reference material lives in this directory, one document per subject and
 [README.md](README.md) as the index; `CLAUDE.md` routes into them rather than holding a copy.
