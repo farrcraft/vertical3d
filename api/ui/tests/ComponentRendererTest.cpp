@@ -10,8 +10,13 @@
 #include <api/ui/component/menu/Menu.h>
 #include <api/ui/component/menu/MenuBar.h>
 #include <api/ui/component/menu/MenuItem.h>
+#include <api/ui/component/TextBox.h>
 #include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/style/Resolver.h>
+#include <api/ui/style/Style.h>
+#include <api/ui/style/Theme.h>
+#include <api/ui/style/property/Color.h>
+#include <api/ui/style/property/Number.h>
 
 #include <cstddef>
 #include <string>
@@ -305,6 +310,50 @@ BOOST_AUTO_TEST_CASE(a_focused_component_is_ringed) {
     BOOST_CHECK_EQUAL(canvas.vertices().size(), plain + static_cast<std::size_t>(4 * 4));
     // untextured like everything else the ui draws, so the ring costs no batch of its own
     BOOST_CHECK_EQUAL(canvas.batches().size(), 1);
+}
+
+/**
+ * The ring is read off the class the component is drawn in, so a theme can mark a focused text
+ * box differently from every other control.
+ *
+ * One ring for every control is what the base bought, and it is still what a theme naming
+ * nothing gets. What it cost was a theme that wanted a box ringed like a box.
+ **/
+BOOST_AUTO_TEST_CASE(a_theme_rings_a_class_in_its_own_colour) {
+    v3d::ui::paint::ComponentRenderer renderer(
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+
+    const glm::vec4 ringColour(0.0f, 1.0f, 0.0f, 1.0f);
+    const boost::shared_ptr<v3d::ui::style::Theme> theme =
+        boost::make_shared<v3d::ui::style::Theme>("dark");
+    const boost::shared_ptr<v3d::ui::style::Style> field =
+        boost::make_shared<v3d::ui::style::Style>("default", "textbox");
+    field->addProperty(boost::make_shared<v3d::ui::style::property::Color>("focus", ringColour), "color");
+    field->addProperty(boost::make_shared<v3d::ui::style::property::Number>("focus-width", 2.0f), "number");
+    theme->addStyle(field);
+    // the base first: taking it by reference drops whatever has been resolved from it
+    renderer.dressing().focus = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+    renderer.theme(theme);
+
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(800, 600);
+
+    const boost::shared_ptr<v3d::ui::component::TextBox> box =
+        boost::make_shared<v3d::ui::component::TextBox>();
+    box->layout().width = v3d::ui::Length(120.0f, v3d::ui::Length::Unit::Pixels);
+    box->layout().height = v3d::ui::Length(24.0f, v3d::ui::Length::Unit::Pixels);
+    box->focused(true);
+
+    v3d::ui::Container container("screen", true);
+    container.add(box);
+    renderer.draw(&canvas, container);
+
+    // the ring is traced after the component it rings, so the last four quads are its
+    BOOST_REQUIRE(canvas.vertices().size() >= 4 * 4);
+    for (std::size_t back = canvas.vertices().size() - (4 * 4); back < canvas.vertices().size(); back++) {
+        BOOST_CHECK(canvas.vertices()[back].colour == ringColour);
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

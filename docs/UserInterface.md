@@ -196,6 +196,12 @@ The style classes:
 | `panel`, `bar`, `scrollbar`, `checkbox`, `radio`, `list`, `tabs`, `textbox` | the component of that kind |
 | `button` | `ComponentRenderer::skin()`, chosen by button state as well as by name |
 
+Every one of them may also name `focus` and `focus-width`, which is the ring around the control
+when it holds the keyboard. `button` is the one class a `Dressing` reads nothing else out of: a
+button's fill is its nine images and its label is the base's, and the first style of the set
+answers for the ring whatever state it was written for, because a ring says where the keyboard is
+rather than what state the button is in.
+
 `ui` and `tools` are separate on purpose: they want the same key names at about twice the
 size, because a HUD is read at a glance and a tool panel is read closely.
 
@@ -283,10 +289,13 @@ focusable component, and is how a screen says it is keyboard driven — an app c
 screen goes up. `focusNext()` will not do it, on purpose: tab must not take the focus onto the
 first widget of a hud nobody is looking at, so a ui with nothing focused stays that way.
 
-**A focused component is ringed**, traced around its box after it is drawn, in the base
-dressing's `focus` colour at `focus-width` thick. The draw walk does it rather than any one
-component, because where the keyboard is is the ui's business and one ring for every control is
-the point of it.
+**A focused component is ringed**, traced around its box after it is drawn, in the `focus`
+colour at `focus-width` thick of the style class the component is drawn in — so a theme can mark
+a focused text box differently from a focused list, and one naming neither rings every control
+out of the base. `ComponentRenderer`'s `ringed()` is what says which class rings which
+component, and a component dressed by the base alone is ringed out of it. The draw walk traces
+it rather than any one component, because where the keyboard is is the ui's business and one
+ring drawn one way is the point of it.
 
 The characters come from `event::TextInput`, which `input::Keyboard` raises from SDL's text
 input — shift already applied, a dead key and the one after it already one character, an input
@@ -351,9 +360,9 @@ boxes the draw left or on the primitives it emitted. [Testing.md](Testing.md) ha
 - **Nothing enforces which of the two ways to use.** The rule above is a rule of thumb in a
   document, and a reader who wants a HUD out of `Immediate` will get one that flickers under
   the cursor rather than an error.
-- **Adding a component means editing seven places** — `component::Type`, `component::name()`,
-  the loader's branch, the renderer's paint switch, the Arranger's `natural()`, the cursor's
-  and the keys'. The compiler now names all seven
+- **Adding a component means editing eight places** — `component::Type`, `component::name()`,
+  the loader's branch, the renderer's paint switch, its `ringed()`, the Arranger's `natural()`,
+  the cursor's and the keys'. The compiler names all eight
   ([ADR-0047](adr/0047-a-component-type-is-checked-by-the-compiler.md)), so forgetting one is
-  a build error rather than a component that silently is not there — but the count is
-  unchanged, and a registry is the only thing that would reduce it.
+  a build error rather than a component that silently is not there — but a registry is the only
+  thing that would reduce the count.
