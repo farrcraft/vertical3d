@@ -180,6 +180,18 @@ class Component {
     bool clip() const;
     void clip(bool cut);
 
+    /**
+     * Get whether the component can be used.
+     *
+     * True by default, and a property of the component rather than a state something
+     * writes as the cursor moves: a disabled component is not offered a point, is not
+     * reached by the tab order, and is drawn in the theme's disabled colour. A component
+     * that holds others disables them with it, so a box is what a screen greys a group of
+     * controls out with. ADR-0059.
+     **/
+    bool enabled() const;
+    void enabled(bool on);
+
  private:
     Layout layout_;
     std::vector<boost::shared_ptr<Component>> children_;
@@ -191,6 +203,7 @@ class Component {
     std::string style_;
     std::string name_;
     bool visible_;
+    bool enabled_;
     bool pickable_;
     bool focusable_;
     bool focused_;
@@ -215,5 +228,15 @@ std::vector<boost::shared_ptr<Component>> ordered(const std::vector<boost::share
  * parent per frame.
  **/
 bool inDrawOrder(const std::vector<boost::shared_ptr<Component>>& components) noexcept;
+
+/**
+ * Whether a component can be used, which is whether it and everything holding it are
+ * enabled.
+ *
+ * The walks that offer a point and collect a tab order skip a disabled subtree whole and
+ * never have to ask, but drawing reaches a component on its own - and a label greyed
+ * because the box around it is disabled is what inheriting means. ADR-0059.
+ **/
+bool usable(const Component& component) noexcept;
 
 };  // end namespace v3d::ui

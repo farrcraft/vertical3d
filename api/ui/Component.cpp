@@ -32,6 +32,7 @@ Component::Component(component::Type type) :
     zIndex_(0),
     id_(nextID++),
     visible_(true),
+    enabled_(true),
     pickable_(false),
     focusable_(false),
     focused_(false),
@@ -134,6 +135,14 @@ void Component::clip(bool cut) {
     clip_ = cut;
 }
 
+bool Component::enabled() const {
+    return enabled_;
+}
+
+void Component::enabled(bool on) {
+    enabled_ = on;
+}
+
 v3d::type::geometry::Bound2D Component::bound() const {
     v3d::type::geometry::Bound2D bound(position_, size_);
     return bound;
@@ -156,6 +165,15 @@ void Component::name(const std::string& str) {
 }
 component::Type Component::type() const {
     return type_;
+}
+
+bool usable(const Component& component) noexcept {
+    for (const Component* each = &component; each != nullptr; each = each->parent()) {
+        if (!each->enabled()) {
+            return false;
+        }
+    }
+    return true;
 }
 
 bool inDrawOrder(const std::vector<boost::shared_ptr<Component>>& components) noexcept {

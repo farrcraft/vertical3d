@@ -53,9 +53,13 @@ void strips(const boost::shared_ptr<Container>& container,
  * A button is the only component that has a state to write, and it is the state a
  * Toolbar writes onto the buttons it holds, so a button in a tree lights up the way one
  * on a strip does rather than by a second mechanism.
+ *
+ * A button that cannot be used is left alone in both directions. The state it carries lasts
+ * as long as the cursor is where it is and being disabled does not, so one must never be
+ * written over the other - ADR-0059.
  **/
 void lit(const boost::shared_ptr<Component>& component, bool on) {
-    if (!component || component->type() != component::Type::Button) {
+    if (!component || component->type() != component::Type::Button || !usable(*component)) {
         return;
     }
     const boost::shared_ptr<component::Button> button =

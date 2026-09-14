@@ -70,6 +70,7 @@ void Resolver::chrome() {
     readColour(style, "mark", &base_.mark);
     readColour(style, "text", &base_.text);
     readColour(style, "active-text", &base_.activeText);
+    readColour(style, "disabled-text", &base_.disabledText);
     readColour(style, "highlight", &base_.highlight);
     readColour(style, "hover", &base_.hover);
     readColour(style, "focus", &base_.focus);

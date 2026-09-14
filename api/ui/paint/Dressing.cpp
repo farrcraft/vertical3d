@@ -26,6 +26,7 @@ thumb(0.35f, 0.38f, 0.45f, 1.0f),
 mark(0.42f, 0.66f, 0.95f, 1.0f),
 text(0.78f, 0.80f, 0.84f, 1.0f),
 activeText(1.0f, 1.0f, 1.0f, 1.0f),
+disabledText(0.45f, 0.47f, 0.52f, 1.0f),
 highlight(0.16f, 0.34f, 0.58f, 1.0f),
 hover(0.16f, 0.18f, 0.24f, 1.0f),
 focus(0.42f, 0.66f, 0.95f, 1.0f) {

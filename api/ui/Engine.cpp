@@ -160,8 +160,10 @@ boost::shared_ptr<style::Theme> Engine::theme(const std::string_view& name) cons
 /**
  **/
 void Engine::focus(const boost::shared_ptr<Component>& component) {
+    // a component that cannot be used is nothing to focus, the same answer one that never
+    // asked to be focusable gets - ADR-0059
     const boost::shared_ptr<Component> wanted =
-        component && component->focusable() ? component : boost::shared_ptr<Component>();
+        component && component->focusable() && usable(*component) ? component : boost::shared_ptr<Component>();
     const boost::shared_ptr<Component> was = focused_.lock();
     if (was == wanted) {
         return;
@@ -203,8 +205,8 @@ namespace {
  **/
 void focusable(const boost::shared_ptr<Component>& component,
     std::vector<boost::shared_ptr<Component>>* found) {
-    if (!component || !component->visible()) {
-        return;  // a hidden subtree is skipped whole, not just its root
+    if (!component || !component->visible() || !component->enabled()) {
+        return;  // a hidden or disabled subtree is skipped whole, not just its root
     }
     if (component->focusable()) {
         found->push_back(component);
@@ -259,8 +261,18 @@ bool Engine::focusNext(bool forward) {
     }
 
     const std::vector<boost::shared_ptr<Component>> order = tabOrder();
+    if (order.empty()) {
+        return false;
+    }
     const auto here = std::find(order.begin(), order.end(), was);
-    if (here == order.end() || order.size() < 2) {
+    if (here == order.end()) {
+        // what held the focus is no longer reachable - hidden, disabled or taken out of the
+        // tree since it took it - so there is no place in the order to move on from, and the
+        // walk starts again rather than leaving the focus somewhere tab cannot get it back
+        focus(forward ? order.front() : order.back());
+        return true;
+    }
+    if (order.size() < 2) {
         return false;
     }
     const std::size_t at = static_cast<std::size_t>(here - order.begin());

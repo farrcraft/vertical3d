@@ -167,7 +167,7 @@ BOOST_AUTO_TEST_CASE(a_button_style_carries_a_state_and_its_images) {
     const boost::shared_ptr<v3d::ui::style::Button> styled =
         boost::dynamic_pointer_cast<v3d::ui::style::Button>(buttons.front());
     BOOST_REQUIRE(styled);
-    BOOST_CHECK((styled->state() == v3d::ui::component::Button::STATE_NORMAL));
+    BOOST_CHECK((styled->state() == v3d::ui::style::Button::State::Normal));
 
     const boost::shared_ptr<v3d::ui::style::property::Image> corner =
         boost::dynamic_pointer_cast<v3d::ui::style::property::Image>(styled->property("top-left", "image"));
@@ -437,6 +437,47 @@ BOOST_AUTO_TEST_CASE(a_button_is_drawn_from_the_images_its_style_names) {
     // the corner is drawn at the size the style's own number gives
     BOOST_CHECK_CLOSE(canvas.vertices()[0].position.x, 10.0f, 0.001f);
     BOOST_CHECK_CLOSE(canvas.vertices()[2].position.x, 14.0f, 0.001f);
+}
+
+/**
+ * A theme's "inactive" style is what a button that cannot be used is skinned from, and it is
+ * chosen by Component::enabled() rather than by a button state - which is the route that did
+ * not exist before ADR-0059, when nothing anywhere read the style the loader had parsed.
+ **/
+BOOST_AUTO_TEST_CASE(a_disabled_button_is_drawn_from_the_inactive_style) {
+    bool loaded = false;
+    const boost::shared_ptr<v3d::ui::Engine> ui = load(R"({
+        "themes": [ { "name": "dark", "styles": [
+            {
+                "class": "button", "name": "default", "state": "inactive",
+                "images": [ { "name": "center", "source": "skins/spent.tga" } ]
+            } ] } ],
+        "containers": [ { "name": "hud", "visible": true, "components": [] } ]
+    })", &loaded);
+    BOOST_REQUIRE(loaded);
+    ui->resolveImages([](const std::string&) { return v3d::render::realtime::TextureHandle(3); });
+
+    v3d::ui::paint::ComponentRenderer drawing = renderer();
+    drawing.theme(ui->theme("dark"));
+
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(800, 600);
+
+    const boost::shared_ptr<v3d::ui::component::Button> button =
+        boost::make_shared<v3d::ui::component::Button>();
+    button->label("Continue");
+    button->position(glm::vec2(10.0f, 20.0f));
+    button->size(glm::vec2(100.0f, 30.0f));
+
+    // an enabled button takes the normal style, which this theme does not carry
+    drawing.draw(&canvas, button);
+    BOOST_CHECK(canvas.empty());
+
+    button->enabled(false);
+    drawing.draw(&canvas, button);
+    BOOST_CHECK_EQUAL(canvas.vertices().size(), 4U);
+    BOOST_REQUIRE_EQUAL(canvas.batches().size(), 1U);
+    BOOST_CHECK(canvas.batches().front().texture.valid());
 }
 
 /**

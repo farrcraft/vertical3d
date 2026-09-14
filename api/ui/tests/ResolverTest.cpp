@@ -166,6 +166,27 @@ BOOST_AUTO_TEST_CASE(the_ui_style_is_read_into_the_base) {
 }
 
 /**
+ * The colour a control that cannot be used is drawn in is the theme's to name, and it is
+ * named once in "ui" rather than per class - so a theme that dresses one control disabled
+ * has dressed them all. ADR-0059.
+ **/
+BOOST_AUTO_TEST_CASE(the_ui_style_names_the_disabled_colour) {
+    const boost::shared_ptr<v3d::ui::style::Theme> theme =
+        boost::make_shared<v3d::ui::style::Theme>("dark");
+    const boost::shared_ptr<v3d::ui::style::Style> chrome = style("default", "ui");
+    colour(chrome, "disabled-text", green);
+    theme->addStyle(chrome);
+
+    Resolver resolver;
+    resolver.base().disabledText = red;
+    resolver.theme(theme);
+
+    BOOST_CHECK(resolver.base().disabledText == green);
+    const v3d::ui::paint::Dressing& dressing = resolver.resolve(Resolver::Class::Button, std::string_view());
+    BOOST_CHECK(dressing.disabledText == green);
+}
+
+/**
  * A scrollbar is not a progress bar. They read the same property names out of different
  * classes, so a theme that paints a health bar green leaves a scrollbar alone.
  **/

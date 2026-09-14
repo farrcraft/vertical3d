@@ -93,6 +93,12 @@ bool Keys::press(std::string_view key, bool shifted, bool controlled) {
         ui_->focus(boost::shared_ptr<Component>());
         return true;
     }
+    if (!usable(*focused)) {
+        // a component disabled while it held the focus answers no key, and the key goes on
+        // to the app's bindings the way one reaching an unfocused ui does. Tab and escape
+        // are above this, so the focus is never stuck on one - ADR-0059
+        return false;
+    }
     return act(focused, key, shifted, controlled);
 }
 
@@ -101,7 +107,9 @@ bool Keys::text(std::string_view utf8) {
         return false;
     }
     const boost::shared_ptr<Component> focused = ui_->focused();
-    if (!focused || focused->type() != component::Type::TextBox) {
+    if (!focused || focused->type() != component::Type::TextBox || !usable(*focused)) {
+        // a box disabled while it held the focus takes no characters either, so what is
+        // typed reaches the app rather than a field nobody can use - ADR-0059
         return false;
     }
     const boost::shared_ptr<component::TextBox> box =

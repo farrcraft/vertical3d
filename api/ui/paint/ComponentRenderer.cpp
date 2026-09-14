@@ -52,6 +52,31 @@ namespace {
 const float markColumn = 0.9f;
 
 /**
+ * The colour a component's own text is drawn in: what it would be drawn in, or the theme's
+ * disabled colour when the component - or anything holding it - cannot be used. An icon is
+ * tinted by the same answer, so one key greys a label and the picture beside it - ADR-0059.
+ **/
+glm::vec4 ink(const Component& component, const Dressing& dress, const glm::vec4& colour) {
+    return usable(component) ? colour : dress.disabledText;
+}
+
+/**
+ * Which of a theme's button styles a button is dressed by. A button that cannot be used
+ * takes the disabled one whatever the cursor last wrote on it - ADR-0059.
+ **/
+style::Button::State look(const component::Button& button) noexcept {
+    if (!usable(button)) {
+        return style::Button::State::Disabled;
+    }
+    switch (button.state()) {
+        case component::Button::STATE_HOVER: return style::Button::State::Hover;
+        case component::Button::STATE_PRESS: return style::Button::State::Press;
+        case component::Button::STATE_NORMAL: break;
+    }
+    return style::Button::State::Normal;
+}
+
+/**
  * The style class a component is dressed by, which is the class its focus ring is read
  * off - or nothing for one drawn out of the base alone.
  *
@@ -223,7 +248,9 @@ void ComponentRenderer::paint(v3d::render::realtime::Canvas* canvas,
  **/
 void ComponentRenderer::ring(v3d::render::realtime::Canvas* canvas,
     const boost::shared_ptr<Component>& component) const {
-    if (canvas == nullptr || !component->focused()) {
+    // a component disabled while it held the focus stops saying the keyboard is on it -
+    // the ring is what a player reads as "type here", and there is nothing to type - ADR-0059
+    if (canvas == nullptr || !component->focused() || !usable(*component)) {
         return;
     }
     // the class the component is drawn in, so a theme can ring a text box differently from
@@ -318,13 +345,13 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
 
     glm::vec2 pen(label->position().x, label->position().y + base().lineHeight * 0.75f);
     if (label->layout().width.unit() == Length::Unit::Auto) {
-        write_(text, pen, base().text);
+        write_(text, pen, ink(*label, base(), base().text));
         return;
     }
     // a label with a width to wrap to draws the rows the arranger sized it for, so the two
     // agree about how tall it is
     for (const std::string& row : wrap(text, size.x, measure_)) {
-        write_(row, pen, base().text);
+        write_(row, pen, ink(*label, base(), base().text));
         pen.y += base().lineHeight;
     }
 }
@@ -344,7 +371,8 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     place(*icon, icon->position(), size);
 
     canvas->rect(icon->position(), icon->position() + size,
-        glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), icon->texture());
+        glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f),
+        ink(*icon, base(), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)), icon->texture());
 }
 
 /**
@@ -362,9 +390,11 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     const glm::vec2 min = button->position();
     place(*button, min, size);
 
-    // a checked toggle keeps its highlight whether or not the cursor is on it, which is
-    // what says which mask and which tool are in force
-    const bool lit = button->checked() || button->state() == component::Button::STATE_HOVER;
+    // a button that cannot be used is never lit, whatever the cursor last left on it; and a
+    // checked toggle keeps its highlight whether or not the cursor is on it, which is what
+    // says which mask and which tool are in force
+    const bool lit = usable(*button) &&
+        (button->checked() || button->state() == component::Button::STATE_HOVER);
     if (!skin(canvas, *button, min, min + size) && lit) {
         canvas->rect(min, min + size, button->checked() ? base().highlight : base().hover);
     }
@@ -375,12 +405,13 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
         const float side = std::min(base().iconSize, std::min(size.x, size.y));
         const glm::vec2 corner = min + (size - glm::vec2(side, side)) * 0.5f;
         canvas->rect(corner, corner + glm::vec2(side, side),
-            glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), button->texture());
+            glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f),
+            ink(*button, base(), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)), button->texture());
         return;
     }
 
     const glm::vec2 baseline(min.x + (size.x - measure_(label)) * 0.5f, min.y + size.y * 0.7f);
-    write_(label, baseline, lit ? base().activeText : base().text);
+    write_(label, baseline, ink(*button, base(), lit ? base().activeText : base().text));
 }
 
 /**
@@ -497,7 +528,8 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     if (text.empty()) {
         return;
     }
-    write_(text, glm::vec2(min.x + side + dress.padding * 0.5f, min.y + size.y * 0.7f), dress.text);
+    write_(text, glm::vec2(min.x + side + dress.padding * 0.5f, min.y + size.y * 0.7f),
+        ink(*box, dress, dress.text));
 }
 
 /**
@@ -543,7 +575,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
             fillBox(canvas, glm::vec2(low.x, top), glm::vec2(high.x, top + row), 0.0f, dress.highlight);
         }
         write_(list->items()[index], glm::vec2(low.x + dress.padding * 0.5f, top + row * 0.7f),
-            picked ? dress.activeText : dress.text);
+            ink(*list, dress, picked ? dress.activeText : dress.text));
     }
 
     canvas->unclip();
@@ -603,9 +635,9 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
         fillBox(canvas, glm::vec2(pen.x + from, low.y), glm::vec2(pen.x + to, high.y),
             0.0f, dress.highlight);
     }
-    write_(text, pen, dress.text);
+    write_(text, pen, ink(*box, dress, dress.text));
 
-    if (box->focused()) {
+    if (box->focused() && usable(*box)) {
         const float stem = std::max(width, 1.0f);
         canvas->rect(glm::vec2(pen.x + caret, low.y), glm::vec2(pen.x + caret + stem, high.y), dress.mark);
     }
@@ -644,7 +676,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
         const bool picked = static_cast<int>(index) == bar->selected();
         fillBox(canvas, corner, corner + extent, dress.radius, picked ? dress.highlight : dress.track);
         write_(label, glm::vec2(corner.x + dress.padding * 0.5f, corner.y + height * 0.7f),
-            picked ? dress.activeText : dress.text);
+            ink(*bar, dress, picked ? dress.activeText : dress.text));
         pen += width + dress.borderWidth;
     }
     // where each tab ended up, for the cursor to be tested against - the same rule as a
@@ -672,12 +704,13 @@ bool ComponentRenderer::skin(v3d::render::realtime::Canvas* canvas, const compon
         return false;
     }
 
-    // a button's styles are told apart by state as well as by name, so the set is walked
-    // rather than asked for one
+    // a button's styles are told apart by the look they dress as well as by name, so the
+    // set is walked rather than asked for one
+    const style::Button::State wanted = look(button);
     boost::shared_ptr<style::Style> target;
     for (const boost::shared_ptr<style::Style>& candidate : theme->getStyleSet(std::string(button.style()), "button")) {
         const boost::shared_ptr<style::Button> styled = boost::dynamic_pointer_cast<style::Button>(candidate);
-        if (styled && styled->state() == button.state()) {
+        if (styled && styled->state() == wanted) {
             target = styled;
             break;
         }

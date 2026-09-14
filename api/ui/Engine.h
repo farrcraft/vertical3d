@@ -138,6 +138,10 @@ class Engine {
      * looking at.
      *
      * @param forward whether to move to the next one rather than the previous one
+     * A component that held the focus and is no longer reachable - hidden, disabled or taken
+     * out of the tree since - leaves the walk with nowhere to move on from, so the tab starts
+     * it again at the first component rather than leaving the focus stuck on one.
+     *
      * @return whether the focus moved, which a ui holding one focusable component and a ui
      *         holding none both answer false
      **/

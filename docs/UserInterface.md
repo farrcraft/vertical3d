@@ -14,7 +14,8 @@ The decisions behind its shape are [ADR-0019](adr/0019-the-ui-is-laid-out-by-wha
 [ADR-0045](adr/0045-a-window-is-dragged-by-the-bar-that-folds-it.md),
 [ADR-0046](adr/0046-a-table-given-a-height-scrolls-in-its-own-right.md),
 [ADR-0057](adr/0057-a-selection-is-an-anchor-the-caret-moved-from.md) and
-[ADR-0058](adr/0058-the-platform-half-of-a-ui-router-is-the-apis.md). Those say why; this
+[ADR-0058](adr/0058-the-platform-half-of-a-ui-router-is-the-apis.md) and
+[ADR-0059](adr/0059-disabled-is-a-property-of-a-component.md). Those say why; this
 says what.
 
 ## Two ways to write a ui, and which to reach for
@@ -205,7 +206,15 @@ The style classes:
 | `ui` | the retained components — the defaults every other class is applied over |
 | `tools` | `ui::Immediate` |
 | `panel`, `bar`, `scrollbar`, `checkbox`, `radio`, `list`, `tabs`, `textbox` | the component of that kind |
-| `button` | `ComponentRenderer::skin()`, chosen by button state as well as by name |
+| `button` | `ComponentRenderer::skin()`, chosen by the look it dresses as well as by name |
+
+A button style names which look it dresses with `"state"`: `normal`, `hover`, `press` or
+`disabled` - spelled `inactive` by the themes written before
+[ADR-0059](adr/0059-disabled-is-a-property-of-a-component.md), which still reads. The look is
+`style::Button::State` rather than the component's own state enum, because three of them are
+what the cursor writes and the fourth is `Component::enabled()`. The colour a disabled control's
+label is written in is `disabled-text` in `ui`, beside `text` and `active-text`, so one key
+dresses all five control types.
 
 Every one of them may also name `focus` and `focus-width`, which is the ring around the control
 when it holds the keyboard. `button` is the one class a `Dressing` reads nothing else out of: a
@@ -230,6 +239,15 @@ clickable — which is why `Component` leaves `pickable()` false. A control sets
 scrollbar, a select list, a tab bar and a text box exist to be driven, and a panel or a label
 laid over a scene does not. A press is remembered until it comes up, which is what drags a scrollbar's thumb
 across frames.
+
+**A component that cannot be used right now is `enabled(false)`**, and it is a property of the
+component rather than a state something writes as the cursor moves —
+[ADR-0059](adr/0059-disabled-is-a-property-of-a-component.md). A disabled component is not
+offered the point, is not reached by the tab order, keeps whatever state it had, draws no focus
+ring, and is written in the theme's disabled colour. **Disabling a component disables what it
+holds**, so a box is what a screen greys a group of controls out with; `ui::usable()` is the
+derived answer and is what every call site in the library reads. `pickable()` is still the
+answer to *is this scenery* — a label, a panel — where `enabled()` is *not right now*.
 
 A press also moves the focus — onto what it landed on when that component asked to be
 focusable, and off whatever had it otherwise — which is what makes clicking into a box mean
@@ -275,7 +293,9 @@ Keys::text("e")            what the platform composed - utf-8, straight in at th
 **Tab is the second way the focus moves.** `Engine::focusNext()` walks to the next focusable
 component in the order the tree is drawn in - containers as the config listed them, components
 by depth with add order between equal depths, a flow box's children in the order it holds them -
-and wraps at each end, skipping a hidden subtree whole. A ui author wanting a different tab
+and wraps at each end, skipping a hidden or disabled subtree whole. A component that held the
+focus and is no longer in that order - disabled, hidden or taken out of the tree since - leaves
+the walk nowhere to move on from, so the tab starts it again rather than stranding the focus. A ui author wanting a different tab
 order reorders the document; there is no `tabIndex`.
 
 `press()` takes two more arguments saying whether shift and control are held, because a key
@@ -449,6 +469,11 @@ what the design came to, recorded here so a reader meets it before the code does
   rather than a component that silently is not there.
   [ADR-0047](adr/0047-a-component-type-is-checked-by-the-compiler.md) has why a registry was
   weighed and left, and it is a trade to revisit rather than work waiting to be done.
+- **A component disabled while it holds the focus keeps `focused()`** until something moves the
+  focus. It draws no ring and answers no key, so nothing reaches it and nothing shows it, but
+  `Engine::focused()` still reports it and `onFocus()` was not told.
+  [ADR-0059](adr/0059-disabled-is-a-property-of-a-component.md) has what moving it from a setter
+  would cost.
 - **A clip is square**, so a rounded panel cuts what it holds to its box and not to its curve.
   [ADR-0037](adr/0037-clipping-is-a-scissor-the-batch-carries.md) has what lifting that would
   cost. No theme here rounds anything, so nothing in this tree shows it.

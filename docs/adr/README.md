@@ -67,3 +67,4 @@ old record's status and leave the file in place.
 | [0056](0056-a-look-at-keeps-the-basis-it-built.md) | Camera Precision — `lookat()` Keeps The Basis It Built, And Every Other Writer Of The Rotation Clears It | accepted | 2026-09-12 |
 | [0057](0057-a-selection-is-an-anchor-the-caret-moved-from.md) | Text Editing — A Selection Is An Anchor The Caret Moved From, And The Cursor Measures Text To Place One | accepted | 2026-09-13 |
 | [0058](0058-the-platform-half-of-a-ui-router-is-the-apis.md) | UI Input — The Platform Half Of The Keyboard Router Is The api's, And Text Input Follows The Focus | accepted | 2026-09-13 |
+| [0059](0059-disabled-is-a-property-of-a-component.md) | UI Components — Disabled Is A Property Of A Component, Not A Fourth Button State | accepted | 2026-09-13 |

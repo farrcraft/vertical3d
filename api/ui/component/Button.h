@@ -22,6 +22,9 @@ namespace v3d::ui::component {
  * A button that names an icon is drawn as that image instead of as its label, and holds
  * the texture whatever uploaded the image put there. It keeps its label either way, which
  * is what a strip measures before anything has been resolved. See ADR-0020.
+ *
+ * A button that cannot be used is not a state here. That is Component::enabled(), which
+ * lasts, where a state lasts as long as the cursor is where it is. See ADR-0059.
  */
 class Button : public Component {
  public:
@@ -31,10 +34,9 @@ class Button : public Component {
         * button state enumeration
         */
     typedef enum {
-        STATE_NORMAL,   /**< Normal Button State **/
-        STATE_HOVER,    /**< Mouse is hovering over button **/
-        STATE_PRESS,    /**< Button is being clicked **/
-        STATE_INACTIVE  /**< unclickable/insensitive state **/
+        STATE_NORMAL,  /**< Normal Button State **/
+        STATE_HOVER,   /**< Mouse is hovering over button **/
+        STATE_PRESS    /**< Button is being clicked **/
     } ButtonState;
 
     /**
