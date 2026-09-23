@@ -2,6 +2,7 @@ v3d_add_api_library(event
 	"kind/Key.h" "kind/Key.cpp"
 	"kind/KeyDown.h" "kind/KeyDown.cpp"
 	"kind/KeyUp.h" "kind/KeyUp.cpp"
+	"kind/MouseWheel.h" "kind/MouseWheel.cpp"
 	"kind/TextInput.h" "kind/TextInput.cpp"
  "kind/WindowResize.h" "kind/WindowResize.cpp"
  "kind/WindowFocus.h" "kind/WindowFocus.cpp"

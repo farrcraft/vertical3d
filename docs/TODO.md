@@ -4,6 +4,12 @@ Loose ends and open work: what is missing or unfinished and is not covered by an
 [plans/](plans/). An entry is deleted when it is done rather than marked, so everything here is
 live.
 
+**Missing or unfinished is the whole test, and it is narrower than it reads.** A feature that is
+complete and that nothing here happens to call is not missing anything, and a choice that was
+weighed and rejected is not unfinished: the first belongs in the document that owns the subject
+and the second in the ADR that settled it. Neither is work, and a list carrying them is one
+where nothing on it is actually due.
+
 An entry states the gap in the code, not who is waiting on it. The api is consumed as source
 ([ADR-0027](adr/0027-the-api-is-consumed-as-source.md)) and most of what consumes it is not in
 this tree - cozy and retcon are both apps on it in another repository - so what the apps here
@@ -89,30 +95,12 @@ one, so each gap below is one a consumer meets before this tree does.
 [] nothing catches a pipeline built against one colour format drawing into a target of another. It is a wrong picture rather than a validation error, because dynamic rendering takes the format from the pipeline
 [] `Frame::passBefore` exists because `Engine3D` creates the colour pass in its constructor. A frame that let a pass say where it belongs, or an engine that created its pass lazily, would not need it
 
-## User interface
-
-`api/ui` is two ways to write a ui - a tree of components
-([ADR-0034](adr/0034-a-component-has-children-and-a-box.md)) and a layer of calls
-([ADR-0035](adr/0035-an-immediate-mode-layer-over-the-same-canvas.md)) - and
-[UserInterface.md](UserInterface.md) is what owns it. The component tree is driven from outside
-this tree rather than inside it: ADR-0034 was decided for a game HUD nesting four levels deep,
-and here the editor's menu bar and toolbars are strips the renderer places itself while the apps
-put up a menu and an overlay.
-
-[] a game that owns the mouse has no cursor to hand `ui::Immediate`, so a window it puts up cannot be folded, dragged or scrolled - a cursor position is the layer's only input. That is why the one thing driving the layer here is voxel's F3 readout, which needs none of them
-[] adding a component still means editing eight places - `component::Type`, `component::name`, `ui::Loader`'s branch, `ComponentRenderer::paint`, `ComponentRenderer`'s `ringed()`, `Arranger::natural`, `ui::Cursor`'s switch and `ui::Keys`'s - plus `style::Resolver`'s class when it is dressed by one of its own. The compiler names all eight ([ADR-0047](adr/0047-a-component-type-is-checked-by-the-compiler.md)), so an omission is a build error rather than a component that silently is not there. A registry is the only thing that would reduce it, and it was weighed and left: `paint()` and `natural()` read the renderer's and the arranger's own state, so a table of free functions would make two private members public. `ringed()` is the one place the two enums meet, and it checks `Type` against `style::Resolver::Class` in that direction only - a class nothing rings is not a build error
-[] a clip is a scissor, so it is axis aligned and square: a panel with rounded corners clips to the box and not to the curve
-[] the seam that feeds the keyboard router is unbuilt: nothing in this tree constructs a `ui::Keys` or calls `Engine::focusFirst()`, and the editor builds a `ui::Cursor` with no `Keys`, no `Measure` and no `Clipboard` - it has no text box to need any of them. Every case for the routing is in `api/ui/tests`, so it is proven and the wiring an app has to write is not
-[] `SDL_StartTextInput` is on for the life of the window rather than for as long as something is focused, which is free on a desktop and would raise an on screen keyboard and never lower it anywhere else
-[] a `LineCanvas` clip ([ADR-0037](adr/0037-clipping-is-a-scissor-the-batch-carries.md)) is proven by its tests alone - nothing in this tree draws into one. The panes that would want one here are the editor's
-
 ## The game loop
 
 The loop simulates at a fixed step and renders at a variable one -
 [ADR-0032](adr/0032-the-loop-simulates-at-a-fixed-step.md).
 
 [] the api interpolates nothing. `Engine::alpha()` is the fraction a renderer would blend the last two simulation states by, and nothing in this tree reads it, so a world drawn here is snapped to the last completed step and its motion is quantised to 60 Hz however fast the display is
-[] only pong draws the frame statistics. `ui::StatisticsOverlay` is the api's, and tetris, voxel and vertical3d each already hold the `TextRenderer` it needs
 
 ## Ongoing workstreams
 

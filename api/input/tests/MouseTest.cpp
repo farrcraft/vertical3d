@@ -5,6 +5,7 @@
 
 #include <api/event/kind/MouseButton.h>
 #include <api/event/kind/MouseMotion.h>
+#include <api/event/kind/MouseWheel.h>
 #include <api/input/Mouse.h>
 
 #include <string>
@@ -28,6 +29,10 @@ struct Recorder {
         motion_.push_back(event);
     }
 
+    void wheel(const v3d::event::kind::MouseWheel& event) {
+        wheel_.push_back(event);
+    }
+
     void sourceEvent(const v3d::event::Event& event) {
         if (event.type() == v3d::event::Type::Source) {
             source_.push_back(event);
@@ -36,6 +41,7 @@ struct Recorder {
 
     std::vector<v3d::event::kind::MouseButton> buttons_;
     std::vector<v3d::event::kind::MouseMotion> motion_;
+    std::vector<v3d::event::kind::MouseWheel> wheel_;
     std::vector<v3d::event::Event> source_;
 };
 
@@ -45,6 +51,16 @@ SDL_Event buttonEvent(uint32_t type, uint8_t button, float x, float y) {
     event.button.button = button;
     event.button.x = x;
     event.button.y = y;
+    return event;
+}
+
+SDL_Event wheelEvent(float notches, float x, float y) {
+    SDL_Event event{};
+    event.type = SDL_EVENT_MOUSE_WHEEL;
+    event.wheel.x = 0.0f;
+    event.wheel.y = notches;
+    event.wheel.mouse_x = x;
+    event.wheel.mouse_y = y;
     return event;
 }
 
@@ -191,4 +207,44 @@ BOOST_AUTO_TEST_CASE(mousestate_test) {
     previous = state(glm::vec2(9.0f, 1.0f));
     BOOST_CHECK_EQUAL(previous[0], 5.0f);
     BOOST_CHECK_EQUAL(previous[1], 7.0f);
+}
+
+/**
+ * A wheel is an edge and not a position: there is no such thing as where one is, so the
+ * notches a frame saw are accumulated and cleared with the button edges.
+ **/
+BOOST_AUTO_TEST_CASE(mouse_wheel_test) {
+    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    boost::shared_ptr<v3d::event::Context> context = boost::make_shared<v3d::event::Context>("mouse");
+    v3d::input::Mouse mouse(context, dispatcher);
+
+    Recorder recorder;
+    dispatcher->sink<v3d::event::kind::MouseWheel>().connect<&Recorder::wheel>(recorder);
+    dispatcher->sink<v3d::event::Event>().connect<&Recorder::sourceEvent>(recorder);
+
+    BOOST_CHECK_EQUAL(mouse.handleEvent(wheelEvent(1.0f, 40.0f, 50.0f)), true);
+    BOOST_REQUIRE_EQUAL(recorder.wheel_.size(), 1u);
+    BOOST_CHECK_EQUAL(recorder.wheel_[0].notches()[1], 1.0f);
+
+    // the event carries where the cursor was, which is what says what was scrolled
+    BOOST_CHECK_EQUAL(recorder.wheel_[0].position()[0], 40.0f);
+    BOOST_CHECK_EQUAL(recorder.wheel_[0].position()[1], 50.0f);
+
+    // a wheel sends one event per notch, so a flick that turned three reads as three
+    mouse.handleEvent(wheelEvent(1.0f, 40.0f, 50.0f));
+    mouse.handleEvent(wheelEvent(1.0f, 40.0f, 50.0f));
+    BOOST_CHECK_EQUAL(mouse.state().wheel(), 3.0f);
+
+    // turning it back subtracts, so a flick each way inside one frame comes to nothing
+    mouse.handleEvent(wheelEvent(-3.0f, 40.0f, 50.0f));
+    BOOST_CHECK_EQUAL(mouse.state().wheel(), 0.0f);
+
+    // a turn has no discrete name, so nothing binds to one
+    BOOST_CHECK_EQUAL(recorder.source_.size(), 0u);
+
+    // a frame that reads it late reads nothing, the way a button edge does
+    mouse.handleEvent(wheelEvent(2.0f, 40.0f, 50.0f));
+    BOOST_CHECK_EQUAL(mouse.state().wheel(), 2.0f);
+    mouse.flush();
+    BOOST_CHECK_EQUAL(mouse.state().wheel(), 0.0f);
 }

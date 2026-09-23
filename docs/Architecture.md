@@ -55,7 +55,8 @@ not carry a second implementation of the format.
 
 **A config document names an image and never loads one**, per
 [ADR-0020](adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md): a theme's images and a
-sprite sheet's are both resolved by the app through its own asset manager and renderer.
+sprite sheet's are both resolved by the app through its own asset manager and renderer, and a
+ui image can resolve to one region of a sheet.
 
 `Config::load` and `registerEventMappings` guard every lookup and log a `false`, but **a
 window config is not guarded**: `initialize` reads `width` and `height` with `at()`, so a
@@ -170,7 +171,7 @@ fixed order: `onEvent()` first, then the input engine's bindings, then the engin
 and is what lets an app host a ui toolkit it did not write.
 
 **Three places, but the bindings are not the only way to hear about input.** A device
-publishes its `event::kind::*` — `KeyDown`, `MouseButton`, `MouseMotion` — through the
+publishes its `event::kind::*` — `KeyDown`, `MouseButton`, `MouseMotion`, `MouseWheel` — through the
 dispatcher whichever mappers exist, and the mapper subscribes to a separate source event
 alongside them. So an app subscribes to the abstracted event directly and adopts no
 `mappings.json`, which is what voxel and the editor already do for motion and resize; a
@@ -179,7 +180,9 @@ command named in config rather than in a switch.
 
 `Engine::keys()` and `Engine::mouse()` are the polled half of the same thing, and answer
 `held()` for what is down now plus `pressed()` and `released()` for what changed edge during
-this frame's events. The loop clears the edges after `render()`, so a key pressed and released
+this frame's events. The wheel is an edge with no held half — there is no such thing as where
+a wheel is — so `MouseState::wheel()` accumulates the notches this frame's events turned and is
+cleared with the rest. The loop clears the edges after `render()`, so a key pressed and released
 inside one frame answers both and is never seen held — the distinction polling SDL directly
 cannot make. Either is null when the app did not ask for that device's `Feature`.
 

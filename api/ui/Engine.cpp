@@ -7,6 +7,7 @@
 
 #include <api/asset/kind/Json.h>
 #include <api/log/Logger.h>
+#include <api/ui/Image.h>
 #include <api/ui/component/Box.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/Icon.h>
@@ -64,12 +65,12 @@ std::size_t Engine::resolveThemeImages(const Resolve& resolve) {
                 if (!image) {
                     continue;
                 }
-                const v3d::render::realtime::TextureHandle texture = resolve(std::string(image->source()));
-                if (!texture.valid()) {
+                const v3d::ui::Image resolvedImage = resolve(std::string(image->source()));
+                if (!resolvedImage.valid()) {
                     logger_->get()->error("Unable to resolve the ui image [{}]", image->source());
                     continue;
                 }
-                image->texture(texture);
+                image->image(resolvedImage);
                 resolved++;
             }
         }
@@ -136,12 +137,12 @@ bool Engine::resolveIcon(const Resolve& resolve, const std::string& source, cons
     if (source.empty()) {
         return false;
     }
-    const v3d::render::realtime::TextureHandle texture = resolve(source);
-    if (!texture.valid()) {
+    const v3d::ui::Image image = resolve(source);
+    if (!image.valid()) {
         logger_->get()->error("Unable to resolve the ui image [{}]", source);
         return false;
     }
-    target->texture(texture);
+    target->image(image);
     return true;
 }
 
@@ -160,8 +161,10 @@ boost::shared_ptr<style::Theme> Engine::theme(const std::string_view& name) cons
 /**
  **/
 void Engine::focus(const boost::shared_ptr<Component>& component) {
+    // a component that cannot be used is nothing to focus, the same answer one that never
+    // asked to be focusable gets - ADR-0059
     const boost::shared_ptr<Component> wanted =
-        component && component->focusable() ? component : boost::shared_ptr<Component>();
+        component && component->focusable() && usable(*component) ? component : boost::shared_ptr<Component>();
     const boost::shared_ptr<Component> was = focused_.lock();
     if (was == wanted) {
         return;
@@ -173,6 +176,17 @@ void Engine::focus(const boost::shared_ptr<Component>& component) {
         wanted->focused(true);
     }
     focused_ = wanted;
+    // after both components have been told, so that a listener asking focused() is answered
+    // the move rather than the middle of it
+    if (moved_) {
+        moved_(wanted);
+    }
+}
+
+/**
+ **/
+void Engine::onFocus(const Focused& moved) {
+    moved_ = moved;
 }
 
 /**
@@ -192,8 +206,8 @@ namespace {
  **/
 void focusable(const boost::shared_ptr<Component>& component,
     std::vector<boost::shared_ptr<Component>>* found) {
-    if (!component || !component->visible()) {
-        return;  // a hidden subtree is skipped whole, not just its root
+    if (!component || !component->visible() || !component->enabled()) {
+        return;  // a hidden or disabled subtree is skipped whole, not just its root
     }
     if (component->focusable()) {
         found->push_back(component);
@@ -248,8 +262,18 @@ bool Engine::focusNext(bool forward) {
     }
 
     const std::vector<boost::shared_ptr<Component>> order = tabOrder();
+    if (order.empty()) {
+        return false;
+    }
     const auto here = std::find(order.begin(), order.end(), was);
-    if (here == order.end() || order.size() < 2) {
+    if (here == order.end()) {
+        // what held the focus is no longer reachable - hidden, disabled or taken out of the
+        // tree since it took it - so there is no place in the order to move on from, and the
+        // walk starts again rather than leaving the focus somewhere tab cannot get it back
+        focus(forward ? order.front() : order.back());
+        return true;
+    }
+    if (order.size() < 2) {
         return false;
     }
     const std::size_t at = static_cast<std::size_t>(here - order.begin());

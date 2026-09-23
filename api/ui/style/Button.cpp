@@ -9,13 +9,13 @@
 
 namespace v3d::ui::style {
 
-Button::Button(const std::string& str, v3d::ui::component::Button::ButtonState s) : Style(str, "button"), state_(s) {
+Button::Button(const std::string& str, State s) : Style(str, "button"), state_(s) {
 }
 
 Button::~Button() {
 }
 
-v3d::ui::component::Button::ButtonState Button::state() const {
+Button::State Button::state() const {
     return state_;
 }
 

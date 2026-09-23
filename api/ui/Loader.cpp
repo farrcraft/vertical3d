@@ -414,15 +414,16 @@ bool Loader::loadStyle(const boost::json::object& entry, const boost::shared_ptr
     if (className == "button") {
         // a button is drawn differently in each of its states, so its styles are told
         // apart by the state as well as by the name
-        component::Button::ButtonState state = component::Button::STATE_NORMAL;
+        style::Button::State state = style::Button::State::Normal;
         const std::string stateName = entry.contains("state")
             ? boost::json::value_to<std::string>(entry.at("state")) : std::string("normal");
         if (stateName == "hover") {
-            state = component::Button::STATE_HOVER;
+            state = style::Button::State::Hover;
         } else if (stateName == "press") {
-            state = component::Button::STATE_PRESS;
-        } else if (stateName == "inactive") {
-            state = component::Button::STATE_INACTIVE;
+            state = style::Button::State::Press;
+        } else if (stateName == "disabled" || stateName == "inactive") {
+            // both names dress a component that is not enabled - ADR-0059
+            state = style::Button::State::Disabled;
         } else if (stateName != "normal") {
             logger_->get()->error("A button style has no state [{}]", stateName);
             return false;
@@ -522,6 +523,7 @@ void Loader::loadAttributes(const boost::json::object& entry, const boost::share
         component->style(boost::json::value_to<std::string>(entry.at("style")));
     }
     component->visible(flag(entry, "visible", component->visible()));
+    component->enabled(flag(entry, "enabled", component->enabled()));
     component->pickable(flag(entry, "pickable", component->pickable()));
     component->focusable(flag(entry, "focusable", component->focusable()));
     component->clip(flag(entry, "clip", component->clip()));

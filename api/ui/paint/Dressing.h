@@ -34,17 +34,18 @@ struct Dressing final {
     float borderWidth;     /**< how thick a panel's or a bar's outline is drawn **/
     float focusWidth;      /**< how thick the ring around the focused component is **/
     float radius;          /**< how far a panel's corners are rounded, 0 for square **/
-    glm::vec4 panel;       /**< the background the menu is drawn on **/
-    glm::vec4 border;      /**< the panel's outline **/
-    glm::vec4 track;       /**< the unfilled part of a bar **/
-    glm::vec4 fill;        /**< the filled part of a bar **/
-    glm::vec4 thumb;       /**< the part of a scrollbar's track that is taken hold of **/
-    glm::vec4 mark;        /**< what a checked box or a chosen radio button is marked with **/
-    glm::vec4 text;        /**< an ordinary item's label **/
-    glm::vec4 activeText;  /**< the label of the item navigation is on **/
-    glm::vec4 highlight;   /**< what is drawn behind that item **/
-    glm::vec4 hover;       /**< what is drawn behind a toolbar button the cursor is on **/
-    glm::vec4 focus;       /**< the ring around whatever the keyboard is on **/
+    glm::vec4 panel;         /**< the background the menu is drawn on **/
+    glm::vec4 border;        /**< the panel's outline **/
+    glm::vec4 track;         /**< the unfilled part of a bar **/
+    glm::vec4 fill;          /**< the filled part of a bar **/
+    glm::vec4 thumb;         /**< the part of a scrollbar's track that is taken hold of **/
+    glm::vec4 mark;          /**< what a checked box or a chosen radio button is marked with **/
+    glm::vec4 text;          /**< an ordinary item's label **/
+    glm::vec4 activeText;    /**< the label of the item navigation is on **/
+    glm::vec4 disabledText;  /**< the label of a control that is there and cannot be used **/
+    glm::vec4 highlight;     /**< what is drawn behind that item **/
+    glm::vec4 hover;         /**< what is drawn behind a toolbar button the cursor is on **/
+    glm::vec4 focus;         /**< the ring around whatever the keyboard is on **/
 };
 
 };  // namespace v3d::ui::paint

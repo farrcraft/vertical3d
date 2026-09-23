@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include <api/render/realtime/Handle.h>
 #include <api/ui/Component.h>
+#include <api/ui/Image.h>
 
 #include <string>
 
@@ -17,14 +17,14 @@ namespace v3d::ui::component {
 /**
  * An Icon Component.
  *
- * An icon names the image it draws and holds the texture whatever uploaded that image
- * put there, which is unset until something has. Its size is the component's own: a
- * handle is a slot id rather than a picture, so there is nothing here to measure.
+ * An icon names the image it draws and holds what that name resolved to, which is nothing
+ * until something has resolved it. Its size is the component's own: a handle is a slot id
+ * rather than a picture, so there is nothing here to measure.
  */
 class Icon : public Component {
  public:
     /**
-     * @param source the name of the image, for whatever resolves sources to textures
+     * @param source the name of the image, for whatever resolves sources to images
      */
     explicit Icon(const std::string& source);
     ~Icon();
@@ -33,19 +33,30 @@ class Icon : public Component {
      * @return the name of the image the icon draws
      */
     std::string_view source() const;
+    /**
+     * Name a different image, which is how an icon changes what it shows.
+     *
+     * The image the old name resolved to is dropped rather than kept, so the icon draws
+     * nothing until the new name is resolved rather than the old picture under the new name.
+     * ui::Engine::resolveComponentImages() resolves this icon alone, and every later
+     * resolveImages() resolves it from the new name.
+     *
+     * @param name the name of the image
+     */
+    void source(const std::string& name);
 
     /**
-     * @return the texture the icon draws with, unset until something has uploaded source()
+     * @return what source() resolved to, unset until something has resolved it
      */
-    v3d::render::realtime::TextureHandle texture() const noexcept;
+    const v3d::ui::Image& image() const noexcept;
     /**
-     * @param tex a handle from the renderer that uploaded source()
+     * @param resolved what source() resolved to
      */
-    void texture(const v3d::render::realtime::TextureHandle& tex) noexcept;
+    void image(const v3d::ui::Image& resolved) noexcept;
 
  private:
     std::string source_;
-    v3d::render::realtime::TextureHandle texture_;
+    v3d::ui::Image image_;
 };
 
 

@@ -120,6 +120,17 @@
         "context": "tetris",
         "name": "debugMode"
       }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "f3",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "tetris",
+        "name": "toggleStatistics"
+      }
     }
   ]
 }

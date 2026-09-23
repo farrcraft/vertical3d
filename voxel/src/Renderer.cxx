@@ -314,13 +314,11 @@ void Renderer::drawTerrain(v3d::render::realtime::Pass* pass) {
 
 /**
  **/
-void Renderer::drawDebug(const v3d::ui::shell::StatisticsOverlay::Sample& statistics) {
+void Renderer::drawDebug(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
+    const v3d::ui::Immediate::Input& tools) {
     const glm::vec3 position = scene_->player()->position();
 
-    // the game owns the mouse - it is warped back to the centre of the window every frame
-    // for mouselook - so there is no cursor to offer the layer, and the window is a
-    // readout rather than something to fold
-    tools_->begin(&canvas_, v3d::ui::Immediate::Input());
+    tools_->begin(&canvas_, tools);
     if (tools_->window(debugTitle, glm::vec2(20.0f, 20.0f), glm::vec2(260.0f, 132.0f), 0.85f)) {
         tools_->text(std::string("Voxel ") + VOXEL_VERSION);
         // the loop already keeps a rolling mean, so nothing here averages anything
@@ -336,7 +334,8 @@ void Renderer::drawDebug(const v3d::ui::shell::StatisticsOverlay::Sample& statis
 
 /**
  **/
-void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics) {
+void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
+    const v3d::ui::Immediate::Input& tools) {
     glm::ivec2 size;
     if (!engine_.beginFrame(&size)) {
         return;
@@ -356,7 +355,7 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics)
 
     canvas_.clear();
     if (debug_) {
-        drawDebug(statistics);
+        drawDebug(statistics, tools);
     }
     if (ui_) {
         uiRenderer_->draw(&canvas_, *ui_);

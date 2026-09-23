@@ -59,8 +59,10 @@ class Renderer {
     /**
      * @param statistics what the loop measured about its own pacing, which the debug
      *        window reads - the app hands it over because api/ui sits below api/engine
+     * @param tools what the cursor did, for the immediate layer - Controller::tools()
      **/
-    void draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics);
+    void draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
+        const v3d::ui::Immediate::Input& tools);
     /**
      * Resize the frame
      */
@@ -105,7 +107,8 @@ class Renderer {
     /**
      * The F3 readout - the build, what the loop measured, and where the player is standing.
      **/
-    void drawDebug(const v3d::ui::shell::StatisticsOverlay::Sample& statistics);
+    void drawDebug(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
+        const v3d::ui::Immediate::Input& tools);
 
     boost::shared_ptr<Scene> scene_;
     boost::shared_ptr<v3d::log::Logger> logger_;

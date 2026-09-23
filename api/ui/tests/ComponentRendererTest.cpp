@@ -7,6 +7,7 @@
 #include <api/ui/Container.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/Label.h>
+#include <api/ui/component/Panel.h>
 #include <api/ui/component/menu/Menu.h>
 #include <api/ui/component/menu/MenuBar.h>
 #include <api/ui/component/menu/MenuItem.h>
@@ -355,6 +356,95 @@ BOOST_AUTO_TEST_CASE(a_theme_rings_a_class_in_its_own_colour) {
     for (std::size_t back = canvas.vertices().size() - ringVertices; back < canvas.vertices().size(); back++) {
         BOOST_CHECK(canvas.vertices()[back].colour == ringColour);
     }
+}
+
+/**
+ * A control that is there and cannot be used is drawn saying so: its label is written in the
+ * theme's disabled colour, and no hover it was left holding lights it. ADR-0059.
+ **/
+BOOST_AUTO_TEST_CASE(a_disabled_button_is_written_in_the_disabled_colour) {
+    std::vector<Written> written;
+    v3d::ui::paint::ComponentRenderer renderer(
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+        [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
+            Written line;
+            line.text = text;
+            line.pen = pen;
+            line.colour = colour;
+            written.push_back(line);
+        });
+
+    const glm::vec4 ordinary(0.8f, 0.8f, 0.8f, 1.0f);
+    const glm::vec4 greyed(0.3f, 0.3f, 0.3f, 1.0f);
+    renderer.dressing().text = ordinary;
+    renderer.dressing().disabledText = greyed;
+
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(800, 600);
+
+    const boost::shared_ptr<v3d::ui::component::Button> button =
+        boost::make_shared<v3d::ui::component::Button>();
+    button->label("Continue");
+    button->size(glm::vec2(120.0f, 30.0f));
+
+    renderer.draw(&canvas, button);
+    BOOST_REQUIRE_EQUAL(written.size(), 1U);
+    BOOST_CHECK(written.front().colour == ordinary);
+
+    written.clear();
+    canvas.clear();
+    button->enabled(false);
+    // the state a cursor left on it before it was disabled, which must not light it now
+    button->state(v3d::ui::component::Button::STATE_HOVER);
+    renderer.draw(&canvas, button);
+
+    BOOST_REQUIRE_EQUAL(written.size(), 1U);
+    BOOST_CHECK(written.front().colour == greyed);
+    // no plate under it either: a disabled button is never lit
+    BOOST_CHECK(canvas.empty());
+}
+
+/**
+ * Disabling a box greys what it holds. The walks that route a point and a tab skip a disabled
+ * subtree and never reach it, but drawing reaches every component on its own - so a label
+ * inside a disabled group has to ask what is around it.
+ **/
+BOOST_AUTO_TEST_CASE(a_disabled_box_greys_the_label_it_holds) {
+    std::vector<Written> written;
+    v3d::ui::paint::ComponentRenderer renderer(
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+        [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
+            Written line;
+            line.text = text;
+            line.pen = pen;
+            line.colour = colour;
+            written.push_back(line);
+        });
+
+    const glm::vec4 greyed(0.3f, 0.3f, 0.3f, 1.0f);
+    renderer.dressing().text = glm::vec4(0.8f, 0.8f, 0.8f, 1.0f);
+    renderer.dressing().disabledText = greyed;
+
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(800, 600);
+
+    const boost::shared_ptr<v3d::ui::component::Panel> group =
+        boost::make_shared<v3d::ui::component::Panel>();
+    group->layout().width = v3d::ui::Length(200.0f, v3d::ui::Length::Unit::Pixels);
+    group->layout().height = v3d::ui::Length(100.0f, v3d::ui::Length::Unit::Pixels);
+    group->enabled(false);
+
+    const boost::shared_ptr<v3d::ui::component::Label> label =
+        boost::make_shared<v3d::ui::component::Label>();
+    label->text("Sound");
+    group->add(label);
+
+    v3d::ui::Container container("screen", true);
+    container.add(group);
+    renderer.draw(&canvas, container);
+
+    BOOST_REQUIRE_EQUAL(written.size(), 1U);
+    BOOST_CHECK(written.front().colour == greyed);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

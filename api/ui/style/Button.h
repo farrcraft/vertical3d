@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include <api/ui/component/Button.h>
 #include <api/ui/style/Style.h>
 
 #include <string>
@@ -17,17 +16,31 @@ namespace v3d::ui::style {
  */
 class Button : public Style {
  public:
-    Button(const std::string& str, v3d::ui::component::Button::ButtonState s);
+    /**
+     * Which look the style dresses, which a theme names with "state".
+     *
+     * Its own rather than component::Button::ButtonState: three of these are the transient
+     * state the cursor writes, and the fourth is a component being disabled, which nothing
+     * about the cursor touches and lasts until something says otherwise - ADR-0059.
+     */
+    enum class State {
+        Normal,
+        Hover,
+        Press,
+        Disabled
+    };
+
+    Button(const std::string& str, State s);
     ~Button();
 
     /**
-     * Get the button state this style is used for.
-     * @return the button state
+     * Get the look this style is used for.
+     * @return the look
      */
-    v3d::ui::component::Button::ButtonState state() const;
+    State state() const;
 
  private:
-    v3d::ui::component::Button::ButtonState state_;
+    State state_;
 };
 
 };  // end namespace v3d::ui::style

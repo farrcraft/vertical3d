@@ -19,6 +19,15 @@
 
 #include <boost/make_shared.hpp>
 
+namespace {
+
+/**
+ * The button the immediate layer answers, which is the one a binding config calls "left".
+ **/
+const char* const primaryButton = "left";
+
+};  // namespace
+
 Controller::Controller(const std::string& appPath) :
     v3d::engine::Engine(appPath),
     debug_(false) {
@@ -100,8 +109,28 @@ bool Controller::simulate(float step) {
  **/
 bool Controller::render() {
     const v3d::engine::Statistics& measured = statistics();
-    renderer_->draw({ measured.mean(), measured.last(), measured.steps() });
+    renderer_->draw({ measured.mean(), measured.last(), measured.steps() }, tools());
     return true;
+}
+
+/**
+ **/
+v3d::ui::Immediate::Input Controller::tools() const {
+    v3d::ui::Immediate::Input input;
+    // no cursor while the game has the mouse - see tools() in Controller.h
+    if (!menu_ || !menu_->visible()) {
+        return input;
+    }
+    const v3d::input::MouseState* pointer = mouse();
+    if (pointer == nullptr) {
+        return input;  // the app did not ask for Feature::MouseInput
+    }
+    input.cursor = pointer->position();
+    input.down = pointer->held(primaryButton);
+    input.pressed = pointer->pressed(primaryButton);
+    input.released = pointer->released(primaryButton);
+    input.wheel = pointer->wheel();
+    return input;
 }
 
 /**

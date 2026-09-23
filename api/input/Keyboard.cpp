@@ -14,9 +14,8 @@
 namespace v3d::input {
 
 /**
- * Map a SDL key symbol to a string representation
  **/
-std::string keyEvent(SDL_Keycode key) {
+std::string keyName(SDL_Keycode key) {
     std::string evnt;
 
     switch (key) {
@@ -293,7 +292,7 @@ const KeyState& Keyboard::state() const {
 /**
  **/
 bool Keyboard::handleEvent(const SDL_Event& event) {
-    std::string keyName;
+    std::string name;
     bool pressed = true;
     switch (event.type) {
     case SDL_EVENT_TEXT_INPUT:
@@ -305,19 +304,19 @@ bool Keyboard::handleEvent(const SDL_Event& event) {
     case SDL_EVENT_KEY_DOWN:
     case SDL_EVENT_KEY_UP:
         pressed = (event.type == SDL_EVENT_KEY_DOWN);
-        keyName = keyEvent(event.key.key);
+        name = keyName(event.key.key);
         // a key we have no name for cannot be bound to anything, and must not reach
         // KeyState either - it would be held under an empty name that nothing can ask for
-        if (keyName.empty()) {
+        if (name.empty()) {
             return true;
         }
-        if (state_.held(keyName) != pressed) {
-            state_(keyName);
+        if (state_.held(name) != pressed) {
+            state_(name);
         }
         if (pressed) {
-            dispatcher_->trigger<v3d::event::kind::KeyDown>(v3d::event::kind::KeyDown(keyName, context_));
+            dispatcher_->trigger<v3d::event::kind::KeyDown>(v3d::event::kind::KeyDown(name, context_));
         } else {
-            dispatcher_->trigger<v3d::event::kind::KeyUp>(v3d::event::kind::KeyUp(keyName, context_));
+            dispatcher_->trigger<v3d::event::kind::KeyUp>(v3d::event::kind::KeyUp(name, context_));
         }
         break;
     default:
@@ -327,7 +326,7 @@ bool Keyboard::handleEvent(const SDL_Event& event) {
     // trigger an event source event so any mappers can propogate any mapped events.
     // the edge is carried as the event's state, not as its data - data is the binding's
     // parameter, and the two would otherwise overwrite each other.
-    v3d::event::Event source(keyName, context_);
+    v3d::event::Event source(name, context_);
     source.type(v3d::event::Type::Source);
     source.state(pressed ? v3d::event::State::Pressed : v3d::event::State::Released);
     dispatcher_->trigger(source);

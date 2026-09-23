@@ -40,7 +40,9 @@ boost::shared_ptr<Component> search(const boost::shared_ptr<Component>& componen
  * order it was drawn in.
  **/
 boost::shared_ptr<Component> probe(const boost::shared_ptr<Component>& component, const glm::vec2& point) {
-    if (!component || !component->visible()) {
+    // a disabled subtree is skipped whole, the way a hidden one is: what a component holds
+    // cannot be used when the component cannot - ADR-0059
+    if (!component || !component->visible() || !component->enabled()) {
         return nullptr;
     }
 

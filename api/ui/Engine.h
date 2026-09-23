@@ -7,7 +7,7 @@
 
 #include <api/event/Engine.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/Handle.h>
+#include <api/ui/Image.h>
 
 #include <cstddef>
 #include <functional>
@@ -42,14 +42,16 @@ class Theme;
 class Engine {
  public:
     /**
-     * How a named image becomes a texture.
+     * How a named image becomes something to draw.
      *
-     * The library neither reads an image nor uploads one - an app resolves the source
-     * through its own asset manager and renderer, per ADR-0020.
+     * The library neither reads an image nor uploads one, and never interprets a source
+     * name - an app resolves the source through its own asset manager and renderer, per
+     * ADR-0020. The answer can be part of a texture, which is how an app serves many images
+     * out of one sprite sheet; a bare handle converts to the whole of its texture.
      *
-     * @return the texture, or an unset handle when the source could not be resolved
+     * @return the image, or an unset one when the source could not be resolved
      **/
-    typedef std::function<v3d::render::realtime::TextureHandle(const std::string& source)> Resolve;
+    typedef std::function<v3d::ui::Image(const std::string& source)> Resolve;
 
     Engine(const boost::shared_ptr<v3d::event::Engine>& eventEngine, const boost::shared_ptr<entt::dispatcher>& dispatcher,
         const boost::shared_ptr<v3d::log::Logger>& logger);
@@ -60,12 +62,15 @@ class Engine {
      * Hand every image the config named to a resolver and keep what comes back - the
      * image properties of every loaded theme, and every icon in every container.
      *
+     * Safe to run again, and running it again is what resolves an icon whose source()
+     * has changed since - each image is resolved from the name it holds now.
+     *
      * A separate pass rather than part of load(), because an app has a renderer to
      * upload through only after the window is up, and because the same document is worth
      * loading whether or not anything will be drawn from it.
      *
-     * @param resolve what turns a source into a texture
-     * @return how many sources were resolved to a set handle
+     * @param resolve what turns a source into an image
+     * @return how many sources were resolved to a set image
      **/
     std::size_t resolveImages(const Resolve& resolve);
 
@@ -96,18 +101,48 @@ class Engine {
     boost::shared_ptr<Component> focused() const;
 
     /**
+     * What the focus having moved is announced to.
+     *
+     * @param focused what the keyboard is now on, or null for nothing
+     **/
+    typedef std::function<void(const boost::shared_ptr<Component>& focused)> Focused;
+
+    /**
+     * Be told when the focus moves, which is how anything outside this library follows it.
+     *
+     * Three things move it and an app sees none of them directly - a press through
+     * ui::Cursor, tab through ui::Keys, and focusFirst(). Each announces the move as it
+     * happens, in the same frame, so text input can be started before the next character.
+     *
+     * Announced only when the focus actually changed, and after both components have been
+     * told, so what is handed over is what focused() would answer - a component that did
+     * not ask to be focusable is nothing, and nothing is what is announced.
+     *
+     * One listener, and the last caller wins. ui::shell::Keyboard is what this exists for
+     * and it gives the callback back as it goes, so an app wanting one of its own sets it
+     * after the seam is built and clears it before the seam goes.
+     *
+     * @param moved what to call, or an empty function to stop being told
+     **/
+    void onFocus(const Focused& moved);
+
+    /**
      * Move the focus to the next focusable component, or to the one before it, extending
      * ADR-0040 with a second way for the focus to move.
      *
      * The order is the order the tree holds them in, which is the order they are drawn in:
      * containers as the config listed them, components by depth with add order between
      * equal depths, and a flow box's children in the order it was given them. A ui author
-     * wanting a different tab order reorders the document. A hidden component is skipped,
-     * and so is everything it holds.
+     * wanting a different tab order reorders the document. A hidden or disabled component
+     * is skipped, and so is everything it holds.
      *
      * **A ui with nothing focused is left alone**, which is what keeps a game's movement
      * keys working: tab must not take the focus onto the first widget of a hud nobody is
      * looking at.
+     *
+     * A component that held the focus and is no longer reachable - hidden, disabled or taken
+     * out of the tree since - leaves the walk with nowhere to move on from, so the tab starts
+     * it again at the first component.
      *
      * @param forward whether to move to the next one rather than the previous one
      * @return whether the focus moved, which a ui holding one focusable component and a ui
@@ -151,17 +186,20 @@ class Engine {
 
     /**
      * Resolve the images the loaded themes name, and the ones the loaded components do.
-     * @return how many handles were set
+     * resolveComponentImages() is also how an app resolves the one component it has just
+     * pointed at a different source, without resolving the whole ui again.
+     * @return how many images were set
      **/
     std::size_t resolveThemeImages(const Resolve& resolve);
     std::size_t resolveContainerImages(const Resolve& resolve);
     std::size_t resolveComponentImages(const Resolve& resolve, const boost::shared_ptr<Component>& component);
 
     /**
-     * Resolve one component's image and write the handle onto it.
+     * Resolve one component's image and write the whole answer onto it, so that resolving
+     * again puts back the part of the texture as well as the texture.
      *
-     * @param target anything with a texture(handle) setter - an icon or a button
-     * @return whether a handle was set, which naming no image is not
+     * @param target anything with an image(Image) setter - an icon or a button
+     * @return whether an image was set, which naming no image is not
      **/
     template <typename T>
     bool resolveIcon(const Resolve& resolve, const std::string& source, const boost::shared_ptr<T>& target);
@@ -182,6 +220,7 @@ class Engine {
     // component belongs to its container, and a focus outliving one that was unloaded
     // should not keep it alive
     boost::weak_ptr<Component> focused_;
+    Focused moved_;
 };
 
 };  // namespace v3d::ui

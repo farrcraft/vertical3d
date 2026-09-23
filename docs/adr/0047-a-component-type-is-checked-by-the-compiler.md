@@ -115,8 +115,16 @@ wider than the enum and fails if a named type is ever added past it.
   is one whose author meant it to be complete — but it is a rule the tree did not have before.
 - Five switches got longer, and a reader skimming one now walks past a dozen no-op labels to
   reach the cases that do something.
-- The seven places are still seven. This makes them checked, not fewer, and a registry remains
-  the only thing that would reduce the count.
+- The places are still all of them. This makes them checked, not fewer. They have since become
+  eight rather than seven: `ComponentRenderer::ringed()` arrived with the focus ring of
+  [ADR-0040](0040-a-key-goes-to-a-focused-component.md) and is the one place `component::Type`
+  and `style::Resolver::Class` meet — and it is checked in that direction only, so a class
+  nothing rings is not a build error.
+
+  A registry remains the only thing that would reduce the count, and it was weighed and left:
+  `paint()` and `natural()` read the renderer's and the arranger's own state, so a table of free
+  functions would make two private members public to save eight case labels. That is the trade
+  to revisit if the count grows again, not a gap waiting to be filled.
 
 ### Risks
 - **`parse()`'s upper bound is the one unchecked assumption left.** It walks to `VerticalBox`

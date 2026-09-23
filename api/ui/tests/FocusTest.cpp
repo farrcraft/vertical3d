@@ -226,4 +226,76 @@ BOOST_AUTO_TEST_CASE(a_hidden_container_is_skipped) {
     BOOST_CHECK_EQUAL(focusedName(fixture.ui), "first");
 }
 
+/**
+ * A disabled subtree is skipped whole, the way a hidden one is: a group of controls greyed
+ * out by the box around them must not be tabbed into - ADR-0059.
+ **/
+BOOST_AUTO_TEST_CASE(a_disabled_subtree_is_skipped) {
+    Fixture fixture(ONE_CONTAINER);
+    const boost::shared_ptr<v3d::ui::Container> hud = fixture.ui->container("hud");
+    hud->add(box("first"));
+
+    const boost::shared_ptr<v3d::ui::component::Panel> group = panel("group");
+    group->enabled(false);
+    group->add(box("buried"));
+    hud->add(group);
+    hud->add(box("last"));
+
+    fixture.ui->focus(hud->get("first"));
+    BOOST_CHECK(fixture.ui->focusNext(true));
+    BOOST_CHECK_EQUAL(focusedName(fixture.ui), "last");
+
+    // a component disabled in its own right is not reached either
+    const boost::shared_ptr<v3d::ui::component::TextBox> spent = box("spent");
+    spent->enabled(false);
+    hud->add(spent);
+    BOOST_CHECK(fixture.ui->focusNext(true));
+    BOOST_CHECK_EQUAL(focusedName(fixture.ui), "first");
+}
+
+/**
+ * A disabled component is nothing to focus, which is the answer one that never asked to be
+ * focusable gets - and a component inside a disabled box is no different, though it is
+ * enabled itself.
+ **/
+BOOST_AUTO_TEST_CASE(a_disabled_component_cannot_be_focused) {
+    Fixture fixture(ONE_CONTAINER);
+    const boost::shared_ptr<v3d::ui::Container> hud = fixture.ui->container("hud");
+    const boost::shared_ptr<v3d::ui::component::TextBox> spent = box("spent");
+    spent->enabled(false);
+    hud->add(spent);
+
+    fixture.ui->focus(hud->get("spent"));
+    BOOST_CHECK(!fixture.ui->focused());
+
+    const boost::shared_ptr<v3d::ui::component::Panel> group = panel("group");
+    group->enabled(false);
+    group->add(box("buried"));
+    hud->add(group);
+
+    fixture.ui->focus(hud->get("buried"));
+    BOOST_CHECK(!fixture.ui->focused());
+}
+
+/**
+ * A component disabled while it held the focus answers no key and takes no characters, so
+ * both reach the app's bindings. Tab and escape still move the focus off it, which is what
+ * keeps one from being stuck on a control nobody can use.
+ **/
+BOOST_AUTO_TEST_CASE(a_component_disabled_while_focused_takes_no_key) {
+    Fixture fixture(ONE_CONTAINER);
+    const boost::shared_ptr<v3d::ui::Container> hud = fixture.ui->container("hud");
+    hud->add(box("first"));
+    hud->add(box("second"));
+
+    fixture.ui->focus(hud->get("first"));
+    hud->get("first")->enabled(false);
+
+    BOOST_CHECK(!fixture.keys->press("backspace"));
+    BOOST_CHECK(!fixture.keys->text("a"));
+
+    BOOST_CHECK(fixture.keys->press("tab"));
+    BOOST_CHECK_EQUAL(focusedName(fixture.ui), "second");
+}
+
 BOOST_AUTO_TEST_SUITE_END()

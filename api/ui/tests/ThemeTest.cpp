@@ -7,6 +7,8 @@
 #include <api/render/realtime/Canvas.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
+#include <api/ui/Image.h>
+#include <api/ui/component/Button.h>
 #include <api/ui/component/Icon.h>
 #include <api/ui/component/Label.h>
 #include <api/ui/component/Toolbar.h>
@@ -20,8 +22,10 @@
 #include <api/ui/style/property/Number.h>
 
 #include <cstddef>
+#include <map>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -79,6 +83,25 @@ struct Uploader final {
     }
 
     std::vector<std::string> asked;
+};
+
+/**
+ * Answers the names in a sprite sheet with the one texture the sheet was uploaded to and the
+ * part of it each name is, the way an app with sheets would, and nothing for anything else.
+ **/
+struct Sheet final {
+    v3d::ui::Image operator()(const std::string& source) const {
+        static const std::map<std::string, std::pair<glm::vec2, glm::vec2>> regions = {
+            { "items/wood", { glm::vec2(0.0f, 0.0f), glm::vec2(0.25f, 0.5f) } },
+            { "items/stone", { glm::vec2(0.25f, 0.0f), glm::vec2(0.5f, 0.5f) } },
+            { "skins/center", { glm::vec2(0.5f, 0.5f), glm::vec2(0.75f, 1.0f) } },
+        };
+        const auto found = regions.find(source);
+        if (found == regions.end()) {
+            return v3d::ui::Image();
+        }
+        return v3d::ui::Image(v3d::render::realtime::TextureHandle(9), found->second.first, found->second.second);
+    }
 };
 
 const char* const themedDocument = R"({
@@ -167,7 +190,7 @@ BOOST_AUTO_TEST_CASE(a_button_style_carries_a_state_and_its_images) {
     const boost::shared_ptr<v3d::ui::style::Button> styled =
         boost::dynamic_pointer_cast<v3d::ui::style::Button>(buttons.front());
     BOOST_REQUIRE(styled);
-    BOOST_CHECK((styled->state() == v3d::ui::component::Button::STATE_NORMAL));
+    BOOST_CHECK((styled->state() == v3d::ui::style::Button::State::Normal));
 
     const boost::shared_ptr<v3d::ui::style::property::Image> corner =
         boost::dynamic_pointer_cast<v3d::ui::style::property::Image>(styled->property("top-left", "image"));
@@ -175,7 +198,7 @@ BOOST_AUTO_TEST_CASE(a_button_style_carries_a_state_and_its_images) {
     BOOST_CHECK_EQUAL(corner->source(), "skins/tl.tga");
     BOOST_CHECK((corner->align() == v3d::ui::style::Property::TOP_LEFT));
     // nothing has uploaded it, so the handle it will draw with is unset
-    BOOST_CHECK(!corner->texture().valid());
+    BOOST_CHECK(!corner->image().valid());
 }
 
 /**
@@ -276,12 +299,12 @@ BOOST_AUTO_TEST_CASE(the_image_pass_resolves_every_source_the_config_named) {
         boost::dynamic_pointer_cast<v3d::ui::style::property::Image>(
             ui->theme("dark")->getStyleSet("", "button").front()->property("center", "image"));
     BOOST_REQUIRE(centre);
-    BOOST_CHECK(centre->texture().valid());
+    BOOST_CHECK(centre->image().valid());
 
     const boost::shared_ptr<v3d::ui::component::Icon> icon =
         boost::dynamic_pointer_cast<v3d::ui::component::Icon>(ui->container("hud")->get("logo"));
     BOOST_REQUIRE(icon);
-    BOOST_CHECK(icon->texture().valid());
+    BOOST_CHECK(icon->image().valid());
 }
 
 /**
@@ -320,7 +343,7 @@ BOOST_AUTO_TEST_CASE(an_image_nested_in_a_layout_is_resolved) {
     const boost::shared_ptr<v3d::ui::component::Icon> deepest =
         boost::dynamic_pointer_cast<v3d::ui::component::Icon>(ui->container("hud")->get("slot-one"));
     BOOST_REQUIRE(deepest);
-    BOOST_CHECK_EQUAL(deepest->texture().id(), 7U);
+    BOOST_CHECK_EQUAL(deepest->image().texture.id(), 7U);
 }
 
 /**
@@ -344,7 +367,7 @@ BOOST_AUTO_TEST_CASE(an_unresolved_source_leaves_the_handle_unset) {
     const boost::shared_ptr<v3d::ui::component::Icon> icon =
         boost::dynamic_pointer_cast<v3d::ui::component::Icon>(ui->container("hud")->get("logo"));
     BOOST_REQUIRE(icon);
-    BOOST_CHECK(!icon->texture().valid());
+    BOOST_CHECK(!icon->image().valid());
 }
 
 /**
@@ -440,6 +463,46 @@ BOOST_AUTO_TEST_CASE(a_button_is_drawn_from_the_images_its_style_names) {
 }
 
 /**
+ * A theme's "inactive" style is what a button that cannot be used is skinned from, and it is
+ * chosen by Component::enabled() rather than by a button state. ADR-0059.
+ **/
+BOOST_AUTO_TEST_CASE(a_disabled_button_is_drawn_from_the_inactive_style) {
+    bool loaded = false;
+    const boost::shared_ptr<v3d::ui::Engine> ui = load(R"({
+        "themes": [ { "name": "dark", "styles": [
+            {
+                "class": "button", "name": "default", "state": "inactive",
+                "images": [ { "name": "center", "source": "skins/spent.tga" } ]
+            } ] } ],
+        "containers": [ { "name": "hud", "visible": true, "components": [] } ]
+    })", &loaded);
+    BOOST_REQUIRE(loaded);
+    ui->resolveImages([](const std::string&) { return v3d::render::realtime::TextureHandle(3); });
+
+    v3d::ui::paint::ComponentRenderer drawing = renderer();
+    drawing.theme(ui->theme("dark"));
+
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(800, 600);
+
+    const boost::shared_ptr<v3d::ui::component::Button> button =
+        boost::make_shared<v3d::ui::component::Button>();
+    button->label("Continue");
+    button->position(glm::vec2(10.0f, 20.0f));
+    button->size(glm::vec2(100.0f, 30.0f));
+
+    // an enabled button takes the normal style, which this theme does not carry
+    drawing.draw(&canvas, button);
+    BOOST_CHECK(canvas.empty());
+
+    button->enabled(false);
+    drawing.draw(&canvas, button);
+    BOOST_CHECK_EQUAL(canvas.vertices().size(), 4U);
+    BOOST_REQUIRE_EQUAL(canvas.batches().size(), 1U);
+    BOOST_CHECK(canvas.batches().front().texture.valid());
+}
+
+/**
  * A button whose theme names no images for its state is the flat one the toolbars draw, and
  * an unlit flat button is only its label.
  **/
@@ -478,7 +541,7 @@ BOOST_AUTO_TEST_CASE(an_icon_draws_the_texture_it_was_resolved_to) {
     drawing.draw(&canvas, icon);
     BOOST_CHECK(canvas.empty());
 
-    icon->texture(v3d::render::realtime::TextureHandle(5));
+    icon->image(v3d::render::realtime::TextureHandle(5));
     drawing.draw(&canvas, icon);
 
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4U);
@@ -486,6 +549,111 @@ BOOST_AUTO_TEST_CASE(an_icon_draws_the_texture_it_was_resolved_to) {
     BOOST_CHECK_CLOSE(canvas.vertices()[2].position.y, 24.0f, 0.001f);
     BOOST_REQUIRE_EQUAL(canvas.batches().size(), 1U);
     BOOST_CHECK_EQUAL(canvas.batches().front().texture.id(), 5U);
+}
+
+/**
+ * A resolver can answer with part of a texture, and an icon, a button and a skin all draw
+ * that part rather than the whole sheet it is on.
+ **/
+BOOST_AUTO_TEST_CASE(an_image_resolved_to_part_of_a_sheet_draws_that_part) {
+    bool loaded = false;
+    const boost::shared_ptr<v3d::ui::Engine> ui = load(R"({
+        "themes": [ { "name": "dark", "styles": [
+            {
+                "class": "button", "name": "default", "state": "normal",
+                "images": [ { "name": "center", "source": "skins/center" } ]
+            } ] } ],
+        "containers": [ { "name": "hud", "visible": true, "components": [
+            { "type": "icon", "name": "slot", "source": "items/wood" },
+            { "type": "button", "name": "use", "label": "Use", "icon": "items/stone" }
+        ] } ]
+    })", &loaded);
+    BOOST_REQUIRE(loaded);
+    BOOST_CHECK_EQUAL(ui->resolveImages(Sheet()), 3U);
+
+    v3d::ui::paint::ComponentRenderer drawing = renderer();
+    drawing.theme(ui->theme("dark"));
+    drawing.dressing().iconSize = 20.0f;
+
+    const boost::shared_ptr<v3d::ui::component::Icon> icon =
+        boost::dynamic_pointer_cast<v3d::ui::component::Icon>(ui->container("hud")->get("slot"));
+    BOOST_REQUIRE(icon);
+    icon->size(glm::vec2(32.0f, 32.0f));
+    v3d::render::realtime::Canvas iconCanvas;
+    iconCanvas.resize(800, 600);
+    drawing.draw(&iconCanvas, icon);
+    BOOST_REQUIRE_EQUAL(iconCanvas.vertices().size(), 4U);
+    BOOST_CHECK_EQUAL(iconCanvas.batches().front().texture.id(), 9U);
+    BOOST_CHECK(iconCanvas.vertices()[0].uv == glm::vec2(0.0f, 0.0f));
+    BOOST_CHECK(iconCanvas.vertices()[2].uv == glm::vec2(0.25f, 0.5f));
+
+    // the skin's centre is the first quad and the button's icon the one drawn over it
+    const boost::shared_ptr<v3d::ui::component::Button> button =
+        boost::dynamic_pointer_cast<v3d::ui::component::Button>(ui->container("hud")->get("use"));
+    BOOST_REQUIRE(button);
+    button->size(glm::vec2(100.0f, 30.0f));
+    v3d::render::realtime::Canvas buttonCanvas;
+    buttonCanvas.resize(800, 600);
+    drawing.draw(&buttonCanvas, button);
+    BOOST_REQUIRE_EQUAL(buttonCanvas.vertices().size(), 2U * 4U);
+    BOOST_CHECK(buttonCanvas.vertices()[0].uv == glm::vec2(0.5f, 0.5f));
+    BOOST_CHECK(buttonCanvas.vertices()[2].uv == glm::vec2(0.75f, 1.0f));
+    BOOST_CHECK(buttonCanvas.vertices()[4].uv == glm::vec2(0.25f, 0.0f));
+    BOOST_CHECK(buttonCanvas.vertices()[6].uv == glm::vec2(0.5f, 0.5f));
+}
+
+/**
+ * An icon pointed at a different source shows nothing until that source is resolved, and
+ * then keeps showing it however many times the whole ui is resolved again.
+ **/
+BOOST_AUTO_TEST_CASE(an_icon_given_a_new_source_keeps_it_across_a_resolve) {
+    bool loaded = false;
+    const boost::shared_ptr<v3d::ui::Engine> ui = load(R"({
+        "themes": [ { "name": "dark" } ],
+        "containers": [ { "name": "hud", "visible": true, "components": [
+            { "type": "icon", "name": "slot", "source": "items/wood" }
+        ] } ]
+    })", &loaded);
+    BOOST_REQUIRE(loaded);
+    const Sheet sheet;
+    ui->resolveImages(sheet);
+
+    const boost::shared_ptr<v3d::ui::component::Icon> icon =
+        boost::dynamic_pointer_cast<v3d::ui::component::Icon>(ui->container("hud")->get("slot"));
+    BOOST_REQUIRE(icon);
+    BOOST_CHECK(icon->image().uv1 == glm::vec2(0.25f, 0.5f));
+
+    // naming the same source again keeps what it resolved to
+    icon->source("items/wood");
+    BOOST_CHECK(icon->image().valid());
+
+    icon->source("items/stone");
+    BOOST_CHECK(!icon->image().valid());
+
+    BOOST_CHECK_EQUAL(ui->resolveComponentImages(sheet, icon), 1U);
+    BOOST_CHECK(icon->image().uv0 == glm::vec2(0.25f, 0.0f));
+
+    ui->resolveImages(sheet);
+    BOOST_CHECK_EQUAL(icon->source(), "items/stone");
+    BOOST_CHECK(icon->image().uv0 == glm::vec2(0.25f, 0.0f));
+    BOOST_CHECK(icon->image().uv1 == glm::vec2(0.5f, 0.5f));
+}
+
+/**
+ * A button pointed at a different icon falls back to its label until the new one is
+ * resolved, rather than drawing the old picture under the new name.
+ **/
+BOOST_AUTO_TEST_CASE(a_button_given_a_new_icon_drops_the_old_image) {
+    v3d::ui::component::Button button;
+    button.icon("items/wood");
+    button.image(Sheet()("items/wood"));
+    BOOST_REQUIRE(button.image().valid());
+
+    button.icon("items/wood");
+    BOOST_CHECK(button.image().valid());
+
+    button.icon("items/stone");
+    BOOST_CHECK(!button.image().valid());
 }
 
 /**

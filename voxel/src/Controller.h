@@ -9,6 +9,7 @@
 #include <api/event/Event.h>
 #include <api/event/kind/MouseMotion.h>
 #include <api/ui/Engine.h>
+#include <api/ui/Immediate.h>
 #include <api/ui/shell/GameMenu.h>
 
 #include <string>
@@ -51,6 +52,16 @@ class Controller final : public v3d::engine::Engine {
          * @return bool
          **/
         bool render();
+
+        /**
+         * What to hand the immediate layer this frame.
+         *
+         * The game owns the mouse while it is being played: mouselook warps the pointer
+         * back to the centre every frame, so its position means nothing. This answers the
+         * real cursor only while the menu is up, and a default Input otherwise, which
+         * leaves the debug window a readout.
+         **/
+        v3d::ui::Immediate::Input tools() const;
 
         /**
          * @return bool

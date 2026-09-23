@@ -90,7 +90,7 @@ set(V3D_API_type_REQUIRES)
 set(V3D_API_type_PACKAGES glm)
 
 set(V3D_API_ui_PATH "ui")
-set(V3D_API_ui_REQUIRES log render asset event font image type)
+set(V3D_API_ui_REQUIRES log render asset event font image input type)
 set(V3D_API_ui_PACKAGES glm EnTT)
 
 # The imported target each package provides, which is how the verification below recognises

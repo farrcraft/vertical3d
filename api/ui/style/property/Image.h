@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/realtime/Handle.h>
+#include <api/ui/Image.h>
 #include <api/ui/style/Property.h>
 
 #include <string>
@@ -15,7 +15,7 @@
 namespace v3d::ui::style::property {
 
 /**
- * A style property that defines an image.
+ * A style property that names an image, and holds what the name resolved to.
  */
 class Image : public Property {
  public:
@@ -23,24 +23,24 @@ class Image : public Property {
     ~Image();
 
     /**
-     * Get the texture associated with the image property
-     * @return the handle, which is unset until something has uploaded the source
+     * Get what the source resolved to
+     * @return the image, which is unset until something has resolved the source
      */
-    v3d::render::realtime::TextureHandle texture() const noexcept;
+    const v3d::ui::Image& image() const noexcept;
     /**
      * Get the name of the image source
      * @return the image source name
      */
     std::string_view source() const;
     /**
-     * Set the texture the image property draws with
-     * @param tex a handle from the quad renderer that uploaded source()
+     * Set what the image property draws
+     * @param resolved what source() resolved to
      */
-    void texture(const v3d::render::realtime::TextureHandle& tex) noexcept;
+    void image(const v3d::ui::Image& resolved) noexcept;
 
  private:
     std::string source_;
-    v3d::render::realtime::TextureHandle texture_;
+    v3d::ui::Image image_;
 };
 
 };  // end namespace v3d::ui::style::property

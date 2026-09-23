@@ -420,4 +420,61 @@ BOOST_AUTO_TEST_CASE(a_command_is_sent_as_a_destination) {
     BOOST_CHECK(text->event().type() == v3d::event::Type::Destination);
 }
 
+/**
+ * A disabled component is never offered the point: it sends nothing, and the hover the
+ * cursor would have written on it is not written either - which is the half of ADR-0059
+ * that keeps "disabled" from being undone by a cursor passing over it.
+ **/
+BOOST_AUTO_TEST_CASE(a_disabled_button_is_neither_picked_nor_lit) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::Button> button =
+        boost::make_shared<v3d::ui::component::Button>();
+    button->label("Continue");
+    button->event(v3d::event::Event("continue", fixture.context));
+    fixture.place(button, glm::vec2(100.0f, 50.0f), glm::vec2(120.0f, 30.0f));
+    button->enabled(false);
+    fixture.draw();
+
+    BOOST_CHECK(!fixture.cursor->motion(glm::vec2(160.0f, 65.0f)));
+    BOOST_CHECK(!fixture.cursor->hovered());
+    BOOST_CHECK_EQUAL(button->state(), v3d::ui::component::Button::STATE_NORMAL);
+
+    BOOST_CHECK(!fixture.cursor->press(glm::vec2(160.0f, 65.0f)));
+    BOOST_CHECK(fixture.sent.empty());
+
+    // it answers again the moment it is enabled, with nothing else having been set
+    button->enabled(true);
+    BOOST_CHECK(fixture.cursor->press(glm::vec2(160.0f, 65.0f)));
+    BOOST_REQUIRE_EQUAL(fixture.sent.size(), 1U);
+    BOOST_CHECK_EQUAL(fixture.sent.front(), "test::continue");
+}
+
+/**
+ * Disabling a box disables what it holds, so a screen greys out a group of controls with
+ * the box around them rather than with a call per control.
+ **/
+BOOST_AUTO_TEST_CASE(a_disabled_box_takes_what_it_holds_with_it) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::Panel> group =
+        boost::make_shared<v3d::ui::component::Panel>();
+    fixture.place(group, glm::vec2(0.0f, 0.0f), glm::vec2(200.0f, 200.0f));
+
+    const boost::shared_ptr<v3d::ui::component::Button> button =
+        boost::make_shared<v3d::ui::component::Button>();
+    button->event(v3d::event::Event("inside", fixture.context));
+    button->layout().width = v3d::ui::Length(100.0f, v3d::ui::Length::Unit::Pixels);
+    button->layout().height = v3d::ui::Length(100.0f, v3d::ui::Length::Unit::Pixels);
+    group->add(button);
+    fixture.draw();
+
+    BOOST_CHECK(fixture.cursor->press(glm::vec2(50.0f, 50.0f)));
+    BOOST_REQUIRE_EQUAL(fixture.sent.size(), 1U);
+    BOOST_CHECK_EQUAL(fixture.sent.front(), "test::inside");
+
+    group->enabled(false);
+    fixture.draw();
+    BOOST_CHECK(!fixture.cursor->press(glm::vec2(50.0f, 50.0f)));
+    BOOST_CHECK_EQUAL(fixture.sent.size(), 1U);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

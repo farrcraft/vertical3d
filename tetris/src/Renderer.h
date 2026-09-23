@@ -11,6 +11,7 @@
 #include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/Engine.h>
 #include <api/ui/paint/TextRenderer.h>
+#include <api/ui/shell/StatisticsOverlay.h>
 
 #include <map>
 #include <string>
@@ -37,8 +38,17 @@ class TetrisRenderer final {
      TetrisRenderer(const boost::shared_ptr<v3d::render::realtime::Window>& window, const boost::shared_ptr<v3d::log::Logger>& logger,
          const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry);
 
-    void draw();
+    /**
+     * @param statistics what the loop measured about the frame being drawn, which the
+     *        overlay reads - the app hands it over because api/ui sits below api/engine
+     **/
+    void draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics);
     void resize(int width, int height);
+
+    /**
+     * The frame statistics drawn over the game, for whatever shows and hides them.
+     **/
+    const boost::shared_ptr<v3d::ui::shell::StatisticsOverlay>& statistics() const;
 
     void scene(const boost::shared_ptr<TetrisScene>& scene);
 
@@ -102,5 +112,6 @@ class TetrisRenderer final {
     std::map<std::string, Sprite> sprites_;
 
     boost::shared_ptr<v3d::ui::paint::TextRenderer> text_;
+    boost::shared_ptr<v3d::ui::shell::StatisticsOverlay> statistics_;
     boost::shared_ptr<v3d::ui::paint::ComponentRenderer> uiRenderer_;
 };
