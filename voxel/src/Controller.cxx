@@ -117,8 +117,7 @@ bool Controller::render() {
  **/
 v3d::ui::Immediate::Input Controller::tools() const {
     v3d::ui::Immediate::Input input;
-    // while the game has the mouse the pointer is warped back to the centre every frame, so
-    // there is no cursor to offer - the menu going up is what hands one back
+    // no cursor while the game has the mouse - see tools() in Controller.h
     if (!menu_ || !menu_->visible()) {
         return input;
     }

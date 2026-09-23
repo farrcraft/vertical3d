@@ -38,7 +38,8 @@ class Icon : public Component {
      *
      * The image the old name resolved to is dropped rather than kept, so the icon draws
      * nothing until the new name is resolved rather than the old picture under the new name.
-     * ui::Engine::resolveImages() is what resolves it, and resolves it again after that.
+     * ui::Engine::resolveComponentImages() resolves this icon alone, and every later
+     * resolveImages() resolves it from the new name.
      *
      * @param name the name of the image
      */

@@ -28,7 +28,7 @@ Keyboard::Keyboard(const boost::shared_ptr<Engine>& ui, const boost::shared_ptr<
     if (ui_) {
         ui_->onFocus([this](const boost::shared_ptr<Component>& focused) { follow(focused); });
     }
-    // whatever the window was left composing, the focus is what says now
+    // start composing to match whatever is focused now, whatever the window was left doing
     follow(ui_ ? ui_->focused() : boost::shared_ptr<Component>());
 }
 

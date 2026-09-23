@@ -16,10 +16,8 @@ namespace v3d::input {
  * What this library calls a key - "escape", "arrow_left", "a" - which is the name a
  * binding in mappings.json names and the name ui::Keys is handed.
  *
- * Public because there is one table and both halves of the keyboard need it: this device
- * turns a key into a bound command, and ui::shell::Keyboard turns the same key into an edit
- * on whatever the ui has focused. A second table would drift, and a binding that stopped
- * agreeing with what a text box answers is the kind of disagreement nothing reports.
+ * Public because ui::shell::Keyboard names the keys it hands a text box from this table
+ * too, so a binding and a text box always agree on what a key is called.
  *
  * @return the name, or an empty string for a key this library has none for
  **/

@@ -442,7 +442,7 @@ BOOST_AUTO_TEST_CASE(a_disabled_button_is_neither_picked_nor_lit) {
     BOOST_CHECK(!fixture.cursor->press(glm::vec2(160.0f, 65.0f)));
     BOOST_CHECK(fixture.sent.empty());
 
-    // and it answers again the moment it is enabled, with nothing else having been set
+    // it answers again the moment it is enabled, with nothing else having been set
     button->enabled(true);
     BOOST_CHECK(fixture.cursor->press(glm::vec2(160.0f, 65.0f)));
     BOOST_REQUIRE_EQUAL(fixture.sent.size(), 1U);

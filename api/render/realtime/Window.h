@@ -111,10 +111,9 @@ class Window final {
      * SDL_EVENT_TEXT_INPUT arrives at all.
      *
      * SDL3 sends none until it is asked to, so a ui text box would otherwise hear the keys
-     * and never the characters - ADR-0040. It is off with the window and turned on for as
-     * long as something is focused that takes typing, rather than for the life of the
-     * window: on a desktop either costs nothing, but starting it is what raises an on
-     * screen keyboard, and one that is never stopped is one that never lowers.
+     * and never the characters - ADR-0040. It is off when the window is created, and is
+     * turned on only while something that takes typing is focused. Starting it raises an
+     * on screen keyboard where the platform has one, and stopping it lowers it again.
      *
      * ui::shell::Keyboard is what follows the focus and calls this, so an app that routes
      * its keyboard through that seam does not call it itself.

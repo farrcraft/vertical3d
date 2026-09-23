@@ -318,9 +318,6 @@ void Renderer::drawDebug(const v3d::ui::shell::StatisticsOverlay::Sample& statis
     const v3d::ui::Immediate::Input& tools) {
     const glm::vec3 position = scene_->player()->position();
 
-    // whether there is a cursor to offer is the app's to say: mouselook warps the pointer
-    // back to the centre every frame, so the layer is handed a default Input while the game
-    // has the mouse and the window is a readout rather than something to fold
     tools_->begin(&canvas_, tools);
     if (tools_->window(debugTitle, glm::vec2(20.0f, 20.0f), glm::vec2(260.0f, 132.0f), 0.85f)) {
         tools_->text(std::string("Voxel ") + VOXEL_VERSION);

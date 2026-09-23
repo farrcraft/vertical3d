@@ -245,7 +245,7 @@ BOOST_AUTO_TEST_CASE(a_disabled_subtree_is_skipped) {
     BOOST_CHECK(fixture.ui->focusNext(true));
     BOOST_CHECK_EQUAL(focusedName(fixture.ui), "last");
 
-    // and a component disabled in its own right is not reached either
+    // a component disabled in its own right is not reached either
     const boost::shared_ptr<v3d::ui::component::TextBox> spent = box("spent");
     spent->enabled(false);
     hud->add(spent);

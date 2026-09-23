@@ -59,10 +59,7 @@ class Renderer {
     /**
      * @param statistics what the loop measured about its own pacing, which the debug
      *        window reads - the app hands it over because api/ui sits below api/engine
-     * @param tools what the cursor did, for the immediate layer. The app decides whether
-     *        there is a cursor to offer at all: mouselook warps the pointer back to the
-     *        centre every frame, so what is handed over while the game has the mouse is a
-     *        default Input and the debug window is a readout rather than something to fold
+     * @param tools what the cursor did, for the immediate layer - Controller::tools()
      **/
     void draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
         const v3d::ui::Immediate::Input& tools);

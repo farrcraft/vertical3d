@@ -27,27 +27,20 @@ namespace v3d::ui::shell {
  * The platform half of ui::Keys: what turns an SDL event into the two calls that router
  * takes, and what an app's Engine::onEvent() hands every event to.
  *
- * ui::Keys names no platform type on purpose - a key is a name and a character is utf-8,
- * per ADR-0040 - which leaves an app to decode the event, read the modifiers off it, find a
- * clipboard and start the platform composing before any of it works. That is the same
- * decoding in every app, so it is the api's rather than each app's, per ADR-0028.
+ * It decodes the event, reads the modifiers off it, supplies the clipboard and starts the
+ * platform composing, none of which ui::Keys does itself - ADR-0040, ADR-0028.
  *
- * It goes in an app's onEvent() because ADR-0043 put the app ahead of the bindings: a key
- * the ui took must not also fire the command bound to it, and returning true is what stops
- * it. Only a key going down is ever taken. A release always goes through, so a key held
- * when a box took the focus is still seen to come up and nothing is left stuck down.
+ * A key the ui takes returns true, which keeps it from the command bound to it - ADR-0043.
+ * Only a key going down is ever taken. A release always goes through, so a key held when a
+ * box took the focus is still seen to come up and nothing is left stuck down.
  *
  * **Text input follows the focus.** The platform composes nothing until it is asked to, so
- * this turns it on while a text box holds the keyboard and off again after - which is what
- * ADR-0040 recorded as a consequence it had not paid for. It follows ui::Engine::onFocus()
- * rather than checking per event, because the focus also moves under a mouse press this
- * class never sees, and a box clicked into and typed into in one frame would otherwise lose
- * its first character.
+ * this turns it on while a text box holds the keyboard and off again after. It follows
+ * ui::Engine::onFocus() rather than checking per event, because the focus also moves under
+ * a mouse press this class never sees.
  *
- * The cursor stays the app's. ui::Cursor takes points rather than events and a press has to
- * interleave with whatever else an app does with one - the editor offers the ui a press and
- * drives a camera with the one the ui did not take - so a seam that consumed mouse events
- * here would decide that for every app.
+ * The cursor stays the app's: ui::Cursor takes points rather than events, and an app routes
+ * a press to it itself.
  **/
 class Keyboard final {
  public:

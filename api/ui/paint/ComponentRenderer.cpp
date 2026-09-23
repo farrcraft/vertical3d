@@ -249,8 +249,7 @@ void ComponentRenderer::paint(v3d::render::realtime::Canvas* canvas,
  **/
 void ComponentRenderer::ring(v3d::render::realtime::Canvas* canvas,
     const boost::shared_ptr<Component>& component) const {
-    // a component disabled while it held the focus stops saying the keyboard is on it -
-    // the ring is what a player reads as "type here", and there is nothing to type - ADR-0059
+    // a component disabled while it held the focus draws no ring - ADR-0059
     if (canvas == nullptr || !component->focused() || !usable(*component)) {
         return;
     }

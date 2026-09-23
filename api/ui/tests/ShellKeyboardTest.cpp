@@ -108,8 +108,8 @@ BOOST_AUTO_TEST_CASE(nothing_focused_takes_nothing) {
 }
 
 /**
- * A key going down reaches the focused box as the operation api/input names it, which is
- * the whole point of sharing one key name table with the device that binds the same key.
+ * A key going down reaches the focused box under the name api/input gives it, the same
+ * name a binding uses.
  **/
 BOOST_AUTO_TEST_CASE(a_key_reaches_the_focused_box) {
     Fixture fixture;
@@ -153,7 +153,7 @@ BOOST_AUTO_TEST_CASE(shift_rides_on_the_event) {
 }
 
 /**
- * And so does control, which names the four chords a box answers.
+ * Control comes off the event too, and names the four chords a box answers.
  **/
 BOOST_AUTO_TEST_CASE(control_rides_on_the_event) {
     Fixture fixture;

@@ -422,8 +422,7 @@ bool Loader::loadStyle(const boost::json::object& entry, const boost::shared_ptr
         } else if (stateName == "press") {
             state = style::Button::State::Press;
         } else if (stateName == "disabled" || stateName == "inactive") {
-            // "inactive" is what a theme written against the old button state says, and it
-            // now dresses a component that is not enabled - ADR-0059
+            // both names dress a component that is not enabled - ADR-0059
             state = style::Button::State::Disabled;
         } else if (stateName != "normal") {
             logger_->get()->error("A button style has no state [{}]", stateName);

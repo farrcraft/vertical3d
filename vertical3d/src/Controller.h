@@ -68,7 +68,7 @@ class Controller final : public v3d::engine::Engine {
      *
      * Only the keyboard goes this way. A press has to interleave with the camera and the
      * transform tools - drag() offers the ui the press and drives a camera with the one it
-     * did not take - so the cursor is routed from a mapped command as it always was.
+     * did not take - so the cursor is routed from a mapped command.
      **/
     bool onEvent(const SDL_Event& event) override;
 

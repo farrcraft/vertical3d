@@ -144,7 +144,7 @@ bool Controller::buildUi() {
     // them - ADR-0038. The measure is the renderer's own, so that a press inside a text box
     // lands on the character it looks like it landed on - ADR-0057
     uiCursor_ = boost::make_shared<v3d::ui::input::Cursor>(vgui_, dispatcher_, renderer_->measure());
-    // the keyboard half, which is the seam an app writes rather than the routing - ADR-0028
+    // the keyboard half is the api's shell, not the app's - ADR-0028
     uiKeys_ = boost::make_shared<v3d::ui::shell::Keyboard>(vgui_, dispatcher_, window());
 
     boost::shared_ptr<v3d::ui::Container> container = vgui_->container(uiContainer);

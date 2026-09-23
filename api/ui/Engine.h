@@ -111,10 +111,8 @@ class Engine {
      * Be told when the focus moves, which is how anything outside this library follows it.
      *
      * Three things move it and an app sees none of them directly - a press through
-     * ui::Cursor, tab through ui::Keys, and focusFirst() - so polling would be the only
-     * other way and it would be a frame late. A frame is the whole difference here: the
-     * platform composes no text until it is asked to, so a box clicked into and typed
-     * into in the same frame would lose the first character.
+     * ui::Cursor, tab through ui::Keys, and focusFirst(). Each announces the move as it
+     * happens, in the same frame, so text input can be started before the next character.
      *
      * Announced only when the focus actually changed, and after both components have been
      * told, so what is handed over is what focused() would answer - a component that did
@@ -135,18 +133,18 @@ class Engine {
      * The order is the order the tree holds them in, which is the order they are drawn in:
      * containers as the config listed them, components by depth with add order between
      * equal depths, and a flow box's children in the order it was given them. A ui author
-     * wanting a different tab order reorders the document. A hidden component is skipped,
-     * and so is everything it holds.
+     * wanting a different tab order reorders the document. A hidden or disabled component
+     * is skipped, and so is everything it holds.
      *
      * **A ui with nothing focused is left alone**, which is what keeps a game's movement
      * keys working: tab must not take the focus onto the first widget of a hud nobody is
      * looking at.
      *
-     * @param forward whether to move to the next one rather than the previous one
      * A component that held the focus and is no longer reachable - hidden, disabled or taken
      * out of the tree since - leaves the walk with nowhere to move on from, so the tab starts
-     * it again at the first component rather than leaving the focus stuck on one.
+     * it again at the first component.
      *
+     * @param forward whether to move to the next one rather than the previous one
      * @return whether the focus moved, which a ui holding one focusable component and a ui
      *         holding none both answer false
      **/

@@ -56,11 +56,10 @@ class Controller final : public v3d::engine::Engine {
         /**
          * What to hand the immediate layer this frame.
          *
-         * The game owns the mouse while it is being played - the pointer is warped back to
-         * the centre every frame for mouselook, so where it is says nothing - and the menu
-         * is what hands it back. So this answers a real cursor exactly while the menu is up,
-         * and a default Input otherwise, which is what leaves the debug window a readout
-         * while there is nothing to point at it with.
+         * The game owns the mouse while it is being played: mouselook warps the pointer
+         * back to the centre every frame, so its position means nothing. This answers the
+         * real cursor only while the menu is up, and a default Input otherwise, which
+         * leaves the debug window a readout.
          **/
         v3d::ui::Immediate::Input tools() const;
 

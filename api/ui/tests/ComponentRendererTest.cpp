@@ -360,8 +360,7 @@ BOOST_AUTO_TEST_CASE(a_theme_rings_a_class_in_its_own_colour) {
 
 /**
  * A control that is there and cannot be used is drawn saying so: its label is written in the
- * theme's disabled colour, and no hover it was left holding lights it. Before ADR-0059 a
- * disabled button was pixel for pixel a working one, which is worse than not offering it.
+ * theme's disabled colour, and no hover it was left holding lights it. ADR-0059.
  **/
 BOOST_AUTO_TEST_CASE(a_disabled_button_is_written_in_the_disabled_colour) {
     std::vector<Written> written;

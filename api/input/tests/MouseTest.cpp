@@ -242,7 +242,7 @@ BOOST_AUTO_TEST_CASE(mouse_wheel_test) {
     // a turn has no discrete name, so nothing binds to one
     BOOST_CHECK_EQUAL(recorder.source_.size(), 0u);
 
-    // and the frame that reads it late reads nothing, the way a button edge does
+    // a frame that reads it late reads nothing, the way a button edge does
     mouse.handleEvent(wheelEvent(2.0f, 40.0f, 50.0f));
     BOOST_CHECK_EQUAL(mouse.state().wheel(), 2.0f);
     mouse.flush();

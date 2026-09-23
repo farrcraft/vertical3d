@@ -464,8 +464,7 @@ BOOST_AUTO_TEST_CASE(a_button_is_drawn_from_the_images_its_style_names) {
 
 /**
  * A theme's "inactive" style is what a button that cannot be used is skinned from, and it is
- * chosen by Component::enabled() rather than by a button state - which is the route that did
- * not exist before ADR-0059, when nothing anywhere read the style the loader had parsed.
+ * chosen by Component::enabled() rather than by a button state. ADR-0059.
  **/
 BOOST_AUTO_TEST_CASE(a_disabled_button_is_drawn_from_the_inactive_style) {
     bool loaded = false;
@@ -605,8 +604,7 @@ BOOST_AUTO_TEST_CASE(an_image_resolved_to_part_of_a_sheet_draws_that_part) {
 
 /**
  * An icon pointed at a different source shows nothing until that source is resolved, and
- * then keeps showing it however many times the whole ui is resolved again - which is what
- * lets a grid of cells change what they hold and survive a reload.
+ * then keeps showing it however many times the whole ui is resolved again.
  **/
 BOOST_AUTO_TEST_CASE(an_icon_given_a_new_source_keeps_it_across_a_resolve) {
     bool loaded = false;
