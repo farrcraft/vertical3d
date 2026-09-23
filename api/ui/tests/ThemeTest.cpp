@@ -91,18 +91,17 @@ struct Uploader final {
  **/
 struct Sheet final {
     v3d::ui::Image operator()(const std::string& source) const {
+        static const std::map<std::string, std::pair<glm::vec2, glm::vec2>> regions = {
+            { "items/wood", { glm::vec2(0.0f, 0.0f), glm::vec2(0.25f, 0.5f) } },
+            { "items/stone", { glm::vec2(0.25f, 0.0f), glm::vec2(0.5f, 0.5f) } },
+            { "skins/center", { glm::vec2(0.5f, 0.5f), glm::vec2(0.75f, 1.0f) } },
+        };
         const auto found = regions.find(source);
         if (found == regions.end()) {
             return v3d::ui::Image();
         }
         return v3d::ui::Image(v3d::render::realtime::TextureHandle(9), found->second.first, found->second.second);
     }
-
-    std::map<std::string, std::pair<glm::vec2, glm::vec2>> regions = {
-        { "items/wood", { glm::vec2(0.0f, 0.0f), glm::vec2(0.25f, 0.5f) } },
-        { "items/stone", { glm::vec2(0.25f, 0.0f), glm::vec2(0.5f, 0.5f) } },
-        { "skins/center", { glm::vec2(0.5f, 0.5f), glm::vec2(0.75f, 1.0f) } },
-    };
 };
 
 const char* const themedDocument = R"({
