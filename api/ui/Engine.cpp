@@ -7,6 +7,7 @@
 
 #include <api/asset/kind/Json.h>
 #include <api/log/Logger.h>
+#include <api/ui/Image.h>
 #include <api/ui/component/Box.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/Icon.h>
@@ -64,12 +65,12 @@ std::size_t Engine::resolveThemeImages(const Resolve& resolve) {
                 if (!image) {
                     continue;
                 }
-                const v3d::render::realtime::TextureHandle texture = resolve(std::string(image->source()));
-                if (!texture.valid()) {
+                const v3d::ui::Image resolvedImage = resolve(std::string(image->source()));
+                if (!resolvedImage.valid()) {
                     logger_->get()->error("Unable to resolve the ui image [{}]", image->source());
                     continue;
                 }
-                image->texture(texture);
+                image->image(resolvedImage);
                 resolved++;
             }
         }
@@ -136,12 +137,12 @@ bool Engine::resolveIcon(const Resolve& resolve, const std::string& source, cons
     if (source.empty()) {
         return false;
     }
-    const v3d::render::realtime::TextureHandle texture = resolve(source);
-    if (!texture.valid()) {
+    const v3d::ui::Image image = resolve(source);
+    if (!image.valid()) {
         logger_->get()->error("Unable to resolve the ui image [{}]", source);
         return false;
     }
-    target->texture(texture);
+    target->image(image);
     return true;
 }
 

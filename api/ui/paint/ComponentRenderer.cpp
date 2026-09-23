@@ -7,6 +7,7 @@
 
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
+#include <api/ui/Image.h>
 #include <api/ui/component/Bar.h>
 #include <api/ui/component/Box.h>
 #include <api/ui/component/Button.h>
@@ -144,13 +145,13 @@ void place(Component& component, const glm::vec2& position, const glm::vec2& siz
 }
 
 /**
- * @return the texture a style's image property was resolved to, unset when the style
- *      names no such image or nothing has resolved it
+ * @return what a style's image property was resolved to, unset when the style names no
+ *      such image or nothing has resolved it
  **/
-v3d::render::realtime::TextureHandle image(const boost::shared_ptr<style::Style>& target, const std::string& name) {
+v3d::ui::Image image(const boost::shared_ptr<style::Style>& target, const std::string& name) {
     boost::shared_ptr<style::property::Image> property =
         boost::dynamic_pointer_cast<style::property::Image>(target->property(name, "image"));
-    return property ? property->texture() : v3d::render::realtime::TextureHandle();
+    return property ? property->image() : v3d::ui::Image();
 }
 
 };  // namespace
@@ -359,7 +360,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
 /**
  **/
 void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Icon>& icon) const {
-    if (canvas == nullptr || !icon || !icon->texture().valid()) {
+    if (canvas == nullptr || !icon || !icon->image().valid()) {
         return;
     }
     // an icon given no size is a square the height of a strip, which is the one size the
@@ -370,9 +371,9 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     }
     place(*icon, icon->position(), size);
 
-    canvas->rect(icon->position(), icon->position() + size,
-        glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f),
-        ink(*icon, base(), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)), icon->texture());
+    const v3d::ui::Image& picture = icon->image();
+    canvas->rect(icon->position(), icon->position() + size, picture.uv0, picture.uv1,
+        ink(*icon, base(), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)), picture.texture);
 }
 
 /**
@@ -401,12 +402,12 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
 
     // an icon is what the button says instead of its label, not as well as it. The label
     // stays on the component for whatever measures it before an image has been resolved
-    if (button->texture().valid()) {
+    const v3d::ui::Image& picture = button->image();
+    if (picture.valid()) {
         const float side = std::min(base().iconSize, std::min(size.x, size.y));
         const glm::vec2 corner = min + (size - glm::vec2(side, side)) * 0.5f;
-        canvas->rect(corner, corner + glm::vec2(side, side),
-            glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f),
-            ink(*button, base(), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)), button->texture());
+        canvas->rect(corner, corner + glm::vec2(side, side), picture.uv0, picture.uv1,
+            ink(*button, base(), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)), picture.texture);
         return;
     }
 
@@ -723,8 +724,6 @@ bool ComponentRenderer::skin(v3d::render::realtime::Canvas* canvas, const compon
     style::readMetric(target, "corner", &corner);
     corner = std::min(corner, std::min((max.x - min.x) * 0.5f, (max.y - min.y) * 0.5f));
 
-    const glm::vec2 uv0(0.0f, 0.0f);
-    const glm::vec2 uv1(1.0f, 1.0f);
     const glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
     unsigned int drawn = 0;
 
@@ -747,11 +746,11 @@ bool ComponentRenderer::skin(v3d::render::realtime::Canvas* canvas, const compon
     };
 
     for (const auto& part : parts) {
-        const v3d::render::realtime::TextureHandle texture = image(target, part.name);
-        if (!texture.valid()) {
+        const v3d::ui::Image piece = image(target, part.name);
+        if (!piece.valid()) {
             continue;
         }
-        canvas->rect(part.min, part.max, uv0, uv1, white, texture);
+        canvas->rect(part.min, part.max, piece.uv0, piece.uv1, white, piece.texture);
         drawn++;
     }
 

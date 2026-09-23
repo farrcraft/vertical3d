@@ -15,12 +15,12 @@ Image::Image(const std::string& name, const std::string& src) : Property(name), 
 Image::~Image() {
 }
 
-v3d::render::realtime::TextureHandle Image::texture() const noexcept {
-    return texture_;
+const v3d::ui::Image& Image::image() const noexcept {
+    return image_;
 }
 
-void Image::texture(const v3d::render::realtime::TextureHandle& tex) noexcept {
-    texture_ = tex;
+void Image::image(const v3d::ui::Image& resolved) noexcept {
+    image_ = resolved;
 }
 
 std::string_view Image::source() const {

@@ -7,7 +7,7 @@
 
 #include <api/event/Engine.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/Handle.h>
+#include <api/ui/Image.h>
 
 #include <cstddef>
 #include <functional>
@@ -42,14 +42,16 @@ class Theme;
 class Engine {
  public:
     /**
-     * How a named image becomes a texture.
+     * How a named image becomes something to draw.
      *
-     * The library neither reads an image nor uploads one - an app resolves the source
-     * through its own asset manager and renderer, per ADR-0020.
+     * The library neither reads an image nor uploads one, and never interprets a source
+     * name - an app resolves the source through its own asset manager and renderer, per
+     * ADR-0020. The answer can be part of a texture, which is how an app serves many images
+     * out of one sprite sheet; a bare handle converts to the whole of its texture.
      *
-     * @return the texture, or an unset handle when the source could not be resolved
+     * @return the image, or an unset one when the source could not be resolved
      **/
-    typedef std::function<v3d::render::realtime::TextureHandle(const std::string& source)> Resolve;
+    typedef std::function<v3d::ui::Image(const std::string& source)> Resolve;
 
     Engine(const boost::shared_ptr<v3d::event::Engine>& eventEngine, const boost::shared_ptr<entt::dispatcher>& dispatcher,
         const boost::shared_ptr<v3d::log::Logger>& logger);
@@ -60,12 +62,15 @@ class Engine {
      * Hand every image the config named to a resolver and keep what comes back - the
      * image properties of every loaded theme, and every icon in every container.
      *
+     * Safe to run again, and running it again is what resolves an icon whose source()
+     * has changed since - each image is resolved from the name it holds now.
+     *
      * A separate pass rather than part of load(), because an app has a renderer to
      * upload through only after the window is up, and because the same document is worth
      * loading whether or not anything will be drawn from it.
      *
-     * @param resolve what turns a source into a texture
-     * @return how many sources were resolved to a set handle
+     * @param resolve what turns a source into an image
+     * @return how many sources were resolved to a set image
      **/
     std::size_t resolveImages(const Resolve& resolve);
 
@@ -183,17 +188,20 @@ class Engine {
 
     /**
      * Resolve the images the loaded themes name, and the ones the loaded components do.
-     * @return how many handles were set
+     * resolveComponentImages() is also how an app resolves the one component it has just
+     * pointed at a different source, without resolving the whole ui again.
+     * @return how many images were set
      **/
     std::size_t resolveThemeImages(const Resolve& resolve);
     std::size_t resolveContainerImages(const Resolve& resolve);
     std::size_t resolveComponentImages(const Resolve& resolve, const boost::shared_ptr<Component>& component);
 
     /**
-     * Resolve one component's image and write the handle onto it.
+     * Resolve one component's image and write the whole answer onto it, so that resolving
+     * again puts back the part of the texture as well as the texture.
      *
-     * @param target anything with a texture(handle) setter - an icon or a button
-     * @return whether a handle was set, which naming no image is not
+     * @param target anything with an image(Image) setter - an icon or a button
+     * @return whether an image was set, which naming no image is not
      **/
     template <typename T>
     bool resolveIcon(const Resolve& resolve, const std::string& source, const boost::shared_ptr<T>& target);

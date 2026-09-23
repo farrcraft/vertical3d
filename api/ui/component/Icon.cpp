@@ -19,12 +19,20 @@ std::string_view Icon::source() const {
     return source_;
 }
 
-v3d::render::realtime::TextureHandle Icon::texture() const noexcept {
-    return texture_;
+void Icon::source(const std::string& name) {
+    if (name == source_) {
+        return;
+    }
+    source_ = name;
+    image_ = v3d::ui::Image();
 }
 
-void Icon::texture(const v3d::render::realtime::TextureHandle& tex) noexcept {
-    texture_ = tex;
+const v3d::ui::Image& Icon::image() const noexcept {
+    return image_;
+}
+
+void Icon::image(const v3d::ui::Image& resolved) noexcept {
+    image_ = resolved;
 }
 
 };  // end namespace v3d::ui::component

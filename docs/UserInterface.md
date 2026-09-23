@@ -165,7 +165,7 @@ Every type in `component::Type` has a loader and a draw path; there are no empty
 |---|---|---|
 | `Panel` | a filled box with a border | nothing |
 | `Label` | its text, wrapped to the width it was given, or one line when that width is `Auto` | its text |
-| `Icon` | a texture at the component's size | its source and handle |
+| `Icon` | an image at the component's size | its source and what it resolved to |
 | `Bar` | a track and the fraction of it that is filled | its fraction |
 | `Button` | a label, or an icon, or a nine-slice skin | nothing — a toggle's mark is set by whatever answers its command |
 | `CheckBox`, `RadioButton` | a mark and a label beside it | nothing, for the same reason |
@@ -187,7 +187,10 @@ own contents rather than facts about the app.
 A theme is data, and the app resolves the images it names —
 [ADR-0020](adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md). `ui::Engine::load()`
 reads themes and containers out of one JSON document; `resolveImages()` is a second pass an app
-runs once it has a renderer to upload through.
+runs once it has a renderer to upload through. The resolver answers a `ui::Image`, a texture and
+the region of it that is the image, so one sprite sheet can serve every icon on a screen; what
+a source name means is left to the app. An icon changed at runtime takes its new source and is
+resolved again with `resolveComponentImages()`, and later passes keep that change.
 
 A `Theme` holds `Style`s; a `Style` is a bag of `Property`s of four kinds — colour, number,
 font, image — each read from its own array and filed under a class. A component names a style;

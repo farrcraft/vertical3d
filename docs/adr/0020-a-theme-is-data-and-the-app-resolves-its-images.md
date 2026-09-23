@@ -27,6 +27,29 @@ image: `Engine::resolveImages()` hands each source to a callback the app supplie
 the `TextureHandle` that comes back, the way text measuring and writing are already
 callbacks.
 
+### Amendment: the answer can be part of a texture
+
+The callback answered with a handle, so an image was always a whole texture and every icon
+was a file of its own: an inventory of a hundred items was a hundred uploads that
+`pipeline::Resources` never releases, however the art was packed. The answer is now a
+`ui::Image` — a handle and the pair of texture coordinates that bound the image within it —
+and `Icon`, `Button` and a theme's `property::Image` each keep the whole answer, which is what
+the draw passes to `Canvas::rect`. A bare handle converts to the whole of its texture, so a
+resolver with no sheets is unchanged.
+
+**The source name stays opaque to the library.** An app with a sprite sheet looks the name up
+in `config::SpriteSheets` and answers with the sheet's handle and the region's corners;
+`v3dlib_ui` does not read the sheet and gains no dependency on `v3dlib_config`. The rejected
+shapes were the library reading the sheet itself, which links a library into `api/ui` to save a
+callback work the app is already set up to do, and the app setting the corners on each
+component after the pass, which is a second walk of the tree and leaves the corners behind
+whenever the pass runs again.
+
+**An icon can be pointed at another source.** `Icon::source(name)` joins `Button::icon(name)`,
+and either drops what the old name resolved to, so a changed source shows nothing until it is
+resolved rather than the old picture. Because the image is always resolved from the name the
+component holds now, running the pass again keeps the change instead of undoing it.
+
 ## Alternatives Considered
 
 ### Alternative 1: `v3dlib_ui` links `v3dlib_asset` and loads its own images

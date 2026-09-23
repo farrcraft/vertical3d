@@ -6,8 +6,8 @@
 #pragma once
 
 #include <api/event/Event.h>
-#include <api/render/realtime/Handle.h>
 #include <api/ui/Component.h>
+#include <api/ui/Image.h>
 
 #include <string>
 
@@ -20,8 +20,8 @@ namespace v3d::ui::component {
  * sets checked(). See ADR-0019.
  *
  * A button that names an icon is drawn as that image instead of as its label, and holds
- * the texture whatever uploaded the image put there. It keeps its label either way, which
- * is what a strip measures before anything has been resolved. See ADR-0020.
+ * what the name resolved to. It keeps its label either way, which is what a strip measures
+ * before anything has been resolved. See ADR-0020.
  *
  * A button that cannot be used is not a state here. That is Component::enabled(), which
  * lasts, where a state lasts as long as the cursor is where it is. See ADR-0059.
@@ -73,7 +73,11 @@ class Button : public Component {
 
     /**
      * Set the image the button draws instead of its label.
-     * @param source the name of the image, for whatever resolves sources to textures
+     *
+     * Naming a different image drops what the old name resolved to, so the button shows its
+     * label until the new one is resolved rather than the old picture under the new name.
+     *
+     * @param source the name of the image, for whatever resolves sources to images
      **/
     void icon(const std::string& source);
     /**
@@ -82,13 +86,13 @@ class Button : public Component {
     std::string_view icon() const;
 
     /**
-     * @return the texture the icon draws with, unset until something has uploaded icon()
+     * @return what icon() resolved to, unset until something has resolved it
      **/
-    v3d::render::realtime::TextureHandle texture() const noexcept;
+    const v3d::ui::Image& image() const noexcept;
     /**
-     * @param tex a handle from the renderer that uploaded icon()
+     * @param resolved what icon() resolved to
      **/
-    void texture(const v3d::render::realtime::TextureHandle& tex) noexcept;
+    void image(const v3d::ui::Image& resolved) noexcept;
 
     /**
      * Set whether the button shows a mark when it is checked.
@@ -114,7 +118,7 @@ class Button : public Component {
  private:
     std::string label_;
     std::string icon_;
-    v3d::render::realtime::TextureHandle texture_;
+    v3d::ui::Image image_;
     ButtonState state_;
     v3d::event::Event event_;
     bool toggle_;

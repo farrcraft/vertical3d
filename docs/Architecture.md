@@ -55,7 +55,8 @@ not carry a second implementation of the format.
 
 **A config document names an image and never loads one**, per
 [ADR-0020](adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md): a theme's images and a
-sprite sheet's are both resolved by the app through its own asset manager and renderer.
+sprite sheet's are both resolved by the app through its own asset manager and renderer, and a
+ui image can resolve to one region of a sheet.
 
 `Config::load` and `registerEventMappings` guard every lookup and log a `false`, but **a
 window config is not guarded**: `initialize` reads `width` and `height` with `at()`, so a

@@ -46,19 +46,23 @@ v3d::event::Event Button::event() const {
 }
 
 void Button::icon(const std::string& source) {
+    if (source == icon_) {
+        return;
+    }
     icon_ = source;
+    image_ = v3d::ui::Image();
 }
 
 std::string_view Button::icon() const {
     return icon_;
 }
 
-v3d::render::realtime::TextureHandle Button::texture() const noexcept {
-    return texture_;
+const v3d::ui::Image& Button::image() const noexcept {
+    return image_;
 }
 
-void Button::texture(const v3d::render::realtime::TextureHandle& tex) noexcept {
-    texture_ = tex;
+void Button::image(const v3d::ui::Image& resolved) noexcept {
+    image_ = resolved;
 }
 
 void Button::toggle(bool on) {
