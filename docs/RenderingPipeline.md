@@ -312,6 +312,12 @@ up the ground plane, not when it is further from the camera. The depth variant t
 test and write, ui quads do neither, world quads test only. So solid geometry hides a world
 quad and a world quad never hides another.
 
+**`realtime::DepthOrder`** is how a caller puts its quads in that order without sorting them
+itself. It collects quads with a key the caller computes, and hands them to a canvas largest
+key first. Equal keys are grouped by texture and otherwise keep the order they were added in,
+so a key quantised to a tile row cuts fewer batches than an exact one. The canvas is unchanged
+and still draws whatever it is given in submission order.
+
 There is no clip and no text branch. The renderer is built on the first call to
 `DeviceContext::worldQuads()`, the way the line renderer is. So is the quad renderer, since a
 context is built before it has been told the format its pipelines compile against.
@@ -461,8 +467,8 @@ Three consequences bite:
   go in front of it with `Frame::passBefore`. Otherwise it is recorded after the pass that
   samples it.
 - **What `Resources` is given for a target names its images rather than owning them**
-  (`Texture::owned` is false), and `recreate()` allocates new ones, so a handle registered
-  before a resize is stale.
+  (`Texture::owned` is false), and `recreate()` allocates new ones. After a resize, release the
+  old handle and register the target again.
 
 A pipeline under dynamic rendering is built against the format of what it draws into, and
 nothing catches a pipeline built for one colour format drawing into a target of another. It
@@ -473,12 +479,17 @@ the swapchain's to avoid that.
 
 `DrawItem` refers to pipelines, materials and textures by handle, never by pointer. A pointer
 sorts by whatever the allocator handed out, which reorders a frame differently on every run.
-`vulkan::Resources` owns them, hands out the handles, and destroys everything when the context
-goes. Slots are never reused, so a handle cannot come to mean something other than what it was
-given for.
+`vulkan::Resources` owns them, hands out the handles, and destroys whatever is left when the
+context goes.
 
-Nothing frees an individual resource. Textures and pipelines are built at load time and used
-until the app closes; per-level unloading is what will ask for more.
+**A texture is released explicitly** ([ADR-0061](adr/0061-a-resource-is-released-explicitly.md)),
+through `renderer::Quad::release`, which releases its material with it. A handle carries a slot
+and a generation. A released slot is reused by the next registration with its generation moved
+on, so a handle stops resolving the moment it is released, and it can never come to mean
+whatever is put in its slot next. What it named is handed to the in-flight ring as a callback,
+and `Ring::begin()` runs the callback once every frame that began before the release has
+finished. A material's descriptor set comes back the same way and is written again for the next
+material, because the pools cannot free a set. Pipelines are not released.
 
 **Geometry is not one of them.** A mesh is created and destroyed while the app runs, which a
 registry that never frees cannot hold without leaking, and the sort key has no geometry field
@@ -496,10 +507,6 @@ to sort a handle on. So `vulkan::Mesh` is owned by whatever built it — a chunk
 - **A second depth buffer.** There is one per context, and the editor's four viewports share
   it. That works only because their regions do not overlap and each pass clears its own. Two
   passes wanting different depth over the same pixels would not work.
-- **Culling.** Nothing is culled against the frustum, though
-  [`type::geometry::Frustum`](../api/type/geometry/Frustum.h) can say what would be. Voxel submits an item per meshed chunk
-  whether or not the chunk is in front of the camera; its chunk-local vertices and per-chunk
-  origin are there to make culling possible later.
 - **A 2D pass does not use set 0.** `Canvas::projection()` builds an orthographic matrix by
   hand and the quad pipeline reads it from a push constant, while `vulkan::FrameUniforms` holds
   a camera per pass that only voxel's terrain pipeline reads. The 2D path would stop being a

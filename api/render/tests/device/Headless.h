@@ -68,6 +68,14 @@ struct Headless {
     void submitAndWait(VkCommandBuffer commands);
 
     /**
+     * Submit a command buffer from the context's ring and move on without waiting, the way a
+     * presented frame does, so that what it reads is still in flight when the case continues.
+     *
+     * @param commands a buffer from ring()->begin(), still recording
+     **/
+    void submit(VkCommandBuffer commands);
+
+    /**
      * @return whether the validation layer reported nothing, having been on to report it
      **/
     bool silent() const;

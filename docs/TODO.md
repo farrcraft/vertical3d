@@ -58,10 +58,18 @@ it as an open question and could not settle it.
 ## Tile grids
 
 `api/grid` is a library of its own - [ADR-0029](adr/0029-tile-grids-are-an-api-library.md) - and
-`odyssey` is what consumes it here.
+`odyssey` is what consumes it here. A map's picture and terrain legend are the grid's, and the
+rest of a map is the game's - [ADR-0062](adr/0062-a-map-picture-and-legend-are-the-grids.md).
 
-[] nothing in the api reads or writes a map. The one format that exists is odyssey's own, in `odyssey/tile/Map.cpp`, so anything wanting to load a grid - a map editor, a generator, a second game - writes its own loader or lifts that file. A format in the api earns a record when a second consumer reads one
-[] `TileFilter` is a `std::function` called for every neighbour of every visited tile, which is the first thing to templatise if a board is ever large enough to notice
+[] a `TileGrid` is one rectangle centred on the world origin, so a world made of regions, each offset in the world and each loaded and released with its sheets, has no way to place a grid. Whether a region is a grid with an origin, a grid of grids or a game's list of grids is for the first consumer with regions to say; a world origin on `TileGrid` is the likeliest answer, and it changes every world and tile conversion - [LargeWorlds](plans/completed/LargeWorlds.md#step-7--regions) has the reasoning
+
+[] remembered sight is odyssey's `tile/Sight.h`, though nothing about fog of war is odyssey's own. It moves to `api/grid` when a second consumer wants ground it has seen to stay revealed - [LargeWorlds](plans/completed/LargeWorlds.md#step-8--remembered-sight)
+
+[] `TileFilter` is a `std::function` called for every neighbour of every visited tile, which is the first thing to templatise if a board is ever large enough to notice. A region-sized board is the likeliest first, so it waits behind regions - [LargeWorlds](plans/completed/LargeWorlds.md#step-9--the-movement-filter-as-a-template)
+
+## Voxel
+
+[] a remeshed chunk destroys its old mesh with the last reference to it, which is safe only because `memory::Uploader` idles the queue after every copy, as `ChunkMeshPool.h` says. Once uploads stop idling the queue - [milestone 7](roadmap/m7-ShellAndShipping.md#asynchronous-loading) - the old mesh has to be retired through `frame::Ring::retire` ([ADR-0061](adr/0061-a-resource-is-released-explicitly.md)) instead
 
 ## Sprite sheets
 
@@ -80,22 +88,12 @@ belongs to `imagetool`, to a `spritetool` beside it, or to whoever needs it is u
 
 `api/asset` reads glTF 2.0 into a `v3d::type::Model`, which is the only geometry the api loads
 from a file. Nothing in this tree loads one - `voxel` builds its terrain procedurally and the
-editor models with `brep::BRep` - so the gaps below are what the library's own tests reach
-rather than what an app here has hit.
+editor models with `brep::BRep` - so the gap below is what the library's own tests reach
+rather than what an app here has hit. Its path onto the device is
+[milestone 4](roadmap/m4-LitScene.md#2-a-model-onto-the-device)'s, and splitting a file by
+material is [milestone 5](roadmap/m5-SkeletalAnimation.md#1-reading-a-skeleton)'s.
 
-[] a `type::Model` has no path onto the device. `vulkan::Mesh` takes bytes, a stride-free count and indices, so the step is an app's four lines; a helper on the render side would need a vertex layout the api does not own
-[] only the first material in a file is kept, because a merge is one draw. A file whose parts need different surfaces has to become several models, and nothing splits one yet
 [] `.gltf` with external buffers resolves them relative to the file, which is cgltf's own behaviour rather than the asset manager's path handling. The two agree today because the manager hands over a full path
-
-## Offscreen rendering
-
-A pass draws into a target it names -
-[ADR-0031](adr/0031-a-pass-draws-into-a-target-it-names.md). Nothing in this tree draws into
-one, so each gap below is one a consumer meets before this tree does.
-
-[] a target is single-buffered, so a pass wanting the previous frame's contents needs two and has to swap them itself. A double-buffered target would be the natural next shape
-[] nothing catches a pipeline built against one colour format drawing into a target of another. It is a wrong picture rather than a validation error, because dynamic rendering takes the format from the pipeline
-[] `Frame::passBefore` exists because `Engine3D` creates the colour pass in its constructor. A frame that let a pass say where it belongs, or an engine that created its pass lazily, would not need it
 
 ## Ongoing workstreams
 
@@ -126,9 +124,9 @@ tree.
 Two gaps are left. The rationale for the Vulkan move and for the SDL3 upgrade is recorded
 nowhere — [ADR-0001](adr/0001-vulkan-replaces-opengl.md) records the decision, not the
 reasoning behind it. And [ECSDesign.md](ECSDesign.md) is the one reference document that is
-still a set of notes rather than a description of the tree; what a renderable component looks
-like is the live question in it, and
-[RenderingPipeline.md](RenderingPipeline.md#still-open-how-this-meets-the-ecs) states it.
+still a set of notes rather than a description of the tree. What would make it one is what a
+renderable component looks like, which is
+[milestone 3](roadmap/m3-RenderableComponent.md)'s decision.
 
 ## Editor
 

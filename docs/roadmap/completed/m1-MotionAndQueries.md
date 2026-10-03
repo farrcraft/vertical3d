@@ -93,7 +93,7 @@ a game's rule — cozy and retcon would answer it differently — and is
 ### `Plane` and `Frustum` in `api/type`
 
 Moved from moya, which keeps using them. They are the ground pick above and the culling in
-[milestone 2](../m2-LargeWorlds.md#culling).
+[milestone 2](m2-LargeWorlds.md#culling).
 
 **The frustum's plane extraction has to be checked against the clip space it is handed.** moya
 builds an offline camera and the realtime camera builds Vulkan clip space

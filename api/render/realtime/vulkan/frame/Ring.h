@@ -10,9 +10,11 @@
 #include <vulkan/vulkan.h>
 
 #include <cstdint>
+#include <functional>
 #include <vector>
 
 #include "CommandPool.h"
+#include "Retirement.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -29,6 +31,10 @@ namespace v3d::render::realtime::vulkan::frame {
  * The fence is created here and waited on here, and is signalled by whichever submit the
  * caller makes - Presenter's, or a test's. That is the one thing about a ring a reader has to
  * be told rather than infer, and it is why fence() is exposed at all.
+ *
+ * Because it knows when a frame has finished, it is also where something released during
+ * play waits to be destroyed - ADR-0061. Anything driving frames has to begin them through
+ * begin(), or nothing retired is ever collected.
  **/
 class Ring final {
  public:
@@ -81,6 +87,20 @@ class Ring final {
     void waitIdle() const;
 
     /**
+     * @return how many frames have been begun since the ring was built
+     **/
+    uint64_t begun() const noexcept;
+
+    /**
+     * Hold a destruction back until every frame begun so far has finished.
+     *
+     * For something released while a frame recorded before the release may still be reading
+     * it. The callback runs from a later begin(), or from the destructor once the device is
+     * idle, and is the last use of whatever it captured.
+     **/
+    void retire(std::function<void()> destroy);
+
+    /**
      * The fence the current frame's submit has to signal, and that waitFrame() waits on. A
      * submit that does not signal it leaves the next turn around the ring waiting forever.
      **/
@@ -91,7 +111,8 @@ class Ring final {
      * buffer.
      *
      * The fence is only reset once the frame is going to be submitted, so a caller that gives
-     * up between waitFrame() and here leaves the ring as it found it.
+     * up between waitFrame() and here leaves the ring as it found it. Once the frame is begun,
+     * whatever was retired framesInFlight frames ago is destroyed.
      *
      * @return the buffer to record into
      * @throw std::runtime_error if the fence or the buffer cannot be made ready
@@ -111,6 +132,8 @@ class Ring final {
     std::vector<VkFence> inFlight_;
     uint32_t framesInFlight_;
     uint32_t frame_;
+    uint64_t begun_;
+    Retirement retired_;
 };
 
 };  // namespace v3d::render::realtime::vulkan::frame

@@ -9,6 +9,7 @@ add_executable(voxel
 	"src/game/Player.h" "src/game/Player.cxx"
 	"src/noise/noiseutils.h" "src/noise/noiseutils.cpp"
 	"src/voxel/Chunk.h" "src/voxel/Chunk.cxx"
+	"src/voxel/ChunkCulling.h" "src/voxel/ChunkCulling.cxx"
 	"src/voxel/ChunkMeshPool.h" "src/voxel/ChunkMeshPool.cxx"
 	"src/voxel/FaceCulling.h" "src/voxel/FaceCulling.cxx"
 	"src/voxel/MeshBuilder.h" "src/voxel/MeshBuilder.cxx"

@@ -11,6 +11,27 @@ outlives the schedule.
 
 No plan is open.
 
+[completed/LargeWorlds.md](completed/LargeWorlds.md) was drafted and closed on 2026-10-03,
+taking up [milestone 2](../roadmap/completed/m2-LargeWorlds.md) of
+[the game engine roadmap](../roadmap/GameEngine.md). A texture can be released, with a
+generation that refuses a stale handle and destruction deferred for the frames in flight
+([ADR-0061](../adr/0061-a-resource-is-released-explicitly.md)). World quads can be handed to a
+canvas in an order the caller keys, voxel culls its chunks, and `api/grid` builds a grid from a
+map's picture and terrain legend, which odyssey now uses
+([ADR-0062](../adr/0062-a-map-picture-and-legend-are-the-grids.md)). Regions, remembered sight
+and the movement filter went to [TODO.md](../TODO.md#tile-grids) behind their triggers.
+
+Four things came out differently. **The retirement queue is the ring's**, collected by
+`Ring::begin()`, because the draft's `DeviceContext` drives no frame: `Presenter` and the device
+suite both begin frames themselves. **The device harness could not release anything in
+flight**, because its one submit waited for the frame; a submit that does not wait was split out
+of it, and the release cases were shown to fail with the fix taken out. **`Registry::clear()`
+never did what its comment said**: slots restarted at zero, so an earlier handle reached
+whatever was added next, and it now releases every slot instead. And **`Picture` holds a
+`std::optional<TileGrid>` and a vector of unknown glyphs**, rather than a shared pointer and a
+map. The first keeps boost out of `api/grid`. The second exists because clang-tidy holds a move
+constructor to not throwing, and MSVC's `std::map` allocates when it is moved.
+
 [completed/MotionAndQueries.md](completed/MotionAndQueries.md) was drafted and closed on
 2026-10-03, taking up [milestone 1](../roadmap/completed/m1-MotionAndQueries.md) of
 [the game engine roadmap](../roadmap/GameEngine.md): moya's `Plane` and `Frustum` moved into

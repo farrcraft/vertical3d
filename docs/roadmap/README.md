@@ -26,7 +26,6 @@ the others; a roadmap exists because the ordering between its items is the inter
 |---|---|
 | [OfflineRendering.md](OfflineRendering.md) | `talyn` and `moya` — the raytracer and the reyes renderer |
 | [GameEngine.md](GameEngine.md) | The realtime api, for games rather than demos — the index of seven milestones, each its own document |
-| [m2-LargeWorlds.md](m2-LargeWorlds.md) | 2 — releasing a resource, ordering world quads, culling, a map document, regions |
 | [m3-RenderableComponent.md](m3-RenderableComponent.md) | 3 — the decision of how the ECS meets the renderer |
 | [m4-LitScene.md](m4-LitScene.md) | 4 — images and samplers, a model onto the device, a lit pass, shadows, a post chain |
 | [m5-SkeletalAnimation.md](m5-SkeletalAnimation.md) | 5 — skins and clips from glTF, skinning, instancing |
@@ -37,4 +36,5 @@ the others; a roadmap exists because the ordering between its items is the inter
 
 | Roadmap | Area | Done by |
 |---|---|---|
+| [m2-LargeWorlds.md](completed/m2-LargeWorlds.md) | 2 — releasing a resource, ordering world quads, culling, a grid from a map's picture; regions, remembered sight and the movement filter are in [TODO.md](../TODO.md#tile-grids) | [LargeWorlds](../plans/completed/LargeWorlds.md), 2026-10-03 |
 | [m1-MotionAndQueries.md](completed/m1-MotionAndQueries.md) | 1 — interpolation, a ground pick, overlap, `Plane` and `Frustum`; the sprite clip is in [TODO.md](../TODO.md#sprite-sheets) | [MotionAndQueries](../plans/completed/MotionAndQueries.md), 2026-10-03 |

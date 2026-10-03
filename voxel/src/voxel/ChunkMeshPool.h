@@ -29,6 +29,7 @@ class ChunkMeshPool {
 
         boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh> mesh;
         glm::vec3 origin;  /**< the chunk's corner in blocks, which its vertices are relative to **/
+        float size;        /**< how many blocks the chunk spans along each axis **/
     };
 
     typedef boost::unordered_map<size_t, Entry> EntryMap;
@@ -36,7 +37,8 @@ class ChunkMeshPool {
     /**
      * Take a chunk's mesh, replacing whatever was there.
      **/
-    void add(size_t chunkId, const boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh>& mesh, const glm::vec3& origin);
+    void add(size_t chunkId, const boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh>& mesh, const glm::vec3& origin,
+        float size);
 
     /**
      * @return the meshes, for a caller building a draw item out of each

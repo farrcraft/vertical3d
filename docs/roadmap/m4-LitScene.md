@@ -8,8 +8,10 @@ architecture document lists what it has as "what vertical3d has no class for". T
 moves that tier here and has retcon delete its copy.
 
 It waits on [milestone 3](m3-RenderableComponent.md), because the pass walks entities and what it
-walks for is that record's answer, and on [milestone 2](m2-LargeWorlds.md)'s resource lifetime,
-because the texture class moved here should be released the way milestone 2 decides.
+walks for is that record's answer, and on [milestone 2](completed/m2-LargeWorlds.md)'s resource lifetime,
+which is now decided ([ADR-0061](../adr/0061-a-resource-is-released-explicitly.md)): the image,
+sampler and texture classes moved here retire what they own through `frame::Ring::retire`, which
+takes a callback and needs no change for them.
 
 ## What exists
 
@@ -30,12 +32,13 @@ Here:
   `vkCreateSampler` is called in three places, each holding a bare `VkSampler`.
 * **A model stops at the cpu.** `asset::loader::Gltf` reads glTF into a `type::Model`
   ([ADR-0030](../adr/0030-a-model-is-an-interleaved-array-that-names-its-texture.md)), and
-  [TODO.md](../TODO.md#models) records that it has no path onto the device. retcon's
+  nothing takes one onto the device. `memory::Mesh` takes bytes and indices, so the step is an
+  app's four lines, and a helper here would need a vertex layout the api does not own. retcon's
   `GltfLoader` already parses through it and converts to its own vertex layout.
 * **Two consumers write raw Vulkan for want of this.** retcon's `gpu/` tier, and voxel, which
   creates its own descriptor set layout, pool and uniform buffer for an untextured material
   ([`Renderer.cxx:145-243`](../../voxel/src/Renderer.cxx)).
-* **Three gaps in targets**, from [TODO.md](../TODO.md#offscreen-rendering): a target is
+* **Three gaps in targets**, none met yet because nothing in this tree draws into one: a target is
   single-buffered, nothing catches a pipeline built for one format drawing into a target of
   another, and `Frame::passBefore` exists because `Engine3D` creates its colour pass in its
   constructor.
@@ -70,10 +73,10 @@ hand-built pool is the same thing written once more.
 ### 2. A model onto the device
 
 A helper that takes a `type::Model` to a `memory::Mesh`, and a registry that de-duplicates by
-path the way retcon's does. TODO.md says this needs a vertex layout the api does not own;
-moving retcon's gives it one, and it is the same position, normal and uv that `type::Model`
-already holds. The registry's handles are what [milestone 3](m3-RenderableComponent.md)'s component
-names.
+path the way retcon's does. The vertex layout the api does not own is what has kept this an
+app's job; moving retcon's gives it one, and it is the same position, normal and uv that
+`type::Model` already holds. The registry's handles are what
+[milestone 3](m3-RenderableComponent.md)'s component names.
 
 ### 3. A lit mesh pass, with the look as data
 
@@ -93,7 +96,7 @@ the second bites, and cascades are the usual answer — after the move, not as p
 ### 5. A chain after the scene
 
 The offscreen colour target, the LUT grade and the outline, as passes a consumer orders. This
-is where TODO.md's three target gaps are closed, because a post chain is the first thing in
+is where the three target gaps above are closed, because a post chain is the first thing in
 either tree that reads a target another pass wrote: a double-buffered target for a pass that
 reads its own last frame, a format check, and a frame that lets a pass say where it belongs so
 `passBefore` can go.

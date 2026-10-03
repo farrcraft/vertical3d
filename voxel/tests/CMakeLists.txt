@@ -4,12 +4,15 @@
 v3d_add_test(voxel
 	"TestMain.cxx"
 	"ChunkTest.cxx"
+	"ChunkCullingTest.cxx"
 	"FaceCullingTest.cxx"
 	"MeshCacheTest.cxx"
 	"MortonCodeTest.cxx"
+	"../src/engine/Camera.cxx"
 	"../src/engine/MortonCode.cxx"
 	"../src/noise/noiseutils.cpp"
 	"../src/voxel/Chunk.cxx"
+	"../src/voxel/ChunkCulling.cxx"
 	"../src/voxel/FaceCulling.cxx"
 	"../src/voxel/MeshCache.cxx"
 	"../src/voxel/TerrainMap.cxx"
@@ -29,5 +32,6 @@ target_link_directories(v3dtest_voxel PRIVATE "${V3D_ROOT}/vendor/libnoise/Debug
 # A chunk is built against a TerrainMap, and the vtable of the one the tests derive from
 # refers to the perlin implementation whether or not any test generates noise.
 target_link_libraries(v3dtest_voxel PRIVATE
+	v3dlib_type
 	${Boost_LIBRARIES}
 	"libnoise")

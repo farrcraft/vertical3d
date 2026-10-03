@@ -4,6 +4,10 @@
 **Status**: accepted
 **Deciders**: Joshua Farr
 
+Amended by [ADR-0061](0061-a-resource-is-released-explicitly.md): `Resources` now frees, by
+explicit release, and a reused slot refuses its old handles by generation. Meshes stay the app's,
+for the other reason given below: the sort key has no geometry field.
+
 ## Context
 
 `vulkan::Resources` owns the pipelines, materials and textures a `DrawItem` names by handle,

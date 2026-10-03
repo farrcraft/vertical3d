@@ -5,7 +5,11 @@
 
 #include "Map.h"
 
+#include <api/grid/Picture.h>
+
+#include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -20,24 +24,17 @@ constexpr char crateGlyph = 'o';
 constexpr char startGlyph = '@';
 
 /**
- * @param glyph a character from a map row
- * @param kind where the kind it names is written
- * @return false when the character names no kind, which rejects the document
+ * @param glyph a character from a map row, which the grid has already accepted
+ * @return the kind it names
  **/
-bool kindFromGlyph(char glyph, Kind* kind) {
+Kind kindFromGlyph(char glyph) {
     switch (glyph) {
-    case floorGlyph:
-    case startGlyph:
-        *kind = Kind::Floor;
-        return true;
     case wallGlyph:
-        *kind = Kind::Wall;
-        return true;
+        return Kind::Wall;
     case crateGlyph:
-        *kind = Kind::Crate;
-        return true;
+        return Kind::Crate;
     default:
-        return false;
+        return Kind::Floor;
     }
 }
 
@@ -58,6 +55,19 @@ v3d::grid::Cover cover(Kind kind) {
     default:
         return v3d::grid::Cover::None;
     }
+}
+
+/**
+ * The terrain legend for the grid. The start glyph is not in it: where the player starts is
+ * odyssey's, not the grid's, so the grid hands its tiles back - ADR-0062.
+ **/
+std::map<char, v3d::grid::Terrain> legend() {
+    std::map<char, v3d::grid::Terrain> terrain;
+    for (char glyph : {floorGlyph, wallGlyph, crateGlyph}) {
+        const Kind kind = kindFromGlyph(glyph);
+        terrain[glyph] = v3d::grid::Terrain{passable(kind), cover(kind)};
+    }
+    return terrain;
 }
 
 };  // namespace
@@ -95,48 +105,42 @@ bool Map::load(const boost::shared_ptr<v3d::asset::kind::Json>& document) {
         lines.push_back(boost::json::value_to<std::string>(row));
     }
 
-    const std::size_t width = lines.front().size();
-    if (width == 0) {
-        logger_->get()->error("the map's first row is empty");
+    v3d::grid::Picture picture = v3d::grid::fromPicture(lines, legend());
+    if (!picture.grid) {
+        logger_->get()->error("the map cannot be read: {}", picture.error);
         return false;
-    }
-    for (const std::string& line : lines) {
-        if (line.size() != width) {
-            logger_->get()->error("the map's rows are {} and {} tiles long, so it is not rectangular",
-                width, line.size());
-            return false;
-        }
     }
 
     // read the whole document before touching this map's own state, so a rejected one
     // leaves whatever was loaded before intact rather than half replaced
+    v3d::grid::TileCoord start{-1, -1};
+    for (const v3d::grid::Unknown& unknown : picture.unknown) {
+        if (unknown.glyph != startGlyph) {
+            logger_->get()->error("the map has an unknown tile '{}' at {}, {}", unknown.glyph,
+                unknown.tiles.front().x, unknown.tiles.front().y);
+            return false;
+        }
+        // the start stands on floor, and the last one written is the one that counts
+        for (const v3d::grid::TileCoord& tile : unknown.tiles) {
+            picture.grid->setPassable(tile, passable(Kind::Floor));
+            picture.grid->setCover(tile, cover(Kind::Floor));
+        }
+        start = unknown.tiles.back();
+    }
+
+    const std::size_t width = lines.front().size();
     std::vector<Kind> kinds;
     kinds.reserve(width * lines.size());
-    v3d::grid::TileCoord start{-1, -1};
-    for (std::size_t y = 0; y < lines.size(); y++) {
-        for (std::size_t x = 0; x < width; x++) {
-            const char glyph = lines[y][x];
-            Kind kind = Kind::Floor;
-            if (!kindFromGlyph(glyph, &kind)) {
-                logger_->get()->error("the map has an unknown tile '{}' at {}, {}", glyph, x, y);
-                return false;
-            }
-            if (glyph == startGlyph) {
-                start = v3d::grid::TileCoord{static_cast<int>(x), static_cast<int>(y)};
-            }
-            kinds.push_back(kind);
+    for (const std::string& line : lines) {
+        for (char glyph : line) {
+            kinds.push_back(kindFromGlyph(glyph));
         }
     }
 
-    auto grid = boost::make_shared<v3d::grid::TileGrid>(
-        static_cast<int>(width), static_cast<int>(lines.size()));
-    for (std::size_t i = 0; i < kinds.size(); i++) {
-        const v3d::grid::TileCoord tile{
-            static_cast<int>(i % width), static_cast<int>(i / width)};
-        grid->setPassable(tile, passable(kinds[i]));
-        grid->setCover(tile, cover(kinds[i]));
-        if (start.x < 0 && passable(kinds[i])) {
-            start = tile;
+    auto grid = boost::make_shared<v3d::grid::TileGrid>(std::move(*picture.grid));
+    for (std::size_t i = 0; start.x < 0 && i < kinds.size(); i++) {
+        if (passable(kinds[i])) {
+            start = v3d::grid::TileCoord{static_cast<int>(i % width), static_cast<int>(i / width)};
         }
     }
     if (start.x < 0) {

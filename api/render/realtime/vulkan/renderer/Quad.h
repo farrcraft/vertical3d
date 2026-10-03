@@ -54,7 +54,8 @@ namespace v3d::render::realtime::vulkan::renderer {
  * recorded holds.
  *
  * Everything it registers - the pipeline, the white texture, a material per texture -
- * belongs to pipeline::Resources and lives until the context does.
+ * belongs to pipeline::Resources. The pipelines and the white texture live until the
+ * context does; a texture lives until it is released here, along with its material.
  **/
 class Quad final {
  public:
@@ -100,8 +101,8 @@ class Quad final {
      *
      * The images stay the target's - what is registered names them rather than taking them
      * over, so nothing here frees them. A target that is resized allocates new ones, and
-     * the handle this returned then names images that no longer exist: register the target
-     * again after a recreate() and use the new handle.
+     * the handle this returned then names images that no longer exist: after a recreate(),
+     * release the old handle and register the target again.
      *
      * @return the handle to draw with
      **/
@@ -111,9 +112,9 @@ class Quad final {
      * Register a render target's depth image, so that a draw can sample what a pass tested
      * against rather than what it painted - which is the read half of a shadow map.
      *
-     * The same borrowed contract, and the same rule about registering again after a
-     * recreate(). A target built without a depth image, or with one it was not told would
-     * be sampled, has nothing to register: it comes back as the white texture, because a
+     * The same borrowed contract, and the same rule about releasing and registering again
+     * after a recreate(). A target built without a depth image, or with one it was not told
+     * would be sampled, has nothing to register: it comes back as the white texture, because a
      * descriptor set written against an image with no sampled usage is undefined and a
      * flat white shadow map is a scene that is merely unshadowed.
      *
@@ -125,6 +126,17 @@ class Quad final {
      * @return the 1x1 white texture an untextured quad is drawn against
      **/
     TextureHandle white() const noexcept;
+
+    /**
+     * Release a texture and the material drawn with it - ADR-0061. The handle resolves to
+     * nothing at once, and the image and the descriptor set are reclaimed once no frame in
+     * flight can still be reading them.
+     *
+     * @return whether anything was released. The white texture is never released, so a
+     *         handle depthTexture() gave back for a target with nothing to sample can be
+     *         released like any other without taking it away from everything else.
+     **/
+    bool release(const TextureHandle& handle);
 
     /**
      * Upload a canvas and add a draw item to the pass for each of its batches.
@@ -215,11 +227,15 @@ class Quad final {
     VkDescriptorSetLayout materialLayout_;  /**< set 1, the sampler every quad reads through **/
     std::vector<VkDescriptorPool> pools_;
     uint32_t remaining_;                    /**< sets left in the last pool **/
+    /**< sets whose material was released and no frame still reads, to be written again. Shared
+         with what the ring runs, because the ring is destroyed after this is **/
+    boost::shared_ptr<std::vector<VkDescriptorSet>> spare_;
 
     PipelineHandle pipeline_;               /**< for a pass with no depth attachment **/
     PipelineHandle depthPipeline_;          /**< for a pass with one **/
     TextureHandle white_;
-    std::map<uint32_t, MaterialHandle> materials_;
+    /**< keyed by the whole handle, so a slot reused after a release never finds the old set **/
+    std::map<TextureHandle, MaterialHandle> materials_;
 
     /**< a ring of geometry per frame in flight, grown as a frame's submissions ask **/
     std::vector<std::vector<Geometry>> geometry_;

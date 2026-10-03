@@ -30,11 +30,10 @@ namespace odyssey::tile {
  *     '@'  floor, and where the player starts
  *
  * Rows of characters rather than an array of objects because a map is read far more often
- * by a person than by the program, and this way the file looks like the board. The format
- * is odyssey's own and lives here rather than in api/grid: the grid is a data structure
- * with no opinion about where a map came from, and one app wanting a file is not a library
- * ([ADR-0016](../../docs/adr/0016-undo-records-what-has-already-happened.md)). It earns a
- * record of its own when something other than this app reads or writes one.
+ * by a person than by the program, and this way the file looks like the board. The rows and
+ * the terrain of '.', '#' and 'o' go to v3d::grid::fromPicture, which builds the grid. The
+ * JSON around them, the kinds and the '@' are odyssey's, because api/grid owns a picture and a
+ * terrain legend and nothing else about a map - ADR-0062.
  **/
 class Map final {
  public:

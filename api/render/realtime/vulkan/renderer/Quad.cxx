@@ -78,6 +78,7 @@ Quad::Quad(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::share
     uniforms_(uniforms),
     materialLayout_(VK_NULL_HANDLE),
     remaining_(0),
+    spare_(boost::make_shared<std::vector<VkDescriptorSet>>()),
     cursor_(0) {
     factory_ = boost::make_shared<memory::TextureFactory>(device_);
     createLayouts();
@@ -241,7 +242,7 @@ void Quad::addPool() {
 /**
  **/
 MaterialHandle Quad::material(const TextureHandle& handle) {
-    const std::map<uint32_t, MaterialHandle>::const_iterator found = materials_.find(handle.id());
+    const std::map<TextureHandle, MaterialHandle>::const_iterator found = materials_.find(handle);
     if (found != materials_.end()) {
         return found->second;
     }
@@ -251,24 +252,30 @@ MaterialHandle Quad::material(const TextureHandle& handle) {
         return MaterialHandle();
     }
 
-    if (pools_.empty() || remaining_ == 0) {
-        addPool();
-    }
-
-    VkDescriptorSetAllocateInfo info{};
-    info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    info.descriptorPool = pools_.back();
-    info.descriptorSetCount = 1;
-    info.pSetLayouts = &materialLayout_;
-
     VkDescriptorSet set = VK_NULL_HANDLE;
-    VkResult result = vkAllocateDescriptorSets(device_->handle(), &info, &set);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to allocate a vulkan descriptor set - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
+    if (!spare_->empty()) {
+        // the pools were not created to free a set, so a released one is written again
+        set = spare_->back();
+        spare_->pop_back();
+    } else {
+        if (pools_.empty() || remaining_ == 0) {
+            addPool();
+        }
+
+        VkDescriptorSetAllocateInfo info{};
+        info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        info.descriptorPool = pools_.back();
+        info.descriptorSetCount = 1;
+        info.pSetLayouts = &materialLayout_;
+
+        VkResult result = vkAllocateDescriptorSets(device_->handle(), &info, &set);
+        if (result != VK_SUCCESS) {
+            std::stringstream msg;
+            msg << "Unable to allocate a vulkan descriptor set - " << device::resultString(result);
+            throw std::runtime_error(msg.str());
+        }
+        remaining_--;
     }
-    remaining_--;
 
     VkDescriptorImageInfo image{};
     image.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -290,8 +297,28 @@ MaterialHandle Quad::material(const TextureHandle& handle) {
     built.texture = handle;
 
     const MaterialHandle material = resources_->add(built);
-    materials_[handle.id()] = material;
+    materials_[handle] = material;
     return material;
+}
+
+/**
+ **/
+bool Quad::release(const TextureHandle& handle) {
+    if (handle == white_) {
+        return false;
+    }
+
+    const std::map<TextureHandle, MaterialHandle>::const_iterator found = materials_.find(handle);
+    if (found != materials_.end()) {
+        const pipeline::Material* material = resources_->material(found->second);
+        if (material != nullptr) {
+            ring_->retire([spare = spare_, set = material->set]() { spare->push_back(set); });
+        }
+        resources_->release(found->second);
+        materials_.erase(found);
+    }
+
+    return resources_->release(handle);
 }
 
 /**

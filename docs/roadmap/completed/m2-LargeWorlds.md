@@ -1,46 +1,53 @@
 # A World Larger Than the Screen
 
-Milestone 2 of [the game engine roadmap](GameEngine.md). What a game needs once its world no
+Milestone 2 of [the game engine roadmap](../GameEngine.md). What a game needs once its world no
 longer fits in one screen or one load: resources that can be let go, world sprites drawn in the
 order the camera sees them, things off screen not drawn, and maps read from a file. Every
 consumer in and out of this tree has drawn a single board so far, and every gap here follows
 from that.
 
+**Done by [LargeWorlds](../../plans/completed/LargeWorlds.md)**, closed 2026-10-03. Regions,
+remembered sight and the movement filter are held in [TODO.md](../../TODO.md#tile-grids) behind
+their triggers. Resource lifetime and the grid's part of a map have records of their own in
+[ADR-0061](../../adr/0061-a-resource-is-released-explicitly.md) and
+[ADR-0062](../../adr/0062-a-map-picture-and-legend-are-the-grids.md). What follows is the
+reasoning the plan was drafted from, as it stood then.
+
 cozy's M6 (world and map) is where all of it is first due, and cozy's own roadmap names this
 tree's add-only resources as that milestone's trigger. Nothing here waits on another milestone
-except culling, which uses [milestone 1](completed/m1-MotionAndQueries.md)'s `Frustum`.
+except culling, which uses [milestone 1](m1-MotionAndQueries.md)'s `Frustum`.
 
 ## What exists
 
-* **[`pipeline::Resources`](../../api/render/realtime/vulkan/pipeline/Resources.h) adds and never
+* **[`pipeline::Resources`](../../../api/render/realtime/vulkan/pipeline/Resources.h) adds and never
   removes.** It hands out a handle for a pipeline, a material or a texture, and nothing frees
   one. That costs something already: cozy's debug hot reload leaks the texture it replaces on
-  every reload, and [`Quad::texture(target)`](../../api/render/realtime/vulkan/renderer/Quad.h)
+  every reload, and [`Quad::texture(target)`](../../../api/render/realtime/vulkan/renderer/Quad.h)
   tells its caller to register a target again after it is recreated, which leaves the old
   registration naming images that no longer exist.
-* **[`WorldCanvas`](../../api/render/realtime/WorldCanvas.h) draws in submission order**, and
+* **[`WorldCanvas`](../../../api/render/realtime/WorldCanvas.h) draws in submission order**, and
   says why: in an isometric projection a sprite is behind another when its feet are further up
   the ground plane, which is the caller's knowledge, and by
-  [ADR-0042](../adr/0042-a-textured-quad-in-world-space.md) one world quad never occludes
+  [ADR-0042](../../adr/0042-a-textured-quad-in-world-space.md) one world quad never occludes
   another through depth. Its stream is cut wherever the bound texture changes
-  ([ADR-0005](../adr/0005-one-batched-quad-primitive.md)).
-* **A pass can sort its items by key** ([Pass.h](../../api/render/realtime/Pass.h)), by
+  ([ADR-0005](../../adr/0005-one-batched-quad-primitive.md)).
+* **A pass can sort its items by key** ([Pass.h](../../../api/render/realtime/Pass.h)), by
   pipeline and material, for a depth-tested scene with an item per object. That is a different
   sort from the one above: a canvas is one stream, and the order inside it is what matters.
-* **Nothing is culled**, per [RenderingPipeline.md](../RenderingPipeline.md#what-is-not-built-yet).
+* **Nothing is culled**, per [RenderingPipeline.md](../../RenderingPipeline.md#what-is-not-built-yet).
   voxel submits every meshed chunk, and its chunk-local vertices were laid out to allow culling
   later.
-* **[`api/grid`](../../api/grid/)** is one rectangle of tiles on Y = 0 with world and tile
+* **[`api/grid`](../../../api/grid/)** is one rectangle of tiles on Y = 0 with world and tile
   conversion, A*, a reachable set, a distance field and line of sight
-  ([ADR-0029](../adr/0029-tile-grids-are-an-api-library.md)). Its movement filter is a
+  ([ADR-0029](../../adr/0029-tile-grids-are-an-api-library.md)). Its movement filter is a
   `std::function` called for every neighbour of every visited tile, which
-  [TODO.md](../TODO.md#tile-grids) names as the first thing to templatise.
+  is the first thing to templatise once a board is large enough to notice.
 * **Two map formats exist and they are the same idea.** odyssey's
-  [`Map.h`](../../odyssey/tile/Map.h) is rows of characters, one per tile, so that the file
+  [`Map.h`](../../../odyssey/tile/Map.h) is rows of characters, one per tile, so that the file
   looks like the board; retcon's `game/mission/MapFile` is a picture of glyphs with a legend
   saying what each glyph's terrain is and what stands on it. Both say a format is a game's until
   a second reader exists.
-* **odyssey remembers what it has seen.** [`Sight.h`](../../odyssey/tile/Sight.h) keeps two
+* **odyssey remembers what it has seen.** [`Sight.h`](../../../odyssey/tile/Sight.h) keeps two
   answers per tile — in sight now, and seen before — on top of `grid::hasLineOfSight`, and
   says the range and the memory are what it adds.
 
@@ -56,10 +63,10 @@ and a region that loads one must not see each other's texture.
 handle, a reference count held by whatever keeps a handle, or a scope — everything registered
 for a scene released with it — and they differ in who can get it wrong. Whatever is released
 must also not be in a frame still in flight, so the free waits on the in-flight ring
-([ADR-0051](../adr/0051-the-in-flight-ring-is-not-the-swapchain.md)), which is what knows when
+([ADR-0051](../../adr/0051-the-in-flight-ring-is-not-the-swapchain.md)), which is what knows when
 a frame has finished with it.
 
-[Milestone 4](m4-LitScene.md) moves textures and samplers into classes of their own, so this
+[Milestone 4](../m4-LitScene.md) moves textures and samplers into classes of their own, so this
 milestone should give them a registry that release works in, rather than give `Resources` a
 release that milestone 4 then works around.
 
@@ -77,7 +84,7 @@ unless asked.
 
 ### Culling
 
-Testing a box against [milestone 1](completed/m1-MotionAndQueries.md)'s `Frustum` before an item is submitted.
+Testing a box against [milestone 1](m1-MotionAndQueries.md)'s `Frustum` before an item is submitted.
 For voxel that is one box per chunk, and for retcon one per entity. For cozy it is one per region
 or chunk of a region rather than per quad: the test is cheaper than a quad, but not by enough to
 run thousands of them a frame.
@@ -130,8 +137,8 @@ back rather than lost.
 ## Not in this milestone
 
 * **Streaming in the background.** Loading a region without a hitch needs loading off the main
-  thread, which is [milestone 7](m7-ShellAndShipping.md#asynchronous-loading). A region loaded on
+  thread, which is [milestone 7](../m7-ShellAndShipping.md#asynchronous-loading). A region loaded on
   the main thread is correct, and M6 can start there.
 * **A minimap.** Drawing the world into a target and showing it in the ui is what
-  [ADR-0031](../adr/0031-a-pass-draws-into-a-target-it-names.md) already allows. It is a
+  [ADR-0031](../../adr/0031-a-pass-draws-into-a-target-it-names.md) already allows. It is a
   consumer's first use of it rather than a missing piece.

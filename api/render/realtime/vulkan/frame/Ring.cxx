@@ -9,6 +9,7 @@
 
 #include <sstream>
 #include <stdexcept>
+#include <utility>
 
 #include <boost/make_shared.hpp>
 
@@ -19,7 +20,9 @@ namespace v3d::render::realtime::vulkan::frame {
 Ring::Ring(const boost::shared_ptr<device::Device>& device, uint32_t framesInFlight) :
     device_(device),
     framesInFlight_(framesInFlight > 0 ? framesInFlight : 1),
-    frame_(0) {
+    frame_(0),
+    begun_(0),
+    retired_(framesInFlight_) {
     pool_ = boost::make_shared<CommandPool>(device_, device_->families().graphics);
     commands_ = pool_->allocate(framesInFlight_);
 
@@ -43,8 +46,10 @@ Ring::Ring(const boost::shared_ptr<device::Device>& device, uint32_t framesInFli
 /**
  **/
 Ring::~Ring() {
-    // nothing may be waiting on a fence when it is destroyed
+    // nothing may be waiting on a fence when it is destroyed, and nothing retired may still
+    // be read by a frame
     waitIdle();
+    retired_.flush();
 
     for (VkFence fence : inFlight_) {
         vkDestroyFence(device_->handle(), fence, nullptr);
@@ -90,6 +95,18 @@ void Ring::waitIdle() const {
 
 /**
  **/
+uint64_t Ring::begun() const noexcept {
+    return begun_;
+}
+
+/**
+ **/
+void Ring::retire(std::function<void()> destroy) {
+    retired_.retire(begun_, std::move(destroy));
+}
+
+/**
+ **/
 VkFence Ring::fence() const noexcept {
     return inFlight_[frame_];
 }
@@ -125,6 +142,11 @@ VkCommandBuffer Ring::begin() {
         msg << "Unable to begin a vulkan command buffer - " << device::resultString(result);
         throw std::runtime_error(msg.str());
     }
+
+    // counted only once nothing can throw, because a begin that failed waited on a slot without
+    // moving past it, and counting it would collect a frame early
+    begun_++;
+    retired_.collect(begun_);
 
     return commands;
 }

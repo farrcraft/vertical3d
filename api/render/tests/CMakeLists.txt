@@ -1,16 +1,19 @@
 # The frame model is testable without a window or a device - a pass collects draw items and a
 # sort key orders them, neither of which touches vulkan. So are all three canvases: batching, the
 # transform stack, the projection and the line geometry are all cpu side, and so is which format a
-# chain is built with, and so is the channel order a captured frame is written in. Everything
-# else below the recorder needs a device, and waits on ADR-0007.
+# chain is built with, and so is the channel order a captured frame is written in, and so is when a
+# released resource is destroyed, given a count of frames. Everything else below the recorder needs
+# a device, and waits on ADR-0007.
 v3d_add_test(render
 	"TestMain.cpp"
 	"FrameTest.cpp"
 	"SortKeyTest.cpp"
 	"RegistryTest.cpp"
+	"RetirementTest.cpp"
 	"CanvasTest.cpp"
 	"LineCanvasTest.cpp"
 	"WorldCanvasTest.cpp"
+	"DepthOrderTest.cpp"
 	"SwapchainFormatTest.cpp"
 	"CaptureConvertTest.cpp")
 
@@ -26,6 +29,7 @@ v3d_add_test(render_device
 	"device/Reference.cpp"
 	"device/OffscreenFrameTest.cpp"
 	"device/WorldDepthTest.cpp"
+	"device/ReleaseTest.cpp"
 	"device/PipelineBuilderTest.cpp")
 
 # A committed picture is resolved against the working directory, which v3d_add_test points at

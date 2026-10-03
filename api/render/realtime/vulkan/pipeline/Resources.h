@@ -8,6 +8,7 @@
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Registry.h>
 #include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/memory/Allocator.h>
 
 #include <vulkan/vulkan.h>
@@ -67,19 +68,21 @@ struct Texture final {
  * Everything a draw item can name by handle, and the owner that destroys it.
  *
  * Draw items refer to resources by handle rather than by pointer so that the sort key
- * they carry means something - see ADR-0004. That only works while a handle's slot is
- * stable and while something outlives the frames using it, which is what this is for.
+ * they carry means something - see ADR-0004. That only works while something outlives the
+ * frames using a resource, which is what this is for.
  *
- * Resources live until the context does. Nothing here reference counts or frees an
- * individual resource: textures and pipelines are built at load time and used until the
- * app closes.
+ * A resource lives until it is released or the context goes - ADR-0061. A released handle
+ * resolves to nothing at once, and what it named is handed to the ring to destroy once the
+ * frames that may still read it have finished. Pipelines are built at load time and are not
+ * released.
  **/
 class Resources final {
  public:
     /**
      * @param device the device everything registered here was created on
+     * @param ring the frames in flight, which hold back what is released until they finish
      **/
-    explicit Resources(const boost::shared_ptr<device::Device>& device);
+    Resources(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<frame::Ring>& ring);
 
     /**
      * Destroys every resource that was registered, in the order vulkan requires.
@@ -106,6 +109,22 @@ class Resources final {
     TextureHandle add(const Texture& texture);
 
     /**
+     * Stop addressing a material. Its descriptor set belongs to the pool it came from, so
+     * whoever allocated it decides what happens to the set.
+     *
+     * @return whether the handle referred to anything
+     **/
+    bool release(const MaterialHandle& handle);
+
+    /**
+     * Stop addressing a texture, and destroy what it owns once no frame in flight can still
+     * be sampling it. A material naming it has to be released as well, by whoever made it.
+     *
+     * @return whether the handle referred to anything
+     **/
+    bool release(const TextureHandle& handle);
+
+    /**
      * @return the pipeline the handle refers to, or nullptr
      **/
     const Pipeline* pipeline(const PipelineHandle& handle) const;
@@ -122,6 +141,7 @@ class Resources final {
 
  private:
     boost::shared_ptr<device::Device> device_;
+    boost::shared_ptr<frame::Ring> ring_;
     Registry<PipelineTag, Pipeline> pipelines_;
     Registry<MaterialTag, Material> materials_;
     Registry<TextureTag, Texture> textures_;

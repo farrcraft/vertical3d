@@ -3,6 +3,7 @@ v3d_add_test(grid
 	"TileGridTest.cpp"
 	"PathfindingTest.cpp"
 	"LineOfSightTest.cpp"
-	"OverlayTest.cpp")
+	"OverlayTest.cpp"
+	"PictureTest.cpp")
 
 target_link_libraries(v3dtest_grid PRIVATE v3dlib_grid)

@@ -39,7 +39,7 @@ retcon's ADR-0041 — so what follows is work for this tree whoever ends up want
 | # | Milestone | What it is | Drawn from |
 |---|---|---|---|
 | 1 | [Motion and queries](completed/m1-MotionAndQueries.md) — **done by [a plan](../plans/completed/MotionAndQueries.md)**, sprite clip aside | Interpolation, sprite clips, a ground pick, box overlap, `Plane` and `Frustum` in `api/type` | cozy M5–M6, pong, voxel, odyssey, moya |
-| 2 | [A world larger than the screen](m2-LargeWorlds.md) | Releasing a resource, depth-ordering world quads, culling, a grid map format, remembered sight | cozy M6, retcon phase 6, odyssey |
+| 2 | [A world larger than the screen](completed/m2-LargeWorlds.md) — **done by [a plan](../plans/completed/LargeWorlds.md)**, regions and remembered sight aside | Releasing a resource, depth-ordering world quads, culling, a grid map format, remembered sight | cozy M6, retcon phase 6, odyssey |
 | 3 | [The renderable component](m3-RenderableComponent.md) | A decision: how the ECS meets the renderer | the open question in [ECSDesign.md](../ECSDesign.md), retcon's `ecs/` |
 | 4 | [A lit scene](m4-LitScene.md) | Image, sampler and texture classes, `type::Model` onto the device, a lit mesh pass, a shadow map, a post chain | retcon `engine/renderer/`, voxel |
 | 5 | [Skeletal animation](m5-SkeletalAnimation.md) | Skins and clips from glTF, GPU skinning, a clip sampler shared with milestone 1, instancing | retcon phases 7–10 |
@@ -70,8 +70,9 @@ entity carries to be drawn is a lit scene built to one game's shape, and retcon'
 `MeshRenderer` is the shape it would default to. The decision is small; deciding it after the
 mesh tier exists is not.
 
-**Milestone 4 also waits on milestone 2**, because the texture class it moves here should be
-released the way milestone 2 decides rather than be retrofitted.
+**Milestone 4 no longer waits on milestone 2.** The texture class it moves here retires what it
+owns through the in-flight ring, which milestone 2 decided
+([ADR-0061](../adr/0061-a-resource-is-released-explicitly.md)).
 
 **Milestones 4 and 5 are strictly ordered, and the order is the point of the roadmap.**
 retcon's lit tier works today, so moving it here is not urgent for retcon on its own. But
@@ -93,9 +94,8 @@ them blocks another.
   Moving it is a handoff from retcon under its ADR-0041, which is how every previous round
   reached this tree. [m4-LitScene.md](m4-LitScene.md) has what the move involves.
 * **What a renderable component is** — milestone 3, in its own record.
-* **Which part of a map is the grid's** — retcon's map format names encounters, items and a
-  horde beside its terrain, so a second reader exists for the terrain layer alone.
-  [m2-LargeWorlds.md](m2-LargeWorlds.md) has the detail.
+* **Which part of a map is the grid's** — decided: a picture and a terrain legend, and nothing
+  else ([ADR-0062](../adr/0062-a-map-picture-and-legend-are-the-grids.md)).
 
 ## Verification
 

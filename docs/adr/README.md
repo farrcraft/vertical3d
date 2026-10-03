@@ -69,3 +69,5 @@ old record's status and leave the file in place.
 | [0058](0058-the-platform-half-of-a-ui-router-is-the-apis.md) | UI Input — The Platform Half Of The Keyboard Router Is The api's, And Text Input Follows The Focus | accepted | 2026-09-13 |
 | [0059](0059-disabled-is-a-property-of-a-component.md) | UI Components — Disabled Is A Property Of A Component, Not A Fourth Button State | accepted | 2026-09-13 |
 | [0060](0060-a-moving-thing-keeps-its-previous-step.md) | Interpolation — A Moving Thing's Previous Step Is A Component, Snapshotted Before Each Step | accepted | 2026-10-03 |
+| [0061](0061-a-resource-is-released-explicitly.md) | Resource Lifetime — A Resource Is Released Explicitly, A Stale Handle Resolves To Nothing, And The Ring Defers Destruction | accepted | 2026-10-03 |
+| [0062](0062-a-map-picture-and-legend-are-the-grids.md) | Map Formats — The Grid Owns A Picture And A Terrain Legend, And The Container Is The Game's | accepted | 2026-10-03 |

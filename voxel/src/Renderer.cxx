@@ -11,6 +11,7 @@
 #include <voxel/src/engine/ChunkMeshBuilder.h>
 #include <voxel/src/engine/SceneUniforms.h>
 #include <voxel/src/game/Player.h>
+#include <voxel/src/voxel/ChunkCulling.h>
 #include <voxel/src/voxel/ChunkMeshPool.h>
 #include <voxel/src/voxel/MeshBuilder.h>
 
@@ -106,6 +107,8 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
     engine_(logger, assetManager, registry),
     sceneLayout_(VK_NULL_HANDLE),
     pool_(VK_NULL_HANDLE),
+    drawnChunks_(0),
+    meshedChunks_(0),
     debug_(false) {
     engine_.initialize(window);
     engine_.clearColour(sky);
@@ -283,13 +286,21 @@ void Renderer::ui(const boost::shared_ptr<v3d::ui::Engine>& engine) {
  **/
 void Renderer::drawTerrain(v3d::render::realtime::Pass* pass) {
     const glm::vec3 eye = scene_->camera()->position();
+    const v3d::type::geometry::Frustum frustum(scene_->camera()->projection() * scene_->camera()->view());
     const ChunkMeshPool::EntryMap& entries = meshes_->entries();
 
+    drawnChunks_ = 0;
+    meshedChunks_ = 0;
     for (ChunkMeshPool::EntryMap::const_iterator it = entries.begin(); it != entries.end(); ++it) {
         const ChunkMeshPool::Entry& entry = (*it).second;
         if (!entry.mesh) {
             continue;
         }
+        meshedChunks_++;
+        if (!chunkInView(frustum, entry.origin, entry.size)) {
+            continue;
+        }
+        drawnChunks_++;
 
         v3d::render::realtime::DrawItem item;
         entry.mesh->describe(&item);
@@ -319,7 +330,7 @@ void Renderer::drawDebug(const v3d::ui::shell::StatisticsOverlay::Sample& statis
     const glm::vec3 position = scene_->player()->position();
 
     tools_->begin(&canvas_, tools);
-    if (tools_->window(debugTitle, glm::vec2(20.0f, 20.0f), glm::vec2(260.0f, 132.0f), 0.85f)) {
+    if (tools_->window(debugTitle, glm::vec2(20.0f, 20.0f), glm::vec2(260.0f, 154.0f), 0.85f)) {
         tools_->text(std::string("Voxel ") + VOXEL_VERSION);
         // the loop already keeps a rolling mean, so nothing here averages anything
         tools_->text(std::to_string(statistics.mean / 1000000U) + " ms");
@@ -327,6 +338,7 @@ void Renderer::drawDebug(const v3d::ui::shell::StatisticsOverlay::Sample& statis
         where.precision(1);
         where << std::fixed << "x " << position.x << "  y " << position.y << "  z " << position.z;
         tools_->text(where.str());
+        tools_->text("chunks " + std::to_string(drawnChunks_) + " / " + std::to_string(meshedChunks_));
     }
     tools_->endWindow();
     tools_->end();

@@ -18,6 +18,7 @@
 
 #include <vulkan/vulkan.h>
 
+#include <cstddef>
 #include <string>
 
 #include <boost/shared_ptr.hpp>
@@ -100,12 +101,13 @@ class Renderer {
     void createPipeline();
 
     /**
-     * One draw item per meshed chunk, submitted to the terrain pass.
+     * One draw item per meshed chunk in the camera's view, submitted to the terrain pass.
      **/
     void drawTerrain(v3d::render::realtime::Pass* pass);
 
     /**
-     * The F3 readout - the build, what the loop measured, and where the player is standing.
+     * The F3 readout - the build, what the loop measured, where the player is standing, and
+     * how many of the meshed chunks were drawn.
      **/
     void drawDebug(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
         const v3d::ui::Immediate::Input& tools);
@@ -126,6 +128,8 @@ class Renderer {
 
     boost::shared_ptr<ChunkMeshPool> meshes_;
     boost::shared_ptr<MeshBuilder> builder_;
+    std::size_t drawnChunks_;   /**< how many chunks the last frame drew **/
+    std::size_t meshedChunks_;  /**< how many it could have, being meshed **/
 
     bool debug_;
 

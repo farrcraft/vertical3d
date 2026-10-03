@@ -116,6 +116,11 @@ symmetric because the endpoints are ordered before the line is traced.
   generation too.
 - **One predicate serves the path search, the reachable set and the distance field**, so a tile
   a movement highlight offers is one the path search can reach for the cost shown.
+- **A map's terrain is the grid's, and nothing else about a map is.** `fromPicture()` turns rows
+  of glyphs and a legend of passability and cover into a `TileGrid`. It hands back every glyph
+  the legend does not name, with the tiles it stands on, rather than refusing it. The file, the
+  props, the spawns and the start position stay the game's
+  ([ADR-0062](adr/0062-a-map-picture-and-legend-are-the-grids.md)).
 - **`tileDistance()` is Chebyshev**, and it is the metric anything measured in tiles uses. A
   second metric invented elsewhere would disagree with what movement charges.
 - **The overlay is geometry, not drawing.** `Overlay.h` hands its segments to a `LineSink`
@@ -236,6 +241,11 @@ because neither is simulation and neither wants to run twice on a slow frame.
 - **A frame may submit any number of canvases, and each takes a buffer of its own.** Appending
   into one buffer would not work, because `vulkan::Buffer::grow` replaces the allocation and
   invalidates the handle every draw item recorded before it is holding.
+- **A released handle resolves to nothing at once, and what it named outlives it.** The Vulkan
+  objects are destroyed only once the frames in flight have finished with them
+  ([ADR-0061](adr/0061-a-resource-is-released-explicitly.md)), so a device suite counting live
+  allocations has to run the ring that far first. A frame driven without `Ring::begin()`
+  collects nothing.
 - **A `Frustum` has to be told the depth range of the matrix it is given.** Its default,
   `ZeroToOne`, is what `type::camera::Camera` builds; moya builds `MinusOneToOne`. A frustum
   read with the wrong one puts its near plane behind the true one, so it keeps what it should

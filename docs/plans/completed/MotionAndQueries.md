@@ -167,7 +167,7 @@ moya's [`ReferenceTest`](../../../moya/tests/ReferenceTest.cxx) renders through
 `RenderContext`'s culling, so its two pictures not changing is what shows moya's own behaviour
 survived.
 
-**Nothing in the realtime tree culls yet.** That is [milestone 2](../../roadmap/m2-LargeWorlds.md#culling);
+**Nothing in the realtime tree culls yet.** That is [milestone 2](../../roadmap/completed/m2-LargeWorlds.md#culling);
 this step makes it possible and leaves voxel submitting every chunk.
 
 ### Step 4 — A box overlaps a box
@@ -317,7 +317,7 @@ point of the step rather than something a reference could pin
 ## What this does not do
 
 - **It does not cull anything.** Step 3 makes a correct frustum available; using it is
-  [milestone 2](../../roadmap/m2-LargeWorlds.md#culling).
+  [milestone 2](../../roadmap/completed/m2-LargeWorlds.md#culling).
 - **It does not respond to a collision.** Step 4 answers whether two boxes overlap. What happens
   when they do is a game's rule, as pong's one-sided paddle shows.
 - **It does not give voxel collision.** `Player::checkWorldCollision` is a lookup in voxel's own

@@ -15,7 +15,7 @@ sprite clip.
 * **glTF is read here, and stops at a static mesh.** `asset::loader::Gltf` reads a file into a
   `type::Model` whose vertex is a position, a normal and a uv
   ([Model.h](../../api/type/Model.h)). Joints, weights, skins, nodes and animations are not
-  read. [TODO.md](../TODO.md#models) records that only the first material is kept, because a
+  read. Only the first material in a file is kept, because a
   merge is one draw, so a file whose parts need different surfaces has to become several models
   and nothing splits one.
 * **retcon parses through it.** Its `GltfLoader` is a conversion from the api's model into its

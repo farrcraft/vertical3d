@@ -86,7 +86,7 @@ consumer that will need to know which pass is slow rather than that a frame was.
 
 Nothing in `api/` starts a thread, and the uploader blocks. Every load today is on the main
 thread, which is correct and is a hitch the size of the load. A region loaded while walking
-toward it ([milestone 2](m2-LargeWorlds.md#regions)) is the first case where that shows, and the
+toward it ([milestone 2](completed/m2-LargeWorlds.md#regions)) is the first case where that shows, and the
 first piece is decoding off the main thread with the upload kept on it, because the decode is
 most of the time and the upload is what touches the device.
 
@@ -94,7 +94,7 @@ most of the time and the upload is what touches the device.
 
 * **Hot reload.** cozy has a file watcher, and considered sending it here and decided against it
   in its M3 plan. Its debug reload is also the clearest case of
-  [milestone 2](m2-LargeWorlds.md#releasing-a-resource)'s leak.
+  [milestone 2](completed/m2-LargeWorlds.md#releasing-a-resource)'s leak.
 * **What retcon has not adopted.** Bindings as data, the shell's menu and settings persistence
   are all here already; retcon taking them up in its phase 7 is retcon's work.
 * **Crash reporting, packaging and macOS.** retcon's phase 11. MoltenVK is a platform this tree

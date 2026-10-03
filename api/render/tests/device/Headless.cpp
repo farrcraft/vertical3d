@@ -62,6 +62,15 @@ Headless::~Headless() {
 /**
  **/
 void Headless::submitAndWait(VkCommandBuffer commands) {
+    submit(commands);
+    // the ring has moved past the slot this was submitted from, so its fence is no longer the
+    // one waitFrame() would wait on
+    context->ring()->waitIdle();
+}
+
+/**
+ **/
+void Headless::submit(VkCommandBuffer commands) {
     VkResult result = vkEndCommandBuffer(commands);
     if (result != VK_SUCCESS) {
         throw std::runtime_error("Unable to end the test's command buffer");
@@ -81,7 +90,6 @@ void Headless::submitAndWait(VkCommandBuffer commands) {
         throw std::runtime_error("Unable to submit the test's command buffer");
     }
 
-    context->ring()->waitFrame();
     context->ring()->advance();
 }
 
