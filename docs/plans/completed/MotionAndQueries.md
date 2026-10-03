@@ -1,7 +1,7 @@
 # Motion And Queries — A Plane, A Frustum, A Ground Pick, Overlap, And Drawing Between Steps
 
 Drafted 2026-10-03 against `13a9557`. Six steps across `api/type`, `api/ecs`, `moya` and `pong`,
-taking up [milestone 1](../../roadmap/m1-MotionAndQueries.md) of
+taking up [milestone 1](../../roadmap/completed/m1-MotionAndQueries.md) of
 [the game engine roadmap](../../roadmap/GameEngine.md). Five are open and one is held behind a
 named trigger.
 
@@ -342,5 +342,5 @@ Update the state in the table above, and set ADR-0060's status when step 5 lands
   [ECSDesign.md](../../ECSDesign.md) gains `Previous<T>`. Delete [TODO.md](../../TODO.md#the-game-loop)'s
   game-loop entry rather than marking it.
 - **When the plan closes**, step 6 moves to TODO.md with its trigger, the roadmap's
-  [m1](../../roadmap/m1-MotionAndQueries.md) points here as done, and this file moves to
+  [m1](../../roadmap/completed/m1-MotionAndQueries.md) points here as done, and this file moves to
   [completed/]().

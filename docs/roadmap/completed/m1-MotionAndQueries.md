@@ -1,36 +1,36 @@
 # Motion and Queries
 
-Milestone 1 of [the game engine roadmap](GameEngine.md). Five small pieces with little order
+Milestone 1 of [the game engine roadmap](../GameEngine.md). Five small pieces with little order
 between them: drawing between simulation steps, playing a sprite's frames, finding where a
 click lands on the ground, asking whether two boxes overlap, and the plane and frustum maths
 that two of those need. Each is something a consumer has written for itself or stubbed.
 
-**Done by [MotionAndQueries](../plans/completed/MotionAndQueries.md)**, closed 2026-10-03. The
-sprite clip is held in [TODO.md](../TODO.md#sprite-sheets) until it has a second consumer, and
+**Done by [MotionAndQueries](../../plans/completed/MotionAndQueries.md)**, closed 2026-10-03. The
+sprite clip is held in [TODO.md](../../TODO.md#sprite-sheets) until it has a second consumer, and
 interpolation has a record of its own in
-[ADR-0060](../adr/0060-a-moving-thing-keeps-its-previous-step.md); what follows is the
+[ADR-0060](../../adr/0060-a-moving-thing-keeps-its-previous-step.md); what follows is the
 reasoning the plan was drafted from, as it stood then.
 
 ## What exists
 
 * **The loop simulates at a fixed step and renders at a variable one**
-  ([ADR-0032](../adr/0032-the-loop-simulates-at-a-fixed-step.md)).
-  [`Engine::alpha()`](../../api/engine/Engine.h) is the fraction between the last completed
-  step and the next, and [`Accumulator.h`](../../api/engine/Accumulator.h) says of it that
+  ([ADR-0032](../../adr/0032-the-loop-simulates-at-a-fixed-step.md)).
+  [`Engine::alpha()`](../../../api/engine/Engine.h) is the fraction between the last completed
+  step and the next, and [`Accumulator.h`](../../../api/engine/Accumulator.h) says of it that
   nothing reads it yet. Every world drawn in this tree is snapped to the last 60 Hz step.
-* **A sprite sheet names regions.** [`config::SpriteSheets`](../../api/config/SpriteSheets.h)
+* **A sprite sheet names regions.** [`config::SpriteSheets`](../../../api/config/SpriteSheets.h)
   reads and writes the document, and `image::TextureAtlas` places what it names. Nothing plays
   a sequence of them: cozy's M5 plan states that the engine has no animation of any kind, and
   defers its walk cycle for want of art rather than of code.
-* **A click is already a ray.** [`Camera::ray()`](../../api/type/camera/Camera.h) turns a window
+* **A click is already a ray.** [`Camera::ray()`](../../../api/type/camera/Camera.h) turns a window
   point into a world-space ray, orthographic included. What is missing is the last step: where
   that ray meets the ground.
-* **[`type::geometry`](../../api/type/geometry/)** has `Ray` (slab test against an `AABBox`,
+* **[`type::geometry`](../../../api/type/geometry/)** has `Ray` (slab test against an `AABBox`,
   Möller-Trumbore against a triangle), `AABBox`, which can be built and extended but not tested
   against anything, and `Bound2D`, whose only test is a point
-  ([`Bound2D.h:64`](../../api/type/geometry/Bound2D.h)).
+  ([`Bound2D.h:64`](../../../api/type/geometry/Bound2D.h)).
 * **moya has a `Plane` and a `Frustum`** (`moya/libmoya/Plane.h` and `Frustum.h`, since moved to
-  [`api/type/geometry/`](../../api/type/geometry/) by [the plan](../plans/completed/MotionAndQueries.md)): classifying a point or a box against a plane,
+  [`api/type/geometry/`](../../../api/type/geometry/) by [the plan](../../plans/completed/MotionAndQueries.md)): classifying a point or a box against a plane,
   intersecting a ray or an edge with one, and extracting six planes from a matrix. They are
   general geometry living in a renderer.
 
@@ -46,7 +46,7 @@ settles what an entity carries to be drawn, but this does not have to wait for i
 positions is useful to pong today and is what a transform pair would generalise.
 
 cozy's `Movement` integrates a velocity on the fixed step and is the consumer that would see it
-first. odyssey is not one: its [path follower](../../odyssey/system/Movement.cpp) replaces a
+first. odyssey is not one: its [path follower](../../../odyssey/system/Movement.cpp) replaces a
 tile coordinate every 0.15 seconds, so what it would want is a position between two tiles,
 which is its own path's elapsed time rather than the loop's.
 
@@ -81,24 +81,24 @@ followed by `TileGrid`'s world-to-tile, which `api/grid` already has.
 ### Overlap
 
 Box against box, for `Bound2D` and for `AABBox`, and a containment test for each. pong writes
-its own ([`PongScene.cxx:95-112`](../../pong/src/PongScene.cxx)), voxel's
+its own ([`PongScene.cxx:95-112`](../../../pong/src/PongScene.cxx)), voxel's
 `Player::checkWorldCollision` is a stub that always answers no
-([`Player.cxx:94`](../../voxel/src/game/Player.cxx)), and cozy will need the same at M6 when
+([`Player.cxx:94`](../../../voxel/src/game/Player.cxx)), and cozy will need the same at M6 when
 something first walks into something.
 
 This is overlap and not collision response. Pushing a body back out of what it walked into is
 a game's rule — cozy and retcon would answer it differently — and is
-[not on this roadmap](GameEngine.md#not-on-this-roadmap).
+[not on this roadmap](../GameEngine.md#not-on-this-roadmap).
 
 ### `Plane` and `Frustum` in `api/type`
 
 Moved from moya, which keeps using them. They are the ground pick above and the culling in
-[milestone 2](m2-LargeWorlds.md#culling).
+[milestone 2](../m2-LargeWorlds.md#culling).
 
 **The frustum's plane extraction has to be checked against the clip space it is handed.** moya
 builds an offline camera and the realtime camera builds Vulkan clip space
-([ADR-0012](../adr/0012-camera-builds-vulkan-clip-space.md)), whose depth runs 0 to 1 rather
-than −1 to 1. By [ADR-0024](../adr/0024-api-type-serves-both-renderers.md) a convention one
+([ADR-0012](../../adr/0012-camera-builds-vulkan-clip-space.md)), whose depth runs 0 to 1 rather
+than −1 to 1. By [ADR-0024](../../adr/0024-api-type-serves-both-renderers.md) a convention one
 consumer needs becomes a parameter rather than a second copy, so the extraction takes it.
 
 ## Verification
@@ -115,6 +115,6 @@ place boxes known to be inside, outside and straddling each plane, and assert al
 ## Not in this milestone
 
 * **A camera that moves itself.** voxel's flight camera and the editor's orbit tool are each
-  one consumer's controller; [milestone 7](m7-ShellAndShipping.md) has the relative mouse mode
+  one consumer's controller; [milestone 7](../m7-ShellAndShipping.md) has the relative mouse mode
   they both work around.
 * **Collision response and a broadphase.** See above.

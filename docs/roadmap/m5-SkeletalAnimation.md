@@ -7,7 +7,7 @@ in neither tree.** It is the largest gap either game has, and it is retcon's.
 
 It waits on [milestone 4](m4-LitScene.md), because a skinned vertex is a vertex layout, a pipeline
 and a variant of the lit pass, and those have to exist somewhere before skinning can be written
-against them. It shares its time-keeping with [milestone 1](m1-MotionAndQueries.md#a-sprite-clip)'s
+against them. It shares its time-keeping with [milestone 1](completed/m1-MotionAndQueries.md#a-sprite-clip)'s
 sprite clip.
 
 ## What exists
@@ -58,7 +58,7 @@ time.
 **The time-keeping is milestone 1's.** Advancing a clip on the fixed step, looping, clamping and
 reporting an event at a named time are what the sprite clip already does; a skeletal clip is
 the same clock over continuous tracks rather than a list of regions. Interpolating a pose by
-`alpha()` between two steps is [milestone 1's interpolation](m1-MotionAndQueries.md#interpolation)
+`alpha()` between two steps is [milestone 1's interpolation](completed/m1-MotionAndQueries.md#interpolation)
 applied to joints instead of a transform.
 
 ### 3. Skinning in the lit pass

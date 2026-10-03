@@ -8,7 +8,7 @@ from that.
 
 cozy's M6 (world and map) is where all of it is first due, and cozy's own roadmap names this
 tree's add-only resources as that milestone's trigger. Nothing here waits on another milestone
-except culling, which uses [milestone 1](m1-MotionAndQueries.md)'s `Frustum`.
+except culling, which uses [milestone 1](completed/m1-MotionAndQueries.md)'s `Frustum`.
 
 ## What exists
 
@@ -77,7 +77,7 @@ unless asked.
 
 ### Culling
 
-Testing a box against [milestone 1](m1-MotionAndQueries.md)'s `Frustum` before an item is submitted.
+Testing a box against [milestone 1](completed/m1-MotionAndQueries.md)'s `Frustum` before an item is submitted.
 For voxel that is one box per chunk, and for retcon one per entity. For cozy it is one per region
 or chunk of a region rather than per quad: the test is cheaper than a quad, but not by enough to
 run thousands of them a frame.

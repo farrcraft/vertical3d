@@ -38,7 +38,7 @@ retcon's ADR-0041 — so what follows is work for this tree whoever ends up want
 
 | # | Milestone | What it is | Drawn from |
 |---|---|---|---|
-| 1 | [Motion and queries](m1-MotionAndQueries.md) — **done by [a plan](../plans/completed/MotionAndQueries.md)**, sprite clip aside | Interpolation, sprite clips, a ground pick, box overlap, `Plane` and `Frustum` in `api/type` | cozy M5–M6, pong, voxel, odyssey, moya |
+| 1 | [Motion and queries](completed/m1-MotionAndQueries.md) — **done by [a plan](../plans/completed/MotionAndQueries.md)**, sprite clip aside | Interpolation, sprite clips, a ground pick, box overlap, `Plane` and `Frustum` in `api/type` | cozy M5–M6, pong, voxel, odyssey, moya |
 | 2 | [A world larger than the screen](m2-LargeWorlds.md) | Releasing a resource, depth-ordering world quads, culling, a grid map format, remembered sight | cozy M6, retcon phase 6, odyssey |
 | 3 | [The renderable component](m3-RenderableComponent.md) | A decision: how the ECS meets the renderer | the open question in [ECSDesign.md](../ECSDesign.md), retcon's `ecs/` |
 | 4 | [A lit scene](m4-LitScene.md) | Image, sampler and texture classes, `type::Model` onto the device, a lit mesh pass, a shadow map, a post chain | retcon `engine/renderer/`, voxel |

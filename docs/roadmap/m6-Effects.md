@@ -6,7 +6,7 @@ day. Both games list them and neither has started them, so this milestone is dra
 design documents rather than from code that has hit a wall.
 
 **It has a 2D half and a 3D half.** The 2D half is drawn through `WorldCanvas`, needs
-[milestone 1](m1-MotionAndQueries.md)'s clip and nothing else, and is the half cozy wants from its
+[milestone 1](completed/m1-MotionAndQueries.md)'s clip and nothing else, and is the half cozy wants from its
 M6 on. The 3D half draws the same particles in a lit scene and waits on
 [milestone 4](m4-LitScene.md).
 
@@ -42,7 +42,7 @@ An emitter that spawns particles at a rate or in a burst, a fixed-step update th
 them, and a draw that writes each as a billboard into a `WorldCanvas`. The update is on the fixed
 step like everything else that simulates
 ([ADR-0032](../adr/0032-the-loop-simulates-at-a-fixed-step.md)), and drawing between steps is
-[milestone 1's interpolation](m1-MotionAndQueries.md#interpolation).
+[milestone 1's interpolation](completed/m1-MotionAndQueries.md#interpolation).
 
 **A particle's look is a sprite clip.** Smoke that thins, a spark that fades, a flame that
 flickers are each a sequence of regions over a lifetime, which is milestone 1's clip advanced by

@@ -52,7 +52,7 @@ batching, which argues for a component of its own whose system writes into one c
 the api provides the component and each game writes the walk. The first is what makes the
 component worth having in the api at all; the second is where both games are today.
 
-**What it means for [interpolation](m1-MotionAndQueries.md#interpolation).** If the api owns the
+**What it means for [interpolation](completed/m1-MotionAndQueries.md#interpolation).** If the api owns the
 transform, the previous and current pair that milestone 1 blends is a second transform
 component, copied by the api before each step, and the drawing system reads `alpha()`.
 

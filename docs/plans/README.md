@@ -12,7 +12,7 @@ outlives the schedule.
 No plan is open.
 
 [completed/MotionAndQueries.md](completed/MotionAndQueries.md) was drafted and closed on
-2026-10-03, taking up [milestone 1](../roadmap/m1-MotionAndQueries.md) of
+2026-10-03, taking up [milestone 1](../roadmap/completed/m1-MotionAndQueries.md) of
 [the game engine roadmap](../roadmap/GameEngine.md): moya's `Plane` and `Frustum` moved into
 `api/type` with the frustum told its depth range, a ray meeting a plane, box overlap, and a
 component's previous step kept so that `Engine::alpha()` has a reader

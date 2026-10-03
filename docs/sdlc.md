@@ -52,8 +52,9 @@ gone. Those live in [`audits/`](audits/), and move to
 
 An area nobody has taken up gets a roadmap, in [`roadmap/`](roadmap/): what it would need and
 in what order, written while the code is still fresh in someone's head. A roadmap is not
-scheduled and does not close. **When one of its sections is taken up it earns a plan**, and the
-roadmap points at it.
+scheduled. **When one of its sections is taken up it earns a plan**, and the roadmap points at
+it. When its plans have done what it asked, or what is left is recorded elsewhere, it moves to
+[`roadmap/completed/`](roadmap/completed/).
 
 ## 2. Decide
 
