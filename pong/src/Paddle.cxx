@@ -5,6 +5,7 @@
 
 #include "Paddle.h"
 
+#include <api/ecs/Previous.h>
 #include <api/ecs/component/Color3.h>
 #include <api/ecs/component/Position1D.h>
 
@@ -49,6 +50,14 @@ void Paddle::offset(const float off) {
 float Paddle::position() const {
     v3d::ecs::component::Position1D& component = registry_->get<v3d::ecs::component::Position1D>(id_);
     return component.value();
+}
+
+float Paddle::drawn(float alpha) const {
+    return v3d::ecs::interpolated<v3d::ecs::component::Position1D>(*registry_, id_, alpha).value();
+}
+
+void Paddle::settle() {
+    v3d::ecs::settle<v3d::ecs::component::Position1D>(*registry_, id_);
 }
 
 float Paddle::offset() const {

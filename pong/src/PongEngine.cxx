@@ -6,6 +6,7 @@
 #include "PongEngine.h"
 
 #include <api/asset/kind/Sound.h>
+#include <api/ecs/Previous.h>
 #include <api/ecs/component/Color3.h>
 #include <api/ecs/component/Position1D.h>
 #include <api/ecs/component/Position2D.h>
@@ -139,13 +140,17 @@ bool PongEngine::simulate(float step) {
     if (!v3d::engine::Engine::simulate(step)) {
         return false;
     }
+    // what the ball and paddles were before this step moves them, for the renderer to
+    // draw between - ADR-0060
+    v3d::ecs::snapshot<v3d::ecs::component::Position2D>(registry_);
+    v3d::ecs::snapshot<v3d::ecs::component::Position1D>(registry_);
     scene_->tick(step);
     return true;
 }
 
 bool PongEngine::render() {
     const v3d::engine::Statistics& measured = statistics();
-    renderer_->draw({ measured.mean(), measured.last(), measured.steps() });
+    renderer_->draw({ measured.mean(), measured.last(), measured.steps() }, alpha());
     return true;
 }
 

@@ -35,8 +35,9 @@ class PongRenderer final {
 
     /**
      * @param statistics what the loop measured about the frame being drawn
+     * @param alpha how far the frame is between the last simulation step and the next
      **/
-    void draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics);
+    void draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics, float alpha);
     void resize(int width, int height);
 
     void scene(const boost::shared_ptr<PongScene>& scene);
@@ -59,8 +60,8 @@ class PongRenderer final {
  private:
     void drawBoard();
     void drawScores();
-    void drawBall();
-    void drawPaddle(const Paddle& paddle);
+    void drawBall(float alpha);
+    void drawPaddle(const Paddle& paddle, float alpha);
 
     boost::shared_ptr<PongScene> scene_;
     boost::shared_ptr<v3d::ui::Engine> ui_;

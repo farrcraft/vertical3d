@@ -39,6 +39,17 @@ class Paddle final {
     float offset() const;
     float position() const;
 
+    /**
+     * Where to draw the paddle, alpha of the way from the last step to this one.
+     **/
+    float drawn(float alpha) const;
+
+    /**
+     * Draw the paddle where it is with no motion, after it has been put somewhere rather
+     * than moved there.
+     **/
+    void settle();
+
     glm::vec3 color() const;
 
     void reset();

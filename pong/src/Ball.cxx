@@ -5,6 +5,7 @@
 
 #include "Ball.h"
 
+#include <api/ecs/Previous.h>
 #include <api/ecs/component/Color3.h>
 #include <api/ecs/component/Position2D.h>
 
@@ -36,6 +37,14 @@ glm::vec2 Ball::position() const {
 void Ball::position(const glm::vec2 & pos) {
     v3d::ecs::component::Position2D& component = registry_->get<v3d::ecs::component::Position2D>(id_);
     component.set(pos);
+}
+
+glm::vec2 Ball::drawn(float alpha) const {
+    return v3d::ecs::interpolated<v3d::ecs::component::Position2D>(*registry_, id_, alpha).value();
+}
+
+void Ball::settle() {
+    v3d::ecs::settle<v3d::ecs::component::Position2D>(*registry_, id_);
 }
 
 void Ball::move(float step) {

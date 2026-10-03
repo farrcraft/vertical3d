@@ -3,6 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/ecs/Previous.h>
+#include <api/ecs/component/Position1D.h>
+#include <api/ecs/component/Position2D.h>
 #include <api/event/kind/Sound.h>
 #include <pong/src/PongScene.h>
 
@@ -140,6 +143,30 @@ BOOST_AUTO_TEST_CASE(pong_scene_right_paddle_collision_test) {
 }
 
 /**
+ * A ball that has already passed the paddle's face, as a fast one does between two steps, is
+ * still returned rather than let through to the edge behind the paddle.
+ **/
+BOOST_AUTO_TEST_CASE(pong_scene_paddle_past_the_face_test) {
+    Fixture fixture;
+    fixture.scene_.ball().position(glm::vec2(8.0f, 300.0f));
+    fixture.scene_.ball().direction(glm::vec2(-60.0f, 0.0f));
+
+    fixture.scene_.tick(STEP);
+
+    BOOST_TEST((fixture.scene_.ball().direction() == glm::vec2(60.0f, 0.0f)));
+    BOOST_TEST(fixture.sounds_.has("hit"));
+
+    Fixture right;
+    right.scene_.ball().position(glm::vec2(792.0f, 300.0f));
+    right.scene_.ball().direction(glm::vec2(60.0f, 0.0f));
+
+    right.scene_.tick(STEP);
+
+    BOOST_TEST((right.scene_.ball().direction() == glm::vec2(-60.0f, 0.0f)));
+    BOOST_TEST(right.sounds_.has("hit"));
+}
+
+/**
  * A ball level with the paddle's face but past the end of it is not met, which is the case
  * that separates a save from a point.
  **/
@@ -155,8 +182,8 @@ BOOST_AUTO_TEST_CASE(pong_scene_paddle_miss_test) {
 }
 
 /**
- * A paddle travelling as it meets the ball puts a little of that travel into the return,
- * which is the only way a rally changes angle.
+ * A paddle travelling as it meets the ball carries the return the way it is going, on both
+ * sides: a paddle moving up sends the ball up, which is towards smaller y.
  **/
 BOOST_AUTO_TEST_CASE(pong_scene_paddle_travel_angles_the_return_test) {
     Fixture fixture;
@@ -167,7 +194,68 @@ BOOST_AUTO_TEST_CASE(pong_scene_paddle_travel_angles_the_return_test) {
     fixture.scene_.tick(STEP);
 
     BOOST_TEST(fixture.scene_.ball().direction().x == 60.0f);
-    BOOST_TEST(fixture.scene_.ball().direction().y == 0.9f);
+    BOOST_TEST(fixture.scene_.ball().direction().y < 0.0f);
+
+    Fixture right;
+    right.scene_.ball().position(glm::vec2(780.0f, 300.0f));
+    right.scene_.ball().direction(glm::vec2(60.0f, 0.0f));
+    right.scene_.right().down(true);
+
+    right.scene_.tick(STEP);
+
+    BOOST_TEST(right.scene_.ball().direction().x == -60.0f);
+    BOOST_TEST(right.scene_.ball().direction().y > 0.0f);
+}
+
+/**
+ * Where the ball meets the paddle sets the angle it goes back at: flat off the centre,
+ * downwards off the lower half and upwards off the upper, steepest off the ends. The speed
+ * is kept, whatever the angle.
+ **/
+BOOST_AUTO_TEST_CASE(pong_scene_paddle_angles_by_where_it_is_struck_test) {
+    const float struck[] = { 290.0f, 300.0f, 310.0f, 330.0f };
+    float lastAngle = -1.0f;
+    for (const float y : struck) {
+        Fixture fixture;
+        fixture.scene_.ball().position(glm::vec2(20.0f, y));
+        fixture.scene_.ball().direction(glm::vec2(-60.0f, 0.0f));
+
+        fixture.scene_.tick(STEP);
+
+        const glm::vec2 returned = fixture.scene_.ball().direction();
+        BOOST_TEST(returned.x > 0.0f);
+        BOOST_TEST(glm::length(returned) == 60.0f, boost::test_tools::tolerance(0.001f));
+        const float angle = std::atan2(returned.y, returned.x);
+        BOOST_TEST(angle > lastAngle);
+        lastAngle = angle;
+    }
+    // the last was struck by the very end, at the steepest return: fifty degrees, downwards
+    BOOST_TEST(lastAngle == 0.8727f, boost::test_tools::tolerance(0.001f));
+
+    // and an angled ball struck by the centre goes back flat rather than retracing its line
+    Fixture flat;
+    flat.scene_.ball().position(glm::vec2(20.0f, 300.0f));
+    flat.scene_.ball().direction(glm::vec2(-48.0f, 36.0f));
+
+    flat.scene_.tick(STEP);
+
+    BOOST_TEST(flat.scene_.ball().direction().x == 60.0f, boost::test_tools::tolerance(0.001f));
+    BOOST_TEST(flat.scene_.ball().direction().y == 0.0f, boost::test_tools::tolerance(0.001f));
+}
+
+/**
+ * A ball already heading away from a paddle is not returned again on the step after it was,
+ * however deep past the face it still is.
+ **/
+BOOST_AUTO_TEST_CASE(pong_scene_paddle_returns_once_test) {
+    Fixture fixture;
+    fixture.scene_.ball().position(glm::vec2(8.0f, 300.0f));
+    fixture.scene_.ball().direction(glm::vec2(60.0f, 0.0f));
+
+    fixture.scene_.tick(STEP);
+
+    BOOST_TEST(fixture.scene_.ball().direction().x == 60.0f);
+    BOOST_TEST(!fixture.sounds_.has("hit"));
 }
 
 /**
@@ -186,6 +274,36 @@ BOOST_AUTO_TEST_CASE(pong_scene_left_edge_scores_test) {
     BOOST_TEST((fixture.scene_.ball().direction() == glm::vec2(-60.0f, 0.0f)));
     BOOST_TEST(fixture.scene_.left().position() == 300.0f);
     BOOST_TEST(fixture.sounds_.has("score"));
+}
+
+/**
+ * A point puts the ball back on the centre spot rather than moving it there, so the frame after
+ * it is drawn from the centre and not swept across the court from the edge it left by.
+ **/
+BOOST_AUTO_TEST_CASE(pong_scene_a_point_settles_the_ball_test) {
+    Fixture fixture;
+    fixture.scene_.ball().position(glm::vec2(5.0f, 100.0f));
+    fixture.scene_.ball().direction(glm::vec2(-60.0f, 0.0f));
+    fixture.scene_.left().position(500.0f);
+
+    v3d::ecs::snapshot<v3d::ecs::component::Position2D>(fixture.registry_);
+    v3d::ecs::snapshot<v3d::ecs::component::Position1D>(fixture.registry_);
+    fixture.scene_.tick(STEP);
+
+    BOOST_TEST(near(fixture.scene_.ball().drawn(0.0f), glm::vec2(400.0f, 300.0f)));
+    BOOST_TEST(fixture.scene_.left().drawn(0.0f) == 300.0f);
+}
+
+/**
+ * Between two steps the ball is drawn between where the steps left it.
+ **/
+BOOST_AUTO_TEST_CASE(pong_scene_ball_drawn_between_steps_test) {
+    Fixture fixture;
+
+    v3d::ecs::snapshot<v3d::ecs::component::Position2D>(fixture.registry_);
+    fixture.scene_.tick(STEP);
+
+    BOOST_TEST(near(fixture.scene_.ball().drawn(0.5f), glm::vec2(399.5f, 300.0f)));
 }
 
 BOOST_AUTO_TEST_CASE(pong_scene_right_edge_scores_test) {
@@ -227,6 +345,44 @@ BOOST_AUTO_TEST_CASE(pong_scene_bounces_off_the_bottom_test) {
     BOOST_TEST(fixture.scene_.ball().direction().x == 60.0f);
     BOOST_TEST(fixture.scene_.ball().direction().y == -120.0f);
     BOOST_TEST(fixture.sounds_.has("bounce"));
+}
+
+/**
+ * Both walls turn the ball where its edge meets the wall's face, fifteen pixels in, so the
+ * top is no deeper than the bottom.
+ **/
+BOOST_AUTO_TEST_CASE(pong_scene_walls_turn_the_ball_at_their_faces_test) {
+    Fixture top;
+    top.scene_.ball().position(glm::vec2(400.0f, 20.0f));
+    top.scene_.ball().direction(glm::vec2(60.0f, -120.0f));
+
+    top.scene_.tick(STEP);
+
+    BOOST_TEST(top.scene_.ball().direction().y == 120.0f);
+
+    Fixture clear;
+    clear.scene_.ball().position(glm::vec2(400.0f, 21.0f));
+    clear.scene_.ball().direction(glm::vec2(60.0f, -120.0f));
+
+    clear.scene_.tick(STEP);
+
+    BOOST_TEST(clear.scene_.ball().direction().y == -120.0f);
+    BOOST_TEST(!clear.sounds_.has("bounce"));
+}
+
+/**
+ * A ball still inside a wall on the step after it was turned is heading out of it, and is
+ * not turned back in.
+ **/
+BOOST_AUTO_TEST_CASE(pong_scene_walls_turn_the_ball_once_test) {
+    Fixture fixture;
+    fixture.scene_.ball().position(glm::vec2(400.0f, 12.0f));
+    fixture.scene_.ball().direction(glm::vec2(60.0f, 120.0f));
+
+    fixture.scene_.tick(STEP);
+
+    BOOST_TEST(fixture.scene_.ball().direction().y == 120.0f);
+    BOOST_TEST(!fixture.sounds_.has("bounce"));
 }
 
 /**

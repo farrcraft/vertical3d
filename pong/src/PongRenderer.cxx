@@ -82,7 +82,7 @@ void PongRenderer::resize(int width, int height) {
 
 /**
  **/
-void PongRenderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics) {
+void PongRenderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics, float alpha) {
     if (!scene_) {
         return;
     }
@@ -98,9 +98,9 @@ void PongRenderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statist
     canvas_.clear();
 
     drawBoard();
-    drawPaddle(scene_->left());
-    drawPaddle(scene_->right());
-    drawBall();
+    drawPaddle(scene_->left(), alpha);
+    drawPaddle(scene_->right(), alpha);
+    drawBall(alpha);
     drawScores();
 
     if (ui_) {
@@ -147,16 +147,16 @@ void PongRenderer::drawScores() {
 
 /**
  **/
-void PongRenderer::drawBall() {
-    canvas_.circle(scene_->ball().position(), scene_->ball().size(), ballSides, ballColour);
+void PongRenderer::drawBall(float alpha) {
+    canvas_.circle(scene_->ball().drawn(alpha), scene_->ball().size(), ballSides, ballColour);
 }
 
 /**
  **/
-void PongRenderer::drawPaddle(const Paddle& paddle) {
+void PongRenderer::drawPaddle(const Paddle& paddle, float alpha) {
     canvas_.push();
     // the paddle's position is the centre of its travel; its rectangle is drawn from the corner
-    canvas_.translate(glm::vec2(paddle.offset(), paddle.position() - 25.0f));
+    canvas_.translate(glm::vec2(paddle.offset(), paddle.drawn(alpha) - 25.0f));
     const glm::vec3 colour = paddle.color();
     canvas_.rect(glm::vec2(0.0f, 0.0f), glm::vec2(15.0f, 50.0f), glm::vec4(colour, 1.0f));
     canvas_.pop();

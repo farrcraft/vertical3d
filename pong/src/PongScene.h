@@ -43,6 +43,11 @@ class PongScene {
     void checkVictory();
     void steerOpponent(const glm::vec2& ballPosition);
     void bouncePaddles(const glm::vec2& ballPosition);
+    /**
+     * Send the ball back off a paddle, at an angle set by where along the paddle it struck.
+     * @param away the sign of the horizontal direction away from that paddle
+     **/
+    void returnBall(Paddle& paddle, const glm::vec2& ballPosition, float away);
     void scorePoint(const glm::vec2& ballPosition);
     void bounceWalls(const glm::vec2& ballPosition);
     void movePaddles(float step);
