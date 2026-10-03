@@ -1,0 +1,106 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#include <api/type/geometry/Frustum.h>
+#include <api/type/geometry/Plane.h>
+#include <moya/libmoya/Polygon.h>
+
+#include <boost/test/unit_test.hpp>
+#include <boost/make_shared.hpp>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+namespace {
+
+v3d::moya::Vertex vertex(float x, float y, float z) {
+    v3d::moya::Vertex v;
+    v.point(glm::vec3(x, y, z));
+    return v;
+}
+
+/**
+ * The z = 0 plane, keeping the positive half space.
+ **/
+v3d::type::geometry::Plane zPlane() {
+    v3d::type::geometry::Plane plane;
+    plane.calculate(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    return plane;
+}
+
+};  // namespace
+
+/**
+ * The clip rewrites the polygon it is called on, so the polygon itself comes out clipped.
+ **/
+BOOST_AUTO_TEST_CASE(polygon_clip_rewrites_the_polygon_test) {
+    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    polygon->addVertex(vertex(0.0f, 0.0f, -1.0f));
+    polygon->addVertex(vertex(1.0f, 0.0f, -1.0f));
+    polygon->addVertex(vertex(1.0f, 0.0f, 1.0f));
+    polygon->addVertex(vertex(0.0f, 0.0f, 1.0f));
+
+    polygon->clip(zPlane());
+
+    // the half of the quad below z = 0 is gone, and nothing that survived is below it
+    BOOST_TEST(polygon->vertexCount() > 0u);
+    for (size_t i = 0; i < polygon->vertexCount(); i++) {
+        BOOST_TEST(polygon->vertex(i).point().z >= 0.0f);
+    }
+}
+
+/**
+ * A polygon wholly inside the kept half space survives the clip with its vertices.
+ **/
+BOOST_AUTO_TEST_CASE(polygon_clip_keeps_an_inside_polygon_test) {
+    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    polygon->addVertex(vertex(0.0f, 0.0f, 1.0f));
+    polygon->addVertex(vertex(1.0f, 0.0f, 1.0f));
+    polygon->addVertex(vertex(1.0f, 1.0f, 2.0f));
+
+    polygon->clip(zPlane());
+
+    BOOST_TEST(polygon->vertexCount() == 3u);
+}
+
+/**
+ * A polygon with no area has no inside to keep, and the walk opens on the vertex before the
+ * first one - so it is left alone rather than indexed off the front.
+ **/
+BOOST_AUTO_TEST_CASE(polygon_clip_degenerate_polygon_test) {
+    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+
+    polygon->clip(zPlane());
+    BOOST_TEST(polygon->vertexCount() == 0u);
+
+    polygon->addVertex(vertex(0.0f, 0.0f, 1.0f));
+    polygon->addVertex(vertex(1.0f, 0.0f, 1.0f));
+
+    polygon->clip(zPlane());
+    BOOST_TEST(polygon->vertexCount() == 2u);
+}
+
+/**
+ * A frustum clip runs every plane over the polygon, so what survives is inside all six.
+ **/
+BOOST_AUTO_TEST_CASE(polygon_clip_frustum_test) {
+    v3d::moya::Polygon polygon;
+    polygon.addVertex(vertex(-3.0f, -3.0f, 0.0f));
+    polygon.addVertex(vertex(3.0f, -3.0f, 0.0f));
+    polygon.addVertex(vertex(0.0f, 3.0f, 0.0f));
+
+    const v3d::type::geometry::Frustum frustum(glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f),
+        v3d::type::geometry::Frustum::Depth::MinusOneToOne);
+    v3d::moya::clip(polygon, frustum);
+
+    BOOST_TEST(polygon.vertexCount() >= 3u);
+    for (size_t i = 0; i < polygon.vertexCount(); i++) {
+        const glm::vec3 point = polygon.vertex(i).point();
+        BOOST_TEST(point.x >= -1.0001f);
+        BOOST_TEST(point.x <= 1.0001f);
+        BOOST_TEST(point.y >= -1.0001f);
+        BOOST_TEST(point.y <= 1.0001f);
+    }
+}

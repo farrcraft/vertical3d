@@ -13,8 +13,12 @@
 
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::moya {
+namespace v3d::type::geometry {
+class Frustum;
 class Plane;
+};  // namespace v3d::type::geometry
+
+namespace v3d::moya {
 class RenderContext;
 
 class Polygon : public ReyesPrimitive {
@@ -55,6 +59,13 @@ class Polygon : public ReyesPrimitive {
      **/
     glm::vec3 geometricNormal(void) const;
 
+    /**
+     * Sutherland-Hodgman clip of the polygon against a plane, keeping the positive half
+     * space. The polygon is rewritten in place, which is what lets a caller run one plane
+     * after another over the same one.
+     **/
+    void clip(const v3d::type::geometry::Plane & plane);
+
     // reyes methods
     // virtual bool diceable(void) const;
     virtual v3d::type::geometry::AABBox bound(void) const;
@@ -62,7 +73,7 @@ class Polygon : public ReyesPrimitive {
     virtual bool dice(boost::shared_ptr<MicroPolygonGrid> & grid, RenderContext & rc);
 
  protected:
-    void split(const Plane & plane, const boost::shared_ptr<Polygon> & p1, const boost::shared_ptr<Polygon> & p2);
+    void split(const v3d::type::geometry::Plane & plane, const boost::shared_ptr<Polygon> & p1, const boost::shared_ptr<Polygon> & p2);
 
  private:
     std::vector<Vertex> vertices_;
@@ -70,5 +81,11 @@ class Polygon : public ReyesPrimitive {
     // afterwards - the caller loops until it answers false
     bool diced_ = false;
 };
+
+/**
+ * Clip a polygon against each of a frustum's planes in turn, keeping what is inside all six.
+ * The polygon is rewritten in place.
+ **/
+void clip(Polygon & poly, const v3d::type::geometry::Frustum & frustum);
 
 };  // namespace v3d::moya

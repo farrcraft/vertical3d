@@ -7,6 +7,7 @@
 
 #include <api/image/Factory.h>
 #include <api/render/offline/sl/Imager.h>
+#include <api/type/geometry/Frustum.h>
 
 #include <algorithm>
 #include <cmath>
@@ -21,7 +22,6 @@
 #include <glm/mat3x3.hpp>
 #include <glm/matrix.hpp>
 
-#include "Frustum.h"
 #include "GridShader.h"
 
 namespace v3d::moya {
@@ -178,8 +178,8 @@ void RenderContext::projection(std::string name, float fov) {
             window then selects the part of screen space the image covers.
 
             The interface looks down +z, so w is +z rather than the -z a right handed
-            system would write, and depth runs [-1, 1] to match the orthographic branch
-            and the plane extraction in Frustum::extract.
+            system would write, and depth runs [-1, 1] to match the orthographic branch,
+            which is the depth range the cull below names to its Frustum.
         */
         const float tangent = std::tan(glm::radians(fov) / 2.0f);
         projection = glm::mat4x4(0.0f);
@@ -640,10 +640,10 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
         projection alone. Testing the raster space bound against the planes of the raster
         matrix asks whether pixel coordinates fall inside a volume measured in eye units.
     */
-    Frustum frustum(coordinateSystems_["screen"]);
+    const v3d::type::geometry::Frustum frustum(coordinateSystems_["screen"], v3d::type::geometry::Frustum::Depth::MinusOneToOne);
     v3d::type::geometry::AABBox eyeBound;
     eyeBound.extents(bound_min, bound_max);
-    if (frustum.intersect(eyeBound) == Frustum::OUTSIDE) {  // poly is entirely outside frustum
+    if (frustum.intersect(eyeBound) == v3d::type::geometry::Frustum::OUTSIDE) {  // poly is entirely outside frustum
         return;
     }
 

@@ -5,11 +5,12 @@
 
 #pragma once
 
-#include <api/type/geometry/AABBox.h>
+#include "AABBox.h"
 
-#include "Polygon.h"
+#include <glm/vec3.hpp>
 
-namespace v3d::moya {
+namespace v3d::type::geometry {
+
 /**
     *	defines a plane from one of:
     *		N dot P = D
@@ -52,19 +53,14 @@ class Plane {
     * signed distance to point
     */
     float distance(const glm::vec3 & point) const;
-    int classify(const v3d::type::geometry::AABBox & aabb) const;
+    int classify(const AABBox & aabb) const;
     int classify(const glm::vec3 & point) const;
     bool intersect(const glm::vec3 & start, const glm::vec3 & direction, glm::vec3 * hitPoint) const;
     bool intersectEdge(const glm::vec3 & A, const glm::vec3 & B, glm::vec3 * hitPoint) const;
-    /**
-    * Sutherland-Hodgman clip of a polygon against this plane, keeping the positive
-    * half space. The polygon is rewritten in place, which is what lets a caller run one
-    * plane after another over the same one.
-    */
-    void clip(const boost::shared_ptr<Polygon> & poly);
     void normalize(void);
 
     float & operator[] (unsigned int i);
+    float operator[] (unsigned int i) const;
 
  private:
     /*
@@ -75,4 +71,4 @@ class Plane {
     */
     float equation_[4] = { 0.0f, 0.0f, 0.0f, 0.0f };  // abcd
 };
-};  // namespace v3d::moya
+};  // namespace v3d::type::geometry

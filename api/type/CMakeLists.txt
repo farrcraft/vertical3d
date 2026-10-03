@@ -6,6 +6,8 @@ v3d_add_api_library(type
 "camera/Profile.h" "camera/Profile.cxx"
 "geometry/AABBox.h" "geometry/AABBox.cxx"
 "geometry/Bound2D.h" "geometry/Bound2D.cxx"
+"geometry/Frustum.h" "geometry/Frustum.cxx"
+"geometry/Plane.h" "geometry/Plane.cxx"
 "geometry/Ray.h" "geometry/Ray.cxx"
 )
 

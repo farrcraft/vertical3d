@@ -5,6 +5,9 @@
 
 #include "Polygon.h"
 
+#include <api/type/geometry/Frustum.h>
+#include <api/type/geometry/Plane.h>
+
 #include <cmath>
 #include <cassert>
 #include <iostream>
@@ -13,7 +16,6 @@
 
 #include <glm/common.hpp>
 
-#include "Plane.h"
 #include "RenderContext.h"
 
 namespace v3d::moya {
@@ -83,6 +85,52 @@ glm::vec3 Polygon::geometricNormal(void) const {
         }
     }
     return glm::vec3(0.0f);
+}
+
+/* note - clipping happens after culling
+
+    this is a 3D Sutherland-Hodgman polygon clipper: instead of clipping against a single
+    clipping rectangle edge, it clips against a plane.
+*/
+void Polygon::clip(const v3d::type::geometry::Plane & plane) {
+    const size_t nverts = vertices_.size();
+    // fewer than three vertices bound no area to keep, and the walk below opens on the vertex
+    // before the first one
+    if (nverts < 3) {
+        return;
+    }
+    std::vector<Vertex> clipped;
+    Vertex i;
+    glm::vec3 hit;
+    Vertex s = vertices_[nverts - 1];  // start with last vertex
+    for (size_t j = 0; j < nverts; j++) {
+        const Vertex p = vertices_[j];
+        /*
+         there are 4 possible test cases:
+            case 1: s & p both inside	 - in/in
+            case 2: s inside, p outside - in/out
+            case 3: s & p both outside	 - out/out
+            case 4: s outside, p inside - out/in
+         */
+        const bool pInside = plane.classify(p.point()) != v3d::type::geometry::Plane::NEGATIVE;
+        const bool sInside = plane.classify(s.point()) != v3d::type::geometry::Plane::NEGATIVE;
+        if (pInside) {  // cases 1 & 4
+            if (!sInside) {  // case 4
+                plane.intersectEdge(s.point(), p.point(), &hit);
+                i.point(hit);
+                clipped.push_back(i);
+            }
+            clipped.push_back(p);
+        } else if (sInside) {  // case 2
+            plane.intersectEdge(s.point(), p.point(), &hit);
+            i.point(hit);
+            clipped.push_back(i);
+        }
+        // case 3: the entire edge is clipped
+        s = p;
+    }
+
+    vertices_ = std::move(clipped);
 }
 
 // return an object space bound of the polygon
@@ -208,7 +256,7 @@ void addWholeEdge(const glm::vec3& a, const glm::vec3& b, int side, bool first, 
 
 };  // namespace
 
-void Polygon::split(const Plane& plane, const boost::shared_ptr<Polygon> & p1, const boost::shared_ptr<Polygon> & p2) {
+void Polygon::split(const v3d::type::geometry::Plane& plane, const boost::shared_ptr<Polygon> & p1, const boost::shared_ptr<Polygon> & p2) {
     // intersect each edge with the plane
     glm::vec3 A;
     glm::vec3 B;
@@ -262,7 +310,7 @@ void Polygon::split(RenderContext & rc) {
     mp /= 2.0;
     pop = bounds.min() + mp;
     // create the intersection plane from pop and pn
-    Plane plane;
+    v3d::type::geometry::Plane plane;
     plane.calculate(pn, pop);
 
     // two new (potentially) polygons created as a result of splitting
@@ -382,6 +430,12 @@ bool Polygon::dice(boost::shared_ptr<MicroPolygonGrid> & grid, RenderContext & r
 
     diced_ = true;
     return true;
+}
+
+void clip(Polygon & poly, const v3d::type::geometry::Frustum & frustum) {
+    for (const v3d::type::geometry::Plane & plane : frustum.planes()) {
+        poly.clip(plane);
+    }
 }
 
 };  // namespace v3d::moya

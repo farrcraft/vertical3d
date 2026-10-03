@@ -8,8 +8,9 @@
 #include <cmath>
 #include <cassert>
 
-namespace v3d::moya {
+#include <glm/geometric.hpp>
 
+namespace v3d::type::geometry {
 
 Plane::Plane() {
 }
@@ -98,7 +99,7 @@ int Plane::classify(const glm::vec3 & point) const {
     classify the 8 points of the aabb against the plane
     see: http://www.flipcode.com/articles/article_frustumculling.shtml
 */
-int Plane::classify(const v3d::type::geometry::AABBox & aabb) const {
+int Plane::classify(const AABBox & aabb) const {
     glm::vec3 corners[8];
     aabb.vertices(corners);
     int inside = 8;  // start with all 8 points inside
@@ -123,71 +124,11 @@ float & Plane::operator[] (unsigned int i) {
     return equation_[i];
 }
 
-
-/* note - clipping happens after culling
-
-    clip a single polygon to a single plane
-    this is a 3D Sutherland-Hodgman Polygon Clipper 
-    instead of clipping against a single clipping rectangle edge, we clip against
-    a plane.
-*/
-void Plane::clip(const boost::shared_ptr<Polygon> & poly) {
-    Polygon clippedPoly;
-    Vertex s;
-    Vertex p;
-    Vertex i;
-    glm::vec3 hit;
-    size_t nverts;
-
-    nverts = poly->vertexCount();
-    // fewer than three vertices bound no area to keep, and the walk below opens on the vertex
-    // before the first one
-    if (nverts < 3) {
-        return;
-    }
-    s = poly->vertex(nverts - 1);  // start with last vertex
-    for (size_t j = 0; j < nverts; j++) {
-        p = poly->vertex(j);
-        /*
-         there are 4 possible test cases:
-            case 1: s & p both inside	 - in/in
-            case 2: s inside, p outside - in/out
-            case 3: s & p both outside	 - out/out
-            case 4: s outside, p inside - out/in
-         */
-        int side = classify(p.point());
-        if (side == POSITIVE || side == ON_PLANE) {  // cases 1 & 4
-             side = classify(s.point());
-             if (side == POSITIVE || side == ON_PLANE) {
-                  // case 1
-                  clippedPoly.addVertex(p);
-             } else {
-                  // case 4
-                  intersectEdge(s.point(), p.point(), &hit);
-                  i.point(hit);
-                  clippedPoly.addVertex(i);
-                  clippedPoly.addVertex(p);
-             }
-        } else {  // cases 2 & 3
-             side = classify(s.point());
-             if (side == POSITIVE || side == ON_PLANE) {
-                  // case 2
-                  intersectEdge(s.point(), p.point(), &hit);
-                  i.point(hit);
-                  clippedPoly.addVertex(i);
-             } else {
-                  // case 3
-                  // entire edge is clipped - no action required
-             }
-        }
-        s = p;
-    }
-
-    poly->clear();
-    for (size_t k = 0; k < clippedPoly.vertexCount(); k++) {
-        poly->addVertex(clippedPoly.vertex(k));
-    }
+float Plane::operator[] (unsigned int i) const {
+    assert(i < 4);
+    return equation_[i];
 }
+
 
 // ray intersection test
 bool Plane::intersect(const glm::vec3 & start, const glm::vec3 & direction, glm::vec3 * hitPoint) const {
@@ -224,4 +165,4 @@ bool Plane::intersectEdge(const glm::vec3 & A, const glm::vec3 & B, glm::vec3 * 
     return false;
 }
 
-};  // namespace v3d::moya
+};  // namespace v3d::type::geometry
