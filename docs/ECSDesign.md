@@ -12,8 +12,8 @@ written around — what a renderable component looks like — is still open. See
 a raw `entt::registry*`. There is no accessor; only a subclass reaches it.
 
 `v3d::ecs::System` ([api/ecs/System.h](../api/ecs/System.h)) is all the system support there
-is: a registry pointer and a `virtual bool tick()`. `odyssey::system::Movement` is the one
-subclass in the tree.
+is: a registry pointer and a `virtual bool simulate(float step)`.
+`odyssey::system::Movement` is the one subclass in the tree.
 
 `api/ecs/component/` holds the components more than one app could want, and there are four:
 `Color3`, `Position1D`, `Position2D` and `PositionFixed2D`. An app defines the rest beside its
@@ -31,6 +31,14 @@ v3d::ecs::component::Position2D& position = registry_->get<v3d::ecs::component::
 
 `try_get` is the guarded form, and odyssey's renderer uses it to draw the player only when the
 component is there.
+
+[api/ecs/Previous.h](../api/ecs/Previous.h) keeps what a component was before the last
+simulation step, so a renderer can draw between steps
+([ADR-0060](adr/0060-a-moving-thing-keeps-its-previous-step.md)). `snapshot<T>(registry)` at the
+top of `simulate()` copies every entity's `T` into its `Previous<T>`; `settle<T>` makes the two
+equal after a teleport; `interpolated<T>(registry, entity, alpha)` blends them through an
+`interpolate(const T&, const T&, float)` found beside `T`. `Position1D` and `Position2D` have
+one, and `PositionFixed2D` deliberately does not, so `interpolated` refuses it at compile time.
 
 ## Notes
 

@@ -9,6 +9,28 @@ every phase is closed it moves to [completed/](completed/), and any open item it
 moves to [TODO.md](../TODO.md). The plan itself stays, because the reasoning behind an ordering
 outlives the schedule.
 
+No plan is open.
+
+[completed/MotionAndQueries.md](completed/MotionAndQueries.md) was drafted and closed on
+2026-10-03, taking up [milestone 1](../roadmap/m1-MotionAndQueries.md) of
+[the game engine roadmap](../roadmap/GameEngine.md): moya's `Plane` and `Frustum` moved into
+`api/type` with the frustum told its depth range, a ray meeting a plane, box overlap, and a
+component's previous step kept so that `Engine::alpha()` has a reader
+([ADR-0060](../adr/0060-a-moving-thing-keeps-its-previous-step.md)). The sprite clip went to
+[TODO.md](../TODO.md#sprite-sheets) behind a second consumer.
+
+Four things came out differently. **The wrong depth range is not the same bug for both
+cameras**: read as `[-1, 1]`, an orthographic camera's near plane falls far behind the eye, as
+the plan said, but a perspective one's falls at half the near distance, still in front. The
+tests put a box in that gap for each. **Pong had a suite** — the plan twice said it had none —
+and it was the full build failing to link it, not a person playing, that showed the scene now
+needed `api/type`. Its collision and scoring cases carried step 4 unchanged. **The positions
+could not be copied**: `Position1D` and `Position2D` declared moves and no copy, which a
+snapshot needs, and the ADR records that they gained one. And **watching pong after step 5
+found a gameplay fault the plan had not looked for**: a paddle return reversed both components
+of the ball's direction and ignored where the ball struck, so every rally was a horizontal line.
+That was fixed beside the plan rather than as a step of it.
+
 [completed/RealtimeGoldenImage.md](completed/RealtimeGoldenImage.md) was drafted and closed on
 2026-09-12, out of what [RenderTestsInCI](completed/RenderTestsInCI.md) left behind. Five steps
 pinning what the device suite draws to committed pictures, on the rule that a reference may hold

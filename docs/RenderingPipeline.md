@@ -496,7 +496,8 @@ to sort a handle on. So `vulkan::Mesh` is owned by whatever built it — a chunk
 - **A second depth buffer.** There is one per context, and the editor's four viewports share
   it. That works only because their regions do not overlap and each pass clears its own. Two
   passes wanting different depth over the same pixels would not work.
-- **Culling.** Nothing is culled against the frustum. Voxel submits an item per meshed chunk
+- **Culling.** Nothing is culled against the frustum, though
+  [`type::geometry::Frustum`](../api/type/geometry/Frustum.h) can say what would be. Voxel submits an item per meshed chunk
   whether or not the chunk is in front of the camera; its chunk-local vertices and per-chunk
   origin are there to make culling possible later.
 - **A 2D pass does not use set 0.** `Canvas::projection()` builds an orthographic matrix by

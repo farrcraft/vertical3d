@@ -74,6 +74,8 @@ is in the tree.
 sprites are; nothing reads a `sprites.json` and cuts out everything it names. Whether that
 belongs to `imagetool`, to a `spritetool` beside it, or to whoever needs it is undecided
 
+[] nothing plays a sprite's frames: no clock advances through named regions on the fixed step, loops or clamps, or says when a named frame is reached. One consumer would write it, and that one calls its walk cycle thirty lines of its own. It is due when a second wants the same clock, milestone 6's particles or milestone 5's clip sampler being the likeliest, and is then drafted against what the first wrote - [MotionAndQueries](plans/completed/MotionAndQueries.md#step-6--a-sprite-clip) has the reasoning
+
 ## Models
 
 `api/asset` reads glTF 2.0 into a `v3d::type::Model`, which is the only geometry the api loads
@@ -94,13 +96,6 @@ one, so each gap below is one a consumer meets before this tree does.
 [] a target is single-buffered, so a pass wanting the previous frame's contents needs two and has to swap them itself. A double-buffered target would be the natural next shape
 [] nothing catches a pipeline built against one colour format drawing into a target of another. It is a wrong picture rather than a validation error, because dynamic rendering takes the format from the pipeline
 [] `Frame::passBefore` exists because `Engine3D` creates the colour pass in its constructor. A frame that let a pass say where it belongs, or an engine that created its pass lazily, would not need it
-
-## The game loop
-
-The loop simulates at a fixed step and renders at a variable one -
-[ADR-0032](adr/0032-the-loop-simulates-at-a-fixed-step.md).
-
-[] the api interpolates nothing. `Engine::alpha()` is the fraction a renderer would blend the last two simulation states by, and nothing in this tree reads it, so a world drawn here is snapped to the last completed step and its motion is quantised to 60 Hz however fast the display is
 
 ## Ongoing workstreams
 

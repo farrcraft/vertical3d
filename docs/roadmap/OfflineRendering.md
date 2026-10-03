@@ -103,11 +103,18 @@ that wants one draws a backdrop polygon, which is what the reference fixture doe
 
 Neither renderer needs to write intersection maths or camera maths from scratch.
 
-* **[`type::Ray`](../../api/type/Ray.h)** has an origin, a direction, `transformed()`, a slab
+* **[`type::Ray`](../../api/type/geometry/Ray.h)** has an origin, a direction, `transformed()`, a slab
   test against `AABBox` and Möller-Trumbore against a triangle, all with tests. It was written
   for the editor's picker ([ADR-0014](../adr/0014-picking-is-a-cpu-ray-cast.md)) and it is
   exactly what a primary ray and a triangle-mesh raytracer need.
-* **[`type::Camera`](../../api/type/Camera.h)** builds the matrices and `project()`/`unproject()`
+* **[`type::geometry::Plane`](../../api/type/geometry/Plane.h)** is a plane held as its equation:
+  it classifies a point or an `AABBox` against itself and meets a ray or an edge, and `Ray` can
+  be asked where it crosses one. moya's polygon clip is `Polygon::clip(const Plane&)`, and stays
+  in moya.
+* **[`type::geometry::Frustum`](../../api/type/geometry/Frustum.h)** extracts six planes from a
+  matrix and classifies a box against them. It is told the depth range of the clip space the
+  matrix builds, and moya's `RenderContext` names `MinusOneToOne`.
+* **[`type::Camera`](../../api/type/camera/Camera.h)** builds the matrices and `project()`/`unproject()`
   are inverses ([ADR-0012](../adr/0012-camera-builds-vulkan-clip-space.md)), so a primary ray
   through a pixel is an unproject and a subtract. It builds *Vulkan* clip space, which an
   offline renderer has no reason to want; by

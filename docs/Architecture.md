@@ -156,6 +156,14 @@ arrives decoded instead, on `asset::Model::baseColourImage()`. That is on the as
 than on the material because `api/type` is built against glm alone and a material holding an
 image would take `api/image` into every consumer of a mesh.
 
+**The queries are in `type::geometry`, and are glm only.** `Ray` meets an `AABBox`, a triangle
+and a `Plane`; `Plane` classifies a point or a box against itself; `Frustum` classifies a box
+against the six planes of a matrix; `AABBox` and `Bound2D` are the boxes,
+and each answers whether it overlaps another or contains a point, edges and faces counting as
+inside. A ground pick is `Camera::ray()` crossed with a `Plane`, and there is no helper for
+it, because which way is up belongs to the caller. Anything that clips a renderer's own
+primitive against a plane stays with that renderer, as moya's `Polygon::clip` does.
+
 **Meshes are owned by the app**, not by `Resources`
 ([ADR-0010](adr/0010-meshes-are-owned-by-the-app.md)).
 
@@ -191,7 +199,11 @@ frame rate was; what runs in `tick()` does not. Per-frame work that is not simul
 state, UI animation, camera smoothing — is what `tick()` is still for.
 
 `Engine::alpha()` is the fraction of a step held but not yet simulated, for a renderer that
-interpolates between two simulation states. Nothing reads it yet. `Engine::statistics()` is
+interpolates between two simulation states. A game keeps the state before each step in
+`ecs::Previous<T>`, snapshotted at the top of `simulate()`, and draws through
+`ecs::interpolated` ([ADR-0060](adr/0060-a-moving-thing-keeps-its-previous-step.md)); pong is
+the one that does. A thing put somewhere rather than moved there is settled, or it is drawn
+sweeping to it for a frame. `Engine::statistics()` is
 what the loop measured about its own pacing; steps-per-frame is the number worth watching.
 
 Every app that simulates is on `simulate()`. **Voxel is the one that overrides both**, and is
@@ -224,6 +236,11 @@ because neither is simulation and neither wants to run twice on a slow frame.
 - **A frame may submit any number of canvases, and each takes a buffer of its own.** Appending
   into one buffer would not work, because `vulkan::Buffer::grow` replaces the allocation and
   invalidates the handle every draw item recorded before it is holding.
+- **A `Frustum` has to be told the depth range of the matrix it is given.** Its default,
+  `ZeroToOne`, is what `type::camera::Camera` builds; moya builds `MinusOneToOne`. A frustum
+  read with the wrong one puts its near plane behind the true one, so it keeps what it should
+  cull and drops nothing it should keep, which is the direction that looks right
+  ([ADR-0024](adr/0024-api-type-serves-both-renderers.md)).
 - **The swapchain is UNORM, not sRGB**, so colour is authored in display space
   ([ADR-0009](adr/0009-colour-authored-in-display-space.md)). A lit 3D scene will revisit this.
 - **`v3d::type::camera::Camera` builds Vulkan clip space**, and `project()` and `unproject()` are

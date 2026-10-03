@@ -23,3 +23,11 @@ the others; a roadmap exists because the ordering between its items is the inter
 | Roadmap | Area |
 |---|---|
 | [OfflineRendering.md](OfflineRendering.md) | `talyn` and `moya` — the raytracer and the reyes renderer |
+| [GameEngine.md](GameEngine.md) | The realtime api, for games rather than demos — the index of seven milestones, each its own document |
+| [m1-MotionAndQueries.md](m1-MotionAndQueries.md) | 1 — interpolation, sprite clips, a ground pick, overlap, `Plane` and `Frustum` |
+| [m2-LargeWorlds.md](m2-LargeWorlds.md) | 2 — releasing a resource, ordering world quads, culling, a map document, regions |
+| [m3-RenderableComponent.md](m3-RenderableComponent.md) | 3 — the decision of how the ECS meets the renderer |
+| [m4-LitScene.md](m4-LitScene.md) | 4 — images and samplers, a model onto the device, a lit pass, shadows, a post chain |
+| [m5-SkeletalAnimation.md](m5-SkeletalAnimation.md) | 5 — skins and clips from glTF, skinning, instancing |
+| [m6-Effects.md](m6-Effects.md) | 6 — particles, weather, a tint over the world, a panned voice |
+| [m7-ShellAndShipping.md](m7-ShellAndShipping.md) | 7 — the shell's renderer setup, widgets, input, versioned documents, profiling, async loading |
