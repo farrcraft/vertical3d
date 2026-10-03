@@ -5,6 +5,8 @@
 
 #include "Position2D.h"
 
+#include <glm/common.hpp>
+
 
 namespace v3d::ecs::component {
 
@@ -42,6 +44,11 @@ glm::vec2 Position2D::value() const {
  **/
 void Position2D::set(const glm::vec2& position) {
     position_ = position;
+}
+
+Position2D interpolate(const Position2D& from, const Position2D& to, float alpha) {
+    const glm::vec2 blended = glm::mix(from.value(), to.value(), alpha);
+    return Position2D(blended.x, blended.y);
 }
 
 };  // namespace v3d::ecs::component
