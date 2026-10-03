@@ -6,6 +6,7 @@
 #pragma once
 
 #include "AABBox.h"
+#include "Plane.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
@@ -92,6 +93,19 @@ class Ray final {
      **/
     bool intersects(const glm::vec3& a, const glm::vec3& b, const glm::vec3& c, float* distance,
         float* u, float* v) const;
+
+    /**
+     * Where this ray crosses a plane.
+     *
+     * A ray lying in the plane, or parallel to it, does not cross it, and neither does one that
+     * would have to run backwards to reach it: a click on the sky is not a click on the ground
+     * behind the camera.
+     *
+     * @param plane the plane, whose normal need not be unit length
+     * @param distance where the crossing is, if there is one - may be null
+     * @return whether the ray crosses the plane at or ahead of its origin
+     **/
+    bool intersects(const Plane& plane, float* distance) const;
 
  private:
     glm::vec3 origin_;

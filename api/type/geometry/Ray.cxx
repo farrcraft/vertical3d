@@ -158,4 +158,25 @@ bool Ray::intersects(const glm::vec3& a, const glm::vec3& b, const glm::vec3& c,
     return true;
 }
 
+/**
+ **/
+bool Ray::intersects(const Plane& plane, float* distance) const {
+    // the plane's equation along the ray is distance(origin) + t * dot(normal, direction),
+    // which is zero where the ray crosses. Neither term needs a unit normal, since a scale
+    // of one is a scale of the other
+    const float approach = glm::dot(plane.normal(), direction_);
+    if (std::fabs(approach) < epsilon) {
+        return false;
+    }
+    const float hit = -plane.distance(origin_) / approach;
+    if (hit < 0.0f) {
+        return false;
+    }
+
+    if (distance != nullptr) {
+        *distance = hit;
+    }
+    return true;
+}
+
 };  // namespace v3d::type::geometry

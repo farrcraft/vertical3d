@@ -3,11 +3,14 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/type/camera/Camera.h>
 #include <api/type/geometry/AABBox.h>
+#include <api/type/geometry/Plane.h>
 #include <api/type/geometry/Ray.h>
 
 #include <boost/test/unit_test.hpp>
 
+#include <glm/geometric.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 BOOST_AUTO_TEST_CASE(ray_direction_test) {
@@ -143,4 +146,93 @@ BOOST_AUTO_TEST_CASE(ray_box_test) {
     // pointing away
     v3d::type::geometry::Ray away(glm::vec3(0.0f, 0.0f, -5.0f), glm::vec3(0.0f, 0.0f, -1.0f));
     BOOST_CHECK_EQUAL(away.intersects(box, nullptr), false);
+}
+
+namespace {
+
+/**
+ * The ground at height y, facing up.
+ **/
+v3d::type::geometry::Plane ground(float y) {
+    v3d::type::geometry::Plane plane;
+    plane.calculate(glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, y, 0.0f));
+    return plane;
+}
+
+};  // namespace
+
+BOOST_AUTO_TEST_CASE(ray_plane_test) {
+    float distance = 0.0f;
+
+    // straight down onto the ground lands directly below, as far away as the ground is
+    v3d::type::geometry::Ray down(glm::vec3(1.0f, 10.0f, 2.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+    BOOST_TEST(down.intersects(ground(3.0f), &distance));
+    BOOST_CHECK_CLOSE(distance, 7.0f, 0.01f);
+    glm::vec3 hit = down.point(distance);
+    BOOST_CHECK_CLOSE(hit[0], 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(hit[1], 3.0f, 0.01f);
+    BOOST_CHECK_CLOSE(hit[2], 2.0f, 0.01f);
+
+    // a ray running alongside the ground never reaches it, and neither does one lying in it
+    v3d::type::geometry::Ray parallel(glm::vec3(0.0f, 10.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    BOOST_TEST(!parallel.intersects(ground(3.0f), &distance));
+    v3d::type::geometry::Ray lying(glm::vec3(0.0f, 3.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    BOOST_TEST(!lying.intersects(ground(3.0f), &distance));
+
+    // a ray pointing at the sky would have to run backwards to reach the ground
+    v3d::type::geometry::Ray up(glm::vec3(0.0f, 10.0f, 0.0f), glm::vec3(0.0f, 1.0f, 1.0f));
+    BOOST_TEST(!up.intersects(ground(3.0f), nullptr));
+
+    // and one coming up from below crosses it from the other side
+    v3d::type::geometry::Ray under(glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    BOOST_TEST(under.intersects(ground(3.0f), &distance));
+    BOOST_CHECK_CLOSE(distance, 4.0f, 0.01f);
+}
+
+BOOST_AUTO_TEST_CASE(ray_plane_unnormalised_test) {
+    // a normal ten units long scales the plane's equation and the ray's approach to it alike,
+    // so the crossing is where it would be for a unit normal
+    v3d::type::geometry::Plane plane;
+    plane[v3d::type::geometry::Plane::A] = 0.0f;
+    plane[v3d::type::geometry::Plane::B] = 10.0f;
+    plane[v3d::type::geometry::Plane::C] = 0.0f;
+    plane[v3d::type::geometry::Plane::D] = -30.0f;
+
+    v3d::type::geometry::Ray slanted(glm::vec3(0.0f, 7.0f, 0.0f), glm::vec3(1.0f, -1.0f, 0.0f));
+    float distance = 0.0f;
+    BOOST_TEST(slanted.intersects(plane, &distance));
+    glm::vec3 hit = slanted.point(distance);
+    BOOST_CHECK_CLOSE(hit[0], 4.0f, 0.01f);
+    BOOST_CHECK_SMALL(hit[1] - 3.0f, 0.0001f);
+}
+
+/**
+ * A ground pick through an orthographic camera looking down at an angle. Its rays are
+ * parallel, so the two clicks land in different places on the ground, and two clicks a
+ * horizontal step apart on the screen start the same height above it and travel the same
+ * distance to reach it.
+ **/
+BOOST_AUTO_TEST_CASE(ray_plane_orthographic_pick_test) {
+    v3d::type::camera::Camera camera;
+    camera.profile().eye(glm::vec3(10.0f, 10.0f, 10.0f));
+    camera.profile().up(glm::vec3(0.0f, 1.0f, 0.0f));
+    camera.profile().lookat(glm::vec3(0.0f, 0.0f, 0.0f));
+    camera.createProjection();
+    camera.createView();
+
+    int viewport[4] = { 0, 0, 640, 480 };
+    v3d::type::geometry::Ray left = camera.ray(glm::vec2(200.0f, 240.0f), viewport);
+    v3d::type::geometry::Ray right = camera.ray(glm::vec2(440.0f, 240.0f), viewport);
+
+    float leftDistance = 0.0f;
+    float rightDistance = 0.0f;
+    BOOST_TEST(left.intersects(ground(0.0f), &leftDistance));
+    BOOST_TEST(right.intersects(ground(0.0f), &rightDistance));
+
+    const glm::vec3 leftHit = left.point(leftDistance);
+    const glm::vec3 rightHit = right.point(rightDistance);
+    BOOST_CHECK_SMALL(leftHit[1], 0.001f);
+    BOOST_CHECK_SMALL(rightHit[1], 0.001f);
+    BOOST_CHECK_GT(glm::length(rightHit - leftHit), 0.1f);
+    BOOST_CHECK_CLOSE(leftDistance, rightDistance, 0.01f);
 }
