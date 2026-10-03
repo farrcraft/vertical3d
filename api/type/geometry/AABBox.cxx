@@ -6,6 +6,7 @@
 #include "AABBox.h"
 
 #include <glm/common.hpp>
+#include <glm/vector_relational.hpp>
 
 namespace v3d::type::geometry {
 
@@ -78,6 +79,14 @@ void AABBox::extents(const glm::vec3& min, const glm::vec3& max) {
 void AABBox::extend(const glm::vec3& point) {
     min_ = glm::min(min_, point);
     max_ = glm::max(max_, point);
+}
+
+bool AABBox::contains(const glm::vec3& point) const {
+    return glm::all(glm::lessThanEqual(min_, point)) && glm::all(glm::lessThanEqual(point, max_));
+}
+
+bool AABBox::overlaps(const AABBox& other) const {
+    return glm::all(glm::lessThanEqual(min_, other.max_)) && glm::all(glm::lessThanEqual(other.min_, max_));
 }
 
 };  // namespace v3d::type::geometry

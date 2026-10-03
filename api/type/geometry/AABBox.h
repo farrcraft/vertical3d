@@ -66,6 +66,18 @@ class AABBox final {
         */
     void extend(const glm::vec3 & point);
 
+    /**
+        * Whether a point is inside the box. The faces count as inside.
+        * @param point the point to test, in the box's own space.
+        */
+    bool contains(const glm::vec3 & point) const;
+    /**
+        * Whether two boxes share any volume. The faces count as inside, so two boxes
+        * that meet at a face overlap.
+        * @param other the box to test against, in the same space.
+        */
+    bool overlaps(const AABBox & other) const;
+
     // set min & max to bound polygon
     // void bound(const Polygon & poly);
 

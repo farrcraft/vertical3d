@@ -31,11 +31,24 @@ void Bound2D::expand(float size) {
     position_[1] += size;
 }
 
-bool Bound2D::intersect(const glm::vec2& point) {
+bool Bound2D::intersect(const glm::vec2& point) const {
+    return contains(point);
+}
+
+bool Bound2D::contains(const glm::vec2& point) const {
     return (point[0] >= position_[0]) &&
         (point[1] >= position_[1]) &&
         (point[0] <= (position_[0] + size_[0])) &&
         (point[1] <= (position_[1] + size_[1]));
+}
+
+bool Bound2D::overlaps(const Bound2D& other) const {
+    const glm::vec2 end = position_ + size_;
+    const glm::vec2 otherEnd = other.position_ + other.size_;
+    return (position_[0] <= otherEnd[0]) &&
+        (other.position_[0] <= end[0]) &&
+        (position_[1] <= otherEnd[1]) &&
+        (other.position_[1] <= end[1]);
 }
 
 

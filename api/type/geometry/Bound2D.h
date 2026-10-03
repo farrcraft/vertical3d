@@ -61,7 +61,20 @@ class Bound2D {
         * @param point the point to check for intersection
         * @return whether the point is inside the bounding box (true) or not (false)
         */
-    bool intersect(const glm::vec2 & point);
+    bool intersect(const glm::vec2 & point) const;
+    /**
+        * Whether a point is inside the bound. The edge counts as inside.
+        *
+        * @param point the point to test
+        */
+    bool contains(const glm::vec2 & point) const;
+    /**
+        * Whether two bounds share any area. The edge counts as inside, so two bounds that
+        * meet along an edge overlap.
+        *
+        * @param other the bound to test against
+        */
+    bool overlaps(const Bound2D & other) const;
     /**
         * Add the size of another bounding volume to this one
         *

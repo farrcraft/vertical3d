@@ -65,3 +65,38 @@ BOOST_AUTO_TEST_CASE(bound2d_test) {
     BOOST_CHECK_EQUAL(position[0], 17.0f);
     BOOST_CHECK_EQUAL(position[1], 20.0f);
 }
+
+/**
+ * Two bounds overlap unless they are apart on at least one axis, and sharing exactly an edge
+ * counts as overlapping, the same closed edge contains() and intersect() use.
+ **/
+BOOST_AUTO_TEST_CASE(bound2d_overlaps_test) {
+    const v3d::type::geometry::Bound2D bound(0.0f, 0.0f, 10.0f, 10.0f);
+
+    // apart on x only, and on y only
+    BOOST_TEST(!bound.overlaps(v3d::type::geometry::Bound2D(11.0f, 0.0f, 5.0f, 5.0f)));
+    BOOST_TEST(!bound.overlaps(v3d::type::geometry::Bound2D(-6.0f, 2.0f, 5.0f, 5.0f)));
+    BOOST_TEST(!bound.overlaps(v3d::type::geometry::Bound2D(2.0f, 11.0f, 5.0f, 5.0f)));
+    BOOST_TEST(!bound.overlaps(v3d::type::geometry::Bound2D(2.0f, -6.0f, 5.0f, 5.0f)));
+
+    // overlapping a corner, which is the answer from both sides
+    const v3d::type::geometry::Bound2D corner(8.0f, 8.0f, 5.0f, 5.0f);
+    BOOST_TEST(bound.overlaps(corner));
+    BOOST_TEST(corner.overlaps(bound));
+
+    // one inside the other
+    BOOST_TEST(bound.overlaps(v3d::type::geometry::Bound2D(2.0f, 2.0f, 1.0f, 1.0f)));
+    BOOST_TEST(v3d::type::geometry::Bound2D(2.0f, 2.0f, 1.0f, 1.0f).overlaps(bound));
+
+    // sharing exactly an edge
+    BOOST_TEST(bound.overlaps(v3d::type::geometry::Bound2D(10.0f, 0.0f, 5.0f, 5.0f)));
+}
+
+BOOST_AUTO_TEST_CASE(bound2d_contains_test) {
+    const v3d::type::geometry::Bound2D bound(0.0f, 0.0f, 10.0f, 10.0f);
+
+    BOOST_TEST(bound.contains(glm::vec2(5.0f, 5.0f)));
+    BOOST_TEST(bound.contains(glm::vec2(10.0f, 0.0f)));
+    BOOST_TEST(!bound.contains(glm::vec2(10.5f, 5.0f)));
+    BOOST_TEST(!bound.contains(glm::vec2(5.0f, -0.5f)));
+}

@@ -84,3 +84,51 @@ BOOST_AUTO_TEST_CASE(aabbox_test) {
     BOOST_CHECK_EQUAL((min_extent == vertices[6]), true);
     BOOST_CHECK_EQUAL((max_extent == vertices[7]), true);
 }
+
+namespace {
+
+v3d::type::geometry::AABBox box(const glm::vec3 & min, const glm::vec3 & max) {
+    v3d::type::geometry::AABBox b;
+    b.extents(min, max);
+    return b;
+}
+
+};  // namespace
+
+/**
+ * Two boxes overlap unless they are apart on at least one axis, and sharing exactly a face
+ * counts as overlapping.
+ **/
+BOOST_AUTO_TEST_CASE(aabbox_overlaps_test) {
+    const v3d::type::geometry::AABBox unit = box(glm::vec3(0.0f), glm::vec3(1.0f));
+
+    // apart on each axis alone
+    for (int axis = 0; axis < 3; axis++) {
+        glm::vec3 offset(0.0f);
+        offset[axis] = 2.0f;
+        BOOST_TEST(!unit.overlaps(box(offset, offset + glm::vec3(1.0f))));
+        BOOST_TEST(!unit.overlaps(box(-offset, -offset + glm::vec3(1.0f))));
+    }
+
+    // overlapping, from both sides
+    const v3d::type::geometry::AABBox shifted = box(glm::vec3(0.5f), glm::vec3(1.5f));
+    BOOST_TEST(unit.overlaps(shifted));
+    BOOST_TEST(shifted.overlaps(unit));
+
+    // one inside the other
+    const v3d::type::geometry::AABBox inner = box(glm::vec3(0.25f), glm::vec3(0.75f));
+    BOOST_TEST(unit.overlaps(inner));
+    BOOST_TEST(inner.overlaps(unit));
+
+    // sharing exactly a face
+    BOOST_TEST(unit.overlaps(box(glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(2.0f, 1.0f, 1.0f))));
+}
+
+BOOST_AUTO_TEST_CASE(aabbox_contains_test) {
+    const v3d::type::geometry::AABBox unit = box(glm::vec3(0.0f), glm::vec3(1.0f));
+
+    BOOST_TEST(unit.contains(glm::vec3(0.5f)));
+    BOOST_TEST(unit.contains(glm::vec3(1.0f, 0.0f, 1.0f)));
+    BOOST_TEST(!unit.contains(glm::vec3(0.5f, 1.5f, 0.5f)));
+    BOOST_TEST(!unit.contains(glm::vec3(0.5f, 0.5f, -0.5f)));
+}
