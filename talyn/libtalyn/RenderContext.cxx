@@ -5,6 +5,8 @@
 
 #include "RenderContext.h"
 
+#include <api/render/offline/Film.h>
+#include <api/render/offline/Sampler.h>
 #include <api/render/offline/sl/Imager.h>
 
 #include <vector>
@@ -17,8 +19,6 @@ namespace {
 
 // the planes of an RGBA framebuffer
 const unsigned int RED = 0;
-const unsigned int GREEN = 1;
-const unsigned int BLUE = 2;
 const unsigned int ALPHA = 3;
 
 };  // namespace
@@ -92,29 +92,35 @@ void RenderContext::render() {
     // and sizing one per pixel is the one allocation a tracer would notice
     HitShader shader(&scene_);
 
+    // a sample at a time into the film, which filters them into pixels once every ray is
+    // cast, per ADR-0076
+    const v3d::render::offline::Sampler sampler(sampling_);
+    v3d::render::offline::Film film(width, height, sampling_);
     for (unsigned int row = 0; row < height; row++) {
         for (unsigned int column = 0; column < width; column++) {
-            // the camera measures y downward from the top of the viewport and image row 0
-            // is the top of the picture, so a pixel index is a screen point as it stands
-            glm::vec2 point(static_cast<float>(column) + 0.5f, static_cast<float>(row) + 0.5f);
-            v3d::type::geometry::Ray ray = camera.ray(point, viewport);
+            for (const v3d::render::offline::Sampler::Sample & at : sampler.pixel(column, row)) {
+                // the camera measures y downward from the top of the viewport and image row 0
+                // is the top of the picture, so a raster position is a screen point as it stands
+                v3d::type::geometry::Ray ray = camera.ray(at.raster, viewport);
 
-            glm::vec3 colour = scene_.background();
-            Hit hit;
-            const bool covered = scene_.nearest(ray, 0.0f, &hit);
-            if (covered) {
-                // the nearest hit is the batch, and the surface shader's Ci is the pixel
-                colour = shader.shade(hit);
+                v3d::render::offline::Film::Sample sample;
+                sample.raster = at.raster;
+                sample.colour = scene_.background();
+                Hit hit;
+                sample.hit = scene_.nearest(ray, 0.0f, &hit);
+                if (sample.hit) {
+                    // the nearest hit is the batch, and the surface shader's Ci is the sample
+                    sample.colour = shader.shade(hit);
+                    sample.opacity = glm::vec3(1.0f);
+                    sample.depth = hit.distance;
+                }
+                film.add(sample);
             }
-
-            framebuffer_->value(RED, column, row, colour.r);
-            framebuffer_->value(GREEN, column, row, colour.g);
-            framebuffer_->value(BLUE, column, row, colour.b);
-            // a ray that hit nothing covered nothing, which is what lets an imager tell
-            // a pixel the scene never reached from a black one
-            framebuffer_->value(ALPHA, column, row, covered ? 1.0f : 0.0f);
         }
     }
+    // a ray that hit nothing covered nothing, which is what lets an imager tell a pixel the
+    // scene never reached from a black one
+    film.resolve(framebuffer_.get(), RED, ALPHA);
 
     if (imager_.shader) {
         // after the last ray, which is where every sample the frame will ever hold is in
@@ -130,6 +136,14 @@ void RenderContext::imager(const v3d::render::offline::sl::Placed & shader) {
 
 boost::shared_ptr<v3d::render::offline::FrameBuffer> RenderContext::framebuffer() const {
     return framebuffer_;
+}
+
+v3d::render::offline::Sampling & RenderContext::sampling() {
+    return sampling_;
+}
+
+const v3d::render::offline::Sampling & RenderContext::sampling() const {
+    return sampling_;
 }
 
 };  // namespace v3d::talyn

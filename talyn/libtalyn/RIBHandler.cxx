@@ -96,6 +96,29 @@ void RIBHandler::clipping(float hither, float yon) {
     clippingNamed_ = true;
 }
 
+void RIBHandler::depthOfField(float fstop, float focalLength, float focalDistance) {
+    rc_->sampling().fstop = fstop;
+    rc_->sampling().focalLength = focalLength;
+    rc_->sampling().focalDistance = focalDistance;
+}
+
+void RIBHandler::shutter(float open, float close) {
+    rc_->sampling().shutter = glm::vec2(open, close);
+}
+
+void RIBHandler::pixelSamples(unsigned int x, unsigned int y) {
+    rc_->sampling().samples = glm::uvec2(x, y);
+}
+
+void RIBHandler::pixelFilter(v3d::render::offline::Filter filter, float xwidth, float ywidth) {
+    rc_->sampling().filter = filter;
+    rc_->sampling().width = glm::vec2(xwidth, ywidth);
+}
+
+void RIBHandler::pixelVariance(float variation) {
+    rc_->sampling().variance = variation;
+}
+
 bool RIBHandler::buildCamera() {
     // a centred screen window is what a Profile can hold: it carries a field of
     // view and a pixel aspect, not four edges

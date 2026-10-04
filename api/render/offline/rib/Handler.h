@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <api/render/offline/Sampling.h>
+
 #include <string>
 #include <vector>
 
@@ -67,6 +69,31 @@ class Handler {
         (void)hither;
         (void)yon;
     }
+    /**
+     * @param fstop an infinite one is a pinhole, which is also what RIB's DepthOfField
+     *        with no arguments asks for
+     **/
+    virtual void depthOfField(float fstop, float focalLength, float focalDistance) {
+        (void)fstop;
+        (void)focalLength;
+        (void)focalDistance;
+    }
+    virtual void shutter(float open, float close) {
+        (void)open;
+        (void)close;
+    }
+
+    // how a pixel is sampled
+    virtual void pixelSamples(unsigned int x, unsigned int y) {
+        (void)x;
+        (void)y;
+    }
+    virtual void pixelFilter(Filter filter, float xwidth, float ywidth) {
+        (void)filter;
+        (void)xwidth;
+        (void)ywidth;
+    }
+    virtual void pixelVariance(float variation) { (void)variation; }
     virtual void display(const std::string & name, const std::string & type, const std::string & mode,
         const ParameterList & parameters) {
         (void)name;

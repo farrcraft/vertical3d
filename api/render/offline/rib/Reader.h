@@ -78,6 +78,8 @@ class Reader final {
     Result optionRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result cameraRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result displayRequest(const std::string & name, Lexer * lexer, Handler * handler);
+    Result lensRequest(const std::string & name, Lexer * lexer, Handler * handler);
+    Result sampleRequest(const std::string & name, Lexer * lexer, Handler * handler);
     static Result blockRequest(const std::string & name, Handler * handler);
     Result transformRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result attributeRequest(const std::string & name, Lexer * lexer, Handler * handler);

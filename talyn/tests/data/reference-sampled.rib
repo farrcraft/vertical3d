@@ -1,11 +1,8 @@
 ##RenderMan RIB-Structure 1.1
-##Scene Two surfaces under two lights, one casting a shadow across the other
+##Scene reference-shaded at the RI default sampling
 version 3.03
 Format 64 48 1
-# one sample at each pixel centre under a one pixel box, which the film gives back exactly:
-# this picture pins the hider and the shading, and reference-sampled pins the sampling
-PixelSamples 1 1
-PixelFilter "box" 1 1
+# no PixelSamples and no PixelFilter, so two by two samples under a gaussian two pixels wide
 Projection "orthographic"
 # an ortho zoom of one and a pixel aspect of 4:3, which is what the code built scene sets
 ScreenWindow -1.333333 1.333333 -1 1

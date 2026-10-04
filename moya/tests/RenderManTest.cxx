@@ -77,3 +77,28 @@ BOOST_AUTO_TEST_CASE(renderman_declare_test) {
     BOOST_CHECK_EQUAL(shading.surface->name(), "matte");
     RiEnd();
 }
+
+/**
+ * The sampling requests reach the same context from C. A filter is named by its function
+ * there, and one the interface does not declare leaves the filter the context had.
+ **/
+BOOST_AUTO_TEST_CASE(renderman_sampling_test) {
+    RiBegin(RI_NULL);
+    RiPixelSamples(4.0f, 4.0f);
+    RiPixelFilter(RiCatmullRomFilter, 3.0f, 3.0f);
+    RiDepthOfField(8.0f, 0.1f, 3.0f);
+    RiShutter(0.0f, 0.5f);
+
+    const v3d::render::offline::Sampling & sampling = context().sampling();
+    BOOST_CHECK_EQUAL(sampling.samples.x, 4u);
+    BOOST_CHECK_EQUAL(sampling.samples.y, 4u);
+    BOOST_CHECK(sampling.filter == v3d::render::offline::Filter::CatmullRom);
+    BOOST_CHECK_EQUAL(sampling.width.x, 3.0f);
+    BOOST_CHECK_EQUAL(sampling.fstop, 8.0f);
+    BOOST_CHECK_EQUAL(sampling.shutter.y, 0.5f);
+
+    RiPixelFilter(nullptr, 1.0f, 1.0f);
+    BOOST_CHECK(context().sampling().filter == v3d::render::offline::Filter::CatmullRom);
+    BOOST_CHECK_EQUAL(context().sampling().width.x, 3.0f);
+    RiEnd();
+}

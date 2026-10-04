@@ -46,6 +46,37 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_camera_test) {
 }
 
 /**
+ * The sampling requests reach the render context, and a scene that names none of them is
+ * sampled the way RI says a scene that says nothing is.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_sampling_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+
+    BOOST_REQUIRE(read(
+        "Format 64 48 1\n"
+        "PixelSamples 4 4\n"
+        "DepthOfField 8 0.1 3\n"
+        "WorldBegin\n"
+        "WorldEnd\n", &handler));
+
+    BOOST_CHECK_EQUAL(handler.context().sampling().samples.x, 4u);
+    BOOST_CHECK_EQUAL(handler.context().sampling().samples.y, 4u);
+    BOOST_CHECK_EQUAL(handler.context().sampling().fstop, 8.0f);
+    BOOST_CHECK_CLOSE(handler.context().sampling().focalLength, 0.1f, 1.0e-4f);
+    BOOST_CHECK_EQUAL(handler.context().sampling().focalDistance, 3.0f);
+
+    v3d::moya::Renderer plainRenderer;
+    v3d::moya::RIBHandler silent(&plainRenderer);
+    BOOST_REQUIRE(read("Format 64 48 1\nWorldBegin\nWorldEnd\n", &silent));
+    BOOST_CHECK_EQUAL(silent.context().sampling().samples.x, 2u);
+    BOOST_CHECK_EQUAL(silent.context().sampling().samples.y, 2u);
+    BOOST_CHECK(silent.context().sampling().filter == v3d::render::offline::Filter::Gaussian);
+    BOOST_CHECK_EQUAL(silent.context().sampling().width.x, 2.0f);
+    BOOST_CHECK(silent.context().sampling().pinhole());
+}
+
+/**
  * The polygon a file names reaches the first pass with the points it named, moved into eye
  * space by the transform that was current.
  **/

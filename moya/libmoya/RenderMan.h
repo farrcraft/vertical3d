@@ -121,6 +121,7 @@ extern RtVoid RiFormat(RtInt xres, RtInt yres, RtFloat aspect),
     RiProjectionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]),
     RiClipping(RtFloat hither, RtFloat yon),
     RiClippingPlane(RtFloat x, RtFloat y, RtFloat z, RtFloat nx, RtFloat ny, RtFloat nz),
+    RiDepthOfField(RtFloat fstop, RtFloat focallength, RtFloat focaldistance),
     RiShutter(RtFloat min, RtFloat max);
 
 extern RtVoid RiPixelVariance(RtFloat variation),

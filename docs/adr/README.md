@@ -84,3 +84,4 @@ old record's status and leave the file in place.
 | [0073](0073-a-document-is-read-forward-one-version-at-a-time.md) | Reading An Old Document — It Is Walked Forward One Version At A Time, And Refused Rather Than Half Read | accepted | 2026-10-04 |
 | [0074](0074-the-shell-builds-the-uis-renderers.md) | An App's Text And Ui Renderers — One Shell Class Builds Them Over The Renderer It Is Handed | accepted | 2026-10-04 |
 | [0075](0075-a-canvas-may-draw-in-a-space-of-its-own.md) | A 2D Game Space — A Canvas May Draw In A Space Of Its Own, And Its Projection Stays A Push Constant Per Submit | accepted | 2026-10-04 |
+| [0076](0076-a-pixel-is-a-filtered-set-of-seeded-samples.md) | Offline Sampling — A Pixel Is A Filtered Set Of Seeded Samples, Resolved By One Film Both Renderers Share | accepted | 2026-10-04 |

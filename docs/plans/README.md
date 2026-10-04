@@ -9,7 +9,13 @@ every phase is closed it moves to [completed/](completed/), and any open item it
 moves to [TODO.md](../TODO.md). The plan itself stays, because the reasoning behind an ordering
 outlives the schedule.
 
-No plan is open.
+One plan is open. [OfflineRenderingPhases4To6.md](OfflineRenderingPhases4To6.md) was drafted on
+2026-10-04, taking up the last three phases of [the offline rendering
+roadmap](../roadmap/OfflineRendering.md): a pixel as a filtered set of seeded samples in a film
+both renderers share, depth of field, motion blur of a transform and adaptive sampling; a trace
+that recurses, reflection, refraction, transparency, spheres, `texture()` and `noise()`; and
+phase 6 answered as one ray tracer both renderers reach, which gives moya shadows. Area lights,
+displacement and an acceleration structure are held.
 
 [completed/ShellAndShipping.md](completed/ShellAndShipping.md) was drafted and closed on
 2026-10-04, taking up [milestone 7](../roadmap/completed/m7-ShellAndShipping.md) of

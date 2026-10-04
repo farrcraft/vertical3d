@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/log/Logger.h>
+#include <api/render/offline/Sampling.h>
 #include <api/render/offline/rib/Declarations.h>
 #include <api/render/offline/sl/ShaderLibrary.h>
 
@@ -233,6 +234,13 @@ class RenderContext {
         unsigned int gridSize() const;
         float shadingRate() const;
 
+        /**
+            *	How the frame is sampled: what RiPixelSamples, RiPixelFilter,
+            *	RiPixelVariance, RiShutter and RiDepthOfField asked for.
+            */
+        v3d::render::offline::Sampling & sampling();
+        const v3d::render::offline::Sampling & sampling() const;
+
  protected:
         void initialize();
 
@@ -311,12 +319,7 @@ class RenderContext {
         glm::mat4x4 transform_ = glm::mat4x4(1.0f);  // world to camera transformation matrix / current transformation matrix
         float near_ = 1.0e-10f;  // near clipping plane
         float far_ = 1.0e38f;  // far clipping plane
-        // other clipping planes
-        float fStop_ = 1.0e38f;  // for depth of field
-        float focalLength_ = 0.0f;
-        float focalDistance_ = 0.0f;
-        float shutterOpen_ = 0.0f;
-        float shutterClose_ = 0.0f;
+        v3d::render::offline::Sampling sampling_;
 
 
         /*

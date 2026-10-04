@@ -114,6 +114,29 @@ void RIBHandler::clipping(float hither, float yon) {
     context().clipping(hither, yon);
 }
 
+void RIBHandler::depthOfField(float fstop, float focalLength, float focalDistance) {
+    context().sampling().fstop = fstop;
+    context().sampling().focalLength = focalLength;
+    context().sampling().focalDistance = focalDistance;
+}
+
+void RIBHandler::shutter(float open, float close) {
+    context().sampling().shutter = glm::vec2(open, close);
+}
+
+void RIBHandler::pixelSamples(unsigned int x, unsigned int y) {
+    context().sampling().samples = glm::uvec2(x, y);
+}
+
+void RIBHandler::pixelFilter(v3d::render::offline::Filter filter, float xwidth, float ywidth) {
+    context().sampling().filter = filter;
+    context().sampling().width = glm::vec2(xwidth, ywidth);
+}
+
+void RIBHandler::pixelVariance(float variation) {
+    context().sampling().variance = variation;
+}
+
 void RIBHandler::output(const std::string & name) {
     output_ = name;
     context().display(name, "file", "rgb");

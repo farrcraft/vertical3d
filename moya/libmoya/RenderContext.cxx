@@ -84,6 +84,14 @@ float RenderContext::shadingRate() const {
     return shadingRate_;
 }
 
+v3d::render::offline::Sampling & RenderContext::sampling() {
+    return sampling_;
+}
+
+const v3d::render::offline::Sampling & RenderContext::sampling() const {
+    return sampling_;
+}
+
 /*
     maps to RiWorldBegin()
     freezes all rendering options, world to camera transformation

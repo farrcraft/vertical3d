@@ -246,17 +246,19 @@ and that displacement and volume shaders parse and are reported as unsupported.
 
 ### Phase 4 — sampling and quality
 
-**Unblocked** — phase 3 closed, and there is now something worth antialiasing.
+**Taken up by [OfflineRenderingPhases4To6](../plans/OfflineRenderingPhases4To6.md)**, with phases
+5 and 6. Unblocked since phase 3 closed, and there is now something worth antialiasing.
 
 The five `Ri*Filter` functions — box, triangle, gaussian, catmull-rom, sinc — all return `0.0`
 today, and they are the pixel filter half of this. The sampling half is supersampling, then
-adaptive supersampling. `RenderContext` already declares `fStop_`, `focalLength_`,
-`focalDistance_`, `shutterOpen_` and `shutterClose_`, which nothing writes and nothing reads:
-depth of field and motion blur are fields waiting for an implementation.
+adaptive supersampling. moya's `RenderContext` declares `fStop_`, `focalLength_`,
+`focalDistance_`, `shutterOpen_` and `shutterClose_`, which nothing writes and nothing reads, and
+talyn has no equivalent: depth of field and motion blur have nowhere shared to live yet.
 
 ### Phase 5 — talyn's own list
 
-**Unblocked** — phase 3 closed. Reflection and refraction are the recursion the algorithm
+**Taken up by [OfflineRenderingPhases4To6](../plans/OfflineRenderingPhases4To6.md).** Unblocked
+since phase 3 closed. Reflection and refraction are the recursion the algorithm
 comment already describes, and the hook is in: `trace()` is a built-in talyn answers, with a
 depth of one and no shipped shader calling it. Index of refraction and transparency come with
 them, and `refract` is already in the library. Texture and bump mapping ride on `api/image`,
@@ -265,6 +267,9 @@ nothing until there is a scene large enough to be slow, and should wait for one 
 built on principle.
 
 ### Phase 6 — whether they unify
+
+**Taken up by [OfflineRenderingPhases4To6](../plans/OfflineRenderingPhases4To6.md)**, which
+answers it in a record of its own before building it.
 
 The question talyn's driver used to ask in a comment at the top of it, until phase 1 removed the
 comment: one renderer with two algorithms behind a common interface, or two renderers that share

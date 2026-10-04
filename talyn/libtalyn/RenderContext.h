@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/render/offline/FrameBuffer.h>
+#include <api/render/offline/Sampling.h>
 
 #include <boost/shared_ptr.hpp>
 
@@ -30,7 +31,8 @@ class RenderContext {
     void format(unsigned int width, unsigned int height);
 
     /**
-     * Cast a primary ray through the centre of every pixel and write what it finds.
+     * Cast a primary ray through every sample of every pixel and write what the film
+     * makes of them.
      *
      * The camera is given the framebuffer's size and its matrices are rebuilt here,
      * since Camera::ray() reads the cached ones. Nothing is drawn without a format().
@@ -48,10 +50,17 @@ class RenderContext {
 
     boost::shared_ptr<v3d::render::offline::FrameBuffer> framebuffer() const;
 
+    /**
+     * How the frame is sampled, as the scene asked for it.
+     */
+    v3d::render::offline::Sampling & sampling();
+    const v3d::render::offline::Sampling & sampling() const;
+
  private:
     boost::shared_ptr<v3d::render::offline::FrameBuffer> framebuffer_;
     Scene scene_;
     v3d::render::offline::sl::Placed imager_;
+    v3d::render::offline::Sampling sampling_;
 };
 
 

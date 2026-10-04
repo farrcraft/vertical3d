@@ -11,6 +11,9 @@ set(CMAKE_C_FLAGS "/utf-8")
 
 v3d_add_api_library(render_offline
 	"FrameBuffer.h" "FrameBuffer.cxx"
+	"Sampling.h" "Sampling.cxx"
+	"Sampler.h" "Sampler.cxx"
+	"Film.h" "Film.cxx"
 	"rib/Lexer.h" "rib/Lexer.cxx"
 	"rib/Declarations.h" "rib/Declarations.cxx"
 	"rib/Parameters.h" "rib/Parameters.cxx"

@@ -32,6 +32,22 @@ const char* SHADED_RENDERED = "data_out/reference-shaded.png";
 const char* SHADED_SCENE = "data/reference-shaded.rib";
 const char* SHADED_RIB_RENDERED = "data_out/reference-shaded-rib.png";
 
+const char* SAMPLED = "data/reference-sampled.png";
+const char* SAMPLED_RENDERED = "data_out/reference-sampled.png";
+const char* SAMPLED_SCENE = "data/reference-sampled.rib";
+const char* SAMPLED_RIB_RENDERED = "data_out/reference-sampled-rib.png";
+
+/**
+ * One sample at each pixel centre under a one pixel box, which the film gives back exactly.
+ * The references drawn this way pin the hider and the shading; reference-sampled pins the
+ * sampling.
+ **/
+void pixelCentres(v3d::talyn::RenderContext & rc) {
+    rc.sampling().samples = glm::uvec2(1, 1);
+    rc.sampling().filter = v3d::render::offline::Filter::Box;
+    rc.sampling().width = glm::vec2(1.0f, 1.0f);
+}
+
 /*
     Regenerating this reference is expected whenever shading or sampling changes the
     picture on purpose. What it buys is that a change which was not meant to alter the
@@ -40,6 +56,7 @@ const char* SHADED_RIB_RENDERED = "data_out/reference-shaded-rib.png";
 boost::shared_ptr<v3d::image::Image> render() {
     v3d::talyn::RenderContext rc;
     rc.format(64, 48);
+    pixelCentres(rc);
 
     v3d::type::camera::Profile & profile = rc.scene().camera().profile();
     profile.orthographic(true);
@@ -108,7 +125,8 @@ void quad(v3d::talyn::Scene* scene, float left, float bottom, float right, float
 /*
     The same scene as data/reference-shaded.rib, built through the render context instead
     of read from a file: a matte floor and a plastic panel, three lights of three kinds,
-    and a shadow the panel casts across the floor.
+    and a shadow the panel casts across the floor. It is sampled at the RI defaults unless
+    the caller says otherwise.
 */
 void shadedScene(v3d::talyn::RenderContext & rc) {
     typedef v3d::render::offline::rib::Declaration Declaration;
@@ -285,6 +303,7 @@ BOOST_AUTO_TEST_CASE(talyn_renders_a_lit_scene_test) {
 BOOST_AUTO_TEST_CASE(talyn_shaded_reference_test) {
     v3d::talyn::RenderContext rc;
     shadedScene(rc);
+    pixelCentres(rc);
     rc.render();
 
     check(rc.framebuffer()->image(3), SHADED, SHADED_RENDERED);
@@ -304,4 +323,50 @@ BOOST_AUTO_TEST_CASE(talyn_shaded_reference_from_rib_test) {
 
     rc->render();
     check(rc->framebuffer()->image(3), SHADED, SHADED_RIB_RENDERED);
+}
+
+/**
+ * The shaded scene at the RI defaults, two by two samples under a gaussian two pixels wide,
+ * per ADR-0076. Its edges are antialiased, and it is the same on every run because every
+ * pixel's samples are seeded by where the pixel is.
+ **/
+BOOST_AUTO_TEST_CASE(talyn_sampled_reference_test) {
+    v3d::talyn::RenderContext rc;
+    shadedScene(rc);
+    rc.render();
+
+    check(rc.framebuffer()->image(3), SAMPLED, SAMPLED_RENDERED);
+}
+
+/**
+ * The sampled scene said in RIB, which names no sampling and so gets the defaults.
+ **/
+BOOST_AUTO_TEST_CASE(talyn_sampled_reference_from_rib_test) {
+    auto rc = boost::make_shared<v3d::talyn::RenderContext>();
+    v3d::talyn::RIBHandler handler(rc);
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(reader.read(SAMPLED_SCENE, &handler));
+    BOOST_CHECK_EQUAL(reader.error(), "");
+    BOOST_REQUIRE_EQUAL(handler.error(), "");
+
+    rc->render();
+    check(rc->framebuffer()->image(3), SAMPLED, SAMPLED_RIB_RENDERED);
+}
+
+/**
+ * Two renders of the sampled scene are equal byte for byte, which is what lets a reference
+ * survive sampling at all.
+ **/
+BOOST_AUTO_TEST_CASE(talyn_sampled_render_is_repeatable_test) {
+    v3d::talyn::RenderContext first;
+    shadedScene(first);
+    first.render();
+    v3d::talyn::RenderContext second;
+    shadedScene(second);
+    second.render();
+
+    const v3d::image::Difference difference = v3d::image::compare(
+        *first.framebuffer()->image(3), *second.framebuffer()->image(3), 0);
+    BOOST_CHECK_MESSAGE(difference.match, difference.description());
 }

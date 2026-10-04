@@ -24,7 +24,7 @@ the others; a roadmap exists because the ordering between its items is the inter
 
 | Roadmap | Area |
 |---|---|
-| [OfflineRendering.md](OfflineRendering.md) | `talyn` and `moya` — the raytracer and the reyes renderer |
+| [OfflineRendering.md](OfflineRendering.md) | `talyn` and `moya` — the raytracer and the reyes renderer; phases 4 to 6 taken up by [OfflineRenderingPhases4To6](../plans/OfflineRenderingPhases4To6.md) |
 
 ## Completed
 

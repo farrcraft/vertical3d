@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <fstream>
 #include <istream>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -331,6 +332,77 @@ Reader::Result Reader::displayRequest(const std::string & name, Lexer * lexer, H
 }
 
 /**
+ * Reads the lens and the shutter: where a sample's eye is and when it looks.
+ **/
+Reader::Result Reader::lensRequest(const std::string & name, Lexer * lexer, Handler * handler) {
+    float a = 0.0f;
+    float b = 0.0f;
+    float c = 0.0f;
+
+    if (name == "DepthOfField") {
+        // the form with no arguments asks for a pinhole
+        if (lexer->peek().kind() != Kind::NUMBER) {
+            handler->depthOfField(std::numeric_limits<float>::infinity(), 0.0f, 0.0f);
+            return Result::Handled;
+        }
+        if (!number(lexer, &a) || !number(lexer, &b) || !number(lexer, &c)) {
+            return Result::Failed;
+        }
+        handler->depthOfField(a, b, c);
+        return Result::Handled;
+    }
+    if (name == "Shutter") {
+        if (!number(lexer, &a) || !number(lexer, &b)) {
+            return Result::Failed;
+        }
+        handler->shutter(a, b);
+        return Result::Handled;
+    }
+    return Result::Unhandled;
+}
+
+/**
+ * Reads how a pixel is sampled and filtered.
+ **/
+Reader::Result Reader::sampleRequest(const std::string & name, Lexer * lexer, Handler * handler) {
+    float a = 0.0f;
+    float b = 0.0f;
+    std::string first;
+
+    if (name == "PixelSamples") {
+        if (!number(lexer, &a) || !number(lexer, &b)) {
+            return Result::Failed;
+        }
+        handler->pixelSamples(sampleCount(a), sampleCount(b));
+        return Result::Handled;
+    }
+    if (name == "PixelFilter") {
+        if (!text(lexer, &first) || !number(lexer, &a) || !number(lexer, &b)) {
+            return Result::Failed;
+        }
+        Filter filter = Filter::Gaussian;
+        if (!filterNamed(first, &filter)) {
+            // the request was understood and its filter was not, so the renderer keeps the
+            // one it had rather than the parse failing
+            if (reported_.insert("filter " + first).second) {
+                logger_->get()->warn("RIB PixelFilter '{}' is not a filter and was skipped", first);
+            }
+            return Result::Handled;
+        }
+        handler->pixelFilter(filter, a, b);
+        return Result::Handled;
+    }
+    if (name == "PixelVariance") {
+        if (!number(lexer, &a)) {
+            return Result::Failed;
+        }
+        handler->pixelVariance(a);
+        return Result::Handled;
+    }
+    return Result::Unhandled;
+}
+
+/**
  * Reads the blocks a scene is nested out of. None of them carries an argument.
  **/
 Reader::Result Reader::blockRequest(const std::string & name, Handler * handler) {
@@ -565,6 +637,12 @@ bool Reader::request(const std::string & name, Lexer * lexer, Handler * handler)
     }
     if (result == Result::Unhandled) {
         result = displayRequest(name, lexer, handler);
+    }
+    if (result == Result::Unhandled) {
+        result = lensRequest(name, lexer, handler);
+    }
+    if (result == Result::Unhandled) {
+        result = sampleRequest(name, lexer, handler);
     }
     if (result == Result::Unhandled) {
         result = blockRequest(name, handler);

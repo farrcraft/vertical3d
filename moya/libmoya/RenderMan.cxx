@@ -191,24 +191,24 @@ RtBasis RiBezierBasis,
 RtInt RiLastError;
 
 // RI subroutines
-RtFloat RiGaussianFilter(RtFloat /* x */, RtFloat /* y */, RtFloat /* xwidth */, RtFloat /* ywidth */) {
-    return 0.0;
+RtFloat RiGaussianFilter(RtFloat x, RtFloat y, RtFloat xwidth, RtFloat ywidth) {
+    return v3d::render::offline::filter(v3d::render::offline::Filter::Gaussian, glm::vec2(x, y), glm::vec2(xwidth, ywidth));
 }
 
-RtFloat RiBoxFilter(RtFloat /* x */, RtFloat /* y */, RtFloat /* xwidth */, RtFloat /* ywidth */) {
-    return 0.0;
+RtFloat RiBoxFilter(RtFloat x, RtFloat y, RtFloat xwidth, RtFloat ywidth) {
+    return v3d::render::offline::filter(v3d::render::offline::Filter::Box, glm::vec2(x, y), glm::vec2(xwidth, ywidth));
 }
 
-RtFloat RiTriangleFilter(RtFloat /* x */, RtFloat /* y */, RtFloat /* xwidth */, RtFloat /* ywidth */) {
-    return 0.0;
+RtFloat RiTriangleFilter(RtFloat x, RtFloat y, RtFloat xwidth, RtFloat ywidth) {
+    return v3d::render::offline::filter(v3d::render::offline::Filter::Triangle, glm::vec2(x, y), glm::vec2(xwidth, ywidth));
 }
 
-RtFloat RiCatmullRomFilter(RtFloat /* x */, RtFloat /* y */, RtFloat /* xwidth */, RtFloat /* ywidth */) {
-    return 0.0;
+RtFloat RiCatmullRomFilter(RtFloat x, RtFloat y, RtFloat xwidth, RtFloat ywidth) {
+    return v3d::render::offline::filter(v3d::render::offline::Filter::CatmullRom, glm::vec2(x, y), glm::vec2(xwidth, ywidth));
 }
 
-RtFloat RiSincFilter(RtFloat /* x */, RtFloat /* y */, RtFloat /* xwidth */, RtFloat /* ywidth */) {
-    return 0.0;
+RtFloat RiSincFilter(RtFloat x, RtFloat y, RtFloat xwidth, RtFloat ywidth) {
+    return v3d::render::offline::filter(v3d::render::offline::Filter::Sinc, glm::vec2(x, y), glm::vec2(xwidth, ywidth));
 }
 
 RtVoid RiErrorIgnore(RtInt code, RtInt severity, char *msg) {
@@ -428,16 +428,46 @@ RtVoid RiClipping(RtFloat hither, RtFloat yon) {
 RtVoid RiClippingPlane(RtFloat x, RtFloat y, RtFloat z, RtFloat nx, RtFloat ny, RtFloat nz) {
 }
 
+RtVoid RiDepthOfField(RtFloat fstop, RtFloat focallength, RtFloat focaldistance) {
+    v3d::render::offline::Sampling & sampling = renderer().activeRenderContext().sampling();
+    sampling.fstop = fstop;
+    sampling.focalLength = focallength;
+    sampling.focalDistance = focaldistance;
+}
+
 RtVoid RiShutter(RtFloat min, RtFloat max) {
+    renderer().activeRenderContext().sampling().shutter = glm::vec2(min, max);
 }
 
 RtVoid RiPixelVariance(RtFloat variation) {
+    renderer().activeRenderContext().sampling().variance = variation;
 }
 
 RtVoid RiPixelSamples(RtFloat xsamples, RtFloat ysamples) {
+    renderer().activeRenderContext().sampling().samples = glm::uvec2(
+        v3d::render::offline::sampleCount(xsamples), v3d::render::offline::sampleCount(ysamples));
 }
 
 RtVoid RiPixelFilter(RtFilterFunc filterfunc, RtFloat xwidth, RtFloat ywidth) {
+    // the C interface names a filter by its function, and only the five RI declares are
+    // known; any other leaves the filter the context had
+    v3d::render::offline::Filter filter = v3d::render::offline::Filter::Gaussian;
+    if (filterfunc == RiBoxFilter) {
+        filter = v3d::render::offline::Filter::Box;
+    } else if (filterfunc == RiTriangleFilter) {
+        filter = v3d::render::offline::Filter::Triangle;
+    } else if (filterfunc == RiCatmullRomFilter) {
+        filter = v3d::render::offline::Filter::CatmullRom;
+    } else if (filterfunc == RiGaussianFilter) {
+        filter = v3d::render::offline::Filter::Gaussian;
+    } else if (filterfunc == RiSincFilter) {
+        filter = v3d::render::offline::Filter::Sinc;
+    } else {
+        return;
+    }
+    v3d::render::offline::Sampling & sampling = renderer().activeRenderContext().sampling();
+    sampling.filter = filter;
+    sampling.width = glm::vec2(xwidth, ywidth);
 }
 
 RtVoid RiExposure(RtFloat gain, RtFloat gamma) {

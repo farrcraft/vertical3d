@@ -82,9 +82,9 @@ class Renderer {
     /**
      * What a ray from a point in a direction comes back with - the phase 6 hook.
      *
-     * talyn implements it and moya answers with its background. Its existence is what makes
-     * phase 6 a question anyone can answer; nothing here decides whether moya's raytracing
-     * is talyn.
+     * talyn implements it. moya does not, so a shader tracing in moya gets the fallback's
+     * black. Its existence is what makes phase 6 a question anyone can answer; nothing here
+     * decides whether moya's raytracing is talyn.
      *
      * @return whether the renderer traced it; one that did not answers black and says so
      **/

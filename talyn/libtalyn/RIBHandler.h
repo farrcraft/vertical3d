@@ -35,6 +35,12 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
     void screenWindow(float left, float right, float bottom, float top) override;
     void projection(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
     void clipping(float hither, float yon) override;
+    void depthOfField(float fstop, float focalLength, float focalDistance) override;
+    void shutter(float open, float close) override;
+
+    void pixelSamples(unsigned int x, unsigned int y) override;
+    void pixelFilter(v3d::render::offline::Filter filter, float xwidth, float ywidth) override;
+    void pixelVariance(float variation) override;
 
     void worldBegin() override;
     void attributeBegin() override;

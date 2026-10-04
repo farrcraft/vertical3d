@@ -24,6 +24,10 @@ void frame(v3d::talyn::RenderContext & rc) {
     profile.orthoZoom(1.0f);
     profile.eye(glm::vec3(0.0f, 0.0f, -1.0f));
     profile.clipping(0.001f, 100.0f);
+    // a sample at each pixel centre, given back exactly, so a pixel is what its centre hit
+    rc.sampling().samples = glm::uvec2(1, 1);
+    rc.sampling().filter = v3d::render::offline::Filter::Box;
+    rc.sampling().width = glm::vec2(1.0f, 1.0f);
 }
 
 void checkPixel(const v3d::render::offline::FrameBuffer & buffer,
@@ -116,4 +120,31 @@ BOOST_AUTO_TEST_CASE(rendercontext_unformatted_test) {
     rc.render();
 
     BOOST_CHECK(!rc.framebuffer());
+}
+
+/**
+ * At the RI defaults a pixel beside an edge is partly covered: the gaussian is two pixels
+ * wide, so the samples of the pixels either side reach it. One well inside is covered whole.
+ **/
+BOOST_AUTO_TEST_CASE(rendercontext_sampled_edge_coverage_test) {
+    v3d::talyn::RenderContext rc;
+    frame(rc);
+    rc.sampling() = v3d::render::offline::Sampling();
+
+    // the same right triangle, whose vertical edge falls between columns 11 and 12
+    rc.scene().add(v3d::talyn::Triangle(
+        glm::vec3(-1.5f, -0.5f, 1.0f),
+        glm::vec3(0.5f, -0.5f, 1.0f),
+        glm::vec3(0.5f, 1.5f, 1.0f),
+        glm::vec3(1.0f, 0.0f, 0.0f)));
+    rc.render();
+
+    auto buffer = rc.framebuffer();
+    BOOST_REQUIRE(buffer);
+    const float inside = buffer->value(3, 11, 8);
+    const float outside = buffer->value(3, 12, 8);
+    BOOST_CHECK(inside > 0.5f && inside < 1.0f);
+    BOOST_CHECK(outside > 0.0f && outside < 0.5f);
+    BOOST_CHECK_CLOSE(buffer->value(3, 8, 8), 1.0f, 1.0e-4f);
+    BOOST_CHECK_EQUAL(buffer->value(3, 0, 15), 0.0f);
 }

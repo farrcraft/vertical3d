@@ -45,6 +45,38 @@ BOOST_AUTO_TEST_CASE(talyn_ribhandler_format_test) {
     BOOST_CHECK_EQUAL(handler.error(), "");
 }
 
+/**
+ * The sampling requests reach the render context, and a scene that names none of them is
+ * sampled the way RI says a scene that says nothing is.
+ **/
+BOOST_AUTO_TEST_CASE(talyn_ribhandler_sampling_test) {
+    auto rc = boost::make_shared<v3d::talyn::RenderContext>();
+    v3d::talyn::RIBHandler handler(rc);
+
+    BOOST_REQUIRE(read(
+        "Format 32 16 1\n"
+        "PixelSamples 4 4\n"
+        "DepthOfField 8 0.1 3\n"
+        "WorldBegin\n"
+        "WorldEnd\n", &handler));
+
+    BOOST_CHECK_EQUAL(rc->sampling().samples.x, 4u);
+    BOOST_CHECK_EQUAL(rc->sampling().samples.y, 4u);
+    BOOST_CHECK_EQUAL(rc->sampling().fstop, 8.0f);
+    BOOST_CHECK_CLOSE(rc->sampling().focalLength, 0.1f, 1.0e-4f);
+    BOOST_CHECK_EQUAL(rc->sampling().focalDistance, 3.0f);
+
+    auto plain = boost::make_shared<v3d::talyn::RenderContext>();
+    v3d::talyn::RIBHandler silent(plain);
+    BOOST_REQUIRE(read("Format 32 16 1\nWorldBegin\nWorldEnd\n", &silent));
+    BOOST_CHECK_EQUAL(plain->sampling().samples.x, 2u);
+    BOOST_CHECK_EQUAL(plain->sampling().samples.y, 2u);
+    BOOST_CHECK(plain->sampling().filter == v3d::render::offline::Filter::Gaussian);
+    BOOST_CHECK_EQUAL(plain->sampling().width.x, 2.0f);
+    BOOST_CHECK_EQUAL(plain->sampling().width.y, 2.0f);
+    BOOST_CHECK(plain->sampling().pinhole());
+}
+
 BOOST_AUTO_TEST_CASE(talyn_ribhandler_missing_file_test) {
     auto rc = boost::make_shared<v3d::talyn::RenderContext>();
     v3d::talyn::RIBHandler handler(rc);

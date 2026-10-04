@@ -5,6 +5,7 @@
 
 #include <api/render/offline/rib/Reader.h>
 
+#include <cmath>
 #include <map>
 #include <sstream>
 #include <string>
@@ -55,6 +56,27 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
         (void)parameters;
         display_ = name + "|" + type + "|" + mode;
         counts_["Display"]++;
+    }
+    void depthOfField(float fstop, float focalLength, float focalDistance) override {
+        lens_ = glm::vec3(fstop, focalLength, focalDistance);
+        counts_["DepthOfField"]++;
+    }
+    void shutter(float open, float close) override {
+        shutter_ = glm::vec2(open, close);
+        counts_["Shutter"]++;
+    }
+    void pixelSamples(unsigned int x, unsigned int y) override {
+        samples_ = glm::uvec2(x, y);
+        counts_["PixelSamples"]++;
+    }
+    void pixelFilter(v3d::render::offline::Filter filter, float xwidth, float ywidth) override {
+        filter_ = filter;
+        filterWidth_ = glm::vec2(xwidth, ywidth);
+        counts_["PixelFilter"]++;
+    }
+    void pixelVariance(float variation) override {
+        variance_ = variation;
+        counts_["PixelVariance"]++;
     }
     void frameBegin(int frame) override {
         frame_ = frame;
@@ -147,6 +169,12 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
     glm::mat4x4 transform_ = glm::mat4x4(1.0f);
     glm::vec3 translate_ = glm::vec3(0.0f);
     glm::vec3 color_ = glm::vec3(0.0f);
+    glm::vec3 lens_ = glm::vec3(0.0f);
+    glm::vec2 shutter_ = glm::vec2(0.0f);
+    glm::vec2 filterWidth_ = glm::vec2(0.0f);
+    glm::uvec2 samples_ = glm::uvec2(0);
+    v3d::render::offline::Filter filter_ = v3d::render::offline::Filter::Box;
+    float variance_ = 0.0f;
     std::string projection_;
     std::string display_;
     std::string surface_;
@@ -293,6 +321,80 @@ BOOST_AUTO_TEST_CASE(ribreader_undeclared_parameter_test) {
     v3d::render::offline::rib::Reader second(boost::make_shared<v3d::log::Logger>());
     BOOST_CHECK(!read("Surface \"marble\" \"veins\" 3\n", &bare, &second));
     BOOST_CHECK(second.error().contains("undeclared parameter 'veins'"));
+}
+
+/**
+ * The requests that say how a pixel is sampled reach the handler with their arguments, and
+ * a sample rate is a count by the time it does.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_sampling_requests_test) {
+    CountingHandler handler;
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(read(
+        "PixelSamples 4 2.6\n"
+        "PixelFilter \"catmull-rom\" 3 4\n"
+        "PixelVariance 0.05\n"
+        "Shutter 0 0.5\n"
+        "DepthOfField 8 0.1 3\n"
+        "WorldBegin\n"
+        "WorldEnd\n", &handler, &reader));
+
+    BOOST_CHECK(reader.unrecognised().empty());
+    BOOST_CHECK_EQUAL(handler.samples_.x, 4u);
+    BOOST_CHECK_EQUAL(handler.samples_.y, 3u);
+    BOOST_CHECK(handler.filter_ == v3d::render::offline::Filter::CatmullRom);
+    BOOST_CHECK_EQUAL(handler.filterWidth_.x, 3.0f);
+    BOOST_CHECK_EQUAL(handler.filterWidth_.y, 4.0f);
+    BOOST_CHECK_CLOSE(handler.variance_, 0.05f, 1.0e-4f);
+    BOOST_CHECK_EQUAL(handler.shutter_.x, 0.0f);
+    BOOST_CHECK_EQUAL(handler.shutter_.y, 0.5f);
+    BOOST_CHECK_EQUAL(handler.lens_.x, 8.0f);
+    BOOST_CHECK_CLOSE(handler.lens_.y, 0.1f, 1.0e-4f);
+    BOOST_CHECK_EQUAL(handler.lens_.z, 3.0f);
+}
+
+/**
+ * A filter the reader does not know is reported and never reaches the handler, so the
+ * renderer keeps the filter it had. The rest of the scene still reads.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_unknown_filter_test) {
+    CountingHandler handler;
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(read(
+        "PixelFilter \"mitchell\" 2 2\n"
+        "PixelSamples 1 1\n", &handler, &reader));
+
+    BOOST_CHECK_EQUAL(handler.count("PixelFilter"), 0u);
+    BOOST_CHECK_EQUAL(handler.count("PixelSamples"), 1u);
+    BOOST_CHECK(reader.unrecognised().empty());
+}
+
+/**
+ * RIB's DepthOfField with no arguments asks for a pinhole, which RI writes as an infinite
+ * fstop, and a sample rate below one still takes a sample.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_pinhole_and_rate_test) {
+    CountingHandler handler;
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(read(
+        "DepthOfField\n"
+        "PixelSamples 0.25 0\n", &handler, &reader));
+
+    BOOST_CHECK_EQUAL(handler.count("DepthOfField"), 1u);
+    BOOST_CHECK(std::isinf(handler.lens_.x));
+    BOOST_CHECK_EQUAL(handler.samples_.x, 1u);
+    BOOST_CHECK_EQUAL(handler.samples_.y, 1u);
+
+    v3d::render::offline::Sampling sampling;
+    sampling.fstop = handler.lens_.x;
+    sampling.focalLength = 0.1f;
+    sampling.focalDistance = 3.0f;
+    BOOST_CHECK(sampling.pinhole());
+    sampling.fstop = 8.0f;
+    BOOST_CHECK(!sampling.pinhole());
 }
 
 /**

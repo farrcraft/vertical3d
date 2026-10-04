@@ -11,7 +11,8 @@ or a swapchain, so their suites render in CI where everything below the recorder
 `api/render` cannot.
 
 [roadmap/OfflineRendering.md](roadmap/OfflineRendering.md) says where they stand and what each
-would need next. No plan is open against them;
+would need next. [plans/OfflineRenderingPhases4To6.md](plans/OfflineRenderingPhases4To6.md) is
+open against them, taking up sampling, talyn's recursion and the shared ray tracer;
 [plans/completed/OfflineRenderingPhase3.md](plans/completed/OfflineRenderingPhase3.md) closed on
 2026-09-10 and is the account of how the shading language got here.
 
@@ -27,8 +28,9 @@ where `tests` already is. A subdirectory added above that line does not inherit 
   renderer. moya's are RGB, a depth and a coverage, named by `moya::FrameBuffer::Plane`;
   talyn's four are RGBA, where the alpha is that same coverage.
 - **Coverage is what an imager reads as `alpha`**, and it is the difference between a pixel
-  nothing was drawn into and a black one. One or nothing while there is one sample per pixel
-  centre; a sampler that takes more would put a fraction there.
+  nothing was drawn into and a black one. It is the filtered fraction of a pixel's samples that
+  hit, so it is one or nothing only at one sample per pixel under a one pixel box. moya still
+  writes its planes directly, one sample per pixel centre.
 - **moya's raster space counts y downward from the upper left**, which is RI's convention and
   `image::Image`'s row order. The composition is `raster * screen`, since a matrix applies to
   what is on its right. Reversing either would write a correct render upside down, or in eye
@@ -36,6 +38,30 @@ where `tests` already is. A subdirectory added above that line does not inherit 
 - **A `RenderContext` writes a file only when `RiDisplay` named one with type `"file"`.** The RI
   token table in `RenderMan.cxx` is `RtToken`, that is, pointers, and most of it is still
   uninitialised. A null token reaches the context as an empty string rather than as an error.
+
+## Sampling
+
+A pixel is a filtered set of seeded samples, per
+[ADR-0076](adr/0076-a-pixel-is-a-filtered-set-of-seeded-samples.md). `offline::Sampling` is what
+`PixelSamples`, `PixelFilter`, `PixelVariance`, `Shutter` and `DepthOfField` asked for, starting at
+the RI defaults; `offline::Sampler` gives a pixel's samples; `offline::Film` filters them into
+pixels and resolves into a renderer's planes. talyn renders through them. moya does not yet.
+
+- **The RI defaults are two by two samples under a gaussian two pixels wide**, so a scene that
+  names nothing is antialiased and four times slower than one sample a pixel. A reference that
+  pins hiding and shading names `PixelSamples 1 1` and `PixelFilter "box" 1 1`, in code and in
+  its `.rib`, and `reference-sampled.png` pins the defaults.
+- **An axis with one stratum is sampled at the pixel centre**, not jittered. That is what makes
+  one sample under a one pixel box give back exactly the picture a renderer drew at its pixel
+  centres, so a reference pinned that way survives a change to the sampler.
+- **A miss carries a colour into the film.** It is black unless a renderer has a background of
+  its own, as talyn's `Scene::background()` is, so a filtered colour is premultiplied in the
+  ordinary case. Coverage counts only hits either way.
+- **A depth is not filtered.** It is the nearest hit among the samples inside the pixel, since a
+  blend of two surfaces' depths is a depth neither is at.
+- **The filters are RI's formulas**, cut off at the width a scene gives. Catmull-rom peaks at two
+  and has a negative lobe, so a pixel's weights can sum to nearly nothing; the film answers black
+  there rather than dividing by it.
 
 ## RIB
 
@@ -52,6 +78,9 @@ implements it as `<renderer>::RIBHandler`. RIB is also what the editor exports t
   major under a row vector convention and glm stores column major under a column vector one, so
   `glm::make_mat4` over the sixteen floats *is* the conversion. This applies to `Transform`,
   `ConcatTransform`, `RtMatrix` and the editor's export alike.
+- **A `PixelFilter` the reader does not know is reported and never reaches the handler**, so a
+  renderer keeps the filter it had. A `PixelSamples` rate reaches it as a count of at least one.
+  RIB's `DepthOfField` with no arguments is a pinhole, sent as an infinite fstop.
 - **A RIB `Polygon` carries no vertex count.** It is the length of `"P"`, which the reader
   divides out. A parameter list is therefore parsed before the count is known, and an
   unbracketed varying or vertex parameter ends the parse rather than being guessed at.
