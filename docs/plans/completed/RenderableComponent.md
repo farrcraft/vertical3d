@@ -3,7 +3,7 @@
 Drafted 2026-10-03 against `e5423af`, and closed the same day. Six steps across `api/ecs` and
 `api/render`, taking up
 [milestone 3](../../roadmap/completed/m3-RenderableComponent.md) of
-[the game engine roadmap](../../roadmap/GameEngine.md). Every step is in this tree. cozy and retcon
+[the game engine roadmap](../../roadmap/completed/GameEngine.md). Every step is in this tree. cozy and retcon
 are evidence for the shape and adopt it after it ships; neither is changed or run here.
 
 The milestone is a decision, and most of this plan is the evidence for it. The code it adds is

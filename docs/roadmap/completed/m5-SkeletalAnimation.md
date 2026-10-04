@@ -1,6 +1,6 @@
 # Skeletal Animation
 
-Milestone 5 of [the game engine roadmap](../GameEngine.md). Characters that move by bending rather
+Milestone 5 of [the game engine roadmap](GameEngine.md). Characters that move by bending rather
 than by sliding: skins and clips read from glTF, a skinned vertex in the lit pass, a pose sampled
 and blended on the cpu, and enough instancing that a crowd of them is affordable. **This exists
 in neither tree.** It is the largest gap either game has, and it is retcon's.

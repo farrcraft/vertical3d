@@ -3,7 +3,7 @@
 Drafted 2026-10-03 against `e5423af`, with milestones 3 and 4's work in the tree and
 uncommitted, and closed the same day. Eight steps across `api/type`, `api/asset`, `api/ecs`, `api/render` and the
 documents, and an eighth held, taking up [milestone 5](../../roadmap/completed/m5-SkeletalAnimation.md) of
-[the game engine roadmap](../../roadmap/GameEngine.md). Every step is in this tree. retcon is the
+[the game engine roadmap](../../roadmap/completed/GameEngine.md). Every step is in this tree. retcon is the
 consumer this is written for and adopts it after it ships. It is neither changed nor run here.
 
 The roadmap lists four sections in order: reading a skeleton, clips and a pose, skinning in the

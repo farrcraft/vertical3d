@@ -2,7 +2,7 @@
 
 Drafted 2026-10-03 against `13a9557`. Six steps across `api/type`, `api/ecs`, `moya` and `pong`,
 taking up [milestone 1](../../roadmap/completed/m1-MotionAndQueries.md) of
-[the game engine roadmap](../../roadmap/GameEngine.md). Five are open and one is held behind a
+[the game engine roadmap](../../roadmap/completed/GameEngine.md). Five are open and one is held behind a
 named trigger.
 
 **Closed on 2026-10-03.** Steps 1 to 5 landed and pong was watched; step 6 went to TODO.md with

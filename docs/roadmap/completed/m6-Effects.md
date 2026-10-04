@@ -1,6 +1,6 @@
 # Effects
 
-Milestone 6 of [the game engine roadmap](../GameEngine.md). The things on screen that are neither
+Milestone 6 of [the game engine roadmap](GameEngine.md). The things on screen that are neither
 a sprite nor a mesh: particles, weather, and the colour of the world changing with the time of
 day. Both games list them and neither has started them, so this milestone is drawn from their
 design documents rather than from code that has hit a wall.

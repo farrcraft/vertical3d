@@ -1,6 +1,6 @@
 # The Shell, Finished
 
-Milestone 7 of [the game engine roadmap](../GameEngine.md), **done by
+Milestone 7 of [the game engine roadmap](GameEngine.md), **done by
 [ShellAndShipping](../../plans/completed/ShellAndShipping.md)**, asynchronous loading aside. **A collection rather than a sequence**:
 pieces of the app shell, the ui and the loop that consumers have each worked around, and the
 things a game needs on the way to shipping that a demo never does. None of them blocks another

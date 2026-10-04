@@ -3,7 +3,7 @@
 Drafted 2026-10-03 against `a551015`, and closed the same day. Nine steps across `api/render`,
 `api/grid`, `voxel`, `odyssey` and the editor, taking up
 [milestone 2](../../roadmap/completed/m2-LargeWorlds.md) of
-[the game engine roadmap](../../roadmap/GameEngine.md). Six were done, and the three held behind
+[the game engine roadmap](../../roadmap/completed/GameEngine.md). Six were done, and the three held behind
 named triggers moved to [TODO.md](../../TODO.md#tile-grids).
 
 Every consumer has drawn a single board so far, and every gap here follows from that.

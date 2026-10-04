@@ -2,7 +2,7 @@
 
 Drafted 2026-10-03 against `e5423af`, with milestone 3's work in the tree and uncommitted, and
 closed the same day. Eleven steps across `api/render`, `voxel` and the documents, taking up
-[milestone 4](../../roadmap/completed/m4-LitScene.md) of [the game engine roadmap](../../roadmap/GameEngine.md).
+[milestone 4](../../roadmap/completed/m4-LitScene.md) of [the game engine roadmap](../../roadmap/completed/GameEngine.md).
 Every step is in this tree. retcon is the evidence for the tier and adopts it after it ships; it
 is neither changed nor run here.
 

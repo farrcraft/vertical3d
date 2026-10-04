@@ -2,7 +2,7 @@
 
 Drafted 2026-10-04 against `e939bec`, and closed 2026-10-04. Thirteen steps across `api/ui`, `api/event`, `api/engine`,
 `api/asset`, `api/render`, four apps and the documents, one of them held, taking up
-[milestone 7](../../roadmap/completed/m7-ShellAndShipping.md) of [the game engine roadmap](../../roadmap/GameEngine.md).
+[milestone 7](../../roadmap/completed/m7-ShellAndShipping.md) of [the game engine roadmap](../../roadmap/completed/GameEngine.md).
 Every step is in this tree. cozy and retcon are the consumers it is written for, and each adopts
 after it ships. Neither is changed nor run here.
 

@@ -25,13 +25,14 @@ the others; a roadmap exists because the ordering between its items is the inter
 | Roadmap | Area |
 |---|---|
 | [OfflineRendering.md](OfflineRendering.md) | `talyn` and `moya` — the raytracer and the reyes renderer |
-| [GameEngine.md](GameEngine.md) | The realtime api, for games rather than demos — the index of seven milestones, each its own document |
 
 ## Completed
 
 | Roadmap | Area | Done by |
 |---|---|---|
+| [GameEngine.md](completed/GameEngine.md) | The realtime api, for games rather than demos — the index of the seven milestones below; what each left is in [TODO.md](../TODO.md) | the seven plans below, 2026-10-03 to 2026-10-04 |
 | [m7-ShellAndShipping.md](completed/m7-ShellAndShipping.md) | 7 — strips that respect `pickable()`, a held command, a relative mouse, a document read forward, one screen for the ui's renderers, a game space on a canvas, a wrapping box, a file chooser, pass timings and a slider; asynchronous loading is in [TODO.md](../TODO.md#loading) | [ShellAndShipping](../plans/completed/ShellAndShipping.md), 2026-10-04 |
+| [m6-Effects.md](completed/m6-Effects.md) | 6 — a sprite clip, a seeded random source, particles on the step, weather, a tint over the world, and a lit scene's colour over time; the panned voice is in [TODO.md](../TODO.md#audio) | [Effects](../plans/completed/Effects.md), 2026-10-04 |
 | [m5-SkeletalAnimation.md](completed/m5-SkeletalAnimation.md) | 5 — a model in parts, skins and clips from glTF, playback on the step, skinning in both lit passes; instancing is in [TODO.md](../TODO.md#lit-scenes) | [SkeletalAnimation](../plans/completed/SkeletalAnimation.md), 2026-10-03 |
 | [m4-LitScene.md](completed/m4-LitScene.md) | 4 — images and samplers, a model onto the device, a lit pass, shadows, a post chain; retcon adopts it after, and a fit that follows the camera is in [TODO.md](../TODO.md#lit-scenes) | [LitScene](../plans/completed/LitScene.md), 2026-10-03 |
 | [m3-RenderableComponent.md](completed/m3-RenderableComponent.md) | 3 — a transform, a sprite and the walk that draws it, per [ADR-0063](../adr/0063-an-entity-is-drawn-from-a-transform-and-a-component-per-kind.md); the mesh component is [m4](completed/m4-LitScene.md)'s to build | [RenderableComponent](../plans/completed/RenderableComponent.md), 2026-10-03 |

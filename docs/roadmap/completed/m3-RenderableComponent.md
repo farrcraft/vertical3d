@@ -1,6 +1,6 @@
 # The Renderable Component
 
-Milestone 3 of [the game engine roadmap](../GameEngine.md). **This milestone is a decision rather
+Milestone 3 of [the game engine roadmap](GameEngine.md). **This milestone is a decision rather
 than a body of code**: what an entity carries so that something can draw it, and where it
 stands in the world. It is in the roadmap because [milestone 4](m4-LitScene.md) cannot be shaped
 until it is answered, and because the question has been open since before either game existed.

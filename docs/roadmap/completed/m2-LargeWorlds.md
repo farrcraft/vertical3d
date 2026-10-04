@@ -1,6 +1,6 @@
 # A World Larger Than the Screen
 
-Milestone 2 of [the game engine roadmap](../GameEngine.md). What a game needs once its world no
+Milestone 2 of [the game engine roadmap](GameEngine.md). What a game needs once its world no
 longer fits in one screen or one load: resources that can be let go, world sprites drawn in the
 order the camera sees them, things off screen not drawn, and maps read from a file. Every
 consumer in and out of this tree has drawn a single board so far, and every gap here follows

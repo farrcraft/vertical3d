@@ -8,16 +8,20 @@ pipelines, offscreen targets and a sampled depth target exist with nothing above
 mesh, no material beyond one texture, no shadow, no post-processing, no animation of any kind,
 no culling, and no way to free a resource once it is registered.
 
+**Every milestone has been done by a plan, the last on 2026-10-04**, and what each set aside
+is in [TODO.md](../../TODO.md). The rest of this document is the reasoning they were drafted from,
+and describes the tree as it was when it was written.
+
 This roadmap is the index. Each milestone is a document of its own, because each is large
 enough to earn a plan when it is taken up and the reasoning for one does not need the others.
 
 ## Who this was drawn from
 
-The api is consumed as source ([ADR-0027](../adr/0027-the-api-is-consumed-as-source.md)) and
+The api is consumed as source ([ADR-0027](../../adr/0027-the-api-is-consumed-as-source.md)) and
 most of what consumes it is outside this tree, so the evidence came from four places:
 
-* **The api itself** — what each library offers, and the gaps [TODO.md](../TODO.md) and
-  [RenderingPipeline.md](../RenderingPipeline.md#what-is-not-built-yet) already record.
+* **The api itself** — what each library offers, and the gaps [TODO.md](../../TODO.md) and
+  [RenderingPipeline.md](../../RenderingPipeline.md#what-is-not-built-yet) already record.
 * **The apps in this tree** — what each implements locally that is engine-shaped: pong's
   hand-written box tests, voxel's collision stub and raw Vulkan, odyssey's map format and fog
   of war, moya's `Plane` and `Frustum`, and the renderer setup four apps write identically.
@@ -38,13 +42,13 @@ retcon's ADR-0041 — so what follows is work for this tree whoever ends up want
 
 | # | Milestone | What it is | Drawn from |
 |---|---|---|---|
-| 1 | [Motion and queries](completed/m1-MotionAndQueries.md) — **done by [a plan](../plans/completed/MotionAndQueries.md)**, sprite clip aside | Interpolation, sprite clips, a ground pick, box overlap, `Plane` and `Frustum` in `api/type` | cozy M5–M6, pong, voxel, odyssey, moya |
-| 2 | [A world larger than the screen](completed/m2-LargeWorlds.md) — **done by [a plan](../plans/completed/LargeWorlds.md)**, regions and remembered sight aside | Releasing a resource, depth-ordering world quads, culling, a grid map format, remembered sight | cozy M6, retcon phase 6, odyssey |
-| 3 | [The renderable component](completed/m3-RenderableComponent.md) — **done by [a plan](../plans/completed/RenderableComponent.md)**, the mesh component built by milestone 4 | A decision: how the ECS meets the renderer | the open question in [ECSDesign.md](../ECSDesign.md), retcon's `ecs/` |
-| 4 | [A lit scene](completed/m4-LitScene.md) — **done by [a plan](../plans/completed/LitScene.md)**, retcon's adoption aside | Image, sampler and texture classes, `type::Model` onto the device, a lit mesh pass, a shadow map, a post chain | retcon `engine/renderer/`, voxel |
-| 5 | [Skeletal animation](completed/m5-SkeletalAnimation.md) — **done by [a plan](../plans/completed/SkeletalAnimation.md)**, instancing aside | Skins and clips from glTF, GPU skinning, a clip sampler shared with milestone 1, instancing | retcon phases 7–10 |
-| 6 | [Effects](completed/m6-Effects.md) — **done by [a plan](../plans/completed/Effects.md)**, the panned voice aside | Particles, weather, a tint over the world, panned audio | cozy M6–M8, retcon phase 10 |
-| 7 | [The shell, finished](completed/m7-ShellAndShipping.md) — **done by [a plan](../plans/completed/ShellAndShipping.md)**, asynchronous loading aside | The renderer setup into the shell, missing widgets, versioned documents, relative mouse, profiling, async loading | every app, cozy M7–M10, retcon phases 7 and 11 |
+| 1 | [Motion and queries](m1-MotionAndQueries.md) — **done by [a plan](../../plans/completed/MotionAndQueries.md)**, sprite clip aside | Interpolation, sprite clips, a ground pick, box overlap, `Plane` and `Frustum` in `api/type` | cozy M5–M6, pong, voxel, odyssey, moya |
+| 2 | [A world larger than the screen](m2-LargeWorlds.md) — **done by [a plan](../../plans/completed/LargeWorlds.md)**, regions and remembered sight aside | Releasing a resource, depth-ordering world quads, culling, a grid map format, remembered sight | cozy M6, retcon phase 6, odyssey |
+| 3 | [The renderable component](m3-RenderableComponent.md) — **done by [a plan](../../plans/completed/RenderableComponent.md)**, the mesh component built by milestone 4 | A decision: how the ECS meets the renderer | the open question in [ECSDesign.md](../../ECSDesign.md), retcon's `ecs/` |
+| 4 | [A lit scene](m4-LitScene.md) — **done by [a plan](../../plans/completed/LitScene.md)**, retcon's adoption aside | Image, sampler and texture classes, `type::Model` onto the device, a lit mesh pass, a shadow map, a post chain | retcon `engine/renderer/`, voxel |
+| 5 | [Skeletal animation](m5-SkeletalAnimation.md) — **done by [a plan](../../plans/completed/SkeletalAnimation.md)**, instancing aside | Skins and clips from glTF, GPU skinning, a clip sampler shared with milestone 1, instancing | retcon phases 7–10 |
+| 6 | [Effects](m6-Effects.md) — **done by [a plan](../../plans/completed/Effects.md)**, the panned voice aside | Particles, weather, a tint over the world, panned audio | cozy M6–M8, retcon phase 10 |
+| 7 | [The shell, finished](m7-ShellAndShipping.md) — **done by [a plan](../../plans/completed/ShellAndShipping.md)**, asynchronous loading aside | The renderer setup into the shell, missing widgets, versioned documents, relative mouse, profiling, async loading | every app, cozy M7–M10, retcon phases 7 and 11 |
 
 ## The ordering
 
@@ -72,7 +76,7 @@ mesh tier exists is not.
 
 **Milestone 4 no longer waits on milestone 2.** The texture class it moves here retires what it
 owns through the in-flight ring, which milestone 2 decided
-([ADR-0061](../adr/0061-a-resource-is-released-explicitly.md)).
+([ADR-0061](../../adr/0061-a-resource-is-released-explicitly.md)).
 
 **Milestones 4 and 5 are strictly ordered, and the order is the point of the roadmap.**
 retcon's lit tier works today, so moving it here is not urgent for retcon on its own. But
@@ -92,14 +96,14 @@ them blocks another.
 * **Where the lit tier lives** — whether retcon's `engine/renderer/gpu/` and `passes/` move here
   before skeletal animation is written, or animation is written in retcon and moved later.
   Moving it is a handoff from retcon under its ADR-0041, which is how every previous round
-  reached this tree. [m4-LitScene.md](completed/m4-LitScene.md) has what the move involves.
+  reached this tree. [m4-LitScene.md](m4-LitScene.md) has what the move involves.
 * **What a renderable component is** — milestone 3, in its own record.
 * **Which part of a map is the grid's** — decided: a picture and a terrain legend, and nothing
-  else ([ADR-0062](../adr/0062-a-map-picture-and-legend-are-the-grids.md)).
+  else ([ADR-0062](../../adr/0062-a-map-picture-and-legend-are-the-grids.md)).
 
 ## Verification
 
-The device suite and its golden images ([ADR-0054](../adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md))
+The device suite and its golden images ([ADR-0054](../../adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md))
 are the only way this tree asserts a picture, and they hold only what the specification
 determines pixel for pixel. Most of milestones 4 to 6 is lighting, filtering and blending,
 which is exactly what a reference cannot pin — each milestone document says what *can* be
@@ -120,5 +124,5 @@ Each has a trigger rather than a reason it can never happen.
   which is the first thing a string table would hit.
 * **Gamepad.** retcon has ruled it out and cozy has not scheduled it; `api/input` is keyboard
   and mouse only.
-* **The offline renderers.** [OfflineRendering.md](OfflineRendering.md) owns them, and they
+* **The offline renderers.** [OfflineRendering.md](../OfflineRendering.md) owns them, and they
   stay out of the realtime work.

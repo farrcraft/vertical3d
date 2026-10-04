@@ -1,6 +1,6 @@
 # Motion and Queries
 
-Milestone 1 of [the game engine roadmap](../GameEngine.md). Five small pieces with little order
+Milestone 1 of [the game engine roadmap](GameEngine.md). Five small pieces with little order
 between them: drawing between simulation steps, playing a sprite's frames, finding where a
 click lands on the ground, asking whether two boxes overlap, and the plane and frustum maths
 that two of those need. Each is something a consumer has written for itself or stubbed.
@@ -88,7 +88,7 @@ something first walks into something.
 
 This is overlap and not collision response. Pushing a body back out of what it walked into is
 a game's rule — cozy and retcon would answer it differently — and is
-[not on this roadmap](../GameEngine.md#not-on-this-roadmap).
+[not on this roadmap](GameEngine.md#not-on-this-roadmap).
 
 ### `Plane` and `Frustum` in `api/type`
 

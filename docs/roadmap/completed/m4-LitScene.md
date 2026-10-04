@@ -1,6 +1,6 @@
 # A Lit Scene
 
-Milestone 4 of [the game engine roadmap](../GameEngine.md).
+Milestone 4 of [the game engine roadmap](GameEngine.md).
 
 **Done by [LitScene](../../plans/completed/LitScene.md)**, closed 2026-10-03. The tier is written into
 this tree's frame model rather than moved as retcon's passes are, and retcon's look-dev scene is

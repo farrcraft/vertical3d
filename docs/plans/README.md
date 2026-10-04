@@ -13,7 +13,7 @@ No plan is open.
 
 [completed/ShellAndShipping.md](completed/ShellAndShipping.md) was drafted and closed on
 2026-10-04, taking up [milestone 7](../roadmap/completed/m7-ShellAndShipping.md) of
-[the game engine roadmap](../roadmap/GameEngine.md). A strip respects `pickable()`, a command can
+[the game engine roadmap](../roadmap/completed/GameEngine.md). A strip respects `pickable()`, a command can
 be held, voxel looks in relative mouse mode, and a document is read forward through a chain
 ([ADR-0073](../adr/0073-a-document-is-read-forward-one-version-at-a-time.md)). One shell class
 builds the ui's renderers over an `Engine3D`, and pong, tetris, voxel and the editor draw through
@@ -40,7 +40,7 @@ destructor that could allocate; and a function past the cognitive complexity thr
 
 [completed/Effects.md](completed/Effects.md) was drafted on 2026-10-03 and closed on 2026-10-04,
 taking up [milestone 6](../roadmap/completed/m6-Effects.md) of
-[the game engine roadmap](../roadmap/GameEngine.md). The sprite clip that
+[the game engine roadmap](../roadmap/completed/GameEngine.md). The sprite clip that
 [MotionAndQueries](completed/MotionAndQueries.md#step-6--a-sprite-clip) held is written over
 milestone 5's clock, and retcon's splitmix64 is `type::Random`, so a seed fixes every particle on
 any standard library. An emitter is a component stepped with the simulation that owns its
@@ -69,7 +69,7 @@ white light leaves the lit tier as it was.
 
 [completed/SkeletalAnimation.md](completed/SkeletalAnimation.md) was drafted and closed on
 2026-10-03, taking up [milestone 5](../roadmap/completed/m5-SkeletalAnimation.md) of
-[the game engine roadmap](../roadmap/GameEngine.md). A file is one model in parts, read through
+[the game engine roadmap](../roadmap/completed/GameEngine.md). A file is one model in parts, read through
 its node hierarchy, and may carry a skin
 ([ADR-0069](../adr/0069-a-model-is-parts-over-one-array-and-may-carry-a-skin.md)). Clips are
 sampled on the cpu from a playback component advanced on the step and drawn between steps, and
@@ -89,7 +89,7 @@ accepted as each step began** rather than when its code had proved them, because
 before anything was built on it.
 
 [completed/LitScene.md](completed/LitScene.md) was drafted and closed on 2026-10-03, taking up
-[milestone 4](../roadmap/completed/m4-LitScene.md) of [the game engine roadmap](../roadmap/GameEngine.md).
+[milestone 4](../roadmap/completed/m4-LitScene.md) of [the game engine roadmap](../roadmap/completed/GameEngine.md).
 It writes retcon's lit tier into the frame model the rest of the api draws through, rather than
 moving retcon's hand-recorded passes: the recorder learns a scene set at set 2 and a depth bias
 ([ADR-0064](../adr/0064-a-pass-carries-a-scene-set-and-a-depth-bias.md)), which is the one thing
@@ -111,7 +111,7 @@ with the cel pass's winding would have drawn the back faces.
 
 [completed/RenderableComponent.md](completed/RenderableComponent.md) was drafted and closed on
 2026-10-03, taking up [milestone 3](../roadmap/completed/m3-RenderableComponent.md) of
-[the game engine roadmap](../roadmap/GameEngine.md). An entity is drawn from an
+[the game engine roadmap](../roadmap/completed/GameEngine.md). An entity is drawn from an
 `ecs::component::Transform` and a component per kind of drawing, which the api walks
 ([ADR-0063](../adr/0063-an-entity-is-drawn-from-a-transform-and-a-component-per-kind.md)). The
 transform holds a quaternion rather than retcon's yaw, because a yaw interpolated between steps
@@ -130,7 +130,7 @@ already did.
 
 [completed/LargeWorlds.md](completed/LargeWorlds.md) was drafted and closed on 2026-10-03,
 taking up [milestone 2](../roadmap/completed/m2-LargeWorlds.md) of
-[the game engine roadmap](../roadmap/GameEngine.md). A texture can be released, with a
+[the game engine roadmap](../roadmap/completed/GameEngine.md). A texture can be released, with a
 generation that refuses a stale handle and destruction deferred for the frames in flight
 ([ADR-0061](../adr/0061-a-resource-is-released-explicitly.md)). World quads can be handed to a
 canvas in an order the caller keys, voxel culls its chunks, and `api/grid` builds a grid from a
@@ -151,7 +151,7 @@ constructor to not throwing, and MSVC's `std::map` allocates when it is moved.
 
 [completed/MotionAndQueries.md](completed/MotionAndQueries.md) was drafted and closed on
 2026-10-03, taking up [milestone 1](../roadmap/completed/m1-MotionAndQueries.md) of
-[the game engine roadmap](../roadmap/GameEngine.md): moya's `Plane` and `Frustum` moved into
+[the game engine roadmap](../roadmap/completed/GameEngine.md): moya's `Plane` and `Frustum` moved into
 `api/type` with the frustum told its depth range, a ray meeting a plane, box overlap, and a
 component's previous step kept so that `Engine::alpha()` has a reader
 ([ADR-0060](../adr/0060-a-moving-thing-keeps-its-previous-step.md)). The sprite clip went to

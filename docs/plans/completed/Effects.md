@@ -2,7 +2,7 @@
 
 Drafted 2026-10-03 against `425cda2`, and closed 2026-10-04. Eleven steps across `api/type`, `api/ecs`, `api/render`
 and the documents, one of them held, taking up [milestone 6](../../roadmap/completed/m6-Effects.md) of
-[the game engine roadmap](../../roadmap/GameEngine.md). Every step is in this tree. cozy and retcon
+[the game engine roadmap](../../roadmap/completed/GameEngine.md). Every step is in this tree. cozy and retcon
 are the consumers it is written for, and each adopts after it ships. Neither is changed nor run
 here.
 
