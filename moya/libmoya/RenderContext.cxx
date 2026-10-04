@@ -10,6 +10,7 @@
 #include <api/type/geometry/Frustum.h>
 
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <iostream>
 #include <string>
@@ -82,6 +83,11 @@ unsigned int RenderContext::gridSize() const {
 
 float RenderContext::shadingRate() const {
     return shadingRate_;
+}
+
+Samples & RenderContext::samples() {
+    assert(samples_);
+    return *samples_;
 }
 
 v3d::render::offline::Sampling & RenderContext::sampling() {
@@ -751,7 +757,10 @@ void RenderContext::render() {
         return;
     }
 
+    boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = frameBuffer_->planes();
+    samples_ = boost::make_shared<Samples>(planes->width(), planes->height(), sampling_);
     frameBuffer_->render(*this);
+    samples_->resolve(planes.get(), FrameBuffer::RED, FrameBuffer::COVERAGE, FrameBuffer::DEPTH);
 
     if (imager_) {
         // after the last bucket, which is where every sample the frame will ever hold is

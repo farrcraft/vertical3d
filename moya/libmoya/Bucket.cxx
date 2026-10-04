@@ -6,6 +6,7 @@
 #include "Bucket.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <vector>
 
@@ -18,63 +19,60 @@ namespace v3d::moya {
 namespace {
 
 /*
-    One sample per pixel centre, no pixel filter: each micropolygon is bounded in
-    raster space and every pixel centre the bound covers takes its colour, where its
-    depth beats what the plane already holds.
+    A micropolygon is bounded in raster space, and every sample in the pixels the bound
+    touches that the micropolygon covers takes its colour, where its depth there beats
+    what the sample already holds.
+*/
+void hide(const std::array<glm::vec3, 4> & corners, const glm::vec3 & color, Samples * samples) {
+    glm::vec3 min = corners[0];
+    glm::vec3 max = corners[0];
+    for (unsigned int k = 1; k < 4; k++) {
+        min = glm::min(min, corners[k]);
+        max = glm::max(max, corners[k]);
+    }
+
+    // a sample may be anywhere in its pixel, so every pixel the bound touches
+    const int left = std::max(0, static_cast<int>(std::floor(min.x)));
+    const int right = std::min(static_cast<int>(samples->width()) - 1, static_cast<int>(std::floor(max.x)));
+    const int top = std::max(0, static_cast<int>(std::floor(min.y)));
+    const int bottom = std::min(static_cast<int>(samples->height()) - 1, static_cast<int>(std::floor(max.y)));
+
+    for (int row = top; row <= bottom; row++) {
+        for (int column = left; column <= right; column++) {
+            for (unsigned int k = 0; k < samples->perPixel(); k++) {
+                Samples::Sample & sample = samples->at(static_cast<unsigned int>(column),
+                    static_cast<unsigned int>(row), k);
+                float depth = 0.0f;
+                if (!covers(corners, sample.raster, &depth) || (sample.hit && depth >= sample.depth)) {
+                    continue;
+                }
+                sample.colour = color;
+                sample.opacity = glm::vec3(1.0f);
+                sample.depth = depth;
+                sample.hit = true;
+            }
+        }
+    }
+}
+
+/*
+    Every micropolygon of a grid into the frame's samples. The film filters the samples
+    into pixels once every bucket is done.
 */
 void hide(MicroPolygonGrid & grid, RenderContext & rc) {
-    boost::shared_ptr<FrameBuffer> framebuffer = rc.framebuffer();
-    boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = framebuffer->planes();
-
     // eye space to raster is the projection and then the scale into pixels, in that
     // order - a matrix applies to what is on its right
     glm::mat4x4 toRaster = rc.coordinateSystem("raster") * rc.coordinateSystem("screen");
 
-    const int width = static_cast<int>(planes->width());
-    const int height = static_cast<int>(planes->height());
-
     for (unsigned int i = 0; i + 1 < grid.size(); i++) {
         for (unsigned int j = 0; j + 1 < grid.size(); j++) {
             MicroPolygon poly = grid.microPolygon(i, j);
-
-            glm::vec3 corner = project(toRaster, poly[0].point());
-            glm::vec3 min = corner;
-            glm::vec3 max = corner;
-            float depth = corner.z;
-            for (unsigned int k = 1; k < 4; k++) {
-                corner = project(toRaster, poly[k].point());
-                min = glm::min(min, corner);
-                max = glm::max(max, corner);
-                depth += corner.z;
+            std::array<glm::vec3, 4> corners;
+            for (unsigned int k = 0; k < 4; k++) {
+                corners[k] = project(toRaster, poly[k].point());
             }
-            // a micropolygon is smaller than a pixel, so one depth for the whole of
-            // it is as fine as the sampling can tell
-            depth /= 4.0f;
-
-            // a pixel is sampled at its centre, so column c is covered when the bound
-            // spans c + 0.5
-            int left = std::max(0, static_cast<int>(std::ceil(min.x - 0.5f)));
-            int right = std::min(width - 1, static_cast<int>(std::floor(max.x - 0.5f)));
-            int top = std::max(0, static_cast<int>(std::ceil(min.y - 0.5f)));
-            int bottom = std::min(height - 1, static_cast<int>(std::floor(max.y - 0.5f)));
-
             // the shaded colour, which is what the surface shader left on the vertex
-            const glm::vec3 color = poly[0].color();
-            for (int row = top; row <= bottom; row++) {
-                for (int column = left; column <= right; column++) {
-                    unsigned int x = static_cast<unsigned int>(column);
-                    unsigned int y = static_cast<unsigned int>(row);
-                    if (depth >= planes->value(FrameBuffer::DEPTH, x, y)) {
-                        continue;
-                    }
-                    planes->value(FrameBuffer::RED, x, y, color.r);
-                    planes->value(FrameBuffer::GREEN, x, y, color.g);
-                    planes->value(FrameBuffer::BLUE, x, y, color.b);
-                    planes->value(FrameBuffer::DEPTH, x, y, depth);
-                    // one sample per pixel centre, so a pixel is covered or it is not
-                    planes->value(FrameBuffer::COVERAGE, x, y, 1.0f);
-                }
-            }
+            hide(corners, poly[0].color(), &rc.samples());
         }
     }
 }

@@ -2,6 +2,10 @@
 ##Scene The phase 1 reference scene, said in RIB
 version 3.03
 Format 64 48 1
+# one sample at each pixel centre under a one pixel box, which the film gives back exactly:
+# this picture pins the hider and the shading, and reference-sampled pins the sampling
+PixelSamples 1 1
+PixelFilter "box" 1 1
 Projection "orthographic"
 # the defaults are RI_EPSILON and RI_INFINITY, which leave the orthographic depth scale at
 # about 2e-38 and collapse every z onto the near plane

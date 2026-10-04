@@ -29,8 +29,7 @@ where `tests` already is. A subdirectory added above that line does not inherit 
   talyn's four are RGBA, where the alpha is that same coverage.
 - **Coverage is what an imager reads as `alpha`**, and it is the difference between a pixel
   nothing was drawn into and a black one. It is the filtered fraction of a pixel's samples that
-  hit, so it is one or nothing only at one sample per pixel under a one pixel box. moya still
-  writes its planes directly, one sample per pixel centre.
+  hit, so it is one or nothing only at one sample per pixel under a one pixel box.
 - **moya's raster space counts y downward from the upper left**, which is RI's convention and
   `image::Image`'s row order. The composition is `raster * screen`, since a matrix applies to
   what is on its right. Reversing either would write a correct render upside down, or in eye
@@ -45,7 +44,7 @@ A pixel is a filtered set of seeded samples, per
 [ADR-0076](adr/0076-a-pixel-is-a-filtered-set-of-seeded-samples.md). `offline::Sampling` is what
 `PixelSamples`, `PixelFilter`, `PixelVariance`, `Shutter` and `DepthOfField` asked for, starting at
 the RI defaults; `offline::Sampler` gives a pixel's samples; `offline::Film` filters them into
-pixels and resolves into a renderer's planes. talyn renders through them. moya does not yet.
+pixels and resolves into a renderer's planes. Both renderers render through them.
 
 - **The RI defaults are two by two samples under a gaussian two pixels wide**, so a scene that
   names nothing is antialiased and four times slower than one sample a pixel. A reference that
@@ -57,6 +56,12 @@ pixels and resolves into a renderer's planes. talyn renders through them. moya d
 - **A miss carries a colour into the film.** It is black unless a renderer has a background of
   its own, as talyn's `Scene::background()` is, so a filtered colour is premultiplied in the
   ordinary case. Coverage counts only hits either way.
+- **moya hides into a sample store the size of the frame**, `moya::Samples`, and filters it
+  through the film once the last bucket is done. A sample is not finished until every grid that
+  could reach it is hidden, and the sweep comes round again when a split lands behind it, so no
+  bucket is finished before the sweep is. Where the buckets fall therefore never shows.
+- **moya's hider tests a sample against the micropolygon**, as two triangles, and interpolates
+  its depth there, rather than filling the micropolygon's raster bound.
 - **A depth is not filtered.** It is the nearest hit among the samples inside the pixel, since a
   blend of two surfaces' depths is a depth neither is at.
 - **The filters are RI's formulas**, cut off at the width a scene gives. Catmull-rom peaks at two

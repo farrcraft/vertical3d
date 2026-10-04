@@ -30,6 +30,22 @@ const char* SHADED_RENDERED = "data_out/reference-shaded.png";
 const char* SHADED_SCENE = "data/reference-shaded.rib";
 const char* SHADED_RIB_RENDERED = "data_out/reference-shaded-rib.png";
 
+const char* SAMPLED = "data/reference-sampled.png";
+const char* SAMPLED_RENDERED = "data_out/reference-sampled.png";
+const char* SAMPLED_SCENE = "data/reference-sampled.rib";
+const char* SAMPLED_RIB_RENDERED = "data_out/reference-sampled-rib.png";
+
+/**
+ * One sample at each pixel centre under a one pixel box, which the film gives back exactly.
+ * The references drawn this way pin the hider and the shading; reference-sampled pins the
+ * sampling.
+ **/
+void pixelCentres(v3d::moya::RenderContext & rc) {
+    rc.sampling().samples = glm::uvec2(1, 1);
+    rc.sampling().filter = v3d::render::offline::Filter::Box;
+    rc.sampling().width = glm::vec2(1.0f, 1.0f);
+}
+
 v3d::moya::Vertex vertex(float x, float y, float z) {
     v3d::moya::Vertex v;
     v.point(glm::vec3(x, y, z));
@@ -47,6 +63,7 @@ v3d::moya::Vertex vertex(float x, float y, float z) {
 */
 void scene(v3d::moya::RenderContext & rc) {
     rc.imageResolution(64, 48, 1.0f);
+    pixelCentres(rc);
     // the defaults are RI_EPSILON and RI_INFINITY, which leave the orthographic depth
     // scale at about 2e-38 and collapse every z onto the near plane
     rc.clipping(1.0f, 100.0f);
@@ -101,7 +118,8 @@ void put(v3d::render::offline::rib::ParameterList* list, const std::string & nam
 /*
     The same scene as data/reference-shaded.rib, built through the render context instead
     of read from a file. Two surfaces under two lights: a matte one and a plastic one, a
-    distant light and a point light close enough for its falloff to show.
+    distant light and a point light close enough for its falloff to show. It is sampled at
+    the RI defaults unless the caller says otherwise.
 */
 void shadedScene(v3d::moya::RenderContext & rc) {
     rc.imageResolution(64, 48, 1.0f);
@@ -296,6 +314,7 @@ BOOST_AUTO_TEST_CASE(moya_no_display_writes_nothing_test) {
 BOOST_AUTO_TEST_CASE(moya_shaded_reference_test) {
     v3d::moya::RenderContext rc;
     shadedScene(rc);
+    pixelCentres(rc);
     rc.render();
 
     check(rc.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
@@ -319,4 +338,71 @@ BOOST_AUTO_TEST_CASE(moya_shaded_reference_from_rib_test) {
 
     check(handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
         SHADED, SHADED_RIB_RENDERED);
+}
+
+/**
+ * The shaded scene at the RI defaults, two by two samples under a gaussian two pixels wide,
+ * per ADR-0076. Its edges are antialiased, and it is the same on every run because every
+ * pixel's samples are seeded by where the pixel is.
+ **/
+BOOST_AUTO_TEST_CASE(moya_sampled_reference_test) {
+    v3d::moya::RenderContext rc;
+    shadedScene(rc);
+    rc.render();
+
+    check(rc.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
+        SAMPLED, SAMPLED_RENDERED);
+}
+
+/**
+ * The sampled scene said in RIB, which names no sampling and so gets the defaults.
+ **/
+BOOST_AUTO_TEST_CASE(moya_sampled_reference_from_rib_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(reader.read(SAMPLED_SCENE, &handler));
+    BOOST_CHECK_EQUAL(reader.error(), "");
+
+    check(handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
+        SAMPLED, SAMPLED_RIB_RENDERED);
+}
+
+/**
+ * Two renders of the sampled scene are equal byte for byte.
+ **/
+BOOST_AUTO_TEST_CASE(moya_sampled_render_is_repeatable_test) {
+    v3d::moya::RenderContext first;
+    shadedScene(first);
+    first.render();
+    v3d::moya::RenderContext second;
+    shadedScene(second);
+    second.render();
+
+    const v3d::image::Difference difference = v3d::image::compare(
+        *first.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
+        *second.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS), 0);
+    BOOST_CHECK_MESSAGE(difference.match, difference.description());
+}
+
+/**
+ * A primitive straddling a bucket edge renders as it does inside one bucket. The samples
+ * belong to the frame rather than to a bucket, and the film filters across bucket edges, so
+ * where the buckets fall does not show.
+ **/
+BOOST_AUTO_TEST_CASE(moya_bucket_edges_do_not_show_test) {
+    v3d::moya::RenderContext small;
+    small.bucketSize(8, 8);
+    shadedScene(small);
+    small.render();
+    v3d::moya::RenderContext large;
+    large.bucketSize(64, 64);
+    shadedScene(large);
+    large.render();
+
+    const v3d::image::Difference difference = v3d::image::compare(
+        *small.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
+        *large.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS), 0);
+    BOOST_CHECK_MESSAGE(difference.match, difference.description());
 }

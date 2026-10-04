@@ -12,6 +12,7 @@
 
 #include "Polygon.h"
 #include "FrameBuffer.h"
+#include "Samples.h"
 #include "Shading.h"
 
 #include <vector>
@@ -228,6 +229,11 @@ class RenderContext {
             *	The buckets the world was prepared into. Null until prepareWorld().
             */
         boost::shared_ptr<FrameBuffer> framebuffer() const;
+        /**
+            *	The frame's samples, which the hider writes into during render(). Placed
+            *	when render() begins, from sampling() as it stands then.
+            */
+        Samples & samples();
 
         unsigned int bucketWidth() const;
         unsigned int bucketHeight() const;
@@ -295,6 +301,7 @@ class RenderContext {
         std::vector<std::string> lit_;
         v3d::render::offline::sl::InstancePtr imager_;
         boost::shared_ptr<FrameBuffer> frameBuffer_;
+        boost::shared_ptr<Samples> samples_;
         // camera options
         unsigned int xres_ = 320;
         unsigned int yres_ = 240;

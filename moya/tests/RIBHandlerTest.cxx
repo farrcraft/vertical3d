@@ -279,6 +279,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_explicit_screen_window_test) {
     BOOST_REQUIRE(read(
         "ScreenWindow -2 2 -2 2\n"
         "Format 64 48 1\n"
+        "PixelSamples 1 1\n"
+        "PixelFilter \"box\" 1 1\n"
         "Projection \"orthographic\"\n"
         "Clipping 1 100\n"
         "WorldBegin\n"

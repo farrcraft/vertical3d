@@ -10,6 +10,7 @@ add_library("v3dlib_moya"
 	"Renderer.h" "Renderer.cxx"
 	"RenderMan.h" "RenderMan.cxx"
 	"ReyesPrimitive.h" "ReyesPrimitive.cxx"
+	"Samples.h" "Samples.cxx"
 	"Shading.h"
 	"Vertex.h" "Vertex.cxx"
 )

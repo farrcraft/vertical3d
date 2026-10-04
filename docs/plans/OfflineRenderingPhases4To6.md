@@ -107,8 +107,8 @@ distant light's shadow ray of fixed length; and the C array helper still in moya
 | [3](#step-3--the-record-a-pixel-is-a-filtered-set-of-seeded-samples) | The record: a pixel is a filtered set of seeded samples | `docs/adr` | **0076** | done, accepted |
 | [4](#step-4--five-filters-and-a-film) | Five filters and a film both renderers write samples into | `api/render/offline` | 0076 | done |
 | [5](#step-5--talyn-samples-through-the-film) | talyn samples through the film | `talyn` | 0076 | done |
-| [6](#step-6--moyas-hider-tests-a-sample-against-the-micropolygon) | moya's hider tests a sample against the micropolygon | `moya` | — | not started |
-| [7](#step-7--moya-samples-through-the-film) | moya samples through the film, a bucket at a time | `moya` | 0076 | not started |
+| [6](#step-6--moyas-hider-tests-a-sample-against-the-micropolygon) | moya's hider tests a sample against the micropolygon | `moya` | — | done |
+| [7](#step-7--moya-samples-through-the-film) | moya samples through the film | `moya` | 0076 | done |
 | [8](#step-8--depth-of-field) | Depth of field in both | `moya`, `talyn` | — | not started |
 | [9](#step-9--motion-blur-of-a-transform) | Motion blur of a transform, in both | `api/render/offline`, `moya`, `talyn` | — | not started |
 | [10](#step-10--adaptive-sampling-in-talyn) | Adaptive sampling in talyn | `talyn` | — | not started |
@@ -287,6 +287,12 @@ change, because its micropolygons tile its bound exactly.
 * the white quad's reference is unchanged; the shaded one is regenerated, and its regeneration is
   the step's.
 
+**Landed, and neither reference changed.** The prediction above was wrong: every moya scene is
+an axis-aligned quad under an orthographic camera, so each micropolygon already fills its raster
+bound, and its depth is flat, so the mean and the interpolation agree. The fringe is real for a
+rotated or perspective micropolygon, and `MicroPolygonGridTest` pins the test that removes it.
+With no picture to regenerate, steps 6 and 7 went in as one commit.
+
 ### Step 7 — moya samples through the film
 
 **The hider writes samples into the film**, a bucket at a time. A bucket is given its position, so
@@ -303,6 +309,16 @@ step 6's pictures byte for byte. A new `reference-sampled.png` pins moya at the 
 * the new reference matches from both routes, and twice in a row;
 * a primitive straddling a bucket edge renders the same as one inside a bucket;
 * `ReferenceTest.cxx:182-189`'s exact pixel still holds at one sample.
+
+**Landed, without bucket-local hiding.** moya's sweep comes round again when a split lands
+behind it, and a primitive dices once, so no bucket is finished until the sweep is and a
+primitive filed into several buckets would be diced by the first and yield nothing to the rest.
+The hider writes into `moya::Samples`, a store of every sample of the frame, and the store goes
+through the film once after the last bucket. Its memory is the samples' rather than a frame
+buffer's, which ADR-0076's film avoids for talyn and a reyes hider cannot; bucket-local stores
+are what threads would want, and they wait for those. A primitive is still filed under its upper
+left corner, which costs nothing now that hiding is not bucket-local. The straddling case
+renders the shaded scene at a bucket size of 8 and of 64 and requires them equal byte for byte.
 
 ### Step 8 — Depth of field
 
