@@ -5,17 +5,19 @@
 
 #include "Model.h"
 
+#include <cstddef>
 #include <string>
+#include <vector>
 
 namespace v3d::asset::kind {
 
 /**
  **/
 Model::Model(const std::string& name, Type t, const boost::shared_ptr<v3d::type::Model>& model,
-    const boost::shared_ptr<v3d::image::Image>& baseColour) :
+    const std::vector<boost::shared_ptr<v3d::image::Image>>& baseColours) :
     Asset(name, t),
     model_(model),
-    baseColour_(baseColour) {
+    baseColours_(baseColours) {
 }
 
 /**
@@ -26,8 +28,11 @@ boost::shared_ptr<v3d::type::Model> Model::model() {
 
 /**
  **/
-boost::shared_ptr<v3d::image::Image> Model::baseColourImage() const {
-    return baseColour_;
+boost::shared_ptr<v3d::image::Image> Model::baseColourImage(std::size_t material) const {
+    if (material >= baseColours_.size()) {
+        return boost::shared_ptr<v3d::image::Image>();
+    }
+    return baseColours_[material];
 }
 
 };  // namespace v3d::asset::kind

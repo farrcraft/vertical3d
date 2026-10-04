@@ -19,6 +19,7 @@ Pass::Pass(const std::string& name) :
     viewport_(0.0f, 0.0f, 0.0f, 0.0f),
     view_(1.0f),
     projection_(1.0f),
+    scene_(VK_NULL_HANDLE),
     clears_(true),
     depth_(false),
     sorts_(false) {
@@ -77,6 +78,20 @@ void Pass::target(const boost::shared_ptr<vulkan::frame::RenderTarget>& target) 
  **/
 const boost::shared_ptr<vulkan::frame::RenderTarget>& Pass::target() const noexcept {
     return target_;
+}
+
+/**
+ **/
+void Pass::reads(const boost::shared_ptr<vulkan::frame::RenderTarget>& target) {
+    if (target && std::find(reads_.begin(), reads_.end(), target) == reads_.end()) {
+        reads_.push_back(target);
+    }
+}
+
+/**
+ **/
+const std::vector<boost::shared_ptr<vulkan::frame::RenderTarget>>& Pass::reads() const noexcept {
+    return reads_;
 }
 
 /**
@@ -160,6 +175,30 @@ void Pass::ordered(std::vector<const DrawItem*>* into) const {
 void Pass::reset() noexcept {
     // the capacity is worth keeping - the next frame submits about as much as this one did
     items_.clear();
+}
+
+/**
+ **/
+void Pass::scene(VkDescriptorSet set) noexcept {
+    scene_ = set;
+}
+
+/**
+ **/
+VkDescriptorSet Pass::scene() const noexcept {
+    return scene_;
+}
+
+/**
+ **/
+void Pass::depthBias(float constant, float slope, float clamp) noexcept {
+    bias_ = DepthBias{constant, slope, clamp};
+}
+
+/**
+ **/
+const std::optional<Pass::DepthBias>& Pass::depthBias() const noexcept {
+    return bias_;
 }
 
 };  // namespace v3d::render::realtime

@@ -76,9 +76,6 @@ Quad::Quad(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::share
     resources_(resources),
     ring_(ring),
     uniforms_(uniforms),
-    materialLayout_(VK_NULL_HANDLE),
-    remaining_(0),
-    spare_(boost::make_shared<std::vector<VkDescriptorSet>>()),
     cursor_(0) {
     factory_ = boost::make_shared<memory::TextureFactory>(device_);
     createLayouts();
@@ -91,15 +88,7 @@ Quad::Quad(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::share
  **/
 Quad::~Quad() {
     // the pipelines, their layouts, the textures and the materials belong to pipeline::Resources -
-    // what is owned here is the descriptor machinery and the geometry buffers
-    for (VkDescriptorPool pool : pools_) {
-        vkDestroyDescriptorPool(device_->handle(), pool, nullptr);
-    }
-    pools_.clear();
-
-    if (materialLayout_ != VK_NULL_HANDLE) {
-        vkDestroyDescriptorSetLayout(device_->handle(), materialLayout_, nullptr);
-    }
+    // what is owned here is the descriptor pool and the geometry buffers, which go with it
 }
 
 /**
@@ -111,17 +100,8 @@ void Quad::createLayouts() {
     sampler.descriptorCount = 1;
     sampler.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-    VkDescriptorSetLayoutCreateInfo material{};
-    material.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    material.bindingCount = 1;
-    material.pBindings = &sampler;
-
-    VkResult result = vkCreateDescriptorSetLayout(device_->handle(), &material, nullptr, &materialLayout_);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to create the per material descriptor set layout - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    materialSets_ = boost::make_shared<pipeline::DescriptorPool>(device_, ring_,
+        std::vector<VkDescriptorSetLayoutBinding>{sampler}, poolSize, "per material");
 }
 
 /**
@@ -139,7 +119,7 @@ void Quad::createPipelines(VkFormat colour, VkFormat depth) {
         // get a quad's winding wrong and have it silently disappear
         .cull(VK_CULL_MODE_NONE)
         .set(uniforms_->layout())
-        .set(materialLayout_)
+        .set(materialSets_->layout())
         .push(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(Push))
         .colourFormat(colour);
 
@@ -171,7 +151,7 @@ void Quad::endFrame() noexcept {
 /**
  **/
 VkDescriptorSetLayout Quad::materialLayout() const noexcept {
-    return materialLayout_;
+    return materialSets_->layout();
 }
 
 /**
@@ -183,8 +163,8 @@ void Quad::createWhite() {
 
 /**
  **/
-TextureHandle Quad::texture(const boost::shared_ptr<v3d::image::Image>& image) {
-    return resources_->add(factory_->create(image));
+TextureHandle Quad::texture(const boost::shared_ptr<v3d::image::Image>& image, memory::TextureFactory::Encoding encoding) {
+    return resources_->add(factory_->create(image, encoding));
 }
 
 /**
@@ -195,48 +175,28 @@ TextureHandle Quad::texture(const unsigned char* pixels, uint32_t width, uint32_
 
 /**
  **/
-TextureHandle Quad::texture(const frame::RenderTarget& target) {
-    return resources_->add(target.texture());
+TextureHandle Quad::texture(const frame::RenderTarget& target, uint32_t slot) {
+    // a depth-only target has no colour to read, and a set written against no image is a
+    // validation error - the same answer depthTexture() gives a target with no depth to read
+    if (target.view() == VK_NULL_HANDLE || slot >= target.images()) {
+        return white_;
+    }
+    return resources_->add(target.texture(slot));
 }
 
 /**
  **/
-TextureHandle Quad::depthTexture(const frame::RenderTarget& target) {
-    if (!target.sampledDepth()) {
+TextureHandle Quad::depthTexture(const frame::RenderTarget& target, uint32_t slot) {
+    if (!target.sampledDepth() || slot >= target.images()) {
         return white_;
     }
-    return resources_->add(target.depthTexture());
+    return resources_->add(target.depthTexture(slot));
 }
 
 /**
  **/
 TextureHandle Quad::white() const noexcept {
     return white_;
-}
-
-/**
- **/
-void Quad::addPool() {
-    VkDescriptorPoolSize size{};
-    size.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    size.descriptorCount = poolSize;
-
-    VkDescriptorPoolCreateInfo info{};
-    info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    info.maxSets = poolSize;
-    info.poolSizeCount = 1;
-    info.pPoolSizes = &size;
-
-    VkDescriptorPool pool = VK_NULL_HANDLE;
-    VkResult result = vkCreateDescriptorPool(device_->handle(), &info, nullptr, &pool);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to create a vulkan descriptor pool - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
-
-    pools_.push_back(pool);
-    remaining_ = poolSize;
 }
 
 /**
@@ -252,35 +212,13 @@ MaterialHandle Quad::material(const TextureHandle& handle) {
         return MaterialHandle();
     }
 
-    VkDescriptorSet set = VK_NULL_HANDLE;
-    if (!spare_->empty()) {
-        // the pools were not created to free a set, so a released one is written again
-        set = spare_->back();
-        spare_->pop_back();
-    } else {
-        if (pools_.empty() || remaining_ == 0) {
-            addPool();
-        }
-
-        VkDescriptorSetAllocateInfo info{};
-        info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        info.descriptorPool = pools_.back();
-        info.descriptorSetCount = 1;
-        info.pSetLayouts = &materialLayout_;
-
-        VkResult result = vkAllocateDescriptorSets(device_->handle(), &info, &set);
-        if (result != VK_SUCCESS) {
-            std::stringstream msg;
-            msg << "Unable to allocate a vulkan descriptor set - " << device::resultString(result);
-            throw std::runtime_error(msg.str());
-        }
-        remaining_--;
-    }
+    // a set that was released before is written again here, so every write is a full one
+    VkDescriptorSet set = materialSets_->allocate();
 
     VkDescriptorImageInfo image{};
     image.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    image.imageView = texture->view;
-    image.sampler = texture->sampler;
+    image.imageView = texture->image->view();
+    image.sampler = texture->sampler->handle();
 
     VkWriteDescriptorSet write{};
     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -312,7 +250,7 @@ bool Quad::release(const TextureHandle& handle) {
     if (found != materials_.end()) {
         const pipeline::Material* material = resources_->material(found->second);
         if (material != nullptr) {
-            ring_->retire([spare = spare_, set = material->set]() { spare->push_back(set); });
+            materialSets_->release(material->set);
         }
         resources_->release(found->second);
         materials_.erase(found);

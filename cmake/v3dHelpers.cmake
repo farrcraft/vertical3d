@@ -133,11 +133,15 @@ function(v3d_add_shader target source)
 	endif()
 	get_filename_component(name ${source} NAME)
 	set(output "${CMAKE_CURRENT_BINARY_DIR}/shaders/${name}.inc")
+	# glslc writes what the shader #included into a depfile, so an edit to a block several
+	# shaders share rebuilds every one of them rather than only the file that was named here
 	add_custom_command(
 		OUTPUT ${output}
 		COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/shaders"
-		COMMAND ${Vulkan_GLSLC_EXECUTABLE} --target-env=vulkan1.3 -O -mfmt=c "${CMAKE_CURRENT_SOURCE_DIR}/${source}" -o ${output}
+		COMMAND ${Vulkan_GLSLC_EXECUTABLE} --target-env=vulkan1.3 -O -mfmt=c -MD -MF "${output}.d" -MT ${output}
+			"${CMAKE_CURRENT_SOURCE_DIR}/${source}" -o ${output}
 		DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${source}"
+		DEPFILE "${output}.d"
 		COMMENT "Compiling ${source} to SPIR-V"
 		VERBATIM)
 	set_source_files_properties(${output} PROPERTIES HEADER_FILE_ONLY TRUE GENERATED TRUE)

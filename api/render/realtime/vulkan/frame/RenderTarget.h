@@ -6,14 +6,17 @@
 #pragma once
 
 #include <api/render/realtime/vulkan/device/Device.h>
-#include <api/render/realtime/vulkan/memory/Allocator.h>
+#include <api/render/realtime/vulkan/memory/Image.h>
 #include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/vulkan/pipeline/Sampler.h>
 
 #include <vulkan/vulkan.h>
 
 #include <cstdint>
+#include <vector>
 
 #include "DepthBuffer.h"
+#include "Ring.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -36,26 +39,41 @@ namespace v3d::render::realtime::vulkan::frame {
  * target of a different format needs a pipeline built for that format - the pipeline is not
  * something a target can fix up at record time.
  *
- * A target owns its images and frees them, which is what separates it from everything in
- * Resources: those are built at load time and live until the context does, and a target is
- * thrown away and rebuilt whenever what it is sized against changes.
+ * A target's images are thrown away and rebuilt whenever what it is sized against changes,
+ * and a frame still in flight may be drawing into them or reading them when that happens.
+ * So what it lets go of, on a resize or when it is destroyed, goes to the ring rather than
+ * being destroyed at once - ADR-0061.
+ *
+ * A target holds one image, or one per frame in flight - ADR-0068. With one per frame a pass
+ * draws into current(), and what the frame before drew is still there to read at previous(),
+ * which one image cannot give: it would be read as last frame and written as this one at
+ * once. The accessors that take no slot answer for current().
  **/
 class RenderTarget final {
  public:
     /**
      * @param device the device to allocate on
+     * @param ring the frames in flight, which hold back the images a resize lets go of
      * @param width in pixels
      * @param height in pixels
-     * @param colour the format of the colour image
+     * @param colour the format of the colour image, or VK_FORMAT_UNDEFINED for none - a
+     *        target with sampled depth and no colour is what a shadow map draws into, and
+     *        every colour accessor then answers null
      * @param depth whether to allocate a depth image the same size, for a pass that tests
      * @param sampledDepth whether that depth image is also read by a later pass, which is
      *        what a shadow map is. It costs a sampler and can change which depth format
      *        the device gives, so a pipeline drawing into this has to be built against
      *        depthFormat() rather than against DepthBuffer::chooseFormat's default
-     * @throw std::runtime_error if allocation fails, or if either dimension is zero
+     * @param images one, or the ring's frames in flight for a target a pass reads the previous
+     *        frame of. Each image of a target with more than one starts cleared and readable,
+     *        so previous() can be read on the first frame
+     * @throw std::runtime_error if allocation fails, if either dimension is zero, if there
+     *        is no colour and no sampled depth, which would be a target with nothing to read,
+     *        or if images is neither one nor the frames in flight
      **/
-    RenderTarget(const boost::shared_ptr<device::Device>& device, uint32_t width, uint32_t height,
-        VkFormat colour, bool depth = false, bool sampledDepth = false);
+    RenderTarget(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Ring>& ring,
+        uint32_t width, uint32_t height, VkFormat colour, bool depth = false, bool sampledDepth = false,
+        uint32_t images = 1);
 
     /**
      **/
@@ -69,12 +87,29 @@ class RenderTarget final {
      * pipeline built against this target has to be rebuilt.
      *
      * The view and the sampler are new, so anything holding a descriptor set written
-     * against the old ones has to write it again. A pipeline::Resources texture registered for the
-     * old view refers to an image that no longer exists.
+     * against the old ones has to write it again. A pipeline::Resources texture registered
+     * from the old images keeps them alive and goes on naming them, so it has to be
+     * released and the target registered again.
      *
      * @throw std::runtime_error if the new allocation fails
      **/
     void recreate(uint32_t width, uint32_t height);
+
+    /**
+     * @return how many images the target holds
+     **/
+    uint32_t images() const noexcept;
+
+    /**
+     * @return the slot the frame being built draws into, which is chosen by the ring's frame
+     **/
+    uint32_t current() const noexcept;
+
+    /**
+     * @return the slot the frame before this one drew into, which is current() for a target of
+     *         one image
+     **/
+    uint32_t previous() const noexcept;
 
     /**
      * @return the colour image, for the layout transitions either side of a pass
@@ -124,47 +159,73 @@ class RenderTarget final {
     bool sampledDepth() const noexcept;
 
     /**
-     * The depth image described as something pipeline::Resources can own, so that a draw item can
-     * name it as a material's texture and sample what was rendered into it - which is the
-     * whole of a shadow map's read side.
+     * One slot's depth image described as something pipeline::Resources can own, so that a draw
+     * item can name it as a material's texture and sample what was rendered into it - which
+     * is the whole of a shadow map's read side.
      *
-     * The same borrowed-rather-than-owned contract texture() has. Its images are empty
-     * when the target carries no depth or was not built to have it sampled, because a
-     * descriptor set written against those would be a read of an image with no sampled
-     * usage - which the validation layer says, and nothing else does.
+     * The same shared contract texture() has. Its images are empty when the target carries no
+     * depth, was not built to have it sampled, or has no such slot, because a descriptor set
+     * written against those would be a read of an image with no sampled usage - which the
+     * validation layer says, and nothing else does.
      **/
-    pipeline::Texture depthTexture() const;
+    pipeline::Texture depthTexture(uint32_t slot = 0) const;
 
     /**
-     * The target described as something pipeline::Resources can own, so that a draw item can name it
-     * as a material's texture and sample what was rendered into it.
+     * One slot described as something pipeline::Resources can own, so that a draw item can name
+     * it as a material's texture and sample what was rendered into it. A target of more than
+     * one image is registered once per slot, and a reader names current() or previous() each
+     * frame.
      *
-     * The images belong to the target and not to pipeline::Resources, so the registered copy has no
-     * memory: registering it hands over a view and a sampler to bind, not an allocation to
-     * free. That is why this returns a value rather than registering itself - what is
-     * registered has to be understood as a reference to something with its own lifetime.
+     * What is registered shares the target's image and sampler rather than copying them, so
+     * whichever of the target and the registration lets go last is what frees them. That is
+     * why this returns a value rather than registering itself: the registration is the
+     * caller's to release.
      **/
-    pipeline::Texture texture() const;
+    pipeline::Texture texture(uint32_t slot = 0) const;
 
  private:
+    /**
+     * One frame's images: the colour, and the depth when the target has one.
+     **/
+    struct Slot final {
+        boost::shared_ptr<memory::Image> image;
+        boost::shared_ptr<DepthBuffer> depth;
+    };
+
     /**
      **/
     void create(uint32_t width, uint32_t height);
 
     /**
+     * A colour image of the target's format.
+     **/
+    boost::shared_ptr<memory::Image> createColour(uint32_t width, uint32_t height) const;
+
+    /**
+     * Clear every slot and leave it in the layout a reader samples it in, as though a pass had
+     * drawn into it, so that a frame reading previous() before anything has reads a defined
+     * image rather than one in an undefined layout.
+     **/
+    void ready() const;
+
+    /**
      **/
     void destroy();
 
+    /**
+     * @return the current slot, which every target has at least one of once created
+     **/
+    const Slot& slot() const noexcept;
+
     boost::shared_ptr<device::Device> device_;
+    boost::shared_ptr<Ring> ring_;
     VkFormat format_;
-    VkImage image_;
-    memory::Allocation memory_;
-    VkImageView view_;
-    VkSampler sampler_;
+    uint32_t images_;
+    std::vector<Slot> slots_;
+    boost::shared_ptr<pipeline::Sampler> sampler_;
     VkExtent2D extent_;
     bool wantsDepth_;
     bool sampledDepth_;
-    boost::shared_ptr<DepthBuffer> depth_;
 };
 
 };  // namespace v3d::render::realtime::vulkan::frame

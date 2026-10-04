@@ -6,11 +6,32 @@
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Pass.h>
 
+#include <cstddef>
+#include <stdexcept>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
 
 #include <boost/make_shared.hpp>
+
+using v3d::render::realtime::Frame;
+using Node = v3d::render::realtime::Frame::Node;
+
+namespace {
+
+// stand-ins for targets: the ordering compares identities and never looks behind them. The
+// values differ so that nothing could fold the two into one address
+const int sceneTarget = 1;
+const int shadowTarget = 2;
+
+Node node(const void* writes, const std::vector<const void*>& reads = {}) {
+    Node made;
+    made.writes = writes;
+    made.reads = reads;
+    return made;
+}
+
+};  // namespace
 
 BOOST_AUTO_TEST_SUITE(frame_test)
 
@@ -240,6 +261,72 @@ BOOST_AUTO_TEST_CASE(sorting_is_configured_per_pass) {
     BOOST_CHECK(scene->sorts());
     BOOST_CHECK(!overlay->depth());
     BOOST_CHECK(!overlay->sorts());
+}
+
+/**
+ * A pass reading a target is recorded after the pass drawing into it, even when the reader was
+ * created first - which is Engine3D's colour pass, made before an app has added anything.
+ **/
+BOOST_AUTO_TEST_CASE(a_reader_is_recorded_after_a_writer_created_later) {
+    const std::vector<Node> nodes{node(nullptr, {&sceneTarget}), node(&sceneTarget)};
+    BOOST_CHECK(Frame::order(nodes) == (std::vector<std::size_t>{1, 0}));
+}
+
+/**
+ * Passes the reads do not order keep the order they were created in, and passes into one
+ * target keep it whatever else moves: an overlay created after the colour pass still draws
+ * over it once the scene the colour pass reads has been moved in front of both.
+ **/
+BOOST_AUTO_TEST_CASE(passes_the_reads_do_not_order_keep_their_order) {
+    const std::vector<Node> independent{node(&sceneTarget), node(&shadowTarget), node(nullptr)};
+    BOOST_CHECK(Frame::order(independent) == (std::vector<std::size_t>{0, 1, 2}));
+
+    // colour reads the scene, the overlay draws over colour, and the scene comes last
+    const std::vector<Node> overlay{node(nullptr, {&sceneTarget}), node(nullptr), node(&sceneTarget)};
+    BOOST_CHECK(Frame::order(overlay) == (std::vector<std::size_t>{2, 0, 1}));
+}
+
+/**
+ * A chain of three: the shadow is drawn before the scene that reads it, and the scene before
+ * the grade that reads that, whatever order they were made in.
+ **/
+BOOST_AUTO_TEST_CASE(a_chain_is_recorded_in_the_order_it_reads) {
+    const std::vector<Node> nodes{node(nullptr, {&sceneTarget}), node(&sceneTarget, {&shadowTarget}), node(&shadowTarget)};
+    BOOST_CHECK(Frame::order(nodes) == (std::vector<std::size_t>{2, 1, 0}));
+}
+
+/**
+ * A pass reading the target it draws into is reading that target's previous frame, so it waits
+ * for no other pass drawing into it, and passes into the target keep their order.
+ **/
+BOOST_AUTO_TEST_CASE(reading_your_own_target_orders_nothing) {
+    const std::vector<Node> nodes{node(&sceneTarget, {&sceneTarget}), node(&sceneTarget)};
+    BOOST_CHECK(Frame::order(nodes) == (std::vector<std::size_t>{0, 1}));
+}
+
+/**
+ * Two passes each reading what the other draws have no order, and the frame says so rather
+ * than recording one of them reading a target nothing has drawn into yet.
+ **/
+BOOST_AUTO_TEST_CASE(a_cycle_throws) {
+    const std::vector<Node> nodes{node(&sceneTarget, {&shadowTarget}), node(&shadowTarget, {&sceneTarget})};
+    BOOST_CHECK_THROW(Frame::order(nodes), std::runtime_error);
+}
+
+/**
+ * ordered() is order() over the frame's passes, and an empty target is nothing to read.
+ **/
+BOOST_AUTO_TEST_CASE(a_frame_with_no_reads_records_as_created) {
+    Frame frame(boost::make_shared<v3d::render::realtime::Context>());
+    frame.pass("first");
+    frame.pass("second");
+    frame.pass("second")->reads(boost::shared_ptr<v3d::render::realtime::vulkan::frame::RenderTarget>());
+
+    const std::vector<boost::shared_ptr<v3d::render::realtime::Pass>> ordered = frame.ordered();
+    BOOST_REQUIRE_EQUAL(ordered.size(), 2U);
+    BOOST_CHECK_EQUAL(ordered[0]->name(), "first");
+    BOOST_CHECK_EQUAL(ordered[1]->name(), "second");
+    BOOST_CHECK(frame.pass("second")->reads().empty());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

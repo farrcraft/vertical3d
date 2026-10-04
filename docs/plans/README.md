@@ -11,6 +11,67 @@ outlives the schedule.
 
 No plan is open.
 
+[completed/SkeletalAnimation.md](completed/SkeletalAnimation.md) was drafted and closed on
+2026-10-03, taking up [milestone 5](../roadmap/completed/m5-SkeletalAnimation.md) of
+[the game engine roadmap](../roadmap/GameEngine.md). A file is one model in parts, read through
+its node hierarchy, and may carry a skin
+([ADR-0069](../adr/0069-a-model-is-parts-over-one-array-and-may-carry-a-skin.md)). Clips are
+sampled on the cpu from a playback component advanced on the step and drawn between steps, and
+which clip plays is the game's ([ADR-0070](../adr/0070-animation-is-sampled-from-playback-on-the-step.md)).
+A frame's palettes are one storage buffer in the scene set, so both lit passes draw the pose
+([ADR-0071](../adr/0071-joint-palettes-are-a-storage-buffer-in-the-scene-set.md)). Instancing
+was held, and went to [TODO.md](../TODO.md#lit-scenes) behind a count that nothing has reached.
+
+Four things came out differently. **The loader had never read a node**, so any mesh a node
+moved loaded at its own origin, which every file so far had been too simple to show. **A skeleton
+needs a root matrix**: a Mixamo rig's hundredth scale stands above the root joint, which a clip
+animating that joint would otherwise overwrite. **No rigged asset existed anywhere**, so the
+fixtures are generated: a hand-written strip whose every value is exact, which lets a skin at rest
+be compared with its unskinned mesh byte for byte, and the same strip exported by Blender, which
+shows the exporter's matrices agree with this tree's arithmetic. **And the steps' records were
+accepted as each step began** rather than when its code had proved them, because each was read
+before anything was built on it.
+
+[completed/LitScene.md](completed/LitScene.md) was drafted and closed on 2026-10-03, taking up
+[milestone 4](../roadmap/completed/m4-LitScene.md) of [the game engine roadmap](../roadmap/GameEngine.md).
+It writes retcon's lit tier into the frame model the rest of the api draws through, rather than
+moving retcon's hand-recorded passes: the recorder learns a scene set at set 2 and a depth bias
+([ADR-0064](../adr/0064-a-pass-carries-a-scene-set-and-a-depth-bias.md)), which is the one thing
+retcon's refusal of that model rested on. Images and samplers are classes, a model reaches the
+device through a registry ([ADR-0065](../adr/0065-a-mesh-is-registered-by-path-and-released.md)),
+the tier lights in linear ([ADR-0066](../adr/0066-the-lit-tier-lights-in-linear.md)) with
+replaceable shaders ([ADR-0067](../adr/0067-lit-shaders-are-embedded-and-replaceable.md)), and a
+frame places its passes by what they read
+([ADR-0068](../adr/0068-a-target-per-frame-a-checked-format-and-passes-placed-by-what-they-read.md)).
+retcon's look-dev scene is a device case, and the plan's last step is the handoff retcon reads
+when it adopts.
+
+Three things came out differently. **A format mismatch is a validation error after all**, so the
+recorder's check is for a run without the layers, and for naming the pass. **Passes into one
+target keep their creation order whatever the reads move**, which a sort by reads alone broke by
+putting an overlay under the colour pass. **And retcon's light matrix could not come across as it
+is**: it is built with `glm::lookAt`, mirrored from this tree's cameras, so a shadow pass culled
+with the cel pass's winding would have drawn the back faces.
+
+[completed/RenderableComponent.md](completed/RenderableComponent.md) was drafted and closed on
+2026-10-03, taking up [milestone 3](../roadmap/completed/m3-RenderableComponent.md) of
+[the game engine roadmap](../roadmap/GameEngine.md). An entity is drawn from an
+`ecs::component::Transform` and a component per kind of drawing, which the api walks
+([ADR-0063](../adr/0063-an-entity-is-drawn-from-a-transform-and-a-component-per-kind.md)). The
+transform holds a quaternion rather than retcon's yaw, because a yaw interpolated between steps
+turns the long way round. `realtime::sprites()` draws every `Sprite` into one depth order. The
+mesh component is shaped and handed to [milestone 4](../roadmap/completed/m4-LitScene.md), because nothing
+gives a mesh a handle yet.
+
+Three things came out differently. **The prototype is a test here, not a change in cozy.** The
+roadmap asked for cozy's sprites to be written against the record before it was accepted, and a
+case in `SpriteTest.cpp` rebuilds cozy's scene from its camera profile and its constants instead.
+Consumers adopt a feature after it ships. **That case found the plan had cozy's order
+backwards**: from cozy's eye the acorn is nearer than the player, not further. **And a test
+cannot return a `WorldCanvas` by value**: clang-tidy holds its move to not throwing, and its
+`std::deque` allocates when moved, so the test fills one in place, as the canvas's other tests
+already did.
+
 [completed/LargeWorlds.md](completed/LargeWorlds.md) was drafted and closed on 2026-10-03,
 taking up [milestone 2](../roadmap/completed/m2-LargeWorlds.md) of
 [the game engine roadmap](../roadmap/GameEngine.md). A texture can be released, with a

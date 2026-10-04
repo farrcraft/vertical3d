@@ -21,7 +21,7 @@ depthFormat_(VK_FORMAT_UNDEFINED) {
     pipelineCache_ = boost::make_shared<vulkan::pipeline::Cache>(device_);
     resources_ = boost::make_shared<vulkan::pipeline::Resources>(device_, ring_);
     uploader_ = boost::make_shared<vulkan::memory::Uploader>(device_);
-    frameUniforms_ = boost::make_shared<vulkan::frame::FrameUniforms>(device_, ring_->framesInFlight());
+    frameUniforms_ = boost::make_shared<vulkan::frame::FrameUniforms>(device_, ring_);
     // settled here even though the image may never be built, because every pipeline that
     // could draw into a depth pass is built against it
     depthFormat_ = vulkan::frame::DepthBuffer::chooseFormat(device_->physical());

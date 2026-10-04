@@ -44,7 +44,7 @@ set(V3D_API_dag_REQUIRES)
 set(V3D_API_dag_PACKAGES glm)
 
 set(V3D_API_ecs_PATH "ecs")
-set(V3D_API_ecs_REQUIRES)
+set(V3D_API_ecs_REQUIRES type)
 set(V3D_API_ecs_PACKAGES glm EnTT)
 
 set(V3D_API_engine_PATH "engine")
@@ -76,7 +76,7 @@ set(V3D_API_log_REQUIRES)
 set(V3D_API_log_PACKAGES spdlog)
 
 set(V3D_API_render_PATH "render")
-set(V3D_API_render_REQUIRES log asset font image)
+set(V3D_API_render_REQUIRES log asset ecs font image type)
 set(V3D_API_render_PACKAGES Vulkan VulkanMemoryAllocator SDL3 glm EnTT)
 
 # Under api/render but not part of it: the offline renderers of ADR-0022 share this and it

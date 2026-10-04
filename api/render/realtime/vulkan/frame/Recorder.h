@@ -45,6 +45,8 @@ class Recorder final {
         VkImage depthImage;    /**< the depth buffer, or null when there is none **/
         VkImageView depthView; /**< the attachment a pass that depth tests draws into **/
         bool sampledDepth;     /**< whether a later pass reads that depth image **/
+        VkFormat format;       /**< the colour format, or undefined when it goes unchecked **/
+        VkFormat depthFormat;  /**< the depth format, or undefined when it goes unchecked **/
 
         /**
          * What the frame leaves the image in.
@@ -69,6 +71,20 @@ class Recorder final {
     static void record(VkCommandBuffer commands, const Frame& frame, const Target& target, const pipeline::Resources& resources,
         FrameUniforms* uniforms = nullptr);
 
+    /**
+     * Whether a pass gives a pipeline everything it declares it needs per pass: a scene set
+     * for a pipeline whose layout has a set 2, and a bias for one built with depth bias -
+     * ADR-0064. And whether the pipeline was built for what the pass draws into: its colour
+     * format, and its depth format when the pass tests depth, wherever both sides state one -
+     * ADR-0068. Checked whenever the recorder binds a pipeline, and nothing else needs a
+     * device to ask.
+     *
+     * @param into what the pass draws into, whose formats go unchecked where it leaves them
+     *        undefined
+     * @throw std::runtime_error naming the pass and what it lacks
+     **/
+    static void check(const Pass& pass, const pipeline::Pipeline& pipeline, const Target& into = Target());
+
  private:
     /**
      * What the last item recorded left bound, so the next one can skip rebinding it.
@@ -78,6 +94,7 @@ class Recorder final {
 
         const pipeline::Pipeline* pipeline;
         VkDescriptorSet frameSet;
+        VkDescriptorSet sceneSet;
         VkDescriptorSet set;
         VkBuffer vertexBuffer;
         VkDeviceSize vertexBufferOffset;
@@ -86,6 +103,7 @@ class Recorder final {
         VkRect2D area;      /**< the whole of what the pass draws into, which an unclipped item wants **/
         VkRect2D scissor;   /**< what is set now, so an unchanged clip costs nothing **/
         bool scissorSet;    /**< false until one is known, which is what an escape hatch leaves behind **/
+        const Target* into; /**< what the pass draws into, which every pipeline it binds is checked against. Set before any item is recorded **/
     };
 
     /**
@@ -111,6 +129,17 @@ class Recorder final {
     static void transitionDepthForReading(VkCommandBuffer commands, VkImage image);
 
     /**
+     * Bring a target into the layouts a pass draws into, before the first pass of the frame
+     * that writes it. A target with no colour image has only its depth moved.
+     **/
+    static void openTarget(VkCommandBuffer commands, const Pass& pass, const Target& into);
+
+    /**
+     * Leave a target readable after the last pass of the frame that writes it.
+     **/
+    static void closeTarget(VkCommandBuffer commands, const Pass& pass, const Target& into);
+
+    /**
      * @param frameSet what the pass binds at set 0, or null if it binds nothing there
      **/
     static void record(VkCommandBuffer commands, const Pass& pass, const Target& target, const pipeline::Resources& resources,
@@ -119,7 +148,8 @@ class Recorder final {
     /**
      * Bind what the item needs that is not bound already, and issue its draw.
      **/
-    static void record(VkCommandBuffer commands, const DrawItem& item, const pipeline::Resources& resources, VkDescriptorSet frameSet, Bound* bound);
+    static void record(VkCommandBuffer commands, const Pass& pass, const DrawItem& item, const pipeline::Resources& resources,
+        VkDescriptorSet frameSet, Bound* bound);
 
     /**
      * Cut the draw down to what the item asks for, or back to the whole pass when it asks

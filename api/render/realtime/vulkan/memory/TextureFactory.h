@@ -7,6 +7,7 @@
 
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/vulkan/pipeline/Sampler.h>
 
 #include <vulkan/vulkan.h>
 
@@ -32,9 +33,22 @@ namespace v3d::render::realtime::vulkan::memory {
  * A single channel image is given a view that swizzles its one channel into alpha and
  * ones into rgb, so a glyph atlas samples as white-with-coverage and the one quad shader
  * serves both text and sprites without a branch - see ADR-0005.
+ *
+ * Every texture is read through the same sampler, which the factory makes once and each
+ * texture shares.
  **/
 class TextureFactory final {
  public:
+    /**
+     * How the bytes of a colour image are read back by a shader.
+     **/
+    enum class Encoding {
+        /**< as they were authored, which is every texture drawn unlit - ADR-0009 **/
+        Display,
+        /**< decoded from sRGB to linear when sampled, which a lit albedo is - ADR-0066 **/
+        Srgb
+    };
+
     /**
      * @param device the device the images are created on
      **/
@@ -53,15 +67,18 @@ class TextureFactory final {
      * @param height in pixels
      * @param channels 1 for a coverage mask, 3 or 4 for colour - 3 is widened to 4,
      *        because a three channel format is not something a device has to support
-     * @return the created image, its memory, view and sampler, for the caller to register
+     * @param encoding how a shader reads the colour back. A coverage mask is not a colour
+     *        and ignores it
+     * @return the created image and the sampler it is read through, for the caller to register
      * @throw std::runtime_error if any part of the creation or upload fails
      **/
-    pipeline::Texture create(const unsigned char* pixels, uint32_t width, uint32_t height, uint32_t channels) const;
+    pipeline::Texture create(const unsigned char* pixels, uint32_t width, uint32_t height, uint32_t channels,
+        Encoding encoding = Encoding::Display) const;
 
     /**
      * @param image the image to upload, whose bpp decides the channel count
      **/
-    pipeline::Texture create(const boost::shared_ptr<v3d::image::Image>& image) const;
+    pipeline::Texture create(const boost::shared_ptr<v3d::image::Image>& image, Encoding encoding = Encoding::Display) const;
 
  private:
     /**
@@ -71,6 +88,7 @@ class TextureFactory final {
 
     boost::shared_ptr<device::Device> device_;
     boost::shared_ptr<Uploader> uploader_;
+    boost::shared_ptr<pipeline::Sampler> sampler_;
 };
 
 };  // namespace v3d::render::realtime::vulkan::memory

@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -35,6 +36,17 @@ class RenderTarget;
  **/
 class Pass final {
  public:
+    /**
+     * What vkCmdSetDepthBias is given, in its terms: a constant offset in units of the
+     * depth format's smallest step, one scaled by the polygon's slope, and the most either
+     * may add up to - zero for no limit.
+     **/
+    struct DepthBias final {
+        float constant;
+        float slope;
+        float clamp;
+    };
+
     /**
      * @param name what the pass is for, used in logs and debug markers
      **/
@@ -88,12 +100,11 @@ class Pass final {
      *
      * The recorder leaves a target readable by every pass after the last one that drew
      * into it, so a pass sampling what an earlier pass rendered names that target's
-     * texture as a material like any other - ADR-0031. A pass that reads a target it also
-     * draws into, or one written by a later pass in the same frame, reads what is there
-     * rather than what it expects; ordering the passes is the caller's.
+     * texture as a material like any other - ADR-0031 - and says so with reads().
      *
      * A pipeline is built against the format of what it draws into, so a pass whose target
-     * is not the swapchain's format needs a pipeline built for that format.
+     * is not the swapchain's format needs a pipeline built for that format. The recorder
+     * throws when one is drawn into the other - ADR-0068.
      *
      * Passing an empty pointer puts the pass back on the swapchain image.
      **/
@@ -103,6 +114,20 @@ class Pass final {
      * @return the target the pass draws into, or an empty pointer for the swapchain image
      **/
     const boost::shared_ptr<vulkan::frame::RenderTarget>& target() const noexcept;
+
+    /**
+     * Say that this pass samples what another pass drew into a target, so the frame records
+     * every pass drawing into it first - ADR-0068. Naming the target the pass draws into
+     * itself orders nothing, which is what a pass reading its own previous() frame does.
+     *
+     * Kept across reset(), as the target is: it is what the pass is, not what it drew.
+     **/
+    void reads(const boost::shared_ptr<vulkan::frame::RenderTarget>& target);
+
+    /**
+     * @return the targets this pass samples, in the order they were named
+     **/
+    const std::vector<boost::shared_ptr<vulkan::frame::RenderTarget>>& reads() const noexcept;
 
     /**
      * The region of the target the pass draws into, as x, y, width, height in pixels.
@@ -134,6 +159,40 @@ class Pass final {
      * @return the view to clip transform the pass draws through
      **/
     const glm::mat4& projection() const noexcept;
+
+    /**
+     * What the pass binds at set 2 for every item whose pipeline declares one - the light,
+     * the shadow map and whatever else a lit scene shares across a pass - per ADR-0064.
+     *
+     * Bound once for the pass, like the camera, and only for pipelines that declare a set
+     * 2, so a quad drawn in the same pass binds nothing extra. An item whose pipeline
+     * declares one, in a pass that names none, is an error at record time.
+     *
+     * @param set a set allocated against the layout those pipelines declare at 2, or null
+     *        for none
+     **/
+    void scene(VkDescriptorSet set) noexcept;
+
+    /**
+     * @return what the pass binds at set 2, or null
+     **/
+    VkDescriptorSet scene() const noexcept;
+
+    /**
+     * The depth bias every pipeline built with one draws at in this pass - ADR-0064.
+     *
+     * A bias is the pass's rather than the item's, because what decides it is the target's
+     * depth format and the light's angle, which every caster in a shadow pass shares. A
+     * pipeline built without one ignores it, so other geometry can share the pass. An item
+     * whose pipeline was built with one, in a pass that names none, is an error at record
+     * time: vulkan would otherwise draw with whatever bias was last set, and say nothing.
+     **/
+    void depthBias(float constant, float slope, float clamp = 0.0f) noexcept;
+
+    /**
+     * @return the bias the pass draws at, or nothing when it names none
+     **/
+    const std::optional<DepthBias>& depthBias() const noexcept;
 
     /**
      * Record the pass's items in sort key order rather than in submission order.
@@ -190,6 +249,9 @@ class Pass final {
     glm::mat4 projection_;
     std::vector<DrawItem> items_;
     boost::shared_ptr<vulkan::frame::RenderTarget> target_;
+    std::vector<boost::shared_ptr<vulkan::frame::RenderTarget>> reads_;
+    VkDescriptorSet scene_;
+    std::optional<DepthBias> bias_;
     bool clears_;
     bool depth_;
     bool sorts_;

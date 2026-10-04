@@ -14,10 +14,15 @@ v3d_add_test(render
 	"LineCanvasTest.cpp"
 	"WorldCanvasTest.cpp"
 	"DepthOrderTest.cpp"
+	"SpriteTest.cpp"
 	"SwapchainFormatTest.cpp"
+	"RecorderCheckTest.cpp"
+	"LitSettingsTest.cpp"
+	"ShadowTest.cpp"
+	"GradeTest.cpp"
 	"CaptureConvertTest.cpp")
 
-target_link_libraries(v3dtest_render PRIVATE v3dlib_render v3dlib_font v3dlib_image EnTT::EnTT ${SDL3_LIBRARIES} ${Vulkan_LIBRARIES} Freetype::Freetype)
+target_link_libraries(v3dtest_render PRIVATE v3dlib_render v3dlib_font v3dlib_image v3dlib_type EnTT::EnTT ${SDL3_LIBRARIES} ${Vulkan_LIBRARIES} Freetype::Freetype)
 
 # A second binary rather than more cases in the first, because these need a gpu and that one
 # must keep running on a runner with none. ADR-0007 is what puts a software implementation
@@ -30,6 +35,14 @@ v3d_add_test(render_device
 	"device/OffscreenFrameTest.cpp"
 	"device/WorldDepthTest.cpp"
 	"device/ReleaseTest.cpp"
+	"device/DescriptorPoolTest.cpp"
+	"device/SceneSetTest.cpp"
+	"device/DepthTargetTest.cpp"
+	"device/MeshRegistryTest.cpp"
+	"device/LitSceneTest.cpp"
+	"device/SkinTest.cpp"
+	"device/RenderTargetTest.cpp"
+	"device/PostTest.cpp"
 	"device/PipelineBuilderTest.cpp")
 
 # A committed picture is resolved against the working directory, which v3d_add_test points at
@@ -46,5 +59,16 @@ add_custom_command(TARGET v3dtest_render_device POST_BUILD
 # compiles one needs a vertex stage of its own - the renderers' shaders are v3dlib_render's
 v3d_add_shader(v3dtest_render_device "shaders/depth.vert")
 
-target_link_libraries(v3dtest_render_device PRIVATE v3dlib_render v3dlib_image Boost::filesystem EnTT::EnTT ${SDL3_LIBRARIES} ${Vulkan_LIBRARIES})
+# a pipeline declaring a scene at set 2 and reading nothing else, which is how the case that
+# binds one shows the set arrived - ADR-0064
+v3d_add_shader(v3dtest_render_device "shaders/scene.vert")
+v3d_add_shader(v3dtest_render_device "shaders/scene.frag")
+
+# a full-screen pass that copies by position, which is how the identity case is exact anywhere
+v3d_add_shader(v3dtest_render_device "shaders/copy.frag")
+
+# the mesh registry's cases load models, and the asset suite already keeps the fixtures
+target_compile_definitions(v3dtest_render_device PRIVATE V3D_ASSET_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/../../asset/tests/data")
+
+target_link_libraries(v3dtest_render_device PRIVATE v3dlib_render v3dlib_image v3dlib_asset v3dlib_type Boost::filesystem EnTT::EnTT ${SDL3_LIBRARIES} ${Vulkan_LIBRARIES})
 set_tests_properties(render_device PROPERTIES SKIP_RETURN_CODE 77)

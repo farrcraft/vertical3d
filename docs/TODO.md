@@ -82,18 +82,26 @@ is in the tree.
 sprites are; nothing reads a `sprites.json` and cuts out everything it names. Whether that
 belongs to `imagetool`, to a `spritetool` beside it, or to whoever needs it is undecided
 
-[] nothing plays a sprite's frames: no clock advances through named regions on the fixed step, loops or clamps, or says when a named frame is reached. One consumer would write it, and that one calls its walk cycle thirty lines of its own. It is due when a second wants the same clock, milestone 6's particles or milestone 5's clip sampler being the likeliest, and is then drafted against what the first wrote - [MotionAndQueries](plans/completed/MotionAndQueries.md#step-6--a-sprite-clip) has the reasoning
+[] nothing plays a sprite's frames. The clock is written - `type::animation::Clock` advances a time on the fixed step, loops or clamps it, and says when a marker is passed ([ADR-0070](adr/0070-animation-is-sampled-from-playback-on-the-step.md)) - and what is missing is the half that names regions: a list of a sheet's regions with a time each, and which one a time falls in. One consumer would write it, and that one calls its walk cycle thirty lines of its own. It is due when a second wants it, milestone 6's particles being the likeliest - [MotionAndQueries](plans/completed/MotionAndQueries.md#step-6--a-sprite-clip) has the reasoning
 
 ## Models
 
 `api/asset` reads glTF 2.0 into a `v3d::type::Model`, which is the only geometry the api loads
 from a file. Nothing in this tree loads one - `voxel` builds its terrain procedurally and the
 editor models with `brep::BRep` - so the gap below is what the library's own tests reach
-rather than what an app here has hit. Its path onto the device is
-[milestone 4](roadmap/m4-LitScene.md#2-a-model-onto-the-device)'s, and splitting a file by
-material is [milestone 5](roadmap/m5-SkeletalAnimation.md#1-reading-a-skeleton)'s.
+rather than what an app here has hit. `realtime::MeshRegistry` takes one onto the device
+([LitScene](plans/completed/LitScene.md#step-6--a-model-onto-the-device)). A file is one model in
+parts, a part per material ([ADR-0069](adr/0069-a-model-is-parts-over-one-array-and-may-carry-a-skin.md)).
 
 [] `.gltf` with external buffers resolves them relative to the file, which is cgltf's own behaviour rather than the asset manager's path handling. The two agree today because the manager hands over a full path
+
+## Lit scenes
+
+[] a shadow map is fitted to its casters once, by `shadow::fit`, and covers nothing that walks out of that sphere. A world larger than one look-dev scene needs the fit to follow the camera, and past that cascades, which the roadmap left for after the move - [LitScene](plans/completed/LitScene.md#step-8--a-shadow-map)
+
+[] the identity grade and the inverting grade were exact on the Radeon and assert a step at most, because lavapipe had not been seen yet. If CI shows lavapipe exact too, the tolerance in `PostTest.cpp` comes down to zero; if it does not, the step is the reason, and that goes beside the case - [LitScene](plans/completed/LitScene.md#step-10--the-chain-after-the-scene)
+
+[] nothing draws many of one mesh in one draw. `meshes()` and `casters()` submit an item per part per entity, which at retcon's twelve characters and a few dozen props is a few hundred draws. Instancing would move `Lit::Object` from the push block into a per-frame storage buffer read by `gl_InstanceIndex`, beside the palette at set 2, and group the walk by entry and part; the recorder already draws instances. It is due when a count asks for it - retcon's horde density, a township's population, or a profile showing recording time - [SkeletalAnimation](plans/completed/SkeletalAnimation.md#step-8--instancing-held)
 
 ## Ongoing workstreams
 
@@ -121,12 +129,9 @@ tree.
 
 **Documentation.** Reference material lives in this directory, one document per subject and
 [README.md](README.md) as the index; `CLAUDE.md` routes into them rather than holding a copy.
-Two gaps are left. The rationale for the Vulkan move and for the SDL3 upgrade is recorded
+One gap is left. The rationale for the Vulkan move and for the SDL3 upgrade is recorded
 nowhere — [ADR-0001](adr/0001-vulkan-replaces-opengl.md) records the decision, not the
-reasoning behind it. And [ECSDesign.md](ECSDesign.md) is the one reference document that is
-still a set of notes rather than a description of the tree. What would make it one is what a
-renderable component looks like, which is
-[milestone 3](roadmap/m3-RenderableComponent.md)'s decision.
+reasoning behind it.
 
 ## Editor
 

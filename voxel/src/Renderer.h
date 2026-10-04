@@ -10,6 +10,7 @@
 #include <api/render/realtime/Canvas.h>
 #include <api/render/realtime/Engine3D.h>
 #include <api/render/realtime/vulkan/memory/DeviceBuffer.h>
+#include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
 #include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/Engine.h>
 #include <api/ui/Immediate.h>
@@ -120,8 +121,7 @@ class Renderer {
     v3d::render::realtime::Engine3D engine_;
 
     boost::shared_ptr<v3d::render::realtime::DeviceContext> context_;
-    VkDescriptorSetLayout sceneLayout_;
-    VkDescriptorPool pool_;
+    boost::shared_ptr<v3d::render::realtime::vulkan::pipeline::DescriptorPool> scenePool_;
     boost::shared_ptr<v3d::render::realtime::vulkan::memory::DeviceBuffer> uniforms_;
     v3d::render::realtime::PipelineHandle pipeline_;
     v3d::render::realtime::MaterialHandle material_;

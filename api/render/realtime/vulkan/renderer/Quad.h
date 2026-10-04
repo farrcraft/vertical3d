@@ -15,6 +15,7 @@
 #include <api/render/realtime/vulkan/memory/Buffer.h>
 #include <api/render/realtime/vulkan/memory/TextureFactory.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
+#include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
 #include <api/render/realtime/vulkan/pipeline/Resources.h>
 
 #include <vulkan/vulkan.h>
@@ -86,9 +87,11 @@ class Quad final {
 
     /**
      * Upload an image and register it, so a canvas can name it.
+     * @param encoding how a shader reads it back - as authored unless something lights it
      * @return the handle to draw with
      **/
-    TextureHandle texture(const boost::shared_ptr<v3d::image::Image>& image);
+    TextureHandle texture(const boost::shared_ptr<v3d::image::Image>& image,
+        memory::TextureFactory::Encoding encoding = memory::TextureFactory::Encoding::Display);
 
     /**
      * @param pixels tightly packed rows of width * channels bytes
@@ -99,28 +102,33 @@ class Quad final {
     /**
      * Register a render target so that a canvas can sample what a pass drew into it.
      *
-     * The images stay the target's - what is registered names them rather than taking them
-     * over, so nothing here frees them. A target that is resized allocates new ones, and
-     * the handle this returned then names images that no longer exist: after a recreate(),
-     * release the old handle and register the target again.
+     * What is registered shares the target's images. A target that is resized allocates
+     * new ones, and the handle this returned goes on naming the old ones, which it keeps
+     * alive: after a recreate(), release the old handle and register the target again.
      *
+     * A target with no colour image has nothing to register, and comes back as the white
+     * texture for the same reason depthTexture() gives one for a target with no depth to read.
+     *
+     * @param slot which of the target's images - one handle per slot for a target holding one
+     *        per frame in flight, of which a reader names current() or previous() each frame
      * @return the handle to draw with
      **/
-    TextureHandle texture(const frame::RenderTarget& target);
+    TextureHandle texture(const frame::RenderTarget& target, uint32_t slot = 0);
 
     /**
      * Register a render target's depth image, so that a draw can sample what a pass tested
      * against rather than what it painted - which is the read half of a shadow map.
      *
-     * The same borrowed contract, and the same rule about releasing and registering again
+     * The same shared contract, and the same rule about releasing and registering again
      * after a recreate(). A target built without a depth image, or with one it was not told
      * would be sampled, has nothing to register: it comes back as the white texture, because a
      * descriptor set written against an image with no sampled usage is undefined and a
      * flat white shadow map is a scene that is merely unshadowed.
      *
+     * @param slot which of the target's images, as texture() takes it
      * @return the handle to draw with
      **/
-    TextureHandle depthTexture(const frame::RenderTarget& target);
+    TextureHandle depthTexture(const frame::RenderTarget& target, uint32_t slot = 0);
 
     /**
      * @return the 1x1 white texture an untextured quad is drawn against
@@ -211,11 +219,6 @@ class Quad final {
      **/
     void createWhite();
 
-    /**
-     * Add a descriptor pool, because the last one is full or there is none.
-     **/
-    void addPool();
-
     boost::shared_ptr<v3d::log::Logger> logger_;
     boost::shared_ptr<device::Device> device_;
     boost::shared_ptr<pipeline::Cache> cache_;
@@ -224,12 +227,7 @@ class Quad final {
     boost::shared_ptr<frame::FrameUniforms> uniforms_;
     boost::shared_ptr<memory::TextureFactory> factory_;
 
-    VkDescriptorSetLayout materialLayout_;  /**< set 1, the sampler every quad reads through **/
-    std::vector<VkDescriptorPool> pools_;
-    uint32_t remaining_;                    /**< sets left in the last pool **/
-    /**< sets whose material was released and no frame still reads, to be written again. Shared
-         with what the ring runs, because the ring is destroyed after this is **/
-    boost::shared_ptr<std::vector<VkDescriptorSet>> spare_;
+    boost::shared_ptr<pipeline::DescriptorPool> materialSets_;  /**< set 1, the sampler every quad reads through **/
 
     PipelineHandle pipeline_;               /**< for a pass with no depth attachment **/
     PipelineHandle depthPipeline_;          /**< for a pass with one **/

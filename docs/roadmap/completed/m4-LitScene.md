@@ -1,15 +1,32 @@
 # A Lit Scene
 
-Milestone 4 of [the game engine roadmap](GameEngine.md). What a 3D game needs from the renderer
+Milestone 4 of [the game engine roadmap](../GameEngine.md).
+
+**Done by [LitScene](../../plans/completed/LitScene.md)**, closed 2026-10-03. The tier is written into
+this tree's frame model rather than moved as retcon's passes are, and retcon's look-dev scene is
+reproduced in the device suite rather than run. Four records settle what this document left
+open: the scene set and the bias
+([ADR-0064](../../adr/0064-a-pass-carries-a-scene-set-and-a-depth-bias.md)), the mesh registry
+([ADR-0065](../../adr/0065-a-mesh-is-registered-by-path-and-released.md)), colour
+([ADR-0066](../../adr/0066-the-lit-tier-lights-in-linear.md)) and shaders
+([ADR-0067](../../adr/0067-lit-shaders-are-embedded-and-replaceable.md)), and a fifth closes the
+three target gaps ([ADR-0068](../../adr/0068-a-target-per-frame-a-checked-format-and-passes-placed-by-what-they-read.md)).
+The acceptance test below is retcon's to run when it adopts, and the plan's last step is the
+handoff it reads. A shadow fit that follows the camera, and cascades, are in
+[TODO.md](../../TODO.md#lit-scenes). What follows is the reasoning the plan was drafted from, as it
+stood then.
+
+What a 3D game needs from the renderer
 above the plumbing: images, samplers and textures as classes, a model onto the device, a lit
 mesh pass, a shadow map and a chain of passes after the scene. **None of it would be new code.**
 retcon has written all of it against this tree's device tier, in `engine/renderer/`, and its own
 architecture document lists what it has as "what vertical3d has no class for". This milestone
 moves that tier here and has retcon delete its copy.
 
-It waits on [milestone 3](m3-RenderableComponent.md), because the pass walks entities and what it
-walks for is that record's answer, and on [milestone 2](completed/m2-LargeWorlds.md)'s resource lifetime,
-which is now decided ([ADR-0061](../adr/0061-a-resource-is-released-explicitly.md)): the image,
+What the pass walks for is [milestone 3](m3-RenderableComponent.md)'s answer, which
+[ADR-0063](../../adr/0063-an-entity-is-drawn-from-a-transform-and-a-component-per-kind.md) records. It
+also depends on [milestone 2](m2-LargeWorlds.md)'s resource lifetime,
+which is now decided ([ADR-0061](../../adr/0061-a-resource-is-released-explicitly.md)): the image,
 sampler and texture classes moved here retire what they own through `frame::Ring::retire`, which
 takes a callback and needs no change for them.
 
@@ -17,27 +34,27 @@ takes a callback and needs no change for them.
 
 Here:
 
-* **The device tier.** Device, allocator ([ADR-0053](../adr/0053-a-consumer-chooses-how-memory-is-found.md)),
+* **The device tier.** Device, allocator ([ADR-0053](../../adr/0053-a-consumer-chooses-how-memory-is-found.md)),
   swapchain and presenter, the in-flight ring, `memory::Mesh`, `DeviceBuffer`, `Buffer`, the
   uploader, `pipeline::Builder` and the pipeline cache. retcon uses all of it.
-* **Set 0 is the camera** ([ADR-0008](../adr/0008-binding-by-update-frequency.md)), held per pass
+* **Set 0 is the camera** ([ADR-0008](../../adr/0008-binding-by-update-frequency.md)), held per pass
   by `vulkan::FrameUniforms`. Set 1 is the material, and a material is one texture.
 * **Targets and depth.** A pass draws into a target it names
-  ([ADR-0031](../adr/0031-a-pass-draws-into-a-target-it-names.md)); a target's depth can be
-  sampled ([ADR-0044](../adr/0044-a-sampled-depth-target-is-read-only.md)); a pipeline can be
+  ([ADR-0031](../../adr/0031-a-pass-draws-into-a-target-it-names.md)); a target's depth can be
+  sampled ([ADR-0044](../../adr/0044-a-sampled-depth-target-is-read-only.md)); a pipeline can be
   depth-only and carry a depth bias. That is a shadow map's plumbing, and nothing here draws
   one.
 * **No image or sampler class.** The image, its allocation and its view are open-coded in
   `frame::DepthBuffer`, `frame::RenderTarget` and the `pipeline::Texture` POD, and
   `vkCreateSampler` is called in three places, each holding a bare `VkSampler`.
 * **A model stops at the cpu.** `asset::loader::Gltf` reads glTF into a `type::Model`
-  ([ADR-0030](../adr/0030-a-model-is-an-interleaved-array-that-names-its-texture.md)), and
+  ([ADR-0030](../../adr/0030-a-model-is-an-interleaved-array-that-names-its-texture.md)), and
   nothing takes one onto the device. `memory::Mesh` takes bytes and indices, so the step is an
   app's four lines, and a helper here would need a vertex layout the api does not own. retcon's
   `GltfLoader` already parses through it and converts to its own vertex layout.
 * **Two consumers write raw Vulkan for want of this.** retcon's `gpu/` tier, and voxel, which
   creates its own descriptor set layout, pool and uniform buffer for an untextured material
-  ([`Renderer.cxx:145-243`](../../voxel/src/Renderer.cxx)).
+  ([`Renderer.cxx:145-243`](../../../voxel/src/Renderer.cxx)).
 * **Three gaps in targets**, none met yet because nothing in this tree draws into one: a target is
   single-buffered, nothing catches a pipeline built for one format drawing into a target of
   another, and `Frame::passBefore` exists because `Engine3D` creates its colour pass in its
@@ -75,8 +92,12 @@ hand-built pool is the same thing written once more.
 A helper that takes a `type::Model` to a `memory::Mesh`, and a registry that de-duplicates by
 path the way retcon's does. The vertex layout the api does not own is what has kept this an
 app's job; moving retcon's gives it one, and it is the same position, normal and uv that
-`type::Model` already holds. The registry's handles are what
-[milestone 3](m3-RenderableComponent.md)'s component names.
+`type::Model` already holds. The registry's handles are what an entity names to be drawn
+([ADR-0063](../../adr/0063-an-entity-is-drawn-from-a-transform-and-a-component-per-kind.md)): a
+`realtime::component::Mesh` holding a `MeshHandle` and `castsShadow`, built with the registry
+and beside `component::Sprite`, with the material on the registry entry rather than on the
+entity. The lit pass walks `view<const ecs::component::Transform, const component::Mesh>()`,
+reading `interpolated<Transform>` as `realtime::sprites()` does.
 
 ### 3. A lit mesh pass, with the look as data
 
@@ -112,8 +133,8 @@ reads its own last frame, a format check, and a frame that lets a pass say where
   relink. A lit tier needs one rule for the shaders it ships and has to let a consumer bring its
   own, which is what a game's look is.
 * **Colour space.** This tree authors colour in display space
-  ([ADR-0009](../adr/0009-colour-authored-in-display-space.md)) and presents through a `UNORM`
-  chain unless a consumer names another ([ADR-0049](../adr/0049-a-consumer-chooses-the-swapchain-format.md)).
+  ([ADR-0009](../../adr/0009-colour-authored-in-display-space.md)) and presents through a `UNORM`
+  chain unless a consumer names another ([ADR-0049](../../adr/0049-a-consumer-chooses-the-swapchain-format.md)).
   retcon asks for `B8G8R8A8_SRGB` and lights in linear. Lighting is only correct in linear, so
   the lit tier assumes a consumer that chose sRGB, and that assumption should be written into
   the record that accepts the tier rather than discovered by the next one to use it.
@@ -126,13 +147,13 @@ own qa policy calls the renderer's only net. The move is done when retcon builds
 this tree's tier with its copy deleted and that capture does not change. Each step above is a
 separate change to retcon's pointer, so a capture that moves says which step moved it.
 
-Here, by [ADR-0054](../adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md), a lit
+Here, by [ADR-0054](../../adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md), a lit
 picture cannot be pinned — lighting is arithmetic the specification leaves to the
 implementation, and so is filtered sampling. What the device suite can pin is what the
 specification determines: a depth-only pass's depth at known vertices, a post pass that is the
 identity, and a LUT that is the identity. Those catch a pass that reads the wrong target or
 writes the wrong format, which is most of what goes wrong in a chain. Everything else is
-validation silence and a screenshot, per [Testing.md](../Testing.md).
+validation silence and a screenshot, per [Testing.md](../../Testing.md).
 
 ## Not in this milestone
 
@@ -140,7 +161,7 @@ validation silence and a screenshot, per [Testing.md](../Testing.md).
   [milestone 5](m5-SkeletalAnimation.md#4-instancing)'s, because a horde of skinned characters is
   what needs it.
 * **Merging draws, a second depth buffer, and the 2D pass reading set 0** — the rest of
-  [RenderingPipeline.md](../RenderingPipeline.md#what-is-not-built-yet)'s list. None is needed
+  [RenderingPipeline.md](../../RenderingPipeline.md#what-is-not-built-yet)'s list. None is needed
   by a lit scene, and each is its own change.
 * **Ambient occlusion, fog, night and weather passes.** retcon lists them as polish, and they
   are passes a chain allows rather than pieces of it.

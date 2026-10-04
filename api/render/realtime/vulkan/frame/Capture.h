@@ -12,6 +12,7 @@
 #include <vulkan/vulkan.h>
 
 #include <string_view>
+#include <vector>
 
 #include <boost/shared_ptr.hpp>
 
@@ -48,6 +49,12 @@ class Capture final {
         VkExtent2D extent;     /**< its size **/
         VkFormat format;       /**< its colour format, which decides the channel order **/
         VkImageLayout layout;  /**< what it is in when record() is called, and what it is left in **/
+        /**
+         * Whether to copy the depth aspect rather than colour. Only a D32_SFLOAT image can be
+         * read this way, because it is the one depth format whose copy is the float a test
+         * asserts, and it is the one this tree prefers.
+         **/
+        bool depth;
     };
 
     /**
@@ -68,7 +75,8 @@ class Capture final {
      * used afterwards exactly as one that is not.
      *
      * @param commands a command buffer that is still recording
-     * @pre the image is in source.layout, and what wrote it is a colour attachment write
+     * @pre the image is in source.layout, and what wrote it is an attachment write
+     * @throw std::runtime_error for a depth source in a format other than D32_SFLOAT
      **/
     void record(VkCommandBuffer commands, const Source& source);
 
@@ -91,6 +99,16 @@ class Capture final {
     bool write(std::string_view filename);
 
     /**
+     * What the last record() of a depth source copied, one float per pixel in row order.
+     * Compared in a test rather than written as a png, because a picture of depth would round
+     * it to the eight bits a png channel holds.
+     *
+     * @pre the submit carrying that record() has completed
+     * @return the depths, or nothing when the last record() was not of a depth source
+     **/
+    std::vector<float> depth() const;
+
+    /**
      * Turn a copied image into one the writers understand.
      *
      * A chain is commonly BGRA and a png is RGBA, and the alpha a chain presents is not
@@ -110,6 +128,7 @@ class Capture final {
     uint32_t width_;
     uint32_t height_;
     VkFormat format_;
+    bool depth_;
 };
 
 };  // namespace v3d::render::realtime::vulkan::frame

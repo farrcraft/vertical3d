@@ -130,6 +130,13 @@ SPIR-V as a C initialiser list into `<binary dir>/shaders/<name>.inc`. The sourc
 that into a `uint32_t` array. The engine's shaders are in
 [api/render/shaders/](../api/render/shaders/).
 
+A shader may `#include` another file, beside it or by a relative path, with
+`#extension GL_GOOGLE_include_directive : require`. glslc writes a depfile of what was included,
+and the build reads it, so an edit to a shared include rebuilds every shader that uses it. The
+lit shaders share `shaders/lit/lit.glsl` this way
+([ADR-0067](adr/0067-lit-shaders-are-embedded-and-replaceable.md)), and the skinned ones
+`shaders/lit/skin.glsl` as well.
+
 `VULKAN_SDK` must point at an SDK install, or the first call to that function fails with
 "glslc was not found". The tool is looked for at that first call rather than at configure
 time, so a build that compiles no shader is not stopped by its absence.

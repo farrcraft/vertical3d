@@ -1,5 +1,9 @@
 v3d_add_api_library(type
 "Model.h" "Model.cxx"
+"Skeleton.h" "Skeleton.cxx"
+"animation/Clip.h" "animation/Clip.cxx"
+"animation/Clock.h" "animation/Clock.cxx"
+"animation/Pose.h" "animation/Pose.cxx"
 "camera/ArcBall.h" "camera/ArcBall.cxx"
 "camera/Camera.h" "camera/Camera.cxx"
 "camera/Isometric.h" "camera/Isometric.cxx"

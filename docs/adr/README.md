@@ -71,3 +71,12 @@ old record's status and leave the file in place.
 | [0060](0060-a-moving-thing-keeps-its-previous-step.md) | Interpolation — A Moving Thing's Previous Step Is A Component, Snapshotted Before Each Step | accepted | 2026-10-03 |
 | [0061](0061-a-resource-is-released-explicitly.md) | Resource Lifetime — A Resource Is Released Explicitly, A Stale Handle Resolves To Nothing, And The Ring Defers Destruction | accepted | 2026-10-03 |
 | [0062](0062-a-map-picture-and-legend-are-the-grids.md) | Map Formats — The Grid Owns A Picture And A Terrain Legend, And The Container Is The Game's | accepted | 2026-10-03 |
+| [0063](0063-an-entity-is-drawn-from-a-transform-and-a-component-per-kind.md) | Renderable Components — An Entity Is Drawn From A Transform And A Component Per Kind Of Drawing, Walked By The api | accepted | 2026-10-03 |
+| [0064](0064-a-pass-carries-a-scene-set-and-a-depth-bias.md) | Lit Drawing — A Pass Carries A Scene Set At Set 2 And A Depth Bias, And A Lit Scene Is Drawn Through The Recorder | accepted | 2026-10-03 |
+| [0065](0065-a-mesh-is-registered-by-path-and-released.md) | Mesh Registry — A Model Is Registered Once By Path, Named By Handle, And Released Explicitly | accepted | 2026-10-03 |
+| [0066](0066-the-lit-tier-lights-in-linear.md) | Lit Colour — The Lit Tier Lights In Linear, Draws Into An sRGB Target, And Decodes Its Albedo | accepted | 2026-10-03 |
+| [0067](0067-lit-shaders-are-embedded-and-replaceable.md) | Lit Shaders — The api's Are Embedded, A Consumer May Hand In Its Own, And The Shared Blocks Are One Include | accepted | 2026-10-03 |
+| [0068](0068-a-target-per-frame-a-checked-format-and-passes-placed-by-what-they-read.md) | Render Targets For A Chain — A Target May Hold An Image Per Frame, A Pipeline Is Checked Against Its Target, And A Pass Is Placed By What It Reads | accepted | 2026-10-03 |
+| [0069](0069-a-model-is-parts-over-one-array-and-may-carry-a-skin.md) | Loaded Geometry In Parts — A Model Is Parts Over One Vertex Array, Read Through Its Nodes, And May Carry A Skin | accepted | 2026-10-03 |
+| [0070](0070-animation-is-sampled-from-playback-on-the-step.md) | Animation — Clips And Sampling Are api/type's, Playback Is A Component On The Step, And Which Clip Plays Is The Game's | accepted | 2026-10-03 |
+| [0071](0071-joint-palettes-are-a-storage-buffer-in-the-scene-set.md) | Skinning — A Frame's Joint Palettes Are One Storage Buffer In The Scene Set, And An Item Names Its First Joint | accepted | 2026-10-03 |

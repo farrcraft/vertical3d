@@ -1,23 +1,32 @@
 # Skeletal Animation
 
-Milestone 5 of [the game engine roadmap](GameEngine.md). Characters that move by bending rather
+Milestone 5 of [the game engine roadmap](../GameEngine.md). Characters that move by bending rather
 than by sliding: skins and clips read from glTF, a skinned vertex in the lit pass, a pose sampled
 and blended on the cpu, and enough instancing that a crowd of them is affordable. **This exists
 in neither tree.** It is the largest gap either game has, and it is retcon's.
 
+**Done by [SkeletalAnimation](../../plans/completed/SkeletalAnimation.md)**, closed 2026-10-03,
+instancing aside. Three records settle what this document left open: a model in parts that may
+carry a skin ([ADR-0069](../../adr/0069-a-model-is-parts-over-one-array-and-may-carry-a-skin.md)),
+where animation lives and that choosing a clip is the game's
+([ADR-0070](../../adr/0070-animation-is-sampled-from-playback-on-the-step.md)), and where the
+palette binds ([ADR-0071](../../adr/0071-joint-palettes-are-a-storage-buffer-in-the-scene-set.md)).
+Instancing waits in [TODO.md](../../TODO.md#lit-scenes) for a count that needs it. retcon has no
+rigged art yet, so the acceptance test below is retcon's to run when it has; a Blender export
+stands in for it here.
+
 It waits on [milestone 4](m4-LitScene.md), because a skinned vertex is a vertex layout, a pipeline
 and a variant of the lit pass, and those have to exist somewhere before skinning can be written
-against them. It shares its time-keeping with [milestone 1](completed/m1-MotionAndQueries.md#a-sprite-clip)'s
+against them. It shares its time-keeping with [milestone 1](m1-MotionAndQueries.md#a-sprite-clip)'s
 sprite clip.
 
 ## What exists
 
 * **glTF is read here, and stops at a static mesh.** `asset::loader::Gltf` reads a file into a
   `type::Model` whose vertex is a position, a normal and a uv
-  ([Model.h](../../api/type/Model.h)). Joints, weights, skins, nodes and animations are not
-  read. Only the first material in a file is kept, because a
-  merge is one draw, so a file whose parts need different surfaces has to become several models
-  and nothing splits one.
+  ([Model.h](../../../api/type/Model.h)). Joints, weights, skins and animations are not read. A
+  file is one model in parts, a part per material, placed by its nodes
+  ([ADR-0069](../../adr/0069-a-model-is-parts-over-one-array-and-may-carry-a-skin.md)).
 * **retcon parses through it.** Its `GltfLoader` is a conversion from the api's model into its
   own vertex layout (its ADR-0020, amended), so a loader that reads skins here is one retcon
   already calls.
@@ -44,7 +53,7 @@ character is rarely one surface and the split is the same walk over the file.
 
 Whether a skinned vertex is a second `type::Model` layout or the same layout with joint
 attributes that a static mesh leaves empty is
-[ADR-0030](../adr/0030-a-model-is-an-interleaved-array-that-names-its-texture.md)'s to amend,
+[ADR-0030](../../adr/0030-a-model-is-an-interleaved-array-that-names-its-texture.md)'s to amend,
 and the cost of the second is four bytes of joints and sixteen of weights on every static
 vertex in both games.
 
@@ -58,14 +67,14 @@ time.
 **The time-keeping is milestone 1's.** Advancing a clip on the fixed step, looping, clamping and
 reporting an event at a named time are what the sprite clip already does; a skeletal clip is
 the same clock over continuous tracks rather than a list of regions. Interpolating a pose by
-`alpha()` between two steps is [milestone 1's interpolation](completed/m1-MotionAndQueries.md#interpolation)
+`alpha()` between two steps is [milestone 1's interpolation](m1-MotionAndQueries.md#interpolation)
 applied to joints instead of a transform.
 
 ### 3. Skinning in the lit pass
 
 A variant of milestone 4's mesh pipeline that reads joints and weights and a palette of joint
 matrices per draw. The palette is per instance and per frame, which by
-[ADR-0008](../adr/0008-binding-by-update-frequency.md)'s rule makes it neither the camera nor
+[ADR-0008](../../adr/0008-binding-by-update-frequency.md)'s rule makes it neither the camera nor
 the material, so where it binds is the step's to settle — and the shadow pass needs the same
 variant, or a skinned character casts the shadow of its bind pose.
 
@@ -93,7 +102,7 @@ at known times, sampled and compared against matrices computed by hand, the way 
 Blending and crossfading are the same at the pose level.
 
 Skinning on the device cannot be pinned to a picture
-([ADR-0054](../adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md)) except for
+([ADR-0054](../../adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md)) except for
 the case that is the identity — a skin at its bind pose must draw the picture the unskinned mesh
 draws, which is a strong check that the palette and the weights are wired correctly. Beyond
 that, retcon's reference capture with a character posed at a fixed time is the acceptance test,

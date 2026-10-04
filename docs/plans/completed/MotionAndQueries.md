@@ -247,7 +247,7 @@ after a point would be drawn for one frame streaking across the court. `settle<T
 entity)` sets the previous to the current, and is what a reset calls.
 
 **What the ADR does not decide** is what an entity's transform is, which is
-[milestone 3](../../roadmap/m3-RenderableComponent.md)'s. This works over whatever `T` that turns
+[milestone 3](../../roadmap/completed/m3-RenderableComponent.md)'s. This works over whatever `T` that turns
 out to be, and is meant to.
 
 **pong adopts it.** The ball and both paddles are `Position2D`/`Position1D` components already.
@@ -266,7 +266,7 @@ and gone after.
 
 **Held, and here is why.** The roadmap puts a sprite clip in this milestone because its
 time-keeping — advancing on the fixed step, looping, clamping, an event at a named point — is the
-same as a skeletal clip's ([milestone 5](../../roadmap/m5-SkeletalAnimation.md)) and a particle's
+same as a skeletal clip's ([milestone 5](../../roadmap/completed/m5-SkeletalAnimation.md)) and a particle's
 lifetime ([milestone 6](../../roadmap/m6-Effects.md)), and is worth writing once. But there is one
 consumer, and that consumer has said in its own M5 plan that a walk cycle is "perhaps thirty
 lines, entirely this game's", and that nothing in the engine should have to do it for one game.

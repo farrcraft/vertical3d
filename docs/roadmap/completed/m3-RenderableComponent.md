@@ -1,20 +1,26 @@
 # The Renderable Component
 
-Milestone 3 of [the game engine roadmap](GameEngine.md). **This milestone is a decision rather
+Milestone 3 of [the game engine roadmap](../GameEngine.md). **This milestone is a decision rather
 than a body of code**: what an entity carries so that something can draw it, and where it
 stands in the world. It is in the roadmap because [milestone 4](m4-LitScene.md) cannot be shaped
 until it is answered, and because the question has been open since before either game existed.
 
+**Done by [RenderableComponent](../../plans/completed/RenderableComponent.md)**, closed 2026-10-03. The
+decision has a record of its own in
+[ADR-0063](../../adr/0063-an-entity-is-drawn-from-a-transform-and-a-component-per-kind.md), and the
+mesh component it shapes is built by [milestone 4](m4-LitScene.md). What follows is the
+reasoning the plan was drafted from, as it stood then.
+
 ## What exists
 
-* **The question is written down in two places.** [ECSDesign.md](../ECSDesign.md) was written
-  around it, and [RenderingPipeline.md](../RenderingPipeline.md#still-open-how-this-meets-the-ecs)
+* **The question is written down in two places.** [ECSDesign.md](../../ECSDesign.md) was written
+  around it, and [RenderingPipeline.md](../../RenderingPipeline.md#how-this-meets-the-ecs)
   states it: `Scene::collect()` returning a frame fits the pass model, a `Renderable` marker says
   nothing about how to draw, and components named after the old operation classes are the
-  design [ADR-0004](../adr/0004-operations-as-draw-data.md) moved away from. The likely answer it
+  design [ADR-0004](../../adr/0004-operations-as-draw-data.md) moved away from. The likely answer it
   names is a component naming a material and a mesh or quad, with a system turning those into
   draw items — and nothing has been built to prove it.
-* **[`api/ecs`](../../api/ecs/)** is a `System` with `simulate(float)` and four components:
+* **[`api/ecs`](../../../api/ecs/)** is a `System` with `simulate(float)` and four components:
   `Color3`, `Position1D`, `Position2D` and `PositionFixed2D`. Nothing in it is 3D.
 * **Neither game uses the api's positions, and both say why.** cozy's
   `src/Components.h` defines `Position` as the feet of a thing on the XZ ground plane, and its
@@ -24,12 +30,12 @@ until it is answered, and because the question has been open since before either
 * **retcon has answered the question for itself.** Its `MeshRenderer` is a handle into its mesh
   registry plus whether the entity casts a shadow; its scene renderer walks the registry and
   draws every entity carrying both. Nothing in that component owns GPU memory, which is the
-  same rule as [ADR-0010](../adr/0010-meshes-are-owned-by-the-app.md).
+  same rule as [ADR-0010](../../adr/0010-meshes-are-owned-by-the-app.md).
 * **cozy draws without one.** Its world sprites are emitted into a `WorldCanvas` by the code
   that owns them, read from its own components, so what an entity looks like is a function in
   the game rather than data on the entity.
 * **The editor is a scene graph.** A mesh is a dag node
-  ([ADR-0013](../adr/0013-mesh-is-a-dag-node.md)) and nothing in it is an entity.
+  ([ADR-0013](../../adr/0013-mesh-is-a-dag-node.md)) and nothing in it is an entity.
 
 ## What it needs decided
 
@@ -52,7 +58,7 @@ batching, which argues for a component of its own whose system writes into one c
 the api provides the component and each game writes the walk. The first is what makes the
 component worth having in the api at all; the second is where both games are today.
 
-**What it means for [interpolation](completed/m1-MotionAndQueries.md#interpolation).** If the api owns the
+**What it means for [interpolation](m1-MotionAndQueries.md#interpolation).** If the api owns the
 transform, the previous and current pair that milestone 1 blends is a second transform
 component, copied by the api before each step, and the drawing system reads `alpha()`.
 
@@ -67,7 +73,8 @@ component, copied by the api before each step, and the drawing system reads `alp
 ## Verification
 
 A record is verified by being used. The test of this one is that retcon's `MeshRenderer` and
-`Transform` can be deleted in favour of the api's without its scene renderer changing shape,
-and that cozy's sprite emission can be written against it without an item per sprite. The plan
-that takes this up should prototype the second before the record is accepted, because it is the
-one the likely answer does not obviously fit.
+`Transform` could be replaced by the api's without its scene renderer changing shape, and that
+cozy's sprite emission could be written against it without an item per sprite. Both are checked
+in this tree, against what the games do: the second as a test that reproduces cozy's scene
+before the record is accepted, because it is the one the likely answer does not obviously fit.
+The games adopt the result after it ships.

@@ -8,18 +8,28 @@
 #include <api/asset/Type.h>
 #include <api/asset/kind/Model.h>
 #include <api/image/Factory.h>
+#include <api/type/animation/Clip.h>
 
+#include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <map>
 #include <numeric>
 #include <string>
+#include <vector>
 
 // cgltf.h is a C header, and cpplint sorts it with the C system headers rather than with
 // the third party ones. Its implementation half is compiled once, in CgltfImpl.cpp.
 #include <cgltf.h>  // NOLINT(build/include_order)
 
 #include <boost/make_shared.hpp>
+#include <glm/geometric.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/mat3x3.hpp>
+#include <glm/mat4x4.hpp>
 
 namespace v3d::asset::loader {
 
@@ -27,12 +37,15 @@ namespace {
 
 /**
  * The accessors one primitive draws from. Position is the only one a primitive has to have:
- * without it there is no geometry, and the other two default to zero.
+ * without it there is no geometry, and the rest default to zero.
  **/
 struct Attributes final {
     const cgltf_accessor* position{ nullptr };
     const cgltf_accessor* normal{ nullptr };
     const cgltf_accessor* uv{ nullptr };
+    const cgltf_accessor* joints{ nullptr };
+    const cgltf_accessor* weights{ nullptr };
+    bool moreInfluences{ false };  /**< a second set of joints, which four influences cannot hold **/
 };
 
 Attributes attributesOf(const cgltf_primitive& primitive) {
@@ -53,6 +66,18 @@ Attributes attributesOf(const cgltf_primitive& primitive) {
                     found.uv = attribute.data;
                 }
                 break;
+            case cgltf_attribute_type_joints:
+                if (attribute.index == 0) {
+                    found.joints = attribute.data;
+                } else {
+                    found.moreInfluences = true;
+                }
+                break;
+            case cgltf_attribute_type_weights:
+                if (attribute.index == 0) {
+                    found.weights = attribute.data;
+                }
+                break;
             default:
                 break;
         }
@@ -61,9 +86,299 @@ Attributes attributesOf(const cgltf_primitive& primitive) {
 }
 
 /**
- * Append one primitive's vertices to the merged array, rebasing its indices onto it.
+ * The skin a model keeps, and how to reach its joints in the skeleton's order.
  **/
-void appendPrimitive(const cgltf_primitive& primitive, const Attributes& attributes, v3d::type::Model* model) {
+struct Rig final {
+    const cgltf_skin* skin{ nullptr };
+    std::vector<std::uint16_t> order;                     /**< a skin joint's index to the skeleton's **/
+    std::map<const cgltf_node*, std::uint16_t> joints;    /**< a joint's node to the skeleton's index **/
+    std::vector<glm::mat4> bound;                         /**< by skeleton index: the joint at rest, times its inverse bind **/
+};
+
+/**
+ * What the walk found that a model cannot hold, for the loader to report.
+ **/
+struct Dropped final {
+    bool skins{ false };       /**< a mesh bound to a skin other than the one kept **/
+    bool influences{ false };  /**< a second set of joints and weights **/
+    bool unweighted{ false };  /**< a skinned primitive with no joints, or none that weigh anything **/
+    bool channels{ false };    /**< a channel animating a node that is not one of the skeleton's joints **/
+};
+
+/**
+ * A primitive the walk reached, and where its node puts it. In a model with a skeleton, a
+ * skinned primitive is placed by its joints and an unskinned one follows one joint rigidly.
+ **/
+struct Placed final {
+    const cgltf_primitive* primitive{ nullptr };
+    Attributes attributes;
+    glm::mat4 world{ 1.0f };
+    bool skinned{ false };
+    std::uint16_t joint{ 0 };  /**< the joint an unskinned primitive follows **/
+};
+
+/**
+ * The primitives drawn with one material, which become one part. The material is null for
+ * primitives that name none.
+ **/
+struct Bucket final {
+    const cgltf_material* material{ nullptr };
+    std::vector<Placed> primitives;
+};
+
+/**
+ * The nodes a walk starts from: the scene the file names, or its first, or every root when it
+ * has none.
+ **/
+std::vector<const cgltf_node*> roots(const cgltf_data& data) {
+    std::vector<const cgltf_node*> found;
+    const cgltf_scene* scene = data.scene;
+    if (scene == nullptr && data.scenes_count > 0) {
+        scene = &data.scenes[0];
+    }
+    if (scene != nullptr) {
+        for (cgltf_size index = 0; index < scene->nodes_count; ++index) {
+            found.push_back(scene->nodes[index]);
+        }
+        return found;
+    }
+    for (cgltf_size index = 0; index < data.nodes_count; ++index) {
+        if (data.nodes[index].parent == nullptr) {
+            found.push_back(&data.nodes[index]);
+        }
+    }
+    return found;
+}
+
+/**
+ * The skin of the first skinned mesh a walk from this node reaches, or null.
+ **/
+const cgltf_skin* firstSkin(const cgltf_node& node) {
+    if (node.mesh != nullptr && node.skin != nullptr) {
+        return node.skin;
+    }
+    for (cgltf_size index = 0; index < node.children_count; ++index) {
+        const cgltf_skin* skin = firstSkin(*node.children[index]);
+        if (skin != nullptr) {
+            return skin;
+        }
+    }
+    return nullptr;
+}
+
+glm::mat4 worldOf(const cgltf_node& node) {
+    glm::mat4 world(1.0f);
+    cgltf_node_transform_world(&node, glm::value_ptr(world));
+    return world;
+}
+
+/**
+ * A joint's rest pose, local to its parent. A node a clip animates carries its transform as a
+ * translation, a rotation and a scale, which the specification requires; one given as a matrix
+ * is taken apart, which holds for any matrix without shear.
+ **/
+void restOf(const cgltf_node& node, v3d::type::Skeleton::Joint* joint) {
+    if (node.has_matrix != 0) {
+        const glm::mat4 local = glm::make_mat4(node.matrix);
+        joint->translation = glm::vec3(local[3]);
+        joint->scale = glm::vec3(glm::length(glm::vec3(local[0])), glm::length(glm::vec3(local[1])), glm::length(glm::vec3(local[2])));
+        const glm::mat3 turn(glm::vec3(local[0]) / joint->scale.x, glm::vec3(local[1]) / joint->scale.y,
+            glm::vec3(local[2]) / joint->scale.z);
+        joint->rotation = glm::quat_cast(turn);
+        return;
+    }
+    if (node.has_translation != 0) {
+        joint->translation = glm::make_vec3(node.translation);
+    }
+    if (node.has_rotation != 0) {
+        // glTF stores x, y, z, w and glm's constructor takes w first
+        joint->rotation = glm::quat(node.rotation[3], node.rotation[0], node.rotation[1], node.rotation[2]);
+    }
+    if (node.has_scale != 0) {
+        joint->scale = glm::make_vec3(node.scale);
+    }
+}
+
+/**
+ * The skin's parent of each of its joints: the nearest ancestor that is also one of its
+ * joints, by its index in the skin, or -1.
+ **/
+std::vector<int32_t> skinParents(const cgltf_skin& skin) {
+    std::map<const cgltf_node*, int32_t> index;
+    for (cgltf_size joint = 0; joint < skin.joints_count; ++joint) {
+        index[skin.joints[joint]] = static_cast<int32_t>(joint);
+    }
+    std::vector<int32_t> parents(skin.joints_count, -1);
+    for (cgltf_size joint = 0; joint < skin.joints_count; ++joint) {
+        for (const cgltf_node* above = skin.joints[joint]->parent; above != nullptr; above = above->parent) {
+            const std::map<const cgltf_node*, int32_t>::const_iterator found = index.find(above);
+            if (found != index.end()) {
+                parents[joint] = found->second;
+                break;
+            }
+        }
+    }
+    return parents;
+}
+
+/**
+ * Read a skin into a skeleton whose parents precede their children, keeping the skin's own
+ * order wherever it already does, and fill in how the rest of the walk reaches its joints.
+ **/
+v3d::type::Skeleton readSkeleton(const cgltf_skin& skin, Rig* rig) {
+    const std::vector<int32_t> parents = skinParents(skin);
+    rig->skin = &skin;
+    rig->order.assign(skin.joints_count, 0);
+
+    // repeatedly take every joint whose parent is already placed; a tree places at least one
+    // joint a sweep, so this ends
+    std::vector<bool> placed(skin.joints_count, false);
+    std::vector<cgltf_size> sequence;
+    while (sequence.size() < skin.joints_count) {
+        for (cgltf_size joint = 0; joint < skin.joints_count; ++joint) {
+            if (!placed[joint] && (parents[joint] < 0 || placed[static_cast<std::size_t>(parents[joint])])) {
+                rig->order[joint] = static_cast<std::uint16_t>(sequence.size());
+                placed[joint] = true;
+                sequence.push_back(joint);
+            }
+        }
+    }
+
+    v3d::type::Skeleton skeleton;
+    for (const cgltf_size joint : sequence) {
+        const cgltf_node& node = *skin.joints[joint];
+        v3d::type::Skeleton::Joint read;
+        read.name = node.name != nullptr ? node.name : std::string();
+        read.parent = parents[joint] < 0 ? -1 : rig->order[static_cast<std::size_t>(parents[joint])];
+        restOf(node, &read);
+        if (skin.inverse_bind_matrices != nullptr) {
+            cgltf_accessor_read_float(skin.inverse_bind_matrices, joint, glm::value_ptr(read.inverseBind), 16);
+        }
+        rig->joints[&node] = static_cast<std::uint16_t>(skeleton.joints.size());
+        rig->bound.push_back(worldOf(node) * read.inverseBind);
+        skeleton.joints.push_back(read);
+    }
+
+    // whatever stands above the skeleton - an armature's scale, typically - is the root's
+    const cgltf_node* above = skin.joints[sequence.front()]->parent;
+    if (above != nullptr) {
+        skeleton.root = worldOf(*above);
+    }
+    return skeleton;
+}
+
+/**
+ * The joint an unskinned mesh in a skinned model follows: its own node or nearest ancestor that
+ * is a joint, or the first root when it is under none.
+ **/
+std::uint16_t followed(const cgltf_node& node, const Rig& rig) {
+    for (const cgltf_node* at = &node; at != nullptr; at = at->parent) {
+        const std::map<const cgltf_node*, std::uint16_t>::const_iterator found = rig.joints.find(at);
+        if (found != rig.joints.end()) {
+            return found->second;
+        }
+    }
+    return 0;
+}
+
+/**
+ * Where a node's primitives are placed. Without a skeleton that is the node's world matrix. A
+ * mesh bound to the kept skin is placed by its joints alone, which the specification requires,
+ * so its own node is ignored. Any other mesh follows a joint, and is taken into the space that
+ * joint's skinning matrix expects, so that it stands where the file put it while the joint is
+ * at rest.
+ **/
+Placed placement(const cgltf_node& node, const Rig& rig, Dropped* dropped) {
+    Placed placed;
+    if (rig.skin == nullptr) {
+        placed.world = worldOf(node);
+        return placed;
+    }
+    if (node.skin == rig.skin) {
+        placed.skinned = true;
+        return placed;
+    }
+    if (node.skin != nullptr) {
+        dropped->skins = true;
+    }
+    placed.joint = followed(node, rig);
+    placed.world = glm::inverse(rig.bound[placed.joint]) * worldOf(node);
+    return placed;
+}
+
+/**
+ * Put every primitive of a node's mesh, and of its children's, into the bucket of its
+ * material, opening a bucket the first time a material is reached.
+ **/
+void collect(const cgltf_node& node, const Rig& rig, std::vector<Bucket>* buckets, Dropped* dropped) {
+    if (node.mesh != nullptr) {
+        const Placed where = placement(node, rig, dropped);
+
+        for (cgltf_size index = 0; index < node.mesh->primitives_count; ++index) {
+            const cgltf_primitive& primitive = node.mesh->primitives[index];
+            const Attributes attributes = attributesOf(primitive);
+            if (attributes.position == nullptr) {
+                continue;
+            }
+            std::vector<Bucket>::iterator bucket = buckets->begin();
+            while (bucket != buckets->end() && bucket->material != primitive.material) {
+                ++bucket;
+            }
+            if (bucket == buckets->end()) {
+                buckets->push_back(Bucket{ primitive.material, {} });
+                bucket = buckets->end() - 1;
+            }
+            Placed placed = where;
+            placed.primitive = &primitive;
+            placed.attributes = attributes;
+            bucket->primitives.push_back(placed);
+        }
+    }
+    for (cgltf_size index = 0; index < node.children_count; ++index) {
+        collect(*node.children[index], rig, buckets, dropped);
+    }
+}
+
+/**
+ * A skinned vertex's influence, in the skeleton's joint order and with weights that sum to
+ * one. One whose weights sum to nothing follows the first root, as an unweighted vertex has
+ * nothing else to follow.
+ **/
+v3d::type::Model::Influence influenceOf(const Attributes& attributes, cgltf_size index, const Rig& rig, Dropped* dropped) {
+    v3d::type::Model::Influence influence;
+    influence.weights = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
+    if (attributes.joints == nullptr || attributes.weights == nullptr) {
+        dropped->unweighted = true;
+        return influence;
+    }
+    cgltf_uint joints[4] = {0, 0, 0, 0};
+    glm::vec4 weights(0.0f);
+    cgltf_accessor_read_uint(attributes.joints, index, joints, 4);
+    // an integer weight reads as its normalised value
+    cgltf_accessor_read_float(attributes.weights, index, glm::value_ptr(weights), 4);
+    const float sum = weights.x + weights.y + weights.z + weights.w;
+    if (sum <= 0.0f) {
+        dropped->unweighted = true;
+        return influence;
+    }
+    for (int slot = 0; slot < 4; ++slot) {
+        influence.joints[slot] = joints[slot] < rig.order.size() ? rig.order[joints[slot]] : 0;
+    }
+    influence.weights = weights / sum;
+    return influence;
+}
+
+/**
+ * Append one primitive's vertices to the merged array, placed by its node and with its
+ * indices rebased onto the array.
+ **/
+void appendPrimitive(const Placed& placed, const Rig& rig, v3d::type::Model* model, Dropped* dropped) {
+    const cgltf_primitive& primitive = *placed.primitive;
+    const Attributes& attributes = placed.attributes;
+    // a normal is carried by the inverse transpose, so a node scaled unevenly keeps it
+    // perpendicular to its surface, and renormalised because a scale changes its length
+    const glm::mat3 normals = glm::transpose(glm::inverse(glm::mat3(placed.world)));
+
     const std::size_t baseVertex = model->vertices().size();
     const cgltf_size count = attributes.position->count;
     model->vertices().resize(baseVertex + count);
@@ -71,11 +386,25 @@ void appendPrimitive(const cgltf_primitive& primitive, const Attributes& attribu
     for (cgltf_size index = 0; index < count; ++index) {
         v3d::type::Model::Vertex& vertex = model->vertices()[baseVertex + index];
         cgltf_accessor_read_float(attributes.position, index, &vertex.position.x, 3);
+        vertex.position = glm::vec3(placed.world * glm::vec4(vertex.position, 1.0f));
         if (attributes.normal != nullptr) {
             cgltf_accessor_read_float(attributes.normal, index, &vertex.normal.x, 3);
+            const glm::vec3 turned = normals * vertex.normal;
+            const float length = glm::length(turned);
+            vertex.normal = length > 0.0f ? turned / length : turned;
         }
         if (attributes.uv != nullptr) {
             cgltf_accessor_read_float(attributes.uv, index, &vertex.uv.x, 2);
+        }
+    }
+
+    if (rig.skin != nullptr) {
+        dropped->influences = dropped->influences || attributes.moreInfluences;
+        for (cgltf_size index = 0; index < count; ++index) {
+            v3d::type::Model::Influence influence;
+            influence.joints[0] = placed.joint;
+            influence.weights = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
+            model->influences().push_back(placed.skinned ? influenceOf(attributes, index, rig, dropped) : influence);
         }
     }
 
@@ -97,6 +426,88 @@ void appendPrimitive(const cgltf_primitive& primitive, const Attributes& attribu
     model->indices().resize(baseIndex + count);
     std::iota(model->indices().begin() + static_cast<std::ptrdiff_t>(baseIndex), model->indices().end(),
         static_cast<std::uint32_t>(baseVertex));
+}
+
+/**
+ * One channel of a clip, or nothing when the channel animates a node that is not a joint, or a
+ * path a pose has no room for. Morph target weights are dropped without a report, since a
+ * model has no morph targets to give them to.
+ **/
+bool readChannel(const cgltf_animation_channel& source, const Rig& rig, v3d::type::animation::Channel* channel,
+    Dropped* dropped) {
+    using v3d::type::animation::Channel;
+    if (source.sampler == nullptr || source.target_node == nullptr) {
+        return false;
+    }
+    switch (source.target_path) {
+        case cgltf_animation_path_type_translation:
+            channel->path = Channel::Path::Translation;
+            break;
+        case cgltf_animation_path_type_rotation:
+            channel->path = Channel::Path::Rotation;
+            break;
+        case cgltf_animation_path_type_scale:
+            channel->path = Channel::Path::Scale;
+            break;
+        default:
+            return false;
+    }
+    const std::map<const cgltf_node*, std::uint16_t>::const_iterator joint = rig.joints.find(source.target_node);
+    if (joint == rig.joints.end()) {
+        dropped->channels = true;
+        return false;
+    }
+    channel->joint = joint->second;
+
+    const cgltf_animation_sampler& sampler = *source.sampler;
+    switch (sampler.interpolation) {
+        case cgltf_interpolation_type_step:
+            channel->interpolation = Channel::Interpolation::Step;
+            break;
+        case cgltf_interpolation_type_cubic_spline:
+            channel->interpolation = Channel::Interpolation::CubicSpline;
+            break;
+        default:
+            channel->interpolation = Channel::Interpolation::Linear;
+            break;
+    }
+
+    channel->times.resize(sampler.input->count);
+    for (cgltf_size key = 0; key < sampler.input->count; ++key) {
+        cgltf_accessor_read_float(sampler.input, key, &channel->times[key], 1);
+    }
+    // a translation or a scale is three floats and a rotation four; an integer rotation reads
+    // as its normalised value
+    const cgltf_size width = channel->path == Channel::Path::Rotation ? 4 : 3;
+    channel->values.assign(sampler.output->count, glm::vec4(0.0f));
+    for (cgltf_size value = 0; value < sampler.output->count; ++value) {
+        cgltf_accessor_read_float(sampler.output, value, glm::value_ptr(channel->values[value]), width);
+    }
+    return true;
+}
+
+/**
+ * Every animation in the file as a clip of the skeleton's joints, named as the file named it.
+ **/
+std::vector<v3d::type::animation::Clip> readClips(const cgltf_data& data, const Rig& rig, Dropped* dropped) {
+    std::vector<v3d::type::animation::Clip> clips;
+    for (cgltf_size index = 0; index < data.animations_count; ++index) {
+        const cgltf_animation& animation = data.animations[index];
+        v3d::type::animation::Clip clip;
+        clip.name = animation.name != nullptr ? animation.name : std::string();
+        for (cgltf_size channel = 0; channel < animation.channels_count; ++channel) {
+            v3d::type::animation::Channel read;
+            if (!readChannel(animation.channels[channel], rig, &read, dropped)) {
+                continue;
+            }
+            if (!read.times.empty()) {
+                clip.duration = std::max(clip.duration, read.times.back());
+            }
+            clip.channels.push_back(read);
+        }
+        clips.push_back(clip);
+    }
+    return clips;
 }
 
 /**
@@ -179,42 +590,70 @@ boost::shared_ptr<Asset> Gltf::load(std::string_view name) {
         return boost::shared_ptr<Asset>();
     }
 
+    const std::vector<const cgltf_node*> starts = roots(*data);
     boost::shared_ptr<v3d::type::Model> model = boost::make_shared<v3d::type::Model>();
-    bool haveMaterial = false;
-    const cgltf_image* embedded = nullptr;
 
-    for (cgltf_size meshIndex = 0; meshIndex < data->meshes_count; ++meshIndex) {
-        const cgltf_mesh& mesh = data->meshes[meshIndex];
-        for (cgltf_size primitiveIndex = 0; primitiveIndex < mesh.primitives_count; ++primitiveIndex) {
-            const cgltf_primitive& primitive = mesh.primitives[primitiveIndex];
-            const Attributes attributes = attributesOf(primitive);
-            if (attributes.position == nullptr) {
-                continue;
-            }
-
-            appendPrimitive(primitive, attributes, model.get());
-
-            if (!haveMaterial && primitive.material != nullptr) {
-                model->material() = readMaterial(*primitive.material, &embedded);
-                haveMaterial = true;
-            }
+    // the first skin a mesh is bound to is the model's; a model has one skeleton
+    Rig rig;
+    for (const cgltf_node* start : starts) {
+        const cgltf_skin* skin = firstSkin(*start);
+        if (skin != nullptr && skin->joints_count > 0) {
+            model->skeleton() = readSkeleton(*skin, &rig);
+            break;
         }
     }
 
-    // decoded before the file is freed, because the bytes are the file's
-    boost::shared_ptr<v3d::image::Image> baseColour;
-    if (embedded != nullptr) {
-        baseColour = decodeEmbedded(*embedded, name);
+    Dropped dropped;
+    if (rig.skin != nullptr) {
+        model->clips() = readClips(*data, rig, &dropped);
+    }
+
+    std::vector<Bucket> buckets;
+    for (const cgltf_node* start : starts) {
+        collect(*start, rig, &buckets, &dropped);
+    }
+
+    std::vector<boost::shared_ptr<v3d::image::Image>> baseColours;
+
+    for (const Bucket& bucket : buckets) {
+        v3d::type::Model::Part part;
+        part.firstIndex = static_cast<std::uint32_t>(model->indices().size());
+        part.material = static_cast<std::uint32_t>(model->materials().size());
+        for (const Placed& placed : bucket.primitives) {
+            appendPrimitive(placed, rig, model.get(), &dropped);
+        }
+        part.indexCount = static_cast<std::uint32_t>(model->indices().size()) - part.firstIndex;
+        model->parts().push_back(part);
+
+        const cgltf_image* embedded = nullptr;
+        model->materials().push_back(bucket.material != nullptr ? readMaterial(*bucket.material, &embedded)
+                                                                : v3d::type::Model::Material());
+        // decoded before the file is freed, because the bytes are the file's
+        baseColours.push_back(embedded != nullptr ? decodeEmbedded(*embedded, name) : boost::shared_ptr<v3d::image::Image>());
     }
 
     cgltf_free(data);
+
+    if (dropped.skins) {
+        logger_->get()->warn("{} binds meshes to more than one skin. The first is kept, and a mesh bound to another "
+            "follows a joint of it rigidly", name);
+    }
+    if (dropped.influences) {
+        logger_->get()->warn("{} gives some vertices more than four influences, and only the first four are kept", name);
+    }
+    if (dropped.channels) {
+        logger_->get()->warn("{} animates nodes that are not joints of its skeleton, which no clip keeps", name);
+    }
+    if (dropped.unweighted) {
+        logger_->get()->warn("{} has skinned vertices with no weight, which follow the skeleton's first root", name);
+    }
 
     if (model->empty()) {
         logger_->get()->error("No geometry in gltf asset: {}", name);
         return boost::shared_ptr<Asset>();
     }
 
-    return boost::make_shared<kind::Model>(std::string(name), Type::ModelGltf, model, baseColour);
+    return boost::make_shared<kind::Model>(std::string(name), Type::ModelGltf, model, baseColours);
 }
 
 /**

@@ -10,6 +10,15 @@ v3d_add_api_library(render
 	"realtime/LineCanvas.h" "realtime/LineCanvas.cpp"
 	"realtime/WorldCanvas.h" "realtime/WorldCanvas.cpp"
 	"realtime/DepthOrder.h" "realtime/DepthOrder.cpp"
+	"realtime/Sprites.h" "realtime/Sprites.cpp"
+	"realtime/component/Sprite.h"
+	"realtime/component/Mesh.h"
+	"realtime/MeshRegistry.h" "realtime/MeshRegistry.cpp"
+	"realtime/Meshes.h" "realtime/Meshes.cpp"
+	"realtime/Poses.h" "realtime/Poses.cpp"
+	"realtime/LitSettings.h" "realtime/LitSettings.cpp"
+	"realtime/Shadow.h" "realtime/Shadow.cpp"
+	"realtime/Grade.h" "realtime/Grade.cpp"
 	"realtime/DrawItem.h" "realtime/DrawItem.cpp"
 	"realtime/Pass.h" "realtime/Pass.cpp"
 	"realtime/vulkan/device/Result.h" "realtime/vulkan/device/Result.cxx" 
@@ -31,6 +40,9 @@ v3d_add_api_library(render
 	"realtime/vulkan/memory/Uploader.h" "realtime/vulkan/memory/Uploader.cxx"
 	"realtime/vulkan/memory/DeviceBuffer.h" "realtime/vulkan/memory/DeviceBuffer.cxx"
 	"realtime/vulkan/memory/Mesh.h" "realtime/vulkan/memory/Mesh.cxx"
+	"realtime/vulkan/memory/Image.h" "realtime/vulkan/memory/Image.cxx"
+	"realtime/vulkan/pipeline/Sampler.h" "realtime/vulkan/pipeline/Sampler.cxx"
+	"realtime/vulkan/pipeline/DescriptorPool.h" "realtime/vulkan/pipeline/DescriptorPool.cxx"
 	"realtime/vulkan/frame/DepthBuffer.h" "realtime/vulkan/frame/DepthBuffer.cxx"
 	"realtime/vulkan/frame/RenderTarget.h" "realtime/vulkan/frame/RenderTarget.cxx"
 	"realtime/vulkan/frame/FrameUniforms.h" "realtime/vulkan/frame/FrameUniforms.cxx"
@@ -39,7 +51,9 @@ v3d_add_api_library(render
 	"realtime/vulkan/memory/TextureFactory.h" "realtime/vulkan/memory/TextureFactory.cxx"
 	"realtime/vulkan/renderer/Quad.h" "realtime/vulkan/renderer/Quad.cxx"
 	"realtime/vulkan/renderer/Line.h" "realtime/vulkan/renderer/Line.cxx"
-	"realtime/vulkan/renderer/World.h" "realtime/vulkan/renderer/World.cxx")
+	"realtime/vulkan/renderer/World.h" "realtime/vulkan/renderer/World.cxx"
+	"realtime/vulkan/renderer/Lit.h" "realtime/vulkan/renderer/Lit.cxx"
+	"realtime/vulkan/renderer/FullScreen.h" "realtime/vulkan/renderer/FullScreen.cxx")
 
 # The one batched quad primitive of ADR-0005. Compiled to SPIR-V and embedded rather than
 # loaded from disk - see v3d_add_shader in the root CMakeLists.
@@ -54,11 +68,25 @@ v3d_add_shader(v3dlib_render "shaders/line.frag")
 v3d_add_shader(v3dlib_render "shaders/world.vert")
 v3d_add_shader(v3dlib_render "shaders/world.frag")
 
+# The lit tier of ADR-0064, whose shared blocks are shaders/lit/lit.glsl - ADR-0067.
+v3d_add_shader(v3dlib_render "shaders/lit/mesh.vert")
+v3d_add_shader(v3dlib_render "shaders/lit/cel.frag")
+v3d_add_shader(v3dlib_render "shaders/lit/outline.vert")
+v3d_add_shader(v3dlib_render "shaders/lit/outline.frag")
+v3d_add_shader(v3dlib_render "shaders/lit/shadow.vert")
+v3d_add_shader(v3dlib_render "shaders/lit/skinned_mesh.vert")
+v3d_add_shader(v3dlib_render "shaders/lit/skinned_outline.vert")
+v3d_add_shader(v3dlib_render "shaders/lit/skinned_shadow.vert")
+
+# The pass over a whole target, and the colour grade drawn with it.
+v3d_add_shader(v3dlib_render "shaders/fullscreen.vert")
+v3d_add_shader(v3dlib_render "shaders/grade.frag")
+
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
 # Vulkan and SDL3 are PUBLIC because the realtime headers name their types outright -
 # Context3D.h and every vulkan/ header carry VkDevice and its neighbours, and Window.h
 # carries SDL_Window.
-target_link_libraries(v3dlib_render PUBLIC v3dlib_log v3dlib_asset Vulkan::Vulkan SDL3::SDL3 glm::glm EnTT::EnTT)
+target_link_libraries(v3dlib_render PUBLIC v3dlib_log v3dlib_asset v3dlib_ecs v3dlib_type Vulkan::Vulkan SDL3::SDL3 glm::glm EnTT::EnTT)
 # PRIVATE: the allocator is an implementation detail of memory::Allocator, and Allocator.h
 # declares the two handles it names rather than including the header that defines them
 target_link_libraries(v3dlib_render PRIVATE GPUOpen::VulkanMemoryAllocator)

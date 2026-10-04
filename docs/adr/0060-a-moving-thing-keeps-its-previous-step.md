@@ -54,7 +54,7 @@ that function for `Position1D` and `Position2D`; a game writes it beside its own
 ### Positive
 - `alpha()` gets a reader, and a game that interpolates is visibly smoother above 60 Hz.
 - The mechanism is generic over `T`, so it does not wait on what an entity's transform is,
-  which is [milestone 3](../roadmap/m3-RenderableComponent.md)'s decision.
+  which is [milestone 3](../roadmap/completed/m3-RenderableComponent.md)'s decision.
 
 ### Negative
 - **`T` has to be copyable.** `Position1D` and `Position2D` declare a move constructor and no

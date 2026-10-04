@@ -180,7 +180,8 @@ class Builder final {
      * layout its draws bind through. It must outlive them, which is the caller's half of
      * the arrangement.
      *
-     * set() then has nothing to describe and is ignored. push() is still read, but only
+     * set() then has nothing to describe, and is read only to say whether the layout
+     * declares a set 2 that a pass binds its scene at - ADR-0064. push() is still read, but only
      * for the stage flags the returned Pipeline carries so that a draw can push through
      * the layout given here - the range itself is the caller's, declared when they created
      * it, and a push() that disagrees with it is a difference Vulkan cannot see and

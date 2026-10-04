@@ -18,7 +18,7 @@ two map formats that exist, odyssey's JSON rows and retcon's text `.map`, agree 
 and a terrain legend and on nothing else.
 
 **What is due first is release.** cozy's M6 roadmap names this tree's add-only resources as
-that milestone's trigger, and [milestone 4](../../roadmap/m4-LitScene.md) waits on how a texture
+that milestone's trigger, and [milestone 4](../../roadmap/completed/m4-LitScene.md) waits on how a texture
 is released. Both games are pinned at `13a9557`, and neither has drafted the plan (cozy M6,
 retcon phase 6) that would consume the rest. So the order here is what blocks something, not
 what a consumer is waiting on this week.
@@ -115,7 +115,7 @@ is already where the ring learns that a frame has finished.
 
 **The queue holds destruction, not resource types.** Each entry is a callback. The queue does
 not know what a `pipeline::Texture` is, so
-[milestone 4](../../roadmap/m4-LitScene.md)'s image, sampler and texture classes retire into it
+[milestone 4](../../roadmap/completed/m4-LitScene.md)'s image, sampler and texture classes retire into it
 without a change here. That is what the roadmap means by "give them a registry that release
 works in". A mesh can be retired the same way. voxel has no reason to yet: its remesh is safe
 only because [`Uploader`](../../../api/render/realtime/vulkan/memory/Uploader.cxx) idles the
@@ -452,7 +452,7 @@ when step 6 does.
   "a handle registered before a resize is stale" to the release-then-register rule.
   [Architecture.md](../../Architecture.md#invariants-that-bite) gains the invariant that a released
   handle resolves to nothing at once and its objects outlive it by the frames in flight.
-  [m4-LitScene.md](../../roadmap/m4-LitScene.md) is told its texture class retires into step 2's queue.
+  [m4-LitScene.md](../../roadmap/completed/m4-LitScene.md) is told its texture class retires into step 2's queue.
 - **Step 3** writes cozy's handoff note for hot reload and region sheets.
 - **Step 4** writes cozy's handoff note for depth order.
 - **Step 5** deletes RenderingPipeline.md's culling bullet.

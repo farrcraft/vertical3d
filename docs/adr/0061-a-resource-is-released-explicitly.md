@@ -10,7 +10,7 @@
 reused. That held while every consumer drew one board loaded at startup. It stops holding as
 soon as anything replaces a texture: cozy's debug hot reload leaks the texture it replaces,
 cozy's M6 regions load and unload sheets during play, and
-[milestone 4](../roadmap/m4-LitScene.md)'s texture classes need a registry that release works
+[milestone 4](../roadmap/completed/m4-LitScene.md)'s texture classes need a registry that release works
 in. Two questions have to be settled together: who decides that a resource is dead, and when its
 Vulkan objects may be destroyed, given that a frame recorded before the release may still be
 reading them. [Large worlds](../plans/completed/LargeWorlds.md#step-1--a-registry-slot-is-reused-and-a-stale-handle-is-refused)

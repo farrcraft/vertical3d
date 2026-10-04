@@ -106,7 +106,7 @@ BOOST_AUTO_TEST_SUITE(release_test)
  **/
 BOOST_AUTO_TEST_CASE(a_texture_released_in_flight_outlives_its_frame) {
     v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, width, height, colourFormat);
+    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
 
     TextureHandle texture = flat(&headless, 0xFF, 0x00, 0x00);
     draw(&headless, target, texture, nullptr);
@@ -129,7 +129,7 @@ BOOST_AUTO_TEST_CASE(a_texture_released_in_flight_outlives_its_frame) {
  **/
 BOOST_AUTO_TEST_CASE(a_reused_slot_draws_its_new_texture) {
     v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, width, height, colourFormat);
+    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
 
     TextureHandle red = flat(&headless, 0xFF, 0x00, 0x00);
     draw(&headless, target, red, nullptr);
@@ -156,6 +156,49 @@ BOOST_AUTO_TEST_CASE(a_reused_slot_draws_its_new_texture) {
             return;
         }
     }
+}
+
+/**
+ * A target resized while a frame drawing into it is still in flight keeps its old images
+ * until that frame has finished. Destroying them at once is the same use after free as a
+ * texture released in flight, and is reported by the same layer.
+ **/
+BOOST_AUTO_TEST_CASE(a_target_resized_in_flight_outlives_its_frame) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat, true);
+
+    draw(&headless, target, flat(&headless, 0xFF, 0x00, 0x00), nullptr);
+    target->recreate(width / 2, height / 2);
+
+    for (int frame = 0; frame < 3; frame++) {
+        idle(&headless);
+    }
+    headless.context->ring()->waitIdle();
+
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * A texture registered from a target shares the target's image, so a resize leaves the
+ * registered texture naming the old image rather than one that has been destroyed, and a
+ * frame that still samples it draws.
+ **/
+BOOST_AUTO_TEST_CASE(a_registered_target_keeps_its_image_through_a_resize) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    boost::shared_ptr<RenderTarget> source = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    boost::shared_ptr<RenderTarget> into = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+
+    draw(&headless, source, flat(&headless, 0x00, 0x00, 0xFF), nullptr);
+    const TextureHandle registered = headless.context->quads()->texture(*source);
+    source->recreate(width / 2, height / 2);
+
+    for (int frame = 0; frame < 3; frame++) {
+        idle(&headless);
+    }
+    draw(&headless, into, registered, nullptr);
+    headless.context->ring()->waitIdle();
+
+    BOOST_CHECK(headless.silent());
 }
 
 /**

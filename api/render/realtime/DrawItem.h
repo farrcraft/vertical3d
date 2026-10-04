@@ -61,8 +61,9 @@ struct DrawItem final {
      * How many bytes of push constants an item can carry.
      *
      * 128 is what vulkan guarantees, and taking all of it is what lets an item carry a
-     * transform alongside the handful of floats a lit or graded material wants - a mat4
-     * and a vec4 and a scalar is 84, and the quad primitive's lone mat4 is 64. The cost is
+     * transform alongside the handful of values a lit or graded material wants - the lit
+     * tier's mat4, vec4, scalar and joint index are 88, and the quad primitive's lone mat4 is
+     * 64. The cost is
      * real and is paid per item per frame: an item is copied into a pass's queue by value,
      * so the unfilled part of the block is memcpyd whether or not a pipeline declared it.
      **/

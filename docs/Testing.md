@@ -44,6 +44,24 @@ no reference. What a
 case compiles rather than draws is here for the same reason - a pipeline shape no renderer in
 this tree builds needs a device to reject it.
 
+**The lit tier's cases are mostly of the second kind.** A depth-only pass's depths at known
+planes, a full-screen copy against the quad reference, and an identity and an inverting grade
+are what the specification determines, and are asserted exactly or within a step. A lit,
+shadowed and graded frame is not, so `lit_scene_test` asserts silence and a few properties of the
+picture: the centre of a lit cube, a shadow that darkens only ground, and retcon's look-dev scene
+reproduced at 1280×720. Each writes what it drew to `data_out/` (`lit_cube.png`,
+`lit_shadow.png`, `lit_scene.png`) for a person to look at, and none has a reference.
+
+`skin_test` is the skinned half. Its strongest case compares two pictures rather than a
+picture and a reference: the bending strip drawn skinned at rest, and drawn with its skin
+taken off, are byte for byte the same on any one driver. That holds because the fixture's rest
+palette is exactly the identity and its weights are exact. A skinned caster's depth is asserted
+exactly, as the static one's is. The strip bent half way through its clip is asserted silent and
+different from the strip at rest, and written to `data_out/skinned_bend.png`. The same strip
+exported by Blender 5.2, from `api/asset/tests/data/make_blender_fixture.py`, is drawn at three
+points of its clip. The asset suite checks that its rest palette is the identity to rounding,
+which is the evidence that a real exporter's matrices agree with this tree's.
+
 It is a second binary rather than more cases in `v3dtest_render`, because that one must keep
 running where there is no GPU. **A run with no device exits 77 and ctest reports the suite as
 `Skipped`**, which `set_tests_properties(render_device PROPERTIES SKIP_RETURN_CODE 77)` is

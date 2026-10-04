@@ -4,6 +4,10 @@
 **Status**: accepted
 **Deciders**: Joshua Farr
 
+Amended by [ADR-0064](0064-a-pass-carries-a-scene-set-and-a-depth-bias.md): a pass may also bind a
+scene at set 2, once for the pass and only for a pipeline that declares one. That is this
+record's per frame set split in two, not the per object set it rejects below.
+
 ## Context
 
 [ADR-0004](0004-operations-as-draw-data.md) made a draw item a description that names its

@@ -87,7 +87,7 @@ BOOST_AUTO_TEST_SUITE(offscreen_frame_test)
 BOOST_AUTO_TEST_CASE(a_cleared_pass_is_silent_and_is_the_colour_it_cleared_to) {
     v3d::test::Headless headless(colourFormat, width, height);
 
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, width, height, colourFormat);
+    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
 
     Frame frame(headless.context);
     boost::shared_ptr<Pass> pass = frame.pass("colour");
@@ -141,7 +141,7 @@ BOOST_AUTO_TEST_CASE(a_cleared_pass_is_silent_and_is_the_colour_it_cleared_to) {
 BOOST_AUTO_TEST_CASE(a_drawn_quad_is_silent_and_is_the_committed_picture) {
     v3d::test::Headless headless(colourFormat, width, height);
 
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, width, height, colourFormat);
+    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
 
     Canvas canvas;
     canvas.resize(width, height);
@@ -197,7 +197,7 @@ BOOST_AUTO_TEST_CASE(a_drawn_quad_is_silent_and_is_the_committed_picture) {
 BOOST_AUTO_TEST_CASE(a_textured_quad_is_the_texture_that_was_uploaded) {
     v3d::test::Headless headless(colourFormat, width, height);
 
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, width, height, colourFormat);
+    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
 
     // 32 by 16, which is the size the quad below covers in pixels
     const uint32_t textureWidth = 32;
@@ -268,7 +268,7 @@ BOOST_AUTO_TEST_CASE(a_suballocated_device_clears_the_same_way) {
     BOOST_REQUIRE(headless.device->allocator().kind() ==
         v3d::render::realtime::vulkan::memory::Allocator::Kind::Suballocated);
 
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, width, height, colourFormat);
+    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
 
     Frame frame(headless.context);
     boost::shared_ptr<Pass> pass = frame.pass("colour");

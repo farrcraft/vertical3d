@@ -5,11 +5,9 @@
 
 #include "DepthBuffer.h"
 
-#include <api/render/realtime/vulkan/device/Result.h>
-#include <api/render/realtime/vulkan/memory/Memory.h>
-
-#include <sstream>
 #include <stdexcept>
+
+#include <boost/make_shared.hpp>
 
 namespace v3d::render::realtime::vulkan::frame {
 
@@ -34,9 +32,6 @@ DepthBuffer::DepthBuffer(const boost::shared_ptr<device::Device>& device, uint32
     bool sampled) :
     device_(device),
     format_(VK_FORMAT_UNDEFINED),
-    image_(VK_NULL_HANDLE),
-    view_(VK_NULL_HANDLE),
-    sampler_(VK_NULL_HANDLE),
     extent_(),
     sampled_(sampled) {
     format_ = chooseFormat(device_->physical(), sampled_);
@@ -79,84 +74,33 @@ void DepthBuffer::create(uint32_t width, uint32_t height) {
         return;
     }
 
-    VkImageCreateInfo info{};
-    info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    info.imageType = VK_IMAGE_TYPE_2D;
-    info.format = format_;
-    info.extent.width = width;
-    info.extent.height = height;
-    info.extent.depth = 1;
-    info.mipLevels = 1;
-    info.arrayLayers = 1;
-    info.samples = VK_SAMPLE_COUNT_1_BIT;
-    info.tiling = VK_IMAGE_TILING_OPTIMAL;
-    info.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    memory::Image::Spec spec;
+    spec.width = width;
+    spec.height = height;
+    spec.format = format_;
+    spec.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
     if (sampled_) {
-        info.usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+        // TRANSFER_SRC on the same terms a render target's colour has it: what lets
+        // frame::Capture read a shadow map back, for the price of whatever compression a
+        // driver declines on an image that can be copied out
+        spec.usage |= VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     }
-    info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-
-    VkResult result = vkCreateImage(device_->handle(), &info, nullptr, &image_);
-    if (result != VK_SUCCESS) {
-        image_ = VK_NULL_HANDLE;
-        std::stringstream msg;
-        msg << "Unable to create the vulkan depth image - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
-
-    result = device_->allocator().bind(image_, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &memory_);
-    if (result != VK_SUCCESS) {
-        destroy();
-        std::stringstream msg;
-        msg << "Unable to allocate memory for the vulkan depth image - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
-
-    VkImageViewCreateInfo view{};
-    view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    view.image = image_;
-    view.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    view.format = format_;
     // the stencil aspect is left out even where the format carries one - nothing
     // stencils, and an attachment view may name only the aspects it is used through
-    view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-    view.subresourceRange.levelCount = 1;
-    view.subresourceRange.layerCount = 1;
-
-    result = vkCreateImageView(device_->handle(), &view, nullptr, &view_);
-    if (result != VK_SUCCESS) {
-        view_ = VK_NULL_HANDLE;
-        destroy();
-        std::stringstream msg;
-        msg << "Unable to create the vulkan depth image view - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    spec.aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
+    image_ = boost::make_shared<memory::Image>(device_, spec);
 
     if (sampled_) {
-        VkSamplerCreateInfo sampler{};
-        sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        pipeline::Sampler::Spec sampler;
         // linear, so that a shadow comparison across a texel boundary softens rather than
         // stepping. Nothing here enables the compare mode: a caller that wants a hardware
         // pcf sampler wants its own, and this is the one a plain read uses
-        sampler.magFilter = VK_FILTER_LINEAR;
-        sampler.minFilter = VK_FILTER_LINEAR;
-        sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+        sampler.mipmap = VK_SAMPLER_MIPMAP_MODE_NEAREST;
         // outside what was rendered is lit, not shadowed, so the border is the far plane
-        sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-        sampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-        sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-        sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+        sampler.address = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+        sampler.border = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
         sampler.maxLod = 1.0f;
-
-        result = vkCreateSampler(device_->handle(), &sampler, nullptr, &sampler_);
-        if (result != VK_SUCCESS) {
-            sampler_ = VK_NULL_HANDLE;
-            destroy();
-            std::stringstream msg;
-            msg << "Unable to create the vulkan depth sampler - " << device::resultString(result);
-            throw std::runtime_error(msg.str());
-        }
+        sampler_ = boost::make_shared<pipeline::Sampler>(device_, sampler);
     }
 
     extent_.width = width;
@@ -166,19 +110,8 @@ void DepthBuffer::create(uint32_t width, uint32_t height) {
 /**
  **/
 void DepthBuffer::destroy() {
-    if (sampler_ != VK_NULL_HANDLE) {
-        vkDestroySampler(device_->handle(), sampler_, nullptr);
-        sampler_ = VK_NULL_HANDLE;
-    }
-    if (view_ != VK_NULL_HANDLE) {
-        vkDestroyImageView(device_->handle(), view_, nullptr);
-        view_ = VK_NULL_HANDLE;
-    }
-    if (image_ != VK_NULL_HANDLE) {
-        vkDestroyImage(device_->handle(), image_, nullptr);
-        image_ = VK_NULL_HANDLE;
-    }
-    device_->allocator().free(&memory_);
+    sampler_.reset();
+    image_.reset();
     extent_.width = 0;
     extent_.height = 0;
 }
@@ -195,19 +128,19 @@ void DepthBuffer::recreate(uint32_t width, uint32_t height) {
 /**
  **/
 bool DepthBuffer::valid() const noexcept {
-    return view_ != VK_NULL_HANDLE;
+    return static_cast<bool>(image_);
 }
 
 /**
  **/
 VkImage DepthBuffer::image() const noexcept {
-    return image_;
+    return image_ ? image_->handle() : VK_NULL_HANDLE;
 }
 
 /**
  **/
 VkImageView DepthBuffer::view() const noexcept {
-    return view_;
+    return image_ ? image_->view() : VK_NULL_HANDLE;
 }
 
 /**
@@ -237,7 +170,19 @@ bool DepthBuffer::sampled() const noexcept {
 /**
  **/
 VkSampler DepthBuffer::sampler() const noexcept {
-    return sampler_;
+    return sampler_ ? sampler_->handle() : VK_NULL_HANDLE;
+}
+
+/**
+ **/
+pipeline::Texture DepthBuffer::texture() const {
+    pipeline::Texture texture;
+    if (!sampled_ || !image_) {
+        return texture;
+    }
+    texture.image = image_;
+    texture.sampler = sampler_;
+    return texture;
 }
 
 };  // namespace v3d::render::realtime::vulkan::frame

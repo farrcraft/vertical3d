@@ -94,7 +94,7 @@ void overlapping(WorldCanvas* canvas, bool nearFirst) {
  **/
 void drawAndCheck(v3d::test::Headless* headless, bool nearFirst, const std::string& name) {
     boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(
-        headless->device, width, height, colourFormat, true);
+        headless->device, headless->context->ring(), width, height, colourFormat, true);
     BOOST_REQUIRE(target->depthView() != VK_NULL_HANDLE);
 
     WorldCanvas canvas;

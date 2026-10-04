@@ -9,6 +9,10 @@
 #include <string>
 #include <vector>
 
+#include "Skeleton.h"
+#include "animation/Clip.h"
+
+#include <glm/gtc/type_precision.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -26,7 +30,8 @@ namespace v3d::type {
  * can read one.
  *
  * Everything is merged into a single vertex array and a single index run, so a model is
- * one draw. A file whose parts need different surfaces is several models.
+ * one upload. A part is a range of that index run drawn with one material, so a file whose
+ * surfaces differ is one model drawn as a draw per part - ADR-0069.
  **/
 class Model final {
  public:
@@ -63,6 +68,24 @@ class Model final {
         std::string baseColourTexture;
     };
 
+    /**
+     * Which joints a vertex follows, and how far: the weighted sum of their matrices is what
+     * moves it. Four at most, and the weights sum to one.
+     **/
+    struct Influence final {
+        glm::u16vec4 joints{ 0, 0, 0, 0 };  /**< into the skeleton's joints **/
+        glm::vec4 weights{ 0.0f };
+    };
+
+    /**
+     * A range of the index run, drawn with one of the model's materials.
+     **/
+    struct Part final {
+        std::uint32_t firstIndex{ 0 };
+        std::uint32_t indexCount{ 0 };
+        std::uint32_t material{ 0 };  /**< into materials() **/
+    };
+
     Model();
 
     std::vector<Vertex>& vertices() noexcept;
@@ -71,8 +94,35 @@ class Model final {
     std::vector<std::uint32_t>& indices() noexcept;
     const std::vector<std::uint32_t>& indices() const noexcept;
 
-    Material& material() noexcept;
-    const Material& material() const noexcept;
+    std::vector<Material>& materials() noexcept;
+    const std::vector<Material>& materials() const noexcept;
+
+    /**
+     * What is drawn, in order. Every index is in exactly one part, and a model the loader
+     * reads has at least one.
+     **/
+    std::vector<Part>& parts() noexcept;
+    const std::vector<Part>& parts() const noexcept;
+
+    /**
+     * The joints the model is bent by, empty for a static model.
+     **/
+    Skeleton& skeleton() noexcept;
+    const Skeleton& skeleton() const noexcept;
+
+    /**
+     * An influence per vertex, in the vertices' order, for a model with a skeleton - and
+     * empty for one without, which is what keeps a static model's vertices as they were.
+     **/
+    std::vector<Influence>& influences() noexcept;
+    const std::vector<Influence>& influences() const noexcept;
+
+    /**
+     * The clips that animate the skeleton, by the names the file gave them. Empty for a model
+     * with no skeleton.
+     **/
+    std::vector<animation::Clip>& clips() noexcept;
+    const std::vector<animation::Clip>& clips() const noexcept;
 
     /**
      * @return the vertex array's size in bytes, which is what a device buffer is made from
@@ -87,7 +137,11 @@ class Model final {
  private:
     std::vector<Vertex> vertices_;
     std::vector<std::uint32_t> indices_;
-    Material material_;
+    std::vector<Material> materials_;
+    std::vector<Part> parts_;
+    Skeleton skeleton_;
+    std::vector<Influence> influences_;
+    std::vector<animation::Clip> clips_;
 };
 
 };  // namespace v3d::type

@@ -1,6 +1,7 @@
 v3d_add_test(type
 	"TestMain.cxx"
 	"AABBoxTest.cxx"
+	"AnimationTest.cxx"
 	"ArcBallTest.cxx"
 	"Bound2DTest.cxx"
 	"CameraTest.cxx"

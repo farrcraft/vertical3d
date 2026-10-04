@@ -9,9 +9,13 @@
 #include <api/render/realtime/Registry.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
-#include <api/render/realtime/vulkan/memory/Allocator.h>
+#include <api/render/realtime/vulkan/memory/Image.h>
 
 #include <vulkan/vulkan.h>
+
+#include <vector>
+
+#include "Sampler.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -27,6 +31,10 @@ struct Pipeline final {
     VkPipeline pipeline;
     VkPipelineLayout layout;
     VkShaderStageFlags pushStages;  /**< which stages the layout declared push constants for **/
+    bool scene;                     /**< whether the layout declares a set 2 - ADR-0064 **/
+    bool biased;                    /**< whether depth bias is dynamic state, set per pass **/
+    std::vector<VkFormat> colourFormats;  /**< what it was built to draw into - ADR-0068 **/
+    VkFormat depthFormat;           /**< and its depth, or undefined for none **/
 };
 
 /**
@@ -42,26 +50,16 @@ struct Material final {
 };
 
 /**
- * An image the shaders sample from, with everything that has to be destroyed with it.
+ * An image the shaders sample from, and the sampler they read it through.
+ *
+ * Both are shared rather than owned. A texture memory::TextureFactory built is the only
+ * holder of its image; one registered from a frame::RenderTarget shares the target's, so
+ * the image outlives whichever of the two lets go first. Either way a released texture is
+ * destroyed by the last reference going, which the ring holds until no frame can read it.
  **/
 struct Texture final {
-    Texture() noexcept;
-
-    VkImage image;
-    memory::Allocation memory;
-    VkImageView view;
-    VkSampler sampler;
-    VkExtent2D extent;
-
-    /**
-     * Whether registering this hands over the images or only names them.
-     *
-     * True for everything memory::TextureFactory builds, which exists to be owned here. False for
-     * a frame::RenderTarget, whose images are the target's and are freed and reallocated whenever
-     * it is resized - destroying them here as well would free them twice, and a target
-     * outliving nothing is not what a handle into a registry means.
-     **/
-    bool owned;
+    boost::shared_ptr<memory::Image> image;
+    boost::shared_ptr<Sampler> sampler;
 };
 
 /**

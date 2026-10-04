@@ -266,6 +266,10 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
 
     Pipeline built;
     built.pushStages = pushBytes_ > 0 ? pushStages_ : 0;
+    built.scene = sets_.size() > 2;
+    built.biased = depthBias_;
+    built.colourFormats = colours_;
+    built.depthFormat = depthFormat_;
 
     // a layout the caller owns is compiled into the pipeline and handed straight back, so
     // that registering the result names the layout its draws bind through. It is theirs to

@@ -6,7 +6,9 @@
 #pragma once
 
 #include <api/render/realtime/vulkan/device/Device.h>
-#include <api/render/realtime/vulkan/memory/Allocator.h>
+#include <api/render/realtime/vulkan/memory/Image.h>
+#include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/vulkan/pipeline/Sampler.h>
 
 #include <vulkan/vulkan.h>
 
@@ -105,6 +107,15 @@ class DepthBuffer final {
     VkSampler sampler() const noexcept;
 
     /**
+     * The image described as something pipeline::Resources can hold, sharing it rather than
+     * copying it, so that a draw item can sample what a pass tested against.
+     *
+     * @return the image and its sampler, or an empty texture when this was not built sampled
+     *         or has no image
+     **/
+    pipeline::Texture texture() const;
+
+    /**
      * @return the first depth format the device can use as an optimally tiled attachment
      *
      * Public because a pipeline is built against the format long before anything asks
@@ -130,10 +141,8 @@ class DepthBuffer final {
 
     boost::shared_ptr<device::Device> device_;
     VkFormat format_;
-    VkImage image_;
-    memory::Allocation memory_;
-    VkImageView view_;
-    VkSampler sampler_;
+    boost::shared_ptr<memory::Image> image_;
+    boost::shared_ptr<pipeline::Sampler> sampler_;
     VkExtent2D extent_;
     bool sampled_;
 };

@@ -99,9 +99,10 @@ line.
 
 entt. `v3d::engine::Engine` holds the `entt::registry` as a protected member, so an app's
 `Controller` inherits it and passes `&registry_` into the render engine as a raw
-`entt::registry*`. [ECSDesign.md](ECSDesign.md) says what exists; the open question is what a
-renderable component looks like, and
-[RenderingPipeline.md](RenderingPipeline.md#still-open-how-this-meets-the-ecs) states it.
+`entt::registry*`. [ECSDesign.md](ECSDesign.md) says what exists. An entity is drawn from a
+`Transform` and a component per kind of drawing, which the api walks
+([ADR-0063](adr/0063-an-entity-is-drawn-from-a-transform-and-a-component-per-kind.md)), and
+[RenderingPipeline.md](RenderingPipeline.md#how-this-meets-the-ecs) describes the walk.
 
 ## Tile grids
 
@@ -144,8 +145,17 @@ one consumer is not a library.
 | | |
 |---|---|
 | `brep::BRep` | half-edge topology, what the editor models with |
-| `type::Model` | an interleaved vertex array with indices and a material — what a file on disk becomes |
+| `type::Model` | an interleaved vertex array with indices, in parts that each name a material — what a file on disk becomes |
 | `render::realtime::vulkan::Mesh` | two device buffers |
+
+**A file is one model, in parts.** The loader walks the file's scene and merges every mesh a
+node names where the node places it, into one vertex array and one index run. A part is a
+range of that run and the material it is drawn with, one per material in the file, so a model
+is one upload and a draw per part
+([ADR-0069](adr/0069-a-model-is-parts-over-one-array-and-may-carry-a-skin.md)). A model may carry
+a `type::Skeleton` and an influence per vertex, in an array beside the vertices that a static
+model leaves empty. A skinned mesh is placed by its joints rather than its node, and an
+unskinned mesh in the same file follows the nearest joint above it.
 
 A `Model`'s vertex layout is a contract between the loader and whatever pipeline an app
 writes, not something the device enforces. `vulkan::Mesh` takes bytes and a count because the
@@ -157,9 +167,16 @@ manager. This is the same shape
 [ADR-0020](adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md) settles for themes; see
 [ADR-0030](adr/0030-a-model-is-an-interleaved-array-that-names-its-texture.md). A glTF whose
 image is *embedded* — a `.glb`'s own buffer, or a data uri — has no name to give, so it
-arrives decoded instead, on `asset::Model::baseColourImage()`. That is on the asset rather
+arrives decoded instead, on `asset::Model::baseColourImage(material)`. That is on the asset rather
 than on the material because `api/type` is built against glm alone and a material holding an
 image would take `api/image` into every consumer of a mesh.
+
+**Animation's data and arithmetic are in `type::animation`, and are glm only.** A `Clip` is a
+model's channels, a `Pose` is a joint's translation, rotation and scale each, and `sample`,
+`blend` and `palette` turn a clip at a time into the matrices a vertex is skinned by. `Clock`
+keeps no time of its own: it says what a step does to a time someone else keeps. Playback, and
+which clip plays, are elsewhere
+([ADR-0070](adr/0070-animation-is-sampled-from-playback-on-the-step.md)).
 
 **The queries are in `type::geometry`, and are glm only.** `Ray` meets an `AABBox`, a triangle
 and a `Plane`; `Plane` classifies a point or a box against itself; `Frustum` classifies a box

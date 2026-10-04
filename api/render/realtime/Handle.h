@@ -85,5 +85,6 @@ class Handle final {
 using PipelineHandle = Handle<struct PipelineTag>;
 using MaterialHandle = Handle<struct MaterialTag>;
 using TextureHandle = Handle<struct TextureTag>;
+using MeshHandle = Handle<struct MeshTag>;
 
 };  // namespace v3d::render::realtime

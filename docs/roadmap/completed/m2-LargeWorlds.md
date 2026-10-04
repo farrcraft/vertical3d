@@ -66,7 +66,7 @@ must also not be in a frame still in flight, so the free waits on the in-flight 
 ([ADR-0051](../../adr/0051-the-in-flight-ring-is-not-the-swapchain.md)), which is what knows when
 a frame has finished with it.
 
-[Milestone 4](../m4-LitScene.md) moves textures and samplers into classes of their own, so this
+[Milestone 4](m4-LitScene.md) moves textures and samplers into classes of their own, so this
 milestone should give them a registry that release works in, rather than give `Resources` a
 release that milestone 4 then works around.
 

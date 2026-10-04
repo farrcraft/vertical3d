@@ -6,7 +6,6 @@
 #include "Renderer.h"
 
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
-#include <api/render/realtime/vulkan/device/Result.h>
 #include <voxel/src/engine/Camera.h>
 #include <voxel/src/engine/ChunkMeshBuilder.h>
 #include <voxel/src/engine/SceneUniforms.h>
@@ -105,8 +104,6 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
     scene_(scene),
     logger_(logger),
     engine_(logger, assetManager, registry),
-    sceneLayout_(VK_NULL_HANDLE),
-    pool_(VK_NULL_HANDLE),
     drawnChunks_(0),
     meshedChunks_(0),
     debug_(false) {
@@ -142,19 +139,7 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
 
 /**
  **/
-Renderer::~Renderer() {
-    // the pipeline and the material belong to Resources - what is owned here is the
-    // descriptor machinery the material's set was allocated out of
-    VkDevice device = context_ ? context_->device()->handle() : VK_NULL_HANDLE;
-    if (device != VK_NULL_HANDLE) {
-        if (pool_ != VK_NULL_HANDLE) {
-            vkDestroyDescriptorPool(device, pool_, nullptr);
-        }
-        if (sceneLayout_ != VK_NULL_HANDLE) {
-            vkDestroyDescriptorSetLayout(device, sceneLayout_, nullptr);
-        }
-    }
-}
+Renderer::~Renderer() = default;
 
 /**
  **/
@@ -166,17 +151,9 @@ void Renderer::createLayout() {
     // the shading is worked out per vertex, so only the vertex stage reads the palette
     block.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-    VkDescriptorSetLayoutCreateInfo info{};
-    info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    info.bindingCount = 1;
-    info.pBindings = &block;
-
-    const VkResult result = vkCreateDescriptorSetLayout(context_->device()->handle(), &info, nullptr, &sceneLayout_);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to create the voxel scene descriptor set layout - " << v3d::render::realtime::vulkan::device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    // one set, for the one material every chunk in the world draws with
+    scenePool_ = boost::make_shared<v3d::render::realtime::vulkan::pipeline::DescriptorPool>(context_->device(),
+        context_->ring(), std::vector<VkDescriptorSetLayoutBinding>{block}, 1, "voxel scene");
 }
 
 /**
@@ -199,37 +176,7 @@ void Renderer::createUniforms() {
     uniforms_ = boost::make_shared<v3d::render::realtime::vulkan::memory::DeviceBuffer>(
         context_->device(), context_->uploader(), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, &uniforms, sizeof(uniforms));
 
-    VkDescriptorPoolSize size{};
-    size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    size.descriptorCount = 1;
-
-    VkDescriptorPoolCreateInfo poolInfo{};
-    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    // one set, for the one material every chunk in the world draws with
-    poolInfo.maxSets = 1;
-    poolInfo.poolSizeCount = 1;
-    poolInfo.pPoolSizes = &size;
-
-    VkResult result = vkCreateDescriptorPool(context_->device()->handle(), &poolInfo, nullptr, &pool_);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to create the voxel descriptor pool - " << v3d::render::realtime::vulkan::device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
-
-    VkDescriptorSetAllocateInfo allocation{};
-    allocation.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocation.descriptorPool = pool_;
-    allocation.descriptorSetCount = 1;
-    allocation.pSetLayouts = &sceneLayout_;
-
-    VkDescriptorSet set = VK_NULL_HANDLE;
-    result = vkAllocateDescriptorSets(context_->device()->handle(), &allocation, &set);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to allocate the voxel scene descriptor set - " << v3d::render::realtime::vulkan::device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    VkDescriptorSet set = scenePool_->allocate();
 
     VkDescriptorBufferInfo buffer{};
     buffer.buffer = uniforms_->handle();
@@ -268,7 +215,7 @@ void Renderer::createPipeline() {
         // terrain is opaque, and blending it would cost bandwidth on every fragment of it
         .blend(false)
         .set(context_->frameUniforms()->layout())
-        .set(sceneLayout_)
+        .set(scenePool_->layout())
         .push(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::vec4))
         .colourFormat(context_->colourFormat())
         .depthFormat(context_->depthFormat());

@@ -8,7 +8,7 @@ design documents rather than from code that has hit a wall.
 **It has a 2D half and a 3D half.** The 2D half is drawn through `WorldCanvas`, needs
 [milestone 1](completed/m1-MotionAndQueries.md)'s clip and nothing else, and is the half cozy wants from its
 M6 on. The 3D half draws the same particles in a lit scene and waits on
-[milestone 4](m4-LitScene.md).
+[milestone 4](completed/m4-LitScene.md).
 
 ## What exists
 

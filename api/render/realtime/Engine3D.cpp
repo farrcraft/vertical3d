@@ -143,6 +143,7 @@ void Engine3D::renderFrame() {
     target.image = swapchain->images()[acquisition.image];
     target.view = swapchain->views()[acquisition.image];
     target.extent = swapchain->extent();
+    target.format = swapchain->format();
 
     // the depth buffer is allocated the first frame a pass asks for one, so an app that
     // never depth tests never pays for a full screen image it does not read
@@ -158,6 +159,7 @@ void Engine3D::renderFrame() {
         if (buffer->valid()) {
             target.depthImage = buffer->image();
             target.depthView = buffer->view();
+            target.depthFormat = buffer->format();
         }
     }
 

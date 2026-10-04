@@ -4,6 +4,10 @@
 **Status**: accepted
 **Deciders**: Joshua Farr
 
+Amended by [ADR-0069](0069-a-model-is-parts-over-one-array-and-may-carry-a-skin.md): a file is
+one model in parts, a part per material, rather than several models or its first material
+alone. The loader places each mesh by its node, and a model may carry a skin.
+
 ## Context
 
 Nothing in the tree loads geometry from a file. `voxel` builds its terrain procedurally, the

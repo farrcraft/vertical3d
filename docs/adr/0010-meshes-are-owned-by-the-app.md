@@ -8,6 +8,10 @@ Amended by [ADR-0061](0061-a-resource-is-released-explicitly.md): `Resources` no
 explicit release, and a reused slot refuses its old handles by generation. Meshes stay the app's,
 for the other reason given below: the sort key has no geometry field.
 
+Amended by [ADR-0065](0065-a-mesh-is-registered-by-path-and-released.md): a model that is shared
+is registered once by path in a `MeshRegistry` beside `Resources`, which is alternative 3 below
+built as this record said it could be. A mesh an app builds itself is still the app's.
+
 ## Context
 
 `vulkan::Resources` owns the pipelines, materials and textures a `DrawItem` names by handle,

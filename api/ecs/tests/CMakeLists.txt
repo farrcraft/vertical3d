@@ -3,7 +3,9 @@
 v3d_add_test(ecs
 	"TestMain.cpp"
 	"ComponentTest.cpp"
+	"PlaybackTest.cpp"
 	"PreviousTest.cpp"
-	"SystemTest.cpp")
+	"SystemTest.cpp"
+	"TransformTest.cpp")
 
 target_link_libraries(v3dtest_ecs PRIVATE v3dlib_ecs)

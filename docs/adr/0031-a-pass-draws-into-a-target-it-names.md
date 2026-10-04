@@ -4,6 +4,11 @@
 **Status**: accepted
 **Deciders**: Joshua Farr
 
+Amended by [ADR-0068](0068-a-target-per-frame-a-checked-format-and-passes-placed-by-what-they-read.md):
+a target may hold one image per frame in flight, which is alternative 4 below taken up for what
+a barrier cannot order, a pipeline is checked against the formats it draws into, and a pass is
+placed by the targets it reads rather than by `Frame::passBefore`, which is gone.
+
 ## Context
 
 Every pass drew into the swapchain image. `Pass.h` said so outright — "only the swapchain

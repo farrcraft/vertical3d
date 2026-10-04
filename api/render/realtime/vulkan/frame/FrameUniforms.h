@@ -7,12 +7,15 @@
 
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/memory/Buffer.h>
+#include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
 
 #include <vulkan/vulkan.h>
 
 #include <cstddef>
 #include <cstdint>
 #include <vector>
+
+#include "Ring.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/mat4x4.hpp>
@@ -55,14 +58,10 @@ class FrameUniforms final {
 
     /**
      * @param device the device the buffers and sets are allocated on
-     * @param framesInFlight how many frames may be recorded ahead of the device
+     * @param ring the frames in flight, one ring of slots for each
      * @throw std::runtime_error if the layout cannot be created
      **/
-    FrameUniforms(const boost::shared_ptr<device::Device>& device, uint32_t framesInFlight);
-
-    /**
-     **/
-    ~FrameUniforms();
+    FrameUniforms(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Ring>& ring);
 
     FrameUniforms(const FrameUniforms&) = delete;
     FrameUniforms& operator=(const FrameUniforms&) = delete;
@@ -97,23 +96,12 @@ class FrameUniforms final {
     };
 
     /**
-     **/
-    void createLayout();
-
-    /**
-     * Add a descriptor pool, because the last one is full or there is none.
-     **/
-    void addPool();
-
-    /**
      * Allocate one more slot for a frame, buffer and descriptor set together.
      **/
     Slot addSlot();
 
     boost::shared_ptr<device::Device> device_;
-    VkDescriptorSetLayout layout_;
-    std::vector<VkDescriptorPool> pools_;
-    uint32_t remaining_;                     /**< sets left in the last pool **/
+    boost::shared_ptr<pipeline::DescriptorPool> pool_;
     std::vector<std::vector<Slot>> slots_;   /**< a ring of slots per frame in flight **/
     uint32_t frame_;                         /**< which ring write() is filling **/
     std::size_t cursor_;                     /**< how far into that ring it has got **/

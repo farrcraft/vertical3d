@@ -4,6 +4,9 @@
 **Status**: accepted
 **Deciders**: Joshua Farr
 
+Amended by [ADR-0066](0066-the-lit-tier-lights-in-linear.md): a lit scene computes in linear
+light, draws into an `_SRGB` target and decodes its albedo. Everything else is as below.
+
 ## Context
 
 Phase 2 picked `VK_FORMAT_B8G8R8A8_SRGB` for the swapchain, on the usual advice that an sRGB
