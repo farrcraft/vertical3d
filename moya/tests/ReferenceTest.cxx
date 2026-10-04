@@ -42,6 +42,11 @@ const char* FOCUS_RENDERED = "data_out/reference-focus.png";
 const char* FOCUS_SCENE = "data/reference-focus.rib";
 const char* FOCUS_RIB_RENDERED = "data_out/reference-focus-rib.png";
 
+const char* MOTION = "data/reference-motion.png";
+const char* MOTION_RENDERED = "data_out/reference-motion.png";
+const char* MOTION_SCENE = "data/reference-motion.rib";
+const char* MOTION_RIB_RENDERED = "data_out/reference-motion-rib.png";
+
 /**
  * One sample at each pixel centre under a one pixel box, which the film gives back exactly.
  * The references drawn this way pin the hider and the shading; reference-sampled pins the
@@ -229,6 +234,80 @@ float largest(const v3d::render::offline::FrameBuffer & a, const v3d::render::of
         }
     }
     return worst;
+}
+
+/**
+ * The orthographic camera of the other references, with the shutter open from 0 to 1.
+ **/
+void motionCamera(v3d::moya::RenderContext & rc) {
+    rc.imageResolution(64, 48, 1.0f);
+    rc.sampling().samples = glm::uvec2(4, 4);
+    rc.sampling().shutter = glm::vec2(0.0f, 1.0f);
+    rc.clipping(0.1f, 100.0f);
+    rc.prepareWorld();
+    rc.surface("constant", v3d::render::offline::rib::ParameterList());
+}
+
+void quadAt(v3d::moya::RenderContext & rc, const glm::vec3 (&corners)[4]) {
+    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    for (const glm::vec3 & corner : corners) {
+        polygon->addVertex(vertex(corner.x, corner.y, corner.z));
+    }
+    rc.addPolygon(polygon);
+}
+
+/*
+    The same scene as data/reference-motion.rib: a quad sliding right and a quad turning a
+    quarter about its centre, each across the whole shutter.
+*/
+void motionScene(v3d::moya::RenderContext & rc) {
+    motionCamera(rc);
+
+    rc.attributeBegin();
+    rc.motionBegin({ 0.0f, 1.0f });
+    rc.translate(0.0f, 0.0f, 0.0f);
+    rc.translate(0.5f, 0.0f, 0.0f);
+    rc.motionEnd();
+    rc.color(glm::vec3(0.9f, 0.8f, 0.2f));
+    const glm::vec3 slid[4] = {
+        glm::vec3(-1.2f, 0.1f, 5.0f), glm::vec3(-0.4f, 0.1f, 5.0f),
+        glm::vec3(-0.4f, 0.8f, 5.0f), glm::vec3(-1.2f, 0.8f, 5.0f)
+    };
+    quadAt(rc, slid);
+    rc.attributeEnd();
+
+    rc.attributeBegin();
+    rc.translate(0.6f, -0.4f, 5.0f);
+    rc.motionBegin({ 0.0f, 1.0f });
+    rc.rotate(0.0f, 0.0f, 0.0f, 1.0f);
+    rc.rotate(90.0f, 0.0f, 0.0f, 1.0f);
+    rc.motionEnd();
+    rc.color(glm::vec3(0.2f, 0.7f, 0.9f));
+    const glm::vec3 turned[4] = {
+        glm::vec3(-0.35f, -0.15f, 0.0f), glm::vec3(0.35f, -0.15f, 0.0f),
+        glm::vec3(0.35f, 0.15f, 0.0f), glm::vec3(-0.35f, 0.15f, 0.0f)
+    };
+    quadAt(rc, turned);
+    rc.attributeEnd();
+}
+
+/**
+ * The coverage of a quad that slid twelve pixels right while the shutter was open, along the
+ * row through its middle. Its left edge leaves pixels 8 to 19 one after another and its right
+ * edge reaches pixels 32 to 43, so under a one pixel box the coverage climbs a twelfth a pixel
+ * from 8 and falls a twelfth a pixel from 32, and is whole between.
+ **/
+void checkRamp(const v3d::render::offline::FrameBuffer & planes, unsigned int coverage, unsigned int row) {
+    BOOST_CHECK_EQUAL(planes.value(coverage, 7, row), 0.0f);
+    for (unsigned int k = 0; k < 12; k++) {
+        BOOST_TEST_CONTEXT("pixel " << 8 + k << " and " << 32 + k) {
+            const float rising = (static_cast<float>(k) + 0.5f) / 12.0f;
+            BOOST_CHECK_SMALL(planes.value(coverage, 8 + k, row) - rising, 0.1f);
+            BOOST_CHECK_SMALL(planes.value(coverage, 32 + k, row) - (1.0f - rising), 0.1f);
+        }
+    }
+    BOOST_CHECK_CLOSE(planes.value(coverage, 25, row), 1.0f, 1.0e-4f);
+    BOOST_CHECK_EQUAL(planes.value(coverage, 44, row), 0.0f);
 }
 
 /**
@@ -543,4 +622,57 @@ BOOST_AUTO_TEST_CASE(moya_out_of_focus_spreads_test) {
     BOOST_CHECK_LE(sharp, 2u);
     BOOST_CHECK_GE(blurred, 4u);
     BOOST_CHECK_LE(blurred, 7u);
+}
+
+/**
+ * A quad sliding and a quad turning while the shutter is open.
+ **/
+BOOST_AUTO_TEST_CASE(moya_motion_reference_test) {
+    v3d::moya::RenderContext rc;
+    motionScene(rc);
+    rc.render();
+
+    check(rc.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS), MOTION, MOTION_RENDERED);
+}
+
+BOOST_AUTO_TEST_CASE(moya_motion_reference_from_rib_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(reader.read(MOTION_SCENE, &handler));
+    BOOST_CHECK_EQUAL(reader.error(), "");
+
+    check(handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
+        MOTION, MOTION_RIB_RENDERED);
+}
+
+/**
+ * A quad translated across the shutter spreads over the distance it moved, its coverage
+ * rising and falling linearly along it - the same arithmetic as talyn's case, reached by
+ * moving the micropolygons rather than the ray.
+ **/
+BOOST_AUTO_TEST_CASE(moya_motion_spreads_linearly_test) {
+    v3d::moya::RenderContext rc;
+    rc.imageResolution(64, 48, 1.0f);
+    rc.sampling().samples = glm::uvec2(8, 8);
+    rc.sampling().filter = v3d::render::offline::Filter::Box;
+    rc.sampling().width = glm::vec2(1.0f);
+    rc.sampling().shutter = glm::vec2(0.0f, 1.0f);
+    rc.clipping(0.1f, 100.0f);
+    rc.prepareWorld();
+    rc.surface("constant", v3d::render::offline::rib::ParameterList());
+
+    rc.motionBegin({ 0.0f, 1.0f });
+    rc.translate(0.0f, 0.0f, 0.0f);
+    rc.translate(0.5f, 0.0f, 0.0f);
+    rc.motionEnd();
+    const glm::vec3 corners[4] = {
+        glm::vec3(-1.0f, -0.5f, 5.0f), glm::vec3(0.0f, -0.5f, 5.0f),
+        glm::vec3(0.0f, 0.5f, 5.0f), glm::vec3(-1.0f, 0.5f, 5.0f)
+    };
+    quadAt(rc, corners);
+    rc.render();
+
+    checkRamp(*rc.framebuffer()->planes(), v3d::moya::FrameBuffer::COVERAGE, 24);
 }

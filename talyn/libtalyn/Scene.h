@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <api/render/offline/MovingTransform.h>
 #include <api/render/offline/sl/Instance.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/geometry/Ray.h>
@@ -68,7 +69,15 @@ class Triangle final {
     const glm::vec3 & opacity() const;
     void opacity(const glm::vec3 & value);
 
+    /**
+     * Which of the scene's motions carries the triangle, or negative for none. Its corners
+     * are where the motion's open end put them.
+     **/
+    int motion() const;
+
  private:
+    friend class Scene;
+    int motion_ = -1;
     v3d::render::offline::sl::Placed surface_;
     glm::vec3 opacity_ = glm::vec3(1.0f);
     glm::vec3 a_;
@@ -125,6 +134,11 @@ class Scene final {
     const v3d::type::camera::Camera & camera() const;
 
     void add(const Triangle & triangle);
+    /**
+     * A triangle placed by the open end of a transformation that may move. One that does
+     * not is added as it stands.
+     **/
+    void add(const Triangle & triangle, const v3d::render::offline::MovingTransform & placed);
     const std::vector<Triangle> & triangles() const;
 
     /**
@@ -142,8 +156,11 @@ class Scene final {
      * @param from how far along the ray to start looking. A ray leaving a surface would
      *        otherwise meet the surface it left: that is the self intersection every
      *        tracer has, and it is why a shadow ray is offset rather than started at zero
+     * @param time when, which places every moving triangle. A ray is taken back into the
+     *        pose a moving triangle was stored in rather than the triangle moved, and what
+     *        it hits is brought forward again
      **/
-    bool nearest(const v3d::type::geometry::Ray & ray, float from, Hit* hit) const;
+    bool nearest(const v3d::type::geometry::Ray & ray, float from, Hit* hit, float time = 0.0f) const;
 
     const glm::vec3 & background() const;
     void background(const glm::vec3 & colour);
@@ -151,6 +168,7 @@ class Scene final {
  private:
     v3d::type::camera::Camera camera_;
     std::vector<Triangle> triangles_;
+    std::vector<v3d::render::offline::MovingTransform> motions_;
     std::vector<v3d::render::offline::sl::Placed> lights_;
     glm::vec3 background_ = glm::vec3(0.0f);
 };

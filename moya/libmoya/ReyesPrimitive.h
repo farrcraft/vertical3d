@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <api/render/offline/MovingTransform.h>
 #include <api/type/geometry/AABBox.h>
 
 #include "MicroPolygonGrid.h"
@@ -68,7 +69,16 @@ class ReyesPrimitive {
          */
         const Shading & shading(void) const;
 
+        /**
+         * The object to eye transformation across the shutter, of which placement() is the
+         * open end. The vertices are where the open end puts them, and a sample places
+         * them at its own time. Carried across a split for the reason the rest is.
+         */
+        void motion(const v3d::render::offline::MovingTransform & toEye);
+        const v3d::render::offline::MovingTransform & motion(void) const;
+
  private:
+        v3d::render::offline::MovingTransform motion_;
         glm::mat4x4 placement_ = glm::mat4x4(1.0f);
         glm::vec3 color_ = glm::vec3(1.0f);
         glm::vec3 normal_ = glm::vec3(0.0f);

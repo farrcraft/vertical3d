@@ -56,6 +56,12 @@ class Reader final {
      **/
     const std::vector<std::string> & unrecognised() const;
 
+    /**
+     * What the stream asked for that was read and not built, once each - a primitive that
+     * deforms inside a motion block is one.
+     **/
+    const std::vector<std::string> & unsupported() const;
+
  private:
     /**
      * What one group of requests made of a name it was offered.
@@ -82,6 +88,7 @@ class Reader final {
     Result sampleRequest(const std::string & name, Lexer * lexer, Handler * handler);
     static Result blockRequest(const std::string & name, Handler * handler);
     Result transformRequest(const std::string & name, Lexer * lexer, Handler * handler);
+    Result motionRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result attributeRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result shaderRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result primitiveRequest(const std::string & name, Lexer * lexer, Handler * handler);
@@ -117,7 +124,11 @@ class Reader final {
     Declarations declarations_;
     std::string error_;
     std::vector<std::string> unrecognised_;
+    std::vector<std::string> unsupported_;
     std::set<std::string> reported_;
+    /** Whether a motion block is open, and how many primitives it has held. **/
+    bool motion_ = false;
+    unsigned int motionPrimitives_ = 0;
 };
 
 };  // namespace v3d::render::offline::rib

@@ -129,9 +129,10 @@ void RenderContext::render() {
                 sample.raster = at.raster;
                 sample.colour = scene_.background();
                 Hit hit;
-                sample.hit = scene_.nearest(ray, 0.0f, &hit);
+                sample.hit = scene_.nearest(ray, 0.0f, &hit, at.time);
                 if (sample.hit) {
                     // the nearest hit is the batch, and the surface shader's Ci is the sample
+                    shader.time(at.time);
                     sample.colour = shader.shade(hit);
                     sample.opacity = glm::vec3(1.0f);
                     sample.depth = hit.distance;

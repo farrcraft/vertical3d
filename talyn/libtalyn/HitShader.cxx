@@ -147,9 +147,13 @@ bool HitShader::transmission(const Value & from, const Value & to, Value* fracti
     Hit blocker;
     // anything between here and the light blocks it, and nothing beyond the light does.
     // Opaque only: Os on an occluder is a shading question and this is a visibility one
-    const bool blocked = scene_->nearest(ray, 0.0f, &blocker) && blocker.distance < span;
+    const bool blocked = scene_->nearest(ray, 0.0f, &blocker, time_) && blocker.distance < span;
     fraction->triple(0, blocked ? glm::vec3(0.0f) : glm::vec3(1.0f));
     return true;
+}
+
+void HitShader::time(float when) {
+    time_ = when;
 }
 
 bool HitShader::trace(const Value & origin, const Value & direction, Value* colour) {
@@ -175,7 +179,7 @@ bool HitShader::trace(const Value & origin, const Value & direction, Value* colo
     }
 
     Hit found;
-    if (!scene_->nearest(v3d::type::geometry::Ray(start, along / span), 0.0f, &found)) {
+    if (!scene_->nearest(v3d::type::geometry::Ray(start, along / span), 0.0f, &found, time_)) {
         colour->triple(0, scene_->background());
         return true;
     }

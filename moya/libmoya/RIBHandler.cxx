@@ -200,6 +200,14 @@ void RIBHandler::scale(float sx, float sy, float sz) {
     context().scale(sx, sy, sz);
 }
 
+void RIBHandler::motionBegin(const std::vector<float> & times) {
+    context().motionBegin(times);
+}
+
+void RIBHandler::motionEnd() {
+    context().motionEnd();
+}
+
 void RIBHandler::color(const glm::vec3 & value) {
     context().color(value);
 }

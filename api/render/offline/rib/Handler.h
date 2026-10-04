@@ -132,6 +132,13 @@ class Handler {
         (void)sy;
         (void)sz;
     }
+    /**
+     * Each transform request up to motionEnd() is the transformation at the next of these
+     * times. A primitive inside the block reaches the handler once, at the first time: the
+     * reader reports the rest, since only a transform moves.
+     **/
+    virtual void motionBegin(const std::vector<float> & times) { (void)times; }
+    virtual void motionEnd() { }
 
     // the graphics state
     virtual void color(const glm::vec3 & value) { (void)value; }

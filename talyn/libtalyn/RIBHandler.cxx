@@ -87,7 +87,7 @@ void RIBHandler::projection(const std::string & name, const ParameterList & para
     fov_ = parameters.number("fov", 90.0f);
     // RI marks the current system as camera space here and reinitialises the current
     // transformation, so what follows up to WorldBegin is the world to camera transform
-    transform_ = glm::mat4x4(1.0f);
+    transform_.replace(glm::mat4x4(1.0f));
 }
 
 void RIBHandler::clipping(float hither, float yon) {
@@ -142,7 +142,7 @@ bool RIBHandler::buildCamera() {
         handed with respect to the world for any camera placed by a general lookat, so this
         refuses rather than rendering a mirrored picture that looks plausible.
     */
-    const glm::mat3 basis(transform_);
+    const glm::mat3 basis(transform_.open());
     if (!rotation(basis)) {
         error_ = "a world to camera transformation that is not a rotation and a translation is not supported";
         return false;
@@ -150,7 +150,7 @@ bool RIBHandler::buildCamera() {
 
     v3d::type::camera::Profile & profile = rc_->scene().camera().profile();
     profile.rotation(glm::quat_cast(glm::transpose(basis)));
-    profile.eye(-glm::transpose(basis) * glm::vec3(transform_[3]));
+    profile.eye(-glm::transpose(basis) * glm::vec3(transform_.open()[3]));
     profile.orthographic(projection_ != "perspective");
     // the screen window is what the projection writes into, so its half extents are the
     // camera's aperture and their ratio is the pixel aspect
@@ -171,7 +171,7 @@ bool RIBHandler::buildCamera() {
 void RIBHandler::worldBegin() {
     if (buildCamera()) {
         // inside the world block the current transformation is object to world
-        transform_ = glm::mat4x4(1.0f);
+        transform_.replace(glm::mat4x4(1.0f));
     }
 }
 
@@ -199,6 +199,14 @@ void RIBHandler::attributeEnd() {
     attributes_.pop_back();
 }
 
+void RIBHandler::motionBegin(const std::vector<float> & times) {
+    transform_.begin(times);
+}
+
+void RIBHandler::motionEnd() {
+    transform_.end();
+}
+
 void RIBHandler::option(const std::string & name, const ParameterList & parameters) {
     // RI writes it as Option "searchpath" "shader" ["./shaders:&"], and the shader path
     // is the only one this renderer looks anything up on
@@ -216,7 +224,7 @@ void RIBHandler::surface(const std::string & name, const ParameterList & paramet
         v3d::render::offline::sl::ShaderType::SURFACE, parameters);
     // a shader's own space is the transform that was in force when the scene named it,
     // and talyn's scene is in world space, so the current transformation is that space
-    surface_.placement = transform_;
+    surface_.placement = transform_.open();
 }
 
 void RIBHandler::lightSource(const std::string & name, const std::string & handle,
@@ -225,7 +233,7 @@ void RIBHandler::lightSource(const std::string & name, const std::string & handl
     made.handle = handle;
     made.light.shader = shaders_->instance(name,
         v3d::render::offline::sl::ShaderType::LIGHT, parameters);
-    made.light.placement = transform_;
+    made.light.placement = transform_.open();
     if (!made.light.shader) {
         // the library has said why, and a light that will not compile is one fewer light
         return;
@@ -249,7 +257,7 @@ void RIBHandler::imager(const std::string & name, const ParameterList & paramete
     v3d::render::offline::sl::Placed made;
     made.shader = shaders_->instance(name,
         v3d::render::offline::sl::ShaderType::IMAGER, parameters);
-    made.placement = transform_;
+    made.placement = transform_.open();
     if (made.shader) {
         rc_->imager(made);
     }
@@ -286,29 +294,29 @@ void RIBHandler::transformEnd() {
 }
 
 void RIBHandler::identity() {
-    transform_ = glm::mat4x4(1.0f);
+    transform_.replace(glm::mat4x4(1.0f));
 }
 
 void RIBHandler::transform(const glm::mat4x4 & matrix) {
-    transform_ = matrix;
+    transform_.replace(matrix);
 }
 
 void RIBHandler::concatTransform(const glm::mat4x4 & matrix) {
-    transform_ = transform_ * matrix;
+    transform_.concat(matrix);
 }
 
 void RIBHandler::translate(float dx, float dy, float dz) {
-    transform_ = glm::translate(transform_, glm::vec3(dx, dy, dz));
+    transform_.concat(glm::translate(glm::mat4x4(1.0f), glm::vec3(dx, dy, dz)));
 }
 
 // RiRotate states its angle in degrees, which is the one place the interface disagrees
 // with glm
 void RIBHandler::rotate(float angle, float dx, float dy, float dz) {
-    transform_ = glm::rotate(transform_, glm::radians(angle), glm::vec3(dx, dy, dz));
+    transform_.concat(glm::rotate(glm::mat4x4(1.0f), glm::radians(angle), glm::vec3(dx, dy, dz)));
 }
 
 void RIBHandler::scale(float sx, float sy, float sz) {
-    transform_ = glm::scale(transform_, glm::vec3(sx, sy, sz));
+    transform_.concat(glm::scale(glm::mat4x4(1.0f), glm::vec3(sx, sy, sz)));
 }
 
 void RIBHandler::color(const glm::vec3 & value) {
@@ -328,14 +336,17 @@ void RIBHandler::fan(const std::vector<glm::vec3> & points, const std::vector<gl
         A scene that gives no varying "N" falls through to the constructor that takes the
         triangle's own plane, which is built from points already in world space.
     */
-    const glm::mat3 toWorldNormal = glm::transpose(glm::inverse(glm::mat3(transform_)));
+    // a moving primitive is stored where the open end of its motion puts it, and the scene
+    // carries it from there to wherever a sample's time finds it
+    const glm::mat4x4 & toWorld = transform_.open();
+    const glm::mat3 toWorldNormal = glm::transpose(glm::inverse(glm::mat3(toWorld)));
     for (std::size_t i = 1; i + 1 < indices.size(); i++) {
         if (indices[0] >= points.size() || indices[i] >= points.size() || indices[i + 1] >= points.size()) {
             continue;
         }
-        const glm::vec3 a(transform_ * glm::vec4(points[indices[0]], 1.0f));
-        const glm::vec3 b(transform_ * glm::vec4(points[indices[i]], 1.0f));
-        const glm::vec3 c(transform_ * glm::vec4(points[indices[i + 1]], 1.0f));
+        const glm::vec3 a(toWorld * glm::vec4(points[indices[0]], 1.0f));
+        const glm::vec3 b(toWorld * glm::vec4(points[indices[i]], 1.0f));
+        const glm::vec3 c(toWorld * glm::vec4(points[indices[i + 1]], 1.0f));
         Triangle triangle = indices[0] < normals.size() && indices[i] < normals.size() &&
             indices[i + 1] < normals.size() ?
             Triangle(a, b, c, color_,
@@ -346,7 +357,7 @@ void RIBHandler::fan(const std::vector<glm::vec3> & points, const std::vector<gl
         // the colour is the triangle's Cs and the shader is what multiplies it
         triangle.surface(shading());
         triangle.opacity(opacity_);
-        rc_->scene().add(triangle);
+        rc_->scene().add(triangle, transform_);
     }
 }
 

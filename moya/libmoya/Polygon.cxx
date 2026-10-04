@@ -342,6 +342,7 @@ void Polygon::split(RenderContext & rc) {
             // whatever the current transformation, colour and shader have since become
             if (placed()) {
                 piece->place(placement(), color(), normal(), shading());
+                piece->motion(motion());
             }
             rc.addPolygon(piece);
         }

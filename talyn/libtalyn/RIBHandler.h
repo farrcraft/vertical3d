@@ -54,6 +54,8 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
     void translate(float dx, float dy, float dz) override;
     void rotate(float angle, float dx, float dy, float dz) override;
     void scale(float sx, float sy, float sz) override;
+    void motionBegin(const std::vector<float> & times) override;
+    void motionEnd() override;
 
     void option(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
 
@@ -101,7 +103,7 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
      **/
     class Attributes {
      public:
-        glm::mat4x4 transform = glm::mat4x4(1.0f);
+        v3d::render::offline::MovingTransform transform;
         glm::vec3 color = glm::vec3(1.0f);
         glm::vec3 opacity = glm::vec3(1.0f);
         v3d::render::offline::sl::Placed surface;
@@ -138,12 +140,12 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
 
     boost::shared_ptr<RenderContext> rc_;
     boost::shared_ptr<v3d::render::offline::sl::ShaderLibrary> shaders_;
-    std::vector<glm::mat4x4> transforms_;
+    std::vector<v3d::render::offline::MovingTransform> transforms_;
     std::vector<Attributes> attributes_;
     std::vector<LightSource> lights_;
     std::vector<std::string> lit_;
     v3d::render::offline::sl::Placed surface_;
-    glm::mat4x4 transform_ = glm::mat4x4(1.0f);
+    v3d::render::offline::MovingTransform transform_;
     glm::vec3 color_ = glm::vec3(1.0f);
     glm::vec3 opacity_ = glm::vec3(1.0f);
     /** Whether the scene's lights have been handed over, which happens once. **/

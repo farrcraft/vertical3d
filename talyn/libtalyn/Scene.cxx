@@ -9,6 +9,8 @@
 #include <vector>
 
 #include <glm/geometric.hpp>
+#include <glm/mat3x3.hpp>
+#include <glm/matrix.hpp>
 
 namespace v3d::talyn {
 
@@ -81,6 +83,22 @@ void Scene::add(const Triangle & triangle) {
     triangles_.push_back(triangle);
 }
 
+void Scene::add(const Triangle & triangle, const v3d::render::offline::MovingTransform & placed) {
+    if (!placed.moving()) {
+        add(triangle);
+        return;
+    }
+    // the triangles of one primitive share a motion, and so do the next primitive's when
+    // nothing has been placed in between
+    if (motions_.empty() || motions_.back().open() != placed.open() || motions_.back().close() != placed.close() ||
+        motions_.back().times() != placed.times()) {
+        motions_.push_back(placed);
+    }
+    Triangle moving(triangle);
+    moving.motion_ = static_cast<int>(motions_.size()) - 1;
+    triangles_.push_back(moving);
+}
+
 const std::vector<Triangle> & Scene::triangles() const {
     return triangles_;
 }
@@ -93,17 +111,36 @@ const std::vector<v3d::render::offline::sl::Placed> & Scene::lights() const {
     return lights_;
 }
 
-bool Scene::nearest(const v3d::type::geometry::Ray & ray, float from, Hit* hit) const {
+bool Scene::nearest(const v3d::type::geometry::Ray & ray, float from, Hit* hit, float time) const {
+    // where each motion has carried its triangles by this time from where they are stored,
+    // and the way back
+    std::vector<glm::mat4x4> ahead(motions_.size());
+    std::vector<glm::mat4x4> backward(motions_.size());
+    for (std::size_t i = 0; i < motions_.size(); i++) {
+        ahead[i] = motions_[i].at(time) * glm::inverse(motions_[i].open());
+        backward[i] = glm::inverse(ahead[i]);
+    }
+
     float closest = std::numeric_limits<float>::max();
     const Triangle* found = nullptr;
     float bestU = 0.0f;
     float bestV = 0.0f;
     for (const Triangle & triangle : triangles_) {
+        const int motion = triangle.motion();
+        const v3d::type::geometry::Ray local = motion < 0 ? ray :
+            v3d::type::geometry::Ray(glm::vec3(backward[motion] * glm::vec4(ray.origin(), 1.0f)),
+                glm::mat3(backward[motion]) * ray.direction());
         float distance = 0.0f;
         float u = 0.0f;
         float v = 0.0f;
-        if (!ray.intersects(triangle.a(), triangle.b(), triangle.c(), &distance, &u, &v)) {
+        if (!local.intersects(triangle.a(), triangle.b(), triangle.c(), &distance, &u, &v)) {
             continue;
+        }
+        if (motion >= 0) {
+            // a distance along the ray taken back is in the stored pose's units, which a
+            // motion that scales does not keep
+            const glm::vec3 there(ahead[motion] * glm::vec4(local.origin() + local.direction() * distance, 1.0f));
+            distance = glm::dot(there - ray.origin(), ray.direction());
         }
         if (distance <= from || distance >= closest) {
             continue;
@@ -121,6 +158,13 @@ bool Scene::nearest(const v3d::type::geometry::Ray & ray, float from, Hit* hit) 
     hit->point = ray.origin() + ray.direction() * closest;
     hit->normal = found->shadingNormal(bestU, bestV);
     hit->geometric = found->geometricNormal();
+    if (found->motion() >= 0) {
+        const glm::mat3 normals = glm::transpose(glm::inverse(glm::mat3(ahead[found->motion()])));
+        hit->normal = glm::normalize(normals * hit->normal);
+        if (glm::length(hit->geometric) > 0.0f) {
+            hit->geometric = glm::normalize(normals * hit->geometric);
+        }
+    }
     hit->incident = ray.direction();
     hit->u = bestU;
     hit->v = bestV;
@@ -133,6 +177,10 @@ const glm::vec3 & Scene::background() const {
 
 void Scene::background(const glm::vec3 & colour) {
     background_ = colour;
+}
+
+int Triangle::motion() const {
+    return motion_;
 }
 
 const v3d::render::offline::sl::Placed & Triangle::surface() const {

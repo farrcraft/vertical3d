@@ -78,6 +78,11 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
         variance_ = variation;
         counts_["PixelVariance"]++;
     }
+    void motionBegin(const std::vector<float> & times) override {
+        motionTimes_ = times;
+        counts_["MotionBegin"]++;
+    }
+    void motionEnd() override { counts_["MotionEnd"]++; }
     void frameBegin(int frame) override {
         frame_ = frame;
         counts_["FrameBegin"]++;
@@ -162,6 +167,7 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
     std::vector<std::string> illuminated_;
     std::vector<glm::vec3> background_;
     std::vector<float> bucket_;
+    std::vector<float> motionTimes_;
     std::vector<glm::vec3> points_;
     std::vector<glm::vec3> colors_;
     std::vector<unsigned int> perPolygon_;
@@ -558,4 +564,54 @@ BOOST_AUTO_TEST_CASE(ribreader_imager_test) {
     BOOST_CHECK_EQUAL(handler.imager_, "background");
     BOOST_REQUIRE_EQUAL(handler.background_.size(), 1u);
     BOOST_CHECK_CLOSE(handler.background_[0].b, 0.3f, 0.01f);
+}
+
+/**
+ * A motion block's times reach the handler, and every transform request inside it does too,
+ * since each is the transformation at one of the times.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_motion_block_test) {
+    CountingHandler handler;
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(read(
+        "WorldBegin\n"
+        "MotionBegin [0 0.5]\n"
+        "Translate 0 0 0\n"
+        "Translate 1 0 0\n"
+        "MotionEnd\n"
+        "Polygon \"P\" [0 0 1  1 0 1  1 1 1]\n"
+        "WorldEnd\n", &handler, &reader));
+
+    BOOST_CHECK_EQUAL(handler.count("MotionBegin"), 1u);
+    BOOST_CHECK_EQUAL(handler.count("MotionEnd"), 1u);
+    BOOST_CHECK_EQUAL(handler.count("Translate"), 2u);
+    BOOST_REQUIRE_EQUAL(handler.motionTimes_.size(), 2u);
+    BOOST_CHECK_EQUAL(handler.motionTimes_[1], 0.5f);
+    BOOST_CHECK_EQUAL(handler.count("Polygon"), 1u);
+    BOOST_CHECK(reader.unsupported().empty());
+}
+
+/**
+ * A primitive repeated inside a motion block deforms, which is not built: the first reaches
+ * the handler, the second is read and reported, and the request after the block still reads.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_deforming_motion_test) {
+    CountingHandler handler;
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(read(
+        "WorldBegin\n"
+        "MotionBegin [0 1]\n"
+        "Polygon \"P\" [0 0 1  1 0 1  1 1 1]\n"
+        "Polygon \"P\" [0 0 2  2 0 2  2 2 2  0 2 2]\n"
+        "MotionEnd\n"
+        "Color [0.5 0.5 0.5]\n"
+        "WorldEnd\n", &handler, &reader));
+
+    BOOST_CHECK_EQUAL(handler.count("Polygon"), 1u);
+    BOOST_CHECK_EQUAL(handler.vertices_, 3u);
+    BOOST_REQUIRE_EQUAL(reader.unsupported().size(), 1u);
+    BOOST_CHECK_EQUAL(reader.unsupported()[0], "deforming Polygon");
+    BOOST_CHECK_EQUAL(handler.count("Color"), 1u);
 }

@@ -119,7 +119,7 @@ void RenderContext::prepareWorld() {
     // between RiProjection and here is the world to camera transformation
     saveCoordinateSystem("camera");
     // inside the world block the current transformation is object to world
-    transform_ = glm::mat4x4(1.0f);
+    transform_.replace(glm::mat4x4(1.0f));
 
     // set raster transformation
     glm::mat4x4 raster(1.0f);  // identity
@@ -268,12 +268,12 @@ void RenderContext::projection(std::string name, float fov) {
     // append the projection to the current transformation. RI states the composition in
     // row vectors, where the projection is on the right; a matrix applies to what is on
     // its right here, so it goes on the left
-    transform_ = projection * transform_;
+    transform_ = transform_.before(projection);
     // save as screen coordinate system
     saveCoordinateSystem("screen");
 
     // reinitialize current transformation to indentity matrix
-    transform_ = glm::mat4x4(1.0f);
+    transform_.replace(glm::mat4x4(1.0f));
     // current transformation matrix is now the camera coordinate system
 }
 
@@ -373,25 +373,33 @@ void RenderContext::attributeEnd() {
 }
 
 void RenderContext::saveCoordinateSystem(const std::string& name) {
-    coordinateSystems_[name] = transform_;
+    coordinateSystems_[name] = transform_.open();
 }
 
 void RenderContext::setCoordinateSystem(const std::string& name) {
     // make sure name is a valid coordinate system
 
-    transform_ = coordinateSystems_[name];
+    transform_.replace(coordinateSystems_[name]);
 }
 
 void RenderContext::setIdentityTransform() {
-    transform_ = glm::mat4(1.0f);
+    transform_.replace(glm::mat4(1.0f));
 }
 
 void RenderContext::setTransform(const glm::mat4x4& trans) {
-    transform_ = trans;
+    transform_.replace(trans);
+}
+
+void RenderContext::motionBegin(const std::vector<float> & times) {
+    transform_.begin(times);
+}
+
+void RenderContext::motionEnd() {
+    transform_.end();
 }
 
 void RenderContext::concatTransform(const glm::mat4x4& trans) {
-    transform_ = transform_ * trans;
+    transform_.concat(trans);
 }
 
 void RenderContext::color(const glm::vec3& value) {
@@ -428,17 +436,17 @@ glm::mat4x4 RenderContext::coordinateSystem(const std::string& name) {
 }
 
 void RenderContext::translate(float dx, float dy, float dz) {
-    transform_ = glm::translate(transform_, glm::vec3(dx, dy, dz));
+    transform_.concat(glm::translate(glm::mat4x4(1.0f), glm::vec3(dx, dy, dz)));
 }
 
 // RiRotate states its angle in degrees, which is the one place the interface disagrees
 // with glm
 void RenderContext::rotate(float angle, float dx, float dy, float dz) {
-    transform_ = glm::rotate(transform_, glm::radians(angle), glm::vec3(dx, dy, dz));
+    transform_.concat(glm::rotate(glm::mat4x4(1.0f), glm::radians(angle), glm::vec3(dx, dy, dz)));
 }
 
 void RenderContext::scale(float sx, float sy, float sz) {
-    transform_ = glm::scale(transform_, glm::vec3(sx, sy, sz));
+    transform_.concat(glm::scale(glm::mat4x4(1.0f), glm::vec3(sx, sy, sz)));
 }
 
 /*
@@ -468,7 +476,7 @@ void RenderContext::surface(const std::string & name,
     surface_ = shaders_->instance(name, v3d::render::offline::sl::ShaderType::SURFACE, parameters);
     // RI says a shader's own space is the transform in force when the scene instanced it,
     // which is what a "point \"shader\" (0, 0, 1)" in it is stated against
-    surfacePlacement_ = coordinateSystems_["camera"] * transform_;
+    surfacePlacement_ = coordinateSystems_["camera"] * transform_.open();
 }
 
 void RenderContext::lightSource(const std::string & name, const std::string & handle,
@@ -476,7 +484,7 @@ void RenderContext::lightSource(const std::string & name, const std::string & ha
     LightSource light;
     light.handle = handle;
     light.shader = shaders_->instance(name, v3d::render::offline::sl::ShaderType::LIGHT, parameters);
-    light.placement = coordinateSystems_["camera"] * transform_;
+    light.placement = coordinateSystems_["camera"] * transform_.open();
     if (!light.shader) {
         // the library has already said why, and a light that will not compile is one
         // fewer light rather than a light of some other kind
@@ -518,7 +526,7 @@ Shading RenderContext::shading() {
         state.surface = shaders_->instance("constant",
             v3d::render::offline::sl::ShaderType::SURFACE,
             v3d::render::offline::rib::ParameterList());
-        state.placement = coordinateSystems_["camera"] * transform_;
+        state.placement = coordinateSystems_["camera"] * transform_.open();
     }
     for (const LightSource & light : lights_) {
         if (std::find(lit_.begin(), lit_.end(), light.handle) == lit_.end()) {
@@ -562,8 +570,9 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     // a primitive carries the state it was submitted under - see ReyesPrimitive::place().
     // A piece handed back by a split is already placed and keeps its parent's
     if (!poly->placed()) {
-        poly->place(coordinateSystems_["camera"] * transform_, color_, poly->geometricNormal(),
+        poly->place(coordinateSystems_["camera"] * transform_.open(), color_, poly->geometricNormal(),
             shading());
+        poly->motion(transform_.before(coordinateSystems_["camera"]));
     }
 
     // a vertex that brought no "Cs" of its own takes the primitive's colour. There is no
@@ -602,15 +611,30 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     // belongs here: both happen to be right when it is a rotation and neither is when a
     // scene places its camera with a matrix that also translates
     const glm::mat4x4 toEye = poly->placement();
-    bound_max = glm::vec3(toEye * glm::vec4(bound_max, 1.0f));
-    bound_min = glm::vec3(toEye * glm::vec4(bound_min, 1.0f));
+    const glm::vec3 objectMin = bound_min;
+    const glm::vec3 objectMax = bound_max;
+    bound_max = glm::vec3(toEye * glm::vec4(objectMax, 1.0f));
+    bound_min = glm::vec3(toEye * glm::vec4(objectMin, 1.0f));
 
     // camera transform might've flipped some components of min & max
     orderBound(&bound_min, &bound_max);
 
+    // a moving primitive is culled by where it is at either end of the shutter as well as
+    // where it opened; the size test below reads where it opened, because a split shrinks a
+    // primitive and never the distance it travels
+    glm::vec3 swept_min = bound_min;
+    glm::vec3 swept_max = bound_max;
+    if (poly->motion().moving()) {
+        glm::vec3 closeMin(poly->motion().close() * glm::vec4(objectMin, 1.0f));
+        glm::vec3 closeMax(poly->motion().close() * glm::vec4(objectMax, 1.0f));
+        orderBound(&closeMin, &closeMax);
+        swept_min = glm::min(swept_min, closeMin);
+        swept_max = glm::max(swept_max, closeMax);
+    }
+
     // do hither-yon cull
-    if ((bound_max[2] > far_ && bound_min[2] > far_)  // bound is completely outside far plane (too far away for the camera to see)
-        || (bound_max[2] < near_ && bound_min[2] < near_)) {  // bound is completely outside near plane (effectively behind camera)
+    if ((swept_max[2] > far_ && swept_min[2] > far_)  // bound is completely outside far plane (too far away for the camera to see)
+        || (swept_max[2] < near_ && swept_min[2] < near_)) {  // bound is completely outside near plane (effectively behind camera)
         // cull poly
         // no need to continue since poly won't be rendered
         return;
@@ -660,7 +684,7 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     */
     const v3d::type::geometry::Frustum frustum(coordinateSystems_["screen"], v3d::type::geometry::Frustum::Depth::MinusOneToOne);
     v3d::type::geometry::AABBox eyeBound;
-    eyeBound.extents(bound_min, bound_max);
+    eyeBound.extents(swept_min, swept_max);
     if (frustum.intersect(eyeBound) == v3d::type::geometry::Frustum::OUTSIDE) {  // poly is entirely outside frustum
         return;
     }

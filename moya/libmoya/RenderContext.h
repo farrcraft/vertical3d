@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/log/Logger.h>
+#include <api/render/offline/MovingTransform.h>
 #include <api/render/offline/Sampling.h>
 #include <api/render/offline/rib/Declarations.h>
 #include <api/render/offline/sl/ShaderLibrary.h>
@@ -88,6 +89,12 @@ class RenderContext {
         void clipping(float near, float far);
 
         void projection(std::string name, float fov = 90.0);
+        /**
+            *	maps to RiMotionBegin() and RiMotionEnd(). Each transform request between
+            *	them is the current transformation at the next of the times.
+            */
+        void motionBegin(const std::vector<float> & times);
+        void motionEnd();
         /**
             *	Whether the projection is a perspective one, which is the only kind a lens
             *	can blur.
@@ -268,7 +275,7 @@ class RenderContext {
             */
         class Attributes {
          public:
-            glm::mat4x4 transform = glm::mat4x4(1.0f);
+            v3d::render::offline::MovingTransform transform;
             glm::vec3 color = glm::vec3(1.0f);
             glm::vec3 opacity = glm::vec3(1.0f);
             float shadingRate = 1.0f;
@@ -293,7 +300,7 @@ class RenderContext {
         };
 
         std::string name_;
-        std::vector<glm::mat4x4> transforms_;
+        std::vector<v3d::render::offline::MovingTransform> transforms_;
         std::vector<Attributes> attributes_;
         std::map<std::string, glm::mat4x4> coordinateSystems_;
         v3d::render::offline::rib::Declarations declarations_;
@@ -328,7 +335,9 @@ class RenderContext {
         std::string displayName_;
         std::string displayType_;
         std::string displayMode_;
-        glm::mat4x4 transform_ = glm::mat4x4(1.0f);  // world to camera transformation matrix / current transformation matrix
+        // world to camera transformation matrix / current transformation matrix, which a
+        // motion block makes move
+        v3d::render::offline::MovingTransform transform_;
         float near_ = 1.0e-10f;  // near clipping plane
         float far_ = 1.0e38f;  // far clipping plane
         v3d::render::offline::Sampling sampling_;

@@ -46,6 +46,12 @@ class HitShader final : public v3d::render::offline::sl::runtime::Renderer {
      */
     glm::vec3 shade(const Hit & hit);
 
+    /**
+     * When the sample being shaded was taken, which is when its shadow and traced rays
+     * look at the scene.
+     **/
+    void time(float when);
+
     // what the machine asks a renderer for
     bool space(const std::string & name, glm::mat4x4* matrix) override;
     unsigned int lights() override;
@@ -75,6 +81,7 @@ class HitShader final : public v3d::render::offline::sl::runtime::Renderer {
     Run & run(const v3d::render::offline::sl::InstancePtr & shader);
 
     const Scene* scene_;
+    float time_ = 0.0f;
     /** The hit being shaded, for the space table and for the shadow ray's offset. **/
     const Hit* hit_ = nullptr;
     /** What the shader being run was placed by, which is its own space. **/

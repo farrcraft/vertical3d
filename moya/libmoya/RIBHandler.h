@@ -58,6 +58,8 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
     void translate(float dx, float dy, float dz) override;
     void rotate(float angle, float dx, float dy, float dz) override;
     void scale(float sx, float sy, float sz) override;
+    void motionBegin(const std::vector<float> & times) override;
+    void motionEnd() override;
 
     void color(const glm::vec3 & value) override;
     void opacity(const glm::vec3 & value) override;

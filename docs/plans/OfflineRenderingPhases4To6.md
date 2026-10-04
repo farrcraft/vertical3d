@@ -110,7 +110,7 @@ distant light's shadow ray of fixed length; and the C array helper still in moya
 | [6](#step-6--moyas-hider-tests-a-sample-against-the-micropolygon) | moya's hider tests a sample against the micropolygon | `moya` | — | done |
 | [7](#step-7--moya-samples-through-the-film) | moya samples through the film | `moya` | 0076 | done |
 | [8](#step-8--depth-of-field) | Depth of field in both | `moya`, `talyn` | — | done |
-| [9](#step-9--motion-blur-of-a-transform) | Motion blur of a transform, in both | `api/render/offline`, `moya`, `talyn` | — | not started |
+| [9](#step-9--motion-blur-of-a-transform) | Motion blur of a transform, in both | `api/render/offline`, `moya`, `talyn` | — | done |
 | [10](#step-10--adaptive-sampling-in-talyn) | Adaptive sampling in talyn | `talyn` | — | not started |
 | [11](#step-11--a-trace-that-recurses) | A trace that recurses, to a depth a scene sets | `talyn` | — | not started |
 | [12](#step-12--reflection-refraction-and-transparency) | Reflection, refraction, transparency and spheres | `api/render/offline`, `talyn` | — | not started |
@@ -369,6 +369,17 @@ inside a motion block, is not built, and the reader reports it.
   off linearly along it under a box filter;
 * a new reference per renderer, from both routes;
 * a vertex list inside a motion block is reported and drawn at the block's first time.
+
+**Landed.** The shared piece is `offline::MovingTransform`, which each renderer holds as its
+current transformation, rather than a transform stack in the library: both renderers keep their
+own stacks, and what had to agree was how a block fills the two ends and how they blend. A
+deforming primitive is the reader's to report, through `Reader::unsupported()`, since it is the
+reader that knows a primitive repeated inside a block. moya's first version placed a moving
+micropolygon afresh for every sample its swept bound reached and took 75 seconds over the
+suite; the motion to a sample's time is now worked out once per sample per grid, and a sample is
+rejected by the bound of its slice of the shutter first, which brings the suite back to about
+twenty-three. `reference-motion.rib` is one scene in both suites, a quad sliding and a quad
+turning, and the renderers draw it alike.
 
 ### Step 10 — Adaptive sampling in talyn
 

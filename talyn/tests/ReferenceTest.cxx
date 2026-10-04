@@ -44,6 +44,11 @@ const char* FOCUS_RENDERED = "data_out/reference-focus.png";
 const char* FOCUS_SCENE = "data/reference-focus.rib";
 const char* FOCUS_RIB_RENDERED = "data_out/reference-focus-rib.png";
 
+const char* MOTION = "data/reference-motion.png";
+const char* MOTION_RENDERED = "data_out/reference-motion.png";
+const char* MOTION_SCENE = "data/reference-motion.rib";
+const char* MOTION_RIB_RENDERED = "data_out/reference-motion-rib.png";
+
 /**
  * One sample at each pixel centre under a one pixel box, which the film gives back exactly.
  * The references drawn this way pin the hider and the shading; reference-sampled pins the
@@ -231,6 +236,87 @@ float largest(const v3d::render::offline::FrameBuffer & a, const v3d::render::of
         }
     }
     return worst;
+}
+
+/**
+ * A quad in one z plane under a transformation that may move, as the reader's fan makes it.
+ **/
+void movingQuad(v3d::talyn::Scene* scene, const glm::vec3 (&corners)[4], const glm::vec3 & colour,
+    const v3d::render::offline::sl::Placed & surface, const v3d::render::offline::MovingTransform & placed) {
+    for (unsigned int i = 1; i + 1 < 4; i++) {
+        const glm::vec3 a(placed.open() * glm::vec4(corners[0], 1.0f));
+        const glm::vec3 b(placed.open() * glm::vec4(corners[i], 1.0f));
+        const glm::vec3 c(placed.open() * glm::vec4(corners[i + 1], 1.0f));
+        v3d::talyn::Triangle triangle(a, b, c, colour);
+        triangle.surface(surface);
+        scene->add(triangle, placed);
+    }
+}
+
+/**
+ * The orthographic camera of the other references, with the shutter open from 0 to 1.
+ **/
+void motionCamera(v3d::talyn::RenderContext & rc) {
+    rc.format(64, 48);
+    rc.sampling().samples = glm::uvec2(4, 4);
+    rc.sampling().shutter = glm::vec2(0.0f, 1.0f);
+    v3d::type::camera::Profile & profile = rc.scene().camera().profile();
+    profile.orthographic(true);
+    profile.pixelAspect(4.0f / 3.0f);
+    profile.orthoZoom(1.0f);
+    profile.eye(glm::vec3(0.0f));
+    profile.clipping(0.1f, 100.0f);
+}
+
+/*
+    The same scene as data/reference-motion.rib: a quad sliding right and a quad turning a
+    quarter about its centre, each across the whole shutter.
+*/
+void motionScene(v3d::talyn::RenderContext & rc) {
+    motionCamera(rc);
+    const v3d::render::offline::sl::Placed constant = shader("constant",
+        v3d::render::offline::sl::ShaderType::SURFACE, v3d::render::offline::rib::ParameterList());
+
+    v3d::render::offline::MovingTransform sliding;
+    sliding.begin({ 0.0f, 1.0f });
+    sliding.concat(glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f)));
+    sliding.concat(glm::translate(glm::mat4x4(1.0f), glm::vec3(0.5f, 0.0f, 0.0f)));
+    sliding.end();
+    const glm::vec3 slid[4] = {
+        glm::vec3(-1.2f, 0.1f, 5.0f), glm::vec3(-0.4f, 0.1f, 5.0f),
+        glm::vec3(-0.4f, 0.8f, 5.0f), glm::vec3(-1.2f, 0.8f, 5.0f)
+    };
+    movingQuad(&rc.scene(), slid, glm::vec3(0.9f, 0.8f, 0.2f), constant, sliding);
+
+    v3d::render::offline::MovingTransform turning(glm::translate(glm::mat4x4(1.0f), glm::vec3(0.6f, -0.4f, 5.0f)));
+    turning.begin({ 0.0f, 1.0f });
+    turning.concat(glm::rotate(glm::mat4x4(1.0f), 0.0f, glm::vec3(0.0f, 0.0f, 1.0f)));
+    turning.concat(glm::rotate(glm::mat4x4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
+    turning.end();
+    const glm::vec3 turned[4] = {
+        glm::vec3(-0.35f, -0.15f, 0.0f), glm::vec3(0.35f, -0.15f, 0.0f),
+        glm::vec3(0.35f, 0.15f, 0.0f), glm::vec3(-0.35f, 0.15f, 0.0f)
+    };
+    movingQuad(&rc.scene(), turned, glm::vec3(0.2f, 0.7f, 0.9f), constant, turning);
+}
+
+/**
+ * The coverage of a quad that slid twelve pixels right while the shutter was open, along the
+ * row through its middle. Its left edge leaves pixels 8 to 19 one after another and its right
+ * edge reaches pixels 32 to 43, so under a one pixel box the coverage climbs a twelfth a pixel
+ * from 8 and falls a twelfth a pixel from 32, and is whole between.
+ **/
+void checkRamp(const v3d::render::offline::FrameBuffer & planes, unsigned int coverage, unsigned int row) {
+    BOOST_CHECK_EQUAL(planes.value(coverage, 7, row), 0.0f);
+    for (unsigned int k = 0; k < 12; k++) {
+        BOOST_TEST_CONTEXT("pixel " << 8 + k << " and " << 32 + k) {
+            const float rising = (static_cast<float>(k) + 0.5f) / 12.0f;
+            BOOST_CHECK_SMALL(planes.value(coverage, 8 + k, row) - rising, 0.1f);
+            BOOST_CHECK_SMALL(planes.value(coverage, 32 + k, row) - (1.0f - rising), 0.1f);
+        }
+    }
+    BOOST_CHECK_CLOSE(planes.value(coverage, 25, row), 1.0f, 1.0e-4f);
+    BOOST_CHECK_EQUAL(planes.value(coverage, 44, row), 0.0f);
 }
 
 /**
@@ -498,4 +584,54 @@ BOOST_AUTO_TEST_CASE(talyn_out_of_focus_spreads_test) {
     BOOST_CHECK_LE(sharp, 2u);
     BOOST_CHECK_GE(blurred, 4u);
     BOOST_CHECK_LE(blurred, 7u);
+}
+
+/**
+ * A quad sliding and a quad turning while the shutter is open.
+ **/
+BOOST_AUTO_TEST_CASE(talyn_motion_reference_test) {
+    v3d::talyn::RenderContext rc;
+    motionScene(rc);
+    rc.render();
+
+    check(rc.framebuffer()->image(3), MOTION, MOTION_RENDERED);
+}
+
+BOOST_AUTO_TEST_CASE(talyn_motion_reference_from_rib_test) {
+    auto rc = boost::make_shared<v3d::talyn::RenderContext>();
+    v3d::talyn::RIBHandler handler(rc);
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(reader.read(MOTION_SCENE, &handler));
+    BOOST_CHECK_EQUAL(reader.error(), "");
+    BOOST_REQUIRE_EQUAL(handler.error(), "");
+
+    rc->render();
+    check(rc->framebuffer()->image(3), MOTION, MOTION_RIB_RENDERED);
+}
+
+/**
+ * A quad translated across the shutter spreads over the distance it moved, its coverage
+ * rising and falling linearly along it.
+ **/
+BOOST_AUTO_TEST_CASE(talyn_motion_spreads_linearly_test) {
+    v3d::talyn::RenderContext rc;
+    motionCamera(rc);
+    rc.sampling().samples = glm::uvec2(8, 8);
+    rc.sampling().filter = v3d::render::offline::Filter::Box;
+    rc.sampling().width = glm::vec2(1.0f);
+
+    v3d::render::offline::MovingTransform sliding;
+    sliding.begin({ 0.0f, 1.0f });
+    sliding.concat(glm::mat4x4(1.0f));
+    sliding.concat(glm::translate(glm::mat4x4(1.0f), glm::vec3(0.5f, 0.0f, 0.0f)));
+    sliding.end();
+    const glm::vec3 corners[4] = {
+        glm::vec3(-1.0f, -0.5f, 5.0f), glm::vec3(0.0f, -0.5f, 5.0f),
+        glm::vec3(0.0f, 0.5f, 5.0f), glm::vec3(-1.0f, 0.5f, 5.0f)
+    };
+    movingQuad(&rc.scene(), corners, glm::vec3(1.0f), v3d::render::offline::sl::Placed(), sliding);
+    rc.render();
+
+    checkRamp(*rc.framebuffer(), 3, 24);
 }

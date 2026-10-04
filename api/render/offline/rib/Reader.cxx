@@ -483,6 +483,38 @@ Reader::Result Reader::transformRequest(const std::string & name, Lexer * lexer,
 }
 
 /**
+ * Reads a motion block's bounds. What it moves is the transform requests between them.
+ **/
+Reader::Result Reader::motionRequest(const std::string & name, Lexer * lexer, Handler * handler) {
+    if (name == "MotionBegin") {
+        std::vector<float> times;
+        const Token open = lexer->next();
+        if (open.kind() != Kind::ARRAY_BEGIN) {
+            fail("expected '['", open);
+            return Result::Failed;
+        }
+        while (lexer->peek().kind() == Kind::NUMBER) {
+            times.push_back(lexer->next().value());
+        }
+        const Token close = lexer->next();
+        if (close.kind() != Kind::ARRAY_END) {
+            fail("expected ']'", close);
+            return Result::Failed;
+        }
+        motion_ = true;
+        motionPrimitives_ = 0;
+        handler->motionBegin(times);
+        return Result::Handled;
+    }
+    if (name == "MotionEnd") {
+        motion_ = false;
+        handler->motionEnd();
+        return Result::Handled;
+    }
+    return Result::Unhandled;
+}
+
+/**
  * Reads the attributes a primitive is submitted under.
  **/
 Reader::Result Reader::attributeRequest(const std::string & name, Lexer * lexer, Handler * handler) {
@@ -657,7 +689,23 @@ bool Reader::request(const std::string & name, Lexer * lexer, Handler * handler)
         result = shaderRequest(name, lexer, handler);
     }
     if (result == Result::Unhandled) {
-        result = primitiveRequest(name, lexer, handler);
+        result = motionRequest(name, lexer, handler);
+    }
+    if (result == Result::Unhandled) {
+        // a primitive after the first in a motion block is the same primitive deforming,
+        // which is not built: it is read, so the stream stays in step, and drawn at the
+        // block's first time by being handed to nobody
+        Handler nobody;
+        const bool deforming = motion_ && motionPrimitives_ > 0;
+        result = primitiveRequest(name, lexer, deforming ? &nobody : handler);
+        if (result == Result::Handled && motion_) {
+            motionPrimitives_++;
+            if (deforming && reported_.insert("deforming " + name).second) {
+                unsupported_.push_back("deforming " + name);
+                logger_->get()->warn("RIB {} inside a motion block deforms, which is not supported; "
+                    "it is drawn at the block's first time", name);
+            }
+        }
     }
     if (result != Result::Unhandled) {
         return result == Result::Handled;
@@ -673,7 +721,10 @@ bool Reader::request(const std::string & name, Lexer * lexer, Handler * handler)
 bool Reader::read(std::istream & stream, Handler * handler) {
     error_.clear();
     unrecognised_.clear();
+    unsupported_.clear();
     reported_.clear();
+    motion_ = false;
+    motionPrimitives_ = 0;
     declarations_ = Declarations();
 
     Lexer lexer(stream);
@@ -723,6 +774,10 @@ const std::string & Reader::error() const {
 
 const std::vector<std::string> & Reader::unrecognised() const {
     return unrecognised_;
+}
+
+const std::vector<std::string> & Reader::unsupported() const {
+    return unsupported_;
 }
 
 };  // namespace v3d::render::offline::rib

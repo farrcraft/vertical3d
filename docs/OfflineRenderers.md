@@ -70,6 +70,21 @@ pixels and resolves into a renderer's planes. Both renderers render through them
   and so the divide alone: a corner's raster position is linear in the lens point, so a
   micropolygon is projected three times and every sample's corners are a sum of those. Its
   bound is grown to the lens's four extremes so every sample it can reach is tested.
+- **Only a transform moves.** `offline::MovingTransform` is the current transformation at a
+  motion block's two ends: inside a block each transform request applies to its own copy of
+  the transformation the block found, and outside one a request applies to both ends. Between
+  them translation and scale are interpolated linearly and rotation by a quaternion. A primitive
+  repeated inside a block would deform, which is not built: the reader hands the first to the
+  renderer and lists the rest in `Reader::unsupported()`.
+- **talyn stores a moving triangle where the open end put it**, and `Scene::nearest()` takes a
+  time: a ray is carried back into that pose and its hit is carried forward again. `HitShader`
+  carries the sample's time so its shadow rays look at the same moment.
+- **moya places a moving micropolygon per sample.** A primitive carries its moving object to eye
+  transformation, and the hider moves the eye space corners from the open end to a sample's
+  time. Its bound is where it is at eight slices of the shutter, grown by the furthest a corner
+  moves in one, and a sample is rejected by its own slice's bound before anything is placed. A
+  moving primitive is culled by its bound at both ends, and measured for splitting at the open
+  end alone, since a split shrinks a primitive and never the distance it travels.
 - **A depth is not filtered.** It is the nearest hit among the samples inside the pixel, since a
   blend of two surfaces' depths is a depth neither is at.
 - **The filters are RI's formulas**, cut off at the width a scene gives. Catmull-rom peaks at two

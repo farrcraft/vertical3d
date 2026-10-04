@@ -12,6 +12,7 @@
 #include <stdarg.h>
 #include <string.h>
 
+#include <algorithm>
 #include <deque>
 #include <string>
 #include <vector>
@@ -1046,12 +1047,23 @@ RtVoid RiObjectInstance(RtObjectHandle handle) {
 }
 
 RtVoid RiMotionBegin(RtInt n, ...) {
+    // n times follow, each promoted to a double on its way through the ellipsis
+    va_list arguments;
+    va_start(arguments, n);
+    std::vector<float> times;
+    times.reserve(static_cast<std::size_t>(std::max(n, 0)));
+    for (RtInt i = 0; i < n; i++) {
+        times.push_back(static_cast<float>(va_arg(arguments, double)));
+    }
+    va_end(arguments);
+    renderer().activeRenderContext().motionBegin(times);
 }
 
 RtVoid RiMotionBeginV(RtInt n, RtInt n2, RtToken tokens[], RtPointer parms[]) {
 }
 
 RtVoid RiMotionEnd(void) {
+    renderer().activeRenderContext().motionEnd();
 }
 
 RtVoid RiMakeTexture(char *pic, char *tex, RtToken swrap, RtToken twrap, RtFilterFunc filterfunc, RtFloat swidth, RtFloat twidth, ...) {
