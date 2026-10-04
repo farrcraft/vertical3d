@@ -9,6 +9,8 @@
 #include <api/render/offline/Sampler.h>
 #include <api/render/offline/sl/Imager.h>
 
+#include <algorithm>
+#include <array>
 #include <vector>
 
 #include <glm/geometric.hpp>
@@ -23,6 +25,102 @@ namespace {
 // the planes of an RGBA framebuffer
 const unsigned int RED = 0;
 const unsigned int ALPHA = 3;
+
+/**
+ * Casts one sample's ray and shades what it hits.
+ *
+ * A lens moves each sample's eye across it and aims the ray at the point it would have reached
+ * on the plane of focus, so that plane stays sharp and nothing else does. An orthographic
+ * camera has no lens to move.
+ **/
+class Caster {
+ public:
+    Caster(const Scene * scene, v3d::type::camera::Camera * camera, HitShader * shader,
+        const v3d::render::offline::Sampling & sampling, const std::array<int, 4> & viewport) :
+        scene_(scene), camera_(camera), shader_(shader), viewport_(viewport), focus_(sampling.focalDistance) {
+        radius_ = camera->orthographic() ? 0.0f : sampling.lensRadius();
+        // the camera's own axes and eye, from the view rather than the profile's normals,
+        // which a rotation does not update
+        const glm::mat4x4 toWorld = glm::inverse(camera->view());
+        across_ = glm::normalize(glm::vec3(toWorld[0]));
+        upward_ = glm::normalize(glm::vec3(toWorld[1]));
+        forward_ = glm::normalize(glm::vec3(toWorld[2]));
+        eye_ = glm::vec3(toWorld[3]);
+    }
+
+    v3d::render::offline::Film::Sample cast(const v3d::render::offline::Sampler::Sample & at) const {
+        // the camera measures y downward from the top of the viewport and image row 0 is the
+        // top of the picture, so a raster position is a screen point as it stands
+        int viewport[4] = { viewport_[0], viewport_[1], viewport_[2], viewport_[3] };
+        v3d::type::geometry::Ray ray = camera_->ray(at.raster, viewport);
+        if (radius_ > 0.0f) {
+            const glm::vec3 & origin = ray.origin();
+            const float along = focus_ - glm::dot(origin - eye_, forward_);
+            const glm::vec3 focus = origin + ray.direction() * (along / glm::dot(ray.direction(), forward_));
+            const glm::vec3 moved = origin + radius_ * (at.lens.x * across_ + at.lens.y * upward_);
+            ray = v3d::type::geometry::Ray(moved, focus - moved);
+        }
+
+        v3d::render::offline::Film::Sample sample;
+        sample.raster = at.raster;
+        sample.colour = scene_->background();
+        Hit hit;
+        sample.hit = scene_->nearest(ray, 0.0f, &hit, at.time);
+        if (sample.hit) {
+            // the nearest hit is the batch, and the surface shader's Ci is the sample
+            shader_->time(at.time);
+            sample.colour = shader_->shade(hit);
+            sample.opacity = glm::vec3(1.0f);
+            sample.depth = hit.distance;
+        }
+        return sample;
+    }
+
+ private:
+    const Scene * scene_;
+    v3d::type::camera::Camera * camera_;
+    HitShader * shader_;
+    std::array<int, 4> viewport_;
+    float focus_;
+    float radius_ = 0.0f;
+    glm::vec3 across_;
+    glm::vec3 upward_;
+    glm::vec3 forward_;
+    glm::vec3 eye_;
+};
+
+/**
+ * How far a pixel's samples disagree: the variance of their mean, per channel, which is what
+ * RI's PixelVariance bounds.
+ **/
+class Spread {
+ public:
+    void add(const glm::vec3 & colour) {
+        count_++;
+        sum_ += glm::dvec3(colour);
+        squares_ += glm::dvec3(colour) * glm::dvec3(colour);
+    }
+
+    /**
+     * Whether the largest channel's variance of the mean is within the bound. Fewer than two
+     * samples say nothing about their spread, so they are never settled.
+     **/
+    bool settled(float bound) const {
+        if (count_ < 2) {
+            return false;
+        }
+        const double n = static_cast<double>(count_);
+        const glm::dvec3 mean = sum_ / n;
+        const glm::dvec3 variance = (squares_ - mean * mean * n) / (n - 1.0);
+        const double worst = std::max(variance.x, std::max(variance.y, variance.z));
+        return worst / n <= static_cast<double>(bound);
+    }
+
+ private:
+    unsigned int count_ = 0;
+    glm::dvec3 sum_ { 0.0 };
+    glm::dvec3 squares_ { 0.0 };
+};
 
 };  // namespace
 
@@ -89,7 +187,7 @@ void RenderContext::render() {
     camera.createProjection();
     camera.createView();
 
-    int viewport[4] = { 0, 0, static_cast<int>(width), static_cast<int>(height) };
+    const std::array<int, 4> viewport = { 0, 0, static_cast<int>(width), static_cast<int>(height) };
 
     // one of these for the render rather than one per pixel: it holds the register files,
     // and sizing one per pixel is the one allocation a tracer would notice
@@ -97,48 +195,33 @@ void RenderContext::render() {
 
     // a sample at a time into the film, which filters them into pixels once every ray is
     // cast, per ADR-0076
-    // a lens moves each sample's eye across it and aims the ray at the point it would have
-    // reached on the plane of focus, so that plane stays sharp and nothing else does. An
-    // orthographic camera has no lens to move
-    const float radius = camera.orthographic() ? 0.0f : sampling_.lensRadius();
-    // the camera's own axes and eye, from the view rather than the profile's normals, which
-    // a rotation does not update
-    const glm::mat4x4 toWorld = glm::inverse(camera.view());
-    const glm::vec3 across = glm::normalize(glm::vec3(toWorld[0]));
-    const glm::vec3 upward = glm::normalize(glm::vec3(toWorld[1]));
-    const glm::vec3 forward = glm::normalize(glm::vec3(toWorld[2]));
-    const glm::vec3 eye = glm::vec3(toWorld[3]);
-
+    const Caster caster(&scene_, &camera, &shader, sampling_, viewport);
     const v3d::render::offline::Sampler sampler(sampling_);
     v3d::render::offline::Film film(width, height, sampling_);
+    taken_.assign(static_cast<std::size_t>(width) * height, 0);
     for (unsigned int row = 0; row < height; row++) {
         for (unsigned int column = 0; column < width; column++) {
-            for (const v3d::render::offline::Sampler::Sample & at : sampler.pixel(column, row)) {
-                // the camera measures y downward from the top of the viewport and image row 0
-                // is the top of the picture, so a raster position is a screen point as it stands
-                v3d::type::geometry::Ray ray = camera.ray(at.raster, viewport);
-                if (radius > 0.0f) {
-                    const glm::vec3 & origin = ray.origin();
-                    const float along = sampling_.focalDistance - glm::dot(origin - eye, forward);
-                    const glm::vec3 focus = origin + ray.direction() * (along / glm::dot(ray.direction(), forward));
-                    const glm::vec3 moved = origin + radius * (at.lens.x * across + at.lens.y * upward);
-                    ray = v3d::type::geometry::Ray(moved, focus - moved);
+            /*
+                A PixelVariance above zero asks for another set wherever the first leaves the
+                pixel uncertain: while the variance of the pixel's mean is above it, up to four
+                times the first set. Each set is seeded by the pixel and its pass, so the
+                answer does not depend on the order anything is rendered in.
+            */
+            Spread spread;
+            unsigned int taken = 0;
+            for (unsigned int pass = 0;; pass++) {
+                const std::vector<v3d::render::offline::Sampler::Sample> set = sampler.pixel(column, row, pass);
+                for (const v3d::render::offline::Sampler::Sample & at : set) {
+                    const v3d::render::offline::Film::Sample sample = caster.cast(at);
+                    film.add(sample);
+                    spread.add(sample.colour);
                 }
-
-                v3d::render::offline::Film::Sample sample;
-                sample.raster = at.raster;
-                sample.colour = scene_.background();
-                Hit hit;
-                sample.hit = scene_.nearest(ray, 0.0f, &hit, at.time);
-                if (sample.hit) {
-                    // the nearest hit is the batch, and the surface shader's Ci is the sample
-                    shader.time(at.time);
-                    sample.colour = shader.shade(hit);
-                    sample.opacity = glm::vec3(1.0f);
-                    sample.depth = hit.distance;
+                taken += static_cast<unsigned int>(set.size());
+                if (!(sampling_.variance > 0.0f) || taken >= 4 * set.size() || spread.settled(sampling_.variance)) {
+                    break;
                 }
-                film.add(sample);
             }
+            taken_[static_cast<std::size_t>(row) * width + column] = taken;
         }
     }
     // a ray that hit nothing covered nothing, which is what lets an imager tell a pixel the
@@ -167,6 +250,13 @@ v3d::render::offline::Sampling & RenderContext::sampling() {
 
 const v3d::render::offline::Sampling & RenderContext::sampling() const {
     return sampling_;
+}
+
+unsigned int RenderContext::samplesTaken(unsigned int column, unsigned int row) const {
+    if (!framebuffer_ || column >= framebuffer_->width() || row >= framebuffer_->height() || taken_.empty()) {
+        return 0;
+    }
+    return taken_[static_cast<std::size_t>(row) * framebuffer_->width() + column];
 }
 
 };  // namespace v3d::talyn

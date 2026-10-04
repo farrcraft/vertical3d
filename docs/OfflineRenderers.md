@@ -85,6 +85,12 @@ pixels and resolves into a renderer's planes. Both renderers render through them
   moves in one, and a sample is rejected by its own slice's bound before anything is placed. A
   moving primitive is culled by its bound at both ends, and measured for splitting at the open
   end alone, since a split shrinks a primitive and never the distance it travels.
+- **talyn adapts its sample count and moya does not.** A `PixelVariance` above zero has talyn
+  take another seeded set wherever the variance of a pixel's mean is above it, up to four times
+  the first set; `RenderContext::samplesTaken()` says how many a pixel took. A reyes hider
+  samples a whole bucket at once, and adapting per pixel would split a grid's hiding in two, so
+  moya takes the count `PixelSamples` names, per
+  [ADR-0076](adr/0076-a-pixel-is-a-filtered-set-of-seeded-samples.md).
 - **A depth is not filtered.** It is the nearest hit among the samples inside the pixel, since a
   blend of two surfaces' depths is a depth neither is at.
 - **The filters are RI's formulas**, cut off at the width a scene gives. Catmull-rom peaks at two

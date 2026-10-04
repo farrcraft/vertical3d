@@ -8,6 +8,8 @@
 #include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/Sampling.h>
 
+#include <vector>
+
 #include <boost/shared_ptr.hpp>
 
 #include "Scene.h"
@@ -56,11 +58,18 @@ class RenderContext {
     v3d::render::offline::Sampling & sampling();
     const v3d::render::offline::Sampling & sampling() const;
 
+    /**
+     * How many samples a pixel took in the last render: PixelSamples' count, or more where
+     * a PixelVariance asked for them.
+     */
+    unsigned int samplesTaken(unsigned int column, unsigned int row) const;
+
  private:
     boost::shared_ptr<v3d::render::offline::FrameBuffer> framebuffer_;
     Scene scene_;
     v3d::render::offline::sl::Placed imager_;
     v3d::render::offline::Sampling sampling_;
+    std::vector<unsigned int> taken_;
 };
 
 

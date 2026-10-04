@@ -111,7 +111,7 @@ distant light's shadow ray of fixed length; and the C array helper still in moya
 | [7](#step-7--moya-samples-through-the-film) | moya samples through the film | `moya` | 0076 | done |
 | [8](#step-8--depth-of-field) | Depth of field in both | `moya`, `talyn` | — | done |
 | [9](#step-9--motion-blur-of-a-transform) | Motion blur of a transform, in both | `api/render/offline`, `moya`, `talyn` | — | done |
-| [10](#step-10--adaptive-sampling-in-talyn) | Adaptive sampling in talyn | `talyn` | — | not started |
+| [10](#step-10--adaptive-sampling-in-talyn) | Adaptive sampling in talyn | `talyn` | — | done |
 | [11](#step-11--a-trace-that-recurses) | A trace that recurses, to a depth a scene sets | `talyn` | — | not started |
 | [12](#step-12--reflection-refraction-and-transparency) | Reflection, refraction, transparency and spheres | `api/render/offline`, `talyn` | — | not started |
 | [13](#step-13--texture-and-noise) | `texture()` from an image, and `noise()` | `api/render/offline`, `moya`, `talyn` | — | not started |
@@ -396,6 +396,11 @@ would split a grid's hiding into two passes. The record says so.
 * a variance of zero, the default, renders the sampled reference unchanged;
 * a flat colour takes no extra samples, and a pixel on an edge does;
 * the adapted render is the same twice.
+
+**Landed**, and with it phase 4. The variance is the largest channel's variance of the pixel's
+mean, which is what RI's `PixelVariance` bounds; fewer than two samples never settle. Casting a
+sample became a `Caster` of its own in talyn's render context, so the loop over sets stays
+readable and inside the complexity gate.
 
 ### Step 11 — A trace that recurses
 

@@ -148,3 +148,67 @@ BOOST_AUTO_TEST_CASE(rendercontext_sampled_edge_coverage_test) {
     BOOST_CHECK_CLOSE(buffer->value(3, 8, 8), 1.0f, 1.0e-4f);
     BOOST_CHECK_EQUAL(buffer->value(3, 0, 15), 0.0f);
 }
+
+namespace {
+
+/**
+ * The frame at the RI defaults with a PixelVariance, and a triangle whose vertical edge falls
+ * through the middle of column 12 rather than between two columns.
+ **/
+void adaptive(v3d::talyn::RenderContext & rc) {
+    frame(rc);
+    rc.sampling() = v3d::render::offline::Sampling();
+    rc.sampling().variance = 0.001f;
+    rc.scene().background(glm::vec3(0.0f, 0.0f, 1.0f));
+    rc.scene().add(v3d::talyn::Triangle(
+        glm::vec3(-1.5f, -0.5f, 1.0f),
+        glm::vec3(0.5625f, -0.5f, 1.0f),
+        glm::vec3(0.5625f, 1.5f, 1.0f),
+        glm::vec3(1.0f, 0.0f, 0.0f)));
+}
+
+};  // namespace
+
+/**
+ * A pixel whose samples agree takes the first set and no more, and one on an edge, whose
+ * samples are red and blue, takes more - up to four times the first set.
+ **/
+BOOST_AUTO_TEST_CASE(rendercontext_adaptive_sampling_test) {
+    v3d::talyn::RenderContext rc;
+    adaptive(rc);
+    rc.render();
+
+    BOOST_CHECK_EQUAL(rc.samplesTaken(5, 8), 4u);
+    BOOST_CHECK_EQUAL(rc.samplesTaken(14, 8), 4u);
+    BOOST_CHECK_GT(rc.samplesTaken(12, 8), 4u);
+    BOOST_CHECK_LE(rc.samplesTaken(12, 8), 16u);
+
+    // and a variance of zero, the default, takes the first set everywhere
+    v3d::talyn::RenderContext plain;
+    adaptive(plain);
+    plain.sampling().variance = 0.0f;
+    plain.render();
+    BOOST_CHECK_EQUAL(plain.samplesTaken(12, 8), 4u);
+}
+
+/**
+ * Every further set is seeded by its pixel and its pass, so an adapted render is the same
+ * twice.
+ **/
+BOOST_AUTO_TEST_CASE(rendercontext_adaptive_is_repeatable_test) {
+    v3d::talyn::RenderContext first;
+    adaptive(first);
+    first.render();
+    v3d::talyn::RenderContext second;
+    adaptive(second);
+    second.render();
+
+    for (unsigned int plane = 0; plane < 4; plane++) {
+        for (unsigned int row = 0; row < SIZE; row++) {
+            for (unsigned int column = 0; column < SIZE; column++) {
+                BOOST_REQUIRE_EQUAL(first.framebuffer()->value(plane, column, row),
+                    second.framebuffer()->value(plane, column, row));
+            }
+        }
+    }
+}
