@@ -179,6 +179,14 @@ void Scene::background(const glm::vec3 & colour) {
     background_ = colour;
 }
 
+unsigned int Scene::traceDepth() const {
+    return traceDepth_;
+}
+
+void Scene::traceDepth(unsigned int depth) {
+    traceDepth_ = depth;
+}
+
 int Triangle::motion() const {
     return motion_;
 }

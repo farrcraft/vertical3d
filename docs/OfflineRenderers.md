@@ -201,6 +201,10 @@ rather than a tour.
   ray leaving a surface is offset along the geometric normal and toward the light: started on
   the surface it meets the surface it left, and every lit pixel comes out black in a pattern
   that reads as a normal fault rather than a numerical one.
+- **`trace()` goes as deep as `Option "trace" "maxdepth"` says**, two by default, and past it
+  answers the background. talyn keeps a machine per program per depth, because a surface
+  tracing into another with the same shader is still part way through its run when the other
+  starts. moya does not answer `trace()`, and a ray it is asked for comes back black.
 
 ## Normals
 

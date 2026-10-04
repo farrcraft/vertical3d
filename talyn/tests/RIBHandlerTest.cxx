@@ -77,6 +77,26 @@ BOOST_AUTO_TEST_CASE(talyn_ribhandler_sampling_test) {
     BOOST_CHECK(plain->sampling().pinhole());
 }
 
+/**
+ * `Option "trace" "maxdepth"` sets how deep a shader's trace goes, and a scene that says
+ * nothing gets two.
+ **/
+BOOST_AUTO_TEST_CASE(talyn_ribhandler_trace_depth_test) {
+    auto rc = boost::make_shared<v3d::talyn::RenderContext>();
+    v3d::talyn::RIBHandler handler(rc);
+    BOOST_REQUIRE(read(
+        "Format 32 16 1\n"
+        "Option \"trace\" \"maxdepth\" [5]\n"
+        "WorldBegin\n"
+        "WorldEnd\n", &handler));
+    BOOST_CHECK_EQUAL(rc->scene().traceDepth(), 5u);
+
+    auto plain = boost::make_shared<v3d::talyn::RenderContext>();
+    v3d::talyn::RIBHandler silent(plain);
+    BOOST_REQUIRE(read("Format 32 16 1\nWorldBegin\nWorldEnd\n", &silent));
+    BOOST_CHECK_EQUAL(plain->scene().traceDepth(), 2u);
+}
+
 BOOST_AUTO_TEST_CASE(talyn_ribhandler_missing_file_test) {
     auto rc = boost::make_shared<v3d::talyn::RenderContext>();
     v3d::talyn::RIBHandler handler(rc);

@@ -112,7 +112,7 @@ distant light's shadow ray of fixed length; and the C array helper still in moya
 | [8](#step-8--depth-of-field) | Depth of field in both | `moya`, `talyn` | — | done |
 | [9](#step-9--motion-blur-of-a-transform) | Motion blur of a transform, in both | `api/render/offline`, `moya`, `talyn` | — | done |
 | [10](#step-10--adaptive-sampling-in-talyn) | Adaptive sampling in talyn | `talyn` | — | done |
-| [11](#step-11--a-trace-that-recurses) | A trace that recurses, to a depth a scene sets | `talyn` | — | not started |
+| [11](#step-11--a-trace-that-recurses) | A trace that recurses, to a depth a scene sets | `talyn` | — | done |
 | [12](#step-12--reflection-refraction-and-transparency) | Reflection, refraction, transparency and spheres | `api/render/offline`, `talyn` | — | not started |
 | [13](#step-13--texture-and-noise) | `texture()` from an image, and `noise()` | `api/render/offline`, `moya`, `talyn` | — | not started |
 | [14](#step-14--the-record-one-ray-tracer-both-renderers-reach) | The record: one ray tracer both renderers reach | `docs/adr` | **0077** | not started |
@@ -417,6 +417,13 @@ default is two. Past it, `trace()` answers the background, as it does at a depth
   own registers are intact after the trace;
 * the depth stops at the option's value and answers the background past it;
 * the existing references, whose shaders do not trace, are unchanged.
+
+**Landed.** The depth is the scene's, `Scene::traceDepth()`, and `maxdepth` is a default
+declaration beside `bucketsize` and `gridsize`. `relay.sl`, a test fixture, adds its own colour
+to what it traces along its normal, and two of them facing each other give a sum that counts
+the levels. Keyed by program alone, as before, the machines give the outer level the inner
+level's registers and the sum comes out wrong, which is how the case was checked to catch the
+fault. A light shader run during a trace takes the machine at the depth it was called from.
 
 ### Step 12 — Reflection, refraction and transparency
 

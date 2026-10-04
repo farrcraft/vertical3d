@@ -208,6 +208,8 @@ Declarations::Declarations() {
     // these implementation specific, and an undeclared one is a warning per read.
     declarations_["bucketsize"] = Declaration(Storage::UNIFORM, Type::INTEGER, 2);
     declarations_["gridsize"] = Declaration(Storage::UNIFORM, Type::INTEGER, 1);
+    // and Option "trace", whose name is the standard's
+    declarations_["maxdepth"] = Declaration(Storage::UNIFORM, Type::INTEGER, 1);
 }
 
 bool Declarations::declare(const std::string & name, const std::string & text) {

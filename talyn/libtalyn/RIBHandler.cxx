@@ -213,6 +213,10 @@ void RIBHandler::option(const std::string & name, const ParameterList & paramete
     if (name == "searchpath" && parameters.has("shader")) {
         shaders_->searchpath(parameters.string("shader", std::string()));
     }
+    if (name == "trace" && parameters.has("maxdepth")) {
+        const float depth = parameters.number("maxdepth", 0.0f);
+        rc_->scene().traceDepth(depth > 0.0f ? static_cast<unsigned int>(depth) : 0u);
+    }
 }
 
 void RIBHandler::opacity(const glm::vec3 & value) {

@@ -165,12 +165,21 @@ class Scene final {
     const glm::vec3 & background() const;
     void background(const glm::vec3 & colour);
 
+    /**
+     * How many rays deep a shader's trace() may go, which is RI's
+     * `Option "trace" "maxdepth"`. A trace that would go deeper answers the background,
+     * and that is what bounds two surfaces that trace into each other.
+     **/
+    unsigned int traceDepth() const;
+    void traceDepth(unsigned int depth);
+
  private:
     v3d::type::camera::Camera camera_;
     std::vector<Triangle> triangles_;
     std::vector<v3d::render::offline::MovingTransform> motions_;
     std::vector<v3d::render::offline::sl::Placed> lights_;
     glm::vec3 background_ = glm::vec3(0.0f);
+    unsigned int traceDepth_ = 2;
 };
 
 };  // namespace v3d::talyn

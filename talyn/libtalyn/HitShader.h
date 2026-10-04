@@ -10,6 +10,7 @@
 
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <glm/mat4x4.hpp>
@@ -71,6 +72,10 @@ class HitShader final : public v3d::render::offline::sl::runtime::Renderer {
      * A machine sized for one program and a batch of one. Kept between hits, because a
      * render is one of these per pixel and sizing a register file per pixel is the one
      * allocation that would show.
+     *
+     * There is one per program per trace depth. A surface tracing into another with the
+     * same shader is still running its machine when the other starts, and sharing one
+     * would overwrite the registers the first is part way through.
      */
     class Run final {
      public:
@@ -90,12 +95,10 @@ class HitShader final : public v3d::render::offline::sl::runtime::Renderer {
      * How many traced rays deep the run is.
      *
      * A ray a shader traced may hit a surface whose shader traces again, and nothing in
-     * the language stops that going round for ever. One level is what this phase needs -
-     * no standard shader calls trace() at all - and phase 5 is where a depth a scene can
-     * set belongs.
+     * the language stops that going round for ever: the scene's trace depth does.
      */
     unsigned int depth_ = 0;
-    std::map<const v3d::render::offline::sl::runtime::Program*, Run> runs_;
+    std::map<std::pair<unsigned int, const v3d::render::offline::sl::runtime::Program*>, Run> runs_;
 };
 
 };  // namespace v3d::talyn

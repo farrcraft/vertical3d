@@ -6,6 +6,7 @@
 #include "HitShader.h"
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <glm/geometric.hpp>
@@ -48,7 +49,7 @@ HitShader::HitShader(const Scene* scene) : scene_(scene) {
 }
 
 HitShader::Run & HitShader::run(const v3d::render::offline::sl::InstancePtr & shader) {
-    Run & held = runs_[&shader->program()];
+    Run & held = runs_[std::make_pair(depth_, &shader->program())];
     if (held.program == &shader->program()) {
         return held;
     }
@@ -160,9 +161,9 @@ bool HitShader::trace(const Value & origin, const Value & direction, Value* colo
     if (scene_ == nullptr || colour == nullptr) {
         return false;
     }
-    if (depth_ > 0) {
-        // a ray a traced ray traced answers the background, which is what bounds the
-        // recursion. A depth a scene can set is phase 5's, with the shaders that use it
+    if (depth_ >= scene_->traceDepth()) {
+        // a ray past the scene's depth answers the background, which is what bounds the
+        // recursion
         colour->triple(0, scene_->background());
         return true;
     }
@@ -183,11 +184,15 @@ bool HitShader::trace(const Value & origin, const Value & direction, Value* colo
         colour->triple(0, scene_->background());
         return true;
     }
+    // shade() leaves both of these as the traced surface had them, and the shader that
+    // traced is still running and reads them again
     const Hit* was = hit_;
+    const glm::mat4x4 placed = placement_;
     depth_++;
     colour->triple(0, shade(found));
     depth_--;
     hit_ = was;
+    placement_ = placed;
     return true;
 }
 

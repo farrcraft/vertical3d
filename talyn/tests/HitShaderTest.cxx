@@ -205,3 +205,71 @@ BOOST_AUTO_TEST_CASE(talyn_no_shader_is_the_flat_colour_test) {
     BOOST_CHECK_CLOSE(colour.r, 0.25f, 0.1f);
     BOOST_CHECK_CLOSE(colour.b, 0.75f, 0.1f);
 }
+
+namespace {
+
+/**
+ * Two triangles a unit apart facing each other, each shaded by `relay`, which adds its own
+ * colour to what it traces along its normal: red below, facing up, and green above, facing
+ * down. The hit is on the red one, seen from between them.
+ **/
+glm::vec3 relayed(unsigned int depth) {
+    static ShaderLibrary shaders(boost::make_shared<v3d::log::Logger>());
+    shaders.searchpath("data");
+
+    v3d::talyn::Scene scene;
+    scene.traceDepth(depth);
+    v3d::talyn::Triangle below = facing(2.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+    v3d::talyn::Triangle above(glm::vec3(-2.0f, -2.0f, 1.0f), glm::vec3(0.0f, 2.0f, 1.0f),
+        glm::vec3(2.0f, -2.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    Placed relay;
+    relay.shader = shaders.instance("relay", v3d::render::offline::sl::ShaderType::SURFACE,
+        ParameterList());
+    BOOST_REQUIRE(relay.shader);
+    below.surface(relay);
+    above.surface(relay);
+    scene.add(below);
+    scene.add(above);
+
+    const v3d::type::geometry::Ray ray(glm::vec3(0.0f, 0.0f, 0.5f), glm::vec3(0.0f, 0.0f, -1.0f));
+    v3d::talyn::Hit hit;
+    BOOST_REQUIRE(scene.nearest(ray, 0.0f, &hit));
+    v3d::talyn::HitShader shader(&scene);
+    return shader.shade(hit);
+}
+
+};  // namespace
+
+/**
+ * A surface tracing into a surface with the same shader gets that surface's colour, and
+ * its own registers survive the trace.
+ *
+ * At a depth of two the red surface sees the green one, which sees the red one, which
+ * traces no further: red, plus green, plus red. A machine shared between the levels would
+ * have the outer red read the inner Cs after its trace returned, and the sum would not be
+ * this one.
+ **/
+BOOST_AUTO_TEST_CASE(talyn_a_trace_recurses_test) {
+    const glm::vec3 colour = relayed(2);
+    BOOST_CHECK_CLOSE(colour.r, 2.0f, 0.1f);
+    BOOST_CHECK_CLOSE(colour.g, 1.0f, 0.1f);
+    BOOST_CHECK_SMALL(colour.b, 0.0001f);
+}
+
+/**
+ * The scene's depth is where the trace stops, and past it a trace answers the background,
+ * which is black here.
+ **/
+BOOST_AUTO_TEST_CASE(talyn_a_trace_stops_at_the_depth_test) {
+    const glm::vec3 once = relayed(1);
+    BOOST_CHECK_CLOSE(once.r, 1.0f, 0.1f);
+    BOOST_CHECK_CLOSE(once.g, 1.0f, 0.1f);
+
+    const glm::vec3 never = relayed(0);
+    BOOST_CHECK_CLOSE(never.r, 1.0f, 0.1f);
+    BOOST_CHECK_SMALL(never.g, 0.0001f);
+
+    const glm::vec3 deeper = relayed(3);
+    BOOST_CHECK_CLOSE(deeper.r, 2.0f, 0.1f);
+    BOOST_CHECK_CLOSE(deeper.g, 2.0f, 0.1f);
+}
