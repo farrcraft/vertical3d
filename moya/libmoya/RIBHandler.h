@@ -76,6 +76,9 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
     void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override;
     void pointsPolygons(const std::vector<unsigned int> & counts, const std::vector<unsigned int> & indices,
         const v3d::render::offline::rib::ParameterList & parameters) override;
+    /** Not drawn: moya dices polygons only. The first one a scene names is reported. **/
+    void sphere(float radius, float zmin, float zmax, float thetamax,
+        const v3d::render::offline::rib::ParameterList & parameters) override;
 
     /**
      * The context the requests are landing in, which is where a driver reads the
@@ -94,6 +97,7 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
  private:
     Renderer * renderer_;
     std::string output_;
+    bool spheres_ = false;
 };
 
 };  // namespace v3d::moya

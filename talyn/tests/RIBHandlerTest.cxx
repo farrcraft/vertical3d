@@ -381,3 +381,30 @@ BOOST_AUTO_TEST_CASE(talyn_ribhandler_normal_inverse_transpose_test) {
     BOOST_TEST(triangle.geometricNormal().x == expected.x, boost::test_tools::tolerance(0.0001f));
     BOOST_TEST(triangle.geometricNormal().y == expected.y, boost::test_tools::tolerance(0.0001f));
 }
+
+/**
+ * A sphere reaches the scene with the colour, opacity and transformation that were current,
+ * and is met where the transformation put it.
+ **/
+BOOST_AUTO_TEST_CASE(talyn_ribhandler_sphere_test) {
+    auto rc = boost::make_shared<v3d::talyn::RenderContext>();
+    v3d::talyn::RIBHandler handler(rc);
+    BOOST_REQUIRE(read(
+        "Format 32 16 1\n"
+        "WorldBegin\n"
+        "Color [0.2 0.4 0.6]\n"
+        "Opacity [0.5 0.5 0.5]\n"
+        "Translate 0 0 5\n"
+        "Sphere 1 -1 1 360\n"
+        "WorldEnd\n", &handler));
+
+    BOOST_REQUIRE_EQUAL(rc->scene().spheres().size(), 1u);
+    const v3d::talyn::Sphere & sphere = rc->scene().spheres()[0];
+    BOOST_CHECK_CLOSE(sphere.colour().g, 0.4f, 0.001f);
+    BOOST_CHECK_CLOSE(sphere.opacity().r, 0.5f, 0.001f);
+
+    v3d::talyn::Hit hit;
+    BOOST_REQUIRE(rc->scene().nearest(v3d::type::geometry::Ray(glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+        0.0f, &hit));
+    BOOST_CHECK_CLOSE(hit.distance, 4.0f, 0.001f);
+}

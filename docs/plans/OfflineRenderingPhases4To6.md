@@ -113,7 +113,7 @@ distant light's shadow ray of fixed length; and the C array helper still in moya
 | [9](#step-9--motion-blur-of-a-transform) | Motion blur of a transform, in both | `api/render/offline`, `moya`, `talyn` | — | done |
 | [10](#step-10--adaptive-sampling-in-talyn) | Adaptive sampling in talyn | `talyn` | — | done |
 | [11](#step-11--a-trace-that-recurses) | A trace that recurses, to a depth a scene sets | `talyn` | — | done |
-| [12](#step-12--reflection-refraction-and-transparency) | Reflection, refraction, transparency and spheres | `api/render/offline`, `talyn` | — | not started |
+| [12](#step-12--reflection-refraction-and-transparency) | Reflection, refraction, transparency and spheres | `api/render/offline`, `talyn` | — | done |
 | [13](#step-13--texture-and-noise) | `texture()` from an image, and `noise()` | `api/render/offline`, `moya`, `talyn` | — | not started |
 | [14](#step-14--the-record-one-ray-tracer-both-renderers-reach) | The record: one ray tracer both renderers reach | `docs/adr` | **0077** | not started |
 | [15](#step-15--the-ray-tracer-moves-into-the-shared-library) | talyn's scene and hit shading move into the shared library | `api/render/offline`, `talyn` | 0077 | not started |
@@ -448,6 +448,25 @@ fault. A light shader run during a trace takes the machine at the depth it was c
 * a ray through a glass slab at normal incidence comes out where it went in, displaced by nothing;
 * a sphere's silhouette covers the pixels its radius says;
 * a new reference, a glass sphere and a metal one over a checked floor, from both routes.
+
+**Landed, with three departures.** **A ray carrying on through a surface does not count against
+the trace depth**, as the step had it: a continuation is the same ray rather than a traced one,
+and at the default depth of two a third pane would have come out as background.
+`HitShader::see()` composites front to back by `Oi` until the ray is opaque or leaves the
+scene, and both primary rays and `trace()` go through it. **`fresnel` answers through its
+arguments**, which no built-in had done beyond the component setters, so `Signature::outputs`
+names the first written argument, the compiler requires a variable there and spreads storage
+into it, and the machine writes each. **moya logs a sphere** rather than listing it in
+`Reader::unsupported()`, since it is the renderer, not the reader, that cannot draw one.
+
+talyn's `Triangle` and `Sphere` share a `Primitive` base holding colour, opacity, shader and
+motion, and a `Hit` names a primitive. `glass` sets `Oi` to one and refracts what is behind
+it, so the reference gives its sphere an `Os` of 0.3, which is what the shadow ray reads. The
+RIB route had never set a shader search path: `shader` was undeclared and dropped, and so is
+any shader parameter that is not one of RI's names, which is why the reference declares its
+floor's `size` inline. `reference-trace.png` shows the metal sphere mirroring the checked floor
+below its equator, the glass one refracting an inverted floor and wall, and each one's shadow
+behind it to the right, the glass one's light.
 
 ### Step 13 — `texture()` and `noise()`
 

@@ -49,6 +49,11 @@ const char* MOTION_RENDERED = "data_out/reference-motion.png";
 const char* MOTION_SCENE = "data/reference-motion.rib";
 const char* MOTION_RIB_RENDERED = "data_out/reference-motion-rib.png";
 
+const char* TRACE = "data/reference-trace.png";
+const char* TRACE_RENDERED = "data_out/reference-trace.png";
+const char* TRACE_SCENE = "data/reference-trace.rib";
+const char* TRACE_RIB_RENDERED = "data_out/reference-trace-rib.png";
+
 /**
  * One sample at each pixel centre under a one pixel box, which the film gives back exactly.
  * The references drawn this way pin the hider and the shading; reference-sampled pins the
@@ -317,6 +322,74 @@ void checkRamp(const v3d::render::offline::FrameBuffer & planes, unsigned int co
     }
     BOOST_CHECK_CLOSE(planes.value(coverage, 25, row), 1.0f, 1.0e-4f);
     BOOST_CHECK_EQUAL(planes.value(coverage, 44, row), 0.0f);
+}
+
+/**
+ * A quad through four corners, as the two triangles the reader's fan makes of it.
+ **/
+void polygon(v3d::talyn::Scene* scene, const glm::vec3 (&corners)[4], const glm::vec3 & colour,
+    const v3d::render::offline::sl::Placed & surface) {
+    for (unsigned int i = 1; i + 1 < 4; i++) {
+        v3d::talyn::Triangle triangle(corners[0], corners[i], corners[i + 1], colour);
+        triangle.surface(surface);
+        scene->add(triangle);
+    }
+}
+
+/*
+    The same scene as data/reference-trace.rib: a metal sphere and a glass one over a
+    checked floor, in front of a wall, through a perspective camera at the origin and
+    sampled at the RI defaults.
+*/
+void traceScene(v3d::talyn::RenderContext & rc) {
+    typedef v3d::render::offline::rib::Declaration Declaration;
+    typedef v3d::render::offline::sl::ShaderType ShaderType;
+    rc.format(64, 48);
+    v3d::type::camera::Profile & profile = rc.scene().camera().profile();
+    profile.orthographic(false);
+    profile.pixelAspect(4.0f / 3.0f);
+    profile.fov(40.0f);
+    profile.eye(glm::vec3(0.0f));
+    profile.clipping(0.1f, 100.0f);
+    // the floor's shader is a fixture beside the scene rather than one of the standard ones
+    library().searchpath("data:&");
+
+    v3d::render::offline::rib::ParameterList fill;
+    put(&fill, "intensity", Declaration::Type::FLOAT, { 0.2f });
+    rc.scene().add(shader("ambientlight", ShaderType::LIGHT, fill));
+    v3d::render::offline::rib::ParameterList distant;
+    put(&distant, "intensity", Declaration::Type::FLOAT, { 0.9f });
+    put(&distant, "to", Declaration::Type::POINT, { 0.4f, -1.0f, 0.6f });
+    rc.scene().add(shader("distantlight", ShaderType::LIGHT, distant));
+
+    v3d::render::offline::rib::ParameterList checks;
+    put(&checks, "size", Declaration::Type::FLOAT, { 0.5f });
+    const glm::vec3 floor[4] = {
+        glm::vec3(-4.0f, -1.0f, 2.0f), glm::vec3(4.0f, -1.0f, 2.0f),
+        glm::vec3(4.0f, -1.0f, 12.0f), glm::vec3(-4.0f, -1.0f, 12.0f)
+    };
+    polygon(&rc.scene(), floor, glm::vec3(0.85f, 0.8f, 0.7f), shader("checked", ShaderType::SURFACE, checks));
+    const glm::vec3 wall[4] = {
+        glm::vec3(-4.0f, -1.0f, 12.0f), glm::vec3(4.0f, -1.0f, 12.0f),
+        glm::vec3(4.0f, 4.0f, 12.0f), glm::vec3(-4.0f, 4.0f, 12.0f)
+    };
+    polygon(&rc.scene(), wall, glm::vec3(0.35f, 0.5f, 0.75f),
+        shader("matte", ShaderType::SURFACE, v3d::render::offline::rib::ParameterList()));
+
+    v3d::render::offline::rib::ParameterList mirror;
+    put(&mirror, "Ka", Declaration::Type::FLOAT, { 0.1f });
+    put(&mirror, "Ks", Declaration::Type::FLOAT, { 0.6f });
+    put(&mirror, "Kr", Declaration::Type::FLOAT, { 0.8f });
+    const glm::mat4x4 left = glm::translate(glm::mat4x4(1.0f), glm::vec3(-1.1f, -0.28f, 6.0f));
+    v3d::talyn::Sphere metal(0.7f, -0.7f, 0.7f, 360.0f, left, glm::vec3(0.9f, 0.85f, 0.7f));
+    metal.surface(shader("shinymetal", ShaderType::SURFACE, mirror));
+    rc.scene().add(metal, v3d::render::offline::MovingTransform(left));
+
+    const glm::mat4x4 right = glm::translate(glm::mat4x4(1.0f), glm::vec3(1.1f, -0.28f, 5.5f));
+    v3d::talyn::Sphere glass(0.7f, -0.7f, 0.7f, 360.0f, right, glm::vec3(1.0f));
+    glass.surface(shader("glass", ShaderType::SURFACE, v3d::render::offline::rib::ParameterList()));
+    glass.opacity(glm::vec3(0.3f));
+    rc.scene().add(glass, v3d::render::offline::MovingTransform(right));
 }
 
 /**
@@ -634,4 +707,29 @@ BOOST_AUTO_TEST_CASE(talyn_motion_spreads_linearly_test) {
     rc.render();
 
     checkRamp(*rc.framebuffer(), 3, 24);
+}
+
+/**
+ * A metal sphere and a glass one over a checked floor: reflection, refraction, the fresnel
+ * split between them, spheres, and a shadow through an occluder that is not opaque.
+ **/
+BOOST_AUTO_TEST_CASE(talyn_trace_reference_test) {
+    v3d::talyn::RenderContext rc;
+    traceScene(rc);
+    rc.render();
+
+    check(rc.framebuffer()->image(3), TRACE, TRACE_RENDERED);
+}
+
+BOOST_AUTO_TEST_CASE(talyn_trace_reference_from_rib_test) {
+    auto rc = boost::make_shared<v3d::talyn::RenderContext>();
+    v3d::talyn::RIBHandler handler(rc);
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(reader.read(TRACE_SCENE, &handler));
+    BOOST_CHECK_EQUAL(reader.error(), "");
+    BOOST_REQUIRE_EQUAL(handler.error(), "");
+
+    rc->render();
+    check(rc->framebuffer()->image(3), TRACE, TRACE_RIB_RENDERED);
 }

@@ -350,3 +350,23 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_output_override_test) {
     // nothing is written until WorldEnd, so this reads the context rather than the disk
     BOOST_CHECK_EQUAL(handler.context().displayName(), "data_out/override.png");
 }
+
+/**
+ * moya dices polygons only, so a scene with a sphere in it renders without the sphere and
+ * says so, rather than failing.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_sphere_is_skipped_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+
+    BOOST_REQUIRE(read(
+        "Format 64 48 1\n"
+        "Projection \"orthographic\"\n"
+        "Clipping 1 100\n"
+        "WorldBegin\n"
+        "Sphere 1 -1 1 360\n"
+        "Polygon \"P\" [-0.2 -0.2 5  0.2 -0.2 5  0.2 0.2 5  -0.2 0.2 5]\n"
+        "WorldEnd\n", &handler));
+
+    BOOST_CHECK_EQUAL(handler.context().framebuffer()->primitiveCount(), 1u);
+}

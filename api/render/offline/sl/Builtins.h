@@ -55,6 +55,11 @@ class Signature final {
     bool varying = false;
     /** Takes any number of further arguments after those listed - printf, and only it. **/
     bool variadic = false;
+    /**
+     * The first argument the function writes rather than reads, or -1. Every argument from
+     * it on is written, so each has to be a variable: `fresnel` answers through four of them.
+     **/
+    int outputs = -1;
     std::vector<Argument> arguments;
 };
 

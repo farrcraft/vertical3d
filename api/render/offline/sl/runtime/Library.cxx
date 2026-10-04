@@ -46,7 +46,7 @@ enum class Body {
     ABS, SIGN, FLOOR, CEIL, ROUND, SQRT, EXP, LOG, RADIANS, DEGREES,
     SIN, COS, TAN, ASIN, ACOS, ATAN, MOD, POW, MIN, MAX, CLAMP, MIX, STEP, SMOOTHSTEP,
     // a triple read as a direction rather than as three numbers
-    LENGTH, DISTANCE, NORMALIZE, FACEFORWARD, REFLECT, REFRACT,
+    LENGTH, DISTANCE, NORMALIZE, FACEFORWARD, REFLECT, REFRACT, FRESNEL,
     // one component of one value, named or indexed
     XCOMP, YCOMP, ZCOMP, SETXCOMP, SETYCOMP, SETZCOMP, COMP, SETCOMP,
     // a named coordinate space, which is the renderer's answer rather than the machine's
@@ -72,7 +72,7 @@ Body lookup(const std::string & name) {
         { "mix", Body::MIX }, { "step", Body::STEP }, { "smoothstep", Body::SMOOTHSTEP },
         { "length", Body::LENGTH }, { "distance", Body::DISTANCE },
         { "normalize", Body::NORMALIZE }, { "faceforward", Body::FACEFORWARD },
-        { "reflect", Body::REFLECT }, { "refract", Body::REFRACT },
+        { "reflect", Body::REFLECT }, { "refract", Body::REFRACT }, { "fresnel", Body::FRESNEL },
         { "xcomp", Body::XCOMP }, { "ycomp", Body::YCOMP }, { "zcomp", Body::ZCOMP },
         { "setxcomp", Body::SETXCOMP }, { "setycomp", Body::SETYCOMP },
         { "setzcomp", Body::SETZCOMP }, { "comp", Body::COMP }, { "setcomp", Body::SETCOMP },
@@ -232,6 +232,8 @@ class Site final {
      **/
     Value* written = nullptr;
     const std::vector<const Value*>* given = nullptr;
+    /** The arguments a body answers through, for one that writes more than one. **/
+    const std::vector<Value*>* outputs = nullptr;
     /** The matrix a named coordinate space came to, for the bodies that take one. **/
     glm::mat4x4 matrix = glm::mat4x4(1.0f);
 
@@ -243,6 +245,36 @@ class Site final {
         return given->size();
     }
 };
+
+/**
+ * The unpolarised reflectance of a dielectric, the mean of its two polarisations, and the
+ * reflected and refracted directions with it.
+ *
+ * The incident direction and the normal are normalised first, and the normal is taken to
+ * face against the incident direction, as refract() takes it. Past the critical angle
+ * everything is reflected and the refracted direction is zero, as refract() answers it.
+ **/
+void fresnel(const Site & site, unsigned int point) {
+    const glm::vec3 incident = unit(site.argument(0).triple(point));
+    const glm::vec3 normal = unit(site.argument(1).triple(point));
+    const float eta = site.argument(2).number(point);
+    const float cosine = std::fabs(glm::dot(incident, normal));
+    const float k = 1.0f - eta * eta * (1.0f - cosine * cosine);
+    float reflected = 1.0f;
+    if (k > 0.0f) {
+        const float through = std::sqrt(k);
+        const float across = (eta * cosine - through) / (eta * cosine + through);
+        const float along = (cosine - eta * through) / (cosine + eta * through);
+        reflected = 0.5f * (across * across + along * along);
+    }
+    const std::vector<Value*> & outputs = *site.outputs;
+    outputs[0]->number(point, reflected);
+    outputs[1]->number(point, 1.0f - reflected);
+    if (outputs.size() == 4) {
+        outputs[2]->triple(point, incident - 2.0f * glm::dot(incident, normal) * normal);
+        outputs[3]->triple(point, refract(incident, normal, eta));
+    }
+}
 
 void geometry(const Site & site, unsigned int point) {
     switch (site.body) {
@@ -383,6 +415,9 @@ void apply(const Site & site, unsigned int point) {
         case Body::REFRACT:
             geometry(site, point);
             return;
+        case Body::FRESNEL:
+            fresnel(site, point);
+            return;
         case Body::XCOMP:
         case Body::YCOMP:
         case Body::ZCOMP:
@@ -512,6 +547,16 @@ void Machine::builtin(const Instruction & instruction) {
         return;
     }
     site.written = setter(body) ? &file_[static_cast<std::size_t>(instruction.arguments[0])] : site.target;
+    std::vector<Value*> outputs;
+    if (table[index].outputs >= 0) {
+        for (std::size_t which = static_cast<std::size_t>(table[index].outputs); which < instruction.arguments.size(); which++) {
+            outputs.push_back(&file_[static_cast<std::size_t>(instruction.arguments[which])]);
+        }
+        // the first is the one the mask is asked about: the compiler gives every one the
+        // same storage
+        site.written = outputs.front();
+        site.outputs = &outputs;
+    }
 
     // a named space is one matrix for the whole batch, since a string is uniform - which is
     // the reason a string may be uniform only, and the reason this is not a lookup per point

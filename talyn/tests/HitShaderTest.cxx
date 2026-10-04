@@ -273,3 +273,121 @@ BOOST_AUTO_TEST_CASE(talyn_a_trace_stops_at_the_depth_test) {
     BOOST_CHECK_CLOSE(deeper.r, 2.0f, 0.1f);
     BOOST_CHECK_CLOSE(deeper.g, 2.0f, 0.1f);
 }
+
+namespace {
+
+/** What a ray straight down the negative z axis from a height sees. **/
+v3d::talyn::HitShader::Seen down(v3d::talyn::HitShader* shader, float x, float y, float from) {
+    return shader->see(v3d::type::geometry::Ray(glm::vec3(x, y, from), glm::vec3(0.0f, 0.0f, -1.0f)));
+}
+
+/** A triangle in the plane z = height, facing down the negative z axis. **/
+v3d::talyn::Triangle downward(float size, float height, const glm::vec3 & colour) {
+    return v3d::talyn::Triangle(glm::vec3(-size, -size, height), glm::vec3(0.0f, size, height),
+        glm::vec3(size, -size, height), colour);
+}
+
+};  // namespace
+
+/**
+ * A mirror facing a red quad shows the red quad, exactly: shinymetal with its ambient and its
+ * highlight off is Cs times what it traces, and the quad has no shader of its own.
+ **/
+BOOST_AUTO_TEST_CASE(talyn_a_mirror_shows_what_it_faces_test) {
+    v3d::talyn::Scene scene;
+    v3d::talyn::Triangle mirror = facing(2.0f, glm::vec3(1.0f));
+    ParameterList only;
+    add(&only, "Ka", Declaration::Type::FLOAT, { 0.0f });
+    add(&only, "Ks", Declaration::Type::FLOAT, { 0.0f });
+    mirror.surface(instance("shinymetal", v3d::render::offline::sl::ShaderType::SURFACE, only));
+    scene.add(mirror);
+    scene.add(downward(4.0f, 2.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
+
+    v3d::talyn::HitShader shader(&scene);
+    const glm::vec3 seen = down(&shader, 0.0f, 0.0f, 1.0f).colour;
+    BOOST_CHECK_CLOSE(seen.r, 1.0f, 0.001f);
+    BOOST_CHECK_SMALL(seen.g, 1.0e-6f);
+    BOOST_CHECK_SMALL(seen.b, 1.0e-6f);
+}
+
+/**
+ * A half opaque white quad over a black one composites to grey through its Oi, and over
+ * nothing it lets half the background through.
+ **/
+BOOST_AUTO_TEST_CASE(talyn_transparency_composites_test) {
+    const Placed constant = instance("constant", v3d::render::offline::sl::ShaderType::SURFACE, ParameterList());
+    v3d::talyn::Scene scene;
+    scene.background(glm::vec3(0.0f, 0.0f, 1.0f));
+    v3d::talyn::Triangle pane(glm::vec3(-4.0f, -4.0f, 1.0f), glm::vec3(4.0f, -4.0f, 1.0f),
+        glm::vec3(0.0f, 4.0f, 1.0f), glm::vec3(1.0f));
+    pane.surface(constant);
+    pane.opacity(glm::vec3(0.5f));
+    scene.add(pane);
+    // the black quad is under the left of the pane only
+    v3d::talyn::Triangle under(glm::vec3(-3.0f, -3.0f, 0.0f), glm::vec3(-1.0f, -3.0f, 0.0f),
+        glm::vec3(-1.0f, 3.0f, 0.0f), glm::vec3(0.0f));
+    under.surface(constant);
+    scene.add(under);
+
+    v3d::talyn::HitShader shader(&scene);
+    const v3d::talyn::HitShader::Seen over = down(&shader, -1.5f, -1.0f, 10.0f);
+    BOOST_CHECK(over.hit);
+    BOOST_CHECK_CLOSE(over.colour.r, 0.5f, 0.001f);
+    BOOST_CHECK_CLOSE(over.colour.b, 0.5f, 0.001f);
+    BOOST_CHECK_CLOSE(over.opacity.r, 1.0f, 0.001f);
+    BOOST_CHECK_CLOSE(over.distance, 9.0f, 0.001f);
+
+    const v3d::talyn::HitShader::Seen alone = down(&shader, 1.0f, -1.0f, 10.0f);
+    BOOST_CHECK_CLOSE(alone.colour.r, 0.5f, 0.001f);
+    BOOST_CHECK_CLOSE(alone.colour.b, 1.0f, 0.001f);
+    BOOST_CHECK_CLOSE(alone.opacity.r, 0.5f, 0.001f);
+}
+
+/**
+ * A shadow through a half opaque occluder is half as dark: the occluder test's scene with
+ * the occluder's Os at a half, where its shadow lands.
+ **/
+BOOST_AUTO_TEST_CASE(talyn_a_shadow_through_a_pane_test) {
+    v3d::talyn::Scene scene;
+    v3d::talyn::Triangle floor = facing(8.0f, glm::vec3(1.0f));
+    floor.surface(instance("matte", v3d::render::offline::sl::ShaderType::SURFACE, ParameterList()));
+    scene.add(floor);
+    v3d::talyn::Triangle pane(glm::vec3(-0.5f, -0.5f, 1.0f), glm::vec3(0.5f, -0.5f, 1.0f),
+        glm::vec3(0.0f, 0.5f, 1.0f), glm::vec3(1.0f));
+    pane.opacity(glm::vec3(0.5f));
+    scene.add(pane);
+
+    ParameterList tilted;
+    add(&tilted, "to", Declaration::Type::POINT, { 0.70710678f, 0.0f, -0.70710678f });
+    scene.add(instance("distantlight", v3d::render::offline::sl::ShaderType::LIGHT, tilted));
+
+    v3d::talyn::HitShader shader(&scene);
+    BOOST_CHECK_CLOSE(shader.shade(at(scene, 1.0f, 0.0f)).r, 0.5f * 0.70710678f, 0.5f);
+}
+
+/**
+ * A ray through a glass slab at normal incidence comes out where it went in: straight on,
+ * with what each face reflects taken off. Each face passes 0.96, the fresnel transmittance of
+ * glass of index 1.5 straight on, so the red quad under the slab is 0.9216 of itself and the
+ * floor beside it is still black.
+ **/
+BOOST_AUTO_TEST_CASE(talyn_a_glass_slab_is_straight_through_test) {
+    const Placed glass = instance("glass", v3d::render::offline::sl::ShaderType::SURFACE, ParameterList());
+    v3d::talyn::Scene scene;
+    // the slab's two faces, each facing out of it
+    v3d::talyn::Triangle top(glm::vec3(-4.0f, -4.0f, 1.0f), glm::vec3(4.0f, -4.0f, 1.0f),
+        glm::vec3(0.0f, 4.0f, 1.0f), glm::vec3(1.0f));
+    top.surface(glass);
+    scene.add(top);
+    v3d::talyn::Triangle bottom = downward(4.0f, 0.5f, glm::vec3(1.0f));
+    bottom.surface(glass);
+    scene.add(bottom);
+    scene.add(v3d::talyn::Triangle(glm::vec3(-0.5f, -0.5f, 0.0f), glm::vec3(0.5f, -0.5f, 0.0f),
+        glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
+
+    v3d::talyn::HitShader shader(&scene);
+    const glm::vec3 through = down(&shader, 0.0f, 0.0f, 10.0f).colour;
+    BOOST_CHECK_CLOSE(through.r, 0.96f * 0.96f, 0.01f);
+    BOOST_CHECK_SMALL(through.g, 1.0e-6f);
+    BOOST_CHECK_SMALL(down(&shader, 0.0f, -0.7f, 10.0f).colour.r, 1.0e-6f);
+}

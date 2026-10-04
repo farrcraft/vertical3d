@@ -885,6 +885,14 @@ Type Compiler::checkBuiltinCall(Call & call, const std::vector<Type> & given) {
         if (!suits(signature, given)) {
             continue;
         }
+        for (std::size_t argument = signature.outputs < 0 ? given.size() :
+            static_cast<std::size_t>(signature.outputs); argument < given.size(); argument++) {
+            if (call.arguments[argument]->kind != Expression::Kind::VARIABLE) {
+                throw fail("argument " + std::to_string(argument + 1) + " of '" + call.name +
+                    "' is written, so it has to be a variable", call.arguments[argument]->line,
+                    call.arguments[argument]->column);
+            }
+        }
         call.signature = static_cast<int>(index);
         call.type = signature.resultFrom >= 0 ?
             given[static_cast<std::size_t>(signature.resultFrom)] : signature.result;
@@ -1000,9 +1008,12 @@ void Compiler::inferStatement(const StatementPtr & statement, bool varyingContex
         case Statement::Kind::JUMP:
             inferJump(statement, varyingContext);
             return;
-        case Statement::Kind::EXPRESSION:
-            inferExpression(static_cast<const ExpressionStatement &>(*statement).expression);
+        case Statement::Kind::EXPRESSION: {
+            const ExpressionPtr & expression = static_cast<const ExpressionStatement &>(*statement).expression;
+            inferExpression(expression);
+            inferOutputs(expression, varyingContext);
             return;
+        }
         case Statement::Kind::LIGHTING: {
             const Lighting & lighting = static_cast<const Lighting &>(*statement);
             for (const ExpressionPtr & argument : lighting.arguments) {
@@ -1036,6 +1047,33 @@ void Compiler::inferAssignment(const StatementPtr & statement, bool varyingConte
     // varying whatever was written to it
     if (varyingContext || value == Storage::VARYING) {
         spread(variable.symbol, assignment.value);
+    }
+}
+
+void Compiler::inferOutputs(const ExpressionPtr & expression, bool varyingContext) {
+    // a function that writes its arguments answers nothing, so it is only ever a statement
+    if (!expression || expression->kind != Expression::Kind::CALL) {
+        return;
+    }
+    const Call & call = static_cast<const Call &>(*expression);
+    if (call.function >= 0 || call.signature < 0) {
+        return;
+    }
+    const Signature & signature = builtins()[static_cast<std::size_t>(call.signature)];
+    if (signature.outputs < 0) {
+        return;
+    }
+    // what is written is as varying as what was read, which is an assignment's rule
+    bool varying = varyingContext || signature.varying;
+    const std::size_t first = static_cast<std::size_t>(signature.outputs);
+    for (std::size_t argument = 0; argument < first && argument < call.arguments.size(); argument++) {
+        varying = varying || call.arguments[argument]->storage == Storage::VARYING;
+    }
+    if (!varying) {
+        return;
+    }
+    for (std::size_t argument = first; argument < call.arguments.size(); argument++) {
+        spread(static_cast<const Variable &>(*call.arguments[argument]).symbol, expression);
     }
 }
 

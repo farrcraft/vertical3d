@@ -368,6 +368,28 @@ BOOST_AUTO_TEST_CASE(slcompiler_varying_builtin_test) {
 }
 
 /**
+ * A built-in that answers through its arguments writes them as an assignment would, so they
+ * take the storage of what it read. Anything but a variable there has nowhere to be
+ * written, and is faulted rather than quietly dropped.
+ **/
+BOOST_AUTO_TEST_CASE(slcompiler_written_arguments_test) {
+    std::vector<Symbol> symbols;
+    BOOST_CHECK_EQUAL(compile(
+        "surface s(float eta = 0.5;) {\n"
+        "    float kr; float kt; float flatr; float flatt;\n"
+        "    fresnel(I, N, eta, kr, kt);\n"
+        "    fresnel(vector (0, 0, -1), normal (0, 0, 1), eta, flatr, flatt);\n"
+        "    Ci = Cs;\n"
+        "}\n", &symbols), "");
+    BOOST_CHECK(storageOf(symbols, "kr") == Storage::VARYING);
+    BOOST_CHECK(storageOf(symbols, "kt") == Storage::VARYING);
+    BOOST_CHECK(storageOf(symbols, "flatr") == Storage::UNIFORM);
+
+    BOOST_CHECK_EQUAL(compile("surface s() { float kt; fresnel(I, N, 0.5, 1, kt); Ci = Cs; }"),
+        "argument 4 of 'fresnel' is written, so it has to be a variable at line 1, column 44");
+}
+
+/**
  * A shader that declares a value uniform and then puts a varying one in it is saying two
  * things at once. Keeping one of them quietly is how a whole grid comes out with one point's
  * answer, so it is faulted instead.

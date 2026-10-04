@@ -40,12 +40,35 @@ class HitShader final : public v3d::render::offline::sl::runtime::Renderer {
     explicit HitShader(const Scene* scene);
 
     /**
+     * What a ray sees: every surface along it composited front to back by its Oi, until
+     * they are opaque or the ray leaves the scene, and the background behind what is left.
+     *
+     * A ray going on through a surface is not a traced ray, so it does not count against
+     * the scene's trace depth: a stack of panes is as deep as it is.
+     **/
+    class Seen final {
+     public:
+        /** Premultiplied, as Ci is, with the background already behind it. **/
+        glm::vec3 colour = glm::vec3(0.0f);
+        glm::vec3 opacity = glm::vec3(0.0f);
+        /** Whether anything was there, and how far away the first of it was. **/
+        bool hit = false;
+        float distance = 0.0f;
+    };
+    Seen see(const v3d::type::geometry::Ray & ray);
+
+    /**
      * The colour of one hit: the surface shader's Ci.
      *
-     * A triangle with no shader is its own flat colour, which is what a scene built in
+     * A primitive with no shader is its own flat colour, which is what a scene built in
      * code without one asks for.
      */
     glm::vec3 shade(const Hit & hit);
+    /**
+     * And its Oi. A shader that never writes Oi is as opaque as its primitive, and so is
+     * a primitive with no shader at all.
+     **/
+    glm::vec3 shade(const Hit & hit, glm::vec3* opacity);
 
     /**
      * When the sample being shaded was taken, which is when its shadow and traced rays

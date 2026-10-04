@@ -32,6 +32,11 @@ namespace {
     which is where a shadow lives. A renderer that cannot answer lets all of it through, so
     this is the whole of the difference between a renderer that casts shadows and one that
     does not - moya draws exactly what it drew before and talyn traces.
+
+    shinymetal is RI's with trace() where RI reads an environment map, and glass is this
+    tree's own: RI defines no refracting shader. glass is opaque, because it carries what is
+    behind it by refraction rather than by letting a ray through, and it turns its normal and
+    its ratio of indices round when the ray is leaving it.
 */
 const char* const STANDARD = R"(
 surface constant() {
@@ -59,6 +64,34 @@ surface plastic(float Ka = 1; float Kd = 0.5; float Ks = 0.5; float roughness = 
     Oi = Os;
     Ci = Os * (Cs * (Ka * ambient() + Kd * diffuse(Nf)) +
         specularcolor * Ks * specular(Nf, V, roughness));
+}
+
+surface shinymetal(float Ka = 1; float Ks = 1; float Kr = 1; float roughness = 0.1) {
+    normal Nf = faceforward(normalize(N), I);
+    vector V = -normalize(I);
+    Oi = Os;
+    Ci = Os * Cs * (Ka * ambient() + Ks * specular(Nf, V, roughness) +
+        Kr * trace(P, reflect(I, Nf)));
+}
+
+surface glass(float Ka = 0; float Ks = 0.5; float Kr = 1; float Kt = 1; float roughness = 0.05;
+        float eta = 1.5) {
+    normal Nn = normalize(N);
+    vector In = normalize(I);
+    normal Nf = Nn;
+    float ratio = 1 / eta;
+    if (In . Nn > 0) {
+        Nf = -Nn;
+        ratio = eta;
+    }
+    float kr = 0;
+    float kt = 0;
+    vector R = 0;
+    vector T = 0;
+    fresnel(In, Nf, ratio, kr, kt, R, T);
+    Oi = 1;
+    Ci = Ka * Cs * ambient() + Ks * specular(Nf, -In, roughness) +
+        Kr * kr * trace(P, R) + Kt * kt * Cs * trace(P, T);
 }
 
 light ambientlight(float intensity = 1; color lightcolor = 1) {

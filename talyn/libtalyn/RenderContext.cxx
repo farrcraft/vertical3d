@@ -61,18 +61,15 @@ class Caster {
             ray = v3d::type::geometry::Ray(moved, focus - moved);
         }
 
+        // what the ray sees through every surface it passes, over the background
+        shader_->time(at.time);
+        const HitShader::Seen seen = shader_->see(ray);
         v3d::render::offline::Film::Sample sample;
         sample.raster = at.raster;
-        sample.colour = scene_->background();
-        Hit hit;
-        sample.hit = scene_->nearest(ray, 0.0f, &hit, at.time);
-        if (sample.hit) {
-            // the nearest hit is the batch, and the surface shader's Ci is the sample
-            shader_->time(at.time);
-            sample.colour = shader_->shade(hit);
-            sample.opacity = glm::vec3(1.0f);
-            sample.depth = hit.distance;
-        }
+        sample.colour = seen.colour;
+        sample.opacity = seen.opacity;
+        sample.hit = seen.hit;
+        sample.depth = seen.distance;
         return sample;
     }
 

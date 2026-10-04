@@ -144,6 +144,8 @@ class Compiler final {
     void inferStatement(const StatementPtr & statement, bool varyingContext);
     void inferDeclaration(const StatementPtr & statement, bool varyingContext);
     void inferAssignment(const StatementPtr & statement, bool varyingContext);
+    /** A call that writes its arguments, which is an assignment to each of them. **/
+    void inferOutputs(const ExpressionPtr & expression, bool varyingContext);
     void inferJump(const StatementPtr & statement, bool varyingContext);
     /** Whether a break or a continue leaves this loop under a varying condition. **/
     bool escapes(const StatementPtr & loop) const;

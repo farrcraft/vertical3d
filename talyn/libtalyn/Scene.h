@@ -12,14 +12,56 @@
 
 #include <vector>
 
+#include <glm/mat4x4.hpp>
+#include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
 namespace v3d::talyn {
 
 /**
- * A triangle with one flat colour and the normals a shader reads, in world space.
+ * What every primitive is shaded with: the colour, opacity and surface shader that were
+ * current when the scene made it, and the motion that carries it.
  **/
-class Triangle final {
+class Primitive {
+ public:
+    /** The colour that was current, which is SL's Cs. **/
+    const glm::vec3 & colour() const;
+
+    /**
+     * The surface shader a scene named, and the space it named it in.
+     *
+     * Empty for a primitive built in code without one, which is then its own flat colour:
+     * a scene that said nothing about shading is drawn the way it was before there was a
+     * language to say it in.
+     **/
+    const v3d::render::offline::sl::Placed & surface() const;
+    void surface(const v3d::render::offline::sl::Placed & shader);
+
+    /** The opacity that was current, which is SL's Os. **/
+    const glm::vec3 & opacity() const;
+    void opacity(const glm::vec3 & value);
+
+    /**
+     * Which of the scene's motions carries the primitive, or negative for none. It is
+     * stored where the motion's open end put it.
+     **/
+    int motion() const;
+
+ protected:
+    explicit Primitive(const glm::vec3 & colour);
+
+ private:
+    friend class Scene;
+    int motion_ = -1;
+    v3d::render::offline::sl::Placed surface_;
+    glm::vec3 opacity_ = glm::vec3(1.0f);
+    glm::vec3 colour_;
+};
+
+/**
+ * A triangle with the normals a shader reads, in world space.
+ **/
+class Triangle final : public Primitive {
  public:
     /**
      * A triangle whose shading normal is its plane, which is what a scene that says nothing
@@ -39,7 +81,6 @@ class Triangle final {
     const glm::vec3 & a() const;
     const glm::vec3 & b() const;
     const glm::vec3 & c() const;
-    const glm::vec3 & colour() const;
 
     /**
      * The plane the triangle lies in, wound the way its corners are - SL's Ng. Zero for a
@@ -55,35 +96,10 @@ class Triangle final {
      **/
     glm::vec3 shadingNormal(float u, float v) const;
 
-    /**
-     * The surface shader a scene named, and the space it named it in.
-     *
-     * Empty for a triangle built in code without one, which is then its own flat colour:
-     * a scene that said nothing about shading is drawn the way it was before there was a
-     * language to say it in.
-     **/
-    const v3d::render::offline::sl::Placed & surface() const;
-    void surface(const v3d::render::offline::sl::Placed & shader);
-
-    /** The opacity that was current, which is SL's Os. **/
-    const glm::vec3 & opacity() const;
-    void opacity(const glm::vec3 & value);
-
-    /**
-     * Which of the scene's motions carries the triangle, or negative for none. Its corners
-     * are where the motion's open end put them.
-     **/
-    int motion() const;
-
  private:
-    friend class Scene;
-    int motion_ = -1;
-    v3d::render::offline::sl::Placed surface_;
-    glm::vec3 opacity_ = glm::vec3(1.0f);
     glm::vec3 a_;
     glm::vec3 b_;
     glm::vec3 c_;
-    glm::vec3 colour_;
     glm::vec3 na_;
     glm::vec3 nb_;
     glm::vec3 nc_;
@@ -91,14 +107,61 @@ class Triangle final {
 };
 
 /**
- * Where a ray met a triangle, and everything a shader is a function of there.
+ * RI's sphere: centred on its own origin, cut to the slab between two heights on its z axis
+ * and swept through an angle about it, and placed in world space by the transformation that
+ * was current.
+ *
+ * It is intersected where it is defined rather than tessellated, so its silhouette is exact
+ * at any size. Its normal points out, which is RI's orientation; an inside-out sphere needs
+ * `Orientation`, which this renderer does not read.
+ **/
+class Sphere final : public Primitive {
+ public:
+    /**
+     * @param zmin, zmax the slab it is cut to, clamped to the radius
+     * @param thetamax the sweep about z, in degrees
+     * @param placement object to world, at the open end of its motion
+     **/
+    Sphere(float radius, float zmin, float zmax, float thetamax, const glm::mat4x4 & placement,
+        const glm::vec3 & colour);
+
+    /**
+     * Where a line meets the sphere, as a parameter along it, nearest past `from`.
+     *
+     * The line is in world space and need not be unit length: the parameter is in its
+     * units, which an affine placement keeps.
+     *
+     * @param point the hit in the sphere's own space, where the normal and the surface
+     *        parameters are read off
+     **/
+    bool intersects(const glm::vec3 & origin, const glm::vec3 & direction, float from,
+        float* along, glm::vec3* point) const;
+
+    /** The outward normal at a point on the sphere in its own space, in world space. **/
+    glm::vec3 normal(const glm::vec3 & point) const;
+    /**
+     * RI's u and v at a point in its own space: the fraction of the sweep, and the fraction of
+     * the way from the bottom of the slab to the top in latitude.
+     **/
+    glm::vec2 parameters(const glm::vec3 & point) const;
+
+ private:
+    float radius_;
+    float zmin_;
+    float zmax_;
+    float thetamax_;
+    glm::mat4x4 toObject_;
+};
+
+/**
+ * Where a ray met a primitive, and everything a shader is a function of there.
  *
  * talyn's batch is this, one point of it: the same program and the same instructions that
  * run over a grid of a hundred in moya, with a mask one bit wide.
  **/
 class Hit final {
  public:
-    const Triangle* triangle = nullptr;
+    const Primitive* primitive = nullptr;
     float distance = 0.0f;
     /** SL's P, in world space, which is talyn's current space. **/
     glm::vec3 point = glm::vec3(0.0f);
@@ -108,15 +171,15 @@ class Hit final {
     /** SL's I, the direction the surface was seen along. **/
     glm::vec3 incident = glm::vec3(0.0f);
     /**
-     * The barycentric weights, which stand in for s and t until there is a real surface
-     * parameterisation to read them off.
+     * The surface parameters: a sphere's u and v, and a triangle's barycentric weights,
+     * which stand in for them.
      **/
     float u = 0.0f;
     float v = 0.0f;
 };
 
 /**
- * What a render context draws: a camera, the triangles it sees, the lights on them, and
+ * What a render context draws: a camera, the primitives it sees, the lights on them, and
  * what a ray that misses all of them is worth.
  **/
 class Scene final {
@@ -141,6 +204,10 @@ class Scene final {
     void add(const Triangle & triangle, const v3d::render::offline::MovingTransform & placed);
     const std::vector<Triangle> & triangles() const;
 
+    /** A sphere, placed and moved the way a triangle is. **/
+    void add(const Sphere & sphere, const v3d::render::offline::MovingTransform & placed);
+    const std::vector<Sphere> & spheres() const;
+
     /**
      * The lights shining on the scene, each with the space it was instanced in.
      *
@@ -151,13 +218,13 @@ class Scene final {
     const std::vector<v3d::render::offline::sl::Placed> & lights() const;
 
     /**
-     * The nearest triangle a ray meets beyond `from`, or false.
+     * The nearest primitive a ray meets beyond `from`, or false.
      *
      * @param from how far along the ray to start looking. A ray leaving a surface would
      *        otherwise meet the surface it left: that is the self intersection every
      *        tracer has, and it is why a shadow ray is offset rather than started at zero
-     * @param time when, which places every moving triangle. A ray is taken back into the
-     *        pose a moving triangle was stored in rather than the triangle moved, and what
+     * @param time when, which places every moving primitive. A ray is taken back into the
+     *        pose a moving primitive was stored in rather than the primitive moved, and what
      *        it hits is brought forward again
      **/
     bool nearest(const v3d::type::geometry::Ray & ray, float from, Hit* hit, float time = 0.0f) const;
@@ -175,7 +242,11 @@ class Scene final {
 
  private:
     v3d::type::camera::Camera camera_;
+    /** The motion a primitive placed by this transformation is carried by, or -1. **/
+    int motion(const v3d::render::offline::MovingTransform & placed);
+
     std::vector<Triangle> triangles_;
+    std::vector<Sphere> spheres_;
     std::vector<v3d::render::offline::MovingTransform> motions_;
     std::vector<v3d::render::offline::sl::Placed> lights_;
     glm::vec3 background_ = glm::vec3(0.0f);

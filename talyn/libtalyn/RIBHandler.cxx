@@ -375,6 +375,16 @@ void RIBHandler::polygon(unsigned int vertices, const ParameterList & parameters
     fan(points, normals, indices);
 }
 
+void RIBHandler::sphere(float radius, float zmin, float zmax, float thetamax, const ParameterList & parameters) {
+    (void)parameters;
+    // placed by the open end of its motion, as a polygon's points are, and intersected
+    // where it is defined rather than tessellated
+    Sphere made(radius, zmin, zmax, thetamax, transform_.open(), color_);
+    made.surface(shading());
+    made.opacity(opacity_);
+    rc_->scene().add(made, transform_);
+}
+
 void RIBHandler::pointsPolygons(const std::vector<unsigned int> & counts, const std::vector<unsigned int> & indices,
     const ParameterList & parameters) {
     const std::vector<glm::vec3> points = parameters.points("P");

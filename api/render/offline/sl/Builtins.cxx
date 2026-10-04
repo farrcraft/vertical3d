@@ -38,6 +38,16 @@ Signature same(const char* name, int argument, const std::vector<Argument> & arg
     return signature;
 }
 
+/**
+ * A function that answers through the arguments from `first` on rather than through a
+ * result.
+ **/
+Signature writing(const char* name, int first, const std::vector<Argument> & arguments) {
+    Signature signature = declare(name, Type::VOID, arguments);
+    signature.outputs = first;
+    return signature;
+}
+
 Signature shading(const char* name, Type result, const std::vector<Argument> & arguments) {
     Signature signature = declare(name, result, arguments);
     signature.varying = true;
@@ -77,6 +87,12 @@ std::vector<Signature> build() {
     table.push_back(declare("reflect", Type::VECTOR, { Argument::POINTLIKE, Argument::POINTLIKE }));
     table.push_back(declare("refract", Type::VECTOR,
         { Argument::POINTLIKE, Argument::POINTLIKE, Argument::FLOAT }));
+    // how much of a ray a dielectric reflects and how much it lets through, with refract's
+    // conventions: eta is the ratio of the indices on the incident side and the far side
+    table.push_back(writing("fresnel", 3, { Argument::POINTLIKE, Argument::POINTLIKE,
+        Argument::FLOAT, Argument::FLOAT, Argument::FLOAT }));
+    table.push_back(writing("fresnel", 3, { Argument::POINTLIKE, Argument::POINTLIKE,
+        Argument::FLOAT, Argument::FLOAT, Argument::FLOAT, Argument::POINTLIKE, Argument::POINTLIKE }));
     table.push_back(declare("depth", Type::FLOAT, { Argument::POINT }));
     table.push_back(shading("calculatenormal", Type::NORMAL, { Argument::POINT }));
 

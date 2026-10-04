@@ -5,6 +5,7 @@
 
 #include "HitShader.h"
 
+#include <algorithm>
 #include <string>
 #include <utility>
 #include <vector>
@@ -145,11 +146,23 @@ bool HitShader::transmission(const Value & from, const Value & to, Value* fracti
     }
     const v3d::type::geometry::Ray ray(origin, along / span);
 
+    /*
+        Everything between here and the light takes its share, and nothing beyond the light
+        does. An occluder lets through what its Os does not stop, read off the primitive
+        rather than by running its shader: a shadow is a visibility question, and asking
+        a shader would make every shadow ray a shading one.
+    */
+    glm::vec3 through(1.0f);
+    float past = 0.0f;
     Hit blocker;
-    // anything between here and the light blocks it, and nothing beyond the light does.
-    // Opaque only: Os on an occluder is a shading question and this is a visibility one
-    const bool blocked = scene_->nearest(ray, 0.0f, &blocker, time_) && blocker.distance < span;
-    fraction->triple(0, blocked ? glm::vec3(0.0f) : glm::vec3(1.0f));
+    while (scene_->nearest(ray, past, &blocker, time_) && blocker.distance < span) {
+        through *= glm::vec3(1.0f) - blocker.primitive->opacity();
+        if (std::max(through.r, std::max(through.g, through.b)) <= 0.0f) {
+            break;
+        }
+        past = blocker.distance;
+    }
+    fraction->triple(0, through);
     return true;
 }
 
@@ -179,32 +192,67 @@ bool HitShader::trace(const Value & origin, const Value & direction, Value* colo
         start += hit_->geometric * (side * EPSILON);
     }
 
-    Hit found;
-    if (!scene_->nearest(v3d::type::geometry::Ray(start, along / span), 0.0f, &found, time_)) {
-        colour->triple(0, scene_->background());
-        return true;
-    }
     // shade() leaves both of these as the traced surface had them, and the shader that
     // traced is still running and reads them again
     const Hit* was = hit_;
     const glm::mat4x4 placed = placement_;
     depth_++;
-    colour->triple(0, shade(found));
+    const Seen seen = see(v3d::type::geometry::Ray(start, along / span));
     depth_--;
     hit_ = was;
     placement_ = placed;
+    colour->triple(0, seen.colour);
     return true;
 }
 
+HitShader::Seen HitShader::see(const v3d::type::geometry::Ray & ray) {
+    Seen seen;
+    if (scene_ == nullptr) {
+        return seen;
+    }
+    /*
+        Each surface goes behind what is in front of it: C += (1 - A) Ci and A += (1 - A) Oi,
+        with Ci already premultiplied. The next is looked for past the last, which is what
+        ends the walk - the distances only grow, and a ray meets each primitive at most
+        twice.
+    */
+    float past = 0.0f;
+    Hit hit;
+    while (scene_->nearest(ray, past, &hit, time_)) {
+        glm::vec3 opacity(1.0f);
+        const glm::vec3 colour = shade(hit, &opacity);
+        if (!seen.hit) {
+            seen.hit = true;
+            seen.distance = hit.distance;
+        }
+        seen.colour += (glm::vec3(1.0f) - seen.opacity) * colour;
+        seen.opacity += (glm::vec3(1.0f) - seen.opacity) * opacity;
+        if (std::min(seen.opacity.r, std::min(seen.opacity.g, seen.opacity.b)) >= 1.0f) {
+            return seen;
+        }
+        past = hit.distance;
+    }
+    seen.colour += (glm::vec3(1.0f) - seen.opacity) * scene_->background();
+    return seen;
+}
+
 glm::vec3 HitShader::shade(const Hit & hit) {
-    if (hit.triangle == nullptr) {
+    glm::vec3 opacity(1.0f);
+    return shade(hit, &opacity);
+}
+
+glm::vec3 HitShader::shade(const Hit & hit, glm::vec3* opacity) {
+    if (hit.primitive == nullptr) {
+        *opacity = glm::vec3(0.0f);
         return scene_ == nullptr ? glm::vec3(0.0f) : scene_->background();
     }
-    const v3d::render::offline::sl::Placed & surface = hit.triangle->surface();
+    const Primitive & primitive = *hit.primitive;
+    *opacity = primitive.opacity();
+    const v3d::render::offline::sl::Placed & surface = primitive.surface();
     if (!surface.shader) {
-        // a triangle a scene built without a shader is its own colour, which is the
+        // a primitive a scene built without a shader is its own colour, which is the
         // picture this renderer drew before there was a language to ask for another
-        return hit.triangle->colour();
+        return primitive.opacity() * primitive.colour();
     }
 
     hit_ = &hit;
@@ -219,10 +267,10 @@ glm::vec3 HitShader::shade(const Hit & hit) {
     put(&held.machine, program.symbol("I"), hit.incident);
     put(&held.machine, program.symbol("E"),
         scene_ == nullptr ? glm::vec3(0.0f) : scene_->camera().profile().eye());
-    put(&held.machine, program.symbol("Cs"), hit.triangle->colour());
-    put(&held.machine, program.symbol("Os"), hit.triangle->opacity());
-    // the barycentric weights stand in for the surface parameters until there is a real
-    // parameterisation to read them off
+    put(&held.machine, program.symbol("Cs"), primitive.colour());
+    put(&held.machine, program.symbol("Os"), primitive.opacity());
+    put(&held.machine, program.symbol("Oi"), primitive.opacity());
+    // a sphere's are its own, and a triangle's barycentric weights stand in for them
     put(&held.machine, program.symbol("s"), hit.u);
     put(&held.machine, program.symbol("t"), hit.v);
     put(&held.machine, program.symbol("u"), hit.u);
@@ -230,11 +278,15 @@ glm::vec3 HitShader::shade(const Hit & hit) {
 
     if (!held.machine.run(program)) {
         hit_ = nullptr;
-        return hit.triangle->colour();
+        return primitive.colour();
     }
     const int result = program.symbol("Ci");
-    const glm::vec3 colour = result < 0 ? hit.triangle->colour() :
+    const glm::vec3 colour = result < 0 ? primitive.colour() :
         held.machine.value(result).triple(0);
+    const int coverage = program.symbol("Oi");
+    if (coverage >= 0) {
+        *opacity = held.machine.value(coverage).triple(0);
+    }
     hit_ = nullptr;
     return colour;
 }

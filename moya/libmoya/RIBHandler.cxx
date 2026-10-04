@@ -234,6 +234,18 @@ void RIBHandler::polygon(unsigned int vertices, const ParameterList & parameters
     context().addPolygon(build(points, colors, normals, indices));
 }
 
+void RIBHandler::sphere(float radius, float zmin, float zmax, float thetamax, const ParameterList & parameters) {
+    (void)radius;
+    (void)zmin;
+    (void)zmax;
+    (void)thetamax;
+    (void)parameters;
+    if (!spheres_) {
+        spheres_ = true;
+        context().logger()->get()->warn("moya does not dice spheres, so this scene renders without them");
+    }
+}
+
 void RIBHandler::pointsPolygons(const std::vector<unsigned int> & counts, const std::vector<unsigned int> & indices,
     const ParameterList & parameters) {
     const std::vector<glm::vec3> points = parameters.points("P");

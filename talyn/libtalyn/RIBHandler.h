@@ -73,6 +73,8 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
     void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override;
     void pointsPolygons(const std::vector<unsigned int> & counts, const std::vector<unsigned int> & indices,
         const v3d::render::offline::rib::ParameterList & parameters) override;
+    void sphere(float radius, float zmin, float zmax, float thetamax,
+        const v3d::render::offline::rib::ParameterList & parameters) override;
 
     /**
      * What the scene asked for that a raytracer built on v3d::type::camera::Camera cannot do, or

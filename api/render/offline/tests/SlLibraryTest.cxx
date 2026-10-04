@@ -15,6 +15,7 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <glm/geometric.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
@@ -209,6 +210,34 @@ BOOST_AUTO_TEST_CASE(sllibrary_reflect_and_refract_test) {
         "vector answer = refract(vector (0.99, 0, -0.141), normal (0, 0, 1), 2);");
     BOOST_CHECK_SMALL(trapped.triple("answer").x, 0.0001f);
     BOOST_CHECK_SMALL(trapped.triple("answer").z, 0.0001f);
+}
+
+/**
+ * fresnel against the dielectric formulas, worked by hand for glass of index 1.5 seen from
+ * air, which is an eta of 1 / 1.5.
+ *
+ * Straight on, the reflectance is ((1 - eta) / (1 + eta)) squared, 0.04, whichever way
+ * the light crosses. At 45 degrees the two polarisations part, 0.0920 and 0.0085, and the
+ * answer is their mean. Past the critical angle all of it is reflected.
+ **/
+BOOST_AUTO_TEST_CASE(sllibrary_fresnel_test) {
+    const Shaded straight("float kr = 0; float kt = 0; vector R = 0; vector T = 0;\n"
+        "fresnel(vector (0, 0, -1), normal (0, 0, 1), 1 / 1.5, kr, kt, R, T);");
+    BOOST_CHECK_CLOSE(straight.number("kr"), 0.04f, 0.1f);
+    BOOST_CHECK_CLOSE(straight.number("kt"), 0.96f, 0.1f);
+    BOOST_CHECK_CLOSE(straight.triple("R").z, 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(straight.triple("T").z, -1.0f, 0.01f);
+
+    const Shaded angled("float kr = 0; float kt = 0;\n"
+        "fresnel(vector (1, 0, -1), normal (0, 0, 1), 1 / 1.5, kr, kt);");
+    BOOST_CHECK_CLOSE(angled.number("kr"), 0.050241f, 0.1f);
+    BOOST_CHECK_CLOSE(angled.number("kt"), 1.0f - 0.050241f, 0.1f);
+
+    const Shaded trapped("float kr = 0; float kt = 0; vector R = 0; vector T = 0;\n"
+        "fresnel(vector (0.99, 0, -0.141), normal (0, 0, 1), 2, kr, kt, R, T);");
+    BOOST_CHECK_CLOSE(trapped.number("kr"), 1.0f, 0.01f);
+    BOOST_CHECK_SMALL(trapped.number("kt"), 0.0001f);
+    BOOST_CHECK_SMALL(glm::length(trapped.triple("T")), 0.0001f);
 }
 
 /**

@@ -118,6 +118,13 @@ implements it as `<renderer>::RIBHandler`. RIB is also what the editor exports t
 - **A RIB `Polygon` carries no vertex count.** It is the length of `"P"`, which the reader
   divides out. A parameter list is therefore parsed before the count is known, and an
   unbracketed varying or vertex parameter ends the parse rather than being guessed at.
+- **A parameter is typed by a declaration or it is dropped.** The reader declares RI's standard
+  names, `Option "trace"`'s `maxdepth` and `Option "searchpath"`'s `shader` among them, and
+  nothing else. A shader's own parameter that is not one of those needs `Declare` or an inline
+  type, `"uniform float size" [0.5]`, or the shader runs with its default.
+- **talyn intersects a `Sphere` where it is defined**, cut to its slab of heights and its sweep,
+  with RI's outward normal and its `u` and `v`. moya dices polygons only: a sphere is not drawn,
+  and the first in a scene is logged.
 
 ## Cameras and transforms
 
@@ -205,6 +212,18 @@ rather than a tour.
   answers the background. talyn keeps a machine per program per depth, because a surface
   tracing into another with the same shader is still part way through its run when the other
   starts. moya does not answer `trace()`, and a ray it is asked for comes back black.
+- **talyn composites what a ray passes through**, front to back by each surface's `Oi`, with
+  the background behind what is left. A shader that never writes `Oi` is as opaque as its
+  primitive's `Os`. A ray carrying on through a surface is not a traced ray and does not count
+  against the depth. `transmission()` multiplies by every occluder's `Os`, read off the
+  primitive rather than by running its shader, so a shadow ray is never a shading one.
+- **A built-in may answer through its arguments.** `Signature::outputs` names the first one it
+  writes. The compiler requires a variable there and spreads the storage of what the call read
+  into it, as an assignment would. `fresnel` is the one that does: the unpolarised reflectance
+  of a dielectric, with `refract`'s conventions, and the reflected and refracted directions.
+- **`shinymetal` traces where RI's reads an environment map**, and **`glass`** is this tree's,
+  since RI has no refracting shader. glass sets `Oi` to one, because it shows what is behind it
+  by refraction, and its `Os` is what a shadow through it reads.
 
 ## Normals
 
