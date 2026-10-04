@@ -17,6 +17,13 @@
 
 class PongScene {
  public:
+    /**
+     * The court, in its own units. The rules are written against it, and the renderer maps it
+     * into whatever the window is - ADR-0075.
+     **/
+    static constexpr float width = 800.0f;
+    static constexpr float height = 600.0f;
+
     explicit PongScene(entt::registry* registry, const boost::shared_ptr<entt::dispatcher> & dispatcher);
     ~PongScene();
 
@@ -25,7 +32,6 @@ class PongScene {
      * @param step seconds, which every speed below is expressed against
      **/
     void tick(float step);
-    void resize(int width, int height);
 
     void reset();
 
@@ -56,6 +62,5 @@ class PongScene {
     Ball ball_;
     Paddle left_, right_;
     GameState gameState_;
-    int width_, height_;
     entt::registry* registry_;
 };

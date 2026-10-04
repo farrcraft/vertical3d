@@ -16,6 +16,8 @@ namespace v3d::ui::component {
 /**
  **/
 MenuBar::MenuBar() : Component(component::Type::MenuBar), hover_(-1), open_(-1) {
+    // a strip is a control unless a document says it is scenery, which lets a press through
+    pickable(true);
 }
 
 /**

@@ -25,6 +25,7 @@ Ring::Ring(const boost::shared_ptr<device::Device>& device, uint32_t framesInFli
     retired_(framesInFlight_) {
     pool_ = boost::make_shared<CommandPool>(device_, device_->families().graphics);
     commands_ = pool_->allocate(framesInFlight_);
+    timings_ = boost::make_shared<Timings>(device_, framesInFlight_);
 
     VkFenceCreateInfo fenceInfo{};
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
@@ -143,6 +144,9 @@ VkCommandBuffer Ring::begin() {
         throw std::runtime_error(msg.str());
     }
 
+    // what this slot timed the last time it was used is readable now its fence has signalled
+    timings_->begin(commands, frame_);
+
     // counted only once nothing can throw, because a begin that failed waited on a slot without
     // moving past it, and counting it would collect a frame early
     begun_++;
@@ -155,6 +159,12 @@ VkCommandBuffer Ring::begin() {
  **/
 void Ring::advance() noexcept {
     frame_ = (frame_ + 1) % framesInFlight_;
+}
+
+/**
+ **/
+Timings& Ring::timings() noexcept {
+    return *timings_;
 }
 
 };  // namespace v3d::render::realtime::vulkan::frame

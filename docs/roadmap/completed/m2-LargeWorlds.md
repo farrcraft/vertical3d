@@ -137,7 +137,7 @@ back rather than lost.
 ## Not in this milestone
 
 * **Streaming in the background.** Loading a region without a hitch needs loading off the main
-  thread, which is [milestone 7](../m7-ShellAndShipping.md#asynchronous-loading). A region loaded on
+  thread, which is [milestone 7](m7-ShellAndShipping.md#asynchronous-loading). A region loaded on
   the main thread is correct, and M6 can start there.
 * **A minimap.** Drawing the world into a target and showing it in the ui is what
   [ADR-0031](../../adr/0031-a-pass-draws-into-a-target-it-names.md) already allows. It is a

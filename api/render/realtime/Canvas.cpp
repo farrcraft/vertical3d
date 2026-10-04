@@ -28,7 +28,9 @@ indices(0) {
  **/
 Canvas::Canvas() :
     width_(0),
-    height_(0) {
+    height_(0),
+    space_(0.0f, 0.0f),
+    fit_(Fit::Stretch) {
     transforms_.push_back(glm::mat4(1.0f));
 }
 
@@ -64,6 +66,52 @@ uint32_t Canvas::height() const noexcept {
 
 /**
  **/
+void Canvas::space(const glm::vec2& size, Fit fit) {
+    space_ = size.x > 0.0f && size.y > 0.0f ? size : glm::vec2(0.0f, 0.0f);
+    fit_ = fit;
+}
+
+/**
+ **/
+glm::vec2 Canvas::space() const noexcept {
+    return space_;
+}
+
+/**
+ **/
+glm::vec4 Canvas::viewport() const noexcept {
+    const float width = static_cast<float>(width_);
+    const float height = static_cast<float>(height_);
+    if (space_.x <= 0.0f || fit_ == Fit::Stretch) {
+        return glm::vec4(0.0f, 0.0f, width, height);
+    }
+    const float scale = std::min(width / space_.x, height / space_.y);
+    const glm::vec2 size = space_ * scale;
+    return glm::vec4((width - size.x) * 0.5f, (height - size.y) * 0.5f, size.x, size.y);
+}
+
+/**
+ **/
+glm::vec2 Canvas::toSpace(const glm::vec2& pixel) const noexcept {
+    const glm::vec4 area = viewport();
+    if (space_.x <= 0.0f || area.z <= 0.0f || area.w <= 0.0f) {
+        return pixel;
+    }
+    return (pixel - glm::vec2(area.x, area.y)) * space_ / glm::vec2(area.z, area.w);
+}
+
+/**
+ **/
+glm::vec2 Canvas::toPixels(const glm::vec2& point) const noexcept {
+    if (space_.x <= 0.0f) {
+        return point;
+    }
+    const glm::vec4 area = viewport();
+    return glm::vec2(area.x, area.y) + point * glm::vec2(area.z, area.w) / space_;
+}
+
+/**
+ **/
 glm::mat4 Canvas::projection() const {
     // pixels to clip space, origin top left: scaled to the two units clip space spans and
     // shifted back by one. y is not flipped - vulkan's y already points down
@@ -71,10 +119,19 @@ glm::mat4 Canvas::projection() const {
     const float height = height_ > 0 ? static_cast<float>(height_) : 1.0f;
 
     glm::mat4 projection(1.0f);
-    projection[0][0] = 2.0f / width;
-    projection[1][1] = 2.0f / height;
-    projection[3][0] = -1.0f;
-    projection[3][1] = -1.0f;
+    const glm::vec4 area = viewport();
+    if (space_.x <= 0.0f || area.z <= 0.0f || area.w <= 0.0f) {
+        projection[0][0] = 2.0f / width;
+        projection[1][1] = 2.0f / height;
+        projection[3][0] = -1.0f;
+        projection[3][1] = -1.0f;
+        return projection;
+    }
+    // the space into its viewport's pixels, then those pixels to clip space as above
+    projection[0][0] = 2.0f * area.z / (space_.x * width);
+    projection[1][1] = 2.0f * area.w / (space_.y * height);
+    projection[3][0] = 2.0f * area.x / width - 1.0f;
+    projection[3][1] = 2.0f * area.y / height - 1.0f;
     return projection;
 }
 
@@ -115,12 +172,12 @@ void Canvas::scale(const glm::vec2& factor) {
  **/
 void Canvas::clip(const glm::vec2& min, const glm::vec2& max) {
     const glm::mat4& transform = transforms_.back();
-    const glm::vec2 first(
+    const glm::vec2 first = toPixels(glm::vec2(
         transform[0][0] * min.x + transform[1][0] * min.y + transform[3][0],
-        transform[0][1] * min.x + transform[1][1] * min.y + transform[3][1]);
-    const glm::vec2 second(
+        transform[0][1] * min.x + transform[1][1] * min.y + transform[3][1]));
+    const glm::vec2 second = toPixels(glm::vec2(
         transform[0][0] * max.x + transform[1][0] * max.y + transform[3][0],
-        transform[0][1] * max.x + transform[1][1] * max.y + transform[3][1]);
+        transform[0][1] * max.x + transform[1][1] * max.y + transform[3][1]));
 
     // a negative scale swaps the corners, so which is the smaller is worked out after the
     // transform rather than assumed from the arguments

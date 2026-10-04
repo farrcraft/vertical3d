@@ -128,7 +128,7 @@ into(nullptr) {
 /**
  **/
 void Recorder::record(VkCommandBuffer commands, const Frame& frame, const Target& target, const pipeline::Resources& resources,
-    FrameUniforms* uniforms) {
+    FrameUniforms* uniforms, Timings* timings) {
     // the acquired image comes back in whatever layout it was left in, and nothing in the
     // frame reads it, so undefined is the honest source layout and the cheapest one. A frame
     // given no image is one whose every pass names a target of its own
@@ -161,7 +161,13 @@ void Recorder::record(VkCommandBuffer commands, const Frame& frame, const Target
             openTarget(commands, *pass, into);
         }
 
+        if (timings != nullptr) {
+            timings->open(commands, pass->name());
+        }
         record(commands, *pass, into, resources, writeCamera(uniforms, *pass, into));
+        if (timings != nullptr) {
+            timings->close(commands);
+        }
 
         if (offscreen && lastWrite(passes, index)) {
             closeTarget(commands, *pass, into);

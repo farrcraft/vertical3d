@@ -157,6 +157,22 @@ class Arranger final {
     void arrange(const component::Box& box, const v3d::type::geometry::Bound2D& bounds,
         std::vector<v3d::type::geometry::Bound2D>* boxes) const;
 
+    /**
+     * The natural size of a flow box: the room it is offered, or for one that wraps, the line
+     * it is given and the depth of the lines its children come to.
+     **/
+    glm::vec2 box(const Component& component, const v3d::type::geometry::Bound2D& room) const;
+
+    /**
+     * The same for a box that wraps: along a line until the next child would pass its end,
+     * then on a new line. A child longer than the line has a line of its own.
+     *
+     * @return how far across its lines the children reach, which is the box's natural size
+     *         in that direction
+     **/
+    float wrapped(const component::Box& box, const v3d::type::geometry::Bound2D& bounds,
+        std::vector<v3d::type::geometry::Bound2D>* boxes) const;
+
     paint::Measure measure_;
     const style::Resolver& styles_;
 };

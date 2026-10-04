@@ -9,6 +9,7 @@
 #include <api/ui/component/Button.h>
 #include <api/ui/component/CheckBox.h>
 #include <api/ui/component/SelectList.h>
+#include <api/ui/component/Slider.h>
 #include <api/ui/component/Type.h>
 
 #include <boost/pointer_cast.hpp>
@@ -36,6 +37,11 @@ v3d::event::Event command(const boost::shared_ptr<Component>& component) {
             const boost::shared_ptr<component::SelectList> list =
                 boost::dynamic_pointer_cast<component::SelectList>(component);
             return list ? list->event() : v3d::event::Event();
+        }
+        case component::Type::Slider: {
+            const boost::shared_ptr<component::Slider> slider =
+                boost::dynamic_pointer_cast<component::Slider>(component);
+            return slider ? slider->event() : v3d::event::Event();
         }
         case component::Type::Bar:
         case component::Type::HorizontalBox:

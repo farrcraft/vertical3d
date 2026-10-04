@@ -17,6 +17,7 @@ v3d_add_api_library(ui
 	"component/Panel.h" "component/Panel.cpp"
 	"component/RadioButton.h" "component/RadioButton.cpp"
 	"component/Scrollbar.h" "component/Scrollbar.cpp"
+	"component/Slider.h" "component/Slider.cpp"
 	"component/SelectList.h" "component/SelectList.cpp"
 	"component/TabBar.h" "component/TabBar.cpp"
 	"component/TabPage.h" "component/TabPage.cpp"
@@ -36,8 +37,10 @@ v3d_add_api_library(ui
 	"paint/Painter.h" "paint/Painter.cpp"
 	"paint/Text.h" "paint/Text.cpp"
 	"paint/TextRenderer.h" "paint/TextRenderer.cpp"
+	"shell/FileChooser.h" "shell/FileChooser.cpp"
 	"shell/GameMenu.h" "shell/GameMenu.cpp"
 	"shell/Keyboard.h" "shell/Keyboard.cpp"
+	"shell/Screen.h" "shell/Screen.cpp"
 	"shell/StatisticsOverlay.h" "shell/StatisticsOverlay.cpp"
 	"style/Button.h" "style/Button.cpp"
 	"style/Menu.h" "style/Menu.cpp"
@@ -57,6 +60,7 @@ v3d_add_api_library(ui
 # through, rather than including it.
 # v3dlib_font: TextRenderer.h holds a TextureFontCache and a TextureTextBuffer::Markup.
 # Boost::json: Engine.h names a boost::json::object for the theme it is handed.
+# Boost::filesystem: shell/FileChooser.h names the paths it lists and hands back.
 target_link_libraries(v3dlib_ui PUBLIC
 	v3dlib_log
 	v3dlib_render
@@ -65,6 +69,7 @@ target_link_libraries(v3dlib_ui PUBLIC
 	v3dlib_font
 	v3dlib_type
 	Boost::json
+	Boost::filesystem
 	glm::glm
 	EnTT::EnTT)
 

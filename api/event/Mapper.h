@@ -9,6 +9,7 @@
 
 #include <map>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace v3d::event {
@@ -35,6 +36,16 @@ class Mapper {
      * @return the matching destinations, empty when the source is bound to nothing
      **/
     std::vector<Event> destinations(const Event& source) const;
+
+    /**
+     * Find every source bound to a destination, whatever edge each was bound on and
+     * whatever parameter the destination carries.
+     *
+     * @param destination the destination as "context::name", which is how Event::str()
+     *        and a rebind name one
+     * @return the sources, empty when nothing is bound to it
+     **/
+    std::vector<Event> sources(std::string_view destination) const;
 
  private:
     std::multimap<Event, Event> mappings_;

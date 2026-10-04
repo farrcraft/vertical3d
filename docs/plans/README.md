@@ -11,6 +11,33 @@ outlives the schedule.
 
 No plan is open.
 
+[completed/ShellAndShipping.md](completed/ShellAndShipping.md) was drafted and closed on
+2026-10-04, taking up [milestone 7](../roadmap/completed/m7-ShellAndShipping.md) of
+[the game engine roadmap](../roadmap/GameEngine.md). A strip respects `pickable()`, a command can
+be held, voxel looks in relative mouse mode, and a document is read forward through a chain
+([ADR-0073](../adr/0073-a-document-is-read-forward-one-version-at-a-time.md)). One shell class
+builds the ui's renderers over an `Engine3D`, and pong, tetris, voxel and the editor draw through
+it ([ADR-0074](../adr/0074-the-shell-builds-the-uis-renderers.md)). A canvas may draw in a space of
+its own, which pong's court now is
+([ADR-0075](../adr/0075-a-canvas-may-draw-in-a-space-of-its-own.md)). A box can wrap, the editor
+opens and saves as through a file chooser, every pass is timed on the device, and there is a
+slider. Asynchronous loading went to [TODO.md](../TODO.md#loading) behind cozy's region streaming.
+The three records were accepted when it closed.
+
+Four things came out differently. **The renderer helper could not live on the realtime side**,
+because `v3dlib_ui` links `v3dlib_render`. It is in `api/ui/shell`, with `Engine3D` declared rather
+than included. **A game space is the canvas's, not set 0's**: set 0 is a camera per pass and pong
+draws its court and its menu in one pass, and a clip has to be mapped out of the space because a
+scissor is in pixels. **A menu bar read nothing from a document but its name**, so marking one
+unpickable would have been silently dropped. **And the resolver counted its style classes by
+hand**, so the slider's class indexed past the array; the count is now taken from the enum.
+
+Running the apps found two defects the plan had not looked for, both now in TODO.md: a minimised
+window spins and logs every frame, and voxel's mouselook turns most of the way round in ten
+pixels. The analysis gates found three things a build alone would not, each now fixed: a nested
+struct's member initializers in a default argument, which clang refuses and MSVC accepts; a
+destructor that could allocate; and a function past the cognitive complexity threshold.
+
 [completed/Effects.md](completed/Effects.md) was drafted on 2026-10-03 and closed on 2026-10-04,
 taking up [milestone 6](../roadmap/completed/m6-Effects.md) of
 [the game engine roadmap](../roadmap/GameEngine.md). The sprite clip that

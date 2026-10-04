@@ -72,6 +72,11 @@ table is in flight. Two cases draw for a person to look at, and assert only sile
 their frames move: a fire among two sprites under a dusk tint (`fire_*.png`), and rain falling in
 a lit scene under a blue light (`rain_*.png`).
 
+**Pass timings are asserted by name and by sense, not by value.** `timings_test` records a frame
+of two passes until its slot comes round again, and asserts that both are timed under their names,
+in order, finite and under a second. A device whose graphics queue writes no timestamps logs a
+message and asserts nothing. A frame recorded without timings times nothing.
+
 It is a second binary rather than more cases in `v3dtest_render`, because that one must keep
 running where there is no GPU. **A run with no device exits 77 and ctest reports the suite as
 `Skipped`**, which `set_tests_properties(render_device PROPERTIES SKIP_RETURN_CODE 77)` is

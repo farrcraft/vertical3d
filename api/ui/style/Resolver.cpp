@@ -92,6 +92,7 @@ const char* Resolver::named(Class className) noexcept {
         case Class::Panel:     return "panel";
         case Class::Bar:       return "bar";
         case Class::Scrollbar: return "scrollbar";
+        case Class::Slider:    return "slider";
         case Class::CheckBox:  return "checkbox";
         case Class::Radio:     return "radio";
         case Class::List:      return "list";
@@ -136,6 +137,17 @@ paint::Dressing Resolver::dress(Class className, const std::string_view& name) c
             readColour(style, "border", &dressing.border);
             readMetric(style, "border-width", &dressing.borderWidth);
             readMetric(style, "radius", &dressing.radius);
+            break;
+        case Class::Slider:
+            // a track, the fill up to the thumb, and the thumb - a bar's colours and a
+            // scrollbar's thumb, in a class of its own so that neither theme reaches it
+            readColour(style, "track", &dressing.track);
+            readColour(style, "fill", &dressing.fill);
+            readColour(style, "thumb", &dressing.thumb);
+            readColour(style, "border", &dressing.border);
+            readMetric(style, "border-width", &dressing.borderWidth);
+            readMetric(style, "radius", &dressing.radius);
+            readMetric(style, "mark-size", &dressing.markSize);
             break;
         case Class::CheckBox:
         case Class::Radio:

@@ -23,6 +23,7 @@ std::string_view name(Type type) {
         case Type::RadioButton:    return "radio";
         case Type::Scrollbar:      return "scrollbar";
         case Type::SelectList:     return "list";
+        case Type::Slider:         return "slider";
         case Type::TabBar:         return "tabs";
         case Type::TabPage:        return "tab";
         case Type::TextBox:        return "textbox";

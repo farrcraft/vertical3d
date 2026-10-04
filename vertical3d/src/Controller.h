@@ -11,6 +11,7 @@
 #include <api/event/kind/MouseMotion.h>
 #include <api/event/kind/WindowResize.h>
 #include <api/ui/input/Cursor.h>
+#include <api/ui/shell/FileChooser.h>
 #include <api/ui/shell/Keyboard.h>
 #include <api/ui/Engine.h>
 #include <api/ui/component/Toolbar.h>
@@ -29,6 +30,7 @@
 #include <string>
 #include <vector>
 
+#include <boost/filesystem/path.hpp>
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
 
@@ -136,13 +138,13 @@ class Controller final : public v3d::engine::Engine {
     void history(const std::string& name);
 
     /**
-     * Read the project over the scene, or write the scene out as one.
-     *
-     * There is no file chooser in the tree, so both work on one document at a fixed
-     * path - see ADR-0018.
+     * Choose a project to read over the scene, write the scene to the project it came from,
+     * or choose a name to write it under. The project starts as project.json beside the
+     * executable, and is whatever was last opened or saved as after that.
      **/
     void openProject();
     void saveProject();
+    void saveProjectAs();
 
     /**
      * Write the scene out as RIB for the offline renderers, per ADR-0023.
@@ -151,11 +153,6 @@ class Controller final : public v3d::engine::Engine {
      * project format stays the editor's own and nothing reads this back.
      **/
     void exportProject();
-
-    /**
-     * @return where the one document lives, beside the executable
-     **/
-    std::string projectPath() const;
 
     /**
      * @return where the RIB export goes, beside the executable
@@ -202,9 +199,12 @@ class Controller final : public v3d::engine::Engine {
     boost::shared_ptr<v3d::ui::Engine> vgui_;
     boost::shared_ptr<v3d::ui::input::Cursor> uiCursor_;
     boost::shared_ptr<v3d::ui::shell::Keyboard> uiKeys_;
+    boost::shared_ptr<v3d::ui::shell::FileChooser> chooser_;
     boost::shared_ptr<v3d::ui::component::MenuBar> menu_;
     std::vector<boost::shared_ptr<v3d::ui::component::Toolbar>> toolbars_;
     boost::shared_ptr<Project> project_;
+    // the document Save writes to
+    boost::filesystem::path projectPath_;
     CommandDirectory directory_;
     boost::shared_ptr<CommandStack> commands_;
     boost::shared_ptr<v3d::config::CameraProfiles> profiles_;

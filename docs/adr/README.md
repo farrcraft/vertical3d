@@ -81,3 +81,6 @@ old record's status and leave the file in place.
 | [0070](0070-animation-is-sampled-from-playback-on-the-step.md) | Animation — Clips And Sampling Are api/type's, Playback Is A Component On The Step, And Which Clip Plays Is The Game's | accepted | 2026-10-03 |
 | [0071](0071-joint-palettes-are-a-storage-buffer-in-the-scene-set.md) | Skinning — A Frame's Joint Palettes Are One Storage Buffer In The Scene Set, And An Item Names Its First Joint | accepted | 2026-10-03 |
 | [0072](0072-an-emitter-is-a-component-on-the-step-that-owns-its-particles.md) | Effects — An Emitter Is A Component On The Step That Owns Its Particles, And Its Look Is A Render Component | accepted | 2026-10-04 |
+| [0073](0073-a-document-is-read-forward-one-version-at-a-time.md) | Reading An Old Document — It Is Walked Forward One Version At A Time, And Refused Rather Than Half Read | accepted | 2026-10-04 |
+| [0074](0074-the-shell-builds-the-uis-renderers.md) | An App's Text And Ui Renderers — One Shell Class Builds Them Over The Renderer It Is Handed | accepted | 2026-10-04 |
+| [0075](0075-a-canvas-may-draw-in-a-space-of-its-own.md) | A 2D Game Space — A Canvas May Draw In A Space Of Its Own, And Its Projection Stays A Push Constant Per Submit | accepted | 2026-10-04 |

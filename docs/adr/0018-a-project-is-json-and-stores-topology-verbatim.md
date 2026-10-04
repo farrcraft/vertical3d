@@ -107,7 +107,9 @@ document at a fixed path beside the executable.
 
 ### Negative
 - The format is the half edge representation written down. A change to `BRep`'s members is a
-  change to the file format, and the `version` field is the whole of the migration story.
+  change to the file format. A file of an older version is walked forward through a chain of
+  steps, per [ADR-0073](0073-a-document-is-read-forward-one-version-at-a-time.md), and the chain
+  is empty until the format first changes.
 - One document at a fixed path is not a document model. There is no "save as", no recent
   file, no dirty flag, and nothing warns before a load replaces unsaved work.
 - Reading clears the history, so a load cannot be undone.

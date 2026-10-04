@@ -18,6 +18,7 @@
 #include <api/ui/component/RadioButton.h>
 #include <api/ui/component/Scrollbar.h>
 #include <api/ui/component/SelectList.h>
+#include <api/ui/component/Slider.h>
 #include <api/ui/component/TabBar.h>
 #include <api/ui/component/TabPage.h>
 #include <api/ui/component/TextBox.h>
@@ -293,6 +294,8 @@ boost::shared_ptr<Component> Loader::buildComponent(const std::string& component
             return loadBar(entry);
         case component::Type::Scrollbar:
             return loadScrollbar(entry);
+        case component::Type::Slider:
+            return loadSlider(entry);
         case component::Type::SelectList:
             return loadSelectList(entry);
         case component::Type::TextBox:
@@ -332,11 +335,12 @@ boost::shared_ptr<Component> Loader::loadComponent(const boost::json::object& en
 
     component->name(componentName);
     // a menu and a menu bar are placed entirely by the renderer, so reading a box onto one
-    // would be read and then written over
+    // would be read and then written over. What else they carry is read like anything's
     const component::Type type = component::parse(componentType);
     if (type != component::Type::Menu && type != component::Type::MenuBar) {
-        loadAttributes(entry, component);
+        loadLayout(entry, &component->layout());
     }
+    loadAttributes(entry, component);
     if (!loadChildren(entry, component)) {
         return nullptr;
     }
@@ -518,7 +522,6 @@ boost::shared_ptr<style::Property> Loader::loadProperty(const std::string& secti
 /**
  **/
 void Loader::loadAttributes(const boost::json::object& entry, const boost::shared_ptr<Component>& component) {
-    loadLayout(entry, &component->layout());
     if (entry.contains("style")) {
         component->style(boost::json::value_to<std::string>(entry.at("style")));
     }
@@ -593,6 +596,22 @@ boost::shared_ptr<component::Bar> Loader::loadBar(const boost::json::object& ent
         bar->direction(component::Bar::Direction::Vertical);
     }
     return bar;
+}
+
+/**
+ **/
+boost::shared_ptr<component::Slider> Loader::loadSlider(const boost::json::object& entry) {
+    boost::shared_ptr<component::Slider> slider = boost::make_shared<component::Slider>();
+    const auto number = [&entry](const char* key, float fallback) {
+        return entry.contains(key) ? static_cast<float>(boost::json::value_to<double>(entry.at(key))) : fallback;
+    };
+    slider->range(number("minimum", 0.0f), number("maximum", 1.0f), number("step", 0.0f));
+    slider->value(number("value", slider->minimum()));
+    const v3d::event::Event command = loadCommand(entry);
+    if (command.context()) {
+        slider->event(command);
+    }
+    return slider;
 }
 
 /**
@@ -717,6 +736,7 @@ void Loader::loadBox(const boost::json::object& entry, const boost::shared_ptr<c
         box->spacing(static_cast<float>(boost::json::value_to<double>(entry.at("spacing"))));
     }
     box->stretch(flag(entry, "stretch", box->stretch()));
+    box->wrap(flag(entry, "wrap", box->wrap()));
 }
 
 /**

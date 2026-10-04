@@ -97,9 +97,8 @@ class Window final {
     /**
      * Whether the window has keyboard focus.
      *
-     * An app that steers with the pointer has to know: mouselook warps the cursor back to
-     * the centre after every move, which would drag it out of whatever the player alt
-     * tabbed to.
+     * An app that steers with the pointer has to know, so that a move made over whatever
+     * the player alt tabbed to does not turn the view.
      *
      * @return false when the window is not the one being typed into, and while there is
      *         no window at all
@@ -127,6 +126,25 @@ class Window final {
      * @return whether the platform is composing text
      **/
     bool textInput() const;
+
+    /**
+     * Put the mouse in relative mode, or take it out.
+     *
+     * In relative mode the cursor is hidden and held in the window, and a motion event's
+     * motion() is how far the mouse moved however near an edge it is, which is what
+     * mouselook reads. The platform lets go of the mouse while the window is not focused and
+     * takes it back on focus, so an app turns the mode off only for its own reasons - a menu
+     * that wants a pointer, say.
+     *
+     * @param on whether to enter relative mode
+     * @return whether the platform agreed, which a window that has not been created is not
+     **/
+    bool relativeMouse(bool on);
+
+    /**
+     * @return whether the mouse is in relative mode for this window
+     **/
+    bool relativeMouse() const;
 
     /**
      * Toggle mouse cursor visibility

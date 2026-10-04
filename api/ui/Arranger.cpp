@@ -192,6 +192,10 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::geometry::Bou
             const paint::Dressing& dress = styles_.resolve(style::Resolver::Class::TextBox, component.style());
             return glm::vec2(room.size().x, dress.lineHeight + dress.padding);
         }
+        case component::Type::Slider:
+            // a slider runs the width it is given and is as tall as the thumb its class names
+            return glm::vec2(room.size().x,
+                styles_.resolve(style::Resolver::Class::Slider, component.style()).markSize);
         case component::Type::Scrollbar: {
             // a scrollbar decides how thick it is and nothing about how long: its length
             // is the box it runs down, which is its parent's rather than its own
@@ -203,8 +207,10 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::geometry::Bou
                 ? glm::vec2(styles_.base().scrollbarWidth, room.size().y)
                 : glm::vec2(room.size().x, styles_.base().scrollbarWidth);
         }
-        case component::Type::Bar:
         case component::Type::HorizontalBox:
+        case component::Type::VerticalBox:
+            return box(component, room);
+        case component::Type::Bar:
         case component::Type::Menu:
         case component::Type::MenuBar:
         case component::Type::MenuItem:
@@ -213,9 +219,8 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::geometry::Bou
         case component::Type::TabPage:
         case component::Type::Toolbar:
         case component::Type::Undefined:
-        case component::Type::VerticalBox:
-            // a panel, a bar and a box decide nothing for themselves, so an Auto extent on
-            // one is the room it is in
+            // a panel and a bar decide nothing for themselves, so an Auto extent on one is
+            // the room it is in
             break;
     }
     // every enumerator is handled above and the switch carries no default, so C4062 names
@@ -227,6 +232,10 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::geometry::Bou
  **/
 void Arranger::arrange(const component::Box& box, const v3d::type::geometry::Bound2D& bounds,
     std::vector<v3d::type::geometry::Bound2D>* boxes) const {
+    if (box.wrap()) {
+        wrapped(box, bounds, boxes);
+        return;
+    }
     const bool vertical = box.type() == component::Type::VerticalBox;
     const glm::vec2 extent = bounds.size();
     float pen = vertical ? bounds.position().y : bounds.position().x;
@@ -264,6 +273,74 @@ void Arranger::arrange(const component::Box& box, const v3d::type::geometry::Bou
         }
         boxes->push_back(v3d::type::geometry::Bound2D(corner, size));
     }
+}
+
+/**
+ **/
+glm::vec2 Arranger::box(const Component& component, const v3d::type::geometry::Bound2D& room) const {
+    // a box that wraps is as long as the line it is given and as deep as the lines its
+    // children come to. One that does not decides nothing, as a panel does
+    const auto* flow = dynamic_cast<const component::Box*>(&component);
+    if (flow == nullptr || !flow->wrap()) {
+        return room.size();
+    }
+    const bool vertical = component.type() == component::Type::VerticalBox;
+    const Layout& layout = component.layout();
+    const glm::vec2 line(layout.width.resolve(room.size().x, room.size().x),
+        layout.height.resolve(room.size().y, room.size().y));
+    const float across = wrapped(*flow, v3d::type::geometry::Bound2D(room.position(), line), nullptr);
+    return vertical ? glm::vec2(across, line.y) : glm::vec2(line.x, across);
+}
+
+/**
+ **/
+float Arranger::wrapped(const component::Box& box, const v3d::type::geometry::Bound2D& bounds,
+    std::vector<v3d::type::geometry::Bound2D>* boxes) const {
+    const bool vertical = box.type() == component::Type::VerticalBox;
+    const glm::vec2 extent = bounds.size();
+    // the axis the line runs along, and the one the lines stack across
+    const int along = vertical ? 1 : 0;
+    const int across = vertical ? 0 : 1;
+    const float start = bounds.position()[along];
+    const float end = start + extent[along];
+
+    // as for a box that does not wrap: a child is offered no room along the line, so an Auto
+    // extent there is what it makes of itself
+    const v3d::type::geometry::Bound2D room(bounds.position(),
+        vertical ? glm::vec2(extent.x, 0.0f) : glm::vec2(0.0f, extent.y));
+
+    float pen = start;
+    float line = bounds.position()[across];
+    float deepest = 0.0f;
+    bool placed = false;
+    for (const boost::shared_ptr<Component>& child : box.children()) {
+        if (!child || !child->visible()) {
+            if (boxes != nullptr) {
+                boxes->push_back(v3d::type::geometry::Bound2D(bounds.position(), glm::vec2(0.0f, 0.0f)));
+            }
+            continue;
+        }
+        const glm::vec2 own = natural(*child, room);
+        const Layout& layout = child->layout();
+        const glm::vec2 size(layout.width.resolve(extent.x, own.x), layout.height.resolve(extent.y, own.y));
+
+        // the first child on a line stays on it however long it is, so nothing is lost
+        if (pen > start && pen + size[along] > end) {
+            line += deepest + box.spacing();
+            pen = start;
+            deepest = 0.0f;
+        }
+        glm::vec2 corner;
+        corner[along] = pen;
+        corner[across] = line;
+        if (boxes != nullptr) {
+            boxes->push_back(v3d::type::geometry::Bound2D(corner, size));
+        }
+        pen += size[along] + box.spacing();
+        deepest = std::max(deepest, size[across]);
+        placed = true;
+    }
+    return placed ? line + deepest - bounds.position()[across] : 0.0f;
 }
 
 

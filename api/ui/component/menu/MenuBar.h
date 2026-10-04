@@ -29,6 +29,8 @@ namespace v3d::ui::component {
  *
  * The bar answers where the cursor is out of the bounds a renderer left on the
  * components, per ADR-0019, so nothing is hit until something has been drawn.
+ *
+ * It is pickable from the start, and one marked otherwise is offered nothing.
  **/
 class MenuBar : public Component {
  public:

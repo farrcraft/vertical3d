@@ -38,10 +38,19 @@ namespace v3d::render::realtime {
  * vulkan::renderer::Quad, which uploads it and turns each batch into a draw item.
  *
  * Coordinates are in pixels with the origin at the top left, and the modelview stack
- * applies on the cpu as vertices are added.
+ * applies on the cpu as vertices are added. A canvas given a space draws in that space's
+ * units instead, mapped into its pixels by projection() - ADR-0075.
  **/
 class Canvas final {
  public:
+    /**
+     * How a space is fitted into the canvas.
+     **/
+    enum class Fit {
+        Stretch,  /**< fill the canvas, stretching the space where the aspects differ **/
+        Contain   /**< keep the space's aspect, as large as fits, centred with bars either side **/
+    };
+
     /**
      * One vertex of the stream, in the layout the quad pipeline declares.
      **/
@@ -92,12 +101,40 @@ class Canvas final {
     uint32_t height() const noexcept;
 
     /**
+     * Draw in a space of the caller's own rather than in pixels: a game's court, say, which
+     * then keeps its coordinates whatever size the window is. The space's origin is its top
+     * left and y grows down, as the pixels' do. Kept across clear() and resize().
+     *
+     * @param size how wide and tall the space is, in its own units. Zero in either goes
+     *        back to drawing in pixels
+     **/
+    void space(const glm::vec2& size, Fit fit);
+
+    /**
+     * @return the space's size, or zero when the canvas draws in pixels
+     **/
+    glm::vec2 space() const noexcept;
+
+    /**
+     * Where the space lands in the canvas, in pixels: x, y, width and height. The whole
+     * canvas when there is no space.
+     **/
+    glm::vec4 viewport() const noexcept;
+
+    /**
+     * A point in the canvas's pixels, a cursor say, in the space's units. The point itself
+     * when there is no space.
+     **/
+    glm::vec2 toSpace(const glm::vec2& pixel) const noexcept;
+
+    /**
      * The transform from canvas pixels to clip space, for the pipeline's push constant.
      *
      * Built by hand rather than with glm::ortho, whose y direction and depth range
      * depend on how glm was configured when it was compiled.
      *
-     * @return an orthographic projection with the origin at the top left
+     * @return an orthographic projection with the origin at the top left, from the space
+     *         into its viewport when there is one
      **/
     glm::mat4 projection() const;
 
@@ -132,7 +169,8 @@ class Canvas final {
      *
      * Clipping is per batch and not per vertex: the stream cuts where the rectangle
      * changes and the device scissors the draw, so a quad straddling the edge is drawn
-     * whole and half of it lands. ADR-0037.
+     * whole and half of it lands. ADR-0037. A scissor is in pixels, so the rectangle is
+     * mapped out of the space when there is one.
      **/
     void clip(const glm::vec2& min, const glm::vec2& max);
 
@@ -244,8 +282,15 @@ class Canvas final {
      **/
     void quad(uint32_t first);
 
+    /**
+     * A point in the space's units, in pixels.
+     **/
+    glm::vec2 toPixels(const glm::vec2& point) const noexcept;
+
     uint32_t width_;
     uint32_t height_;
+    glm::vec2 space_;
+    Fit fit_;
     std::deque<glm::mat4> transforms_;
     /**< what each open clip cuts to, already transformed and intersected; empty is uncut **/
     std::deque<glm::vec4> clips_;

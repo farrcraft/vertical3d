@@ -460,4 +460,120 @@ BOOST_AUTO_TEST_CASE(clearing_drops_what_is_clipped) {
     BOOST_CHECK(!canvas.batches()[0].clipped);
 }
 
+/**
+ * A space contained in a wider canvas is as large as fits, centred, with bars either side,
+ * and its corners project to the viewport's.
+ **/
+BOOST_AUTO_TEST_CASE(a_contained_space_is_centred_with_bars) {
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(1600, 900);
+    canvas.space(glm::vec2(800.0f, 600.0f), v3d::render::realtime::Canvas::Fit::Contain);
+
+    const glm::vec4 area = canvas.viewport();
+    BOOST_CHECK_CLOSE(area.x, 200.0f, 0.001f);
+    BOOST_CHECK_SMALL(area.y, 0.001f);
+    BOOST_CHECK_CLOSE(area.z, 1200.0f, 0.001f);
+    BOOST_CHECK_CLOSE(area.w, 900.0f, 0.001f);
+
+    // 200 of 1600 pixels in is a quarter of the way across clip space's two units
+    const glm::vec2 topLeft = project(canvas, glm::vec2(0.0f, 0.0f));
+    const glm::vec2 bottomRight = project(canvas, glm::vec2(800.0f, 600.0f));
+    BOOST_CHECK_CLOSE(topLeft.x, -0.75f, 0.001f);
+    BOOST_CHECK_CLOSE(topLeft.y, -1.0f, 0.001f);
+    BOOST_CHECK_CLOSE(bottomRight.x, 0.75f, 0.001f);
+    BOOST_CHECK_CLOSE(bottomRight.y, 1.0f, 0.001f);
+
+    // and a resize moves the viewport, not the space
+    canvas.resize(800, 1200);
+    BOOST_CHECK_SMALL(canvas.viewport().x, 0.001f);
+    BOOST_CHECK_CLOSE(canvas.viewport().y, 300.0f, 0.001f);
+    BOOST_CHECK_CLOSE(canvas.space().x, 800.0f, 0.001f);
+}
+
+/**
+ * A stretched space fills the canvas whatever its aspect.
+ **/
+BOOST_AUTO_TEST_CASE(a_stretched_space_fills_the_canvas) {
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(1600, 900);
+    canvas.space(glm::vec2(800.0f, 600.0f), v3d::render::realtime::Canvas::Fit::Stretch);
+
+    const glm::vec2 topLeft = project(canvas, glm::vec2(0.0f, 0.0f));
+    const glm::vec2 bottomRight = project(canvas, glm::vec2(800.0f, 600.0f));
+    BOOST_CHECK_CLOSE(topLeft.x, -1.0f, 0.001f);
+    BOOST_CHECK_CLOSE(bottomRight.x, 1.0f, 0.001f);
+    BOOST_CHECK_CLOSE(bottomRight.y, 1.0f, 0.001f);
+}
+
+/**
+ * A cursor in the canvas's pixels comes back in the space's units, at the corners and the
+ * centre, and outside the viewport it lands outside the space.
+ **/
+BOOST_AUTO_TEST_CASE(a_pixel_maps_back_into_the_space) {
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(1600, 900);
+    canvas.space(glm::vec2(800.0f, 600.0f), v3d::render::realtime::Canvas::Fit::Contain);
+
+    const glm::vec2 corner = canvas.toSpace(glm::vec2(200.0f, 0.0f));
+    BOOST_CHECK_SMALL(corner.x, 0.001f);
+    BOOST_CHECK_SMALL(corner.y, 0.001f);
+    const glm::vec2 far = canvas.toSpace(glm::vec2(1400.0f, 900.0f));
+    BOOST_CHECK_CLOSE(far.x, 800.0f, 0.001f);
+    BOOST_CHECK_CLOSE(far.y, 600.0f, 0.001f);
+    const glm::vec2 centre = canvas.toSpace(glm::vec2(800.0f, 450.0f));
+    BOOST_CHECK_CLOSE(centre.x, 400.0f, 0.001f);
+    BOOST_CHECK_CLOSE(centre.y, 300.0f, 0.001f);
+    BOOST_CHECK(canvas.toSpace(glm::vec2(100.0f, 450.0f)).x < 0.0f);
+}
+
+/**
+ * A canvas with no space projects exactly as one always has, and so does one whose space was
+ * taken away again.
+ **/
+BOOST_AUTO_TEST_CASE(a_canvas_without_a_space_projects_as_before) {
+    v3d::render::realtime::Canvas plain;
+    plain.resize(800, 600);
+    v3d::render::realtime::Canvas cleared;
+    cleared.resize(800, 600);
+    cleared.space(glm::vec2(320.0f, 200.0f), v3d::render::realtime::Canvas::Fit::Contain);
+    cleared.space(glm::vec2(0.0f, 0.0f), v3d::render::realtime::Canvas::Fit::Contain);
+
+    BOOST_CHECK(plain.projection() == cleared.projection());
+    BOOST_CHECK(cleared.toSpace(glm::vec2(12.0f, 34.0f)) == glm::vec2(12.0f, 34.0f));
+    const glm::vec4 area = cleared.viewport();
+    BOOST_CHECK(area == glm::vec4(0.0f, 0.0f, 800.0f, 600.0f));
+}
+
+/**
+ * A clip is drawn in the space's units and scissored in pixels, so the rectangle a batch
+ * carries is the one the viewport puts it at.
+ **/
+BOOST_AUTO_TEST_CASE(a_clip_in_a_space_is_cut_in_pixels) {
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(1600, 900);
+    canvas.space(glm::vec2(800.0f, 600.0f), v3d::render::realtime::Canvas::Fit::Contain);
+
+    canvas.clip(glm::vec2(0.0f, 0.0f), glm::vec2(400.0f, 300.0f));
+    canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(10.0f, 10.0f), white);
+    canvas.unclip();
+
+    BOOST_REQUIRE_EQUAL(canvas.batches().size(), 1);
+    const glm::vec4 cut = canvas.batches()[0].clip;
+    BOOST_CHECK_CLOSE(cut.x, 200.0f, 0.001f);
+    BOOST_CHECK_SMALL(cut.y, 0.001f);
+    BOOST_CHECK_CLOSE(cut.z, 800.0f, 0.001f);
+    BOOST_CHECK_CLOSE(cut.w, 450.0f, 0.001f);
+}
+
+/**
+ * A space survives the clear at the start of every frame, as the canvas's size does.
+ **/
+BOOST_AUTO_TEST_CASE(a_space_survives_a_clear) {
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(1600, 900);
+    canvas.space(glm::vec2(800.0f, 600.0f), v3d::render::realtime::Canvas::Fit::Contain);
+    canvas.clear();
+    BOOST_CHECK_CLOSE(canvas.viewport().z, 1200.0f, 0.001f);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

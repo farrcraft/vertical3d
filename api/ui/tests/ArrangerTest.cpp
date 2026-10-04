@@ -7,6 +7,7 @@
 #include <api/ui/Component.h>
 #include <api/ui/Container.h>
 #include <api/ui/component/CheckBox.h>
+#include <api/ui/component/HorizontalBox.h>
 #include <api/ui/component/Label.h>
 #include <api/ui/component/Panel.h>
 #include <api/ui/component/Scrollbar.h>
@@ -16,6 +17,7 @@
 #include <api/ui/style/Theme.h>
 #include <api/ui/style/property/Number.h>
 
+#include <cstddef>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -42,6 +44,32 @@ boost::shared_ptr<v3d::ui::component::Label> label(const std::string& name, cons
 
 v3d::type::geometry::Bound2D canvasArea(float width, float height) {
     return v3d::type::geometry::Bound2D(glm::vec2(0.0f, 0.0f), glm::vec2(width, height));
+}
+
+/**
+ * A cell of a fixed size, as an inventory slot is.
+ **/
+boost::shared_ptr<v3d::ui::component::Panel> cell(float width, float height) {
+    boost::shared_ptr<v3d::ui::component::Panel> made = boost::make_shared<v3d::ui::component::Panel>();
+    made->layout().width = v3d::ui::Length(width, v3d::ui::Length::Unit::Pixels);
+    made->layout().height = v3d::ui::Length(height, v3d::ui::Length::Unit::Pixels);
+    return made;
+}
+
+/**
+ * A row that wraps, at a width, holding a number of 48 pixel cells 8 pixels apart.
+ **/
+boost::shared_ptr<v3d::ui::component::HorizontalBox> grid(float width, std::size_t cells,
+    std::vector<boost::shared_ptr<v3d::ui::component::Panel>>* made) {
+    boost::shared_ptr<v3d::ui::component::HorizontalBox> box = boost::make_shared<v3d::ui::component::HorizontalBox>();
+    box->wrap(true);
+    box->spacing(8.0f);
+    box->layout().width = v3d::ui::Length(width, v3d::ui::Length::Unit::Pixels);
+    for (std::size_t index = 0; index < cells; index++) {
+        made->push_back(cell(48.0f, 48.0f));
+        box->add(made->back());
+    }
+    return box;
 }
 
 };  // namespace
@@ -327,6 +355,88 @@ BOOST_AUTO_TEST_CASE(a_label_with_a_width_wraps_to_it) {
     arranger.walk(nullptr, fixed, fixed->layout().resolve(room, arranger.natural(*fixed, room)),
         v3d::ui::Arranger::Paint());
     BOOST_CHECK_CLOSE(fixed->size().y, 9.0f, 0.001f);
+}
+
+/**
+ * Twenty slots in a row 280 wide make four rows of five: five cells and four gaps are 272,
+ * and a sixth would run to 328.
+ **/
+BOOST_AUTO_TEST_CASE(a_box_that_wraps_starts_a_new_line) {
+    v3d::ui::style::Resolver styles;
+    const v3d::ui::Arranger arranger(measure(), styles);
+    std::vector<boost::shared_ptr<v3d::ui::component::Panel>> cells;
+    const boost::shared_ptr<v3d::ui::component::HorizontalBox> box = grid(280.0f, 20, &cells);
+
+    const v3d::type::geometry::Bound2D room = canvasArea(800.0f, 600.0f);
+    arranger.walk(nullptr, box, box->layout().resolve(room, arranger.natural(*box, room)), v3d::ui::Arranger::Paint());
+
+    BOOST_CHECK_SMALL(cells[4]->position().y, 0.001f);
+    BOOST_CHECK_CLOSE(cells[4]->position().x, 224.0f, 0.001f);
+    BOOST_CHECK_SMALL(cells[5]->position().x, 0.001f);
+    BOOST_CHECK_CLOSE(cells[5]->position().y, 56.0f, 0.001f);
+    BOOST_CHECK_CLOSE(cells[19]->position().x, 224.0f, 0.001f);
+    BOOST_CHECK_CLOSE(cells[19]->position().y, 168.0f, 0.001f);
+}
+
+/**
+ * A box that wraps is as tall as its lines, so a grid of known cells needs no stated height:
+ * four rows of 48 and three gaps of 8.
+ **/
+BOOST_AUTO_TEST_CASE(a_box_that_wraps_is_as_deep_as_its_lines) {
+    v3d::ui::style::Resolver styles;
+    const v3d::ui::Arranger arranger(measure(), styles);
+    std::vector<boost::shared_ptr<v3d::ui::component::Panel>> cells;
+    const boost::shared_ptr<v3d::ui::component::HorizontalBox> box = grid(280.0f, 20, &cells);
+
+    const v3d::type::geometry::Bound2D room = canvasArea(800.0f, 600.0f);
+    const glm::vec2 natural = arranger.natural(*box, room);
+    BOOST_CHECK_CLOSE(natural.x, 280.0f, 0.001f);
+    BOOST_CHECK_CLOSE(natural.y, 216.0f, 0.001f);
+
+    arranger.walk(nullptr, box, box->layout().resolve(room, natural), v3d::ui::Arranger::Paint());
+    BOOST_CHECK_CLOSE(box->size().y, 216.0f, 0.001f);
+}
+
+/**
+ * A cell longer than the line has a line of its own rather than being lost, and the line
+ * after it starts below it.
+ **/
+BOOST_AUTO_TEST_CASE(a_child_longer_than_the_line_has_a_line_of_its_own) {
+    v3d::ui::style::Resolver styles;
+    const v3d::ui::Arranger arranger(measure(), styles);
+    std::vector<boost::shared_ptr<v3d::ui::component::Panel>> cells;
+    const boost::shared_ptr<v3d::ui::component::HorizontalBox> box = grid(100.0f, 1, &cells);
+    const boost::shared_ptr<v3d::ui::component::Panel> wide = cell(300.0f, 20.0f);
+    box->add(wide);
+    const boost::shared_ptr<v3d::ui::component::Panel> after = cell(48.0f, 48.0f);
+    box->add(after);
+
+    const v3d::type::geometry::Bound2D room = canvasArea(800.0f, 600.0f);
+    arranger.walk(nullptr, box, box->layout().resolve(room, arranger.natural(*box, room)), v3d::ui::Arranger::Paint());
+
+    BOOST_CHECK_SMALL(wide->position().x, 0.001f);
+    BOOST_CHECK_CLOSE(wide->position().y, 56.0f, 0.001f);
+    BOOST_CHECK_SMALL(after->position().x, 0.001f);
+    BOOST_CHECK_CLOSE(after->position().y, 84.0f, 0.001f);
+}
+
+/**
+ * A box that does not wrap still runs past its end, and still takes the room it is offered as
+ * its natural size, as every box did before one could wrap.
+ **/
+BOOST_AUTO_TEST_CASE(a_box_that_does_not_wrap_is_as_it_was) {
+    v3d::ui::style::Resolver styles;
+    const v3d::ui::Arranger arranger(measure(), styles);
+    std::vector<boost::shared_ptr<v3d::ui::component::Panel>> cells;
+    const boost::shared_ptr<v3d::ui::component::HorizontalBox> box = grid(280.0f, 6, &cells);
+    box->wrap(false);
+
+    const v3d::type::geometry::Bound2D room = canvasArea(800.0f, 600.0f);
+    const glm::vec2 natural = arranger.natural(*box, room);
+    BOOST_CHECK_CLOSE(natural.y, 600.0f, 0.001f);
+    arranger.walk(nullptr, box, box->layout().resolve(room, natural), v3d::ui::Arranger::Paint());
+    BOOST_CHECK_CLOSE(cells[5]->position().x, 280.0f, 0.001f);
+    BOOST_CHECK_SMALL(cells[5]->position().y, 0.001f);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

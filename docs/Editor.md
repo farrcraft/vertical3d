@@ -41,9 +41,11 @@ Read the record rather than inferring the rule from the code.
 
 - **Multiple viewports are several passes over one frame.** `Renderer` builds one `Pass` per
   `ViewPort`, each with its own region, camera and clear. `data/layout.json` decides the split.
-- **There is no file chooser in the tree.** `project::load`, `project::save` and
-  `project::export::rib` work on one document, at a fixed `project.json` or `export.rib` beside
-  the executable.
+- **A project is chosen through `ui::shell::FileChooser`.** `project::load` and
+  `project::saveAs` put up the `chooser` container `data/vgui.json` lays out, and
+  `project::save` writes to whichever project was last opened or saved as. That starts as
+  `project.json` beside the executable. `project::export::rib` still writes a fixed
+  `export.rib` beside it.
 - **`Tool` stays in the editor.** No game holds a gesture open across events.
 
 ## RIB export

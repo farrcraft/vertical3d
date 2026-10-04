@@ -41,6 +41,7 @@ const char* const menuBar = "menu-bar";
 Controller::Controller(const std::string& path) :
     v3d::engine::Engine(path),
     path_(path),
+    projectPath_(boost::filesystem::path(path) / "project.json"),
     cursor_(0.0f, 0.0f),
     uiGrab_(false) {
 }
@@ -146,6 +147,7 @@ bool Controller::buildUi() {
     uiCursor_ = boost::make_shared<v3d::ui::input::Cursor>(vgui_, dispatcher_, renderer_->measure());
     // the keyboard half is the api's shell, not the app's - ADR-0028
     uiKeys_ = boost::make_shared<v3d::ui::shell::Keyboard>(vgui_, dispatcher_, window());
+    chooser_ = boost::make_shared<v3d::ui::shell::FileChooser>(vgui_);
 
     boost::shared_ptr<v3d::ui::Container> container = vgui_->container(uiContainer);
     if (!container) {
@@ -269,6 +271,10 @@ void Controller::registerCommands() {
 
     press("project::load", [this]() { openProject(); });
     press("project::save", [this]() { saveProject(); });
+    press("project::saveAs", [this]() { saveProjectAs(); });
+    press("project::chooser::pick", [this]() { chooser_->pick(); });
+    press("project::chooser::accept", [this]() { chooser_->accept(); });
+    press("project::chooser::cancel", [this]() { chooser_->close(); });
     press("project::export::rib", [this]() { exportProject(); });
 
     // gui.xml has neither, so there is no menu name to match
@@ -336,12 +342,6 @@ void Controller::history(const std::string& name) {
 
 /**
  **/
-std::string Controller::projectPath() const {
-    return path_ + "project.json";
-}
-
-/**
- **/
 std::string Controller::exportPath() const {
     return path_ + "export.rib";
 }
@@ -372,21 +372,36 @@ void Controller::exportProject() {
 /**
  **/
 void Controller::openProject() {
-    // a gesture under way is holding the mesh it started on, which the read is about to
-    // take out of the scene
-    transformTool_->cancel();
-    if (!project_->read(projectPath(), scene_)) {
-        return;
-    }
-    // the history describes a scene that no longer exists, and nothing in it could be
-    // undone against the one that replaced it
-    commands_->clear();
+    chooser_->open(v3d::ui::shell::FileChooser::Mode::Open, projectPath_.parent_path(), ".json",
+        [this](const boost::filesystem::path& chosen) {
+            // a gesture under way is holding the mesh it started on, which the read is
+            // about to take out of the scene
+            transformTool_->cancel();
+            if (!project_->read(chosen.string(), scene_)) {
+                return;
+            }
+            projectPath_ = chosen;
+            // the history describes a scene that no longer exists, and nothing in it could
+            // be undone against the one that replaced it
+            commands_->clear();
+        });
 }
 
 /**
  **/
 void Controller::saveProject() {
-    project_->write(projectPath(), scene_);
+    project_->write(projectPath_.string(), scene_);
+}
+
+/**
+ **/
+void Controller::saveProjectAs() {
+    chooser_->open(v3d::ui::shell::FileChooser::Mode::Save, projectPath_.parent_path(), ".json",
+        [this](const boost::filesystem::path& chosen) {
+            if (project_->write(chosen.string(), scene_)) {
+                projectPath_ = chosen;
+            }
+        });
 }
 
 /**

@@ -47,7 +47,8 @@ Device::QueueFamilies::QueueFamilies() noexcept :
 graphics(0),
 present(0),
 hasGraphics(false),
-hasPresent(false) {
+hasPresent(false),
+timestampBits(0) {
 }
 
 /**
@@ -66,7 +67,8 @@ Device::Device(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::s
     physical_(VK_NULL_HANDLE),
     device_(VK_NULL_HANDLE),
     graphicsQueue_(VK_NULL_HANDLE),
-    presentQueue_(VK_NULL_HANDLE) {
+    presentQueue_(VK_NULL_HANDLE),
+    timestampPeriod_(0.0f) {
     selectPhysical();
     createLogical();
     allocator_ = boost::make_shared<memory::Allocator>(device_, physical_, instance_->handle(), allocations);
@@ -134,6 +136,12 @@ VkQueue Device::presentQueue() const noexcept {
 
 /**
  **/
+float Device::timestampPeriod() const noexcept {
+    return timestampPeriod_;
+}
+
+/**
+ **/
 Device::QueueFamilies Device::findFamilies(VkPhysicalDevice device) const {
     QueueFamilies families;
 
@@ -148,6 +156,7 @@ Device::QueueFamilies Device::findFamilies(VkPhysicalDevice device) const {
         if (!families.hasGraphics && (properties[index].queueFlags & VK_QUEUE_GRAPHICS_BIT)) {
             families.graphics = index;
             families.hasGraphics = true;
+            families.timestampBits = properties[index].timestampValidBits;
         }
 
         // without a surface there is nothing to be presentable to, and no handle to ask with
@@ -282,6 +291,7 @@ void Device::selectPhysical() {
         throw std::runtime_error(msg.str());
     }
 
+    timestampPeriod_ = selectedProperties.limits.timestampPeriod;
     logger_->get()->info("Using vulkan device {}", std::string(selectedProperties.deviceName));
 }
 

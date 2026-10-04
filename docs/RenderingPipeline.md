@@ -215,6 +215,14 @@ the batch carries it, `renderer::Quad` puts it on the `DrawItem`, and the record
 scissor per item and puts the pass's own region back for an item that names none. Nothing is
 clipped on the cpu, so a quad straddling the edge is drawn whole and half of it lands.
 
+**A canvas may draw in a space of its own**, per
+[ADR-0075](adr/0075-a-canvas-may-draw-in-a-space-of-its-own.md). `Canvas::space(size, fit)` sets a
+size in the game's units, with its origin at the top left, and either stretches it over the
+canvas or contains it at its own aspect, centred with bars either side. `projection()` then
+maps the space into `viewport()`, `toSpace()` maps a cursor back, and a clip is mapped out to
+pixels because a scissor is in pixels. The projection stays a push constant per submit, so a
+court in a space and a menu in pixels are two canvases in one pass, as pong draws them.
+
 `LineCanvas` clips on different terms. It cuts its stream into batches the same way, but the
 rectangle is in the pixels of the image drawn into and the modelview does not apply to it: a
 line canvas is world space, so there is no transform there that a screen rectangle could go
@@ -279,8 +287,8 @@ manipulators are all made of it. It splits across the cpu/gpu line the same way:
   `submit(canvas, pass)` uploads and adds one `DrawItem` per batch.
 
 Two things differ from the quad. Positions are in **world space**, and the transform is the
-camera the pass carries at set 0 rather than a projection in a push constant — lines are the
-first thing in the engine to read set 0, and the quad pipeline is meant to follow. The two
+camera the pass carries at set 0 rather than a projection in a push constant. The quad
+pipeline does not follow, because its projection belongs to a canvas rather than to a pass. The two
 pipelines also differ in behaviour, not only in attachment format: the one built for a pass
 with depth **tests and writes** it, so geometry in front of a wireframe occludes it, while the
 quad's depth variant does neither. Lines drawn over a scene rather than into it go in a pass
@@ -522,6 +530,16 @@ one place that does that. Every other texture keeps the `Display` default.
    transitions the image to `PRESENT_SRC_KHR`. Both transitions are synchronization2 barriers.
 3. `Presenter::present` ends the buffer, submits it with `vkQueueSubmit2`, and presents.
 
+**Every pass is timed on the device.** The ring owns a `vulkan::frame::Timings`, a timestamp query
+pool per slot, and `Ring::begin()` reads what that slot timed the last time it was used and
+resets it in the new command buffer. The recorder writes a timestamp either side of every pass,
+under the pass's name. So `Engine3D::timings()` is the frame that is as old as the ring is deep,
+and reading it never waits on the device. A caller recording its own commands into the ring's
+buffer may open and close spans of its own. The device keeps its timestamp period and the
+graphics family's valid bits, and a family that writes no timestamps leaves the timings off.
+On the cpu, `engine::Statistics::scope(name)` times a span of the frame into a row of its own,
+and `StatisticsOverlay` draws a line per span it is handed.
+
 Two frames are in flight. What they are is a `vulkan::frame::Ring`, which needs a device and
 nothing else ([ADR-0051](adr/0051-the-in-flight-ring-is-not-the-swapchain.md)): a command
 buffer and a fence per frame, `frame()` to say which slot is being recorded, and `waitFrame()`
@@ -615,8 +633,10 @@ has waited on that frame's fence, so nothing is reading what is overwritten.
 Every pipeline in the engine declares that same layout at set 0, which makes them
 interchangeable within a pass: a set bound for one stays bound across a pipeline change to
 another built against the same layout. The quad pipeline declares it and reads nothing from
-it, since a canvas carries its own orthographic projection in a push constant. Voxel's terrain
-pipeline is the first that does read it, and reads nothing else per draw: one camera at set 0,
+it, since a canvas carries its own orthographic projection in a push constant, and two canvases
+in one pass may map different spaces
+([ADR-0075](adr/0075-a-canvas-may-draw-in-a-space-of-its-own.md)). The line, world and lit
+pipelines and voxel's terrain read it. Terrain reads nothing else per draw: one camera at set 0,
 one block palette at set 1, and the chunk's origin in a 16 byte push constant. The line
 pipelines read it and declare nothing else at all — no set 1 and no push constant — and are
 still compatible for set 0 with the quad and terrain pipelines, because compatibility runs
@@ -712,11 +732,6 @@ vertex layout is `type::Model::Vertex`: position, normal and uv in 32 bytes.
 - **A second depth buffer.** There is one per context, and the editor's four viewports share
   it. That works only because their regions do not overlap and each pass clears its own. Two
   passes wanting different depth over the same pixels would not work.
-- **A 2D pass does not use set 0.** `Canvas::projection()` builds an orthographic matrix by
-  hand and the quad pipeline reads it from a push constant, while `vulkan::FrameUniforms` holds
-  a camera per pass that only voxel's terrain pipeline reads. The 2D path would stop being a
-  special case if a pass carried an orthographic camera and the quad pipeline read it from set
-  0 like everything else.
 
 ## How this meets the ECS
 

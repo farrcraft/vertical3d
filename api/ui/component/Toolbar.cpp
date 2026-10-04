@@ -18,6 +18,8 @@ Toolbar::Toolbar(const boost::shared_ptr<entt::dispatcher>& dispatcher, Edge edg
     Component(component::Type::Toolbar),
     dispatcher_(dispatcher),
     edge_(edge) {
+    // a strip is a control unless a document says it is scenery, which lets a press through
+    pickable(true);
 }
 
 /**

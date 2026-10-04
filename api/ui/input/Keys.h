@@ -22,6 +22,7 @@ class Engine;
 
 namespace component {
 class Scrollbar;
+class Slider;
 class SelectList;
 class TabBar;
 class TextBox;
@@ -164,6 +165,14 @@ class Keys final {
      * control that could not have moved.
      **/
     static bool nudge(const boost::shared_ptr<component::Scrollbar>& bar, std::string_view key);
+
+    /**
+     * Move a slider: the arrows by a step, page up and down by a tenth of the range, home
+     * and end to the ends. It sends its command when that changed the value.
+     *
+     * @return whether the key changed the value, which a key at an end does not
+     **/
+    bool slide(const boost::shared_ptr<component::Slider>& slider, std::string_view key);
 
     /**
      * Send whatever command activating a component sends, per ui::command(). A component

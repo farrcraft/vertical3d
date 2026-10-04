@@ -102,4 +102,14 @@ BOOST_AUTO_TEST_CASE(nothing_is_drawn_without_a_text_renderer) {
     BOOST_CHECK(canvas.empty());
 }
 
+/**
+ * A span reads as its name and its time, in the frame's own units.
+ **/
+BOOST_AUTO_TEST_CASE(a_span_reads_as_its_name_and_milliseconds) {
+    v3d::ui::shell::StatisticsOverlay::Sample::Span span;
+    span.name = "terrain";
+    span.nanoseconds = 2 * millisecond + 500000;
+    BOOST_CHECK_EQUAL(v3d::ui::shell::StatisticsOverlay::line(span), "terrain 2.5 ms");
+}
+
 BOOST_AUTO_TEST_SUITE_END()

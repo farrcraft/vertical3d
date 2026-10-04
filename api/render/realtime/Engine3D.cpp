@@ -5,6 +5,8 @@
 
 #include "Engine3D.h"
 
+#include <vector>
+
 #include <boost/make_shared.hpp>
 
 namespace v3d::render::realtime {
@@ -62,6 +64,13 @@ boost::shared_ptr<Context> Engine3D::context() {
  **/
 boost::shared_ptr<Frame> Engine3D::frame() const {
     return frame_;
+}
+
+/**
+ **/
+const std::vector<vulkan::frame::Timings::Timing>& Engine3D::timings() const {
+    static const std::vector<vulkan::frame::Timings::Timing> none;
+    return context_ ? context_->ring()->timings().last() : none;
 }
 
 /**
@@ -167,7 +176,8 @@ void Engine3D::renderFrame() {
     // the slots of the frame about to be recorded are free - acquire() waited on its fence
     uniforms->begin(context_->ring()->frame());
 
-    vulkan::frame::Recorder::record(acquisition.commands, *frame_, target, *context_->resources(), uniforms.get());
+    vulkan::frame::Recorder::record(acquisition.commands, *frame_, target, *context_->resources(), uniforms.get(),
+        &context_->ring()->timings());
 
     if (presenter->present(acquisition) == vulkan::frame::Presenter::Status::OutOfDate) {
         context_->resize();

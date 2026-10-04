@@ -167,6 +167,25 @@ bool Window::textInput() const {
 
 /**
  **/
+bool Window::relativeMouse(bool on) {
+    if (window_ == nullptr) {
+        return false;
+    }
+    const bool ok = SDL_SetWindowRelativeMouseMode(window_, on);
+    if (!ok) {
+        logger_->get()->warn("Relative mouse mode could not be turned {}: {}", on ? "on" : "off", SDL_GetError());
+    }
+    return ok;
+}
+
+/**
+ **/
+bool Window::relativeMouse() const {
+    return window_ != nullptr && SDL_GetWindowRelativeMouseMode(window_);
+}
+
+/**
+ **/
 void Window::cursor(bool state) {
     if (state) {
         SDL_ShowCursor();

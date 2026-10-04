@@ -49,6 +49,7 @@ class Device final {
         uint32_t present;
         bool hasGraphics;
         bool hasPresent;
+        uint32_t timestampBits;  /**< how many bits of a timestamp the graphics family writes, 0 for none **/
     };
 
     /**
@@ -107,6 +108,11 @@ class Device final {
     VkQueue graphicsQueue() const noexcept;
 
     /**
+     * @return how many nanoseconds one tick of a timestamp is
+     **/
+    float timestampPeriod() const noexcept;
+
+    /**
      * @return the queue finished images are presented on, or null on a headless device
      **/
     VkQueue presentQueue() const noexcept;
@@ -148,6 +154,7 @@ class Device final {
     QueueFamilies families_;
     VkQueue graphicsQueue_;
     VkQueue presentQueue_;
+    float timestampPeriod_;
     /**< built once the logical device exists, and outlived by nothing it allocated for **/
     boost::shared_ptr<memory::Allocator> allocator_;
 };

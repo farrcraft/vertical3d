@@ -13,6 +13,7 @@
 #include <iomanip>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
@@ -85,6 +86,18 @@ void StatisticsOverlay::visible(bool visible) noexcept {
 
 /**
  **/
+void StatisticsOverlay::size(float size) noexcept {
+    size_ = size;
+}
+
+/**
+ **/
+float StatisticsOverlay::size() const noexcept {
+    return size_;
+}
+
+/**
+ **/
 std::array<std::string, StatisticsOverlay::rows> StatisticsOverlay::lines(const Sample& sample) {
     std::ostringstream mean;
     mean << milliseconds(sample.mean);
@@ -102,12 +115,22 @@ std::array<std::string, StatisticsOverlay::rows> StatisticsOverlay::lines(const 
 
 /**
  **/
+std::string StatisticsOverlay::line(const Sample::Span& span) {
+    return span.name + " " + milliseconds(span.nanoseconds);
+}
+
+/**
+ **/
 void StatisticsOverlay::draw(v3d::render::realtime::Canvas* canvas, const Sample& sample) {
     if (!visible_ || !canvas || !text_ || !text_->loaded()) {
         return;
     }
 
-    const std::array<std::string, rows> content = lines(sample);
+    const std::array<std::string, rows> frame = lines(sample);
+    std::vector<std::string> content(frame.begin(), frame.end());
+    for (const Sample::Span& span : sample.spans) {
+        content.push_back(line(span));
+    }
 
     float widest = 0.0f;
     for (const std::string& line : content) {
@@ -119,7 +142,7 @@ void StatisticsOverlay::draw(v3d::render::realtime::Canvas* canvas, const Sample
     // the box goes on before the glyphs do: the canvas is drawn in the order it is filled,
     // so a background added after the text it backs would cover it
     canvas->rect(glm::vec2(margin, margin),
-        glm::vec2(margin + widest + padding * 2.0f, margin + lineHeight * static_cast<float>(rows) + padding * 2.0f),
+        glm::vec2(margin + widest + padding * 2.0f, margin + lineHeight * static_cast<float>(content.size()) + padding * 2.0f),
         background);
 
     // the pen is the baseline of the line, which sits one font size below the top of it

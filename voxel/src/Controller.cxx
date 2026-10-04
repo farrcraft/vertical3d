@@ -11,6 +11,7 @@
 #include <voxel/src/game/GameState.h>
 #include <voxel/src/game/Player.h>
 
+#include <cstdint>
 #include <functional>
 #include <string>
 
@@ -45,10 +46,8 @@ bool Controller::initialize() {
 
     window_->caption("Voxel");
 
-    // hide the mouse cursor in the window
-    v3d::render::realtime::Window::cursor(false);
-    // move mouse cursor to center of window
-    window_->warpCursor(window_->width() / 2, window_->height() / 2);
+    // mouselook reads how far the mouse moved, which relative mode reports at any edge
+    window_->relativeMouse(true);
 
     vgui_ = boost::make_shared<v3d::ui::Engine>(eventEngine_, dispatcher_, logger_);
     menu_ = boost::make_shared<v3d::ui::shell::GameMenu>(vgui_, [this](bool suspended) {
@@ -89,6 +88,7 @@ bool Controller::tick(unsigned int delta) {
     }
     // the renderer's per-frame work stays here rather than moving to simulate(): remeshing
     // is a budget of chunks per frame, and the debug overlay averages how long a frame took
+    const v3d::engine::Statistics::Scope chunks = statistics_.scope("chunks");
     renderer_->tick(delta);
     return true;
 }
@@ -109,7 +109,15 @@ bool Controller::simulate(float step) {
  **/
 bool Controller::render() {
     const v3d::engine::Statistics& measured = statistics();
-    renderer_->draw({ measured.mean(), measured.last(), measured.steps() }, tools());
+    v3d::ui::shell::StatisticsOverlay::Sample sample{ measured.mean(), measured.last(), measured.steps(), {} };
+    for (const v3d::engine::Statistics::Row& row : measured.rows()) {
+        sample.spans.push_back({ row.name, row.mean });
+    }
+    // the device's own times, for the passes it drew a few frames ago
+    for (const v3d::render::realtime::vulkan::frame::Timings::Timing& pass : renderer_->timings()) {
+        sample.spans.push_back({ "gpu " + pass.name, static_cast<std::uint64_t>(pass.milliseconds * 1.0e6) });
+    }
+    renderer_->draw(sample, tools());
     return true;
 }
 
@@ -150,10 +158,8 @@ bool Controller::shutdown() {
  **/
 void Controller::suspend(bool suspended) {
     scene_->state()->pause(suspended);
-    v3d::render::realtime::Window::cursor(suspended);
-    if (!suspended) {
-        window_->warpCursor(window_->width() / 2, window_->height() / 2);
-    }
+    // the menu wants a pointer, and leaving relative mode is what shows one
+    window_->relativeMouse(!suspended);
 }
 
 void Controller::handleEvent(const v3d::event::Event& event) {
@@ -208,17 +214,10 @@ void Controller::handleMotion(const v3d::event::kind::MouseMotion& event) {
     if (!window_->focused()) {
         return;
     }
-    // the menu owns the pointer while it is up, so it is not warped back to the centre
+    // the menu owns the pointer while it is up
     if (menu_->visible()) {
         return;
     }
-    const int centerX = window_->width() / 2;
-    const int centerY = window_->height() / 2;
-
-    const glm::vec2 position = event.position();
-    const float heading = position.x - static_cast<float>(centerX);
-    const float pitch = position.y - static_cast<float>(centerY);
-
-    scene_->player()->look(heading, pitch);
-    window_->warpCursor(centerX, centerY);
+    const glm::vec2 moved = event.motion();
+    scene_->player()->look(moved.x, moved.y);
 }

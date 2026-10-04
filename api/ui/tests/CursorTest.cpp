@@ -15,6 +15,8 @@
 #include <api/ui/component/TabBar.h>
 #include <api/ui/component/TabPage.h>
 #include <api/ui/component/TextBox.h>
+#include <api/ui/component/Toolbar.h>
+#include <api/ui/component/menu/MenuBar.h>
 #include <api/ui/input/Cursor.h>
 #include <api/ui/paint/ComponentRenderer.h>
 
@@ -475,6 +477,112 @@ BOOST_AUTO_TEST_CASE(a_disabled_box_takes_what_it_holds_with_it) {
     fixture.draw();
     BOOST_CHECK(!fixture.cursor->press(glm::vec2(50.0f, 50.0f)));
     BOOST_CHECK_EQUAL(fixture.sent.size(), 1U);
+}
+
+/**
+ * A strip is offered a press before the tree, and takes one anywhere on it, its empty run
+ * included - so a button the tree holds under a strip is out of reach while the strip is a
+ * control.
+ **/
+BOOST_AUTO_TEST_CASE(a_strip_takes_a_press_before_the_tree) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::Button> under =
+        boost::make_shared<v3d::ui::component::Button>();
+    under->event(v3d::event::Event("under", fixture.context));
+    fixture.place(under, glm::vec2(0.0f, 0.0f), glm::vec2(800.0f, 100.0f));
+
+    const boost::shared_ptr<v3d::ui::component::Toolbar> strip =
+        boost::make_shared<v3d::ui::component::Toolbar>(fixture.dispatcher, v3d::ui::component::Toolbar::Edge::Top);
+    const boost::shared_ptr<v3d::ui::component::Button> go = boost::make_shared<v3d::ui::component::Button>();
+    go->label("Go");
+    go->event(v3d::event::Event("go", fixture.context));
+    strip->add(go);
+    fixture.container->add(strip);
+    fixture.draw();
+
+    BOOST_CHECK(strip->pickable());
+    BOOST_CHECK(fixture.cursor->press(glm::vec2(700.0f, 4.0f)));
+    BOOST_CHECK(fixture.sent.empty());
+}
+
+/**
+ * A strip marked as scenery is offered nothing: a press on its empty run and on its button
+ * both reach the tree under it, and the cursor moving over it lights nothing of the strip's.
+ **/
+BOOST_AUTO_TEST_CASE(a_strip_that_is_not_pickable_lets_a_press_through) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::Button> under =
+        boost::make_shared<v3d::ui::component::Button>();
+    under->event(v3d::event::Event("under", fixture.context));
+    fixture.place(under, glm::vec2(0.0f, 0.0f), glm::vec2(800.0f, 100.0f));
+
+    const boost::shared_ptr<v3d::ui::component::Toolbar> strip =
+        boost::make_shared<v3d::ui::component::Toolbar>(fixture.dispatcher, v3d::ui::component::Toolbar::Edge::Top);
+    const boost::shared_ptr<v3d::ui::component::Button> go = boost::make_shared<v3d::ui::component::Button>();
+    go->label("Go");
+    go->event(v3d::event::Event("go", fixture.context));
+    strip->add(go);
+    strip->pickable(false);
+    fixture.container->add(strip);
+    fixture.draw();
+
+    const glm::vec2 onButton = go->position() + go->size() * 0.5f;
+    BOOST_CHECK(fixture.cursor->motion(onButton));
+    BOOST_CHECK_EQUAL(go->state(), v3d::ui::component::Button::STATE_NORMAL);
+
+    BOOST_CHECK(fixture.cursor->press(glm::vec2(700.0f, 4.0f)));
+    BOOST_CHECK(fixture.cursor->press(onButton));
+    BOOST_REQUIRE_EQUAL(fixture.sent.size(), 2U);
+    BOOST_CHECK_EQUAL(fixture.sent[0], "test::under");
+    BOOST_CHECK_EQUAL(fixture.sent[1], "test::under");
+}
+
+/**
+ * A disabled strip is skipped the way a disabled subtree is, so a press on it takes nothing
+ * when nothing is under it.
+ **/
+BOOST_AUTO_TEST_CASE(a_disabled_strip_takes_nothing) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::Toolbar> strip =
+        boost::make_shared<v3d::ui::component::Toolbar>(fixture.dispatcher, v3d::ui::component::Toolbar::Edge::Top);
+    const boost::shared_ptr<v3d::ui::component::Button> go = boost::make_shared<v3d::ui::component::Button>();
+    go->label("Go");
+    go->event(v3d::event::Event("go", fixture.context));
+    strip->add(go);
+    strip->enabled(false);
+    fixture.container->add(strip);
+    fixture.draw();
+
+    const glm::vec2 onButton = go->position() + go->size() * 0.5f;
+    BOOST_CHECK(!fixture.cursor->motion(onButton));
+    BOOST_CHECK(!fixture.cursor->press(onButton));
+    BOOST_CHECK(fixture.sent.empty());
+}
+
+/**
+ * A document marks a strip as scenery the way it marks anything else, a menu bar included,
+ * though a menu bar's box is the renderer's and is not read.
+ **/
+BOOST_AUTO_TEST_CASE(a_document_marks_a_strip_as_scenery) {
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
+        boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,
+        boost::make_shared<v3d::log::Logger>());
+    const bool loaded = ui->load(boost::make_shared<v3d::asset::kind::Json>("vgui", v3d::asset::Type::JsonDocument,
+        boost::json::parse(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [
+            { "type": "menubar", "name": "menus", "pickable": false, "menus": [] },
+            { "type": "toolbar", "name": "hotbar", "pickable": false, "buttons": [] },
+            { "type": "toolbar", "name": "tools", "buttons": [] }
+        ] } ] })").as_object()));
+    BOOST_REQUIRE(loaded);
+    const boost::shared_ptr<v3d::ui::Container> hud = ui->container("hud");
+    BOOST_REQUIRE(hud);
+    BOOST_REQUIRE(hud->get("menus"));
+    BOOST_CHECK(!hud->get("menus")->pickable());
+    BOOST_REQUIRE(hud->get("hotbar"));
+    BOOST_CHECK(!hud->get("hotbar")->pickable());
+    BOOST_REQUIRE(hud->get("tools"));
+    BOOST_CHECK(hud->get("tools")->pickable());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

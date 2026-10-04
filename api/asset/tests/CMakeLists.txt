@@ -9,6 +9,7 @@ v3d_add_test(asset
 	"GltfTest.cpp"
 	"JsonTest.cpp"
 	"WriterTest.cpp"
+	"MigrationTest.cpp"
 	"TextTest.cpp")
 
 # SDL3: v3dlib_asset reaches the mixer through v3dlib_audio, which carries SDL3 with it.

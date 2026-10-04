@@ -28,6 +28,9 @@ namespace v3d::ui::component {
  *
  * The strip answers the cursor out of the bounds a renderer left on its buttons, per
  * ADR-0019, so nothing is hit until something has been drawn.
+ *
+ * It is pickable from the start. One marked otherwise is scenery: the cursor offers it
+ * nothing, and a press on it, gaps and buttons alike, falls to whatever is under it.
  **/
 class Toolbar : public Component {
  public:

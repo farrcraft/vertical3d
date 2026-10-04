@@ -11,6 +11,7 @@
 
 #include <SDL3/SDL.h>
 
+#include <algorithm>
 #include <map>
 #include <string>
 
@@ -145,6 +146,7 @@ bool Engine::registerEventMappings() {
     }
     // addMapper stores by name, so this replaces the mapper rather than adding a second
     eventEngine_->addMapper(mapper);
+    mapper_ = mapper;
     return true;
 }
 
@@ -355,6 +357,17 @@ const v3d::input::KeyState* Engine::keys() const {
  **/
 const v3d::input::MouseState* Engine::mouse() const {
     return inputEngine_ ? inputEngine_->mouse() : nullptr;
+}
+
+/**
+ **/
+bool Engine::held(std::string_view command) const {
+    const v3d::input::KeyState* state = keys();
+    if (!mapper_ || state == nullptr) {
+        return false;
+    }
+    return std::ranges::any_of(mapper_->sources(command),
+        [state](const v3d::event::Event& source) { return state->held(source.name()); });
 }
 
 /**

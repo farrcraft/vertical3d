@@ -121,7 +121,7 @@ works in". A mesh can be retired the same way. voxel has no reason to yet: its r
 only because [`Uploader`](../../../api/render/realtime/vulkan/memory/Uploader.cxx) idles the
 queue after every copy, which [`ChunkMeshPool.h`](../../../voxel/src/voxel/ChunkMeshPool.h) says
 in as many words. That stops being true when
-[milestone 7](../../roadmap/m7-ShellAndShipping.md#asynchronous-loading) stops idling the queue,
+[milestone 7](../../roadmap/completed/m7-ShellAndShipping.md#asynchronous-loading) stops idling the queue,
 and a TODO entry says so when this plan closes.
 
 **What the ADR records:** explicit release; a generation that refuses stale handles; and
@@ -431,7 +431,7 @@ what to watch for.
 ## What this does not do
 
 - **It does not load in the background.** A region loaded on the main thread is correct, and
-  that is [milestone 7](../../roadmap/m7-ShellAndShipping.md#asynchronous-loading). Step 2's
+  that is [milestone 7](../../roadmap/completed/m7-ShellAndShipping.md#asynchronous-loading). Step 2's
   deferral is what keeps an unload from hitching; a load still costs what it costs.
 - **It does not give the editor or the ui release.** Neither replaces a texture today. A theme
   switch that re-resolves images would be the first case, and nothing in the tree does that yet.

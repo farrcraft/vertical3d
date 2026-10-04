@@ -30,6 +30,7 @@ enum class Type {
     RadioButton,
     Scrollbar,
     SelectList,
+    Slider,
     TabBar,
     TabPage,
     TextBox,

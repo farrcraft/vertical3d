@@ -54,15 +54,14 @@ bool near(const glm::vec2& lhs, const glm::vec2& rhs) {
 }
 
 /**
- * A scene the size of pong's own window, reset and listening. Everything below measures
- * against the 800x600 the app opens at, since the collision tests are written in pixels.
+ * A scene reset and listening. Everything below measures against the 800x600 court, which is
+ * what the collision tests are written in.
  **/
 struct Fixture final {
     Fixture() :
         dispatcher_(boost::make_shared<entt::dispatcher>()),
         scene_(&registry_, dispatcher_) {
         dispatcher_->sink<v3d::event::kind::Sound>().connect<&Sounds::heard>(sounds_);
-        scene_.resize(800, 600);
         scene_.reset();
     }
 

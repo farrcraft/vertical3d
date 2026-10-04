@@ -7,6 +7,8 @@
 
 #include <api/render/realtime/vulkan/frame/Recorder.h>
 
+#include <vector>
+
 #include "Context.h"
 #include "Context3D.h"
 #include "Engine.h"
@@ -68,6 +70,13 @@ class Engine3D : public Engine {
      * this during a tick, and recorded in one step by renderFrame().
      **/
     boost::shared_ptr<Frame> frame() const;
+
+    /**
+     * How long the device spent on each pass of a frame, by the pass's name. The frame is
+     * as many behind as there are frames in flight, and the list is empty on a device that
+     * writes no timestamps.
+     **/
+    const std::vector<vulkan::frame::Timings::Timing>& timings() const;
 
     /**
      * The colour the frame's first pass clears to.

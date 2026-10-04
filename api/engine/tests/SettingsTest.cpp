@@ -173,3 +173,22 @@ BOOST_AUTO_TEST_CASE(settings_wrong_type_test) {
 
     boost::filesystem::remove(settings.path());
 }
+
+/**
+ * A document with no version, or one that is not a number, is refused rather than read as it
+ * is - and like a malformed one it is replaceable, since nothing says a later build wrote it.
+ **/
+BOOST_AUTO_TEST_CASE(settings_unreadable_version_test) {
+    for (const std::string& document : {
+            std::string("{ \"settings\": { \"paddle1up\": \"z\" } }"),
+            std::string("{ \"version\": \"1\", \"settings\": { \"paddle1up\": \"z\" } }"),
+            std::string("{ \"version\": 0, \"settings\": { \"paddle1up\": \"z\" } }") }) {
+        v3d::engine::Settings settings = fresh("unversioned");
+        put(settings, document);
+
+        BOOST_CHECK_EQUAL(settings.load(), false);
+        BOOST_CHECK_EQUAL(settings.text("paddle1up", "w"), "w");
+        BOOST_CHECK_EQUAL(settings.writable(), true);
+        boost::filesystem::remove(settings.path());
+    }
+}

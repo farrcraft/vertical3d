@@ -39,7 +39,9 @@ it that game. Five pieces live in the api:
 - `v3d::ui::shell::StatisticsOverlay` draws what the loop measured about its own pacing, hidden
   until something shows it. It copies the numbers into a `Sample` rather than reading an
   `engine::Statistics`, because `api/ui` sits below `api/engine` and cannot name that class.
-- `Engine3D::beginFrame` is the minimized-window check a `draw()` opens with.
+- `v3d::ui::shell::Screen` builds those over an `Engine3D`, owns the canvas they fill, and opens
+  each frame with `Engine3D::beginFrame`, which is the minimized-window check
+  ([ADR-0074](adr/0074-the-shell-builds-the-uis-renderers.md)).
 
 An app that reimplements one of these has diverged rather than customised.
 
@@ -223,6 +225,11 @@ alongside them. So an app subscribes to the abstracted event directly and adopts
 binding document is a convenience, not the price of admission. What the bindings buy is a
 command named in config rather than in a switch.
 
+**Mouselook is `Window::relativeMouse(true)`.** The pointer is hidden and held in the window,
+and `MouseMotion::motion()` is how far the mouse moved, however near an edge it is. The platform
+lets go while the window is unfocused and takes the mouse back on focus. An app leaves the mode
+only for its own reasons, as voxel does while its menu is up.
+
 `Engine::keys()` and `Engine::mouse()` are the polled half of the same thing, and answer
 `held()` for what is down now plus `pressed()` and `released()` for what changed edge during
 this frame's events. The wheel is an edge with no held half — there is no such thing as where
@@ -230,6 +237,12 @@ a wheel is — so `MouseState::wheel()` accumulates the notches this frame's eve
 cleared with the rest. The loop clears the edges after `render()`, so a key pressed and released
 inside one frame answers both and is never seen held — the distinction polling SDL directly
 cannot make. Either is null when the app did not ask for that device's `Feature`.
+
+**A command can be polled too.** `Engine::held("context::name")` is true while any key bound
+to that command is down, which is what a walk or a camera pan reads on the fixed step. It asks
+the keys rather than counting the edges the command was sent, so a binding that fires on press
+alone still answers it, and a `rebind()` moves it with nothing more. A command is its name and
+context, without its param, so directions that are held apart are bound as separate commands.
 
 **Simulation goes in `simulate()`.** What runs there produces the same result whatever the
 frame rate was; what runs in `tick()` does not. Per-frame work that is not simulation — input

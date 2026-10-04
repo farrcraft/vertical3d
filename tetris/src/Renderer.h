@@ -8,9 +8,8 @@
 #include <api/asset/Manager.h>
 #include <api/render/realtime/Canvas.h>
 #include <api/render/realtime/Engine3D.h>
-#include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/Engine.h>
-#include <api/ui/paint/TextRenderer.h>
+#include <api/ui/shell/Screen.h>
 #include <api/ui/shell/StatisticsOverlay.h>
 
 #include <map>
@@ -105,13 +104,11 @@ class TetrisRenderer final {
     boost::shared_ptr<v3d::ui::Engine> ui_;
     boost::shared_ptr<v3d::log::Logger> logger_;
 
-    v3d::render::realtime::Canvas canvas_;
     v3d::render::realtime::Engine3D engine_;
 
     v3d::render::realtime::TextureHandle pieces_;
     std::map<std::string, Sprite> sprites_;
 
-    boost::shared_ptr<v3d::ui::paint::TextRenderer> text_;
-    boost::shared_ptr<v3d::ui::shell::StatisticsOverlay> statistics_;
-    boost::shared_ptr<v3d::ui::paint::ComponentRenderer> uiRenderer_;
+    // built after the engine is initialized, because its atlas is uploaded through it
+    boost::shared_ptr<v3d::ui::shell::Screen> screen_;
 };

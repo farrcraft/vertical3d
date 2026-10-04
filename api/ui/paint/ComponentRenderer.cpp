@@ -18,6 +18,7 @@
 #include <api/ui/component/RadioButton.h>
 #include <api/ui/component/Scrollbar.h>
 #include <api/ui/component/SelectList.h>
+#include <api/ui/component/Slider.h>
 #include <api/ui/component/TabBar.h>
 #include <api/ui/component/TabPage.h>
 #include <api/ui/component/TextBox.h>
@@ -90,6 +91,7 @@ std::optional<style::Resolver::Class> ringed(component::Type type) noexcept {
         case component::Type::Panel:       return style::Resolver::Class::Panel;
         case component::Type::Bar:         return style::Resolver::Class::Bar;
         case component::Type::Scrollbar:   return style::Resolver::Class::Scrollbar;
+        case component::Type::Slider:      return style::Resolver::Class::Slider;
         case component::Type::CheckBox:    return style::Resolver::Class::CheckBox;
         case component::Type::RadioButton: return style::Resolver::Class::Radio;
         case component::Type::SelectList:  return style::Resolver::Class::List;
@@ -203,6 +205,9 @@ void ComponentRenderer::paint(v3d::render::realtime::Canvas* canvas,
             break;
         case component::Type::Scrollbar:
             draw(canvas, boost::dynamic_pointer_cast<component::Scrollbar>(component));
+            break;
+        case component::Type::Slider:
+            draw(canvas, boost::dynamic_pointer_cast<component::Slider>(component));
             break;
         case component::Type::CheckBox:
         case component::Type::RadioButton:
@@ -483,6 +488,29 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
         high.x = low.x + bar->thumb();
     }
     fillBox(canvas, low, high, std::max(0.0f, dress.radius - dress.borderWidth), dress.thumb);
+}
+
+/**
+ **/
+void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Slider>& slider) const {
+    if (canvas == nullptr || !slider) {
+        return;
+    }
+    const Dressing& dress = styles_.resolve(style::Resolver::Class::Slider, slider->style());
+
+    const glm::vec2 min = slider->position();
+    const glm::vec2 max = min + slider->size();
+    plateBox(canvas, min, max, dress.radius, dress.borderWidth, dress.track, dress.border);
+
+    // the thumb is a square as tall as the track, and its centre runs between the two ends
+    // less half of it, so it never hangs off either
+    const float side = slider->size().y;
+    const float travel = std::max(0.0f, slider->size().x - side);
+    const float left = min.x + travel * slider->fraction();
+    const glm::vec2 inset(dress.borderWidth, dress.borderWidth);
+    fillBox(canvas, min + inset, glm::vec2(left + side * 0.5f, max.y - inset.y),
+        std::max(0.0f, dress.radius - dress.borderWidth), dress.fill);
+    fillBox(canvas, glm::vec2(left, min.y), glm::vec2(left + side, max.y), dress.radius, dress.thumb);
 }
 
 /**

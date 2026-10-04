@@ -121,6 +121,12 @@ class Cursor final {
     void dispatch(const boost::shared_ptr<Component>& component) const;
 
     /**
+     * Carry a held press to where the cursor is now, for a component that is dragged: a
+     * scrollbar's thumb, a slider's, or a text box's selection.
+     **/
+    void follow(const boost::shared_ptr<Component>& holding, const glm::vec2& point) const;
+
+    /**
      * Put a box's caret where a point landed, or take the selection out to there when the
      * press that started it is still down.
      *

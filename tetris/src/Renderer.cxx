@@ -62,22 +62,16 @@ TetrisRenderer::TetrisRenderer(const boost::shared_ptr<v3d::render::realtime::Wi
     engine_.clearColour(glm::vec4(0.09f, 0.09f, 0.11f, 1.0f));
 
     loadPieces(assetManager, logger);
-    const boost::shared_ptr<v3d::render::realtime::vulkan::renderer::Quad> quads = engine_.quads();
-    text_ = boost::make_shared<v3d::ui::paint::TextRenderer>(assetManager, logger,
-        [quads](const boost::shared_ptr<v3d::image::Image>& atlas) {
-            return quads->texture(atlas);
-        });
 
-    uiRenderer_ = boost::make_shared<v3d::ui::paint::ComponentRenderer>(text_->measure(fontSize), text_->write(&canvas_, fontSize));
-    uiRenderer_->dressing().lineHeight = fontSize * 1.4f;
-
-    statistics_ = boost::make_shared<v3d::ui::shell::StatisticsOverlay>(text_);
+    v3d::ui::shell::Screen::Options options;
+    options.size = fontSize;
+    screen_ = boost::make_shared<v3d::ui::shell::Screen>(&engine_, assetManager, logger, options);
 }
 
 /**
  **/
 const boost::shared_ptr<v3d::ui::shell::StatisticsOverlay>& TetrisRenderer::statistics() const {
-    return statistics_;
+    return screen_->statistics();
 }
 
 /**
@@ -144,7 +138,6 @@ void TetrisRenderer::resize(int width, int height) {
     if (scene_) {
         scene_->resize(width, height);
     }
-    canvas_.resize(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 }
 
 /**
@@ -153,8 +146,8 @@ TetrisRenderer::Layout TetrisRenderer::layout() const {
     const GameBoard* board = scene_->board();
     const float rows = static_cast<float>(board->rows());
     const float columns = static_cast<float>(board->columns());
-    const float width = static_cast<float>(canvas_.width());
-    const float height = static_cast<float>(canvas_.height());
+    const float width = static_cast<float>(screen_->canvas().width());
+    const float height = static_cast<float>(screen_->canvas().height());
 
     Layout metrics;
     // the well has to fit vertically, and the well plus its panel horizontally
@@ -171,15 +164,12 @@ void TetrisRenderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& stati
         return;
     }
 
-    glm::ivec2 size;
-    if (!engine_.beginFrame(&size)) {
+    if (!screen_->begin()) {
         return;
     }
-    if (canvas_.width() != static_cast<uint32_t>(size.x) || canvas_.height() != static_cast<uint32_t>(size.y)) {
-        resize(size.x, size.y);
+    if (screen_->resized()) {
+        resize(static_cast<int>(screen_->canvas().width()), static_cast<int>(screen_->canvas().height()));
     }
-
-    canvas_.clear();
 
     const Layout metrics = layout();
     drawWell(metrics);
@@ -187,16 +177,11 @@ void TetrisRenderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& stati
     drawFalling(metrics);
     drawPanel(metrics);
 
-    if (ui_) {
-        uiRenderer_->draw(&canvas_, *ui_);
-    }
-
-    // last, so the numbers are over whatever the menu put up rather than under it
-    statistics_->draw(&canvas_, statistics);
+    screen_->draw(ui_.get(), statistics);
 
     boost::shared_ptr<v3d::render::realtime::Pass> pass =
         engine_.frame()->pass(v3d::render::realtime::Engine3D::colourPass);
-    engine_.quads()->submit(canvas_, pass.get());
+    engine_.quads()->submit(screen_->canvas(), pass.get());
 
     engine_.renderFrame();
 }
@@ -209,8 +194,8 @@ void TetrisRenderer::drawWell(const Layout& metrics) {
     const glm::vec2 max = min + glm::vec2(metrics.cell * board->columns(), metrics.cell * board->rows());
     const float border = 2.0f;
 
-    canvas_.rect(min - glm::vec2(border, border), max + glm::vec2(border, border), borderColour);
-    canvas_.rect(min, max, wellColour);
+    screen_->canvas().rect(min - glm::vec2(border, border), max + glm::vec2(border, border), borderColour);
+    screen_->canvas().rect(min, max, wellColour);
 }
 
 /**
@@ -266,7 +251,7 @@ void TetrisRenderer::drawBlock(const std::string& colour, const glm::vec2& min, 
     if (sprite == sprites_.end()) {
         return;
     }
-    canvas_.rect(min, min + glm::vec2(cell, cell), sprite->second.uv0, sprite->second.uv1, white, pieces_);
+    screen_->canvas().rect(min, min + glm::vec2(cell, cell), sprite->second.uv0, sprite->second.uv1, white, pieces_);
 }
 
 /**
@@ -276,16 +261,16 @@ void TetrisRenderer::drawPanel(const Layout& metrics) {
     const float line = fontSize * 1.4f;
     const glm::vec2 panel = metrics.origin + glm::vec2(metrics.cell * (board->columns() + 1.0f), line);
 
-    text_->draw(&canvas_, "SCORE", panel, textColour, fontSize);
-    text_->draw(&canvas_, boost::lexical_cast<std::string>(scene_->score()), panel + glm::vec2(0.0f, line), textColour, fontSize);
+    screen_->text()->draw(&screen_->canvas(), "SCORE", panel, textColour, fontSize);
+    screen_->text()->draw(&screen_->canvas(), boost::lexical_cast<std::string>(scene_->score()), panel + glm::vec2(0.0f, line), textColour, fontSize);
 
-    text_->draw(&canvas_, "NEXT", panel + glm::vec2(0.0f, line * 3.0f), textColour, fontSize);
+    screen_->text()->draw(&screen_->canvas(), "NEXT", panel + glm::vec2(0.0f, line * 3.0f), textColour, fontSize);
     // the preview is drawn a little smaller than the well, so a four wide tetrad fits the
     // panel it was given
     drawTetrad(board->nextTetrad(), panel + glm::vec2(0.0f, line * 3.5f), metrics.cell * 0.75f);
 
     if (board->over()) {
-        text_->draw(&canvas_, "GAME OVER", panel + glm::vec2(0.0f, line * 7.0f), textColour, fontSize);
+        screen_->text()->draw(&screen_->canvas(), "GAME OVER", panel + glm::vec2(0.0f, line * 7.0f), textColour, fontSize);
     }
 
     if (scene_->debug()) {
@@ -294,6 +279,6 @@ void TetrisRenderer::drawPanel(const Layout& metrics) {
         const std::string state =
             boost::lexical_cast<std::string>(position.first) + "," + boost::lexical_cast<std::string>(position.second) +
             " " + boost::lexical_cast<std::string>(current.width()) + "x" + boost::lexical_cast<std::string>(current.height());
-        text_->draw(&canvas_, state, panel + glm::vec2(0.0f, line * 9.0f), textColour, fontSize);
+        screen_->text()->draw(&screen_->canvas(), state, panel + glm::vec2(0.0f, line * 9.0f), textColour, fontSize);
     }
 }

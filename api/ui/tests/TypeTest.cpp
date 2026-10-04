@@ -50,9 +50,9 @@ BOOST_AUTO_TEST_CASE(every_named_type_parses_back_to_itself) {
         BOOST_CHECK_MESSAGE(v3d::ui::component::parse(text) == type,
             "type " << index << " is named \"" << text << "\" and does not parse back to itself");
     }
-    // the seventeen a config can ask for: everything in the enum but MenuItem, which the menu
+    // the eighteen a config can ask for: everything in the enum but MenuItem, which the menu
     // holding it builds, and Undefined, which is not a component
-    BOOST_CHECK_EQUAL(named, 17);
+    BOOST_CHECK_EQUAL(named, 18);
 }
 
 /**

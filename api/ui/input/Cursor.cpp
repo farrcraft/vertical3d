@@ -12,6 +12,7 @@
 #include <api/ui/component/Button.h>
 #include <api/ui/component/Scrollbar.h>
 #include <api/ui/component/SelectList.h>
+#include <api/ui/component/Slider.h>
 #include <api/ui/component/TabBar.h>
 #include <api/ui/component/TextBox.h>
 #include <api/ui/component/Toolbar.h>
@@ -31,12 +32,15 @@ namespace {
 /**
  * The strips of a container, in the order the cursor is offered them - which is the
  * reverse of the order they are drawn, because an open menu drops a panel over a toolbar.
+ *
+ * A strip is left out on the same terms the tree's pick leaves a component out: hidden,
+ * disabled, or not pickable.
  **/
 void strips(const boost::shared_ptr<Container>& container,
     std::vector<boost::shared_ptr<component::MenuBar>>* bars,
     std::vector<boost::shared_ptr<component::Toolbar>>* toolbars) {
     for (const boost::shared_ptr<Component>& component : container->components()) {
-        if (!component || !component->visible()) {
+        if (!component || !component->visible() || !component->enabled() || !component->pickable()) {
             continue;
         }
         if (component->type() == component::Type::MenuBar) {
@@ -101,13 +105,7 @@ bool Cursor::motion(const glm::vec2& point) {
     // what drags a thumb off the bar it started on without losing it
     const boost::shared_ptr<Component> holding = held_.lock();
     if (holding) {
-        if (holding->type() == component::Type::Scrollbar) {
-            boost::dynamic_pointer_cast<component::Scrollbar>(holding)->drag(point);
-        } else if (holding->type() == component::Type::TextBox) {
-            // the press left the anchor where it landed, so following the cursor selects
-            // the run between the two - ADR-0057
-            place(boost::dynamic_pointer_cast<component::TextBox>(holding), point, true);
-        }
+        follow(holding, point);
         return true;
     }
 
@@ -197,12 +195,24 @@ bool Cursor::release(const glm::vec2& point) {
     if (!holding) {
         return false;
     }
+    follow(holding, point);
+    return true;
+}
+
+void Cursor::follow(const boost::shared_ptr<Component>& holding, const glm::vec2& point) const {
+    // the components a press drags, and the one place that says so. A component added that
+    // drags is added here, or it stops at the press
     if (holding->type() == component::Type::Scrollbar) {
         boost::dynamic_pointer_cast<component::Scrollbar>(holding)->drag(point);
+    } else if (holding->type() == component::Type::Slider) {
+        if (boost::dynamic_pointer_cast<component::Slider>(holding)->drag(point)) {
+            dispatch(holding);
+        }
     } else if (holding->type() == component::Type::TextBox) {
+        // the press left the anchor where it landed, so following the cursor selects the
+        // run between the two - ADR-0057
         place(boost::dynamic_pointer_cast<component::TextBox>(holding), point, true);
     }
-    return true;
 }
 
 void Cursor::act(const boost::shared_ptr<Component>& component, const glm::vec2& point) {
@@ -234,6 +244,13 @@ void Cursor::act(const boost::shared_ptr<Component>& component, const glm::vec2&
             // absolute rather than relative, so a bar picked anywhere on its track jumps to
             // what was clicked and then follows the cursor until the press comes up
             boost::dynamic_pointer_cast<component::Scrollbar>(component)->drag(point);
+            return;
+        case component::Type::Slider:
+            // like a scrollbar, a press anywhere on the track jumps the thumb there, and a
+            // slider sends its command only when that changed its value
+            if (boost::dynamic_pointer_cast<component::Slider>(component)->drag(point)) {
+                dispatch(component);
+            }
             return;
         case component::Type::TextBox:
             // a press says "type here", and where in the text it landed says where - so the

@@ -115,6 +115,6 @@ place boxes known to be inside, outside and straddling each plane, and assert al
 ## Not in this milestone
 
 * **A camera that moves itself.** voxel's flight camera and the editor's orbit tool are each
-  one consumer's controller; [milestone 7](../m7-ShellAndShipping.md) has the relative mouse mode
+  one consumer's controller; [milestone 7](m7-ShellAndShipping.md) has the relative mouse mode
   they both work around.
 * **Collision response and a broadphase.** See above.

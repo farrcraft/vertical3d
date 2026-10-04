@@ -46,6 +46,7 @@ class Menu;
 class MenuBar;
 class Panel;
 class Scrollbar;
+class Slider;
 class SelectList;
 class TabBar;
 class TextBox;
@@ -152,6 +153,11 @@ class ComponentRenderer {
      * shows. A bar with nothing to scroll draws the track alone.
      **/
     void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Scrollbar>& bar) const;
+
+    /**
+     * A slider's track, the fill up to its value, and its thumb.
+     **/
+    void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Slider>& slider) const;
 
     /**
      * Draw a check box - the box, the mark when it is checked, and the label beside it.

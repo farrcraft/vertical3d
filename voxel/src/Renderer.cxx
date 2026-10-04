@@ -118,23 +118,18 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
     createLayout();
     createUniforms();
     createPipeline();
-    const boost::shared_ptr<v3d::render::realtime::vulkan::renderer::Quad> quads = engine_.quads();
-    text_ = boost::make_shared<v3d::ui::paint::TextRenderer>(assetManager, logger,
-        [quads](const boost::shared_ptr<v3d::image::Image>& atlas) {
-            return quads->texture(atlas);
-        });
-
     meshes_ = boost::make_shared<ChunkMeshPool>();
     builder_ = boost::make_shared<MeshBuilder>(scene_->chunks(),
         ChunkMeshBuilder(context_->device(), context_->uploader()));
 
-    uiRenderer_ = boost::make_shared<v3d::ui::paint::ComponentRenderer>(text_->measure(fontSize), text_->write(&canvas_, fontSize));
-    uiRenderer_->dressing().lineHeight = fontSize * 1.4f;
-
+    v3d::ui::shell::Screen::Options options;
+    options.size = fontSize;
+    // the frame time is in the debug readout, so there is no overlay to draw it
+    options.statistics = false;
     // the debug readout is a panel written as calls rather than a tree kept in step with
     // what it shows, per ADR-0035 - it is a function of the frame it is drawn in
-    tools_ = boost::make_shared<v3d::ui::Immediate>(text_->measure(fontSize), text_->write(&canvas_, fontSize));
-    tools_->dressing().lineHeight = fontSize * 1.4f;
+    options.immediate = true;
+    screen_ = boost::make_shared<v3d::ui::shell::Screen>(&engine_, assetManager, logger, options);
 }
 
 /**
@@ -276,31 +271,37 @@ void Renderer::drawDebug(const v3d::ui::shell::StatisticsOverlay::Sample& statis
     const v3d::ui::Immediate::Input& tools) {
     const glm::vec3 position = scene_->player()->position();
 
-    tools_->begin(&canvas_, tools);
-    if (tools_->window(debugTitle, glm::vec2(20.0f, 20.0f), glm::vec2(260.0f, 154.0f), 0.85f)) {
-        tools_->text(std::string("Voxel ") + VOXEL_VERSION);
+    v3d::ui::Immediate* layer = screen_->immediate();
+    layer->begin(&screen_->canvas(), tools);
+    // a line more for each span of the frame that was timed
+    const float tall = 154.0f + 26.0f * static_cast<float>(statistics.spans.size());
+    if (layer->window(debugTitle, glm::vec2(20.0f, 20.0f), glm::vec2(260.0f, tall), 0.85f)) {
+        layer->text(std::string("Voxel ") + VOXEL_VERSION);
         // the loop already keeps a rolling mean, so nothing here averages anything
-        tools_->text(std::to_string(statistics.mean / 1000000U) + " ms");
+        layer->text(std::to_string(statistics.mean / 1000000U) + " ms");
         std::stringstream where;
         where.precision(1);
         where << std::fixed << "x " << position.x << "  y " << position.y << "  z " << position.z;
-        tools_->text(where.str());
-        tools_->text("chunks " + std::to_string(drawnChunks_) + " / " + std::to_string(meshedChunks_));
+        layer->text(where.str());
+        layer->text("chunks " + std::to_string(drawnChunks_) + " / " + std::to_string(meshedChunks_));
+        for (const v3d::ui::shell::StatisticsOverlay::Sample::Span& span : statistics.spans) {
+            layer->text(v3d::ui::shell::StatisticsOverlay::line(span));
+        }
     }
-    tools_->endWindow();
-    tools_->end();
+    layer->endWindow();
+    layer->end();
 }
 
 /**
  **/
 void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
     const v3d::ui::Immediate::Input& tools) {
-    glm::ivec2 size;
-    if (!engine_.beginFrame(&size)) {
+    if (!screen_->begin()) {
         return;
     }
-    if (canvas_.width() != static_cast<uint32_t>(size.x) || canvas_.height() != static_cast<uint32_t>(size.y)) {
-        resize(size.x, size.y);
+    v3d::render::realtime::Canvas& canvas = screen_->canvas();
+    if (screen_->resized()) {
+        resize(static_cast<int>(canvas.width()), static_cast<int>(canvas.height()));
     }
 
     boost::shared_ptr<v3d::render::realtime::Pass> terrain = engine_.frame()->pass(terrainPass);
@@ -312,22 +313,25 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
     drawTerrain(terrain.get());
     scene_->camera()->dirty(false);
 
-    canvas_.clear();
     if (debug_) {
         drawDebug(statistics, tools);
     }
-    if (ui_) {
-        uiRenderer_->draw(&canvas_, *ui_);
-    }
+    screen_->draw(ui_.get(), statistics);
 
     // a second pass rather than more items in the first: the terrain is depth tested and
     // sorted front to back, and the text over it is painter ordered and must not be
     boost::shared_ptr<v3d::render::realtime::Pass> overlay = engine_.frame()->pass(overlayPass);
     overlay->keepColour();
     overlay->depth(false);
-    engine_.quads()->submit(canvas_, overlay.get());
+    engine_.quads()->submit(canvas, overlay.get());
 
     engine_.renderFrame();
+}
+
+/**
+ **/
+const std::vector<v3d::render::realtime::vulkan::frame::Timings::Timing>& Renderer::timings() const {
+    return engine_.timings();
 }
 
 /**
@@ -349,8 +353,6 @@ void Renderer::resize(int width, int height) {
         w / h,  // aspect
         0.1f,  // near
         1000.0f);  // far
-
-    canvas_.resize(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 }
 
 /**

@@ -457,6 +457,12 @@
                   "command": "save"
                 },
                 {
+                  "label": "Save As",
+                  "type": "action",
+                  "context": "project",
+                  "command": "saveAs"
+                },
+                {
                   "label": "Export",
                   "type": "submenu",
                   "items": [
@@ -671,6 +677,49 @@
               "toggle": true,
               "context": "transform",
               "command": "scale"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "chooser",
+      "visible": false,
+      "components": [
+        {
+          "type": "panel",
+          "name": "chooserPanel",
+          "pickable": true,
+          "position": ["20%", "15%"],
+          "size": ["60%", "70%"],
+          "children": [
+            {
+              "type": "vbox",
+              "name": "chooserColumn",
+              "position": [12, 12],
+              "size": ["94%", "94%"],
+              "spacing": 8,
+              "stretch": true,
+              "children": [
+                { "type": "label", "name": "folder", "label": "" },
+                {
+                  "type": "list",
+                  "name": "files",
+                  "size": ["100%", 320],
+                  "context": "project",
+                  "command": "chooser::pick"
+                },
+                { "type": "textbox", "name": "name", "placeholder": "name" },
+                {
+                  "type": "hbox",
+                  "name": "chooserButtons",
+                  "spacing": 8,
+                  "children": [
+                    { "type": "button", "name": "chooserAccept", "label": "Accept", "context": "project", "command": "chooser::accept" },
+                    { "type": "button", "name": "chooserCancel", "label": "Cancel", "context": "project", "command": "chooser::cancel" }
+                  ]
+                }
+              ]
             }
           ]
         }

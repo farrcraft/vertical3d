@@ -11,9 +11,9 @@
 #include <api/render/realtime/Engine3D.h>
 #include <api/render/realtime/LineCanvas.h>
 #include <api/render/realtime/Window.h>
-#include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/Engine.h>
 #include <api/ui/paint/TextRenderer.h>
+#include <api/ui/shell/Screen.h>
 #include <api/ui/shell/StatisticsOverlay.h>
 #include <vertical3d/src/manipulator/Manipulator.h>
 #include <vertical3d/src/scene/Scene.h>
@@ -143,10 +143,8 @@ class Renderer final {
     std::vector<v3d::render::realtime::LineCanvas> overlays_;
 
     boost::shared_ptr<v3d::ui::Engine> ui_;
-    boost::shared_ptr<v3d::ui::paint::ComponentRenderer> uiRenderer_;
-    v3d::render::realtime::Canvas canvas_;
-    boost::shared_ptr<v3d::ui::paint::TextRenderer> text_;
-    boost::shared_ptr<v3d::ui::shell::StatisticsOverlay> statistics_;
+    // built after the engine is initialized, because its atlas is uploaded through it
+    boost::shared_ptr<v3d::ui::shell::Screen> screen_;
 
     glm::vec4 background_;
 };

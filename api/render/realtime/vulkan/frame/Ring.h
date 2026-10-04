@@ -15,6 +15,7 @@
 
 #include "CommandPool.h"
 #include "Retirement.h"
+#include "Timings.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -125,6 +126,13 @@ class Ring final {
      **/
     void advance() noexcept;
 
+    /**
+     * How long the device spent on what each slot recorded, read when the slot is begun
+     * again. The recorder times every pass of a frame it records, and a caller recording
+     * its own commands into begin()'s buffer may open and close spans of its own.
+     **/
+    Timings& timings() noexcept;
+
  private:
     boost::shared_ptr<device::Device> device_;
     boost::shared_ptr<CommandPool> pool_;
@@ -134,6 +142,7 @@ class Ring final {
     uint32_t frame_;
     uint64_t begun_;
     Retirement retired_;
+    boost::shared_ptr<Timings> timings_;
 };
 
 };  // namespace v3d::render::realtime::vulkan::frame

@@ -49,7 +49,8 @@ class Settings final {
      * A missing file is the common case and not a failure: nothing is held and every read
      * gives its caller's default. A document this build does not understand is treated the
      * same way, and a document from a later version additionally makes this read-only, so a
-     * player who downgrades keeps the settings the newer build wrote.
+     * player who downgrades keeps the settings the newer build wrote. An older one is read
+     * forward through asset::readForward(), and one with no version it can read is refused.
      *
      * @return whether a document was read
      **/

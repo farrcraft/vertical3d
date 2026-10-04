@@ -571,7 +571,7 @@ change is the walk, the shaders and one more binding in set 2.
 characters and a few dozen props, each drawn two or three times, which is a few hundred draws a
 frame. The cost per draw that instancing removes is recording a push and an indexed draw. No
 measurement here shows that cost, and this tree has no profiler to take one with, which is
-[milestone 7](../../roadmap/m7-ShellAndShipping.md)'s. A storage buffer of objects would also replace
+[milestone 7](../../roadmap/completed/m7-ShellAndShipping.md)'s. A storage buffer of objects would also replace
 a push block retcon is about to adopt, before anything has asked for the change.
 
 **The trigger is a count.** That might be retcon setting the horde density its own documents

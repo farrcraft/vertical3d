@@ -11,16 +11,16 @@
 #include <api/render/realtime/Engine3D.h>
 #include <api/render/realtime/vulkan/memory/DeviceBuffer.h>
 #include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
-#include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/Engine.h>
 #include <api/ui/Immediate.h>
+#include <api/ui/shell/Screen.h>
 #include <api/ui/shell/StatisticsOverlay.h>
-#include <api/ui/paint/TextRenderer.h>
 
 #include <vulkan/vulkan.h>
 
 #include <cstddef>
 #include <string>
+#include <vector>
 
 #include <boost/shared_ptr.hpp>
 #include <entt/entt.hpp>
@@ -63,6 +63,11 @@ class Renderer {
      *        window reads - the app hands it over because api/ui sits below api/engine
      * @param tools what the cursor did, for the immediate layer - Controller::tools()
      **/
+    /**
+     * @return how long the device spent on each pass, by its name
+     **/
+    const std::vector<v3d::render::realtime::vulkan::frame::Timings::Timing>& timings() const;
+
     void draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
         const v3d::ui::Immediate::Input& tools);
     /**
@@ -133,10 +138,8 @@ class Renderer {
 
     bool debug_;
 
-    v3d::render::realtime::Canvas canvas_;
-    boost::shared_ptr<v3d::ui::paint::TextRenderer> text_;
 
     boost::shared_ptr<v3d::ui::Engine> ui_;
-    boost::shared_ptr<v3d::ui::paint::ComponentRenderer> uiRenderer_;
-    boost::shared_ptr<v3d::ui::Immediate> tools_;
+    // built after the engine is initialized, because its atlas is uploaded through it
+    boost::shared_ptr<v3d::ui::shell::Screen> screen_;
 };

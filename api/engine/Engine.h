@@ -14,6 +14,7 @@
 
 #include <map>
 #include <string>
+#include <string_view>
 
 #include "Accumulator.h"
 #include "Statistics.h"
@@ -153,6 +154,22 @@ class Engine {
      **/
     const v3d::input::MouseState* mouse() const;
 
+    /**
+     * Whether a command is held: whether any key bound to it is down now.
+     *
+     * Asked of what the keyboard holds rather than of the edges the command was sent, so it
+     * answers the same for a binding that fires on press alone, follows a rebind with
+     * nothing more, and lets go when the keyboard does. Only keys are asked - a mouse button
+     * bound to a command never holds it.
+     *
+     * A command is its name and context; a binding's param is not part of it, so commands
+     * that are to be held apart are bound as commands of their own.
+     *
+     * @param command the destination as "context::name", as rebind() takes it
+     * @return false when nothing is bound to it, or without Feature::KeyboardInput
+     **/
+    bool held(std::string_view command) const;
+
  protected:
     boost::shared_ptr<v3d::log::Logger> logger_;
     boost::shared_ptr<v3d::config::Config> config_;
@@ -217,6 +234,8 @@ class Engine {
      // destination identity -> the source name it should bind to instead of the
      // config's, applied every time the global mapper is rebuilt
      std::map<std::string, std::string> rebindings_;
+     // the global mapper as last built, which held() asks the bindings of
+     boost::shared_ptr<v3d::event::Mapper> mapper_;
 
      std::string appPath_;
      int features_;

@@ -46,6 +46,8 @@ class TestEngine final : public v3d::engine::Engine {
         route(event);
     }
 
+    using Engine::rebind;
+
     bool onEvent(const SDL_Event& event) override {
         offered_.push_back(event.type);
         return take_;
@@ -94,6 +96,13 @@ const int boundFeature = configFeature | static_cast<int>(v3d::engine::Feature::
 SDL_Event keyDown(SDL_Keycode key) {
     SDL_Event event{};
     event.type = SDL_EVENT_KEY_DOWN;
+    event.key.key = key;
+    return event;
+}
+
+SDL_Event keyUp(SDL_Keycode key) {
+    SDL_Event event{};
+    event.type = SDL_EVENT_KEY_UP;
     event.key.key = key;
     return event;
 }
@@ -366,4 +375,52 @@ BOOST_AUTO_TEST_CASE(engine_base_tick_and_render_test) {
 
     BOOST_TEST(engine.tick(16));
     BOOST_TEST(engine.render());
+}
+
+/**
+ * A command is held while the key bound to it is, whether the binding fires on both edges or
+ * on the press alone.
+ **/
+BOOST_AUTO_TEST_CASE(engine_held_follows_the_keyboard_test) {
+    TestEngine engine(appPath("good"));
+    BOOST_REQUIRE(engine.initialize(boundFeature));
+
+    BOOST_CHECK(!engine.held("pong::leftPaddleUp"));
+    engine.offer(keyDown(SDLK_W));
+    BOOST_CHECK(engine.held("pong::leftPaddleUp"));
+    engine.offer(keyUp(SDLK_W));
+    BOOST_CHECK(!engine.held("pong::leftPaddleUp"));
+
+    // bound for the press alone, and held all the same
+    engine.offer(keyDown(SDLK_ESCAPE));
+    BOOST_CHECK(engine.held("ui::quit"));
+    engine.offer(keyUp(SDLK_ESCAPE));
+    BOOST_CHECK(!engine.held("ui::quit"));
+
+    BOOST_CHECK(!engine.held("pong::nothingBound"));
+}
+
+/**
+ * A rebound command is held by its new key and not by its old one, with nothing asked of the
+ * app but the rebind.
+ **/
+BOOST_AUTO_TEST_CASE(engine_held_follows_a_rebind_test) {
+    TestEngine engine(appPath("good"));
+    BOOST_REQUIRE(engine.initialize(boundFeature));
+    BOOST_REQUIRE(engine.rebind("pong::leftPaddleUp", "arrow_up"));
+
+    engine.offer(keyDown(SDLK_W));
+    BOOST_CHECK(!engine.held("pong::leftPaddleUp"));
+    engine.offer(keyDown(SDLK_UP));
+    BOOST_CHECK(engine.held("pong::leftPaddleUp"));
+}
+
+/**
+ * Without a keyboard nothing is held, rather than every command reading as up by accident of
+ * a null state.
+ **/
+BOOST_AUTO_TEST_CASE(engine_held_without_a_keyboard_test) {
+    TestEngine engine(appPath("good"));
+    BOOST_REQUIRE(engine.initialize(configFeature));
+    BOOST_CHECK(!engine.held("pong::leftPaddleUp"));
 }

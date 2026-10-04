@@ -9,10 +9,12 @@
 #include <api/ui/Engine.h>
 #include <api/ui/component/Scrollbar.h>
 #include <api/ui/component/SelectList.h>
+#include <api/ui/component/Slider.h>
 #include <api/ui/component/TabBar.h>
 #include <api/ui/component/TextBox.h>
 #include <api/ui/component/Type.h>
 
+#include <algorithm>
 #include <string>
 #include <string_view>
 
@@ -135,6 +137,8 @@ bool Keys::act(const boost::shared_ptr<Component>& component, std::string_view k
             return turn(boost::dynamic_pointer_cast<component::TabBar>(component), key);
         case component::Type::Scrollbar:
             return nudge(boost::dynamic_pointer_cast<component::Scrollbar>(component), key);
+        case component::Type::Slider:
+            return slide(boost::dynamic_pointer_cast<component::Slider>(component), key);
         case component::Type::Bar:
         case component::Type::Button:
         case component::Type::CheckBox:
@@ -290,6 +294,39 @@ bool Keys::nudge(const boost::shared_ptr<component::Scrollbar>& bar, std::string
         // left for whatever the bar scrolls to answer
         return false;
     }
+    return true;
+}
+
+bool Keys::slide(const boost::shared_ptr<component::Slider>& slider, std::string_view key) {
+    if (!slider) {
+        return false;
+    }
+    // a step, or a hundredth of the range for a slider that has none; a page is ten of them
+    const float span = slider->maximum() - slider->minimum();
+    const float line = slider->step() > 0.0f ? slider->step() : span / 100.0f;
+    const float page = std::max(line, span / 10.0f);
+    float to = slider->value();
+    if (key == "arrow_right") {
+        to += line;
+    } else if (key == "arrow_left") {
+        to -= line;
+    } else if (key == "pageup") {
+        to += page;
+    } else if (key == "pagedown") {
+        to -= page;
+    } else if (key == "home") {
+        to = slider->minimum();
+    } else if (key == "end") {
+        to = slider->maximum();
+    } else {
+        return false;
+    }
+    // a key that moves nothing is not taken, so a slider at an end leaves the arrow for
+    // whatever is next to it - the scrollbar's rule
+    if (!slider->value(to)) {
+        return false;
+    }
+    send(command(slider));
     return true;
 }
 

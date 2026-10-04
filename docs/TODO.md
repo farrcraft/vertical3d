@@ -69,7 +69,9 @@ rest of a map is the game's - [ADR-0062](adr/0062-a-map-picture-and-legend-are-t
 
 ## Voxel
 
-[] a remeshed chunk destroys its old mesh with the last reference to it, which is safe only because `memory::Uploader` idles the queue after every copy, as `ChunkMeshPool.h` says. Once uploads stop idling the queue - [milestone 7](roadmap/m7-ShellAndShipping.md#asynchronous-loading) - the old mesh has to be retired through `frame::Ring::retire` ([ADR-0061](adr/0061-a-resource-is-released-explicitly.md)) instead
+[] a remeshed chunk destroys its old mesh with the last reference to it, which is safe only because `memory::Uploader` idles the queue after every copy, as `ChunkMeshPool.h` says. Once uploads stop idling the queue - [milestone 7](roadmap/completed/m7-ShellAndShipping.md#asynchronous-loading) - the old mesh has to be retired through `frame::Ring::retire` ([ADR-0061](adr/0061-a-resource-is-released-explicitly.md)) instead
+
+[] mouselook turns far too fast and rolls the view: ten pixels of horizontal motion turns it most of the way round and tips it over. It reads one pixel as one unit of `Player::look()`'s heading and pitch, and that scale predates relative mouse mode - [ShellAndShipping](plans/completed/ShellAndShipping.md#step-3--a-relative-mouse)
 
 ## Sprite sheets
 
@@ -100,6 +102,14 @@ parts, a part per material ([ADR-0069](adr/0069-a-model-is-parts-over-one-array-
 [] the identity grade and the inverting grade were exact on the Radeon and assert a step at most, because lavapipe had not been seen yet. If CI shows lavapipe exact too, the tolerance in `PostTest.cpp` comes down to zero; if it does not, the step is the reason, and that goes beside the case - [LitScene](plans/completed/LitScene.md#step-10--the-chain-after-the-scene)
 
 [] nothing draws many of one mesh in one draw. `meshes()` and `casters()` submit an item per part per entity, which at retcon's twelve characters and a few dozen props is a few hundred draws. Instancing would move `Lit::Object` from the push block into a per-frame storage buffer read by `gl_InstanceIndex`, beside the palette at set 2, and group the walk by entry and part; the recorder already draws instances. It is due when a count asks for it - retcon's horde density, a township's population, or a profile showing recording time - [SkeletalAnimation](plans/completed/SkeletalAnimation.md#step-8--instancing-held)
+
+## Loading
+
+[] every load is on the main thread, and is a hitch the size of the load. The first piece is decoding on a worker through an `asset::Manager` of its own, since the manager's loaders are shared and stateful, with the main thread polling once a frame and uploading what is ready through `TextureFactory::create(image)` and `MeshRegistry::add(name, model, albedos)`. Before any thread, a texture a glTF names has to be decoded on the load side: `MeshRegistry::acquire` decodes it inside the upload today. It would be the first thread in `api/`, which is a record of its own. It is due with cozy's M6 region streaming, or any load a player can see as a hitch - [ShellAndShipping](plans/completed/ShellAndShipping.md#step-12--asynchronous-loading-held)
+
+## Frames
+
+[] a minimised window spins. `Engine3D::beginFrame` presents an empty frame when the window has no area, `Swapchain::create` is asked for a chain again on every one and logs `Window has no area` at info each time, and nothing in the loop waits. Two seconds minimised wrote twelve thousand lines to pong's log. The loop could wait on an event while the window is minimised, or the swapchain could log the change of state rather than every frame of it - [ShellAndShipping](plans/completed/ShellAndShipping.md#step-6--one-screen-and-four-apps-on-it)
 
 ## Audio
 
@@ -144,5 +154,5 @@ Open work, for when the app is what moves forward rather than the platform.
 [] 55 of the menu's 76 commands have no handler and log themselves
 [] there is no modelling operation, so a component mode selects a face and then moves the whole object
 [] one thing is selected at a time - no rubber band and no shift-click
-[] there is no file chooser, no "save as" and no dirty flag
+[] there is no dirty flag, so nothing warns before a load or a quit loses unsaved work
 [] the viewport panes are not draggable

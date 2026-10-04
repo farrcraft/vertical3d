@@ -29,8 +29,8 @@ a sequence between `Immediate::begin()` and `end()`, with nothing to keep in ste
 is recomputed every frame. `ui::Immediate` is both the layout and the draw.
 
 A cursor position is the layer's only input, so **whether there is one to offer is the app's to
-say**. A game that owns the mouse has none — mouselook warps the pointer back to the centre
-every frame, so where it is says nothing — and a window it puts up is a readout rather than
+say**. A game that owns the mouse has none — mouselook holds the window in relative mode, so
+the pointer is hidden and where it is says nothing — and a window it puts up is a readout rather than
 something to fold, drag or scroll. `voxel` is that case and answers it the way a game does: the
 menu going up is what hands the pointer back, so its F3 readout takes a real `Input` exactly
 while the menu is up and a default one otherwise. The five fields come off
@@ -62,7 +62,17 @@ Keys          turns a key into an edit on whatever has the focus
   shell::Keyboard  the platform half of it: an SDL event in, and text input following the focus
 TextRenderer  one font, one atlas, and the Measure/Write pair both renderers take
 Painter.h     fillBox, strokeBox and plateBox, which both ways draw out of
+shell::Screen       the set above, built once over an Engine3D, and the canvas they fill
+shell::FileChooser  a list, a name box and a label a config names, driven as a file chooser
 ```
+
+**A file chooser is the shell's, drawn in the app's own ui.** `ui::shell::FileChooser` drives
+components a config names, as `GameMenu` does, so it adds no component type: a list the
+directory is written into, a text box the name is typed into, and a label saying where the list
+is. The app routes the list's command to `pick()` and its buttons' to `accept()` and `close()`.
+The listing is the way up, then the directories, then the files that pass the extension, each
+sorted. Saving gives a bare name the extension and asks once before replacing a file. It is not
+the platform's dialog, which cannot be drawn over a fullscreen game or themed.
 
 Two of those splits are worth knowing about. **The walk is the Arranger's and the painting
 is the renderer's**, joined by a `Paint` callback: one walk still decides both what is drawn
@@ -101,7 +111,15 @@ It takes its atlas upload as a `TextRenderer::Upload` callback rather than a `vu
 so the one thing in the class that needs a device is the one thing handed in and an app
 drawing this canvas with a renderer of its own can use the class rather than copy it. `api/ui`
 names no vulkan type anywhere as a result, which is what ADR-0019's seam was always claiming.
-An app on `Engine3D` passes `quads->texture(image)`.
+
+**An app on `Engine3D` builds none of this itself.** `ui::shell::Screen` makes the text renderer
+with that upload, the component renderer over it, the statistics overlay and, if asked, an
+immediate layer, all over a canvas it owns
+([ADR-0074](adr/0074-the-shell-builds-the-uis-renderers.md)). Its `begin()` opens a frame and
+sizes and clears the canvas, and `resized()` tells the app when to resize what is its own. An app
+hands in the size and a function that dresses for it, so `scale()` can rebuild what closes over
+the size and dress it again. An app built on its own frame model, as retcon is, uses the
+`Upload` seam directly.
 
 Both take a `std::string_view`. A component already holds its text, so measuring one must not
 cost an allocation per label per frame.
@@ -144,6 +162,12 @@ inside a flow box, because the order it holds them in is what it is for. Along t
 children share the room, so an Auto extent there is what the child makes of itself and a panel
 that makes nothing of itself asks for nothing; across the line each is offered the whole of it.
 
+**A flow box may wrap**, `"wrap": true`. It starts a new line, spaced by the same gap, where the
+next child would run past its end, and a child longer than the line has a line of its own. It
+does not stretch. Unlike any other box it sizes itself across its lines from them, so a grid of
+known cells needs no stated height. Along the line it takes the room it is given, which inside a
+row is nothing, so a wrapping box in a row needs a width.
+
 ## What a container draws, and in what order
 
 ```
@@ -171,16 +195,17 @@ Every type in `component::Type` has a loader and a draw path; there are no empty
 | `CheckBox`, `RadioButton` | a mark and a label beside it | nothing, for the same reason |
 | `Scrollbar` | a track and a thumb | its range and offset, or nothing at all when it was told which `SelectList` it scrolls |
 | `SelectList` | a plate and as many rows as it shows | its rows and which is chosen |
+| `Slider` | a track, the fill up to its value, and a thumb | its range, its step and its value |
 | `TabBar`, `TabPage` | a strip of tabs and the one page chosen | which page is up |
 | `TextBox` | a plate, one line of text, a highlight behind the selected run, and a caret when it is focused | its text, its caret and its anchor |
-| `HorizontalBox`, `VerticalBox` | nothing — they place what they hold | spacing and stretch |
+| `HorizontalBox`, `VerticalBox` | nothing — they place what they hold | spacing, stretch and wrap |
 | `Menu`, `MenuItem`, `MenuBar` | a panel of items, or a strip that drops one | which item is active, and any capture |
 
 A component that does not own the state it shows is deliberate: a click sends a command and
 marks nothing, and whatever answers the command sets `checked()`, so the mark cannot disagree
-with what the app believes. A `SelectList`, a `TabBar` and a `TextBox` are the exceptions,
-because which row is chosen, which page is up and what has been half typed are places in their
-own contents rather than facts about the app.
+with what the app believes. A `SelectList`, a `Slider`, a `TabBar` and a `TextBox` are the
+exceptions, because which row is chosen, where a value stands, which page is up and what has
+been half typed are places in their own contents rather than facts about the app.
 
 ## Themes
 
@@ -242,6 +267,13 @@ clickable — which is why `Component` leaves `pickable()` false. A control sets
 scrollbar, a select list, a tab bar and a text box exist to be driven, and a panel or a label
 laid over a scene does not. A press is remembered until it comes up, which is what drags a scrollbar's thumb
 across frames.
+
+**A strip is a control too, and is offered the point on the same terms.** A toolbar and a menu
+bar start pickable, and the cursor skips one that is hidden, disabled or marked
+`"pickable": false`. A pickable strip takes a press anywhere on it, its empty run included. One
+marked otherwise is scenery, buttons and all, and the press falls to the tree under it. A menu
+bar reads its flags from a document like anything else, but not its box, which the renderer
+places.
 
 **A component that cannot be used right now is `enabled(false)`**, and it is a property of the
 component rather than a state something writes as the cursor moves —
@@ -459,17 +491,19 @@ boxes the draw left or on the primitives it emitted. [Testing.md](Testing.md) ha
 
 None of those is unfinished, which is why [TODO.md](TODO.md) carries none of them - each is
 what the design came to, recorded here so a reader meets it before the code does.
-[plans/UiConsolidation.md](plans/UiConsolidation.md) is what closed the ones that are gone.
+[plans/UiConsolidation.md](plans/completed/UiConsolidation.md) is what closed the ones that are gone.
 
 ## Still open
 
 - **Nothing enforces which of the two ways to use.** The rule above is a rule of thumb in a
   document, and a reader who wants a HUD out of `Immediate` will get one that flickers under
   the cursor rather than an error.
-- **Adding a component means editing eight places** — `component::Type`, `component::name()`,
+- **Adding a component means editing nine places** — `component::Type`, `component::name()`,
   the loader's branch, the renderer's paint switch, its `ringed()`, the Arranger's `natural()`,
-  the cursor's and the keys'. The compiler names all eight, so forgetting one is a build error
-  rather than a component that silently is not there.
+  the cursor's, the keys' and `ui::input::command()`. The compiler names all nine, so forgetting
+  one is a build error rather than a component that silently is not there. Two it does not name:
+  a style class of its own in `style::Resolver`, and `Cursor::follow()` for a component a press
+  drags.
   [ADR-0047](adr/0047-a-component-type-is-checked-by-the-compiler.md) has why a registry was
   weighed and left, and it is a trade to revisit rather than work waiting to be done.
 - **A component disabled while it holds the focus keeps `focused()`** until something moves the

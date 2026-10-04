@@ -17,7 +17,7 @@
 
 namespace {
 
-// pixels per second. The court is 800x600 and a paddle runs 40 to 560, so a paddle crosses
+// court units per second. The court is 800x600 and a paddle runs 40 to 560, so a paddle crosses
 // its whole run in a little under six seconds.
 constexpr float PADDLE_SPEED = 90.0f;
 
@@ -54,11 +54,6 @@ PongScene::PongScene(entt::registry* registry, const boost::shared_ptr<entt::dis
 }
 
 PongScene::~PongScene() {
-}
-
-void PongScene::resize(int width, int height) {
-    width_ = width;
-    height_ = height;
 }
 
 void PongScene::checkVictory() {
@@ -100,7 +95,7 @@ void PongScene::bouncePaddles(const glm::vec2& ballPosition) {
     // a box the paddle's own width would let tunnel through
     const float ballSize = gameState_.ballSize();
     const v3d::type::geometry::Bound2D ball(ballPosition - glm::vec2(ballSize / 2.0f), glm::vec2(ballSize));
-    const float court = static_cast<float>(width_);
+    const float court = width;
     const float paddleSize = left_.size();
     const glm::vec2 direction = ball_.direction();
 
@@ -144,7 +139,7 @@ void PongScene::scorePoint(const glm::vec2& ballPosition) {
         victor = -1.0f;
         reset_ball = true;
         dispatcher_->trigger(v3d::event::kind::Sound("score"));
-    } else if (ballPosition[0] >= (width_ - (gameState_.ballSize() / 2.0f))) {
+    } else if (ballPosition[0] >= (width - (gameState_.ballSize() / 2.0f))) {
         left_.score(left_.score() + 1);
         victor = 1.0f;
         reset_ball = true;
@@ -154,8 +149,8 @@ void PongScene::scorePoint(const glm::vec2& ballPosition) {
         return;
     }
     // reposition the ball in the center of the screen
-    float mid_y = height_ / 2.0f;
-    float mid_x = width_ / 2.0f;
+    const float mid_y = height / 2.0f;
+    const float mid_x = width / 2.0f;
     glm::vec2 v(mid_x, mid_y);
     ball_.position(v);
     // set the ball rolling
@@ -183,7 +178,7 @@ void PongScene::bounceWalls(const glm::vec2& ballPosition) {
     const float half = gameState_.ballSize() / 2.0f;
     glm::vec2 direction = ball_.direction();
     const bool intoTop = ballPosition.y - half <= WALL && direction.y < 0.0f;
-    const bool intoBottom = ballPosition.y + half >= static_cast<float>(height_) - WALL && direction.y > 0.0f;
+    const bool intoBottom = ballPosition.y + half >= height - WALL && direction.y > 0.0f;
     if (!intoTop && !intoBottom) {
         return;
     }
@@ -193,10 +188,10 @@ void PongScene::bounceWalls(const glm::vec2& ballPosition) {
 }
 
 void PongScene::movePaddles(float step) {
-    /// FIXME: use variables for screen extents and paddle sizes
-    float travel = PADDLE_SPEED * step;
-    float bottom = 560.0f;
-    float top = 40.0f;
+    // a paddle stops with its end against a wall
+    const float travel = PADDLE_SPEED * step;
+    const float top = WALL + left_.length() / 2.0f;
+    const float bottom = height - top;
     if (left_.up()) {
         if (left_.position() > top)
             left_.position(left_.position() - travel);
@@ -237,13 +232,13 @@ void PongScene::tick(float step) {
 
 
 void PongScene::reset() {
-    float mid_y = height_ / 2.0f;
-    float mid_x = width_ / 2.0f;
+    const float mid_y = height / 2.0f;
+    const float mid_x = width / 2.0f;
     // set the default paddle positions
     left_.position(mid_y);
     right_.position(mid_y);
-    // set the position of the right paddle
-    right_.offset(785.0f);
+    // the right paddle stands its own width in from the far side
+    right_.offset(width - right_.size());
 
     // this is the ball's starting position
     glm::vec2 v(mid_x, mid_y);

@@ -53,6 +53,7 @@ class Resolver final {
         Panel,
         Bar,
         Scrollbar,
+        Slider,
         CheckBox,
         Radio,
         List,
@@ -127,8 +128,10 @@ class Resolver final {
  private:
     /**
      * How many classes there are, which is how many maps of resolved answers are held.
+     * Counted from the last enumerator, so a class added before it is counted with no edit
+     * here; one added after it is not, and indexes past the array.
      **/
-    static constexpr std::size_t classes = 9;
+    static constexpr std::size_t classes = static_cast<std::size_t>(Class::Button) + 1;
 
     /**
      * @return the class's name as a theme writes it

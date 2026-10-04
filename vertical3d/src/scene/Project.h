@@ -29,7 +29,8 @@ namespace v3d::editor {
 class Project final {
  public:
     /**
-     * The format version written into every file, and the only one read() accepts.
+     * The format version written into every file. read() walks an older one forward, per
+     * ADR-0073, and refuses a later one.
      **/
     static const int VERSION;
 

@@ -5,6 +5,7 @@
 
 #include "Project.h"
 
+#include <api/asset/Migration.h>
 #include <api/asset/kind/JsonFile.h>
 #include <api/asset/Writer.h>
 #include <api/brep/BRep.h>
@@ -326,12 +327,18 @@ bool Project::read(const std::string& path, const boost::shared_ptr<Scene>& scen
         logger_->get()->error("{} is not a project: {}", path, error.message());
         return false;
     }
-    const boost::json::object& root = document.as_object();
-
-    v3d::brep::Index version = 0;
-    if (!index(root, "version", &version) || version != static_cast<v3d::brep::Index>(VERSION)) {
-        logger_->get()->error("{} is not a version {} project", path, VERSION);
-        return false;
+    // the format has had one version, so there is no step to walk yet - ADR-0073
+    boost::json::object root = document.as_object();
+    switch (v3d::asset::readForward(&root, VERSION, {})) {
+        case v3d::asset::Reading::Current:
+        case v3d::asset::Reading::Migrated:
+            break;
+        case v3d::asset::Reading::Newer:
+            logger_->get()->error("{} was written by a later build, which this one cannot read", path);
+            return false;
+        case v3d::asset::Reading::Refused:
+            logger_->get()->error("{} has no version this build can read", path);
+            return false;
     }
     if (!root.contains("meshes") || !root.at("meshes").is_array()) {
         logger_->get()->error("{} has no meshes", path);

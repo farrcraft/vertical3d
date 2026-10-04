@@ -125,9 +125,6 @@ bool::PongEngine::initialize() {
     // register game commands
     dispatcher_->sink<v3d::event::Event>().connect<&PongEngine::handleEvent>(*this);
 
-    // set the scene size according to the window canvas
-    renderer_->resize(window_->width(), window_->height());
-
     // reset scene & game state
     scene_->reset();
 

@@ -32,6 +32,7 @@ v3d_add_api_library(render
 	"realtime/vulkan/pipeline/Cache.h" "realtime/vulkan/pipeline/Cache.cxx"
 	"realtime/vulkan/frame/Presenter.h" "realtime/vulkan/frame/Presenter.cxx"
 	"realtime/vulkan/frame/Ring.h" "realtime/vulkan/frame/Ring.cxx"
+	"realtime/vulkan/frame/Timings.h" "realtime/vulkan/frame/Timings.cxx"
 	"realtime/vulkan/frame/Retirement.h" "realtime/vulkan/frame/Retirement.cxx"
 	"realtime/vulkan/frame/Recorder.h" "realtime/vulkan/frame/Recorder.cxx"
 	"realtime/vulkan/pipeline/Resources.h" "realtime/vulkan/pipeline/Resources.cxx"

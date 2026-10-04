@@ -10,7 +10,8 @@ namespace v3d::ui::component {
 Box::Box(Type type) :
     Component(type),
     spacing_(0.0f),
-    stretch_(false) {
+    stretch_(false),
+    wrap_(false) {
 }
 
 void Box::spacing(float gap) {
@@ -27,6 +28,18 @@ void Box::stretch(bool fill) {
 
 bool Box::stretch() const noexcept {
     return stretch_;
+}
+
+/**
+ **/
+void Box::wrap(bool flow) {
+    wrap_ = flow;
+}
+
+/**
+ **/
+bool Box::wrap() const noexcept {
+    return wrap_;
 }
 
 };  // namespace v3d::ui::component

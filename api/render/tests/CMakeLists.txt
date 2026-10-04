@@ -46,7 +46,8 @@ v3d_add_test(render_device
 	"device/SkinTest.cpp"
 	"device/RenderTargetTest.cpp"
 	"device/PostTest.cpp"
-	"device/PipelineBuilderTest.cpp")
+	"device/PipelineBuilderTest.cpp"
+	"device/TimingsTest.cpp")
 
 # A committed picture is resolved against the working directory, which v3d_add_test points at
 # the executable, so the references have to sit beside it - the same copy moya and talyn make

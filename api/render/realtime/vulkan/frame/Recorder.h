@@ -12,6 +12,7 @@
 #include <vulkan/vulkan.h>
 
 #include "FrameUniforms.h"
+#include "Timings.h"
 
 namespace v3d::render::realtime::vulkan::frame {
 
@@ -67,9 +68,10 @@ class Recorder final {
      * @param resources what the frame's draw items name by handle
      * @param uniforms where each pass's camera is written and bound from, or null for a
      *        frame whose pipelines declare nothing at set 0
+     * @param timings where each pass is timed under its name, or null for none
      **/
     static void record(VkCommandBuffer commands, const Frame& frame, const Target& target, const pipeline::Resources& resources,
-        FrameUniforms* uniforms = nullptr);
+        FrameUniforms* uniforms = nullptr, Timings* timings = nullptr);
 
     /**
      * Whether a pass gives a pipeline everything it declares it needs per pass: a scene set
