@@ -73,6 +73,10 @@ unsigned int sampleCount(float rate) {
     return static_cast<unsigned int>(std::lround(rate));
 }
 
+float Sampling::lensRadius() const {
+    return pinhole() ? 0.0f : focalLength / (2.0f * fstop);
+}
+
 bool Sampling::pinhole() const {
     return !(fstop > 0.0f) || std::isinf(fstop) || !(focalLength > 0.0f) || !(focalDistance > 0.0f);
 }

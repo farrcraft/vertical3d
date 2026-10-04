@@ -65,6 +65,11 @@ struct Sampling final {
      * infinite fstop, and an fstop of 0 or a lens with no length is one too.
      **/
     bool pinhole() const;
+
+    /**
+     * The lens's radius, focalLength / (2 * fstop), in camera space units. Zero for a pinhole.
+     **/
+    float lensRadius() const;
 };
 
 };  // namespace v3d::render::offline

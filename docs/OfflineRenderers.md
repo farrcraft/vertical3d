@@ -62,6 +62,14 @@ pixels and resolves into a renderer's planes. Both renderers render through them
   bucket is finished before the sweep is. Where the buckets fall therefore never shows.
 - **moya's hider tests a sample against the micropolygon**, as two triangles, and interpolates
   its depth there, rather than filling the micropolygon's raster bound.
+- **A lens blurs only through a perspective camera.** `Sampling::lensRadius()` is
+  `focalLength / (2 * fstop)` in camera space units, and an orthographic camera has no lens to
+  move, so it ignores `DepthOfField`. talyn moves a sample's ray across the lens and aims it at
+  the point it would have reached on the plane of focus. moya moves a micropolygon instead, by
+  the sample's lens point times `1 - z / focalDistance` in eye x and y, which leaves the depth
+  and so the divide alone: a corner's raster position is linear in the lens point, so a
+  micropolygon is projected three times and every sample's corners are a sum of those. Its
+  bound is grown to the lens's four extremes so every sample it can reach is tested.
 - **A depth is not filtered.** It is the nearest hit among the samples inside the pixel, since a
   blend of two surfaces' depths is a depth neither is at.
 - **The filters are RI's formulas**, cut off at the width a scene gives. Catmull-rom peaks at two

@@ -9,6 +9,8 @@
 #include <moya/libmoya/RIBHandler.h>
 #include <moya/libmoya/RenderContext.h>
 
+#include <algorithm>
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -34,6 +36,11 @@ const char* SAMPLED = "data/reference-sampled.png";
 const char* SAMPLED_RENDERED = "data_out/reference-sampled.png";
 const char* SAMPLED_SCENE = "data/reference-sampled.rib";
 const char* SAMPLED_RIB_RENDERED = "data_out/reference-sampled-rib.png";
+
+const char* FOCUS = "data/reference-focus.png";
+const char* FOCUS_RENDERED = "data_out/reference-focus.png";
+const char* FOCUS_SCENE = "data/reference-focus.rib";
+const char* FOCUS_RIB_RENDERED = "data_out/reference-focus-rib.png";
 
 /**
  * One sample at each pixel centre under a one pixel box, which the film gives back exactly.
@@ -156,6 +163,72 @@ void shadedScene(v3d::moya::RenderContext & rc) {
     rc.surface("plastic", plastic);
     quad(rc, 0.1f, 1.2f, square, glm::vec3(0.9f, 0.0f, -0.436f));
     rc.attributeEnd();
+}
+
+/*
+    The same scene as data/reference-focus.rib: a red quad on the plane of focus four units
+    out and a blue one ten units out, through a perspective camera. The lens is the file's,
+    or a pinhole.
+*/
+void focusScene(v3d::moya::RenderContext & rc, bool lens) {
+    rc.imageResolution(64, 48, 1.0f);
+    rc.sampling().samples = glm::uvec2(4, 4);
+    if (lens) {
+        rc.sampling().fstop = 1.0f;
+        rc.sampling().focalLength = 0.5f;
+        rc.sampling().focalDistance = 4.0f;
+    }
+    rc.projection("perspective", 40.0f);
+    rc.clipping(0.1f, 100.0f);
+    rc.prepareWorld();
+    rc.surface("constant", v3d::render::offline::rib::ParameterList());
+
+    rc.color(glm::vec3(0.9f, 0.2f, 0.2f));
+    boost::shared_ptr<v3d::moya::Polygon> near = boost::make_shared<v3d::moya::Polygon>();
+    near->addVertex(vertex(-1.5f, -1.0f, 4.0f));
+    near->addVertex(vertex(-0.2f, -1.0f, 4.0f));
+    near->addVertex(vertex(-0.2f, 1.0f, 4.0f));
+    near->addVertex(vertex(-1.5f, 1.0f, 4.0f));
+    rc.addPolygon(near);
+
+    rc.color(glm::vec3(0.2f, 0.4f, 0.9f));
+    boost::shared_ptr<v3d::moya::Polygon> far = boost::make_shared<v3d::moya::Polygon>();
+    far->addVertex(vertex(0.5f, -2.5f, 10.0f));
+    far->addVertex(vertex(4.0f, -2.5f, 10.0f));
+    far->addVertex(vertex(4.0f, 2.5f, 10.0f));
+    far->addVertex(vertex(0.5f, 2.5f, 10.0f));
+    rc.addPolygon(far);
+}
+
+/**
+ * How many pixels along a row are partly covered, which is how wide an edge is.
+ **/
+unsigned int partial(const v3d::render::offline::FrameBuffer & planes, unsigned int coverage,
+    unsigned int row, unsigned int from, unsigned int to) {
+    unsigned int count = 0;
+    for (unsigned int column = from; column <= to; column++) {
+        const float value = planes.value(coverage, column, row);
+        if (value > 0.02f && value < 0.98f) {
+            count++;
+        }
+    }
+    return count;
+}
+
+/**
+ * The largest difference between two frames over every plane of a block of columns.
+ **/
+float largest(const v3d::render::offline::FrameBuffer & a, const v3d::render::offline::FrameBuffer & b,
+    unsigned int from, unsigned int to) {
+    float worst = 0.0f;
+    for (unsigned int plane = 0; plane < a.planes(); plane++) {
+        for (unsigned int row = 0; row < a.height(); row++) {
+            for (unsigned int column = from; column <= to; column++) {
+                worst = std::max(worst, std::fabs(a.value(plane, column, row) - b.value(plane, column, row)));
+            }
+        }
+    }
+    return worst;
 }
 
 /**
@@ -405,4 +478,69 @@ BOOST_AUTO_TEST_CASE(moya_bucket_edges_do_not_show_test) {
         *small.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
         *large.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS), 0);
     BOOST_CHECK_MESSAGE(difference.match, difference.description());
+}
+
+/**
+ * Two quads at two depths through a lens focused on the nearer one.
+ **/
+BOOST_AUTO_TEST_CASE(moya_focus_reference_test) {
+    v3d::moya::RenderContext rc;
+    focusScene(rc, true);
+    rc.render();
+
+    check(rc.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS), FOCUS, FOCUS_RENDERED);
+}
+
+BOOST_AUTO_TEST_CASE(moya_focus_reference_from_rib_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(reader.read(FOCUS_SCENE, &handler));
+    BOOST_CHECK_EQUAL(reader.error(), "");
+
+    check(handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
+        FOCUS, FOCUS_RIB_RENDERED);
+}
+
+/**
+ * The quad on the plane of focus is as sharp through the lens as through a pinhole: a point
+ * at the focal distance moves by nothing whatever the lens point. The block is the columns
+ * the blue quad's blur does not reach.
+ **/
+BOOST_AUTO_TEST_CASE(moya_in_focus_is_sharp_test) {
+    v3d::moya::RenderContext pinhole;
+    focusScene(pinhole, false);
+    pinhole.render();
+    v3d::moya::RenderContext lens;
+    focusScene(lens, true);
+    lens.render();
+
+    BOOST_CHECK_SMALL(largest(*pinhole.framebuffer()->planes(), *lens.framebuffer()->planes(), 0, 30),
+        1.0f / 255.0f);
+}
+
+/**
+ * The quad off the plane of focus spreads its edge over its circle of confusion, about five
+ * pixels here, where a pinhole leaves it in a pixel or two. The same arithmetic as talyn's
+ * case, reached by moving the micropolygon rather than the ray.
+ **/
+BOOST_AUTO_TEST_CASE(moya_out_of_focus_spreads_test) {
+    v3d::moya::RenderContext pinhole;
+    focusScene(pinhole, false);
+    pinhole.sampling().filter = v3d::render::offline::Filter::Box;
+    pinhole.sampling().width = glm::vec2(1.0f);
+    pinhole.render();
+    v3d::moya::RenderContext lens;
+    focusScene(lens, true);
+    lens.sampling().filter = v3d::render::offline::Filter::Box;
+    lens.sampling().width = glm::vec2(1.0f);
+    lens.render();
+
+    const unsigned int coverage = v3d::moya::FrameBuffer::COVERAGE;
+    const unsigned int sharp = partial(*pinhole.framebuffer()->planes(), coverage, 24, 30, 45);
+    const unsigned int blurred = partial(*lens.framebuffer()->planes(), coverage, 24, 30, 45);
+    BOOST_CHECK_LE(sharp, 2u);
+    BOOST_CHECK_GE(blurred, 4u);
+    BOOST_CHECK_LE(blurred, 7u);
 }

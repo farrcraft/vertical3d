@@ -109,7 +109,7 @@ distant light's shadow ray of fixed length; and the C array helper still in moya
 | [5](#step-5--talyn-samples-through-the-film) | talyn samples through the film | `talyn` | 0076 | done |
 | [6](#step-6--moyas-hider-tests-a-sample-against-the-micropolygon) | moya's hider tests a sample against the micropolygon | `moya` | — | done |
 | [7](#step-7--moya-samples-through-the-film) | moya samples through the film | `moya` | 0076 | done |
-| [8](#step-8--depth-of-field) | Depth of field in both | `moya`, `talyn` | — | not started |
+| [8](#step-8--depth-of-field) | Depth of field in both | `moya`, `talyn` | — | done |
 | [9](#step-9--motion-blur-of-a-transform) | Motion blur of a transform, in both | `api/render/offline`, `moya`, `talyn` | — | not started |
 | [10](#step-10--adaptive-sampling-in-talyn) | Adaptive sampling in talyn | `talyn` | — | not started |
 | [11](#step-11--a-trace-that-recurses) | A trace that recurses, to a depth a scene sets | `talyn` | — | not started |
@@ -339,6 +339,14 @@ still passes through the point in focus at `focalDistance`.
 * a quad far from it spreads its edge over more pixels, by the circle of confusion the lens gives,
   in both renderers;
 * a new reference per renderer, of two quads at two depths, from both routes.
+
+**Landed.** Both renderers ignore the lens under an orthographic projection, which every
+earlier scene uses. talyn takes the lens's axes from the inverse of the camera's view, because
+a profile's normals do not follow its rotation. `reference-focus.rib` is one scene in both
+suites, and the two renderers draw it alike: a red quad on the plane of focus and a blue one
+blurred over about five pixels. A blurred micropolygon is tested against every sample its grown
+bound reaches, and in a Debug build that took moya's suite from about one second to fourteen
+and talyn's, with step 5's sampled cases, to about eleven.
 
 ### Step 9 — Motion blur of a transform
 

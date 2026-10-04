@@ -10,6 +10,8 @@
 #include <talyn/libtalyn/RIBHandler.h>
 #include <talyn/libtalyn/RenderContext.h>
 
+#include <algorithm>
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -36,6 +38,11 @@ const char* SAMPLED = "data/reference-sampled.png";
 const char* SAMPLED_RENDERED = "data_out/reference-sampled.png";
 const char* SAMPLED_SCENE = "data/reference-sampled.rib";
 const char* SAMPLED_RIB_RENDERED = "data_out/reference-sampled-rib.png";
+
+const char* FOCUS = "data/reference-focus.png";
+const char* FOCUS_RENDERED = "data_out/reference-focus.png";
+const char* FOCUS_SCENE = "data/reference-focus.rib";
+const char* FOCUS_RIB_RENDERED = "data_out/reference-focus-rib.png";
 
 /**
  * One sample at each pixel centre under a one pixel box, which the film gives back exactly.
@@ -167,6 +174,63 @@ void shadedScene(v3d::talyn::RenderContext & rc) {
     put(&shiny, "Ks", Declaration::Type::FLOAT, { 0.5f });
     quad(&rc.scene(), -0.5f, -0.45f, 0.35f, 0.4f, 2.2f, glm::vec3(0.2f, 0.45f, 0.8f),
         shader("plastic", v3d::render::offline::sl::ShaderType::SURFACE, shiny));
+}
+
+/*
+    The same scene as data/reference-focus.rib: a red quad on the plane of focus four units
+    out and a blue one ten units out, through a perspective camera at the origin. The lens is
+    the file's, or a pinhole.
+*/
+void focusScene(v3d::talyn::RenderContext & rc, bool lens) {
+    rc.format(64, 48);
+    rc.sampling().samples = glm::uvec2(4, 4);
+    if (lens) {
+        rc.sampling().fstop = 1.0f;
+        rc.sampling().focalLength = 0.5f;
+        rc.sampling().focalDistance = 4.0f;
+    }
+    v3d::type::camera::Profile & profile = rc.scene().camera().profile();
+    profile.orthographic(false);
+    profile.pixelAspect(4.0f / 3.0f);
+    profile.fov(40.0f);
+    profile.eye(glm::vec3(0.0f));
+    profile.clipping(0.1f, 100.0f);
+
+    const v3d::render::offline::sl::Placed constant = shader("constant",
+        v3d::render::offline::sl::ShaderType::SURFACE, v3d::render::offline::rib::ParameterList());
+    quad(&rc.scene(), -1.5f, -1.0f, -0.2f, 1.0f, 4.0f, glm::vec3(0.9f, 0.2f, 0.2f), constant);
+    quad(&rc.scene(), 0.5f, -2.5f, 4.0f, 2.5f, 10.0f, glm::vec3(0.2f, 0.4f, 0.9f), constant);
+}
+
+/**
+ * How many pixels along a row are partly covered, which is how wide an edge is.
+ **/
+unsigned int partial(const v3d::render::offline::FrameBuffer & planes, unsigned int coverage,
+    unsigned int row, unsigned int from, unsigned int to) {
+    unsigned int count = 0;
+    for (unsigned int column = from; column <= to; column++) {
+        const float value = planes.value(coverage, column, row);
+        if (value > 0.02f && value < 0.98f) {
+            count++;
+        }
+    }
+    return count;
+}
+
+/**
+ * The largest difference between two frames over every plane of a block of columns.
+ **/
+float largest(const v3d::render::offline::FrameBuffer & a, const v3d::render::offline::FrameBuffer & b,
+    unsigned int from, unsigned int to) {
+    float worst = 0.0f;
+    for (unsigned int plane = 0; plane < a.planes(); plane++) {
+        for (unsigned int row = 0; row < a.height(); row++) {
+            for (unsigned int column = from; column <= to; column++) {
+                worst = std::max(worst, std::fabs(a.value(plane, column, row) - b.value(plane, column, row)));
+            }
+        }
+    }
+    return worst;
 }
 
 /**
@@ -369,4 +433,69 @@ BOOST_AUTO_TEST_CASE(talyn_sampled_render_is_repeatable_test) {
     const v3d::image::Difference difference = v3d::image::compare(
         *first.framebuffer()->image(3), *second.framebuffer()->image(3), 0);
     BOOST_CHECK_MESSAGE(difference.match, difference.description());
+}
+
+/**
+ * Two quads at two depths through a lens focused on the nearer one.
+ **/
+BOOST_AUTO_TEST_CASE(talyn_focus_reference_test) {
+    v3d::talyn::RenderContext rc;
+    focusScene(rc, true);
+    rc.render();
+
+    check(rc.framebuffer()->image(3), FOCUS, FOCUS_RENDERED);
+}
+
+BOOST_AUTO_TEST_CASE(talyn_focus_reference_from_rib_test) {
+    auto rc = boost::make_shared<v3d::talyn::RenderContext>();
+    v3d::talyn::RIBHandler handler(rc);
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(reader.read(FOCUS_SCENE, &handler));
+    BOOST_CHECK_EQUAL(reader.error(), "");
+    BOOST_REQUIRE_EQUAL(handler.error(), "");
+
+    rc->render();
+    check(rc->framebuffer()->image(3), FOCUS, FOCUS_RIB_RENDERED);
+}
+
+/**
+ * The quad on the plane of focus is as sharp through the lens as through a pinhole: every
+ * ray aimed at a point on that plane still reaches it. The block is the columns the blue
+ * quad's blur does not reach.
+ **/
+BOOST_AUTO_TEST_CASE(talyn_in_focus_is_sharp_test) {
+    v3d::talyn::RenderContext pinhole;
+    focusScene(pinhole, false);
+    pinhole.render();
+    v3d::talyn::RenderContext lens;
+    focusScene(lens, true);
+    lens.render();
+
+    BOOST_CHECK_SMALL(largest(*pinhole.framebuffer(), *lens.framebuffer(), 0, 30), 1.0f / 255.0f);
+}
+
+/**
+ * The quad off the plane of focus spreads its edge over its circle of confusion. Under a one
+ * pixel box, a pinhole leaves the edge in a pixel or two; the lens, a quarter of a unit across
+ * and focused four units out, blurs a point ten units out over 2 * 0.25 * (10 - 4) / 10 of a
+ * unit there, which is about five pixels at this field of view.
+ **/
+BOOST_AUTO_TEST_CASE(talyn_out_of_focus_spreads_test) {
+    v3d::talyn::RenderContext pinhole;
+    focusScene(pinhole, false);
+    pinhole.sampling().filter = v3d::render::offline::Filter::Box;
+    pinhole.sampling().width = glm::vec2(1.0f);
+    pinhole.render();
+    v3d::talyn::RenderContext lens;
+    focusScene(lens, true);
+    lens.sampling().filter = v3d::render::offline::Filter::Box;
+    lens.sampling().width = glm::vec2(1.0f);
+    lens.render();
+
+    const unsigned int sharp = partial(*pinhole.framebuffer(), 3, 24, 30, 45);
+    const unsigned int blurred = partial(*lens.framebuffer(), 3, 24, 30, 45);
+    BOOST_CHECK_LE(sharp, 2u);
+    BOOST_CHECK_GE(blurred, 4u);
+    BOOST_CHECK_LE(blurred, 7u);
 }

@@ -88,6 +88,11 @@ class RenderContext {
         void clipping(float near, float far);
 
         void projection(std::string name, float fov = 90.0);
+        /**
+            *	Whether the projection is a perspective one, which is the only kind a lens
+            *	can blur.
+            */
+        bool perspective() const;
 
         /**
             *	maps to RiDisplay()

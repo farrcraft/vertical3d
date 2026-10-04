@@ -11,6 +11,9 @@
 
 #include <vector>
 
+#include <glm/geometric.hpp>
+#include <glm/matrix.hpp>
+
 #include "HitShader.h"
 
 namespace v3d::talyn {
@@ -94,6 +97,18 @@ void RenderContext::render() {
 
     // a sample at a time into the film, which filters them into pixels once every ray is
     // cast, per ADR-0076
+    // a lens moves each sample's eye across it and aims the ray at the point it would have
+    // reached on the plane of focus, so that plane stays sharp and nothing else does. An
+    // orthographic camera has no lens to move
+    const float radius = camera.orthographic() ? 0.0f : sampling_.lensRadius();
+    // the camera's own axes and eye, from the view rather than the profile's normals, which
+    // a rotation does not update
+    const glm::mat4x4 toWorld = glm::inverse(camera.view());
+    const glm::vec3 across = glm::normalize(glm::vec3(toWorld[0]));
+    const glm::vec3 upward = glm::normalize(glm::vec3(toWorld[1]));
+    const glm::vec3 forward = glm::normalize(glm::vec3(toWorld[2]));
+    const glm::vec3 eye = glm::vec3(toWorld[3]);
+
     const v3d::render::offline::Sampler sampler(sampling_);
     v3d::render::offline::Film film(width, height, sampling_);
     for (unsigned int row = 0; row < height; row++) {
@@ -102,6 +117,13 @@ void RenderContext::render() {
                 // the camera measures y downward from the top of the viewport and image row 0
                 // is the top of the picture, so a raster position is a screen point as it stands
                 v3d::type::geometry::Ray ray = camera.ray(at.raster, viewport);
+                if (radius > 0.0f) {
+                    const glm::vec3 & origin = ray.origin();
+                    const float along = sampling_.focalDistance - glm::dot(origin - eye, forward);
+                    const glm::vec3 focus = origin + ray.direction() * (along / glm::dot(ray.direction(), forward));
+                    const glm::vec3 moved = origin + radius * (at.lens.x * across + at.lens.y * upward);
+                    ray = v3d::type::geometry::Ray(moved, focus - moved);
+                }
 
                 v3d::render::offline::Film::Sample sample;
                 sample.raster = at.raster;

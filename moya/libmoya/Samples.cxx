@@ -23,6 +23,8 @@ Samples::Samples(unsigned int width, unsigned int height, const v3d::render::off
             for (const v3d::render::offline::Sampler::Sample & at : placed) {
                 Sample sample;
                 sample.raster = at.raster;
+                sample.time = at.time;
+                sample.lens = at.lens;
                 samples_.push_back(sample);
             }
         }

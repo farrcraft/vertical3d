@@ -166,6 +166,10 @@ set a named projection transformation matrix
 the combination of the projection and screen transformation matrices
 move between camera and screen coordinate space
 */
+bool RenderContext::perspective() const {
+    return projection_ == "perspective";
+}
+
 void RenderContext::projection(std::string name, float fov) {
     if (name.empty()) {
         name = "orthographic";

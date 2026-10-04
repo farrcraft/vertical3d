@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <limits>
 #include <vector>
 
 #include "FrameBuffer.h"
@@ -18,18 +19,94 @@ namespace v3d::moya {
 
 namespace {
 
+typedef std::array<glm::vec3, 4> Corners;
+
 /*
-    A micropolygon is bounded in raster space, and every sample in the pixels the bound
-    touches that the micropolygon covers takes its colour, where its depth there beats
-    what the sample already holds.
+    Where a micropolygon is in raster space for a sample's point on the lens.
+
+    A lens point L moves the eye across the lens and keeps the plane of focus where it was,
+    so a point at eye depth z moves by L (1 - z / focus) in eye x and y before it is
+    projected. On the plane of focus that is nothing, and everywhere else it is the circle of
+    confusion. The move leaves z, and so the perspective divide, alone, which makes a corner's
+    raster position linear in L: a micropolygon is projected three times, at the centre of
+    the lens and a unit along each axis of it, and every sample's corners are a sum of those.
 */
-void hide(const std::array<glm::vec3, 4> & corners, const glm::vec3 & color, Samples * samples) {
-    glm::vec3 min = corners[0];
-    glm::vec3 max = corners[0];
-    for (unsigned int k = 1; k < 4; k++) {
-        min = glm::min(min, corners[k]);
-        max = glm::max(max, corners[k]);
+class Lens {
+ public:
+    Lens(const glm::mat4x4 & toRaster, float radius, float focus) :
+        toRaster_(toRaster), radius_(radius), focus_(focus) {
     }
+
+    bool pinhole() const {
+        return radius_ <= 0.0f;
+    }
+
+    /**
+     * Projects a micropolygon's eye space corners, ready for at().
+     */
+    void place(const Corners & eye) {
+        for (unsigned int k = 0; k < 4; k++) {
+            still_[k] = project(toRaster_, eye[k]);
+            if (pinhole()) {
+                continue;
+            }
+            const float shift = radius_ * (1.0f - eye[k].z / focus_);
+            across_[k] = project(toRaster_, eye[k] - glm::vec3(shift, 0.0f, 0.0f)) - still_[k];
+            down_[k] = project(toRaster_, eye[k] - glm::vec3(0.0f, shift, 0.0f)) - still_[k];
+        }
+    }
+
+    /**
+     * The placed micropolygon's corners for a point on the unit lens.
+     */
+    Corners at(const glm::vec2 & lens) const {
+        if (pinhole()) {
+            return still_;
+        }
+        Corners corners;
+        for (unsigned int k = 0; k < 4; k++) {
+            corners[k] = still_[k] + across_[k] * lens.x + down_[k] * lens.y;
+        }
+        return corners;
+    }
+
+    /**
+     * The placed micropolygon's raster bound over every point on the lens, which the lens's
+     * four extremes bound because the corners move linearly.
+     */
+    void bound(glm::vec3 * min, glm::vec3 * max) const {
+        const glm::vec2 extremes[5] = {
+            glm::vec2(0.0f), glm::vec2(-1.0f, -1.0f), glm::vec2(1.0f, -1.0f),
+            glm::vec2(1.0f, 1.0f), glm::vec2(-1.0f, 1.0f)
+        };
+        const unsigned int count = pinhole() ? 1 : 5;
+        *min = glm::vec3(std::numeric_limits<float>::max());
+        *max = glm::vec3(-std::numeric_limits<float>::max());
+        for (unsigned int e = 0; e < count; e++) {
+            for (const glm::vec3 & corner : at(extremes[e])) {
+                *min = glm::min(*min, corner);
+                *max = glm::max(*max, corner);
+            }
+        }
+    }
+
+ private:
+    glm::mat4x4 toRaster_;
+    float radius_;
+    float focus_;
+    Corners still_;
+    Corners across_;
+    Corners down_;
+};
+
+/*
+    Every sample in the pixels a micropolygon's bound touches that the micropolygon covers
+    takes its colour, where its depth there beats what the sample already holds.
+*/
+void hide(const Lens & lens, const glm::vec3 & color, Samples * samples) {
+    glm::vec3 min;
+    glm::vec3 max;
+    lens.bound(&min, &max);
 
     // a sample may be anywhere in its pixel, so every pixel the bound touches
     const int left = std::max(0, static_cast<int>(std::floor(min.x)));
@@ -43,7 +120,7 @@ void hide(const std::array<glm::vec3, 4> & corners, const glm::vec3 & color, Sam
                 Samples::Sample & sample = samples->at(static_cast<unsigned int>(column),
                     static_cast<unsigned int>(row), k);
                 float depth = 0.0f;
-                if (!covers(corners, sample.raster, &depth) || (sample.hit && depth >= sample.depth)) {
+                if (!covers(lens.at(sample.lens), sample.raster, &depth) || (sample.hit && depth >= sample.depth)) {
                     continue;
                 }
                 sample.colour = color;
@@ -62,17 +139,21 @@ void hide(const std::array<glm::vec3, 4> & corners, const glm::vec3 & color, Sam
 void hide(MicroPolygonGrid & grid, RenderContext & rc) {
     // eye space to raster is the projection and then the scale into pixels, in that
     // order - a matrix applies to what is on its right
-    glm::mat4x4 toRaster = rc.coordinateSystem("raster") * rc.coordinateSystem("screen");
+    const glm::mat4x4 toRaster = rc.coordinateSystem("raster") * rc.coordinateSystem("screen");
+    // an orthographic camera has no lens to blur through
+    const float radius = rc.perspective() ? rc.sampling().lensRadius() : 0.0f;
+    Lens lens(toRaster, radius, rc.sampling().focalDistance);
 
     for (unsigned int i = 0; i + 1 < grid.size(); i++) {
         for (unsigned int j = 0; j + 1 < grid.size(); j++) {
             MicroPolygon poly = grid.microPolygon(i, j);
-            std::array<glm::vec3, 4> corners;
+            Corners eye;
             for (unsigned int k = 0; k < 4; k++) {
-                corners[k] = project(toRaster, poly[k].point());
+                eye[k] = poly[k].point();
             }
+            lens.place(eye);
             // the shaded colour, which is what the surface shader left on the vertex
-            hide(corners, poly[0].color(), &rc.samples());
+            hide(lens, poly[0].color(), &rc.samples());
         }
     }
 }
