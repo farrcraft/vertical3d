@@ -5,6 +5,7 @@ v3d_add_api_library(ecs
  "component/Color3.h" "component/Color3.cpp"
  "component/Transform.h" "component/Transform.cpp"
  "component/Playback.h" "component/Playback.cpp"
+ "component/Emitter.h" "component/Emitter.cpp"
  "Previous.h"
  "System.h" "System.cpp")
 

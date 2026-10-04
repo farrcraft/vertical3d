@@ -26,10 +26,6 @@ namespace vulkan::frame {
 class RenderTarget;
 };  // namespace vulkan::frame
 
-namespace vulkan::memory {
-class Image;
-};  // namespace vulkan::memory
-
 namespace vulkan::pipeline {
 class Sampler;
 };  // namespace vulkan::pipeline
@@ -90,6 +86,20 @@ class Grade final {
     bool release(const MaterialHandle& source);
 
     /**
+     * Grade with a different table from the next frame built: a zone's own look, or a step of
+     * a slow change between two tables a game lerps itself.
+     *
+     * The table is made anew and the old one released through the ring, so a frame in flight
+     * finishes with the table it was recorded against. Every source keeps the handle source()
+     * gave it. Called before the frame's submit(), since a material submitted earlier in the
+     * same frame is the one this lets go of.
+     *
+     * @param texels SIZE cubed RGBA texels in the order table() gives them
+     * @return false for texels of the wrong count, which leave the table as it was
+     **/
+    bool replace(const std::vector<uint8_t>& texels);
+
+    /**
      * Submit the grade of a source into a pass.
      **/
     void submit(const MaterialHandle& source, Pass* pass) const;
@@ -108,12 +118,27 @@ class Grade final {
     static std::vector<uint8_t> identity();
 
  private:
+    /**
+     * A scene being graded: its registration, and the material that pairs it with the current
+     * table. The material changes when the table is replaced; the handle the caller holds is
+     * the first one, which is this entry's key.
+     **/
+    struct Source final {
+        TextureHandle scene;
+        MaterialHandle current;
+    };
+
+    /**
+     * Register a table's texels as a texture, uploaded into an image of its own.
+     **/
+    TextureHandle createTable(const std::vector<uint8_t>& texels);
+
     boost::shared_ptr<DeviceContext> context_;
     boost::shared_ptr<vulkan::renderer::FullScreen> pass_;
-    boost::shared_ptr<vulkan::memory::Image> table_;
+    boost::shared_ptr<vulkan::pipeline::Sampler> linear_;
     boost::shared_ptr<vulkan::pipeline::Sampler> nearest_;
     TextureHandle tableTexture_;
-    std::map<MaterialHandle, TextureHandle> scenes_;
+    std::map<MaterialHandle, Source> sources_;
 };
 
 };  // namespace v3d::render::realtime

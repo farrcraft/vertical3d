@@ -21,6 +21,8 @@ layout(std140, set = 2, binding = 0) uniform Scene {
     vec4 bands;                 // xyz the shadow, mid and lit multipliers
     mat4 lightViewProjection;   // what the shadow map was drawn through
     vec4 shadow;                // x a shadow map texel in uv, y strength, z normal bias
+    vec4 colour;                // xyz the light's colour, over the mid and lit bands
+    vec4 shadowColour;          // xyz the shadow band's colour
 } scene;
 
 // per object, laid out as renderer::Lit::Object. Declared whole in every stage so that one

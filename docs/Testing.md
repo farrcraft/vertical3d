@@ -62,6 +62,16 @@ exported by Blender 5.2, from `api/asset/tests/data/make_blender_fixture.py`, is
 points of its clip. The asset suite checks that its rest palette is the identity to rounding,
 which is the evidence that a real exporter's matrices agree with this tree's.
 
+**Effects are simulated headless and drawn on the device.** Every emitter, weather and drawn
+particle case in the type, ecs and render suites is seeded, so `type::Random` fixes the answer
+on any standard library. On the device, an additive world quad over a clear is asserted exactly,
+because its colours are chosen so that every sum is a whole number of 8-bit steps. A world quad in
+a lit pass is hidden by the cube in front of it, a white light leaves the lit tier's pictures as
+they were, and a replaced grade table regrades its sources, including while a frame using the old
+table is in flight. Two cases draw for a person to look at, and assert only silence and that
+their frames move: a fire among two sprites under a dusk tint (`fire_*.png`), and rain falling in
+a lit scene under a blue light (`rain_*.png`).
+
 It is a second binary rather than more cases in `v3dtest_render`, because that one must keep
 running where there is no GPU. **A run with no device exits 77 and ctest reports the suite as
 `Skipped`**, which `set_tests_properties(render_device PROPERTIES SKIP_RETURN_CODE 77)` is

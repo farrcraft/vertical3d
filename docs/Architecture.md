@@ -174,9 +174,18 @@ image would take `api/image` into every consumer of a mesh.
 **Animation's data and arithmetic are in `type::animation`, and are glm only.** A `Clip` is a
 model's channels, a `Pose` is a joint's translation, rotation and scale each, and `sample`,
 `blend` and `palette` turn a clip at a time into the matrices a vertex is skinned by. `Clock`
-keeps no time of its own: it says what a step does to a time someone else keeps. Playback, and
+keeps no time of its own: it says what a step does to a time someone else keeps. A `SpriteClip`
+is a sheet's regions, held as uvs, each shown for its own length of time over a `Clock`. A
+`Track` is a value keyed in time and lerped, optionally wrapping over a period. Playback, and
 which clip plays, are elsewhere
 ([ADR-0070](adr/0070-animation-is-sampled-from-playback-on-the-step.md)).
+
+**Effects' simulation is in `type::effect`, and is glm only.** An `Emitter` describes what is
+made and how it moves and looks over its life, a `State` holds the particles and a `Random`, and
+`step()`, `burst()` and the pieces they are built from age, move and spawn them. `Weather` and
+`fall()` spawn an emitter's particles over a region that follows the view. The component that
+steps them from an entity, and the walk that draws them, are elsewhere
+([ADR-0072](adr/0072-an-emitter-is-a-component-on-the-step-that-owns-its-particles.md)).
 
 **The queries are in `type::geometry`, and are glm only.** `Ray` meets an `AABBox`, a triangle
 and a `Plane`; `Plane` classifies a point or a box against itself; `Frustum` classifies a box
@@ -185,6 +194,12 @@ and each answers whether it overlaps another or contains a point, edges and face
 inside. A ground pick is `Camera::ray()` crossed with a `Plane`, and there is no helper for
 it, because which way is up belongs to the caller. Anything that clips a renderer's own
 primitive against a plane stays with that renderer, as moya's `Polygon::clip` does.
+
+**`type::Random` is the api's random source, and a seed fixes everything it gives.** It is
+splitmix64, whose whole state is one integer a save can keep. The floats, points and
+directions it hands out are derived in the class rather than through `<random>`, whose
+distributions differ between standard libraries, so a seeded test pins the same answer
+everywhere.
 
 **Meshes are owned by the app**, not by `Resources`
 ([ADR-0010](adr/0010-meshes-are-owned-by-the-app.md)).

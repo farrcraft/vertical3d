@@ -57,12 +57,13 @@ void main() {
     const vec3 fillDirection = normalize(vec3(-scene.light.x, 1.0, -scene.light.z));
     const float light = key + scene.light.w * (dot(n, fillDirection) * 0.5 + 0.5);
 
-    const float bands[3] = float[3](scene.bands.x, scene.bands.y, scene.bands.z);
+    const vec3 bands[3] = vec3[3](scene.bands.x * scene.shadowColour.rgb, scene.bands.y * scene.colour.rgb,
+        scene.bands.z * scene.colour.rgb);
     const int band = light < scene.thresholds.x ? 0 : (light < scene.thresholds.y ? 1 : 2);
 
     // a shadow drops one band rather than darkening by a fraction, so cast shadows land on
     // the same palette as the shading. The neighbourhood only softens the edge between them
-    const float shade = mix(bands[band], bands[max(band - 1, 0)], occlusion(worldPosition, n));
+    const vec3 shade = mix(bands[band], bands[max(band - 1, 0)], occlusion(worldPosition, n));
 
     // an untextured model samples a white albedo, so the base colour alone tints it
     const vec4 base = texture(albedo, fragmentUv) * object.baseColour;

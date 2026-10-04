@@ -43,7 +43,7 @@ retcon's ADR-0041 — so what follows is work for this tree whoever ends up want
 | 3 | [The renderable component](completed/m3-RenderableComponent.md) — **done by [a plan](../plans/completed/RenderableComponent.md)**, the mesh component built by milestone 4 | A decision: how the ECS meets the renderer | the open question in [ECSDesign.md](../ECSDesign.md), retcon's `ecs/` |
 | 4 | [A lit scene](completed/m4-LitScene.md) — **done by [a plan](../plans/completed/LitScene.md)**, retcon's adoption aside | Image, sampler and texture classes, `type::Model` onto the device, a lit mesh pass, a shadow map, a post chain | retcon `engine/renderer/`, voxel |
 | 5 | [Skeletal animation](completed/m5-SkeletalAnimation.md) — **done by [a plan](../plans/completed/SkeletalAnimation.md)**, instancing aside | Skins and clips from glTF, GPU skinning, a clip sampler shared with milestone 1, instancing | retcon phases 7–10 |
-| 6 | [Effects](m6-Effects.md) | Particles, weather, a tint over the world, panned audio | cozy M6–M8, retcon phase 10 |
+| 6 | [Effects](completed/m6-Effects.md) — **done by [a plan](../plans/completed/Effects.md)**, the panned voice aside | Particles, weather, a tint over the world, panned audio | cozy M6–M8, retcon phase 10 |
 | 7 | [The shell, finished](m7-ShellAndShipping.md) | The renderer setup into the shell, missing widgets, versioned documents, relative mouse, profiling, async loading | every app, cozy M7–M10, retcon phases 7 and 11 |
 
 ## The ordering

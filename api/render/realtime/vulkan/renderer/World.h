@@ -20,6 +20,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
 #include <vector>
 
 #include "Quad.h"
@@ -47,6 +48,22 @@ namespace v3d::render::realtime::vulkan::renderer {
  **/
 class World final {
  public:
+    /**
+     * How a canvas's quads combine with what is already drawn.
+     **/
+    enum class Blend {
+        /**
+         * Straight alpha over what is there: smoke, a sprite, a tinted fog.
+         **/
+        Alpha,
+
+        /**
+         * Added to what is there by the quad's alpha, so it only ever lightens: a flame, a
+         * spark, a flash. Two additive quads give the same picture in either order.
+         **/
+        Additive
+    };
+
     /**
      * @param logger
      * @param device the device to build the pipelines and buffers on
@@ -82,8 +99,10 @@ class World final {
      * @param pass where the draw items are submitted. Its camera is what the quads are
      *        drawn through, so a pass that never had one set draws them in clip space
      * @param layer the painter order the items sort at
+     * @param blend how the canvas's quads combine with what the pass has already drawn. A
+     *        canvas is one blend, so a game fills a canvas of smoke and another of flame
      **/
-    void submit(const WorldCanvas& canvas, Pass* pass, uint16_t layer = 0);
+    void submit(const WorldCanvas& canvas, Pass* pass, uint16_t layer = 0, Blend blend = Blend::Alpha);
 
     /**
      * Give back the buffers this frame's submissions took, so the next frame starts at the
@@ -93,15 +112,22 @@ class World final {
 
  private:
     /**
-     * Compile the world quad pipeline twice - once for a pass with a depth attachment and
-     * once for a pass without, because dynamic rendering matches a pipeline to the
-     * attachments of the pass it draws into.
+     * Compile the world quad pipeline for each blend twice - once for a pass with a depth
+     * attachment and once for a pass without, because dynamic rendering matches a pipeline to
+     * the attachments of the pass it draws into.
      *
-     * The one built for a pass with depth **tests without writing**, per ADR-0042: solid
+     * The ones built for a pass with depth **test without writing**, per ADR-0042: solid
      * geometry in front of a quad hides it, and two blended quads do not cut holes in each
      * other where their transparent parts overlap.
      **/
     void createPipelines(VkFormat colour, VkFormat depth);
+
+    /**
+     * Compile one of the four.
+     *
+     * @param depth the depth format to test against, or undefined for a pass without one
+     **/
+    PipelineHandle createPipeline(const std::string& name, VkFormat colour, VkFormat depth, Blend blend);
 
     /**
      * A canvas's geometry for one frame - one submission's worth.
@@ -125,8 +151,10 @@ class World final {
     boost::shared_ptr<frame::FrameUniforms> uniforms_;
     boost::shared_ptr<Quad> quads_;
 
-    PipelineHandle pipeline_;       /**< for a pass with no depth attachment **/
-    PipelineHandle depthPipeline_;  /**< for a pass with one, and it tests without writing **/
+    PipelineHandle pipeline_;               /**< for a pass with no depth attachment **/
+    PipelineHandle depthPipeline_;          /**< for a pass with one, and it tests without writing **/
+    PipelineHandle additivePipeline_;       /**< the same two, adding rather than blending over **/
+    PipelineHandle additiveDepthPipeline_;
 
     /**< a ring of geometry per frame in flight, grown as a frame's submissions ask **/
     std::vector<std::vector<Geometry>> geometry_;

@@ -11,6 +11,35 @@ outlives the schedule.
 
 No plan is open.
 
+[completed/Effects.md](completed/Effects.md) was drafted on 2026-10-03 and closed on 2026-10-04,
+taking up [milestone 6](../roadmap/completed/m6-Effects.md) of
+[the game engine roadmap](../roadmap/GameEngine.md). The sprite clip that
+[MotionAndQueries](completed/MotionAndQueries.md#step-6--a-sprite-clip) held is written over
+milestone 5's clock, and retcon's splitmix64 is `type::Random`, so a seed fixes every particle on
+any standard library. An emitter is a component stepped with the simulation that owns its
+particles, and its look is a render component
+([ADR-0072](../adr/0072-an-emitter-is-a-component-on-the-step-that-owns-its-particles.md)).
+Particles sort among sprites through one depth order. Weather falls over a region that follows
+the view, the world canvas carries a tint, world quads go into a lit pass with an additive blend,
+and a lit scene has a light colour and a grade whose table can be replaced. The panned voice went
+to [TODO.md](../TODO.md#audio) until cozy asks. Neither game had scheduled any of this, so it was
+drafted while milestones 1 to 5 were fresh rather than against a trigger.
+
+Four things came out differently. **A rate summed a step at a time falls short in float**: at
+sixty steps a second, rates of one, five, nine and eleven a second spawn one too few in their
+first second, while ten happens to overshoot, which is why the first draft of the case caught
+nothing. **World quads in a lit scene need no pass of their own**, because the recorder binds the
+scene set only for a pipeline that declares one and a pass records in submission order. **The
+lit tier has no separate key and fill to colour**, since it bands one scalar of both, so the
+colours are the light's and the shadow band's. **And a grade's table cannot be rewritten in
+place** under a frame in flight, so `Grade::replace()` makes a new one, rebinds every source,
+and keeps each caller's handle as the key it is found by.
+
+Two things about verifying it are worth knowing next time. A Boost filter lists suites with `:`,
+and with `,` one case of three ran, so a mutation looked harmless. And every picture the device
+suite wrote before step 9 was kept and compared byte for byte afterwards, which is what showed a
+white light leaves the lit tier as it was.
+
 [completed/SkeletalAnimation.md](completed/SkeletalAnimation.md) was drafted and closed on
 2026-10-03, taking up [milestone 5](../roadmap/completed/m5-SkeletalAnimation.md) of
 [the game engine roadmap](../roadmap/GameEngine.md). A file is one model in parts, read through

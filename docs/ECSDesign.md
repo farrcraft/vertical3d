@@ -16,8 +16,8 @@ a raw `entt::registry*`. There is no accessor; only a subclass reaches it.
 is: a registry pointer and a `virtual bool simulate(float step)`.
 `odyssey::system::Movement` is the one subclass in the tree.
 
-`api/ecs/component/` holds the components more than one app could want, and there are six:
-`Color3`, `Playback`, `Position1D`, `Position2D`, `PositionFixed2D` and `Transform`. An app defines the rest
+`api/ecs/component/` holds the components more than one app could want, and there are seven:
+`Color3`, `Emitter`, `Playback`, `Position1D`, `Position2D`, `PositionFixed2D` and `Transform`. An app defines the rest
 beside its own code — pong has `Score`, `Travel`, `Offset` and `PaddleSize`; odyssey has `Size`
 and `Direction`.
 
@@ -33,7 +33,14 @@ fading out of ([ADR-0070](adr/0070-animation-is-sampled-from-playback-on-the-ste
 calls `play()` from whatever decides its clip, and `advance(registry, step)` in `simulate()`.
 It holds no pose, and it is drawn between steps as a `Transform` is, so a game snapshots both.
 `crossed(previous, current, marker)` says whether a step passed a time in the clip, such as a
-footstep. It is the one component here that needs `api/type`, for the clock.
+footstep.
+
+`Emitter` is an entity that makes particles, and the particles it has made
+([ADR-0072](adr/0072-an-emitter-is-a-component-on-the-step-that-owns-its-particles.md)). Its
+description and the step that moves them are `type::effect`'s. `emit(registry, step)` steps
+every emitter from its entity's `Transform`, in `simulate()` or, for a game that does not need
+its effects reproduced, in `tick()`. It is not snapshotted, because each particle keeps its own
+previous position. `Playback` and `Emitter` are the two components here that need `api/type`.
 
 An entity's components are emplaced by the class that owns the entity id, and read back
 through the registry:

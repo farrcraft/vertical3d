@@ -4,25 +4,33 @@
  **/
 
 #include <api/asset/Manager.h>
+#include <api/ecs/component/Emitter.h>
 #include <api/ecs/component/Transform.h>
+#include <api/image/Compare.h>
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
+#include <api/render/realtime/DepthOrder.h>
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Grade.h>
 #include <api/render/realtime/LitSettings.h>
 #include <api/render/realtime/MeshRegistry.h>
+#include <api/render/realtime/Particles.h>
 #include <api/render/realtime/Meshes.h>
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/Shadow.h>
+#include <api/render/realtime/WorldCanvas.h>
 #include <api/render/realtime/component/Mesh.h>
+#include <api/render/realtime/component/Particles.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/DepthBuffer.h>
 #include <api/render/realtime/vulkan/frame/Recorder.h>
 #include <api/render/realtime/vulkan/frame/RenderTarget.h>
 #include <api/render/realtime/vulkan/renderer/Lit.h>
+#include <api/render/realtime/vulkan/renderer/World.h>
 #include <api/type/Model.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Isometric.h>
+#include <api/type/effect/Weather.h>
 
 #include <cmath>
 #include <cstddef>
@@ -46,6 +54,7 @@ using v3d::render::realtime::vulkan::frame::Capture;
 using v3d::render::realtime::vulkan::frame::Recorder;
 using v3d::render::realtime::vulkan::frame::RenderTarget;
 using v3d::render::realtime::vulkan::renderer::Lit;
+using v3d::render::realtime::vulkan::renderer::World;
 
 namespace {
 
@@ -671,6 +680,234 @@ BOOST_AUTO_TEST_CASE(a_model_is_drawn_a_part_at_a_time) {
     BOOST_TEST_MESSAGE("red " << red << ", green " << green);
     BOOST_CHECK_GT(red, 0U);
     BOOST_CHECK_GT(green, 0U);
+}
+
+/**
+ * World quads drawn in the lit pass after its meshes are depth-tested against them: a green
+ * ground quad under a red cube, submitted after the cube, is hidden where the cube stands and
+ * seen everywhere else. A world quad drawn without the scene's depth would cover the cube's top
+ * face at the centre of the picture. The quads go through a World built against the scene
+ * target's own formats, which is what particles in a lit scene are.
+ *
+ * The picture is written to data_out/lit_world_quads.png for a person to look at.
+ **/
+BOOST_AUTO_TEST_CASE(world_quads_are_hidden_by_a_lit_scene) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+        width, height, colourFormat, true);
+
+    const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
+    MeshRegistry meshes(headless.logger, headless.context, assets);
+    const MeshHandle crate = meshes.add("crate", cube(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)));
+
+    Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
+        headless.context->frameUniforms(), headless.context->quads(), colourFormat, target->depthFormat(), VK_FORMAT_UNDEFINED);
+    World world(headless.logger, headless.device, headless.context->pipelineCache(), headless.context->resources(),
+        headless.context->ring(), headless.context->frameUniforms(), headless.context->quads(), colourFormat,
+        target->depthFormat());
+
+    entt::registry registry;
+    place(&registry, crate, glm::vec3(0.0f), glm::vec3(1.0f), false);
+
+    // the first case's camera, whose centre ray meets the cube's top face
+    v3d::type::camera::Isometric orbit;
+    orbit.target(glm::vec3(0.0f));
+    orbit.zoom(1.5f);
+    orbit.elevation(1.0471976f);
+    v3d::type::camera::Camera camera;
+    camera.profile().clipping(0.1f, 100.0f);
+    orbit.apply(&camera);
+    camera.createProjection();
+    camera.createView();
+
+    LitSettings settings;
+    settings.outline = 0.0f;
+
+    v3d::render::realtime::WorldCanvas ground;
+    ground.quad({glm::vec3(-8.0f, -1.0f, -8.0f), glm::vec3(8.0f, -1.0f, -8.0f), glm::vec3(8.0f, -1.0f, 8.0f),
+        glm::vec3(-8.0f, -1.0f, 8.0f)}, glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+
+    Frame frame(headless.context);
+    boost::shared_ptr<Pass> pass = frame.pass("lit");
+    pass->target(target);
+    pass->depth(true);
+    pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+    pass->camera(camera.view(), camera.projection());
+    pass->scene(lit.scene(v3d::render::realtime::pack(settings, glm::mat4(1.0f), 0.0f)));
+    v3d::render::realtime::meshes(registry, 1.0f, meshes, lit, settings.outline, pass.get());
+    world.submit(ground, pass.get());
+
+    VkCommandBuffer commands = headless.context->ring()->begin();
+    Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
+        headless.context->frameUniforms().get());
+    const boost::shared_ptr<v3d::image::Image> picture = readBack(&headless, commands, target, "data_out/lit_world_quads.png");
+    world.endFrame();
+
+    BOOST_CHECK(headless.silent());
+    BOOST_REQUIRE(picture);
+    const unsigned char* centre = picture->data() + (static_cast<std::size_t>(height / 2) * width + width / 2) * 4;
+    BOOST_TEST_MESSAGE("centre " << int(centre[0]) << "," << int(centre[1]) << "," << int(centre[2]));
+    BOOST_CHECK_GT(centre[0], 200);
+    BOOST_CHECK_LT(centre[1], 10);
+
+    const unsigned char* corner = picture->data() + (static_cast<std::size_t>(4) * width + 4) * 4;
+    BOOST_TEST_MESSAGE("corner " << int(corner[0]) << "," << int(corner[1]) << "," << int(corner[2]));
+    BOOST_CHECK_LT(corner[0], 10);
+    BOOST_CHECK_GT(corner[1], 200);
+}
+
+/**
+ * The light's colour multiplies the lit band: the top face of a white cube, which faces the key
+ * and so is in the lit band, is white under a white light and red under a red one. The lit band's
+ * multiplier is one and the colours are whole, so both are exact.
+ **/
+BOOST_AUTO_TEST_CASE(the_light_has_a_colour) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
+    MeshRegistry meshes(headless.logger, headless.context, assets);
+    const MeshHandle crate = meshes.add("crate", cube(glm::vec4(1.0f)));
+
+    entt::registry registry;
+    place(&registry, crate, glm::vec3(0.0f), glm::vec3(1.0f), false);
+
+    v3d::type::camera::Isometric orbit;
+    orbit.target(glm::vec3(0.0f));
+    orbit.zoom(1.5f);
+    orbit.elevation(1.0471976f);
+    v3d::type::camera::Camera camera;
+    camera.profile().clipping(0.1f, 100.0f);
+    orbit.apply(&camera);
+    camera.createProjection();
+    camera.createView();
+
+    for (const glm::vec3& colour : {glm::vec3(1.0f), glm::vec3(1.0f, 0.0f, 0.0f)}) {
+        boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+            width, height, colourFormat, true);
+        Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
+            headless.context->frameUniforms(), headless.context->quads(), colourFormat, target->depthFormat(), VK_FORMAT_UNDEFINED);
+
+        LitSettings settings;
+        settings.outline = 0.0f;
+        settings.colour = colour;
+
+        Frame frame(headless.context);
+        boost::shared_ptr<Pass> pass = frame.pass("lit");
+        pass->target(target);
+        pass->depth(true);
+        pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+        pass->camera(camera.view(), camera.projection());
+        pass->scene(lit.scene(v3d::render::realtime::pack(settings, glm::mat4(1.0f), 0.0f)));
+        v3d::render::realtime::meshes(registry, 1.0f, meshes, lit, settings.outline, pass.get());
+
+        VkCommandBuffer commands = headless.context->ring()->begin();
+        Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
+            headless.context->frameUniforms().get());
+        const boost::shared_ptr<v3d::image::Image> picture = readBack(&headless, commands, target, "data_out/lit_coloured.png");
+        BOOST_REQUIRE(picture);
+
+        const unsigned char* centre = picture->data() + (static_cast<std::size_t>(height / 2) * width + width / 2) * 4;
+        BOOST_TEST_MESSAGE("centre " << int(centre[0]) << "," << int(centre[1]) << "," << int(centre[2]));
+        BOOST_CHECK_EQUAL(static_cast<int>(centre[0]), 255);
+        BOOST_CHECK_EQUAL(static_cast<int>(centre[1]), colour.g > 0.0f ? 255 : 0);
+        BOOST_CHECK_EQUAL(static_cast<int>(centre[2]), colour.b > 0.0f ? 255 : 0);
+    }
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * Rain in a lit scene: a shower falling over the look of a red cube on a white ground, drawn as
+ * streaks along each drop's velocity, added to the scene in the lit pass, under a blue light at
+ * night. What a streak looks like is filtering and blending, which no reference pins (ADR-0054),
+ * so the assertions are silence and that the rain moves between frames. The frames go to
+ * data_out/rain_*.png for a person to look at.
+ **/
+BOOST_AUTO_TEST_CASE(rain_falls_in_a_lit_scene) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
+    MeshRegistry meshes(headless.logger, headless.context, assets);
+    const MeshHandle crate = meshes.add("crate", cube(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)));
+    const MeshHandle ground = meshes.add("ground", cube(glm::vec4(1.0f)));
+
+    entt::registry registry;
+    place(&registry, crate, glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(1.0f), false);
+    place(&registry, ground, glm::vec3(0.0f, -0.05f, 0.0f), glm::vec3(6.0f, 0.1f, 6.0f), false);
+
+    v3d::type::camera::Isometric orbit;
+    orbit.target(glm::vec3(0.0f));
+    orbit.zoom(3.0f);
+    v3d::type::camera::Camera camera;
+    camera.profile().clipping(0.1f, 100.0f);
+    orbit.apply(&camera);
+    camera.createProjection();
+    camera.createView();
+
+    LitSettings settings;
+    settings.outline = 0.0f;
+    settings.colour = glm::vec3(0.45f, 0.55f, 0.9f);
+    settings.shadowColour = glm::vec3(0.3f, 0.3f, 0.6f);
+
+    const entt::entity shower = registry.create();
+    v3d::ecs::component::Emitter& rain = registry.emplace<v3d::ecs::component::Emitter>(shower, 21u);
+    rain.description.direction = glm::vec3(0.0f, -1.0f, 0.0f);
+    rain.description.speedMin = 7.0f;
+    rain.description.speedMax = 9.0f;
+    rain.description.lifeMin = 10.0f;
+    rain.description.lifeMax = 10.0f;
+    rain.description.cap = 4000;
+    rain.description.size = v3d::type::animation::Track<float>(0.03f);
+    rain.description.colour = v3d::type::animation::Track<glm::vec4>(glm::vec4(0.6f, 0.7f, 0.9f, 0.5f));
+    v3d::render::realtime::component::Particles look;
+    look.facing = v3d::render::realtime::component::Particles::Facing::Velocity;
+    look.stretch = 0.04f;
+    registry.emplace<v3d::render::realtime::component::Particles>(shower, look);
+
+    v3d::type::effect::Weather weather;
+    weather.density = 6.0f;
+    weather.intensity = 1.0f;
+    weather.target = 1.0f;
+    weather.wind = glm::vec3(1.5f, 0.0f, 0.0f);
+
+    std::vector<boost::shared_ptr<v3d::image::Image>> frames;
+    for (int shot = 0; shot < 3; shot++) {
+        for (int stepped = 0; stepped < 30; stepped++) {
+            v3d::type::effect::fall(rain.description, &weather, &rain.state, glm::vec3(-3.0f, 0.0f, -3.0f),
+                glm::vec3(3.0f, 6.0f, 3.0f), 1.0f / 60.0f);
+        }
+
+        boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+            width, height, colourFormat, true);
+        Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
+            headless.context->frameUniforms(), headless.context->quads(), colourFormat, target->depthFormat(), VK_FORMAT_UNDEFINED);
+        World world(headless.logger, headless.device, headless.context->pipelineCache(), headless.context->resources(),
+            headless.context->ring(), headless.context->frameUniforms(), headless.context->quads(), colourFormat,
+            target->depthFormat());
+
+        v3d::render::realtime::DepthOrder order;
+        const glm::vec3 forward = camera.profile().direction();
+        v3d::render::realtime::particles(registry, 1.0f, camera.profile().right(), camera.profile().up(), forward, &order);
+        v3d::render::realtime::WorldCanvas drops;
+        order.into(&drops);
+
+        Frame frame(headless.context);
+        boost::shared_ptr<Pass> pass = frame.pass("lit");
+        pass->target(target);
+        pass->depth(true);
+        pass->clearColour(glm::vec4(0.02f, 0.02f, 0.05f, 1.0f));
+        pass->camera(camera.view(), camera.projection());
+        pass->scene(lit.scene(v3d::render::realtime::pack(settings, glm::mat4(1.0f), 0.0f)));
+        v3d::render::realtime::meshes(registry, 1.0f, meshes, lit, settings.outline, pass.get());
+        world.submit(drops, pass.get(), 0, World::Blend::Additive);
+
+        VkCommandBuffer commands = headless.context->ring()->begin();
+        Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
+            headless.context->frameUniforms().get());
+        frames.push_back(readBack(&headless, commands, target, "data_out/rain_" + std::to_string(shot) + ".png"));
+        world.endFrame();
+        BOOST_REQUIRE(frames.back());
+    }
+    BOOST_CHECK(headless.silent());
+    BOOST_CHECK(!v3d::image::compare(*frames[0], *frames[1], 0).match);
+    BOOST_CHECK(!v3d::image::compare(*frames[1], *frames[2], 0).match);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -299,10 +299,17 @@ tile highlight.
 - **`realtime::WorldCanvas`** accumulates quads over a modelview stack of `glm::mat4`, which
   applies as vertices are added. A quad takes its four corners in perimeter order — the order
   `grid::tileCorners` hands them out in — and is fanned from the first, so any convex quad
-  comes out whole. The stream cuts where the bound texture changes and nowhere else.
-- **`vulkan::renderer::World`** owns two pipelines and a pair of buffers per frame in flight, and
-  takes its textures and its set 1 descriptors from the `renderer::Quad` so that an atlas
-  uploaded once serves both primitives out of one descriptor pool.
+  comes out whole. The stream cuts where the bound texture changes and nowhere else. A tint
+  multiplies the colour of every quad added after it, which is how a game lays dusk or an
+  act's palette over the whole world once rather than in every caller; `clear()` returns it to
+  white, and the ui's `Canvas` has none.
+- **`vulkan::renderer::World`** owns four pipelines and a pair of buffers per frame in flight,
+  and takes its textures and its set 1 descriptors from the `renderer::Quad` so that an atlas
+  uploaded once serves both primitives out of one descriptor pool. The pipelines are two blends,
+  each with and without depth. `World::Blend::Alpha` is straight alpha over what is there.
+  `Additive` adds the colour by its alpha and keeps the destination's alpha, so a flame or a
+  spark only lightens and two of them come out the same in either order. A canvas is submitted
+  with one blend.
 
 Positions are in world space through the pass camera at set 0, as lines are. **The order is
 the caller's**: quads are drawn in the order they were added, because what a quad's depth means
@@ -367,6 +374,14 @@ records the shadow pass first. `casters()` submits
 every entity whose `castsShadow` is set, and the shadow pipeline is biased, so the pass names a
 bias or the recorder throws. Both passes bind the same scene set.
 
+**World quads go in the lit pass, after its meshes.** A `World` built against the scene target's
+colour and depth formats submits into the same pass, and the pass records in submission order,
+so its quads are depth-tested against everything `meshes()` drew and are graded with it. The
+recorder binds the scene set only for a pipeline that declares one, so the world pipelines are
+drawn in a pass that carries one. The engine's own `worldQuads()` is compiled against the
+swapchain's format, which the recorder's check refuses in an sRGB scene target. The quads'
+colours are linear there ([ADR-0066](adr/0066-the-lit-tier-lights-in-linear.md)).
+
 **A skinned model is drawn by the same walks, with the skinned pipelines.** `Lit` has a
 skinned variant of the cel, outline and shadow pipelines. Their vertex is
 `MeshRegistry::SkinnedVertex`: the model's 32 bytes, then four joints as unsigned shorts and four
@@ -407,7 +422,10 @@ ground, stays out of the fit. A caller fits once, at scene load or when the cast
 somewhere new; the map does not follow them on its own.
 
 **The look is `LitSettings`**: the light, the fill, two band thresholds, three band
-multipliers, the outline, and the shadow's biases and strength, with no device in it. `pack()`
+multipliers, the light's colour and the shadow band's, the outline, and the shadow's biases and
+strength, with no device in it. The light's colour multiplies the mid and lit bands, and the
+shadow's colour the shadow band, so a scene's light changes over a day by changing two colours.
+Both default to white, which leaves every band as it was. `pack()`
 lays it out as `SceneUniforms`, which is the std140 `Scene` block. The cel shading is a key
 light plus a fill from above and opposite it, quantised into three flat bands, with a cast
 shadow dropping a fragment one band. A game that wants another look hands `Lit` its own
@@ -453,6 +471,14 @@ const MaterialHandle source = grade.source(*scene);                  // again af
 colour->reads(scene);
 grade.submit(source, colour.get());
 ```
+
+**A grade's table can be replaced.** `replace(texels)` makes a new table from texels in the
+order `Grade::table()` gives them, rebinds every source to it, and releases the old table and its
+materials through the ring ([ADR-0061](adr/0061-a-resource-is-released-explicitly.md)), so a
+frame in flight finishes with the table it was recorded against. A source keeps the handle
+`source()` gave it. A zone's own look is a swap, and a slow change between two looks is a lerp
+of their texels that the game uploads as often as it likes. It is called before the frame's
+`submit()`, since the material an earlier submission named is the one it lets go of.
 
 ## Shaders
 
@@ -709,6 +735,17 @@ changes. The transform is read through `interpolated<Transform>`, so an entity w
 `snapshot<Transform>` is drawn between steps
 ([ADR-0060](adr/0060-a-moving-thing-keeps-its-previous-step.md)). A sprite's rotation is
 ignored, because a billboard faces the camera.
+
+`realtime::particles(registry, alpha, right, up, depthAxis, order)` is the walk for
+`component::Particles`, which is what the particles of an `ecs::component::Emitter` look like:
+a texture, and a sprite clip played by a particle's age or over its whole life
+([ADR-0072](adr/0072-an-emitter-is-a-component-on-the-step-that-owns-its-particles.md)). Each
+particle is a quad centred where it stands, drawn alpha of the way from the previous position it
+keeps itself, sized and coloured by the emitter's tracks at its life. It faces the camera, or is
+stretched along its velocity as the camera sees it, which is a raindrop or a spark. A
+snowflake's sway is added here, along the camera's right, and never reaches the simulation. Its key is
+measured as a sprite's is, so particles and sprites handed to one `DepthOrder` sort among each
+other. The walk needs no `Transform`, since a particle stands in the world where it was born.
 
 `component::Mesh` is the other kind the record names: a `MeshHandle` from a `MeshRegistry` and
 `castsShadow`, with the material on the registry entry rather than the entity. The walks that

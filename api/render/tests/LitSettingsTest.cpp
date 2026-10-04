@@ -28,6 +28,8 @@ BOOST_AUTO_TEST_CASE(pack_puts_each_setting_where_the_shader_reads_it) {
     settings.bands = glm::vec3(0.1f, 0.5f, 0.9f);
     settings.normalBias = 0.03f;
     settings.shadowStrength = 0.75f;
+    settings.colour = glm::vec3(1.0f, 0.5f, 0.25f);
+    settings.shadowColour = glm::vec3(0.25f, 0.5f, 1.0f);
     const glm::mat4 light = glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 2.0f, 3.0f));
 
     const SceneUniforms packed = v3d::render::realtime::pack(settings, light, 1.0f / 2048.0f);
@@ -44,6 +46,18 @@ BOOST_AUTO_TEST_CASE(pack_puts_each_setting_where_the_shader_reads_it) {
     BOOST_CHECK_CLOSE(packed.shadow.x, 1.0f / 2048.0f, 0.0001f);
     BOOST_CHECK_CLOSE(packed.shadow.y, 0.75f, 0.0001f);
     BOOST_CHECK_CLOSE(packed.shadow.z, 0.03f, 0.0001f);
+    BOOST_CHECK(packed.colour == glm::vec4(1.0f, 0.5f, 0.25f, 0.0f));
+    BOOST_CHECK(packed.shadowColour == glm::vec4(0.25f, 0.5f, 1.0f, 0.0f));
+}
+
+/**
+ * A light left at its default colour is white over every band, which is what keeps a scene
+ * drawn before the light had a colour the same picture.
+ **/
+BOOST_AUTO_TEST_CASE(the_default_light_is_white) {
+    const SceneUniforms packed = v3d::render::realtime::pack(LitSettings(), glm::mat4(1.0f), 0.0f);
+    BOOST_CHECK(glm::vec3(packed.colour) == glm::vec3(1.0f));
+    BOOST_CHECK(glm::vec3(packed.shadowColour) == glm::vec3(1.0f));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

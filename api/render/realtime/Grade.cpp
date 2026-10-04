@@ -16,6 +16,7 @@
 #include <iterator>
 #include <map>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -101,21 +102,9 @@ Grade::Grade(const boost::shared_ptr<log::Logger>& logger, const boost::shared_p
         texels = identity();
     }
 
-    // UNORM, because the table holds linear colour and is read as it is stored
-    vulkan::memory::Image::Spec volume;
-    volume.width = SIZE;
-    volume.height = SIZE;
-    volume.depth = SIZE;
-    volume.format = VK_FORMAT_R8G8B8A8_UNORM;
-    volume.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    table_ = boost::make_shared<vulkan::memory::Image>(context_->device(), volume);
-    upload(context_, *table_, texels);
-
     // linear between entries, which is what makes sixteen of them enough
-    vulkan::pipeline::Texture texture;
-    texture.image = table_;
-    texture.sampler = boost::make_shared<vulkan::pipeline::Sampler>(context_->device(), vulkan::pipeline::Sampler::Spec());
-    tableTexture_ = context_->resources()->add(texture);
+    linear_ = boost::make_shared<vulkan::pipeline::Sampler>(context_->device(), vulkan::pipeline::Sampler::Spec());
+    tableTexture_ = createTable(texels);
 
     // a texel per pixel, so the scene is read exactly rather than filtered
     vulkan::pipeline::Sampler::Spec point;
@@ -138,27 +127,78 @@ MaterialHandle Grade::source(const vulkan::frame::RenderTarget& scene, uint32_t 
     texture.sampler = nearest_;
     const TextureHandle sceneTexture = context_->resources()->add(texture);
     const MaterialHandle material = pass_->source({sceneTexture, tableTexture_});
-    scenes_[material] = sceneTexture;
+    sources_[material] = Source{sceneTexture, material};
     return material;
 }
 
 /**
  **/
 bool Grade::release(const MaterialHandle& source) {
-    const std::map<MaterialHandle, TextureHandle>::iterator found = scenes_.find(source);
-    if (found == scenes_.end()) {
+    const std::map<MaterialHandle, Source>::iterator found = sources_.find(source);
+    if (found == sources_.end()) {
         return false;
     }
-    pass_->release(source);
-    context_->resources()->release(found->second);
-    scenes_.erase(found);
+    pass_->release(found->second.current);
+    context_->resources()->release(found->second.scene);
+    sources_.erase(found);
+    return true;
+}
+
+/**
+ **/
+bool Grade::replace(const std::vector<uint8_t>& texels) {
+    if (texels.size() != TEXELS * 4) {
+        return false;
+    }
+    const TextureHandle replacement = createTable(texels);
+    // every source is paired with the new table before any is let go of its old pairing, so a
+    // failure part way leaves the grade on the table it had
+    std::vector<MaterialHandle> rebound;
+    rebound.reserve(sources_.size());
+    try {
+        for (const std::pair<const MaterialHandle, Source>& source : sources_) {
+            rebound.push_back(pass_->source({source.second.scene, replacement}));
+        }
+    } catch (...) {
+        for (const MaterialHandle& material : rebound) {
+            pass_->release(material);
+        }
+        context_->resources()->release(replacement);
+        throw;
+    }
+
+    std::size_t next = 0;
+    for (std::pair<const MaterialHandle, Source>& source : sources_) {
+        pass_->release(source.second.current);
+        source.second.current = rebound[next++];
+    }
+    context_->resources()->release(tableTexture_);
+    tableTexture_ = replacement;
     return true;
 }
 
 /**
  **/
 void Grade::submit(const MaterialHandle& source, Pass* pass) const {
-    pass_->submit(source, pass);
+    const std::map<MaterialHandle, Source>::const_iterator found = sources_.find(source);
+    pass_->submit(found != sources_.end() ? found->second.current : source, pass);
+}
+
+/**
+ **/
+TextureHandle Grade::createTable(const std::vector<uint8_t>& texels) {
+    // UNORM, because the table holds linear colour and is read as it is stored
+    vulkan::memory::Image::Spec volume;
+    volume.width = SIZE;
+    volume.height = SIZE;
+    volume.depth = SIZE;
+    volume.format = VK_FORMAT_R8G8B8A8_UNORM;
+    volume.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    vulkan::pipeline::Texture texture;
+    texture.image = boost::make_shared<vulkan::memory::Image>(context_->device(), volume);
+    upload(context_, *texture.image, texels);
+    texture.sampler = linear_;
+    return context_->resources()->add(texture);
 }
 
 /**

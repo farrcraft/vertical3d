@@ -46,6 +46,14 @@ struct LitSettings final {
     glm::vec3 bands{0.30f, 0.55f, 1.0f};
 
     /**
+     * The light's colour, which the mid and lit bands are multiplied by, and the shadow band's:
+     * an amber light with blue shadows at dusk, a dim blue one at night. White leaves every
+     * band as it is.
+     **/
+    glm::vec3 colour{1.0f};
+    glm::vec3 shadowColour{1.0f};
+
+    /**
      * How far the outline hull is pushed out along each normal, in the model's units. Zero
      * draws no outline.
      **/
@@ -82,6 +90,8 @@ struct SceneUniforms final {
     glm::vec4 bands;                /**< xyz the shadow, mid and lit multipliers **/
     glm::mat4 lightViewProjection;  /**< what the shadow map was drawn through **/
     glm::vec4 shadow;               /**< x a shadow map texel in uv, y strength, z normal bias **/
+    glm::vec4 colour;               /**< xyz the light's colour, over the mid and lit bands **/
+    glm::vec4 shadowColour;         /**< xyz the shadow band's colour **/
 };
 
 /**

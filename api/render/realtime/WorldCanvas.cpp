@@ -21,7 +21,8 @@ indices(0) {
 
 /**
  **/
-WorldCanvas::WorldCanvas() {
+WorldCanvas::WorldCanvas() :
+    tint_(1.0f) {
     transforms_.push_back(glm::mat4(1.0f));
 }
 
@@ -33,6 +34,7 @@ void WorldCanvas::clear() {
     batches_.clear();
     transforms_.clear();
     transforms_.push_back(glm::mat4(1.0f));
+    tint_ = glm::vec4(1.0f);
 }
 
 /**
@@ -66,6 +68,14 @@ void WorldCanvas::translate(const glm::vec3& offset) {
  **/
 const glm::mat4& WorldCanvas::transform() const noexcept {
     return transforms_.back();
+}
+
+void WorldCanvas::tint(const glm::vec4& colour) {
+    tint_ = colour;
+}
+
+const glm::vec4& WorldCanvas::tint() const noexcept {
+    return tint_;
 }
 
 /**
@@ -132,7 +142,7 @@ void WorldCanvas::vertex(const glm::vec3& position, const glm::vec2& uv, const g
     Vertex added;
     added.position = glm::vec3(transforms_.back() * glm::vec4(position, 1.0f));
     added.uv = uv;
-    added.colour = colour;
+    added.colour = colour * tint_;
     vertices_.push_back(added);
 }
 

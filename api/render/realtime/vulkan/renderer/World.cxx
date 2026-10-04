@@ -9,6 +9,7 @@
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
 
 #include <cstddef>
+#include <string>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -66,8 +67,17 @@ World::~World() {
 /**
  **/
 void World::createPipelines(VkFormat colour, VkFormat depth) {
+    pipeline_ = createPipeline("world", colour, VK_FORMAT_UNDEFINED, Blend::Alpha);
+    depthPipeline_ = createPipeline("world-depth", colour, depth, Blend::Alpha);
+    additivePipeline_ = createPipeline("world-additive", colour, VK_FORMAT_UNDEFINED, Blend::Additive);
+    additiveDepthPipeline_ = createPipeline("world-additive-depth", colour, depth, Blend::Additive);
+}
+
+/**
+ **/
+PipelineHandle World::createPipeline(const std::string& name, VkFormat colour, VkFormat depth, Blend blend) {
     pipeline::Builder builder(device_);
-    builder.name("world")
+    builder.name(name)
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
         .shader(VK_SHADER_STAGE_FRAGMENT_BIT, fragmentShader, sizeof(fragmentShader))
         .vertexBinding(0, sizeof(WorldCanvas::Vertex))
@@ -81,12 +91,23 @@ void World::createPipelines(VkFormat colour, VkFormat depth) {
         .set(quads_->materialLayout())
         .colourFormat(colour);
 
-    pipeline_ = resources_->add(builder.build(cache_));
+    if (blend == Blend::Additive) {
+        // the destination's alpha is kept, so adding light never changes how opaque the
+        // picture is
+        pipeline::Builder::Blend adding;
+        adding.sourceColour = VK_BLEND_FACTOR_SRC_ALPHA;
+        adding.destinationColour = VK_BLEND_FACTOR_ONE;
+        adding.sourceAlpha = VK_BLEND_FACTOR_ZERO;
+        adding.destinationAlpha = VK_BLEND_FACTOR_ONE;
+        builder.blend(adding);
+    }
 
     // tests and does not write, per ADR-0042: the scene occludes a quad and a quad does not
     // cut a hole in the one behind it where both are transparent
-    builder.name("world-depth").depth(true, false).depthFormat(depth);
-    depthPipeline_ = resources_->add(builder.build(cache_));
+    if (depth != VK_FORMAT_UNDEFINED) {
+        builder.depth(true, false).depthFormat(depth);
+    }
+    return resources_->add(builder.build(cache_));
 }
 
 /**
@@ -110,7 +131,7 @@ void World::endFrame() noexcept {
 
 /**
  **/
-void World::submit(const WorldCanvas& canvas, Pass* pass, uint16_t layer) {
+void World::submit(const WorldCanvas& canvas, Pass* pass, uint16_t layer, Blend blend) {
     if (pass == nullptr || canvas.empty() || !quads_) {
         return;
     }
@@ -129,7 +150,10 @@ void World::submit(const WorldCanvas& canvas, Pass* pass, uint16_t layer) {
 
     // dynamic rendering matches a pipeline to the pass's attachments, so which of the two
     // is drawn with follows from whether the pass has a depth buffer
-    const PipelineHandle handle = pass->depth() ? depthPipeline_ : pipeline_;
+    PipelineHandle handle = pass->depth() ? depthPipeline_ : pipeline_;
+    if (blend == Blend::Additive) {
+        handle = pass->depth() ? additiveDepthPipeline_ : additivePipeline_;
+    }
 
     for (const WorldCanvas::Batch& batch : canvas.batches()) {
         if (batch.indices == 0) {

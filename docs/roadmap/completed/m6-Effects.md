@@ -1,23 +1,31 @@
 # Effects
 
-Milestone 6 of [the game engine roadmap](GameEngine.md). The things on screen that are neither
+Milestone 6 of [the game engine roadmap](../GameEngine.md). The things on screen that are neither
 a sprite nor a mesh: particles, weather, and the colour of the world changing with the time of
 day. Both games list them and neither has started them, so this milestone is drawn from their
 design documents rather than from code that has hit a wall.
 
 **It has a 2D half and a 3D half.** The 2D half is drawn through `WorldCanvas`, needs
-[milestone 1](completed/m1-MotionAndQueries.md)'s clip and nothing else, and is the half cozy wants from its
+[milestone 1](m1-MotionAndQueries.md)'s clip and nothing else, and is the half cozy wants from its
 M6 on. The 3D half draws the same particles in a lit scene and waits on
-[milestone 4](completed/m4-LitScene.md).
+[milestone 4](m4-LitScene.md).
+
+**Done by [Effects](../../plans/completed/Effects.md)**, drafted 2026-10-03 and closed 2026-10-04,
+the panned voice aside. An emitter is a component stepped with the simulation that owns its
+particles, and its look is a render component
+([ADR-0072](../../adr/0072-an-emitter-is-a-component-on-the-step-that-owns-its-particles.md)).
+Weather is an emitter falling over a region that follows the view, a tint is the world canvas's,
+and a lit scene takes a light colour and a grade that can be replaced. The panned voice waits in
+[TODO.md](../../TODO.md#audio) for cozy to ask.
 
 ## What exists
 
-* **World quads.** [`WorldCanvas`](../../api/render/realtime/WorldCanvas.h) draws textured,
+* **World quads.** [`WorldCanvas`](../../../api/render/realtime/WorldCanvas.h) draws textured,
   tinted quads with four world corners, depth-tested without writing
-  ([ADR-0042](../adr/0042-a-textured-quad-in-world-space.md)). A particle drawn as a billboard
+  ([ADR-0042](../../adr/0042-a-textured-quad-in-world-space.md)). A particle drawn as a billboard
   is one of these, and so is a raindrop.
 * **A tint per quad and per vertex.** Every quad carries a colour; nothing tints a whole pass.
-* **Audio with buses and fades.** [`audio::Engine`](../../api/audio/Engine.h) plays a voice on a
+* **Audio with buses and fades.** [`audio::Engine`](../../../api/audio/Engine.h) plays a voice on a
   named bus with a fade in, a fade out and a gain. It has no position and no pan. cozy uses it;
   retcon uses FMOD instead, by its own ADR-0013, and is not a consumer.
 * **cozy keeps the time of day itself**, in its `Clock`, and its M6 roadmap names time of day
@@ -41,8 +49,8 @@ What the games ask for:
 An emitter that spawns particles at a rate or in a burst, a fixed-step update that moves and ages
 them, and a draw that writes each as a billboard into a `WorldCanvas`. The update is on the fixed
 step like everything else that simulates
-([ADR-0032](../adr/0032-the-loop-simulates-at-a-fixed-step.md)), and drawing between steps is
-[milestone 1's interpolation](completed/m1-MotionAndQueries.md#interpolation).
+([ADR-0032](../../adr/0032-the-loop-simulates-at-a-fixed-step.md)), and drawing between steps is
+[milestone 1's interpolation](m1-MotionAndQueries.md#interpolation).
 
 **A particle's look is a sprite clip.** Smoke that thins, a spark that fades, a flame that
 flickers are each a sequence of regions over a lifetime, which is milestone 1's clip advanced by
@@ -69,7 +77,7 @@ the light's colour and milestone 4's LUT. cozy's palette per act is this and not
 
 **Pools of light are not in this milestone, on purpose.** A campfire glowing in a dark camp is a
 light map drawn into a target and multiplied over the world, which
-[ADR-0031](../adr/0031-a-pass-draws-into-a-target-it-names.md) already allows. cozy's art
+[ADR-0031](../../adr/0031-a-pass-draws-into-a-target-it-names.md) already allows. cozy's art
 direction has colour do lighting's work, so whether it wants one is cozy's to ask.
 
 ### Panning a voice
@@ -87,8 +95,8 @@ Weather is the same with a different emitter. The tint is a colour on every vert
 emits, which a canvas test already knows how to read.
 
 What a particle looks like is filtered sampling and blending, which no reference here can pin
-([ADR-0054](../adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md)); it is
-validation silence and a look, per [Testing.md](../Testing.md). A pan is a number handed to
+([ADR-0054](../../adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md)); it is
+validation silence and a look, per [Testing.md](../../Testing.md). A pan is a number handed to
 SDL_mixer, and `audio::Engine::initialize()` is already one of the things no CI here can run.
 
 ## Not in this milestone

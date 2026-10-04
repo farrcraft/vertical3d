@@ -144,6 +144,55 @@ boost::shared_ptr<v3d::image::Image> grade(v3d::test::Headless* headless, const 
 }
 
 /**
+ * Record a frame that draws the sweep into a scene and grades it into an output, with the
+ * output's capture recorded after it, and hand back the commands unsubmitted.
+ **/
+VkCommandBuffer recordGrade(v3d::test::Headless* headless, const Grade& graded, const MaterialHandle& source,
+    const boost::shared_ptr<RenderTarget>& scene, const boost::shared_ptr<RenderTarget>& output,
+    const TextureHandle& sweepTexture, uint32_t size, Capture* capture) {
+    Canvas canvas;
+    canvas.resize(size, size);
+    canvas.clear();
+    canvas.rect(glm::vec2(0.0f), glm::vec2(static_cast<float>(size)), glm::vec2(0.0f), glm::vec2(1.0f), glm::vec4(1.0f),
+        sweepTexture);
+
+    Frame frame(headless->context);
+    boost::shared_ptr<Pass> post = frame.pass("grade");
+    post->target(output);
+    post->reads(scene);
+    graded.submit(source, post.get());
+
+    boost::shared_ptr<Pass> drawn = frame.pass("scene");
+    drawn->target(scene);
+    drawn->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    headless->context->quads()->submit(canvas, drawn.get());
+
+    VkCommandBuffer commands = headless->context->ring()->begin();
+    Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
+        headless->context->frameUniforms().get());
+    Capture::Source captured;
+    captured.image = output->image();
+    captured.extent = output->extent();
+    captured.format = output->format();
+    captured.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    capture->record(commands, captured);
+    return commands;
+}
+
+/**
+ * @return the sweep with every colour channel turned to its complement
+ **/
+std::vector<unsigned char> complement(const std::vector<unsigned char>& texels) {
+    std::vector<unsigned char> inverted = texels;
+    for (std::size_t at = 0; at < inverted.size(); at++) {
+        if (at % 4 != 3) {
+            inverted[at] = static_cast<unsigned char>(255 - inverted[at]);
+        }
+    }
+    return inverted;
+}
+
+/**
  * The largest difference in any channel between a picture and what was expected of it.
  **/
 int largest(const boost::shared_ptr<v3d::image::Image>& picture, const std::vector<unsigned char>& expected) {
@@ -251,6 +300,83 @@ BOOST_AUTO_TEST_CASE(a_strip_grades_the_scene) {
     const int most = largest(picture, inverted);
     BOOST_TEST_MESSAGE("the inverting grade missed the complement by at most " << most);
     BOOST_CHECK_LE(most, 1);
+}
+
+/**
+ * A grade given a new table grades with it from the next frame, through the source handle made
+ * before the swap: a grade built as the identity and given the inverting table gives the
+ * complement. Texels of the wrong count are refused and change nothing.
+ **/
+BOOST_AUTO_TEST_CASE(a_replaced_table_regrades_its_sources) {
+    const uint32_t size = 64;
+    v3d::test::Headless headless(colourFormat, size, size);
+    const std::vector<unsigned char> texels = sweep(size);
+    boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+        size, size, colourFormat);
+    boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+        size, size, colourFormat);
+    const TextureHandle uploaded = headless.context->quads()->texture(texels.data(), size, size, 4);
+
+    Grade graded(headless.logger, headless.context, colourFormat, VK_FORMAT_UNDEFINED);
+    const MaterialHandle source = graded.source(*scene);
+    BOOST_CHECK(!graded.replace(std::vector<uint8_t>(16)));
+    BOOST_REQUIRE(graded.replace(Grade::table(invertingStrip())));
+
+    Capture capture(headless.device, headless.logger);
+    headless.submitAndWait(recordGrade(&headless, graded, source, scene, output, uploaded, size, &capture));
+    headless.context->quads()->endFrame();
+    BOOST_CHECK(graded.release(source));
+    BOOST_CHECK(headless.silent());
+
+    BOOST_REQUIRE(capture.write("data_out/grade_replaced.png"));
+    v3d::image::reader::Png png(headless.logger);
+    const boost::shared_ptr<v3d::image::Image> picture = png.read("data_out/grade_replaced.png");
+    BOOST_REQUIRE(picture);
+    const int most = largest(picture, complement(texels));
+    BOOST_TEST_MESSAGE("the replaced grade missed the complement by at most " << most);
+    BOOST_CHECK_LE(most, 1);
+}
+
+/**
+ * A table replaced while a frame that grades with the old one is still in flight is not
+ * destroyed under it - ADR-0061 - and neither is the material that paired it with the scene.
+ * The validation layer is what would report either, so a silent log is the assertion, and the
+ * frame after the swap grades with the new table.
+ **/
+BOOST_AUTO_TEST_CASE(a_table_replaced_in_flight_keeps_the_frame_silent) {
+    const uint32_t size = 64;
+    v3d::test::Headless headless(colourFormat, size, size);
+    const std::vector<unsigned char> texels = sweep(size);
+    boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+        size, size, colourFormat);
+    boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+        size, size, colourFormat);
+    const TextureHandle uploaded = headless.context->quads()->texture(texels.data(), size, size, 4);
+
+    Grade graded(headless.logger, headless.context, colourFormat, VK_FORMAT_UNDEFINED);
+    const MaterialHandle source = graded.source(*scene);
+
+    Capture before(headless.device, headless.logger);
+    headless.submit(recordGrade(&headless, graded, source, scene, output, uploaded, size, &before));
+    headless.context->quads()->endFrame();
+
+    BOOST_REQUIRE(graded.replace(Grade::table(invertingStrip())));
+
+    Capture after(headless.device, headless.logger);
+    headless.submitAndWait(recordGrade(&headless, graded, source, scene, output, uploaded, size, &after));
+    headless.context->quads()->endFrame();
+    for (int frame = 0; frame < 3; frame++) {
+        headless.submit(headless.context->ring()->begin());
+    }
+    headless.context->ring()->waitIdle();
+    BOOST_CHECK(graded.release(source));
+    BOOST_CHECK(headless.silent());
+
+    BOOST_REQUIRE(after.write("data_out/grade_replaced_in_flight.png"));
+    v3d::image::reader::Png png(headless.logger);
+    const boost::shared_ptr<v3d::image::Image> picture = png.read("data_out/grade_replaced_in_flight.png");
+    BOOST_REQUIRE(picture);
+    BOOST_CHECK_LE(largest(picture, complement(texels)), 1);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

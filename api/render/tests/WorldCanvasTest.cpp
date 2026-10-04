@@ -192,4 +192,36 @@ BOOST_AUTO_TEST_CASE(clearing_drops_the_stream_and_the_stack) {
     BOOST_CHECK_CLOSE(canvas.vertices()[0].position.x, 0.0f, 0.001f);
 }
 
+/**
+ * Every vertex of a quad added after a tint is its colour times the tint, and a quad added
+ * before keeps its own.
+ **/
+BOOST_AUTO_TEST_CASE(a_tint_multiplies_the_quads_after_it) {
+    v3d::render::realtime::WorldCanvas canvas;
+    const glm::vec4 dusk(1.0f, 0.5f, 0.25f, 1.0f);
+    canvas.quad(tile(0.0f, 0.0f), red);
+    canvas.tint(dusk);
+    canvas.quad(tile(1.0f, 0.0f), glm::vec2(0.0f), glm::vec2(1.0f), glm::vec4(0.5f, 1.0f, 1.0f, 0.5f), handle(2));
+
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 8u);
+    for (std::size_t corner = 0; corner < 4; corner++) {
+        BOOST_TEST((canvas.vertices()[corner].colour == red));
+        BOOST_TEST((canvas.vertices()[4 + corner].colour == glm::vec4(0.5f, 0.5f, 0.25f, 0.5f)));
+    }
+    BOOST_TEST((canvas.tint() == dusk));
+}
+
+/**
+ * Clearing the canvas returns its tint to white, since the stream is rebuilt every frame and a
+ * frame that sets no tint draws the world as it is.
+ **/
+BOOST_AUTO_TEST_CASE(clearing_returns_the_tint_to_white) {
+    v3d::render::realtime::WorldCanvas canvas;
+    canvas.tint(glm::vec4(0.2f, 0.2f, 0.6f, 1.0f));
+    canvas.clear();
+
+    canvas.quad(tile(0.0f, 0.0f), red);
+    BOOST_TEST((canvas.vertices()[0].colour == red));
+}
+
 BOOST_AUTO_TEST_SUITE_END()

@@ -80,3 +80,4 @@ old record's status and leave the file in place.
 | [0069](0069-a-model-is-parts-over-one-array-and-may-carry-a-skin.md) | Loaded Geometry In Parts — A Model Is Parts Over One Vertex Array, Read Through Its Nodes, And May Carry A Skin | accepted | 2026-10-03 |
 | [0070](0070-animation-is-sampled-from-playback-on-the-step.md) | Animation — Clips And Sampling Are api/type's, Playback Is A Component On The Step, And Which Clip Plays Is The Game's | accepted | 2026-10-03 |
 | [0071](0071-joint-palettes-are-a-storage-buffer-in-the-scene-set.md) | Skinning — A Frame's Joint Palettes Are One Storage Buffer In The Scene Set, And An Item Names Its First Joint | accepted | 2026-10-03 |
+| [0072](0072-an-emitter-is-a-component-on-the-step-that-owns-its-particles.md) | Effects — An Emitter Is A Component On The Step That Owns Its Particles, And Its Look Is A Render Component | accepted | 2026-10-04 |

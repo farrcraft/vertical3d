@@ -267,7 +267,7 @@ and gone after.
 **Held, and here is why.** The roadmap puts a sprite clip in this milestone because its
 time-keeping — advancing on the fixed step, looping, clamping, an event at a named point — is the
 same as a skeletal clip's ([milestone 5](../../roadmap/completed/m5-SkeletalAnimation.md)) and a particle's
-lifetime ([milestone 6](../../roadmap/m6-Effects.md)), and is worth writing once. But there is one
+lifetime ([milestone 6](../../roadmap/completed/m6-Effects.md)), and is worth writing once. But there is one
 consumer, and that consumer has said in its own M5 plan that a walk cycle is "perhaps thirty
 lines, entirely this game's", and that nothing in the engine should have to do it for one game.
 It also deferred its walk cycle because there is no walking art.

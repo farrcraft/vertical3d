@@ -118,4 +118,20 @@ BOOST_AUTO_TEST_CASE(the_canvas_transform_applies) {
     BOOST_CHECK_EQUAL(quadAt(canvas, 0), 10.0f);
 }
 
+/**
+ * A depth order handed to a tinted canvas is tinted, since it adds through the canvas - which
+ * is what lets one tint cover every sprite and particle a frame sorts.
+ **/
+BOOST_AUTO_TEST_CASE(an_order_handed_to_a_tinted_canvas_is_tinted) {
+    DepthOrder order;
+    order.quad(1.0f, tile(0.0f, 0.0f), glm::vec4(1.0f, 1.0f, 1.0f, 0.5f));
+
+    WorldCanvas canvas;
+    canvas.tint(glm::vec4(0.25f, 0.5f, 1.0f, 1.0f));
+    order.into(&canvas);
+
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4u);
+    BOOST_TEST((canvas.vertices()[0].colour == glm::vec4(0.25f, 0.5f, 1.0f, 0.5f)));
+}
+
 BOOST_AUTO_TEST_SUITE_END()

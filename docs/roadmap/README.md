@@ -26,7 +26,6 @@ the others; a roadmap exists because the ordering between its items is the inter
 |---|---|
 | [OfflineRendering.md](OfflineRendering.md) | `talyn` and `moya` — the raytracer and the reyes renderer |
 | [GameEngine.md](GameEngine.md) | The realtime api, for games rather than demos — the index of seven milestones, each its own document |
-| [m6-Effects.md](m6-Effects.md) | 6 — particles, weather, a tint over the world, a panned voice |
 | [m7-ShellAndShipping.md](m7-ShellAndShipping.md) | 7 — the shell's renderer setup, widgets, input, versioned documents, profiling, async loading |
 
 ## Completed

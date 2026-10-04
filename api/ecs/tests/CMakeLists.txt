@@ -3,6 +3,7 @@
 v3d_add_test(ecs
 	"TestMain.cpp"
 	"ComponentTest.cpp"
+	"EmitterTest.cpp"
 	"PlaybackTest.cpp"
 	"PreviousTest.cpp"
 	"SystemTest.cpp"

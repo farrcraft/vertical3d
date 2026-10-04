@@ -73,8 +73,8 @@ class WorldCanvas final {
     WorldCanvas();
 
     /**
-     * Drop everything accumulated and reset the transform stack, keeping the capacity.
-     * Called at the start of a tick, since the stream is rebuilt every frame.
+     * Drop everything accumulated and reset the transform stack and the tint, keeping the
+     * capacity. Called at the start of a tick, since the stream is rebuilt every frame.
      **/
     void clear();
 
@@ -103,6 +103,18 @@ class WorldCanvas final {
      * @return the transform vertices are being written through
      **/
     const glm::mat4& transform() const noexcept;
+
+    /**
+     * Multiply every quad added from here on by a colour, until the tint is set again - a
+     * light over the whole world, such as dusk or an act's palette, set once rather than by
+     * every caller. White leaves the colours alone.
+     **/
+    void tint(const glm::vec4& colour);
+
+    /**
+     * @return the colour quads are being multiplied by
+     **/
+    const glm::vec4& tint() const noexcept;
 
     /**
      * An untextured quad, drawn against the renderer's white texture.
@@ -160,6 +172,7 @@ class WorldCanvas final {
     void fan(uint32_t first);
 
     std::deque<glm::mat4> transforms_;
+    glm::vec4 tint_;
     std::vector<Vertex> vertices_;
     std::vector<uint32_t> indices_;
     std::vector<Batch> batches_;
