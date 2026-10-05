@@ -8,12 +8,4 @@ v3d_add_test(audio
 # SDL3: the mixer carries SDL3 with it, whether or not a device is ever opened.
 target_link_libraries(v3dtest_audio PRIVATE
 	v3dlib_audio
-	v3dlib_asset
-	v3dlib_event
-	v3dlib_image
-	v3dlib_font
-	${Boost_LIBRARIES}
-	${SDL3_LIBRARIES}
-	${PNG_LIBRARIES}
-	JPEG::JPEG
-	Freetype::Freetype)
+	${SDL3_LIBRARIES})

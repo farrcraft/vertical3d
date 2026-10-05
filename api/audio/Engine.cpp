@@ -13,6 +13,7 @@
 #include <vector>
 
 #include <boost/foreach.hpp>
+#include <boost/json.hpp>
 #include <boost/make_shared.hpp>
 
 namespace v3d::audio {
@@ -79,8 +80,7 @@ void Engine::soundEvent(const v3d::event::kind::Sound& sound) {
     }
 }
 
-bool Engine::load(const boost::shared_ptr<v3d::asset::kind::Json>& config, const Resolve& resolve) {
-    auto const doc = config->document();
+bool Engine::load(const boost::json::object& doc, const Resolve& resolve) {
     // every lookup is guarded, because boost::json::object::at throws for a key it does
     // not hold and a rejected config has to reach the caller as a false return
     if (!doc.contains("sounds") || !doc.at("sounds").is_array()) {

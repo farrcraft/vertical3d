@@ -14,13 +14,11 @@
 #include <string>
 #include <vector>
 
+#include <boost/json/object.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <entt/entt.hpp>
 
-namespace v3d::asset::kind {
-class Json;
-};  // namespace v3d::asset::kind
 
 namespace v3d::ui {
 
@@ -56,7 +54,7 @@ class Engine {
     Engine(const boost::shared_ptr<v3d::event::Engine>& eventEngine, const boost::shared_ptr<entt::dispatcher>& dispatcher,
         const boost::shared_ptr<v3d::log::Logger>& logger);
 
-    bool load(const boost::shared_ptr<v3d::asset::kind::Json>& config);
+    bool load(const boost::json::object& config);
 
     /**
      * Hand every image the config named to a resolver and keep what comes back - the

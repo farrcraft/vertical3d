@@ -3,7 +3,6 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/asset/kind/Json.h>
 #include <api/render/realtime/Canvas.h>
 #include <api/ui/Arranger.h>
 #include <api/ui/Container.h>
@@ -43,8 +42,7 @@ struct Fixture final {
         ui = boost::make_shared<v3d::ui::Engine>(
             boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,
             boost::make_shared<v3d::log::Logger>());
-        BOOST_REQUIRE(ui->load(boost::make_shared<v3d::asset::kind::Json>("vgui", v3d::asset::Type::JsonDocument,
-            boost::json::parse(document).as_object())));
+        BOOST_REQUIRE(ui->load(boost::json::parse(document).as_object()));
         container = ui->container("hud");
         BOOST_REQUIRE(container);
         cursor = boost::make_shared<v3d::ui::input::Cursor>(ui, dispatcher);

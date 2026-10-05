@@ -174,7 +174,12 @@ An app names the `v3dlib_*` targets it uses and nothing else. The exception is a
 a package directly, such as `Boost::program_options` in the three that parse a command line.
 
 Adding a third-party package to an api library means naming it PUBLIC when a header of that
-library names its types, and PRIVATE otherwise.
+library names its types, and PRIVATE otherwise. The same rule holds for another api library,
+and **the configure checks it**: `v3d_api_verify_visibility` reads every header of every library
+and fails when one includes a library its own links PRIVATE or not at all, or when a PUBLIC link
+is one no header needs. Getting it wrong would otherwise compile for as long as some other
+library exported the same dependency. It runs at configure, so a header edited since is checked
+at the next one; CI configures on every run.
 
 - **Apps name neither spdlog nor fmt.** `v3dlib_log` links `spdlog::spdlog` PUBLIC so the
   `SPDLOG_COMPILED_LIB` definition propagates. Every `api/` library whose sources compile

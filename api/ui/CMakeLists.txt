@@ -60,6 +60,7 @@ v3d_add_api_library(ui
 # TextRenderer.h keeps that true by forward declaring the QuadRenderer it uploads an atlas
 # through, rather than including it.
 # v3dlib_font: TextRenderer.h holds a TextureFontCache and a TextureTextBuffer::Markup.
+# v3dlib_image: TextRenderer.h holds the image::Image its atlas is uploaded from.
 # Boost::json: Engine.h names a boost::json::object for the theme it is handed.
 # Boost::filesystem: shell/FileChooser.h names the paths it lists and hands back.
 target_link_libraries(v3dlib_ui PUBLIC
@@ -68,17 +69,17 @@ target_link_libraries(v3dlib_ui PUBLIC
 	v3dlib_asset
 	v3dlib_event
 	v3dlib_font
+	v3dlib_image
 	v3dlib_type
 	Boost::json
 	Boost::filesystem
 	glm::glm
 	EnTT::EnTT)
 
-# PRIVATE: TextRenderer packs its glyphs into an image::TextureAtlas, which no ui header names.
-# v3dlib_input: shell/Keyboard.cpp decodes an SDL key through input::keyName, so that the name
+# PRIVATE: v3dlib_input: shell/Keyboard.cpp decodes an SDL key through input::keyName, so that the name
 # a binding is written against and the name a text box answers come from one table. The header
 # names neither the device nor SDL_Event beyond a forward declaration.
-target_link_libraries(v3dlib_ui PRIVATE v3dlib_image v3dlib_input)
+target_link_libraries(v3dlib_ui PRIVATE v3dlib_input)
 
 target_compile_options(v3dlib_ui PRIVATE /EHsc)
 

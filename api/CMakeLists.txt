@@ -8,3 +8,6 @@ endforeach()
 
 # The manifest the root selected from, against the link graph the libraries just declared.
 v3d_api_verify_manifest()
+
+# And each library's PUBLIC links against what its headers include.
+v3d_api_verify_visibility("${CMAKE_CURRENT_SOURCE_DIR}")

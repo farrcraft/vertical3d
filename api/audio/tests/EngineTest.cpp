@@ -23,9 +23,8 @@ boost::shared_ptr<v3d::audio::Engine> engine() {
         boost::make_shared<entt::dispatcher>());
 }
 
-boost::shared_ptr<v3d::asset::kind::Json> config(const std::string& text) {
-    return boost::make_shared<v3d::asset::kind::Json>(
-        "sounds", v3d::asset::Type::JsonDocument, boost::json::parse(text).as_object());
+boost::json::object config(const std::string& text) {
+    return boost::json::parse(text).as_object();
 }
 
 /**

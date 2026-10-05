@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+#include <boost/json.hpp>
+
 namespace v3d::config {
 
 namespace {
@@ -60,11 +62,7 @@ CameraProfiles::CameraProfiles(const boost::shared_ptr<v3d::log::Logger>& logger
 
 /**
  **/
-bool CameraProfiles::load(const boost::shared_ptr<v3d::asset::kind::Json>& config) {
-    if (!config) {
-        return false;
-    }
-    auto const doc = config->document();
+bool CameraProfiles::load(const boost::json::object& doc) {
     if (!doc.contains("cameras") || !doc.at("cameras").is_array()) {
         logger_->get()->error("Missing cameras in the camera config");
         return false;

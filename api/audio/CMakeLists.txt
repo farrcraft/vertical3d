@@ -6,12 +6,9 @@ v3d_add_api_library(audio "AudioClip.h" "AudioClip.cpp" "Engine.h" "Engine.cpp" 
 # EnTT: Engine.h holds a registry.
 target_link_libraries(v3dlib_audio PUBLIC v3dlib_log SDL3_mixer::SDL3_mixer EnTT::EnTT)
 
-# Engine.h names an asset::Json and an event::Sound. The asset edge closes a cycle -
-# asset's Wav loader builds an audio clip - which CMake resolves for static libraries by
-# repeating them on the link line. Breaking it would mean moving one of the two calls.
-target_link_libraries(v3dlib_audio PUBLIC v3dlib_asset v3dlib_event)
-
-target_link_libraries(v3dlib_audio PRIVATE Boost::json)
+# Engine.h names an event::Sound, and the boost::json::object a sound config is. It names no
+# asset type: asset's Wav loader builds an audio clip, so the edge runs one way only - ADR-0021.
+target_link_libraries(v3dlib_audio PUBLIC v3dlib_event Boost::json)
 
 target_compile_options(v3dlib_audio PRIVATE /EHsc)
 

@@ -222,6 +222,9 @@ unread `registry_` (and either fold the base into `Engine3D` or give it a virtua
 A3. In the `CMakeLists.txt` of `render`, `ui`, `engine`, and in
 [`cmake/`](../../cmake/).
 
+**Closed.** `v3d_api_verify_visibility` fails the configure in both directions, and was shown to by
+breaking render's link to image on purpose. Build.md says so under the linking rules.
+
 `render → image` and `ui → image` become PUBLIC, `engine → SDL3` PUBLIC, `render → ecs` PRIVATE.
 Each CMake comment is corrected to what the headers do. Then add a configure-time check beside
 `v3d_api_verify_manifest`: a header under `api/X` that includes `<api/Y/…>` implies a PUBLIC link
@@ -231,6 +234,11 @@ time, what was riding on it.
 #### Step 10 — A parser takes a document, and audio stops depending on asset
 
 A1, A7.
+
+**Closed.** The cycle is gone and ADR-0021 says it was restored. Each test that built a
+`kind::Json` only to have it unwrapped passes the object instead. Two sources called
+`boost::json::value_to` with only `object.hpp` in reach, and linked only because another object in
+the same library instantiated it; they include the whole of Boost.JSON now.
 
 `audio::Engine::load`, `config::CameraProfiles`, `config::SpriteSheets` and `ui::Engine` take
 `const boost::json::object&`; callers pass `json->document()`. `audio → asset` leaves the link

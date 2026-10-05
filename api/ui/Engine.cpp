@@ -5,7 +5,6 @@
 
 #include "Engine.h"
 
-#include <api/asset/kind/Json.h>
 #include <api/log/Logger.h>
 #include <api/ui/Image.h>
 #include <api/ui/component/Box.h>
@@ -36,9 +35,9 @@ Engine::Engine(const boost::shared_ptr<v3d::event::Engine>& eventEngine, const b
     eventEngine_(eventEngine), dispatcher_(dispatcher), logger_(logger) {
 }
 
-bool Engine::load(const boost::shared_ptr<v3d::asset::kind::Json>& config) {
+bool Engine::load(const boost::json::object& config) {
     Loader loader(eventEngine_, dispatcher_, logger_);
-    if (!loader.load(config->document())) {
+    if (!loader.load(config)) {
         return false;
     }
     containers_ = std::move(loader.containers());

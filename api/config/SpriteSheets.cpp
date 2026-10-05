@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 
+#include <boost/json.hpp>
+
 namespace v3d::config {
 
 namespace {
@@ -83,11 +85,7 @@ bool readSprites(const boost::json::object& entry, SpriteSheet* sheet,
 
 /**
  **/
-bool SpriteSheets::load(const boost::shared_ptr<v3d::asset::kind::Json>& config) {
-    if (!config) {
-        return false;
-    }
-    const boost::json::object doc = config->document();
+bool SpriteSheets::load(const boost::json::object& doc) {
     if (!doc.contains("sheets") || !doc.at("sheets").is_array()) {
         logger_->get()->error("Missing sheets in the sprite config");
         return false;

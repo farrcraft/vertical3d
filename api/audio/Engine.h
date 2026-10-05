@@ -10,7 +10,6 @@
 #define NOMINMAX
 #endif
 
-#include <api/asset/kind/Json.h>
 #include <api/event/kind/Sound.h>
 #include <api/log/Logger.h>
 
@@ -25,6 +24,7 @@
 #include "AudioClip.h"
 #include "Play.h"
 
+#include <boost/json/object.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <entt/entt.hpp>
@@ -79,7 +79,7 @@ class Engine final {
      * @return false when the document is malformed, or when a clip it named would not
      *         load - the clips that did load are kept either way
      **/
-    bool load(const boost::shared_ptr<v3d::asset::kind::Json> & config, const Resolve & resolve);
+    bool load(const boost::json::object & config, const Resolve & resolve);
 
     /**
      * File an already loaded clip under the id a sound event will name.

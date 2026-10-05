@@ -12,7 +12,8 @@ v3d_add_api_library(config
 # v3dlib_type: CameraProfiles.h holds a table of type::CameraProfile and hands them out by
 # value.
 # glm: SpriteSheet.h hands a region out as a uv pair.
-target_link_libraries(v3dlib_config PUBLIC v3dlib_log v3dlib_asset v3dlib_type glm::glm)
+# Boost::json: CameraProfiles.h and SpriteSheets.h each read a boost::json::object.
+target_link_libraries(v3dlib_config PUBLIC v3dlib_log v3dlib_asset v3dlib_type glm::glm Boost::json)
 
 target_compile_options(v3dlib_config PRIVATE /EHsc)
 

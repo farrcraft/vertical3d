@@ -10,13 +10,14 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <boost/json.hpp>
 #include <boost/make_shared.hpp>
 
 namespace {
 
-boost::shared_ptr<v3d::asset::kind::Json> config(const std::string& text) {
+boost::json::object config(const std::string& text) {
     boost::json::value parsed = boost::json::parse(text);
-    return boost::make_shared<v3d::asset::kind::Json>("cameras", v3d::asset::Type::JsonDocument, parsed.as_object());
+    return parsed.as_object();
 }
 
 boost::shared_ptr<v3d::log::Logger> logger() {

@@ -92,10 +92,11 @@ v3d_add_shader(v3dlib_render "shaders/fullscreen.vert")
 v3d_add_shader(v3dlib_render "shaders/grade.frag")
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
+# v3dlib_image: Grade.h takes the image::Image a colour grade is built from.
 # Vulkan and SDL3 are PUBLIC because the realtime headers name their types outright -
 # Context3D.h and every vulkan/ header carry VkDevice and its neighbours, and Window.h
 # carries SDL_Window.
-target_link_libraries(v3dlib_render PUBLIC v3dlib_log v3dlib_asset v3dlib_ecs v3dlib_type Vulkan::Vulkan SDL3::SDL3 glm::glm EnTT::EnTT)
+target_link_libraries(v3dlib_render PUBLIC v3dlib_log v3dlib_asset v3dlib_image v3dlib_type Vulkan::Vulkan SDL3::SDL3 glm::glm EnTT::EnTT)
 # PRIVATE: the allocator is an implementation detail of memory::Allocator, and Allocator.h and
 # Allocation.h declare the handles they name rather than including the header that defines them
 target_link_libraries(v3dlib_render PRIVATE GPUOpen::VulkanMemoryAllocator)
@@ -107,9 +108,10 @@ set_source_files_properties("realtime/vulkan/memory/VmaImpl.cxx" PROPERTIES
 	COMPILE_OPTIONS "/analyze-;/W0"
 	SKIP_LINTING TRUE)
 
-# PRIVATE: Canvas.h and TextureFactory.h forward declare font::TextBuffer and image::Image
-# rather than including them, so a consumer needs these only if it names one itself.
-target_link_libraries(v3dlib_render PRIVATE v3dlib_font v3dlib_image)
+# PRIVATE: Canvas.h forward declares font::TextBuffer rather than including it, so a consumer
+# needs the font library only if it names one itself. The ecs components the lit renderer
+# walks are named in its sources and in no header.
+target_link_libraries(v3dlib_render PRIVATE v3dlib_font v3dlib_ecs)
 
 target_compile_options(v3dlib_render PRIVATE /EHsc)
 

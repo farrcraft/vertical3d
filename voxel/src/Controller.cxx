@@ -56,7 +56,7 @@ bool Controller::initialize() {
     if (config_) {
         boost::shared_ptr<v3d::asset::kind::Json> uiConfig = config_->get(v3d::config::Type::Ui);
         if (uiConfig) {
-            if (!vgui_->load(uiConfig)) {
+            if (!vgui_->load(uiConfig->document())) {
                 return false;
             }
         }

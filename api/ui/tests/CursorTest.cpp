@@ -3,7 +3,6 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/asset/kind/Json.h>
 #include <api/render/realtime/Canvas.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
@@ -56,8 +55,7 @@ struct Fixture final {
             boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,
             boost::make_shared<v3d::log::Logger>());
         bool loaded = false;
-        loaded = ui->load(boost::make_shared<v3d::asset::kind::Json>("vgui", v3d::asset::Type::JsonDocument,
-            boost::json::parse(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [] } ] })").as_object()));
+        loaded = ui->load(boost::json::parse(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [] } ] })").as_object());
         BOOST_REQUIRE(loaded);
         container = ui->container("hud");
         BOOST_REQUIRE(container);
@@ -569,12 +567,11 @@ BOOST_AUTO_TEST_CASE(a_document_marks_a_strip_as_scenery) {
     const boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
         boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,
         boost::make_shared<v3d::log::Logger>());
-    const bool loaded = ui->load(boost::make_shared<v3d::asset::kind::Json>("vgui", v3d::asset::Type::JsonDocument,
-        boost::json::parse(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [
+    const bool loaded = ui->load(boost::json::parse(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [
             { "type": "menubar", "name": "menus", "pickable": false, "menus": [] },
             { "type": "toolbar", "name": "hotbar", "pickable": false, "buttons": [] },
             { "type": "toolbar", "name": "tools", "buttons": [] }
-        ] } ] })").as_object()));
+        ] } ] })").as_object());
     BOOST_REQUIRE(loaded);
     const boost::shared_ptr<v3d::ui::Container> hud = ui->container("hud");
     BOOST_REQUIRE(hud);

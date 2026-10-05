@@ -98,7 +98,7 @@ bool::PongEngine::initialize() {
         if (soundConfig) {
             // a clip is an asset like any other, so the file the config names is resolved
             // against the manager's path rather than the working directory
-            soundEngine_->load(soundConfig,
+            soundEngine_->load(soundConfig->document(),
                 [this](const std::string& source) -> boost::shared_ptr<v3d::audio::AudioClip> {
                     boost::shared_ptr<v3d::asset::kind::Sound> asset = boost::dynamic_pointer_cast<v3d::asset::kind::Sound>(
                         assetManager_->load(source, v3d::asset::Type::AudioWav));
@@ -111,7 +111,7 @@ bool::PongEngine::initialize() {
 
         boost::shared_ptr<v3d::asset::kind::Json> uiConfig = config_->get(v3d::config::Type::Ui);
         if (uiConfig) {
-            if (!vgui_->load(uiConfig)) {
+            if (!vgui_->load(uiConfig->document())) {
                 return false;
             }
         }

@@ -28,7 +28,7 @@ set(V3D_API_asset_REQUIRES log audio font image type)
 set(V3D_API_asset_PACKAGES cgltf)
 
 set(V3D_API_audio_PATH "audio")
-set(V3D_API_audio_REQUIRES log asset event)
+set(V3D_API_audio_REQUIRES log event)
 set(V3D_API_audio_PACKAGES SDL3_mixer EnTT)
 
 set(V3D_API_brep_PATH "brep")
@@ -223,5 +223,97 @@ function(v3d_api_verify_manifest)
 			"The api manifest in cmake/v3dApiLibraries.cmake disagrees with the link "
 			"graph:\n${problems}\n"
 			"Update the manifest to match.")
+	endif()
+endfunction()
+
+# Which api library owns a path under api/: the one whose PATH is the longest prefix of it, so
+# render/offline/Film.h is render_offline's and render/realtime/Canvas.h is render's. Sets
+# out_var to the library, or to nothing for a path no library owns.
+function(v3d_api_owner relative out_var)
+	set(owner)
+	set(longest 0)
+	foreach(library IN LISTS V3D_API_LIBRARIES)
+		set(prefix "${V3D_API_${library}_PATH}/")
+		string(LENGTH "${prefix}" length)
+		string(FIND "${relative}" "${prefix}" at)
+		if(at EQUAL 0 AND length GREATER longest)
+			set(owner ${library})
+			set(longest ${length})
+		endif()
+	endforeach()
+	set(${out_var} "${owner}" PARENT_SCOPE)
+endfunction()
+
+# Read every library's headers and compare what they include from the rest of the api with
+# what the library links PUBLIC. Called once every api library has been added, with the api/
+# directory the libraries were added from.
+#
+# The rule is Build.md's: a library links another PUBLIC when one of its headers includes one
+# of that library's, and PRIVATE otherwise. Getting it wrong compiles as long as some other
+# library happens to export the same dependency, which is what hid four of them - so a header
+# that includes what its library links PRIVATE fails here, and so does a PUBLIC link that no
+# header needs.
+#
+# It runs at configure, so a header edited since then is checked at the next one; CI
+# configures every run.
+function(v3d_api_verify_visibility root)
+	set(problems)
+	foreach(library IN LISTS V3D_API_BUILD)
+		get_target_property(interface "v3dlib_${library}" INTERFACE_LINK_LIBRARIES)
+		# a PRIVATE link of a static library appears here as $<LINK_ONLY:...>, which the match
+		# below leaves out
+		set(public)
+		if(interface)
+			foreach(entry IN LISTS interface)
+				if(entry MATCHES "^v3dlib_(.+)$")
+					list(APPEND public "${CMAKE_MATCH_1}")
+				endif()
+			endforeach()
+		endif()
+
+		file(GLOB_RECURSE headers RELATIVE "${root}" "${root}/${V3D_API_${library}_PATH}/*.h")
+		set(included)
+		foreach(header IN LISTS headers)
+			# a test's headers are not the library's, and nor are those of a library nested in
+			# this one's directory
+			if(header MATCHES "/tests/")
+				continue()
+			endif()
+			v3d_api_owner("${header}" owner)
+			if(NOT owner STREQUAL library)
+				continue()
+			endif()
+			file(STRINGS "${root}/${header}" lines REGEX "^#include <api/")
+			foreach(line IN LISTS lines)
+				if(NOT line MATCHES "^#include <api/([^>]+)>")
+					continue()
+				endif()
+				set(target_header "${CMAKE_MATCH_1}")
+				v3d_api_owner("${target_header}" dependency)
+				if(NOT dependency OR dependency STREQUAL library)
+					continue()
+				endif()
+				list(APPEND included ${dependency})
+				if(NOT dependency IN_LIST public)
+					list(APPEND problems
+						"  ${header} includes api/${target_header}, and v3dlib_${library} does not link v3dlib_${dependency} PUBLIC")
+				endif()
+			endforeach()
+		endforeach()
+
+		foreach(dependency IN LISTS public)
+			if(NOT dependency IN_LIST included)
+				list(APPEND problems
+					"  v3dlib_${library} links v3dlib_${dependency} PUBLIC, and none of its headers includes that library")
+			endif()
+		endforeach()
+	endforeach()
+
+	if(problems)
+		list(JOIN problems "\n" problems)
+		message(FATAL_ERROR
+			"An api library's link visibility disagrees with its headers:\n${problems}\n"
+			"Link PUBLIC what a header includes and PRIVATE what only a source does - "
+			"docs/Build.md#linking-rules.")
 	endif()
 endfunction()
