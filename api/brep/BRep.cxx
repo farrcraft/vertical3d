@@ -339,25 +339,6 @@ Index BRep::addFace(const Face& f) {
     return static_cast<Index>(faces_.size() - 1);
 }
 
-void BRep::splitEdge(Index edge, const glm::vec3& point) {
-    Index vertex;
-    vertices_.push_back(point);
-    vertex = static_cast<Index>(vertices_.size() - 1);
-
-    HalfEdge newEdge(edges_[edge]);
-    // edge goes from PVT to point
-    // newEdge goes from point to NVT
-    newEdge.vertex(vertex);
-
-    Index new_edge_id;
-    edges_.push_back(newEdge);
-    new_edge_id = static_cast<Index>(edges_.size() - 1);
-
-    newEdge.pair(edge);
-    newEdge.next(edges_[edge].next());
-    edges_[edge].next(new_edge_id);
-}
-
 bool BRep::selected(void) const noexcept {
     return selected_;
 }

@@ -107,3 +107,13 @@ BOOST_AUTO_TEST_CASE(engine_mapping_test) {
     dispatcher->trigger(source(keyboard, "q", v3d::event::State::Pressed));
     BOOST_CHECK_EQUAL(recorder.events_.size(), 2u);
 }
+
+BOOST_AUTO_TEST_CASE(engine_lets_the_dispatcher_go_test) {
+    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    {
+        v3d::event::Engine engine(dispatcher);
+        BOOST_CHECK(!dispatcher->sink<v3d::event::Event>().empty());
+    }
+    // the dispatcher outlives the engine, and a delegate to it would be a dangling call
+    BOOST_CHECK(dispatcher->sink<v3d::event::Event>().empty());
+}

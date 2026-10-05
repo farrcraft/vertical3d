@@ -240,3 +240,24 @@ BOOST_AUTO_TEST_CASE(audio_engine_shutdown_drops_its_tracks_test) {
     // and a second shutdown finds nothing left to drop
     BOOST_CHECK_NO_THROW(sound->shutdown());
 }
+
+/**
+ * The dispatcher is shared with the rest of the app and can outlive the engine, so the
+ * delegate initialize() hands it has to go when the engine does, whether or not anything
+ * called shutdown() - and with or without a device, since initialize() connects either way.
+ **/
+BOOST_AUTO_TEST_CASE(audio_engine_lets_the_dispatcher_go_test) {
+    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    {
+        v3d::audio::Engine sound(boost::make_shared<v3d::log::Logger>(), dispatcher);
+        sound.initialize();
+        BOOST_CHECK(!dispatcher->sink<v3d::event::kind::Sound>().empty());
+    }
+    BOOST_CHECK(dispatcher->sink<v3d::event::kind::Sound>().empty());
+
+    // and shutdown() lets it go too, since a silent engine should not be asked to play
+    v3d::audio::Engine sound(boost::make_shared<v3d::log::Logger>(), dispatcher);
+    sound.initialize();
+    sound.shutdown();
+    BOOST_CHECK(dispatcher->sink<v3d::event::kind::Sound>().empty());
+}

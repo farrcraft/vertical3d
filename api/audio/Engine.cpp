@@ -21,7 +21,13 @@ Engine::Engine(const boost::shared_ptr<v3d::log::Logger> & logger, const boost::
     dispatcher_(dispatcher), logger_(logger) {
 }
 
+Engine::~Engine() {
+    shutdown();
+}
+
 void Engine::shutdown() {
+    // no sound event reaches an engine that has let its device go
+    sound_.release();
     // the tracks go before the mixer that handed them out, and the clips before the tracks
     // that were playing them
     for (const std::pair<const Voice, Playing>& playing : voices_) {
@@ -63,7 +69,7 @@ bool Engine::initialize() {
         SDL_QuitSubSystem(SDL_INIT_AUDIO);
     }
 
-    dispatcher_->sink<v3d::event::kind::Sound>().connect<&Engine::soundEvent>(*this);
+    sound_ = dispatcher_->sink<v3d::event::kind::Sound>().connect<&Engine::soundEvent>(*this);
     return mixer_ != nullptr;
 }
 

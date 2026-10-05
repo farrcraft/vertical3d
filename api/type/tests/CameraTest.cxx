@@ -431,3 +431,62 @@ BOOST_AUTO_TEST_CASE(camera_a_set_rotation_outlives_a_cached_basis_test) {
         }
     }
 }
+
+BOOST_AUTO_TEST_CASE(camera_rotate_after_a_lookat_turns_the_view_test) {
+    // the editor's perspective camera is a lookat() profile that the arcball then rotates
+    v3d::type::camera::Camera camera;
+    camera.profile().eye(glm::vec3(0.0f, 0.0f, 5.0f));
+    camera.profile().lookat(glm::vec3(0.0f, 0.0f, 0.0f));
+    camera.createView();
+    const glm::mat4x4 before = camera.view();
+
+    // a turn about one axis, which has two zero components
+    const glm::quat turn = glm::angleAxis(glm::pi<float>() / 6.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+    camera.rotate(turn);
+    camera.createView();
+
+    glm::mat4x4 expected = glm::transpose(glm::mat4_cast(camera.profile().rotation()));
+    expected = glm::translate(expected, -camera.profile().eye());
+    float moved = 0.0f;
+    for (int column = 0; column < 4; ++column) {
+        for (int row = 0; row < 4; ++row) {
+            BOOST_CHECK_SMALL(camera.view()[column][row] - expected[column][row], 0.0001f);
+            moved += std::fabs(camera.view()[column][row] - before[column][row]);
+        }
+    }
+    BOOST_CHECK_GT(moved, 0.1f);
+}
+
+BOOST_AUTO_TEST_CASE(camera_a_degenerate_rotate_is_no_rotation_test) {
+    v3d::type::camera::Camera camera;
+    camera.profile().eye(glm::vec3(0.0f, 0.0f, 5.0f));
+    camera.profile().lookat(glm::vec3(0.0f, 0.0f, 0.0f));
+    const glm::quat before = camera.profile().rotation();
+
+    // what ArcBall::drag answers when the cursor has not moved
+    camera.rotate(glm::quat(0.0f, 0.0f, 0.0f, 0.0f));
+    BOOST_CHECK(camera.profile().rotation() == before);
+}
+
+BOOST_AUTO_TEST_CASE(camera_a_turn_moves_the_normals_with_it_test) {
+    v3d::type::camera::Camera camera;
+    camera.profile().eye(glm::vec3(0.0f, 0.0f, -5.0f));
+    camera.profile().lookat(glm::vec3(0.0f, 0.0f, 0.0f));
+    BOOST_CHECK_CLOSE(camera.profile().direction()[2], 1.0f, 0.01f);
+
+    // a quarter pan about the camera's own y takes the view direction onto world x, and a
+    // dolly after it has to follow
+    camera.pan(glm::half_pi<float>());
+    const glm::vec3 direction = camera.profile().direction();
+    BOOST_CHECK_SMALL(direction[2], 0.0001f);
+    BOOST_CHECK_CLOSE(std::fabs(direction[0]), 1.0f, 0.01f);
+
+    const glm::vec3 eye = camera.profile().eye();
+    camera.dolly(2.0f);
+    BOOST_CHECK_SMALL(glm::length(camera.profile().eye() - (eye + direction * 2.0f)), 0.0001f);
+
+    // and the normals are the view's: direction is the third row of the view's rotation
+    camera.createView();
+    const glm::vec3 viewZ(camera.view()[0][2], camera.view()[1][2], camera.view()[2][2]);
+    BOOST_CHECK_SMALL(glm::length(viewZ - direction), 0.0001f);
+}

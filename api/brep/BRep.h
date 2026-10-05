@@ -88,10 +88,6 @@ class BRep : public v3d::dag::Node, public v3d::dag::Transform {
         void addFace(const std::vector<glm::vec3> & vertices, const glm::vec3 & normal);
         void addEdge(const glm::vec3 & point);
 
-        void splitEdge(Index edge, const glm::vec3 & point);
-        void extrudeFace(Index face);
-        void splitFace(Index face, Index leftEdge, Index rightEdge, const glm::vec3 & leftPoint, const glm::vec3 & rightPoint);
-
         size_t vertexCount(void) const;
         size_t edgeCount(void) const;
         size_t faceCount(void) const;

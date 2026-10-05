@@ -63,10 +63,10 @@ bool Controller::initialize() {
     }
 
     // register game commands
-    dispatcher_->sink<v3d::event::Event>().connect<&Controller::handleEvent>(*this);
+    events_ = dispatcher_->sink<v3d::event::Event>().connect<&Controller::handleEvent>(*this);
     // this is actually the game controller
     // maybe we need a separate player controller class to intercept mouse events?
-    dispatcher_->sink<v3d::event::kind::MouseMotion>().connect<&Controller::handleMotion>(*this);
+    motion_ = dispatcher_->sink<v3d::event::kind::MouseMotion>().connect<&Controller::handleMotion>(*this);
 
     scene_ = boost::make_shared<Scene>();
 

@@ -4,6 +4,14 @@
 **Status**: accepted
 **Deciders**: Joshua Farr
 
+Amended 2026-10-04 by step 1 of [ApiDesignDebt](../plans/ApiDesignDebt.md). The negative below
+came true: `Camera::rotate()`, which the editor's arcball drives, was a fourth writer and never
+cleared the cache, so orbiting a camera built by `lookat()` did nothing. The rule is now enforced
+rather than remembered. `Profile`'s members are private and its rotation has three writers, all
+inside `Profile`: `rotation()`, `lookat()`, and `turn()`, which is what `pan()`, `tilt()` and
+`rotate()` call. `turn()` also re-derives the normals from the rotation it leaves, so the
+independence Alternative 3 leans on now holds only for `rotation()`.
+
 ## Context
 
 `Profile::lookat()` built the basis as a `mat4x4` whose columns are the three normals, cast it

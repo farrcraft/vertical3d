@@ -115,13 +115,7 @@ int run(int argc, char *argv[]) {
     if (!silent) {
         std::cout << "Reading: " << infile << "\n";
     }
-    try {
-        image = factory.read(infile);
-    }
-    catch (std::string & e) {
-        std::cout << "error reading image! - " << e << "\n";
-        exit(EXIT_FAILURE);
-    }
+    image = factory.read(infile);
     if (!image) {
         std::cout << "error reading file!" << "\n";
         exit(EXIT_FAILURE);

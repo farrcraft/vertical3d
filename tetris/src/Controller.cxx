@@ -53,7 +53,7 @@ bool Controller::initialize() {
     renderer_->ui(vgui_);
 
     // register game commands
-    dispatcher_->sink<v3d::event::Event>().connect<&Controller::handleEvent>(*this);
+    events_ = dispatcher_->sink<v3d::event::Event>().connect<&Controller::handleEvent>(*this);
 
     // set the scene size according to the window canvas
     renderer_->resize(window_->width(), window_->height());

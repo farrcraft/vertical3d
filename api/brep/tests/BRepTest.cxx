@@ -5,6 +5,7 @@
 
 #include <api/brep/BRep.h>
 
+#include <type_traits>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -128,28 +129,15 @@ BOOST_AUTO_TEST_CASE(brep_shared_vertex_test) {
     BOOST_CHECK_EQUAL((bound.max() == glm::vec3(1.0f, 1.0f, 2.0f)), true);
 }
 
-BOOST_AUTO_TEST_CASE(brep_split_edge_test) {
-    v3d::brep::BRep mesh;
-    mesh.addFace(quad(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-
-    // splitting an edge adds the point as a vertex and a half edge that carries it,
-    // spliced into the ring after the edge it split
-    uint64_t next = mesh.edge(0)->next();
-    mesh.splitEdge(0, glm::vec3(0.5f, 0.0f, 0.0f));
-    BOOST_CHECK_EQUAL(mesh.vertexCount(), 5u);
-    BOOST_CHECK_EQUAL(mesh.edgeCount(), 5u);
-    BOOST_CHECK_EQUAL(mesh.edge(0)->next(), 4u);
-    BOOST_CHECK_EQUAL(mesh.edge(4)->next(), next);
-    BOOST_CHECK_EQUAL(mesh.edge(4)->vertex(), 4u);
-    BOOST_CHECK_EQUAL((mesh.vertex(4)->point() == glm::vec3(0.5f, 0.0f, 0.0f)), true);
-}
-
 BOOST_AUTO_TEST_CASE(brep_identity_test) {
     v3d::brep::BRep first;
     v3d::brep::BRep second;
 
     // a mesh is a dag::Node, which is what gives the selection model something to key on
     BOOST_CHECK(first.id() != second.id());
+    // which a copy would share with its original
+    static_assert(!std::is_copy_constructible_v<v3d::brep::BRep>);
+    static_assert(!std::is_copy_assignable_v<v3d::brep::BRep>);
 
     // and a dag::Transform, so its geometry is described about its own origin
     first.translation(glm::vec3(4.0f, 0.0f, 0.0f));

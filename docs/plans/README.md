@@ -9,7 +9,10 @@ every phase is closed it moves to [completed/](completed/), and any open item it
 moves to [TODO.md](../TODO.md). The plan itself stays, because the reasoning behind an ordering
 outlives the schedule.
 
-No plan is open.
+[ApiDesignDebt.md](ApiDesignDebt.md) is open, drafted 2026-10-04. It works off
+[the api/ design review](../audits/ApiDesignReview.md): twelve defects first, then the asset↔audio
+cycle and link visibility, the engine's lifecycle, and the rules the review found written in
+several places by hand.
 
 [completed/OfflineRenderingPhases4To6.md](completed/OfflineRenderingPhases4To6.md) was drafted and
 closed on 2026-10-04, taking up the last three phases of [the offline rendering

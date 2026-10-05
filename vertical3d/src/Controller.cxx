@@ -87,9 +87,9 @@ bool Controller::initialize() {
     transformTool_ = boost::make_shared<TransformTool>(scene_, logger_);
     transformTool_->commands(commands_);
 
-    dispatcher_->sink<v3d::event::Event>().connect<&Controller::handleEvent>(*this);
-    dispatcher_->sink<v3d::event::kind::MouseMotion>().connect<&Controller::handleMotion>(*this);
-    dispatcher_->sink<v3d::event::kind::WindowResize>().connect<&Controller::handleResize>(*this);
+    events_ = dispatcher_->sink<v3d::event::Event>().connect<&Controller::handleEvent>(*this);
+    motion_ = dispatcher_->sink<v3d::event::kind::MouseMotion>().connect<&Controller::handleMotion>(*this);
+    resize_ = dispatcher_->sink<v3d::event::kind::WindowResize>().connect<&Controller::handleResize>(*this);
 
     renderer_ = boost::make_shared<Renderer>(window(), logger_, assetManager_, &registry_);
     renderer_->views(views_);

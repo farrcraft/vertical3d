@@ -71,8 +71,8 @@ bool Engine::initialize() {
 
     // one sink for every mapped event: a device event is resolved to an action by the
     // bindings before it gets here, so nothing subscribes to a key
-    dispatcher_->sink<v3d::event::Event>().connect<&Engine::handleEvent>(*this);
-    dispatcher_->sink<v3d::event::kind::MouseMotion>().connect<&Engine::handleMotion>(*this);
+    events_ = dispatcher_->sink<v3d::event::Event>().connect<&Engine::handleEvent>(*this);
+    motion_ = dispatcher_->sink<v3d::event::kind::MouseMotion>().connect<&Engine::handleMotion>(*this);
 
     return true;
 }

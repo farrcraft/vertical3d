@@ -5,12 +5,11 @@
 
 #include "Jpeg.h"
 
-#include <jpeglib.h>
+#include <api/image/JpegError.h>
 
 #include <cstdio>
-#include <fstream>
-#include <iostream>
 #include <string>
+#include <vector>
 
 namespace v3d::image::writer {
 /**
@@ -24,28 +23,48 @@ bool Jpeg::write(std::string_view filename, const boost::shared_ptr<Image>& img)
     if (!img) {
         return false;
     }
-
-    struct jpeg_compress_struct cinfo;
-    struct jpeg_error_mgr jerr;
+    const std::string path(filename);
 
     // open the file
     FILE* fp;
-    errno_t err = fopen_s(&fp, static_cast<std::string>(filename).c_str(), "wb");
+    errno_t err = fopen_s(&fp, path.c_str(), "wb");
     if (err != 0) {
         return false;
     }
 
-    // Initialize the JPEG compression object with default error handling.
-    cinfo.err = jpeg_std_error(&jerr);
+    struct jpeg_compress_struct cinfo;
+    JpegError jerr;
+    cinfo.err = jpeg_std_error(&jerr.pub);
+    jerr.pub.error_exit = jpegErrorExit;
+
+    // a jpeg has no alpha, so an RGBA image goes out a row at a time with it dropped. The
+    // row is declared here because longjmp destroys nothing constructed after the setjmp
+    const bool alpha = img->format() == Image::Format::RGBA;
+    std::vector<unsigned char> row(alpha ? static_cast<std::size_t>(img->width()) * 3 : 0);
+
+    // C4611 flags the mix of setjmp with C++ object destruction, which the declarations
+    // above satisfy: no owning object is constructed after this point.
+#pragma warning(push)
+#pragma warning(disable : 4611)
+    if (setjmp(jerr.setjmp_buffer)) {
+        jpeg_destroy_compress(&cinfo);
+        fclose(fp);
+        // what was written is a fragment of a jpeg, which is worse than no file
+        std::remove(path.c_str());
+        logger_->get()->error("JpegWriter::write - the encoder refused {}", path);
+        return false;
+    }
+#pragma warning(pop)
+
     jpeg_create_compress(&cinfo);
 
-    // Initialize JPEG parameters. The colour space has to be set before jpeg_set_defaults(),
-    // which reads it to decide the rest - including how many components a scanline has.
+    // The colour space has to be set before jpeg_set_defaults(), which reads it to decide
+    // the rest - including how many components a scanline has.
     cinfo.in_color_space = img->format() == Image::Format::Grey ? JCS_GRAYSCALE : JCS_RGB;
 
     jpeg_set_defaults(&cinfo);
 
-    cinfo.input_components = static_cast<int>(img->format());
+    cinfo.input_components = alpha ? 3 : static_cast<int>(img->format());
     cinfo.data_precision = img->bpp() / static_cast<int>(img->format());
     cinfo.image_width = img->width();
     cinfo.image_height = img->height();
@@ -53,23 +72,26 @@ bool Jpeg::write(std::string_view filename, const boost::shared_ptr<Image>& img)
     // Now that we know input colorspace, fix colorspace-dependent defaults
     jpeg_default_colorspace(&cinfo);
 
-    // Specify data destination for compression
     jpeg_stdio_dest(&cinfo, fp);
-
-    // Start compressor
     jpeg_start_compress(&cinfo, TRUE);
 
-    // Process data. Both the file and Image are top down, so the scanlines go out in the
-    // order they are in.
+    // Both the file and Image are top down, so the scanlines go out in the order they are in.
     unsigned char* data = img->data();
-    unsigned int num_scanlines = 1;
-    unsigned int bytes_width = img->width() * static_cast<int>(img->format());
+    const std::size_t bytes_width = static_cast<std::size_t>(img->width()) * static_cast<int>(img->format());
     while (cinfo.next_scanline < cinfo.image_height) {
-        jpeg_write_scanlines(&cinfo, &data, num_scanlines);
+        JSAMPROW line = data;
+        if (alpha) {
+            for (unsigned int column = 0; column < img->width(); ++column) {
+                row[column * 3 + 0] = data[column * 4 + 0];
+                row[column * 3 + 1] = data[column * 4 + 1];
+                row[column * 3 + 2] = data[column * 4 + 2];
+            }
+            line = row.data();
+        }
+        jpeg_write_scanlines(&cinfo, &line, 1);
         data += bytes_width;
     }
 
-    // Finish compression and release memory
     jpeg_finish_compress(&cinfo);
     jpeg_destroy_compress(&cinfo);
 

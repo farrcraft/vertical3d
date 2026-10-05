@@ -198,3 +198,30 @@ BOOST_AUTO_TEST_CASE(imagereader_rejects_bytes_that_are_not_the_format) {
     // and a png cut short is refused rather than read as far as it goes
     BOOST_CHECK(!factory.read(png.data(), 16, "png"));
 }
+
+BOOST_AUTO_TEST_CASE(imagereader_bmp_refuses_rather_than_throws) {
+    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    v3d::image::Factory factory(logger);
+
+    // a depth the reader has no conversion for
+    BOOST_CHECK(!factory.read("data/2x2x32_green.bmp"));
+
+    // and a file cut short, at each of the places a length is checked
+    const std::vector<unsigned char> bmp = bytes("data/2x2x24_red.bmp");
+    BOOST_REQUIRE(bmp.size() > 60);
+    BOOST_CHECK(!factory.read(bmp.data(), 8, "bmp"));
+    BOOST_CHECK(!factory.read(bmp.data(), 30, "bmp"));
+    BOOST_CHECK(!factory.read(bmp.data(), bmp.size() - 4, "bmp"));
+    BOOST_CHECK(factory.read(bmp.data(), bmp.size(), "bmp"));
+}
+
+BOOST_AUTO_TEST_CASE(imagereader_format_is_the_whole_extension) {
+    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    v3d::image::Factory factory(logger);
+
+    // a name too short to have the three characters the format used to be cut from
+    BOOST_CHECK(!factory.read("a"));
+    BOOST_CHECK(!factory.read(""));
+    // and a name with no extension at all
+    BOOST_CHECK(!factory.read("data/2x2x24_red"));
+}

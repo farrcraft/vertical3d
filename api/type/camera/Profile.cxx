@@ -178,6 +178,22 @@ void Profile::rotation(const glm::quat& rotation) {
     basisValid_ = false;
 }
 
+void Profile::turn(const glm::quat& local) {
+    rotation_ = glm::normalize(rotation_ * local);
+    basisValid_ = false;
+
+    // the rotation's columns are the right handed basis lookat() builds, so the normals
+    // come out of it the way lookat() hands them out
+    const glm::mat3 m = glm::mat3_cast(rotation_);
+    right_ = hand_ == Hand::DirectionCrossUp ? -m[0] : m[0];
+    up_ = m[1];
+    direction_ = m[2];
+}
+
+glm::mat4x4 Profile::orientation() const {
+    return basisValid_ ? basis_ : glm::mat4_cast(rotation_);
+}
+
 void Profile::size(unsigned int width, unsigned int height) {
     size_[0] = width;
     size_[1] = height;

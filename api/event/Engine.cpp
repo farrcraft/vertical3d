@@ -13,7 +13,7 @@
 namespace v3d::event {
 
 Engine::Engine(const boost::shared_ptr<entt::dispatcher>& dispatcher) : dispatcher_(dispatcher) {
-    dispatcher->sink<Event>().connect<&Engine::handleSourceEvent>(*this);
+    source_ = dispatcher->sink<Event>().connect<&Engine::handleSourceEvent>(*this);
 }
 
 /**

@@ -110,6 +110,20 @@ class Profile {
         *	@param rotation the new rotation value.
         */
         void rotation(const glm::quat & rotation);
+        /**
+        *	Turn the camera by a rotation composed onto the one it has, in its own axes.
+        *	Unlike rotation(), this keeps the normals in step: they are re-derived from the
+        *	rotation it leaves, so a dolly or a truck after a turn moves along the axes the
+        *	view now has.
+        *	@param local the rotation to compose, which need not be normalized.
+        */
+        void turn(const glm::quat & local);
+        /**
+        *	The rotation as a matrix, which Camera::createView() transposes into the view.
+        *	It is the basis lookat() built while that is still the rotation in force, and the
+        *	rotation cast back to a matrix once anything else has set it.
+        */
+        glm::mat4x4 orientation() const;
         void size(unsigned int width, unsigned int height);
         /**
         *	Choose which basis lookat() builds. It changes nothing until lookat() runs,
@@ -139,9 +153,7 @@ class Profile {
         */
         Profile & operator = (const Profile & p);
 
- protected:
-        friend class Camera;
-
+ private:
         typedef enum CameraOptions {
             OPTION_ORTHOGRAPHIC = (1 << 1),
             OPTION_ADAPTIVE_PROJECTION = (1 << 2),
@@ -168,11 +180,9 @@ class Profile {
         *	The basis matrix lookat() built, kept so that createView() does not rebuild it
         *	out of the quaternion - a round trip that costs about 2e-6 of a view element.
         *
-        *	**Every writer of rotation_ has to clear this**, because a rotation set any
-        *	other way is not the one this matrix carries. There are three - rotation(),
-        *	Camera::pan() and Camera::tilt() - and a fourth added later has to join them.
-        *	When it is clear, createView() rebuilds from the quaternion as it always did,
-        *	which is what keeps a directly rotated camera working.
+        *	rotation(), turn() and lookat() are the only writers of rotation_, and each sets
+        *	this. While it is clear, orientation() rebuilds from the quaternion, which is
+        *	what keeps a directly rotated camera working.
         */
         glm::mat4x4 basis_;
         bool basisValid_;

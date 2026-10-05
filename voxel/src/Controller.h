@@ -91,4 +91,7 @@ class Controller final : public v3d::engine::Engine {
         boost::shared_ptr<v3d::ui::Engine> vgui_;
         boost::shared_ptr<v3d::ui::shell::GameMenu> menu_;
         bool debug_;
+    // the dispatcher holds a delegate to this object; these let it go when the object does
+    entt::scoped_connection events_;
+    entt::scoped_connection motion_;
 };

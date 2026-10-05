@@ -221,6 +221,10 @@ class Controller final : public v3d::engine::Engine {
     // whether the ui took the press, so that the release that ends it does not reach
     // the tools that never saw the press
     bool uiGrab_;
+    // the dispatcher holds a delegate to this object; these let it go when the object does
+    entt::scoped_connection events_;
+    entt::scoped_connection motion_;
+    entt::scoped_connection resize_;
 };
 
 };  // namespace v3d::editor

@@ -11,11 +11,8 @@
 
 #include <cstddef>
 #include <cstring>
-#include <sstream>
 #include <string>
 #include <vector>
-// needed for runtime_error
-#include <stdexcept>
 
 #include <boost/make_shared.hpp>
 
@@ -133,7 +130,7 @@ boost::shared_ptr<Image> Bmp::read(const unsigned char* encoded, std::size_t len
     // read file header
     if (length - at < sizeof(bmp_file_header)) {
         logger_->get()->error("BMPReader::read - error reading bmp file header!");
-        throw std::runtime_error("error reading bmp file header!");
+        return empty_ptr;
     }
     memcpy(&fheader, encoded + at, sizeof(bmp_file_header));
     at += sizeof(bmp_file_header);
@@ -150,10 +147,17 @@ boost::shared_ptr<Image> Bmp::read(const unsigned char* encoded, std::size_t len
     // read info header
     if (length - at < sizeof(bmp_info_header)) {
         logger_->get()->error("BMPReader::read - error reading bmp info header!");
-        throw std::runtime_error("error reading bmp info header!");
+        return empty_ptr;
     }
     memcpy(&iheader, encoded + at, sizeof(bmp_info_header));
     at += sizeof(bmp_info_header);
+
+    // checked before anything is sized from it: the row arithmetic below assumes a whole
+    // number of bytes a pixel and a conversion that knows the layout
+    if (iheader.bits_ != 8 && iheader.bits_ != 16 && iheader.bits_ != 24) {
+        logger_->get()->error("BMPReader::read - {} bit bmps are not supported", iheader.bits_);
+        return empty_ptr;
+    }
 
     int num_colors = 1 << iheader.bits_;
     logHeaders(logger_, fheader, iheader, num_colors);
@@ -162,7 +166,8 @@ boost::shared_ptr<Image> Bmp::read(const unsigned char* encoded, std::size_t len
     if (iheader.bits_ == 8) {  // load 8 bit color palette
         const std::size_t table = sizeof(bmp_rgb_quad) * static_cast<std::size_t>(num_colors);
         if (length - at < table) {
-            throw std::runtime_error("error reading bmp colors!");
+            logger_->get()->error("BMPReader::read - error reading bmp colors!");
+            return empty_ptr;
         }
         colors.resize(static_cast<std::size_t>(num_colors));
         memcpy(colors.data(), encoded + at, table);
@@ -192,7 +197,8 @@ boost::shared_ptr<Image> Bmp::read(const unsigned char* encoded, std::size_t len
 
     // read image data
     if (length - at < storedSize) {
-        throw std::runtime_error("error reading bmp data!");
+        logger_->get()->error("BMPReader::read - error reading bmp data!");
+        return empty_ptr;
     }
     memcpy(temp, encoded + at, storedSize);
 
@@ -206,12 +212,8 @@ boost::shared_ptr<Image> Bmp::read(const unsigned char* encoded, std::size_t len
         convertPalette(temp, data, colors.data(), size, pad, offset, iheader.height_ > 0);
     } else if (iheader.bits_ == 16) {
         convert16(temp, data, size, pad, offset);
-    } else if (iheader.bits_ == 24) {
-        convert24(temp, data, rows, pad, width, iheader.width_);
     } else {
-        std::stringstream ss;
-        ss << iheader.bits_;
-        throw std::runtime_error("unrecognized bmp bits - " + ss.str() + "!");
+        convert24(temp, data, rows, pad, width, iheader.width_);
     }
     return image;
 }

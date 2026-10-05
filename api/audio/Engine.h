@@ -46,7 +46,13 @@ typedef uint32_t Voice;
 class Engine final {
  public:
     Engine(const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<entt::dispatcher>& dispatcher);
-    ~Engine() = default;
+    /**
+     * Shuts down, so the device, the tracks and the dispatcher's delegate to this engine
+     * go with it whether or not the owner called shutdown() itself.
+     **/
+    ~Engine();
+    Engine(const Engine&) = delete;
+    Engine& operator=(const Engine&) = delete;
 
     /**
      * What turns the source a sound config names into a loaded clip, per ADR-0021.
@@ -168,6 +174,8 @@ class Engine final {
     std::map<Voice, Playing> voices_;
     std::vector<MIX_Track*> free_;   /**< reaped tracks, waiting to be played again **/
     Voice nextVoice_ = 1;            /**< never reused, so a stale handle stays stale **/
+    // after dispatcher_, so it disconnects before the dispatcher it points into can go
+    entt::scoped_connection sound_;
 };
 
 };  // namespace v3d::audio

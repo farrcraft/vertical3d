@@ -4,6 +4,11 @@
 **Status**: accepted
 **Deciders**: Joshua Farr
 
+Corrected 2026-10-04 by step 3 of [ApiDesignDebt](../plans/ApiDesignDebt.md). The con below that
+a copied `BRep` gets a second id was never true: a copy shared its original's id, which would have
+aliased the two in the editor's scene and selection. `dag::Node` cannot be copied now, so neither
+can a `BRep`.
+
 ## Context
 
 The editor draws four viewports of a construction grid and nothing else, because there is
@@ -46,7 +51,7 @@ id; the views own their cameras and `CameraProfiles` owns the table those are bu
   the consumer they were written for. One object is passed around: a function that has a
   mesh has its id and its placement, and cannot be handed one without the other.
 - **Cons**: `api/brep`, a geometry library, now links a scene-graph one. Multiple
-  inheritance, and a `BRep` that is copied duplicates the geometry under a second id.
+  inheritance, and a `BRep` cannot be copied, since a copy would share its id.
 - **Why not**: n/a — chosen.
 
 ### Alternative 2: Keep `BRep` pure geometry, wrap it in an editor-side scene node

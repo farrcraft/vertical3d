@@ -123,7 +123,7 @@ bool::PongEngine::initialize() {
     renderer_->ui(vgui_);
 
     // register game commands
-    dispatcher_->sink<v3d::event::Event>().connect<&PongEngine::handleEvent>(*this);
+    events_ = dispatcher_->sink<v3d::event::Event>().connect<&PongEngine::handleEvent>(*this);
 
     // reset scene & game state
     scene_->reset();

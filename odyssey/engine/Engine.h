@@ -101,6 +101,9 @@ class Engine final : public v3d::engine::Engine {
     glm::vec2 cursor_{0.0f, 0.0f};
     boost::shared_ptr<odyssey::render::Renderer> renderer_;
     boost::shared_ptr<odyssey::system::Movement> movementSystem_;
+    // the dispatcher holds a delegate to this object; these let it go when the object does
+    entt::scoped_connection events_;
+    entt::scoped_connection motion_;
 };
 
 };  // namespace odyssey::engine

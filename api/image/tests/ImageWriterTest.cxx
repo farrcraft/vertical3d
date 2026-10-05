@@ -334,3 +334,31 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_grey_test, OutputDirectory) {
     BOOST_CHECK_EQUAL(decoded->width(), side);
     BOOST_CHECK_EQUAL(decoded->height(), side);
 }
+
+BOOST_FIXTURE_TEST_CASE(imagewriter_jpeg_takes_any_spelling_and_drops_alpha, OutputDirectory) {
+    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    v3d::image::Factory factory(logger);
+
+    // red at half opacity: a jpeg has nowhere to put the alpha, and libjpeg's default
+    // handler ended the process rather than refuse four components under JCS_RGB
+    boost::shared_ptr<v3d::image::Image> rgba = boost::make_shared<v3d::image::Image>(2, 2, 32);
+    for (unsigned int pixel = 0; pixel < 4; ++pixel) {
+        (*rgba)[pixel * 4 + 0] = 0xff;
+        (*rgba)[pixel * 4 + 1] = 0;
+        (*rgba)[pixel * 4 + 2] = 0;
+        (*rgba)[pixel * 4 + 3] = 0x80;
+    }
+
+    const char* names[] = { "data_out/test_rgba.jpg", "data_out/test_rgba.JPEG" };
+    for (const char* filename : names) {
+        BOOST_TEST_CONTEXT(filename) {
+            BOOST_REQUIRE_EQUAL(factory.write(filename, rgba), true);
+            boost::shared_ptr<v3d::image::Image> read = factory.read(filename);
+            BOOST_REQUIRE(read != nullptr);
+            BOOST_CHECK_EQUAL(read->bpp(), 24u);
+            BOOST_CHECK_GE((*read)[0], 0xfd);
+            BOOST_CHECK_LE((*read)[1], 2);
+            BOOST_CHECK_LE((*read)[2], 2);
+        }
+    }
+}
