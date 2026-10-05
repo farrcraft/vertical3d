@@ -219,6 +219,11 @@ class Engine {
     const boost::json::object* document(v3d::config::Type type) const;
 
     /**
+     * The same for a type the app names itself - one the api has no enum for.
+     **/
+    const boost::json::object* document(std::string_view type) const;
+
+    /**
      * Time what happens until the scope ends, as a span the statistics report by name - the
      * one thing an app writes into what the loop measures.
      **/

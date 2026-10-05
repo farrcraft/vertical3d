@@ -67,7 +67,11 @@ std::string userPath(const std::string& org, const std::string& app);
  **/
 template <typename T, typename... Args>
 int run(const char* executable, const std::string& name, Args&&... args) {
-    T engine(appPath(executable), std::forward<Args>(args)...);
+    const std::string path = appPath(executable);
+    // beside the executable, whatever directory it was started from - the log is the only
+    // place a windowed app says what went wrong
+    v3d::log::Logger::open(path + "v3d.log");
+    T engine(path, std::forward<Args>(args)...);
 
     // the renderer reports what it cannot do by throwing, and an uncaught exception on
     // windows is an abort dialog with no message in it. A windowed app has no console,

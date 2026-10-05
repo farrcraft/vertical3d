@@ -19,14 +19,6 @@
 
 namespace odyssey::engine {
 
-namespace {
-/**
- * The board, read through the asset manager like any other file the app names.
- **/
-const char* const mapName = "map.json";
-
-};  // namespace
-
 /**
  **/
 Engine::Engine(const std::string& appPath) :
@@ -39,7 +31,8 @@ bool Engine::start() {
     window()->caption("Odyssey");
 
     map_ = boost::make_shared<odyssey::tile::Map>(logger());
-    if (!map_->load(assets()->load<v3d::asset::kind::Json>(mapName))) {
+    // the board is a document of the app's own, which config.json names like the rest
+    if (!map_->load(config()->get("map"))) {
         // the map is the board and the collision rules both, so there is no sensible game
         // without one - the loader has already said what it could not read
         return false;

@@ -7,6 +7,8 @@
 
 #include <spdlog/spdlog.h>
 
+#include <cstdio>
+#include <filesystem>
 #include <memory>
 #include <string>
 
@@ -54,12 +56,19 @@ BOOST_AUTO_TEST_CASE(logger_writes_at_every_level_test) {
 }
 
 /**
- * get() hands back the reference the wrapper holds, so a caller that reseats it - which is
- * what a test double would do - is seen by the next call rather than by a copy.
+ * open() is where the log goes from then on, which is how run() puts it beside the executable
+ * rather than wherever the app was started from.
  **/
-BOOST_AUTO_TEST_CASE(logger_get_is_a_reference_test) {
-    v3d::log::Logger logger;
-    std::shared_ptr<spdlog::logger>& held = logger.get();
+BOOST_AUTO_TEST_CASE(logger_open_moves_the_log_test) {
+    const std::string path = "logger_open_test.log";
+    std::remove(path.c_str());
 
-    BOOST_TEST(held.get() == logger.get().get());
+    v3d::log::Logger::open(path);
+    v3d::log::Logger logger;
+    logger.get()->info("opened");
+    logger.get()->flush();
+    BOOST_TEST(std::filesystem::exists(path));
+
+    // back to the default for whatever runs after
+    v3d::log::Logger::open("v3d.log");
 }

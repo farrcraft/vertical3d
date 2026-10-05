@@ -83,8 +83,18 @@ BOOST_AUTO_TEST_CASE(config_entry_missing_file_test) {
     BOOST_TEST(!loads("missing-file-key"));
 }
 
-BOOST_AUTO_TEST_CASE(config_unknown_type_test) {
-    BOOST_TEST(!loads("unknown-type"));
+/**
+ * A type the api has no name for is an app's own document, filed like the rest for the app to
+ * ask for by name - not a reason to refuse the whole config.
+ **/
+BOOST_AUTO_TEST_CASE(config_app_type_test) {
+    v3d::config::Config config(boost::make_shared<v3d::log::Logger>());
+    BOOST_REQUIRE(config.load(assets("app-type")));
+
+    auto menu = config.get("menu");
+    BOOST_REQUIRE(menu);
+    BOOST_TEST(menu->document().at("items").as_array().size() == 2u);
+    BOOST_TEST(!config.get("nothing"));
 }
 
 BOOST_AUTO_TEST_CASE(config_named_file_absent_test) {

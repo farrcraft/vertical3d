@@ -52,10 +52,9 @@ bool Config::load(const boost::shared_ptr<v3d::asset::Manager>& assetManager) {
         }
         std::string typeName = boost::json::value_to<std::string>(entry.at("type"));
         std::string fileName = boost::json::value_to<std::string>(entry.at("file"));
-        Type type = stringToType(typeName);
-        if (type == Type::Unknown) {
-            logger_->get()->error("Unknown config type: {}", typeName);
-            return false;
+        // a type the api does not read is the app's, and is filed for it to ask for by name
+        if (stringToType(typeName) == Type::Unknown) {
+            logger_->get()->debug("Config names a {} document, which the api does not read", typeName);
         }
         // a file that is missing, is not json, or names an extension nothing loads is no
         // asset, and the manager has logged which
@@ -64,7 +63,7 @@ bool Config::load(const boost::shared_ptr<v3d::asset::Manager>& assetManager) {
             logger_->get()->error("Config file could not be loaded: {}", fileName);
             return false;
         }
-        configs_[type] = asset;
+        configs_[typeName] = asset;
     }
     return true;
 }
@@ -72,9 +71,15 @@ bool Config::load(const boost::shared_ptr<v3d::asset::Manager>& assetManager) {
 /**
  **/
 boost::shared_ptr<v3d::asset::kind::Json> Config::get(Type configType) {
-    auto entry = configs_.find(configType);
+    return get(typeName(configType));
+}
+
+/**
+ **/
+boost::shared_ptr<v3d::asset::kind::Json> Config::get(std::string_view type) {
+    auto entry = configs_.find(std::string(type));
     if (entry == configs_.end()) {
-        return nullptr;
+        return boost::shared_ptr<v3d::asset::kind::Json>();
     }
     return entry->second;
 }

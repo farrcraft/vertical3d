@@ -159,6 +159,12 @@ Features Engine::features() const {
 /**
  **/
 const boost::json::object* Engine::document(v3d::config::Type type) const {
+    return document(v3d::config::typeName(type));
+}
+
+/**
+ **/
+const boost::json::object* Engine::document(std::string_view type) const {
     if (!config_) {
         return nullptr;
     }
