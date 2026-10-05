@@ -9,6 +9,7 @@
 #include <api/engine/Engine.h>
 #include <api/engine/Settings.h>
 #include <api/event/Event.h>
+#include <api/event/Source.h>
 #include <api/ui/Engine.h>
 #include <api/ui/shell/GameMenu.h>
 
@@ -45,6 +46,7 @@ class PongEngine final : public v3d::engine::Engine {
     bool release() override;
 
     void handleEvent(const v3d::event::Event& event);
+    void handleSource(const v3d::event::Source& source);
 
  private:
     /**
@@ -74,4 +76,5 @@ class PongEngine final : public v3d::engine::Engine {
     boost::shared_ptr<v3d::ui::shell::GameMenu> menu_;
     // the dispatcher holds a delegate to this object; these let it go when the object does
     entt::scoped_connection events_;
+    entt::scoped_connection sources_;
 };

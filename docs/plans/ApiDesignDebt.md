@@ -366,6 +366,12 @@ assigning `logger_` in its constructor.
 
 E4.
 
+**Closed.** A key is an `event::Source`, sent only through `event::publish()`, which hands it to
+the event engine for mapping once every listener has heard it and none consumed it. The first shape
+queued the commands on the dispatcher, and the test written for pong's capture showed why that
+fails: a dispatcher calls listeners last-connected first. ADR-0081 records both. No listener
+filters by `Type` now, and ADR-0017 is amended.
+
 Write ADR-0081, amending ADR-0017. Raw input and mapped commands become distinct types on
 distinct sinks, so a listener cannot take both by accident, and the mapper delivers a command
 after its source has been fully published rather than inside the publish. The editor's

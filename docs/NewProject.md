@@ -207,9 +207,9 @@ rather than the settings themselves.
 }
 ```
 
-The recognised types are `window`, `binding`, `ui` and `sound`. Every lookup but one is guarded
-and logs a `false` when it fails. **The window is the exception**: `initialize` reads `width`
-and `height` with `at()`, so a `window.json` naming neither throws rather than falling back.
+The recognised types are `window`, `binding`, `ui` and `sound`. Every lookup is guarded and logs
+a `false` when it fails, so a document startup does not understand stops it with a line in the
+log.
 
 ## 6. Build and run
 

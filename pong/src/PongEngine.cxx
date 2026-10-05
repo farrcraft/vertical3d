@@ -102,6 +102,7 @@ bool PongEngine::start() {
 
     // register game commands
     events_ = dispatcher()->sink<v3d::event::Event>().connect<&PongEngine::handleEvent>(*this);
+    sources_ = dispatcher()->sink<v3d::event::Source>().connect<&PongEngine::handleSource>(*this);
 
     // reset scene & game state
     scene_->reset();
@@ -229,16 +230,22 @@ void PongEngine::applyStoredBindings() {
 
 /**
  **/
-void PongEngine::handleEvent(const v3d::event::Event& event) {
-    // a menu item capturing a key wants the key rather than what it is bound to, so a
-    // source event goes to the capture and no further while one is open
-    if (event.type() == v3d::event::Type::Source && menu_ && menu_->capturing()) {
-        if (event.state() == v3d::event::State::Pressed) {
-            menu_->capture(std::string(event.name()));
-        }
+void PongEngine::handleSource(const v3d::event::Source& source) {
+    if (!menu_ || !menu_->capturing() || source.state() != v3d::event::State::Pressed) {
         return;
     }
+    // escape is left to what it is bound to, which steps back out of the menu and abandons
+    // the capture - so it is never captured as a paddle key
+    if (source.name() == "escape") {
+        return;
+    }
+    // a menu item capturing a key wants the key rather than what it is bound to, so it is
+    // consumed and its bindings make nothing of it - ADR-0081
+    menu_->capture(std::string(source.name()));
+    source.consume();
+}
 
+void PongEngine::handleEvent(const v3d::event::Event& event) {
     if (event.context()->name() == "pong") {
         handlePlayEvent(event);
         return;

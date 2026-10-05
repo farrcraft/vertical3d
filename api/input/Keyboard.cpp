@@ -5,6 +5,7 @@
 
 #include "Keyboard.h"
 
+#include <api/event/Source.h>
 #include <api/event/kind/KeyDown.h>
 #include <api/event/kind/KeyUp.h>
 #include <api/event/kind/TextInput.h>
@@ -185,10 +186,8 @@ bool Keyboard::handleEvent(const SDL_Event& event) {
     // trigger an event source event so any mappers can propogate any mapped events.
     // the edge is carried as the event's state, not as its data - data is the binding's
     // parameter, and the two would otherwise overwrite each other.
-    v3d::event::Event source(name, context_);
-    source.type(v3d::event::Type::Source);
-    source.state(pressed ? v3d::event::State::Pressed : v3d::event::State::Released);
-    dispatcher_->trigger(source);
+    v3d::event::publish(*dispatcher_, v3d::event::Source(name, context_,
+        pressed ? v3d::event::State::Pressed : v3d::event::State::Released));
 
     return true;
 }

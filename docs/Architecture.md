@@ -223,8 +223,11 @@ and is what lets an app host a ui toolkit it did not write.
 
 **Three places, but the bindings are not the only way to hear about input.** A device
 publishes its `event::kind::*` — `KeyDown`, `MouseButton`, `MouseMotion`, `MouseWheel` — through the
-dispatcher whichever mappers exist, and the mapper subscribes to a separate source event
-alongside them. So an app subscribes to the abstracted event directly and adopts no
+dispatcher whichever mappers exist, and alongside them an `event::Source` for the key or button,
+through `event::publish()`. Every listener on `sink<Source>` hears the key, and then the event
+engine sends the commands it is bound to on `sink<Event>` unless a listener consumed it - so a
+command listener hears nothing but commands, and hears them after the key
+([ADR-0081](adr/0081-a-key-and-a-command-are-different-events.md)). So an app subscribes to the abstracted event directly and adopts no
 `mappings.json`, which is what voxel and the editor already do for motion and resize; a
 binding document is a convenience, not the price of admission. What the bindings buy is a
 command named in config rather than in a switch.

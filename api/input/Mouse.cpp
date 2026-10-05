@@ -5,6 +5,7 @@
 
 #include "Mouse.h"
 
+#include <api/event/Source.h>
 #include <api/event/kind/MouseButton.h>
 #include <api/event/kind/MouseMotion.h>
 #include <api/event/kind/MouseWheel.h>
@@ -91,10 +92,8 @@ bool Mouse::handleEvent(const SDL_Event& event) {
 
     // trigger a source event so any mappers can propagate a mapped event, the same way
     // the keyboard does. The edge is the event's state, not its data.
-    v3d::event::Event source(buttonName, context_);
-    source.type(v3d::event::Type::Source);
-    source.state(pressed ? v3d::event::State::Pressed : v3d::event::State::Released);
-    dispatcher_->trigger(source);
+    v3d::event::publish(*dispatcher_, v3d::event::Source(buttonName, context_,
+        pressed ? v3d::event::State::Pressed : v3d::event::State::Released));
 
     return true;
 }

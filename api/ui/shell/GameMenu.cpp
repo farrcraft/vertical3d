@@ -30,7 +30,7 @@ GameMenu::GameMenu(const boost::shared_ptr<Engine>& engine, const Suspend& suspe
 /**
  **/
 void GameMenu::command(const v3d::event::Event& event) {
-    if (event.type() != v3d::event::Type::Destination || !event.context() || event.context()->name() != "ui") {
+    if (!event.context() || event.context()->name() != "ui") {
         return;
     }
     if (event.name() == toggleCommand) {

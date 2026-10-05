@@ -4,6 +4,10 @@
 **Status**: accepted
 **Deciders**: Joshua Farr
 
+Amended by [ADR-0081](0081-a-key-and-a-command-are-different-events.md): a key is an
+`event::Source` on a sink of its own, so a command listener hears commands only and the guard
+this record's consequences describe is gone.
+
 ## Context
 
 The editor answers to twenty-odd things a user can ask for: make a cube, change the select

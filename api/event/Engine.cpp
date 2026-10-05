@@ -13,7 +13,7 @@
 namespace v3d::event {
 
 Engine::Engine(const boost::shared_ptr<entt::dispatcher>& dispatcher) : dispatcher_(dispatcher) {
-    source_ = dispatcher->sink<Event>().connect<&Engine::handleSourceEvent>(*this);
+    source_ = dispatcher->sink<Unclaimed>().connect<&Engine::handleSourceEvent>(*this);
 }
 
 /**
@@ -25,10 +25,8 @@ void Engine::addMapper(const boost::shared_ptr<Mapper>& mapper) {
 
 /**
  **/
-void Engine::handleSourceEvent(const Event& source) {
-    if (source.type() != Type::Source) {
-        return;
-    }
+void Engine::handleSourceEvent(const Unclaimed& unclaimed) {
+    const Source& source = *unclaimed.source;
     for (auto it = mappers_.begin(); it != mappers_.end(); it++) {
         std::vector<Event> destinations = it->second->destinations(source);
         for (auto mapped = destinations.begin(); mapped != destinations.end(); ++mapped) {

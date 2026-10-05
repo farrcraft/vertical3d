@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/event/Source.h>
 #include <api/event/kind/KeyDown.h>
 #include <api/event/kind/KeyUp.h>
 #include <api/input/Keyboard.h>
@@ -30,10 +31,8 @@ struct Recorder {
         up_.push_back(std::string(event.name()));
     }
 
-    void sourceEvent(const v3d::event::Event& event) {
-        if (event.type() == v3d::event::Type::Source) {
-            source_.push_back(event);
-        }
+    void sourceEvent(const v3d::event::Source& event) {
+        source_.push_back(event);
     }
 
     std::vector<std::string> down_;
@@ -57,7 +56,7 @@ BOOST_AUTO_TEST_CASE(keyboard_test) {
     Recorder recorder;
     dispatcher->sink<v3d::event::kind::KeyDown>().connect<&Recorder::down>(recorder);
     dispatcher->sink<v3d::event::kind::KeyUp>().connect<&Recorder::up>(recorder);
-    dispatcher->sink<v3d::event::Event>().connect<&Recorder::sourceEvent>(recorder);
+    dispatcher->sink<v3d::event::Source>().connect<&Recorder::sourceEvent>(recorder);
 
     // a key press is a KeyDown, plus a source event any mapper can bind
     BOOST_CHECK_EQUAL(keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_Q)), true);
@@ -190,7 +189,7 @@ BOOST_AUTO_TEST_CASE(keyboard_held_key_test) {
     v3d::input::Keyboard keyboard(context, dispatcher);
 
     Recorder recorder;
-    dispatcher->sink<v3d::event::Event>().connect<&Recorder::sourceEvent>(recorder);
+    dispatcher->sink<v3d::event::Source>().connect<&Recorder::sourceEvent>(recorder);
 
     // SDL repeats key down while a key is held. Every repeat is still a press, and the
     // release that follows is still a release - the state tracking must not invert on the

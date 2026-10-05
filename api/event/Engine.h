@@ -14,6 +14,7 @@
 #include <entt/entt.hpp>
 
 #include "Context.h"
+#include "Source.h"
 
 namespace v3d::event {
 /**
@@ -34,7 +35,7 @@ class Engine {
 
     /**
      **/
-    void handleSourceEvent(const Event& source);
+    void handleSourceEvent(const Unclaimed& unclaimed);
 
     /**
      * Look up a context from its name.

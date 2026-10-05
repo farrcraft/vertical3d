@@ -207,7 +207,7 @@ bool Engine::shutdown() {
 /**
  **/
 void Engine::command(const v3d::event::Event& event) {
-    if (event.type() == v3d::event::Type::Destination && event.str() == "ui::quit") {
+    if (event.str() == "ui::quit") {
         quit();
     }
 }

@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/event/Source.h>
 #include <api/engine/Engine.h>
 #include <api/engine/Feature.h>
 
@@ -64,12 +65,9 @@ struct Recorder {
     std::vector<v3d::event::Event> events_;
 };
 
-v3d::event::Event source(const boost::shared_ptr<v3d::event::Context>& context,
+v3d::event::Source source(const boost::shared_ptr<v3d::event::Context>& context,
     const std::string& name, v3d::event::State state) {
-    v3d::event::Event event(name, context);
-    event.type(v3d::event::Type::Source);
-    event.state(state);
-    return event;
+    return v3d::event::Source(name, context, state);
 }
 
 /**
@@ -144,14 +142,14 @@ BOOST_AUTO_TEST_CASE(engine_registers_mappings_test) {
     engine.dispatcher()->sink<v3d::event::Event>().connect<&Recorder::handle>(recorder);
 
     boost::shared_ptr<v3d::event::Context> keyboard = engine.events()->resolveContext("keyboard");
-    engine.dispatcher()->trigger(source(keyboard, "w", v3d::event::State::Pressed));
+    v3d::event::publish(*engine.dispatcher(), source(keyboard, "w", v3d::event::State::Pressed));
 
     BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1u);
     BOOST_CHECK_EQUAL(recorder.events_[0].name(), "leftPaddleUp");
     BOOST_CHECK_EQUAL(recorder.events_[0].context()->name(), "pong");
 
     // an unbound key produces nothing
-    engine.dispatcher()->trigger(source(keyboard, "q", v3d::event::State::Pressed));
+    v3d::event::publish(*engine.dispatcher(), source(keyboard, "q", v3d::event::State::Pressed));
     BOOST_CHECK_EQUAL(recorder.events_.size(), 1u);
 }
 
@@ -167,15 +165,15 @@ BOOST_AUTO_TEST_CASE(engine_mapping_state_test) {
 
     boost::shared_ptr<v3d::event::Context> keyboard = engine.events()->resolveContext("keyboard");
 
-    engine.dispatcher()->trigger(source(keyboard, "escape", v3d::event::State::Pressed));
+    v3d::event::publish(*engine.dispatcher(), source(keyboard, "escape", v3d::event::State::Pressed));
     BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1u);
     BOOST_CHECK_EQUAL(recorder.events_[0].name(), "quit");
 
-    engine.dispatcher()->trigger(source(keyboard, "escape", v3d::event::State::Released));
+    v3d::event::publish(*engine.dispatcher(), source(keyboard, "escape", v3d::event::State::Released));
     BOOST_CHECK_EQUAL(recorder.events_.size(), 1u);
 
     // the unstated binding takes both edges
-    engine.dispatcher()->trigger(source(keyboard, "w", v3d::event::State::Released));
+    v3d::event::publish(*engine.dispatcher(), source(keyboard, "w", v3d::event::State::Released));
     BOOST_CHECK_EQUAL(recorder.events_.size(), 2u);
 }
 
@@ -192,17 +190,17 @@ BOOST_AUTO_TEST_CASE(engine_mapping_param_test) {
 
     boost::shared_ptr<v3d::event::Context> keyboard = engine.events()->resolveContext("keyboard");
 
-    engine.dispatcher()->trigger(source(keyboard, "1", v3d::event::State::Pressed));
+    v3d::event::publish(*engine.dispatcher(), source(keyboard, "1", v3d::event::State::Pressed));
     BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1u);
     BOOST_REQUIRE(recorder.events_[0].data());
     BOOST_CHECK_EQUAL(std::get<std::string>(recorder.events_[0].data().get()), "cube");
 
-    engine.dispatcher()->trigger(source(keyboard, "2", v3d::event::State::Pressed));
+    v3d::event::publish(*engine.dispatcher(), source(keyboard, "2", v3d::event::State::Pressed));
     BOOST_REQUIRE_EQUAL(recorder.events_.size(), 2u);
     BOOST_REQUIRE(recorder.events_[1].data());
     BOOST_CHECK_EQUAL(std::get<int>(recorder.events_[1].data().get()), 3);
 
-    engine.dispatcher()->trigger(source(keyboard, "g", v3d::event::State::Pressed));
+    v3d::event::publish(*engine.dispatcher(), source(keyboard, "g", v3d::event::State::Pressed));
     BOOST_REQUIRE_EQUAL(recorder.events_.size(), 3u);
     BOOST_REQUIRE(recorder.events_[2].data());
     BOOST_CHECK(std::get<bool>(recorder.events_[2].data().get()));

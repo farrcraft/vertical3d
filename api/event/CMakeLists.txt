@@ -11,6 +11,7 @@ v3d_add_api_library(event
  "Mapper.h" "Mapper.cpp"
  "Engine.h" "Engine.cpp"
  "Bindings.h" "Bindings.cpp"
+ "Source.h" "Source.cpp"
  "Context.h" "Context.cpp"
  "kind/MouseButton.h" "kind/MouseButton.cpp"
  "kind/MouseMotion.h" "kind/MouseMotion.cpp"

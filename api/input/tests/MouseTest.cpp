@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/event/Source.h>
 #include <api/event/kind/MouseButton.h>
 #include <api/event/kind/MouseMotion.h>
 #include <api/event/kind/MouseWheel.h>
@@ -33,10 +34,8 @@ struct Recorder {
         wheel_.push_back(event);
     }
 
-    void sourceEvent(const v3d::event::Event& event) {
-        if (event.type() == v3d::event::Type::Source) {
-            source_.push_back(event);
-        }
+    void sourceEvent(const v3d::event::Source& event) {
+        source_.push_back(event);
     }
 
     std::vector<v3d::event::kind::MouseButton> buttons_;
@@ -82,7 +81,7 @@ BOOST_AUTO_TEST_CASE(mouse_button_test) {
 
     Recorder recorder;
     dispatcher->sink<v3d::event::kind::MouseButton>().connect<&Recorder::button>(recorder);
-    dispatcher->sink<v3d::event::Event>().connect<&Recorder::sourceEvent>(recorder);
+    dispatcher->sink<v3d::event::Source>().connect<&Recorder::sourceEvent>(recorder);
 
     BOOST_CHECK_EQUAL(mouse.handleEvent(buttonEvent(SDL_EVENT_MOUSE_BUTTON_DOWN, SDL_BUTTON_LEFT, 10.0f, 20.0f)), true);
     BOOST_REQUIRE_EQUAL(recorder.buttons_.size(), 1u);
@@ -132,7 +131,7 @@ BOOST_AUTO_TEST_CASE(mouse_motion_test) {
 
     Recorder recorder;
     dispatcher->sink<v3d::event::kind::MouseMotion>().connect<&Recorder::motion>(recorder);
-    dispatcher->sink<v3d::event::Event>().connect<&Recorder::sourceEvent>(recorder);
+    dispatcher->sink<v3d::event::Source>().connect<&Recorder::sourceEvent>(recorder);
 
     BOOST_CHECK_EQUAL(mouse.handleEvent(motionEvent(3.0f, 0.0f, 3.0f, 0.0f)), true);
     BOOST_REQUIRE_EQUAL(recorder.motion_.size(), 1u);
@@ -220,7 +219,7 @@ BOOST_AUTO_TEST_CASE(mouse_wheel_test) {
 
     Recorder recorder;
     dispatcher->sink<v3d::event::kind::MouseWheel>().connect<&Recorder::wheel>(recorder);
-    dispatcher->sink<v3d::event::Event>().connect<&Recorder::sourceEvent>(recorder);
+    dispatcher->sink<v3d::event::Source>().connect<&Recorder::sourceEvent>(recorder);
 
     BOOST_CHECK_EQUAL(mouse.handleEvent(wheelEvent(1.0f, 40.0f, 50.0f)), true);
     BOOST_REQUIRE_EQUAL(recorder.wheel_.size(), 1u);

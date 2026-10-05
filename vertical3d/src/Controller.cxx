@@ -563,12 +563,6 @@ void Controller::handleMotion(const v3d::event::kind::MouseMotion& event) {
 /**
  **/
 void Controller::handleEvent(const v3d::event::Event& event) {
-    // the dispatcher carries both halves of a mapping. A source event is the keypress
-    // itself, which event::Engine is what listens for; only what a binding or a menu
-    // item produced is a command
-    if (event.type() != v3d::event::Type::Destination) {
-        return;
-    }
     if (!directory_.invoke(event)) {
         logger()->get()->warn("no command is registered as {}", event.str());
         return;
