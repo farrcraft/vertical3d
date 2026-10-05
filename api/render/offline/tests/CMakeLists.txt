@@ -21,6 +21,7 @@ v3d_add_test(render_offline
 	"SlShaderLibraryTest.cxx"
 	"SlImagerTest.cxx"
 	"SlGlobalsTest.cxx"
+	"SlWalkTest.cxx"
 	"TraceSceneTest.cxx"
 	"TraceHitShaderTest.cxx")
 

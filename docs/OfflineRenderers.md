@@ -208,7 +208,12 @@ rather than a tour.
   storage class and every variable with a symbol index, rather than a second structure keyed by
   node. `sl::Compiler::symbols()` is then the list a machine allocates registers against - a
   local declared twice in nested scopes is two of them.
-- **The varying inference runs to a fixed point**, because a loop carries a varying value back
+- **Which children a node has is written down once.** `syntax::forEachChild` hands a node's
+  expressions and statements to a visitor in source order, so a walk that treats most kinds
+  alike - gathering what a shader calls, joining what an expression reads - names only the
+  kinds it cares about, and a new kind of node is one case there.
+- **The varying inference is `sl::Inference`, over the tree the checker annotated, and runs to a
+  fixed point**, because a loop carries a varying value back
   to a name that was read before it was written. Inferring uniform where varying was right
   gives a whole grid one point's answer, which reads as a shading bug and is a compiler bug.
   Anything assigned under a varying condition is varying, and a value declared `uniform` that a

@@ -24,15 +24,8 @@ namespace v3d::render::offline::sl {
  * program.
  *
  * The tree is annotated in place - every expression comes out with a type and a storage
- * class, and every variable with the index of the symbol it resolved to.
- *
- * **The varying inference is the part that can be wrong quietly.** A value is uniform until
- * something varying reaches it; inferring uniform where varying was right gives a whole grid
- * one point's answer, which reads as a shading bug and is a compiler bug. Two things make it
- * sound rather than merely plausible: an assignment inside control flow whose condition is
- * varying becomes varying, because different points take different arms; and the walk runs
- * to a fixed point, because a loop can carry a varying value back to a name that was read
- * before it was written.
+ * class, and every variable with the index of the symbol it resolved to. The storage is the
+ * Inference's, run once the checking is done.
  **/
 class Compiler final {
  public:
@@ -116,67 +109,21 @@ class Compiler final {
     Type checkTernary(const syntax::ExpressionPtr & expression);
     Type checkCast(const syntax::ExpressionPtr & expression);
 
-    /**
-     * The storage pass, run over and over until nothing changes. Marking a symbol varying is
-     * the only direction anything moves, so it terminates.
-     **/
-    void infer();
-    void inferBlock(const syntax::BlockPtr & block, bool varyingContext);
-    void inferStatement(const syntax::StatementPtr & statement, bool varyingContext);
-    void inferDeclaration(const syntax::StatementPtr & statement, bool varyingContext);
-    void inferAssignment(const syntax::StatementPtr & statement, bool varyingContext);
-    /** A call that writes its arguments, which is an assignment to each of them. **/
-    void inferOutputs(const syntax::ExpressionPtr & expression, bool varyingContext);
-    void inferJump(const syntax::StatementPtr & statement, bool varyingContext);
-    /** Whether a break or a continue leaves this loop under a varying condition. **/
-    bool escapes(const syntax::StatementPtr & loop) const;
-    void mark(const syntax::Statement* loop);
-    Storage inferExpression(const syntax::ExpressionPtr & expression);
-    Storage inferCall(const syntax::ExpressionPtr & expression);
-    /**
-     * Mark a symbol varying, recording that something moved so the fixed point runs again.
-     * A symbol that was declared uniform is left alone and the shader is faulted instead.
-     **/
-    void spread(int symbol, const syntax::ExpressionPtr & from);
-
     Failure fail(const std::string & message, unsigned int line, unsigned int column);
 
     syntax::ShaderPtr shader_;
     std::vector<Symbol> symbols_;
     std::vector<Binding> scope_;
     /**
-     * The storage each function's result came out as, one per shader function, joined over
-     * its return statements.
-     **/
-    std::vector<Storage> results_;
-    /**
      * Which functions each function calls, for the recursion check.
      **/
     std::vector<std::vector<int> > calls_;
-    /**
-     * The loops being walked, innermost last, so that a break or a continue can name the one
-     * it leaves.
-     **/
-    std::vector<const syntax::Statement*> enclosing_;
-    /**
-     * The loops a break or a continue escapes under a varying condition. Everything in such a
-     * loop's body is varying whatever reached it, because the statements after the escape run
-     * for some lanes and not for others.
-     **/
-    std::vector<const syntax::Statement*> escaping_;
     /**
      * The globals a surface shader may read only inside an illuminance body - L and Cl,
      * which a light sets and which mean nothing outside one.
      **/
     std::vector<int> lighting_;
     std::string error_;
-    /**
-     * A uniform that a varying value reached, held until the fixed point has settled: the
-     * inference cannot report while it is still running, because a symbol may become varying
-     * on a later round than the one that read it.
-     **/
-    std::string violation_;
-    bool changed_ = false;
     /** Which function is being walked, or -1 for the shader body. **/
     int inside_ = -1;
     /** How many lighting constructs enclose the statement being checked. **/
