@@ -26,6 +26,41 @@ namespace v3d::render::offline::sl {
 class Signature final {
  public:
     /**
+     * What runs a call, named where the signature is declared so that a function cannot be
+     * declared without saying what it does.
+     **/
+    enum class Body {
+        /**
+         * Written in the language - see sources() - and inlined by the compiler, so a call
+         * never reaches the machine.
+         **/
+        SOURCE,
+        /**
+         * Declared and answering its default until something implements it, which the
+         * machine reports once. A scene that rendered nothing and a scene that was not
+         * understood look identical from outside, which is why a stub is loud.
+         **/
+        STUB,
+        // every component of the answer is this function of the same component of each
+        // argument, which is what makes abs() of a colour the three absolute values
+        ABS, SIGN, FLOOR, CEIL, ROUND, SQRT, EXP, LOG, RADIANS, DEGREES,
+        SIN, COS, TAN, ASIN, ACOS, ATAN, MOD, POW, MIN, MAX, CLAMP, MIX, STEP, SMOOTHSTEP,
+        // a triple read as a direction rather than as three numbers
+        LENGTH, DISTANCE, NORMALIZE, FACEFORWARD, REFLECT, REFRACT, FRESNEL,
+        // one component of one value, named or indexed
+        XCOMP, YCOMP, ZCOMP, SETXCOMP, SETYCOMP, SETZCOMP, COMP, SETCOMP,
+        // a named coordinate space, which is the renderer's answer rather than the machine's
+        PTRANSFORM, VTRANSFORM, NTRANSFORM, CTRANSFORM, MTRANSFORM, DEPTH,
+        // a matrix
+        DETERMINANT, TRANSLATE, ROTATE, SCALE,
+        // a pattern, out of an image or out of nothing
+        TEXTURE, NOISE,
+        // what the renderer answers rather than the machine
+        AMBIENT, TRANSMISSION, TRACE,
+        PRINTF
+    };
+
+    /**
      * What a parameter accepts. The last three are the families: a function that takes any
      * position or direction, one that takes any number-like value, and printf's tail.
      **/
@@ -46,6 +81,7 @@ class Signature final {
     };
 
     std::string name;
+    Body body = Body::STUB;
     /** The result type, unless resultFrom names an argument to take it from. **/
     Type result = Type::FLOAT;
     /** The argument whose type the result takes, or -1 for the fixed one above. **/
@@ -96,14 +132,5 @@ std::vector<Signature> builtin(const std::string & name);
  * shaders that both call `diffuse` need two trees rather than one they take turns writing.
  **/
 std::vector<syntax::Function> sources();
-
-/**
- * Whether the built-in is declared but does nothing yet - shadow, which returns its default
- * and is reported once.
- *
- * A scene that rendered nothing and a scene that was not understood look identical from
- * outside, which is why a stub is loud rather than silent.
- **/
-bool stubbed(const std::string & name);
 
 };  // namespace v3d::render::offline::sl

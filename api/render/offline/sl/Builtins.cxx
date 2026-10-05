@@ -20,10 +20,12 @@ namespace v3d::render::offline::sl {
 namespace {
 
 typedef Signature::Argument Argument;
+typedef Signature::Body Body;
 
-Signature declare(const char* name, Type result, const std::vector<Argument> & arguments) {
+Signature declare(const char* name, Body body, Type result, const std::vector<Argument> & arguments) {
     Signature signature;
     signature.name = name;
+    signature.body = body;
     signature.result = result;
     signature.arguments = arguments;
     return signature;
@@ -33,9 +35,10 @@ Signature declare(const char* name, Type result, const std::vector<Argument> & a
  * A function whose result is the type of one of its arguments: normalize() of a normal is a
  * normal, and mix() of two colours is a colour.
  **/
-Signature same(const char* name, int argument, const std::vector<Argument> & arguments) {
+Signature same(const char* name, Body body, int argument, const std::vector<Argument> & arguments) {
     Signature signature;
     signature.name = name;
+    signature.body = body;
     signature.resultFrom = argument;
     signature.arguments = arguments;
     return signature;
@@ -45,14 +48,14 @@ Signature same(const char* name, int argument, const std::vector<Argument> & arg
  * A function that answers through the arguments from `first` on rather than through a
  * result.
  **/
-Signature writing(const char* name, int first, const std::vector<Argument> & arguments) {
-    Signature signature = declare(name, Type::VOID, arguments);
+Signature writing(const char* name, Body body, int first, const std::vector<Argument> & arguments) {
+    Signature signature = declare(name, body, Type::VOID, arguments);
     signature.outputs = first;
     return signature;
 }
 
-Signature shading(const char* name, Type result, const std::vector<Argument> & arguments) {
-    Signature signature = declare(name, result, arguments);
+Signature shading(const char* name, Body body, Type result, const std::vector<Argument> & arguments) {
+    Signature signature = declare(name, body, result, arguments);
     signature.varying = true;
     return signature;
 }
@@ -61,112 +64,121 @@ std::vector<Signature> build() {
     std::vector<Signature> table;
 
     // maths, which is arithmetic over the value model
-    const char* const unary[] = {
-        "abs", "sign", "floor", "ceil", "round", "sqrt", "exp", "log",
-        "radians", "degrees", "sin", "cos", "tan", "asin", "acos", "atan"
+    const struct { const char* name; Body body; } unary[] = {
+        { "abs", Body::ABS }, { "sign", Body::SIGN }, { "floor", Body::FLOOR },
+        { "ceil", Body::CEIL }, { "round", Body::ROUND }, { "sqrt", Body::SQRT },
+        { "exp", Body::EXP }, { "log", Body::LOG }, { "radians", Body::RADIANS },
+        { "degrees", Body::DEGREES }, { "sin", Body::SIN }, { "cos", Body::COS },
+        { "tan", Body::TAN }, { "asin", Body::ASIN }, { "acos", Body::ACOS },
+        { "atan", Body::ATAN }
     };
-    for (const char* const name : unary) {
-        table.push_back(declare(name, Type::FLOAT, { Argument::FLOAT }));
+    for (const auto & entry : unary) {
+        table.push_back(declare(entry.name, entry.body, Type::FLOAT, { Argument::FLOAT }));
     }
-    table.push_back(declare("atan", Type::FLOAT, { Argument::FLOAT, Argument::FLOAT }));
-    table.push_back(declare("log", Type::FLOAT, { Argument::FLOAT, Argument::FLOAT }));
-    table.push_back(declare("mod", Type::FLOAT, { Argument::FLOAT, Argument::FLOAT }));
-    table.push_back(declare("pow", Type::FLOAT, { Argument::FLOAT, Argument::FLOAT }));
-    table.push_back(same("min", 0, { Argument::NUMBER, Argument::NUMBER }));
-    table.push_back(same("max", 0, { Argument::NUMBER, Argument::NUMBER }));
-    table.push_back(same("clamp", 0, { Argument::NUMBER, Argument::NUMBER, Argument::NUMBER }));
-    table.push_back(same("mix", 0, { Argument::NUMBER, Argument::NUMBER, Argument::FLOAT }));
-    table.push_back(declare("step", Type::FLOAT, { Argument::FLOAT, Argument::FLOAT }));
-    table.push_back(declare("smoothstep", Type::FLOAT,
+    table.push_back(declare("atan", Body::ATAN, Type::FLOAT, { Argument::FLOAT, Argument::FLOAT }));
+    table.push_back(declare("log", Body::LOG, Type::FLOAT, { Argument::FLOAT, Argument::FLOAT }));
+    table.push_back(declare("mod", Body::MOD, Type::FLOAT, { Argument::FLOAT, Argument::FLOAT }));
+    table.push_back(declare("pow", Body::POW, Type::FLOAT, { Argument::FLOAT, Argument::FLOAT }));
+    table.push_back(same("min", Body::MIN, 0, { Argument::NUMBER, Argument::NUMBER }));
+    table.push_back(same("max", Body::MAX, 0, { Argument::NUMBER, Argument::NUMBER }));
+    table.push_back(same("clamp", Body::CLAMP, 0, { Argument::NUMBER, Argument::NUMBER, Argument::NUMBER }));
+    table.push_back(same("mix", Body::MIX, 0, { Argument::NUMBER, Argument::NUMBER, Argument::FLOAT }));
+    table.push_back(declare("step", Body::STEP, Type::FLOAT, { Argument::FLOAT, Argument::FLOAT }));
+    table.push_back(declare("smoothstep", Body::SMOOTHSTEP, Type::FLOAT,
         { Argument::FLOAT, Argument::FLOAT, Argument::FLOAT }));
 
     // geometry
-    table.push_back(declare("length", Type::FLOAT, { Argument::POINTLIKE }));
-    table.push_back(declare("distance", Type::FLOAT, { Argument::POINT, Argument::POINT }));
-    table.push_back(same("normalize", 0, { Argument::POINTLIKE }));
-    table.push_back(same("faceforward", 0, { Argument::POINTLIKE, Argument::POINTLIKE }));
-    table.push_back(same("faceforward", 0,
+    table.push_back(declare("length", Body::LENGTH, Type::FLOAT, { Argument::POINTLIKE }));
+    table.push_back(declare("distance", Body::DISTANCE, Type::FLOAT, { Argument::POINT, Argument::POINT }));
+    table.push_back(same("normalize", Body::NORMALIZE, 0, { Argument::POINTLIKE }));
+    table.push_back(same("faceforward", Body::FACEFORWARD, 0, { Argument::POINTLIKE, Argument::POINTLIKE }));
+    table.push_back(same("faceforward", Body::FACEFORWARD, 0,
         { Argument::POINTLIKE, Argument::POINTLIKE, Argument::POINTLIKE }));
-    table.push_back(declare("reflect", Type::VECTOR, { Argument::POINTLIKE, Argument::POINTLIKE }));
-    table.push_back(declare("refract", Type::VECTOR,
+    table.push_back(declare("reflect", Body::REFLECT, Type::VECTOR, { Argument::POINTLIKE, Argument::POINTLIKE }));
+    table.push_back(declare("refract", Body::REFRACT, Type::VECTOR,
         { Argument::POINTLIKE, Argument::POINTLIKE, Argument::FLOAT }));
     // how much of a ray a dielectric reflects and how much it lets through, with refract's
     // conventions: eta is the ratio of the indices on the incident side and the far side
-    table.push_back(writing("fresnel", 3, { Argument::POINTLIKE, Argument::POINTLIKE,
+    table.push_back(writing("fresnel", Body::FRESNEL, 3, { Argument::POINTLIKE, Argument::POINTLIKE,
         Argument::FLOAT, Argument::FLOAT, Argument::FLOAT }));
-    table.push_back(writing("fresnel", 3, { Argument::POINTLIKE, Argument::POINTLIKE,
+    table.push_back(writing("fresnel", Body::FRESNEL, 3, { Argument::POINTLIKE, Argument::POINTLIKE,
         Argument::FLOAT, Argument::FLOAT, Argument::FLOAT, Argument::POINTLIKE, Argument::POINTLIKE }));
-    table.push_back(declare("depth", Type::FLOAT, { Argument::POINT }));
-    table.push_back(shading("calculatenormal", Type::NORMAL, { Argument::POINT }));
+    table.push_back(declare("depth", Body::DEPTH, Type::FLOAT, { Argument::POINT }));
+    table.push_back(shading("calculatenormal", Body::STUB, Type::NORMAL, { Argument::POINT }));
 
     // the component accessors and their setters
-    const char* const readers[] = { "xcomp", "ycomp", "zcomp" };
-    for (const char* const name : readers) {
-        table.push_back(declare(name, Type::FLOAT, { Argument::POINTLIKE }));
+    const struct { const char* name; Body body; } readers[] = {
+        { "xcomp", Body::XCOMP }, { "ycomp", Body::YCOMP }, { "zcomp", Body::ZCOMP }
+    };
+    for (const auto & entry : readers) {
+        table.push_back(declare(entry.name, entry.body, Type::FLOAT, { Argument::POINTLIKE }));
     }
-    const char* const writers[] = { "setxcomp", "setycomp", "setzcomp" };
-    for (const char* const name : writers) {
-        table.push_back(declare(name, Type::VOID, { Argument::POINTLIKE, Argument::FLOAT }));
+    const struct { const char* name; Body body; } writers[] = {
+        { "setxcomp", Body::SETXCOMP }, { "setycomp", Body::SETYCOMP },
+        { "setzcomp", Body::SETZCOMP }
+    };
+    for (const auto & entry : writers) {
+        table.push_back(declare(entry.name, entry.body, Type::VOID, { Argument::POINTLIKE, Argument::FLOAT }));
     }
-    table.push_back(declare("comp", Type::FLOAT, { Argument::NUMBER, Argument::FLOAT }));
-    table.push_back(declare("setcomp", Type::VOID,
+    table.push_back(declare("comp", Body::COMP, Type::FLOAT, { Argument::NUMBER, Argument::FLOAT }));
+    table.push_back(declare("setcomp", Body::SETCOMP, Type::VOID,
         { Argument::NUMBER, Argument::FLOAT, Argument::FLOAT }));
 
     // the transforms, which are what tells the three point-like types apart
-    table.push_back(declare("ptransform", Type::POINT, { Argument::STRING, Argument::POINTLIKE }));
-    table.push_back(declare("ptransform", Type::POINT,
+    table.push_back(declare("ptransform", Body::PTRANSFORM, Type::POINT, { Argument::STRING, Argument::POINTLIKE }));
+    table.push_back(declare("ptransform", Body::PTRANSFORM, Type::POINT,
         { Argument::STRING, Argument::STRING, Argument::POINTLIKE }));
-    table.push_back(declare("vtransform", Type::VECTOR, { Argument::STRING, Argument::POINTLIKE }));
-    table.push_back(declare("vtransform", Type::VECTOR,
+    table.push_back(declare("vtransform", Body::VTRANSFORM, Type::VECTOR, { Argument::STRING, Argument::POINTLIKE }));
+    table.push_back(declare("vtransform", Body::VTRANSFORM, Type::VECTOR,
         { Argument::STRING, Argument::STRING, Argument::POINTLIKE }));
-    table.push_back(declare("ntransform", Type::NORMAL, { Argument::STRING, Argument::POINTLIKE }));
-    table.push_back(declare("ntransform", Type::NORMAL,
+    table.push_back(declare("ntransform", Body::NTRANSFORM, Type::NORMAL, { Argument::STRING, Argument::POINTLIKE }));
+    table.push_back(declare("ntransform", Body::NTRANSFORM, Type::NORMAL,
         { Argument::STRING, Argument::STRING, Argument::POINTLIKE }));
-    table.push_back(declare("ctransform", Type::COLOR, { Argument::STRING, Argument::COLOR }));
-    table.push_back(declare("ctransform", Type::COLOR,
+    table.push_back(declare("ctransform", Body::CTRANSFORM, Type::COLOR, { Argument::STRING, Argument::COLOR }));
+    table.push_back(declare("ctransform", Body::CTRANSFORM, Type::COLOR,
         { Argument::STRING, Argument::STRING, Argument::COLOR }));
-    table.push_back(declare("mtransform", Type::MATRIX, { Argument::STRING, Argument::MATRIX }));
+    table.push_back(declare("mtransform", Body::MTRANSFORM, Type::MATRIX, { Argument::STRING, Argument::MATRIX }));
 
     // matrix
-    table.push_back(declare("determinant", Type::FLOAT, { Argument::MATRIX }));
-    table.push_back(declare("translate", Type::MATRIX, { Argument::MATRIX, Argument::POINTLIKE }));
-    table.push_back(declare("rotate", Type::MATRIX,
+    table.push_back(declare("determinant", Body::DETERMINANT, Type::FLOAT, { Argument::MATRIX }));
+    table.push_back(declare("translate", Body::TRANSLATE, Type::MATRIX, { Argument::MATRIX, Argument::POINTLIKE }));
+    table.push_back(declare("rotate", Body::ROTATE, Type::MATRIX,
         { Argument::MATRIX, Argument::FLOAT, Argument::POINTLIKE }));
-    table.push_back(declare("scale", Type::MATRIX, { Argument::MATRIX, Argument::POINTLIKE }));
+    table.push_back(declare("scale", Body::SCALE, Type::MATRIX, { Argument::MATRIX, Argument::POINTLIKE }));
 
     // the light model, written over illuminance rather than given privileged access
-    table.push_back(shading("ambient", Type::COLOR, {}));
-    table.push_back(shading("diffuse", Type::COLOR, { Argument::POINTLIKE }));
-    table.push_back(shading("specular", Type::COLOR,
+    table.push_back(shading("ambient", Body::AMBIENT, Type::COLOR, {}));
+    table.push_back(shading("diffuse", Body::SOURCE, Type::COLOR, { Argument::POINTLIKE }));
+    table.push_back(shading("specular", Body::SOURCE, Type::COLOR,
         { Argument::POINTLIKE, Argument::POINTLIKE, Argument::FLOAT }));
-    table.push_back(shading("phong", Type::COLOR,
+    table.push_back(shading("phong", Body::SOURCE, Type::COLOR,
         { Argument::POINTLIKE, Argument::POINTLIKE, Argument::FLOAT }));
-    table.push_back(declare("specularbrdf", Type::COLOR,
+    table.push_back(declare("specularbrdf", Body::SOURCE, Type::COLOR,
         { Argument::POINTLIKE, Argument::POINTLIKE, Argument::POINTLIKE, Argument::FLOAT }));
 
     // what the renderer answers rather than the machine: a shadow, and a traced ray
-    table.push_back(shading("transmission", Type::COLOR, { Argument::POINT, Argument::POINT }));
-    table.push_back(shading("trace", Type::COLOR, { Argument::POINT, Argument::POINTLIKE }));
+    table.push_back(shading("transmission", Body::TRANSMISSION, Type::COLOR, { Argument::POINT, Argument::POINT }));
+    table.push_back(shading("trace", Body::TRACE, Type::COLOR, { Argument::POINT, Argument::POINTLIKE }));
 
     // an image, read at s and t when it is not told where. A colour unless a cast asks for
     // a float, which is the first channel
     for (const Type result : { Type::COLOR, Type::FLOAT }) {
-        table.push_back(shading("texture", result, { Argument::STRING }));
-        table.push_back(shading("texture", result,
+        table.push_back(shading("texture", Body::TEXTURE, result, { Argument::STRING }));
+        table.push_back(shading("texture", Body::TEXTURE, result,
             { Argument::STRING, Argument::FLOAT, Argument::FLOAT }));
     }
     // a float unless a cast asks for three of them, each its own pattern
     for (const Type result : { Type::FLOAT, Type::COLOR, Type::POINT, Type::VECTOR }) {
-        table.push_back(declare("noise", result, { Argument::FLOAT }));
-        table.push_back(declare("noise", result, { Argument::FLOAT, Argument::FLOAT }));
-        table.push_back(declare("noise", result, { Argument::POINT }));
+        table.push_back(declare("noise", Body::NOISE, result, { Argument::FLOAT }));
+        table.push_back(declare("noise", Body::NOISE, result, { Argument::FLOAT, Argument::FLOAT }));
+        table.push_back(declare("noise", Body::NOISE, result, { Argument::POINT }));
     }
 
-    // declared, stubbed and reported once - see stubbed()
-    table.push_back(shading("shadow", Type::FLOAT, { Argument::STRING, Argument::POINT }));
+    // declared, stubbed and reported once
+    table.push_back(shading("shadow", Body::STUB, Type::FLOAT, { Argument::STRING, Argument::POINT }));
 
     // and the one anybody actually debugs with
-    Signature print = declare("printf", Type::VOID, { Argument::STRING });
+    Signature print = declare("printf", Body::PRINTF, Type::VOID, { Argument::STRING });
     print.variadic = true;
     table.push_back(print);
 
@@ -240,10 +252,6 @@ std::vector<Signature> builtin(const std::string & name) {
         }
     }
     return found;
-}
-
-bool stubbed(const std::string & name) {
-    return name == "shadow";
 }
 
 };  // namespace v3d::render::offline::sl

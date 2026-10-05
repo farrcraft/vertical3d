@@ -274,6 +274,10 @@ rather than a tour.
   primitive's `Os`. A ray carrying on through a surface is not a traced ray and does not count
   against the depth. `transmission()` multiplies by every occluder's `Os`, read off the
   primitive rather than by running its shader, so a shadow ray is never a shading one.
+- **A built-in is declared with what runs it.** Each `Signature` names its `Body`, and the
+  machine dispatches on that rather than on the name, so a function cannot be declared without
+  saying what it does. `SOURCE` is one written in the language and inlined; `STUB` is one the
+  machine answers with its default and reports once.
 - **A built-in may answer through its arguments.** `Signature::outputs` names the first one it
   writes. The compiler requires a variable there and spreads the storage of what the call read
   into it, as an assignment would. `fresnel` is the one that does: the unpolarised reflectance
@@ -297,7 +301,7 @@ rather than a tour.
   `float texture(name)` is the first channel. Without a cast, `noise` is a float and `texture` a
   colour.
 - **Two strings compare by their text**, which is how `paintedplastic` asks whether it was given
-  a texture at all. `shadow` is the one built-in left declared and stubbed.
+  a texture at all. `shadow` and `calculatenormal` are the built-ins left declared and stubbed.
 
 ## Normals
 

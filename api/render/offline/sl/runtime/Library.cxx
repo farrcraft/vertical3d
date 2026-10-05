@@ -33,69 +33,9 @@ namespace v3d::render::offline::sl::runtime {
 
 namespace {
 
-/**
- * Which body a call runs.
- *
- * A name rather than the index of the signature that matched, because two signatures of
- * one name differ only in how many arguments they take - `atan(y, x)` and `atan(x)` are one
- * body that asks how many it was given.
- **/
-enum class Body {
-    /** Declared, and answering its default until something implements it. **/
-    NONE,
-    // every component of the answer is this function of the same component of each
-    // argument, which is what makes abs() of a colour the three absolute values
-    ABS, SIGN, FLOOR, CEIL, ROUND, SQRT, EXP, LOG, RADIANS, DEGREES,
-    SIN, COS, TAN, ASIN, ACOS, ATAN, MOD, POW, MIN, MAX, CLAMP, MIX, STEP, SMOOTHSTEP,
-    // a triple read as a direction rather than as three numbers
-    LENGTH, DISTANCE, NORMALIZE, FACEFORWARD, REFLECT, REFRACT, FRESNEL,
-    // one component of one value, named or indexed
-    XCOMP, YCOMP, ZCOMP, SETXCOMP, SETYCOMP, SETZCOMP, COMP, SETCOMP,
-    // a named coordinate space, which is the renderer's answer rather than the machine's
-    PTRANSFORM, VTRANSFORM, NTRANSFORM, CTRANSFORM, MTRANSFORM, DEPTH,
-    // a matrix
-    DETERMINANT, TRANSLATE, ROTATE, SCALE,
-    // a pattern, out of an image or out of nothing
-    TEXTURE, NOISE,
-    // what the renderer answers rather than the machine
-    AMBIENT, TRANSMISSION, TRACE,
-    PRINTF
-};
+typedef Signature::Body Body;
 
 const float PI = 3.14159265358979323846f;
-
-Body lookup(const std::string & name) {
-    static const struct { const char* name; Body body; } table[] = {
-        { "abs", Body::ABS }, { "sign", Body::SIGN }, { "floor", Body::FLOOR },
-        { "ceil", Body::CEIL }, { "round", Body::ROUND }, { "sqrt", Body::SQRT },
-        { "exp", Body::EXP }, { "log", Body::LOG }, { "radians", Body::RADIANS },
-        { "degrees", Body::DEGREES }, { "sin", Body::SIN }, { "cos", Body::COS },
-        { "tan", Body::TAN }, { "asin", Body::ASIN }, { "acos", Body::ACOS },
-        { "atan", Body::ATAN }, { "mod", Body::MOD }, { "pow", Body::POW },
-        { "min", Body::MIN }, { "max", Body::MAX }, { "clamp", Body::CLAMP },
-        { "mix", Body::MIX }, { "step", Body::STEP }, { "smoothstep", Body::SMOOTHSTEP },
-        { "length", Body::LENGTH }, { "distance", Body::DISTANCE },
-        { "normalize", Body::NORMALIZE }, { "faceforward", Body::FACEFORWARD },
-        { "reflect", Body::REFLECT }, { "refract", Body::REFRACT }, { "fresnel", Body::FRESNEL },
-        { "xcomp", Body::XCOMP }, { "ycomp", Body::YCOMP }, { "zcomp", Body::ZCOMP },
-        { "setxcomp", Body::SETXCOMP }, { "setycomp", Body::SETYCOMP },
-        { "setzcomp", Body::SETZCOMP }, { "comp", Body::COMP }, { "setcomp", Body::SETCOMP },
-        { "ptransform", Body::PTRANSFORM }, { "vtransform", Body::VTRANSFORM },
-        { "ntransform", Body::NTRANSFORM }, { "ctransform", Body::CTRANSFORM },
-        { "mtransform", Body::MTRANSFORM }, { "depth", Body::DEPTH },
-        { "determinant", Body::DETERMINANT }, { "translate", Body::TRANSLATE },
-        { "rotate", Body::ROTATE }, { "scale", Body::SCALE },
-        { "texture", Body::TEXTURE }, { "noise", Body::NOISE },
-        { "ambient", Body::AMBIENT }, { "transmission", Body::TRANSMISSION },
-        { "trace", Body::TRACE }, { "printf", Body::PRINTF }
-    };
-    for (const auto & entry : table) {
-        if (name == entry.name) {
-            return entry.body;
-        }
-    }
-    return Body::NONE;
-}
 
 float sign(float value) {
     if (value < 0.0f) {
@@ -228,7 +168,7 @@ glm::vec3 refract(const glm::vec3 & incident, const glm::vec3 & normal, float et
  **/
 class Site final {
  public:
-    Body body = Body::NONE;
+    Body body = Body::STUB;
     /** Where the answer goes. **/
     Value* target = nullptr;
     /**
@@ -566,8 +506,8 @@ void Machine::builtin(const Instruction & instruction) {
         report("a call names no standard library function");
         return;
     }
-    const Body body = lookup(table[index].name);
-    if (body == Body::NONE) {
+    const Body body = table[index].body;
+    if (body == Body::STUB || body == Body::SOURCE) {
         report("'" + table[index].name + "' is declared and does nothing yet, so it answers its default");
         return;
     }

@@ -6,6 +6,7 @@
 #include <api/image/Image.h>
 #include <api/render/offline/Noise.h>
 #include <api/render/offline/Texture.h>
+#include <api/render/offline/sl/Builtins.h>
 #include <api/render/offline/sl/Compiler.h>
 #include <api/render/offline/sl/Emitter.h>
 #include <api/render/offline/sl/Parser.h>
@@ -13,6 +14,7 @@
 #include <api/render/offline/sl/runtime/Renderer.h>
 #include <api/render/offline/sl/syntax/Shader.h>
 
+#include <set>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -548,4 +550,27 @@ BOOST_AUTO_TEST_CASE(sllibrary_calculatenormal_is_a_stub_test) {
     BOOST_REQUIRE_EQUAL(shaded.machine().reports().size(), 1u);
     BOOST_CHECK_EQUAL(shaded.machine().reports()[0],
         "'calculatenormal' is declared and does nothing yet, so it answers its default");
+}
+
+/**
+ * A function is declared with what runs it, so the table and the machine cannot disagree: the
+ * functions written in the language are exactly those declared as source, and every other
+ * body is one the machine runs or a stub it reports.
+ **/
+BOOST_AUTO_TEST_CASE(sllibrary_bodies_test) {
+    std::set<std::string> written;
+    for (const v3d::render::offline::sl::syntax::Function & function : v3d::render::offline::sl::sources()) {
+        written.insert(function.name);
+    }
+    std::set<std::string> declared;
+    std::set<std::string> stubs;
+    for (const v3d::render::offline::sl::Signature & signature : v3d::render::offline::sl::builtins()) {
+        if (signature.body == v3d::render::offline::sl::Signature::Body::SOURCE) {
+            declared.insert(signature.name);
+        } else if (signature.body == v3d::render::offline::sl::Signature::Body::STUB) {
+            stubs.insert(signature.name);
+        }
+    }
+    BOOST_CHECK(declared == written);
+    BOOST_CHECK(stubs == std::set<std::string>({ "calculatenormal", "shadow" }));
 }
