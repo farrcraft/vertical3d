@@ -108,7 +108,7 @@ milestones 1 to 6. This tree was read at `e939bec`.
 * **The quad projection is a push constant per submit.** `Canvas::projection()` maps pixels to clip
   space with the origin at the top left (`api/render/realtime/Canvas.cpp:67-77`), and `Quad::submit`
   pushes it with each canvas. The quad pipelines already declare set 0 and do not read it.
-  [RenderingPipeline.md](../../RenderingPipeline.md#what-is-not-built-yet) says only voxel's terrain
+  [RenderingPipeline.md](../../api/Rendering.md#what-is-not-built-yet) says only voxel's terrain
   reads set 0, which is stale: `line.vert`, `world.vert` and `lit.glsl` read it too.
 * **`type::camera::Camera::orthographic` is centred and symmetric**, so it cannot express a
   rectangle with its origin at a corner.
@@ -486,7 +486,7 @@ position.
 **Why not set 0.** Set 0 is a camera per pass. pong draws its court and its menu in one pass, and
 the menu is in pixels, so a camera per pass would need a second pass for the menu or a menu laid
 out in court units. A projection per submit is a projection per canvas, which is what a game space
-is. The [RenderingPipeline.md](../../RenderingPipeline.md#what-is-not-built-yet) item about the 2D
+is. The [RenderingPipeline.md](../../api/Rendering.md#what-is-not-built-yet) item about the 2D
 pass not reading set 0 closes as decided against, and its claim that only voxel reads set 0 is
 corrected.
 
@@ -698,7 +698,7 @@ size. `Bar` is a readout that is not pickable, by design. Making either do both 
 in every switch that reads it.
 
 **The cost is a component type**: the eight places
-[UserInterface.md](../../UserInterface.md#still-open) counts, a ninth in `ui::input::command()`, and
+[UserInterface.md](../../api/UserInterface.md#still-open) counts, a ninth in `ui::input::command()`, and
 two that the compiler does not check. Those are the resolver's class and the drag-follow `if`s in
 `Cursor::motion` and `Cursor::release` (`api/ui/input/Cursor.cpp:104`, `:200`). The two `if`s
 become one test that names both dragging types, so a third is added in one place. The loader reads
@@ -865,7 +865,7 @@ Update the state in the table above.
 * **Drafting** points [the roadmap](../../roadmap/completed/m7-ShellAndShipping.md) and its index here, corrects
   its line about the scrollbar and its pong line number, and says in the plans index that this plan
   is open.
-* **Step 1** adds the strips' rule to [UserInterface.md](../../UserInterface.md)'s account of
+* **Step 1** adds the strips' rule to [UserInterface.md](../../api/UserInterface.md)'s account of
   `pickable()`.
 * **Step 2** adds `held()` beside `Engine::rebind()` in [Architecture.md](../../Architecture.md)'s
   account of the shell.
@@ -877,13 +877,13 @@ Update the state in the table above.
 * **Step 6** accepts 0074 with the fourth app, and replaces the renderer setup in UserInterface.md
   and each app's account with the screen.
 * **Step 7** adds the row for 0075, accepts it with pong, closes the set 0 item in
-  [RenderingPipeline.md](../../RenderingPipeline.md#what-is-not-built-yet) and corrects which shaders
+  [RenderingPipeline.md](../../api/Rendering.md#what-is-not-built-yet) and corrects which shaders
   read set 0.
 * **Step 8** adds wrapping to UserInterface.md's account of the arranger.
 * **Step 9** adds the chooser beside `GameMenu` in UserInterface.md, updates
   [Editor.md](../../Editor.md), and narrows the editor's entry in TODO.md to the dirty flag.
 * **Step 10** adds timings to RenderingPipeline.md's account of the frame, and the new device cases
-  to [Testing.md](../../Testing.md).
+  to [Testing.md](../../contributing/Testing.md).
 * **Step 11** adds the slider to UserInterface.md's list of components, and corrects that
   document's count of places a component type touches if the drag-follow test changes it.
 * **When the plan closes**, [m7](../../roadmap/completed/m7-ShellAndShipping.md) moves to `roadmap/completed/`

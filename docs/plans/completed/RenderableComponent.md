@@ -196,7 +196,7 @@ ground is cozy's `Backdrop` and stays its own code. The trigger for a flat sprit
 case.
 
 **Linking.** `v3dlib_render` gains `v3dlib_ecs` as a public dependency, per
-[Build.md](../../Build.md#linking-rules). It already links EnTT, and `v3dlib_ecs` adds glm, which it
+[Build.md](../../contributing/Build.md#linking-rules). It already links EnTT, and `v3dlib_ecs` adds glm, which it
 also already has.
 
 **Tests**, in a new `SpriteTest.cpp` beside
@@ -308,11 +308,11 @@ the device suite or lavapipe. Nothing here is verified in another repository.
 Update the state in the table above.
 
 - **Step 1** adds the ADR index row, as `proposed`.
-- **Step 2** adds `Transform` to [ECSDesign.md](../../ECSDesign.md)'s list of components.
-- **Step 3** adds `api/ecs` to `api/render`'s dependencies in [Build.md](../../Build.md) if that
+- **Step 2** adds `Transform` to [ECSDesign.md](../../api/ECS.md)'s list of components.
+- **Step 3** adds `api/ecs` to `api/render`'s dependencies in [Build.md](../../contributing/Build.md) if that
   document lists them.
 - **Step 4** sets ADR-0063 to accepted. It replaces RenderingPipeline.md's
-  [still-open section](../../RenderingPipeline.md#how-this-meets-the-ecs) with what was
+  [still-open section](../../api/Rendering.md#how-this-meets-the-ecs) with what was
   decided, and ECSDesign.md's opening paragraph stops calling the question open. It also writes
   cozy's handoff note, to be read when cozy takes the feature up: `Transform`, `Sprite` and
   `sprites()`, the axis to pass, and `snapshot<Transform>` to interpolate.

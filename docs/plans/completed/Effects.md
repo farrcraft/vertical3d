@@ -683,14 +683,14 @@ Update the state in the table above.
   plan is open.
 * **Step 2** records retcon's handoff line in this plan, and nowhere else.
 * **Step 3** adds the ADR index row for 0072 as `proposed`.
-* **Step 4** adds `Emitter` to [ECSDesign.md](../../ECSDesign.md) beside `Playback`.
+* **Step 4** adds `Emitter` to [ECSDesign.md](../../api/ECS.md) beside `Playback`.
 * **Step 5** accepts ADR-0072, and adds `particles()` and `component::Particles` to
-  [RenderingPipeline.md](../../RenderingPipeline.md) beside the sprites.
+  [RenderingPipeline.md](../../api/Rendering.md) beside the sprites.
 * **Step 7** adds the tint to RenderingPipeline.md's account of `WorldCanvas`.
 * **Step 8** adds the additive pipeline and the world pass in a lit frame to RenderingPipeline.md.
 * **Step 9** adds the colours to RenderingPipeline.md's binding table, and the table swap to its
   account of the grade.
-* **Step 11** adds the new device cases to [Testing.md](../../Testing.md).
+* **Step 11** adds the new device cases to [Testing.md](../../contributing/Testing.md).
 * **When the plan closes**, [m6](../../roadmap/completed/m6-Effects.md) moves to `roadmap/completed/` and points
   here as done. The panned voice moves to TODO.md with its trigger, the roadmap's table row says
   so, and this file moves to [completed/](.).

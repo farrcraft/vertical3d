@@ -125,7 +125,7 @@ are three concepts within one letter of each other. It already costs a docblock:
 `lookup()` has to say *"the return type is the library's Style and not this class's."* When a
 signature needs a paragraph to say which type it returns, the naming is the defect.
 
-[`Conventions.md`](../../Conventions.md) says namespaces mirror the `api/` path. In
+[`Conventions.md`](../../contributing/Conventions.md) says namespaces mirror the `api/` path. In
 `component/menu/`, `Menu.h`, `MenuBar.h` and `MenuItem.h` are `v3d::ui::component` while their
 sibling [`Type.h`](../../../api/ui/component/menu/Type.h) is `v3d::ui::menu`; in `style/property/`
 everything is `v3d::ui::style::prop`, an abbreviation the path does not have. Three rules, one
@@ -255,7 +255,7 @@ source is a link error rather than a compile one.
 
 Drop `v3dlib_ui` from [`odyssey/CMakeLists.txt`](../../../odyssey/CMakeLists.txt) in the same
 commit. It links the library and includes nothing from it, which is the linking rule in
-[Build.md](../../Build.md#linking-rules) read backwards — an app names the targets it uses, and
+[Build.md](../../contributing/Build.md#linking-rules) read backwards — an app names the targets it uses, and
 this one does not use this.
 
 **Pure subtraction.** Nothing that draws today changes.
@@ -333,7 +333,7 @@ retained one moved out to `Dressing.h` where step 7 could cache it.
 **Was.** Across [`api/ui/`](../../../api/ui/) and every consumer.
 
 `v3d::ui::menu` becomes `v3d::ui::component::menu` and `v3d::ui::style::prop` becomes
-`v3d::ui::style::property`, per [Conventions.md](../../Conventions.md). `ComponentRenderer::Style`
+`v3d::ui::style::property`, per [Conventions.md](../../contributing/Conventions.md). `ComponentRenderer::Style`
 becomes `ComponentRenderer::Dressing` — the struct of colours and metrics a component is drawn
 with, which is what step 7 caches — leaving `v3d::ui::Style` as the only `Style` in the library.
 
@@ -579,10 +579,10 @@ default alone.
 
 ### Step 14 — `docs/UserInterface.md`
 
-**Closed.** [UserInterface.md](../../UserInterface.md), with rows added to
+**Closed.** [UserInterface.md](../../api/UserInterface.md), with rows added to
 [docs/README.md](../../README.md) and [CLAUDE.md](../../../CLAUDE.md).
 
-**Was.** New [`docs/UserInterface.md`](../../UserInterface.md), plus
+**Was.** New [`docs/UserInterface.md`](../../api/UserInterface.md), plus
 [`docs/README.md`](../../README.md) and [`CLAUDE.md`](../../../CLAUDE.md).
 
 Eight ADRs, two paradigms, thirty classes and no owning document —

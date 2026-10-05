@@ -16,7 +16,7 @@ shared film, a trace that recurses, textures, and one ray tracer both renderers 
 ([ADR-0077](../../adr/0077-offline-one-shared-ray-tracer.md)). What it left is in
 [TODO.md](../../TODO.md#offline-rendering). The rest of this file is the roadmap as it stood before
 those phases, kept as the reasoning they were drafted from, and
-[OfflineRenderers.md](../../OfflineRenderers.md) is the account of the tree as it is.
+[OfflineRenderers.md](../../OfflineRenderer.md) is the account of the tree as it is.
 
 State as of 2026-09-10. Phases 1 and 2 closed on 2026-09-05, the same day as their own plans
 ([one](../../plans/completed/OfflineRenderingPhase1.md),

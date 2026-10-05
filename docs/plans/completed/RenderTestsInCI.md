@@ -87,7 +87,7 @@ reference picture is real, and it is the workstream *after* this one. Step 2 is 
 workstream will stand on. Worth knowing when it comes: the machinery already exists in the
 offline renderers, where moya and talyn each compare against a committed PNG with
 `image::compare` and write what they rendered to `data_out/` on a failure — see
-[Testing.md](../../Testing.md). A realtime golden image should reuse that convention rather than
+[Testing.md](../../contributing/Testing.md). A realtime golden image should reuse that convention rather than
 invent a second one.
 
 ---
@@ -195,7 +195,7 @@ Two things to get right, both of which are traps rather than decisions:
   this point about the messenger: a layer with nowhere to report to is silent, and silence is
   indistinguishable from a clean run.
 - **Synchronization validation is a separate net and is off by default.** `VK_LAYER_VALIDATE_SYNC=1`
-  turns it on, per [Testing.md](../../Testing.md), and it catches the class of defect — a barrier
+  turns it on, per [Testing.md](../../contributing/Testing.md), and it catches the class of defect — a barrier
   whose first scope misses a stage, a present not ordered after its transition — that is hardest
   to find by eye and most worth having in CI. Whether CI sets it is a decision for step 6; the
   sink in this step is what makes it observable either way.

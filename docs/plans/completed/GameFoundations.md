@@ -116,7 +116,7 @@ gives for a word wider than the line. It is good code and the retained component
 it: [`component::Label`](../../../api/ui/component/Label.h) holds a `std::string` and
 `ComponentRenderer` draws *"one line of text at the position it holds"*.
 
-[UserInterface.md](../../UserInterface.md) says the two ways to write a ui are for different jobs and
+[UserInterface.md](../../api/UserInterface.md) says the two ways to write a ui are for different jobs and
 that a hud belongs to the retained one. A hud, a tooltip, an item description and a line of
 dialogue are all more than one line, and all four are on the consuming game's roadmap. This is a
 helper moving up a level, not a feature.
@@ -608,7 +608,7 @@ that nobody holds a handle to is still the common case — it just gets a track 
 
 **Tests.** `api/audio/tests/` exists and cannot open a device in CI, which bounds this: the clip
 table, the tag bookkeeping and the id lifetime are testable, and whether a sound is audible is not.
-That is the same line [Testing.md](../../Testing.md) already draws around `audio::Engine::initialize()`.
+That is the same line [Testing.md](../../contributing/Testing.md) already draws around `audio::Engine::initialize()`.
 
 ## Considered and not done
 

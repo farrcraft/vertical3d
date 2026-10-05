@@ -9,7 +9,7 @@
 A `Canvas` draws in pixels. pong's court is the window in pixels with 800 by 600 written into its
 rules: the paddle travel, where the right paddle stands, and the ball's speeds. A FIXME asks for
 variables. tetris fits its well to the window by hand, and odyssey picks through a hard-coded
-tile width. [RenderingPipeline.md](../RenderingPipeline.md#what-is-not-built-yet) also records
+tile width. [RenderingPipeline.md](../api/Rendering.md#what-is-not-built-yet) also records
 that the 2D pass does not read set 0, and the roadmap took the two to be one change. They are
 not. Set 0 is a camera per pass. The quad projection is a push constant per submit, and so per
 canvas. pong draws its court and its menu in one pass, and the menu is in pixels.

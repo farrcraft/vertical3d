@@ -339,7 +339,7 @@ Update the state in the table above, and set ADR-0060's status when step 5 lands
 - **Step 2** is the ground pick, and the handoff note to retcon is written here, when it lands.
 - **Step 5** changes what [Architecture.md](../../Architecture.md#the-loop-has-two-virtuals-and-they-mean-different-things)
   says about `alpha()` — "nothing reads it yet" stops being true — and
-  [ECSDesign.md](../../ECSDesign.md) gains `Previous<T>`. Delete [TODO.md](../../TODO.md#the-game-loop)'s
+  [ECSDesign.md](../../api/ECS.md) gains `Previous<T>`. Delete [TODO.md](../../TODO.md#the-game-loop)'s
   game-loop entry rather than marking it.
 - **When the plan closes**, step 6 moves to TODO.md with its trigger, the roadmap's
   [m1](../../roadmap/completed/m1-MotionAndQueries.md) points here as done, and this file moves to

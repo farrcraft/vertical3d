@@ -376,7 +376,7 @@ makes on the app's behalf — a pass that both samples a depth target and writes
 this design forbids rather than detects.
 
 **Verification is the awkward part.** Everything below the recorder needs a window and a GPU
-([Testing.md](../../Testing.md)), so this is verified by
+([Testing.md](../../contributing/Testing.md)), so this is verified by
 [ADR-0007](../../adr/0007-ci-render-tests-on-software-vulkan.md)'s standing answer: run an app and read the log,
 with a silent validation layer as the signal. The layer is exactly the right instrument here —
 a sampled image in the wrong layout, a missing usage bit and a format without the sampled
@@ -432,6 +432,6 @@ verified by the four apps still drawing text. Step 7 is the render-verification 
 Update the state note in the table above, set the ADR's status if the step carried one, and for
 step 7 delete [TODO.md](../../TODO.md)'s depth-target line rather than marking it done. Steps 1, 3
 and 7 each move something a document owns: [Architecture.md](../../Architecture.md) for the loop's
-new seam, [UserInterface.md](../../UserInterface.md) for `TextRenderer`'s constructor and
+new seam, [UserInterface.md](../../api/UserInterface.md) for `TextRenderer`'s constructor and
 `Immediate`'s two additions, and
-[RenderingPipeline.md](../../RenderingPipeline.md) for a target whose depth can be read.
+[RenderingPipeline.md](../../api/Rendering.md) for a target whose depth can be read.

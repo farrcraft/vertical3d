@@ -62,13 +62,13 @@ than shipped alongside them, which is why the Vulkan SDK is needed to configure 
 run.
 
 `voxel` additionally needs libnoise, the one vendored submodule, built separately. See
-[docs/Dependencies.md](docs/Dependencies.md) for that and for adding or updating a dependency,
-and [docs/Build.md](docs/Build.md) for the options and the traps.
+[docs/Dependencies.md](docs/contributing/Dependencies.md) for that and for adding or updating a dependency,
+and [docs/Build.md](docs/contributing/Build.md) for the options and the traps.
 
 ### Tests
 
 Boost.Test, one binary per library and per app that has logic worth covering, registered with
-ctest and run in CI on every push. [docs/Testing.md](docs/Testing.md) says what is covered and
+ctest and run in CI on every push. [docs/Testing.md](docs/contributing/Testing.md) says what is covered and
 what needs a GPU.
 
 ```
@@ -79,7 +79,7 @@ ctest --test-dir out/build/x64-Debug -R image      # one suite
 ### Lint
 
 cpplint on every push, plus `/WX`, `/analyze` and clang-tidy locally. The tree is clean at all
-four; the invocations and their traps are in [docs/Linting.md](docs/Linting.md).
+four; the invocations and their traps are in [docs/Linting.md](docs/contributing/Linting.md).
 
 ## Applications
 
@@ -102,8 +102,8 @@ its suite compares what it draws against committed reference images.
 [docs/README.md](docs/README.md) is the index. The ones worth knowing by name:
 
 * [docs/Architecture.md](docs/Architecture.md) — the map of the tree, and the invariants that bite
-* [docs/Build.md](docs/Build.md) — the CMake layout, the options, the linking rules and the traps
-* [docs/RenderingPipeline.md](docs/RenderingPipeline.md) — the render chain from window to draw item
+* [docs/Build.md](docs/contributing/Build.md) — the CMake layout, the options, the linking rules and the traps
+* [docs/RenderingPipeline.md](docs/api/Rendering.md) — the render chain from window to draw item
 * [docs/adr/](docs/adr/) — architecture decision records, and why things are shaped as they are
 * [docs/sdlc.md](docs/sdlc.md) — how work moves through the repo, and what "verified" means here
 * [docs/TODO.md](docs/TODO.md) — what is loose

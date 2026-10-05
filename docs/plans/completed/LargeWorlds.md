@@ -50,7 +50,7 @@ all. Step 7 would take step 6's reader as its input if it is taken up.
 resource's lifetime.**
 
 [`Registry`](../../../api/render/realtime/Registry.h) is a `std::vector` that grows. Its class
-comment and [RenderingPipeline.md](../../RenderingPipeline.md#resource-handles) both state the
+comment and [RenderingPipeline.md](../../api/Rendering.md#resource-handles) both state the
 invariant "slots are never reused, so a handle cannot come to refer to something other than
 what it was given for". The second half of that stays true; the first half has to go.
 
@@ -278,7 +278,7 @@ worked example. Test a region, or a chunk of one, rather than each quad, because
 costs nearly as much as drawing it. A box crossing the frustum's edge counts as in view, so
 nothing at the edge of the screen pops.
 
-**[RenderingPipeline.md](../../RenderingPipeline.md#what-is-not-built-yet)'s culling bullet is
+**[RenderingPipeline.md](../../api/Rendering.md#what-is-not-built-yet)'s culling bullet is
 deleted** when this lands, because the bullet stops being true.
 
 ### Step 6 — A grid from a picture and a legend
@@ -446,7 +446,7 @@ what to watch for.
 Update the state in the table above, and set ADR-0061's status when step 2 lands and ADR-0062's
 when step 6 does.
 
-- **Steps 1 to 3** change [RenderingPipeline.md](../../RenderingPipeline.md#resource-handles): "slots
+- **Steps 1 to 3** change [RenderingPipeline.md](../../api/Rendering.md#resource-handles): "slots
   are never reused" and "nothing frees an individual resource" both stop being true, and the
   section says what replaced them. The target bullet under the offscreen section changes from
   "a handle registered before a resize is stale" to the release-then-register rule.

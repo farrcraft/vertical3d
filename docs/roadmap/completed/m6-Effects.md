@@ -96,7 +96,7 @@ emits, which a canvas test already knows how to read.
 
 What a particle looks like is filtered sampling and blending, which no reference here can pin
 ([ADR-0054](../../adr/0054-testing-golden-images-hold-only-spec-exact-output.md)); it is
-validation silence and a look, per [Testing.md](../../Testing.md). A pan is a number handed to
+validation silence and a look, per [Testing.md](../../contributing/Testing.md). A pan is a number handed to
 SDL_mixer, and `audio::Engine::initialize()` is already one of the things no CI here can run.
 
 ## Not in this milestone

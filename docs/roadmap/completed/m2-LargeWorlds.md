@@ -34,7 +34,7 @@ except culling, which uses [milestone 1](m1-MotionAndQueries.md)'s `Frustum`.
 * **A pass can sort its items by key** ([Pass.h](../../../api/render/realtime/Pass.h)), by
   pipeline and material, for a depth-tested scene with an item per object. That is a different
   sort from the one above: a canvas is one stream, and the order inside it is what matters.
-* **Nothing is culled**, per [RenderingPipeline.md](../../RenderingPipeline.md#what-is-not-built-yet).
+* **Nothing is culled**, per [RenderingPipeline.md](../../api/Rendering.md#what-is-not-built-yet).
   voxel submits every meshed chunk, and its chunk-local vertices were laid out to allow culling
   later.
 * **[`api/grid`](../../../api/grid/)** is one rectangle of tiles on Y = 0 with world and tile

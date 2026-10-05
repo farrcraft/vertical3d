@@ -42,7 +42,7 @@ scripts\build.cmd
 ctest --test-dir out\build\x64-Debug --output-on-failure
 ```
 
-[docs/Linting.md](docs/Linting.md) has the four gates the tree is expected to be clean at.
+[docs/Linting.md](docs/contributing/Linting.md) has the four gates the tree is expected to be clean at.
 Then push and open a pull request.
 
 ## If you found it from a consumer
@@ -90,4 +90,4 @@ do the same.
 
 The consumer moves its pointer to the merged commit and commits that like any other change.
 The submodule sha is the only version pin that exists — there is no release and no
-compatibility check, so see [docs/NewProject.md](docs/NewProject.md#keeping-up-with-the-tree).
+compatibility check, so see [docs/NewProject.md](docs/api/UsingTheApi.md#keeping-up-with-the-tree).

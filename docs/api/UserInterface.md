@@ -2,20 +2,20 @@
 
 What `api/ui` does, as of 2026-09-13. Open questions are at the end.
 
-The decisions behind its shape are [ADR-0019](adr/0019-the-ui-is-laid-out-by-what-draws-it.md),
-[ADR-0020](adr/0020-ui-themes-are-data-apps-load-the-images.md),
-[ADR-0034](adr/0034-ui-layout-is-resolved-while-drawing.md),
-[ADR-0035](adr/0035-ui-immediate-mode-beside-the-retained-tree.md),
-[ADR-0036](adr/0036-text-sdf-glyphs-through-the-quad-shader.md),
-[ADR-0037](adr/0037-2d-clip-with-a-per-batch-scissor.md),
-[ADR-0038](adr/0038-ui-the-ui-hit-tests-the-mouse-before-the-app.md),
-[ADR-0039](adr/0039-layout-never-reads-the-box-it-wrote.md),
-[ADR-0040](adr/0040-ui-keyboard-focus-and-text-input.md),
-[ADR-0045](adr/0045-a-window-is-dragged-by-the-bar-that-folds-it.md),
-[ADR-0046](adr/0046-a-table-given-a-height-scrolls-in-its-own-right.md),
-[ADR-0057](adr/0057-a-selection-is-an-anchor-the-caret-moved-from.md) and
-[ADR-0058](adr/0058-ui-sdl-keyboard-adapter-in-ui-shell.md) and
-[ADR-0059](adr/0059-ui-enabled-is-an-inherited-flag.md). Those say why; this
+The decisions behind its shape are [ADR-0019](../adr/0019-the-ui-is-laid-out-by-what-draws-it.md),
+[ADR-0020](../adr/0020-ui-themes-are-data-apps-load-the-images.md),
+[ADR-0034](../adr/0034-ui-layout-is-resolved-while-drawing.md),
+[ADR-0035](../adr/0035-ui-immediate-mode-beside-the-retained-tree.md),
+[ADR-0036](../adr/0036-text-sdf-glyphs-through-the-quad-shader.md),
+[ADR-0037](../adr/0037-2d-clip-with-a-per-batch-scissor.md),
+[ADR-0038](../adr/0038-ui-the-ui-hit-tests-the-mouse-before-the-app.md),
+[ADR-0039](../adr/0039-layout-never-reads-the-box-it-wrote.md),
+[ADR-0040](../adr/0040-ui-keyboard-focus-and-text-input.md),
+[ADR-0045](../adr/0045-a-window-is-dragged-by-the-bar-that-folds-it.md),
+[ADR-0046](../adr/0046-a-table-given-a-height-scrolls-in-its-own-right.md),
+[ADR-0057](../adr/0057-a-selection-is-an-anchor-the-caret-moved-from.md) and
+[ADR-0058](../adr/0058-ui-sdl-keyboard-adapter-in-ui-shell.md) and
+[ADR-0059](../adr/0059-ui-enabled-is-an-inherited-flag.md). Those say why; this
 says what.
 
 ## Two ways to write a ui, and which to reach for
@@ -84,7 +84,7 @@ names `Container` and `style::Theme` rather than including every component heade
 ## Everything is a quad on somebody else's canvas
 
 Nothing here owns a device, a pass or a draw. A panel, a highlight and a line of text are all
-the batched quad of [ADR-0005](adr/0005-2d-one-batched-quad-pipeline.md), appended to whatever
+the batched quad of [ADR-0005](../adr/0005-2d-one-batched-quad-pipeline.md), appended to whatever
 canvas the app is already filling, so a ui costs the frame no pass and no draw of its own.
 
 ```
@@ -97,14 +97,14 @@ An app submits that canvas through `Engine3D::quads()` when it is done with it.
 
 ## Text is the caller's
 
-`v3d::ui::paint::Measure` and `v3d::ui::paint::Write` in [`paint/Text.h`](../api/ui/paint/Text.h) are the seam. Both
+`v3d::ui::paint::Measure` and `v3d::ui::paint::Write` in [`paint/Text.h`](../../api/ui/paint/Text.h) are the seam. Both
 renderers take the pair and name no font type, which is why drawing a ui costs no device and
 why the whole library is testable without a window — per
-[ADR-0019](adr/0019-the-ui-is-laid-out-by-what-draws-it.md).
+[ADR-0019](../adr/0019-the-ui-is-laid-out-by-what-draws-it.md).
 
 `ui::TextRenderer` is what supplies a pair: one font, packed into one atlas of signed distance
 field glyphs, with the drawn size closed over per
-[ADR-0036](adr/0036-text-sdf-glyphs-through-the-quad-shader.md). A ui at one size and a heading at
+[ADR-0036](../adr/0036-text-sdf-glyphs-through-the-quad-shader.md). A ui at one size and a heading at
 another are two callback pairs from one `TextRenderer`, and one atlas serves both.
 
 It takes its atlas upload as a `TextRenderer::Upload` callback rather than a `vulkan::renderer::Quad`,
@@ -115,7 +115,7 @@ names no vulkan type anywhere as a result, which is what ADR-0019's seam was alw
 **An app on `Engine3D` builds none of this itself.** `ui::shell::Screen` makes the text renderer
 with that upload, the component renderer over it, the statistics overlay and, if asked, an
 immediate layer, all over a canvas it owns
-([ADR-0074](adr/0074-the-shell-builds-the-uis-renderers.md)). Its `begin()` opens a frame and
+([ADR-0074](../adr/0074-the-shell-builds-the-uis-renderers.md)). Its `begin()` opens a frame and
 sizes and clears the canvas, and `resized()` tells the app when to resize what is its own. An app
 hands in the size and a function that dresses for it, so `scale()` can rebuild what closes over
 the size and dress it again. An app built on its own frame model, as retcon is, uses the
@@ -127,7 +127,7 @@ cost an allocation per label per frame.
 ## The box model
 
 A `Component` has children and a `Layout`, and the draw walk resolves the layout against the
-box around it — [ADR-0034](adr/0034-ui-layout-is-resolved-while-drawing.md).
+box around it — [ADR-0034](../adr/0034-ui-layout-is-resolved-while-drawing.md).
 
 ```
 Layout { Length x, y, width, height; Anchor anchor; }
@@ -142,7 +142,7 @@ Length { value, unit }   unit = Auto | Pixels | Percent
   offset at all, so the component sits at the corner it is anchored to.
 
 Nothing in layout reads a box a previous walk wrote —
-[ADR-0039](adr/0039-layout-never-reads-the-box-it-wrote.md). A tree laid out twice lands in the
+[ADR-0039](../adr/0039-layout-never-reads-the-box-it-wrote.md). A tree laid out twice lands in the
 same place, the first frame is the same as the tenth, and a resize places every child against
 the new size rather than the old one.
 
@@ -210,7 +210,7 @@ been half typed are places in their own contents rather than facts about the app
 ## Themes
 
 A theme is data, and the app resolves the images it names —
-[ADR-0020](adr/0020-ui-themes-are-data-apps-load-the-images.md). `ui::Engine::load()`
+[ADR-0020](../adr/0020-ui-themes-are-data-apps-load-the-images.md). `ui::Engine::load()`
 reads themes and containers out of one JSON document; `resolveImages()` is a second pass an app
 runs once it has a renderer to upload through. The resolver answers a `ui::Image`, a texture and
 the region of it that is the image, so one sprite sheet can serve every icon on a screen; what
@@ -238,7 +238,7 @@ The style classes:
 
 A button style names which look it dresses with `"state"`: `normal`, `hover`, `press` or
 `disabled` - spelled `inactive` by the themes written before
-[ADR-0059](adr/0059-ui-enabled-is-an-inherited-flag.md), which still reads. The look is
+[ADR-0059](../adr/0059-ui-enabled-is-an-inherited-flag.md), which still reads. The look is
 `style::Button::State` rather than the component's own state enum, because three of them are
 what the cursor writes and the fourth is `Component::enabled()`. The colour a disabled control's
 label is written in is `disabled-text` in `ui`, beside `text` and `active-text`, so one key
@@ -256,7 +256,7 @@ size, because a HUD is read at a glance and a tool panel is read closely.
 ## The cursor
 
 `ui::Cursor` turns a point into a command —
-[ADR-0038](adr/0038-ui-the-ui-hit-tests-the-mouse-before-the-app.md). It offers the point in
+[ADR-0038](../adr/0038-ui-the-ui-hit-tests-the-mouse-before-the-app.md). It offers the point in
 the reverse of the order the ui was drawn — menu bars, then toolbars, then the component tree
 — and the first thing that takes it stops the walk.
 
@@ -277,7 +277,7 @@ places.
 
 **A component that cannot be used right now is `enabled(false)`**, and it is a property of the
 component rather than a state something writes as the cursor moves —
-[ADR-0059](adr/0059-ui-enabled-is-an-inherited-flag.md). A disabled component is not
+[ADR-0059](../adr/0059-ui-enabled-is-an-inherited-flag.md). A disabled component is not
 offered the point, is not reached by the tab order, keeps whatever state it had, draws no focus
 ring, and is written in the theme's disabled colour. **Disabling a component disables what it
 holds**, so a box is what a screen greys a group of controls out with; `ui::usable()` is the
@@ -288,7 +288,7 @@ A press also moves the focus — onto what it landed on when that component aske
 focusable, and off whatever had it otherwise — which is what makes clicking into a box mean
 "type here". In a text box it says where as well: the caret goes to the character under the
 point and the anchor with it, so following the cursor selects the run between the two —
-[ADR-0057](adr/0057-a-selection-is-an-anchor-the-caret-moved-from.md). That is what the
+[ADR-0057](../adr/0057-a-selection-is-an-anchor-the-caret-moved-from.md). That is what the
 `paint::Measure` a cursor is given is for, and it should be the same one the renderer drawing
 that ui was given; a cursor given none routes every press as before and leaves the caret where
 it was. A button lights up under the cursor whether it sits on a strip or in the tree, and
@@ -299,7 +299,7 @@ Everything is tested against the boxes the last draw left, so an app that routes
 it draws sees a dead ui for one frame.
 
 An `Immediate` window is moved by its title bar, which is also what folds it —
-[ADR-0045](adr/0045-a-window-is-dragged-by-the-bar-that-folds-it.md). A press that stays put
+[ADR-0045](../adr/0045-a-window-is-dragged-by-the-bar-that-folds-it.md). A press that stays put
 folds the window as it always did; one that travels past a few pixels drags it instead and does
 not fold it. The position `window()` is given stays the anchor: the drag is kept as a
 displacement from it, so a window the caller repositions every frame follows and keeps the nudge
@@ -314,7 +314,7 @@ frame for the same reason a widget's hover does.
 ## The keyboard
 
 `ui::Keys` is the cursor's counterpart —
-[ADR-0040](adr/0040-ui-keyboard-focus-and-text-input.md). The focus lives on `ui::Engine`, one
+[ADR-0040](../adr/0040-ui-keyboard-focus-and-text-input.md). The focus lives on `ui::Engine`, one
 component at a time, and a key goes there or nowhere: a ui with nothing focused takes no key,
 so a game's movement bindings go on working until something is clicked into.
 
@@ -356,10 +356,10 @@ there. A `Scrollbar` is moved rather than stepped: an arrow by a line — a boun
 A bar showing all of its content takes no key at all, because a control that swallows a key it
 could not have acted on stops a game being played while it holds the focus. A component does not
 own the state it shows, so activating a check box sends its command and marks nothing —
-[ADR-0019](adr/0019-the-ui-is-laid-out-by-what-draws-it.md).
+[ADR-0019](../adr/0019-the-ui-is-laid-out-by-what-draws-it.md).
 
 **A selection is an anchor the caret moved away from** —
-[ADR-0057](adr/0057-a-selection-is-an-anchor-the-caret-moved-from.md). Nothing is selected
+[ADR-0057](../adr/0057-a-selection-is-an-anchor-the-caret-moved-from.md). Nothing is selected
 exactly when the two are in the same place, so every operation that moves the caret says one
 thing: whether the anchor comes with it. Shift and a caret key selects the run it travelled, and
 an arrow with nothing held lands on an end of the selection rather than a character past it.
@@ -408,7 +408,7 @@ an event; the ui gets them through the seam below, ahead of the bindings.
 an app four things to do before it runs: decode the event, read the modifiers off it, find a
 clipboard, and get the platform composing at all. That is the same work in every app, so it is
 the api's — `ui::shell::Keyboard`, per
-[ADR-0058](adr/0058-ui-sdl-keyboard-adapter-in-ui-shell.md).
+[ADR-0058](../adr/0058-ui-sdl-keyboard-adapter-in-ui-shell.md).
 
 ```cpp
 uiKeys_ = boost::make_shared<v3d::ui::shell::Keyboard>(vgui_, dispatcher_, window());
@@ -418,7 +418,7 @@ bool App::onEvent(const SDL_Event& event) {
 }
 ```
 
-It goes in `onEvent()` because [ADR-0043](adr/0043-input-apps-see-raw-events-before-bindings.md)
+It goes in `onEvent()` because [ADR-0043](../adr/0043-input-apps-see-raw-events-before-bindings.md)
 puts the app ahead of the bindings: a key the ui took must not also fire the command bound to
 it, and returning true is what stops it. **Only a key going down is ever taken.** A release
 always goes through, so a key held when a box took the focus is still seen to come up and
@@ -447,7 +447,7 @@ that for every app.
 ## Clipping
 
 A component that asks to `clip()` cuts what it holds off at its own box, which the batch
-carries as a scissor rectangle — [ADR-0037](adr/0037-2d-clip-with-a-per-batch-scissor.md).
+carries as a scissor rectangle — [ADR-0037](../adr/0037-2d-clip-with-a-per-batch-scissor.md).
 It is asked for rather than default, because a menu drops a panel out of the strip it came
 from. A `SelectList` and an `Immediate` window clip themselves.
 
@@ -458,7 +458,7 @@ The immediate layer has two things that clip and scroll, and they nest. An `Imme
 cuts its body and scrolls it, deciding from last frame's content whether it needs a bar — so
 the bar arrives the frame after the one that overflowed. A table **given a height** does the
 same for its own rows, per
-[ADR-0046](adr/0046-a-table-given-a-height-scrolls-in-its-own-right.md): it clips to that
+[ADR-0046](../adr/0046-a-table-given-a-height-scrolls-in-its-own-right.md): it clips to that
 height, draws a bar down its own right and keeps `headerRow()`'s band above the region rather
 than in it, so the column names stay put while the rows pass under them. Its gutter is reserved
 whether or not there is anything to scroll, which is what lets its bar appear the same frame
@@ -482,7 +482,7 @@ region without the canvas asking. What a `LineCanvas` clip is for is a cut *insi
 
 `api/ui/tests/` needs no window, no device and no font: `Canvas` is CPU side and the text
 callbacks are the app's. A case builds components, draws them onto a canvas, and asserts on the
-boxes the draw left or on the primitives it emitted. [Testing.md](Testing.md) has the rest.
+boxes the draw left or on the primitives it emitted. [Testing.md](../contributing/Testing.md) has the rest.
 
 ## What is not built yet
 
@@ -496,9 +496,9 @@ boxes the draw left or on the primitives it emitted. [Testing.md](Testing.md) ha
   `nextItemWidth(float)` is what tells it, spent by the widget that follows and forgotten
   after it, which is what lets two scrubbers share a row. A separator always takes the row.
 
-None of those is unfinished, which is why [TODO.md](TODO.md) carries none of them - each is
+None of those is unfinished, which is why [TODO.md](../TODO.md) carries none of them - each is
 what the design came to, recorded here so a reader meets it before the code does.
-[plans/UiConsolidation.md](plans/completed/UiConsolidation.md) is what closed the ones that are gone.
+[plans/UiConsolidation.md](../plans/completed/UiConsolidation.md) is what closed the ones that are gone.
 
 ## Still open
 
@@ -512,13 +512,13 @@ what the design came to, recorded here so a reader meets it before the code does
   `component::traits()`, which says what kind a type is for every rule written for a kind -
   a strip, a flow box, a tab bar, a text field. One it does not name: a style class of its own
   in `style::Resolver`.
-  [ADR-0047](adr/0047-code-exhaustive-enum-switches.md) has why a registry was
+  [ADR-0047](../adr/0047-code-exhaustive-enum-switches.md) has why a registry was
   weighed and left, and it is a trade to revisit rather than work waiting to be done.
 - **A component disabled while it holds the focus keeps `focused()`** until something moves the
   focus. It draws no ring and answers no key, so nothing reaches it and nothing shows it, but
   `Engine::focused()` still reports it and `onFocus()` was not told.
-  [ADR-0059](adr/0059-ui-enabled-is-an-inherited-flag.md) has what moving it from a setter
+  [ADR-0059](../adr/0059-ui-enabled-is-an-inherited-flag.md) has what moving it from a setter
   would cost.
 - **A clip is square**, so a rounded panel cuts what it holds to its box and not to its curve.
-  [ADR-0037](adr/0037-2d-clip-with-a-per-batch-scissor.md) has what lifting that would
+  [ADR-0037](../adr/0037-2d-clip-with-a-per-batch-scissor.md) has what lifting that would
   cost. No theme here rounds anything, so nothing in this tree shows it.

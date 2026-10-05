@@ -11,17 +11,17 @@ two of them say the same thing, one of them is wrong.
 | | |
 |---|---|
 | [Architecture.md](Architecture.md) | The map: the libraries, the two Engines, the app shell, geometry, and the invariants that cross everything |
-| [Build.md](Build.md) | Configuring and building, the CMake layout and options, shaders, linking rules, build traps |
-| [Dependencies.md](Dependencies.md) | vcpkg and the manifest, the Vulkan SDK, the libnoise submodule, adding or updating a package |
-| [Testing.md](Testing.md) | The Boost.Test suites, what is covered and what cannot be, and how a rendering change is verified |
-| [Linting.md](Linting.md) | cpplint, `/WX`, `/analyze` and clang-tidy — the four gates the tree is clean at |
-| [Conventions.md](Conventions.md) | House style: file layout, namespaces, pointers, logging, and what a comment is for |
-| [RenderingPipeline.md](RenderingPipeline.md) | The realtime renderer from window to draw item, and what is not built yet |
-| [OfflineRenderers.md](OfflineRenderers.md) | moya and its two hiders, `api/render/offline`, and RIB |
-| [UserInterface.md](UserInterface.md) | `api/ui` — the two ways to write a ui, the box model, themes and the cursor |
+| [Build.md](contributing/Build.md) | Configuring and building, the CMake layout and options, shaders, linking rules, build traps |
+| [Dependencies.md](contributing/Dependencies.md) | vcpkg and the manifest, the Vulkan SDK, the libnoise submodule, adding or updating a package |
+| [Testing.md](contributing/Testing.md) | The Boost.Test suites, what is covered and what cannot be, and how a rendering change is verified |
+| [Linting.md](contributing/Linting.md) | cpplint, `/WX`, `/analyze` and clang-tidy — the four gates the tree is clean at |
+| [Conventions.md](contributing/Conventions.md) | House style: file layout, namespaces, pointers, logging, and what a comment is for |
+| [RenderingPipeline.md](api/Rendering.md) | The realtime renderer from window to draw item, and what is not built yet |
+| [OfflineRenderers.md](OfflineRenderer.md) | moya and its two hiders, `api/render/offline`, and RIB |
+| [UserInterface.md](api/UserInterface.md) | `api/ui` — the two ways to write a ui, the box model, themes and the cursor |
 | [Editor.md](Editor.md) | `vertical3d/` — its layout, its meshes, and the records that settle it |
-| [ECSDesign.md](ECSDesign.md) | entt notes. Still mostly open questions |
-| [NewProject.md](NewProject.md) | Starting an application against the api from another repository |
+| [ECSDesign.md](api/ECS.md) | entt notes. Still mostly open questions |
+| [NewProject.md](api/UsingTheApi.md) | Starting an application against the api from another repository |
 
 ## The record
 

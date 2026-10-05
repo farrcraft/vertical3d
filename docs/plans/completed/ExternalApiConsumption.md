@@ -172,7 +172,7 @@ spdlog's bundled fmt.
 - **The `BOOST_USE_WINAPI_VERSION` trio was already `PUBLIC`** where it appeared. It is the model
   the other two follow, and it is now on all sixteen rather than nine.
 - **`/std:c++latest` and `/permissive-` stay the consumer's to set**, stated in the contract in
-  [docs/Dependencies.md](../../Dependencies.md) rather than forced through an interface property.
+  [docs/Dependencies.md](../../contributing/Dependencies.md) rather than forced through an interface property.
 
 **Not as planned — the standard could not stay a raw flag.** `target_compile_features(INTERFACE
 cxx_std_23)` was the plan's way of stating a floor, and it is unnecessary: glm and EnTT already
@@ -212,9 +212,9 @@ five describe a build that worked once.
   incomplete; an example that names one leaf library tests almost nothing.
 - **It is a project in its own right, not a subdirectory of this one.** Its root is its own, which
   is what makes `CMAKE_SOURCE_DIR` differ from `V3D_ROOT`, and what would have caught step 6's bug.
-- **The walkthrough is written down** in [docs/NewProject.md](../../NewProject.md): the submodule
+- **The walkthrough is written down** in [docs/NewProject.md](../../api/UsingTheApi.md): the submodule
   layout, the manifest a consumer needs, the CMakeLists with the five things in it worth knowing, the
-  app, the config, and how to tell a first run worked. [docs/Dependencies.md](../../Dependencies.md)
+  app, the config, and how to tell a first run worked. [docs/Dependencies.md](../../contributing/Dependencies.md)
   keeps the vcpkg half and points at it.
 
 **Not as planned — it is a step in `ctest.yml`, not a workflow of its own.** The plan argued for a

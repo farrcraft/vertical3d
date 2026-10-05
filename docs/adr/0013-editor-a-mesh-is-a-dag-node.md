@@ -69,7 +69,7 @@ id; the views own their cameras and `CameraProfiles` owns the table those are bu
 - **Pros**: The repository already has entt and `api/ecs`, the registry already lives on the
   `Controller`, and entity ids are exactly the stable handle picking wants. Selection becomes
   a tag component and a query rather than a flag and a walk.
-- **Cons**: [ECSDesign.md](../ECSDesign.md) is aspirational — nothing in the tree stores
+- **Cons**: [ECSDesign.md](../api/ECS.md) is aspirational — nothing in the tree stores
   anything meaningful in the registry. Component selection is the harder half of the editor's
   selection model and it is over the parts *inside* one mesh, which entt does not help with:
   a vertex is not going to be an entity. So the flags stay wherever the mesh is, and the ecs

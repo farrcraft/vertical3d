@@ -247,7 +247,7 @@ per layout.
 forces three grows. It returns half through the ring, and checks that the next 50 come from
 the returns rather than from a fourth pool. Every existing device case draws through set 0 and
 set 1, so they carry the rewrite. voxel is verified by running it and reading the log, per
-[Testing.md](../../Testing.md#verifying-a-rendering-change).
+[Testing.md](../../contributing/Testing.md#verifying-a-rendering-change).
 
 **State: done.** All 25 suites pass, cpplint is clean, and so is `out/build/verify` over
 `v3dlib_render`, both render suites and voxel. voxel ran on the Radeon with validation on, and
@@ -470,7 +470,7 @@ consumer inherits a tier that is not linear in the one place it claims to be.
 **ADR-0067: the api's lit shaders are embedded, and a consumer may hand in its own.**
 
 * The api's are compiled by `v3d_add_shader` like the rest, for the reason
-  [RenderingPipeline.md](../../RenderingPipeline.md#shaders) gives: a shader on disk beside an
+  [RenderingPipeline.md](../../api/Rendering.md#shaders) gives: a shader on disk beside an
   executable goes stale silently.
 * Every lit pipeline takes its modules as SPIR-V words, defaulting to the embedded ones, so a
   game that loads from a directory hands over what it loaded. retcon's "swappable without a
@@ -885,7 +885,7 @@ any other is blessed. Step 4 needed none, so that is step 10's identity LUT if i
 * **It does not move `DebugLines` or `GridOverlay`.** `renderer::Line` is the same pipeline.
 * **It does not instance.** That is [milestone 5](../../roadmap/completed/m5-SkeletalAnimation.md#4-instancing)'s.
 * **It does not merge draws, add a second depth buffer, or put the 2D pass on set 0.** That is
-  the rest of [RenderingPipeline.md](../../RenderingPipeline.md#what-is-not-built-yet)'s list.
+  the rest of [RenderingPipeline.md](../../api/Rendering.md#what-is-not-built-yet)'s list.
 * **It does not add cascades or a self-growing shadow radius.** Step 8 says why.
 * **It does not light voxel.** voxel's vertex layout and its per-vertex lighting are its own.
   Step 3 is what it takes.
@@ -899,7 +899,7 @@ Update the state in the table above.
 
 * **Step 1** adds the ADR index row for 0064 as `proposed`, and the plans index says this plan
   is open.
-* **Step 2** rewrites [RenderingPipeline.md](../../RenderingPipeline.md)'s offscreen-targets
+* **Step 2** rewrites [RenderingPipeline.md](../../api/Rendering.md)'s offscreen-targets
   section where it describes `Texture::owned`. It also deletes "a depth target that can be
   read" from what is not built yet, which ADR-0044 built and the list never lost.
 * **Step 3** deletes voxel's pool from the binding section's account of voxel.
@@ -909,10 +909,10 @@ Update the state in the table above.
   resource-handles section.
 * **Step 7** adds ADRs 0066 and 0067 and accepts 0064. It adds a lit-pass section to
   RenderingPipeline.md and a line to its colour section, and adds the include to
-  [Build.md](../../Build.md#shaders).
+  [Build.md](../../contributing/Build.md#shaders).
 * **Step 9** adds ADR-0068, amends ADR-0031's header, and replaces the offscreen section's
   three consequences with what is now true.
-* **Step 11** adds the device suite's new cases to [Testing.md](../../Testing.md).
+* **Step 11** adds the device suite's new cases to [Testing.md](../../contributing/Testing.md).
 * **When the plan closes**, [m4](../../roadmap/completed/m4-LitScene.md) moves to `roadmap/completed/` and
   points here as done. The roadmap's table row says so, and this file moves to
   [completed/](./).

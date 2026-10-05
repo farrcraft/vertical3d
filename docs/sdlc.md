@@ -57,7 +57,7 @@ rule.
 
 ## 3. Build
 
-[Conventions.md](Conventions.md) has the house style, and [Build.md](Build.md) covers
+[Conventions.md](contributing/Conventions.md) has the house style, and [Build.md](contributing/Build.md) covers
 configuring and building.
 
 One concern per commit. The message says *why* where the diff does not make it obvious. Where a
@@ -70,17 +70,17 @@ tree compiles and links, so a failure belongs to the change until shown otherwis
 
 **Lint and static analysis.** cpplint runs on every push. `/WX`, `/analyze` and clang-tidy run
 locally. The tree is clean at all four, so every finding is a real one. See
-[Linting.md](Linting.md).
+[Linting.md](contributing/Linting.md).
 
 **Tests.** Each api library has a Boost.Test binary, as does each app with logic worth
 covering. Run them with `ctest --test-dir out/build/x64-Debug --output-on-failure`. A change
-with a testable CPU half brings test cases with it. [Testing.md](Testing.md) records what is
+with a testable CPU half brings test cases with it. [Testing.md](contributing/Testing.md) records what is
 covered and what cannot be.
 
 **Rendering.** CI runs the device tests against lavapipe, a software Vulkan driver, and a few of
 them compare against committed reference images. Locally, a rendering change is checked by
 running the app and reading the log. The Khronos validation layer reports through the logger,
-so a run with no validation messages is the signal. [Testing.md](Testing.md) has the detail.
+so a run with no validation messages is the signal. [Testing.md](contributing/Testing.md) has the detail.
 
 ## 5. Record
 
@@ -91,7 +91,7 @@ A change is not finished when it compiles. Before moving on:
 - **Update the reference document.** Update the document that owns whatever the change moved.
   [README.md](README.md) says which document owns which subject. Update `../CLAUDE.md` only if
   the change moved the routing, one of its rules, or the shape of the tree.
-- **Re-read the comments the change added** against [Conventions.md](Conventions.md#writing).
+- **Re-read the comments the change added** against [Conventions.md](contributing/Conventions.md#writing).
   Comments are written while the reasoning is fresh, so they collect history, ADR citations and
   long sentences. A second pass removes them in a minute.
 - **Set the ADR status.** Set a status when a proposed decision is accepted. When a later ADR

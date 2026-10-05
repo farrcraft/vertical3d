@@ -1,12 +1,12 @@
 # Starting A Project Against The api
 
 How to stand up an application in its own repository that uses the `api/` libraries.
-[ADR-0027](adr/0027-build-consume-the-api-as-source.md) settles the shape: the api is taken as
+[ADR-0027](../adr/0027-build-consume-the-api-as-source.md) settles the shape: the api is taken as
 **source**, not as an installed package. There is no `find_package(vertical3d)` and nothing to
 install. The consumer nests this repository with `add_subdirectory` and builds it with its own
 compiler.
 
-[examples/starter/](../examples/starter/) is the finished result of everything below, kept in
+[examples/starter/](../../examples/starter) is the finished result of everything below, kept in
 the tree and built by CI on every push. Copy it rather than typing this out. The walkthrough
 exists to explain the pieces.
 
@@ -62,12 +62,12 @@ myapp/
 project, which is now yours. vertical3d's own `vcpkg.json` is never consulted once it is
 nested, so every package the api needs has to be in yours.
 
-Copy [vcpkg.json](../vcpkg.json) as it stands, `sdl3`'s `vulkan` feature included. Without that
+Copy [vcpkg.json](../../vcpkg.json) as it stands, `sdl3`'s `vulkan` feature included. Without that
 feature `SDL_Vulkan_LoadLibrary` fails at startup with "No dynamic Vulkan support in current
 SDL video driver (windows)", which surfaces as an unhandled exception rather than a build
 failure.
 
-[vcpkg-configuration.json](../vcpkg-configuration.json) matters more, and getting it wrong
+[vcpkg-configuration.json](../../vcpkg-configuration.json) matters more, and getting it wrong
 produces no clear error: **copy the `baseline` commit verbatim.** A boost library's file name
 carries its version, so a baseline that has drifted from the tree's is a different boost, and
 the result is a link error a long way from its cause. Nothing checks that the two agree.
@@ -116,7 +116,7 @@ vertical3d is not the top level project; setting them explicitly documents the i
 
 **`V3D_LIBRARIES` names the api libraries you link.** Their closure is what gets built and
 what decides which packages are looked for, per
-[ADR-0033](adr/0033-build-select-api-libraries-through-a-manifest.md), so an app that wants
+[ADR-0033](../adr/0033-build-select-api-libraries-through-a-manifest.md), so an app that wants
 only `v3d::image` needs no Vulkan SDK and no SDL3 installed. Leave it out and you get `all`,
 which is every library and every package. It has to be `all` if you turned the apps or the
 tests back on.
@@ -149,14 +149,14 @@ themes, which you want as soon as you draw text and not before.
 ## 4. The application
 
 An app is a subclass of `v3d::engine::Engine` that overrides `start`, `tick`, `render` and
-`release`, plus a `main` that drives it. [examples/starter/src/](../examples/starter/src/) is a complete
+`release`, plus a `main` that drives it. [examples/starter/src/](../../examples/starter/src) is a complete
 working one. The parts that are not obvious:
 
 **`main` is one line.** `v3d::engine::run<AppEngine>(argv[0], "myapp")` from
 `<api/engine/Application.h>` derives the path every asset resolves against from `argv[0]`,
 drives `initialize()` and `eventLoop()` inside a try block that logs what a renderer threw, and
 calls `shutdown()` outside it. A windowed app has no console, so an uncaught exception is
-otherwise an abort dialog with nothing in it. [ADR-0028](adr/0028-apps-the-shared-app-shell-lives-in-the-api.md)
+otherwise an abort dialog with nothing in it. [ADR-0028](../adr/0028-apps-the-shared-app-shell-lives-in-the-api.md)
 covers what else an app does not have to write: `v3d::ui::paint::TextRenderer` for a font and its
 glyphs, and `v3d::ui::shell::GameMenu` for a menu the escape key puts up.
 
@@ -178,7 +178,7 @@ destroyed, and the instance reports it leaked.
 
 **A quit calls `quit()`.** The loop ticks and renders after an event handler returns, so the
 window has to outlive the handler; `shutdown()` is `run()`'s and an app cannot reach it -
-[ADR-0080](adr/0080-apps-the-engine-owns-startup-and-shutdown-order.md).
+[ADR-0080](../adr/0080-apps-the-engine-owns-startup-and-shutdown-order.md).
 
 **Drawing is a canvas of quads submitted to a pass.** Open the frame with
 `renderer_->beginFrame(&size)`, which returns false while the window has no area — it has
@@ -249,8 +249,8 @@ error in your own build. Two things to re-check when you do:
 - **The vcpkg baseline**, if `vcpkg-configuration.json` changed in the tree. Copy it again.
 - **The package list**, if `vcpkg.json` changed. Yours is the one that gets installed.
 
-The api is still moving — see [the roadmap](roadmap/) and whatever is open in
-[plans/](plans/) — so expect to fix a call site occasionally rather than to pin a version.
+The api is still moving — see [the roadmap](../roadmap) and whatever is open in
+[plans/](../plans) — so expect to fix a call site occasionally rather than to pin a version.
 
 ## Changing the tree from a consumer
 
@@ -261,5 +261,5 @@ anywhere else, and **it has not been tested**: `V3D_BUILD_APPS` and `V3D_BUILD_T
 applications nor a single test suite.
 
 Fix it here instead, on a branch, and check that branch out in your submodule to try it against
-your app without committing the pointer. [CONTRIBUTING.md](../CONTRIBUTING.md) is the procedure,
+your app without committing the pointer. [CONTRIBUTING.md](../../CONTRIBUTING.md) is the procedure,
 including how to move a commit between two local clones rather than re-typing it.

@@ -34,7 +34,7 @@ pong's court is 800 by 600 window pixels with a FIXME asking for variables
 of its own, and odyssey picks and draws through a hard-coded tile width. Each is a 2D game asking
 for its own coordinates mapped onto whatever the window is. An orthographic camera for a 2D pass
 is that mapping, and is also the item in
-[RenderingPipeline.md](../../RenderingPipeline.md#what-is-not-built-yet) about the 2D pass not
+[RenderingPipeline.md](../../api/Rendering.md#what-is-not-built-yet) about the 2D pass not
 reading set 0 — the two are one change.
 
 ## Widgets

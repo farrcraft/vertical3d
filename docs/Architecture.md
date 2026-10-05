@@ -1,8 +1,8 @@
 # Architecture
 
 A map of the tree, and the invariants that cross it. The deeper references sit beside this
-one: [RenderingPipeline.md](RenderingPipeline.md) for the realtime renderer,
-[OfflineRenderers.md](OfflineRenderers.md) for moya, [Editor.md](Editor.md) for
+one: [RenderingPipeline.md](api/Rendering.md) for the realtime renderer,
+[OfflineRenderers.md](OfflineRenderer.md) for moya, [Editor.md](Editor.md) for
 `vertical3d/`, and [adr/](adr/) for why any of it is shaped as it is.
 
 ## The libraries
@@ -103,7 +103,7 @@ through dynamic rendering: no `VkRenderPass`, no `VkFramebuffer`.
 menu panel are all the quad, so text needs no separate path and `ui::ComponentRenderer` draws
 onto the same canvas. Lines are in world space and read the pass camera at set 0.
 
-[RenderingPipeline.md](RenderingPipeline.md) covers the whole chain, both primitives,
+[RenderingPipeline.md](api/Rendering.md) covers the whole chain, both primitives,
 offscreen targets and the descriptor set layout. It is the reference for anything below this
 line.
 
@@ -111,10 +111,10 @@ line.
 
 entt. `v3d::engine::Engine` holds the `entt::registry` as a protected member, so an app's
 `Controller` inherits it and passes `&registry_` into the render engine as a raw
-`entt::registry*`. [ECSDesign.md](ECSDesign.md) says what exists. An entity is drawn from a
+`entt::registry*`. [ECSDesign.md](api/ECS.md) says what exists. An entity is drawn from a
 `Transform` and a component per kind of drawing, which the api walks
 ([ADR-0063](adr/0063-ecs-draw-from-a-transform-plus-a-component-per-kind.md)), and
-[RenderingPipeline.md](RenderingPipeline.md#how-this-meets-the-ecs) describes the walk.
+[RenderingPipeline.md](api/Rendering.md#how-this-meets-the-ecs) describes the walk.
 
 ## Tile grids
 

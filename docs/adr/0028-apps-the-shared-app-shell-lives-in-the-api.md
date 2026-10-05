@@ -84,7 +84,7 @@ what makes it that game and nothing else.
 
 ### Negative
 - `TextRenderer` cannot be tested: its constructor uploads an atlas, so it needs a device, and
-  it joins the list in [Testing.md](../Testing.md) of what waits on
+  it joins the list in [Testing.md](../contributing/Testing.md) of what waits on
   [ADR-0007](0007-ci-render-tests-on-software-vulkan.md).
 - An app wanting to draw text in two fonts now holds two `TextRenderer`s where it used to hold
   two markups against one atlas. Nothing in the tree does.

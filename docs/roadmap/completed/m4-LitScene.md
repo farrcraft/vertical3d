@@ -153,7 +153,7 @@ implementation, and so is filtered sampling. What the device suite can pin is wh
 specification determines: a depth-only pass's depth at known vertices, a post pass that is the
 identity, and a LUT that is the identity. Those catch a pass that reads the wrong target or
 writes the wrong format, which is most of what goes wrong in a chain. Everything else is
-validation silence and a screenshot, per [Testing.md](../../Testing.md).
+validation silence and a screenshot, per [Testing.md](../../contributing/Testing.md).
 
 ## Not in this milestone
 
@@ -161,7 +161,7 @@ validation silence and a screenshot, per [Testing.md](../../Testing.md).
   [milestone 5](m5-SkeletalAnimation.md#4-instancing)'s, because a horde of skinned characters is
   what needs it.
 * **Merging draws, a second depth buffer, and the 2D pass reading set 0** — the rest of
-  [RenderingPipeline.md](../../RenderingPipeline.md#what-is-not-built-yet)'s list. None is needed
+  [RenderingPipeline.md](../../api/Rendering.md#what-is-not-built-yet)'s list. None is needed
   by a lit scene, and each is its own change.
 * **Ambient occlusion, fog, night and weather passes.** retcon lists them as polish, and they
   are passes a chain allows rather than pieces of it.

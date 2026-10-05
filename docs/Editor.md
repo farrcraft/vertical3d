@@ -59,7 +59,7 @@ Read the record rather than inferring the rule from the code.
 One way only, per [ADR-0023](adr/0023-offline-rib-is-the-scene-format.md).
 `RIBExportVisitor` writes topology and a placement per mesh from the active view's camera, and
 nothing reads it back. The scene has no lights and no materials, so what it produces renders in
-one flat colour. [OfflineRenderers.md](OfflineRenderers.md) covers what the offline renderer
+one flat colour. [OfflineRenderers.md](OfflineRenderer.md) covers what the offline renderer
 does with the file.
 
 ## What is unbuilt

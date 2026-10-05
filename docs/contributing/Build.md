@@ -1,7 +1,7 @@
 # Building
 
 Visual Studio configures `out/build/x64-Debug` directly from
-[CMakeSettings.json](../CMakeSettings.json). From a shell, use a developer environment
+[CMakeSettings.json](../../CMakeSettings.json). From a shell, use a developer environment
 (`vcvars64.bat`), then:
 
 ```
@@ -13,7 +13,7 @@ ninja -C out/build/x64-Debug              # everything
 ninja -C out/build/x64-Debug pong         # one target
 ```
 
-[scripts/build.cmd](../scripts/build.cmd) and [scripts/test.cmd](../scripts/test.cmd) are the
+[scripts/build.cmd](../../scripts/build.cmd) and [scripts/test.cmd](../../scripts/test.cmd) are the
 same two commands with the developer environment already entered, for a shell that is not one:
 
 ```
@@ -30,16 +30,16 @@ is added or updated. This document covers what the build does with them.
 
 ## The CMake layout
 
-**The root is four files.** [cmake/v3dApiLibraries.cmake](../cmake/v3dApiLibraries.cmake)
+**The root is four files.** [cmake/v3dApiLibraries.cmake](../../cmake/v3dApiLibraries.cmake)
 holds the manifest of what each api library depends on,
-[cmake/v3dDependencies.cmake](../cmake/v3dDependencies.cmake) the `find_package` calls,
-[cmake/v3dHelpers.cmake](../cmake/v3dHelpers.cmake) the five `v3d_add_*` functions, and
-[CMakeLists.txt](../CMakeLists.txt) the options. `api/CMakeLists.txt` is a loop over the
+[cmake/v3dDependencies.cmake](../../cmake/v3dDependencies.cmake) the `find_package` calls,
+[cmake/v3dHelpers.cmake](../../cmake/v3dHelpers.cmake) the five `v3d_add_*` functions, and
+[CMakeLists.txt](../../CMakeLists.txt) the options. `api/CMakeLists.txt` is a loop over the
 libraries the root selected — see [Selecting the api](#selecting-the-api).
 
 **Paths into this repository go through `V3D_ROOT`, never `CMAKE_SOURCE_DIR`.** Once another
 project has nested this one, `CMAKE_SOURCE_DIR` names the consumer's root — see
-[ADR-0027](adr/0027-build-consume-the-api-as-source.md).
+[ADR-0027](../adr/0027-build-consume-the-api-as-source.md).
 
 The root sets `CMAKE_CXX_STANDARD 23`, which CMake maps to `/std:c++latest` here. It is stated
 as a standard rather than as the flag because glm and EnTT require `cxx_std_17` through their
@@ -69,7 +69,7 @@ The tests guard is written on each `add_subdirectory("tests")` rather than insid
 
 ### Selecting the api
 
-Per [ADR-0033](adr/0033-build-select-api-libraries-through-a-manifest.md), **a consumer names
+Per [ADR-0033](../adr/0033-build-select-api-libraries-through-a-manifest.md), **a consumer names
 the libraries it links and the tree works out the rest**:
 
 ```cmake
@@ -94,7 +94,7 @@ configure stops if it is not: the apps name every library between them, and each
 directory belongs to one library.
 
 **The manifest is checked against the link graph on every configure.**
-[cmake/v3dApiLibraries.cmake](../cmake/v3dApiLibraries.cmake) states each library's `REQUIRES`
+[cmake/v3dApiLibraries.cmake](../../cmake/v3dApiLibraries.cmake) states each library's `REQUIRES`
 and `PACKAGES` a second time, because the closure has to be known before any library has been
 configured. `v3d_api_verify_manifest` reads what the targets actually linked and fails on a
 difference in either direction, so the two cannot drift. Adding a package to an api library
@@ -109,12 +109,12 @@ imported target, so it has no link line to appear in.
 - `v3d_add_api_library(<name> <sources>)` declares `v3dlib_<name>`, the `v3d::<name>` alias an
   external consumer links, the include root, `/EHsc` and `/utf-8` in the interface, and the
   boost winapi definitions.
-- `v3d_add_shared_data(<target>)` copies the root [data/](../data/) beside the executable.
+- `v3d_add_shared_data(<target>)` copies the root [data/](../../data) beside the executable.
 - `v3d_add_app_data(<target>)` copies `<app>/data` beside the executable.
 - `v3d_add_test(<lib> <sources>)` — see [Testing.md](Testing.md).
 - `v3d_add_shader(<target> <source> [OUTPUT <name>] [DEFINES <define>...])` — see below.
 
-**Assets shared by more than one app live in the root [data/](../data/)**, and an app's own
+**Assets shared by more than one app live in the root [data/](../../data)**, and an app's own
 live in `<app>/data`. Both are copied next to the executable, because the engine resolves an
 asset relative to the exe.
 
@@ -128,7 +128,7 @@ not affect a run from the build tree until you copy it across.
 `v3d_add_shader(<target> <source>)` runs the Vulkan SDK's `glslc` over a GLSL file and writes
 SPIR-V as a C initialiser list into `<binary dir>/shaders/<name>.inc`. The source `#include`s
 that into a `uint32_t` array. The engine's shaders are in
-[api/render/shaders/](../api/render/shaders/). `OUTPUT` names the module something other than the
+[api/render/shaders/](../../api/render/shaders). `OUTPUT` names the module something other than the
 source's file name and `DEFINES` are passed to the preprocessor, so one source compiled twice is
 two shaders: a skinned lit shader is its rigid one compiled with `SKINNED`.
 
@@ -136,7 +136,7 @@ A shader may `#include` another file, beside it or by a relative path, with
 `#extension GL_GOOGLE_include_directive : require`. glslc writes a depfile of what was included,
 and the build reads it, so an edit to a shared include rebuilds every shader that uses it. The
 lit shaders share `shaders/lit/lit.glsl` this way
-([ADR-0067](adr/0067-lit-shaders-are-embedded-and-replaceable.md)), and `shaders/lit/pose.glsl`,
+([ADR-0067](../adr/0067-lit-shaders-are-embedded-and-replaceable.md)), and `shaders/lit/pose.glsl`,
 which brings in `skin.glsl` when `SKINNED` is defined.
 
 `VULKAN_SDK` must point at an SDK install, or the first call to that function fails with
@@ -155,10 +155,10 @@ time, so a build that compiles no shader is not stopped by its absence.
   minutes.
 - **cgltf has no CMake config.** It is a single header the port copies into `include/`, found
   with `find_path(V3D_CGLTF_INCLUDE_DIR ...)` in
-  [cmake/v3dDependencies.cmake](../cmake/v3dDependencies.cmake) and put on `v3dlib_asset_media`'s own
+  [cmake/v3dDependencies.cmake](../../cmake/v3dDependencies.cmake) and put on `v3dlib_asset_media`'s own
   include path. ADR-0027 removed the alternative, a header reachable only through the vcpkg
   include directory. Its implementation half is compiled once, in
-  [api/asset/media/loader/CgltfImpl.cpp](../api/asset/media/loader/CgltfImpl.cpp), which is exempt from both
+  [api/asset/media/loader/CgltfImpl.cpp](../../api/asset/media/loader/CgltfImpl.cpp), which is exempt from both
   analysers the same way `voxel/src/noise/noiseutils.cpp` is.
 - `VCPKG_ROOT` in CMakeSettings.json has a doubled path segment and points nowhere. vcpkg works
   through the toolchain file regardless.
@@ -168,7 +168,7 @@ time, so a build that compiles no shader is not stopped by its absence.
 
 ## Linking rules
 
-Per [ADR-0027](adr/0027-build-consume-the-api-as-source.md), an api library carries its own
+Per [ADR-0027](../adr/0027-build-consume-the-api-as-source.md), an api library carries its own
 dependencies, **including the other api libraries it uses**. So `v3dlib_engine` brings asset,
 config, event, input and render with it.
 
@@ -185,14 +185,14 @@ at the next one; CI configures on every run.
 
 - **Apps name neither spdlog nor fmt.** `v3dlib_log` links `spdlog::spdlog` PUBLIC so the
   `SPDLOG_COMPILED_LIB` definition propagates. Every `api/` library whose sources compile
-  [Logger.h](../api/log/Logger.h) must link `v3dlib_log` PUBLIC for the same reason. Without
+  [Logger.h](../../api/log/Logger.h) must link `v3dlib_log` PUBLIC for the same reason. Without
   the definition it builds spdlog header-only and emits symbols the compiled library also
   defines, which surfaces as a duplicate-symbol link error in whichever app pulls the wrong
   object first.
 - **Only an app that plays sound links the mixer.** It names `v3dlib_audio`, which links
   `SDL3_mixer::SDL3_mixer` PUBLIC, and calls `audio::registerLoaders()` on its asset manager.
   Nothing else in the api reaches audio -
-  [ADR-0079](adr/0079-assets-loaders-are-registered.md).
+  [ADR-0079](../adr/0079-assets-loaders-are-registered.md).
 - **An asset manager loads what was registered on it.** `engine::Engine` registers
   `v3dlib_asset_media`'s loaders on the one it builds; a manager built anywhere else, a test
   among them, starts with documents only and calls `asset::media::registerLoaders()` itself.
@@ -206,17 +206,17 @@ at the next one; CI configures on every run.
 ## Building from another repository
 
 **An application in another repository takes this one as source**, nested with
-`add_subdirectory`. [NewProject.md](NewProject.md) is the walkthrough, and
-[examples/starter/](../examples/starter/) is a working app that CI builds on every push.
+`add_subdirectory`. [NewProject.md](../api/UsingTheApi.md) is the walkthrough, and
+[examples/starter/](../../examples/starter) is a working app that CI builds on every push.
 
 The starter is the only thing in the tree that can catch an api library relying on a global
 the root sets, or on an app naming every library. That is how `api/engine` and `api/render`
 were found not declaring the api libraries they use. It names its three libraries in
 `V3D_LIBRARIES` rather than taking `all`, so the closure of
-[ADR-0033](adr/0033-build-select-api-libraries-through-a-manifest.md) is exercised on every
+[ADR-0033](../adr/0033-build-select-api-libraries-through-a-manifest.md) is exercised on every
 push as well.
 
-[examples/](../examples/) is the exception to "every directory here builds with the tree":
+[examples/](../../examples) is the exception to "every directory here builds with the tree":
 nothing in the root's `add_subdirectory` list names it, because each example is a root project
 of its own, configured separately. That is the only way to be a consumer of this repository
 from inside it.

@@ -21,7 +21,7 @@ The api is consumed as source ([ADR-0027](../../adr/0027-build-consume-the-api-a
 most of what consumes it is outside this tree, so the evidence came from four places:
 
 * **The api itself** — what each library offers, and the gaps [TODO.md](../../TODO.md) and
-  [RenderingPipeline.md](../../RenderingPipeline.md#what-is-not-built-yet) already record.
+  [RenderingPipeline.md](../../api/Rendering.md#what-is-not-built-yet) already record.
 * **The apps in this tree** — what each implements locally that is engine-shaped: pong's
   hand-written box tests, voxel's collision stub and raw Vulkan, odyssey's map format and fog
   of war, moya's `Plane` and `Frustum`, and the renderer setup four apps write identically.
@@ -44,7 +44,7 @@ retcon's ADR-0041 — so what follows is work for this tree whoever ends up want
 |---|---|---|---|
 | 1 | [Motion and queries](m1-MotionAndQueries.md) — **done by [a plan](../../plans/completed/MotionAndQueries.md)**, sprite clip aside | Interpolation, sprite clips, a ground pick, box overlap, `Plane` and `Frustum` in `api/type` | cozy M5–M6, pong, voxel, odyssey, moya |
 | 2 | [A world larger than the screen](m2-LargeWorlds.md) — **done by [a plan](../../plans/completed/LargeWorlds.md)**, regions and remembered sight aside | Releasing a resource, depth-ordering world quads, culling, a grid map format, remembered sight | cozy M6, retcon phase 6, odyssey |
-| 3 | [The renderable component](m3-RenderableComponent.md) — **done by [a plan](../../plans/completed/RenderableComponent.md)**, the mesh component built by milestone 4 | A decision: how the ECS meets the renderer | the open question in [ECSDesign.md](../../ECSDesign.md), retcon's `ecs/` |
+| 3 | [The renderable component](m3-RenderableComponent.md) — **done by [a plan](../../plans/completed/RenderableComponent.md)**, the mesh component built by milestone 4 | A decision: how the ECS meets the renderer | the open question in [ECSDesign.md](../../api/ECS.md), retcon's `ecs/` |
 | 4 | [A lit scene](m4-LitScene.md) — **done by [a plan](../../plans/completed/LitScene.md)**, retcon's adoption aside | Image, sampler and texture classes, `type::Model` onto the device, a lit mesh pass, a shadow map, a post chain | retcon `engine/renderer/`, voxel |
 | 5 | [Skeletal animation](m5-SkeletalAnimation.md) — **done by [a plan](../../plans/completed/SkeletalAnimation.md)**, instancing aside | Skins and clips from glTF, GPU skinning, a clip sampler shared with milestone 1, instancing | retcon phases 7–10 |
 | 6 | [Effects](m6-Effects.md) — **done by [a plan](../../plans/completed/Effects.md)**, the panned voice aside | Particles, weather, a tint over the world, panned audio | cozy M6–M8, retcon phase 10 |

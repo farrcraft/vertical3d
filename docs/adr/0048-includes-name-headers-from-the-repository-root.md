@@ -115,7 +115,7 @@ bullet, which should carry a note pointing here.
 - The include block of every converted file is regrouped as well as rewritten. cpplint reads an
   angle-bracket include ending in `.h` as a **C** system header, so `<api/…>` must precede every
   C++ system header — `<boost/shared_ptr.hpp>` may sit last because it does not end in `.h`, and
-  `<api/log/Logger.h>` may not. [Linting.md](../Linting.md) allows no `--filter`, so the position
+  `<api/log/Logger.h>` may not. [Linting.md](../contributing/Linting.md) allows no `--filter`, so the position
   is a constraint on the conversion rather than a warning to silence. It puts `<api/…>` where
   `examples/starter` and every `<vulkan/vulkan.h>` in the tree already sit.
 - `git blame` gets a line of noise on every converted include, and `git log -L` across one of
@@ -129,7 +129,7 @@ bullet, which should carry a note pointing here.
   compiler: `#include "../` returns nothing under `api/` after the first commit and nothing in
   the apps after the second, and that check is cheap enough to keep running afterwards.
 - A future file is written with a relative include, because nothing enforces this. Mitigated by
-  the same grep and by [Conventions.md](../Conventions.md) carrying the rule; a cpplint check
+  the same grep and by [Conventions.md](../contributing/Conventions.md) carrying the rule; a cpplint check
   would not catch it, since `"../x.h"` is valid Google style.
 - The include root itself moves, and every one of the 763 includes is wrong at once rather than
   the current handful. ADR-0027 fixed the root at the repository and this record depends on that

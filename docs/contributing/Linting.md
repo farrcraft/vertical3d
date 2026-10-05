@@ -1,7 +1,7 @@
 # Linting And Static Analysis
 
 Four gates. cpplint runs on every push; the other three are MSVC-side and are declared in
-[CMakeLists.txt](../CMakeLists.txt). **The tree is clean at all four**, so every finding is a
+[CMakeLists.txt](../../CMakeLists.txt). **The tree is clean at all four**, so every finding is a
 new one.
 
 ## cpplint
@@ -79,7 +79,7 @@ handle, and only for a switch carrying no `default:` label — so it bites exact
 author meant the switch to be complete, and a switch that wants a catch-all keeps one by
 writing `default:`. `api/ui` depends on it: a switch over `component::Type` is exhaustive so
 that adding a component fails the build in every place that has to decide about it, per
-[ADR-0047](adr/0047-code-exhaustive-enum-switches.md).
+[ADR-0047](../adr/0047-code-exhaustive-enum-switches.md).
 
 **`/analyze`** is `-DV3D_ANALYZE=ON`, off by default because it costs several times a plain
 compile of the tree. Its findings are the C6xxx and C26xxx numbers, and they reach `/WX` like
@@ -99,11 +99,11 @@ file would be lost the next time the port moves.
 ## clang-tidy
 
 `-DV3D_CLANG_TIDY=ON`, off by default at a similar cost, with the check list in
-[.clang-tidy](../.clang-tidy). The binary ships with the MSVC install, under
+[.clang-tidy](../../.clang-tidy). The binary ships with the MSVC install, under
 `VC/Tools/Llvm/x64/bin`.
 
 Four families are enabled and 20 checks subtracted. The tree is clean at the 186 left.
-[TODO.md](TODO.md#the-clang-tidy-backlog) carries what each subtraction reports, except the
+[TODO.md](../TODO.md#the-clang-tidy-backlog) carries what each subtraction reports, except the
 seven the `.clang-tidy` comment records as settled rather than pending. Removing a line from
 that table means fixing what it reports, never widening the exclusion.
 
@@ -124,9 +124,9 @@ Two traps, both silent:
 
 ## CI
 
-[.github/workflows/cpplint.yml](../.github/workflows/cpplint.yml) installs cpplint with pip on
+[.github/workflows/cpplint.yml](../../.github/workflows/cpplint.yml) installs cpplint with pip on
 an ubuntu runner and runs the command above. It is separate from
-[ctest.yml](../.github/workflows/ctest.yml), which builds the tree on a Windows runner and runs
+[ctest.yml](../../.github/workflows/ctest.yml), which builds the tree on a Windows runner and runs
 the test suites: lint needs nothing but python, where the build needs an MSVC toolchain, the
 Vulkan SDK, a vcpkg install and the vendor submodule. Neither analyser runs in CI. Both are
 local-only, because of the cost.

@@ -143,7 +143,7 @@ rather than a picture.
 
 What the plan left is what needs a window or a sound device rather than a device to draw
 with: `Feature::Window`, `ui::TextRenderer` and `audio::Engine::initialize()`. They are named
-beside `api/render` in [Testing.md](Testing.md) and were waiting on the same
+beside `api/render` in [Testing.md](contributing/Testing.md) and were waiting on the same
 [ADR-0007](adr/0007-ci-render-tests-on-software-vulkan.md), but a software Vulkan implementation answers none of
 them, so they outlive it.
 

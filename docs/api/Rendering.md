@@ -2,14 +2,14 @@
 
 What `api/render/realtime` does, as of 2026-09-06. Open questions are at the end.
 
-The decisions behind its shape are [ADR-0001](adr/0001-rendering-replace-opengl-with-vulkan.md) through
-[ADR-0005](adr/0005-2d-one-batched-quad-pipeline.md), plus
-[ADR-0008](adr/0008-shaders-descriptor-sets-by-update-frequency.md),
-[ADR-0009](adr/0009-colour-display-space-unorm-swapchain.md),
-[ADR-0010](adr/0010-meshes-owned-by-the-app-that-built-them.md),
-[ADR-0011](adr/0011-rendering-lines-as-a-world-space-primitive.md),
-[ADR-0031](adr/0031-rendering-passes-draw-into-offscreen-targets.md) and
-[ADR-0042](adr/0042-rendering-world-space-sprites.md). Those say why; this says what.
+The decisions behind its shape are [ADR-0001](../adr/0001-rendering-replace-opengl-with-vulkan.md) through
+[ADR-0005](../adr/0005-2d-one-batched-quad-pipeline.md), plus
+[ADR-0008](../adr/0008-shaders-descriptor-sets-by-update-frequency.md),
+[ADR-0009](../adr/0009-colour-display-space-unorm-swapchain.md),
+[ADR-0010](../adr/0010-meshes-owned-by-the-app-that-built-them.md),
+[ADR-0011](../adr/0011-rendering-lines-as-a-world-space-primitive.md),
+[ADR-0031](../adr/0031-rendering-passes-draw-into-offscreen-targets.md) and
+[ADR-0042](../adr/0042-rendering-world-space-sprites.md). Those say why; this says what.
 
 ## The chain of objects
 
@@ -35,13 +35,13 @@ Window    ->  Context3D  ->  Frame  ->  Pass  ->  DrawItem
 presented through a swapchain since odyssey's port on 2026-09-01, and a 2D game differs only
 in what its passes ask for, an orthographic projection and no depth. Everything that belongs
 to the device is `DeviceContext`, and `Context3D` is that plus the window's chain and presenter
-([ADR-0051](adr/0051-frames-in-flight-ring-separate-from-presenting.md)). A context is told what it
+([ADR-0051](../adr/0051-frames-in-flight-ring-separate-from-presenting.md)). A context is told what it
 draws into rather than asking a chain for it, which is what lets one exist with no window under
 it at all. `Engine3D` drives one frame per tick.
 
 There is no `VkRenderPass` and no `VkFramebuffer` anywhere. Passes draw through dynamic
 rendering, straight into the swapchain image views, per
-[ADR-0002](adr/0002-vulkan-require-version-1-3.md).
+[ADR-0002](../adr/0002-vulkan-require-version-1-3.md).
 
 ## A frame
 
@@ -56,16 +56,16 @@ engine.renderFrame();                  // once, at the end
 
 A `Frame` is a list of `Pass`es. `Engine3D` creates one, the `colour` pass, which draws
 straight to the window. Everything else is more passes rather than a different kind of frame
-([ADR-0003](adr/0003-rendering-one-engine-for-2d-and-3d.md)): the editor builds one pass per viewport of the
+([ADR-0003](../adr/0003-rendering-one-engine-for-2d-and-3d.md)): the editor builds one pass per viewport of the
 same scene, and an offscreen target is a pass the colour pass names in `Pass::reads()`, which
-records it first ([ADR-0068](adr/0068-rendering-order-passes-by-what-they-read.md)).
+records it first ([ADR-0068](../adr/0068-rendering-order-passes-by-what-they-read.md)).
 
 A pass carries what varies between 2D and 3D drawing: whether it clears and to what, whether
 it depth tests, what region of the target it draws into, the camera it draws through, and
 whether its items are sorted.
 
 A `DrawItem` describes one draw rather than performing it
-([ADR-0004](adr/0004-rendering-submit-draw-items-as-data.md)). It names its pipeline and material by
+([ADR-0004](../adr/0004-rendering-submit-draw-items-as-data.md)). It names its pipeline and material by
 handle and carries a `SortKey`. The engine owns sorting, merging and recording, and
 `Pass::submit` fills the key's pipeline and material in from the item's handles, so a caller
 sets only the layer and the depth.
@@ -100,7 +100,7 @@ contents is not worth a barrier, and the first pass to use it must clear.
 A `RenderTarget` built with `sampledDepth` allocates its depth image with sampled usage and a
 sampler, and the recorder leaves it in `DEPTH_READ_ONLY_OPTIMAL` after the last pass that wrote
 it — which is a shadow map, and is
-[ADR-0044](adr/0044-a-sampled-depth-target-is-read-only.md). `renderer::Quad::depthTexture()`
+[ADR-0044](../adr/0044-a-sampled-depth-target-is-read-only.md). `renderer::Quad::depthTexture()`
 registers it, sharing the image the way a target's colour is registered.
 
 **Asking for it changes the format.** A format the device will draw depth into is not
@@ -163,7 +163,7 @@ pipeline::Builder(device)
 
 Every buffer and image gets its memory from `memory::Allocator`, which the `Device` owns and
 builds once the logical device exists. It finds memory one of two ways
-([ADR-0053](adr/0053-memory-optional-vma-suballocation.md)): `Kind::Direct` is one device
+([ADR-0053](../adr/0053-memory-optional-vma-suballocation.md)): `Kind::Direct` is one device
 allocation per resource and is what everything here uses, and `Kind::Suballocated` hands out
 regions of larger blocks through the Vulkan Memory Allocator, which is what an application with
 per-frame resources needs — `maxMemoryAllocationCount` is a real limit. A consumer names the
@@ -196,7 +196,7 @@ the caller to say what it draws with and where it sorts.
 ## 2D drawing: the batched quad
 
 Every 2D thing in the engine — a rectangle, a sprite, a glyph — is one quad with a texture,
-per [ADR-0005](adr/0005-2d-one-batched-quad-pipeline.md). Lines are the other primitive and are
+per [ADR-0005](../adr/0005-2d-one-batched-quad-pipeline.md). Lines are the other primitive and are
 described below. The quad is split across the cpu/gpu line:
 
 - **`realtime::Canvas`** accumulates the quads. It holds a vertex stream of position, uv and
@@ -208,18 +208,18 @@ described below. The quad is split across the cpu/gpu line:
 - **`vulkan::renderer::Quad`** owns the one pipeline and a vertex and index buffer per frame
   in flight; the 1x1 white texture an untextured quad is drawn against, and the material it
   binds at set 1, are the context's `Textures`
-  ([ADR-0082](adr/0082-textures-owned-by-the-device-context.md)). `submit(canvas, pass)` uploads the canvas into the buffers belonging to the frame
+  ([ADR-0082](../adr/0082-textures-owned-by-the-device-context.md)). `submit(canvas, pass)` uploads the canvas into the buffers belonging to the frame
   about to be recorded, and turns each batch into a `DrawItem`.
 
 **A clip is batch state and the device scissors the draw**, per
-[ADR-0037](adr/0037-2d-clip-with-a-per-batch-scissor.md). `Canvas::clip` pushes a
+[ADR-0037](../adr/0037-2d-clip-with-a-per-batch-scissor.md). `Canvas::clip` pushes a
 rectangle, in the coordinates being drawn in and intersected with whatever is already clipped;
 the batch carries it, `renderer::Quad` puts it on the `DrawItem`, and the recorder sets a dynamic
 scissor per item and puts the pass's own region back for an item that names none. Nothing is
 clipped on the cpu, so a quad straddling the edge is drawn whole and half of it lands.
 
 **A canvas may draw in a space of its own**, per
-[ADR-0075](adr/0075-2d-a-canvas-may-have-its-own-coordinate-space.md). `Canvas::space(size, fit)` sets a
+[ADR-0075](../adr/0075-2d-a-canvas-may-have-its-own-coordinate-space.md). `Canvas::space(size, fit)` sets a
 size in the game's units, with its origin at the top left, and either stretches it over the
 canvas or contains it at its own aspect, centred with bars either side. `projection()` then
 maps the space into `viewport()`, `toSpace()` maps a cursor back, and a clip is mapped out to
@@ -239,7 +239,7 @@ it submits canvases, and the stream starts again from the first the first time i
 from after the in-flight ring has begun another frame - so nothing has to be told a frame
 ended, and a renderer an app built itself reuses its buffers the same as one the context holds.
 A buffer the content outgrows is replaced by one twice the size, and the old one is retired
-through the ring ([ADR-0061](adr/0061-resources-explicit-release-generational-handles.md)) rather than
+through the ring ([ADR-0061](../adr/0061-resources-explicit-release-generational-handles.md)) rather than
 waited for.
 
 Text goes through the same path. A `v3d::font` text buffer lays glyphs out into positions,
@@ -253,8 +253,8 @@ The ui draws through the same canvas rather than a pass of its own.
 its labels, so a game and its menu cost one upload and a draw per texture.
 
 **Drawing the ui is also what lays it out**, per
-[ADR-0019](adr/0019-the-ui-is-laid-out-by-what-draws-it.md) and
-[ADR-0034](adr/0034-ui-layout-is-resolved-while-drawing.md). A component holds other
+[ADR-0019](../adr/0019-the-ui-is-laid-out-by-what-draws-it.md) and
+[ADR-0034](../adr/0034-ui-layout-is-resolved-while-drawing.md). A component holds other
 components; `Component::layout()` says where it sits in the one holding it, as a length per
 axis that is either pixels, a percentage of the parent or `Auto`; and the walk that draws a
 container resolves each box against the box around it and leaves the component holding the
@@ -267,12 +267,12 @@ what a flow list is for. A `SelectList` shows as many rows as its box has room f
 nor laid out - and a component that was not laid out cannot be picked, which is ADR-0019 read
 the other way round. `Panel`, `Bar` and `Scrollbar` round their corners with `Canvas::arc`,
 which is the same triangle fan `circle` is built from and so stays inside the one batched
-primitive of [ADR-0005](adr/0005-2d-one-batched-quad-pipeline.md). A component cuts what it holds
+primitive of [ADR-0005](../adr/0005-2d-one-batched-quad-pipeline.md). A component cuts what it holds
 off at its own box when it asks to, with `Component::clip(true)`; a `Scrollbar` is the
 arithmetic of how far something is scrolled and leaves the input to whoever picked it.
 
 **There is a second way to write a ui, onto the same canvas**, per
-[ADR-0035](adr/0035-ui-immediate-mode-beside-the-retained-tree.md). `v3d::ui::Immediate`
+[ADR-0035](../adr/0035-ui-immediate-mode-beside-the-retained-tree.md). `v3d::ui::Immediate`
 takes the same `Measure` and `Write` callbacks and is driven by calls rather than by a tree:
 a window, a tab strip, a table, a button and a scrubbable int between `begin()` and `end()`,
 each placed where a layout pen has got to and hit tested against the box it was just drawn
@@ -285,7 +285,7 @@ the bar appears on the frame after the one that overflowed.
 
 ## Line drawing
 
-The second primitive, per [ADR-0011](adr/0011-rendering-lines-as-a-world-space-primitive.md). The editor's
+The second primitive, per [ADR-0011](../adr/0011-rendering-lines-as-a-world-space-primitive.md). The editor's
 construction grid, axis decoration, wireframe display, selected-edge highlight and
 manipulators are all made of it. It splits across the cpu/gpu line the same way:
 
@@ -310,7 +310,7 @@ buffer is, so an app that draws no lines pays nothing for it.
 
 ## World space quads
 
-The third primitive, per [ADR-0042](adr/0042-rendering-world-space-sprites.md): a textured
+The third primitive, per [ADR-0042](../adr/0042-rendering-world-space-sprites.md): a textured
 rectangle with four world corners, for a sprite standing on a ground plane and for a filled
 tile highlight.
 
@@ -323,7 +323,7 @@ tile highlight.
   white, and the ui's `Canvas` has none.
 - **`vulkan::renderer::World`** owns four pipelines and a pair of buffers per frame in flight,
   and takes its textures and its set 1 descriptors from the context's `Textures`
-  ([ADR-0082](adr/0082-textures-owned-by-the-device-context.md)) so that an atlas uploaded once serves
+  ([ADR-0082](../adr/0082-textures-owned-by-the-device-context.md)) so that an atlas uploaded once serves
   both primitives out of one descriptor pool. The pipelines are two blends,
   each with and without depth. `World::Blend::Alpha` is straight alpha over what is there.
   `Additive` adds the colour by its alpha and keeps the destination's alpha, so a flame or a
@@ -356,12 +356,12 @@ A registered model drawn with light is three things: a `MeshRegistry` entry, an 
 `Lit` owns the cel and outline pipelines, compiled against the colour and depth formats of
 the pass they draw into, the shadow pipeline, compiled against the shadow map's depth format,
 and the scene set each frame binds at set 2
-([ADR-0064](adr/0064-lighting-lit-passes-use-the-shared-recorder.md)). Every lit pipeline
+([ADR-0064](../adr/0064-lighting-lit-passes-use-the-shared-recorder.md)). Every lit pipeline
 declares the camera at set 0, the albedo at set 1 in the `Textures` material layout, and the scene
 at set 2, with one push block holding the model matrix, the base colour and the outline's
 thickness. Front faces are clockwise, because a model is wound counter clockwise seen from
 outside and the cameras in `api/type` flip y into Vulkan's clip space
-([ADR-0012](adr/0012-camera-projection-targets-vulkan-clip-space.md)).
+([ADR-0012](../adr/0012-camera-projection-targets-vulkan-clip-space.md)).
 
 A frame of it, built during the tick as any frame is:
 
@@ -383,11 +383,11 @@ so it is called while the frame is built and before the ring begins it, the same
 `Quad::submit` keeps. With no shadow map named, the white texture stands in, which reads as the
 far plane, so nothing is in shadow. `meshes()` submits every entity's outline and then every
 entity's surface, a draw per part of its entry, each drawn alpha of the way from its previous step
-([ADR-0060](adr/0060-ecs-interpolate-from-a-previous-step-component.md)).
+([ADR-0060](../adr/0060-ecs-interpolate-from-a-previous-step-component.md)).
 
 **The shadow is a pass like any other.** Its target has sampled depth and no colour, and the
 recorder leaves that depth read only once the pass has written it
-([ADR-0044](adr/0044-a-sampled-depth-target-is-read-only.md)), which is how the lit pass after
+([ADR-0044](../adr/0044-a-sampled-depth-target-is-read-only.md)), which is how the lit pass after
 it samples the map through set 2. The lit pass names the map in `reads()`, so the frame
 records the shadow pass first. `casters()` submits
 every entity whose `castsShadow` is set, and the shadow pipeline is biased, so the pass names a
@@ -399,7 +399,7 @@ so its quads are depth-tested against everything `meshes()` drew and are graded 
 recorder binds the scene set only for a pipeline that declares one, so the world pipelines are
 drawn in a pass that carries one. The engine's own `worldQuads()` is compiled against the
 swapchain's format, which the recorder's check refuses in an sRGB scene target. The quads'
-colours are linear there ([ADR-0066](adr/0066-lighting-light-in-linear-draw-to-srgb.md)).
+colours are linear there ([ADR-0066](../adr/0066-lighting-light-in-linear-draw-to-srgb.md)).
 
 **A skinned model is drawn by the same walks, with the skinned pipelines.** `Lit` has a
 skinned variant of the cel, outline and shadow pipelines. Their vertex is
@@ -409,10 +409,10 @@ vertex stages include `shaders/lit/skin.glsl` beside `lit.glsl`, and move a vert
 weighted sum of its joints' matrices before the model matrix. The fragment stages are shared.
 
 The matrices are a frame's palette
-([ADR-0071](adr/0071-skinning-joint-matrices-in-one-storage-buffer.md)).
+([ADR-0071](../adr/0071-skinning-joint-matrices-in-one-storage-buffer.md)).
 `realtime::poses(registry, alpha, meshRegistry)` walks every entity whose entry has a skin. It
 samples its `ecs::component::Playback`, drawn between steps, faded out of the clip it is leaving
-([ADR-0070](adr/0070-animation-cpu-sampling-playback-on-the-fixed-step.md)), or stands it at rest
+([ADR-0070](../adr/0070-animation-cpu-sampling-playback-on-the-fixed-step.md)), or stands it at rest
 when it has none. It returns a `Poses`, which is every palette end to end and where each one
 starts. The palette goes to `Lit::scene()`, which writes it into a storage buffer at set 2,
 binding 2, growing the buffer through the ring. The `Poses` goes to `meshes()` and `casters()`,
@@ -449,7 +449,7 @@ lays it out as `SceneUniforms`, which is the std140 `Scene` block. The cel shadi
 light plus a fill from above and opposite it, quantised into three flat bands, with a cast
 shadow dropping a fragment one band. A game that wants another look hands `Lit` its own
 shaders, which declare the same blocks
-([ADR-0067](adr/0067-lit-shaders-are-embedded-and-replaceable.md)).
+([ADR-0067](../adr/0067-lit-shaders-are-embedded-and-replaceable.md)).
 
 **The outline is a hull, not a post process.** Each vertex is pushed out along its normal before
 the model matrix, and the hull is drawn with its front faces culled, so only a rim shows
@@ -468,7 +468,7 @@ bottom right. The images it reads are bound at set 1, one combined image sampler
 and `source()` registers them as a material, so the item binds them as any draw binds a texture.
 Set 0 is declared and need not be read. The pass that draws it names what it reads in
 `Pass::reads()`, which records whatever drew those images first
-([ADR-0068](adr/0068-rendering-order-passes-by-what-they-read.md)).
+([ADR-0068](../adr/0068-rendering-order-passes-by-what-they-read.md)).
 
 A source names images as they are when it is made. A target that is resized is bound again, and
 a source is released before the `FullScreen` that made it goes.
@@ -477,7 +477,7 @@ a source is released before the `FullScreen` that made it goes.
 16³ table. The table comes from a 256×16 strip, sixteen slices of blue side by side with red
 across each and green down it, and a strip of any other shape, or none, gives the identity.
 The table is linear colour and indexed by linear colour
-([ADR-0066](adr/0066-lighting-light-in-linear-draw-to-srgb.md)), since a lit scene's sRGB target decodes
+([ADR-0066](../adr/0066-lighting-light-in-linear-draw-to-srgb.md)), since a lit scene's sRGB target decodes
 when it is sampled. The scene is read nearest, so the grade draws into a target of the scene's
 size, and the lookup is scaled into the table's texel centres so that black and white land on
 entries rather than on their edges. Loading the strip is the caller's, so a game reads its look
@@ -493,7 +493,7 @@ grade.submit(source, colour.get());
 
 **A grade's table can be replaced.** `replace(texels)` makes a new table from texels in the
 order `Grade::table()` gives them, rebinds every source to it, and releases the old table and its
-materials through the ring ([ADR-0061](adr/0061-resources-explicit-release-generational-handles.md)), so a
+materials through the ring ([ADR-0061](../adr/0061-resources-explicit-release-generational-handles.md)), so a
 frame in flight finishes with the table it was recorded against. A source keeps the handle
 `source()` gave it. A zone's own look is a swap, and a slow change between two looks is a lerp
 of their texels that the game uploads as often as it likes. It is called before the frame's
@@ -506,17 +506,17 @@ time, and are embedded in the library. They are not data files: they belong to t
 rather than to any app, and CMake does not copy per-app data into the build tree, so a shader
 sitting on disk beside an executable would go stale silently. `v3d_add_shader` does the
 compiling, and `glslc -mfmt=c` writes the module out as a C initialiser list that the source
-includes into a `uint32_t` array. See [Build.md](Build.md#shaders).
+includes into a `uint32_t` array. See [Build.md](../contributing/Build.md#shaders).
 
 ## Colour
 
 The swapchain is a `UNORM` format rather than an `_SRGB` one, so the colour a shader writes is
-the colour that appears — see [ADR-0009](adr/0009-colour-display-space-unorm-swapchain.md). Every
+the colour that appears — see [ADR-0009](../adr/0009-colour-display-space-unorm-swapchain.md). Every
 colour in the tree is authored in display space, and textures are uploaded as `UNORM` to
 match.
 
 **A consumer that writes linear light names its own format**, per
-[ADR-0049](adr/0049-swapchain-caller-picks-the-format.md). `Swapchain`, `Context3D` and
+[ADR-0049](../adr/0049-swapchain-caller-picks-the-format.md). `Swapchain`, `Context3D` and
 `Engine3D` take a preferred format, defaulting to none and therefore to the rule above; a
 format the surface does not offer in a non-linear sRGB colour space falls back to it, with a
 warning, so silence means the preference was met. An app on the engine shell names one where
@@ -527,7 +527,7 @@ to be right.
 
 **A lit scene is the exception: it computes in linear light and is drawn into an `_SRGB`
 target**, which encodes on store
-([ADR-0066](adr/0066-lighting-light-in-linear-draw-to-srgb.md)). Its albedo is uploaded with
+([ADR-0066](../adr/0066-lighting-light-in-linear-draw-to-srgb.md)). Its albedo is uploaded with
 `TextureFactory::Encoding::Srgb`, so it is decoded before it is lit, and `MeshRegistry` is the
 one place that does that. Every other texture keeps the `Display` default.
 
@@ -556,7 +556,7 @@ On the cpu, `engine::Statistics::scope(name)` times a span of the frame into a r
 and `StatisticsOverlay` draws a line per span it is handed.
 
 Two frames are in flight. What they are is a `vulkan::frame::Ring`, which needs a device and
-nothing else ([ADR-0051](adr/0051-frames-in-flight-ring-separate-from-presenting.md)): a command
+nothing else ([ADR-0051](../adr/0051-frames-in-flight-ring-separate-from-presenting.md)): a command
 buffer and a fence per frame, `frame()` to say which slot is being recorded, and `waitFrame()`
 for anything else keeping a resource per frame in flight. Every renderer is built on the ring
 rather than on the presenter, because sizing and indexing a geometry ring is pacing rather than
@@ -577,7 +577,7 @@ so a chain found out of date in between leaves the ring exactly as it was found.
 `vulkan::frame::Capture` copies a drawn image into a host visible buffer and writes it as a
 png. It is two calls because the submit sits between them — `record()` into the frame's own
 command buffer, `write()` once whatever the caller synchronises with says that submit has
-completed ([ADR-0050](adr/0050-a-frame-is-read-back-in-two-calls.md)).
+completed ([ADR-0050](../adr/0050-a-frame-is-read-back-in-two-calls.md)).
 
 `record()` takes a `Capture::Source` — an image, its extent, its format and the layout it is
 in — so the same call reads a presented frame or an offscreen `RenderTarget`. The swapchain
@@ -597,7 +597,7 @@ and so does a sampled depth image.
 aspect instead of colour, and `depth()` hands back one float a pixel once the submit has
 completed. Only `D32_SFLOAT` can be read this way, since its copy is exactly the float a test
 compares. A png would round depth to eight bits. The device suite is what calls `Capture`, for
-the pictures it pins under [ADR-0054](adr/0054-testing-golden-images-hold-only-spec-exact-output.md)
+the pictures it pins under [ADR-0054](../adr/0054-testing-golden-images-hold-only-spec-exact-output.md)
 and the depths it compares.
 
 ### Resize and minimize
@@ -626,7 +626,7 @@ A draw item names a material, and the material owns its set 1. Anything that cha
 object goes in push constants rather than in a set. That keeps what an item binds of its own
 at one set, and makes merging adjacent items a matter of comparing two handles.
 
-**Set 2 is the pass's**, per [ADR-0064](adr/0064-lighting-lit-passes-use-the-shared-recorder.md).
+**Set 2 is the pass's**, per [ADR-0064](../adr/0064-lighting-lit-passes-use-the-shared-recorder.md).
 `Pass::scene()` names it, and the recorder binds it once for the pass, for any pipeline whose
 layout declares a third set and for nothing else, so a quad drawn in a lit pass binds nothing
 extra. `Pass::depthBias()` is the same arrangement for a depth bias: recorded whenever a
@@ -650,7 +650,7 @@ interchangeable within a pass: a set bound for one stays bound across a pipeline
 another built against the same layout. The quad pipeline declares it and reads nothing from
 it, since a canvas carries its own orthographic projection in a push constant, and two canvases
 in one pass may map different spaces
-([ADR-0075](adr/0075-2d-a-canvas-may-have-its-own-coordinate-space.md)). The line, world and lit
+([ADR-0075](../adr/0075-2d-a-canvas-may-have-its-own-coordinate-space.md)). The line, world and lit
 pipelines and voxel's terrain read it. Terrain reads nothing else per draw: one camera at set 0,
 one block palette at set 1, and the chunk's origin in a 16 byte push constant. The line
 pipelines read it and declare nothing else at all — no set 1 and no push constant — and are
@@ -660,7 +660,7 @@ from set 0 upwards.
 ## Offscreen targets
 
 **A pass draws into the swapchain image unless it names a `vulkan::RenderTarget`**, per
-[ADR-0031](adr/0031-rendering-passes-draw-into-offscreen-targets.md). A target is a colour
+[ADR-0031](../adr/0031-rendering-passes-draw-into-offscreen-targets.md). A target is a colour
 `memory::Image`, optionally a depth buffer, and a `pipeline::Sampler`. A target given
 `VK_FORMAT_UNDEFINED` for colour has no colour image at all, which is what a shadow map draws
 into. It has to have sampled depth, since otherwise there would be nothing to read, and the
@@ -668,7 +668,7 @@ recorder begins its passes with no colour attachment. It is created with
 sampled usage and sized in pixels rather than by the window. It is given the in-flight ring,
 because what it lets go of on a resize or when it is destroyed is retired through the ring
 rather than destroyed under a frame still drawing into it
-([ADR-0061](adr/0061-resources-explicit-release-generational-handles.md)).
+([ADR-0061](../adr/0061-resources-explicit-release-generational-handles.md)).
 
 `Recorder` scans the pass list and moves a target into the attachment layout before the first
 pass that writes it, then into `SHADER_READ_ONLY_OPTIMAL` after the last - and a sampled depth
@@ -679,7 +679,7 @@ Register it with `Textures::texture(target)` to get a texture handle a canvas ca
 composite.
 
 **A pass is placed by what it reads**
-([ADR-0068](adr/0068-rendering-order-passes-by-what-they-read.md)).
+([ADR-0068](../adr/0068-rendering-order-passes-by-what-they-read.md)).
 `Pass::reads(target)` says a pass samples a target, and `Frame::ordered()` records every pass
 drawing into that target first. Passes into one target, the window included, keep the order
 they were created in, and so does anything the reads do not order. Two passes each reading what
@@ -709,7 +709,7 @@ sorts by whatever the allocator handed out, which reorders a frame differently o
 `vulkan::Resources` owns them, hands out the handles, and destroys whatever is left when the
 context goes.
 
-**A texture is released explicitly** ([ADR-0061](adr/0061-resources-explicit-release-generational-handles.md)),
+**A texture is released explicitly** ([ADR-0061](../adr/0061-resources-explicit-release-generational-handles.md)),
 through `Textures::release`, which releases its material with it. A handle carries a slot
 and a generation. A released slot is reused by the next registration with its generation moved
 on, so a handle stops resolving the moment it is released, and it can never come to mean
@@ -725,13 +725,13 @@ released.
 registry that never frees cannot hold without leaking, and the sort key has no geometry field
 to sort a handle on. So `vulkan::Mesh` is owned by whatever built it — a chunk, a model —
 `DrawItem` keeps raw `VkBuffer`s, and a draw item is valid only while its mesh is alive. See
-[ADR-0010](adr/0010-meshes-owned-by-the-app-that-built-them.md).
+[ADR-0010](../adr/0010-meshes-owned-by-the-app-that-built-them.md).
 
 **A model that is shared is registered.** `realtime::MeshRegistry` turns a glTF path, or a
 `type::Model` added under a name, into a `memory::Mesh` once, and hands back a `MeshHandle` with
 a slot and a generation the way `Resources` does
-([ADR-0065](adr/0065-meshes-shared-registry-keyed-by-path.md)). An entry holds the mesh and
-its parts ([ADR-0069](adr/0069-models-material-parts-over-one-vertex-buffer.md)). A part
+([ADR-0065](../adr/0065-meshes-shared-registry-keyed-by-path.md)). An entry holds the mesh and
+its parts ([ADR-0069](../adr/0069-models-material-parts-over-one-vertex-buffer.md)). A part
 is a range of the mesh's indices, its albedo's texture and material from the context's `Textures`, and
 its base colour, and it is one draw. The material is the white one when the part's material
 names no image, or names one that cannot be found, which is reported. Every part naming the same
@@ -754,7 +754,7 @@ vertex layout is `type::Model::Vertex`: position, normal and uv in 32 bytes.
 
 An entity is drawn from an `ecs::component::Transform` and a component per kind of drawing,
 and the api walks them
-([ADR-0063](adr/0063-ecs-draw-from-a-transform-plus-a-component-per-kind.md)). The
+([ADR-0063](../adr/0063-ecs-draw-from-a-transform-plus-a-component-per-kind.md)). The
 drawing components live in `realtime/component/`, beside the handles they name, so `api/ecs`
 stays free of the device.
 
@@ -765,13 +765,13 @@ passes. It goes into a `DepthOrder` keyed by `dot(position, depthAxis)`, so a wh
 sprites reaches one `WorldCanvas` in the caller's order and cuts a batch only where the texture
 changes. The transform is read through `interpolated<Transform>`, so an entity whose game called
 `snapshot<Transform>` is drawn between steps
-([ADR-0060](adr/0060-ecs-interpolate-from-a-previous-step-component.md)). A sprite's rotation is
+([ADR-0060](../adr/0060-ecs-interpolate-from-a-previous-step-component.md)). A sprite's rotation is
 ignored, because a billboard faces the camera.
 
 `realtime::particles(registry, alpha, right, up, depthAxis, order)` is the walk for
 `component::Particles`, which is what the particles of an `ecs::component::Emitter` look like:
 a texture, and a sprite clip played by a particle's age or over its whole life
-([ADR-0072](adr/0072-particles-an-emitter-component-owns-its-particles.md)). Each
+([ADR-0072](../adr/0072-particles-an-emitter-component-owns-its-particles.md)). Each
 particle is a quad centred where it stands, drawn alpha of the way from the previous position it
 keeps itself, sized and coloured by the emitter's tracks at its life. It faces the camera, or is
 stretched along its velocity as the camera sees it, which is a raindrop or a spark. A

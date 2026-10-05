@@ -36,7 +36,7 @@ The tree was read at `f61f898`.
 * **There is no shared sample store.** Both renderers write `offline::FrameBuffer` planes
   directly, one sample per pixel centre, and then run `sl::Imager`. The coverage plane was built
   to hold a fraction once there is more than one sample
-  ([OfflineRenderers.md](../../OfflineRenderers.md)).
+  ([OfflineRenderers.md](../../OfflineRenderer.md)).
 * **The RIB reader knows none of the sampling requests.** `PixelSamples`, `PixelFilter`,
   `PixelVariance`, `Shutter`, `DepthOfField`, `Exposure`, `Quantize` and `MotionBegin` fall to
   `unrecognised_` and are skipped (`rib/Reader.cxx:582-591`), and `rib::Handler` has no method for
@@ -672,7 +672,7 @@ Update the state in the table above.
 
 * **Drafting** points [the roadmap](../../roadmap/completed/OfflineRendering.md)'s phases 4, 5 and 6 here, and
   says in the plans index that this plan is open.
-* **Step 1** corrects the roadmap and [OfflineRenderers.md](../../OfflineRenderers.md).
+* **Step 1** corrects the roadmap and [OfflineRenderers.md](../../OfflineRenderer.md).
 * **Step 2** adds the requests to OfflineRenderers.md's account of the reader.
 * **Step 3** adds the index row for 0076 as `proposed`; **step 5** accepts it.
 * **Steps 4, 5 and 7** describe the film and the sampler in OfflineRenderers.md, and replace its

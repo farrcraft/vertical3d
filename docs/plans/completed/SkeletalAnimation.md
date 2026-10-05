@@ -718,16 +718,16 @@ Update the state in the table above.
 * **Step 1** adds the ADR index row for 0069 as `proposed`, and amends ADR-0030's header. It
   replaces [TODO.md](../../TODO.md#models)'s sentence that splitting a file by material is milestone
   5's. The plans index says this plan is open.
-* **Step 2** updates [RenderingPipeline.md](../../RenderingPipeline.md)'s account of the mesh
+* **Step 2** updates [RenderingPipeline.md](../../api/Rendering.md)'s account of the mesh
   registry and the walk.
 * **Step 4** adds ADR-0070 as `proposed`.
 * **Step 5** rewrites TODO.md's sprite-clip entry: the clock it waited for now exists, and what
   remains is the regions.
-* **Step 6** adds `Playback` to [ECSDesign.md](../../ECSDesign.md) beside `Transform`.
+* **Step 6** adds `Playback` to [ECSDesign.md](../../api/ECS.md) beside `Transform`.
 * **Step 7** adds ADR-0071, accepts 0070 and 0071, and amends ADR-0064's header. It adds the
   palette to RenderingPipeline.md's binding table and lit-pass section, and adds `skin.glsl` to
-  [Build.md](../../Build.md#shaders).
-* **Step 9** adds the new device cases to [Testing.md](../../Testing.md), and the licence of any
+  [Build.md](../../contributing/Build.md#shaders).
+* **Step 9** adds the new device cases to [Testing.md](../../contributing/Testing.md), and the licence of any
   committed asset to wherever the tree records third-party files.
 * **When the plan closes**, [m5](../../roadmap/completed/m5-SkeletalAnimation.md) moves to
   `roadmap/completed/` and points here as done. Instancing moves to TODO.md with its trigger,

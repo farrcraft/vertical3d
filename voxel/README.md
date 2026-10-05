@@ -11,7 +11,7 @@ is the record of what it was before that.
 ## Dependencies
 
 Everything but libnoise comes from the repository's own libraries and its vcpkg manifest — see
-[../docs/Dependencies.md](../docs/Dependencies.md). Voxel is the only app that links
+[../docs/Dependencies.md](../docs/contributing/Dependencies.md). Voxel is the only app that links
 [libnoise](https://github.com/eXpl0it3r/libnoise), which is a git submodule built separately, and
 it will not link without it. Its test suite links libnoise too: `Chunk` is built against a
 `TerrainMap`, and the vtable of the flat one a test supplies refers to the perlin implementation

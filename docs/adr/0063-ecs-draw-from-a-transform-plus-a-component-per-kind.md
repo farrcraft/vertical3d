@@ -10,7 +10,7 @@ editor mesh's `dag::Transform` holds as well.
 ## Context
 
 Nothing in the api says what an entity carries so that something can draw it, and
-[RenderingPipeline.md](../RenderingPipeline.md#how-this-meets-the-ecs) has called
+[RenderingPipeline.md](../api/Rendering.md#how-this-meets-the-ecs) has called
 that open since before either game existed. `api/ecs` has four 2D components, and neither game
 uses them. retcon has written `Transform` (position, yaw, scale) and `MeshRenderer` (a mesh
 handle and a shadow flag), with a scene renderer that walks both. cozy has a `Position` at its

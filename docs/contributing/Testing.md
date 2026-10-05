@@ -2,7 +2,7 @@
 
 Boost.Test, one binary per api library from `api/<lib>/tests/`, plus one per app that has logic
 worth covering. The binaries are registered with ctest and run in CI on every push by
-[.github/workflows/ctest.yml](../.github/workflows/ctest.yml).
+[.github/workflows/ctest.yml](../../.github/workflows/ctest.yml).
 
 ```
 ninja -C out/build/x64-Debug                       # tests build with everything else
@@ -28,16 +28,16 @@ stay that way: a software Vulkan implementation answers none of them.
 
 **`api/render` below the recorder has its own binary, `v3dtest_render_device`**, from
 `api/render/tests/device/`. It draws for real - a surface-free device
-([ADR-0007](adr/0007-ci-render-tests-on-software-vulkan.md)), a `DeviceContext` with no window under it
-([ADR-0051](adr/0051-frames-in-flight-ring-separate-from-presenting.md)), a frame recorded into a
+([ADR-0007](../adr/0007-ci-render-tests-on-software-vulkan.md)), a `DeviceContext` with no window under it
+([ADR-0051](../adr/0051-frames-in-flight-ring-separate-from-presenting.md)), a frame recorded into a
 `RenderTarget`, and `vulkan::frame::Capture` reading it back
-([ADR-0050](adr/0050-a-frame-is-read-back-in-two-calls.md)). Each case asserts both halves:
+([ADR-0050](../adr/0050-a-frame-is-read-back-in-two-calls.md)). Each case asserts both halves:
 that the validation layer had nothing to say, and that the pixels are what was drawn. Four of
 them assert the second half against a picture committed in `api/render/tests/device/data/`,
 compared exactly: a flat quad, a quad drawn with a texture the case uploads, and two overlapping
 world quads in each submission order - which is what says a world quad is ordered by its caller
-and not by its depth ([ADR-0042](adr/0042-rendering-world-space-sprites.md)). What a reference may contain is
-[ADR-0054](adr/0054-testing-golden-images-hold-only-spec-exact-output.md) — only what the
+and not by its depth ([ADR-0042](../adr/0042-rendering-world-space-sprites.md)). What a reference may contain is
+[ADR-0054](../adr/0054-testing-golden-images-hold-only-spec-exact-output.md) — only what the
 specification determines pixel-for-pixel, so that the same file is owed by a driver and by the
 software implementation CI draws with. A case outside that rule asserts texels by hand and has
 no reference. What a
@@ -92,7 +92,7 @@ change with a testable cpu half is expected to bring cases with it.
 Two seams keep the api libraries testable without a window, and both are worth preserving:
 `ComponentRenderer` takes text measuring and writing as callbacks instead of depending on the
 font library, and a strip is hit tested against the bounds a draw left on it, per
-[ADR-0019](adr/0019-the-ui-is-laid-out-by-what-draws-it.md). `api/grid` and
+[ADR-0019](../adr/0019-the-ui-is-laid-out-by-what-draws-it.md). `api/grid` and
 `api/render/offline` name no device at all, so their suites run in CI where the realtime stack
 cannot. The same is true of an app's own rules: `odyssey`'s suite covers its map format, the
 route across it and how far sight reaches over it, and stands up neither a window nor a device
@@ -102,12 +102,12 @@ All three canvases are cpu side and are covered as such: `CanvasTest`, `LineCanv
 `WorldCanvasTest` assert the batching, the transform stack and the geometry without a device.
 What none of them can assert is what the pipeline then does with it - that a world quad is
 hidden behind solid geometry and never behind another world quad, per
-[ADR-0042](adr/0042-rendering-world-space-sprites.md), is a run-and-look check like every
+[ADR-0042](../adr/0042-rendering-world-space-sprites.md), is a run-and-look check like every
 other question below the recorder.
 
 Clipping is asserted where it is decided rather than where it takes effect: the cases check the
 rectangle a batch carries out of `Canvas`, out of `LineCanvas` and out of a ui draw, per
-[ADR-0037](adr/0037-2d-clip-with-a-per-batch-scissor.md), and the `vkCmdSetScissor` that
+[ADR-0037](../adr/0037-2d-clip-with-a-per-batch-scissor.md), and the `vkCmdSetScissor` that
 acts on it is in the recorder and needs a device like everything else there.
 
 `api/audio` draws the same line around the device: the clip table, the `Play` defaults and the
@@ -122,7 +122,7 @@ clipboard in a `std::string`, so a click lands on a known character and a cut is
 without a platform.
 
 `Engine::eventLoop()` renders and so cannot be driven at all, which is why the order of
-[ADR-0043](adr/0043-input-apps-see-raw-events-before-bindings.md) lives in
+[ADR-0043](../adr/0043-input-apps-see-raw-events-before-bindings.md) lives in
 `Engine::route()`: one polled event offered to the app, the bindings and the engine, callable
 from a subclass with no window in sight. `EngineTest` drives it directly.
 
@@ -157,7 +157,7 @@ from a subclass with no window in sight. `EngineTest` drives it directly.
   `textureatlas_regions_do_not_touch` fills every region it allocates and then reads the ring of
   texels around each one: a gutter still at zero was written by nobody, since the atlas clears
   its image at construction. That is what makes the case independent of where the skyline chose
-  to put things, and it fails on the flush packing [ADR-0055](adr/0055-a-texture-atlas-gutters-its-own-regions.md)
+  to put things, and it fails on the flush packing [ADR-0055](../adr/0055-a-texture-atlas-gutters-its-own-regions.md)
   replaced.
 - **`GltfTest` needs two fixtures because a texture arrives two ways.**
   `three_primitives.glb` names its image and `embedded_texture.glb` carries pixel.png in a

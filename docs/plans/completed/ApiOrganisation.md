@@ -181,7 +181,7 @@ namespace, which is a rule the rest of the tree keeps without being told.
 
 One record, and it is step 1. The seven moves after it are not ADR material: a directory split is
 reversible with a `git mv`, constrains nothing later, and the reasoning belongs beside the
-convention in [Conventions.md](../../Conventions.md) rather than in a decision record.
+convention in [Conventions.md](../../contributing/Conventions.md) rather than in a decision record.
 
 | ADR | Decision |
 |---|---|
@@ -255,7 +255,7 @@ What it has to settle:
 - **What it costs.** cpplint classifies an angle-bracket include as a system header, so
   `<api/…>` sorts into the group with `<boost/…>` and `<glm/…>` rather than with the quoted
   project headers. Every converted file's include block gets reordered, and
-  [Linting.md](../../Linting.md) is explicit that there is no `--filter` — so this is a real
+  [Linting.md](../../contributing/Linting.md) is explicit that there is no `--filter` — so this is a real
   constraint on the conversion, not a warning to suppress.
 - **Whether tests follow.** They should, and the plan assumes it: a test that includes its
   subject differently from the way every consumer does is a test written against a private view
@@ -283,7 +283,7 @@ left alone — 159 of them across 24 files, 134 in `api/`. Nothing failed, becau
 form compiles and lints exactly as well; the completeness grep asked whether `../` was gone,
 which is what the script did rather than what the record says. It surfaced only when step 5
 went to add an api include to `ComponentRenderer.cpp` and found no api block to add it to.
-The check in [Conventions.md](../../Conventions.md) is now the one that would have caught it.
+The check in [Conventions.md](../../contributing/Conventions.md) is now the one that would have caught it.
 
 **Where `<api/…>` goes was not a choice.** cpplint reads an angle-bracket include ending in `.h`
 as a *C* system header, so it must precede every C++ system header; leaving the converted lines
@@ -649,7 +649,7 @@ names `vulkan::LineRenderer` and [ADR-0012](../../adr/0012-camera-projection-tar
 rewriting the names inside one to match a later move falsifies it. The rename is recorded here
 and in the commits, which is where a reader following a stale name should end up.
 
-- **[Conventions.md](../../Conventions.md)** took the include rule with step 3 rather than waiting
+- **[Conventions.md](../../contributing/Conventions.md)** took the include rule with step 3 rather than waiting
   for this step: it binds every file in the tree from the moment step 2 landed, and nothing in
   the build or the linter enforces it, so a week of it being undocumented is a week in which a
   new `../` is nobody's fault. What it still needs from this step is the rule for when a
@@ -660,9 +660,9 @@ and in the commits, which is where a reader following a stale name should end up
 - **[v3dHelpers.cmake](../../../cmake/v3dHelpers.cmake)**'s include-root comment currently states
   the reason step 1 removes. Corrected, not deleted — the root is still the repository, for a
   reason that survives.
-- **[RenderingPipeline.md](../../RenderingPipeline.md)** for step 7,
-  **[UserInterface.md](../../UserInterface.md)** for steps 5 and 6,
-  **[OfflineRenderers.md](../../OfflineRenderers.md)** for step 4. Each of these names files by
+- **[RenderingPipeline.md](../../api/Rendering.md)** for step 7,
+  **[UserInterface.md](../../api/UserInterface.md)** for steps 5 and 6,
+  **[OfflineRenderers.md](../../OfflineRenderer.md)** for step 4. Each of these names files by
   path.
 - **[ADR-0027](../../adr/0027-build-consume-the-api-as-source.md)**'s fourth Negative bullet gets a
   note saying [0048](../../adr/0048-includes-name-headers-from-the-repository-root.md) reversed it.
@@ -685,7 +685,7 @@ sufficient:
   look.
 - **Lint.** cpplint over the tree, and `/W4 /WX` through the build. Steps 2 and 3 are the ones to
   watch: converting to angle brackets moves those includes into cpplint's system-header group,
-  and [Linting.md](../../Linting.md) allows no filter.
+  and [Linting.md](../../contributing/Linting.md) allows no filter.
 - **Run.** Once, at the end, rather than per step: the editor and one game, with the validation
   layer on and silent. Nothing here changes a draw, so this is a check that the tree still links
   and starts rather than a rendering verification.

@@ -52,7 +52,7 @@ where this document does not say otherwise.
   are `paint/`, `input/`, `shell/` and `style/` now. A namespace follows the directory, so a
   class whose name already carries the group word drops it — `pipeline::Builder`, not
   `pipeline::PipelineBuilder`. Where the group *is* the noun, the name stays: `device::Device`.
-- [.gitattributes](../.gitattributes) enforces LF (`* text=auto eol=lf`). An editor that saves
+- [.gitattributes](../../.gitattributes) enforces LF (`* text=auto eol=lf`). An editor that saves
   CRLF turns a small change into a whole-file diff, so strip the CRs rather than committing
   them.
 
@@ -77,7 +77,7 @@ where this document does not say otherwise.
 
 ## Writing
 
-These rules apply to code comments and to every document in [docs/](.) alike.
+These rules apply to code comments and to every document in [docs/](..) alike.
 
 - **Plain words, literal statements.** Say what a thing does or requires. Avoid aphorisms
   ("a character is not a key"), inverted sentences ("X, which is what Y") and personification.
@@ -88,7 +88,7 @@ These rules apply to code comments and to every document in [docs/](.) alike.
 - **Present tense.** Describe the code as it is. No "used to", no "no longer", no dates, no
   "phase N", and no account of how a bug was found. History belongs in git and in the ADRs.
 - **Nothing the reader cannot open.** Do not name other repositories, deleted trees such as
-  rigel or v3dlibs, or issue-tracker IDs. [audits/](audits/) is where the deleted trees'
+  rigel or v3dlibs, or issue-tracker IDs. [audits/](../audits) is where the deleted trees'
   lineage lives.
 - **No conversational openers** ("And ...", "So ..."), and no editorialising about how bad an
   alternative would have been.
@@ -116,7 +116,7 @@ A reference document states how a thing works and the rules a reader must follow
 A reader should never need an ADR open to understand it. An ADR may follow a section as a
 single `Background:` line, for a reader who wants the reasoning.
 
-Each document serves one kind of reader, and [README.md](README.md) says which. A subject can
+Each document serves one kind of reader, and [README.md](../README.md) says which. A subject can
 appear twice: once for the people who use it and once for the people who change it. Each fact
 still has one home per reader, and the other document links to it rather than copying it.
 
@@ -133,5 +133,5 @@ so adding an enumerator fails the build at every switch that does not handle it.
 ## Commits
 
 One concern per commit. The message says *why* where the diff does not make it obvious. Where
-a commit implements a decision, it names the ADR. [sdlc.md](sdlc.md) has the rest of the
+a commit implements a decision, it names the ADR. [sdlc.md](../sdlc.md) has the rest of the
 process.

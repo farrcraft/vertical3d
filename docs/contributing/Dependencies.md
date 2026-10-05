@@ -2,7 +2,7 @@
 
 ## From vcpkg
 
-Through the manifest in [vcpkg.json](../vcpkg.json):
+Through the manifest in [vcpkg.json](../../vcpkg.json):
 
 | Port | |
 |---|---|
@@ -14,14 +14,14 @@ Through the manifest in [vcpkg.json](../vcpkg.json):
 | libjpeg-turbo | |
 | libpng | |
 | sdl3 | **With its `vulkan` feature**, which is required. Without it SDL builds with `SDL_VULKAN=OFF` and `SDL_Vulkan_LoadLibrary` fails at startup with "No dynamic Vulkan support in current SDL video driver (windows)" |
-| sdl3-mixer | What `v3dlib_audio` is built on, per [ADR-0021](adr/0021-audio-use-sdl3-mixer.md). It needs SDL >= 3.4.0, which is why the vcpkg baseline moved |
+| sdl3-mixer | What `v3dlib_audio` is built on, per [ADR-0021](../adr/0021-audio-use-sdl3-mixer.md). It needs SDL >= 3.4.0, which is why the vcpkg baseline moved |
 | spdlog | |
 | vulkan | |
-| vulkan-memory-allocator | What `memory::Allocator` suballocates through when a consumer asks for it, per [ADR-0053](adr/0053-memory-optional-vma-suballocation.md). One header that is both declaration and implementation, compiled in `realtime/vulkan/memory/VmaImpl.cxx` the way cgltf is, and linked PRIVATE because `Allocator.h` and `Allocation.h` declare the handles they name rather than including it |
+| vulkan-memory-allocator | What `memory::Allocator` suballocates through when a consumer asks for it, per [ADR-0053](../adr/0053-memory-optional-vma-suballocation.md). One header that is both declaration and implementation, compiled in `realtime/vulkan/memory/VmaImpl.cxx` the way cgltf is, and linked PRIVATE because `Allocator.h` and `Allocation.h` declare the handles they name rather than including it |
 
 **boost 1.91 removed `boost::json::error_code` and `boost::json::system_error`.** Name
 `boost::system` and include `<boost/system/error_code.hpp>` and
-`<boost/system/system_error.hpp>` directly; [api/asset/loader/Json.cpp](../api/asset/loader/Json.cpp)
+`<boost/system/system_error.hpp>` directly; [api/asset/loader/Json.cpp](../../api/asset/loader/Json.cpp)
 parses with a `boost::system::error_code` and is the pattern to copy.
 
 ## Not from vcpkg
@@ -37,7 +37,7 @@ parses with a `boost::system::error_code` and is the pattern to copy.
 
 There is no OpenGL. `api/gl` was deleted on 2026-09-01, and the `find_package(OpenGL)` and
 `find_package(GLEW)` calls and the `glew` port went with it. See
-[ADR-0001](adr/0001-rendering-replace-opengl-with-vulkan.md).
+[ADR-0001](../adr/0001-rendering-replace-opengl-with-vulkan.md).
 
 ## Setting up vcpkg
 
@@ -77,14 +77,14 @@ Packages are installed during CMake generation.
 
 The manifest names one `boost-*` port per boost library the tree includes, not the `boost`
 metapackage, so a boost header that no port covers does not compile. Including
-`<boost/signals2.hpp>` means adding `boost-signals2` to [vcpkg.json](../vcpkg.json) and to
-[examples/starter/vcpkg.json](../examples/starter/vcpkg.json), which the example keeps in step
+`<boost/signals2.hpp>` means adding `boost-signals2` to [vcpkg.json](../../vcpkg.json) and to
+[examples/starter/vcpkg.json](../../examples/starter/vcpkg.json), which the example keeps in step
 with the root.
 
 A compiled boost library needs a second entry: the `COMPONENTS` list in
-[cmake/v3dDependencies.cmake](../cmake/v3dDependencies.cmake), which is what creates the
+[cmake/v3dDependencies.cmake](../../cmake/v3dDependencies.cmake), which is what creates the
 `Boost::<component>` target a `target_link_libraries` can then name. Header-only libraries need
-no component, because [v3d_add_api_library](../cmake/v3dHelpers.cmake) links `Boost::headers`
+no component, because [v3d_add_api_library](../../cmake/v3dHelpers.cmake) links `Boost::headers`
 into every api library, and that target carries the include directory the whole of boost is
 found through.
 
@@ -97,7 +97,7 @@ To get a newer boost, say, update the baseline and re-run the install:
 .\vendor\vcpkg\vcpkg.exe install
 ```
 
-**The baseline is pinned in [vcpkg-configuration.json](../vcpkg-configuration.json)**, not in
+**The baseline is pinned in [vcpkg-configuration.json](../../vcpkg-configuration.json)**, not in
 `vcpkg.json`, and it names a commit of microsoft/vcpkg rather than the `vendor/vcpkg` ports
 tree on disk. A port missing from that commit fails with "the baseline does not contain an
 entry for port X" even when `vendor/vcpkg/ports/X` exists.
@@ -133,16 +133,16 @@ libnoise is not prebuilt in the tree, and `voxel` will not link without it.
 ## Consuming the api from another repository
 
 An application outside this tree takes it as source, per
-[ADR-0027](adr/0027-build-consume-the-api-as-source.md), and [NewProject.md](NewProject.md) is
+[ADR-0027](../adr/0027-build-consume-the-api-as-source.md), and [NewProject.md](../api/UsingTheApi.md) is
 the walkthrough. Two points about it belong here, because they are about dependencies:
 
 - **The consumer's `vcpkg.json` is the one that gets installed.** Manifest mode reads the root
   project's manifest, and once vertical3d is nested that is the consumer's. Copy
-  [vcpkg.json](../vcpkg.json) across; the api's dependencies are not resolved from the tree's
+  [vcpkg.json](../../vcpkg.json) across; the api's dependencies are not resolved from the tree's
   own.
 - **`vendor/vcpkg/` is gitignored here**, so cloning this repository does not bring a vcpkg with
   it. A consumer clones its own.
 
-The baseline in [vcpkg-configuration.json](../vcpkg-configuration.json) has to be copied
+The baseline in [vcpkg-configuration.json](../../vcpkg-configuration.json) has to be copied
 verbatim into the consumer's, and nothing checks that it was. A boost library's file name
 carries its version, so a drifted baseline shows up as a link error rather than a warning.

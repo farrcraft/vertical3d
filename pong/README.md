@@ -28,7 +28,7 @@ Return		- Select Menu Item
 - SDL3_mixer
 - Vulkan
 
-See [../docs/Dependencies.md](../docs/Dependencies.md). The release notes below are an archive
+See [../docs/Dependencies.md](../docs/contributing/Dependencies.md). The release notes below are an archive
 of the 2006-08 versions and describe libraries that no longer exist.
 
 
