@@ -5,8 +5,8 @@
 
 #include "Arranger.h"
 
-#include <api/ui/DrawOrder.h>
 #include <api/render/realtime/Canvas.h>
+#include <api/ui/DrawOrder.h>
 #include <api/ui/component/Box.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/CheckBox.h>
@@ -19,7 +19,9 @@
 #include <api/ui/component/TextBox.h>
 #include <api/ui/component/Toolbar.h>
 #include <api/ui/component/Type.h>
+#include <api/ui/component/menu/Menu.h>
 #include <api/ui/component/menu/MenuBar.h>
+#include <api/ui/component/menu/MenuItem.h>
 #include <api/ui/style/Resolver.h>
 
 #include <algorithm>
@@ -37,18 +39,6 @@ namespace v3d::ui {
 const float Arranger::ruleWidth = 1.0f;
 
 namespace {
-
-/**
- * Leave a component holding the bounds it was put in, which is what the cursor is tested
- * against per ADR-0019.
- *
- * Through a reference to the base, because a menu's own size() is its item count and hides
- * the one that means how big it is.
- **/
-void place(Component& component, const glm::vec2& position, const glm::vec2& size) {
-    component.position(position);
-    component.size(size);
-}
 
 };  // namespace
 
@@ -236,12 +226,7 @@ void Arranger::arrange(const component::Box& box, const v3d::type::geometry::Bou
     const glm::vec2 extent = bounds.size();
     float pen = vertical ? bounds.position().y : bounds.position().x;
 
-    // along the line the children share the room, so none of them is offered any of it: an
-    // Auto extent there is what the child makes of itself, and a child that makes nothing of
-    // itself asks for nothing. Across the line each is offered the whole of it, which is what
-    // stretch() then insists on
-    const v3d::type::geometry::Bound2D room(bounds.position(),
-        vertical ? glm::vec2(extent.x, 0.0f) : glm::vec2(0.0f, extent.y));
+    const v3d::type::geometry::Bound2D room = lineRoom(vertical, bounds);
 
     for (const boost::shared_ptr<Component>& child : box.children()) {
         if (!child || !child->visible()) {
@@ -250,9 +235,8 @@ void Arranger::arrange(const component::Box& box, const v3d::type::geometry::Bou
             boxes->push_back(v3d::type::geometry::Bound2D(bounds.position(), glm::vec2(0.0f, 0.0f)));
             continue;
         }
-        const glm::vec2 own = natural(*child, room);
         const Layout& layout = child->layout();
-        glm::vec2 size(layout.width.resolve(extent.x, own.x), layout.height.resolve(extent.y, own.y));
+        glm::vec2 size = childSize(*child, room, extent);
         glm::vec2 corner;
         if (vertical) {
             if (box.stretch()) {
@@ -300,10 +284,7 @@ float Arranger::wrapped(const component::Box& box, const v3d::type::geometry::Bo
     const float start = bounds.position()[along];
     const float end = start + extent[along];
 
-    // as for a box that does not wrap: a child is offered no room along the line, so an Auto
-    // extent there is what it makes of itself
-    const v3d::type::geometry::Bound2D room(bounds.position(),
-        vertical ? glm::vec2(extent.x, 0.0f) : glm::vec2(0.0f, extent.y));
+    const v3d::type::geometry::Bound2D room = lineRoom(vertical, bounds);
 
     float pen = start;
     float line = bounds.position()[across];
@@ -316,9 +297,7 @@ float Arranger::wrapped(const component::Box& box, const v3d::type::geometry::Bo
             }
             continue;
         }
-        const glm::vec2 own = natural(*child, room);
-        const Layout& layout = child->layout();
-        const glm::vec2 size(layout.width.resolve(extent.x, own.x), layout.height.resolve(extent.y, own.y));
+        const glm::vec2 size = childSize(*child, room, extent);
 
         // the first child on a line stays on it however long it is, so nothing is lost
         if (pen > start && pen + size[along] > end) {
@@ -414,6 +393,132 @@ float Arranger::widest(const component::Toolbar& bar) const {
         }
     }
     return widest;
+}
+
+/**
+ **/
+void Arranger::place(Component& component, const glm::vec2& position, const glm::vec2& size) {
+    component.position(position);
+    component.size(size);
+}
+
+/**
+ **/
+glm::vec2 Arranger::drawn(Component& component) const {
+    const glm::vec2 size = component.size();
+    if (size.x > 0.0f && size.y > 0.0f) {
+        return size;
+    }
+    return natural(component, component.bound());
+}
+
+/**
+ **/
+void Arranger::strip(component::Toolbar& bar, const glm::vec2& corner, const glm::vec2& room) const {
+    const bool row = bar.edge() == component::Toolbar::Edge::Top;
+    // a row spans the canvas and a column spans what is under the strips above it, so that
+    // the rule along a strip's far edge runs the whole way
+    const glm::vec2 size = row
+        ? glm::vec2(room.x - corner.x, styles_.base().barHeight)
+        : glm::vec2(widest(bar) + styles_.base().padding, room.y - corner.y);
+    place(bar, corner, size);
+
+    glm::vec2 pen = corner;
+    for (std::size_t index = 0; index < bar.count(); index++) {
+        const boost::shared_ptr<component::Button> button = bar.button(index);
+        if (!button) {
+            continue;
+        }
+        // the strip decides how big a button in it is - a row's is as wide as its label and
+        // a column's is as wide as the strip - and the button is then drawn at that size, the
+        // same way a button anywhere else is
+        const glm::vec2 box = row
+            ? glm::vec2(extent(*button) + styles_.base().padding, size.y)
+            : glm::vec2(size.x, styles_.base().lineHeight);
+        place(*button, pen, box);
+        pen += row ? glm::vec2(box.x, 0.0f) : glm::vec2(0.0f, box.y);
+    }
+}
+
+/**
+ **/
+void Arranger::panel(component::Menu& menu, const glm::vec2& origin, const glm::vec2& room) const {
+    const std::size_t count = menu.count();
+    if (count == 0) {
+        return;
+    }
+    float widest = 0.0f;
+    for (std::size_t index = 0; index < count; index++) {
+        const boost::shared_ptr<component::MenuItem>& item = menu[index];
+        widest = std::max(widest, item ? measure_(item->text()) : 0.0f);
+    }
+    const paint::Dressing& base = styles_.base();
+    // a column either side of the labels: the mark on the left and the submenu arrow on the
+    // right, both of which are there whether or not this menu uses them, so that every label
+    // in one panel starts at the same place
+    const float column = base.lineHeight * markColumn;
+    const glm::vec2 size(widest + column * 2.0f + base.padding * 0.5f,
+        base.lineHeight * static_cast<float>(count) + base.panelPadding * 2.0f);
+
+    // a panel that would hang off an edge is moved back onto the canvas rather than clipped,
+    // which is what puts the last menu of a bar's flyouts back inside the window
+    glm::vec2 corner(std::min(origin.x, room.x - size.x), std::min(origin.y, room.y - size.y));
+    corner = glm::vec2(std::max(corner.x, 0.0f), std::max(corner.y, 0.0f));
+    place(menu, corner, size);
+
+    for (std::size_t index = 0; index < count; index++) {
+        const boost::shared_ptr<component::MenuItem>& item = menu[index];
+        if (item) {
+            const float top = corner.y + base.panelPadding + base.lineHeight * static_cast<float>(index);
+            place(*item, glm::vec2(corner.x, top), glm::vec2(size.x, base.lineHeight));
+        }
+    }
+}
+
+/**
+ **/
+void Arranger::centred(component::Menu& level, const glm::vec2& room) const {
+    const std::size_t count = level.count();
+    if (count == 0) {
+        return;
+    }
+    float widest = 0.0f;
+    for (std::size_t index = 0; index < count; index++) {
+        const boost::shared_ptr<component::MenuItem>& item = level[index];
+        widest = std::max(widest, item ? measure_(item->text()) : 0.0f);
+    }
+    const paint::Dressing& base = styles_.base();
+    const glm::vec2 size(widest + base.padding * 2.0f,
+        base.lineHeight * static_cast<float>(count) + base.padding * 2.0f);
+    const glm::vec2 corner((room - size) * 0.5f);
+    place(level, corner, size);
+
+    for (std::size_t index = 0; index < count; index++) {
+        const boost::shared_ptr<component::MenuItem>& item = level[index];
+        if (item) {
+            const float top = corner.y + base.padding + base.lineHeight * static_cast<float>(index);
+            place(*item, glm::vec2(corner.x, top), glm::vec2(size.x, base.lineHeight));
+        }
+    }
+}
+
+/**
+ **/
+v3d::type::geometry::Bound2D Arranger::lineRoom(bool vertical, const v3d::type::geometry::Bound2D& bounds) {
+    // along the line the children share the room, so none of them is offered any of it: an
+    // Auto extent there is what the child makes of itself, and a child that makes nothing of
+    // itself asks for nothing. Across the line each is offered the whole of it, which is what
+    // stretch() then insists on
+    const glm::vec2 extent = bounds.size();
+    return v3d::type::geometry::Bound2D(bounds.position(), vertical ? glm::vec2(extent.x, 0.0f) : glm::vec2(0.0f, extent.y));
+}
+
+/**
+ **/
+glm::vec2 Arranger::childSize(Component& child, const v3d::type::geometry::Bound2D& room, const glm::vec2& extent) const {
+    const glm::vec2 own = natural(child, room);
+    const Layout& layout = child.layout();
+    return glm::vec2(layout.width.resolve(extent.x, own.x), layout.height.resolve(extent.y, own.y));
 }
 
 };  // namespace v3d::ui

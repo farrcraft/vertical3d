@@ -97,35 +97,43 @@ float Scrollbar::track() const noexcept {
 }
 
 float Scrollbar::thumb() const noexcept {
-    const float length = track();
-    const float whole = content();
-    const float shown = page();
-    if (whole <= 0.0f || shown >= whole) {
-        return length;
-    }
-    // as much of the track as the page is of the content, which is what makes the thumb a
-    // readout of how much there is as well as of where in it the page sits
-    return std::clamp(length * (shown / whole), std::min(minimumThumb, length), length);
+    return thumbLength(track(), page(), content());
 }
 
 float Scrollbar::thumbStart() const noexcept {
-    const float room = track() - thumb();
-    if (room <= 0.0f || maximum() <= 0.0f) {
-        return 0.0f;
-    }
-    return room * (offset() / maximum());
+    return component::thumbStart(track(), thumb(), offset(), maximum());
 }
 
 void Scrollbar::drag(const glm::vec2& point) {
-    const float room = track() - thumb();
-    if (room <= 0.0f) {
+    if (track() - thumb() <= 0.0f) {
         return;
     }
     const float origin = direction_ == Direction::Vertical ? position().y : position().x;
     const float along = (direction_ == Direction::Vertical ? point.y : point.x) - origin;
+    offset(dragOffset(track(), thumb(), along, maximum()));
+}
 
-    // the cursor holds the middle of the thumb, so what is under it stays under it
-    offset(maximum() * ((along - thumb() * 0.5f) / room));
+float thumbLength(float track, float shown, float whole) noexcept {
+    if (whole <= 0.0f || shown >= whole) {
+        return track;
+    }
+    return std::clamp(track * (shown / whole), std::min(Scrollbar::minimumThumb, track), track);
+}
+
+float thumbStart(float track, float length, float offset, float span) noexcept {
+    const float room = track - length;
+    if (room <= 0.0f || span <= 0.0f) {
+        return 0.0f;
+    }
+    return room * (offset / span);
+}
+
+float dragOffset(float track, float length, float along, float span) noexcept {
+    const float room = track - length;
+    if (room <= 0.0f) {
+        return 0.0f;
+    }
+    return span * std::clamp((along - length * 0.5f) / room, 0.0f, 1.0f);
 }
 
 };  // namespace v3d::ui::component

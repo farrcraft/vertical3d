@@ -473,29 +473,32 @@ void Immediate::endWindow() {
         canvas_->unclip();
         window_.clipped = false;
 
-        Retained& retained = retain(window_.id);
-        // how tall what was drawn came to. The pen has the scroll taken out of it and the
-        // gap after the last row left in, so both go back before it is a height
-        retained.content = std::max(row_.penY + retained.scroll - dressing_.spacing - window_.contentTop, 0.0f);
-
-        const float view = std::max(window_.bodyMax.y - window_.contentTop, 0.0f);
-        const float span = std::max(retained.content - view, 0.0f);
-        if (window_.scrolls) {
-            scrollbar(window_.scroll,
-                glm::vec2(window_.bodyMax.x - dressing_.scrollbarWidth, window_.contentTop),
-                window_.bodyMax, view, span, &retained.scroll);
-        }
-        if (wheeled_ == window_.id && input_.wheel != 0.0f) {
-            // a notch away from the reader shows what is above, which is a smaller offset
-            retained.scroll = std::clamp(retained.scroll - input_.wheel * dressing_.lineHeight * wheelRows,
-                0.0f, span);
-        }
+        closeScroll(window_.id, window_.scroll, window_.contentTop, window_.bodyMax,
+            window_.scrolls ? Bar::Always : Bar::Never);
     }
     row_.margin = window_.margin;
     row_.right = window_.right;
     window_.open = false;
     window_.scrolls = false;
     row_.sameLine = false;
+}
+
+void Immediate::closeScroll(Id id, Id scroll, float contentTop, const glm::vec2& bodyMax, Bar bar) {
+    Retained& retained = retain(id);
+    // how tall what was drawn came to. The pen has the scroll taken out of it and the gap
+    // after the last row left in, so both go back before it is a height
+    retained.content = std::max(row_.penY + retained.scroll - dressing_.spacing - contentTop, 0.0f);
+
+    const float view = std::max(bodyMax.y - contentTop, 0.0f);
+    const float span = std::max(retained.content - view, 0.0f);
+    if (bar == Bar::Always || (bar == Bar::WhenNeeded && span > 0.0f)) {
+        scrollbar(scroll, glm::vec2(bodyMax.x - dressing_.scrollbarWidth, contentTop), bodyMax, view, span,
+            &retained.scroll);
+    }
+    if (wheeled_ == id && input_.wheel != 0.0f) {
+        // a notch away from the reader shows what is above, which is a smaller offset
+        retained.scroll = std::clamp(retained.scroll - input_.wheel * dressing_.lineHeight * wheelRows, 0.0f, span);
+    }
 }
 
 void Immediate::scrollbar(Id id, const glm::vec2& min, const glm::vec2& max, float view,
@@ -505,16 +508,11 @@ void Immediate::scrollbar(Id id, const glm::vec2& min, const glm::vec2& max, flo
         return;
     }
 
-    // as much of the track as the window shows of its content, so the thumb reads as how
-    // much there is as well as where in it the window is
-    const float length = std::clamp(track * (view / (view + span)),
-        std::min(component::Scrollbar::minimumThumb, track), track);
-    const float room = track - length;
+    const float length = component::thumbLength(track, view, view + span);
 
     const Reaction reaction = interact(id, min, max);
-    if (reaction.held && room > 0.0f) {
-        // the cursor holds the middle of the thumb, so what is under it stays under it
-        *scroll = span * std::clamp((input_.cursor.y - min.y - length * 0.5f) / room, 0.0f, 1.0f);
+    if (reaction.held && track - length > 0.0f) {
+        *scroll = component::dragOffset(track, length, input_.cursor.y - min.y, span);
     }
 
     // the thumb rests in the rule colour rather than the widget one, so that it reads
@@ -526,7 +524,7 @@ void Immediate::scrollbar(Id id, const glm::vec2& min, const glm::vec2& max, flo
         grip = dressing_.hover;
     }
 
-    const float start = span > 0.0f ? room * (*scroll / span) : 0.0f;
+    const float start = component::thumbStart(track, length, *scroll, span);
     paint::fillBox(canvas_, min, max, dressing_.radius, dressing_.widget);
     paint::fillBox(canvas_, glm::vec2(min.x, min.y + start), glm::vec2(max.x, min.y + start + length),
         dressing_.radius, grip);
@@ -876,24 +874,8 @@ void Immediate::endTable() {
         canvas_->unclip();
         table_.clipped = false;
 
-        Retained& retained = retain(table_.id);
-        // the pen has the scroll taken out of it and the gap after the last row left in,
-        // so both go back before it is a height
-        retained.content = std::max(
-            row_.penY + retained.scroll - dressing_.spacing - table_.contentTop, 0.0f);
-
         const float bottom = table_.top + table_.height;
-        const float view = std::max(bottom - table_.contentTop, 0.0f);
-        const float span = std::max(retained.content - view, 0.0f);
-        if (span > 0.0f) {
-            scrollbar(table_.scroll,
-                glm::vec2(table_.right - dressing_.scrollbarWidth, table_.contentTop),
-                glm::vec2(table_.right, bottom), view, span, &retained.scroll);
-        }
-        if (wheeled_ == table_.id && input_.wheel != 0.0f) {
-            retained.scroll = std::clamp(
-                retained.scroll - input_.wheel * dressing_.lineHeight * wheelRows, 0.0f, span);
-        }
+        closeScroll(table_.id, table_.scroll, table_.contentTop, glm::vec2(table_.right, bottom), Bar::WhenNeeded);
         // what follows the table is under the region rather than under the rows, which are
         // as tall as they are however tall the table was asked to be
         row_.penY = bottom + dressing_.spacing;

@@ -382,6 +382,13 @@ taking the keyboard off the viewport to put it on a toolbar button, and a game's
 `MenuItem`s, which are not focusable. So the call is covered by `api/ui/tests` and by no app
 here — worth knowing before trusting it in one.
 
+**A game's menu keeps a keyboard of its own, on purpose.** It is driven by commands — the
+`menuNext`, `menuPrevious`, `selectMenu` and `showGameMenu` an app's bindings send — rather than
+by focus and `ui::Keys`, which take keys themselves. That is what lets a game bind its menu to a
+gamepad or to keys of its choosing and rebind them from inside the menu, which a focus walk
+answering raw keys could not do; and a game's menu has nothing a text box offers. The two models
+meet only where a menu item captures a key, which an app routes through `GameMenu::capture()`.
+
 **A focused component is ringed**, traced around its box after it is drawn, in the `focus`
 colour at `focus-width` thick of the style class the component is drawn in — so a theme can mark
 a focused text box differently from a focused list, and one naming neither rings every control

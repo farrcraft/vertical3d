@@ -347,7 +347,7 @@ boost::shared_ptr<Component> Loader::loadComponent(const boost::json::object& en
     }
     // which tab is up is a place in the pages, so it can only be read once the pages the
     // children array named are there
-    if (componentType == "tabs" && entry.contains("selected")) {
+    if (type == component::Type::TabBar && entry.contains("selected")) {
         boost::static_pointer_cast<component::TabBar>(component)->selected(
             boost::json::value_to<int>(entry.at("selected")));
     }

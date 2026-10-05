@@ -52,7 +52,6 @@ namespace {
  * a row's height: the mark a checked item draws on the left and the arrow a submenu
  * item draws on the right.
  **/
-const float markColumn = 0.9f;
 
 /**
  * The colour a component's own text is drawn in: what it would be drawn in, or the theme's
@@ -134,18 +133,6 @@ const float markFill = 0.5f;
  * for, so this is a number rather than something measured.
  **/
 const float defaultCorner = 8.0f;
-
-/**
- * Leave a component holding the bounds it was drawn in, which is what the cursor is
- * tested against per ADR-0019.
- *
- * Through a reference to the base, because a menu's own size() is its item count and
- * hides the one that means how big it is.
- **/
-void place(Component& component, const glm::vec2& position, const glm::vec2& size) {
-    component.position(position);
-    component.size(size);
-}
 
 /**
  * @return what a style's image property was resolved to, unset when the style names no
@@ -342,11 +329,8 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
         return;
     }
     const std::string text(label->text());
-    glm::vec2 size = label->size();
-    if (size.x <= 0.0f || size.y <= 0.0f) {
-        size = glm::vec2(measure_(text), base().lineHeight);
-    }
-    place(*label, label->position(), size);
+    const glm::vec2 size = arranger_.drawn(*label);
+    Arranger::place(*label, label->position(), size);
 
     glm::vec2 pen(label->position().x, label->position().y + base().lineHeight * 0.75f);
     if (label->layout().width.unit() == Length::Unit::Auto) {
@@ -367,13 +351,8 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     if (canvas == nullptr || !icon || !icon->image().valid()) {
         return;
     }
-    // an icon given no size is a square the height of a strip, which is the one size the
-    // ui has that is not derived from a string
-    glm::vec2 size = icon->size();
-    if (size.x <= 0.0f || size.y <= 0.0f) {
-        size = glm::vec2(base().barHeight, base().barHeight);
-    }
-    place(*icon, icon->position(), size);
+    const glm::vec2 size = arranger_.drawn(*icon);
+    Arranger::place(*icon, icon->position(), size);
 
     const v3d::ui::Image& picture = icon->image();
     canvas->rect(icon->position(), icon->position() + size, picture.uv0, picture.uv1,
@@ -388,12 +367,9 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     }
     const std::string label(button->label());
 
-    glm::vec2 size = button->size();
-    if (size.x <= 0.0f || size.y <= 0.0f) {
-        size = glm::vec2(arranger_.extent(*button) + base().padding, base().barHeight);
-    }
+    const glm::vec2 size = arranger_.drawn(*button);
     const glm::vec2 min = button->position();
-    place(*button, min, size);
+    Arranger::place(*button, min, size);
 
     // a button that cannot be used is never lit, whatever the cursor last left on it; and a
     // checked toggle keeps its highlight whether or not the cursor is on it, which is what
@@ -522,12 +498,9 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     const bool round = box->type() == component::Type::RadioButton;
     const std::string text(box->label());
 
-    glm::vec2 size = box->size();
-    if (size.x <= 0.0f || size.y <= 0.0f) {
-        size = arranger_.natural(*box, box->bound());
-    }
+    const glm::vec2 size = arranger_.drawn(*box);
     const glm::vec2 min = box->position();
-    place(*box, min, size);
+    Arranger::place(*box, min, size);
 
     const Dressing& dress = styles_.resolve(
         round ? style::Resolver::Class::Radio : style::Resolver::Class::CheckBox, box->style());
@@ -566,12 +539,9 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     if (canvas == nullptr || !list) {
         return;
     }
-    glm::vec2 size = list->size();
-    if (size.x <= 0.0f || size.y <= 0.0f) {
-        size = arranger_.natural(*list, list->bound());
-    }
+    const glm::vec2 size = arranger_.drawn(*list);
     const glm::vec2 min = list->position();
-    place(*list, min, size);
+    Arranger::place(*list, min, size);
 
     const Dressing& dress = styles_.resolve(style::Resolver::Class::List, list->style());
     const float width = dress.borderWidth;
@@ -615,12 +585,9 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     if (canvas == nullptr || !box) {
         return;
     }
-    glm::vec2 size = box->size();
-    if (size.x <= 0.0f || size.y <= 0.0f) {
-        size = arranger_.natural(*box, box->bound());
-    }
+    const glm::vec2 size = arranger_.drawn(*box);
     const glm::vec2 min = box->position();
-    place(*box, min, size);
+    Arranger::place(*box, min, size);
 
     const Dressing& dress = styles_.resolve(style::Resolver::Class::TextBox, box->style());
     const float width = dress.borderWidth;
@@ -638,7 +605,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
         // the placeholder says what the box is for and is not what it holds, so it is
         // dropped the moment there is something to type into
         box->pen(low.x);
-        write_(box->placeholder(), glm::vec2(low.x, min.y + size.y * 0.7f), dress.track);
+        write_(box->placeholder(), glm::vec2(low.x, min.y + size.y * 0.7f), dress.placeholder);
         canvas->unclip();
         return;
     }
@@ -667,7 +634,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
 
     if (box->focused() && usable(*box)) {
         const float stem = std::max(width, 1.0f);
-        canvas->rect(glm::vec2(pen.x + caret, low.y), glm::vec2(pen.x + caret + stem, high.y), dress.mark);
+        canvas->rect(glm::vec2(pen.x + caret, low.y), glm::vec2(pen.x + caret + stem, high.y), dress.caret);
     }
 
     canvas->unclip();
@@ -679,12 +646,9 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     if (canvas == nullptr || !bar) {
         return;
     }
-    glm::vec2 size = bar->size();
-    if (size.x <= 0.0f || size.y <= 0.0f) {
-        size = arranger_.natural(*bar, bar->bound());
-    }
+    const glm::vec2 size = arranger_.drawn(*bar);
     const glm::vec2 min = bar->position();
-    place(*bar, min, size);
+    Arranger::place(*bar, min, size);
 
     const Dressing& dress = styles_.resolve(style::Resolver::Class::Tabs, bar->style());
     const float height = dress.barHeight;
@@ -702,7 +666,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
         boxes.push_back(v3d::type::geometry::Bound2D(corner, extent));
 
         const bool picked = static_cast<int>(index) == bar->selected();
-        fillBox(canvas, corner, corner + extent, dress.radius, picked ? dress.highlight : dress.track);
+        fillBox(canvas, corner, corner + extent, dress.radius, picked ? dress.highlight : dress.tab);
         write_(label, glm::vec2(corner.x + dress.padding * 0.5f, corner.y + height * 0.7f),
             ink(*bar, dress, picked ? dress.activeText : dress.text));
         pen += width + dress.borderWidth;
@@ -818,21 +782,10 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
         return;
     }
 
-    std::vector<std::string> labels;
-    labels.reserve(count);
-    float widest = 0.0f;
-    for (std::size_t index = 0; index < count; index++) {
-        const boost::shared_ptr<component::MenuItem>& item = (*level)[index];
-        const std::string label = item ? item->text() : std::string();
-        widest = std::max(widest, measure_(label));
-        labels.push_back(label);
-    }
-
-    const float width = widest + base().padding * 2.0f;
-    const float height = base().lineHeight * static_cast<float>(count) + base().padding * 2.0f;
-    const glm::vec2 origin(
-        (static_cast<float>(canvas->width()) - width) * 0.5f,
-        (static_cast<float>(canvas->height()) - height) * 0.5f);
+    arranger_.centred(*level, glm::vec2(static_cast<float>(canvas->width()), static_cast<float>(canvas->height())));
+    const glm::vec2 origin = level->position();
+    const float width = static_cast<const Component&>(*level).size().x;
+    const float height = static_cast<const Component&>(*level).size().y;
 
     // a one pixel border, as a filled rectangle with the panel drawn over it
     canvas->rect(origin - glm::vec2(1.0f, 1.0f), origin + glm::vec2(width + 1.0f, height + 1.0f), base().border);
@@ -854,7 +807,8 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
         // the pen sits on the baseline, which is most of the way down the line box - the
         // remainder is where descenders go
         const glm::vec2 pen(origin.x + base().padding, top + base().lineHeight * 0.75f);
-        write_(labels[index], pen, selected ? base().activeText : base().text);
+        const boost::shared_ptr<component::MenuItem>& item = (*level)[index];
+        write_(item ? item->text() : std::string(), pen, selected ? base().activeText : base().text);
     }
 }
 
@@ -866,7 +820,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     }
 
     const float width = static_cast<float>(canvas->width());
-    place(*bar, glm::vec2(0.0f, 0.0f), glm::vec2(width, base().barHeight));
+    Arranger::place(*bar, glm::vec2(0.0f, 0.0f), glm::vec2(width, base().barHeight));
 
     canvas->rect(glm::vec2(0.0f, 0.0f), glm::vec2(width, base().barHeight), base().panel);
     // a rule along the bottom edge, so the strip reads as something over the scene rather
@@ -919,13 +873,8 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     }
 
     const bool row = bar->edge() == component::Toolbar::Edge::Top;
-    // a row spans the canvas and a column spans what is under the strips above it, so
-    // that the rule along a strip's far edge runs the whole way
-    const glm::vec2 size = row
-        ? glm::vec2(static_cast<float>(canvas->width()) - corner.x, base().barHeight)
-        : glm::vec2(arranger_.widest(*bar) + base().padding, static_cast<float>(canvas->height()) - corner.y);
-
-    place(*bar, corner, size);
+    arranger_.strip(*bar, corner, glm::vec2(static_cast<float>(canvas->width()), static_cast<float>(canvas->height())));
+    const glm::vec2 size = bar->size();
 
     canvas->rect(corner, corner + size, base().panel);
     if (row) {
@@ -936,23 +885,11 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
             glm::vec2(corner.x + size.x + Arranger::ruleWidth, corner.y + size.y), base().border);
     }
 
-    glm::vec2 pen = corner;
     for (std::size_t index = 0; index < bar->count(); index++) {
         const boost::shared_ptr<component::Button> button = bar->button(index);
-        if (!button) {
-            continue;
+        if (button) {
+            draw(canvas, button);
         }
-        // the strip decides how big a button in it is - a row's is as wide as its label
-        // and a column's is as wide as the strip - and the button is then drawn at the
-        // size it was given, the same way a button anywhere else is
-        const glm::vec2 box = row
-            ? glm::vec2(arranger_.extent(*button) + base().padding, size.y)
-            : glm::vec2(size.x, base().lineHeight);
-
-        place(*button, pen, box);
-        draw(canvas, button);
-
-        pen += row ? glm::vec2(box.x, 0.0f) : glm::vec2(0.0f, box.y);
     }
 }
 
@@ -965,32 +902,10 @@ void ComponentRenderer::panel(v3d::render::realtime::Canvas* canvas, const boost
         return;
     }
 
-    const float column = base().lineHeight * markColumn;
-
-    std::vector<std::string> labels;
-    labels.reserve(count);
-    float widest = 0.0f;
-    for (std::size_t index = 0; index < count; index++) {
-        const boost::shared_ptr<component::MenuItem>& item = (*menu)[index];
-        const std::string label = item ? item->text() : std::string();
-        widest = std::max(widest, measure_(label));
-        labels.push_back(label);
-    }
-
-    // a column either side of the labels: the mark on the left and the submenu arrow on
-    // the right, both of which are there whether or not this menu uses them, so that
-    // every label in one panel starts at the same place
-    const glm::vec2 size(widest + column * 2.0f + base().padding * 0.5f,
-        base().lineHeight * static_cast<float>(count) + base().panelPadding * 2.0f);
-
-    // a panel that would hang off an edge is moved back onto the canvas rather than
-    // clipped, which is what puts the last menu of a bar's flyouts back inside the window
-    glm::vec2 corner(
-        std::min(origin.x, static_cast<float>(canvas->width()) - size.x),
-        std::min(origin.y, static_cast<float>(canvas->height()) - size.y));
-    corner = glm::vec2(std::max(corner.x, 0.0f), std::max(corner.y, 0.0f));
-
-    place(*menu, corner, size);
+    arranger_.panel(*menu, origin, glm::vec2(static_cast<float>(canvas->width()), static_cast<float>(canvas->height())));
+    const glm::vec2 corner = menu->position();
+    const glm::vec2 size = static_cast<const Component&>(*menu).size();
+    const float column = base().lineHeight * Arranger::markColumn;
 
     canvas->rect(corner - glm::vec2(1.0f, 1.0f), corner + size + glm::vec2(1.0f, 1.0f), base().border);
     canvas->rect(corner, corner + size, base().panel);
@@ -1001,10 +916,6 @@ void ComponentRenderer::panel(v3d::render::realtime::Canvas* canvas, const boost
         const boost::shared_ptr<component::MenuItem>& item = (*menu)[index];
         const float top = corner.y + base().panelPadding + base().lineHeight * static_cast<float>(index);
         const bool selected = active && item == active;
-
-        if (item) {
-            place(*item, glm::vec2(corner.x, top), glm::vec2(size.x, base().lineHeight));
-        }
 
         if (selected) {
             canvas->rect(glm::vec2(corner.x, top), glm::vec2(corner.x + size.x, top + base().lineHeight), base().highlight);
@@ -1026,7 +937,7 @@ void ComponentRenderer::panel(v3d::render::realtime::Canvas* canvas, const boost
         const glm::vec2 pen(corner.x + column, top + base().lineHeight * 0.75f);
         // a disabled item - or one in a disabled menu - is drawn as one, as a button is
         const bool live = item && usable(*item);
-        write_(labels[index], pen, !live ? base().disabledText : selected ? base().activeText : base().text);
+        write_(item ? item->text() : std::string(), pen, !live ? base().disabledText : selected ? base().activeText : base().text);
     }
 }
 

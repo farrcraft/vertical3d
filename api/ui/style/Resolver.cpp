@@ -68,6 +68,9 @@ void Resolver::chrome() {
     readColour(style, "fill", &base_.fill);
     readColour(style, "thumb", &base_.thumb);
     readColour(style, "mark", &base_.mark);
+    readColour(style, "caret", &base_.caret);
+    readColour(style, "placeholder", &base_.placeholder);
+    readColour(style, "tab", &base_.tab);
     readColour(style, "text", &base_.text);
     readColour(style, "active-text", &base_.activeText);
     readColour(style, "disabled-text", &base_.disabledText);
@@ -172,7 +175,7 @@ paint::Dressing Resolver::dress(Class className, const std::string_view& name) c
             break;
         case Class::Tabs:
             readColour(style, "background", &dressing.panel);
-            readColour(style, "tab", &dressing.track);
+            readColour(style, "tab", &dressing.tab);
             readColour(style, "highlight", &dressing.highlight);
             readColour(style, "text", &dressing.text);
             readColour(style, "active-text", &dressing.activeText);
@@ -184,10 +187,8 @@ paint::Dressing Resolver::dress(Class className, const std::string_view& name) c
             readColour(style, "background", &dressing.panel);
             readColour(style, "border", &dressing.border);
             readColour(style, "text", &dressing.text);
-            // the caret is the mark of a text box: the one thing drawn over the text that
-            // is the component's own rather than the app's
-            readColour(style, "caret", &dressing.mark);
-            readColour(style, "placeholder", &dressing.track);
+            readColour(style, "caret", &dressing.caret);
+            readColour(style, "placeholder", &dressing.placeholder);
             // what is drawn behind the selected run, the way a list highlights a chosen row
             readColour(style, "highlight", &dressing.highlight);
             readMetric(style, "border-width", &dressing.borderWidth);

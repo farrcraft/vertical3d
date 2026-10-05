@@ -31,6 +31,7 @@ class Resolver;
 namespace component {
 class Box;
 class Button;
+class Menu;
 class MenuBar;
 class TabBar;
 class Toolbar;
@@ -146,7 +147,59 @@ class Arranger final {
      **/
     float widest(const component::Toolbar& bar) const;
 
+    /**
+     * Leave a component holding the bounds it was put in, which is what the cursor is tested
+     * against per ADR-0019. The one way a box is given, in a layout walk and in a draw.
+     *
+     * Through a reference to the base, because a menu's own size() is its item count and
+     * hides the one that means how big it is.
+     **/
+    static void place(Component& component, const glm::vec2& position, const glm::vec2& size);
+
+    /**
+     * The size a component is drawn at: the box a walk gave it, or its natural size when it
+     * was drawn without one.
+     **/
+    glm::vec2 drawn(Component& component) const;
+
+    /**
+     * Place a toolbar and every button on it. A row spans the room from its corner and is a
+     * strip high; a column is as wide as its widest button and runs the height of the room.
+     *
+     * @param room the extent of what the strip is drawn into, the canvas
+     **/
+    void strip(component::Toolbar& bar, const glm::vec2& corner, const glm::vec2& room) const;
+
+    /**
+     * Place a menu bar's open panel and its items, hanging from an origin and moved back into
+     * the room where it would hang off an edge.
+     **/
+    void panel(component::Menu& menu, const glm::vec2& origin, const glm::vec2& room) const;
+
+    /**
+     * Place a game menu's level and its items, centred in the room.
+     **/
+    void centred(component::Menu& level, const glm::vec2& room) const;
+
+    /**
+     * How wide a flyout panel's mark column is, as a fraction of a line - the room on each
+     * side of its labels for a check mark and a submenu arrow.
+     **/
+    static constexpr float markColumn = 0.9f;
+
  private:
+    /**
+     * The room a flow box offers each child: none along the line it lays out, the whole of
+     * it across.
+     **/
+    static v3d::type::geometry::Bound2D lineRoom(bool vertical, const v3d::type::geometry::Bound2D& bounds);
+
+    /**
+     * The size a child of a flow box asks for in the room it is offered, resolved against the
+     * box's extent.
+     **/
+    glm::vec2 childSize(Component& child, const v3d::type::geometry::Bound2D& room, const glm::vec2& extent) const;
+
     /**
      * Write the boxes of a flow box's children - along the line by what each asks for, and
      * across it by the box's width when it stretches them.

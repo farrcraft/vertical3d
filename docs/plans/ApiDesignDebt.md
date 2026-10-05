@@ -449,6 +449,16 @@ dispatcher, which puts dispatch back where ADR-0038 says it is. ADR-0059's table
 
 U4, U6, U7.
 
+**Closed.** The arranger places a toolbar and its buttons, a menu bar's panels and a game menu's
+level with their items, and the renderer paints the boxes it was given; `Arranger::place()` is the
+one `place()` and `drawn()` the one size fallback. **U6 was decided as two models**, and
+UserInterface.md says why: a game's menu is driven by commands its bindings send, which is what
+lets it be rebound or driven by a gamepad. U7: `Dressing` has a caret, a placeholder and a tab
+colour of its own, so an unthemed placeholder is readable; the thumb maths is three functions the
+scrollbar and `Immediate` share, and `Immediate` closes a scrolled region in one place; a flow
+box's child room and size are one helper each; `Component` cannot be copied; the loader tests the
+tab bar's type.
+
 Strip and menu-panel placement move into `Arranger`, so layout without a canvas places
 everything; `ComponentRenderer` reads boxes only, the seven size fallbacks call `natural()`, and
 `place()` exists once. `draw(Menu)` reuses `panel()` and plates through the theme. Then decide

@@ -40,6 +40,9 @@ struct Dressing final {
     glm::vec4 fill;          /**< the filled part of a bar **/
     glm::vec4 thumb;         /**< the part of a scrollbar's track that is taken hold of **/
     glm::vec4 mark;          /**< what a checked box or a chosen radio button is marked with **/
+    glm::vec4 caret;         /**< a text box's caret **/
+    glm::vec4 placeholder;   /**< what an empty text box shows in place of text **/
+    glm::vec4 tab;           /**< a tab that is not the chosen one **/
     glm::vec4 text;          /**< an ordinary item's label **/
     glm::vec4 activeText;    /**< the label of the item navigation is on **/
     glm::vec4 disabledText;  /**< the label of a control that is there and cannot be used **/

@@ -154,4 +154,23 @@ class Scrollbar : public Component {
     boost::weak_ptr<SelectList> scrolled_;
 };
 
+/**
+ * The length of a scrollbar's thumb: as much of the track as what is shown is of the whole,
+ * which makes the thumb a readout of how much there is as well as of where in it the view
+ * sits, and never shorter than Scrollbar::minimumThumb. The component and the immediate layer
+ * both ask this.
+ **/
+float thumbLength(float track, float shown, float whole) noexcept;
+
+/**
+ * Where along the track a thumb of that length starts, for an offset into a span.
+ **/
+float thumbStart(float track, float length, float offset, float span) noexcept;
+
+/**
+ * The offset a drag to a point along the track asks for. The cursor holds the middle of the
+ * thumb, so what is under it stays under it.
+ **/
+float dragOffset(float track, float length, float along, float span) noexcept;
+
 };  // namespace v3d::ui::component

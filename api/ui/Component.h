@@ -31,6 +31,10 @@ class Component {
  public:
     explicit Component(component::Type type);
     virtual ~Component();
+    // a copy would share the children it was copied from, and they would still name the
+    // original as their parent
+    Component(const Component&) = delete;
+    Component& operator=(const Component&) = delete;
 
     /**
      * Get the id of the component, which is unique among the components built so far and

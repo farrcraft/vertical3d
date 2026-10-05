@@ -493,6 +493,20 @@ class Immediate {
      * @param span how much of it it does not, which is the furthest it can be scrolled
      * @param scroll read and written - where the region is scrolled to
      **/
+    /**
+     * Whether a scrolled region puts up its scrollbar: a window decides at its start, from
+     * what it drew last frame, and a table whenever there is more than it shows.
+     **/
+    enum class Bar { Never, Always, WhenNeeded };
+
+    /**
+     * Close a scrolled region - a window's body or a table: measure what was drawn into it,
+     * put up its scrollbar down the right of the body, and turn the wheel over it into scroll.
+     *
+     * @param bodyMax the bottom right corner of the region, which the scrollbar runs down to
+     **/
+    void closeScroll(Id id, Id scroll, float contentTop, const glm::vec2& bodyMax, Bar bar);
+
     void scrollbar(Id id, const glm::vec2& min, const glm::vec2& max, float view, float span,
         float* scroll);
 
