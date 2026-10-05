@@ -20,7 +20,14 @@ namespace {
  **/
 class TestEngine final : public v3d::engine::Engine {
  public:
-    using Engine::Engine;
+    explicit TestEngine(const std::string& path, v3d::engine::Features features = v3d::engine::Features()) :
+        Engine(path),
+        features_(features) {
+    }
+
+    v3d::engine::Features features() const override {
+        return features_;
+    }
 
     const boost::shared_ptr<entt::dispatcher>& dispatcher() const {
         return dispatcher_;
@@ -55,6 +62,9 @@ class TestEngine final : public v3d::engine::Engine {
 
     bool take_ = false;
     std::vector<Uint32> offered_;
+
+ private:
+    v3d::engine::Features features_;
 };
 
 /**
@@ -86,8 +96,8 @@ std::string appPath(const std::string& fixture) {
     return "fixtures/" + fixture + "/";
 }
 
-const int configFeature = static_cast<int>(v3d::engine::Feature::Config);
-const int boundFeature = configFeature | static_cast<int>(v3d::engine::Feature::KeyboardInput);
+const v3d::engine::Features configFeature = v3d::engine::Feature::Config;
+const v3d::engine::Features boundFeature = v3d::engine::Feature::Config | v3d::engine::Feature::KeyboardInput;
 
 /**
  * A key going down, as SDL delivers it - the only event in this file the input devices
@@ -117,7 +127,7 @@ SDL_Event keyUp(SDL_Keycode key) {
 BOOST_AUTO_TEST_CASE(engine_initialize_no_features_test) {
     TestEngine engine(appPath("good"));
 
-    BOOST_TEST(engine.initialize(0));
+    BOOST_TEST(engine.initialize());
     BOOST_TEST(static_cast<bool>(engine.assets()));
     BOOST_TEST(static_cast<bool>(engine.dispatcher()));
     BOOST_TEST(static_cast<bool>(engine.events()));
@@ -129,9 +139,9 @@ BOOST_AUTO_TEST_CASE(engine_initialize_no_features_test) {
  * Feature::Config reads config.json out of the app's data directory and files what it names.
  **/
 BOOST_AUTO_TEST_CASE(engine_initialize_config_test) {
-    TestEngine engine(appPath("good"));
+    TestEngine engine(appPath("good"), configFeature);
 
-    BOOST_TEST(engine.initialize(configFeature));
+    BOOST_TEST(engine.initialize());
     BOOST_REQUIRE(engine.config());
     BOOST_TEST(static_cast<bool>(engine.config()->get(v3d::config::Type::Binding)));
     BOOST_TEST(static_cast<bool>(engine.config()->get(v3d::config::Type::Window)));
@@ -143,8 +153,8 @@ BOOST_AUTO_TEST_CASE(engine_initialize_config_test) {
  * triggered on the dispatcher comes back out as the destination it was bound to.
  **/
 BOOST_AUTO_TEST_CASE(engine_registers_mappings_test) {
-    TestEngine engine(appPath("good"));
-    BOOST_REQUIRE(engine.initialize(configFeature));
+    TestEngine engine(appPath("good"), configFeature);
+    BOOST_REQUIRE(engine.initialize());
 
     Recorder recorder;
     engine.dispatcher()->sink<v3d::event::Event>().connect<&Recorder::handle>(recorder);
@@ -165,8 +175,8 @@ BOOST_AUTO_TEST_CASE(engine_registers_mappings_test) {
  * A binding naming a state binds that edge only; one naming none matches both.
  **/
 BOOST_AUTO_TEST_CASE(engine_mapping_state_test) {
-    TestEngine engine(appPath("good"));
-    BOOST_REQUIRE(engine.initialize(configFeature));
+    TestEngine engine(appPath("good"), configFeature);
+    BOOST_REQUIRE(engine.initialize());
 
     Recorder recorder;
     engine.dispatcher()->sink<v3d::event::Event>().connect<&Recorder::handle>(recorder);
@@ -190,8 +200,8 @@ BOOST_AUTO_TEST_CASE(engine_mapping_state_test) {
  * wrote it as - which is what lets one action serve several bindings.
  **/
 BOOST_AUTO_TEST_CASE(engine_mapping_param_test) {
-    TestEngine engine(appPath("good"));
-    BOOST_REQUIRE(engine.initialize(configFeature));
+    TestEngine engine(appPath("good"), configFeature);
+    BOOST_REQUIRE(engine.initialize());
 
     Recorder recorder;
     engine.dispatcher()->sink<v3d::event::Event>().connect<&Recorder::handle>(recorder);
@@ -220,8 +230,8 @@ BOOST_AUTO_TEST_CASE(engine_mapping_param_test) {
  * to go.
  **/
 BOOST_AUTO_TEST_CASE(engine_declined_event_reaches_the_bindings_test) {
-    TestEngine engine(appPath("good"));
-    BOOST_REQUIRE(engine.initialize(boundFeature));
+    TestEngine engine(appPath("good"), boundFeature);
+    BOOST_REQUIRE(engine.initialize());
 
     Recorder recorder;
     engine.dispatcher()->sink<v3d::event::Event>().connect<&Recorder::handle>(recorder);
@@ -238,8 +248,8 @@ BOOST_AUTO_TEST_CASE(engine_declined_event_reaches_the_bindings_test) {
  * presses a button the app drew and gives an order is the bug it exists to prevent.
  **/
 BOOST_AUTO_TEST_CASE(engine_taken_event_is_not_mapped_test) {
-    TestEngine engine(appPath("good"));
-    BOOST_REQUIRE(engine.initialize(boundFeature));
+    TestEngine engine(appPath("good"), boundFeature);
+    BOOST_REQUIRE(engine.initialize());
     engine.take_ = true;
 
     Recorder recorder;
@@ -259,13 +269,13 @@ BOOST_AUTO_TEST_CASE(engine_quit_survives_a_taken_event_test) {
     SDL_Event quit{};
     quit.type = SDL_EVENT_QUIT;
 
-    TestEngine declining(appPath("good"));
-    BOOST_REQUIRE(declining.initialize(boundFeature));
+    TestEngine declining(appPath("good"), boundFeature);
+    BOOST_REQUIRE(declining.initialize());
     declining.offer(quit);
     BOOST_CHECK(declining.quitting());
 
-    TestEngine taking(appPath("good"));
-    BOOST_REQUIRE(taking.initialize(boundFeature));
+    TestEngine taking(appPath("good"), boundFeature);
+    BOOST_REQUIRE(taking.initialize());
     taking.take_ = true;
     taking.offer(quit);
     BOOST_CHECK(taking.quitting());
@@ -288,50 +298,50 @@ BOOST_AUTO_TEST_CASE(engine_default_takes_no_event_test) {
  * which line of it was wrong.
  **/
 BOOST_AUTO_TEST_CASE(engine_missing_config_document_test) {
-    TestEngine engine(appPath("nowhere"));
-    BOOST_TEST(!engine.initialize(configFeature));
+    TestEngine engine(appPath("nowhere"), configFeature);
+    BOOST_TEST(!engine.initialize());
 }
 
 BOOST_AUTO_TEST_CASE(engine_unloadable_config_file_test) {
-    TestEngine engine(appPath("unloadable-config"));
-    BOOST_TEST(!engine.initialize(configFeature));
+    TestEngine engine(appPath("unloadable-config"), configFeature);
+    BOOST_TEST(!engine.initialize());
 }
 
 BOOST_AUTO_TEST_CASE(engine_no_mappings_key_test) {
-    TestEngine engine(appPath("no-mappings-key"));
-    BOOST_TEST(!engine.initialize(configFeature));
+    TestEngine engine(appPath("no-mappings-key"), configFeature);
+    BOOST_TEST(!engine.initialize());
     // the document itself loaded - it is the mapping walk that rejected it
     BOOST_REQUIRE(engine.config());
     BOOST_TEST(static_cast<bool>(engine.config()->get(v3d::config::Type::Binding)));
 }
 
 BOOST_AUTO_TEST_CASE(engine_mapping_not_an_object_test) {
-    TestEngine engine(appPath("mapping-not-object"));
-    BOOST_TEST(!engine.initialize(configFeature));
+    TestEngine engine(appPath("mapping-not-object"), configFeature);
+    BOOST_TEST(!engine.initialize());
     // the document itself loaded - it is the mapping walk that rejected it
     BOOST_REQUIRE(engine.config());
     BOOST_TEST(static_cast<bool>(engine.config()->get(v3d::config::Type::Binding)));
 }
 
 BOOST_AUTO_TEST_CASE(engine_mapping_missing_source_test) {
-    TestEngine engine(appPath("missing-source"));
-    BOOST_TEST(!engine.initialize(configFeature));
+    TestEngine engine(appPath("missing-source"), configFeature);
+    BOOST_TEST(!engine.initialize());
     // the document itself loaded - it is the mapping walk that rejected it
     BOOST_REQUIRE(engine.config());
     BOOST_TEST(static_cast<bool>(engine.config()->get(v3d::config::Type::Binding)));
 }
 
 BOOST_AUTO_TEST_CASE(engine_mapping_missing_destination_test) {
-    TestEngine engine(appPath("missing-destination"));
-    BOOST_TEST(!engine.initialize(configFeature));
+    TestEngine engine(appPath("missing-destination"), configFeature);
+    BOOST_TEST(!engine.initialize());
     // the document itself loaded - it is the mapping walk that rejected it
     BOOST_REQUIRE(engine.config());
     BOOST_TEST(static_cast<bool>(engine.config()->get(v3d::config::Type::Binding)));
 }
 
 BOOST_AUTO_TEST_CASE(engine_mapping_unsupported_param_test) {
-    TestEngine engine(appPath("bad-param"));
-    BOOST_TEST(!engine.initialize(configFeature));
+    TestEngine engine(appPath("bad-param"), configFeature);
+    BOOST_TEST(!engine.initialize());
     // the document itself loaded - it is the mapping walk that rejected it
     BOOST_REQUIRE(engine.config());
     BOOST_TEST(static_cast<bool>(engine.config()->get(v3d::config::Type::Binding)));
@@ -344,7 +354,7 @@ BOOST_AUTO_TEST_CASE(engine_mapping_unsupported_param_test) {
  **/
 BOOST_AUTO_TEST_CASE(engine_quit_test) {
     TestEngine engine(appPath("good"));
-    BOOST_REQUIRE(engine.initialize(0));
+    BOOST_REQUIRE(engine.initialize());
 
     BOOST_TEST(!engine.quitting());
     engine.quit();
@@ -353,17 +363,6 @@ BOOST_AUTO_TEST_CASE(engine_quit_test) {
     // asking twice is asking once
     engine.quit();
     BOOST_TEST(engine.quitting());
-}
-
-/**
- * An engine that never reached the window has nothing to tear down, so an app that fails in
- * initialize can still call shutdown once from main.
- **/
-BOOST_AUTO_TEST_CASE(engine_shutdown_without_window_test) {
-    TestEngine engine(appPath("good"));
-    BOOST_REQUIRE(engine.initialize(0));
-
-    BOOST_TEST(engine.shutdown());
 }
 
 /**
@@ -382,8 +381,8 @@ BOOST_AUTO_TEST_CASE(engine_base_tick_and_render_test) {
  * on the press alone.
  **/
 BOOST_AUTO_TEST_CASE(engine_held_follows_the_keyboard_test) {
-    TestEngine engine(appPath("good"));
-    BOOST_REQUIRE(engine.initialize(boundFeature));
+    TestEngine engine(appPath("good"), boundFeature);
+    BOOST_REQUIRE(engine.initialize());
 
     BOOST_CHECK(!engine.held("pong::leftPaddleUp"));
     engine.offer(keyDown(SDLK_W));
@@ -405,8 +404,8 @@ BOOST_AUTO_TEST_CASE(engine_held_follows_the_keyboard_test) {
  * app but the rebind.
  **/
 BOOST_AUTO_TEST_CASE(engine_held_follows_a_rebind_test) {
-    TestEngine engine(appPath("good"));
-    BOOST_REQUIRE(engine.initialize(boundFeature));
+    TestEngine engine(appPath("good"), boundFeature);
+    BOOST_REQUIRE(engine.initialize());
     BOOST_REQUIRE(engine.rebind("pong::leftPaddleUp", "arrow_up"));
 
     engine.offer(keyDown(SDLK_W));
@@ -420,8 +419,8 @@ BOOST_AUTO_TEST_CASE(engine_held_follows_a_rebind_test) {
  * a null state.
  **/
 BOOST_AUTO_TEST_CASE(engine_held_without_a_keyboard_test) {
-    TestEngine engine(appPath("good"));
-    BOOST_REQUIRE(engine.initialize(configFeature));
+    TestEngine engine(appPath("good"), configFeature);
+    BOOST_REQUIRE(engine.initialize());
     BOOST_CHECK(!engine.held("pong::leftPaddleUp"));
 }
 
@@ -430,7 +429,16 @@ BOOST_AUTO_TEST_CASE(engine_held_without_a_keyboard_test) {
  * claiming a binding it did not make.
  **/
 BOOST_AUTO_TEST_CASE(engine_rebind_without_bindings_test) {
-    TestEngine engine(appPath("good"));
-    BOOST_REQUIRE(engine.initialize(static_cast<int>(v3d::engine::Feature::KeyboardInput)));
+    TestEngine engine(appPath("good"), v3d::engine::Feature::KeyboardInput);
+    BOOST_REQUIRE(engine.initialize());
     BOOST_CHECK(!engine.rebind("pong::leftPaddleUp", "arrow_up"));
 }
+
+// shutdown() is run()'s alone - ADR-0080 - so no handler in an app can tear the window down
+// under the frame after it. quit() is what is left to call.
+template <typename T>
+concept ShutsDown = requires(T& engine) { engine.shutdown(); };
+template <typename T>
+concept Quits = requires(T& engine) { engine.quit(); };
+static_assert(!ShutsDown<TestEngine>);
+static_assert(Quits<TestEngine>);

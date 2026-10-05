@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <api/type/Flags.h>
+
 #include <cstdint>
 
 namespace v3d::input {
@@ -13,16 +15,9 @@ enum class DeviceType : uint32_t {
     Keyboard = (1 << 1)
 };
 
-constexpr DeviceType operator|(DeviceType lhs, DeviceType rhs) {
-    return static_cast<DeviceType>(static_cast<int>(lhs) | static_cast<int>(rhs));
-}
+using DeviceTypes = v3d::type::Flags<DeviceType>;
 
-constexpr bool operator&(int lhs, DeviceType rhs) {
-    return lhs & static_cast<int>(rhs);
-}
-
-constexpr int& operator|=(int& lhs, DeviceType rhs) {  // NOLINT(runtime/references)
-    lhs = lhs | static_cast<int>(rhs);
-    return lhs;
+constexpr DeviceTypes operator|(DeviceType lhs, DeviceType rhs) {
+    return DeviceTypes(lhs) | rhs;
 }
 };  // namespace v3d::input

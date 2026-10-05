@@ -55,7 +55,7 @@ class Controller final : public v3d::engine::Engine {
      * Bring up the window, read the config, and build the views out of it.
      * @return whether the editor can run
      **/
-    bool initialize();
+    bool start() override;
 
     /**
      **/
@@ -63,7 +63,7 @@ class Controller final : public v3d::engine::Engine {
 
     /**
      **/
-    bool shutdown() override;
+    bool release() override;
 
     /**
      * Offer every event to the ui before the bindings map it, per ADR-0043.

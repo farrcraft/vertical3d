@@ -28,7 +28,7 @@ class PongEngine final : public v3d::engine::Engine {
     /**
      * @return bool
      **/
-    bool initialize();
+    bool start() override;
 
     /**
      * @return bool
@@ -37,12 +37,12 @@ class PongEngine final : public v3d::engine::Engine {
 
     /**
      **/
-    bool render();
+    bool render() override;
 
     /**
      * @return bool
      **/
-    bool shutdown();
+    bool release() override;
 
     void handleEvent(const v3d::event::Event& event);
 

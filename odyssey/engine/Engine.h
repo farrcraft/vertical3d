@@ -47,7 +47,7 @@ class Engine final : public v3d::engine::Engine {
      * 
      * @return bool
      **/
-    bool initialize();
+    bool start() override;
 
     /**
      * Advance the game world by one fixed simulation step
@@ -64,7 +64,7 @@ class Engine final : public v3d::engine::Engine {
     /**
      * @return bool
      **/
-    bool shutdown() override;
+    bool release() override;
 
  private:
     /**

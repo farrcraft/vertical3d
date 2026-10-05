@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "Device.h"
+#include "DeviceType.h"
 #include "Keyboard.h"
 #include "KeyState.h"
 #include "Mouse.h"
@@ -29,7 +30,7 @@ class Engine final {
  public:
     /**
      **/
-    Engine(const boost::shared_ptr<v3d::event::Engine> & eventEngine, const boost::shared_ptr<entt::dispatcher> &dispatcher, int devices);
+    Engine(const boost::shared_ptr<v3d::event::Engine> & eventEngine, const boost::shared_ptr<entt::dispatcher> &dispatcher, DeviceTypes devices);
 
     /**
      **/

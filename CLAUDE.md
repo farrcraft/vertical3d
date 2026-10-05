@@ -73,9 +73,10 @@ what has to be installed first. The tree is clean at cpplint, at `/W4` with `/WX
   nothing enforces the split, so simulation left in `tick()` is frame-rate dependent and
   compiles. `tick` is milliseconds, `simulate` is seconds.
   [docs/Architecture.md](docs/Architecture.md) has the rest of the loop.
-- **A quit command calls `Engine::quit()`, never `shutdown()`**, and an app's `shutdown()`
-  tears its renderer down before the base class runs. Either mistake leaves a destroyed window
-  being drawn into.
+- **An app's startup is `start()` and its teardown is `release()`**, both called by the engine
+  in its own order ([ADR-0080](docs/adr/0080-the-engine-owns-its-lifecycle.md)). Whatever
+  presents to the window, a renderer above all, is released in `release()`. A quit command
+  calls `Engine::quit()`; `shutdown()` is `run<T>`'s alone and an app cannot reach it.
 - **The shell around a game belongs to the api**
   ([ADR-0028](docs/adr/0028-an-apps-shell-belongs-to-the-api.md)). An app that writes its own
   `main`, menu, text renderer or minimize check has diverged rather than customised.

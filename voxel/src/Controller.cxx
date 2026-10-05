@@ -35,15 +35,7 @@ Controller::Controller(const std::string& appPath) :
 }
 
 
-bool Controller::initialize() {
-    if (!v3d::engine::Engine::initialize(static_cast<int>(
-        v3d::engine::Feature::Config |
-        v3d::engine::Feature::Window |
-        v3d::engine::Feature::MouseInput |
-        v3d::engine::Feature::KeyboardInput))) {
-        return false;
-    }
-
+bool Controller::start() {
     window_->caption("Voxel");
 
     // mouselook reads how far the mouse moved, which relative mode reports at any edge
@@ -143,13 +135,10 @@ v3d::ui::Immediate::Input Controller::tools() const {
 
 /**
  **/
-bool Controller::shutdown() {
+bool Controller::release() {
     if (renderer_) {
         // the device has to be idle before the window it presents to is destroyed
         renderer_->shutdown();
-    }
-    if (!v3d::engine::Engine::shutdown()) {
-        return false;
     }
     return true;
 }
@@ -169,8 +158,6 @@ void Controller::handleEvent(const v3d::event::Event& event) {
             return;
         }
         if (event.name() == "quit") {
-            // not shutdown() - this is running inside the event loop, which would tick and
-            // render one more frame against the window shutdown() had just destroyed
             quit();
             return;
         }

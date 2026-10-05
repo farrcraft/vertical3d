@@ -4,49 +4,43 @@
  **/
 
 #include <api/engine/Feature.h>
+#include <api/input/DeviceType.h>
 
 #include <boost/test/unit_test.hpp>
 
 /**
- * The bitmask an app hands initialize(). Combining is done over the enum and testing over the
- * int it arrives as, which is why there are two operators rather than one.
+ * What an app asks the engine for. Combining features is a set of them, and a set answers
+ * only for the enum it holds.
  **/
 BOOST_AUTO_TEST_CASE(feature_combine_test) {
-    const v3d::engine::Feature features =
-        v3d::engine::Feature::Window | v3d::engine::Feature::Config;
+    const v3d::engine::Features features = v3d::engine::Feature::Config | v3d::engine::Feature::KeyboardInput;
 
-    BOOST_CHECK_EQUAL(static_cast<int>(features), 3);
-}
-
-BOOST_AUTO_TEST_CASE(feature_test_test) {
-    const int features = static_cast<int>(
-        v3d::engine::Feature::Config | v3d::engine::Feature::KeyboardInput);
-
-    BOOST_CHECK(features & v3d::engine::Feature::Config);
-    BOOST_CHECK(features & v3d::engine::Feature::KeyboardInput);
-    BOOST_CHECK(!(features & v3d::engine::Feature::Window));
-    BOOST_CHECK(!(features & v3d::engine::Feature::MouseInput));
+    BOOST_CHECK(features.has(v3d::engine::Feature::Config));
+    BOOST_CHECK(features.has(v3d::engine::Feature::KeyboardInput));
+    BOOST_CHECK(!features.has(v3d::engine::Feature::Window));
+    BOOST_CHECK(!features.has(v3d::engine::Feature::MouseInput));
 }
 
 /**
- * Each flag is a bit of its own, so no feature can be asked for by asking for another.
- **/
-BOOST_AUTO_TEST_CASE(feature_flags_are_distinct_test) {
-    BOOST_CHECK_EQUAL(static_cast<int>(v3d::engine::Feature::Window), 1);
-    BOOST_CHECK_EQUAL(static_cast<int>(v3d::engine::Feature::Config), 2);
-    BOOST_CHECK_EQUAL(static_cast<int>(v3d::engine::Feature::MouseInput), 4);
-    BOOST_CHECK_EQUAL(static_cast<int>(v3d::engine::Feature::KeyboardInput), 8);
-}
-
-/**
- * Nothing asked for is nothing enabled, which is the mask a test - or an app that only wants
- * the asset manager and the event engine - passes.
+ * Nothing asked for is nothing enabled, which is the set a test passes when it wants only the
+ * asset manager and the event engine.
  **/
 BOOST_AUTO_TEST_CASE(feature_none_test) {
-    const int features = 0;
+    const v3d::engine::Features features;
 
-    BOOST_CHECK(!(features & v3d::engine::Feature::Window));
-    BOOST_CHECK(!(features & v3d::engine::Feature::Config));
-    BOOST_CHECK(!(features & v3d::engine::Feature::MouseInput));
-    BOOST_CHECK(!(features & v3d::engine::Feature::KeyboardInput));
+    BOOST_CHECK(features.empty());
+    BOOST_CHECK(!features.has(v3d::engine::Feature::Window));
+}
+
+/**
+ * A set grows by |=, and one bit is a set of one wherever a set is asked for - which is how
+ * the engine builds the devices it hands the input engine.
+ **/
+BOOST_AUTO_TEST_CASE(feature_accumulate_test) {
+    v3d::input::DeviceTypes devices;
+    devices |= v3d::input::DeviceType::Mouse;
+
+    BOOST_CHECK(devices.has(v3d::input::DeviceType::Mouse));
+    BOOST_CHECK(!devices.has(v3d::input::DeviceType::Keyboard));
+    BOOST_CHECK(devices == v3d::input::DeviceTypes(v3d::input::DeviceType::Mouse));
 }

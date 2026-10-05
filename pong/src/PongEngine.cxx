@@ -68,18 +68,10 @@ std::string_view paddleCommand(std::string_view item) {
 PongEngine::PongEngine(const std::string & path) : v3d::engine::Engine(path) {
 }
 
-bool::PongEngine::initialize() {
-    if (!Engine::initialize(
-        static_cast<int>(v3d::engine::Feature::Window |
-        v3d::engine::Feature::KeyboardInput |
-        v3d::engine::Feature::MouseInput |
-        v3d::engine::Feature::Config))) {
-        return false;
-    }
-
+bool PongEngine::start() {
     window_->caption("Pong!");
 
-    // after Engine::initialize(), because rebinding rebuilds the mapper the config built
+    // once the engine is up, because rebinding rebuilds the mapper the config built
     settings_ = boost::make_shared<v3d::engine::Settings>(ORGANIZATION, APPLICATION, logger_);
     settings_->load();
     applyStoredBindings();
@@ -154,16 +146,13 @@ bool PongEngine::render() {
 
 /**
  **/
-bool PongEngine::shutdown() {
+bool PongEngine::release() {
     if (soundEngine_) {
         soundEngine_->shutdown();
     }
     if (renderer_) {
         // the device has to be idle before the window it presents to is destroyed
         renderer_->shutdown();
-    }
-    if (!v3d::engine::Engine::shutdown()) {
-        return false;
     }
     return true;
 }
@@ -213,8 +202,6 @@ void PongEngine::handleUiEvent(const v3d::event::Event& event) {
         scene_->state().coop(true);
         scene_->reset();
     } else if (event.name() == "quit") {
-        // not shutdown() - this is running inside the event loop, which would tick and
-        // render one more frame against the window shutdown() had destroyed
         quit();
         return;
     }

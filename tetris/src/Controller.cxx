@@ -18,15 +18,7 @@ Controller::Controller(const std::string& path) : v3d::engine::Engine(path) {
     logger_ = boost::make_shared<v3d::log::Logger>();
 }
 
-bool Controller::initialize() {
-    if (!Engine::initialize(
-        static_cast<int>(v3d::engine::Feature::Window |
-            v3d::engine::Feature::KeyboardInput |
-            v3d::engine::Feature::MouseInput |
-            v3d::engine::Feature::Config))) {
-        return false;
-    }
-
+bool Controller::start() {
     window_->caption("Tetris!");
 
     vgui_ = boost::make_shared<v3d::ui::Engine>(eventEngine_, dispatcher_, logger_);
@@ -81,13 +73,10 @@ bool Controller::render() {
 
 /**
  **/
-bool Controller::shutdown() {
+bool Controller::release() {
     if (renderer_) {
         // the device has to be idle before the window it presents to is destroyed
         renderer_->shutdown();
-    }
-    if (!v3d::engine::Engine::shutdown()) {
-        return false;
     }
     return true;
 }
@@ -169,8 +158,6 @@ void Controller::handleEvent(const v3d::event::Event& event) {
             return;
         }
         if (event.name() == "quit") {
-            // not shutdown() - this is running inside the event loop, which would tick and
-            // render one more frame against the window shutdown() had destroyed
             quit();
             return;
         }

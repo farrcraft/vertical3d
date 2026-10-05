@@ -18,6 +18,7 @@
 #include <string_view>
 
 #include "Accumulator.h"
+#include "Feature.h"
 #include "Statistics.h"
 
 #include <boost/json.hpp>
@@ -40,14 +41,24 @@ class Engine {
     explicit Engine(const std::string& appPath);
 
     /**
-     * Initialize the engine.
-     * Initialization includes only the minimal amount of work required to get
-     * a window displayed on the screen.
-     *
-     * @param features The set of engine features to be enabled.
-     * @return bool
+     * Releases the window and SDL if shutdown() never ran - a test, or a run that failed
+     * before it got there. An app's own release() cannot run from here, because what it
+     * releases has already been destroyed by the time a base destructor runs.
      **/
-    bool initialize(int features);
+    virtual ~Engine();
+
+    Engine(const Engine&) = delete;
+    Engine& operator=(const Engine&) = delete;
+
+    /**
+     * Start the engine: the features() the app asked for, then the app's own start().
+     *
+     * Not virtual - ADR-0080. The order is the engine's, and an app supplies what runs at its
+     * end rather than wrapping the whole and calling back in.
+     *
+     * @return false when a feature or the app's start() failed, which is logged
+     **/
+    bool initialize();
 
     /**
      * The game loop entry point
@@ -115,17 +126,13 @@ class Engine {
     virtual bool render();
 
     /**
-     * @return bool
-     **/
-    virtual bool shutdown();
-
-    /**
      * Ask the game loop to stop after the frame it is on.
      *
      * This is what a quit command calls, and shutdown() is not: the loop ticks and
      * renders after an event handler returns, so tearing the window and SDL down from
      * inside a handler leaves the frame after it drawing against a destroyed window.
-     * eventLoop() returns, and the caller shuts down once, outside the loop.
+     * eventLoop() returns, and run() shuts down once, outside the loop. shutdown() is not
+     * reachable from an app at all - ADR-0080.
      **/
     void quit() noexcept;
 
@@ -172,6 +179,29 @@ class Engine {
     bool held(std::string_view command) const;
 
  protected:
+    /**
+     * What the engine sets up before start(). Every app in this tree wants all four, so
+     * that is the default and only an app that wants fewer says so.
+     **/
+    virtual Features features() const;
+
+    /**
+     * The app's own startup, run once every feature is up - the window open, the config read,
+     * the bindings built - so it can build on all of them.
+     *
+     * @return false to stop startup, which run() reports as a failed run
+     **/
+    virtual bool start();
+
+    /**
+     * The app's own teardown, run before the engine destroys the window: whatever presents
+     * to the window, a renderer above all, has to let the device go idle while the window
+     * still exists. The engine calls this; nothing else should.
+     *
+     * @return false when something failed to release, which run() reports
+     **/
+    virtual bool release();
+
     boost::shared_ptr<v3d::log::Logger> logger_;
     boost::shared_ptr<v3d::config::Config> config_;
     boost::shared_ptr<v3d::render::realtime::Window> window_;
@@ -215,9 +245,20 @@ class Engine {
      // what the binding config says, which held() asks and rebind() rebuilds
      boost::shared_ptr<v3d::event::Bindings> bindings_;
 
+     /**
+      * The app's release(), then the window and SDL. Private, and reached only through
+      * run(), so no event handler can tear the window down under the frame after it -
+      * ADR-0080.
+      **/
+     bool shutdown();
+
+     template <typename T, typename... Args>
+     friend int run(const char* executable, const std::string& name, Args&&... args);
+
      std::string appPath_;
-     int features_;
+     Features features_;
      bool needShutdown_;
+     bool released_ = false;
      bool quitting_;
      boost::shared_ptr<v3d::input::Engine> inputEngine_;
 };

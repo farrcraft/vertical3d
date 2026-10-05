@@ -48,15 +48,7 @@ Controller::Controller(const std::string& path) :
 
 /**
  **/
-bool Controller::initialize() {
-    if (!v3d::engine::Engine::initialize(static_cast<int>(
-        v3d::engine::Feature::Config |
-        v3d::engine::Feature::Window |
-        v3d::engine::Feature::MouseInput |
-        v3d::engine::Feature::KeyboardInput))) {
-        return false;
-    }
-
+bool Controller::start() {
     window_->caption("Vertical|3D");
 
     if (!config_) {
@@ -289,8 +281,6 @@ void Controller::registerCommands() {
     // gui.xml names this one without a context; ui is the context every app in the
     // repository puts its application level commands in
     press("ui::quit", [this]() {
-        // not shutdown() - this is running inside the event loop, which would tick and
-        // render one more frame against the window shutdown() had destroyed
         quit();
     });
 
@@ -514,12 +504,12 @@ bool Controller::render() {
 
 /**
  **/
-bool Controller::shutdown() {
+bool Controller::release() {
     if (renderer_) {
         // the device has to be idle before the window it presents to is destroyed
         renderer_->shutdown();
     }
-    return v3d::engine::Engine::shutdown();
+    return true;
 }
 
 /**

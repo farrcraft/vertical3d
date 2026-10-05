@@ -45,8 +45,9 @@ it that game. Five pieces live in the api:
 
 An app that reimplements one of these has diverged rather than customised.
 
-**Feature flags decide what exists.** `Engine::initialize(int features)` takes a bitmask of
-`v3d::engine::Feature` and constructs only what was asked for. `Feature::Config` loads
+**Feature flags decide what exists.** `Engine::initialize()` asks the app's `features()` — all
+four unless it says otherwise — and constructs only what was asked for, then calls the app's
+`start()` ([ADR-0080](adr/0080-the-engine-owns-its-lifecycle.md)). `Feature::Config` loads
 `data/config.json`, which must use the indirect form:
 `{"configs": [{"type": "...", "file": "..."}]}`. Pong's `data/` is the reference. The types are
 `window`, `binding`, `ui`, `sound`, `camera`, `layout` and `sprite`; the last is a table of
@@ -273,14 +274,15 @@ because neither is simulation and neither wants to run twice on a slow frame.
   what it is for — a click that both presses a button the app drew and gives an order to the
   scene is the bug it prevents — and it is also how an app silently disables its own
   `mappings.json` by taking everything. Quit, resize and focus run whatever it returns.
-- **A quit command calls `Engine::quit()`, never `shutdown()`.** `eventLoop` ticks and renders
-  after a handler returns, so tearing the window down inside one leaves the next frame drawing
-  into a destroyed window. `quit()` sets a flag the loop breaks on, and `main` calls
-  `shutdown()` after `eventLoop()` returns.
-- **An app's `shutdown()` must tear its renderer down before the base class runs.** The context
+- **A quit command calls `Engine::quit()`.** `eventLoop` ticks and renders after a handler
+  returns, so tearing the window down inside one would leave the next frame drawing into a
+  destroyed window. `quit()` sets a flag the loop breaks on, and `run<T>` calls `shutdown()` after
+  `eventLoop()` returns; an app cannot reach `shutdown()` at all.
+- **An app releases its renderer in `release()`, which runs before the window goes.** The context
   owns the device that holds the window's surface alive, and `Window::destroy()` unloads the
   vulkan library. A surface released after that is never destroyed, and the instance reports it
-  leaked.
+  leaked. The engine calls `release()` first because the order is its own -
+  [ADR-0080](adr/0080-the-engine-owns-its-lifecycle.md).
 - **`DrawItem::pushCapacity` is 128 bytes**, which is all vulkan guarantees, so an item can
   carry a transform alongside the floats a lit or graded material wants. The cost is paid per
   item per frame: an item is copied into a pass's queue by value, so the unused part of the

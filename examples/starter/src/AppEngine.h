@@ -22,11 +22,12 @@ class AppEngine final : public v3d::engine::Engine {
  public:
     explicit AppEngine(const std::string& path);
 
-    bool initialize();
+    v3d::engine::Features features() const override;
+    bool start() override;
 
     bool tick(unsigned int delta) override;
     bool render() override;
-    bool shutdown() override;
+    bool release() override;
 
  private:
     boost::shared_ptr<v3d::render::realtime::Engine3D> renderer_;

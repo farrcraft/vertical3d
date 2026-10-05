@@ -28,7 +28,6 @@ namespace v3d::engine {
  **/
 Engine::Engine(const std::string& appPath) :
     appPath_(appPath),
-    features_(0),
     needShutdown_(false),
     quitting_(false) {
 }
@@ -53,9 +52,9 @@ bool Engine::rebind(const std::string& command, const std::string& key) {
 
 /**
  **/
-bool Engine::initialize(int features) {
+bool Engine::initialize() {
     logger_ = boost::make_shared<v3d::log::Logger>();
-    features_ = features;
+    features_ = features();
 
     logger_->get()->info("Initializing engine...");
 
@@ -66,7 +65,7 @@ bool Engine::initialize(int features) {
     dispatcher_ = boost::make_shared<entt::dispatcher>();
     eventEngine_ = boost::make_shared<v3d::event::Engine>(dispatcher_);
 
-    if (features_ & Feature::Config) {
+    if (features_.has(Feature::Config)) {
         config_ = boost::make_shared<v3d::config::Config>(logger_);
         // Load config (through the asset manager)
         if (!config_->load(assetManager_)) {
@@ -92,18 +91,18 @@ bool Engine::initialize(int features) {
         }
     }
 
-    int devices = 0;
-    if (features_ & Feature::KeyboardInput) {
+    v3d::input::DeviceTypes devices;
+    if (features_.has(Feature::KeyboardInput)) {
         devices |= v3d::input::DeviceType::Keyboard;
     }
-    if (features_ & Feature::MouseInput) {
+    if (features_.has(Feature::MouseInput)) {
         devices |= v3d::input::DeviceType::Mouse;
     }
-    if (devices != 0) {
+    if (!devices.empty()) {
         inputEngine_ = boost::make_shared<v3d::input::Engine>(eventEngine_, dispatcher_, devices);
     }
 
-    if (features_ & Feature::Window) {
+    if (features_.has(Feature::Window)) {
         // Initialize SDL
         if (!SDL_Init(SDL_INIT_VIDEO)) {
             logger_->get()->error("SDL could not initialize! SDL_Error: {}", SDL_GetError());
@@ -118,7 +117,7 @@ bool Engine::initialize(int features) {
         // config, or none carrying dimensions, still gets a window
         int width = -1;
         int height = -1;
-        if (features_ & Feature::Config) {
+        if (features_.has(Feature::Config)) {
             boost::shared_ptr<v3d::asset::kind::Json> windowConfig = config_->get(v3d::config::Type::Window);
             if (windowConfig) {
                 // guarded as the bindings are: a window document this does not understand
@@ -138,21 +137,54 @@ bool Engine::initialize(int features) {
             return false;
         }
     }
+    return start();
+}
+
+/**
+ **/
+Engine::~Engine() {
+    if (needShutdown_) {
+        window_->destroy();
+        SDL_Quit();
+    }
+}
+
+/**
+ **/
+Features Engine::features() const {
+    return Feature::Window | Feature::Config | Feature::KeyboardInput | Feature::MouseInput;
+}
+
+/**
+ **/
+bool Engine::start() {
+    return true;
+}
+
+/**
+ **/
+bool Engine::release() {
     return true;
 }
 
 /**
  **/
 bool Engine::shutdown() {
+    // the app's, once, and before the window: what presents to the window has to let the
+    // device go idle while it still exists
+    bool released = true;
+    if (!released_) {
+        released_ = true;
+        released = release();
+    }
     if (!needShutdown_) {
-        return true;
+        return released;
     }
     logger_->get()->info("Shutting down engine...");
-    if (features_ & Feature::Window) {
-        window_->destroy();
-        SDL_Quit();
-    }
-    return true;
+    window_->destroy();
+    SDL_Quit();
+    needShutdown_ = false;
+    return released;
 }
 
 /**

@@ -54,9 +54,9 @@ std::string userPath(const std::string& org, const std::string& app);
  * handler calls: tearing the window down from inside one leaves the frame after it drawing
  * against a destroyed window.
  *
- * @param T the engine to run, which is v3d::engine::Engine subclassed by the app. It has
- *          to carry an initialize() of its own taking no arguments, which is where the app
- *          names the features it wants
+ * @param T the engine to run, which is v3d::engine::Engine subclassed by the app, with its
+ *          own features(), start() and release() - ADR-0080. This is the one caller of
+ *          shutdown(), which an app cannot reach
  * @param executable argv[0]
  * @param name what the app is called, for the one line a failure is reported on
  * @param args whatever else the app's engine is built from, forwarded after the path. An

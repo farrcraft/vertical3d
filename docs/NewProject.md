@@ -148,8 +148,8 @@ themes, which you want as soon as you draw text and not before.
 
 ## 4. The application
 
-An app is a subclass of `v3d::engine::Engine` that overrides `tick`, `render` and `shutdown`,
-plus a `main` that drives it. [examples/starter/src/](../examples/starter/src/) is a complete
+An app is a subclass of `v3d::engine::Engine` that overrides `start`, `tick`, `render` and
+`release`, plus a `main` that drives it. [examples/starter/src/](../examples/starter/src/) is a complete
 working one. The parts that are not obvious:
 
 **`main` is one line.** `v3d::engine::run<AppEngine>(argv[0], "myapp")` from
@@ -166,19 +166,19 @@ header has two spellings depending on which side of the boundary you are on. You
 first. If you run cpplint over your own sources, note that it reads an angle-bracketed `.h` as
 a C system header, so the api includes sort *above* `<string>` rather than below it.
 
-**`initialize` takes a feature bitmask**, and constructs only what is asked for.
-`Feature::Window | Feature::KeyboardInput | Feature::Config` is the useful minimum for
-something with a window. `Feature::Config` is what reads `data/config.json`; without it you
-still get a window, at its own default size rather than the configured one.
+**`features()` says what the engine builds**, and it builds all four unless an app overrides
+it to ask for fewer. `Feature::Config` is what reads `data/config.json`; without it you still
+get a window, at its own default size rather than the configured one. `start()` runs once they
+are all up, and is where an app builds its renderer and scene.
 
-**The renderer is torn down before the base class.** `shutdown()` calls the render engine's
-first, because the context owns the device that holds the window's surface alive and
+**The renderer is released in `release()`**, which the engine runs before it destroys the
+window, because the context owns the device that holds the window's surface alive and
 `Window::destroy()` unloads the vulkan library. A surface released after that is never
 destroyed, and the instance reports it leaked.
 
-**A quit calls `quit()`, never `shutdown()`.** The loop ticks and renders after an event
-handler returns, so tearing the window down inside one leaves the next frame drawing into a
-destroyed window.
+**A quit calls `quit()`.** The loop ticks and renders after an event handler returns, so the
+window has to outlive the handler; `shutdown()` is `run()`'s and an app cannot reach it -
+[ADR-0080](adr/0080-the-engine-owns-its-lifecycle.md).
 
 **Drawing is a canvas of quads submitted to a pass.** Open the frame with
 `renderer_->beginFrame(&size)`, which returns false while the window has no area — it has

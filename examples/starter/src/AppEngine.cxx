@@ -17,16 +17,13 @@
 AppEngine::AppEngine(const std::string& path) : v3d::engine::Engine(path) {
 }
 
-bool AppEngine::initialize() {
+v3d::engine::Features AppEngine::features() const {
     // Feature::Config is what reads data/config.json, and through it data/window.json. Without
     // it the window is created at its own default size rather than at the one configured.
-    if (!Engine::initialize(static_cast<int>(
-        v3d::engine::Feature::Window |
-        v3d::engine::Feature::KeyboardInput |
-        v3d::engine::Feature::Config))) {
-        return false;
-    }
+    return v3d::engine::Feature::Window | v3d::engine::Feature::KeyboardInput | v3d::engine::Feature::Config;
+}
 
+bool AppEngine::start() {
     window_->caption("vertical3d starter");
 
     renderer_ = boost::make_shared<v3d::render::realtime::Engine3D>(logger_, assetManager_);
@@ -65,11 +62,11 @@ bool AppEngine::render() {
     return true;
 }
 
-bool AppEngine::shutdown() {
-    // the renderer is torn down before the base class runs: the context owns the device that
-    // holds the window's surface alive, and Window::destroy unloads the vulkan library
+bool AppEngine::release() {
+    // the renderer goes before the engine destroys the window: the context owns the device
+    // that holds the window's surface alive, and Window::destroy unloads the vulkan library
     if (renderer_) {
         renderer_->shutdown();
     }
-    return Engine::shutdown();
+    return true;
 }

@@ -38,7 +38,7 @@ class Controller final : public v3d::engine::Engine {
           *
           * @return bool
           **/
-        bool initialize();
+        bool start() override;
 
         /**
          * Advance the game world time
@@ -51,7 +51,7 @@ class Controller final : public v3d::engine::Engine {
          * Draw the current frame
          * @return bool
          **/
-        bool render();
+        bool render() override;
 
         /**
          * What to hand the immediate layer this frame.
@@ -66,7 +66,7 @@ class Controller final : public v3d::engine::Engine {
         /**
          * @return bool
          **/
-        bool shutdown();
+        bool release() override;
 
         void handleEvent(const v3d::event::Event& event);
 

@@ -35,15 +35,7 @@ Engine::Engine(const std::string& appPath) :
 
 /**
  **/
-bool Engine::initialize() {
-    if (!v3d::engine::Engine::initialize(static_cast<int>(
-        v3d::engine::Feature::Config |
-        v3d::engine::Feature::Window |
-        v3d::engine::Feature::MouseInput |
-        v3d::engine::Feature::KeyboardInput))) {
-        return false;
-    }
-
+bool Engine::start() {
     window_->caption("Odyssey");
 
     map_ = boost::make_shared<odyssey::tile::Map>(logger_);
@@ -83,8 +75,6 @@ void Engine::handleEvent(const v3d::event::Event& event) {
         return;
     }
     if (event.name() == "quit") {
-        // not shutdown() - the event loop ticks and renders once more after a handler
-        // returns, and that frame would be drawn into a destroyed window
         quit();
         return;
     }
@@ -157,13 +147,10 @@ void Engine::step(int dx, int dy) {
 
 /**
  **/
-bool Engine::shutdown() {
+bool Engine::release() {
     if (renderer_) {
         // the device has to be idle before the window it presents to is destroyed
         renderer_->shutdown();
-    }
-    if (!v3d::engine::Engine::shutdown()) {
-        return false;
     }
     return true;
 }

@@ -314,6 +314,12 @@ config is read with the same guards as the bindings.
 
 E1, and the typed-flags half of E9.
 
+**Closed.** `initialize()` takes nothing and calls the app's `start()`; `shutdown()` is private to
+`run<T>` and calls the app's `release()` before the window goes; `features()` defaults to all four,
+and only the starter asks for fewer. `Feature` and `DeviceType` are `type::Flags`. `EngineTest`
+asserts through a concept that `shutdown()` is out of reach. CLAUDE.md's rule says what the type
+enforces, and all five apps run and shut down once.
+
 Write ADR-0080 first; the review's E1 sets out the options. The likely shape: `shutdown()` is
 private to `run<T>` (or refuses while the loop runs) and calls a protected virtual `release()`
 before tearing the window down; start-up is `features()` plus `start()`, with the base owning
