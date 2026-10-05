@@ -5,9 +5,30 @@
 
 #pragma once
 
+#include <api/render/offline/Characters.h>
+
 #include <string>
 
 namespace v3d::render::offline::sl {
+
+/** What kind of thing a Token is. **/
+enum class TokenKind {
+    END,
+    IDENTIFIER,
+    KEYWORD,
+    NUMBER,
+    STRING,
+    /**
+     * Something that combines values: arithmetic, comparison, logic, assignment, the
+     * two halves of the ternary, and SL's '.' for a dot product and '^' for a cross.
+     **/
+    OPERATOR,
+    /**
+     * Something that groups or separates: the three bracket pairs, a comma, a
+     * semicolon.
+     **/
+    PUNCTUATION
+};
 
 /**
  * One lexical unit of a shading language source.
@@ -18,59 +39,18 @@ namespace v3d::render::offline::sl {
  * is an identifier, and what it means is the symbol table's answer rather than the
  * lexer's - which is what lets a shader declare a variable named after a built-in.
  **/
-class Token final {
+class Token final : public v3d::render::offline::Lexeme<TokenKind> {
  public:
-    enum class Kind {
-        END,
-        IDENTIFIER,
-        KEYWORD,
-        NUMBER,
-        STRING,
-        /**
-         * Something that combines values: arithmetic, comparison, logic, assignment, the
-         * two halves of the ternary, and SL's '.' for a dot product and '^' for a cross.
-         **/
-        OPERATOR,
-        /**
-         * Something that groups or separates: the three bracket pairs, a comma, a
-         * semicolon.
-         **/
-        PUNCTUATION
-    };
+    typedef TokenKind Kind;
 
-    Token();
-    Token(Kind kind, unsigned int line, unsigned int column);
-    Token(Kind kind, const std::string & text, unsigned int line, unsigned int column);
-    Token(float value, unsigned int line, unsigned int column);
-
-    Kind kind() const;
-
-    /**
-     * The name of an identifier or a keyword, the spelling of an operator or a
-     * punctuation mark, or the contents of a string with its escapes resolved and its
-     * quotes gone. Empty for a number and for END.
-     **/
-    const std::string & text() const;
-
-    /**
-     * The value of a number. SL has no integer type, so every numeric literal is one of
-     * these however it was written.
-     **/
-    float value() const;
-
-    /**
-     * Where the token started, counting from one. A parse error that does not say where
-     * is most of the cost of a parse error.
-     **/
-    unsigned int line() const;
-    unsigned int column() const;
-
- private:
-    Kind kind_ = Kind::END;
-    std::string text_;
-    float value_ = 0.0f;
-    unsigned int line_ = 0;
-    unsigned int column_ = 0;
+    Token() = default;
+    Token(Kind kind, unsigned int line, unsigned int column) : Lexeme(kind, line, column) {
+    }
+    Token(Kind kind, const std::string & text, unsigned int line, unsigned int column) :
+        Lexeme(kind, text, line, column) {
+    }
+    Token(float value, unsigned int line, unsigned int column) : Lexeme(Kind::NUMBER, value, line, column) {
+    }
 };
 
 };  // namespace v3d::render::offline::sl

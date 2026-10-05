@@ -5,9 +5,21 @@
 
 #pragma once
 
+#include <api/render/offline/Characters.h>
+
 #include <string>
 
 namespace v3d::render::offline::rib {
+
+/** What kind of thing a Token is. **/
+enum class TokenKind {
+    END,
+    IDENTIFIER,
+    STRING,
+    NUMBER,
+    ARRAY_BEGIN,
+    ARRAY_END
+};
 
 /**
  * One lexical unit of a RIB stream.
@@ -18,43 +30,18 @@ namespace v3d::render::offline::rib {
  * argument, so the next identifier begins the next request whether or not either one is
  * recognised.
  **/
-class Token final {
+class Token final : public v3d::render::offline::Lexeme<TokenKind> {
  public:
-    enum class Kind {
-        END,
-        IDENTIFIER,
-        STRING,
-        NUMBER,
-        ARRAY_BEGIN,
-        ARRAY_END
-    };
+    typedef TokenKind Kind;
 
-    Token();
-    Token(Kind kind, unsigned int line, unsigned int column);
-    Token(Kind kind, const std::string & text, unsigned int line, unsigned int column);
-    Token(float value, unsigned int line, unsigned int column);
-
-    Kind kind() const;
-    /**
-     * The name of an identifier or the contents of a string, with the escapes resolved
-     * and the quotes gone. Empty for every other kind.
-     **/
-    const std::string & text() const;
-    float value() const;
-
-    /**
-     * Where the token started, counting from one. A parse error that does not say where
-     * is most of the cost of a parse error.
-     **/
-    unsigned int line() const;
-    unsigned int column() const;
-
- private:
-    Kind kind_ = Kind::END;
-    std::string text_;
-    float value_ = 0.0f;
-    unsigned int line_ = 0;
-    unsigned int column_ = 0;
+    Token() = default;
+    Token(Kind kind, unsigned int line, unsigned int column) : Lexeme(kind, line, column) {
+    }
+    Token(Kind kind, const std::string & text, unsigned int line, unsigned int column) :
+        Lexeme(kind, text, line, column) {
+    }
+    Token(float value, unsigned int line, unsigned int column) : Lexeme(Kind::NUMBER, value, line, column) {
+    }
 };
 
 };  // namespace v3d::render::offline::rib

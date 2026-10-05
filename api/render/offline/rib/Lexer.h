@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <api/render/offline/Characters.h>
+
 #include <iosfwd>
 #include <string>
 
@@ -54,20 +56,13 @@ class Lexer final {
     Token scanNumber(unsigned int line, unsigned int column);
     Token scanIdentifier(unsigned int line, unsigned int column);
 
-    /**
-     * Consume one character, tracking the position.
-     **/
-    int get();
-    int look();
     void skipSpace();
     Token fail(const std::string & message, unsigned int line, unsigned int column);
 
-    std::istream & stream_;
+    v3d::render::offline::Characters in_;
     Token peeked_;
     bool peeking_ = false;
     std::string error_;
-    unsigned int line_ = 1;
-    unsigned int column_ = 0;
 };
 
 };  // namespace v3d::render::offline::rib

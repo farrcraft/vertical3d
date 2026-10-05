@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <api/render/offline/Characters.h>
+
 #include <iosfwd>
 #include <string>
 
@@ -52,20 +54,6 @@ class Lexer final {
     Token scanOperator(unsigned int line, unsigned int column);
 
     /**
-     * Consume one character, tracking the position.
-     **/
-    int get();
-    int look();
-    /**
-     * Put back the character get() just returned, one deep.
-     *
-     * Deciding whether a '/' opens a comment or is a division takes the character after
-     * it, and a '.' is a number or a dot product on the same terms. The stream's own
-     * putback cannot serve: it fails once the stream has hit its end, which is the case a
-     * trailing '/' produces.
-     **/
-    void unget(int c);
-    /**
      * Whitespace and both comment forms, which stand in the same places.
      *
      * @return false when a comment was left unterminated, which sets the error
@@ -73,14 +61,10 @@ class Lexer final {
     bool skipSpace();
     Token fail(const std::string & message, unsigned int line, unsigned int column);
 
-    std::istream & stream_;
+    v3d::render::offline::Characters in_;
     Token peeked_;
     bool peeking_ = false;
-    int pushback_ = 0;
-    bool pushed_ = false;
     std::string error_;
-    unsigned int line_ = 1;
-    unsigned int column_ = 0;
 };
 
 };  // namespace v3d::render::offline::sl

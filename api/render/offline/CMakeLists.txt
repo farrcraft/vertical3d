@@ -10,6 +10,7 @@ set(CMAKE_CXX_FLAGS "/utf-8")
 set(CMAKE_C_FLAGS "/utf-8")
 
 v3d_add_api_library(render_offline
+	"Characters.h" "Characters.cxx"
 	"FrameBuffer.h" "FrameBuffer.cxx"
 	"Sampling.h" "Sampling.cxx"
 	"Sampler.h" "Sampler.cxx"
@@ -19,7 +20,7 @@ v3d_add_api_library(render_offline
 	"Texture.h" "Texture.cxx"
 	"Textures.h" "Textures.cxx"
 	"Noise.h" "Noise.cxx"
-	"rib/Token.h" "rib/Token.cxx"
+	"rib/Token.h"
 	"rib/Lexer.h" "rib/Lexer.cxx"
 	"rib/Words.h" "rib/Words.cxx"
 	"rib/Declaration.h" "rib/Declaration.cxx"
@@ -28,7 +29,7 @@ v3d_add_api_library(render_offline
 	"rib/Arguments.h" "rib/Arguments.cxx"
 	"rib/Handler.h"
 	"rib/Reader.h" "rib/Reader.cxx"
-	"sl/Token.h" "sl/Token.cxx"
+	"sl/Token.h"
 	"sl/Lexer.h" "sl/Lexer.cxx"
 	"sl/syntax/Expression.h" "sl/syntax/Expression.cxx"
 	"sl/syntax/Number.h" "sl/syntax/Number.cxx"

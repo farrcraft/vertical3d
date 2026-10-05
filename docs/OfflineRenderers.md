@@ -192,7 +192,9 @@ rather than a tour.
 
 - **The `SL*` files are to a `.sl` file what the `RIB*` ones are to a `.rib` file**, and are
   shaped the same way on purpose - a `peek`/`next` lexer over an `std::istream`, an `error()`
-  that ends the stream, and a line and column on every token.
+  that ends the stream, and a line and column on every token. What is the same is shared:
+  `offline::Characters` reads the stream with its position and decodes a string's escapes, and
+  each language's `Token` is an `offline::Lexeme` over its own kinds.
 - **A keyword is a closed set**: the five shader types, the eight data types, the two storage
   classes, the control flow and the three lighting constructs. Everything else that looks like
   a name is an identifier, so a shader may declare a variable called `output` or write its own
