@@ -537,6 +537,14 @@ Run the device suite and the golden images; this is the step most likely to move
 
 O1, and D7.
 
+**Closed.** `sl::Globals` resolves a program's globals once, and a machine cache holds it beside
+the machine; `sl::Point` is what a hider fills per shading point, and `Globals::shine` runs a light
+over a batch. `GridShader`, `HitShader` and `Imager` use them, so both hiders now bind `Oi` and
+`du`/`dv` the same way. **D7 is documented rather than fixed:** honouring `Oi` under reyes needs a
+sample to keep a list of surfaces and composite them, which is a feature rather than debt, so
+OfflineRenderers.md says the reyes hider's samples are opaque and TODO.md holds the work. The
+reference renders under both hiders pass unchanged.
+
 A globals map in `api/render/offline/sl`, resolved once per program, plus one "run a light over
 a batch" routine; `HitShader`, `GridShader` and `Imager` use them and supply only per-point data.
 Then decide D7: the reyes hider honours `Oi`, or OfflineRenderers.md says it does not and

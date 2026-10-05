@@ -64,6 +64,8 @@ each until a scene asks for it.
 
 [] displacement shaders are refused and `calculatenormal` is a stub, so neither displacement nor bump is possible. Displacement reaches back into moya's dicing, moves a grid after it is shaded and needs a bound grown by `displacementbound`; under the ray hider it needs a tessellation a ray tracer does not otherwise do. Bump needs derivatives across a batch, and a traced hit is a batch of one. It is due with a scene that needs surface detail a texture cannot give
 
+[] the reyes hider ignores `Oi`: a sample keeps the nearest surface and forces its opacity to one, so a translucent shader is opaque under `"hidden"` and translucent under `"raytrace"`. Honouring it needs a sample to keep every surface it meets and composite them front to back once the bucket is done - the ray hider's `see()` loop, over a sample's list rather than a ray's hits. It is due with a scene that wants glass or smoke drawn by the reyes hider
+
 [] `offline::trace::Scene::nearest` tests every primitive. Since moya traces too, every shadow ray from every grid point pays for the whole scene. An acceleration structure goes inside `offline::trace` and neither renderer changes; it is due with a scene that takes a second to render, which the suites' times would show
 
 ## Tile grids

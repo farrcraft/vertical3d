@@ -17,7 +17,6 @@ namespace v3d::render::offline::trace {
 
 namespace {
 
-typedef v3d::render::offline::sl::runtime::Machine Machine;
 typedef v3d::render::offline::sl::runtime::Value Value;
 typedef v3d::render::offline::sl::runtime::Program Program;
 
@@ -31,18 +30,6 @@ typedef v3d::render::offline::sl::runtime::Program Program;
  * exactly the case where an offset along it stays on the surface.
  **/
 const float EPSILON = 1.0e-4f;
-
-void put(Machine* machine, int reg, const glm::vec3 & value) {
-    if (reg >= 0) {
-        machine->value(reg).triple(0, value);
-    }
-}
-
-void put(Machine* machine, int reg, float value) {
-    if (reg >= 0) {
-        machine->value(reg).number(0, value);
-    }
-}
 
 };  // namespace
 
@@ -60,6 +47,7 @@ HitShader::Run & HitShader::run(const v3d::render::offline::sl::InstancePtr & sh
     // a batch of one, which is the whole point: a hit is not a special case of the
     // model, it is a batch one wide
     held.machine.prepare(shader->program(), 1);
+    held.globals = v3d::render::offline::sl::Globals(shader->program());
     return held;
 }
 
@@ -103,30 +91,14 @@ bool HitShader::light(unsigned int index, const Value & surface, Value* directio
     }
     const v3d::render::offline::sl::Placed & source = shining()[index];
     Run & held = run(source.shader);
-    const Program & program = source.shader->program();
 
-    // a light's parameters are stated in the space the scene instanced it in, and the
-    // point it is lighting is in world space
+    // the point it is lighting is in world space, and the light's own space is where the
+    // scene instanced it
     const glm::mat4x4 was = placement_;
     placement_ = source.placement;
-    source.shader->write(&held.machine, source.placement);
-
-    put(&held.machine, program.symbol("Ps"), surface.triple(0));
-    put(&held.machine, program.symbol("P"),
-        v3d::render::offline::sl::ptransform(source.placement, glm::vec3(0.0f)));
-    const bool ran = held.machine.run(program);
+    const bool ran = held.globals.shine(source, &held.machine, 1, surface, direction, colour, reached, ambient);
     placement_ = was;
-    if (!ran) {
-        return false;
-    }
-
-    const int away = program.symbol("L");
-    const int tint = program.symbol("Cl");
-    direction->triple(0, away < 0 ? glm::vec3(0.0f) : held.machine.value(away).triple(0));
-    colour->triple(0, tint < 0 ? glm::vec3(0.0f) : held.machine.value(tint).triple(0));
-    *reached = held.machine.lit();
-    *ambient = source.shader->ambient();
-    return true;
+    return ran;
 }
 
 bool HitShader::transmission(const Value & from, const Value & to, Value* fraction) {
@@ -271,31 +243,26 @@ glm::vec3 HitShader::shade(const Hit & hit, glm::vec3* opacity) {
     const Program & program = surface.shader->program();
     surface.shader->write(&held.machine, surface.placement);
 
-    put(&held.machine, program.symbol("P"), hit.point);
-    put(&held.machine, program.symbol("N"), hit.normal);
-    put(&held.machine, program.symbol("Ng"), hit.geometric);
-    put(&held.machine, program.symbol("I"), hit.incident);
-    put(&held.machine, program.symbol("E"),
-        scene_ == nullptr ? glm::vec3(0.0f) : scene_->eye());
-    put(&held.machine, program.symbol("Cs"), primitive.colour());
-    put(&held.machine, program.symbol("Os"), primitive.opacity());
-    put(&held.machine, program.symbol("Oi"), primitive.opacity());
-    put(&held.machine, program.symbol("s"), hit.s);
-    put(&held.machine, program.symbol("t"), hit.t);
-    put(&held.machine, program.symbol("u"), hit.u);
-    put(&held.machine, program.symbol("v"), hit.v);
+    v3d::render::offline::sl::Point point;
+    point.position = hit.point;
+    point.normal = hit.normal;
+    point.geometric = hit.geometric;
+    point.incident = hit.incident;
+    point.colour = primitive.colour();
+    point.opacity = primitive.opacity();
+    point.s = hit.s;
+    point.t = hit.t;
+    point.u = hit.u;
+    point.v = hit.v;
+    held.globals.surface(&held.machine, 0, point);
+    held.globals.eye(&held.machine, scene_ == nullptr ? glm::vec3(0.0f) : scene_->eye());
 
     if (!held.machine.run(program)) {
         hit_ = nullptr;
         return primitive.colour();
     }
-    const int result = program.symbol("Ci");
-    const glm::vec3 colour = result < 0 ? primitive.colour() :
-        held.machine.value(result).triple(0);
-    const int coverage = program.symbol("Oi");
-    if (coverage >= 0) {
-        *opacity = held.machine.value(coverage).triple(0);
-    }
+    const glm::vec3 colour = held.globals.colour(held.machine, 0, primitive.colour());
+    *opacity = held.globals.opacity(held.machine, 0, *opacity);
     hit_ = nullptr;
     return colour;
 }

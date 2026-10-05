@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/render/offline/Texture.h>
+#include <api/render/offline/sl/Globals.h>
 #include <api/render/offline/sl/runtime/Machine.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
 #include <api/render/offline/trace/HitShader.h>
@@ -79,6 +80,7 @@ class GridShader final : public v3d::render::offline::sl::runtime::Renderer {
      public:
         v3d::render::offline::sl::runtime::Machine machine;
         const v3d::render::offline::sl::runtime::Program* program = nullptr;
+        v3d::render::offline::sl::Globals globals;
         unsigned int batch = 0;
     };
 

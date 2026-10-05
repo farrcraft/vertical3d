@@ -13,7 +13,11 @@ so its suites render in CI where everything below the recorder in `api/render` c
 
 **A hider is how moya decides what the camera sees, and a scene picks one with `Hider`**, per
 [ADR-0078](adr/0078-one-offline-renderer-with-two-hiders.md). Both read one graphics state and
-write one framebuffer, so everything below about shading and sampling holds under either.
+write one framebuffer, so everything below about shading and sampling holds under either -
+**except opacity: the reyes hider's samples are opaque.** A shader's `Oi` is bound and read the
+same under both, but only the ray hider composites by it, so a translucent surface is translucent
+under `"raytrace"` and opaque under `"hidden"`. Honouring it under reyes needs each sample to keep
+every surface it meets and composite them in depth order, and [TODO.md](TODO.md) holds that.
 
 - **`"hidden"` is the reyes hider and RI's default.** Primitives are split, diced into
   micropolygon grids, shaded a grid at a time and hidden into the samples of their buckets.
@@ -229,6 +233,11 @@ rather than a tour.
   that transform, and the declared defaults are *run* through the renderer's space table rather
   than remembered - which is what makes `point "shader" (0, 0, 1)` in the standard lights aim
   where the scene put them. A position a scene binds is stated in the same space.
+- **Both hiders bind the same globals.** A hider fills an `sl::Point` per shading point and
+  `sl::Globals`, resolved once per program, writes it into the batch and reads `Ci` and `Oi`
+  back, and `Globals::shine` runs a light over a batch, so there is one list of what a shader
+  is given rather than one per hider. `du` and `dv` are zero for a traced hit, which has no
+  neighbouring point to difference.
 - **A grid and a traced hit have different current spaces.** `GridShader` works in camera space
   and `trace::HitShader` in world space, which is why the space table is a callback each
   implements rather than a constant the library holds. `"object"` is the one a grid declines to

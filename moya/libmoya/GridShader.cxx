@@ -21,27 +21,7 @@ namespace v3d::moya {
 
 namespace {
 
-typedef v3d::render::offline::sl::runtime::Machine Machine;
 typedef v3d::render::offline::sl::runtime::Value Value;
-
-/**
- * Write one triple into a register, if the shader has that global at all.
- *
- * A shader that never mentions `Ng` still has the symbol - the compiler declares every
- * global of the shader's type - so this is really about a program that failed to compile
- * and was substituted, which may be a different shader entirely.
- **/
-void put(Machine* machine, int reg, unsigned int point, const glm::vec3 & value) {
-    if (reg >= 0) {
-        machine->value(reg).triple(point, value);
-    }
-}
-
-void put(Machine* machine, int reg, unsigned int point, float value) {
-    if (reg >= 0) {
-        machine->value(reg).number(point, value);
-    }
-}
 
 };  // namespace
 
@@ -59,6 +39,7 @@ GridShader::Run & GridShader::run(const v3d::render::offline::sl::InstancePtr & 
     held.batch = batch;
     held.machine.renderer(this);
     held.machine.prepare(shader->program(), batch);
+    held.globals = v3d::render::offline::sl::Globals(shader->program());
     return held;
 }
 
@@ -142,41 +123,14 @@ bool GridShader::light(unsigned int index, const Value & surface, Value* directi
     }
     const v3d::render::offline::sl::Placed & shining = shading_->lights[index];
     Run & held = run(shining.shader, batch_);
-    const v3d::render::offline::sl::runtime::Program & program = shining.shader->program();
 
-    /*
-        A light's own space is where the scene put it, and its parameters are stated
-        there; the batch it is lighting is in camera space. Writing the parameters through
-        the placement is what makes a light placed by a transform land where the scene put
-        it rather than at the origin.
-    */
+    // the batch it is lighting is in camera space, and the light's own space is where the
+    // scene put it
     const glm::mat4x4 was = placement_;
     placement_ = shining.placement;
-    shining.shader->write(&held.machine, shining.placement);
-
-    const int where = program.symbol("Ps");
-    const int origin = program.symbol("P");
-    const glm::vec3 position = v3d::render::offline::sl::ptransform(shining.placement,
-        glm::vec3(0.0f));
-    for (unsigned int point = 0; point < batch_; point++) {
-        put(&held.machine, where, point, surface.triple(point));
-        put(&held.machine, origin, point, position);
-    }
-    const bool ran = held.machine.run(program);
+    const bool ran = held.globals.shine(shining, &held.machine, batch_, surface, direction, colour, reached, ambient);
     placement_ = was;
-    if (!ran) {
-        return false;
-    }
-
-    const int away = program.symbol("L");
-    const int tint = program.symbol("Cl");
-    for (unsigned int point = 0; point < batch_; point++) {
-        direction->triple(point, away < 0 ? glm::vec3(0.0f) : held.machine.value(away).triple(point));
-        colour->triple(point, tint < 0 ? glm::vec3(0.0f) : held.machine.value(tint).triple(point));
-    }
-    *reached = held.machine.lit();
-    *ambient = shining.shader->ambient();
-    return true;
+    return ran;
 }
 
 void GridShader::shade(const Shading & shading, MicroPolygonGrid* grid) {
@@ -200,64 +154,51 @@ void GridShader::shade(const Shading & shading, MicroPolygonGrid* grid) {
     const v3d::render::offline::sl::runtime::Program & program = shading.surface->program();
     shading.surface->write(&held.machine, shading.placement);
 
-    const int position = program.symbol("P");
-    const int normal = program.symbol("N");
-    const int geometric = program.symbol("Ng");
-    const int incident = program.symbol("I");
-    const int eye = program.symbol("E");
-    const int surfaceColor = program.symbol("Cs");
-    const int surfaceOpacity = program.symbol("Os");
-    const int s = program.symbol("s");
-    const int t = program.symbol("t");
-    const int u = program.symbol("u");
-    const int v = program.symbol("v");
-    const int du = program.symbol("du");
-    const int dv = program.symbol("dv");
-
     // the grid parameters dicing already walks: vertex (i, j) is at i and j over the span,
     // and the spacing between two of them is what a derivative would divide by
     const float span = size > 1 ? static_cast<float>(size - 1) : 1.0f;
-    const glm::vec3 opacity = shading.opacity;
 
     for (unsigned int i = 0; i < size; i++) {
         for (unsigned int j = 0; j < size; j++) {
-            const unsigned int point = i * size + j;
+            const unsigned int lane = i * size + j;
             const Vertex vert = grid->vertex(i, j);
-            put(&held.machine, position, point, vert.point());
-            put(&held.machine, normal, point, vert.normal());
-            put(&held.machine, geometric, point, vert.geometricNormal());
-            const glm::vec3 plane = toWorldNormal * vert.geometricNormal();
-            planes_[point] = glm::length(plane) > 0.0f ? glm::normalize(plane) : plane;
+            v3d::render::offline::sl::Point point;
+            point.position = vert.point();
+            point.normal = vert.normal();
+            point.geometric = vert.geometricNormal();
             // the eye is the origin of camera space, so the direction the surface is seen
             // along is the point itself
-            put(&held.machine, incident, point, vert.point());
-            put(&held.machine, surfaceColor, point, vert.color());
-            put(&held.machine, surfaceOpacity, point, opacity);
+            point.incident = vert.point();
+            point.colour = vert.color();
+            point.opacity = shading.opacity;
             const glm::vec2 st = vert.hasTexCoord() ? vert.st() :
                 glm::vec2(static_cast<float>(i) / span, static_cast<float>(j) / span);
-            put(&held.machine, s, point, st.x);
-            put(&held.machine, t, point, st.y);
-            put(&held.machine, u, point, static_cast<float>(i) / span);
-            put(&held.machine, v, point, static_cast<float>(j) / span);
-            put(&held.machine, du, point, 1.0f / span);
-            put(&held.machine, dv, point, 1.0f / span);
+            point.s = st.x;
+            point.t = st.y;
+            point.u = static_cast<float>(i) / span;
+            point.v = static_cast<float>(j) / span;
+            point.du = 1.0f / span;
+            point.dv = 1.0f / span;
+            held.globals.surface(&held.machine, lane, point);
+
+            const glm::vec3 plane = toWorldNormal * vert.geometricNormal();
+            planes_[lane] = glm::length(plane) > 0.0f ? glm::normalize(plane) : plane;
         }
     }
-    put(&held.machine, eye, 0, glm::vec3(0.0f));
+    held.globals.eye(&held.machine, glm::vec3(0.0f));
 
     if (!held.machine.run(program)) {
         shading_ = nullptr;
         return;
     }
 
-    const int result = program.symbol("Ci");
-    if (result >= 0) {
-        for (unsigned int i = 0; i < size; i++) {
-            for (unsigned int j = 0; j < size; j++) {
-                Vertex vert = grid->vertex(i, j);
-                vert.color(held.machine.value(result).triple(i * size + j));
-                grid->addVertex(vert, i, j);
-            }
+    // what the shader left in Oi is not read: this hider's samples are opaque, which
+    // OfflineRenderers.md says
+    for (unsigned int i = 0; i < size; i++) {
+        for (unsigned int j = 0; j < size; j++) {
+            Vertex vert = grid->vertex(i, j);
+            vert.color(held.globals.colour(held.machine, i * size + j, vert.color()));
+            grid->addVertex(vert, i, j);
         }
     }
     shading_ = nullptr;

@@ -5,67 +5,11 @@
 
 #include "Imager.h"
 
+#include <api/render/offline/sl/Globals.h>
+
 #include <glm/vec3.hpp>
 
 namespace v3d::render::offline::sl {
-
-namespace {
-
-/**
- * Which register each of an imager's globals is, looked up once rather than per row.
- **/
-class Globals final {
- public:
-    explicit Globals(const runtime::Program & program) :
-        colour(program.symbol("Ci")),
-        opacity(program.symbol("Oi")),
-        alpha(program.symbol("alpha")),
-        position(program.symbol("P")) {
-    }
-
-    int colour;
-    int opacity;
-    int alpha;
-    int position;
-};
-
-/** One pixel's worth of the frame, into the register file. **/
-void read(const FrameBuffer & frame, unsigned int coverage, const Globals & globals,
-    runtime::Machine* machine, unsigned int column, unsigned int row) {
-    const float covered = frame.value(coverage, column, row);
-    if (globals.colour >= 0) {
-        machine->value(globals.colour).triple(column, glm::vec3(
-            frame.value(0, column, row), frame.value(1, column, row), frame.value(2, column, row)));
-    }
-    if (globals.opacity >= 0) {
-        machine->value(globals.opacity).triple(column, glm::vec3(covered));
-    }
-    if (globals.alpha >= 0) {
-        machine->value(globals.alpha).number(column, covered);
-    }
-    if (globals.position >= 0) {
-        // the pixel's centre in raster space, which is where an imager that varies across
-        // the frame reads what it varies by
-        machine->value(globals.position).triple(column, glm::vec3(
-            static_cast<float>(column) + 0.5f, static_cast<float>(row) + 0.5f, 0.0f));
-    }
-}
-
-/** And back out of it. **/
-void write(FrameBuffer* frame, unsigned int coverage, const Globals & globals,
-    const runtime::Machine & machine, unsigned int column, unsigned int row) {
-    if (globals.colour >= 0) {
-        const glm::vec3 shaded = machine.value(globals.colour).triple(column);
-        frame->value(0, column, row, shaded.r);
-        frame->value(1, column, row, shaded.g);
-        frame->value(2, column, row, shaded.b);
-    }
-    if (globals.alpha >= 0) {
-        frame->value(coverage, column, row, machine.value(globals.alpha).number(column));
-    }
-}
-
-};  // namespace
 
 Imager::Imager(const InstancePtr & shader, runtime::Renderer* renderer) :
     shader_(shader),
@@ -91,13 +35,21 @@ bool Imager::run(FrameBuffer* frame, unsigned int coverage) {
     for (unsigned int row = 0; row < height; row++) {
         shader_->write(&machine_);
         for (unsigned int column = 0; column < width; column++) {
-            read(*frame, coverage, globals, &machine_, column, row);
+            // the pixel's centre in raster space
+            globals.pixel(&machine_, column, glm::vec3(frame->value(0, column, row), frame->value(1, column, row),
+                frame->value(2, column, row)), frame->value(coverage, column, row),
+                glm::vec3(static_cast<float>(column) + 0.5f, static_cast<float>(row) + 0.5f, 0.0f));
         }
         if (!machine_.run(program)) {
             return false;
         }
         for (unsigned int column = 0; column < width; column++) {
-            write(frame, coverage, globals, machine_, column, row);
+            const glm::vec3 was(frame->value(0, column, row), frame->value(1, column, row), frame->value(2, column, row));
+            const glm::vec3 shaded = globals.colour(machine_, column, was);
+            frame->value(0, column, row, shaded.r);
+            frame->value(1, column, row, shaded.g);
+            frame->value(2, column, row, shaded.b);
+            frame->value(coverage, column, row, globals.alpha(machine_, column, frame->value(coverage, column, row)));
         }
     }
     return true;
