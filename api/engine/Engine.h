@@ -271,6 +271,15 @@ class Engine {
       **/
      void command(const v3d::event::Event& event);
 
+     /**
+      * The three parts of initialize() that a feature turns on: the config and the bindings
+      * it names, the input devices, and the window the window config sizes. Each false is a
+      * startup that cannot go on, and has said why.
+      **/
+     bool loadConfig();
+     void startInput();
+     bool openWindow();
+
      // what the binding config says, which held() asks and rebind() rebuilds
      boost::shared_ptr<v3d::event::Bindings> bindings_;
 

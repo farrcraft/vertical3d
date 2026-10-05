@@ -49,6 +49,28 @@ void clear(VkCommandBuffer commands, VkImageView colour, VkImageView depth, cons
     vkCmdEndRendering(commands);
 }
 
+/**
+ * Clear a slot's images, taking each from nothing into what a pass draws in and then into what
+ * the recorder leaves a target in after its last pass - ADR-0031 and ADR-0044 - so that a slot
+ * no pass has drawn into looks like one a pass has. A null image is one the slot does not have.
+ **/
+void readied(VkCommandBuffer commands, VkImage colour, VkImageView colourView, VkImage depth, VkImageView depthView,
+    const VkExtent2D& extent) {
+    if (colour != VK_NULL_HANDLE) {
+        memory::record(commands, {memory::colourForDrawing(colour)});
+    }
+    if (depth != VK_NULL_HANDLE) {
+        memory::record(commands, {memory::depthForDrawing(depth)});
+    }
+    clear(commands, colourView, depthView, extent);
+    if (colour != VK_NULL_HANDLE) {
+        memory::record(commands, {memory::colourAfterDrawing(colour, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)});
+    }
+    if (depth != VK_NULL_HANDLE) {
+        memory::record(commands, {memory::depthForSampling(depth)});
+    }
+}
+
 };  // namespace
 
 /**
@@ -147,25 +169,8 @@ void RenderTarget::ready() const {
     uploader.oneShot([this](VkCommandBuffer commands) {
         for (const Slot& slot : slots_) {
             const bool depth = slot.depth && slot.depth->sampled();
-            VkImage colourImage = slot.image ? slot.image->handle() : VK_NULL_HANDLE;
-            VkImage depthImage = depth ? slot.depth->image() : VK_NULL_HANDLE;
-            // into what a pass draws in and then into what the recorder leaves a target in
-            // after its last pass - ADR-0031 and ADR-0044 - so that a slot no pass has drawn
-            // into looks like one a pass has
-            if (colourImage != VK_NULL_HANDLE) {
-                memory::record(commands, {memory::colourForDrawing(colourImage)});
-            }
-            if (depthImage != VK_NULL_HANDLE) {
-                memory::record(commands, {memory::depthForDrawing(depthImage)});
-            }
-            clear(commands, slot.image ? slot.image->view() : VK_NULL_HANDLE, depth ? slot.depth->view() : VK_NULL_HANDLE,
-                extent_);
-            if (colourImage != VK_NULL_HANDLE) {
-                memory::record(commands, {memory::colourAfterDrawing(colourImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)});
-            }
-            if (depthImage != VK_NULL_HANDLE) {
-                memory::record(commands, {memory::depthForSampling(depthImage)});
-            }
+            readied(commands, slot.image ? slot.image->handle() : VK_NULL_HANDLE, slot.image ? slot.image->view() : VK_NULL_HANDLE,
+                depth ? slot.depth->image() : VK_NULL_HANDLE, depth ? slot.depth->view() : VK_NULL_HANDLE, extent_);
         }
     });
 }

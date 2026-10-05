@@ -52,18 +52,8 @@ class Controller final : public v3d::engine::Engine {
     explicit Controller(const std::string& path);
 
     /**
-     * Bring up the window, read the config, and build the views out of it.
-     * @return whether the editor can run
-     **/
-    bool start() override;
-
-    /**
      **/
     bool render() override;
-
-    /**
-     **/
-    bool release() override;
 
     /**
      * Offer every event to the ui before the bindings map it, per ADR-0043.
@@ -90,6 +80,17 @@ class Controller final : public v3d::engine::Engine {
      * The window changed size, so the layout divides a different area between the views.
      **/
     void handleResize(const v3d::event::kind::WindowResize& event);
+
+ protected:
+    /**
+     * Bring up the window, read the config, and build the views out of it.
+     * @return whether the editor can run
+     **/
+    bool start() override;
+
+    /**
+     **/
+    bool release() override;
 
  private:
     /**

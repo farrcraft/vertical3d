@@ -73,12 +73,12 @@ class Engine final {
     /**
      * Load every clip a sound config names, through the resolver the app supplies.
      *
-     * @param config the document, an array of clip ids over the files that hold them
+     * @param doc the document, an array of clip ids over the files that hold them
      * @param resolve what turns one of those files into a clip
      * @return false when the document is malformed, or when a clip it named would not
      *         load - the clips that did load are kept either way
      **/
-    bool load(const boost::json::object & config, const Resolve & resolve);
+    bool load(const boost::json::object & doc, const Resolve & resolve);
 
     /**
      * Load every clip a sound config names through an asset manager, which has to have had

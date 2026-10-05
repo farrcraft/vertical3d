@@ -14,7 +14,7 @@ did the starter, which draws a quad.
 [ADR-0033](0033-a-consumer-selects-the-api-libraries-it-wants.md) exists so that a consumer installs
 only the closure of what it uses, and this undid it. The same constructor kept the extension table
 as a chain of `if`s that had already drifted from `image::Factory`'s, and three of its loaders were
-one loader with the reader class changed. The audit is [B5, A2, T1 and T2](../audits/ApiDesignReview.md).
+one loader with the reader class changed. The audit is [B5, A2, T1 and T2](../audits/completed/ApiDesignReview.md).
 
 Not every payload is needed by the same consumers. `render` loads models and their textures through
 the manager, and `ui` loads typefaces, so whatever holds those loaders is in their closure anyway.

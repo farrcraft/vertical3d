@@ -26,10 +26,6 @@ class TestEngine final : public v3d::engine::Engine {
         features_(features) {
     }
 
-    v3d::engine::Features features() const override {
-        return features_;
-    }
-
     /**
      * route() is where the order of ADR-0043 lives, and eventLoop() renders, so a test
      * drives the one and never the other.
@@ -47,6 +43,11 @@ class TestEngine final : public v3d::engine::Engine {
 
     bool take_ = false;
     std::vector<Uint32> offered_;
+
+ protected:
+    v3d::engine::Features features() const override {
+        return features_;
+    }
 
  private:
     v3d::engine::Features features_;

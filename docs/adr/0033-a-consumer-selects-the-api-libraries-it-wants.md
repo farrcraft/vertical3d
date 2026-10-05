@@ -129,7 +129,7 @@ means all of them.
 - `engine` requires `render`, and so the Vulkan SDK, because `Engine.h` holds the concrete
   `Window`. The accumulator, the statistics, the settings and the path helpers cannot be had
   without it. Splitting them out, or holding the window through an interface, was weighed on
-  2026-10-05 ([ApiDesignDebt](../plans/ApiDesignDebt.md) step 18) and decided against while
+  2026-10-05 ([ApiDesignDebt](../plans/completed/ApiDesignDebt.md) step 18) and decided against while
   nothing headless consumes the loop: the split costs a library or an interface, and buys
   nothing for any consumer that exists.
 - The root is four cmake files instead of three.

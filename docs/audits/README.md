@@ -6,8 +6,9 @@ document is the only account of that tree once it is gone, so it stays in the re
 list is worked off. The source itself comes back with `git show <commit>^:<path>`.
 
 An audit sits here while its list is open and moves to [completed/](completed/) when every item
-is closed. The four tree records are complete;
-[ApiDesignReview.md](ApiDesignReview.md), a design review of `api/` rather than of a tree, is open.
+is closed. Every record is complete, the four tree records and
+[ApiDesignReview.md](completed/ApiDesignReview.md), a design review of `api/` rather than of a tree,
+whose items [ApiDesignDebt](../plans/completed/ApiDesignDebt.md) worked off.
 
 ## The records
 

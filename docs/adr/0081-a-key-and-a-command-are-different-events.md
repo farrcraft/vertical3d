@@ -13,7 +13,7 @@ had to filter by the flag at run time; [ADR-0017](0017-a-command-is-a-name-in-a-
 records the editor handling every keypress twice before it learned to. And the order a listener
 heard a key and its command in depended on the order things had connected, which a dispatcher
 publishes in reverse. Pong's key capture worked by that accident. The review is
-[E4](../audits/ApiDesignReview.md).
+[E4](../audits/completed/ApiDesignReview.md).
 
 ## Decision
 

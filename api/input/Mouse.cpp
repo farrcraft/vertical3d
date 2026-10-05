@@ -10,6 +10,8 @@
 #include <api/event/kind/MouseMotion.h>
 #include <api/event/kind/MouseWheel.h>
 
+#include <algorithm>
+#include <initializer_list>
 #include <string>
 #include <string_view>
 
@@ -40,12 +42,8 @@ std::string buttonEvent(unsigned int button) {
 /**
  **/
 bool isButtonName(std::string_view name) {
-    for (unsigned int button : {SDL_BUTTON_LEFT, SDL_BUTTON_MIDDLE, SDL_BUTTON_RIGHT, SDL_BUTTON_X1, SDL_BUTTON_X2}) {
-        if (buttonEvent(button) == name) {
-            return true;
-        }
-    }
-    return false;
+    const std::initializer_list<unsigned int> buttons{SDL_BUTTON_LEFT, SDL_BUTTON_MIDDLE, SDL_BUTTON_RIGHT, SDL_BUTTON_X1, SDL_BUTTON_X2};
+    return std::ranges::any_of(buttons, [name](unsigned int button) { return buttonEvent(button) == name; });
 }
 
 bool Mouse::handleEvent(const SDL_Event& event) {

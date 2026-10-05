@@ -41,15 +41,6 @@ class Engine final : public v3d::engine::Engine {
     explicit Engine(const std::string& appPath);
 
     /**
-     * Initialize the engine.
-     * Initialization includes only the minimal amount of work required to get
-     * a window displayed on the screen.
-     * 
-     * @return bool
-     **/
-    bool start() override;
-
-    /**
      * Advance the game world by one fixed simulation step
      * @return bool
      **/
@@ -60,6 +51,16 @@ class Engine final : public v3d::engine::Engine {
      * @return bool
      **/
     bool render() override;
+
+ protected:
+    /**
+     * Initialize the engine.
+     * Initialization includes only the minimal amount of work required to get
+     * a window displayed on the screen.
+     * 
+     * @return bool
+     **/
+    bool start() override;
 
     /**
      * @return bool

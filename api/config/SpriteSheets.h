@@ -47,10 +47,10 @@ class SpriteSheets final {
      * has. A region outside the sheet it is in is rejected the same way, because a uv
      * outside 0..1 samples whatever the wrap mode decides rather than reporting anything.
      *
-     * @param config the parsed sprites document
+     * @param doc the parsed sprites document
      * @return whether every sheet in it was understood
      **/
-    bool load(const boost::json::object& config);
+    bool load(const boost::json::object& doc);
 
     /**
      * @param name the sheet name

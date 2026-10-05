@@ -29,24 +29,25 @@ class PongEngine final : public v3d::engine::Engine {
     /**
      * @return bool
      **/
-    bool start() override;
-
-    /**
-     * @return bool
-     **/
     bool simulate(float step) override;
 
     /**
      **/
     bool render() override;
 
+    void handleEvent(const v3d::event::Event& event);
+    void handleSource(const v3d::event::Source& source);
+
+ protected:
+    /**
+     * @return bool
+     **/
+    bool start() override;
+
     /**
      * @return bool
      **/
     bool release() override;
-
-    void handleEvent(const v3d::event::Event& event);
-    void handleSource(const v3d::event::Source& source);
 
  private:
     /**

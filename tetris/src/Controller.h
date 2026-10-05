@@ -22,7 +22,6 @@ class Controller final : public v3d::engine::Engine {
  public:
     explicit Controller(const std::string& path);
 
-    bool start() override;
     /**
      * @return bool
      **/
@@ -32,12 +31,15 @@ class Controller final : public v3d::engine::Engine {
      **/
     bool render() override;
 
+    void handleEvent(const v3d::event::Event& event);
+
+ protected:
+    bool start() override;
+
     /**
      * @return bool
      **/
     bool release() override;
-
-    void handleEvent(const v3d::event::Event& event);
 
  private:
     /**

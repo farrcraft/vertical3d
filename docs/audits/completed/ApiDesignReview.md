@@ -4,7 +4,7 @@ A design-principles review of every library under `api/`, against the tree at `7
 (2026-10-04): SRP, DRY, OCP, LSP, ISP, DIP, coupling, ownership and dead abstraction. Unlike the
 other records here it is not about a tree being deleted; it is an itemised list of debt, kept here
 because the list is the point and it will be worked off item by item.
-[plans/ApiDesignDebt.md](../plans/ApiDesignDebt.md) is the plan that works it off.
+[plans/ApiDesignDebt.md](../../plans/completed/ApiDesignDebt.md) is the plan that works it off.
 
 ## Method
 
@@ -42,18 +42,18 @@ These are bugs, not design notes, and are worth fixing ahead of anything else.
 
 | # | Where | Defect |
 |---|---|---|
-| D1 | [Camera.cxx:305](../../api/type/camera/Camera.cxx#L305) | `Camera::rotate` never clears `Profile::basisValid_`. Every config profile goes through `lookat()`, which sets it, so `createView()` uses the cached basis and **the editor's perspective arcball does nothing**. The all-components-non-zero guard also drops any single-axis rotation. ADR-0056 named a fourth writer forgetting the cache as its risk; this is it. |
-| D2 | [ui/Engine.cpp:207](../../api/ui/Engine.cpp#L207) | `focusable()` has no TabBar case, so tab order reaches controls on hidden pages; `shell::Keyboard` turns text input on for them and typing goes into a box nobody can see. |
-| D3 | [ui/Container.cpp:66](../../api/ui/Container.cpp#L66) | `probe()` picks children in reverse add order with no depth sort, while `Arranger::walk` draws by depth. A nested child with an out-of-order `depth` is drawn on top and clicked underneath — against ADR-0019's one walk for both. |
-| D4 | [image/writer/Jpeg.cxx:37](../../api/image/writer/Jpeg.cxx#L37) | The jpeg writer uses libjpeg's default error manager, whose `error_exit` calls `exit()`. An RGBA image sets `input_components = 4` with `JCS_RGB`, which libjpeg rejects — so converting an RGBA png to jpg ends the process. |
-| D5 | [image/reader/Bmp.cxx](../../api/image/reader/Bmp.cxx) | Throws `runtime_error` on truncated and 32-bit files; `Reader.h` promises null, and `Factory::read` does not catch. `Factory` also keys formats on the last three characters (`.jpeg` → `peg`; a short name throws `out_of_range`). |
-| D6 | [Engine3D.cpp:190](../../api/render/realtime/Engine3D.cpp#L190) | Geometry rings reset only for the three renderers `endFrame()` names. A `World` a game builds for the lit pass — the route RenderingPipeline.md documents — never resets, and allocates a new host-visible buffer pair every frame. |
-| D7 | [moya/libmoya/GridShader.cxx](../../moya/libmoya/GridShader.cxx) | The reyes hider never binds or reads `Oi` and forces opacity to 1 ([Bucket.cxx:303](../../moya/libmoya/Bucket.cxx#L303)); the ray hider honours it. A shader setting `Oi` is translucent under `"raytrace"` and opaque under `"hidden"`, contradicting OfflineRenderers.md's "holds under either". |
-| D8 | [BRep.cxx:342](../../api/brep/BRep.cxx#L342) | `splitEdge` sets the new vertex on the copy (so it splits the *next* edge), duplicates `pair_`, and writes to the local after `push_back`. [BRepTest.cxx:130](../../api/brep/tests/BRepTest.cxx#L130) asserts the wrong result on a mesh with no pairs. `extrudeFace`/`splitFace` are declared and never defined. Latent: no app calls them. |
-| D9 | [vertical3d/src/main.cxx](../../vertical3d/src/main.cxx) | The editor writes its own `main` and calls `shutdown()` inside the `try`, so an exception from the loop skips teardown — the case `run<T>` exists to handle. ADR-0028 already requires `run<>`. |
-| D10 | [audio/Engine.cpp:66](../../api/audio/Engine.cpp#L66) | Connects a dispatcher sink to `*this`; neither `shutdown()` nor the destructor disconnects it, and the destructor does not call `shutdown()`. No `disconnect` or `scoped_connection` exists anywhere in the tree (see A6). |
-| D11 | [dag/Node.cxx:10](../../api/dag/Node.cxx#L10) | A copied `Node` keeps its id, so a copied `BRep` aliases the original in the editor's scene and selection. ADR-0013's consequence "a copy duplicates the geometry under a second id" is wrong. |
-| D12 | [AABBox.cxx:37](../../api/type/geometry/AABBox.cxx#L37), [Bound2D.cxx:16](../../api/type/geometry/Bound2D.cxx#L16) | `AABBox::origin()` returns the size; `Bound2D::expand`/`shrink` contradict their comments; the tests assert the wrong numbers. No production caller. |
+| D1 | [Camera.cxx:305](../../../api/type/camera/Camera.cxx#L305) | `Camera::rotate` never clears `Profile::basisValid_`. Every config profile goes through `lookat()`, which sets it, so `createView()` uses the cached basis and **the editor's perspective arcball does nothing**. The all-components-non-zero guard also drops any single-axis rotation. ADR-0056 named a fourth writer forgetting the cache as its risk; this is it. |
+| D2 | [ui/Engine.cpp:207](../../../api/ui/Engine.cpp#L207) | `focusable()` has no TabBar case, so tab order reaches controls on hidden pages; `shell::Keyboard` turns text input on for them and typing goes into a box nobody can see. |
+| D3 | [ui/Container.cpp:66](../../../api/ui/Container.cpp#L66) | `probe()` picks children in reverse add order with no depth sort, while `Arranger::walk` draws by depth. A nested child with an out-of-order `depth` is drawn on top and clicked underneath — against ADR-0019's one walk for both. |
+| D4 | [image/writer/Jpeg.cxx:37](../../../api/image/writer/Jpeg.cxx#L37) | The jpeg writer uses libjpeg's default error manager, whose `error_exit` calls `exit()`. An RGBA image sets `input_components = 4` with `JCS_RGB`, which libjpeg rejects — so converting an RGBA png to jpg ends the process. |
+| D5 | [image/reader/Bmp.cxx](../../../api/image/reader/Bmp.cxx) | Throws `runtime_error` on truncated and 32-bit files; `Reader.h` promises null, and `Factory::read` does not catch. `Factory` also keys formats on the last three characters (`.jpeg` → `peg`; a short name throws `out_of_range`). |
+| D6 | [Engine3D.cpp:190](../../../api/render/realtime/Engine3D.cpp#L190) | Geometry rings reset only for the three renderers `endFrame()` names. A `World` a game builds for the lit pass — the route RenderingPipeline.md documents — never resets, and allocates a new host-visible buffer pair every frame. |
+| D7 | [moya/libmoya/GridShader.cxx](../../../moya/libmoya/GridShader.cxx) | The reyes hider never binds or reads `Oi` and forces opacity to 1 ([Bucket.cxx:303](../../../moya/libmoya/Bucket.cxx#L303)); the ray hider honours it. A shader setting `Oi` is translucent under `"raytrace"` and opaque under `"hidden"`, contradicting OfflineRenderers.md's "holds under either". |
+| D8 | [BRep.cxx:342](../../../api/brep/BRep.cxx#L342) | `splitEdge` sets the new vertex on the copy (so it splits the *next* edge), duplicates `pair_`, and writes to the local after `push_back`. [BRepTest.cxx:130](../../../api/brep/tests/BRepTest.cxx#L130) asserts the wrong result on a mesh with no pairs. `extrudeFace`/`splitFace` are declared and never defined. Latent: no app calls them. |
+| D9 | [vertical3d/src/main.cxx](../../../vertical3d/src/main.cxx) | The editor writes its own `main` and calls `shutdown()` inside the `try`, so an exception from the loop skips teardown — the case `run<T>` exists to handle. ADR-0028 already requires `run<>`. |
+| D10 | [audio/Engine.cpp:66](../../../api/audio/Engine.cpp#L66) | Connects a dispatcher sink to `*this`; neither `shutdown()` nor the destructor disconnects it, and the destructor does not call `shutdown()`. No `disconnect` or `scoped_connection` exists anywhere in the tree (see A6). |
+| D11 | [dag/Node.cxx:10](../../../api/dag/Node.cxx#L10) | A copied `Node` keeps its id, so a copied `BRep` aliases the original in the editor's scene and selection. ADR-0013's consequence "a copy duplicates the geometry under a second id" is wrong. |
+| D12 | [AABBox.cxx:37](../../../api/type/geometry/AABBox.cxx#L37), [Bound2D.cxx:16](../../../api/type/geometry/Bound2D.cxx#L16) | `AABBox::origin()` returns the size; `Bound2D::expand`/`shrink` contradict their comments; the tests assert the wrong numbers. No production caller. |
 
 Smaller ones, listed with their library below: `TextureFont`'s constructor leaves three members
 uninitialised on a face failure; `JsonFile::read` never surfaces an error and `loader/Json.cpp` loops
@@ -64,10 +64,10 @@ described in the wrong layout; `rebind()` returns true when nothing was rebuilt.
 
 **A1. asset ↔ audio is a cycle, against ADR-0021.** `audio/Engine.h` includes `asset/kind/Json.h`
 only to type one parameter of `load()`; asset links audio for the Wav loader. Both CMake files link
-PUBLIC, and [audio/CMakeLists.txt:9](../../api/audio/CMakeLists.txt#L9) admits it. Have `load()`
+PUBLIC, and [audio/CMakeLists.txt:9](../../../api/audio/CMakeLists.txt#L9) admits it. Have `load()`
 take `const boost::json::object&` — this restores ADR-0021's own reasoning rather than changing it.
 
-**A2. asset is a hub with a closed registry.** [Manager.cpp:30](../../api/asset/Manager.cpp#L30)
+**A2. asset is a hub with a closed registry.** [Manager.cpp:30](../../../api/asset/Manager.cpp#L30)
 constructs all nine loaders and offers no way to register one, so asset links audio (SDL3_mixer),
 font (Freetype) and image (png, jpeg), and everything above asset inherits them — `config`, which
 only reads JSON, needs the mixer. That undercuts ADR-0033's "install only the closure you use".
@@ -89,7 +89,7 @@ where a wrong cast looks like a missing file. One contract — null and a log li
 `load<T>(name)` covers both. `Manager` also does not cache, which ADR-0030 lists as a Pro.
 
 **A5. Loader options are a string-keyed bag on a shared loader.**
-[TextRenderer.cpp:67](../../api/ui/paint/TextRenderer.cpp#L67) sets `"fontSize"` and `"spread"` on
+[TextRenderer.cpp:67](../../../api/ui/paint/TextRenderer.cpp#L67) sets `"fontSize"` and `"spread"` on
 the Manager's one `TextureFont` loader, and they stay set for the next caller. `"fontSize"` is read as
 `unsigned` by one loader and `float` by another; a mismatch throws `bad_variant_access`. Pass typed
 options with the request.
@@ -250,7 +250,7 @@ partly config — depend on asset. Parsers should take `const boost::json::objec
 
 - **B1 — every topology invariant is left to the caller.** Raw inserts and public setters on every
   `HalfEdge` field; the only mesh validation is in the editor
-  ([Project.cxx:240](../../vertical3d/src/scene/Project.cxx#L240)); `Face()` leaves `edge_`
+  ([Project.cxx:240](../../../vertical3d/src/scene/Project.cxx#L240)); `Face()` leaves `edge_`
   uninitialised. A `BRep::validate()` or a checking builder.
 - **B2 — the editor re-implements traversal.** The library's iterators need a `shared_ptr`, are
   non-const and loop forever on a broken ring, so the editor hand-walks `next()` with a guard and

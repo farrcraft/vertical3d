@@ -87,7 +87,7 @@ recompute — a tab bar's selected tab and a window's collapsed flag.
   defaults differ by about a factor of two, because a hud is read at a glance and a tool panel
   is read closely. A theme setting `line-height` for either broke the other. The layer reads a
   "tools" class of its own as of step 13 of
-  [plans/UiConsolidation.md](../plans/UiConsolidation.md); the box drawing is still shared, which
+  [plans/UiConsolidation.md](../plans/completed/UiConsolidation.md); the box drawing is still shared, which
   is the part of this that was true.
 - The layer needs no window, no device and no font to be tested: it takes `Measure` and `Write`
   as callbacks like `ComponentRenderer`, so a case can drive a cursor over a button and assert
@@ -118,4 +118,4 @@ recompute — a tab bar's selected tab and a window's collapsed flag.
   have lost the scroll and the fold of any panel behind a toggle. `Immediate::retention` is the
   number of frames a widget keeps what it was holding after it stops being drawn, and
   `Immediate::retained()` is what it is holding. Step 3 of
-  [plans/UiConsolidation.md](../plans/UiConsolidation.md).
+  [plans/UiConsolidation.md](../plans/completed/UiConsolidation.md).

@@ -9,10 +9,15 @@ every phase is closed it moves to [completed/](completed/), and any open item it
 moves to [TODO.md](../TODO.md). The plan itself stays, because the reasoning behind an ordering
 outlives the schedule.
 
-[ApiDesignDebt.md](ApiDesignDebt.md) is open, drafted 2026-10-04. It works off
-[the api/ design review](../audits/ApiDesignReview.md): twelve defects first, then the asset↔audio
-cycle and link visibility, the engine's lifecycle, and the rules the review found written in
-several places by hand.
+[completed/ApiDesignDebt.md](completed/ApiDesignDebt.md) was drafted on 2026-10-04 and closed on
+2026-10-05, working off [the api/ design review](../audits/completed/ApiDesignReview.md): twelve
+defects first, then the asset↔audio cycle and link visibility, the engine's lifecycle
+([ADR-0080](../adr/0080-the-engine-owns-its-lifecycle.md)), keys and commands as two events
+([ADR-0081](../adr/0081-a-key-and-a-command-are-different-events.md)), textures on the context
+([ADR-0082](../adr/0082-textures-belong-to-the-context.md)), and the rules the review found
+written in several places by hand - one ui traversal, one set of shading globals, one geometry
+ring reset, one transform value. The reyes hider's opacity went to
+[TODO.md](../TODO.md#offline-rendering).
 
 [completed/OfflineRenderingPhases4To6.md](completed/OfflineRenderingPhases4To6.md) was drafted and
 closed on 2026-10-04, taking up the last three phases of [the offline rendering

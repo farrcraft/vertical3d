@@ -1,6 +1,6 @@
 # API Design Debt — Twelve Defects, One Cycle, And Rules That Live In One Place
 
-Drafted 2026-10-04 from [the api/ design review](../audits/ApiDesignReview.md), which is this plan's
+Drafted 2026-10-04 from [the api/ design review](../../audits/completed/ApiDesignReview.md), which is this plan's
 context and is not restated here: every step names the review items it closes by their ids (D1,
 A2, U1, …), and the review holds the evidence for each. Thirty-two steps in nine phases, touching
 every library under `api/` and every app that subclasses `engine::Engine`.
@@ -13,21 +13,21 @@ globals, one teardown path, one reset of a geometry ring.
 
 ## Decisions
 
-Recorded in [adr/](../adr/), not here. Numbers are the next free ones at the time of writing;
-[adr/README.md](../adr/README.md) is the authority.
+Recorded in [adr/](../../adr/), not here. Numbers are the next free ones at the time of writing;
+[adr/README.md](../../adr/README.md) is the authority.
 
 | ADR | Decision | Step |
 |---|---|---|
 | **0079** | An asset loader is registered, and a media loader lives with its payload — revisits the consequence of ADR-0021 that the mixer rides along on everything linking `v3dlib_asset` | 11 |
 | **0080** | The engine owns its lifecycle: `shutdown()` is not virtual, and an app supplies hooks | 14 |
-| **0081** | A key and a command are different events — amends [ADR-0017](../adr/0017-a-command-is-a-name-in-a-context.md), which recorded the single type's cost as a consequence, not a decision | 17 |
-| **0082** | Textures and materials belong to the device context, not to the 2D renderer — amends [0042](../adr/0042-a-textured-quad-in-world-space.md) and [0065](../adr/0065-a-mesh-is-registered-by-path-and-released.md), whose reasoning (one shared set 1 pool) is kept | 23 |
-| [0013](../adr/0013-mesh-is-a-dag-node.md) | **Corrected** by steps 3 and 6: a copy does not get a new id today, and the dag skeletons it declined to grow are deleted |
-| [0021](../adr/0021-sdl3-mixer-replaces-soloud.md) | **Restored** by step 10: audio stops depending on asset, which is what its decision already says |
-| [0030](../adr/0030-a-model-is-an-interleaved-array-that-names-its-texture.md) | **Corrected** by step 12: either `Manager` caches or the Pro that says it does is struck |
-| [0047](../adr/0047-a-component-type-is-checked-by-the-compiler.md) | **Corrected** by step 20: the compiler names every place only once the predicates are a switch too |
-| [0056](../adr/0056-a-look-at-keeps-the-basis-it-built.md) | Enforcement **replaced** by step 1: one setter clears the cache, rather than every writer remembering to |
-| [0059](../adr/0059-disabled-is-a-property-of-a-component.md) | **Extended** by step 21 to strip buttons and menu items |
+| **0081** | A key and a command are different events — amends [ADR-0017](../../adr/0017-a-command-is-a-name-in-a-context.md), which recorded the single type's cost as a consequence, not a decision | 17 |
+| **0082** | Textures and materials belong to the device context, not to the 2D renderer — amends [0042](../../adr/0042-a-textured-quad-in-world-space.md) and [0065](../../adr/0065-a-mesh-is-registered-by-path-and-released.md), whose reasoning (one shared set 1 pool) is kept | 23 |
+| [0013](../../adr/0013-mesh-is-a-dag-node.md) | **Corrected** by steps 3 and 6: a copy does not get a new id today, and the dag skeletons it declined to grow are deleted |
+| [0021](../../adr/0021-sdl3-mixer-replaces-soloud.md) | **Restored** by step 10: audio stops depending on asset, which is what its decision already says |
+| [0030](../../adr/0030-a-model-is-an-interleaved-array-that-names-its-texture.md) | **Corrected** by step 12: either `Manager` caches or the Pro that says it does is struck |
+| [0047](../../adr/0047-a-component-type-is-checked-by-the-compiler.md) | **Corrected** by step 20: the compiler names every place only once the predicates are a switch too |
+| [0056](../../adr/0056-a-look-at-keeps-the-basis-it-built.md) | Enforcement **replaced** by step 1: one setter clears the cache, rather than every writer remembering to |
+| [0059](../../adr/0059-disabled-is-a-property-of-a-component.md) | **Extended** by step 21 to strip buttons and menu items |
 
 Whether step 18 (an engine without Vulkan) and step 22 (one keyboard model for the menu) earn an
 ADR depends on which way they go; each step says.
@@ -94,7 +94,7 @@ whichever lands second rebases.
 
 #### Step 1 — A camera's rotation has one writer
 
-D1, and the structural half of T5. In [`api/type/camera/`](../../api/type/camera/).
+D1, and the structural half of T5. In [`api/type/camera/`](../../../api/type/camera/).
 
 **Closed.** `Profile`'s members are private; `turn()` is the one composing writer, and it
 re-derives the normals. Three cases in `CameraTest.cxx`; ADR-0056 and Architecture.md amended.
@@ -110,10 +110,10 @@ the case that would have caught this. Then run the editor and orbit the perspect
 
 #### Step 2 — The image reader and writer keep their contracts
 
-D4, D5. In [`api/image/`](../../api/image/).
+D4, D5. In [`api/image/`](../../../api/image/).
 
 **Closed.** The jpeg error manager is one private header,
-[`JpegError.h`](../../api/image/JpegError.h), that the reader and the writer share; the writer
+[`JpegError.h`](../../../api/image/JpegError.h), that the reader and the writer share; the writer
 drops alpha a row at a time and removes a fragment it could not finish. `.jpeg` registers beside
 `.jpg`. Cases in `ImageReaderTest.cxx` and `ImageWriterTest.cxx`, the 32 bit fixture among them.
 
@@ -128,7 +128,7 @@ Tests: a truncated bmp, an RGBA image written as jpeg, `photo.JPEG`, and a two-c
 
 #### Step 3 — `splitEdge` splits the edge it is given, and a copied node is a new node
 
-D8, D11. In [`api/brep/`](../../api/brep/) and [`api/dag/`](../../api/dag/).
+D8, D11. In [`api/brep/`](../../../api/brep/) and [`api/dag/`](../../../api/dag/).
 
 **Closed.** All three edit operations deleted with the test that pinned the wrong result, since
 nothing schedules a modelling operation. `dag::Node` cannot be copied, and nothing in the tree did;
@@ -147,7 +147,7 @@ members (B1's one-line half).
 
 **Closed.** Run and closed through its window, exit 0, log silent.
 
-D9. [`vertical3d/src/main.cxx`](../../vertical3d/src/main.cxx) becomes the one-line `main`
+D9. [`vertical3d/src/main.cxx`](../../../vertical3d/src/main.cxx) becomes the one-line `main`
 ADR-0028 already requires. `Controller::initialize()` already takes no arguments. Run the editor.
 
 #### Step 5 — A listener holds its connection
@@ -220,7 +220,7 @@ unread `registry_` (and either fold the base into `Engine3D` or give it a virtua
 #### Step 9 — Link visibility matches the headers, and something checks it
 
 A3. In the `CMakeLists.txt` of `render`, `ui`, `engine`, and in
-[`cmake/`](../../cmake/).
+[`cmake/`](../../../cmake/).
 
 **Closed.** `v3d_api_verify_visibility` fails the configure in both directions, and was shown to by
 breaking render's link to image on purpose. Build.md says so under the linking rules.
@@ -656,15 +656,19 @@ writers use a byte vector for scratch, and the RGB↔BGR swap is one function.
 
 #### Step 32 — The documents that own what moved
 
+**Closed.** Each document was updated as its step landed, which the closing notes above name.
+What was left at the end was ADR-0060 and ADR-0063, which still described `PositionFixed2D` as a
+component and are amended in place. The review and this plan moved to `completed/`.
+
 Architecture.md (the engine lifecycle, the shell, the event types), Build.md (the visibility
 check, the new link lines), RenderingPipeline.md (textures, the ring), UserInterface.md,
 OfflineRenderers.md, Editor.md, ECSDesign.md and NewProject.md, each as its step lands rather than
-all at the end where that is practical. Then [the review](../audits/ApiDesignReview.md) moves to
+all at the end where that is practical. Then [the review](../../audits/completed/ApiDesignReview.md) moves to
 `audits/completed/` and this plan to `plans/completed/`.
 
 ## Verification
 
-Per [sdlc.md](../sdlc.md) §4, for every step:
+Per [sdlc.md](../../sdlc.md) §4, for every step:
 
 - **Build.** `scripts\build.cmd`. Steps 9 to 15 reach every app.
 - **Tests.** `scripts\test.cmd`. Every defect in phase 1 and every bug a refactor fixes (D2, D3,
@@ -694,8 +698,11 @@ disturb.
 
 ## Open questions
 
-- **Do `dag::Node` and `dag::Transform` stay a library after step 6?** They are used only by brep
-  and the editor. Moving them into `api/brep` removes a library; keeping them leaves a place for a
-  scene graph ADR-0013 said not to grow. Decide when step 29 is touching brep anyway.
-- **Does the reyes hider honour `Oi`?** Step 26. Compositing by coverage in `Bucket` is real work,
-  and a documented difference between hiders is a legitimate answer.
+Both are answered.
+
+- **`dag` stays a library.** Step 30 gave `dag::Transform` the TRS value from `api/type`, so what
+  is left in `dag` is the node identity and the placement a mesh is selected and moved by, which
+  brep and the editor both name. Folding it into brep would make the editor's selection model a
+  brep concern.
+- **The reyes hider does not honour `Oi`.** Step 26 documented the difference between the hiders,
+  and TODO.md holds compositing by coverage in `Bucket`.

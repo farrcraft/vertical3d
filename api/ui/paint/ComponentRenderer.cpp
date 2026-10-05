@@ -937,7 +937,11 @@ void ComponentRenderer::panel(v3d::render::realtime::Canvas* canvas, const boost
         const glm::vec2 pen(corner.x + column, top + base().lineHeight * 0.75f);
         // a disabled item - or one in a disabled menu - is drawn as one, as a button is
         const bool live = item && usable(*item);
-        write_(item ? item->text() : std::string(), pen, !live ? base().disabledText : selected ? base().activeText : base().text);
+        glm::vec4 colour = selected ? base().activeText : base().text;
+        if (!live) {
+            colour = base().disabledText;
+        }
+        write_(item ? item->text() : std::string(), pen, colour);
     }
 }
 

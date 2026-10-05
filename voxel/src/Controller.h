@@ -19,7 +19,6 @@
 class Renderer;
 class Scene;
 
-
 /**
  * Application controller
  */
@@ -30,15 +29,6 @@ class Controller final : public v3d::engine::Engine {
          *
          */
         explicit Controller(const std::string& path);
-
-        /**
-          * Initialize the engine.
-          * Initialization includes only the minimal amount of work required to get
-          * a window displayed on the screen.
-          *
-          * @return bool
-          **/
-        bool start() override;
 
         /**
          * Advance the game world time
@@ -63,11 +53,6 @@ class Controller final : public v3d::engine::Engine {
          **/
         v3d::ui::Immediate::Input tools() const;
 
-        /**
-         * @return bool
-         **/
-        bool release() override;
-
         void handleEvent(const v3d::event::Event& event);
 
         /**
@@ -76,6 +61,21 @@ class Controller final : public v3d::engine::Engine {
          * offset from the centre is the amount to turn by.
          **/
         void handleMotion(const v3d::event::kind::MouseMotion& event);
+
+ protected:
+        /**
+          * Initialize the engine.
+          * Initialization includes only the minimal amount of work required to get
+          * a window displayed on the screen.
+          *
+          * @return bool
+          **/
+        bool start() override;
+
+        /**
+         * @return bool
+         **/
+        bool release() override;
 
  private:
         /**

@@ -22,7 +22,7 @@ enum class Feature : uint32_t {
 
 using Features = v3d::type::Flags<Feature>;
 
-constexpr Features operator|(Feature lhs, Feature rhs) {
+constexpr Features operator|(Feature lhs, Feature rhs) noexcept {
     return Features(lhs) | rhs;
 }
 

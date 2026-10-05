@@ -29,7 +29,7 @@ class Floor final : public v3d::render::offline::trace::Primitive {
     Floor() : Primitive(glm::vec3(0.5f)) {
     }
 
-    bool intersect(const v3d::type::geometry::Ray & ray, float from, const v3d::render::offline::trace::Pose &,
+    bool intersect(const v3d::type::geometry::Ray & ray, float from, const v3d::render::offline::trace::Pose & /* pose */,
         v3d::render::offline::trace::Intersection* found) const override {
         if (ray.direction().z == 0.0f) {
             return false;
@@ -42,7 +42,7 @@ class Floor final : public v3d::render::offline::trace::Primitive {
         return true;
     }
 
-    void describe(const v3d::render::offline::trace::Intersection &, v3d::render::offline::trace::Hit* hit) const override {
+    void describe(const v3d::render::offline::trace::Intersection & /* found */, v3d::render::offline::trace::Hit* hit) const override {
         hit->normal = glm::vec3(0.0f, 0.0f, 1.0f);
         hit->geometric = hit->normal;
     }

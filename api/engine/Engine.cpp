@@ -66,32 +66,48 @@ bool Engine::initialize() {
     eventEngine_ = boost::make_shared<v3d::event::Engine>(dispatcher_);
     quitCommand_ = dispatcher_->sink<v3d::event::Event>().connect<&Engine::command>(*this);
 
-    if (features_.has(Feature::Config)) {
-        config_ = boost::make_shared<v3d::config::Config>(logger_);
-        // Load config (through the asset manager)
-        if (!config_->load(assetManager_)) {
+    if (features_.has(Feature::Config) && !loadConfig()) {
+        return false;
+    }
+    startInput();
+    if (features_.has(Feature::Window) && !openWindow()) {
+        return false;
+    }
+    return start();
+}
+
+/**
+ **/
+bool Engine::loadConfig() {
+    config_ = boost::make_shared<v3d::config::Config>(logger_);
+    // Load config (through the asset manager)
+    if (!config_->load(assetManager_)) {
+        return false;
+    }
+    // a binding config is optional: an app with none sends no commands from a key
+    const boost::shared_ptr<v3d::asset::kind::Json> mappings = config_->get(v3d::config::Type::Binding);
+    if (mappings) {
+        bindings_ = boost::make_shared<v3d::event::Bindings>(eventEngine_, logger_,
+            [](const v3d::event::Event& source) {
+                const std::string_view device = source.context() ? source.context()->name() : std::string_view();
+                if (device == "keyboard") {
+                    return v3d::input::isKeyName(source.name());
+                }
+                if (device == "mouse") {
+                    return v3d::input::isButtonName(source.name());
+                }
+                return true;
+            });
+        if (!bindings_->load(mappings->document())) {
             return false;
         }
-        // a binding config is optional: an app with none sends no commands from a key
-        const boost::shared_ptr<v3d::asset::kind::Json> mappings = config_->get(v3d::config::Type::Binding);
-        if (mappings) {
-            bindings_ = boost::make_shared<v3d::event::Bindings>(eventEngine_, logger_,
-                [](const v3d::event::Event& source) {
-                    const std::string_view device = source.context() ? source.context()->name() : std::string_view();
-                    if (device == "keyboard") {
-                        return v3d::input::isKeyName(source.name());
-                    }
-                    if (device == "mouse") {
-                        return v3d::input::isButtonName(source.name());
-                    }
-                    return true;
-                });
-            if (!bindings_->load(mappings->document())) {
-                return false;
-            }
-        }
     }
+    return true;
+}
 
+/**
+ **/
+void Engine::startInput() {
     v3d::input::DeviceTypes devices;
     if (features_.has(Feature::KeyboardInput)) {
         devices |= v3d::input::DeviceType::Keyboard;
@@ -102,43 +118,42 @@ bool Engine::initialize() {
     if (!devices.empty()) {
         inputEngine_ = boost::make_shared<v3d::input::Engine>(eventEngine_, dispatcher_, devices);
     }
+}
 
-    if (features_.has(Feature::Window)) {
-        // Initialize SDL
-        if (!SDL_Init(SDL_INIT_VIDEO)) {
-            logger_->get()->error("SDL could not initialize! SDL_Error: {}", SDL_GetError());
-            return false;
-        }
-        // We've reached a point of initialization that will require a shutdown
-        needShutdown_ = true;
+/**
+ **/
+bool Engine::openWindow() {
+    // Initialize SDL
+    if (!SDL_Init(SDL_INIT_VIDEO)) {
+        logger_->get()->error("SDL could not initialize! SDL_Error: {}", SDL_GetError());
+        return false;
+    }
+    // We've reached a point of initialization that will require a shutdown
+    needShutdown_ = true;
 
-        window_ = boost::make_shared<v3d::render::realtime::Window>(logger_);
+    window_ = boost::make_shared<v3d::render::realtime::Window>(logger_);
 
-        // a size of -1 leaves the window at its own default, so an app with no window
-        // config, or none carrying dimensions, still gets a window
-        int width = -1;
-        int height = -1;
-        if (features_.has(Feature::Config)) {
-            boost::shared_ptr<v3d::asset::kind::Json> windowConfig = config_->get(v3d::config::Type::Window);
-            if (windowConfig) {
-                // guarded as the bindings are: a window document this does not understand
-                // is a false return out of startup, not an exception out of it
-                const boost::json::object& doc = windowConfig->document();
-                const boost::json::object* window = doc.contains("window") ? doc.at("window").if_object() : nullptr;
-                if (window == nullptr || !window->contains("width") || !window->contains("height") ||
-                    !window->at("width").is_int64() || !window->at("height").is_int64()) {
-                    logger_->get()->error("The window config needs a window with a whole width and height");
-                    return false;
-                }
-                width = static_cast<int>(window->at("width").as_int64());
-                height = static_cast<int>(window->at("height").as_int64());
+    // a size of -1 leaves the window at its own default, so an app with no window
+    // config, or none carrying dimensions, still gets a window
+    int width = -1;
+    int height = -1;
+    if (features_.has(Feature::Config)) {
+        boost::shared_ptr<v3d::asset::kind::Json> windowConfig = config_->get(v3d::config::Type::Window);
+        if (windowConfig) {
+            // guarded as the bindings are: a window document this does not understand
+            // is a false return out of startup, not an exception out of it
+            const boost::json::object& doc = windowConfig->document();
+            const boost::json::object* window = doc.contains("window") ? doc.at("window").if_object() : nullptr;
+            if (window == nullptr || !window->contains("width") || !window->contains("height") ||
+                !window->at("width").is_int64() || !window->at("height").is_int64()) {
+                logger_->get()->error("The window config needs a window with a whole width and height");
+                return false;
             }
-        }
-        if (!window_->create(width, height)) {
-            return false;
+            width = static_cast<int>(window->at("width").as_int64());
+            height = static_cast<int>(window->at("height").as_int64());
         }
     }
-    return start();
+    return window_->create(width, height);
 }
 
 /**

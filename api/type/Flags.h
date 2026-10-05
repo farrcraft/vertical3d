@@ -16,7 +16,7 @@ namespace v3d::type {
  * number, and asking whether a bit is set says which enum it is asking about. An enum opts in
  * with one operator|, which is what lets `A | B` spell a set:
  *
- *     constexpr type::Flags<Feature> operator|(Feature a, Feature b) { return type::Flags<Feature>(a) | b; }
+ *     constexpr type::Flags<Feature> operator|(Feature a, Feature b) noexcept { return type::Flags<Feature>(a) | b; }
  **/
 template <typename E>
 class Flags final {

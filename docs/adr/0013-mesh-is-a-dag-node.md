@@ -4,7 +4,7 @@
 **Status**: accepted
 **Deciders**: Joshua Farr
 
-Corrected 2026-10-04 by step 3 of [ApiDesignDebt](../plans/ApiDesignDebt.md). The con below that
+Corrected 2026-10-04 by step 3 of [ApiDesignDebt](../plans/completed/ApiDesignDebt.md). The con below that
 a copied `BRep` gets a second id was never true: a copy shared its original's id, which would have
 aliased the two in the editor's scene and selection. `dag::Node` cannot be copied now, so neither
 can a `BRep`.

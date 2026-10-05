@@ -4,7 +4,7 @@
 **Status**: accepted
 **Deciders**: Joshua Farr
 
-Restored 2026-10-04 by step 10 of [ApiDesignDebt](../plans/ApiDesignDebt.md). The dependency this
+Restored 2026-10-04 by step 10 of [ApiDesignDebt](../plans/completed/ApiDesignDebt.md). The dependency this
 record keeps one way had come back the other way: `audio::Engine::load()` took an
 `asset::kind::Json`, so `v3dlib_audio` linked `v3dlib_asset` and the two closed a cycle.
 `load()` takes the `boost::json::object` now, and audio names no asset type.

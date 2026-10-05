@@ -4,6 +4,9 @@
 **Status**: accepted
 **Deciders**: Joshua Farr
 
+Amended in place: `PositionFixed2D` is gone, and `Transform` is `type::Transform`, the value an
+editor mesh's `dag::Transform` holds as well.
+
 ## Context
 
 Nothing in the api says what an entity carries so that something can draw it, and

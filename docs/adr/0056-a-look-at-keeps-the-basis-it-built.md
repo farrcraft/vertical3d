@@ -4,7 +4,7 @@
 **Status**: accepted
 **Deciders**: Joshua Farr
 
-Amended 2026-10-04 by step 1 of [ApiDesignDebt](../plans/ApiDesignDebt.md). The negative below
+Amended 2026-10-04 by step 1 of [ApiDesignDebt](../plans/completed/ApiDesignDebt.md). The negative below
 came true: `Camera::rotate()`, which the editor's arcball drives, was a fourth writer and never
 cleared the cache, so orbiting a camera built by `lookat()` did nothing. The rule is now enforced
 rather than remembered. `Profile`'s members are private and its rotation has three writers, all

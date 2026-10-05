@@ -4,6 +4,9 @@
 **Status**: accepted
 **Deciders**: Joshua Farr
 
+Amended in place: `PositionFixed2D` is gone. A tile is a `grid::TileCoord`, which has no
+`interpolate` for the reason given below, and the guard is unchanged.
+
 ## Context
 
 The loop calls `simulate()` zero or more times a frame and `render()` once

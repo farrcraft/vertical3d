@@ -16,7 +16,7 @@ not. 3D code depended on the 2D renderer, and asking `quads()` for a texture bui
 pipelines, which `pipeline::Builder` refuses against an undefined colour format — so a headless
 context, which [ADR-0051](0051-the-in-flight-ring-is-not-the-swapchain.md) says can build every
 renderer, could not load a mesh. The factory also made its own uploader beside the context's.
-The review is [R2](../audits/ApiDesignReview.md).
+The review is [R2](../audits/completed/ApiDesignReview.md).
 
 ## Decision
 

@@ -36,10 +36,10 @@ class CameraProfiles final {
      * Read every profile in the document.
      * A profile missing a name is rejected; every other field has a default.
      *
-     * @param config the parsed cameras.json
+     * @param doc the parsed cameras.json
      * @return whether the table was understood
      **/
-    bool load(const boost::json::object& config);
+    bool load(const boost::json::object& doc);
 
     /**
      * @param name the profile name, as whatever names a view names it

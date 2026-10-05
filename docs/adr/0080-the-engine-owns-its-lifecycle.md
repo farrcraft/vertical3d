@@ -13,7 +13,7 @@ that shape, and two rules CLAUDE.md lists as its costliest were kept only by cop
 a renderer goes before the window, and a quit handler calls `quit()` rather than `shutdown()`. Five
 handlers carried a comment saying so. The app's `initialize()` hid the base's rather than
 overriding it, and three apps declared `render()` and `shutdown()` without `override`. The review
-is [E1](../audits/ApiDesignReview.md).
+is [E1](../audits/completed/ApiDesignReview.md).
 
 ## Decision
 

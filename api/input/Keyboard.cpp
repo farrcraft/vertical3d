@@ -10,6 +10,7 @@
 #include <api/event/kind/KeyUp.h>
 #include <api/event/kind/TextInput.h>
 
+#include <algorithm>
 #include <string>
 #include <string_view>
 
@@ -129,12 +130,7 @@ std::string keyName(SDL_Keycode key) {
 /**
  **/
 bool isKeyName(std::string_view name) {
-    for (const Named& named : KEYS) {
-        if (named.name == name) {
-            return true;
-        }
-    }
-    return false;
+    return std::ranges::any_of(KEYS, [name](const Named& named) { return named.name == name; });
 }
 
 /**

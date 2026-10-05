@@ -26,13 +26,13 @@ typedef std::function<void(const StatementPtr &)> StatementVisitor;
  * is a case for the kinds it cares about and this for the rest, and a new kind of node is
  * one case here rather than one in every walk.
  **/
-void forEachChild(const Expression & expression, const ExpressionVisitor & visit);
+void forEachChild(const Expression & node, const ExpressionVisitor & visit);
 
 /**
  * Hand each expression and each statement a statement holds to the visitor for its kind,
  * in source order. A missing child - a `for` with no step, an `if` with no `else` - is
  * skipped rather than visited as null.
  **/
-void forEachChild(const Statement & statement, const ExpressionVisitor & expressions, const StatementVisitor & statements);
+void forEachChild(const Statement & node, const ExpressionVisitor & expressions, const StatementVisitor & statements);
 
 };  // namespace v3d::render::offline::sl::syntax
