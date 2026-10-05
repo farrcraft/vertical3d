@@ -132,25 +132,16 @@ void fill(const Nearest & found, const v3d::type::geometry::Ray & ray, const Pos
 Scene::Scene() {
 }
 
-v3d::type::camera::Camera & Scene::camera() {
-    return camera_;
-}
-
-const v3d::type::camera::Camera & Scene::camera() const {
-    return camera_;
-}
-
 void Scene::view(const glm::mat4x4 & toCamera) {
     view_ = toCamera;
-    viewNamed_ = true;
 }
 
 glm::mat4x4 Scene::view() const {
-    return viewNamed_ ? view_ : camera_.view();
+    return view_;
 }
 
 glm::vec3 Scene::eye() const {
-    return viewNamed_ ? glm::vec3(glm::inverse(view_)[3]) : camera_.profile().eye();
+    return glm::vec3(glm::inverse(view_)[3]);
 }
 
 int Scene::motion(const v3d::render::offline::MovingTransform & placed) {

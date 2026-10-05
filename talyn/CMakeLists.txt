@@ -1,5 +1,0 @@
-add_subdirectory("libtalyn")
-add_subdirectory("talyn")
-if(V3D_BUILD_TESTS)
-	add_subdirectory("tests")
-endif()

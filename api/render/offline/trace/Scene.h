@@ -7,7 +7,6 @@
 
 #include <api/render/offline/MovingTransform.h>
 #include <api/render/offline/sl/Placed.h>
-#include <api/type/camera/Camera.h>
 #include <api/type/geometry/Ray.h>
 
 #include <vector>
@@ -22,27 +21,16 @@
 namespace v3d::render::offline::trace {
 
 /**
- * What a render context draws: a camera, the primitives it sees, the lights on them, and
- * what a ray that misses all of them is worth.
+ * What a ray can meet: the primitives in world space, the lights on them, and what a ray
+ * that misses all of them is worth.
  **/
 class Scene final {
  public:
     Scene();
 
     /**
-     * The camera the primary rays come from.
-     *
-     * Its viewport size is set by the render to the framebuffer's, but the pixel
-     * aspect is not: a frame that is not square needs one that matches, or the
-     * picture is stretched across it.
-     **/
-    v3d::type::camera::Camera & camera();
-    const v3d::type::camera::Camera & camera() const;
-
-    /**
      * The world to camera transformation a hit's "camera" space is, and where its E is.
-     * The camera's own until a renderer that does not cast its primary rays from it - moya,
-     * whose hider projects - names the one it sees through.
+     * The renderer names the camera it sees through; until it does, the two spaces agree.
      **/
     void view(const glm::mat4x4 & toCamera);
     glm::mat4x4 view() const;
@@ -91,8 +79,6 @@ class Scene final {
     void traceDepth(unsigned int depth);
 
  private:
-    v3d::type::camera::Camera camera_;
-    bool viewNamed_ = false;
     glm::mat4x4 view_ = glm::mat4x4(1.0f);
     /** The motion a primitive placed by this transformation is carried by, or -1. **/
     int motion(const v3d::render::offline::MovingTransform & placed);

@@ -123,7 +123,6 @@ endif()
 add_subdirectory("api")
 
 if(V3D_BUILD_APPS)
-	add_subdirectory("talyn")
 	add_subdirectory("moya")
 	add_subdirectory("v3dshell")
 	add_subdirectory("pong")

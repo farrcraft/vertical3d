@@ -38,9 +38,9 @@ BOOST_AUTO_TEST_CASE(scene_test) {
     BOOST_CHECK_EQUAL(scene.triangles()[0].c().y, 1.0f);
     BOOST_CHECK_EQUAL(scene.triangles()[0].colour().r, 1.0f);
 
-    // the camera is the scene's own, and reads back what was written to its profile
-    scene.camera().profile().eye(glm::vec3(0.0f, 0.0f, -4.0f));
-    BOOST_CHECK_EQUAL(scene.camera().profile().eye().z, -4.0f);
+    // the eye is where the world to camera transformation puts the camera space origin back
+    scene.view(glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, 4.0f)));
+    BOOST_CHECK_EQUAL(scene.eye().z, -4.0f);
 }
 
 /**

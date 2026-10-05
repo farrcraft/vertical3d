@@ -25,7 +25,7 @@ namespace v3d::render::offline::trace {
 
 /**
  * Runs a surface shader over one hit, which is a batch one point wide: what a ray sees, for
- * talyn's primary rays and for any renderer's traced ones, per ADR-0077.
+ * the ray hider's primary rays and for traced ones, per ADR-0077.
  *
  * No special case and no second path: the same program and the same instructions that
  * run over a grid of a hundred in moya, with a mask one bit wide. That is the whole
