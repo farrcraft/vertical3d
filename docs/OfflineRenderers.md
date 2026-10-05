@@ -19,12 +19,16 @@ same under both, but only the ray hider composites by it, so a translucent surfa
 under `"raytrace"` and opaque under `"hidden"`. Honouring it under reyes needs each sample to keep
 every surface it meets and composite them in depth order, and [TODO.md](TODO.md) holds that.
 
-- **`"hidden"` is the reyes hider and RI's default.** Primitives are split, diced into
+- **A hider is a `moya::Hider`**: whether it sees the traced scene alone, and how it renders
+  what the context gathered. `RenderContext` holds one and asks it both.
+- **`"hidden"` is `moya::ReyesHider` and RI's default.** Primitives are split, diced into
   micropolygon grids, shaded a grid at a time and hidden into the samples of their buckets.
 - **`"raytrace"` is `moya::RayHider`.** It casts a primary ray through every sample into the
-  traced scene and buckets nothing. Its rays are built in camera space from the screen window
-  and the projection the reyes hider projects through, so it takes any camera the reyes hider
-  takes, an off-centre `ScreenWindow` included. They start on the near plane.
+  traced scene and buckets nothing. A ray is found by inverting the camera to raster
+  transformation the reyes hider projects through - solving for x and y at a depth rather than
+  inverting the whole matrix, whose depth terms RI's default clipping range ruins - so it takes
+  any camera the reyes hider takes, an off-centre `ScreenWindow` included. Rays start on the
+  near plane.
 - **A hider name moya does not know is logged and leaves the hider as it was.**
 - **The ray tracer is shared by both**, per
   [ADR-0077](adr/0077-one-ray-tracer-both-renderers-reach.md): `offline::trace::Scene` holds

@@ -26,7 +26,7 @@
 namespace v3d::moya {
 
 class GridShader;
-class RayHider;
+class Hider;
 
 /**
     *	holds the current graphics state
@@ -101,6 +101,13 @@ class RenderContext {
             */
         void hider(const std::string & name);
         bool raytracing() const;
+        /**
+            *	The reyes pass: every bucket's grids hidden into a fresh set of samples, and
+            *	those resolved into the planes. What the reyes hider renders with.
+            */
+        void bucket(v3d::render::offline::FrameBuffer* planes);
+        /** The near clipping plane, RiClipping's hither. **/
+        float hither() const;
         /**
             *	maps to RiMotionBegin() and RiMotionEnd(). Each transform request between
             *	them is the current transformation at the next of the times.
@@ -385,8 +392,7 @@ class RenderContext {
         glm::vec3 opacity_ = glm::vec3(1.0f);
         std::string projection_ = "orthographic";
         float fov_ = 90.0f;
-        bool raytrace_ = false;
-        boost::shared_ptr<RayHider> rayHider_;
+        boost::shared_ptr<Hider> hider_;
         // display options. An empty name is no output, which is the RI default of a
         // framebuffer this renderer does not have
         std::string displayName_;

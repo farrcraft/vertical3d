@@ -27,6 +27,7 @@
 #include <glm/matrix.hpp>
 
 #include "GridShader.h"
+#include "Hider.h"
 #include "RayHider.h"
 
 namespace v3d::moya {
@@ -52,6 +53,8 @@ RenderContext::~RenderContext() {
 
 void RenderContext::initialize() {
     logger_ = boost::make_shared<v3d::log::Logger>();
+    // RI's default hider
+    hider_ = boost::make_shared<ReyesHider>();
     shaders_ = boost::make_shared<v3d::render::offline::sl::ShaderLibrary>(logger_);
     textures_ = boost::make_shared<v3d::render::offline::Textures>(logger_);
 
@@ -104,7 +107,7 @@ const v3d::render::offline::Sampling & RenderContext::sampling() const {
 }
 
 unsigned int RenderContext::samplesTaken(unsigned int column, unsigned int row) const {
-    return rayHider_ ? rayHider_->samplesTaken(column, row) : 0;
+    return hider_->samplesTaken(column, row);
 }
 
 /*
@@ -292,16 +295,20 @@ void RenderContext::projection(std::string name, float fov) {
 
 void RenderContext::hider(const std::string & name) {
     if (name == "hidden") {
-        raytrace_ = false;
+        hider_ = boost::make_shared<ReyesHider>();
     } else if (name == "raytrace") {
-        raytrace_ = true;
+        hider_ = boost::make_shared<RayHider>();
     } else {
         logger_->get()->warn("moya has no hider named '{}', so it keeps the one it had", name);
     }
 }
 
 bool RenderContext::raytracing() const {
-    return raytrace_;
+    return hider_->traces();
+}
+
+float RenderContext::hither() const {
+    return near_;
 }
 
 /*
@@ -651,7 +658,7 @@ void RenderContext::shade(v3d::render::offline::trace::Primitive* primitive, con
 }
 
 bool RenderContext::addSphere(float radius, float zmin, float zmax, float thetamax) {
-    if (!raytrace_) {
+    if (!hider_->traces()) {
         return false;
     }
     // placed by the open end of its motion, as a polygon's points are
@@ -675,7 +682,7 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     */
     // a primitive carries the state it was submitted under - see ReyesPrimitive::place().
     // A piece handed back by a split is already placed and keeps its parent's
-    if (raytrace_) {
+    if (hider_->traces()) {
         // the ray hider sees the traced scene and nothing else, so nothing is bucketed
         trace(*poly, shading());
         return;
@@ -890,8 +897,14 @@ const std::string & RenderContext::displayName() const {
     return displayName_;
 }
 
+void RenderContext::bucket(v3d::render::offline::FrameBuffer* planes) {
+    samples_ = boost::make_shared<Samples>(planes->width(), planes->height(), sampling_);
+    frameBuffer_->render(*this);
+    samples_->resolve(planes, FrameBuffer::RED, FrameBuffer::COVERAGE, FrameBuffer::DEPTH);
+}
+
 /*
-    perform the second reyes pass, then write what it sampled
+    hide what the world gathered, then write what it sampled
 */
 void RenderContext::render() {
     if (!frameBuffer_) {
@@ -899,24 +912,7 @@ void RenderContext::render() {
     }
 
     boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = frameBuffer_->planes();
-    if (raytrace_) {
-        RayHider::Camera camera;
-        camera.toCamera = coordinateSystems_["camera"];
-        camera.toRaster = coordinateSystems_["raster"] * coordinateSystems_["screen"];
-        camera.perspective = perspective();
-        camera.fov = fov_;
-        std::copy(screen_, screen_ + 4, camera.screen);
-        camera.near = near_;
-        camera.width = planes->width();
-        camera.height = planes->height();
-        rayHider_ = boost::make_shared<RayHider>(camera);
-        rayHider_->render(traced_, textures_.get(), sampling_, planes.get(),
-            FrameBuffer::RED, FrameBuffer::COVERAGE, FrameBuffer::DEPTH);
-    } else {
-        samples_ = boost::make_shared<Samples>(planes->width(), planes->height(), sampling_);
-        frameBuffer_->render(*this);
-        samples_->resolve(planes.get(), FrameBuffer::RED, FrameBuffer::COVERAGE, FrameBuffer::DEPTH);
-    }
+    hider_->render(this, planes.get());
 
     if (imager_) {
         // after the last bucket, which is where every sample the frame will ever hold is

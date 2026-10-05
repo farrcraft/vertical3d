@@ -6,6 +6,7 @@
 #include <api/render/offline/rib/Reader.h>
 #include <api/render/offline/trace/Hit.h>
 #include <moya/libmoya/RIBHandler.h>
+#include <moya/libmoya/RayHider.h>
 #include <moya/libmoya/RenderContext.h>
 #include <moya/libmoya/RenderMan.h>
 
@@ -460,4 +461,34 @@ BOOST_AUTO_TEST_CASE(rayhider_lights_per_primitive_test) {
     BOOST_CHECK(triangles[1]->lights() == triangles[0]->lights());
     BOOST_REQUIRE(triangles[2]->lights());
     BOOST_CHECK_EQUAL(triangles[2]->lights()->size(), 1u);
+}
+
+/**
+ * A primary ray is found by inverting the projection the reyes hider projects through, so a
+ * point along it projects back to the raster position it was cast through - off the middle
+ * of an uncentred screen window too - and it starts on the near plane.
+ **/
+BOOST_AUTO_TEST_CASE(rayhider_inverts_the_projection_test) {
+    v3d::moya::RenderContext rc;
+    rc.imageResolution(32, 16, 1.0f);
+    rc.screenWindow(-0.5f, 1.5f, -1.0f, 1.0f);
+    rc.clipping(0.1f, 100.0f);
+    rc.projection("perspective", 60.0f);
+
+    v3d::moya::RayHider::Camera camera;
+    camera.toRaster = rc.coordinateSystem("raster") * rc.coordinateSystem("screen");
+    camera.perspective = true;
+    camera.hither = 0.1f;
+    camera.width = 32;
+    camera.height = 16;
+    v3d::moya::RayHider hider;
+    hider.camera(camera);
+
+    for (const glm::vec2 & raster : { glm::vec2(3.5f, 2.5f), glm::vec2(30.0f, 14.0f), glm::vec2(16.0f, 8.0f) }) {
+        const v3d::type::geometry::Ray ray = hider.ray(raster, glm::vec2(0.0f), rc.sampling());
+        BOOST_CHECK_CLOSE(ray.origin().z, 0.1f, 0.01f);
+        const glm::vec3 projected = v3d::moya::project(camera.toRaster, ray.origin() + ray.direction() * 5.0f);
+        BOOST_CHECK_CLOSE(projected.x, raster.x, 0.01f);
+        BOOST_CHECK_CLOSE(projected.y, raster.y, 0.01f);
+    }
 }
