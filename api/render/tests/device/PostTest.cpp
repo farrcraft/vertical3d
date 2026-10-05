@@ -62,7 +62,6 @@ void record(v3d::test::Headless* headless, const Frame& frame, const boost::shar
     source.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     capture->record(commands, source);
     headless->submitAndWait(commands);
-    headless->context->quads()->endFrame();
 }
 
 /**
@@ -324,7 +323,6 @@ BOOST_AUTO_TEST_CASE(a_replaced_table_regrades_its_sources) {
 
     Capture capture(headless.device, headless.logger);
     headless.submitAndWait(recordGrade(&headless, graded, source, scene, output, uploaded, size, &capture));
-    headless.context->quads()->endFrame();
     BOOST_CHECK(graded.release(source));
     BOOST_CHECK(headless.silent());
 
@@ -358,13 +356,11 @@ BOOST_AUTO_TEST_CASE(a_table_replaced_in_flight_keeps_the_frame_silent) {
 
     Capture before(headless.device, headless.logger);
     headless.submit(recordGrade(&headless, graded, source, scene, output, uploaded, size, &before));
-    headless.context->quads()->endFrame();
 
     BOOST_REQUIRE(graded.replace(Grade::table(invertingStrip())));
 
     Capture after(headless.device, headless.logger);
     headless.submitAndWait(recordGrade(&headless, graded, source, scene, output, uploaded, size, &after));
-    headless.context->quads()->endFrame();
     for (int frame = 0; frame < 3; frame++) {
         headless.submit(headless.context->ring()->begin());
     }

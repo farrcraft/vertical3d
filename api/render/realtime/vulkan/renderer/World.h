@@ -13,6 +13,7 @@
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
+#include <api/render/realtime/vulkan/frame/StreamRing.h>
 #include <api/render/realtime/vulkan/memory/Buffer.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
 #include <api/render/realtime/vulkan/pipeline/Resources.h>
@@ -65,7 +66,6 @@ class World final {
     };
 
     /**
-     * @param logger
      * @param device the device to build the pipelines and buffers on
      * @param cache the pipeline cache every pipeline is compiled against
      * @param resources where the pipelines are registered
@@ -78,7 +78,7 @@ class World final {
      * @param depth the format of the depth image, for the second of the two pipelines
      * @throw std::runtime_error if the pipelines cannot be created
      **/
-    World(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<device::Device>& device,
+    World(const boost::shared_ptr<device::Device>& device,
         const boost::shared_ptr<pipeline::Cache>& cache, const boost::shared_ptr<pipeline::Resources>& resources,
         const boost::shared_ptr<frame::Ring>& ring, const boost::shared_ptr<frame::FrameUniforms>& uniforms,
         const boost::shared_ptr<Textures>& textures, VkFormat colour, VkFormat depth);
@@ -104,12 +104,6 @@ class World final {
      **/
     void submit(const WorldCanvas& canvas, Pass* pass, uint16_t layer = 0, Blend blend = Blend::Alpha);
 
-    /**
-     * Give back the buffers this frame's submissions took, so the next frame starts at the
-     * front of the ring again. The engine calls this once a frame has been recorded.
-     **/
-    void endFrame() noexcept;
-
  private:
     /**
      * Compile the world quad pipeline for each blend twice - once for a pass with a depth
@@ -129,21 +123,6 @@ class World final {
      **/
     PipelineHandle createPipeline(const std::string& name, VkFormat colour, VkFormat depth, Blend blend);
 
-    /**
-     * A canvas's geometry for one frame - one submission's worth.
-     **/
-    struct Geometry {
-        boost::shared_ptr<memory::Buffer> vertices;
-        boost::shared_ptr<memory::Buffer> indices;
-    };
-
-    /**
-     * Take the next free pair of buffers of the frame being recorded, adding one to the
-     * ring if every pair in it has already been claimed this frame.
-     **/
-    Geometry claim();
-
-    boost::shared_ptr<v3d::log::Logger> logger_;
     boost::shared_ptr<device::Device> device_;
     boost::shared_ptr<pipeline::Cache> cache_;
     boost::shared_ptr<pipeline::Resources> resources_;
@@ -156,9 +135,7 @@ class World final {
     PipelineHandle additivePipeline_;       /**< the same two, adding rather than blending over **/
     PipelineHandle additiveDepthPipeline_;
 
-    /**< a ring of geometry per frame in flight, grown as a frame's submissions ask **/
-    std::vector<std::vector<Geometry>> geometry_;
-    std::size_t cursor_;  /**< how far into the current frame's ring submit() has got **/
+    boost::shared_ptr<frame::StreamRing> stream_;  /**< what a frame's geometry is streamed through **/
 };
 
 };  // namespace v3d::render::realtime::vulkan::renderer

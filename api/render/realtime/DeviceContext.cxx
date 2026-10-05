@@ -123,7 +123,7 @@ boost::shared_ptr<Textures> DeviceContext::textures() const {
  **/
 boost::shared_ptr<vulkan::renderer::Quad> DeviceContext::quads() {
     if (!quads_) {
-        quads_ = boost::make_shared<vulkan::renderer::Quad>(logger_, device_, pipelineCache_, resources_, ring_,
+        quads_ = boost::make_shared<vulkan::renderer::Quad>(device_, pipelineCache_, resources_, ring_,
             frameUniforms_, textures_, colourFormat_, depthFormat_);
     }
     return quads_;
@@ -139,7 +139,7 @@ bool DeviceContext::hasQuads() const noexcept {
  **/
 boost::shared_ptr<vulkan::renderer::Line> DeviceContext::lines() {
     if (!lines_) {
-        lines_ = boost::make_shared<vulkan::renderer::Line>(logger_, device_, pipelineCache_, resources_, ring_,
+        lines_ = boost::make_shared<vulkan::renderer::Line>(device_, pipelineCache_, resources_, ring_,
             frameUniforms_, colourFormat_, depthFormat_);
     }
     return lines_;
@@ -155,7 +155,7 @@ bool DeviceContext::hasLines() const noexcept {
  **/
 boost::shared_ptr<vulkan::renderer::World> DeviceContext::worldQuads() {
     if (!worldQuads_) {
-        worldQuads_ = boost::make_shared<vulkan::renderer::World>(logger_, device_, pipelineCache_, resources_,
+        worldQuads_ = boost::make_shared<vulkan::renderer::World>(device_, pipelineCache_, resources_,
             ring_, frameUniforms_, textures_, colourFormat_, depthFormat_);
     }
     return worldQuads_;

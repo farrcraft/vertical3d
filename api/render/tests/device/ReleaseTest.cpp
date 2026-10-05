@@ -11,6 +11,7 @@
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/Recorder.h>
 #include <api/render/realtime/vulkan/frame/RenderTarget.h>
+#include <api/render/realtime/vulkan/frame/StreamRing.h>
 
 #include <string>
 #include <vector>
@@ -82,7 +83,6 @@ void draw(v3d::test::Headless* headless, const boost::shared_ptr<RenderTarget>& 
     }
 
     headless->submit(commands);
-    headless->context->quads()->endFrame();
 }
 
 /**
@@ -213,6 +213,32 @@ BOOST_AUTO_TEST_CASE(the_white_texture_is_not_released) {
 
     BOOST_CHECK(!headless.context->textures()->release(white));
     BOOST_CHECK(headless.context->resources()->texture(white) != nullptr);
+}
+
+/**
+ * A stream holds as many buffers as the busiest frame claimed, per frame in flight, however
+ * many frames run - with nothing telling it a frame ended, which is what a renderer an app built
+ * itself never got told. A buffer the content outgrows is replaced and retired, not added to.
+ **/
+BOOST_AUTO_TEST_CASE(a_stream_holds_what_one_frame_asked_for) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    v3d::render::realtime::vulkan::frame::StreamRing stream(headless.device, headless.context->ring(), 64, 32);
+    const std::size_t frames = headless.context->ring()->framesInFlight();
+
+    for (int frame = 0; frame < 12; ++frame) {
+        stream.claim(16, 8);
+        stream.claim(16, 8);
+        idle(&headless);
+    }
+    BOOST_CHECK_EQUAL(stream.held(), 2 * frames);
+
+    for (std::size_t frame = 0; frame < frames * 2; ++frame) {
+        const v3d::render::realtime::vulkan::frame::StreamRing::Geometry grown = stream.claim(1000, 8);
+        BOOST_CHECK_GE(grown.vertices->size(), 1000u);
+        idle(&headless);
+    }
+    BOOST_CHECK_EQUAL(stream.held(), 2 * frames);
+    BOOST_CHECK(headless.silent());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

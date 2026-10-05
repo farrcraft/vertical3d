@@ -41,20 +41,18 @@ const VkDeviceSize initialIndexBytes = 16ULL * 1024;
 
 /**
  **/
-World::World(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<device::Device>& device,
+World::World(const boost::shared_ptr<device::Device>& device,
     const boost::shared_ptr<pipeline::Cache>& cache, const boost::shared_ptr<pipeline::Resources>& resources,
     const boost::shared_ptr<frame::Ring>& ring, const boost::shared_ptr<frame::FrameUniforms>& uniforms,
     const boost::shared_ptr<Textures>& textures, VkFormat colour, VkFormat depth) :
-    logger_(logger),
     device_(device),
     cache_(cache),
     resources_(resources),
     ring_(ring),
     uniforms_(uniforms),
-    textures_(textures),
-    cursor_(0) {
+    textures_(textures) {
+    stream_ = boost::make_shared<frame::StreamRing>(device_, ring_, initialVertexBytes, initialIndexBytes);
     createPipelines(colour, depth);
-    geometry_.resize(ring_->framesInFlight() > 0 ? ring_->framesInFlight() : 1);
 }
 
 /**
@@ -112,39 +110,14 @@ PipelineHandle World::createPipeline(const std::string& name, VkFormat colour, V
 
 /**
  **/
-World::Geometry World::claim() {
-    std::vector<Geometry>& ring = geometry_[ring_->frame()];
-    if (cursor_ >= ring.size()) {
-        Geometry geometry;
-        geometry.vertices = boost::make_shared<memory::Buffer>(device_, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, initialVertexBytes);
-        geometry.indices = boost::make_shared<memory::Buffer>(device_, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, initialIndexBytes);
-        ring.push_back(geometry);
-    }
-    return ring[cursor_++];
-}
-
-/**
- **/
-void World::endFrame() noexcept {
-    cursor_ = 0;
-}
-
-/**
- **/
 void World::submit(const WorldCanvas& canvas, Pass* pass, uint16_t layer, Blend blend) {
     if (pass == nullptr || canvas.empty() || !textures_) {
         return;
     }
 
-    // the device may still be reading what this frame's slots held two frames ago
-    ring_->waitFrame();
-
-    const Geometry claimed = claim();
     const VkDeviceSize vertexBytes = canvas.vertices().size() * sizeof(WorldCanvas::Vertex);
     const VkDeviceSize indexBytes = canvas.indices().size() * sizeof(uint32_t);
-
-    claimed.vertices->grow(vertexBytes);
-    claimed.indices->grow(indexBytes);
+    const frame::StreamRing::Geometry claimed = stream_->claim(vertexBytes, indexBytes);
     claimed.vertices->write(canvas.vertices().data(), vertexBytes);
     claimed.indices->write(canvas.indices().data(), indexBytes);
 

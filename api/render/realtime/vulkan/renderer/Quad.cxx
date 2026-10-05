@@ -5,6 +5,8 @@
 
 #include "Quad.h"
 
+#include "Clip.h"
+
 #include <api/render/realtime/DrawItem.h>
 #include <api/render/realtime/vulkan/device/Result.h>
 #include <api/render/realtime/vulkan/frame/RenderTarget.h>
@@ -60,20 +62,18 @@ struct Push final {
 
 /**
  **/
-Quad::Quad(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<device::Device>& device,
+Quad::Quad(const boost::shared_ptr<device::Device>& device,
     const boost::shared_ptr<pipeline::Cache>& cache, const boost::shared_ptr<pipeline::Resources>& resources,
     const boost::shared_ptr<frame::Ring>& ring, const boost::shared_ptr<frame::FrameUniforms>& uniforms,
     const boost::shared_ptr<Textures>& textures, VkFormat colour, VkFormat depth) :
-    logger_(logger),
     device_(device),
     cache_(cache),
     resources_(resources),
     ring_(ring),
     uniforms_(uniforms),
-    textures_(textures),
-    cursor_(0) {
+    textures_(textures) {
+    stream_ = boost::make_shared<frame::StreamRing>(device_, ring_, initialVertexBytes, initialIndexBytes);
     createPipelines(colour, depth);
-    geometry_.resize(ring_->framesInFlight() > 0 ? ring_->framesInFlight() : 1);
 }
 
 /**
@@ -110,42 +110,16 @@ void Quad::createPipelines(VkFormat colour, VkFormat depth) {
 
 /**
  **/
-Quad::Geometry Quad::claim() {
-    std::vector<Geometry>& ring = geometry_[ring_->frame()];
-    if (cursor_ >= ring.size()) {
-        Geometry geometry;
-        geometry.vertices = boost::make_shared<memory::Buffer>(device_, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, initialVertexBytes);
-        geometry.indices = boost::make_shared<memory::Buffer>(device_, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, initialIndexBytes);
-        ring.push_back(geometry);
-    }
-    return ring[cursor_++];
-}
-
-/**
- **/
-void Quad::endFrame() noexcept {
-    cursor_ = 0;
-}
-
-/**
- **/
 void Quad::submit(const Canvas& canvas, Pass* pass, uint16_t layer) {
     if (pass == nullptr || canvas.empty()) {
         return;
     }
 
-    // the device may still be reading what this frame's slots held two frames ago
-    ring_->waitFrame();
-
-    const Geometry claimed = claim();
-    const boost::shared_ptr<memory::Buffer>& vertices = claimed.vertices;
-    const boost::shared_ptr<memory::Buffer>& indices = claimed.indices;
-
     const VkDeviceSize vertexBytes = canvas.vertices().size() * sizeof(Canvas::Vertex);
     const VkDeviceSize indexBytes = canvas.indices().size() * sizeof(uint32_t);
-
-    vertices->grow(vertexBytes);
-    indices->grow(indexBytes);
+    const frame::StreamRing::Geometry claimed = stream_->claim(vertexBytes, indexBytes);
+    const boost::shared_ptr<memory::Buffer>& vertices = claimed.vertices;
+    const boost::shared_ptr<memory::Buffer>& indices = claimed.indices;
 
     vertices->write(canvas.vertices().data(), vertexBytes);
     indices->write(canvas.indices().data(), indexBytes);
@@ -179,13 +153,7 @@ void Quad::submit(const Canvas& canvas, Pass* pass, uint16_t layer) {
         if (batch.clipped) {
             // the canvas clips in its own pixels, which are the image's because the ui is
             // drawn into a pass covering the whole of it - ADR-0037
-            const float left = std::max(batch.clip.x, 0.0f);
-            const float top = std::max(batch.clip.y, 0.0f);
-            item.scissored = true;
-            item.scissor.offset.x = static_cast<int32_t>(left);
-            item.scissor.offset.y = static_cast<int32_t>(top);
-            item.scissor.extent.width = static_cast<uint32_t>(std::max(batch.clip.z - left, 0.0f));
-            item.scissor.extent.height = static_cast<uint32_t>(std::max(batch.clip.w - top, 0.0f));
+            clip(&item, batch.clip);
         }
 
         if (pipeline != nullptr && pipeline->pushStages != 0) {

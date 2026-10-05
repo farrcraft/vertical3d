@@ -170,7 +170,6 @@ BOOST_AUTO_TEST_CASE(a_drawn_quad_is_silent_and_is_the_committed_picture) {
     capture.record(commands, source);
 
     headless.submitAndWait(commands);
-    headless.context->quads()->endFrame();
 
     BOOST_CHECK(headless.silent());
 
@@ -245,7 +244,6 @@ BOOST_AUTO_TEST_CASE(a_textured_quad_is_the_texture_that_was_uploaded) {
     capture.record(commands, source);
 
     headless.submitAndWait(commands);
-    headless.context->quads()->endFrame();
 
     BOOST_CHECK(headless.silent());
 

@@ -130,7 +130,6 @@ void drawAndCheck(v3d::test::Headless* headless, bool nearFirst, const std::stri
     capture.record(commands, source);
 
     headless->submitAndWait(commands);
-    headless->context->worldQuads()->endFrame();
 
     BOOST_CHECK(headless->silent());
 

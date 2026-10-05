@@ -196,17 +196,6 @@ void Engine3D::renderFrame() {
  **/
 void Engine3D::endFrame() {
     frame_->reset();
-    // the geometry buffers this frame's submissions took go back to the front of
-    // their rings, for the next frame to claim from
-    if (context_) {
-        context_->quads()->endFrame();
-        if (context_->hasLines()) {
-            context_->lines()->endFrame();
-        }
-        if (context_->hasWorldQuads()) {
-            context_->worldQuads()->endFrame();
-        }
-    }
 }
 
 };  // namespace v3d::render::realtime

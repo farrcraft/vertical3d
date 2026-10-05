@@ -195,7 +195,6 @@ boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, const e
     source.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     capture.record(commands, source);
     headless->submitAndWait(commands);
-    headless->context->worldQuads()->endFrame();
 
     const std::string path = "data_out/" + name + ".png";
     if (!capture.write(path)) {

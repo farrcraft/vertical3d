@@ -101,7 +101,6 @@ std::vector<unsigned char> drawFrame(v3d::test::Headless* headless, const boost:
     source.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     capture.record(commands, source);
     headless->submitAndWait(commands);
-    headless->context->quads()->endFrame();
     return centre(headless, &capture, path);
 }
 

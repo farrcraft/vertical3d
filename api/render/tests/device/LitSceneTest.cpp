@@ -717,7 +717,7 @@ BOOST_AUTO_TEST_CASE(world_quads_are_hidden_by_a_lit_scene) {
 
     Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
         headless.context->frameUniforms(), headless.context->textures(), colourFormat, target->depthFormat(), VK_FORMAT_UNDEFINED);
-    World world(headless.logger, headless.device, headless.context->pipelineCache(), headless.context->resources(),
+    World world(headless.device, headless.context->pipelineCache(), headless.context->resources(),
         headless.context->ring(), headless.context->frameUniforms(), headless.context->textures(), colourFormat,
         target->depthFormat());
 
@@ -756,7 +756,6 @@ BOOST_AUTO_TEST_CASE(world_quads_are_hidden_by_a_lit_scene) {
     Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
         headless.context->frameUniforms().get());
     const boost::shared_ptr<v3d::image::Image> picture = readBack(&headless, commands, target, "data_out/lit_world_quads.png");
-    world.endFrame();
 
     BOOST_CHECK(headless.silent());
     BOOST_REQUIRE(picture);
@@ -895,7 +894,7 @@ BOOST_AUTO_TEST_CASE(rain_falls_in_a_lit_scene) {
             width, height, colourFormat, true);
         Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
             headless.context->frameUniforms(), headless.context->textures(), colourFormat, target->depthFormat(), VK_FORMAT_UNDEFINED);
-        World world(headless.logger, headless.device, headless.context->pipelineCache(), headless.context->resources(),
+        World world(headless.device, headless.context->pipelineCache(), headless.context->resources(),
             headless.context->ring(), headless.context->frameUniforms(), headless.context->textures(), colourFormat,
             target->depthFormat());
 
@@ -919,7 +918,6 @@ BOOST_AUTO_TEST_CASE(rain_falls_in_a_lit_scene) {
         Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
             headless.context->frameUniforms().get());
         frames.push_back(readBack(&headless, commands, target, "data_out/rain_" + std::to_string(shot) + ".png"));
-        world.endFrame();
         BOOST_REQUIRE(frames.back());
     }
     BOOST_CHECK(headless.silent());

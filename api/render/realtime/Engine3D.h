@@ -119,8 +119,7 @@ class Engine3D : public Engine {
 
  private:
     /**
-     * Drop what the frame collected and give back the geometry buffers its submissions
-     * took, whether or not the frame was recorded.
+     * Drop what the frame collected, whether or not the frame was recorded.
      **/
     void endFrame();
 

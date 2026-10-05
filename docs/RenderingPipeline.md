@@ -229,8 +229,15 @@ line canvas is world space, so there is no transform there that a screen rectang
 through.
 
 The buffers are per frame in flight because the device may still be reading the previous
-frame's geometry. `submit` calls `Presenter::waitFrame()` before writing. That is the same
-fence `acquire` waits on, so it costs the frame nothing it was not going to pay.
+frame's geometry. Each renderer streams through a `vulkan::frame::StreamRing`, whose `claim`
+waits on the frame's fence before handing over a buffer. That is the same fence `acquire`
+waits on, so it costs the frame nothing it was not going to pay. A frame takes as many sets as
+it submits canvases, and the stream starts again from the first the first time it is claimed
+from after the in-flight ring has begun another frame - so nothing has to be told a frame
+ended, and a renderer an app built itself reuses its buffers the same as one the context holds.
+A buffer the content outgrows is replaced by one twice the size, and the old one is retired
+through the ring ([ADR-0061](adr/0061-a-resource-is-released-explicitly.md)) rather than
+waited for.
 
 Text goes through the same path. A `v3d::font` text buffer lays glyphs out into positions,
 atlas coordinates and colours, and `Canvas::text` copies those into the stream against the
@@ -312,8 +319,9 @@ tile highlight.
   act's palette over the whole world once rather than in every caller; `clear()` returns it to
   white, and the ui's `Canvas` has none.
 - **`vulkan::renderer::World`** owns four pipelines and a pair of buffers per frame in flight,
-  and takes its textures and its set 1 descriptors from the `renderer::Quad` so that an atlas
-  uploaded once serves both primitives out of one descriptor pool. The pipelines are two blends,
+  and takes its textures and its set 1 descriptors from the context's `Textures`
+  ([ADR-0082](adr/0082-textures-belong-to-the-context.md)) so that an atlas uploaded once serves
+  both primitives out of one descriptor pool. The pipelines are two blends,
   each with and without depth. `World::Blend::Alpha` is straight alpha over what is there.
   `Additive` adds the colour by its alpha and keeps the destination's alpha, so a flame or a
   spark only lightens and two of them come out the same in either order. A canvas is submitted

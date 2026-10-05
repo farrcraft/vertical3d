@@ -489,6 +489,16 @@ call. Test: a default-constructed headless context registers a texture and a mes
 
 R1, R5, and D6.
 
+**Closed.** `vulkan::frame::StreamRing` holds a set of buffers per frame in flight and starts its
+claims again the first time it is claimed from after `Ring::begun()` moves, so `Engine3D::endFrame()`
+only resets the frame and no test calls a renderer's `endFrame()`. A buffer the content outgrows is
+replaced and retired through the ring. Quad, Line and World hold one and lose the logger; the clip
+to a scissor is `renderer::clip()`. `ReleaseTest` claims through a stream for many frames and holds
+a constant count, and does again after growing. The draw-item helper did not come out: what the
+three fill in differs in everything but the clip, so a helper would be a constructor with a flag
+per renderer. `Buffer::grow` keeps its device wait, since its one caller left is `Capture`'s
+readback, which waits for the device anyway.
+
 Extract a `StreamRing` keyed by the in-flight ring's frame, which resets when its slot is reused;
 Quad, Line and World hold one, and `Engine3D::endFrame()`'s list goes, along with the manual
 `world.endFrame()` in `LitSceneTest`. `Buffer::grow` retires the old allocation through the ring

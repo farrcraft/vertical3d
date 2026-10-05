@@ -5,6 +5,8 @@
 
 #include "Line.h"
 
+#include "Clip.h"
+
 #include <api/render/realtime/DrawItem.h>
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
 
@@ -41,19 +43,17 @@ const VkDeviceSize initialVertexBytes = 64ULL * 1024;
 
 /**
  **/
-Line::Line(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<device::Device>& device,
+Line::Line(const boost::shared_ptr<device::Device>& device,
     const boost::shared_ptr<pipeline::Cache>& cache, const boost::shared_ptr<pipeline::Resources>& resources,
     const boost::shared_ptr<frame::Ring>& ring, const boost::shared_ptr<frame::FrameUniforms>& uniforms,
     VkFormat colour, VkFormat depth) :
-    logger_(logger),
     device_(device),
     cache_(cache),
     resources_(resources),
     ring_(ring),
-    uniforms_(uniforms),
-    cursor_(0) {
+    uniforms_(uniforms) {
+    stream_ = boost::make_shared<frame::StreamRing>(device_, ring_, initialVertexBytes, 0);
     createPipelines(colour, depth);
-    vertices_.resize(ring_->framesInFlight() > 0 ? ring_->framesInFlight() : 1);
 }
 
 /**
@@ -87,34 +87,13 @@ void Line::createPipelines(VkFormat colour, VkFormat depth) {
 
 /**
  **/
-boost::shared_ptr<memory::Buffer> Line::claim() {
-    std::vector<boost::shared_ptr<memory::Buffer>>& ring = vertices_[ring_->frame()];
-    if (cursor_ >= ring.size()) {
-        ring.push_back(boost::make_shared<memory::Buffer>(device_, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, initialVertexBytes));
-    }
-    return ring[cursor_++];
-}
-
-/**
- **/
-void Line::endFrame() noexcept {
-    cursor_ = 0;
-}
-
-/**
- **/
 void Line::submit(const LineCanvas& canvas, Pass* pass, uint16_t layer) {
     if (pass == nullptr || canvas.empty()) {
         return;
     }
 
-    // the device may still be reading what this frame's slots held two frames ago
-    ring_->waitFrame();
-
-    const boost::shared_ptr<memory::Buffer> vertices = claim();
     const VkDeviceSize vertexBytes = canvas.vertices().size() * sizeof(LineCanvas::Vertex);
-
-    vertices->grow(vertexBytes);
+    const boost::shared_ptr<memory::Buffer> vertices = stream_->claim(vertexBytes, 0).vertices;
     vertices->write(canvas.vertices().data(), vertexBytes);
 
     // dynamic rendering matches a pipeline to the pass's attachments, so which of the two
@@ -139,13 +118,7 @@ void Line::submit(const LineCanvas& canvas, Pass* pass, uint16_t layer) {
         if (batch.clipped) {
             // the canvas clips in the image's pixels already, since a world space stream
             // has no transform that would carry a rectangle to the screen - ADR-0037
-            const float left = std::max(batch.clip.x, 0.0f);
-            const float top = std::max(batch.clip.y, 0.0f);
-            item.scissored = true;
-            item.scissor.offset.x = static_cast<int32_t>(left);
-            item.scissor.offset.y = static_cast<int32_t>(top);
-            item.scissor.extent.width = static_cast<uint32_t>(std::max(batch.clip.z - left, 0.0f));
-            item.scissor.extent.height = static_cast<uint32_t>(std::max(batch.clip.w - top, 0.0f));
+            clip(&item, batch.clip);
         }
 
         pass->submit(item);
