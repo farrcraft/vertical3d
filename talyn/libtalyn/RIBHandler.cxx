@@ -5,6 +5,9 @@
 
 #include "RIBHandler.h"
 
+#include <api/render/offline/trace/Sphere.h>
+#include <api/render/offline/trace/Triangle.h>
+
 #include <algorithm>
 #include <cmath>
 #include <string>

@@ -9,6 +9,7 @@
 #include <api/asset/loader/Gltf.h>
 #include <api/image/Compare.h>
 #include <api/image/Factory.h>
+#include <api/type/animation/Channel.h>
 #include <api/type/animation/Clip.h>
 #include <api/type/animation/Pose.h>
 

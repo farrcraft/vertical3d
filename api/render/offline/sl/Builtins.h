@@ -5,10 +5,12 @@
 
 #pragma once
 
+#include <api/render/offline/sl/syntax/Function.h>
+
 #include <string>
 #include <vector>
 
-#include "Syntax.h"
+#include "Types.h"
 
 namespace v3d::render::offline::sl {
 
@@ -93,7 +95,7 @@ std::vector<Signature> builtin(const std::string & name);
  * Read fresh every call rather than held: the compiler annotates a tree in place, so two
  * shaders that both call `diffuse` need two trees rather than one they take turns writing.
  **/
-std::vector<Function> sources();
+std::vector<syntax::Function> sources();
 
 /**
  * Whether the built-in is declared but does nothing yet - shadow, which returns its default

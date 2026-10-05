@@ -17,14 +17,6 @@
 
 namespace v3d::audio {
 
-/**
- **/
-Play::Play() noexcept :
-loops(0),
-fadeInMs(0),
-gain(1.0f) {
-}
-
 Engine::Engine(const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<entt::dispatcher> &dispatcher) :
     dispatcher_(dispatcher), logger_(logger) {
 }

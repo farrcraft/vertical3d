@@ -7,6 +7,8 @@
 
 #include <api/asset/kind/Image.h>
 #include <api/ecs/component/PositionFixed2D.h>
+#include <api/grid/TileCoord.h>
+#include <api/grid/TileGrid.h>
 #include <odyssey/engine/Unit.h>
 
 #include <string>

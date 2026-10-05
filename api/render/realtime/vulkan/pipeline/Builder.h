@@ -15,7 +15,7 @@
 #include <vector>
 
 #include "Cache.h"
-#include "Resources.h"
+#include "Pipeline.h"
 
 #include <boost/shared_ptr.hpp>
 

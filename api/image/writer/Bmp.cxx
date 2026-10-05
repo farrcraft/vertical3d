@@ -5,7 +5,9 @@
 
 #include "Bmp.h"
 
-#include <api/image/BmpHeader.h>
+#include <api/image/BmpFileHeader.h>
+#include <api/image/BmpInfoHeader.h>
+#include <api/image/BmpRgbQuad.h>
 
 #include <cstring>
 #include <fstream>

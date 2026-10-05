@@ -5,30 +5,16 @@
 
 #pragma once
 
+#include "Terrain.h"
+#include "TileGrid.h"
+#include "Unknown.h"
+
 #include <map>
 #include <optional>
 #include <string>
 #include <vector>
 
-#include "TileGrid.h"
-
 namespace v3d::grid {
-
-/**
- * What a glyph in a map picture makes the tile it stands on.
- **/
-struct Terrain final {
-    bool passable{true};
-    Cover cover{Cover::None};
-};
-
-/**
- * A glyph a legend did not name, and every tile it stands on in row order.
- **/
-struct Unknown final {
-    char glyph{0};
-    std::vector<TileCoord> tiles;
-};
 
 /**
  * A grid read from a picture, or why it could not be.

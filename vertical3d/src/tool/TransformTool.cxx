@@ -5,6 +5,7 @@
 
 #include "TransformTool.h"
 
+#include <vertical3d/src/command/TransformCommand.h>
 #include <vertical3d/src/manipulator/RotateManipulator.h>
 #include <vertical3d/src/manipulator/ScaleManipulator.h>
 #include <vertical3d/src/manipulator/TranslateManipulator.h>

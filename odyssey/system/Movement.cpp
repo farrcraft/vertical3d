@@ -6,6 +6,7 @@
 #include "Movement.h"
 
 #include <api/ecs/component/PositionFixed2D.h>
+#include <api/grid/TileCoord.h>
 #include <odyssey/engine/Path.h>
 
 namespace odyssey::system {

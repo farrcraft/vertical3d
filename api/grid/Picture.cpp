@@ -5,6 +5,8 @@
 
 #include "Picture.h"
 
+#include "TileCoord.h"
+
 #include <algorithm>
 #include <cstddef>
 #include <map>

@@ -7,6 +7,8 @@
 #include <api/image/Factory.h>
 #include <api/render/offline/rib/Reader.h>
 #include <api/render/offline/sl/ShaderLibrary.h>
+#include <api/render/offline/trace/Sphere.h>
+#include <api/render/offline/trace/Triangle.h>
 #include <talyn/libtalyn/RIBHandler.h>
 #include <talyn/libtalyn/RenderContext.h>
 

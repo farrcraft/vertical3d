@@ -31,6 +31,7 @@ v3d_add_test(vertical3d
 	"../src/command/CommandDirectory.cxx"
 	"../src/command/CommandStack.cxx"
 	"../src/command/CreateCommand.cxx"
+	"../src/command/Placement.cxx"
 	"../src/command/TransformCommand.cxx"
 	"../src/tool/SelectMask.cxx"
 	"../src/tool/SelectTool.cxx"

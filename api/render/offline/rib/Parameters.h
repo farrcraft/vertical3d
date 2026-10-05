@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-#include "Declarations.h"
+#include "Declaration.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>

@@ -4,6 +4,9 @@
  **/
 
 #include <api/render/offline/rib/Reader.h>
+#include <api/render/offline/trace/Hit.h>
+#include <api/render/offline/trace/Sphere.h>
+#include <api/render/offline/trace/Triangle.h>
 #include <talyn/libtalyn/RIBHandler.h>
 
 #include <sstream>

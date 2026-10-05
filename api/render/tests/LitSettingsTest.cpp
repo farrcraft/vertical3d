@@ -4,6 +4,7 @@
  **/
 
 #include <api/render/realtime/LitSettings.h>
+#include <api/render/realtime/SceneUniforms.h>
 
 #include <boost/test/unit_test.hpp>
 #include <glm/geometric.hpp>

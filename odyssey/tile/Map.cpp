@@ -6,6 +6,8 @@
 #include "Map.h"
 
 #include <api/grid/Picture.h>
+#include <api/grid/Terrain.h>
+#include <api/grid/Unknown.h>
 
 #include <map>
 #include <string>

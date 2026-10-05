@@ -4,6 +4,7 @@
  **/
 
 #include <api/type/Skeleton.h>
+#include <api/type/animation/Channel.h>
 #include <api/type/animation/Clip.h>
 #include <api/type/animation/Clock.h>
 #include <api/type/animation/Pose.h>

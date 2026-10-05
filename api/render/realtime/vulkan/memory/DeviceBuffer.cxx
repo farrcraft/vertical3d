@@ -10,6 +10,7 @@
 #include <sstream>
 #include <stdexcept>
 
+#include "Allocator.h"
 #include "Buffer.h"
 #include "Memory.h"
 

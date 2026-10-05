@@ -1,4 +1,10 @@
 add_executable(pong
+	"src/component/Direction.h"
+	"src/component/Offset.h"
+	"src/component/PaddleSize.h"
+	"src/component/Score.h"
+	"src/component/Size.h"
+	"src/component/Travel.h"
 	"src/Ball.h" "src/Ball.cxx"
 	"src/GameState.h" "src/GameState.cxx"
 	"src/Paddle.h" "src/Paddle.cxx"

@@ -5,6 +5,31 @@
 
 #include "Emitter.h"
 
+#include <api/render/offline/sl/syntax/Assignment.h>
+#include <api/render/offline/sl/syntax/Binary.h>
+#include <api/render/offline/sl/syntax/Block.h>
+#include <api/render/offline/sl/syntax/Call.h>
+#include <api/render/offline/sl/syntax/Cast.h>
+#include <api/render/offline/sl/syntax/Conditional.h>
+#include <api/render/offline/sl/syntax/Declaration.h>
+#include <api/render/offline/sl/syntax/Declarator.h>
+#include <api/render/offline/sl/syntax/Expression.h>
+#include <api/render/offline/sl/syntax/ExpressionStatement.h>
+#include <api/render/offline/sl/syntax/For.h>
+#include <api/render/offline/sl/syntax/Function.h>
+#include <api/render/offline/sl/syntax/Jump.h>
+#include <api/render/offline/sl/syntax/Lighting.h>
+#include <api/render/offline/sl/syntax/Number.h>
+#include <api/render/offline/sl/syntax/Parameter.h>
+#include <api/render/offline/sl/syntax/Shader.h>
+#include <api/render/offline/sl/syntax/Statement.h>
+#include <api/render/offline/sl/syntax/String.h>
+#include <api/render/offline/sl/syntax/Ternary.h>
+#include <api/render/offline/sl/syntax/Tuple.h>
+#include <api/render/offline/sl/syntax/Unary.h>
+#include <api/render/offline/sl/syntax/Variable.h>
+#include <api/render/offline/sl/syntax/While.h>
+
 #include <string>
 #include <vector>
 
@@ -59,7 +84,7 @@ runtime::Opcode binaryOpcode(const std::string & op) {
 
 };  // namespace
 
-Emitter::Emitter(const ShaderPtr & shader, const std::vector<Symbol> & symbols) :
+Emitter::Emitter(const syntax::ShaderPtr & shader, const std::vector<Symbol> & symbols) :
     shader_(shader),
     symbols_(symbols) {
 }
@@ -107,7 +132,7 @@ int Emitter::here() const {
     return static_cast<int>(program_->instructions.size());
 }
 
-int Emitter::put(runtime::Opcode opcode, int target, int left, int right, const ExpressionPtr & where) {
+int Emitter::put(runtime::Opcode opcode, int target, int left, int right, const syntax::ExpressionPtr & where) {
     runtime::Instruction instruction;
     instruction.opcode = opcode;
     instruction.target = target;
@@ -145,7 +170,7 @@ bool Emitter::emit(runtime::Program* program) {
     try {
         // the declared defaults come first and are their own run: a default the body
         // computed would overwrite whatever a scene bound, once per grid
-        for (const Parameter & parameter : shader_->parameters) {
+        for (const syntax::Parameter & parameter : shader_->parameters) {
             if (!parameter.defaultValue || parameter.symbol < 0) {
                 continue;
             }
@@ -162,53 +187,53 @@ bool Emitter::emit(runtime::Program* program) {
     return true;
 }
 
-void Emitter::emitBlock(const BlockPtr & block) {
+void Emitter::emitBlock(const syntax::BlockPtr & block) {
     if (!block) {
         return;
     }
-    for (const StatementPtr & statement : block->statements) {
+    for (const syntax::StatementPtr & statement : block->statements) {
         emitStatement(statement);
     }
 }
 
-void Emitter::emitStatement(const StatementPtr & statement) {
+void Emitter::emitStatement(const syntax::StatementPtr & statement) {
     if (!statement) {
         return;
     }
     switch (statement->kind) {
-        case Statement::Kind::BLOCK:
-            emitBlock(boost::static_pointer_cast<Block>(statement));
+        case syntax::Statement::Kind::BLOCK:
+            emitBlock(boost::static_pointer_cast<syntax::Block>(statement));
             return;
-        case Statement::Kind::DECLARATION:
+        case syntax::Statement::Kind::DECLARATION:
             emitDeclaration(statement);
             return;
-        case Statement::Kind::ASSIGNMENT:
+        case syntax::Statement::Kind::ASSIGNMENT:
             emitAssignment(statement);
             return;
-        case Statement::Kind::CONDITIONAL:
+        case syntax::Statement::Kind::CONDITIONAL:
             emitConditional(statement);
             return;
-        case Statement::Kind::WHILE:
+        case syntax::Statement::Kind::WHILE:
             emitWhile(statement);
             return;
-        case Statement::Kind::FOR:
+        case syntax::Statement::Kind::FOR:
             emitFor(statement);
             return;
-        case Statement::Kind::JUMP:
+        case syntax::Statement::Kind::JUMP:
             emitJump(statement);
             return;
-        case Statement::Kind::EXPRESSION:
-            emitExpression(static_cast<const ExpressionStatement &>(*statement).expression);
+        case syntax::Statement::Kind::EXPRESSION:
+            emitExpression(static_cast<const syntax::ExpressionStatement &>(*statement).expression);
             return;
-        case Statement::Kind::LIGHTING:
+        case syntax::Statement::Kind::LIGHTING:
             emitLighting(statement);
             return;
     }
 }
 
-void Emitter::emitDeclaration(const StatementPtr & statement) {
-    const Declaration & declaration = static_cast<const Declaration &>(*statement);
-    for (const Declarator & declarator : declaration.declarators) {
+void Emitter::emitDeclaration(const syntax::StatementPtr & statement) {
+    const syntax::Declaration & declaration = static_cast<const syntax::Declaration &>(*statement);
+    for (const syntax::Declarator & declarator : declaration.declarators) {
         if (!declarator.initialiser) {
             continue;
         }
@@ -217,9 +242,9 @@ void Emitter::emitDeclaration(const StatementPtr & statement) {
     }
 }
 
-void Emitter::emitAssignment(const StatementPtr & statement) {
-    const Assignment & assignment = static_cast<const Assignment &>(*statement);
-    const Variable & variable = static_cast<const Variable &>(*assignment.target);
+void Emitter::emitAssignment(const syntax::StatementPtr & statement) {
+    const syntax::Assignment & assignment = static_cast<const syntax::Assignment &>(*statement);
+    const syntax::Variable & variable = static_cast<const syntax::Variable &>(*assignment.target);
     const int value = emitExpression(assignment.value);
     if (assignment.op == "=") {
         put(runtime::Opcode::MOVE, variable.symbol, value, -1, assignment.value);
@@ -233,8 +258,8 @@ void Emitter::emitAssignment(const StatementPtr & statement) {
     put(runtime::Opcode::MOVE, variable.symbol, combined, -1, assignment.value);
 }
 
-void Emitter::emitConditional(const StatementPtr & statement) {
-    const Conditional & conditional = static_cast<const Conditional &>(*statement);
+void Emitter::emitConditional(const syntax::StatementPtr & statement) {
+    const syntax::Conditional & conditional = static_cast<const syntax::Conditional &>(*statement);
     const int condition = emitExpression(conditional.condition);
 
     if (conditional.condition->storage != Storage::VARYING) {
@@ -267,19 +292,19 @@ void Emitter::emitConditional(const StatementPtr & statement) {
     put(runtime::Opcode::POP_MASK, -1, -1, -1, conditional.condition);
 }
 
-void Emitter::emitWhile(const StatementPtr & statement) {
-    const While & loop = static_cast<const While &>(*statement);
-    emitLoop(loop.condition, loop.body, StatementPtr());
+void Emitter::emitWhile(const syntax::StatementPtr & statement) {
+    const syntax::While & loop = static_cast<const syntax::While &>(*statement);
+    emitLoop(loop.condition, loop.body, syntax::StatementPtr());
 }
 
-void Emitter::emitFor(const StatementPtr & statement) {
-    const For & loop = static_cast<const For &>(*statement);
+void Emitter::emitFor(const syntax::StatementPtr & statement) {
+    const syntax::For & loop = static_cast<const syntax::For &>(*statement);
     emitStatement(loop.initialiser);
     emitLoop(loop.condition, loop.body, loop.step);
 }
 
-void Emitter::emitLoop(const ExpressionPtr & condition, const StatementPtr & body,
-    const StatementPtr & step) {
+void Emitter::emitLoop(const syntax::ExpressionPtr & condition, const syntax::StatementPtr & body,
+    const syntax::StatementPtr & step) {
     /*
         A loop is masked whether its condition varies or not. A uniform condition narrows the
         loop's lanes all together, so it behaves as the jump it would have compiled to, and
@@ -303,16 +328,16 @@ void Emitter::emitLoop(const ExpressionPtr & condition, const StatementPtr & bod
     put(runtime::Opcode::POP_LOOP, -1, -1, -1, condition);
 }
 
-void Emitter::emitJump(const StatementPtr & statement) {
-    const Jump & jump = static_cast<const Jump &>(*statement);
+void Emitter::emitJump(const syntax::StatementPtr & statement) {
+    const syntax::Jump & jump = static_cast<const syntax::Jump &>(*statement);
     switch (jump.where) {
-        case Jump::Where::BREAK:
-            put(runtime::Opcode::BREAK, -1, -1, -1, ExpressionPtr());
+        case syntax::Jump::Where::BREAK:
+            put(runtime::Opcode::BREAK, -1, -1, -1, syntax::ExpressionPtr());
             return;
-        case Jump::Where::CONTINUE:
-            put(runtime::Opcode::CONTINUE, -1, -1, -1, ExpressionPtr());
+        case syntax::Jump::Where::CONTINUE:
+            put(runtime::Opcode::CONTINUE, -1, -1, -1, syntax::ExpressionPtr());
             return;
-        case Jump::Where::RETURN:
+        case syntax::Jump::Where::RETURN:
             if (jump.value && !returns_.empty()) {
                 const int value = emitExpression(jump.value);
                 put(runtime::Opcode::MOVE, returns_.back(), value, -1, jump.value);
@@ -322,27 +347,27 @@ void Emitter::emitJump(const StatementPtr & statement) {
     }
 }
 
-int Emitter::emitExpression(const ExpressionPtr & expression) {
+int Emitter::emitExpression(const syntax::ExpressionPtr & expression) {
     switch (expression->kind) {
-        case Expression::Kind::NUMBER:
-            return number(static_cast<const Number &>(*expression).value);
-        case Expression::Kind::STRING:
-            return string(static_cast<const String &>(*expression).value);
-        case Expression::Kind::VARIABLE:
-            return static_cast<const Variable &>(*expression).symbol;
-        case Expression::Kind::UNARY: {
-            const Unary & unary = static_cast<const Unary &>(*expression);
+        case syntax::Expression::Kind::NUMBER:
+            return number(static_cast<const syntax::Number &>(*expression).value);
+        case syntax::Expression::Kind::STRING:
+            return string(static_cast<const syntax::String &>(*expression).value);
+        case syntax::Expression::Kind::VARIABLE:
+            return static_cast<const syntax::Variable &>(*expression).symbol;
+        case syntax::Expression::Kind::UNARY: {
+            const syntax::Unary & unary = static_cast<const syntax::Unary &>(*expression);
             const int operand = emitExpression(unary.operand);
             const int result = temporary(expression->type, expression->storage);
             put(unary.op == "!" ? runtime::Opcode::NOT : runtime::Opcode::NEGATE, result, operand, -1, expression);
             return result;
         }
-        case Expression::Kind::BINARY:
+        case syntax::Expression::Kind::BINARY:
             return emitBinary(expression);
-        case Expression::Kind::TERNARY: {
+        case syntax::Expression::Kind::TERNARY: {
             // both arms are computed and one is chosen, which is what a mask would do with
             // fewer instructions and the same work
-            const Ternary & ternary = static_cast<const Ternary &>(*expression);
+            const syntax::Ternary & ternary = static_cast<const syntax::Ternary &>(*expression);
             const int condition = emitExpression(ternary.condition);
             const int result = temporary(expression->type, expression->storage);
             const int whenTrue = emitExpression(ternary.whenTrue);
@@ -357,19 +382,19 @@ int Emitter::emitExpression(const ExpressionPtr & expression) {
             put(runtime::Opcode::POP_MASK, -1, -1, -1, expression);
             return result;
         }
-        case Expression::Kind::CAST:
+        case syntax::Expression::Kind::CAST:
             return emitCast(expression);
-        case Expression::Kind::CALL:
+        case syntax::Expression::Kind::CALL:
             return emitCall(expression);
-        case Expression::Kind::TUPLE:
-        case Expression::Kind::INDEX:
+        case syntax::Expression::Kind::TUPLE:
+        case syntax::Expression::Kind::INDEX:
             break;
     }
     throw fail("this expression has no instructions yet", expression->line, expression->column);
 }
 
-int Emitter::emitBinary(const ExpressionPtr & expression) {
-    const Binary & binary = static_cast<const Binary &>(*expression);
+int Emitter::emitBinary(const syntax::ExpressionPtr & expression) {
+    const syntax::Binary & binary = static_cast<const syntax::Binary &>(*expression);
     const int left = emitExpression(binary.left);
     const int right = emitExpression(binary.right);
     const int result = temporary(expression->type, expression->storage);
@@ -377,13 +402,13 @@ int Emitter::emitBinary(const ExpressionPtr & expression) {
     return result;
 }
 
-int Emitter::emitCast(const ExpressionPtr & expression) {
-    const Cast & cast = static_cast<const Cast &>(*expression);
+int Emitter::emitCast(const syntax::ExpressionPtr & expression) {
+    const syntax::Cast & cast = static_cast<const syntax::Cast &>(*expression);
     const int result = temporary(expression->type, expression->storage);
-    if (cast.operand->kind == Expression::Kind::TUPLE) {
+    if (cast.operand->kind == syntax::Expression::Kind::TUPLE) {
         // a parenthesised list is a literal for the type in front of it, so each element is
         // moved into its own component of the result
-        const Tuple & tuple = static_cast<const Tuple &>(*cast.operand);
+        const syntax::Tuple & tuple = static_cast<const syntax::Tuple &>(*cast.operand);
         for (std::size_t i = 0; i < tuple.elements.size(); i++) {
             const int element = emitExpression(tuple.elements[i]);
             put(runtime::Opcode::MOVE_COMPONENT, result, element, static_cast<int>(i), expression);
@@ -403,8 +428,8 @@ int Emitter::emitCast(const ExpressionPtr & expression) {
     return moved;
 }
 
-int Emitter::emitCall(const ExpressionPtr & expression) {
-    const Call & call = static_cast<const Call &>(*expression);
+int Emitter::emitCall(const syntax::ExpressionPtr & expression) {
+    const syntax::Call & call = static_cast<const syntax::Call &>(*expression);
     if (call.function >= 0) {
         return emitInline(expression);
     }
@@ -415,7 +440,7 @@ int Emitter::emitCall(const ExpressionPtr & expression) {
     instruction.line = expression->line;
     instruction.column = expression->column;
     instruction.arguments.reserve(call.arguments.size());
-    for (const ExpressionPtr & argument : call.arguments) {
+    for (const syntax::ExpressionPtr & argument : call.arguments) {
         instruction.arguments.push_back(emitExpression(argument));
     }
     program_->instructions.push_back(instruction);
@@ -431,12 +456,12 @@ int Emitter::global(const char* name) const {
     return -1;
 }
 
-void Emitter::emitLighting(const StatementPtr & statement) {
-    const Lighting & lighting = static_cast<const Lighting &>(*statement);
-    ExpressionPtr where;
+void Emitter::emitLighting(const syntax::StatementPtr & statement) {
+    const syntax::Lighting & lighting = static_cast<const syntax::Lighting &>(*statement);
+    syntax::ExpressionPtr where;
     std::vector<int> given;
     given.reserve(lighting.arguments.size());
-    for (const ExpressionPtr & argument : lighting.arguments) {
+    for (const syntax::ExpressionPtr & argument : lighting.arguments) {
         given.push_back(emitExpression(argument));
         where = argument;
     }
@@ -445,13 +470,13 @@ void Emitter::emitLighting(const StatementPtr & statement) {
     open.arguments = given;
     open.line = statement->line;
     open.column = statement->column;
-    if (lighting.construct != Lighting::Construct::ILLUMINANCE) {
+    if (lighting.construct != syntax::Lighting::Construct::ILLUMINANCE) {
         /*
             A light shader's end of the message passing. L and Ps are its own globals: the
             construct writes the first for every point it lights and reads the second to
             know where each of those points is.
         */
-        open.opcode = lighting.construct == Lighting::Construct::ILLUMINATE
+        open.opcode = lighting.construct == syntax::Lighting::Construct::ILLUMINATE
             ? runtime::Opcode::ILLUMINATE : runtime::Opcode::SOLAR;
         open.left = global("L");
         open.right = global("Ps");
@@ -482,14 +507,14 @@ void Emitter::emitLighting(const StatementPtr & statement) {
     put(runtime::Opcode::POP_ILLUMINANCE, -1, -1, -1, where);
 }
 
-int Emitter::emitInline(const ExpressionPtr & expression) {
-    const Call & call = static_cast<const Call &>(*expression);
-    const Function & function = shader_->functions[static_cast<std::size_t>(call.function)];
+int Emitter::emitInline(const syntax::ExpressionPtr & expression) {
+    const syntax::Call & call = static_cast<const syntax::Call &>(*expression);
+    const syntax::Function & function = shader_->functions[static_cast<std::size_t>(call.function)];
     // every argument is evaluated before any formal is written, so that an argument which
     // is itself a call cannot land on a formal this one has already filled
     std::vector<int> given;
     given.reserve(call.arguments.size());
-    for (const ExpressionPtr & argument : call.arguments) {
+    for (const syntax::ExpressionPtr & argument : call.arguments) {
         given.push_back(emitExpression(argument));
     }
     for (std::size_t i = 0; i < given.size() && i < function.parameters.size(); i++) {

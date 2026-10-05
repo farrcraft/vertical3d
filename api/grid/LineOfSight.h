@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "TileCoord.h"
 #include "TileGrid.h"
 
 #include <functional>

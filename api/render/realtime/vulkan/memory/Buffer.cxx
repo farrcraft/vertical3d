@@ -7,6 +7,7 @@
 
 #include <api/render/realtime/vulkan/device/Result.h>
 
+#include "Allocator.h"
 #include "Memory.h"
 
 #include <cstring>

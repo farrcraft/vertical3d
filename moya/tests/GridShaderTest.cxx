@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/offline/rib/Declarations.h>
+#include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <moya/libmoya/GridShader.h>
 #include <moya/libmoya/RenderContext.h>

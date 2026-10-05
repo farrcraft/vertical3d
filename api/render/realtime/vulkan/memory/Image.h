@@ -11,7 +11,7 @@
 
 #include <cstdint>
 
-#include "Allocator.h"
+#include "Allocation.h"
 
 #include <boost/shared_ptr.hpp>
 

@@ -4,6 +4,7 @@
  **/
 
 #include <api/render/offline/rib/Lexer.h>
+#include <api/render/offline/rib/Token.h>
 
 #include <fstream>
 #include <sstream>

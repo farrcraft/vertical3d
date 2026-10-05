@@ -3,6 +3,8 @@
  * Copyright (c) 2026 Joshua Farr (josh@farrcraft.com)
  **/
 
+#include <api/grid/TileCoord.h>
+#include <api/grid/TileGrid.h>
 #include <odyssey/tile/Map.h>
 #include <odyssey/tile/Sight.h>
 

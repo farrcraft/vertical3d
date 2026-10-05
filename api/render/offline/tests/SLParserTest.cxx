@@ -4,6 +4,19 @@
  **/
 
 #include <api/render/offline/sl/Parser.h>
+#include <api/render/offline/sl/syntax/Assignment.h>
+#include <api/render/offline/sl/syntax/Binary.h>
+#include <api/render/offline/sl/syntax/Cast.h>
+#include <api/render/offline/sl/syntax/Conditional.h>
+#include <api/render/offline/sl/syntax/Declaration.h>
+#include <api/render/offline/sl/syntax/Expression.h>
+#include <api/render/offline/sl/syntax/For.h>
+#include <api/render/offline/sl/syntax/Lighting.h>
+#include <api/render/offline/sl/syntax/Parameter.h>
+#include <api/render/offline/sl/syntax/Shader.h>
+#include <api/render/offline/sl/syntax/Statement.h>
+#include <api/render/offline/sl/syntax/Ternary.h>
+#include <api/render/offline/sl/syntax/Tuple.h>
 
 #include <sstream>
 #include <string>
@@ -13,14 +26,14 @@
 
 namespace {
 
-typedef v3d::render::offline::sl::Expression Expression;
-typedef v3d::render::offline::sl::Statement Statement;
+typedef v3d::render::offline::sl::syntax::Expression Expression;
+typedef v3d::render::offline::sl::syntax::Statement Statement;
 
-std::vector<v3d::render::offline::sl::ShaderPtr> parse(const std::string & source,
+std::vector<v3d::render::offline::sl::syntax::ShaderPtr> parse(const std::string & source,
     std::string * error = nullptr) {
     std::istringstream stream(source);
     v3d::render::offline::sl::Parser parser(stream);
-    std::vector<v3d::render::offline::sl::ShaderPtr> shaders = parser.parse();
+    std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parser.parse();
     if (error) {
         *error = parser.error();
     }
@@ -31,35 +44,35 @@ std::vector<v3d::render::offline::sl::ShaderPtr> parse(const std::string & sourc
  * The one statement of a shader whose body holds exactly one, as an expression - which is
  * what the precedence cases assert the shape of.
  **/
-v3d::render::offline::sl::ExpressionPtr only(const std::string & expression) {
+v3d::render::offline::sl::syntax::ExpressionPtr only(const std::string & expression) {
     std::string error;
-    std::vector<v3d::render::offline::sl::ShaderPtr> shaders =
+    std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders =
         parse("surface s() { Ci = " + expression + "; }", &error);
     BOOST_REQUIRE_EQUAL(error, "");
     BOOST_REQUIRE_EQUAL(shaders.size(), 1u);
     BOOST_REQUIRE_EQUAL(shaders[0]->body->statements.size(), 1u);
     const Statement & statement = *shaders[0]->body->statements[0];
     BOOST_REQUIRE(statement.kind == Statement::Kind::ASSIGNMENT);
-    return static_cast<const v3d::render::offline::sl::Assignment &>(statement).value;
+    return static_cast<const v3d::render::offline::sl::syntax::Assignment &>(statement).value;
 }
 
 /**
  * The operator of a binary node, or empty when the node is not one - which reads better in a
  * failure than a cast that would have been wrong.
  **/
-std::string binary(const v3d::render::offline::sl::ExpressionPtr & expression) {
+std::string binary(const v3d::render::offline::sl::syntax::ExpressionPtr & expression) {
     if (!expression || expression->kind != Expression::Kind::BINARY) {
         return "";
     }
-    return static_cast<const v3d::render::offline::sl::Binary &>(*expression).op;
+    return static_cast<const v3d::render::offline::sl::syntax::Binary &>(*expression).op;
 }
 
-v3d::render::offline::sl::ExpressionPtr left(const v3d::render::offline::sl::ExpressionPtr & expression) {
-    return static_cast<const v3d::render::offline::sl::Binary &>(*expression).left;
+v3d::render::offline::sl::syntax::ExpressionPtr left(const v3d::render::offline::sl::syntax::ExpressionPtr & expression) {
+    return static_cast<const v3d::render::offline::sl::syntax::Binary &>(*expression).left;
 }
 
-v3d::render::offline::sl::ExpressionPtr right(const v3d::render::offline::sl::ExpressionPtr & expression) {
-    return static_cast<const v3d::render::offline::sl::Binary &>(*expression).right;
+v3d::render::offline::sl::syntax::ExpressionPtr right(const v3d::render::offline::sl::syntax::ExpressionPtr & expression) {
+    return static_cast<const v3d::render::offline::sl::syntax::Binary &>(*expression).right;
 }
 
 /**
@@ -147,7 +160,7 @@ BOOST_AUTO_TEST_CASE(slparser_standard_surface_shaders_test) {
     const char* const names[] = { "constant", "matte", "metal", "plastic" };
     for (std::size_t i = 0; i < 4; i++) {
         std::string error;
-        std::vector<v3d::render::offline::sl::ShaderPtr> shaders = parse(sources[i], &error);
+        std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parse(sources[i], &error);
         BOOST_CHECK_EQUAL(error, "");
         BOOST_REQUIRE_EQUAL(shaders.size(), 1u);
         BOOST_CHECK_EQUAL(shaders[0]->name, names[i]);
@@ -164,7 +177,7 @@ BOOST_AUTO_TEST_CASE(slparser_standard_light_shaders_test) {
     const char* const names[] = { "ambientlight", "distantlight", "pointlight", "spotlight" };
     for (std::size_t i = 0; i < 4; i++) {
         std::string error;
-        std::vector<v3d::render::offline::sl::ShaderPtr> shaders = parse(sources[i], &error);
+        std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parse(sources[i], &error);
         BOOST_CHECK_EQUAL(error, "");
         BOOST_REQUIRE_EQUAL(shaders.size(), 1u);
         BOOST_CHECK_EQUAL(shaders[0]->name, names[i]);
@@ -179,13 +192,13 @@ BOOST_AUTO_TEST_CASE(slparser_standard_light_shaders_test) {
  **/
 BOOST_AUTO_TEST_CASE(slparser_parameters_test) {
     std::string error;
-    std::vector<v3d::render::offline::sl::ShaderPtr> shaders = parse(
+    std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parse(
         "surface s(float Ka = 1; output varying color Ci2 = 0; uniform string space = \"world\";) { }",
         &error);
 
     BOOST_CHECK_EQUAL(error, "");
     BOOST_REQUIRE_EQUAL(shaders.size(), 1u);
-    const std::vector<v3d::render::offline::sl::Parameter> & parameters = shaders[0]->parameters;
+    const std::vector<v3d::render::offline::sl::syntax::Parameter> & parameters = shaders[0]->parameters;
     BOOST_REQUIRE_EQUAL(parameters.size(), 3u);
 
     BOOST_CHECK_EQUAL(parameters[0].name, "Ka");
@@ -208,7 +221,7 @@ BOOST_AUTO_TEST_CASE(slparser_parameters_test) {
  **/
 BOOST_AUTO_TEST_CASE(slparser_parameter_needs_a_default_test) {
     std::string error;
-    std::vector<v3d::render::offline::sl::ShaderPtr> shaders = parse("surface s(float Ka;) { }", &error);
+    std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parse("surface s(float Ka;) { }", &error);
 
     BOOST_CHECK_EQUAL(shaders.size(), 0u);
     BOOST_CHECK_EQUAL(error, "expected '=' but found ';' at line 1, column 19");
@@ -220,7 +233,7 @@ BOOST_AUTO_TEST_CASE(slparser_parameter_needs_a_default_test) {
  **/
 BOOST_AUTO_TEST_CASE(slparser_unsupported_shader_types_test) {
     std::string error;
-    std::vector<v3d::render::offline::sl::ShaderPtr> shaders = parse(
+    std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parse(
         "displacement bumpy(float Km = 1;) { P = P + Km * N; }\n"
         "volume fog(float density = 1;) { Ci = Ci * density; }\n"
         "imager background(color bgcolor = 0;) { Ci = Ci + (1 - alpha) * bgcolor; }\n", &error);
@@ -241,22 +254,22 @@ BOOST_AUTO_TEST_CASE(slparser_unsupported_shader_types_test) {
  **/
 BOOST_AUTO_TEST_CASE(slparser_dot_and_cross_test) {
     // a . b * c is (a . b) * c, since the dot binds tighter
-    v3d::render::offline::sl::ExpressionPtr product = only("a . b * c");
+    v3d::render::offline::sl::syntax::ExpressionPtr product = only("a . b * c");
     BOOST_CHECK_EQUAL(binary(product), "*");
     BOOST_CHECK_EQUAL(binary(left(product)), ".");
 
     // and a * b ^ c is a * (b ^ c) for the same reason
-    v3d::render::offline::sl::ExpressionPtr cross = only("a * b ^ c");
+    v3d::render::offline::sl::syntax::ExpressionPtr cross = only("a * b ^ c");
     BOOST_CHECK_EQUAL(binary(cross), "*");
     BOOST_CHECK_EQUAL(binary(right(cross)), "^");
 
     // a '.' is not a member access: its right hand side is an expression of its own
-    v3d::render::offline::sl::ExpressionPtr dot = only("L . L");
+    v3d::render::offline::sl::syntax::ExpressionPtr dot = only("L . L");
     BOOST_CHECK_EQUAL(binary(dot), ".");
     BOOST_CHECK(right(dot)->kind == Expression::Kind::VARIABLE);
 
     // and a '^' is not an exponent: pow() is what raises a number
-    v3d::render::offline::sl::ExpressionPtr power = only("pow(a, b)");
+    v3d::render::offline::sl::syntax::ExpressionPtr power = only("pow(a, b)");
     BOOST_CHECK(power->kind == Expression::Kind::CALL);
 }
 
@@ -266,57 +279,57 @@ BOOST_AUTO_TEST_CASE(slparser_dot_and_cross_test) {
  **/
 BOOST_AUTO_TEST_CASE(slparser_precedence_test) {
     // the ternary is the loosest, so everything else is inside its arms
-    v3d::render::offline::sl::ExpressionPtr ternary = only("a || b ? c + d : e * f");
+    v3d::render::offline::sl::syntax::ExpressionPtr ternary = only("a || b ? c + d : e * f");
     BOOST_REQUIRE(ternary->kind == Expression::Kind::TERNARY);
-    const v3d::render::offline::sl::Ternary & choice =
-        static_cast<const v3d::render::offline::sl::Ternary &>(*ternary);
+    const v3d::render::offline::sl::syntax::Ternary & choice =
+        static_cast<const v3d::render::offline::sl::syntax::Ternary &>(*ternary);
     BOOST_CHECK_EQUAL(binary(choice.condition), "||");
     BOOST_CHECK_EQUAL(binary(choice.whenTrue), "+");
     BOOST_CHECK_EQUAL(binary(choice.whenFalse), "*");
 
     // '||' is looser than '&&'
-    v3d::render::offline::sl::ExpressionPtr disjunction = only("a || b && c");
+    v3d::render::offline::sl::syntax::ExpressionPtr disjunction = only("a || b && c");
     BOOST_CHECK_EQUAL(binary(disjunction), "||");
     BOOST_CHECK_EQUAL(binary(right(disjunction)), "&&");
 
     // '&&' is looser than an equality
-    v3d::render::offline::sl::ExpressionPtr conjunction = only("a == b && c");
+    v3d::render::offline::sl::syntax::ExpressionPtr conjunction = only("a == b && c");
     BOOST_CHECK_EQUAL(binary(conjunction), "&&");
     BOOST_CHECK_EQUAL(binary(left(conjunction)), "==");
 
     // an equality is looser than a comparison
-    v3d::render::offline::sl::ExpressionPtr equality = only("a < b == c");
+    v3d::render::offline::sl::syntax::ExpressionPtr equality = only("a < b == c");
     BOOST_CHECK_EQUAL(binary(equality), "==");
     BOOST_CHECK_EQUAL(binary(left(equality)), "<");
 
     // a comparison is looser than an addition
-    v3d::render::offline::sl::ExpressionPtr comparison = only("a + b < c");
+    v3d::render::offline::sl::syntax::ExpressionPtr comparison = only("a + b < c");
     BOOST_CHECK_EQUAL(binary(comparison), "<");
     BOOST_CHECK_EQUAL(binary(left(comparison)), "+");
 
     // an addition is looser than a multiply
-    v3d::render::offline::sl::ExpressionPtr sum = only("a + b * c");
+    v3d::render::offline::sl::syntax::ExpressionPtr sum = only("a + b * c");
     BOOST_CHECK_EQUAL(binary(sum), "+");
     BOOST_CHECK_EQUAL(binary(right(sum)), "*");
 
     // a multiply is looser than a dot product
-    v3d::render::offline::sl::ExpressionPtr scaled = only("a * b . c");
+    v3d::render::offline::sl::syntax::ExpressionPtr scaled = only("a * b . c");
     BOOST_CHECK_EQUAL(binary(scaled), "*");
     BOOST_CHECK_EQUAL(binary(right(scaled)), ".");
 
     // and a dot product is looser than a unary minus
-    v3d::render::offline::sl::ExpressionPtr negated = only("-a . b");
+    v3d::render::offline::sl::syntax::ExpressionPtr negated = only("-a . b");
     BOOST_CHECK_EQUAL(binary(negated), ".");
     BOOST_CHECK(left(negated)->kind == Expression::Kind::UNARY);
 
     // the same level runs left to right
-    v3d::render::offline::sl::ExpressionPtr chain = only("a - b - c");
+    v3d::render::offline::sl::syntax::ExpressionPtr chain = only("a - b - c");
     BOOST_CHECK_EQUAL(binary(chain), "-");
     BOOST_CHECK_EQUAL(binary(left(chain)), "-");
     BOOST_CHECK(right(chain)->kind == Expression::Kind::VARIABLE);
 
     // and parentheses beat all of it
-    v3d::render::offline::sl::ExpressionPtr grouped = only("(a + b) * c");
+    v3d::render::offline::sl::syntax::ExpressionPtr grouped = only("(a + b) * c");
     BOOST_CHECK_EQUAL(binary(grouped), "*");
     BOOST_CHECK_EQUAL(binary(left(grouped)), "+");
 }
@@ -326,26 +339,26 @@ BOOST_AUTO_TEST_CASE(slparser_precedence_test) {
  * Sixteen elements are a matrix; whether the count matches the type is the compiler's answer.
  **/
 BOOST_AUTO_TEST_CASE(slparser_cast_and_tuple_test) {
-    v3d::render::offline::sl::ExpressionPtr cast = only("point \"world\" (0, 1, 2)");
+    v3d::render::offline::sl::syntax::ExpressionPtr cast = only("point \"world\" (0, 1, 2)");
     BOOST_REQUIRE(cast->kind == Expression::Kind::CAST);
-    const v3d::render::offline::sl::Cast & transform =
-        static_cast<const v3d::render::offline::sl::Cast &>(*cast);
+    const v3d::render::offline::sl::syntax::Cast & transform =
+        static_cast<const v3d::render::offline::sl::syntax::Cast &>(*cast);
     BOOST_CHECK(transform.type == v3d::render::offline::sl::Type::POINT);
     BOOST_CHECK_EQUAL(transform.space, "world");
     BOOST_REQUIRE(transform.operand->kind == Expression::Kind::TUPLE);
-    BOOST_CHECK_EQUAL(static_cast<const v3d::render::offline::sl::Tuple &>(*transform.operand).elements.size(), 3u);
+    BOOST_CHECK_EQUAL(static_cast<const v3d::render::offline::sl::syntax::Tuple &>(*transform.operand).elements.size(), 3u);
 
     // no space named is the shader's current one
-    v3d::render::offline::sl::ExpressionPtr plain = only("color (1, 0, 0)");
+    v3d::render::offline::sl::syntax::ExpressionPtr plain = only("color (1, 0, 0)");
     BOOST_REQUIRE(plain->kind == Expression::Kind::CAST);
-    BOOST_CHECK_EQUAL(static_cast<const v3d::render::offline::sl::Cast &>(*plain).space, "");
+    BOOST_CHECK_EQUAL(static_cast<const v3d::render::offline::sl::syntax::Cast &>(*plain).space, "");
 
     // one element in parentheses is that element, not a tuple of one
-    v3d::render::offline::sl::ExpressionPtr single = only("(a)");
+    v3d::render::offline::sl::syntax::ExpressionPtr single = only("(a)");
     BOOST_CHECK(single->kind == Expression::Kind::VARIABLE);
 
     // a cast binds like a unary, so what follows it is outside
-    v3d::render::offline::sl::ExpressionPtr outside = only("float a + b");
+    v3d::render::offline::sl::syntax::ExpressionPtr outside = only("float a + b");
     BOOST_CHECK_EQUAL(binary(outside), "+");
     BOOST_CHECK(left(outside)->kind == Expression::Kind::CAST);
 }
@@ -356,7 +369,7 @@ BOOST_AUTO_TEST_CASE(slparser_cast_and_tuple_test) {
  **/
 BOOST_AUTO_TEST_CASE(slparser_statements_test) {
     std::string error;
-    std::vector<v3d::render::offline::sl::ShaderPtr> shaders = parse(
+    std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parse(
         "surface s() {\n"
         "    float a = 0, b;\n"
         "    uniform float c = 1;\n"
@@ -370,12 +383,12 @@ BOOST_AUTO_TEST_CASE(slparser_statements_test) {
 
     BOOST_CHECK_EQUAL(error, "");
     BOOST_REQUIRE_EQUAL(shaders.size(), 1u);
-    const std::vector<v3d::render::offline::sl::StatementPtr> & body = shaders[0]->body->statements;
+    const std::vector<v3d::render::offline::sl::syntax::StatementPtr> & body = shaders[0]->body->statements;
     BOOST_REQUIRE_EQUAL(body.size(), 8u);
 
     BOOST_REQUIRE(body[0]->kind == Statement::Kind::DECLARATION);
-    const v3d::render::offline::sl::Declaration & declaration =
-        static_cast<const v3d::render::offline::sl::Declaration &>(*body[0]);
+    const v3d::render::offline::sl::syntax::Declaration & declaration =
+        static_cast<const v3d::render::offline::sl::syntax::Declaration &>(*body[0]);
     BOOST_REQUIRE_EQUAL(declaration.declarators.size(), 2u);
     BOOST_CHECK_EQUAL(declaration.declarators[0].name, "a");
     BOOST_REQUIRE(declaration.declarators[0].initialiser);
@@ -383,17 +396,17 @@ BOOST_AUTO_TEST_CASE(slparser_statements_test) {
     BOOST_CHECK(!declaration.declarators[1].initialiser);
 
     BOOST_REQUIRE(body[1]->kind == Statement::Kind::DECLARATION);
-    BOOST_CHECK(static_cast<const v3d::render::offline::sl::Declaration &>(*body[1]).storage ==
+    BOOST_CHECK(static_cast<const v3d::render::offline::sl::syntax::Declaration &>(*body[1]).storage ==
         v3d::render::offline::sl::Storage::UNIFORM);
 
     BOOST_REQUIRE(body[2]->kind == Statement::Kind::ASSIGNMENT);
-    BOOST_CHECK_EQUAL(static_cast<const v3d::render::offline::sl::Assignment &>(*body[2]).op, "+=");
+    BOOST_CHECK_EQUAL(static_cast<const v3d::render::offline::sl::syntax::Assignment &>(*body[2]).op, "+=");
 
     BOOST_REQUIRE(body[3]->kind == Statement::Kind::CONDITIONAL);
-    BOOST_CHECK(static_cast<const v3d::render::offline::sl::Conditional &>(*body[3]).whenFalse);
+    BOOST_CHECK(static_cast<const v3d::render::offline::sl::syntax::Conditional &>(*body[3]).whenFalse);
 
     BOOST_REQUIRE(body[4]->kind == Statement::Kind::FOR);
-    const v3d::render::offline::sl::For & loop = static_cast<const v3d::render::offline::sl::For &>(*body[4]);
+    const v3d::render::offline::sl::syntax::For & loop = static_cast<const v3d::render::offline::sl::syntax::For &>(*body[4]);
     BOOST_CHECK(loop.initialiser);
     BOOST_CHECK(loop.condition);
     BOOST_CHECK(loop.step);
@@ -409,17 +422,17 @@ BOOST_AUTO_TEST_CASE(slparser_statements_test) {
  **/
 BOOST_AUTO_TEST_CASE(slparser_dangling_else_test) {
     std::string error;
-    std::vector<v3d::render::offline::sl::ShaderPtr> shaders = parse(
+    std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parse(
         "surface s() { if (a) if (b) c = 1; else c = 2; }", &error);
 
     BOOST_CHECK_EQUAL(error, "");
     BOOST_REQUIRE_EQUAL(shaders.size(), 1u);
-    const v3d::render::offline::sl::Conditional & outer =
-        static_cast<const v3d::render::offline::sl::Conditional &>(*shaders[0]->body->statements[0]);
+    const v3d::render::offline::sl::syntax::Conditional & outer =
+        static_cast<const v3d::render::offline::sl::syntax::Conditional &>(*shaders[0]->body->statements[0]);
     // the else belongs to the inner if, so the outer one has none
     BOOST_CHECK(!outer.whenFalse);
     BOOST_REQUIRE(outer.whenTrue->kind == Statement::Kind::CONDITIONAL);
-    BOOST_CHECK(static_cast<const v3d::render::offline::sl::Conditional &>(*outer.whenTrue).whenFalse);
+    BOOST_CHECK(static_cast<const v3d::render::offline::sl::syntax::Conditional &>(*outer.whenTrue).whenFalse);
 }
 
 /**
@@ -428,15 +441,15 @@ BOOST_AUTO_TEST_CASE(slparser_dangling_else_test) {
  **/
 BOOST_AUTO_TEST_CASE(slparser_lighting_constructs_test) {
     std::string error;
-    std::vector<v3d::render::offline::sl::ShaderPtr> shaders = parse(
+    std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parse(
         "surface s() { illuminance(P) { Ci = Ci + Cl; } }", &error);
 
     BOOST_CHECK_EQUAL(error, "");
     BOOST_REQUIRE_EQUAL(shaders.size(), 1u);
     BOOST_REQUIRE(shaders[0]->body->statements[0]->kind == Statement::Kind::LIGHTING);
-    const v3d::render::offline::sl::Lighting & loop =
-        static_cast<const v3d::render::offline::sl::Lighting &>(*shaders[0]->body->statements[0]);
-    BOOST_CHECK(loop.construct == v3d::render::offline::sl::Lighting::Construct::ILLUMINANCE);
+    const v3d::render::offline::sl::syntax::Lighting & loop =
+        static_cast<const v3d::render::offline::sl::syntax::Lighting &>(*shaders[0]->body->statements[0]);
+    BOOST_CHECK(loop.construct == v3d::render::offline::sl::syntax::Lighting::Construct::ILLUMINANCE);
     BOOST_CHECK_EQUAL(loop.arguments.size(), 1u);
     BOOST_REQUIRE(loop.body);
     BOOST_CHECK(loop.body->kind == Statement::Kind::BLOCK);
@@ -449,7 +462,7 @@ BOOST_AUTO_TEST_CASE(slparser_lighting_constructs_test) {
  **/
 BOOST_AUTO_TEST_CASE(slparser_function_test) {
     std::string error;
-    std::vector<v3d::render::offline::sl::ShaderPtr> shaders = parse(
+    std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parse(
         "surface s(float Ka = 1;) {\n"
         "    float sqr(float x) { return x * x; }\n"
         "    Ci = sqr(Ka);\n"
@@ -469,7 +482,7 @@ BOOST_AUTO_TEST_CASE(slparser_function_test) {
 
 BOOST_AUTO_TEST_CASE(slparser_nested_function_rejected_test) {
     std::string error;
-    std::vector<v3d::render::offline::sl::ShaderPtr> shaders = parse(
+    std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parse(
         "surface s() { if (a) { float sqr(float x) { return x; } } }", &error);
 
     BOOST_CHECK_EQUAL(shaders.size(), 0u);
@@ -482,7 +495,7 @@ BOOST_AUTO_TEST_CASE(slparser_nested_function_rejected_test) {
  **/
 BOOST_AUTO_TEST_CASE(slparser_several_shaders_test) {
     std::string error;
-    std::vector<v3d::render::offline::sl::ShaderPtr> shaders =
+    std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders =
         parse(std::string(CONSTANT) + MATTE + AMBIENTLIGHT, &error);
 
     BOOST_CHECK_EQUAL(error, "");
@@ -494,7 +507,7 @@ BOOST_AUTO_TEST_CASE(slparser_several_shaders_test) {
 
 BOOST_AUTO_TEST_CASE(slparser_empty_source_test) {
     std::string error;
-    std::vector<v3d::render::offline::sl::ShaderPtr> shaders = parse("  // nothing but a comment\n", &error);
+    std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parse("  // nothing but a comment\n", &error);
 
     BOOST_CHECK_EQUAL(error, "");
     BOOST_CHECK_EQUAL(shaders.size(), 0u);
@@ -506,7 +519,7 @@ BOOST_AUTO_TEST_CASE(slparser_empty_source_test) {
  **/
 BOOST_AUTO_TEST_CASE(slparser_error_position_test) {
     std::string error;
-    std::vector<v3d::render::offline::sl::ShaderPtr> shaders = parse(
+    std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parse(
         "surface good() { Ci = Cs; }\n"
         "surface bad() {\n"
         "    Ci = Cs\n"
@@ -544,7 +557,7 @@ BOOST_AUTO_TEST_CASE(slparser_not_a_shader_test) {
  **/
 BOOST_AUTO_TEST_CASE(slparser_reports_a_lexer_error_test) {
     std::string error;
-    std::vector<v3d::render::offline::sl::ShaderPtr> shaders =
+    std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders =
         parse("#include \"common.h\"\nsurface s() { }", &error);
 
     BOOST_CHECK_EQUAL(shaders.size(), 0u);

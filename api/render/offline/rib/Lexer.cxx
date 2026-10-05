@@ -37,49 +37,6 @@ std::string position(unsigned int line, unsigned int column) {
 
 };  // namespace
 
-Token::Token() {
-}
-
-Token::Token(Kind kind, unsigned int line, unsigned int column) :
-    kind_(kind),
-    line_(line),
-    column_(column) {
-}
-
-Token::Token(Kind kind, const std::string & text, unsigned int line, unsigned int column) :
-    kind_(kind),
-    text_(text),
-    line_(line),
-    column_(column) {
-}
-
-Token::Token(float value, unsigned int line, unsigned int column) :
-    kind_(Kind::NUMBER),
-    value_(value),
-    line_(line),
-    column_(column) {
-}
-
-Token::Kind Token::kind() const {
-    return kind_;
-}
-
-const std::string & Token::text() const {
-    return text_;
-}
-
-float Token::value() const {
-    return value_;
-}
-
-unsigned int Token::line() const {
-    return line_;
-}
-
-unsigned int Token::column() const {
-    return column_;
-}
-
 Lexer::Lexer(std::istream & stream) : stream_(stream) {
     char header[2] = { 0, 0 };
     stream_.read(header, 2);

@@ -9,6 +9,7 @@
 
 #include <api/ecs/component/Emitter.h>
 #include <api/type/effect/Emitter.h>
+#include <api/type/effect/Particle.h>
 
 #include <algorithm>
 #include <cmath>

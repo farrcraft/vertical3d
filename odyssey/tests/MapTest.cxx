@@ -4,6 +4,8 @@
  **/
 
 #include <api/grid/Pathfinding.h>
+#include <api/grid/TileCoord.h>
+#include <api/grid/TileGrid.h>
 #include <odyssey/tile/Map.h>
 
 #include <string>

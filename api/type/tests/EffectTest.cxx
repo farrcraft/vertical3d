@@ -4,6 +4,8 @@
  **/
 
 #include <api/type/effect/Emitter.h>
+#include <api/type/effect/Particle.h>
+#include <api/type/effect/State.h>
 
 #include <cmath>
 #include <cstddef>

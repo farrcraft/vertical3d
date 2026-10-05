@@ -8,6 +8,7 @@
 #include <api/asset/Type.h>
 #include <api/asset/kind/Model.h>
 #include <api/image/Factory.h>
+#include <api/type/animation/Channel.h>
 #include <api/type/animation/Clip.h>
 
 #include <algorithm>

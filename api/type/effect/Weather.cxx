@@ -5,6 +5,8 @@
 
 #include "Weather.h"
 
+#include "Particle.h"
+
 #include <algorithm>
 #include <cmath>
 #include <cstddef>

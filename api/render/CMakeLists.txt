@@ -18,9 +18,11 @@ v3d_add_api_library(render
 	"realtime/MeshRegistry.h" "realtime/MeshRegistry.cpp"
 	"realtime/Meshes.h" "realtime/Meshes.cpp"
 	"realtime/Poses.h" "realtime/Poses.cpp"
-	"realtime/LitSettings.h" "realtime/LitSettings.cpp"
+	"realtime/LitSettings.h"
+	"realtime/SceneUniforms.h" "realtime/SceneUniforms.cpp"
 	"realtime/Shadow.h" "realtime/Shadow.cpp"
 	"realtime/Grade.h" "realtime/Grade.cpp"
+	"realtime/SortKey.h" "realtime/SortKey.cpp"
 	"realtime/DrawItem.h" "realtime/DrawItem.cpp"
 	"realtime/Pass.h" "realtime/Pass.cpp"
 	"realtime/vulkan/device/Result.h" "realtime/vulkan/device/Result.cxx" 
@@ -35,8 +37,12 @@ v3d_add_api_library(render
 	"realtime/vulkan/frame/Timings.h" "realtime/vulkan/frame/Timings.cxx"
 	"realtime/vulkan/frame/Retirement.h" "realtime/vulkan/frame/Retirement.cxx"
 	"realtime/vulkan/frame/Recorder.h" "realtime/vulkan/frame/Recorder.cxx"
+	"realtime/vulkan/pipeline/Pipeline.h" "realtime/vulkan/pipeline/Pipeline.cxx"
+	"realtime/vulkan/pipeline/Material.h" "realtime/vulkan/pipeline/Material.cxx"
+	"realtime/vulkan/pipeline/Texture.h"
 	"realtime/vulkan/pipeline/Resources.h" "realtime/vulkan/pipeline/Resources.cxx"
 	"realtime/vulkan/memory/Memory.h" "realtime/vulkan/memory/Memory.cxx"
+	"realtime/vulkan/memory/Allocation.h" "realtime/vulkan/memory/Allocation.cxx"
 	"realtime/vulkan/memory/Allocator.h" "realtime/vulkan/memory/Allocator.cxx"
 	"realtime/vulkan/memory/VmaImpl.cxx"
 	"realtime/vulkan/memory/Buffer.h" "realtime/vulkan/memory/Buffer.cxx"
@@ -90,8 +96,8 @@ v3d_add_shader(v3dlib_render "shaders/grade.frag")
 # Context3D.h and every vulkan/ header carry VkDevice and its neighbours, and Window.h
 # carries SDL_Window.
 target_link_libraries(v3dlib_render PUBLIC v3dlib_log v3dlib_asset v3dlib_ecs v3dlib_type Vulkan::Vulkan SDL3::SDL3 glm::glm EnTT::EnTT)
-# PRIVATE: the allocator is an implementation detail of memory::Allocator, and Allocator.h
-# declares the two handles it names rather than including the header that defines them
+# PRIVATE: the allocator is an implementation detail of memory::Allocator, and Allocator.h and
+# Allocation.h declare the handles they name rather than including the header that defines them
 target_link_libraries(v3dlib_render PRIVATE GPUOpen::VulkanMemoryAllocator)
 
 # one header that is both declaration and implementation, compiled in exactly one translation

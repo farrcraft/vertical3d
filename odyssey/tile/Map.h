@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/asset/kind/Json.h>
+#include <api/grid/TileCoord.h>
 #include <api/grid/TileGrid.h>
 #include <api/log/Logger.h>
 

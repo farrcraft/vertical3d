@@ -5,6 +5,7 @@
 
 #include <api/grid/LineOfSight.h>
 #include <api/grid/Pathfinding.h>
+#include <api/grid/TileCoord.h>
 #include <api/grid/TileGrid.h>
 
 #include <algorithm>

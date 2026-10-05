@@ -5,6 +5,9 @@
 
 #include "Builtins.h"
 
+#include <api/render/offline/sl/syntax/Function.h>
+#include <api/render/offline/sl/syntax/Shader.h>
+
 #include <algorithm>
 #include <sstream>
 #include <string>
@@ -209,18 +212,18 @@ surface library() {
 }
 )";
 
-std::vector<Function> read() {
+std::vector<syntax::Function> read() {
     std::istringstream stream(SOURCE);
     Parser parser(stream);
-    const std::vector<ShaderPtr> shaders = parser.parse();
+    const std::vector<syntax::ShaderPtr> shaders = parser.parse();
     // the wrapper is a shader only because a function is parsed inside one; nothing but its
     // function list is kept
-    return shaders.size() == 1 ? shaders[0]->functions : std::vector<Function>();
+    return shaders.size() == 1 ? shaders[0]->functions : std::vector<syntax::Function>();
 }
 
 };  // namespace
 
-std::vector<Function> sources() {
+std::vector<syntax::Function> sources() {
     return read();
 }
 

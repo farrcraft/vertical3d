@@ -4,6 +4,7 @@
  **/
 
 #include <api/audio/Engine.h>
+#include <api/audio/Play.h>
 
 #include <string>
 #include <vector>

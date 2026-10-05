@@ -10,6 +10,8 @@
 #include <sstream>
 #include <stdexcept>
 
+#include "Allocator.h"
+
 namespace v3d::render::realtime::vulkan::memory {
 
 /**

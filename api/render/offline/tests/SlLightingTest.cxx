@@ -8,6 +8,7 @@
 #include <api/render/offline/sl/Parser.h>
 #include <api/render/offline/sl/runtime/Machine.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
+#include <api/render/offline/sl/syntax/Shader.h>
 
 #include <sstream>
 #include <string>
@@ -30,7 +31,7 @@ typedef v3d::render::offline::sl::runtime::Opcode Opcode;
 bool build(const std::string & source, Program* program, std::string* error) {
     std::istringstream stream(source);
     v3d::render::offline::sl::Parser parser(stream);
-    std::vector<v3d::render::offline::sl::ShaderPtr> shaders = parser.parse();
+    std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parser.parse();
     if (shaders.size() != 1) {
         *error = parser.error();
         return false;

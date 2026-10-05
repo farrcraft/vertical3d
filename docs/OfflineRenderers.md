@@ -153,7 +153,7 @@ implements it as `<renderer>::RIBHandler`. RIB is also what the editor exports t
 
 Shading is a language rather than a set of built-in models, per
 [ADR-0026](adr/0026-shading-is-a-language-over-a-batch.md), and it lives in
-`api/render/offline` beside the RIB one: `sl::Lexer`, `sl::Syntax` and `sl::Parser` read a shader,
+`api/render/offline` beside the RIB one: `sl::Lexer`, the `sl::syntax` nodes and `sl::Parser` read a shader,
 `sl::Types` and `sl::Compiler` check it, `sl::Emitter` flattens it into a `sl::runtime::Program`,
 and `sl::runtime::Machine` runs that over a batch. `sl::ShaderLibrary` maps a name to a program
 and `sl::Instance` binds a scene's parameters onto one. What follows is where the seams are

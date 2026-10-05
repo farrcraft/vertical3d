@@ -6,7 +6,9 @@
 #pragma once
 
 #include <api/render/offline/rib/Handler.h>
+#include <api/render/offline/sl/Placed.h>
 #include <api/render/offline/sl/ShaderLibrary.h>
+#include <api/render/offline/trace/Primitive.h>
 
 #include <string>
 #include <vector>

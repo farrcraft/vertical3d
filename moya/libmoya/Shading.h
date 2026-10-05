@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/render/offline/sl/Instance.h>
+#include <api/render/offline/sl/Placed.h>
 
 #include <vector>
 

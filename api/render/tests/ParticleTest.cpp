@@ -14,6 +14,7 @@
 #include <api/type/animation/SpriteClip.h>
 #include <api/type/animation/Track.h>
 #include <api/type/effect/Emitter.h>
+#include <api/type/effect/Particle.h>
 
 #include <cstddef>
 #include <vector>

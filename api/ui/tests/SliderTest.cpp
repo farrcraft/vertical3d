@@ -8,6 +8,7 @@
 #include <api/ui/Arranger.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
+#include <api/ui/Length.h>
 #include <api/ui/component/Slider.h>
 #include <api/ui/input/Cursor.h>
 #include <api/ui/input/Keys.h>

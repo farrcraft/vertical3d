@@ -5,42 +5,19 @@
 
 #pragma once
 
+#include <api/render/offline/sl/syntax/Block.h>
+#include <api/render/offline/sl/syntax/Call.h>
+#include <api/render/offline/sl/syntax/Expression.h>
+#include <api/render/offline/sl/syntax/Shader.h>
+#include <api/render/offline/sl/syntax/Statement.h>
+
 #include <string>
 #include <vector>
 
-#include "Syntax.h"
+#include "Symbol.h"
+#include "Types.h"
 
 namespace v3d::render::offline::sl {
-
-/**
- * One named value a shader run holds.
- *
- * A local declared twice in nested scopes is two symbols, so this is what the machine
- * allocates a register against rather than the name. Order is globals, then the shader's
- * parameters, then every local and formal in the order they were declared.
- **/
-class Symbol final {
- public:
-    enum class Role {
-        /** A shader global: P, N, Ci and the rest, decided by the shader type. **/
-        GLOBAL,
-        /** A shader parameter, which a scene may bind. **/
-        PARAMETER,
-        /** A local, or the formal of a function defined inside the shader. **/
-        LOCAL
-    };
-
-    std::string name;
-    Type type = Type::FLOAT;
-    Storage storage = Storage::UNIFORM;
-    Role role = Role::LOCAL;
-    /** Whether a shader of this type may assign it. **/
-    bool writable = true;
-    /** Whether the storage was written down rather than inferred. **/
-    bool declared = false;
-    /** Whether a shader parameter is written back to the caller. **/
-    bool output = false;
-};
 
 /**
  * Symbols, types and the varying inference: the pass between the syntax tree and the
@@ -59,7 +36,7 @@ class Symbol final {
  **/
 class Compiler final {
  public:
-    explicit Compiler(const ShaderPtr & shader);
+    explicit Compiler(const syntax::ShaderPtr & shader);
 
     /**
      * Check and annotate. False on the first error, which error() then names with a
@@ -114,57 +91,57 @@ class Compiler final {
      * the call graph's answer rather than the parser's.
      **/
     void checkCallGraph();
-    void checkBlock(const BlockPtr & block);
-    void checkStatement(const StatementPtr & statement);
-    void checkCondition(const ExpressionPtr & condition, const char* construct);
-    void checkJump(const StatementPtr & statement);
-    void checkDeclaration(const StatementPtr & statement);
-    void checkAssignment(const StatementPtr & statement);
-    void checkLighting(const StatementPtr & statement);
-    Type checkExpression(const ExpressionPtr & expression);
-    Type checkVariable(const ExpressionPtr & expression);
-    Type checkCall(const ExpressionPtr & expression);
+    void checkBlock(const syntax::BlockPtr & block);
+    void checkStatement(const syntax::StatementPtr & statement);
+    void checkCondition(const syntax::ExpressionPtr & condition, const char* construct);
+    void checkJump(const syntax::StatementPtr & statement);
+    void checkDeclaration(const syntax::StatementPtr & statement);
+    void checkAssignment(const syntax::StatementPtr & statement);
+    void checkLighting(const syntax::StatementPtr & statement);
+    Type checkExpression(const syntax::ExpressionPtr & expression);
+    Type checkVariable(const syntax::ExpressionPtr & expression);
+    Type checkCall(const syntax::ExpressionPtr & expression);
     /**
      * Which of the shader's own functions the call names, or -1 for none of them. A shader's
      * function wins over a standard one of the same name.
      **/
-    int checkShaderCall(Call & call, const std::vector<Type> & given);
+    int checkShaderCall(syntax::Call & call, const std::vector<Type> & given);
     /**
      * The first standard signature that accepts the call, preferring one that answers the
      * type a cast around the call wants.
      **/
-    Type checkBuiltinCall(Call & call, const std::vector<Type> & given, Type wanted);
-    Type checkUnary(const ExpressionPtr & expression);
-    Type checkBinary(const ExpressionPtr & expression);
-    Type checkTernary(const ExpressionPtr & expression);
-    Type checkCast(const ExpressionPtr & expression);
+    Type checkBuiltinCall(syntax::Call & call, const std::vector<Type> & given, Type wanted);
+    Type checkUnary(const syntax::ExpressionPtr & expression);
+    Type checkBinary(const syntax::ExpressionPtr & expression);
+    Type checkTernary(const syntax::ExpressionPtr & expression);
+    Type checkCast(const syntax::ExpressionPtr & expression);
 
     /**
      * The storage pass, run over and over until nothing changes. Marking a symbol varying is
      * the only direction anything moves, so it terminates.
      **/
     void infer();
-    void inferBlock(const BlockPtr & block, bool varyingContext);
-    void inferStatement(const StatementPtr & statement, bool varyingContext);
-    void inferDeclaration(const StatementPtr & statement, bool varyingContext);
-    void inferAssignment(const StatementPtr & statement, bool varyingContext);
+    void inferBlock(const syntax::BlockPtr & block, bool varyingContext);
+    void inferStatement(const syntax::StatementPtr & statement, bool varyingContext);
+    void inferDeclaration(const syntax::StatementPtr & statement, bool varyingContext);
+    void inferAssignment(const syntax::StatementPtr & statement, bool varyingContext);
     /** A call that writes its arguments, which is an assignment to each of them. **/
-    void inferOutputs(const ExpressionPtr & expression, bool varyingContext);
-    void inferJump(const StatementPtr & statement, bool varyingContext);
+    void inferOutputs(const syntax::ExpressionPtr & expression, bool varyingContext);
+    void inferJump(const syntax::StatementPtr & statement, bool varyingContext);
     /** Whether a break or a continue leaves this loop under a varying condition. **/
-    bool escapes(const StatementPtr & loop) const;
-    void mark(const Statement* loop);
-    Storage inferExpression(const ExpressionPtr & expression);
-    Storage inferCall(const ExpressionPtr & expression);
+    bool escapes(const syntax::StatementPtr & loop) const;
+    void mark(const syntax::Statement* loop);
+    Storage inferExpression(const syntax::ExpressionPtr & expression);
+    Storage inferCall(const syntax::ExpressionPtr & expression);
     /**
      * Mark a symbol varying, recording that something moved so the fixed point runs again.
      * A symbol that was declared uniform is left alone and the shader is faulted instead.
      **/
-    void spread(int symbol, const ExpressionPtr & from);
+    void spread(int symbol, const syntax::ExpressionPtr & from);
 
     Failure fail(const std::string & message, unsigned int line, unsigned int column);
 
-    ShaderPtr shader_;
+    syntax::ShaderPtr shader_;
     std::vector<Symbol> symbols_;
     std::vector<Binding> scope_;
     /**
@@ -180,13 +157,13 @@ class Compiler final {
      * The loops being walked, innermost last, so that a break or a continue can name the one
      * it leaves.
      **/
-    std::vector<const Statement*> enclosing_;
+    std::vector<const syntax::Statement*> enclosing_;
     /**
      * The loops a break or a continue escapes under a varying condition. Everything in such a
      * loop's body is varying whatever reached it, because the statements after the escape run
      * for some lanes and not for others.
      **/
-    std::vector<const Statement*> escaping_;
+    std::vector<const syntax::Statement*> escaping_;
     /**
      * The globals a surface shader may read only inside an illuminance body - L and Cl,
      * which a light sets and which mean nothing outside one.

@@ -7,6 +7,7 @@
 #include <api/log/Logger.h>
 #include <api/render/offline/SearchPath.h>
 #include <api/render/offline/Texture.h>
+#include <api/render/offline/Textures.h>
 
 #include <string>
 #include <vector>

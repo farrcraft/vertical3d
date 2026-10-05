@@ -12,10 +12,12 @@
 #include <string>
 #include <vector>
 
+#include "Declaration.h"
 #include "Declarations.h"
 #include "Handler.h"
 #include "Lexer.h"
 #include "Parameters.h"
+#include "Token.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/mat4x4.hpp>

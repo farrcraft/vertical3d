@@ -5,6 +5,8 @@
 
 #include "Emitter.h"
 
+#include "Particle.h"
+
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -44,15 +46,6 @@ glm::vec3 birthplace(const Emitter& emitter, Random* random) {
 }
 
 };  // namespace
-
-float Particle::life() const noexcept {
-    return lifetime > 0.0f ? std::clamp(age / lifetime, 0.0f, 1.0f) : 1.0f;
-}
-
-State::State(uint64_t seed) noexcept :
-    owed(0.0f),
-    random(seed) {
-}
 
 void travel(const Emitter& emitter, State* state, float seconds, const glm::vec3& wind) {
     std::vector<Particle>& particles = state->particles;

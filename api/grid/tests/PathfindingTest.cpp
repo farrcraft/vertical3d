@@ -3,7 +3,11 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/grid/DistanceField.h>
 #include <api/grid/Pathfinding.h>
+#include <api/grid/ReachableTile.h>
+#include <api/grid/TileCoord.h>
+#include <api/grid/TileFilter.h>
 #include <api/grid/TileGrid.h>
 
 #include <algorithm>

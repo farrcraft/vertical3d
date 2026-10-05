@@ -7,8 +7,8 @@
 
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/memory/Image.h>
-#include <api/render/realtime/vulkan/pipeline/Resources.h>
 #include <api/render/realtime/vulkan/pipeline/Sampler.h>
+#include <api/render/realtime/vulkan/pipeline/Texture.h>
 
 #include <vulkan/vulkan.h>
 

@@ -6,8 +6,11 @@
 #include "Renderer.h"
 
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
+#include <api/render/realtime/vulkan/pipeline/Material.h>
+#include <api/render/realtime/vulkan/pipeline/Resources.h>
 #include <voxel/src/engine/Camera.h>
 #include <voxel/src/engine/ChunkMeshBuilder.h>
+#include <voxel/src/engine/ChunkVertex.h>
 #include <voxel/src/engine/SceneUniforms.h>
 #include <voxel/src/game/Player.h>
 #include <voxel/src/voxel/ChunkCulling.h>

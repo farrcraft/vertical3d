@@ -17,6 +17,7 @@
 #include <api/render/realtime/Particles.h>
 #include <api/render/realtime/Meshes.h>
 #include <api/render/realtime/Pass.h>
+#include <api/render/realtime/SceneUniforms.h>
 #include <api/render/realtime/Shadow.h>
 #include <api/render/realtime/WorldCanvas.h>
 #include <api/render/realtime/component/Mesh.h>

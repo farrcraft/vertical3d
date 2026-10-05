@@ -3,6 +3,8 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/config/SpriteRegion.h>
+#include <api/config/SpriteSheet.h>
 #include <api/config/SpriteSheets.h>
 #include <api/asset/Writer.h>
 

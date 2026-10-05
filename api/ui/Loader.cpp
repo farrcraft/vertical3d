@@ -44,6 +44,7 @@
 
 #include "Component.h"
 #include "Container.h"
+#include "Length.h"
 
 #include <boost/json/value_to.hpp>
 #include <boost/make_shared.hpp>

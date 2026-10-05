@@ -10,21 +10,8 @@
 #include <api/render/realtime/vulkan/memory/Uploader.h>
 
 #include <boost/shared_ptr.hpp>
-#include <glm/vec2.hpp>
-#include <glm/vec3.hpp>
 
 class MeshCache;
-
-/**
- * One vertex of a chunk mesh, in the layout shaders/voxel.vert declares.
- *
- * The position is chunk local, so a chunk's vertices never change when it moves and the
- * origin the pipeline adds back is a push constant rather than a rebuild.
- **/
-struct ChunkVertex {
-    glm::vec3 position;
-    glm::vec2 info;  /**< the face bit, and the block type it was cut from **/
-};
 
 /**
  * Turns a built mesh cache into device local geometry.

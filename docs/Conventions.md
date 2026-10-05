@@ -39,6 +39,14 @@ where this document does not say otherwise.
 - Third-party includes in angle brackets — boost, glm — go last, below the project's own. They
   are exempt from the rule above because their names do not end in `.h`, so the linter files
   them with the project's headers rather than with the system's.
+- **One class per header**, named after it, with its out-of-line definitions in the source of
+  the same name. A small struct beside the class that uses it is still a second class: an
+  `Allocation` gets `Allocation.h` rather than a place in `Allocator.h`. A class nested in its
+  owner stays there, and so does a helper in a source file's anonymous namespace, since neither
+  is visible to anyone else. A typedef or enum goes with the class that defines its meaning.
+  When the split leaves a family of headers that only make sense together — an AST's node
+  types, an app's ECS components — they go in a subdirectory of their own, under the rule
+  below.
 - **A directory splits when its files stop sharing a reader, not when it passes a file count.**
   `api/dag` is eighteen files and 493 lines and wants nothing done to it, because they are one
   concept; `api/ui` had 36 files above its subdirectories doing five different jobs, and they

@@ -19,6 +19,7 @@ add_executable("vertical3d"
 	"src/command/CommandDirectory.h" "src/command/CommandDirectory.cxx"
 	"src/command/CommandStack.h" "src/command/CommandStack.cxx"
 	"src/command/CreateCommand.h" "src/command/CreateCommand.cxx"
+	"src/command/Placement.h" "src/command/Placement.cxx"
 	"src/command/TransformCommand.h" "src/command/TransformCommand.cxx"
 
 	"src/tool/Tool.h"

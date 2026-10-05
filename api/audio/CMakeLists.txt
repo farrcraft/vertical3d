@@ -1,4 +1,4 @@
-v3d_add_api_library(audio "AudioClip.h" "AudioClip.cpp" "Engine.h" "Engine.cpp")
+v3d_add_api_library(audio "AudioClip.h" "AudioClip.cpp" "Engine.h" "Engine.cpp" "Play.h" "Play.cpp")
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
 # The mixer is PUBLIC for the same reason - AudioClip and Engine name MIX_ types in their

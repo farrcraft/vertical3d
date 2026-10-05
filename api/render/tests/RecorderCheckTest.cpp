@@ -5,7 +5,7 @@
 
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/vulkan/frame/Recorder.h>
-#include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/vulkan/pipeline/Pipeline.h>
 
 #include <stdexcept>
 

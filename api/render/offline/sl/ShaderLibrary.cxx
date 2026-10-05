@@ -6,6 +6,7 @@
 #include "ShaderLibrary.h"
 
 #include <api/render/offline/SearchPath.h>
+#include <api/render/offline/sl/syntax/Shader.h>
 
 #include <fstream>
 #include <sstream>
@@ -162,13 +163,13 @@ imager background(color background = 0) {
  * file: RI identifies a shader by the name in its source, and a file holding exactly one
  * is unambiguous whatever it is called.
  **/
-ShaderPtr find(const std::vector<ShaderPtr> & shaders, const std::string & name) {
-    for (const ShaderPtr & shader : shaders) {
+syntax::ShaderPtr find(const std::vector<syntax::ShaderPtr> & shaders, const std::string & name) {
+    for (const syntax::ShaderPtr & shader : shaders) {
         if (shader->name == name) {
             return shader;
         }
     }
-    return shaders.size() == 1 ? shaders[0] : ShaderPtr();
+    return shaders.size() == 1 ? shaders[0] : syntax::ShaderPtr();
 }
 
 };  // namespace
@@ -203,7 +204,7 @@ ProgramPtr ShaderLibrary::compile(const std::string & name, const std::string & 
     const std::string & where) {
     std::istringstream stream(source);
     Parser parser(stream);
-    const ShaderPtr shader = find(parser.parse(), name);
+    const syntax::ShaderPtr shader = find(parser.parse(), name);
     if (!shader) {
         // a source that would not parse and a source that simply holds no shader of that
         // name are different things, and a message that reads as the other one wastes time

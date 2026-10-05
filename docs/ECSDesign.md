@@ -18,8 +18,8 @@ is: a registry pointer and a `virtual bool simulate(float step)`.
 
 `api/ecs/component/` holds the components more than one app could want, and there are seven:
 `Color3`, `Emitter`, `Playback`, `Position1D`, `Position2D`, `PositionFixed2D` and `Transform`. An app defines the rest
-beside its own code — pong has `Score`, `Travel`, `Offset` and `PaddleSize`; odyssey has `Size`
-and `Direction`.
+beside its own code — pong has `Score`, `Travel`, `Offset`, `PaddleSize`, `Size` and `Direction`
+in [pong/src/component/](../pong/src/component/); odyssey has `engine::Path`.
 
 `Transform` is where a thing stands in a 3D world: a position, a quaternion and a scale, with
 `aboutY()` for a world that turns about one axis

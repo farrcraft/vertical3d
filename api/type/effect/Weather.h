@@ -6,6 +6,7 @@
 #pragma once
 
 #include "Emitter.h"
+#include "State.h"
 
 #include <glm/vec3.hpp>
 

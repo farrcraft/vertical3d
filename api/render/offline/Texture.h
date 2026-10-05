@@ -6,13 +6,9 @@
 #pragma once
 
 #include <api/image/Image.h>
-#include <api/log/Logger.h>
 
-#include <map>
-#include <string>
 #include <vector>
 
-#include <boost/shared_ptr.hpp>
 #include <glm/vec3.hpp>
 
 namespace v3d::render::offline {
@@ -40,32 +36,6 @@ class Texture final {
     unsigned int width_ = 0;
     unsigned int height_ = 0;
     std::vector<glm::vec3> texels_;
-};
-
-/**
- * The textures a frame's shaders name, each read once.
- *
- * There is no `txmake` here: the image a scene names is the texture, so `MakeTexture` has
- * nothing to make. A name that does not read is remembered as missing, so a scene naming it
- * on a thousand grids tries once.
- **/
-class Textures final {
- public:
-    explicit Textures(const boost::shared_ptr<v3d::log::Logger> & logger);
-
-    /**
-     * Where a relative name is looked for, as `Option "searchpath" "texture"` gives it. A
-     * name found on none of them is tried as it is, against the working directory.
-     **/
-    void searchpath(const std::string & path);
-
-    /** The texture of that name, or null when it cannot be read. **/
-    const Texture* find(const std::string & name);
-
- private:
-    boost::shared_ptr<v3d::log::Logger> logger_;
-    std::vector<std::string> directories_;
-    std::map<std::string, boost::shared_ptr<Texture> > textures_;
 };
 
 };  // namespace v3d::render::offline

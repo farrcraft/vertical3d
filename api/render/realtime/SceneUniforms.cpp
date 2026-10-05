@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include "LitSettings.h"
+#include "SceneUniforms.h"
 
 #include <cstddef>
 

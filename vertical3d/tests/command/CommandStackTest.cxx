@@ -5,6 +5,7 @@
 
 #include <vertical3d/src/command/CommandStack.h>
 #include <vertical3d/src/command/CreateCommand.h>
+#include <vertical3d/src/command/Placement.h>
 #include <vertical3d/src/command/TransformCommand.h>
 #include <vertical3d/src/scene/CreatePoly.h>
 #include <vertical3d/src/scene/Scene.h>

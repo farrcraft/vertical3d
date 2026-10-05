@@ -5,12 +5,20 @@
 
 #pragma once
 
+#include <api/render/offline/sl/syntax/Block.h>
+#include <api/render/offline/sl/syntax/Expression.h>
+#include <api/render/offline/sl/syntax/Lighting.h>
+#include <api/render/offline/sl/syntax/Parameter.h>
+#include <api/render/offline/sl/syntax/Shader.h>
+#include <api/render/offline/sl/syntax/Statement.h>
+
 #include <iosfwd>
 #include <string>
 #include <vector>
 
 #include "Lexer.h"
-#include "Syntax.h"
+#include "Token.h"
+#include "Types.h"
 
 namespace v3d::render::offline::sl {
 
@@ -39,7 +47,7 @@ class Parser final {
      * Every shader the source declares, in the order it declared them. Empty on failure,
      * and empty for a source that declares none.
      **/
-    std::vector<ShaderPtr> parse();
+    std::vector<syntax::ShaderPtr> parse();
 
     /**
      * What went wrong, or empty.
@@ -81,33 +89,33 @@ class Parser final {
      **/
     Token expectKind(Token::Kind kind, const char* what);
 
-    ShaderPtr parseShader();
+    syntax::ShaderPtr parseShader();
     /**
      * A shader's parameter list, whose every parameter carries a required default, or a
      * function's formals, which carry none.
      **/
-    void parseParameters(std::vector<Parameter>* parameters, bool defaults);
+    void parseParameters(std::vector<syntax::Parameter>* parameters, bool defaults);
     bool parseType(Type* type);
     Storage parseStorage();
 
-    BlockPtr parseBlock();
-    StatementPtr parseStatement();
+    syntax::BlockPtr parseBlock();
+    syntax::StatementPtr parseStatement();
     /**
      * The statements that open with a keyword, which is all of them but an assignment and a
      * bare expression.
      **/
-    StatementPtr parseKeywordStatement(const Token & keyword);
-    StatementPtr parseConditional();
-    StatementPtr parseWhile();
-    StatementPtr parseFor();
+    syntax::StatementPtr parseKeywordStatement(const Token & keyword);
+    syntax::StatementPtr parseConditional();
+    syntax::StatementPtr parseWhile();
+    syntax::StatementPtr parseFor();
     /**
      * break, continue or return - the last with an optional value.
      **/
-    StatementPtr parseJump();
+    syntax::StatementPtr parseJump();
     /**
      * A declaration inside a body, where a function definition is not allowed and says so.
      **/
-    StatementPtr parseLocalDeclaration();
+    syntax::StatementPtr parseLocalDeclaration();
     /**
      * The rest of a declaration, from the first name onward.
      *
@@ -115,35 +123,35 @@ class Parser final {
      * told apart by the token after it, and the lexer looks one token ahead rather than
      * two.
      **/
-    StatementPtr parseDeclaration(Storage storage, Type type, const Token & first);
+    syntax::StatementPtr parseDeclaration(Storage storage, Type type, const Token & first);
     /**
      * An assignment or a bare expression, leaving the semicolon for the caller - which is
      * what lets a for loop's head reuse it.
      **/
-    StatementPtr parseSimpleStatement();
-    StatementPtr parseLighting(Lighting::Construct construct);
+    syntax::StatementPtr parseSimpleStatement();
+    syntax::StatementPtr parseLighting(syntax::Lighting::Construct construct);
 
-    ExpressionPtr parseExpression();
-    ExpressionPtr parseTernary();
-    ExpressionPtr parseLogicalOr();
-    ExpressionPtr parseLogicalAnd();
-    ExpressionPtr parseEquality();
-    ExpressionPtr parseComparison();
-    ExpressionPtr parseAdditive();
-    ExpressionPtr parseMultiplicative();
+    syntax::ExpressionPtr parseExpression();
+    syntax::ExpressionPtr parseTernary();
+    syntax::ExpressionPtr parseLogicalOr();
+    syntax::ExpressionPtr parseLogicalAnd();
+    syntax::ExpressionPtr parseEquality();
+    syntax::ExpressionPtr parseComparison();
+    syntax::ExpressionPtr parseAdditive();
+    syntax::ExpressionPtr parseMultiplicative();
     /**
      * '.' and '^' - the dot and cross products - which bind tighter than a multiply.
      **/
-    ExpressionPtr parseProduct();
-    ExpressionPtr parseUnary();
-    ExpressionPtr parsePostfix();
-    ExpressionPtr parsePrimary();
+    syntax::ExpressionPtr parseProduct();
+    syntax::ExpressionPtr parseUnary();
+    syntax::ExpressionPtr parsePostfix();
+    syntax::ExpressionPtr parsePrimary();
     /**
      * A parenthesised expression or a comma separated list: three elements are a point or
      * a colour and sixteen are a matrix, which is the compiler's check rather than this
      * one's.
      **/
-    ExpressionPtr parseParenthesised();
+    syntax::ExpressionPtr parseParenthesised();
 
     Failure fail(const std::string & message, const Token & token);
 

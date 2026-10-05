@@ -6,9 +6,10 @@
 #pragma once
 
 #include <api/render/realtime/vulkan/device/Device.h>
-#include <api/render/realtime/vulkan/memory/Allocator.h>
 
 #include <vulkan/vulkan.h>
+
+#include "Allocation.h"
 
 #include <boost/shared_ptr.hpp>
 

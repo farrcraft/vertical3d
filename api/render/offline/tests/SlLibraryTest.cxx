@@ -11,6 +11,7 @@
 #include <api/render/offline/sl/Parser.h>
 #include <api/render/offline/sl/runtime/Machine.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
+#include <api/render/offline/sl/syntax/Shader.h>
 
 #include <sstream>
 #include <string>
@@ -40,7 +41,7 @@ class Shaded final {
         const std::string source = "surface test() {\n" + body + "\n}\n";
         std::istringstream stream(source);
         v3d::render::offline::sl::Parser parser(stream);
-        std::vector<v3d::render::offline::sl::ShaderPtr> shaders = parser.parse();
+        std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parser.parse();
         BOOST_REQUIRE_MESSAGE(shaders.size() == 1, parser.error() + " in: " + body);
         v3d::render::offline::sl::Compiler compiler(shaders[0]);
         BOOST_REQUIRE_MESSAGE(compiler.compile(), compiler.error() + " in: " + body);

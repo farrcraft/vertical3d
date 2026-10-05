@@ -7,7 +7,8 @@
 
 #include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/Sampling.h>
-#include <api/render/offline/Texture.h>
+#include <api/render/offline/Textures.h>
+#include <api/render/offline/sl/Placed.h>
 #include <api/render/offline/trace/Scene.h>
 
 #include <vector>

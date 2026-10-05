@@ -5,6 +5,8 @@
 
 #include "Pathfinding.h"
 
+#include "DistanceField.h"
+
 #include <algorithm>
 #include <array>
 #include <cstddef>

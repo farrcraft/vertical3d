@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/render/offline/Texture.h>
+#include <api/render/offline/Textures.h>
 #include <api/render/offline/sl/runtime/Machine.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
 
@@ -17,6 +18,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
+#include "Hit.h"
 #include "Scene.h"
 
 namespace v3d::render::offline::trace {

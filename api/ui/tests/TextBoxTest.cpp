@@ -7,6 +7,7 @@
 #include <api/render/realtime/Canvas.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
+#include <api/ui/Length.h>
 #include <api/ui/component/Panel.h>
 #include <api/ui/component/TextBox.h>
 #include <api/ui/input/Cursor.h>

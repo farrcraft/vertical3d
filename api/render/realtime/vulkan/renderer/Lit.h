@@ -6,7 +6,7 @@
 #pragma once
 
 #include <api/render/realtime/Handle.h>
-#include <api/render/realtime/LitSettings.h>
+#include <api/render/realtime/SceneUniforms.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>

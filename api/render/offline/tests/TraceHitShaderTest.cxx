@@ -4,11 +4,14 @@
  **/
 
 #include <api/log/Logger.h>
-#include <api/render/offline/rib/Declarations.h>
+#include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Parameters.h>
+#include <api/render/offline/sl/Placed.h>
 #include <api/render/offline/sl/ShaderLibrary.h>
+#include <api/render/offline/trace/Hit.h>
 #include <api/render/offline/trace/HitShader.h>
 #include <api/render/offline/trace/Scene.h>
+#include <api/render/offline/trace/Triangle.h>
 
 #include <string>
 #include <vector>

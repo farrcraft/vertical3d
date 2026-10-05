@@ -5,6 +5,8 @@
 
 #include <api/render/offline/sl/Compiler.h>
 #include <api/render/offline/sl/Parser.h>
+#include <api/render/offline/sl/Symbol.h>
+#include <api/render/offline/sl/syntax/Shader.h>
 
 #include <sstream>
 #include <string>
@@ -24,7 +26,7 @@ typedef v3d::render::offline::sl::Symbol Symbol;
 std::string compile(const std::string & source, std::vector<Symbol>* symbols = nullptr) {
     std::istringstream stream(source);
     v3d::render::offline::sl::Parser parser(stream);
-    std::vector<v3d::render::offline::sl::ShaderPtr> shaders = parser.parse();
+    std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parser.parse();
     if (shaders.size() != 1) {
         return parser.error().empty() ? "no shader" : parser.error();
     }

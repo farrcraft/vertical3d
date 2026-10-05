@@ -9,58 +9,14 @@
 #include <api/render/realtime/Registry.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
-#include <api/render/realtime/vulkan/memory/Image.h>
 
-#include <vulkan/vulkan.h>
-
-#include <vector>
-
-#include "Sampler.h"
+#include "Material.h"
+#include "Pipeline.h"
+#include "Texture.h"
 
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::render::realtime::vulkan::pipeline {
-
-/**
- * A graphics pipeline and the layout its descriptor sets and push constants are bound
- * through. Both are needed at record time, so they are registered together.
- **/
-struct Pipeline final {
-    Pipeline() noexcept;
-
-    VkPipeline pipeline;
-    VkPipelineLayout layout;
-    VkShaderStageFlags pushStages;  /**< which stages the layout declared push constants for **/
-    bool scene;                     /**< whether the layout declares a set 2 - ADR-0064 **/
-    bool biased;                    /**< whether depth bias is dynamic state, set per pass **/
-    std::vector<VkFormat> colourFormats;  /**< what it was built to draw into - ADR-0068 **/
-    VkFormat depthFormat;           /**< and its depth, or undefined for none **/
-};
-
-/**
- * What is bound at set 1 for a draw - the per material frequency of the binding
- * convention. A material outlives the frames that draw with it, so the set is allocated
- * once rather than per frame.
- **/
-struct Material final {
-    Material() noexcept;
-
-    VkDescriptorSet set;
-    TextureHandle texture;
-};
-
-/**
- * An image the shaders sample from, and the sampler they read it through.
- *
- * Both are shared rather than owned. A texture memory::TextureFactory built is the only
- * holder of its image; one registered from a frame::RenderTarget shares the target's, so
- * the image outlives whichever of the two lets go first. Either way a released texture is
- * destroyed by the last reference going, which the ring holds until no frame can read it.
- **/
-struct Texture final {
-    boost::shared_ptr<memory::Image> image;
-    boost::shared_ptr<Sampler> sampler;
-};
 
 /**
  * Everything a draw item can name by handle, and the owner that destroys it.

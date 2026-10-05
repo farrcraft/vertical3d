@@ -29,6 +29,7 @@
 
 #include "Component.h"
 #include "Container.h"
+#include "Length.h"
 
 namespace v3d::ui {
 

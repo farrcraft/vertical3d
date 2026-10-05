@@ -10,24 +10,6 @@
 #include <entt/entt.hpp>
 #include <glm/glm.hpp>
 
-struct Offset final {
-    float offset_;
-};
-
-struct Score final {
-    int score_;
-};
-
-struct Travel final {
-    bool up_;
-    bool down_;
-};
-
-struct PaddleSize final {
-    float size_;
-    float length_;
-};
-
 class Paddle final {
  public:
     Paddle(entt::registry* registry);

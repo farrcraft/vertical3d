@@ -8,6 +8,7 @@
 #include <api/image/Factory.h>
 #include <api/render/offline/sl/Imager.h>
 #include <api/render/offline/trace/Scene.h>
+#include <api/render/offline/trace/Triangle.h>
 #include <api/type/geometry/Frustum.h>
 
 #include <algorithm>

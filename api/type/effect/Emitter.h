@@ -5,11 +5,10 @@
 
 #pragma once
 
-#include <api/type/Random.h>
 #include <api/type/animation/Track.h>
+#include "State.h"
 
 #include <cstdint>
-#include <vector>
 
 #include <glm/gtc/quaternion.hpp>
 #include <glm/vec3.hpp>
@@ -65,40 +64,6 @@ struct Emitter final {
      **/
     animation::Track<float> size{ 1.0f };
     animation::Track<glm::vec4> colour{ glm::vec4(1.0f) };
-};
-
-/**
- * One particle. Positions are in the world, so a particle stays where it was born when what
- * emitted it moves on.
- **/
-struct Particle final {
-    glm::vec3 position;
-    glm::vec3 previous;  /**< where the step before left it, which a frame draws from - ADR-0072 **/
-    glm::vec3 velocity;
-    float age;           /**< seconds since birth **/
-    float lifetime;
-    float phase;         /**< in [0, 1), the particle's own offset into anything periodic about it **/
-
-    /**
-     * @return how far through its life the particle is, from 0 to 1, which its tracks are
-     *         sampled at
-     **/
-    float life() const noexcept;
-};
-
-/**
- * What an emitter has made, and what it owes.
- **/
-struct State final {
-    /**
-     * @param seed what every particle's randomness is drawn from, so a seed gives the same
-     *        particles every time
-     **/
-    explicit State(uint64_t seed = 0) noexcept;
-
-    std::vector<Particle> particles;
-    float owed;            /**< the fraction of a particle the rate has earned and not yet spawned **/
-    Random random;
 };
 
 /**

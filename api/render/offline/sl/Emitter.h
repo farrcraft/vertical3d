@@ -5,13 +5,18 @@
 
 #pragma once
 
+#include <api/render/offline/sl/runtime/Instruction.h>
 #include <api/render/offline/sl/runtime/Program.h>
+#include <api/render/offline/sl/syntax/Block.h>
+#include <api/render/offline/sl/syntax/Expression.h>
+#include <api/render/offline/sl/syntax/Shader.h>
+#include <api/render/offline/sl/syntax/Statement.h>
 
 #include <string>
 #include <vector>
 
-#include "Compiler.h"
-#include "Syntax.h"
+#include "Symbol.h"
+#include "Types.h"
 
 namespace v3d::render::offline::sl {
 
@@ -28,7 +33,7 @@ namespace v3d::render::offline::sl {
  **/
 class Emitter final {
  public:
-    Emitter(const ShaderPtr & shader, const std::vector<Symbol> & symbols);
+    Emitter(const syntax::ShaderPtr & shader, const std::vector<Symbol> & symbols);
 
     /**
      * False when something in the shader has no instructions yet, which error() names.
@@ -46,42 +51,42 @@ class Emitter final {
     int string(const std::string & text);
     /** Where the next instruction will go, for a jump that is patched afterwards. **/
     int here() const;
-    int put(runtime::Opcode opcode, int target, int left, int right, const ExpressionPtr & where);
+    int put(runtime::Opcode opcode, int target, int left, int right, const syntax::ExpressionPtr & where);
     void patch(int instruction, int target);
 
-    void emitBlock(const BlockPtr & block);
-    void emitStatement(const StatementPtr & statement);
-    void emitDeclaration(const StatementPtr & statement);
-    void emitAssignment(const StatementPtr & statement);
-    void emitConditional(const StatementPtr & statement);
-    void emitWhile(const StatementPtr & statement);
-    void emitFor(const StatementPtr & statement);
-    void emitLoop(const ExpressionPtr & condition, const StatementPtr & body,
-        const StatementPtr & step);
-    void emitJump(const StatementPtr & statement);
+    void emitBlock(const syntax::BlockPtr & block);
+    void emitStatement(const syntax::StatementPtr & statement);
+    void emitDeclaration(const syntax::StatementPtr & statement);
+    void emitAssignment(const syntax::StatementPtr & statement);
+    void emitConditional(const syntax::StatementPtr & statement);
+    void emitWhile(const syntax::StatementPtr & statement);
+    void emitFor(const syntax::StatementPtr & statement);
+    void emitLoop(const syntax::ExpressionPtr & condition, const syntax::StatementPtr & body,
+        const syntax::StatementPtr & step);
+    void emitJump(const syntax::StatementPtr & statement);
     /**
      * The three message passing constructs. Each is a loop or a mask over registers the
      * shader's own globals already are, which is why they are instructions rather than
      * calls into the library.
      **/
-    void emitLighting(const StatementPtr & statement);
+    void emitLighting(const syntax::StatementPtr & statement);
     /** The register a shader global is, which the lighting constructs read and write. **/
     int global(const char* name) const;
 
-    int emitExpression(const ExpressionPtr & expression);
-    int emitBinary(const ExpressionPtr & expression);
-    int emitCall(const ExpressionPtr & expression);
+    int emitExpression(const syntax::ExpressionPtr & expression);
+    int emitBinary(const syntax::ExpressionPtr & expression);
+    int emitCall(const syntax::ExpressionPtr & expression);
     /**
      * A shader's own function, pasted in where it was called. A run has no call stack, so
      * there is nowhere for a call to return to; the recursion the compiler rejects at the
      * call graph is what makes pasting terminate.
      **/
-    int emitInline(const ExpressionPtr & expression);
-    int emitCast(const ExpressionPtr & expression);
+    int emitInline(const syntax::ExpressionPtr & expression);
+    int emitCast(const syntax::ExpressionPtr & expression);
 
     Failure fail(const std::string & message, unsigned int line, unsigned int column);
 
-    ShaderPtr shader_;
+    syntax::ShaderPtr shader_;
     const std::vector<Symbol> & symbols_;
     runtime::Program* program_ = nullptr;
     /**

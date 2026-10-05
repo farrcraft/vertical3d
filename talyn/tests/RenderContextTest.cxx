@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/offline/trace/Triangle.h>
 #include <talyn/libtalyn/RenderContext.h>
 
 #include <boost/test/unit_test.hpp>

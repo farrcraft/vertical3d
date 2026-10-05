@@ -5,12 +5,13 @@
 
 #pragma once
 
+#include <api/type/animation/Clip.h>
+
 #include <cstdint>
 #include <string>
 #include <vector>
 
 #include "Skeleton.h"
-#include "animation/Clip.h"
 
 #include <glm/gtc/type_precision.hpp>
 #include <glm/vec2.hpp>

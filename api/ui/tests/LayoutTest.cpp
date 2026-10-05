@@ -5,6 +5,7 @@
 
 #include <api/render/realtime/Canvas.h>
 #include <api/ui/Container.h>
+#include <api/ui/Length.h>
 #include <api/ui/component/Bar.h>
 #include <api/ui/component/HorizontalBox.h>
 #include <api/ui/component/Label.h>

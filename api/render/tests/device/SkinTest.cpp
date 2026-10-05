@@ -16,6 +16,7 @@
 #include <api/render/realtime/Meshes.h>
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/Poses.h>
+#include <api/render/realtime/SceneUniforms.h>
 #include <api/render/realtime/Shadow.h>
 #include <api/render/realtime/component/Mesh.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>

@@ -6,6 +6,7 @@ v3d_add_api_library(ui
 	"Image.h" "Image.cpp"
 	"Immediate.h" "Immediate.cpp"
 	"Layout.h" "Layout.cpp"
+	"Length.h" "Length.cpp"
 	"Loader.h" "Loader.cpp"
 	"component/Bar.h" "component/Bar.cpp"
 	"component/Box.h" "component/Box.cpp"

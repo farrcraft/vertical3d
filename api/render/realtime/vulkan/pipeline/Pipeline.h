@@ -1,0 +1,30 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once
+
+#include <vulkan/vulkan.h>
+
+#include <vector>
+
+namespace v3d::render::realtime::vulkan::pipeline {
+
+/**
+ * A graphics pipeline and the layout its descriptor sets and push constants are bound
+ * through. Both are needed at record time, so they are registered together.
+ **/
+struct Pipeline final {
+    Pipeline() noexcept;
+
+    VkPipeline pipeline;
+    VkPipelineLayout layout;
+    VkShaderStageFlags pushStages;  /**< which stages the layout declared push constants for **/
+    bool scene;                     /**< whether the layout declares a set 2 - ADR-0064 **/
+    bool biased;                    /**< whether depth bias is dynamic state, set per pass **/
+    std::vector<VkFormat> colourFormats;  /**< what it was built to draw into - ADR-0068 **/
+    VkFormat depthFormat;           /**< and its depth, or undefined for none **/
+};
+
+};  // namespace v3d::render::realtime::vulkan::pipeline

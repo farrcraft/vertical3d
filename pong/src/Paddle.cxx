@@ -8,6 +8,10 @@
 #include <api/ecs/Previous.h>
 #include <api/ecs/component/Color3.h>
 #include <api/ecs/component/Position1D.h>
+#include <pong/src/component/Offset.h>
+#include <pong/src/component/PaddleSize.h>
+#include <pong/src/component/Score.h>
+#include <pong/src/component/Travel.h>
 
 Paddle::Paddle(entt::registry* registry) :
     registry_(registry) {

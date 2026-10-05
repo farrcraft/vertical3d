@@ -4,6 +4,7 @@
  **/
 
 #include <api/grid/Overlay.h>
+#include <api/grid/TileCoord.h>
 #include <api/grid/TileGrid.h>
 
 #include <array>

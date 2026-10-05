@@ -78,21 +78,6 @@ VkResult Allocator::suballocate(VkBuffer buffer, VkImage image, VkMemoryProperty
 
 /**
  **/
-Allocation::Allocation() noexcept :
-    memory(VK_NULL_HANDLE),
-    offset(0),
-    size(0),
-    handle(VK_NULL_HANDLE) {
-}
-
-/**
- **/
-bool Allocation::valid() const noexcept {
-    return memory != VK_NULL_HANDLE;
-}
-
-/**
- **/
 Allocator::Allocator(VkDevice device, VkPhysicalDevice physical, VkInstance instance, Kind kind) :
     device_(device),
     physical_(physical),

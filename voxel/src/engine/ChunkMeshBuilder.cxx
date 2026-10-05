@@ -10,7 +10,11 @@
 #include <cstdint>
 #include <vector>
 
+#include "ChunkVertex.h"
+
 #include <boost/make_shared.hpp>
+#include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
 
 ChunkMeshBuilder::ChunkMeshBuilder(const boost::shared_ptr<v3d::render::realtime::vulkan::device::Device>& device,
     const boost::shared_ptr<v3d::render::realtime::vulkan::memory::Uploader>& uploader) :

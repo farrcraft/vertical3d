@@ -8,9 +8,10 @@
 #include <api/log/Logger.h>
 #include <api/render/offline/MovingTransform.h>
 #include <api/render/offline/Sampling.h>
-#include <api/render/offline/Texture.h>
+#include <api/render/offline/Textures.h>
 #include <api/render/offline/rib/Declarations.h>
 #include <api/render/offline/sl/ShaderLibrary.h>
+#include <api/render/offline/trace/Primitive.h>
 #include <api/render/offline/trace/Scene.h>
 
 #include "Polygon.h"

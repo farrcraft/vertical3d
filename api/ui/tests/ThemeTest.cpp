@@ -8,6 +8,7 @@
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
 #include <api/ui/Image.h>
+#include <api/ui/Length.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/Icon.h>
 #include <api/ui/component/Label.h>

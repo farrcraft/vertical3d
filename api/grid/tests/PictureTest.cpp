@@ -4,6 +4,9 @@
  **/
 
 #include <api/grid/Picture.h>
+#include <api/grid/Terrain.h>
+#include <api/grid/TileCoord.h>
+#include <api/grid/TileGrid.h>
 
 #include <map>
 #include <string>

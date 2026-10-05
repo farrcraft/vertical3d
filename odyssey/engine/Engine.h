@@ -10,6 +10,7 @@
 #include <api/engine/Engine.h>
 #include <api/event/Event.h>
 #include <api/event/kind/MouseMotion.h>
+#include <api/grid/TileCoord.h>
 #include <api/input/Engine.h>
 #include <api/log/Logger.h>
 #include <odyssey/render/Renderer.h>

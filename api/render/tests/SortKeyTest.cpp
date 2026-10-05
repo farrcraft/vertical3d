@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/realtime/DrawItem.h>
+#include <api/render/realtime/SortKey.h>
 
 #include <algorithm>
 #include <vector>

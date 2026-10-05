@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/type/effect/Emitter.h>
+#include <api/type/effect/State.h>
 
 #include <cstdint>
 

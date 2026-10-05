@@ -7,6 +7,7 @@
 
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Pass.h>
+#include <api/render/realtime/vulkan/pipeline/Pipeline.h>
 #include <api/render/realtime/vulkan/pipeline/Resources.h>
 
 #include <vulkan/vulkan.h>

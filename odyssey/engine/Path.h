@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/grid/TileGrid.h>
+#include <api/grid/TileCoord.h>
 
 #include <cstddef>
 #include <vector>
