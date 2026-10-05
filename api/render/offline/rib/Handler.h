@@ -25,7 +25,7 @@ namespace v3d::render::offline::rib {
  *
  * **Every method has an empty body rather than being pure virtual.** The RI standard asks
  * a renderer to accept a request for a feature it does not support, and a request added
- * later then breaks neither renderer. The cost is that a misspelled override is silent, so
+ * later then breaks no handler. The cost is that a misspelled override is silent, so
  * every override carries `override`.
  **/
 class Handler {
@@ -38,6 +38,14 @@ class Handler {
         (void)declaration;
     }
     virtual void option(const std::string & name, const ParameterList & parameters) {
+        (void)name;
+        (void)parameters;
+    }
+    /**
+     * RiHider: how the renderer decides what the camera sees. RI names `"hidden"` as the
+     * default; any other name is the renderer's own.
+     **/
+    virtual void hider(const std::string & name, const ParameterList & parameters) {
         (void)name;
         (void)parameters;
     }

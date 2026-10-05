@@ -238,6 +238,13 @@ Reader::Result Reader::optionRequest(const std::string & name, Lexer * lexer, Ha
         handler->option(first, list);
         return Result::Handled;
     }
+    if (name == "Hider") {
+        if (!text(lexer, &first) || !parameters(lexer, 1, &list)) {
+            return Result::Failed;
+        }
+        handler->hider(first, list);
+        return Result::Handled;
+    }
     if (name == "Format") {
         if (!number(lexer, &a) || !number(lexer, &b) || !number(lexer, &c)) {
             return Result::Failed;

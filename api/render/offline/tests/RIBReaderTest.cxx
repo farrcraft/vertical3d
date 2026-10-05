@@ -38,6 +38,11 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
         }
         counts_["Option"]++;
     }
+    void hider(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override {
+        (void)parameters;
+        hider_ = name;
+        counts_["Hider"]++;
+    }
     void format(unsigned int width, unsigned int height, float pixelAspect) override {
         width_ = width;
         height_ = height;
@@ -189,6 +194,7 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
     std::string display_;
     std::string surface_;
     std::string imager_;
+    std::string hider_;
     std::string identifier_;
     float version_ = 0.0f;
     float pixelAspect_ = 0.0f;
@@ -577,8 +583,8 @@ BOOST_AUTO_TEST_CASE(ribreader_area_light_test) {
 }
 
 /**
- * Imager is how a scene says what a pixel nothing was drawn into is worth, which is what
- * phase 2's talyn reference worked around with a backdrop polygon.
+ * Imager is how a scene says what a pixel nothing was drawn into is worth, which a scene would
+ * otherwise have to say with a backdrop polygon.
  **/
 BOOST_AUTO_TEST_CASE(ribreader_imager_test) {
     CountingHandler handler;
@@ -588,6 +594,19 @@ BOOST_AUTO_TEST_CASE(ribreader_imager_test) {
     BOOST_CHECK_EQUAL(handler.imager_, "background");
     BOOST_REQUIRE_EQUAL(handler.background_.size(), 1u);
     BOOST_CHECK_CLOSE(handler.background_[0].b, 0.3f, 0.01f);
+}
+
+/**
+ * Hider names how the renderer decides what the camera sees, and reaches the handler by name.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_hider_test) {
+    CountingHandler handler;
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(read("Hider \"raytrace\"\n", &handler, &reader));
+    BOOST_CHECK_EQUAL(handler.count("Hider"), 1u);
+    BOOST_CHECK_EQUAL(handler.hider_, "raytrace");
+    BOOST_CHECK(reader.unrecognised().empty());
 }
 
 /**
