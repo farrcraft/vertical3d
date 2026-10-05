@@ -7,6 +7,7 @@ v3d_add_test(moya
 	"MicroPolygonGridTest.cxx"
 	"PolygonClipTest.cxx"
 	"PolygonTest.cxx"
+	"RayHiderTest.cxx"
 	"ReferenceTest.cxx"
 	"RenderContextTest.cxx"
 	"RIBHandlerTest.cxx"

@@ -26,6 +26,7 @@
 namespace v3d::moya {
 
 class GridShader;
+class RayHider;
 
 /**
     *	holds the current graphics state
@@ -92,6 +93,14 @@ class RenderContext {
         void clipping(float near, float far);
 
         void projection(std::string name, float fov = 90.0);
+        /**
+            *	maps to RiHider()
+            *	"hidden", RI's default, is the reyes hider; "raytrace" casts a primary ray
+            *	through every sample instead, per ADR-0078. Any other name is reported and
+            *	leaves the hider as it was.
+            */
+        void hider(const std::string & name);
+        bool raytracing() const;
         /**
             *	maps to RiMotionBegin() and RiMotionEnd(). Each transform request between
             *	them is the current transformation at the next of the times.
@@ -233,6 +242,14 @@ class RenderContext {
             *	polygon will be placed into a starting bucket when it is initially added
             */
         void addPolygon(const boost::shared_ptr<Polygon>& poly);
+        /**
+            *	maps to RiSphere()
+            *	Only the ray hider draws one, intersected where it is defined; the reyes
+            *	hider does not dice spheres.
+            *
+            *	@return false when the hider cannot draw it
+            */
+        bool addSphere(float radius, float zmin, float zmax, float thetamax);
 
         /**
             *	Get the matrix for a named coordinate system.
@@ -274,6 +291,11 @@ class RenderContext {
             */
         v3d::render::offline::Sampling & sampling();
         const v3d::render::offline::Sampling & sampling() const;
+        /**
+            *	How many samples a pixel took in the last render under the ray hider, or
+            *	zero under the reyes hider, which takes what PixelSamples names.
+            */
+        unsigned int samplesTaken(unsigned int column, unsigned int row) const;
 
  protected:
         void initialize();
@@ -284,6 +306,8 @@ class RenderContext {
             *	the current transformation and shaded as the hider will shade it.
             */
         void trace(const Polygon & poly, const Shading & state);
+        /** The surface, opacity and lights a traced primitive made now is shaded by. **/
+        void shade(v3d::render::offline::trace::Primitive* primitive, const Shading & state);
         /** The lights in a hider's state, placed in world space, as one shared set. **/
         const v3d::render::offline::trace::Lights & tracedLights(const Shading & state);
 
@@ -360,6 +384,9 @@ class RenderContext {
         glm::vec3 color_ = glm::vec3(1.0f);
         glm::vec3 opacity_ = glm::vec3(1.0f);
         std::string projection_ = "orthographic";
+        float fov_ = 90.0f;
+        bool raytrace_ = false;
+        boost::shared_ptr<RayHider> rayHider_;
         // display options. An empty name is no output, which is the RI default of a
         // framebuffer this renderer does not have
         std::string displayName_;

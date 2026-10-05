@@ -1,0 +1,42 @@
+##RenderMan RIB-Structure 1.1
+##Scene A metal sphere and a glass one over a floor, through the ray hider
+version 3.03
+Hider "raytrace"
+Format 320 240 1
+Projection "perspective" "fov" [40]
+Clipping 0.1 100
+Imager "background" "background" [0.05 0.06 0.1]
+WorldBegin
+LightSource "ambientlight" 0 "intensity" [0.2]
+# down, forward and from the left, so each sphere's shadow falls on the floor behind it
+LightSource "distantlight" 1 "intensity" [0.9] "to" [0.4 -1 0.6]
+
+AttributeBegin
+Color [0.85 0.8 0.7]
+Surface "matte"
+Polygon "P" [-4 -1 2  4 -1 2  4 -1 12  -4 -1 12]
+AttributeEnd
+
+AttributeBegin
+Color [0.35 0.5 0.75]
+Surface "matte"
+Polygon "P" [-4 -1 12  4 -1 12  4 4 12  -4 4 12]
+AttributeEnd
+
+AttributeBegin
+Color [0.9 0.85 0.7]
+Surface "shinymetal" "Ka" [0.1] "Ks" [0.6] "Kr" [0.8]
+Translate -1.1 -0.28 6
+Sphere 0.7 -0.7 0.7 360
+AttributeEnd
+
+# opaque to the camera, which sees through it by refraction; its Opacity is what a shadow
+# ray reads, so its shadow is a light one
+AttributeBegin
+Color [1 1 1]
+Opacity [0.3 0.3 0.3]
+Surface "glass"
+Translate 1.1 -0.28 5.5
+Sphere 0.7 -0.7 0.7 360
+AttributeEnd
+WorldEnd

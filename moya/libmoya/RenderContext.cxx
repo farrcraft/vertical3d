@@ -8,6 +8,7 @@
 #include <api/image/Factory.h>
 #include <api/render/offline/sl/Imager.h>
 #include <api/render/offline/trace/Scene.h>
+#include <api/render/offline/trace/Sphere.h>
 #include <api/render/offline/trace/Triangle.h>
 #include <api/type/geometry/Frustum.h>
 
@@ -26,6 +27,7 @@
 #include <glm/matrix.hpp>
 
 #include "GridShader.h"
+#include "RayHider.h"
 
 namespace v3d::moya {
 
@@ -99,6 +101,10 @@ v3d::render::offline::Sampling & RenderContext::sampling() {
 
 const v3d::render::offline::Sampling & RenderContext::sampling() const {
     return sampling_;
+}
+
+unsigned int RenderContext::samplesTaken(unsigned int column, unsigned int row) const {
+    return rayHider_ ? rayHider_->samplesTaken(column, row) : 0;
 }
 
 /*
@@ -184,6 +190,7 @@ void RenderContext::projection(std::string name, float fov) {
     // name is orthographic, perspective, or empty
     // only perspective uses fov
     projection_ = name;
+    fov_ = fov;
     projectionNamed_ = true;
 
     const float left = screen_[0];
@@ -281,6 +288,20 @@ void RenderContext::projection(std::string name, float fov) {
     // reinitialize current transformation to indentity matrix
     transform_.replace(glm::mat4x4(1.0f));
     // current transformation matrix is now the camera coordinate system
+}
+
+void RenderContext::hider(const std::string & name) {
+    if (name == "hidden") {
+        raytrace_ = false;
+    } else if (name == "raytrace") {
+        raytrace_ = true;
+    } else {
+        logger_->get()->warn("moya has no hider named '{}', so it keeps the one it had", name);
+    }
+}
+
+bool RenderContext::raytracing() const {
+    return raytrace_;
 }
 
 /*
@@ -594,11 +615,8 @@ void RenderContext::trace(const Polygon & poly, const Shading & state) {
     }
     const glm::mat4x4 & toWorld = transform_.open();
     const glm::mat3 toWorldNormal = glm::transpose(glm::inverse(glm::mat3(toWorld)));
-    v3d::render::offline::sl::Placed surface;
-    surface.shader = state.surface;
-    surface.placement = glm::inverse(coordinateSystems_["camera"]) * state.placement;
 
-    // a fan, as talyn makes one, since RI says a polygon is planar and convex
+    // a fan, since RI says a polygon is planar and convex
     const Vertex first = poly.vertex(0);
     for (std::size_t i = 1; i + 1 < poly.vertexCount(); i++) {
         const Vertex corners[3] = { first, poly.vertex(i), poly.vertex(i + 1) };
@@ -616,11 +634,31 @@ void RenderContext::trace(const Polygon & poly, const Shading & state) {
         if (corners[0].hasTexCoord() && corners[1].hasTexCoord() && corners[2].hasTexCoord()) {
             triangle.st(corners[0].st(), corners[1].st(), corners[2].st());
         }
-        triangle.surface(surface);
-        triangle.opacity(state.opacity);
-        triangle.lights(tracedLights(state));
+        shade(&triangle, state);
         traced_.add(triangle, transform_);
     }
+}
+
+void RenderContext::shade(v3d::render::offline::trace::Primitive* primitive, const Shading & state) {
+    // a shader is placed in camera space, which is moya's current space, and the traced
+    // scene is in world space
+    v3d::render::offline::sl::Placed surface;
+    surface.shader = state.surface;
+    surface.placement = glm::inverse(coordinateSystems_["camera"]) * state.placement;
+    primitive->surface(surface);
+    primitive->opacity(state.opacity);
+    primitive->lights(tracedLights(state));
+}
+
+bool RenderContext::addSphere(float radius, float zmin, float zmax, float thetamax) {
+    if (!raytrace_) {
+        return false;
+    }
+    // placed by the open end of its motion, as a polygon's points are
+    v3d::render::offline::trace::Sphere sphere(radius, zmin, zmax, thetamax, transform_.open(), color_);
+    shade(&sphere, shading());
+    traced_.add(sphere, transform_);
+    return true;
 }
 
 void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
@@ -637,6 +675,11 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     */
     // a primitive carries the state it was submitted under - see ReyesPrimitive::place().
     // A piece handed back by a split is already placed and keeps its parent's
+    if (raytrace_) {
+        // the ray hider sees the traced scene and nothing else, so nothing is bucketed
+        trace(*poly, shading());
+        return;
+    }
     if (!poly->placed()) {
         const Shading state = shading();
         trace(*poly, state);
@@ -856,9 +899,24 @@ void RenderContext::render() {
     }
 
     boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = frameBuffer_->planes();
-    samples_ = boost::make_shared<Samples>(planes->width(), planes->height(), sampling_);
-    frameBuffer_->render(*this);
-    samples_->resolve(planes.get(), FrameBuffer::RED, FrameBuffer::COVERAGE, FrameBuffer::DEPTH);
+    if (raytrace_) {
+        RayHider::Camera camera;
+        camera.toCamera = coordinateSystems_["camera"];
+        camera.toRaster = coordinateSystems_["raster"] * coordinateSystems_["screen"];
+        camera.perspective = perspective();
+        camera.fov = fov_;
+        std::copy(screen_, screen_ + 4, camera.screen);
+        camera.near = near_;
+        camera.width = planes->width();
+        camera.height = planes->height();
+        rayHider_ = boost::make_shared<RayHider>(camera);
+        rayHider_->render(traced_, textures_.get(), sampling_, planes.get(),
+            FrameBuffer::RED, FrameBuffer::COVERAGE, FrameBuffer::DEPTH);
+    } else {
+        samples_ = boost::make_shared<Samples>(planes->width(), planes->height(), sampling_);
+        frameBuffer_->render(*this);
+        samples_->resolve(planes.get(), FrameBuffer::RED, FrameBuffer::COVERAGE, FrameBuffer::DEPTH);
+    }
 
     if (imager_) {
         // after the last bucket, which is where every sample the frame will ever hold is

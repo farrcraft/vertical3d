@@ -66,7 +66,7 @@ bool GridShader::space(const std::string & name, glm::mat4x4* matrix) {
     /*
         Every one of these is out of camera space, because that is where the machine
         already is: moya's first pass works there and so its current space is that one.
-        talyn's is world space, which is why this is a callback rather than a table the
+        A traced hit's is world space, which is why this is a callback rather than a table the
         library holds. The context's own table runs the other way - it holds world to
         camera and camera to screen - so half of these are an inverse of it.
     */

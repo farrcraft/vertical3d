@@ -31,6 +31,7 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
     ~RIBHandler();
 
     void option(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void hider(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
 
     void format(unsigned int width, unsigned int height, float pixelAspect) override;
     void frameAspectRatio(float aspect) override;

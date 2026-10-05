@@ -52,7 +52,8 @@ A renderer is then its hider, and everything after a hit is shared.
   attribute state would serve both. talyn as an executable retires.
 - **Cons**: A larger change than either renderer needs: moya's context, buckets and C API would have
   to absorb talyn's driver, and talyn is the simpler of the two to read and to test against.
-- **Why not**: The tracer is what moya lacks; its hider and its state are not.
+- **Why not**: The tracer is what moya lacks; its hider and its state are not. Taken up after all
+  in [ADR-0078](0078-one-offline-renderer-with-two-hiders.md), once the tracer had moved.
 
 ### Alternative 4: Leave them apart, and moya traces nothing
 - **Pros**: No work, and no second copy of moya's geometry.

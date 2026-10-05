@@ -361,7 +361,7 @@ BOOST_AUTO_TEST_CASE(render_context_split_carries_the_normal_test) {
  * An imager runs after the last bucket, over the finished frame, and gives a pixel nothing
  * was drawn into what the scene said it is worth.
  *
- * It is the same shader and the same runner talyn uses after its last ray, which is what
+ * It is the same shader and the same runner the ray hider uses after its last ray, which is what
  * the coverage plane is for: without it a pixel the hider never reached and a black one
  * are the same number.
  **/

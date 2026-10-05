@@ -32,7 +32,7 @@ class RenderContext;
  * the execution model is a batch rather than a shading point.
  *
  * **moya's current space is camera space.** That is what its first pass already works in
- * and what the space table hands the machine for "current". talyn's is world space, which
+ * and what the space table hands the machine for "current". A traced hit's is world space, which
  * is why the table is a renderer callback rather than a constant.
  *
  * One of these lives for a render rather than for a grid: `prepare` sizes a register file

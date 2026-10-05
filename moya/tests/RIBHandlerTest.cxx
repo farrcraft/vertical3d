@@ -26,7 +26,7 @@ bool read(const std::string & source, v3d::moya::RIBHandler * handler) {
 
 /**
  * A scene reaches the render context through the handler, which is the whole of ADR-0023's
- * claim that one reader drives both renderers.
+ * claim that a RIB file drives the offline renderer.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_camera_test) {
     v3d::moya::Renderer renderer;
@@ -352,8 +352,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_output_override_test) {
 }
 
 /**
- * moya dices polygons only, so a scene with a sphere in it renders without the sphere and
- * says so, rather than failing.
+ * The reyes hider dices polygons only, so a scene with a sphere in it renders without the
+ * sphere and says so, rather than failing. The ray hider draws one.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_sphere_is_skipped_test) {
     v3d::moya::Renderer renderer;

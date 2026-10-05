@@ -539,9 +539,15 @@ RtVoid RiDisplayV(char *name, RtToken type, RtToken mode, RtInt n, RtToken token
 }
 
 RtVoid RiHider(RtToken type, ...) {
+    renderer().activeRenderContext().hider(type ? type : "");
 }
 
 RtVoid RiHiderV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[]) {
+    // neither hider takes a parameter
+    (void)n;
+    (void)tokens;
+    (void)parms;
+    renderer().activeRenderContext().hider(type ? type : "");
 }
 
 RtVoid RiColorSamples(RtInt n, RtFloat nRGB[], RtFloat RGBn[]) {

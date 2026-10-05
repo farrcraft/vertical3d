@@ -90,6 +90,11 @@ void RIBHandler::option(const std::string & name, const ParameterList & paramete
     }
 }
 
+void RIBHandler::hider(const std::string & name, const ParameterList & parameters) {
+    (void)parameters;
+    context().hider(name);
+}
+
 void RIBHandler::surface(const std::string & name, const ParameterList & parameters) {
     context().surface(name, parameters);
 }
@@ -249,14 +254,10 @@ void RIBHandler::polygon(unsigned int vertices, const ParameterList & parameters
 }
 
 void RIBHandler::sphere(float radius, float zmin, float zmax, float thetamax, const ParameterList & parameters) {
-    (void)radius;
-    (void)zmin;
-    (void)zmax;
-    (void)thetamax;
     (void)parameters;
-    if (!spheres_) {
+    if (!context().addSphere(radius, zmin, zmax, thetamax) && !spheres_) {
         spheres_ = true;
-        context().logger()->get()->warn("moya does not dice spheres, so this scene renders without them");
+        context().logger()->get()->warn("the reyes hider does not dice spheres, so this scene renders without them");
     }
 }
 

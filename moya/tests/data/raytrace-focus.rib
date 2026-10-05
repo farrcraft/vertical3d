@@ -1,0 +1,18 @@
+##RenderMan RIB-Structure 1.1
+##Scene Two quads at two depths through a lens focused on the nearer one
+version 3.03
+Hider "raytrace"
+Format 64 48 1
+PixelSamples 4 4
+Projection "perspective" "fov" [40]
+Clipping 0.1 100
+# a lens a quarter of a unit across, focused four units out: the red quad is on the plane
+# of focus and the blue one, ten units out, is blurred by about five pixels
+DepthOfField 1 0.5 4
+WorldBegin
+Surface "constant"
+Color [0.9 0.2 0.2]
+Polygon "P" [-1.5 -1 4  -0.2 -1 4  -0.2 1 4  -1.5 1 4]
+Color [0.2 0.4 0.9]
+Polygon "P" [0.5 -2.5 10  4 -2.5 10  4 2.5 10  0.5 2.5 10]
+WorldEnd
