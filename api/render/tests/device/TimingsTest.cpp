@@ -82,8 +82,8 @@ BOOST_AUTO_TEST_CASE(each_pass_is_timed_under_its_name) {
 }
 
 /**
- * A frame recorded with no timings is recorded as before, and the ring's timings read nothing
- * from it.
+ * A frame recorded with no timings records no timestamp queries, and the ring's timings read
+ * nothing from it.
  **/
 BOOST_AUTO_TEST_CASE(a_frame_recorded_without_timings_times_nothing) {
     v3d::test::Headless headless(colourFormat, width, height);

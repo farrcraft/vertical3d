@@ -99,8 +99,8 @@ BOOST_AUTO_TEST_CASE(the_uv_rectangle_follows_the_corner_order) {
 }
 
 /**
- * The stream cuts where the bound texture changes and nowhere else, which is ADR-0005's rule
- * unchanged - so a sheet of sprites drawn from one atlas is one draw however many there are.
+ * The stream cuts where the bound texture changes and nowhere else, as the 2D canvas does. A
+ * sheet of sprites drawn from one atlas is one draw however many there are.
  **/
 BOOST_AUTO_TEST_CASE(the_stream_cuts_where_the_texture_changes) {
     v3d::render::realtime::WorldCanvas canvas;
@@ -125,9 +125,9 @@ BOOST_AUTO_TEST_CASE(the_stream_cuts_where_the_texture_changes) {
 }
 
 /**
- * The order is the order quads were added, per ADR-0042: the caller decides what is in front
- * of what, because in an isometric projection that is a fact about the game and not about the
- * distance from the camera.
+ * Quads draw in the order they were added. The caller decides what is in front of what,
+ * because in an isometric projection that depends on the game and not on the distance from
+ * the camera.
  **/
 BOOST_AUTO_TEST_CASE(quads_are_drawn_in_the_order_they_were_added) {
     v3d::render::realtime::WorldCanvas canvas;
@@ -144,8 +144,8 @@ BOOST_AUTO_TEST_CASE(quads_are_drawn_in_the_order_they_were_added) {
 
 /**
  * The transform stack applies on the cpu as vertices are added, so geometry can be described
- * at the origin and placed where it is drawn - and it is a 4x4 over a world position, unlike
- * Canvas's, which only ever moves a point in a plane.
+ * at the origin and placed where it is drawn. Each transform is a 4x4 over a world position,
+ * unlike Canvas's, which only moves a point in a plane.
  **/
 BOOST_AUTO_TEST_CASE(the_transform_stack_places_geometry) {
     v3d::render::realtime::WorldCanvas canvas;
@@ -164,7 +164,7 @@ BOOST_AUTO_TEST_CASE(the_transform_stack_places_geometry) {
     canvas.quad(tile(0.0f, 0.0f), white);
     BOOST_CHECK_CLOSE(canvas.vertices()[4].position.x, 0.0f, 0.001f);
 
-    // a rotation is expressible, which is what makes a quad standing upright possible
+    // a rotation is expressible, so a quad can stand upright
     canvas.push();
     canvas.transform(glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
     canvas.quad(tile(0.0f, 0.0f), white);

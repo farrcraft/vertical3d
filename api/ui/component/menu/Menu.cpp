@@ -142,7 +142,7 @@ boost::shared_ptr<MenuItem>& Menu::operator[](size_t i) {
 bool Menu::dispatch(const boost::shared_ptr<MenuItem>& item) const {
     v3d::event::Event event = item->event();
     // an item is only bound to an event when its config gave both a command and a context.
-    // a disabled item sends nothing - ADR-0059
+    // a disabled item sends nothing
     if (!usable(*item)) {
         return false;
     }
@@ -183,7 +183,7 @@ bool Menu::capture(const v3d::event::EventData& value) {
 /**
  **/
 void Menu::activate() {
-    // an activation arriving while one is open is what ends a capture, whichever level
+    // an activation arriving while a capture is open ends it, whichever level
     // the item being captured into belongs to
     if (capture_) {
         const boost::shared_ptr<MenuItem> item = capture_;

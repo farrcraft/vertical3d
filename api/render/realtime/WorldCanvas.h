@@ -23,21 +23,21 @@ namespace v3d::render::realtime {
  * Everything the engine draws as textured quads standing in the world, accumulated as one
  * stream.
  *
- * The cpu half of the third primitive of ADR-0042, and the counterpart of Canvas in space
- * and of LineCanvas in primitive: a quad here has four world corners and is drawn through
+ * The CPU side of the world space quad primitive. It draws the same quads as Canvas, but in
+ * world space as LineCanvas does. A quad here has four world corners and is drawn through
  * the camera its pass carries at set 0, so a pass whose camera was never set draws it in
  * clip space.
  *
- * Nothing here touches vulkan.
+ * Nothing here calls Vulkan.
  *
- * **The order is the caller's.** Quads are drawn in the order they were added, because what
- * a quad's depth means is the caller's knowledge - in an isometric projection a sprite is
+ * **The caller sets the draw order.** Quads are drawn in the order they were added, because
+ * only the caller knows what a quad's depth means. In an isometric projection a sprite is
  * behind another when its feet are further up the ground plane, not when it is further from
  * the camera. Depth testing hides a quad behind solid geometry and never behind another
- * quad, per ADR-0042.
+ * quad.
  *
- * Batching is ADR-0005's rule unchanged: the stream cuts where the bound texture changes,
- * and an untextured quad names no texture and is drawn against the renderer's 1x1 white one.
+ * Batching follows Canvas: the stream cuts where the bound texture changes, and an
+ * untextured quad names no texture and is drawn against the renderer's 1x1 white one.
  **/
 class WorldCanvas final {
  public:

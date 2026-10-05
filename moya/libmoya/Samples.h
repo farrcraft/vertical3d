@@ -20,8 +20,8 @@ namespace v3d::moya {
  *
  * A reyes hider resolves visibility per sample, and a sample is not finished until every
  * grid that could reach it has been hidden. moya's sweep comes round again when a split
- * lands behind it, so no bucket is finished until the sweep is: the store is the whole
- * image's, and it goes through the film once, after the last bucket, per ADR-0076.
+ * lands behind it, so no bucket is finished until the sweep is. The store therefore covers
+ * the whole image, and it goes through the film once, after the last bucket.
  **/
 class Samples final {
  public:

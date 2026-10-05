@@ -18,8 +18,7 @@ namespace v3d::render::offline::trace {
 class Triangle final : public Primitive {
  public:
     /**
-     * A triangle whose shading normal is its plane, which is what a scene that says nothing
-     * about its normals gets.
+     * A triangle whose shading normal is its plane, for a scene that gives no normals.
      **/
     Triangle(const glm::vec3 & a, const glm::vec3 & b, const glm::vec3 & c, const glm::vec3 & colour);
 

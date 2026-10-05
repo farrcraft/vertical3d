@@ -24,8 +24,8 @@ const char* const TextRenderer::defaultFont = "fonts/NotoSans-Regular.ttf";
 
 // chosen by packing printable ascii and seeing what fit rather than by arithmetic. 48 with
 // a spread of 8 is the largest of the pairs tried that still fits a 512 atlas: 48 and 12
-// does not, and 64 and 8 does not. So the atlas the tree has always used stays the default
-// and the dimensions are an argument for the charset or the base that needs more
+// does not, and 64 and 8 does not. A charset or a base that needs more passes larger
+// atlas dimensions
 const float TextRenderer::baseSize = 48.0f;
 const unsigned int TextRenderer::defaultSpread = 8;
 const unsigned int TextRenderer::defaultAtlas = 512;
@@ -42,9 +42,9 @@ TextRenderer::TextRenderer(const boost::shared_ptr<v3d::asset::Manager>& assetMa
     unsigned int atlasWidth,
     unsigned int atlasHeight) :
     size_(size) {
-    // a one channel atlas: the glyph's distance becomes its alpha, which is what lets text
-    // go through the quad shader. Subpixel (LCD) filtering would need dual source blending
-    // or a second pass, and is not a distance field
+    // a one channel atlas: the glyph's distance becomes its alpha, so text goes through the
+    // quad shader. Subpixel (LCD) filtering would need dual source blending or a second
+    // pass, and is not a distance field
     cache_ = boost::make_shared<v3d::font::TextureFontCache>(atlasWidth, atlasHeight, 1, logger);
     markup_.size_ = size_;
 

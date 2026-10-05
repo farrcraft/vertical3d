@@ -63,7 +63,8 @@ TextureHandle Textures::texture(const unsigned char* pixels, uint32_t width, uin
  **/
 TextureHandle Textures::texture(const vulkan::frame::RenderTarget& target, uint32_t slot) {
     // a depth-only target has no colour to read, and a set written against no image is a
-    // validation error - the same answer depthTexture() gives a target with no depth to read
+    // validation error. It gets the white texture, as depthTexture() does for a target with
+    // no depth to read
     if (target.view() == VK_NULL_HANDLE || slot >= target.images()) {
         return white_;
     }

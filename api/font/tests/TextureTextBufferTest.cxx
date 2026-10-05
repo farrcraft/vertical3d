@@ -53,10 +53,10 @@ float advanceOf(const boost::shared_ptr<v3d::font::TextureFont>& font, const std
 /**
  * One atlas, drawn at more than one size.
  *
- * This is the whole of what ADR-0036 bought, checked without a device: the glyph metrics
- * are in pixels of the size the face was rasterized at, so a markup asking for another size
- * lays out at a ratio of them. Asking for twice the base has to advance the pen twice as
- * far and put out a quad twice as large, from the same glyphs in the same atlas.
+ * Checked without a device: the glyph metrics are in pixels of the size the face was
+ * rasterized at, so a markup with another size lays out at a ratio of them. Twice the base
+ * size advances the pen twice as far and produces a quad twice as large, from the same
+ * glyphs in the same atlas.
  **/
 BOOST_AUTO_TEST_CASE(texturetextbuffer_scales_to_the_markup_size_test) {
     boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
@@ -72,20 +72,19 @@ BOOST_AUTO_TEST_CASE(texturetextbuffer_scales_to_the_markup_size_test) {
     const float base = advanceOf(font, line, kBase);
     BOOST_REQUIRE(base > 0.0f);
 
-    // the pen advances in proportion, which is what a layout measuring a string relies on
+    // the pen advances in proportion, which a layout that measures a string relies on
     BOOST_CHECK_CLOSE(advanceOf(font, line, kBase * 2.0f), base * 2.0f, 0.01f);
     BOOST_CHECK_CLOSE(advanceOf(font, line, kBase * 0.5f), base * 0.5f, 0.01f);
 
-    // and a size that was not asked for is the base, so a caller that does not care about
-    // size gets what it always got
+    // and a markup with no size set uses the base size
     BOOST_CHECK_CLOSE(advanceOf(font, line, kBase), base, 0.01f);
 }
 
 /**
  * The quad a glyph is drawn into scales with the size, and its atlas coordinates do not.
  *
- * The second half is the point: one atlas serves every size because the glyph is sampled
- * from the same place however large it is drawn.
+ * One atlas serves every size because the glyph is sampled from the same place however
+ * large it is drawn.
  **/
 BOOST_AUTO_TEST_CASE(texturetextbuffer_quad_scales_and_the_atlas_does_not_test) {
     boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();

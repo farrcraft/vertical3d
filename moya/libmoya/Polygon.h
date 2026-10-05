@@ -55,14 +55,14 @@ class Polygon : public ReyesPrimitive {
      * the way the vertices are.
      *
      * One value for the whole polygon - SL's Ng. A polygon whose vertices are collinear,
-     * or which has fewer than three of them, has no plane and answers zero.
+     * or which has fewer than three of them, has no plane and returns zero.
      **/
     glm::vec3 geometricNormal(void) const;
 
     /**
      * Sutherland-Hodgman clip of the polygon against a plane, keeping the positive half
-     * space. The polygon is rewritten in place, which is what lets a caller run one plane
-     * after another over the same one.
+     * space. The polygon is rewritten in place, so a caller can clip against one plane after
+     * another.
      **/
     void clip(const v3d::type::geometry::Plane & plane);
 
@@ -77,8 +77,8 @@ class Polygon : public ReyesPrimitive {
 
  private:
     std::vector<Vertex> vertices_;
-    // one grid covers the whole polygon, so dice() answers true once and false
-    // afterwards - the caller loops until it answers false
+    // one grid covers the whole polygon, so dice() returns true once and false
+    // afterwards; the caller loops until it returns false
     bool diced_ = false;
 };
 

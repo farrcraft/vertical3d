@@ -33,8 +33,8 @@ namespace odyssey::tile {
  * Rows of characters rather than an array of objects because a map is read far more often
  * by a person than by the program, and this way the file looks like the board. The rows and
  * the terrain of '.', '#' and 'o' go to v3d::grid::fromPicture, which builds the grid. The
- * JSON around them, the kinds and the '@' are odyssey's, because api/grid owns a picture and a
- * terrain legend and nothing else about a map - ADR-0062.
+ * JSON around them, the kinds and the '@' are odyssey's, because api/grid parses a picture
+ * against a terrain legend and nothing else about a map file.
  **/
 class Map final {
  public:
@@ -68,8 +68,8 @@ class Map final {
 
     /**
      * @return what a tile is made of, or Kind::Wall for a tile off the map - nothing can
-     *         stand outside the board, and answering rather than throwing keeps this the
-     *         same shape as TileGrid::passable()
+     *         stand outside the board, and returning rather than throwing matches
+     *         TileGrid::passable()
      **/
     Kind kind(v3d::grid::TileCoord tile) const;
 

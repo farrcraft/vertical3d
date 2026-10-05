@@ -79,8 +79,8 @@ void ScaleManipulator::apply(const boost::shared_ptr<v3d::brep::BRep>& mesh, con
 
     glm::vec3 scale = mesh->scale();
     if (axis() == Axis::None) {
-        // one gesture, three axes: rightwards and upwards both grow the object, which
-        // is the direction a corner handle would be dragged
+        // one gesture scales all three axes: dragging right or up grows the object, as
+        // dragging a corner handle outward would
         const glm::vec2 delta = to - from;
         const float factor = 1.0f + (delta.x - delta.y) / handlePixels;
         scale *= factor;

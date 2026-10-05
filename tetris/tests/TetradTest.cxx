@@ -62,8 +62,7 @@ BOOST_AUTO_TEST_CASE(tetrad_rotation_test) {
 BOOST_AUTO_TEST_CASE(tetrad_counterclockwise_test) {
     const Tetrad::ShapeInfo start = el();
 
-    // the two directions have to be each other's inverse, which they were not when the
-    // counter-clockwise branch copied the layout unchanged
+    // the two directions have to be each other's inverse
     Tetrad piece(start);
     piece.rotate(Tetrad::COUNTERCLOCKWISE);
     BOOST_CHECK_EQUAL(same(piece.shape(), start), false);

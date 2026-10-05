@@ -16,7 +16,7 @@ namespace {
 
 /**
  * The plane of a triangle, wound the way its corners are. A triangle with no area names no
- * plane and answers zero rather than a normalised nothing.
+ * plane and returns zero rather than normalising a zero vector.
  **/
 glm::vec3 plane(const glm::vec3 & a, const glm::vec3 & b, const glm::vec3 & c) {
     const glm::vec3 across = glm::cross(b - a, c - a);
@@ -57,7 +57,7 @@ const glm::vec3 & Triangle::geometricNormal() const {
 glm::vec3 Triangle::shadingNormal(float u, float v) const {
     const glm::vec3 normal = na_ * (1.0f - u - v) + nb_ * u + nc_ * v;
     // interpolating unit normals does not give a unit one back, and three corners whose
-    // normals cancel give none at all - the plane is what is left to answer with
+    // normals cancel give none at all, so the plane is used instead
     const float length = glm::length(normal);
     return length > 0.0f ? normal / length : geometric_;
 }

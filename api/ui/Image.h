@@ -14,16 +14,16 @@ namespace v3d::ui {
 /**
  * What a named image resolves to: a texture, and the part of it that is the image.
  *
- * The part is what lets one upload serve many images - a sprite sheet answers each of its
- * regions with the same texture and a different pair of corners. What a source name means is
- * the app's business, so nothing here reads a sheet. ADR-0020.
+ * The part lets one upload serve many images: a sprite sheet resolves each of its regions to
+ * the same texture and a different pair of corners. What a source name means is for the app
+ * to decide, so nothing here reads a sheet.
  *
  * Not style::property::Image, which is a theme's reference to an image by name and holds one
  * of these once it has been resolved.
  **/
 struct Image final {
     /**
-     * Nothing, which is what an image is before it has been resolved.
+     * Nothing: an image before it has been resolved.
      **/
     Image() noexcept;
     /**

@@ -83,7 +83,7 @@ PipelineHandle World::createPipeline(const std::string& name, VkFormat colour, V
         .vertexAttribute(1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(WorldCanvas::Vertex, uv))
         .vertexAttribute(2, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(WorldCanvas::Vertex, colour))
         // a quad standing in the world is seen from whichever side the camera is on, and a
-        // tile highlight is seen from above and below - ADR-0042
+        // tile highlight is seen from above and below
         .cull(VK_CULL_MODE_NONE)
         .set(uniforms_->layout())
         .set(textures_->layout())
@@ -100,7 +100,7 @@ PipelineHandle World::createPipeline(const std::string& name, VkFormat colour, V
         builder.blend(adding);
     }
 
-    // tests and does not write, per ADR-0042: the scene occludes a quad and a quad does not
+    // tests and does not write: the scene occludes a quad and a quad does not
     // cut a hole in the one behind it where both are transparent
     if (depth != VK_FORMAT_UNDEFINED) {
         builder.depth(true, false).depthFormat(depth);

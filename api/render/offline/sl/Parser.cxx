@@ -46,8 +46,8 @@ std::string position(const Token & token) {
 }
 
 /**
- * What a token is, for a diagnostic. An END has no text to quote, and "end of source" is
- * what a reader needs to hear rather than an empty pair of quotes.
+ * What a token is, for a diagnostic. An END has no text to quote, so the diagnostic says
+ * "end of source" rather than showing an empty pair of quotes.
  **/
 std::string describe(const Token & token) {
     switch (token.kind()) {
@@ -241,8 +241,8 @@ void Parser::parseParameters(std::vector<syntax::Parameter>* parameters, bool de
         parameter.line = opening.line();
         parameter.column = opening.column();
 
-        // "output varying color Ci = 0" is how SL writes it, but neither order is worth
-        // rejecting, and 'output' is an identifier rather than a keyword
+        // SL writes "output varying color Ci = 0", but either order is accepted, and
+        // 'output' is an identifier rather than a keyword
         for (;;) {
             if (accept(Token::Kind::IDENTIFIER, "output")) {
                 parameter.output = true;
@@ -271,7 +271,7 @@ void Parser::parseParameters(std::vector<syntax::Parameter>* parameters, bool de
         parameters->push_back(parameter);
 
         // a shader's parameters are separated by semicolons and a function's formals by
-        // commas, and a file written the other way round is not worth refusing
+        // commas, and a file written the other way round is accepted
         if (!accept(Token::Kind::PUNCTUATION, ";") && !accept(Token::Kind::PUNCTUATION, ",")) {
             return;
         }
@@ -339,7 +339,7 @@ syntax::StatementPtr Parser::parseStatement() {
         return parseBlock();
     }
     if (accept(Token::Kind::PUNCTUATION, ";")) {
-        // an empty statement is an empty block, which is what it does
+        // an empty statement is parsed as an empty block, which has the same effect
         return boost::make_shared<syntax::Block>(token.line(), token.column());
     }
     if (token.kind() == Token::Kind::KEYWORD) {
@@ -386,8 +386,7 @@ syntax::StatementPtr Parser::parseConditional() {
     expect(Token::Kind::PUNCTUATION, ")");
     syntax::StatementPtr whenTrue = parseStatement();
     syntax::StatementPtr whenFalse;
-    // an else binds to the nearest if, which is what taking it here rather than unwinding
-    // to an outer one does
+    // an else binds to the nearest if, so it is taken here rather than by an outer one
     if (accept(Token::Kind::KEYWORD, "else")) {
         whenFalse = parseStatement();
     }
@@ -407,7 +406,7 @@ syntax::StatementPtr Parser::parseFor() {
     const Token keyword = expect(Token::Kind::KEYWORD, "for");
     boost::shared_ptr<syntax::For> loop = boost::make_shared<syntax::For>(keyword.line(), keyword.column());
     expect(Token::Kind::PUNCTUATION, "(");
-    // any of the three heads may be empty, which is what a null one on the node is
+    // any of the three heads may be empty, and an empty one is null on the node
     if (!at(Token::Kind::PUNCTUATION, ";")) {
         loop->initialiser = parseSimpleStatement();
     }

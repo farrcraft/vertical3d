@@ -46,7 +46,8 @@ class Compiler final {
 
  private:
     /**
-     * Thrown by the checks and caught by compile(), for the reason the parser's failure is.
+     * Thrown by the checks and caught by compile(), so a check reads as its rule rather than
+     * as a chain of error returns.
      **/
     class Failure final {};
 
@@ -80,8 +81,8 @@ class Compiler final {
     void checkFunctions();
     /**
      * Reject a function that reaches itself. The machine has a register file per shader run
-     * and no call stack, so a recursive shader has no meaning to give - which is why this is
-     * the call graph's answer rather than the parser's.
+     * and no call stack, so a recursive shader cannot run. The check needs the whole call
+     * graph, so it is made here rather than in the parser.
      **/
     void checkCallGraph();
     void checkBlock(const syntax::BlockPtr & block);
@@ -100,8 +101,8 @@ class Compiler final {
      **/
     int checkShaderCall(syntax::Call & call, const std::vector<Type> & given);
     /**
-     * The first standard signature that accepts the call, preferring one that answers the
-     * type a cast around the call wants.
+     * The first standard signature that accepts the call, preferring one that returns the
+     * type of a cast around the call.
      **/
     Type checkBuiltinCall(syntax::Call & call, const std::vector<Type> & given, Type wanted);
     Type checkUnary(const syntax::ExpressionPtr & expression);
@@ -124,12 +125,12 @@ class Compiler final {
      **/
     std::vector<int> lighting_;
     std::string error_;
-    /** Which function is being walked, or -1 for the shader body. **/
+    /** Which function is being checked, or -1 for the shader body. **/
     int inside_ = -1;
     /** How many lighting constructs enclose the statement being checked. **/
     int depth_ = 0;
     /**
-     * The type a cast wants from the call that is its operand, or void. Read by that call
+     * The type a cast requires of the call that is its operand, or void. Read by that call
      * alone, and cleared before its arguments are checked.
      **/
     Type wanted_ = Type::VOID;

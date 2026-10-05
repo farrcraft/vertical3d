@@ -38,8 +38,7 @@ BOOST_AUTO_TEST_CASE(transform_matrix_order_test) {
 }
 
 /**
- * The hand of aboutY: a positive angle turns +Z towards +X, which is how retcon's facings and
- * glm::rotate about +Y both read.
+ * The hand of aboutY: a positive angle turns +Z towards +X, as glm::rotate about +Y does.
  **/
 BOOST_AUTO_TEST_CASE(transform_about_y_hand_test) {
     const glm::vec3 turned = v3d::ecs::component::aboutY(glm::half_pi<float>()) * glm::vec3(0.0f, 0.0f, 1.0f);

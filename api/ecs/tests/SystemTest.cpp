@@ -71,8 +71,8 @@ BOOST_AUTO_TEST_CASE(system_simulate_test) {
 }
 
 /**
- * The return is what the engine's loop reads to stop, so a system that fails has to be able
- * to say so through the base.
+ * The engine's loop reads the return value to decide whether to stop, so a system that fails
+ * must be able to report it through the base.
  **/
 BOOST_AUTO_TEST_CASE(system_simulate_failure_test) {
     entt::registry registry;

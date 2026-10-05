@@ -14,9 +14,7 @@ namespace v3d::editor {
 /**
  * What walks a scene.
  *
- * A scene holds meshes and nothing else so far, so there is one visit(); a visitor that
- * wants only some of what a scene holds is what the interface grows into when lights,
- * cameras and groups become nodes of their own.
+ * A scene holds only meshes, so there is one visit().
  **/
 class SceneVisitor {
  public:

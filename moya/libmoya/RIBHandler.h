@@ -15,7 +15,7 @@
 namespace v3d::moya {
 
 /**
- * Drives a reyes render context from a RIB stream, per ADR-0023 and ADR-0025.
+ * Drives a render context from a RIB stream. The reader calls one typed method per RI request.
  *
  * RiBegin and RiEnd have no RIB equivalent - the standard says they are implied at the
  * start and end of a file - so a handler creates the context it drives and destroys it

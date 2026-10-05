@@ -23,9 +23,9 @@ namespace v3d::render::realtime {
  * which reorders a frame differently every run. A handle's slot is its sort order.
  *
  * A released slot is reused by a later add, with its generation moved on, and a handle
- * whose generation is not its slot's current one resolves to nothing - ADR-0061. So a
- * handle can stop referring to anything, but it cannot come to refer to something other
- * than what it was given for.
+ * whose generation is not its slot's current one resolves to nothing. A handle can therefore
+ * stop referring to anything, but it cannot come to refer to something other than what it
+ * was given for.
  **/
 template <typename Tag, typename Resource>
 class Registry final {

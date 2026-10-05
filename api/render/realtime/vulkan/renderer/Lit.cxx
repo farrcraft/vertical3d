@@ -143,7 +143,7 @@ Lit::Lit(const boost::shared_ptr<device::Device>& device, const boost::shared_pt
     palette.descriptorCount = 1;
     palette.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-    // a set per frame in flight, which is all a scene ever asks for
+    // a set per frame in flight, which is all a scene ever needs
     scenes_ = boost::make_shared<pipeline::DescriptorPool>(device_, ring_,
         std::vector<VkDescriptorSetLayoutBinding>{block, map, palette}, ring_->framesInFlight(), "scene");
     slots_.resize(ring_->framesInFlight() > 0 ? ring_->framesInFlight() : 1);
@@ -289,8 +289,9 @@ void Lit::reserve(Slot* slot, std::size_t joints) {
         size *= 2;
     }
     if (slot->palette) {
-        // the frame that last read it has finished, since the slot is only written after
-        // waiting for it, but the ring is what is trusted with that - ADR-0061
+        // the frame that last read it should have finished, since the slot is only written
+        // after waiting for it. It is still released through the ring, which destroys it only
+        // once no frame in flight can read it
         ring_->retire([old = slot->palette]() mutable { old.reset(); });
     }
     slot->palette = boost::make_shared<memory::Buffer>(device_, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, size);

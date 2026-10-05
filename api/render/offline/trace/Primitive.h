@@ -25,8 +25,8 @@ typedef boost::shared_ptr<const std::vector<v3d::render::offline::sl::Placed> > 
 class Hit;
 
 /**
- * Where a moving primitive is at the time a ray looks: the way from there back to the pose it
- * is stored in, and forward again. Both null for a primitive that does not move.
+ * Where a moving primitive is at a ray's time: the transform from there back to the pose it
+ * is stored in, and the transform forward again. Both null for a primitive that does not move.
  **/
 class Pose final {
  public:
@@ -50,7 +50,7 @@ class Intersection final {
 
 /**
  * What every primitive is shaded with: the colour, opacity, surface shader and lights that
- * were current when the scene made it, and the motion that carries it.
+ * were current when the scene created it, and the motion that carries it.
  **/
 class Primitive {
  public:
@@ -65,7 +65,7 @@ class Primitive {
 
     /**
      * The surface at an intersection, in the pose the primitive is stored in: its normals and
-     * its surface parameters. Where the hit is and what was hit are the scene's to fill in.
+     * its surface parameters. The scene fills in where the hit is and what was hit.
      **/
     virtual void describe(const Intersection & found, Hit* hit) const = 0;
 
@@ -75,9 +75,8 @@ class Primitive {
     /**
      * The surface shader a scene named, and the space it named it in.
      *
-     * Empty for a primitive built in code without one, which is then its own flat colour:
-     * a scene that said nothing about shading is drawn the way it was before there was a
-     * language to say it in.
+     * Empty for a primitive built in code without one, which is then drawn in its own flat
+     * colour.
      **/
     const v3d::render::offline::sl::Placed & surface() const;
     void surface(const v3d::render::offline::sl::Placed & shader);
@@ -87,8 +86,9 @@ class Primitive {
     void opacity(const glm::vec3 & value);
 
     /**
-     * The lights that were on when the scene made it, per ADR-0077. Null for a primitive
-     * given none, which is shaded by the scene's own list.
+     * The lights that were on when the scene created it. A traced hit is shaded against
+     * these, so a reflection shows the surface lit as the camera sees it. Null for a
+     * primitive given none, which is shaded by the scene's own list.
      **/
     const Lights & lights() const;
     void lights(const Lights & lit);

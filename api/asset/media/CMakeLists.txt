@@ -14,9 +14,9 @@ target_link_libraries(v3dlib_asset_media PUBLIC v3dlib_log v3dlib_asset v3dlib_i
 # include the header, and no header here names a cgltf type.
 target_include_directories(v3dlib_asset_media PRIVATE "${V3D_CGLTF_INCLUDE_DIR}")
 
-# cgltf is a third party header compiled here rather than vendored into the tree, and its
-# implementation half is not this repository's to hold to /W4 or to either analyser -
-# a local fix is lost the next time the port moves. The pragma in the file drops the
+# cgltf is a third party header compiled here rather than vendored into the tree. Its
+# implementation half is not held to /W4 or to either analyser, because a local fix would be
+# lost the next time the port updates. The pragma in the file drops the
 # warning level, /analyze- takes it out of MSVC's analysis and SKIP_LINTING out of
 # clang-tidy's.
 set_source_files_properties("loader/CgltfImpl.cpp" PROPERTIES

@@ -28,7 +28,7 @@ class ReyesPrimitive {
         virtual v3d::type::geometry::AABBox bound(void) const;
         /**
          * Break the primitive into smaller ones and submit each back to the first pass,
-         * which is what decides the bucket and the diceability of each piece. The caller
+         * which decides the bucket and the diceability of each piece. The caller
          * discards this primitive afterwards either way, so a primitive that cannot be
          * usefully split submits nothing and is dropped.
          */
@@ -36,10 +36,10 @@ class ReyesPrimitive {
         /**
          * Turn the primitive into a micropolygon grid, one call per grid.
          *
-         * A primitive may need more than one, so the caller loops - each call that
-         * produces a grid replaces what the reference holds and answers true, and the
-         * call after the last one answers false. A primitive that answered true without
-         * end would never leave that loop.
+         * A primitive may need more than one, so the caller loops. Each call that produces
+         * a grid replaces what the reference holds and returns true, and the call after the
+         * last one returns false. A primitive that always returned true would never leave
+         * that loop.
          */
         virtual bool dice(boost::shared_ptr<MicroPolygonGrid> & grid, RenderContext & rc);
         virtual void diceable(bool status);

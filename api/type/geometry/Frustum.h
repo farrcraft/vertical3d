@@ -25,7 +25,7 @@ class Frustum final {
  public:
     /**
      * The depth range of the clip space the matrix builds, which decides where its near
-     * plane is - ADR-0024.
+     * plane is.
      **/
     enum class Depth {
         ZeroToOne,      // Vulkan, and every camera in api/type

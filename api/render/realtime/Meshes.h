@@ -19,14 +19,14 @@ class Lit;
 
 /**
  * Every entity carrying both an ecs::component::Transform and a component::Mesh, submitted to a
- * lit pass - ADR-0063.
+ * lit pass.
  *
  * Each is drawn where its transform puts it, alpha of the way from its previous step when it
- * has one (ADR-0060), a draw per part of its registry entry with that part's albedo and base
- * colour. A skinned entry is drawn with Lit's skinned pipelines, in the pose poses() gave it;
- * one the poses do not name is skipped, since it has no palette to be drawn with. Outlines go in first,
- * for every entity, and surfaces after, so the pass draws each hull before any surface that
- * might cover it. An entity whose handle has been released is skipped.
+ * has one, with a draw per part of its registry entry using that part's albedo and base
+ * colour. A skinned entry is drawn with Lit's skinned pipelines, in the pose poses() gave it.
+ * One the poses do not name is skipped, since it has no palette to be drawn with. Outlines go
+ * in first, for every entity, and surfaces after, so the pass draws each hull before any
+ * surface that might cover it. An entity whose handle has been released is skipped.
  *
  * The pass is the caller's, and has to name the scene Lit::scene() returned for this frame.
  *
@@ -45,7 +45,7 @@ void meshes(const entt::registry& registry, float alpha, const MeshRegistry& mes
  *
  * The pass is the caller's. It draws into a target with sampled depth and no colour, and names
  * the scene Lit::scene() returned for this frame and a depth bias. The lit pass names the
- * target in Pass::reads(), so the frame records this one first - ADR-0068.
+ * target in Pass::reads(), so the frame records this one first.
  **/
 void casters(const entt::registry& registry, float alpha, const MeshRegistry& meshes, const vulkan::renderer::Lit& lit,
     Pass* pass, const Poses& poses = Poses());

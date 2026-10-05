@@ -210,10 +210,10 @@ BOOST_AUTO_TEST_SUITE(effects_test)
 
 /**
  * A fire in a 2D world: a flame playing its clip over each particle's life and smoke swaying
- * above it, sorted among a figure in front of the fire and one behind, under a dusk tint, as
- * cozy draws its world. Filtering and blending are what no reference can pin (ADR-0054), so the
- * assertions are the validation layer's silence and that the fire moves between frames. The
- * frames go to data_out/fire_*.png for a person to look at.
+ * above it, sorted among a figure in front of the fire and one behind, under a dusk tint.
+ * Filtering and blending differ between conformant drivers, so there is no reference picture.
+ * The case checks that the validation layer reports no errors and that the fire moves between
+ * frames. The frames go to data_out/fire_*.png for a person to look at.
  **/
 BOOST_AUTO_TEST_CASE(a_fire_is_drawn_among_sprites) {
     v3d::test::Headless headless(colourFormat, width, height);

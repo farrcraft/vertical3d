@@ -20,9 +20,9 @@ namespace v3d::ui {
  *
  * A tab bar holds every page and draws only the chosen one; a flow box draws its children in
  * the order it holds them, because that order is what it lays out; anything else draws by
- * depth. This is the one statement of that rule, and the draw walk, the pick and the tab order
- * all go through it - so a control on a page nobody can see is neither picked nor focused, and
- * a child is picked where it was drawn (ADR-0019).
+ * depth. This is the only statement of that rule. Drawing, picking and the tab order all go
+ * through it, so a control on a hidden page is neither picked nor focused, and a child is
+ * picked where it was drawn.
  *
  * @param visit called with each live child, as a boost::shared_ptr<Component>
  **/

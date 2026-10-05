@@ -125,7 +125,7 @@ void ViewLayout::place(const Node& node, const glm::vec4& region) {
 
     const std::size_t count = node.children.size();
     // the last child takes what integer division left over, so the children cover the
-    // whole region rather than leaving a seam of undrawn pixels down the middle
+    // whole region rather than leaving a gap of undrawn pixels down the middle
     float offset = node.vertical ? region.y : region.x;
     const float total = node.vertical ? region.w : region.z;
     const float end = offset + total;

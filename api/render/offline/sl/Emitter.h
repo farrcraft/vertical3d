@@ -23,20 +23,20 @@ namespace v3d::render::offline::sl {
 /**
  * The annotated tree, turned into a flat program.
  *
- * Runs after Compiler, which is what put the type and the storage class on every
- * expression and the symbol index on every variable. The emitter reads those rather than
- * working any of it out again.
+ * Runs after Compiler, which puts the type and the storage class on every expression and
+ * the symbol index on every variable. The emitter reads those rather than working them out
+ * again.
  *
- * **A uniform condition becomes a jump and a varying one becomes a mask.** That is the
- * decision this pass exists to make: a condition every point in the batch agrees about costs
- * a branch, and one they disagree about runs both arms with the lanes that took each.
+ * **A uniform condition becomes a jump and a varying one becomes a mask.** A condition with
+ * the same value at every point in the batch costs a branch. A condition whose value differs
+ * between points runs both arms, each with the lanes that took it.
  **/
 class Emitter final {
  public:
     Emitter(const syntax::ShaderPtr & shader, const std::vector<Symbol> & symbols);
 
     /**
-     * False when something in the shader has no instructions yet, which error() names.
+     * False when the shader uses something that has no instructions; error() names it.
      **/
     bool emit(runtime::Program* program);
 
@@ -65,21 +65,21 @@ class Emitter final {
         const syntax::StatementPtr & step);
     void emitJump(const syntax::StatementPtr & statement);
     /**
-     * The three message passing constructs. Each is a loop or a mask over registers the
-     * shader's own globals already are, which is why they are instructions rather than
-     * calls into the library.
+     * The three message passing constructs. Each is a loop or a mask over the registers that
+     * hold the shader's own globals, so they are instructions rather than calls into the
+     * library.
      **/
     void emitLighting(const syntax::StatementPtr & statement);
-    /** The register a shader global is, which the lighting constructs read and write. **/
+    /** The register that holds a shader global, which the lighting constructs read and write. **/
     int global(const char* name) const;
 
     int emitExpression(const syntax::ExpressionPtr & expression);
     int emitBinary(const syntax::ExpressionPtr & expression);
     int emitCall(const syntax::ExpressionPtr & expression);
     /**
-     * A shader's own function, pasted in where it was called. A run has no call stack, so
-     * there is nowhere for a call to return to; the recursion the compiler rejects at the
-     * call graph is what makes pasting terminate.
+     * A shader's own function, pasted in where it was called. A run has no call stack, so a
+     * call has nowhere to return to. Pasting terminates because the compiler rejects
+     * recursion.
      **/
     int emitInline(const syntax::ExpressionPtr & expression);
     int emitCast(const syntax::ExpressionPtr & expression);

@@ -22,10 +22,10 @@ namespace v3d::render::realtime::vulkan::pipeline {
  * Everything a draw item can name by handle, and the owner that destroys it.
  *
  * Draw items refer to resources by handle rather than by pointer so that the sort key
- * they carry means something - see ADR-0004. That only works while something outlives the
- * frames using a resource, which is what this is for.
+ * they carry is stable. That requires an owner that outlives the frames using a resource,
+ * which this class is.
  *
- * A resource lives until it is released or the context goes - ADR-0061. A released handle
+ * A resource lives until it is released or the context goes. A released handle
  * resolves to nothing at once, and what it named is handed to the ring to destroy once the
  * frames that may still read it have finished. Pipelines are built at load time and are not
  * released.

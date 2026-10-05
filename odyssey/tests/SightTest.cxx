@@ -21,8 +21,8 @@ boost::shared_ptr<v3d::asset::kind::Json> document(const std::string& text) {
 }
 
 /**
- * A board of one row, so what is between two tiles is what the row says is between them
- * and nothing is reached around.
+ * A board of one row, so only the tiles in the row lie between two tiles, and no line can
+ * go around them.
  *
  * @param glyphs the row's characters, in the map document's own alphabet
  **/
@@ -41,9 +41,8 @@ constexpr v3d::grid::TileCoord at(int x) {
 };  // namespace
 
 /**
- * A kind's cover is what decides sight, which is the one place this app's alphabet and the
- * grid's rules meet: a crate is Cover::Half and is seen over, a wall is Cover::Full and is
- * not. Both are impassable, so passability says nothing about either.
+ * A kind's cover decides sight: a crate is Cover::Half and is seen over, and a wall is
+ * Cover::Full and is not. Both are impassable, so passability does not affect sight.
  **/
 BOOST_AUTO_TEST_CASE(sight_reads_cover_test) {
     odyssey::tile::Sight seen;
@@ -103,9 +102,8 @@ BOOST_AUTO_TEST_CASE(sight_remembers_test) {
 }
 
 /**
- * Nothing off the board is seen or remembered, so a caller drawing a tile asks about it
- * rather than about the bounds first - the shape TileGrid::passable() has for the same
- * reason.
+ * Nothing off the board is seen or remembered, so a caller drawing a tile can query it
+ * without checking the bounds first, as TileGrid::passable() allows.
  **/
 BOOST_AUTO_TEST_CASE(sight_off_the_board_test) {
     odyssey::tile::Sight seen;

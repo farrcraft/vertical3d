@@ -60,25 +60,25 @@ namespace v3d::ui::paint {
 /**
  * Draws the ui onto a canvas of quads.
  *
- * A panel, a highlight and a line of text are all the batched quad of ADR-0005, so the
- * whole ui is added to whatever canvas the app is already filling and costs the frame no
- * pass and no draw of its own.
+ * A panel, a highlight and a line of text are all batched quads, so the whole ui is added
+ * to whatever canvas the app is already filling and costs the frame no pass and no draw of
+ * its own.
  *
  * Text is the caller's to lay out. This library knows where a label goes and how wide the
  * thing around it has to be; turning a string into glyph quads belongs to v3d::font and to
  * whatever atlas the app loaded, so those two are handed in as callbacks.
  *
- * Drawing is also what lays the ui out: every component is left holding the bounds it
- * was drawn in, which is what the cursor is tested against, per ADR-0019.
+ * Drawing also lays the ui out. Every component is left holding the bounds it was drawn
+ * in, and the cursor is tested against those bounds, so nothing is hit before it has been
+ * drawn.
  *
  * Every component type this library has is drawn: menus, menu bars, toolbars, buttons,
  * labels, icons, panels, bars, scrollbars, check boxes, radio buttons, select lists, tab
  * bars and the two flow boxes.
  *
- * A component holds other components, and drawing one is what works out where they go:
- * every box is resolved against the box around it as the walk reaches it, per ADR-0034.
- * A flow box writes its children's boxes itself, because their positions are what it is
- * for.
+ * Drawing a component also places the components it holds: each box is resolved against
+ * its parent's box as the traversal reaches it. A flow box writes its children's boxes
+ * itself.
  *
  * The strips stack in the order a container lists them. A menu bar takes the top of the
  * canvas, a top toolbar takes a band under whatever is already there, and a left toolbar
@@ -132,7 +132,7 @@ class ComponentRenderer {
     void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Icon>& icon) const;
 
     /**
-     * Draw a button at the position and size it holds, which is what a button in a
+     * Draw a button at the position and size it holds, which a button in a
      * container carries and what a toolbar writes on the ones in the strip.
      **/
     void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Button>& button) const;
@@ -169,9 +169,9 @@ class ComponentRenderer {
      * Draw a select list - its plate, and as many of its rows as its box shows, with the
      * chosen one highlighted.
      *
-     * The rows are cut off at the plate and moved up by what the list is scrolled by, per
-     * ADR-0037, and the row height the style resolved to is left on the list so that it
-     * can say which row a point is on.
+     * The rows are clipped to the plate and moved up by the scroll offset. The row height
+     * the style resolved to is stored on the list so that it can say which row a point is
+     * on.
      **/
     void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::SelectList>& list) const;
 
@@ -181,7 +181,7 @@ class ComponentRenderer {
      *
      * The line is cut off at the plate and slid left when the caret would be past the far
      * edge, so a box goes on being typed into once it is full. Whether the caret is drawn
-     * is the component's focused() flag, which Engine::focus() wrote - ADR-0040.
+     * is the component's focused() flag, which Engine::focus() wrote.
      **/
     void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::TextBox>& box) const;
 
@@ -253,15 +253,15 @@ class ComponentRenderer {
         const glm::vec2& origin) const;
 
     /**
-     * Draw one component into the box the walk has just written onto it - the switch on
-     * what a component is, which is what the Arranger calls back.
+     * Draw one component into the box the layout pass has just written onto it. This is
+     * the switch on component type that the Arranger calls back.
      **/
     void paint(v3d::render::realtime::Canvas* canvas,
         const boost::shared_ptr<Component>& component) const;
 
     /**
      * Trace the ring that says where the keyboard is, over a component that has just been
-     * drawn. Nothing is traced for a component that is not focused, per ADR-0040.
+     * drawn. Nothing is traced for a component that is not focused.
      **/
     void ring(v3d::render::realtime::Canvas* canvas,
         const boost::shared_ptr<Component>& component) const;
@@ -270,15 +270,15 @@ class ComponentRenderer {
      * Draw the nine images a button style names over the button's box - the four corners
      * at their own size, the four edges stretched along it, and the centre over the rest.
      *
-     * @return false when the theme names no image for that button in that state, which is
-     *      what leaves a flat button to be drawn instead
+     * @return false when the theme names no image for that button in that state, and a
+     *      flat button is drawn instead
      **/
     bool skin(v3d::render::realtime::Canvas* canvas, const component::Button& button,
         const glm::vec2& min, const glm::vec2& max) const;
 
     /**
      * The colours and metrics before any component's own style class is applied over
-     * them, which is what the parts of the ui with no style class of their own are drawn
+     * them, which the parts of the ui with no style class of their own are drawn
      * with - a menu panel, a toolbar strip, a label.
      **/
     const Dressing& base() const noexcept;
@@ -286,7 +286,7 @@ class ComponentRenderer {
     Measure measure_;
     Write write_;
     style::Resolver styles_;
-    // the other half of the walk: it resolves the boxes and calls back here to fill them
+    // the layout pass: it resolves the boxes and calls back here to fill them
     Arranger arranger_;
 };
 

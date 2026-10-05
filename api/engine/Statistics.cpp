@@ -28,7 +28,7 @@ void Statistics::frame(std::uint64_t frame, unsigned int steps) noexcept {
     total_ -= recent_[next_];
     total_ += frame;
     recent_[next_] = frame;
-    // a name not timed this frame took no time in it, which is what keeps its mean honest
+    // a name not timed this frame counts as zero for it, so its mean stays correct
     for (Named& named : named_) {
         named.total -= named.recent[next_];
         named.total += named.pending;

@@ -109,8 +109,8 @@ BOOST_AUTO_TEST_SUITE(scene_set_test)
  * What a pass names as its scene is what a pipeline declaring a set 2 reads there.
  *
  * The colour is in channels at the ends of their range and the triangle covers every pixel,
- * so every implementation owes the same texels and the case needs no committed picture to
- * say so - ADR-0054.
+ * so every conformant implementation produces the same texels and the case can check them
+ * without a committed picture.
  **/
 BOOST_AUTO_TEST_CASE(a_pass_binds_its_scene_at_set_2) {
     v3d::test::Headless headless(colourFormat, width, height);

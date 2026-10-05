@@ -13,11 +13,11 @@ namespace v3d::render::realtime {
  * An opaque, comparable reference to a resource the engine owns.
  *
  * Draw items name resources by handle rather than by pointer so that a sort key can be
- * built out of them - see ADR-0004. The tag parameter keeps the handle types distinct,
+ * built out of them. The tag parameter keeps the handle types distinct,
  * so a texture handle cannot be passed where a pipeline handle is wanted.
  *
  * A slot can be reused once what was in it is released, so a handle also carries the
- * generation of the occupant it was given for - ADR-0061. Two handles to the same slot with
+ * generation of the occupant it was given for. Two handles to the same slot with
  * different generations are different handles; only the slot is a sort order.
  **/
 template <typename Tag>

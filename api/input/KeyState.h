@@ -15,10 +15,10 @@ namespace v3d::input {
  * KeyState keeps track of the current state of all keys based on all of the key up/down
  * events that we've seen.
  *
- * Held is a fact about now and an edge is a fact about a frame: a key pressed and released
- * between two flushes answers pressed() and released() and was never held when anything
- * looked. That is the difference polling cannot express, and it is why the loop clears the
- * edges rather than the reader - see Engine::eventLoop.
+ * held() reports the current state; pressed() and released() report changes since the last
+ * flush. A key pressed and released between two flushes returns true from both pressed() and
+ * released(), but was never held when anything checked, so polling held() alone misses it.
+ * The loop clears the edges once per frame, not the reader; see engine::Engine::eventLoop.
  **/
 class KeyState final {
  public:

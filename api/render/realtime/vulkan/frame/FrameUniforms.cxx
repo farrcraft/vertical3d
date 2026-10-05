@@ -46,7 +46,7 @@ FrameUniforms::FrameUniforms(const boost::shared_ptr<device::Device>& device, co
     camera.binding = 0;
     camera.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     camera.descriptorCount = 1;
-    // a fragment shader wants the camera as often as a vertex shader does - for a view
+    // a fragment shader needs the camera as often as a vertex shader does - for a view
     // direction, or for reconstructing a position - so both stages see it
     camera.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
     pool_ = boost::make_shared<pipeline::DescriptorPool>(device_, ring, std::vector<VkDescriptorSetLayoutBinding>{camera},

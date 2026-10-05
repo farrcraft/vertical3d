@@ -107,18 +107,18 @@ float once(Body body, float x) {
 }
 
 /**
- * One component of the answer, out of the same component of each argument.
+ * One component of the result, from the same component of each argument.
  **/
 float number(Body body, const float* given, std::size_t count) {
     switch (body) {
         case Body::LOG:
-            // the two argument form is the logarithm to a base, which is the ratio of two
+            // the two argument form is the logarithm to a base: the ratio of two natural logarithms
             return count == 2 ? std::log(given[0]) / std::log(given[1]) : once(body, given[0]);
         case Body::ATAN:
             return count == 2 ? std::atan2(given[0], given[1]) : once(body, given[0]);
         case Body::MOD:
             // RI's mod takes the sign of the divisor rather than of the dividend, so that
-            // mod(-1, 3) is 2 and a value walked backwards round a period stays in it
+            // mod(-1, 3) is 2 and a value decreasing past zero stays inside the period
             return given[1] == 0.0f ? 0.0f : given[0] - given[1] * std::floor(given[0] / given[1]);
         case Body::POW:
             return std::pow(given[0], given[1]);
@@ -147,8 +147,8 @@ glm::vec3 unit(const glm::vec3 & value) {
 }
 
 /**
- * A direction turned to lie on the same side of the surface as the reference does, which is
- * how a shader answers a surface facing away without knowing which way it faces.
+ * A direction turned to lie on the same side of the surface as the reference does, so a
+ * shader can handle a surface facing away without knowing which way it faces.
  **/
 glm::vec3 faceforward(const glm::vec3 & normal, const glm::vec3 & incident,
     const glm::vec3 & reference) {
@@ -169,17 +169,17 @@ glm::vec3 refract(const glm::vec3 & incident, const glm::vec3 & normal, float et
 class Site final {
  public:
     Body body = Body::STUB;
-    /** Where the answer goes. **/
+    /** Where the result goes. **/
     Value* target = nullptr;
     /**
-     * The value written, which is the answer for every body but a setter - `setxcomp`
-     * writes the argument it was handed and answers nothing.
+     * The value written: the result for every body but a setter. `setxcomp` writes the
+     * argument it was given and returns nothing.
      **/
     Value* written = nullptr;
     const std::vector<const Value*>* given = nullptr;
-    /** The arguments a body answers through, for one that writes more than one. **/
+    /** The arguments a body returns results through, for one that writes more than one. **/
     const std::vector<Value*>* outputs = nullptr;
-    /** The matrix a named coordinate space came to, for the bodies that take one. **/
+    /** The matrix of a named coordinate space, for the bodies that take one. **/
     glm::mat4x4 matrix = glm::mat4x4(1.0f);
     /** The image texture() reads, and where: its own arguments, or the shader's s and t. **/
     const Texture* texture = nullptr;
@@ -201,7 +201,7 @@ class Site final {
  *
  * The incident direction and the normal are normalised first, and the normal is taken to
  * face against the incident direction, as refract() takes it. Past the critical angle
- * everything is reflected and the refracted direction is zero, as refract() answers it.
+ * everything is reflected and the refracted direction is zero, as refract() returns it.
  **/
 void fresnel(const Site & site, unsigned int point) {
     const glm::vec3 incident = unit(site.argument(0).triple(point));
@@ -272,8 +272,8 @@ void geometry(const Site & site, unsigned int point) {
             site.target->triple(point, unit(site.argument(0).triple(point)));
             return;
         case Body::FACEFORWARD: {
-            // two arguments means the reference is the normal itself, which is what a
-            // shader with no Ng to hand asks for
+            // two arguments means the reference is the normal itself, for a shader that
+            // has no Ng
             const glm::vec3 normal = site.argument(0).triple(point);
             const glm::vec3 reference = site.count() == 3 ? site.argument(2).triple(point) : normal;
             site.target->triple(point, faceforward(normal, site.argument(1).triple(point), reference));
@@ -293,8 +293,8 @@ void geometry(const Site & site, unsigned int point) {
 }
 
 void component(const Site & site, unsigned int point) {
-    // xcomp, ycomp and zcomp are consecutive and so are their setters, which is what makes
-    // the name the index
+    // xcomp, ycomp and zcomp are consecutive and so are their setters, so the offset from
+    // the first gives the component index
     switch (site.body) {
         case Body::XCOMP:
         case Body::YCOMP:
@@ -372,9 +372,9 @@ void matrices(const Site & site, unsigned int point) {
 }
 
 /**
- * The group where every component of the answer is the same function of that component of
- * each argument, and a one component argument is read for all of them - which is RI's
- * promotion rather than a zero fill.
+ * The group where every component of the result is the same function of that component of
+ * each argument. A one component argument is read for all of them, as RI promotes it,
+ * rather than a zero fill.
  **/
 void componentwise(const Site & site, unsigned int point) {
     float given[3] = { 0.0f, 0.0f, 0.0f };
@@ -474,8 +474,8 @@ std::string format(const std::vector<const Value*> & given, unsigned int point) 
         } else if (next < given.size()) {
             line += printed(conversion, *given[next++], point);
         } else {
-            // a conversion with nothing left to print says so rather than reading past the
-            // arguments, which is the one printf mistake that would otherwise take a render down
+            // a conversion with nothing left to print is reported rather than reading past
+            // the arguments, which would crash the render
             line += "(missing)";
         }
     }
@@ -489,8 +489,8 @@ bool transforming(Body body) {
 }
 
 /**
- * Whether the body writes the argument it was handed rather than answering a value, which
- * decides both which register the mask is asked about and where the answer goes.
+ * Whether the body writes the argument it was given rather than returning a value. This
+ * decides which register the mask is checked against and where the result goes.
  **/
 bool setter(Body body) {
     return body == Body::SETXCOMP || body == Body::SETYCOMP ||
@@ -536,14 +536,14 @@ void Machine::builtin(const Instruction & instruction) {
     site.written = setter(body) ? &file_[static_cast<std::size_t>(instruction.arguments[0])] : site.target;
     std::vector<Value*> outputs = written(instruction, table[index].outputs);
     if (!outputs.empty()) {
-        // the first is the one the mask is asked about: the compiler gives every one the
+        // the mask is checked against the first: the compiler gives every one the
         // same storage
         site.written = outputs.front();
         site.outputs = &outputs;
     }
 
-    // a named space is one matrix for the whole batch, since a string is uniform - which is
-    // the reason a string may be uniform only, and the reason this is not a lookup per point
+    // a named space is one matrix for the whole batch, since a string is always uniform, so
+    // this is not a lookup per point
     if (transforming(body)) {
         site.matrix = space(given[0]->text());
         if (given.size() == 3) {
@@ -556,7 +556,7 @@ void Machine::builtin(const Instruction & instruction) {
         site.texture = texture(given, &site.s, &site.t);
     } else if (body == Body::CTRANSFORM && given[0]->text() != "rgb") {
         // there is one colour space here and it is the one a framebuffer holds; a scene
-        // asking for another gets its colours back unchanged rather than wrong
+        // naming another gets its colours back unchanged
         report("the colour space \"" + given[0]->text() + "\" is not one this renderer knows");
     }
 
@@ -566,8 +566,7 @@ void Machine::builtin(const Instruction & instruction) {
             continue;
         }
         if (body == Body::PRINTF) {
-            // a line per shading point, because a person who wrote a printf asked to be told
-            // every time rather than once
+            // a line per shading point, not deduplicated as the machine's reports are
             printed_.push_back(format(given, point));
             continue;
         }
@@ -639,8 +638,8 @@ void Machine::shadowed(bool ray, const Value & from, const Value & to, Value* ta
         return;
     }
     /*
-        The answer a renderer that cannot do it gives. All the light gets through, so a scene
-        renders unshadowed rather than not at all, and a ray comes back black rather than with
+        The result when the renderer cannot do it. All the light gets through, so a scene
+        renders unshadowed rather than not at all, and a ray returns black rather than
         something plausible.
     */
     const unsigned int wide = target->storage() == Storage::VARYING ? batch_ : 1;

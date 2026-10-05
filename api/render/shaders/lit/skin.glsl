@@ -1,7 +1,7 @@
 /**
- * What a skinned lit shader adds to lit.glsl: every palette drawn this frame, and the matrix a
- * vertex is moved by - ADR-0071. Included after lit.glsl, whose Object block names where this
- * object's palette starts.
+ * What a skinned lit shader adds to lit.glsl: one storage buffer holding every joint palette
+ * drawn this frame, and the matrix a vertex is moved by. Included after lit.glsl, whose Object
+ * block gives where this object's palette starts.
  **/
 
 // set 2 - every joint matrix drawn this frame, one palette after another

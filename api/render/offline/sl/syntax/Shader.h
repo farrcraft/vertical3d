@@ -21,9 +21,9 @@ namespace v3d::render::offline::sl::syntax {
 class Shader final {
  public:
     /**
-     * Whether this phase executes a shader of this type. A displacement or a volume shader
-     * parses and is reported by name, which is the difference between a scene naming
-     * something unsupported and a scene that is malformed.
+     * Whether a shader of this type runs. A displacement or a volume shader parses and is
+     * reported by name, so a scene naming one is reported as unsupported rather than
+     * malformed.
      **/
     bool supported() const;
 

@@ -33,8 +33,8 @@ class Buffer;
  * so nothing needs an upload that overlaps the frames being drawn.
  *
  * A single channel image is given a view that swizzles its one channel into alpha and
- * ones into rgb, so a glyph atlas samples as white-with-coverage and the one quad shader
- * serves both text and sprites without a branch - see ADR-0005.
+ * ones into rgb, so a glyph atlas samples as white-with-coverage and the quad shader reads
+ * text and sprites the same way.
  *
  * Every texture is read through the same sampler, which the factory makes once and each
  * texture shares.
@@ -45,9 +45,9 @@ class TextureFactory final {
      * How the bytes of a colour image are read back by a shader.
      **/
     enum class Encoding {
-        /**< as they were authored, which is every texture drawn unlit - ADR-0009 **/
+        /**< as they were authored, as every texture drawn unlit is **/
         Display,
-        /**< decoded from sRGB to linear when sampled, which a lit albedo is - ADR-0066 **/
+        /**< decoded from sRGB to linear when sampled, as a lit albedo is **/
         Srgb
     };
 

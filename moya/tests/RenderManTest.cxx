@@ -13,8 +13,8 @@
 namespace {
 
 /**
- * The context the C entry points are landing in. RiGetContext is RI's own way to ask, and
- * the handle it answers with is the context.
+ * The context the C entry points are landing in. RiGetContext is RI's own query for it, and
+ * the handle it returns is the context.
  **/
 v3d::moya::RenderContext & context() {
     return *static_cast<v3d::moya::RenderContext*>(RiGetContext());
@@ -27,9 +27,9 @@ v3d::moya::RenderContext & context() {
  * goes through the other: a va_list cannot be built at runtime, so a reader holding a
  * parsed parameter list could not call these.
  *
- * That is exactly why the shader requests are worth a case on this path too. A parameter
- * a C caller passes is typed by what RiDeclare said, the same table a file's Declare
- * fills, and it reaches the same graphics state.
+ * The shader requests therefore need a case on this path too. A parameter a C caller passes
+ * is typed by what RiDeclare said, the same table a file's Declare fills, and it reaches the
+ * same graphics state.
  **/
 BOOST_AUTO_TEST_CASE(renderman_surface_and_lights_test) {
     RiBegin(RI_NULL);
@@ -61,8 +61,8 @@ BOOST_AUTO_TEST_CASE(renderman_surface_and_lights_test) {
 }
 
 /**
- * A parameter the scene declared itself is typed by that declaration, which is what makes
- * a shader parameter the standard has never heard of bindable at all.
+ * A parameter the scene declared itself is typed by that declaration, so a shader parameter
+ * the standard does not define can still be bound.
  **/
 BOOST_AUTO_TEST_CASE(renderman_declare_test) {
     RiBegin(RI_NULL);

@@ -47,9 +47,9 @@ class Controller final : public v3d::engine::Engine {
          * What to hand the immediate layer this frame.
          *
          * The game owns the mouse while it is being played: mouselook warps the pointer
-         * back to the centre every frame, so its position means nothing. This answers the
-         * real cursor only while the menu is up, and a default Input otherwise, which
-         * leaves the debug window a readout.
+         * back to the centre every frame, so its position means nothing. This returns the
+         * real cursor only while the menu is up, and a default Input otherwise, so the debug
+         * window cannot be clicked.
          **/
         v3d::ui::Immediate::Input tools() const;
 
@@ -81,8 +81,8 @@ class Controller final : public v3d::engine::Engine {
         /**
          * Pause the world while the menu is over it, and give the pointer back.
          *
-         * The cursor goes with the menu: mouselook warps the pointer to the centre every
-         * frame, which a menu cannot be clicked or seen through.
+         * The cursor is released while the menu is up: mouselook warps the pointer to the
+         * centre every frame, and the menu could not be clicked while it does.
          **/
         void suspend(bool suspended);
 

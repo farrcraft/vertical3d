@@ -17,10 +17,9 @@ namespace v3d::render::realtime {
 /**
  * Everything to be drawn for one image, as a list of passes.
  *
- * A frame is built up during a tick and recorded in one step at the end of it. The list
- * holds one pass while nothing needs more, but it is a list from the start because
- * compositing, offscreen targets and an editor's several viewports are all more passes
- * over the same frame rather than a different kind of frame - see ADR-0003.
+ * A frame is built up during a tick and recorded in one step at the end of it. Compositing,
+ * offscreen targets and an editor's several viewports are all extra passes over the same
+ * frame, not a different kind of frame.
  **/
 class Frame {
  public:
@@ -37,7 +36,7 @@ class Frame {
 
     /**
      * The passes in the order they are recorded: every pass drawing into a target before
-     * every pass that reads() it, and otherwise the order they were created in - ADR-0068.
+     * every pass that reads() it, and otherwise the order they were created in.
      * Passes drawing into one target, the swapchain image included, always keep the order
      * they were created in, since each draws over what the one before it left.
      *
@@ -65,8 +64,8 @@ class Frame {
     };
 
     /**
-     * ordered() over identities alone, so that the ordering can be asked about with no device
-     * to make a target on.
+     * ordered() over identities alone, so that the ordering can be tested without a device to
+     * make a target on.
      *
      * @return the indices of the nodes in the order they are recorded
      * @throw std::runtime_error on a cycle

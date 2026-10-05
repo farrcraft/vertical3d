@@ -16,9 +16,9 @@ namespace v3d::render::offline::sl::syntax {
 /**
  * A formal parameter of a shader or of a function inside one.
  *
- * A shader parameter has a **required** default - SL has no uninitialised parameter, and
- * the default is what a scene that does not mention it gets. A function's formals have
- * none, which is the one way the two lists differ.
+ * A shader parameter has a **required** default: SL has no uninitialised parameter, and a
+ * scene that does not mention the parameter gets the default. A function's formals have
+ * none, and that is the only difference between the two lists.
  **/
 class Parameter final {
  public:

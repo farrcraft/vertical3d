@@ -25,9 +25,8 @@ namespace {
 constexpr int UNREACHED = std::numeric_limits<int>::max();
 
 /**
- * Neighbour offsets, orthogonals first. The order is what breaks ties between routes of
- * equal cost, so it is fixed rather than incidental: the same query returns the same path on
- * every run, which is what lets a result be reproduced.
+ * Neighbour offsets, orthogonals first. The order breaks ties between routes of equal cost,
+ * so it is fixed: the same query returns the same path on every run.
  **/
 constexpr std::array<TileCoord, 8> STEPS{
     TileCoord{ 1, 0 }, TileCoord{ -1, 0 }, TileCoord{ 0, 1 }, TileCoord{ 0, -1 },
@@ -89,7 +88,7 @@ class Walk {
      *
      * A diagonal additionally requires one of the two tiles it passes between to be open,
      * so a wall laid corner to corner cannot be squeezed through. One blocked corner still
-     * admits the step: rounding the end of a wall passes through nothing.
+     * allows the step, so a mover can round the end of a wall.
      **/
     bool allowed(TileCoord from, TileCoord step) const {
         if (!open(TileCoord{ from.x + step.x, from.y + step.y })) {

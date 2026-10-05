@@ -23,8 +23,8 @@
 namespace v3d::render::offline::trace {
 
 /**
- * What a ray can meet: the primitives in world space, the lights on them, and what a ray
- * that misses all of them is worth.
+ * What a ray can meet: the primitives in world space, the lights on them, and the colour of
+ * a ray that misses all of them.
  *
  * A primitive is anything that can intersect a ray and describe the hit, and the scene holds
  * them as one list, so a new kind of primitive is a new class rather than a change here.
@@ -33,8 +33,8 @@ class Scene final {
  public:
     /**
      * Where every motion has carried its primitives by one time, from where they are stored,
-     * and the way back. Worked out once for a time rather than for every ray, since every ray
-     * of a sample looks at the same time.
+     * and the way back. Computed once per time rather than per ray, since every ray of a
+     * sample has the same time.
      **/
     class Poses final {
      public:
@@ -45,8 +45,9 @@ class Scene final {
     Scene();
 
     /**
-     * The world to camera transformation a hit's "camera" space is, and where its E is.
-     * The renderer names the camera it sees through; until it does, the two spaces agree.
+     * The world to camera transformation that defines a hit's "camera" space, and the
+     * position of its E. The renderer sets the camera; until it does, the two spaces are
+     * the same.
      **/
     void view(const glm::mat4x4 & toCamera);
     glm::mat4x4 view() const;
@@ -64,8 +65,8 @@ class Scene final {
     const std::vector<boost::shared_ptr<const Primitive>> & primitives() const;
 
     /**
-     * The primitives of one kind, in the order they were added - what a test or a tool asks
-     * when it wants to know what a scene made of a request.
+     * The primitives of one kind, in the order they were added, for a test or a tool that
+     * checks what a scene built from a request.
      **/
     template <class Kind>
     std::vector<const Kind*> all() const {
@@ -80,8 +81,8 @@ class Scene final {
     }
 
     /**
-     * The lights shining on a primitive that was given none of its own, which is how a
-     * scene built in code names its lights once for everything in it.
+     * The lights shining on a primitive that was given none of its own. A scene built in
+     * code names its lights here once for everything in it.
      **/
     void add(const v3d::render::offline::sl::Placed & light);
     const std::vector<v3d::render::offline::sl::Placed> & lights() const;
@@ -94,9 +95,9 @@ class Scene final {
     /**
      * The nearest primitive a ray meets beyond `from`, or false.
      *
-     * @param from how far along the ray to start looking. A ray leaving a surface would
-     *        otherwise meet the surface it left: that is the self intersection every
-     *        tracer has, and it is why a shadow ray is offset rather than started at zero
+     * @param from how far along the ray to start looking. Without it, a ray leaving a
+     *        surface would meet the surface it left, so a shadow ray is offset rather
+     *        than started at zero
      * @param poses where the moving primitives are. A ray is taken back into the pose a
      *        moving primitive was stored in rather than the primitive moved, and what it
      *        hits is brought forward again
@@ -104,7 +105,7 @@ class Scene final {
     bool nearest(const v3d::type::geometry::Ray & ray, float from, Hit* hit, const Poses & poses) const;
 
     /**
-     * The same at a time, for a caller asking once rather than for every ray of a sample.
+     * The same at a time, for a caller tracing one ray rather than every ray of a sample.
      **/
     bool nearest(const v3d::type::geometry::Ray & ray, float from, Hit* hit, float time = 0.0f) const;
 
@@ -113,8 +114,8 @@ class Scene final {
 
     /**
      * How many rays deep a shader's trace() may go, which is RI's
-     * `Option "trace" "maxdepth"`. A trace that would go deeper answers the background,
-     * and that is what bounds two surfaces that trace into each other.
+     * `Option "trace" "maxdepth"`. A trace that would go deeper returns the background,
+     * which bounds the recursion between two surfaces that trace into each other.
      **/
     unsigned int traceDepth() const;
     void traceDepth(unsigned int depth);

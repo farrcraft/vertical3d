@@ -58,7 +58,7 @@ namespace {
  * Read a fixed length array of numbers - a position, a size, a colour.
  *
  * @param fallback what to answer with when the field is absent or the wrong length,
- *      which is what lets every one of these be optional
+ *      so every one of these is optional
  **/
 template <typename T, std::size_t N>
 T numbers(const boost::json::object& entry, const std::string& field, const T& fallback) {
@@ -242,8 +242,7 @@ bool Loader::loadTheme(const boost::json::object& entry) {
     std::string themeName = boost::json::value_to<std::string>(entry.at("name"));
     boost::shared_ptr<style::Theme> theme = boost::make_shared<style::Theme>(themeName);
 
-    // a theme with no styles in it is legal and draws in the defaults, which is what
-    // every ui config in the tree was before the styles could be read
+    // a theme with no styles in it is legal and draws in the defaults
     if (entry.contains("styles")) {
         if (!entry.at("styles").is_array()) {
             logger_->get()->error("Unrecognized styles config in theme [{}]", themeName);
@@ -267,8 +266,8 @@ bool Loader::loadTheme(const boost::json::object& entry) {
 
 boost::shared_ptr<Component> Loader::buildComponent(const std::string& componentType, const boost::json::object& entry) {
     // the config's vocabulary is component::name()'s, so this switches on what a type is
-    // rather than on what it was spelled. An exhaustive switch, per ADR-0047: a component
-    // added to the enum names this function until it is given a way to be built
+    // rather than on what it was spelled. An exhaustive switch, so a component added to
+    // the enum fails the build here until it is given a way to be built
     switch (component::parse(componentType)) {
         case component::Type::Menu: {
             boost::shared_ptr<component::Menu> menu = loadMenu(entry);
@@ -427,7 +426,7 @@ bool Loader::loadStyle(const boost::json::object& entry, const boost::shared_ptr
         } else if (stateName == "press") {
             state = style::Button::State::Press;
         } else if (stateName == "disabled" || stateName == "inactive") {
-            // both names dress a component that is not enabled - ADR-0059
+            // both names dress a component that is not enabled
             state = style::Button::State::Disabled;
         } else if (stateName != "normal") {
             logger_->get()->error("A button style has no state [{}]", stateName);
@@ -580,8 +579,8 @@ boost::shared_ptr<component::Button> Loader::loadButton(const boost::json::objec
  **/
 boost::shared_ptr<component::Panel> Loader::loadPanel(const boost::json::object& entry) {
     static_cast<void>(entry);
-    // everything a panel is drawn with is its style's, per ADR-0020, so there is nothing
-    // of its own to read
+    // everything a panel is drawn with comes from its style, so there is nothing of its
+    // own to read
     return boost::make_shared<component::Panel>();
 }
 
@@ -721,8 +720,8 @@ void Loader::loadCheckBox(const boost::json::object& entry, const boost::shared_
     if (entry.contains("label")) {
         box->label(boost::json::value_to<std::string>(entry.at("label")));
     }
-    // a mark in the config is the state the ui starts in; after that it is whatever
-    // answers the command that sets one, per ADR-0019
+    // a mark in the config is the state the ui starts in; after that, whatever handles
+    // the command sets it
     box->checked(flag(entry, "checked", false));
     const v3d::event::Event command = loadCommand(entry);
     if (command.context()) {

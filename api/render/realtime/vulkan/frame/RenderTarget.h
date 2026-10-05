@@ -25,29 +25,29 @@ namespace v3d::render::realtime::vulkan::frame {
 /**
  * An image a pass draws into that is not the swapchain's, and that a later pass samples.
  *
- * The second half is the point: a target is created with sampled usage and is left in
- * VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL by the recorder once the last pass drawing into
- * it has finished, so what one pass rendered is what the next one reads. A shadow map, a
- * scene rendered before it is graded, and a second view of one scene are all this.
+ * A target is created with sampled usage, and the recorder leaves it in
+ * VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL once the last pass drawing into it has finished,
+ * so a later pass can read what an earlier one rendered. A shadow map, a scene rendered
+ * before it is graded, and a second view of one scene are all render targets.
  *
  * The extent is given rather than following the swapchain. A shadow map is sized by how
  * much detail it needs and not by the window; a target that should track the window is
  * recreated by the app when Engine3D::beginFrame reports a new size.
  *
- * The colour format is given too, and defaults to the swapchain's. A pipeline under dynamic
- * rendering is built against the format of what it draws into, so a pass drawing into a
- * target of a different format needs a pipeline built for that format - the pipeline is not
- * something a target can fix up at record time.
+ * The colour format is given too, and is not taken from the swapchain. A pipeline under
+ * dynamic rendering is built against the format of what it draws into, so a pass drawing
+ * into a target of a different format needs a pipeline built for that format. A target
+ * cannot adapt a pipeline at record time.
  *
  * A target's images are thrown away and rebuilt whenever what it is sized against changes,
  * and a frame still in flight may be drawing into them or reading them when that happens.
- * So what it lets go of, on a resize or when it is destroyed, goes to the ring rather than
- * being destroyed at once - ADR-0061.
+ * What it releases, on a resize or when it is destroyed, therefore goes to the ring rather
+ * than being destroyed at once.
  *
- * A target holds one image, or one per frame in flight - ADR-0068. With one per frame a pass
- * draws into current(), and what the frame before drew is still there to read at previous(),
- * which one image cannot give: it would be read as last frame and written as this one at
- * once. The accessors that take no slot answer for current().
+ * A target holds one image, or one per frame in flight. With one per frame, a pass draws
+ * into current() and what the previous frame drew is still readable at previous(). One
+ * image cannot do that, because it would be read as last frame and written as this one at
+ * once. The accessors that take no slot return current()'s.
  **/
 class RenderTarget final {
  public:
@@ -60,8 +60,8 @@ class RenderTarget final {
      *        target with sampled depth and no colour is what a shadow map draws into, and
      *        every colour accessor then answers null
      * @param depth whether to allocate a depth image the same size, for a pass that tests
-     * @param sampledDepth whether that depth image is also read by a later pass, which is
-     *        what a shadow map is. It costs a sampler and can change which depth format
+     * @param sampledDepth whether that depth image is also read by a later pass, as a
+     *        shadow map is. It costs a sampler and can change which depth format
      *        the device gives, so a pipeline drawing into this has to be built against
      *        depthFormat() rather than against DepthBuffer::chooseFormat's default
      * @param images one, or the ring's frames in flight for a target a pass reads the previous
@@ -160,13 +160,13 @@ class RenderTarget final {
 
     /**
      * One slot's depth image described as something pipeline::Resources can own, so that a draw
-     * item can name it as a material's texture and sample what was rendered into it - which
-     * is the whole of a shadow map's read side.
+     * item can name it as a material's texture and sample what was rendered into it. This is
+     * how a shadow map is read.
      *
-     * The same shared contract texture() has. Its images are empty when the target carries no
-     * depth, was not built to have it sampled, or has no such slot, because a descriptor set
-     * written against those would be a read of an image with no sampled usage - which the
-     * validation layer says, and nothing else does.
+     * The same sharing rules as texture() apply. Its images are empty when the target carries
+     * no depth, was not built to have it sampled, or has no such slot. A descriptor set
+     * written against those would read an image with no sampled usage, which only the
+     * validation layer reports.
      **/
     pipeline::Texture depthTexture(uint32_t slot = 0) const;
 
@@ -177,9 +177,9 @@ class RenderTarget final {
      * frame.
      *
      * What is registered shares the target's image and sampler rather than copying them, so
-     * whichever of the target and the registration lets go last is what frees them. That is
-     * why this returns a value rather than registering itself: the registration is the
-     * caller's to release.
+     * whichever of the target and the registration releases them last frees them. This
+     * returns a value rather than registering itself, because the caller owns the
+     * registration and releases it.
      **/
     pipeline::Texture texture(uint32_t slot = 0) const;
 

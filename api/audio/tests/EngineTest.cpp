@@ -88,7 +88,7 @@ BOOST_AUTO_TEST_CASE(audio_engine_load_missing_clip_test) {
 }
 
 /**
- * No resolver at all fails every clip, which is what an app that passes an empty one gets.
+ * No resolver at all fails every clip, as it does for an app that passes an empty one.
  **/
 BOOST_AUTO_TEST_CASE(audio_engine_load_without_resolver_test) {
     auto sound = engine();
@@ -154,7 +154,7 @@ BOOST_AUTO_TEST_CASE(audio_engine_add_clip_test) {
 }
 
 /**
- * A clip nothing filed is a false return, which is what the sound event handler logs. The
+ * A clip nothing filed is a false return, which the sound event handler logs. The
  * clip that did load is not played here: play needs the device that initialize() opens.
  **/
 BOOST_AUTO_TEST_CASE(audio_engine_unknown_clip_test) {
@@ -176,9 +176,9 @@ BOOST_AUTO_TEST_CASE(audio_engine_shutdown_without_initialize_test) {
 }
 
 /**
- * The track surface with no device: the clip table and the voice bookkeeping are testable
- * and whether a sound is audible is not, which is the line Testing.md draws around
- * audio::Engine::initialize().
+ * The track functions with no device. The clip table and the voice bookkeeping can be
+ * tested; whether a sound is audible cannot, so these tests run without the device that
+ * audio::Engine::initialize() opens.
  **/
 BOOST_AUTO_TEST_CASE(audio_engine_play_without_a_device_test) {
     v3dtest::writeWav("hit.wav");
@@ -211,8 +211,7 @@ BOOST_AUTO_TEST_CASE(audio_engine_play_without_a_device_test) {
 }
 
 /**
- * The defaults are what a one shot wants, which is what keeps playClip() the same call it
- * always was: no bus, no repeat, no fade, and the clip's own volume.
+ * The defaults are a one shot's: no bus, no repeat, no fade, and the clip's own volume.
  **/
 BOOST_AUTO_TEST_CASE(audio_play_defaults_are_a_one_shot_test) {
     const v3d::audio::Play once;

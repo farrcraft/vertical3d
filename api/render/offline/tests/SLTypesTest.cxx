@@ -14,9 +14,9 @@ namespace {
 typedef v3d::render::offline::sl::Type Type;
 
 /**
- * A matrix that both rotates and translates, which is the only kind that tells the three
- * transforms apart: a pure rotation leaves ptransform and vtransform agreeing, and a uniform
- * scale leaves vtransform and ntransform agreeing.
+ * A matrix that both rotates and translates, so the three transforms give different results.
+ * Under a pure rotation ptransform and vtransform agree, and under a uniform scale vtransform
+ * and ntransform agree.
  **/
 glm::mat4x4 placed() {
     glm::mat4x4 matrix = glm::translate(glm::mat4x4(1.0f), glm::vec3(10.0f, 20.0f, 30.0f));
@@ -36,8 +36,8 @@ BOOST_AUTO_TEST_CASE(sltypes_components_test) {
 
 /**
  * RI's coercions: a float replicates into anything made of floats, and the three point-like
- * types convert to each other. A colour does not convert to or from a position - a colour
- * that has drifted into one is a mistake worth catching.
+ * types convert to each other. A colour does not convert to or from a position, so using
+ * one as the other is an error.
  **/
 BOOST_AUTO_TEST_CASE(sltypes_coercion_test) {
     BOOST_CHECK(v3d::render::offline::sl::coercible(Type::FLOAT, Type::POINT));
@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE(sltypes_arithmetic_test) {
     // a float is a scale over anything else, whichever side it is on
     BOOST_CHECK(v3d::render::offline::sl::arithmetic(Type::FLOAT, Type::COLOR) == Type::COLOR);
     BOOST_CHECK(v3d::render::offline::sl::arithmetic(Type::POINT, Type::FLOAT) == Type::POINT);
-    // and the point-like types mix, taking the left operand's
+    // the point-like types mix, taking the left operand's type
     BOOST_CHECK(v3d::render::offline::sl::arithmetic(Type::POINT, Type::VECTOR) == Type::POINT);
     BOOST_CHECK(v3d::render::offline::sl::arithmetic(Type::VECTOR, Type::NORMAL) == Type::VECTOR);
     // a colour and a position have none between them
@@ -82,8 +82,8 @@ BOOST_AUTO_TEST_CASE(sltypes_ptransform_test) {
 }
 
 /**
- * A direction has no position, so a translation does nothing to it. That is the whole of
- * what tells a vector from a point, and it is invisible until a scene translates.
+ * A direction has no position, so a translation does nothing to it. That is the only
+ * difference between a vector and a point, and it is invisible until a scene translates.
  **/
 BOOST_AUTO_TEST_CASE(sltypes_vtransform_test) {
     const glm::vec3 turned = v3d::render::offline::sl::vtransform(placed(), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -94,9 +94,9 @@ BOOST_AUTO_TEST_CASE(sltypes_vtransform_test) {
 }
 
 /**
- * A normal goes by the inverse transpose. Under a rotation that is what a vector does, and
- * the moment a scene scales one axis it is not - the same fault as moya's dicing and its traced
- * fan, in a third place.
+ * A normal goes by the inverse transpose. Under a rotation a normal transforms as a vector
+ * does; under a scale of one axis it does not. moya's dicing and its traced fan follow the
+ * same rule.
  **/
 BOOST_AUTO_TEST_CASE(sltypes_ntransform_test) {
     // under a rotation and a translation the three agree about direction
@@ -105,8 +105,8 @@ BOOST_AUTO_TEST_CASE(sltypes_ntransform_test) {
     BOOST_CHECK_CLOSE(turned.y, 1.0f, 0.01f);
     BOOST_CHECK_SMALL(turned.z, 0.0001f);
 
-    // and a scale of one axis is where they part company: the plane of a surface leans the
-    // opposite way to the points that make it
+    // under a scale of one axis they differ: the plane of a surface leans the opposite way
+    // to the points that make it
     const glm::mat4x4 stretched = glm::scale(glm::mat4x4(1.0f), glm::vec3(1.0f, 2.0f, 1.0f));
     const glm::vec3 normal(1.0f, 1.0f, 0.0f);
 

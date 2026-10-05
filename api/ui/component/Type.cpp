@@ -36,7 +36,7 @@ std::string_view name(Type type) {
             return std::string_view();
     }
     // every enumerator is handled above and the switch carries no default, so C4062 names
-    // this function when a component type is added - see ADR-0047
+    // this function when a component type is added
     return std::string_view();
 }
 
@@ -81,7 +81,7 @@ Type parse(std::string_view text) {
     // read at startup, and a table would be a second place to forget. A type with no config
     // name answers empty from name(), which no non-empty text matches.
     //
-    // The walk runs to VerticalBox because the enum is kept alphabetical and that is its last
+    // The loop runs to VerticalBox because the enum is kept alphabetical and that is its last
     // entry. A type added past it would be skipped here while compiling everywhere else, so
     // TypeTest sweeps wider than the enum and fails if one ever is
     if (text.empty()) {

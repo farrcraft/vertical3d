@@ -37,8 +37,8 @@ constexpr int DIAGONAL_STEP_COST = 1;
  * Steps between two tiles ignoring everything in the way: Chebyshev distance, which is the
  * admissible heuristic for the costs above.
  *
- * This is the distance metric for anything measured in tiles. A second metric invented
- * elsewhere would disagree with what movement charges.
+ * This is the distance metric for anything measured in tiles. Use it rather than another
+ * metric, so that distances agree with what movement costs.
  **/
 int tileDistance(TileCoord a, TileCoord b);
 
@@ -53,10 +53,9 @@ int tileDistance(TileCoord a, TileCoord b);
  * start itself is never tested against the grid or the filter - the mover is standing on
  * it, and whatever makes a tile unenterable does not trap whoever is already there.
  *
- * A diagonal step between two blocked tiles is refused: a wall laid corner to corner is a
- * wall, and two movers standing corner to corner cannot be slipped between. Cutting a
- * single blocked corner is allowed, because rounding the end of a wall passes through
- * nothing.
+ * A diagonal step between two blocked tiles is refused, so a wall laid corner to corner
+ * blocks movement, and a mover cannot slip between two movers standing corner to corner.
+ * Cutting a single blocked corner is allowed, so a mover can round the end of a wall.
  *
  * Ties are broken by a fixed neighbour order, so the same query on the same map always
  * returns the same path.
@@ -69,8 +68,7 @@ std::vector<TileCoord> findPath(const TileGrid& grid, TileCoord start, TileCoord
  *
  * Includes start at a cost of 0. The same corner rule and the same treatment of the start
  * tile as findPath(), so a tile in this set is a tile findPath() can reach for the cost
- * given here - a highlight drawn from this cannot promise a move the path search then
- * refuses.
+ * given here. A highlight drawn from this set never shows a move that findPath() refuses.
  *
  * @throws std::invalid_argument if the budget is negative
  **/

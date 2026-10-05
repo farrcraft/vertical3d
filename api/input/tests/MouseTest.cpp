@@ -16,9 +16,9 @@
 #include <boost/make_shared.hpp>
 
 /**
- * The device this replaces was v3D::MouseDevice. Mouse::handleEvent was an empty stub that
- * returned true, so every mouse event in every app was swallowed - this is the test that
- * would have caught it.
+ * A Mouse turns SDL events into dispatcher events and MouseState, and handleEvent claims
+ * only the events that belong to the mouse. A test feeds it an SDL_Event and checks what
+ * comes out of the dispatcher.
  **/
 namespace {
 struct Recorder {
@@ -176,7 +176,7 @@ BOOST_AUTO_TEST_CASE(mousestate_edge_test) {
     BOOST_CHECK_EQUAL(state.pressed("left"), false);
     BOOST_CHECK_EQUAL(state.released("left"), false);
     BOOST_CHECK_EQUAL(state.pressed("right"), false);
-    // what is held and where the cursor is are facts about now, not about the frame
+    // what is held and where the cursor is are current state, not edges of the frame
     BOOST_CHECK_EQUAL(state.held("right"), true);
     BOOST_CHECK_EQUAL(state.position()[0], 4.0f);
     BOOST_CHECK_EQUAL(state.position()[1], 2.0f);
@@ -197,7 +197,7 @@ BOOST_AUTO_TEST_CASE(mousestate_test) {
     BOOST_CHECK_EQUAL(state("left"), false);
     BOOST_CHECK_EQUAL(state.held("left"), false);
 
-    // and moving the cursor hands back where it was
+    // and moving the cursor returns where it was
     glm::vec2 previous = state(glm::vec2(5.0f, 7.0f));
     BOOST_CHECK_EQUAL(previous[0], 0.0f);
     BOOST_CHECK_EQUAL(previous[1], 0.0f);
@@ -209,8 +209,8 @@ BOOST_AUTO_TEST_CASE(mousestate_test) {
 }
 
 /**
- * A wheel is an edge and not a position: there is no such thing as where one is, so the
- * notches a frame saw are accumulated and cleared with the button edges.
+ * A wheel is an edge and not a position, because a wheel has no position. The notches a
+ * frame saw are accumulated and cleared with the button edges.
  **/
 BOOST_AUTO_TEST_CASE(mouse_wheel_test) {
     boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
@@ -225,7 +225,7 @@ BOOST_AUTO_TEST_CASE(mouse_wheel_test) {
     BOOST_REQUIRE_EQUAL(recorder.wheel_.size(), 1u);
     BOOST_CHECK_EQUAL(recorder.wheel_[0].notches()[1], 1.0f);
 
-    // the event carries where the cursor was, which is what says what was scrolled
+    // the event carries where the cursor was, which identifies what was scrolled
     BOOST_CHECK_EQUAL(recorder.wheel_[0].position()[0], 40.0f);
     BOOST_CHECK_EQUAL(recorder.wheel_[0].position()[1], 50.0f);
 

@@ -4,8 +4,8 @@
 /**
  * The outline: the model pushed out along its normals in its own space, before the pose and the
  * model matrix, and drawn with its front faces culled. What survives is the back of a slightly
- * larger hull, visible only around the silhouette - pushed out at the bind pose and then posed,
- * so that it follows the surface it outlines.
+ * larger hull, visible only around the silhouette. It is pushed out at the bind pose and then
+ * posed, so it follows the surface it outlines.
  **/
 
 #include "lit.glsl"

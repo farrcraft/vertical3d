@@ -113,7 +113,7 @@ BOOST_AUTO_TEST_CASE(findpath_diagonal_run_costs_one_per_tile_test) {
 
     const std::vector<TileCoord> path = findPath(grid, at(0, 0), at(4, 4));
 
-    // four steps, not eight: this is the whole of the 8 way decision in one assertion
+    // four steps, not eight: this one assertion checks that movement is 8 way
     BOOST_CHECK_EQUAL(path.size(), 5u);
     BOOST_CHECK_EQUAL(path.back() == at(4, 4), true);
     BOOST_CHECK_EQUAL(contiguous(path), true);
@@ -156,8 +156,8 @@ BOOST_AUTO_TEST_CASE(findpath_rounding_an_offset_wall_is_free_test) {
 
     // straight across is 8 steps, and going around by way of the gap at (4, 8) is also 8:
     // the four rows of detour are absorbed by the four columns of travel it already had to
-    // make. this is the Chebyshev under-charge that 8 way movement at a flat cost buys - a
-    // wall only costs something when the way round leaves the diagonal envelope
+    // make. with 8 way movement at a flat cost, a wall adds cost only when the way round
+    // leaves the diagonal envelope
     BOOST_CHECK_EQUAL(path.size(), 9u);
 }
 
@@ -264,8 +264,8 @@ BOOST_AUTO_TEST_CASE(findpath_cannot_squeeze_between_two_blocked_tiles_test) {
 BOOST_AUTO_TEST_CASE(findpath_the_corner_rule_reads_the_filter_too_test) {
     const TileGrid grid = makeGrid();
 
-    // the same rule, sourced from the filter rather than from the grid: a wall of bodies is
-    // a wall
+    // the same rule, with the blocked tiles coming from the filter rather than from the
+    // grid: movers standing corner to corner block like a wall
     const std::vector<TileCoord> path =
         findPath(grid, at(3, 3), at(4, 4), blocking({ at(4, 3), at(3, 4) }));
 
@@ -278,7 +278,7 @@ BOOST_AUTO_TEST_CASE(findpath_a_single_blocked_corner_can_still_be_cut_test) {
     grid.setPassable(at(4, 3), false);
 
     // only one of the two tiles the diagonal passes between is blocked, so rounding the end
-    // of the wall passes through nothing and is allowed
+    // of the wall is allowed
     const std::vector<TileCoord> path = findPath(grid, at(3, 3), at(4, 4));
 
     BOOST_CHECK_EQUAL(path.size(), 2u);
@@ -479,7 +479,7 @@ BOOST_AUTO_TEST_CASE(distancefield_the_goal_is_never_tested_test) {
     const TileGrid grid = makeGrid();
 
     // whoever is standing on the goal does not make it unreachable - the same exemption
-    // findPath() gives its start, and what lets an approach measure against an occupied tile
+    // findPath() gives its start, so an approach can be measured to an occupied tile
     const DistanceField field(grid, CENTRE, blocking({ CENTRE }));
 
     BOOST_CHECK_EQUAL(field.cost(CENTRE), 0);

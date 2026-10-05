@@ -80,8 +80,8 @@ BOOST_AUTO_TEST_CASE(transform_tool_drag_test) {
     boost::shared_ptr<v3d::editor::TransformTool> transform = tool(scene);
     transform->activate("translate");
 
-    // a press on the x handle grabs it, and the press is the tool's rather than the one
-    // that selects
+    // a press on the x handle grabs it, and the press goes to this tool rather than to the
+    // one that selects
     transform->button(1, true, glm::vec2(centre.x + 45.0f, centre.y));
     BOOST_CHECK_EQUAL(transform->dragging(), true);
     BOOST_CHECK(transform->manipulator()->axis() == v3d::editor::Manipulator::Axis::X);
@@ -107,14 +107,13 @@ BOOST_AUTO_TEST_CASE(transform_tool_miss_test) {
     boost::shared_ptr<v3d::editor::TransformTool> transform = tool(scene);
     transform->activate("translate");
 
-    // a press away from every handle is not a drag, which is what lets the same press go on
-    // to select
+    // a press away from every handle is not a drag, so the same press can go on to select
     transform->button(1, true, glm::vec2(30.0f, 370.0f));
     BOOST_CHECK_EQUAL(transform->dragging(), false);
     transform->motion(glm::vec2(60.0f, 340.0f));
     BOOST_CHECK_SMALL(cube->translation().x, 0.001f);
 
-    // and neither is a press with nothing selected, however good the aim
+    // neither is a press with nothing selected, however good the aim
     scene->deselect();
     transform->button(1, true, centre);
     BOOST_CHECK_EQUAL(transform->dragging(), false);
@@ -184,7 +183,7 @@ BOOST_AUTO_TEST_CASE(transform_tool_no_gesture_test) {
     transform->button(1, false, glm::vec2(centre.x + 45.0f, centre.y));
     BOOST_CHECK_EQUAL(history->undoDepth(), 0u);
 
-    // and neither does a press that took no handle
+    // neither does a press that took no handle
     transform->button(1, true, glm::vec2(30.0f, 370.0f));
     transform->button(1, false, glm::vec2(30.0f, 370.0f));
     BOOST_CHECK_EQUAL(history->undoDepth(), 0u);
@@ -204,8 +203,8 @@ BOOST_AUTO_TEST_CASE(transform_tool_abandoned_gesture_test) {
     transform->button(1, true, glm::vec2(centre.x + 45.0f, centre.y));
     transform->motion(glm::vec2(centre.x + 145.0f, centre.y));
 
-    // the mode change drops the drag, but what it already wrote to the mesh has happened and
-    // has to be reachable from the history
+    // the mode change drops the drag, but what it already wrote to the mesh stays, so it
+    // has to be recorded in the history
     transform->activate("rotate");
     BOOST_CHECK_EQUAL(history->undoDepth(), 1u);
     BOOST_CHECK_EQUAL(history->undo()->name(), "translate");

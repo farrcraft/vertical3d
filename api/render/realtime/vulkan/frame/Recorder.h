@@ -20,16 +20,16 @@ namespace v3d::render::realtime::vulkan::frame {
 /**
  * Turns a frame into commands.
  *
- * Recording is the engine's job rather than an operation's, per ADR-0004, so this is the
- * one place that touches a command buffer. It draws through dynamic rendering - there is
- * no VkRenderPass and no VkFramebuffer anywhere in the renderer, per ADR-0002.
+ * Recording belongs to the engine rather than to each draw, so this is the only place that
+ * writes to a command buffer. It draws through dynamic rendering: there is no VkRenderPass
+ * and no VkFramebuffer anywhere in the renderer, which relies on Vulkan 1.3.
  *
- * A pass is recorded in submission order unless it asks to be sorted, which is what 2D
- * content needs - see Pass::sort. A sorted pass is walked in sort key order, so items
- * sharing a pipeline and a material end up adjacent and the binds between them fall away.
+ * A pass is recorded in submission order, which 2D content needs, unless it asks to be
+ * sorted - see Pass::sort. A sorted pass is recorded in sort key order, so items sharing a
+ * pipeline and a material end up adjacent and need no binds between them.
  *
  * Nothing already bound is rebound: a pipeline and a descriptor set are bound only when
- * an item asks for a different one than the last item did, so a run of quads sharing a
+ * an item names a different one than the last item did, so a run of quads sharing a
  * texture costs one bind between them.
  **/
 class Recorder final {
@@ -55,10 +55,10 @@ class Recorder final {
          *
          * PRESENT_SRC by default, because a frame is usually drawn to be presented and that
          * is the layout the presentation engine reads. A frame with no chain under it is not
-         * presented and cannot use it - the layout is only valid where VK_KHR_swapchain is
-         * enabled, so asking for it on a headless device is a validation error rather than a
-         * pointless transition. Such a frame names what it is drawn for instead, which for
-         * one that is captured or sampled afterwards is SHADER_READ_ONLY_OPTIMAL.
+         * presented and cannot use it: the layout is only valid where VK_KHR_swapchain is
+         * enabled, so using it on a headless device is a validation error. Such a frame names
+         * the layout its next use needs instead, which is SHADER_READ_ONLY_OPTIMAL for one that
+         * is captured or sampled afterwards.
          **/
         VkImageLayout finalLayout;
     };
@@ -76,11 +76,15 @@ class Recorder final {
 
     /**
      * Whether a pass gives a pipeline everything it declares it needs per pass: a scene set
-     * for a pipeline whose layout has a set 2, and a bias for one built with depth bias -
-     * ADR-0064. And whether the pipeline was built for what the pass draws into: its colour
-     * format, and its depth format when the pass tests depth, wherever both sides state one -
-     * ADR-0068. Checked whenever the recorder binds a pipeline, and nothing else needs a
-     * device to ask.
+     * for a pipeline whose layout has a set 2, and a bias for one built with depth bias.
+     *
+     * Also whether the pipeline was built for what the pass draws into: its colour format,
+     * and its depth format when the pass tests depth, wherever both sides state one. The
+     * validation layer reports a mismatch only when it is enabled; this check names the pass
+     * in every build.
+     *
+     * Checked whenever the recorder binds a pipeline. It needs no device, so it can be
+     * tested on its own.
      *
      * @param into what the pass draws into, whose formats go unchecked where it leaves them
      *        undefined
@@ -103,9 +107,9 @@ class Recorder final {
         VkDeviceSize vertexBufferOffset;
         VkBuffer indexBuffer;
         VkDeviceSize indexBufferOffset;
-        VkRect2D area;      /**< the whole of what the pass draws into, which an unclipped item wants **/
+        VkRect2D area;      /**< all of what the pass draws into, which an unclipped item uses **/
         VkRect2D scissor;   /**< what is set now, so an unchanged clip costs nothing **/
-        bool scissorSet;    /**< false until one is known, which is what an escape hatch leaves behind **/
+        bool scissorSet;    /**< false until one is known, as after an escape hatch has run **/
         const Target* into; /**< what the pass draws into, which every pipeline it binds is checked against. Set before any item is recorded **/
     };
 
@@ -116,7 +120,8 @@ class Recorder final {
     static void openTarget(VkCommandBuffer commands, const Pass& pass, const Target& into);
 
     /**
-     * Leave a target readable after the last pass of the frame that writes it.
+     * Leave a target readable after the last pass of the frame that writes it: colour in
+     * SHADER_READ_ONLY_OPTIMAL, and a sampled depth image in DEPTH_READ_ONLY_OPTIMAL.
      **/
     static void closeTarget(VkCommandBuffer commands, const Pass& pass, const Target& into);
 
@@ -133,8 +138,8 @@ class Recorder final {
         VkDescriptorSet frameSet, Bound* bound);
 
     /**
-     * Cut the draw down to what the item asks for, or back to the whole pass when it asks
-     * for nothing, per ADR-0037. The rectangle is clamped to the pass's own, so an item
+     * Cut the draw down to the item's scissor, or back to the whole pass when it names
+     * none. The rectangle is clamped to the pass's own, so an item
      * clipped against a canvas larger than the image cannot name a region outside it.
      **/
     static void scissor(VkCommandBuffer commands, const DrawItem& item, Bound* bound);

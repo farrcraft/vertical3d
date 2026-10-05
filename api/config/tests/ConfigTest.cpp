@@ -46,8 +46,8 @@ BOOST_AUTO_TEST_CASE(config_load_test) {
 }
 
 /**
- * A type the document did not name is a null return rather than a default, which is what lets
- * an app treat an absent config as "take what the code already does".
+ * A type the document did not name is a null return rather than a default, so an app can
+ * treat an absent config as "use the code's defaults".
  **/
 BOOST_AUTO_TEST_CASE(config_absent_type_test) {
     v3d::config::Config config(boost::make_shared<v3d::log::Logger>());
@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE(config_absent_type_test) {
 
 /**
  * Every rejection below is a false return rather than an exception out of engine startup,
- * which is the whole reason load() guards each lookup with a contains().
+ * so load() guards each lookup with contains().
  **/
 BOOST_AUTO_TEST_CASE(config_missing_document_test) {
     BOOST_TEST(!loads("nowhere"));
@@ -102,9 +102,9 @@ BOOST_AUTO_TEST_CASE(config_named_file_absent_test) {
 }
 
 /**
- * The extension is what picks a loader, and Manager::loadTypeFromExt throws for one it does
- * not know - so a config naming a file this library cannot load has to be a rejection like
- * any other rather than the one path out of load() that escapes as an exception.
+ * The extension picks a loader, and Manager::loadTypeFromExt returns no asset for an
+ * extension nothing is registered for. A config naming a file this library cannot load is
+ * therefore a rejection like any other.
  **/
 BOOST_AUTO_TEST_CASE(config_unloadable_extension_test) {
     BOOST_TEST(!loads("bad-extension"));

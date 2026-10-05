@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE(viewlayout_covers_the_window_test) {
     BOOST_REQUIRE(layout.load(config(quad)));
 
     // an odd size does not divide evenly, and the last child of a split takes what integer
-    // division left over - otherwise there is a seam of pixels no pass ever draws into
+    // division left over - otherwise there is a gap of pixels no pass ever draws into
     layout.resize(1025, 769);
 
     BOOST_CHECK_EQUAL(layout.views()[0].region.z + layout.views()[1].region.z, 1025.0f);
@@ -101,8 +101,7 @@ BOOST_AUTO_TEST_CASE(viewlayout_hit_test) {
 }
 
 BOOST_AUTO_TEST_CASE(viewlayout_single_view_test) {
-    // a layout does not have to split at all - one viewport covering the window is a valid
-    // one, and is what maximising a view will produce
+    // a layout does not have to split at all - one viewport covering the window is valid
     v3d::editor::ViewLayout layout(logger());
     BOOST_REQUIRE(layout.load(config("{\"layout\": {\"root\": {\"camera\": \"Perspective\"}}}")));
 
@@ -119,8 +118,8 @@ BOOST_AUTO_TEST_CASE(viewlayout_rejects_test) {
     BOOST_CHECK(!layout.load(config("{}")));
     // a layout with no root
     BOOST_CHECK(!layout.load(config("{\"layout\": {\"name\": \"empty\"}}")));
-    // a split with nothing in it draws nothing, which is a config worth rejecting rather
-    // than a window that comes up blank
+    // a split with nothing in it draws nothing, so the config is rejected rather than
+    // bringing up a blank window
     BOOST_CHECK(!layout.load(config("{\"layout\": {\"root\": {\"split\": \"vertical\", \"children\": []}}}")));
     // a node that is neither a camera nor a split
     BOOST_CHECK(!layout.load(config("{\"layout\": {\"root\": {\"name\": \"neither\"}}}")));

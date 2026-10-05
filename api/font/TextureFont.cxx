@@ -155,8 +155,7 @@ TextureFont::TextureFont(const std::string& filename, float size, const boost::s
     underlineThickness_ = underlineThickness_ < 0.0f ? std::ceil(underlineThickness_ - 0.5f) : std::floor(underlineThickness_ + 0.5f);
     underlineThickness_ = std::max(underlineThickness_, 1.0f);
 
-    // metrics are 26.6 fixed point, which carries the fractional pixel the /100 was
-    // reaching for
+    // metrics are 26.6 fixed point, which already carries fractional pixels
     FT_Size_Metrics metrics = freetype_->face_->size->metrics;
     ascender_ = metrics.ascender / 64.0f;
     descender_ = metrics.descender / 64.0f;
@@ -320,7 +319,7 @@ class GlyphHandle final {
  * Which of freetype's render modes a run of glyphs is rasterized through.
  *
  * A three channel atlas is subpixel filtered and has to stay so. A single channel one is a
- * distance field when a spread was asked for - ADR-0036 - and coverage otherwise.
+ * distance field when a spread was asked for, and coverage otherwise.
  **/
 FT_Render_Mode glyphRenderMode(unsigned int depth, bool sdf) {
     if (depth == 3) {
@@ -339,7 +338,7 @@ FT_Int32 glyphLoadFlags(FT_Library library, TextureFont::OutlineType outline, bo
     unsigned int depth, bool lcdFiltering, const unsigned char* lcdWeights, bool sdf) {
     FT_Int32 flags = 0;
     // a distance field is built from the outline, so the load must not have rendered one
-    // to a bitmap already - the caller renders it afterwards, in the mode it wants
+    // to a bitmap already - the caller renders it afterwards, in the mode it needs
     if (outline != TextureFont::OUTLINE_TYPE_NONE || sdf) {
         flags |= FT_LOAD_NO_BITMAP;
     } else {

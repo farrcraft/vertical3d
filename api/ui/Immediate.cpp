@@ -27,7 +27,7 @@ namespace v3d::ui {
 namespace {
 
 /**
- * The seed and the multiplier of FNV-1a, which is what a label is turned into an id with.
+ * The seed and the multiplier of FNV-1a, which hashes a label into an id.
  * Any hash would do; this one is four lines and needs no table.
  **/
 const std::uint64_t hashSeed = 1469598103934665603ULL;
@@ -40,8 +40,8 @@ const float ruleWidth = 1.0f;
 
 /**
  * How far a scrub moves the value for each pixel the cursor travels. One unit per pixel is
- * too fast to land on a number by hand and too slow to cross a wide range, and a quarter
- * is the compromise every tool of this kind settles on.
+ * too fast to land on a number by hand and too slow to cross a wide range; a quarter is a
+ * compromise between the two.
  **/
 const float scrubRate = 0.25f;
 
@@ -53,7 +53,7 @@ const float wheelRows = 3.0f;
 
 /**
  * How far a press on a title bar has to travel before it moves the window instead of
- * folding it, per ADR-0045. Wide enough that a hand resting on the button does not drag,
+ * folding it. Wide enough that a hand resting on the button does not drag,
  * and narrow enough that a move that was meant is never read as a fold.
  **/
 const float dragThreshold = 3.0f;
@@ -241,8 +241,8 @@ void Immediate::begin(v3d::render::realtime::Canvas* canvas, const Input& input)
 }
 
 void Immediate::end() {
-    // what the cursor was found on this frame is what answers the next one, which is how a
-    // window drawn later takes the cursor from one under it
+    // what the cursor was found on this frame is used by the next one, so a window drawn
+    // later takes the cursor from one under it
     hovered_ = hovering_;
     if (input_.released || !input_.down) {
         active_ = 0;
@@ -378,7 +378,7 @@ bool Immediate::window(const std::string& title, const glm::vec2& position, cons
     Retained& retained = retain(id);
 
     // the title bar both folds the window and moves it, told apart by whether the press
-    // travelled - ADR-0045. The move is applied before the window is placed, so a dragged
+    // travelled. The move is applied before the window is placed, so a dragged
     // window is under the cursor on the frame it moved rather than the one after. The
     // pixels spent deciding are not applied, so a drag lags by the threshold once
     if (active_ != id) {
@@ -766,7 +766,7 @@ bool Immediate::table(const std::string& id, unsigned int columns, float height)
     // the gutter is reserved for as long as the table has a height, whether or not there
     // is anything to scroll yet, so that the columns do not re-flow when a row arrives -
     // and so that the bar can be drawn the frame the content overflows rather than the one
-    // after, which is what a window's has to do. ADR-0046
+    // after, as a window's has to be
     if (table_.height > 0.0f) {
         row_.right -= dressing_.scrollbarWidth + dressing_.spacing;
     }

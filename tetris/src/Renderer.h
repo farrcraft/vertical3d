@@ -29,8 +29,8 @@ class TetrisScene;
  * Everything tetris draws, built as one canvas of quads and handed to the render engine.
  *
  * Every block on the board samples one atlas, so the whole well, the falling tetrad and the
- * preview reach the device as a single batch - see ADR-0005. Text and the menu are the same
- * primitive against their own textures.
+ * preview reach the device as a single batch of quads. Text and the menu are quads too,
+ * against their own textures.
  **/
 class TetrisRenderer final {
  public:
@@ -39,7 +39,7 @@ class TetrisRenderer final {
 
     /**
      * @param statistics what the loop measured about the frame being drawn, which the
-     *        overlay reads - the app hands it over because api/ui sits below api/engine
+     *        overlay reads. The app passes it in because api/ui cannot depend on api/engine
      **/
     void draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics);
     void resize(int width, int height);

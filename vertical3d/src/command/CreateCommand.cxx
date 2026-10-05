@@ -27,7 +27,7 @@ void CreateCommand::redo() {
     if (!scene_ || !mesh_) {
         return;
     }
-    // a new mesh is the selected one, which is what the transform tools act on
+    // a new mesh becomes the selection, so the transform tools act on it
     scene_->deselect();
     mesh_->selected(true);
     scene_->add(mesh_);

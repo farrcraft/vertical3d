@@ -42,8 +42,8 @@ constexpr glm::vec4 green(0.0f, 1.0f, 0.0f, 1.0f);
 BOOST_AUTO_TEST_SUITE(resolver_test)
 
 /**
- * With no theme at all, every class resolves to the base - which is what a theme carrying
- * nothing has to leave unchanged, per ADR-0020.
+ * With no theme at all, every class resolves to the base, and a theme carrying nothing leaves
+ * it unchanged.
  **/
 BOOST_AUTO_TEST_CASE(no_theme_resolves_to_the_base) {
     Resolver resolver;
@@ -96,8 +96,7 @@ BOOST_AUTO_TEST_CASE(a_component_naming_no_style_takes_the_first_of_its_class) {
 
 /**
  * The answer is worked out once and kept, so the same ask comes back as the same object
- * rather than as a fresh one. This is the whole point of the class: a component asks every
- * frame and the theme changes almost never.
+ * rather than as a fresh one. A component asks every frame and the theme rarely changes.
  **/
 BOOST_AUTO_TEST_CASE(the_same_ask_is_worked_out_once) {
     Resolver resolver;
@@ -168,7 +167,7 @@ BOOST_AUTO_TEST_CASE(the_ui_style_is_read_into_the_base) {
 /**
  * The colour a control that cannot be used is drawn in is the theme's to name, and it is
  * named once in "ui" rather than per class - so a theme that dresses one control disabled
- * has dressed them all. ADR-0059.
+ * has dressed them all.
  **/
 BOOST_AUTO_TEST_CASE(the_ui_style_names_the_disabled_colour) {
     const boost::shared_ptr<v3d::ui::style::Theme> theme =
@@ -187,8 +186,8 @@ BOOST_AUTO_TEST_CASE(the_ui_style_names_the_disabled_colour) {
 }
 
 /**
- * A scrollbar is not a progress bar. They read the same property names out of different
- * classes, so a theme that paints a health bar green leaves a scrollbar alone.
+ * A scrollbar and a progress bar are dressed apart. They read the same property names out of
+ * different classes, so a theme that paints a health bar green leaves a scrollbar alone.
  **/
 BOOST_AUTO_TEST_CASE(a_scrollbar_does_not_take_a_bars_style) {
     const boost::shared_ptr<v3d::ui::style::Theme> theme =
@@ -207,8 +206,7 @@ BOOST_AUTO_TEST_CASE(a_scrollbar_does_not_take_a_bars_style) {
 
 /**
  * A class rings its own control, so a theme can mark a focused text box differently from a
- * focused list - and a class naming neither keeps the base's ring, which is the one ring every
- * control showed before a class could ask for its own.
+ * focused list - and a class naming neither keeps the base's ring.
  **/
 BOOST_AUTO_TEST_CASE(a_class_can_ring_its_own_control) {
     const boost::shared_ptr<v3d::ui::style::Theme> theme =
@@ -239,8 +237,8 @@ BOOST_AUTO_TEST_CASE(a_class_can_ring_its_own_control) {
  * Dressing - its fill is nine images and its label is the base's.
  *
  * A button's styles are told apart by state as well as by name, and the first of the set is
- * what answers here, because a ring says where the keyboard is rather than what state the
- * button is in.
+ * used here, because a ring shows where the keyboard is rather than what state the button
+ * is in.
  **/
 BOOST_AUTO_TEST_CASE(a_buttons_ring_comes_out_of_the_button_class) {
     const boost::shared_ptr<v3d::ui::style::Theme> theme =
@@ -261,8 +259,8 @@ BOOST_AUTO_TEST_CASE(a_buttons_ring_comes_out_of_the_button_class) {
 /**
  * The immediate layer reads its own style class, not the retained side's.
  *
- * The two want the same keys at different sizes - a hud is read at a glance and a tool panel
- * is read closely - so a theme that set "line-height" for one used to break the other.
+ * The two use the same keys at different sizes - a hud is read at a glance and a tool panel
+ * is read closely - so with one class a theme's "line-height" for one would break the other.
  **/
 BOOST_AUTO_TEST_CASE(the_two_ways_of_writing_a_ui_read_different_classes) {
     const boost::shared_ptr<v3d::ui::style::Theme> theme =

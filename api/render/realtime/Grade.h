@@ -35,17 +35,16 @@ class FullScreen;
 };  // namespace vulkan::renderer
 
 /**
- * A colour grade: a full-screen pass that looks every pixel of a scene up in a 16 cubed table,
- * which is how a game gives a whole frame its look in one step.
+ * A colour grade: a full-screen pass that looks every pixel of a scene up in a 16 cubed table.
+ * It gives a whole frame its look in one step.
  *
  * The table comes from a strip, 256 by 16: sixteen slices of blue side by side, red across
  * each and green down it. With no strip, or one of the wrong size, the table is the identity
- * and the pass copies the scene. The table is indexed by linear colour (ADR-0066), so a lit
- * scene drawn into an sRGB target is graded as the light it holds, and a strip is baked for
- * that.
+ * and the pass copies the scene. The table is indexed by linear colour, so a lit scene drawn
+ * into an sRGB target is graded as the light it holds, and a strip must be baked for that.
  *
  * The scene is read nearest, a texel per pixel, so the pass draws into a target the scene's
- * size. Its pass names the scene in Pass::reads() - ADR-0068.
+ * size. The pass the grade is drawn in must name the scene target in Pass::reads().
  **/
 class Grade final {
  public:
@@ -91,8 +90,8 @@ class Grade final {
      *
      * The table is made anew and the old one released through the ring, so a frame in flight
      * finishes with the table it was recorded against. Every source keeps the handle source()
-     * gave it. Called before the frame's submit(), since a material submitted earlier in the
-     * same frame is the one this lets go of.
+     * gave it. Call this before the frame's submit(), because it releases the material a submit
+     * earlier in the same frame would have used.
      *
      * @param texels SIZE cubed RGBA texels in the order table() gives them
      * @return false for texels of the wrong count, which leave the table as it was

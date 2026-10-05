@@ -12,10 +12,9 @@ namespace v3d::engine {
 /**
  * Real time in, whole simulation steps out.
  *
- * The loop hands each frame's elapsed time to accumulate() and then drains what that owes,
- * one fixed step at a time. Everything about the timing contract in
- * ADR-0032 that is arithmetic rather than plumbing lives here, which is what makes it
- * testable without a window or a device.
+ * The loop passes each frame's elapsed time to accumulate() and then drains the steps now
+ * due, one fixed step at a time. The timing arithmetic lives here, apart from the loop, so it
+ * can be tested without a window or a device.
  **/
 class Accumulator final {
  public:
@@ -26,7 +25,7 @@ class Accumulator final {
     static constexpr std::uint64_t step = 1000000000ULL / 60ULL;
 
     /**
-     * The same step in seconds, which is what simulate() is passed and what a velocity is
+     * The same step in seconds, as simulate() receives it and as a velocity is
      * expressed against.
      **/
     static constexpr float seconds = 1.0f / 60.0f;
@@ -43,29 +42,27 @@ class Accumulator final {
      * Take one frame of elapsed real time.
      *
      * @param elapsed nanoseconds since the previous frame, clamped before it is added
-     * @return how many whole steps are now owed, which is how many times drain() will
+     * @return how many whole steps are now due, which is how many times drain() will
      *         return true before it stops
      **/
     unsigned int accumulate(std::uint64_t elapsed) noexcept;
 
     /**
-     * Consume one owed step.
+     * Consume one due step.
      *
-     * @return whether a step was owed, and therefore whether simulate() should run
+     * @return whether a step was due, and therefore whether simulate() should run
      **/
     bool drain() noexcept;
 
     /**
      * The fraction of a step held but not yet drained, in [0, 1).
      *
-     * Rendering between the last completed step and the one after it is the entire reason
-     * to separate simulation from drawing: a draw interpolates between the two states by
-     * this much.
+     * A draw interpolates between the last two simulation states by this much.
      **/
     float alpha() const noexcept;
 
     /**
-     * @return steps owed by the most recent accumulate(), whether or not they were drained
+     * @return steps made due by the most recent accumulate(), whether or not they were drained
      **/
     unsigned int steps() const noexcept;
 

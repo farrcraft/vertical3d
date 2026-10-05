@@ -22,17 +22,15 @@
 namespace v3d::render::offline::trace {
 
 /**
- * Traces rays through a scene and shades what they meet: what a ray sees for the ray hider's
- * primary rays, and the shadow and traced rays a shader asks for under either hider, per
- * ADR-0077.
+ * Traces rays through a scene and shades what they meet: the ray hider's primary rays, and
+ * the shadow and traced rays a shader requests under either of moya's hiders.
  *
- * Each hit is shaded by a HitShader made for it on the stack, which is what a shader's
- * callbacks are answered by. A traced ray shades its hit with another, so a shader part way
- * through its run when it traces is left as it was.
+ * Each hit is shaded by a HitShader made for it on the stack, which handles the shader's
+ * callbacks. A traced ray shades its hit with another HitShader, so a shader that traces
+ * part way through its run is left as it was.
  *
- * **One shader run per pixel is slow and that is accepted here.** Batching the hits of a
- * scanline that share a shader is the obvious next thing; the 64 by 48 references do not
- * need it and a real image will.
+ * **One shader run per pixel is slow.** Batching the hits of a scanline that share a shader
+ * would make it faster.
  **/
 class Tracer final {
  public:
@@ -47,14 +45,14 @@ class Tracer final {
      * they are opaque or the ray leaves the scene, and the background behind what is left.
      *
      * A ray going on through a surface is not a traced ray, so it does not count against
-     * the scene's trace depth: a stack of panes is as deep as it is.
+     * the scene's trace depth, and a stack of panes of any depth is composited.
      **/
     class Seen final {
      public:
         /** Premultiplied, as Ci is, with the background already behind it. **/
         glm::vec3 colour = glm::vec3(0.0f);
         glm::vec3 opacity = glm::vec3(0.0f);
-        /** Whether anything was there, and how far away the first of it was. **/
+        /** Whether the ray hit anything, and the distance to the first hit. **/
         bool hit = false;
         float distance = 0.0f;
     };
@@ -63,25 +61,24 @@ class Tracer final {
     /**
      * The colour of one hit: the surface shader's Ci.
      *
-     * A primitive with no shader is its own flat colour, which is what a scene built in
-     * code without one asks for.
+     * A primitive with no shader is drawn in its own flat colour.
      */
     glm::vec3 shade(const Hit & hit);
     /**
-     * And its Oi. A shader that never writes Oi is as opaque as its primitive, and so is
+     * The Oi of one hit. A shader that never writes Oi is as opaque as its primitive, and so is
      * a primitive with no shader at all.
      **/
     glm::vec3 shade(const Hit & hit, glm::vec3* opacity);
 
     /**
-     * When the sample being shaded was taken, which is when its shadow and traced rays
-     * look at the scene. The moving primitives are placed for it here, once.
+     * When the sample being shaded was taken, which is the time its shadow and traced rays
+     * see the scene at. The moving primitives are placed for it here, once.
      **/
     void time(float when);
 
     /**
-     * transmission() and trace() in world space: for a hit of this scene, and for a renderer
-     * whose shading point is not one - moya's grids, per ADR-0077.
+     * transmission() and trace() in world space, for a hit in this scene and for a renderer
+     * whose shading point is not a hit, such as moya's grids.
      *
      * @param geometric the plane of the surface the ray leaves, which it is started off so
      *        that it does not meet that surface again; zero starts it where it is
@@ -94,8 +91,8 @@ class Tracer final {
 
     /**
      * A machine sized for one program and a batch of one, and that program's globals. Kept
-     * between hits, because a render is one of these per pixel and sizing a register file per
-     * pixel is the one allocation that would show.
+     * between hits, because a render runs one per pixel and sizing a register file per pixel
+     * would be the costliest allocation in the render.
      *
      * There is one per program per trace depth. A surface tracing into another with the
      * same shader is still running its machine when the other starts, and sharing one
@@ -121,7 +118,7 @@ class Tracer final {
      * How many traced rays deep the run is.
      *
      * A ray a shader traced may hit a surface whose shader traces again, and nothing in
-     * the language stops that going round for ever: the scene's trace depth does.
+     * the language stops that recursing for ever; the scene's trace depth limits it.
      */
     unsigned int depth_ = 0;
     std::map<std::pair<unsigned int, const v3d::render::offline::sl::runtime::Program*>, Run> runs_;

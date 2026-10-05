@@ -120,8 +120,8 @@ BOOST_AUTO_TEST_CASE(rayhider_renderman_hider_test) {
 }
 
 /**
- * Every ray misses, so every pixel says nothing was drawn into it, which is what lets an
- * imager tell a pixel the scene never reached from a black one.
+ * Every ray misses, so every pixel records that nothing was drawn into it. An imager can then
+ * tell a pixel the scene never reached from a black one.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_empty_scene_test) {
     v3d::moya::RenderContext rc;
@@ -434,9 +434,8 @@ BOOST_AUTO_TEST_CASE(rayhider_sphere_test) {
 }
 
 /**
- * A primitive is given the lights that are on when it is made, per ADR-0077, so switching one
- * off between two primitives lights them differently; primitives made under the same lights
- * share one set.
+ * A primitive is given the lights that are on when it is made, so switching one off between
+ * two primitives lights them differently. Primitives made under the same lights share one set.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_lights_per_primitive_test) {
     v3d::moya::Renderer renderer;

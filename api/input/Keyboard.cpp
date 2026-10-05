@@ -152,9 +152,9 @@ bool Keyboard::handleEvent(const SDL_Event& event) {
     bool pressed = true;
     switch (event.type) {
     case SDL_EVENT_TEXT_INPUT:
-        // what the platform composed rather than which key moved, because the two are not
-        // the same question - ADR-0040. It is not a source event: nothing binds a command
-        // to a letter being typed
+        // the text the platform composed, which is separate from which key moved: one
+        // character can take several keys, and one key can produce different characters.
+        // It is not a source event, so no command can be bound to a typed letter
         dispatcher_->trigger<v3d::event::kind::TextInput>(v3d::event::kind::TextInput(event.text.text, context_));
         return true;
     case SDL_EVENT_KEY_DOWN:
@@ -162,7 +162,7 @@ bool Keyboard::handleEvent(const SDL_Event& event) {
         pressed = (event.type == SDL_EVENT_KEY_DOWN);
         name = keyName(event.key.key);
         // a key we have no name for cannot be bound to anything, and must not reach
-        // KeyState either - it would be held under an empty name that nothing can ask for
+        // KeyState either - it would be held under an empty name that no caller can query
         if (name.empty()) {
             return true;
         }

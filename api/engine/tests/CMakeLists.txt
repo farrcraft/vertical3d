@@ -1,6 +1,6 @@
 # The engine without a window: the feature mask, the config and mappings initialize() reads,
-# and the quit flag the loop stops on. Nothing here asks for Feature::Window, which is what
-# would need SDL and a device.
+# and the quit flag the loop stops on. No test asks for Feature::Window, which would need SDL
+# and a device.
 v3d_add_test(engine
 	"TestMain.cpp"
 	"ApplicationTest.cpp"

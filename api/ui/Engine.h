@@ -33,9 +33,7 @@ class Theme;
  * A loaded ui: the containers a config named, the themes it carried, and which of them is
  * active.
  *
- * Reading the document is ui::Loader's - a loader runs once and this is asked questions for
- * as long as the app lives, and keeping the two together put every component header and
- * boost::json in front of every app that draws a ui.
+ * ui::Loader reads the document; this holds the result for as long as the app lives.
  **/
 class Engine {
  public:
@@ -43,9 +41,9 @@ class Engine {
      * How a named image becomes something to draw.
      *
      * The library neither reads an image nor uploads one, and never interprets a source
-     * name - an app resolves the source through its own asset manager and renderer, per
-     * ADR-0020. The answer can be part of a texture, which is how an app serves many images
-     * out of one sprite sheet; a bare handle converts to the whole of its texture.
+     * name - an app resolves the source through its own asset manager and renderer. The
+     * result can be part of a texture, so an app can serve many images out of one sprite
+     * sheet; a bare handle converts to the whole of its texture.
      *
      * @return the image, or an unset one when the source could not be resolved
      **/
@@ -58,7 +56,7 @@ class Engine {
 
     /**
      * The dispatcher this ui sends its commands through, for something in the shell that
-     * answers some of them itself.
+     * handles some of them itself.
      **/
     const boost::shared_ptr<entt::dispatcher>& dispatcher() const noexcept;
 
@@ -91,7 +89,7 @@ class Engine {
      *
      * One component at a time, and the engine is where that is decided because both
      * routers reach it: ui::Cursor gives the focus as a press lands and ui::Keys reads it
-     * to know where a key goes. ADR-0040.
+     * to know where a key goes.
      *
      * @param component what to focus, or null for nothing. A component that did not ask
      *      to be focusable is nothing, so a press on a panel takes the focus off rather
@@ -122,17 +120,16 @@ class Engine {
      * told, so what is handed over is what focused() would answer - a component that did
      * not ask to be focusable is nothing, and nothing is what is announced.
      *
-     * One listener, and the last caller wins. ui::shell::Keyboard is what this exists for
-     * and it gives the callback back as it goes, so an app wanting one of its own sets it
-     * after the seam is built and clears it before the seam goes.
+     * One listener, and the last caller wins. ui::shell::Keyboard sets it and clears it as
+     * it is destroyed, so an app wanting one of its own sets it after the Keyboard is built
+     * and clears it before the Keyboard is destroyed.
      *
      * @param moved what to call, or an empty function to stop being told
      **/
     void onFocus(const Focused& moved);
 
     /**
-     * Move the focus to the next focusable component, or to the one before it, extending
-     * ADR-0040 with a second way for the focus to move.
+     * Move the focus to the next focusable component, or to the one before it.
      *
      * The order is the order the tree holds them in, which is the order they are drawn in:
      * containers as the config listed them, components by depth with add order between
@@ -140,13 +137,12 @@ class Engine {
      * wanting a different tab order reorders the document. A hidden or disabled component
      * is skipped, and so is everything it holds.
      *
-     * **A ui with nothing focused is left alone**, which is what keeps a game's movement
-     * keys working: tab must not take the focus onto the first widget of a hud nobody is
-     * looking at.
+     * **A ui with nothing focused is left alone**, so a game's movement keys keep working:
+     * tab must not take the focus onto the first widget of a hud nobody is looking at.
      *
-     * A component that held the focus and is no longer reachable - hidden, disabled or taken
-     * out of the tree since - leaves the walk with nowhere to move on from, so the tab starts
-     * it again at the first component.
+     * When the component that held the focus is no longer reachable - hidden, disabled or
+     * taken out of the tree since - there is no place in the order to move on from, so tab
+     * starts again at the first component.
      *
      * @param forward whether to move to the next one rather than the previous one
      * @return whether the focus moved, which a ui holding one focusable component and a ui
@@ -155,14 +151,13 @@ class Engine {
     bool focusNext(bool forward);
 
     /**
-     * Put the focus on the first focusable component, which is what starts a screen being
-     * driven from the keyboard.
+     * Put the focus on the first focusable component, which starts a screen being driven
+     * from the keyboard.
      *
-     * focusNext() deliberately leaves a ui with nothing focused alone, so a press was the
-     * only thing that ever gave out a first focus and a screen nobody clicks on could not
-     * be tabbed through at all. This is how a screen says it is keyboard driven: the app
-     * calls it as the screen goes up, and a hud that would rather keep the movement keys
-     * working simply does not.
+     * focusNext() leaves a ui with nothing focused alone, so without this a screen nobody
+     * clicks on cannot be tabbed through. This is how a screen says it is keyboard driven:
+     * the app calls it as the screen goes up, and a hud that keeps the movement keys
+     * working does not.
      *
      * The order is focusNext()'s order - the order things are drawn in.
      *
@@ -209,8 +204,8 @@ class Engine {
     bool resolveIcon(const Resolve& resolve, const std::string& source, const boost::shared_ptr<T>& target);
 
     /**
-     * What can be focused, in the order the draw walk reaches it - the one order both
-     * focusFirst() and focusNext() move through.
+     * What can be focused, in draw order, which is the order both focusFirst() and
+     * focusNext() move through.
      **/
     std::vector<boost::shared_ptr<Component>> tabOrder() const;
 

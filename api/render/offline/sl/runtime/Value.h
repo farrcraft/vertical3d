@@ -19,10 +19,9 @@ namespace v3d::render::offline::sl::runtime {
  * A value a shader run holds: a type, a storage class and a buffer.
  *
  * The buffer is **one element wide when uniform and one per shading point when varying**,
- * and `lane()` is what makes the two read the same way - a uniform value answers lane zero
- * for every point. That is the whole of why a grid of a hundred points and a single traced
- * hit are one code path rather than two: the batch is the execution model, and a batch of
- * one is not a special case of it.
+ * and `lane()` makes the two read the same way: a uniform value returns lane zero for every
+ * point. A grid of a hundred points and a single traced hit therefore share one code path,
+ * and a batch of one is not a special case.
  *
  * A string is uniform always. There is no per-point coordinate space to name, and allowing
  * one would make every transform a runtime string lookup.
@@ -49,7 +48,7 @@ class Value final {
 
     /**
      * Which element a given shading point reads. Zero for a uniform value at every point,
-     * which is what lets one instruction serve both storage classes.
+     * so one instruction serves both storage classes.
      **/
     unsigned int lane(unsigned int point) const;
 
@@ -61,8 +60,8 @@ class Value final {
     void matrix(unsigned int point, const glm::mat4x4 & value);
 
     /**
-     * One component of one element, which is what an instruction that does not care what
-     * the type means walks over.
+     * One component of one element, for an instruction that works a component at a time
+     * whatever the type.
      **/
     float component(unsigned int point, unsigned int index) const;
     void component(unsigned int point, unsigned int index, float value);

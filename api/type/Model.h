@@ -24,24 +24,22 @@ namespace v3d::type {
  * Loaded geometry: one interleaved vertex array, the indices into it, and the surface it
  * is drawn with.
  *
- * The third thing in the tree called a mesh, and the one that is neither of the others. A
- * brep::BRep is topology the editor models with, and a render::realtime::vulkan::memory::Mesh is
- * two device buffers; this is what a file on disk turns into on the way from one to the
- * other. It holds no handle and no device type, so a renderer that never opens a window
- * can read one.
+ * Not to be confused with the two other meshes in the tree: a brep::BRep is topology the
+ * editor models with, and a render::realtime::vulkan::memory::Mesh is two device buffers. This
+ * is what a file on disk is loaded into before it is uploaded. It holds no handle and no
+ * device type, so a renderer that never opens a window can read one.
  *
- * Everything is merged into a single vertex array and a single index run, so a model is
- * one upload. A part is a range of that index run drawn with one material, so a file whose
- * surfaces differ is one model drawn as a draw per part - ADR-0069.
+ * All geometry is merged into a single vertex array and a single index run, so a model is
+ * one upload. A part is a range of that index run drawn with one material, so a file with
+ * several surfaces is one model drawn with one draw per part.
  **/
 class Model final {
  public:
     /**
      * The interleaved attributes, in the order a pipeline declaring this layout expects
-     * them. A vertex buffer is bytes and a stride to the device - vulkan::memory::Mesh says the
-     * stride is the pipeline's - so this layout is a contract between a loader and
-     * whatever pipeline an app writes to draw with it, and not something the device
-     * enforces.
+     * them. The device sees only bytes and a stride, and the pipeline sets the stride, so
+     * this layout is an agreement between a loader and the pipeline an app draws it with.
+     * The device does not enforce it.
      **/
     struct Vertex final {
         glm::vec3 position{ 0.0f, 0.0f, 0.0f };
@@ -52,12 +50,8 @@ class Model final {
     /**
      * How a model's surface looks: a colour, and the name of the image tinting it.
      *
-     * The texture is a name rather than pixels, which is
-     * [ADR-0020](../../docs/adr/0020-ui-themes-are-data-apps-load-the-images.md)'s
-     * shape - the data names an image and the app resolves it through the asset manager,
-     * which is what already knows where assets live and what has been loaded once. A
-     * loader that decoded the pixels itself would be a second image pipeline beside
-     * api/image.
+     * The texture is a name rather than pixels. The app resolves the name through the
+     * asset manager, which knows where assets live and what is already loaded.
      **/
     struct Material final {
         glm::vec4 baseColour{ 1.0f, 1.0f, 1.0f, 1.0f };
@@ -112,8 +106,8 @@ class Model final {
     const Skeleton& skeleton() const noexcept;
 
     /**
-     * An influence per vertex, in the vertices' order, for a model with a skeleton - and
-     * empty for one without, which is what keeps a static model's vertices as they were.
+     * An influence per vertex, in the vertices' order, for a model with a skeleton. Empty
+     * for a model without one, so a static model carries no skinning data.
      **/
     std::vector<Influence>& influences() noexcept;
     const std::vector<Influence>& influences() const noexcept;
@@ -126,7 +120,7 @@ class Model final {
     const std::vector<animation::Clip>& clips() const noexcept;
 
     /**
-     * @return the vertex array's size in bytes, which is what a device buffer is made from
+     * @return the vertex array's size in bytes, which is the size of its device buffer
      **/
     std::size_t vertexBytes() const noexcept;
 

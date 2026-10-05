@@ -67,7 +67,7 @@ std::vector<unsigned char> centre(v3d::test::Headless* headless, Capture* captur
  * the output, and the writer clears the target's current() slot to a colour. The reader
  * declares what it reads, so the frame records the writer first.
  *
- * @return the texel at the output's centre, which is what the target held a frame ago
+ * @return the texel at the output's centre, which holds what the target held a frame ago
  **/
 std::vector<unsigned char> drawFrame(v3d::test::Headless* headless, const boost::shared_ptr<RenderTarget>& slots,
     const std::vector<TextureHandle>& handles, const boost::shared_ptr<RenderTarget>& output,
@@ -161,7 +161,7 @@ BOOST_AUTO_TEST_CASE(a_target_holds_one_image_or_one_per_frame) {
 
 /**
  * A pipeline built for one colour format, drawn into a target of another, is reported by the
- * recorder with the pass that did it - ADR-0068.
+ * recorder, naming the pass that drew it.
  **/
 BOOST_AUTO_TEST_CASE(a_pipeline_for_another_format_throws) {
     v3d::test::Headless headless(colourFormat, width, height);
@@ -196,7 +196,7 @@ BOOST_AUTO_TEST_CASE(a_pipeline_for_another_format_throws) {
 
 /**
  * The context's depth buffer is for the passes drawing into the swapchain image, so a frame
- * whose only depth test is into a target of its own does not ask for it.
+ * whose only depth test is into a target of its own does not create it.
  **/
 BOOST_AUTO_TEST_CASE(only_a_swapchain_pass_wants_the_swapchain_depth) {
     v3d::test::Headless headless(colourFormat, width, height);

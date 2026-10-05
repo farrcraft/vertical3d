@@ -17,7 +17,7 @@
 namespace {
 
 /**
- * A menu of two items inside a submenu, which is what a toggle has to walk back out of one
+ * A menu of two items inside a submenu, which a toggle has to step back out of one
  * level at a time.
  **/
 const char* const document = R"({
@@ -71,7 +71,7 @@ const char* const bindings = R"({
 })";
 
 /**
- * A ui engine over a document written inline, which is what a config file amounts to by
+ * A ui engine over a document written inline, which is all a config file amounts to by
  * the time it reaches the loader.
  **/
 boost::shared_ptr<v3d::ui::Engine> load(const std::string& config) {
@@ -86,7 +86,7 @@ boost::shared_ptr<v3d::ui::Engine> load(const std::string& config) {
 }
 
 /**
- * The menu's active item, by label, which is what navigation moves.
+ * The menu's active item, by label, which navigation moves.
  **/
 std::string active(const boost::shared_ptr<v3d::ui::Engine>& ui) {
     boost::shared_ptr<v3d::ui::component::Menu> menu =
@@ -209,10 +209,7 @@ BOOST_AUTO_TEST_CASE(a_missing_container_leaves_the_menu_inert) {
 
 /**
  * Activating a key input captures rather than dispatching, and the key it is then given is
- * the whole answer.
- *
- * This is what pong's four Options items could not do: activating one used to fall through
- * a branch that did nothing, so the screen was there and inert.
+ * the whole value.
  **/
 BOOST_AUTO_TEST_CASE(a_key_input_item_captures_a_key_and_sends_it) {
     boost::shared_ptr<v3d::ui::Engine> ui = load(bindings);
@@ -234,14 +231,14 @@ BOOST_AUTO_TEST_CASE(a_key_input_item_captures_a_key_and_sends_it) {
     BOOST_TEST(menu.capture(std::string("w")));
     BOOST_TEST(!menu.capturing());
 
-    // the item carries what it captured, which is what its event goes out with
+    // the item carries what it captured, and its event goes out with it
     boost::shared_ptr<v3d::ui::component::Menu> component =
         boost::dynamic_pointer_cast<v3d::ui::component::Menu>(ui->container("game-menu")->get("main-menu"));
     boost::optional<v3d::event::EventData> value = (*component)[0]->value();
     BOOST_REQUIRE(value);
     BOOST_TEST(std::get<std::string>(value.get()) == "w");
 
-    // and the label shows it, which is what makes a rebinding screen readable
+    // and the label shows it, so a rebinding screen shows the current key
     BOOST_TEST((*component)[0]->text() == "Player 1 Up: w");
 }
 

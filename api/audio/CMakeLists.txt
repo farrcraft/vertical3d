@@ -11,7 +11,7 @@ target_link_libraries(v3dlib_audio PRIVATE SDL3_mixer::SDL3_mixer)
 
 # Engine.h names an event::Sound, and the boost::json::object a sound config is.
 # v3dlib_asset: the wav loader and the sound it builds are an asset::Loader and an
-# asset::Asset - ADR-0079. The edge runs from here to the asset core and not back.
+# asset::Asset. This library depends on the asset core, and not the other way round.
 target_link_libraries(v3dlib_audio PUBLIC v3dlib_event v3dlib_asset Boost::json)
 
 target_compile_options(v3dlib_audio PRIVATE /EHsc)

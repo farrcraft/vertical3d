@@ -65,8 +65,8 @@ bool coercible(Type from, Type to) {
     if (from == Type::VOID || to == Type::VOID || from == Type::STRING || to == Type::STRING) {
         return false;
     }
-    // a float replicates into anything that is made of floats, which is what lets a shader
-    // write "color specularcolor = 1"
+    // a float replicates into anything that is made of floats, so a shader can write
+    // "color specularcolor = 1"
     if (from == Type::FLOAT) {
         return true;
     }
@@ -88,14 +88,13 @@ Type arithmetic(Type left, Type right) {
     if (right == Type::FLOAT) {
         return left;
     }
-    // the three point-like types mix, and the result takes the left operand's - RI's own
-    // affine reading, where a point minus a point is a vector, is a distinction this
-    // language does not draw
+    // the three point-like types mix, and the result takes the left operand's type. This
+    // language does not follow RI's affine rule that a point minus a point is a vector
     if (pointlike(left) && pointlike(right)) {
         return left;
     }
-    // a colour and a position have no arithmetic between them, and ctransform is what a
-    // shader that means to convert one says
+    // a colour and a position have no arithmetic between them; a shader converts between
+    // them with ctransform
     return Type::VOID;
 }
 

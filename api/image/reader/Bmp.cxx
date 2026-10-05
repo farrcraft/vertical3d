@@ -93,9 +93,8 @@ void convert16(const unsigned char* temp, unsigned char* data, uint64_t size, in
 
 /**
  * Rows come off the disk padded to a dword boundary and go into the image without that
- * padding, so each is copied on its own. Walking both buffers with one index and a modulo
- * test for the padding read past the end of the data and misplaced every row after the
- * first - it only ever looked right because every fixture is a single flat colour.
+ * padding, so each is copied on its own. A single index over both buffers would read past
+ * the end of the data and misplace every row after the first.
  **/
 void convert24(const unsigned char* temp, unsigned char* data, uint64_t rows, int64_t pad,
     int64_t width, int64_t columns) {

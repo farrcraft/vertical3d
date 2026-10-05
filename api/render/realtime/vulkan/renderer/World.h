@@ -31,9 +31,9 @@
 namespace v3d::render::realtime::vulkan::renderer {
 
 /**
- * The device half of the world space quad primitive - ADR-0042.
+ * The device side of the world space quad primitive.
  *
- * A canvas is filled on the cpu during a tick and handed here, which uploads it into
+ * A canvas is filled on the CPU during a tick and handed here, which uploads it into
  * buffers belonging to the frame about to be recorded and turns each of its batches into a
  * draw item on a pass. The buffers are per frame in flight, because the device may still be
  * reading the previous frame's out of the previous slot.
@@ -42,10 +42,10 @@ namespace v3d::render::realtime::vulkan::renderer {
  * its own out of the frame's ring. They cannot share one pair: growing a buffer replaces the
  * allocation, which invalidates the handle every draw item already recorded holds.
  *
- * **Textures and their descriptors are the quad renderer's.** A world quad samples through
- * the same set 1 layout as a ui quad, so an atlas uploaded once serves both and there is one
- * descriptor pool rather than two. What differs is the vertex stage, which reads the pass
- * camera at set 0 instead of pushing a projection of its own.
+ * **Textures and their descriptors belong to the context's Textures.** A world quad samples
+ * through the same set 1 layout as a ui quad, so an atlas uploaded once serves both and there
+ * is one descriptor pool rather than two. What differs is the vertex stage, which reads the
+ * pass camera at set 0 instead of pushing a projection of its own.
  **/
 class World final {
  public:
@@ -71,7 +71,7 @@ class World final {
      * @param resources where the pipelines are registered
      * @param ring which frame in flight is being recorded, and when its buffers are free
      * @param uniforms set 0, which both pipelines declare and read - a world canvas is in
-     *        world space, so the pass's camera is its whole transform
+     *        world space, so the pass's camera is its only transform
      * @param textures where a texture becomes the set 1 descriptor a draw item names
      * @param colour the format of the image the pass draws into, which dynamic rendering
      *        needs at pipeline creation because there is no render pass to take it from
@@ -98,7 +98,8 @@ class World final {
      * @param canvas the geometry to draw, which is copied and not kept
      * @param pass where the draw items are submitted. Its camera is what the quads are
      *        drawn through, so a pass that never had one set draws them in clip space
-     * @param layer the painter order the items sort at
+     * @param layer the layer the items' sort key carries, which only has an effect in a
+     *        pass that sorts
      * @param blend how the canvas's quads combine with what the pass has already drawn. A
      *        canvas is one blend, so a game fills a canvas of smoke and another of flame
      **/
@@ -110,7 +111,7 @@ class World final {
      * attachment and once for a pass without, because dynamic rendering matches a pipeline to
      * the attachments of the pass it draws into.
      *
-     * The ones built for a pass with depth **test without writing**, per ADR-0042: solid
+     * The ones built for a pass with depth **test without writing**: solid
      * geometry in front of a quad hides it, and two blended quads do not cut holes in each
      * other where their transparent parts overlap.
      **/

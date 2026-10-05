@@ -36,8 +36,8 @@ enum class TokenKind {
  * A keyword is separated from an identifier here rather than in the parser because the
  * set is closed and small: the shader types, the data types, the storage classes, the
  * control flow, and the three lighting constructs. Everything else that looks like a name
- * is an identifier, and what it means is the symbol table's answer rather than the
- * lexer's - which is what lets a shader declare a variable named after a built-in.
+ * is an identifier. The symbol table decides what an identifier means, not the lexer, so a
+ * shader can declare a variable named after a built-in.
  **/
 class Token final : public v3d::render::offline::Lexeme<TokenKind> {
  public:

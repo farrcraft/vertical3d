@@ -80,9 +80,7 @@ bool Reader::matrix(Lexer * lexer, glm::mat4x4 * out) {
     if (!numbers(lexer, 16, &values)) {
         return false;
     }
-    // reading the floats in the order RIB wrote them is the change of convention: RI
-    // writes row major under a row vector convention and glm stores column major under a
-    // column vector one, so a transpose here would undo it
+    // read in RIB's order with no transpose, as ParameterList::matrix explains
     *out = glm::make_mat4(values.data());
     return true;
 }
@@ -143,8 +141,8 @@ bool Reader::values(Lexer * lexer, const Declaration & declaration, unsigned int
         }
     }
 
-    // a bare value is not self-delimiting, which is the whole reason the declaration table
-    // exists - without a type there is no knowing how much of what follows belonged to it
+    // a bare value is not self-delimiting: only the declaration's type says how much of
+    // what follows belongs to it
     const unsigned int elements = declaration.elements(vertices);
     if (elements == 0) {
         return fail("parameter '" + name + "' is varying or vertex and carries no array, so its length is unknowable",
@@ -187,8 +185,8 @@ bool Reader::parameters(Lexer * lexer, unsigned int vertices, ParameterList * li
             return false;
         }
 
-        // a length that can be known is worth checking: an array disagreeing with its
-        // declaration is a scene saying something other than what it means
+        // check the length when it is known: an array that disagrees with its declaration
+        // is an error in the scene
         if (declaration.elements(vertices) != 0 && declaration.type() != Declaration::Type::STRING) {
             const std::size_t expected = static_cast<std::size_t>(declaration.elements(vertices)) *
                 declaration.count() * declaration.floats();
@@ -340,7 +338,7 @@ Reader::Result Reader::displayRequest(const std::string & name, Lexer * lexer, H
 }
 
 /**
- * Reads the lens and the shutter: where a sample's eye is and when it looks.
+ * Reads the lens and the shutter: the depth of field, and when the shutter opens and closes.
  **/
 Reader::Result Reader::lensRequest(const std::string & name, Lexer * lexer, Handler * handler) {
     float a = 0.0f;
@@ -348,7 +346,7 @@ Reader::Result Reader::lensRequest(const std::string & name, Lexer * lexer, Hand
     float c = 0.0f;
 
     if (name == "DepthOfField") {
-        // the form with no arguments asks for a pinhole
+        // the form with no arguments sets a pinhole
         if (lexer->peek().kind() != Kind::NUMBER) {
             handler->depthOfField(std::numeric_limits<float>::infinity(), 0.0f, 0.0f);
             return Result::Handled;
@@ -602,9 +600,7 @@ Reader::Result Reader::shaderRequest(const std::string & name, Lexer * lexer, Ha
 }
 
 bool Reader::handle(Lexer * lexer, std::string * value) {
-    // RIB 3.03 writes a light handle as a sequence number and later RIB writes a string.
-    // Both are read, and it is a string to the handler either way: a renderer keying a map
-    // on it should not have to know which the file used
+    // a number or a string, and a string to the handler either way
     const Token token = lexer->peek();
     if (token.kind() == Kind::NUMBER) {
         lexer->next();
@@ -662,7 +658,7 @@ Reader::Result Reader::primitiveRequest(const std::string & name, Lexer * lexer,
 }
 
 bool Reader::request(const std::string & name, Lexer * lexer, Handler * handler) {
-    // the groups are asked in turn, and the first that recognises the name consumes the
+    // the groups are tried in turn, and the first that recognises the name consumes the
     // request's arguments. Order is not significant - no name belongs to two of them.
     typedef Result (Reader::*Group)(const std::string &, Lexer *, Handler *);
     static const Group groups[] = {
@@ -678,8 +674,8 @@ bool Reader::request(const std::string & name, Lexer * lexer, Handler * handler)
         }
     }
     if (result == Result::Unhandled) {
-        // a primitive after the first in a motion block is the same primitive deforming, and
-        // goes where the handler says - nowhere, unless it can build one
+        // a primitive after the first in a motion block is the same primitive deforming. It
+        // goes to the handler's deformation(), and is dropped when that is null
         Handler nobody;
         const bool deforming = motion_ && motionPrimitives_ > 0;
         Handler* deformation = deforming ? handler->deformation() : nullptr;

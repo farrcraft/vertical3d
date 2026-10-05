@@ -25,10 +25,9 @@ enum class TokenKind {
  * One lexical unit of a RIB stream.
  *
  * An ASCII RIB file holds nothing else: a request name, a quoted string, a number, and
- * the two array delimiters. That is what makes recovery from an unrecognised request
- * possible without knowing its arity - only a string, a number or an array can be an
- * argument, so the next identifier begins the next request whether or not either one is
- * recognised.
+ * the two array delimiters. The reader can therefore recover from an unrecognised request
+ * without knowing its arity. Only a string, a number or an array can be an argument, so the
+ * next identifier begins the next request whether or not either one is recognised.
  **/
 class Token final : public v3d::render::offline::Lexeme<TokenKind> {
  public:

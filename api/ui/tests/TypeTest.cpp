@@ -17,9 +17,9 @@ namespace {
  * How far past the enum the sweeps below run.
  *
  * component::parse() walks to VerticalBox because the enum is kept alphabetical and that is
- * its last entry. Sweeping wider is what turns that into something checked rather than
- * assumed: a type added past VerticalBox is named by name(), whose switch the compiler makes
- * exhaustive, and is then found here while parse() would have skipped it.
+ * its last entry. Sweeping wider checks that: a type added past VerticalBox is named by
+ * name(), whose switch the compiler makes exhaustive, and is then found here while parse()
+ * would have skipped it.
  *
  * An int outside the enumerators is a valid value of a scoped enum's underlying type, so
  * casting one and switching on it falls through to name()'s empty answer rather than being
@@ -32,10 +32,10 @@ const int beyond = 64;
 BOOST_AUTO_TEST_SUITE(type_test)
 
 /**
- * Every type a config can name parses back to itself, per ADR-0047.
+ * Every type a config can name parses back to itself.
  *
  * The two halves of the config's vocabulary have to agree or a component is loadable under a
- * name nothing spells: name() is exhaustive and so cannot forget a type, and this is what
+ * name nothing spells: name() is exhaustive and so cannot forget a type, and this test
  * stops parse() forgetting one.
  **/
 BOOST_AUTO_TEST_CASE(every_named_type_parses_back_to_itself) {
@@ -72,8 +72,8 @@ BOOST_AUTO_TEST_CASE(no_two_types_share_a_name) {
 }
 
 /**
- * A name no component answers to is Undefined rather than a guess, which is what the loader
- * reports as an unrecognised type.
+ * A name no component has is Undefined rather than a guess, and the loader reports it as an
+ * unrecognised type.
  **/
 BOOST_AUTO_TEST_CASE(an_unknown_name_is_undefined) {
     BOOST_CHECK(v3d::ui::component::parse("") == v3d::ui::component::Type::Undefined);

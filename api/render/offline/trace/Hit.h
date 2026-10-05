@@ -12,9 +12,9 @@
 namespace v3d::render::offline::trace {
 
 /**
- * Where a ray met a primitive, and everything a shader is a function of there.
+ * Where a ray met a primitive, and everything a shader reads there.
  *
- * A hit's batch is this, one point of it: the same program and the same instructions that
+ * A hit is shaded as a batch of one point: the same program and the same instructions that
  * run over a grid of a hundred in moya, with a mask one bit wide.
  **/
 class Hit final {

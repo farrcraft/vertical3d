@@ -36,8 +36,8 @@ boost::shared_ptr<v3d::editor::ViewPort> frontView() {
 }
 
 /**
- * Where a world point lands in that view, which is how a test aims a click at a
- * particular piece of geometry.
+ * Where a world point lands in that view. A test uses it to aim a click at a particular
+ * piece of geometry.
  **/
 glm::vec2 screen(const boost::shared_ptr<v3d::editor::ViewPort>& view, const glm::vec3& point) {
     boost::shared_ptr<v3d::type::camera::Camera> camera = view->camera();
@@ -175,7 +175,7 @@ BOOST_AUTO_TEST_CASE(picker_vertex_test) {
     BOOST_CHECK(hit.kind == v3d::editor::SelectMask::Vertex);
 
     // a front view of a cube projects its front and back vertices onto the same point, so
-    // which index answers is decided by depth - whichever it is has to be under the cursor
+    // depth decides which index is returned. Whichever it is has to be under the cursor
     v3d::brep::Vertex* found = cube->vertex(hit.component);
     BOOST_REQUIRE(found != nullptr);
     BOOST_CHECK_LT(glm::distance(screen(view, found->point()), target), 5.0f);
@@ -202,7 +202,7 @@ BOOST_AUTO_TEST_CASE(picker_edge_test) {
     glm::vec3 to;
     BOOST_REQUIRE_EQUAL(v3d::brep::loopSegment(*cube, loop, 0, &from, &to), true);
 
-    // the middle of an edge, which is the point furthest from either of its vertices
+    // the middle of an edge, the point furthest from either of its vertices
     v3d::editor::Picker::Hit hit = picker.pick(scene, *view, screen(view, (from + to) * 0.5f),
         v3d::editor::SelectMask::Edge);
     BOOST_CHECK_EQUAL(hit.valid, true);

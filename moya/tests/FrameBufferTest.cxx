@@ -35,7 +35,7 @@ BOOST_AUTO_TEST_CASE(framebuffer_bucket_grid_test) {
 
 /**
  * An image that is not gets a partial bucket rather than losing its right and bottom edges,
- * which an integer division of the two sizes silently did.
+ * as an integer division of the two sizes would.
  **/
 BOOST_AUTO_TEST_CASE(framebuffer_partial_bucket_test) {
     unsigned int bucket[2] = { 16, 16 };

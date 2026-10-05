@@ -13,7 +13,7 @@
 namespace v3d::render::offline::sl::syntax {
 
 /**
- * What a walk does with each child of a node: an expression, a statement, or either.
+ * What a tree traversal does with each child of a node: an expression, a statement, or either.
  **/
 typedef std::function<void(const ExpressionPtr &)> ExpressionVisitor;
 typedef std::function<void(const StatementPtr &)> StatementVisitor;
@@ -21,10 +21,10 @@ typedef std::function<void(const StatementPtr &)> StatementVisitor;
 /**
  * Hand each operand of an expression to a visitor, in source order. A leaf has none.
  *
- * This is the one place that knows which members of which node are its children, so a walk
- * that treats every kind of node alike - gathering what a tree calls, joining what it reads -
- * is a case for the kinds it cares about and this for the rest, and a new kind of node is
- * one case here rather than one in every walk.
+ * This is the only place that lists which members of each kind of node are its children. A
+ * traversal that treats most nodes alike, such as gathering the names a tree calls, handles
+ * the kinds it needs and calls this for the rest. A new kind of node then needs one case
+ * here rather than one in every traversal.
  **/
 void forEachChild(const Expression & node, const ExpressionVisitor & visit);
 

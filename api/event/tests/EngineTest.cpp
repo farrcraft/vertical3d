@@ -13,8 +13,7 @@
 #include <boost/make_shared.hpp>
 
 /**
- * The replacement for CommandDirectory: the engine resolves contexts by name and routes a
- * source event through its mappers.
+ * The engine resolves contexts by name and routes a source event through its mappers.
  **/
 namespace {
 /**
@@ -115,10 +114,9 @@ struct Order {
 };  // namespace
 
 /**
- * A key and the command it is bound to are two sinks, and every listener has heard the key
- * before any hears the command - whichever was connected first. A listener on the key can
- * also consume it, and then its bindings make nothing of it, which is what a key capture
- * does - ADR-0081.
+ * A key and the command it is bound to go to two sinks, and every listener receives the key
+ * before any receives the command, whichever was connected first. A listener on the key can
+ * also consume it, as a key capture does, and then its bindings send nothing.
  **/
 BOOST_AUTO_TEST_CASE(engine_a_key_is_heard_before_its_command_test) {
     boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();

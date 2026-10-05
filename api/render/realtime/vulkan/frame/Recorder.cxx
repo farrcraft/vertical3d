@@ -27,10 +27,10 @@ namespace {
  * names, or the last.
  *
  * A target is brought into the layout a pass attaches it in once, before the first pass
- * that writes it, and left readable after the last one - so two passes drawing into one
+  * that writes it, and left readable after the last one, so two passes drawing into one
  * target cost one pair of barriers rather than two. Scanned rather than tallied because a
- * frame has a handful of passes, and a walk is easier to be sure of than a map that has
- * to be cleared every frame.
+ * frame has a handful of passes, and a scan is easier to verify than a map that has to be
+ * cleared every frame.
  **/
 bool firstWrite(const std::vector<boost::shared_ptr<Pass>>& passes, std::size_t index) {
     for (std::size_t before = 0; before < index; ++before) {
@@ -132,7 +132,7 @@ into(nullptr) {
 void Recorder::record(VkCommandBuffer commands, const Frame& frame, const Target& target, const pipeline::Resources& resources,
     FrameUniforms* uniforms, Timings* timings) {
     // the acquired image comes back in whatever layout it was left in, and nothing in the
-    // frame reads it, so undefined is the honest source layout and the cheapest one. A frame
+    // frame reads it, so undefined is the correct source layout and the cheapest one. A frame
     // given no image is one whose every pass names a target of its own
     if (target.image != VK_NULL_HANDLE) {
         memory::record(commands, {memory::colourForDrawing(target.image)});
@@ -142,7 +142,7 @@ void Recorder::record(VkCommandBuffer commands, const Frame& frame, const Target
         memory::record(commands, {memory::depthForDrawing(target.depthImage)});
     }
 
-    // every pass drawing into a target before every pass reading it - ADR-0068
+    // every pass drawing into a target before every pass reading it
     const std::vector<boost::shared_ptr<Pass>> passes = frame.ordered();
     for (std::size_t index = 0; index < passes.size(); ++index) {
         const boost::shared_ptr<Pass>& pass = passes[index];
@@ -189,12 +189,12 @@ void Recorder::openTarget(VkCommandBuffer commands, const Pass& pass, const Targ
 /**
  **/
 void Recorder::closeTarget(VkCommandBuffer commands, const Pass& pass, const Target& into) {
-    // what a target is for: every pass after the last one that wrote it can sample it
+    // every pass after the last one that wrote the target can sample it
     if (into.image != VK_NULL_HANDLE) {
         memory::record(commands, {memory::colourAfterDrawing(into.image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)});
     }
-    // and the same for its depth, where anything is going to read that - a shadow map has no
-    // colour worth reading and is only ever this half
+    // and the same for its depth when it was created sampled: DEPTH_READ_ONLY_OPTIMAL lets a
+    // later pass both sample it and depth test against it. A shadow map has only this half
     if (pass.depth() && into.sampledDepth && into.depthImage != VK_NULL_HANDLE) {
         memory::record(commands, {memory::depthForSampling(into.depthImage)});
     }
@@ -265,7 +265,7 @@ void Recorder::record(VkCommandBuffer commands, const Pass& pass, const Target& 
 
     Bound bound;
     bound.into = &target;
-    // an item that names no clip of its own draws into the whole of this, per ADR-0037
+    // an item that names no clip of its own draws into all of this
     bound.area = area;
     bound.scissor = area;
     bound.scissorSet = true;
@@ -289,8 +289,9 @@ void Recorder::check(const Pass& pass, const pipeline::Pipeline& pipeline, const
         msg << "The " << pass.name() << " pass draws with a pipeline built with depth bias, and names no bias";
         throw std::runtime_error(msg.str());
     }
-    // validation reports these too, but only with its layers on, and as a draw rather than a
-    // pass. The recorder attaches one colour image at most, so the first format is the one
+    // the pipeline's formats must match the target's. Validation reports a mismatch too, but
+    // only with its layers on, and as a draw rather than a pass. The recorder attaches one
+    // colour image at most, so only the first format is compared
     if (into.format != VK_FORMAT_UNDEFINED && !pipeline.colourFormats.empty() && pipeline.colourFormats.front() != into.format) {
         std::stringstream msg;
         msg << "The " << pass.name() << " pass draws into colour format " << into.format
@@ -310,14 +311,14 @@ void Recorder::check(const Pass& pass, const pipeline::Pipeline& pipeline, const
  **/
 void Recorder::record(VkCommandBuffer commands, const Pass& pass, const DrawItem& item, const pipeline::Resources& resources,
     VkDescriptorSet frameSet, Bound* bound) {
-    // the escape hatch of ADR-0004, for work the item's fields cannot describe. It
-    // records whatever it likes, so nothing about what is bound survives it
+    // the escape hatch, for work the item's fields cannot describe. It may record anything,
+    // so nothing about what is bound is assumed to survive it
     if (item.record) {
         item.record(commands);
         const VkRect2D area = bound->area;
         const Target* into = bound->into;
         *bound = Bound();
-        // what it did to the scissor is its own business, so the next item sets one again
+        // it may have changed the scissor, so the next item sets one again
         bound->area = area;
         bound->into = into;
         return;
@@ -347,15 +348,15 @@ void Recorder::record(VkCommandBuffer commands, const Pass& pass, const DrawItem
     }
 
     if (frameSet != VK_NULL_HANDLE && frameSet != bound->frameSet) {
-        // set 0 is the per frame frequency of ADR-0008 - the camera the whole pass draws
-        // through, which is why it is bound here and never per item
+        // set 0 holds per frame data: the camera the whole pass draws through, so it is bound
+        // here and never per item
         vkCmdBindDescriptorSets(commands, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 0, 1, &frameSet, 0, nullptr);
         bound->frameSet = frameSet;
     }
 
     if (pipeline->scene && pass.scene() != bound->sceneSet) {
-        // set 2 is the scene of ADR-0064 - shared by every lit item in the pass, so bound
-        // once for it like set 0, and only for a pipeline that declares one
+        // set 2 is the scene, shared by every lit item in the pass, so it is bound once for
+        // the pass like set 0, and only for a pipeline that declares one
         VkDescriptorSet scene = pass.scene();
         vkCmdBindDescriptorSets(commands, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 2, 1, &scene, 0, nullptr);
         bound->sceneSet = scene;
@@ -367,7 +368,7 @@ void Recorder::record(VkCommandBuffer commands, const Pass& pass, const DrawItem
 
     const pipeline::Material* material = resources.material(item.material);
     if (material != nullptr && material->set != VK_NULL_HANDLE && material->set != bound->set) {
-        // set 1 is the per material frequency of the same convention
+        // set 1 holds per material data
         vkCmdBindDescriptorSets(commands, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 1, 1, &material->set, 0, nullptr);
         bound->set = material->set;
     }

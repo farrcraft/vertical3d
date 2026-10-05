@@ -14,7 +14,7 @@
 namespace v3d::type::effect {
 
 /**
- * What an emitter has made, and what it owes.
+ * What an emitter has made, and the fraction of a particle its rate has accumulated.
  **/
 struct State final {
     /**

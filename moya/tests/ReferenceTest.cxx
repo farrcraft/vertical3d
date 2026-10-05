@@ -106,9 +106,8 @@ v3d::moya::Vertex vertex(float x, float y, float z) {
     failing one. The screen window is [-1, 1] on both axes, and the raster transform puts
     its origin at the upper left corner.
 
-    Regenerating this reference is expected whenever shading or sampling changes the
-    picture on purpose. What it buys is that a change which was not meant to alter the
-    picture says so.
+    Regenerate this reference when a change to shading or sampling alters the picture on
+    purpose. Any other change to the picture fails the test.
 */
 void scene(v3d::moya::RenderContext & rc) {
     rc.imageResolution(64, 48, 1.0f);
@@ -130,8 +129,8 @@ void scene(v3d::moya::RenderContext & rc) {
 }
 
 /**
- * A vertex with a shading normal of its own, which is what makes a quad's cosine falloff a
- * gradient rather than one value.
+ * A vertex with a shading normal of its own, so that a quad's cosine falloff is a gradient
+ * rather than one value.
  **/
 v3d::moya::Vertex shaded(float x, float y, float z, const glm::vec3 & normal) {
     v3d::moya::Vertex v;
@@ -153,9 +152,8 @@ void quad(v3d::moya::RenderContext & rc, float left, float right,
 /**
  * One parameter as a scene wrote it, typed the way the reader would have typed it.
  *
- * An out parameter rather than an answer, which is what rib::arguments does beside it:
- * a ParameterList is a map and returning one by value is a copy of every parameter a
- * request carried.
+ * An out parameter rather than a return value, as rib::arguments uses. A ParameterList is a
+ * map, and returning one by value copies every parameter a request carried.
  **/
 void put(v3d::render::offline::rib::ParameterList* list, const std::string & name,
     v3d::render::offline::rib::Declaration::Type type, const std::vector<float> & values) {
@@ -592,8 +590,8 @@ BOOST_AUTO_TEST_CASE(moya_renders_a_polygon_test) {
 }
 
 /**
- * A rendered image against a committed one. moya touches no window, device or
- * swapchain, so unlike everything below the recorder in api/render this runs in CI.
+ * A rendered image against a committed one. moya touches no window, device or swapchain,
+ * so this runs on any machine.
  **/
 BOOST_AUTO_TEST_CASE(moya_reference_test) {
     v3d::moya::RenderContext rc;
@@ -608,8 +606,8 @@ BOOST_AUTO_TEST_CASE(moya_reference_test) {
 
     boost::shared_ptr<v3d::image::Image> reference = factory.read(REFERENCE);
     if (reference == nullptr) {
-        // chasing a failure without the image that caused it is most of the cost of a
-        // reference test, and a reference being regenerated on purpose starts here too
+        // write what was rendered, so a missing reference can be inspected, or committed when
+        // it is being regenerated on purpose
         boost::filesystem::create_directory("data_out");
         factory.write(RENDERED, rendered);
     }
@@ -629,9 +627,8 @@ BOOST_AUTO_TEST_CASE(moya_reference_test) {
 /**
  * The same scene said in RIB, against the same committed picture.
  *
- * Two routes to one image: if the file path and the code path disagree, this says so, and
- * neither of them is the reference. It is what makes the reader a rendering change rather
- * than a parsing one.
+ * Two routes to one image: if the file path and the code path disagree, this case fails, and
+ * neither path is the reference. A fault in the reader therefore shows as a wrong picture.
  **/
 BOOST_AUTO_TEST_CASE(moya_reference_from_rib_test) {
     v3d::moya::Renderer renderer;
@@ -687,13 +684,12 @@ BOOST_AUTO_TEST_CASE(moya_no_display_writes_nothing_test) {
 }
 
 /**
- * The first moya picture with shading in it: a matte surface and a plastic one, a distant
- * light and a point light, each surface carrying normals of its own so the falloff is a
- * gradient.
+ * A shaded scene: a matte surface and a plastic one, a distant light and a point light, each
+ * surface carrying normals of its own so the falloff is a gradient.
  *
- * A shader is not tested by a picture - the language's own cases are in
- * v3dtest_render_offline, and a wrong smoothstep is found there. What this catches is the
- * wiring between the machine and the renderer, which no unit case can see.
+ * The picture does not test individual shaders: the shading language has its own cases in
+ * v3dtest_render_offline, and a wrong smoothstep is found there. This case checks the wiring
+ * between the shading machine and the renderer, which no unit case covers.
  **/
 BOOST_AUTO_TEST_CASE(moya_shaded_reference_test) {
     v3d::moya::RenderContext rc;
@@ -708,9 +704,8 @@ BOOST_AUTO_TEST_CASE(moya_shaded_reference_test) {
 /**
  * The same shaded scene said in RIB, against the same committed picture.
  *
- * Two routes to one image, which is what phase 2 established and what a scene with a
- * shader in it has more of to disagree about: a parameter bound on one path and defaulted
- * on the other would show here and nowhere else.
+ * Two routes to one image. A scene with shaders has more for the two paths to disagree
+ * about: a parameter bound on one path and defaulted on the other shows here and nowhere else.
  **/
 BOOST_AUTO_TEST_CASE(moya_shaded_reference_from_rib_test) {
     v3d::moya::Renderer renderer;
@@ -725,9 +720,9 @@ BOOST_AUTO_TEST_CASE(moya_shaded_reference_from_rib_test) {
 }
 
 /**
- * The shaded scene at the RI defaults, two by two samples under a gaussian two pixels wide,
- * per ADR-0076. Its edges are antialiased, and it is the same on every run because every
- * pixel's samples are seeded by where the pixel is.
+ * The shaded scene at the RI defaults, two by two samples under a gaussian two pixels wide.
+ * Its edges are antialiased, and it is the same on every run because every pixel's samples
+ * are seeded by where the pixel is.
  **/
 BOOST_AUTO_TEST_CASE(moya_sampled_reference_test) {
     v3d::moya::RenderContext rc;
@@ -945,15 +940,15 @@ BOOST_AUTO_TEST_CASE(moya_textured_quad_test) {
 }
 
 /**
- * A plastic panel casting a shadow across a matte floor under the reyes hider: the shadow is
- * traced through the shared scene, per ADR-0077, and falls where the ray hider's does.
+ * A plastic panel casting a shadow across a matte floor under the reyes hider. The shadow is
+ * traced through the same scene the ray hider uses, so it falls where the ray hider's does.
  **/
 BOOST_AUTO_TEST_CASE(moya_shadow_reference_from_rib_test) {
     boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = read(SHADOW_SCENE);
     check(planes->image(v3d::moya::FrameBuffer::CHANNELS), SHADOW, SHADOW_RIB_RENDERED);
 
     /*
-        And the two hiders agree on the same file away from the edges, where the reyes hider's
+        The two hiders also agree on the same file away from the edges, where the reyes hider's
         micropolygons are flat: in a shadow of both lights, in the point light's shadow alone,
         lit by both, and the imager's background. An edge moves by up to a micropolygon, so
         only the insides are pinned.
@@ -972,8 +967,8 @@ BOOST_AUTO_TEST_CASE(moya_shadow_reference_from_rib_test) {
 
 /**
  * The ray hider's references, each reached by a file and by the render context, against one
- * committed picture. Two routes to one image: if they disagree, this says so, and neither of
- * them is the reference.
+ * committed picture. Two routes to one image: if they disagree, the case fails, and neither
+ * of them is the reference.
  **/
 BOOST_AUTO_TEST_CASE(moya_raytrace_triangle_reference_test) {
     v3d::moya::RenderContext rc;
@@ -987,9 +982,9 @@ BOOST_AUTO_TEST_CASE(moya_raytrace_triangle_reference_test) {
  * A matte floor and a plastic panel, three lights of three kinds, and the panel's shadow
  * across the floor, one sample at each pixel centre.
  *
- * A shader is not tested by a picture - the language's own cases are in
- * v3dtest_render_offline. What this catches is the wiring: an ambient() that reached no light,
- * a shadow ray that started on the surface it left, an imager that ran over the wrong plane.
+ * The picture does not test individual shaders, which have their own cases in
+ * v3dtest_render_offline. This case checks the wiring: an ambient() that reached no light, a
+ * shadow ray that started on the surface it left, an imager that ran over the wrong plane.
  **/
 BOOST_AUTO_TEST_CASE(moya_raytrace_shaded_reference_test) {
     v3d::moya::RenderContext rc;
@@ -1014,7 +1009,7 @@ BOOST_AUTO_TEST_CASE(moya_raytrace_sampled_reference_test) {
 }
 
 /**
- * Two renders are equal byte for byte, which is what lets a reference survive sampling at all.
+ * Two renders are equal byte for byte, so a sampled picture can have a reference at all.
  **/
 BOOST_AUTO_TEST_CASE(moya_raytrace_render_is_repeatable_test) {
     v3d::moya::RenderContext first;

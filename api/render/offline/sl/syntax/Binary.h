@@ -12,7 +12,7 @@
 namespace v3d::render::offline::sl::syntax {
 
 /**
- * Everything infix, including the two that read as something else: '.' is a dot product
+ * Everything infix, including two operators that differ from C: '.' is a dot product
  * rather than a member access, and '^' is a cross product rather than an exponent.
  **/
 class Binary final : public Expression {

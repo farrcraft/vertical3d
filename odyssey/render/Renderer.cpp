@@ -28,10 +28,9 @@ constexpr glm::vec4 clearColour(0.05f, 0.05f, 0.07f, 1.0f);
 constexpr glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
 
 /**
- * A tile is drawn as its kind's colour, and a kind is the only thing that separates them:
- * there is no tile artwork yet, and a flat colour is enough to read the board while there
- * is not. An unset texture handle draws against the renderer's white texture, so the quad
- * comes out as the colour alone.
+ * A tile is drawn as its kind's colour. There is no tile artwork, so the kind is the only
+ * thing that tells tiles apart. An unset texture handle draws against the renderer's white
+ * texture, so the quad comes out as the colour alone.
  **/
 glm::vec4 tileColour(odyssey::tile::Kind kind) {
     switch (kind) {
@@ -47,8 +46,8 @@ glm::vec4 tileColour(odyssey::tile::Kind kind) {
 /**
  * How much of a tile's colour is left when it is drawn from memory rather than from sight.
  *
- * Dimmed rather than recoloured, so a wall remembered still reads as a wall: what is out of
- * sight is known rather than current.
+ * Dimmed rather than recoloured, so a remembered wall still looks like a wall but is
+ * visibly out of date.
  **/
 constexpr float rememberedLight = 0.4f;
 

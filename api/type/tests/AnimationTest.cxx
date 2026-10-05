@@ -94,8 +94,8 @@ float angleAboutZ(const glm::quat& rotation) {
 BOOST_AUTO_TEST_SUITE(animation_test)
 
 /**
- * The palette at the rest pose is the identity for every joint, exactly - which is what lets a
- * skin at rest draw the picture its unskinned mesh draws.
+ * The palette at the rest pose is the identity for every joint, exactly, so a skin at rest
+ * draws the same picture as its unskinned mesh.
  **/
 BOOST_AUTO_TEST_CASE(animation_the_rest_palette_is_the_identity_test) {
     const Skeleton skeleton = strip();

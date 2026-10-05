@@ -30,9 +30,8 @@ BOOST_AUTO_TEST_CASE(logger_registers_under_one_name_test) {
 }
 
 /**
- * spdlog throws on a second registration under the same name, and apps really do build two -
- * so the second Logger takes over the one already registered rather than bringing the
- * process down.
+ * spdlog throws on a second registration under the same name, and apps do construct two
+ * Loggers. The second takes over the one already registered rather than ending the process.
  **/
 BOOST_AUTO_TEST_CASE(logger_second_instance_shares_the_first_test) {
     v3d::log::Logger first;

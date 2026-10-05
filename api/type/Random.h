@@ -21,7 +21,7 @@ namespace v3d::type {
  * implementation-defined: a seed gives the same floats under any standard library, so a test
  * can pin them.
  *
- * Not thread-safe. What it gives depends on the order it is asked in.
+ * Not thread-safe. Its output depends on the order of the calls.
  **/
 class Random final {
  public:

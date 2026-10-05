@@ -116,8 +116,8 @@ bool PongEngine::simulate(float step) {
     if (!v3d::engine::Engine::simulate(step)) {
         return false;
     }
-    // what the ball and paddles were before this step moves them, for the renderer to
-    // draw between - ADR-0060
+    // where the ball and paddles were before this step moves them, so the renderer can
+    // interpolate between the two steps
     v3d::ecs::snapshot<v3d::ecs::component::Position2D>(registry_);
     v3d::ecs::snapshot<v3d::ecs::component::Position1D>(registry_);
     scene_->tick(step);
@@ -239,8 +239,8 @@ void PongEngine::handleSource(const v3d::event::Source& source) {
     if (source.name() == "escape") {
         return;
     }
-    // a menu item capturing a key wants the key rather than what it is bound to, so it is
-    // consumed and its bindings make nothing of it - ADR-0081
+    // a menu item capturing a key takes the key itself rather than the command it is bound
+    // to, so the key is consumed and its bindings do not fire
     menu_->capture(std::string(source.name()));
     source.consume();
 }

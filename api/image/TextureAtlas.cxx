@@ -17,9 +17,8 @@ namespace {
 
 /**
  * Texels held empty around every region, so that a sampler reading a region's edge texel
- * cannot reach into whatever was packed beside it. One is enough for the bilinear filtering
- * the tree's atlases are read with; mipmapping one would need the gutter to grow with the
- * chain, and would be the thing that makes this an argument rather than a constant.
+ * cannot reach into whatever was packed beside it. One texel is enough for bilinear
+ * filtering. A mipmapped atlas would need a gutter that grows with the mip chain.
  **/
 constexpr unsigned int gutter = 1;
 

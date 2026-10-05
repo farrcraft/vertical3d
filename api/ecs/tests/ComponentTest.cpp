@@ -15,8 +15,8 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
-// a component is a value: an aggregate entt builds from what emplace is given, and a copy is
-// what a snapshot of the previous step keeps - ADR-0060
+// a component is a value: an aggregate entt builds from the arguments to emplace, and a
+// snapshot of the previous step is a copy
 static_assert(std::is_aggregate_v<v3d::ecs::component::Color3>);
 static_assert(std::is_aggregate_v<v3d::ecs::component::Position1D>);
 static_assert(std::is_aggregate_v<v3d::ecs::component::Position2D>);
@@ -34,7 +34,7 @@ BOOST_AUTO_TEST_CASE(component_defaults_test) {
 }
 
 /**
- * The positions blend linearly, which is how ecs::interpolated draws them between two steps.
+ * The positions blend linearly, as ecs::interpolated draws them between two steps.
  **/
 BOOST_AUTO_TEST_CASE(component_interpolate_test) {
     const v3d::ecs::component::Position2D from{glm::vec2(0.0f, 10.0f)};

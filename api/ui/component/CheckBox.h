@@ -15,13 +15,11 @@ namespace v3d::ui::component {
 /**
  * A box with a mark in it and a label beside it.
  *
- * It does not own the state it shows, for the reason a toggle button does not: clicking
- * one sends its command and marks nothing, and whatever answers the command sets
- * checked(). See ADR-0019. A check box that is never told is never checked, which is a
- * missing handler rather than a missing mark.
+ * It does not own the state it shows. Clicking one sends its command and marks nothing,
+ * and whatever handles the command sets checked(). A check box that is never checked
+ * usually means its command has no handler.
  *
- * The box, the mark and the outline are the "checkbox" style class the component names,
- * per ADR-0020.
+ * The box, the mark and the outline are the "checkbox" style class the component names.
  **/
 class CheckBox : public Component {
  public:

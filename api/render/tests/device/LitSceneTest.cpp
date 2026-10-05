@@ -60,7 +60,7 @@ using v3d::render::realtime::vulkan::renderer::World;
 
 namespace {
 
-// linear light, which the target encodes on store - ADR-0066
+// the lit pipelines compute in linear light, and an SRGB target encodes it on store
 const VkFormat colourFormat = VK_FORMAT_R8G8B8A8_SRGB;
 const uint32_t width = 128;
 const uint32_t height = 128;
@@ -262,12 +262,12 @@ boost::shared_ptr<v3d::image::Image> drawShadowed(v3d::test::Headless* headless,
 BOOST_AUTO_TEST_SUITE(lit_scene_test)
 
 /**
- * A lit cube, outlined, drawn through the recorder from an entity - which is every part of
- * step 7 at once. Lighting is arithmetic the specification leaves to the implementation, so
- * there is no reference (ADR-0054). What is asserted is the validation layer's silence, and
- * one spot: the pixel at the centre lands on the cube's top face, which faces the key light
- * and so is the lit band of the cube's own colour. That spot is also the winding check: with
- * the faces the wrong way round the outline hull's near side would cover it in black.
+ * A lit cube, outlined, drawn through the recorder from an entity. Lighting arithmetic is left
+ * to the implementation, so there is no reference picture. The case checks that the validation
+ * layer reports no errors, and checks one pixel. The pixel at the centre lands on the cube's
+ * top face, which faces the key light and so is in the lit band of the cube's own colour. The
+ * same pixel checks the winding: with the faces the wrong way round, the near side of the
+ * outline hull would cover it in black.
  *
  * The picture is always written to data_out/lit_cube.png for a person to look at.
  **/
@@ -290,9 +290,9 @@ BOOST_AUTO_TEST_CASE(a_lit_entity_is_drawn_and_silent) {
     registry.emplace<Transform>(entity);
     registry.emplace<v3d::render::realtime::component::Mesh>(entity, v3d::render::realtime::component::Mesh{crate, true});
 
-    // the tree's own orthographic camera, which builds Vulkan clip space (ADR-0012) and so is
-    // what decides which way round a face is on screen. Steeper than its default 45 degrees,
-    // so that the ray through the centre of the picture meets the top face rather than an edge
+    // the tree's own orthographic camera, which builds Vulkan clip space and so decides which
+    // way round a face is on screen. Steeper than its default 45 degrees, so that the ray
+    // through the centre of the picture meets the top face rather than an edge
     v3d::type::camera::Isometric orbit;
     orbit.target(glm::vec3(0.0f));
     orbit.zoom(1.5f);
@@ -359,8 +359,8 @@ BOOST_AUTO_TEST_CASE(a_lit_entity_is_drawn_and_silent) {
 }
 
 /**
- * An entity whose mesh was released is skipped rather than drawn from a stale entry, so the
- * walk submits nothing for it - and nothing for its outline either.
+ * An entity whose mesh was released is skipped rather than drawn from a stale entry, so
+ * meshes() submits nothing for it and nothing for its outline.
  **/
 BOOST_AUTO_TEST_CASE(a_released_mesh_is_not_walked) {
     v3d::test::Headless headless(colourFormat, width, height);
@@ -394,8 +394,8 @@ BOOST_AUTO_TEST_CASE(a_released_mesh_is_not_walked) {
  * shadow pipeline and shadow::light, so the depths are exact for the same reason: each front
  * face is a plane of one depth, at a quarter and three quarters of the light's range.
  *
- * A third entity that casts no shadow stands nearer the light over the right quad. Walked, it
- * would put its own depth there.
+ * A third entity that casts no shadow stands nearer the light over the right quad. If it were
+ * drawn into the map, it would put its own depth there.
  **/
 BOOST_AUTO_TEST_CASE(a_caster_is_drawn_into_the_shadow_map_at_its_depth) {
     const uint32_t size = 16;
@@ -463,10 +463,11 @@ BOOST_AUTO_TEST_CASE(a_caster_is_drawn_into_the_shadow_map_at_its_depth) {
 
 /**
  * A cube on the ground, with a shadow pass before the lit pass and the map read through the
- * scene set. Where the shadow falls is PCF and the implementation's filtering, so there is no
- * reference (ADR-0054). What is asserted is silence, and what the shadow changed against the
- * same frame drawn with it ignored: some white ground went grey, and nothing else moved. A
- * surface shadowing itself, which is what too little bias draws, would be a change on the cube.
+ * scene set. Where the shadow falls depends on PCF and the implementation's filtering, so there
+ * is no reference picture. The case checks that the validation layer reports no errors, and
+ * compares the frame against the same frame drawn with the shadow ignored: some white ground
+ * went grey, and nothing else changed. Too little bias makes a surface shadow itself, which
+ * would show as a change on the cube.
  *
  * The picture is written to data_out/lit_shadow.png for a person to look at.
  **/
@@ -486,23 +487,21 @@ BOOST_AUTO_TEST_CASE(a_shadow_falls_on_the_ground) {
 }
 
 /**
- * retcon's look-dev scene, reproduced with this tree's fixtures standing in for its art: a
- * ground that casts nothing, two upright figures and ten props at set yaws under one key light
- * at LitSettings' defaults, which are retcon's, seen through an orthographic camera at 45
- * degrees at 1280 by 720. The frame is retcon's chain - a shadow pass, the lit scene into an
- * sRGB target, and the grade into a target in the swapchain format retcon asks for - with the
- * identity table in place of its urban-ruin strip.
+ * A full-size lit game scene built from this tree's fixtures: a ground that casts nothing, two
+ * upright figures and ten props at set yaws under one key light at LitSettings' defaults, seen
+ * through an orthographic camera at 45 degrees at 1280 by 720. The frame is a shadow pass, the
+ * lit scene into an sRGB target, and a grade into a target in an sRGB swapchain format. The
+ * grade uses the identity table.
  *
- * The passes are made in the opposite order, grade first, as an engine makes its colour pass
- * before a game adds anything, and each names what it reads, so the frame has to put them
- * right - ADR-0068.
+ * The passes are created in the opposite order, grade first, as an engine creates its colour
+ * pass before a game adds anything. Each pass names what it reads, so the frame must record a
+ * pass that draws into a target before any pass that reads it.
  *
- * Lighting, PCF and filtering are the implementation's, so there is no reference (ADR-0054).
- * What is asserted is silence, here and on lavapipe in CI, which is the second driver retcon's
- * own capture never had; and that the frame drew something. data_out/lit_scene.png is for a
- * person to look at.
+ * Lighting, PCF and filtering are left to the implementation, so there is no reference picture.
+ * The case checks that the validation layer reports no errors, here and on lavapipe in CI, and
+ * that the frame drew something. data_out/lit_scene.png is for a person to look at.
  **/
-BOOST_AUTO_TEST_CASE(retcons_scene_is_drawn_and_silent) {
+BOOST_AUTO_TEST_CASE(full_lit_scene_is_drawn_and_silent) {
     const uint32_t frameWidth = 1280;
     const uint32_t frameHeight = 720;
     const uint32_t mapSize = 2048;
@@ -565,7 +564,7 @@ BOOST_AUTO_TEST_CASE(retcons_scene_is_drawn_and_silent) {
     camera.createProjection();
     camera.createView();
 
-    // retcon's settings, and its three metres of margin for a figure's height and its shadow
+    // the default settings, and three metres of margin for a figure's height and its shadow
     const LitSettings settings;
     const std::optional<v3d::render::realtime::shadow::Bounds> bounds = v3d::render::realtime::shadow::fit(registry, {}, 3.0f);
     if (!bounds) {
@@ -627,8 +626,8 @@ BOOST_AUTO_TEST_CASE(retcons_scene_is_drawn_and_silent) {
 
 /**
  * A model of two parts is drawn a part at a time, each with its own base colour: one model of a
- * red cube and a green one, side by side. The lit band of each colour appears, which it does
- * not if the walk draws the whole model with one part's colour.
+ * red cube and a green one, side by side. The lit band of each colour appears. It would not if
+ * meshes() drew the whole model with one part's colour.
  *
  * The picture is written to data_out/lit_parts.png.
  **/
@@ -700,7 +699,7 @@ BOOST_AUTO_TEST_CASE(a_model_is_drawn_a_part_at_a_time) {
  * ground quad under a red cube, submitted after the cube, is hidden where the cube stands and
  * seen everywhere else. A world quad drawn without the scene's depth would cover the cube's top
  * face at the centre of the picture. The quads go through a World built against the scene
- * target's own formats, which is what particles in a lit scene are.
+ * target's own formats, as particles in a lit scene do.
  *
  * The picture is written to data_out/lit_world_quads.png for a person to look at.
  **/
@@ -832,8 +831,9 @@ BOOST_AUTO_TEST_CASE(the_light_has_a_colour) {
 /**
  * Rain in a lit scene: a shower falling over the look of a red cube on a white ground, drawn as
  * streaks along each drop's velocity, added to the scene in the lit pass, under a blue light at
- * night. What a streak looks like is filtering and blending, which no reference pins (ADR-0054),
- * so the assertions are silence and that the rain moves between frames. The frames go to
+ * night. A streak's appearance depends on filtering and blending, which differ between
+ * conformant drivers, so there is no reference picture. The case checks that the validation
+ * layer reports no errors and that the rain moves between frames. The frames go to
  * data_out/rain_*.png for a person to look at.
  **/
 BOOST_AUTO_TEST_CASE(rain_falls_in_a_lit_scene) {

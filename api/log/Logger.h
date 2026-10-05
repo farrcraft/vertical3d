@@ -15,10 +15,9 @@ namespace v3d::log {
 /**
  * The process's log.
  *
- * There is one, and every Logger is a handle on it: spdlog's registry is global, and a log
- * that split by who constructed it would be no use to read. So this is a global with an
- * object's spelling, and passing one around says where a class logs rather than giving it a
- * log of its own.
+ * There is one log, and every Logger is a handle on it, because spdlog's registry is global.
+ * Passing a Logger to a class shows that the class logs; it does not give the class a log of
+ * its own.
  **/
 class Logger final {
  public:
@@ -26,7 +25,7 @@ class Logger final {
          * Say where the log is written, before anything logs. engine::run() does this with
          * the directory the executable is in, so v3d.log lands beside it whatever directory
          * the app was started from. Without it the log is v3d.log in the working directory,
-         * which is what a test or a tool run from its own directory wants.
+         * which suits a test or a tool run from its own directory.
          *
          * Called after something has logged, it moves the log there from then on; a handle
          * taken before still writes where it was taken.

@@ -5,12 +5,12 @@ Hider "raytrace"
 Format 64 48 1
 # no PixelSamples and no PixelFilter, so two by two samples under a gaussian two pixels wide
 Projection "orthographic"
-# an ortho zoom of one and a pixel aspect of 4:3, which is what the code built scene sets
+# an ortho zoom of one and a pixel aspect of 4:3, as the scene ReferenceTest builds in code has
 ScreenWindow -1.333333 1.333333 -1 1
 Clipping 0.001 100
 # what a ray that hits nothing is worth, said with a request rather than with geometry
 Imager "background" "background" [0.05 0.06 0.1]
-# the eye one unit back along -z, the same camera the phase 1 reference uses
+# the eye one unit back along -z, the same camera as raytrace-triangle.rib
 Transform [1 0 0 0  0 1 0 0  0 0 1 0  0 0 1 1]
 WorldBegin
 # a little ambient light, so a point both the others are blocked from is dark rather than

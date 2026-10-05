@@ -22,19 +22,18 @@ namespace v3d::render::offline::trace {
 class Tracer;
 
 /**
- * Runs a surface shader over one hit, which is a batch one point wide, and answers what the
- * shader asks while it runs.
+ * Runs a surface shader over one hit, which is a batch one point wide, and implements the
+ * renderer callbacks the shader makes while it runs.
  *
- * No special case and no second path: the same program and the same instructions that
- * run over a grid of a hundred in moya, with a mask one bit wide. That is the whole
- * reason ADR-0026's execution model is a batch rather than a shading point.
+ * There is no special case and no second path: the hit runs the same program and the same
+ * instructions that run over a grid of a hundred in moya, with a mask one bit wide.
  *
- * One is made on the stack for each hit the Tracer shades, so a hit a shader traces into is
- * shaded by another and nothing this one holds changes under it.
+ * One is made on the stack for each hit the Tracer shades. A hit that a shader traces into
+ * is shaded by another, so nothing this one holds changes under it.
  *
  * **A hit's current space is world space**, because that is where the scene is. moya's
- * grids shade in camera space, and the pair is the thing that will confuse a reader - which
- * is why the space table is a renderer callback rather than a constant the library holds.
+ * grids shade in camera space. The two differ, so the space table is a renderer callback
+ * rather than a constant the library holds.
  **/
 class HitShader final : public v3d::render::offline::sl::runtime::Renderer {
  public:
@@ -49,7 +48,7 @@ class HitShader final : public v3d::render::offline::sl::runtime::Renderer {
      **/
     glm::vec3 shade(glm::vec3* opacity);
 
-    // what the machine asks a renderer for
+    // the runtime::Renderer callbacks
     bool space(const std::string & name, glm::mat4x4* matrix) override;
     unsigned int lights() override;
     bool light(unsigned int index, const v3d::render::offline::sl::runtime::Value & surface,
@@ -71,7 +70,7 @@ class HitShader final : public v3d::render::offline::sl::runtime::Renderer {
     Tracer* tracer_;
     const Hit & hit_;
     /**
-     * What the shader being run was placed by, which is its own space: the surface's, and a
+     * The placement of the shader being run, which is its own space: the surface's, and a
      * light's while that light runs.
      **/
     glm::mat4x4 placement_;

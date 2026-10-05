@@ -21,7 +21,7 @@ namespace v3d::ui::component {
  * changes - by a press, a drag or a key - so whatever answers reads value() back.
  *
  * The track, the fill up to the thumb and the thumb are the "slider" style class the
- * component names, per ADR-0020.
+ * component names.
  **/
 class Slider : public Component {
  public:

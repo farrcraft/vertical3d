@@ -22,8 +22,8 @@
 namespace v3d::moya {
 
 /**
- * The hider `Hider "raytrace"` selects, per ADR-0078: a primary ray through every sample,
- * into the traced scene, rather than primitives diced and bucketed.
+ * The hider `Hider "raytrace"` selects: a primary ray through every sample, into the traced
+ * scene, rather than primitives diced and bucketed.
  *
  * A ray is found by inverting the same camera to raster transformation the reyes hider
  * projects through, so the two hiders cannot disagree about where a pixel looks; it is then
@@ -52,8 +52,8 @@ class RayHider final : public Hider {
     /**
      * Cast every sample of every pixel and write what the film makes of them.
      *
-     * A PixelVariance above zero asks for another set wherever the first leaves a pixel
-     * uncertain, per ADR-0076.
+     * With a PixelVariance above zero, another set of samples is taken wherever the first
+     * leaves a pixel uncertain.
      **/
     void render(RenderContext* context, v3d::render::offline::FrameBuffer* planes) override;
 

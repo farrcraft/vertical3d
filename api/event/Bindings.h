@@ -27,14 +27,13 @@ namespace v3d::event {
  * What a binding document says, as the global mapper the event engine routes through.
  *
  * The bindings are held as one mapper named "global" that has no way to be edited in place,
- * so a rebind rebuilds it from the document with the overrides applied. That keeps one path
- * reading a binding rather than two that could disagree, and it is why an override is
- * remembered rather than written straight into the mapper: the next rebind rebuilds from the
- * document again and would otherwise lose this one.
+ * so a rebind rebuilds it from the document with the overrides applied. Each override is kept
+ * rather than written into the mapper, because the next rebind rebuilds from the document
+ * again and would otherwise lose it.
  *
- * Nothing here knows a key from a mouse button. Whether a source names something a device
- * can send is asked of the Known the owner supplies, and a name it does not recognise is
- * logged and bound anyway - it fires on nothing, which is what it did before it was checked.
+ * This class does not distinguish a key from a mouse button. The Known check the owner
+ * supplies decides whether a source names something a device can send. A name it does not
+ * recognise is logged and bound anyway, and never fires.
  **/
 class Bindings final {
  public:

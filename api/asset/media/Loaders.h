@@ -17,7 +17,7 @@ namespace v3d::asset::media {
  * found by.
  *
  * engine::Engine does this for the manager it builds. A manager built anywhere else loads
- * none of these until something calls it - ADR-0079.
+ * none of these until something calls it.
  **/
 void registerLoaders(Manager& manager, const boost::shared_ptr<v3d::log::Logger>& logger);
 

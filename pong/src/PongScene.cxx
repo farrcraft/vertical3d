@@ -91,8 +91,8 @@ void PongScene::steerOpponent(const glm::vec2& ballPosition) {
 void PongScene::bouncePaddles(const glm::vec2& ballPosition) {
     // the ball is treated as its square box, and each paddle as a box running from its face
     // out past the court's edge rather than as thick as the paddle. A ball that reaches the
-    // face bounces, and so does one fast enough to have passed it between two steps, which
-    // a box the paddle's own width would let tunnel through
+    // face bounces, and so does one fast enough to have passed it between two steps. A box
+    // the paddle's own width would let that ball tunnel through
     const float ballSize = gameState_.ballSize();
     const v3d::type::geometry::Bound2D ball(ballPosition - glm::vec2(ballSize / 2.0f), glm::vec2(ballSize));
     const float court = width;

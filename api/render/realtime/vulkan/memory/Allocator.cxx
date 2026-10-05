@@ -90,8 +90,8 @@ Allocator::Allocator(VkDevice device, VkPhysicalDevice physical, VkInstance inst
     info.physicalDevice = physical_;
     info.device = device_;
     info.instance = instance;
-    // the version the tree draws with - ADR-0001. A suballocator asked for a newer one than
-    // the loader has calls entry points that are not there
+    // Vulkan 1.3, the version the renderer requires. A suballocator asked for a newer one
+    // than the loader has calls entry points that are not there
     info.vulkanApiVersion = VK_API_VERSION_1_3;
 
     const VkResult result = vmaCreateAllocator(&info, &suballocator_);

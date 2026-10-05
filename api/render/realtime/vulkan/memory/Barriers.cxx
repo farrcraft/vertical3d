@@ -136,7 +136,7 @@ VkImageMemoryBarrier2 uploadedForSampling(VkImage image) {
 VkImageMemoryBarrier2 forReadback(VkImage image, VkImageAspectFlags aspect, VkImageLayout from) {
     VkImageMemoryBarrier2 into = barrier(image, aspect, from, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
     // ALL_COMMANDS rather than the stage that drew: what this has to be ordered after is
-    // whatever transitioned the image into PRESENT_SRC, and a capture cannot know which
+    // whatever transitioned the image into PRESENT_SRC, and a capture cannot tell which
     // barrier that was or which stage it named as its second scope. What has to be made
     // visible is still only the frame's own writes.
     into.srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;

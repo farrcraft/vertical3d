@@ -37,7 +37,7 @@ BOOST_AUTO_TEST_CASE(scene_empty_test) {
     scene.accept(&visitor);
     BOOST_CHECK_EQUAL(visitor.visited.size(), 0u);
 
-    // an empty scene is what an unopened document is, not an error
+    // an empty scene is an unopened document, not an error
     scene.accept(nullptr);
 }
 

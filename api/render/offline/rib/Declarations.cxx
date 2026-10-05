@@ -53,7 +53,7 @@ Declarations::Declarations() {
     declarations_["background"] = Declaration(Storage::UNIFORM, Type::COLOR, 1);
     declarations_["fov"] = Declaration(Storage::UNIFORM, Type::FLOAT, 1);
 
-    // the identifier attributes, which is how a scene names an object
+    // the identifier attributes, which a scene uses to name an object
     declarations_["name"] = Declaration(Storage::UNIFORM, Type::STRING, 1);
     declarations_["shadinggroup"] = Declaration(Storage::UNIFORM, Type::STRING, 1);
 
@@ -61,7 +61,7 @@ Declarations::Declarations() {
     // these implementation specific, and an undeclared one is a warning per read.
     declarations_["bucketsize"] = Declaration(Storage::UNIFORM, Type::INTEGER, 2);
     declarations_["gridsize"] = Declaration(Storage::UNIFORM, Type::INTEGER, 1);
-    // and Option "trace" and Option "searchpath", whose names are the standard's
+    // the parameters of Option "trace" and Option "searchpath", whose names the standard defines
     declarations_["maxdepth"] = Declaration(Storage::UNIFORM, Type::INTEGER, 1);
     declarations_["shader"] = Declaration(Storage::UNIFORM, Type::STRING, 1);
     declarations_["texture"] = Declaration(Storage::UNIFORM, Type::STRING, 1);

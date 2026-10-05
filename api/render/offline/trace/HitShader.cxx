@@ -23,8 +23,7 @@ HitShader::HitShader(Tracer* tracer, const Hit & hit) :
 }
 
 bool HitShader::space(const std::string & name, glm::mat4x4* matrix) {
-    // a hit is in world space, because that is where the scene is. moya's grids are in
-    // camera space, and the two answering "current" differently is why this is a callback
+    // a hit's current space is world space, because that is where the scene is
     if (name == "current" || name == "world" || name == "object") {
         *matrix = glm::mat4x4(1.0f);
         return true;
@@ -37,9 +36,8 @@ bool HitShader::space(const std::string & name, glm::mat4x4* matrix) {
         *matrix = tracer_->scene()->view();
         return true;
     }
-    // a raytracer has no screen or raster space to speak of: it does not project, it
-    // asks a camera for a ray through a pixel and the matrix that would do it is the
-    // camera's own business
+    // a ray tracer has no screen or raster space: it does not project, but requests a ray
+    // through a pixel from the camera, and that matrix belongs to the camera
     return false;
 }
 
@@ -98,8 +96,7 @@ glm::vec3 HitShader::shade(glm::vec3* opacity) {
     *opacity = primitive.opacity();
     const v3d::render::offline::sl::Placed & surface = primitive.surface();
     if (!surface.shader) {
-        // a primitive a scene built without a shader is its own colour, which is the
-        // picture this renderer drew before there was a language to ask for another
+        // a primitive built without a shader is drawn in its own colour
         return primitive.opacity() * primitive.colour();
     }
 

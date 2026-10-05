@@ -16,7 +16,8 @@
 namespace v3d::ui::paint {
 
 /**
- * The seam between this library and whatever draws its text, per ADR-0019.
+ * The callbacks this library measures and draws text through, so that it names no font
+ * type.
  *
  * Both ways of writing a ui take this pair: ComponentRenderer for the retained components
  * and Immediate for the layer of calls. Neither names a font type, so neither costs a

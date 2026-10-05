@@ -213,8 +213,8 @@ BOOST_AUTO_TEST_CASE(gltf_names_the_texture_rather_than_decoding_it_test) {
     boost::shared_ptr<v3d::type::Model> model = load(FIXTURE);
     BOOST_REQUIRE(model);
 
-    // the material names its image and the app resolves it, which is ADR-0020's shape. The
-    // fixture ships no albedo.png at all, and loading it still succeeds
+    // the material names its image and the app resolves it. The fixture ships no
+    // albedo.png at all, and loading still succeeds
     BOOST_CHECK_EQUAL(model->materials()[0].baseColourTexture, "albedo.png");
 }
 
@@ -242,8 +242,8 @@ BOOST_AUTO_TEST_CASE(gltf_decodes_a_texture_the_file_carries_test) {
 }
 
 /**
- * And a model whose texture was named carries no pixels, so an app can tell the two apart
- * by asking rather than by knowing which packaging it loaded.
+ * A model whose texture was named carries no pixels, so an app can tell the two apart by
+ * checking rather than by knowing which packaging it loaded.
  **/
 BOOST_AUTO_TEST_CASE(gltf_a_named_texture_carries_no_pixels_test) {
     boost::shared_ptr<v3d::asset::media::kind::Model> asset = loadAsset(FIXTURE);
@@ -283,8 +283,8 @@ BOOST_AUTO_TEST_CASE(gltf_vertex_bytes_is_the_array_size_test) {
 }
 
 /**
- * A file whose surfaces differ is one model in parts, a part per material, holding every
- * primitive drawn with it - ADR-0069.
+ * A file with several surfaces is one model in parts, one part per material, holding every
+ * primitive drawn with it.
  **/
 BOOST_AUTO_TEST_CASE(gltf_a_part_per_material_test) {
     boost::shared_ptr<v3d::type::Model> model = load(PARTS);
@@ -348,7 +348,7 @@ BOOST_AUTO_TEST_CASE(gltf_one_material_is_one_part_test) {
 }
 
 /**
- * A model with no skin has no skeleton and no influences, so its vertices are what they were.
+ * A model with no skin has no skeleton and no influences.
  **/
 BOOST_AUTO_TEST_CASE(gltf_a_static_model_has_no_skeleton_test) {
     boost::shared_ptr<v3d::type::Model> model = load(FIXTURE);

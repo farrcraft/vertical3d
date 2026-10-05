@@ -1,11 +1,9 @@
-# The offline renderer of ADR-0022 is built on this library. It names neither Vulkan nor SDL:
-# moya touches no window, no device and no swapchain, which is what lets its suites and this
-# one run in CI where everything below the recorder in api/render cannot - and what makes
-# it selectable without the realtime stack, per ADR-0033.
+# The code shared by the offline renderer, moya. This library must not link Vulkan or SDL.
+# It touches no window, device or swapchain, so its suite and moya's run in CI on a runner
+# with no GPU. A consumer can also select it without the realtime stack.
 #
-# /utf-8 is set here rather than inherited: this directory is added by api/CMakeLists.txt
-# rather than by the api/render one whose flags used to reach it, and spdlog's bundled fmt
-# has a static_assert that fails without it.
+# /utf-8 is set here because api/CMakeLists.txt adds this directory, so it does not inherit
+# api/render's flags. spdlog's bundled fmt has a static_assert that fails without it.
 set(CMAKE_CXX_FLAGS "/utf-8")
 set(CMAKE_C_FLAGS "/utf-8")
 

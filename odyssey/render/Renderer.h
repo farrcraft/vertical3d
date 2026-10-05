@@ -22,11 +22,10 @@ namespace odyssey::render {
 /**
  * Everything odyssey draws, built as one canvas of quads and handed to the render engine.
  *
- * A tile and a sprite are the same primitive per ADR-0005, so a screen of them reaches
- * the device as one batch per texture. There is one painter ordered pass and no depth
- * buffer, which is what a 2D game wants and what the engine gives it by default - a pass
- * is drawn in submission order unless it asks to be sorted, and allocates depth only when
- * it asks for that.
+ * Tiles and sprites both go through the batched quad pipeline, so a screen of them reaches
+ * the device as one batch per texture. There is one pass, drawn in submission order, and no
+ * depth buffer. This is the engine's default: a pass is drawn in submission order unless
+ * it asks to be sorted, and allocates depth only when it asks for it.
  **/
 class Renderer final {
  public:

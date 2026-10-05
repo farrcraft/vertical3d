@@ -23,8 +23,7 @@ v3d::moya::Vertex vertex(float x, float y, float z) {
 };  // namespace
 
 /**
- * A grid's extent is fixed when it is made, so every point in it can be written to. It used
- * to be built empty and indexed into regardless.
+ * A grid's extent is fixed when it is made, so every point in it can be written to.
  **/
 BOOST_AUTO_TEST_CASE(micropolygon_grid_size_test) {
     v3d::moya::MicroPolygonGrid grid(4);
@@ -73,7 +72,7 @@ BOOST_AUTO_TEST_CASE(micropolygon_grid_extent_test) {
 
 /**
  * A micropolygon turned 45 degrees covers the points inside it and not the corners of its
- * raster bound, which a hider filling the bound would have written.
+ * raster bound, which a hider that filled the whole bound would write.
  **/
 BOOST_AUTO_TEST_CASE(micropolygon_covers_test) {
     const std::array<glm::vec3, 4> diamond = {

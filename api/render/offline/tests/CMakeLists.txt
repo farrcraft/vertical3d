@@ -1,5 +1,5 @@
-# The offline library is cpu only, so unlike its realtime sibling every part of it is
-# testable without a window or a device.
+# The offline library runs on the CPU only, so every part of it is testable without a
+# window or a device.
 v3d_add_test(render_offline
 	"TestMain.cxx"
 	"FrameBufferTest.cxx"

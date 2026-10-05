@@ -103,7 +103,7 @@ bool Bindings::readSource(const boost::json::object& mapping, Event* event) {
     *event = Event(name, events_->resolveContext(context));
     event->type(Type::Source);
     // an optional "state" binds one edge only - "pressed"/"down" or "released"/"up". Without
-    // it the binding matches both, which is what most actions want.
+    // it the binding matches both, as most actions need.
     if (source.contains("state")) {
         event->state(stringToState(boost::json::value_to<std::string>(source.at("state"))));
     }

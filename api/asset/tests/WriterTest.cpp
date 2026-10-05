@@ -58,7 +58,7 @@ std::string contents(const boost::filesystem::path& path) {
  *
  * By value rather than by type: a whole number prints without a fractional part, so a double
  * that happens to be 2.0 reads back as an integer. Everything reading a document this writes
- * takes a number rather than a double, which is what makes that harmless.
+ * takes a number rather than a double, so that is harmless.
  **/
 BOOST_AUTO_TEST_CASE(writer_round_trip_test) {
     boost::json::object root;
@@ -94,7 +94,7 @@ BOOST_AUTO_TEST_CASE(writer_round_trip_test) {
 }
 
 /**
- * The two shapes the printer exists for: a float that would otherwise print every digit of
+ * The two cases the printer handles: a float that would otherwise print every digit of
  * the double it was widened to, and a vector that would otherwise take a line per number.
  **/
 BOOST_AUTO_TEST_CASE(writer_readable_test) {
@@ -136,9 +136,9 @@ BOOST_AUTO_TEST_CASE(writer_write_document_test) {
 }
 
 /**
- * The whole point of ADR-0041: the document already there survives a write that does not
- * complete. The rename is made to fail by leaving a directory where the target is, which
- * neither rename nor remove will replace.
+ * The document already there survives a write that does not complete. The rename is made to
+ * fail by leaving a directory where the target is, which neither rename nor remove will
+ * replace.
  **/
 BOOST_AUTO_TEST_CASE(writer_failed_write_keeps_the_previous_document_test) {
     const Sandbox sandbox("failure");

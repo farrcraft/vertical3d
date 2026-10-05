@@ -16,7 +16,7 @@
 namespace v3d::type {
 
 /**
- * The joints a skinned model is bent by - ADR-0069.
+ * The joints that deform a skinned model.
  *
  * Joints are held in an order where every parent precedes its children, so that a pose can be
  * made global in one pass from the front. A joint's rest pose is local to its parent, or to

@@ -15,9 +15,9 @@ namespace v3d::editor {
 /**
  * Where a mesh is, all three parts of it at once.
  *
- * A manipulator writes one of translation, rotation and scale per ADR-0015, but a
- * gesture is undone by putting the whole placement back: recording only the part that
- * moved would leave the record depending on which manipulator made it.
+ * A manipulator writes one of translation, rotation and scale on the object's transform.
+ * A gesture is undone by restoring the whole placement, so the record does not depend on
+ * which manipulator made it.
  **/
 struct Placement {
     glm::vec3 translation{ 0.0f, 0.0f, 0.0f };

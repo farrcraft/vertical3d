@@ -19,8 +19,8 @@ class System {
     /**
      * Advance this system by one simulation step.
      *
-     * Named for what the engine calls it from rather than for the frame, because a system
-     * runs on the fixed step of ADR-0032 and not once per drawn frame.
+     * Named after Engine::simulate(), which calls it: a system runs once per fixed
+     * simulation step, not once per drawn frame.
      *
      * @param step seconds of simulated time
      **/

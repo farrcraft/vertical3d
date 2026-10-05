@@ -23,8 +23,8 @@
 namespace {
 
 /**
- * The scene says what happened by triggering a sound, so the clips a tick fires are the
- * only account of which branch it took.
+ * The scene reports what happened by triggering a sound, so the clips a tick fires are the
+ * only record of which branch it took.
  **/
 struct Sounds final {
     void heard(const v3d::event::kind::Sound& sound) {
@@ -39,9 +39,9 @@ struct Sounds final {
 };
 
 /**
- * The step the engine drains at, which is what every scene speed below is expressed
- * against. Repeated here rather than taken from v3d::engine::Accumulator, because the scene
- * is where pong's rules are and this test links neither the engine nor a device.
+ * The fixed step the engine simulates at, in seconds. Every scene speed below is per second.
+ * It is repeated here rather than taken from v3d::engine::Accumulator, because this test
+ * links neither the engine nor a device.
  **/
 constexpr float STEP = 1.0f / 60.0f;
 
@@ -54,8 +54,8 @@ bool near(const glm::vec2& lhs, const glm::vec2& rhs) {
 }
 
 /**
- * A scene reset and listening. Everything below measures against the 800x600 court, which is
- * what the collision tests are written in.
+ * A scene reset and listening. Everything below measures against the 800x600 court, the
+ * units the collision tests are written in.
  **/
 struct Fixture final {
     Fixture() :
@@ -74,8 +74,8 @@ struct Fixture final {
 };  // namespace
 
 /**
- * reset() centres both paddles and the ball and serves to the left, which is the state a
- * round begins in.
+ * reset() centres both paddles and the ball and serves to the left, the state a round
+ * begins in.
  **/
 BOOST_AUTO_TEST_CASE(pong_scene_reset_test) {
     Fixture fixture;
@@ -103,7 +103,7 @@ BOOST_AUTO_TEST_CASE(pong_scene_tick_moves_the_ball_test) {
 }
 
 /**
- * A paused scene does nothing at all, which is what the menu holds the game on.
+ * A paused scene does nothing at all. The game is paused while the menu is open.
  **/
 BOOST_AUTO_TEST_CASE(pong_scene_paused_test) {
     Fixture fixture;
@@ -166,8 +166,8 @@ BOOST_AUTO_TEST_CASE(pong_scene_paddle_past_the_face_test) {
 }
 
 /**
- * A ball level with the paddle's face but past the end of it is not met, which is the case
- * that separates a save from a point.
+ * A ball level with the paddle's face but past the end of it is not met. This case
+ * separates a save from a point.
  **/
 BOOST_AUTO_TEST_CASE(pong_scene_paddle_miss_test) {
     Fixture fixture;
@@ -231,7 +231,7 @@ BOOST_AUTO_TEST_CASE(pong_scene_paddle_angles_by_where_it_is_struck_test) {
     // the last was struck by the very end, at the steepest return: fifty degrees, downwards
     BOOST_TEST(lastAngle == 0.8727f, boost::test_tools::tolerance(0.001f));
 
-    // and an angled ball struck by the centre goes back flat rather than retracing its line
+    // an angled ball struck by the centre goes back flat rather than retracing its line
     Fixture flat;
     flat.scene_.ball().position(glm::vec2(20.0f, 300.0f));
     flat.scene_.ball().direction(glm::vec2(-48.0f, 36.0f));
@@ -463,8 +463,8 @@ BOOST_AUTO_TEST_CASE(pong_scene_ai_follows_the_ball_downwards_test) {
 }
 
 /**
- * A ball going the other way is not the ai's problem, so it stops rather than carrying on
- * towards where the ball was.
+ * When the ball is moving away from the ai's paddle, the paddle stops rather than carrying
+ * on towards where the ball was.
  **/
 BOOST_AUTO_TEST_CASE(pong_scene_ai_rests_when_the_ball_leaves_test) {
     Fixture fixture;
@@ -496,11 +496,9 @@ BOOST_AUTO_TEST_CASE(pong_scene_coop_leaves_the_right_paddle_alone_test) {
 }
 
 /**
- * The bug this scene was carrying: a tick advanced the world by one increment whatever the
- * frame had taken, so the ball and the paddles ran faster on a faster machine. Every speed
- * is now per second, so the same simulated duration produces the same result however it was
- * chopped up - sixty steps of a sixtieth land where a hundred and twenty of a hundred and
- * twentieth do.
+ * Every speed is per second, so the same simulated duration produces the same result however
+ * it is divided into steps: sixty steps of a sixtieth land where a hundred and twenty of a
+ * hundred and twentieth do.
  **/
 BOOST_AUTO_TEST_CASE(pong_scene_is_frame_rate_independent_test) {
     Fixture slow;

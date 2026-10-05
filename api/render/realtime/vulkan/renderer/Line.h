@@ -28,9 +28,9 @@
 namespace v3d::render::realtime::vulkan::renderer {
 
 /**
- * The device half of the line primitive - ADR-0011.
+ * The device side of the world space line primitive.
  *
- * A canvas is filled on the cpu during a tick and handed here, which uploads it into a
+ * A canvas is filled on the CPU during a tick and handed here, which uploads it into a
  * buffer belonging to the frame about to be recorded. There is no texture, no material
  * and no index buffer, so an uncut canvas becomes one draw and a clipped one becomes a
  * draw per rectangle it is cut to. The buffers are per frame in flight, because the
@@ -41,7 +41,7 @@ namespace v3d::render::realtime::vulkan::renderer {
  * allocation, which invalidates the handle every draw item already recorded holds.
  *
  * Lines are one pixel wide. Wider ones need the wideLines device feature, which the
- * device does not ask for.
+ * device does not enable.
  **/
 class Line final {
  public:
@@ -51,7 +51,7 @@ class Line final {
      * @param resources where the pipelines are registered
      * @param ring which frame in flight is being recorded, and when its buffers are free
      * @param uniforms set 0, which the line pipelines both declare and read - a line
-     *        canvas is world space, so the pass's camera is its whole transform
+     *        canvas is world space, so the pass's camera is its only transform
      * @param colour the format of the image the pass draws into, which dynamic rendering
      *        needs at pipeline creation because there is no render pass to take it from
      * @param depth the format of the depth image, for the second of the two pipelines
@@ -77,7 +77,8 @@ class Line final {
      * @param canvas the geometry to draw, which is copied and not kept
      * @param pass where the draw item is submitted. Its camera is what the lines are
      *        drawn through, so a pass that never had one set draws them in clip space
-     * @param layer the painter order the item sorts at
+     * @param layer the layer the item's sort key carries, which only has an effect in a pass
+     *        that sorts
      **/
     void submit(const LineCanvas& canvas, Pass* pass, uint16_t layer = 0);
 

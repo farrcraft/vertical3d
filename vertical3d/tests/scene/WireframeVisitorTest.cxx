@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE(wireframe_transform_test) {
         BOOST_CHECK(vertex.position.x <= 11.1f);
     }
 
-    // and the transform is popped, so the next mesh does not inherit it
+    // the transform is popped, so the next mesh does not inherit it
     BOOST_CHECK_SMALL(canvas.transform()[3][0], 0.0001f);
 }
 

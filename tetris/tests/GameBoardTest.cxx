@@ -13,9 +13,9 @@
 namespace {
 
 /**
- * A one cell shape, so that a test can put exactly one block where it wants it. A
- * rotation of a single cell normalises back to the same layout, which the board's random
- * initial rotation relies on here.
+ * A one cell shape, so that a test can put exactly one block where it needs it. A
+ * rotation of a single cell normalises back to the same layout, so the board's random
+ * initial rotation does not change where it lands.
  **/
 Tetrad::ShapeInfo dot() {
     Tetrad::ShapeInfo shape;
@@ -57,7 +57,7 @@ BOOST_AUTO_TEST_CASE(gameboard_fits_test) {
     BOOST_CHECK_EQUAL(game->fits(piece, 0, 0), true);
     // hard against either wall is still inside it
     BOOST_CHECK_EQUAL(game->fits(piece, static_cast<int>(game->columns()) - 2, 0), true);
-    // and one cell further is not
+    // one cell further is not
     BOOST_CHECK_EQUAL(game->fits(piece, static_cast<int>(game->columns()) - 1, 0), false);
     BOOST_CHECK_EQUAL(game->fits(piece, -1, 0), false);
     // the floor
@@ -69,7 +69,7 @@ BOOST_AUTO_TEST_CASE(gameboard_fits_test) {
     BOOST_CHECK_EQUAL(game->fits(piece, 2, 5), true);
     BOOST_CHECK_EQUAL(game->fits(piece, 3, 5), false);
     BOOST_CHECK_EQUAL(game->fits(piece, 4, 5), false);
-    // and the row below it is still clear
+    // the row below it is still clear
     BOOST_CHECK_EQUAL(game->fits(piece, 3, 6), true);
 
     // an uninitialized tetrad is nowhere
@@ -136,7 +136,7 @@ BOOST_AUTO_TEST_CASE(gameboard_game_over_test) {
     game->update(0.0f);
     BOOST_CHECK_EQUAL(game->over(), true);
 
-    // and a game that is over does not keep running
+    // a game that is over does not keep running
     const unsigned int score = game->score();
     game->update(10.0f);
     BOOST_CHECK_EQUAL(game->score(), score);
@@ -163,9 +163,7 @@ BOOST_AUTO_TEST_CASE(gameboard_load_test) {
 
 /**
  * The fall rate is a duration rather than a number of steps, so a second of simulated time
- * drops a tetrad the same distance however that second was divided up. This is what the
- * board was not doing while update() counted whole milliseconds: a step shorter than one
- * rounded to zero and the piece never fell at all.
+ * drops a tetrad the same distance however that second is divided up.
  **/
 BOOST_AUTO_TEST_CASE(gameboard_fall_rate_is_a_duration_test) {
     boost::shared_ptr<GameBoard> coarse = board();
@@ -186,6 +184,6 @@ BOOST_AUTO_TEST_CASE(gameboard_fall_rate_is_a_duration_test) {
 
     BOOST_CHECK_EQUAL(coarse->currentTetrad().position().second,
                       fine->currentTetrad().position().second);
-    // and it actually fell, so the comparison is not two pieces sitting at the top
+    // it actually fell, so the comparison is not between two pieces sitting at the top
     BOOST_CHECK_GT(coarse->currentTetrad().position().second, 0);
 }

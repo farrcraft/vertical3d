@@ -38,8 +38,8 @@ struct Step {
 
     /**
      * Set when the segment passed exactly through the point four tiles share, so it moved
-     * diagonally and touched neither tile it passed between. Those two are corner, and they
-     * stop sight only together.
+     * diagonally and touched neither tile it passed between. Those two tiles block sight
+     * only when both of them block.
      **/
     bool diagonal{false};
     std::pair<TileCoord, TileCoord> corner;
@@ -99,8 +99,8 @@ bool hasLineOfSight(const TileGrid& grid, TileCoord from, TileCoord to, const Si
         return false;
     }
 
-    // one trace for both directions: whichever way the caller asked, the same line is
-    // walked, so the answer cannot depend on which end is asking
+    // one trace for both directions: whatever the argument order, the same line is traced,
+    // so the result does not depend on which endpoint comes first
     if (precedes(to, from)) {
         std::swap(from, to);
     }

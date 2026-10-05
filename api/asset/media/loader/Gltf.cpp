@@ -97,7 +97,7 @@ struct Rig final {
 };
 
 /**
- * What the walk found that a model cannot hold, for the loader to report.
+ * What the traversal found that a model cannot hold, for the loader to report.
  **/
 struct Dropped final {
     bool skins{ false };       /**< a mesh bound to a skin other than the one kept **/
@@ -107,7 +107,7 @@ struct Dropped final {
 };
 
 /**
- * A primitive the walk reached, and where its node puts it. In a model with a skeleton, a
+ * A primitive the traversal reached, and where its node puts it. In a model with a skeleton, a
  * skinned primitive is placed by its joints and an unskinned one follows one joint rigidly.
  **/
 struct Placed final {
@@ -128,8 +128,8 @@ struct Bucket final {
 };
 
 /**
- * The nodes a walk starts from: the scene the file names, or its first, or every root when it
- * has none.
+ * The nodes the traversal starts from: the scene the file names, or its first, or every root
+ * when it has none.
  **/
 std::vector<const cgltf_node*> roots(const cgltf_data& data) {
     std::vector<const cgltf_node*> found;
@@ -152,7 +152,7 @@ std::vector<const cgltf_node*> roots(const cgltf_data& data) {
 }
 
 /**
- * The skin of the first skinned mesh a walk from this node reaches, or null.
+ * The skin of the first skinned mesh a traversal from this node reaches, or null.
  **/
 const cgltf_skin* firstSkin(const cgltf_node& node) {
     if (node.mesh != nullptr && node.skin != nullptr) {
@@ -224,7 +224,7 @@ std::vector<int32_t> skinParents(const cgltf_skin& skin) {
 
 /**
  * Read a skin into a skeleton whose parents precede their children, keeping the skin's own
- * order wherever it already does, and fill in how the rest of the walk reaches its joints.
+ * order wherever it already does, and record how the rest of the traversal reaches its joints.
  **/
 v3d::type::Skeleton readSkeleton(const cgltf_skin& skin, Rig* rig) {
     const std::vector<int32_t> parents = skinParents(skin);
@@ -309,7 +309,8 @@ Placed placement(const cgltf_node& node, const Rig& rig, Dropped* dropped) {
 
 /**
  * Put every primitive of a node's mesh, and of its children's, into the bucket of its
- * material, opening a bucket the first time a material is reached.
+ * material, opening a bucket the first time a material is reached. Meshes are reached through
+ * the node hierarchy rather than the file's mesh list, so each is placed by its node.
  **/
 void collect(const cgltf_node& node, const Rig& rig, std::vector<Bucket>* buckets, Dropped* dropped) {
     if (node.mesh != nullptr) {

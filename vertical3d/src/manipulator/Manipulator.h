@@ -21,12 +21,12 @@ namespace v3d::editor {
  * The handles that move, turn and resize the selection.
  *
  * A manipulator writes through the mesh's dag::Transform and never through its
- * geometry, so it acts on the object even when a component is what is selected. That is
- * also why it is drawn at the object's own origin: the transform pivots there, and
- * handles drawn anywhere else would lie about where a rotation turns.
+ * geometry, so it acts on the object even when a component is selected. It is drawn at
+ * the object's own origin because the transform pivots there, so a rotation turns about
+ * the point the handles show.
  *
- * Handles are picked by their own test against the cursor, per ADR-0014, and drawn
- * through LineCanvas, which is the only primitive there is. They are sized in world
+ * Handles are picked by testing each one against the cursor on the CPU, and drawn
+ * through LineCanvas. They are sized in world
  * units taken from the view, so a handle keeps roughly the same length on screen
  * however far away the object is.
  *
@@ -118,16 +118,16 @@ class Manipulator {
     /**
      * Where this manipulator sits for a mesh seen through a view.
      *
-     * The view's camera matrices are rebuilt first, so a handle answers for where the
-     * camera is now rather than for where it was when the last frame was drawn.
+     * The view's camera matrices are rebuilt first, so the handles match where the camera
+     * is now rather than where it was when the last frame was drawn.
      **/
     Placement placement(const boost::shared_ptr<v3d::brep::BRep>& mesh, const ViewPort& view) const;
 
     /**
      * Which handle the cursor is over.
      *
-     * @param axis where the answer goes - untouched when nothing is under the cursor
-     * @return whether a handle is
+     * @param axis set to the handle under the cursor, and untouched when there is none
+     * @return whether a handle is under the cursor
      **/
     virtual bool grab(const boost::shared_ptr<v3d::brep::BRep>& mesh, const ViewPort& view,
         const glm::vec2& cursor, Axis* axis) const;
@@ -167,8 +167,7 @@ class Manipulator {
     virtual Space effective() const noexcept;
 
     /**
-     * A handle's direction in world space. The centre handle has none and answers with
-     * zero.
+     * A handle's direction in world space. The centre handle has none and returns zero.
      **/
     static glm::vec3 direction(const Placement& placement, Axis axis);
 
@@ -207,19 +206,19 @@ class Manipulator {
      * How far a point is from a segment, both in screen pixels.
      *
      * A handle is a run of segments however it is drawn - a shaft is one and a ring is
-     * as many as it is approximated with - so this is what says whether the cursor is on
-     * one. Testing the points a ring is drawn through instead would leave the gaps
-     * between them ungrabbable, and the gaps grow with the ring.
+     * as many as it is approximated with - so this test decides whether the cursor is on
+     * one. Testing only the points a ring is drawn through would leave the gaps between
+     * them ungrabbable, and the gaps grow with the ring.
      **/
     static float distanceToSegment(const glm::vec2& from, const glm::vec2& to, const glm::vec2& target);
 
     /**
      * How far along a handle a drag went, in world units.
      *
-     * The handle is projected to the screen and the drag's component along it taken,
-     * which is what makes a gesture across the screen move the object the way the
-     * handle points. A handle pointing at the viewer projects to nothing and answers
-     * with zero rather than with a division by it.
+     * The handle is projected to the screen and the drag's component along it is taken,
+     * so a gesture across the screen moves the object the way the handle points. A handle
+     * pointing at the viewer projects to a point and returns zero rather than dividing
+     * by its zero length.
      **/
     static float along(const ViewPort& view, const Placement& placement, Axis axis,
         const glm::vec2& from, const glm::vec2& to);

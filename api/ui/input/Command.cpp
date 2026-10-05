@@ -75,7 +75,7 @@ v3d::event::Event command(const boost::shared_ptr<Component>& component) {
             return v3d::event::Event();
     }
     // every enumerator is handled above and the switch carries no default, so C4062 names
-    // this function when a component type is added - see ADR-0047
+    // this function when a component type is added
     return v3d::event::Event();
 }
 

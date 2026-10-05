@@ -10,22 +10,22 @@
 namespace v3d::audio {
 
 /**
- * How to start a sound. Every field has the value a one shot wants, so the default is what
- * playClip() has always done.
+ * How to start a sound. Every field defaults to what a one shot needs, so a default Play
+ * starts a sound as playClip() does.
  **/
 struct Play final {
     Play() noexcept;
 
     /**
-     * The bus the sound is mixed on - "music", "sfx", "ambience". A tag is a named group
-     * with a volume for the cost of a string, which is what makes a settings screen three
-     * sliders rather than one. Empty is no bus.
+     * The bus the sound is mixed on - "music", "sfx", "ambience". A bus is a named group
+     * with its own volume, so a settings screen can offer a slider per bus. Empty is no
+     * bus.
      **/
     std::string bus;
 
     /**
-     * How many times to repeat after the first play. -1 loops until stopped, which is what
-     * a bed of ambience or a music track wants.
+     * How many times to repeat after the first play. -1 loops until stopped, as a bed of
+     * ambience or a music track needs.
      **/
     int loops;
 

@@ -236,8 +236,8 @@ BOOST_AUTO_TEST_CASE(an_entity_with_nothing_playing_stands_at_rest) {
 /**
  * At its rest pose a skin draws the picture its unskinned mesh draws, byte for byte: the rest
  * palette is exactly the identity and every weight is exact, so skinning changes no vertex.
- * This is what fails on a wrong stride, a joint read from the wrong attribute, a wrong first
- * joint, or a palette that never reached the set.
+ * The case fails on a wrong stride, a joint read from the wrong attribute, a wrong first joint,
+ * or a palette that never reached the set.
  *
  * The pictures are written to data_out/skinned_rest.png and data_out/unskinned_rest.png.
  **/

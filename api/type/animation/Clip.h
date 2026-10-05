@@ -15,7 +15,7 @@ namespace v3d::type::animation {
 struct Pose;
 
 /**
- * A named set of channels, which sampled at a time gives a pose - ADR-0070.
+ * A named set of channels. Sampling it at a time gives a pose.
  **/
 struct Clip final {
     std::string name;

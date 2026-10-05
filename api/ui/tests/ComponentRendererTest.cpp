@@ -237,7 +237,7 @@ BOOST_AUTO_TEST_CASE(an_empty_menu_draws_nothing) {
 
 /**
  * A label given a width draws a row per line, each a line below the last. One that was given
- * no width is one line however long it is, which is what every label in the tree is today.
+ * no width is one line however long it is.
  **/
 BOOST_AUTO_TEST_CASE(a_label_with_a_width_draws_a_row_per_line) {
     std::vector<Written> written;
@@ -279,11 +279,9 @@ BOOST_AUTO_TEST_CASE(a_label_with_a_width_draws_a_row_per_line) {
 /**
  * A focused component is ringed, and an unfocused one is not.
  *
- * Drawn by the walk rather than by any one component's draw, because where the keyboard is
- * is the ui's business: a ring every control shows the same way is the point of it, and a
- * control that looks no different focused is a screen tabbed through blind. At the default
- * radius of zero the ring is four straight runs, so it is one quad per edge on top of
- * whatever the component drew.
+ * Drawn by the renderer rather than by each component's draw, so every control shows the
+ * focus the same way. At the default radius of zero the ring is four straight runs, so it
+ * is one quad per edge on top of whatever the component drew.
  **/
 BOOST_AUTO_TEST_CASE(a_focused_component_is_ringed) {
     v3d::ui::paint::ComponentRenderer renderer(
@@ -318,8 +316,7 @@ BOOST_AUTO_TEST_CASE(a_focused_component_is_ringed) {
  * The ring is read off the class the component is drawn in, so a theme can mark a focused text
  * box differently from every other control.
  *
- * One ring for every control is what the base bought, and it is still what a theme naming
- * nothing gets. What it cost was a theme that wanted a box ringed like a box.
+ * A theme naming nothing still gets the base's ring for every control.
  **/
 BOOST_AUTO_TEST_CASE(a_theme_rings_a_class_in_its_own_colour) {
     v3d::ui::paint::ComponentRenderer renderer(
@@ -361,7 +358,7 @@ BOOST_AUTO_TEST_CASE(a_theme_rings_a_class_in_its_own_colour) {
 
 /**
  * A control that is there and cannot be used is drawn saying so: its label is written in the
- * theme's disabled colour, and no hover it was left holding lights it. ADR-0059.
+ * theme's disabled colour, and no hover it was left holding lights it.
  **/
 BOOST_AUTO_TEST_CASE(a_disabled_button_is_written_in_the_disabled_colour) {
     std::vector<Written> written;
@@ -406,9 +403,9 @@ BOOST_AUTO_TEST_CASE(a_disabled_button_is_written_in_the_disabled_colour) {
 }
 
 /**
- * Disabling a box greys what it holds. The walks that route a point and a tab skip a disabled
- * subtree and never reach it, but drawing reaches every component on its own - so a label
- * inside a disabled group has to ask what is around it.
+ * Disabling a box greys what it holds. Routing a point or a tab skips a disabled subtree and
+ * never reaches it, but drawing reaches every component on its own, so a label inside a
+ * disabled group has to check what is around it.
  **/
 BOOST_AUTO_TEST_CASE(a_disabled_box_greys_the_label_it_holds) {
     std::vector<Written> written;

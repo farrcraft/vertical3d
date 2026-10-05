@@ -65,8 +65,8 @@ BOOST_AUTO_TEST_CASE(the_identity_is_each_entry_at_its_own_position) {
 }
 
 /**
- * A strip baked from the identity reads back as the identity, in RGB and in RGBA, which is
- * what pins slice, row and column to blue, green and red. The strip's alpha is not the table's.
+ * A strip baked from the identity reads back as the identity, in RGB and in RGBA. This fixes
+ * slice, row and column to blue, green and red. The strip's alpha is not copied into the table.
  **/
 BOOST_AUTO_TEST_CASE(a_strip_is_read_slice_by_slice) {
     BOOST_CHECK(Grade::table(identityStrip(24)) == Grade::identity());

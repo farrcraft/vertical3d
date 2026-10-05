@@ -67,8 +67,8 @@ BOOST_AUTO_TEST_CASE(statistics_window_rolls_test) {
 }
 
 /**
- * Steps-per-frame is the health metric, and it reports what the frame owed rather than
- * what the clamp let through - a frame owing 15 is the clamp at its ceiling.
+ * Steps per frame is the health metric. A stalled frame reports 15 steps, the clamp's
+ * ceiling, while its frame time is recorded unclamped.
  **/
 BOOST_AUTO_TEST_CASE(statistics_steps_test) {
     Accumulator accumulator;

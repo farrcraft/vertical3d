@@ -17,7 +17,7 @@
 namespace v3d::render::offline::sl {
 
 /**
- * What a hider knows about one shading point, which a surface shader reads as its globals.
+ * The values a hider has for one shading point, which a surface shader reads as its globals.
  * Every hider fills in the same fields, so a shader sees the same thing under either.
  **/
 class Point final {
@@ -37,7 +37,7 @@ class Point final {
 };
 
 /**
- * Which register each global a renderer writes or reads is, in one program, looked up once
+ * The register holding each global a renderer writes or reads, in one program, looked up once
  * when its machine is prepared rather than by name at every point. A global the program does
  * not have is -1, and writing or reading it does nothing.
  **/
@@ -74,8 +74,8 @@ class Globals final {
 
     /**
      * Write a pixel into one lane, for an imager: its colour as Ci, its coverage as Oi and
-     * alpha, and its centre in raster space as P, which is what an imager that varies across
-     * the frame reads.
+     * alpha, and its centre in raster space as P, for an imager that varies across the
+     * frame.
      **/
     void pixel(runtime::Machine* machine, unsigned int lane, const glm::vec3 & colour, float coverage,
         const glm::vec3 & position) const;
@@ -89,8 +89,8 @@ class Globals final {
      * Run a light over a batch of surface points and read back what it shone on each.
      *
      * The light's parameters are written through its placement, and its P is the origin of
-     * that space, which is what lands a light placed by a transform where the scene put it.
-     * The renderer answers "shader" space with the light's placement while this runs.
+     * that space, so a light placed by a transform lands where the scene put it. While this
+     * runs, the renderer resolves "shader" space to the light's placement.
      *
      * @param machine prepared for the light's program, whose globals these are
      * @param surface the points being lit, in the renderer's current space

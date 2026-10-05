@@ -27,7 +27,15 @@ namespace v3d::ui::shell {
 
 /**
  * The text an app draws with, the renderers over it, and the canvas they fill, built once
- * over the renderer the app already has - ADR-0074.
+ * over the renderer the app already has.
+ *
+ * Builds the text renderer, the component renderer and, when Options asks, the statistics
+ * overlay and an immediate layer over the Engine3D it is handed. It owns the canvas they
+ * draw into. An app opens each frame with begin(), which also skips a minimised window.
+ *
+ * This lives in api/ui because v3dlib_ui links v3dlib_render, so building it on the render
+ * side would be a library cycle. Engine3D is forward-declared so that no api/ui header names
+ * a Vulkan type.
  *
  * What is drawn into the canvas, and which pass it is submitted to, stay the app's. So do
  * the passes themselves: begin() begins the frame and sizes the canvas, and the app fills it

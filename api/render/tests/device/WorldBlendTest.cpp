@@ -112,8 +112,8 @@ BOOST_AUTO_TEST_SUITE(world_blend_test)
 
 /**
  * An additive quad adds its colour, scaled by its alpha, to what is there and leaves the alpha
- * as it was, where the alpha pipeline covers it - and the sums land on whole 8-bit steps well
- * away from any rounding boundary, so the specification determines every byte (ADR-0054).
+ * as it was, where the alpha pipeline covers it. The sums land on whole 8-bit steps well away
+ * from any rounding boundary, so the specification determines every byte.
  *
  * The clear is 51 and 102 on a 255 scale. A quad of 0.4, 0.4 and 0.8 adds 102, 102 and 204 at
  * full alpha and half that at half alpha, so every sum is a multiple of 51.

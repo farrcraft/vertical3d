@@ -13,10 +13,9 @@ namespace v3d::editor {
  * One undoable unit of editing.
  *
  * A command is a record of a change that has already been made rather than a request to
- * make one, per ADR-0016: it is pushed onto the stack once the change is complete, and
- * the stack calls undo() and redo() on it from then on. What one unit is belongs to
- * whatever made the change - for a drag it is the whole gesture and not the motion
- * event.
+ * make one. It is pushed onto the stack once the change is complete, and the stack calls
+ * undo() and redo() on it from then on. Whatever made the change decides how large one
+ * unit is: for a drag it is the whole gesture, not one motion event.
  **/
 class Command {
  public:

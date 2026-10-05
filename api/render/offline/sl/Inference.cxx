@@ -58,9 +58,8 @@ void Inference::spread(int symbol, const syntax::ExpressionPtr & from) {
         return;
     }
     if (entry.declared) {
-        // an explicit uniform that a varying value reaches is a shader saying two things at
-        // once, and quietly keeping one of them is how a grid comes out with one point's
-        // answer
+        // an explicit uniform that a varying value reaches is an error; silently keeping it
+        // uniform would give a whole grid one point's value
         if (violation_.empty()) {
             const unsigned int line = from ? from->line : shader_->line;
             const unsigned int column = from ? from->column : shader_->column;
@@ -75,8 +74,8 @@ void Inference::spread(int symbol, const syntax::ExpressionPtr & from) {
 
 std::string Inference::run() {
     // a loop can carry a varying value back to a name that was read before it was written,
-    // so one pass is not enough. Nothing ever moves from varying back to uniform, so the
-    // walk is monotone and settles
+    // so one pass is not enough. Nothing ever changes from varying back to uniform, so the
+    // traversal is monotone and terminates
     results_.assign(shader_->functions.size(), Storage::UNIFORM);
     for (int round = 0; round < 64; round++) {
         changed_ = false;
@@ -189,7 +188,7 @@ void Inference::inferAssignment(const syntax::StatementPtr & statement, bool var
 }
 
 void Inference::inferOutputs(const syntax::ExpressionPtr & expression, bool varyingContext) {
-    // a function that writes its arguments answers nothing, so it is only ever a statement
+    // a function that writes its arguments returns nothing, so it is only ever a statement
     if (!expression || expression->kind != syntax::Expression::Kind::CALL) {
         return;
     }
@@ -285,15 +284,15 @@ Storage Inference::inferCall(const syntax::ExpressionPtr & expression) {
     }
     if (call.function < 0) {
         // a built-in that reads the shading point is varying however uniform its arguments
-        // are: ambient() takes none and answers differently at every point on a grid
+        // are: ambient() takes none and returns a different value at every point on a grid
         const bool varying = call.signature >= 0 &&
             builtins()[static_cast<std::size_t>(call.signature)].varying;
         return varying ? Storage::VARYING : storage;
     }
     const std::size_t index = static_cast<std::size_t>(call.function);
     const syntax::Function & function = shader_->functions[index];
-    // a formal takes the storage of every argument any call site passes it, which is what
-    // makes a function called once with a varying value varying everywhere
+    // a formal takes the storage of every argument any call site passes it, so a function
+    // called once with a varying value is varying everywhere
     for (std::size_t i = 0; i < arguments.size() && i < function.parameters.size(); i++) {
         if (arguments[i] == Storage::VARYING) {
             spread(function.parameters[i].symbol, call.arguments[i]);

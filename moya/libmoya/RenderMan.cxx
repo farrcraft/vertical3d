@@ -65,7 +65,7 @@ void parameters(v3d::moya::RenderContext & rc, RtInt n, RtToken tokens[], RtPoin
         &unresolved);
     for (const std::string & name : unresolved) {
         // a name with no declaration has no length either, so it is dropped rather than
-        // read past - the same answer the reader gives a file
+        // read past, as the RIB reader does for a file
         rc.logger()->get()->warn("RI parameter '{}' was not declared and was skipped", name);
     }
 }
@@ -234,8 +234,8 @@ RtVoid RiProcDynamicLoad(RtPointer data, RtFloat detail) {
 RiGetContext and RiContext have no RIB equivalents
 */
 RtContextHandle RiGetContext(void) {
-    // the handle is the context, which is what makes it something RiContext could make
-    // active again. RI says nothing about what one is, only that it names a context
+    // the handle is the context itself, so RiContext could make it active again. RI does not
+    // define a handle, only that it names a context
     return &renderer().activeRenderContext();
 }
 
@@ -247,7 +247,7 @@ RtToken RiDeclare(char * name, char * declaration) {
         return 0;
     }
     renderer().activeRenderContext().declarations().declare(name, declaration);
-    // RI answers the token the name now stands for, which for this renderer is the name
+    // RI returns the token the name now stands for, which for this renderer is the name
     return name;
 }
 
@@ -629,8 +629,8 @@ RtLightHandle RiAreaLightSource(RtToken name, ...) {
 }
 
 RtLightHandle RiAreaLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
-    // an area light is a light whose shape matters, and sampling one is phase 4. It
-    // reaches the context as an ordinary light so that a scene using one still lights
+    // an area light is a light whose shape matters, and moya does not sample its shape. It
+    // reaches the context as an ordinary light so that a scene using one is still lit
     return RiLightSourceV(name, n, tokens, parms);
 }
 

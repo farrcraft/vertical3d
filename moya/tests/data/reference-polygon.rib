@@ -1,5 +1,5 @@
 ##RenderMan RIB-Structure 1.1
-##Scene The phase 1 reference scene, said in RIB
+##Scene A quad asymmetric about both axes, said in RIB
 version 3.03
 Format 64 48 1
 # one sample at each pixel centre under a one pixel box, which the film gives back exactly:
@@ -11,11 +11,10 @@ Projection "orthographic"
 # about 2e-38 and collapse every z onto the near plane
 Clipping 1 100
 WorldBegin
-# the shader that means no shading, named rather than defaulted to: this picture is what
-# the tree drew before there was a language, and naming it is what says the language draws
-# the same thing
+# the shader that means no shading, named rather than left as the default, so the picture
+# shows that the shading language draws an unshaded surface unchanged
 Surface "constant"
 # asymmetric about both axes, so a flipped picture is a failing one. No Color, so it takes the
-# RI default of white - which is what the code built scene renders
+# RI default of white, as the scene ReferenceTest builds in code does
 Polygon "P" [-0.7 -0.2 5  0.3 -0.2 5  0.3 0.8 5  -0.7 0.8 5]
 WorldEnd

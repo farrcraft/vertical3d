@@ -147,7 +147,7 @@ Token Lexer::scanOperator(unsigned int line, unsigned int column) {
     std::string text(1, static_cast<char>(first));
 
     // the two character forms, longest match first: a '<' is not a '<=' until the '=' is
-    // seen, and a '&' that is not half of a '&&' is nothing in this language
+    // seen, and a '&' that is not half of a '&&' is not a token in this language
     const int second = in_.look();
     const bool assigns = (first == '+' || first == '-' || first == '*' || first == '/' ||
         first == '=' || first == '!' || first == '<' || first == '>') && second == '=';
@@ -178,8 +178,8 @@ Token Lexer::scan() {
     }
     if (c == '#') {
         // '#' has no other meaning in SL, so wherever one is, it came from a directive this
-        // lexer will not resolve. Reporting it by name is the difference between a shader
-        // that needs a tool this tree does not have and a shader that is misspelt
+        // lexer will not resolve. Reporting it by name says the shader needs a preprocessor,
+        // rather than suggesting that it is misspelt
         in_.get();
         return fail("the C preprocessor is not run, so a '#' directive cannot be read", line, column);
     }

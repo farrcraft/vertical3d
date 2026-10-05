@@ -11,17 +11,17 @@
 namespace v3d::render::offline {
 
 /**
- * What the RIB and SL lexers have in common: a stream read a character at a time with its
- * position kept, the character classes, and how a quoted string's escapes decode. The two
- * languages are lexed differently above this and identically below it.
+ * The character input shared by the RIB and SL lexers: a stream read a character at a time
+ * with its position kept, the character classes, and how a quoted string's escapes decode.
+ * Each lexer builds its own tokens on top of this class.
  **/
 class Characters final {
  public:
-    /** What get() and look() answer once the stream is spent. **/
+    /** What get() and look() return once the stream is exhausted. **/
     static const int END = -1;
 
     /**
-     * The stream is read from as characters are asked for and has to outlive this.
+     * The stream is read as characters are requested, and must outlive this object.
      **/
     explicit Characters(std::istream & stream);
 
@@ -38,14 +38,14 @@ class Characters final {
     /**
      * Put back the character get() just returned, one deep.
      *
-     * The stream's own putback cannot serve: it fails once the stream has hit its end, which
-     * is the case a lexer looking one past a trailing character produces.
+     * The stream's own putback is not used because it fails once the stream has reached its
+     * end. A lexer that looks one character past a trailing character reaches that state.
      **/
     void unget(int c);
 
     /** The line of the last character consumed, counting from one. **/
     unsigned int line() const;
-    /** And its column, which is zero before the first character of a line. **/
+    /** The column of the last character consumed, which is zero before the first character of a line. **/
     unsigned int column() const;
 
     /**
@@ -61,12 +61,13 @@ class Characters final {
 
     static bool digit(int c);
     static bool octal(int c);
-    /** A letter or an underscore, which is what a name may start with. **/
+    /** A letter or an underscore: the characters a name may start with. **/
     static bool alpha(int c);
     static bool space(int c);
 
     /**
-     * " at line 3, column 7", which is how every lexer and parser error ends.
+     * Formats a position as " at line 3, column 7". Every lexer and parser error message ends
+     * with it.
      **/
     static std::string position(unsigned int line, unsigned int column);
 
@@ -92,7 +93,7 @@ class Lexeme {
     Lexeme(Kind kind, const std::string & text, unsigned int line, unsigned int column) :
         kind_(kind), text_(text), line_(line), column_(column) {
     }
-    /** A number, which is the one kind a lexeme with a value is. **/
+    /** A number. Only a number lexeme carries a value. **/
     Lexeme(Kind number, float value, unsigned int line, unsigned int column) :
         kind_(number), value_(value), line_(line), column_(column) {
     }
@@ -114,8 +115,7 @@ class Lexeme {
     }
 
     /**
-     * Where the lexeme started, counting from one. A parse error that does not say where is
-     * most of the cost of a parse error.
+     * Where the lexeme started, counting from one. Parse errors report this position.
      **/
     unsigned int line() const {
         return line_;

@@ -21,11 +21,11 @@ namespace v3d::render::realtime::vulkan::memory {
  *
  * Everything that has to reach device local memory - a texture's pixels, a mesh's
  * vertices - is copied there by a command buffer that belongs to nothing else, and the
- * caller cannot free its staging buffer until that copy has run. So this waits, which
- * keeps a staging allocation's lifetime to the function that made it.
+ * caller cannot free its staging buffer until that copy has run. This therefore waits,
+ * which keeps a staging allocation's lifetime within the function that made it.
  *
  * Waiting is only reasonable because uploads happen at load time, off the frame loop.
- * Anything uploading while frames are being drawn wants a transfer queue and a fence
+ * Anything uploading while frames are being drawn needs a transfer queue and a fence
  * rather than this.
  *
  * The one command buffer is reset and reused, so a thousand chunk meshes cost one

@@ -14,10 +14,10 @@
 namespace v3d::render::offline {
 
 /**
- * Where and when a pixel is sampled, per ADR-0076.
+ * Where and when a pixel is sampled.
  *
  * A pixel's samples are drawn from a generator seeded by its column and row, so they are the
- * same on every run and whatever order pixels or buckets are asked for in.
+ * same on every run and in whatever order pixels or buckets are rendered.
  **/
 class Sampler final {
  public:
@@ -36,13 +36,13 @@ class Sampler final {
     explicit Sampler(const Sampling & sampling);
 
     /**
-     * The samples of one pixel, stratified over a grid the size PixelSamples asked for and
+     * The samples of one pixel, stratified over a grid the size PixelSamples requested and
      * jittered within each cell.
      *
      * An axis with one stratum is sampled at the pixel centre rather than jittered, so one
      * sample a pixel is exactly the pixel centre.
      *
-     * @param pass which set of samples; a pixel asked for more than once is given a different
+     * @param pass which set of samples; a pixel sampled more than once is given a different
      *        set each time, and the same set for the same pass
      **/
     std::vector<Sample> pixel(unsigned int column, unsigned int row, unsigned int pass = 0) const;

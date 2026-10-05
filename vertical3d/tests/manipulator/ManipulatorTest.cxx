@@ -55,8 +55,8 @@ BOOST_AUTO_TEST_CASE(manipulator_grab_test) {
     boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
     v3d::editor::TranslateManipulator manipulator;
 
-    // the centre handle sits where all three axes meet, so it is what a click on the origin
-    // finds rather than whichever axis happened to be tested first
+    // the centre handle sits where all three axes meet, so a click on the origin finds it
+    // rather than whichever axis happened to be tested first
     v3d::editor::Manipulator::Axis axis = v3d::editor::Manipulator::Axis::X;
     BOOST_CHECK_EQUAL(manipulator.grab(cube, *view, centre, &axis), true);
     BOOST_CHECK(axis == v3d::editor::Manipulator::Axis::None);
@@ -97,7 +97,8 @@ BOOST_AUTO_TEST_CASE(manipulator_translate_axis_test) {
     manipulator.apply(cube, *view, centre, glm::vec2(centre.x + 100.0f, centre.y));
     BOOST_CHECK_CLOSE(cube->translation().x, 1.0f, 0.5f);
 
-    // the drag's component across the handle does nothing, which is what constrains it
+    // the drag's component across the handle does nothing, so the drag is constrained to
+    // the handle
     const glm::vec3 before = cube->translation();
     manipulator.apply(cube, *view, centre, glm::vec2(centre.x, centre.y + 100.0f));
     BOOST_CHECK_CLOSE(cube->translation().x, before.x, 0.5f);
@@ -125,7 +126,7 @@ BOOST_AUTO_TEST_CASE(manipulator_rotate_grab_test) {
 
     // this view looks along z, so the z ring faces the camera and the other two are edge on.
     // The rim of the z ring at three o'clock is also where the edge on y ring's projection
-    // ends, and the click is meant for the ring that can be seen
+    // ends, and the click goes to the ring that can be seen
     const v3d::editor::Manipulator::Placement seat = manipulator.placement(cube, *view);
     const float radius = seat.size * 200.0f;
     v3d::editor::Manipulator::Axis axis = v3d::editor::Manipulator::Axis::None;

@@ -59,7 +59,7 @@ v3d::moya::MicroPolygonGrid facing(const glm::vec3 & normal, const glm::vec3 & c
 };  // namespace
 
 /**
- * The done-when of the step: `matte` over a grid under one distant light is the cosine of
+ * `matte` over a grid under one distant light is the cosine of
  * the angle between the surface and the light, at every vertex of the grid at once.
  *
  * distantlight aims from the shader's origin toward (0, 0, 1) by default, so the light
@@ -90,8 +90,8 @@ BOOST_AUTO_TEST_CASE(moya_matte_under_one_light_test) {
 
     /*
         A surface whose normal points away from the camera is shaded as though it did not.
-        matte turns it with faceforward, which is what that function is for and is why a
-        polygon wound the other way is not simply black.
+        matte turns it with faceforward, so a polygon wound the other way is not simply
+        black.
     */
     v3d::moya::MicroPolygonGrid backwards = facing(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(1.0f));
     rc.shader().shade(shading, &backwards);
@@ -100,8 +100,8 @@ BOOST_AUTO_TEST_CASE(moya_matte_under_one_light_test) {
 
 /**
  * A light behind the surface lights nothing. The illuminance cone of PI/2 inside
- * `diffuse` is what keeps it out of the sum, and it is the reason a scene with lights on
- * both sides does not come out uniformly bright.
+ * `diffuse` keeps it out of the sum, so a scene with lights on both sides does not come out
+ * uniformly bright.
  **/
 BOOST_AUTO_TEST_CASE(moya_a_light_behind_the_surface_test) {
     v3d::moya::RenderContext rc;
@@ -118,9 +118,8 @@ BOOST_AUTO_TEST_CASE(moya_a_light_behind_the_surface_test) {
 }
 
 /**
- * `constant` is the shader that means no shading, and it writes the colour dicing already
- * carried onto the grid. That is what a scene naming no surface draws, and it is why the
- * pictures this renderer drew before there was a language are the pictures it draws now.
+ * `constant` is the shader that means no shading: it writes the colour dicing already
+ * carried onto the grid. A scene that names no surface draws with it.
  **/
 BOOST_AUTO_TEST_CASE(moya_constant_is_the_flat_colour_test) {
     v3d::moya::RenderContext rc;
@@ -174,7 +173,7 @@ BOOST_AUTO_TEST_CASE(moya_two_lights_test) {
     v3d::moya::MicroPolygonGrid one = facing(normal, glm::vec3(1.0f));
     rc.shader().shade(rc.shading(), &one);
     BOOST_CHECK_CLOSE(one.vertex(0, 0).color().r, cosine, 0.1f);
-    // the green the fill added is gone, which is the picture changing
+    // the green the fill added is gone, so switching the light off changed the picture
     BOOST_CHECK_CLOSE(one.vertex(0, 0).color().g, cosine, 0.1f);
 
     rc.illuminate("fill", true);
@@ -185,8 +184,8 @@ BOOST_AUTO_TEST_CASE(moya_two_lights_test) {
 
 /**
  * Which lights are on is an attribute, so an `Illuminate` inside an AttributeBegin block
- * is local to it. The lights themselves are the frame's and do not come back with it,
- * which is what lets a light created inside a block go on lighting after it.
+ * is local to it. The lights themselves belong to the frame and outlive the block, so a light
+ * created inside a block can still be switched on after it.
  **/
 BOOST_AUTO_TEST_CASE(moya_illuminate_is_an_attribute_test) {
     v3d::moya::RenderContext rc;
@@ -220,8 +219,7 @@ BOOST_AUTO_TEST_CASE(moya_a_light_is_placed_test) {
     /*
         The vertex at (0, 0, 5) is two units from a light at (0, 0, 3), so L is (0, 0, -2):
         the cosine against the normal is one and the falloff is a quarter. A light left at
-        the origin would be five units away and a twenty fifth as bright, which is what
-        this distinguishes.
+        the origin would be five units away and a twenty fifth as bright.
     */
     BOOST_CHECK_CLOSE(grid.vertex(0, 0).color().r, 0.25f, 1.0f);
 }

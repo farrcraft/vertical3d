@@ -26,7 +26,7 @@ BOOST_AUTO_TEST_CASE(noise_range_test) {
     }
     BOOST_CHECK_GE(lowest, 0.0f);
     BOOST_CHECK_LE(highest, 1.0f);
-    // and it does go somewhere, rather than sitting at its middle
+    // it varies across the range, rather than staying near its middle
     BOOST_CHECK_LT(lowest, 0.3f);
     BOOST_CHECK_GT(highest, 0.7f);
 
@@ -47,14 +47,14 @@ BOOST_AUTO_TEST_CASE(noise_continuous_test) {
 }
 
 /**
- * The same point is the same value on every call, which is what lets a reference pin a
- * shader that uses it.
+ * The same point is the same value on every call, so a reference image can pin a shader
+ * that uses it.
  **/
 BOOST_AUTO_TEST_CASE(noise_deterministic_test) {
     const glm::vec3 at(1.25f, 2.5f, -3.75f);
     const float first = v3d::render::offline::noise(at);
     BOOST_CHECK_EQUAL(v3d::render::offline::noise(at), first);
     BOOST_CHECK_NE(first, 0.5f);
-    // and the lattice repeats every 256 cells, as Perlin's does
+    // the lattice repeats every 256 cells, as Perlin's does
     BOOST_CHECK_CLOSE(v3d::render::offline::noise(at + glm::vec3(256.0f, 0.0f, 0.0f)), first, 0.01f);
 }

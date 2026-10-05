@@ -138,11 +138,11 @@ bool Controller::buildUi() {
     if (!vgui_->load(*config)) {
         return false;
     }
-    // the ui knows the order its own strips are drawn in, so it is what offers a cursor to
-    // them - ADR-0038. The measure is the renderer's own, so that a press inside a text box
-    // lands on the character it looks like it landed on - ADR-0057
+    // the ui hit-tests the cursor before the app, in the order its own strips are drawn.
+    // The text measure is the renderer's, so a press inside a text box places the caret
+    // on the character drawn under the pointer
     uiCursor_ = boost::make_shared<v3d::ui::input::Cursor>(vgui_, dispatcher(), renderer_->measure());
-    // the keyboard half is the api's shell, not the app's - ADR-0028
+    // the keyboard adapter comes from the api's shell rather than being written here
     uiKeys_ = boost::make_shared<v3d::ui::shell::Keyboard>(vgui_, dispatcher(), window());
     chooser_ = boost::make_shared<v3d::ui::shell::FileChooser>(vgui_);
 
@@ -179,8 +179,8 @@ void Controller::syncUi() {
         if (item) {
             item->checked(on);
         }
-        // a command may be on a menu, on a toolbar or on both, and the two show the same
-        // flag - the editor's, rather than one each
+        // a command may be on a menu, on a toolbar or on both, and both show the editor's
+        // flag rather than keeping one each
         for (const boost::shared_ptr<v3d::ui::component::Toolbar>& bar : toolbars_) {
             boost::shared_ptr<v3d::ui::component::Button> button = bar->find(command);
             if (button) {
@@ -211,8 +211,8 @@ void Controller::syncUi() {
 /**
  **/
 void Controller::registerCommands() {
-    // a refused registration means the name is already taken, which is one of the two
-    // handlers never running - so it is said out loud rather than returned to nobody
+    // a refused registration means the name is already taken and the second handler
+    // would never run, so it is logged as an error
     auto press = [this](const std::string& name, const CommandDirectory::PressHandler& handler) {
         if (!directory_.addPress(name, handler)) {
             logger()->get()->error("{} is registered twice", name);
@@ -224,8 +224,8 @@ void Controller::registerCommands() {
         }
     };
 
-    // the names are gui.xml's, because a menu translated from it names the command it
-    // invokes and the two have to meet somewhere
+    // a key binding in mappings.json and a menu item in the ui config invoke a command
+    // by these names, so all three have to spell them the same way
     press("create::poly::cube", [this]() { createPoly("cube"); });
     press("create::poly::plane", [this]() { createPoly("plane"); });
     press("create::poly::cylinder", [this]() { createPoly("cylinder"); });
@@ -241,13 +241,13 @@ void Controller::registerCommands() {
     press("transform::rotate", [this]() { transformMode("rotate"); });
     press("transform::scale", [this]() { transformMode("scale"); });
 
-    // camera and light have flags on the view and nothing that draws them, so a command
-    // for either would be a menu item that appears to work
+    // camera and light have flags on the view but nothing draws them, so they have no
+    // command: a toggle for either would appear to work and change nothing
     press("view::show::grid", [this]() { toggleShow(ViewPort::SHOW_GRID); });
     press("view::show::mesh", [this]() { toggleShow(ViewPort::SHOW_MESH); });
     press("view::show::handle", [this]() { toggleShow(ViewPort::SHOW_HANDLE); });
-    // not a view flag - the readout is over the window rather than in any one pane, so it
-    // is the renderer's to show and nothing here reads it back
+    // not a view flag: the readout covers the window rather than one pane, so the renderer
+    // shows it and nothing here reads it back
     press("view::show::statistics", [this]() { renderer_->statistics()->toggle(); });
 
     // the three camera moves are held rather than latched: the modifier going down
@@ -274,12 +274,10 @@ void Controller::registerCommands() {
     press("project::chooser::cancel", [this]() { chooser_->close(); });
     press("project::export::rib", [this]() { exportProject(); });
 
-    // gui.xml has neither, so there is no menu name to match
     press("edit::undo", [this]() { history("undo"); });
     press("edit::redo", [this]() { history("redo"); });
 
-    // gui.xml names this one without a context; ui is the context every app in the
-    // repository puts its application level commands in
+    // ui is the context every app in the repository puts its application level commands in
     press("ui::quit", [this]() {
         quit();
     });
@@ -309,8 +307,7 @@ void Controller::createPoly(const std::string& name) {
         return;
     }
 
-    // the command is what does the creating, so that making a mesh and redoing one are
-    // the same code rather than two that have to agree
+    // the command does the creating, so making a mesh and redoing one run the same code
     boost::shared_ptr<CreateCommand> command = boost::make_shared<CreateCommand>(scene_, mesh, name);
     command->redo();
     commands_->push(command);
@@ -376,8 +373,8 @@ void Controller::openProject() {
                 return;
             }
             projectPath_ = chosen;
-            // the history describes a scene that no longer exists, and nothing in it could
-            // be undone against the one that replaced it
+            // the history describes the scene that was replaced, so none of it can be
+            // undone against the new one
             commands_->clear();
         });
 }
@@ -445,8 +442,8 @@ bool Controller::uiPress(const glm::vec2& cursor) {
 /**
  **/
 void Controller::drag(bool pressed) {
-    // the ui is drawn over every view, so it is offered the press first, and the
-    // release that ends one it took reaches nothing else
+    // the ui is drawn over every view, so it is offered the press first. The release that
+    // ends a press the ui took goes nowhere else
     if (pressed) {
         uiGrab_ = uiPress(cursor_);
         if (uiGrab_) {
@@ -463,9 +460,9 @@ void Controller::drag(bool pressed) {
     // the primary mouse button, whose number the input layer does not put on the mapped
     // event - the binding names which button it is
     cameraTool_->button(1, pressed, cursor_);
-    // one button, three tools. A modifier held means the drag is driving a camera;
-    // otherwise a handle of the selection takes the press if the cursor is on one, and a
-    // press no handle took is what picks
+    // one button drives three tools. With a modifier held, the drag drives a camera.
+    // Otherwise a handle of the selection under the cursor takes the press, and a press no
+    // handle took picks
     if (cameraTool_->mode() != CameraControlTool::CAMERA_MODE_NONE) {
         return;
     }

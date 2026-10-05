@@ -119,8 +119,8 @@ BOOST_AUTO_TEST_CASE(the_canvas_transform_applies) {
 }
 
 /**
- * A depth order handed to a tinted canvas is tinted, since it adds through the canvas - which
- * is what lets one tint cover every sprite and particle a frame sorts.
+ * A depth order handed to a tinted canvas is tinted, since it adds through the canvas. One
+ * tint therefore covers every sprite and particle a frame sorts.
  **/
 BOOST_AUTO_TEST_CASE(an_order_handed_to_a_tinted_canvas_is_tinted) {
     DepthOrder order;

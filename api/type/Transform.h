@@ -12,8 +12,8 @@
 namespace v3d::type {
 
 /**
- * Where a thing is, which way it is turned, and how large it is - what an ecs entity and an
- * editor mesh are both placed by, so that the composition is written once.
+ * Where a thing is, which way it is turned, and how large it is. Both an ecs entity and an
+ * editor mesh are placed by it, so the composition is written once.
  **/
 struct Transform final {
     glm::vec3 position{0.0f};

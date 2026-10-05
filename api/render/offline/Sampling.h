@@ -39,20 +39,20 @@ bool filterNamed(const std::string & name, Filter * filter);
 float filter(Filter kind, const glm::vec2 & offset, const glm::vec2 & width);
 
 /**
- * How many samples a PixelSamples rate asks for along one axis. RI takes a float, and a
+ * How many samples a PixelSamples rate requests along one axis. RI takes a float, and a
  * rate below one still takes one sample.
  **/
 unsigned int sampleCount(float rate);
 
 /**
  * How a frame is sampled: what PixelSamples, PixelFilter, PixelVariance, Shutter and
- * DepthOfField asked for. Every field starts at the RI default.
+ * DepthOfField requested. Every field starts at the RI default.
  **/
 struct Sampling final {
     glm::uvec2 samples { 2, 2 };
     Filter filter { Filter::Gaussian };
     glm::vec2 width { 2.0f, 2.0f };
-    /** 0 asks for no adaptive sampling. **/
+    /** 0 means no adaptive sampling. **/
     float variance { 0.0f };
     /** When the shutter opens and closes. **/
     glm::vec2 shutter { 0.0f, 0.0f };

@@ -31,9 +31,9 @@ namespace v3d::render::realtime::vulkan::renderer {
  * is any later post pass - a blur, a tone map, a vignette.
  *
  * The images are the source, named as a material, so the item binds them the way any draw
- * binds a texture. Set 0 is declared, as every pipeline in the engine declares it (ADR-0008),
- * and need not be read. The pass that draws it names what it samples in Pass::reads(), so the
- * frame records whatever drew them first - ADR-0068.
+ * binds a texture. Set 0 is declared, as every pipeline in the engine declares it, and need
+ * not be read. The pass that draws it must name what it samples in Pass::reads(), so the
+ * frame records whatever drew them first.
  **/
 class FullScreen final {
  public:
@@ -64,7 +64,8 @@ class FullScreen final {
 
     /**
      * Bind images as a source, each read through the sampler it was registered with. A depth
-     * image is bound read only for depth, as the recorder leaves one - ADR-0044.
+     * image is bound in DEPTH_READ_ONLY_OPTIMAL, the layout the recorder leaves a sampled
+     * depth image in.
      *
      * A source names its images as they are now. A target that is resized, or a texture that
      * is released, is bound again rather than followed. Release a source before this goes,

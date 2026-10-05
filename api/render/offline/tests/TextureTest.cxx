@@ -87,7 +87,7 @@ BOOST_AUTO_TEST_CASE(texture_grey_test) {
 }
 
 /**
- * A name is found on the search path and read once; a name that does not read is null, and
+ * A name is found on the search path and read once; a name that cannot be read is null, and
  * is remembered as missing rather than tried again.
  **/
 BOOST_AUTO_TEST_CASE(textures_find_test) {
@@ -98,10 +98,10 @@ BOOST_AUTO_TEST_CASE(textures_find_test) {
     const v3d::render::offline::Texture* found = textures.find("data/blocks.png");
     BOOST_REQUIRE(found != nullptr);
     BOOST_CHECK_EQUAL(found->width(), 8u);
-    // the second asking is the same texture rather than a second read
+    // the second request is the same texture rather than a second read
     BOOST_CHECK(textures.find("data/blocks.png") == found);
 
-    // blocks.png was asked for before the path was set, and stays missing for the frame
+    // blocks.png was requested before the path was set, and stays missing for the frame
     BOOST_CHECK(textures.find("blocks.png") == nullptr);
     v3d::render::offline::Textures fresh(boost::make_shared<v3d::log::Logger>());
     fresh.searchpath("nowhere:data");

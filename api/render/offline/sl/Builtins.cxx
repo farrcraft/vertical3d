@@ -45,8 +45,8 @@ Signature same(const char* name, Body body, int argument, const std::vector<Argu
 }
 
 /**
- * A function that answers through the arguments from `first` on rather than through a
- * result.
+ * A function that returns its results through the arguments from `first` on rather than
+ * through a return value.
  **/
 Signature writing(const char* name, Body body, int first, const std::vector<Argument> & arguments) {
     Signature signature = declare(name, body, Type::VOID, arguments);
@@ -124,7 +124,7 @@ std::vector<Signature> build() {
     table.push_back(declare("setcomp", Body::SETCOMP, Type::VOID,
         { Argument::NUMBER, Argument::FLOAT, Argument::FLOAT }));
 
-    // the transforms, which are what tells the three point-like types apart
+    // the transforms, which treat the three point-like types differently
     table.push_back(declare("ptransform", Body::PTRANSFORM, Type::POINT, { Argument::STRING, Argument::POINTLIKE }));
     table.push_back(declare("ptransform", Body::PTRANSFORM, Type::POINT,
         { Argument::STRING, Argument::STRING, Argument::POINTLIKE }));
@@ -156,18 +156,18 @@ std::vector<Signature> build() {
     table.push_back(declare("specularbrdf", Body::SOURCE, Type::COLOR,
         { Argument::POINTLIKE, Argument::POINTLIKE, Argument::POINTLIKE, Argument::FLOAT }));
 
-    // what the renderer answers rather than the machine: a shadow, and a traced ray
+    // computed by the renderer rather than the machine: a shadow, and a traced ray
     table.push_back(shading("transmission", Body::TRANSMISSION, Type::COLOR, { Argument::POINT, Argument::POINT }));
     table.push_back(shading("trace", Body::TRACE, Type::COLOR, { Argument::POINT, Argument::POINTLIKE }));
 
-    // an image, read at s and t when it is not told where. A colour unless a cast asks for
+    // an image, read at s and t when no coordinates are given. A colour unless a cast requests
     // a float, which is the first channel
     for (const Type result : { Type::COLOR, Type::FLOAT }) {
         table.push_back(shading("texture", Body::TEXTURE, result, { Argument::STRING }));
         table.push_back(shading("texture", Body::TEXTURE, result,
             { Argument::STRING, Argument::FLOAT, Argument::FLOAT }));
     }
-    // a float unless a cast asks for three of them, each its own pattern
+    // a float unless a cast requests three of them, each its own pattern
     for (const Type result : { Type::FLOAT, Type::COLOR, Type::POINT, Type::VECTOR }) {
         table.push_back(declare("noise", Body::NOISE, result, { Argument::FLOAT }));
         table.push_back(declare("noise", Body::NOISE, result, { Argument::FLOAT, Argument::FLOAT }));
@@ -177,7 +177,7 @@ std::vector<Signature> build() {
     // declared, stubbed and reported once
     table.push_back(shading("shadow", Body::STUB, Type::FLOAT, { Argument::STRING, Argument::POINT }));
 
-    // and the one anybody actually debugs with
+    // printf, for debugging
     Signature print = declare("printf", Body::PRINTF, Type::VOID, { Argument::STRING });
     print.variadic = true;
     table.push_back(print);
@@ -190,8 +190,8 @@ std::vector<Signature> build() {
     light - the same direction in a light shader's illuminate and in a surface shader's
     illuminance body - so a cosine falloff is L . N and no term here negates anything.
 
-    A cone of PI/2 is the front of the surface, which is what keeps a light behind it out
-    of the sum.
+    A cone of PI/2 covers the front of the surface, so a light behind it is left out of
+    the sum.
 */
 const char* const SOURCE = R"(
 surface library() {

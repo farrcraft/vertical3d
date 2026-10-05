@@ -27,8 +27,8 @@ class TestEngine final : public v3d::engine::Engine {
     }
 
     /**
-     * route() is where the order of ADR-0043 lives, and eventLoop() renders, so a test
-     * drives the one and never the other.
+     * route() offers an event to the app, the input devices and the engine, in that order.
+     * eventLoop() renders, so a test drives route() and never eventLoop().
      **/
     void offer(const SDL_Event& event) {
         route(event);
@@ -83,8 +83,8 @@ const v3d::engine::Features configFeature = v3d::engine::Feature::Config;
 const v3d::engine::Features boundFeature = v3d::engine::Feature::Config | v3d::engine::Feature::KeyboardInput;
 
 /**
- * A key going down, as SDL delivers it - the only event in this file the input devices
- * have anything to say about.
+ * A key going down, as SDL delivers it. It is the only event in this file that the input
+ * devices handle.
  **/
 SDL_Event keyDown(SDL_Keycode key) {
     SDL_Event event{};
@@ -104,8 +104,8 @@ SDL_Event keyUp(SDL_Keycode key) {
 
 /**
  * A mask of nothing builds the asset manager, the dispatcher and the event engine and stops
- * there - no config read, no input devices and no window, which is what makes the engine
- * testable without one.
+ * there: no config read, no input devices and no window, so the engine can be tested
+ * without a window.
  **/
 BOOST_AUTO_TEST_CASE(engine_initialize_no_features_test) {
     TestEngine engine(appPath("good"));
@@ -180,7 +180,7 @@ BOOST_AUTO_TEST_CASE(engine_mapping_state_test) {
 
 /**
  * A destination's param reaches the handler as the event's data, in the type the document
- * wrote it as - which is what lets one action serve several bindings.
+ * wrote it as, so one action can serve several bindings.
  **/
 BOOST_AUTO_TEST_CASE(engine_mapping_param_test) {
     TestEngine engine(appPath("good"), configFeature);
@@ -208,9 +208,8 @@ BOOST_AUTO_TEST_CASE(engine_mapping_param_test) {
 }
 
 /**
- * The app is offered every event before the bindings are, per ADR-0043, and what it
- * declines goes on to be mapped exactly as it was before there was anywhere else for it
- * to go.
+ * The app is offered every event before the bindings are, and an event it does not consume
+ * is mapped as usual.
  **/
 BOOST_AUTO_TEST_CASE(engine_declined_event_reaches_the_bindings_test) {
     TestEngine engine(appPath("good"), boundFeature);
@@ -227,8 +226,8 @@ BOOST_AUTO_TEST_CASE(engine_declined_event_reaches_the_bindings_test) {
 }
 
 /**
- * And what it takes stops there. This is the whole point of the seam: a click that both
- * presses a button the app drew and gives an order is the bug it exists to prevent.
+ * An event the app consumes goes no further, so one click cannot both press a button the
+ * app drew and issue an order.
  **/
 BOOST_AUTO_TEST_CASE(engine_taken_event_is_not_mapped_test) {
     TestEngine engine(appPath("good"), boundFeature);
@@ -245,8 +244,8 @@ BOOST_AUTO_TEST_CASE(engine_taken_event_is_not_mapped_test) {
 }
 
 /**
- * A close request is a window fact rather than input, so it is not an app's to decline -
- * an app that could swallow one would be a window that could not be closed.
+ * A close request is handled even when the app consumes it, so the window can always be
+ * closed.
  **/
 BOOST_AUTO_TEST_CASE(engine_quit_survives_a_taken_event_test) {
     SDL_Event quit{};
@@ -265,8 +264,8 @@ BOOST_AUTO_TEST_CASE(engine_quit_survives_a_taken_event_test) {
 }
 
 /**
- * The default takes nothing, which is what makes the seam additive: the four apps in this
- * tree do not override it and see the events they always saw.
+ * The default onEvent() consumes nothing, so an app that does not override it has every
+ * event mapped.
  **/
 BOOST_AUTO_TEST_CASE(engine_default_takes_no_event_test) {
     v3d::engine::Engine engine(appPath("good"));
@@ -276,9 +275,8 @@ BOOST_AUTO_TEST_CASE(engine_default_takes_no_event_test) {
 }
 
 /**
- * Every rejection below is a false return out of initialize rather than an exception, because
- * a malformed document is what an app ships and a throw out of startup says nothing about
- * which line of it was wrong.
+ * Every rejection below makes initialize() return false rather than throw. A malformed
+ * document is a data error in the app, and the log says what was wrong with it.
  **/
 BOOST_AUTO_TEST_CASE(engine_missing_config_document_test) {
     TestEngine engine(appPath("nowhere"), configFeature);
@@ -293,7 +291,7 @@ BOOST_AUTO_TEST_CASE(engine_unloadable_config_file_test) {
 BOOST_AUTO_TEST_CASE(engine_no_mappings_key_test) {
     TestEngine engine(appPath("no-mappings-key"), configFeature);
     BOOST_TEST(!engine.initialize());
-    // the document itself loaded - it is the mapping walk that rejected it
+    // the document itself loaded; reading its mappings rejected it
     BOOST_REQUIRE(engine.config());
     BOOST_TEST(static_cast<bool>(engine.config()->get(v3d::config::Type::Binding)));
 }
@@ -301,7 +299,7 @@ BOOST_AUTO_TEST_CASE(engine_no_mappings_key_test) {
 BOOST_AUTO_TEST_CASE(engine_mapping_not_an_object_test) {
     TestEngine engine(appPath("mapping-not-object"), configFeature);
     BOOST_TEST(!engine.initialize());
-    // the document itself loaded - it is the mapping walk that rejected it
+    // the document itself loaded; reading its mappings rejected it
     BOOST_REQUIRE(engine.config());
     BOOST_TEST(static_cast<bool>(engine.config()->get(v3d::config::Type::Binding)));
 }
@@ -309,7 +307,7 @@ BOOST_AUTO_TEST_CASE(engine_mapping_not_an_object_test) {
 BOOST_AUTO_TEST_CASE(engine_mapping_missing_source_test) {
     TestEngine engine(appPath("missing-source"), configFeature);
     BOOST_TEST(!engine.initialize());
-    // the document itself loaded - it is the mapping walk that rejected it
+    // the document itself loaded; reading its mappings rejected it
     BOOST_REQUIRE(engine.config());
     BOOST_TEST(static_cast<bool>(engine.config()->get(v3d::config::Type::Binding)));
 }
@@ -317,7 +315,7 @@ BOOST_AUTO_TEST_CASE(engine_mapping_missing_source_test) {
 BOOST_AUTO_TEST_CASE(engine_mapping_missing_destination_test) {
     TestEngine engine(appPath("missing-destination"), configFeature);
     BOOST_TEST(!engine.initialize());
-    // the document itself loaded - it is the mapping walk that rejected it
+    // the document itself loaded; reading its mappings rejected it
     BOOST_REQUIRE(engine.config());
     BOOST_TEST(static_cast<bool>(engine.config()->get(v3d::config::Type::Binding)));
 }
@@ -325,15 +323,13 @@ BOOST_AUTO_TEST_CASE(engine_mapping_missing_destination_test) {
 BOOST_AUTO_TEST_CASE(engine_mapping_unsupported_param_test) {
     TestEngine engine(appPath("bad-param"), configFeature);
     BOOST_TEST(!engine.initialize());
-    // the document itself loaded - it is the mapping walk that rejected it
+    // the document itself loaded; reading its mappings rejected it
     BOOST_REQUIRE(engine.config());
     BOOST_TEST(static_cast<bool>(engine.config()->get(v3d::config::Type::Binding)));
 }
 
 /**
- * quit() is what a command handler calls, and the loop reads it after the handler returns.
- * shutdown() is not: it tears down the window that the frame after the handler would draw
- * into.
+ * A command handler calls quit(), and the loop reads the flag after the handler returns.
  **/
 BOOST_AUTO_TEST_CASE(engine_quit_test) {
     TestEngine engine(appPath("good"));
@@ -343,7 +339,7 @@ BOOST_AUTO_TEST_CASE(engine_quit_test) {
     engine.quit();
     BOOST_TEST(engine.quitting());
 
-    // asking twice is asking once
+    // calling it twice is the same as calling it once
     engine.quit();
     BOOST_TEST(engine.quitting());
 }
@@ -408,8 +404,7 @@ BOOST_AUTO_TEST_CASE(engine_held_without_a_keyboard_test) {
 }
 
 /**
- * With no binding config there is nothing for a rebind to rebuild, and it says so rather than
- * claiming a binding it did not make.
+ * With no binding config there is nothing for a rebind to rebuild, so rebind() returns false.
  **/
 BOOST_AUTO_TEST_CASE(engine_rebind_without_bindings_test) {
     TestEngine engine(appPath("good"), v3d::engine::Feature::KeyboardInput);
@@ -417,11 +412,10 @@ BOOST_AUTO_TEST_CASE(engine_rebind_without_bindings_test) {
     BOOST_CHECK(!engine.rebind("pong::leftPaddleUp", "arrow_up"));
 }
 
-// shutdown() is run()'s alone - ADR-0080 - so no handler in an app can tear the window down
-// under the frame after it. quit() is what is left to call.
+// Only run() calls shutdown(), so an app's handlers end the loop with quit().
 /**
- * "ui::quit" is the one command every app means the same thing by, so the engine answers it
- * as it answers a closed window, and no app writes the handler.
+ * "ui::quit" means the same in every app, so the engine handles it as it handles a closed
+ * window, and no app writes the handler.
  **/
 BOOST_AUTO_TEST_CASE(engine_answers_ui_quit_test) {
     TestEngine engine(appPath("good"), configFeature);

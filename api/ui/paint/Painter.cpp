@@ -18,7 +18,7 @@ namespace {
 const unsigned int cornerSides = 6;
 
 /**
- * A quarter turn, which is what each corner of a rounded box sweeps.
+ * A quarter turn, which each corner of a rounded box sweeps.
  **/
 const float quarterTurn = 1.5707963267948966f;
 

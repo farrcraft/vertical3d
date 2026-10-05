@@ -42,7 +42,7 @@ class Declaration final {
 
     /**
      * Read a declaration - "uniform point", "varying float", "float[3]", "point". An
-     * omitted class is uniform, which is what the standard defaults it to.
+     * omitted class is uniform, the standard's default.
      *
      * @return false when no type word was found, leaving the result untouched
      **/

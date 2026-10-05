@@ -1,6 +1,5 @@
 # The meshing and terrain logic needs neither a window nor a device, so it is testable the
-# same way an api library is. The renderer is not, and is not covered here - that waits on
-# ADR 0007 like the rest of the device-side work.
+# same way an api library is. The renderer needs a device and is not covered here.
 v3d_add_test(voxel
 	"TestMain.cxx"
 	"ChunkTest.cxx"

@@ -12,9 +12,9 @@ namespace v3d::moya {
 class RenderContext;
 
 /**
- * How moya decides what the camera sees, which a scene picks with `Hider` - ADR-0078. Both
- * read one graphics state and write one framebuffer; what differs is whether primitives are
- * diced and bucketed or traced.
+ * How moya decides what the camera sees. A scene picks the hider with the `Hider` request.
+ * Both hiders read one graphics state and write one framebuffer. They differ in whether
+ * primitives are diced and bucketed or traced.
  **/
 class Hider {
  public:

@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE(constructionplane_degenerate_test) {
     grid.draw(camera, &canvas);
     BOOST_CHECK(canvas.empty());
 
-    // and a null canvas is not dereferenced
+    // a null canvas is not dereferenced
     grid.spacing(1.0f);
     grid.draw(camera, nullptr);
 }

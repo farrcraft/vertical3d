@@ -21,7 +21,7 @@ BOOST_AUTO_TEST_CASE(renderer_active_context_test) {
 }
 
 /**
- * The stack is what RiBegin and RiEnd push and pop: destroying the active context uncovers
+ * RiBegin and RiEnd push and pop the stack: destroying the active context uncovers
  * the one below it with the options it was left holding.
  **/
 BOOST_AUTO_TEST_CASE(renderer_context_stack_test) {
@@ -39,8 +39,8 @@ BOOST_AUTO_TEST_CASE(renderer_context_stack_test) {
 }
 
 /**
- * A renderer with no context builds one on demand rather than answering with nothing, which
- * is what makes every option call safe before RiBegin.
+ * A renderer with no context builds one on demand rather than returning nothing, so every
+ * option call is safe before RiBegin.
  **/
 BOOST_AUTO_TEST_CASE(renderer_implicit_context_test) {
     v3d::moya::Renderer renderer;

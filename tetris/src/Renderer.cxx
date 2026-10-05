@@ -21,8 +21,8 @@
 namespace {
 
 /**
- * The size the ui and the side panel are drawn at, which the one atlas is scaled to per
- * ADR-0036 rather than rasterized at.
+ * The size the ui and the side panel are drawn at. Glyphs are distance fields, so the atlas
+ * is scaled to this size rather than rasterized at it.
  **/
 const float fontSize = 22.0f;
 
@@ -232,8 +232,8 @@ void TetrisRenderer::drawTetrad(const Tetrad& tetrad, const glm::vec2& origin, f
         return;
     }
     const Tetrad::ShapeInfo& shape = tetrad.shape();
-    // the layout's first index is the row and its second the column, which is the order the
-    // board's collision and lock-in walk it in
+    // the layout's first index is the row and its second the column, the same order the
+    // board's collision and lock-in code reads it in
     for (unsigned int row = 0; row < 4; row++) {
         for (unsigned int column = 0; column < 4; column++) {
             if (shape.layout_[row][column] == 0) {

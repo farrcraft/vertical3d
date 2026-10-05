@@ -25,16 +25,16 @@ namespace v3d::render::realtime::vulkan::frame {
  * The frames recorded ahead of the one the device is still drawing, and what each of them
  * owns: a command buffer and the fence its submission signals.
  *
- * This needs a device and nothing else - ADR-0051. Pacing the device is not presenting, and a
- * ring is what everything keeping a resource per frame in flight is actually indexed by, so a
- * renderer works the same whether the frames it paces end up on a screen or in a file.
+ * This needs only a device. Pacing frames is separate from presenting: everything keeping a
+ * resource per frame in flight is indexed by the ring, so a renderer works the same whether
+ * its frames end up on a screen or in a file.
  *
- * The fence is created here and waited on here, and is signalled by whichever submit the
- * caller makes - Presenter's, or a test's. That is the one thing about a ring a reader has to
- * be told rather than infer, and it is why fence() is exposed at all.
+ * The fence is created here and waited on here, but is signalled by whichever submit the
+ * caller makes - Presenter's, or a test's. The caller's submit must signal it, which is why
+ * fence() is public.
  *
- * Because it knows when a frame has finished, it is also where something released during
- * play waits to be destroyed - ADR-0061. Anything driving frames has to begin them through
+ * Because the ring tracks when a frame has finished, it is also where something released
+ * during play waits to be destroyed. Anything driving frames has to begin them through
  * begin(), or nothing retired is ever collected.
  **/
 class Ring final {

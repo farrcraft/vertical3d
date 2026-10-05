@@ -61,7 +61,8 @@ v3d::grid::Cover cover(Kind kind) {
 
 /**
  * The terrain legend for the grid. The start glyph is not in it: where the player starts is
- * odyssey's, not the grid's, so the grid hands its tiles back - ADR-0062.
+ * odyssey's concern, not the grid's. The grid parses only the terrain, and the app reads
+ * the start from the tiles the grid hands back.
  **/
 std::map<char, v3d::grid::Terrain> legend() {
     std::map<char, v3d::grid::Terrain> terrain;

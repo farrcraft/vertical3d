@@ -25,9 +25,9 @@ class Manipulator;
  * decorates the scene with.
  *
  * A viewport is not a window and owns no device state. It fills a LineCanvas during a
- * tick and the renderer turns that into a pass with this viewport's camera at set 0 and
- * this viewport's region as its scissor - which is what makes four views of one scene
- * four passes against one device, per ADR-0003.
+ * tick, and the renderer turns that into a pass with this viewport's camera at set 0 and
+ * this viewport's region as its scissor. Four views of one scene are therefore four
+ * passes against one device.
  **/
 class ViewPort final {
  public:
@@ -108,10 +108,9 @@ class ViewPort final {
      * The scene is drawn by every view that shows meshes, so one scene becomes four
      * canvases - each view draws it through its own camera.
      *
-     * The handles go to a canvas of their own because they are an overlay: they are
-     * drawn in a second pass that does not depth test, per ADR-0011. Sharing the scene's
-     * canvas would put a handle in the depth tested pass, where the grid's own axis
-     * lines lie in the same plane and win.
+     * The handles go to a canvas of their own because they are an overlay, drawn in a
+     * second pass that does not depth test. On the scene's canvas a handle would be in
+     * the depth tested pass, where the grid's axis lines lie in the same plane and hide it.
      *
      * @param scene what to draw, which the controller owns
      * @param manipulator the handles the selection carries, which every view that shows

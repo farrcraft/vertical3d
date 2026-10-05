@@ -42,8 +42,8 @@ void checkReference(const boost::shared_ptr<v3d::log::Logger>& logger,
     BOOST_REQUIRE_MESSAGE(drawn != nullptr, "cannot read back " + rendered);
 
     boost::shared_ptr<v3d::image::Image> reference = png.read(committed);
-    // a reference that is not there reads exactly like one that matched, so this is a
-    // failure rather than a picture blessed on the spot
+    // a missing reference fails rather than being written from what was drawn, which would
+    // pass every time
     BOOST_REQUIRE_MESSAGE(reference != nullptr,
         "cannot read the reference " + committed + " - what was drawn is in " + rendered);
 

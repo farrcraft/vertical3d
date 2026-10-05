@@ -69,8 +69,8 @@ class CameraControlTool final : public Tool {
 
  private:
     /**
-     * Where the cursor is within the view, which is what the arcball and the deltas are
-     * measured in - the window origin is not the view's.
+     * Where the cursor is within the view. The arcball and the deltas are measured from
+     * the view's origin, which is not the window's.
      **/
     glm::vec2 local(const glm::vec2& position) const;
 

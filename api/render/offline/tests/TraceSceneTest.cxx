@@ -21,8 +21,8 @@
 namespace {
 
 /**
- * The plane z = 0, which no part of the library knows about: a primitive is what intersects
- * a ray and describes the hit, and a scene takes any of them.
+ * The plane z = 0, a primitive defined only in this test. A primitive is anything that
+ * intersects a ray and describes the hit, and a scene accepts any of them.
  **/
 class Floor final : public v3d::render::offline::trace::Primitive {
  public:
@@ -53,7 +53,7 @@ class Floor final : public v3d::render::offline::trace::Primitive {
 BOOST_AUTO_TEST_CASE(scene_test) {
     v3d::render::offline::trace::Scene scene;
 
-    // a ray that hits nothing is worth the background, which starts black
+    // a ray that hits nothing returns the background, which starts black
     BOOST_CHECK_EQUAL(scene.background().r, 0.0f);
     BOOST_CHECK_EQUAL(scene.all<v3d::render::offline::trace::Triangle>().size(), 0u);
 
@@ -78,8 +78,8 @@ BOOST_AUTO_TEST_CASE(scene_test) {
 }
 
 /**
- * A triangle that was told nothing about its normals lies flat: its plane is both Ng and the N
- * a hit anywhere on it shades with.
+ * A triangle given no normals is flat: its plane is both Ng and the N a hit anywhere on it
+ * shades with.
  **/
 BOOST_AUTO_TEST_CASE(triangle_geometric_normal_test) {
     v3d::render::offline::trace::Triangle triangle(
@@ -101,8 +101,8 @@ BOOST_AUTO_TEST_CASE(triangle_geometric_normal_test) {
 
     BOOST_TEST((reversed.geometricNormal() == glm::vec3(0.0f, 0.0f, -1.0f)));
 
-    // a triangle with no area lies in no plane and answers zero rather than a normalised
-    // nothing
+    // a triangle with no area lies in no plane and returns zero rather than normalising a
+    // zero vector
     v3d::render::offline::trace::Triangle degenerate(
         glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(2.0f, 0.0f, 0.0f), glm::vec3(1.0f));
 
@@ -110,8 +110,8 @@ BOOST_AUTO_TEST_CASE(triangle_geometric_normal_test) {
 }
 
 /**
- * A triangle given a normal per corner interpolates between them, which is what makes a surface
- * smooth. Ng stays its plane: SL defines faceforward() and calculatenormal() in terms of both.
+ * A triangle given a normal per corner interpolates between them, so the surface shades
+ * smoothly. Ng stays its plane: SL defines faceforward() and calculatenormal() in terms of both.
  **/
 BOOST_AUTO_TEST_CASE(triangle_shading_normal_test) {
     const glm::vec3 leaning = glm::normalize(glm::vec3(1.0f, 0.0f, 1.0f));
@@ -189,15 +189,15 @@ BOOST_AUTO_TEST_CASE(scene_sphere_cut_test) {
     v3d::render::offline::trace::Hit hit;
     BOOST_REQUIRE(downward(scene, 0.0f, 0.2f, &hit));
     BOOST_CHECK_CLOSE(hit.point.z, -std::sqrt(1.0f - 0.04f), 0.01f);
-    // the outward normal of the bottom, which is the inside the ray is looking at
+    // the outward normal of the bottom, whose inside the ray meets
     BOOST_CHECK_LT(hit.normal.z, 0.0f);
     // a negative y is past a sweep of half a turn from the x axis
     BOOST_CHECK(!downward(scene, 0.0f, -0.2f, &hit));
 }
 
 /**
- * A kind of primitive the scene was never told about is met, nearest first among the rest,
- * and described by itself.
+ * A kind of primitive defined outside the library is met, nearest first among the rest, and
+ * describes its own hit.
  **/
 BOOST_AUTO_TEST_CASE(scene_any_primitive_test) {
     v3d::render::offline::trace::Scene scene;
@@ -214,7 +214,7 @@ BOOST_AUTO_TEST_CASE(scene_any_primitive_test) {
     BOOST_CHECK_EQUAL(scene.all<Floor>().size(), 1u);
     BOOST_CHECK_EQUAL(scene.all<v3d::render::offline::trace::Triangle>().size(), 1u);
 
-    // and past it, the triangle behind
+    // past it, the triangle behind
     BOOST_REQUIRE(scene.nearest(v3d::type::geometry::Ray(glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 0.0f, -1.0f)), 5.0f, &hit));
     BOOST_CHECK(hit.primitive == scene.all<v3d::render::offline::trace::Triangle>()[0]);
 }

@@ -11,7 +11,7 @@ namespace v3d::render::realtime::component {
 
 /**
  * What a lit entity looks like: a model registered with a MeshRegistry, and whether it casts
- * a shadow - ADR-0063. Where it stands is its ecs::component::Transform.
+ * a shadow. Where it stands is its ecs::component::Transform.
  *
  * The material is the registry entry's rather than the entity's, so two entities drawing one
  * model draw it the same way.

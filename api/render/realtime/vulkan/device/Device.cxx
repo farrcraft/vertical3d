@@ -20,9 +20,9 @@ namespace v3d::render::realtime::vulkan::device {
 
 namespace {
 /**
- * The device extensions the renderer cannot do without. This is where both the check against
- * a candidate device and the list the logical device is created with come from, because a
- * device selected on one list and created with another is selected on terms it is not given.
+ * The device extensions the renderer cannot do without. Both the check against a candidate
+ * device and the list the logical device is created with come from here, so a device is
+ * created with exactly the extensions it was selected for.
  *
  * @param presenting whether the device presents, which is all the swapchain extension is for.
  *        A headless device needs nothing beyond 1.3 core
@@ -222,7 +222,7 @@ bool Device::hasRequiredFeatures(VkPhysicalDevice device) {
 
     vkGetPhysicalDeviceFeatures2(device, &features);
 
-    // ADR-0002 - the renderer draws through dynamic rendering and synchronizes with the 1.3 barrier forms
+    // the renderer draws through dynamic rendering and synchronizes with the 1.3 barrier forms
     return features13.dynamicRendering == VK_TRUE && features13.synchronization2 == VK_TRUE;
 }
 

@@ -55,8 +55,8 @@ BOOST_AUTO_TEST_CASE(a_chunk_behind_is_culled) {
 }
 
 /**
- * A chunk the camera stands inside crosses the near plane and is drawn - it is the one whose
- * near faces fill the screen.
+ * A chunk the camera stands inside crosses the near plane and is drawn: its near faces fill
+ * the screen.
  **/
 BOOST_AUTO_TEST_CASE(a_chunk_across_the_near_plane_is_in_view) {
     BOOST_CHECK(chunkInView(view(), glm::vec3(-8.0f, -8.0f, -8.0f), chunkSize));

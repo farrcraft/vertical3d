@@ -25,13 +25,13 @@ namespace v3d::render::realtime::vulkan::frame {
  * The buffers a renderer streams a frame's geometry through, a set per frame in flight.
  *
  * A submission claims the next pair of the frame being recorded, and a frame takes as many as
- * it submits. Which frame that is the ring says: the claims start again from the front of a
- * slot the first time it is claimed from after the ring has begun another frame, so nothing
- * has to be told a frame ended - a renderer an app built itself reuses its buffers the same
- * as one the engine holds.
+ * it submits. The ring identifies the frame. Claims restart from the front of a slot the first
+ * time it is claimed from after the ring has begun another frame, so nothing has to signal
+ * that a frame ended. A renderer an app built itself reuses its buffers the same way as one
+ * the engine holds.
  *
- * A buffer the content outgrows is replaced by one twice the size and the old one retired
- * through the ring - ADR-0061 - rather than destroyed under a device that may be reading it.
+ * A buffer the content outgrows is replaced by one twice the size, and the old one is retired
+ * through the ring rather than destroyed while the device may be reading it.
  **/
 class StreamRing final {
  public:
@@ -75,7 +75,7 @@ class StreamRing final {
     boost::shared_ptr<Ring> ring_;
     VkDeviceSize vertexBytes_;
     VkDeviceSize indexBytes_;
-    std::vector<std::vector<Geometry>> slots_;  /**< a set of geometry per frame in flight, grown as a frame asks **/
+    std::vector<std::vector<Geometry>> slots_;  /**< a set of geometry per frame in flight, grown as a frame claims more **/
     std::size_t cursor_ = 0;                    /**< how far into the current frame's set the claims have got **/
     uint64_t counted_ = std::numeric_limits<uint64_t>::max();  /**< the ring's begun() the cursor counts in **/
 };

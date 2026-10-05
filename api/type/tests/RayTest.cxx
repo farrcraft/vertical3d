@@ -117,7 +117,7 @@ BOOST_AUTO_TEST_CASE(ray_triangle_barycentric_test) {
     BOOST_CHECK_EQUAL(u, -1.0f);
     BOOST_CHECK_EQUAL(v, -1.0f);
 
-    // the overload without them answers what the overload with them answers
+    // the overload without them returns what the overload with them returns
     v3d::type::geometry::Ray same(glm::vec3(1.0f, 2.0f, -2.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     float plain = 0.0f;
     BOOST_CHECK_EQUAL(same.intersects(a, b, c, &plain), true);

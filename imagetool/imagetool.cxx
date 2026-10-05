@@ -158,8 +158,8 @@ int run(int argc, char *argv[]) {
 int main(int argc, char *argv[]) {
     // the option parser and the image factory both report by throwing, and an exception
     // leaving main is an abort with no message in it. The handler reports through stdio
-    // rather than the stream the rest of the file writes to: a last resort that can itself
-    // throw is not one
+    // rather than the stream the rest of the file writes to, because the handler itself
+    // must not throw
     try {
         return run(argc, argv);
     } catch (const std::exception& error) {

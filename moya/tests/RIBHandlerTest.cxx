@@ -25,8 +25,8 @@ bool read(const std::string & source, v3d::moya::RIBHandler * handler) {
 };  // namespace
 
 /**
- * A scene reaches the render context through the handler, which is the whole of ADR-0023's
- * claim that a RIB file drives the offline renderer.
+ * A scene reaches the render context through the handler, so a RIB file drives the offline
+ * renderer.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_camera_test) {
     v3d::moya::Renderer renderer;
@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_camera_test) {
 
 /**
  * The sampling requests reach the render context, and a scene that names none of them is
- * sampled the way RI says a scene that says nothing is.
+ * sampled at the RI defaults.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_sampling_test) {
     v3d::moya::Renderer renderer;
@@ -96,8 +96,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_polygon_test) {
 }
 
 /**
- * A scene places its camera with a matrix that translates, which is what the standard's own
- * example does. The world to camera transformation applies as it stands: a transpose and an
+ * A scene places its camera with a matrix that translates, as the standard's own example
+ * does. The world to camera transformation applies as it stands: a transpose and an
  * inverse are both right only when it is a rotation, and neither is when it is not.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_camera_transform_test) {
@@ -177,8 +177,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_attribute_block_test) {
 }
 
 /**
- * A perspective projection makes the nearer of two equal quads the larger one. Until this
- * phase RiProjection("perspective") built the identity matrix, so it made them the same size.
+ * A perspective projection makes the nearer of two equal quads the larger one. An identity
+ * projection would make them the same size.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_perspective_test) {
     v3d::moya::Renderer renderer;
@@ -205,8 +205,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_perspective_test) {
     }
     BOOST_CHECK_GT(covered, 0u);
 
-    // the same quad twice as far away covers a quarter of the pixels, which is what a
-    // perspective projection means and what an identity matrix would not do
+    // the same quad twice as far away covers a quarter of the pixels under a perspective
+    // projection, and the same pixels under an identity matrix
     v3d::moya::Renderer far;
     v3d::moya::RIBHandler distant(&far);
     BOOST_REQUIRE(read(
@@ -296,8 +296,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_explicit_screen_window_test) {
 }
 
 /**
- * Option "limits" is how a scene names the bucket and grid sizes, which is what the standard's
- * example file opens with.
+ * Option "limits" is how a scene names the bucket and grid sizes. The standard's example file
+ * opens with it.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_limits_test) {
     v3d::moya::Renderer renderer;
@@ -313,8 +313,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_limits_test) {
 }
 
 /**
- * TransformEnd restores what TransformBegin saved. Popping without restoring left the current
- * transformation wherever the block had moved it.
+ * TransformEnd restores what TransformBegin saved, rather than leaving the current
+ * transformation wherever the block moved it.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_transform_block_test) {
     v3d::moya::Renderer renderer;
@@ -372,9 +372,10 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_sphere_is_skipped_test) {
 }
 
 /**
- * A mirror reflects what the camera cannot see, per ADR-0077: the red quad is above the
- * frame, and the mirror tilted forty five degrees under it turns every ray up into it.
- * shinymetal with its ambient and its highlight off is Cs times what it traces.
+ * A mirror reflects what the camera cannot see, because a reflection traces the whole scene in
+ * world space. The red quad is above the frame, and the mirror tilted forty five degrees under
+ * it turns every ray up into it. shinymetal with its ambient and its highlight off is Cs times
+ * what it traces.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_a_mirror_traces_test) {
     v3d::moya::Renderer renderer;

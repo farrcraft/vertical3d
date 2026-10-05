@@ -17,8 +17,8 @@
 namespace v3d::type::effect {
 
 /**
- * What an emitter makes: how often, where, moving how, and looking how over a particle's life -
- * ADR-0072.
+ * The description of an emitter: how often it spawns particles, where, how they move, and how
+ * they look over their life.
  *
  * The spawn shape and the direction are in the emitter's own space, which step() turns into
  * the world by an orientation, so a muzzle flash follows the way its gun faces. Acceleration is
@@ -35,7 +35,7 @@ struct Emitter final {
     };
 
     float rate{ 0.0f };      /**< particles a second; burst() adds them all at once **/
-    uint32_t cap{ 256 };     /**< how many may live at once; what is owed beyond it is dropped **/
+    uint32_t cap{ 256 };     /**< how many may live at once; particles due beyond it are dropped **/
 
     float lifeMin{ 1.0f };   /**< a particle's lifetime in seconds, drawn between these **/
     float lifeMax{ 1.0f };
@@ -91,7 +91,8 @@ uint32_t owing(State* state, float rate, float seconds);
 bool spawn(const Emitter& emitter, State* state, const glm::vec3& position, const glm::quat& orientation);
 
 /**
- * Move the particles an emitter has made, then spawn what its rate owes within its shape.
+ * Move the particles an emitter has made, then spawn the particles its rate makes due within
+ * its shape.
  *
  * One born this step stands where it was born, with its previous position there too.
  *

@@ -231,7 +231,7 @@ void TransformTool::button(unsigned int button, bool pressed, const glm::vec2& p
     if (!pressed) {
         dragging_ = false;
         commit();
-        // the cursor is still over whatever it let go of, and the handle should say so
+        // the cursor is still over the handle it released, so highlight that handle again
         hover(position);
         return;
     }

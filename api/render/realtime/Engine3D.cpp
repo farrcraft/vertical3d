@@ -40,15 +40,15 @@ bool Engine3D::initialize(const boost::shared_ptr<Window>& window) {
  **/
 bool Engine3D::shutdown() {
     if (context_) {
-        // the swapchain, the device and the window all outlive the frames that were
-        // submitted against them, but only just
+        // every submitted frame has to finish before the swapchain, the device and the
+        // window are destroyed
         context_->ring()->waitIdle();
     }
     // the context has to go before the window does. It owns the device, which holds
     // the window's surface alive, and the window's teardown unloads the vulkan library -
     // a surface destroyed after that is not destroyed at all, and the instance reports
     // it as leaked
-    // released, not Frame::reset() - the assignment is what tells the two apart at a glance
+    // assigned null rather than calling frame_.reset(), which reads like Frame::reset()
     frame_ = nullptr;
     context_.reset();
     return Engine::shutdown();

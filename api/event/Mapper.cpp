@@ -43,8 +43,8 @@ std::vector<Event> Mapper::destinations(const Event& source) const {
 
 std::vector<Event> Mapper::sources(std::string_view destination) const {
     std::vector<Event> found;
-    // the map is keyed by source, so a destination is a walk over all of it - which is a
-    // handful of bindings, asked a handful of times a step
+    // the map is keyed by source, so finding a destination's sources scans all of it. That
+    // is a handful of bindings, looked up a few times a step
     for (const std::pair<const Event, Event>& mapping : mappings_) {
         if (mapping.second.str() == destination) {
             found.push_back(mapping.first);

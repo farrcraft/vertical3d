@@ -15,8 +15,9 @@ namespace v3d::render::realtime {
 namespace {
 
 /**
- * A handle's slot as a key field. Slots past what sixteen bits hold - and an unset handle -
- * group together at the end, which costs a merge between them and never the order of a layer.
+ * A handle's slot as a key field. Slots that do not fit in sixteen bits, and an unset handle,
+ * share the last value. Items with those slots may cost extra binds, but the order of layers
+ * is unaffected.
  **/
 uint16_t slot(uint32_t id) noexcept {
     return static_cast<uint16_t>(std::min<uint32_t>(id, 0xFFFFu));
@@ -178,8 +179,8 @@ void Pass::ordered(std::vector<const DrawItem*>* into) const {
     if (!sorts_) {
         return;
     }
-    // stable, so that items whose keys are equal keep the order they arrived in - which
-    // is what a run of quads sharing a pipeline and a material depends on
+    // stable, so that items whose keys are equal keep the order they arrived in. A run of
+    // quads sharing a pipeline and a material depends on that
     std::stable_sort(into->begin(), into->end(), [](const DrawItem* left, const DrawItem* right) {
         return left->key < right->key;
     });

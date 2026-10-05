@@ -24,22 +24,21 @@ namespace v3d::render::offline::sl {
 namespace {
 
 /*
-    The standard shaders, compiled into the library as source strings per ADR-0026, so that
-    Surface "matte" works against no files at all.
+    The standard shaders, compiled into the library as source strings so that
+    Surface "matte" works with no shader files at all.
 
-    They are RI's own, written in this tree's reading of the language: L points from the
-    point being shaded toward the light, so a spotlight tests its cone against -L, which is
-    the way the light travels.
+    They are RI's own, written in this implementation's interpretation of the language: L
+    points from the point being shaded toward the light, so a spotlight tests its cone
+    against -L, the direction the light travels.
 
-    Each of the three directional ones asks transmission() how much of its light arrives,
-    which is where a shadow lives. A renderer that cannot answer lets all of it through, so
-    this is the whole of the difference between a renderer that casts shadows and one that
-    does not.
+    Each of the three directional lights calls transmission() for how much of its light
+    arrives, which is how a shadow is cast. A renderer with no ray tracer returns full
+    transmission, so its lights cast no shadows.
 
-    shinymetal is RI's with trace() where RI reads an environment map, and glass is this
-    tree's own: RI defines no refracting shader. glass is opaque, because it carries what is
-    behind it by refraction rather than by letting a ray through, and it turns its normal and
-    its ratio of indices round when the ray is leaving it.
+    shinymetal is RI's with trace() where RI reads an environment map. glass is not one of
+    RI's, since RI defines no refracting shader. glass is opaque because it shows what is
+    behind it by tracing a refracted ray rather than by letting a ray through. It flips its
+    normal and its ratio of indices when the ray is leaving it.
 */
 const char* const STANDARD = R"(
 surface constant() {
@@ -119,10 +118,9 @@ light distantlight(float intensity = 1; color lightcolor = 1;
     solar(to - from, 0) {
         /*
             A light at infinity has no position for a shadow ray to end at, so the ray runs
-            a long way back along L, which points at the light. Far enough is a scene sized
-            question and this answer is a constant: a scene larger than this shadows itself
-            wrongly, and the alternative is a ray with no end, which the tracer has no
-            reading for.
+            a long way back along L, which points at the light. The right length depends on
+            the scene's size, and this is a constant: a scene larger than it is shadowed
+            wrongly. The tracer does not accept a ray with no end.
         */
         Cl = intensity * lightcolor * transmission(Ps, Ps + L * 100000);
     }
@@ -206,8 +204,8 @@ ProgramPtr ShaderLibrary::compile(const std::string & name, const std::string & 
     Parser parser(stream);
     const syntax::ShaderPtr shader = find(parser.parse(), name);
     if (!shader) {
-        // a source that would not parse and a source that simply holds no shader of that
-        // name are different things, and a message that reads as the other one wastes time
+        // a source that would not parse and a source that holds no shader of that name are
+        // different failures, and the message must say which one happened
         if (parser.error().empty()) {
             logger_->get()->error("there is no shader called '{}' in {}", name, where);
         } else {
@@ -235,15 +233,13 @@ ProgramPtr ShaderLibrary::compile(const std::string & name, const std::string & 
 ProgramPtr ShaderLibrary::program(const std::string & name) {
     const auto held = programs_.find(name);
     if (held != programs_.end()) {
-        // a failure is cached too: a scene naming a broken shader on a thousand primitives
-        // is one attempt and one report
+        // a failure is cached too
         return held->second;
     }
     std::string where;
     std::string source = file(name, &where);
     if (source.empty()) {
-        // a file on the search path wins over a built-in of the same name, which is how a
-        // scene replaces one
+        // a file on the search path takes precedence over a built-in of the same name
         where = "the standard shaders";
         source = STANDARD;
     }
@@ -254,7 +250,7 @@ ProgramPtr ShaderLibrary::program(const std::string & name) {
 
 InstancePtr ShaderLibrary::fallback(ShaderType wanted) {
     if (wanted != ShaderType::SURFACE) {
-        // RI asks for a default surface and says nothing about a default light: a light
+        // RI requires a default surface and says nothing about a default light: a light
         // that will not compile is one fewer light rather than a light of some other kind
         return InstancePtr();
     }
@@ -269,8 +265,7 @@ InstancePtr ShaderLibrary::instance(const std::string & name, ShaderType wanted,
     const rib::ParameterList & parameters) {
     const ProgramPtr found = program(name);
     if (!found) {
-        // already reported by name and position, and loud: a scene whose shader failed and
-        // a scene that named no shader must not look the same from outside
+        // already reported as an error, by name and position
         return fallback(wanted);
     }
     if (found->type != wanted) {

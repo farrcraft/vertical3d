@@ -19,13 +19,13 @@ namespace v3d::render::offline::sl::runtime {
 /**
  * What the machine needs from a renderer, and does not hold itself.
  *
- * A shader run knows nothing about buckets, grids, rays or scenes. What it does need - the
- * matrix for a named coordinate space, the lights shining on the batch, whether light
- * reaches a point, and a ray traced - arrives through this, which moya's grids and a traced
- * hit each implement.
+ * A shader run has no access to buckets, grids, rays or scenes. What it does need arrives
+ * through this interface: the matrix for a named coordinate space, the lights shining on the
+ * batch, whether light reaches a point, and a traced ray. moya's grids and a traced hit each
+ * implement it.
  *
- * **Every method has an answer for a renderer that cannot do it**, so that a renderer, or a
- * suite's stand-in for one, implements only what it can answer. Only the coordinate space is
+ * **Every method has a default for a renderer that cannot do it**, so a renderer, or a
+ * test's stand-in for one, implements only what it supports. Only the coordinate space is
  * required, because a renderer that cannot say where it is shading has nothing to shade.
  **/
 class Renderer {
@@ -39,8 +39,8 @@ class Renderer {
      * a callback rather than a table the library holds.
      *
      * @param name the space: "current", "object", "shader", "world", "camera", "raster", ...
-     * @param matrix where to put it, if the renderer knows the space
-     * @return whether it did; a space a renderer does not know leaves the value alone
+     * @param matrix where to put it, if the renderer recognises the space
+     * @return whether it did; a space the renderer does not recognise leaves the value alone
      **/
     virtual bool space(const std::string & name, glm::mat4x4* matrix) = 0;
 
@@ -50,11 +50,11 @@ class Renderer {
     virtual unsigned int lights();
 
     /**
-     * What one light does to the batch: the message passing of ADR-0026, from the side the
-     * surface shader is on.
+     * Runs one light over the batch, for the surface shader's side of the message passing
+     * between surface and light shaders.
      *
-     * Running one means running that light's own program over the same batch, which is the
-     * renderer's job rather than the machine's - the renderer is what holds the shader
+     * Running a light means running its own program over the same batch. That is the
+     * renderer's job rather than the machine's, because the renderer holds the shader
      * instances a scene named.
      *
      * @param index which of lights()
@@ -62,8 +62,8 @@ class Renderer {
      * @param direction where L lands: **from the surface point toward the light**
      * @param colour where Cl lands
      * @param reached which points the light gets to at all
-     * @param ambient whether the light used neither illuminate nor solar, which is what
-     *        keeps it out of an illuminance loop and inside ambient()
+     * @param ambient whether the light used neither illuminate nor solar, so that it is left
+     *        out of an illuminance loop and summed by ambient()
      * @return whether the renderer ran it; a light it could not run lights nothing
      **/
     virtual bool light(unsigned int index, const Value & surface, Value* direction,
@@ -72,27 +72,28 @@ class Renderer {
     /**
      * How much of the light leaving one point arrives at the other, per component.
      *
-     * This is where a shadow lives. A grid and a traced hit answer it from the shared ray tracer, per
-     * ADR-0077. A ray tracing extension rather than RI 3.03.
+     * This is how a shadow is cast. moya computes it with the shared ray tracer, for a grid
+     * and for a traced hit alike. A ray tracing extension rather than part of RI 3.03.
      *
-     * @return whether the renderer answered; one that did not lets all the light through
+     * @return whether the renderer computed it; when it did not, all the light gets through
      **/
     virtual bool transmission(const Value & from, const Value & to, Value* fraction);
 
     /**
-     * What a ray from a point in a direction comes back with, which a grid and a traced hit answer
-     * from the shared ray tracer, per ADR-0077.
+     * The colour a ray from a point in a direction returns. moya traces it with the shared
+     * ray tracer, for a grid and for a traced hit alike.
      *
-     * @return whether the renderer traced it; one that did not answers black and says so
+     * @return whether the renderer traced it; when it did not, the result is black and the
+     *         machine reports it
      **/
     virtual bool trace(const Value & origin, const Value & direction, Value* colour);
 
     /**
      * The texture a shader names, which the renderer holds for the frame so that each is
-     * read once however many batches ask for it.
+     * read once however many batches use it.
      *
      * @return null when the name cannot be read, or when the renderer holds no textures;
-     *         the machine answers black and says so
+     *         the machine then returns black and reports it
      **/
     virtual const Texture* texture(const std::string & name);
 };

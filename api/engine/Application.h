@@ -17,9 +17,8 @@ namespace v3d::engine {
 /**
  * The directory the running executable sits in, with a trailing separator.
  *
- * This is what an engine resolves its relative asset paths against, and argv[0] is the
- * only thing that knows it - a game is as likely to be started from another directory as
- * from its own.
+ * An engine resolves its relative asset paths against this. It comes from argv[0] because a
+ * game can be started from any working directory.
  *
  * @param executable argv[0]
  **/
@@ -28,16 +27,15 @@ std::string appPath(const char* executable);
 /**
  * The directory this user's own files for an app belong in, with a trailing separator.
  *
- * The symmetric question to the one appPath() answers. That one says where an app reads
- * the assets it shipped with; this one says where it writes what the player chose - a
- * settings document, a key binding, a saved game. They are different directories because
- * the first is overwritten from source on every build and is not reliably writable at all.
+ * appPath() is where an app reads the assets it shipped with. This is where it writes what
+ * the player chose: a settings document, a key binding, a saved game. The two differ because
+ * appPath() is overwritten on every build and may not be writable at all.
  *
  * Nothing else is needed to read or write there: asset::Manager takes its root as a
  * constructor argument, so a second manager on this path loads through the same loaders.
  *
- * A platform that cannot answer gives an empty string and a log line rather than throwing,
- * because a game that cannot find a settings directory should still run on its defaults.
+ * A platform that cannot provide one gives an empty string and a log line rather than
+ * throwing, because a game without a settings directory should still run on its defaults.
  * The directory is created if it does not exist.
  *
  * @param org the organization the app belongs to, the same for every app that shares it
@@ -47,35 +45,32 @@ std::string appPath(const char* executable);
 std::string userPath(const std::string& org, const std::string& app);
 
 /**
- * Build an engine, run it to completion and shut it down - the whole of an app's main.
+ * Build an engine, run it to completion and shut it down. This is all of an app's main().
  *
- * shutdown() runs outside the loop and outside the catch, because it has to run whether
- * the loop ended by being asked to or by throwing, and because quit() is what an event
- * handler calls: tearing the window down from inside one leaves the frame after it drawing
- * against a destroyed window.
+ * shutdown() runs outside the loop and outside the catch, so it runs whether the loop ended
+ * normally or by throwing. An event handler calls quit() instead: tearing the window down
+ * inside a handler would leave the next frame drawing to a destroyed window.
  *
- * @param T the engine to run, which is v3d::engine::Engine subclassed by the app, with its
- *          own features(), start() and release() - ADR-0080. This is the one caller of
+ * @param T the engine to run: the app's subclass of v3d::engine::Engine, with its own
+ *          features(), start() and release(). This function is the only caller of
  *          shutdown(), which an app cannot reach
  * @param executable argv[0]
- * @param name what the app is called, for the one line a failure is reported on
- * @param args whatever else the app's engine is built from, forwarded after the path. An
- *        app that parses its command line into options before the engine exists has
- *        nowhere else to hand them over, and writing its own main to do it means writing
- *        this function's ordering out a second time
+ * @param name what the app is called, used in the log line that reports a failure
+ * @param args further constructor arguments for the app's engine, forwarded after the path.
+ *        An app that parses its command line into options passes them here rather than
+ *        writing its own main
  * @return the process exit status
  **/
 template <typename T, typename... Args>
 int run(const char* executable, const std::string& name, Args&&... args) {
     const std::string path = appPath(executable);
-    // beside the executable, whatever directory it was started from - the log is the only
-    // place a windowed app says what went wrong
+    // beside the executable, whatever directory it was started from: a windowed app has no
+    // console, so the log is the only place its errors appear
     v3d::log::Logger::open(path + "v3d.log");
     T engine(path, std::forward<Args>(args)...);
 
-    // the renderer reports what it cannot do by throwing, and an uncaught exception on
-    // windows is an abort dialog with no message in it. A windowed app has no console,
-    // so the log is the only place what went wrong is readable
+    // the renderer reports failures by throwing, and an uncaught exception on Windows shows
+    // an abort dialog with no message, so the exception is caught and logged here
     int exitStatus = EXIT_SUCCESS;
     try {
         if (!engine.initialize() || !engine.eventLoop()) {

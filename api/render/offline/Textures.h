@@ -21,8 +21,8 @@ namespace v3d::render::offline {
  * The textures a frame's shaders name, each read once.
  *
  * There is no `txmake` here: the image a scene names is the texture, so `MakeTexture` has
- * nothing to make. A name that does not read is remembered as missing, so a scene naming it
- * on a thousand grids tries once.
+ * nothing to make. A name that cannot be read is remembered as missing, so a scene naming it
+ * on a thousand grids tries to read it once.
  **/
 class Textures final {
  public:

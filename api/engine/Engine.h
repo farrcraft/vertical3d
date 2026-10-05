@@ -53,8 +53,8 @@ class Engine {
     /**
      * Start the engine: the features() the app asked for, then the app's own start().
      *
-     * Not virtual - ADR-0080. The order is the engine's, and an app supplies what runs at its
-     * end rather than wrapping the whole and calling back in.
+     * Not virtual: the engine controls the startup order, and an app adds its own work in
+     * start().
      *
      * @return false when a feature or the app's start() failed, which is logged
      **/
@@ -70,16 +70,14 @@ class Engine {
     /**
      * Offered every SDL event before the input devices see it.
      *
-     * This is where an app puts a ui it did not write. A ui toolkit an app did not write
-     * wants the events themselves rather than the commands the bindings turn them into,
-     * and polling the keyboard instead is not the same thing: a press and a release inside
-     * one frame poll as nothing having happened.
+     * This is where an app feeds a third-party ui toolkit, which needs the raw events
+     * rather than the commands the bindings make from them. Polling the keyboard is not a
+     * substitute: a press and a release inside one frame poll as no change.
      *
-     * Returning true consumes the event, so the input engine never maps it to a command -
-     * a click that both presses a button and gives an order is what that prevents, and it
-     * is the rule ui::Cursor::press() already applies inside api/ui. Per ADR-0043 the app
-     * is asked first, and the engine's own handling of quit, resize and focus runs
-     * whatever this returns.
+     * Returning true consumes the event, so the input engine never maps it to a command.
+     * One click then cannot both press a button and issue an order, the same rule
+     * ui::Cursor::press() applies inside api/ui. The engine still handles quit, resize and
+     * focus whatever this returns.
      *
      * @return whether the app took the event
      **/
@@ -96,10 +94,9 @@ class Engine {
     /**
      * Advance the simulation by one fixed step.
      *
-     * Called zero or more times per frame, however many whole steps the real time since the
-     * last frame owes, per ADR-0032. Simulation belongs here and not in tick(): what runs
-     * on a fixed step produces the same result whatever the frame rate was, and what runs
-     * in tick() does not.
+     * Called once for each whole fixed step in the real time since the last frame, so zero
+     * or more times per frame. Simulation belongs here and not in tick(): a fixed step gives
+     * the same result at any frame rate, and tick() does not.
      *
      * @param step seconds of simulated time, always Accumulator::seconds
      * @return bool
@@ -128,11 +125,9 @@ class Engine {
     /**
      * Ask the game loop to stop after the frame it is on.
      *
-     * This is what a quit command calls, and shutdown() is not: the loop ticks and
-     * renders after an event handler returns, so tearing the window and SDL down from
-     * inside a handler leaves the frame after it drawing against a destroyed window.
-     * eventLoop() returns, and run() shuts down once, outside the loop. shutdown() is not
-     * reachable from an app at all - ADR-0080.
+     * A quit command calls this. The loop still ticks and renders after an event handler
+     * returns, so the window cannot be torn down inside a handler. Instead eventLoop()
+     * returns, and run() shuts down once, outside the loop. An app cannot call shutdown().
      **/
     void quit() noexcept;
 
@@ -175,9 +170,9 @@ class Engine {
     /**
      * Whether a command is held: whether any key bound to it is down now.
      *
-     * Asked of what the keyboard holds rather than of the edges the command was sent, so it
-     * answers the same for a binding that fires on press alone, follows a rebind with
-     * nothing more, and lets go when the keyboard does. Only keys are asked - a mouse button
+     * Reads the keyboard's current state rather than the edges the command was sent on. It
+     * therefore gives the same result for a binding that fires on press alone, follows a
+     * rebind automatically, and releases when the key does. Only keys count: a mouse button
      * bound to a command never holds it.
      *
      * A command is its name and context; a binding's param is not part of it, so commands
@@ -190,8 +185,8 @@ class Engine {
 
  protected:
     /**
-     * What the engine sets up before start(). Every app in this tree wants all four, so
-     * that is the default and only an app that wants fewer says so.
+     * What the engine sets up before start(). All four by default; an app that needs fewer
+     * overrides this.
      **/
     virtual Features features() const;
 
@@ -214,7 +209,7 @@ class Engine {
 
     /**
      * One of the documents config.json names, or null when there is no config or it names
-     * none of that type - which is a document an app treats as optional.
+     * none of that type. An app treats every such document as optional.
      **/
     const boost::json::object* document(v3d::config::Type type) const;
 
@@ -224,23 +219,23 @@ class Engine {
     const boost::json::object* document(std::string_view type) const;
 
     /**
-     * Time what happens until the scope ends, as a span the statistics report by name - the
-     * one thing an app writes into what the loop measures.
+     * Time the rest of the scope as a named span in the loop's statistics. This is how an
+     * app adds its own timings.
      **/
     Statistics::Scope measure(std::string_view name);
 
     /**
-     * The one registry an app's entities live in. Protected and writable on purpose: an app
-     * is its entities, and every system it runs reaches them here.
+     * The registry that holds all of an app's entities. Protected and writable on purpose,
+     * so every system the app runs can reach it.
      **/
     entt::registry registry_;
 
     /**
-     * Point a command at a different key than the config bound it to - event::Bindings says
-     * how, and keeps the context and the edge the config gave it.
+     * Bind a command to a different key than the config gave it, keeping the context and
+     * the edge from the config. event::Bindings does the work.
      *
-     * What is not done here is remembering it across runs. A binding lives as long as the
-     * process unless the app writes it somewhere, which engine::userPath() says where.
+     * The change is not saved. It lasts for the process unless the app stores it, for
+     * example in a document under engine::userPath().
      *
      * @param command the destination the binding drives, as "context::name"
      * @param key the source event name to bind it to, which for a keyboard binding is a
@@ -252,41 +247,40 @@ class Engine {
     /**
      * Offer one polled event to the app, the input devices and the engine, in that order.
      *
-     * Separate from eventLoop() because that one renders and so cannot be driven in a
-     * test, and the order the three are offered in is the part worth testing.
+     * Separate from eventLoop(), which renders and so cannot run in a test, so that the
+     * order can be tested.
      **/
     void route(const SDL_Event& event);
 
  private:
      /**
-      * Answer one event the input devices did not take - a quit, a resize, a focus
-      * change. What the engine itself does with an event, as against when it looks for
-      * one, which is eventLoop()'s.
+      * Handle one event the input devices did not take: a quit, a resize or a focus
+      * change. eventLoop() decides when to poll for events; this decides what the engine
+      * does with one.
       **/
      void handleEvent(const SDL_Event& event);
 
      /**
-      * Answer the one command every app means the same thing by: "ui::quit", which a menu's
-      * quit item and a quit key both send, ends the loop as a closed window does.
+      * Handle "ui::quit", which a menu's quit item and a quit key both send. It ends the
+      * loop as a closed window does.
       **/
      void command(const v3d::event::Event& event);
 
      /**
       * The three parts of initialize() that a feature turns on: the config and the bindings
-      * it names, the input devices, and the window the window config sizes. Each false is a
-      * startup that cannot go on, and has said why.
+      * it names, the input devices, and the window the window config sizes. Each returns
+      * false, after logging why, when startup cannot continue.
       **/
      bool loadConfig();
      void startInput();
      bool openWindow();
 
-     // what the binding config says, which held() asks and rebind() rebuilds
+     // the bindings from the binding config, read by held() and rebuilt by rebind()
      boost::shared_ptr<v3d::event::Bindings> bindings_;
 
      /**
-      * The app's release(), then the window and SDL. Private, and reached only through
-      * run(), so no event handler can tear the window down under the frame after it -
-      * ADR-0080.
+      * The app's release(), then the window and SDL. Private and called only by run(), so
+      * no event handler can destroy the window while a frame still needs it.
       **/
      bool shutdown();
 

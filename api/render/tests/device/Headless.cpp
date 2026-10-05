@@ -21,8 +21,8 @@ namespace v3d::test {
 bool deviceAvailable() {
     try {
         boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
-        // no windowing extensions: what is being asked is whether anything can draw, not
-        // whether anything can present
+        // no windowing extensions: the probe tests whether anything can draw, not whether
+        // anything can present
         boost::shared_ptr<render::realtime::vulkan::device::Instance> instance =
             boost::make_shared<render::realtime::vulkan::device::Instance>(logger, std::vector<const char*>());
         render::realtime::vulkan::device::Device device(logger, instance);
@@ -30,7 +30,7 @@ bool deviceAvailable() {
     } catch (const std::exception& error) {
         // the console rather than the logger, which writes to a file beside the executable.
         // A machine with no gpu and one whose loader found no driver both reach here, and
-        // this message is what tells them apart
+        // this message tells them apart
         std::cerr << "no device to draw with: " << error.what() << "\n";
         return false;
     }
@@ -63,8 +63,8 @@ Headless::~Headless() {
  **/
 void Headless::submitAndWait(VkCommandBuffer commands) {
     submit(commands);
-    // the ring has moved past the slot this was submitted from, so its fence is no longer the
-    // one waitFrame() would wait on
+    // submit() has already advanced the ring past the slot this was submitted from, so
+    // waitFrame() would wait on a different fence
     context->ring()->waitIdle();
 }
 
@@ -96,8 +96,8 @@ void Headless::submit(VkCommandBuffer commands) {
 /**
  **/
 bool Headless::silent() const {
-    // the layer being on is half the assertion: where it is not installed nothing was watching,
-    // and no errors reported reads exactly like a clean run
+    // the layer must be on for an empty log to mean anything: where it is not installed nothing
+    // checked the calls, and no errors reported looks exactly like a clean run
     if (!instance->validating()) {
         BOOST_TEST_MESSAGE("the validation layer is not installed - this case asserts nothing");
         return false;

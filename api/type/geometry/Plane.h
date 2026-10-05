@@ -64,9 +64,8 @@ class Plane {
  private:
     /*
         The equation is the plane's only state: normal in [A..C] and the negated distance
-        from the origin in [D], so that distance(p) is the equation applied to p. A stored
-        normal and distance alongside it is what the two writers that set only one of the
-        pair used to disagree about.
+        from the origin in [D], so that distance(p) is the equation applied to p. A separate
+        stored normal and distance could disagree with it.
     */
     float equation_[4] = { 0.0f, 0.0f, 0.0f, 0.0f };  // abcd
 };

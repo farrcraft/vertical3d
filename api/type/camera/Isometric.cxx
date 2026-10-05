@@ -59,8 +59,8 @@ glm::vec3 Isometric::forward() const {
 
 glm::vec3 Isometric::right() const {
     // the projection sends the basis x to the right of the screen, so this is the profile's
-    // right flattened onto the ground - crossed the way the hand names rather than the way
-    // this tree's default does, which is the whole of what a hand decides
+    // right flattened onto the ground, crossed the way the hand names. The cross order is
+    // all that a hand changes
     return hand_ == Profile::Hand::DirectionCrossUp
         ? glm::normalize(glm::cross(forward(), UP))
         : glm::normalize(glm::cross(UP, forward()));
@@ -122,7 +122,7 @@ void Isometric::apply(Camera* camera) const {
         return;
     }
     Profile& profile = camera->profile();
-    // before lookat, which is what reads it
+    // before lookat(), which reads it
     profile.hand(hand_);
     profile.orthographic(true);
     profile.orthoZoom(zoom_);

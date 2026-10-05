@@ -54,8 +54,8 @@ BOOST_AUTO_TEST_CASE(a_pool_grows_when_the_last_one_is_full) {
 
 /**
  * A released set is given out again once the frames in flight have moved past it, rather
- * than another being allocated - the pools cannot free one, so a set not reused is a set
- * leaked until the pool goes.
+ * than another being allocated. The pools cannot free a single set, so a set that is not
+ * reused stays allocated until the pool is destroyed.
  **/
 BOOST_AUTO_TEST_CASE(a_released_set_is_given_out_again) {
     v3d::test::Headless headless(colourFormat, width, height);

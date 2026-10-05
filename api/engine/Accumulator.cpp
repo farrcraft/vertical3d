@@ -25,8 +25,8 @@ bool Accumulator::drain() noexcept {
 }
 
 float Accumulator::alpha() const noexcept {
-    // whole steps are only outstanding mid-drain, and a caller asking then is asking about a
-    // frame it has not finished simulating - report the fraction either way
+    // whole steps are outstanding only mid-drain, while the frame is still being simulated;
+    // report the fraction either way
     return static_cast<float>(remainder_ % step) / static_cast<float>(step);
 }
 

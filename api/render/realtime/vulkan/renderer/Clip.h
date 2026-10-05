@@ -18,7 +18,7 @@ namespace v3d::render::realtime::vulkan::renderer {
 
 /**
  * Cut an item down to a canvas's clip rectangle - min x, min y, max x, max y, in the pixels of
- * the image drawn into, which is what a scissor is in - ADR-0037. What lies off the top or left
+ * the image drawn into, the unit a scissor uses. What lies off the top or left
  * of the image is dropped, and a rectangle turned inside out cuts the draw to nothing.
  **/
 inline void clip(DrawItem* item, const glm::vec4& rectangle) {

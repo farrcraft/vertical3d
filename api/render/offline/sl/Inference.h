@@ -22,13 +22,13 @@ namespace v3d::render::offline::sl {
  * The varying inference: which symbols, expressions and function results are varying, over
  * a tree the checker has already annotated with types and symbols.
  *
- * **This is the part that can be wrong quietly.** A value is uniform until something varying
- * reaches it; inferring uniform where varying was right gives a whole grid one point's
- * answer, which reads as a shading bug and is a compiler bug. Two things make it sound rather
- * than merely plausible: an assignment inside control flow whose condition is varying becomes
- * varying, because different points take different arms; and the walk runs to a fixed point,
- * because a loop can carry a varying value back to a name that was read before it was
- * written. Marking a symbol varying is the only direction anything moves, so it terminates.
+ * **An error here is silent.** A value is uniform until something varying reaches it.
+ * Inferring uniform where varying was right gives a whole grid one point's value, which
+ * looks like a shading bug but is a compiler bug. Two rules make the inference sound. An
+ * assignment inside control flow whose condition is varying becomes varying, because
+ * different points take different arms. The traversal runs to a fixed point, because a loop
+ * can carry a varying value back to a name that was read before it was written. A symbol
+ * only ever changes from uniform to varying, so the traversal terminates.
  **/
 class Inference final {
  public:
@@ -70,7 +70,7 @@ class Inference final {
      **/
     std::vector<Storage> results_;
     /**
-     * The loops being walked, innermost last, so that a break or a continue can name the one
+     * The loops being traversed, innermost last, so that a break or a continue can name the one
      * it leaves.
      **/
     std::vector<const syntax::Statement*> enclosing_;
@@ -87,7 +87,7 @@ class Inference final {
      **/
     std::string violation_;
     bool changed_ = false;
-    /** Which function is being walked, or -1 for the shader body. **/
+    /** Which function is being traversed, or -1 for the shader body. **/
     int inside_ = -1;
 };
 

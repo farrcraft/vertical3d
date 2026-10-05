@@ -23,8 +23,8 @@ const char* const validationLayer = "VK_LAYER_KHRONOS_validation";
 
 /**
  * What the validation layer has to say, put through the logger at a severity that
- * matches its own. An error here is a real one: the layer only speaks when the api
- * has been used in a way that is undefined or about to be.
+ * matches its own. An error here is a real one: the layer only reports an error when the
+ * API has been used in a way that is undefined or about to be.
  **/
 VKAPI_ATTR VkBool32 VKAPI_CALL Instance::report(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
     VkDebugUtilsMessageTypeFlagsEXT types, const VkDebugUtilsMessengerCallbackDataEXT* data, void* user) {
@@ -162,8 +162,8 @@ void Instance::createMessenger() {
 
     VkDebugUtilsMessengerCreateInfoEXT info{};
     info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    // info and verbose are left out: they are the layer narrating what it was asked to do
-    // rather than telling us anything is wrong, and they bury the two that matter
+    // info and verbose are left out: they describe what the layer was asked to do rather
+    // than a problem, and they would bury the warnings and errors
     info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
     info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
         VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |

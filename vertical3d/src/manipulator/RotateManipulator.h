@@ -18,9 +18,8 @@ namespace v3d::editor {
 /**
  * Turns the selection: a ring per axis, about the object's origin.
  *
- * An axis ring turns by however far the cursor swept round the origin on screen, which
- * is the gesture the ring invites. The centre handle tumbles the object about the
- * camera's own axes instead.
+ * An axis ring turns by however far the cursor swept round the origin on screen. The
+ * centre handle tumbles the object about the camera's own axes instead.
  **/
 class RotateManipulator final : public Manipulator {
  public:
@@ -39,8 +38,8 @@ class RotateManipulator final : public Manipulator {
      * How far the cursor swept round the manipulator's origin, in radians about a
      * handle's axis.
      *
-     * Measured on the screen rather than in the world, because the ring is what the
-     * gesture follows. Clip space points y down, so a rotation about an axis running
+     * Measured on the screen rather than in the world, because the gesture follows the
+     * ring as drawn. Clip space points y down, so a rotation about an axis running
      * into the screen sweeps the opposite way round the origin from one about an axis
      * coming out of it, and the sign follows from which it is.
      **/

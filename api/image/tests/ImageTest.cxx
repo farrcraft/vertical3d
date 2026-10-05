@@ -46,9 +46,8 @@ static_assert(!std::is_copy_assignable<v3d::image::Image>::value,
     "assigning an image would free its buffer twice");
 
 /**
- * format() is the channel count and it follows the depth, rather than being decided once for
- * the two depths that happened to be handled. A depth no format describes still leaves a
- * definite answer, because an indeterminate one is what every writer reads to size a row.
+ * format() is the channel count and it follows the depth. A depth no format describes still
+ * gives a defined value, because every writer reads format() to size a row.
  **/
 BOOST_AUTO_TEST_CASE(image_format_follows_depth_test) {
     // a texture atlas packed at depth 1 is this

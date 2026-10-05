@@ -242,8 +242,8 @@ void GameBoard::lockTetrad() {
             }
             const unsigned int row = position.second + i;
             const unsigned int column = position.first + j;
-            // fits() has already said the tetrad is inside the board, but a lock is the one
-            // place a stray write would corrupt the heap rather than draw something odd
+            // fits() has already checked the tetrad is inside the board, but a stray write during
+            // a lock would corrupt the heap rather than draw something odd, so it is checked again
             if (row < rows_ && column < cols_) {
                 pieces_[row][column] = Piece(shape.color_);
             }

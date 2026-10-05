@@ -37,7 +37,7 @@ const uint32_t height = 16;
 
 /**
  * A texture that is one flat colour, so that wherever and however it is sampled what reaches
- * the target is that colour exactly - ADR-0054.
+ * the target is that colour exactly, on any conformant driver.
  **/
 TextureHandle flat(v3d::test::Headless* headless, unsigned char r, unsigned char g, unsigned char b) {
     std::vector<unsigned char> pixels;
@@ -98,11 +98,11 @@ BOOST_AUTO_TEST_SUITE(release_test)
 
 /**
  * A texture released while the frame that samples it is still in flight is not destroyed
- * under that frame - ADR-0061. Destroying it at once is a use after free on the device,
- * which nothing reports but the validation layer, so a silent log is the assertion.
+ * under that frame. Destroying it at once is a use after free on the device, which only the
+ * validation layer reports, so the case passes if the layer reports no errors.
  *
- * The layer only learns that a frame has finished when the app waits on its fence, so the
- * frame is in flight as far as it is concerned however quickly the device drew it.
+ * The layer treats a frame as finished only once the app waits on its fence, so the frame
+ * counts as in flight however quickly the device drew it.
  **/
 BOOST_AUTO_TEST_CASE(a_texture_released_in_flight_outlives_its_frame) {
     v3d::test::Headless headless(colourFormat, width, height);
@@ -202,9 +202,9 @@ BOOST_AUTO_TEST_CASE(a_registered_target_keeps_its_image_through_a_resize) {
 }
 
 /**
- * The white texture is shared by every untextured quad, so releasing it is refused - and a
- * caller releasing what depthTexture() gave back for a target with nothing to sample is
- * releasing it.
+ * The white texture is shared by every untextured quad, so releasing it is refused. depthTexture()
+ * returns the white texture for a target with no depth to sample, so a caller that releases
+ * that handle is releasing the white texture.
  **/
 BOOST_AUTO_TEST_CASE(the_white_texture_is_not_released) {
     v3d::test::Headless headless(colourFormat, width, height);
@@ -217,8 +217,8 @@ BOOST_AUTO_TEST_CASE(the_white_texture_is_not_released) {
 
 /**
  * A stream holds as many buffers as the busiest frame claimed, per frame in flight, however
- * many frames run - with nothing telling it a frame ended, which is what a renderer an app built
- * itself never got told. A buffer the content outgrows is replaced and retired, not added to.
+ * many frames run. Nothing tells the stream that a frame ended, as with a renderer an app
+ * builds itself. A buffer the content outgrows is replaced and retired, not added to.
  **/
 BOOST_AUTO_TEST_CASE(a_stream_holds_what_one_frame_asked_for) {
     v3d::test::Headless headless(colourFormat, width, height);
@@ -243,7 +243,8 @@ BOOST_AUTO_TEST_CASE(a_stream_holds_what_one_frame_asked_for) {
 
 /**
  * A target's depth drawn on a canvas is sampled in the layout the recorder leaves it in, which
- * is read only for depth rather than for shaders - the layer reports the draw otherwise.
+ * is read only for depth rather than for shaders. The layer reports the draw if any other
+ * layout is used.
  **/
 BOOST_AUTO_TEST_CASE(a_depth_texture_draws_on_a_canvas) {
     v3d::test::Headless headless(colourFormat, width, height);

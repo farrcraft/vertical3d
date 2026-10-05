@@ -93,7 +93,7 @@ BOOST_AUTO_TEST_CASE(brep_face_loop_test) {
         sum += mesh->vertex(mesh->edge(entry)->vertex())->point();
     }
 
-    // which is what center averages
+    // and center averages those vertices
     glm::vec3 middle = v3d::brep::center(*mesh, 0);
     BOOST_CHECK_CLOSE(middle[0], 0.5f, 0.01f);
     BOOST_CHECK_CLOSE(middle[1], 0.5f, 0.01f);
@@ -127,7 +127,7 @@ BOOST_AUTO_TEST_CASE(brep_identity_test) {
     v3d::brep::BRep first;
     v3d::brep::BRep second;
 
-    // a mesh is a dag::Node, which is what gives the selection model something to key on
+    // a mesh is a dag::Node, so it has an id for the selection model to key on
     BOOST_CHECK(first.id() != second.id());
     // which a copy would share with its original
     static_assert(!std::is_copy_constructible_v<v3d::brep::BRep>);

@@ -203,7 +203,7 @@ BOOST_AUTO_TEST_CASE(toolbar_hover_follows_the_cursor) {
 }
 
 /**
- * A button is found by the command it sends, which is how whatever answers a command marks
+ * A button is found by the command it sends, which is how whatever handles a command marks
  * the button that names it. A button that is not a toggle never shows a mark.
  **/
 BOOST_AUTO_TEST_CASE(toolbar_marks_by_command) {
@@ -265,10 +265,9 @@ BOOST_AUTO_TEST_CASE(toolbar_insets_match_what_is_drawn) {
  * Two left strips stand side by side rather than on top of each other, on the first frame as
  * well as the ones after it.
  *
- * The draw used to advance past a column by the box the strip was last drawn in, which is
- * nothing until it has been drawn once - so on the first frame both strips were placed at the
- * left edge, and insets() disagreed because it advanced by what the strip would be drawn at.
- * One implementation of the rule is what makes the two agree.
+ * The draw and insets() both advance past a column by what the strip will be drawn at, not
+ * by the box it was last drawn in, which is nothing before the first draw. Both use one
+ * implementation, so the two agree.
  **/
 BOOST_AUTO_TEST_CASE(toolbar_two_columns_stand_side_by_side_on_the_first_frame) {
     Fixture fixture;
@@ -296,9 +295,8 @@ BOOST_AUTO_TEST_CASE(toolbar_two_columns_stand_side_by_side_on_the_first_frame) 
 }
 
 /**
- * A strip holds its buttons outside children(), and what is said of the strip is said of them:
- * a disabled one disables every button on it, which then takes no press and sends nothing -
- * ADR-0059.
+ * A strip holds its buttons outside children(), and they inherit from the strip: a disabled
+ * one disables every button on it, which then takes no press and sends nothing.
  **/
 BOOST_AUTO_TEST_CASE(a_disabled_strip_disables_its_buttons) {
     Fixture fixture;

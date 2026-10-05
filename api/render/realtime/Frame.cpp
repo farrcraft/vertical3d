@@ -70,7 +70,7 @@ std::vector<std::size_t> Frame::order(const std::vector<Node>& nodes) {
 
     // the earliest created pass whose writers are all placed goes next, so that passes the
     // reads do not order keep the order they were created in. A frame is a handful of passes,
-    // so the quadratic walk is cheaper than building a graph for it
+    // so the quadratic search is cheaper than building a graph for it
     std::vector<std::size_t> order;
     std::vector<bool> placed(nodes.size(), false);
     while (order.size() < nodes.size()) {

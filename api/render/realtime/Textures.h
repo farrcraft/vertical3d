@@ -28,12 +28,12 @@ class RenderTarget;
 };  // namespace vulkan::frame
 
 /**
- * The textures a context holds and the materials they are sampled through - ADR-0082.
+ * The textures a context holds and the materials they are sampled through.
  *
  * Every pipeline that samples a texture at set 1 declares this one layout, so a material made
  * here serves the quad, the world quad and the lit renderer alike and an atlas is uploaded
- * once. It is the context's rather than any renderer's, so a context that draws no quads -
- * a headless one, or one loading meshes - registers textures all the same.
+ * once. It belongs to the context rather than to any renderer, so a context that draws no
+ * quads - a headless one, or one loading meshes - registers textures all the same.
  *
  * What is registered belongs to pipeline::Resources. The white texture lives as long as the
  * context; a texture lives until it is released here, along with its material.
@@ -82,13 +82,13 @@ class Textures final {
 
     /**
      * Register a render target's depth image, so that a draw can sample what a pass tested
-     * against rather than what it painted - which is the read half of a shadow map.
+     * against rather than what it painted. A shadow map is read this way.
      *
-     * The same shared contract, and the same rule about releasing and registering again after
-     * a recreate(). A target built without a depth image, or with one it was not told would be
-     * sampled, has nothing to register: it comes back as the white texture, because a set
-     * written against an image with no sampled usage is undefined and a flat white shadow map
-     * is a scene that is merely unshadowed.
+     * The registration shares the target's image, and the same rule applies about releasing
+     * and registering again after a recreate(). A target built without a depth image, or
+     * with one not created as sampled, has nothing to register. It comes back as the white
+     * texture, because a set written against an image with no sampled usage is undefined,
+     * and a white shadow map only leaves the scene unshadowed.
      **/
     TextureHandle depthTexture(const vulkan::frame::RenderTarget& target, uint32_t slot = 0);
 
@@ -111,7 +111,7 @@ class Textures final {
     VkDescriptorSetLayout layout() const noexcept;
 
     /**
-     * Release a texture and the material drawn with it - ADR-0061. The handle resolves to
+     * Release a texture and the material drawn with it. The handle resolves to
      * nothing at once, and the image and the descriptor set are reclaimed once no frame in
      * flight can still be reading them.
      *

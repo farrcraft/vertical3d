@@ -13,9 +13,9 @@ namespace odyssey::tile {
  * What a tile is made of.
  *
  * This is the app's own vocabulary, not the grid's. `v3d::grid::TileGrid` holds only what
- * it needs to answer a route - whether a tile may be walked on and how much cover it
- * carries - and a kind is what decides those two and what the renderer draws. Two kinds
- * that block movement can still look nothing alike.
+ * it needs to find a route: whether a tile may be walked on and how much cover it carries.
+ * A kind decides those two and what the renderer draws. Two kinds that block movement can
+ * still look nothing alike.
  **/
 enum class Kind : std::uint8_t {
     Floor,  ///< Open ground. Walkable, no cover.

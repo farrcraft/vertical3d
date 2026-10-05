@@ -14,11 +14,11 @@ namespace v3d::type::effect {
 
 /**
  * Rain or snow over a region of the world: how dense it is now, how dense it is heading for,
- * and the wind - ADR-0072.
+ * and the wind.
  *
  * The particles are an Emitter's, launched as it launches them, but born over the top of a
- * region the caller moves with the view rather than within the emitter's shape. What the
- * weather is, and when it changes, is the game's: it sets target and wind.
+ * region the caller moves with the view rather than within the emitter's shape. The game
+ * decides what the weather is and when it changes, by setting target and wind.
  *
  * +y is up.
  **/
@@ -31,8 +31,8 @@ struct Weather final {
 };
 
 /**
- * Step weather over a region: ease its intensity, move what is falling, and spawn what the
- * density owes over the region's top face.
+ * Step weather over a region: ease its intensity, move what is falling, and spawn the
+ * particles the density makes due over the region's top face.
  *
  * A particle that falls below the region is removed. One that leaves it across a side comes in
  * at the opposite side, its previous position moved with it, so the region keeps its density as

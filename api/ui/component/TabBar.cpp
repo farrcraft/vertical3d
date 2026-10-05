@@ -18,8 +18,8 @@ const int TabBar::none;
 TabBar::TabBar() :
     Component(Type::TabBar),
     selected_(0) {
-    // a control exists to be driven, so it asks for the press and the focus that a panel
-    // laid over a scene must not take - ADR-0034 and ADR-0040
+    // a control is pickable and focusable from the start; a plain component is neither, so a
+    // panel laid over a scene lets presses through
     pickable(true);
     focusable(true);
 }

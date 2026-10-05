@@ -17,8 +17,8 @@
 namespace {
 
 /**
- * A fixture as its encoded bytes, which is what an image embedded in another file arrives
- * as - there is no path to hand a reader.
+ * A fixture as its encoded bytes, the form in which an image embedded in another file
+ * arrives. There is no path to give a reader.
  **/
 std::vector<unsigned char> bytes(const std::string& path) {
     std::ifstream file(path.c_str(), std::ifstream::in | std::ifstream::binary);
@@ -219,7 +219,7 @@ BOOST_AUTO_TEST_CASE(imagereader_format_is_the_whole_extension) {
     boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::Factory factory(logger);
 
-    // a name too short to have the three characters the format used to be cut from
+    // a name shorter than a three-character extension
     BOOST_CHECK(!factory.read("a"));
     BOOST_CHECK(!factory.read(""));
     // and a name with no extension at all

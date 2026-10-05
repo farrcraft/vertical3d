@@ -19,11 +19,10 @@ namespace {
 /**
  * How far along the geometric normal a ray leaving a surface starts.
  *
- * **This is the trap of the step.** A shadow ray that starts exactly on the surface hits
- * the surface it left, every lit pixel comes out black, and the pattern it makes looks
- * like a normal fault rather than like a numerical one. The offset is along the normal
- * rather than along the ray, because a ray running nearly parallel to the surface is
- * exactly the case where an offset along it stays on the surface.
+ * **This is a trap.** A shadow ray that starts exactly on the surface hits the surface it
+ * left, and every lit pixel comes out black. The pattern looks like a fault in the normals
+ * rather than a numerical one. The offset is along the normal rather than along the ray,
+ * because an offset along a ray nearly parallel to the surface stays on the surface.
  **/
 const float EPSILON = 1.0e-4f;
 
@@ -50,8 +49,7 @@ Tracer::Run & Tracer::run(const v3d::render::offline::sl::InstancePtr & shader) 
         return held;
     }
     held.program = &shader->program();
-    // a batch of one, which is the whole point: a hit is not a special case of the
-    // model, it is a batch one wide
+    // a batch of one: a hit is not a special case of the model
     held.machine.prepare(shader->program(), 1);
     held.globals = v3d::render::offline::sl::Globals(shader->program());
     return held;
@@ -103,8 +101,7 @@ glm::vec3 Tracer::traced(const glm::vec3 & origin, const glm::vec3 & direction, 
         return glm::vec3(0.0f);
     }
     const float span = glm::length(direction);
-    // a ray past the scene's depth answers the background, which is what bounds the
-    // recursion
+    // a ray past the scene's depth returns the background, which bounds the recursion
     if (depth_ >= scene_->traceDepth() || span <= 0.0f) {
         return scene_->background();
     }
@@ -124,8 +121,8 @@ Tracer::Seen Tracer::see(const v3d::type::geometry::Ray & ray) {
     }
     /*
         Each surface goes behind what is in front of it: C += (1 - A) Ci and A += (1 - A) Oi,
-        with Ci already premultiplied. The next is looked for past the last, which is what
-        ends the walk - the distances only grow, and a ray meets each primitive at most
+        with Ci already premultiplied. The next surface is searched for past the last one,
+        so the loop ends: the distances only grow, and a ray meets each primitive at most
         twice.
     */
     float past = 0.0f;

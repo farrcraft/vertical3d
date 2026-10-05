@@ -65,7 +65,7 @@ bool Settings::load() {
         return false;
     }
 
-    // through the loader every other document is read with; it answers null for one it
+    // through the loader every other document is read with; it returns null for one it
     // could not parse
     v3d::asset::Manager assets(directory_, logger_);
     const boost::shared_ptr<v3d::asset::kind::Json> document =
@@ -75,15 +75,14 @@ bool Settings::load() {
         return false;
     }
 
-    // the format has had one version, so there is no step to walk yet - ADR-0073
+    // the format has one version, so the migration chain has no steps yet
     boost::json::object root = document->document();
     switch (v3d::asset::readForward(&root, VERSION, {})) {
         case v3d::asset::Reading::Current:
         case v3d::asset::Reading::Migrated:
             break;
         case v3d::asset::Reading::Newer:
-            // a later build wrote it and knows what is in it; overwriting would cost that build
-            // everything it stored
+            // a later build wrote it; overwriting it would lose everything that build stored
             logger_->get()->warn("{} was written by a later build than this one, which writes version {} - running on defaults",
                 path_, VERSION);
             writable_ = false;

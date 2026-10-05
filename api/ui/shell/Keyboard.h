@@ -28,9 +28,10 @@ namespace v3d::ui::shell {
  * takes, and what an app's Engine::onEvent() hands every event to.
  *
  * It decodes the event, reads the modifiers off it, supplies the clipboard and starts the
- * platform composing, none of which ui::Keys does itself - ADR-0040, ADR-0028.
+ * platform composing, none of which ui::Keys does itself.
  *
- * A key the ui takes returns true, which keeps it from the command bound to it - ADR-0043.
+ * A key the ui takes returns true. The app returns that from Engine::onEvent(), so the input
+ * engine does not also map the key to its bound command.
  * Only a key going down is ever taken. A release always goes through, so a key held when a
  * box took the focus is still seen to come up and nothing is left stuck down.
  *
@@ -48,7 +49,7 @@ class Keyboard final {
      * @param ui where the focus lives, and what announces it moving
      * @param dispatcher where a focused component's event is sent
      * @param window what composes text, turned on and off as the focus reaches a text box
-     *        and leaves it. A seam given none still edits: everything but the characters
+     *        and leaves it. Given none, it still edits: everything but the characters
      *        arrives as a key
      **/
     Keyboard(const boost::shared_ptr<Engine>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
@@ -74,7 +75,7 @@ class Keyboard final {
     input::Keys& keys() noexcept;
 
     /**
-     * The platform's clipboard, which is what the four chords a text box answers read and
+     * The platform's clipboard, which the four chords a text box acts on read and
      * write. Public because it is the pair to hand any other ui::Keys an app builds.
      **/
     static input::Keys::Clipboard clipboard();

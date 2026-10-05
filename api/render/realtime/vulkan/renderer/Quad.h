@@ -41,12 +41,12 @@ class RenderTarget;
 namespace v3d::render::realtime::vulkan::renderer {
 
 /**
- * The device half of the one batched quad primitive - ADR-0005.
+ * The device side of the batched quad primitive.
  *
  * There is one pipeline here and every 2D thing in the engine draws with it: a rectangle,
  * a sprite and a glyph differ only in which texture is bound and what the vertex colour is.
  *
- * A Canvas is filled on the cpu during a tick and handed here, which uploads its geometry
+ * A Canvas is filled on the CPU during a tick and handed here, which uploads its geometry
  * into buffers belonging to the frame about to be recorded and turns each of its
  * batches into a draw item on a pass. The buffers are per frame in flight, because the
  * device may still be reading the previous frame's out of the previous slot.
@@ -56,9 +56,8 @@ namespace v3d::render::realtime::vulkan::renderer {
  * buffer replaces the allocation, which invalidates the handle every draw item already
  * recorded holds.
  *
- * Everything it registers - the pipeline, the white texture, a material per texture -
- * belongs to pipeline::Resources. The pipelines and the white texture live until the
- * context does; a texture lives until it is released here, along with its material.
+ * The pipelines it registers belong to pipeline::Resources and live until the context does.
+ * Textures and their materials belong to the context's Textures.
  **/
 class Quad final {
  public:
@@ -94,8 +93,9 @@ class Quad final {
      *
      * @param canvas the geometry to draw, which is copied and not kept
      * @param pass where the draw items are submitted
-     * @param layer the painter order the items sort at, for a caller drawing a ui over a
-     *        game - within one canvas, submission order is what decides what is on top
+     * @param layer the layer the items' sort key carries. It only has an effect in a pass
+     *        that sorts; an unsorted pass records in submission order, and within one
+     *        canvas submission order decides what is on top
      **/
     void submit(const Canvas& canvas, Pass* pass, uint16_t layer = 0);
 

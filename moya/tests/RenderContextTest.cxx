@@ -75,8 +75,8 @@ BOOST_AUTO_TEST_CASE(render_context_reserved_coordinate_systems_test) {
 }
 
 /**
- * saveCoordinateSystem files the current transform under a name, and setCoordinateSystem is
- * the way back - together they are what RiCoordinateSystem and RiCoordSysTransform do.
+ * saveCoordinateSystem files the current transform under a name, and setCoordinateSystem
+ * restores it. Together they implement RiCoordinateSystem and RiCoordSysTransform.
  **/
 BOOST_AUTO_TEST_CASE(render_context_coordinate_system_test) {
     v3d::moya::RenderContext rc;
@@ -112,8 +112,8 @@ BOOST_AUTO_TEST_CASE(render_context_translate_test) {
 }
 
 /**
- * A rotate composes onto the current transform the way a translate does. Both it and scale
- * used to have empty bodies, so RiRotate and RiScale were silent no-ops.
+ * A rotate composes onto the current transform the way a translate does, so RiRotate and
+ * RiScale change the transform.
  **/
 BOOST_AUTO_TEST_CASE(render_context_rotate_test) {
     v3d::moya::RenderContext rc;
@@ -122,7 +122,7 @@ BOOST_AUTO_TEST_CASE(render_context_rotate_test) {
     rc.rotate(90.0f, 0.0f, 0.0f, 1.0f);
     rc.saveCoordinateSystem("object");
 
-    // the angle is in degrees, which is what RiRotate states it in
+    // the angle is in degrees, as RiRotate takes it
     glm::mat4x4 composed = rc.coordinateSystem("object");
     glm::vec3 turned = glm::vec3(composed * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
     BOOST_TEST(turned.x == 0.0f, boost::test_tools::tolerance(0.0001f));
@@ -180,9 +180,9 @@ BOOST_AUTO_TEST_CASE(render_context_split_terminates_test) {
     /*
         The default screen window is [-4/3, 4/3] by [-1, 1] over a 320 by 240 image, so the
         raster bound is 216 pixels across. A grid covers 16, so four rounds of four way
-        splitting bring every piece under one: 4^4 pieces, all diceable and bucketed. Reaching
-        the count at all is half the assertion - a split that failed to shrink its input would
-        be re-split without end.
+        splitting bring every piece under one: 4^4 pieces, all diceable and bucketed. The case
+        also checks that the count is reached at all, because a split that failed to shrink its
+        input would be re-split without end.
     */
     BOOST_TEST(rc.framebuffer()->primitiveCount() == 256u);
 }
@@ -206,7 +206,7 @@ boost::shared_ptr<v3d::moya::Polygon> diagonal() {
 
 /**
  * A polygon that says nothing about its normals gets its own plane on every vertex, as both Ng
- * and N - which is what makes such a surface faceted.
+ * and N, so such a surface is faceted.
  **/
 BOOST_AUTO_TEST_CASE(render_context_face_normal_test) {
     v3d::moya::RenderContext rc;
@@ -216,7 +216,7 @@ BOOST_AUTO_TEST_CASE(render_context_face_normal_test) {
     polygon->addVertex(vertex(-0.01f, -0.01f, 5.0f));
     polygon->addVertex(vertex(0.01f, -0.01f, 5.0f));
     polygon->addVertex(vertex(0.01f, 0.01f, 5.0f));
-    // nothing has written a shading normal yet, which is what the fill in is for
+    // nothing has written a shading normal yet, so the fill in supplies one
     BOOST_TEST(!polygon->vertex(0).hasNormal());
 
     rc.addPolygon(polygon);
@@ -286,7 +286,7 @@ BOOST_AUTO_TEST_CASE(render_context_normal_inverse_transpose_test) {
 
 /**
  * Dicing interpolates the shading normal onto the grid the way it interpolates the position and
- * the colour, which is what makes a surface given a varying "N" come out smooth. The geometric
+ * the colour, so a surface given a varying "N" comes out smooth. The geometric
  * normal is one value across the primitive and is copied rather than interpolated.
  **/
 BOOST_AUTO_TEST_CASE(render_context_dice_interpolates_normal_test) {
@@ -329,10 +329,10 @@ BOOST_AUTO_TEST_CASE(render_context_dice_interpolates_normal_test) {
 }
 
 /**
- * A split builds its pieces from intersection points, which carry no normal any more than they
- * carry a colour, so a piece takes the whole primitive's plane through place() - the same route
- * the colour takes. A surface large enough to split is therefore faceted per piece, and the
- * phase that gives the edge split an interpolating clip is what would change that.
+ * A split builds its pieces from intersection points, which carry no normal and no colour, so a
+ * piece takes the whole primitive's plane through place(), the same route the colour takes. A
+ * surface large enough to split is therefore faceted per piece, because the edge split does not
+ * interpolate the normal.
  **/
 BOOST_AUTO_TEST_CASE(render_context_split_carries_the_normal_test) {
     v3d::moya::RenderContext rc;
@@ -350,8 +350,8 @@ BOOST_AUTO_TEST_CASE(render_context_split_carries_the_normal_test) {
     BOOST_REQUIRE(!polygon->diceable());
     BOOST_TEST((polygon->normal() == glm::vec3(0.0f, 0.0f, 1.0f)));
 
-    // the pieces reach the first pass again already placed, so they keep it: the render
-    // terminates with every piece bucketed, which it could not do if a piece were re-measured
+    // the pieces reach the first pass again already placed, so they keep it. The render then
+    // terminates with every piece bucketed, which would fail if a piece were re-measured
     // against the state of whatever came last
     rc.render();
     BOOST_TEST(rc.framebuffer()->primitiveCount() == 256u);
@@ -359,11 +359,11 @@ BOOST_AUTO_TEST_CASE(render_context_split_carries_the_normal_test) {
 
 /**
  * An imager runs after the last bucket, over the finished frame, and gives a pixel nothing
- * was drawn into what the scene said it is worth.
+ * was drawn into the value the scene set for it.
  *
- * It is the same shader and the same runner the ray hider uses after its last ray, which is what
- * the coverage plane is for: without it a pixel the hider never reached and a black one
- * are the same number.
+ * The ray hider runs the same shader through the same runner after its last ray. The imager
+ * reads the coverage plane, because without it a pixel the hider never reached and a black
+ * one hold the same value.
  **/
 BOOST_AUTO_TEST_CASE(rendercontext_imager_test) {
     v3d::moya::RenderContext rc;

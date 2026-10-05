@@ -2,7 +2,7 @@
 
 /**
  * Writes the colour bound at set 2 and nothing else, so a picture of it says whether the
- * pass's scene set reached the draw - ADR-0064. Sets 0 and 1 are declared by the pipeline
+ * pass's scene set reached the draw. Sets 0 and 1 are declared by the pipeline
  * and read by nothing here.
  **/
 

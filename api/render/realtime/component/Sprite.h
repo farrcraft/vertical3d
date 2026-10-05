@@ -14,7 +14,7 @@ namespace v3d::render::realtime::component {
 
 /**
  * An entity drawn as an upright quad facing the camera, its bottom edge centred on the
- * position of its ecs::component::Transform - ADR-0063.
+ * position of its ecs::component::Transform.
  *
  * The region is held resolved rather than by name, so a game resolves it again when the sheet
  * it came from is reloaded. The transform's rotation does not turn the quad: a game shows which

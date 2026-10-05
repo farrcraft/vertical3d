@@ -33,12 +33,12 @@ class TextBox;
 namespace v3d::ui::input {
 
 /**
- * Turns a key into an edit on whatever has the focus, per ADR-0040.
+ * Turns a key into an edit on whatever has the focus.
  *
- * The keyboard's ui::Cursor, and the same shape: it is handed what the app's input engine
- * saw, it answers whether the ui took it, and it names the operation while the component
- * carries it out. Nothing here reaches for a component by walking the tree - the focus is
- * the ui's, so a key goes to one place or to nowhere.
+ * The keyboard counterpart of ui::Cursor, with the same shape: it receives what the app's
+ * input engine saw, returns whether the ui took it, and names the operation while the
+ * component carries it out. Nothing here finds a component by walking the tree. The ui
+ * holds the focus, so a key goes to one place or to nowhere.
  *
  * Two kinds of input, because a key is not a character. A key names an operation - a
  * backspace, a caret move, a return that sends the command - and comes from the key names
@@ -53,17 +53,18 @@ namespace v3d::ui::input {
  * on to the app's bindings, because a button is not something a player is typing into.
  *
  * A box also takes the four chords an editor is expected to answer - cut, copy, paste and
- * select all - over the selection ADR-0057 gave it. The clipboard behind them is the app's,
- * for the reason the text measuring is.
+ * select all - over its selection. The app supplies the clipboard, as it supplies text
+ * measuring.
  *
- * A ui with nothing focused takes neither kind, which is what leaves a game's movement keys
- * working until something is clicked into or Engine::focusFirst() starts a screen off.
+ * A ui with nothing focused takes neither kind, so a game's movement keys keep working
+ * until something is clicked into or Engine::focusFirst() starts a screen off.
  **/
 class Keys final {
  public:
     /**
-     * The platform's clipboard, which this library cannot reach for itself without taking
-     * SDL with it - the same kind of seam text measuring is, per ADR-0019 and ADR-0057.
+     * The platform's clipboard, as a pair of callbacks. This library cannot reach the
+     * clipboard without depending on SDL, so the app supplies it, as it supplies text
+     * measuring.
      *
      * A router given neither call still edits everything else. A cut with nowhere to hand
      * the run does not take it out, because a cut that loses the text is worse than one
@@ -94,7 +95,7 @@ class Keys final {
      * @param controlled whether a control key is held, which names the four chords a text
      *        box answers - cut, copy, paste and select all. Every other chord goes on to
      *        the app, so a ctrl-s still saves while somebody is typing
-     * @return whether the ui took it, which is what stops it reaching the app's bindings
+     * @return whether the ui took it, in which case it does not reach the app's bindings
      **/
     bool press(std::string_view key, bool shifted = false, bool controlled = false);
 
@@ -119,8 +120,8 @@ class Keys final {
     /**
      * A key that reached a text box: the caret moves, a character goes, or a return sends.
      *
-     * The one component that takes every key that composes text, because a box is the one
-     * place a letter is being typed rather than played.
+     * The only component that takes every key that composes text, because a text box is
+     * where letters are typed rather than used as game controls.
      **/
     bool edit(const boost::shared_ptr<component::TextBox>& box, std::string_view key,
         bool shifted, bool controlled);
@@ -135,8 +136,8 @@ class Keys final {
     void cutSelection(const boost::shared_ptr<component::TextBox>& box) const;
 
     /**
-     * Put whatever the clipboard holds in over the selection, which is what TextBox::insert
-     * already does with a run of characters the platform composed.
+     * Put whatever the clipboard holds in over the selection, the way TextBox::insert
+     * handles a run of characters the platform composed.
      **/
     void paste(const boost::shared_ptr<component::TextBox>& box) const;
 
@@ -148,7 +149,7 @@ class Keys final {
 
     /**
      * A key that reached a tab bar: the arrows change which page is up. A bar carries no
-     * command, so nothing is sent - which is what a click on a tab does too.
+     * command, so nothing is sent, as with a click on a tab.
      **/
     static bool turn(const boost::shared_ptr<component::TabBar>& bar, std::string_view key);
 
@@ -156,9 +157,9 @@ class Keys final {
      * A key that reached a scrollbar: the arrows move it by a line, page up and page down
      * by what the page shows, and home and end to the ends of the content.
      *
-     * The bar is the arithmetic and not the input, so what a line and a page come to is
-     * its to say and this only names which of them a key asked for. Which arrows read as
-     * "along" is the bar's direction, the way it is for a list and for a tab bar.
+     * The bar does the arithmetic, so it decides what a line and a page come to; this only
+     * says which of them a key asked for. Which arrows read as "along" follows the bar's
+     * direction, as it does for a list and for a tab bar.
      *
      * A bar with nothing to scroll takes no key, so an arrow reaching one that shows all
      * of its content goes on to the app's bindings rather than being swallowed by a
@@ -181,8 +182,8 @@ class Keys final {
     void send(const boost::shared_ptr<Component>& component) const;
 
     /**
-     * Send one event. An event with no context is not dispatchable and is dropped, which
-     * is what a component nobody gave a command to carries.
+     * Send one event. An event with no context is not dispatchable and is dropped; a
+     * component with no command carries one.
      **/
     void send(const v3d::event::Event& event) const;
 

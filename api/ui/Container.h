@@ -60,7 +60,7 @@ class Container {
      * The topmost pickable component under a point.
      *
      * Tested against the boxes the components were last drawn in, so nothing is picked
-     * until something has been drawn, per ADR-0019. A child is offered the point before
+     * until something has been drawn. A child is offered the point before
      * its parent, and a component that is not pickable is passed over without hiding
      * what is under it.
      *

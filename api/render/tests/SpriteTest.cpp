@@ -60,8 +60,8 @@ void draw(const entt::registry& registry, float alpha, const glm::vec3& across,
 }
 
 /**
- * The corners cozy's drawSprite builds by hand, for comparing against the walk's: half the
- * width either side along right, the height along up, top-left first.
+ * The corners of a billboard built by hand, for comparing against what sprites() emits: half
+ * the width either side along right, the height along up, top-left first.
  **/
 WorldCanvas::Corners billboard(const glm::vec3& feet, float width, float height,
     const glm::vec3& across, const glm::vec3& rise) {
@@ -171,15 +171,15 @@ BOOST_AUTO_TEST_CASE(a_sprite_without_a_transform_is_not_drawn) {
 }
 
 /**
- * cozy's world as it draws it by hand: a 1.6 high marker at the player's feet and a 0.9 high
- * acorn at (2.6, 0, -2.2), on one sheet, under its isometric profile with the eye at
- * (10, 14.142, -10). The walk has to give the corners drawSprite builds from the profile's right
- * and up, in one batch, keyed along the camera's forward flattened onto the ground.
+ * A small isometric game world: a 1.6 high marker at the player's feet and a 0.9 high acorn at
+ * (2.6, 0, -2.2), on one sheet, under an isometric profile with the eye at (10, 14.142, -10).
+ * sprites() must emit the billboard corners built from the profile's right and up, in one
+ * batch, keyed along the camera's forward flattened onto the ground.
  *
  * From that eye the acorn is nearer the camera than the player standing at the origin, so the
  * player is drawn first.
  **/
-BOOST_AUTO_TEST_CASE(cozys_world_through_the_walk) {
+BOOST_AUTO_TEST_CASE(sprite_world_is_drawn_through_sprites) {
     v3d::type::camera::Profile profile("isometric");
     profile.eye(glm::vec3(10.0f, 14.142f, -10.0f));
     profile.lookat(glm::vec3(0.0f));

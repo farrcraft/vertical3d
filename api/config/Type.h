@@ -45,8 +45,8 @@ constexpr Type stringToType(const std::string_view& typeName) {
 }
 
 /**
- * The name a config entry gives a type, which is what Config files the document under -
- * the inverse of stringToType, and empty for Unknown.
+ * The name a config entry gives a type, which is the key Config files the document under.
+ * The inverse of stringToType, and empty for Unknown.
  **/
 constexpr std::string_view typeName(Type type) {
     switch (type) {

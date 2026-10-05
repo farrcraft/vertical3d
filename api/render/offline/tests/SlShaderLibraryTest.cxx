@@ -41,7 +41,7 @@ void add(ParameterList* list, const std::string & name, Declaration::Type type,
 }
 
 /**
- * The value a bound parameter came to, read out of a machine the instance wrote into.
+ * The value of a bound parameter, read out of a machine the instance wrote into.
  **/
 glm::vec3 bound(const InstancePtr & instance, const std::string & name) {
     v3d::render::offline::sl::runtime::Machine machine;
@@ -55,8 +55,7 @@ glm::vec3 bound(const InstancePtr & instance, const std::string & name) {
 };  // namespace
 
 /**
- * Every standard shader compiles against no files at all, which is what makes a renderer's
- * suite hermetic and a first render possible with nothing installed.
+ * Every standard shader compiles with no shader files at all.
  **/
 BOOST_AUTO_TEST_CASE(slshaderlibrary_standard_shaders_compile_test) {
     ShaderLibrary library(logger());
@@ -74,8 +73,8 @@ BOOST_AUTO_TEST_CASE(slshaderlibrary_standard_shaders_compile_test) {
         const InstancePtr shader = library.instance(name, ShaderType::LIGHT, none);
         BOOST_REQUIRE_MESSAGE(shader, std::string("no instance of ") + name);
         BOOST_CHECK_EQUAL(shader->name(), name);
-        // only the one using neither illuminate nor solar is ambient, and it is the one
-        // an illuminance loop cannot see
+        // only the one using neither illuminate nor solar is ambient, and an illuminance
+        // loop skips it
         BOOST_CHECK_EQUAL(shader->ambient(), std::string(name) == "ambientlight");
     }
 
@@ -86,8 +85,7 @@ BOOST_AUTO_TEST_CASE(slshaderlibrary_standard_shaders_compile_test) {
 
 /**
  * A parameter list binds onto the declared parameters and everything it does not name is
- * left at the default the shader declared - which is what `Surface "plastic" "Ks" [0.8]`
- * has to mean.
+ * left at the default the shader declared, as `Surface "plastic" "Ks" [0.8]` requires.
  **/
 BOOST_AUTO_TEST_CASE(slshaderlibrary_binds_over_the_defaults_test) {
     ShaderLibrary library(logger());
@@ -107,8 +105,8 @@ BOOST_AUTO_TEST_CASE(slshaderlibrary_binds_over_the_defaults_test) {
 
 /**
  * A default written as an expression is a value, because the program computes it in a
- * prologue the run itself skips. `point "shader" (0, 0, 1)` is the case that matters:
- * distantlight aims itself with two of them.
+ * prologue the run itself skips. distantlight aims itself with two defaults of the form
+ * `point "shader" (0, 0, 1)`.
  **/
 BOOST_AUTO_TEST_CASE(slshaderlibrary_expression_default_test) {
     ShaderLibrary library(logger());
@@ -121,8 +119,8 @@ BOOST_AUTO_TEST_CASE(slshaderlibrary_expression_default_test) {
 }
 
 /**
- * A colour bound with one value replicates and one bound with three does not, which is
- * RI's promotion rather than a partial write.
+ * A colour bound with one value replicates and one bound with three does not, as RI
+ * promotes it, rather than a partial write.
  **/
 BOOST_AUTO_TEST_CASE(slshaderlibrary_binds_a_colour_test) {
     ShaderLibrary library(logger());
@@ -149,14 +147,14 @@ BOOST_AUTO_TEST_CASE(slshaderlibrary_unbindable_parameters_test) {
 
     const InstancePtr shader = library.instance("matte", ShaderType::SURFACE, list);
     BOOST_REQUIRE(shader);
-    // a matrix has no reading as a float, so Kd keeps what matte declares
+    // a matrix does not coerce to a float, so Kd keeps what matte declares
     BOOST_CHECK_CLOSE(bound(shader, "Kd").x, 1.0f, 0.01f);
 }
 
 /**
- * A shader that will not compile is reported and substituted rather than fatal - RI asks a
- * renderer to carry on. A light has no substitute, because a light of some other kind is a
- * worse answer than one fewer light.
+ * A shader that will not compile is reported and substituted rather than fatal, because RI
+ * requires a renderer to carry on. A light has no substitute: one fewer light is better than
+ * a light of some other kind.
  **/
 BOOST_AUTO_TEST_CASE(slshaderlibrary_substitutes_a_failure_test) {
     ShaderLibrary library(logger());
@@ -168,16 +166,16 @@ BOOST_AUTO_TEST_CASE(slshaderlibrary_substitutes_a_failure_test) {
 
     BOOST_CHECK(!library.instance("nosuchlight", ShaderType::LIGHT, none));
 
-    // a name that is a shader of another kind is the same answer
+    // a name that is a shader of another kind is substituted the same way
     const InstancePtr wrong = library.instance("distantlight", ShaderType::SURFACE, none);
     BOOST_REQUIRE(wrong);
     BOOST_CHECK_EQUAL(wrong->name(), "matte");
 }
 
 /**
- * A `.sl` file on the search path wins over a built-in of the same name, which is how a
- * scene replaces one. `&` in the path is whatever it was before, which is how a scene adds
- * to what a driver put there rather than replacing it.
+ * A `.sl` file on the search path takes precedence over a built-in of the same name, so a
+ * scene can replace one. `&` in the path is whatever it was before, so a scene can add to
+ * what a driver put there rather than replacing it.
  **/
 BOOST_AUTO_TEST_CASE(slshaderlibrary_searchpath_test) {
     {
@@ -191,7 +189,7 @@ BOOST_AUTO_TEST_CASE(slshaderlibrary_searchpath_test) {
     const ParameterList none;
     const InstancePtr shader = library.instance("matte", ShaderType::SURFACE, none);
     BOOST_REQUIRE(shader);
-    // the file's default rather than the built-in's, which says which one was compiled
+    // the file's default rather than the built-in's, which shows which one was compiled
     BOOST_CHECK_CLOSE(bound(shader, "Kd").x, 7.0f, 0.01f);
 
     ShaderLibrary appended(logger());
@@ -207,8 +205,8 @@ BOOST_AUTO_TEST_CASE(slshaderlibrary_searchpath_test) {
 namespace {
 
 /**
- * A renderer that has placed the shader two units up, which is what a scene's transform
- * in force at the `LightSource` request amounts to.
+ * A renderer that has placed the shader two units up, as a scene's transform in force at
+ * the `LightSource` request would.
  **/
 class Placed final : public v3d::render::offline::sl::runtime::Renderer {
  public:
@@ -224,12 +222,11 @@ class Placed final : public v3d::render::offline::sl::runtime::Renderer {
 };  // namespace
 
 /**
- * A shader's own space is the transform that was in force when the scene instanced it,
- * which is the open question step 8 left and this is the answer to.
+ * A shader's own space is the transform that was in force when the scene instanced it.
  *
  * The defaults are run rather than remembered, so `point "shader" (0, 0, 1)` arrives where
- * the renderer says that space is; and a position the scene bound is stated in the same
- * space and takes the same transform. A distant light aimed down that a scene lifted two
+ * the renderer places that space. A position the scene bound is stated in the same space
+ * and takes the same transform. A distant light aimed down that a scene lifted two
  * units still points down, and is two units up.
  **/
 BOOST_AUTO_TEST_CASE(slshaderlibrary_shader_space_test) {
@@ -249,7 +246,7 @@ BOOST_AUTO_TEST_CASE(slshaderlibrary_shader_space_test) {
     // the default, computed against the renderer rather than against the identity
     BOOST_CHECK_CLOSE(machine.value(shader->program().symbol("to")).triple(0).y, 2.0f, 0.01f);
     BOOST_CHECK_CLOSE(machine.value(shader->program().symbol("to")).triple(0).z, 1.0f, 0.01f);
-    // and the bound one, which the scene stated in the same space
+    // the bound one, which the scene stated in the same space
     BOOST_CHECK_CLOSE(machine.value(shader->program().symbol("from")).triple(0).x, 1.0f, 0.01f);
     BOOST_CHECK_CLOSE(machine.value(shader->program().symbol("from")).triple(0).y, 2.0f, 0.01f);
 }

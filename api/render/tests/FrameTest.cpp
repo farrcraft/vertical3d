@@ -45,8 +45,8 @@ BOOST_AUTO_TEST_CASE(frame_starts_empty) {
 }
 
 /**
- * Asking for a pass by name twice gives the same pass rather than a second one, which is
- * what lets several parts of an app submit into one pass without co-ordinating.
+ * Asking for a pass by name twice gives the same pass rather than a second one, so several
+ * parts of an app can submit into one pass without co-ordinating.
  **/
 BOOST_AUTO_TEST_CASE(passes_are_created_once_and_kept_in_order) {
     v3d::render::realtime::Frame frame;
@@ -136,8 +136,8 @@ BOOST_AUTO_TEST_CASE(a_draw_item_defaults_to_one_instance) {
 }
 
 /**
- * A pass draws through the identity until an app gives it a camera. That is what a 2D pass
- * wants - a canvas carries its own projection in a push constant and reads nothing at set 0.
+ * A pass draws through the identity until an app gives it a camera. A 2D pass needs nothing
+ * more, because a canvas carries its own projection in a push constant and reads nothing at set 0.
  **/
 BOOST_AUTO_TEST_CASE(a_pass_has_an_identity_camera_until_it_is_given_one) {
     v3d::render::realtime::Pass pass("scene");
@@ -185,8 +185,8 @@ BOOST_AUTO_TEST_CASE(a_pass_records_in_submission_order_by_default) {
 }
 
 /**
- * A sorted pass hands the recorder its items grouped by the key - layer first, then pipeline,
- * then material - which is what lets the recorder skip rebinding between adjacent items.
+ * A sorted pass hands the recorder its items grouped by the key: layer first, then pipeline,
+ * then material. The recorder can then skip rebinding between adjacent items.
  **/
 BOOST_AUTO_TEST_CASE(a_sorted_pass_records_in_key_order) {
     v3d::render::realtime::Pass pass("scene");
@@ -246,7 +246,7 @@ BOOST_AUTO_TEST_CASE(sorting_a_pass_is_stable) {
 
 /**
  * Sorting is per pass, so an app can hold a sorted scene pass and an unsorted ui pass in one
- * frame - which is what a game drawing an overlay over a 3D world is.
+ * frame, as a game that draws an overlay over a 3D world does.
  **/
 BOOST_AUTO_TEST_CASE(sorting_is_configured_per_pass) {
     v3d::render::realtime::Frame frame;
@@ -265,7 +265,7 @@ BOOST_AUTO_TEST_CASE(sorting_is_configured_per_pass) {
 
 /**
  * A pass reading a target is recorded after the pass drawing into it, even when the reader was
- * created first - which is Engine3D's colour pass, made before an app has added anything.
+ * created first. Engine3D's colour pass is such a reader: it is made before an app adds anything.
  **/
 BOOST_AUTO_TEST_CASE(a_reader_is_recorded_after_a_writer_created_later) {
     const std::vector<Node> nodes{node(nullptr, {&sceneTarget}), node(&sceneTarget)};
@@ -305,8 +305,8 @@ BOOST_AUTO_TEST_CASE(reading_your_own_target_orders_nothing) {
 }
 
 /**
- * Two passes each reading what the other draws have no order, and the frame says so rather
- * than recording one of them reading a target nothing has drawn into yet.
+ * Two passes that each read what the other draws have no valid order, so ordering them throws
+ * rather than recording a pass that reads a target nothing has drawn into yet.
  **/
 BOOST_AUTO_TEST_CASE(a_cycle_throws) {
     const std::vector<Node> nodes{node(&sceneTarget, {&shadowTarget}), node(&shadowTarget, {&sceneTarget})};

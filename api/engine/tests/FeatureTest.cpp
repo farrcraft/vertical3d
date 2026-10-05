@@ -9,8 +9,8 @@
 #include <boost/test/unit_test.hpp>
 
 /**
- * What an app asks the engine for. Combining features is a set of them, and a set answers
- * only for the enum it holds.
+ * What an app asks the engine for. Features combine into a set, and a set accepts only its
+ * own enum.
  **/
 BOOST_AUTO_TEST_CASE(feature_combine_test) {
     const v3d::engine::Features features = v3d::engine::Feature::Config | v3d::engine::Feature::KeyboardInput;
@@ -22,7 +22,7 @@ BOOST_AUTO_TEST_CASE(feature_combine_test) {
 }
 
 /**
- * Nothing asked for is nothing enabled, which is the set a test passes when it wants only the
+ * Nothing asked for is nothing enabled, which is the set a test passes when it needs only the
  * asset manager and the event engine.
  **/
 BOOST_AUTO_TEST_CASE(feature_none_test) {
@@ -33,8 +33,8 @@ BOOST_AUTO_TEST_CASE(feature_none_test) {
 }
 
 /**
- * A set grows by |=, and one bit is a set of one wherever a set is asked for - which is how
- * the engine builds the devices it hands the input engine.
+ * A set grows by |=, and a single feature converts to a set of one wherever a set is
+ * expected. The engine builds the input engine's device list this way.
  **/
 BOOST_AUTO_TEST_CASE(feature_accumulate_test) {
     v3d::input::DeviceTypes devices;

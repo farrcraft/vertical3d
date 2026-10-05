@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE(slglobals_surface_test) {
 
 /**
  * A program a renderer was not given has no globals at all, and what is read back from it
- * is whatever the renderer said otherwise.
+ * is the fallback value the renderer passed.
  **/
 BOOST_AUTO_TEST_CASE(slglobals_absent_test) {
     const Globals globals;
@@ -74,7 +74,7 @@ BOOST_AUTO_TEST_CASE(slglobals_absent_test) {
 
 /**
  * A light runs once over the whole batch, and every lane gets what it shone. `ambientlight`
- * lights every point and is the one an ambient() call collects.
+ * lights every point, and an ambient() call sums it.
  **/
 BOOST_AUTO_TEST_CASE(slglobals_shine_test) {
     ParameterList list;

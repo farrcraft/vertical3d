@@ -26,8 +26,8 @@ Reading readForward(boost::json::object* document, int current, std::span<const 
     if (stamped == nullptr) {
         return Reading::Refused;
     }
-    // to_number takes 2.0 as 2 and refuses 2.5, a string and a bool, which is what a version
-    // a person could have typed needs
+    // to_number accepts 2.0 as 2 and refuses 2.5, a string and a bool, because a person may
+    // have typed the version by hand
     boost::system::error_code error;
     const int version = stamped->to_number<int>(error);
     if (error || version < 1) {

@@ -82,8 +82,8 @@ BOOST_AUTO_TEST_CASE(a_radius_out_is_the_edge_of_the_map) {
 
 /**
  * A light is drawn through the matrix a camera of the tree's own would build at the same eye,
- * looking at the same point with the same box. That is what lets the shadow pass cull with the
- * cel pass's winding: a camera built any other way can turn every face around on screen.
+ * looking at the same point with the same box. The shadow pass can then cull with the cel
+ * pass's winding. A camera built any other way can turn every face around on screen.
  **/
 BOOST_AUTO_TEST_CASE(the_light_sees_as_a_camera_does) {
     const glm::vec3 towards = glm::normalize(glm::vec3(-0.45f, 0.62f, 0.64f));

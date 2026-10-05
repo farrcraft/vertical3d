@@ -25,9 +25,9 @@ jobs:
 
     env:
       BUILD_DIR: out/build/ci
-      # The out of tree build of ADR-0027, which is a second build directory rather than a
-      # second workflow: it needs this job's toolchain, vcpkg install and SDK, and a runner
-      # of its own would build boost again to prove one link line.
+      # The out of tree build of the starter example, which consumes the api as source. It is
+      # a second build directory rather than a second workflow: it needs this job's toolchain,
+      # vcpkg install and SDK, and a runner of its own would build boost again.
       STARTER_BUILD_DIR: out/build/ci-starter
       # The installer names its own directory after the version it carries, so the build is
       # given a fixed root instead and never has to know which version that was.
@@ -36,10 +36,10 @@ jobs:
       # LOCALAPPDATA, because the actions/cache path has to name it too and the runner's own
       # environment is not readable from a workflow expression.
       VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\out\build\vcpkg-cache
-      # Mesa's software Vulkan implementation, which is what gives the render tests a device on
-      # a runner that has no gpu - ADR-0007. Pinned rather than resolved the way the SDK above
-      # is: this comes from a third-party release rather than a package manager, so "latest"
-      # would let the driver under the tests change with no commit here to blame it on.
+      # Mesa's software Vulkan implementation, which gives the render tests a device on a
+      # runner that has no gpu. Pinned rather than resolved the way the SDK above is: this
+      # comes from a third-party release rather than a package manager, so "latest" would let
+      # the driver under the tests change without a commit here.
       MESA_VERSION: "26.2.0"
       MESA_ROOT: ${{ github.workspace }}\out\build\mesa
 
@@ -47,7 +47,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           # libnoise is a submodule and is needed: voxel compiles its headers and its suite
-          # links it. It is the only one left - the mixer comes from vcpkg per ADR-0021.
+          # links it. It is the only submodule; SDL3_mixer comes from vcpkg.
           submodules: true
 
       # Defender holds a file while it scans it. Files this job writes are often opened again
@@ -193,8 +193,8 @@ jobs:
           Write-Host "loader:       $loader"
 
       # This job runs elevated, and the loader ignores VK_DRIVER_FILES and VK_LAYER_PATH in an
-      # elevated process. It reads the registry instead, which is why it reported "Found no
-      # drivers!" with both of them set. Each manifest is registered the way the SDK and mesa's
+      # elevated process. It reads the registry instead, and reports "Found no drivers!" even
+      # with both of them set. Each manifest is registered the way the SDK and mesa's
       # own installer register theirs: a DWORD of zero named by the manifest's full path.
       #
       # Only these two are registered, so an elevated run sees the same one driver and one layer
@@ -243,7 +243,7 @@ jobs:
       # libnoise is built out of source: it commits a CMakeCache.txt naming a generator that
       # is not on this image, and its cmake_minimum_required predates what current CMake
       # accepts on its own. The archive lands where voxel's target_link_directories expects
-      # it. It is the only vendored library left, per ADR-0021.
+      # it. It is the only vendored library.
       - name: Build libnoise
         shell: cmd
         run: |
@@ -289,9 +289,9 @@ jobs:
           call "%RUNNER_TEMP%\vcvars.bat" >nul
           cmake --build "%BUILD_DIR%" || exit /b 1
 
-      # Synchronization validation is off by default and is a separate net from ordinary
-      # validation - it reports the hazards a barrier's scopes are wrong about, which are the
-      # ones hardest to see by eye and the ones a rendering change is most likely to introduce.
+      # Synchronization validation is off by default and is separate from ordinary
+      # validation. It reports hazards caused by a barrier's scopes being wrong, which are the
+      # hardest to see by eye and the most likely to come from a rendering change.
       # The render suite is silent under it; the apps are not, and are not run here.
       - name: Test
         shell: cmd
@@ -301,12 +301,10 @@ jobs:
           call "%RUNNER_TEMP%\vcvars.bat" >nul
           ctest --test-dir "%BUILD_DIR%" --output-on-failure || exit /b 1
 
-      # A skipped render suite is a failure here even though it is not one locally. The whole
-      # point of the suite is that CI draws something, and a run where it skipped is green
-      # while having asserted nothing about the renderer at all - which is the same trap as a
-      # validation layer that was never installed reporting no errors. Locally the skip is
-      # right, because a machine may legitimately have no device; on this runner lavapipe was
-      # just installed, so a skip means the loader is not seeing it.
+      # A skipped render suite is a failure here even though it is not one locally. A run where
+      # the suite skipped is green but has checked nothing about the renderer. Locally the skip
+      # is correct, because a machine may have no device. On this runner lavapipe was just
+      # installed, so a skip means the loader is not finding it.
       - name: The render suite ran rather than skipped
         shell: pwsh
         env:
@@ -350,15 +348,13 @@ jobs:
           }
           if ($exit -ne 0) { throw "the render suite exited $exit" }
 
-      # Nothing inside the tree can tell a target that carries its own include path and its
-      # own dependencies from one picking them up off the root's global or off an app that
-      # names every library, because in this repository both are always there. Only a root
-      # project of its own separates them, which is what this builds - and it is what found
-      # api/engine and api/render not declaring the api libraries they use.
+      # Inside the tree, a target that does not declare its own include path and dependencies
+      # still builds, because the root and the apps supply them. Only a separate root project
+      # shows the difference, and this step builds one.
       #
-      # It also names its three libraries in V3D_LIBRARIES rather than taking all of them, so
-      # this is where the closure of ADR-0033 is exercised: a library that links something its
-      # manifest entry does not declare stops this configure.
+      # It also names three libraries in V3D_LIBRARIES rather than taking all of them, so it
+      # exercises the dependency closure in cmake/v3dApiLibraries.cmake: a library that links
+      # something its manifest entry does not declare stops this configure.
       #
       # It reuses this job's vcpkg install rather than resolving from its own manifest, which
       # would build boost a second time to install the same package set.

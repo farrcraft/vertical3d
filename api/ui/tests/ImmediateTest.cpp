@@ -142,7 +142,7 @@ BOOST_AUTO_TEST_CASE(a_button_answers_a_press_and_a_release_on_it) {
     v3d::ui::Immediate ui = build(&written);
     const glm::vec2 on(20.0f, 10.0f);
 
-    // the frame that finds the cursor, which is what the next one answers with
+    // the frame that finds the cursor, which the next one uses
     ui.begin(&canvas, hover(on));
     BOOST_CHECK(!ui.button("Go"));
     ui.end();
@@ -224,8 +224,8 @@ BOOST_AUTO_TEST_CASE(pushid_tells_two_widgets_of_one_label_apart) {
     const glm::vec2 onFirst(20.0f, 10.0f);
     const glm::vec2 onSecond(20.0f, 36.0f);
 
-    // pressed on the first and released on the second: sharing one id, the second answers
-    // for a press it never had
+    // pressed on the first and released on the second: sharing one id, the second reports a
+    // click for a press it never had
     ui.begin(&canvas, hover(onFirst));
     ui.button("Kill");
     ui.button("Kill");
@@ -242,7 +242,7 @@ BOOST_AUTO_TEST_CASE(pushid_tells_two_widgets_of_one_label_apart) {
     BOOST_CHECK(secondAnswered);
 
     // with an id of their own, the press stays on the button it landed on and the stray
-    // release answers nothing
+    // release clicks nothing
     for (int frame = 0; frame < 2; frame++) {
         ui.begin(&canvas, frame == 0 ? hover(onFirst) : press(onFirst));
         ui.pushId(0);
@@ -339,7 +339,7 @@ BOOST_AUTO_TEST_CASE(a_tab_strip_keeps_which_tab_is_selected) {
     ui.tab("Entities");
     ui.endTabBar();
     ui.end();
-    // the frame that switches still answers for the tab that was selected when it began,
+    // the frame that switches still reports the tab that was selected when it began,
     // so only one tab draws what it holds
     ui.begin(&canvas, release(onSecond));
     ui.tabBar("panels");
@@ -492,8 +492,8 @@ BOOST_AUTO_TEST_CASE(a_progress_bar_fills_what_it_was_given) {
 }
 
 /**
- * A window drawn later takes the cursor from one under it, which is what deciding hover at
- * the end of a frame is for.
+ * A window drawn later takes the cursor from one under it, because hover is decided at the
+ * end of a frame.
  **/
 BOOST_AUTO_TEST_CASE(the_window_drawn_last_takes_the_cursor) {
     std::vector<Written> written;
@@ -525,7 +525,7 @@ BOOST_AUTO_TEST_CASE(the_window_drawn_last_takes_the_cursor) {
 
 /**
  * What a window holds is cut off at the window rather than drawn over what is beside it, so
- * the rows go into a batch carrying the window's body - ADR-0037.
+ * the rows go into a batch carrying the window's body as its clip.
  **/
 BOOST_AUTO_TEST_CASE(a_window_cuts_what_it_holds_off_at_its_edges) {
     std::vector<Written> written;
@@ -669,7 +669,7 @@ BOOST_AUTO_TEST_CASE(a_bar_appears_the_frame_after_a_window_overflows) {
  * A widget that stops being drawn is aged out, so a panel whose ids come from changing text
  * costs what it drew recently rather than everything it has ever drawn.
  *
- * ADR-0035 named this as the bound on the layer's state. Without it the map only grows.
+ * Without ageing out, the map of what the layer holds only grows.
  **/
 BOOST_AUTO_TEST_CASE(what_stops_being_drawn_is_aged_out) {
     std::vector<Written> written;
@@ -812,7 +812,7 @@ BOOST_AUTO_TEST_CASE(a_given_width_cannot_exceed_the_row) {
 
 /**
  * An app asks the layer whether a click has already been spent before it acts on one of its
- * own - the immediate half of the rule ADR-0038 states for the retained tree.
+ * own, as ui::Cursor does for the retained tree.
  **/
 BOOST_AUTO_TEST_CASE(the_layer_says_when_it_wants_the_cursor) {
     std::vector<Written> written;
@@ -840,7 +840,7 @@ BOOST_AUTO_TEST_CASE(the_layer_says_when_it_wants_the_cursor) {
 }
 
 /**
- * And it keeps wanting it through a drag that has left the widget, because the release that
+ * The layer keeps the cursor through a drag that has left the widget, because the release that
  * ends the drag is still the layer's and not the scene's.
  **/
 BOOST_AUTO_TEST_CASE(the_layer_keeps_the_cursor_through_a_drag) {
@@ -851,7 +851,7 @@ BOOST_AUTO_TEST_CASE(the_layer_keeps_the_cursor_through_a_drag) {
     int value = 5;
 
     // a press only lands on a widget the frame before found the cursor on, so the hover
-    // frame is what makes the press frame a press on this one
+    // frame makes the press frame a press on this one
     ui.begin(&canvas, hover(glm::vec2(100.0f, 8.0f)));
     ui.dragInt("scrub", &value, 0, 10);
     ui.end();
@@ -873,7 +873,7 @@ BOOST_AUTO_TEST_CASE(the_layer_keeps_the_cursor_through_a_drag) {
 
 /**
  * A press on a title bar that travels moves the window and does not fold it; one that stays
- * put folds it. ADR-0045.
+ * put folds it.
  **/
 BOOST_AUTO_TEST_CASE(a_press_that_travels_moves_the_window_instead_of_folding_it) {
     std::vector<Written> written;
@@ -964,8 +964,7 @@ BOOST_AUTO_TEST_CASE(a_dragged_window_keeps_its_title_bar_on_the_canvas) {
 }
 
 /**
- * A table given a height scrolls its rows inside it and leaves its header above them, per
- * ADR-0046.
+ * A table given a height scrolls its rows inside it and leaves its header above them.
  **/
 BOOST_AUTO_TEST_CASE(a_table_given_a_height_keeps_its_header_above_its_rows) {
     std::vector<Written> written;
@@ -1004,7 +1003,7 @@ BOOST_AUTO_TEST_CASE(a_table_given_a_height_keeps_its_header_above_its_rows) {
     ui.end();
 
     BOOST_REQUIRE_EQUAL(written.size(), 42U);
-    // the header has not moved and the rows have, which is the whole of the feature
+    // the header has not moved and the rows have
     BOOST_CHECK_CLOSE(written[0].pen.y, header, 0.001f);
     BOOST_CHECK_CLOSE(firstRow - written[2].pen.y, ui.dressing().lineHeight * 3.0f * 2.0f, 0.001f);
 }

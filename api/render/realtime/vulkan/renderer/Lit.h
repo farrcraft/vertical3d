@@ -30,17 +30,18 @@
 namespace v3d::render::realtime::vulkan::renderer {
 
 /**
- * The device half of a lit scene: the cel and outline pipelines a registered model is drawn
+ * The device side of a lit scene: the cel and outline pipelines a registered model is drawn
  * with, the shadow pipeline it casts with, a skinned variant of each, and the scene set both
- * passes bind at 2 - ADR-0064. The scene set carries every joint palette drawn in the frame, so
- * a skinned model casts the pose it is drawn in - ADR-0071.
+ * passes bind at set 2. The scene set carries every joint palette drawn in the frame in one
+ * storage buffer, so a skinned model casts the pose it is drawn in.
  *
- * Every pipeline here declares the camera at set 0, the albedo at set 1 in renderer::Quad's
+ * Every pipeline here declares the camera at set 0, the albedo at set 1 in the Textures
  * material layout, and the scene at set 2, with one push block for the object. What they
- * draw is linear light, so the target they draw into is an sRGB one - ADR-0066.
+ * draw is linear light, so the target they draw into must be an sRGB one, which encodes on
+ * store.
  *
  * Front faces are clockwise, because a model is wound counter clockwise seen from outside and
- * the cameras in api/type flip y into Vulkan's clip space - ADR-0012.
+ * the cameras in api/type flip y into Vulkan's clip space.
  **/
 class Lit final {
  public:
@@ -56,8 +57,11 @@ class Lit final {
 
     /**
      * The SPIR-V each pipeline is built from. The defaults are the api's own, embedded at
-     * build time; a game that loads its own from disk hands over what it loaded - ADR-0067. A
-     * replacement declares the blocks lit.glsl does.
+     * build time. A game that loads its own shaders from disk passes in what it loaded.
+     *
+     * A replacement must declare the same descriptor sets and push constant block as the
+     * defaults, which including shaders/lit/lit.glsl provides. A missing or extra binding
+     * fails at pipeline creation; a block with its members reordered is not detected.
      **/
     struct Shaders final {
         std::vector<uint32_t> mesh;             /**< the cel pass's vertex stage **/
@@ -78,7 +82,7 @@ class Lit final {
     /**
      * @param textures whose layout set 1 is, and whose white texture stands in for a
      *        shadow map until a scene names one
-     * @param colour the format of what the cel pass draws into, which ADR-0066 makes an sRGB one
+     * @param colour the format of what the cel pass draws into, which must be an sRGB one
      * @param depth the format of that pass's depth
      * @param shadow the depth format of the target a shadow pass draws into, or
      *        VK_FORMAT_UNDEFINED for a scene that casts no shadow and builds no shadow pipeline

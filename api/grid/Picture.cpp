@@ -42,7 +42,7 @@ Picture fromPicture(const std::vector<std::string>& rows, const std::map<char, T
             const char glyph = rows[y][x];
             const std::map<char, Terrain>::const_iterator found = legend.find(glyph);
             if (found == legend.end()) {
-                // left as nothing can stand on and nothing shields, until the caller says otherwise
+                // impassable and with no cover, until the caller sets otherwise
                 grid.setPassable(tile, false);
                 grid.setCover(tile, Cover::None);
                 std::vector<Unknown>::iterator known = std::find_if(picture.unknown.begin(), picture.unknown.end(),

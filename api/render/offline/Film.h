@@ -16,8 +16,8 @@
 namespace v3d::render::offline {
 
 /**
- * What a renderer's samples become pixels through, per ADR-0076. Both of moya's hiders write here,
- * and the pixel filter is applied here and nowhere else.
+ * Turns a renderer's samples into pixels. Both of moya's hiders write here, and the pixel filter
+ * is applied here and nowhere else.
  *
  * A sample is filtered into every pixel whose centre is within the filter's width of it, as it
  * arrives, so the film holds a weighted sum per pixel rather than the samples. Its memory is a
@@ -38,7 +38,7 @@ class Film final {
         glm::vec3 colour { 0.0f, 0.0f, 0.0f };
         glm::vec3 opacity { 0.0f, 0.0f, 0.0f };
         float depth { 0.0f };
-        /** Whether anything was there, which is what coverage counts. **/
+        /** Whether the sample hit a surface. Coverage counts these samples. **/
         bool hit { false };
     };
 
@@ -59,7 +59,7 @@ class Film final {
     glm::vec3 colour(unsigned int column, unsigned int row) const;
     glm::vec3 opacity(unsigned int column, unsigned int row) const;
     /**
-     * The filtered fraction of samples that hit, which is what a coverage plane holds.
+     * The filtered fraction of samples that hit. A coverage plane holds this value.
      **/
     float coverage(unsigned int column, unsigned int row) const;
     /**

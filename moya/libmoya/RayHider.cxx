@@ -24,8 +24,8 @@ namespace v3d::moya {
 namespace {
 
 /**
- * How far a pixel's samples disagree: the variance of their mean, per channel, which is what
- * RI's PixelVariance bounds.
+ * How far a pixel's samples disagree: the variance of their mean, per channel, which RI's
+ * PixelVariance bounds.
  **/
 class Spread {
  public:
@@ -37,7 +37,7 @@ class Spread {
 
     /**
      * Whether the largest channel's variance of the mean is within the bound. Fewer than two
-     * samples say nothing about their spread, so they are never settled.
+     * samples give no measure of spread, so they are never settled.
      **/
     bool settled(float bound) const {
         if (count_ < 2) {
@@ -108,7 +108,7 @@ v3d::type::geometry::Ray RayHider::ray(const glm::vec2 & raster, const glm::vec2
             origin = glm::vec3(radius * lens, 0.0f);
             direction = focus - origin;
         }
-        // started on the near plane, which is what clips what is nearer the eye
+        // started on the near plane, which clips anything nearer the eye
         origin += direction * (camera_.hither / direction.z);
     } else {
         origin = unproject(raster, camera_.hither);
@@ -137,13 +137,13 @@ void RayHider::render(RenderContext* context, v3d::render::offline::FrameBuffer*
     taken_.assign(static_cast<std::size_t>(width) * height, 0);
 
     // one of these for the render rather than one per pixel: it holds the register files,
-    // and sizing one per pixel is the one allocation a tracer would notice
+    // and sizing them for every pixel would be the tracer's largest allocation cost
     v3d::render::offline::trace::Tracer tracer(&context->traced(), &context->textures());
     const v3d::render::offline::Sampler sampler(sampling);
     v3d::render::offline::Film film(width, height, sampling);
     for (unsigned int row = 0; row < height; row++) {
         for (unsigned int column = 0; column < width; column++) {
-            // each further set is seeded by the pixel and its pass, so the answer does not
+            // each further set is seeded by the pixel and its pass, so the result does not
             // depend on the order anything is rendered in
             Spread spread;
             unsigned int taken = 0;

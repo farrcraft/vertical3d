@@ -51,8 +51,8 @@ class Instance final {
     bool validating() const noexcept;
 
     /**
-     * What the layer has reported since the instance was created, which is what a render
-     * test asserts on rather than a picture - ADR-0007.
+     * What the layer has reported since the instance was created. A render test asserts on
+     * these.
      *
      * Assert validating() alongside these: where the layer is not installed they stay zero
      * because nothing was watching, which reads exactly like a clean run.
@@ -68,8 +68,7 @@ class Instance final {
 
     /**
      * @return the first error reported, or empty when there has been none. Only the first is
-     *         kept - a count is what a caller acts on, and every message goes to the logger
-     *         anyway, so holding all of them for the life of an instance buys nothing
+     *         kept: a caller acts on the count, and every message goes to the logger anyway
      **/
     const std::string& firstError() const noexcept;
 

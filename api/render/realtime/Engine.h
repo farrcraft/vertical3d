@@ -11,9 +11,9 @@
 #include "Window.h"
 
 namespace v3d::render::realtime {
-/* The render engine.
- * This is different from the game engine.While the game engine is responsible for coordinating the game,
- * it is the responsibility of the render engine to manage the rendering pipeline.
+/**
+ * The render engine. This is separate from the game engine: the game engine coordinates the
+ * game, and the render engine manages the rendering pipeline.
  **/
 class Engine {
  public:

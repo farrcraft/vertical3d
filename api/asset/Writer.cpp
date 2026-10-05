@@ -62,9 +62,9 @@ void indent(std::string* out, int depth) {
 /**
  * Write a number as a float.
  *
- * boost::json serializes a double as 0E0 rather than as 0 - a form that is valid, unreadable,
- * and impossible to hand edit. The narrowing is exact for anything a float was widened to
- * make, which is what every document this tree writes holds.
+ * boost::json serializes a double as 0E0 rather than as 0, a form that is valid but hard to
+ * read and to edit by hand. The narrowing is exact for a double widened from a float, and every
+ * number in a document this tree writes is one.
  **/
 void printNumber(std::string* out, const boost::json::value& value) {
     if (!value.is_double()) {

@@ -45,8 +45,8 @@ BOOST_AUTO_TEST_CASE(ribdeclaration_float_counts_test) {
 }
 
 /**
- * The class gives how many elements a primitive carries, which is what makes "P" on a quad
- * twelve floats and "roughness" on the same quad one.
+ * The class gives how many elements a primitive carries, so "P" on a quad is twelve floats
+ * and "roughness" on the same quad is one.
  **/
 BOOST_AUTO_TEST_CASE(ribdeclaration_element_counts_test) {
     Declaration declaration;
@@ -140,7 +140,7 @@ BOOST_AUTO_TEST_CASE(ribdeclarations_inline_form_test) {
     BOOST_CHECK(declaration.storage() == Declaration::Storage::VARYING);
     BOOST_CHECK_EQUAL(declaration.floats(), 3u);
 
-    // and it stayed out of the table
+    // it stayed out of the table
     BOOST_CHECK(!declarations.resolve("squish", &name, &declaration));
 }
 
@@ -177,8 +177,8 @@ BOOST_AUTO_TEST_CASE(parameterlist_reads_back_typed_test) {
 }
 
 /**
- * A partial trailing triple contributes nothing, which is what a file whose array does not
- * match its declaration produces.
+ * A partial trailing triple contributes nothing. A file whose array does not match its
+ * declaration produces one.
  **/
 BOOST_AUTO_TEST_CASE(parameterlist_partial_point_test) {
     v3d::render::offline::rib::ParameterList parameters;
@@ -194,9 +194,8 @@ BOOST_AUTO_TEST_CASE(parameterlist_partial_point_test) {
 }
 
 /**
- * RIB writes a matrix in row major order under RI's row vector convention and glm stores
- * column major under a column vector one, so reading the floats in order is the change of
- * convention. A transpose here would undo it, which is why this applies the result to a point.
+ * A matrix read in RIB's order needs no transpose to become glm's, as ParameterList::matrix
+ * explains. The test checks the convention by applying the result to a point.
  **/
 BOOST_AUTO_TEST_CASE(parameterlist_matrix_convention_test) {
     v3d::render::offline::rib::ParameterList parameters;

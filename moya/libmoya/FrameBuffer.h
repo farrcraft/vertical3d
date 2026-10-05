@@ -32,8 +32,8 @@ class FrameBuffer {
         DEPTH = 3,
         /**
          * How much of the pixel was drawn into, which is SL's alpha: the filtered
-         * fraction of its samples that hit. It is what an imager reads to tell a pixel
-         * nothing was drawn into from a black one.
+         * fraction of its samples that hit. An imager reads it to tell a pixel nothing was
+         * drawn into from a black one.
          */
         COVERAGE = 4
     };

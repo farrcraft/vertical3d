@@ -26,7 +26,7 @@ typedef v3d::render::offline::sl::ShaderLibrary ShaderLibrary;
 typedef v3d::render::offline::sl::InstancePtr InstancePtr;
 typedef v3d::render::offline::sl::ShaderType ShaderType;
 
-/** The colour plane count plus one for coverage, which is what moya's framebuffer holds. **/
+/** The colour plane count plus one for coverage, as moya's framebuffer holds. **/
 const unsigned int COVERAGE = 3;
 
 ShaderLibrary & library() {
@@ -50,8 +50,8 @@ FrameBuffer drawn() {
 
 /**
  * `background` composites the frame over a constant colour where coverage says nothing was
- * drawn, and leaves the pixels that were drawn into alone. That is the whole of what a
- * scene needs to say what a ray that hit nothing is worth.
+ * drawn, and leaves the pixels that were drawn into alone. A scene uses it to set the colour
+ * of pixels where nothing was hit.
  **/
 BOOST_AUTO_TEST_CASE(slimager_background_test) {
     ParameterList list;
@@ -67,22 +67,21 @@ BOOST_AUTO_TEST_CASE(slimager_background_test) {
     // the pixel nothing was drawn into takes the colour whole
     BOOST_CHECK_CLOSE(frame.value(0, 0, 0), 0.15f, 0.01f);
     BOOST_CHECK_CLOSE(frame.value(2, 0, 0), 0.45f, 0.01f);
-    // and the one that was drawn into is untouched, because its coverage was one
+    // the one that was drawn into is untouched, because its coverage was one
     BOOST_CHECK_CLOSE(frame.value(0, 1, 0), 0.9f, 0.01f);
     BOOST_CHECK_CLOSE(frame.value(1, 1, 0), 0.2f, 0.01f);
     // every row runs, not only the first
     BOOST_CHECK_CLOSE(frame.value(2, 3, 1), 0.45f, 0.01f);
 
-    // and the frame is covered afterwards: a pixel the imager painted is no longer one
-    // that nothing was drawn into
+    // the whole frame is covered afterwards, because a pixel the imager paints counts as
+    // covered
     BOOST_CHECK_CLOSE(frame.value(COVERAGE, 0, 0), 1.0f, 0.01f);
 }
 
 /**
- * A batch here is a row of pixels, which is neither a grid nor a ray hit - the third
- * consumer of the machine, and the one that says the batch model was not built for grids
- * alone. An imager that varies across the frame is what says each pixel of the row got its
- * own answer rather than the first one's.
+ * A batch here is a row of pixels, which is neither a grid nor a ray hit. An imager that
+ * varies across the frame shows that each pixel of the row gets its own value rather than
+ * the first one's.
  **/
 BOOST_AUTO_TEST_CASE(slimager_a_row_is_a_batch_test) {
     ShaderLibrary shaders(boost::make_shared<v3d::log::Logger>());
@@ -109,8 +108,8 @@ BOOST_AUTO_TEST_CASE(slimager_a_row_is_a_batch_test) {
 
 /**
  * A shader that is not an imager is refused rather than run over the frame. The library
- * already reports a name that is the wrong kind of shader; this is the second line of it,
- * for a caller that reached here with one anyway.
+ * already reports a name that is the wrong kind of shader; this check covers a caller that
+ * passes one here anyway.
  **/
 BOOST_AUTO_TEST_CASE(slimager_only_an_imager_test) {
     const InstancePtr surface = library().instance("matte", ShaderType::SURFACE, ParameterList());
@@ -119,6 +118,6 @@ BOOST_AUTO_TEST_CASE(slimager_only_an_imager_test) {
     FrameBuffer frame = drawn();
     v3d::render::offline::sl::Imager imager(surface, nullptr);
     BOOST_CHECK(!imager.run(&frame, COVERAGE));
-    // and the frame is as it was
+    // the frame is unchanged
     BOOST_CHECK_SMALL(frame.value(0, 0, 0), 0.0001f);
 }

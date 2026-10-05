@@ -16,16 +16,15 @@
 namespace v3d::render::realtime::vulkan::memory {
 
 /**
- * A host visible buffer the cpu reaches straight into, kept mapped for its whole life.
+ * A host visible buffer the CPU writes directly, kept mapped for its whole life.
  *
  * This is the buffer a frame's geometry is built in: a batcher rewrites the whole thing
  * every frame, so a staging copy to device local memory would cost more than the slower
- * reads do. Static geometry wants the opposite trade and is not what this is for. It is
- * also what a transfer the cpu has to see lands in, which is the other direction of the
- * same trade.
+ * reads do. Static geometry needs the opposite trade and should not use this. It is also
+ * where a transfer the CPU has to read lands, the same trade in the other direction.
  *
  * The allocation is coherent, so a write is visible to the device without a flush and a
- * completed transfer is visible to the cpu without an invalidate.
+ * completed transfer is visible to the CPU without an invalidate.
  **/
 class Buffer final {
  public:
@@ -74,7 +73,7 @@ class Buffer final {
      *
      * The allocation is host visible and coherent rather than cached, so reading it back is
      * far slower than writing it. That is the right trade for a buffer the device fills
-     * once and the cpu reads once, and the wrong one for anything doing it per frame.
+     * once and the CPU reads once, and the wrong one for anything doing it per frame.
      *
      * @throw std::runtime_error if the read would run off the end
      **/

@@ -105,16 +105,16 @@ BOOST_AUTO_TEST_CASE(a_user_path_is_absolute_and_ends_with_a_separator) {
     const char last = path[path.size() - 1];
     BOOST_TEST((last == '/' || last == '\\'));
 
-    // SDL creates it, which is what makes it writable without the app checking first
+    // SDL creates it, so the app can write to it without checking first
     BOOST_TEST(boost::filesystem::exists(boost::filesystem::path(path)));
 
-    // and it is not where the app reads its assets from
+    // it is not where the app reads its assets from
     BOOST_TEST(path != v3d::engine::appPath("ApplicationTest.exe"));
 }
 
 /**
- * The app name separates two apps sharing an organization, which is what stops one game's
- * settings from being another's.
+ * The app name separates two apps that share an organization, so one game's settings are
+ * not another's.
  **/
 BOOST_AUTO_TEST_CASE(a_user_path_is_per_app) {
     const std::string one = v3d::engine::userPath("Vertical3D", "ApplicationTestOne");
@@ -142,7 +142,7 @@ BOOST_AUTO_TEST_CASE(run_forwards_what_the_engine_is_built_from) {
 }
 
 /**
- * And an app that is built from nothing else still calls it the way it always did.
+ * An app whose engine takes only the path passes no further arguments.
  **/
 BOOST_AUTO_TEST_CASE(run_still_takes_a_path_alone) {
     Built record;

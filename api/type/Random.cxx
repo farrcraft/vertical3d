@@ -19,8 +19,8 @@ Random::Random(uint64_t seed) noexcept :
 }
 
 uint64_t Random::next() noexcept {
-    // the state is only a counter; the mixing is what randomises the output, which is why the
-    // generator saves and restores as one integer
+    // the state is only a counter and the mixing randomises the output, so the generator
+    // saves and restores as one integer
     state_ += 0x9E3779B97F4A7C15ULL;
     uint64_t z = state_;
     z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ULL;

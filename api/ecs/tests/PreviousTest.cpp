@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE(previous_created_after_the_snapshot_test) {
 }
 
 /**
- * A settle after a move draws no motion, which is what a teleport wants.
+ * A settle after a move draws no motion, as a teleport needs.
  **/
 BOOST_AUTO_TEST_CASE(previous_settle_test) {
     entt::registry registry;

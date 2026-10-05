@@ -78,9 +78,7 @@ boost::shared_ptr<v3d::ui::component::HorizontalBox> grid(float width, std::size
 BOOST_AUTO_TEST_SUITE(arranger_test)
 
 /**
- * A tree can be laid out with no canvas and nothing to paint it, which is the thing
- * ADR-0034 recorded as the cost of putting layout in the draw walk. It is the *walk* that
- * layout lives in, and the walk will run without drawing.
+ * A tree can be laid out with no canvas and nothing to paint it.
  **/
 BOOST_AUTO_TEST_CASE(a_tree_is_laid_out_without_being_drawn) {
     v3d::ui::style::Resolver styles;
@@ -111,7 +109,7 @@ BOOST_AUTO_TEST_CASE(a_tree_is_laid_out_without_being_drawn) {
 }
 
 /**
- * The paint is called once per component, in the order the walk reaches them: a parent
+ * The paint is called once per component, in the order the layout pass reaches them: a parent
  * before what it holds, so a child is drawn over its plate.
  **/
 BOOST_AUTO_TEST_CASE(the_paint_is_called_once_per_component_parent_first) {
@@ -184,7 +182,7 @@ BOOST_AUTO_TEST_CASE(a_check_box_asks_for_room_from_its_own_class) {
     BOOST_CHECK_CLOSE(v3d::ui::Arranger(measure(), bare).natural(*box, canvasArea(400.0f, 200.0f)).x, 16.0f, 0.001f);
 
     // with one, the row is sized for the mark that will be drawn in it rather than for the
-    // base - which is what a themed box laid out one way and drawn another used to do
+    // base
     v3d::ui::style::Resolver styles;
     styles.base().markSize = 16.0f;
     styles.theme(theme);
@@ -193,7 +191,7 @@ BOOST_AUTO_TEST_CASE(a_check_box_asks_for_room_from_its_own_class) {
 
 /**
  * A component that makes nothing of itself takes the room it is in, and takes it on the very
- * first walk - nothing here is answered from a box an earlier walk wrote, per ADR-0039.
+ * first pass, because layout never reads a box an earlier pass wrote.
  **/
 BOOST_AUTO_TEST_CASE(an_auto_extent_is_the_room_on_the_first_walk) {
     v3d::ui::style::Resolver styles;
@@ -211,7 +209,7 @@ BOOST_AUTO_TEST_CASE(an_auto_extent_is_the_room_on_the_first_walk) {
 /**
  * A component that names neither x nor y sits at the corner it is anchored to, which is its
  * parent's rather than the canvas's - so a child of a panel away from the origin is inside
- * that panel. ADR-0039.
+ * that panel.
  **/
 BOOST_AUTO_TEST_CASE(an_auto_position_is_the_corner_of_the_parent) {
     v3d::ui::style::Resolver styles;
@@ -237,7 +235,7 @@ BOOST_AUTO_TEST_CASE(an_auto_position_is_the_corner_of_the_parent) {
 
 /**
  * A scrollbar decides how thick it is and nothing about how long, so its Auto length is the
- * box it runs down, and it is that on the first walk.
+ * box it runs down, and it is that on the first pass.
  **/
 BOOST_AUTO_TEST_CASE(a_scrollbar_is_as_long_as_the_box_it_runs_down) {
     v3d::ui::style::Resolver styles;
@@ -287,9 +285,9 @@ BOOST_AUTO_TEST_CASE(an_auto_extent_along_a_flow_is_not_the_whole_line) {
 }
 
 /**
- * The walk never reads the box a previous walk wrote, so the same tree laid out twice lands
+ * Layout never reads the box a previous pass wrote, so the same tree laid out twice lands
  * in the same place - and a tree laid out against a new canvas lands against that one
- * rather than against the size before it. ADR-0039.
+ * rather than against the size before it.
  **/
 BOOST_AUTO_TEST_CASE(a_second_walk_lands_where_the_first_did) {
     v3d::ui::style::Resolver styles;
@@ -334,7 +332,7 @@ BOOST_AUTO_TEST_CASE(a_label_with_a_width_wraps_to_it) {
     BOOST_CHECK_CLOSE(wrapped->size().x, 100.0f, 0.001f);
     BOOST_CHECK_CLOSE(wrapped->size().y, 2.0f * line, 0.001f);
 
-    // an Auto width is one line, exactly as before
+    // an Auto width is one line
     const boost::shared_ptr<v3d::ui::component::Label> single = label("single", "one two three four");
     arranger.walk(nullptr, single, single->layout().resolve(room, arranger.natural(*single, room)),
         v3d::ui::Arranger::Paint());
@@ -423,7 +421,7 @@ BOOST_AUTO_TEST_CASE(a_child_longer_than_the_line_has_a_line_of_its_own) {
 
 /**
  * A box that does not wrap still runs past its end, and still takes the room it is offered as
- * its natural size, as every box did before one could wrap.
+ * its natural size.
  **/
 BOOST_AUTO_TEST_CASE(a_box_that_does_not_wrap_is_as_it_was) {
     v3d::ui::style::Resolver styles;

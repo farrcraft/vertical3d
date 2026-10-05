@@ -10,10 +10,10 @@
 namespace v3d::ui::component {
 
 /**
- * What a component is, which is what the draw walk switches on and what the loader builds.
+ * What a component is: what drawing switches on and what the loader builds.
  *
- * Every one of these has a loader and a draw path. A type with neither is a claim the
- * library does not answer for, so it is not listed here until it does.
+ * Every one of these has a loader and a draw path. A type is not listed here until it has
+ * both.
  **/
 enum class Type {
     Undefined,
@@ -39,20 +39,20 @@ enum class Type {
 };
 
 /**
- * What a ui config's "type" calls this component, per ADR-0047.
+ * What a ui config's "type" calls this component.
  *
- * The one place the config's vocabulary is written down, and an exhaustive switch, so a type
- * added to the enum above names this function until it is given a name here. A type a config
- * cannot ask for answers empty - a menu item is built by the menu that holds it, and Undefined
- * is not a component.
+ * This is the only place the config's names are written down. It is an exhaustive switch
+ * with no default, so a type added to the enum above fails the build here (C4062) until it
+ * is given a name. A type a config cannot ask for returns empty: a menu item is built by the
+ * menu that holds it, and Undefined is not a component.
  **/
 std::string_view name(Type type);
 
 /**
  * The reverse: what a config asked for.
  *
- * @return the type, or Undefined for a name no component answers to - which is what the
- *         loader reports as an unrecognised type rather than building nothing quietly
+ * @return the type, or Undefined for a name no component has. The loader reports that as
+ *         an unrecognised type.
  **/
 Type parse(std::string_view text);
 
@@ -67,9 +67,9 @@ struct Traits final {
 };
 
 /**
- * The traits of a type - an exhaustive switch like name(), so a type added to the enum names
- * this function too and says what it is, rather than being left out of a rule written as a
- * test against the types somebody remembered. ADR-0047.
+ * The traits of a type. An exhaustive switch like name(), so a type added to the enum fails
+ * the build here until its traits are given. A rule about a kind of component reads these
+ * traits rather than testing for particular types.
  **/
 Traits traits(Type type);
 

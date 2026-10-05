@@ -13,8 +13,7 @@
 #include <boost/make_shared.hpp>
 
 /**
- * The replacement for the command layer's Bind: a Mapper holds the source-to-destination
- * bindings and answers what a source event maps to.
+ * A Mapper holds the source-to-destination bindings and returns what a source event maps to.
  **/
 namespace {
 v3d::event::Event source(const boost::shared_ptr<v3d::event::Context>& context,
@@ -68,7 +67,7 @@ BOOST_AUTO_TEST_CASE(mapper_edge_test) {
     BOOST_CHECK_EQUAL(mapper.destinations(source(keyboard, "escape", v3d::event::State::Pressed)).size(), 1u);
     BOOST_CHECK_EQUAL(mapper.destinations(source(keyboard, "escape", v3d::event::State::Released)).size(), 0u);
 
-    // a binding with no edge answers for both, which is what a held key needs
+    // a binding with no edge matches both, as a held key needs
     mapper.map(source(keyboard, "w", v3d::event::State::Any), destination(ui, "up"));
     BOOST_CHECK_EQUAL(mapper.destinations(source(keyboard, "w", v3d::event::State::Pressed)).size(), 1u);
     BOOST_CHECK_EQUAL(mapper.destinations(source(keyboard, "w", v3d::event::State::Released)).size(), 1u);

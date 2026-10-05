@@ -150,7 +150,7 @@ void Quad::submit(const Canvas& canvas, Pass* pass, uint16_t layer) {
 
         if (batch.clipped) {
             // the canvas clips in its own pixels, which are the image's because the ui is
-            // drawn into a pass covering the whole of it - ADR-0037
+            // drawn into a pass covering the whole image
             clip(&item, batch.clip);
         }
 

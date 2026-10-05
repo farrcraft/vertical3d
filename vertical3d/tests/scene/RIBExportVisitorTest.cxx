@@ -20,8 +20,8 @@
 namespace {
 
 /**
- * What the reader made of the file, which is a stronger assertion than what the text
- * looked like: the export is only worth anything if a renderer can read it back.
+ * What the RIB reader parsed from the file. The tests assert on this rather than on the
+ * text, because the export has to be readable by a renderer.
  **/
 class ImportHandler final : public v3d::render::offline::rib::Handler {
  public:
@@ -123,8 +123,8 @@ BOOST_AUTO_TEST_CASE(ribexport_round_trip_test) {
 
     const std::string exported = exportScene(scene, false);
 
-    // beside the executable, so that a person can hand it to a renderer - which is the only
-    // thing the export is for and the one thing a round trip cannot assert
+    // beside the executable, so that a person can render it and check the image by eye. A
+    // round trip through the reader cannot check what the render looks like
     boost::filesystem::create_directory("data_out");
     std::ofstream file("data_out/export.rib");
     file << exported;
@@ -168,8 +168,8 @@ BOOST_AUTO_TEST_CASE(ribexport_placement_test) {
 }
 
 /**
- * The camera the export names is the view's, and its aperture is written rather than left to
- * a reader to rederive from the frame aspect.
+ * The camera the export names is the view's, and its aperture is written out rather than
+ * left for a reader to derive from the frame aspect.
  **/
 BOOST_AUTO_TEST_CASE(ribexport_camera_test) {
     boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
@@ -188,8 +188,8 @@ BOOST_AUTO_TEST_CASE(ribexport_camera_test) {
     BOOST_CHECK_CLOSE(perspective.top_, 1.0f, 0.01f);
     BOOST_CHECK_CLOSE(perspective.right_, 4.0f / 3.0f, 0.01f);
 
-    // the world to camera transformation is what a view matrix is, so it puts an eye eight
-    // units back at the origin of camera space
+    // a view matrix is the world to camera transformation, so it puts an eye eight units
+    // back at the origin of camera space
     const glm::vec4 eye = perspective.camera_ * glm::vec4(0.0f, 0.0f, -8.0f, 1.0f);
     BOOST_CHECK_SMALL(eye.x, 0.01f);
     BOOST_CHECK_SMALL(eye.y, 0.01f);

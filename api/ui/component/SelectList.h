@@ -20,15 +20,14 @@ namespace v3d::ui::component {
  * Unlike a check box, a list does own what it shows: the rows are its, and which one is
  * chosen is a place in them rather than a state some command owns. What a click means is
  * still the app's - the list is told which row was clicked and sends its command, and
- * whatever answers decides what being on that row does.
+ * whatever handles the command decides what choosing that row does.
  *
- * How tall a row is belongs to whatever drew it, so a list that has never been drawn
- * cannot say which row a point is on, per ADR-0019. Everything measured in pixels here -
- * the scroll offset, the content height - is in the same units and means nothing until
- * then.
+ * The row height is set by whatever draws the list, so a list that has never been drawn
+ * cannot say which row a point is on. The pixel values here, such as the scroll offset and
+ * the content height, are meaningless until then.
  *
  * The plate, the rows and the highlight behind the chosen one are the "list" style class
- * the component names, per ADR-0020.
+ * the component names.
  **/
 class SelectList : public Component {
  public:
@@ -66,8 +65,8 @@ class SelectList : public Component {
     float offset() const noexcept;
 
     /**
-     * How tall one row is drawn, which is what the renderer resolved from its style and
-     * left here on the way past.
+     * How tall one row is drawn. The renderer resolves it from the style and stores it
+     * here while drawing.
      **/
     void rowHeight(float height);
     float rowHeight() const noexcept;
@@ -75,15 +74,15 @@ class SelectList : public Component {
     /**
      * How wide the widest row is when it is drawn, left here by whatever measured it.
      *
-     * Measuring every row is what sizing a list to its content costs, and the answer only
-     * changes when the rows do - so items() forgets it and whatever draws the list works
-     * it out again. Negative until something has.
+     * Sizing a list to its content means measuring every row, and the result changes only
+     * when the rows do. items() clears it and the next draw measures it again. Negative
+     * until something has measured it.
      **/
     void widest(float width) noexcept;
     float widest() const noexcept;
 
     /**
-     * @return how tall all the rows come to, which is what a scrollbar's content is
+     * @return how tall all the rows come to, which a scrollbar uses as its content
      **/
     float content() const noexcept;
 

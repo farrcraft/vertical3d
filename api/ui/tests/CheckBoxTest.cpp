@@ -48,7 +48,7 @@ v3d::ui::paint::ComponentRenderer build(std::vector<Written>* written) {
 }
 
 /**
- * A ui engine over a document written inline, which is what a config file amounts to by
+ * A ui engine over a document written inline, which is all a config file amounts to by
  * the time it reaches the loader.
  **/
 boost::shared_ptr<v3d::ui::Engine> load(const std::string& config) {
@@ -148,8 +148,8 @@ BOOST_AUTO_TEST_CASE(a_radio_button_is_a_check_box_with_a_round_mark) {
 }
 
 /**
- * Neither owns the state it shows: a check box is checked by whatever answered its command,
- * and starts however the config left it. ADR-0019.
+ * Neither owns the state it shows: a check box is checked by whatever handled its command,
+ * and starts however the config left it.
  **/
 BOOST_AUTO_TEST_CASE(the_loader_reads_a_check_box_a_radio_button_and_a_clip) {
     const std::string document = R"({

@@ -17,8 +17,8 @@ BOOST_AUTO_TEST_SUITE(lit_settings_test)
 
 /**
  * Each setting lands in the member and the component lit.glsl reads it from. The offsets are
- * static assertions beside pack(); this is the half they cannot see, which is a value written
- * into the wrong component of the right member.
+ * static assertions beside pack(). This test catches what those cannot: a value written into
+ * the wrong component of the right member.
  **/
 BOOST_AUTO_TEST_CASE(pack_puts_each_setting_where_the_shader_reads_it) {
     LitSettings settings;
@@ -52,8 +52,8 @@ BOOST_AUTO_TEST_CASE(pack_puts_each_setting_where_the_shader_reads_it) {
 }
 
 /**
- * A light left at its default colour is white over every band, which is what keeps a scene
- * drawn before the light had a colour the same picture.
+ * A light left at its default colour is white over every band, so a scene that sets no light
+ * colour is lit by plain white.
  **/
 BOOST_AUTO_TEST_CASE(the_default_light_is_white) {
     const SceneUniforms packed = v3d::render::realtime::pack(LitSettings(), glm::mat4(1.0f), 0.0f);

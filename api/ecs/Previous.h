@@ -12,7 +12,8 @@
 namespace v3d::ecs {
 
 /**
- * What an entity's T was at the start of the most recent simulation step - ADR-0060.
+ * What an entity's T was at the start of the most recent simulation step. snapshot() writes it,
+ * and interpolated() blends from it to the current T.
  **/
 template <typename T>
 struct Previous final {
@@ -21,7 +22,7 @@ struct Previous final {
 
 /**
  * A type that can be drawn between two steps: an interpolate(from, to, alpha) beside it,
- * found by argument-dependent lookup, that answers another T.
+ * found by argument-dependent lookup, that returns a T.
  **/
 template <typename T>
 concept Interpolable = std::copy_constructible<T> && requires(const T& from, const T& to, float alpha) {
@@ -45,7 +46,7 @@ void snapshot(entt::registry& registry) {
 /**
  * Make an entity's previous step its current one, so it is drawn with no motion.
  *
- * What a teleport calls - a ball put back on the centre spot - since otherwise the frame
+ * A teleport calls this, such as a ball put back on the centre spot. Otherwise the frame
  * after it draws the entity sweeping from where it was to where it was put.
  **/
 template <typename T>

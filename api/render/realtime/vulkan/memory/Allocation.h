@@ -8,8 +8,8 @@
 #include <vulkan/vulkan.h>
 
 // the allocator's own handle, declared rather than included: vk_mem_alloc.h is large and
-// this header is reached from most of the renderer. Repeating the library's own typedef is
-// what keeps that header in the one translation unit that implements it - VmaImpl.cxx
+// this header is included by most of the renderer. Repeating the library's own typedef keeps
+// that header in the one translation unit that implements it - VmaImpl.cxx
 VK_DEFINE_HANDLE(VmaAllocation)
 
 namespace v3d::render::realtime::vulkan::memory {
@@ -18,7 +18,7 @@ namespace v3d::render::realtime::vulkan::memory {
  * Memory a resource lives in, and the handle whoever allocated it needs to give it back.
  *
  * A resource holds one of these rather than a VkDeviceMemory, because what identifies an
- * allocation is the allocator's business: a suballocator hands out a region of a larger
+ * allocation depends on the allocator: a suballocator hands out a region of a larger
  * block, so the device memory alone does not say which allocation was meant.
  **/
 struct Allocation final {

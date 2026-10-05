@@ -18,9 +18,6 @@ add_executable(Odyssey
 	"ui/Screen.h" "ui/Screen.cpp"
 )
 
-# SDL3MAIN_LIBRARY is also specified within SDL3_LIBRARY by the FindSDL3 module.
-# It's needed for Windows specific main function.
-# If I don't use FindSDL3 module, I have to link it as well.
 target_link_libraries(Odyssey
 		"v3dlib_asset"
 		"v3dlib_asset_media"

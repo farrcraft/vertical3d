@@ -130,8 +130,8 @@ void RenderContext::prepareWorld() {
     // save the existing transform as the camera coordinate system. What a scene set
     // between RiProjection and here is the world to camera transformation
     saveCoordinateSystem("camera");
-    // a traced hit's "camera" space and its E are this camera's, which the traced scene
-    // has no camera of its own to give
+    // a traced hit's "camera" space and its E are this camera's, because the traced scene
+    // has no camera of its own
     traced_.view(coordinateSystems_["camera"]);
     // inside the world block the current transformation is object to world
     transform_.replace(glm::mat4x4(1.0f));
@@ -473,8 +473,7 @@ void RenderContext::translate(float dx, float dy, float dz) {
     transform_.concat(glm::translate(glm::mat4x4(1.0f), glm::vec3(dx, dy, dz)));
 }
 
-// RiRotate states its angle in degrees, which is the one place the interface disagrees
-// with glm
+// RiRotate takes its angle in degrees and glm takes radians
 void RenderContext::rotate(float angle, float dx, float dy, float dz) {
     transform_.concat(glm::rotate(glm::mat4x4(1.0f), glm::radians(angle), glm::vec3(dx, dy, dz)));
 }
@@ -509,7 +508,7 @@ void RenderContext::surface(const std::string & name,
     const v3d::render::offline::rib::ParameterList & parameters) {
     surface_ = shaders_->instance(name, v3d::render::offline::sl::ShaderType::SURFACE, parameters);
     // RI says a shader's own space is the transform in force when the scene instanced it,
-    // which is what a "point \"shader\" (0, 0, 1)" in it is stated against
+    // and a "point \"shader\" (0, 0, 1)" in it is stated against that space
     surfacePlacement_ = coordinateSystems_["camera"] * transform_.open();
 }
 
@@ -520,13 +519,13 @@ void RenderContext::lightSource(const std::string & name, const std::string & ha
     light.shader = shaders_->instance(name, v3d::render::offline::sl::ShaderType::LIGHT, parameters);
     light.placement = coordinateSystems_["camera"] * transform_.open();
     if (!light.shader) {
-        // the library has already said why, and a light that will not compile is one
-        // fewer light rather than a light of some other kind
+        // the library has already logged why. A light that will not compile is left out
+        // rather than replaced by a light of some other kind
         return;
     }
     lights_.push_back(light);
-    // RiLightSource creates the light and switches it on, which is why this is not two
-    // requests in a scene that wants one light
+    // RiLightSource creates the light and switches it on, so a scene that wants one light
+    // needs one request
     illuminate(handle, true);
 }
 
@@ -558,9 +557,8 @@ Shading RenderContext::shading() {
     state.placement = surfacePlacement_;
     state.opacity = opacity_;
     if (!state.surface) {
-        // a scene that names no surface draws the shader that means no shading, which is
-        // the picture this renderer drew before there was a language. RI leaves the
-        // default to the renderer and forbids only "null"
+        // a scene that names no surface draws the shader that means no shading. RI leaves
+        // the default to the renderer and forbids only "null"
         state.surface = shaders_->instance("constant",
             v3d::render::offline::sl::ShaderType::SURFACE,
             v3d::render::offline::rib::ParameterList());
@@ -674,11 +672,8 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
 
     // bound polygon in eye space
     /*
-        if this is just based off of poly vertices, the bound will be in object space
-        we'll need to apply the current modeling transformation to get from object space to world space
-        and then the camera transformation will need to be applied to get into eye space
-        we should probably just transform the poly to eye space first since any future calculations
-        on this poly will be done in eye space or beyond.
+        the polygon's vertices are in object space, so its bound is too. The placement
+        carries both into eye space, where every later calculation on the polygon happens.
     */
     // a primitive carries the state it was submitted under - see ReyesPrimitive::place().
     // A piece handed back by a split is already placed and keeps its parent's
@@ -695,13 +690,12 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
         poly->motion(transform_.before(coordinateSystems_["camera"]));
     }
 
-    // a vertex that brought no "Cs" of its own takes the primitive's colour. There is no
-    // light and no material behind it - RiSurface is still empty - so this is the
-    // geometry's colour rather than a shaded one.
+    // a vertex that brought no "Cs" of its own takes the primitive's colour, which the
+    // surface shader then reads as Cs.
     //
     // The normals go the same way: Ng is the primitive's plane on every vertex, and a
-    // vertex that brought no varying "N" shades with it, which is what makes a polygon
-    // that says nothing about its normals faceted
+    // vertex that brought no varying "N" shades with it, so a polygon that gives no
+    // normals is shaded faceted
     for (unsigned int i = 0; i < poly->vertexCount(); i++) {
         if (!(*poly)[i].hasColor()) {
             (*poly)[i].color(poly->color());
@@ -718,12 +712,9 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     glm::vec3 bound_min = bound.min();
 
     /*
-        convert bound to eye space coordinates
-        first multiply by modeling transformation to get world coordinates
-        next multiply by camera transformation to get camera/eye coordinates
-
-        for now we're just taking the current transform.
-        later we'll probably need to concatenate the transforms_ matrix stack too
+        convert bound to eye space coordinates: the modeling transformation takes it to
+        world coordinates, and the camera transformation takes that to eye coordinates.
+        The primitive's placement holds the two composed.
     */
 
     // the camera coordinate system holds the world to camera transformation, which is what
@@ -849,8 +840,8 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
      */
     if (poly->diceable()) {
         // a normal transforms by the inverse transpose rather than by the matrix that
-        // moves the points. The two agree under a rotation and a uniform scale, and part
-        // company the moment a scene scales one axis, which tilts a normal off its surface
+        // moves the points. The two agree under a rotation and a uniform scale, and differ
+        // as soon as a scene scales one axis, which would tilt a normal off its surface
         const glm::mat3x3 toEyeNormal = glm::transpose(glm::inverse(glm::mat3x3(toEye)));
         for (unsigned int i = 0; i < poly->vertexCount(); i++) {
             Vertex pv = poly->vertex(i);
@@ -915,8 +906,8 @@ void RenderContext::render() {
     hider_->render(this, planes.get());
 
     if (imager_) {
-        // after the last bucket, which is where every sample the frame will ever hold is
-        // in it: an imager is a function of the finished picture rather than of a piece
+        // after the last bucket, once every sample of the frame is in: an imager is a
+        // function of the finished picture rather than of a piece
         v3d::render::offline::sl::Imager imager(imager_, &shader());
         imager.run(frameBuffer_->planes().get(), FrameBuffer::COVERAGE);
     }
@@ -927,8 +918,8 @@ void RenderContext::render() {
         return;
     }
 
-    // the alpha and depth modes need planes the hider does not write yet, so every mode
-    // is the three colour channels for now
+    // the alpha and depth modes need planes the hider does not write, so every mode
+    // writes the three colour channels
     auto logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::Factory factory(logger);
     factory.write(displayName_, frameBuffer_->planes()->image(FrameBuffer::CHANNELS));

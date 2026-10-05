@@ -14,9 +14,9 @@ namespace v3d::render::realtime::vulkan::frame {
 namespace {
 
 /**
- * In preference order. A depth only format is what a scene wants - nothing in the
- * renderer stencils - so the two combined formats are here only for a device that
- * cannot use D32 as an attachment.
+ * In preference order. A depth only format is preferred, because nothing in the renderer
+ * uses stencil. The two combined formats are here only for a device that cannot use D32 as
+ * an attachment.
  **/
 const VkFormat candidates[3] = {
     VK_FORMAT_D32_SFLOAT,
@@ -49,8 +49,8 @@ DepthBuffer::~DepthBuffer() {
 VkFormat DepthBuffer::chooseFormat(VkPhysicalDevice device, bool sampled) {
     VkFormatFeatureFlags wanted = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
     if (sampled) {
-        // a format a device will draw depth into is not necessarily one it will let a
-        // shader read, so asking for both narrows the list rather than only the usage
+        // a format a device can draw depth into is not necessarily one a shader can sample,
+        // so a sampled buffer requires its format to support both
         wanted |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
     }
     for (VkFormat format : candidates) {
@@ -80,9 +80,9 @@ void DepthBuffer::create(uint32_t width, uint32_t height) {
     spec.format = format_;
     spec.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
     if (sampled_) {
-        // TRANSFER_SRC on the same terms a render target's colour has it: what lets
-        // frame::Capture read a shadow map back, for the price of whatever compression a
-        // driver declines on an image that can be copied out
+        // TRANSFER_SRC, as a render target's colour has, so frame::Capture can read a shadow
+        // map back. The cost is any compression a driver disables on an image that can be
+        // copied out
         spec.usage |= VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     }
     // the stencil aspect is left out even where the format carries one - nothing
@@ -93,8 +93,8 @@ void DepthBuffer::create(uint32_t width, uint32_t height) {
     if (sampled_) {
         pipeline::Sampler::Spec sampler;
         // linear, so that a shadow comparison across a texel boundary softens rather than
-        // stepping. Nothing here enables the compare mode: a caller that wants a hardware
-        // pcf sampler wants its own, and this is the one a plain read uses
+        // stepping. Nothing here enables the compare mode: a caller that needs a hardware PCF
+        // sampler creates its own, and this one serves a plain read
         sampler.mipmap = VK_SAMPLER_MIPMAP_MODE_NEAREST;
         // outside what was rendered is lit, not shadowed, so the border is the far plane
         sampler.address = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;

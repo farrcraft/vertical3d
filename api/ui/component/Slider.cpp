@@ -20,8 +20,7 @@ Slider::Slider() :
     maximum_(1.0f),
     step_(0.0f),
     value_(0.0f) {
-    // a slider exists to be driven, so it asks for the press its drag needs and for the
-    // focus its keys need
+    // pickable for its drag and focusable for its keys, which a plain component is not
     pickable(true);
     focusable(true);
 }
@@ -78,7 +77,7 @@ float Slider::fraction() const noexcept {
  **/
 bool Slider::drag(const glm::vec2& point) {
     if (size().x <= 0.0f) {
-        // never drawn, so there is no track to read a point against - ADR-0019
+        // never drawn, so there is no track to read a point against
         return false;
     }
     const float along = std::clamp((point.x - position().x) / size().x, 0.0f, 1.0f);

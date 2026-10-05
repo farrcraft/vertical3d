@@ -19,8 +19,8 @@ SelectList::SelectList() :
     rowHeight_(0.0f),
     widest_(-1.0f),
     selected_(none) {
-    // a control exists to be driven, so it asks for the press and the focus that a panel
-    // laid over a scene must not take - ADR-0034 and ADR-0040
+    // a control is pickable and focusable from the start; a plain component is neither, so a
+    // panel laid over a scene lets presses through
     pickable(true);
     focusable(true);
 }
@@ -96,9 +96,8 @@ int SelectList::at(const glm::vec2& point) const {
 
 void SelectList::event(const v3d::event::Event& destination) {
     event_ = destination;
-    // stamped here rather than by whoever built it, the way Button and MenuItem do it: an
-    // app applying ADR-0017's destination guard drops anything that is not marked, so a
-    // command that is not stamped is a command that never arrives
+    // marked as a command here rather than by the caller, as Button and MenuItem do, because a
+    // listener that accepts only Destination events drops an unmarked one
     event_.type(v3d::event::Type::Destination);
 }
 

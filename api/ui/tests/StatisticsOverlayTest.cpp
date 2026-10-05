@@ -87,8 +87,7 @@ BOOST_AUTO_TEST_CASE(an_overlay_starts_hidden_and_toggles_both_ways) {
 }
 
 /**
- * Nothing is drawn without a text renderer to draw it with, which is what a font that
- * would not load leaves the overlay holding.
+ * Nothing is drawn without a text renderer to draw it with, as when a font would not load.
  **/
 BOOST_AUTO_TEST_CASE(nothing_is_drawn_without_a_text_renderer) {
     const boost::shared_ptr<v3d::ui::paint::TextRenderer> text;

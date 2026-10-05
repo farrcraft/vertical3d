@@ -89,7 +89,7 @@ BOOST_AUTO_TEST_CASE(batches_are_cut_only_where_the_texture_changes) {
 /**
  * Going back to a texture that was used earlier starts a new batch rather than reopening the
  * old one - the quads in between have to stay underneath, and merging them would put them on
- * top. Painter order beats batch count.
+ * top. Painter order takes priority over batch count.
  **/
 BOOST_AUTO_TEST_CASE(returning_to_a_texture_does_not_reopen_its_batch) {
     v3d::render::realtime::Canvas canvas;
@@ -302,8 +302,8 @@ BOOST_AUTO_TEST_CASE(empty_text_adds_no_batch) {
 }
 
 /**
- * A scale multiplies what is drawn under it, and a pop takes it back off - which is what
- * lets something authored at one size be drawn at another without scaling its own numbers.
+ * A scale multiplies what is drawn under it, and a pop takes it back off. Something authored at
+ * one size can then be drawn at another without scaling its own numbers.
  **/
 BOOST_AUTO_TEST_CASE(a_scale_multiplies_what_is_drawn_under_it) {
     v3d::render::realtime::Canvas canvas;
@@ -328,8 +328,8 @@ BOOST_AUTO_TEST_CASE(a_scale_multiplies_what_is_drawn_under_it) {
 
 /**
  * A clip cuts the stream where it opens and where it closes, and the batch between them
- * carries the rectangle the device is to scissor to - ADR-0037. Nothing is dropped on the
- * cpu: the quad inside the clip is still four vertices.
+ * carries the rectangle the device scissors to. Nothing is dropped on the cpu: the quad
+ * inside the clip is still four vertices.
  **/
 BOOST_AUTO_TEST_CASE(a_clip_cuts_the_batch_and_carries_its_rectangle) {
     v3d::render::realtime::Canvas canvas;
@@ -374,8 +374,8 @@ BOOST_AUTO_TEST_CASE(a_clip_is_transformed_like_a_vertex) {
 }
 
 /**
- * A clip inside a clip can only take room away, which is what makes a child of a scrolled
- * panel safe to clip against its own box without knowing what is around it.
+ * A clip inside a clip can only take room away, so a child of a scrolled panel can clip
+ * against its own box without knowing what is around it.
  **/
 BOOST_AUTO_TEST_CASE(a_nested_clip_can_only_take_room_away) {
     v3d::render::realtime::Canvas canvas;
@@ -396,8 +396,8 @@ BOOST_AUTO_TEST_CASE(a_nested_clip_can_only_take_room_away) {
 }
 
 /**
- * Two clips that miss each other leave nothing rather than an inverted rectangle, which
- * would be a validation error by the time it reached a scissor.
+ * Two clips that miss each other leave an empty rectangle rather than an inverted one. An
+ * inverted rectangle would be a validation error once it reached a scissor.
  **/
 BOOST_AUTO_TEST_CASE(clips_that_miss_each_other_leave_an_empty_rectangle) {
     v3d::render::realtime::Canvas canvas;
@@ -527,8 +527,8 @@ BOOST_AUTO_TEST_CASE(a_pixel_maps_back_into_the_space) {
 }
 
 /**
- * A canvas with no space projects exactly as one always has, and so does one whose space was
- * taken away again.
+ * A canvas with no space projects in its own pixels over the whole window, and so does one
+ * whose space was removed again.
  **/
 BOOST_AUTO_TEST_CASE(a_canvas_without_a_space_projects_as_before) {
     v3d::render::realtime::Canvas plain;

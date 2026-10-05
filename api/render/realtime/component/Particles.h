@@ -15,7 +15,8 @@
 namespace v3d::render::realtime::component {
 
 /**
- * What the particles of an entity's ecs::component::Emitter look like - ADR-0072.
+ * What the particles of an entity's ecs::component::Emitter look like. The emitter owns its
+ * particles.
  *
  * A particle is a quad centred on where it stands, sized and coloured by the emitter's tracks.
  * Its region is a frame of the clip, or the uv pair below when there is no clip, held resolved

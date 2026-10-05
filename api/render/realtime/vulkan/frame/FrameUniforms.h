@@ -24,17 +24,16 @@
 namespace v3d::render::realtime::vulkan::frame {
 
 /**
- * Set 0, the per frame frequency of ADR-0008 - the camera a whole pass draws through.
+ * Set 0, which holds per frame data: the camera a whole pass draws through.
  *
  * A scene of a few hundred draws shares one view and one projection, so they are bound
  * once for the pass rather than pushed per draw. This owns the layout every pipeline in
- * the engine declares at set 0, which is what makes those pipelines interchangeable
- * within a pass: a descriptor set bound for one stays bound across a pipeline change to
+ * the engine declares at set 0, so those pipelines are interchangeable within a pass: a descriptor set bound for one stays bound across a pipeline change to
  * another built against the same layout.
  *
  * There is a slot per pass per frame in flight, because a frame's several passes have
  * different cameras and the device may still be reading the set two frames back. Slots
- * are added as passes demand them and never given back - a frame's pass count settles in
+ * are added as passes need them and never given back - a frame's pass count settles in
  * the first few frames.
  *
  * A slot is written during recording, which is after the presenter has waited on the

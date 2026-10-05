@@ -65,7 +65,7 @@ int run(int argc, char *argv[]) {
     }
 
     // RiBegin and RiEnd have no RIB equivalent - the standard says they are implied at the
-    // start and end of a file - so the handler is what creates and destroys the context
+    // start and end of a file - so the handler creates and destroys the context
     boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::moya::Renderer renderer;
     v3d::moya::RIBHandler handler(&renderer);
@@ -73,8 +73,8 @@ int run(int argc, char *argv[]) {
     if (!outfile.empty()) {
         handler.output(outfile);
     }
-    // the grid and bucket sizes a scene names are Option "limits", and the command line
-    // overrides them by being applied first and re-applied after
+    // the command line sets the grid and bucket sizes before the scene is read, so a scene
+    // that names its own with Option "limits" replaces them
     if (var_map.count("grid")) {
         handler.context().gridSize(static_cast<unsigned int>(var_map["grid"].as<int>()));
     }
@@ -83,8 +83,8 @@ int run(int argc, char *argv[]) {
         handler.context().bucketSize(size, size);
     }
 
-    // flushed rather than left to the buffer: the render that follows it is the whole
-    // run, and a progress line nobody sees until the picture is written is not one
+    // flushed rather than left to the buffer: the render that follows takes the rest of the
+    // run, and the progress line has to appear before it starts
     std::cout << "Rendering scene file: " << infile << "\n" << std::flush;
 
     v3d::render::offline::rib::Reader reader(logger);
@@ -102,8 +102,7 @@ int run(int argc, char *argv[]) {
 int main(int argc, char *argv[]) {
     // the option parser and the reader both report by throwing, and an exception leaving
     // main is an abort with no message in it. The handler reports through stdio rather than
-    // the stream the rest of the file writes to: a last resort that can itself throw is not
-    // one
+    // the stream the rest of the file writes to, because a last-resort handler must not throw
     try {
         return run(argc, argv);
     } catch (const std::exception& error) {

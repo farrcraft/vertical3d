@@ -66,8 +66,8 @@ BOOST_AUTO_TEST_CASE(polygon_clip_keeps_an_inside_polygon_test) {
 }
 
 /**
- * A polygon with no area has no inside to keep, and the walk opens on the vertex before the
- * first one - so it is left alone rather than indexed off the front.
+ * A polygon with no area has no inside to keep, and the clip loop starts on the vertex before
+ * the first one, so the polygon is left alone rather than indexed off the front.
  **/
 BOOST_AUTO_TEST_CASE(polygon_clip_degenerate_polygon_test) {
     boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();

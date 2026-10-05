@@ -69,26 +69,26 @@ v3d_add_api_library(render
 	"realtime/vulkan/renderer/Lit.h" "realtime/vulkan/renderer/Lit.cxx"
 	"realtime/vulkan/renderer/FullScreen.h" "realtime/vulkan/renderer/FullScreen.cxx")
 
-# The one batched quad primitive of ADR-0005. Compiled to SPIR-V and embedded rather than
+# The batched quad primitive. Every shader is compiled to SPIR-V and embedded rather than
 # loaded from disk - see v3d_add_shader in the root CMakeLists.
 v3d_add_shader(v3dlib_render "shaders/quad.vert")
 v3d_add_shader(v3dlib_render "shaders/quad.frag")
 
-# The line primitive of ADR-0011.
+# The world space line primitive.
 v3d_add_shader(v3dlib_render "shaders/line.vert")
 v3d_add_shader(v3dlib_render "shaders/line.frag")
 
-# The world space quad primitive of ADR-0042.
+# The world space quad primitive.
 v3d_add_shader(v3dlib_render "shaders/world.vert")
 v3d_add_shader(v3dlib_render "shaders/world.frag")
 
-# The lit tier of ADR-0064, whose shared blocks are shaders/lit/lit.glsl - ADR-0067.
+# The lit renderer. The blocks its shaders share are in shaders/lit/lit.glsl.
 v3d_add_shader(v3dlib_render "shaders/lit/mesh.vert")
 v3d_add_shader(v3dlib_render "shaders/lit/cel.frag")
 v3d_add_shader(v3dlib_render "shaders/lit/outline.vert")
 v3d_add_shader(v3dlib_render "shaders/lit/outline.frag")
 v3d_add_shader(v3dlib_render "shaders/lit/shadow.vert")
-# a skinned model's are the same three compiled with SKINNED - see shaders/lit/pose.glsl
+# A skinned model uses the same three vertex shaders compiled with SKINNED - see shaders/lit/pose.glsl
 v3d_add_shader(v3dlib_render "shaders/lit/mesh.vert" OUTPUT "skinned_mesh.vert" DEFINES SKINNED)
 v3d_add_shader(v3dlib_render "shaders/lit/outline.vert" OUTPUT "skinned_outline.vert" DEFINES SKINNED)
 v3d_add_shader(v3dlib_render "shaders/lit/shadow.vert" OUTPUT "skinned_shadow.vert" DEFINES SKINNED)
@@ -107,16 +107,16 @@ target_link_libraries(v3dlib_render PUBLIC v3dlib_log v3dlib_asset v3dlib_image 
 # Allocation.h declare the handles they name rather than including the header that defines them
 target_link_libraries(v3dlib_render PRIVATE GPUOpen::VulkanMemoryAllocator)
 
-# one header that is both declaration and implementation, compiled in exactly one translation
-# unit. Dropping the warning level and both analysers is what api/asset does for cgltf, and for
-# the same reason: a local fix is lost the next time the port moves.
+# VMA is one header that is both declaration and implementation, compiled in exactly one
+# translation unit. Its warnings and both analysers are switched off, as api/asset does for cgltf,
+# because a local fix would be lost the next time the port is updated.
 set_source_files_properties("realtime/vulkan/memory/VmaImpl.cxx" PROPERTIES
 	COMPILE_OPTIONS "/analyze-;/W0"
 	SKIP_LINTING TRUE)
 
 # PRIVATE: Canvas.h forward declares font::TextBuffer rather than including it, so a consumer
 # needs the font library only if it names one itself. The ecs components the lit renderer
-# walks are named in its sources and in no header, and so are the model and image assets
+# reads are named in its sources and in no header, and so are the model and image assets
 # MeshRegistry loads.
 target_link_libraries(v3dlib_render PRIVATE v3dlib_font v3dlib_ecs v3dlib_asset_media)
 

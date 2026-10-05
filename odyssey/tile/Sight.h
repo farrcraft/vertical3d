@@ -16,15 +16,14 @@ namespace odyssey::tile {
 /**
  * What can be seen from where something stands, and what has been seen before.
  *
- * Two answers per tile rather than one, because a board drawn from the first alone is a
- * board that forgets: a wall the player has walked past is still known to be a wall when
- * the player is elsewhere, and only what is in sight right now is current. A tile is
- * therefore in sight, remembered, or neither.
+ * Each tile has two flags: whether it is in sight now, and whether it has ever been seen.
+ * A wall the player has walked past is still known to be a wall when the player is
+ * elsewhere, but only what is in sight now is current. A tile is therefore in sight,
+ * remembered, or neither.
  *
- * Whether two tiles can see each other is v3d::grid::hasLineOfSight's answer, under
- * [ADR-0029](../../docs/adr/0029-grid-8-way-movement-symmetric-line-of-sight.md): only Cover::Full stops a
- * line, so a crate is seen over. What this adds is the range and the memory, neither of
- * which the grid has an opinion about.
+ * Whether two tiles can see each other is decided by v3d::grid::hasLineOfSight, which is
+ * symmetric. Only Cover::Full stops a line, so a crate is seen over. This class adds the
+ * range and the memory; the grid has neither.
  **/
 class Sight final {
  public:

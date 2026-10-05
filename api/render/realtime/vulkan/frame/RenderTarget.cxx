@@ -35,7 +35,7 @@ void clear(VkCommandBuffer commands, VkImageView colour, VkImageView depth, cons
     depthAttachment.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
     depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    // the far plane, which is what a shadow map read before anything was drawn should say
+    // the far plane, so a shadow map read before anything was drawn reports no shadow
     depthAttachment.clearValue.depthStencil.depth = 1.0f;
 
     VkRenderingInfo rendering{};
@@ -50,9 +50,9 @@ void clear(VkCommandBuffer commands, VkImageView colour, VkImageView depth, cons
 }
 
 /**
- * Clear a slot's images, taking each from nothing into what a pass draws in and then into what
- * the recorder leaves a target in after its last pass - ADR-0031 and ADR-0044 - so that a slot
- * no pass has drawn into looks like one a pass has. A null image is one the slot does not have.
+ * Clear a slot's images, taking each from undefined into the layout a pass draws in and then
+ * into the layout the recorder leaves a target in after its last pass, so that a slot no pass
+ * has drawn into looks like one a pass has. A null image is one the slot does not have.
  **/
 void readied(VkCommandBuffer commands, VkImage colour, VkImageView colourView, VkImage depth, VkImageView depthView,
     const VkExtent2D& extent) {
@@ -108,7 +108,7 @@ void RenderTarget::recreate(uint32_t width, uint32_t height) {
 /**
  **/
 void RenderTarget::create(uint32_t width, uint32_t height) {
-    // unlike a swapchain image, a target is asked for at a size the caller chose, so a
+    // unlike a swapchain image, a target is created at a size the caller chose, so a
     // dimension of zero is a mistake rather than a minimized window
     if (width == 0 || height == 0) {
         throw std::runtime_error("A vulkan render target cannot have a zero dimension");
@@ -124,8 +124,7 @@ void RenderTarget::create(uint32_t width, uint32_t height) {
             slot.image = createColour(width, height);
         }
         if (wantsDepth_) {
-            // a depth buffer is the same image at the same size whoever is drawing into it, so
-            // a target's is one of those rather than a second implementation of the same thing
+            // a target's depth is a DepthBuffer, the same class the swapchain passes use
             slot.depth = boost::make_shared<DepthBuffer>(device_, width, height, sampledDepth_);
         }
     }
@@ -152,10 +151,9 @@ boost::shared_ptr<memory::Image> RenderTarget::createColour(uint32_t width, uint
     spec.width = width;
     spec.height = height;
     spec.format = format_;
-    // both halves of what a target is for: a pass draws into it and a later pass reads it.
-    // TRANSFER_SRC is what lets frame::Capture copy one out, and is granted rather than asked
-    // for on the same terms SAMPLED is - a colour image that cannot be read is the narrower
-    // thing to be, and the only cost here is whichever compression a desktop driver declines
+    // a pass draws into a target and a later pass reads it. TRANSFER_SRC lets frame::Capture
+    // copy one out; it is always granted, as SAMPLED is, and its only cost is any
+    // compression a desktop driver disables for it
     spec.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     return boost::make_shared<memory::Image>(device_, spec);
 }

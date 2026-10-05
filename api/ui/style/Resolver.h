@@ -34,20 +34,19 @@ boost::shared_ptr<Style> lookup(const boost::shared_ptr<Theme>& theme,
  * Turns a theme into the colours and metrics a component is drawn with, once per style
  * rather than once per frame.
  *
- * Resolving a style means a linear walk of the theme's styles comparing names, then one
- * map lookup and one cast per colour and per metric it carries. That is a handful of
- * allocations and a handful of casts for every component, every frame, for an answer that
- * only changes when the theme does - so it is worked out on the first ask and kept.
+ * Resolving a style walks the theme's styles comparing names, then does a map lookup and a
+ * cast for each colour and metric. The result changes only when the theme does, so it is
+ * computed on the first request and cached.
  *
- * What is kept is dropped whole when the theme changes or the base is taken by reference
- * to be written, which are the only two things that can make an answer wrong.
+ * The cache is cleared when the theme changes or when the base is taken by non-const
+ * reference to be written. Nothing else can make a cached result wrong.
  **/
 class Resolver final {
  public:
     /**
-     * The style classes a component is dressed by. An enum rather than a string because
-     * it is the key of a per frame lookup, and because the set is closed - a class here
-     * is one this library reads named properties out of.
+     * The style classes a component is dressed by. An enum rather than a string, because
+     * it keys a per-frame lookup and the set is closed: each class is one this library
+     * reads named properties from.
      **/
     enum class Class {
         Panel,
@@ -75,16 +74,16 @@ class Resolver final {
      * The defaults every class is resolved from - what a theme's "ui" style names, and
      * what a theme naming nothing draws in.
      *
-     * Taking it by non const reference drops what has been resolved, because the caller
-     * is about to change what those answers were worked out from. An app setting its
-     * metrics once at startup pays for that once; one calling this every frame has
-     * turned the cache off, which is why the const overload exists.
+     * The non-const overload clears the cache, because the caller is about to change the
+     * values it was computed from. Calling it every frame disables the cache, so read
+     * through the const overload.
      **/
     paint::Dressing& base() noexcept;
     const paint::Dressing& base() const noexcept;
 
     /**
-     * Read a theme's "ui" style into the base, per ADR-0020.
+     * Read a theme's "ui" style into the base. Only the properties the style names are
+     * overwritten.
      **/
     void chrome();
 
@@ -98,14 +97,13 @@ class Resolver final {
     const paint::Dressing& resolve(Class className, const std::string_view& name) const;
 
     /**
-     * The style itself, for what a Dressing does not carry - the nine images a button is
+     * The style itself, for what a Dressing does not carry: the nine images a button is
      * skinned from, which are handles rather than colours.
      *
-     * Not cached: it is asked for once per button rather than once per component, and a
-     * button's style is chosen by state as well as by name. Class::Button resolves the one
-     * thing a button does read as a Dressing - its focus ring - and takes the first style
-     * of the class the way every other class does, because a ring says where the keyboard
-     * is rather than what state the button is in.
+     * Not cached, because it is requested once per button rather than once per component,
+     * and a button's style is chosen by state as well as by name. Class::Button resolves
+     * only a button's focus ring. Like every other class, it takes the first style of the
+     * class, because the ring shows keyboard focus rather than the button's state.
      **/
     boost::shared_ptr<Style> lookup(const std::string& className,
         const std::string_view& name) const;
@@ -113,10 +111,9 @@ class Resolver final {
     /**
      * The style class a theme names the immediate layer's colours and metrics in.
      *
-     * Its own rather than the retained side's "ui", because the two want the same keys at
-     * different sizes: a hud is read at a glance and a tool panel is read closely, so
-     * their line heights and paddings differ by about a factor of two. One class for both
-     * means a theme cannot set either without breaking the other.
+     * Separate from the retained side's "ui" class, because the two use the same keys at
+     * different sizes. A hud is read at a glance and a tool panel is read closely, so
+     * their line heights and paddings differ by about a factor of two.
      **/
     static const char* const tools;
 

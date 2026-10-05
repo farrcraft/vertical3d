@@ -223,8 +223,8 @@ bool readFaces(const boost::json::array& faces, const std::string& path,
 }
 
 /**
- * A reference out of range is a mesh the wireframe and the picker would walk off the end
- * of, so it is refused here rather than found by whatever reads it first.
+ * A reference out of range would make the wireframe and the picker index past the end
+ * of the mesh, so it is refused here rather than found by whatever reads it first.
  **/
 bool validMesh(const boost::shared_ptr<v3d::brep::BRep>& mesh, const std::string& path,
     const boost::shared_ptr<v3d::log::Logger>& logger) {
@@ -305,7 +305,8 @@ bool Project::read(const std::string& path, const boost::shared_ptr<Scene>& scen
         logger_->get()->error("{} is not a project: {}", path, error.message());
         return false;
     }
-    // the format has had one version, so there is no step to walk yet - ADR-0073
+    // an older file is migrated one version at a time. The format has one version, so
+    // there are no migration steps yet
     boost::json::object root = document.as_object();
     switch (v3d::asset::readForward(&root, VERSION, {})) {
         case v3d::asset::Reading::Current:

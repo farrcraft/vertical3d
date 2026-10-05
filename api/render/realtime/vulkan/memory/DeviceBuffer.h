@@ -22,7 +22,7 @@ namespace v3d::render::realtime::vulkan::memory {
  * This is the other half of the trade Buffer describes: geometry that is built once and
  * drawn for the life of the process pays for one staging copy at load time and is read
  * out of the memory closest to the device for every frame after it. A batcher rewriting
- * its whole content every frame wants Buffer instead.
+ * its whole content every frame should use Buffer instead.
  *
  * The buffer is not mapped and cannot be written to directly - upload() is the only way
  * anything reaches it, and it waits for the copy, so nothing may be in flight against
@@ -41,7 +41,7 @@ class DeviceBuffer final {
         VkBufferUsageFlags usage, VkDeviceSize bytes);
 
     /**
-     * Allocate and fill in one step, which is what static geometry wants.
+     * Allocate and fill in one step, as static geometry needs.
      * @param data the content to copy in, of bytes length
      **/
     DeviceBuffer(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Uploader>& uploader,

@@ -75,8 +75,8 @@ class RenderContext {
         /**
             *	maps to RiFrameAspectRatio(aspect)
             *	the ratio of the width of the whole image to its height. Set by
-            *	imageResolution() from the pixel resolution unless this named one, which
-            *	is what makes RiFormat and RiFrameAspectRatio independent.
+            *	imageResolution() from the pixel resolution unless this named one, so
+            *	RiFormat and RiFrameAspectRatio can be set independently.
             */
         void frameAspectRatio(float aspect);
         /**
@@ -96,7 +96,7 @@ class RenderContext {
         /**
             *	maps to RiHider()
             *	"hidden", RI's default, is the reyes hider; "raytrace" casts a primary ray
-            *	through every sample instead, per ADR-0078. Any other name is reported and
+            *	through every sample instead. Any other name is reported and
             *	leaves the hider as it was.
             */
         void hider(const std::string & name);
@@ -131,8 +131,8 @@ class RenderContext {
 
         /**
             *	maps to RiTransformBegin() and RiTransformEnd()
-            *	pop restores what push saved, which is what makes the pair a bracket
-            *	rather than a discard.
+            *	pop restores what push saved, so the pair brackets a change rather than
+            *	discarding the saved state.
             */
         void pushTransform();
         void popTransform();
@@ -192,15 +192,14 @@ class RenderContext {
         /**
             *	maps to RiSurface()
             *	the shader a primitive added from here on is shaded by. A scene that names
-            *	none draws "constant", which is the shader that means no shading and is
-            *	the picture this renderer drew before there was a language.
+            *	none draws "constant", the shader that means no shading.
             */
         void surface(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters);
         /**
             *	maps to RiLightSource()
             *	creates a light and switches it on in the current attribute state. The
             *	light itself belongs to the frame; which lights are on is an attribute,
-            *	which is what makes Illuminate inside an AttributeBegin block local to it.
+            *	so an Illuminate inside an AttributeBegin block is local to that block.
             */
         void lightSource(const std::string & name, const std::string & handle,
             const v3d::render::offline::rib::ParameterList & parameters);
@@ -233,13 +232,13 @@ class RenderContext {
             *	What runs a surface shader over a grid.
             *
             *	Kept for the render rather than made per grid, because it holds the
-            *	register files: a thousand grids over one program size one once.
+            *	register files that later grids reuse.
             */
         GridShader & shader();
 
         /**
-            *	What a shader's trace() and transmission() are answered from, per
-            *	ADR-0077: every primitive the scene gave, in world space, as it was
+            *	The scene a shader's trace() and transmission() calls are traced
+            *	through: every primitive the scene gave, in world space, as it was
             *	given rather than as the hider split it.
             */
         v3d::render::offline::trace::Scene & traced();
@@ -272,7 +271,7 @@ class RenderContext {
         v3d::render::offline::rib::Declarations & declarations();
 
         /**
-            *	Where this context says what it could not do. The reader has its own for
+            *	Where this context reports what it could not do. The reader has its own for
             *	what it reads; this one is for what happens after that.
             */
         const boost::shared_ptr<v3d::log::Logger> & logger() const;

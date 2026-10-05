@@ -13,18 +13,18 @@
 namespace v3d::asset {
 
 /**
- * One step of a document's history: it takes a document of one version to the next, and
- * answers whether it could. It reads and writes the document it is handed and nothing else,
- * because that is a copy the walk throws away if a later step fails.
+ * One migration step: it takes a document of one version to the next, and returns whether it
+ * succeeded. It reads and writes only the document it is given, because that is a copy
+ * readForward() discards if a later step fails.
  **/
 typedef std::function<bool(boost::json::object&)> Migration;
 
 /**
- * What reading a document forward found, per ADR-0073. What to do about each is the caller's.
+ * What reading a document forward found. The caller decides what to do about each.
  **/
 enum class Reading {
     Current,    // already at this build's version, and untouched
-    Migrated,   // walked forward to this build's version
+    Migrated,   // migrated forward to this build's version
     Newer,      // a later build wrote it, so it is untouched and must not be overwritten
     Refused     // no version, one that is not a whole number above zero, a missing or failed step
 };
@@ -33,7 +33,7 @@ enum class Reading {
  * Walk a document forward to this build's version, one step at a time.
  *
  * The document's version is the whole number at its root under "version". chain[0] takes
- * version 1 to 2, so a build at version n has n - 1 steps. The walk runs on a copy, stamps
+ * version 1 to 2, so a build at version n has n - 1 steps. Migration runs on a copy, stamps
  * the version after every step, and assigns the copy back only when every step succeeded, so
  * a refused document is exactly what was handed in.
  *

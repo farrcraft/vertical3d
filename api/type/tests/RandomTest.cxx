@@ -61,8 +61,8 @@ BOOST_AUTO_TEST_CASE(random_zero_is_a_seed_test) {
 }
 
 /**
- * The state is a seed that resumes the sequence rather than restarting it, which is what a save
- * keeps.
+ * The state is a seed that resumes the sequence rather than restarting it, so a save stores
+ * it.
  **/
 BOOST_AUTO_TEST_CASE(random_a_restored_state_continues_test) {
     Random original(99);

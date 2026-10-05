@@ -21,7 +21,7 @@ namespace v3d::render::realtime::vulkan::memory {
  * An image, the memory it lives in, and the one view everything in the renderer reads or
  * draws it through.
  *
- * The three are made and destroyed together everywhere an image is wanted - a texture, a
+ * The three are made and destroyed together everywhere an image is needed - a texture, a
  * render target, a depth buffer - so they are one object. It is held by shared pointer
  * because more than one thing can need it alive: a target and the texture registered from
  * it, or a frame still in flight after its owner let go.

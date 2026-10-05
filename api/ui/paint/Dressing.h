@@ -18,8 +18,8 @@ namespace v3d::ui::paint {
  * drawing a component reads fields rather than asking a map for them.
  *
  * A theme's "ui" style names the defaults, and a component's own style class names what
- * differs from them, per ADR-0020. What a style does not name keeps the value it had, so
- * a theme carrying nothing changes nothing. style::Resolver is what works one out.
+ * differs from them. What a style does not name keeps the value it had, so a theme
+ * carrying nothing changes nothing. style::Resolver works one out.
  **/
 struct Dressing final {
     Dressing() noexcept;

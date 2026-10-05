@@ -93,8 +93,7 @@ bool SpriteSheet::uv(const std::string& sprite, glm::vec2* uv0, glm::vec2* uv1) 
 /**
  **/
 bool SpriteSheet::place(const std::string& sprite, const SpriteRegion& region) {
-    // a region running off the sheet would give a uv outside 0..1, which samples whatever the
-    // wrap mode decides rather than reporting anything
+    // a region running off the sheet would give a uv outside 0..1
     if (sprite.empty() || region.width <= 0 || region.height <= 0 ||
         region.x < 0 || region.y < 0 ||
         region.x + region.width > width_ || region.y + region.height > height_) {

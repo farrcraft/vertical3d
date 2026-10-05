@@ -28,13 +28,13 @@ class Theme;
 };  // namespace style
 
 /**
- * A ui written as calls rather than as a tree, per ADR-0035.
+ * A ui written as calls rather than as a tree.
  *
  * A panel is a sequence between begin() and end(): each widget is placed where the layout
  * pen has got to, drawn onto the same quad canvas the retained components draw onto, hit
- * tested against the box it was just drawn in, and answers on the spot. There is nothing
- * to keep in step with the state it shows, because it is a function of that state - which
- * is what makes it the right shape for a tool and the wrong one for a hud.
+ * tested against the box it was just drawn in, and returns its result on the spot. There is
+ * nothing to keep in step with the state it shows, because it is a function of that state,
+ * so it suits tool panels that read live state.
  *
  * Text is the caller's to draw, the same way ComponentRenderer takes it: this class knows
  * how wide a string is and where it goes, and v3d::font turns it into glyphs.
@@ -43,9 +43,9 @@ class Theme;
  * so a widget drawn later takes the cursor from one under it. A widget that moved is
  * therefore hovered a frame late.
  *
- * A window cuts what it holds off at its own edges and scrolls it, which is the canvas's
- * clip of ADR-0037. How tall the content is is measured as it is drawn, so a window
- * decides whether it needs a scrollbar from what the frame before it held.
+ * A window clips what it holds to its own edges, through the canvas's clip rectangle, and
+ * scrolls it. The content height is measured as it is drawn, so a window decides whether
+ * it needs a scrollbar from what the frame before it held.
  **/
 class Immediate {
  public:
@@ -114,12 +114,10 @@ class Immediate {
     Dressing& dressing() noexcept;
 
     /**
-     * Read a theme's "tools" style into dressing(), per ADR-0020.
+     * Read a theme's "tools" style into dressing().
      *
-     * Its own style class rather than the "ui" the retained components read, because the
-     * two want the same keys at different sizes: a hud is read at a glance and a tool
-     * panel is read closely, so a line height that suits one is wrong for the other. A
-     * theme dresses both, in two classes.
+     * A separate class from the "ui" the retained components read, because a tool panel
+     * uses the same keys at smaller sizes than a hud. A theme dresses both, in two classes.
      **/
     void theme(const boost::shared_ptr<style::Theme>& theme);
 
@@ -129,8 +127,8 @@ class Immediate {
     void begin(v3d::render::realtime::Canvas* canvas, const Input& input);
 
     /**
-     * Finish a frame, which is what settles who has the cursor for the next one, and ages
-     * out what nothing has drawn for retention frames.
+     * Finish a frame: settle who has the cursor for the next one, and age out what nothing
+     * has drawn for retention frames.
      **/
     void end();
 
@@ -155,21 +153,22 @@ class Immediate {
     /**
      * Open a window at a place the caller decides, and that its title bar moves it from.
      *
-     * The position is the anchor rather than the answer: a drag is kept as a displacement
-     * from it, so a window the caller repositions every frame follows and keeps the nudge
-     * it was given. A press on the bar that stays put folds the window and one that
-     * travels drags it, per ADR-0045.
+     * The position is an anchor. A drag is kept in the window's retained state as a
+     * displacement from it, so a window the caller repositions every frame follows and
+     * keeps the offset it was dragged by. The displacement is clamped so the title bar
+     * stays on the canvas. A press on the bar that stays within a few pixels folds the
+     * window on release; one that travels past that drags it and does not fold it.
      *
-     * What goes in it is cut off at the window's edges and scrolls when there is more of
-     * it than fits, per ADR-0037. How much there is is what last frame's content came to,
-     * so the bar appears on the frame after the one that overflowed and a window whose
-     * content changes every frame sizes its thumb a frame behind.
+     * What goes in it is clipped to the window's edges and scrolls when there is more of
+     * it than fits. The content height is last frame's, so the bar appears on the frame
+     * after the one that overflowed, and a window whose content changes every frame sizes
+     * its thumb a frame behind.
      *
      * Pair every call with endWindow() whatever it answered: a collapsed window returns
      * false and still has to be closed.
      *
      * @param alpha what the window's background is drawn at, 1 for opaque
-     * @return whether what goes in it should be drawn, which a collapsed window says no to
+     * @return whether what goes in it should be drawn, false for a collapsed window
      **/
     bool window(const std::string& title, const glm::vec2& position, const glm::vec2& size, float alpha);
     void endWindow();
@@ -235,9 +234,8 @@ class Immediate {
      * How wide the next widget should be, instead of the rest of the row.
      *
      * Consumed by the widget that follows and forgotten after it, so it is set again for
-     * each one - which is what lets two scrubbers share a row without either of them
-     * owning a width. A separator is not one of the widgets it applies to: a rule that
-     * stops halfway across is not a narrower rule, it is a wrong one.
+     * each one, so two scrubbers can share a row without either of them owning a width.
+     * It does not apply to a separator, which always spans the row.
      *
      * @param width in pixels, or nothing at all to go back to the rest of the row
      **/
@@ -249,10 +247,9 @@ class Immediate {
      *
      * What an app asks before it acts on a click of its own, so that a press which
      * already pressed a button here does not also give an order to the scene behind it.
-     * ui::Cursor answers the same question for the retained tree (ADR-0038); this is the
-     * immediate layer's half of that rule.
+     * ui::Cursor does the same for the retained tree.
      *
-     * Answered from what the previous frame found, the same way a widget's own hover is:
+     * Computed from what the previous frame found, the same way a widget's own hover is:
      * an app asks this before it draws, and what it is asking about has not been drawn
      * yet.
      **/
@@ -290,7 +287,7 @@ class Immediate {
      * One tab of the open strip.
      *
      * A click on a tab takes effect at endTabBar(), so the frame that switches tabs still
-     * answers for the tab that was selected when it began. Without that, both the old tab
+     * reports the tab that was selected when it began. Without that, both the old tab
      * and the new one would draw what they hold on the frame between them.
      *
      * @return whether this is the selected tab, and so whether to draw what it holds
@@ -302,10 +299,11 @@ class Immediate {
      * Open a table of a fixed number of columns. Name each with column() before the first
      * headerRow() or nextRow().
      *
-     * A table given a height scrolls its rows inside it and keeps its header above them,
-     * per ADR-0046: it clips to that height, takes the wheel from whatever it is drawn in
-     * and draws a bar down its own right. One given no height is as tall as its rows and
-     * scrolls with whatever holds it, which is what a short table wants.
+     * A table given a height scrolls its own rows: it clips to that height, keeps its own
+     * scroll offset across frames and draws its own bar down its right. Its header row is
+     * drawn once above the region rather than in it. The wheel turns the innermost scrolling
+     * region under the cursor, so a table inside a window takes the wheel from the window.
+     * A table given no height is as tall as its rows and scrolls with whatever holds it.
      *
      * The room a bar would take is reserved whether or not there is anything to scroll,
      * so the columns of a table that gains a row do not re-flow.
@@ -357,7 +355,7 @@ class Immediate {
     struct Retained final {
         Retained() noexcept;
 
-        std::uint64_t frame;  /**< the last frame that asked for it, which is what ages it out **/
+        std::uint64_t frame;  /**< the last frame that asked for it, which it is aged out from **/
         unsigned int tab;  /**< which tab of a strip is selected **/
         float scroll;      /**< how far the content is scrolled up, in pixels **/
         float content;     /**< how tall what it held came to last frame **/
@@ -398,7 +396,7 @@ class Immediate {
         float right;         /**< and the right edge **/
         Id id;               /**< whose scroll and content the one being written are **/
         Id scroll;           /**< the id its scrollbar answers the cursor as **/
-        glm::vec2 bodyMin;   /**< the part of it below the title bar, which is what is cut to **/
+        glm::vec2 bodyMin;   /**< the part of it below the title bar, which is clipped to **/
         glm::vec2 bodyMax;
         float contentTop;    /**< where its content would start if it were not scrolled **/
         bool scrolls;
@@ -465,9 +463,9 @@ class Immediate {
      * Offer a box to the cursor.
      *
      * Two things have to agree for a widget to be hovered: the cursor is in its box now,
-     * and nothing drawn over it took the cursor last frame. The first is what stops a
-     * widget answering a release that landed somewhere else; the second is what lets a
-     * window drawn later take the cursor from one under it.
+     * and nothing drawn over it took the cursor last frame. The first stops a widget
+     * reacting to a release that landed somewhere else; the second lets a window drawn
+     * later take the cursor from one under it.
      *
      * A disabled widget is offered nothing, which stops it lighting up as well as
      * answering.
@@ -486,7 +484,7 @@ class Immediate {
      * A window and a table each have one, so the region is passed rather than read: the
      * bar is drawn inside the rectangle given, against the right of it.
      *
-     * @param id what the thumb answers the cursor as
+     * @param id the id the thumb is hit tested under
      * @param min the top left of the region the bar runs down
      * @param max its bottom right, which the bar is drawn against
      * @param view how much of the content the region shows, in pixels
@@ -547,10 +545,10 @@ class Immediate {
     glm::vec2 previousCursor_;
     glm::vec2 drag_;
 
-    Id hovered_;   /**< what the cursor was on last frame, which is what answers this one **/
+    Id hovered_;   /**< what the cursor was on last frame, which this frame uses **/
     Id hovering_;  /**< what it is on this frame, which the next one will use **/
     Id active_;    /**< what a press went down on **/
-    glm::vec2 pressAt_;  /**< and where it went down, which is what a travel is measured from **/
+    glm::vec2 pressAt_;  /**< and where it went down, which a travel is measured from **/
     float nextWidth_;  /**< what the next widget was told to be, or nothing **/
 
     std::vector<Id> ids_;

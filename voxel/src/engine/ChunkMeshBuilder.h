@@ -16,9 +16,9 @@ class MeshCache;
 /**
  * Turns a built mesh cache into device local geometry.
  *
- * A chunk is meshed once and drawn for the life of the process, which is the trade
- * vulkan::memory::DeviceBuffer is for - one staging copy at build time against the fastest memory
- * for every frame after it.
+ * A chunk is meshed once and drawn for the life of the process, so its geometry goes in a
+ * vulkan::memory::DeviceBuffer: one staging copy at build time, and the fastest memory for
+ * every frame after it.
  */
 class ChunkMeshBuilder {
  public:

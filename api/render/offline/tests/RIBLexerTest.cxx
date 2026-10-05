@@ -67,13 +67,12 @@ BOOST_AUTO_TEST_CASE(riblexer_unterminated_string_test) {
 
     BOOST_CHECK_EQUAL(tokens.size(), 1u);
     BOOST_CHECK(error.contains("unterminated string"));
-    // and it says where
+    // the error gives the position
     BOOST_CHECK(error.contains("column 9"));
 }
 
 /**
- * Whitespace is not significant, so an array spans lines - which is what the whitespace split
- * this replaced could not read.
+ * Whitespace is not significant, so an array spans lines.
  **/
 BOOST_AUTO_TEST_CASE(riblexer_array_across_lines_test) {
     std::vector<Token> tokens = lex("Polygon \"P\" \n[-100. 0. -100.\n 100. 0. 100.]\n");
@@ -126,8 +125,8 @@ BOOST_AUTO_TEST_CASE(riblexer_position_test) {
 }
 
 /**
- * Both encodings are part of the format and neither is in scope. Parsed as ASCII they become
- * nonsense rather than an error, which is what this refuses to do.
+ * Both encodings are part of the format and neither is supported. Parsed as ASCII they would
+ * produce nonsense rather than an error, so the lexer reports an error instead.
  **/
 BOOST_AUTO_TEST_CASE(riblexer_binary_rejected_test) {
     std::string error;
@@ -147,7 +146,7 @@ BOOST_AUTO_TEST_CASE(riblexer_unexpected_character_test) {
 }
 
 /**
- * The standard's own example file, which is the widest RIB in the tree: quoted strings,
+ * The standard's own example file, which covers the most RIB syntax in the tree: quoted strings,
  * bracketed arrays spanning lines, structure comments, unbracketed parameter values and every
  * number form.
  **/
@@ -172,8 +171,8 @@ BOOST_AUTO_TEST_CASE(riblexer_example_file_test) {
 }
 
 /**
- * peek() leaves the token for next(), which is what the parser above reads a request name with
- * before deciding whether it owns what follows.
+ * peek() leaves the token for next(). The reader uses it to read a request name before
+ * deciding whether it handles what follows.
  **/
 BOOST_AUTO_TEST_CASE(riblexer_peek_test) {
     std::istringstream stream("Format 640");

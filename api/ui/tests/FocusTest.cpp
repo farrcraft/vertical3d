@@ -93,7 +93,7 @@ BOOST_AUTO_TEST_CASE(the_focus_moves_forward_and_back_and_wraps) {
     BOOST_CHECK(fixture.ui->focusNext(true));
     BOOST_CHECK_EQUAL(focusedName(fixture.ui), "first");
 
-    // backwards is the same walk the other way, and wraps at the other end
+    // backwards is the same order the other way, and wraps at the other end
     BOOST_CHECK(fixture.ui->focusNext(false));
     BOOST_CHECK_EQUAL(focusedName(fixture.ui), "third");
     BOOST_CHECK(fixture.ui->focusNext(false));
@@ -128,7 +128,7 @@ BOOST_AUTO_TEST_CASE(a_hidden_subtree_is_skipped) {
 }
 
 /**
- * Depth is what orders the walk, and a flow box is the exception: it holds its children in
+ * Depth sets the tab order, and a flow box is the exception: it holds its children in
  * the order it places them, so a z index inside one changes nothing. This mirrors what
  * Arranger::walk does, and the two have to agree or the tab order is not the reading order.
  **/
@@ -226,7 +226,7 @@ BOOST_AUTO_TEST_CASE(a_hidden_container_is_skipped) {
 
 /**
  * A disabled subtree is skipped whole, the way a hidden one is: a group of controls greyed
- * out by the box around them must not be tabbed into - ADR-0059.
+ * out by the box around them must not be tabbed into.
  **/
 BOOST_AUTO_TEST_CASE(a_disabled_subtree_is_skipped) {
     Fixture fixture(ONE_CONTAINER);
@@ -277,8 +277,8 @@ BOOST_AUTO_TEST_CASE(a_disabled_component_cannot_be_focused) {
 
 /**
  * A component disabled while it held the focus answers no key and takes no characters, so
- * both reach the app's bindings. Tab and escape still move the focus off it, which is what
- * keeps one from being stuck on a control nobody can use.
+ * both reach the app's bindings. Tab and escape still move the focus off it, so the focus
+ * is never stuck on a control nobody can use.
  **/
 BOOST_AUTO_TEST_CASE(a_component_disabled_while_focused_takes_no_key) {
     Fixture fixture(ONE_CONTAINER);

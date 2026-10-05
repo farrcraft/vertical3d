@@ -38,8 +38,7 @@ struct Segment {
 };
 
 /**
- * A sink that keeps what it was handed, which is what makes an overlay assertable with no
- * renderer anywhere near it.
+ * A sink that stores what it receives, so an overlay can be tested without a renderer.
  **/
 class Recorder {
  public:
@@ -183,8 +182,8 @@ BOOST_AUTO_TEST_CASE(overlay_grid_spans_the_board_test) {
 
     for (const Segment& segment : recorder.segments()) {
         // every line runs the full extent of the board on one axis and sits on a tile
-        // boundary on the other, so the outline is the grid's own arithmetic rather than a
-        // second opinion about where the tiles are
+        // boundary on the other, so the outline uses the grid's own arithmetic rather than a
+        // separate calculation of where the tiles are
         const bool alongZ = segment.from.x == segment.to.x;
         if (alongZ) {
             BOOST_CHECK_CLOSE(segment.from.z, min.z, 0.01f);

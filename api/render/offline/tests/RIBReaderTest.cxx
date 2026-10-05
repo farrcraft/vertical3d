@@ -17,7 +17,7 @@
 namespace {
 
 /**
- * Counts what it was handed, which is what proves the parser without either renderer.
+ * Counts the requests it receives, so the reader can be tested without a renderer.
  **/
 class CountingHandler final : public v3d::render::offline::rib::Handler {
  public:
@@ -295,8 +295,8 @@ BOOST_AUTO_TEST_CASE(ribreader_points_polygons_test) {
 }
 
 /**
- * An unbracketed value is legal for a uniform parameter, and is why the declaration table
- * exists at all.
+ * An unbracketed value is legal for a uniform parameter; only the declaration table says
+ * how many values it takes.
  **/
 BOOST_AUTO_TEST_CASE(ribreader_unbracketed_parameter_test) {
     CountingHandler handler;
@@ -324,7 +324,8 @@ BOOST_AUTO_TEST_CASE(ribreader_declare_then_use_test) {
 
 /**
  * An undeclared parameter with an array is recoverable, because the array bounds itself. One
- * without an array is not, and saying so is better than reading the next request as a value.
+ * without an array is not, and is reported as an error rather than reading the next request
+ * as a value.
  **/
 BOOST_AUTO_TEST_CASE(ribreader_undeclared_parameter_test) {
     CountingHandler bracketed;
@@ -371,7 +372,7 @@ BOOST_AUTO_TEST_CASE(ribreader_sampling_requests_test) {
 }
 
 /**
- * A filter the reader does not know is reported and never reaches the handler, so the
+ * A filter the reader does not recognise is reported and never reaches the handler, so the
  * renderer keeps the filter it had. The rest of the scene still reads.
  **/
 BOOST_AUTO_TEST_CASE(ribreader_unknown_filter_test) {
@@ -388,7 +389,7 @@ BOOST_AUTO_TEST_CASE(ribreader_unknown_filter_test) {
 }
 
 /**
- * RIB's DepthOfField with no arguments asks for a pinhole, which RI writes as an infinite
+ * RIB's DepthOfField with no arguments sets a pinhole, which RI writes as an infinite
  * fstop, and a sample rate below one still takes a sample.
  **/
 BOOST_AUTO_TEST_CASE(ribreader_pinhole_and_rate_test) {
@@ -415,8 +416,7 @@ BOOST_AUTO_TEST_CASE(ribreader_pinhole_and_rate_test) {
 
 /**
  * An unrecognised request is reported once per name and its arguments are skipped, so the
- * request after it is still read. A scene that rendered nothing and a scene that was not
- * understood look identical from outside without this.
+ * request after it is still read.
  **/
 BOOST_AUTO_TEST_CASE(ribreader_unrecognised_request_test) {
     CountingHandler handler;
@@ -433,14 +433,14 @@ BOOST_AUTO_TEST_CASE(ribreader_unrecognised_request_test) {
     BOOST_REQUIRE_EQUAL(reader.unrecognised().size(), 2u);
     BOOST_CHECK_EQUAL(reader.unrecognised()[0], "Sides");
     BOOST_CHECK_EQUAL(reader.unrecognised()[1], "Displacement");
-    // and everything after them still arrived
+    // everything after them still arrived
     BOOST_CHECK_EQUAL(handler.count("WorldBegin"), 1u);
     BOOST_CHECK_EQUAL(handler.vertices_, 3u);
 }
 
 /**
  * MakeTexture is understood and makes nothing, because the image a scene names is the
- * texture; and the texture search path is a string the renderers are handed.
+ * texture; and the texture search path is a string the renderer receives.
  **/
 BOOST_AUTO_TEST_CASE(ribreader_texture_requests_test) {
     CountingHandler handler;
@@ -459,9 +459,8 @@ BOOST_AUTO_TEST_CASE(ribreader_texture_requests_test) {
 }
 
 /**
- * RIB writes a matrix in row major order under RI's row vector convention; glm stores column
- * major under a column vector one, so reading the floats in order is the conversion. A
- * transpose would undo it, which is why this applies the result rather than comparing storage.
+ * A matrix read in RIB's order needs no transpose to become glm's. The test checks the
+ * convention by applying the result to a point rather than comparing storage.
  **/
 BOOST_AUTO_TEST_CASE(ribreader_transform_convention_test) {
     CountingHandler handler;
@@ -497,7 +496,8 @@ BOOST_AUTO_TEST_CASE(ribreader_graphics_state_test) {
 }
 
 /**
- * A parse error says what and where rather than leaving a scene that quietly rendered nothing.
+ * A parse error gives the problem and its position, rather than leaving a scene that silently
+ * rendered nothing.
  **/
 BOOST_AUTO_TEST_CASE(ribreader_error_position_test) {
     CountingHandler handler;
@@ -547,9 +547,8 @@ BOOST_AUTO_TEST_CASE(ribreader_example_file_test) {
 
 /**
  * A light carries a handle, and a later Illuminate names it by that handle. RIB 3.03
- * writes it as a sequence number and later RIB writes a string; both are read, and it is a
- * string to the handler either way - a renderer keying a map on it should not have to know
- * which the file used.
+ * writes it as a sequence number and later RIB writes a string; both reach the handler as a
+ * string.
  **/
 BOOST_AUTO_TEST_CASE(ribreader_light_handles_test) {
     CountingHandler handler;
@@ -570,8 +569,8 @@ BOOST_AUTO_TEST_CASE(ribreader_light_handles_test) {
 }
 
 /**
- * An area light reaches the handler as an ordinary light. Sampling its shape is phase 4,
- * and a scene using one lighting nothing at all would be the worse answer.
+ * An area light reaches a handler that does not override areaLightSource() as an ordinary
+ * light, so a scene using one is still lit.
  **/
 BOOST_AUTO_TEST_CASE(ribreader_area_light_test) {
     CountingHandler handler;
@@ -583,8 +582,8 @@ BOOST_AUTO_TEST_CASE(ribreader_area_light_test) {
 }
 
 /**
- * Imager is how a scene says what a pixel nothing was drawn into is worth, which a scene would
- * otherwise have to say with a backdrop polygon.
+ * Imager names the shader run over the finished frame, and reaches the handler with its
+ * parameters.
  **/
 BOOST_AUTO_TEST_CASE(ribreader_imager_test) {
     CountingHandler handler;
@@ -636,7 +635,8 @@ BOOST_AUTO_TEST_CASE(ribreader_motion_block_test) {
 }
 
 /**
- * A primitive repeated inside a motion block deforms, which is not built: the first reaches
+ * A primitive repeated inside a motion block deforms, which the default handler does not
+ * build: the first reaches
  * the handler, the second is read and reported, and the request after the block still reads.
  **/
 BOOST_AUTO_TEST_CASE(ribreader_deforming_motion_test) {
@@ -662,8 +662,8 @@ BOOST_AUTO_TEST_CASE(ribreader_deforming_motion_test) {
 namespace {
 
 /**
- * A renderer that can do what the reader's defaults stand in for: sample an area light, make
- * a texture, and build a primitive that deforms.
+ * A handler that implements what the default bodies leave out: sample an area light, make a
+ * texture, and build a primitive that deforms.
  **/
 class CapableHandler final : public v3d::render::offline::rib::Handler {
  public:
@@ -714,7 +714,7 @@ class CapableHandler final : public v3d::render::offline::rib::Handler {
 };  // namespace
 
 /**
- * What a renderer can do is the handler's to say: an area light, a texture to make and a
+ * A handler decides what it supports: an area light, a texture to make and a
  * deforming primitive each reach a handler that takes them, and nothing is reported.
  **/
 BOOST_AUTO_TEST_CASE(ribreader_capable_handler_test) {

@@ -35,13 +35,14 @@ class Program final {
      *
      * They are at the front and a run starts after them, because a default written as an
      * instruction the body runs would overwrite the value a scene bound on every pass over
-     * a grid. `Shader` runs them once and reads the answers out.
+     * a grid. `Machine::initialise()` runs them once, before a scene's values are written
+     * over them.
      **/
     std::size_t prologue = 0;
 
     /**
-     * The register a named symbol is, or -1. What a renderer binds a parameter or reads Ci
-     * through, when it did not keep the index the compiler gave it.
+     * The register holding a named symbol, or -1. A renderer that did not keep the index
+     * the compiler gave a symbol uses this to bind a parameter or read Ci.
      **/
     int symbol(const std::string & wanted) const;
 };

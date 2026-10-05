@@ -18,8 +18,8 @@ namespace v3d::render::offline::sl::syntax {
 /**
  * A function defined inside a shader.
  *
- * Recursion is rejected at the call graph rather than here: the machine has a register file
- * per shader run and no call stack, so a recursive shader has no meaning to give.
+ * The compiler rejects recursion by checking the call graph, because the machine has no
+ * call stack.
  **/
 class Function final {
  public:

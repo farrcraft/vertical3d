@@ -29,7 +29,7 @@ struct Difference final {
 
     /**
      * One line saying what was wrong and where. A reference test that reports only
-     * that two images differ costs an afternoon the first time it fires.
+     * that two images differ is hard to diagnose.
      **/
     std::string description() const;
 };
@@ -37,8 +37,8 @@ struct Difference final {
 /**
  * Compare two images channel by channel.
  *
- * The tolerance is there for float rounding across compilers, not for "close enough":
- * a test that needs a loose one is testing something it should not be.
+ * The tolerance covers float rounding across compilers, not "close enough". A test that
+ * needs a loose tolerance is checking the wrong thing.
  *
  * @param tolerance the largest per channel difference that still counts as a match
  **/

@@ -98,8 +98,8 @@ v3d::type::Model triangle(const std::string& texture) {
 BOOST_AUTO_TEST_SUITE(mesh_registry_test)
 
 /**
- * A path asked for twice is one upload and one handle - which is what lets a hundred props
- * drawn from one file cost one mesh.
+ * A path asked for twice is one upload and one handle, so a hundred props drawn from one file
+ * cost one mesh.
  **/
 BOOST_AUTO_TEST_CASE(a_path_loaded_twice_is_one_upload) {
     v3d::test::Headless headless(colourFormat, width, height);
@@ -163,10 +163,9 @@ BOOST_AUTO_TEST_CASE(two_models_naming_one_image_share_its_material) {
 }
 
 /**
- * A context that draws nothing - no colour format, so no 2D pipeline can be built against it -
- * still uploads a texture and registers a textured mesh. Textures are the context's rather
- * than the quad renderer's, which asking for would have compiled a pipeline against nothing -
- * ADR-0082.
+ * A context with no colour format, so that no 2D pipeline can be built against it, still
+ * uploads a texture and registers a textured mesh. Textures belong to the device context, not
+ * to the quad renderer, so uploading one compiles no pipeline.
  **/
 BOOST_AUTO_TEST_CASE(a_context_that_draws_nothing_still_loads_textures) {
     v3d::test::Headless headless(VK_FORMAT_UNDEFINED, width, height);
@@ -185,7 +184,7 @@ BOOST_AUTO_TEST_CASE(a_context_that_draws_nothing_still_loads_textures) {
 
 /**
  * A file whose surfaces differ is one entry in parts, each with its own range and base colour,
- * in the order the model holds them - ADR-0069.
+ * in the order the model holds them.
  **/
 BOOST_AUTO_TEST_CASE(a_file_in_parts_is_an_entry_in_parts) {
     v3d::test::Headless headless(colourFormat, width, height);
@@ -272,7 +271,8 @@ BOOST_AUTO_TEST_CASE(a_part_outside_the_model_is_refused) {
 
 /**
  * A mesh released while the frame drawing it is still in flight is not destroyed under that
- * frame - the same rule ADR-0061 gives a texture. A silent log is the assertion.
+ * frame, as with a texture: it is destroyed once the frames in flight have finished. The case
+ * passes if the validation layer reports no errors.
  **/
 BOOST_AUTO_TEST_CASE(a_mesh_released_in_flight_outlives_its_frame) {
     v3d::test::Headless headless(colourFormat, width, height);

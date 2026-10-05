@@ -15,8 +15,8 @@ namespace v3d::render::realtime::vulkan::memory {
  * Pick a memory type the device offers that both an allocation is allowed to use and the
  * caller can live with.
  *
- * Every allocation in the renderer goes through this rather than through a suballocating
- * allocator - there are two kinds of allocation, and each is made once at load time.
+ * Allocator's direct path chooses every memory type through this. The suballocated path
+ * leaves the choice to the Vulkan Memory Allocator.
  *
  * @param device the physical device whose memory types are being chosen from
  * @param bits the memoryTypeBits a VkMemoryRequirements reported for the allocation

@@ -12,9 +12,8 @@
 namespace v3d::render::realtime::vulkan::pipeline {
 
 /**
- * What is bound at set 1 for a draw - the per material frequency of the binding
- * convention. A material outlives the frames that draw with it, so the set is allocated
- * once rather than per frame.
+ * What is bound at set 1 for a draw: per material data. A material outlives the frames that
+ * draw with it, so the set is allocated once rather than per frame.
  **/
 struct Material final {
     Material() noexcept;

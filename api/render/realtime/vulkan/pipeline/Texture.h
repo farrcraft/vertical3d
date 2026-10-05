@@ -26,8 +26,8 @@ namespace v3d::render::realtime::vulkan::pipeline {
 struct Texture final {
     /**
      * What a descriptor write names to sample this texture, in the layout the image is left in
-     * for sampling: a depth image read only for depth, as the recorder leaves one - ADR-0044 -
-     * and a colour one read only for shaders.
+     * for sampling: DEPTH_READ_ONLY_OPTIMAL for a depth image, as the recorder leaves one, and
+     * SHADER_READ_ONLY_OPTIMAL for a colour one.
      **/
     VkDescriptorImageInfo descriptor() const noexcept {
         VkDescriptorImageInfo info{};

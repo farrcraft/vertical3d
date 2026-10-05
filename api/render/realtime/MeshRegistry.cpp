@@ -181,7 +181,7 @@ std::string MeshRegistry::acquire(const Source& source, Part* part) {
         }
 
         Albedo albedo;
-        // a lit albedo is decoded to linear before it is lit - ADR-0066
+        // a lit albedo is decoded to linear before it is lit
         albedo.texture = textures->texture(image, vulkan::memory::TextureFactory::Encoding::Srgb);
         albedo.material = textures->material(albedo.texture);
         albedo.users = 0;

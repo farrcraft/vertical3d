@@ -73,7 +73,7 @@ std::vector<Sampler::Sample> Sampler::pixel(unsigned int column, unsigned int ro
     }
 
     // time and the lens are stratified too, each over the samples in an order of its own, so
-    // that a sample's position does not decide when it looks or where on the lens it looks from
+    // that a sample's position does not decide its time or its point on the lens
     std::vector<unsigned int> times(count);
     std::vector<unsigned int> lenses(count);
     for (unsigned int k = 0; k < count; k++) {

@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_load_test) {
 
     const v3d::config::SpriteSheet terrain = loaded.get("terrain");
     BOOST_CHECK_EQUAL(terrain.name(), "terrain");
-    // the image is named rather than loaded, per ADR-0020
+    // the image is named rather than loaded
     BOOST_CHECK_EQUAL(terrain.image(), "terrain.png");
     BOOST_CHECK_EQUAL(terrain.width(), 256);
     BOOST_CHECK_EQUAL(terrain.height(), 128);
@@ -65,7 +65,7 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_load_test) {
 
 /**
  * The document holds pixels and the call gives back a fraction, so an author reads the sheet
- * in the units the image is in and a shader gets what it wants.
+ * in the units the image is in and a shader gets the fraction it needs.
  **/
 BOOST_AUTO_TEST_CASE(sprite_sheets_convert_pixels_to_uv_test) {
     v3d::config::SpriteSheets loaded(logger());
@@ -96,10 +96,9 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_convert_pixels_to_uv_test) {
 }
 
 /**
- * A sheet with no name, no image or no size is not one, and a region running off the sheet
- * would give a uv outside 0..1 - which samples whatever the wrap mode decides rather than
- * reporting anything. Both are refused, and the rest of the document is kept: one bad entry
- * should not cost an app every sprite it has.
+ * A sheet with no name, no image or no size is refused, and so is a region running off its
+ * sheet. The rest of the document is kept: one bad entry should not cost an app every sprite
+ * it has.
  **/
 BOOST_AUTO_TEST_CASE(sprite_sheets_reject_what_they_cannot_use_test) {
     const char* const mixed =
@@ -152,11 +151,9 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_missing_document_test) {
  * The document write() emits is the document load() reads, through the text form that
  * actually reaches a file.
  *
- * This is the case the write side exists for. A packer that emitted the format from its own
- * code would be a second implementation of it, and the two would drift the way this format
- * specialises in: place() drops a region it does not like and keeps the sheet, get() answers
- * a missing name with an empty region, and uv() answers false - so a sheet that stopped
- * being emitted correctly draws as nothing and reports nothing.
+ * A sheet written wrongly would fail silently: place() drops a region it rejects and keeps
+ * the sheet, get() returns an empty region for a missing name, and uv() returns false. This
+ * round trip guards against that.
  **/
 BOOST_AUTO_TEST_CASE(sprite_sheets_round_trip_test) {
     v3d::config::SpriteSheets loaded(logger());
@@ -231,8 +228,8 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_build_a_document_test) {
 }
 
 /**
- * Packing one sheet of several replaces that sheet and leaves the rest alone, which is the
- * whole of what a tool needs to keep a document it only partly owns.
+ * Packing one sheet of several replaces that sheet and leaves the rest alone, so a tool can
+ * update a document it only partly owns.
  **/
 BOOST_AUTO_TEST_CASE(sprite_sheets_add_replaces_one_sheet_test) {
     v3d::config::SpriteSheets loaded(logger());
@@ -256,7 +253,7 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_add_replaces_one_sheet_test) {
     BOOST_REQUIRE_EQUAL(terrain.sprites().size(), 1u);
     BOOST_CHECK(!terrain.has("water"));
 
-    // and the sheet nobody packed is untouched, which is what loading before writing buys
+    // and the sheet nobody packed is untouched, because the tool loaded before writing
     const v3d::config::SpriteSheet actors = loaded.get("actors");
     BOOST_CHECK_EQUAL(actors.image(), "actors.png");
     BOOST_CHECK(actors.has("player"));

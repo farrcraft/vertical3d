@@ -16,8 +16,8 @@
 namespace v3d::type::animation {
 
 /**
- * Every joint's translation, rotation and scale, local to its parent, in the skeleton's order -
- * what a clip sampled at a time gives - ADR-0070.
+ * Every joint's translation, rotation and scale, local to its parent, in the skeleton's order.
+ * Sampling a clip at a time gives one.
  **/
 struct Pose final {
     struct Joint final {
@@ -30,7 +30,7 @@ struct Pose final {
 };
 
 /**
- * @return the skeleton standing in its rest pose, which is what a clip that animates only some
+ * @return the skeleton standing in its rest pose, the base a clip that animates only some
  *         joints is sampled over
  **/
 Pose rest(const Skeleton& skeleton);

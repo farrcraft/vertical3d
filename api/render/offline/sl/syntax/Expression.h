@@ -14,9 +14,9 @@ namespace v3d::render::offline::sl::syntax {
 /**
  * A node of the syntax tree.
  *
- * The nodes are data the compiler walks rather than objects with behaviour, so their
- * members are public and there are no accessors - the same shape `ParameterList::Parameter`
- * already has. A consumer reads `kind` and casts to the class it names.
+ * The nodes are data the compiler traverses rather than objects with behaviour, so their
+ * members are public and there are no accessors, as in `ParameterList::Parameter`. A
+ * consumer reads `kind` and casts to the class it names.
  **/
 class Expression {
  public:

@@ -54,8 +54,8 @@ void Presenter::createSync() {
     VkSemaphoreCreateInfo semaphoreInfo{};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-    // one per frame rather than per image: a frame waits on it before drawing, which is the
-    // ring's turn rather than the chain's
+    // one per frame rather than per image: a frame waits on it before drawing, and frames are
+    // counted by the ring, not by the chain
     for (uint32_t index = 0; index < ring_->framesInFlight(); index++) {
         VkSemaphore semaphore = VK_NULL_HANDLE;
         VkResult result = vkCreateSemaphore(device_->handle(), &semaphoreInfo, nullptr, &semaphore);
@@ -166,7 +166,7 @@ Presenter::Status Presenter::present(const Acquisition& acquisition) {
     submit.signalSemaphoreInfoCount = 1;
     submit.pSignalSemaphoreInfos = &signal;
 
-    // the ring's fence, which is what its next turn around waits on - ADR-0051
+    // the ring's fence, which its next turn around waits on
     result = vkQueueSubmit2(device_->graphicsQueue(), 1, &submit, ring_->fence());
     device::check(result, "Unable to submit a vulkan frame");
 

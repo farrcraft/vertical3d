@@ -38,7 +38,7 @@ const float characterWidth = 10.0f;
  * A ui engine holding one container, built by hand rather than loaded, plus the renderer
  * that places what it holds and the router that answers a cursor over it.
  *
- * Nothing is picked until something has been drawn, per ADR-0019, so every case here draws
+ * Nothing is picked until something has been drawn, so every case here draws
  * before it clicks.
  **/
 struct Fixture final {
@@ -67,7 +67,7 @@ struct Fixture final {
     }
 
     /**
-     * Place a component at a box and draw the container, which is what leaves it pickable.
+     * Place a component at a box and draw the container, which leaves it pickable.
      **/
     void place(const boost::shared_ptr<v3d::ui::Component>& component, const glm::vec2& corner,
         const glm::vec2& size) {
@@ -99,8 +99,7 @@ struct Fixture final {
 BOOST_AUTO_TEST_SUITE(cursor_test)
 
 /**
- * A button in a container answers a click by sending its command, which is what nothing did
- * before ADR-0038: a button outside a strip carried a bound event and nothing sent it.
+ * A button in a container sends its command when it is clicked, as one on a strip does.
  **/
 BOOST_AUTO_TEST_CASE(a_button_in_a_container_sends_its_command) {
     Fixture fixture;
@@ -117,8 +116,8 @@ BOOST_AUTO_TEST_CASE(a_button_in_a_container_sends_its_command) {
 }
 
 /**
- * A press that lands on nothing pickable is not taken, so a hud of labels over a scene leaves
- * the scene clickable - which is what ADR-0034's pickable() default of false is for.
+ * A press that lands on nothing pickable is not taken. pickable() is false by default, so a
+ * hud of labels over a scene leaves the scene clickable.
  **/
 BOOST_AUTO_TEST_CASE(a_press_on_nothing_pickable_falls_through) {
     Fixture fixture;
@@ -138,7 +137,7 @@ BOOST_AUTO_TEST_CASE(a_press_on_nothing_pickable_falls_through) {
 }
 
 /**
- * Nothing is picked until it has been drawn, per ADR-0019, so a router asked before the first
+ * Nothing is picked until it has been drawn, so a router asked before the first
  * frame answers nothing rather than guessing.
  **/
 BOOST_AUTO_TEST_CASE(nothing_is_picked_before_anything_is_drawn) {
@@ -153,8 +152,8 @@ BOOST_AUTO_TEST_CASE(nothing_is_picked_before_anything_is_drawn) {
 }
 
 /**
- * A check box sends its command and marks nothing: whatever answers the command sets checked(),
- * so the mark cannot disagree with what the item reports - ADR-0019.
+ * A check box sends its command and marks nothing: whatever handles the command sets
+ * checked(), so the mark cannot disagree with what the item reports.
  **/
 BOOST_AUTO_TEST_CASE(a_check_box_sends_its_command_and_marks_nothing) {
     Fixture fixture;
@@ -314,7 +313,7 @@ BOOST_AUTO_TEST_CASE(the_hover_follows_the_component_a_press_would_land_on) {
 
 /**
  * A component that takes no press takes no hover either, so a label laid over a scene does
- * not flicker as the cursor crosses it - ADR-0034's pickable() decides both.
+ * not flicker as the cursor crosses it: pickable() decides both.
  **/
 BOOST_AUTO_TEST_CASE(a_component_that_is_not_pickable_is_not_hovered) {
     Fixture fixture;
@@ -331,9 +330,8 @@ BOOST_AUTO_TEST_CASE(a_component_that_is_not_pickable_is_not_hovered) {
 
 /**
  * A page the player has left keeps the box it held while it was up, so offering a point to
- * every page of a bar lets a component nobody can see answer for the one they are looking
- * at. Only the chosen page is walked, which is what TabBar's header says and what
- * Arranger::walk already does.
+ * every page of a bar would let a hidden component take a press meant for the visible one.
+ * Only the chosen page is offered the point, as only the chosen page is laid out.
  **/
 BOOST_AUTO_TEST_CASE(a_page_that_is_not_up_is_not_picked) {
     Fixture fixture;
@@ -346,7 +344,7 @@ BOOST_AUTO_TEST_CASE(a_page_that_is_not_up_is_not_picked) {
         boost::make_shared<v3d::ui::component::TabPage>();
     second->label("Two");
 
-    // one button on each page, in the same place, which is what a settings screen with two
+    // one button on each page, in the same place, as on a settings screen with two
     // pages of controls looks like
     const boost::shared_ptr<v3d::ui::component::Button> onFirst =
         boost::make_shared<v3d::ui::component::Button>();
@@ -391,11 +389,9 @@ BOOST_AUTO_TEST_CASE(a_page_that_is_not_up_is_not_picked) {
 /**
  * Every component that carries a command sends it as a destination event.
  *
- * ADR-0017 splits a sink's traffic into the source half and the destination half, and an app
- * that drops everything that is not a destination - which is what the ADR asks for - never
- * sees a command that was not stamped. Button and MenuItem stamped theirs from the start and
- * the rest did not, so a check box worked in a test that read the event and did nothing in
- * an app that routed it.
+ * A listener that drops every event that is not a destination never sees an unmarked
+ * command, so a control that did not mark its event would work in a test that reads the
+ * event and do nothing in an app that routes it.
  **/
 BOOST_AUTO_TEST_CASE(a_command_is_sent_as_a_destination) {
     Fixture fixture;
@@ -423,8 +419,8 @@ BOOST_AUTO_TEST_CASE(a_command_is_sent_as_a_destination) {
 
 /**
  * A disabled component is never offered the point: it sends nothing, and the hover the
- * cursor would have written on it is not written either - which is the half of ADR-0059
- * that keeps "disabled" from being undone by a cursor passing over it.
+ * cursor would have written on it is not written either, so a cursor passing over it
+ * cannot undo its disabled look.
  **/
 BOOST_AUTO_TEST_CASE(a_disabled_button_is_neither_picked_nor_lit) {
     Fixture fixture;

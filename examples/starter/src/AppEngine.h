@@ -15,8 +15,8 @@
 #include <entt/entt.hpp>
 
 /**
- * An application is a subclass of the game engine, overriding the three things the loop
- * calls: tick, render and shutdown.
+ * An application is a subclass of the game engine. The engine calls start() once before
+ * the loop, tick() and render() every frame, and release() once after it.
  **/
 class AppEngine final : public v3d::engine::Engine {
  public:

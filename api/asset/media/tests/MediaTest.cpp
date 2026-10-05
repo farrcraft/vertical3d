@@ -24,8 +24,8 @@ boost::shared_ptr<v3d::asset::Manager> manager() {
 };  // namespace
 
 /**
- * Registering the media loaders is what lets a manager load a picture or a model by its
- * extension; one that has not been told about them knows only documents.
+ * Once the media loaders are registered, a manager loads a picture or a model by its
+ * extension. A manager without them loads only documents.
  **/
 BOOST_AUTO_TEST_CASE(media_registered_by_extension_test) {
     auto assets = manager();

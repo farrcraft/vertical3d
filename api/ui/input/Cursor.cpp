@@ -61,9 +61,8 @@ void strips(const boost::shared_ptr<Container>& container,
  * Toolbar writes onto the buttons it holds, so a button in a tree lights up the way one
  * on a strip does rather than by a second mechanism.
  *
- * A button that cannot be used is left alone in both directions. The state it carries lasts
- * as long as the cursor is where it is and being disabled does not, so one must never be
- * written over the other - ADR-0059.
+ * A button that cannot be used is left alone in both directions. Its hover state is
+ * transient and being disabled is not, so the one must never overwrite the other.
  **/
 void lit(const boost::shared_ptr<Component>& component, bool on) {
     if (!component || component->type() != component::Type::Button || !usable(*component)) {
@@ -104,8 +103,8 @@ void Cursor::hover(const boost::shared_ptr<Component>& component) {
 }
 
 bool Cursor::motion(const glm::vec2& point) {
-    // a press that has not come up goes on being followed wherever the cursor is, which is
-    // what drags a thumb off the bar it started on without losing it
+    // a press that has not come up goes on being followed wherever the cursor is, so a
+    // thumb dragged off the bar it started on is not lost
     const boost::shared_ptr<Component> holding = held_.lock();
     if (holding) {
         follow(holding, point);
@@ -155,11 +154,11 @@ bool Cursor::press(const glm::vec2& point) {
     if (!ui_) {
         return false;
     }
-    // a press is what says "type here", so it moves the focus wherever it lands - onto a
-    // component that asked to be focusable, and off whatever had it otherwise. ADR-0040
+    // a press moves the focus wherever it lands: onto a focusable component, and otherwise
+    // off whatever had it
     ui_->focus(boost::shared_ptr<Component>());
-    // any_of stops at the first container that takes the press, which is what keeps a
-    // press from reaching more than one ui
+    // any_of stops at the first container that takes the press, so a press never reaches
+    // more than one ui
     return std::ranges::any_of(ui_->containers(),
         [this, &point](const boost::shared_ptr<Container>& container) {
             return container && container->visible() && press(container, point);
@@ -203,8 +202,8 @@ bool Cursor::release(const glm::vec2& point) {
 }
 
 void Cursor::follow(const boost::shared_ptr<Component>& holding, const glm::vec2& point) const {
-    // the components a press drags, and the one place that says so - exhaustive, so a type
-    // added to the enum is named here and says whether it follows the cursor (ADR-0047)
+    // the components a press drags. Exhaustive, so a type added to the enum fails the build
+    // here until it says whether it follows the cursor
     switch (holding->type()) {
         case component::Type::Scrollbar:
             boost::dynamic_pointer_cast<component::Scrollbar>(holding)->drag(point);
@@ -216,7 +215,7 @@ void Cursor::follow(const boost::shared_ptr<Component>& holding, const glm::vec2
             break;
         case component::Type::TextBox:
             // the press left the anchor where it landed, so following the cursor selects the
-            // run between the two - ADR-0057
+            // run between the two
             place(boost::dynamic_pointer_cast<component::TextBox>(holding), point, true);
             break;
         case component::Type::Undefined:
@@ -243,8 +242,8 @@ void Cursor::follow(const boost::shared_ptr<Component>& holding, const glm::vec2
 void Cursor::act(const boost::shared_ptr<Component>& component, const glm::vec2& point) {
     switch (component->type()) {
         case component::Type::SelectList: {
-            // which row was clicked is the list's to know and the app's to interpret: the
-            // list moves its selection and sends its command, per ADR-0038
+            // the list moves its selection and sends its command; what the row means is
+            // for the app to decide
             const boost::shared_ptr<component::SelectList> list =
                 boost::dynamic_pointer_cast<component::SelectList>(component);
             const int row = list->at(point);
@@ -298,7 +297,7 @@ void Cursor::act(const boost::shared_ptr<Component>& component, const glm::vec2&
         case component::Type::Undefined:
         case component::Type::VerticalBox:
             // nothing here owns a place a press moves it to, so the press is the command and
-            // nothing else - which is what falls out of the switch into dispatch()
+            // nothing else, and it falls out of the switch into dispatch()
             break;
     }
     dispatch(component);
@@ -315,8 +314,8 @@ void Cursor::place(const boost::shared_ptr<component::TextBox>& box, const glm::
 
 void Cursor::dispatch(const boost::shared_ptr<Component>& component) const {
     // a component does not own the state it shows: the click sends the command and marks
-    // nothing, and whatever answers it sets checked() - ADR-0019. Which components carry
-    // one is ui::command()'s to know, shared with the key that activates the same thing
+    // nothing, and whatever handles it sets checked(). ui::command() decides which
+    // components carry one, for a key and a click alike
     send(dispatcher_.get(), command(component));
 }
 

@@ -23,7 +23,7 @@
 namespace {
 
 /**
- * The button the immediate layer answers, which is the one a binding config calls "left".
+ * The button the immediate layer responds to, named as a binding config names it.
  **/
 const char* const primaryButton = "left";
 
@@ -143,7 +143,7 @@ bool Controller::release() {
  **/
 void Controller::suspend(bool suspended) {
     scene_->state()->pause(suspended);
-    // the menu wants a pointer, and leaving relative mode is what shows one
+    // the menu needs a pointer, and leaving relative mode shows one
     window()->relativeMouse(!suspended);
 }
 

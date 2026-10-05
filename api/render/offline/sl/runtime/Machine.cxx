@@ -20,8 +20,8 @@ namespace v3d::render::offline::sl::runtime {
 namespace {
 
 /**
- * A shader with a loop nothing ends would otherwise hang a render rather than fail it, and a
- * hung render says nothing about why.
+ * The most instructions one run executes before it fails. Without a limit, a shader with an
+ * endless loop would hang a render rather than fail it, and give no reason.
  **/
 const std::size_t LIMIT = 4000000;
 
@@ -172,8 +172,8 @@ void Machine::arithmetic(const Instruction & instruction) {
     const unsigned int count = target.storage() == Storage::VARYING ? batch_ : 1;
     const unsigned int wide = target.components();
 
-    // a matrix times a matrix is the product rather than a component at a time, which is the
-    // one place the shapes and the maths disagree
+    // a matrix times a matrix is the matrix product, the only multiplication that is not
+    // done a component at a time
     if (instruction.opcode == Opcode::MULTIPLY &&
         left.type() == Type::MATRIX && right.type() == Type::MATRIX) {
         for (unsigned int point = 0; point < count; point++) {
@@ -189,8 +189,8 @@ void Machine::arithmetic(const Instruction & instruction) {
             continue;
         }
         for (unsigned int i = 0; i < wide; i++) {
-            // a one component operand is a scale over the whole of the other, which is RI's
-            // promotion rather than a zero fill
+            // a one component operand is a scale over the whole of the other, as RI promotes
+            // it, rather than a zero fill
             const float a = left.component(point, left.components() == 1 ? 0 : i);
             const float b = right.component(point, right.components() == 1 ? 0 : i);
             target.component(point, i, combine(instruction.opcode, a, b));
@@ -257,8 +257,7 @@ void Machine::unary(const Instruction & instruction) {
 glm::mat4x4 Machine::space(const std::string & name) {
     glm::mat4x4 matrix(1.0f);
     if (renderer_ == nullptr || !renderer_->space(name, &matrix)) {
-        // the value still arrives, in the space it was already in: a scene that named a space
-        // nothing knows renders in the wrong place rather than not at all, and says so
+        // the value still arrives, unchanged in the space it was already in
         report("the coordinate space \"" + name + "\" is not one this renderer knows");
     }
     return matrix;
@@ -317,8 +316,8 @@ bool Machine::nextLight() {
         std::vector<char> reached(batch_, 1);
         bool ambient = false;
         if (!renderer_->light(index, surface, &direction, &colour, &reached, &ambient) || ambient) {
-            // an ambient light is not one an illuminance loop sees: it has no direction to
-            // test against the cone, and ambient() is where it is summed instead
+            // an illuminance loop skips an ambient light: it has no direction to test against
+            // the cone, and ambient() sums it instead
             continue;
         }
         std::vector<char> lanes = round.base;
@@ -485,8 +484,8 @@ bool Machine::execute(const Program & program, std::size_t from, std::size_t unt
     loops_.clear();
     frames_.clear();
     illuminations_.clear();
-    // every point until an illuminate or a solar says otherwise, which is what makes a
-    // light shader with neither light the whole batch
+    // every point until an illuminate or a solar narrows it, so a light shader with neither
+    // lights the whole batch
     lit_.assign(batch_, 1);
 
     std::size_t pc = from;
@@ -579,7 +578,7 @@ bool Machine::execute(const Program & program, std::size_t from, std::size_t unt
                 }
                 break;
             case Opcode::LOOP_END:
-                // a lane that took a continue comes back for the next pass; one that broke
+                // a lane that took a continue comes back for the next iteration; one that broke
                 // does not, because break cleared it from the loop's own lanes
                 masks_.back() = loops_.back().lanes;
                 pc = static_cast<std::size_t>(anyLive() ? instruction.target : loops_.back().exit);
@@ -622,7 +621,7 @@ bool Machine::execute(const Program & program, std::size_t from, std::size_t unt
             case Opcode::ILLUMINATE:
             case Opcode::SOLAR:
                 // all three narrow the batch to the points one light reaches, and all
-                // three leave over the body when that is none of them
+                // three skip the body when the light reaches none of them
                 if (!admit(instruction)) {
                     pc = static_cast<std::size_t>(instruction.target);
                     continue;

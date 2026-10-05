@@ -34,8 +34,8 @@ class ParameterList final {
     std::size_t size() const;
 
     /**
-     * Every parameter the request carried, in name order. What a consumer that binds onto
-     * something of its own walks, rather than asking for the names it already knows.
+     * Every parameter the request carried, in name order. A consumer that binds parameters
+     * onto its own variables iterates these, rather than looking up names it knows in advance.
      **/
     std::vector<std::string> names() const;
 
@@ -64,9 +64,9 @@ class ParameterList final {
 
     /**
      * Sixteen floats as a matrix, or the identity. RIB writes a matrix in row major
-     * order under RI's row vector convention and glm stores column major under a column
-     * vector one, so reading the floats in order is the change of convention - a
-     * transpose here would undo it.
+     * order under RI's row vector convention, and glm stores column major under a column
+     * vector one. Reading the floats in order therefore converts between the conventions,
+     * and a transpose here would undo it.
      **/
     glm::mat4x4 matrix(const std::string & name) const;
 

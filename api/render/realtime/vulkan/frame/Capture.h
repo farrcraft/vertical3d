@@ -26,12 +26,13 @@ class Swapchain;
 
 /**
  * A drawn image read back off the device and written out as a png - a presented frame off the
- * swapchain, or an offscreen target a pass drew into per ADR-0031.
+ * swapchain, or an offscreen target a pass drew into.
  *
  * Copying and writing are two calls because a queue submit sits between them: record() adds
  * the copy to the command buffer the frame is already being drawn into, and write() reads
- * the result once that submit has completed. What orders the two is the caller's - a fence
- * it already waits on, or a device wait.
+ * the result once that frame's fence has signalled. The caller is responsible for that
+ * synchronisation - a fence it already waits on, or a device wait. A record() with no
+ * write() after it is not detected: the copy runs and is discarded.
  *
  * The readback allocation is made by the first record() and reused by every later one, so a
  * renderer that holds a Capture and never asks for one pays nothing for it.
@@ -40,7 +41,7 @@ class Capture final {
  public:
     /**
      * What a capture reads from. A swapchain image and a render target differ only in these
-     * four things, which is why record() takes them rather than either class.
+     * four things, so record() takes them rather than either class.
      **/
     struct Source {
         Source() noexcept;
@@ -51,8 +52,8 @@ class Capture final {
         VkImageLayout layout;  /**< what it is in when record() is called, and what it is left in **/
         /**
          * Whether to copy the depth aspect rather than colour. Only a D32_SFLOAT image can be
-         * read this way, because it is the one depth format whose copy is the float a test
-         * asserts, and it is the one this tree prefers.
+         * read this way, because its copy is one plain float per texel, which a test compares.
+         * It is also the depth format the renderer prefers.
          **/
         bool depth;
     };

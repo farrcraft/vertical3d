@@ -18,15 +18,15 @@
 namespace v3d::render::offline::rib {
 
 /**
- * What a RIB reader hands a renderer, per ADR-0025.
+ * The interface a RIB reader calls on a renderer, one method per request.
  *
- * The methods mirror the RI request set, which is what decides what a scene can say. A
- * method that does not correspond to an RI request does not belong here.
+ * The methods mirror the RI request set. A method that does not correspond to an RI request
+ * does not belong here.
  *
- * **Every method has an empty body rather than being pure virtual.** The RI standard asks
+ * **Every method has an empty body rather than being pure virtual.** The RI standard requires
  * a renderer to accept a request for a feature it does not support, and a request added
- * later then breaks no handler. The cost is that a misspelled override is silent, so
- * every override carries `override`.
+ * later then breaks no handler. A misspelled override is silent as a result, so every
+ * override carries `override`.
  **/
 class Handler {
  public:
@@ -78,8 +78,8 @@ class Handler {
         (void)yon;
     }
     /**
-     * @param fstop an infinite one is a pinhole, which is also what RIB's DepthOfField
-     *        with no arguments asks for
+     * @param fstop an infinite one is a pinhole; RIB's DepthOfField with no arguments also
+     *        sets a pinhole
      **/
     virtual void depthOfField(float fstop, float focalLength, float focalDistance) {
         (void)fstop;
@@ -142,8 +142,8 @@ class Handler {
     }
     /**
      * Each transform request up to motionEnd() is the transformation at the next of these
-     * times. A primitive inside the block reaches the handler once, at the first time: the
-     * reader reports the rest, since only a transform moves.
+     * times. A primitive inside the block reaches the handler once, at the first time. Each
+     * later copy of it goes to deformation().
      **/
     virtual void motionBegin(const std::vector<float> & times) { (void)times; }
     virtual void motionEnd() { }
@@ -164,8 +164,8 @@ class Handler {
      * @param handle what a later Illuminate names this light by
      *
      * RIB 3.03 writes the handle as a sequence number and later RIB writes a string. Both
-     * are read and it is a string here either way, because a renderer keying a map on it
-     * should not have to know which the file used.
+     * are read and it is a string here either way, so a renderer keying a map on it does
+     * not need to handle both forms.
      **/
     virtual void lightSource(const std::string & name, const std::string & handle,
         const ParameterList & parameters) {
@@ -175,8 +175,8 @@ class Handler {
     }
     /**
      * A light whose shape matters, bound to the geometry that follows it. A renderer that
-     * cannot sample a light's area takes it as an ordinary light, which is what this does
-     * unless it is overridden - a scene using one still lights rather than going dark.
+     * cannot sample a light's area treats it as an ordinary light. The default body does
+     * this, so a scene that uses one is still lit.
      **/
     virtual void areaLightSource(const std::string & name, const std::string & handle,
         const ParameterList & parameters) {
@@ -184,9 +184,6 @@ class Handler {
     }
     /**
      * Turn a light on or off in the current attribute state.
-     *
-     * The reader recognised the handle and threw it away until now, which was correct only
-     * while nothing could turn a light off.
      **/
     virtual void illuminate(const std::string & handle, bool on) {
         (void)handle;
@@ -212,8 +209,8 @@ class Handler {
         (void)parameters;
     }
     /**
-     * The shader run over the finished framebuffer, which is how a scene says what a pixel
-     * nothing was drawn into is worth.
+     * The shader run over the finished framebuffer. A scene uses it to set the value of a
+     * pixel that nothing was drawn into.
      **/
     virtual void imager(const std::string & name, const ParameterList & parameters) {
         (void)name;
@@ -222,10 +219,10 @@ class Handler {
 
     // geometry
     /**
-     * Where a primitive after the first in a motion block goes, which is the same primitive at
-     * a later time - one that deforms. None by default: such a primitive is read, so the stream
-     * stays in step, and dropped, so it is drawn at the block's first time, and the reader
-     * lists it as unsupported.
+     * The handler that receives each primitive after the first in a motion block. Such a
+     * primitive is the same one at a later time, so it deforms. Null by default: the reader
+     * then reads the primitive to keep the stream in step, drops it, and lists it as
+     * unsupported, so the primitive is drawn at the block's first time.
      **/
     virtual Handler* deformation() { return nullptr; }
 

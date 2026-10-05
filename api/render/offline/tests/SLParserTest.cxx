@@ -41,8 +41,8 @@ std::vector<v3d::render::offline::sl::syntax::ShaderPtr> parse(const std::string
 }
 
 /**
- * The one statement of a shader whose body holds exactly one, as an expression - which is
- * what the precedence cases assert the shape of.
+ * The only statement of a shader whose body holds exactly one, as an expression. The
+ * precedence cases check its shape.
  **/
 v3d::render::offline::sl::syntax::ExpressionPtr only(const std::string & expression) {
     std::string error;
@@ -57,8 +57,8 @@ v3d::render::offline::sl::syntax::ExpressionPtr only(const std::string & express
 }
 
 /**
- * The operator of a binary node, or empty when the node is not one - which reads better in a
- * failure than a cast that would have been wrong.
+ * The operator of a binary node, or empty when the node is not one, so a failure shows an
+ * empty operator rather than the result of a wrong cast.
  **/
 std::string binary(const v3d::render::offline::sl::syntax::ExpressionPtr & expression) {
     if (!expression || expression->kind != Expression::Kind::BINARY) {
@@ -76,8 +76,8 @@ v3d::render::offline::sl::syntax::ExpressionPtr right(const v3d::render::offline
 }
 
 /**
- * The four standard surface shaders, as the RI specification writes them. They are what the
- * library compiles in, so a parser that cannot read them has nothing to run.
+ * The four standard surface shaders, as the RI specification writes them. The library
+ * compiles them in.
  **/
 const char* const CONSTANT =
 "surface constant() {\n"
@@ -152,8 +152,8 @@ const char* const SPOTLIGHT =
 };  // namespace
 
 /**
- * The four standard surface shaders parse, which is the whole of what makes a renderer able
- * to answer `Surface "matte"` against no files at all.
+ * The four standard surface shaders parse, so a renderer can resolve `Surface "matte"` with
+ * no shader files at all.
  **/
 BOOST_AUTO_TEST_CASE(slparser_standard_surface_shaders_test) {
     const char* const sources[] = { CONSTANT, MATTE, METAL, PLASTIC };
@@ -170,7 +170,7 @@ BOOST_AUTO_TEST_CASE(slparser_standard_surface_shaders_test) {
 }
 
 /**
- * And the four standard lights, which are where the three lighting constructs appear.
+ * The four standard lights parse; they contain the three lighting constructs.
  **/
 BOOST_AUTO_TEST_CASE(slparser_standard_light_shaders_test) {
     const char* const sources[] = { AMBIENTLIGHT, DISTANTLIGHT, POINTLIGHT, SPOTLIGHT };
@@ -187,8 +187,8 @@ BOOST_AUTO_TEST_CASE(slparser_standard_light_shaders_test) {
 
 /**
  * A parameter carries a type, an optional storage class, an optional output, and a default
- * that is not optional at all - SL has no uninitialised parameter, and the default is what a
- * scene that does not mention it gets.
+ * that is required: SL has no uninitialised parameter, and a scene that does not mention
+ * the parameter gets the default.
  **/
 BOOST_AUTO_TEST_CASE(slparser_parameters_test) {
     std::string error;
@@ -228,8 +228,9 @@ BOOST_AUTO_TEST_CASE(slparser_parameter_needs_a_default_test) {
 }
 
 /**
- * All five shader types parse. The two this phase does not run come back marked rather than
- * refused, so a scene carrying one is told what is unsupported rather than what is malformed.
+ * All five shader types parse. Displacement and volume shaders do not run, and come back
+ * marked rather than refused, so a scene carrying one is told what is unsupported rather
+ * than what is malformed.
  **/
 BOOST_AUTO_TEST_CASE(slparser_unsupported_shader_types_test) {
     std::string error;
@@ -249,8 +250,8 @@ BOOST_AUTO_TEST_CASE(slparser_unsupported_shader_types_test) {
 }
 
 /**
- * '.' is a dot product and '^' a cross, and both bind tighter than a multiply. Neither is
- * what a reader coming from another language expects, which is why each has a case.
+ * '.' is a dot product and '^' a cross product, and both bind tighter than a multiply.
+ * Both differ from C, so each has a case.
  **/
 BOOST_AUTO_TEST_CASE(slparser_dot_and_cross_test) {
     // a . b * c is (a . b) * c, since the dot binds tighter
@@ -258,7 +259,7 @@ BOOST_AUTO_TEST_CASE(slparser_dot_and_cross_test) {
     BOOST_CHECK_EQUAL(binary(product), "*");
     BOOST_CHECK_EQUAL(binary(left(product)), ".");
 
-    // and a * b ^ c is a * (b ^ c) for the same reason
+    // a * b ^ c is a * (b ^ c) for the same reason
     v3d::render::offline::sl::syntax::ExpressionPtr cross = only("a * b ^ c");
     BOOST_CHECK_EQUAL(binary(cross), "*");
     BOOST_CHECK_EQUAL(binary(right(cross)), "^");
@@ -268,14 +269,14 @@ BOOST_AUTO_TEST_CASE(slparser_dot_and_cross_test) {
     BOOST_CHECK_EQUAL(binary(dot), ".");
     BOOST_CHECK(right(dot)->kind == Expression::Kind::VARIABLE);
 
-    // and a '^' is not an exponent: pow() is what raises a number
+    // a '^' is not an exponent: pow() raises a number to a power
     v3d::render::offline::sl::syntax::ExpressionPtr power = only("pow(a, b)");
     BOOST_CHECK(power->kind == Expression::Kind::CALL);
 }
 
 /**
- * One case per precedence level, lowest to highest. Each asserts that the operator of the
- * level above is the root, which is what says the level below bound first.
+ * One case per precedence level, lowest to highest. Each checks that the looser operator is
+ * the root, which shows that the tighter one bound first.
  **/
 BOOST_AUTO_TEST_CASE(slparser_precedence_test) {
     // the ternary is the loosest, so everything else is inside its arms
@@ -317,7 +318,7 @@ BOOST_AUTO_TEST_CASE(slparser_precedence_test) {
     BOOST_CHECK_EQUAL(binary(scaled), "*");
     BOOST_CHECK_EQUAL(binary(right(scaled)), ".");
 
-    // and a dot product is looser than a unary minus
+    // a dot product is looser than a unary minus
     v3d::render::offline::sl::syntax::ExpressionPtr negated = only("-a . b");
     BOOST_CHECK_EQUAL(binary(negated), ".");
     BOOST_CHECK(left(negated)->kind == Expression::Kind::UNARY);
@@ -328,7 +329,7 @@ BOOST_AUTO_TEST_CASE(slparser_precedence_test) {
     BOOST_CHECK_EQUAL(binary(left(chain)), "-");
     BOOST_CHECK(right(chain)->kind == Expression::Kind::VARIABLE);
 
-    // and parentheses beat all of it
+    // parentheses override all of it
     v3d::render::offline::sl::syntax::ExpressionPtr grouped = only("(a + b) * c");
     BOOST_CHECK_EQUAL(binary(grouped), "*");
     BOOST_CHECK_EQUAL(binary(left(grouped)), "+");
@@ -336,7 +337,7 @@ BOOST_AUTO_TEST_CASE(slparser_precedence_test) {
 
 /**
  * A cast, with the space name that makes it a transform, and the triple it usually wraps.
- * Sixteen elements are a matrix; whether the count matches the type is the compiler's answer.
+ * Sixteen elements are a matrix; the compiler checks whether the count matches the type.
  **/
 BOOST_AUTO_TEST_CASE(slparser_cast_and_tuple_test) {
     v3d::render::offline::sl::syntax::ExpressionPtr cast = only("point \"world\" (0, 1, 2)");
@@ -417,8 +418,7 @@ BOOST_AUTO_TEST_CASE(slparser_statements_test) {
 }
 
 /**
- * An if with no else takes the nearest one, which is the dangling else every C-like grammar
- * has to answer for.
+ * An else binds to the nearest if, which resolves the dangling else of every C-like grammar.
  **/
 BOOST_AUTO_TEST_CASE(slparser_dangling_else_test) {
     std::string error;
@@ -436,8 +436,7 @@ BOOST_AUTO_TEST_CASE(slparser_dangling_else_test) {
 }
 
 /**
- * The three lighting constructs take a body rather than being calls, which is what makes them
- * the part of SL that is not a language feature anywhere else.
+ * The three lighting constructs take a body rather than being calls. They are specific to SL.
  **/
 BOOST_AUTO_TEST_CASE(slparser_lighting_constructs_test) {
     std::string error;
@@ -456,9 +455,8 @@ BOOST_AUTO_TEST_CASE(slparser_lighting_constructs_test) {
 }
 
 /**
- * A function may be defined inside a shader, and only at the top of its body: the machine has
- * a register file per shader run and no call stack, so where a function may appear is the
- * shape the compiler needs rather than a matter of taste.
+ * A function may be defined inside a shader, and only at the top of its body. The machine has
+ * a register file per shader run and no call stack, and the compiler requires this placement.
  **/
 BOOST_AUTO_TEST_CASE(slparser_function_test) {
     std::string error;
@@ -474,9 +472,9 @@ BOOST_AUTO_TEST_CASE(slparser_function_test) {
     BOOST_CHECK_EQUAL(shaders[0]->functions[0].name, "sqr");
     BOOST_CHECK(shaders[0]->functions[0].type == v3d::render::offline::sl::Type::FLOAT);
     BOOST_REQUIRE_EQUAL(shaders[0]->functions[0].parameters.size(), 1u);
-    // a function's formals carry no default, which is the one way the two lists differ
+    // a function's formals carry no default, the only difference between the two lists
     BOOST_CHECK(!shaders[0]->functions[0].parameters[0].defaultValue);
-    // and the function is not left in the body as a statement
+    // the function is not left in the body as a statement
     BOOST_CHECK_EQUAL(shaders[0]->body->statements.size(), 1u);
 }
 
@@ -490,8 +488,8 @@ BOOST_AUTO_TEST_CASE(slparser_nested_function_rejected_test) {
 }
 
 /**
- * A file may hold more than one shader, which is how the standard ones are compiled in as
- * source strings.
+ * A file may hold more than one shader, so the standard ones can be compiled in as source
+ * strings.
  **/
 BOOST_AUTO_TEST_CASE(slparser_several_shaders_test) {
     std::string error;
@@ -552,8 +550,8 @@ BOOST_AUTO_TEST_CASE(slparser_not_a_shader_test) {
 }
 
 /**
- * A lexer error surfaces as itself rather than as the end of source it hands back, so a
- * shader that needs the preprocessor says so instead of looking truncated.
+ * A lexer error is reported as itself rather than as the end of source the lexer returns, so
+ * a shader that needs the preprocessor is reported as such instead of looking truncated.
  **/
 BOOST_AUTO_TEST_CASE(slparser_reports_a_lexer_error_test) {
     std::string error;

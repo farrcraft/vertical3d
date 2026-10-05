@@ -282,8 +282,8 @@ float Manipulator::along(const ViewPort& view, const Placement& placement, Axis 
 
     const glm::vec2 screen = tip - root;
     const float length = glm::length(screen);
-    // a handle pointing at the viewer projects to a point, and a drag along it means
-    // nothing
+    // a handle pointing at the viewer projects to a point, which has no direction to
+    // measure a drag along
     if (length < 1.0f) {
         return 0.0f;
     }

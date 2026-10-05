@@ -1,5 +1,5 @@
 ##RenderMan RIB-Structure 1.1
-##Scene The phase 1 reference scene, said in RIB
+##Scene A triangle asymmetric about both axes, said in RIB
 version 3.03
 Hider "raytrace"
 Format 64 48 1
@@ -8,18 +8,17 @@ Format 64 48 1
 PixelSamples 1 1
 PixelFilter "box" 1 1
 Projection "orthographic"
-# an ortho zoom of one and a pixel aspect of 4:3, which is what the code built scene sets
+# an ortho zoom of one and a pixel aspect of 4:3, as the scene ReferenceTest builds in code has
 ScreenWindow -1.333333 1.333333 -1 1
 Clipping 0.001 100
-# what a ray that hits nothing is worth, which phase 2 had to say with geometry
+# what a ray that hits nothing is worth, said with a request rather than with geometry
 Imager "background" "background" [0.15 0.25 0.45]
 # the eye four thirds of nothing back along -z: a world to camera transformation puts the
 # world origin one unit in front of the camera
 Transform [1 0 0 0  0 1 0 0  0 0 1 0  0 0 1 1]
 WorldBegin
-# the shader that means no shading, named rather than defaulted to: this picture is what
-# the tree drew before there was a language, and naming it is what says the language draws
-# the same thing
+# the shader that means no shading, named rather than left as the default, so the picture
+# shows that the shading language draws an unshaded surface unchanged
 Surface "constant"
 # asymmetric about both axes, so a flipped picture is a failing one
 Color [0.9 0.2 0.2]

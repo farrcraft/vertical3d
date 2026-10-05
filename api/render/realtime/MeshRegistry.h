@@ -34,17 +34,17 @@ namespace v3d::render::realtime {
 class DeviceContext;
 
 /**
- * Models on the device, each uploaded once and named by handle - ADR-0065.
+ * Models on the device, each uploaded once and named by handle.
  *
  * A model loaded from a path, or added under a name, is uploaded the first time and handed
  * back by the same handle every time after, so a hundred props drawn from one file are one
- * upload. It is drawn a part at a time - ADR-0069. Each part's albedo is a texture and a
- * material from renderer::Quad, shared by every part naming the same image, and the white
- * texture for a part naming none.
+ * upload. A model is one vertex buffer drawn a part at a time. Each part's albedo is a
+ * texture and a material from the context's Textures, shared by every part naming the same
+ * image, and the white texture for a part naming none.
  *
  * The vertex layout is type::Model::Vertex - a position, a normal and a uv, 32 bytes - which
  * is what a pipeline drawing an entry declares. A model with a skeleton is uploaded as a
- * SkinnedVertex instead, and keeps its skeleton and clips on the cpu for whatever poses it.
+ * SkinnedVertex instead, and keeps its skeleton and clips on the CPU for whatever poses it.
  *
  * A handle is released explicitly, and resolves to nothing at once. The mesh is destroyed
  * once no frame in flight can still be drawing it, and an albedo once the last entry naming
@@ -91,7 +91,7 @@ class MeshRegistry final {
 
     /**
      * @param logger where a texture that could not be found is reported
-     * @param context the device to upload to, and the quads whose materials an albedo uses
+     * @param context the device to upload to, and the textures an albedo is registered with
      * @param assets where a path is loaded from, and a texture a model names is resolved
      **/
     MeshRegistry(const boost::shared_ptr<log::Logger>& logger, const boost::shared_ptr<DeviceContext>& context,
@@ -100,7 +100,7 @@ class MeshRegistry final {
     /**
      * Destroys every mesh still registered at once, the way Resources destroys what it holds,
      * so it goes after the frames in flight have finished. An albedo still registered with
-     * renderer::Quad stays there until the context goes.
+     * the context's Textures stays there until the context goes.
      **/
     ~MeshRegistry() = default;
 
@@ -134,7 +134,8 @@ class MeshRegistry final {
         const std::vector<boost::shared_ptr<image::Image>>& albedos = {});
 
     /**
-     * Stop addressing an entry, and destroy what only it was using once no frame can be.
+     * Stop addressing an entry. What only it was using is destroyed once no frame in flight
+     * can still be using it.
      *
      * @return whether the handle referred to anything
      **/

@@ -29,8 +29,8 @@ class Factory {
     /**
      * Decode an image that arrived as bytes rather than as a file.
      *
-     * A buffer carries no name, so the format has to be said rather than worked out from
-     * an extension - which is what an embedded image's mime type or its container says.
+     * A buffer carries no name, so the caller states the format rather than it being
+     * taken from an extension. An embedded image's mime type or its container gives it.
      *
      * @param kind the format's key, as the readers were registered under: "png", "jpg",
      *        "bmp", "tga"

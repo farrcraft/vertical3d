@@ -56,7 +56,7 @@ namespace {
 /**
  * The colour a component's own text is drawn in: what it would be drawn in, or the theme's
  * disabled colour when the component - or anything holding it - cannot be used. An icon is
- * tinted by the same answer, so one key greys a label and the picture beside it - ADR-0059.
+ * tinted with the same colour, so one key greys both a label and the picture beside it.
  **/
 glm::vec4 ink(const Component& component, const Dressing& dress, const glm::vec4& colour) {
     return usable(component) ? colour : dress.disabledText;
@@ -64,7 +64,7 @@ glm::vec4 ink(const Component& component, const Dressing& dress, const glm::vec4
 
 /**
  * Which of a theme's button styles a button is dressed by. A button that cannot be used
- * takes the disabled one whatever the cursor last wrote on it - ADR-0059.
+ * takes the disabled one whatever the cursor last wrote on it.
  **/
 style::Button::State look(const component::Button& button) noexcept {
     if (!usable(button)) {
@@ -82,9 +82,9 @@ style::Button::State look(const component::Button& button) noexcept {
  * The style class a component is dressed by, which is the class its focus ring is read
  * off - or nothing for one drawn out of the base alone.
  *
- * The one place the two enums meet: Resolver::Class is not checked against Type, so this
- * switch is what says which type reads which class. Every enumerator is named and there is
- * no default, so a component added to Type lands here as a build error - ADR-0047.
+ * The only place the two enums meet. Resolver::Class is not checked against Type, so this
+ * switch defines which type reads which class. Every enumerator is named and there is no
+ * default, so a component added to Type is a build error here.
  **/
 std::optional<style::Resolver::Class> ringed(component::Type type) noexcept {
     switch (type) {
@@ -228,11 +228,9 @@ void ComponentRenderer::paint(v3d::render::realtime::Canvas* canvas,
         case component::Type::MenuBar:
         case component::Type::MenuItem:
         case component::Type::Toolbar:
-            // two kinds of nothing, drawn by one branch because they are the same nothing to
-            // the walk. A box draws nothing of its own - it is whatever it holds - and a tab
-            // page is a box whose bar draws the strip above it. A strip places and draws what
-            // it holds itself, so the walk is handed nothing to do: ComponentRenderer::draw
-            // has an overload per strip that the ui engine calls instead
+            // types that draw nothing here. A box draws nothing of its own, and a tab page is a
+            // box whose bar draws the strip above it. A strip places and draws its own contents
+            // through the ComponentRenderer::draw overload the ui engine calls instead
             break;
     }
     ring(canvas, component);
@@ -242,7 +240,7 @@ void ComponentRenderer::paint(v3d::render::realtime::Canvas* canvas,
  **/
 void ComponentRenderer::ring(v3d::render::realtime::Canvas* canvas,
     const boost::shared_ptr<Component>& component) const {
-    // a component disabled while it held the focus draws no ring - ADR-0059
+    // a component disabled while it held the focus draws no ring
     if (canvas == nullptr || !component->focused() || !usable(*component)) {
         return;
     }
@@ -255,10 +253,9 @@ void ComponentRenderer::ring(v3d::render::realtime::Canvas* canvas,
     if (width <= 0.0f || dress.focus.a <= 0.0f) {
         return;
     }
-    // drawn here rather than in each component's draw, because where the keyboard is is
-    // the ui's business rather than any one component's - and a ring every control shows
-    // the same way is the point of it. Traced around the box it was drawn in, after that
-    // draw, so it sits over the component rather than under whatever the component filled
+    // drawn here rather than in each component's draw, so every control shows the focus
+    // the same way. Traced around the box it was drawn in, after that draw, so it sits
+    // over the component rather than under whatever the component filled
     const glm::vec2 min = component->position();
     const glm::vec2 size = component->size();
     if (size.x <= 0.0f || size.y <= 0.0f) {
@@ -372,8 +369,8 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     Arranger::place(*button, min, size);
 
     // a button that cannot be used is never lit, whatever the cursor last left on it; and a
-    // checked toggle keeps its highlight whether or not the cursor is on it, which is what
-    // says which mask and which tool are in force
+    // checked toggle keeps its highlight whether or not the cursor is on it, so a strip
+    // shows which mask and which tool are in force
     const bool lit = usable(*button) &&
         (button->checked() || button->state() == component::Button::STATE_HOVER);
     if (!skin(canvas, *button, min, min + size) && lit) {
@@ -549,8 +546,8 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
 
     plateBox(canvas, min, min + size, dress.radius, width, dress.panel, dress.border);
 
-    // how tall a row is is the style's, and the list is what answers a point with it - so
-    // it is written on the way past, the way a box is
+    // the row height comes from the style, and the list needs it to find the row under a
+    // point, so it is stored on the list while drawing, like a box
     list->rowHeight(row);
     if (list->items().empty() || row <= 0.0f) {
         return;
@@ -618,7 +615,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
 
     const glm::vec2 pen(low.x - slid, min.y + size.y * 0.7f);
     // left on the box so that a press can find the character under it, the way a list is
-    // left holding the height of a row - ADR-0019 and ADR-0057
+    // left holding the height of a row
     box->pen(pen.x);
 
     if (box->selected()) {
@@ -671,17 +668,16 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
             ink(*bar, dress, picked ? dress.activeText : dress.text));
         pen += width + dress.borderWidth;
     }
-    // where each tab ended up, for the cursor to be tested against - the same rule as a
-    // component's own box, per ADR-0019
+    // where each tab ended up, for the cursor to be tested against
     bar->tabs(boxes);
 
-    // the rule under the strip, which is what joins the chosen tab to the page below it
+    // the rule under the strip, which joins the chosen tab to the page below it
     canvas->rect(glm::vec2(min.x, min.y + height), glm::vec2(min.x + size.x, min.y + height + Arranger::ruleWidth), dress.border);
 
     if (!bar->page()) {
         return;
     }
-    // the plate the chosen page sits on. Descending into the page is the walk's, so that
+    // the plate the chosen page sits on. The layout pass descends into the page, so
     // painting never reaches back into layout
     const v3d::type::geometry::Bound2D box = arranger_.page(*bar);
     fillBox(canvas, box.position(), box.position() + box.size(), 0.0f, dress.panel);
@@ -719,7 +715,7 @@ bool ComponentRenderer::skin(v3d::render::realtime::Canvas* canvas, const compon
     unsigned int drawn = 0;
 
     // every one of the nine is optional: a style naming only a centre is a flat skin, and
-    // one naming none at all is not a skin, which is what leaves the button drawn flat
+    // one naming none at all is not a skin, so the button is drawn flat
     const struct {
         const char* name;
         glm::vec2 min;

@@ -10,8 +10,8 @@
 namespace v3d::render::offline::sl::syntax {
 
 bool Shader::supported() const {
-    // displacement reaches back into dicing and is a geometry change wearing a shading
-    // change's clothes; a volume shader has no place to run until there is a volume
+    // displacement changes geometry, so it would have to run during dicing; a volume shader
+    // needs a volume to run in, and the renderer has none
     return type == ShaderType::SURFACE || type == ShaderType::LIGHT || type == ShaderType::IMAGER;
 }
 

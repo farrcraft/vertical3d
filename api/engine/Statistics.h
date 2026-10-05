@@ -16,10 +16,10 @@
 namespace v3d::engine {
 
 /**
- * What the loop knows about its own pacing.
+ * What the loop measures about its own pacing.
  *
- * Collection belongs here because the loop is the only thing that measures a frame;
- * drawing any of it stays with whoever wants to draw it.
+ * The loop is the only thing that measures a frame, so collection lives here. Displaying
+ * the numbers is up to the app.
  **/
 class Statistics final {
  public:
@@ -71,7 +71,7 @@ class Statistics final {
      * Record one frame.
      *
      * @param frame nanoseconds the frame took, before the accumulator clamps it
-     * @param steps simulation steps that frame owed
+     * @param steps simulation steps due in that frame
      **/
     void frame(std::uint64_t frame, unsigned int steps) noexcept;
 
@@ -82,7 +82,7 @@ class Statistics final {
     Scope scope(std::string_view name);
 
     /**
-     * Add time to a name's row for the frame, which is what a scope does as it ends, and how
+     * Add time to a name's row for the frame. A scope calls this as it ends, and it is how
      * a time measured elsewhere joins the rows.
      **/
     void add(std::string_view name, std::uint64_t nanoseconds);
@@ -108,11 +108,11 @@ class Statistics final {
     std::uint64_t mean() const noexcept;
 
     /**
-     * Steps the last frame owed.
+     * Steps due in the last frame.
      *
      * This is the number worth watching. It sits at 0 or 1 with occasional 2s on a healthy
-     * frame; a sustained 3 or more means the accumulator's clamp is doing real work and
-     * something cannot keep up with the step it is being given.
+     * frame; a sustained 3 or more means frames take longer than the fixed step and the loop
+     * is falling behind.
      **/
     unsigned int steps() const noexcept;
 

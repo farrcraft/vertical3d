@@ -20,12 +20,12 @@ namespace v3d::grid {
  * How much of whatever stands on a tile is shielded by what is on it.
  *
  * Terrain rather than a rule: a wall and a crate carry cover for the same reason, and
- * neither knows what is standing behind it. Which cover applies to a particular line
+ * neither depends on what is standing behind it. Which cover applies to a particular line
  * depends on where the other end of that line is, and that belongs to whoever is using the
  * grid.
  *
  * Cover height and passability are independent flags and neither implies the other. The
- * combinations that make sense are worth stating rather than enforcing: a crate or a low
+ * sensible combinations are listed here rather than enforced: a crate or a low
  * wall is Half and impassable, a doorway is None and passable, a solid wall is Full and
  * impassable, and open ground is None and passable.
  *
@@ -48,8 +48,8 @@ std::string_view toString(Cover cover);
  *
  * Pure data and arithmetic. It holds no entities and does not track what occupies a tile;
  * occupancy belongs to whatever is moving over the grid and is supplied to pathfinding
- * separately as a predicate, which is what keeps this type usable for map generation and
- * for a running simulation alike.
+ * separately as a predicate, so this type serves map generation and a running simulation
+ * alike.
  *
  * The grid is centred on the world origin.
  **/
@@ -122,7 +122,7 @@ class TileGrid {
      * How much cover a tile carries.
      *
      * Off grid tiles have no cover. Nothing off the map can shield what is on it, and
-     * answering rather than throwing keeps this the same shape as passable().
+     * returning a value rather than throwing matches passable().
      **/
     Cover cover(TileCoord tile) const;
 
@@ -138,8 +138,8 @@ class TileGrid {
     void setCover(TileCoord tile, Cover cover);
 
     /**
-     * Where a tile's entry is in anything kept a value per tile: row major, y * width + x. A
-     * tile off the grid has no index, so a caller asks contains() first.
+     * The position of a tile's entry in any array holding one value per tile: row major,
+     * y * width + x. A tile off the grid has no index, so a caller checks contains() first.
      **/
     std::size_t index(TileCoord tile) const;
 

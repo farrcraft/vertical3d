@@ -19,8 +19,8 @@ namespace v3d::render::realtime {
 /**
  * World quads collected with a depth key and handed to a canvas furthest first.
  *
- * The key is the caller's, per ADR-0042: in an isometric projection it is how far up the
- * ground plane a sprite's feet are, which nothing here can know. A larger key is further away
+ * The caller supplies the key. In an isometric projection it is how far up the ground plane
+ * a sprite's feet are, which nothing here can compute. A larger key is further away
  * and is drawn first. Equal keys are drawn grouped by texture and otherwise in the order they
  * were added, so a caller that wants fewer batch cuts quantises its key - to a tile row, say -
  * and lets the tie-break merge them.

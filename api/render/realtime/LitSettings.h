@@ -14,7 +14,8 @@ namespace v3d::render::realtime {
  * and the shadow's terms. Plain data with no device in it, so a game reading its look from a
  * file or a command line links nothing to do so.
  *
- * The defaults are retcon's, the look the tier was built against.
+ * The defaults give three cel bands under a white key light from above and to one side, with
+ * a thin outline and full strength shadows.
  **/
 struct LitSettings final {
     /**
@@ -72,8 +73,8 @@ struct LitSettings final {
     float normalBias = 0.02f;
 
     /**
-     * How much of a band a shadow takes away. Zero still draws the shadow pass and ignores it,
-     * which is the comparison with and without.
+     * How much of a band a shadow takes away. Zero still draws the shadow pass but ignores its
+     * result, for comparing the scene with and without shadows.
      **/
     float shadowStrength = 1.0f;
 };

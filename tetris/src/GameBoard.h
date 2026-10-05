@@ -34,7 +34,7 @@ class GameBoard {
         bool load(const boost::shared_ptr<v3d::asset::Manager>& assetManager);
 
         /**
-         * Install a shape set directly, which is what reading the file ends in.
+         * Install a shape set directly. Reading the file ends by calling this.
          *
          * Separate from the read so that what the board does with a set of shapes can be
          * exercised without a file behind it.
@@ -118,9 +118,8 @@ class GameBoard {
          * Whether a tetrad's shape would overlap the walls, the floor or a block already on
          * the board if it were at a given position.
          *
-         * Every move the board or the controller makes is checked through this, so that one
-         * description of what a legal position is serves the fall, the sideways moves and
-         * the rotation.
+         * Every move the board or the controller makes is checked through this, so the fall,
+         * the sideways moves and the rotation share one definition of a legal position.
          *
          * @param tetrad the shape to test, whose own position is ignored
          * @param column the leftmost column of its 4x4 layout

@@ -12,8 +12,8 @@ namespace v3d::render::offline::sl {
 
 /**
  * A value's type. The three point-like ones are all three floats and differ only in how a
- * transform treats them - a point translates, a vector does not, and a normal goes by the
- * inverse transpose - which is the compiler's problem rather than the parser's.
+ * transform treats them: a point translates, a vector does not, and a normal goes by the
+ * inverse transpose. The compiler handles the difference, not the parser.
  *
  * SL has no integer type: a count, an index and a colour component are all floats.
  **/
@@ -29,9 +29,9 @@ enum class Type {
 };
 
 /**
- * Whether a value is stored once or once per shading point. UNSPECIFIED is what a
- * declaration that named neither carries; the varying inference in the compiler is what
- * turns it into one of the other two.
+ * Whether a value is stored once or once per shading point. A declaration that names
+ * neither carries UNSPECIFIED, and the compiler's varying inference turns it into one of
+ * the other two.
  **/
 enum class Storage {
     UNSPECIFIED,
@@ -40,8 +40,7 @@ enum class Storage {
 };
 
 /**
- * The five shader types. All five parse; surface, light and imager are the three this
- * phase executes.
+ * The five shader types. All five parse; only surface, light and imager shaders run.
  **/
 enum class ShaderType {
     SURFACE,
@@ -65,8 +64,8 @@ unsigned int components(Type type);
 
 /**
  * Whether the type is a position or a direction - point, vector or normal. The three are
- * all three floats and convert to each other freely in arithmetic; what tells them apart is
- * a transform.
+ * all three floats and convert to each other freely in arithmetic; only a transform treats
+ * them differently.
  **/
 bool pointlike(Type type);
 
@@ -81,8 +80,8 @@ bool pointlike(Type type);
 bool coercible(Type from, Type to);
 
 /**
- * The type of an arithmetic expression over the two, or VOID when there is none - which is
- * what an operator applied to types that have no arithmetic between them answers.
+ * The type of an arithmetic expression over the two, or VOID when the two types have no
+ * arithmetic between them.
  **/
 Type arithmetic(Type left, Type right);
 
@@ -101,9 +100,9 @@ glm::vec3 vtransform(const glm::mat4x4 & matrix, const glm::vec3 & vector);
 /**
  * A normal through a matrix, by the inverse transpose.
  *
- * The same rule as moya's dicing and its traced fan: under a rotation or a uniform scale this
- * is what vtransform answers, and the moment a scene scales one axis it is not - the matrix
- * that moves the points tilts a normal off its surface.
+ * moya's dicing and its traced fan use the same rule. Under a rotation or a uniform scale
+ * the result matches vtransform. Under a non-uniform scale it does not, because the matrix
+ * that moves the points would tilt a normal off its surface.
  **/
 glm::vec3 ntransform(const glm::mat4x4 & matrix, const glm::vec3 & normal);
 

@@ -33,7 +33,7 @@ typedef v3d::render::offline::sl::runtime::Program Program;
 
 /**
  * A shader body, run over a batch of one, with its symbols readable afterwards. Every case
- * here is "does this built-in answer what the standard says", which wants a source string
+ * here checks that a built-in returns what the standard says, which needs a source string
  * and a register rather than a hand-built program.
  **/
 class Shaded final {
@@ -76,8 +76,7 @@ class Shaded final {
 };
 
 /**
- * The float a one line expression comes to, which is what most of the library is asserted
- * through.
+ * The float a one line expression evaluates to. Most of the library is tested through this.
  **/
 float answer(const std::string & expression) {
     return Shaded("float answer = " + expression + ";").number("answer");
@@ -86,9 +85,9 @@ float answer(const std::string & expression) {
 };  // namespace
 
 /**
- * The maths, each against the value the standard gives it. They are one loop over the
- * components in the machine, so a case per name is what says the name reached the right
- * body rather than the one beside it in the table.
+ * The maths, each against the value the standard gives it. They share one loop over the
+ * components in the machine, so a case per name checks that each name reaches its own body
+ * rather than its neighbour in the table.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_maths_test) {
     BOOST_CHECK_CLOSE(answer("abs(-3)"), 3.0f, 0.01f);
@@ -118,9 +117,9 @@ BOOST_AUTO_TEST_CASE(sllibrary_maths_test) {
 }
 
 /**
- * RI's mod takes the sign of its divisor rather than of its dividend, which is what makes a
- * value walked backwards round a period stay inside it. C's fmod does the opposite, so this
- * is the one piece of arithmetic here that is not the obvious call.
+ * RI's mod takes the sign of its divisor rather than of its dividend, so a value decreasing
+ * past zero stays inside the period. C's fmod does the opposite, so mod is not a plain call
+ * to it.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_mod_test) {
     BOOST_CHECK_CLOSE(answer("mod(7, 3)"), 1.0f, 0.01f);
@@ -143,8 +142,8 @@ BOOST_AUTO_TEST_CASE(sllibrary_step_test) {
 
 /**
  * A componentwise built-in over a colour is that function of each of the three, and a float
- * argument beside a colour one is read for all three. That is RI's promotion rather than a
- * zero fill, and it is what "mix(Cs, Cl, 0.5)" leans on.
+ * argument beside a colour one is read for all three, as RI promotes it, rather than a zero
+ * fill. "mix(Cs, Cl, 0.5)" relies on this.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_componentwise_over_a_colour_test) {
     const Shaded shaded("color answer = mix(color (0, 10, 20), color (10, 20, 40), 0.5);");
@@ -172,8 +171,7 @@ BOOST_AUTO_TEST_CASE(sllibrary_geometry_test) {
 /**
  * faceforward turns a normal to the side its reference is on, hand worked: against an
  * incident direction coming from in front, the normal is left alone; from behind, it is
- * flipped. The two argument form has no Ng to hand and uses the normal as its own
- * reference.
+ * flipped. The two argument form has no Ng and uses the normal as its own reference.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_faceforward_test) {
     const Shaded toward("normal answer = faceforward(normal (0, 0, 1), vector (0, 0, -1));");
@@ -182,7 +180,7 @@ BOOST_AUTO_TEST_CASE(sllibrary_faceforward_test) {
     const Shaded away("normal answer = faceforward(normal (0, 0, 1), vector (0, 0, 1));");
     BOOST_CHECK_CLOSE(away.triple("answer").z, -1.0f, 0.01f);
 
-    // three arguments, where the reference disagrees with the normal and wins
+    // three arguments, where the reference faces the other way from the normal and decides
     const Shaded reference(
         "normal answer = faceforward(normal (0, 0, 1), vector (0, 0, -1), normal (0, 0, -1));");
     BOOST_CHECK_CLOSE(reference.triple("answer").z, -1.0f, 0.01f);
@@ -204,7 +202,7 @@ BOOST_AUTO_TEST_CASE(sllibrary_reflect_and_refract_test) {
 
     /*
         45 degrees into a medium of eta 0.5: sin of the refracted angle is half the sin of
-        the incident one, so the answer is (0.35355, 0, -0.93541) to five places.
+        the incident one, so the result is (0.35355, 0, -0.93541) to five places.
     */
     const Shaded bent(
         "vector answer = refract(vector (0.70710678, 0, -0.70710678), normal (0, 0, 1), 0.5);");
@@ -223,8 +221,8 @@ BOOST_AUTO_TEST_CASE(sllibrary_reflect_and_refract_test) {
  * air, which is an eta of 1 / 1.5.
  *
  * Straight on, the reflectance is ((1 - eta) / (1 + eta)) squared, 0.04, whichever way
- * the light crosses. At 45 degrees the two polarisations part, 0.0920 and 0.0085, and the
- * answer is their mean. Past the critical angle all of it is reflected.
+ * the light crosses. At 45 degrees the two polarisations differ, 0.0920 and 0.0085, and the
+ * result is their mean. Past the critical angle all of it is reflected.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_fresnel_test) {
     const Shaded straight("float kr = 0; float kt = 0; vector R = 0; vector T = 0;\n"
@@ -248,8 +246,7 @@ BOOST_AUTO_TEST_CASE(sllibrary_fresnel_test) {
 
 /**
  * The component accessors and their setters, by name and by index. A setter writes the
- * value it was handed rather than answering one, which is the only shape in the library
- * that does.
+ * value it was given rather than returning one; no other built-in does that.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_components_test) {
     BOOST_CHECK_CLOSE(answer("xcomp(point (7, 8, 9))"), 7.0f, 0.01f);
@@ -267,20 +264,20 @@ BOOST_AUTO_TEST_CASE(sllibrary_components_test) {
 }
 
 /**
- * The matrix built-ins, over the identity. determinant is the one that says whether the
- * others built what they claimed.
+ * The matrix built-ins, over the identity. determinant checks that the others built the
+ * matrices they should.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_matrix_test) {
     BOOST_CHECK_CLOSE(answer("determinant(matrix 1)"), 1.0f, 0.01f);
     BOOST_CHECK_CLOSE(answer("determinant(scale(matrix 1, vector (2, 3, 4)))"), 24.0f, 0.01f);
-    // a rotation and a translation each leave the volume alone, which a determinant of one says
+    // a rotation and a translation each preserve volume, so the determinant is one
     BOOST_CHECK_CLOSE(answer("determinant(translate(matrix 1, vector (5, 6, 7)))"), 1.0f, 0.01f);
     BOOST_CHECK_CLOSE(answer("determinant(rotate(matrix 1, 0.5, vector (0, 1, 0)))"), 1.0f, 0.01f);
 }
 
 /**
- * A named coordinate space is the renderer's answer. With none attached the value arrives
- * in the space it was already in and the machine says so once, rather than a scene silently
+ * The renderer resolves a named coordinate space. With none attached the value arrives in
+ * the space it was already in and the machine reports it once, rather than a scene silently
  * rendering in the wrong place.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_transform_without_a_renderer_test) {
@@ -292,9 +289,9 @@ BOOST_AUTO_TEST_CASE(sllibrary_transform_without_a_renderer_test) {
 }
 
 /**
- * printf is how anyone debugs a shader, so it is a line per shading point rather than one
- * line however many points there are - which is the opposite of every other thing the
- * machine says, and is what the person who typed it asked for.
+ * printf is for debugging a shader, so it writes a line per shading point rather than one
+ * line however many points there are. Every other message from the machine is reported
+ * once.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_printf_test) {
     const Shaded shaded(
@@ -303,13 +300,13 @@ BOOST_AUTO_TEST_CASE(sllibrary_printf_test) {
     BOOST_REQUIRE_EQUAL(shaded.machine().printed().size(), 3u);
     BOOST_CHECK(shaded.machine().printed()[0].find("s is 0.000000") != std::string::npos);
     BOOST_CHECK(shaded.machine().printed()[0].find("(0.500000 0.000000 1.000000)") != std::string::npos);
-    // no report: a printf that printed is not a thing the machine could not do
+    // no report: reports are only for what the machine could not do
     BOOST_CHECK(shaded.machine().reports().empty());
 }
 
 /**
- * A conversion with nothing left to print says so rather than reading past the arguments,
- * which is the one printf mistake that would otherwise take a render down.
+ * A conversion with nothing left to print is reported rather than reading past the
+ * arguments, which would crash the render.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_printf_missing_argument_test) {
     const Shaded shaded("printf(\"%f and %f\", 1);");
@@ -318,9 +315,7 @@ BOOST_AUTO_TEST_CASE(sllibrary_printf_missing_argument_test) {
 }
 
 /**
- * A stub answers its default and says so exactly once, however many points ran it: a scene
- * that rendered nothing and a scene that was not understood look identical from outside,
- * and a 640 by 480 render must not print a million lines to tell them apart.
+ * A stub returns its default and is reported exactly once, however many points ran it.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_stubs_report_once_test) {
     const Shaded shaded(
@@ -393,7 +388,7 @@ BOOST_AUTO_TEST_CASE(sllibrary_texture_test) {
 }
 
 /**
- * A name that cannot be read answers black, and says so once however many points asked.
+ * A name that cannot be read returns black, and is reported once however many points read it.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_missing_texture_test) {
     Textured renderer;
@@ -408,7 +403,7 @@ BOOST_AUTO_TEST_CASE(sllibrary_missing_texture_test) {
 }
 
 /**
- * noise() of a float, a pair and a point is a float, and a cast asks for three of it, each
+ * noise() of a float, a pair and a point is a float, and a cast to colour gives three, each
  * its own pattern: a colour of noise is not grey.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_noise_test) {
@@ -434,8 +429,8 @@ BOOST_AUTO_TEST_CASE(sllibrary_noise_test) {
 }
 
 /**
- * Two strings are equal by their text, which is how a shader asks whether it was given a
- * texture name at all.
+ * Two strings are equal by their text, so a shader can check whether it was given a texture
+ * name at all.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_string_comparison_test) {
     const Shaded shaded(
@@ -451,12 +446,12 @@ BOOST_AUTO_TEST_CASE(sllibrary_string_comparison_test) {
 namespace {
 
 /**
- * A renderer that knows two spaces, so that the transforming built-ins have something to
+ * A renderer that defines two spaces, so that the transforming built-ins have something to
  * transform through.
  *
- * "world" both scales one axis and translates, which is the shape that tells the three
- * apart: under a rotation or a uniform scale a normal and a vector answer the same thing,
- * and the moment one axis is scaled they do not.
+ * "world" both scales one axis and translates, so the three transforms give different
+ * results. Under a rotation or a uniform scale a normal and a vector transform the same way;
+ * under a non-uniform scale they do not.
  **/
 class Spaces final : public v3d::render::offline::sl::runtime::Renderer {
  public:
@@ -478,8 +473,8 @@ class Spaces final : public v3d::render::offline::sl::runtime::Renderer {
 
 /**
  * The three transforms against one matrix that scales an axis and translates. A point
- * translates, a vector does not, and a normal goes by the inverse transpose - which is the
- * same class of fault as step 2's, and is invisible under every uniform scale.
+ * translates, a vector does not, and a normal goes by the inverse transpose. Using the wrong
+ * one is invisible under any uniform scale.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_transforms_test) {
     Spaces renderer;
@@ -495,7 +490,7 @@ BOOST_AUTO_TEST_CASE(sllibrary_transforms_test) {
     // the same scale with no move, because a direction has no position to move
     BOOST_CHECK_CLOSE(shaded.triple("turned").x, 1.0f, 0.01f);
     BOOST_CHECK_CLOSE(shaded.triple("turned").z, 2.0f, 0.01f);
-    // and the inverse transpose, which is the reciprocal of that scale rather than the scale
+    // the inverse transpose, which is the reciprocal of that scale rather than the scale
     BOOST_CHECK_CLOSE(shaded.triple("tilted").z, 0.5f, 0.01f);
     BOOST_CHECK_CLOSE(shaded.number("away"), 0.5f, 0.01f);
     BOOST_CHECK(shaded.machine().reports().empty());
@@ -513,15 +508,15 @@ BOOST_AUTO_TEST_CASE(sllibrary_transform_between_two_spaces_test) {
 
     BOOST_CHECK_CLOSE(shaded.triple("same").x, 1.0f, 0.01f);
     BOOST_CHECK_CLOSE(shaded.triple("same").z, 1.0f, 0.01f);
-    // and back the other way, which undoes the case above
+    // back the other way, which undoes the case above
     BOOST_CHECK_CLOSE(shaded.triple("out").x, 1.0f, 0.01f);
     BOOST_CHECK_CLOSE(shaded.triple("out").z, 1.0f, 0.01f);
 }
 
 /**
  * A matrix through a space is the two composed, and a colour through one is the colour:
- * there is one colour space here and it is the one a framebuffer holds, so a scene asking
- * for another gets its colours back unchanged and is told.
+ * there is one colour space here and it is the one a framebuffer holds, so a scene naming
+ * another gets its colours back unchanged and a report.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_matrix_and_colour_spaces_test) {
     Spaces renderer;
@@ -541,8 +536,8 @@ BOOST_AUTO_TEST_CASE(sllibrary_matrix_and_colour_spaces_test) {
 
 /**
  * calculatenormal needs the derivatives of the grid it is shading, which no renderer
- * supplies yet. It is a stub like the other three rather than a plausible answer, because
- * a plausible answer is what makes a scene render wrong quietly.
+ * supplies. It is a stub like the other three rather than returning a plausible value,
+ * because a plausible value would make a scene render wrong silently.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_calculatenormal_is_a_stub_test) {
     const Shaded shaded("normal answer = calculatenormal(P);", 4);
@@ -553,7 +548,7 @@ BOOST_AUTO_TEST_CASE(sllibrary_calculatenormal_is_a_stub_test) {
 }
 
 /**
- * A function is declared with what runs it, so the table and the machine cannot disagree: the
+ * A function is declared with what runs it, so the table and the machine always agree: the
  * functions written in the language are exactly those declared as source, and every other
  * body is one the machine runs or a stub it reports.
  **/

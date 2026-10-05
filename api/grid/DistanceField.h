@@ -17,11 +17,10 @@ namespace v3d::grid {
 /**
  * What a route to one goal tile costs from every tile of a grid at once.
  *
- * A flood fill outward from the goal, so cost() answers "what would getting from here to
- * there cost" for the whole board. That is the difference between closing on something and
- * walking into the wall in front of it: tileDistance() ignores what is in the way, so the
- * tile it calls closest to a goal on the far side of a wall is the tile against the wall,
- * and whatever moved there has nowhere left to go that is closer.
+ * A flood fill outward from the goal, so cost() returns the cost of a route to the goal from
+ * any tile of the board. Use it rather than tileDistance() to move toward a goal.
+ * tileDistance() ignores what is in the way, so the tile it calls closest to a goal behind a
+ * wall is the tile against the wall, and a mover there has no closer tile to go to.
  *
  * The goal is never tested against the grid or the filter, exactly as findPath() never
  * tests the tile its mover is standing on: whoever is standing on the goal does not make it
@@ -30,13 +29,14 @@ namespace v3d::grid {
  * the corner rule read the same in either direction, so the cost recorded on a tile is what
  * a route from that tile to the goal costs.
  *
- * Building one floods the whole board, so it is worth hoisting out of a loop over candidate
- * tiles rather than asked once per tile.
+ * Building one floods the whole board, so build it once outside a loop over candidate tiles
+ * rather than once per tile.
  **/
 class DistanceField {
  public:
     /**
-     * What a tile with no route to the goal costs, and what an off grid tile answers.
+     * What a tile with no route to the goal costs, and what cost() returns for an off grid
+     * tile.
      **/
     static constexpr int UNREACHABLE = std::numeric_limits<int>::max();
 

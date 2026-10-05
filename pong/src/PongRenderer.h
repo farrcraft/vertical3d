@@ -24,7 +24,7 @@
 /**
  * Everything pong draws, built as one canvas of quads and handed to the render engine.
  *
- * The board, the scoreboard and the menu are all the same primitive - see ADR-0005 - so the
+ * The board, the scoreboard and the menu all go through the batched quad pipeline, so the
  * whole frame reaches the device as one upload and a draw per texture.
  **/
 class PongRenderer final {

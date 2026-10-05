@@ -32,7 +32,7 @@ BOOST_AUTO_TEST_CASE(track_keys_and_lerps_test) {
 }
 
 /**
- * A colour is lerped a component at a time, which is what a particle fading out needs.
+ * A colour is lerped a component at a time, as a particle fading out needs.
  **/
 BOOST_AUTO_TEST_CASE(track_a_colour_test) {
     const Track<glm::vec4> fade({{0.0f, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)}, {1.0f, glm::vec4(1.0f, 0.5f, 0.0f, 0.0f)}});

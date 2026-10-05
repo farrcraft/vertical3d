@@ -211,8 +211,8 @@ BOOST_AUTO_TEST_SUITE(post_test)
 /**
  * A full-screen pass that copies is the identity: the quad case's picture, drawn into a target
  * and copied through FullScreen into another, is the committed quad reference byte for byte. The
- * copy reads by position, so the case is exact on any implementation - ADR-0054 - and needs no
- * reference of its own.
+ * copy reads by position, so the case is exact on any implementation and needs no reference of
+ * its own.
  **/
 BOOST_AUTO_TEST_CASE(a_copying_pass_is_the_identity) {
     const uint32_t width = 64;
@@ -231,7 +231,7 @@ BOOST_AUTO_TEST_CASE(a_copying_pass_is_the_identity) {
         headless.context->ring(), headless.context->frameUniforms(), spec);
     const MaterialHandle source = copy.source({headless.context->textures()->texture(*scene)});
 
-    // the quad case's canvas, which is what the reference holds
+    // the quad case's canvas, whose picture the reference holds
     Canvas canvas;
     canvas.resize(width, height);
     canvas.clear();
@@ -258,9 +258,10 @@ BOOST_AUTO_TEST_CASE(a_copying_pass_is_the_identity) {
 
 /**
  * The identity table leaves a scene as it was, to within the filtering the implementation does
- * between entries. Arithmetic says exactly - every entry is its own position and a linear blend
- * of neighbours is the input - but the precision of a filter's weights is the implementation's,
- * so this asserts a step at most in any channel and holds no reference (ADR-0054).
+ * between entries. In exact arithmetic the result is the input, because every entry is its own
+ * position and a linear blend of neighbours is the input. The precision of a filter's weights
+ * is left to the implementation, so the case allows one step in any channel and has no
+ * reference picture.
  **/
 BOOST_AUTO_TEST_CASE(the_identity_grade_leaves_the_scene_within_a_step) {
     const uint32_t size = 64;
@@ -337,9 +338,9 @@ BOOST_AUTO_TEST_CASE(a_replaced_table_regrades_its_sources) {
 
 /**
  * A table replaced while a frame that grades with the old one is still in flight is not
- * destroyed under it - ADR-0061 - and neither is the material that paired it with the scene.
- * The validation layer is what would report either, so a silent log is the assertion, and the
- * frame after the swap grades with the new table.
+ * destroyed under it, and neither is the material that paired it with the scene. Only the
+ * validation layer would report either, so the case checks that it reports no errors, and that
+ * the frame after the swap grades with the new table.
  **/
 BOOST_AUTO_TEST_CASE(a_table_replaced_in_flight_keeps_the_frame_silent) {
     const uint32_t size = 64;

@@ -45,19 +45,19 @@ GridShader::Run & GridShader::run(const v3d::render::offline::sl::InstancePtr & 
 
 bool GridShader::space(const std::string & name, glm::mat4x4* matrix) {
     /*
-        Every one of these is out of camera space, because that is where the machine
-        already is: moya's first pass works there and so its current space is that one.
-        A traced hit's is world space, which is why this is a callback rather than a table the
-        library holds. The context's own table runs the other way - it holds world to
-        camera and camera to screen - so half of these are an inverse of it.
+        Every one of these maps out of camera space, because the reyes hider works there and
+        so its current space is camera space. A traced hit's current space is world space, so
+        this is a callback rather than a table the library holds. The context's own table runs
+        the other way, holding world to camera and camera to screen, so half of these are an
+        inverse of it.
     */
     if (name == "current" || name == "camera") {
         *matrix = glm::mat4x4(1.0f);
         return true;
     }
     if (name == "shader") {
-        // the transform that was in force when the scene instanced the shader, which is
-        // what a "point \"shader\" (0, 0, 1)" in it is stated against
+        // the transform that was in force when the scene instanced the shader, against which
+        // a "point \"shader\" (0, 0, 1)" in it is stated
         *matrix = placement_;
         return true;
     }
@@ -76,15 +76,15 @@ bool GridShader::space(const std::string & name, glm::mat4x4* matrix) {
     }
     if (name == "NDC") {
         // screen space is the canonical volume over [-1, 1] and NDC is the same volume
-        // over [0, 1], which is the half and the shift between them
+        // over [0, 1], so the matrix halves and shifts
         glm::mat4x4 normalised = glm::scale(glm::mat4x4(1.0f), glm::vec3(0.5f));
         normalised = glm::translate(normalised, glm::vec3(1.0f));
         *matrix = normalised * screen;
         return true;
     }
     // "object" is the transform in force at the primitive rather than at the shader, and
-    // a primitive does not carry it: a scene that transforms between Surface and Polygon
-    // would get the shader's answer to a question about the geometry's
+    // a primitive does not carry it. Returning the shader's transform would be wrong for a
+    // scene that transforms between Surface and Polygon
     return false;
 }
 
@@ -153,8 +153,8 @@ void GridShader::shade(const Shading & shading, MicroPolygonGrid* grid) {
     Run & held = run(shading.surface, batch);
     shading.surface->write(&held.machine, shading.placement);
 
-    // the grid parameters dicing already walks: vertex (i, j) is at i and j over the span,
-    // and the spacing between two of them is what a derivative would divide by
+    // the grid parameters dicing uses: vertex (i, j) is at i and j over the span, and the
+    // spacing between two of them is the step a derivative divides by
     const float span = size > 1 ? static_cast<float>(size - 1) : 1.0f;
 
     for (unsigned int i = 0; i < size; i++) {
@@ -191,8 +191,7 @@ void GridShader::shade(const Shading & shading, MicroPolygonGrid* grid) {
         return;
     }
 
-    // what the shader left in Oi is not read: this hider's samples are opaque, which
-    // OfflineRenderers.md says
+    // what the shader left in Oi is not read, because the reyes hider's samples are opaque
     for (unsigned int i = 0; i < size; i++) {
         for (unsigned int j = 0; j < size; j++) {
             Vertex vert = grid->vertex(i, j);

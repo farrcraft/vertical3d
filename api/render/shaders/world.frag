@@ -1,9 +1,9 @@
 #version 450
 
 /**
- * The fragment half of the world space quad primitive - ADR-0042.
+ * The fragment stage of the world space quad primitive.
  *
- * ADR-0005's fragment stage without the text branch: one sampler, always bound, because an
+ * quad.frag without the text branch. There is one sampler and it is always bound, because an
  * untextured quad is drawn against a 1x1 white texture rather than through a second
  * pipeline. Nothing draws distance field glyphs in world space, so there is nothing here to
  * threshold.
@@ -14,7 +14,7 @@ layout(location = 1) in vec4 fragmentColour;
 
 layout(location = 0) out vec4 outColour;
 
-// set 1 is the per material frequency, per docs/RenderingPipeline.md
+// set 1 holds per material data
 layout(set = 1, binding = 0) uniform sampler2D albedo;
 
 void main() {

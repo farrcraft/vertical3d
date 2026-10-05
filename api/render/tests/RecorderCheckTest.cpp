@@ -18,8 +18,8 @@ using v3d::render::realtime::vulkan::pipeline::Pipeline;
 namespace {
 
 /**
- * Something to stand for a descriptor set. check() asks only whether a pass names one, so
- * nothing ever binds it.
+ * A stand-in for a descriptor set. check() tests only whether a pass names one, so nothing
+ * ever binds it.
  **/
 int placeholder = 0;
 
@@ -32,8 +32,7 @@ VkDescriptorSet someSet() {
 BOOST_AUTO_TEST_SUITE(recorder_check_test)
 
 /**
- * A pipeline built with neither asks nothing of a pass, which is every pipeline in the tree
- * before ADR-0064.
+ * A pipeline built with neither a depth bias nor a scene set can be drawn in any pass.
  **/
 BOOST_AUTO_TEST_CASE(a_plain_pipeline_draws_in_any_pass) {
     Pass pass("plain");
@@ -41,8 +40,8 @@ BOOST_AUTO_TEST_CASE(a_plain_pipeline_draws_in_any_pass) {
 }
 
 /**
- * A biased pipeline in a pass with no bias would draw at whatever bias was last set, which
- * vulkan does not report.
+ * A biased pipeline in a pass with no bias throws. It would otherwise draw at whatever bias
+ * was last set, and vulkan does not report that.
  **/
 BOOST_AUTO_TEST_CASE(a_biased_pipeline_needs_a_biased_pass) {
     Pipeline biased;
@@ -82,8 +81,8 @@ BOOST_AUTO_TEST_CASE(a_scene_pipeline_needs_a_scene_set) {
 }
 
 /**
- * A pipeline is built for one colour format and draws into one, and the pass is told which
- * pass drew into which rather than finding a wrong picture - ADR-0068.
+ * A pipeline is built for one colour format and draws only into that format. A mismatch throws
+ * when the pipeline is bound, so the error names the pass instead of showing as a wrong picture.
  **/
 BOOST_AUTO_TEST_CASE(a_pipeline_draws_only_into_its_colour_format) {
     Pipeline built;
@@ -100,7 +99,7 @@ BOOST_AUTO_TEST_CASE(a_pipeline_draws_only_into_its_colour_format) {
 
 /**
  * Where either side states nothing there is nothing to compare: a target described without
- * its format, and a pipeline that writes no colour, which a shadow pipeline is.
+ * its format, and a pipeline that writes no colour, such as a shadow pipeline.
  **/
 BOOST_AUTO_TEST_CASE(an_unstated_format_is_not_checked) {
     Pipeline built;

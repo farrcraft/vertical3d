@@ -17,9 +17,8 @@
 #include <boost/make_shared.hpp>
 
 /**
- * The device this replaces was v3D::KeyboardDevice, which pushed key names at registered
- * listeners. A Keyboard turns SDL events into dispatcher events instead, so what a test
- * feeds it is an SDL_Event and what it watches for is what comes out of the dispatcher.
+ * A Keyboard turns SDL events into dispatcher events, so a test feeds it an SDL_Event and
+ * checks what comes out of the dispatcher.
  **/
 namespace {
 struct Recorder {
@@ -129,9 +128,9 @@ BOOST_AUTO_TEST_CASE(keystate_test) {
 }
 
 /**
- * An edge is a fact about a frame, which is the thing polling cannot answer: a key pressed
- * and released between two flushes was never held when anything looked, and both of its
- * edges are still true of that frame.
+ * A key pressed and released between two flushes was never held when anything checked, but
+ * both of its edges are still true for that frame. Polling the held state alone cannot
+ * detect it.
  **/
 BOOST_AUTO_TEST_CASE(keystate_edge_test) {
     v3d::input::KeyState state;

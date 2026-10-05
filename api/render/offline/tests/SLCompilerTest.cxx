@@ -20,8 +20,8 @@ typedef v3d::render::offline::sl::Storage Storage;
 typedef v3d::render::offline::sl::Symbol Symbol;
 
 /**
- * Parse one shader and compile it, answering what the compiler said. An empty answer is a
- * shader that came out clean.
+ * Parse one shader and compile it, returning the compiler's error. An empty result means the
+ * shader compiled cleanly.
  **/
 std::string compile(const std::string & source, std::vector<Symbol>* symbols = nullptr) {
     std::istringstream stream(source);
@@ -42,8 +42,8 @@ std::string compile(const std::string & source, std::vector<Symbol>* symbols = n
 }
 
 /**
- * The storage a named symbol came out as. A name declared more than once answers for the
- * last of them, which is the one a case that cares would have written.
+ * The storage a named symbol came out as. For a name declared more than once, the last
+ * declaration's storage is returned.
  **/
 Storage storageOf(const std::vector<Symbol> & symbols, const std::string & name) {
     Storage found = Storage::UNSPECIFIED;
@@ -134,8 +134,7 @@ const char* const BACKGROUND =
 };  // namespace
 
 /**
- * The nine shaders the library compiles in all pass the checker. A compiler that cannot take
- * the standard shaders has nothing to run against a scene that names one.
+ * The nine shaders compiled into the library all pass the checker.
  **/
 BOOST_AUTO_TEST_CASE(slcompiler_standard_shaders_test) {
     const char* const sources[] = {
@@ -148,9 +147,9 @@ BOOST_AUTO_TEST_CASE(slcompiler_standard_shaders_test) {
 }
 
 /**
- * A float promotes into anything made of floats by replication, which is what lets a shader
- * write "color specularcolor = 1"; the three point-like types convert to each other; and a
- * colour converts to neither.
+ * A float promotes into anything made of floats by replication, so a shader can write
+ * "color specularcolor = 1". The three point-like types convert to each other, and a colour
+ * converts to none of them.
  **/
 BOOST_AUTO_TEST_CASE(slcompiler_coercion_test) {
     BOOST_CHECK_EQUAL(compile("surface s(color c = 1;) { Ci = c; }"), "");
@@ -159,18 +158,18 @@ BOOST_AUTO_TEST_CASE(slcompiler_coercion_test) {
     BOOST_CHECK_EQUAL(compile("surface s() { normal M = I; Ci = Cs; }"), "");
     BOOST_CHECK_EQUAL(compile("surface s() { matrix m = 1; Ci = Cs; }"), "");
 
-    // a colour is not a position, and ctransform is what a shader that means to say so says
+    // a colour is not a position; a shader converts between them with ctransform
     BOOST_CHECK_EQUAL(compile("surface s() { point p = Cs; Ci = Cs; }"),
         "'p' is point and is given color at line 1, column 21");
     BOOST_CHECK_EQUAL(compile("surface s() { color c = P; Ci = Cs; }"),
         "'c' is color and is given point at line 1, column 21");
-    // and neither is a string
+    // nor is a string
     BOOST_CHECK_EQUAL(compile("surface s() { float f = \"world\"; Ci = Cs; }"),
         "'f' is float and is given string at line 1, column 21");
 }
 
 /**
- * The two operators most likely to be read as something else. A dot product is a number and
+ * The two operators that differ from C. A dot product is a number and
  * a cross product is a direction, and neither takes a colour.
  **/
 BOOST_AUTO_TEST_CASE(slcompiler_dot_and_cross_test) {
@@ -196,23 +195,21 @@ BOOST_AUTO_TEST_CASE(slcompiler_tuple_test) {
 
 /**
  * A shader may only write the globals its type owns. A light shader assigning Ci is told that
- * Ci belongs to a surface and an imager, which is a far more useful thing to read than that
- * the name is undeclared.
+ * Ci belongs to a surface and an imager, rather than that the name is undeclared.
  **/
 BOOST_AUTO_TEST_CASE(slcompiler_global_writability_test) {
     BOOST_CHECK_EQUAL(compile("light l() { Ci = 1; }"),
         "'Ci' belongs to a surface and an imager shader, not to a light shader at line 1, column 13");
     BOOST_CHECK_EQUAL(compile("light l() { Cl = 1; }"), "");
 
-    // and a global its type does own may still be read only
+    // a global its type does own may still be read only
     BOOST_CHECK_EQUAL(compile("surface s() { P = 0; Ci = Cs; }"),
         "'P' cannot be assigned in a surface shader at line 1, column 15");
     BOOST_CHECK_EQUAL(compile("surface s() { Cs = 1; Ci = Cs; }"),
         "'Cs' cannot be assigned in a surface shader at line 1, column 15");
     BOOST_CHECK_EQUAL(compile("imager i() { P = point (0, 0, 0); }"),
         "'P' cannot be assigned in an imager shader at line 1, column 14");
-    // an imager writes alpha as well as reading it: a pixel it has painted is no longer
-    // one that nothing was drawn into, and "background" says so
+    // an imager writes alpha as well as reading it
     BOOST_CHECK_EQUAL(compile("imager i() { alpha = 1; }"), "");
 }
 
@@ -225,7 +222,7 @@ BOOST_AUTO_TEST_CASE(slcompiler_lighting_globals_test) {
     BOOST_CHECK_EQUAL(compile("surface s() { Ci = Cl; }"),
         "'Cl' is set by a light and means nothing outside an 'illuminance' body "
         "at line 1, column 20");
-    // and the constructs themselves belong to one end or the other
+    // each construct belongs to either the surface side or the light side
     BOOST_CHECK_EQUAL(compile("light l() { illuminance(P) { Cl = 1; } }"),
         "'illuminance' is only valid in a surface shader at line 1, column 13");
     BOOST_CHECK_EQUAL(compile("surface s() { illuminate(P) { Ci = 1; } }"),
@@ -264,9 +261,8 @@ BOOST_AUTO_TEST_CASE(slcompiler_storage_defaults_test) {
 }
 
 /**
- * The rule that is easy to get wrong and quiet when it is: different points take different
- * arms, so anything assigned inside control flow with a varying condition is varying whatever
- * was assigned to it.
+ * Different points take different arms, so anything assigned inside control flow with a
+ * varying condition is varying whatever was assigned to it. Getting this wrong is silent.
  **/
 BOOST_AUTO_TEST_CASE(slcompiler_varying_condition_test) {
     std::vector<Symbol> symbols;
@@ -302,16 +298,16 @@ BOOST_AUTO_TEST_CASE(slcompiler_varying_loop_test) {
 
     BOOST_CHECK(storageOf(symbols, "counted") == Storage::VARYING);
     BOOST_CHECK(storageOf(symbols, "stepped") == Storage::UNIFORM);
-    // and the counter of the varying while goes with it: it is written under a varying
+    // the counter of the varying while is varying too: it is written under a varying
     // condition, so different points leave that loop having counted different numbers
     BOOST_CHECK(storageOf(symbols, "i") == Storage::VARYING);
     BOOST_CHECK(storageOf(symbols, "j") == Storage::UNIFORM);
 }
 
 /**
- * The reason the inference runs to a fixed point rather than once: a loop carries a varying
- * value back to a name that was read before it was written, so one pass over the source order
- * would leave `early` uniform with a varying value in it.
+ * The inference runs to a fixed point rather than once. A loop carries a varying value back
+ * to a name that was read before it was written, so one pass in source order would leave
+ * `early` uniform with a varying value in it.
  **/
 BOOST_AUTO_TEST_CASE(slcompiler_fixed_point_test) {
     std::vector<Symbol> symbols;
@@ -348,13 +344,13 @@ BOOST_AUTO_TEST_CASE(slcompiler_string_is_uniform_test) {
 
     BOOST_CHECK(storageOf(symbols, "space") == Storage::UNIFORM);
     BOOST_CHECK(storageOf(symbols, "origin") == Storage::UNIFORM);
-    // the space is a name, and P is what makes this one vary
+    // the space is a name, and P makes this one vary
     BOOST_CHECK(storageOf(symbols, "here") == Storage::VARYING);
 }
 
 /**
  * A built-in that reads the shading point is varying however uniform its arguments are:
- * ambient() takes none at all and answers differently at every point on a grid.
+ * ambient() takes none at all and returns a different value at every point on a grid.
  **/
 BOOST_AUTO_TEST_CASE(slcompiler_varying_builtin_test) {
     std::vector<Symbol> symbols;
@@ -370,9 +366,9 @@ BOOST_AUTO_TEST_CASE(slcompiler_varying_builtin_test) {
 }
 
 /**
- * A built-in that answers through its arguments writes them as an assignment would, so they
- * take the storage of what it read. Anything but a variable there has nowhere to be
- * written, and is faulted rather than quietly dropped.
+ * A built-in that returns results through its arguments writes them as an assignment would,
+ * so they take the storage of what it read. Anything but a variable there cannot be
+ * written, and is an error rather than silently dropped.
  **/
 BOOST_AUTO_TEST_CASE(slcompiler_written_arguments_test) {
     std::vector<Symbol> symbols;
@@ -392,14 +388,13 @@ BOOST_AUTO_TEST_CASE(slcompiler_written_arguments_test) {
 }
 
 /**
- * A shader that declares a value uniform and then puts a varying one in it is saying two
- * things at once. Keeping one of them quietly is how a whole grid comes out with one point's
- * answer, so it is faulted instead.
+ * A shader that declares a value uniform and then puts a varying one in it is an error.
+ * Silently keeping it uniform would give a whole grid one point's value.
  **/
 BOOST_AUTO_TEST_CASE(slcompiler_uniform_given_a_varying_test) {
     BOOST_CHECK_EQUAL(compile("surface s() { uniform float f = s; Ci = Cs; }"),
         "'f' is uniform and is given a varying value at line 1, column 33");
-    // and the same by way of a varying condition rather than a varying value
+    // the same through a varying condition rather than a varying value
     BOOST_CHECK_EQUAL(compile("surface s() { uniform float f = 0; if (t > 0) { f = 1; } Ci = Cs; }"),
         "'f' is uniform and is given a varying value at line 1, column 53");
 }
@@ -420,13 +415,13 @@ BOOST_AUTO_TEST_CASE(slcompiler_function_storage_test) {
 
     BOOST_CHECK(storageOf(symbols, "x") == Storage::VARYING);
     BOOST_CHECK(storageOf(symbols, "fromGlobal") == Storage::VARYING);
-    // and the result carries it back to the uniform call site, because there is one body
+    // the result carries it back to the uniform call site, because there is one body
     BOOST_CHECK(storageOf(symbols, "fromParameter") == Storage::VARYING);
 }
 
 /**
- * The machine has a register file per shader run and no call stack, so a function that
- * reaches itself has no meaning to give. Rejected at the call graph, not at the parser.
+ * A function that reaches itself is rejected, because the machine has no call stack. The
+ * compiler rejects it from the call graph, not the parser.
  **/
 BOOST_AUTO_TEST_CASE(slcompiler_recursion_test) {
     BOOST_CHECK_EQUAL(compile(
@@ -479,14 +474,14 @@ BOOST_AUTO_TEST_CASE(slcompiler_parameter_names_test) {
         "'Cs' is already a shader global at line 1, column 11");
     BOOST_CHECK_EQUAL(compile("surface s(float a = 1; float a = 2;) { Ci = Cs; }"),
         "'a' is already a parameter at line 1, column 24");
-    // and its default has to be the type it says
+    // its default has to be of its declared type
     BOOST_CHECK_EQUAL(compile("surface s(float a = \"world\";) { Ci = Cs; }"),
         "the default for 'a' is string, which is not float at line 1, column 11");
 }
 
 /**
- * Displacement and volume shaders parse and are refused here by name, which is the difference
- * between a scene naming something unsupported and a scene that is malformed.
+ * Displacement and volume shaders parse and are refused here by name, so a scene naming one
+ * is reported as unsupported rather than malformed.
  **/
 BOOST_AUTO_TEST_CASE(slcompiler_unsupported_shader_test) {
     BOOST_CHECK_EQUAL(compile("displacement bumpy(float Km = 1;) { }"),

@@ -155,7 +155,7 @@ BOOST_AUTO_TEST_CASE(a_closed_bar_draws_only_its_labels) {
 
 /**
  * Nothing is hit until something has been drawn: the bounds a click is tested against are
- * what the last draw left on the components, per ADR-0019.
+ * what the last draw left on the components.
  **/
 BOOST_AUTO_TEST_CASE(a_bar_that_has_not_been_drawn_takes_no_press) {
     Fixture fixture;
@@ -262,8 +262,8 @@ BOOST_AUTO_TEST_CASE(the_cursor_opens_a_flyout_from_a_submenu_item) {
 }
 
 /**
- * Moving off a submenu item onto one of its siblings closes the flyout, which is what stops
- * two of them standing open over each other.
+ * Moving off a submenu item onto one of its siblings closes the flyout, so two of them never
+ * stand open over each other.
  **/
 BOOST_AUTO_TEST_CASE(leaving_a_submenu_item_closes_its_flyout) {
     Fixture fixture;
@@ -310,7 +310,7 @@ BOOST_AUTO_TEST_CASE(a_press_elsewhere_dismisses_an_open_bar_and_nothing_more) {
 }
 
 /**
- * A check item draws its mark only when it is checked, and what checks it is whatever answers
+ * A check item draws its mark only when it is checked, and what checks it is whatever handles
  * its command rather than the item's own activation.
  **/
 BOOST_AUTO_TEST_CASE(a_check_item_draws_a_mark_only_when_it_is_checked) {

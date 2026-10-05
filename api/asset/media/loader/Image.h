@@ -12,7 +12,7 @@ namespace v3d::asset::media::loader {
  * Every image format, through image::Factory, which reads the format from the extension.
  *
  * One instance is registered per asset type, so that a caller naming ImagePng gets back an
- * asset that says it was one; what decodes the file is the factory either way.
+ * asset that says it was one; the factory decodes the file either way.
  **/
 class Image final : public Loader {
  public:

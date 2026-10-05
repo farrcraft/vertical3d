@@ -35,7 +35,7 @@ namespace v3d::audio {
  *
  * An id rather than a pointer, so that a handle to a sound that has since finished is
  * refused rather than being a pointer to a track the engine has recycled underneath it.
- * Zero is no sound at all, which is what a failed play() gives back.
+ * Zero is no sound at all, which a failed play() returns.
  **/
 typedef uint32_t Voice;
 
@@ -54,10 +54,10 @@ class Engine final {
     Engine& operator=(const Engine&) = delete;
 
     /**
-     * What turns the source a sound config names into a loaded clip, per ADR-0021: an app
-     * with clips that do not come from files hands one of these. The manager overload of
-     * load() below is this over the asset manager, which is what an app that loads its clips
-     * as assets wants.
+     * Turns the source a sound config names into a loaded clip. This library never reaches
+     * the asset manager itself, so an app whose clips do not come from files supplies one of
+     * these. The manager overload of load() below wraps the asset manager in one, for an app
+     * that loads its clips as assets.
      **/
     typedef std::function<boost::shared_ptr<AudioClip>(const std::string& source)> Resolve;
 
@@ -81,9 +81,9 @@ class Engine final {
     bool load(const boost::json::object & doc, const Resolve & resolve);
 
     /**
-     * Load every clip a sound config names through an asset manager, which has to have had
-     * registerLoaders() called on it - the resolver every app that plays sound would
-     * otherwise write. A source resolves against the manager's path like any other asset.
+     * Load every clip a sound config names through an asset manager, which must have had
+     * registerLoaders() called on it. This saves every app that plays sound writing the same
+     * resolver. A source resolves against the manager's path like any other asset.
      **/
     bool load(const boost::json::object & config, v3d::asset::Manager & assets);
 
@@ -96,7 +96,7 @@ class Engine final {
     bool addClip(const boost::shared_ptr<AudioClip> & clip, const std::string_view & key);
 
     /**
-     * Start a clip and forget it, which is what a one shot is.
+     * Start a clip without keeping a handle to it: a one shot.
      *
      * @return whether it started
      **/
@@ -162,8 +162,8 @@ class Engine final {
      * Take the tracks of every finished sound back, so a game that starts one shots does
      * not grow a track per sound played.
      *
-     * Called as a sound is started rather than on a timer, because that is the only moment
-     * the engine is asked for anything and a finished track costs nothing until then.
+     * Called as a sound is started rather than on a timer, because a finished track costs
+     * nothing until a new one is needed.
      **/
     void reap();
 

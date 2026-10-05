@@ -21,7 +21,7 @@
 namespace {
 
 /**
- * A vertical bar of a given box, already placed the way a draw walk would leave it.
+ * A vertical bar of a given box, already placed the way a draw would leave it.
  **/
 boost::shared_ptr<v3d::ui::component::Scrollbar> bar(const glm::vec2& position, const glm::vec2& size) {
     boost::shared_ptr<v3d::ui::component::Scrollbar> component =
@@ -34,7 +34,7 @@ boost::shared_ptr<v3d::ui::component::Scrollbar> bar(const glm::vec2& position, 
 
 /**
  * A list of numbered rows, already placed and told how tall a row is drawn - both of which
- * a draw walk leaves on it.
+ * a draw leaves on it.
  **/
 boost::shared_ptr<v3d::ui::component::SelectList> list(std::size_t rows, float rowHeight,
     const glm::vec2& position, const glm::vec2& size) {
@@ -161,7 +161,7 @@ BOOST_AUTO_TEST_CASE(a_horizontal_bar_scrolls_across) {
 
 /**
  * A bar that has never been drawn has no track, so a drag on it scrolls nowhere rather
- * than dividing by a zero length - the same rule as picking one, per ADR-0019.
+ * than dividing by a zero length.
  **/
 BOOST_AUTO_TEST_CASE(a_bar_that_was_never_drawn_scrolls_nowhere) {
     const boost::shared_ptr<v3d::ui::component::Scrollbar> component =
@@ -235,7 +235,7 @@ BOOST_AUTO_TEST_CASE(a_bound_bar_reports_the_lists_range) {
 }
 
 /**
- * Dragging a bound bar's thumb scrolls the list, which is the whole point of binding one.
+ * Dragging a bound bar's thumb scrolls the list.
  **/
 BOOST_AUTO_TEST_CASE(dragging_a_bound_bar_moves_the_list) {
     const boost::shared_ptr<v3d::ui::component::SelectList> rows =

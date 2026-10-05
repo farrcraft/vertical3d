@@ -263,8 +263,8 @@ void Emitter::emitConditional(const syntax::StatementPtr & statement) {
     const int condition = emitExpression(conditional.condition);
 
     if (conditional.condition->storage != Storage::VARYING) {
-        // every point agrees, so the arm not taken costs a branch rather than a pass over
-        // the batch with an empty mask
+        // the condition is the same at every point, so the arm not taken costs a branch
+        // rather than a pass over the batch with an empty mask
         const int skip = put(runtime::Opcode::JUMP_IF_ZERO, -1, condition, -1, conditional.condition);
         emitStatement(conditional.whenTrue);
         if (!conditional.whenFalse) {
@@ -278,7 +278,7 @@ void Emitter::emitConditional(const syntax::StatementPtr & statement) {
         return;
     }
 
-    // the points disagree, so both arms run, each under the lanes that took it
+    // the condition varies between points, so both arms run, each under the lanes that took it
     const int taken = put(runtime::Opcode::MASK, -1, condition, -1, conditional.condition);
     emitStatement(conditional.whenTrue);
     patch(taken, here());
@@ -307,8 +307,8 @@ void Emitter::emitLoop(const syntax::ExpressionPtr & condition, const syntax::St
     const syntax::StatementPtr & step) {
     /*
         A loop is masked whether its condition varies or not. A uniform condition narrows the
-        loop's lanes all together, so it behaves as the jump it would have compiled to, and
-        one form means break and continue have one meaning rather than two.
+        loop's lanes all together, so it behaves as the jump it would have compiled to. With
+        one form, break and continue have one meaning rather than two.
     */
     const int open = put(runtime::Opcode::LOOP, -1, -1, -1, condition);
     const int top = here();
@@ -318,8 +318,8 @@ void Emitter::emitLoop(const syntax::ExpressionPtr & condition, const syntax::St
     }
     emitStatement(body);
     if (step) {
-        // a lane that took a continue comes back for the step: C's continue goes to it
-        // rather than past it, and a counter that stopped advancing would never end
+        // a lane that took a continue still runs the step, as C's continue does; otherwise
+        // its counter would stop advancing and the loop would never end
         put(runtime::Opcode::LOOP_RESTORE, -1, -1, -1, condition);
         emitStatement(step);
     }
@@ -365,8 +365,8 @@ int Emitter::emitExpression(const syntax::ExpressionPtr & expression) {
         case syntax::Expression::Kind::BINARY:
             return emitBinary(expression);
         case syntax::Expression::Kind::TERNARY: {
-            // both arms are computed and one is chosen, which is what a mask would do with
-            // fewer instructions and the same work
+            // both arms are computed and one is chosen: the same work a mask would do, in
+            // fewer instructions
             const syntax::Ternary & ternary = static_cast<const syntax::Ternary &>(*expression);
             const int condition = emitExpression(ternary.condition);
             const int result = temporary(expression->type, expression->storage);
@@ -420,8 +420,8 @@ int Emitter::emitCast(const syntax::ExpressionPtr & expression) {
     if (cast.space.empty()) {
         return result;
     }
-    // the space is what makes a cast a transform, and which transform it is comes from the
-    // type: a point translates, a vector does not, a normal goes by the inverse transpose
+    // a space name makes a cast a transform, and the type decides which transform: a point
+    // translates, a vector does not, a normal goes by the inverse transpose
     const int space = string(cast.space);
     const int moved = temporary(expression->type, expression->storage);
     put(runtime::Opcode::TRANSFORM, moved, result, space, expression);
@@ -473,8 +473,8 @@ void Emitter::emitLighting(const syntax::StatementPtr & statement) {
     if (lighting.construct != syntax::Lighting::Construct::ILLUMINANCE) {
         /*
             A light shader's end of the message passing. L and Ps are its own globals: the
-            construct writes the first for every point it lights and reads the second to
-            know where each of those points is.
+            construct writes the first for every point it lights and reads the second for
+            the position of each of those points.
         */
         open.opcode = lighting.construct == syntax::Lighting::Construct::ILLUMINATE
             ? runtime::Opcode::ILLUMINATE : runtime::Opcode::SOLAR;

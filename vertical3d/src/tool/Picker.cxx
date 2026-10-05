@@ -22,7 +22,7 @@ namespace {
 
 /**
  * Where along a segment the closest point to a target is, as a fraction of it,
- * clamped to the segment's ends. A degenerate segment answers with its start.
+ * clamped to the segment's ends. A degenerate segment returns zero, its start.
  **/
 float closest(const glm::vec2& from, const glm::vec2& to, const glm::vec2& target) {
     const glm::vec2 along = to - from;
@@ -106,8 +106,8 @@ void Picker::visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
         return;
     }
 
-    // an object has to be selected before any of its components may be, which is what
-    // keeps a component click inside the mesh the user is working on
+    // an object has to be selected before any of its components may be, so a component
+    // click stays inside the mesh the user is working on
     if (mask_ != SelectMask::Object && !mesh->selected()) {
         return;
     }

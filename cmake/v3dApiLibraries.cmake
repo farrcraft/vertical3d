@@ -1,14 +1,13 @@
-# What each api library depends on, and the only place in the tree that says so before any
-# of them has been configured.
+# What each api library depends on. This is the only place in the tree that states it before
+# any library has been configured.
 #
-# A consumer names the libraries it links in V3D_LIBRARIES and gets those and their closure -
-# nothing else is added and no package outside that closure is looked for, so an app wanting
-# only v3d::image does not need the Vulkan SDK to configure. See ADR-0033.
+# A consumer names the libraries it links in V3D_LIBRARIES, and gets those and every library
+# they depend on. Nothing else is added and no package outside that set is looked for, so an
+# app that uses only v3d::image does not need the Vulkan SDK to configure.
 #
-# This is a second statement of what each library's own target_link_libraries already says,
-# which is a fact recorded twice. v3d_api_verify_manifest below is what stops the two
-# disagreeing: it reads the real link graph once every library has been added and fails the
-# configure on a difference in either direction.
+# This repeats what each library's own target_link_libraries already says.
+# v3d_api_verify_manifest below keeps the two in step: it reads the real link graph once every
+# library has been added, and fails the configure on a difference in either direction.
 
 # Every api library, by the name that follows v3dlib_ and v3d::.
 set(V3D_API_LIBRARIES
@@ -27,8 +26,8 @@ set(V3D_API_asset_PATH "asset")
 set(V3D_API_asset_REQUIRES log)
 set(V3D_API_asset_PACKAGES)
 
-# Under api/asset but not part of it: the loaders for what has to be decoded rather than read,
-# which is what keeps their libraries out of a closure that only reads documents - ADR-0079.
+# Under api/asset but a separate library: the loaders for formats that have to be decoded
+# rather than read. A selection that only reads documents does not pull in their packages.
 set(V3D_API_asset_media_PATH "asset/media")
 set(V3D_API_asset_media_REQUIRES log asset image type)
 set(V3D_API_asset_media_PACKAGES cgltf)
@@ -85,8 +84,8 @@ set(V3D_API_render_PATH "render")
 set(V3D_API_render_REQUIRES log asset asset_media ecs font image type)
 set(V3D_API_render_PACKAGES Vulkan VulkanMemoryAllocator SDL3 glm EnTT)
 
-# Under api/render but not part of it: the offline renderer of ADR-0022 is built on this and it
-# names neither Vulkan nor SDL, which is the whole reason it is selectable on its own.
+# Under api/render but a separate library: the offline renderer is built on it. It names
+# neither Vulkan nor SDL, so it can be selected without them.
 set(V3D_API_render_offline_PATH "render/offline")
 set(V3D_API_render_offline_REQUIRES log image type)
 set(V3D_API_render_offline_PACKAGES glm)
@@ -100,8 +99,8 @@ set(V3D_API_ui_REQUIRES log render asset event font image input type)
 set(V3D_API_ui_PACKAGES glm EnTT)
 
 # The imported target each package provides, which is how the verification below recognises
-# a package in a link line. A package whose whole contribution is an include directory -
-# cgltf is the only one - has no target and so cannot be checked this way.
+# a package in a link line. A package that provides only an include directory, such as cgltf,
+# has no target and so cannot be checked this way.
 set(V3D_PACKAGE_TARGETS
 	"Vulkan::Vulkan=Vulkan"
 	"GPUOpen::VulkanMemoryAllocator=VulkanMemoryAllocator"
@@ -114,9 +113,9 @@ set(V3D_PACKAGE_TARGETS
 	"EnTT::EnTT=EnTT"
 	"spdlog::spdlog=spdlog")
 
-# A package whose whole contribution is an include directory has no target to appear in a
-# link line, so nothing can confirm the library still uses it and the verification below has
-# to take the manifest's word for it.
+# A package that provides only an include directory has no target to appear in a link line.
+# The verification below cannot confirm the library still uses it, and accepts the manifest
+# entry as it is.
 set(V3D_PACKAGES_WITHOUT_TARGET cgltf)
 
 # Expand V3D_LIBRARIES into the set of libraries to add and the set of packages to look for.
@@ -179,10 +178,10 @@ endfunction()
 # Read the link graph the libraries actually declared and compare it to the manifest above.
 # Called once every api library has been added.
 #
-# A library missing from a REQUIRES list is the failure that matters: this tree always builds
-# the whole api, so nothing here would notice until a consumer selected a narrow set and got
-# an unknown target. The reverse - a manifest entry no link line backs - is reported too,
-# because a stale entry drags a package into a configure that no longer needs it.
+# A library missing from a REQUIRES list is the important failure. This tree always builds
+# the whole api, so the omission would show only when a consumer selected a narrow set and got
+# an unknown target. A manifest entry that no link line backs is reported too, because a stale
+# entry adds a package to a configure that does not need it.
 function(v3d_api_verify_manifest)
 	set(problems)
 	foreach(library IN LISTS V3D_API_BUILD)
@@ -254,11 +253,11 @@ endfunction()
 # what the library links PUBLIC. Called once every api library has been added, with the api/
 # directory the libraries were added from.
 #
-# The rule is Build.md's: a library links another PUBLIC when one of its headers includes one
-# of that library's, and PRIVATE otherwise. Getting it wrong compiles as long as some other
-# library happens to export the same dependency, which is what hid four of them - so a header
-# that includes what its library links PRIVATE fails here, and so does a PUBLIC link that no
-# header needs.
+# A library links another PUBLIC when one of its headers includes one of that library's
+# headers, and PRIVATE otherwise. A wrong link still compiles as long as some other library
+# happens to export the same dependency, so the compiler does not catch it. A header that
+# includes what its library links PRIVATE fails here, and so does a PUBLIC link that no header
+# needs.
 #
 # It runs at configure, so a header edited since then is checked at the next one; CI
 # configures every run.
@@ -320,6 +319,6 @@ function(v3d_api_verify_visibility root)
 		message(FATAL_ERROR
 			"An api library's link visibility disagrees with its headers:\n${problems}\n"
 			"Link PUBLIC what a header includes and PRIVATE what only a source does - "
-			"docs/Build.md#linking-rules.")
+			"docs/contributing/Build.md#linking-rules.")
 	endif()
 endfunction()

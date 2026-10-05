@@ -75,7 +75,7 @@ class Engine final : public v3d::engine::Engine {
 
     /**
      * Track the cursor. A click carries no position of its own, so the last motion is
-     * where the click happened - which is how the editor reads a pick too.
+     * where the click happened.
      **/
     void handleMotion(const v3d::event::kind::MouseMotion& event);
 
@@ -87,7 +87,7 @@ class Engine final : public v3d::engine::Engine {
 
     /**
      * One tile in a direction, if the player is not already walking a route and the tile
-     * can be entered. The grid answers that, so a step and a route refuse the same tiles.
+     * can be entered. The grid decides that, so a step and a route refuse the same tiles.
      **/
     void step(int dx, int dy);
 

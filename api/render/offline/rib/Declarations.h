@@ -16,8 +16,9 @@ namespace v3d::render::offline::rib {
  * What a scene has declared, and what the standard declares for it.
  *
  * The standard geometric primitive variables and the parameters of the standard shaders
- * are here on construction. They are named as this table's own strings: RenderMan.h is
- * moya's C interface and this library sits below moya per ADR-0022.
+ * are here on construction. They are named by this table's own strings rather than by
+ * RenderMan.h's tokens, because RenderMan.h belongs to moya and this library must not
+ * depend on moya.
  **/
 class Declarations final {
  public:

@@ -24,8 +24,8 @@ glm::mat4x4 translation(float x) {
 };  // namespace
 
 /**
- * A still transformation answers itself exactly at every time, which is what keeps every
- * picture without a motion block the picture it was.
+ * A still transformation returns its matrix exactly at every time, so a scene without a
+ * motion block renders exactly as it would with no motion support.
  **/
 BOOST_AUTO_TEST_CASE(moving_transform_still_test) {
     const glm::mat4x4 skew(1.0f, 0.3f, 0.0f, 0.0f, 0.0f, 2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 0.0f, 1.0f, 2.0f, 3.0f, 1.0f);
@@ -95,7 +95,7 @@ BOOST_AUTO_TEST_CASE(moving_transform_requests_around_a_block_test) {
     const v3d::render::offline::MovingTransform camera = moving.before(translation(-10.0f));
     BOOST_CHECK_CLOSE(apply(camera.close(), glm::vec3(0.0f)).x, -6.0f, 1.0e-4f);
 
-    // and replacing it outside a block stops it
+    // replacing it outside a block stops it
     moving.replace(glm::mat4x4(1.0f));
     BOOST_CHECK(!moving.moving());
 }

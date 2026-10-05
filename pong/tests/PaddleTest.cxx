@@ -25,8 +25,8 @@ BOOST_AUTO_TEST_CASE(paddle_components_test) {
 }
 
 /**
- * position() writes an absolute and move() adds to it - the scene uses the first to centre a
- * paddle after a point and the second nowhere, so this is what keeps them distinct.
+ * position() writes an absolute position and move() adds to it. The scene uses only the
+ * first, to centre a paddle after a point, so this test keeps the two distinct.
  **/
 BOOST_AUTO_TEST_CASE(paddle_move_test) {
     entt::registry registry;

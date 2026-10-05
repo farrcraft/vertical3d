@@ -102,7 +102,7 @@ bool Grade::replace(const std::vector<uint8_t>& texels) {
         return false;
     }
     const TextureHandle replacement = createTable(texels);
-    // every source is paired with the new table before any is let go of its old pairing, so a
+    // every source is paired with the new table before any old pairing is released, so a
     // failure part way leaves the grade on the table it had
     std::vector<MaterialHandle> rebound;
     rebound.reserve(sources_.size());
@@ -138,8 +138,7 @@ void Grade::submit(const MaterialHandle& source, Pass* pass) const {
 /**
  **/
 TextureHandle Grade::createTable(const std::vector<uint8_t>& texels) {
-    // sampled linearly between entries, the factory's default, which is what makes sixteen of
-    // them enough
+    // sampled linearly between entries, the factory's default, so sixteen of them are enough
     const vulkan::memory::TextureFactory factory(context_->device(), context_->uploader());
     return context_->resources()->add(factory.volume(texels.data(), SIZE, SIZE, SIZE));
 }

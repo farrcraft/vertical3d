@@ -102,8 +102,8 @@ BOOST_AUTO_TEST_CASE(film_uniform_test) {
 }
 
 /**
- * Half of a pixel's samples hitting is a coverage of a half under a box, which is the fraction
- * the coverage plane was built to hold. A black miss weighs in, so the colour is premultiplied.
+ * Half of a pixel's samples hitting is a coverage of a half under a box, the fraction the
+ * coverage plane holds. A black miss weighs in, so the colour is premultiplied.
  **/
 BOOST_AUTO_TEST_CASE(film_half_coverage_test) {
     const v3d::render::offline::Sampling sampling = box(2, 1.0f);
@@ -125,8 +125,8 @@ BOOST_AUTO_TEST_CASE(film_half_coverage_test) {
 }
 
 /**
- * One sample a pixel under a box one pixel wide is the sample, exactly, and it is at the
- * pixel's centre: that is what keeps a reference rendered before there was a film.
+ * One sample a pixel under a box one pixel wide resolves to the sample exactly, and the
+ * sample is at the pixel's centre.
  **/
 BOOST_AUTO_TEST_CASE(film_one_sample_is_exact_test) {
     const v3d::render::offline::Sampling sampling = box(1, 1.0f);
@@ -168,7 +168,7 @@ BOOST_AUTO_TEST_CASE(film_one_sample_is_exact_test) {
 }
 
 /**
- * A pixel's samples are the same whatever order pixels are asked for in and on a second
+ * A pixel's samples are the same whatever order pixels are requested in and on a second
  * sampler, fall inside the pixel, and differ from one pass to the next.
  **/
 BOOST_AUTO_TEST_CASE(film_sampler_is_deterministic_test) {
@@ -202,7 +202,7 @@ BOOST_AUTO_TEST_CASE(film_sampler_is_deterministic_test) {
 }
 
 /**
- * Samples are stratified: one falls in each cell of the grid PixelSamples asks for.
+ * Samples are stratified: one falls in each cell of the grid PixelSamples requests.
  **/
 BOOST_AUTO_TEST_CASE(film_sampler_is_stratified_test) {
     v3d::render::offline::Sampling sampling;

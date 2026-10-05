@@ -63,8 +63,8 @@ BOOST_AUTO_TEST_CASE(cameraprofiles_load_test) {
 }
 
 BOOST_AUTO_TEST_CASE(cameraprofiles_orientation_test) {
-    // the lookat is what orients a profile: the three normals and the rotation have to
-    // agree, and a table naming each of them separately is a table that can disagree
+    // lookat() orients a profile, so the three normals and the rotation agree; a table
+    // naming each of them separately could disagree
     v3d::config::CameraProfiles profiles(logger());
     BOOST_REQUIRE(profiles.load(config(cameras)));
 

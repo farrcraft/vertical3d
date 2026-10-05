@@ -65,10 +65,9 @@ void Arranger::walk(v3d::render::realtime::Canvas* canvas, const boost::shared_p
         return;
     }
 
-    // a component that holds more than it can show cuts what it holds off at its own box,
-    // per ADR-0037. It is what the component asked for rather than the default, because a
-    // menu drops a panel out of the strip it came from
-    // a clip is the canvas's, so a walk asked for boxes alone has nothing to push it onto
+    // a component that holds more than it can show clips what it holds to its own box. Only
+    // when it asks, because a menu drops a panel out of the strip it came from.
+    // A clip is the canvas's, so a layout pass with no canvas has nothing to push it onto
     const bool cut = component->clip() && canvas != nullptr;
     if (cut) {
         canvas->clip(component->position(), component->position() + component->size());
@@ -113,7 +112,7 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::geometry::Bou
             }
             const float line = measure_(label->text());
             // a label given a width wraps to it, and what it makes of the other axis is the
-            // rows it came to - which is what an Auto height is offered, per ADR-0039
+            // height of the rows it came to, which an Auto height is offered
             if (component.layout().width.unit() == Length::Unit::Auto) {
                 return glm::vec2(line, styles_.base().lineHeight);
             }
@@ -210,7 +209,7 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::geometry::Bou
             break;
     }
     // every enumerator is handled above and the switch carries no default, so C4062 names
-    // this function when a component type is added - see ADR-0047
+    // this function when a component type is added
     return room.size();
 }
 
@@ -230,8 +229,8 @@ void Arranger::arrange(const component::Box& box, const v3d::type::geometry::Bou
 
     for (const boost::shared_ptr<Component>& child : box.children()) {
         if (!child || !child->visible()) {
-            // a hidden row leaves no gap behind it, which is what makes a list of however
-            // many rows there are read as one
+            // a hidden row leaves no gap behind it, so a list of however many rows there are
+            // reads as one
             boxes->push_back(v3d::type::geometry::Bound2D(bounds.position(), glm::vec2(0.0f, 0.0f)));
             continue;
         }
@@ -461,7 +460,7 @@ void Arranger::panel(component::Menu& menu, const glm::vec2& origin, const glm::
         base.lineHeight * static_cast<float>(count) + base.panelPadding * 2.0f);
 
     // a panel that would hang off an edge is moved back onto the canvas rather than clipped,
-    // which is what puts the last menu of a bar's flyouts back inside the window
+    // so the flyouts of a bar's last menu stay inside the window
     glm::vec2 corner(std::min(origin.x, room.x - size.x), std::min(origin.y, room.y - size.y));
     corner = glm::vec2(std::max(corner.x, 0.0f), std::max(corner.y, 0.0f));
     place(menu, corner, size);
@@ -507,8 +506,8 @@ void Arranger::centred(component::Menu& level, const glm::vec2& room) const {
 v3d::type::geometry::Bound2D Arranger::lineRoom(bool vertical, const v3d::type::geometry::Bound2D& bounds) {
     // along the line the children share the room, so none of them is offered any of it: an
     // Auto extent there is what the child makes of itself, and a child that makes nothing of
-    // itself asks for nothing. Across the line each is offered the whole of it, which is what
-    // stretch() then insists on
+    // itself asks for nothing. Across the line each is offered the whole of it, which
+    // stretch() then enforces
     const glm::vec2 extent = bounds.size();
     return v3d::type::geometry::Bound2D(bounds.position(), vertical ? glm::vec2(extent.x, 0.0f) : glm::vec2(0.0f, extent.y));
 }

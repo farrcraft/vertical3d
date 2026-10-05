@@ -46,8 +46,8 @@ Type declared(rib::Declaration::Type type) {
 /**
  * A position or a direction out of the space it was stated in and into the machine's.
  *
- * Which of the three transforms it takes is what tells the point-like types apart, and
- * getting it wrong is invisible under every uniform scale.
+ * The point-like types differ in which of the three transforms they take. Using the wrong
+ * one is invisible under any uniform scale.
  **/
 glm::vec3 moved(Type type, const glm::mat4x4 & placement, const glm::vec3 & given) {
     switch (type) {
@@ -69,8 +69,8 @@ glm::vec3 moved(Type type, const glm::mat4x4 & placement, const glm::vec3 & give
 Instance::Instance(const ProgramPtr & program, const boost::shared_ptr<v3d::log::Logger> & logger) :
     program_(program),
     logger_(logger) {
-    // a light shader that never says where its light comes from lights every point of
-    // every batch, which is what ambient() sums and an illuminance loop cannot reach
+    // a light shader with neither illuminate nor solar lights every point of every batch;
+    // ambient() sums such lights and an illuminance loop skips them
     ambient_ = program_->type == ShaderType::LIGHT &&
         std::ranges::none_of(program_->instructions, [](const runtime::Instruction & instruction) {
             return instruction.opcode == runtime::Opcode::ILLUMINATE ||
@@ -126,7 +126,7 @@ void Instance::bind(const rib::ParameterList & parameters) {
         const rib::Declaration* declaration = parameters.declaration(given);
         const Type type = declaration == nullptr ? Type::VOID : declared(declaration->type());
         if (!coercible(type, held->type)) {
-            // reinterpreted rather than reported is how a picture comes out wrong quietly
+            // reported rather than reinterpreted, so the picture is not silently wrong
             logger_->get()->warn("'{}' of the shader '{}' is {} and the scene bound {}",
                 given, program_->name, sl::name(held->type),
                 type == Type::VOID ? "something with no reading" : sl::name(type));
@@ -140,8 +140,8 @@ void Instance::bind(const rib::ParameterList & parameters) {
         const std::vector<float> & values = parameters.floats(given);
         held->values.assign(components(held->type), 0.0f);
         for (unsigned int component = 0; component < held->values.size(); component++) {
-            // a float bound onto a colour replicates, which is RI's promotion and is what
-            // "Color [1]" and a one value "specularcolor" both mean
+            // a float bound onto a colour replicates, as RI promotes it; "Color [1]" and a
+            // one value "specularcolor" both rely on this
             const std::size_t which = values.size() == 1 ? 0 : component;
             if (which < values.size()) {
                 held->values[component] = values[which];
@@ -151,8 +151,8 @@ void Instance::bind(const rib::ParameterList & parameters) {
 }
 
 void Instance::write(runtime::Machine* machine, const glm::mat4x4 & placement) const {
-    // the declared defaults, run rather than remembered: what a coordinate space in one
-    // comes to is the renderer's answer, and the machine has one now
+    // the declared defaults, run rather than remembered: the renderer resolves a coordinate
+    // space in one, and the machine has a renderer attached now
     machine->initialise();
 
     for (const Binding & held : bindings_) {

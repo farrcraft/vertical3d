@@ -49,7 +49,7 @@ class TransformStack final {
 };
 
 /**
- * A canvas's open clips, per ADR-0037, each already intersected with the one outside it so an
+ * A canvas's open clips, each already intersected with the one outside it so an
  * inner clip can only take room away.
  **/
 class ClipStack final {

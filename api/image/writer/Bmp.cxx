@@ -45,8 +45,7 @@ bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
 
     fheader.type_ = 19778;
     fheader.offset_ = sizeof(bmp_file_header) + sizeof(bmp_info_header) + shades * sizeof(bmp_rgb_quad);
-    // the total file size, filled in below once the padded data length is known -
-    // sizeof(img->data()) was the size of the pointer
+    // the total file size, filled in below once the padded data length is known
     fheader.size_ = fheader.offset_;
 
     bmp_info_header iheader;
@@ -98,9 +97,8 @@ bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     const unsigned char* temp = img->data();
 
     // each row is copied on its own, because the padding is per row and the source
-    // image has none of it. Walking both buffers with a single index and a modulo test
-    // ran off the end of each - past the destination by a row's worth of padding, and
-    // past the source by however many bytes of padding the whole image adds up to.
+    // image has none of it. A single index over both buffers would run off the end of
+    // each.
     for (uint64_t row = 0; row < rows; ++row) {
         unsigned char* dest = data + row * pad;
         const unsigned char* src = temp + row * rowBytes;

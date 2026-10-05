@@ -19,7 +19,7 @@ class PongScene {
  public:
     /**
      * The court, in its own units. The rules are written against it, and the renderer maps it
-     * into whatever the window is - ADR-0075.
+     * onto a canvas with its own coordinate space, fitted to whatever the window is.
      **/
     static constexpr float width = 800.0f;
     static constexpr float height = 600.0f;

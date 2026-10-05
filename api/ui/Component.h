@@ -23,9 +23,8 @@ namespace v3d::ui {
  * All UI components are all derived from this class.
  *
  * A component holds other components, and layout() says where it sits in the one holding
- * it. position() and size() are the box it was last drawn in - the output of the walk
- * that resolves layout(), and what the cursor is tested against, per ADR-0019 and
- * ADR-0034.
+ * it. position() and size() are the box it was last drawn in: the output of the layout
+ * pass that resolves layout(), and what the cursor is tested against.
  */
 class Component {
  public:
@@ -111,8 +110,8 @@ class Component {
     component::Type type() const;
 
     /**
-     * Set the component's z index depth value, which is what a container draws in order
-     * of. Equal depths keep the order they were added in.
+     * Set the component's z index depth value, which a container draws in order of. Equal
+     * depths keep the order they were added in.
      * @param index the new depth
      **/
     void depth(unsigned int index);
@@ -144,20 +143,20 @@ class Component {
 
     /**
      * Take an item this component holds outside children() - a toolbar's buttons, a menu's
-     * items - so that what is said of this component is said of it: usable() walks up through
-     * the holder, and a disabled strip disables what is on it (ADR-0059). The item is laid out
-     * and drawn by the holder itself, so it is not a child and no walk reaches it as one.
+     * items - so that the item inherits from this component: usable() walks up through the
+     * holder, and a disabled strip disables what is on it. The holder lays out and draws the
+     * item itself, so it is not a child and no traversal reaches it as one.
      *
      * An item already held by something else is left with it, as add() leaves a child.
      **/
     void adopt(Component& item) noexcept;
 
     /**
-     * Get whether the component answers the cursor.
+     * Get whether the component takes the cursor.
      *
-     * False by default, and deliberately: a hud is mostly labels and bars drawn over a
-     * scene that has to stay clickable, so a component takes a press only when it was
-     * asked to. ADR-0034.
+     * False by default: a hud is mostly labels and bars drawn over a scene that has to
+     * stay clickable, so a component takes a press only when it is set. Controls set it in
+     * their constructors.
      **/
     bool pickable() const;
     void pickable(bool pick);
@@ -165,10 +164,9 @@ class Component {
     /**
      * Get whether the component takes the keyboard.
      *
-     * False by default, for the reason pickable() is: most of a ui has nothing to type
-     * into, and a press that took the keyboard off a text box every time it landed on a
-     * panel would make one unusable. A component that reads keys - a text box - asks for
-     * it. ADR-0040.
+     * False by default: most of a ui has nothing to type into, and a press that took the
+     * keyboard off a text box whenever it landed on a panel would make the box unusable.
+     * Controls that read keys set it in their constructors.
      **/
     bool focusable() const;
     void focusable(bool takes);
@@ -176,9 +174,9 @@ class Component {
     /**
      * Get whether the keyboard is on this component.
      *
-     * Written by Engine::focus(), which is what keeps one component focused at a time.
-     * It is a flag here rather than a question for the engine so that drawing a component
-     * reads the component, per ADR-0019.
+     * Written by Engine::focus(), which keeps one component focused at a time. A flag here
+     * rather than a question for the engine, so that drawing a component reads only the
+     * component.
      **/
     bool focused() const;
     void focused(bool on);
@@ -186,9 +184,9 @@ class Component {
     /**
      * Get whether what this component holds is cut off at its box.
      *
-     * False by default, and deliberately: a menu drops a panel out of the strip it came
+     * False by default: a menu drops a panel out of the strip it came
      * from, and a badge sits half outside the plate it belongs to. A component that holds
-     * more than it can show - a list, a scrolled panel - asks for it. ADR-0037.
+     * more than it can show - a list, a scrolled panel - sets it.
      **/
     bool clip() const;
     void clip(bool cut);
@@ -199,8 +197,8 @@ class Component {
      * True by default, and a property of the component rather than a state something
      * writes as the cursor moves: a disabled component is not offered a point, is not
      * reached by the tab order, and is drawn in the theme's disabled colour. A component
-     * that holds others disables them with it, so a box is what a screen greys a group of
-     * controls out with. ADR-0059.
+     * that holds others disables them with it, so a screen greys out a group of controls by
+     * disabling the box around them.
      **/
     bool enabled() const;
     void enabled(bool on);
@@ -233,12 +231,11 @@ class Component {
 std::vector<boost::shared_ptr<Component>> ordered(const std::vector<boost::shared_ptr<Component>>& components);
 
 /**
- * Whether components are already in the order they are drawn, so that a walk over them
+ * Whether components are already in the order they are drawn, so that a loop over them
  * needs no sorted copy of its own.
  *
- * True whenever nothing has been given a depth, which is every container in the tree
- * today - so the common case costs a scan rather than an allocation and a sort, once per
- * parent per frame.
+ * True whenever nothing has been given a depth, which is the common case, so it costs a
+ * scan rather than an allocation and a sort, once per parent per frame.
  **/
 bool inDrawOrder(const std::vector<boost::shared_ptr<Component>>& components) noexcept;
 
@@ -246,9 +243,9 @@ bool inDrawOrder(const std::vector<boost::shared_ptr<Component>>& components) no
  * Whether a component can be used, which is whether it and everything holding it are
  * enabled.
  *
- * The walks that offer a point and collect a tab order skip a disabled subtree whole and
- * never have to ask, but drawing reaches a component on its own - and a label greyed
- * because the box around it is disabled is what inheriting means. ADR-0059.
+ * Picking and the tab order skip a disabled subtree whole and never need to ask. Drawing
+ * reaches each component on its own, so it asks here, and a label inside a disabled box is
+ * drawn greyed.
  **/
 bool usable(const Component& component) noexcept;
 

@@ -130,8 +130,8 @@ Swapchain::Support Swapchain::querySupport() const {
 /**
  **/
 VkSurfaceFormatKHR Swapchain::chooseFormat(const std::vector<VkSurfaceFormatKHR>& formats, VkFormat preferred) {
-    // a caller's format wins where the surface offers it, and falls through where it does
-    // not - ADR-0049
+    // a caller's format is used where the surface offers it, and falls through where it does
+    // not
     if (preferred != VK_FORMAT_UNDEFINED) {
         for (const VkSurfaceFormatKHR& format : formats) {
             if (format.format == preferred && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
@@ -141,8 +141,8 @@ VkSurfaceFormatKHR Swapchain::chooseFormat(const std::vector<VkSurfaceFormatKHR>
     }
 
     // a UNORM format rather than an SRGB one, so a colour a shader writes is the colour
-    // that appears - see ADR-0009. An _SRGB target encodes on write, taking every colour
-    // in the engine as linear and brightening it
+    // that appears. An _SRGB target encodes on write, treating every colour in the engine
+    // as linear and brightening it
     for (const VkSurfaceFormatKHR& format : formats) {
         if ((format.format == VK_FORMAT_B8G8R8A8_UNORM || format.format == VK_FORMAT_R8G8B8A8_UNORM) &&
             format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
@@ -248,8 +248,8 @@ void Swapchain::create(uint32_t width, uint32_t height) {
 
     logger_->get()->info("Created a vulkan swapchain of {} images at {} x {}", images_.size(), extent_.width, extent_.height);
 
-    // silent when there was no preference or it was met; a caller whose colours depend on
-    // the format would otherwise have to work out that it did not get one - ADR-0049
+    // silent when there was no preference or it was met. A caller whose colours depend on
+    // the format is told when it did not get the one it named
     if (preferred_ != VK_FORMAT_UNDEFINED && format_ != preferred_) {
         logger_->get()->warn("The surface does not offer swapchain format {}, so {} is what the chain was built with",
             static_cast<int>(preferred_), static_cast<int>(format_));

@@ -19,17 +19,16 @@ class Component;
 namespace v3d::ui::input {
 
 /**
- * The command a component sends when it is activated, per ADR-0040.
+ * The command a component sends when it is activated.
  *
- * Both routers ask: ui::Cursor for a press and ui::Keys for a return or a space. Which
- * components carry a command is one list rather than one per router, because a component
- * a press activates and a key does not is the defect this exists to make unrepresentable.
+ * Both routers call this: ui::Cursor for a press and ui::Keys for a return or a space.
+ * Which components carry a command is one list shared by both routers, so a press and a
+ * key always activate the same components.
  *
- * A component does not own the state it shows - activating one sends its command and
- * marks nothing, and whatever answers the command sets checked(), per ADR-0019. A list
- * and a tab bar are the exception the ADR names: which row or page is chosen is a place
- * in what the component holds rather than a state a command owns, so the router moves it
- * before asking here.
+ * A component does not own the state it shows: activating one sends its command and marks
+ * nothing, and whatever handles the command sets checked(). A list and a tab bar are the
+ * exception. Which row or page is chosen is a position in what the component holds rather
+ * than a state a command owns, so the router moves it before calling this.
  *
  * A text box carries a command and is not activated by either router: a click into one is
  * somebody starting to type and a space is a space, so only a return sends it and ui::Keys

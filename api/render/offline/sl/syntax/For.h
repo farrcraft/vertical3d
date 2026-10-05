@@ -14,7 +14,7 @@ class For final : public Statement {
  public:
     For(unsigned int line, unsigned int column);
 
-    /** Any of the three heads may be null, which is what an empty one in the source is. **/
+    /** Any of the three heads may be null, when it is empty in the source. **/
     StatementPtr initialiser;
     ExpressionPtr condition;
     StatementPtr step;

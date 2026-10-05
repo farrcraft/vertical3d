@@ -23,7 +23,7 @@ boost::shared_ptr<v3d::asset::Manager> manager(const std::string& path = "data")
 
 /**
  * A manager starts with the two loaders that read a document, and nothing else - the rest are
- * registered by api/asset/media and api/audio, per ADR-0079.
+ * registered by api/asset/media and api/audio.
  **/
 BOOST_AUTO_TEST_CASE(manager_loader_per_registered_type_test) {
     auto assets = manager();
@@ -45,7 +45,7 @@ BOOST_AUTO_TEST_CASE(manager_unregistered_type_test) {
 
 /**
  * The extension picks the loader, and the asset that comes back is the one that loader
- * builds - which is what a dynamic_pointer_cast here is asking.
+ * builds, which the dynamic_pointer_cast here checks.
  **/
 BOOST_AUTO_TEST_CASE(manager_type_from_extension_test) {
     auto assets = manager();
@@ -94,8 +94,8 @@ BOOST_AUTO_TEST_CASE(manager_unknown_extension_test) {
 }
 
 /**
- * A typed load answers a file of another kind with null rather than with the wrong object,
- * and says so in the log rather than looking like a missing file.
+ * A typed load returns null for a file of another kind rather than the wrong object, and logs
+ * the mismatch so it does not look like a missing file.
  **/
 BOOST_AUTO_TEST_CASE(manager_typed_load_test) {
     auto assets = manager();

@@ -25,8 +25,8 @@ typedef v3d::render::offline::sl::Type Type;
 typedef v3d::render::offline::sl::Storage Storage;
 
 /**
- * Read a shader, check it and emit it. The three passes are separate classes and this is the
- * only place a case wants all of them at once.
+ * Read a shader, check it and emit it. The three passes are separate classes, and this suite
+ * needs all of them at once.
  **/
 bool build(const std::string & source, Program* program, std::string* error) {
     std::istringstream stream(source);
@@ -82,7 +82,7 @@ int put(Program* program, Opcode opcode, int target, int left, int right = -1) {
 }
 
 /**
- * How many instructions of that opcode a program holds - which is how a case says that a
+ * How many instructions of that opcode a program holds. A test uses it to check that a
  * uniform condition compiled to a jump rather than to a mask.
  **/
 std::size_t count(const Program & program, Opcode opcode) {
@@ -98,9 +98,9 @@ std::size_t count(const Program & program, Opcode opcode) {
 };  // namespace
 
 /**
- * The point of the batch: a hand-built program computes the same arithmetic over four points
- * and over one, and answers the same thing at the point they share. A single traced hit is not
- * a special case of the model, it is a batch one wide.
+ * A hand-built program computes the same arithmetic over four points and over one, and
+ * returns the same value at the point they share. A single traced hit is not a special case
+ * of the model; it is a batch one wide.
  **/
 BOOST_AUTO_TEST_CASE(slmachine_batch_of_one_test) {
     Program program;
@@ -127,14 +127,14 @@ BOOST_AUTO_TEST_CASE(slmachine_batch_of_one_test) {
     single.prepare(program, 1);
     single.value(x).number(0, 2.0f);
     BOOST_REQUIRE(single.run());
-    // the same instructions, a mask one bit wide, and the answer the grid gave at that point
+    // the same instructions, a mask one bit wide, and the value the grid gave at that point
     BOOST_CHECK_EQUAL(single.value(result).number(0), 7.0f);
     BOOST_CHECK_EQUAL(single.batch(), 1u);
 }
 
 /**
- * A uniform value is stored once and read by every point, which is the memory the storage
- * class decides.
+ * A uniform value is stored once and read by every point; the storage class decides how
+ * much memory a value takes.
  **/
 BOOST_AUTO_TEST_CASE(slmachine_uniform_is_one_element_test) {
     Program program;
@@ -155,8 +155,8 @@ BOOST_AUTO_TEST_CASE(slmachine_uniform_is_one_element_test) {
 }
 
 /**
- * A colour is three floats and a float promotes into it by replication, which is what
- * "Ci = Os * 0.5" leans on.
+ * A colour is three floats and a float promotes into it by replication. "Ci = Os * 0.5"
+ * relies on this.
  **/
 BOOST_AUTO_TEST_CASE(slmachine_promotion_test) {
     Program program;
@@ -179,7 +179,7 @@ BOOST_AUTO_TEST_CASE(slmachine_promotion_test) {
 
 /**
  * A varying condition runs both arms, each under the lanes that took it, so each lane comes
- * out with its own answer.
+ * out with its own value.
  **/
 BOOST_AUTO_TEST_CASE(slmachine_varying_if_test) {
     std::string error;
@@ -214,8 +214,7 @@ BOOST_AUTO_TEST_CASE(slmachine_varying_if_test) {
 }
 
 /**
- * A condition every point agrees about is a jump rather than a mask - the optimisation that
- * makes the common case free.
+ * A condition with the same value at every point is a jump rather than a mask.
  **/
 BOOST_AUTO_TEST_CASE(slmachine_uniform_if_is_a_jump_test) {
     std::string error;
@@ -308,8 +307,8 @@ BOOST_AUTO_TEST_CASE(slmachine_break_leaves_the_others_running_test) {
 }
 
 /**
- * A continue takes a lane out for the rest of the pass and gives it back at the next one,
- * which is the difference between it and a break.
+ * A continue takes a lane out for the rest of the iteration and gives it back at the next
+ * one, unlike a break.
  **/
 BOOST_AUTO_TEST_CASE(slmachine_continue_test) {
     std::string error;
@@ -416,7 +415,7 @@ BOOST_AUTO_TEST_CASE(slmachine_cast_and_compound_test) {
 }
 
 /**
- * The whole of `constant`, which is the shader phase 2's renderers were doing by hand.
+ * The complete `constant` shader, compiled and run.
  **/
 BOOST_AUTO_TEST_CASE(slmachine_constant_shader_test) {
     std::string error;
@@ -441,8 +440,8 @@ BOOST_AUTO_TEST_CASE(slmachine_constant_shader_test) {
 }
 
 /**
- * A named coordinate space is the renderer's answer rather than the machine's, and a machine
- * with no renderer attached says so once rather than at every point of every grid.
+ * The renderer resolves a named coordinate space, not the machine. A machine with no
+ * renderer attached reports it once rather than at every point of every grid.
  **/
 BOOST_AUTO_TEST_CASE(slmachine_transform_needs_a_renderer_test) {
     std::string error;
@@ -464,8 +463,7 @@ BOOST_AUTO_TEST_CASE(slmachine_transform_needs_a_renderer_test) {
 }
 
 /**
- * A shader with a loop nothing ends fails rather than hanging the render, because a hung
- * render says nothing about why.
+ * A shader with an endless loop fails rather than hanging the render.
  **/
 BOOST_AUTO_TEST_CASE(slmachine_endless_loop_test) {
     std::string error;
@@ -504,7 +502,7 @@ BOOST_AUTO_TEST_CASE(slmachine_prepare_once_test) {
 
 /**
  * A shader's own function is pasted in where it was called, because a run has no call stack
- * to return over. The arguments land on the formals, and the answer comes back in a register
+ * to return over. The arguments land on the formals, and the result comes back in a register
  * of the caller's own.
  **/
 BOOST_AUTO_TEST_CASE(slmachine_function_is_inlined_test) {
@@ -530,7 +528,7 @@ BOOST_AUTO_TEST_CASE(slmachine_function_is_inlined_test) {
 /**
  * A return means "this lane is done with the function", not "done with the shader". Under a
  * varying condition each lane leaves by its own arm and the shader carries on for all of
- * them, which is the whole reason an inlined body is bracketed rather than merely pasted.
+ * them. An inlined body is bracketed rather than merely pasted for this reason.
  **/
 BOOST_AUTO_TEST_CASE(slmachine_return_leaves_the_function_test) {
     std::string error;
@@ -594,8 +592,8 @@ BOOST_AUTO_TEST_CASE(slmachine_return_out_of_a_loop_test) {
 }
 
 /**
- * A machine runs the program it was prepared for and no other, so one that was never prepared
- * has nothing to run and says so rather than reading a register file it does not have.
+ * A machine runs the program it was prepared for and no other. One that was never prepared
+ * reports an error rather than reading a register file it does not have.
  **/
 BOOST_AUTO_TEST_CASE(slmachine_unprepared_test) {
     v3d::render::offline::sl::runtime::Machine machine;

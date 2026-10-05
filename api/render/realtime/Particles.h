@@ -14,7 +14,7 @@ namespace v3d::render::realtime {
 
 /**
  * The particles of every entity carrying both an ecs::component::Emitter and a
- * component::Particles, added to a depth order as quads - ADR-0072.
+ * component::Particles, added to a depth order as quads.
  *
  * Each particle is drawn alpha of the way from its previous position to its position. Its key
  * is how far that lies along depthAxis, measured as sprites() measures a sprite's, so particles

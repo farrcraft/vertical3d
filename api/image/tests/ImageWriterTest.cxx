@@ -340,7 +340,7 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_jpeg_takes_any_spelling_and_drops_alpha, Out
     v3d::image::Factory factory(logger);
 
     // red at half opacity: a jpeg has nowhere to put the alpha, and libjpeg's default
-    // handler ended the process rather than refuse four components under JCS_RGB
+    // handler would end the process rather than refuse four components under JCS_RGB
     boost::shared_ptr<v3d::image::Image> rgba = boost::make_shared<v3d::image::Image>(2, 2, 32);
     for (unsigned int pixel = 0; pixel < 4; ++pixel) {
         (*rgba)[pixel * 4 + 0] = 0xff;

@@ -22,8 +22,8 @@ class Register final {
     /** The symbol's name, or empty for a temporary. **/
     std::string name;
     /**
-     * Whether the symbol is a shader parameter, which is what a scene may bind and what
-     * the prologue leaves holding a declared default.
+     * Whether the symbol is a shader parameter. A scene may bind a parameter, and the
+     * prologue leaves it holding its declared default.
      **/
     bool parameter = false;
     /**

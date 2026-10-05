@@ -19,9 +19,9 @@ namespace v3d::render::offline {
  * opened and when it closed, and the times it named for each.
  *
  * Only a transform moves. Inside a block, each transform request applies to its own copy of
- * the transformation as the block found it, the first to the open end and the last to the
- * close; a block naming more than two times keeps its first and last. Outside one, a request
- * applies to both ends, so what follows a block moves with it.
+ * the transformation as it was when the block opened. The first request sets the open end and
+ * the last sets the close; a block naming more than two times keeps its first and last.
+ * Outside a block, a request applies to both ends, so what follows a block moves with it.
  *
  * The motion between the ends is translation and scale interpolated linearly and rotation by a
  * quaternion, which is exact for a rigid motion and a uniform scale. A shear, or a non-uniform
@@ -41,8 +41,8 @@ class MovingTransform final {
     const glm::vec2 & times() const;
 
     /**
-     * The transformation at a time, held at its ends outside the block's times. A still one
-     * answers itself exactly.
+     * The transformation at a time, held at its ends outside the block's times. A still
+     * transformation returns its matrix exactly.
      **/
     glm::mat4x4 at(float time) const;
 
@@ -85,7 +85,7 @@ class MovingTransform final {
     glm::quat openRotation_ { 1.0f, 0.0f, 0.0f, 0.0f };
     glm::quat closeRotation_ { 1.0f, 0.0f, 0.0f, 0.0f };
 
-    /** A block's state: the transformation it found, and each request's result so far. **/
+    /** A block's state: the transformation when it opened, and each request's result so far. **/
     bool inBlock_ { false };
     std::vector<float> blockTimes_;
     glm::mat4x4 baseOpen_;

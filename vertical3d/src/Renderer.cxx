@@ -33,7 +33,7 @@ constexpr glm::vec4 background(0.16f, 0.17f, 0.19f, 1.0f);
 const char* const handleSuffix = " handles";
 
 /**
- * The one pass that is not a view's, drawn over all of them.
+ * The pass that belongs to no view, drawn over all of them.
  **/
 const char* const uiPass = "ui";
 
@@ -41,8 +41,8 @@ const char* const uiPass = "ui";
  * How large the whole ui is drawn, as a multiple of the size it was laid out at.
  *
  * Every metric below is a multiple of the text size and the text size is a multiple of
- * this, so the editor scales by one number. That it is one number rather than a rebuilt
- * atlas is what ADR-0036 bought.
+ * this, so the editor scales by one number. Glyphs are distance fields, so a new scale
+ * does not need a rebuilt atlas.
  **/
 const float uiScale = 1.0f;
 
@@ -121,8 +121,8 @@ void Renderer::ui(const boost::shared_ptr<v3d::ui::Engine>& ui) {
         return;
     }
 
-    // the app half of ADR-0020: an image a theme names is an asset like any other, and
-    // the texture it becomes is the quad renderer's
+    // a theme names its images but does not load them. The app loads each one as an
+    // asset, and the device context's texture service owns the texture it becomes
     ui_->resolveImages([this](const std::string& source) -> v3d::render::realtime::TextureHandle {
         const v3d::asset::Type type = source.ends_with(".png")
             ? v3d::asset::Type::ImagePng : v3d::asset::Type::ImageTga;
@@ -161,8 +161,7 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics)
 
     boost::shared_ptr<v3d::render::realtime::vulkan::renderer::Line> lines = engine_.lines();
 
-    // a view with no scene still draws its grid, which is what an empty document looks
-    // like rather than an error
+    // a view with no scene still draws its grid: an empty document is not an error
     const Scene empty;
     const Scene& scene = scene_ ? *scene_ : empty;
 
@@ -182,8 +181,8 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics)
         pass->depth(true);
         pass->camera(view->camera()->view(), view->camera()->projection());
 
-        // the handles go over the top of what the scene pass left, undepth tested, so
-        // that a handle lying in the plane of the grid is not lost to it
+        // the handles are drawn over what the scene pass left, without a depth test, so
+        // a handle lying in the plane of the grid is not hidden by it
         boost::shared_ptr<v3d::render::realtime::Pass> overlay = frame->pass(view->name() + handleSuffix);
         overlay->viewport(view->region());
         overlay->keepColour();

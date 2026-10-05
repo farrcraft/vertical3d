@@ -68,7 +68,7 @@ class GameMenu {
     static const char* const toggleCommand;
 
     /**
-     * @return whether the menu is up, which is what suspends the game under it
+     * @return whether the menu is up, which suspends the game under it
      **/
     bool visible() const;
 
@@ -82,7 +82,7 @@ class GameMenu {
 
     /**
      * Act on one of the navigation commands an app's bindings send while the menu is up -
-     * "menuPrevious", "menuNext" and "selectMenu", which is what the mappings in an app's
+     * "menuPrevious", "menuNext" and "selectMenu", which the mappings in an app's
      * data directory name.
      *
      * @return whether the command was one of them and was acted on, which a command
@@ -100,9 +100,9 @@ class GameMenu {
      * Give the capturing item its value - a key name for a key input, per the table in
      * api/input/Keyboard.cpp.
      *
-     * An app feeds this from its key events while capturing() rather than binding them,
-     * which is what a rebinding screen is: the key that would normally do something is
-     * instead the answer to what should do it.
+     * An app feeds this from its key events while capturing() rather than binding them.
+     * That is how a rebinding screen works: the key pressed becomes the new binding instead
+     * of doing what it is bound to.
      *
      * @return whether a capture took it, which is false when the menu is down or when
      *         nothing is capturing

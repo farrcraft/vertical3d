@@ -21,27 +21,27 @@ namespace v3d::event {
  * What a device sent - a key or a button going down or up - as against the command a binding
  * makes of it, which is an Event.
  *
- * A type of its own so that the two are two sinks: a listener on sink<Event> hears commands
- * and nothing else, and one that wants the keys themselves, as a key capture does, asks for
- * sink<Source> - ADR-0081. It is an Event underneath because a binding is written in the same
- * terms for both ends, which is what a Mapper keys on.
+ * A type of its own so that the two go to separate sinks: a listener on sink<Event> receives
+ * commands only, and one that needs the keys themselves, such as a key capture, listens on
+ * sink<Source>. It derives from Event because a binding names both ends in the same terms, and
+ * a Mapper keys on them.
  **/
 class Source final : public Event {
  public:
     Source(const std::string& name, const boost::shared_ptr<Context>& context, State state);
 
     /**
-     * Take the key for the listener that heard it, so its bindings make nothing of it - what
-     * a key capture does, since the key is the answer and not a command. A listener hears a
-     * source as a const reference, which is why this is const.
+     * Consume the key, so its bindings send no command. A key capture does this, because it
+     * needs the key itself rather than a command. A listener receives a source as a const
+     * reference, so this is const.
      **/
     void consume() const noexcept;
 
     bool consumed() const noexcept;
 
  private:
-    // shared, because a dispatcher hands each listener a copy of what it was given, and
-    // publish() asks the one it sent
+    // shared, because a dispatcher gives each listener a copy, and publish() reads the flag
+    // on the one it sent
     boost::shared_ptr<bool> consumed_;
 };
 
@@ -54,13 +54,13 @@ struct Unclaimed final {
 };
 
 /**
- * Send a source to every listener, and then, unless one consumed it, the commands its
- * bindings make of it.
+ * Send a source to every listener on sink<Source>, and then, unless one consumed it, send the
+ * commands its bindings make of it.
  *
- * So every listener has heard the key before any hears what it was bound to, whatever order
- * they connected in - a dispatcher calls a sink's listeners in reverse order of connection,
- * which is why the event engine is not one of them. This is the one place a source is sent
- * from - ADR-0081.
+ * Every listener receives the key before any receives its command, whatever order they
+ * connected in. A dispatcher calls a sink's listeners in reverse order of connection, so the
+ * event engine listens for Unclaimed rather than for the key. A source is always sent through
+ * this function and never triggered directly.
  **/
 void publish(entt::dispatcher& dispatcher, const Source& source);
 

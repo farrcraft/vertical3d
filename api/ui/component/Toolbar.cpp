@@ -56,7 +56,7 @@ boost::shared_ptr<Button> Toolbar::button(std::size_t index) const {
 boost::shared_ptr<Button> Toolbar::buttonAt(const glm::vec2& cursor) const {
     for (const boost::shared_ptr<Button>& button : buttons_) {
         // a button that cannot be used is not offered the cursor, so the strip neither
-        // lights it nor sends its command - ADR-0059
+        // lights it nor sends its command
         if (!button || !usable(*button)) {
             continue;
         }

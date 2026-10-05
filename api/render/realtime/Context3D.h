@@ -29,9 +29,9 @@ class Context3D : public DeviceContext {
     /**
      * @param logger
      * @param window the window the context renders to
-     * @param preferred the colour format to present through - Swapchain, ADR-0049. What
-     *        was settled on is swapchain()->format(), which is what the quad renderer and
-     *        every other pipeline drawing into the chain is built against.
+     * @param preferred the colour format to present through - see Swapchain. The format
+     *        chosen is swapchain()->format(), which the quad renderer and every other
+     *        pipeline drawing into the chain are built against.
      **/
     Context3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Window>& window,
         VkFormat preferred = VK_FORMAT_UNDEFINED);

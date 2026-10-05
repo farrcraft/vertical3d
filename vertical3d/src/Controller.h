@@ -56,7 +56,7 @@ class Controller final : public v3d::engine::Engine {
     bool render() override;
 
     /**
-     * Offer every event to the ui before the bindings map it, per ADR-0043.
+     * Offer every event to the ui before the bindings map it.
      *
      * Only the keyboard goes this way. A press has to interleave with the camera and the
      * transform tools - drag() offers the ui the press and drives a camera with the one it
@@ -71,8 +71,8 @@ class Controller final : public v3d::engine::Engine {
     void handleEvent(const v3d::event::Event& event);
 
     /**
-     * The cursor moved. Which view it is over is what decides which camera a drag
-     * drives, so this is where the active view is chosen.
+     * The cursor moved. The view under the cursor decides which camera a drag drives, so
+     * this is where the active view is chosen.
      **/
     void handleMotion(const v3d::event::kind::MouseMotion& event);
 
@@ -107,8 +107,8 @@ class Controller final : public v3d::engine::Engine {
     void syncUi();
 
     /**
-     * Offer the cursor to the ui before the tools see it. Which part of the ui is offered
-     * it first is the library's, per ADR-0038.
+     * Offer the cursor to the ui before the tools see it. The ui library decides which of
+     * its parts is offered the cursor first.
      * @return whether the ui took it
      **/
     bool uiMotion(const glm::vec2& cursor);
@@ -120,9 +120,8 @@ class Controller final : public v3d::engine::Engine {
     bool uiPress(const glm::vec2& cursor);
 
     /**
-     * Register a handler for every command the editor answers to. What is not in here
-     * is what the editor cannot do, which is how an untranslated menu item reports
-     * itself.
+     * Register a handler for every command the editor supports. A menu item naming a
+     * command that is not registered here logs a warning when it is invoked.
      **/
     void registerCommands();
 
@@ -148,10 +147,10 @@ class Controller final : public v3d::engine::Engine {
     void saveProjectAs();
 
     /**
-     * Write the scene out as RIB for the offline renderer, per ADR-0023.
+     * Write the scene out as RIB for the offline renderer.
      *
-     * One way: topology and a placement per mesh, from the active view's camera. The
-     * project format stays the editor's own and nothing reads this back.
+     * Export only: topology and a placement per mesh, from the active view's camera.
+     * Nothing reads the RIB back; the editor saves and opens its own project format.
      **/
     void exportProject();
 

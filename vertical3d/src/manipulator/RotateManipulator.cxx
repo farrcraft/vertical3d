@@ -129,9 +129,8 @@ bool RotateManipulator::grab(const boost::shared_ptr<v3d::brep::BRep>& mesh, con
         return true;
     }
 
-    // a ring is not one segment, so the base class's test does not answer for it - but
-    // it is the run of segments it is drawn as, and each of those the base class can
-    // answer for
+    // a ring is not one segment, so it is tested as the run of segments it is drawn as,
+    // each with the base class's segment test
     glm::vec3 forward(0.0f, 0.0f, 1.0f);  // NOLINT(build/include_what_you_use) - the direction, not std::forward
     basis(view, nullptr, nullptr, &forward);
 

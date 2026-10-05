@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_CASE(playback_cuts_with_nothing_to_fade_from_test) {
 
 /**
  * Between two steps either side of a loop's end the time runs forwards through the end, not
- * back through the clip - which is what keeping it unwrapped is for.
+ * back through the clip, because the time is kept unwrapped.
  **/
 BOOST_AUTO_TEST_CASE(playback_interpolating_across_a_wrap_runs_forwards_test) {
     Playback before = walking();

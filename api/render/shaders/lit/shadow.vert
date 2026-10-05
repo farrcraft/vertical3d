@@ -3,8 +3,8 @@
 
 /**
  * The shadow pass: a caster drawn through the light rather than the camera, into a target
- * with depth and no colour. There is no fragment stage, because the depth test writes all
- * there is to write. A posed model casts its pose rather than the one it was bound in.
+ * with depth and no colour. There is no fragment stage, because only depth is written. A posed
+ * model casts the shadow of its current pose rather than its bind pose.
  **/
 
 #include "lit.glsl"

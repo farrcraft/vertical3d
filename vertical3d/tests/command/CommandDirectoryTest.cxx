@@ -62,8 +62,8 @@ BOOST_AUTO_TEST_CASE(commanddirectory_separates_contexts) {
 }
 
 /**
- * An unknown command runs nothing and says so, which is how an untranslated menu item
- * reports itself rather than failing silently.
+ * An unknown command runs nothing and invoke() returns false, so a menu item naming an
+ * unregistered command can be reported rather than failing silently.
  **/
 BOOST_AUTO_TEST_CASE(commanddirectory_reports_an_unknown_command) {
     v3d::editor::CommandDirectory directory;
@@ -143,8 +143,8 @@ BOOST_AUTO_TEST_CASE(commanddirectory_ignores_a_release_of_a_press_command) {
 }
 
 /**
- * The directory can say what the editor can do, which is what a menu translated from
- * another tree has to be checked against.
+ * The directory lists every registered command, so a menu definition can be checked
+ * against it.
  **/
 BOOST_AUTO_TEST_CASE(commanddirectory_lists_its_names_in_order) {
     v3d::editor::CommandDirectory directory;
@@ -161,7 +161,7 @@ BOOST_AUTO_TEST_CASE(commanddirectory_lists_its_names_in_order) {
 
 /**
  * An event with no context is named by its leaf alone. Nothing the editor binds arrives
- * that way, but the identity is what the directory keys on either way.
+ * that way, but the directory still keys on the event's identity.
  **/
 BOOST_AUTO_TEST_CASE(commanddirectory_invokes_a_contextless_event) {
     v3d::editor::CommandDirectory directory;

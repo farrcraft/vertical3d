@@ -68,7 +68,6 @@ void Plane::calculate(const glm::vec3 & A, const glm::vec3 & B, const glm::vec3 
     set(n, glm::dot(n, A));
 }
 
-// tested - seems ok
 void Plane::calculate(const glm::vec3 & normal, const glm::vec3 & point) {
     set(normal, glm::dot(normal, point));
 }
@@ -77,7 +76,6 @@ float Plane::signedDistance(const glm::vec3 & point) const {
     return equation_[0] * point[0] + equation_[1] * point[1] + equation_[2] * point[2] + equation_[3];
 }
 
-// tested - seems ok
 // classifies whether a point is on either side of the plane or on the plane itself.
 int Plane::classify(const glm::vec3 & point) const {
     /*
@@ -130,7 +128,6 @@ float Plane::operator[] (unsigned int i) const {
 }
 
 
-// tested - seems ok
 bool Plane::intersectEdge(const glm::vec3 & A, const glm::vec3 & B, glm::vec3 * hitPoint) const {
     glm::vec3 direction = B - A;
     float denom = glm::dot(normal(), direction);

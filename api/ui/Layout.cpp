@@ -16,7 +16,7 @@ v3d::type::geometry::Bound2D Layout::resolve(const v3d::type::geometry::Bound2D&
     const glm::vec2 size(width.resolve(extent.x, own.x), height.resolve(extent.y, own.y));
 
     // an Auto position is no offset at all, so a component that names neither x nor y sits
-    // at the corner it is anchored to - ADR-0039
+    // at the corner it is anchored to
     const glm::vec2 offset(x.resolve(extent.x, 0.0f), y.resolve(extent.y, 0.0f));
 
     glm::vec2 corner = parent.position() + offset;

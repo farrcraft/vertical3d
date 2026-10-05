@@ -22,8 +22,8 @@ BOOST_AUTO_TEST_CASE(config_string_to_type_test) {
 }
 
 /**
- * Unknown is what load() rejects an entry on, so anything that is not one of the seven above -
- * a case difference included - has to land there rather than on a neighbouring type.
+ * load() rejects an entry whose type is Unknown, so anything that is not one of the seven
+ * above, a case difference included, must map to Unknown rather than to a neighbouring type.
  **/
 BOOST_AUTO_TEST_CASE(config_unknown_type_name_test) {
     BOOST_TEST((v3d::config::stringToType("") == v3d::config::Type::Unknown));

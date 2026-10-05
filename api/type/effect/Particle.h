@@ -15,7 +15,7 @@ namespace v3d::type::effect {
  **/
 struct Particle final {
     glm::vec3 position;
-    glm::vec3 previous;  /**< where the step before left it, which a frame draws from - ADR-0072 **/
+    glm::vec3 previous;  /**< where the previous step left it; a frame interpolates from here **/
     glm::vec3 velocity;
     float age;           /**< seconds since birth **/
     float lifetime;

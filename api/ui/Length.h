@@ -14,7 +14,7 @@ namespace v3d::ui {
  * the box around it. Auto hands the number back to whatever asked: for a size that is what
  * the component makes of the axis - the width of a label's text, the side of an icon, the
  * room it was offered when it makes nothing - and for a position it is the anchored corner
- * itself. ADR-0039.
+ * itself.
  **/
 class Length final {
  public:
@@ -25,7 +25,7 @@ class Length final {
     };
 
     /**
-     * An Auto length, which is what a component that names nothing is laid out with.
+     * An Auto length, which a component that names nothing is laid out with.
      **/
     Length() noexcept;
 
@@ -36,7 +36,7 @@ class Length final {
 
     /**
      * @param extent the parent's extent in this axis, which a Percent is of
-     * @param own what the component makes of this axis itself, which is what Auto is
+     * @param own what the component makes of this axis itself, which Auto resolves to
      * @return the length in pixels
      **/
     float resolve(float extent, float own) const noexcept;

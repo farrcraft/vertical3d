@@ -12,9 +12,8 @@ namespace v3d::type {
 /**
  * A set of an enum's bits, typed by the enum.
  *
- * What an int mask was standing in for: it cannot be handed a bit of another enum or a stray
- * number, and asking whether a bit is set says which enum it is asking about. An enum opts in
- * with one operator|, which is what lets `A | B` spell a set:
+ * Unlike an int mask, it cannot be given a bit of another enum or a stray number, and a test
+ * for a bit names its enum. An enum opts in with one operator|, so that `A | B` makes a set:
  *
  *     constexpr type::Flags<Feature> operator|(Feature a, Feature b) noexcept { return type::Flags<Feature>(a) | b; }
  **/

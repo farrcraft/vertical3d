@@ -25,16 +25,16 @@ namespace v3d::render::offline::sl {
 /**
  * Recursive descent over a shading language source.
  *
- * Recursive descent rather than a generated parser because the grammar is small and the
- * error messages are the reason anyone will read this code: every diagnostic names a line,
- * a column and what was expected, which a table driven parser makes hard to say well.
+ * Recursive descent rather than a generated parser, because the grammar is small and the
+ * error messages matter most. Every diagnostic names a line, a column and what was
+ * expected, which is hard to do well in a table driven parser.
  *
- * All five shader types parse. The two this phase does not execute - displacement and
- * volume - come back as shaders that answer false to `Shader::supported()`, so a scene
- * carrying one is told what is unsupported rather than what is malformed.
+ * All five shader types parse. Displacement and volume shaders are not executed: they come
+ * back as shaders whose `Shader::supported()` returns false, so a scene carrying one is
+ * told what is unsupported rather than what is malformed.
  *
- * **A parse that fails yields no shaders at all**, and error() says why. What a renderer
- * does about that is step 8's answer, not this class's.
+ * **A parse that fails yields no shaders at all**, and error() says why. The renderer
+ * decides what to do about it.
  **/
 class Parser final {
  public:
@@ -56,8 +56,8 @@ class Parser final {
 
  private:
     /**
-     * Thrown by the productions and caught by parse(), which is what keeps a production
-     * reading like the grammar rule it implements rather than like a chain of null checks.
+     * Thrown by the productions and caught by parse(), so a production reads like the
+     * grammar rule it implements rather than like a chain of null checks.
      **/
     class Failure final {};
 
@@ -76,7 +76,7 @@ class Parser final {
      **/
     bool at(Token::Kind kind, const std::string & text);
     /**
-     * Consume the next token when it is that one, and say whether it was.
+     * Consume the next token when it is that one, and return whether it was.
      **/
     bool accept(Token::Kind kind, const std::string & text);
     /**
@@ -113,7 +113,7 @@ class Parser final {
      **/
     syntax::StatementPtr parseJump();
     /**
-     * A declaration inside a body, where a function definition is not allowed and says so.
+     * A declaration inside a body, where a function definition is not allowed and is reported.
      **/
     syntax::StatementPtr parseLocalDeclaration();
     /**
@@ -125,8 +125,8 @@ class Parser final {
      **/
     syntax::StatementPtr parseDeclaration(Storage storage, Type type, const Token & first);
     /**
-     * An assignment or a bare expression, leaving the semicolon for the caller - which is
-     * what lets a for loop's head reuse it.
+     * An assignment or a bare expression, leaving the semicolon for the caller so that a for
+     * loop's head can reuse it.
      **/
     syntax::StatementPtr parseSimpleStatement();
     syntax::StatementPtr parseLighting(syntax::Lighting::Construct construct);
@@ -148,8 +148,7 @@ class Parser final {
     syntax::ExpressionPtr parsePrimary();
     /**
      * A parenthesised expression or a comma separated list: three elements are a point or
-     * a colour and sixteen are a matrix, which is the compiler's check rather than this
-     * one's.
+     * a colour and sixteen are a matrix. The compiler checks the count, not the parser.
      **/
     syntax::ExpressionPtr parseParenthesised();
 

@@ -35,7 +35,7 @@ class Loader {
      * Load an asset
      *
      * @param name The path of the asset to be loaded
-     * @return the asset, or null with a line in the log saying why - every loader answers a
+     * @return the asset, or null with a line in the log saying why. Every loader reports a
      *         failure that way and none throws
      **/
     virtual boost::shared_ptr<Asset> load(std::string_view name) = 0;

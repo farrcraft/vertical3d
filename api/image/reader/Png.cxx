@@ -34,7 +34,7 @@ struct Cursor final {
  * libpng's own read, over memory instead of a FILE.
  *
  * A short buffer is an error rather than a short read: png_error longjmps out of the
- * decode, which is what stops the rows below being written from whatever was on the stack.
+ * decode, so the rows below are never filled from whatever was on the stack.
  **/
 void readFromBuffer(png_structp png, png_bytep into, png_size_t wanted) {
     Cursor* cursor = static_cast<Cursor*>(png_get_io_ptr(png));
@@ -80,8 +80,8 @@ boost::shared_ptr<Image> Png::read(const unsigned char* encoded, std::size_t siz
 
     // longjmp does not destroy anything constructed after the setjmp point, so every
     // object below that owns memory is declared above it. Without this libpng's default
-    // error handler aborts the process, which a reader pointed at bytes it did not open
-    // itself cannot afford - a truncated png is an ordinary thing to be handed.
+    // error handler aborts the process. A reader receives bytes it did not open itself,
+    // and a truncated png is an ordinary input, so it has to fail instead.
     boost::shared_ptr<Image> img;
     std::vector<png_bytep> rowpointers;
     // C4611 flags the mix of setjmp with C++ object destruction, which the declarations

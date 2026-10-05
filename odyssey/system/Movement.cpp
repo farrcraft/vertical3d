@@ -13,9 +13,9 @@ namespace odyssey::system {
 namespace {
 
 /**
- * How long an entity spends crossing one tile. A diagonal costs the same as an orthogonal
- * step, per ADR-0029, so it takes the same time as one - which is what makes a walk read
- * as a steady pace rather than as a stutter around corners.
+ * How long an entity spends crossing one tile, in seconds. On the grid a diagonal step
+ * costs the same as an orthogonal one, so it takes the same time. A walk therefore keeps a
+ * steady pace rather than slowing down around corners.
  **/
 constexpr float secondsPerTile = 0.15f;
 
@@ -31,7 +31,7 @@ bool Movement::simulate(float step) {
             continue;
         }
         path.elapsed += step;
-        // a while rather than an if: a step longer than secondsPerTile owes more than one
+        // a while rather than an if: a step longer than secondsPerTile covers more than one
         // tile, and dropping the remainder would make a slow frame a slow walk
         while (path.elapsed >= secondsPerTile && path.next < path.tiles.size()) {
             path.elapsed -= secondsPerTile;

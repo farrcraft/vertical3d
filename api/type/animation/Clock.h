@@ -10,13 +10,13 @@
 namespace v3d::type::animation {
 
 /**
- * The time-keeping of anything played on the step: a duration, and whether it loops or stops
- * at its end - ADR-0070.
+ * The time-keeping of anything played on the fixed simulation step: a duration, and whether it
+ * loops or stops at its end.
  *
- * A clock holds no time of its own. Whoever plays something keeps the time and asks the clock
- * what a step does to it, so a skeletal clip and a sprite's frames can each own theirs. A
+ * A clock holds no time of its own. Whatever plays something keeps the time and passes it to
+ * the clock to advance, so a skeletal clip and a sprite's frames can each keep their own. A
  * looping clock's time is kept unwrapped, so that two steps either side of a wrap still
- * interpolate forwards; sample() is what wraps it.
+ * interpolate forwards; sample() wraps it.
  **/
 class Clock final {
  public:

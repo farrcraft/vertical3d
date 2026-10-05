@@ -35,7 +35,7 @@ class MouseWheel final : public Event {
     glm::vec2 notches() const noexcept;
 
     /**
-     * @return where the cursor was as it turned, which is what says what was scrolled
+     * @return where the cursor was as it turned, which identifies what was scrolled
      **/
     glm::vec2 position() const noexcept;
 

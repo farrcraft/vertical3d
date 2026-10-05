@@ -52,9 +52,9 @@ bool build(const std::string & source, Program* program, std::string* error) {
 /**
  * One light shader, compiled and ready to run over a batch.
  *
- * A light with neither `illuminate` nor `solar` in it is an ambient one, which is what
- * keeps it out of an illuminance loop and inside `ambient()`. The program says so, which
- * is what the renderers will read in step 9 rather than asking the source again.
+ * A light with neither `illuminate` nor `solar` in it is an ambient one, so it is left out
+ * of an illuminance loop and summed by `ambient()`. The program records this, so a renderer
+ * reads it there rather than from the source.
  **/
 class Lamp final {
  public:
@@ -99,7 +99,7 @@ class Lamp final {
 
 /**
  * The renderer's half of the message passing: it holds the light shader instances a scene
- * named, and running one is what an illuminance loop asks it for.
+ * named, and an illuminance loop calls it to run one.
  **/
 class Scene final : public v3d::render::offline::sl::runtime::Renderer {
  public:
@@ -176,7 +176,7 @@ light overhead() {
 /**
  * A light shader's `solar` sets L against the direction the light travels, so that L points
  * from the surface toward the light in the illuminance body that reads it. Every point of
- * the batch is lit, which is what makes a light at infinity distant.
+ * the batch is lit, because a light at infinity reaches everything from one direction.
  **/
 BOOST_AUTO_TEST_CASE(sllighting_solar_test) {
     Scene scene;
@@ -203,9 +203,9 @@ BOOST_AUTO_TEST_CASE(sllighting_solar_test) {
 }
 
 /**
- * A light with a position aims a cone, and the points outside it are not lit at all. That
- * is the light's own end of the mask: L is written for every point it reaches and the ones
- * it misses come back as points the surface never runs the body for.
+ * A light with a position aims a cone, and the points outside it are not lit at all. This is
+ * the light shader's side of the mask: L is written for every point it reaches, and the
+ * surface never runs the body for the points it misses.
  **/
 BOOST_AUTO_TEST_CASE(sllighting_illuminate_cone_test) {
     Scene scene;
@@ -244,9 +244,9 @@ BOOST_AUTO_TEST_CASE(sllighting_illuminate_cone_test) {
 }
 
 /**
- * The done-when of the step: `diffuse` over one distant light is the cosine of the angle
- * between the surface and the light, and it is one line of the language rather than a
- * built-in with privileged access to the lights.
+ * `diffuse` over one distant light is the cosine of the angle between the surface and the
+ * light, and it is one line of the language rather than a built-in with privileged access
+ * to the lights.
  **/
 BOOST_AUTO_TEST_CASE(sllighting_diffuse_is_the_cosine_test) {
     Scene scene;
@@ -256,7 +256,7 @@ BOOST_AUTO_TEST_CASE(sllighting_diffuse_is_the_cosine_test) {
     lit.normal(0, glm::vec3(0.0f, 0.0f, 1.0f));
     // 60 degrees off the light, whose cosine is a half
     lit.normal(1, glm::vec3(0.8660254f, 0.0f, 0.5f));
-    // facing away, which the illuminance cone of PI/2 keeps out of the sum entirely
+    // facing away, so the illuminance cone of PI/2 leaves the light out of the sum entirely
     lit.normal(2, glm::vec3(0.0f, 0.0f, -1.0f));
     lit.run();
 
@@ -266,10 +266,9 @@ BOOST_AUTO_TEST_CASE(sllighting_diffuse_is_the_cosine_test) {
 }
 
 /**
- * The other done-when: a two light scene runs the body twice, with that light's own L and
- * Cl each time. Two colours that do not overlap say which light each component came from,
- * so a body that ran once with the last light's values would fail rather than pass by
- * halves.
+ * A two light scene runs the body twice, with that light's own L and Cl each time. Two
+ * colours that do not overlap show which light each component came from, so a body that ran
+ * once with the last light's values fails.
  **/
 BOOST_AUTO_TEST_CASE(sllighting_two_lights_test) {
     Scene scene;
@@ -298,8 +297,8 @@ BOOST_AUTO_TEST_CASE(sllighting_two_lights_test) {
 }
 
 /**
- * An illuminance cone keeps a light out of the sum, which is what stops a surface being
- * lit from behind. The same scene with no cone sums both.
+ * An illuminance cone leaves a light out of the sum, so a surface is not lit from behind.
+ * The same scene with no cone sums both.
  **/
 BOOST_AUTO_TEST_CASE(sllighting_illuminance_cone_test) {
     Scene scene;
@@ -324,9 +323,9 @@ BOOST_AUTO_TEST_CASE(sllighting_illuminance_cone_test) {
 }
 
 /**
- * `ambient()` sums the lights an illuminance loop cannot see. A light with neither
- * `illuminate` nor `solar` has no direction to test against a cone, which is exactly what
- * makes it ambient and exactly why it needs its own built-in.
+ * `ambient()` sums the lights an illuminance loop skips. A light with neither `illuminate`
+ * nor `solar` is ambient: it has no direction to test against a cone, so it needs its own
+ * built-in.
  **/
 BOOST_AUTO_TEST_CASE(sllighting_ambient_test) {
     Scene scene;
@@ -345,14 +344,14 @@ BOOST_AUTO_TEST_CASE(sllighting_ambient_test) {
     Lit summed("color sum = 0;\nilluminance(P) { sum += Cl; }\nCi = sum;", &scene, 1);
     summed.normal(0, glm::vec3(0.0f, 0.0f, 1.0f));
     summed.run();
-    // and the ambient one is not in the illuminance loop
+    // the ambient one is not in the illuminance loop
     BOOST_CHECK_CLOSE(summed.colour(0).r, 1.0f, 0.1f);
 }
 
 /**
- * A renderer that cannot answer a shadow lets all the light through and says so once. That
- * is the difference between a scene that rendered without shadows and one that was not
- * understood.
+ * A renderer that cannot compute a shadow lets all the light through, and the machine
+ * reports it once. The report tells a scene that rendered without shadows apart from one
+ * that was not understood.
  **/
 BOOST_AUTO_TEST_CASE(sllighting_transmission_without_a_renderer_test) {
     Scene scene;
@@ -366,8 +365,8 @@ BOOST_AUTO_TEST_CASE(sllighting_transmission_without_a_renderer_test) {
 }
 
 /**
- * A renderer that cannot trace says so. A ray comes back black rather than coming back with
- * something plausible, because a plausible answer is the failure mode phase 1 named.
+ * When a renderer cannot trace, the machine reports it. A ray returns black rather than something
+ * plausible, because a plausible value would hide the failure.
  **/
 BOOST_AUTO_TEST_CASE(sllighting_trace_without_a_renderer_test) {
     Scene scene;
@@ -381,9 +380,9 @@ BOOST_AUTO_TEST_CASE(sllighting_trace_without_a_renderer_test) {
 }
 
 /**
- * `specular` and `phong` are the language too, and each is adopted into the shader that
- * calls it rather than being a built-in. specular reaches specularbrdf, which is what says
- * the adoption is transitive.
+ * `specular` and `phong` are written in the language too, and each is added to the shader
+ * that calls it rather than being a built-in. specular calls specularbrdf, which shows that
+ * adding them is transitive.
  **/
 BOOST_AUTO_TEST_CASE(sllighting_specular_test) {
     Scene scene;

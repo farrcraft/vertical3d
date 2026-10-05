@@ -55,7 +55,7 @@ bool Mouse::handleEvent(const SDL_Event& event) {
         pressed = (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN);
         buttonName = buttonEvent(event.button.button);
         // a button we have no name for cannot be bound to anything, and must not reach
-        // MouseState either - it would be held under an empty name that nothing can ask for
+        // MouseState either - it would be held under an empty name that no caller can query
         if (buttonName.empty()) {
             return true;
         }

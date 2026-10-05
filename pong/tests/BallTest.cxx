@@ -32,9 +32,8 @@ BOOST_AUTO_TEST_CASE(ball_components_test) {
 }
 
 /**
- * The direction is a velocity in units per second, so a move scales it by the step - which
- * is why the scene multiplies the direction to speed the ball up rather than scaling
- * anything else.
+ * The direction is a velocity in units per second, so a move scales it by the step. The
+ * scene speeds the ball up by multiplying the direction.
  **/
 BOOST_AUTO_TEST_CASE(ball_move_test) {
     entt::registry registry;
@@ -52,8 +51,7 @@ BOOST_AUTO_TEST_CASE(ball_move_test) {
 
 /**
  * Half the step is half the distance. Two moves of half a step land where one whole one
- * would, which is what makes the ball's speed a property of the ball rather than of how
- * often the loop got round to it.
+ * would, so the ball's speed does not depend on how often the loop steps it.
  **/
 BOOST_AUTO_TEST_CASE(ball_move_scales_by_the_step_test) {
     entt::registry registry;

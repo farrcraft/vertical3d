@@ -17,11 +17,10 @@ namespace v3d::render::offline::sl {
 /**
  * One way a standard library function may be called: what it takes and what it gives back.
  *
- * This is the **declared interface** rather than a claim about how the function is
- * implemented. Some of these are arithmetic the machine does; `ambient`, `diffuse`,
- * `specular` and `phong` are ordinary shader functions written over `illuminance`, which is
- * both what the standard says and what makes them testable. A caller cannot tell the
- * difference, and neither can the type checker.
+ * This is the **declared interface**, not a statement of how the function is implemented.
+ * Some of these are arithmetic the machine does. `ambient`, `diffuse`, `specular` and `phong`
+ * are ordinary shader functions written over `illuminance`, as the standard defines them.
+ * Neither a caller nor the type checker can tell the difference.
  **/
 class Signature final {
  public:
@@ -36,26 +35,26 @@ class Signature final {
          **/
         SOURCE,
         /**
-         * Declared and answering its default until something implements it, which the
-         * machine reports once. A scene that rendered nothing and a scene that was not
-         * understood look identical from outside, which is why a stub is loud.
+         * Declared but not implemented: it returns its default, and the machine reports the
+         * call once. The report exists because a scene that rendered nothing and a scene that
+         * was not understood look identical from outside.
          **/
         STUB,
-        // every component of the answer is this function of the same component of each
-        // argument, which is what makes abs() of a colour the three absolute values
+        // each component of the result is this function of the same component of each
+        // argument, so abs() of a colour is the three absolute values
         ABS, SIGN, FLOOR, CEIL, ROUND, SQRT, EXP, LOG, RADIANS, DEGREES,
         SIN, COS, TAN, ASIN, ACOS, ATAN, MOD, POW, MIN, MAX, CLAMP, MIX, STEP, SMOOTHSTEP,
         // a triple read as a direction rather than as three numbers
         LENGTH, DISTANCE, NORMALIZE, FACEFORWARD, REFLECT, REFRACT, FRESNEL,
         // one component of one value, named or indexed
         XCOMP, YCOMP, ZCOMP, SETXCOMP, SETYCOMP, SETZCOMP, COMP, SETCOMP,
-        // a named coordinate space, which is the renderer's answer rather than the machine's
+        // a named coordinate space, which the renderer supplies rather than the machine
         PTRANSFORM, VTRANSFORM, NTRANSFORM, CTRANSFORM, MTRANSFORM, DEPTH,
         // a matrix
         DETERMINANT, TRANSLATE, ROTATE, SCALE,
         // a pattern, out of an image or out of nothing
         TEXTURE, NOISE,
-        // what the renderer answers rather than the machine
+        // computed by the renderer rather than the machine
         AMBIENT, TRANSMISSION, TRACE,
         PRINTF
     };
@@ -88,14 +87,14 @@ class Signature final {
     int resultFrom = -1;
     /**
      * Varying however uniform its arguments are, because it reads the shading point.
-     * `ambient()` takes nothing and answers something different at every point on a grid.
+     * `ambient()` takes nothing and returns something different at every point on a grid.
      **/
     bool varying = false;
     /** Takes any number of further arguments after those listed - printf, and only it. **/
     bool variadic = false;
     /**
      * The first argument the function writes rather than reads, or -1. Every argument from
-     * it on is written, so each has to be a variable: `fresnel` answers through four of them.
+     * it on is written, so each has to be a variable: `fresnel` writes four of them.
      **/
     int outputs = -1;
     std::vector<Argument> arguments;
@@ -106,9 +105,9 @@ class Signature final {
  *
  * A name may appear more than once: `faceforward` takes two arguments or three, and `noise`
  * takes a float, a point or a pair. The compiler tries each in turn and takes the first that
- * accepts the call, unless the call is the operand of a cast and a later one answers the
- * cast's type: `color noise(P)` is a colour of noise rather than a grey one, which is how
- * SL chooses between functions that differ only in what they answer.
+ * accepts the call, unless the call is the operand of a cast and a later one returns the
+ * cast's type. `color noise(P)` is therefore a colour of noise rather than a grey one. SL
+ * chooses this way between functions that differ only in their return type.
  **/
 const std::vector<Signature> & builtins();
 
@@ -121,10 +120,9 @@ std::vector<Signature> builtin(const std::string & name);
  * The library's own functions, written in the language rather than in C++.
  *
  * `diffuse`, `specular` and `phong` are ordinary functions over `illuminance` rather than
- * built-ins with privileged access to the lights - which is both what the standard says
- * and what makes them testable, since a case can write the same three lines and compare.
- * A shader that calls one has it adopted into its own function list and inlined from
- * there, so nothing downstream of the compiler knows the difference.
+ * built-ins with privileged access to the lights, as the standard defines them. A test can
+ * write the same three lines and compare. A shader that calls one has it added to its own
+ * function list and inlined from there, so nothing after the compiler treats it differently.
  *
  * A shader's own function of the same name wins, which is how a scene overrides one.
  *

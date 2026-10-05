@@ -41,7 +41,7 @@ v3d::ui::paint::ComponentRenderer build(std::vector<Written>* written) {
 }
 
 /**
- * A page with one label in it, so that a test can tell whether the page was walked.
+ * A page with one label in it, so that a test can tell whether the page was laid out.
  **/
 boost::shared_ptr<v3d::ui::component::TabPage> page(const std::string& label, const std::string& holds) {
     boost::shared_ptr<v3d::ui::component::TabPage> component =
@@ -132,8 +132,8 @@ BOOST_AUTO_TEST_CASE(the_page_is_laid_out_under_the_strip) {
 }
 
 /**
- * A tab is as wide as its label, and which one a point is on is answered against where the
- * draw put them. A bar that has never been drawn answers nothing, per ADR-0019.
+ * A tab is as wide as its label, and which one a point is on is found against where the
+ * draw put them. A bar that has never been drawn returns no tab.
  **/
 BOOST_AUTO_TEST_CASE(a_point_names_the_tab_under_it) {
     v3d::ui::paint::ComponentRenderer renderer = build(nullptr);

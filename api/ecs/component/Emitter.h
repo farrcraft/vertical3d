@@ -15,11 +15,12 @@
 namespace v3d::ecs::component {
 
 /**
- * An entity that makes particles, and the particles it has made - ADR-0072.
+ * A particle emitter on an entity: what it makes, and the particles it has made, which the
+ * component owns.
  *
  * Stepped by emit() from the entity's Transform, so an effect carried by an entity is born where
  * the entity stands. It is not snapshotted: each particle keeps its own previous position.
- * When it fires and how hard is the game's, which writes description.rate or calls
+ * The game decides when it fires and how hard, by writing description.rate or calling
  * type::effect::burst().
  **/
 struct Emitter final {

@@ -1,9 +1,10 @@
 /**
- * The blocks every lit shader shares, written once - ADR-0067. A shader includes this rather
- * than declaring its own, so a member added here is added everywhere at once.
+ * The blocks every lit shader shares. A shader includes this rather than declaring its own, so
+ * a member added here is added everywhere at once. A replacement shader handed to renderer::Lit
+ * must declare the same sets and push constant block, and can include this file to do so.
  *
- * Set 0 is the camera every pipeline in the engine declares (ADR-0008), set 1 the albedo, and
- * set 2 the scene a lit pass binds once for itself (ADR-0064).
+ * Set 0 is the camera every pipeline in the engine declares, set 1 the albedo, and set 2 the
+ * scene a lit pass binds once for itself.
  **/
 
 // set 0 - the camera the whole pass draws through
@@ -31,5 +32,5 @@ layout(push_constant) uniform Object {
     mat4 model;
     vec4 baseColour;
     float outline;
-    uint firstJoint;            // where the object's palette starts in skin.glsl's - ADR-0071
+    uint firstJoint;            // where the object's palette starts in skin.glsl's joint buffer
 } object;

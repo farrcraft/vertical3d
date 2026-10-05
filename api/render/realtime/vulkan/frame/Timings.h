@@ -25,8 +25,8 @@ namespace v3d::render::realtime::vulkan::frame {
  * begun again, after its fence. The numbers are therefore as old as the ring is deep, and
  * reading them never waits on the device.
  *
- * A device whose graphics queue writes no timestamps leaves this off, and every call is
- * then nothing.
+ * On a device whose graphics queue writes no timestamps this is off, and every call then
+ * does nothing.
  **/
 class Timings final {
  public:

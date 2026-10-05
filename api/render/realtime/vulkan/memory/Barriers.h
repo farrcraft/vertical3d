@@ -37,12 +37,12 @@ VkImageMemoryBarrier2 colourAfterDrawing(VkImage image, VkImageLayout to);
 VkImageMemoryBarrier2 depthForDrawing(VkImage image);
 
 /**
- * Out of DEPTH_ATTACHMENT for a later pass to sample - ADR-0044.
+ * Out of DEPTH_ATTACHMENT for a later pass to sample.
  *
- * DEPTH_READ_ONLY_OPTIMAL rather than SHADER_READ_ONLY_OPTIMAL: it is the layout a depth aspect
- * is both sampled and tested in, and it is what makes the promise a pass sampling this depends
- * on - that nothing writes the image while it is being read. A pass that both samples a
- * target's depth and draws into it is the hazard that forbids rather than detects.
+ * DEPTH_READ_ONLY_OPTIMAL rather than SHADER_READ_ONLY_OPTIMAL, because it is the layout a depth
+ * aspect can be both sampled and tested in. A pass sampling the image relies on nothing writing
+ * it while it is read. A pass that both samples a target's depth and draws into it breaks that
+ * rule; the validation layer reports it, and nothing here detects it.
  **/
 VkImageMemoryBarrier2 depthForSampling(VkImage image);
 

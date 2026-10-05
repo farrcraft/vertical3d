@@ -27,11 +27,11 @@ namespace v3d::asset {
  *
  * It loads what a loader has been registered for. A manager starts with the two that read a
  * document, Json and Text; the loaders for pictures and models are in api/asset/media and the
- * one for sound in api/audio, and each registers its own - ADR-0079.
+ * one for sound in api/audio, and each library registers its own.
  *
- * **Every way of loading answers a failure the same way: no asset, and a line in the log.** A
- * missing file, one that does not decode, a type nothing registered and an extension nothing
- * answers to are all that, so a caller guards one pointer whatever went wrong.
+ * **Every way of loading reports a failure the same way: no asset, and a line in the log.**
+ * That covers a missing file, one that does not decode, a type with no registered loader and
+ * an unregistered extension, so a caller checks one pointer whatever went wrong.
  **/
 class Manager final {
  public:

@@ -44,8 +44,8 @@ const uint32_t vertexShader[] =
 /**
  * Two quads in clip space, each at one depth: the left at a quarter and the right at three
  * quarters. Each is a plane of one depth, so interpolation across it gives that depth at
- * every covered sample, and both values are exact in a 32 bit float - which is what lets
- * the case compare equal rather than near.
+ * every covered sample. Both values are exact in a 32 bit float, so the case compares equal
+ * rather than near.
  **/
 const float nearDepth = 0.25f;
 const float farDepth = 0.75f;

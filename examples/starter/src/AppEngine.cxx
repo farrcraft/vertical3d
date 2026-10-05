@@ -18,7 +18,7 @@ AppEngine::AppEngine(const std::string& path) : v3d::engine::Engine(path) {
 }
 
 v3d::engine::Features AppEngine::features() const {
-    // Feature::Config is what reads data/config.json, and through it data/window.json. Without
+    // Feature::Config reads data/config.json, and through it data/window.json. Without
     // it the window is created at its own default size rather than at the one configured.
     return v3d::engine::Feature::Window | v3d::engine::Feature::KeyboardInput | v3d::engine::Feature::Config;
 }

@@ -42,8 +42,8 @@ BOOST_AUTO_TEST_CASE(json_malformed_document_test) {
 }
 
 /**
- * The loader catches its own exceptions, so a file that is not there comes back null - which
- * is what Config::load reads to decide a config is missing.
+ * The loader catches its own exceptions, so a file that is not there comes back null.
+ * Config::load takes null to mean the config is missing.
  **/
 BOOST_AUTO_TEST_CASE(json_missing_document_test) {
     BOOST_TEST(!document("absent.json"));

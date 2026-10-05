@@ -20,21 +20,23 @@ namespace v3d::ui::component {
  *
  * A text box owns what it shows, the way a SelectList owns its rows: the text is a place
  * in the component rather than a fact about the app, and there is nowhere else for a
- * half-typed word to live. Whatever answers its command reads text() when it arrives.
+ * half-typed word to live. Whatever handles its command reads text() when it arrives.
  *
- * The editing is here and the routing is ui::Keys' - a key names an operation and this
- * carries it out, the way a cursor names a row and a list chooses it. ADR-0040.
+ * The editing is here and the key routing is in ui::Keys: a key names an operation and
+ * this component carries it out.
  *
  * The caret is a byte offset into utf-8, and every operation moves it to a character
  * boundary, so a multi-byte character is inserted, stepped over and erased whole.
  *
- * A selection is an anchor the caret has moved away from rather than a flag and a range -
- * ADR-0057. Nothing is selected exactly when the two are in the same place, so every
- * operation that moves the caret decides one thing: whether the anchor comes with it. A
- * cut, a copy and a paste are then a run of bytes and an insertion, which the box had
- * already.
+ * A selection is an anchor plus the caret, two byte offsets. Nothing is selected exactly
+ * when the two are equal. Every operation that moves the caret says whether the anchor
+ * moves with it. Cut, copy and paste are then a run of bytes and an insertion.
  *
- * The plate, the text and the caret are the "textbox" style class, per ADR-0020.
+ * The box never reaches the clipboard. ui::Keys receives clipboard access as callbacks,
+ * so api/ui names no SDL type. ui::Cursor measures text through the app's Measure
+ * callback, so a press places the caret through at() and a drag selects.
+ *
+ * The plate, the text and the caret are the "textbox" style class.
  **/
 class TextBox : public Component {
  public:
@@ -53,8 +55,8 @@ class TextBox : public Component {
      * Clamped to the text and moved to a character boundary, so an offset inside a
      * multi-byte character is not expressible.
      *
-     * @param extend whether the anchor stays where it is, which is what makes the move
-     *        select the run travelled rather than leave it behind
+     * @param extend whether the anchor stays where it is, so the move selects the run
+     *        travelled
      **/
     void caret(std::size_t offset, bool extend = false);
     std::size_t caret() const noexcept;
@@ -121,7 +123,7 @@ class TextBox : public Component {
      * leave the caret after them.
      *
      * @param value utf-8, as the platform composed it or as a clipboard held it
-     * @return whether it went in, which the limit is what refuses. The limit is measured
+     * @return whether it went in. Only the limit refuses it, and the limit is measured
      *      against what the text would become, so a paste may be as long as the run it
      *      replaces plus whatever room was left
      **/
@@ -145,8 +147,7 @@ class TextBox : public Component {
      * Move the caret one character, or to an end of the text.
      *
      * A selection has two ends, so an arrow with nothing held lands on the near or the far
-     * one rather than a character past it - which is what a first arrow out of a selection
-     * means everywhere else.
+     * one rather than a character past it, as in other text editors.
      *
      * @param extend whether the anchor stays where it is, which selects the run travelled
      * @return whether anything moved
@@ -160,14 +161,12 @@ class TextBox : public Component {
      * Which character boundary a point in the box falls on, so that a press can put the
      * caret where it landed.
      *
-     * Measured against the pen the last draw left, per ADR-0019: a box that has not been
-     * drawn answers the start of its text, the same way a component that has not been drawn
-     * cannot be picked at all. The point is in canvas pixels and only its x is read,
-     * because a box holds one line.
+     * Measured against the pen position the last draw stored, so a box that has not been
+     * drawn returns the start of its text. The point is in canvas pixels and only its x is
+     * read, because a box holds one line.
      *
-     * One measure call per character boundary, which is what a click costs on a line short
-     * enough to be held in one box. The alternative is adding up per character widths, and
-     * those do not come to what a run measures.
+     * Makes one measure call per character boundary. Per-character widths do not add up to
+     * what a run measures, so each boundary is measured as a run.
      *
      * @param measure how wide a run of the text is when it is drawn
      * @return the byte offset of the boundary nearest the point
@@ -178,16 +177,15 @@ class TextBox : public Component {
      * Where the text was last drawn from, in canvas pixels: the inside edge of the box, less
      * however far the line slid to keep the caret in view.
      *
-     * Left here by whatever drew it, the way a list's row height is. The slide is a fact
-     * about the draw rather than about the box, and at() cannot find a character without it.
+     * Stored by whatever drew the box, like a list's row height. at() needs it to find a
+     * character.
      **/
     void pen(float x) noexcept;
     float pen() const noexcept;
 
     /**
-     * Set the event a return in the box sends. What the text then means is the app's -
-     * the box is told the user is done and sends its command, and whatever answers reads
-     * text().
+     * Set the event a return in the box sends. Whatever handles the command reads text()
+     * and decides what it means.
      **/
     void event(const v3d::event::Event& destination);
     v3d::event::Event event() const;

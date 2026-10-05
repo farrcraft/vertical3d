@@ -20,7 +20,8 @@ namespace v3d::render::realtime::shadow {
 /**
  **/
 glm::mat4 light(const glm::vec3& towards, const glm::vec3& centre, float radius) {
-    // the light looks along +z of its own basis, from the light towards the centre - ADR-0012
+    // the light looks along +z of its own basis, as a camera does, from the light towards the
+    // centre
     const glm::vec3 z = -glm::normalize(towards);
     const glm::vec3 eye = centre - z * (radius * 2.0f);
 

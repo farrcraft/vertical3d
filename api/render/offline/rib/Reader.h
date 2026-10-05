@@ -25,16 +25,16 @@
 namespace v3d::render::offline::rib {
 
 /**
- * Reads an ASCII RIB stream and drives a handler, per ADR-0023 and ADR-0025.
+ * Reads an ASCII RIB stream and calls a handler for each request.
  *
  * The handler is a parameter rather than a member, so one reader serves the renderer and a
  * suite can drive it with a handler that only counts.
  *
  * An unrecognised request is reported once per name rather than once per occurrence, and
  * its arguments are skipped: only a string, a number or an array can be an argument, so
- * the next identifier begins the next request whatever this one was. **A scene that
- * rendered nothing and a scene that was not understood look identical from outside**,
- * which is why the report exists at all.
+ * the next identifier begins the next request whatever this one was. The report exists
+ * because **a scene that rendered nothing and a scene that was not understood look
+ * identical from outside**.
  **/
 class Reader final {
  public:
@@ -59,17 +59,17 @@ class Reader final {
     const std::vector<std::string> & unrecognised() const;
 
     /**
-     * What the stream asked for that was read and not built, once each - a primitive that
-     * deforms inside a motion block is one.
+     * The requests that were read but not built, once each. A primitive that deforms inside
+     * a motion block is one.
      **/
     const std::vector<std::string> & unsupported() const;
 
  private:
     /**
-     * What one group of requests made of a name it was offered.
+     * The result of offering a request name to one group of requests.
      *
      * Unhandled is not a failure: it means the name belongs to another group, and the next
-     * one is asked. Only the last group's Unhandled is a request this reader does not know.
+     * group is tried. Only the last group's Unhandled is a request this reader does not recognise.
      **/
     enum class Result {
         Unhandled,

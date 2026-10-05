@@ -43,7 +43,7 @@ struct Fixture {
 };  // namespace
 
 /**
- * A command answers every source bound to it, and a document that does not describe its
+ * Every source bound to a command is found, and a document that does not describe its
  * bindings is refused without disturbing the ones already in place.
  **/
 BOOST_FIXTURE_TEST_CASE(bindings_load_test, Fixture) {

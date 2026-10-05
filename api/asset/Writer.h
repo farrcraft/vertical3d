@@ -13,7 +13,7 @@
 namespace v3d::asset {
 
 /**
- * The write side of what JsonFile does for reading, per ADR-0041.
+ * Writing documents to disk, the counterpart of JsonFile for reading.
  *
  * A caller decides what its document holds; this decides only how it reaches the disk.
  **/
@@ -31,7 +31,7 @@ namespace v3d::asset {
 std::string serializeDocument(const boost::json::value& document);
 
 /**
- * Replace the file at path with bytes, whole or not at all, per ADR-0041.
+ * Replace the file at path with bytes, whole or not at all.
  *
  * The bytes go to a sibling temporary that is renamed onto the target, so the file already
  * there survives every failure but the rename. Nothing is flushed to the device, so this is

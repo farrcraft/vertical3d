@@ -34,11 +34,10 @@ class MeshBuilder;
 /**
  * The terrain, and the text drawn over it.
  *
- * Two passes, because the two want opposite things from the frame: the terrain is a depth
- * tested, sorted scene of one draw item per chunk through a pipeline of its own, and the
- * overlay and the ui are painter ordered quads on the batched primitive of ADR-0005 drawn on
- * top of it. The pass is the unit of variation, per ADR-0003, so neither has to know about
- * the other.
+ * Two passes, because the two need opposite settings. The terrain is a depth tested, sorted
+ * scene of one draw item per chunk through a pipeline of its own. The overlay and the ui
+ * are painter ordered quads, drawn on top of it through the batched quad pipeline. Each pass
+ * carries its own settings, so neither has to know about the other.
  */
 class Renderer {
  public:
@@ -60,7 +59,7 @@ class Renderer {
      */
     /**
      * @param statistics what the loop measured about its own pacing, which the debug
-     *        window reads - the app hands it over because api/ui sits below api/engine
+     *        window reads. The app passes it in because api/ui cannot depend on api/engine
      * @param tools what the cursor did, for the immediate layer - Controller::tools()
      **/
     /**

@@ -71,7 +71,7 @@ v3d::render::offline::trace::Hit at(const v3d::render::offline::trace::Scene & s
 };  // namespace
 
 /**
- * The done-when of the step, against hand-worked maths.
+ * `matte` over one distant light, against hand-worked maths.
  *
  * `matte` is `Os * Cs * (Ka * ambient() + Kd * diffuse(Nf))`, and with no ambient light
  * and one distant light that is the cosine between the surface and the light. A light
@@ -116,8 +116,8 @@ BOOST_AUTO_TEST_CASE(trace_the_cosine_test) {
 }
 
 /**
- * An occluder darkens the point behind it. That is the whole of what `transmission` is
- * for, and the tracer answers it by casting a ray to the light.
+ * An occluder darkens the point behind it. The tracer computes `transmission` by casting a
+ * ray to the light.
  **/
 BOOST_AUTO_TEST_CASE(trace_an_occluder_casts_a_shadow_test) {
     v3d::render::offline::trace::Scene scene;
@@ -125,15 +125,15 @@ BOOST_AUTO_TEST_CASE(trace_an_occluder_casts_a_shadow_test) {
     floor.surface(instance("matte", v3d::render::offline::sl::ShaderType::SURFACE, ParameterList()));
     scene.add(floor);
 
-    // a small triangle a unit above the floor, with no shader of its own: an occluder is
-    // a visibility question and what it would have been shaded as does not come into it
+    // a small triangle a unit above the floor, with no shader of its own: a shadow ray
+    // reads an occluder's opacity and does not run its shader
     scene.add(v3d::render::offline::trace::Triangle(glm::vec3(-0.5f, -0.5f, 1.0f), glm::vec3(0.5f, -0.5f, 1.0f),
         glm::vec3(0.0f, 0.5f, 1.0f), glm::vec3(1.0f)));
 
     /*
         The light is up and over to one side rather than straight overhead, so the shadow
-        falls beside the occluder rather than under it - a point directly beneath it is
-        one the camera cannot see past the occluder to shade.
+        falls beside the occluder rather than under it. The camera cannot see a point
+        directly beneath the occluder.
     */
     ParameterList tilted;
     add(&tilted, "to", Declaration::Type::POINT, { 0.70710678f, 0.0f, -0.70710678f });
@@ -142,18 +142,17 @@ BOOST_AUTO_TEST_CASE(trace_an_occluder_casts_a_shadow_test) {
     v3d::render::offline::trace::Tracer shader(&scene);
     // one unit over from the occluder, which is where its shadow lands
     BOOST_CHECK_SMALL(shader.shade(at(scene, 1.0f, 0.0f)).r, 0.0001f);
-    // and well away from it, where the cosine is all there is
+    // well away from it, where only the cosine applies
     BOOST_CHECK_CLOSE(shader.shade(at(scene, 4.0f, -4.0f)).r, 0.70710678f, 0.5f);
 }
 
 /**
- * A light directly above a large polygon, which is the case the self-intersection
- * epsilon exists for.
+ * A light directly above a large polygon, the case the self-intersection offset guards
+ * against.
  *
  * A shadow ray that starts exactly on the surface meets the surface it left, and every
- * lit pixel comes out black in a pattern that reads as a normal fault rather than as a
- * numerical one. The polygon is large and the point is far from its origin, because that
- * is where the arithmetic that computes the hit has the most to lose.
+ * lit pixel comes out black. The polygon is large and the point is far from its origin,
+ * because that is where the hit computation loses the most precision.
  **/
 BOOST_AUTO_TEST_CASE(trace_the_shadow_epsilon_test) {
     v3d::render::offline::trace::Scene scene;
@@ -172,9 +171,9 @@ BOOST_AUTO_TEST_CASE(trace_the_shadow_epsilon_test) {
 }
 
 /**
- * A point light is where the scene put it, and falls off with the square of the distance
- * - which is what says its position reached the shader through the space it was
- * instanced in rather than being left at the origin.
+ * A point light is where the scene put it, and falls off with the square of the distance.
+ * This shows its position reached the shader through the space it was instanced in rather
+ * than being left at the origin.
  **/
 BOOST_AUTO_TEST_CASE(trace_a_point_light_is_placed_test) {
     v3d::render::offline::trace::Scene scene;
@@ -184,7 +183,7 @@ BOOST_AUTO_TEST_CASE(trace_a_point_light_is_placed_test) {
 
     Placed bulb = instance("pointlight", v3d::render::offline::sl::ShaderType::LIGHT,
         ParameterList());
-    // two units above the origin of the floor, which is where the hit is
+    // two units above the origin of the floor, where the hit is
     bulb.placement = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, 2.0f));
     scene.add(bulb);
 
@@ -194,9 +193,7 @@ BOOST_AUTO_TEST_CASE(trace_a_point_light_is_placed_test) {
 }
 
 /**
- * A triangle a scene built without a shader is its own flat colour. That is the picture
- * this renderer drew before there was a language to ask for another, and it is why the
- * phase 2 reference still matches.
+ * A triangle a scene built without a shader is drawn in its own flat colour.
  **/
 BOOST_AUTO_TEST_CASE(trace_no_shader_is_the_flat_colour_test) {
     v3d::render::offline::trace::Scene scene;
@@ -247,9 +244,8 @@ glm::vec3 relayed(unsigned int depth) {
  * its own registers survive the trace.
  *
  * At a depth of two the red surface sees the green one, which sees the red one, which
- * traces no further: red, plus green, plus red. A machine shared between the levels would
- * have the outer red read the inner Cs after its trace returned, and the sum would not be
- * this one.
+ * traces no further: red, plus green, plus red. If the levels shared a machine, the outer
+ * red would read the inner Cs after its trace returned, and the sum would differ.
  **/
 BOOST_AUTO_TEST_CASE(trace_a_trace_recurses_test) {
     const glm::vec3 colour = relayed(2);
@@ -259,7 +255,7 @@ BOOST_AUTO_TEST_CASE(trace_a_trace_recurses_test) {
 }
 
 /**
- * The scene's depth is where the trace stops, and past it a trace answers the background,
+ * The scene's depth is where the trace stops, and past it a trace returns the background,
  * which is black here.
  **/
 BOOST_AUTO_TEST_CASE(trace_a_trace_stops_at_the_depth_test) {
@@ -395,8 +391,8 @@ BOOST_AUTO_TEST_CASE(trace_a_glass_slab_is_straight_through_test) {
 }
 
 /**
- * A primitive given lights of its own is shaded by those rather than by the scene's, per
- * ADR-0077: the scene's list is for a primitive that was given none.
+ * A primitive given lights of its own is shaded by those rather than by the scene's. The
+ * scene's list is for a primitive that was given none.
  **/
 BOOST_AUTO_TEST_CASE(trace_a_primitive_has_its_own_lights_test) {
     v3d::render::offline::trace::Scene scene;

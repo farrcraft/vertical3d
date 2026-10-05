@@ -116,7 +116,7 @@ void Line::submit(const LineCanvas& canvas, Pass* pass, uint16_t layer) {
 
         if (batch.clipped) {
             // the canvas clips in the image's pixels already, since a world space stream
-            // has no transform that would carry a rectangle to the screen - ADR-0037
+            // has no transform that would carry a rectangle to the screen
             clip(&item, batch.clip);
         }
 

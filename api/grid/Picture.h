@@ -34,10 +34,10 @@ struct Picture final {
 /**
  * Build a grid from rows of glyphs, one per tile, and a legend saying what each glyph is.
  *
- * Only the terrain is the grid's - ADR-0062. The file the rows came from, and whatever else a
- * glyph means to a game, such as a prop, a spawn or where the player starts, are the game's. So
- * a glyph the legend does not name is handed back rather than refused. A game that treats one
- * as an error does so on top.
+ * The grid parses terrain only. Reading the file the rows came from, and any other meaning a
+ * glyph has to a game, such as a prop, a spawn or the player's start, belong to the game. A
+ * glyph the legend does not name is therefore returned in Picture::unknown rather than
+ * refused. A game that treats one as an error checks that list itself.
  *
  * @param rows the picture, row y of it being tile row y, all the same length
  * @param legend what each glyph is made of

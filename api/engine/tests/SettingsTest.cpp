@@ -21,8 +21,8 @@ boost::shared_ptr<v3d::log::Logger> logger() {
 }
 
 /**
- * Every case reads and writes the same real directory - userPath() is the only thing that
- * says where that is - so each starts by removing whatever the last one left.
+ * Every case reads and writes the same real directory, the one userPath() returns, so each
+ * starts by removing whatever the last one left.
  **/
 v3d::engine::Settings fresh(const std::string& app) {
     v3d::engine::Settings settings("vertical3d_tests", app, logger());
@@ -111,8 +111,8 @@ BOOST_AUTO_TEST_CASE(settings_unknown_key_survives_test) {
 }
 
 /**
- * A document from a later build runs on defaults and is not written back: the build that
- * wrote it knows what is in it, and this one would drop everything it does not.
+ * A document from a later build runs on defaults and is not written back, because writing it
+ * would drop everything this build does not know about.
  **/
 BOOST_AUTO_TEST_CASE(settings_future_version_test) {
     v3d::engine::Settings settings = fresh("future");
@@ -136,7 +136,7 @@ BOOST_AUTO_TEST_CASE(settings_future_version_test) {
 
 /**
  * A document that got truncated, or that somebody edited into something that will not parse,
- * costs the settings and not the app.
+ * loses the settings but does not stop the app.
  **/
 BOOST_AUTO_TEST_CASE(settings_malformed_document_test) {
     v3d::engine::Settings settings = fresh("malformed");

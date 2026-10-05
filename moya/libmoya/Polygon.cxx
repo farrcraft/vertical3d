@@ -76,7 +76,7 @@ Vertex& Polygon::operator[] (size_t idx) {
 glm::vec3 Polygon::geometricNormal(void) const {
     // the first pair of edges that spans an area. A repeated vertex or a collinear run at
     // the head of the polygon gives a zero cross product, which names no plane, so the
-    // walk goes on rather than answering with it
+    // search continues past it
     for (size_t i = 1; i + 1 < vertices_.size(); i++) {
         const glm::vec3 across = glm::cross(vertices_[i].point() - vertices_[0].point(),
                                             vertices_[i + 1].point() - vertices_[0].point());
@@ -95,8 +95,8 @@ glm::vec3 Polygon::geometricNormal(void) const {
 */
 void Polygon::clip(const v3d::type::geometry::Plane & plane) {
     const size_t nverts = vertices_.size();
-    // fewer than three vertices bound no area to keep, and the walk below opens on the vertex
-    // before the first one
+    // fewer than three vertices bound no area to keep, and the loop below starts on the
+    // vertex before the first one
     if (nverts < 3) {
         return;
     }
@@ -390,8 +390,8 @@ bool Polygon::dice(boost::shared_ptr<MicroPolygonGrid> & grid, RenderContext & r
     /*
         bilinear interpolation over the polygon's first four vertices. A triangle's fourth
         corner degenerates onto its third; a polygon with more than four vertices has the
-        rest dropped, which is a wrong grid for a concave one and is what triangulating
-        before dicing would fix.
+        rest dropped, which gives a wrong grid for a concave one. Triangulating before
+        dicing would avoid that.
     */
     const size_t fourth = vertices_.size() > 3 ? 3 : 2;
     glm::vec3 corners[4] = {
@@ -408,8 +408,8 @@ bool Polygon::dice(boost::shared_ptr<MicroPolygonGrid> & grid, RenderContext & r
         vertices_[2].color(),
         vertices_[fourth].color()
     };
-    // and so does the shading normal, which is what makes a surface given a varying "N"
-    // come out smooth rather than faceted
+    // and so does the shading normal, so a surface given a varying "N" comes out smooth
+    // rather than faceted
     glm::vec3 normals[4] = {
         vertices_[0].normal(),
         vertices_[1].normal(),

@@ -25,7 +25,7 @@ class TextureTextBuffer : public TextBuffer {
      * with it. What is here is what addText() honours.
      **/
     struct Markup {
-        /** The size the text is laid out at - a ratio of the font's own, per ADR-0036. **/
+        /** The size the text is laid out at; the font's metrics are scaled by its ratio to the font's own size. **/
         float size_ = 0.0f;
         float gamma_ = 1.0f;
         glm::vec4 foregroundColor_{1.0f};

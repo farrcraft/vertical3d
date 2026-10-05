@@ -3,7 +3,7 @@
 /**
  * One triangle that covers the whole of what the pass draws into, built from the vertex
  * index so that the draw needs no buffer. Every pixel is wholly inside it, so nothing about
- * the picture it makes depends on how an implementation rasterizes an edge - ADR-0054.
+ * the picture it makes depends on how an implementation rasterizes an edge.
  **/
 
 void main() {

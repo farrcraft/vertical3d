@@ -277,7 +277,7 @@ BOOST_AUTO_TEST_CASE(a_point_is_picked_by_the_deepest_pickable_component) {
 /**
  * Inside a component as at the top of a container, the child drawn last is the one a point
  * reaches first, so a nested child with a depth out of the order it was added in is picked
- * where it was drawn rather than where it was added - ADR-0019.
+ * where it was drawn rather than where it was added.
  **/
 BOOST_AUTO_TEST_CASE(a_nested_child_is_picked_in_the_order_it_was_drawn) {
     v3d::render::realtime::Canvas canvas;
@@ -370,7 +370,7 @@ BOOST_AUTO_TEST_CASE(a_rounded_panel_is_bands_and_wedges_in_one_batch) {
 
 /**
  * A component that asks to clip cuts what it holds off at its own box, so the batch its
- * children are drawn in carries that box for the device to scissor to - ADR-0037. The
+ * children are drawn in carries that box for the device to scissor to. The
  * parent's own quads are not cut: a panel draws inside itself already.
  **/
 BOOST_AUTO_TEST_CASE(a_component_that_clips_cuts_its_children_to_its_box) {
@@ -403,7 +403,7 @@ BOOST_AUTO_TEST_CASE(a_component_that_clips_cuts_its_children_to_its_box) {
     BOOST_CHECK_CLOSE(cut.clip.z, 120.0f, 0.001f);
     BOOST_CHECK_CLOSE(cut.clip.w, 80.0f, 0.001f);
     // and the child is left holding the box it asked for rather than the one it can show,
-    // which is what the cursor is still tested against
+    // which the cursor is still tested against
     BOOST_CHECK_CLOSE(inner->size().x, 400.0f, 0.001f);
 }
 

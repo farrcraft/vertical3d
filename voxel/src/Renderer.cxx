@@ -55,11 +55,11 @@ const char* const terrainPass = v3d::render::realtime::Engine3D::colourPass;
 const char* const overlayPass = "overlay";
 
 /**
- * The size the ui and the debug overlay are drawn at, which the one atlas is scaled to per
- * ADR-0036 rather than rasterized at.
+ * The size the ui and the debug overlay are drawn at. Glyphs are distance fields, so the
+ * atlas is scaled to this size rather than rasterized at it.
  **/
 /**
- * What the debug readout's window is titled, which is also the id the layer knows it by.
+ * What the debug readout's window is titled, which is also its id in the immediate layer.
  **/
 const char* const debugTitle = "Debug";
 
@@ -129,8 +129,8 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
     options.size = fontSize;
     // the frame time is in the debug readout, so there is no overlay to draw it
     options.statistics = false;
-    // the debug readout is a panel written as calls rather than a tree kept in step with
-    // what it shows, per ADR-0035 - it is a function of the frame it is drawn in
+    // the debug readout is an immediate mode panel: it is written as calls every frame
+    // rather than kept as a tree in step with what it shows
     options.immediate = true;
     screen_ = boost::make_shared<v3d::ui::shell::Screen>(&engine_, assetManager, logger, options);
 }
@@ -338,8 +338,8 @@ const std::vector<v3d::render::realtime::vulkan::frame::Timings::Timing>& Render
 /**
  **/
 void Renderer::tick(unsigned int /* delta */) {
-    // the chunk build has a budget per tick rather than a duration, so how long the last
-    // frame took is nothing to it - the loop keeps that, and the debug readout asks
+    // the chunk build has a budget of chunks per tick rather than a duration, so it does not
+    // use how long the last frame took. The loop measures that for the debug readout
     builder_->build(meshes_, chunkUpdatesPerTick);
 }
 

@@ -50,9 +50,9 @@ Recorder::Target describe(const boost::shared_ptr<RenderTarget>& target) {
 /**
  * Read back what a capture wrote.
  *
- * Going through the file rather than asking the capture for its pixels is deliberate: it is
- * the same round trip the reference comparison makes, so a case asserting a colour by hand and
- * one asserting a picture are reading the same bytes.
+ * This reads the file rather than asking the capture for its pixels. The reference comparison
+ * makes the same round trip, so a case that checks a colour by hand and one that checks a
+ * picture read the same bytes.
  **/
 boost::shared_ptr<v3d::image::Image> written(const boost::shared_ptr<v3d::log::Logger>& logger, const std::string& path) {
     v3d::image::reader::Png png(logger);
@@ -80,9 +80,9 @@ std::vector<unsigned char> rgba(unsigned char r, unsigned char g, unsigned char 
 BOOST_AUTO_TEST_SUITE(offscreen_frame_test)
 
 /**
- * The whole of a frame, drawn into a target rather than a chain: a pass that clears, recorded
- * by the recorder, submitted, and read back. What it asserts is what ADR-0007 chose - that the
- * validation layer had nothing to say about any of it.
+ * A complete frame, drawn into a target rather than a chain: a pass that clears, recorded by
+ * the recorder, submitted, and read back. The case passes if the validation layer reports no
+ * errors and every texel is the clear colour.
  **/
 BOOST_AUTO_TEST_CASE(a_cleared_pass_is_silent_and_is_the_colour_it_cleared_to) {
     v3d::test::Headless headless(colourFormat, width, height);
@@ -129,14 +129,13 @@ BOOST_AUTO_TEST_CASE(a_cleared_pass_is_silent_and_is_the_colour_it_cleared_to) {
 }
 
 /**
- * The same frame with a quad in it, which is the first case that reaches a pipeline: the
- * renderer compiles one against the target's format rather than a chain's, and the recorder
- * binds and draws it.
+ * The same frame with a quad in it, so the case reaches a pipeline: the renderer compiles one
+ * against the target's format rather than a chain's, and the recorder binds and draws it.
  *
- * This is the case the committed picture is checked against, and it is the dullest one the
- * suite can draw on purpose - one flat rect on a cleared target, at integer boundaries, in
- * channels at the ends of their range. Under ADR-0054 every conformant implementation owes
- * the same bytes for it, so the reference is the specification's rather than this machine's.
+ * The picture is compared against a committed reference, so it is deliberately simple: one
+ * flat rect on a cleared target, at integer boundaries, in channels at the ends of their
+ * range. The Vulkan specification fixes that output exactly, so any conformant driver
+ * produces it bit for bit.
  **/
 BOOST_AUTO_TEST_CASE(a_drawn_quad_is_silent_and_is_the_committed_picture) {
     v3d::test::Headless headless(colourFormat, width, height);
@@ -173,25 +172,25 @@ BOOST_AUTO_TEST_CASE(a_drawn_quad_is_silent_and_is_the_committed_picture) {
 
     BOOST_CHECK(headless.silent());
 
-    // every texel rather than the five a spot check reached: a quad drawn at the wrong scale,
-    // flipped in y or off by a pixel differs from the reference wherever it differs
+    // every texel rather than a few spot checks, so a quad drawn at the wrong scale, flipped in
+    // y or off by a pixel fails wherever a texel differs from the reference
     v3d::test::checkReference(headless.logger, &capture, "quad");
 }
 
 
 /**
- * A quad drawn with a texture the case uploads, which is the only thing in the tree that
- * asserts the upload path: a texture that arrived transposed, mirrored, in the wrong channel
- * order or in the wrong mip is a picture rather than a validation error.
+ * A quad drawn with a texture the case uploads. This is the only check of the upload path: a
+ * texture that arrived transposed, mirrored, in the wrong channel order or in the wrong mip
+ * gives a wrong picture rather than a validation error.
  *
- * The texture is built here rather than committed beside the reference, because a file would
- * be a second thing to keep in step with the picture. Its four quadrants are four different
- * full range colours over a rectangle that is wider than it is tall, so a transpose and a
- * flip in either axis are all different pictures.
+ * The texture is built here rather than committed beside the reference, so there is no second
+ * file to keep in step with the picture. Its four quadrants are four different full range
+ * colours over a rectangle that is wider than it is tall, so a transpose and a flip in either
+ * axis all give different pictures.
  *
- * It is drawn at one texel per pixel on integer boundaries, which is what ADR-0054 requires
- * of a sampled reference: every sampler in the tree is linear and at that scale the filter
- * lands on texel centres, so what reaches the target is the texel unchanged.
+ * It is drawn at one texel per pixel on integer boundaries, so the output is exact. Every
+ * sampler in the tree is linear, and at that scale the filter lands on texel centres, so
+ * each texel reaches the target unchanged.
  **/
 BOOST_AUTO_TEST_CASE(a_textured_quad_is_the_texture_that_was_uploaded) {
     v3d::test::Headless headless(colourFormat, width, height);
@@ -252,9 +251,8 @@ BOOST_AUTO_TEST_CASE(a_textured_quad_is_the_texture_that_was_uploaded) {
 
 /**
  * The same clear, on a device whose memory comes from a suballocator rather than from one
- * device allocation per resource - ADR-0053. Nothing in this tree asks for that allocator, so
- * this case is the only thing that runs it: without one the second path would compile and
- * never execute, which is the failure mode of keeping the first as the default.
+ * device allocation per resource. Nothing in this tree selects that allocator, because direct
+ * allocation is the default. This case is the only code that runs the suballocated path.
  *
  * It asserts the picture as well as the silence, because an allocation bound at the wrong
  * offset is a wrong picture rather than a reported error - a suballocated region starts part

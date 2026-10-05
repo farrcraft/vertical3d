@@ -140,8 +140,8 @@ bool Engine::openWindow() {
     if (features_.has(Feature::Config)) {
         boost::shared_ptr<v3d::asset::kind::Json> windowConfig = config_->get(v3d::config::Type::Window);
         if (windowConfig) {
-            // guarded as the bindings are: a window document this does not understand
-            // is a false return out of startup, not an exception out of it
+            // as with the bindings, a window document that cannot be read makes startup
+            // return false rather than throw
             const boost::json::object& doc = windowConfig->document();
             const boost::json::object* window = doc.contains("window") ? doc.at("window").if_object() : nullptr;
             if (window == nullptr || !window->contains("width") || !window->contains("height") ||
@@ -208,8 +208,8 @@ bool Engine::release() {
 /**
  **/
 bool Engine::shutdown() {
-    // the app's, once, and before the window: what presents to the window has to let the
-    // device go idle while it still exists
+    // the app's release() runs once, before the window is destroyed: whatever presents to
+    // the window has to wait for the device to go idle while the window still exists
     bool released = true;
     if (!released_) {
         released_ = true;
@@ -242,13 +242,13 @@ bool Engine::render() {
 /**
  **/
 void Engine::route(const SDL_Event& event) {
-    // the app is the outer layer - it drew over the scene, so it is what the cursor is
-    // pointing at - and what it takes never reaches the bindings, per ADR-0043
+    // the app is offered the event first, because it draws over the scene and so is what
+    // the cursor points at. An event the app consumes never reaches the bindings
     if (!onEvent(event) && inputEngine_ && inputEngine_->filterEvent(event)) {
         return;
     }
-    // quit, resize and focus are window facts rather than input, so they are not an app's
-    // to decline and not a binding's to consume
+    // quit, resize and focus are window events rather than input, so the engine handles
+    // them even when the app consumed the event
     handleEvent(event);
 }
 
@@ -278,8 +278,8 @@ void Engine::handleEvent(const SDL_Event& event) {
         }
         dispatcher_->trigger(v3d::event::kind::WindowResize(event.window.data1, event.window.data2));
         break;
-    // a key released while the window is unfocused never arrives, so an app that wants
-    // held input dropped needs to be told focus went rather than poll for it
+    // a key released while the window is unfocused never arrives, so an app that drops
+    // held input on focus loss is told when focus goes rather than polling for it
     case SDL_EVENT_WINDOW_FOCUS_GAINED:
         dispatcher_->trigger(v3d::event::kind::WindowFocus(true));
         break;
@@ -304,8 +304,8 @@ bool Engine::eventLoop() {
         while (SDL_PollEvent(&event) != 0 && !quitting_) {
             route(event);
         }
-        // an event handler may have asked to stop, and the window it drew into can have
-        // gone with it - so nothing after this point runs on the frame that quit
+        // an event handler may have asked to stop, and its window may be gone, so nothing
+        // after this point runs on the frame that quit
         if (quitting_) {
             break;
         }
@@ -316,21 +316,20 @@ bool Engine::eventLoop() {
         if (!tick(static_cast<unsigned int>(elapsed / SDL_NS_PER_MS))) {
             return false;
         }
-        // and advance the simulation by however many whole steps that frame owes, per
-        // ADR-0032 - the accumulator clamps the frame and carries the remainder forward
+        // advance the simulation by each whole fixed step now due. The accumulator clamps
+        // the frame and carries the remainder forward
         statistics_.frame(elapsed, accumulator_.accumulate(elapsed));
         while (accumulator_.drain()) {
             if (!simulate(Accumulator::seconds)) {
                 return false;
             }
         }
-        // and draw the frame on the screen
+        // draw the frame on the screen
         if (!render()) {
             return false;
         }
-        // the edges belonged to this frame, and everything that reads them has now run. The
-        // loop is what clears them, so "exactly once per frame" is not a precondition an app
-        // has to honour
+        // the edges belong to this frame, and everything that reads them has now run. The
+        // loop clears them so that an app does not have to
         if (inputEngine_) {
             inputEngine_->flush();
         }

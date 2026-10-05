@@ -8,7 +8,7 @@
 #include <boost/test/unit_test.hpp>
 
 BOOST_AUTO_TEST_CASE(morton_code_round_trip_test) {
-    // every block position within a chunk, which is what the code is used to key
+    // every block position within a chunk, since the code is used as their key
     for (int x = 0; x < 16; x++) {
         for (int y = 0; y < 16; y++) {
             for (int z = 0; z < 16; z++) {

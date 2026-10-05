@@ -64,9 +64,9 @@ BOOST_AUTO_TEST_CASE(sllexer_kinds_test) {
 }
 
 /**
- * A keyword is a closed set. A name outside it is an identifier however much it looks like
- * part of the language, which is what lets a shader declare a variable called "output" or
- * write its own "noise".
+ * The keywords are a closed set. A name outside it is an identifier however much it looks
+ * like part of the language, so a shader can declare a variable called "output" or write its
+ * own "noise".
  **/
 BOOST_AUTO_TEST_CASE(sllexer_keyword_set_test) {
     std::vector<Token> tokens = lex("varying normal Nf; output noise diffuse mix");
@@ -116,7 +116,7 @@ BOOST_AUTO_TEST_CASE(sllexer_number_test) {
 
 /**
  * A number carries no sign. A '-' is the subtraction or the negation, so "a-1" is three
- * tokens - which is the difference between a lexer for an expression language and RIB's.
+ * tokens. RIB's lexer, by contrast, reads a sign as part of a number.
  **/
 BOOST_AUTO_TEST_CASE(sllexer_unsigned_number_test) {
     std::vector<Token> tokens = lex("a-1");
@@ -131,8 +131,8 @@ BOOST_AUTO_TEST_CASE(sllexer_unsigned_number_test) {
 
 /**
  * A string carries what is between the quotes, spaces included, with the escapes resolved.
- * In SL it names a coordinate space, a texture or a message and has almost nothing done to
- * it, which is why step 5 may require it to be uniform.
+ * In SL it names a coordinate space, a texture or a message, and the compiler requires it
+ * to be uniform.
  **/
 BOOST_AUTO_TEST_CASE(sllexer_string_test) {
     std::vector<Token> tokens = lex("\"two words\" \"a \\\"quote\\\" and a \\\\\" \"\\101\"");
@@ -164,8 +164,8 @@ BOOST_AUTO_TEST_CASE(sllexer_operator_test) {
 }
 
 /**
- * '.' is SL's dot product and '^' its cross, and neither is what a reader coming from
- * another language expects. A '.' that a digit follows is a number instead.
+ * '.' is SL's dot product and '^' its cross product, unlike in C. A '.' followed by a digit
+ * is a number instead.
  **/
 BOOST_AUTO_TEST_CASE(sllexer_dot_test) {
     std::vector<Token> tokens = lex("a . b ^ c + .5");
@@ -180,8 +180,7 @@ BOOST_AUTO_TEST_CASE(sllexer_dot_test) {
 }
 
 /**
- * A '/' is a division unless what follows it opens a comment, which is a decision that
- * takes the character after it.
+ * A '/' is a division unless the character after it opens a comment.
  **/
 BOOST_AUTO_TEST_CASE(sllexer_comment_test) {
     std::string error;
@@ -199,16 +198,16 @@ BOOST_AUTO_TEST_CASE(sllexer_comment_test) {
     BOOST_CHECK_EQUAL(tokens[2].text(), "b");
     BOOST_CHECK_EQUAL(tokens[3].text(), "c");
     BOOST_CHECK_EQUAL(tokens[4].text(), "d");
-    // a '/' at the very end of the stream is still a division, which is the case the
-    // stream's own putback cannot answer
+    // a '/' at the very end of the stream is still a division; the stream's own putback
+    // fails in this case
     BOOST_CHECK(tokens[5].kind() == Token::Kind::OPERATOR);
     BOOST_CHECK_EQUAL(tokens[5].text(), "/");
 }
 
 /**
- * A block comment does not nest, and a "//" inside one is as much a part of it as anything
- * else - so the first close ends it and what follows is code again. The second close is
- * then a multiply and a divide, which is what a language without nesting does with one.
+ * A block comment does not nest, and a "//" inside one is part of the comment. The first
+ * close ends it and what follows is code again, so a second close lexes as a multiply and a
+ * divide.
  **/
 BOOST_AUTO_TEST_CASE(sllexer_block_comment_is_flat_test) {
     std::string error;
@@ -226,8 +225,8 @@ BOOST_AUTO_TEST_CASE(sllexer_block_comment_is_flat_test) {
 }
 
 /**
- * Every token says where it started, counting from one, because a diagnostic that does not
- * is most of the cost of a diagnostic.
+ * Every token records where it started, counting from one, so a diagnostic can give the
+ * position.
  **/
 BOOST_AUTO_TEST_CASE(sllexer_position_test) {
     std::vector<Token> tokens = lex("surface matte(\n    float Ka = 1;\n)");
@@ -259,8 +258,8 @@ BOOST_AUTO_TEST_CASE(sllexer_unterminated_block_comment_test) {
 
 /**
  * A shader that needs cpp is rejected by name rather than mis-parsed. A '#' has no other
- * meaning in SL, so a scene that names such a shader learns what is missing rather than
- * being told its file is malformed.
+ * meaning in SL, so a scene that names such a shader is told what is missing rather than
+ * that its file is malformed.
  **/
 BOOST_AUTO_TEST_CASE(sllexer_preprocessor_test) {
     std::string error;
@@ -271,8 +270,8 @@ BOOST_AUTO_TEST_CASE(sllexer_preprocessor_test) {
 }
 
 /**
- * A single '&' is nothing in this language, and saying so beats reporting the identifier
- * after it as unexpected.
+ * A single '&' is not a token in this language. The error names the '&' rather than the
+ * identifier after it.
  **/
 BOOST_AUTO_TEST_CASE(sllexer_half_an_operator_test) {
     std::string error;
@@ -296,8 +295,8 @@ BOOST_AUTO_TEST_CASE(sllexer_error_ends_the_stream_test) {
 }
 
 /**
- * peek() leaves the token for next() rather than consuming it, which is what a recursive
- * descent parser reads the grammar with.
+ * peek() leaves the token for next() rather than consuming it, so a recursive descent
+ * parser can look one token ahead.
  **/
 BOOST_AUTO_TEST_CASE(sllexer_peek_test) {
     std::istringstream stream("surface matte");

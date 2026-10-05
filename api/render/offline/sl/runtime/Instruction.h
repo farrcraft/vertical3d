@@ -12,8 +12,8 @@ namespace v3d::render::offline::sl::runtime {
 /**
  * What one instruction does.
  *
- * A flat list over register indices rather than a tree the machine walks, for two reasons:
- * the mask handling below wants somewhere to put a jump, and a tree walk over a batch
+ * A flat list over register indices rather than a tree the machine traverses, for two
+ * reasons: the mask handling below needs jump targets, and a tree traversal over a batch
  * allocates at every node.
  **/
 enum class Opcode {
@@ -21,8 +21,8 @@ enum class Opcode {
     MOVE,
     /**
      * One component of target takes the number in left, `right` saying which. A
-     * parenthesised list is a literal for the type in front of it, and this is how each of
-     * its values reaches its own component.
+     * parenthesised list is a literal for the type in front of it, and this instruction
+     * writes each of its values into its own component.
      **/
     MOVE_COMPONENT,
     ADD,
@@ -47,12 +47,12 @@ enum class Opcode {
     OR,
     /**
      * A standard library function: `left` is its index in builtins() and `arguments` are
-     * the registers holding what it was given. What it does is the library's, which the
-     * machine is handed rather than holds.
+     * the registers holding its arguments. Its implementation belongs to the library, which
+     * is passed to the machine rather than held by it.
      **/
     CALL,
     /**
-     * A named coordinate space: target = left through the matrix the renderer answers for
+     * A named coordinate space: target = left through the matrix the renderer returns for
      * the space in the string register `right`, treating it as the target register's type -
      * a point translates, a vector does not, a normal goes by the inverse transpose.
      **/
@@ -60,9 +60,9 @@ enum class Opcode {
     /** Jump to `target`. **/
     JUMP,
     /**
-     * Jump to `target` when the **uniform** register `left` is zero. A condition every point
-     * agrees about is a jump rather than a mask, which is the optimisation that makes the
-     * common case free.
+     * Jump to `target` when the **uniform** register `left` is zero. A condition with the
+     * same value at every point is a jump rather than a mask, so the common case costs no
+     * mask operations.
      **/
     JUMP_IF_ZERO,
     /**
@@ -91,7 +91,7 @@ enum class Opcode {
     LOOP_END,
     POP_LOOP,
     /**
-     * Take the live lanes out of the loop for good, or for the rest of this pass round it.
+     * Take the live lanes out of the loop for good, or for the rest of this iteration.
      * Neither jumps: a lane leaves by losing its bit, because the lanes beside it have not
      * finished.
      **/
@@ -112,15 +112,16 @@ enum class Opcode {
      * `arguments` are the construct's own - the point being shaded, and a cone axis and
      * half angle when it named one.
      *
-     * The message passing of ADR-0026, from the side the surface is on: the body runs once
-     * per light, over the same batch, with L and Cl set by that light's own program.
+     * The surface shader's side of the message passing between surface and light shaders:
+     * the body runs once per light, over the same batch, with L and Cl set by that light's
+     * own program.
      **/
     ILLUMINANCE,
     /**
      * Set L and Cl from the next light the body has not run for, and narrow the batch to
      * the points that light reaches inside the cone. Jump to `target` when the lights run
-     * out - and skip a light no point of this batch sees, which is what keeps a scene with
-     * a hundred lights from running the body a hundred times over an empty mask.
+     * out. A light that reaches no point of this batch is skipped, so a scene with a
+     * hundred lights does not run the body a hundred times over an empty mask.
      **/
     ILLUMINANCE_NEXT,
     POP_ILLUMINANCE,

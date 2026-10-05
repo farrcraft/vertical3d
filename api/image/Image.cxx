@@ -15,9 +15,9 @@ namespace v3d::image {
 namespace {
 
 /**
- * @return the format of that many bits per pixel, or RGB for a depth no format describes -
- *         which is a definite answer rather than a right one, and is why a writer checks the
- *         format it was handed rather than assuming one
+ * @return the format of that many bits per pixel, or RGB for a depth no format describes.
+ *         RGB is then a defined value but not necessarily a correct one, so a writer checks
+ *         the format it receives rather than assuming one
  **/
 Image::Format formatOf(uint8_t bpp) {
     switch (bpp / 8) {

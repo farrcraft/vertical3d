@@ -350,7 +350,7 @@ void hide(MicroPolygonGrid & grid, const ReyesPrimitive & primitive, RenderConte
     for (unsigned int i = 0; i + 1 < grid.size(); i++) {
         for (unsigned int j = 0; j + 1 < grid.size(); j++) {
             placement.place(corners(i, j));
-            // the shaded colour, which is what the surface shader left on the vertex
+            // the shaded colour the surface shader left on the vertex
             hide(placement, grid.microPolygon(i, j)[0].color(), &samples, motions.get());
         }
     }
@@ -390,9 +390,9 @@ bool Bucket::render(RenderContext & rc) {
             }
         } else {
             // split primitive into smaller (possibly diceable) primitives
-            // the splitter feeds each piece back through the first pass, which is what
-            // buckets it and decides whether it is diceable in turn, so the original is
-            // finished with either way
+            // the splitter feeds each piece back through the first pass, which buckets it
+            // and decides whether it is diceable in turn, so the original is finished with
+            // either way
             prim->split(rc);
             primitives_.erase(primitives_.begin() + i);
             i--;

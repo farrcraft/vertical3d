@@ -13,8 +13,8 @@
 namespace {
 
 /**
- * The size the ui and the scores are drawn at, which the one atlas is scaled to per
- * ADR-0036 rather than rasterized at.
+ * The size the ui and the scores are drawn at. Glyphs are distance fields, so the atlas
+ * is scaled to this size rather than rasterized at it.
  **/
 const float fontSize = 28.0f;
 

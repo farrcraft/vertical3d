@@ -20,8 +20,7 @@ Scrollbar::Scrollbar() :
     page_(0.0f),
     offset_(0.0f),
     direction_(Direction::Vertical) {
-    // a bar exists to be driven, so it asks for the press its drag needs and for the focus
-    // its keys go to - ADR-0034 and ADR-0040
+    // pickable for its drag and focusable for its keys, which a plain component is not
     pickable(true);
     focusable(true);
 }
@@ -55,7 +54,7 @@ float Scrollbar::content() const noexcept {
 
 float Scrollbar::page() const noexcept {
     // a bound list's page is the box it was drawn in, so a bar reads as unscrollable until
-    // the list has been drawn once - the same rule picking one follows, per ADR-0019
+    // the list has been drawn once
     const boost::shared_ptr<SelectList> list = scrolled_.lock();
     return list ? list->size().y : page_;
 }

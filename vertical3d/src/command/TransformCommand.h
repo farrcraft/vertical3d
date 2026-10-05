@@ -20,9 +20,9 @@ namespace v3d::editor {
  * One gesture of a manipulator: where the mesh was when the handle was grabbed, and
  * where it was when the handle was let go.
  *
- * The drag itself has already been applied a motion event at a time - a gesture cannot
- * wait for its own end to show what it is doing - so the command records the two ends
- * of it rather than the offset, per ADR-0016.
+ * The drag is applied one motion event at a time while it happens, so by the time the
+ * command is made the change is already done. The command records the placements at both
+ * ends of the gesture rather than the offset.
  **/
 class TransformCommand final : public Command {
  public:

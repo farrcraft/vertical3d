@@ -37,8 +37,8 @@ void RIBExportVisitor::begin(const v3d::type::camera::Camera& camera, unsigned i
 
     /*
         The screen window is written rather than left to the frame aspect, because the
-        editor's camera states its aperture as a pixel aspect and an ortho zoom and there
-        is no reason to make a reader rederive it.
+        editor's camera states its aperture as a pixel aspect and an ortho zoom, and a reader
+        should not have to derive it from those.
     */
     if (profile.orthographic()) {
         const float top = profile.orthoZoom();
@@ -51,8 +51,8 @@ void RIBExportVisitor::begin(const v3d::type::camera::Camera& camera, unsigned i
     }
     *stream_ << "Clipping " << clipping.x << " " << clipping.y << "\n";
 
-    // what a scene sets between Projection and WorldBegin is the world to camera
-    // transformation, which is what a view matrix is
+    // the transform set between Projection and WorldBegin is the world to camera
+    // transformation, which a view matrix already is
     *stream_ << "Transform ";
     matrix(camera.view());
     *stream_ << "\n";

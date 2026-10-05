@@ -53,8 +53,8 @@ const unsigned int IMAGER = 1u << 2;
  * A shader global: which shader types have it, and which of them may write it.
  *
  * The three lists are the standard's. A name that is not here is not a global, so a light
- * shader mentioning `Ci` is told that `Ci` belongs to a surface and an imager rather than
- * being told it is undeclared - which is a far more useful thing to read.
+ * shader mentioning `Ci` is told that `Ci` belongs to a surface and an imager, rather than
+ * that it is undeclared.
  **/
 class Global final {
  public:
@@ -87,8 +87,8 @@ const Global GLOBALS[] = {
     { "Ci", Type::COLOR, Storage::VARYING, SURFACE | IMAGER, SURFACE | IMAGER, false },
     { "Oi", Type::COLOR, Storage::VARYING, SURFACE | IMAGER, SURFACE | IMAGER, false },
     { "Ps", Type::POINT, Storage::VARYING, LIGHT, 0, false },
-    // an imager writes alpha as well as reading it: a pixel it has painted is no longer
-    // one that nothing was drawn into, and "background" says so
+    // an imager writes alpha as well as reading it: a pixel it paints counts as covered,
+    // and the "background" imager writes alpha to record that
     { "alpha", Type::FLOAT, Storage::VARYING, IMAGER, IMAGER, false },
     // a light writes these; a surface reads them, and only inside an illuminance body
     { "L", Type::VECTOR, Storage::VARYING, SURFACE | LIGHT, LIGHT, true },
@@ -157,7 +157,7 @@ bool accepts(Argument wanted, Type given) {
         case Argument::NUMBER:
             return given == Type::FLOAT || given == Type::COLOR || pointlike(given);
         case Argument::POINTLIKE:
-            // a float replicates into a direction, which is what "normalize(0)" leans on
+            // a float replicates into a direction, so "normalize(0)" is accepted
             return pointlike(given) || given == Type::FLOAT;
         case Argument::FLOAT:
             return coercible(given, Type::FLOAT);
@@ -202,8 +202,8 @@ bool defines(const std::vector<syntax::Function> & functions, const std::string 
 void gather(const syntax::StatementPtr & statement, std::vector<std::string>* called);
 
 /**
- * Every name an expression calls, added once. What adopt() walks the tree for, before any
- * name has been resolved to anything.
+ * Every name an expression calls, added once. adopt() collects these from the tree before
+ * any name has been resolved.
  **/
 void gather(const syntax::ExpressionPtr & expression, std::vector<std::string>* called) {
     if (!expression) {
@@ -250,7 +250,7 @@ Compiler::Failure Compiler::fail(const std::string & message, unsigned int line,
 int Compiler::declare(const std::string & name, Type type, Storage storage,
     Symbol::Role role, bool writable, unsigned int line, unsigned int column) {
     // a local shadows whatever is outside its block; a parameter that collides with a global
-    // or with another parameter is a shader saying two things by one name
+    // or with another parameter is an error
     if (role == Symbol::Role::PARAMETER) {
         const int existing = lookup(name);
         if (existing >= 0) {
@@ -304,8 +304,8 @@ void Compiler::declareParameters() {
         if (parameter.type == Type::VOID) {
             throw fail("a parameter cannot be void", parameter.line, parameter.column);
         }
-        // a parameter is uniform unless it says otherwise: a scene binds one value for the
-        // whole primitive, and only a declaration can say the renderer will vary it
+        // a parameter is uniform unless declared varying: a scene binds one value for the
+        // whole primitive unless the declaration lets the renderer vary it
         const Type given = checkExpression(parameter.defaultValue);
         if (!coercible(given, parameter.type)) {
             throw fail(std::string("the default for '") + parameter.name + "' is " + name(given) +
@@ -342,8 +342,8 @@ bool Compiler::compile() {
 }
 
 void Compiler::adopt() {
-    // a call to diffuse or specular names a function written in the language, which the
-    // shader takes on as its own so that nothing after this pass sees two kinds of function
+    // a call to diffuse or specular names a function written in the language. It is added to
+    // the shader's own functions so that nothing after this pass sees two kinds of function
     std::vector<std::string> called;
     gather(boost::static_pointer_cast<syntax::Statement>(shader_->body), &called);
     for (const syntax::Function & function : shader_->functions) {
@@ -355,7 +355,7 @@ void Compiler::adopt() {
     const std::vector<syntax::Function> library = sources();
     for (std::size_t i = 0; i < called.size(); i++) {
         if (defines(shader_->functions, called[i])) {
-            // the shader's own wins, which is how a scene overrides one of these
+            // the shader's own takes precedence, so a scene can override one of these
             continue;
         }
         for (const syntax::Function & candidate : library) {
@@ -363,7 +363,7 @@ void Compiler::adopt() {
                 continue;
             }
             shader_->functions.push_back(candidate);
-            // and whatever it calls in turn, which is how specular reaches specularbrdf
+            // add whatever it calls in turn, such as specularbrdf from specular
             gather(boost::static_pointer_cast<syntax::Statement>(candidate.body), &called);
             break;
         }
@@ -389,8 +389,7 @@ void Compiler::checkFunctions() {
 }
 
 void Compiler::checkCallGraph() {
-    // the machine has a register file per shader run and no call stack, so a recursive
-    // shader has no meaning to give. Depth first over the call graph, colouring as it goes
+    // depth first over the call graph, colouring as it goes
     const std::size_t count = calls_.size();
     std::vector<int> colour(count, 0);
     std::vector<std::size_t> stack;
@@ -431,7 +430,7 @@ void Compiler::checkBlock(const syntax::BlockPtr & block) {
         checkStatement(statement);
     }
     // a local goes out of scope with its block, and its symbol stays: the machine allocates
-    // against the symbol, and two locals of the same name in sibling blocks are two of them
+    // against the symbol, and two locals of the same name in sibling blocks are two symbols
     scope_.resize(mark);
 }
 
@@ -616,8 +615,7 @@ Type Compiler::checkVariable(const syntax::ExpressionPtr & expression) {
     syntax::Variable & variable = static_cast<syntax::Variable &>(*expression);
     variable.symbol = lookup(variable.name);
     if (variable.symbol < 0) {
-        // a global of another shader type is a far more useful thing to be told about than
-        // an undeclared name
+        // report a global of another shader type as that, rather than as an undeclared name
         for (const Global & global : GLOBALS) {
             if (variable.name == global.name) {
                 throw fail("'" + variable.name + "' belongs to " + owners(global.shaders) +
@@ -666,7 +664,7 @@ Type Compiler::checkBinary(const syntax::ExpressionPtr & expression) {
 
     if (op == "." || op == "^") {
         // the two that read as something else: a dot product and a cross product, over
-        // positions and directions rather than over anything with three of something
+        // positions and directions rather than over any three-component type
         if (!accepts(Argument::POINTLIKE, left) || !accepts(Argument::POINTLIKE, right)) {
             throw fail("'" + op + "' takes two positions or directions, not " +
                 name(left) + " and " + name(right), expression->line, expression->column);
@@ -773,8 +771,7 @@ Type Compiler::checkCall(const syntax::ExpressionPtr & expression) {
     for (const syntax::ExpressionPtr & argument : call.arguments) {
         given.push_back(checkExpression(argument));
     }
-    // a shader's own function wins over a standard one of the same name, which is how a
-    // shader replaces a light model it does not like
+    // a shader's own function takes precedence over a standard one of the same name
     const int function = checkShaderCall(call, given);
     if (function >= 0) {
         call.function = function;

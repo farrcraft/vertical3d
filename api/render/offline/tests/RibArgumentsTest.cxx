@@ -19,10 +19,9 @@ typedef v3d::render::offline::rib::ParameterList ParameterList;
 };  // namespace
 
 /**
- * The C interface hands a parameter list over as two parallel arrays, and neither of them
- * says how long a value array is - the declaration does. This is the same answer the
- * reader reaches from a file, which is why the two paths into a render context cannot
- * disagree about what a scene said.
+ * The C interface passes a parameter list as two parallel arrays, and neither says how long
+ * a value array is; only the declaration does. The reader resolves a file's parameters the
+ * same way, so both paths into a render context agree.
  **/
 BOOST_AUTO_TEST_CASE(ribarguments_typed_by_declaration_test) {
     Declarations declarations;
@@ -41,8 +40,8 @@ BOOST_AUTO_TEST_CASE(ribarguments_typed_by_declaration_test) {
 }
 
 /**
- * A name may carry its declaration inline, which declares it for the one request - the
- * same thing it means in a file.
+ * A name may carry its declaration inline, which declares it for that request only, as it
+ * does in a file.
  **/
 BOOST_AUTO_TEST_CASE(ribarguments_inline_declaration_test) {
     Declarations declarations;
@@ -57,8 +56,8 @@ BOOST_AUTO_TEST_CASE(ribarguments_inline_declaration_test) {
 }
 
 /**
- * A string parameter's array is an array of pointers to characters, which is what
- * RtString is - the one type whose values are not floats.
+ * A string parameter's array is an array of pointers to characters, as RtString is. String
+ * is the only type whose values are not floats.
  **/
 BOOST_AUTO_TEST_CASE(ribarguments_strings_test) {
     Declarations declarations;
@@ -90,7 +89,7 @@ BOOST_AUTO_TEST_CASE(ribarguments_varying_takes_the_vertices_test) {
 
 /**
  * A name with no declaration has no length either, so it is dropped rather than read
- * past. A caller that wants to say so is told which names those were.
+ * past. The caller receives the list of those names.
  **/
 BOOST_AUTO_TEST_CASE(ribarguments_undeclared_is_dropped_test) {
     Declarations declarations;
@@ -108,8 +107,8 @@ BOOST_AUTO_TEST_CASE(ribarguments_undeclared_is_dropped_test) {
 }
 
 /**
- * A null anywhere is a caller that built its arrays wrong, and reading past one would be
- * the last thing a render did.
+ * A null anywhere means the caller built its arrays wrong. It is skipped, because reading
+ * through it would crash the render.
  **/
 BOOST_AUTO_TEST_CASE(ribarguments_nulls_test) {
     Declarations declarations;

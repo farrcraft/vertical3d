@@ -15,8 +15,8 @@ using v3d::render::realtime::vulkan::device::check;
 BOOST_AUTO_TEST_SUITE(result_test)
 
 /**
- * A failure names what was being attempted and why it failed, which is all a log line from
- * a user's machine has to go on.
+ * A failure names what was being attempted and why it failed, because a log line from a
+ * user's machine carries nothing else.
  **/
 BOOST_AUTO_TEST_CASE(a_failed_call_throws_what_and_why) {
     try {
@@ -28,7 +28,8 @@ BOOST_AUTO_TEST_CASE(a_failed_call_throws_what_and_why) {
 }
 
 /**
- * Success passes, and so does the one other result a call names as no failure - and only it.
+ * Success passes, and so does the one other result a call names as tolerated. No other result
+ * passes.
  **/
 BOOST_AUTO_TEST_CASE(success_and_what_is_tolerated_pass) {
     BOOST_CHECK_NO_THROW(check(VK_SUCCESS, "Unable to count"));

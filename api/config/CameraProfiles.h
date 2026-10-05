@@ -23,7 +23,7 @@ namespace v3d::config {
  *
  * A profile is described by where the camera is and what it looks at rather than by
  * its three normals: the basis and the rotation have to agree, and
- * Profile::lookat() is the one call that writes all four consistently.
+ * only Profile::lookat() writes all four consistently.
  **/
 class CameraProfiles final {
  public:

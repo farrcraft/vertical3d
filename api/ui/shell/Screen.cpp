@@ -37,8 +37,8 @@ Screen::Screen(v3d::render::realtime::Engine3D* engine, const boost::shared_ptr<
         options_.dress = lineHeight;
     }
 
-    // the atlas is a texture on the device, which is the one line of this that knows there is
-    // a device - and why it is here rather than in an app, per ADR-0074
+    // the atlas is a texture on the device, and this upload is the only line here that
+    // needs one
     text_ = boost::make_shared<paint::TextRenderer>(assets, logger,
         [engine](const boost::shared_ptr<v3d::image::Image>& atlas) {
             if (engine == nullptr || !engine->textures()) {

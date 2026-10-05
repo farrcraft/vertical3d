@@ -26,7 +26,7 @@ BOOST_AUTO_TEST_CASE(a_default_handle_is_invalid) {
 }
 
 /**
- * Handles order by slot, which is what a sort key is built out of.
+ * Handles order by slot, and a sort key is built from the slot.
  **/
 BOOST_AUTO_TEST_CASE(handles_order_by_slot) {
     v3d::render::realtime::PipelineHandle first(0);
@@ -127,8 +127,8 @@ BOOST_AUTO_TEST_CASE(a_second_release_is_a_no_op) {
 }
 
 /**
- * Walking a registry with released slots visits only what it still holds, in slot order -
- * which is what a destructor walks to destroy.
+ * Walking a registry with released slots visits only what it still holds, in slot order. A
+ * destructor uses the same walk to destroy what remains.
  **/
 BOOST_AUTO_TEST_CASE(a_walk_skips_released_slots) {
     v3d::render::realtime::Registry<struct TestTag, std::string> registry;

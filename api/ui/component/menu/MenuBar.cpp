@@ -131,8 +131,7 @@ int MenuBar::labelAt(const glm::vec2& cursor) const {
 int MenuBar::itemAt(const boost::shared_ptr<Menu>& panel, const glm::vec2& cursor) {
     for (std::size_t index = 0; index < panel->count(); index++) {
         const boost::shared_ptr<MenuItem>& item = (*panel)[index];
-        // an item that cannot be used is not offered the cursor, the way a strip's button is
-        // not - ADR-0059
+        // an item that cannot be used is not offered the cursor, like a disabled strip button
         if (item && usable(*item) && within(*item, cursor)) {
             return static_cast<int>(index);
         }

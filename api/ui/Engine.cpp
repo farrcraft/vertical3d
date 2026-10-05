@@ -48,8 +48,8 @@ bool Engine::load(const boost::json::object& config) {
     containers_ = std::move(loader.containers());
     themes_ = std::move(loader.themes());
 
-    // the first theme loaded is active unless the document named one, which is what makes
-    // a config carrying a single theme need no field at all
+    // the first theme loaded is active unless the document named one, so a config carrying
+    // a single theme needs no field at all
     activeTheme_ = themes_.empty() ? nullptr : themes_.front();
     if (!loader.active().empty()) {
         activeTheme(loader.active());
@@ -88,7 +88,7 @@ std::size_t Engine::resolveComponentImages(const Resolve& resolve, const boost::
     boost::shared_ptr<component::Icon> icon = boost::dynamic_pointer_cast<component::Icon>(component);
     boost::shared_ptr<component::Button> button = boost::dynamic_pointer_cast<component::Button>(component);
     // a strip's buttons are its own rather than children, so they are not reached by the
-    // walk below and are taken here
+    // traversal below and are taken here
     boost::shared_ptr<component::Toolbar> bar = boost::dynamic_pointer_cast<component::Toolbar>(component);
     if (icon) {
         if (resolveIcon(resolve, std::string(icon->source()), icon)) {
@@ -166,7 +166,7 @@ boost::shared_ptr<style::Theme> Engine::theme(const std::string_view& name) cons
  **/
 void Engine::focus(const boost::shared_ptr<Component>& component) {
     // a component that cannot be used is nothing to focus, the same answer one that never
-    // asked to be focusable gets - ADR-0059
+    // asked to be focusable gets
     const boost::shared_ptr<Component> wanted =
         component && component->focusable() && usable(*component) ? component : boost::shared_ptr<Component>();
     const boost::shared_ptr<Component> was = focused_.lock();
@@ -202,7 +202,7 @@ boost::shared_ptr<Component> Engine::focused() const {
 namespace {
 
 /**
- * Collect what can be focused, in the order the draw walk reaches it - forEachDrawn's, so a
+ * Collect what can be focused, in draw order - forEachDrawn's, so a
  * control on a tab page that is not up is not one.
  **/
 void focusable(const boost::shared_ptr<Component>& component,
@@ -260,7 +260,7 @@ bool Engine::focusNext(bool forward) {
     if (here == order.end()) {
         // what held the focus is no longer reachable - hidden, disabled or taken out of the
         // tree since it took it - so there is no place in the order to move on from, and the
-        // walk starts again rather than leaving the focus somewhere tab cannot get it back
+        // order starts again rather than leaving the focus somewhere tab cannot get it back
         focus(forward ? order.front() : order.back());
         return true;
     }

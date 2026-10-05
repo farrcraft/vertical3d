@@ -13,7 +13,7 @@ target_link_libraries(v3dlib_image PUBLIC v3dlib_log)
 # it too.
 target_link_libraries(v3dlib_image PUBLIC Boost::filesystem)
 
-# glm is named by Texture.h and TextureAtlas.h.
+# glm is named by TextureAtlas.h.
 target_link_libraries(v3dlib_image PUBLIC glm::glm)
 
 # PRIVATE: the codecs are reached only from reader/ and writer/, never from a header.

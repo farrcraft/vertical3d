@@ -78,7 +78,7 @@ glm::vec3 Camera::project(const glm::vec3& point, const int viewport[4]) const {
 
 geometry::Ray Camera::ray(const glm::vec2& point, const int viewport[4]) const {
     // the two ends of the pixel's line through the frustum. Depth zero is the near
-    // plane and one is the far one, per ADR-0012
+    // plane and one is the far one
     const glm::vec3 from = unproject(glm::vec3(point.x, point.y, 0.0f), viewport);
     const glm::vec3 to = unproject(glm::vec3(point.x, point.y, 1.0f), viewport);
     return geometry::Ray(from, to - from);
@@ -87,7 +87,7 @@ geometry::Ray Camera::ray(const glm::vec2& point, const int viewport[4]) const {
 /*
 build either an orthographic or perspective projection matrix
 
-both are vulkan clip space, per ADR-0012: y points down and depth runs from zero at the
+both are vulkan clip space: y points down and depth runs from zero at the
 near plane to one at the far one. The camera looks along its own direction vector, which
 the profile documents as +z of the basis its three normals define - so a point in front
 of the camera has a positive view z, and w is that z rather than its negation.
@@ -197,9 +197,9 @@ void Camera::createView() {
     view_ = glm::transpose(profile_.orientation());
     view_ = glm::translate(view_, e);
     if (profile_.hand() == Profile::Hand::DirectionCrossUp) {
-        // the mirrored basis is the rotation with view x negated, and this is where that
-        // happens rather than in the rotation, which carries no mirror - ADR-0052. Applied
-        // on the left, so it mirrors the view rather than the world the rotation is turning
+        // the mirrored basis is the rotation with view x negated. A quaternion cannot carry
+        // a mirror, so the negation is applied here. Applied on the left, so it mirrors the
+        // view rather than the world the rotation is turning
         glm::mat4x4 mirror(1.0f);
         mirror[0][0] = -1.0f;
         view_ = mirror * view_;
@@ -286,7 +286,7 @@ float Camera::orthoFactorVertical() const {
 }
 
 void Camera::rotate(const glm::quat& new_rot) {
-    // ArcBall::drag answers a zero quaternion for a drag too short to have an axis, which
+    // ArcBall::drag returns a zero quaternion for a drag too short to have an axis, which
     // is no rotation at all rather than one to compose
     if (glm::dot(new_rot, new_rot) <= glm::epsilon<float>()) {
         return;

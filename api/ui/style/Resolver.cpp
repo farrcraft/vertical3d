@@ -133,8 +133,8 @@ paint::Dressing Resolver::dress(Class className, const std::string_view& name) c
             readMetric(style, "radius", &dressing.radius);
             break;
         case Class::Scrollbar:
-            // a scrollbar is not a progress bar: it dresses from its own class, so a theme
-            // that paints a health bar green does not paint a scrollbar green as well
+            // a scrollbar dresses from its own class, so a theme that paints a health bar
+            // green does not also paint every scrollbar green
             readColour(style, "track", &dressing.track);
             readColour(style, "thumb", &dressing.thumb);
             readColour(style, "border", &dressing.border);
@@ -142,8 +142,8 @@ paint::Dressing Resolver::dress(Class className, const std::string_view& name) c
             readMetric(style, "radius", &dressing.radius);
             break;
         case Class::Slider:
-            // a track, the fill up to the thumb, and the thumb - a bar's colours and a
-            // scrollbar's thumb, in a class of its own so that neither theme reaches it
+            // a track, the fill up to the thumb, and the thumb. A class of its own, so a
+            // theme's bar and scrollbar styles do not change it
             readColour(style, "track", &dressing.track);
             readColour(style, "fill", &dressing.fill);
             readColour(style, "thumb", &dressing.thumb);
@@ -154,8 +154,8 @@ paint::Dressing Resolver::dress(Class className, const std::string_view& name) c
             break;
         case Class::CheckBox:
         case Class::Radio:
-            // the box a mark sits in is a track rather than a panel: it is the thing the
-            // mark is drawn over, the way a bar's fill is drawn over one
+            // the box a mark sits in is dressed as a track, because the mark is drawn over
+            // it the way a bar's fill is drawn over its track
             readColour(style, "background", &dressing.track);
             readColour(style, "mark", &dressing.mark);
             readColour(style, "border", &dressing.border);
@@ -196,12 +196,12 @@ paint::Dressing Resolver::dress(Class className, const std::string_view& name) c
             readMetric(style, "line-height", &dressing.lineHeight);
             break;
         case Class::Button:
-            // a button's fill is its skin's and its label is the base's, so the ring below
-            // is the whole of what it reads as a Dressing
+            // a button's fill comes from its skin and its label colour from the base, so
+            // the ring below is all it reads as a Dressing
             break;
     }
-    // the ring is chrome every class may override, read here rather than in nine branches
-    // that would all say the same thing. A class naming neither is ringed out of the base
+    // every class may override the focus ring, so it is read once here for all of them.
+    // A class naming neither property draws the base's ring
     readColour(style, "focus", &dressing.focus);
     readMetric(style, "focus-width", &dressing.focusWidth);
     return dressing;

@@ -13,12 +13,11 @@
 namespace v3d::ecs::component {
 
 /**
- * Which of a model's clips an entity is playing, how far in, and the one it is fading out of -
- * ADR-0070.
+ * Which of a model's clips an entity is playing, how far in, and the one it is fading out of.
  *
  * Advanced on the fixed step by advance(), and drawn between steps through ecs::interpolated,
  * so a game snapshots it beside its Transform. A pose is sampled from it when it is drawn; it
- * holds no pose itself. Which clip to play, and when, is the game's: it calls play().
+ * holds no pose itself. The game decides which clip plays and when, by calling play().
  *
  * A clip is named by its index into the model's clips, and carries its duration and whether it
  * loops, copied in by play(), so that advancing needs nothing but the component.
@@ -73,8 +72,8 @@ void advance(entt::registry& registry, float step);
 uint32_t crossed(const Playback& previous, const Playback& current, float marker);
 
 /**
- * The playback alpha of the way from one step to the next, which is how ecs::interpolated
- * draws it between steps.
+ * The playback alpha of the way from one step to the next, which ecs::interpolated uses to
+ * draw it between steps.
  *
  * Across a step that changed clip there is no halfway, so it is the later step, and the fade is
  * what smooths the change. A fade that finished during the step draws the clip alone.

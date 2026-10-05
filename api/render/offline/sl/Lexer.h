@@ -27,12 +27,12 @@ namespace v3d::render::offline::sl {
 class Lexer final {
  public:
     /**
-     * The stream is read from as tokens are asked for and has to outlive the lexer.
+     * The stream is read as tokens are requested, and must outlive the lexer.
      **/
     explicit Lexer(std::istream & stream);
 
     /**
-     * The next token, consuming it. END once the stream is spent or an error is set.
+     * The next token, consuming it. END once the stream is exhausted or an error is set.
      **/
     Token next();
 
@@ -54,7 +54,7 @@ class Lexer final {
     Token scanOperator(unsigned int line, unsigned int column);
 
     /**
-     * Whitespace and both comment forms, which stand in the same places.
+     * Whitespace and both comment forms, which may appear in the same places.
      *
      * @return false when a comment was left unterminated, which sets the error
      **/

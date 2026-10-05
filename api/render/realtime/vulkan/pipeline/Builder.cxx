@@ -244,7 +244,7 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
         throw std::runtime_error(msg.str());
     }
     // an empty list is a pipeline that writes no colour, which a shadow pass is. An entry
-    // left undefined is one nobody named, which is the default and is still a mistake
+    // left undefined was never named; that is the default, and still an error
     for (const VkFormat format : colours_) {
         if (format == VK_FORMAT_UNDEFINED) {
             std::stringstream msg;
@@ -268,8 +268,8 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
     built.depthFormat = depthFormat_;
 
     // a layout the caller owns is compiled into the pipeline and handed straight back, so
-    // that registering the result names the layout its draws bind through. It is theirs to
-    // destroy, which is why the failure path below is the only one that frees one
+    // that registering the result names the layout its draws bind through. The caller
+    // destroys it, so the failure path below frees a layout only when this builder made it
     const bool ownsLayout = layout_ == VK_NULL_HANDLE;
 
     VkPushConstantRange push{};
@@ -322,7 +322,7 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
 
     const VkPipelineColorBlendAttachmentState attachment = colourBlend();
 
-    // blend() is one answer for the pipeline, so every attachment blends the same way
+    // blend state applies to the whole pipeline, so every attachment blends the same way
     const std::vector<VkPipelineColorBlendAttachmentState> attachments(colours_.size(), attachment);
     VkPipelineColorBlendStateCreateInfo blending{};
     blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;

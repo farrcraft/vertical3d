@@ -38,10 +38,10 @@ class Model : public Asset {
      * baseColourTexture is empty. Decoded pixels arrive here instead, for the app to
      * upload the way it uploads any other image.
      *
-     * It is on the asset rather than on the material because it is a fact about how the
-     * file was packaged rather than about the surface, and because api/type is built
-     * against glm alone - a material holding an image would take api/image into every
-     * consumer of a mesh, the offline renderer included.
+     * It is on the asset rather than on the material because it describes how the file was
+     * packaged, not the surface. api/type also depends on glm alone, and a material holding
+     * an image would pull api/image into every consumer of a model, the offline renderer
+     * included.
      *
      * Null for a material whose texture was named, which is every .gltf pointing at a file
      * beside it, and for one with no texture at all.
