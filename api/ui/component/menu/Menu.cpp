@@ -5,6 +5,8 @@
 
 #include "Menu.h"
 
+#include <api/ui/input/Command.h>
+
 namespace v3d::ui::component {
 Menu::Menu(const boost::shared_ptr<entt::dispatcher>& dispatcher) :
     Component(component::Type::Menu), dispatcher_(dispatcher), active_(-1) {
@@ -29,6 +31,9 @@ void Menu::level(const boost::weak_ptr<Menu>& m) {
 }
 
 void Menu::addItem(const boost::shared_ptr<MenuItem>& item) {
+    if (item) {
+        adopt(*item);
+    }
     items_.push_back(item);
 }
 
@@ -137,16 +142,15 @@ boost::shared_ptr<MenuItem>& Menu::operator[](size_t i) {
 bool Menu::dispatch(const boost::shared_ptr<MenuItem>& item) const {
     v3d::event::Event event = item->event();
     // an item is only bound to an event when its config gave both a command and a context.
-    // Event::str() dereferences the context, so an unbound event must never be sent.
-    if (!dispatcher_ || !event.context()) {
+    // a disabled item sends nothing - ADR-0059
+    if (!usable(*item)) {
         return false;
     }
     boost::optional<v3d::event::EventData> value = item->value();
     if (value) {
         event.data(value.get());
     }
-    dispatcher_->trigger(event);
-    return true;
+    return v3d::ui::input::send(dispatcher_.get(), event);
 }
 
 bool Menu::capturing() const {

@@ -95,6 +95,12 @@ void Component::add(const boost::shared_ptr<Component>& child) {
     children_.push_back(child);
 }
 
+void Component::adopt(Component& item) noexcept {
+    if (item.parent_ == nullptr && &item != this) {
+        item.parent_ = this;
+    }
+}
+
 const std::vector<boost::shared_ptr<Component>>& Component::children() const noexcept {
     return children_;
 }

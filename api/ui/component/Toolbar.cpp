@@ -5,6 +5,8 @@
 
 #include "Toolbar.h"
 
+#include <api/ui/input/Command.h>
+
 #include <cstddef>
 #include <string>
 
@@ -31,6 +33,9 @@ Toolbar::Edge Toolbar::edge() const noexcept {
 /**
  **/
 void Toolbar::add(const boost::shared_ptr<Button>& button) {
+    if (button) {
+        adopt(*button);
+    }
     buttons_.push_back(button);
 }
 
@@ -97,12 +102,7 @@ bool Toolbar::press(const glm::vec2& cursor) {
     // the gap between the buttons and the edges of the strip takes the press and does
     // nothing with it, so a click that misses a button does not reach the scene under it
     if (over) {
-        const v3d::event::Event event = over->event();
-        // a button is only bound when its config gave both a command and a context.
-        // Event::str() dereferences the context, so an unbound event must never be sent
-        if (dispatcher_ && event.context()) {
-            dispatcher_->trigger(event);
-        }
+        v3d::ui::input::send(dispatcher_.get(), over->event());
     }
     return true;
 }

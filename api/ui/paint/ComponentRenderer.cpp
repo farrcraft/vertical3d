@@ -1024,7 +1024,9 @@ void ComponentRenderer::panel(v3d::render::realtime::Canvas* canvas, const boost
         }
 
         const glm::vec2 pen(corner.x + column, top + base().lineHeight * 0.75f);
-        write_(labels[index], pen, selected ? base().activeText : base().text);
+        // a disabled item - or one in a disabled menu - is drawn as one, as a button is
+        const bool live = item && usable(*item);
+        write_(labels[index], pen, !live ? base().disabledText : selected ? base().activeText : base().text);
     }
 }
 

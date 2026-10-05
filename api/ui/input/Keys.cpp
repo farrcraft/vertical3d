@@ -359,9 +359,7 @@ void Keys::send(const boost::shared_ptr<Component>& component) const {
 }
 
 void Keys::send(const v3d::event::Event& event) const {
-    if (dispatcher_ && event.context()) {
-        dispatcher_->trigger(event);
-    }
+    input::send(dispatcher_.get(), event);
 }
 
 };  // namespace v3d::ui::input

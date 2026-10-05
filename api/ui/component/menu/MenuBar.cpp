@@ -26,6 +26,9 @@ void MenuBar::add(const std::string& label, const boost::shared_ptr<Menu>& menu)
     labels_.push_back(label);
     // nothing is hit until a renderer has said where the label went
     bounds_.push_back(v3d::type::geometry::Bound2D(0.0f, 0.0f, 0.0f, 0.0f));
+    if (menu) {
+        adopt(*menu);
+    }
     menus_.push_back(menu);
 }
 
@@ -128,7 +131,9 @@ int MenuBar::labelAt(const glm::vec2& cursor) const {
 int MenuBar::itemAt(const boost::shared_ptr<Menu>& panel, const glm::vec2& cursor) {
     for (std::size_t index = 0; index < panel->count(); index++) {
         const boost::shared_ptr<MenuItem>& item = (*panel)[index];
-        if (item && within(*item, cursor)) {
+        // an item that cannot be used is not offered the cursor, the way a strip's button is
+        // not - ADR-0059
+        if (item && usable(*item) && within(*item, cursor)) {
             return static_cast<int>(index);
         }
     }

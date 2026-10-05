@@ -314,16 +314,10 @@ void Cursor::place(const boost::shared_ptr<component::TextBox>& box, const glm::
 }
 
 void Cursor::dispatch(const boost::shared_ptr<Component>& component) const {
-    if (!dispatcher_) {
-        return;
-    }
     // a component does not own the state it shows: the click sends the command and marks
     // nothing, and whatever answers it sets checked() - ADR-0019. Which components carry
     // one is ui::command()'s to know, shared with the key that activates the same thing
-    const v3d::event::Event sent = command(component);
-    if (sent.context()) {
-        dispatcher_->trigger(sent);
-    }
+    send(dispatcher_.get(), command(component));
 }
 
 };  // namespace v3d::ui::input

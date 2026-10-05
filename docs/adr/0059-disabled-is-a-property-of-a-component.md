@@ -64,6 +64,8 @@ derived answer — the component and everything holding it. `Button::STATE_INACT
 | `paint::Dressing` | carries `disabledText`, read from the theme's `ui` style as `disabled-text` |
 | `ComponentRenderer` | a disabled component is never lit, writes its text in `disabledText`, tints an icon with it, and draws no focus ring |
 | `Loader` | reads `"enabled": false` on any component, the way it reads `pickable`, and `"state": "disabled"` — or the older `"inactive"` — on a button style |
+| `Component::adopt` | a strip's buttons and a menu's items answer to their holder, so a disabled toolbar or menu disables what it holds *(2026-10-05)* |
+| `MenuBar::itemAt`, `Menu::dispatch` | a disabled item is neither lit nor sent, and the panel writes it in `disabledText` *(2026-10-05)* |
 
 A theme's button styles are told apart by `style::Button::State`, its own enum, rather than by
 the component's `ButtonState`: three of those are the transient state a cursor writes and the

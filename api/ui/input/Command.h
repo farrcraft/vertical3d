@@ -8,6 +8,7 @@
 #include <api/event/Event.h>
 
 #include <boost/shared_ptr.hpp>
+#include <entt/entt.hpp>
 
 namespace v3d::ui {
 
@@ -39,5 +40,17 @@ namespace v3d::ui::input {
  *         rather than being handed something it has to know not to send
  **/
 v3d::event::Event command(const boost::shared_ptr<Component>& component);
+
+/**
+ * Send a command, if it is one.
+ *
+ * Every place the ui sends a command comes through here - the cursor, the keys, a strip's
+ * button and a menu's item - so the one rule about sending is written once: an event with no
+ * context is not bound to anything, and Event::str() dereferences the context, so it is never
+ * sent.
+ *
+ * @return whether it was sent
+ **/
+bool send(entt::dispatcher* dispatcher, const v3d::event::Event& event);
 
 };  // namespace v3d::ui::input

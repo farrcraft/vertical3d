@@ -139,6 +139,16 @@ class Component {
     Component* parent() const noexcept;
 
     /**
+     * Take an item this component holds outside children() - a toolbar's buttons, a menu's
+     * items - so that what is said of this component is said of it: usable() walks up through
+     * the holder, and a disabled strip disables what is on it (ADR-0059). The item is laid out
+     * and drawn by the holder itself, so it is not a child and no walk reaches it as one.
+     *
+     * An item already held by something else is left with it, as add() leaves a child.
+     **/
+    void adopt(Component& item) noexcept;
+
+    /**
      * Get whether the component answers the cursor.
      *
      * False by default, and deliberately: a hud is mostly labels and bars drawn over a

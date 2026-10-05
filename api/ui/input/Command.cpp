@@ -16,6 +16,14 @@
 
 namespace v3d::ui::input {
 
+bool send(entt::dispatcher* dispatcher, const v3d::event::Event& event) {
+    if (dispatcher == nullptr || !event.context()) {
+        return false;
+    }
+    dispatcher->trigger(event);
+    return true;
+}
+
 v3d::event::Event command(const boost::shared_ptr<Component>& component) {
     if (!component) {
         return v3d::event::Event();

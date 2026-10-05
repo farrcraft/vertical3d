@@ -294,3 +294,22 @@ BOOST_AUTO_TEST_CASE(toolbar_two_columns_stand_side_by_side_on_the_first_frame) 
     // and the two together take exactly what the app was told they would
     BOOST_TEST(right.position().x + right.size().x + 1.0f == reserved);
 }
+
+/**
+ * A strip holds its buttons outside children(), and what is said of the strip is said of them:
+ * a disabled one disables every button on it, which then takes no press and sends nothing -
+ * ADR-0059.
+ **/
+BOOST_AUTO_TEST_CASE(a_disabled_strip_disables_its_buttons) {
+    Fixture fixture;
+    boost::shared_ptr<v3d::ui::component::Toolbar> bar =
+        fixture.bar(v3d::ui::component::Toolbar::Edge::Top);
+    fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0f, 0.0f));
+
+    BOOST_TEST(v3d::ui::usable(*bar->button(1)));
+    bar->enabled(false);
+    BOOST_TEST(!v3d::ui::usable(*bar->button(1)));
+
+    bar->press(Fixture::centre(*bar->button(1)));
+    BOOST_TEST(fixture.sent.empty());
+}

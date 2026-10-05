@@ -429,6 +429,15 @@ with out-of-order depth is picked where it is drawn.
 
 U3, U5.
 
+**Closed, the lighter way.** A strip's buttons and a menu's items stay outside `children()` and are
+adopted by their holder, so `usable()` walks up through it: a disabled toolbar disables its
+buttons, a disabled item is neither lit nor sent, and the panel draws it disabled. A strip button
+is read through `loadAttributes` like any other. Every command the ui sends goes through
+`ui::input::send()`, the one place the unbound-event rule is written; ADR-0059's table has the new
+rows. **Not done:** `visible` on a menu item, which wants the panel's rows to close up rather than
+a check, and taking the dispatcher off `Toolbar` and `Menu`, which changes how a menu bar answers a
+press for no defect.
+
 Either strip buttons and menu items become real children loaded through the attribute path, or
 `usable()` and the loader treat their owner as the parent; the step picks the one that leaves
 fewer special cases in the walks. Either way: a disabled toolbar draws disabled, `enabled`/

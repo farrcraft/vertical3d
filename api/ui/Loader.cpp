@@ -882,8 +882,14 @@ boost::shared_ptr<component::Toolbar> Loader::loadToolbar(const boost::json::obj
             logger_->get()->error("Unrecognized toolbar button config");
             return nullptr;
         }
-        // a button in a strip is read the same way a button in a container is
-        bar->add(loadButton(buttonIterator->as_object()));
+        // a button in a strip is read the same way a button in a container is, so "enabled",
+        // "style", "name" and "visible" on one mean what they mean anywhere else
+        const boost::shared_ptr<component::Button> button = loadButton(buttonIterator->as_object());
+        loadAttributes(buttonIterator->as_object(), button);
+        if (buttonIterator->as_object().contains("name")) {
+            button->name(boost::json::value_to<std::string>(buttonIterator->as_object().at("name")));
+        }
+        bar->add(button);
     }
     return bar;
 }

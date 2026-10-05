@@ -351,4 +351,21 @@ BOOST_AUTO_TEST_CASE(an_item_is_found_by_the_command_it_sends) {
     BOOST_CHECK(!fixture.bar->find("test::nothing"));
 }
 
+
+/**
+ * A disabled item is not lit and sends nothing, as a disabled button does not.
+ **/
+BOOST_AUTO_TEST_CASE(a_disabled_item_sends_nothing) {
+    Fixture fixture;
+    build(&fixture);
+    fixture.draw();
+
+    fixture.bar->press(fixture.label(0));
+    fixture.draw();
+
+    boost::shared_ptr<v3d::ui::component::Menu> panel = fixture.bar->panels().front();
+    (*panel)[0]->enabled(false);
+    fixture.bar->press(Fixture::centre(*(*panel)[0]));
+    BOOST_CHECK(fixture.sent.empty());
+}
 BOOST_AUTO_TEST_SUITE_END()
