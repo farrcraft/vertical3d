@@ -174,6 +174,15 @@ class Handler {
         (void)parameters;
     }
     /**
+     * A light whose shape matters, bound to the geometry that follows it. A renderer that
+     * cannot sample a light's area takes it as an ordinary light, which is what this does
+     * unless it is overridden - a scene using one still lights rather than going dark.
+     **/
+    virtual void areaLightSource(const std::string & name, const std::string & handle,
+        const ParameterList & parameters) {
+        lightSource(name, handle, parameters);
+    }
+    /**
      * Turn a light on or off in the current attribute state.
      *
      * The reader recognised the handle and threw it away until now, which was correct only
@@ -182,6 +191,25 @@ class Handler {
     virtual void illuminate(const std::string & handle, bool on) {
         (void)handle;
         (void)on;
+    }
+    /**
+     * Make a texture file from an image. Nothing by default: a renderer that reads the image
+     * a scene names as the texture has nothing to make, and the request is still understood
+     * rather than unrecognised.
+     *
+     * @param filter the name of the filter the texture is made with
+     **/
+    virtual void makeTexture(const std::string & picture, const std::string & texture, const std::string & swrap,
+        const std::string & twrap, const std::string & filter, float swidth, float twidth,
+        const ParameterList & parameters) {
+        (void)picture;
+        (void)texture;
+        (void)swrap;
+        (void)twrap;
+        (void)filter;
+        (void)swidth;
+        (void)twidth;
+        (void)parameters;
     }
     /**
      * The shader run over the finished framebuffer, which is how a scene says what a pixel
@@ -193,6 +221,14 @@ class Handler {
     }
 
     // geometry
+    /**
+     * Where a primitive after the first in a motion block goes, which is the same primitive at
+     * a later time - one that deforms. None by default: such a primitive is read, so the stream
+     * stays in step, and dropped, so it is drawn at the block's first time, and the reader
+     * lists it as unsupported.
+     **/
+    virtual Handler* deformation() { return nullptr; }
+
     /**
      * One closed planar convex polygon. RIB carries no vertex count - it is the length of
      * the "P" array, which the reader has already divided out.

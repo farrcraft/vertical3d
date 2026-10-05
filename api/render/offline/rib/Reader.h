@@ -83,12 +83,17 @@ class Reader final {
      * The request set, split the way the RI standard groups it. Each takes the name a
      * request began with and either recognises it or passes.
      **/
+    /**
+     * The requests that are a name and a parameter list and nothing else, which read the same
+     * way and differ only in which handler method they forward to.
+     **/
+    Result namedRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result optionRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result cameraRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result displayRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result lensRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result sampleRequest(const std::string & name, Lexer * lexer, Handler * handler);
-    static Result blockRequest(const std::string & name, Handler * handler);
+    Result blockRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result transformRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result motionRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result attributeRequest(const std::string & name, Lexer * lexer, Handler * handler);

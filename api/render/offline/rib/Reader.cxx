@@ -203,6 +203,31 @@ bool Reader::parameters(Lexer * lexer, unsigned int vertices, ParameterList * li
     return true;
 }
 
+Reader::Result Reader::namedRequest(const std::string & name, Lexer * lexer, Handler * handler) {
+    typedef void (Handler::*Named)(const std::string &, const ParameterList &);
+    static const struct { const char* name; Named forward; } table[] = {
+        { "Option", &Handler::option },
+        { "Hider", &Handler::hider },
+        { "Projection", &Handler::projection },
+        { "Attribute", &Handler::attribute },
+        { "Surface", &Handler::surface },
+        { "Imager", &Handler::imager }
+    };
+    for (const auto & entry : table) {
+        if (name != entry.name) {
+            continue;
+        }
+        std::string first;
+        ParameterList list;
+        if (!text(lexer, &first) || !parameters(lexer, 1, &list)) {
+            return Result::Failed;
+        }
+        (handler->*entry.forward)(first, list);
+        return Result::Handled;
+    }
+    return Result::Unhandled;
+}
+
 /**
  * Reads the RI options: what the picture is and what the scene calls things.
  **/
@@ -212,7 +237,6 @@ Reader::Result Reader::optionRequest(const std::string & name, Lexer * lexer, Ha
     float c = 0.0f;
     std::string first;
     std::string second;
-    ParameterList list;
 
     if (name == "version") {
         if (!number(lexer, &a)) {
@@ -229,20 +253,6 @@ Reader::Result Reader::optionRequest(const std::string & name, Lexer * lexer, Ha
             logger_->get()->warn("RIB declaration of '{}' does not name a type", first);
         }
         handler->declare(first, second);
-        return Result::Handled;
-    }
-    if (name == "Option") {
-        if (!text(lexer, &first) || !parameters(lexer, 1, &list)) {
-            return Result::Failed;
-        }
-        handler->option(first, list);
-        return Result::Handled;
-    }
-    if (name == "Hider") {
-        if (!text(lexer, &first) || !parameters(lexer, 1, &list)) {
-            return Result::Failed;
-        }
-        handler->hider(first, list);
         return Result::Handled;
     }
     if (name == "Format") {
@@ -263,8 +273,6 @@ Reader::Result Reader::cameraRequest(const std::string & name, Lexer * lexer, Ha
     float b = 0.0f;
     float c = 0.0f;
     float d = 0.0f;
-    std::string first;
-    ParameterList list;
 
     if (name == "FrameAspectRatio") {
         if (!number(lexer, &a)) {
@@ -285,13 +293,6 @@ Reader::Result Reader::cameraRequest(const std::string & name, Lexer * lexer, Ha
             return Result::Failed;
         }
         handler->cropWindow(a, b, c, d);
-        return Result::Handled;
-    }
-    if (name == "Projection") {
-        if (!text(lexer, &first) || !parameters(lexer, 1, &list)) {
-            return Result::Failed;
-        }
-        handler->projection(first, list);
         return Result::Handled;
     }
     if (name == "Clipping") {
@@ -412,7 +413,8 @@ Reader::Result Reader::sampleRequest(const std::string & name, Lexer * lexer, Ha
 /**
  * Reads the blocks a scene is nested out of. None of them carries an argument.
  **/
-Reader::Result Reader::blockRequest(const std::string & name, Handler * handler) {
+Reader::Result Reader::blockRequest(const std::string & name, Lexer * lexer, Handler * handler) {
+    (void)lexer;
     if (name == "WorldBegin") {
         handler->worldBegin();
         return Result::Handled;
@@ -526,8 +528,6 @@ Reader::Result Reader::motionRequest(const std::string & name, Lexer * lexer, Ha
  **/
 Reader::Result Reader::attributeRequest(const std::string & name, Lexer * lexer, Handler * handler) {
     float a = 0.0f;
-    std::string first;
-    ParameterList list;
     std::vector<float> triple;
 
     if (name == "Color") {
@@ -551,13 +551,6 @@ Reader::Result Reader::attributeRequest(const std::string & name, Lexer * lexer,
         handler->shadingRate(a);
         return Result::Handled;
     }
-    if (name == "Attribute") {
-        if (!text(lexer, &first) || !parameters(lexer, 1, &list)) {
-            return Result::Failed;
-        }
-        handler->attribute(first, list);
-        return Result::Handled;
-    }
     return Result::Unhandled;
 }
 
@@ -569,20 +562,6 @@ Reader::Result Reader::shaderRequest(const std::string & name, Lexer * lexer, Ha
     std::string second;
     ParameterList list;
 
-    if (name == "Surface") {
-        if (!text(lexer, &first) || !parameters(lexer, 1, &list)) {
-            return Result::Failed;
-        }
-        handler->surface(first, list);
-        return Result::Handled;
-    }
-    if (name == "Imager") {
-        if (!text(lexer, &first) || !parameters(lexer, 1, &list)) {
-            return Result::Failed;
-        }
-        handler->imager(first, list);
-        return Result::Handled;
-    }
     if (name == "LightSource" || name == "AreaLightSource") {
         if (!text(lexer, &first) || !handle(lexer, &second)) {
             return Result::Failed;
@@ -590,10 +569,11 @@ Reader::Result Reader::shaderRequest(const std::string & name, Lexer * lexer, Ha
         if (!parameters(lexer, 1, &list)) {
             return Result::Failed;
         }
-        // an area light is a light whose shape matters, and sampling one is phase 4. It
-        // reaches the handler as an ordinary light so that a scene using one still lights
-        // rather than going dark
-        handler->lightSource(first, second, list);
+        if (name == "AreaLightSource") {
+            handler->areaLightSource(first, second, list);
+        } else {
+            handler->lightSource(first, second, list);
+        }
         return Result::Handled;
     }
     if (name == "Illuminate") {
@@ -605,9 +585,16 @@ Reader::Result Reader::shaderRequest(const std::string & name, Lexer * lexer, Ha
         return Result::Handled;
     }
     if (name == "MakeTexture") {
-        // the image a scene names is the texture, so there is nothing to make and the
-        // request is understood rather than unrecognised
-        skipArguments(lexer);
+        std::string swrap;
+        std::string twrap;
+        std::string filter;
+        float swidth = 0.0f;
+        float twidth = 0.0f;
+        if (!text(lexer, &first) || !text(lexer, &second) || !text(lexer, &swrap) || !text(lexer, &twrap) ||
+            !text(lexer, &filter) || !number(lexer, &swidth) || !number(lexer, &twidth) || !parameters(lexer, 1, &list)) {
+            return Result::Failed;
+        }
+        handler->makeTexture(first, second, swrap, twrap, filter, swidth, twidth, list);
         return Result::Handled;
     }
     return Result::Unhandled;
@@ -676,44 +663,33 @@ Reader::Result Reader::primitiveRequest(const std::string & name, Lexer * lexer,
 bool Reader::request(const std::string & name, Lexer * lexer, Handler * handler) {
     // the groups are asked in turn, and the first that recognises the name consumes the
     // request's arguments. Order is not significant - no name belongs to two of them.
-    Result result = optionRequest(name, lexer, handler);
-    if (result == Result::Unhandled) {
-        result = cameraRequest(name, lexer, handler);
+    typedef Result (Reader::*Group)(const std::string &, Lexer *, Handler *);
+    static const Group groups[] = {
+        &Reader::namedRequest, &Reader::optionRequest, &Reader::cameraRequest, &Reader::displayRequest,
+        &Reader::lensRequest, &Reader::sampleRequest, &Reader::blockRequest, &Reader::transformRequest,
+        &Reader::attributeRequest, &Reader::shaderRequest, &Reader::motionRequest
+    };
+    Result result = Result::Unhandled;
+    for (const Group group : groups) {
+        result = (this->*group)(name, lexer, handler);
+        if (result != Result::Unhandled) {
+            break;
+        }
     }
     if (result == Result::Unhandled) {
-        result = displayRequest(name, lexer, handler);
-    }
-    if (result == Result::Unhandled) {
-        result = lensRequest(name, lexer, handler);
-    }
-    if (result == Result::Unhandled) {
-        result = sampleRequest(name, lexer, handler);
-    }
-    if (result == Result::Unhandled) {
-        result = blockRequest(name, handler);
-    }
-    if (result == Result::Unhandled) {
-        result = transformRequest(name, lexer, handler);
-    }
-    if (result == Result::Unhandled) {
-        result = attributeRequest(name, lexer, handler);
-    }
-    if (result == Result::Unhandled) {
-        result = shaderRequest(name, lexer, handler);
-    }
-    if (result == Result::Unhandled) {
-        result = motionRequest(name, lexer, handler);
-    }
-    if (result == Result::Unhandled) {
-        // a primitive after the first in a motion block is the same primitive deforming,
-        // which is not built: it is read, so the stream stays in step, and drawn at the
-        // block's first time by being handed to nobody
+        // a primitive after the first in a motion block is the same primitive deforming, and
+        // goes where the handler says - nowhere, unless it can build one
         Handler nobody;
         const bool deforming = motion_ && motionPrimitives_ > 0;
-        result = primitiveRequest(name, lexer, deforming ? &nobody : handler);
+        Handler* deformation = deforming ? handler->deformation() : nullptr;
+        Handler* into = handler;
+        if (deforming) {
+            into = deformation != nullptr ? deformation : &nobody;
+        }
+        result = primitiveRequest(name, lexer, into);
         if (result == Result::Handled && motion_) {
             motionPrimitives_++;
-            if (deforming && reported_.insert("deforming " + name).second) {
+            if (deforming && deformation == nullptr && reported_.insert("deforming " + name).second) {
                 unsupported_.push_back("deforming " + name);
                 logger_->get()->warn("RIB {} inside a motion block deforms, which is not supported; "
                     "it is drawn at the block's first time", name);

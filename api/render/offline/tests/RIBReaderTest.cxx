@@ -658,3 +658,83 @@ BOOST_AUTO_TEST_CASE(ribreader_deforming_motion_test) {
     BOOST_CHECK_EQUAL(reader.unsupported()[0], "deforming Polygon");
     BOOST_CHECK_EQUAL(handler.count("Color"), 1u);
 }
+
+namespace {
+
+/**
+ * A renderer that can do what the reader's defaults stand in for: sample an area light, make
+ * a texture, and build a primitive that deforms.
+ **/
+class CapableHandler final : public v3d::render::offline::rib::Handler {
+ public:
+    void areaLightSource(const std::string & name, const std::string & handle,
+        const v3d::render::offline::rib::ParameterList & parameters) override {
+        (void)parameters;
+        area_ = name + "|" + handle;
+    }
+    void lightSource(const std::string & name, const std::string & handle,
+        const v3d::render::offline::rib::ParameterList & parameters) override {
+        (void)name;
+        (void)handle;
+        (void)parameters;
+        lights_++;
+    }
+    void makeTexture(const std::string & picture, const std::string & texture, const std::string & swrap,
+        const std::string & twrap, const std::string & filter, float swidth, float twidth,
+        const v3d::render::offline::rib::ParameterList & parameters) override {
+        (void)parameters;
+        made_ = picture + "|" + texture + "|" + swrap + "|" + twrap + "|" + filter + "|" +
+            std::to_string(static_cast<int>(swidth)) + "|" + std::to_string(static_cast<int>(twidth));
+    }
+    void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override {
+        (void)parameters;
+        vertices_.push_back(vertices);
+    }
+    Handler* deformation() override {
+        return &later_;
+    }
+
+    /** The later poses, which this renderer keeps apart from the first. **/
+    class Later final : public v3d::render::offline::rib::Handler {
+     public:
+        void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override {
+            (void)parameters;
+            vertices_.push_back(vertices);
+        }
+        std::vector<unsigned int> vertices_;
+    };
+
+    std::string area_;
+    std::string made_;
+    unsigned int lights_ = 0;
+    std::vector<unsigned int> vertices_;
+    Later later_;
+};
+
+};  // namespace
+
+/**
+ * What a renderer can do is the handler's to say: an area light, a texture to make and a
+ * deforming primitive each reach a handler that takes them, and nothing is reported.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_capable_handler_test) {
+    CapableHandler handler;
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+    std::istringstream stream(
+        "MakeTexture \"grid.png\" \"grid.tx\" \"periodic\" \"clamp\" \"gaussian\" 2 3\n"
+        "WorldBegin\n"
+        "AreaLightSource \"arealight\" 3 \"intensity\" [4]\n"
+        "MotionBegin [0 1]\n"
+        "Polygon \"P\" [0 0 1  1 0 1  1 1 1]\n"
+        "Polygon \"P\" [0 0 2  2 0 2  2 2 2  0 2 2]\n"
+        "MotionEnd\n"
+        "WorldEnd\n");
+    BOOST_REQUIRE(reader.read(stream, &handler));
+
+    BOOST_CHECK_EQUAL(handler.made_, "grid.png|grid.tx|periodic|clamp|gaussian|2|3");
+    BOOST_CHECK_EQUAL(handler.area_, "arealight|3");
+    BOOST_CHECK_EQUAL(handler.lights_, 0u);
+    BOOST_CHECK((handler.vertices_ == std::vector<unsigned int>{ 3u }));
+    BOOST_CHECK((handler.later_.vertices_ == std::vector<unsigned int>{ 4u }));
+    BOOST_CHECK(reader.unsupported().empty());
+}

@@ -108,8 +108,10 @@ pixels and resolves into a renderer's planes. Both hiders render through them.
   motion block's two ends: inside a block each transform request applies to its own copy of
   the transformation the block found, and outside one a request applies to both ends. Between
   them translation and scale are interpolated linearly and rotation by a quaternion. A primitive
-  repeated inside a block would deform, which is not built: the reader hands the first to the
-  renderer and lists the rest in `Reader::unsupported()`.
+  repeated inside a block would deform, which moya does not build: the reader hands the later
+  poses to `Handler::deformation()`, which is null unless a renderer overrides it, and then lists
+  them in `Reader::unsupported()`. What a renderer can build is the handler's to say, as an
+  area light is - `Handler::areaLightSource` is an ordinary light unless it is overridden.
 - **The traced scene stores a moving triangle where the open end put it**, and
   `trace::Scene::nearest()` takes the poses at a time: a ray is carried back into that pose and its hit is carried forward
   again. The `Tracer` works the poses out once for the sample's time, so its shadow and traced rays look at the same moment
@@ -157,7 +159,8 @@ it as `moya::RIBHandler`. RIB is also what the editor exports to, one way, per
   names, `Option "trace"`'s `maxdepth` and `Option "searchpath"`'s `shader` and `texture` among
   them, and nothing else. A shader's own parameter that is not one of those needs `Declare` or an inline
   type, `"uniform float size" [0.5]`, or the shader runs with its default.
-- **`MakeTexture` is understood and makes nothing.** There is no `txmake`: the image a scene
+- **`MakeTexture` is understood and moya makes nothing**, which is `Handler::makeTexture`'s
+  default. There is no `txmake`: the image a scene
   names in a shader is the texture, read through `image::Factory`, so a scene that converts one
   first should name the image rather than what it converted it to.
 - **A polygon's `"st"` is its texture coordinates**, two floats a vertex. A traced hit weights
