@@ -6,6 +6,12 @@ renderers, and share nothing with the realtime stack. Each is a library, a drive
 [ADR-0022](adr/0022-offline-rendering-shares-an-api-library.md). What they share lives in
 `api/render/offline` (`v3dlib_render_offline`, namespace `v3d::render::offline`).
 
+**The ray tracer is one of the shared things**, per
+[ADR-0077](adr/0077-one-ray-tracer-both-renderers-reach.md): `offline::trace::Scene` holds
+triangles and spheres in world space and `offline::trace::HitShader` shades what a ray meets.
+talyn is a driver that casts primary rays into it, and its own library is only its render
+context and its RIB handler.
+
 That library **names neither Vulkan nor SDL**, and neither renderer touches a window, a device
 or a swapchain, so their suites render in CI where everything below the recorder in
 `api/render` cannot.
@@ -76,8 +82,8 @@ pixels and resolves into a renderer's planes. Both renderers render through them
   them translation and scale are interpolated linearly and rotation by a quaternion. A primitive
   repeated inside a block would deform, which is not built: the reader hands the first to the
   renderer and lists the rest in `Reader::unsupported()`.
-- **talyn stores a moving triangle where the open end put it**, and `Scene::nearest()` takes a
-  time: a ray is carried back into that pose and its hit is carried forward again. `HitShader`
+- **The traced scene stores a moving triangle where the open end put it**, and
+  `trace::Scene::nearest()` takes a time: a ray is carried back into that pose and its hit is carried forward again. `HitShader`
   carries the sample's time so its shadow rays look at the same moment.
 - **moya places a moving micropolygon per sample.** A primitive carries its moving object to eye
   transformation, and the hider moves the eye space corners from the open end to a sample's
@@ -209,6 +215,9 @@ rather than a tour.
   space, which is why the space table is a callback each implements rather than a constant the
   library holds. `"object"` is the one moya declines to answer: it is the transform at the
   primitive rather than at the shader, and a primitive does not carry one.
+- **A traced primitive carries the lights that were on when it was made**, as one set shared by
+  every primitive made until they change. A primitive given none, which is how a scene built in
+  code is lit, is shaded by the scene's own list.
 - **`transmission()` is where a shadow lives**, and the three standard directional lights call
   it. A renderer that cannot answer lets all the light through, so that one call is the whole
   of the difference between moya, which draws what it drew before, and talyn, which traces. A

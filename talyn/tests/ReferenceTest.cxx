@@ -85,7 +85,7 @@ boost::shared_ptr<v3d::image::Image> render() {
 
     rc.scene().background(glm::vec3(0.15f, 0.25f, 0.45f));
     // asymmetric about both axes, so a flipped picture is a failing one
-    rc.scene().add(v3d::talyn::Triangle(
+    rc.scene().add(v3d::render::offline::trace::Triangle(
         glm::vec3(-0.8f, -0.6f, 2.0f),
         glm::vec3(0.8f, -0.6f, 2.0f),
         glm::vec3(0.0f, 0.7f, 2.0f),
@@ -126,14 +126,14 @@ v3d::render::offline::sl::Placed shader(const std::string & name,
 /**
  * A quad in one z plane, as the two triangles the reader's fan makes of it.
  **/
-void quad(v3d::talyn::Scene* scene, float left, float bottom, float right, float top,
+void quad(v3d::render::offline::trace::Scene* scene, float left, float bottom, float right, float top,
     float z, const glm::vec3 & colour, const v3d::render::offline::sl::Placed & surface) {
     const glm::vec3 corners[4] = {
         glm::vec3(left, bottom, z), glm::vec3(right, bottom, z),
         glm::vec3(right, top, z), glm::vec3(left, top, z)
     };
     for (unsigned int i = 1; i + 1 < 4; i++) {
-        v3d::talyn::Triangle triangle(corners[0], corners[i], corners[i + 1], colour);
+        v3d::render::offline::trace::Triangle triangle(corners[0], corners[i], corners[i + 1], colour);
         triangle.surface(surface);
         scene->add(triangle);
     }
@@ -246,13 +246,13 @@ float largest(const v3d::render::offline::FrameBuffer & a, const v3d::render::of
 /**
  * A quad in one z plane under a transformation that may move, as the reader's fan makes it.
  **/
-void movingQuad(v3d::talyn::Scene* scene, const glm::vec3 (&corners)[4], const glm::vec3 & colour,
+void movingQuad(v3d::render::offline::trace::Scene* scene, const glm::vec3 (&corners)[4], const glm::vec3 & colour,
     const v3d::render::offline::sl::Placed & surface, const v3d::render::offline::MovingTransform & placed) {
     for (unsigned int i = 1; i + 1 < 4; i++) {
         const glm::vec3 a(placed.open() * glm::vec4(corners[0], 1.0f));
         const glm::vec3 b(placed.open() * glm::vec4(corners[i], 1.0f));
         const glm::vec3 c(placed.open() * glm::vec4(corners[i + 1], 1.0f));
-        v3d::talyn::Triangle triangle(a, b, c, colour);
+        v3d::render::offline::trace::Triangle triangle(a, b, c, colour);
         triangle.surface(surface);
         scene->add(triangle, placed);
     }
@@ -327,10 +327,10 @@ void checkRamp(const v3d::render::offline::FrameBuffer & planes, unsigned int co
 /**
  * A quad through four corners, as the two triangles the reader's fan makes of it.
  **/
-void polygon(v3d::talyn::Scene* scene, const glm::vec3 (&corners)[4], const glm::vec3 & colour,
+void polygon(v3d::render::offline::trace::Scene* scene, const glm::vec3 (&corners)[4], const glm::vec3 & colour,
     const v3d::render::offline::sl::Placed & surface) {
     for (unsigned int i = 1; i + 1 < 4; i++) {
-        v3d::talyn::Triangle triangle(corners[0], corners[i], corners[i + 1], colour);
+        v3d::render::offline::trace::Triangle triangle(corners[0], corners[i], corners[i + 1], colour);
         triangle.surface(surface);
         scene->add(triangle);
     }
@@ -381,12 +381,12 @@ void traceScene(v3d::talyn::RenderContext & rc) {
     put(&mirror, "Ks", Declaration::Type::FLOAT, { 0.6f });
     put(&mirror, "Kr", Declaration::Type::FLOAT, { 0.8f });
     const glm::mat4x4 left = glm::translate(glm::mat4x4(1.0f), glm::vec3(-1.1f, -0.28f, 6.0f));
-    v3d::talyn::Sphere metal(0.7f, -0.7f, 0.7f, 360.0f, left, glm::vec3(0.9f, 0.85f, 0.7f));
+    v3d::render::offline::trace::Sphere metal(0.7f, -0.7f, 0.7f, 360.0f, left, glm::vec3(0.9f, 0.85f, 0.7f));
     metal.surface(shader("shinymetal", ShaderType::SURFACE, mirror));
     rc.scene().add(metal, v3d::render::offline::MovingTransform(left));
 
     const glm::mat4x4 right = glm::translate(glm::mat4x4(1.0f), glm::vec3(1.1f, -0.28f, 5.5f));
-    v3d::talyn::Sphere glass(0.7f, -0.7f, 0.7f, 360.0f, right, glm::vec3(1.0f));
+    v3d::render::offline::trace::Sphere glass(0.7f, -0.7f, 0.7f, 360.0f, right, glm::vec3(1.0f));
     glass.surface(shader("glass", ShaderType::SURFACE, v3d::render::offline::rib::ParameterList()));
     glass.opacity(glm::vec3(0.3f));
     rc.scene().add(glass, v3d::render::offline::MovingTransform(right));

@@ -8,6 +8,7 @@
 
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
@@ -132,7 +133,7 @@ BOOST_AUTO_TEST_CASE(talyn_ribhandler_polygon_test) {
 
     // a quad fans into two triangles
     BOOST_REQUIRE_EQUAL(rc->scene().triangles().size(), 2u);
-    const v3d::talyn::Triangle & first = rc->scene().triangles()[0];
+    const v3d::render::offline::trace::Triangle & first = rc->scene().triangles()[0];
     BOOST_CHECK_EQUAL(first.a().x, 1.0f);
     BOOST_CHECK_EQUAL(first.a().y, 2.0f);
     BOOST_CHECK_EQUAL(first.a().z, 3.0f);
@@ -323,7 +324,7 @@ BOOST_AUTO_TEST_CASE(talyn_ribhandler_face_normal_test) {
         "WorldEnd\n", &handler));
 
     BOOST_REQUIRE_EQUAL(rc->scene().triangles().size(), 1u);
-    const v3d::talyn::Triangle & triangle = rc->scene().triangles()[0];
+    const v3d::render::offline::trace::Triangle & triangle = rc->scene().triangles()[0];
     BOOST_TEST((triangle.geometricNormal() == glm::vec3(0.0f, 0.0f, 1.0f)));
     BOOST_TEST((triangle.shadingNormal(0.25f, 0.25f) == glm::vec3(0.0f, 0.0f, 1.0f)));
 }
@@ -344,7 +345,7 @@ BOOST_AUTO_TEST_CASE(talyn_ribhandler_normal_override_test) {
         "WorldEnd\n", &handler));
 
     BOOST_REQUIRE_EQUAL(rc->scene().triangles().size(), 1u);
-    const v3d::talyn::Triangle & triangle = rc->scene().triangles()[0];
+    const v3d::render::offline::trace::Triangle & triangle = rc->scene().triangles()[0];
     BOOST_TEST((triangle.shadingNormal(0.25f, 0.25f) == glm::vec3(0.0f, 1.0f, 0.0f)));
     BOOST_TEST((triangle.geometricNormal() == glm::vec3(0.0f, 0.0f, 1.0f)));
 }
@@ -368,7 +369,7 @@ BOOST_AUTO_TEST_CASE(talyn_ribhandler_normal_inverse_transpose_test) {
         "WorldEnd\n", &handler));
 
     BOOST_REQUIRE_EQUAL(rc->scene().triangles().size(), 1u);
-    const v3d::talyn::Triangle & triangle = rc->scene().triangles()[0];
+    const v3d::render::offline::trace::Triangle & triangle = rc->scene().triangles()[0];
 
     // (1, 1, 0) under the inverse transpose of a scale of two in y has its y halved
     const glm::vec3 expected = glm::normalize(glm::vec3(1.0f, 0.5f, 0.0f));
@@ -399,12 +400,42 @@ BOOST_AUTO_TEST_CASE(talyn_ribhandler_sphere_test) {
         "WorldEnd\n", &handler));
 
     BOOST_REQUIRE_EQUAL(rc->scene().spheres().size(), 1u);
-    const v3d::talyn::Sphere & sphere = rc->scene().spheres()[0];
+    const v3d::render::offline::trace::Sphere & sphere = rc->scene().spheres()[0];
     BOOST_CHECK_CLOSE(sphere.colour().g, 0.4f, 0.001f);
     BOOST_CHECK_CLOSE(sphere.opacity().r, 0.5f, 0.001f);
 
-    v3d::talyn::Hit hit;
+    v3d::render::offline::trace::Hit hit;
     BOOST_REQUIRE(rc->scene().nearest(v3d::type::geometry::Ray(glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
         0.0f, &hit));
     BOOST_CHECK_CLOSE(hit.distance, 4.0f, 0.001f);
+}
+
+/**
+ * A primitive is given the lights that are on when it is made, per ADR-0077, so switching
+ * one off between two primitives lights them differently; primitives made under the same
+ * lights share one set.
+ **/
+BOOST_AUTO_TEST_CASE(talyn_ribhandler_lights_per_primitive_test) {
+    auto rc = boost::make_shared<v3d::talyn::RenderContext>();
+    v3d::talyn::RIBHandler handler(rc);
+    BOOST_REQUIRE(read(
+        "Format 32 16 1\n"
+        "WorldBegin\n"
+        "LightSource \"ambientlight\" 1\n"
+        "LightSource \"distantlight\" 2\n"
+        "Polygon \"P\" [0 0 5  1 0 5  0 1 5]\n"
+        "Polygon \"P\" [0 0 6  1 0 6  0 1 6]\n"
+        "Illuminate 2 0\n"
+        "Polygon \"P\" [0 0 7  1 0 7  0 1 7]\n"
+        "WorldEnd\n", &handler));
+
+    const std::vector<v3d::render::offline::trace::Triangle> & triangles = rc->scene().triangles();
+    BOOST_REQUIRE_EQUAL(triangles.size(), 3u);
+    BOOST_REQUIRE(triangles[0].lights());
+    BOOST_CHECK_EQUAL(triangles[0].lights()->size(), 2u);
+    BOOST_CHECK(triangles[1].lights() == triangles[0].lights());
+    BOOST_REQUIRE(triangles[2].lights());
+    BOOST_CHECK_EQUAL(triangles[2].lights()->size(), 1u);
+    // and nothing reaches the scene's own list, which is for primitives given none
+    BOOST_CHECK(rc->scene().lights().empty());
 }

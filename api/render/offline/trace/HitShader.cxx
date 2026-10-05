@@ -13,7 +13,7 @@
 #include <glm/geometric.hpp>
 #include <glm/matrix.hpp>
 
-namespace v3d::talyn {
+namespace v3d::render::offline::trace {
 
 namespace {
 
@@ -57,14 +57,14 @@ HitShader::Run & HitShader::run(const v3d::render::offline::sl::InstancePtr & sh
     }
     held.program = &shader->program();
     held.machine.renderer(this);
-    // a batch of one, which is the whole point: talyn's hit is not a special case of the
+    // a batch of one, which is the whole point: a hit is not a special case of the
     // model, it is a batch one wide
     held.machine.prepare(shader->program(), 1);
     return held;
 }
 
 bool HitShader::space(const std::string & name, glm::mat4x4* matrix) {
-    // talyn works in world space, because that is where its scene is. moya works in
+    // a hit is in world space, because that is where the scene is. moya's grids are in
     // camera space, and the two answering "current" differently is why this is a callback
     if (name == "current" || name == "world" || name == "object") {
         *matrix = glm::mat4x4(1.0f);
@@ -84,28 +84,36 @@ bool HitShader::space(const std::string & name, glm::mat4x4* matrix) {
     return false;
 }
 
+const std::vector<v3d::render::offline::sl::Placed> & HitShader::shining() const {
+    static const std::vector<v3d::render::offline::sl::Placed> none;
+    if (hit_ != nullptr && hit_->primitive != nullptr && hit_->primitive->lights()) {
+        return *hit_->primitive->lights();
+    }
+    return scene_ == nullptr ? none : scene_->lights();
+}
+
 unsigned int HitShader::lights() {
-    return scene_ == nullptr ? 0u : static_cast<unsigned int>(scene_->lights().size());
+    return static_cast<unsigned int>(shining().size());
 }
 
 bool HitShader::light(unsigned int index, const Value & surface, Value* direction,
     Value* colour, std::vector<char>* reached, bool* ambient) {
-    if (scene_ == nullptr || index >= scene_->lights().size()) {
+    if (index >= shining().size()) {
         return false;
     }
-    const v3d::render::offline::sl::Placed & shining = scene_->lights()[index];
-    Run & held = run(shining.shader);
-    const Program & program = shining.shader->program();
+    const v3d::render::offline::sl::Placed & source = shining()[index];
+    Run & held = run(source.shader);
+    const Program & program = source.shader->program();
 
     // a light's parameters are stated in the space the scene instanced it in, and the
     // point it is lighting is in world space
     const glm::mat4x4 was = placement_;
-    placement_ = shining.placement;
-    shining.shader->write(&held.machine, shining.placement);
+    placement_ = source.placement;
+    source.shader->write(&held.machine, source.placement);
 
     put(&held.machine, program.symbol("Ps"), surface.triple(0));
     put(&held.machine, program.symbol("P"),
-        v3d::render::offline::sl::ptransform(shining.placement, glm::vec3(0.0f)));
+        v3d::render::offline::sl::ptransform(source.placement, glm::vec3(0.0f)));
     const bool ran = held.machine.run(program);
     placement_ = was;
     if (!ran) {
@@ -117,7 +125,7 @@ bool HitShader::light(unsigned int index, const Value & surface, Value* directio
     direction->triple(0, away < 0 ? glm::vec3(0.0f) : held.machine.value(away).triple(0));
     colour->triple(0, tint < 0 ? glm::vec3(0.0f) : held.machine.value(tint).triple(0));
     *reached = held.machine.lit();
-    *ambient = shining.shader->ambient();
+    *ambient = source.shader->ambient();
     return true;
 }
 
@@ -295,4 +303,4 @@ glm::vec3 HitShader::shade(const Hit & hit, glm::vec3* opacity) {
     return colour;
 }
 
-};  // namespace v3d::talyn
+};  // namespace v3d::render::offline::trace

@@ -8,12 +8,12 @@
 #include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/Sampling.h>
 #include <api/render/offline/Texture.h>
+#include <api/render/offline/trace/Scene.h>
 
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
 
-#include "Scene.h"
 
 namespace v3d::talyn {
 /**
@@ -42,8 +42,8 @@ class RenderContext {
      */
     void render();
 
-    Scene & scene();
-    const Scene & scene() const;
+    v3d::render::offline::trace::Scene & scene();
+    const v3d::render::offline::trace::Scene & scene() const;
 
     /** The images the scene's shaders read, each once. **/
     v3d::render::offline::Textures & textures();
@@ -70,7 +70,7 @@ class RenderContext {
 
  private:
     boost::shared_ptr<v3d::render::offline::FrameBuffer> framebuffer_;
-    Scene scene_;
+    v3d::render::offline::trace::Scene scene_;
     v3d::render::offline::Textures textures_;
     v3d::render::offline::sl::Placed imager_;
     v3d::render::offline::Sampling sampling_;

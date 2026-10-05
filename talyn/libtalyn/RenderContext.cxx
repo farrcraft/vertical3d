@@ -8,6 +8,7 @@
 #include <api/render/offline/Film.h>
 #include <api/render/offline/Sampler.h>
 #include <api/render/offline/sl/Imager.h>
+#include <api/render/offline/trace/HitShader.h>
 
 #include <algorithm>
 #include <array>
@@ -17,11 +18,13 @@
 #include <glm/geometric.hpp>
 #include <glm/matrix.hpp>
 
-#include "HitShader.h"
 
 namespace v3d::talyn {
 
 namespace {
+
+typedef v3d::render::offline::trace::HitShader HitShader;
+typedef v3d::render::offline::trace::Scene Scene;
 
 // the planes of an RGBA framebuffer
 const unsigned int RED = 0;

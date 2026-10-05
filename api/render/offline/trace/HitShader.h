@@ -19,18 +19,19 @@
 
 #include "Scene.h"
 
-namespace v3d::talyn {
+namespace v3d::render::offline::trace {
 
 /**
- * Runs a surface shader over one hit, which is a batch one point wide.
+ * Runs a surface shader over one hit, which is a batch one point wide: what a ray sees, for
+ * talyn's primary rays and for any renderer's traced ones, per ADR-0077.
  *
  * No special case and no second path: the same program and the same instructions that
  * run over a grid of a hundred in moya, with a mask one bit wide. That is the whole
  * reason ADR-0026's execution model is a batch rather than a shading point.
  *
- * **talyn's current space is world space**, because that is where its scene is. moya's is
- * camera space, and the pair is the thing that will confuse a reader - which is why the
- * space table is a renderer callback rather than a constant the library holds.
+ * **A hit's current space is world space**, because that is where the scene is. moya's
+ * grids shade in camera space, and the pair is the thing that will confuse a reader - which
+ * is why the space table is a renderer callback rather than a constant the library holds.
  *
  * **One shader run per pixel is slow and that is accepted here.** Batching the hits of a
  * scanline that share a shader is the obvious next thing; the 64 by 48 references do not
@@ -114,6 +115,9 @@ class HitShader final : public v3d::render::offline::sl::runtime::Renderer {
 
     Run & run(const v3d::render::offline::sl::InstancePtr & shader);
 
+    /** The lights on the hit being shaded: its primitive's, or the scene's. **/
+    const std::vector<v3d::render::offline::sl::Placed> & shining() const;
+
     const Scene* scene_;
     v3d::render::offline::Textures* textures_;
     float time_ = 0.0f;
@@ -131,4 +135,4 @@ class HitShader final : public v3d::render::offline::sl::runtime::Renderer {
     std::map<std::pair<unsigned int, const v3d::render::offline::sl::runtime::Program*>, Run> runs_;
 };
 
-};  // namespace v3d::talyn
+};  // namespace v3d::render::offline::trace

@@ -14,7 +14,7 @@
 #include <glm/mat3x3.hpp>
 #include <glm/matrix.hpp>
 
-namespace v3d::talyn {
+namespace v3d::render::offline::trace {
 
 namespace {
 
@@ -164,6 +164,14 @@ void Primitive::surface(const v3d::render::offline::sl::Placed & shader) {
 
 const glm::vec3 & Primitive::opacity() const {
     return opacity_;
+}
+
+const Lights & Primitive::lights() const {
+    return lights_;
+}
+
+void Primitive::lights(const Lights & lit) {
+    lights_ = lit;
 }
 
 void Primitive::opacity(const glm::vec3 & value) {
@@ -375,4 +383,4 @@ void Scene::traceDepth(unsigned int depth) {
     traceDepth_ = depth;
 }
 
-};  // namespace v3d::talyn
+};  // namespace v3d::render::offline::trace

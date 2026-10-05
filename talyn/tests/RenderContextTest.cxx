@@ -69,7 +69,7 @@ BOOST_AUTO_TEST_CASE(rendercontext_triangle_test) {
 
     // a right triangle with its vertical edge at x = 0.5 and its horizontal one at y = -0.5,
     // so a pixel either side of each edge is half a pixel away from it
-    rc.scene().add(v3d::talyn::Triangle(
+    rc.scene().add(v3d::render::offline::trace::Triangle(
         glm::vec3(-1.5f, -0.5f, 1.0f),
         glm::vec3(0.5f, -0.5f, 1.0f),
         glm::vec3(0.5f, 1.5f, 1.0f),
@@ -102,9 +102,9 @@ BOOST_AUTO_TEST_CASE(rendercontext_nearest_hit_test) {
     const glm::vec3 further(0.0f, 1.0f, 0.0f);
 
     // two triangles over the same pixel, the first one further from the camera
-    rc.scene().add(v3d::talyn::Triangle(
+    rc.scene().add(v3d::render::offline::trace::Triangle(
         glm::vec3(-1.0f, -1.0f, 5.0f), glm::vec3(1.0f, -1.0f, 5.0f), glm::vec3(0.0f, 1.0f, 5.0f), further));
-    rc.scene().add(v3d::talyn::Triangle(
+    rc.scene().add(v3d::render::offline::trace::Triangle(
         glm::vec3(-1.0f, -1.0f, 2.0f), glm::vec3(1.0f, -1.0f, 2.0f), glm::vec3(0.0f, 1.0f, 2.0f), closer));
 
     rc.render();
@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE(rendercontext_sampled_edge_coverage_test) {
     rc.sampling() = v3d::render::offline::Sampling();
 
     // the same right triangle, whose vertical edge falls between columns 11 and 12
-    rc.scene().add(v3d::talyn::Triangle(
+    rc.scene().add(v3d::render::offline::trace::Triangle(
         glm::vec3(-1.5f, -0.5f, 1.0f),
         glm::vec3(0.5f, -0.5f, 1.0f),
         glm::vec3(0.5f, 1.5f, 1.0f),
@@ -160,7 +160,7 @@ void adaptive(v3d::talyn::RenderContext & rc) {
     rc.sampling() = v3d::render::offline::Sampling();
     rc.sampling().variance = 0.001f;
     rc.scene().background(glm::vec3(0.0f, 0.0f, 1.0f));
-    rc.scene().add(v3d::talyn::Triangle(
+    rc.scene().add(v3d::render::offline::trace::Triangle(
         glm::vec3(-1.5f, -0.5f, 1.0f),
         glm::vec3(0.5625f, -0.5f, 1.0f),
         glm::vec3(0.5625f, 1.5f, 1.0f),

@@ -4,7 +4,7 @@
  **/
 
 #include <api/render/offline/MovingTransform.h>
-#include <talyn/libtalyn/Scene.h>
+#include <api/render/offline/trace/Scene.h>
 
 #include <cmath>
 
@@ -14,7 +14,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 BOOST_AUTO_TEST_CASE(scene_test) {
-    v3d::talyn::Scene scene;
+    v3d::render::offline::trace::Scene scene;
 
     // a ray that hits nothing is worth the background, which starts black
     BOOST_CHECK_EQUAL(scene.background().r, 0.0f);
@@ -23,7 +23,7 @@ BOOST_AUTO_TEST_CASE(scene_test) {
     scene.background(glm::vec3(0.0f, 0.0f, 1.0f));
     BOOST_CHECK_EQUAL(scene.background().b, 1.0f);
 
-    v3d::talyn::Triangle triangle(
+    v3d::render::offline::trace::Triangle triangle(
         glm::vec3(0.0f, 0.0f, 1.0f),
         glm::vec3(1.0f, 0.0f, 1.0f),
         glm::vec3(0.0f, 1.0f, 1.0f),
@@ -45,7 +45,7 @@ BOOST_AUTO_TEST_CASE(scene_test) {
  * a hit anywhere on it shades with.
  **/
 BOOST_AUTO_TEST_CASE(triangle_geometric_normal_test) {
-    v3d::talyn::Triangle triangle(
+    v3d::render::offline::trace::Triangle triangle(
         glm::vec3(0.0f, 0.0f, 0.0f),
         glm::vec3(1.0f, 0.0f, 0.0f),
         glm::vec3(0.0f, 1.0f, 0.0f),
@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE(triangle_geometric_normal_test) {
     BOOST_TEST((triangle.shadingNormal(0.3f, 0.3f) == glm::vec3(0.0f, 0.0f, 1.0f)));
 
     // the winding decides which way it faces
-    v3d::talyn::Triangle reversed(
+    v3d::render::offline::trace::Triangle reversed(
         glm::vec3(0.0f, 0.0f, 0.0f),
         glm::vec3(0.0f, 1.0f, 0.0f),
         glm::vec3(1.0f, 0.0f, 0.0f),
@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE(triangle_geometric_normal_test) {
 
     // a triangle with no area lies in no plane and answers zero rather than a normalised
     // nothing
-    v3d::talyn::Triangle degenerate(
+    v3d::render::offline::trace::Triangle degenerate(
         glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(2.0f, 0.0f, 0.0f), glm::vec3(1.0f));
 
     BOOST_TEST((degenerate.geometricNormal() == glm::vec3(0.0f)));
@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE(triangle_geometric_normal_test) {
  **/
 BOOST_AUTO_TEST_CASE(triangle_shading_normal_test) {
     const glm::vec3 leaning = glm::normalize(glm::vec3(1.0f, 0.0f, 1.0f));
-    v3d::talyn::Triangle triangle(
+    v3d::render::offline::trace::Triangle triangle(
         glm::vec3(0.0f, 0.0f, 0.0f),
         glm::vec3(1.0f, 0.0f, 0.0f),
         glm::vec3(0.0f, 1.0f, 0.0f),
@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE(triangle_shading_normal_test) {
 namespace {
 
 /** Whether a ray straight down the negative z axis from z = 10 meets the scene, and where. **/
-bool downward(const v3d::talyn::Scene & scene, float x, float y, v3d::talyn::Hit* hit) {
+bool downward(const v3d::render::offline::trace::Scene & scene, float x, float y, v3d::render::offline::trace::Hit* hit) {
     return scene.nearest(v3d::type::geometry::Ray(glm::vec3(x, y, 10.0f), glm::vec3(0.0f, 0.0f, -1.0f)),
         0.0f, hit);
 }
@@ -121,13 +121,13 @@ bool downward(const v3d::talyn::Scene & scene, float x, float y, v3d::talyn::Hit
  * the near side first.
  **/
 BOOST_AUTO_TEST_CASE(scene_sphere_silhouette_test) {
-    v3d::talyn::Scene scene;
+    v3d::render::offline::trace::Scene scene;
     const glm::mat4x4 placed = glm::translate(glm::mat4x4(1.0f), glm::vec3(2.0f, 1.0f, 0.0f));
-    scene.add(v3d::talyn::Sphere(1.5f, -1.5f, 1.5f, 360.0f, placed, glm::vec3(1.0f)),
+    scene.add(v3d::render::offline::trace::Sphere(1.5f, -1.5f, 1.5f, 360.0f, placed, glm::vec3(1.0f)),
         v3d::render::offline::MovingTransform(placed));
     BOOST_REQUIRE_EQUAL(scene.spheres().size(), 1u);
 
-    v3d::talyn::Hit hit;
+    v3d::render::offline::trace::Hit hit;
     BOOST_REQUIRE(downward(scene, 2.0f, 1.0f, &hit));
     BOOST_CHECK_CLOSE(hit.distance, 8.5f, 0.001f);
     BOOST_CHECK_CLOSE(hit.normal.z, 1.0f, 0.001f);
@@ -145,11 +145,11 @@ BOOST_AUTO_TEST_CASE(scene_sphere_silhouette_test) {
  * one where the sweep has not reached meets nothing at all.
  **/
 BOOST_AUTO_TEST_CASE(scene_sphere_cut_test) {
-    v3d::talyn::Scene scene;
-    scene.add(v3d::talyn::Sphere(1.0f, -1.0f, 0.5f, 180.0f, glm::mat4x4(1.0f), glm::vec3(1.0f)),
+    v3d::render::offline::trace::Scene scene;
+    scene.add(v3d::render::offline::trace::Sphere(1.0f, -1.0f, 0.5f, 180.0f, glm::mat4x4(1.0f), glm::vec3(1.0f)),
         v3d::render::offline::MovingTransform());
 
-    v3d::talyn::Hit hit;
+    v3d::render::offline::trace::Hit hit;
     BOOST_REQUIRE(downward(scene, 0.0f, 0.2f, &hit));
     BOOST_CHECK_CLOSE(hit.point.z, -std::sqrt(1.0f - 0.04f), 0.01f);
     // the outward normal of the bottom, which is the inside the ray is looking at

@@ -7,8 +7,8 @@
 #include <api/render/offline/rib/Declarations.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/sl/ShaderLibrary.h>
-#include <talyn/libtalyn/HitShader.h>
-#include <talyn/libtalyn/Scene.h>
+#include <api/render/offline/trace/HitShader.h>
+#include <api/render/offline/trace/Scene.h>
 
 #include <string>
 #include <vector>
@@ -49,8 +49,8 @@ Placed instance(const std::string & name, v3d::render::offline::sl::ShaderType t
  * A triangle in the z = 0 plane wound so that its normal is along positive z, which is
  * the side the camera and the lights are on.
  **/
-v3d::talyn::Triangle facing(float size, const glm::vec3 & colour) {
-    return v3d::talyn::Triangle(glm::vec3(-size, -size, 0.0f), glm::vec3(size, -size, 0.0f),
+v3d::render::offline::trace::Triangle facing(float size, const glm::vec3 & colour) {
+    return v3d::render::offline::trace::Triangle(glm::vec3(-size, -size, 0.0f), glm::vec3(size, -size, 0.0f),
         glm::vec3(0.0f, size, 0.0f), colour);
 }
 
@@ -58,9 +58,9 @@ v3d::talyn::Triangle facing(float size, const glm::vec3 & colour) {
  * The hit a ray straight down the negative z axis makes on such a triangle, at a point
  * the triangle covers.
  **/
-v3d::talyn::Hit at(const v3d::talyn::Scene & scene, float x, float y) {
+v3d::render::offline::trace::Hit at(const v3d::render::offline::trace::Scene & scene, float x, float y) {
     const v3d::type::geometry::Ray ray(glm::vec3(x, y, 10.0f), glm::vec3(0.0f, 0.0f, -1.0f));
-    v3d::talyn::Hit hit;
+    v3d::render::offline::trace::Hit hit;
     BOOST_REQUIRE_MESSAGE(scene.nearest(ray, 0.0f, &hit), "the ray missed the triangle");
     return hit;
 }
@@ -74,9 +74,9 @@ v3d::talyn::Hit at(const v3d::talyn::Scene & scene, float x, float y) {
  * and one distant light that is the cosine between the surface and the light. A light
  * straight overhead gives the colour back whole; one sixty degrees off gives half of it.
  **/
-BOOST_AUTO_TEST_CASE(talyn_matte_at_a_hit_test) {
-    v3d::talyn::Scene scene;
-    v3d::talyn::Triangle triangle = facing(2.0f, glm::vec3(1.0f, 0.5f, 0.0f));
+BOOST_AUTO_TEST_CASE(trace_matte_at_a_hit_test) {
+    v3d::render::offline::trace::Scene scene;
+    v3d::render::offline::trace::Triangle triangle = facing(2.0f, glm::vec3(1.0f, 0.5f, 0.0f));
     triangle.surface(instance("matte", v3d::render::offline::sl::ShaderType::SURFACE,
         ParameterList()));
     scene.add(triangle);
@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE(talyn_matte_at_a_hit_test) {
     add(&overhead, "to", Declaration::Type::POINT, { 0.0f, 0.0f, -1.0f });
     scene.add(instance("distantlight", v3d::render::offline::sl::ShaderType::LIGHT, overhead));
 
-    v3d::talyn::HitShader shader(&scene);
+    v3d::render::offline::trace::HitShader shader(&scene);
     const glm::vec3 lit = shader.shade(at(scene, 0.0f, 0.0f));
     BOOST_CHECK_CLOSE(lit.r, 1.0f, 0.1f);
     BOOST_CHECK_CLOSE(lit.g, 0.5f, 0.1f);
@@ -97,9 +97,9 @@ BOOST_AUTO_TEST_CASE(talyn_matte_at_a_hit_test) {
  * Sixty degrees off the surface, whose cosine is a half. The light is tilted rather than
  * the triangle, so that the same hit is being shaded and only the lighting has changed.
  **/
-BOOST_AUTO_TEST_CASE(talyn_the_cosine_test) {
-    v3d::talyn::Scene scene;
-    v3d::talyn::Triangle triangle = facing(2.0f, glm::vec3(1.0f));
+BOOST_AUTO_TEST_CASE(trace_the_cosine_test) {
+    v3d::render::offline::trace::Scene scene;
+    v3d::render::offline::trace::Triangle triangle = facing(2.0f, glm::vec3(1.0f));
     triangle.surface(instance("matte", v3d::render::offline::sl::ShaderType::SURFACE,
         ParameterList()));
     scene.add(triangle);
@@ -108,24 +108,23 @@ BOOST_AUTO_TEST_CASE(talyn_the_cosine_test) {
     add(&tilted, "to", Declaration::Type::POINT, { 0.8660254f, 0.0f, -0.5f });
     scene.add(instance("distantlight", v3d::render::offline::sl::ShaderType::LIGHT, tilted));
 
-    v3d::talyn::HitShader shader(&scene);
+    v3d::render::offline::trace::HitShader shader(&scene);
     BOOST_CHECK_CLOSE(shader.shade(at(scene, 0.0f, 0.0f)).r, 0.5f, 0.5f);
 }
 
 /**
  * An occluder darkens the point behind it. That is the whole of what `transmission` is
- * for, and it is the one thing the two renderers genuinely disagree about: moya lets all
- * the light through until it has a shadow map and talyn traces.
+ * for, and the tracer answers it by casting a ray to the light.
  **/
-BOOST_AUTO_TEST_CASE(talyn_an_occluder_casts_a_shadow_test) {
-    v3d::talyn::Scene scene;
-    v3d::talyn::Triangle floor = facing(8.0f, glm::vec3(1.0f));
+BOOST_AUTO_TEST_CASE(trace_an_occluder_casts_a_shadow_test) {
+    v3d::render::offline::trace::Scene scene;
+    v3d::render::offline::trace::Triangle floor = facing(8.0f, glm::vec3(1.0f));
     floor.surface(instance("matte", v3d::render::offline::sl::ShaderType::SURFACE, ParameterList()));
     scene.add(floor);
 
     // a small triangle a unit above the floor, with no shader of its own: an occluder is
     // a visibility question and what it would have been shaded as does not come into it
-    scene.add(v3d::talyn::Triangle(glm::vec3(-0.5f, -0.5f, 1.0f), glm::vec3(0.5f, -0.5f, 1.0f),
+    scene.add(v3d::render::offline::trace::Triangle(glm::vec3(-0.5f, -0.5f, 1.0f), glm::vec3(0.5f, -0.5f, 1.0f),
         glm::vec3(0.0f, 0.5f, 1.0f), glm::vec3(1.0f)));
 
     /*
@@ -137,7 +136,7 @@ BOOST_AUTO_TEST_CASE(talyn_an_occluder_casts_a_shadow_test) {
     add(&tilted, "to", Declaration::Type::POINT, { 0.70710678f, 0.0f, -0.70710678f });
     scene.add(instance("distantlight", v3d::render::offline::sl::ShaderType::LIGHT, tilted));
 
-    v3d::talyn::HitShader shader(&scene);
+    v3d::render::offline::trace::HitShader shader(&scene);
     // one unit over from the occluder, which is where its shadow lands
     BOOST_CHECK_SMALL(shader.shade(at(scene, 1.0f, 0.0f)).r, 0.0001f);
     // and well away from it, where the cosine is all there is
@@ -153,9 +152,9 @@ BOOST_AUTO_TEST_CASE(talyn_an_occluder_casts_a_shadow_test) {
  * numerical one. The polygon is large and the point is far from its origin, because that
  * is where the arithmetic that computes the hit has the most to lose.
  **/
-BOOST_AUTO_TEST_CASE(talyn_the_shadow_epsilon_test) {
-    v3d::talyn::Scene scene;
-    v3d::talyn::Triangle floor = facing(1000.0f, glm::vec3(1.0f));
+BOOST_AUTO_TEST_CASE(trace_the_shadow_epsilon_test) {
+    v3d::render::offline::trace::Scene scene;
+    v3d::render::offline::trace::Triangle floor = facing(1000.0f, glm::vec3(1.0f));
     floor.surface(instance("matte", v3d::render::offline::sl::ShaderType::SURFACE, ParameterList()));
     scene.add(floor);
 
@@ -163,7 +162,7 @@ BOOST_AUTO_TEST_CASE(talyn_the_shadow_epsilon_test) {
     add(&overhead, "to", Declaration::Type::POINT, { 0.0f, 0.0f, -1.0f });
     scene.add(instance("distantlight", v3d::render::offline::sl::ShaderType::LIGHT, overhead));
 
-    v3d::talyn::HitShader shader(&scene);
+    v3d::render::offline::trace::HitShader shader(&scene);
     BOOST_CHECK_CLOSE(shader.shade(at(scene, 0.0f, 0.0f)).r, 1.0f, 0.1f);
     BOOST_CHECK_CLOSE(shader.shade(at(scene, 400.0f, -400.0f)).r, 1.0f, 0.1f);
     BOOST_CHECK_CLOSE(shader.shade(at(scene, -700.0f, -800.0f)).r, 1.0f, 0.1f);
@@ -174,9 +173,9 @@ BOOST_AUTO_TEST_CASE(talyn_the_shadow_epsilon_test) {
  * - which is what says its position reached the shader through the space it was
  * instanced in rather than being left at the origin.
  **/
-BOOST_AUTO_TEST_CASE(talyn_a_point_light_is_placed_test) {
-    v3d::talyn::Scene scene;
-    v3d::talyn::Triangle floor = facing(4.0f, glm::vec3(1.0f));
+BOOST_AUTO_TEST_CASE(trace_a_point_light_is_placed_test) {
+    v3d::render::offline::trace::Scene scene;
+    v3d::render::offline::trace::Triangle floor = facing(4.0f, glm::vec3(1.0f));
     floor.surface(instance("matte", v3d::render::offline::sl::ShaderType::SURFACE, ParameterList()));
     scene.add(floor);
 
@@ -186,7 +185,7 @@ BOOST_AUTO_TEST_CASE(talyn_a_point_light_is_placed_test) {
     bulb.placement = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, 2.0f));
     scene.add(bulb);
 
-    v3d::talyn::HitShader shader(&scene);
+    v3d::render::offline::trace::HitShader shader(&scene);
     // the cosine is one and the falloff is a quarter, so a quarter of the colour
     BOOST_CHECK_CLOSE(shader.shade(at(scene, 0.0f, 0.0f)).r, 0.25f, 1.0f);
 }
@@ -196,11 +195,11 @@ BOOST_AUTO_TEST_CASE(talyn_a_point_light_is_placed_test) {
  * this renderer drew before there was a language to ask for another, and it is why the
  * phase 2 reference still matches.
  **/
-BOOST_AUTO_TEST_CASE(talyn_no_shader_is_the_flat_colour_test) {
-    v3d::talyn::Scene scene;
+BOOST_AUTO_TEST_CASE(trace_no_shader_is_the_flat_colour_test) {
+    v3d::render::offline::trace::Scene scene;
     scene.add(facing(2.0f, glm::vec3(0.25f, 0.5f, 0.75f)));
 
-    v3d::talyn::HitShader shader(&scene);
+    v3d::render::offline::trace::HitShader shader(&scene);
     const glm::vec3 colour = shader.shade(at(scene, 0.0f, 0.0f));
     BOOST_CHECK_CLOSE(colour.r, 0.25f, 0.1f);
     BOOST_CHECK_CLOSE(colour.b, 0.75f, 0.1f);
@@ -217,10 +216,10 @@ glm::vec3 relayed(unsigned int depth) {
     static ShaderLibrary shaders(boost::make_shared<v3d::log::Logger>());
     shaders.searchpath("data");
 
-    v3d::talyn::Scene scene;
+    v3d::render::offline::trace::Scene scene;
     scene.traceDepth(depth);
-    v3d::talyn::Triangle below = facing(2.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-    v3d::talyn::Triangle above(glm::vec3(-2.0f, -2.0f, 1.0f), glm::vec3(0.0f, 2.0f, 1.0f),
+    v3d::render::offline::trace::Triangle below = facing(2.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+    v3d::render::offline::trace::Triangle above(glm::vec3(-2.0f, -2.0f, 1.0f), glm::vec3(0.0f, 2.0f, 1.0f),
         glm::vec3(2.0f, -2.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     Placed relay;
     relay.shader = shaders.instance("relay", v3d::render::offline::sl::ShaderType::SURFACE,
@@ -232,9 +231,9 @@ glm::vec3 relayed(unsigned int depth) {
     scene.add(above);
 
     const v3d::type::geometry::Ray ray(glm::vec3(0.0f, 0.0f, 0.5f), glm::vec3(0.0f, 0.0f, -1.0f));
-    v3d::talyn::Hit hit;
+    v3d::render::offline::trace::Hit hit;
     BOOST_REQUIRE(scene.nearest(ray, 0.0f, &hit));
-    v3d::talyn::HitShader shader(&scene);
+    v3d::render::offline::trace::HitShader shader(&scene);
     return shader.shade(hit);
 }
 
@@ -249,7 +248,7 @@ glm::vec3 relayed(unsigned int depth) {
  * have the outer red read the inner Cs after its trace returned, and the sum would not be
  * this one.
  **/
-BOOST_AUTO_TEST_CASE(talyn_a_trace_recurses_test) {
+BOOST_AUTO_TEST_CASE(trace_a_trace_recurses_test) {
     const glm::vec3 colour = relayed(2);
     BOOST_CHECK_CLOSE(colour.r, 2.0f, 0.1f);
     BOOST_CHECK_CLOSE(colour.g, 1.0f, 0.1f);
@@ -260,7 +259,7 @@ BOOST_AUTO_TEST_CASE(talyn_a_trace_recurses_test) {
  * The scene's depth is where the trace stops, and past it a trace answers the background,
  * which is black here.
  **/
-BOOST_AUTO_TEST_CASE(talyn_a_trace_stops_at_the_depth_test) {
+BOOST_AUTO_TEST_CASE(trace_a_trace_stops_at_the_depth_test) {
     const glm::vec3 once = relayed(1);
     BOOST_CHECK_CLOSE(once.r, 1.0f, 0.1f);
     BOOST_CHECK_CLOSE(once.g, 1.0f, 0.1f);
@@ -277,13 +276,13 @@ BOOST_AUTO_TEST_CASE(talyn_a_trace_stops_at_the_depth_test) {
 namespace {
 
 /** What a ray straight down the negative z axis from a height sees. **/
-v3d::talyn::HitShader::Seen down(v3d::talyn::HitShader* shader, float x, float y, float from) {
+v3d::render::offline::trace::HitShader::Seen down(v3d::render::offline::trace::HitShader* shader, float x, float y, float from) {
     return shader->see(v3d::type::geometry::Ray(glm::vec3(x, y, from), glm::vec3(0.0f, 0.0f, -1.0f)));
 }
 
 /** A triangle in the plane z = height, facing down the negative z axis. **/
-v3d::talyn::Triangle downward(float size, float height, const glm::vec3 & colour) {
-    return v3d::talyn::Triangle(glm::vec3(-size, -size, height), glm::vec3(0.0f, size, height),
+v3d::render::offline::trace::Triangle downward(float size, float height, const glm::vec3 & colour) {
+    return v3d::render::offline::trace::Triangle(glm::vec3(-size, -size, height), glm::vec3(0.0f, size, height),
         glm::vec3(size, -size, height), colour);
 }
 
@@ -293,9 +292,9 @@ v3d::talyn::Triangle downward(float size, float height, const glm::vec3 & colour
  * A mirror facing a red quad shows the red quad, exactly: shinymetal with its ambient and its
  * highlight off is Cs times what it traces, and the quad has no shader of its own.
  **/
-BOOST_AUTO_TEST_CASE(talyn_a_mirror_shows_what_it_faces_test) {
-    v3d::talyn::Scene scene;
-    v3d::talyn::Triangle mirror = facing(2.0f, glm::vec3(1.0f));
+BOOST_AUTO_TEST_CASE(trace_a_mirror_shows_what_it_faces_test) {
+    v3d::render::offline::trace::Scene scene;
+    v3d::render::offline::trace::Triangle mirror = facing(2.0f, glm::vec3(1.0f));
     ParameterList only;
     add(&only, "Ka", Declaration::Type::FLOAT, { 0.0f });
     add(&only, "Ks", Declaration::Type::FLOAT, { 0.0f });
@@ -303,7 +302,7 @@ BOOST_AUTO_TEST_CASE(talyn_a_mirror_shows_what_it_faces_test) {
     scene.add(mirror);
     scene.add(downward(4.0f, 2.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
 
-    v3d::talyn::HitShader shader(&scene);
+    v3d::render::offline::trace::HitShader shader(&scene);
     const glm::vec3 seen = down(&shader, 0.0f, 0.0f, 1.0f).colour;
     BOOST_CHECK_CLOSE(seen.r, 1.0f, 0.001f);
     BOOST_CHECK_SMALL(seen.g, 1.0e-6f);
@@ -314,30 +313,30 @@ BOOST_AUTO_TEST_CASE(talyn_a_mirror_shows_what_it_faces_test) {
  * A half opaque white quad over a black one composites to grey through its Oi, and over
  * nothing it lets half the background through.
  **/
-BOOST_AUTO_TEST_CASE(talyn_transparency_composites_test) {
+BOOST_AUTO_TEST_CASE(trace_transparency_composites_test) {
     const Placed constant = instance("constant", v3d::render::offline::sl::ShaderType::SURFACE, ParameterList());
-    v3d::talyn::Scene scene;
+    v3d::render::offline::trace::Scene scene;
     scene.background(glm::vec3(0.0f, 0.0f, 1.0f));
-    v3d::talyn::Triangle pane(glm::vec3(-4.0f, -4.0f, 1.0f), glm::vec3(4.0f, -4.0f, 1.0f),
+    v3d::render::offline::trace::Triangle pane(glm::vec3(-4.0f, -4.0f, 1.0f), glm::vec3(4.0f, -4.0f, 1.0f),
         glm::vec3(0.0f, 4.0f, 1.0f), glm::vec3(1.0f));
     pane.surface(constant);
     pane.opacity(glm::vec3(0.5f));
     scene.add(pane);
     // the black quad is under the left of the pane only
-    v3d::talyn::Triangle under(glm::vec3(-3.0f, -3.0f, 0.0f), glm::vec3(-1.0f, -3.0f, 0.0f),
+    v3d::render::offline::trace::Triangle under(glm::vec3(-3.0f, -3.0f, 0.0f), glm::vec3(-1.0f, -3.0f, 0.0f),
         glm::vec3(-1.0f, 3.0f, 0.0f), glm::vec3(0.0f));
     under.surface(constant);
     scene.add(under);
 
-    v3d::talyn::HitShader shader(&scene);
-    const v3d::talyn::HitShader::Seen over = down(&shader, -1.5f, -1.0f, 10.0f);
+    v3d::render::offline::trace::HitShader shader(&scene);
+    const v3d::render::offline::trace::HitShader::Seen over = down(&shader, -1.5f, -1.0f, 10.0f);
     BOOST_CHECK(over.hit);
     BOOST_CHECK_CLOSE(over.colour.r, 0.5f, 0.001f);
     BOOST_CHECK_CLOSE(over.colour.b, 0.5f, 0.001f);
     BOOST_CHECK_CLOSE(over.opacity.r, 1.0f, 0.001f);
     BOOST_CHECK_CLOSE(over.distance, 9.0f, 0.001f);
 
-    const v3d::talyn::HitShader::Seen alone = down(&shader, 1.0f, -1.0f, 10.0f);
+    const v3d::render::offline::trace::HitShader::Seen alone = down(&shader, 1.0f, -1.0f, 10.0f);
     BOOST_CHECK_CLOSE(alone.colour.r, 0.5f, 0.001f);
     BOOST_CHECK_CLOSE(alone.colour.b, 1.0f, 0.001f);
     BOOST_CHECK_CLOSE(alone.opacity.r, 0.5f, 0.001f);
@@ -347,12 +346,12 @@ BOOST_AUTO_TEST_CASE(talyn_transparency_composites_test) {
  * A shadow through a half opaque occluder is half as dark: the occluder test's scene with
  * the occluder's Os at a half, where its shadow lands.
  **/
-BOOST_AUTO_TEST_CASE(talyn_a_shadow_through_a_pane_test) {
-    v3d::talyn::Scene scene;
-    v3d::talyn::Triangle floor = facing(8.0f, glm::vec3(1.0f));
+BOOST_AUTO_TEST_CASE(trace_a_shadow_through_a_pane_test) {
+    v3d::render::offline::trace::Scene scene;
+    v3d::render::offline::trace::Triangle floor = facing(8.0f, glm::vec3(1.0f));
     floor.surface(instance("matte", v3d::render::offline::sl::ShaderType::SURFACE, ParameterList()));
     scene.add(floor);
-    v3d::talyn::Triangle pane(glm::vec3(-0.5f, -0.5f, 1.0f), glm::vec3(0.5f, -0.5f, 1.0f),
+    v3d::render::offline::trace::Triangle pane(glm::vec3(-0.5f, -0.5f, 1.0f), glm::vec3(0.5f, -0.5f, 1.0f),
         glm::vec3(0.0f, 0.5f, 1.0f), glm::vec3(1.0f));
     pane.opacity(glm::vec3(0.5f));
     scene.add(pane);
@@ -361,7 +360,7 @@ BOOST_AUTO_TEST_CASE(talyn_a_shadow_through_a_pane_test) {
     add(&tilted, "to", Declaration::Type::POINT, { 0.70710678f, 0.0f, -0.70710678f });
     scene.add(instance("distantlight", v3d::render::offline::sl::ShaderType::LIGHT, tilted));
 
-    v3d::talyn::HitShader shader(&scene);
+    v3d::render::offline::trace::HitShader shader(&scene);
     BOOST_CHECK_CLOSE(shader.shade(at(scene, 1.0f, 0.0f)).r, 0.5f * 0.70710678f, 0.5f);
 }
 
@@ -371,23 +370,47 @@ BOOST_AUTO_TEST_CASE(talyn_a_shadow_through_a_pane_test) {
  * glass of index 1.5 straight on, so the red quad under the slab is 0.9216 of itself and the
  * floor beside it is still black.
  **/
-BOOST_AUTO_TEST_CASE(talyn_a_glass_slab_is_straight_through_test) {
+BOOST_AUTO_TEST_CASE(trace_a_glass_slab_is_straight_through_test) {
     const Placed glass = instance("glass", v3d::render::offline::sl::ShaderType::SURFACE, ParameterList());
-    v3d::talyn::Scene scene;
+    v3d::render::offline::trace::Scene scene;
     // the slab's two faces, each facing out of it
-    v3d::talyn::Triangle top(glm::vec3(-4.0f, -4.0f, 1.0f), glm::vec3(4.0f, -4.0f, 1.0f),
+    v3d::render::offline::trace::Triangle top(glm::vec3(-4.0f, -4.0f, 1.0f), glm::vec3(4.0f, -4.0f, 1.0f),
         glm::vec3(0.0f, 4.0f, 1.0f), glm::vec3(1.0f));
     top.surface(glass);
     scene.add(top);
-    v3d::talyn::Triangle bottom = downward(4.0f, 0.5f, glm::vec3(1.0f));
+    v3d::render::offline::trace::Triangle bottom = downward(4.0f, 0.5f, glm::vec3(1.0f));
     bottom.surface(glass);
     scene.add(bottom);
-    scene.add(v3d::talyn::Triangle(glm::vec3(-0.5f, -0.5f, 0.0f), glm::vec3(0.5f, -0.5f, 0.0f),
+    scene.add(v3d::render::offline::trace::Triangle(glm::vec3(-0.5f, -0.5f, 0.0f), glm::vec3(0.5f, -0.5f, 0.0f),
         glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
 
-    v3d::talyn::HitShader shader(&scene);
+    v3d::render::offline::trace::HitShader shader(&scene);
     const glm::vec3 through = down(&shader, 0.0f, 0.0f, 10.0f).colour;
     BOOST_CHECK_CLOSE(through.r, 0.96f * 0.96f, 0.01f);
     BOOST_CHECK_SMALL(through.g, 1.0e-6f);
     BOOST_CHECK_SMALL(down(&shader, 0.0f, -0.7f, 10.0f).colour.r, 1.0e-6f);
+}
+
+/**
+ * A primitive given lights of its own is shaded by those rather than by the scene's, per
+ * ADR-0077: the scene's list is for a primitive that was given none.
+ **/
+BOOST_AUTO_TEST_CASE(trace_a_primitive_has_its_own_lights_test) {
+    v3d::render::offline::trace::Scene scene;
+    v3d::render::offline::trace::Triangle triangle = facing(2.0f, glm::vec3(1.0f));
+    triangle.surface(instance("matte", v3d::render::offline::sl::ShaderType::SURFACE,
+        ParameterList()));
+
+    // the scene's light is overhead and the primitive's own is sixty degrees off
+    ParameterList overhead;
+    add(&overhead, "to", Declaration::Type::POINT, { 0.0f, 0.0f, -1.0f });
+    scene.add(instance("distantlight", v3d::render::offline::sl::ShaderType::LIGHT, overhead));
+    ParameterList tilted;
+    add(&tilted, "to", Declaration::Type::POINT, { 0.8660254f, 0.0f, -0.5f });
+    triangle.lights(boost::make_shared<std::vector<Placed> >(
+        1, instance("distantlight", v3d::render::offline::sl::ShaderType::LIGHT, tilted)));
+    scene.add(triangle);
+
+    v3d::render::offline::trace::HitShader shader(&scene);
+    BOOST_CHECK_CLOSE(shader.shade(at(scene, 0.0f, 0.0f)).r, 0.5f, 0.5f);
 }

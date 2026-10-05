@@ -21,6 +21,8 @@ namespace v3d::talyn {
 namespace {
 
 typedef v3d::render::offline::rib::ParameterList ParameterList;
+typedef v3d::render::offline::trace::Sphere Sphere;
+typedef v3d::render::offline::trace::Triangle Triangle;
 
 const float TOLERANCE = 1.0e-4f;
 
@@ -270,22 +272,26 @@ void RIBHandler::imager(const std::string & name, const ParameterList & paramete
     }
 }
 
-v3d::render::offline::sl::Placed RIBHandler::shading() {
-    if (!lit_given_) {
-        /*
-            A raytracer shades every triangle against one light list, so which lights are
-            on stops being a question at the first primitive. A scene that switches one
-            off after its geometry is not something the standard describes, and this
-            renderer draws what was on when the geometry arrived.
-        */
-        lit_given_ = true;
-        for (const LightSource & made : lights_) {
-            if (std::find(lit_.begin(), lit_.end(), made.handle) != lit_.end()) {
-                rc_->scene().add(made.light);
-            }
+const v3d::render::offline::trace::Lights & RIBHandler::lit() {
+    if (lighting_ && litFor_ == lit_ && lightsFor_ == lights_.size()) {
+        return lighting_;
+    }
+    auto on = boost::make_shared<std::vector<v3d::render::offline::sl::Placed> >();
+    for (const LightSource & made : lights_) {
+        if (std::find(lit_.begin(), lit_.end(), made.handle) != lit_.end()) {
+            on->push_back(made.light);
         }
     }
-    return surface_;
+    lighting_ = on;
+    litFor_ = lit_;
+    lightsFor_ = lights_.size();
+    return lighting_;
+}
+
+void RIBHandler::shade(v3d::render::offline::trace::Primitive* primitive) {
+    primitive->surface(surface_);
+    primitive->opacity(opacity_);
+    primitive->lights(lit());
 }
 
 void RIBHandler::transformBegin() {
@@ -368,8 +374,7 @@ void RIBHandler::fan(const std::vector<glm::vec3> & points, const std::vector<gl
             triangle.st(corner(indices[0]), corner(indices[i]), corner(indices[i + 1]));
         }
         // the colour is the triangle's Cs and the shader is what multiplies it
-        triangle.surface(shading());
-        triangle.opacity(opacity_);
+        shade(&triangle);
         rc_->scene().add(triangle, transform_);
     }
 }
@@ -390,8 +395,7 @@ void RIBHandler::sphere(float radius, float zmin, float zmax, float thetamax, co
     // placed by the open end of its motion, as a polygon's points are, and intersected
     // where it is defined rather than tessellated
     Sphere made(radius, zmin, zmax, thetamax, transform_.open(), color_);
-    made.surface(shading());
-    made.opacity(opacity_);
+    shade(&made);
     rc_->scene().add(made, transform_);
 }
 

@@ -118,12 +118,8 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
     };
 
     /**
-     * A light the scene created, under the handle a later Illuminate names it by.
-     *
-     * They are held here rather than in the scene because the scene is given only the
-     * ones that are on when a primitive needs them: a raytracer shades every triangle
-     * against one light list, so there is one moment - the first primitive - at which
-     * which lights are on stops being a question and becomes an answer.
+     * A light the scene created, under the handle a later Illuminate names it by. A
+     * primitive is given the ones that are on when it is made.
      **/
     class LightSource {
      public:
@@ -131,14 +127,14 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
         v3d::render::offline::sl::Placed light;
     };
 
+    /** The surface, opacity and lights a primitive made now is shaded by. **/
+    void shade(v3d::render::offline::trace::Primitive* primitive);
+
     /**
-     * The surface a triangle added now is shaded by, and the lights on it.
-     *
-     * The lights reach the scene here, the first time a primitive asks for them. A scene
-     * that switches a light off after its geometry is a scene the standard does not
-     * describe, and this renderer draws the lights that were on at the first primitive.
+     * The lights that are on, as one set every primitive made until they change shares.
+     * Built again only when the lights or which are on have changed since.
      **/
-    v3d::render::offline::sl::Placed shading();
+    const v3d::render::offline::trace::Lights & lit();
 
     boost::shared_ptr<RenderContext> rc_;
     boost::shared_ptr<v3d::render::offline::sl::ShaderLibrary> shaders_;
@@ -150,8 +146,10 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
     v3d::render::offline::MovingTransform transform_;
     glm::vec3 color_ = glm::vec3(1.0f);
     glm::vec3 opacity_ = glm::vec3(1.0f);
-    /** Whether the scene's lights have been handed over, which happens once. **/
-    bool lit_given_ = false;
+    v3d::render::offline::trace::Lights lighting_;
+    /** What lighting_ was built from, so a change to either builds it again. **/
+    std::vector<std::string> litFor_;
+    std::size_t lightsFor_ = 0;
     std::string error_;
     std::string projection_ = "orthographic";
     // the RI defaults, and the same chain moya's render context follows: a format sets the

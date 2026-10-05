@@ -2,11 +2,9 @@
 # neither a window nor a device.
 v3d_add_test(talyn
 	"TestMain.cxx"
-	"HitShaderTest.cxx"
 	"RenderContextTest.cxx"
 	"RIBHandlerTest.cxx"
-	"ReferenceTest.cxx"
-	"SceneTest.cxx")
+	"ReferenceTest.cxx")
 
 # the suite reads its reference image through image::Factory, which is where the png and jpeg
 # codecs come in

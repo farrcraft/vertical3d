@@ -12,15 +12,22 @@
 
 #include <vector>
 
+#include <boost/shared_ptr.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::talyn {
+namespace v3d::render::offline::trace {
 
 /**
- * What every primitive is shaded with: the colour, opacity and surface shader that were
- * current when the scene made it, and the motion that carries it.
+ * The lights a primitive is shaded by, each with the space it was instanced in. Shared, since
+ * every primitive made between two changes of the lights has the same set.
+ **/
+typedef boost::shared_ptr<const std::vector<v3d::render::offline::sl::Placed> > Lights;
+
+/**
+ * What every primitive is shaded with: the colour, opacity, surface shader and lights that
+ * were current when the scene made it, and the motion that carries it.
  **/
 class Primitive {
  public:
@@ -42,6 +49,13 @@ class Primitive {
     void opacity(const glm::vec3 & value);
 
     /**
+     * The lights that were on when the scene made it, per ADR-0077. Null for a primitive
+     * given none, which is shaded by the scene's own list.
+     **/
+    const Lights & lights() const;
+    void lights(const Lights & lit);
+
+    /**
      * Which of the scene's motions carries the primitive, or negative for none. It is
      * stored where the motion's open end put it.
      **/
@@ -54,6 +68,7 @@ class Primitive {
     friend class Scene;
     int motion_ = -1;
     v3d::render::offline::sl::Placed surface_;
+    Lights lights_;
     glm::vec3 opacity_ = glm::vec3(1.0f);
     glm::vec3 colour_;
 };
@@ -167,14 +182,14 @@ class Sphere final : public Primitive {
 /**
  * Where a ray met a primitive, and everything a shader is a function of there.
  *
- * talyn's batch is this, one point of it: the same program and the same instructions that
+ * A hit's batch is this, one point of it: the same program and the same instructions that
  * run over a grid of a hundred in moya, with a mask one bit wide.
  **/
 class Hit final {
  public:
     const Primitive* primitive = nullptr;
     float distance = 0.0f;
-    /** SL's P, in world space, which is talyn's current space. **/
+    /** SL's P, in world space, which is a hit's current space. **/
     glm::vec3 point = glm::vec3(0.0f);
     /** SL's N and Ng: the interpolated shading normal and the triangle's plane. **/
     glm::vec3 normal = glm::vec3(0.0f);
@@ -223,10 +238,8 @@ class Scene final {
     const std::vector<Sphere> & spheres() const;
 
     /**
-     * The lights shining on the scene, each with the space it was instanced in.
-     *
-     * A light belongs to the frame rather than to the attribute block that made it, which
-     * is RI's rule and is why these are the scene's rather than a triangle's.
+     * The lights shining on a primitive that was given none of its own, which is how a
+     * scene built in code names its lights once for everything in it.
      **/
     void add(const v3d::render::offline::sl::Placed & light);
     const std::vector<v3d::render::offline::sl::Placed> & lights() const;
@@ -267,4 +280,4 @@ class Scene final {
     unsigned int traceDepth_ = 2;
 };
 
-};  // namespace v3d::talyn
+};  // namespace v3d::render::offline::trace
