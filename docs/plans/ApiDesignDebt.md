@@ -380,6 +380,10 @@ ADR-0058's ordering note is revisited.
 
 #### Step 18 — Decide whether the loop needs Vulkan
 
+**Closed, decided against.** Nothing headless consumes the loop, in this tree or the two that adopt
+it, so the split would cost a library or an interface for no consumer. ADR-0033's consequences say
+so, and where to start if one appears.
+
 E6. Either the engine holds its window through a narrow interface (or is handed one), so
 `Window.h` leaves `Engine.h`; or the pure pieces — `Accumulator`, `Statistics`, `Settings`, the path
 helpers — move to a library that does not link render. Or neither, recorded in ADR-0033's
@@ -579,5 +583,3 @@ disturb.
   scene graph ADR-0013 said not to grow. Decide when step 29 is touching brep anyway.
 - **Does the reyes hider honour `Oi`?** Step 26. Compositing by coverage in `Bucket` is real work,
   and a documented difference between hiders is a legitimate answer.
-- **Is step 18 worth doing before anything headless exists?** Likely not, and closing it as
-  decided against is an outcome the plan allows.

@@ -125,7 +125,13 @@ means all of them.
   manifest. The verification makes disagreement loud rather than impossible, and a new package means
   editing two files.
 - `cgltf` contributes an include directory rather than an imported target, so nothing can confirm
-  `api/asset` still uses it. Its manifest entry is taken on trust.
+  `api/asset/media` still uses it. Its manifest entry is taken on trust.
+- `engine` requires `render`, and so the Vulkan SDK, because `Engine.h` holds the concrete
+  `Window`. The accumulator, the statistics, the settings and the path helpers cannot be had
+  without it. Splitting them out, or holding the window through an interface, was weighed on
+  2026-10-05 ([ApiDesignDebt](../plans/ApiDesignDebt.md) step 18) and decided against while
+  nothing headless consumes the loop: the split costs a library or an interface, and buys
+  nothing for any consumer that exists.
 - The root is four cmake files instead of three.
 
 ### Risks
