@@ -2,7 +2,7 @@
 
 **Status**: accepted
 **Date**: 2026-08-30
-**Documented in**: [internals/RealtimeRenderer.md](../internals/RealtimeRenderer.md)
+**Documented in**: [internals/realtime/Pipelines.md](../internals/realtime/Pipelines.md)
 
 ## Context
 

@@ -35,7 +35,7 @@ content went. Numbers are never reused.
 | [0036](0036-text-sdf-glyphs-through-the-quad-shader.md) | Text: SDF glyphs through the quad shader | accepted |
 | [0037](0037-2d-clip-with-a-per-batch-scissor.md) | 2D: clip with a per-batch scissor | accepted |
 | [0042](0042-rendering-world-space-sprites.md) | Rendering: world-space sprites | amended by 0082 |
-| 0044 | *Not a decision. Now in docs/internals/RealtimeRenderer.md and vulkan/frame/DepthBuffer.h* | removed |
+| 0044 | *Not a decision. Now in docs/internals/realtime/Memory.md and vulkan/frame/DepthBuffer.h* | removed |
 | [0049](0049-swapchain-caller-picks-the-format.md) | Swapchain: caller picks the format | accepted |
 | [0051](0051-frames-in-flight-ring-separate-from-presenting.md) | Frames: in-flight ring separate from presenting | accepted |
 | [0052](0052-camera-selectable-handedness.md) | Camera: selectable handedness | accepted |
@@ -118,7 +118,7 @@ content went. Numbers are never reused.
 | [0014](0014-editor-pick-by-cpu-ray-cast.md) | Editor: pick by CPU ray cast | accepted |
 | [0015](0015-editor-manipulators-edit-the-object-transform.md) | Editor: manipulators edit the object transform | accepted |
 | [0016](0016-editor-undo-records-completed-changes.md) | Editor: undo records completed changes | accepted |
-| 0017 | *Not a decision. Now in docs/Editor.md and vertical3d/src/command/CommandDirectory.h* | removed |
+| 0017 | *Not a decision. Now in docs/editor/CommandsAndUndo.md and vertical3d/src/command/CommandDirectory.h* | removed |
 | [0018](0018-editor-projects-saved-as-json-with-exact-topology.md) | Editor: projects saved as JSON with exact topology | amended by 0041 |
 
 ## Build, testing and code

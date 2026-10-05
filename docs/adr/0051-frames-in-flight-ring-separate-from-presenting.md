@@ -2,7 +2,7 @@
 
 **Status**: accepted
 **Date**: 2026-09-11
-**Documented in**: [internals/RealtimeRenderer.md](../internals/RealtimeRenderer.md)
+**Documented in**: [internals/realtime/Frames.md](../internals/realtime/Frames.md)
 
 ## Context
 

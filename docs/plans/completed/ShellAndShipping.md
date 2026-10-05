@@ -127,7 +127,7 @@ milestones 1 to 6. This tree was read at `e939bec`.
   (`api/ui/Arranger.cpp:228-269`), and `natural()` gives a box the room it was offered
   (`:207`, `:216`).
 * **No file chooser exists**, and nothing lists a directory. The editor reads and writes a fixed
-  `project.json` ([Editor.md](../../Editor.md), [TODO.md](../../TODO.md#editor)). `ui::shell::GameMenu`
+  `project.json` ([Editor.md](../../editor/README.md), [TODO.md](../../TODO.md#editor)). `ui::shell::GameMenu`
   is the precedent for a shell class that drives components a document names, which touches none of
   [ADR-0047](../../adr/0047-code-exhaustive-enum-switches.md)'s places.
 * **A binding reaches key-up**, and a binding may fire on press, release or both. `KeyState` knows
@@ -881,7 +881,7 @@ Update the state in the table above.
   read set 0.
 * **Step 8** adds wrapping to UserInterface.md's account of the arranger.
 * **Step 9** adds the chooser beside `GameMenu` in UserInterface.md, updates
-  [Editor.md](../../Editor.md), and narrows the editor's entry in TODO.md to the dirty flag.
+  [Editor.md](../../editor/README.md), and narrows the editor's entry in TODO.md to the dirty flag.
 * **Step 10** adds timings to RenderingPipeline.md's account of the frame, and the new device cases
   to [Testing.md](../../contributing/Testing.md).
 * **Step 11** adds the slider to UserInterface.md's list of components, and corrects that

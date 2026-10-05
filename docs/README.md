@@ -40,15 +40,15 @@ For anyone working inside a library rather than using it.
 
 | Document | Covers |
 |---|---|
-| [internals/RealtimeRenderer.md](internals/RealtimeRenderer.md) | How `api/render/realtime` works: frames in flight, recording, memory, descriptor sets |
+| [internals/realtime/](internals/realtime/README.md) | How `api/render/realtime` works: frames in flight, recording, memory, descriptor sets |
 | [internals/UserInterface.md](internals/UserInterface.md) | How `api/ui` works: layout, drawing, hit testing and input routing |
-| [OfflineRenderer.md](OfflineRenderer.md) | moya and `api/render/offline`: RIB, the hiders, the shading language, the film |
+| [offline/](offline/README.md) | moya and `api/render/offline`: RIB, the hiders, the shading language, the film |
 
 ## The applications
 
 | Document | Covers |
 |---|---|
-| [Editor.md](Editor.md) | The `vertical3d` editor and `api/brep` |
+| [editor/](editor/README.md) | The `vertical3d` editor and `api/brep` |
 | [Games.md](Games.md) | pong, tetris, voxel and odyssey, plus imagetool and v3dshell |
 
 ## The project record

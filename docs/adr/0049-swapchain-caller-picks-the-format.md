@@ -3,7 +3,7 @@
 **Status**: accepted
 **Date**: 2026-09-08
 **Amends**: [ADR-0009](0009-colour-display-space-unorm-swapchain.md)
-**Documented in**: [internals/RealtimeRenderer.md](../internals/RealtimeRenderer.md)
+**Documented in**: [internals/realtime/Frames.md](../internals/realtime/Frames.md)
 
 ## Context
 

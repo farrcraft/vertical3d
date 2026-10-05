@@ -2,7 +2,7 @@
 
 **Status**: accepted
 **Date**: 2026-09-02
-**Documented in**: [The editor](../Editor.md)
+**Documented in**: [editor/](../editor/README.md)
 
 ## Context
 

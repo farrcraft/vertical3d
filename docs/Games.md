@@ -13,8 +13,8 @@ which api features it is the best example of.
 - [imagetool](#imagetool)
 - [v3dshell](#v3dshell)
 
-The editor in `vertical3d/` has its own document, [Editor.md](Editor.md). The offline renderer
-`moya` is covered in [OfflineRenderer.md](OfflineRenderer.md).
+The editor in `vertical3d/` has its own document, [editor/](editor/README.md). The offline renderer
+`moya` is covered in [offline/](offline/README.md).
 
 ## Running a game
 

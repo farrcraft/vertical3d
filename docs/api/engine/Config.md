@@ -31,7 +31,7 @@ The api recognises seven types, listed in `config::Type` in
 | `ui` | `ui::Engine::load()` | Themes and containers. See [ui/](../ui/README.md). |
 | `sound` | `audio::Engine::load()` | See [Audio](Audio.md#audio). |
 | `camera` | `config::CameraProfiles` | `{"cameras": [...]}`, named camera profiles. See below. |
-| `layout` | The editor's viewport layout | The editor's own format. See [Editor.md](../../Editor.md). |
+| `layout` | The editor's viewport layout | The editor's own format. See [editor/](../../editor/README.md). |
 | `sprite` | `config::SpriteSheets` | See [Sprite sheets](#sprite-sheets). |
 
 **Any other type is an app's own document.** The config loads it like the others and files it

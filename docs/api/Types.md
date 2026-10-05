@@ -237,7 +237,7 @@ quaternion rotation and a scale. ECS entities and editor meshes are both placed 
 
 | Type | What it is |
 |---|---|
-| `brep::BRep` | Half-edge topology the editor models with. See [Editor.md](../Editor.md). |
+| `brep::BRep` | Half-edge topology the editor models with. See [editor/](../editor/README.md). |
 | `type::Model` | Interleaved vertices, indices, materials and parts: what a model file loads into. |
 | The renderer's mesh | Two device buffers, made from a `type::Model`. See [rendering/](rendering/README.md). |
 

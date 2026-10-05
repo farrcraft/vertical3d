@@ -31,11 +31,11 @@ is SDL3.
 | `api/type`, `api/grid`, `api/ecs` | [docs/api/Types.md](docs/api/Types.md), [Grid.md](docs/api/Grid.md), [ECS.md](docs/api/ECS.md) |
 | `api/asset`, `api/image`, `api/font` | [docs/api/Assets.md](docs/api/Assets.md) |
 | Using `api/render/realtime` | [docs/api/rendering/](docs/api/rendering/README.md) |
-| Changing `api/render/realtime` | [docs/internals/RealtimeRenderer.md](docs/internals/RealtimeRenderer.md) |
+| Changing `api/render/realtime` | [docs/internals/realtime/](docs/internals/realtime/README.md) |
 | Using `api/ui` | [docs/api/ui/](docs/api/ui/README.md) |
 | Changing `api/ui` | [docs/internals/UserInterface.md](docs/internals/UserInterface.md) |
-| `moya`, `api/render/offline`, RIB | [docs/OfflineRenderer.md](docs/OfflineRenderer.md) |
-| `vertical3d/`, `api/brep` | [docs/Editor.md](docs/Editor.md) |
+| `moya`, `api/render/offline`, RIB | [docs/offline/](docs/offline/README.md) |
+| `vertical3d/`, `api/brep` | [docs/editor/](docs/editor/README.md) |
 | pong, tetris, voxel, odyssey, imagetool | [docs/Games.md](docs/Games.md) |
 | `examples/` | [examples/README.md](examples/README.md) |
 | Why something is shaped as it is | [docs/adr/README.md](docs/adr/README.md), grouped by area |

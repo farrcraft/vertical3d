@@ -3,7 +3,7 @@
 **Status**: amended
 **Date**: 2026-09-04
 **Amended by**: [ADR-0078](0078-offline-moya-is-the-one-renderer-ray-tracing-is-a-hider.md)
-**Documented in**: [OfflineRenderer.md](../OfflineRenderer.md)
+**Documented in**: [offline/](../offline/README.md)
 
 ## Context
 

@@ -279,7 +279,7 @@ F1 → `tetris::toggleFS` and Space → `odyssey::moveUp`.
 
 ## Editor
 
-Open work for when the editor app itself moves forward. [Editor.md](Editor.md) describes the
+Open work for when the editor app itself moves forward. [editor/](editor/README.md) describes the
 editor.
 
 [] 55 of the menu's 77 commands have no handler, and only log themselves when chosen.

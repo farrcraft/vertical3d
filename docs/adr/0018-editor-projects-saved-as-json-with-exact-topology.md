@@ -3,7 +3,7 @@
 **Status**: amended
 **Date**: 2026-09-02
 **Amended by**: [ADR-0041](0041-files-write-documents-atomically.md)
-**Documented in**: [The editor](../Editor.md)
+**Documented in**: [editor/](../editor/README.md)
 
 ## Context
 

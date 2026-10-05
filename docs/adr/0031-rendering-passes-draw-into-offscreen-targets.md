@@ -3,7 +3,7 @@
 **Status**: amended
 **Date**: 2026-09-06
 **Amended by**: [ADR-0068](0068-rendering-order-passes-by-what-they-read.md)
-**Documented in**: [api/rendering/FramesAndTargets.md](../api/rendering/FramesAndTargets.md), [internals/RealtimeRenderer.md](../internals/RealtimeRenderer.md)
+**Documented in**: [api/rendering/FramesAndTargets.md](../api/rendering/FramesAndTargets.md), [internals/realtime/Frames.md](../internals/realtime/Frames.md)
 
 ## Context
 

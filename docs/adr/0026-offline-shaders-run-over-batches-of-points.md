@@ -2,7 +2,7 @@
 
 **Status**: accepted
 **Date**: 2026-09-08
-**Documented in**: [OfflineRenderer.md](../OfflineRenderer.md)
+**Documented in**: [offline/ShadingLanguage.md](../offline/ShadingLanguage.md)
 
 ## Context
 

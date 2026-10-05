@@ -450,7 +450,7 @@ when step 6 does.
   are never reused" and "nothing frees an individual resource" both stop being true, and the
   section says what replaced them. The target bullet under the offscreen section changes from
   "a handle registered before a resize is stale" to the release-then-register rule.
-  [RealtimeRenderer.md](../../internals/RealtimeRenderer.md) gains the invariant that a released
+  [RealtimeRenderer.md](../../internals/realtime/README.md) gains the invariant that a released
   handle resolves to nothing at once and its objects outlive it by the frames in flight.
   [m4-LitScene.md](../../roadmap/completed/m4-LitScene.md) is told its texture class retires into step 2's queue.
 - **Step 3** writes cozy's handoff note for hot reload and region sheets.

@@ -102,9 +102,9 @@ variable. [UsingTheApi.md](UsingTheApi.md) covers that.
 | Use cameras, geometry queries, models, animation or particle effects | [Types.md](Types.md) |
 | Build a tile board with paths and sight lines | [Grid.md](Grid.md) |
 | Load images, fonts, models and JSON documents | [Assets.md](Assets.md) |
-| Change the realtime renderer itself | [../internals/RealtimeRenderer.md](../internals/RealtimeRenderer.md) |
+| Change the realtime renderer itself | [../internals/realtime/](../internals/realtime/README.md) |
 | Change the ui library itself | [../internals/UserInterface.md](../internals/UserInterface.md) |
-| Work on moya or `render_offline` | [../OfflineRenderer.md](../OfflineRenderer.md) |
+| Work on moya or `render_offline` | [../offline/](../offline/README.md) |
 | See a complete small app | [examples/starter](../../examples/starter/) |
 
 ## Glossary
@@ -248,12 +248,12 @@ Terms are grouped by subject. Each entry links to the document that covers it.
 - **Frames in flight** — frames the GPU may still be working on while the CPU builds the next.
   The **in-flight ring** (`vulkan::frame::Ring`) holds each one's buffers and fences, and frees
   released resources once no frame in flight uses them. See
-  [internals/RealtimeRenderer.md](../internals/RealtimeRenderer.md).
+  [internals/realtime/](../internals/realtime/README.md).
 - **Presenter** — `vulkan::Presenter`, which acquires a swapchain image, submits the recorded
-  frame and presents it. See [internals/RealtimeRenderer.md](../internals/RealtimeRenderer.md).
+  frame and presents it. See [internals/realtime/](../internals/realtime/README.md).
 - **Recorder** — the code that turns a pass's draw items into Vulkan commands, binding a
   pipeline, set or buffer only when it changes. See
-  [internals/RealtimeRenderer.md](../internals/RealtimeRenderer.md).
+  [internals/realtime/](../internals/realtime/README.md).
 - **Lit pass** — a pass that draws meshes with light and shadow through
   `vulkan::renderer::Lit`. See [rendering/Lighting.md](rendering/Lighting.md).
 - **Scene set** — descriptor set 2, which a lit pass binds once. It holds the light, the shadow
@@ -276,7 +276,7 @@ Terms are grouped by subject. Each entry links to the document that covers it.
 ### Offline rendering
 
 - **RIB** — the RenderMan Interface Bytestream, the scene file format moya reads. See
-  [OfflineRenderer.md](../OfflineRenderer.md).
+  [offline/](../offline/README.md).
 - **Hider** — the part of moya that decides which surfaces the camera sees: the Reyes hider or
   the ray tracing hider. A scene picks one with `Hider`. See
-  [OfflineRenderer.md](../OfflineRenderer.md).
+  [offline/](../offline/README.md).

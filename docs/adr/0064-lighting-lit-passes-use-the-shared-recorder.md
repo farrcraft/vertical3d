@@ -4,7 +4,7 @@
 **Date**: 2026-10-03
 **Amends**: [ADR-0008](0008-shaders-descriptor-sets-by-update-frequency.md)
 **Amended by**: [ADR-0071](0071-skinning-joint-matrices-in-one-storage-buffer.md)
-**Documented in**: [internals/RealtimeRenderer.md](../internals/RealtimeRenderer.md)
+**Documented in**: [internals/realtime/Pipelines.md](../internals/realtime/Pipelines.md)
 
 ## Context
 

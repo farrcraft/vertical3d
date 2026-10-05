@@ -662,7 +662,7 @@ and in the commits, which is where a reader following a stale name should end up
   reason that survives.
 - **[RenderingPipeline.md](../../api/rendering/README.md)** for step 7,
   **[UserInterface.md](../../api/ui/README.md)** for steps 5 and 6,
-  **[OfflineRenderers.md](../../OfflineRenderer.md)** for step 4. Each of these names files by
+  **[OfflineRenderers.md](../../offline/README.md)** for step 4. Each of these names files by
   path.
 - **[ADR-0027](../../adr/0027-build-consume-the-api-as-source.md)**'s fourth Negative bullet gets a
   note saying [0048](../../adr/0048-includes-name-headers-from-the-repository-root.md) reversed it.

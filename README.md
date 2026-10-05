@@ -69,8 +69,8 @@ Start with the documents for what you are doing:
 | Contributing to this repository | [docs/contributing/](docs/contributing/), starting with [GettingStarted.md](docs/contributing/GettingStarted.md) |
 | Writing an app with the libraries | [docs/api/](docs/api/), and [UsingTheApi.md](docs/api/UsingTheApi.md) for an app in another repository |
 | Changing the renderer or the UI library | [docs/internals/](docs/internals/) |
-| Working on moya or the offline renderer | [docs/OfflineRenderer.md](docs/OfflineRenderer.md) |
-| Working on the vertical3d editor | [docs/Editor.md](docs/Editor.md) |
+| Working on moya or the offline renderer | [docs/offline/](docs/offline/README.md) |
+| Working on the vertical3d editor | [docs/editor/](docs/editor/README.md) |
 | Working on a game or a tool | [docs/Games.md](docs/Games.md) |
 | Reading an example | [examples/README.md](examples/README.md) |
 | Asking why something is designed as it is | [docs/adr/](docs/adr/), the architecture decision records |

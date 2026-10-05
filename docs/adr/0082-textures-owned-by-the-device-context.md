@@ -3,7 +3,7 @@
 **Status**: accepted
 **Date**: 2026-10-05
 **Amends**: [ADR-0042](0042-rendering-world-space-sprites.md), [ADR-0065](0065-meshes-shared-registry-keyed-by-path.md)
-**Documented in**: [internals/RealtimeRenderer.md](../internals/RealtimeRenderer.md), [api/rendering/TexturesAndMeshes.md](../api/rendering/TexturesAndMeshes.md)
+**Documented in**: [internals/realtime/Memory.md](../internals/realtime/Memory.md), [api/rendering/TexturesAndMeshes.md](../api/rendering/TexturesAndMeshes.md)
 
 ## Context
 

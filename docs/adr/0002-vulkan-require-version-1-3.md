@@ -2,7 +2,7 @@
 
 **Status**: accepted
 **Date**: 2026-08-30
-**Documented in**: [internals/RealtimeRenderer.md](../internals/RealtimeRenderer.md)
+**Documented in**: [internals/realtime/Device.md](../internals/realtime/Device.md)
 
 ## Context
 

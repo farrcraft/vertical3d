@@ -3,7 +3,7 @@
 **Status**: accepted
 **Date**: 2026-10-03
 **Amends**: [ADR-0010](0010-meshes-owned-by-the-app-that-built-them.md)
-**Documented in**: [internals/RealtimeRenderer.md](../internals/RealtimeRenderer.md)
+**Documented in**: [internals/realtime/Memory.md](../internals/realtime/Memory.md)
 
 ## Context
 

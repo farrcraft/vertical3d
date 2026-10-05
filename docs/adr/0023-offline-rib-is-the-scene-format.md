@@ -2,7 +2,7 @@
 
 **Status**: accepted
 **Date**: 2026-09-04
-**Documented in**: [OfflineRenderer.md](../OfflineRenderer.md), [Editor.md](../Editor.md)
+**Documented in**: [offline/Rib.md](../offline/Rib.md), [editor/Files.md](../editor/Files.md)
 
 ## Context
 

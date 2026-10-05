@@ -2,7 +2,7 @@
 
 **Status**: accepted
 **Date**: 2026-09-12
-**Documented in**: [internals/RealtimeRenderer.md](../internals/RealtimeRenderer.md)
+**Documented in**: [internals/realtime/Memory.md](../internals/realtime/Memory.md)
 
 ## Context
 

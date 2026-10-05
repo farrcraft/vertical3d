@@ -49,7 +49,7 @@ Each is a gap a consumer has named:
 * **Strips that respect `pickable()`.** `Toolbar` and `MenuBar` pick before consulting it, so a
   strip in a HUD takes clicks meant for the world. cozy works around it by having nothing in its
   HUD pickable, and a test of its own holds it there.
-* **A file chooser.** The editor has no "save as", per [Editor.md](../../Editor.md), and a chooser
+* **A file chooser.** The editor has no "save as", per [Editor.md](../../editor/README.md), and a chooser
   is what it is missing.
 
 Each new component touches the places [ADR-0047](../../adr/0047-code-exhaustive-enum-switches.md)

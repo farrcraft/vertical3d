@@ -4,7 +4,7 @@
 **Date**: 2026-10-04
 **Amends**: [ADR-0022](0022-offline-shared-library-with-no-vulkan.md)
 **Supersedes**: [ADR-0077](0077-offline-one-shared-ray-tracer.md)
-**Documented in**: [OfflineRenderer.md](../OfflineRenderer.md)
+**Documented in**: [offline/RayTracing.md](../offline/RayTracing.md)
 
 ## Context
 

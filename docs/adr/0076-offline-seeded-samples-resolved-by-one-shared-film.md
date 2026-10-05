@@ -2,7 +2,7 @@
 
 **Status**: accepted
 **Date**: 2026-10-04
-**Documented in**: [OfflineRenderer.md](../OfflineRenderer.md)
+**Documented in**: [offline/CamerasAndSampling.md](../offline/CamerasAndSampling.md)
 
 ## Context
 

@@ -1,7 +1,7 @@
 # Rendering
 
 These pages are for someone drawing from an app with `api/render/realtime`. How the renderer
-works inside is in [internals/RealtimeRenderer.md](../../internals/RealtimeRenderer.md).
+works inside is in [internals/realtime/](../../internals/realtime/README.md).
 
 All names are in `v3d::render::realtime` unless a namespace is given. `vulkan::` means
 `v3d::render::realtime::vulkan`.

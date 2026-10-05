@@ -3,7 +3,7 @@
 **Status**: accepted
 **Date**: 2026-10-03
 **Amends**: [ADR-0064](0064-lighting-lit-passes-use-the-shared-recorder.md)
-**Documented in**: [internals/RealtimeRenderer.md](../internals/RealtimeRenderer.md)
+**Documented in**: [internals/realtime/Pipelines.md](../internals/realtime/Pipelines.md)
 
 ## Context
 
