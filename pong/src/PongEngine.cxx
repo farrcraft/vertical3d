@@ -117,7 +117,7 @@ bool::PongEngine::initialize() {
         }
     }
     boost::shared_ptr<v3d::render::realtime::Window> win = window();
-    renderer_ = boost::make_shared<PongRenderer>(win, logger_, assetManager_, &registry_);
+    renderer_ = boost::make_shared<PongRenderer>(win, logger_, assetManager_);
     scene_ = boost::make_shared<PongScene>(&registry_, dispatcher_);
     renderer_->scene(scene_);
     renderer_->ui(vgui_);

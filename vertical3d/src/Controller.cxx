@@ -91,7 +91,7 @@ bool Controller::initialize() {
     motion_ = dispatcher_->sink<v3d::event::kind::MouseMotion>().connect<&Controller::handleMotion>(*this);
     resize_ = dispatcher_->sink<v3d::event::kind::WindowResize>().connect<&Controller::handleResize>(*this);
 
-    renderer_ = boost::make_shared<Renderer>(window(), logger_, assetManager_, &registry_);
+    renderer_ = boost::make_shared<Renderer>(window(), logger_, assetManager_);
     renderer_->views(views_);
     renderer_->scene(scene_);
     renderer_->manipulator(transformTool_->manipulator());

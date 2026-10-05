@@ -56,8 +56,8 @@ constexpr glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
 /**
  **/
 TetrisRenderer::TetrisRenderer(const boost::shared_ptr<v3d::render::realtime::Window>& window, const boost::shared_ptr<v3d::log::Logger>& logger,
-    const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry) :
-    logger_(logger), engine_(logger, assetManager, registry) {
+    const boost::shared_ptr<v3d::asset::Manager>& assetManager) :
+    logger_(logger), engine_(logger, assetManager) {
     engine_.initialize(window);
     engine_.clearColour(glm::vec4(0.09f, 0.09f, 0.11f, 1.0f));
 

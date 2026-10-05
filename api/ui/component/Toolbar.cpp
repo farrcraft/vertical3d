@@ -56,7 +56,7 @@ boost::shared_ptr<Button> Toolbar::buttonAt(const glm::vec2& cursor) const {
             continue;
         }
         v3d::type::geometry::Bound2D bound = button->bound();
-        if (bound.intersect(cursor)) {
+        if (bound.contains(cursor)) {
             return button;
         }
     }
@@ -73,7 +73,7 @@ bool Toolbar::motion(const glm::vec2& cursor) {
         }
     }
     v3d::type::geometry::Bound2D bound = this->bound();
-    return bound.intersect(cursor);
+    return bound.contains(cursor);
 }
 
 /**
@@ -90,7 +90,7 @@ void Toolbar::leave() {
  **/
 bool Toolbar::press(const glm::vec2& cursor) {
     v3d::type::geometry::Bound2D bound = this->bound();
-    if (!bound.intersect(cursor)) {
+    if (!bound.contains(cursor)) {
         return false;
     }
     const boost::shared_ptr<Button> over = buttonAt(cursor);

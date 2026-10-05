@@ -9,7 +9,6 @@
 
 #include <vector>
 
-#include "Context.h"
 #include "Context3D.h"
 #include "Engine.h"
 #include "Frame.h"
@@ -26,12 +25,11 @@ class Engine3D : public Engine {
     /**
      * @param logger
      * @param assetManager
-     * @param registry
      * @param preferred the colour format to present through - ADR-0049. An app whose
      *        shaders write linear light names one here; leaving it undefined is the
      *        display space default every app in this tree presents through.
      **/
-    Engine3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry,
+    Engine3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager,
         VkFormat preferred = VK_FORMAT_UNDEFINED);
 
     /**
@@ -112,7 +110,7 @@ class Engine3D : public Engine {
      **/
     static const char* const colourPass;
 
-    boost::shared_ptr<Context> context();
+    boost::shared_ptr<DeviceContext> context();
 
  private:
     /**

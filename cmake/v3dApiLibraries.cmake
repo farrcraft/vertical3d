@@ -56,7 +56,7 @@ set(V3D_API_event_REQUIRES)
 set(V3D_API_event_PACKAGES glm EnTT)
 
 set(V3D_API_font_PATH "font")
-set(V3D_API_font_REQUIRES log image type)
+set(V3D_API_font_REQUIRES log image)
 set(V3D_API_font_PACKAGES Freetype glm)
 
 set(V3D_API_grid_PATH "grid")

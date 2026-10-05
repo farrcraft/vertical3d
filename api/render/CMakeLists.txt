@@ -1,7 +1,7 @@
 v3d_add_api_library(render
 	"realtime/Frame.h" "realtime/Frame.cpp"
 	"realtime/Engine.h" "realtime/Engine.cpp" 
-	"realtime/Context.h" "realtime/Window.h" "realtime/Window.cpp" 
+	"realtime/Window.h" "realtime/Window.cpp" 
 	"realtime/Engine3D.h" "realtime/Engine3D.cpp" 
 	"realtime/Context3D.h" "realtime/Context3D.cpp"
 	"realtime/DeviceContext.h" "realtime/DeviceContext.cxx" 

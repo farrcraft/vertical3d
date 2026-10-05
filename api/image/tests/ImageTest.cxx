@@ -62,7 +62,7 @@ static_assert(!std::is_copy_assignable<v3d::image::Image>::value,
  * definite answer, because an indeterminate one is what every writer reads to size a row.
  **/
 BOOST_AUTO_TEST_CASE(image_format_follows_depth_test) {
-    // a texture atlas packed at depth 1 and a Font2D bitmap are both this
+    // a texture atlas packed at depth 1 is this
     const v3d::image::Image grey(4, 4, 8);
     BOOST_CHECK((grey.format() == v3d::image::Image::Format::Grey));
 

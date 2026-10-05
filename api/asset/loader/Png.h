@@ -14,7 +14,7 @@ class Png final : public Loader {
  public:
     /**
      **/
-    Png(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& logger);
+    Png(const boost::shared_ptr<v3d::log::Logger>& logger);
 
     /**
      **/

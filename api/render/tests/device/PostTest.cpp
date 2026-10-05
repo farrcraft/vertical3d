@@ -121,7 +121,7 @@ boost::shared_ptr<v3d::image::Image> grade(v3d::test::Headless* headless, const 
         uploaded);
 
     // the grade is made first and reads the scene, so the frame draws the scene ahead of it
-    Frame frame(headless->context);
+    Frame frame;
     boost::shared_ptr<Pass> post = frame.pass("grade");
     post->target(output);
     post->reads(scene);
@@ -156,7 +156,7 @@ VkCommandBuffer recordGrade(v3d::test::Headless* headless, const Grade& graded, 
     canvas.rect(glm::vec2(0.0f), glm::vec2(static_cast<float>(size)), glm::vec2(0.0f), glm::vec2(1.0f), glm::vec4(1.0f),
         sweepTexture);
 
-    Frame frame(headless->context);
+    Frame frame;
     boost::shared_ptr<Pass> post = frame.pass("grade");
     post->target(output);
     post->reads(scene);
@@ -238,7 +238,7 @@ BOOST_AUTO_TEST_CASE(a_copying_pass_is_the_identity) {
     canvas.clear();
     canvas.rect(glm::vec2(16.0f, 8.0f), glm::vec2(48.0f, 24.0f), glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
 
-    Frame frame(headless.context);
+    Frame frame;
     boost::shared_ptr<Pass> post = frame.pass("copy");
     post->target(output);
     post->reads(scene);

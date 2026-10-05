@@ -70,7 +70,7 @@ boost::shared_ptr<v3d::image::Image> blended(v3d::test::Headless* headless, cons
     boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(
         headless->device, headless->context->ring(), width, height, colourFormat, false);
 
-    Frame frame(headless->context);
+    Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("world");
     pass->target(target);
     pass->clearColour(glm::vec4(0.2f, 0.4f, 0.0f, 1.0f));

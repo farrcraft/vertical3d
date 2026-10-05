@@ -29,7 +29,7 @@ bool AppEngine::initialize() {
 
     window_->caption("vertical3d starter");
 
-    renderer_ = boost::make_shared<v3d::render::realtime::Engine3D>(logger_, assetManager_, &registry_);
+    renderer_ = boost::make_shared<v3d::render::realtime::Engine3D>(logger_, assetManager_);
     if (!renderer_->initialize(window())) {
         return false;
     }

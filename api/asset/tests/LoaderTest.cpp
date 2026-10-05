@@ -22,7 +22,7 @@ namespace {
 class Probe final : public v3d::asset::Loader {
  public:
     explicit Probe(const boost::shared_ptr<v3d::log::Logger>& logger) :
-        Loader(nullptr, v3d::asset::Type::Text, logger) {
+        Loader(v3d::asset::Type::Text, logger) {
     }
 
     boost::shared_ptr<v3d::asset::Asset> load(std::string_view /* name */) override {
@@ -83,8 +83,5 @@ BOOST_AUTO_TEST_CASE(loader_absent_parameter_test) {
     BOOST_TEST(!loader.parameter("size"));
 
     loader.parameter("size", v3d::asset::ParameterValue(static_cast<unsigned int>(12)));
-    loader.reset();
-
-    // reset() clears intermediate state per its own contract; parameters are not that state.
     BOOST_TEST(static_cast<bool>(loader.parameter("size")));
 }

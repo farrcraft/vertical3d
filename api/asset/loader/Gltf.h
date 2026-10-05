@@ -48,7 +48,7 @@ class Gltf final : public Loader {
  public:
     /**
      **/
-    Gltf(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& logger);
+    Gltf(const boost::shared_ptr<v3d::log::Logger>& logger);
 
     /**
      * @param name the path to a .gltf or .glb file

@@ -7,7 +7,6 @@
 
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/component/Type.h>
-#include <api/ui/style/Theme.h>
 
 #include <string>
 #include <vector>

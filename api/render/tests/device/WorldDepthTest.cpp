@@ -100,7 +100,7 @@ void drawAndCheck(v3d::test::Headless* headless, bool nearFirst, const std::stri
     WorldCanvas canvas;
     overlapping(&canvas, nearFirst);
 
-    Frame frame(headless->context);
+    Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("world");
     pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
     pass->depth(true);

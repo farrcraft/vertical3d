@@ -60,7 +60,7 @@ boost::shared_ptr<Component> probe(const boost::shared_ptr<Component>& component
             }
         }
         // the strip itself, which is what a press on a tab reaches
-        return component->pickable() && component->bound().intersect(point) ? component : nullptr;
+        return component->pickable() && component->bound().contains(point) ? component : nullptr;
     }
 
     const std::vector<boost::shared_ptr<Component>>& children = component->children();
@@ -71,7 +71,7 @@ boost::shared_ptr<Component> probe(const boost::shared_ptr<Component>& component
         }
     }
     v3d::type::geometry::Bound2D bound = component->bound();
-    if (component->pickable() && bound.intersect(point)) {
+    if (component->pickable() && bound.contains(point)) {
         return component;
     }
     return nullptr;

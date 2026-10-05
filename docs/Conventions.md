@@ -48,8 +48,8 @@ where this document does not say otherwise.
   types, an app's ECS components — they go in a subdirectory of their own, under the rule
   below.
 - **A directory splits when its files stop sharing a reader, not when it passes a file count.**
-  `api/dag` is eighteen files and 493 lines and wants nothing done to it, because they are one
-  concept; `api/ui` had 36 files above its subdirectories doing five different jobs, and they
+  `api/grid` is sixteen files and 1,300 lines and wants nothing done to it, because they are
+  one concept; `api/ui` had 36 files above its subdirectories doing five different jobs, and they
   are `paint/`, `input/`, `shell/` and `style/` now. A namespace follows the directory, so a
   class whose name already carries the group word drops it — `pipeline::Builder`, not
   `pipeline::PipelineBuilder`. Where the group *is* the noun, the name stays: `device::Device`.

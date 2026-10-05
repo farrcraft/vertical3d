@@ -34,8 +34,8 @@ const unsigned int centreLineWidth = 14;
 /**
  **/
 PongRenderer::PongRenderer(const boost::shared_ptr<v3d::render::realtime::Window>& window, const boost::shared_ptr<v3d::log::Logger>& logger,
-    const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry) :
-    engine_(logger, assetManager, registry) {
+    const boost::shared_ptr<v3d::asset::Manager>& assetManager) :
+    engine_(logger, assetManager) {
     engine_.initialize(window);
     engine_.clearColour(barColour);
 

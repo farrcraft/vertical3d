@@ -5,7 +5,6 @@
 
 #include "Manager.h"
 
-#include <api/asset/loader/Font2D.h>
 #include <api/asset/loader/Gltf.h>
 #include <api/asset/loader/Jpeg.h>
 #include <api/asset/loader/Json.h>
@@ -27,15 +26,14 @@ Manager::Manager(std::string_view path, const boost::shared_ptr<v3d::log::Logger
     logger_(logger) {
     path_ = static_cast<std::string>(path);
     logger_->get()->info("Setting asset manager path to: {}", path);
-    loaders_[asset::Type::ImageJpeg] = boost::make_shared<v3d::asset::loader::Jpeg>(this, logger_);
-    loaders_[asset::Type::ImagePng] = boost::make_shared<v3d::asset::loader::Png>(this, logger_);
-    loaders_[asset::Type::ImageTga] = boost::make_shared<v3d::asset::loader::Tga>(this, logger_);
-    loaders_[asset::Type::ModelGltf] = boost::make_shared<v3d::asset::loader::Gltf>(this, logger_);
-    loaders_[asset::Type::JsonDocument] = boost::make_shared<v3d::asset::loader::Json>(this, logger_);
-    loaders_[asset::Type::AudioWav] = boost::make_shared<v3d::asset::loader::Wav>(this, logger_);
-    loaders_[asset::Type::Text] = boost::make_shared<v3d::asset::loader::Text>(this, logger_);
-    loaders_[asset::Type::Font2D] = boost::make_shared<v3d::asset::loader::Font2D>(this, logger_);
-    loaders_[asset::Type::TextureFont] = boost::make_shared<v3d::asset::loader::TextureFont>(this, logger_);
+    loaders_[asset::Type::ImageJpeg] = boost::make_shared<v3d::asset::loader::Jpeg>(logger_);
+    loaders_[asset::Type::ImagePng] = boost::make_shared<v3d::asset::loader::Png>(logger_);
+    loaders_[asset::Type::ImageTga] = boost::make_shared<v3d::asset::loader::Tga>(logger_);
+    loaders_[asset::Type::ModelGltf] = boost::make_shared<v3d::asset::loader::Gltf>(logger_);
+    loaders_[asset::Type::JsonDocument] = boost::make_shared<v3d::asset::loader::Json>(logger_);
+    loaders_[asset::Type::AudioWav] = boost::make_shared<v3d::asset::loader::Wav>(logger_);
+    loaders_[asset::Type::Text] = boost::make_shared<v3d::asset::loader::Text>(logger_);
+    loaders_[asset::Type::TextureFont] = boost::make_shared<v3d::asset::loader::TextureFont>(logger_);
 }
 
 /**
@@ -50,12 +48,8 @@ boost::shared_ptr<Loader> Manager::resolveLoader(asset::Type t) {
 
 /**
  **/
-boost::shared_ptr<Asset> Manager::load(std::string_view name, asset::Type t, bool hasPath) {
-    boost::filesystem::path assetPath;
-    // recursive asset loaders will already have a path set
-    if (!hasPath) {
-        assetPath = path_;
-    }
+boost::shared_ptr<Asset> Manager::load(std::string_view name, asset::Type t) {
+    boost::filesystem::path assetPath = path_;
     assetPath /= static_cast<std::string>(name);
 
     boost::shared_ptr<Loader> loader = resolveLoader(t);

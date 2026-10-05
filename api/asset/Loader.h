@@ -18,7 +18,6 @@
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::asset {
-class Manager;
 
 using ParameterValue = std::variant<unsigned int, float, std::string>;
 
@@ -33,13 +32,6 @@ class Loader {
      * @return Type
      **/
     Type type() const;
-
-    /**
-     * Reset any intermediate loader state
-     * Some loaders might require multiple calls to the loader for a single load operation.
-     * Use reset to clear any state used to support any individual load operation.
-    **/
-    void reset();
 
     /**
      * Load an asset
@@ -68,10 +60,9 @@ class Loader {
      *
      * @param Type t The asset type this loader provides
      **/
-    Loader(Manager* manager, Type t, const boost::shared_ptr<v3d::log::Logger>& logger);
+    Loader(Type t, const boost::shared_ptr<v3d::log::Logger>& logger);
 
     boost::shared_ptr<v3d::log::Logger> logger_;
-    Manager* manager_;
     std::map<std::string, ParameterValue> parameters_;
 
  private:

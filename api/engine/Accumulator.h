@@ -59,8 +59,8 @@ class Accumulator final {
      * The fraction of a step held but not yet drained, in [0, 1).
      *
      * Rendering between the last completed step and the one after it is the entire reason
-     * to separate simulation from drawing. Nothing reads this yet; it is here so that the
-     * app which wants it does not have to rewrite every draw call in the tree first.
+     * to separate simulation from drawing: a draw interpolates between the two states by
+     * this much.
      **/
     float alpha() const noexcept;
 

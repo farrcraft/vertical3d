@@ -1,6 +1,5 @@
 v3d_add_test(font
 	"TestMain.cxx"
-	"Font2DTest.cxx"
 	"TextureFontCacheTest.cxx"
 	"TextureTextBufferTest.cxx")
 

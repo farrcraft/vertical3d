@@ -17,9 +17,8 @@ class Image {
          * The format of the image (the number of channels)
          *
          * The value is the channel count, which is what a writer divides bpp by to get the
-         * bits in a channel. Grey is one channel: a texture atlas packed at depth 1 and a
-         * Font2D bitmap are both that, so it is a format the tree makes rather than one
-         * held open for later.
+         * bits in a channel. Grey is one channel: a texture atlas packed at depth 1 is that,
+         * so it is a format the tree makes rather than one held open for later.
          */
         enum class Format {
             Grey = 1,

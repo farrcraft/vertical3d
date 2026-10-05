@@ -108,7 +108,7 @@ const std::vector<boost::shared_ptr<Menu>>& MenuBar::panels() const noexcept {
  **/
 bool MenuBar::within(const Component& component, const glm::vec2& cursor) {
     v3d::type::geometry::Bound2D bound = component.bound();
-    return bound.intersect(cursor);
+    return bound.contains(cursor);
 }
 
 /**
@@ -116,7 +116,7 @@ bool MenuBar::within(const Component& component, const glm::vec2& cursor) {
 int MenuBar::labelAt(const glm::vec2& cursor) const {
     for (std::size_t index = 0; index < bounds_.size(); index++) {
         v3d::type::geometry::Bound2D bound = bounds_[index];
-        if (bound.intersect(cursor)) {
+        if (bound.contains(cursor)) {
             return static_cast<int>(index);
         }
     }

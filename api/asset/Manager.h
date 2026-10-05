@@ -32,7 +32,7 @@ class Manager final {
      * @param name
      * @param type
      **/
-    boost::shared_ptr<Asset> load(std::string_view name, asset::Type t, bool hasPath = false);
+    boost::shared_ptr<Asset> load(std::string_view name, asset::Type t);
 
     /**
      * Load an asset, guessing the type from its filename extension.

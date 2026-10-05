@@ -4,7 +4,7 @@ v3d_add_api_library(config
 	"SpriteRegion.h" "SpriteRegion.cpp"
 	"SpriteSheet.h" "SpriteSheet.cpp"
 	"SpriteSheets.h" "SpriteSheets.cpp"
- "Sounds.h" "Type.h")
+	"Type.h")
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
 # v3dlib_asset: Config.h names an asset::Json, and load() resolves each file it lists

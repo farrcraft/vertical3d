@@ -72,7 +72,7 @@ PipelineHandle scenePipeline(v3d::test::Headless* headless, VkDescriptorSetLayou
  **/
 void draw(v3d::test::Headless* headless, const boost::shared_ptr<RenderTarget>& target, PipelineHandle pipeline,
     VkDescriptorSet scene, Capture* capture) {
-    Frame frame(headless->context);
+    Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("scene");
     pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
     pass->scene(scene);

@@ -10,8 +10,6 @@
 
 #include "Window.h"
 
-#include <entt/entt.hpp>
-
 namespace v3d::render::realtime {
 /* The render engine.
  * This is different from the game engine.While the game engine is responsible for coordinating the game,
@@ -21,11 +19,11 @@ class Engine {
  public:
     /**
      **/
-    Engine(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry);
+    Engine(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager);
 
     /**
      **/
-    ~Engine();
+    virtual ~Engine();
 
     virtual bool initialize(const boost::shared_ptr<Window>& window);
 
@@ -52,6 +50,5 @@ class Engine {
     boost::shared_ptr<v3d::log::Logger> logger_;
     boost::shared_ptr<v3d::asset::Manager> assetManager_;
     boost::shared_ptr<Window> window_;
-    entt::registry* registry_;
 };
 };  // namespace v3d::render::realtime

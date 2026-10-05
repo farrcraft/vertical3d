@@ -57,10 +57,10 @@ const float fontSize = 15.0f * uiScale;
  **/
 Renderer::Renderer(const boost::shared_ptr<v3d::render::realtime::Window>& window,
     const boost::shared_ptr<v3d::log::Logger>& logger,
-    const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry) :
+    const boost::shared_ptr<v3d::asset::Manager>& assetManager) :
     logger_(logger),
     assetManager_(assetManager),
-    engine_(logger, assetManager, registry),
+    engine_(logger, assetManager),
     background_(background) {
     engine_.initialize(window);
     engine_.clearColour(background_);

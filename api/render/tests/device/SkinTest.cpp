@@ -115,7 +115,7 @@ boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, const e
     settings.outline = 0.05f;
 
     const Poses poses = v3d::render::realtime::poses(registry, 1.0f, meshes);
-    Frame frame(headless->context);
+    Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("lit");
     pass->target(target);
     pass->depth(true);
@@ -383,7 +383,7 @@ BOOST_AUTO_TEST_CASE(a_skinned_caster_casts_its_pose) {
     const glm::mat4 light = v3d::render::realtime::shadow::light(glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f), 1.0f);
     const Poses poses = v3d::render::realtime::poses(registry, 1.0f, meshes);
 
-    Frame frame(headless.context);
+    Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("shadow");
     pass->target(map);
     pass->depth(true);
@@ -427,7 +427,7 @@ BOOST_AUTO_TEST_CASE(a_skinned_mesh_released_in_flight_outlives_its_frame) {
     entt::registry registry;
     lay(&registry, strip);
     const Poses poses = v3d::render::realtime::poses(registry, 1.0f, meshes);
-    Frame frame(headless.context);
+    Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("lit");
     pass->target(target);
     pass->depth(true);

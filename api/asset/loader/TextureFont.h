@@ -14,7 +14,7 @@ class TextureFont final : public Loader {
  public:
     /**
      **/
-    TextureFont(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& logger);
+    TextureFont(const boost::shared_ptr<v3d::log::Logger>& logger);
 
     /**
      **/

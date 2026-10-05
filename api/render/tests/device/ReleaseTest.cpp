@@ -58,7 +58,7 @@ void draw(v3d::test::Headless* headless, const boost::shared_ptr<RenderTarget>& 
     canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(static_cast<float>(width), static_cast<float>(height)), glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f),
         glm::vec4(1.0f), texture);
 
-    Frame frame(headless->context);
+    Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("colour");
     pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
     headless->context->quads()->submit(canvas, pass.get());

@@ -16,7 +16,7 @@ namespace v3d::asset::loader {
 
 /**
  **/
-Wav::Wav(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(manager, Type::AudioWav, logger) {
+Wav::Wav(const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(Type::AudioWav, logger) {
 }
 
 /**

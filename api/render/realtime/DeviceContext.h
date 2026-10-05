@@ -17,8 +17,6 @@
 #include <api/render/realtime/vulkan/renderer/Quad.h>
 #include <api/render/realtime/vulkan/renderer/World.h>
 
-#include "Context.h"
-
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::render::realtime {
@@ -36,7 +34,7 @@ namespace v3d::render::realtime {
  * otherwise pay two pipeline compiles and a vertex buffer per frame in flight for nothing, and
  * a context built before its destination is described has nothing to build them against yet.
  **/
-class DeviceContext : public Context {
+class DeviceContext {
  public:
     /**
      * @param logger
@@ -52,7 +50,7 @@ class DeviceContext : public Context {
 
     /**
      **/
-    ~DeviceContext() override;
+    virtual ~DeviceContext();
 
     /**
      * @return the device backing the context

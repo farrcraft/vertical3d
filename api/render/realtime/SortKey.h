@@ -18,8 +18,8 @@ namespace v3d::render::realtime {
  * it whatever pipeline or material either of them uses. Within a layer, grouping by
  * pipeline and then material is what lets the recorder merge adjacent items.
  *
- * Nothing sorts yet - the recorder walks each pass in submission order, per ADR-0004 -
- * so filling the key in is a caller's obligation that nothing enforces.
+ * A pass is recorded in submission order unless Pass::sort() asks for key order, and
+ * filling the key in is a caller's obligation that nothing enforces.
  **/
 struct SortKey final {
     /**

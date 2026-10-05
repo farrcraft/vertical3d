@@ -26,13 +26,6 @@ BOOST_AUTO_TEST_CASE(aabbox_test) {
     glm::vec3 max_check = box.max();
     BOOST_CHECK_EQUAL((maximum == max_check), true);
 
-    // test box origin
-    // note origin() returns max - min, which is the box's size rather than its origin
-    glm::vec3 origin = box.origin();
-    BOOST_CHECK_EQUAL(origin[0], 5.0f);
-    BOOST_CHECK_EQUAL(origin[1], 11.0f);
-    BOOST_CHECK_EQUAL(origin[2], 17.0f);
-
     // test setting box extents
     glm::vec3 min_extent(3.0f, 9.0f, 11.0f);
     glm::vec3 max_extent(11.0f, 17.0f, 23.0f);

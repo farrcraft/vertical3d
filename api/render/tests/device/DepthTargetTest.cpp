@@ -95,7 +95,7 @@ std::vector<float> drawDepth(v3d::test::Headless* headless, const boost::shared_
     Buffer buffer(headless->device, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertices.size() * sizeof(float));
     buffer.write(vertices.data(), vertices.size() * sizeof(float));
 
-    Frame frame(headless->context);
+    Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("shadow");
     pass->target(target);
     pass->depth(true);

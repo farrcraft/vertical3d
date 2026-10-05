@@ -11,10 +11,9 @@
 namespace v3d::render::realtime {
 /**
  **/
-Engine::Engine(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry) :
+Engine::Engine(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager) :
     logger_(logger),
-    assetManager_(assetManager),
-    registry_(registry) {
+    assetManager_(assetManager) {
 }
 
 /**

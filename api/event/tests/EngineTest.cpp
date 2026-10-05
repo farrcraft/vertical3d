@@ -12,9 +12,8 @@
 #include <boost/make_shared.hpp>
 
 /**
- * The replacement for CommandDirectory: the engine resolves contexts by name, routes a
- * source event through its mappers, and dispatches a destination event by name for callers
- * that hold a string rather than a resolved event.
+ * The replacement for CommandDirectory: the engine resolves contexts by name and routes a
+ * source event through its mappers.
  **/
 namespace {
 /**
@@ -51,28 +50,6 @@ BOOST_AUTO_TEST_CASE(engine_context_test) {
 
     // a different name to a different one
     BOOST_CHECK(engine.resolveContext("mouse") != keyboard);
-}
-
-BOOST_AUTO_TEST_CASE(engine_dispatch_test) {
-    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    v3d::event::Engine engine(dispatcher);
-
-    Recorder recorder;
-    dispatcher->sink<v3d::event::Event>().connect<&Recorder::handle>(recorder);
-
-    // dispatching by name resolves the context and builds the event, so a caller holding
-    // two strings reaches the same sink a resolved Event would
-    engine.dispatch("ui", "quit");
-    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1u);
-    BOOST_CHECK_EQUAL(recorder.events_[0].name(), "quit");
-    BOOST_CHECK_EQUAL(recorder.events_[0].context()->name(), "ui");
-    BOOST_CHECK(!recorder.events_[0].data());
-
-    // and it can carry the parameter the old one passed as a string
-    engine.dispatch("ui", "setMaxScore", 11);
-    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 2u);
-    BOOST_REQUIRE(recorder.events_[1].data());
-    BOOST_CHECK_EQUAL(std::get<int>(recorder.events_[1].data().get()), 11);
 }
 
 BOOST_AUTO_TEST_CASE(engine_mapping_test) {

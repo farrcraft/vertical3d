@@ -231,7 +231,7 @@ boost::shared_ptr<v3d::image::Image> drawShadowed(v3d::test::Headless* headless,
 
     // the lit pass is made first, as an engine's colour pass is, and reads the map, so the
     // frame records the shadow pass ahead of it
-    Frame frame(headless->context);
+    Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("lit");
     boost::shared_ptr<Pass> casting = frame.pass("shadow");
     casting->target(map);
@@ -306,7 +306,7 @@ BOOST_AUTO_TEST_CASE(a_lit_entity_is_drawn_and_silent) {
     // the frame is built before it is begun, as an engine builds one during its tick: a scene
     // waits for its slot to be free, and a begun frame's fence is not signalled until it is
     // submitted
-    Frame frame(headless.context);
+    Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("lit");
     pass->target(target);
     pass->depth(true);
@@ -419,7 +419,7 @@ BOOST_AUTO_TEST_CASE(a_caster_is_drawn_into_the_shadow_map_at_its_depth) {
 
     const glm::mat4 light = v3d::render::realtime::shadow::light(glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f), 1.0f);
 
-    Frame frame(headless.context);
+    Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("shadow");
     pass->target(map);
     pass->depth(true);
@@ -566,7 +566,7 @@ BOOST_AUTO_TEST_CASE(retcons_scene_is_drawn_and_silent) {
     VkDescriptorSet sceneSet = lit.scene(v3d::render::realtime::pack(settings, light, 1.0f / static_cast<float>(mapSize)),
         headless.context->quads()->depthTexture(*map));
 
-    Frame frame(headless.context);
+    Frame frame;
     boost::shared_ptr<Pass> post = frame.pass("grade");
     post->target(output);
     post->reads(scene);
@@ -650,7 +650,7 @@ BOOST_AUTO_TEST_CASE(a_model_is_drawn_a_part_at_a_time) {
     LitSettings settings;
     settings.outline = 0.0f;
 
-    Frame frame(headless.context);
+    Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("lit");
     pass->target(target);
     pass->depth(true);
@@ -728,7 +728,7 @@ BOOST_AUTO_TEST_CASE(world_quads_are_hidden_by_a_lit_scene) {
     ground.quad({glm::vec3(-8.0f, -1.0f, -8.0f), glm::vec3(8.0f, -1.0f, -8.0f), glm::vec3(8.0f, -1.0f, 8.0f),
         glm::vec3(-8.0f, -1.0f, 8.0f)}, glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
 
-    Frame frame(headless.context);
+    Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("lit");
     pass->target(target);
     pass->depth(true);
@@ -791,7 +791,7 @@ BOOST_AUTO_TEST_CASE(the_light_has_a_colour) {
         settings.outline = 0.0f;
         settings.colour = colour;
 
-        Frame frame(headless.context);
+        Frame frame;
         boost::shared_ptr<Pass> pass = frame.pass("lit");
         pass->target(target);
         pass->depth(true);
@@ -889,7 +889,7 @@ BOOST_AUTO_TEST_CASE(rain_falls_in_a_lit_scene) {
         v3d::render::realtime::WorldCanvas drops;
         order.into(&drops);
 
-        Frame frame(headless.context);
+        Frame frame;
         boost::shared_ptr<Pass> pass = frame.pass("lit");
         pass->target(target);
         pass->depth(true);

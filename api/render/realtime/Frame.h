@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include "Context.h"
 #include "Pass.h"
 
 #include <cstddef>
@@ -25,10 +24,6 @@ namespace v3d::render::realtime {
  **/
 class Frame {
  public:
-    /**
-     **/
-    explicit Frame(const boost::shared_ptr<Context>& context);
-
     /**
      * The pass of that name, added to the end of the list if the frame has none.
      * @return the pass, which stays valid until the frame is destroyed
@@ -72,17 +67,11 @@ class Frame {
     static std::vector<std::size_t> order(const std::vector<Node>& nodes);
 
     /**
-     * @return the context the frame is drawn against
-     **/
-    boost::shared_ptr<Context> context() const noexcept;
-
-    /**
      * Drop what every pass has collected, keeping the passes themselves.
      **/
     void reset() noexcept;
 
  private:
-    boost::shared_ptr<Context> context_;
     std::vector<boost::shared_ptr<Pass>> passes_;
 };
 };  // namespace v3d::render::realtime

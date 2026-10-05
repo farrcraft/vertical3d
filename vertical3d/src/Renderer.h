@@ -54,7 +54,7 @@ class Renderer final {
      **/
     Renderer(const boost::shared_ptr<v3d::render::realtime::Window>& window,
         const boost::shared_ptr<v3d::log::Logger>& logger,
-        const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry);
+        const boost::shared_ptr<v3d::asset::Manager>& assetManager);
 
     /**
      **/

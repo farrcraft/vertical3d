@@ -17,7 +17,7 @@ namespace v3d::asset::loader {
 
 /**
  **/
-Text::Text(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(manager, Type::Text, logger) {
+Text::Text(const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(Type::Text, logger) {
 }
 
 /**

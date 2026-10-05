@@ -13,9 +13,8 @@ of them reaches the api as `../../../api/`.
 
 ## Meshes
 
-`api/brep` holds two mesh representations. `BRep` is half-edge and is what the editor models
-with. `WingedEdgeBRep` is winged-edge and has no consumer yet. `Vertex`, `Face` and `Index` are
-common to both.
+`api/brep` holds one mesh representation, `BRep`, which is half-edge and is what the editor
+models with.
 
 A mesh names its own parts with `brep::Index`, one `uint32_t` for a vertex, a half edge or a
 face, since all three are offsets into a `BRep`'s arrays. `INVALID_ID` is `1 << 31`, and **its

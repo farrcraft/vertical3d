@@ -566,8 +566,8 @@ std::string readerFor(const cgltf_image& image) {
 
 /**
  **/
-Gltf::Gltf(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& logger) :
-    Loader(manager, Type::ModelGltf, logger) {
+Gltf::Gltf(const boost::shared_ptr<v3d::log::Logger>& logger) :
+    Loader(Type::ModelGltf, logger) {
 }
 
 /**

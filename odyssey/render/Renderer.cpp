@@ -67,7 +67,7 @@ Renderer::Renderer(const boost::shared_ptr<v3d::render::realtime::Window>& windo
     const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry) :
     logger_(logger),
     registry_(registry),
-    engine_(logger, assetManager, registry) {
+    engine_(logger, assetManager) {
     engine_.initialize(window);
     engine_.clearColour(clearColour);
 

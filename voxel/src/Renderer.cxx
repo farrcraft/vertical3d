@@ -103,19 +103,19 @@ constexpr glm::vec3 palette[materialCount] = {
 /**
  **/
 Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_ptr<v3d::render::realtime::Window>& window,
-    const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry) :
+    const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager) :
     scene_(scene),
     logger_(logger),
-    engine_(logger, assetManager, registry),
+    engine_(logger, assetManager),
     drawnChunks_(0),
     meshedChunks_(0),
     debug_(false) {
     engine_.initialize(window);
     engine_.clearColour(sky);
 
-    context_ = boost::dynamic_pointer_cast<v3d::render::realtime::DeviceContext>(engine_.context());
+    context_ = engine_.context();
     if (!context_) {
-        throw std::runtime_error("The voxel renderer needs a context on a device to build its pipeline against");
+        throw std::runtime_error("The voxel renderer needs a device to build its pipeline against, and the render engine did not start");
     }
 
     createLayout();

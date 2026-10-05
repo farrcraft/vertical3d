@@ -130,23 +130,6 @@ float Plane::operator[] (unsigned int i) const {
 }
 
 
-// ray intersection test
-bool Plane::intersect(const glm::vec3 & start, const glm::vec3 & direction, glm::vec3 * hitPoint) const {
-    float denom = glm::dot(normal(), direction);
-    if (denom == 0.0) {  // ray and plane are parallel
-        return false;
-    }
-    float tval = (distance() - (glm::dot(normal(), start))) / denom;
-    if (tval >= 0.0) {  // intersection isn't behind ray
-        glm::vec3 hit = start + direction * tval;
-        hitPoint->x = hit.x;
-        hitPoint->y = hit.y;
-        hitPoint->z = hit.z;
-        return true;
-    }
-    return false;
-}
-
 // tested - seems ok
 bool Plane::intersectEdge(const glm::vec3 & A, const glm::vec3 & B, glm::vec3 * hitPoint) const {
     glm::vec3 direction = B - A;

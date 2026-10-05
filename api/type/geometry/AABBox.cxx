@@ -34,11 +34,6 @@ void AABBox::max(const glm::vec3& v) {
     max_ = v;
 }
 
-glm::vec3 AABBox::origin() const {
-    return (max_ - min_);
-}
-
-
 void AABBox::vertices(glm::vec3* v) const {
     // calculate the remaining vertices of the box from the two extents.
     v[0][0] = min_[0];

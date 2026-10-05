@@ -89,7 +89,7 @@ BOOST_AUTO_TEST_CASE(a_cleared_pass_is_silent_and_is_the_colour_it_cleared_to) {
 
     boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
 
-    Frame frame(headless.context);
+    Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("colour");
     pass->clearColour(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
 
@@ -150,7 +150,7 @@ BOOST_AUTO_TEST_CASE(a_drawn_quad_is_silent_and_is_the_committed_picture) {
     // pixel that should have been background and is not
     canvas.rect(glm::vec2(16.0f, 8.0f), glm::vec2(48.0f, 24.0f), glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
 
-    Frame frame(headless.context);
+    Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("colour");
     pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
@@ -225,7 +225,7 @@ BOOST_AUTO_TEST_CASE(a_textured_quad_is_the_texture_that_was_uploaded) {
     canvas.rect(glm::vec2(16.0f, 8.0f), glm::vec2(48.0f, 24.0f),
         glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), uploaded);
 
-    Frame frame(headless.context);
+    Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("colour");
     pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
@@ -270,7 +270,7 @@ BOOST_AUTO_TEST_CASE(a_suballocated_device_clears_the_same_way) {
 
     boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
 
-    Frame frame(headless.context);
+    Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("colour");
     pass->clearColour(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
 

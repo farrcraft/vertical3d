@@ -71,7 +71,7 @@ bool Controller::initialize() {
     scene_ = boost::make_shared<Scene>();
 
     boost::shared_ptr<v3d::render::realtime::Window> win = window();
-    renderer_ = boost::make_shared<Renderer>(scene_, win, logger_, assetManager_, &registry_);
+    renderer_ = boost::make_shared<Renderer>(scene_, win, logger_, assetManager_);
     renderer_->ui(vgui_);
 
     // set the scene size according to the window canvas

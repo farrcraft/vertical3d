@@ -39,7 +39,7 @@ BOOST_AUTO_TEST_SUITE(frame_test)
  * A frame starts with no passes at all - the engine adds the one it draws through.
  **/
 BOOST_AUTO_TEST_CASE(frame_starts_empty) {
-    v3d::render::realtime::Frame frame(boost::make_shared<v3d::render::realtime::Context>());
+    v3d::render::realtime::Frame frame;
 
     BOOST_CHECK_EQUAL(frame.passes().size(), 0);
 }
@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE(frame_starts_empty) {
  * what lets several parts of an app submit into one pass without co-ordinating.
  **/
 BOOST_AUTO_TEST_CASE(passes_are_created_once_and_kept_in_order) {
-    v3d::render::realtime::Frame frame(boost::make_shared<v3d::render::realtime::Context>());
+    v3d::render::realtime::Frame frame;
 
     boost::shared_ptr<v3d::render::realtime::Pass> scene = frame.pass("scene");
     boost::shared_ptr<v3d::render::realtime::Pass> overlay = frame.pass("overlay");
@@ -106,7 +106,7 @@ BOOST_AUTO_TEST_CASE(items_keep_submission_order) {
  * because the engine builds them once and draws with them every frame after that.
  **/
 BOOST_AUTO_TEST_CASE(reset_empties_the_queues_and_keeps_the_passes) {
-    v3d::render::realtime::Frame frame(boost::make_shared<v3d::render::realtime::Context>());
+    v3d::render::realtime::Frame frame;
 
     boost::shared_ptr<v3d::render::realtime::Pass> pass = frame.pass("colour");
     pass->clearColour(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
@@ -249,7 +249,7 @@ BOOST_AUTO_TEST_CASE(sorting_a_pass_is_stable) {
  * frame - which is what a game drawing an overlay over a 3D world is.
  **/
 BOOST_AUTO_TEST_CASE(sorting_is_configured_per_pass) {
-    v3d::render::realtime::Frame frame(boost::make_shared<v3d::render::realtime::Context>());
+    v3d::render::realtime::Frame frame;
 
     boost::shared_ptr<v3d::render::realtime::Pass> scene = frame.pass("scene");
     scene->depth(true);
@@ -317,7 +317,7 @@ BOOST_AUTO_TEST_CASE(a_cycle_throws) {
  * ordered() is order() over the frame's passes, and an empty target is nothing to read.
  **/
 BOOST_AUTO_TEST_CASE(a_frame_with_no_reads_records_as_created) {
-    Frame frame(boost::make_shared<v3d::render::realtime::Context>());
+    Frame frame;
     frame.pass("first");
     frame.pass("second");
     frame.pass("second")->reads(boost::shared_ptr<v3d::render::realtime::vulkan::frame::RenderTarget>());

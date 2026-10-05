@@ -323,7 +323,7 @@ because neither is simulation and neither wants to run twice on a slow frame.
   buffer, so the copy constructor is deleted rather than freeing that buffer twice - a
   consumer holds a `boost::shared_ptr<Image>`, and `image::crop()` is how a copy is actually
   made. `format()` follows the depth wherever the depth is set, and `Format::Grey` is one
-  channel: a texture atlas at depth 1 and a `Font2D` bitmap are both that. Every writer
+  channel: a texture atlas at depth 1 is that. Every writer
   encodes one - png as `GRAY`, tga as type 3, jpeg as `JCS_GRAYSCALE`, bmp as 8 bit indices
   into a 256 entry ramp. **The readers do not agree about what comes back**: png and bmp hand
   back RGB, because one asks libpng for `gray_to_rgb` and the other resolves indices through

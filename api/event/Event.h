@@ -27,7 +27,6 @@ class Event {
     Event(const std::string& name, const boost::shared_ptr<Context>& context);
     explicit Event(const std::string& name);
 
-    bool operator() (const Event& lhs, const Event& rhs) const;
     /**
      * Order events by identity and then by state, so that a binding on one edge and a
      * binding on Any are distinct keys in a Mapper rather than colliding.

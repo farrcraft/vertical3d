@@ -51,11 +51,6 @@ class AABBox final {
         * @param max the maximum extents of the bounding box.
         */
     void extents(const glm::vec3 & min, const glm::vec3 & max);
-    /**
-        * Get the origin of the bounding box.
-        * @return the origin of the bounding box.
-        */
-    glm::vec3 origin() const;
 
     /**
         * Extend bounds to include a point.

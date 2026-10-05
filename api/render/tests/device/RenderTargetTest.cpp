@@ -78,7 +78,7 @@ std::vector<unsigned char> drawFrame(v3d::test::Headless* headless, const boost:
     canvas.rect(glm::vec2(0.0f), glm::vec2(width, height), glm::vec2(0.0f), glm::vec2(1.0f), glm::vec4(1.0f),
         handles[slots->previous()]);
 
-    Frame frame(headless->context);
+    Frame frame;
     boost::shared_ptr<Pass> reader = frame.pass("reader");
     reader->target(output);
     reader->reads(slots);
@@ -185,7 +185,7 @@ BOOST_AUTO_TEST_CASE(a_pipeline_for_another_format_throws) {
     item.vertexBuffer = buffer.handle();
     item.vertices = 3;
 
-    Frame frame(headless.context);
+    Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("mismatched");
     pass->target(target);
     pass->submit(item);

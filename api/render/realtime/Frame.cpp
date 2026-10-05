@@ -17,12 +17,6 @@ namespace v3d::render::realtime {
 
 /**
  **/
-Frame::Frame(const boost::shared_ptr<Context>& context) :
-    context_(context) {
-}
-
-/**
- **/
 boost::shared_ptr<Pass> Frame::pass(const std::string& name) {
     for (const boost::shared_ptr<Pass>& pass : passes_) {
         if (pass->name() == name) {
@@ -100,12 +94,6 @@ std::vector<std::size_t> Frame::order(const std::vector<Node>& nodes) {
         order.push_back(next);
     }
     return order;
-}
-
-/**
- **/
-boost::shared_ptr<Context> Frame::context() const noexcept {
-    return context_;
 }
 
 /**

@@ -14,7 +14,7 @@ class Tga final : public Loader {
  public:
     /**
      **/
-    Tga(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& logger);
+    Tga(const boost::shared_ptr<v3d::log::Logger>& logger);
 
     /**
      **/

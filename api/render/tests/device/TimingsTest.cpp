@@ -53,7 +53,7 @@ BOOST_AUTO_TEST_CASE(each_pass_is_timed_under_its_name) {
     described.extent = target->extent();
     described.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-    Frame frame(headless.context);
+    Frame frame;
     frame.pass("first")->clearColour(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
     const boost::shared_ptr<Pass> second = frame.pass("second");
     second->keepColour();
@@ -95,7 +95,7 @@ BOOST_AUTO_TEST_CASE(a_frame_recorded_without_timings_times_nothing) {
     described.extent = target->extent();
     described.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-    Frame frame(headless.context);
+    Frame frame;
     frame.pass("colour");
     for (uint32_t index = 0; index < headless.context->ring()->framesInFlight() + 1; ++index) {
         VkCommandBuffer commands = headless.context->ring()->begin();

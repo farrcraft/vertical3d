@@ -14,7 +14,7 @@ class Jpeg final : public Loader {
  public:
     /**
      **/
-    Jpeg(Manager* manager, const boost::shared_ptr<v3d::log::Logger> &logger);
+    Jpeg(const boost::shared_ptr<v3d::log::Logger> &logger);
 
     /**
      **/

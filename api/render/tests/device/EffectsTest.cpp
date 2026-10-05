@@ -177,7 +177,7 @@ boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, const e
 
     boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless->device, headless->context->ring(),
         width, height, colourFormat, false);
-    Frame frame(headless->context);
+    Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("world");
     pass->target(target);
     pass->clearColour(glm::vec4(0.15f, 0.2f, 0.3f, 1.0f));

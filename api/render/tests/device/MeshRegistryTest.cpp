@@ -271,7 +271,7 @@ BOOST_AUTO_TEST_CASE(a_mesh_released_in_flight_outlives_its_frame) {
         .colourFormats({});
     const PipelineHandle pipeline = headless.context->resources()->add(builder.build(headless.context->pipelineCache()));
 
-    Frame frame(headless.context);
+    Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("depth");
     pass->target(target);
     pass->depth(true);

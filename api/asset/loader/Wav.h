@@ -14,7 +14,7 @@ class Wav final : public Loader {
  public:
     /**
      **/
-    Wav(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& logger);
+    Wav(const boost::shared_ptr<v3d::log::Logger>& logger);
 
     /**
      **/

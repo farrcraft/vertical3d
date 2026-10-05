@@ -17,7 +17,7 @@ namespace v3d::asset::loader {
 
 /**
  **/
-TextureFont::TextureFont(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(manager, Type::TextureFont, logger) {
+TextureFont::TextureFont(const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(Type::TextureFont, logger) {
 }
 
 /**

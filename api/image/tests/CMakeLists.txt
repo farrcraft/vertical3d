@@ -4,7 +4,6 @@ v3d_add_test(image
 	"ImageTest.cxx"
 	"ImageReaderTest.cxx"
 	"ImageWriterTest.cxx"
-	"TextureTest.cxx"
 	"TextureAtlasTest.cxx"
 	"CropTest.cxx")
 

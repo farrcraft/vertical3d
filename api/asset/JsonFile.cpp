@@ -3,12 +3,12 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
 **/
 
-#include"JsonFile.h"
+#include "JsonFile.h"
 
 #include <cstdio>
 #include <string>
 
-namespace v3d::asset::kind {
+namespace v3d::asset {
 
 /**
  **/
@@ -108,4 +108,4 @@ std::size_t JsonFile::read(char* data, std::size_t size) {
     return nread;
 }
 
-};  // namespace v3d::asset::kind
+};  // namespace v3d::asset

@@ -38,7 +38,6 @@ BOOST_AUTO_TEST_CASE(manager_loader_per_registered_type_test) {
         v3d::asset::Type::JsonDocument,
         v3d::asset::Type::AudioWav,
         v3d::asset::Type::Text,
-        v3d::asset::Type::Font2D,
         v3d::asset::Type::TextureFont
     };
 
@@ -98,8 +97,7 @@ BOOST_AUTO_TEST_CASE(manager_unknown_extension_test) {
 }
 
 /**
- * A name is resolved against the manager's own path unless the caller says it is already
- * resolved, which is what a loader recursing into a second asset passes.
+ * A name is resolved against the manager's own path.
  **/
 BOOST_AUTO_TEST_CASE(manager_path_resolution_test) {
     auto assets = manager("data");
@@ -107,7 +105,6 @@ BOOST_AUTO_TEST_CASE(manager_path_resolution_test) {
 
     auto rooted = manager("nowhere");
     BOOST_TEST(!rooted->load("document.json", v3d::asset::Type::JsonDocument));
-    BOOST_TEST(static_cast<bool>(rooted->load("data/document.json", v3d::asset::Type::JsonDocument, true)));
 }
 
 /**

@@ -171,6 +171,10 @@ Pure deletion, plus the one change a deletion makes safe. Nothing that draws or 
 
 B3, B4, and B3's consequence for `dag::Transform`.
 
+**Closed.** `api/dag` is `Node` and `Transform`, and `Transform` is not virtual. Editor.md and the
+clang-tidy note follow; Conventions.md's example of a small directory that wants nothing done to it
+is `api/grid` now.
+
 Delete `WingedEdgeBRep`, `Edge` and their tests (938 lines), and the seven empty `dag` classes.
 With the only override gone, `dag::Transform`'s members become non-virtual, which closes the door
 ADR-0013 made `translation(v)` a setter to close. Whether `Node` and `Transform` then stay a
@@ -180,6 +184,10 @@ them.
 #### Step 7 — font, image, asset and type lose the OpenGL-era stack and the wrong helpers
 
 T3, D12, the dead half of T6, and the asset half of A8.
+
+**Closed.** `TextBuffer` stays rather than folding into `TextureTextBuffer`: `Canvas::text` takes
+it, and it is the seam that lets render draw text and `CanvasTest` build some without FreeType.
+`JsonFile` is `v3d::asset::JsonFile`. The ui's five `intersect` calls are `contains`.
 
 Delete `font::Font2D`, `BitmapFont`, `BitmapTextBuffer`, `image::Texture`, `asset::kind::Font2D`,
 `asset::loader::Font2D`, `asset::Type::Font2D` and `asset::Cache`. Remove `Loader::reset`,
@@ -196,11 +204,16 @@ and `intersect` goes.
 
 The dead items of E9 and R7, and U7's unused include.
 
+**Closed.** `Frame` held its context and nothing read it, so both went and `realtime::Context` with
+them; `Engine3D::context()` is a `DeviceContext`. The unread registry went from the render engine's
+constructor and from the four app renderers that only passed it on. **Moved to step 24:** the
+unread logger on Quad, Line and World, since that step rewrites their constructors.
+
 `event::Engine::dispatch`, `Event::operator()`, `api/config/Sounds.h`, `realtime::Context` (so
 `Engine3D::context()` returns a `DeviceContext` and voxel's downcast goes), `realtime::Engine`'s
 unread `registry_` (and either fold the base into `Engine3D` or give it a virtual destructor),
-the logger field on Quad, Line and World, `Component.h`'s include of `style/Theme.h`, and the stale
-comments the review names (`Accumulator.h:62`, `SortKey.h:21`).
+`Component.h`'s include of `style/Theme.h`, and the stale comments the review names
+(`Accumulator.h:62`, `SortKey.h:21`).
 
 ### Phase 3 — The dependency graph
 
@@ -378,7 +391,7 @@ Extract a `StreamRing` keyed by the in-flight ring's frame, which resets when it
 Quad, Line and World hold one, and `Engine3D::endFrame()`'s list goes, along with the manual
 `world.endFrame()` in `LitSceneTest`. `Buffer::grow` retires the old allocation through the ring
 rather than waiting for idle. The shared scissor and draw-item helpers come out in the same
-commit. Test: a `World` the app built, drawn for many frames, holds a constant buffer count.
+commit, and so does the logger the three renderers are handed and never read. Test: a `World` the app built, drawn for many frames, holds a constant buffer count.
 
 #### Step 25 — Layouts, barriers, sort keys and the rest
 

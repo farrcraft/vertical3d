@@ -55,7 +55,6 @@ class Plane {
     float distance(const glm::vec3 & point) const;
     int classify(const AABBox & aabb) const;
     int classify(const glm::vec3 & point) const;
-    bool intersect(const glm::vec3 & start, const glm::vec3 & direction, glm::vec3 * hitPoint) const;
     bool intersectEdge(const glm::vec3 & A, const glm::vec3 & B, glm::vec3 * hitPoint) const;
     void normalize(void);
 

@@ -23,17 +23,17 @@ class Transform {
 
     void scale(const glm::vec3 & s);
     void rotation(const glm::quat & r);
-    virtual void translation(const glm::vec3 & t);
+    void translation(const glm::vec3 & t);
 
     glm::vec3 scale(void) const;
     glm::quat rotation(void) const;
-    virtual glm::vec3 translation(void) const;
+    glm::vec3 translation(void) const;
 
     /**
      * Move by an offset, rather than to a position - what a drag of a translate
      * manipulator does, where the gesture measures a delta and not a destination.
      **/
-    virtual void translate(const glm::vec3 & offset);
+    void translate(const glm::vec3 & offset);
 
     /**
      * @return the composition, translation * rotation * scale.

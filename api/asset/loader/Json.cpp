@@ -7,7 +7,7 @@
 
 #include <api/asset/Type.h>
 #include <api/asset/kind/Json.h>
-#include <api/asset/kind/JsonFile.h>
+#include <api/asset/JsonFile.h>
 
 #include <iostream>
 #include <string>
@@ -19,7 +19,7 @@
 namespace v3d::asset {
 /**
  **/
-loader::Json::Json(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(manager, Type::JsonDocument, logger) {
+loader::Json::Json(const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(Type::JsonDocument, logger) {
 }
 
 /**
@@ -28,7 +28,7 @@ boost::shared_ptr<Asset> loader::Json::load(std::string_view name) {
     boost::shared_ptr<v3d::asset::kind::Json> asset;
     try {
         logger_->get()->info("Looking for json asset at: {}", name);
-        kind::JsonFile file(static_cast<std::string>(name).c_str(), "r");
+        JsonFile file(static_cast<std::string>(name).c_str(), "r");
         boost::json::stream_parser parser;
         boost::system::error_code err;
         do {

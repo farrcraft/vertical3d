@@ -22,8 +22,8 @@
 #  - misc-no-recursion reports a menu and its submenus, a viewport layout and its children, and
 #    a json value and its members. Each is a tree whose depth is a document's, and recursion is
 #    what walking one looks like.
-#  - misc-multiple-inheritance reports BRep and WingedEdgeBRep, which are a dag::Node and a
-#    dag::Transform. That is ADR-0013, not an oversight.
+#  - misc-multiple-inheritance reports BRep, which is a dag::Node and a dag::Transform. That is
+#    ADR-0013, not an oversight.
 #  - readability-make-member-function-const reports Menu::next and Menu::previous, which move
 #    the active item of the level they lock out of a weak_ptr. Nothing in *this* changes, so
 #    the check is right about the physics and wrong about the meaning.

@@ -42,23 +42,6 @@ void Engine::handleSourceEvent(const Event& source) {
 
 /**
  **/
-void Engine::dispatch(const std::string_view& context, const std::string& name) {
-    Event event(name, resolveContext(context));
-    event.type(Type::Destination);
-    dispatcher_->trigger(event);
-}
-
-/**
- **/
-void Engine::dispatch(const std::string_view& context, const std::string& name, const EventData& data) {
-    Event event(name, resolveContext(context));
-    event.type(Type::Destination);
-    event.data(data);
-    dispatcher_->trigger(event);
-}
-
-/**
- **/
 boost::shared_ptr<Context> Engine::resolveContext(const std::string_view& name) {
     for (auto it = contexts_.begin(); it != contexts_.end(); it++) {
         if ((*it)->name() == name) {

@@ -30,45 +30,14 @@ BOOST_AUTO_TEST_CASE(bound2d_test) {
     glm::vec2 size2 = bound2.size();
     BOOST_CHECK_EQUAL((size == size2), true);
 
-    // test expand
-    bound.expand(10.0f);
-    size = bound.size();
-    BOOST_CHECK_EQUAL(size[0], 20.0f);
-    BOOST_CHECK_EQUAL(size[1], 30.0f);
-    position = bound.position();
-    BOOST_CHECK_EQUAL(position[0], 12.0f);
-    BOOST_CHECK_EQUAL(position[1], 15.0f);
-
-    // test shrink
-    bound.shrink(5.0f);
-    size = bound.size();
-    BOOST_CHECK_EQUAL(size[0], 15.0f);
-    BOOST_CHECK_EQUAL(size[1], 25.0f);
-    position = bound.position();
-    BOOST_CHECK_EQUAL(position[0], 17.0f);
-    BOOST_CHECK_EQUAL(position[1], 20.0f);
-
-    // test intersect
-    glm::vec2 point(25.0f, 35.0f);
-    bool inside = bound.intersect(point);
-    BOOST_CHECK_EQUAL(inside, true);
-    point = glm::vec2(10.0f, 5.0f);
-    inside = bound.intersect(point);
-    BOOST_CHECK_EQUAL(inside, false);
-
-    // test addition
-    bound += bound2;
-    size = bound.size();
-    BOOST_CHECK_EQUAL(size[0], 25.0f);
-    BOOST_CHECK_EQUAL(size[1], 45.0f);
-    position = bound.position();
-    BOOST_CHECK_EQUAL(position[0], 17.0f);
-    BOOST_CHECK_EQUAL(position[1], 20.0f);
+    // test contains
+    BOOST_CHECK_EQUAL(bound.contains(glm::vec2(7.0f, 15.0f)), true);
+    BOOST_CHECK_EQUAL(bound.contains(glm::vec2(1.0f, 5.0f)), false);
 }
 
 /**
  * Two bounds overlap unless they are apart on at least one axis, and sharing exactly an edge
- * counts as overlapping, the same closed edge contains() and intersect() use.
+ * counts as overlapping, the same closed edge contains() uses.
  **/
 BOOST_AUTO_TEST_CASE(bound2d_overlaps_test) {
     const v3d::type::geometry::Bound2D bound(0.0f, 0.0f, 10.0f, 10.0f);

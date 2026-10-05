@@ -30,7 +30,7 @@
 class PongRenderer final {
  public:
     PongRenderer(const boost::shared_ptr<v3d::render::realtime::Window>& window, const boost::shared_ptr<v3d::log::Logger>& logger,
-        const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry);
+        const boost::shared_ptr<v3d::asset::Manager>& assetManager);
 
     /**
      * @param statistics what the loop measured about the frame being drawn
