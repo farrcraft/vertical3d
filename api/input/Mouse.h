@@ -8,7 +8,14 @@
 #include "Device.h"
 #include "MouseState.h"
 
+#include <string_view>
+
 namespace v3d::input {
+
+/**
+ * Whether a name is one a mouse button is bound by - "left", "middle", "right", "x1", "x2".
+ **/
+bool isButtonName(std::string_view name);
 /**
  **/
 class Mouse : public Device {

@@ -7,6 +7,7 @@
 
 #include <api/asset/Manager.h>
 #include <api/config/Config.h>
+#include <api/event/Bindings.h>
 #include <api/event/Engine.h>
 #include <api/input/Engine.h>
 #include <api/log/Logger.h>
@@ -182,17 +183,8 @@ class Engine {
     Statistics statistics_;
 
     /**
-     * Point a command at a different key than the config bound it to.
-     *
-     * The bindings are held as one mapper named "global" that has no way to be edited in
-     * place, so this rebuilds it from the config document with the overrides applied.
-     * That keeps one code path reading a binding rather than two that could disagree, and
-     * it is why the override is remembered rather than written straight into the mapper:
-     * the next rebind rebuilds from config again and would otherwise lose this one.
-     *
-     * Only the source's name changes. Whatever context and edge the config bound the
-     * command under it keeps, so rebinding a key that fires on press does not silently
-     * start firing on release too.
+     * Point a command at a different key than the config bound it to - event::Bindings says
+     * how, and keeps the context and the edge the config gave it.
      *
      * What is not done here is remembering it across runs. A binding lives as long as the
      * process unless the app writes it somewhere, which engine::userPath() says where.
@@ -200,7 +192,7 @@ class Engine {
      * @param command the destination the binding drives, as "context::name"
      * @param key the source event name to bind it to, which for a keyboard binding is a
      *        key name from api/input/Keyboard.cpp's table
-     * @return whether the bindings were rebuilt
+     * @return whether the bindings were rebuilt, which is false with no binding config
      **/
     bool rebind(const std::string& command, const std::string& key);
 
@@ -220,22 +212,8 @@ class Engine {
       **/
      void handleEvent(const SDL_Event& event);
 
-     bool registerEventMappings();
-
-     /**
-      * One end of a binding: the name and context it fires under, plus what that end
-      * alone carries - the edge a source matches, and the parameter a destination
-      * arrives with.
-      * @return false when the mapping does not describe that end, which is logged
-      **/
-     bool readMappingSource(const boost::json::object& mapping, v3d::event::Event* event);
-     bool readMappingDestination(const boost::json::object& mapping, v3d::event::Event* event);
-
-     // destination identity -> the source name it should bind to instead of the
-     // config's, applied every time the global mapper is rebuilt
-     std::map<std::string, std::string> rebindings_;
-     // the global mapper as last built, which held() asks the bindings of
-     boost::shared_ptr<v3d::event::Mapper> mapper_;
+     // what the binding config says, which held() asks and rebind() rebuilds
+     boost::shared_ptr<v3d::event::Bindings> bindings_;
 
      std::string appPath_;
      int features_;

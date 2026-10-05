@@ -10,6 +10,7 @@
 #include <api/event/kind/MouseWheel.h>
 
 #include <string>
+#include <string_view>
 
 namespace v3d::input {
 
@@ -37,6 +38,15 @@ std::string buttonEvent(unsigned int button) {
 
 /**
  **/
+bool isButtonName(std::string_view name) {
+    for (unsigned int button : {SDL_BUTTON_LEFT, SDL_BUTTON_MIDDLE, SDL_BUTTON_RIGHT, SDL_BUTTON_X1, SDL_BUTTON_X2}) {
+        if (buttonEvent(button) == name) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool Mouse::handleEvent(const SDL_Event& event) {
     std::string buttonName;
     bool pressed = true;

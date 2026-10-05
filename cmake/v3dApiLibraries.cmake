@@ -58,7 +58,7 @@ set(V3D_API_engine_REQUIRES log asset asset_media config event input render)
 set(V3D_API_engine_PACKAGES SDL3 EnTT)
 
 set(V3D_API_event_PATH "event")
-set(V3D_API_event_REQUIRES)
+set(V3D_API_event_REQUIRES log)
 set(V3D_API_event_PACKAGES glm EnTT)
 
 set(V3D_API_font_PATH "font")

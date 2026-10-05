@@ -9,6 +9,7 @@
 #include "KeyState.h"
 
 #include <string>
+#include <string_view>
 
 namespace v3d::input {
 
@@ -22,6 +23,12 @@ namespace v3d::input {
  * @return the name, or an empty string for a key this library has none for
  **/
 std::string keyName(SDL_Keycode key);
+
+/**
+ * Whether a name is one keyName() gives a key, which is what a binding document is checked
+ * against so that a misspelt key is reported rather than bound to nothing.
+ **/
+bool isKeyName(std::string_view name);
 
 /**
  **/

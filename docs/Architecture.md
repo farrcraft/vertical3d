@@ -60,9 +60,11 @@ not carry a second implementation of the format.
 sprite sheet's are both resolved by the app through its own asset manager and renderer, and a
 ui image can resolve to one region of a sheet.
 
-`Config::load` and `registerEventMappings` guard every lookup and log a `false`, but **a
-window config is not guarded**: `initialize` reads `width` and `height` with `at()`, so a
-`window.json` naming neither throws.
+`Config::load`, `event::Bindings` and the window config's read guard every lookup and log a
+`false`, so a document startup does not understand stops it with a line in the log rather than
+an exception. A binding to a key or button no device sends is bound anyway and logged as a
+warning: `Bindings` asks the engine, which knows the input library's names, whether each source
+is one.
 
 ## Where a player's files go
 

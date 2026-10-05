@@ -6,6 +6,7 @@
 #include <api/event/kind/KeyDown.h>
 #include <api/event/kind/KeyUp.h>
 #include <api/input/Keyboard.h>
+#include <api/input/Mouse.h>
 
 #include <cstddef>
 #include <string>
@@ -206,4 +207,19 @@ BOOST_AUTO_TEST_CASE(keyboard_held_key_test) {
     BOOST_CHECK(recorder.source_[2].state() == v3d::event::State::Pressed);
     BOOST_CHECK(recorder.source_[3].state() == v3d::event::State::Released);
     BOOST_CHECK(recorder.source_[4].state() == v3d::event::State::Pressed);
+}
+
+/**
+ * A key's name reads both ways off one table, so a binding document can be checked against
+ * the names a key event will actually carry.
+ **/
+BOOST_AUTO_TEST_CASE(keyboard_name_table_test) {
+    BOOST_TEST(v3d::input::keyName(SDLK_ESCAPE) == "escape");
+    BOOST_TEST(v3d::input::isKeyName("escape"));
+    BOOST_TEST(v3d::input::isKeyName(v3d::input::keyName(SDLK_A)));
+    BOOST_TEST(!v3d::input::isKeyName("escpae"));
+    BOOST_TEST(!v3d::input::isKeyName(""));
+
+    BOOST_TEST(v3d::input::isButtonName("left"));
+    BOOST_TEST(!v3d::input::isButtonName("a"));
 }

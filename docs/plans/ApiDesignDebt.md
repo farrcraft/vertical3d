@@ -298,6 +298,12 @@ already de-duplicates, which argues for striking it.
 
 E3, and the key-name half of E9.
 
+**Closed.** `event::Bindings` reads the document, keeps the overrides and answers `sources()`;
+`Engine` holds one and asks it for `held()`. It cannot name a key itself, since `input` is above
+`event`, so the engine hands it a check over `input::isKeyName()` and `isButtonName()`, and every
+app's bindings passed it. `event` links `log` now. The window config is read with guards, and
+Architecture.md stops listing it as a trap.
+
 Move binding-document parsing, the rebind overlay, source lookup and `held()` into
 `event::Bindings`, which needs no SDL and is testable without an engine. `Engine` holds one and
 forwards. `rebind()` returns false when nothing was rebuilt. `input::keyName` becomes a constexpr

@@ -424,3 +424,13 @@ BOOST_AUTO_TEST_CASE(engine_held_without_a_keyboard_test) {
     BOOST_REQUIRE(engine.initialize(configFeature));
     BOOST_CHECK(!engine.held("pong::leftPaddleUp"));
 }
+
+/**
+ * With no binding config there is nothing for a rebind to rebuild, and it says so rather than
+ * claiming a binding it did not make.
+ **/
+BOOST_AUTO_TEST_CASE(engine_rebind_without_bindings_test) {
+    TestEngine engine(appPath("good"));
+    BOOST_REQUIRE(engine.initialize(static_cast<int>(v3d::engine::Feature::KeyboardInput)));
+    BOOST_CHECK(!engine.rebind("pong::leftPaddleUp", "arrow_up"));
+}

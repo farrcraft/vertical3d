@@ -9,6 +9,8 @@
 #include <api/event/kind/WindowFocus.h>
 #include <api/event/kind/WindowResize.h>
 #include <api/input/DeviceType.h>
+#include <api/input/Keyboard.h>
+#include <api/input/Mouse.h>
 
 #include <SDL3/SDL.h>
 
@@ -43,122 +45,10 @@ bool Engine::quitting() const noexcept {
     return quitting_;
 }
 
-bool Engine::readMappingSource(const boost::json::object& mapping, v3d::event::Event* event) {
-    if (!mapping.contains("source") || !mapping.at("source").is_object()) {
-        logger_->get()->error("Missing mapping source");
-        return false;
-    }
-    auto const source = mapping.at("source");
-    if (!source.as_object().contains("name") || !source.as_object().contains("context")) {
-        logger_->get()->error("Mapping source needs both a name and a context");
-        return false;
-    }
-    std::string sourceName = boost::json::value_to<std::string>(source.at("name"));
-    std::string sourceContextName = boost::json::value_to<std::string>(source.at("context"));
-    boost::shared_ptr<v3d::event::Context> sourceContext = eventEngine_->resolveContext(sourceContextName);
-    *event = v3d::event::Event(sourceName, sourceContext);
-    event->type(v3d::event::Type::Source);
-    // an optional "state" binds one edge only - "pressed"/"down" or "released"/"up".
-    // without it the binding matches both, which is what most actions want.
-    if (source.as_object().contains("state")) {
-        std::string sourceState = boost::json::value_to<std::string>(source.at("state"));
-        event->state(v3d::event::stringToState(sourceState));
-    }
-    return true;
-}
-
-bool Engine::readMappingDestination(const boost::json::object& mapping, v3d::event::Event* event) {
-    if (!mapping.contains("destination") || !mapping.at("destination").is_object()) {
-        logger_->get()->error("Missing mapping destination");
-        return false;
-    }
-    auto const destination = mapping.at("destination");
-    if (!destination.as_object().contains("name") || !destination.as_object().contains("context")) {
-        logger_->get()->error("Mapping destination needs both a name and a context");
-        return false;
-    }
-    std::string destinationName = boost::json::value_to<std::string>(destination.at("name"));
-    std::string destinationContextName = boost::json::value_to<std::string>(destination.at("context"));
-    boost::shared_ptr<v3d::event::Context> destinationContext = eventEngine_->resolveContext(destinationContextName);
-    *event = v3d::event::Event(destinationName, destinationContext);
-    event->type(v3d::event::Type::Destination);
-    // an optional "param" lets one action serve several bindings, telling them apart by
-    // the value it arrives with. It reaches the handler as the event's data, the same
-    // way a menu item's value does.
-    if (!destination.as_object().contains("param")) {
-        return true;
-    }
-    auto const param = destination.at("param");
-    if (param.is_int64()) {
-        event->data(static_cast<int>(param.as_int64()));
-    } else if (param.is_bool()) {
-        event->data(param.as_bool());
-    } else if (param.is_string()) {
-        event->data(boost::json::value_to<std::string>(param));
-    } else {
-        logger_->get()->error("Unsupported binding param type for [{}]", destinationName);
-        return false;
-    }
-    return true;
-}
-
-bool Engine::registerEventMappings() {
-    boost::shared_ptr<v3d::asset::kind::Json> mappingConfig = config_->get(v3d::config::Type::Binding);
-    if (!mappingConfig) {
-        return true;
-    }
-
-    // We're only supporting a single global mapper for now
-    boost::shared_ptr<v3d::event::Mapper> mapper = boost::make_shared<v3d::event::Mapper>("global");
-
-    auto const doc = mappingConfig->document();
-    // every lookup below is guarded by a contains() rather than reaching straight for
-    // at(): boost::json::at throws, and a mapping document this function does not
-    // understand has to come back as a false return, not as an exception out of startup.
-    if (!doc.contains("mappings") || !doc.at("mappings").is_array()) {
-        logger_->get()->error("Missing mappings in config");
-        return false;
-    }
-    auto const items = doc.at("mappings").as_array();
-    for (const auto* it = items.begin(); it != items.end(); ++it) {
-        if (!it->is_object()) {
-            logger_->get()->error("Unrecognized mapping");
-            return false;
-        }
-        auto const mapping = it->as_object();
-        v3d::event::Event sourceEvent;
-        v3d::event::Event destinationEvent;
-        if (!readMappingSource(mapping, &sourceEvent) ||
-            !readMappingDestination(mapping, &destinationEvent)) {
-            return false;
-        }
-        // a rebound command keeps the context and the edge the config gave it, and takes
-        // only its name from what the player chose
-        const std::map<std::string, std::string>::const_iterator rebound =
-            rebindings_.find(destinationEvent.str());
-        if (rebound != rebindings_.end()) {
-            v3d::event::Event replacement(rebound->second, sourceEvent.context());
-            replacement.type(v3d::event::Type::Source);
-            replacement.state(sourceEvent.state());
-            sourceEvent = replacement;
-        }
-
-        mapper->map(sourceEvent, destinationEvent);
-    }
-    // addMapper stores by name, so this replaces the mapper rather than adding a second
-    eventEngine_->addMapper(mapper);
-    mapper_ = mapper;
-    return true;
-}
-
 /**
  **/
 bool Engine::rebind(const std::string& command, const std::string& key) {
-    if (!config_) {
-        return false;
-    }
-    rebindings_[command] = key;
-    return registerEventMappings();
+    return bindings_ && bindings_->rebind(command, key);
 }
 
 /**
@@ -182,9 +72,23 @@ bool Engine::initialize(int features) {
         if (!config_->load(assetManager_)) {
             return false;
         }
-        // If config includes event mappings/bindings, they will get loaded here
-        if (!registerEventMappings()) {
-            return false;
+        // a binding config is optional: an app with none sends no commands from a key
+        const boost::shared_ptr<v3d::asset::kind::Json> mappings = config_->get(v3d::config::Type::Binding);
+        if (mappings) {
+            bindings_ = boost::make_shared<v3d::event::Bindings>(eventEngine_, logger_,
+                [](const v3d::event::Event& source) {
+                    const std::string_view device = source.context() ? source.context()->name() : std::string_view();
+                    if (device == "keyboard") {
+                        return v3d::input::isKeyName(source.name());
+                    }
+                    if (device == "mouse") {
+                        return v3d::input::isButtonName(source.name());
+                    }
+                    return true;
+                });
+            if (!bindings_->load(mappings->document())) {
+                return false;
+            }
         }
     }
 
@@ -217,10 +121,17 @@ bool Engine::initialize(int features) {
         if (features_ & Feature::Config) {
             boost::shared_ptr<v3d::asset::kind::Json> windowConfig = config_->get(v3d::config::Type::Window);
             if (windowConfig) {
-                auto const doc = windowConfig->document();
-                auto const window = doc.at("window");
-                width = boost::json::value_to<int>(window.at("width"));
-                height = boost::json::value_to<int>(window.at("height"));
+                // guarded as the bindings are: a window document this does not understand
+                // is a false return out of startup, not an exception out of it
+                const boost::json::object& doc = windowConfig->document();
+                const boost::json::object* window = doc.contains("window") ? doc.at("window").if_object() : nullptr;
+                if (window == nullptr || !window->contains("width") || !window->contains("height") ||
+                    !window->at("width").is_int64() || !window->at("height").is_int64()) {
+                    logger_->get()->error("The window config needs a window with a whole width and height");
+                    return false;
+                }
+                width = static_cast<int>(window->at("width").as_int64());
+                height = static_cast<int>(window->at("height").as_int64());
             }
         }
         if (!window_->create(width, height)) {
@@ -365,10 +276,10 @@ const v3d::input::MouseState* Engine::mouse() const {
  **/
 bool Engine::held(std::string_view command) const {
     const v3d::input::KeyState* state = keys();
-    if (!mapper_ || state == nullptr) {
+    if (!bindings_ || state == nullptr) {
         return false;
     }
-    return std::ranges::any_of(mapper_->sources(command),
+    return std::ranges::any_of(bindings_->sources(command),
         [state](const v3d::event::Event& source) { return state->held(source.name()); });
 }
 
