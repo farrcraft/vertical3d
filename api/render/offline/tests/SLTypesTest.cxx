@@ -95,7 +95,7 @@ BOOST_AUTO_TEST_CASE(sltypes_vtransform_test) {
 
 /**
  * A normal goes by the inverse transpose. Under a rotation that is what a vector does, and
- * the moment a scene scales one axis it is not - the same fault as moya's dicing and talyn's
+ * the moment a scene scales one axis it is not - the same fault as moya's dicing and its traced
  * fan, in a third place.
  **/
 BOOST_AUTO_TEST_CASE(sltypes_ntransform_test) {

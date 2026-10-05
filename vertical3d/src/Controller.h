@@ -147,7 +147,7 @@ class Controller final : public v3d::engine::Engine {
     void saveProjectAs();
 
     /**
-     * Write the scene out as RIB for the offline renderers, per ADR-0023.
+     * Write the scene out as RIB for the offline renderer, per ADR-0023.
      *
      * One way: topology and a placement per mesh, from the active view's camera. The
      * project format stays the editor's own and nothing reads this back.

@@ -27,8 +27,8 @@ namespace v3d::render::offline::sl::runtime {
  * while any lane is live, and `break`, `continue` and `return` clear lanes rather than
  * jumping out, because the lanes beside them have not finished.
  *
- * **talyn's batch is one point.** No special case and no second path: the same program, the
- * same instructions, a mask one bit wide. That is the whole reason the model is a batch.
+ * **A traced hit's batch is one point.** No special case and no second path: the same
+ * program, the same instructions, a mask one bit wide. That is the whole reason the model is a batch.
  *
  * **A run allocates once.** prepare() sizes the register file for a program and a batch; a
  * renderer then writes its inputs into the file, calls run(), and reads the results out - a

@@ -48,10 +48,10 @@ clang-tidy, `/analyze` and cpplint alike.
 Carried out of [OfflineRenderingPhase3](plans/completed/OfflineRenderingPhase3.md), which named
 it as an open question and could not settle it.
 
-[] RI states its rotations in a left handed system and both offline renderers hand the angle
-   straight to `glm::rotate`, which is counter-clockwise by the right hand rule. Nothing in the
-   tree can tell the difference: the two renderers agree with each other whichever of them is
-   right, so a reference picture agreeing with itself says nothing. A light placed by a
+[] RI states its rotations in a left handed system and moya hands the angle straight to
+   `glm::rotate`, which is counter-clockwise by the right hand rule. Nothing in the tree can
+   tell the difference: both hiders read the same transformation, so they agree with each other
+   whichever reading is right, so a reference picture agreeing with itself says nothing. A light placed by a
    rotation was expected to make it visible and did not. What would settle it is a scene whose
    correct picture is known from outside this tree
 
@@ -60,9 +60,9 @@ it as an open question and could not settle it.
 Held by [OfflineRenderingPhases4To6](plans/completed/OfflineRenderingPhases4To6.md#step-17--held-area-lights-displacement-and-acceleration),
 each until a scene asks for it.
 
-[] area lights render as point lights. Sampling a light's area is the film's lens disc in another place, but a RenderMan area light runs its light shader at points on a primitive, and `AreaLightSource` binds a shader to geometry neither renderer keeps as a light. It is due with a scene that wants soft shadows, which both renderers can now cast through the shared tracer
+[] area lights render as point lights. Sampling a light's area is the film's lens disc in another place, but a RenderMan area light runs its light shader at points on a primitive, and `AreaLightSource` binds a shader to geometry neither hider keeps as a light. It is due with a scene that wants soft shadows, which both hiders can now cast through the shared tracer
 
-[] displacement shaders are refused and `calculatenormal` is a stub, so neither displacement nor bump is possible. Displacement reaches back into moya's dicing, moves a grid after it is shaded and needs a bound grown by `displacementbound`; in talyn it needs a tessellation a ray tracer does not otherwise do. Bump needs derivatives across a batch, and a traced hit is a batch of one. It is due with a scene that needs surface detail a texture cannot give
+[] displacement shaders are refused and `calculatenormal` is a stub, so neither displacement nor bump is possible. Displacement reaches back into moya's dicing, moves a grid after it is shaded and needs a bound grown by `displacementbound`; under the ray hider it needs a tessellation a ray tracer does not otherwise do. Bump needs derivatives across a batch, and a traced hit is a batch of one. It is due with a scene that needs surface detail a texture cannot give
 
 [] `offline::trace::Scene::nearest` tests every primitive. Since moya traces too, every shadow ray from every grid point pays for the whole scene. An acceleration structure goes inside `offline::trace` and neither renderer changes; it is due with a scene that takes a second to render, which the suites' times would show
 

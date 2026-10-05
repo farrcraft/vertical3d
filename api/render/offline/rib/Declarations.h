@@ -17,7 +17,7 @@ namespace v3d::render::offline::rib {
  *
  * The standard geometric primitive variables and the parameters of the standard shaders
  * are here on construction. They are named as this table's own strings: RenderMan.h is
- * moya's C interface and this library sits below both renderers per ADR-0022.
+ * moya's C interface and this library sits below moya per ADR-0022.
  **/
 class Declarations final {
  public:

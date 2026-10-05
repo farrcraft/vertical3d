@@ -27,8 +27,8 @@ namespace v3d::render::offline::rib {
 /**
  * Reads an ASCII RIB stream and drives a handler, per ADR-0023 and ADR-0025.
  *
- * The handler is a parameter rather than a member, so one reader serves both renderers and
- * a suite can drive it with a handler that only counts.
+ * The handler is a parameter rather than a member, so one reader serves the renderer and a
+ * suite can drive it with a handler that only counts.
  *
  * An unrecognised request is reported once per name rather than once per occurrence, and
  * its arguments are skipped: only a string, a number or an array can be an argument, so

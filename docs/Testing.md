@@ -132,8 +132,8 @@ from a subclass with no window in sight. `EngineTest` drives it directly.
   fixture directory in a `POST_BUILD` command, so adding a picture and rebuilding copies
   nothing - the target was already up to date. Touch a source of the suite, or rebuild it from
   clean; a fresh CI checkout never sees this.
-- **The moya and talyn suites each render against a committed PNG**, in `moya/tests/data/` and
-  `talyn/tests/data/`. They compare with `image::compare`, which reports the worst pixel and by
+- **The moya suite renders against committed PNGs**, in `moya/tests/data/`, one set per hider:
+  `reference-*` under the reyes hider and `raytrace-*` under the ray hider. They compare with `image::compare`, which reports the worst pixel and by
   how much rather than only that two images differ. A failing case, or a missing reference,
   writes what it rendered to `data_out/` beside the executable. That is also how a reference is
   regenerated when a change is meant to alter the picture. **Each PNG has a `.rib` beside it

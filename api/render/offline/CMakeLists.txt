@@ -1,6 +1,6 @@
-# The offline renderers of ADR-0022 share this library. It names neither Vulkan nor SDL:
-# talyn and moya touch no window, no device and no swapchain, which is what lets their
-# suites run in CI where everything below the recorder in api/render cannot - and what makes
+# The offline renderer of ADR-0022 is built on this library. It names neither Vulkan nor SDL:
+# moya touches no window, no device and no swapchain, which is what lets its suites and this
+# one run in CI where everything below the recorder in api/render cannot - and what makes
 # it selectable without the realtime stack, per ADR-0033.
 #
 # /utf-8 is set here rather than inherited: this directory is added by api/CMakeLists.txt

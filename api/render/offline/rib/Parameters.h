@@ -20,7 +20,7 @@ namespace v3d::render::offline::rib {
 /**
  * The token-value pairs of one request, typed by the declarations that were in force.
  *
- * Parameters are typed once, in the reader, so neither renderer re-derives how many
+ * Parameters are typed once, in the reader, so no handler re-derives how many
  * floats "Cs" is. A name that is not here reads as empty or as the caller's fallback
  * rather than throwing: a renderer must accept a request carrying a parameter it does
  * not support.

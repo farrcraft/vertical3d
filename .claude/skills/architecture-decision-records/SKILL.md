@@ -146,6 +146,6 @@ new ADR.
 | Process and quality gates | cpplint, the test tiers, what CI runs and on what runner |
 
 Library boundaries are the category most easily missed, because a misplacement looks like a
-file-organisation question rather than a decision. It is not: `moya` and `talyn` are offline
-renderers with no realtime dependency, and keeping that true is what stops `api/type` and
+file-organisation question rather than a decision. It is not: `moya` is an offline renderer
+with no realtime dependency, and keeping that true is what stops `api/type` and
 `api/image` from quietly acquiring one.

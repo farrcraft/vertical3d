@@ -87,10 +87,10 @@ environment fault is not, and `docs/Build.md` lists the ones that recur.
 
 ### Boundaries
 
-- **The offline renderers must not acquire a realtime dependency.** `moya` and `talyn` are
-  offline and consume only the non-realtime libraries — `type`, `brep`, `dag`, `image`,
+- **The offline renderer must not acquire a realtime dependency.** `moya` is offline and
+  consumes only the non-realtime libraries — `type`, `brep`, `dag`, `image`,
   `log`, `asset`. A change that pulls `render`, `gl`, `ui`, `input` or Vulkan into that set,
-  or into those apps, is a design finding even if it links.
+  or into that app, is a design finding even if it links.
 - **App logic does not belong in `api/`, and api concerns do not belong in an app.** The
   test is whether a second app would want it.
 - **Two different classes are named `Engine`** — `v3d::engine::Engine` is the game engine,

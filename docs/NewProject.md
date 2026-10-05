@@ -110,8 +110,8 @@ command line beside your flag. The standard and `/permissive-` are the only comp
 you supply. The include root, `/EHsc`, `/utf-8` and the boost winapi version definitions all
 arrive through the `v3d::` targets.
 
-**`V3D_BUILD_APPS` and `V3D_BUILD_TESTS` go off**, or you build pong, tetris, the editor, both
-offline renderers and 22 test binaries alongside your app. They already default to off when
+**`V3D_BUILD_APPS` and `V3D_BUILD_TESTS` go off**, or you build pong, tetris, the editor, the
+offline renderer and 21 test binaries alongside your app. They already default to off when
 vertical3d is not the top level project; setting them explicitly documents the intent.
 
 **`V3D_LIBRARIES` names the api libraries you link.** Their closure is what gets built and

@@ -26,7 +26,7 @@ typedef v3d::render::offline::sl::ShaderLibrary ShaderLibrary;
 typedef v3d::render::offline::sl::InstancePtr InstancePtr;
 typedef v3d::render::offline::sl::ShaderType ShaderType;
 
-/** The colour plane count plus one for coverage, which is what both renderers hold. **/
+/** The colour plane count plus one for coverage, which is what moya's framebuffer holds. **/
 const unsigned int COVERAGE = 3;
 
 ShaderLibrary & library() {

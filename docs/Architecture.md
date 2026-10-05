@@ -2,7 +2,7 @@
 
 A map of the tree, and the invariants that cross it. The deeper references sit beside this
 one: [RenderingPipeline.md](RenderingPipeline.md) for the realtime renderer,
-[OfflineRenderers.md](OfflineRenderers.md) for talyn and moya, [Editor.md](Editor.md) for
+[OfflineRenderers.md](OfflineRenderers.md) for moya, [Editor.md](Editor.md) for
 `vertical3d/`, and [adr/](adr/) for why any of it is shaped as it is.
 
 ## The libraries
@@ -12,7 +12,7 @@ Reusable C++ libraries live under [api/](../api/), one target per subdirectory n
 `v3d::render::realtime::vulkan`. The [README](../README.md#layout) lists what each one is for.
 
 The apps that consume them are at the top level: pong, tetris, voxel, odyssey, vertical3d,
-talyn, moya, imagetool, v3dshell. Every one of those directories builds with the tree.
+moya, imagetool, v3dshell. Every one of those directories builds with the tree.
 
 ## Two different classes named Engine
 

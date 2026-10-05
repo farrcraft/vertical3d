@@ -16,7 +16,7 @@ and namespaced to match its path (`v3d::render::realtime`, `v3d::asset`, and so 
 
 | | |
 |---|---|
-| [`render`](api/render/) | The Vulkan realtime renderer — frames, passes, draw items, and the quad and line primitives. `render/offline` holds what the two offline renderers share |
+| [`render`](api/render/) | The Vulkan realtime renderer — frames, passes, draw items, and the quad and line primitives. `render/offline` holds what the offline renderer is built on: RIB, the shading language, the film and the ray tracer |
 | [`engine`](api/engine/) | The game engine: main loop, window, asset manager, config and input |
 | [`ui`](api/ui/) | Menus, toolbars, themes and the component renderer |
 | [`brep`](api/brep/) | Boundary representation meshes, half-edge and winged-edge |
@@ -89,13 +89,12 @@ four; the invocations and their traps are in [docs/Linting.md](docs/Linting.md).
 | **Pong** | Pong, with sound and single-player AI. |
 | **Tetris** | Tetris. |
 | **Odyssey** | A tile-based roguelike. Opens a window and draws a player sprite positioned in tile units; the game itself is not written yet. |
-| **Moya** | A RenderMan-compatible Reyes renderer — micropolygon grids, buckets and framebuffers. Reads a RIB file and renders it, in one flat colour per surface. |
-| **Talyn** | A raytracer. Reads the same RIB files and renders them, at one sample per pixel with no light and no material. |
+| **Moya** | A RenderMan renderer. Reads a RIB file and renders it through a shading language, with a Reyes hider of micropolygon grids and buckets, or a ray tracing one selected by `Hider "raytrace"`. |
 | **imagetool** | A small CLI over `api/image`. Reads an image and reports its dimensions and depth; it parses an `--outfile` but the write path is unreachable. |
 | **v3dshell** | An intended REPL for driving Vertical3D. Currently an empty `main`. |
 
-Pong, Tetris, Voxel, Odyssey and Vertical3D all run. Moya and talyn render from the command
-line, and their suites compare what they draw against committed reference images.
+Pong, Tetris, Voxel, Odyssey and Vertical3D all run. Moya renders from the command line, and
+its suite compares what it draws against committed reference images.
 
 ## Documentation
 

@@ -101,7 +101,7 @@ glm::vec3 vtransform(const glm::mat4x4 & matrix, const glm::vec3 & vector);
 /**
  * A normal through a matrix, by the inverse transpose.
  *
- * The same rule as moya's dicing and talyn's fan: under a rotation or a uniform scale this
+ * The same rule as moya's dicing and its traced fan: under a rotation or a uniform scale this
  * is what vtransform answers, and the moment a scene scales one axis it is not - the matrix
  * that moves the points tilts a normal off its surface.
  **/

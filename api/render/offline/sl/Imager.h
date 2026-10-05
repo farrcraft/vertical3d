@@ -19,12 +19,11 @@ namespace v3d::render::offline::sl {
  * not built for grids alone: **a batch here is a row of pixels**, which is neither a
  * micropolygon grid nor a ray hit and needs no special case to be either.
  *
- * It is shared because both renderers do the same thing with it - moya after the last
- * bucket and talyn after the last ray - and because a framebuffer is already the one
- * structure they have in common.
+ * It runs the same way after either hider - after the last bucket or after the last ray -
+ * because a framebuffer is already the one structure the two have in common.
  *
- * An imager is how a scene says what a pixel nothing was drawn into is worth, which is
- * what phase 2's talyn reference worked around with a backdrop polygon.
+ * An imager is how a scene says what a pixel nothing was drawn into is worth, which a scene
+ * would otherwise have to say with a backdrop polygon.
  **/
 class Imager final {
  public:
@@ -34,7 +33,7 @@ class Imager final {
      * Run it over every pixel.
      *
      * The first three planes are the colour, which the shader reads as `Ci` and writes
-     * back. `Oi` is the coverage replicated, because neither renderer keeps an opacity
+     * back. `Oi` is the coverage replicated, because neither hider keeps an opacity
      * of its own: a framebuffer here holds what was drawn and how much of the pixel it
      * covered, and the two are the same number when a sample either lands or does not.
      *

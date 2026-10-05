@@ -21,8 +21,8 @@ namespace v3d::render::offline::sl::runtime {
  *
  * A shader run knows nothing about buckets, grids, rays or scenes. What it does need - the
  * matrix for a named coordinate space, the lights shining on the batch, whether light
- * reaches a point, and a ray traced - arrives through this, which moya and talyn each
- * implement.
+ * reaches a point, and a ray traced - arrives through this, which moya's grids and a traced
+ * hit each implement.
  *
  * **Every method has an answer for a renderer that cannot do it**, so that a renderer, or a
  * suite's stand-in for one, implements only what it can answer. Only the coordinate space is
@@ -35,7 +35,7 @@ class Renderer {
     /**
      * The matrix from the shader's current space into the named one.
      *
-     * moya's current space is camera space and talyn's is world space, which is why this is
+     * moya's grids are shaded in camera space and a traced hit in world space, which is why this is
      * a callback rather than a table the library holds.
      *
      * @param name the space: "current", "object", "shader", "world", "camera", "raster", ...
@@ -72,7 +72,7 @@ class Renderer {
     /**
      * How much of the light leaving one point arrives at the other, per component.
      *
-     * This is where a shadow lives. Both renderers answer it from the shared ray tracer, per
+     * This is where a shadow lives. A grid and a traced hit answer it from the shared ray tracer, per
      * ADR-0077. A ray tracing extension rather than RI 3.03.
      *
      * @return whether the renderer answered; one that did not lets all the light through
@@ -80,7 +80,7 @@ class Renderer {
     virtual bool transmission(const Value & from, const Value & to, Value* fraction);
 
     /**
-     * What a ray from a point in a direction comes back with, which both renderers answer
+     * What a ray from a point in a direction comes back with, which a grid and a traced hit answer
      * from the shared ray tracer, per ADR-0077.
      *
      * @return whether the renderer traced it; one that did not answers black and says so

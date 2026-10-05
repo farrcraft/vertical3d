@@ -118,7 +118,7 @@ imported target, so it has no link line to appear in.
 live in `<app>/data`. Both are copied next to the executable, because the engine resolves an
 asset relative to the exe.
 
-**Only tetris, voxel, odyssey and talyn call `v3d_add_app_data`.** Everywhere else the `data/`
+**Only tetris, voxel, odyssey and moya call `v3d_add_app_data`.** Everywhere else the `data/`
 under `out/build/<config>/<app>/` is a stale manual copy, so editing `pong/data/*.json` does
 not affect a run from the build tree until you copy it across.
 

@@ -36,7 +36,7 @@ typedef boost::shared_ptr<runtime::Program> ProgramPtr;
  *
  * An instance holds no register file. `write()` puts the bound values into a machine a
  * renderer has prepared, because how many machines there are and how long they live is the
- * renderer's question - moya reuses one across a thousand grids and talyn shades one hit.
+ * renderer's question - moya reuses one across a thousand grids and a traced hit is one point.
  **/
 class Instance final {
  public:

@@ -1,22 +1,40 @@
-# The Offline Renderers
+# The Offline Renderer
 
-`talyn` (raytracer) and `moya` (reyes, behind the RenderMan interface) are the *other*
-renderers, and share nothing with the realtime stack. Each is a library, a driver and a suite:
-`talyn/libtalyn`, `talyn/talyn` and `talyn/tests`, and the same three for moya. See
-[ADR-0022](adr/0022-offline-rendering-shares-an-api-library.md). What they share lives in
-`api/render/offline` (`v3dlib_render_offline`, namespace `v3d::render::offline`).
+`moya`, a RenderMan renderer, is the *other* renderer, and shares nothing with the realtime
+stack. It is a library, a driver and a suite: `moya/libmoya`, `moya/moya` and `moya/tests`.
+What it is built on lives in `api/render/offline` (`v3dlib_render_offline`, namespace
+`v3d::render::offline`), per [ADR-0022](adr/0022-offline-rendering-shares-an-api-library.md):
+the RIB reader, the shading language, the film and the sampler, and the ray tracer.
 
-**The ray tracer is one of the shared things**, per
-[ADR-0077](adr/0077-one-ray-tracer-both-renderers-reach.md): `offline::trace::Scene` holds
-triangles and spheres in world space and `offline::trace::HitShader` shades what a ray meets.
-talyn is a driver that casts primary rays into it, and its own library is only its render
-context and its RIB handler.
+That library **names neither Vulkan nor SDL**, and moya touches no window, device or swapchain,
+so its suites render in CI where everything below the recorder in `api/render` cannot.
 
-That library **names neither Vulkan nor SDL**, and neither renderer touches a window, a device
-or a swapchain, so their suites render in CI where everything below the recorder in
-`api/render` cannot.
+## Hiders
 
-No plan is open against them. [The roadmap](roadmap/completed/OfflineRendering.md) is complete,
+**A hider is how moya decides what the camera sees, and a scene picks one with `Hider`**, per
+[ADR-0078](adr/0078-one-offline-renderer-with-two-hiders.md). Both read one graphics state and
+write one framebuffer, so everything below about shading and sampling holds under either.
+
+- **`"hidden"` is the reyes hider and RI's default.** Primitives are split, diced into
+  micropolygon grids, shaded a grid at a time and hidden into the samples of their buckets.
+- **`"raytrace"` is `moya::RayHider`.** It casts a primary ray through every sample into the
+  traced scene and buckets nothing. Its rays are built in camera space from the screen window
+  and the projection the reyes hider projects through, so it takes any camera the reyes hider
+  takes, an off-centre `ScreenWindow` included. They start on the near plane.
+- **A hider name moya does not know is logged and leaves the hider as it was.**
+- **The ray tracer is shared by both**, per
+  [ADR-0077](adr/0077-one-ray-tracer-both-renderers-reach.md): `offline::trace::Scene` holds
+  triangles and spheres in world space and `offline::trace::HitShader` shades what a ray meets.
+  Every primitive a scene gives is added to it in world space as it arrives. The reyes hider
+  reads it for `trace()` and `transmission()`, and the ray hider for everything.
+- **The depth plane is raster space z under either hider**: the projection, then the raster
+  matrix, which is what a reyes sample is hidden by. A ray's hit is carried back into camera
+  space and projected the same way.
+- **A traced primitive takes its primitive's colour rather than a varying `"Cs"`.** The reyes
+  hider interpolates `"Cs"` across a grid, so a scene that colours its vertices differs between
+  the two.
+
+No plan is open against it. [The roadmap](roadmap/completed/OfflineRendering.md) is complete,
 [OfflineRenderingPhase3](plans/completed/OfflineRenderingPhase3.md) is the account of how the
 shading language got here, and [OfflineRenderingPhases4To6](plans/completed/OfflineRenderingPhases4To6.md)
 of sampling, recursion and the shared ray tracer. What is left is in
@@ -31,8 +49,8 @@ where `tests` already is. A subdirectory added above that line does not inherit 
 
 - **The plane count is not the channel count.** `offline::FrameBuffer` is a stack of float
   planes. `image(channels)` takes the leading planes as the picture and leaves the rest to the
-  renderer. moya's are RGB, a depth and a coverage, named by `moya::FrameBuffer::Plane`;
-  talyn's four are RGBA, where the alpha is that same coverage.
+  renderer. moya's are RGB, a depth and a coverage, named by `moya::FrameBuffer::Plane`, under
+  either hider.
 - **Coverage is what an imager reads as `alpha`**, and it is the difference between a pixel
   nothing was drawn into and a black one. It is the filtered fraction of a pixel's samples that
   hit, so it is one or nothing only at one sample per pixel under a one pixel box.
@@ -50,7 +68,7 @@ A pixel is a filtered set of seeded samples, per
 [ADR-0076](adr/0076-a-pixel-is-a-filtered-set-of-seeded-samples.md). `offline::Sampling` is what
 `PixelSamples`, `PixelFilter`, `PixelVariance`, `Shutter` and `DepthOfField` asked for, starting at
 the RI defaults; `offline::Sampler` gives a pixel's samples; `offline::Film` filters them into
-pixels and resolves into a renderer's planes. Both renderers render through them.
+pixels and resolves into a renderer's planes. Both hiders render through them.
 
 - **The RI defaults are two by two samples under a gaussian two pixels wide**, so a scene that
   names nothing is antialiased and four times slower than one sample a pixel. A reference that
@@ -59,19 +77,20 @@ pixels and resolves into a renderer's planes. Both renderers render through them
 - **An axis with one stratum is sampled at the pixel centre**, not jittered. That is what makes
   one sample under a one pixel box give back exactly the picture a renderer drew at its pixel
   centres, so a reference pinned that way survives a change to the sampler.
-- **A miss carries a colour into the film.** It is black unless a renderer has a background of
-  its own, as talyn's `Scene::background()` is, so a filtered colour is premultiplied in the
-  ordinary case. Coverage counts only hits either way.
+- **A miss carries a colour into the film.** Under the ray hider it is
+  `trace::Scene::background()`, which is black unless something sets it, so a filtered colour
+  is premultiplied in the ordinary case. Coverage counts only hits either way.
 - **moya hides into a sample store the size of the frame**, `moya::Samples`, and filters it
   through the film once the last bucket is done. A sample is not finished until every grid that
   could reach it is hidden, and the sweep comes round again when a split lands behind it, so no
   bucket is finished before the sweep is. Where the buckets fall therefore never shows.
-- **moya's hider tests a sample against the micropolygon**, as two triangles, and interpolates
+- **The reyes hider tests a sample against the micropolygon**, as two triangles, and interpolates
   its depth there, rather than filling the micropolygon's raster bound.
 - **A lens blurs only through a perspective camera.** `Sampling::lensRadius()` is
   `focalLength / (2 * fstop)` in camera space units, and an orthographic camera has no lens to
-  move, so it ignores `DepthOfField`. talyn moves a sample's ray across the lens and aims it at
-  the point it would have reached on the plane of focus. moya moves a micropolygon instead, by
+  move, so it ignores `DepthOfField`. The lens is at the eye. The ray hider moves a sample's
+  ray's origin across it and aims it at the point it would have reached on the plane of focus.
+  The reyes hider moves a micropolygon instead, by
   the sample's lens point times `1 - z / focalDistance` in eye x and y, which leaves the depth
   and so the divide alone: a corner's raster position is linear in the lens point, so a
   micropolygon is projected three times and every sample's corners are a sum of those. Its
@@ -91,11 +110,11 @@ pixels and resolves into a renderer's planes. Both renderers render through them
   moves in one, and a sample is rejected by its own slice's bound before anything is placed. A
   moving primitive is culled by its bound at both ends, and measured for splitting at the open
   end alone, since a split shrinks a primitive and never the distance it travels.
-- **talyn adapts its sample count and moya does not.** A `PixelVariance` above zero has talyn
-  take another seeded set wherever the variance of a pixel's mean is above it, up to four times
-  the first set; `RenderContext::samplesTaken()` says how many a pixel took. A reyes hider
-  samples a whole bucket at once, and adapting per pixel would split a grid's hiding in two, so
-  moya takes the count `PixelSamples` names, per
+- **The ray hider adapts its sample count and the reyes hider does not.** A `PixelVariance`
+  above zero has the ray hider take another seeded set wherever the variance of a pixel's mean
+  is above it, up to four times the first set; `RenderContext::samplesTaken()` says how many a
+  pixel took. A reyes hider samples a whole bucket at once, and adapting per pixel would split a
+  grid's hiding in two, so it takes the count `PixelSamples` names, per
   [ADR-0076](adr/0076-a-pixel-is-a-filtered-set-of-seeded-samples.md).
 - **A depth is not filtered.** It is the nearest hit among the samples inside the pixel, since a
   blend of two surfaces' depths is a depth neither is at.
@@ -105,10 +124,10 @@ pixels and resolves into a renderer's planes. Both renderers render through them
 
 ## RIB
 
-**One reader serves both renderers.** `offline::rib::Reader` dispatches onto
+**The reader is a library of its own.** `offline::rib::Reader` dispatches onto
 `offline::rib::Handler`, a C++ interface with typed parameter lists rather than the RI C ABI, per
-[ADR-0025](adr/0025-the-rib-reader-dispatches-a-cpp-request-interface.md). Each renderer
-implements it as `<renderer>::RIBHandler`. RIB is also what the editor exports to, one way, per
+[ADR-0025](adr/0025-the-rib-reader-dispatches-a-cpp-request-interface.md), and moya implements
+it as `moya::RIBHandler`. RIB is also what the editor exports to, one way, per
 [ADR-0023](adr/0023-rib-is-the-offline-scene-description.md).
 
 - **Every method has an empty body rather than being pure virtual**, because the RI standard
@@ -131,23 +150,22 @@ implements it as `<renderer>::RIBHandler`. RIB is also what the editor exports t
 - **`MakeTexture` is understood and makes nothing.** There is no `txmake`: the image a scene
   names in a shader is the texture, read through `image::Factory`, so a scene that converts one
   first should name the image rather than what it converted it to.
-- **A polygon's `"st"` is its texture coordinates**, two floats a vertex. talyn weights a
-  triangle's three by the hit's barycentrics, and a triangle given none has `s` and `t` equal to
-  them. moya interpolates them across a grid as it does `"Cs"` and carries them through a split;
-  a grid whose corners have none takes its own parameters.
-- **talyn intersects a `Sphere` where it is defined**, cut to its slab of heights and its sweep,
-  with RI's outward normal and its `u` and `v`. moya dices polygons only: a sphere is not drawn,
-  and the first in a scene is logged.
+- **A polygon's `"st"` is its texture coordinates**, two floats a vertex. A traced hit weights
+  a triangle's three by its barycentrics, and a triangle given none has `s` and `t` equal to
+  them. The reyes hider interpolates them across a grid as it does `"Cs"` and carries them
+  through a split; a grid whose corners have none takes its own parameters.
+- **The ray hider intersects a `Sphere` where it is defined**, cut to its slab of heights and
+  its sweep, with RI's outward normal and its `u` and `v`. The reyes hider dices polygons only:
+  a sphere is not drawn, and the first in a scene is logged.
 
 ## Cameras and transforms
 
 - **moya's world-to-camera transform applies as it stands.** `prepareWorld` saves the current
   transformation as the camera coordinate system, and by the RI standard that transformation
   *is* the world to camera one. A transpose or an inverse is right only when it is a rotation.
-- **talyn refuses a camera `type::camera::Profile` cannot hold**: an off centre `ScreenWindow`, a
-  non-rigid matrix, or one that reverses handedness. RI's camera basis for a general lookat
-  produces exactly those. `rib::Handler::error()` says which one it was, and the reader still
-  succeeds, because the request was understood.
+- **Both hiders see through the same camera coordinate systems**, so a camera one accepts the
+  other does: an off-centre `ScreenWindow`, a matrix that scales, and one that reverses
+  handedness, which RI's camera basis for a general lookat produces.
 
 ## The shading language
 
@@ -196,8 +214,8 @@ rather than a tour.
 - **A run is a batch, and a batch of one is not a special case.** `sl::runtime::Machine` runs a
   flat program under a stack of execution masks: a condition every point agrees about is a
   jump, one they disagree about runs both arms with the lanes that took each, and `break`,
-  `continue` and `return` clear lanes rather than jumping. moya's batch is a micropolygon grid,
-  talyn's is one hit, and an imager's is a row of pixels.
+  `continue` and `return` clear lanes rather than jumping. A grid's batch is its micropolygons,
+  a traced hit's is one point, and an imager's is a row of pixels.
 - **A call is inlined.** A run has no register file per call and no call stack, so a shader's
   own function is pasted in where it was called, bracketed so that a `return` inside it means
   the lanes are done with the function rather than with the shader. Recursion is rejected at
@@ -211,33 +229,32 @@ rather than a tour.
   that transform, and the declared defaults are *run* through the renderer's space table rather
   than remembered - which is what makes `point "shader" (0, 0, 1)` in the standard lights aim
   where the scene put them. A position a scene binds is stated in the same space.
-- **The two renderers' current spaces differ.** moya works in camera space and talyn in world
-  space, which is why the space table is a callback each implements rather than a constant the
-  library holds. `"object"` is the one moya declines to answer: it is the transform at the
-  primitive rather than at the shader, and a primitive does not carry one.
+- **A grid and a traced hit have different current spaces.** `GridShader` works in camera space
+  and `trace::HitShader` in world space, which is why the space table is a callback each
+  implements rather than a constant the library holds. `"object"` is the one a grid declines to
+  answer: it is the transform at the primitive rather than at the shader, and a primitive does
+  not carry one.
 - **A traced primitive carries the lights that were on when it was made**, as one set shared by
   every primitive made until they change. A primitive given none, which is how a scene built in
   code is lit, is shaded by the scene's own list.
 - **`transmission()` is where a shadow lives**, and the three standard directional lights call
-  it. Both renderers answer it from the shared ray tracer; one that cannot lets all the light
-  through, so that one call is the whole of the difference between a shadowed scene and an
+  it. Both hiders answer it from the shared ray tracer; a renderer that cannot lets all the
+  light through, so that one call is the whole of the difference between a shadowed scene and an
   unshadowed one. A ray leaving a surface is offset along the geometric normal and toward the light: started on
   the surface it meets the surface it left, and every lit pixel comes out black in a pattern
   that reads as a normal fault rather than a numerical one.
 - **`trace()` goes as deep as `Option "trace" "maxdepth"` says**, two by default, and past it
-  answers the background. talyn keeps a machine per program per depth, because a surface
+  answers the background. `HitShader` keeps a machine per program per depth, because a surface
   tracing into another with the same shader is still part way through its run when the other
   starts.
-- **moya traces through the shared scene**, per
-  [ADR-0077](adr/0077-one-ray-tracer-both-renderers-reach.md). Every primitive a scene gives is
-  added to it in world space as it arrives, before the hider splits it, and `GridShader` carries
-  a shading point's ray from camera space into world space, started off the grid's plane. A grid
-  is shaded once for all of its samples, so its rays look at the scene at the shutter's open. A
-  traced hit on a moya primitive takes the primitive's colour rather than a varying `"Cs"`.
+- **A grid traces through the shared scene.** `GridShader` carries a shading point's ray from
+  camera space into world space, started off the grid's plane. A grid is shaded once for all of
+  its samples, so under the reyes hider its rays look at the scene at the shutter's open, where
+  the ray hider's look at each sample's time.
 - **A light shader runs in its own space.** While a light runs, `"shader"` is the light's
   placement rather than the surface's, which is what puts a `pointlight`'s default `from` where
   the scene placed it.
-- **talyn composites what a ray passes through**, front to back by each surface's `Oi`, with
+- **A traced ray composites what it passes through**, front to back by each surface's `Oi`, with
   the background behind what is left. A shader that never writes `Oi` is as opaque as its
   primitive's `Os`. A ray carrying on through a surface is not a traced ray and does not count
   against the depth. `transmission()` multiplies by every occluder's `Os`, read off the
@@ -269,7 +286,7 @@ rather than a tour.
 
 ## Normals
 
-Both renderers carry two, because SL's `faceforward` and `calculatenormal` are defined in terms
+Both hiders carry two, because SL's `faceforward` and `calculatenormal` are defined in terms
 of the pair: **`Ng` is the geometric normal** - the plane the primitive lies in, one value across
 it, wound the way its vertices are - and **`N` is the shading normal**, which a scene sets per
 vertex with a varying `"N"` and which is `Ng` when it does not.
@@ -284,7 +301,7 @@ vertex with a varying `"N"` and which is `Ng` when it does not.
   pieces are built from intersection points, which have neither. A piece inherits the whole
   primitive's plane through `ReyesPrimitive::place()`, so a surface large enough to split is
   faceted per piece.
-- talyn's `Triangle` has a constructor per case, and `shadingNormal(u, v)` interpolates over the
+- `trace::Triangle` has a constructor per case, and `shadingNormal(u, v)` interpolates over the
   barycentric coordinates `type::Ray::intersects` reports - `u` weighs `b` and `v` weighs `c`, so
   `a` carries the rest. The overload that reports them exists because Moller-Trumbore solves for
   them on its way to the distance and the four argument form throws them away.

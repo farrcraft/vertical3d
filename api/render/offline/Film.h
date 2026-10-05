@@ -16,7 +16,7 @@
 namespace v3d::render::offline {
 
 /**
- * What a renderer's samples become pixels through, per ADR-0076. Both renderers write here,
+ * What a renderer's samples become pixels through, per ADR-0076. Both of moya's hiders write here,
  * and the pixel filter is applied here and nowhere else.
  *
  * A sample is filtered into every pixel whose centre is within the filter's width of it, as it

@@ -50,8 +50,8 @@ v3d_add_test(render_device
 	"device/TimingsTest.cpp")
 
 # A committed picture is resolved against the working directory, which v3d_add_test points at
-# the executable, so the references have to sit beside it - the same copy moya and talyn make
-# for theirs. What may be in one is ADR-0054.
+# the executable, so the references have to sit beside it - the same copy moya makes for
+# its own. What may be in one is ADR-0054.
 add_custom_command(TARGET v3dtest_render_device POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy_directory
 		"${CMAKE_CURRENT_SOURCE_DIR}/device/data"

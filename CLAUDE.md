@@ -8,7 +8,7 @@ document that owns a subject before working on it.
 
 A monorepo for the Vertical3D ecosystem: reusable C++ libraries under `api/` (targets named
 `v3dlib_*`, one per subdirectory) plus the apps that consume them at the top level — pong,
-tetris, voxel, odyssey, vertical3d, talyn, moya, imagetool, v3dshell. Every one of those
+tetris, voxel, odyssey, vertical3d, moya, imagetool, v3dshell. Every one of those
 directories builds with the tree. [examples/](examples/) is the exception: it consumes the
 repository rather than being part of it.
 
@@ -28,7 +28,7 @@ is SDL3.
 | A lint or analyser finding | [docs/Linting.md](docs/Linting.md) |
 | Style, and what a comment is for | [docs/Conventions.md](docs/Conventions.md) |
 | `api/render/realtime` | [docs/RenderingPipeline.md](docs/RenderingPipeline.md) |
-| `talyn`, `moya`, `api/render/offline`, RIB | [docs/OfflineRenderers.md](docs/OfflineRenderers.md) |
+| `moya`, `api/render/offline`, RIB | [docs/OfflineRenderers.md](docs/OfflineRenderers.md) |
 | `api/ui` | [docs/UserInterface.md](docs/UserInterface.md) |
 | `vertical3d/`, `api/brep` | [docs/Editor.md](docs/Editor.md) |
 | Why something is shaped as it is | [docs/adr/](docs/adr/), indexed in its README |

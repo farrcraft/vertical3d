@@ -20,7 +20,7 @@ namespace v3d::render::offline::sl::runtime {
  *
  * The buffer is **one element wide when uniform and one per shading point when varying**,
  * and `lane()` is what makes the two read the same way - a uniform value answers lane zero
- * for every point. That is the whole of why a grid of a hundred points and talyn's single
+ * for every point. That is the whole of why a grid of a hundred points and a single traced
  * hit are one code path rather than two: the batch is the execution model, and a batch of
  * one is not a special case of it.
  *

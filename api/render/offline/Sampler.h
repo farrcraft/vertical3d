@@ -40,7 +40,7 @@ class Sampler final {
      * jittered within each cell.
      *
      * An axis with one stratum is sampled at the pixel centre rather than jittered, so one
-     * sample a pixel is the pixel centre both renderers sampled before there was a sampler.
+     * sample a pixel is exactly the pixel centre.
      *
      * @param pass which set of samples; a pixel asked for more than once is given a different
      *        set each time, and the same set for the same pass

@@ -41,7 +41,7 @@ class Model : public Asset {
      * It is on the asset rather than on the material because it is a fact about how the
      * file was packaged rather than about the surface, and because api/type is built
      * against glm alone - a material holding an image would take api/image into every
-     * consumer of a mesh, offline renderers included.
+     * consumer of a mesh, the offline renderer included.
      *
      * Null for a material whose texture was named, which is every .gltf pointing at a file
      * beside it, and for one with no texture at all.

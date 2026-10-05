@@ -99,7 +99,7 @@ std::size_t count(const Program & program, Opcode opcode) {
 
 /**
  * The point of the batch: a hand-built program computes the same arithmetic over four points
- * and over one, and answers the same thing at the point they share. talyn's single hit is not
+ * and over one, and answers the same thing at the point they share. A single traced hit is not
  * a special case of the model, it is a batch one wide.
  **/
 BOOST_AUTO_TEST_CASE(slmachine_batch_of_one_test) {
