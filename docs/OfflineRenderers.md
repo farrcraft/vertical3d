@@ -55,8 +55,10 @@ of sampling, recursion and the shared ray tracer. What is left is in
 
 ## Building
 
-**`api/render/CMakeLists.txt` adds `offline` below its `set(CMAKE_CXX_FLAGS "/utf-8")` line**,
-where `tests` already is. A subdirectory added above that line does not inherit the flag.
+**`api/render/offline` is added by `api/CMakeLists.txt`** from the library manifest, as every api
+library is, and so inherits nothing from the `api/render` directory above it. It sets `/utf-8` in
+its own CMakeLists for that reason: spdlog's bundled fmt has a `static_assert` that fails without
+it.
 
 ## Framebuffers and raster space
 

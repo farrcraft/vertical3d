@@ -112,7 +112,7 @@ imported target, so it has no link line to appear in.
 - `v3d_add_shared_data(<target>)` copies the root [data/](../data/) beside the executable.
 - `v3d_add_app_data(<target>)` copies `<app>/data` beside the executable.
 - `v3d_add_test(<lib> <sources>)` — see [Testing.md](Testing.md).
-- `v3d_add_shader(<target> <source>)` — see below.
+- `v3d_add_shader(<target> <source> [OUTPUT <name>] [DEFINES <define>...])` — see below.
 
 **Assets shared by more than one app live in the root [data/](../data/)**, and an app's own
 live in `<app>/data`. Both are copied next to the executable, because the engine resolves an
@@ -128,14 +128,16 @@ not affect a run from the build tree until you copy it across.
 `v3d_add_shader(<target> <source>)` runs the Vulkan SDK's `glslc` over a GLSL file and writes
 SPIR-V as a C initialiser list into `<binary dir>/shaders/<name>.inc`. The source `#include`s
 that into a `uint32_t` array. The engine's shaders are in
-[api/render/shaders/](../api/render/shaders/).
+[api/render/shaders/](../api/render/shaders/). `OUTPUT` names the module something other than the
+source's file name and `DEFINES` are passed to the preprocessor, so one source compiled twice is
+two shaders: a skinned lit shader is its rigid one compiled with `SKINNED`.
 
 A shader may `#include` another file, beside it or by a relative path, with
 `#extension GL_GOOGLE_include_directive : require`. glslc writes a depfile of what was included,
 and the build reads it, so an edit to a shared include rebuilds every shader that uses it. The
 lit shaders share `shaders/lit/lit.glsl` this way
-([ADR-0067](adr/0067-lit-shaders-are-embedded-and-replaceable.md)), and the skinned ones
-`shaders/lit/skin.glsl` as well.
+([ADR-0067](adr/0067-lit-shaders-are-embedded-and-replaceable.md)), and `shaders/lit/pose.glsl`,
+which brings in `skin.glsl` when `SKINNED` is defined.
 
 `VULKAN_SDK` must point at an SDK install, or the first call to that function fails with
 "glslc was not found". The tool is looked for at that first call rather than at configure

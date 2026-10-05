@@ -88,9 +88,10 @@ v3d_add_shader(v3dlib_render "shaders/lit/cel.frag")
 v3d_add_shader(v3dlib_render "shaders/lit/outline.vert")
 v3d_add_shader(v3dlib_render "shaders/lit/outline.frag")
 v3d_add_shader(v3dlib_render "shaders/lit/shadow.vert")
-v3d_add_shader(v3dlib_render "shaders/lit/skinned_mesh.vert")
-v3d_add_shader(v3dlib_render "shaders/lit/skinned_outline.vert")
-v3d_add_shader(v3dlib_render "shaders/lit/skinned_shadow.vert")
+# a skinned model's are the same three compiled with SKINNED - see shaders/lit/pose.glsl
+v3d_add_shader(v3dlib_render "shaders/lit/mesh.vert" OUTPUT "skinned_mesh.vert" DEFINES SKINNED)
+v3d_add_shader(v3dlib_render "shaders/lit/outline.vert" OUTPUT "skinned_outline.vert" DEFINES SKINNED)
+v3d_add_shader(v3dlib_render "shaders/lit/shadow.vert" OUTPUT "skinned_shadow.vert" DEFINES SKINNED)
 
 # The pass over a whole target, and the colour grade drawn with it.
 v3d_add_shader(v3dlib_render "shaders/fullscreen.vert")

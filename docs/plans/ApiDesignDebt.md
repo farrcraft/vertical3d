@@ -573,6 +573,19 @@ needs, and it does not build that structure.
 
 O4, O5, O6.
 
+**Closed.** A `Signature` names its `Body`, so a function cannot be declared without one, and
+`calculatenormal` - which had none and fell to the default - is a declared stub; a test holds the
+source-written and stubbed sets to what the table says. `syntax::forEachChild` is the one list of
+a node's children, and the varying inference is `sl::Inference`. `Machine::prepare` holds its
+program, and `run()` and `initialise()` take none. The RIB reader forwards `AreaLightSource`,
+`MakeTexture` and a motion block's later poses to `Handler` methods whose defaults are today's
+fallbacks, and reads the name-and-parameters requests and its request groups through tables. The
+lexers share `offline::Characters` and `offline::Lexeme`. `moya::Hider` is the interface, and
+`RayHider` solves the camera to raster transformation for x and y at a depth rather than
+rebuilding it from the field of view - a full inverse is ruined by RI's default clipping range.
+`v3d_add_shader` takes `OUTPUT` and `DEFINES`, and the three skinned shaders are their rigid ones
+compiled with `SKINNED`. OfflineRenderers.md's build paragraph names `api/CMakeLists.txt`.
+
 A built-in's body is stored in its `Signature`, so registering one is one row and an unregistered
 body is a build-time gap rather than a silent default. `forEachChild` on the syntax nodes, and
 storage inference moves to its own class over the annotated tree. `Machine` binds its program at

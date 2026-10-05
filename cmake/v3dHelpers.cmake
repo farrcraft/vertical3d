@@ -124,7 +124,12 @@ endfunction()
 #
 # The tool is looked for here rather than at configure time, so that a build compiling no
 # shader is not stopped by its absence.
+#
+# OUTPUT names the module something other than the source's file name, and DEFINES are passed
+# to the preprocessor, so that one source compiled twice is two shaders rather than two copies
+# of a source.
 function(v3d_add_shader target source)
+	cmake_parse_arguments(PARSE_ARGV 2 shader "" "OUTPUT" "DEFINES")
 	if(NOT Vulkan_GLSLC_EXECUTABLE)
 		find_program(Vulkan_GLSLC_EXECUTABLE NAMES glslc HINTS "$ENV{VULKAN_SDK}/Bin" "$ENV{VULKAN_SDK}/bin")
 	endif()
@@ -132,17 +137,24 @@ function(v3d_add_shader target source)
 		message(FATAL_ERROR "glslc was not found - it ships with the Vulkan SDK, which VULKAN_SDK should point at")
 	endif()
 	get_filename_component(name ${source} NAME)
+	if(shader_OUTPUT)
+		set(name ${shader_OUTPUT})
+	endif()
 	set(output "${CMAKE_CURRENT_BINARY_DIR}/shaders/${name}.inc")
+	set(defines "")
+	foreach(define IN LISTS shader_DEFINES)
+		list(APPEND defines "-D${define}")
+	endforeach()
 	# glslc writes what the shader #included into a depfile, so an edit to a block several
 	# shaders share rebuilds every one of them rather than only the file that was named here
 	add_custom_command(
 		OUTPUT ${output}
 		COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/shaders"
-		COMMAND ${Vulkan_GLSLC_EXECUTABLE} --target-env=vulkan1.3 -O -mfmt=c -MD -MF "${output}.d" -MT ${output}
+		COMMAND ${Vulkan_GLSLC_EXECUTABLE} --target-env=vulkan1.3 -O -mfmt=c ${defines} -MD -MF "${output}.d" -MT ${output}
 			"${CMAKE_CURRENT_SOURCE_DIR}/${source}" -o ${output}
 		DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${source}"
 		DEPFILE "${output}.d"
-		COMMENT "Compiling ${source} to SPIR-V"
+		COMMENT "Compiling ${source} to SPIR-V as ${name}"
 		VERBATIM)
 	set_source_files_properties(${output} PROPERTIES HEADER_FILE_ONLY TRUE GENERATED TRUE)
 	target_sources(${target} PRIVATE ${output})
