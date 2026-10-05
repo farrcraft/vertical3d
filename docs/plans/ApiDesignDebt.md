@@ -555,6 +555,14 @@ Render the suites under both hiders before and after.
 
 O2, O3.
 
+**Closed.** `trace::Tracer` owns `see`, `transmitted`, `traced`, the depth and the machines, and
+works out the motion poses once per `time()` rather than per ray. `HitShader` is a stack object
+made per hit, so a traced ray's hit is shaded by another and nothing is saved or restored.
+`Primitive` has a virtual `intersect` and `describe`; the scene holds one list, and `all<Kind>()`
+is the typed view the tests read. A primitive the library has never seen is met and described,
+which `TraceSceneTest` shows with a plane defined in the test. The reference renders under both
+hiders pass unchanged.
+
 A `Tracer` owns `see`, `transmitted`, `traced` and the depth; the per-hit `Renderer` adapter is a
 stack object, so there is nothing to save and restore. `trace::Primitive` gains a virtual
 `intersect` and `describe` (or a variant), the scene holds one list, and motion poses are computed

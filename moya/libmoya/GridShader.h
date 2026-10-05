@@ -9,7 +9,7 @@
 #include <api/render/offline/sl/Globals.h>
 #include <api/render/offline/sl/runtime/Machine.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
-#include <api/render/offline/trace/HitShader.h>
+#include <api/render/offline/trace/Tracer.h>
 
 #include <map>
 #include <string>
@@ -102,7 +102,7 @@ class GridShader final : public v3d::render::offline::sl::runtime::Renderer {
     unsigned int batch_ = 1;
     std::map<const v3d::render::offline::sl::runtime::Program*, Run> runs_;
     /** What casts the rays, into the context's traced scene. **/
-    v3d::render::offline::trace::HitShader tracer_;
+    v3d::render::offline::trace::Tracer tracer_;
     /** Camera space to world space, and each shading point's Ng in world space. **/
     glm::mat4x4 toWorld_ = glm::mat4x4(1.0f);
     std::vector<glm::vec3> planes_;

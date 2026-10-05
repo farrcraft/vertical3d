@@ -28,7 +28,12 @@ every surface it meets and composite them in depth order, and [TODO.md](TODO.md)
 - **A hider name moya does not know is logged and leaves the hider as it was.**
 - **The ray tracer is shared by both**, per
   [ADR-0077](adr/0077-one-ray-tracer-both-renderers-reach.md): `offline::trace::Scene` holds
-  triangles and spheres in world space and `offline::trace::HitShader` shades what a ray meets.
+  its primitives in world space as one list, and `offline::trace::Tracer` traces rays through it
+  and shades what they meet. A primitive is anything with an `intersect` and a `describe` -
+  triangles and spheres are two - so a new kind is a new class and the scene does not change.
+  Each hit is shaded by a `trace::HitShader` made for it on the stack, which answers the
+  shader's callbacks; a hit a shader traces into gets its own, so nothing is saved and restored
+  around a traced ray.
   Every primitive a scene gives is added to it in world space as it arrives. The reyes hider
   reads it for `trace()` and `transmission()`, and the ray hider for everything.
 - **The depth plane is raster space z under either hider**: the projection, then the raster
@@ -106,8 +111,9 @@ pixels and resolves into a renderer's planes. Both hiders render through them.
   repeated inside a block would deform, which is not built: the reader hands the first to the
   renderer and lists the rest in `Reader::unsupported()`.
 - **The traced scene stores a moving triangle where the open end put it**, and
-  `trace::Scene::nearest()` takes a time: a ray is carried back into that pose and its hit is carried forward again. `HitShader`
-  carries the sample's time so its shadow rays look at the same moment.
+  `trace::Scene::nearest()` takes the poses at a time: a ray is carried back into that pose and its hit is carried forward
+  again. The `Tracer` works the poses out once for the sample's time, so its shadow and traced rays look at the same moment
+  without inverting a motion per ray.
 - **moya places a moving micropolygon per sample.** A primitive carries its moving object to eye
   transformation, and the hider moves the eye space corners from the open end to a sample's
   time. Its bound is where it is at eight slices of the shutter, grown by the furthest a corner
@@ -239,7 +245,7 @@ rather than a tour.
   is given rather than one per hider. `du` and `dv` are zero for a traced hit, which has no
   neighbouring point to difference.
 - **A grid and a traced hit have different current spaces.** `GridShader` works in camera space
-  and `trace::HitShader` in world space, which is why the space table is a callback each
+  and a traced hit in world space, which is why the space table is a callback each
   implements rather than a constant the library holds. `"object"` is the one a grid declines to
   answer: it is the transform at the primitive rather than at the shader, and a primitive does
   not carry one.
@@ -253,7 +259,7 @@ rather than a tour.
   the surface it meets the surface it left, and every lit pixel comes out black in a pattern
   that reads as a normal fault rather than a numerical one.
 - **`trace()` goes as deep as `Option "trace" "maxdepth"` says**, two by default, and past it
-  answers the background. `HitShader` keeps a machine per program per depth, because a surface
+  answers the background. The `Tracer` keeps a machine per program per depth, because a surface
   tracing into another with the same shader is still part way through its run when the other
   starts.
 - **A grid traces through the shared scene.** `GridShader` carries a shading point's ray from

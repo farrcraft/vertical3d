@@ -168,7 +168,7 @@ BOOST_AUTO_TEST_CASE(rayhider_buckets_nothing_test) {
     rightTriangle(rc);
 
     BOOST_CHECK_EQUAL(rc.framebuffer()->primitiveCount(), 0u);
-    BOOST_CHECK_EQUAL(rc.traced().triangles().size(), 1u);
+    BOOST_CHECK_EQUAL(rc.traced().all<v3d::render::offline::trace::Triangle>().size(), 1u);
 }
 
 BOOST_AUTO_TEST_CASE(rayhider_nearest_hit_test) {
@@ -345,10 +345,11 @@ BOOST_AUTO_TEST_CASE(rayhider_polygon_is_fanned_test) {
         "Polygon \"P\" [0 0 1  1 0 1  1 1 1  0 1 1]\n"
         "WorldEnd\n", &handler));
 
-    const std::vector<v3d::render::offline::trace::Triangle> & triangles = handler.context().traced().triangles();
+    const std::vector<const v3d::render::offline::trace::Triangle*> triangles =
+        handler.context().traced().all<v3d::render::offline::trace::Triangle>();
     BOOST_REQUIRE_EQUAL(triangles.size(), 2u);
-    BOOST_CHECK_EQUAL(triangles[0].a().x, 0.0f);
-    BOOST_CHECK_EQUAL(triangles[0].a().z, 2.0f);
+    BOOST_CHECK_EQUAL(triangles[0]->a().x, 0.0f);
+    BOOST_CHECK_EQUAL(triangles[0]->a().z, 2.0f);
 }
 
 /**
@@ -366,12 +367,13 @@ BOOST_AUTO_TEST_CASE(rayhider_normals_test) {
         "Polygon \"P\" [0 0 0  1 0 0  0 1 0] \"N\" [0 1 0  0 1 0  0 1 0]\n"
         "WorldEnd\n", &handler));
 
-    const std::vector<v3d::render::offline::trace::Triangle> & triangles = handler.context().traced().triangles();
+    const std::vector<const v3d::render::offline::trace::Triangle*> triangles =
+        handler.context().traced().all<v3d::render::offline::trace::Triangle>();
     BOOST_REQUIRE_EQUAL(triangles.size(), 2u);
-    BOOST_TEST((triangles[0].geometricNormal() == glm::vec3(0.0f, 0.0f, 1.0f)));
-    BOOST_TEST((triangles[0].shadingNormal(0.25f, 0.25f) == glm::vec3(0.0f, 0.0f, 1.0f)));
-    BOOST_TEST((triangles[1].shadingNormal(0.25f, 0.25f) == glm::vec3(0.0f, 1.0f, 0.0f)));
-    BOOST_TEST((triangles[1].geometricNormal() == glm::vec3(0.0f, 0.0f, 1.0f)));
+    BOOST_TEST((triangles[0]->geometricNormal() == glm::vec3(0.0f, 0.0f, 1.0f)));
+    BOOST_TEST((triangles[0]->shadingNormal(0.25f, 0.25f) == glm::vec3(0.0f, 0.0f, 1.0f)));
+    BOOST_TEST((triangles[1]->shadingNormal(0.25f, 0.25f) == glm::vec3(0.0f, 1.0f, 0.0f)));
+    BOOST_TEST((triangles[1]->geometricNormal() == glm::vec3(0.0f, 0.0f, 1.0f)));
 }
 
 /**
@@ -390,16 +392,17 @@ BOOST_AUTO_TEST_CASE(rayhider_normal_inverse_transpose_test) {
         "Polygon \"P\" [1 0 0  0 1 0  0 1 1] \"N\" [1 1 0  1 1 0  1 1 0]\n"
         "WorldEnd\n", &handler));
 
-    const std::vector<v3d::render::offline::trace::Triangle> & triangles = handler.context().traced().triangles();
+    const std::vector<const v3d::render::offline::trace::Triangle*> triangles =
+        handler.context().traced().all<v3d::render::offline::trace::Triangle>();
     BOOST_REQUIRE_EQUAL(triangles.size(), 1u);
     // (1, 1, 0) under the inverse transpose of a scale of two in y has its y halved
     const glm::vec3 expected = glm::normalize(glm::vec3(1.0f, 0.5f, 0.0f));
-    const glm::vec3 shading = triangles[0].shadingNormal(0.25f, 0.25f);
+    const glm::vec3 shading = triangles[0]->shadingNormal(0.25f, 0.25f);
     BOOST_TEST(shading.x == expected.x, boost::test_tools::tolerance(0.0001f));
     BOOST_TEST(shading.y == expected.y, boost::test_tools::tolerance(0.0001f));
     // the "N" given was the polygon's own plane, so the plane the moved points lie in agrees
-    BOOST_TEST(triangles[0].geometricNormal().x == expected.x, boost::test_tools::tolerance(0.0001f));
-    BOOST_TEST(triangles[0].geometricNormal().y == expected.y, boost::test_tools::tolerance(0.0001f));
+    BOOST_TEST(triangles[0]->geometricNormal().x == expected.x, boost::test_tools::tolerance(0.0001f));
+    BOOST_TEST(triangles[0]->geometricNormal().y == expected.y, boost::test_tools::tolerance(0.0001f));
 }
 
 /**
@@ -420,9 +423,9 @@ BOOST_AUTO_TEST_CASE(rayhider_sphere_test) {
         "WorldEnd\n", &handler));
 
     const v3d::render::offline::trace::Scene & scene = handler.context().traced();
-    BOOST_REQUIRE_EQUAL(scene.spheres().size(), 1u);
-    BOOST_CHECK_CLOSE(scene.spheres()[0].colour().g, 0.4f, 0.001f);
-    BOOST_CHECK_CLOSE(scene.spheres()[0].opacity().r, 0.5f, 0.001f);
+    BOOST_REQUIRE_EQUAL(scene.all<v3d::render::offline::trace::Sphere>().size(), 1u);
+    BOOST_CHECK_CLOSE(scene.all<v3d::render::offline::trace::Sphere>()[0]->colour().g, 0.4f, 0.001f);
+    BOOST_CHECK_CLOSE(scene.all<v3d::render::offline::trace::Sphere>()[0]->opacity().r, 0.5f, 0.001f);
 
     v3d::render::offline::trace::Hit hit;
     BOOST_REQUIRE(scene.nearest(v3d::type::geometry::Ray(glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 1.0f)), 0.0f, &hit));
@@ -449,11 +452,12 @@ BOOST_AUTO_TEST_CASE(rayhider_lights_per_primitive_test) {
         "Polygon \"P\" [0 0 7  1 0 7  0 1 7]\n"
         "WorldEnd\n", &handler));
 
-    const std::vector<v3d::render::offline::trace::Triangle> & triangles = handler.context().traced().triangles();
+    const std::vector<const v3d::render::offline::trace::Triangle*> triangles =
+        handler.context().traced().all<v3d::render::offline::trace::Triangle>();
     BOOST_REQUIRE_EQUAL(triangles.size(), 3u);
-    BOOST_REQUIRE(triangles[0].lights());
-    BOOST_CHECK_EQUAL(triangles[0].lights()->size(), 2u);
-    BOOST_CHECK(triangles[1].lights() == triangles[0].lights());
-    BOOST_REQUIRE(triangles[2].lights());
-    BOOST_CHECK_EQUAL(triangles[2].lights()->size(), 1u);
+    BOOST_REQUIRE(triangles[0]->lights());
+    BOOST_CHECK_EQUAL(triangles[0]->lights()->size(), 2u);
+    BOOST_CHECK(triangles[1]->lights() == triangles[0]->lights());
+    BOOST_REQUIRE(triangles[2]->lights());
+    BOOST_CHECK_EQUAL(triangles[2]->lights()->size(), 1u);
 }

@@ -79,6 +79,7 @@ v3d_add_api_library(render_offline
 	"trace/Hit.h"
 	"trace/Scene.h" "trace/Scene.cxx"
 	"trace/HitShader.h" "trace/HitShader.cxx"
+	"trace/Tracer.h" "trace/Tracer.cxx"
 )
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.

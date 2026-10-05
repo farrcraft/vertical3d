@@ -7,7 +7,7 @@
 
 #include <api/render/offline/Film.h>
 #include <api/render/offline/Sampler.h>
-#include <api/render/offline/trace/HitShader.h>
+#include <api/render/offline/trace/Tracer.h>
 
 #include <algorithm>
 #include <cmath>
@@ -109,7 +109,7 @@ void RayHider::render(const v3d::render::offline::trace::Scene & scene, v3d::ren
 
     // one of these for the render rather than one per pixel: it holds the register files,
     // and sizing one per pixel is the one allocation a tracer would notice
-    v3d::render::offline::trace::HitShader shader(&scene, textures);
+    v3d::render::offline::trace::Tracer tracer(&scene, textures);
     const v3d::render::offline::Sampler sampler(sampling);
     v3d::render::offline::Film film(width, height, sampling);
     for (unsigned int row = 0; row < height; row++) {
@@ -122,8 +122,8 @@ void RayHider::render(const v3d::render::offline::trace::Scene & scene, v3d::ren
                 const std::vector<v3d::render::offline::Sampler::Sample> set = sampler.pixel(column, row, pass);
                 for (const v3d::render::offline::Sampler::Sample & at : set) {
                     const v3d::type::geometry::Ray traced = ray(at.raster, at.lens, sampling);
-                    shader.time(at.time);
-                    const v3d::render::offline::trace::HitShader::Seen seen = shader.see(traced);
+                    tracer.time(at.time);
+                    const v3d::render::offline::trace::Tracer::Seen seen = tracer.see(traced);
 
                     v3d::render::offline::Film::Sample sample;
                     sample.raster = at.raster;

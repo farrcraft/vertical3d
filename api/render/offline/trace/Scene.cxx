@@ -8,126 +8,12 @@
 #include <limits>
 #include <vector>
 
+#include <boost/make_shared.hpp>
 #include <glm/geometric.hpp>
 #include <glm/mat3x3.hpp>
 #include <glm/matrix.hpp>
 
 namespace v3d::render::offline::trace {
-
-namespace {
-
-/**
- * The nearest primitive a ray has met so far, and where on it.
- **/
-class Nearest final {
- public:
-    float distance = std::numeric_limits<float>::max();
-    const Triangle* triangle = nullptr;
-    const Sphere* sphere = nullptr;
-    /** A triangle's barycentric weights, or the point on a sphere in its own space. **/
-    float u = 0.0f;
-    float v = 0.0f;
-    glm::vec3 point = glm::vec3(0.0f);
-};
-
-/**
- * Where each motion has carried its primitives by a time from where they are stored, and the
- * way back.
- **/
-class Poses final {
- public:
-    std::vector<glm::mat4x4> ahead;
-    std::vector<glm::mat4x4> backward;
-};
-
-void meetTriangles(const std::vector<Triangle> & triangles, const v3d::type::geometry::Ray & ray, float from,
-    const Poses & poses, Nearest* found) {
-    for (const Triangle & triangle : triangles) {
-        const int motion = triangle.motion();
-        const v3d::type::geometry::Ray local = motion < 0 ? ray :
-            v3d::type::geometry::Ray(glm::vec3(poses.backward[motion] * glm::vec4(ray.origin(), 1.0f)),
-                glm::mat3(poses.backward[motion]) * ray.direction());
-        float distance = 0.0f;
-        float u = 0.0f;
-        float v = 0.0f;
-        if (!local.intersects(triangle.a(), triangle.b(), triangle.c(), &distance, &u, &v)) {
-            continue;
-        }
-        if (motion >= 0) {
-            // a distance along the ray taken back is in the stored pose's units, which a
-            // motion that scales does not keep
-            const glm::vec3 there(poses.ahead[motion] * glm::vec4(local.origin() + local.direction() * distance, 1.0f));
-            distance = glm::dot(there - ray.origin(), ray.direction());
-        }
-        if (distance <= from || distance >= found->distance) {
-            continue;
-        }
-        found->distance = distance;
-        found->triangle = &triangle;
-        found->sphere = nullptr;
-        found->u = u;
-        found->v = v;
-    }
-}
-
-void meetSpheres(const std::vector<Sphere> & spheres, const v3d::type::geometry::Ray & ray, float from,
-    const Poses & poses, Nearest* found) {
-    for (const Sphere & sphere : spheres) {
-        const int motion = sphere.motion();
-        // taken back unnormalised, so the parameter along it is still the ray's distance
-        const glm::vec3 origin = motion < 0 ? ray.origin() :
-            glm::vec3(poses.backward[motion] * glm::vec4(ray.origin(), 1.0f));
-        const glm::vec3 direction = motion < 0 ? ray.direction() : glm::mat3(poses.backward[motion]) * ray.direction();
-        float distance = 0.0f;
-        glm::vec3 point(0.0f);
-        if (!sphere.intersects(origin, direction, from, &distance, &point) || distance >= found->distance) {
-            continue;
-        }
-        found->distance = distance;
-        found->triangle = nullptr;
-        found->sphere = &sphere;
-        found->point = point;
-    }
-}
-
-/**
- * Everything a shader reads at the nearest hit, with a moving primitive's normals carried
- * forward to the time its hit was found at.
- **/
-void fill(const Nearest & found, const v3d::type::geometry::Ray & ray, const Poses & poses, Hit* hit) {
-    hit->distance = found.distance;
-    hit->point = ray.origin() + ray.direction() * found.distance;
-    if (found.triangle != nullptr) {
-        hit->primitive = found.triangle;
-        hit->normal = found.triangle->shadingNormal(found.u, found.v);
-        hit->geometric = found.triangle->geometricNormal();
-        hit->u = found.u;
-        hit->v = found.v;
-        const glm::vec2 st = found.triangle->st(found.u, found.v);
-        hit->s = st.x;
-        hit->t = st.y;
-    } else {
-        hit->primitive = found.sphere;
-        hit->normal = found.sphere->normal(found.point);
-        hit->geometric = hit->normal;
-        const glm::vec2 parameters = found.sphere->parameters(found.point);
-        hit->u = parameters.x;
-        hit->v = parameters.y;
-        hit->s = parameters.x;
-        hit->t = parameters.y;
-    }
-    const int motion = hit->primitive->motion();
-    if (motion >= 0) {
-        const glm::mat3 normals = glm::transpose(glm::inverse(glm::mat3(poses.ahead[motion])));
-        hit->normal = glm::normalize(normals * hit->normal);
-        if (glm::length(hit->geometric) > 0.0f) {
-            hit->geometric = glm::normalize(normals * hit->geometric);
-        }
-    }
-    hit->incident = ray.direction();
-}
-
-};  // namespace
 
 Scene::Scene() {
 }
@@ -157,28 +43,25 @@ int Scene::motion(const v3d::render::offline::MovingTransform & placed) {
     return static_cast<int>(motions_.size()) - 1;
 }
 
+void Scene::add(const boost::shared_ptr<Primitive> & primitive, const v3d::render::offline::MovingTransform & placed) {
+    primitive->motion_ = motion(placed);
+    primitives_.push_back(primitive);
+}
+
 void Scene::add(const Triangle & triangle) {
-    triangles_.push_back(triangle);
+    primitives_.push_back(boost::make_shared<Triangle>(triangle));
 }
 
 void Scene::add(const Triangle & triangle, const v3d::render::offline::MovingTransform & placed) {
-    Triangle moving(triangle);
-    moving.motion_ = motion(placed);
-    triangles_.push_back(moving);
-}
-
-const std::vector<Triangle> & Scene::triangles() const {
-    return triangles_;
+    add(boost::make_shared<Triangle>(triangle), placed);
 }
 
 void Scene::add(const Sphere & sphere, const v3d::render::offline::MovingTransform & placed) {
-    Sphere moving(sphere);
-    moving.motion_ = motion(placed);
-    spheres_.push_back(moving);
+    add(boost::make_shared<Sphere>(sphere), placed);
 }
 
-const std::vector<Sphere> & Scene::spheres() const {
-    return spheres_;
+const std::vector<boost::shared_ptr<const Primitive>> & Scene::primitives() const {
+    return primitives_;
 }
 
 void Scene::add(const v3d::render::offline::sl::Placed & light) {
@@ -189,7 +72,7 @@ const std::vector<v3d::render::offline::sl::Placed> & Scene::lights() const {
     return lights_;
 }
 
-bool Scene::nearest(const v3d::type::geometry::Ray & ray, float from, Hit* hit, float time) const {
+Scene::Poses Scene::poses(float time) const {
     Poses poses;
     poses.ahead.resize(motions_.size());
     poses.backward.resize(motions_.size());
@@ -197,15 +80,52 @@ bool Scene::nearest(const v3d::type::geometry::Ray & ray, float from, Hit* hit, 
         poses.ahead[i] = motions_[i].at(time) * glm::inverse(motions_[i].open());
         poses.backward[i] = glm::inverse(poses.ahead[i]);
     }
+    return poses;
+}
 
-    Nearest found;
-    meetTriangles(triangles_, ray, from, poses, &found);
-    meetSpheres(spheres_, ray, from, poses, &found);
-    const bool met = found.triangle != nullptr || found.sphere != nullptr;
-    if (met && hit != nullptr) {
-        fill(found, ray, poses, hit);
+bool Scene::nearest(const v3d::type::geometry::Ray & ray, float from, Hit* hit, float time) const {
+    return nearest(ray, from, hit, poses(time));
+}
+
+bool Scene::nearest(const v3d::type::geometry::Ray & ray, float from, Hit* hit, const Poses & poses) const {
+    const Primitive* met = nullptr;
+    Intersection nearest;
+    nearest.distance = std::numeric_limits<float>::max();
+    for (const boost::shared_ptr<const Primitive> & primitive : primitives_) {
+        const int motion = primitive->motion();
+        Pose pose;
+        if (motion >= 0) {
+            pose.ahead = &poses.ahead[motion];
+            pose.backward = &poses.backward[motion];
+        }
+        Intersection found;
+        if (primitive->intersect(ray, from, pose, &found) && found.distance < nearest.distance) {
+            nearest = found;
+            met = primitive.get();
+        }
     }
-    return met;
+    if (met == nullptr) {
+        return false;
+    }
+    if (hit == nullptr) {
+        return true;
+    }
+
+    hit->primitive = met;
+    hit->distance = nearest.distance;
+    hit->point = ray.origin() + ray.direction() * nearest.distance;
+    met->describe(nearest, hit);
+    // a moving primitive's normals are carried forward to the time its hit was found at
+    const int motion = met->motion();
+    if (motion >= 0) {
+        const glm::mat3 normals = glm::transpose(glm::inverse(glm::mat3(poses.ahead[motion])));
+        hit->normal = glm::normalize(normals * hit->normal);
+        if (glm::length(hit->geometric) > 0.0f) {
+            hit->geometric = glm::normalize(normals * hit->geometric);
+        }
+    }
+    hit->incident = ray.direction();
+    return true;
 }
 
 const glm::vec3 & Scene::background() const {

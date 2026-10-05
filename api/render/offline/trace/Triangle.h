@@ -58,6 +58,10 @@ class Triangle final : public Primitive {
     /** SL's s and t at a hit, weighted as shadingNormal() weighs the normals. **/
     glm::vec2 st(float u, float v) const;
 
+    bool intersect(const v3d::type::geometry::Ray & ray, float from, const Pose & pose,
+        Intersection* found) const override;
+    void describe(const Intersection & found, Hit* hit) const override;
+
  private:
     glm::vec3 a_;
     glm::vec3 b_;

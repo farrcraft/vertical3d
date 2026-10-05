@@ -6,6 +6,9 @@
 #include "Triangle.h"
 
 #include <glm/geometric.hpp>
+#include <glm/mat3x3.hpp>
+
+#include "Hit.h"
 
 namespace v3d::render::offline::trace {
 
@@ -67,6 +70,42 @@ void Triangle::st(const glm::vec2 & a, const glm::vec2 & b, const glm::vec2 & c)
 
 glm::vec2 Triangle::st(float u, float v) const {
     return sta_ * (1.0f - u - v) + stb_ * u + stc_ * v;
+}
+
+bool Triangle::intersect(const v3d::type::geometry::Ray & ray, float from, const Pose & pose,
+    Intersection* found) const {
+    const v3d::type::geometry::Ray local = pose.backward == nullptr ? ray :
+        v3d::type::geometry::Ray(glm::vec3(*pose.backward * glm::vec4(ray.origin(), 1.0f)),
+            glm::mat3(*pose.backward) * ray.direction());
+    float distance = 0.0f;
+    float u = 0.0f;
+    float v = 0.0f;
+    if (!local.intersects(a_, b_, c_, &distance, &u, &v)) {
+        return false;
+    }
+    if (pose.ahead != nullptr) {
+        // a distance along the ray taken back is in the stored pose's units, which a
+        // motion that scales does not keep
+        const glm::vec3 there(*pose.ahead * glm::vec4(local.origin() + local.direction() * distance, 1.0f));
+        distance = glm::dot(there - ray.origin(), ray.direction());
+    }
+    if (distance <= from) {
+        return false;
+    }
+    found->distance = distance;
+    found->u = u;
+    found->v = v;
+    return true;
+}
+
+void Triangle::describe(const Intersection & found, Hit* hit) const {
+    hit->normal = shadingNormal(found.u, found.v);
+    hit->geometric = geometric_;
+    hit->u = found.u;
+    hit->v = found.v;
+    const glm::vec2 coordinates = st(found.u, found.v);
+    hit->s = coordinates.x;
+    hit->t = coordinates.y;
 }
 
 };  // namespace v3d::render::offline::trace

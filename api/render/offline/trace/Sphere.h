@@ -52,6 +52,10 @@ class Sphere final : public Primitive {
      **/
     glm::vec2 parameters(const glm::vec3 & point) const;
 
+    bool intersect(const v3d::type::geometry::Ray & ray, float from, const Pose & pose,
+        Intersection* found) const override;
+    void describe(const Intersection & found, Hit* hit) const override;
+
  private:
     float radius_;
     float zmin_;

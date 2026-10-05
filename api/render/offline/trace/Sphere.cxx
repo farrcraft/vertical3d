@@ -12,6 +12,8 @@
 #include <glm/mat3x3.hpp>
 #include <glm/matrix.hpp>
 
+#include "Hit.h"
+
 namespace v3d::render::offline::trace {
 
 namespace {
@@ -86,6 +88,25 @@ glm::vec2 Sphere::parameters(const glm::vec3 & point) const {
     const float latitude = std::asin(std::clamp(point.z / radius_, -1.0f, 1.0f));
     return glm::vec2(thetamax_ > 0.0f ? phi / thetamax_ : 0.0f,
         high > low ? (latitude - low) / (high - low) : 0.0f);
+}
+
+bool Sphere::intersect(const v3d::type::geometry::Ray & ray, float from, const Pose & pose,
+    Intersection* found) const {
+    // taken back unnormalised, so the parameter along it is still the ray's distance
+    const glm::vec3 origin = pose.backward == nullptr ? ray.origin() :
+        glm::vec3(*pose.backward * glm::vec4(ray.origin(), 1.0f));
+    const glm::vec3 direction = pose.backward == nullptr ? ray.direction() : glm::mat3(*pose.backward) * ray.direction();
+    return intersects(origin, direction, from, &found->distance, &found->point);
+}
+
+void Sphere::describe(const Intersection & found, Hit* hit) const {
+    hit->normal = normal(found.point);
+    hit->geometric = hit->normal;
+    const glm::vec2 surface = parameters(found.point);
+    hit->u = surface.x;
+    hit->v = surface.y;
+    hit->s = surface.x;
+    hit->t = surface.y;
 }
 
 };  // namespace v3d::render::offline::trace

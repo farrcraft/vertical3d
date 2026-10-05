@@ -6,10 +6,12 @@
 #pragma once
 
 #include <api/render/offline/sl/Placed.h>
+#include <api/type/geometry/Ray.h>
 
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
+#include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
 namespace v3d::render::offline::trace {
@@ -20,12 +22,53 @@ namespace v3d::render::offline::trace {
  **/
 typedef boost::shared_ptr<const std::vector<v3d::render::offline::sl::Placed> > Lights;
 
+class Hit;
+
+/**
+ * Where a moving primitive is at the time a ray looks: the way from there back to the pose it
+ * is stored in, and forward again. Both null for a primitive that does not move.
+ **/
+class Pose final {
+ public:
+    const glm::mat4x4* ahead = nullptr;
+    const glm::mat4x4* backward = nullptr;
+};
+
+/**
+ * Where a ray met a primitive, as far as the primitive needs to describe the hit afterwards.
+ **/
+class Intersection final {
+ public:
+    /** Along the ray, in the ray's own units. **/
+    float distance = 0.0f;
+    /** A triangle's barycentric weights. **/
+    float u = 0.0f;
+    float v = 0.0f;
+    /** A sphere's point in its own space. **/
+    glm::vec3 point = glm::vec3(0.0f);
+};
+
 /**
  * What every primitive is shaded with: the colour, opacity, surface shader and lights that
  * were current when the scene made it, and the motion that carries it.
  **/
 class Primitive {
  public:
+    virtual ~Primitive() = default;
+
+    /**
+     * Where a world space ray meets the primitive, nearest past `from`, with the primitive
+     * where its pose puts it.
+     **/
+    virtual bool intersect(const v3d::type::geometry::Ray & ray, float from, const Pose & pose,
+        Intersection* found) const = 0;
+
+    /**
+     * The surface at an intersection, in the pose the primitive is stored in: its normals and
+     * its surface parameters. Where the hit is and what was hit are the scene's to fill in.
+     **/
+    virtual void describe(const Intersection & found, Hit* hit) const = 0;
+
     /** The colour that was current, which is SL's Cs. **/
     const glm::vec3 & colour() const;
 
@@ -58,6 +101,8 @@ class Primitive {
 
  protected:
     explicit Primitive(const glm::vec3 & colour);
+    Primitive(const Primitive &) = default;
+    Primitive & operator=(const Primitive &) = default;
 
  private:
     friend class Scene;
