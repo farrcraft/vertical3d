@@ -3,4 +3,4 @@ v3d_add_test(log
 	"TestMain.cpp"
 	"LoggerTest.cpp")
 
-target_link_libraries(v3dtest_log PRIVATE v3dlib_log)
+target_link_libraries(v3dtest_log PRIVATE v3dlib_log Boost::filesystem)

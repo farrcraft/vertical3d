@@ -8,10 +8,10 @@
 #include <spdlog/spdlog.h>
 
 #include <cstdio>
-#include <filesystem>
 #include <memory>
 #include <string>
 
+#include <boost/filesystem/operations.hpp>
 #include <boost/test/unit_test.hpp>
 
 /**
@@ -67,7 +67,7 @@ BOOST_AUTO_TEST_CASE(logger_open_moves_the_log_test) {
     v3d::log::Logger logger;
     logger.get()->info("opened");
     logger.get()->flush();
-    BOOST_TEST(std::filesystem::exists(path));
+    BOOST_TEST(boost::filesystem::exists(path));
 
     // back to the default for whatever runs after
     v3d::log::Logger::open("v3d.log");

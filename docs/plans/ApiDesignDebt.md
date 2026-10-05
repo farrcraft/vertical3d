@@ -394,6 +394,13 @@ ADR only if it changes the graph.
 
 E7, E8.
 
+**Closed.** `log::Logger::open()` says where the one log goes and `run<T>` calls it with the app
+path, so the log lands beside the executable when an app is started from elsewhere, which was
+checked by doing it; a `Logger` says in its header that it is a handle on a global, and `get()`
+returns by value. Config files every document under the name its entry gives: a type the api does
+not read is the app's own rather than a reason to refuse startup, so there is nothing to skip, and
+odyssey's board loads through config.
+
 The log sink is built once against `appPath()` (or `userPath()`), by `run<T>`, so `v3d.log` lands
 where NewProject.md and the CI workflow say it does. Then either inject it for real or make it one
 honest global accessor; `get()` returns by value. Config types are keyed by string, an unknown

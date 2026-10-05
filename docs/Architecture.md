@@ -55,7 +55,13 @@ four unless it says otherwise — and constructs only what was asked for, then c
 names over pixel rectangles in an image, read by `config::SpriteSheets`. **That one is also
 the only config document the tree writes**: a sprite sheet is packed by a tool rather than
 typed by a person, so `SpriteSheets::document()` emits what `load()` reads and a packer does
-not carry a second implementation of the format.
+not carry a second implementation of the format. Any other type is an app's own document,
+filed under the name its entry gives and asked for with `Config::get("map")` or
+`Engine::document("map")` — odyssey's board is one.
+
+**The log is `v3d.log` beside the executable**, because `run<T>` calls `log::Logger::open()` with
+the app path before anything logs. There is one log per process, and a `Logger` is a handle on
+it; a test or a tool that never opens one writes `v3d.log` in its working directory.
 
 **A config document names an image and never loads one**, per
 [ADR-0020](adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md): a theme's images and a
