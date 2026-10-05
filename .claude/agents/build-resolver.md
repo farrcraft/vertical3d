@@ -132,7 +132,7 @@ there building is still the only available check. CI runs the whole thing —
 [.github/workflows/ctest.yml](../../.github/workflows/ctest.yml).
 
 Rendering is not covered: it needs a window and a GPU, which is
-[ADR-0007](../../docs/adr/0007-ci-rendering-tests.md). For anything under `api/render`,
+[ADR-0007](../../docs/adr/0007-ci-render-tests-on-software-vulkan.md). For anything under `api/render`,
 "it builds" plus a run with the validation layer is the whole of the signal.
 
 ## Workflow

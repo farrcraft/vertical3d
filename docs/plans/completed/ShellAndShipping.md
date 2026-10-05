@@ -129,7 +129,7 @@ milestones 1 to 6. This tree was read at `e939bec`.
 * **No file chooser exists**, and nothing lists a directory. The editor reads and writes a fixed
   `project.json` ([Editor.md](../../Editor.md), [TODO.md](../../TODO.md#editor)). `ui::shell::GameMenu`
   is the precedent for a shell class that drives components a document names, which touches none of
-  [ADR-0047](../../adr/0047-a-component-type-is-checked-by-the-compiler.md)'s places.
+  [ADR-0047](../../adr/0047-code-exhaustive-enum-switches.md)'s places.
 * **A binding reaches key-up**, and a binding may fire on press, release or both. `KeyState` knows
   what is held by key name. Nothing maps a command back to its keys, so nothing can say a command
   is held.
@@ -161,10 +161,10 @@ milestones 1 to 6. This tree was read at `e939bec`.
 | [1](#step-1--strips-that-respect-pickable) | Strips that respect `pickable()` and `enabled()` | `api/ui` | — | done |
 | [2](#step-2--a-held-command) | A command held while any key bound to it is | `api/event`, `api/engine` | — | done |
 | [3](#step-3--a-relative-mouse) | A window in relative mouse mode, and voxel's mouselook on it | `api/render`, `voxel` | — | done |
-| [4](#step-4--a-document-read-forward) | A document read forward through a chain, and `Settings` and the project on it | `api/asset`, `api/engine`, `vertical3d` | **[0073](../../adr/0073-a-document-is-read-forward-one-version-at-a-time.md)** | done; accepted |
+| [4](#step-4--a-document-read-forward) | A document read forward through a chain, and `Settings` and the project on it | `api/asset`, `api/engine`, `vertical3d` | **[0073](../../adr/0073-files-migrate-old-documents-one-version-at-a-time.md)** | done; accepted |
 | [5](#step-5--the-record-the-shell-builds-the-uis-renderers) | The record: the shell builds the ui's renderers | `docs/adr` | **[0074](../../adr/0074-the-shell-builds-the-uis-renderers.md)** | done; accepted |
 | [6](#step-6--one-screen-and-four-apps-on-it) | `ui::shell::Screen`, and pong, tetris, voxel and the editor on it | `api/ui`, four apps | 0074 | done |
-| [7](#step-7--a-canvas-with-a-space-of-its-own) | A canvas with a space of its own, and pong's court in it | `api/render`, `pong` | **[0075](../../adr/0075-a-canvas-may-draw-in-a-space-of-its-own.md)** | done; accepted |
+| [7](#step-7--a-canvas-with-a-space-of-its-own) | A canvas with a space of its own, and pong's court in it | `api/render`, `pong` | **[0075](../../adr/0075-2d-a-canvas-may-have-its-own-coordinate-space.md)** | done; accepted |
 | [8](#step-8--a-box-that-wraps) | A box that wraps and sizes itself from its lines | `api/ui` | — | done |
 | [9](#step-9--a-file-chooser-and-the-editors-save-as) | A file chooser, and the editor's open and save as | `api/ui`, `vertical3d` | — | done |
 | [10](#step-10--where-the-time-goes) | Named cpu scopes and gpu timestamps per pass | `api/engine`, `api/render`, `api/ui` | — | done |
@@ -283,7 +283,7 @@ menu with a pointer, and the log has no warning or error. Two things came out di
 
 **ADR-0073: a document is read forward one version at a time, through a chain, and is refused
 rather than half read.** It generalises cozy's ADR-0003 and is the read half of
-[ADR-0041](../../adr/0041-a-document-is-written-whole-or-not-at-all.md). It goes in as `proposed` and
+[ADR-0041](../../adr/0041-files-write-documents-atomically.md). It goes in as `proposed` and
 is accepted when `Settings` reads through it.
 
 The shape, in `api/asset/`, Boost.JSON only:
@@ -349,7 +349,7 @@ walk, the second step sees version 1 and the order case fails. Three things came
 
 **ADR-0074: the text, component and statistics renderers an app draws its ui with, and the canvas
 they draw into, are built by one `api/ui/shell` class over an `Engine3D` it is handed.** It extends
-[ADR-0028](../../adr/0028-an-apps-shell-belongs-to-the-api.md) and goes in as `proposed`, accepted when
+[ADR-0028](../../adr/0028-apps-the-shared-app-shell-lives-in-the-api.md) and goes in as `proposed`, accepted when
 the fourth app is on it.
 
 * **It lives in `api/ui/shell`.** `v3dlib_ui` already links `v3dlib_render`. The header declares
@@ -366,7 +366,7 @@ the fourth app is on it.
 
 * **In `api/render`.** It would link `v3dlib_ui`, which links it: a cycle.
 * **A library of its own above both**, `api/shell`. It has no dependency `v3dlib_ui` lacks, and a
-  consumer selecting libraries ([ADR-0033](../../adr/0033-a-consumer-selects-the-api-libraries-it-wants.md))
+  consumer selecting libraries ([ADR-0033](../../adr/0033-build-select-api-libraries-through-a-manifest.md))
   would select one more for one class.
 * **A `TextRenderer` constructor that builds its own upload**, which
   [EmbeddingSeams](EmbeddingSeams.md) removed to keep Vulkan out of `api/ui`'s headers.
@@ -776,10 +776,10 @@ first.**
 | a menu bar marked anything at all | its flags are read now, though not its box |
 | walk or pan keys that can be rebound | bindings, read through `Engine::held(command)` |
 | mouselook | `Window::relativeMouse(true)` and `MouseMotion::motion()` |
-| a save or settings file a later build can read | `asset::readForward()` and a chain ([ADR-0073](../../adr/0073-a-document-is-read-forward-one-version-at-a-time.md)) |
+| a save or settings file a later build can read | `asset::readForward()` and a chain ([ADR-0073](../../adr/0073-files-migrate-old-documents-one-version-at-a-time.md)) |
 | the text, component and statistics renderers built once | `ui::shell::Screen` ([ADR-0074](../../adr/0074-the-shell-builds-the-uis-renderers.md)) |
 | a mouse position in those coordinates | `Canvas::toSpace()` |
-| a 2D game in its own coordinates | `Canvas::space()` and `toSpace()` ([ADR-0075](../../adr/0075-a-canvas-may-draw-in-a-space-of-its-own.md)) |
+| a 2D game in its own coordinates | `Canvas::space()` and `toSpace()` ([ADR-0075](../../adr/0075-2d-a-canvas-may-have-its-own-coordinate-space.md)) |
 | a grid of slots | a wrapping box |
 | a named save | `ui::shell::FileChooser` |
 | a volume or a sensitivity | `component::Slider`, `"slider"` in a document |
@@ -871,7 +871,7 @@ Update the state in the table above.
   account of the shell.
 * **Step 3** adds relative mode beside `warpCursor()` in Architecture.md.
 * **Step 4** adds the index row for 0073 as `proposed`, accepts it when `Settings` is on it, and
-  updates [ADR-0018](../../adr/0018-a-project-is-json-and-stores-topology-verbatim.md)'s note that a
+  updates [ADR-0018](../../adr/0018-editor-projects-saved-as-json-with-exact-topology.md)'s note that a
   version is the whole of the migration story.
 * **Step 5** adds the row for 0074 as `proposed`.
 * **Step 6** accepts 0074 with the fourth app, and replaces the renderer setup in UserInterface.md

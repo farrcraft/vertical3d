@@ -118,7 +118,7 @@ tetris never asked for.
    build one — by copying all of it. A pipeline builder in
    `api/render/realtime/vulkan` is what stops the second pipeline being a fork of the first.
 
-3. **Set 0, the per-frame descriptor.** [ADR-0008](../../adr/0008-binding-by-update-frequency.md)
+3. **Set 0, the per-frame descriptor.** [ADR-0008](../../adr/0008-shaders-descriptor-sets-by-update-frequency.md)
    decided that camera and projection live at set 0, bound once per pass.
    `QuadRenderer::createLayouts` creates `frameLayout_` with **zero bindings** and nothing
    ever writes or binds a set against it. The quad pipeline pushes a mat4 per draw, which is
@@ -137,7 +137,7 @@ tetris never asked for.
    the one class of GPU object in the frame that nothing outlives on the app's behalf.
 
 6. **Sorting and merging.** Nothing sorts; the recorder walks each pass in submission order,
-   which [ADR-0004](../../adr/0004-operations-as-draw-data.md) allowed for. A pong frame is a
+   which [ADR-0004](../../adr/0004-rendering-submit-draw-items-as-data.md) allowed for. A pong frame is a
    handful of items. Voxel submits one per non-empty chunk, and is the first frame where the
    sort key has to do the job it was designed for.
 

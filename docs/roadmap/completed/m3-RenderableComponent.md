@@ -7,7 +7,7 @@ until it is answered, and because the question has been open since before either
 
 **Done by [RenderableComponent](../../plans/completed/RenderableComponent.md)**, closed 2026-10-03. The
 decision has a record of its own in
-[ADR-0063](../../adr/0063-an-entity-is-drawn-from-a-transform-and-a-component-per-kind.md), and the
+[ADR-0063](../../adr/0063-ecs-draw-from-a-transform-plus-a-component-per-kind.md), and the
 mesh component it shapes is built by [milestone 4](m4-LitScene.md). What follows is the
 reasoning the plan was drafted from, as it stood then.
 
@@ -17,7 +17,7 @@ reasoning the plan was drafted from, as it stood then.
   around it, and [RenderingPipeline.md](../../RenderingPipeline.md#how-this-meets-the-ecs)
   states it: `Scene::collect()` returning a frame fits the pass model, a `Renderable` marker says
   nothing about how to draw, and components named after the old operation classes are the
-  design [ADR-0004](../../adr/0004-operations-as-draw-data.md) moved away from. The likely answer it
+  design [ADR-0004](../../adr/0004-rendering-submit-draw-items-as-data.md) moved away from. The likely answer it
   names is a component naming a material and a mesh or quad, with a system turning those into
   draw items — and nothing has been built to prove it.
 * **[`api/ecs`](../../../api/ecs/)** is a `System` with `simulate(float)` and four components:
@@ -30,12 +30,12 @@ reasoning the plan was drafted from, as it stood then.
 * **retcon has answered the question for itself.** Its `MeshRenderer` is a handle into its mesh
   registry plus whether the entity casts a shadow; its scene renderer walks the registry and
   draws every entity carrying both. Nothing in that component owns GPU memory, which is the
-  same rule as [ADR-0010](../../adr/0010-meshes-are-owned-by-the-app.md).
+  same rule as [ADR-0010](../../adr/0010-meshes-owned-by-the-app-that-built-them.md).
 * **cozy draws without one.** Its world sprites are emitted into a `WorldCanvas` by the code
   that owns them, read from its own components, so what an entity looks like is a function in
   the game rather than data on the entity.
 * **The editor is a scene graph.** A mesh is a dag node
-  ([ADR-0013](../../adr/0013-mesh-is-a-dag-node.md)) and nothing in it is an entity.
+  ([ADR-0013](../../adr/0013-editor-a-mesh-is-a-dag-node.md)) and nothing in it is an entity.
 
 ## What it needs decided
 

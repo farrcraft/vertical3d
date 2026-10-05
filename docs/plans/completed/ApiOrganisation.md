@@ -86,7 +86,7 @@ installs nothing and consumes as source; the include root is how. A new consumer
 way.
 
 **And this was weighed once already, and declined.**
-[ADR-0027](../../adr/0027-the-api-is-consumed-as-source.md)'s fourth Negative bullet is exactly this
+[ADR-0027](../../adr/0027-build-consume-the-api-as-source.md)'s fourth Negative bullet is exactly this
 question: *"The same header has two spellings… Rewriting every in-tree include to the second form
 is a whole-file diff across the tree for no build gain, so the asymmetry is kept and a reader has
 to learn it."*
@@ -109,10 +109,10 @@ Thirty-two files in `v3d::render::offline`, and the prefixes are doing the work 
 should:
 
 - **`RIB*` — six files.** A lexer, a declarations table, a parameter list and a reader that
-  dispatches [ADR-0025](../../adr/0025-the-rib-reader-dispatches-a-cpp-request-interface.md)'s
+  dispatches [ADR-0025](../../adr/0025-offline-rib-reader-calls-a-typed-handler-interface.md)'s
   request interface.
 - **`SL*` — twenty-four files.** A complete language per
-  [ADR-0026](../../adr/0026-shading-is-a-language-over-a-batch.md): lexer, syntax, parser, type
+  [ADR-0026](../../adr/0026-offline-shaders-run-over-batches-of-points.md): lexer, syntax, parser, type
   checker, built-ins, compiler and emitter, plus a bytecode runtime of value, program and
   machine. `SLCompiler.cxx` is 989 lines and
   `SLParser.cxx` is 664.
@@ -129,12 +129,12 @@ different jobs:
 
 - the shape of the library — `Engine`, `Loader`, `Component`, `Container`, `Layout`, `Arranger`
 - paint — `ComponentRenderer`, `Painter`, `TextRenderer`, `Text`, `Dressing`
-- input — `Cursor` ([ADR-0038](../../adr/0038-a-cursor-is-routed-by-the-library-that-drew-it.md)),
-  `Keys` ([ADR-0040](../../adr/0040-a-key-goes-to-a-focused-component.md)), `Command`
+- input — `Cursor` ([ADR-0038](../../adr/0038-ui-the-ui-hit-tests-the-mouse-before-the-app.md)),
+  `Keys` ([ADR-0040](../../adr/0040-ui-keyboard-focus-and-text-input.md)), `Command`
 - the immediate layer — `Immediate`, alone, at 909 lines of `.cpp` and 554 of `.h`
-  ([ADR-0035](../../adr/0035-an-immediate-mode-layer-over-the-same-canvas.md))
+  ([ADR-0035](../../adr/0035-ui-immediate-mode-beside-the-retained-tree.md))
 - the shell pieces — `GameMenu`, `StatisticsOverlay`, which are
-  [ADR-0028](../../adr/0028-an-apps-shell-belongs-to-the-api.md) rather than components
+  [ADR-0028](../../adr/0028-apps-the-shared-app-shell-lives-in-the-api.md) rather than components
 
 And one file is in the wrong place outright. `api/ui/Style.h` declares
 `v3d::ui::Style`, whose `property()` returns a `boost::shared_ptr<style::Property>` and which
@@ -152,7 +152,7 @@ library is 1,332 lines across 32 files, which is the signature of a directory ho
 ### `api/asset` mixes the framework with the payloads
 
 `Asset`, `Cache`, `Manager`, `Loader`, `Writer` and `Type` are the framework of
-[ADR-0030](../../adr/0030-a-model-is-an-interleaved-array-that-names-its-texture.md)'s asset path.
+[ADR-0030](../../adr/0030-models-one-interleaved-array.md)'s asset path.
 `Font2D`, `Image`, `Json`, `JsonFile`, `Model`, `Sound`, `Text` and `TextureFont` are the things
 it holds. They sit interleaved, alphabetically, and the result is that
 [`api/asset/Loader.h`](../../../api/asset/Loader.h) sits directly above `api/asset/loader/` — which
@@ -185,9 +185,9 @@ convention in [Conventions.md](../../Conventions.md) rather than in a decision r
 
 | ADR | Decision |
 |---|---|
-| [0048](../../adr/0048-an-api-header-is-named-from-the-repository-root.md) (step 1) | An api header is named by its path from the repository root, inside the tree as well as outside |
-| [0027](../../adr/0027-the-api-is-consumed-as-source.md) | The api is taken as source through a nesting root — it created the include root step 1 starts using, and declined to use it |
-| [0033](../../adr/0033-a-consumer-selects-the-api-libraries-it-wants.md) | A consumer names the libraries it wants — the library boundaries this plan does **not** move |
+| [0048](../../adr/0048-includes-name-headers-from-the-repository-root.md) (step 1) | An api header is named by its path from the repository root, inside the tree as well as outside |
+| [0027](../../adr/0027-build-consume-the-api-as-source.md) | The api is taken as source through a nesting root — it created the include root step 1 starts using, and declined to use it |
+| [0033](../../adr/0033-build-select-api-libraries-through-a-manifest.md) | A consumer names the libraries it wants — the library boundaries this plan does **not** move |
 
 Note what step 1 does *not* do to ADR-0027. It does not supersede it: that record's decision — the
 api is consumed as source through a nesting root — is untouched, and the include root it created
@@ -262,7 +262,7 @@ What it has to settle:
   of the library.
 
 **Landed as `proposed` on 2026-09-08.**
-[ADR-0048](../../adr/0048-an-api-header-is-named-from-the-repository-root.md) is written and in the
+[ADR-0048](../../adr/0048-includes-name-headers-from-the-repository-root.md) is written and in the
 index. Steps 2 and 3 do not start until it is accepted, and the note on ADR-0027's fourth Negative
 bullet is held until then — a pointer to a proposed record is a claim that may not survive.
 
@@ -325,7 +325,7 @@ over the whole tree. No relative parent include survives anywhere in the reposit
 own other directories — `vertical3d/src/view` including `../scene/WireframeVisitor.h`. Those are
 converted too, so `<vertical3d/src/scene/WireframeVisitor.h>` is how an app names its own header
 and no `../` survives. The alternative was to convert only the api ones and leave an app file
-holding both spellings, which is the problem [ADR-0048](../../adr/0048-an-api-header-is-named-from-the-repository-root.md)
+holding both spellings, which is the problem [ADR-0048](../../adr/0048-includes-name-headers-from-the-repository-root.md)
 exists to remove, in miniature. It also makes the editor's own directories movable, which is what
 the open question below was waiting on.
 
@@ -449,7 +449,7 @@ ui/component/  unchanged
 stutter is a symptom rather than the objection: `Immediate` is not a *concern* of this library
 the way paint and input are, it is one of its two entry points — the immediate counterpart to
 `Engine` for the retained side, per
-[ADR-0035](../../adr/0035-an-immediate-mode-layer-over-the-same-canvas.md). It belongs in the
+[ADR-0035](../../adr/0035-ui-immediate-mode-beside-the-retained-tree.md). It belongs in the
 top-level list with `Engine` and `Loader`. The same reasoning settles the open question below
 about `Layout` and `Arranger`, which stay for the same reason.
 
@@ -469,7 +469,7 @@ name alone is not safe here, and the compiler is what settles each one.
 `layout/` versus `widget/` split there would be arbitrary — a `Panel` is both.
 
 `ui/shell/` is the one grouping that is a claim rather than a tidy-up:
-[ADR-0028](../../adr/0028-an-apps-shell-belongs-to-the-api.md) says what every app repeats belongs to
+[ADR-0028](../../adr/0028-apps-the-shared-app-shell-lives-in-the-api.md) says what every app repeats belongs to
 the api, and `GameMenu` and `StatisticsOverlay` are that rather than components. Putting them
 under a name says which of the two things in this library they are.
 
@@ -522,9 +522,9 @@ shape again:
   include-based tooling because avoiding an include is the whole point of them.
 
 `renderer/` earns the split on its own. Those three are the primitives of
-[ADR-0005](../../adr/0005-one-batched-quad-primitive.md),
-[ADR-0011](../../adr/0011-lines-are-the-second-primitive.md) and
-[ADR-0042](../../adr/0042-a-textured-quad-in-world-space.md) — the files an app-facing rendering
+[ADR-0005](../../adr/0005-2d-one-batched-quad-pipeline.md),
+[ADR-0011](../../adr/0011-rendering-lines-as-a-world-space-primitive.md) and
+[ADR-0042](../../adr/0042-rendering-world-space-sprites.md) — the files an app-facing rendering
 change reaches — and they are currently filed between `Recorder` and `Resources`.
 
 `frame/` is the largest of the five and the one whose membership is arguable: it is everything
@@ -643,8 +643,8 @@ That is the last name `api/` puts in the global namespace.
 
 **Landed 2026-09-08**, for every step except 4, which has not been done.
 
-**The ADRs are deliberately not updated.** [ADR-0011](../../adr/0011-lines-are-the-second-primitive.md)
-names `vulkan::LineRenderer` and [ADR-0012](../../adr/0012-camera-builds-vulkan-clip-space.md) names
+**The ADRs are deliberately not updated.** [ADR-0011](../../adr/0011-rendering-lines-as-a-world-space-primitive.md)
+names `vulkan::LineRenderer` and [ADR-0012](../../adr/0012-camera-projection-targets-vulkan-clip-space.md) names
 `v3d::type::Camera` in its title. A record says what was decided when it was decided, and
 rewriting the names inside one to match a later move falsifies it. The rename is recorded here
 and in the commits, which is where a reader following a stale name should end up.
@@ -664,8 +664,8 @@ and in the commits, which is where a reader following a stale name should end up
   **[UserInterface.md](../../UserInterface.md)** for steps 5 and 6,
   **[OfflineRenderers.md](../../OfflineRenderers.md)** for step 4. Each of these names files by
   path.
-- **[ADR-0027](../../adr/0027-the-api-is-consumed-as-source.md)**'s fourth Negative bullet gets a
-  note saying [0048](../../adr/0048-an-api-header-is-named-from-the-repository-root.md) reversed it.
+- **[ADR-0027](../../adr/0027-build-consume-the-api-as-source.md)**'s fourth Negative bullet gets a
+  note saying [0048](../../adr/0048-includes-name-headers-from-the-repository-root.md) reversed it.
   Held until 0048 is accepted, and earlier than step 11 if that happens first.
 - **[README.md](../README.md)** and **[sdlc.md](../../sdlc.md)** get this plan's entry, and lose it
   again when it closes.
@@ -702,13 +702,13 @@ Two things worth adding that the gates do not cover:
 ## What this plan does not do
 
 **It does not move a library boundary.** Sixteen `v3dlib_*` targets in, sixteen out. Every split
-here is inside a library, and [ADR-0033](../../adr/0033-a-consumer-selects-the-api-libraries-it-wants.md)'s
+here is inside a library, and [ADR-0033](../../adr/0033-build-select-api-libraries-through-a-manifest.md)'s
 manifest is untouched. A directory is not a target.
 
 **It does not split `api/ui/component`.** 34 files, and they are one concept repeated. The five
 places that must be edited together to add a widget are recorded in
 [UiConsolidation](UiConsolidation.md) step 8 and partly closed by
-[ADR-0047](../../adr/0047-a-component-type-is-checked-by-the-compiler.md); a directory split does
+[ADR-0047](../../adr/0047-code-exhaustive-enum-switches.md); a directory split does
 nothing for that and adds a level to seventeen paths.
 
 **It does not split `api/dag`, `api/brep`, `api/font`, `api/image`, `api/input`, `api/grid`,

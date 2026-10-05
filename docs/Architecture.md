@@ -25,7 +25,7 @@ Apps hold both.
 
 ## The shell around a game belongs to the api
 
-Per [ADR-0028](adr/0028-an-apps-shell-belongs-to-the-api.md), an app carries only what makes
+Per [ADR-0028](adr/0028-apps-the-shared-app-shell-lives-in-the-api.md), an app carries only what makes
 it that game. Five pieces live in the api:
 
 - `v3d::engine::run<T>(argv[0], "<name>")` is an app's `main`. It derives the app path, runs
@@ -48,7 +48,7 @@ An app that reimplements one of these has diverged rather than customised.
 
 **Feature flags decide what exists.** `Engine::initialize()` asks the app's `features()` — all
 four unless it says otherwise — and constructs only what was asked for, then calls the app's
-`start()` ([ADR-0080](adr/0080-the-engine-owns-its-lifecycle.md)). `Feature::Config` loads
+`start()` ([ADR-0080](adr/0080-apps-the-engine-owns-startup-and-shutdown-order.md)). `Feature::Config` loads
 `data/config.json`, which must use the indirect form:
 `{"configs": [{"type": "...", "file": "..."}]}`. Pong's `data/` is the reference. The types are
 `window`, `binding`, `ui`, `sound`, `camera`, `layout` and `sprite`; the last is a table of
@@ -64,7 +64,7 @@ the app path before anything logs. There is one log per process, and a `Logger` 
 it; a test or a tool that never opens one writes `v3d.log` in its working directory.
 
 **A config document names an image and never loads one**, per
-[ADR-0020](adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md): a theme's images and a
+[ADR-0020](adr/0020-ui-themes-are-data-apps-load-the-images.md): a theme's images and a
 sprite sheet's are both resolved by the app through its own asset manager and renderer, and a
 ui image can resolve to one region of a sheet.
 
@@ -81,7 +81,7 @@ is one.
 the directory. `engine::Settings` is the document in there: an overlay of what was changed,
 so deleting it is a reset and a setting nobody touched keeps tracking the shipped value.
 Written whole or not at all, per
-[ADR-0041](adr/0041-a-document-is-written-whole-or-not-at-all.md).
+[ADR-0041](adr/0041-files-write-documents-atomically.md).
 
 **The org is `Vertical3D` and the app is its own name**, as pong uses them. Neither can change
 once an app has shipped: they are the directory, and a new pair orphans every existing
@@ -98,8 +98,8 @@ Window → Engine3D → Context3D → Frame → Pass → DrawItem, one of each. 
 through dynamic rendering: no `VkRenderPass`, no `VkFramebuffer`.
 
 **There are two primitives**: the batched quad
-([ADR-0005](adr/0005-one-batched-quad-primitive.md)) and the line
-([ADR-0011](adr/0011-lines-are-the-second-primitive.md)). A rectangle, a sprite, a glyph and a
+([ADR-0005](adr/0005-2d-one-batched-quad-pipeline.md)) and the line
+([ADR-0011](adr/0011-rendering-lines-as-a-world-space-primitive.md)). A rectangle, a sprite, a glyph and a
 menu panel are all the quad, so text needs no separate path and `ui::ComponentRenderer` draws
 onto the same canvas. Lines are in world space and read the pass camera at set 0.
 
@@ -113,14 +113,14 @@ entt. `v3d::engine::Engine` holds the `entt::registry` as a protected member, so
 `Controller` inherits it and passes `&registry_` into the render engine as a raw
 `entt::registry*`. [ECSDesign.md](ECSDesign.md) says what exists. An entity is drawn from a
 `Transform` and a component per kind of drawing, which the api walks
-([ADR-0063](adr/0063-an-entity-is-drawn-from-a-transform-and-a-component-per-kind.md)), and
+([ADR-0063](adr/0063-ecs-draw-from-a-transform-plus-a-component-per-kind.md)), and
 [RenderingPipeline.md](RenderingPipeline.md#how-this-meets-the-ecs) describes the walk.
 
 ## Tile grids
 
 `api/grid` is a board plus the two things asked of one: a route across it and a sight line
 over it. It names no device, so its suite runs anywhere.
-[ADR-0029](adr/0029-tile-grids-are-an-api-library.md) settles its three rules — movement is
+[ADR-0029](adr/0029-grid-8-way-movement-symmetric-line-of-sight.md) settles its three rules — movement is
 8-way at a flat cost per step, a diagonal may not pass between two blocked tiles, and sight is
 symmetric because the endpoints are ordered before the line is traced.
 
@@ -133,7 +133,7 @@ symmetric because the endpoints are ordered before the line is traced.
   of glyphs and a legend of passability and cover into a `TileGrid`. It hands back every glyph
   the legend does not name, with the tiles it stands on, rather than refusing it. The file, the
   props, the spawns and the start position stay the game's
-  ([ADR-0062](adr/0062-a-map-picture-and-legend-are-the-grids.md)).
+  ([ADR-0062](adr/0062-grid-parse-terrain-not-map-files.md)).
 - **`tileDistance()` is Chebyshev**, and it is the metric anything measured in tiles uses. A
   second metric invented elsewhere would disagree with what movement charges.
 - **The overlay is geometry, not drawing.** `Overlay.h` hands its segments to a `LineSink`
@@ -164,7 +164,7 @@ one consumer is not a library.
 node names where the node places it, into one vertex array and one index run. A part is a
 range of that run and the material it is drawn with, one per material in the file, so a model
 is one upload and a draw per part
-([ADR-0069](adr/0069-a-model-is-parts-over-one-array-and-may-carry-a-skin.md)). A model may carry
+([ADR-0069](adr/0069-models-material-parts-over-one-vertex-buffer.md)). A model may carry
 a `type::Skeleton` and an influence per vertex, in an array beside the vertices that a static
 model leaves empty. A skinned mesh is placed by its joints rather than its node, and an
 unskinned mesh in the same file follows the nearest joint above it.
@@ -176,8 +176,8 @@ stride belongs to the pipeline.
 **A model names its texture rather than carrying it.** `type::Model::Material` holds a base
 colour and the name the file gave its image, and the app resolves that name through the asset
 manager. This is the same shape
-[ADR-0020](adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md) settles for themes; see
-[ADR-0030](adr/0030-a-model-is-an-interleaved-array-that-names-its-texture.md). A glTF whose
+[ADR-0020](adr/0020-ui-themes-are-data-apps-load-the-images.md) settles for themes; see
+[ADR-0030](adr/0030-models-one-interleaved-array.md). A glTF whose
 image is *embedded* — a `.glb`'s own buffer, or a data uri — has no name to give, so it
 arrives decoded instead, on `asset::Model::baseColourImage(material)`. That is on the asset rather
 than on the material because `api/type` is built against glm alone and a material holding an
@@ -190,14 +190,14 @@ keeps no time of its own: it says what a step does to a time someone else keeps.
 is a sheet's regions, held as uvs, each shown for its own length of time over a `Clock`. A
 `Track` is a value keyed in time and lerped, optionally wrapping over a period. Playback, and
 which clip plays, are elsewhere
-([ADR-0070](adr/0070-animation-is-sampled-from-playback-on-the-step.md)).
+([ADR-0070](adr/0070-animation-cpu-sampling-playback-on-the-fixed-step.md)).
 
 **Effects' simulation is in `type::effect`, and is glm only.** An `Emitter` describes what is
 made and how it moves and looks over its life, a `State` holds the particles and a `Random`, and
 `step()`, `burst()` and the pieces they are built from age, move and spawn them. `Weather` and
 `fall()` spawn an emitter's particles over a region that follows the view. The component that
 steps them from an entity, and the walk that draws them, are elsewhere
-([ADR-0072](adr/0072-an-emitter-is-a-component-on-the-step-that-owns-its-particles.md)).
+([ADR-0072](adr/0072-particles-an-emitter-component-owns-its-particles.md)).
 
 **The queries are in `type::geometry`, and are glm only.** `Ray` meets an `AABBox`, a triangle
 and a `Plane`; `Plane` classifies a point or a box against itself; `Frustum` classifies a box
@@ -214,17 +214,17 @@ distributions differ between standard libraries, so a seeded test pins the same 
 everywhere.
 
 **Meshes are owned by the app**, not by `Resources`
-([ADR-0010](adr/0010-meshes-are-owned-by-the-app.md)).
+([ADR-0010](adr/0010-meshes-owned-by-the-app-that-built-them.md)).
 
 ## The loop has two virtuals, and they mean different things
 
-Per [ADR-0032](adr/0032-the-loop-simulates-at-a-fixed-step.md), `eventLoop()` measures each
+Per [ADR-0032](adr/0032-loop-fixed-step-simulation-variable-rate-rendering.md), `eventLoop()` measures each
 frame in nanoseconds, hands it to `tick(unsigned int delta)` once, then drains however many
 whole 60 Hz steps that frame owes through `simulate(float step)`, then calls `render()`.
 
 Before any of that it polls, and `Engine::route()` offers each event to three places in a
 fixed order: `onEvent()` first, then the input engine's bindings, then the engine's own
-`handleEvent`. That order is [ADR-0043](adr/0043-an-app-sees-an-event-before-the-bindings-do.md)
+`handleEvent`. That order is [ADR-0043](adr/0043-input-apps-see-raw-events-before-bindings.md)
 and is what lets an app host a ui toolkit it did not write.
 
 **Three places, but the bindings are not the only way to hear about input.** A device
@@ -233,7 +233,7 @@ dispatcher whichever mappers exist, and alongside them an `event::Source` for th
 through `event::publish()`. Every listener on `sink<Source>` hears the key, and then the event
 engine sends the commands it is bound to on `sink<Event>` unless a listener consumed it - so a
 command listener hears nothing but commands, and hears them after the key
-([ADR-0081](adr/0081-a-key-and-a-command-are-different-events.md)). So an app subscribes to the abstracted event directly and adopts no
+([ADR-0081](adr/0081-input-key-events-and-commands-are-separate.md)). So an app subscribes to the abstracted event directly and adopts no
 `mappings.json`, which is what voxel and the editor already do for motion and resize; a
 binding document is a convenience, not the price of admission. What the bindings buy is a
 command named in config rather than in a switch.
@@ -264,7 +264,7 @@ state, UI animation, camera smoothing — is what `tick()` is still for.
 `Engine::alpha()` is the fraction of a step held but not yet simulated, for a renderer that
 interpolates between two simulation states. A game keeps the state before each step in
 `ecs::Previous<T>`, snapshotted at the top of `simulate()`, and draws through
-`ecs::interpolated` ([ADR-0060](adr/0060-a-moving-thing-keeps-its-previous-step.md)); pong is
+`ecs::interpolated` ([ADR-0060](adr/0060-ecs-interpolate-from-a-previous-step-component.md)); pong is
 the one that does. A thing put somewhere rather than moved there is settled, or it is drawn
 sweeping to it for a frame. `Engine::statistics()` is
 what the loop measured about its own pacing; steps-per-frame is the number worth watching.
@@ -292,7 +292,7 @@ because neither is simulation and neither wants to run twice on a slow frame.
   owns the device that holds the window's surface alive, and `Window::destroy()` unloads the
   vulkan library. A surface released after that is never destroyed, and the instance reports it
   leaked. The engine calls `release()` first because the order is its own -
-  [ADR-0080](adr/0080-the-engine-owns-its-lifecycle.md).
+  [ADR-0080](adr/0080-apps-the-engine-owns-startup-and-shutdown-order.md).
 - **`DrawItem::pushCapacity` is 128 bytes**, which is all vulkan guarantees, so an item can
   carry a transform alongside the floats a lit or graded material wants. The cost is paid per
   item per frame: an item is copied into a pass's queue by value, so the unused part of the
@@ -302,7 +302,7 @@ because neither is simulation and neither wants to run twice on a slow frame.
   invalidates the handle every draw item recorded before it is holding.
 - **A released handle resolves to nothing at once, and what it named outlives it.** The Vulkan
   objects are destroyed only once the frames in flight have finished with them
-  ([ADR-0061](adr/0061-a-resource-is-released-explicitly.md)), so a device suite counting live
+  ([ADR-0061](adr/0061-resources-explicit-release-generational-handles.md)), so a device suite counting live
   allocations has to run the ring that far first. A frame driven without `Ring::begin()`
   collects nothing.
 - **A `Frustum` has to be told the depth range of the matrix it is given.** Its default,
@@ -311,15 +311,15 @@ because neither is simulation and neither wants to run twice on a slow frame.
   cull and drops nothing it should keep, which is the direction that looks right
   ([ADR-0024](adr/0024-api-type-serves-both-renderers.md)).
 - **The swapchain is UNORM, not sRGB**, so colour is authored in display space
-  ([ADR-0009](adr/0009-colour-authored-in-display-space.md)). A lit 3D scene will revisit this.
+  ([ADR-0009](adr/0009-colour-display-space-unorm-swapchain.md)). A lit 3D scene will revisit this.
 - **`v3d::type::camera::Camera` builds Vulkan clip space**, and `project()` and `unproject()` are
-  inverses ([ADR-0012](adr/0012-camera-builds-vulkan-clip-space.md)). **Its basis is
+  inverses ([ADR-0012](adr/0012-camera-projection-targets-vulkan-clip-space.md)). **Its basis is
   `right = up x direction`**, the opposite hand to `glm::lookAt`'s. Screen right is
   `camera::Profile::right()`. A camera behaviour that names a world axis copied from a `lookAt`
   moves the scene the wrong way with nothing else looking wrong, so `type::camera::Isometric`
   carries a hand and crosses by it, and asserts the direction through `project()`. A consumer
   whose geometry is wound for `glm::lookAt` names the other hand
-  ([ADR-0052](adr/0052-a-consumer-names-the-camera-hand.md)); that basis is a mirror rather than
+  ([ADR-0052](adr/0052-camera-selectable-handedness.md)); that basis is a mirror rather than
   a second rotation, so the profile's quaternion is the proper one either way and `createView()`
   negates view x. Nothing in this tree names it, so `right()` here always means the first one.
   **With the hand named, a view built through `lookat()` is `glm::lookAt`'s element for element**

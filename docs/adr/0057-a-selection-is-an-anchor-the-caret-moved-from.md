@@ -19,7 +19,7 @@ both renderers already take. And a clipboard is the platform's: `api/ui` names n
 anywhere, and reaching for `SDL_GetClipboardText` would make it the first place that did.
 
 `ui::Keys` names an operation and the component carries it out
-([ADR-0040](0040-a-key-goes-to-a-focused-component.md)), so whatever shape the selection takes
+([ADR-0040](0040-ui-keyboard-focus-and-text-input.md)), so whatever shape the selection takes
 has to be expressible as operations a key can name.
 
 ## Decision
@@ -58,7 +58,7 @@ given no `Measure` and a router given no `Clipboard` behave as they did before e
 - **Pros**: nothing to wire; cut, copy and paste work the moment a `ui::Keys` exists.
 - **Cons**: `api/ui` names no vulkan type and no SDL type, which is what makes it testable
   with no window and usable by an app bringing its own platform layer
-  ([ADR-0028](0028-an-apps-shell-belongs-to-the-api.md) is the shape that assumes it).
+  ([ADR-0028](0028-apps-the-shared-app-shell-lives-in-the-api.md) is the shape that assumes it).
 - **Why not**: one `#include <SDL3/SDL_clipboard.h>` would cost the library that property for
   two calls the app can pass in.
 

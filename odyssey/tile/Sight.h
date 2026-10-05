@@ -22,7 +22,7 @@ namespace odyssey::tile {
  * therefore in sight, remembered, or neither.
  *
  * Whether two tiles can see each other is v3d::grid::hasLineOfSight's answer, under
- * [ADR-0029](../../docs/adr/0029-tile-grids-are-an-api-library.md): only Cover::Full stops a
+ * [ADR-0029](../../docs/adr/0029-grid-8-way-movement-symmetric-line-of-sight.md): only Cover::Full stops a
  * line, so a crate is seen over. What this adds is the range and the memory, neither of
  * which the grid has an opinion about.
  **/

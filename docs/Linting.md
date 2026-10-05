@@ -79,7 +79,7 @@ handle, and only for a switch carrying no `default:` label — so it bites exact
 author meant the switch to be complete, and a switch that wants a catch-all keeps one by
 writing `default:`. `api/ui` depends on it: a switch over `component::Type` is exhaustive so
 that adding a component fails the build in every place that has to decide about it, per
-[ADR-0047](adr/0047-a-component-type-is-checked-by-the-compiler.md).
+[ADR-0047](adr/0047-code-exhaustive-enum-switches.md).
 
 **`/analyze`** is `-DV3D_ANALYZE=ON`, off by default because it costs several times a plain
 compile of the tree. Its findings are the C6xxx and C26xxx numbers, and they reach `/WX` like

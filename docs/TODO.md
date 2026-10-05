@@ -11,7 +11,7 @@ and the second in the ADR that settled it. Neither is work, and a list carrying 
 where nothing on it is actually due.
 
 An entry states the gap in the code, not who is waiting on it. The api is consumed as source
-([ADR-0027](adr/0027-the-api-is-consumed-as-source.md)) and most of what consumes it is not in
+([ADR-0027](adr/0027-build-consume-the-api-as-source.md)) and most of what consumes it is not in
 this tree - cozy and retcon are both apps on it in another repository - so what the apps here
 happen to use is evidence about this tree and nothing else. Where an entry names a consumer it
 is because the usage explains the gap, and "nothing in this tree" is the strongest claim any of
@@ -70,9 +70,9 @@ each until a scene asks for it.
 
 ## Tile grids
 
-`api/grid` is a library of its own - [ADR-0029](adr/0029-tile-grids-are-an-api-library.md) - and
+`api/grid` is a library of its own - [ADR-0029](adr/0029-grid-8-way-movement-symmetric-line-of-sight.md) - and
 `odyssey` is what consumes it here. A map's picture and terrain legend are the grid's, and the
-rest of a map is the game's - [ADR-0062](adr/0062-a-map-picture-and-legend-are-the-grids.md).
+rest of a map is the game's - [ADR-0062](adr/0062-grid-parse-terrain-not-map-files.md).
 
 [] a `TileGrid` is one rectangle centred on the world origin, so a world made of regions, each offset in the world and each loaded and released with its sheets, has no way to place a grid. Whether a region is a grid with an origin, a grid of grids or a game's list of grids is for the first consumer with regions to say; a world origin on `TileGrid` is the likeliest answer, and it changes every world and tile conversion - [LargeWorlds](plans/completed/LargeWorlds.md#step-7--regions) has the reasoning
 
@@ -82,7 +82,7 @@ rest of a map is the game's - [ADR-0062](adr/0062-a-map-picture-and-legend-are-t
 
 ## Voxel
 
-[] a remeshed chunk destroys its old mesh with the last reference to it, which is safe only because `memory::Uploader` idles the queue after every copy, as `ChunkMeshPool.h` says. Once uploads stop idling the queue - [milestone 7](roadmap/completed/m7-ShellAndShipping.md#asynchronous-loading) - the old mesh has to be retired through `frame::Ring::retire` ([ADR-0061](adr/0061-a-resource-is-released-explicitly.md)) instead
+[] a remeshed chunk destroys its old mesh with the last reference to it, which is safe only because `memory::Uploader` idles the queue after every copy, as `ChunkMeshPool.h` says. Once uploads stop idling the queue - [milestone 7](roadmap/completed/m7-ShellAndShipping.md#asynchronous-loading) - the old mesh has to be retired through `frame::Ring::retire` ([ADR-0061](adr/0061-resources-explicit-release-generational-handles.md)) instead
 
 [] mouselook turns far too fast and rolls the view: ten pixels of horizontal motion turns it most of the way round and tips it over. It reads one pixel as one unit of `Player::look()`'s heading and pitch, and that scale predates relative mouse mode - [ShellAndShipping](plans/completed/ShellAndShipping.md#step-3--a-relative-mouse)
 
@@ -104,7 +104,7 @@ from a file. Nothing in this tree loads one - `voxel` builds its terrain procedu
 editor models with `brep::BRep` - so the gap below is what the library's own tests reach
 rather than what an app here has hit. `realtime::MeshRegistry` takes one onto the device
 ([LitScene](plans/completed/LitScene.md#step-6--a-model-onto-the-device)). A file is one model in
-parts, a part per material ([ADR-0069](adr/0069-a-model-is-parts-over-one-array-and-may-carry-a-skin.md)).
+parts, a part per material ([ADR-0069](adr/0069-models-material-parts-over-one-vertex-buffer.md)).
 
 [] `.gltf` with external buffers resolves them relative to the file, which is cgltf's own behaviour rather than the asset manager's path handling. The two agree today because the manager hands over a full path
 
@@ -144,11 +144,11 @@ rather than a picture.
 What the plan left is what needs a window or a sound device rather than a device to draw
 with: `Feature::Window`, `ui::TextRenderer` and `audio::Engine::initialize()`. They are named
 beside `api/render` in [Testing.md](Testing.md) and were waiting on the same
-[ADR-0007](adr/0007-ci-rendering-tests.md), but a software Vulkan implementation answers none of
+[ADR-0007](adr/0007-ci-render-tests-on-software-vulkan.md), but a software Vulkan implementation answers none of
 them, so they outlive it.
 
 What a picture cannot cover outlives that plan too, by
-[ADR-0054](adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md): a reference holds
+[ADR-0054](adr/0054-testing-golden-images-hold-only-spec-exact-output.md): a reference holds
 only what the specification determines, so blending, filtered sampling, multisampling and text
 are asserted by validation silence and spot checks and by nothing stronger. Widening that needs
 a second implementation to compare against rather than a second rule, and there is none in this
@@ -157,7 +157,7 @@ tree.
 **Documentation.** Reference material lives in this directory, one document per subject and
 [README.md](README.md) as the index; `CLAUDE.md` routes into them rather than holding a copy.
 One gap is left. The rationale for the Vulkan move and for the SDL3 upgrade is recorded
-nowhere — [ADR-0001](adr/0001-vulkan-replaces-opengl.md) records the decision, not the
+nowhere — [ADR-0001](adr/0001-rendering-replace-opengl-with-vulkan.md) records the decision, not the
 reasoning behind it.
 
 ## Editor

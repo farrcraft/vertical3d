@@ -4,7 +4,7 @@
 **Status**: accepted
 **Deciders**: Joshua Farr
 
-Amended by [ADR-0081](0081-a-key-and-a-command-are-different-events.md): a key is an
+Amended by [ADR-0081](0081-input-key-events-and-commands-are-separate.md): a key is an
 `event::Source` on a sink of its own, so a command listener hears commands only and the guard
 this record's consequences describe is gone.
 
@@ -65,7 +65,7 @@ active one — `activate`, `deactivate`, `motion`, `button`. Rigel put that in `
 beside its `Command`, and the natural mirror would be `api/event` beside the dispatcher. No
 game in the repository has a tool: input reaches them as discrete named events and they need
 nothing that holds a gesture open across them. The interface stays where its only consumer
-is, on the reasoning of [ADR-0016](0016-undo-records-what-has-already-happened.md) — one
+is, on the reasoning of [ADR-0016](0016-editor-undo-records-completed-changes.md) — one
 consumer is not a library.
 
 ## Alternatives Considered

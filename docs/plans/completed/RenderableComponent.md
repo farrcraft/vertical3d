@@ -42,7 +42,7 @@ uncommitted in its working tree, and retcon is at `3d22935`. Both are pinned to 
   accepted.
 * **This tree has no mesh handle.** [`Handle.h`](../../../api/render/realtime/Handle.h) defines
   pipeline, material and texture handles. Meshes are the app's
-  ([ADR-0010](../../adr/0010-meshes-are-owned-by-the-app.md)), and the registry that would give a
+  ([ADR-0010](../../adr/0010-meshes-owned-by-the-app-that-built-them.md)), and the registry that would give a
   mesh a handle is milestone 4's second section. A mesh component can therefore be shaped here
   and built only there.
 
@@ -76,7 +76,7 @@ game reads. The recommendation is to pay it, for two reasons.
 
 - **Yaw does not interpolate correctly as a float.** A unit turning from 170° to -170° crosses
   20 degrees. Lerping the angle sweeps it 340 degrees the other way instead. Since
-  [ADR-0060](../../adr/0060-a-moving-thing-keeps-its-previous-step.md), anything drawn between
+  [ADR-0060](../../adr/0060-ecs-interpolate-from-a-previous-step-component.md), anything drawn between
   steps is interpolated through an `interpolate` beside its type. With yaw, that function would
   need to know the angle wraps; a slerp does not. retcon only gets away with a float because it
   teleports.
@@ -109,7 +109,7 @@ rules should not link Vulkan to place a unit.
 **Who turns them into draw items: the api.** The roadmap says a walk in the api is what makes
 the component worth having there at all. The walk is a function called from `render()`, not an
 `ecs::System`. A system is `simulate(float)` on the fixed step
-([ADR-0032](../../adr/0032-the-loop-simulates-at-a-fixed-step.md)), and drawing is once per frame
+([ADR-0032](../../adr/0032-loop-fixed-step-simulation-variable-rate-rendering.md)), and drawing is once per frame
 with `alpha()`.
 
 **Interpolation: the walk reads `interpolated<Transform>`.** An entity with a
@@ -148,7 +148,7 @@ moves to it, because pong is 1D and 2D and odyssey is a tile position. `Position
 - `matrix()` takes a point in the order translate, rotate, scale, checked against a scaled,
   quarter-turned and moved unit vector;
 - `aboutY` turns +Z towards +X for a positive angle, which pins the hand against
-  [ADR-0052](../../adr/0052-a-consumer-names-the-camera-hand.md)'s default rather than leaving it to
+  [ADR-0052](../../adr/0052-camera-selectable-handedness.md)'s default rather than leaving it to
   whoever reads the sign first;
 - `interpolate` at 0, 1 and one half, and at one half between 170° and -170° about Y gives 180°,
   not 0°. That case fails a lerped angle;
@@ -231,7 +231,7 @@ feet, and an acorn 0.9 high at (2.6, 0, -2.2), both on one texture. It asserts:
 If writing it needs anything the record does not give, the record changes before it is
 accepted. That is the point of doing this before acceptance rather than after. A pixel
 comparison is not part of it: a sprite is filtered and blended, which
-[ADR-0054](../../adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md) does not allow
+[ADR-0054](../../adr/0054-testing-golden-images-hold-only-spec-exact-output.md) does not allow
 a reference to hold, and the geometry is what the record decides.
 
 **Then ADR-0063 is accepted.**
@@ -247,7 +247,7 @@ normalised, which is ADR-0001's key. Then `order.into(&spriteQuads_)` as before.
 are the ones `drawSprite` builds, and a sheet shared by every sprite stays one batch. `Position`
 can keep its meaning and write `Transform::position` each step, or be replaced by it. Calling
 `snapshot<Transform>` at the top of `simulate()` draws the player between steps
-([ADR-0063](../../adr/0063-an-entity-is-drawn-from-a-transform-and-a-component-per-kind.md)).
+([ADR-0063](../../adr/0063-ecs-draw-from-a-transform-plus-a-component-per-kind.md)).
 
 ### Step 5 — retcon's components checked against it
 

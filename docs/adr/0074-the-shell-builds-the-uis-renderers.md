@@ -11,7 +11,7 @@ pong, tetris, voxel and the editor each build the same set, in their own order. 
 measure and write, and usually a `StatisticsOverlay`. Each owns the canvas they draw into, and
 checks every frame whether the window's size has moved it. cozy writes the same set, and also
 rebuilds the renderers that close over a font size whenever its text scale changes.
-[ADR-0028](0028-an-apps-shell-belongs-to-the-api.md) says what every game writes the same way is
+[ADR-0028](0028-apps-the-shared-app-shell-lives-in-the-api.md) says what every game writes the same way is
 the api's. The roadmap asked for a helper "on the realtime side", which the library edges rule
 out: `v3dlib_ui` links `v3dlib_render`, so a helper in `api/render` that built a `TextRenderer`
 would be a cycle.
@@ -43,7 +43,7 @@ dressing are handed in.
 ### Alternative 3: A library of its own above both, `api/shell`
 - **Pros**: Neither library learns about the other, and a ui with no renderer stays exactly that.
 - **Cons**: It has no dependency `v3dlib_ui` lacks, and a consumer selecting libraries
-  ([ADR-0033](0033-a-consumer-selects-the-api-libraries-it-wants.md)) would select one more for
+  ([ADR-0033](0033-build-select-api-libraries-through-a-manifest.md)) would select one more for
   one class.
 - **Why not**: A library for one class, guarding against an edge that already exists.
 

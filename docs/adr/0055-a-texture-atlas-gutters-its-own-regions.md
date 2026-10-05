@@ -84,7 +84,7 @@ leaves the divergence this record exists to end.
 
 ### Positive
 - The gutter is the allocator's policy, so a new consumer gets it without knowing it exists.
-  This is [ADR-0028](0028-an-apps-shell-belongs-to-the-api.md)'s argument — what every consumer
+  This is [ADR-0028](0028-apps-the-shared-app-shell-lives-in-the-api.md)'s argument — what every consumer
   repeats belongs to the api — applied where the copies had already begun to disagree.
 - `TextureFont`'s two call sites lose their arithmetic rather than gaining any: it asks for the
   glyph's own size now, and `w - 1` / `h - 1` is gone.

@@ -13,7 +13,7 @@ one sample per pixel centre.
 **Completed on 2026-10-04**, when phases 4 to 6 closed with
 [OfflineRenderingPhases4To6](../../plans/completed/OfflineRenderingPhases4To6.md): sampling through a
 shared film, a trace that recurses, textures, and one ray tracer both renderers reach
-([ADR-0077](../../adr/0077-one-ray-tracer-both-renderers-reach.md)). What it left is in
+([ADR-0077](../../adr/0077-offline-one-shared-ray-tracer.md)). What it left is in
 [TODO.md](../../TODO.md#offline-rendering). The rest of this file is the roadmap as it stood before
 those phases, kept as the reasoning they were drafted from, and
 [OfflineRenderers.md](../../OfflineRenderers.md) is the account of the tree as it is.
@@ -34,7 +34,7 @@ that.
 file through the shared reader and `moya/tests/` as a suite of 55 cases that pass.
 
 There are **two ways into a render context**, and by
-[ADR-0025](../../adr/0025-the-rib-reader-dispatches-a-cpp-request-interface.md) neither goes
+[ADR-0025](../../adr/0025-offline-rib-reader-calls-a-typed-handler-interface.md) neither goes
 through the other: the RI C entry points, and
 [`moya::RIBHandler`](../../../moya/libmoya/RIBHandler.cxx). Both drive `RenderContext`, which is
 where the behaviour is. A reader cannot use the C API, because a `va_list` cannot be built at
@@ -82,7 +82,7 @@ handed to each bucket it touches — and no more than four vertices per polygon.
 
 `talyn/libtalyn` builds `v3dlib_talyn`, with `talyn/talyn/talyn.cxx` as a driver and
 `talyn/tests/` as a suite, mirroring moya per
-[ADR-0022](../../adr/0022-offline-rendering-shares-an-api-library.md).
+[ADR-0022](../../adr/0022-offline-shared-library-with-no-vulkan.md).
 
 `main` parses eight options with `program_options`, dispatches on the file extension, and
 drives a `RenderContext` to an image written through `image::Factory` — `--outfile foo.png`
@@ -113,7 +113,7 @@ Neither renderer needs to write intersection maths or camera maths from scratch.
 
 * **[`type::Ray`](../../../api/type/geometry/Ray.h)** has an origin, a direction, `transformed()`, a slab
   test against `AABBox` and Möller-Trumbore against a triangle, all with tests. It was written
-  for the editor's picker ([ADR-0014](../../adr/0014-picking-is-a-cpu-ray-cast.md)) and it is
+  for the editor's picker ([ADR-0014](../../adr/0014-editor-pick-by-cpu-ray-cast.md)) and it is
   exactly what a primary ray and a triangle-mesh raytracer need.
 * **[`type::geometry::Plane`](../../../api/type/geometry/Plane.h)** is a plane held as its equation:
   it classifies a point or an `AABBox` against itself and meets a ray or an edge, and `Ray` can
@@ -123,7 +123,7 @@ Neither renderer needs to write intersection maths or camera maths from scratch.
   matrix and classifies a box against them. It is told the depth range of the clip space the
   matrix builds, and moya's `RenderContext` names `MinusOneToOne`.
 * **[`type::Camera`](../../../api/type/camera/Camera.h)** builds the matrices and `project()`/`unproject()`
-  are inverses ([ADR-0012](../../adr/0012-camera-builds-vulkan-clip-space.md)), so a primary ray
+  are inverses ([ADR-0012](../../adr/0012-camera-projection-targets-vulkan-clip-space.md)), so a primary ray
   through a pixel is an unproject and a subtract. It builds *Vulkan* clip space, which an
   offline renderer has no reason to want; by
   [ADR-0024](../../adr/0024-api-type-serves-both-renderers.md) that convention becomes a parameter
@@ -199,7 +199,7 @@ the picture will not be the one that was computed.
 left is filling that grid from a polygon, then allocating `planes_`, writing a flat colour per
 micropolygon, and adding the framebuffer-to-`image::Image` conversion talyn already has. That
 last piece is what makes `--output` mean something, and by
-[ADR-0022](../../adr/0022-offline-rendering-shares-an-api-library.md) it is written once in
+[ADR-0022](../../adr/0022-offline-shared-library-with-no-vulkan.md) it is written once in
 `api/render/offline` rather than copied across.
 
 ### Phase 2 — a scene worth rendering
@@ -211,7 +211,7 @@ second.
 Blocked by phase 1, which is done: parsing a scene format nobody can render is unverifiable work.
 
 RIB is the format both renderers read, by
-[ADR-0023](../../adr/0023-rib-is-the-offline-scene-description.md), and the reader is in the wrong
+[ADR-0023](../../adr/0023-offline-rib-is-the-scene-format.md), and the reader is in the wrong
 tree for it: talyn has one that recognises requests and acts on one of them, and moya has the RI
 entry points it should be calling. The reader moves to `api/render/offline` and needs a real
 tokenizer first — quoted strings, bracketed arrays and typed parameter lists, none of which the
@@ -219,7 +219,7 @@ current whitespace split handles, and a declaration table without which the firs
 is not `P` has no type.
 
 The editor is the other end of the same decision. Its project file
-([ADR-0018](../../adr/0018-a-project-is-json-and-stores-topology-verbatim.md)) stays the editor's
+([ADR-0018](../../adr/0018-editor-projects-saved-as-json-with-exact-topology.md)) stays the editor's
 own and gains a RIB export, one way. That export carries topology and a placement per mesh and
 **nothing else** — the editor's `Scene` has no lights and no materials, and `SceneVisitor` is
 written in anticipation of them rather than for them — so a scene out of the editor renders grey
@@ -234,7 +234,7 @@ what came out differently; this is what the tree now has.
 
 The large question sitting underneath the phase was whether shading is fixed-function C++ or a
 shading language, and it is answered as a language by
-[ADR-0026](../../adr/0026-shading-is-a-language-over-a-batch.md). `api/render/offline/sl` is that
+[ADR-0026](../../adr/0026-offline-shaders-run-over-batches-of-points.md). `api/render/offline/sl` is that
 language: a lexer, a parser, a checker with a varying inference, and a machine that runs a
 compiled program over a **batch** of shading points under an execution mask. moya's batch is a
 micropolygon grid, talyn's is a single hit, and an imager's is a row of pixels — the same
@@ -276,15 +276,15 @@ built on principle.
 
 ### Phase 6 — whether they unify
 
-**Answered by [ADR-0077](../../adr/0077-one-ray-tracer-both-renderers-reach.md)**: two renderers
+**Answered by [ADR-0077](../../adr/0077-offline-one-shared-ray-tracer.md)**: two renderers
 that share one ray tracer, built by [OfflineRenderingPhases4To6](../../plans/completed/OfflineRenderingPhases4To6.md).
 talyn drives it and moya's shaders trace into it.
 
 The question talyn's driver used to ask in a comment at the top of it, until phase 1 removed the
 comment: one renderer with two algorithms behind a common interface, or two renderers that share
 libraries. Sharing libraries is settled —
-[ADR-0022](../../adr/0022-offline-rendering-shares-an-api-library.md) gives them one, and
-[ADR-0023](../../adr/0023-rib-is-the-offline-scene-description.md) gives them one way in — so what
+[ADR-0022](../../adr/0022-offline-shared-library-with-no-vulkan.md) gives them one, and
+[ADR-0023](../../adr/0023-offline-rib-is-the-scene-format.md) gives them one way in — so what
 is left is whether talyn becomes moya's raytracing component, reached from a shader's `trace()`.
 Phase 3 was the precondition and it has closed: shading is a language, `trace()` is a built-in
 both renderers see, and the two now share the library, the reader, the shader instance and the
@@ -299,24 +299,24 @@ reasoning; these are pointers, not summaries.
 * **Where the shared offline code lives** — `api/render/offline`, a second library beside
   `v3dlib_render` that links neither Vulkan nor SDL, and talyn splits into a library, a driver
   and a suite the way moya already is:
-  [ADR-0022](../../adr/0022-offline-rendering-shares-an-api-library.md).
+  [ADR-0022](../../adr/0022-offline-shared-library-with-no-vulkan.md).
 * **Which scene description is primary** — RIB, read by one reader in that library; the editor's
   project file stays the editor's and gains a one-way export:
-  [ADR-0023](../../adr/0023-rib-is-the-offline-scene-description.md).
+  [ADR-0023](../../adr/0023-offline-rib-is-the-scene-format.md).
 * **Whether the offline renderers use `api/type`** — yes, and a convention only one renderer
   needs becomes a parameter of the type rather than a second copy of it, starting with the clip
   space `Camera` builds: [ADR-0024](../../adr/0024-api-type-serves-both-renderers.md), which
-  narrows [ADR-0012](../../adr/0012-camera-builds-vulkan-clip-space.md) without reversing it.
+  narrows [ADR-0012](../../adr/0012-camera-projection-targets-vulkan-clip-space.md) without reversing it.
 * **Fixed-function shading or a shading language** — a language, a subset of SL compiled at
   runtime, run by a machine that operates over a batch of shading points so that moya's grid and
   talyn's single hit are one code path:
-  [ADR-0026](../../adr/0026-shading-is-a-language-over-a-batch.md).
+  [ADR-0026](../../adr/0026-offline-shaders-run-over-batches-of-points.md).
 
 ## What this still needs decided
 
 **Nothing this roadmap opened is still open.** The last of them — fixed-function shading or a
 shading language — is answered as a language by
-[ADR-0026](../../adr/0026-shading-is-a-language-over-a-batch.md). What that answer does *not* settle
+[ADR-0026](../../adr/0026-offline-shaders-run-over-batches-of-points.md). What that answer does *not* settle
 is phase 6: a shader can call `trace()`, which is what makes the question of whether moya's
 raytracing is talyn answerable, and answering it is still that phase's own work.
 
@@ -326,7 +326,7 @@ This is the part worth knowing before any of the above starts.
 
 **The offline renderers are the only renderers in this tree CI can run.** Everything below the
 recorder in `api/render` needs a window and a GPU and is waiting on
-[ADR-0007](../../adr/0007-ci-rendering-tests.md); a rendering change is verified today by running
+[ADR-0007](../../adr/0007-ci-render-tests-on-software-vulkan.md); a rendering change is verified today by running
 an app and reading the validation log. Neither of these renderers touches a window, a device or
 a swapchain — `moya/tests/CMakeLists.txt` already says so, and its suite runs in CI now.
 

@@ -1,7 +1,7 @@
 # Luxa Audit
 
 **Closed 2026-09-04. `luxa/` is deleted.** All nine items are worked off; the last two
-landed as [ADR-0020](../../adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md). What
+landed as [ADR-0020](../../adr/0020-ui-themes-are-data-apps-load-the-images.md). What
 follows is the record of what the tree held and where each piece went, kept because it is
 the only account of that. Recover the sources from `git show <commit>^:luxa/...` if a
 question about the original ever comes up.
@@ -140,7 +140,7 @@ The original finding follows.
 
 208 lines of immediate-mode OpenGL: `glOrtho`, `glPushMatrix`, `glPushAttrib`,
 `glTexEnvi`, `glTranslatef`, `glColor3f`. None of it survives
-[ADR-0001](../../adr/0001-vulkan-replaces-opengl.md), and it is already partly hollowed —
+[ADR-0001](../../adr/0001-rendering-replace-opengl-with-vulkan.md), and it is already partly hollowed —
 `drawTexturedQuad` and `drawTexture` have had their bodies removed with comments pointing
 at `operation::GLTexturedQuad` and `operation::GLTexture`, and `prepare`'s background clear
 is commented out in favour of `operation::Overlay`.
@@ -152,10 +152,10 @@ What it actually provides, stripped of the GL:
   the "sprite/orthographic pass" Phase 5 already schedules; the UI is another client of it.
 - **a matrix stack** — `push`/`pop`/`position`/`clear`, used by `Button::draw` to place
   its nine textured quads in component-local coordinates. Under
-  [ADR-0004](../../adr/0004-operations-as-draw-data.md) this becomes a transform on the draw item,
+  [ADR-0004](../../adr/0004-rendering-submit-draw-items-as-data.md) this becomes a transform on the draw item,
   not renderer state.
 - **textured quad and texture drawing** — already superseded by the batched quad primitive
-  of [ADR-0005](../../adr/0005-one-batched-quad-primitive.md).
+  of [ADR-0005](../../adr/0005-2d-one-batched-quad-pipeline.md).
 - **`getDefaultFont(style_class, theme)`** — resolves a `Font2D` by pulling the `label`/`font`
   property out of the theme's default style set for a class. This is theme-to-font
   resolution, it is genuinely useful, and it has no home in `api/ui` today. Note it targets
@@ -343,7 +343,7 @@ except where noted.
 2. ~~Restore a value field on `MenuItem` for input-type items.~~ **Done 2026-08-31.**
 3. ~~Design the JSON schema for themes, styles, style properties and fonts, and extend
    `ui::Engine::load` past the single `"menu"` arm.~~ **Done 2026-09-04**, as
-   [ADR-0020](../../adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md). A theme carries
+   [ADR-0020](../../adr/0020-ui-themes-are-data-apps-load-the-images.md). A theme carries
    styles, a style carries colours, numbers, fonts and images — each read as the kind of the
    array it was written in — and a button style carries the state it dresses.
    `ComponentRenderer::theme()` reads the `ui` style into the colours and metrics it draws

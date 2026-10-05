@@ -45,7 +45,7 @@ the rasterizer is a render mode at an existing call site — `FT_Glyph_To_Bitmap
 
 What makes it more than a render mode is the shader.
 [`quad.frag`](../../../api/render/shaders/quad.frag) is shared by panels, sprites and glyphs, and
-[ADR-0005](../../adr/0005-one-batched-quad-primitive.md) is explicit that this costs no branch:
+[ADR-0005](../../adr/0005-2d-one-batched-quad-pipeline.md) is explicit that this costs no branch:
 untextured quads sample a 1×1 white texture, and a single-channel atlas reaches alpha through a
 swizzled view. A distance field needs a `smoothstep` around its threshold, which would corrupt
 every non-text quad if applied unconditionally. So the primitive has to learn which of its batches
@@ -98,15 +98,15 @@ Recorded in [adr/](../../adr/), not here.
 
 | ADR | Decision |
 |---|---|
-| **0036** | Text is a distinct kind of quad, and the primitive carries which — written by step 1, amending [0005](../../adr/0005-one-batched-quad-primitive.md) |
-| [0005](../../adr/0005-one-batched-quad-primitive.md) | One batched quad primitive with an optional texture — **amended**, not superseded: one pipeline still draws every 2D thing |
+| **0036** | Text is a distinct kind of quad, and the primitive carries which — written by step 1, amending [0005](../../adr/0005-2d-one-batched-quad-pipeline.md) |
+| [0005](../../adr/0005-2d-one-batched-quad-pipeline.md) | One batched quad primitive with an optional texture — **amended**, not superseded: one pipeline still draws every 2D thing |
 | [0019](../../adr/0019-the-ui-is-laid-out-by-what-draws-it.md) | The ui is laid out by what draws it — unchanged; step 5 keeps `Measure`/`Write` as the seam |
-| [0020](../../adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md) | A theme is data and the app resolves its images — unchanged; step 8 is the same division applied to paths |
+| [0020](../../adr/0020-ui-themes-are-data-apps-load-the-images.md) | A theme is data and the app resolves its images — unchanged; step 8 is the same division applied to paths |
 
 0036 is the next free number; [adr/README.md](../../adr/README.md) is the authority and `0026` is a
 reserved gap rather than an available one. The draft said 0034, which
-[0034](../../adr/0034-a-component-has-children-and-a-box.md) and
-[0035](../../adr/0035-an-immediate-mode-layer-over-the-same-canvas.md) took while it was staged.
+[0034](../../adr/0034-ui-layout-is-resolved-while-drawing.md) and
+[0035](../../adr/0035-ui-immediate-mode-beside-the-retained-tree.md) took while it was staged.
 
 ## What blocks what
 
@@ -135,14 +135,14 @@ together.
 
 ### Step 1 — ADR-0036, text is a distinct kind of quad
 
-**Closed.** [ADR-0036](../../adr/0036-text-is-a-distinct-kind-of-quad.md). It settled the flag in the
+**Closed.** [ADR-0036](../../adr/0036-text-sdf-glyphs-through-the-quad-shader.md). It settled the flag in the
 push constant over a second pipeline: the branch is uniform across a draw, and the alternative
 multiplies two pipelines into four and pays a bind per frame to avoid it.
-[ADR-0005](../../adr/0005-one-batched-quad-primitive.md) carries the amendment note.
+[ADR-0005](../../adr/0005-2d-one-batched-quad-pipeline.md) carries the amendment note.
 
 The record comes first, per [sdlc.md](../../sdlc.md).
 
-It amends [ADR-0005](../../adr/0005-one-batched-quad-primitive.md) rather than superseding it: one
+It amends [ADR-0005](../../adr/0005-2d-one-batched-quad-pipeline.md) rather than superseding it: one
 pipeline still draws every 2D thing, and a glyph is still a quad with a texture. What changes is
 the claim that no branch is needed, and that claim is load-bearing enough to be worth a record.
 
@@ -242,7 +242,7 @@ a ui at one size and a heading at another asks for two callback pairs from one `
 
 The pair has a second consumer since this was drafted:
 [`ui::Immediate`](../../../api/ui/Immediate.h) takes the same two callbacks per
-[ADR-0035](../../adr/0035-an-immediate-mode-layer-over-the-same-canvas.md). That is an argument
+[ADR-0035](../../adr/0035-ui-immediate-mode-beside-the-retained-tree.md). That is an argument
 for the seam rather than against it — both consumers take a size that is already closed over,
 and neither learns a font type — but it is a third and fourth call site for step 6 to find.
 
@@ -359,7 +359,7 @@ Per [sdlc.md](../../sdlc.md) §4:
 **It does not write a config document.** An app can read a user file through a second
 `asset::Manager` and write one with `boost::json`, which is what the prompting game will do.
 Serializing config back out is plausibly the api's job eventually, but there is one consumer
-today, and [ADR-0016](../../adr/0016-undo-records-what-has-already-happened.md) and
+today, and [ADR-0016](../../adr/0016-editor-undo-records-completed-changes.md) and
 [ADR-0017](../../adr/0017-a-command-is-a-name-in-a-context.md) both settle that one consumer is not
 a library. It moves when a second app wants it.
 

@@ -6,7 +6,7 @@
 
 ## Context
 
-[ADR-0034](0034-a-component-has-children-and-a-box.md) put layout in the draw walk and recorded
+[ADR-0034](0034-ui-layout-is-resolved-while-drawing.md) put layout in the draw walk and recorded
 what it cost: "a percentage of a parent that has never been drawn is a percentage of zero, so
 the frame after a resize places a child against the previous size". The percentage half of that
 is not what happens — the walk resolves top down and hands each child the box it has just

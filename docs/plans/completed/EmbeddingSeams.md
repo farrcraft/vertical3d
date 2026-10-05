@@ -25,7 +25,7 @@ Two of the nine entries closed between `c4bb7aa` and `11ae25c`, as part of
 | Was | Now |
 |---|---|
 | The retained tree does not wrap text | [`ui::wrap`](../../../api/ui/Text.h) is used by [`Arranger.cpp:135`](../../../api/ui/Arranger.cpp#L135) to measure a `Label`'s rows and by [`ComponentRenderer.cpp:248`](../../../api/ui/ComponentRenderer.cpp#L248) to draw them |
-| No world-space filled primitive | [`grid::fillTile` and `fillTiles`](../../../api/grid/Overlay.h#L71) over the textured world-space quad of [ADR-0042](../../adr/0042-a-textured-quad-in-world-space.md) |
+| No world-space filled primitive | [`grid::fillTile` and `fillTiles`](../../../api/grid/Overlay.h#L71) over the textured world-space quad of [ADR-0042](../../adr/0042-rendering-world-space-sprites.md) |
 
 That is worth saying plainly rather than leaving the reader to diff two commits: a list written
 against a tree that is still moving goes stale in the direction of *less* work, and the two
@@ -134,7 +134,7 @@ ADR-0043.** Two things are settled and neither is obvious:
 
 - *The app goes before the bindings*, because the app is the outer layer — it drew over the
   scene, so it is what the cursor is pointing at. This is the same rule
-  [ADR-0038](../../adr/0038-a-cursor-is-routed-by-the-library-that-drew-it.md) applies inside
+  [ADR-0038](../../adr/0038-ui-the-ui-hit-tests-the-mouse-before-the-app.md) applies inside
   `api/ui`, extended one layer out.
 - *`handleEvent` runs whatever the app returns*, because quit, resize and focus are window
   facts rather than input. An app that consumed a resize would be a window that never resized,
@@ -152,7 +152,7 @@ returning true stops the bindings seeing the event, one returning false does not
 
 **What it unblocks.** The whole of the consuming game's engine-adoption block, which is
 otherwise driving its own loop — legal, since `Accumulator` is public and
-[ADR-0032](../../adr/0032-the-loop-simulates-at-a-fixed-step.md)'s fixed step comes with it, but it
+[ADR-0032](../../adr/0032-loop-fixed-step-simulation-variable-rate-rendering.md)'s fixed step comes with it, but it
 declines the one thing that block exists to adopt.
 
 ### Step 2 — `run<T>` forwards what an app was built with
@@ -253,7 +253,7 @@ returning `hovered_ != 0 || active_ != 0`. The `active_` half is what stops a sc
 dragged from losing the cursor the moment the drag leaves the widget's box.
 
 This is the immediate layer's half of the rule
-[ADR-0038](../../adr/0038-a-cursor-is-routed-by-the-library-that-drew-it.md) already states for the
+[ADR-0038](../../adr/0038-ui-the-ui-hit-tests-the-mouse-before-the-app.md) already states for the
 retained tree, so it cites that ADR rather than earning one.
 [`ImmediateTest.cpp`](../../../api/ui/tests/ImmediateTest.cpp) covers it: over a window, off it,
 and held through a drag that leaves the widget.
@@ -377,7 +377,7 @@ this design forbids rather than detects.
 
 **Verification is the awkward part.** Everything below the recorder needs a window and a GPU
 ([Testing.md](../../Testing.md)), so this is verified by
-[ADR-0007](../../adr/0007-ci-rendering-tests.md)'s standing answer: run an app and read the log,
+[ADR-0007](../../adr/0007-ci-render-tests-on-software-vulkan.md)'s standing answer: run an app and read the log,
 with a silent validation layer as the signal. The layer is exactly the right instrument here —
 a sampled image in the wrong layout, a missing usage bit and a format without the sampled
 feature are all things it says out loud. `chooseFormat`'s new branch is the one half with no

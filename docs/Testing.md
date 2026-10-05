@@ -28,16 +28,16 @@ stay that way: a software Vulkan implementation answers none of them.
 
 **`api/render` below the recorder has its own binary, `v3dtest_render_device`**, from
 `api/render/tests/device/`. It draws for real - a surface-free device
-([ADR-0007](adr/0007-ci-rendering-tests.md)), a `DeviceContext` with no window under it
-([ADR-0051](adr/0051-the-in-flight-ring-is-not-the-swapchain.md)), a frame recorded into a
+([ADR-0007](adr/0007-ci-render-tests-on-software-vulkan.md)), a `DeviceContext` with no window under it
+([ADR-0051](adr/0051-frames-in-flight-ring-separate-from-presenting.md)), a frame recorded into a
 `RenderTarget`, and `vulkan::frame::Capture` reading it back
 ([ADR-0050](adr/0050-a-frame-is-read-back-in-two-calls.md)). Each case asserts both halves:
 that the validation layer had nothing to say, and that the pixels are what was drawn. Four of
 them assert the second half against a picture committed in `api/render/tests/device/data/`,
 compared exactly: a flat quad, a quad drawn with a texture the case uploads, and two overlapping
 world quads in each submission order - which is what says a world quad is ordered by its caller
-and not by its depth ([ADR-0042](adr/0042-a-textured-quad-in-world-space.md)). What a reference may contain is
-[ADR-0054](adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md) — only what the
+and not by its depth ([ADR-0042](adr/0042-rendering-world-space-sprites.md)). What a reference may contain is
+[ADR-0054](adr/0054-testing-golden-images-hold-only-spec-exact-output.md) — only what the
 specification determines pixel-for-pixel, so that the same file is owed by a driver and by the
 software implementation CI draws with. A case outside that rule asserts texels by hand and has
 no reference. What a
@@ -102,12 +102,12 @@ All three canvases are cpu side and are covered as such: `CanvasTest`, `LineCanv
 `WorldCanvasTest` assert the batching, the transform stack and the geometry without a device.
 What none of them can assert is what the pipeline then does with it - that a world quad is
 hidden behind solid geometry and never behind another world quad, per
-[ADR-0042](adr/0042-a-textured-quad-in-world-space.md), is a run-and-look check like every
+[ADR-0042](adr/0042-rendering-world-space-sprites.md), is a run-and-look check like every
 other question below the recorder.
 
 Clipping is asserted where it is decided rather than where it takes effect: the cases check the
 rectangle a batch carries out of `Canvas`, out of `LineCanvas` and out of a ui draw, per
-[ADR-0037](adr/0037-clipping-is-a-scissor-the-batch-carries.md), and the `vkCmdSetScissor` that
+[ADR-0037](adr/0037-2d-clip-with-a-per-batch-scissor.md), and the `vkCmdSetScissor` that
 acts on it is in the recorder and needs a device like everything else there.
 
 `api/audio` draws the same line around the device: the clip table, the `Play` defaults and the
@@ -122,7 +122,7 @@ clipboard in a `std::string`, so a click lands on a known character and a cut is
 without a platform.
 
 `Engine::eventLoop()` renders and so cannot be driven at all, which is why the order of
-[ADR-0043](adr/0043-an-app-sees-an-event-before-the-bindings-do.md) lives in
+[ADR-0043](adr/0043-input-apps-see-raw-events-before-bindings.md) lives in
 `Engine::route()`: one polled event offered to the app, the bindings and the engine, callable
 from a subclass with no window in sight. `EngineTest` drives it directly.
 

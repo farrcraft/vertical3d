@@ -112,15 +112,15 @@ tree was read in its working state.
 
 | | What | Where | ADR | State |
 |---|---|---|---|---|
-| [1](#step-1--the-record-the-lit-tier-is-the-recorders) | The record: a pass carries a scene set at set 2 and a depth bias, and the lit tier draws through the recorder | `docs/adr` | **[0064](../../adr/0064-a-pass-carries-a-scene-set-and-a-depth-bias.md)** | done; accepted |
+| [1](#step-1--the-record-the-lit-tier-is-the-recorders) | The record: a pass carries a scene set at set 2 and a depth bias, and the lit tier draws through the recorder | `docs/adr` | **[0064](../../adr/0064-lighting-lit-passes-use-the-shared-recorder.md)** | done; accepted |
 | [2](#step-2--an-image-and-a-sampler) | `memory::Image` and `pipeline::Sampler`, with `DepthBuffer`, `RenderTarget` and `TextureFactory` rewritten over them | `api/render` | — | done |
 | [3](#step-3--a-descriptor-pool) | A descriptor pool for one layout, with `FrameUniforms`, `Quad` and voxel over it | `api/render`, `voxel` | — | done |
 | [4](#step-4--the-recorder-binds-set-2-and-a-bias) | `Pass::scene` and `Pass::depthBias`, recorded | `api/render` | 0064 | done |
 | [5](#step-5--a-depth-only-target) | A target with no colour image, and a device case reading its depth back | `api/render` | 0044 | done |
-| [6](#step-6--a-model-onto-the-device) | `MeshRegistry`, `MeshHandle` and `component::Mesh` | `api/render` | **[0065](../../adr/0065-a-mesh-is-registered-by-path-and-released.md)** | done; accepted |
-| [7](#step-7--the-lit-pass-with-the-look-as-data) | The colour record, the shader rule, the cel and outline pipelines, and the walk | `api/render` | **[0066](../../adr/0066-the-lit-tier-lights-in-linear.md)**, **[0067](../../adr/0067-lit-shaders-are-embedded-and-replaceable.md)** | done; accepted |
+| [6](#step-6--a-model-onto-the-device) | `MeshRegistry`, `MeshHandle` and `component::Mesh` | `api/render` | **[0065](../../adr/0065-meshes-shared-registry-keyed-by-path.md)** | done; accepted |
+| [7](#step-7--the-lit-pass-with-the-look-as-data) | The colour record, the shader rule, the cel and outline pipelines, and the walk | `api/render` | **[0066](../../adr/0066-lighting-light-in-linear-draw-to-srgb.md)**, **[0067](../../adr/0067-lit-shaders-are-embedded-and-replaceable.md)** | done; accepted |
 | [8](#step-8--a-shadow-map) | The shadow pass, the light's matrix and the fit, bound at set 2 | `api/render` | 0064 | done |
-| [9](#step-9--targets-a-chain-can-use) | Double-buffered targets, a format check, and passes placed by what they read | `api/render` | **[0068](../../adr/0068-a-target-per-frame-a-checked-format-and-passes-placed-by-what-they-read.md)** | done; accepted |
+| [9](#step-9--targets-a-chain-can-use) | Double-buffered targets, a format check, and passes placed by what they read | `api/render` | **[0068](../../adr/0068-rendering-order-passes-by-what-they-read.md)** | done; accepted |
 | [10](#step-10--the-chain-after-the-scene) | A full-screen pass and the LUT grade | `api/render` | 0068 | done |
 | [11](#step-11--retcons-scene-reproduced-here-and-the-handoff) | retcon's look-dev scene reproduced in the device suite, and the handoff note | `api/render`, `docs` | — | done |
 
@@ -141,7 +141,7 @@ once for the pass.** Both are per pass rather than per item, for the same reason
 light, its shadow map and a bias change when the scene does, not when the object does. So
 binding them costs one bind per pass, and the sort key does not change.
 
-**This amends [ADR-0008](../../adr/0008-binding-by-update-frequency.md) rather than contradicting
+**This amends [ADR-0008](../../adr/0008-shaders-descriptor-sets-by-update-frequency.md) rather than contradicting
 it.** That record rejected a third set *per object*. A per-pass set is set 0's frequency split
 in two: set 0 is the camera every pipeline shares, and set 2 is what only lit pipelines read.
 retcon placed it at 2 for the reason this tree would: widening set 0 would change every shader
@@ -193,7 +193,7 @@ one class.
 * **`DepthBuffer`** holds an `Image` and an optional `Sampler`.
 * **`RenderTarget`** holds the same. Its `recreate()` hands the old ones to `Ring::retire`
   rather than destroying them. That closes the gap the survey found, and it is
-  [ADR-0061](../../adr/0061-a-resource-is-released-explicitly.md)'s rule applied to a resize.
+  [ADR-0061](../../adr/0061-resources-explicit-release-generational-handles.md)'s rule applied to a resize.
 * **`pipeline::Texture`** stops being a POD of raw handles. It holds a `boost::shared_ptr` to an
   `Image` and one to a `Sampler`. `owned = false` becomes "shares its owner's image", which a
   shared pointer says without a flag.
@@ -359,7 +359,7 @@ and passes with it in. Four things came out differently:
 ### Step 6 — A model onto the device
 
 **ADR-0065: a mesh can be registered, de-duplicated by path, and released.** It amends
-[ADR-0010](../../adr/0010-meshes-are-owned-by-the-app.md) in the way that record's third
+[ADR-0010](../../adr/0010-meshes-owned-by-the-app-that-built-them.md) in the way that record's third
 alternative foresaw: a cache built on top of app-owned meshes, owning `memory::Mesh` objects
 the way a chunk does. A mesh still never goes in `Resources`, and the sort key still has no
 geometry field. `DrawItem` keeps raw buffers, filled at walk time from the registry.
@@ -387,7 +387,7 @@ class MeshRegistry final {
   declares.
 * **Loading goes through `asset::Manager`** with `Type::ModelGltf`, as retcon's `GltfLoader`
   does. Merged primitives and the first material are
-  [ADR-0030](../../adr/0030-a-model-is-an-interleaved-array-that-names-its-texture.md)'s, and
+  [ADR-0030](../../adr/0030-models-one-interleaved-array.md)'s, and
   splitting by material is milestone 5's.
 
 **`component::Mesh`**, beside `component::Sprite`, is the shape
@@ -454,11 +454,11 @@ Two records go in first, because the pass is written against both.
 **ADR-0066: the lit tier assumes linear light.** Lighting is correct only in linear, so the
 lit pipelines are written for a target that encodes on store:
 
-* an `_SRGB` swapchain named under [ADR-0049](../../adr/0049-a-consumer-chooses-the-swapchain-format.md),
+* an `_SRGB` swapchain named under [ADR-0049](../../adr/0049-swapchain-caller-picks-the-format.md),
   and an offscreen target in an `_SRGB` format;
 * **albedo uploaded as `_SRGB`**, so that a display-space texture is decoded before it is lit.
   `TextureFactory::create` gains an encoding argument whose default stays `UNORM`, so
-  [ADR-0009](../../adr/0009-colour-authored-in-display-space.md) is unchanged for everything that
+  [ADR-0009](../../adr/0009-colour-display-space-unorm-swapchain.md) is unchanged for everything that
   is not lit.
 
 The second bullet is where this tier and retcon's part. retcon uploads `UNORM` and its capture
@@ -612,7 +612,7 @@ into. The shadow pipeline reads nothing at binding 1, and validation is silent a
 
 **ADR-0068: a target may be one image per frame in flight, a pipeline is checked against what
 it draws into, and a pass is placed by what it reads.** It amends
-[ADR-0031](../../adr/0031-a-pass-draws-into-a-target-it-names.md). These are the roadmap's three
+[ADR-0031](../../adr/0031-rendering-passes-draw-into-offscreen-targets.md). These are the roadmap's three
 gaps:
 
 * **Double-buffered.** `RenderTarget` takes a count, one or the ring's frames in flight. `Pass`
@@ -691,7 +691,7 @@ Five things came out differently:
 * **The grade works in linear.** The scene target is `_SRGB` by ADR-0066 and decodes on sample.
   The LUT is indexed in linear, which is retcon's handoff gotcha 12, kept.
 
-**Tests**, by [ADR-0054](../../adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md):
+**Tests**, by [ADR-0054](../../adr/0054-testing-golden-images-hold-only-spec-exact-output.md):
 
 * **A full-screen pass with a copying shader is the identity.** Its source is `quad.png`'s
   target, at one texel per pixel and sampled nearest, and its output equals `quad.png`
@@ -797,19 +797,19 @@ Written here for retcon to read, not sent to it. Each of retcon's classes has a 
 | `GpuImage` | `vulkan::memory::Image` |
 | `Sampler` | `vulkan::pipeline::Sampler` |
 | `DescriptorAllocator` | a `vulkan::pipeline::DescriptorPool` per layout: `FrameUniforms`' camera, `Quad`'s material, `Lit`'s scene |
-| `MeshRegistry` | `realtime::MeshRegistry`, with `MeshHandle`s that are released ([ADR-0065](../../adr/0065-a-mesh-is-registered-by-path-and-released.md)) |
+| `MeshRegistry` | `realtime::MeshRegistry`, with `MeshHandle`s that are released ([ADR-0065](../../adr/0065-meshes-shared-registry-keyed-by-path.md)) |
 | `MeshPipeline` | `vulkan::renderer::Lit` |
 | `ShadowPass` | a `Pass` on a `RenderTarget` with sampled depth and no colour, drawn by `realtime::casters()`, with `shadow::light()` and `shadow::fit()` |
 | `OffscreenPass` | a `RenderTarget` |
 | `LutPipeline` | `realtime::Grade`, over `vulkan::renderer::FullScreen` |
 | `SceneRenderSettings` | `realtime::LitSettings` |
-| `SceneRenderer` | a `Frame` of three passes, placed by `Pass::reads()` ([ADR-0068](../../adr/0068-a-target-per-frame-a-checked-format-and-passes-placed-by-what-they-read.md)) |
-| `MeshRenderer` | `realtime::component::Mesh`, beside milestone 3's `ecs::component::Transform` ([ADR-0063](../../adr/0063-an-entity-is-drawn-from-a-transform-and-a-component-per-kind.md)) |
+| `SceneRenderer` | a `Frame` of three passes, placed by `Pass::reads()` ([ADR-0068](../../adr/0068-rendering-order-passes-by-what-they-read.md)) |
+| `MeshRenderer` | `realtime::component::Mesh`, beside milestone 3's `ecs::component::Transform` ([ADR-0063](../../adr/0063-ecs-draw-from-a-transform-plus-a-component-per-kind.md)) |
 
 What adopting involves:
 
 * **Adopting the tier means adopting `Frame` and the recorder**, which is what retcon's D8
-  declined. [ADR-0064](../../adr/0064-a-pass-carries-a-scene-set-and-a-depth-bias.md) is the answer
+  declined. [ADR-0064](../../adr/0064-lighting-lit-passes-use-the-shared-recorder.md) is the answer
   to it: set 2 and a depth bias are the pass's.
 * **The transform turns by a quaternion, not a yaw.** `aboutY()` makes one from a yaw.
 * **Shaders.** retcon keeps loading its shaders from its directory with its own `loadSpirv`,
@@ -827,7 +827,7 @@ What adopting involves:
 **retcon's capture is expected to move, for two reasons and no others:**
 
 * **The albedo is decoded before it is lit**
-  ([ADR-0066](../../adr/0066-the-lit-tier-lights-in-linear.md)). retcon uploads it `UNORM`, so its
+  ([ADR-0066](../../adr/0066-lighting-light-in-linear-draw-to-srgb.md)). retcon uploads it `UNORM`, so its
   capture has a display-space texture lit as though it were linear. This is the larger move, on
   every textured surface.
 * **The vertex stage draws through `camera.viewProjection`**, which the host multiplies, where

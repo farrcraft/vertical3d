@@ -6,11 +6,11 @@ Milestone 4 of [the game engine roadmap](GameEngine.md).
 this tree's frame model rather than moved as retcon's passes are, and retcon's look-dev scene is
 reproduced in the device suite rather than run. Four records settle what this document left
 open: the scene set and the bias
-([ADR-0064](../../adr/0064-a-pass-carries-a-scene-set-and-a-depth-bias.md)), the mesh registry
-([ADR-0065](../../adr/0065-a-mesh-is-registered-by-path-and-released.md)), colour
-([ADR-0066](../../adr/0066-the-lit-tier-lights-in-linear.md)) and shaders
+([ADR-0064](../../adr/0064-lighting-lit-passes-use-the-shared-recorder.md)), the mesh registry
+([ADR-0065](../../adr/0065-meshes-shared-registry-keyed-by-path.md)), colour
+([ADR-0066](../../adr/0066-lighting-light-in-linear-draw-to-srgb.md)) and shaders
 ([ADR-0067](../../adr/0067-lit-shaders-are-embedded-and-replaceable.md)), and a fifth closes the
-three target gaps ([ADR-0068](../../adr/0068-a-target-per-frame-a-checked-format-and-passes-placed-by-what-they-read.md)).
+three target gaps ([ADR-0068](../../adr/0068-rendering-order-passes-by-what-they-read.md)).
 The acceptance test below is retcon's to run when it adopts, and the plan's last step is the
 handoff it reads. A shadow fit that follows the camera, and cascades, are in
 [TODO.md](../../TODO.md#lit-scenes). What follows is the reasoning the plan was drafted from, as it
@@ -24,9 +24,9 @@ architecture document lists what it has as "what vertical3d has no class for". T
 moves that tier here and has retcon delete its copy.
 
 What the pass walks for is [milestone 3](m3-RenderableComponent.md)'s answer, which
-[ADR-0063](../../adr/0063-an-entity-is-drawn-from-a-transform-and-a-component-per-kind.md) records. It
+[ADR-0063](../../adr/0063-ecs-draw-from-a-transform-plus-a-component-per-kind.md) records. It
 also depends on [milestone 2](m2-LargeWorlds.md)'s resource lifetime,
-which is now decided ([ADR-0061](../../adr/0061-a-resource-is-released-explicitly.md)): the image,
+which is now decided ([ADR-0061](../../adr/0061-resources-explicit-release-generational-handles.md)): the image,
 sampler and texture classes moved here retire what they own through `frame::Ring::retire`, which
 takes a callback and needs no change for them.
 
@@ -34,13 +34,13 @@ takes a callback and needs no change for them.
 
 Here:
 
-* **The device tier.** Device, allocator ([ADR-0053](../../adr/0053-a-consumer-chooses-how-memory-is-found.md)),
+* **The device tier.** Device, allocator ([ADR-0053](../../adr/0053-memory-optional-vma-suballocation.md)),
   swapchain and presenter, the in-flight ring, `memory::Mesh`, `DeviceBuffer`, `Buffer`, the
   uploader, `pipeline::Builder` and the pipeline cache. retcon uses all of it.
-* **Set 0 is the camera** ([ADR-0008](../../adr/0008-binding-by-update-frequency.md)), held per pass
+* **Set 0 is the camera** ([ADR-0008](../../adr/0008-shaders-descriptor-sets-by-update-frequency.md)), held per pass
   by `vulkan::FrameUniforms`. Set 1 is the material, and a material is one texture.
 * **Targets and depth.** A pass draws into a target it names
-  ([ADR-0031](../../adr/0031-a-pass-draws-into-a-target-it-names.md)); a target's depth can be
+  ([ADR-0031](../../adr/0031-rendering-passes-draw-into-offscreen-targets.md)); a target's depth can be
   sampled ([ADR-0044](../../adr/0044-a-sampled-depth-target-is-read-only.md)); a pipeline can be
   depth-only and carry a depth bias. That is a shadow map's plumbing, and nothing here draws
   one.
@@ -48,7 +48,7 @@ Here:
   `frame::DepthBuffer`, `frame::RenderTarget` and the `pipeline::Texture` POD, and
   `vkCreateSampler` is called in three places, each holding a bare `VkSampler`.
 * **A model stops at the cpu.** `asset::loader::Gltf` reads glTF into a `type::Model`
-  ([ADR-0030](../../adr/0030-a-model-is-an-interleaved-array-that-names-its-texture.md)), and
+  ([ADR-0030](../../adr/0030-models-one-interleaved-array.md)), and
   nothing takes one onto the device. `memory::Mesh` takes bytes and indices, so the step is an
   app's four lines, and a helper here would need a vertex layout the api does not own. retcon's
   `GltfLoader` already parses through it and converts to its own vertex layout.
@@ -93,7 +93,7 @@ A helper that takes a `type::Model` to a `memory::Mesh`, and a registry that de-
 path the way retcon's does. The vertex layout the api does not own is what has kept this an
 app's job; moving retcon's gives it one, and it is the same position, normal and uv that
 `type::Model` already holds. The registry's handles are what an entity names to be drawn
-([ADR-0063](../../adr/0063-an-entity-is-drawn-from-a-transform-and-a-component-per-kind.md)): a
+([ADR-0063](../../adr/0063-ecs-draw-from-a-transform-plus-a-component-per-kind.md)): a
 `realtime::component::Mesh` holding a `MeshHandle` and `castsShadow`, built with the registry
 and beside `component::Sprite`, with the material on the registry entry rather than on the
 entity. The lit pass walks `view<const ecs::component::Transform, const component::Mesh>()`,
@@ -133,8 +133,8 @@ reads its own last frame, a format check, and a frame that lets a pass say where
   relink. A lit tier needs one rule for the shaders it ships and has to let a consumer bring its
   own, which is what a game's look is.
 * **Colour space.** This tree authors colour in display space
-  ([ADR-0009](../../adr/0009-colour-authored-in-display-space.md)) and presents through a `UNORM`
-  chain unless a consumer names another ([ADR-0049](../../adr/0049-a-consumer-chooses-the-swapchain-format.md)).
+  ([ADR-0009](../../adr/0009-colour-display-space-unorm-swapchain.md)) and presents through a `UNORM`
+  chain unless a consumer names another ([ADR-0049](../../adr/0049-swapchain-caller-picks-the-format.md)).
   retcon asks for `B8G8R8A8_SRGB` and lights in linear. Lighting is only correct in linear, so
   the lit tier assumes a consumer that chose sRGB, and that assumption should be written into
   the record that accepts the tier rather than discovered by the next one to use it.
@@ -147,7 +147,7 @@ own qa policy calls the renderer's only net. The move is done when retcon builds
 this tree's tier with its copy deleted and that capture does not change. Each step above is a
 separate change to retcon's pointer, so a capture that moves says which step moved it.
 
-Here, by [ADR-0054](../../adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md), a lit
+Here, by [ADR-0054](../../adr/0054-testing-golden-images-hold-only-spec-exact-output.md), a lit
 picture cannot be pinned — lighting is arithmetic the specification leaves to the
 implementation, and so is filtered sampling. What the device suite can pin is what the
 specification determines: a depth-only pass's depth at known vertices, a post pass that is the

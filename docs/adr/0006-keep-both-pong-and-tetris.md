@@ -10,7 +10,7 @@ Tetris does not compile: it includes `api/gl/GLFontRenderer.h`, which does not e
 repository, uses a `fonts_` member dropped from its header, and links `v3dlib_core`, a target
 that is never built. Its renderer is also the last consumer of fixed-function OpenGL —
 `glBegin`, `glTranslatef`, `glPushMatrix`, `glOrtho` — none of which survives
-[ADR-0001](0001-vulkan-replaces-opengl.md). Pong is already on the `api/` framework and
+[ADR-0001](0001-rendering-replace-opengl-with-vulkan.md). Pong is already on the `api/` framework and
 builds. Whether tetris is worth the port had to be settled before planning the phase that
 would do it.
 
@@ -39,7 +39,7 @@ its fixed-function rendering is rewritten rather than abandoned.
 ## Consequences
 
 ### Positive
-- The textured quad path of [ADR-0005](0005-one-batched-quad-primitive.md) gets a real
+- The textured quad path of [ADR-0005](0005-2d-one-batched-quad-pipeline.md) gets a real
   consumer early, rather than being validated first by odyssey several phases later.
 - Two apps on the api surface assumptions that one would hide.
 

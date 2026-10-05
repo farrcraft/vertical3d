@@ -39,7 +39,7 @@ libraries the root selected — see [Selecting the api](#selecting-the-api).
 
 **Paths into this repository go through `V3D_ROOT`, never `CMAKE_SOURCE_DIR`.** Once another
 project has nested this one, `CMAKE_SOURCE_DIR` names the consumer's root — see
-[ADR-0027](adr/0027-the-api-is-consumed-as-source.md).
+[ADR-0027](adr/0027-build-consume-the-api-as-source.md).
 
 The root sets `CMAKE_CXX_STANDARD 23`, which CMake maps to `/std:c++latest` here. It is stated
 as a standard rather than as the flag because glm and EnTT require `cxx_std_17` through their
@@ -69,7 +69,7 @@ The tests guard is written on each `add_subdirectory("tests")` rather than insid
 
 ### Selecting the api
 
-Per [ADR-0033](adr/0033-a-consumer-selects-the-api-libraries-it-wants.md), **a consumer names
+Per [ADR-0033](adr/0033-build-select-api-libraries-through-a-manifest.md), **a consumer names
 the libraries it links and the tree works out the rest**:
 
 ```cmake
@@ -168,7 +168,7 @@ time, so a build that compiles no shader is not stopped by its absence.
 
 ## Linking rules
 
-Per [ADR-0027](adr/0027-the-api-is-consumed-as-source.md), an api library carries its own
+Per [ADR-0027](adr/0027-build-consume-the-api-as-source.md), an api library carries its own
 dependencies, **including the other api libraries it uses**. So `v3dlib_engine` brings asset,
 config, event, input and render with it.
 
@@ -192,7 +192,7 @@ at the next one; CI configures on every run.
 - **Only an app that plays sound links the mixer.** It names `v3dlib_audio`, which links
   `SDL3_mixer::SDL3_mixer` PUBLIC, and calls `audio::registerLoaders()` on its asset manager.
   Nothing else in the api reaches audio -
-  [ADR-0079](adr/0079-an-asset-loader-is-registered.md).
+  [ADR-0079](adr/0079-assets-loaders-are-registered.md).
 - **An asset manager loads what was registered on it.** `engine::Engine` registers
   `v3dlib_asset_media`'s loaders on the one it builds; a manager built anywhere else, a test
   among them, starts with documents only and calls `asset::media::registerLoaders()` itself.
@@ -213,7 +213,7 @@ The starter is the only thing in the tree that can catch an api library relying 
 the root sets, or on an app naming every library. That is how `api/engine` and `api/render`
 were found not declaring the api libraries they use. It names its three libraries in
 `V3D_LIBRARIES` rather than taking `all`, so the closure of
-[ADR-0033](adr/0033-a-consumer-selects-the-api-libraries-it-wants.md) is exercised on every
+[ADR-0033](adr/0033-build-select-api-libraries-through-a-manifest.md) is exercised on every
 push as well.
 
 [examples/](../examples/) is the exception to "every directory here builds with the tree":

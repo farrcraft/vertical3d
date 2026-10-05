@@ -14,7 +14,7 @@ own (`engine/view/Picking`: `screenRay` and `intersectHorizontalPlane`) beside t
 `Camera::ray()`, which already does the first half of it. pong writes its box tests by hand,
 because [`Bound2D`](../../../api/type/geometry/Bound2D.h) tests only a point and `AABBox` tests
 nothing. And [`Engine::alpha()`](../../../api/engine/Engine.h) has been in the loop since
-[ADR-0032](../../adr/0032-the-loop-simulates-at-a-fixed-step.md) with nothing reading it, so every
+[ADR-0032](../../adr/0032-loop-fixed-step-simulation-variable-rate-rendering.md) with nothing reading it, so every
 world drawn in this tree, and in both games, is snapped to the last 60 Hz step.
 
 **What is due first is the ground pick.** cozy's M5 step 10 is a click in the world, and cozy's
@@ -127,7 +127,7 @@ its ADR-0041.
 Gribb-Hartmann method and classifies a box against them. **Its near plane is right for moya and
 wrong for every camera in the realtime tree**: it is the w row plus the z row, which is the near
 plane of a clip volume whose depth runs −1 to 1, and its own comment says so. `type::camera::Camera`
-builds Vulkan clip space ([ADR-0012](../../adr/0012-camera-builds-vulkan-clip-space.md)), whose depth
+builds Vulkan clip space ([ADR-0012](../../adr/0012-camera-projection-targets-vulkan-clip-space.md)), whose depth
 runs 0 to 1, and there the near plane is the z row alone. A frustum extracted from a realtime
 camera as written today puts its near plane behind the camera, so it keeps things it should cull
 and never culls anything it should keep — which is the direction that looks right.
@@ -207,7 +207,7 @@ suite compiles `PongScene.cxx` itself, so it links `v3dlib_type` as the app does
 **This is the step that carries a decision, and it earns ADR-0060.** What has to be settled is
 where the state a renderer blends between lives, and who keeps it. The loop calls `simulate()`
 zero or more times a frame and then `render()` once
-([ADR-0032](../../adr/0032-the-loop-simulates-at-a-fixed-step.md)), so a renderer that wants to draw
+([ADR-0032](../../adr/0032-loop-fixed-step-simulation-variable-rate-rendering.md)), so a renderer that wants to draw
 between the last two steps needs the state before the last step as well as after it, and nothing
 holds that today.
 
@@ -277,7 +277,7 @@ wants the same clock — milestone 6's particles are the likeliest — or milest
 its sampler needs a clock to be written against. At that point this step is drafted against what
 cozy wrote rather than ahead of it, and what decides where it lives is whether it is glm-only,
 which `api/type` requires, or holds region names from `api/config`, which would make it a library
-of its own under [ADR-0033](../../adr/0033-a-consumer-selects-the-api-libraries-it-wants.md).
+of its own under [ADR-0033](../../adr/0033-build-select-api-libraries-through-a-manifest.md).
 
 Until then this plan closes without it, and it moves to [TODO.md](../../TODO.md) with its trigger.
 
@@ -312,7 +312,7 @@ what to watch for.
 
 Nothing here draws differently on a device except pong after step 5, and that difference is the
 point of the step rather than something a reference could pin
-([ADR-0054](../../adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md)).
+([ADR-0054](../../adr/0054-testing-golden-images-hold-only-spec-exact-output.md)).
 
 ## What this does not do
 

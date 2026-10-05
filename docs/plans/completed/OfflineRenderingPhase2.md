@@ -28,12 +28,12 @@ Recorded in [docs/adr/](../../adr/), not here. The ones that shape this plan:
 
 | ADR | Decision |
 |---|---|
-| [0022](../../adr/0022-offline-rendering-shares-an-api-library.md) | Shared offline code is `api/render/offline`; each renderer is a library with a driver |
-| [0023](../../adr/0023-rib-is-the-offline-scene-description.md) | RIB is what both renderers read; the editor exports to it, one way |
+| [0022](../../adr/0022-offline-shared-library-with-no-vulkan.md) | Shared offline code is `api/render/offline`; each renderer is a library with a driver |
+| [0023](../../adr/0023-offline-rib-is-the-scene-format.md) | RIB is what both renderers read; the editor exports to it, one way |
 | [0024](../../adr/0024-api-type-serves-both-renderers.md) | `api/type` serves both, and a convention is a parameter rather than a fork |
-| [0018](../../adr/0018-a-project-is-json-and-stores-topology-verbatim.md) | The project file is the editor's own, and stores topology verbatim |
-| [0013](../../adr/0013-mesh-is-a-dag-node.md) | A mesh is a dag node with a transform; the scene holds no cameras |
-| [0025](../../adr/0025-the-rib-reader-dispatches-a-cpp-request-interface.md) | The reader hands a renderer C++ requests with typed parameter lists |
+| [0018](../../adr/0018-editor-projects-saved-as-json-with-exact-topology.md) | The project file is the editor's own, and stores topology verbatim |
+| [0013](../../adr/0013-editor-a-mesh-is-a-dag-node.md) | A mesh is a dag node with a transform; the scene holds no cameras |
+| [0025](../../adr/0025-offline-rib-reader-calls-a-typed-handler-interface.md) | The reader hands a renderer C++ requests with typed parameter lists |
 
 ## What blocks what
 
@@ -57,7 +57,7 @@ phase and is what the first four are for.
 
 ### Step 1 — ADR-0025, what the reader hands a renderer
 
-[ADR-0023](../../adr/0023-rib-is-the-offline-scene-description.md) settled that one reader
+[ADR-0023](../../adr/0023-offline-rib-is-the-scene-format.md) settled that one reader
 dispatches onto an interface both renderers implement. It did not settle what that interface is
 made of, and there are three candidates: moya's RI C ABI (`RtToken`, `RtPointer`, varargs), a
 C++ request interface taking `std::string`, `float`, `glm::mat4x4` and a parsed parameter list,
@@ -70,13 +70,13 @@ Two things it has to weigh, both of which point the same way. **A `va_list` cann
 runtime**, so a reader holding a parsed parameter list cannot call `RiPolygon` at all — only the
 `RiPolygonV` form, which is what the RI standard provides for exactly this caller. And
 `api/render/offline` cannot include `RenderMan.h`: that header is moya's C ABI, and
-[ADR-0022](../../adr/0022-offline-rendering-shares-an-api-library.md) put the shared library below
+[ADR-0022](../../adr/0022-offline-shared-library-with-no-vulkan.md) put the shared library below
 both renderers rather than beside one.
 
 **Done when**: `docs/adr/0025-*.md` exists, is in the index, and step 4 cites it rather than
 re-deriving it.
 
-**Landed** as [ADR-0025](../../adr/0025-the-rib-reader-dispatches-a-cpp-request-interface.md).
+**Landed** as [ADR-0025](../../adr/0025-offline-rib-reader-calls-a-typed-handler-interface.md).
 
 ### Step 2 — the tokenizer
 
@@ -354,7 +354,7 @@ count and transform the scene held, and one of the two renderers draws it.
 also writes what it exported to `data_out/export.rib` beside the executable: a round trip cannot
 assert that a renderer draws the file, and handing it to one is the only thing the export is
 for. talyn draws that cube — in white, because the editor's scene has no materials, which is
-what [ADR-0023](../../adr/0023-rib-is-the-offline-scene-description.md) said a scene out of the
+what [ADR-0023](../../adr/0023-offline-rib-is-the-scene-format.md) said a scene out of the
 editor would look like.
 
 The camera is written as an explicit `ScreenWindow` rather than left to the frame aspect. The

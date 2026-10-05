@@ -79,10 +79,10 @@ tree was read in its working state.
 | [1](#step-1--a-model-in-parts) | A model is parts over one vertex array, read through the node hierarchy | `api/type`, `api/asset` | **0069** | done; accepted |
 | [2](#step-2--the-registry-draws-parts) | A registry entry is parts, and the walks submit one item per part | `api/render` | 0069 | done |
 | [3](#step-3--reading-a-skin) | Skeletons, per-vertex influences, and a fixture that has them | `api/type`, `api/asset` | 0069 | done |
-| [4](#step-4--the-record-where-animation-lives) | The record: where animation lives, and what is sampled when | `docs/adr` | **[0070](../../adr/0070-animation-is-sampled-from-playback-on-the-step.md)** | done; accepted |
+| [4](#step-4--the-record-where-animation-lives) | The record: where animation lives, and what is sampled when | `docs/adr` | **[0070](../../adr/0070-animation-cpu-sampling-playback-on-the-fixed-step.md)** | done; accepted |
 | [5](#step-5--clips-a-clock-and-a-pose) | The clock, clips, sampling, blending and a palette | `api/type`, `api/asset` | 0070 | done |
 | [6](#step-6--playback-on-the-step) | A playback component, advanced in `simulate()` and drawn between steps | `api/ecs` | 0070, 0060 | done |
-| [7](#step-7--skinning-in-the-lit-tier) | The palette at set 2, the skinned shaders, and the walk that poses | `api/render` | **[0071](../../adr/0071-joint-palettes-are-a-storage-buffer-in-the-scene-set.md)** | done; accepted |
+| [7](#step-7--skinning-in-the-lit-tier) | The palette at set 2, the skinned shaders, and the walk that poses | `api/render` | **[0071](../../adr/0071-skinning-joint-matrices-in-one-storage-buffer.md)** | done; accepted |
 | [8](#step-8--instancing-held) | Instancing | — | — | held; in [TODO.md](../../TODO.md#lit-scenes) |
 | [9](#step-9--a-figure-that-moves-and-the-handoff) | A rigged figure drawn mid-clip, and the handoff | `api/asset`, `api/render`, `docs` | — | done |
 
@@ -95,7 +95,7 @@ Step 6 needs step 5. Step 7 needs steps 2, 5 and 6. Step 9 needs everything.
 ### Step 1 — A model in parts
 
 **ADR-0069: a model is parts that share one vertex array, and may carry a skin.** It amends
-[ADR-0030](../../adr/0030-a-model-is-an-interleaved-array-that-names-its-texture.md), which deferred
+[ADR-0030](../../adr/0030-models-one-interleaved-array.md), which deferred
 this exact case rather than rejecting it: "Splitting a file into several `Model`s is the natural
 extension". The record goes the other way from that sentence, and says why.
 
@@ -307,7 +307,7 @@ through it.
   sprite clip in [TODO.md](../../TODO.md#sprite-sheets) is written over it when it is taken up. Its
   region names are what would take it elsewhere, and a clock has none.
 * **Playback is a component in `api/ecs`**, advanced in `simulate()`, and has an `interpolate()`
-  so that [ADR-0060](../../adr/0060-a-moving-thing-keeps-its-previous-step.md) draws it between
+  so that [ADR-0060](../../adr/0060-ecs-interpolate-from-a-previous-step-component.md) draws it between
   steps.
 * **What is interpolated is the playback state, not the pose.** That state is a clip, a time and
   a fade. The pose is sampled once a frame, at draw time, from the interpolated state. This
@@ -322,7 +322,7 @@ through it.
 **Alternatives the record weighs:**
 
 * **A library of its own, `api/animation`.** It would be one more manifest entry under
-  [ADR-0033](../../adr/0033-a-consumer-selects-the-api-libraries-it-wants.md) for code that has no
+  [ADR-0033](../../adr/0033-build-select-api-libraries-through-a-manifest.md) for code that has no
   dependency `api/type` and `api/ecs` do not already have.
 * **Sampling on the device.** That means a compute pass writing the palette. It is fast at a
   thousand characters and pointless at twelve, and it would put clip data in buffers.
@@ -463,8 +463,8 @@ the clip alone. The weight it skips is under one step's worth of the fade.
 ### Step 7 — Skinning in the lit tier
 
 **ADR-0071: a frame's joint palettes are a storage buffer in the scene set, and an item names
-its offset.** It amends [ADR-0064](../../adr/0064-a-pass-carries-a-scene-set-and-a-depth-bias.md)
-and cites [ADR-0008](../../adr/0008-binding-by-update-frequency.md). The roadmap left where the
+its offset.** It amends [ADR-0064](../../adr/0064-lighting-lit-passes-use-the-shared-recorder.md)
+and cites [ADR-0008](../../adr/0008-shaders-descriptor-sets-by-update-frequency.md). The roadmap left where the
 palette binds to this step.
 
 * **Set 2 binding 2 is a read-only storage buffer of every palette drawn this frame**, written
@@ -492,7 +492,7 @@ palette binds to this step.
   `skin.glsl` beside `lit.glsl`. `Lit::Shaders` gains three entries, so ADR-0067's replacement
   still covers everything. The fragment stages are shared.
 * **The palette buffer is per frame in flight.** It grows by doubling, and an outgrown buffer
-  goes through `Ring::retire` ([ADR-0061](../../adr/0061-a-resource-is-released-explicitly.md)).
+  goes through `Ring::retire` ([ADR-0061](../../adr/0061-resources-explicit-release-generational-handles.md)).
   `Lit::scene()` gains the palette: a span of matrices that it copies and binds.
 * **`realtime::poses(registry, alpha, meshes)`** walks
   `view<const Transform, const component::Mesh, const ecs::component::Playback>()`. For each
@@ -633,11 +633,11 @@ Written here for retcon to read, not sent to it. The counterparts:
 
 | retcon needs | here |
 |---|---|
-| a file whose surfaces differ | one `type::Model` in parts, drawn a part at a time ([ADR-0069](../../adr/0069-a-model-is-parts-over-one-array-and-may-carry-a-skin.md)) |
+| a file whose surfaces differ | one `type::Model` in parts, drawn a part at a time ([ADR-0069](../../adr/0069-models-material-parts-over-one-vertex-buffer.md)) |
 | a skeleton and weights | `type::Skeleton` and `Model::influences()`, read from the first skin |
 | clips by name | `Model::clips()`, and `MeshRegistry::clip(handle, name)` for the index |
-| playing, fading, footsteps | `ecs::component::Playback`: `play()`, `advance(registry, step)`, `crossed()` ([ADR-0070](../../adr/0070-animation-is-sampled-from-playback-on-the-step.md)) |
-| the pose drawn and cast | `realtime::poses()`, handed to `Lit::scene()`, `meshes()` and `casters()` ([ADR-0071](../../adr/0071-joint-palettes-are-a-storage-buffer-in-the-scene-set.md)) |
+| playing, fading, footsteps | `ecs::component::Playback`: `play()`, `advance(registry, step)`, `crossed()` ([ADR-0070](../../adr/0070-animation-cpu-sampling-playback-on-the-fixed-step.md)) |
+| the pose drawn and cast | `realtime::poses()`, handed to `Lit::scene()`, `meshes()` and `casters()` ([ADR-0071](../../adr/0071-skinning-joint-matrices-in-one-storage-buffer.md)) |
 
 What adopting involves:
 

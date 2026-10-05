@@ -7,10 +7,10 @@ in neither tree.** It is the largest gap either game has, and it is retcon's.
 
 **Done by [SkeletalAnimation](../../plans/completed/SkeletalAnimation.md)**, closed 2026-10-03,
 instancing aside. Three records settle what this document left open: a model in parts that may
-carry a skin ([ADR-0069](../../adr/0069-a-model-is-parts-over-one-array-and-may-carry-a-skin.md)),
+carry a skin ([ADR-0069](../../adr/0069-models-material-parts-over-one-vertex-buffer.md)),
 where animation lives and that choosing a clip is the game's
-([ADR-0070](../../adr/0070-animation-is-sampled-from-playback-on-the-step.md)), and where the
-palette binds ([ADR-0071](../../adr/0071-joint-palettes-are-a-storage-buffer-in-the-scene-set.md)).
+([ADR-0070](../../adr/0070-animation-cpu-sampling-playback-on-the-fixed-step.md)), and where the
+palette binds ([ADR-0071](../../adr/0071-skinning-joint-matrices-in-one-storage-buffer.md)).
 Instancing waits in [TODO.md](../../TODO.md#lit-scenes) for a count that needs it. retcon has no
 rigged art yet, so the acceptance test below is retcon's to run when it has; a Blender export
 stands in for it here.
@@ -26,7 +26,7 @@ sprite clip.
   `type::Model` whose vertex is a position, a normal and a uv
   ([Model.h](../../../api/type/Model.h)). Joints, weights, skins and animations are not read. A
   file is one model in parts, a part per material, placed by its nodes
-  ([ADR-0069](../../adr/0069-a-model-is-parts-over-one-array-and-may-carry-a-skin.md)).
+  ([ADR-0069](../../adr/0069-models-material-parts-over-one-vertex-buffer.md)).
 * **retcon parses through it.** Its `GltfLoader` is a conversion from the api's model into its
   own vertex layout (its ADR-0020, amended), so a loader that reads skins here is one retcon
   already calls.
@@ -53,7 +53,7 @@ character is rarely one surface and the split is the same walk over the file.
 
 Whether a skinned vertex is a second `type::Model` layout or the same layout with joint
 attributes that a static mesh leaves empty is
-[ADR-0030](../../adr/0030-a-model-is-an-interleaved-array-that-names-its-texture.md)'s to amend,
+[ADR-0030](../../adr/0030-models-one-interleaved-array.md)'s to amend,
 and the cost of the second is four bytes of joints and sixteen of weights on every static
 vertex in both games.
 
@@ -74,7 +74,7 @@ applied to joints instead of a transform.
 
 A variant of milestone 4's mesh pipeline that reads joints and weights and a palette of joint
 matrices per draw. The palette is per instance and per frame, which by
-[ADR-0008](../../adr/0008-binding-by-update-frequency.md)'s rule makes it neither the camera nor
+[ADR-0008](../../adr/0008-shaders-descriptor-sets-by-update-frequency.md)'s rule makes it neither the camera nor
 the material, so where it binds is the step's to settle — and the shadow pass needs the same
 variant, or a skinned character casts the shadow of its bind pose.
 
@@ -102,7 +102,7 @@ at known times, sampled and compared against matrices computed by hand, the way 
 Blending and crossfading are the same at the pose level.
 
 Skinning on the device cannot be pinned to a picture
-([ADR-0054](../../adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md)) except for
+([ADR-0054](../../adr/0054-testing-golden-images-hold-only-spec-exact-output.md)) except for
 the case that is the identity — a skin at its bind pose must draw the picture the unskinned mesh
 draws, which is a strong check that the palette and the weights are wired correctly. Beyond
 that, retcon's reference capture with a character posed at a fixed time is the acceptance test,

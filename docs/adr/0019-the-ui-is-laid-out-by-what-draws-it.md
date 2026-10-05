@@ -38,7 +38,7 @@ Four things follow from it.
 
 - **A menu bar is `api/ui`'s, not the editor's.** It is a widget, and a widget that reads a
   JSON tree through `ui::Engine` like the menu beside it. This is the opposite call from the
-  construction grid of [ADR-0011](0011-lines-are-the-second-primitive.md), and for the
+  construction grid of [ADR-0011](0011-rendering-lines-as-a-world-space-primitive.md), and for the
   opposite reason: a grid's extent and spacing are a modeller's policy, where a strip of
   labels that drops panels is not the editor's idea of anything.
 - **A menu is drawn twice and owns only one of the rectangles.** Its label in the strip and

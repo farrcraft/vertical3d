@@ -9,7 +9,7 @@
 `Immediate::headerRow` draws the column names at the layout pen, so inside a scrolling window
 the header scrolls away with the rows under it and a long roster is read against nothing. The
 window is the only thing in the layer that scrolls: it clips to its body, keeps a `scroll` in
-`Retained`, and draws one bar down its right ([ADR-0037](0037-clipping-is-a-scissor-the-batch-carries.md)).
+`Retained`, and draws one bar down its right ([ADR-0037](0037-2d-clip-with-a-per-batch-scissor.md)).
 A table has no region of its own, so there is nothing for a header to be frozen *against*.
 
 That makes "freeze the header" two different features depending on where the table sits. If a

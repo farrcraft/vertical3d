@@ -7,7 +7,7 @@ things a game needs on the way to shipping that a demo never does. None of them 
 or waits on another milestone, and each is taken when a consumer reaches it. Where a consumer
 has named its own trigger, that trigger is given.
 
-The shell belongs to the api ([ADR-0028](../../adr/0028-an-apps-shell-belongs-to-the-api.md)), so
+The shell belongs to the api ([ADR-0028](../../adr/0028-apps-the-shared-app-shell-lives-in-the-api.md)), so
 anything every game writes the same way is a candidate for here, and anything a game writes
 differently is not.
 
@@ -52,7 +52,7 @@ Each is a gap a consumer has named:
 * **A file chooser.** The editor has no "save as", per [Editor.md](../../Editor.md), and a chooser
   is what it is missing.
 
-Each new component touches the places [ADR-0047](../../adr/0047-a-component-type-is-checked-by-the-compiler.md)
+Each new component touches the places [ADR-0047](../../adr/0047-code-exhaustive-enum-switches.md)
 lists, which is the cost of a widget here and worth knowing before taking on four.
 
 ## Input
@@ -71,7 +71,7 @@ migrations one version at a time, which refuses rather than reading a half-migra
 (its ADR-0003, and `src/Save.h`). Nothing about the walk is cozy's: `engine::Settings` is a
 versioned document as well, and every document a game writes outlives the build that wrote it.
 `asset::writeDocument` already writes one whole or not at all
-([ADR-0041](../../adr/0041-a-document-is-written-whole-or-not-at-all.md)); reading one forward is
+([ADR-0041](../../adr/0041-files-write-documents-atomically.md)); reading one forward is
 the other half.
 
 retcon is not the second consumer: its saves are Boost.Serialization, by its own design. The

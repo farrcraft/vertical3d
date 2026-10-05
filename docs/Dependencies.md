@@ -14,10 +14,10 @@ Through the manifest in [vcpkg.json](../vcpkg.json):
 | libjpeg-turbo | |
 | libpng | |
 | sdl3 | **With its `vulkan` feature**, which is required. Without it SDL builds with `SDL_VULKAN=OFF` and `SDL_Vulkan_LoadLibrary` fails at startup with "No dynamic Vulkan support in current SDL video driver (windows)" |
-| sdl3-mixer | What `v3dlib_audio` is built on, per [ADR-0021](adr/0021-sdl3-mixer-replaces-soloud.md). It needs SDL >= 3.4.0, which is why the vcpkg baseline moved |
+| sdl3-mixer | What `v3dlib_audio` is built on, per [ADR-0021](adr/0021-audio-use-sdl3-mixer.md). It needs SDL >= 3.4.0, which is why the vcpkg baseline moved |
 | spdlog | |
 | vulkan | |
-| vulkan-memory-allocator | What `memory::Allocator` suballocates through when a consumer asks for it, per [ADR-0053](adr/0053-a-consumer-chooses-how-memory-is-found.md). One header that is both declaration and implementation, compiled in `realtime/vulkan/memory/VmaImpl.cxx` the way cgltf is, and linked PRIVATE because `Allocator.h` and `Allocation.h` declare the handles they name rather than including it |
+| vulkan-memory-allocator | What `memory::Allocator` suballocates through when a consumer asks for it, per [ADR-0053](adr/0053-memory-optional-vma-suballocation.md). One header that is both declaration and implementation, compiled in `realtime/vulkan/memory/VmaImpl.cxx` the way cgltf is, and linked PRIVATE because `Allocator.h` and `Allocation.h` declare the handles they name rather than including it |
 
 **boost 1.91 removed `boost::json::error_code` and `boost::json::system_error`.** Name
 `boost::system` and include `<boost/system/error_code.hpp>` and
@@ -37,7 +37,7 @@ parses with a `boost::system::error_code` and is the pattern to copy.
 
 There is no OpenGL. `api/gl` was deleted on 2026-09-01, and the `find_package(OpenGL)` and
 `find_package(GLEW)` calls and the `glew` port went with it. See
-[ADR-0001](adr/0001-vulkan-replaces-opengl.md).
+[ADR-0001](adr/0001-rendering-replace-opengl-with-vulkan.md).
 
 ## Setting up vcpkg
 
@@ -133,7 +133,7 @@ libnoise is not prebuilt in the tree, and `voxel` will not link without it.
 ## Consuming the api from another repository
 
 An application outside this tree takes it as source, per
-[ADR-0027](adr/0027-the-api-is-consumed-as-source.md), and [NewProject.md](NewProject.md) is
+[ADR-0027](adr/0027-build-consume-the-api-as-source.md), and [NewProject.md](NewProject.md) is
 the walkthrough. Two points about it belong here, because they are about dependencies:
 
 - **The consumer's `vcpkg.json` is the one that gets installed.** Manifest mode reads the root

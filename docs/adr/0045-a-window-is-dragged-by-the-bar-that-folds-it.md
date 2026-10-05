@@ -6,7 +6,7 @@
 
 ## Context
 
-[ADR-0035](0035-an-immediate-mode-layer-over-the-same-canvas.md) gave `api/ui` an immediate
+[ADR-0035](0035-ui-immediate-mode-beside-the-retained-tree.md) gave `api/ui` an immediate
 mode layer, and `Immediate::window` said in its own docblock that the layer "does not drag
 one": a window is drawn where the caller puts it and folds when its title bar is clicked. An
 app porting a devtools panel off Dear ImGui loses the affordance, because ImGui moves a window

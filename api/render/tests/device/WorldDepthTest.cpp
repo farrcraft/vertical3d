@@ -151,7 +151,7 @@ BOOST_AUTO_TEST_SUITE(world_depth_test)
 /**
  * Two overlapping opaque world quads come out in the order they were submitted, whichever
  * way round that is, and the depth between them decides nothing -
- * [ADR-0042](../../../../docs/adr/0042-a-textured-quad-in-world-space.md): the depth tested
+ * [ADR-0042](../../../../docs/adr/0042-rendering-world-space-sprites.md): the depth tested
  * pipeline tests and does not write, so solid geometry occludes a quad and one quad never
  * occludes another.
  *

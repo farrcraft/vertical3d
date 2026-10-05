@@ -106,7 +106,7 @@ playback. This tree was read at `425cda2`.
 |---|---|---|---|---|
 | [1](#step-1--a-sprite-clip-and-a-keyed-track) | A sprite clip over the clock, and a keyed track of colours or sizes | `api/type` | — | done |
 | [2](#step-2--a-seeded-random-source) | retcon's splitmix64, as a random source a test can pin | `api/type` | — | done |
-| [3](#step-3--the-record-where-effects-live) | The record: where effects live, and what is stepped when | `docs/adr` | **[0072](../../adr/0072-an-emitter-is-a-component-on-the-step-that-owns-its-particles.md)** | done; accepted |
+| [3](#step-3--the-record-where-effects-live) | The record: where effects live, and what is stepped when | `docs/adr` | **[0072](../../adr/0072-particles-an-emitter-component-owns-its-particles.md)** | done; accepted |
 | [4](#step-4--an-emitter-and-its-particles) | An emitter's description, its particles, and the step that moves them | `api/type`, `api/ecs` | 0072 | done |
 | [5](#step-5--particles-drawn) | Particles drawn as billboards into a depth order | `api/render` | 0072 | done |
 | [6](#step-6--weather) | An emitter over a region, wind, and a density that eases | `api/type` | 0072 | done |
@@ -145,7 +145,7 @@ class SpriteClip final {
 turns names into uvs with `config::SpriteSheets::uv` when the sheet loads, and builds the clip
 again when it reloads. That keeps the clip glm-only and in `api/type`, which was the open
 question MotionAndQueries left: region names would have taken it into a library of its own under
-[ADR-0033](../../adr/0033-a-consumer-selects-the-api-libraries-it-wants.md), and nothing here needs
+[ADR-0033](../../adr/0033-build-select-api-libraries-through-a-manifest.md), and nothing here needs
 them.
 
 A walk cycle is a clip per facing and a time the game keeps. A particle is the same clip with
@@ -215,7 +215,7 @@ stop short of the rim and the cone case fails. Two things came out differently:
 
 **ADR-0072: an emitter is a component stepped with the simulation, which owns its particles, and
 whose look is a render component.** It goes in as `proposed` and is accepted when step 5 draws
-through it. It follows the split [ADR-0070](../../adr/0070-animation-is-sampled-from-playback-on-the-step.md)
+through it. It follows the split [ADR-0070](../../adr/0070-animation-cpu-sampling-playback-on-the-fixed-step.md)
 made for animation.
 
 * **The description and the stepping are `api/type`'s.** An emitter's description is plain data:
@@ -228,9 +228,9 @@ made for animation.
   torch carried by a character emits from the character.
 * **What a particle looks like is a render component**, `realtime::component::Particles`, with a
   texture and a sprite clip. It is the counterpart of `Sprite`, and it is a component per kind of
-  drawing, per [ADR-0063](../../adr/0063-an-entity-is-drawn-from-a-transform-and-a-component-per-kind.md).
+  drawing, per [ADR-0063](../../adr/0063-ecs-draw-from-a-transform-plus-a-component-per-kind.md).
   `api/ecs` cannot hold a `TextureHandle`.
-* **A particle keeps its own previous position.** [ADR-0060](../../adr/0060-a-moving-thing-keeps-its-previous-step.md)
+* **A particle keeps its own previous position.** [ADR-0060](../../adr/0060-ecs-interpolate-from-a-previous-step-component.md)
   draws between steps from a `Previous<T>` snapshot of the whole component. For an emitter that
   copies every particle every step. One extra `glm::vec3` per particle holds the same information
   at a fraction of the cost, and a particle born this step has a previous position equal to its
@@ -446,7 +446,7 @@ multiply taken out, the tinted quad keeps its own colour, and with the reset tak
 the grade. They are depth-tested against the meshes, and graded with them. A `World` is built
 against the scene target's colour and depth formats, which the device cases already do. What this
 step adds is the order: the world pass reads the scene target's depth, and
-[ADR-0068](../../adr/0068-a-target-per-frame-a-checked-format-and-passes-placed-by-what-they-read.md)
+[ADR-0068](../../adr/0068-rendering-order-passes-by-what-they-read.md)
 places it by that read.
 
 **`World` gains an additive pair of pipelines.** The blend is source alpha by one, and depth is
@@ -455,7 +455,7 @@ blend, so a game fills a canvas of smoke and a canvas of flame. An additive part
 to be sorted against another, because addition commutes.
 
 **The colours are linear here.** The scene target lights in linear
-([ADR-0066](../../adr/0066-the-lit-tier-lights-in-linear.md)), so a vertex colour is a linear colour,
+([ADR-0066](../../adr/0066-lighting-light-in-linear-draw-to-srgb.md)), so a vertex colour is a linear colour,
 as it already is for every quad drawn into an sRGB swapchain.
 
 **Tests**, on the device:
@@ -502,7 +502,7 @@ and a replacement shader that includes `lit.glsl` gets the member with nothing m
 night is a dim blue one.
 
 **`Grade` can be given a new table.** `Grade::table(texels)` uploads a new 16³ table, retires the
-old one through the ring ([ADR-0061](../../adr/0061-a-resource-is-released-explicitly.md)), and
+old one through the ring ([ADR-0061](../../adr/0061-resources-explicit-release-generational-handles.md)), and
 rewrites each source's descriptor. retcon's grade per zone is a swap on entering the zone. A slow
 change between two grades is a lerp of the two tables' texels on the cpu, uploaded as often as the
 game likes. A table is 16 KiB, so this needs no second texture and no shader change.
@@ -560,7 +560,7 @@ the game's.
 ### Step 11 — A fire and rain drawn, and the handoff
 
 **Two pictures for a person to look at**, since filtering and blending are what
-[ADR-0054](../../adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md) says a reference
+[ADR-0054](../../adr/0054-testing-golden-images-hold-only-spec-exact-output.md) says a reference
 cannot pin. Both are device cases that assert silence and that consecutive frames differ, and both
 write to `data_out/`:
 
@@ -603,7 +603,7 @@ first.** Neither has milestones 3 to 5, and step 5 draws through `sprites()`'s d
 | a walk cycle, a flickering flame | `type::animation::SpriteClip`, its regions held as uvs |
 | a colour or a size over time, a day's tint | `type::animation::Track`, which may wrap over a period |
 | a deterministic random source | `type::Random`, which is retcon's `Rng` with its states intact |
-| a fire, a burst, a muzzle flash | `ecs::component::Emitter`, stepped by `emit(registry, step)`, with `realtime::component::Particles` ([ADR-0072](../../adr/0072-an-emitter-is-a-component-on-the-step-that-owns-its-particles.md)); `type::effect::burst()` for a burst |
+| a fire, a burst, a muzzle flash | `ecs::component::Emitter`, stepped by `emit(registry, step)`, with `realtime::component::Particles` ([ADR-0072](../../adr/0072-particles-an-emitter-component-owns-its-particles.md)); `type::effect::burst()` for a burst |
 | particles among sprites | `realtime::particles()` into the depth order `sprites()` uses |
 | rain and snow | `type::effect::Weather` and `fall()`, with its region from the ground pick, and `sway` for snow |
 | dusk, night, an act's palette over the world | `WorldCanvas::tint()`, sampled from a track |
@@ -664,7 +664,7 @@ reference picture is blessed. Nothing is verified in another repository.
 
 * **No GPU particles**, per the roadmap.
 * **No light pools.** A campfire's glow is a light map that
-  [ADR-0031](../../adr/0031-a-pass-draws-into-a-target-it-names.md) already allows, and cozy's art
+  [ADR-0031](../../adr/0031-rendering-passes-draw-into-offscreen-targets.md) already allows, and cozy's art
   direction has not asked for one.
 * **No fog pass, and no screen flash.** A flash is a tinted quad in the ui or a grade swap for one
   frame, and both are the game's.

@@ -53,7 +53,7 @@ class Model final {
      * How a model's surface looks: a colour, and the name of the image tinting it.
      *
      * The texture is a name rather than pixels, which is
-     * [ADR-0020](../../docs/adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md)'s
+     * [ADR-0020](../../docs/adr/0020-ui-themes-are-data-apps-load-the-images.md)'s
      * shape - the data names an image and the app resolves it through the asset manager,
      * which is what already knows where assets live and what has been loaded once. A
      * loader that decoded the pixels itself would be a second image pipeline beside

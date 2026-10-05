@@ -19,7 +19,7 @@ namespace v3d::test {
  * committed under the same name.
  *
  * What a reference is allowed to contain is
- * [ADR-0054](../../../../docs/adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md).
+ * [ADR-0054](../../../../docs/adr/0054-testing-golden-images-hold-only-spec-exact-output.md).
  * A case drawing anything outside that rule asserts spot checks and validation silence
  * instead of calling this, and has no committed picture at all.
  *

@@ -50,9 +50,9 @@ Recorded in [adr/](../../adr/), not here.
 
 | ADR | Decision |
 |---|---|
-| [0032](../../adr/0032-the-loop-simulates-at-a-fixed-step.md) | The loop simulates at a fixed step and renders at a variable one — written by step 1 |
-| [0012](../../adr/0012-camera-builds-vulkan-clip-space.md) | `v3d::type::Camera` builds Vulkan clip space — unchanged; step 5's loader produces profiles for it |
-| [0016](../../adr/0016-undo-records-what-has-already-happened.md), [0017](../../adr/0017-a-command-is-a-name-in-a-context.md) | One consumer is not a library, and it moves when a second app wants it — **step 5 applies it**, and needs no record of its own |
+| [0032](../../adr/0032-loop-fixed-step-simulation-variable-rate-rendering.md) | The loop simulates at a fixed step and renders at a variable one — written by step 1 |
+| [0012](../../adr/0012-camera-projection-targets-vulkan-clip-space.md) | `v3d::type::Camera` builds Vulkan clip space — unchanged; step 5's loader produces profiles for it |
+| [0016](../../adr/0016-editor-undo-records-completed-changes.md), [0017](../../adr/0017-a-command-is-a-name-in-a-context.md) | One consumer is not a library, and it moves when a second app wants it — **step 5 applies it**, and needs no record of its own |
 
 `0026` is a deliberate gap, reserved by [the shading plan](OfflineRenderingPhase3.md) —
 [adr/README.md](../../adr/README.md) says so above its table. 0028 through 0031 have been taken since
@@ -78,7 +78,7 @@ not travel together.
 
 ### Step 1 — ADR-0032, the loop simulates at a fixed step
 
-**Done.** [ADR-0032](../../adr/0032-the-loop-simulates-at-a-fixed-step.md), accepted. It settles
+**Done.** [ADR-0032](../../adr/0032-loop-fixed-step-simulation-variable-rate-rendering.md), accepted. It settles
 one thing this plan had not seen: `simulate()` takes its step as a `float` in seconds rather
 than the `unsigned int` milliseconds written below, because 16.67 ms is not an integer and an
 integer step would either lie about the time it drained or move the rate to 62.5 Hz. `tick()`
@@ -218,7 +218,7 @@ resolves and that an absent one returns empty. Add parse cases now that there is
 a named profile round-tripping, a profile missing a name rejected, and the documented defaults
 applied to a sparse entry.
 
-No ADR: [ADR-0016](../../adr/0016-undo-records-what-has-already-happened.md) and
+No ADR: [ADR-0016](../../adr/0016-editor-undo-records-completed-changes.md) and
 [ADR-0017](../../adr/0017-a-command-is-a-name-in-a-context.md) both already settle that one consumer is
 not a library and that the thing moves when a second app wants it. This is that rule being applied,
 not a new decision. Cite it in the commit message.
@@ -281,7 +281,7 @@ and the states around it are per-app.
 
 ## Open questions
 
-Both of the first two are settled by [ADR-0032](../../adr/0032-the-loop-simulates-at-a-fixed-step.md):
+Both of the first two are settled by [ADR-0032](../../adr/0032-loop-fixed-step-simulation-variable-rate-rendering.md):
 the rate is a constant, and the accumulator is its own type.
 
 The third — **do tetris and voxel eventually move onto `simulate()`?** — was carried out to

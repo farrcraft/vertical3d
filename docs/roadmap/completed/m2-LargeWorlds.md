@@ -9,8 +9,8 @@ from that.
 **Done by [LargeWorlds](../../plans/completed/LargeWorlds.md)**, closed 2026-10-03. Regions,
 remembered sight and the movement filter are held in [TODO.md](../../TODO.md#tile-grids) behind
 their triggers. Resource lifetime and the grid's part of a map have records of their own in
-[ADR-0061](../../adr/0061-a-resource-is-released-explicitly.md) and
-[ADR-0062](../../adr/0062-a-map-picture-and-legend-are-the-grids.md). What follows is the
+[ADR-0061](../../adr/0061-resources-explicit-release-generational-handles.md) and
+[ADR-0062](../../adr/0062-grid-parse-terrain-not-map-files.md). What follows is the
 reasoning the plan was drafted from, as it stood then.
 
 cozy's M6 (world and map) is where all of it is first due, and cozy's own roadmap names this
@@ -28,9 +28,9 @@ except culling, which uses [milestone 1](m1-MotionAndQueries.md)'s `Frustum`.
 * **[`WorldCanvas`](../../../api/render/realtime/WorldCanvas.h) draws in submission order**, and
   says why: in an isometric projection a sprite is behind another when its feet are further up
   the ground plane, which is the caller's knowledge, and by
-  [ADR-0042](../../adr/0042-a-textured-quad-in-world-space.md) one world quad never occludes
+  [ADR-0042](../../adr/0042-rendering-world-space-sprites.md) one world quad never occludes
   another through depth. Its stream is cut wherever the bound texture changes
-  ([ADR-0005](../../adr/0005-one-batched-quad-primitive.md)).
+  ([ADR-0005](../../adr/0005-2d-one-batched-quad-pipeline.md)).
 * **A pass can sort its items by key** ([Pass.h](../../../api/render/realtime/Pass.h)), by
   pipeline and material, for a depth-tested scene with an item per object. That is a different
   sort from the one above: a canvas is one stream, and the order inside it is what matters.
@@ -39,7 +39,7 @@ except culling, which uses [milestone 1](m1-MotionAndQueries.md)'s `Frustum`.
   later.
 * **[`api/grid`](../../../api/grid/)** is one rectangle of tiles on Y = 0 with world and tile
   conversion, A*, a reachable set, a distance field and line of sight
-  ([ADR-0029](../../adr/0029-tile-grids-are-an-api-library.md)). Its movement filter is a
+  ([ADR-0029](../../adr/0029-grid-8-way-movement-symmetric-line-of-sight.md)). Its movement filter is a
   `std::function` called for every neighbour of every visited tile, which
   is the first thing to templatise once a board is large enough to notice.
 * **Two map formats exist and they are the same idea.** odyssey's
@@ -63,7 +63,7 @@ and a region that loads one must not see each other's texture.
 handle, a reference count held by whatever keeps a handle, or a scope — everything registered
 for a scene released with it — and they differ in who can get it wrong. Whatever is released
 must also not be in a frame still in flight, so the free waits on the in-flight ring
-([ADR-0051](../../adr/0051-the-in-flight-ring-is-not-the-swapchain.md)), which is what knows when
+([ADR-0051](../../adr/0051-frames-in-flight-ring-separate-from-presenting.md)), which is what knows when
 a frame has finished with it.
 
 [Milestone 4](m4-LitScene.md) moves textures and samplers into classes of their own, so this
@@ -140,5 +140,5 @@ back rather than lost.
   thread, which is [milestone 7](m7-ShellAndShipping.md#asynchronous-loading). A region loaded on
   the main thread is correct, and M6 can start there.
 * **A minimap.** Drawing the world into a target and showing it in the ui is what
-  [ADR-0031](../../adr/0031-a-pass-draws-into-a-target-it-names.md) already allows. It is a
+  [ADR-0031](../../adr/0031-rendering-passes-draw-into-offscreen-targets.md) already allows. It is a
   consumer's first use of it rather than a missing piece.

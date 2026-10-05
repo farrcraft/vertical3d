@@ -57,7 +57,7 @@ what it was given for". The second half of that stays true; the first half has t
 **The recommendation is explicit release, per handle.** The roadmap names three choices:
 
 - **A reference count** held by whatever keeps a handle. A handle is a value. It is copied into
-  every `DrawItem` and packed into a `SortKey` ([ADR-0004](../../adr/0004-operations-as-draw-data.md)),
+  every `DrawItem` and packed into a `SortKey` ([ADR-0004](../../adr/0004-rendering-submit-draw-items-as-data.md)),
   so counting it would make each of those copies a counted one. That costs the draw path for a
   convenience that only load and unload need.
 - **A scope**, where everything registered for a scene is released with it. That is what cozy's
@@ -102,7 +102,7 @@ registry with holes still walks only its live slots.
 A resource that is released while a recorded frame still reads it is a use after free on the
 device. The device suite under lavapipe is where that shows up as a validation error. What
 knows when a frame has finished is the in-flight ring
-([ADR-0051](../../adr/0051-the-in-flight-ring-is-not-the-swapchain.md)).
+([ADR-0051](../../adr/0051-frames-in-flight-ring-separate-from-presenting.md)).
 
 **The shape.** `Resources::release(handle)` removes the handle from its registry at once, so
 the handle stops resolving from that moment. The Vulkan objects behind it go onto a retirement
@@ -127,7 +127,7 @@ and a TODO entry says so when this plan closes.
 **What the ADR records:** explicit release; a generation that refuses stale handles; and
 destruction deferred by the ring rather than by a device wait. A `vkDeviceWaitIdle` on every
 release would be correct and would hitch a region load on the main thread, which is the case
-the roadmap says M6 starts with. The ADR amends [ADR-0010](../../adr/0010-meshes-are-owned-by-the-app.md)'s
+the roadmap says M6 starts with. The ADR amends [ADR-0010](../../adr/0010-meshes-owned-by-the-app-that-built-them.md)'s
 premise that `Resources` "never frees". It does not supersede it, because meshes stay the
 app's.
 
@@ -168,7 +168,7 @@ sheets.
 
 **The handoff note.** For cozy: a texture can be released, through
 `renderer_->quads()->release(handle)`, which releases its material with it
-([ADR-0061](../../adr/0061-a-resource-is-released-explicitly.md)). Calling it on the old handle
+([ADR-0061](../../adr/0061-resources-explicit-release-generational-handles.md)). Calling it on the old handle
 before `rebindTextures()` closes the leak `Watch.h:40` acknowledges, and `resolveTexture`'s
 cache can drop an entry once it has released what the entry held. A released handle resolves to
 nothing at once, so a draw that still names one is skipped rather than drawn wrong, and the
@@ -180,7 +180,7 @@ texture is refused, so a handle `depthTexture()` gave back can be released like 
 calls, and today it is not. The device case from step 2 is extended: release a texture, register
 a new one that reuses its slot, draw with the new one, and read every pixel back through
 [`Capture`](../../../api/render/realtime/vulkan/frame/Capture.h). That is a flat colour at one
-texel per pixel, so [ADR-0054](../../adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md)
+texel per pixel, so [ADR-0054](../../adr/0054-testing-golden-images-hold-only-spec-exact-output.md)
 allows it to be asserted exactly. The case that matters is the stale map entry: with the map
 looked up by slot and the entry left behind, the case draws nothing and fails.
 
@@ -222,7 +222,7 @@ submission order among exact equals.
 ("a sheet per object is a cut per object"). An atlas per region is the caller's half of the
 answer, and a quantised key is the other half.
 
-**No ADR.** This is [ADR-0042](../../adr/0042-a-textured-quad-in-world-space.md)'s "ordered by its
+**No ADR.** This is [ADR-0042](../../adr/0042-rendering-world-space-sprites.md)'s "ordered by its
 caller", given a tool. The order is still the caller's, and depth testing still never hides
 one quad behind another.
 
@@ -364,7 +364,7 @@ the `legend` records' passability and cover. A glyph the legend lacks comes back
 glyph is invalid stays retcon's, checked against that list. Props stay keyed by glyph in
 retcon's own legend, and spawns, the horde, items and objectives stay records. Picture row *y*
 is tile row *y*. Adopting it is retcon's decision under its ADR-0041
-([ADR-0062](../../adr/0062-a-map-picture-and-legend-are-the-grids.md)).
+([ADR-0062](../../adr/0062-grid-parse-terrain-not-map-files.md)).
 
 For cozy: whichever format M6 picks, its terrain half is this call. A Tiled tile layer becomes
 rows plus a legend once its tile ids are mapped to glyphs. Whatever a glyph means beyond
@@ -424,7 +424,7 @@ Steps 1, 4 and 6 are headless, and so is step 2's queue. Step 2's release and st
 reuse are device questions. There is one GPU here and no local lavapipe, so they are checked on
 the Radeon with the validation layer locally, and on the runner's lavapipe when the branch is
 opened as a pull request. Step 3's readback is the only picture this plan asserts, and it
-qualifies under [ADR-0054](../../adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md)
+qualifies under [ADR-0054](../../adr/0054-testing-golden-images-hold-only-spec-exact-output.md)
 because it is a flat colour. Step 5 is the one thing a person has to watch, and the step says
 what to watch for.
 
@@ -438,7 +438,7 @@ what to watch for.
 - **It does not add a spatial structure.** It adds a loop over boxes, per the roadmap.
 - **It does not read Tiled, or any file.** Step 6 is a picture and a legend; the container stays
   the game's.
-- **It does not draw a minimap.** That is [ADR-0031](../../adr/0031-a-pass-draws-into-a-target-it-names.md)
+- **It does not draw a minimap.** That is [ADR-0031](../../adr/0031-rendering-passes-draw-into-offscreen-targets.md)
   used by a consumer, and step 3 makes it safe to resize the target that minimap draws into.
 
 ## When a step lands

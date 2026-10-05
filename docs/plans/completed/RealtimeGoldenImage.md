@@ -12,7 +12,7 @@ not be had, measured rather than argued.
 
 ## Why now
 
-[ADR-0007](../../adr/0007-ci-rendering-tests.md) chose validation silence over pixels and deferred
+[ADR-0007](../../adr/0007-ci-render-tests-on-software-vulkan.md) chose validation silence over pixels and deferred
 golden images in its fifth alternative rather than rejecting them.
 [ADR-0050](../../adr/0050-a-frame-is-read-back-in-two-calls.md) built the half that was missing and
 said outright that ADR-0007 stands until something blesses a reference. Nothing has.
@@ -40,7 +40,7 @@ The answer is to bless only pictures the specification determines — axis align
 integer pixel boundaries, flat colours at the ends of the channel range, nearest sampling, no
 blending and no multisampling — so that every conformant implementation owes the same bytes and
 the file stops being any one rasterizer's. What may be in a reference, and what a case that
-wants more does instead, is [ADR-0054](../../adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md).
+wants more does instead, is [ADR-0054](../../adr/0054-testing-golden-images-hold-only-spec-exact-output.md).
 
 **This is also what the ordering below is built around.** The claim is not provable on this
 machine: there is one gpu here, and the runner's lavapipe is the second implementation. So the
@@ -140,7 +140,7 @@ returns rather than which filter it is.
 ## Step 5 — Depth and order
 
 Two opaque world quads that overlap, drawn near first and then far first, per
-[ADR-0042](../../adr/0042-a-textured-quad-in-world-space.md). This is the only case here that draws
+[ADR-0042](../../adr/0042-rendering-world-space-sprites.md). This is the only case here that draws
 through `renderer::World` or puts a depth attachment on a render target, so it is what says
 either works at all.
 

@@ -17,7 +17,7 @@ enough to earn a plan when it is taken up and the reasoning for one does not nee
 
 ## Who this was drawn from
 
-The api is consumed as source ([ADR-0027](../../adr/0027-the-api-is-consumed-as-source.md)) and
+The api is consumed as source ([ADR-0027](../../adr/0027-build-consume-the-api-as-source.md)) and
 most of what consumes it is outside this tree, so the evidence came from four places:
 
 * **The api itself** — what each library offers, and the gaps [TODO.md](../../TODO.md) and
@@ -76,7 +76,7 @@ mesh tier exists is not.
 
 **Milestone 4 no longer waits on milestone 2.** The texture class it moves here retires what it
 owns through the in-flight ring, which milestone 2 decided
-([ADR-0061](../../adr/0061-a-resource-is-released-explicitly.md)).
+([ADR-0061](../../adr/0061-resources-explicit-release-generational-handles.md)).
 
 **Milestones 4 and 5 are strictly ordered, and the order is the point of the roadmap.**
 retcon's lit tier works today, so moving it here is not urgent for retcon on its own. But
@@ -99,11 +99,11 @@ them blocks another.
   reached this tree. [m4-LitScene.md](m4-LitScene.md) has what the move involves.
 * **What a renderable component is** — milestone 3, in its own record.
 * **Which part of a map is the grid's** — decided: a picture and a terrain legend, and nothing
-  else ([ADR-0062](../../adr/0062-a-map-picture-and-legend-are-the-grids.md)).
+  else ([ADR-0062](../../adr/0062-grid-parse-terrain-not-map-files.md)).
 
 ## Verification
 
-The device suite and its golden images ([ADR-0054](../../adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md))
+The device suite and its golden images ([ADR-0054](../../adr/0054-testing-golden-images-hold-only-spec-exact-output.md))
 are the only way this tree asserts a picture, and they hold only what the specification
 determines pixel for pixel. Most of milestones 4 to 6 is lighting, filtering and blending,
 which is exactly what a reference cannot pin — each milestone document says what *can* be

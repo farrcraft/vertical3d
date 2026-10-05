@@ -1,7 +1,7 @@
 # Starting A Project Against The api
 
 How to stand up an application in its own repository that uses the `api/` libraries.
-[ADR-0027](adr/0027-the-api-is-consumed-as-source.md) settles the shape: the api is taken as
+[ADR-0027](adr/0027-build-consume-the-api-as-source.md) settles the shape: the api is taken as
 **source**, not as an installed package. There is no `find_package(vertical3d)` and nothing to
 install. The consumer nests this repository with `add_subdirectory` and builds it with its own
 compiler.
@@ -116,7 +116,7 @@ vertical3d is not the top level project; setting them explicitly documents the i
 
 **`V3D_LIBRARIES` names the api libraries you link.** Their closure is what gets built and
 what decides which packages are looked for, per
-[ADR-0033](adr/0033-a-consumer-selects-the-api-libraries-it-wants.md), so an app that wants
+[ADR-0033](adr/0033-build-select-api-libraries-through-a-manifest.md), so an app that wants
 only `v3d::image` needs no Vulkan SDK and no SDL3 installed. Leave it out and you get `all`,
 which is every library and every package. It has to be `all` if you turned the apps or the
 tests back on.
@@ -156,7 +156,7 @@ working one. The parts that are not obvious:
 `<api/engine/Application.h>` derives the path every asset resolves against from `argv[0]`,
 drives `initialize()` and `eventLoop()` inside a try block that logs what a renderer threw, and
 calls `shutdown()` outside it. A windowed app has no console, so an uncaught exception is
-otherwise an abort dialog with nothing in it. [ADR-0028](adr/0028-an-apps-shell-belongs-to-the-api.md)
+otherwise an abort dialog with nothing in it. [ADR-0028](adr/0028-apps-the-shared-app-shell-lives-in-the-api.md)
 covers what else an app does not have to write: `v3d::ui::paint::TextRenderer` for a font and its
 glyphs, and `v3d::ui::shell::GameMenu` for a menu the escape key puts up.
 
@@ -178,7 +178,7 @@ destroyed, and the instance reports it leaked.
 
 **A quit calls `quit()`.** The loop ticks and renders after an event handler returns, so the
 window has to outlive the handler; `shutdown()` is `run()`'s and an app cannot reach it -
-[ADR-0080](adr/0080-the-engine-owns-its-lifecycle.md).
+[ADR-0080](adr/0080-apps-the-engine-owns-startup-and-shutdown-order.md).
 
 **Drawing is a canvas of quads submitted to a pass.** Open the frame with
 `renderer_->beginFrame(&size)`, which returns false while the window has no area — it has

@@ -132,9 +132,9 @@ game drawn in a projection:
 | [`LineCanvas`](../../../api/render/realtime/LineCanvas.h) | world | the camera the pass carries |
 
 So a rectangle can be textured or it can be in the world, and not both.
-[ADR-0005](../../adr/0005-one-batched-quad-primitive.md) is the reason — one batched quad primitive,
+[ADR-0005](../../adr/0005-2d-one-batched-quad-pipeline.md) is the reason — one batched quad primitive,
 and the primitive was built for a ui. It has held well: a panel, a sprite and a glyph are one
-pipeline, and [ADR-0036](../../adr/0036-text-is-a-distinct-kind-of-quad.md) amended it without
+pipeline, and [ADR-0036](../../adr/0036-text-sdf-glyphs-through-the-quad-shader.md) amended it without
 splitting it.
 
 What it does not cover is a sprite standing on a ground plane. The consuming game has settled, in a
@@ -194,11 +194,11 @@ and [adr/README.md](../../adr/README.md) is the authority if something takes the
 |---|---|
 | **0041** | A document is written whole or not at all — written by step 1 |
 | **0042** | A textured quad in world space, and how it relates to ADR-0005 — written by step 10 |
-| [0005](../../adr/0005-one-batched-quad-primitive.md) | One batched quad primitive — **amended or extended** by 0042, and step 10 is where which of the two is settled |
+| [0005](../../adr/0005-2d-one-batched-quad-pipeline.md) | One batched quad primitive — **amended or extended** by 0042, and step 10 is where which of the two is settled |
 | [0019](../../adr/0019-the-ui-is-laid-out-by-what-draws-it.md) | The ui is laid out by what draws it — unchanged; steps 7 and 9 keep the `Measure`/`Write` seam |
-| [0020](../../adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md) | An app resolves what a config names — unchanged; step 12's sheet resolves its image the same way a theme does |
-| [0027](../../adr/0027-the-api-is-consumed-as-source.md) | The api is consumed as source — unchanged, and why a consuming game can be planned against unreleased api |
-| [0040](../../adr/0040-a-key-goes-to-a-focused-component.md) | A key goes to a focused component — **extended** by step 8, which gives the focus a second way to move |
+| [0020](../../adr/0020-ui-themes-are-data-apps-load-the-images.md) | An app resolves what a config names — unchanged; step 12's sheet resolves its image the same way a theme does |
+| [0027](../../adr/0027-build-consume-the-api-as-source.md) | The api is consumed as source — unchanged, and why a consuming game can be planned against unreleased api |
+| [0040](../../adr/0040-ui-keyboard-focus-and-text-input.md) | A key goes to a focused component — **extended** by step 8, which gives the focus a second way to move |
 
 ## What blocks what
 
@@ -235,7 +235,7 @@ and every day it is not done is a day another app writes the workaround.
 
 ### Step 1 — ADR-0041, a document is written whole or not at all
 
-**Landed** as [ADR-0041](../../adr/0041-a-document-is-written-whole-or-not-at-all.md).
+**Landed** as [ADR-0041](../../adr/0041-files-write-documents-atomically.md).
 
 The record comes first, per [sdlc.md](../../sdlc.md).
 
@@ -429,7 +429,7 @@ and there is no key name for shift-tab — so the app that saw the key says. It 
 false, which is forward-only tab for a caller that ignores it. No `tabIndex` was added.
 
 In [`api/ui/Engine.h`](../../../api/ui/Engine.h) and [`Keys.cpp`](../../../api/ui/Keys.cpp), extending
-[ADR-0040](../../adr/0040-a-key-goes-to-a-focused-component.md).
+[ADR-0040](../../adr/0040-ui-keyboard-focus-and-text-input.md).
 
 `Engine::focus()` holds one component at a time and a press is the only thing that calls it. It
 needs a second caller: a traversal that finds the next `focusable()` component after the one that
@@ -480,7 +480,7 @@ with nothing to scroll draws a track and no thumb, and a bar whose list has gone
 
 ### Step 10 — ADR-0042, a textured quad in world space
 
-**Landed** as [ADR-0042](../../adr/0042-a-textured-quad-in-world-space.md): a third primitive,
+**Landed** as [ADR-0042](../../adr/0042-rendering-world-space-sprites.md): a third primitive,
 `realtime::WorldCanvas`, ordered by its caller, with a depth pipeline that tests and does not
 write. ADR-0005 is narrowed rather than amended, the way ADR-0011 narrowed it.
 
@@ -490,11 +490,11 @@ What it has to settle:
 
 - **A third primitive, or a mode of the quad.** `LineCanvas` is the precedent for the first: a
   separate canvas, world coordinates, drawn through the pass camera, and
-  [ADR-0011](../../adr/0011-lines-are-the-second-primitive.md) is the record that made it a peer rather
+  [ADR-0011](../../adr/0011-rendering-lines-as-a-world-space-primitive.md) is the record that made it a peer rather
   than a variant. The second is `Canvas` learning that a batch is world space and taking its
   projection from the pass, which is a smaller change and a larger claim, since `Canvas` currently
   *is* the definition of screen space in this tree.
-- **Whether it amends [ADR-0005](../../adr/0005-one-batched-quad-primitive.md) or sits beside it.**
+- **Whether it amends [ADR-0005](../../adr/0005-2d-one-batched-quad-pipeline.md) or sits beside it.**
   0005 says one batched quad primitive draws every 2D thing; 0036 amended it once already, for text.
   A world space quad is either the third amendment or the honest admission that 0005 was about the
   ui.
@@ -557,7 +557,7 @@ resolves to — decide by which one can name the other without a new dependency 
 A `sprite` config type beside `window`, `binding`, `ui`, `sound`, `camera` and `layout`: an image,
 and a table of names over pixel rectangles in it. Loaded like every other config, resolved to a
 texture by the app the way a theme's images are, per
-[ADR-0020](../../adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md) — the library reads the
+[ADR-0020](../../adr/0020-ui-themes-are-data-apps-load-the-images.md) — the library reads the
 document and never touches the asset manager.
 
 **Pixels in the document, uv at the call.** An author reads a sprite sheet in pixels and a shader

@@ -21,13 +21,13 @@ Recorded in [adr/](../../adr/), not here. Numbers are the next free ones at the 
 | **0079** | An asset loader is registered, and a media loader lives with its payload — revisits the consequence of ADR-0021 that the mixer rides along on everything linking `v3dlib_asset` | 11 |
 | **0080** | The engine owns its lifecycle: `shutdown()` is not virtual, and an app supplies hooks | 14 |
 | **0081** | A key and a command are different events — amends [ADR-0017](../../adr/0017-a-command-is-a-name-in-a-context.md), which recorded the single type's cost as a consequence, not a decision | 17 |
-| **0082** | Textures and materials belong to the device context, not to the 2D renderer — amends [0042](../../adr/0042-a-textured-quad-in-world-space.md) and [0065](../../adr/0065-a-mesh-is-registered-by-path-and-released.md), whose reasoning (one shared set 1 pool) is kept | 23 |
-| [0013](../../adr/0013-mesh-is-a-dag-node.md) | **Corrected** by steps 3 and 6: a copy does not get a new id today, and the dag skeletons it declined to grow are deleted |
-| [0021](../../adr/0021-sdl3-mixer-replaces-soloud.md) | **Restored** by step 10: audio stops depending on asset, which is what its decision already says |
-| [0030](../../adr/0030-a-model-is-an-interleaved-array-that-names-its-texture.md) | **Corrected** by step 12: either `Manager` caches or the Pro that says it does is struck |
-| [0047](../../adr/0047-a-component-type-is-checked-by-the-compiler.md) | **Corrected** by step 20: the compiler names every place only once the predicates are a switch too |
+| **0082** | Textures and materials belong to the device context, not to the 2D renderer — amends [0042](../../adr/0042-rendering-world-space-sprites.md) and [0065](../../adr/0065-meshes-shared-registry-keyed-by-path.md), whose reasoning (one shared set 1 pool) is kept | 23 |
+| [0013](../../adr/0013-editor-a-mesh-is-a-dag-node.md) | **Corrected** by steps 3 and 6: a copy does not get a new id today, and the dag skeletons it declined to grow are deleted |
+| [0021](../../adr/0021-audio-use-sdl3-mixer.md) | **Restored** by step 10: audio stops depending on asset, which is what its decision already says |
+| [0030](../../adr/0030-models-one-interleaved-array.md) | **Corrected** by step 12: either `Manager` caches or the Pro that says it does is struck |
+| [0047](../../adr/0047-code-exhaustive-enum-switches.md) | **Corrected** by step 20: the compiler names every place only once the predicates are a switch too |
 | [0056](../../adr/0056-a-look-at-keeps-the-basis-it-built.md) | Enforcement **replaced** by step 1: one setter clears the cache, rather than every writer remembering to |
-| [0059](../../adr/0059-disabled-is-a-property-of-a-component.md) | **Extended** by step 21 to strip buttons and menu items |
+| [0059](../../adr/0059-ui-enabled-is-an-inherited-flag.md) | **Extended** by step 21 to strip buttons and menu items |
 
 Whether step 18 (an engine without Vulkan) and step 22 (one keyboard model for the menu) earn an
 ADR depends on which way they go; each step says.

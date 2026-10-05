@@ -21,7 +21,7 @@ namespace v3d::render::offline::sl {
  * What a scene's `Surface "plastic"` reaches: a name, compiled on first use and kept.
  *
  * **The standard shaders are source strings compiled into the library**, per
- * [ADR-0026](../../../../docs/adr/0026-shading-is-a-language-over-a-batch.md), so
+ * [ADR-0026](../../../../docs/adr/0026-offline-shaders-run-over-batches-of-points.md), so
  * `Surface "matte"` works against no files at all - which is what makes a renderer's suite
  * hermetic and a first render possible with nothing installed. `Option "searchpath"
  * "shader"` adds directories for everything else, and a `.sl` file found there wins over a

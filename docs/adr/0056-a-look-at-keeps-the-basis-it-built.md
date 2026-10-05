@@ -25,10 +25,10 @@ of its sixteen elements differ.
 
 That is not a correctness problem and no picture built from it is wrong. It is a *stability*
 problem, and it belongs to a consumer rather than to this tree: retcon — an app on this api that
-is not in this tree ([ADR-0027](0027-the-api-is-consumed-as-source.md)) — replaced its own
+is not in this tree ([ADR-0027](0027-build-consume-the-api-as-source.md)) — replaced its own
 `glm::lookAt` camera with this one and its reference capture moved by 153 of 891600 pixels, none
 of them geometrically wrong and two of them on a hard outline edge. A reference frame compared at
-zero tolerance ([ADR-0054](0054-a-realtime-reference-is-a-picture-the-spec-determines.md)) is
+zero tolerance ([ADR-0054](0054-testing-golden-images-hold-only-spec-exact-output.md)) is
 re-baselined by a difference of one unit in the last place, so "close enough" is the thing that
 costs rather than the thing that passes.
 
@@ -108,6 +108,6 @@ only one left.
   asserting that a directly set rotation and a pan after a `lookat()` both still build the view
   the quaternion describes.
 - Equality is asserted with `==` rather than by comparing bits. The mirrored hand
-  ([ADR-0052](0052-a-consumer-names-the-camera-hand.md)) turns some zeros negative, and
+  ([ADR-0052](0052-camera-selectable-handedness.md)) turns some zeros negative, and
   `-0.0f == 0.0f` while their bits differ. That is the one place the gate is looser than "the
   same bits", and it is looser only about the sign of zero.

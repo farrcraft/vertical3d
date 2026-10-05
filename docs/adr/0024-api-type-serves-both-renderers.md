@@ -6,7 +6,7 @@
 
 ## Context
 
-[ADR-0012](0012-camera-builds-vulkan-clip-space.md) made `v3d::type::Camera` build Vulkan clip
+[ADR-0012](0012-camera-projection-targets-vulkan-clip-space.md) made `v3d::type::Camera` build Vulkan clip
 space — y down, depth in [0, 1]. Every consumer it had was realtime, and the convention was
 chosen for the swapchain.
 
@@ -14,7 +14,7 @@ The offline renderers are consumers now. `moya` links `v3dlib_type` already and 
 `RenderContext` half-implements the reyes screen and raster spaces, which are specified
 independently of any graphics API. `talyn` needs a primary ray through a pixel, which is
 `Camera::ray()` and `type::Ray::intersects` — both written for the editor's picker
-([ADR-0014](0014-picking-is-a-cpu-ray-cast.md)) and both tested.
+([ADR-0014](0014-editor-pick-by-cpu-ray-cast.md)) and both tested.
 
 So the roadmap's question is whether the offline renderers use the api types at all. Using them
 unchanged means inheriting a clip convention chosen for a swapchain neither renderer touches;

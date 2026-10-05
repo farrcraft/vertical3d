@@ -34,14 +34,14 @@ Read the record rather than inferring the rule from the code.
 
 | Area | Record |
 |---|---|
-| A mesh is a dag node with a transform; the scene belongs to the editor | [ADR-0013](adr/0013-mesh-is-a-dag-node.md) |
-| Picking is a CPU ray cast, with screen space proximity for components | [ADR-0014](adr/0014-picking-is-a-cpu-ray-cast.md) |
-| Manipulators write the object transform, and are an overlay pass | [ADR-0015](adr/0015-manipulators-write-the-object-transform.md) |
-| Undo records what has already happened; one gesture is one command | [ADR-0016](adr/0016-undo-records-what-has-already-happened.md) |
+| A mesh is a dag node with a transform; the scene belongs to the editor | [ADR-0013](adr/0013-editor-a-mesh-is-a-dag-node.md) |
+| Picking is a CPU ray cast, with screen space proximity for components | [ADR-0014](adr/0014-editor-pick-by-cpu-ray-cast.md) |
+| Manipulators write the object transform, and are an overlay pass | [ADR-0015](adr/0015-editor-manipulators-edit-the-object-transform.md) |
+| Undo records what has already happened; one gesture is one command | [ADR-0016](adr/0016-editor-undo-records-completed-changes.md) |
 | A command is a name in a context; the directory is the editor's | [ADR-0017](adr/0017-a-command-is-a-name-in-a-context.md) |
-| A project is JSON, and stores topology verbatim | [ADR-0018](adr/0018-a-project-is-json-and-stores-topology-verbatim.md) |
+| A project is JSON, and stores topology verbatim | [ADR-0018](adr/0018-editor-projects-saved-as-json-with-exact-topology.md) |
 | The ui is laid out by what draws it, and hit tested against those bounds | [ADR-0019](adr/0019-the-ui-is-laid-out-by-what-draws-it.md) |
-| A theme is data, and the app resolves the images it names | [ADR-0020](adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md) |
+| A theme is data, and the app resolves the images it names | [ADR-0020](adr/0020-ui-themes-are-data-apps-load-the-images.md) |
 
 ## Three things the ADRs do not say
 
@@ -56,7 +56,7 @@ Read the record rather than inferring the rule from the code.
 
 ## RIB export
 
-One way only, per [ADR-0023](adr/0023-rib-is-the-offline-scene-description.md).
+One way only, per [ADR-0023](adr/0023-offline-rib-is-the-scene-format.md).
 `RIBExportVisitor` writes topology and a placement per mesh from the active view's camera, and
 nothing reads it back. The scene has no lights and no materials, so what it produces renders in
 one flat colour. [OfflineRenderers.md](OfflineRenderers.md) covers what the offline renderer

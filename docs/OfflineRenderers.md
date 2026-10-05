@@ -3,7 +3,7 @@
 `moya`, a RenderMan renderer, is the *other* renderer, and shares nothing with the realtime
 stack. It is a library, a driver and a suite: `moya/libmoya`, `moya/moya` and `moya/tests`.
 What it is built on lives in `api/render/offline` (`v3dlib_render_offline`, namespace
-`v3d::render::offline`), per [ADR-0022](adr/0022-offline-rendering-shares-an-api-library.md):
+`v3d::render::offline`), per [ADR-0022](adr/0022-offline-shared-library-with-no-vulkan.md):
 the RIB reader, the shading language, the film and the sampler, and the ray tracer.
 
 That library **names neither Vulkan nor SDL**, and moya touches no window, device or swapchain,
@@ -12,7 +12,7 @@ so its suites render in CI where everything below the recorder in `api/render` c
 ## Hiders
 
 **A hider is how moya decides what the camera sees, and a scene picks one with `Hider`**, per
-[ADR-0078](adr/0078-one-offline-renderer-with-two-hiders.md). Both read one graphics state and
+[ADR-0078](adr/0078-offline-moya-is-the-one-renderer-ray-tracing-is-a-hider.md). Both read one graphics state and
 write one framebuffer, so everything below about shading and sampling holds under either -
 **except opacity: the reyes hider's samples are opaque.** A shader's `Oi` is bound and read the
 same under both, but only the ray hider composites by it, so a translucent surface is translucent
@@ -31,7 +31,7 @@ every surface it meets and composite them in depth order, and [TODO.md](TODO.md)
   near plane.
 - **A hider name moya does not know is logged and leaves the hider as it was.**
 - **The ray tracer is shared by both**, per
-  [ADR-0077](adr/0077-one-ray-tracer-both-renderers-reach.md): `offline::trace::Scene` holds
+  [ADR-0077](adr/0077-offline-one-shared-ray-tracer.md): `offline::trace::Scene` holds
   its primitives in world space as one list, and `offline::trace::Tracer` traces rays through it
   and shades what they meet. A primitive is anything with an `intersect` and a `describe` -
   triangles and spheres are two - so a new kind is a new class and the scene does not change.
@@ -80,7 +80,7 @@ it.
 ## Sampling
 
 A pixel is a filtered set of seeded samples, per
-[ADR-0076](adr/0076-a-pixel-is-a-filtered-set-of-seeded-samples.md). `offline::Sampling` is what
+[ADR-0076](adr/0076-offline-seeded-samples-resolved-by-one-shared-film.md). `offline::Sampling` is what
 `PixelSamples`, `PixelFilter`, `PixelVariance`, `Shutter` and `DepthOfField` asked for, starting at
 the RI defaults; `offline::Sampler` gives a pixel's samples; `offline::Film` filters them into
 pixels and resolves into a renderer's planes. Both hiders render through them.
@@ -133,7 +133,7 @@ pixels and resolves into a renderer's planes. Both hiders render through them.
   is above it, up to four times the first set; `RenderContext::samplesTaken()` says how many a
   pixel took. A reyes hider samples a whole bucket at once, and adapting per pixel would split a
   grid's hiding in two, so it takes the count `PixelSamples` names, per
-  [ADR-0076](adr/0076-a-pixel-is-a-filtered-set-of-seeded-samples.md).
+  [ADR-0076](adr/0076-offline-seeded-samples-resolved-by-one-shared-film.md).
 - **A depth is not filtered.** It is the nearest hit among the samples inside the pixel, since a
   blend of two surfaces' depths is a depth neither is at.
 - **The filters are RI's formulas**, cut off at the width a scene gives. Catmull-rom peaks at two
@@ -144,9 +144,9 @@ pixels and resolves into a renderer's planes. Both hiders render through them.
 
 **The reader is a library of its own.** `offline::rib::Reader` dispatches onto
 `offline::rib::Handler`, a C++ interface with typed parameter lists rather than the RI C ABI, per
-[ADR-0025](adr/0025-the-rib-reader-dispatches-a-cpp-request-interface.md), and moya implements
+[ADR-0025](adr/0025-offline-rib-reader-calls-a-typed-handler-interface.md), and moya implements
 it as `moya::RIBHandler`. RIB is also what the editor exports to, one way, per
-[ADR-0023](adr/0023-rib-is-the-offline-scene-description.md).
+[ADR-0023](adr/0023-offline-rib-is-the-scene-format.md).
 
 - **Every method has an empty body rather than being pure virtual**, because the RI standard
   asks a renderer to accept a request it does not support. A misspelled override is therefore
@@ -189,7 +189,7 @@ it as `moya::RIBHandler`. RIB is also what the editor exports to, one way, per
 ## The shading language
 
 Shading is a language rather than a set of built-in models, per
-[ADR-0026](adr/0026-shading-is-a-language-over-a-batch.md), and it lives in
+[ADR-0026](adr/0026-offline-shaders-run-over-batches-of-points.md), and it lives in
 `api/render/offline` beside the RIB one: `sl::Lexer`, the `sl::syntax` nodes and `sl::Parser` read a shader,
 `sl::Types` and `sl::Compiler` check it, `sl::Emitter` flattens it into a `sl::runtime::Program`,
 and `sl::runtime::Machine` runs that over a batch. `sl::ShaderLibrary` maps a name to a program

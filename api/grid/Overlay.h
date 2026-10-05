@@ -32,7 +32,7 @@ constexpr float OVERLAY_LIFT = 0.01f;
  * The overlay is handed out as segments rather than written into a canvas, so that nothing
  * here names a renderer and every case can be asserted without a device - the seam
  * ComponentRenderer takes its text measuring across, for the same reason. A caller drawing
- * through the line primitive of [ADR-0011](../../docs/adr/0011-lines-are-the-second-primitive.md)
+ * through the line primitive of [ADR-0011](../../docs/adr/0011-rendering-lines-as-a-world-space-primitive.md)
  * passes a sink of two lines.
  **/
 typedef std::function<void(const glm::vec3& from, const glm::vec3& to, const glm::vec4& colour)> LineSink;
@@ -41,7 +41,7 @@ typedef std::function<void(const glm::vec3& from, const glm::vec3& to, const glm
  * Where a filled quad of the overlay goes, and in what colour.
  *
  * The counterpart of LineSink for the world space quad of
- * [ADR-0042](../../docs/adr/0042-a-textured-quad-in-world-space.md), and here for the same
+ * [ADR-0042](../../docs/adr/0042-rendering-world-space-sprites.md), and here for the same
  * reason: nothing in this library names a renderer. The corners arrive in the order
  * tileCorners() gives them, which is the order realtime::WorldCanvas takes them in.
  **/

@@ -6,7 +6,7 @@
 
 ## Context
 
-[ADR-0007](0007-ci-rendering-tests.md) settled that render tests assert the absence of
+[ADR-0007](0007-ci-render-tests-on-software-vulkan.md) settled that render tests assert the absence of
 validation errors rather than comparing pixels, and its fifth alternative deferred
 golden-image comparison rather than rejecting it: *"worth revisiting once there is stable
 output worth pinning"*. Nothing in the tree can read a frame back, so revisiting it has

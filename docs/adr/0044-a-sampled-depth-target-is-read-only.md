@@ -6,7 +6,7 @@
 
 ## Context
 
-[ADR-0031](0031-a-pass-draws-into-a-target-it-names.md) gave a pass a target of its own and had
+[ADR-0031](0031-rendering-passes-draw-into-offscreen-targets.md) gave a pass a target of its own and had
 the recorder leave that target's colour image in `VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL`, so
 what one pass rendered is what the next one samples. Its depth image got half of that: the
 target allocates one, a pass tests and writes it, and then nothing can read it. The image was

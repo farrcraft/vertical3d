@@ -7,10 +7,10 @@ debug readout. No app data file changed after all - see step 13.
 `api/ui` is ~9,100 lines of library and ~3,750 of tests, and a third of the library is three
 files: [`ComponentRenderer.cpp`](../../../api/ui/ComponentRenderer.cpp) at 1124,
 [`Engine.cpp`](../../../api/ui/Engine.cpp) at 912 and [`Immediate.cpp`](../../../api/ui/Immediate.cpp)
-at 762. It grew fast — [ADR-0034](../../adr/0034-a-component-has-children-and-a-box.md),
-[0035](../../adr/0035-an-immediate-mode-layer-over-the-same-canvas.md),
-[0036](../../adr/0036-text-is-a-distinct-kind-of-quad.md) and
-[0037](../../adr/0037-clipping-is-a-scissor-the-batch-carries.md) all landed on 2026-09-06 — and
+at 762. It grew fast — [ADR-0034](../../adr/0034-ui-layout-is-resolved-while-drawing.md),
+[0035](../../adr/0035-ui-immediate-mode-beside-the-retained-tree.md),
+[0036](../../adr/0036-text-sdf-glyphs-through-the-quad-shader.md) and
+[0037](../../adr/0037-2d-clip-with-a-per-batch-scissor.md) all landed on 2026-09-06 — and
 what it has not had since is a pass over its shape.
 
 **Three of the twelve steps are defects that ship in this tree today**, and one of them makes a
@@ -86,7 +86,7 @@ Meanwhile the editor already hand-writes the routing that does exist.
 first *"because an open panel is drawn over a toolbar"*, then tells every toolbar to `leave()` or
 `motion()`; [`uiPress`](../../../vertical3d/src/Controller.cxx) does the same ordering again for a
 press. That ordering rule belongs to the library — it is a fact about how the library draws —
-and [ADR-0028](../../adr/0028-an-apps-shell-belongs-to-the-api.md) is the standing answer for what
+and [ADR-0028](../../adr/0028-apps-the-shared-app-shell-lives-in-the-api.md) is the standing answer for what
 every app repeats.
 
 ### Two `Style` structs, one style class, and defaults that differ by 2×
@@ -183,10 +183,10 @@ Recorded in [adr/](../../adr/), not here.
 |---|---|
 | **0038** | Who turns a cursor into a command — written by step 8, and the reason step 9 is the api's rather than each app's |
 | [0019](../../adr/0019-the-ui-is-laid-out-by-what-draws-it.md) | The ui is laid out by what draws it — unchanged. Step 7 moves the walk into a class of its own; it does not move it out of the draw |
-| [0034](../../adr/0034-a-component-has-children-and-a-box.md) | A component has children and a box — unchanged |
-| [0035](../../adr/0035-an-immediate-mode-layer-over-the-same-canvas.md) | An immediate mode layer over the same canvas — **corrected** twice by this plan: its state map is not pruned (step 3), and its "ui" style does not dress both sides (step 10) |
-| [0020](../../adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md) | A theme is data and the app resolves its images — unchanged; step 10 splits a class within it, not the rule |
-| [0028](../../adr/0028-an-apps-shell-belongs-to-the-api.md) | What every app repeats belongs to the api — the argument step 9 rests on |
+| [0034](../../adr/0034-ui-layout-is-resolved-while-drawing.md) | A component has children and a box — unchanged |
+| [0035](../../adr/0035-ui-immediate-mode-beside-the-retained-tree.md) | An immediate mode layer over the same canvas — **corrected** twice by this plan: its state map is not pruned (step 3), and its "ui" style does not dress both sides (step 10) |
+| [0020](../../adr/0020-ui-themes-are-data-apps-load-the-images.md) | A theme is data and the app resolves its images — unchanged; step 10 splits a class within it, not the rule |
+| [0028](../../adr/0028-apps-the-shared-app-shell-lives-in-the-api.md) | What every app repeats belongs to the api — the argument step 9 rests on |
 
 0038 is the next free number; [adr/README.md](../../adr/README.md) is the authority, and `0026` is a
 reserved gap rather than an available one.
@@ -294,7 +294,7 @@ missing for a single frame - would have lost the scroll and the fold of every pa
 toggle. `Immediate::retention` is how many frames a widget keeps what it holds.
 
 **Was.** In [`api/ui/Immediate.cpp`](../../../api/ui/Immediate.cpp) and
-[ADR-0035](../../adr/0035-an-immediate-mode-layer-over-the-same-canvas.md).
+[ADR-0035](../../adr/0035-ui-immediate-mode-beside-the-retained-tree.md).
 
 ADR-0035 records as a consequence that *"the map is cleared of anything not drawn for a frame, so
 the cost is bounded."* There is no `erase` anywhere in the file — `state_` is only ever inserted
@@ -458,7 +458,7 @@ need no change, which is the check that the move was a move.
 
 ### Step 9 — ADR-0038, who turns a cursor into a command
 
-**Closed.** [ADR-0038](../../adr/0038-a-cursor-is-routed-by-the-library-that-drew-it.md). It
+**Closed.** [ADR-0038](../../adr/0038-ui-the-ui-hit-tests-the-mouse-before-the-app.md). It
 settled a router over the engine rather than a dispatcher on `Container`, for the reason the
 plan expected: the ordering between a menu panel, a toolbar and a tree is the half the editor
 was writing by hand, and a dispatcher on `Container` fixes the other half.
@@ -477,7 +477,7 @@ What it has to settle:
   the right order.** The second is the one this plan expects: the ordering between a menu panel, a
   toolbar and a container tree is a fact about how the library draws, and it is currently written
   in [`vertical3d/src/Controller.cxx`](../../../vertical3d/src/Controller.cxx) — which is the
-  signature [ADR-0028](../../adr/0028-an-apps-shell-belongs-to-the-api.md) names.
+  signature [ADR-0028](../../adr/0028-apps-the-shared-app-shell-lives-in-the-api.md) names.
 - **What a press on a picked component means**, given that a `CheckBox` "does not own the state it
   shows" per ADR-0019 — the router dispatches the component's event and something else answers by
   setting `checked()`. That rule is already recorded; what is new is who sends the event.
@@ -560,7 +560,7 @@ the plan expected: the editor's theme is the only one in the tree that names a s
 and it names colours rather than metrics.
 
 **Was.** In [`api/ui/`](../../../api/ui/), [`vertical3d/data/vgui.json`](../../../vertical3d/data/vgui.json)
-and [ADR-0035](../../adr/0035-an-immediate-mode-layer-over-the-same-canvas.md).
+and [ADR-0035](../../adr/0035-ui-immediate-mode-beside-the-retained-tree.md).
 
 Two style classes — `"ui"` for the retained chrome and something else for the immediate layer's —
 so that a theme can set `line-height` for a HUD without setting it for a debug window. The
@@ -580,10 +580,10 @@ default alone.
 ### Step 14 — `docs/UserInterface.md`
 
 **Closed.** [UserInterface.md](../../UserInterface.md), with rows added to
-[docs/README.md](../../README.md) and [CLAUDE.md](../../CLAUDE.md).
+[docs/README.md](../../README.md) and [CLAUDE.md](../../../CLAUDE.md).
 
 **Was.** New [`docs/UserInterface.md`](../../UserInterface.md), plus
-[`docs/README.md`](../../README.md) and [`CLAUDE.md`](../../CLAUDE.md).
+[`docs/README.md`](../../README.md) and [`CLAUDE.md`](../../../CLAUDE.md).
 
 Eight ADRs, two paradigms, thirty classes and no owning document —
 [`Architecture.md`](../../Architecture.md) names `api/ui` once, in passing, and the CLAUDE.md routing

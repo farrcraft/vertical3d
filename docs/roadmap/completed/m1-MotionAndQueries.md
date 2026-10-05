@@ -8,13 +8,13 @@ that two of those need. Each is something a consumer has written for itself or s
 **Done by [MotionAndQueries](../../plans/completed/MotionAndQueries.md)**, closed 2026-10-03. The
 sprite clip is held in [TODO.md](../../TODO.md#sprite-sheets) until it has a second consumer, and
 interpolation has a record of its own in
-[ADR-0060](../../adr/0060-a-moving-thing-keeps-its-previous-step.md); what follows is the
+[ADR-0060](../../adr/0060-ecs-interpolate-from-a-previous-step-component.md); what follows is the
 reasoning the plan was drafted from, as it stood then.
 
 ## What exists
 
 * **The loop simulates at a fixed step and renders at a variable one**
-  ([ADR-0032](../../adr/0032-the-loop-simulates-at-a-fixed-step.md)).
+  ([ADR-0032](../../adr/0032-loop-fixed-step-simulation-variable-rate-rendering.md)).
   [`Engine::alpha()`](../../../api/engine/Engine.h) is the fraction between the last completed
   step and the next, and [`Accumulator.h`](../../../api/engine/Accumulator.h) says of it that
   nothing reads it yet. Every world drawn in this tree is snapped to the last 60 Hz step.
@@ -97,7 +97,7 @@ Moved from moya, which keeps using them. They are the ground pick above and the 
 
 **The frustum's plane extraction has to be checked against the clip space it is handed.** moya
 builds an offline camera and the realtime camera builds Vulkan clip space
-([ADR-0012](../../adr/0012-camera-builds-vulkan-clip-space.md)), whose depth runs 0 to 1 rather
+([ADR-0012](../../adr/0012-camera-projection-targets-vulkan-clip-space.md)), whose depth runs 0 to 1 rather
 than −1 to 1. By [ADR-0024](../../adr/0024-api-type-serves-both-renderers.md) a convention one
 consumer needs becomes a parameter rather than a second copy, so the extraction takes it.
 

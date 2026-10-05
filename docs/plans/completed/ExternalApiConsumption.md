@@ -1,7 +1,7 @@
 # External API Consumption — The api Builds Inside Another Repository's Tree
 
 Drafted 2026-09-05, **closed 2026-09-05**. Made the `api/` libraries usable by an application in a
-different repository, by the route [ADR-0027](../../adr/0027-the-api-is-consumed-as-source.md)
+different repository, by the route [ADR-0027](../../adr/0027-build-consume-the-api-as-source.md)
 settles: the consumer takes this repository as a submodule or through `FetchContent` and builds it
 with its own compiler. Nothing is installed, exported or packaged.
 
@@ -31,8 +31,8 @@ Recorded in [docs/adr/](../../adr/), not here.
 
 | ADR | Decision |
 |---|---|
-| [0027](../../adr/0027-the-api-is-consumed-as-source.md) | The api is taken as source through a nestable root, not as an installed package — **step 1 wrote it** |
-| [0022](../../adr/0022-offline-rendering-shares-an-api-library.md) | `api/render` builds two libraries, and the offline one names neither Vulkan nor SDL |
+| [0027](../../adr/0027-build-consume-the-api-as-source.md) | The api is taken as source through a nestable root, not as an installed package — **step 1 wrote it** |
+| [0022](../../adr/0022-offline-shared-library-with-no-vulkan.md) | `api/render` builds two libraries, and the offline one names neither Vulkan nor SDL |
 
 ## What blocks what
 
