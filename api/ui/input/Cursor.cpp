@@ -43,9 +43,12 @@ void strips(const boost::shared_ptr<Container>& container,
         if (!component || !component->visible() || !component->enabled() || !component->pickable()) {
             continue;
         }
+        if (!component::traits(component->type()).strip) {
+            continue;
+        }
         if (component->type() == component::Type::MenuBar) {
             bars->push_back(boost::dynamic_pointer_cast<component::MenuBar>(component));
-        } else if (component->type() == component::Type::Toolbar) {
+        } else {
             toolbars->push_back(boost::dynamic_pointer_cast<component::Toolbar>(component));
         }
     }
@@ -200,18 +203,40 @@ bool Cursor::release(const glm::vec2& point) {
 }
 
 void Cursor::follow(const boost::shared_ptr<Component>& holding, const glm::vec2& point) const {
-    // the components a press drags, and the one place that says so. A component added that
-    // drags is added here, or it stops at the press
-    if (holding->type() == component::Type::Scrollbar) {
-        boost::dynamic_pointer_cast<component::Scrollbar>(holding)->drag(point);
-    } else if (holding->type() == component::Type::Slider) {
-        if (boost::dynamic_pointer_cast<component::Slider>(holding)->drag(point)) {
-            dispatch(holding);
-        }
-    } else if (holding->type() == component::Type::TextBox) {
-        // the press left the anchor where it landed, so following the cursor selects the
-        // run between the two - ADR-0057
-        place(boost::dynamic_pointer_cast<component::TextBox>(holding), point, true);
+    // the components a press drags, and the one place that says so - exhaustive, so a type
+    // added to the enum is named here and says whether it follows the cursor (ADR-0047)
+    switch (holding->type()) {
+        case component::Type::Scrollbar:
+            boost::dynamic_pointer_cast<component::Scrollbar>(holding)->drag(point);
+            break;
+        case component::Type::Slider:
+            if (boost::dynamic_pointer_cast<component::Slider>(holding)->drag(point)) {
+                dispatch(holding);
+            }
+            break;
+        case component::Type::TextBox:
+            // the press left the anchor where it landed, so following the cursor selects the
+            // run between the two - ADR-0057
+            place(boost::dynamic_pointer_cast<component::TextBox>(holding), point, true);
+            break;
+        case component::Type::Undefined:
+        case component::Type::Bar:
+        case component::Type::Button:
+        case component::Type::CheckBox:
+        case component::Type::HorizontalBox:
+        case component::Type::Icon:
+        case component::Type::Label:
+        case component::Type::Menu:
+        case component::Type::MenuBar:
+        case component::Type::MenuItem:
+        case component::Type::Panel:
+        case component::Type::RadioButton:
+        case component::Type::SelectList:
+        case component::Type::TabBar:
+        case component::Type::TabPage:
+        case component::Type::Toolbar:
+        case component::Type::VerticalBox:
+            break;
     }
 }
 

@@ -109,7 +109,7 @@ bool Keys::text(std::string_view utf8) {
         return false;
     }
     const boost::shared_ptr<Component> focused = ui_->focused();
-    if (!focused || focused->type() != component::Type::TextBox || !usable(*focused)) {
+    if (!focused || !component::traits(focused->type()).text || !usable(*focused)) {
         // a box disabled while it held the focus takes no characters either, so what is
         // typed reaches the app rather than a field nobody can use - ADR-0059
         return false;

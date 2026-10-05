@@ -5,6 +5,7 @@
 
 #include "Arranger.h"
 
+#include <api/ui/DrawOrder.h>
 #include <api/render/realtime/Canvas.h>
 #include <api/ui/component/Box.h>
 #include <api/ui/component/Button.h>
@@ -69,14 +70,6 @@ void Arranger::walk(v3d::render::realtime::Canvas* canvas, const boost::shared_p
         paint(canvas, component);
     }
 
-    // only the chosen page of a tab bar is walked, so a page that is not up has no box and
-    // nothing in it can be picked
-    if (component->type() == component::Type::TabBar) {
-        const auto* tabs = static_cast<const component::TabBar*>(component.get());
-        walk(canvas, tabs->page(), page(*tabs), paint);
-        return;
-    }
-
     const std::vector<boost::shared_ptr<Component>>& children = component->children();
     if (children.empty()) {
         return;
@@ -91,26 +84,28 @@ void Arranger::walk(v3d::render::realtime::Canvas* canvas, const boost::shared_p
         canvas->clip(component->position(), component->position() + component->size());
     }
 
-    const auto* box = dynamic_cast<const component::Box*>(component.get());
+    // which children are walked, and in what order, is forEachDrawn's: the chosen page of a
+    // tab bar only, so a page that is not up has no box; a flow box's in the order it holds
+    // them; anything else's by depth. What is here is where each one goes
+    const component::Traits kind = component::traits(component->type());
+    const auto* tabs = kind.pages ? static_cast<const component::TabBar*>(component.get()) : nullptr;
+    const auto* box = kind.flow ? static_cast<const component::Box*>(component.get()) : nullptr;
+    std::vector<v3d::type::geometry::Bound2D> boxes;
     if (box != nullptr) {
-        // a flow box places its children in the order it holds them, because that order is
-        // what it is for. A z index inside one changes nothing
-        std::vector<v3d::type::geometry::Bound2D> boxes;
         boxes.reserve(children.size());
         arrange(*box, component->bound(), &boxes);
-        for (std::size_t index = 0; index < children.size(); index++) {
-            walk(canvas, children[index], boxes[index], paint);
-        }
-    } else {
-        std::vector<boost::shared_ptr<Component>> sorted;
-        if (!inDrawOrder(children)) {
-            sorted = v3d::ui::ordered(children);
-        }
-        const v3d::type::geometry::Bound2D room = component->bound();
-        for (const boost::shared_ptr<Component>& child : sorted.empty() ? children : sorted) {
+    }
+    const v3d::type::geometry::Bound2D room = component->bound();
+    std::size_t index = 0;
+    forEachDrawn(*component, [&](const boost::shared_ptr<Component>& child) {
+        if (tabs != nullptr) {
+            walk(canvas, child, page(*tabs), paint);
+        } else if (box != nullptr) {
+            walk(canvas, child, boxes[index++], paint);
+        } else {
             walk(canvas, child, child->layout().resolve(room, natural(*child, room)), paint);
         }
-    }
+    });
 
     if (cut) {
         canvas->unclip();
@@ -281,7 +276,7 @@ void Arranger::arrange(const component::Box& box, const v3d::type::geometry::Bou
 glm::vec2 Arranger::box(const Component& component, const v3d::type::geometry::Bound2D& room) const {
     // a box that wraps is as long as the line it is given and as deep as the lines its
     // children come to. One that does not decides nothing, as a panel does
-    const auto* flow = dynamic_cast<const component::Box*>(&component);
+    const auto* flow = component::traits(component.type()).flow ? static_cast<const component::Box*>(&component) : nullptr;
     if (flow == nullptr || !flow->wrap()) {
         return room.size();
     }
@@ -356,14 +351,14 @@ glm::vec2 Arranger::stack(const Container& container,
         if (!component || !component->visible()) {
             continue;
         }
+        if (!component::traits(component->type()).strip) {
+            continue;
+        }
         if (component->type() == component::Type::MenuBar) {
             if (bars != nullptr) {
                 bars->push_back(boost::dynamic_pointer_cast<component::MenuBar>(component));
             }
             taken.y += styles_.base().barHeight + ruleWidth;
-            continue;
-        }
-        if (component->type() != component::Type::Toolbar) {
             continue;
         }
         const boost::shared_ptr<component::Toolbar> bar =

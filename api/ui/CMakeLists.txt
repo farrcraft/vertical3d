@@ -2,6 +2,7 @@ v3d_add_api_library(ui
 	"Arranger.h" "Arranger.cpp"
 	"Component.h" "Component.cpp"
 	"Container.h" "Container.cpp"
+	"DrawOrder.h"
 	"Engine.h" "Engine.cpp"
 	"Image.h" "Image.cpp"
 	"Immediate.h" "Immediate.cpp"

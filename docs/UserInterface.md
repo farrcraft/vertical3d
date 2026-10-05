@@ -501,9 +501,10 @@ what the design came to, recorded here so a reader meets it before the code does
 - **Adding a component means editing nine places** — `component::Type`, `component::name()`,
   the loader's branch, the renderer's paint switch, its `ringed()`, the Arranger's `natural()`,
   the cursor's, the keys' and `ui::input::command()`. The compiler names all nine, so forgetting
-  one is a build error rather than a component that silently is not there. Two it does not name:
-  a style class of its own in `style::Resolver`, and `Cursor::follow()` for a component a press
-  drags.
+  one is a build error rather than a component that silently is not there, and so does
+  `component::traits()`, which says what kind a type is for every rule written for a kind -
+  a strip, a flow box, a tab bar, a text field. One it does not name: a style class of its own
+  in `style::Resolver`.
   [ADR-0047](adr/0047-a-component-type-is-checked-by-the-compiler.md) has why a registry was
   weighed and left, and it is a trade to revisit rather than work waiting to be done.
 - **A component disabled while it holds the focus keeps `focused()`** until something moves the

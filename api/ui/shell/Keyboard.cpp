@@ -74,7 +74,7 @@ void Keyboard::follow(const boost::shared_ptr<Component>& focused) {
     if (!window_) {
         return;
     }
-    const bool typed = focused && focused->type() == component::Type::TextBox;
+    const bool typed = focused && component::traits(focused->type()).text;
     if (typed == window_->textInput()) {
         return;
     }

@@ -83,4 +83,20 @@ BOOST_AUTO_TEST_CASE(an_unknown_name_is_undefined) {
     BOOST_CHECK(v3d::ui::component::name(v3d::ui::component::Type::MenuItem).empty());
 }
 
+/**
+ * A kind of component is answered by its type, so a rule written for strips, flow boxes, tab
+ * bars or text fields asks traits() rather than listing the types it remembered.
+ **/
+BOOST_AUTO_TEST_CASE(a_kind_is_answered_by_its_type) {
+    using v3d::ui::component::Type;
+    using v3d::ui::component::traits;
+    BOOST_CHECK(traits(Type::MenuBar).strip && traits(Type::Toolbar).strip);
+    BOOST_CHECK(traits(Type::HorizontalBox).flow && traits(Type::VerticalBox).flow);
+    BOOST_CHECK(traits(Type::TabBar).pages);
+    BOOST_CHECK(traits(Type::TextBox).text);
+
+    const v3d::ui::component::Traits button = traits(Type::Button);
+    BOOST_CHECK(!button.strip && !button.flow && !button.pages && !button.text);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

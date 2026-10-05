@@ -275,6 +275,39 @@ BOOST_AUTO_TEST_CASE(a_point_is_picked_by_the_deepest_pickable_component) {
 }
 
 /**
+ * Inside a component as at the top of a container, the child drawn last is the one a point
+ * reaches first, so a nested child with a depth out of the order it was added in is picked
+ * where it was drawn rather than where it was added - ADR-0019.
+ **/
+BOOST_AUTO_TEST_CASE(a_nested_child_is_picked_in_the_order_it_was_drawn) {
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(400, 200);
+
+    const boost::shared_ptr<v3d::ui::component::Panel> backdrop = panel("backdrop");
+    backdrop->layout().width = v3d::ui::Length(100.0f, v3d::ui::Length::Unit::Percent);
+    backdrop->layout().height = v3d::ui::Length(100.0f, v3d::ui::Length::Unit::Percent);
+    // the same square twice, the first added drawn over the second by its depth
+    const boost::shared_ptr<v3d::ui::component::Panel> over = panel("over");
+    const boost::shared_ptr<v3d::ui::component::Panel> under = panel("under");
+    for (const boost::shared_ptr<v3d::ui::component::Panel>& each : { over, under }) {
+        each->layout().x = v3d::ui::Length(10.0f, v3d::ui::Length::Unit::Pixels);
+        each->layout().y = v3d::ui::Length(10.0f, v3d::ui::Length::Unit::Pixels);
+        each->layout().width = v3d::ui::Length(50.0f, v3d::ui::Length::Unit::Pixels);
+        each->layout().height = v3d::ui::Length(50.0f, v3d::ui::Length::Unit::Pixels);
+        each->pickable(true);
+    }
+    over->depth(5);
+    backdrop->add(over);
+    backdrop->add(under);
+
+    v3d::ui::Container container("hud", true);
+    container.add(backdrop);
+    build().draw(&canvas, container);
+
+    BOOST_CHECK_EQUAL(container.pick(glm::vec2(20.0f, 20.0f))->name(), "over");
+}
+
+/**
  * A bar is a track with a fraction of it filled. A square one is four runs of outline around
  * one quad of track, and one more for the fill; an empty one draws no fill at all.
  **/

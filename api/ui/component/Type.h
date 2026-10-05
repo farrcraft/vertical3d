@@ -56,4 +56,21 @@ std::string_view name(Type type);
  **/
 Type parse(std::string_view text);
 
+/**
+ * What a type is, for a rule that holds of a kind of component rather than of one.
+ **/
+struct Traits final {
+    bool strip = false;   /**< a menu bar or a toolbar: stacked at an edge, its items its own **/
+    bool flow = false;    /**< a component::Box, laying its children out in the order it holds them **/
+    bool pages = false;   /**< holds pages and shows one, so only that one is live **/
+    bool text = false;    /**< takes typed text while it has the focus **/
+};
+
+/**
+ * The traits of a type - an exhaustive switch like name(), so a type added to the enum names
+ * this function too and says what it is, rather than being left out of a rule written as a
+ * test against the types somebody remembered. ADR-0047.
+ **/
+Traits traits(Type type);
+
 }  // namespace v3d::ui::component

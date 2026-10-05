@@ -309,8 +309,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const Contai
             continue;
         }
         // the strips were placed by stack() and the menu bars are held back to the end
-        if (component->type() == component::Type::MenuBar ||
-            component->type() == component::Type::Toolbar) {
+        if (component::traits(component->type()).strip) {
             continue;
         }
         if (component->type() == component::Type::Menu) {

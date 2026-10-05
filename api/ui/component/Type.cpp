@@ -40,6 +40,42 @@ std::string_view name(Type type) {
     return std::string_view();
 }
 
+Traits traits(Type type) {
+    Traits traits;
+    switch (type) {
+        case Type::MenuBar:
+        case Type::Toolbar:
+            traits.strip = true;
+            break;
+        case Type::HorizontalBox:
+        case Type::VerticalBox:
+            traits.flow = true;
+            break;
+        case Type::TabBar:
+            traits.pages = true;
+            break;
+        case Type::TextBox:
+            traits.text = true;
+            break;
+        case Type::Undefined:
+        case Type::Bar:
+        case Type::Button:
+        case Type::CheckBox:
+        case Type::Icon:
+        case Type::Label:
+        case Type::Menu:
+        case Type::MenuItem:
+        case Type::Panel:
+        case Type::RadioButton:
+        case Type::Scrollbar:
+        case Type::SelectList:
+        case Type::Slider:
+        case Type::TabPage:
+            break;
+    }
+    return traits;
+}
+
 Type parse(std::string_view text) {
     // walked rather than mapped: the list is short, this runs once per component in a config
     // read at startup, and a table would be a second place to forget. A type with no config

@@ -412,6 +412,12 @@ one logs and is skipped, and odyssey's map loads through config like any other d
 
 U1, U2, and D2 and D3.
 
+**Closed.** `ui::forEachDrawn()` is the one rule for which children are live and in what order, and
+the draw walk, the pick and the tab order go through it; both new cases fail against the code
+before it. `resolveComponentImages` does not: a page that is not up still needs its images for when
+it is. `component::traits()` answers strip, flow, pages and text, and `Cursor::follow()` is an
+exhaustive switch; ADR-0047 is corrected.
+
 One function answers "the live children of X in draw order" — TabBar to its page, a Box in held
 order, everything else by depth — and `Arranger::walk`, `Container::probe` (reversed),
 `focusable` and `resolveComponentImages` all use it. Then the twenty unchecked `type() ==` tests

@@ -4,6 +4,13 @@
 **Status**: accepted
 **Deciders**: Joshua Farr
 
+Corrected 2026-10-05 by step 20 of [ApiDesignDebt](../plans/ApiDesignDebt.md). The compiler
+named every switch, but per-type rules also lived in about twenty tests of `type() ==` and
+casts, unchecked - and two ui defects came from them drifting apart. The rules written for a kind
+of component now ask `component::traits()`, an exhaustive switch like the rest, and
+`Cursor::follow()` is one too. Of the places this record counted as unchecked, only a style class
+in `style::Resolver` is left.
+
 ## Context
 
 Adding a component to `api/ui` means editing seven places: `component::Type`, the name it is
