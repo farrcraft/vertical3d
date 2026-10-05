@@ -115,7 +115,7 @@ distant light's shadow ray of fixed length; and the C array helper still in moya
 | [11](#step-11--a-trace-that-recurses) | A trace that recurses, to a depth a scene sets | `talyn` | — | done |
 | [12](#step-12--reflection-refraction-and-transparency) | Reflection, refraction, transparency and spheres | `api/render/offline`, `talyn` | — | done |
 | [13](#step-13--texture-and-noise) | `texture()` from an image, and `noise()` | `api/render/offline`, `moya`, `talyn` | — | done |
-| [14](#step-14--the-record-one-ray-tracer-both-renderers-reach) | The record: one ray tracer both renderers reach | `docs/adr` | **0077** | not started |
+| [14](#step-14--the-record-one-ray-tracer-both-renderers-reach) | The record: one ray tracer both renderers reach | `docs/adr` | **0077** | done, accepted |
 | [15](#step-15--the-ray-tracer-moves-into-the-shared-library) | talyn's scene and hit shading move into the shared library | `api/render/offline`, `talyn` | 0077 | not started |
 | [16](#step-16--moya-traces) | moya traces: shadows and `trace()` | `moya` | 0077 | not started |
 | [17](#step-17--held-area-lights-displacement-and-acceleration) | Area lights, displacement and bump, and an acceleration structure | — | — | held |
@@ -533,6 +533,12 @@ hider, and everything after a hit is shared.
 
 What the record has to settle besides: **the space the shared scene is in**, world space as talyn's
 is, which moya's camera space primitives are transformed into as they are added.
+
+**Accepted on drafting**, ahead of step 16, on the decision rather than on a moya shadow. It settles the space as world, and one more thing the step did not
+name: **which lights a traced hit is shaded by.** talyn holds one list fixed at the first
+primitive and moya gives each primitive the lights that were on, so the record has a primitive
+carry its own, shared as a set; step 15 moves talyn onto that without changing a picture. It
+also records that moya, shading a grid once for all its samples, traces at shutter open.
 
 ### Step 15 — The ray tracer moves into the shared library
 
