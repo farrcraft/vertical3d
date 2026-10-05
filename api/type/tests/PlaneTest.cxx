@@ -33,7 +33,7 @@ BOOST_AUTO_TEST_CASE(plane_representation_test) {
 
     BOOST_TEST((plane.normal() == glm::vec3(0.0f, 1.0f, 0.0f)));
     BOOST_TEST(plane.distance() == 5.0f);
-    BOOST_TEST(plane.distance(glm::vec3(0.0f, 7.0f, 0.0f)) == 2.0f);
+    BOOST_TEST(plane.signedDistance(glm::vec3(0.0f, 7.0f, 0.0f)) == 2.0f);
 }
 
 /**
@@ -100,5 +100,5 @@ BOOST_AUTO_TEST_CASE(plane_const_subscript_test) {
     const v3d::type::geometry::Plane& reader = plane;
     BOOST_TEST(reader[v3d::type::geometry::Plane::B] == 2.0f);
     BOOST_TEST(reader[v3d::type::geometry::Plane::D] == -4.0f);
-    BOOST_TEST(reader.distance(glm::vec3(0.0f, 3.0f, 0.0f)) == 2.0f);
+    BOOST_TEST(reader.signedDistance(glm::vec3(0.0f, 3.0f, 0.0f)) == 2.0f);
 }

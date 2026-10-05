@@ -12,29 +12,12 @@
 
 namespace v3d::font {
 
-wchar_t* wcsdupstr(const wchar_t* string) {
-    const size_t len = wcslen(string) + 1;
-    wchar_t* result = new wchar_t[len];
-    wcscpy_s(result, len, string);
-    return result;
-}
-
 TextureFontCache::TextureFontCache(unsigned int width, unsigned int height, unsigned int depth, const boost::shared_ptr<v3d::log::Logger>& logger) : logger_(logger) {
     atlas_.reset(new v3d::image::TextureAtlas(width, height, depth, logger));
-    cache_ = wcsdupstr(L" ");
-}
-
-TextureFontCache::~TextureFontCache() {
-    delete[] cache_;
 }
 
 boost::shared_ptr<v3d::image::TextureAtlas> TextureFontCache::atlas() {
     return atlas_;
-}
-
-void TextureFontCache::charcodes(const wchar_t* charcodes) {
-    delete[] cache_;
-    cache_ = wcsdupstr(charcodes);
 }
 
 /**

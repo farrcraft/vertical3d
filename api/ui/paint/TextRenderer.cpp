@@ -45,22 +45,7 @@ TextRenderer::TextRenderer(const boost::shared_ptr<v3d::asset::Manager>& assetMa
     // a one channel atlas: the glyph's distance becomes its alpha, which is what lets text
     // go through the quad shader. Subpixel (LCD) filtering would need dual source blending
     // or a second pass, and is not a distance field
-    cache_ = boost::make_shared<v3d::font::TextureFontCache>(atlasWidth, atlasHeight, v3d::font::TextureTextBuffer::LCD_FILTERING_OFF, logger);
-    cache_->charcodes(charcodes);
-
-    markup_.family_ = "sans";
-    markup_.bold_ = false;
-    markup_.italic_ = false;
-    markup_.rise_ = 0.0f;
-    markup_.spacing_ = 0.0f;
-    markup_.gamma_ = 1.0f;
-    markup_.outline_ = false;
-    markup_.underline_ = false;
-    markup_.overline_ = false;
-    markup_.strikethrough_ = false;
-    markup_.foregroundColor_ = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-    // transparent, so no background quad is emitted behind each glyph
-    markup_.backgroundColor_ = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
+    cache_ = boost::make_shared<v3d::font::TextureFontCache>(atlasWidth, atlasHeight, 1, logger);
     markup_.size_ = size_;
 
     // the face is opened here rather than loaded as an asset: what it is rasterized at is this

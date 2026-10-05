@@ -70,21 +70,6 @@ class Image {
          * @return the image height
          */
         uint32_t height() const;
-        /**
-         * Set the number of bits per pixel in the image
-         * @param bits the number of bits per pixel
-         */
-        void bpp(uint8_t bits);
-        /**
-         * Set the width of the image
-         * @param w the image width
-         */
-        void width(unsigned int w);
-        /**
-         * Set the height of the image
-         * @param h the image height
-         */
-        void height(unsigned int h);
 
         Format format() const;
 

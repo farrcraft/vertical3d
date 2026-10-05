@@ -34,7 +34,7 @@ based on gluUnProject
 takes a screen space coordinate and the viewport dimensions
 and returns the world space coordinate
 */
-glm::vec3 Camera::unproject(const glm::vec3& point, int viewport[4]) {
+glm::vec3 Camera::unproject(const glm::vec3& point, const int viewport[4]) const {
     glm::vec4 p;
     // normalize point to range [-1, 1]
     p[0] = (point[0] - viewport[0]) * 2.0f / viewport[2] - 1.0f;
@@ -59,7 +59,7 @@ based on gluProject
 takes a world space coordinate and the viewport dimensions
 returns the screen space coordinate
 */
-glm::vec3 Camera::project(const glm::vec3& point, int viewport[4]) {
+glm::vec3 Camera::project(const glm::vec3& point, const int viewport[4]) const {
     glm::vec4 p;
     p = view() * glm::vec4(point, 1.0f);
     p = projection() * p;
@@ -76,7 +76,7 @@ glm::vec3 Camera::project(const glm::vec3& point, int viewport[4]) {
     return p;
 }
 
-geometry::Ray Camera::ray(const glm::vec2& point, int viewport[4]) {
+geometry::Ray Camera::ray(const glm::vec2& point, const int viewport[4]) const {
     // the two ends of the pixel's line through the frustum. Depth zero is the near
     // plane and one is the far one, per ADR-0012
     const glm::vec3 from = unproject(glm::vec3(point.x, point.y, 0.0f), viewport);

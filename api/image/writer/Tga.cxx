@@ -5,11 +5,14 @@
 
 #include "Tga.h"
 
+#include <api/image/Channels.h>
+
 #include <fstream>
 #include <iostream>
 #include <limits>
 #include <cstring>
 #include <string>
+#include <vector>
 
 #pragma pack(push, 1)
 
@@ -81,9 +84,8 @@ bool Tga::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
 
     unsigned int bytespp = fheader.bpp_ / 8;
     unsigned int size = fheader.width_ * fheader.height_ * bytespp;
-    boost::shared_ptr<Image> tmp_img(new Image(size));
-    unsigned char* data = img->data();
-    unsigned char* tmp_data = tmp_img->data();
+    std::vector<unsigned char> scratch(size);
+    const unsigned char* data = img->data();
 
     if (file.fail()) {
         file.close();
@@ -91,18 +93,13 @@ bool Tga::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     }
 
     if (grey) {
-        // one channel is one channel in either order, so there is nothing to swap - and
-        // the swap below reads three bytes of every pixel, which this depth does not have
-        memcpy(tmp_data, data, size);
+        // one channel is one channel in either order, so there is nothing to swap
+        memcpy(scratch.data(), data, size);
     } else {
-        for (unsigned int i = 0; i < static_cast<int>(size); i += bytespp) {  // Swaps The 1st And 3rd Bytes ('R'ed and 'B'lue)
-            tmp_data[i] = data[i + 2];
-            tmp_data[i + 1] = data[i + 1];
-            tmp_data[i + 2] = data[i];
-        }
+        swapRedBlue(data, scratch.data(), size / bytespp, bytespp);
     }
 
-    file.write(reinterpret_cast<char*>(tmp_data), size);
+    file.write(reinterpret_cast<char*>(scratch.data()), size);
 
     tga_footer footer;
     memset(&footer, 0, sizeof(tga_footer));

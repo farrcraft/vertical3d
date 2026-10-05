@@ -5,6 +5,8 @@
 
 #include "Tga.h"
 
+#include <api/image/Channels.h>
+
 #include <cstddef>
 #include <cstring>
 #include <string>
@@ -62,14 +64,7 @@ boost::shared_ptr<Image> Tga::read(const unsigned char* data, std::size_t size) 
     memcpy(out, data + headerSize, pixels);
 
     if (bytespp >= 3) {
-        // the bound is the last byte read rather than the first, so that a whole pixel is
-        // what the loop is proved to stay inside
-        for (std::size_t i = 0; i + 2 < pixels; i += bytespp) {
-            // Swaps The 1st And 3rd Bytes ('R'ed and 'B'lue)
-            const unsigned char temp = out[i];
-            out[i] = out[i + 2];
-            out[i + 2] = temp;
-        }
+        swapRedBlue(out, out, pixels / bytespp, bytespp);
     }
 
     // bit 5 of the image descriptor is the vertical origin, and it is clear far more

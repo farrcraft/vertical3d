@@ -362,3 +362,27 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_jpeg_takes_any_spelling_and_drops_alpha, Out
         }
     }
 }
+
+/**
+ * A 32 bit image keeps its alpha through a TGA, which stores BGRA: the colour channels are
+ * reordered and the alpha is carried across rather than left as the zero a fresh buffer holds.
+ **/
+BOOST_FIXTURE_TEST_CASE(imagewriter_tga_alpha_test, OutputDirectory) {
+    boost::shared_ptr<v3d::image::Image> img32 = boost::make_shared<v3d::image::Image>(2, 1, 32);
+    for (unsigned int pixel = 0; pixel < 2; ++pixel) {
+        (*img32)[pixel * 4 + 0] = 0x10;
+        (*img32)[pixel * 4 + 1] = 0x20;
+        (*img32)[pixel * 4 + 2] = 0x30;
+        (*img32)[pixel * 4 + 3] = 0x80;
+    }
+    v3d::image::Factory factory(boost::make_shared<v3d::log::Logger>());
+    BOOST_REQUIRE(factory.write("data_out/alpha.tga", img32));
+
+    boost::shared_ptr<v3d::image::Image> image = factory.read("data_out/alpha.tga");
+    BOOST_REQUIRE(image != nullptr);
+    BOOST_REQUIRE_EQUAL(image->bpp(), 32u);
+    BOOST_CHECK_EQUAL((*image)[0], 0x10);
+    BOOST_CHECK_EQUAL((*image)[2], 0x30);
+    BOOST_CHECK_EQUAL((*image)[3], 0x80);
+    BOOST_CHECK_EQUAL((*image)[7], 0x80);
+}

@@ -18,11 +18,6 @@ namespace v3d::font {
 
 class TextureFont {
  public:
-    typedef struct {
-        wchar_t charcode_;
-        float kerning_;
-    } Kerning;
-
     typedef enum {
         OUTLINE_TYPE_NONE = 0,
         OUTLINE_TYPE_LINE = 1,
@@ -38,7 +33,6 @@ class TextureFont {
         glm::ivec2 offset_;
         glm::vec2 advance_;
         glm::vec2 st_[2];
-        std::vector<Kerning> kerning_;
         OutlineType outline_;
         float outlineThickness_;
     } Glyph;
@@ -54,8 +48,12 @@ class TextureFont {
     TextureFont(const std::string& filename, float size, const boost::shared_ptr<v3d::log::Logger> & logger,
         unsigned int spread = 0);
 
+    /**
+     * The glyph for a charcode, or null when it was not loaded. -1 is the opaque white square
+     * a line or a background is drawn with, made the first time it is asked for - and null
+     * when the atlas has no room for it.
+     **/
     boost::shared_ptr<Glyph> glyph(wchar_t charcode);
-    static float kerning(const boost::shared_ptr<Glyph>& glyph, wchar_t charcode);
 
     /**
      **/
@@ -90,7 +88,6 @@ class TextureFont {
     float underlineThickness() const;
 
  protected:
-    void generateKerning();
     static boost::shared_ptr<Glyph> createGlyph();
 
  private:

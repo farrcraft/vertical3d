@@ -634,6 +634,18 @@ or move into the one app each serves. `grid` gets one `flood` and exposes its in
 
 T4, the rest of T5, T6.
 
+**Closed.** Kerning is deleted rather than applied: it was built O(n²) on every glyph load and
+never read, and applying it would move every line of ui text. `Markup` is a struct with defaults
+holding only what `addText` honours, and a strikethrough is drawn in its own colour rather than
+the overline's. `TextureFont::Freetype` releases what it opened on every path and when it goes;
+`TextureFontCache` is given a depth, `1`, rather than the filtering enum, and its charcode buffer
+went because nothing read it. A full atlas that left no room for the line glyph skips the lines
+and still draws the glyph. `Camera` starts at identity and its three queries are const.
+`Plane::distance(point)` is `signedDistance`. `Image` has no length constructor and no dimension
+setters; the writers and the BMP reader keep their scratch in a byte vector or read the encoded
+bytes in place, and `image::swapRedBlue` is the one swap - which carries the alpha a 32 bit TGA
+used to lose. The outline path in `TextureFont` is still there and still unreachable.
+
 Apply kerning in `addCharacter` or delete it; trim `Markup` to what is honoured; make FreeType an
 RAII owner; pass the atlas depth as a depth; null-check the `black` glyph; give
 `TextureFontCache` a deleted copy or no raw buffer. `Camera`'s matrices start at identity and its

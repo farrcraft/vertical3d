@@ -52,7 +52,7 @@ class Plane {
     /**
     * signed distance to point
     */
-    float distance(const glm::vec3 & point) const;
+    float signedDistance(const glm::vec3 & point) const;
     int classify(const AABBox & aabb) const;
     int classify(const glm::vec3 & point) const;
     bool intersectEdge(const glm::vec3 & A, const glm::vec3 & B, glm::vec3 * hitPoint) const;

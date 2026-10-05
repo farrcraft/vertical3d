@@ -26,14 +26,8 @@ const unsigned int kSpread = 8;
  **/
 v3d::font::TextureTextBuffer::Markup plain(const boost::shared_ptr<v3d::font::TextureFont>& font, float size) {
     v3d::font::TextureTextBuffer::Markup markup;
-    markup.family_ = "sans";
     markup.size_ = size;
-    markup.bold_ = false;
-    markup.italic_ = false;
-    markup.rise_ = 0.0f;
-    markup.spacing_ = 0.0f;
     markup.gamma_ = 1.0f;
-    markup.outline_ = false;
     markup.underline_ = false;
     markup.overline_ = false;
     markup.strikethrough_ = false;

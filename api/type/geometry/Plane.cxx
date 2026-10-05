@@ -73,7 +73,7 @@ void Plane::calculate(const glm::vec3 & normal, const glm::vec3 & point) {
     set(normal, glm::dot(normal, point));
 }
 
-float Plane::distance(const glm::vec3 & point) const {
+float Plane::signedDistance(const glm::vec3 & point) const {
     return equation_[0] * point[0] + equation_[1] * point[1] + equation_[2] * point[2] + equation_[3];
 }
 
@@ -84,7 +84,7 @@ int Plane::classify(const glm::vec3 & point) const {
         Ax + By + Cz + D = 0
         Ax + By + Cz = -D
     */
-    float dist = distance(point);
+    float dist = signedDistance(point);
 
     if (dist < 0.0) {
         return NEGATIVE;

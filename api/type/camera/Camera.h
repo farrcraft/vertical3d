@@ -36,8 +36,8 @@ class Camera {
          */
         const Profile & profile() const;
 
-        glm::vec3 unproject(const glm::vec3 & point, int viewport[4]);
-        glm::vec3 project(const glm::vec3 & point, int viewport[4]);
+        glm::vec3 unproject(const glm::vec3 & point, const int viewport[4]) const;
+        glm::vec3 project(const glm::vec3 & point, const int viewport[4]) const;
 
         /**
          *	The ray a screen point casts into the scene, in world space.
@@ -50,7 +50,7 @@ class Camera {
          *	@param point where the click was, in window pixels
          *	@param viewport the region the camera draws into, as x, y, width, height
          */
-        geometry::Ray ray(const glm::vec2 & point, int viewport[4]);
+        geometry::Ray ray(const glm::vec2 & point, const int viewport[4]) const;
 
         /**
          *	Create a projection matrix.
@@ -135,8 +135,8 @@ class Camera {
 
  private:
         glm::vec3 lookAt_;
-        glm::mat4x4 projection_;
-        glm::mat4x4 view_;  // viewing transformation
+        glm::mat4x4 projection_{1.0f};
+        glm::mat4x4 view_{1.0f};  // viewing transformation, identity until createView()
         Profile profile_;
 };
 

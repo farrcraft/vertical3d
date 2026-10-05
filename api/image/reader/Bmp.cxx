@@ -8,6 +8,7 @@
 #include <api/image/BmpFileHeader.h>
 #include <api/image/BmpInfoHeader.h>
 #include <api/image/BmpRgbQuad.h>
+#include <api/image/Channels.h>
 
 #include <cstddef>
 #include <cstring>
@@ -101,12 +102,8 @@ void convert24(const unsigned char* temp, unsigned char* data, uint64_t rows, in
     for (uint64_t row = 0; row < rows; ++row) {
         const unsigned char* src = temp + row * pad;
         unsigned char* dest = data + row * width;
-        for (int64_t column = 0; column < columns; ++column) {
-            // bgr on disk, rgb in memory
-            dest[column * 3 + 0] = src[column * 3 + 2];
-            dest[column * 3 + 1] = src[column * 3 + 1];
-            dest[column * 3 + 2] = src[column * 3 + 0];
-        }
+        // bgr on disk, rgb in memory
+        swapRedBlue(src, dest, static_cast<std::size_t>(columns), 3);
     }
 }
 
@@ -191,16 +188,12 @@ boost::shared_ptr<Image> Bmp::read(const unsigned char* encoded, std::size_t len
     logger_->get()->debug("BMPReader::read - allocating image bits: {}", size);
     logger_->get()->debug("BMPReader::read - width is: {} after padding: {}", width, pad);
 
-    // this is just temporary storage
-    boost::shared_ptr<Image> img = boost::make_shared<Image>(storedSize);
-    unsigned char* temp = img->data();
-
     // read image data
     if (length - at < storedSize) {
         logger_->get()->error("BMPReader::read - error reading bmp data!");
         return empty_ptr;
     }
-    memcpy(temp, encoded + at, storedSize);
+    const unsigned char* temp = encoded + at;
 
     const int64_t offset = pad - width;
 

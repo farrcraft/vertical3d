@@ -8,10 +8,12 @@
 #include <api/image/BmpFileHeader.h>
 #include <api/image/BmpInfoHeader.h>
 #include <api/image/BmpRgbQuad.h>
+#include <api/image/Channels.h>
 
 #include <cstring>
 #include <fstream>
 #include <string>
+#include <vector>
 
 #include <boost/make_shared.hpp>
 
@@ -91,9 +93,9 @@ bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
         file.write(reinterpret_cast<char*>(&entry), sizeof(bmp_rgb_quad));
     }
 
-    boost::shared_ptr<Image> image = boost::make_shared<Image>(size);
-    unsigned char* data = image->data();
-    unsigned char* temp = img->data();
+    std::vector<unsigned char> scratch(size);
+    unsigned char* data = scratch.data();
+    const unsigned char* temp = img->data();
 
     // each row is copied on its own, because the padding is per row and the source
     // image has none of it. Walking both buffers with a single index and a modulo test
@@ -107,15 +109,8 @@ bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
             memcpy(dest, src, static_cast<size_t>(rowBytes));
             continue;
         }
-        for (uint32_t column = 0; column < img->width(); ++column) {
-            // rgb in memory, bgr on disk
-            dest[column * channels + 0] = src[column * channels + 2];
-            dest[column * channels + 1] = src[column * channels + 1];
-            dest[column * channels + 2] = src[column * channels + 0];
-            if (img->format() == v3d::image::Image::Format::RGBA) {
-                dest[column * channels + 3] = src[column * channels + 3];
-            }
-        }
+        // rgb in memory, bgr on disk
+        swapRedBlue(src, dest, img->width(), channels);
     }
 
     // write image data

@@ -21,7 +21,7 @@ TextureTextBuffer::TextureTextBuffer() :
     lineStart_(0) {
 }
 
-void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar_t current, wchar_t /* previous */) {
+void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar_t current) {
     if (current == L'\n') {
         pen->x = origin_.x;
         const float lineScale = markup.font_->size() > 0.0f ? markup.size_ / markup.font_->size() : 1.0f;
@@ -39,6 +39,9 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
     if (!glyph) {
         return;
     }
+    // the lines and the background are drawn with the white square, which a full atlas may
+    // have had no room for: the glyph is still drawn, and they are not
+    const bool lines = black != nullptr;
 
     // every metric below is in pixels of the size the face was rasterized at, so asking
     // for another size is asking for them at a ratio of it - ADR-0036. A markup whose
@@ -56,7 +59,7 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
     size_t istart = indices().size();
     size_t vstart = vertices().size();
 
-    if (markup.backgroundColor_.a > 0.0f) {
+    if (lines && markup.backgroundColor_.a > 0.0f) {
         glm::vec2 xy0(pen->x, pen->y + descender);
         glm::vec2 xy1(pen->x + advance, xy0.y + height + linegap);
 
@@ -66,7 +69,7 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
         icount += 6;
     }
 
-    if (markup.underline_) {
+    if (lines && markup.underline_) {
         glm::vec2 xy0(pen->x, pen->y + underlinePosition);
         glm::vec2 xy1(pen->x + advance, xy0.y + underlineThickness);
 
@@ -76,7 +79,7 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
         icount += 6;
     }
 
-    if (markup.overline_) {
+    if (lines && markup.overline_) {
         glm::vec2 xy0(pen->x, pen->y + ascender);
         glm::vec2 xy1(pen->x + advance, xy0.y + underlineThickness);
 
@@ -86,11 +89,11 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
         icount += 6;
     }
 
-    if (markup.strikethrough_) {
+    if (lines && markup.strikethrough_) {
         glm::vec2 xy0(pen->x, pen->y + ascender * .33f);
         glm::vec2 xy1(pen->x + advance, xy0.y + underlineThickness);
 
-        addQuad(xy0, xy1, black->st_[0], black->st_[1], markup.overlineColor_, markup.gamma_);
+        addQuad(xy0, xy1, black->st_[0], black->st_[1], markup.strikethroughColor_, markup.gamma_);
 
         vcount += 4;
         icount += 6;
@@ -163,9 +166,8 @@ void TextureTextBuffer::addText(glm::vec2* pen, const Markup& markup, const std:
         descender_ = markup.font_->descender();
     }
     */
-    addCharacter(pen, markup, text[0], 0);
-    for (unsigned int i = 1; i < text.length(); ++i) {
-        addCharacter(pen, markup, text[i], text[i - 1]);
+    for (const wchar_t character : text) {
+        addCharacter(pen, markup, character);
     }
 }
 

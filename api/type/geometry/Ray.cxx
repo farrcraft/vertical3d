@@ -168,7 +168,7 @@ bool Ray::intersects(const Plane& plane, float* distance) const {
     if (std::fabs(approach) < epsilon) {
         return false;
     }
-    const float hit = -plane.distance(origin_) / approach;
+    const float hit = -plane.signedDistance(origin_) / approach;
     if (hit < 0.0f) {
         return false;
     }
