@@ -699,9 +699,9 @@ void Machine::shadowed(bool ray, const Value & from, const Value & to, Value* ta
         return;
     }
     /*
-        The answer a renderer that cannot do it gives. All the light gets through, which is
-        moya without a shadow map, and a ray comes back black, which is what makes trace()
-        the phase 6 hook rather than phase 6.
+        The answer a renderer that cannot do it gives. All the light gets through, so a scene
+        renders unshadowed rather than not at all, and a ray comes back black rather than with
+        something plausible.
     */
     const unsigned int wide = target->storage() == Storage::VARYING ? batch_ : 1;
     const float answer = ray ? 0.0f : 1.0f;

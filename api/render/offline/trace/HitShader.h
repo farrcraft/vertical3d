@@ -82,6 +82,16 @@ class HitShader final : public v3d::render::offline::sl::runtime::Renderer {
      **/
     void time(float when);
 
+    /**
+     * transmission() and trace() in world space, for a renderer whose shading point is not
+     * a hit of this scene: moya's grids, per ADR-0077.
+     *
+     * @param geometric the plane of the surface the ray leaves, which it is started off so
+     *        that it does not meet that surface again; zero starts it where it is
+     **/
+    glm::vec3 transmitted(const glm::vec3 & from, const glm::vec3 & to, const glm::vec3 & geometric);
+    glm::vec3 traced(const glm::vec3 & origin, const glm::vec3 & direction, const glm::vec3 & geometric);
+
     // what the machine asks a renderer for
     bool space(const std::string & name, glm::mat4x4* matrix) override;
     unsigned int lights() override;

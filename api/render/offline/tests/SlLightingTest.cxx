@@ -350,8 +350,8 @@ BOOST_AUTO_TEST_CASE(sllighting_ambient_test) {
 
 /**
  * A renderer that cannot answer a shadow lets all the light through and says so once. That
- * is moya until it has a shadow map, and the difference between a scene that rendered
- * without shadows and one that was not understood.
+ * is the difference between a scene that rendered without shadows and one that was not
+ * understood.
  **/
 BOOST_AUTO_TEST_CASE(sllighting_transmission_without_a_renderer_test) {
     Scene scene;
@@ -365,11 +365,10 @@ BOOST_AUTO_TEST_CASE(sllighting_transmission_without_a_renderer_test) {
 }
 
 /**
- * The phase 6 hook exists and reports that it is one. A ray comes back black rather than
- * coming back with something plausible, because a plausible answer is the failure mode
- * phase 1 named.
+ * A renderer that cannot trace says so. A ray comes back black rather than coming back with
+ * something plausible, because a plausible answer is the failure mode phase 1 named.
  **/
-BOOST_AUTO_TEST_CASE(sllighting_trace_is_a_hook_test) {
+BOOST_AUTO_TEST_CASE(sllighting_trace_without_a_renderer_test) {
     Scene scene;
     Lit lit("Ci = trace(P, vector (0, 0, 1));", &scene, 4);
     lit.run();

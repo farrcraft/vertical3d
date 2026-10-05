@@ -73,6 +73,11 @@ void RIBHandler::option(const std::string & name, const ParameterList & paramete
         }
         return;
     }
+    if (name == "trace" && parameters.has("maxdepth")) {
+        const float depth = parameters.number("maxdepth", 0.0f);
+        context().traced().traceDepth(depth > 0.0f ? static_cast<unsigned int>(depth) : 0u);
+        return;
+    }
     if (name != "limits") {
         return;
     }

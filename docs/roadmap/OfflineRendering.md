@@ -268,8 +268,9 @@ built on principle.
 
 ### Phase 6 — whether they unify
 
-**Taken up by [OfflineRenderingPhases4To6](../plans/OfflineRenderingPhases4To6.md)**, which
-answers it in a record of its own before building it.
+**Answered by [ADR-0077](../adr/0077-one-ray-tracer-both-renderers-reach.md)**: two renderers
+that share one ray tracer, built by [OfflineRenderingPhases4To6](../plans/OfflineRenderingPhases4To6.md).
+talyn drives it and moya's shaders trace into it.
 
 The question talyn's driver used to ask in a comment at the top of it, until phase 1 removed the
 comment: one renderer with two algorithms behind a common interface, or two renderers that share

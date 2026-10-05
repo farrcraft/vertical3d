@@ -370,3 +370,36 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_sphere_is_skipped_test) {
 
     BOOST_CHECK_EQUAL(handler.context().framebuffer()->primitiveCount(), 1u);
 }
+
+/**
+ * A mirror reflects what the camera cannot see, per ADR-0077: the red quad is above the
+ * frame, and the mirror tilted forty five degrees under it turns every ray up into it.
+ * shinymetal with its ambient and its highlight off is Cs times what it traces.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_a_mirror_traces_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+
+    BOOST_REQUIRE(read(
+        "Format 64 48 1\n"
+        "PixelSamples 1 1\n"
+        "PixelFilter \"box\" 1 1\n"
+        "Projection \"perspective\" \"fov\" [30]\n"
+        "Clipping 0.1 100\n"
+        "WorldBegin\n"
+        "AttributeBegin\n"
+        "Surface \"shinymetal\" \"Ka\" [0] \"Ks\" [0] \"Kr\" [1]\n"
+        "Polygon \"P\" [-1 -1 4  1 -1 4  1 1 6  -1 1 6]\n"
+        "AttributeEnd\n"
+        "AttributeBegin\n"
+        "Color [1 0 0]\n"
+        "Surface \"constant\"\n"
+        "Polygon \"P\" [-3 3 2  3 3 2  3 3 8  -3 3 8]\n"
+        "AttributeEnd\n"
+        "WorldEnd\n", &handler));
+
+    boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::RED, 32, 24), 1.0f, 0.01f);
+    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::GREEN, 32, 24), 1.0e-6f);
+    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::BLUE, 32, 24), 1.0e-6f);
+}

@@ -8,7 +8,9 @@
 #include <string>
 #include <vector>
 
+#include <glm/geometric.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/mat3x3.hpp>
 #include <glm/matrix.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
@@ -43,7 +45,8 @@ void put(Machine* machine, int reg, unsigned int point, float value) {
 
 };  // namespace
 
-GridShader::GridShader(RenderContext* context) : context_(context) {
+GridShader::GridShader(RenderContext* context) :
+    context_(context), tracer_(&context->traced(), &context->textures()) {
 }
 
 GridShader::Run & GridShader::run(const v3d::render::offline::sl::InstancePtr & shader,
@@ -74,7 +77,7 @@ bool GridShader::space(const std::string & name, glm::mat4x4* matrix) {
     if (name == "shader") {
         // the transform that was in force when the scene instanced the shader, which is
         // what a "point \"shader\" (0, 0, 1)" in it is stated against
-        *matrix = shading_ == nullptr ? glm::mat4x4(1.0f) : shading_->placement;
+        *matrix = placement_;
         return true;
     }
     if (name == "world") {
@@ -108,6 +111,26 @@ const v3d::render::offline::Texture* GridShader::texture(const std::string & nam
     return context_->textures().find(name);
 }
 
+bool GridShader::transmission(const Value & from, const Value & to, Value* fraction) {
+    for (unsigned int point = 0; point < batch_; point++) {
+        const glm::vec3 source(toWorld_ * glm::vec4(from.triple(point), 1.0f));
+        const glm::vec3 target(toWorld_ * glm::vec4(to.triple(point), 1.0f));
+        fraction->triple(point, tracer_.transmitted(source, target,
+            point < planes_.size() ? planes_[point] : glm::vec3(0.0f)));
+    }
+    return true;
+}
+
+bool GridShader::trace(const Value & origin, const Value & direction, Value* colour) {
+    for (unsigned int point = 0; point < batch_; point++) {
+        const glm::vec3 start(toWorld_ * glm::vec4(origin.triple(point), 1.0f));
+        const glm::vec3 along = glm::mat3(toWorld_) * direction.triple(point);
+        colour->triple(point, tracer_.traced(start, along,
+            point < planes_.size() ? planes_[point] : glm::vec3(0.0f)));
+    }
+    return true;
+}
+
 unsigned int GridShader::lights() {
     return shading_ == nullptr ? 0u : static_cast<unsigned int>(shading_->lights.size());
 }
@@ -127,6 +150,8 @@ bool GridShader::light(unsigned int index, const Value & surface, Value* directi
         the placement is what makes a light placed by a transform land where the scene put
         it rather than at the origin.
     */
+    const glm::mat4x4 was = placement_;
+    placement_ = shining.placement;
     shining.shader->write(&held.machine, shining.placement);
 
     const int where = program.symbol("Ps");
@@ -137,7 +162,9 @@ bool GridShader::light(unsigned int index, const Value & surface, Value* directi
         put(&held.machine, where, point, surface.triple(point));
         put(&held.machine, origin, point, position);
     }
-    if (!held.machine.run(program)) {
+    const bool ran = held.machine.run(program);
+    placement_ = was;
+    if (!ran) {
         return false;
     }
 
@@ -162,7 +189,12 @@ void GridShader::shade(const Shading & shading, MicroPolygonGrid* grid) {
         return;
     }
     shading_ = &shading;
+    placement_ = shading.placement;
     batch_ = batch;
+    toWorld_ = glm::inverse(context_->coordinateSystem("camera"));
+    const glm::mat3 toWorldNormal = glm::transpose(glm::inverse(glm::mat3(toWorld_)));
+    planes_.assign(batch, glm::vec3(0.0f));
+    tracer_.time(context_->sampling().shutter.x);
 
     Run & held = run(shading.surface, batch);
     const v3d::render::offline::sl::runtime::Program & program = shading.surface->program();
@@ -194,6 +226,8 @@ void GridShader::shade(const Shading & shading, MicroPolygonGrid* grid) {
             put(&held.machine, position, point, vert.point());
             put(&held.machine, normal, point, vert.normal());
             put(&held.machine, geometric, point, vert.geometricNormal());
+            const glm::vec3 plane = toWorldNormal * vert.geometricNormal();
+            planes_[point] = glm::length(plane) > 0.0f ? glm::normalize(plane) : plane;
             // the eye is the origin of camera space, so the direction the surface is seen
             // along is the point itself
             put(&held.machine, incident, point, vert.point());

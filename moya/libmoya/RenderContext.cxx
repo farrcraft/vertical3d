@@ -7,6 +7,7 @@
 
 #include <api/image/Factory.h>
 #include <api/render/offline/sl/Imager.h>
+#include <api/render/offline/trace/Scene.h>
 #include <api/type/geometry/Frustum.h>
 
 #include <algorithm>
@@ -119,6 +120,9 @@ void RenderContext::prepareWorld() {
     // save the existing transform as the camera coordinate system. What a scene set
     // between RiProjection and here is the world to camera transformation
     saveCoordinateSystem("camera");
+    // a traced hit's "camera" space and its E are this camera's, which the traced scene
+    // has no camera of its own to give
+    traced_.view(coordinateSystems_["camera"]);
     // inside the world block the current transformation is object to world
     transform_.replace(glm::mat4x4(1.0f));
 
@@ -560,6 +564,64 @@ GridShader & RenderContext::shader() {
     return *shader_;
 }
 
+v3d::render::offline::trace::Scene & RenderContext::traced() {
+    return traced_;
+}
+
+const v3d::render::offline::trace::Lights & RenderContext::tracedLights(const Shading & state) {
+    if (tracedLights_ && tracedFor_ == lit_ && tracedLightsFor_ == lights_.size()) {
+        return tracedLights_;
+    }
+    // a light is placed in camera space, which is moya's current space, and the traced
+    // scene is in world space
+    const glm::mat4x4 toWorld = glm::inverse(coordinateSystems_["camera"]);
+    auto on = boost::make_shared<std::vector<v3d::render::offline::sl::Placed> >();
+    for (const v3d::render::offline::sl::Placed & light : state.lights) {
+        v3d::render::offline::sl::Placed placed = light;
+        placed.placement = toWorld * light.placement;
+        on->push_back(placed);
+    }
+    tracedLights_ = on;
+    tracedFor_ = lit_;
+    tracedLightsFor_ = lights_.size();
+    return tracedLights_;
+}
+
+void RenderContext::trace(const Polygon & poly, const Shading & state) {
+    if (poly.vertexCount() < 3) {
+        return;
+    }
+    const glm::mat4x4 & toWorld = transform_.open();
+    const glm::mat3 toWorldNormal = glm::transpose(glm::inverse(glm::mat3(toWorld)));
+    v3d::render::offline::sl::Placed surface;
+    surface.shader = state.surface;
+    surface.placement = glm::inverse(coordinateSystems_["camera"]) * state.placement;
+
+    // a fan, as talyn makes one, since RI says a polygon is planar and convex
+    const Vertex first = poly.vertex(0);
+    for (std::size_t i = 1; i + 1 < poly.vertexCount(); i++) {
+        const Vertex corners[3] = { first, poly.vertex(i), poly.vertex(i + 1) };
+        glm::vec3 points[3];
+        for (int k = 0; k < 3; k++) {
+            points[k] = glm::vec3(toWorld * glm::vec4(corners[k].point(), 1.0f));
+        }
+        const bool normals = corners[0].hasNormal() && corners[1].hasNormal() && corners[2].hasNormal();
+        v3d::render::offline::trace::Triangle triangle = normals ?
+            v3d::render::offline::trace::Triangle(points[0], points[1], points[2], color_,
+                glm::normalize(toWorldNormal * corners[0].normal()),
+                glm::normalize(toWorldNormal * corners[1].normal()),
+                glm::normalize(toWorldNormal * corners[2].normal())) :
+            v3d::render::offline::trace::Triangle(points[0], points[1], points[2], color_);
+        if (corners[0].hasTexCoord() && corners[1].hasTexCoord() && corners[2].hasTexCoord()) {
+            triangle.st(corners[0].st(), corners[1].st(), corners[2].st());
+        }
+        triangle.surface(surface);
+        triangle.opacity(state.opacity);
+        triangle.lights(tracedLights(state));
+        traced_.add(triangle, transform_);
+    }
+}
+
 void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     // if an output stream exists
     // echo RiPolygon RIB command to output stream
@@ -575,8 +637,10 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     // a primitive carries the state it was submitted under - see ReyesPrimitive::place().
     // A piece handed back by a split is already placed and keeps its parent's
     if (!poly->placed()) {
+        const Shading state = shading();
+        trace(*poly, state);
         poly->place(coordinateSystems_["camera"] * transform_.open(), color_, poly->geometricNormal(),
-            shading());
+            state);
         poly->motion(transform_.before(coordinateSystems_["camera"]));
     }
 

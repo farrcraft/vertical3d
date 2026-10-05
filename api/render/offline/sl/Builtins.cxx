@@ -141,7 +141,7 @@ std::vector<Signature> build() {
     table.push_back(declare("specularbrdf", Type::COLOR,
         { Argument::POINTLIKE, Argument::POINTLIKE, Argument::POINTLIKE, Argument::FLOAT }));
 
-    // what the renderer answers rather than the machine: a shadow, and the phase 6 hook
+    // what the renderer answers rather than the machine: a shadow, and a traced ray
     table.push_back(shading("transmission", Type::COLOR, { Argument::POINT, Argument::POINT }));
     table.push_back(shading("trace", Type::COLOR, { Argument::POINT, Argument::POINTLIKE }));
 

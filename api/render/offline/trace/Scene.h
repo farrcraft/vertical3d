@@ -225,6 +225,15 @@ class Scene final {
     v3d::type::camera::Camera & camera();
     const v3d::type::camera::Camera & camera() const;
 
+    /**
+     * The world to camera transformation a hit's "camera" space is, and where its E is.
+     * The camera's own until a renderer that does not cast its primary rays from it - moya,
+     * whose hider projects - names the one it sees through.
+     **/
+    void view(const glm::mat4x4 & toCamera);
+    glm::mat4x4 view() const;
+    glm::vec3 eye() const;
+
     void add(const Triangle & triangle);
     /**
      * A triangle placed by the open end of a transformation that may move. One that does
@@ -269,6 +278,8 @@ class Scene final {
 
  private:
     v3d::type::camera::Camera camera_;
+    bool viewNamed_ = false;
+    glm::mat4x4 view_ = glm::mat4x4(1.0f);
     /** The motion a primitive placed by this transformation is carried by, or -1. **/
     int motion(const v3d::render::offline::MovingTransform & placed);
 

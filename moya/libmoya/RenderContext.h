@@ -11,6 +11,7 @@
 #include <api/render/offline/Texture.h>
 #include <api/render/offline/rib/Declarations.h>
 #include <api/render/offline/sl/ShaderLibrary.h>
+#include <api/render/offline/trace/Scene.h>
 
 #include "Polygon.h"
 #include "FrameBuffer.h"
@@ -220,6 +221,13 @@ class RenderContext {
         GridShader & shader();
 
         /**
+            *	What a shader's trace() and transmission() are answered from, per
+            *	ADR-0077: every primitive the scene gave, in world space, as it was
+            *	given rather than as the hider split it.
+            */
+        v3d::render::offline::trace::Scene & traced();
+
+        /**
             *	maps to RiPolygon()
             *	polygon will be placed into a starting bucket when it is initially added
             */
@@ -270,6 +278,14 @@ class RenderContext {
         void initialize();
 
  private:
+        /**
+            *	Add a primitive the scene gave to the traced scene, as triangles placed by
+            *	the current transformation and shaded as the hider will shade it.
+            */
+        void trace(const Polygon & poly, const Shading & state);
+        /** The lights in a hider's state, placed in world space, as one shared set. **/
+        const v3d::render::offline::trace::Lights & tracedLights(const Shading & state);
+
         /*
             Every option carries the default the RI standard gives it. They are stated here
             rather than in a constructor initialiser list because there are two constructors
@@ -319,6 +335,11 @@ class RenderContext {
         v3d::render::offline::sl::InstancePtr surface_;
         glm::mat4x4 surfacePlacement_ = glm::mat4x4(1.0f);
         std::vector<std::string> lit_;
+        v3d::render::offline::trace::Scene traced_;
+        /** The lights that are on, in world space, and what that set was built from. **/
+        v3d::render::offline::trace::Lights tracedLights_;
+        std::vector<std::string> tracedFor_;
+        std::size_t tracedLightsFor_ = 0;
         v3d::render::offline::sl::InstancePtr imager_;
         boost::shared_ptr<FrameBuffer> frameBuffer_;
         boost::shared_ptr<Samples> samples_;

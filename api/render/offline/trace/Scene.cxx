@@ -303,6 +303,19 @@ const v3d::type::camera::Camera & Scene::camera() const {
     return camera_;
 }
 
+void Scene::view(const glm::mat4x4 & toCamera) {
+    view_ = toCamera;
+    viewNamed_ = true;
+}
+
+glm::mat4x4 Scene::view() const {
+    return viewNamed_ ? view_ : camera_.view();
+}
+
+glm::vec3 Scene::eye() const {
+    return viewNamed_ ? glm::vec3(glm::inverse(view_)[3]) : camera_.profile().eye();
+}
+
 int Scene::motion(const v3d::render::offline::MovingTransform & placed) {
     if (!placed.moving()) {
         return -1;

@@ -225,3 +225,27 @@ BOOST_AUTO_TEST_CASE(moya_a_light_is_placed_test) {
     */
     BOOST_CHECK_CLOSE(grid.vertex(0, 0).color().r, 0.25f, 1.0f);
 }
+
+/**
+ * A light's own space is the light's while it runs, not the surface's it is lighting: a
+ * light placed inside an attribute block the surface is outside of still lights from where
+ * the block put it.
+ **/
+BOOST_AUTO_TEST_CASE(moya_a_light_runs_in_its_own_space_test) {
+    v3d::moya::RenderContext rc;
+    prepare(&rc);
+    rc.attributeBegin();
+    rc.translate(0.0f, 0.0f, 3.0f);
+    rc.lightSource("pointlight", "bulb", ParameterList());
+    rc.attributeEnd();
+    // whether a light is on is an attribute, so the block's end switched it off again
+    rc.illuminate("bulb", true);
+    rc.surface("matte", ParameterList());
+
+    v3d::moya::MicroPolygonGrid grid = facing(glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(1.0f));
+    rc.shader().shade(rc.shading(), &grid);
+
+    // two units away as above; taking the surface's space for the light's would put the
+    // light at the origin, five units away
+    BOOST_CHECK_CLOSE(grid.vertex(0, 0).color().r, 0.25f, 1.0f);
+}

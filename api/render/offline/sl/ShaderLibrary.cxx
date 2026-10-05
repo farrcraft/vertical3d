@@ -33,7 +33,7 @@ namespace {
     Each of the three directional ones asks transmission() how much of its light arrives,
     which is where a shadow lives. A renderer that cannot answer lets all of it through, so
     this is the whole of the difference between a renderer that casts shadows and one that
-    does not - moya draws exactly what it drew before and talyn traces.
+    does not.
 
     shinymetal is RI's with trace() where RI reads an environment map, and glass is this
     tree's own: RI defines no refracting shader. glass is opaque, because it carries what is

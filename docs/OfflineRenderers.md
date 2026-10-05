@@ -219,15 +219,24 @@ rather than a tour.
   every primitive made until they change. A primitive given none, which is how a scene built in
   code is lit, is shaded by the scene's own list.
 - **`transmission()` is where a shadow lives**, and the three standard directional lights call
-  it. A renderer that cannot answer lets all the light through, so that one call is the whole
-  of the difference between moya, which draws what it drew before, and talyn, which traces. A
-  ray leaving a surface is offset along the geometric normal and toward the light: started on
+  it. Both renderers answer it from the shared ray tracer; one that cannot lets all the light
+  through, so that one call is the whole of the difference between a shadowed scene and an
+  unshadowed one. A ray leaving a surface is offset along the geometric normal and toward the light: started on
   the surface it meets the surface it left, and every lit pixel comes out black in a pattern
   that reads as a normal fault rather than a numerical one.
 - **`trace()` goes as deep as `Option "trace" "maxdepth"` says**, two by default, and past it
   answers the background. talyn keeps a machine per program per depth, because a surface
   tracing into another with the same shader is still part way through its run when the other
-  starts. moya does not answer `trace()`, and a ray it is asked for comes back black.
+  starts.
+- **moya traces through the shared scene**, per
+  [ADR-0077](adr/0077-one-ray-tracer-both-renderers-reach.md). Every primitive a scene gives is
+  added to it in world space as it arrives, before the hider splits it, and `GridShader` carries
+  a shading point's ray from camera space into world space, started off the grid's plane. A grid
+  is shaded once for all of its samples, so its rays look at the scene at the shutter's open. A
+  traced hit on a moya primitive takes the primitive's colour rather than a varying `"Cs"`.
+- **A light shader runs in its own space.** While a light runs, `"shader"` is the light's
+  placement rather than the surface's, which is what puts a `pointlight`'s default `from` where
+  the scene placed it.
 - **talyn composites what a ray passes through**, front to back by each surface's `Oi`, with
   the background behind what is left. A shader that never writes `Oi` is as opaque as its
   primitive's `Os`. A ray carrying on through a surface is not a traced ray and does not count

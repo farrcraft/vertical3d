@@ -24,10 +24,9 @@ namespace v3d::render::offline::sl::runtime {
  * reaches a point, and a ray traced - arrives through this, which moya and talyn each
  * implement.
  *
- * **Every method has an answer for a renderer that cannot do it**, because the two
- * renderers genuinely disagree: talyn traces a shadow ray and moya answers that light gets
- * through until it has a shadow map. Only the coordinate space is required, because a
- * renderer that cannot say where it is shading has nothing to shade.
+ * **Every method has an answer for a renderer that cannot do it**, so that a renderer, or a
+ * suite's stand-in for one, implements only what it can answer. Only the coordinate space is
+ * required, because a renderer that cannot say where it is shading has nothing to shade.
  **/
 class Renderer {
  public:
@@ -73,20 +72,16 @@ class Renderer {
     /**
      * How much of the light leaving one point arrives at the other, per component.
      *
-     * This is where a shadow lives, and it is the one thing the two renderers genuinely
-     * disagree about: talyn answers by tracing and moya answers that all of it gets through
-     * until it has a shadow map. A ray tracing extension rather than RI 3.03.
+     * This is where a shadow lives. Both renderers answer it from the shared ray tracer, per
+     * ADR-0077. A ray tracing extension rather than RI 3.03.
      *
      * @return whether the renderer answered; one that did not lets all the light through
      **/
     virtual bool transmission(const Value & from, const Value & to, Value* fraction);
 
     /**
-     * What a ray from a point in a direction comes back with - the phase 6 hook.
-     *
-     * talyn implements it. moya does not, so a shader tracing in moya gets the fallback's
-     * black. Its existence is what makes phase 6 a question anyone can answer; nothing here
-     * decides whether moya's raytracing is talyn.
+     * What a ray from a point in a direction comes back with, which both renderers answer
+     * from the shared ray tracer, per ADR-0077.
      *
      * @return whether the renderer traced it; one that did not answers black and says so
      **/

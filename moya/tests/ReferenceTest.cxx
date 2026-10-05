@@ -36,6 +36,9 @@ const char* SAMPLED = "data/reference-sampled.png";
 const char* SAMPLED_RENDERED = "data_out/reference-sampled.png";
 const char* SAMPLED_SCENE = "data/reference-sampled.rib";
 const char* SAMPLED_RIB_RENDERED = "data_out/reference-sampled-rib.png";
+const char* SHADOW = "data/reference-shadow.png";
+const char* SHADOW_SCENE = "data/reference-shadow.rib";
+const char* SHADOW_RIB_RENDERED = "data_out/reference-shadow-rib.png";
 
 const char* FOCUS = "data/reference-focus.png";
 const char* FOCUS_RENDERED = "data_out/reference-focus.png";
@@ -710,4 +713,40 @@ BOOST_AUTO_TEST_CASE(moya_textured_quad_test) {
     }
     // and outside the quad is the background
     BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::BLUE, 4, 4), 0.0f);
+}
+
+/**
+ * talyn's shaded scene, a plastic panel casting a shadow across a matte floor, in moya: the
+ * shadow is traced through the shared scene, per ADR-0077, and falls where talyn's does.
+ **/
+BOOST_AUTO_TEST_CASE(moya_shadow_reference_from_rib_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(reader.read(SHADOW_SCENE, &handler));
+    BOOST_CHECK_EQUAL(reader.error(), "");
+
+    boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
+    check(planes->image(v3d::moya::FrameBuffer::CHANNELS), SHADOW, SHADOW_RIB_RENDERED);
+
+    /*
+        And it agrees with talyn's reference-shaded.png away from the edges, where moya's
+        micropolygons are flat: the 8-bit values here are talyn's, in a shadow of both
+        lights, in the point light's shadow alone, lit by both, and the imager's background.
+        An edge moves by up to a micropolygon, so only the insides are pinned.
+    */
+    const struct { unsigned int column; unsigned int row; float rgb[3]; } talyn[] = {
+        { 40, 30, { 36.0f, 34.0f, 27.0f } },
+        { 24, 40, { 167.0f, 156.0f, 125.0f } },
+        { 56, 26, { 167.0f, 156.0f, 125.0f } },
+        { 8, 8, { 237.0f, 222.0f, 177.0f } },
+        { 2, 2, { 12.0f, 15.0f, 25.0f } }
+    };
+    for (const auto & pixel : talyn) {
+        for (unsigned int channel = 0; channel < 3; channel++) {
+            BOOST_CHECK_SMALL(planes->value(channel, pixel.column, pixel.row) - pixel.rgb[channel] / 255.0f,
+                1.5f / 255.0f);
+        }
+    }
 }

@@ -75,7 +75,7 @@ bool HitShader::space(const std::string & name, glm::mat4x4* matrix) {
         return true;
     }
     if (name == "camera" && scene_ != nullptr) {
-        *matrix = scene_->camera().view();
+        *matrix = scene_->view();
         return true;
     }
     // a raytracer has no screen or raster space to speak of: it does not project, it
@@ -133,13 +133,16 @@ bool HitShader::transmission(const Value & from, const Value & to, Value* fracti
     if (scene_ == nullptr || fraction == nullptr) {
         return false;
     }
-    const glm::vec3 source = from.triple(0);
-    const glm::vec3 target = to.triple(0);
-    const glm::vec3 along = target - source;
+    fraction->triple(0, transmitted(from.triple(0), to.triple(0),
+        hit_ == nullptr ? glm::vec3(0.0f) : hit_->geometric));
+    return true;
+}
+
+glm::vec3 HitShader::transmitted(const glm::vec3 & from, const glm::vec3 & to, const glm::vec3 & geometric) {
+    const glm::vec3 along = to - from;
     const float span = glm::length(along);
-    if (span <= 0.0f) {
-        fraction->triple(0, glm::vec3(1.0f));
-        return true;
+    if (scene_ == nullptr || span <= 0.0f) {
+        return glm::vec3(1.0f);
     }
 
     /*
@@ -148,12 +151,8 @@ bool HitShader::transmission(const Value & from, const Value & to, Value* fracti
         the side the light is on - a ray leaving the back of a surface would otherwise
         start inside it.
     */
-    glm::vec3 origin = source;
-    if (hit_ != nullptr) {
-        const float side = glm::dot(hit_->geometric, along) < 0.0f ? -1.0f : 1.0f;
-        origin += hit_->geometric * (side * EPSILON);
-    }
-    const v3d::type::geometry::Ray ray(origin, along / span);
+    const float side = glm::dot(geometric, along) < 0.0f ? -1.0f : 1.0f;
+    const v3d::type::geometry::Ray ray(from + geometric * (side * EPSILON), along / span);
 
     /*
         Everything between here and the light takes its share, and nothing beyond the light
@@ -171,8 +170,7 @@ bool HitShader::transmission(const Value & from, const Value & to, Value* fracti
         }
         past = blocker.distance;
     }
-    fraction->triple(0, through);
-    return true;
+    return through;
 }
 
 const v3d::render::offline::Texture* HitShader::texture(const std::string & name) {
@@ -187,35 +185,34 @@ bool HitShader::trace(const Value & origin, const Value & direction, Value* colo
     if (scene_ == nullptr || colour == nullptr) {
         return false;
     }
-    if (depth_ >= scene_->traceDepth()) {
-        // a ray past the scene's depth answers the background, which is what bounds the
-        // recursion
-        colour->triple(0, scene_->background());
-        return true;
+    colour->triple(0, traced(origin.triple(0), direction.triple(0),
+        hit_ == nullptr ? glm::vec3(0.0f) : hit_->geometric));
+    return true;
+}
+
+glm::vec3 HitShader::traced(const glm::vec3 & origin, const glm::vec3 & direction, const glm::vec3 & geometric) {
+    if (scene_ == nullptr) {
+        return glm::vec3(0.0f);
     }
-    const glm::vec3 along = direction.triple(0);
-    const float span = glm::length(along);
-    if (span <= 0.0f) {
-        colour->triple(0, scene_->background());
-        return true;
+    const float span = glm::length(direction);
+    // a ray past the scene's depth answers the background, which is what bounds the
+    // recursion
+    if (depth_ >= scene_->traceDepth() || span <= 0.0f) {
+        return scene_->background();
     }
-    glm::vec3 start = origin.triple(0);
-    if (hit_ != nullptr) {
-        const float side = glm::dot(hit_->geometric, along) < 0.0f ? -1.0f : 1.0f;
-        start += hit_->geometric * (side * EPSILON);
-    }
+    const float side = glm::dot(geometric, direction) < 0.0f ? -1.0f : 1.0f;
+    const glm::vec3 start = origin + geometric * (side * EPSILON);
 
     // shade() leaves both of these as the traced surface had them, and the shader that
     // traced is still running and reads them again
     const Hit* was = hit_;
     const glm::mat4x4 placed = placement_;
     depth_++;
-    const Seen seen = see(v3d::type::geometry::Ray(start, along / span));
+    const Seen seen = see(v3d::type::geometry::Ray(start, direction / span));
     depth_--;
     hit_ = was;
     placement_ = placed;
-    colour->triple(0, seen.colour);
-    return true;
+    return seen.colour;
 }
 
 HitShader::Seen HitShader::see(const v3d::type::geometry::Ray & ray) {
@@ -279,7 +276,7 @@ glm::vec3 HitShader::shade(const Hit & hit, glm::vec3* opacity) {
     put(&held.machine, program.symbol("Ng"), hit.geometric);
     put(&held.machine, program.symbol("I"), hit.incident);
     put(&held.machine, program.symbol("E"),
-        scene_ == nullptr ? glm::vec3(0.0f) : scene_->camera().profile().eye());
+        scene_ == nullptr ? glm::vec3(0.0f) : scene_->eye());
     put(&held.machine, program.symbol("Cs"), primitive.colour());
     put(&held.machine, program.symbol("Os"), primitive.opacity());
     put(&held.machine, program.symbol("Oi"), primitive.opacity());

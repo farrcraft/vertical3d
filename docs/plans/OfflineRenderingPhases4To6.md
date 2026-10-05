@@ -117,7 +117,7 @@ distant light's shadow ray of fixed length; and the C array helper still in moya
 | [13](#step-13--texture-and-noise) | `texture()` from an image, and `noise()` | `api/render/offline`, `moya`, `talyn` | — | done |
 | [14](#step-14--the-record-one-ray-tracer-both-renderers-reach) | The record: one ray tracer both renderers reach | `docs/adr` | **0077** | done, accepted |
 | [15](#step-15--the-ray-tracer-moves-into-the-shared-library) | talyn's scene and hit shading move into the shared library | `api/render/offline`, `talyn` | 0077 | done |
-| [16](#step-16--moya-traces) | moya traces: shadows and `trace()` | `moya` | 0077 | not started |
+| [16](#step-16--moya-traces) | moya traces: shadows and `trace()` | `moya` | 0077 | done |
 | [17](#step-17--held-area-lights-displacement-and-acceleration) | Area lights, displacement and bump, and an acceleration structure | — | — | held |
 
 Steps 1 and 2 depend on nothing. Step 4 needs step 3. Step 5 needs steps 2 and 4. Step 7 needs
@@ -573,6 +573,26 @@ It is regenerated in this step and looked at before it is committed.
 * a `shinymetal` grid in moya reflects a red quad;
 * the fallback cases in `SlLightingTest` still pin black and fully lit for a renderer that answers
   neither.
+
+**Landed, and the prediction was wrong twice.** moya's shaded scene has no occluder - two quads
+side by side in one plane - so tracing alone changed nothing in it. What changed it is a fault
+the step found on the way: **a light shader in moya ran in the surface's space**, so a
+`pointlight` placed by a `Translate` took its default `from` at the surface's origin, and
+moya's point lights had never been where their scenes put them. `GridShader` now swaps in the
+light's placement while it runs, as talyn's hit shader does. moya's shaded and sampled
+references were regenerated for that and looked at: the orange quad was lit almost flat and is
+now brightest toward the point light at its upper left, as the scene's comment says it should
+be, and the blue quad's gradient steepens the same way. `moya_a_light_runs_in_its_own_space_test`
+pins it, and reads a twenty fifth rather than a quarter without the fix.
+
+The shadow is pinned by **`reference-shadow.rib`, talyn's shaded scene**, in moya: a plastic
+panel over a matte floor under three lights. moya's picture is `reference-shadow.png`, and five
+pixels inside its regions - shadowed from both lights, from the point light alone, lit, and
+background - match talyn's reference-shaded.png to within a step. Edges move by up to a
+micropolygon, since moya colours one flat. A `shinymetal` mirror tilted under a red quad above
+the frame shows the quad. The tracer gained world-space `transmitted()` and `traced()` for a
+caller whose shading point is not a hit, and `trace::Scene` a named view, so a traced hit's
+`"camera"` space and `E` are moya's camera rather than the scene's own.
 
 ### Step 17 — Held: area lights, displacement, and acceleration
 

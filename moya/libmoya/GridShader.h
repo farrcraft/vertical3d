@@ -8,6 +8,7 @@
 #include <api/render/offline/Texture.h>
 #include <api/render/offline/sl/runtime/Machine.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
+#include <api/render/offline/trace/HitShader.h>
 
 #include <map>
 #include <string>
@@ -58,6 +59,16 @@ class GridShader final : public v3d::render::offline::sl::runtime::Renderer {
         v3d::render::offline::sl::runtime::Value* colour,
         std::vector<char>* reached, bool* ambient) override;
     const v3d::render::offline::Texture* texture(const std::string & name) override;
+    /**
+     * Both from the traced scene, per ADR-0077, at the shutter's open: a grid is shaded
+     * once for all of its samples, so it has no one time of its own to trace at.
+     **/
+    bool transmission(const v3d::render::offline::sl::runtime::Value & from,
+        const v3d::render::offline::sl::runtime::Value & to,
+        v3d::render::offline::sl::runtime::Value* fraction) override;
+    bool trace(const v3d::render::offline::sl::runtime::Value & origin,
+        const v3d::render::offline::sl::runtime::Value & direction,
+        v3d::render::offline::sl::runtime::Value* colour) override;
 
  private:
     /**
@@ -81,8 +92,18 @@ class GridShader final : public v3d::render::offline::sl::runtime::Renderer {
     RenderContext* context_;
     /** What is being shaded, for the space table and for the lights. **/
     const Shading* shading_ = nullptr;
+    /**
+     * The shader being run's own space: the surface's, and a light's while that light runs,
+     * which is what puts a light's `point "shader" (0, 0, 0)` where the scene placed it.
+     **/
+    glm::mat4x4 placement_ = glm::mat4x4(1.0f);
     unsigned int batch_ = 1;
     std::map<const v3d::render::offline::sl::runtime::Program*, Run> runs_;
+    /** What casts the rays, into the context's traced scene. **/
+    v3d::render::offline::trace::HitShader tracer_;
+    /** Camera space to world space, and each shading point's Ng in world space. **/
+    glm::mat4x4 toWorld_ = glm::mat4x4(1.0f);
+    std::vector<glm::vec3> planes_;
 };
 
 };  // namespace v3d::moya
