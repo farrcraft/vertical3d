@@ -117,16 +117,18 @@ The records are load-bearing and easy to break without noticing:
 
 From `docs/sdlc.md`:
 
-- **A significant technical choice with no ADR.** Significant means hard to reverse,
-  constrains later phases, or a future reader would ask "why on earth is it done this way".
-  If the diff makes such a choice and `docs/adr/` did not move, that is a finding.
-- **A decision restated rather than linked.** `docs/adr/` is the only home; a plan or a
-  comment that re-argues a recorded decision will eventually disagree with it. A comment
-  citing "per ADR-00NN" and then summarising it is the same finding.
+- **A significant technical choice with no ADR.** A choice qualifies when there was a real
+  alternative, it is hard to reverse or constrains other code, and its reasons cannot be read
+  from the code. If the diff makes such a choice and `docs/adr/` did not move, that is a
+  finding. A bug fix or one class's behaviour is not such a choice.
+- **A comment that cites an ADR, a document, a plan or a milestone.** A comment states the
+  rule itself. "per ADR-00NN" is a finding whether or not the sentence makes sense without it.
 - **A comment carrying something that will expire.** Provenance from a deleted tree
-  (`rigel/`, `v3dlibs/`, `luxa/`, `vault/`), the history of what the code used to be, or a
-  roadmap for a later phase. Keep the rule, drop the attribution. See the comment convention
-  in `docs/Conventions.md`.
+  (`rigel/`, `v3dlibs/`, `luxa/`, `vault/`), another repository, the history of what the code
+  used to be, or a roadmap for a later phase. See `docs/Conventions.md#writing`.
+- **A comment written in the house's old register.** Aphorisms, "X, which is what Y",
+  personified code ("wants", "owes", "knows"), sentences past about 35 words. Quote the
+  sentence and offer the plain version.
 - **A change that moved a workstream without updating the plan's state notes**, or changed
   the architecture, the build or a convention without updating the document that owns it -
   `docs/README.md` says which that is.

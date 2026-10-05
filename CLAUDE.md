@@ -68,22 +68,22 @@ what has to be installed first. The tree is clean at cpplint, at `/W4` with `/WX
   An app names the `v3dlib_*` targets it uses and nothing else. There is no OpenGL in the tree,
   and glm and EnTT have to be linked rather than assumed.
   [docs/Build.md](docs/Build.md#linking-rules).
-- **Simulation goes in `simulate(float step)`, not `tick(unsigned int delta)`.** Both are
-  called from the loop ([ADR-0032](docs/adr/0032-the-loop-simulates-at-a-fixed-step.md)) and
-  nothing enforces the split, so simulation left in `tick()` is frame-rate dependent and
-  compiles. `tick` is milliseconds, `simulate` is seconds.
-  [docs/Architecture.md](docs/Architecture.md) has the rest of the loop.
-- **An app's startup is `start()` and its teardown is `release()`**, both called by the engine
-  in its own order ([ADR-0080](docs/adr/0080-the-engine-owns-its-lifecycle.md)). Whatever
-  presents to the window, a renderer above all, is released in `release()`. A quit command
-  calls `Engine::quit()`; `shutdown()` is `run<T>`'s alone and an app cannot reach it.
-- **The shell around a game belongs to the api**
-  ([ADR-0028](docs/adr/0028-an-apps-shell-belongs-to-the-api.md)). An app that writes its own
-  `main`, menu, text renderer or minimize check has diverged rather than customised.
-- **Comments explain the code, not the change.** No history, no ADR summaries, no roadmap for a
-  later phase. [docs/Conventions.md](docs/Conventions.md#comments) has the three habits that
-  keep reappearing, and is worth re-reading against the comments a change added.
-- **Cite an ADR rather than restating it**, in code and in documents alike.
+- **Simulation goes in `simulate(float step)`, not `tick(unsigned int delta)`.** The loop calls
+  both. Nothing enforces the split, so simulation left in `tick()` compiles and then runs at a
+  speed that depends on the frame rate. `tick` takes milliseconds and `simulate` takes seconds.
+  [docs/api/Engine.md](docs/api/Engine.md) has the rest of the loop.
+- **An app starts up in `start()` and tears down in `release()`.** The engine calls both, in an
+  order it controls. Anything that presents to the window, a renderer above all, is released
+  in `release()`. A quit command calls `Engine::quit()`. Only `run<T>` calls `shutdown()`, and an
+  app cannot reach it.
+- **The shell around a game belongs to the api.** `main`, the game menu, the text renderer and
+  the minimized-window check are all provided. An app that writes its own has diverged from the
+  others rather than customised them.
+- **Comments and documents stand on their own.** A comment states the rule; it never cites an
+  ADR, a document or a plan. A reference document states the rule in full, and may add an ADR
+  only as a `Background:` link. Write plainly: short sentences, no aphorisms, no history.
+  [docs/contributing/Conventions.md](docs/contributing/Conventions.md#writing) has the rules,
+  and is worth re-reading against the comments a change added.
 
 ## Style in one screen
 
