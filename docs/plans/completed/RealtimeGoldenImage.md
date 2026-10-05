@@ -14,7 +14,7 @@ not be had, measured rather than argued.
 
 [ADR-0007](../../adr/0007-ci-render-tests-on-software-vulkan.md) chose validation silence over pixels and deferred
 golden images in its fifth alternative rather than rejecting them.
-[ADR-0050](../../adr/0050-a-frame-is-read-back-in-two-calls.md) built the half that was missing and
+ADR-0050 (removed) built the half that was missing and
 said outright that ADR-0007 stands until something blesses a reference. Nothing has.
 
 What that leaves uncovered is named in [TODO.md](../../TODO.md): the renderers themselves, the
@@ -156,3 +156,39 @@ What landed pins that instead: a picture per submission order, and a direct asse
 two differ. A pipeline that wrote depth would make them one picture, which is the regression the
 case now fails on. The other half of ADR-0042 — the solid geometry that does occlude a quad — is
 not drawn, because nothing in this tree writes depth; it needs a consumer's own pipeline.
+
+## Outcome
+
+Drafted and closed on 2026-09-12, from what [RenderTestsInCI](RenderTestsInCI.md) left
+behind. Its five steps pinned what the device suite draws to committed pictures. The rule is
+that a reference image may hold only what the Vulkan specification determines pixel for pixel
+([ADR-0054](../../adr/0054-testing-golden-images-hold-only-spec-exact-output.md)). That rule
+answers the objection in [ADR-0007](../../adr/0007-ci-render-tests-on-software-vulkan.md) that a
+golden image is one rasterizer's output and says nothing about another's. Four pictures are
+pinned, and every one is byte-exact on a Radeon and on the CI runner's lavapipe.
+
+The ordering was built around a claim the authoring machine cannot test. There is one GPU on it,
+the second implementation is the runner's, and CI runs on a pull request rather than on a
+branch. So the first picture was a probe, the simplest one the suite could draw, and the rest
+waited on what CI reported about it. That shape is worth reusing for anything else compared
+against a reference here: take one artefact through the whole loop before taking four.
+
+Three things came out differently from the plan:
+
+- **Step 5's text contradicted the ADR it cited.** It said two overlapping world quads should
+  give the same picture in either submission order. But
+  [ADR-0042](../../adr/0042-rendering-world-space-sprites.md) says the caller supplies the order,
+  and the depth-tested pipeline tests depth without writing it, so one quad never occludes
+  another. The drafted assertion would have failed a correct renderer, and on its first run it
+  did. What landed pins one picture per order and asserts that the two differ. A pipeline that
+  started writing depth would fail that assertion.
+- **ADR-0054 had to be amended before step 4 could be written.** It required nearest filtering,
+  but every sampler in the tree is `VK_FILTER_LINEAR` and nothing can ask for another. As
+  written, the rule admitted no textured picture. It now states the principle stage by stage: no
+  partially covered pixel, a texel returned unchanged at one texel per pixel, and a blend that is
+  the identity. That also covers the quad pipeline's blend, which is exact for an opaque source.
+  The first probe picture had been accepted under wording that excluded it.
+- **The one failed CI run was not caused by a picture.** The step that re-runs the suite to turn
+  a skip into a failure ran the executable from the workspace root rather than from its own
+  directory. The reference path resolved to nothing, while ctest in the same job passed the case.
+  Nothing in that suite had read a file before, so no earlier run could have caught it.

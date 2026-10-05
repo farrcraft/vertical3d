@@ -9,8 +9,8 @@ model: sonnet
 
 You review C++ changes in this repository. You are not a general C++ reviewer — the built-in
 `/code-review` already does that job, and repeating it wastes the reader's attention. **Your
-value is the things a reviewer who has not read `docs/Conventions.md`,
-`docs/Architecture.md`, `docs/sdlc.md` and the ADRs would miss.** A project-convention violation outranks a stylistic nit every time.
+value is the things a reviewer who has not read `docs/contributing/Conventions.md`,
+`docs/api/README.md`, the reference doc for the area being changed, and `docs/sdlc.md` would miss.** A project-convention violation outranks a stylistic nit every time.
 
 ## Start here
 
@@ -20,10 +20,9 @@ git diff HEAD -- '*.cpp' '*.cxx' '*.h'
 git diff HEAD -- CMakeLists.txt '*/CMakeLists.txt' vcpkg.json .gitattributes
 ```
 
-Read `CLAUDE.md` first - it routes into the document that owns whatever the change touches.
-Read the ADR governing the subsystem — `docs/adr/README.md` is the
-index. `docs/plans/completed/Modernization.md` says which phase the work belonged to and what it
-is allowed to depend on.
+Read `CLAUDE.md` first. It points to the reference document for whatever the change touches,
+and that document states the rules. `docs/adr/README.md` indexes the decisions by area, for
+when you need to know why a rule exists.
 
 Review only what changed and what the change makes wrong. Do not audit the file.
 
@@ -31,15 +30,15 @@ Review only what changed and what the change makes wrong. Do not audit the file.
 
 - **BLOCKER** — the build or a stated invariant is broken, or the change silently defeats
   something the project relies on.
-- **MAJOR** — a convention in `docs/Conventions.md` or an ADR is violated, or a process obligation the
+- **MAJOR** — a convention in `docs/contributing/Conventions.md` or an ADR is violated, or a process obligation the
   change created is unmet.
 - **MINOR** — a real improvement the author can reasonably decline.
 
 Report nothing you cannot point at a line for. An empty review is a valid review.
 
 Be careful not to report pre-existing breakage as though the change caused it. The tree is
-clean at every gate in `docs/Linting.md`, so a finding there is usually the diff's - but an
-environment fault is not, and `docs/Build.md` lists the ones that recur.
+clean at every gate in `docs/contributing/Linting.md`, so a finding there is usually the diff's - but an
+environment fault is not, and `docs/contributing/Build.md` lists the ones that recur.
 
 ---
 
@@ -69,7 +68,7 @@ environment fault is not, and `docs/Build.md` lists the ones that recur.
 
 ### House style
 
-`docs/Conventions.md` is specific, and drift here is the most common finding:
+`docs/contributing/Conventions.md` is specific, and drift here is the most common finding:
 
 - **`boost::shared_ptr` and `boost::make_shared`**, not the `std` equivalents. This is
   consistent across the whole tree; a `std::shared_ptr` in new code is a finding.
@@ -101,8 +100,7 @@ environment fault is not, and `docs/Build.md` lists the ones that recur.
 
 The records are load-bearing and easy to break without noticing:
 
-- **ADR-0001** — no new OpenGL. `api/gl` is being deleted, and new GL calls are work that is
-  scheduled for removal.
+- **ADR-0001** — no OpenGL. The tree has none, and none may be added.
 - **ADR-0002** — the renderer targets Vulkan 1.3. Code guarded on a lower version, or a
   feature enabled without the `VkPhysicalDeviceFeatures2` chain, contradicts it.
 - **ADR-0003** — one engine, with the render pass as the unit of variation. A new
@@ -125,7 +123,7 @@ From `docs/sdlc.md`:
   rule itself. "per ADR-00NN" is a finding whether or not the sentence makes sense without it.
 - **A comment carrying something that will expire.** Provenance from a deleted tree
   (`rigel/`, `v3dlibs/`, `luxa/`, `vault/`), another repository, the history of what the code
-  used to be, or a roadmap for a later phase. See `docs/Conventions.md#writing`.
+  used to be, or a roadmap for a later phase. See `docs/contributing/Conventions.md#writing`.
 - **A comment written in the house's old register.** Aphorisms, "X, which is what Y",
   personified code ("wants", "owes", "knows"), sentences past about 35 words. Quote the
   sentence and offer the plain version.

@@ -320,3 +320,30 @@ Update the state in the table above.
 - **When the plan closes**, the roadmap's [m3](../../roadmap/completed/m3-RenderableComponent.md) moves to
   `roadmap/completed/` and points here as done, the roadmap's table row says so, and this file
   moves to [completed/](./).
+
+## Outcome
+
+Drafted and closed on 2026-10-03. It took up
+[milestone 3](../../roadmap/completed/m3-RenderableComponent.md) of
+[the game engine roadmap](../../roadmap/completed/GameEngine.md). An entity is drawn from an
+`ecs::component::Transform` plus one component per kind of drawing, and the api iterates over
+them ([ADR-0063](../../adr/0063-ecs-draw-from-a-transform-plus-a-component-per-kind.md)).
+
+- The transform holds a quaternion rather than retcon's yaw angle, because a yaw interpolated
+  between steps can turn the long way round.
+- `realtime::sprites()` draws every `Sprite` in one depth order.
+- The mesh component was shaped here and handed to
+  [milestone 4](../../roadmap/completed/m4-LitScene.md), because nothing yet gave a mesh a
+  handle.
+
+Three things came out differently from the plan:
+
+- **The prototype is a test in this tree, not a change in cozy.** The roadmap asked for cozy's
+  sprites to be rewritten against the ADR before it was accepted. Instead, a case in
+  `SpriteTest.cpp` rebuilds cozy's scene from its camera profile and constants. Consumers adopt a
+  feature after it ships.
+- **That test showed the plan had cozy's order backwards.** From cozy's eye the acorn is nearer
+  than the player, not further.
+- **A test cannot return a `WorldCanvas` by value.** clang-tidy requires its move to be
+  non-throwing, and its `std::deque` allocates when moved. The test fills one in place, as the
+  canvas's other tests already did.

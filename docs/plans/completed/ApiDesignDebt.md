@@ -20,13 +20,13 @@ Recorded in [adr/](../../adr/), not here. Numbers are the next free ones at the 
 |---|---|---|
 | **0079** | An asset loader is registered, and a media loader lives with its payload — revisits the consequence of ADR-0021 that the mixer rides along on everything linking `v3dlib_asset` | 11 |
 | **0080** | The engine owns its lifecycle: `shutdown()` is not virtual, and an app supplies hooks | 14 |
-| **0081** | A key and a command are different events — amends [ADR-0017](../../adr/0017-a-command-is-a-name-in-a-context.md), which recorded the single type's cost as a consequence, not a decision | 17 |
+| **0081** | A key and a command are different events — amends ADR-0017 (removed), which recorded the single type's cost as a consequence, not a decision | 17 |
 | **0082** | Textures and materials belong to the device context, not to the 2D renderer — amends [0042](../../adr/0042-rendering-world-space-sprites.md) and [0065](../../adr/0065-meshes-shared-registry-keyed-by-path.md), whose reasoning (one shared set 1 pool) is kept | 23 |
 | [0013](../../adr/0013-editor-a-mesh-is-a-dag-node.md) | **Corrected** by steps 3 and 6: a copy does not get a new id today, and the dag skeletons it declined to grow are deleted |
 | [0021](../../adr/0021-audio-use-sdl3-mixer.md) | **Restored** by step 10: audio stops depending on asset, which is what its decision already says |
 | [0030](../../adr/0030-models-one-interleaved-array.md) | **Corrected** by step 12: either `Manager` caches or the Pro that says it does is struck |
 | [0047](../../adr/0047-code-exhaustive-enum-switches.md) | **Corrected** by step 20: the compiler names every place only once the predicates are a switch too |
-| [0056](../../adr/0056-a-look-at-keeps-the-basis-it-built.md) | Enforcement **replaced** by step 1: one setter clears the cache, rather than every writer remembering to |
+| 0056 (removed) | Enforcement **replaced** by step 1: one setter clears the cache, rather than every writer remembering to |
 | [0059](../../adr/0059-ui-enabled-is-an-inherited-flag.md) | **Extended** by step 21 to strip buttons and menu items |
 
 Whether step 18 (an engine without Vulkan) and step 22 (one keyboard model for the menu) earn an
@@ -706,3 +706,21 @@ Both are answered.
   brep concern.
 - **The reyes hider does not honour `Oi`.** Step 26 documented the difference between the hiders,
   and TODO.md holds compositing by coverage in `Bucket`.
+
+## Outcome
+
+Drafted on 2026-10-04 and closed on 2026-10-05. It worked through
+[the api/ design review](../../audits/completed/ApiDesignReview.md) in this order:
+
+- the twelve defects;
+- the dependency cycle between `api/asset` and `api/audio`, and link visibility;
+- the engine owning the startup and shutdown order
+  ([ADR-0080](../../adr/0080-apps-the-engine-owns-startup-and-shutdown-order.md));
+- key events and commands as two separate events
+  ([ADR-0081](../../adr/0081-input-key-events-and-commands-are-separate.md));
+- textures owned by the device context
+  ([ADR-0082](../../adr/0082-textures-owned-by-the-device-context.md));
+- one implementation for each rule the review found written by hand in several places: one ui
+  traversal, one set of shading globals, one geometry ring reset and one transform value.
+
+The reyes hider's handling of opacity went to [TODO.md](../../TODO.md#offline-rendering).

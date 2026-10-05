@@ -26,7 +26,7 @@ Write an ADR only when **all three** hold:
 
 - a bug fix, even an interesting one (that goes in the commit message)
 - the behaviour of one class or one widget (that goes in its header)
-- a naming or file-layout choice (that goes in `docs/Conventions.md`, if anywhere)
+- a naming or file-layout choice (that goes in `docs/contributing/Conventions.md`, if anywhere)
 - reference material such as a list of fields, a formula or a table of behaviours (that goes in
   the reference doc)
 
@@ -58,7 +58,7 @@ Copy [`docs/adr/template.md`](../../../docs/adr/template.md). Do not invent a va
 `0032-loop-fixed-step-simulation-variable-rate-rendering.md`.
 
 **Header.** `Status` is one of proposed, accepted, amended or superseded. The header also
-carries `Date`, `Amends`, `Amended by`, `Superseded by` and `Documented in`. Omit any link line
+carries `Date`, `Amends`, `Amended by`, `Supersedes`, `Superseded by` and `Documented in`. Omit any link line
 that has nothing to link.
 
 **Context.** Five sentences at most, in the present tense. Give the constraints and forces that

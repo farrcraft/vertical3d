@@ -95,7 +95,7 @@ through the current transformation and builds the camera at `WorldBegin`.
 holds an eye and a rotation, and `Camera::createView()` composes them, so a world to camera
 matrix that reverses handedness — which is what RI's camera basis is for any general lookat —
 cannot be expressed. Such a scene is refused with a message rather than rendered mirrored. It
-is the shape [ADR-0024](../../adr/0024-api-type-serves-both-renderers.md) anticipated and the
+is the shape ADR-0024 (removed) anticipated and the
 first thing that would make it concrete.
 
 [`RenderContext::render`](../../../talyn/libtalyn/RenderContext.cxx) casts a primary ray through
@@ -126,7 +126,7 @@ Neither renderer needs to write intersection maths or camera maths from scratch.
   are inverses ([ADR-0012](../../adr/0012-camera-projection-targets-vulkan-clip-space.md)), so a primary ray
   through a pixel is an unproject and a subtract. It builds *Vulkan* clip space, which an
   offline renderer has no reason to want; by
-  [ADR-0024](../../adr/0024-api-type-serves-both-renderers.md) that convention becomes a parameter
+  ADR-0024 (removed) that convention becomes a parameter
   rather than a reason for a second camera.
 * **`api/image`** reads and writes bmp, jpeg, png and tga, and `Image` row 0 is the top of the
   picture, which is what both framebuffers assume.
@@ -305,7 +305,7 @@ reasoning; these are pointers, not summaries.
   [ADR-0023](../../adr/0023-offline-rib-is-the-scene-format.md).
 * **Whether the offline renderers use `api/type`** — yes, and a convention only one renderer
   needs becomes a parameter of the type rather than a second copy of it, starting with the clip
-  space `Camera` builds: [ADR-0024](../../adr/0024-api-type-serves-both-renderers.md), which
+  space `Camera` builds: ADR-0024 (removed), which
   narrows [ADR-0012](../../adr/0012-camera-projection-targets-vulkan-clip-space.md) without reversing it.
 * **Fixed-function shading or a shading language** — a language, a subset of SL compiled at
   runtime, run by a machine that operates over a batch of shading points so that moya's grid and

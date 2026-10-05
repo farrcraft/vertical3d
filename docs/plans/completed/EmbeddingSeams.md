@@ -183,7 +183,7 @@ argument arrives.
 ### Step 3 — `TextRenderer` takes its atlas upload as a seam
 
 [`ui::TextRenderer`](../../../api/ui/TextRenderer.h) is the reference implementation of the
-`Measure`/`Write` pair, and by [ADR-0019](../../adr/0019-the-ui-is-laid-out-by-what-draws-it.md) that pair names no font type so that
+`Measure`/`Write` pair, and by ADR-0019 (removed) that pair names no font type so that
 drawing a ui costs no device. Every part of the class holds to that — `font::TextureFontCache`
 packs into a CPU `image::TextureAtlas`, `font::TextureTextBuffer` lays a string out,
 `Canvas::text()` copies the result into the stream — and then the constructor takes a
@@ -431,7 +431,28 @@ verified by the four apps still drawing text. Step 7 is the render-verification 
 
 Update the state note in the table above, set the ADR's status if the step carried one, and for
 step 7 delete [TODO.md](../../TODO.md)'s depth-target line rather than marking it done. Steps 1, 3
-and 7 each move something a document owns: [Architecture.md](../../Architecture.md) for the loop's
+and 7 each move something a document owns: [Engine.md](../../api/Engine.md) for the loop's
 new seam, [UserInterface.md](../../api/UserInterface.md) for `TextRenderer`'s constructor and
 `Immediate`'s two additions, and
 [RenderingPipeline.md](../../api/Rendering.md) for a target whose depth can be read.
+
+## Outcome
+
+Drafted and closed on 2026-09-07. Its seven steps covered the places where an `api/` library
+assumed its host app was one of the four in this tree:
+
+- a loop that gave an app no access to its own events
+  ([ADR-0043](../../adr/0043-input-apps-see-raw-events-before-bindings.md));
+- a text renderer that was device-free in every line but one;
+- an immediate-mode layer that could not be asked whether it wanted the cursor;
+- an image reader that could only read from a path;
+- a depth target that was written but could not be sampled (ADR-0044, removed).
+
+The ordering mattered because only the event change blocked anything. A different step was the
+only one whose cost was growing, because a copy of `ui::TextRenderer` existed downstream for
+the sake of a single line. Two entries the list was drafted from had already closed in
+[GameFoundations](GameFoundations.md) before it was written.
+
+[What came out differently](#what-came-out-differently) records the deviations from the plan.
+One more: step 7 has no headless test case. `chooseFormat` queries a physical device for format
+properties, so it needs a device like everything else below the recorder.

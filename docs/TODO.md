@@ -1,171 +1,295 @@
 # TODO
 
-Loose ends and open work: what is missing or unfinished and is not covered by an open plan in
-[plans/](plans/). An entry is deleted when it is done rather than marked, so everything here is
-live.
+This file lists open work that no open plan in [plans/](plans/) covers. It is for anyone looking
+for something to pick up.
 
-**Missing or unfinished is the whole test, and it is narrower than it reads.** A feature that is
-complete and that nothing here happens to call is not missing anything, and a choice that was
-weighed and rejected is not unfinished: the first belongs in the document that owns the subject
-and the second in the ADR that settled it. Neither is work, and a list carrying them is one
-where nothing on it is actually due.
+An entry is something **missing or unfinished** in the code. When an entry is done, delete it.
+Do not tick it or mark it done. Everything here is open.
 
-An entry states the gap in the code, not who is waiting on it. The api is consumed as source
-([ADR-0027](adr/0027-build-consume-the-api-as-source.md)) and most of what consumes it is not in
-this tree - cozy and retcon are both apps on it in another repository - so what the apps here
-happen to use is evidence about this tree and nothing else. Where an entry names a consumer it
-is because the usage explains the gap, and "nothing in this tree" is the strongest claim any of
-them can make.
+Two kinds of item do not belong here:
+
+- **A finished feature that nothing calls yet.** It is not missing anything. Describe it in the
+  document that owns the subject.
+- **An option that was considered and rejected.** It is not unfinished. Record it in the ADR
+  that made the decision.
+
+Each entry states the gap in the code, not who is waiting for it. An entry may name a trigger:
+the condition that makes the work due.
 
 ## The clang-tidy backlog
 
-[.clang-tidy](../.clang-tidy) enables bugprone, performance, misc and readability and subtracts
-20 checks by name. The tree is clean at the 186 that are left. Seven of the subtractions are
-settled rather than pending and are not listed here - the file says why. The rest are this
-table: what the tree reports at that check, counted once per distinct site over a full
-`-DV3D_CLANG_TIDY=ON` build. Removing a line means fixing what it reports, never widening the
-exclusion. `voxel/src/noise` is not counted - it is vendored verbatim and is skipped by
-clang-tidy, `/analyze` and cpplint alike.
+[.clang-tidy](../.clang-tidy) enables the bugprone, performance, misc and readability families
+and disables 20 checks by name. The tree is clean at the 186 checks left enabled.
 
-| Check | Sites | Note |
-|---|---|---|
-| `readability-implicit-bool-conversion` | 69 |  |
-| `bugprone-narrowing-conversions` | 111 |  |
-| `readability-braces-around-statements` | 111 |  |
-| `readability-math-missing-parentheses` | 131 |  |
-| `bugprone-easily-swappable-parameters` | 233 |  |
-| `performance-enum-size` | 303 |  |
-| `misc-use-internal-linkage` | 526 |  |
-| `misc-const-correctness` | 939 |  |
-| `misc-non-private-member-variables-in-classes` | 1303 |  |
-| `readability-magic-numbers` | 1883 |  |
-| `readability-identifier-length` | 2483 |  |
-| `misc-include-cleaner` | 3346 |  |
-| `readability-uppercase-literal-suffix` | 4156 |  |
+Seven of the disabled checks are disabled for good, and `.clang-tidy` says why; they are not
+listed here. The other thirteen are in the table below, with the number of distinct sites each
+reports over a full `-DV3D_CLANG_TIDY=ON` build.
+
+- To remove a row, fix every site it reports. Never widen an exclusion instead.
+- `voxel/src/noise` is not counted. It is vendored code, kept unchanged, and is skipped by
+  clang-tidy, `/analyze` and cpplint.
+
+| Check | Sites |
+|---|---|
+| `readability-implicit-bool-conversion` | 69 |
+| `bugprone-narrowing-conversions` | 111 |
+| `readability-braces-around-statements` | 111 |
+| `readability-math-missing-parentheses` | 131 |
+| `bugprone-easily-swappable-parameters` | 233 |
+| `performance-enum-size` | 303 |
+| `misc-use-internal-linkage` | 526 |
+| `misc-const-correctness` | 939 |
+| `misc-non-private-member-variables-in-classes` | 1303 |
+| `readability-magic-numbers` | 1883 |
+| `readability-identifier-length` | 2483 |
+| `misc-include-cleaner` | 3346 |
+| `readability-uppercase-literal-suffix` | 4156 |
 
 ## RiRotate's sign
 
-Carried out of [OfflineRenderingPhase3](plans/completed/OfflineRenderingPhase3.md), which named
-it as an open question and could not settle it.
+[] The sign of `RiRotate` is unverified.
 
-[] RI states its rotations in a left handed system and moya hands the angle straight to
-   `glm::rotate`, which is counter-clockwise by the right hand rule. Nothing in the tree can
-   tell the difference: both hiders read the same transformation, so they agree with each other
-   whichever reading is right, so a reference picture agreeing with itself says nothing. A light placed by a
-   rotation was expected to make it visible and did not. What would settle it is a scene whose
-   correct picture is known from outside this tree
+- The RenderMan Interface (RI) states rotations in a left-handed coordinate system.
+- moya passes the angle straight to `glm::rotate`, which rotates counter-clockwise by the
+  right-hand rule.
+- Nothing in the tree can tell whether this is right. Both hiders read the same transformation,
+  so they always agree with each other. A reference picture made by the tree only agrees with
+  itself.
+- A scene lit by a rotated light did not reveal the difference either.
+- To settle it, render a scene whose correct picture is known from outside this tree.
+
+Background: [OfflineRenderingPhase3](plans/completed/OfflineRenderingPhase3.md#open-questions).
 
 ## Offline rendering
 
-Held by [OfflineRenderingPhases4To6](plans/completed/OfflineRenderingPhases4To6.md#step-17--held-area-lights-displacement-and-acceleration),
-each until a scene asks for it.
+Each of these waits until a scene needs it.
 
-[] area lights render as point lights. Sampling a light's area is the film's lens disc in another place, but a RenderMan area light runs its light shader at points on a primitive, and `AreaLightSource` binds a shader to geometry neither hider keeps as a light. It is due with a scene that wants soft shadows, which both hiders can now cast through the shared tracer
+[] **Area lights render as point lights.**
 
-[] displacement shaders are refused and `calculatenormal` is a stub, so neither displacement nor bump is possible. Displacement reaches back into moya's dicing, moves a grid after it is shaded and needs a bound grown by `displacementbound`; under the ray hider it needs a tessellation a ray tracer does not otherwise do. Bump needs derivatives across a batch, and a traced hit is a batch of one. It is due with a scene that needs surface detail a texture cannot give
+- A RenderMan area light runs its light shader at points on a primitive.
+- `AreaLightSource` binds a shader to geometry, but neither hider keeps geometry as a light.
+- Sampling a light's area would work like sampling the film's lens disc.
+- Due when a scene needs soft shadows. Both hiders can already cast shadows through the shared
+  ray tracer.
 
-[] the reyes hider ignores `Oi`: a sample keeps the nearest surface and forces its opacity to one, so a translucent shader is opaque under `"hidden"` and translucent under `"raytrace"`. Honouring it needs a sample to keep every surface it meets and composite them front to back once the bucket is done - the ray hider's `see()` loop, over a sample's list rather than a ray's hits. It is due with a scene that wants glass or smoke drawn by the reyes hider
+[] **Displacement and bump mapping are not possible.** Displacement shaders are refused, and
+`calculatenormal` is a stub.
 
-[] `offline::trace::Scene::nearest` tests every primitive. Since moya traces too, every shadow ray from every grid point pays for the whole scene. An acceleration structure goes inside `offline::trace` and neither renderer changes; it is due with a scene that takes a second to render, which the suites' times would show
+- Under the reyes hider, displacement reaches into moya's dicing. It moves a grid after the grid
+  is shaded, and needs the grid's bound grown by `displacementbound`.
+- Under the ray hider, displacement needs tessellation, which the ray tracer does not otherwise
+  do.
+- Bump mapping needs derivatives across a batch of points. A traced hit is a batch of one.
+- Due when a scene needs surface detail that a texture cannot give.
+
+[] **The reyes hider ignores opacity (`Oi`).**
+
+- A sample keeps only the nearest surface and sets its opacity to one. A translucent shader is
+  opaque under `"hidden"` and translucent under `"raytrace"`.
+- The fix: each sample keeps every surface it meets, and composites them front to back once the
+  bucket is done. This is the ray hider's `see()` loop, applied to a sample's list of surfaces
+  instead of a ray's hits.
+- Due when a scene needs glass or smoke drawn by the reyes hider.
+
+[] **`offline::trace::Scene::nearest` tests every primitive.**
+
+- moya traces shadow rays, so every shadow ray from every grid point pays for the whole scene.
+- An acceleration structure goes inside `offline::trace`. Neither renderer needs to change.
+- Due when a scene takes a second to render. The test suites' timings would show it.
+
+[] **moya's `--grid` and `--bucket` do not override a scene's `Option "limits"`.** The driver
+applies them before reading the scene, so a scene that names its own sizes replaces them.
+Applying them again after the read would make the command line win.
+
+Background: [OfflineRenderingPhases4To6](plans/completed/OfflineRenderingPhases4To6.md#step-17--held-area-lights-displacement-and-acceleration).
 
 ## Tile grids
 
-`api/grid` is a library of its own - [ADR-0029](adr/0029-grid-8-way-movement-symmetric-line-of-sight.md) - and
-`odyssey` is what consumes it here. A map's picture and terrain legend are the grid's, and the
-rest of a map is the game's - [ADR-0062](adr/0062-grid-parse-terrain-not-map-files.md).
+`api/grid` is a library of its own, and odyssey uses it. The grid owns a map's picture and
+terrain legend; the rest of a map belongs to the game. [Grid.md](api/Grid.md) describes the
+library.
 
-[] a `TileGrid` is one rectangle centred on the world origin, so a world made of regions, each offset in the world and each loaded and released with its sheets, has no way to place a grid. Whether a region is a grid with an origin, a grid of grids or a game's list of grids is for the first consumer with regions to say; a world origin on `TileGrid` is the likeliest answer, and it changes every world and tile conversion - [LargeWorlds](plans/completed/LargeWorlds.md#step-7--regions) has the reasoning
+[] **A world cannot be made of regions.**
 
-[] remembered sight is odyssey's `tile/Sight.h`, though nothing about fog of war is odyssey's own. It moves to `api/grid` when a second consumer wants ground it has seen to stay revealed - [LargeWorlds](plans/completed/LargeWorlds.md#step-8--remembered-sight)
+- A `TileGrid` is one rectangle centred on the world origin.
+- A world of regions needs each region offset in the world, and loaded and released with its
+  sprite sheets. There is no way to place a grid like that.
+- A region could be a grid with an origin, a grid of grids, or a game's list of grids. The first
+  game with regions decides. A world origin on `TileGrid` is the most likely answer, and it
+  changes every conversion between world and tile coordinates.
+- Background: [LargeWorlds, step 7](plans/completed/LargeWorlds.md#step-7--regions).
 
-[] `TileFilter` is a `std::function` called for every neighbour of every visited tile, which is the first thing to templatise if a board is ever large enough to notice. A region-sized board is the likeliest first, so it waits behind regions - [LargeWorlds](plans/completed/LargeWorlds.md#step-9--the-movement-filter-as-a-template)
+[] **Remembered sight belongs in `api/grid`.**
+
+- Fog of war that keeps seen ground revealed is in odyssey's
+  [tile/Sight.h](../odyssey/tile/Sight.h), but nothing about it is specific to odyssey.
+- Move it to `api/grid` when a second game needs it.
+- Background: [LargeWorlds, step 8](plans/completed/LargeWorlds.md#step-8--remembered-sight).
+
+[] **`TileFilter` is a `std::function`.**
+
+- It is called for every neighbour of every visited tile.
+- Make it a template parameter if a board becomes large enough for the cost to show. A
+  region-sized board is the most likely case, so this waits for regions.
+- Background: [LargeWorlds, step 9](plans/completed/LargeWorlds.md#step-9--the-movement-filter-as-a-template).
 
 ## Voxel
 
-[] a remeshed chunk destroys its old mesh with the last reference to it, which is safe only because `memory::Uploader` idles the queue after every copy, as `ChunkMeshPool.h` says. Once uploads stop idling the queue - [milestone 7](roadmap/completed/m7-ShellAndShipping.md#asynchronous-loading) - the old mesh has to be retired through `frame::Ring::retire` ([ADR-0061](adr/0061-resources-explicit-release-generational-handles.md)) instead
+[] **A remeshed chunk destroys its old mesh too early once uploads become asynchronous.**
 
-[] mouselook turns far too fast and rolls the view: ten pixels of horizontal motion turns it most of the way round and tips it over. It reads one pixel as one unit of `Player::look()`'s heading and pitch, and that scale predates relative mouse mode - [ShellAndShipping](plans/completed/ShellAndShipping.md#step-3--a-relative-mouse)
+- Today a remeshed chunk destroys its old mesh when the last reference goes. That is safe only
+  because `memory::Uploader` waits for the queue to go idle after every copy, as
+  [ChunkMeshPool.h](../voxel/src/voxel/ChunkMeshPool.h) says.
+- When uploads stop waiting for the queue (see [Loading](#loading)), the old mesh must be retired
+  through `frame::Ring::retire` instead.
+
+[] **Mouselook turns far too fast and rolls the view.**
+
+- Ten pixels of horizontal mouse motion turns the view most of the way round and tips it over.
+- The code reads one pixel as one unit of `Player::look()`'s heading and pitch. That scale was
+  set before relative mouse mode existed.
+- Background: [ShellAndShipping, step 3](plans/completed/ShellAndShipping.md#step-3--a-relative-mouse).
 
 ## Sprite sheets
 
-`image::TextureAtlas` places regions, `config::SpriteSheets` reads and writes the document that
-names them, and `image::crop` cuts one back out of a sheet. Every half of a packer's round trip
-is in the tree.
+The api has every piece of a sprite sheet round trip: `image::TextureAtlas` places regions,
+`config::SpriteSheets` reads and writes the document that names them, and `image::crop` cuts a
+region back out of a sheet.
 
-[] nothing in the tree packs a sheet, and unpacking one is a rectangle at a time. `imagetool
---crop` cuts one region, so a sheet can be exploded by a caller that already knows where its
-sprites are; nothing reads a `sprites.json` and cuts out everything it names. Whether that
-belongs to `imagetool`, to a `spritetool` beside it, or to whoever needs it is undecided
+[] **Nothing packs a sheet, and nothing unpacks a whole sheet.**
+
+- `imagetool --crop` cuts out one region, so a caller that already knows where the sprites are
+  can split a sheet one rectangle at a time.
+- Nothing reads a `sprites.json` and cuts out every region it names.
+- Undecided: whether this belongs in `imagetool`, in a separate `spritetool`, or with whoever
+  needs it first.
 
 ## Models
 
-`api/asset` reads glTF 2.0 into a `v3d::type::Model`, which is the only geometry the api loads
-from a file. Nothing in this tree loads one - `voxel` builds its terrain procedurally and the
-editor models with `brep::BRep` - so the gap below is what the library's own tests reach
-rather than what an app here has hit. `realtime::MeshRegistry` takes one onto the device
-([LitScene](plans/completed/LitScene.md#step-6--a-model-onto-the-device)). A file is one model in
-parts, a part per material ([ADR-0069](adr/0069-models-material-parts-over-one-vertex-buffer.md)).
+`api/asset` reads glTF 2.0 into a `v3d::type::Model`. That is the only geometry the api loads
+from a file. No app in this tree loads one: voxel builds its terrain procedurally and the editor
+models with `brep::BRep`. So the gap below comes from the library's own tests, not from an app.
+[Assets.md](api/Assets.md) describes the loader.
 
-[] `.gltf` with external buffers resolves them relative to the file, which is cgltf's own behaviour rather than the asset manager's path handling. The two agree today because the manager hands over a full path
+[] **External buffers are resolved by cgltf, not by the asset manager.** A `.gltf` file with
+external buffers has them resolved relative to the file, which is cgltf's own behaviour. It
+matches the asset manager's path handling only because the manager passes cgltf a full path.
 
 ## Lit scenes
 
-[] a shadow map is fitted to its casters once, by `shadow::fit`, and covers nothing that walks out of that sphere. A world larger than one look-dev scene needs the fit to follow the camera, and past that cascades, which the roadmap left for after the move - [LitScene](plans/completed/LitScene.md#step-8--a-shadow-map)
+[] **A shadow map covers only a fixed sphere.**
 
-[] the identity grade and the inverting grade were exact on the Radeon and assert a step at most, because lavapipe had not been seen yet. If CI shows lavapipe exact too, the tolerance in `PostTest.cpp` comes down to zero; if it does not, the step is the reason, and that goes beside the case - [LitScene](plans/completed/LitScene.md#step-10--the-chain-after-the-scene)
+- `shadow::fit` fits the shadow map to its casters once. Anything that moves out of that sphere
+  is not covered.
+- A world larger than one look-dev scene needs the fit to follow the camera, and beyond that,
+  cascaded shadow maps.
+- Background: [LitScene, step 8](plans/completed/LitScene.md#step-8--a-shadow-map).
 
-[] nothing draws many of one mesh in one draw. `meshes()` and `casters()` submit an item per part per entity, which at retcon's twelve characters and a few dozen props is a few hundred draws. Instancing would move `Lit::Object` from the push block into a per-frame storage buffer read by `gl_InstanceIndex`, beside the palette at set 2, and group the walk by entry and part; the recorder already draws instances. It is due when a count asks for it - retcon's horde density, a township's population, or a profile showing recording time - [SkeletalAnimation](plans/completed/SkeletalAnimation.md#step-8--instancing-held)
+[] **The grade tests allow a one-step tolerance that may not be needed.**
+
+- The identity grade and the inverting grade were exact on the authoring GPU (a Radeon), but
+  [PostTest.cpp](../api/render/tests/device/PostTest.cpp) allows a difference of one step,
+  because lavapipe, the software Vulkan driver CI uses, had not been checked.
+- If CI shows lavapipe is exact too, reduce the tolerance to zero. If it is not, add a comment
+  beside the case saying lavapipe is the reason.
+- Background: [LitScene, step 10](plans/completed/LitScene.md#step-10--the-chain-after-the-scene).
+
+[] **There is no instanced drawing.**
+
+- `meshes()` and `casters()` submit one draw item per part per entity. A scene with a dozen
+  characters and a few dozen props is a few hundred draws.
+- Instancing would move `Lit::Object` from the push constant block into a per-frame storage
+  buffer, read by `gl_InstanceIndex`, beside the joint palette at set 2. Draw items would be
+  grouped by mesh entry and part. The recorder can already draw instances.
+- Due when a scene's object count or a profile of recording time needs it.
+- Background: [SkeletalAnimation, step 8](plans/completed/SkeletalAnimation.md#step-8--instancing-held).
 
 ## Loading
 
-[] every load is on the main thread, and is a hitch the size of the load. The first piece is decoding on a worker through an `asset::Manager` of its own, since the manager's loaders are shared and stateful, with the main thread polling once a frame and uploading what is ready through `TextureFactory::create(image)` and `MeshRegistry::add(name, model, albedos)`. Before any thread, a texture a glTF names has to be decoded on the load side: `MeshRegistry::acquire` decodes it inside the upload today. It would be the first thread in `api/`, which is a record of its own. It is due with cozy's M6 region streaming, or any load a player can see as a hitch - [ShellAndShipping](plans/completed/ShellAndShipping.md#step-12--asynchronous-loading-held)
+[] **Every load runs on the main thread**, so each load is a frame hitch the size of the load.
+
+- First piece: decode on a worker thread through its own `asset::Manager`, because the manager's
+  loaders are shared and stateful. The main thread polls once a frame and uploads what is ready
+  through `TextureFactory::create(image)` and `MeshRegistry::add(name, model, albedos)`.
+- Before any thread is added, a texture named by a glTF file must be decoded on the load side.
+  Today `MeshRegistry::acquire` decodes it inside the upload.
+- This would be the first thread in `api/`, which needs an ADR of its own.
+- Due when a game streams regions, or any load is long enough for a player to see.
+- Background: [ShellAndShipping, step 12](plans/completed/ShellAndShipping.md#step-12--asynchronous-loading-held).
 
 ## Frames
 
-[] a minimised window spins. `Engine3D::beginFrame` presents an empty frame when the window has no area, `Swapchain::create` is asked for a chain again on every one and logs `Window has no area` at info each time, and nothing in the loop waits. Two seconds minimised wrote twelve thousand lines to pong's log. The loop could wait on an event while the window is minimised, or the swapchain could log the change of state rather than every frame of it - [ShellAndShipping](plans/completed/ShellAndShipping.md#step-6--one-screen-and-four-apps-on-it)
+[] **A minimised window busy-loops and floods the log.**
+
+- When the window has no area, `Engine3D::beginFrame` presents an empty frame.
+- `Swapchain::create` is asked for a new swapchain on every frame, and logs
+  `Window has no area` at info level each time.
+- Nothing in the loop waits. Two seconds minimised wrote twelve thousand lines to pong's log.
+- Possible fixes: the loop waits for an event while the window is minimised, or the swapchain
+  logs only the change of state.
+- Background: [ShellAndShipping, step 6](plans/completed/ShellAndShipping.md#step-6--one-screen-and-four-apps-on-it).
 
 ## Audio
 
-`audio::Engine` plays a voice on a named bus with a fade and a gain, and nothing places it.
+`audio::Engine` plays a voice on a named bus, with a fade and a gain. Nothing gives a voice a
+position.
 
-[] a voice has no pan. A footstep on the left of a fixed camera's screen wants one, and a position becomes a pan in the caller, since a flat world under a fixed camera makes that mapping the game's: `Play` would gain a pan and the engine `pan(voice, value)`, through whatever SDL_mixer 3 offers a track. It is due when cozy asks, since retcon pans through FMOD - [Effects](plans/completed/Effects.md#step-10--a-panned-voice-held)
+[] **A voice has no pan.**
 
-## Ongoing workstreams
+- A footstep on the left of a fixed camera's screen should sound from the left.
+- The caller converts a position to a pan, because in a flat world under a fixed camera that
+  mapping belongs to the game.
+- `Play` would gain a pan value, and the engine a `pan(voice, value)` call, using whatever
+  SDL_mixer 3 offers for a track.
+- Due when a game needs positional sound.
+- Background: [Effects, step 10](plans/completed/Effects.md#step-10--a-panned-voice-held).
 
-**Tests.** Every library needing neither a window nor a GPU is covered. The GPU half —
-everything below the recorder in `api/render` — now has a suite that draws:
-`v3dtest_render_device` runs against lavapipe on the runner, which
-[RenderTestsInCI](plans/completed/RenderTestsInCI.md) built and closed, and four of its cases
-are pinned to committed pictures by
-[RealtimeGoldenImage](plans/completed/RealtimeGoldenImage.md). The pipeline cache is what is
-left there: nothing that draws asserts it, and what would is a count of what was compiled
-rather than a picture.
+## Tests
 
-What the plan left is what needs a window or a sound device rather than a device to draw
-with: `Feature::Window`, `ui::TextRenderer` and `audio::Engine::initialize()`. They are named
-beside `api/render` in [Testing.md](contributing/Testing.md) and were waiting on the same
-[ADR-0007](adr/0007-ci-render-tests-on-software-vulkan.md), but a software Vulkan implementation answers none of
-them, so they outlive it.
+[Testing.md](contributing/Testing.md) describes what the suites cover.
 
-What a picture cannot cover outlives that plan too, by
-[ADR-0054](adr/0054-testing-golden-images-hold-only-spec-exact-output.md): a reference holds
-only what the specification determines, so blending, filtered sampling, multisampling and text
-are asserted by validation silence and spot checks and by nothing stronger. Widening that needs
-a second implementation to compare against rather than a second rule, and there is none in this
-tree.
+[] **Nothing asserts the pipeline cache.** The device suite covers everything below the
+recorder in `api/render` except the pipeline cache. A test for it would count what was compiled,
+not compare a picture.
 
-**Documentation.** Reference material lives in this directory, one document per subject and
-[README.md](README.md) as the index; `CLAUDE.md` routes into them rather than holding a copy.
-One gap is left. The rationale for the Vulkan move and for the SDL3 upgrade is recorded
-nowhere — [ADR-0001](adr/0001-rendering-replace-opengl-with-vulkan.md) records the decision, not the
-reasoning behind it.
+[] **Three things need a window or a sound device to test:** `Feature::Window`,
+`ui::TextRenderer` and `audio::Engine::initialize()`. A software Vulkan driver does not help
+with any of them.
+
+[] **Some rendering cannot be checked against a reference picture.** A reference image may hold
+only what the Vulkan specification determines exactly. So blending, filtered sampling,
+multisampling and text are checked only by a silent validation log and by spot checks. Checking
+them more strongly needs a second Vulkan implementation to compare against, and this tree has
+none.
+
+## Documentation
+
+[] **The reasons for moving to Vulkan and to SDL3 are not recorded.**
+[ADR-0001](adr/0001-rendering-replace-opengl-with-vulkan.md) records the decision to move to
+Vulkan, but not the reasoning, and nothing records why SDL3 replaced SDL2.
+
+## Games
+
+[] **pong's `data/` is not copied into the build.** `pong/CMakeLists.txt` calls
+`v3d_add_shared_data(pong)` but not `v3d_add_app_data(pong)`, so a fresh build has no
+`window.json` beside the executable. Every other game calls both.
+
+[] **Three bindings name commands nothing handles:** F1 → `pong::toggleFS`,
+F1 → `tetris::toggleFS` and Space → `odyssey::moveUp`.
 
 ## Editor
 
-Open work, for when the app is what moves forward rather than the platform.
+Open work for when the editor app itself moves forward. [Editor.md](Editor.md) describes the
+editor.
 
-[] 55 of the menu's 76 commands have no handler and log themselves
-[] there is no modelling operation, so a component mode selects a face and then moves the whole object
-[] one thing is selected at a time - no rubber band and no shift-click
-[] there is no dirty flag, so nothing warns before a load or a quit loses unsaved work
-[] the viewport panes are not draggable
+[] 55 of the menu's 77 commands have no handler, and only log themselves when chosen.
+
+[] There are no modelling operations. In a component mode you can select a face, but moving it
+moves the whole object.
+
+[] Only one thing can be selected at a time. There is no rubber-band selection and no
+shift-click.
+
+[] There is no dirty flag, so nothing warns before a load or a quit discards unsaved work.
+
+[] The viewport panes cannot be resized by dragging.

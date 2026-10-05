@@ -9,7 +9,7 @@ open: the scene set and the bias
 ([ADR-0064](../../adr/0064-lighting-lit-passes-use-the-shared-recorder.md)), the mesh registry
 ([ADR-0065](../../adr/0065-meshes-shared-registry-keyed-by-path.md)), colour
 ([ADR-0066](../../adr/0066-lighting-light-in-linear-draw-to-srgb.md)) and shaders
-([ADR-0067](../../adr/0067-lit-shaders-are-embedded-and-replaceable.md)), and a fifth closes the
+(ADR-0067 (removed)), and a fifth closes the
 three target gaps ([ADR-0068](../../adr/0068-rendering-order-passes-by-what-they-read.md)).
 The acceptance test below is retcon's to run when it adopts, and the plan's last step is the
 handoff it reads. A shadow fit that follows the camera, and cascades, are in
@@ -41,7 +41,7 @@ Here:
   by `vulkan::FrameUniforms`. Set 1 is the material, and a material is one texture.
 * **Targets and depth.** A pass draws into a target it names
   ([ADR-0031](../../adr/0031-rendering-passes-draw-into-offscreen-targets.md)); a target's depth can be
-  sampled ([ADR-0044](../../adr/0044-a-sampled-depth-target-is-read-only.md)); a pipeline can be
+  sampled (ADR-0044 (removed)); a pipeline can be
   depth-only and carry a depth bias. That is a shadow map's plumbing, and nothing here draws
   one.
 * **No image or sampler class.** The image, its allocation and its view are open-coded in

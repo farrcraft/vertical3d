@@ -505,3 +505,29 @@ be judged.
   rather than on a GPU, which is a different problem with a different answer, and folding them in
   would make this plan two workstreams wearing one title.
 - **Anything in the clang-tidy backlog.** Unrelated, and large enough to drown this.
+
+## Outcome
+
+Drafted on 2026-09-11 against `88711c0` and closed on 2026-09-12. Its six steps built what
+[ADR-0007](../../adr/0007-ci-render-tests-on-software-vulkan.md) had decided and nothing had yet
+implemented: tests for the device half of `api/render/realtime` that assert something, rather
+than a person running an app and reading the validation log.
+
+The ordering mattered because only one of the six steps blocked anything. A device could not be
+selected without a surface, and every headless object needs one that can be. The two smallest
+steps were independent of it and useful to an app on their own. The last step was last on
+purpose: the suites ran against a real driver before running against a software one, so that a
+failure was either the test's fault or lavapipe's, never both at once.
+
+Four defects came out of the work, none of them the thing a step was looking for. Each was
+found by running the code rather than reading it, and the steps above list them. The one that
+changed the shape of the work was step 4's survey, which found that `Presenter` was two classes
+under one name. That led to
+[ADR-0051](../../adr/0051-frames-in-flight-ring-separate-from-presenting.md).
+
+Step 6 is the one to read before writing CI against a driver again. Lavapipe was not the
+obstacle it was expected to be, and the four failed runs said nothing about it. A GitHub runner
+is elevated, and the Vulkan loader ignores `VK_DRIVER_FILES` and `VK_LAYER_PATH` in an elevated
+process, so the driver was never loaded. What made that visible was better failure output: the
+probe reporting the exception it caught, and the job printing the log and the loader's own
+diagnostics. That took three runs to build and one to find the cause.

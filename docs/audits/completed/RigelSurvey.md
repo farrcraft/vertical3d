@@ -369,7 +369,7 @@ games; it is blocked by the api never having had a customer that draws lines or 
    nineteen of them under gui.xml's own names, and item 9 adds `project::load` and
    `project::save`, so a menu item has something to invoke. **The menus themselves landed
    2026-09-02**, as `vertical3d/data/vgui.json` and
-   [ADR-0019](../../adr/0019-the-ui-is-laid-out-by-what-draws-it.md): nine menus over 75 commands,
+   ADR-0019 (removed): nine menus over 75 commands,
    drawn by `api/ui` as a bar with dropped panels and flyouts, hit tested against the bounds
    the renderer leaves on each component. **The two toolbars landed 2026-09-04**, which
    closes this item: `ui::component::Toolbar` is a strip of `Button`s on the top or the left
@@ -421,7 +421,7 @@ games; it is blocked by the api never having had a customer that draws lines or 
    colour carries the emphasis the origin lines had.
 8. ~~Port the five command sets onto `api/event` contexts, and decide what a `Tool` is in
    the api now that `event::Engine` dispatches by name.~~ Done 2026-09-02, recorded as
-   [ADR-0017](../../adr/0017-a-command-is-a-name-in-a-context.md). A command is identified by its
+   ADR-0017 (removed). A command is identified by its
    context and name together, which is what `Event::str()` returns and what a binding and a
    menu item both carry, so `v3d::editor::CommandDirectory` maps that string to a handler
    and `Controller::handleEvent` is a lookup. `data/mappings.json` was rewritten onto

@@ -1,6 +1,6 @@
 # Documentation refresh
 
-**Status: in progress.** Decided: retired and merged ADRs are deleted, with a row in the index
+**Status: complete (2026-10-05).** Decided: retired and merged ADRs are deleted, with a row in the index
 saying where their content went; kept ADRs get a full rewrite to the new template; docs move into
 audience folders; the phases run straight through.
 
@@ -296,3 +296,43 @@ file. `adr/`, `plans/`, `roadmap/`, `audits/` and `TODO.md` stay where they are.
    - Build, run the tests and run cpplint after each directory.
 
 Each phase is one or more commits on `feat/motion-and-queries`.
+
+## Outcome
+
+All five phases landed on 2026-10-05.
+
+- **Framework.** The writing, comment, document and ADR rules are in
+  [contributing/Conventions.md](../../contributing/Conventions.md), [sdlc.md](../../sdlc.md),
+  [adr/template.md](../../adr/template.md) and the ADR skill. CLAUDE.md and the reviewer agent
+  follow them.
+- **ADRs.**
+  - 68 records are renamed and rewritten to the template.
+  - 14 records were deleted: 0006, 0017, 0019, 0024, 0039, 0044, 0045, 0046, 0050, 0055, 0056,
+    0057, 0067 and 0074. Their content now lives in the reference docs and in headers.
+  - 0019 and 0039 were folded into 0034, 0050 into 0054, and the still-true half of 0077 into
+    0078.
+  - The index is grouped by area, and its statuses match the records' headers.
+- **Docs.**
+  - `docs/` is split into `contributing/`, `api/` and `internals/`.
+  - `docs/OfflineRenderer.md`, `docs/Editor.md` and `docs/Games.md` cover the apps.
+  - The examples have READMEs.
+  - `Architecture.md` was dissolved into the api docs.
+  - The contradictions the review found were settled against the code.
+- **Comments.**
+  - No source file cites an ADR, a document, a plan or another repository.
+  - The sweep changed about 620 files and touched comments only. The exceptions are two test
+    names that named other repositories.
+  - The build, all 25 test suites and cpplint are clean.
+
+**What came out differently from the plan.**
+
+- The plan put the comment sweep last. It ran alongside the doc rewrite instead, because the
+  two touch disjoint files.
+- 0034 absorbed 0019 and 0039, rather than 0019 being merged on its own.
+- 0071 keeps its link to 0064 as an amendment.
+
+**Found along the way, and moved to [TODO.md](../../TODO.md):**
+
+- pong's data directory is not copied into the build.
+- Three bindings name commands that nothing handles.
+- moya's `--grid` and `--bucket` options do not override a scene's limits.

@@ -498,7 +498,7 @@ and the additive mutation looked harmless.
 contributions before banding. They default to white, which leaves today's pictures unchanged to
 the byte. `SceneUniforms` gains one `vec4` at the end of the block. Earlier offsets do not move,
 and a replacement shader that includes `lit.glsl` gets the member with nothing more, per
-[ADR-0067](../../adr/0067-lit-shaders-are-embedded-and-replaceable.md). Dusk is an amber key, and
+ADR-0067 (removed). Dusk is an amber key, and
 night is a dim blue one.
 
 **`Grade` can be given a new table.** `Grade::table(texels)` uploads a new 16³ table, retires the
@@ -679,7 +679,7 @@ reference picture is blessed. Nothing is verified in another repository.
 Update the state in the table above.
 
 * **Step 1** removes the sprite-clip entry from [TODO.md](../../TODO.md#sprite-sheets), and adds the
-  clip to [Architecture.md](../../Architecture.md)'s account of `api/type`. The plans index says this
+  clip to [Types.md](../../api/Types.md)'s account of `api/type`. The plans index says this
   plan is open.
 * **Step 2** records retcon's handoff line in this plan, and nowhere else.
 * **Step 3** adds the ADR index row for 0072 as `proposed`.
@@ -694,3 +694,46 @@ Update the state in the table above.
 * **When the plan closes**, [m6](../../roadmap/completed/m6-Effects.md) moves to `roadmap/completed/` and points
   here as done. The panned voice moves to TODO.md with its trigger, the roadmap's table row says
   so, and this file moves to [completed/](.).
+
+## Outcome
+
+Drafted on 2026-10-03 and closed on 2026-10-04. It took up
+[milestone 6](../../roadmap/completed/m6-Effects.md) of
+[the game engine roadmap](../../roadmap/completed/GameEngine.md). Neither game had scheduled any
+of this, so the plan was drafted while milestones 1 to 5 were fresh rather than in response to a
+request. It delivered:
+
+- the sprite clip that [MotionAndQueries](MotionAndQueries.md#step-6--a-sprite-clip) had held,
+  written over milestone 5's clock;
+- `type::Random`, a splitmix64 generator, so a seed fixes every particle on any standard
+  library;
+- an emitter as a component, stepped with the simulation, that owns its particles, with its
+  look as a render component
+  ([ADR-0072](../../adr/0072-particles-an-emitter-component-owns-its-particles.md));
+- particles sorted among sprites through one depth order;
+- weather that falls over a region following the view;
+- a tint carried by the world canvas;
+- world quads drawn in a lit pass with an additive blend;
+- a light colour for a lit scene, and a colour grade whose lookup table can be replaced.
+
+The panned voice went to [TODO.md](../../TODO.md#audio), held until cozy asks for it.
+
+Four things came out differently from the plan:
+
+- **A rate summed one step at a time falls short in float.** At sixty steps a second, rates of
+  one, five, nine and eleven a second spawn one too few in their first second. A rate of ten
+  happens to overshoot, which is why the first draft of the test caught nothing.
+- **World quads in a lit scene need no pass of their own.** The recorder binds the scene set only
+  for a pipeline that declares one, and a pass records in submission order.
+- **The lit pipeline has no separate key and fill light to colour.** It bands one scalar made of
+  both, so the colours are the light's and the shadow band's.
+- **A grade's table cannot be rewritten in place** while a frame is in flight.
+  `Grade::replace()` creates a new table, rebinds every source, and keeps each caller's handle as
+  the key it is found by.
+
+Two lessons about verification:
+
+- A Boost.Test filter separates suites with `:`. With `,`, only one case of three ran, so a
+  mutation looked harmless.
+- Every picture the device suite wrote before step 9 was kept and compared byte for byte
+  afterwards. That comparison showed a white light leaves the lit pipeline's output unchanged.

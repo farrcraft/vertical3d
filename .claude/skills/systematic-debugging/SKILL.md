@@ -37,8 +37,8 @@ matter more here than in a repo where you can throw tools at the problem.
   by default, so redirect and read the file rather than the console tail:
   `ninja -C out/build/x64-Debug > build.log 2>&1`.
 - **Check whether it is the environment rather than the code.** A stale CMake cache, a
-  missing `VULKAN_SDK`, an unbuilt libnoise. `docs/Build.md` has each of them, and the tree
-  is otherwise clean at every gate `docs/Linting.md` lists.
+  missing `VULKAN_SDK`, an unbuilt libnoise. `docs/contributing/Build.md` has each of them, and the tree
+  is otherwise clean at every gate `docs/contributing/Linting.md` lists.
 - **Reproduce it deliberately** and write the steps down. For an app, that means which app,
   which `data/` config, and what you did.
 - **Narrow it.** Build one target rather than the tree. For a compile error, `cl /Zs` on a

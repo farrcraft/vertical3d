@@ -3,124 +3,82 @@
 [![ctest](https://github.com/farrcraft/vertical3d/actions/workflows/ctest.yml/badge.svg)](https://github.com/farrcraft/vertical3d/actions/workflows/ctest.yml)
 [![cpplint](https://github.com/farrcraft/vertical3d/actions/workflows/cpplint.yml/badge.svg)](https://github.com/farrcraft/vertical3d/actions/workflows/cpplint.yml)
 
-A monorepo for the Vertical3D ecosystem: a set of C++ libraries for building 3D applications
-and games, and the applications I have written against them over the years. Rendering is Vulkan
-1.3, windowing and input are SDL3, and the whole tree builds with CMake.
+Vertical3D is a set of C++ libraries for building 3D applications and games, together with the
+applications built on them. Rendering uses Vulkan 1.3, windowing and input use SDL3, and the
+whole repository builds with CMake.
 
-Windows and MSVC in practice. Nothing here is packaged or released; it is built from source.
+It builds on Windows with MSVC. Nothing is packaged or released; you build it from source.
 
-## Layout
+## The libraries
 
-The libraries live under [api/](api/), one target per subdirectory, each named `v3dlib_<name>`
-and namespaced to match its path (`v3d::render::realtime`, `v3d::asset`, and so on).
+The libraries are in [api/](api/), one CMake target per directory. Each target is named
+`v3dlib_<name>`, with the alias `v3d::<name>`, and its namespace matches its path, for example
+`v3d::render::realtime`.
 
-| | |
+| Library | What it does |
 |---|---|
-| [`render`](api/render/) | The Vulkan realtime renderer — frames, passes, draw items, and the quad and line primitives. `render/offline` holds what the offline renderer is built on: RIB, the shading language, the film and the ray tracer |
-| [`engine`](api/engine/) | The game engine: main loop, window, asset manager, config and input |
-| [`ui`](api/ui/) | Menus, toolbars, themes and the component renderer |
-| [`brep`](api/brep/) | Boundary representation meshes, half-edge and winged-edge |
-| [`type`](api/type/) | Math and geometry — vectors, cameras, rays |
-| [`dag`](api/dag/) | The id and the transform a mesh is placed by |
-| [`image`](api/image/) | Image readers and writers — png, jpeg, tga, bmp |
+| [`render`](api/render/) | The Vulkan renderer: frames, passes, 2D quads, lines, lit 3D meshes and post-processing |
+| [`render/offline`](api/render/offline/) | The base of the offline renderer: RIB parsing, the shading language, the film and the ray tracer. Needs no Vulkan (`v3dlib_render_offline`) |
+| [`engine`](api/engine/) | The application base class, the main loop, and startup of the window, config and input |
+| [`ui`](api/ui/) | Menus, toolbars, windows, widgets and themes |
+| [`brep`](api/brep/) | Boundary representation meshes: half-edge topology, faces and vertices |
+| [`type`](api/type/) | Shared value types: geometry and rays, cameras, transforms, models and skeletons, animation clips, particle effects, random numbers |
+| [`dag`](api/dag/) | Scene nodes: an id and a transform for each mesh |
+| [`image`](api/image/) | Image reading and writing (PNG, JPEG, TGA, BMP), cropping and comparison |
 | [`font`](api/font/) | Glyph layout and atlas packing |
-| [`asset`](api/asset/) | Loading and resolving files by type, and the loaders for documents |
-| [`asset/media`](api/asset/media/) | The loaders for pictures and glTF models — `v3dlib_asset_media` |
+| [`asset`](api/asset/) | Loading files by type, and the loaders for JSON documents |
+| [`asset/media`](api/asset/media/) | Loaders for images and glTF models (`v3dlib_asset_media`) |
 | [`config`](api/config/) | JSON configuration documents |
-| [`event`](api/event/) | Input mapping and command dispatch |
+| [`event`](api/event/) | Mapping input to named commands, and dispatching them |
 | [`input`](api/input/) | Keyboard and mouse state |
-| [`audio`](api/audio/) | Sound playback over SDL3_mixer, and the loader for a wav |
-| [`ecs`](api/ecs/) | Components and systems over entt |
-| [`grid`](api/grid/) | Tile boards — pathfinding, line of sight and overlay geometry |
-| [`log`](api/log/) | A thin wrapper over spdlog |
+| [`audio`](api/audio/) | Sound playback through SDL3_mixer |
+| [`ecs`](api/ecs/) | Components and systems on EnTT |
+| [`grid`](api/grid/) | Tile grids: pathfinding, line of sight and overlay geometry |
+| [`log`](api/log/) | Logging through spdlog |
 
-The applications sit at the top level, each consuming some subset of those.
-[examples/](examples/) sits outside that: each example is a root project of its own, showing
-how an application in another repository consumes the api.
+## The applications
+
+Each application is a top-level directory and builds with the libraries.
+
+| Application | What it is |
+|---|---|
+| **vertical3d** | A 3D modelling tool: four viewports over a construction grid, with primitives, picking, manipulators, undo, menus, toolbars and project files. The most complete app here |
+| **voxel** | A Minecraft-style voxel terrain generator, with chunked meshes over Perlin noise |
+| **pong** | Pong, with sound and a computer opponent |
+| **tetris** | Tetris |
+| **odyssey** | A tile-based roguelike in early development: a tile map, routes and line of sight, and a player sprite |
+| **moya** | A RenderMan-style renderer. It reads a RIB file and renders it with a Reyes hider (micropolygon grids and buckets), or with ray tracing when the file says `Hider "raytrace"` |
+| **imagetool** | A command-line tool for images. It reads an image, prints its size and bit depth with `--info`, cuts out a rectangle with `--crop x,y,width,height`, and writes the result with `--outfile` |
+| **v3dshell** | A placeholder for a command shell. Its `main` is empty |
+
+[examples/](examples/) is separate: each example is its own CMake project that uses the
+libraries the way an app in another repository would.
 
 ## Building
 
-You will need Visual Studio 2022 or newer with the MSVC toolchain, the
-[Vulkan SDK](https://vulkan.lunarg.com/) with `VULKAN_SDK` set, CMake, and Ninja. Dependencies
-come from vcpkg through a manifest, so the first configure installs them. Budget around 45
-minutes for a cold install, most of it building boost.
-
-Visual Studio configures the tree directly from [CMakeSettings.json](CMakeSettings.json). From
-a shell, use a developer environment (`vcvars64.bat`) and then:
-
-```
-cmake -S . -B out/build/x64-Debug -G Ninja \
-  -DCMAKE_BUILD_TYPE=Debug \
-  -DCMAKE_TOOLCHAIN_FILE=vendor/vcpkg/scripts/buildsystems/vcpkg.cmake \
-  -DVCPKG_TARGET_TRIPLET=x64-windows
-ninja -C out/build/x64-Debug              # everything
-ninja -C out/build/x64-Debug pong         # one target
-```
-
-Shaders are compiled to SPIR-V at build time by `glslc` and embedded into the binaries rather
-than shipped alongside them, which is why the Vulkan SDK is needed to configure and not only to
-run.
-
-`voxel` additionally needs libnoise, the one vendored submodule, built separately. See
-[docs/Dependencies.md](docs/contributing/Dependencies.md) for that and for adding or updating a dependency,
-and [docs/Build.md](docs/contributing/Build.md) for the options and the traps.
-
-### Tests
-
-Boost.Test, one binary per library and per app that has logic worth covering, registered with
-ctest and run in CI on every push. [docs/Testing.md](docs/contributing/Testing.md) says what is covered and
-what needs a GPU.
-
-```
-ctest --test-dir out/build/x64-Debug --output-on-failure
-ctest --test-dir out/build/x64-Debug -R image      # one suite
-```
-
-### Lint
-
-cpplint on every push, plus `/WX`, `/analyze` and clang-tidy locally. The tree is clean at all
-four; the invocations and their traps are in [docs/Linting.md](docs/contributing/Linting.md).
-
-## Applications
-
-| | |
-|---|---|
-| **Vertical3D** | A 3D modelling tool. Four viewports over a construction grid, with primitives, picking, manipulators, undo, menus, toolbars and project persistence. The most complete thing here. |
-| **Voxel** | A Minecraft-style voxel terrain generator, with chunked meshing over perlin noise. |
-| **Pong** | Pong, with sound and single-player AI. |
-| **Tetris** | Tetris. |
-| **Odyssey** | A tile-based roguelike. Opens a window and draws a player sprite positioned in tile units; the game itself is not written yet. |
-| **Moya** | A RenderMan renderer. Reads a RIB file and renders it through a shading language, with a Reyes hider of micropolygon grids and buckets, or a ray tracing one selected by `Hider "raytrace"`. |
-| **imagetool** | A small CLI over `api/image`. Reads an image and reports its dimensions and depth; it parses an `--outfile` but the write path is unreachable. |
-| **v3dshell** | An intended REPL for driving Vertical3D. Currently an empty `main`. |
-
-Pong, Tetris, Voxel, Odyssey and Vertical3D all run. Moya renders from the command line, and
-its suite compares what it draws against committed reference images.
+You need Windows, Visual Studio 2022 or newer, the Vulkan SDK and vcpkg.
+[docs/contributing/GettingStarted.md](docs/contributing/GettingStarted.md) goes from a fresh
+clone to a build, the tests and a running app.
 
 ## Documentation
 
-[docs/README.md](docs/README.md) is the index. The ones worth knowing by name:
+Start with the documents for what you are doing:
 
-* [docs/Architecture.md](docs/Architecture.md) — the map of the tree, and the invariants that bite
-* [docs/Build.md](docs/contributing/Build.md) — the CMake layout, the options, the linking rules and the traps
-* [docs/RenderingPipeline.md](docs/api/Rendering.md) — the render chain from window to draw item
-* [docs/adr/](docs/adr/) — architecture decision records, and why things are shaped as they are
-* [docs/sdlc.md](docs/sdlc.md) — how work moves through the repo, and what "verified" means here
-* [docs/TODO.md](docs/TODO.md) — what is loose
-* [CLAUDE.md](CLAUDE.md) — orientation for coding agents, routing into the above
+| You are | Read |
+|---|---|
+| Contributing to this repository | [docs/contributing/](docs/contributing/), starting with [GettingStarted.md](docs/contributing/GettingStarted.md) |
+| Writing an app with the libraries | [docs/api/](docs/api/), and [UsingTheApi.md](docs/api/UsingTheApi.md) for an app in another repository |
+| Changing the renderer or the UI library | [docs/internals/](docs/internals/) |
+| Working on moya or the offline renderer | [docs/OfflineRenderer.md](docs/OfflineRenderer.md) |
+| Working on the vertical3d editor | [docs/Editor.md](docs/Editor.md) |
+| Working on a game or a tool | [docs/Games.md](docs/Games.md) |
+| Reading an example | [examples/README.md](examples/README.md) |
+| Asking why something is designed as it is | [docs/adr/](docs/adr/), the architecture decision records |
+
+[docs/README.md](docs/README.md) indexes every document. [CLAUDE.md](CLAUDE.md) is orientation
+for coding agents.
 
 ## History
 
-Much of this code traces back to the early aughts, before what we would now call modern C++.
-There was a single namespace, every library was its own repo and package, and the build used
-autotools on Unix and Visual Studio solutions on Windows. That is a modular design, and it
-works well for larger OSS projects that split across many small packages, but it is a great
-deal more to maintain.
-
-The current iteration pulls everything into one repo, replaces both build systems with CMake,
-makes the namespaces granular, and targets C++17 or newer. Rendering moved from OpenGL to
-Vulkan and windowing from SDL2 to SDL3. That work is recorded in
-[docs/plans/completed/Modernization.md](docs/plans/completed/Modernization.md), whose six
-phases closed on 2026-09-04 along with the last of the four legacy trees.
-
-How modern a given file is still varies widely.
+Much of this code dates from the early 2000s. It has since been brought into one repository,
+moved to CMake, C++17 and newer, and Vulkan, and is still being modernised a piece at a time.

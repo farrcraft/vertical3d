@@ -1,28 +1,32 @@
 # Linting And Static Analysis
 
-Four gates. cpplint runs on every push; the other three are MSVC-side and are declared in
-[CMakeLists.txt](../../CMakeLists.txt). **The tree is clean at all four**, so every finding is a
-new one.
+This document is for contributors. It describes the four checks the tree must pass, how to run
+each one, and the traps in each.
+
+The four checks are cpplint, the compiler's warnings, MSVC `/analyze` and clang-tidy. **The tree
+is clean at all four**, so every finding is new and should be fixed. cpplint runs in CI. The
+other three are build options declared in [CMakeLists.txt](../../CMakeLists.txt).
+
+- [cpplint](#cpplint)
+- [The compiler](#the-compiler)
+- [MSVC /analyze](#msvc-analyze)
+- [clang-tidy](#clang-tidy)
+- [CI](#ci)
 
 ## cpplint
 
-Code is linted against the
-[Google C++ style guide](https://google.github.io/styleguide/cppguide.html) using the cpplint
-tool.
+cpplint checks the code against the
+[Google C++ style guide](https://google.github.io/styleguide/cppguide.html). Install the pinned
+version:
 
-> pip install cpplint==2.0.2
+```
+pip install cpplint==2.0.2
+```
 
-The version is pinned, and CI installs the same one. This is the community fork rather than
-Google's original, and it renames checks between releases. A filter naming a category cpplint
-does not have suppresses nothing and reports nothing, so an unpinned bump can turn the tree red
-without a line of code changing. The fork is also what decides the namespace rule below, which
-is enforced rather than suppressed.
+CI installs the same version. This is the community fork of cpplint, which renames checks between
+releases. Do not upgrade it without checking the tree again.
 
-The tool command for Visual Studio integration:
-
->  C:\Python312\python.exe C:\Python312\Lib\site-packages\cpplint.py --linelength=180 --output=vs7 $(ItemPath)
-
-To run the linter on everything from the command line:
+Run it on the whole tree from the repository root:
 
 ```
 cpplint --linelength=180 \
@@ -30,27 +34,33 @@ cpplint --linelength=180 \
   --exclude=voxel/src/noise --recursive .
 ```
 
-The first three excludes matter only locally. CI never builds, checks out no submodules and
-installs no ports, so it has none of those trees. A developer machine has all three, and they
-hold two orders of magnitude more lintable files than the project does — `vcpkg_installed/` at
-the repo root is the worst at 80,000-odd third party headers. `--exclude` filters what is
-linted rather than what is walked, so the run costs an `os.walk` of the whole tree either way.
+**The expected output is zero errors.**
 
-`voxel/src/noise` is the fourth exclude, and it is not local. That code is vendored verbatim,
-and `/analyze` and clang-tidy skip it for the same reason.
+The excludes:
 
-**A report of zero is the expected result.**
+- `out`, `vendor` and `vcpkg_installed` exist only on a developer machine. They hold far more
+  files than the project, mostly third-party headers. CI checks out no submodules and installs no
+  packages, so it has none of them.
+- `voxel/src/noise` is third-party code kept as it was published. The static analysers skip it
+  too.
 
-There is no `--filter`: every check cpplint has is enforced. Do not add one. cpplint accepts a
-filter naming a category it does not have and then silently suppresses nothing, so an entry
-that stops working looks exactly like a tree that started failing. That is what
-`runtime/indentation_namespace` did here, for as long as it took the check to be renamed
-`whitespace/indent_namespace` under it.
+`--exclude` removes files from the lint, not from the directory walk, so a run still walks the
+excluded directories.
+
+For Visual Studio's external tools, this command lints the current file:
+
+```
+C:\Python312\python.exe C:\Python312\Lib\site-packages\cpplint.py --linelength=180 --output=vs7 $(ItemPath)
+```
+
+**Do not add a `--filter`.** Every cpplint check is enforced. cpplint accepts a filter that names
+a category it does not have, and then suppresses nothing without saying so. A filter entry whose
+check was renamed looks the same as a tree that started failing.
 
 ### Namespace indentation
 
-A namespace body is not indented. The check cannot distinguish a continuation line from a
-declaration, so a continuation at namespace scope sits at column 0 as well:
+A namespace body is not indented. cpplint cannot tell a continuation line from a declaration, so
+a continuation line at namespace scope also starts at column 0:
 
 ```
 Recorder::Target::Target() noexcept :
@@ -63,70 +73,77 @@ L" !\"#$%&'()*+,-./0123456789:;<=>?"
 L"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_";
 ```
 
-It only misreads a *nested* class's constructor: `Plain::Plain()` may indent its initialiser
-list and `Recorder::Target::Target()` may not. The tree writes both flush for consistency
-rather than by rule.
+cpplint misreads only the constructor of a nested class: `Plain::Plain()` may indent its
+initialiser list and `Recorder::Target::Target()` may not. The tree writes both at column 0 so
+they look the same.
 
 ## The compiler
 
-**`/WX` is on** whenever this project is the top level one, so on every build of this
-repository and no build of a consumer that has nested it. The tree is clean at `/W4`, so a
-warning is a new one. Use `-DV3D_WARNINGS_AS_ERRORS=OFF` to get past it rather than editing the
-flag.
+- **`/W4` with `/WX`.** Warnings are errors whenever this repository is the top-level project.
+  That is every build of this repository and no build of a project that nests it. To get past a
+  warning temporarily, configure with `-DV3D_WARNINGS_AS_ERRORS=OFF`. Do not edit the flag.
+- **`/w14062`.** This warning is not part of `/W4`. It reports an enumerator that a `switch` does
+  not handle, and only for a `switch` with no `default:` label. A `switch` over an enum in this
+  tree has no `default:`, so adding an enumerator fails the build everywhere it needs handling.
+  `api/ui` relies on this for `component::Type`. A `switch` that needs a catch-all case writes
+  `default:` and is not checked.
 
-**`/w14062` is on**, which is not a `/W4` default. It reports an enumerator a switch does not
-handle, and only for a switch carrying no `default:` label — so it bites exactly where the
-author meant the switch to be complete, and a switch that wants a catch-all keeps one by
-writing `default:`. `api/ui` depends on it: a switch over `component::Type` is exhaustive so
-that adding a component fails the build in every place that has to decide about it, per
-[ADR-0047](../adr/0047-code-exhaustive-enum-switches.md).
+Background: [ADR-0047](../adr/0047-code-exhaustive-enum-switches.md)
 
-**`/analyze`** is `-DV3D_ANALYZE=ON`, off by default because it costs several times a plain
-compile of the tree. Its findings are the C6xxx and C26xxx numbers, and they reach `/WX` like
-any other warning. Nothing in the tree reports at it.
+## MSVC /analyze
 
-It is paired with `/analyze:external-`, which is not the default. CMake gives an imported
-target's include directories to MSVC as `/external:I`, and without that switch a boost or glm
-header costs more analysis time than the whole tree and reports findings in code this
+Turn it on with `-DV3D_ANALYZE=ON`. It is off by default because it makes a build several times
+slower. Its findings are the C6xxx and C26xxx warnings, and `/WX` turns them into errors like any
+other warning. The tree has no findings.
+
+The build adds `/analyze:external-` with it. CMake passes an imported target's include
+directories to MSVC as `/external:I`. Without `/analyze:external-`, the analyser also checks boost
+and glm headers. That takes longer than the whole tree and reports findings in code this
 repository does not own.
 
-Two files are third party and are exempt from both analysers:
-`voxel/src/noise/noiseutils.cpp`, in the app's `set_source_files_properties` and the suite's
-since they share the file, and `api/asset/media/loader/CgltfImpl.cpp`. `/analyze-` takes a source out
-of MSVC's analysis and `SKIP_LINTING TRUE` takes it out of clang-tidy's. A local fix to either
-file would be lost the next time the port moves.
+Two third-party files are excluded from both analysers:
+
+- `voxel/src/noise/noiseutils.cpp`, excluded in both the voxel app and its test suite, which
+  compile the same file.
+- `api/asset/media/loader/CgltfImpl.cpp`.
+
+`/analyze-` removes a file from MSVC's analysis, and `SKIP_LINTING TRUE` removes it from
+clang-tidy. Do not fix findings in these files, because a fix would be lost when the package is
+updated.
 
 ## clang-tidy
 
-`-DV3D_CLANG_TIDY=ON`, off by default at a similar cost, with the check list in
-[.clang-tidy](../../.clang-tidy). The binary ships with the MSVC install, under
-`VC/Tools/Llvm/x64/bin`.
+Turn it on with `-DV3D_CLANG_TIDY=ON`. It is off by default for the same cost reason. The check
+list is in [.clang-tidy](../../.clang-tidy). The clang-tidy executable comes with the MSVC install,
+under `VC/Tools/Llvm/x64/bin`.
 
-Four families are enabled and 20 checks subtracted. The tree is clean at the 186 left.
-[TODO.md](../TODO.md#the-clang-tidy-backlog) carries what each subtraction reports, except the
-seven the `.clang-tidy` comment records as settled rather than pending. Removing a line from
-that table means fixing what it reports, never widening the exclusion.
+`.clang-tidy` enables four check families and subtracts 20 checks by name. The tree is clean at
+the 186 that remain. [TODO.md](../TODO.md#the-clang-tidy-backlog) lists what each subtracted
+check reports, except seven that the `.clang-tidy` comment marks as settled. To remove a line from
+that list, fix what the check reports. Do not widen the exclusion.
 
-`V3D_WARNINGS_AS_ERRORS` decides whether a finding stops the build, for clang-tidy as much as
-for the compiler. Toggling either analyser rewrites the compile command, so ninja rebuilds what
-it has to on its own.
+`V3D_WARNINGS_AS_ERRORS` also decides whether a clang-tidy finding stops the build. Turning
+either analyser on or off changes the compile commands, so ninja rebuilds what it needs to.
 
 Two traps, both silent:
 
-- **CMake writes a system include directory as the joined `-external:I<dir>`**, which clang-cl's
-  option table has as separate only. clang-tidy discards it *and every option after it* without
-  saying so, which surfaces as "cannot use 'throw' with exceptions disabled" on every source
-  that throws. The `--extra-arg-before=/EHsc` on the invocation restores it, because an
-  extra-arg-before is applied ahead of the command rather than inside it.
-- **A check name clang-tidy does not know is not an error**, which is cpplint's `--filter`
-  hazard again. `.clang-tidy` enables whole families and subtracts by name, so a name that stops
-  meaning anything turns findings on rather than off.
+- **CMake writes a system include directory as one argument, `-external:I<dir>`.** clang-cl
+  accepts that option only as two arguments. clang-tidy drops it and every option after it
+  without a warning. The symptom is "cannot use 'throw' with exceptions disabled" on every source
+  that throws. The build passes `--extra-arg-before=/EHsc` to clang-tidy, which puts `/EHsc`
+  ahead of the compile command so it survives.
+- **clang-tidy ignores a check name it does not know.** `.clang-tidy` enables whole families and
+  subtracts checks by name, so a subtracted name that stops matching a check turns that check
+  back on.
 
 ## CI
 
 [.github/workflows/cpplint.yml](../../.github/workflows/cpplint.yml) installs cpplint with pip on
-an ubuntu runner and runs the command above. It is separate from
-[ctest.yml](../../.github/workflows/ctest.yml), which builds the tree on a Windows runner and runs
-the test suites: lint needs nothing but python, where the build needs an MSVC toolchain, the
-Vulkan SDK, a vcpkg install and the vendor submodule. Neither analyser runs in CI. Both are
-local-only, because of the cost.
+an Ubuntu runner and runs the command above. It runs on each pull request and on each push to
+`main`.
+
+It is a separate workflow from [ctest.yml](../../.github/workflows/ctest.yml), which builds the
+tree on a Windows runner and runs the tests. cpplint needs only Python. The build needs MSVC, the
+Vulkan SDK, a vcpkg install and the libnoise submodule.
+
+Neither `/analyze` nor clang-tidy runs in CI, because of their cost. They are run locally.

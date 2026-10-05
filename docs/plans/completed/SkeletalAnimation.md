@@ -303,7 +303,7 @@ through it.
 * **`api/type` holds the clock, the clip, the pose, sampling and blending.** All of them are glm
   and arithmetic. They are tested the way `Ray` is, and they are readable by an offline renderer
   that wants a frame of an animated model
-  ([ADR-0024](../../adr/0024-api-type-serves-both-renderers.md)). The clock goes here too, and the
+  (ADR-0024, removed). The clock goes here too, and the
   sprite clip in [TODO.md](../../TODO.md#sprite-sheets) is written over it when it is taken up. Its
   region names are what would take it elsewhere, and a clock has none.
 * **Playback is a component in `api/ecs`**, advanced in `simulate()`, and has an `interpolate()`
@@ -732,3 +732,33 @@ Update the state in the table above.
 * **When the plan closes**, [m5](../../roadmap/completed/m5-SkeletalAnimation.md) moves to
   `roadmap/completed/` and points here as done. Instancing moves to TODO.md with its trigger,
   the roadmap's table row says so, and this file moves to [completed/]().
+
+## Outcome
+
+Drafted and closed on 2026-10-03. It took up
+[milestone 5](../../roadmap/completed/m5-SkeletalAnimation.md) of
+[the game engine roadmap](../../roadmap/completed/GameEngine.md), and delivered:
+
+- a file loaded as one model in parts, read through its node hierarchy, and optionally carrying
+  a skin ([ADR-0069](../../adr/0069-models-material-parts-over-one-vertex-buffer.md));
+- clips sampled on the CPU from a playback component that advances on the fixed step and is
+  drawn between steps, with the game choosing which clip plays
+  ([ADR-0070](../../adr/0070-animation-cpu-sampling-playback-on-the-fixed-step.md));
+- a frame's joint palettes in one storage buffer in the scene set, so both lit passes draw the
+  pose ([ADR-0071](../../adr/0071-skinning-joint-matrices-in-one-storage-buffer.md)).
+
+Instancing was held, and went to [TODO.md](../../TODO.md#lit-scenes) until a draw count needs
+it.
+
+Four things came out differently from the plan:
+
+- **The loader had never read a node.** Any mesh positioned by a node loaded at its own origin.
+  Every earlier file had been too simple to show this.
+- **A skeleton needs a root matrix.** A Mixamo rig has a scale of one hundredth above the root
+  joint. A clip that animates the root joint would otherwise overwrite it.
+- **No rigged asset existed**, so the fixtures are generated. One is a hand-written strip whose
+  values are all exact, so a skin at rest can be compared byte for byte with its unskinned mesh.
+  The other is the same strip exported by Blender, which shows the exporter's matrices agree with
+  this tree's arithmetic.
+- **Each step's ADR was accepted as the step began**, rather than after its code proved it,
+  because each was read before anything was built on it.

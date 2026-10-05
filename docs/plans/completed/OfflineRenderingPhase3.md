@@ -30,7 +30,7 @@ Recorded in [docs/adr/](../../adr/), not here. The ones that shape this plan:
 | [0026](../../adr/0026-offline-shaders-run-over-batches-of-points.md) | Shading is a language, and it runs over a batch of shading points |
 | [0022](../../adr/0022-offline-shared-library-with-no-vulkan.md) | Shared offline code is `api/render/offline`; each renderer is a library with a driver |
 | [0023](../../adr/0023-offline-rib-is-the-scene-format.md) | RIB is what both renderers read; the editor exports to it, one way |
-| [0024](../../adr/0024-api-type-serves-both-renderers.md) | `api/type` serves both, and a convention is a parameter rather than a fork |
+| 0024 (removed) | `api/type` serves both, and a convention is a parameter rather than a fork |
 | [0025](../../adr/0025-offline-rib-reader-calls-a-typed-handler-interface.md) | The reader hands a renderer C++ requests with typed parameter lists |
 
 ## What blocks what
@@ -143,7 +143,7 @@ Independent of the language and blocking all of it. Neither renderer has a norma
   interpolate, and Möller-Trumbore computes them on the way to the distance —
   [`type::Ray::intersects`](../../api/type/Ray.h) throws them away. **An overload that also reports
   `u` and `v`** is the change, additive rather than a signature change, and by
-  [ADR-0024](../../adr/0024-api-type-serves-both-renderers.md) it belongs in `api/type` where the
+  ADR-0024 (removed) it belongs in `api/type` where the
   editor's picker can have it too.
 
 **Done when**: `v3dtest_type` covers the barycentric overload against a hand-worked triangle, both
@@ -808,3 +808,37 @@ The fourth outlived the phase and is in [TODO.md](../../TODO.md):
   tree. A light placed by a rotation was expected to be the thing that made it visible, and it
   was not: both renderers hand the angle to the same `glm::rotate`, so they agree with each
   other whichever of them is right, and a reference picture agreeing with itself says nothing.
+
+## Outcome
+
+Drafted on 2026-09-05 and closed on 2026-09-10. Its twelve steps took up phase 3 of
+[the offline rendering roadmap](../../roadmap/completed/OfflineRendering.md), light and surface.
+It answered the question that roadmap had left open: shading is a language
+([ADR-0026](../../adr/0026-offline-shaders-run-over-batches-of-points.md)), not a fixed set of
+shaders. That made it a subsystem rather than a small task, and phases 4 and 5 waited behind it.
+
+The ordering was almost entirely forced. One step, the surface normal, blocked everything and
+depended on nothing. The five steps that build the language are strictly sequential: an AST
+cannot be type-checked before it parses, and a program cannot run before it is compiled. Only
+the last four steps had any slack.
+
+Four things came out differently, and each was a step's own text being wrong rather than the
+ordering:
+
+- `ambient()` cannot be a function over `illuminance`, as step 7 assumed. A light with no
+  direction cannot be reached by an illuminance loop, and that is what makes it ambient.
+- `Shader` was already the syntax node, so step 8's shader instance is `sl::Instance`.
+- Step 8's C API bodies moved to step 9, because each of them calls a render context method that
+  step 9 wrote.
+- Step 10 had to decide who calls `transmission`, which the plan left open. RenderMan's own
+  standard lights do not call it, so the three directional lights here do.
+
+It also found two things nothing else had:
+
+- The analysis gates had never covered an app. `out/build/verify` was configured with
+  `V3D_BUILD_APPS=OFF`, so `/analyze` and clang-tidy had only ever seen `api/`.
+- Neither renderer could tell an empty pixel from a black one. An imager needs that difference,
+  and phase 1's fix for a black png had hidden it.
+
+The phase closed as intended: the two pictures the tree drew before the language existed are
+drawn by the language, unchanged, through every pass of it.

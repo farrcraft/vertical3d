@@ -195,7 +195,7 @@ and [adr/README.md](../../adr/README.md) is the authority if something takes the
 | **0041** | A document is written whole or not at all — written by step 1 |
 | **0042** | A textured quad in world space, and how it relates to ADR-0005 — written by step 10 |
 | [0005](../../adr/0005-2d-one-batched-quad-pipeline.md) | One batched quad primitive — **amended or extended** by 0042, and step 10 is where which of the two is settled |
-| [0019](../../adr/0019-the-ui-is-laid-out-by-what-draws-it.md) | The ui is laid out by what draws it — unchanged; steps 7 and 9 keep the `Measure`/`Write` seam |
+| 0019 (removed) | The ui is laid out by what draws it — unchanged; steps 7 and 9 keep the `Measure`/`Write` seam |
 | [0020](../../adr/0020-ui-themes-are-data-apps-load-the-images.md) | An app resolves what a config names — unchanged; step 12's sheet resolves its image the same way a theme does |
 | [0027](../../adr/0027-build-consume-the-api-as-source.md) | The api is consumed as source — unchanged, and why a consuming game can be planned against unreleased api |
 | [0040](../../adr/0040-ui-keyboard-focus-and-text-input.md) | A key goes to a focused component — **extended** by step 8, which gives the focus a second way to move |
@@ -350,7 +350,7 @@ it.
 ### Step 5 — Pong remembers what it was told
 
 **Landed**, with the org and app recorded in
-[Architecture.md](../../Architecture.md) where the next app will look. Verified by running it:
+[Engine.md](../../api/Engine.md) where the next app will look. Verified by running it:
 rebound Player 1 Up to `j` through the menu, confirmed the document, restarted and confirmed
 `j` moves the paddle and `w` no longer does, deleted the document and confirmed `w` does again.
 
@@ -410,7 +410,7 @@ Two halves:
 - **A label wraps when it has a width to wrap to.** A `Label` whose layout gives it an `Auto` width
   is one line, exactly as today. One that was given a width or a percentage wraps to it, and its
   `Auto` *height* becomes the rows it came to — which is the shape
-  [ADR-0039](../../adr/0039-layout-never-reads-the-box-it-wrote.md) already describes for a component
+  ADR-0039 (removed) already describes for a component
   that makes something of an axis itself, so nothing about layout changes to accommodate it.
 
 **Do not add a rich-text component.** A run of text with per-span colour, a link, an inline icon —
@@ -613,7 +613,7 @@ That is the same line [Testing.md](../../contributing/Testing.md) already draws 
 ## Considered and not done
 
 **Promoting `CommandDirectory` to `api/event`.**
-[ADR-0017](../../adr/0017-a-command-is-a-name-in-a-context.md) rejected this with a stated condition —
+ADR-0017 (removed) rejected this with a stated condition —
 *"it moves when a second app wants it"* — and the consuming game's M1 plan predicted its M2 would be
 the trigger. It read the code and concluded not yet: about twelve commands in two contexts that do
 not overlap, answered by two `if` chains, where the editor's directory exists to serve 76 commands
@@ -656,3 +656,26 @@ Two corrections found while reading, neither of which is a step:
   Whichever landed it did not close the note.
 - **`JsonFile::open` uses `fopen_s`**, which is MSVC's, as do all four image readers and writers.
   The tree is Windows-only and this is not urgent; it is worth knowing before step 2 adds a fifth.
+
+## Outcome
+
+Drafted on 2026-09-07 outside this tree, then staged and closed here the same day. Its thirteen
+steps covered what a game needs from these libraries that a demo does not:
+
+- a document written whole or not at all
+  ([ADR-0041](../../adr/0041-files-write-documents-atomically.md));
+- a textured quad in world space
+  ([ADR-0042](../../adr/0042-rendering-world-space-sprites.md));
+- the missing halves of `api/ui` and `api/audio`.
+
+The ordering mattered because the groups were largely independent: four groups, and only two
+with an order inside them. So the one defect it carried, an editor save that truncated the
+previous project before writing the new one, did not wait behind the structural work.
+
+Two things came out differently from the plan:
+
+- Step 8 gave `Keys::press` an argument for whether shift is held. A key name carries no
+  modifier, and `api/ui` cannot ask `api/input` for one without bringing SDL into a library that
+  needs no window to test.
+- Step 12 landed entirely in `api/config`, because a sprite sheet resolves to a texture handle
+  the app already holds.

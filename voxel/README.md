@@ -1,18 +1,8 @@
 # Voxel
 
-A Minecraft inspired random voxel world generation app.
+A Minecraft-style voxel world with randomly generated terrain. [docs/Games.md](../docs/Games.md#voxel)
+covers how to run it, its controls, and which api features it is the reference example for.
 
-
-Ported onto the current api and Vulkan on 2026-09-01: terrain draws through a depth tested,
-sorted pass of voxel's own pipeline, one draw item per meshed chunk, with a second pass of
-batched quads for the debug overlay and the game menu. [../docs/audits/completed/VoxelSurvey.md](../docs/audits/completed/VoxelSurvey.md)
-is the record of what it was before that.
-
-## Dependencies
-
-Everything but libnoise comes from the repository's own libraries and its vcpkg manifest — see
-[../docs/Dependencies.md](../docs/contributing/Dependencies.md). Voxel is the only app that links
-[libnoise](https://github.com/eXpl0it3r/libnoise), which is a git submodule built separately, and
-it will not link without it. Its test suite links libnoise too: `Chunk` is built against a
-`TerrainMap`, and the vtable of the flat one a test supplies refers to the perlin implementation
-whether or not any case generates noise.
+Voxel is the only app that links [libnoise](https://github.com/eXpl0it3r/libnoise). libnoise is
+a git submodule that is built separately, and voxel and its test suite do not link without it.
+[docs/contributing/Dependencies.md](../docs/contributing/Dependencies.md#libnoise) has the steps.

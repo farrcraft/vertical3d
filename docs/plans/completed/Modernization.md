@@ -36,7 +36,7 @@ Recorded in [docs/adr/](../../adr/), not here. The ones that shape this plan:
 | [0003](../../adr/0003-rendering-one-engine-for-2d-and-3d.md) | One realtime engine, with the render pass as the unit of variation |
 | [0004](../../adr/0004-rendering-submit-draw-items-as-data.md) | Operations are draw data; the engine sorts, merges and records |
 | [0005](../../adr/0005-2d-one-batched-quad-pipeline.md) | One batched quad primitive with an optional texture |
-| [0006](../../adr/0006-keep-both-pong-and-tetris.md) | Both pong and tetris are kept |
+| 0006 (removed) | Both pong and tetris are kept |
 | [0007](../../adr/0007-ci-render-tests-on-software-vulkan.md) | Render tests run on a Windows runner against software Vulkan |
 
 ## Where things actually stand
@@ -1026,7 +1026,7 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
   - Still open: nothing but a create and a transform is undoable, and a modelling operation
     that edits geometry will need to record the topology it changed rather than a placement.
 - ~~**There is nothing a menu item could invoke.**~~ Landed 2026-09-02 as
-  [ADR-0017](../../adr/0017-a-command-is-a-name-in-a-context.md), which is item 8 of the
+  ADR-0017 (removed), which is item 8 of the
   survey's delete list. A command is identified by its context and name together -
   `Event::str()`, which is the form gui.xml's 51 command strings are already in - and
   `v3d::editor::CommandDirectory` maps that to a handler. A key binding and a menu item carry
@@ -1073,7 +1073,7 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
     path beside the executable. No "save as", no dirty flag, and nothing warns before a load
     replaces unsaved work.
 - ~~**There is nothing that draws a menu.**~~ Landed 2026-09-02 as
-  [ADR-0019](../../adr/0019-the-ui-is-laid-out-by-what-draws-it.md). `api/ui` had a menu, but it
+  ADR-0019 (removed). `api/ui` had a menu, but it
   was a game's pause menu - one panel centred on the canvas, navigated by the keyboard, with
   no notion of a strip and no idea where the cursor is. **Drawing is what lays the ui out**:
   `ComponentRenderer` leaves every component holding the bounds it was drawn in, and
@@ -1297,3 +1297,8 @@ unbuilt input capture — is the editor section of [docs/TODO.md](../../TODO.md)
 
 None outstanding. The last one — how render tests run in CI — is settled in
 [ADR-0007](../../adr/0007-ci-render-tests-on-software-vulkan.md).
+
+## Outcome
+
+Closed on 2026-09-04. It covered several overlapping rewrites: SDL3, the migration of the legacy
+trees, Vulkan, the engine consolidation and the per-app ports.

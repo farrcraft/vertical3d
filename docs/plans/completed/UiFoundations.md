@@ -100,7 +100,7 @@ Recorded in [adr/](../../adr/), not here.
 |---|---|
 | **0036** | Text is a distinct kind of quad, and the primitive carries which — written by step 1, amending [0005](../../adr/0005-2d-one-batched-quad-pipeline.md) |
 | [0005](../../adr/0005-2d-one-batched-quad-pipeline.md) | One batched quad primitive with an optional texture — **amended**, not superseded: one pipeline still draws every 2D thing |
-| [0019](../../adr/0019-the-ui-is-laid-out-by-what-draws-it.md) | The ui is laid out by what draws it — unchanged; step 5 keeps `Measure`/`Write` as the seam |
+| 0019 (removed) | The ui is laid out by what draws it — unchanged; step 5 keeps `Measure`/`Write` as the seam |
 | [0020](../../adr/0020-ui-themes-are-data-apps-load-the-images.md) | A theme is data and the app resolves its images — unchanged; step 8 is the same division applied to paths |
 
 0036 is the next free number; [adr/README.md](../../adr/README.md) is the authority and `0026` is a
@@ -236,7 +236,7 @@ One atlas at one base size, and `draw()` and `width()` take the size they are wa
 of requested size to base size.
 
 `measure()` and `write()` keep their shape — per
-[ADR-0019](../../adr/0019-the-ui-is-laid-out-by-what-draws-it.md) `ComponentRenderer` names no font
+ADR-0019 (removed) `ComponentRenderer` names no font
 type, and it should stay that way — so they close over the size the caller wants. An app drawing
 a ui at one size and a heading at another asks for two callback pairs from one `TextRenderer`.
 
@@ -360,7 +360,7 @@ Per [sdlc.md](../../sdlc.md) §4:
 `asset::Manager` and write one with `boost::json`, which is what the prompting game will do.
 Serializing config back out is plausibly the api's job eventually, but there is one consumer
 today, and [ADR-0016](../../adr/0016-editor-undo-records-completed-changes.md) and
-[ADR-0017](../../adr/0017-a-command-is-a-name-in-a-context.md) both settle that one consumer is not
+ADR-0017 (removed) both settle that one consumer is not
 a library. It moves when a second app wants it.
 
 **It does not promote `CommandDirectory` to `api/event`.** ADR-0017's Alternative 3 named the
@@ -396,3 +396,25 @@ this plan is for.
   Not this plan's — the glyph metrics scale on the cpu in `TextureTextBuffer::addCharacter`, which
   is the layout's own business, so nothing here needed the transform to do it. It has one now:
   `Canvas::scale(const glm::vec2&)`, landed elsewhere.
+
+## Outcome
+
+Drafted on 2026-09-06 outside this tree, then staged and closed here the same day. Its nine
+steps covered what a ui needs from the engine before it can have more than one text size:
+
+- signed distance field glyphs
+  ([ADR-0036](../../adr/0036-text-sdf-glyphs-through-the-quad-shader.md), which amends
+  [ADR-0005](../../adr/0005-2d-one-batched-quad-pipeline.md));
+- menu input capture;
+- a user settings path;
+- a window whose size an app can set.
+
+The ordering mattered because two steps were shipping defects. Pong's rebinding menu did nothing
+when activated, and an overflowing glyph atlas reported success. Four apps also each hardcoded a
+font size around a limit that belonged to the library, not to them.
+
+Two things came out differently from the plan:
+
+- Step 4 could not be added on its own as drafted, so it landed with step 2.
+- Step 5 gave its size argument a default. The four call sites it was expected to break did not
+  break, so step 6 became four apps choosing a size rather than four apps being repaired.

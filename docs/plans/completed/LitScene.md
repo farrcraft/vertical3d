@@ -118,7 +118,7 @@ tree was read in its working state.
 | [4](#step-4--the-recorder-binds-set-2-and-a-bias) | `Pass::scene` and `Pass::depthBias`, recorded | `api/render` | 0064 | done |
 | [5](#step-5--a-depth-only-target) | A target with no colour image, and a device case reading its depth back | `api/render` | 0044 | done |
 | [6](#step-6--a-model-onto-the-device) | `MeshRegistry`, `MeshHandle` and `component::Mesh` | `api/render` | **[0065](../../adr/0065-meshes-shared-registry-keyed-by-path.md)** | done; accepted |
-| [7](#step-7--the-lit-pass-with-the-look-as-data) | The colour record, the shader rule, the cel and outline pipelines, and the walk | `api/render` | **[0066](../../adr/0066-lighting-light-in-linear-draw-to-srgb.md)**, **[0067](../../adr/0067-lit-shaders-are-embedded-and-replaceable.md)** | done; accepted |
+| [7](#step-7--the-lit-pass-with-the-look-as-data) | The colour record, the shader rule, the cel and outline pipelines, and the walk | `api/render` | **[0066](../../adr/0066-lighting-light-in-linear-draw-to-srgb.md)**, **0067 (removed)** | done; accepted |
 | [8](#step-8--a-shadow-map) | The shadow pass, the light's matrix and the fit, bound at set 2 | `api/render` | 0064 | done |
 | [9](#step-9--targets-a-chain-can-use) | Double-buffered targets, a format check, and passes placed by what they read | `api/render` | **[0068](../../adr/0068-rendering-order-passes-by-what-they-read.md)** | done; accepted |
 | [10](#step-10--the-chain-after-the-scene) | A full-screen pass and the LUT grade | `api/render` | 0068 | done |
@@ -554,7 +554,7 @@ Six things came out differently:
   `renderer::Lit` shadow pipeline. `meshes()` submits a shadow item for an entity with
   `castsShadow`.
 * **The map reaches the lit pass at set 2, binding 1.** It goes through the target's sampler,
-  in `DEPTH_READ_ONLY_OPTIMAL`, which [ADR-0044](../../adr/0044-a-sampled-depth-target-is-read-only.md)
+  in `DEPTH_READ_ONLY_OPTIMAL`, which ADR-0044 (removed)
   already leaves it in.
 * **The recorder's existing rule orders it**: the shadow pass writes the target and the lit pass
   reads it. Until step 9 that order is the caller's, using `passBefore`.
@@ -814,7 +814,7 @@ What adopting involves:
 * **The transform turns by a quaternion, not a yaw.** `aboutY()` makes one from a yaw.
 * **Shaders.** retcon keeps loading its shaders from its directory with its own `loadSpirv`,
   and hands the words to `Lit::Shaders`
-  ([ADR-0067](../../adr/0067-lit-shaders-are-embedded-and-replaceable.md)). They declare the blocks in
+  (ADR-0067, removed). They declare the blocks in
   `shaders/lit/lit.glsl`, which are retcon's own blocks, member for member. Its `lut.frag` can be
   handed to a `FullScreen` as it is, once its samplers say `set = 1`, because the scene at binding
   0 and the table at binding 1 are the layout `Grade` uses.
@@ -916,3 +916,35 @@ Update the state in the table above.
 * **When the plan closes**, [m4](../../roadmap/completed/m4-LitScene.md) moves to `roadmap/completed/` and
   points here as done. The roadmap's table row says so, and this file moves to
   [completed/](./).
+
+## Outcome
+
+Drafted and closed on 2026-10-03. It took up
+[milestone 4](../../roadmap/completed/m4-LitScene.md) of
+[the game engine roadmap](../../roadmap/completed/GameEngine.md). It rebuilt retcon's lit
+rendering inside the frame model the rest of the api draws through, rather than copying
+retcon's hand-recorded passes. It delivered:
+
+- a scene set at set 2 and a depth bias in the recorder
+  ([ADR-0064](../../adr/0064-lighting-lit-passes-use-the-shared-recorder.md)), which removed
+  retcon's reason for refusing the frame model;
+- images and samplers as classes;
+- a model reaching the device through a registry
+  ([ADR-0065](../../adr/0065-meshes-shared-registry-keyed-by-path.md));
+- lighting in linear colour
+  ([ADR-0066](../../adr/0066-lighting-light-in-linear-draw-to-srgb.md)), with replaceable
+  shaders (ADR-0067, removed);
+- a frame that places its passes by what they read
+  ([ADR-0068](../../adr/0068-rendering-order-passes-by-what-they-read.md));
+- retcon's look-dev scene as a device test case, and a handoff note for retcon to read when it
+  adopts the work.
+
+Three things came out differently from the plan:
+
+- **A format mismatch is a validation error after all.** The recorder's own check is for runs
+  without the validation layers, and for naming the pass.
+- **Passes into one target keep their creation order, whatever the reads move.** A sort by reads
+  alone broke this by putting an overlay under the colour pass.
+- **retcon's light matrix could not be copied unchanged.** It is built with `glm::lookAt`, which
+  is mirrored relative to this tree's cameras. A shadow pass culled with the cel pass's winding
+  would have drawn the back faces.

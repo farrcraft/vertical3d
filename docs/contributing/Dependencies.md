@@ -1,124 +1,81 @@
 # Dependencies
 
-## From vcpkg
+This document is for contributors. It lists the third-party packages the tree uses, says where
+each one comes from, and explains how to add or update one. [Build.md](Build.md) covers what the
+build does with them. A project in another repository that uses the api manages its own
+packages, as described in [UsingTheApi.md](../api/UsingTheApi.md#2-the-vcpkg-manifest).
 
-Through the manifest in [vcpkg.json](../../vcpkg.json):
+- [Packages from vcpkg](#packages-from-vcpkg)
+- [The Vulkan SDK](#the-vulkan-sdk)
+- [libnoise](#libnoise)
+- [Setting up vcpkg](#setting-up-vcpkg)
+- [Adding a package](#adding-a-package)
+- [Updating versions](#updating-versions)
 
-| Port | |
+## Packages from vcpkg
+
+vcpkg installs these in manifest mode, from [vcpkg.json](../../vcpkg.json). The packages are
+installed into `out/build/<config>/vcpkg_installed/` during the first configure.
+
+| Port | Notes |
 |---|---|
-| boost-filesystem, boost-foreach, boost-headers, boost-json, boost-lexical-cast, boost-optional, boost-program-options, boost-smart-ptr, boost-system, boost-test, boost-unordered | The boost libraries the tree includes, named one port each rather than through the `boost` metapackage. See the note below on `boost::json`, and [adding a boost library](#adding-a-boost-library) |
-| cgltf | A single header the port copies into `include/`, with no CMake config of its own. [Build.md](Build.md#traps) covers how it is found and where its implementation half is compiled |
+| boost-filesystem, boost-foreach, boost-headers, boost-json, boost-lexical-cast, boost-optional, boost-program-options, boost-smart-ptr, boost-system, boost-test, boost-unordered | One port per boost library the tree uses. The manifest does not use the `boost` metapackage. See [Adding a boost library](#adding-a-boost-library) |
+| cgltf | A single header with no CMake config. [Build.md](Build.md#traps) says how it is found and where its implementation is compiled |
 | entt | |
 | freetype | |
 | glm | |
 | libjpeg-turbo | |
 | libpng | |
-| sdl3 | **With its `vulkan` feature**, which is required. Without it SDL builds with `SDL_VULKAN=OFF` and `SDL_Vulkan_LoadLibrary` fails at startup with "No dynamic Vulkan support in current SDL video driver (windows)" |
-| sdl3-mixer | What `v3dlib_audio` is built on, per [ADR-0021](../adr/0021-audio-use-sdl3-mixer.md). It needs SDL >= 3.4.0, which is why the vcpkg baseline moved |
+| sdl3 | **Must have its `vulkan` feature.** Without it SDL is built without Vulkan support, and `SDL_Vulkan_LoadLibrary` fails at startup with "No dynamic Vulkan support in current SDL video driver (windows)" |
+| sdl3-mixer | `v3dlib_audio` plays sound through it. It needs SDL 3.4.0 or newer |
 | spdlog | |
 | vulkan | |
-| vulkan-memory-allocator | What `memory::Allocator` suballocates through when a consumer asks for it, per [ADR-0053](../adr/0053-memory-optional-vma-suballocation.md). One header that is both declaration and implementation, compiled in `realtime/vulkan/memory/VmaImpl.cxx` the way cgltf is, and linked PRIVATE because `Allocator.h` and `Allocation.h` declare the handles they name rather than including it |
+| vulkan-memory-allocator | Used by `memory::Allocator` when an app turns on suballocation. It is a single header. Its implementation is compiled once, in `api/render/realtime/vulkan/memory/VmaImpl.cxx`, and it is linked PRIVATE because no public header includes it |
 
-**boost 1.91 removed `boost::json::error_code` and `boost::json::system_error`.** Name
-`boost::system` and include `<boost/system/error_code.hpp>` and
-`<boost/system/system_error.hpp>` directly; [api/asset/loader/Json.cpp](../../api/asset/loader/Json.cpp)
-parses with a `boost::system::error_code` and is the pattern to copy.
+The configure looks only for the packages that the selected api libraries need. A build of this
+repository always selects every library, so it needs all of them. Boost is always looked for,
+because every api library links `Boost::headers`.
 
-## Not from vcpkg
+**boost::json has no `error_code` or `system_error` of its own** in the boost version the tree
+uses. Include `<boost/system/error_code.hpp>` and `<boost/system/system_error.hpp>` and use the
+`boost::system` types. [api/asset/loader/Json.cpp](../../api/asset/loader/Json.cpp) parses with a
+`boost::system::error_code` and is the example to copy.
 
-- **The Vulkan SDK.** Every configure needs it whether or not the build will draw:
-  `find_package(Vulkan)` is unconditional, and `v3d_add_shader` looks for `glslc` with a
-  `FATAL_ERROR` on the first shader it is asked to compile, because shaders are compiled at
-  build time and embedded as SPIR-V. `VULKAN_SDK` has to point at an install.
-- **[libnoise](https://github.com/eXpl0it3r/libnoise)**, an unofficial fork that adds CMake
-  support. It is a git submodule, built separately, and it is the only submodule left. Only
-  voxel links it. See [Building libnoise](#building-libnoise) below; voxel's
-  `target_link_directories` expects its artefacts under `vendor/libnoise/Debug`.
+There is no OpenGL, and no package for it.
 
-There is no OpenGL. `api/gl` was deleted on 2026-09-01, and the `find_package(OpenGL)` and
-`find_package(GLEW)` calls and the `glew` port went with it. See
-[ADR-0001](../adr/0001-rendering-replace-opengl-with-vulkan.md).
+Background: [ADR-0021](../adr/0021-audio-use-sdl3-mixer.md),
+[ADR-0053](../adr/0053-memory-optional-vma-suballocation.md)
 
-## Setting up vcpkg
+## The Vulkan SDK
 
-Clone it:
+The [Vulkan SDK](https://vulkan.lunarg.com/) is installed separately, not through vcpkg. Its
+installer sets `VULKAN_SDK`, and the build uses that variable to find it.
 
-```
-mkdir vendor
-cd vendor
-git clone https://github.com/Microsoft/vcpkg.git
-```
+**Building this repository needs the SDK.** Two parts of the configure use it:
 
-Then:
+- `find_package(Vulkan)` runs when the selected libraries include `render`. A build of this
+  repository selects every library, so it always runs.
+- `glslc`, the SDK's shader compiler, compiles shaders at build time. `v3d_add_shader` looks for
+  it on its first call and stops the configure if it is missing. `api/render`, the render device
+  tests and voxel call it.
 
-```
-# Prepare to use vcpkg
-.\vcpkg\bootstrap-vcpkg.bat
+A project in another repository needs the SDK only if the api libraries it selects include
+`render`, directly or through `engine` or `ui`. See
+[UsingTheApi.md](../api/UsingTheApi.md#selecting-libraries).
 
-# Install dependencies
-cd ..
-.\vendor\vcpkg\vcpkg.exe install
+The SDK also provides the Khronos validation layer, which the renderer turns on when it is
+installed. [Testing.md](Testing.md#verifying-a-rendering-change) explains how to use it.
 
-# Integrate this installation with Visual Studio (CMake will not work in VS otherwise)
-.\vendor\vcpkg\vcpkg.exe integrate install
-```
+## libnoise
 
-## Adding a dependency
-
-Open a developer command prompt and run, for example:
-
-```
-.\vendor\vcpkg\vcpkg.exe add port libpng
-```
-
-Packages are installed during CMake generation.
-
-### Adding a boost library
-
-The manifest names one `boost-*` port per boost library the tree includes, not the `boost`
-metapackage, so a boost header that no port covers does not compile. Including
-`<boost/signals2.hpp>` means adding `boost-signals2` to [vcpkg.json](../../vcpkg.json) and to
-[examples/starter/vcpkg.json](../../examples/starter/vcpkg.json), which the example keeps in step
-with the root.
-
-A compiled boost library needs a second entry: the `COMPONENTS` list in
-[cmake/v3dDependencies.cmake](../../cmake/v3dDependencies.cmake), which is what creates the
-`Boost::<component>` target a `target_link_libraries` can then name. Header-only libraries need
-no component, because [v3d_add_api_library](../../cmake/v3dHelpers.cmake) links `Boost::headers`
-into every api library, and that target carries the include directory the whole of boost is
-found through.
-
-## Updating versions
-
-To get a newer boost, say, update the baseline and re-run the install:
-
-```
-.\vendor\vcpkg\vcpkg.exe x-update-baseline
-.\vendor\vcpkg\vcpkg.exe install
-```
-
-**The baseline is pinned in [vcpkg-configuration.json](../../vcpkg-configuration.json)**, not in
-`vcpkg.json`, and it names a commit of microsoft/vcpkg rather than the `vendor/vcpkg` ports
-tree on disk. A port missing from that commit fails with "the baseline does not contain an
-entry for port X" even when `vendor/vcpkg/ports/X` exists.
-
-Editing `vcpkg.json` re-runs the manifest install. A cold install builds boost from source and
-takes roughly 45 minutes; changing the sdl3 feature set rebuilds SDL only, about five minutes.
-
-## Submodules
-
-Submodules live in `vendor/` and are cloned and built individually. To add one:
-
-```
-git submodule add https://github.com/eXpl0it3r/libnoise vendor/libnoise
-```
+[libnoise](https://github.com/eXpl0it3r/libnoise) is an unofficial fork of libnoise with CMake
+support. It is the tree's only git submodule, at `vendor/libnoise`. Only voxel and voxel's test
+suite link it, and neither links until libnoise has been built.
 
 ### Building libnoise
 
-Build it **out of source**. The `CMakeCache.txt` libnoise commits names a "Visual Studio 17
-2022" generator that is not necessarily installed, and reusing that cache is the usual reason a
-build of it fails. `CMAKE_POLICY_VERSION_MINIMUM` is needed because its
-`cmake_minimum_required(VERSION 3.0)` predates what current CMake accepts.
+Build it out of source, with the commands below, from the repository root in a developer
+environment. Replace `<repo>` with the absolute path of your clone.
 
 ```
 cmake -S vendor/libnoise -B vendor/libnoise/build-ninja -G Ninja \
@@ -128,21 +85,91 @@ cmake -S vendor/libnoise -B vendor/libnoise/build-ninja -G Ninja \
 cmake --build vendor/libnoise/build-ninja
 ```
 
-libnoise is not prebuilt in the tree, and `voxel` will not link without it.
+- **Do not build in the libnoise source directory.** libnoise commits a `CMakeCache.txt` that
+  names a "Visual Studio 17 2022" generator. Reusing that cache is the usual cause of a failed
+  libnoise build.
+- `CMAKE_POLICY_VERSION_MINIMUM=3.5` is required because libnoise declares
+  `cmake_minimum_required(VERSION 3.0)`, which current CMake rejects.
+- The archive must land in `vendor/libnoise/Debug`, which is where voxel's
+  `target_link_directories` looks.
 
-## Consuming the api from another repository
+## Setting up vcpkg
 
-An application outside this tree takes it as source, per
-[ADR-0027](../adr/0027-build-consume-the-api-as-source.md), and [NewProject.md](../api/UsingTheApi.md) is
-the walkthrough. Two points about it belong here, because they are about dependencies:
+`vendor/vcpkg/` is listed in `.gitignore`, so a clone of this repository does not include
+vcpkg. Clone and bootstrap it once:
 
-- **The consumer's `vcpkg.json` is the one that gets installed.** Manifest mode reads the root
-  project's manifest, and once vertical3d is nested that is the consumer's. Copy
-  [vcpkg.json](../../vcpkg.json) across; the api's dependencies are not resolved from the tree's
-  own.
-- **`vendor/vcpkg/` is gitignored here**, so cloning this repository does not bring a vcpkg with
-  it. A consumer clones its own.
+```
+git clone https://github.com/Microsoft/vcpkg.git vendor/vcpkg
+.\vendor\vcpkg\bootstrap-vcpkg.bat
+```
 
-The baseline in [vcpkg-configuration.json](../../vcpkg-configuration.json) has to be copied
-verbatim into the consumer's, and nothing checks that it was. A boost library's file name
-carries its version, so a drifted baseline shows up as a link error rather than a warning.
+For Visual Studio's CMake integration, also run:
+
+```
+.\vendor\vcpkg\vcpkg.exe integrate install
+```
+
+You do not need to run `vcpkg install` yourself. The first configure installs the manifest's
+packages into the build directory. A `vcpkg install` run from the repository root installs a
+second copy into `vcpkg_installed/` at the root, which the build does not use.
+
+CI uses the vcpkg that the GitHub Windows runner image provides, not `vendor/vcpkg`.
+
+## Adding a package
+
+From a developer command prompt:
+
+```
+.\vendor\vcpkg\vcpkg.exe add port libpng
+```
+
+The package is installed at the next configure. Then:
+
+1. Add the `find_package` call to [cmake/v3dDependencies.cmake](../../cmake/v3dDependencies.cmake),
+   inside `v3d_find_packages` if the package needs anything other than a plain
+   `find_package(<name> REQUIRED)`.
+2. Link it from the api library that uses it, PUBLIC or PRIVATE as
+   [Build.md](Build.md#linking-rules) describes.
+3. Add it to that library's `PACKAGES` list in
+   [cmake/v3dApiLibraries.cmake](../../cmake/v3dApiLibraries.cmake). If the package provides an
+   imported target, add the target to `V3D_PACKAGE_TARGETS` as well. The configure fails if the
+   manifest and the link lines disagree.
+4. Add the port to [examples/starter/vcpkg.json](../../examples/starter/vcpkg.json). That file is
+   kept identical to the root one.
+
+### Adding a boost library
+
+The manifest lists one `boost-*` port per boost library, so a boost header with no port in the
+manifest does not compile. To include `<boost/signals2.hpp>`, add `boost-signals2` to
+[vcpkg.json](../../vcpkg.json) and to [examples/starter/vcpkg.json](../../examples/starter/vcpkg.json).
+
+A compiled boost library needs one more step. Add it to the `COMPONENTS` list of the
+`find_package(Boost ...)` call in [cmake/v3dDependencies.cmake](../../cmake/v3dDependencies.cmake).
+That creates the `Boost::<component>` target that `target_link_libraries` can name. All the
+components are found in that one call.
+
+A header-only boost library needs no component. Every api library links `Boost::headers`, which
+carries the include directory for all of boost.
+
+Boost is resolved in config mode, using the `BoostConfig.cmake` that vcpkg installs. FindBoost's
+input variables, such as `Boost_USE_STATIC_LIBS`, have no effect. The `x64-windows` triplet
+builds boost as shared libraries.
+
+## Updating versions
+
+To move every package to newer versions, update the baseline and configure again:
+
+```
+.\vendor\vcpkg\vcpkg.exe x-update-baseline
+```
+
+**The baseline is in [vcpkg-configuration.json](../../vcpkg-configuration.json)**, not in
+`vcpkg.json`. It names a commit of the microsoft/vcpkg repository, not the ports in your local
+`vendor/vcpkg`. A port that the baseline commit does not contain fails with "the baseline does
+not contain an entry for port X", even when `vendor/vcpkg/ports/X` exists.
+
+Copy the new baseline into
+[examples/starter/vcpkg-configuration.json](../../examples/starter/vcpkg-configuration.json) as well.
+
+A new baseline usually reinstalls most packages, including boost. See [Build.md](Build.md#traps)
+for the cost.

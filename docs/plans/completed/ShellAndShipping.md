@@ -162,7 +162,7 @@ milestones 1 to 6. This tree was read at `e939bec`.
 | [2](#step-2--a-held-command) | A command held while any key bound to it is | `api/event`, `api/engine` | — | done |
 | [3](#step-3--a-relative-mouse) | A window in relative mouse mode, and voxel's mouselook on it | `api/render`, `voxel` | — | done |
 | [4](#step-4--a-document-read-forward) | A document read forward through a chain, and `Settings` and the project on it | `api/asset`, `api/engine`, `vertical3d` | **[0073](../../adr/0073-files-migrate-old-documents-one-version-at-a-time.md)** | done; accepted |
-| [5](#step-5--the-record-the-shell-builds-the-uis-renderers) | The record: the shell builds the ui's renderers | `docs/adr` | **[0074](../../adr/0074-the-shell-builds-the-uis-renderers.md)** | done; accepted |
+| [5](#step-5--the-record-the-shell-builds-the-uis-renderers) | The record: the shell builds the ui's renderers | `docs/adr` | **0074 (removed)** | done; accepted |
 | [6](#step-6--one-screen-and-four-apps-on-it) | `ui::shell::Screen`, and pong, tetris, voxel and the editor on it | `api/ui`, four apps | 0074 | done |
 | [7](#step-7--a-canvas-with-a-space-of-its-own) | A canvas with a space of its own, and pong's court in it | `api/render`, `pong` | **[0075](../../adr/0075-2d-a-canvas-may-have-its-own-coordinate-space.md)** | done; accepted |
 | [8](#step-8--a-box-that-wraps) | A box that wraps and sizes itself from its lines | `api/ui` | — | done |
@@ -777,7 +777,7 @@ first.**
 | walk or pan keys that can be rebound | bindings, read through `Engine::held(command)` |
 | mouselook | `Window::relativeMouse(true)` and `MouseMotion::motion()` |
 | a save or settings file a later build can read | `asset::readForward()` and a chain ([ADR-0073](../../adr/0073-files-migrate-old-documents-one-version-at-a-time.md)) |
-| the text, component and statistics renderers built once | `ui::shell::Screen` ([ADR-0074](../../adr/0074-the-shell-builds-the-uis-renderers.md)) |
+| the text, component and statistics renderers built once | `ui::shell::Screen` (ADR-0074, removed) |
 | a mouse position in those coordinates | `Canvas::toSpace()` |
 | a 2D game in its own coordinates | `Canvas::space()` and `toSpace()` ([ADR-0075](../../adr/0075-2d-a-canvas-may-have-its-own-coordinate-space.md)) |
 | a grid of slots | a wrapping box |
@@ -867,9 +867,9 @@ Update the state in the table above.
   is open.
 * **Step 1** adds the strips' rule to [UserInterface.md](../../api/UserInterface.md)'s account of
   `pickable()`.
-* **Step 2** adds `held()` beside `Engine::rebind()` in [Architecture.md](../../Architecture.md)'s
+* **Step 2** adds `held()` beside `Engine::rebind()` in [Engine.md](../../api/Engine.md)'s
   account of the shell.
-* **Step 3** adds relative mode beside `warpCursor()` in Architecture.md.
+* **Step 3** adds relative mode beside `warpCursor()` in Engine.md.
 * **Step 4** adds the index row for 0073 as `proposed`, accepts it when `Settings` is on it, and
   updates [ADR-0018](../../adr/0018-editor-projects-saved-as-json-with-exact-topology.md)'s note that a
   version is the whole of the migration story.
@@ -889,3 +889,47 @@ Update the state in the table above.
 * **When the plan closes**, [m7](../../roadmap/completed/m7-ShellAndShipping.md) moves to `roadmap/completed/`
   and points here as done. Asynchronous loading moves to TODO.md with its trigger, the roadmap's
   table row says so, and this file moves to [completed/](.).
+
+## Outcome
+
+Drafted and closed on 2026-10-04. It took up
+[milestone 7](../../roadmap/completed/m7-ShellAndShipping.md) of
+[the game engine roadmap](../../roadmap/completed/GameEngine.md), and delivered:
+
+- a strip that respects `pickable()`;
+- a command that can be held;
+- voxel looking around in relative mouse mode;
+- a document read forward through a chain of migrations
+  ([ADR-0073](../../adr/0073-files-migrate-old-documents-one-version-at-a-time.md));
+- one shell class that builds the ui's renderers over an `Engine3D`, which pong, tetris, voxel
+  and the editor all draw through (ADR-0074, removed);
+- a canvas that may draw in its own coordinate space, which pong's court uses
+  ([ADR-0075](../../adr/0075-2d-a-canvas-may-have-its-own-coordinate-space.md));
+- a box that can wrap text, open and save-as through a file chooser in the editor, every pass
+  timed on the device, and a slider.
+
+Asynchronous loading went to [TODO.md](../../TODO.md#loading), held behind cozy's region
+streaming. The plan's three ADRs were accepted when it closed.
+
+Four things came out differently from the plan:
+
+- **The renderer helper could not live on the realtime side**, because `v3dlib_ui` links
+  `v3dlib_render`. It is in `api/ui/shell`, with `Engine3D` declared rather than included.
+- **A game space belongs to the canvas, not to set 0.** Set 0 holds one camera per pass, and
+  pong draws its court and its menu in one pass. A clip also has to be mapped out of the game
+  space, because a scissor is in pixels.
+- **A menu bar read nothing from a document except its name**, so marking one unpickable would
+  have been silently dropped.
+- **The style resolver counted its style classes by hand**, so the slider's class indexed past
+  the array. The count now comes from the enum.
+
+Running the apps found two defects the plan had not looked for. Both went to TODO.md: a
+minimised window spins and logs every frame ([Frames](../../TODO.md#frames)), and voxel's
+mouselook turns most of the way round in ten pixels ([Voxel](../../TODO.md#voxel)).
+
+The analysis gates found three problems that a build alone would not, and each was fixed:
+
+- a nested struct's member initializers used in a default argument, which clang refuses and
+  MSVC accepts;
+- a destructor that could allocate;
+- a function over the cognitive complexity threshold.

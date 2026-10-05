@@ -52,7 +52,7 @@ Recorded in [adr/](../../adr/), not here.
 |---|---|
 | [0032](../../adr/0032-loop-fixed-step-simulation-variable-rate-rendering.md) | The loop simulates at a fixed step and renders at a variable one — written by step 1 |
 | [0012](../../adr/0012-camera-projection-targets-vulkan-clip-space.md) | `v3d::type::Camera` builds Vulkan clip space — unchanged; step 5's loader produces profiles for it |
-| [0016](../../adr/0016-editor-undo-records-completed-changes.md), [0017](../../adr/0017-a-command-is-a-name-in-a-context.md) | One consumer is not a library, and it moves when a second app wants it — **step 5 applies it**, and needs no record of its own |
+| [0016](../../adr/0016-editor-undo-records-completed-changes.md), 0017 (removed) | One consumer is not a library, and it moves when a second app wants it — **step 5 applies it**, and needs no record of its own |
 
 `0026` is a deliberate gap, reserved by [the shading plan](OfflineRenderingPhase3.md) —
 [adr/README.md](../../adr/README.md) says so above its table. 0028 through 0031 have been taken since
@@ -219,7 +219,7 @@ a named profile round-tripping, a profile missing a name rejected, and the docum
 applied to a sparse entry.
 
 No ADR: [ADR-0016](../../adr/0016-editor-undo-records-completed-changes.md) and
-[ADR-0017](../../adr/0017-a-command-is-a-name-in-a-context.md) both already settle that one consumer is
+ADR-0017 (removed) both already settle that one consumer is
 not a library and that the thing moves when a second app wants it. This is that rule being applied,
 not a new decision. Cite it in the commit message.
 
@@ -264,7 +264,7 @@ Per [sdlc.md](../../sdlc.md) §4:
 
 **It does not make "only a destination event is a command" structural.** Every app subscribing to
 `sink<v3d::event::Event>()` receives both halves of a mapping and filters by context name rather
-than by `type()`. [ADR-0017](../../adr/0017-a-command-is-a-name-in-a-context.md) already states the
+than by `type()`. ADR-0017 (removed) already states the
 convention and records the editor hitting the bug it prevents. Dispatching commands as a distinct
 type so the sink cannot carry both would supersede part of that record, touch five apps, and break
 the property it is built on — that a key binding and a menu item are *the same object*. Not worth
@@ -289,3 +289,18 @@ The third — **do tetris and voxel eventually move onto `simulate()`?** — was
 The premise that they were "not wrong today" did not survive reading them. Tetris counted whole
 milliseconds, so a step shorter than one rounded to zero and nothing fell; voxel's player
 ignored its delta and moved a hardcoded tenth of a second per frame.
+
+## Outcome
+
+Drafted on 2026-09-05 outside this tree, then staged and closed here on 2026-09-06. It filled
+three gaps in the game loop that every app subclassing `v3d::engine::Engine` had worked around
+separately, or had failed to:
+
+- a fixed simulation step
+  ([ADR-0032](../../adr/0032-loop-fixed-step-simulation-variable-rate-rendering.md));
+- window focus as an event;
+- the camera profile loader, moved out of the editor into `api/config`.
+
+The ordering mattered because the new capability and the two-app bug fix that depended on it
+were separate commits. Pong and odyssey had advanced their worlds by one increment per frame, so
+they ran faster on a faster machine.

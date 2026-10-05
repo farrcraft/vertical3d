@@ -98,7 +98,7 @@ Moved from moya, which keeps using them. They are the ground pick above and the 
 **The frustum's plane extraction has to be checked against the clip space it is handed.** moya
 builds an offline camera and the realtime camera builds Vulkan clip space
 ([ADR-0012](../../adr/0012-camera-projection-targets-vulkan-clip-space.md)), whose depth runs 0 to 1 rather
-than −1 to 1. By [ADR-0024](../../adr/0024-api-type-serves-both-renderers.md) a convention one
+than −1 to 1. By ADR-0024 (removed) a convention one
 consumer needs becomes a parameter rather than a second copy, so the extraction takes it.
 
 ## Verification

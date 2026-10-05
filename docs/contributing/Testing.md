@@ -1,185 +1,252 @@
 # Testing
 
-Boost.Test, one binary per api library from `api/<lib>/tests/`, plus one per app that has logic
-worth covering. The binaries are registered with ctest and run in CI on every push by
-[.github/workflows/ctest.yml](../../.github/workflows/ctest.yml).
+This document is for contributors. It explains how to run the tests, how the suites are
+organised, how to write a test, and how to check a rendering change, including the tests that
+draw on a GPU.
+
+- [Running the tests](#running-the-tests)
+- [How the suites are organised](#how-the-suites-are-organised)
+- [Writing a test](#writing-a-test)
+- [The render device suite](#the-render-device-suite)
+- [Reference images](#reference-images)
+- [Verifying a rendering change](#verifying-a-rendering-change)
+- [Traps](#traps)
+
+## Running the tests
+
+The tests use Boost.Test. Each suite is one executable, registered with ctest, and they build
+with everything else.
 
 ```
-ninja -C out/build/x64-Debug                       # tests build with everything else
+ninja -C out/build/x64-Debug                       # builds the tests too
 ctest --test-dir out/build/x64-Debug --output-on-failure
-ctest --test-dir out/build/x64-Debug -R image      # one suite
-out/build/x64-Debug/api/image/tests/v3dtest_image.exe --run_test=texture_test
+ctest --test-dir out/build/x64-Debug -R image      # one suite, by name
+ctest --test-dir out/build/x64-Debug -N            # list the suites
 ```
 
-`v3d_add_test(<lib> <sources>)` builds `v3dtest_<lib>`, links the framework, and adds the ctest
-entry with the working directory beside the executable so a suite's fixtures resolve. Link the
-library under test yourself in `api/<lib>/tests/CMakeLists.txt`. `TestMain` carries the
-`BOOST_TEST_MODULE` define and nothing else - except `render_device`'s, which needs a `main` of
-its own so that it can decide whether to run at all.
+`ctest` needs a developer environment. From a plain shell, `scripts\test.cmd` runs the same
+`ctest` command and passes any arguments through, so `scripts\test.cmd -R image` runs one suite.
 
-`add_test` passes `--detect_memory_leaks=0`. Boost.Test otherwise reports a permanent false
-positive for any suite that builds a `Logger`, because spdlog's registry outlives the report.
+To run one test case, run the suite's executable directly with Boost.Test's `--run_test`:
 
-## What is covered
+```
+out/build/x64-Debug/api/image/tests/v3dtest_image.exe --run_test=compare_identical_test
+```
 
-Everything except what needs a window or a sound device, and the beginnings of what needs a
-GPU. `Feature::Window`, `audio::Engine::initialize()` and `ui::TextRenderer` are uncovered and
-stay that way: a software Vulkan implementation answers none of them.
+CI runs every suite in [.github/workflows/ctest.yml](../../.github/workflows/ctest.yml) on each
+pull request and on each push to `main`.
 
-**`api/render` below the recorder has its own binary, `v3dtest_render_device`**, from
-`api/render/tests/device/`. It draws for real - a surface-free device
-([ADR-0007](../adr/0007-ci-render-tests-on-software-vulkan.md)), a `DeviceContext` with no window under it
-([ADR-0051](../adr/0051-frames-in-flight-ring-separate-from-presenting.md)), a frame recorded into a
-`RenderTarget`, and `vulkan::frame::Capture` reading it back
-([ADR-0050](../adr/0050-a-frame-is-read-back-in-two-calls.md)). Each case asserts both halves:
-that the validation layer had nothing to say, and that the pixels are what was drawn. Four of
-them assert the second half against a picture committed in `api/render/tests/device/data/`,
-compared exactly: a flat quad, a quad drawn with a texture the case uploads, and two overlapping
-world quads in each submission order - which is what says a world quad is ordered by its caller
-and not by its depth ([ADR-0042](../adr/0042-rendering-world-space-sprites.md)). What a reference may contain is
-[ADR-0054](../adr/0054-testing-golden-images-hold-only-spec-exact-output.md) — only what the
-specification determines pixel-for-pixel, so that the same file is owed by a driver and by the
-software implementation CI draws with. A case outside that rule asserts texels by hand and has
-no reference. What a
-case compiles rather than draws is here for the same reason - a pipeline shape no renderer in
-this tree builds needs a device to reject it.
+## How the suites are organised
 
-**The lit tier's cases are mostly of the second kind.** A depth-only pass's depths at known
-planes, a full-screen copy against the quad reference, and an identity and an inverting grade
-are what the specification determines, and are asserted exactly or within a step. A lit,
-shadowed and graded frame is not, so `lit_scene_test` asserts silence and a few properties of the
-picture: the centre of a lit cube, a shadow that darkens only ground, and retcon's look-dev scene
-reproduced at 1280×720. Each writes what it drew to `data_out/` (`lit_cube.png`,
-`lit_shadow.png`, `lit_scene.png`) for a person to look at, and none has a reference.
+- **One suite per api library**, in `api/<lib>/tests/`, built as `v3dtest_<lib>`. A library nested
+  inside another one's directory has its own suite: `asset_media` is in
+  `api/asset/media/tests/` and `render_offline` is in `api/render/offline/tests/`.
+- **One extra suite for the realtime renderer on a real device**, `render_device`, from
+  `api/render/tests/device/`. See [The render device suite](#the-render-device-suite).
+- **One suite per app that has logic worth testing**: moya, odyssey, pong, tetris, vertical3d
+  and voxel, each in `<app>/tests/`.
 
-`skin_test` is the skinned half. Its strongest case compares two pictures rather than a
-picture and a reference: the bending strip drawn skinned at rest, and drawn with its skin
-taken off, are byte for byte the same on any one driver. That holds because the fixture's rest
-palette is exactly the identity and its weights are exact. A skinned caster's depth is asserted
-exactly, as the static one's is. The strip bent half way through its clip is asserted silent and
-different from the strip at rest, and written to `data_out/skinned_bend.png`. The same strip
-exported by Blender 5.2, from `api/asset/tests/data/make_blender_fixture.py`, is drawn at three
-points of its clip. The asset_media suite checks that its rest palette is the identity to rounding,
-which is the evidence that a real exporter's matrices agree with this tree's.
+`ctest -N` lists every suite. The test sources are the record of what each suite checks. A change
+with a testable CPU-side part is expected to add test cases.
 
-**Effects are simulated headless and drawn on the device.** Every emitter, weather and drawn
-particle case in the type, ecs and render suites is seeded, so `type::Random` fixes the answer
-on any standard library. On the device, an additive world quad over a clear is asserted exactly,
-because its colours are chosen so that every sum is a whole number of 8-bit steps. A world quad in
-a lit pass is hidden by the cube in front of it, a white light leaves the lit tier's pictures as
-they were, and a replaced grade table regrades its sources, including while a frame using the old
-table is in flight. Two cases draw for a person to look at, and assert only silence and that
-their frames move: a fire among two sprites under a dusk tint (`fire_*.png`), and rain falling in
-a lit scene under a blue light (`rain_*.png`).
+### What has no automated test
 
-**Pass timings are asserted by name and by sense, not by value.** `timings_test` records a frame
-of two passes until its slot comes round again, and asserts that both are timed under their names,
-in order, finite and under a second. A device whose graphics queue writes no timestamps logs a
-message and asserts nothing. A frame recorded without timings times nothing.
+These have no automated test:
 
-It is a second binary rather than more cases in `v3dtest_render`, because that one must keep
-running where there is no GPU. **A run with no device exits 77 and ctest reports the suite as
-`Skipped`**, which `set_tests_properties(render_device PROPERTIES SKIP_RETURN_CODE 77)` is
-what arranges. The probe is in `main` rather than a per-case skip on purpose: a binary whose
-every case skipped exits zero and reads as a pass, which is the same trap as a validation layer
-that was never installed reporting no errors. CI installs lavapipe per ADR-0007, so a skip there
-is a failure rather than a pass: locally a machine may have no device, but the runner was given
-one.
+- `Feature::Window`, which opens the SDL window. A CI runner has no display.
+- `audio::Engine::initialize()`, which opens the audio device. The rest of `api/audio` is tested,
+  but not whether a sound is audible. An engine with no device gives back no voice, so its suite
+  runs anywhere.
+- `ui::paint::TextRenderer`.
 
-`ctest -N` lists what exists, and the test sources are the record of what each suite asserts. A
-change with a testable cpu half is expected to bring cases with it.
+`Engine::eventLoop()` renders, so a test cannot drive it. The order in which an event reaches the
+app, the bindings and the engine is in `Engine::route()`, which a test calls directly with no
+window.
 
-Two seams keep the api libraries testable without a window, and both are worth preserving:
-`ComponentRenderer` takes text measuring and writing as callbacks instead of depending on the
-font library, and a strip is hit tested against the bounds a draw left on it, per
-[ADR-0019](../adr/0019-the-ui-is-laid-out-by-what-draws-it.md). `api/grid` and
-`api/render/offline` name no device at all, so their suites run in CI where the realtime stack
-cannot. The same is true of an app's own rules: `odyssey`'s suite covers its map format, the
-route across it and how far sight reaches over it, and stands up neither a window nor a device
-to do it.
+## Writing a test
 
-All three canvases are cpu side and are covered as such: `CanvasTest`, `LineCanvasTest` and
-`WorldCanvasTest` assert the batching, the transform stack and the geometry without a device.
-What none of them can assert is what the pipeline then does with it - that a world quad is
-hidden behind solid geometry and never behind another world quad, per
-[ADR-0042](../adr/0042-rendering-world-space-sprites.md), is a run-and-look check like every
-other question below the recorder.
+Add the sources to the suite's `tests/CMakeLists.txt`:
 
-Clipping is asserted where it is decided rather than where it takes effect: the cases check the
-rectangle a batch carries out of `Canvas`, out of `LineCanvas` and out of a ui draw, per
-[ADR-0037](../adr/0037-2d-clip-with-a-per-batch-scissor.md), and the `vkCmdSetScissor` that
-acts on it is in the recorder and needs a device like everything else there.
+```cmake
+v3d_add_test(image
+	"TestMain.cxx"
+	"CropTest.cxx")
+target_link_libraries(v3dtest_image PRIVATE v3dlib_image)
+```
 
-`api/audio` draws the same line around the device: the clip table, the `Play` defaults and the
-voice bookkeeping are asserted, and whether a sound is audible is not. An engine that opened no
-device gives back no voice, so every case in `EngineTest` runs in CI.
+`v3d_add_test(<lib> <sources>)` does the following:
 
-Input is asserted the same way, against the boxes a draw left: `CursorTest` presses and moves,
-`TextBoxTest` types, and neither needs a window because `ui::Cursor` and `ui::Keys` are handed
-a point and a key name rather than an SDL event. The two seams a text box needs beyond that are
-callbacks for the same reason: `TextBoxTest` measures a character as ten pixels and keeps its
-clipboard in a `std::string`, so a click lands on a known character and a cut is asserted
-without a platform.
+- Builds `v3dtest_<lib>` and links Boost.Test.
+- Adds the repository root to the include path, so a test includes its subject as
+  `<api/<lib>/...>` like any other file.
+- Registers the ctest entry `<lib>`, with the working directory set to the executable's
+  directory. Fixtures in a `data/` directory beside the executable then resolve.
+- Passes `--detect_memory_leaks=0`. Without it, Boost.Test reports a false leak in every suite
+  that builds a `Logger`, because spdlog's registry is destroyed after the report.
 
-`Engine::eventLoop()` renders and so cannot be driven at all, which is why the order of
-[ADR-0043](../adr/0043-input-apps-see-raw-events-before-bindings.md) lives in
-`Engine::route()`: one polled event offered to the app, the bindings and the engine, callable
-from a subclass with no window in sight. `EngineTest` drives it directly.
+You link the library under test yourself. Each suite's `TestMain` defines `BOOST_TEST_MODULE` and
+nothing else. The exception is `render_device`, whose `main` checks for a device first.
 
-## Suites with something to know about them
+A suite with fixture files copies its `tests/data/` directory beside the executable in a
+`POST_BUILD` command. See [Traps](#traps) for what that means when you add a fixture.
 
-- **A new reference reaches the executable only when its target relinks.** The suites copy their
-  fixture directory in a `POST_BUILD` command, so adding a picture and rebuilding copies
-  nothing - the target was already up to date. Touch a source of the suite, or rebuild it from
-  clean; a fresh CI checkout never sees this.
-- **The moya suite renders against committed PNGs**, in `moya/tests/data/`, one set per hider:
-  `reference-*` under the reyes hider and `raytrace-*` under the ray hider. They compare with `image::compare`, which reports the worst pixel and by
-  how much rather than only that two images differ. A failing case, or a missing reference,
-  writes what it rendered to `data_out/` beside the executable. That is also how a reference is
-  regenerated when a change is meant to alter the picture. **Each PNG has a `.rib` beside it
-  describing the same scene**, so the file path and the code path are pinned to one picture and
-  a divergence between them fails.
-- **Voxel's suite must link `libnoise`.** `Chunk` is built against a `TerrainMap`, and the
-  vtable of the flat one a test supplies refers to the perlin implementation whether or not a
-  case generates noise.
-- **A round trip cannot see a symmetric orientation fault.** A writer and a reader that both
-  reverse their rows return the image they were given, so
-  `imagewriter_jpeg_orientation_test` goes through libjpeg directly on one side of each check.
-- **Every image reader decodes from memory, and the path form is written in terms of it**, so
-  `imagereader_buffer_matches_the_path` reads each fixture both ways and compares them pixel
-  for pixel. That is the case that would catch a format whose two entry points drifted apart -
-  which cannot happen while there is only one, and is why there is only one.
-- **The sprite sheet round trip goes through the text form, not straight back.**
-  `sprite_sheets_round_trip_test` serializes what `document()` emits and parses it again before
-  loading, because the file is what a packer and an app actually share - a number that widened
-  on the way out, or a key emitted under the wrong name, shows up there and nowhere else.
-- **The atlas suite states its invariant without knowing where the packer put anything.**
-  `textureatlas_regions_do_not_touch` fills every region it allocates and then reads the ring of
-  texels around each one: a gutter still at zero was written by nobody, since the atlas clears
-  its image at construction. That is what makes the case independent of where the skyline chose
-  to put things, and it fails on the flush packing [ADR-0055](../adr/0055-a-texture-atlas-gutters-its-own-regions.md)
-  replaced.
-- **`GltfTest` needs two fixtures because a texture arrives two ways.**
-  `three_primitives.glb` names its image and `embedded_texture.glb` carries pixel.png in a
-  bufferView; each is generated by the script beside it in `api/asset/tests/data/`.
+### Patterns the suites use
+
+- **Test the decision, not the effect.** For example, the 2D clipping tests check the scissor
+  rectangle that a batch carries out of `Canvas`, `LineCanvas` or a UI draw. The
+  `vkCmdSetScissor` call that applies it needs a device.
+- **Replace a platform dependency with a callback.** `ComponentRenderer` takes text measuring and
+  text drawing as callbacks. `TextBoxTest` measures every character as ten pixels and keeps its
+  clipboard in a `std::string`. Input tests hand `ui::Cursor` and `ui::Keys` a point or a key
+  name rather than an SDL event.
+- **Seed every random number.** `type::Random` gives the same sequence on any standard library,
+  so particle and weather tests assert exact values.
+- **Check an invariant, not a layout.** `textureatlas_regions_do_not_touch` fills every region
+  and then checks that the texels around each one are still zero. The test passes wherever the
+  packer puts the regions.
+- **A round trip cannot find a symmetric fault.** A writer and a reader that both flip rows
+  return the image they were given. `imagewriter_jpeg_orientation_test` calls libjpeg directly
+  on one side of each check.
+- **Round-trip through the file format.** `sprite_sheets_round_trip_test` serializes the
+  document, parses the text again, and then loads it. This catches a key written under the wrong
+  name or a number that changed type.
+- **Write a picture for a person to look at** when a frame cannot be checked exactly. Write it to
+  `data_out/` beside the executable, and assert what can be asserted: validation silence and a
+  few properties of the picture.
+
+## The render device suite
+
+`v3dtest_render_device` tests the realtime renderer on a real Vulkan device. Its cases create a
+device with no window surface, record frames into an offscreen render target, and read the pixels
+back with `vulkan::frame::Capture`. Every case asserts two things:
+
+- The validation layer reported nothing. The test reads the count from
+  `vulkan::device::Instance::errors()` and `firstError()` rather than from the log.
+- The pixels or values are what was drawn. A few cases compare against a committed reference
+  image (see [Reference images](#reference-images)). The rest check chosen pixels or values by
+  hand.
+
+Some cases build a pipeline rather than drawing, because only a device can reject a pipeline
+shape that no renderer in the tree uses.
+
+Cases that cannot be checked exactly, such as a lit and shadowed scene, a skinned mesh mid-clip,
+or a particle effect, assert validation silence and a few properties. They write what they drew to
+`data_out/` (for example `lit_scene.png`, `skinned_bend.png`, `fire_*.png`) for a person to
+inspect.
+
+### Where it runs
+
+- **In CI**, the runner has no GPU. CI installs lavapipe, Mesa's software Vulkan driver, and
+  points the Vulkan loader at it. Every case in the suite runs there, with synchronization
+  validation on (`VK_LAYER_VALIDATE_SYNC=1`).
+- **Locally**, the suite runs on your GPU.
+
+### When there is no device
+
+`main` checks for a usable device before Boost.Test starts. With no device, the executable exits
+with code 77, and ctest reports the suite as `Skipped` (set by
+`set_tests_properties(render_device PROPERTIES SKIP_RETURN_CODE 77)`).
+
+The check is in `main` rather than in each case because a suite whose every case skips exits
+with zero, and ctest would report a pass.
+
+**In CI a skip is a failure.** A separate workflow step runs the executable again and fails the
+job on exit code 77, because lavapipe was installed and the loader should have found it. Locally
+a skip is correct, since a machine may have no Vulkan device.
+
+This is a separate executable from `v3dtest_render`, which tests the renderer's CPU-side code,
+so that `v3dtest_render` runs on any machine.
+
+Background: [ADR-0007](../adr/0007-ci-render-tests-on-software-vulkan.md)
+
+## Reference images
+
+### Realtime references
+
+`api/render/tests/device/data/` holds four reference images: `quad.png`, `textured_quad.png`,
+`world_near_first.png` and `world_far_first.png`. A case compares its capture with
+`checkReference()`, at a tolerance of zero.
+
+A reference must be identical on every conformant Vulkan driver, including lavapipe in CI and
+your GPU locally. So a reference may contain only output that the Vulkan specification fixes
+exactly:
+
+- Geometry that is axis-aligned and lies on whole-pixel boundaries, so no pixel is partly
+  covered.
+- Colour channels of exactly 0.0 or 1.0, or texels sampled at one texel per pixel.
+- Blending only where the result equals the source, such as an opaque source.
+
+A reference must not contain any of these, because the specification allows drivers to differ
+on them:
+
+- A partly covered pixel.
+- Partial alpha.
+- A magnified or minified texture sample.
+- A multisample resolve.
+- An interpolated channel value that is not at 0.0 or 1.0.
+
+Every sampler in the tree uses linear filtering, so a textured reference must draw its texture
+at exactly one texel per pixel.
+
+A case that needs anything outside these rules checks chosen pixels by hand and has no
+reference.
+
+`checkReference()` writes what was drawn to `data_out/<name>.png` whether it matched or not. To
+change a reference on purpose, copy that file over the committed one. The test never writes to
+`data/`.
+
+Background: [ADR-0054](../adr/0054-testing-golden-images-hold-only-spec-exact-output.md)
+
+### moya references
+
+The moya suite renders scenes on the CPU and compares them with committed PNGs in
+`moya/tests/data/`:
+
+- `reference-*.png` are rendered with the Reyes hider.
+- `raytrace-*.png` are rendered with the ray tracing hider.
+- Each PNG has a `.rib` file beside it that describes the same scene. The suite renders it from
+  the file and from code, so both paths are tied to one picture.
+
+The comparison is `image::compare` at a tolerance of 1, which absorbs floating-point rounding
+differences between compilers. It reports the worst pixel and by how much. A failing case, or a
+case with no reference yet, writes what it rendered to `data_out/` beside the executable. Copy that
+file over the reference to change it on purpose.
 
 ## Verifying a rendering change
 
-CI renders, against lavapipe on the runner per ADR-0007. What it renders is three cases, and one
-of them is now pinned to a picture rather than to texels chosen by hand — so a quad drawn in the
-wrong colour, at the wrong scale or a pixel out fails there. What no reference can cover is
-anything blended, filtered or antialiased, per ADR-0054, which is most of what a renderer does.
-A change below the recorder is still verified by running the app and reading the log.
+CI checks the four reference images and every other device case. That does not cover anything
+blended, filtered or antialiased, which is most of what the renderer draws. Check a rendering
+change locally by running an app and reading its log.
 
-The Khronos validation layer is enabled when installed and `vulkan::Instance` routes it through
-the logger, so a silent run is the signal. Without that messenger a loaded layer is silent,
-which looks exactly like a clean run. `Instance::errors()` and `firstError()` are the same thing
-counted, which is what `render_device` asserts on rather than scraping the log.
+1. **Run the app and read `v3d.log`.** The log is written beside the executable. When the Khronos
+   validation layer is installed, the renderer turns it on and sends its messages to the log
+   through `vulkan::device::Instance`. A clean run has no validation messages, so a silent log
+   is the result you want. Without that routing, a loaded layer prints nothing, which looks the
+   same as a clean run.
+2. **Run with synchronization validation** after changing a barrier, an image layout or a
+   semaphore wait stage. Set `VK_LAYER_VALIDATE_SYNC=1` in the environment. It reports hazards
+   that ordinary validation does not, such as:
+   - a barrier whose first scope misses the stage that a semaphore is waited at;
+   - a present that is not ordered after the transition to `PRESENT_SRC`;
+   - a layout transition whose first scope names a stage but no access, so its write is not
+     ordered after the previous frame's write to the same image.
 
-**Synchronization validation is off by default and is a separate net.** Set
-`VK_LAYER_VALIDATE_SYNC=1` in the environment to turn it on. It reports hazards ordinary
-validation does not: a barrier whose first scope misses the stage a semaphore is waited at, a
-present that is not ordered after the transition into `PRESENT_SRC`, or a layout transition
-whose first scope names a stage and no access bit, so the write it performs is not ordered
-after the last frame's write to the same image. All three were in the tree and are fixed. Run
-it after touching a barrier, a layout or a semaphore stage, because nothing else sees them.
+   CI runs the test suites with it on. It does not run the apps.
+3. **Run the render device suite** on your GPU: `ctest --test-dir out/build/x64-Debug -R
+   render_device`.
+4. **Look at the picture last.** Screenshots and the `data_out/` images are for checking what
+   the log and the tests cannot.
+
+## Traps
+
+- **A new or changed fixture is copied only when its suite relinks.** Suites copy `tests/data/`
+  in a `POST_BUILD` command, which runs only when the executable is relinked. Adding a reference
+  image and rebuilding copies nothing. Touch one of the suite's sources, or copy the file into
+  the `data/` directory beside the executable by hand. A fresh CI checkout always relinks.
+- **voxel's suite must link libnoise**, even for cases that generate no noise. `Chunk` is built
+  against a `TerrainMap`, and the vtable of the flat map a test supplies refers to the Perlin
+  implementation. See [Dependencies.md](Dependencies.md#building-libnoise).
+- **Run the moya executable from its own directory.** It is
+  `out/build/x64-Debug/moya/moya/moya.exe`. Started from another directory it can stop on a
+  missing-DLL dialog and use no CPU, which looks like a hung render.
+- **A debug moya render is slow.** A 256x192 ray traced scene takes about a minute.

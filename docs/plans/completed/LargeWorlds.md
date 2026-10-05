@@ -450,7 +450,7 @@ when step 6 does.
   are never reused" and "nothing frees an individual resource" both stop being true, and the
   section says what replaced them. The target bullet under the offscreen section changes from
   "a handle registered before a resize is stale" to the release-then-register rule.
-  [Architecture.md](../../Architecture.md#invariants-that-bite) gains the invariant that a released
+  [RealtimeRenderer.md](../../internals/RealtimeRenderer.md) gains the invariant that a released
   handle resolves to nothing at once and its objects outlive it by the frames in flight.
   [m4-LitScene.md](../../roadmap/completed/m4-LitScene.md) is told its texture class retires into step 2's queue.
 - **Step 3** writes cozy's handoff note for hot reload and region sheets.
@@ -463,3 +463,35 @@ when step 6 does.
   queue, with milestone 7 as its trigger. The roadmap's
   [m2](../../roadmap/completed/m2-LargeWorlds.md) moves to `roadmap/completed/` and points here as done, and
   this file moves to [completed/](./).
+
+## Outcome
+
+Drafted and closed on 2026-10-03. It took up
+[milestone 2](../../roadmap/completed/m2-LargeWorlds.md) of
+[the game engine roadmap](../../roadmap/completed/GameEngine.md), and delivered:
+
+- textures that can be released, with a generation number that rejects a stale handle and
+  destruction deferred for the frames in flight
+  ([ADR-0061](../../adr/0061-resources-explicit-release-generational-handles.md));
+- world quads handed to a canvas in an order the caller chooses by key;
+- chunk culling in voxel;
+- `api/grid` building a grid from a map's picture and terrain legend, which odyssey uses
+  ([ADR-0062](../../adr/0062-grid-parse-terrain-not-map-files.md)).
+
+Regions, remembered sight and the movement filter went to
+[TODO.md](../../TODO.md#tile-grids), each held until it is needed.
+
+Four things came out differently from the plan:
+
+- **The retirement queue belongs to the ring.** It is collected by `Ring::begin()`, because the
+  draft's `DeviceContext` drives no frame: `Presenter` and the device suite both begin frames
+  themselves.
+- **The device test harness could not release anything in flight**, because its one submit
+  waited for the frame. A submit that does not wait was split out of it. The release cases were
+  shown to fail with the fix removed.
+- **`Registry::clear()` never did what its comment said.** Slots restarted at zero, so an older
+  handle reached whatever was added next. It now releases every slot instead.
+- **`Picture` holds a `std::optional<TileGrid>` and a vector of unknown glyphs**, rather than a
+  shared pointer and a map. The optional keeps boost out of `api/grid`. The vector is there
+  because clang-tidy requires a non-throwing move constructor, and MSVC's `std::map` allocates
+  when it is moved.

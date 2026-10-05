@@ -1,44 +1,10 @@
-# Pong! Read Me
+# Pong
 
-This project is less about the game of pong and more about game engine code design. While 
-it's perfectly possible to throw together a pong implementation in a half day (or less), 
-the result would most likey be throw away code. Most of the work has gone into creating the 
-reusable game framework. 
+Pong built on the Vertical3D api: a single-player game against the computer, and a
+cooperative mode. [docs/Games.md](../docs/Games.md#pong) covers how to run it, its controls,
+its data files, and which api features it is the reference example for.
 
-
-## Default Controls:
-ESC 		- Show Previous Menu Level / Hide Menu
-Arrow Up 	- Menu Up / Player 2 paddle up
-Arrow Down	- Menu Down / Player 2 paddle down
-W			- Player 1 paddle up
-s			- Player 1 paddle down
-Return		- Select Menu Item
-
-
-## Features:
-- Single player versus AI game mode
-- Cooperative game mode
-- Configurable controls
-- Configurable match scores
-- Sound effects
-
-
-## 3rd Party Libraries:
-- SDL3
-- SDL3_mixer
-- Vulkan
-
-See [../docs/Dependencies.md](../docs/contributing/Dependencies.md). The release notes below are an archive
-of the 2006-08 versions and describe libraries that no longer exist.
-
-
-## TODO:
-- Add support for modifying game vars and binds in the menu system.
-- key configuration and gamevar modifications aren't preserved across runs.
-- non-coop multiplayer modes aren't implemented.
-
-
-## Release Notes:
+## Release notes, 2006–2008
 
 ### New in version 0.1.4 (02-25-08)
 Version bump for v3d libraries API sync.

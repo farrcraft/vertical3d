@@ -683,3 +683,18 @@ Update the state in the table above.
   says it is answered.
 * **When the plan closes**, the roadmap moves to `roadmap/completed/` and points here, the held
   items move to TODO.md with their triggers, and this file moves to [completed/](./).
+
+## Outcome
+
+Drafted and closed on 2026-10-04. It took up the last three phases of
+[the offline rendering roadmap](../../roadmap/completed/OfflineRendering.md):
+
+- **Phase 4.** A pixel became a filtered set of seeded samples, in a film both renderers share.
+  Depth of field, motion blur of a transform and adaptive sampling followed.
+- **Phase 5.** A trace that recurses, with reflection, refraction, transparency, spheres,
+  `texture()` and `noise()`.
+- **Phase 6.** The answer was one ray tracer that both renderers reach
+  ([ADR-0077](../../adr/0077-offline-one-shared-ray-tracer.md)). That gave moya shadows.
+
+Area lights, displacement and an acceleration structure went to
+[TODO.md](../../TODO.md#offline-rendering).

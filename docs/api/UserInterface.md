@@ -1,414 +1,160 @@
 # The User Interface
 
-What `api/ui` does, as of 2026-09-13. Open questions are at the end.
+This document is for someone building a ui for an app with `api/ui` (`v3dlib_ui`). It covers
+the two ways to write a ui, the document format, the components, themes, input, and the shell
+classes a game uses. How the library works inside is in
+[internals/UserInterface.md](../internals/UserInterface.md).
 
-The decisions behind its shape are [ADR-0019](../adr/0019-the-ui-is-laid-out-by-what-draws-it.md),
-[ADR-0020](../adr/0020-ui-themes-are-data-apps-load-the-images.md),
-[ADR-0034](../adr/0034-ui-layout-is-resolved-while-drawing.md),
-[ADR-0035](../adr/0035-ui-immediate-mode-beside-the-retained-tree.md),
-[ADR-0036](../adr/0036-text-sdf-glyphs-through-the-quad-shader.md),
-[ADR-0037](../adr/0037-2d-clip-with-a-per-batch-scissor.md),
-[ADR-0038](../adr/0038-ui-the-ui-hit-tests-the-mouse-before-the-app.md),
-[ADR-0039](../adr/0039-layout-never-reads-the-box-it-wrote.md),
-[ADR-0040](../adr/0040-ui-keyboard-focus-and-text-input.md),
-[ADR-0045](../adr/0045-a-window-is-dragged-by-the-bar-that-folds-it.md),
-[ADR-0046](../adr/0046-a-table-given-a-height-scrolls-in-its-own-right.md),
-[ADR-0057](../adr/0057-a-selection-is-an-anchor-the-caret-moved-from.md) and
-[ADR-0058](../adr/0058-ui-sdl-keyboard-adapter-in-ui-shell.md) and
-[ADR-0059](../adr/0059-ui-enabled-is-an-inherited-flag.md). Those say why; this
-says what.
+- [Two ways to write a ui](#two-ways-to-write-a-ui)
+- [Getting set up](#getting-set-up)
+- [The ui document](#the-ui-document)
+- [The box model](#the-box-model)
+- [Components](#components)
+- [Themes and styles](#themes-and-styles)
+- [Images](#images)
+- [Commands](#commands)
+- [The mouse](#the-mouse)
+- [The keyboard](#the-keyboard)
+- [Editing text in a TextBox](#editing-text-in-a-textbox)
+- [Enabled and disabled](#enabled-and-disabled)
+- [Clipping](#clipping)
+- [Immediate mode](#immediate-mode)
+- [GameMenu, StatisticsOverlay and FileChooser](#gamemenu-statisticsoverlay-and-filechooser)
+- [Testing a ui](#testing-a-ui)
 
-## Two ways to write a ui, and which to reach for
+## Two ways to write a ui
 
-**A tree, when the ui is authored.** A menu bar, a settings screen, a HUD: built once by
-`ui::Engine` from a JSON document, looked up by name, and kept in step with the game by
-whatever answers its commands. `ui::ComponentRenderer` draws it.
+`api/ui` offers two models. Both draw onto the same `realtime::Canvas`, use the same box
+drawing and the same text callbacks, so they look like one ui on screen.
 
-**Calls, when the ui is a function of live state.** A debug readout, a tool panel: written as
-a sequence between `Immediate::begin()` and `end()`, with nothing to keep in step because it
-is recomputed every frame. `ui::Immediate` is both the layout and the draw.
+**Retained mode** is a tree of components. `v3d::ui::Engine` builds the tree once from a JSON
+document. The app looks components up by name and changes them when the game's state changes.
+`v3d::ui::paint::ComponentRenderer` draws the tree. Use it for an authored ui: a menu bar, a
+settings screen, a HUD, a game's pause menu.
 
-A cursor position is the layer's only input, so **whether there is one to offer is the app's to
-say**. A game that owns the mouse has none — mouselook holds the window in relative mode, so
-the pointer is hidden and where it is says nothing — and a window it puts up is a readout rather than
-something to fold, drag or scroll. `voxel` is that case and answers it the way a game does: the
-menu going up is what hands the pointer back, so its F3 readout takes a real `Input` exactly
-while the menu is up and a default one otherwise. The five fields come off
-`input::MouseState` — the cursor, the primary button and its two edges, and the wheel.
+**Immediate mode** is a sequence of calls. `v3d::ui::Immediate` is written between `begin()`
+and `end()` every frame, and each call both lays out and draws one widget. Nothing has to be
+kept in step with the game, because the panel is rebuilt from live state each frame. Use it
+for a ui that shows live values: a debug readout, a tool panel.
 
-The rule is what owns the truth. A retained tree that shows a number has to be told when the
-number changes, and the characteristic defect is a readout two frames stale; an immediate
-panel cannot be stale and cannot be looked up by name. `voxel`'s F3 readout is the tree's
-worst case and the layer's best one, which is why it is the layer's first consumer.
+How to choose:
 
-Both draw onto the same `realtime::Canvas`, share `Painter`'s box drawing, and take the same
-text callbacks, so the two look like one ui. They read different style classes — see below.
+- A retained component shows whatever it was last told. If the app forgets to update it, it
+  shows a stale value.
+- An immediate panel cannot be stale, but it cannot be looked up by name or styled from a
+  document.
+- Nothing enforces the choice. A HUD built with `Immediate` works, but its hover runs a frame
+  behind the cursor (see [Immediate mode](#immediate-mode)).
 
-## The classes
+The two read different style classes from a theme: `ui` for retained mode and `tools` for
+immediate mode. See [Themes and styles](#themes-and-styles).
 
-```
-Engine        the loaded ui: containers, themes, which theme is active
-  Loader      builds one out of a JSON document, and is then done with
-Container     what a document named, and what a point is picked out of
-Component     a box, children, and what a draw leaves on it
+### Everything is drawn as quads on the app's canvas
 
-ComponentRenderer   paints a component, and owns the two below
-  Arranger          resolves every box and calls back to paint each one
-  style::Resolver   turns a theme into the Dressing a component is drawn with
-
-Immediate     the other way to write a ui - layout and paint in one pass
-Cursor        turns a point into a command, moves the focus, and places a caret
-Keys          turns a key into an edit on whatever has the focus
-  shell::Keyboard  the platform half of it: an SDL event in, and text input following the focus
-TextRenderer  one font, one atlas, and the Measure/Write pair both renderers take
-Painter.h     fillBox, strokeBox and plateBox, which both ways draw out of
-shell::Screen       the set above, built once over an Engine3D, and the canvas they fill
-shell::FileChooser  a list, a name box and a label a config names, driven as a file chooser
-```
-
-**A file chooser is the shell's, drawn in the app's own ui.** `ui::shell::FileChooser` drives
-components a config names, as `GameMenu` does, so it adds no component type: a list the
-directory is written into, a text box the name is typed into, and a label saying where the list
-is. The app routes the list's command to `pick()` and its buttons' to `accept()` and `close()`.
-The listing is the way up, then the directories, then the files that pass the extension, each
-sorted. Saving gives a bare name the extension and asks once before replacing a file. It is not
-the platform's dialog, which cannot be drawn over a fullscreen game or themed.
-
-Two of those splits are worth knowing about. **The walk is the Arranger's and the painting
-is the renderer's**, joined by a `Paint` callback: one walk still decides both what is drawn
-and what is clicked, per ADR-0019, but it will run with no canvas and nothing to paint, so
-layout can be asked for on its own. And **reading a config is the Loader's**, so `Engine.h`
-names `Container` and `style::Theme` rather than including every component header and
-`boost::json`.
-
-## Everything is a quad on somebody else's canvas
-
-Nothing here owns a device, a pass or a draw. A panel, a highlight and a line of text are all
-the batched quad of [ADR-0005](../adr/0005-2d-one-batched-quad-pipeline.md), appended to whatever
-canvas the app is already filling, so a ui costs the frame no pass and no draw of its own.
+The ui owns no device, pass or draw call. Panels, highlights and text are all quads appended
+to a canvas the app is already filling. The app submits that canvas itself, through
+`Engine3D::quads()`, so a ui adds no pass and no draw of its own. [Rendering.md](Rendering.md)
+covers the canvas and the quad pipeline.
 
 ```
-app's Canvas  <--  ComponentRenderer::draw(canvas, engine)   the tree
-              <--  Immediate::begin(canvas, input) ... end()  the calls
+app's Canvas  <--  ComponentRenderer::draw(canvas, engine)   the retained tree
+              <--  Immediate::begin(canvas, input) ... end()  immediate calls
               <--  TextRenderer::draw(canvas, ...)            a line of text anywhere
 ```
 
-An app submits that canvas through `Engine3D::quads()` when it is done with it.
+### Text is supplied by the app
 
-## Text is the caller's
+Both models take text through two callbacks declared in [`paint/Text.h`](../../api/ui/paint/Text.h):
 
-`v3d::ui::paint::Measure` and `v3d::ui::paint::Write` in [`paint/Text.h`](../../api/ui/paint/Text.h) are the seam. Both
-renderers take the pair and name no font type, which is why drawing a ui costs no device and
-why the whole library is testable without a window — per
-[ADR-0019](../adr/0019-the-ui-is-laid-out-by-what-draws-it.md).
-
-`ui::TextRenderer` is what supplies a pair: one font, packed into one atlas of signed distance
-field glyphs, with the drawn size closed over per
-[ADR-0036](../adr/0036-text-sdf-glyphs-through-the-quad-shader.md). A ui at one size and a heading at
-another are two callback pairs from one `TextRenderer`, and one atlas serves both.
-
-It takes its atlas upload as a `TextRenderer::Upload` callback rather than a `vulkan::renderer::Quad`,
-so the one thing in the class that needs a device is the one thing handed in and an app
-drawing this canvas with a renderer of its own can use the class rather than copy it. `api/ui`
-names no vulkan type anywhere as a result, which is what ADR-0019's seam was always claiming.
-
-**An app on `Engine3D` builds none of this itself.** `ui::shell::Screen` makes the text renderer
-with that upload, the component renderer over it, the statistics overlay and, if asked, an
-immediate layer, all over a canvas it owns
-([ADR-0074](../adr/0074-the-shell-builds-the-uis-renderers.md)). Its `begin()` opens a frame and
-sizes and clears the canvas, and `resized()` tells the app when to resize what is its own. An app
-hands in the size and a function that dresses for it, so `scale()` can rebuild what closes over
-the size and dress it again. An app built on its own frame model, as retcon is, uses the
-`Upload` seam directly.
-
-Both take a `std::string_view`. A component already holds its text, so measuring one must not
-cost an allocation per label per frame.
-
-## The box model
-
-A `Component` has children and a `Layout`, and the draw walk resolves the layout against the
-box around it — [ADR-0034](../adr/0034-ui-layout-is-resolved-while-drawing.md).
-
-```
-Layout { Length x, y, width, height; Anchor anchor; }
-Length { value, unit }   unit = Auto | Pixels | Percent
-```
-
-- **Pixels** is itself.
-- **Percent** is of the parent's extent in the same axis.
-- **Auto** hands the number back to the component: for a size that is what it makes of itself
-  — the width of a label's text, the side of an icon, the room a button's label needs — and a
-  component that makes nothing of itself takes the room it is offered. For a position it is no
-  offset at all, so the component sits at the corner it is anchored to.
-
-Nothing in layout reads a box a previous walk wrote —
-[ADR-0039](../adr/0039-layout-never-reads-the-box-it-wrote.md). A tree laid out twice lands in the
-same place, the first frame is the same as the tenth, and a resize places every child against
-the new size rather than the old one.
-
-`anchor` says which corner of the parent `x` and `y` are measured from, and they always grow
-inwards, so a bottom-right anchor with an `x` of 8 sits eight pixels in from the right edge
-whatever the parent's width is.
-
-`layout()` is the input. `position()` and `size()` are the **output** — the absolute box the
-component was last drawn in. The two are separate so a percentage survives being resolved.
-
-**A component is not clickable until it has been drawn**, and that failure inherits: every
-child of a component that was skipped is unplaced too.
-
-`HorizontalBox` and `VerticalBox` arrange what they hold in a line, with a gap and an optional
-stretch across the line. A hidden child leaves no gap behind it. A z index changes nothing
-inside a flow box, because the order it holds them in is what it is for. Along the line the
-children share the room, so an Auto extent there is what the child makes of itself and a panel
-that makes nothing of itself asks for nothing; across the line each is offered the whole of it.
-
-**A flow box may wrap**, `"wrap": true`. It starts a new line, spaced by the same gap, where the
-next child would run past its end, and a child longer than the line has a line of its own. It
-does not stretch. Unlike any other box it sizes itself across its lines from them, so a grid of
-known cells needs no stated height. Along the line it takes the room it is given, which inside a
-row is nothing, so a wrapping box in a row needs a width.
-
-## What a container draws, and in what order
-
-```
-non-strip components   in depth order, add order between equal depths
-toolbars               each at the corner stack() gave it
-menu bars              last, because an open menu drops a panel over the strips below it
-```
-
-The strips stack: a menu bar takes the top of the canvas, a top toolbar takes a band under
-whatever is already there, and a left toolbar runs down the side of what is left.
-`ComponentRenderer::insets()` is what an app asks for the area that leaves it — and it asks
-the same `stack()` the draw does, so the two cannot disagree.
-
-## The components
-
-Every type in `component::Type` has a loader and a draw path; there are no empty declarations.
-
-| | draws | owns |
+| Callback | Signature | Does |
 |---|---|---|
-| `Panel` | a filled box with a border | nothing |
-| `Label` | its text, wrapped to the width it was given, or one line when that width is `Auto` | its text |
-| `Icon` | an image at the component's size | its source and what it resolved to |
-| `Bar` | a track and the fraction of it that is filled | its fraction |
-| `Button` | a label, or an icon, or a nine-slice skin | nothing — a toggle's mark is set by whatever answers its command |
-| `CheckBox`, `RadioButton` | a mark and a label beside it | nothing, for the same reason |
-| `Scrollbar` | a track and a thumb | its range and offset, or nothing at all when it was told which `SelectList` it scrolls |
-| `SelectList` | a plate and as many rows as it shows | its rows and which is chosen |
-| `Slider` | a track, the fill up to its value, and a thumb | its range, its step and its value |
-| `TabBar`, `TabPage` | a strip of tabs and the one page chosen | which page is up |
-| `TextBox` | a plate, one line of text, a highlight behind the selected run, and a caret when it is focused | its text, its caret and its anchor |
-| `HorizontalBox`, `VerticalBox` | nothing — they place what they hold | spacing, stretch and wrap |
-| `Menu`, `MenuItem`, `MenuBar` | a panel of items, or a strip that drops one | which item is active, and any capture |
+| `paint::Measure` | `float(std::string_view)` | returns how wide a string is when drawn, in pixels |
+| `paint::Write` | `void(std::string_view, const glm::vec2& pen, const glm::vec4& colour)` | draws a string with its pen on the baseline |
 
-A component that does not own the state it shows is deliberate: a click sends a command and
-marks nothing, and whatever answers the command sets `checked()`, so the mark cannot disagree
-with what the app believes. A `SelectList`, a `Slider`, a `TabBar` and a `TextBox` are the
-exceptions, because which row is chosen, where a value stands, which page is up and what has
-been half typed are places in their own contents rather than facts about the app.
+Neither renderer names a font type. This keeps `api/ui` testable without a window or a GPU.
+The callbacks take a `std::string_view`, so measuring a label does not allocate. The view
+must stay valid for the length of the call.
 
-## Themes
+`v3d::ui::paint::TextRenderer` supplies the pair. It holds one font, packed into one atlas of
+signed distance field glyphs. `measure(size)` and `write(canvas, size)` return callbacks for
+one drawn size. Two sizes from one `TextRenderer` share the same atlas.
 
-A theme is data, and the app resolves the images it names —
-[ADR-0020](../adr/0020-ui-themes-are-data-apps-load-the-images.md). `ui::Engine::load()`
-reads themes and containers out of one JSON document; `resolveImages()` is a second pass an app
-runs once it has a renderer to upload through. The resolver answers a `ui::Image`, a texture and
-the region of it that is the image, so one sprite sheet can serve every icon on a screen; what
-a source name means is left to the app. An icon changed at runtime takes its new source and is
-resolved again with `resolveComponentImages()`, and later passes keep that change.
+`TextRenderer` uploads its atlas through an `Upload` callback rather than a Vulkan type. No
+`api/ui` header names a Vulkan type. An app that draws the canvas through its own renderer
+can supply its own `Upload`.
 
-A `Theme` holds `Style`s; a `Style` is a bag of `Property`s of four kinds — colour, number,
-font, image — each read from its own array and filed under a class. A component names a style;
-one that names none is dressed by whichever style of its class the theme holds first, so a
-theme can dress every panel without every panel naming one.
+## Getting set up
 
-`style::Resolver` turns a theme into a `Dressing` — the plain struct of colours and metrics a
-component is drawn with, with no strings in it. It works one out per (class, style name) and
-keeps it until the theme or the base changes, because a component asks every frame and a theme
-changes almost never.
+### Screen: the renderers and the canvas
 
-The style classes:
+An app built on `Engine3D` uses `v3d::ui::shell::Screen` and builds none of the pieces itself.
+A `Screen` builds:
 
-| Class | Read by |
-|---|---|
-| `ui` | the retained components — the defaults every other class is applied over |
-| `tools` | `ui::Immediate` |
-| `panel`, `bar`, `scrollbar`, `checkbox`, `radio`, `list`, `tabs`, `textbox` | the component of that kind |
-| `button` | `ComponentRenderer::skin()`, chosen by the look it dresses as well as by name |
+- the `TextRenderer`, uploading its atlas through the `Engine3D`
+- the `ComponentRenderer` over that text
+- a `StatisticsOverlay`, unless `Options::statistics` is false
+- an `Immediate` layer, if `Options::immediate` is true
+- the canvas all of these draw into
 
-A button style names which look it dresses with `"state"`: `normal`, `hover`, `press` or
-`disabled` - spelled `inactive` by the themes written before
-[ADR-0059](../adr/0059-ui-enabled-is-an-inherited-flag.md), which still reads. The look is
-`style::Button::State` rather than the component's own state enum, because three of them are
-what the cursor writes and the fourth is `Component::enabled()`. The colour a disabled control's
-label is written in is `disabled-text` in `ui`, beside `text` and `active-text`, so one key
-dresses all five control types.
-
-Every one of them may also name `focus` and `focus-width`, which is the ring around the control
-when it holds the keyboard. `button` is the one class a `Dressing` reads nothing else out of: a
-button's fill is its nine images and its label is the base's, and the first style of the set
-answers for the ring whatever state it was written for, because a ring says where the keyboard is
-rather than what state the button is in.
-
-`ui` and `tools` are separate on purpose: they want the same key names at about twice the
-size, because a HUD is read at a glance and a tool panel is read closely.
-
-## The cursor
-
-`ui::Cursor` turns a point into a command —
-[ADR-0038](../adr/0038-ui-the-ui-hit-tests-the-mouse-before-the-app.md). It offers the point in
-the reverse of the order the ui was drawn — menu bars, then toolbars, then the component tree
-— and the first thing that takes it stops the walk.
-
-A press on a `pickable()` component sends that component's bound event and is consumed. A
-press on anything else is not consumed, so a HUD of labels over a scene leaves the scene
-clickable — which is why `Component` leaves `pickable()` false. A control sets it, and
-`focusable()` with it, in its own constructor: a button, a check box, a radio button, a
-scrollbar, a select list, a tab bar and a text box exist to be driven, and a panel or a label
-laid over a scene does not. A press is remembered until it comes up, which is what drags a scrollbar's thumb
-across frames.
-
-**A strip is a control too, and is offered the point on the same terms.** A toolbar and a menu
-bar start pickable, and the cursor skips one that is hidden, disabled or marked
-`"pickable": false`. A pickable strip takes a press anywhere on it, its empty run included. One
-marked otherwise is scenery, buttons and all, and the press falls to the tree under it. A menu
-bar reads its flags from a document like anything else, but not its box, which the renderer
-places.
-
-**A component that cannot be used right now is `enabled(false)`**, and it is a property of the
-component rather than a state something writes as the cursor moves —
-[ADR-0059](../adr/0059-ui-enabled-is-an-inherited-flag.md). A disabled component is not
-offered the point, is not reached by the tab order, keeps whatever state it had, draws no focus
-ring, and is written in the theme's disabled colour. **Disabling a component disables what it
-holds**, so a box is what a screen greys a group of controls out with; `ui::usable()` is the
-derived answer and is what every call site in the library reads. `pickable()` is still the
-answer to *is this scenery* — a label, a panel — where `enabled()` is *not right now*.
-
-A press also moves the focus — onto what it landed on when that component asked to be
-focusable, and off whatever had it otherwise — which is what makes clicking into a box mean
-"type here". In a text box it says where as well: the caret goes to the character under the
-point and the anchor with it, so following the cursor selects the run between the two —
-[ADR-0057](../adr/0057-a-selection-is-an-anchor-the-caret-moved-from.md). That is what the
-`paint::Measure` a cursor is given is for, and it should be the same one the renderer drawing
-that ui was given; a cursor given none routes every press as before and leaves the caret where
-it was. A button lights up under the cursor whether it sits on a strip or in the tree, and
-only ever the one a press would land on, so a hud of unpickable labels does not flicker as the
-cursor crosses it.
-
-Everything is tested against the boxes the last draw left, so an app that routes input before
-it draws sees a dead ui for one frame.
-
-An `Immediate` window is moved by its title bar, which is also what folds it —
-[ADR-0045](../adr/0045-a-window-is-dragged-by-the-bar-that-folds-it.md). A press that stays put
-folds the window as it always did; one that travels past a few pixels drags it instead and does
-not fold it. The position `window()` is given stays the anchor: the drag is kept as a
-displacement from it, so a window the caller repositions every frame follows and keeps the nudge
-it was given. The bar is held on the canvas, because the bar is the only thing that drags one
-back.
-
-`Immediate::capturing()` is the immediate layer's half of the same rule: whether the cursor is
-over something that layer drew, or is dragging something it drew, so an app can ask whether a
-click has already been spent before acting on one of its own. It answers from the previous
-frame for the same reason a widget's hover does.
-
-## The keyboard
-
-`ui::Keys` is the cursor's counterpart —
-[ADR-0040](../adr/0040-ui-keyboard-focus-and-text-input.md). The focus lives on `ui::Engine`, one
-component at a time, and a key goes there or nowhere: a ui with nothing focused takes no key,
-so a game's movement bindings go on working until something is clicked into.
-
-Two calls, because **a character is not a key**.
-
-```
-Keys::press("backspace")   what api/input named - an operation, or a key to swallow
-Keys::text("e")            what the platform composed - utf-8, straight in at the caret
+```cpp
+v3d::ui::shell::Screen::Options options;
+options.size = fontSize;          // text size at a scale of one
+options.immediate = true;         // also build an Immediate layer
+screen_ = boost::make_shared<v3d::ui::shell::Screen>(&engine_, assetManager, logger, options);
 ```
 
-**Tab is the second way the focus moves.** `Engine::focusNext()` walks to the next focusable
-component in the order the tree is drawn in - containers as the config listed them, components
-by depth with add order between equal depths, a flow box's children in the order it holds them -
-and wraps at each end, skipping a hidden or disabled subtree whole. A component that held the
-focus and is no longer in that order - disabled, hidden or taken out of the tree since - leaves
-the walk nowhere to move on from, so the tab starts it again rather than stranding the focus. A ui author wanting a different tab
-order reorders the document; there is no `tabIndex`.
+Each frame:
 
-`press()` takes two more arguments saying whether shift and control are held, because a key
-name carries no modifier and this library cannot ask `api/input` for one without taking SDL with
-it. Shift and tab is the focus moving backwards, shift and a caret key selects, and control
-names the four chords a text box answers. A ui with nothing focused is left alone by tab as it
-is by every other key.
+```cpp
+if (!screen_->begin()) {
+    return;                       // minimised: the frame was presented empty
+}
+if (screen_->resized()) {
+    resize(screen_->canvas().width(), screen_->canvas().height());   // the app's own things
+}
+// ... the app draws its own content into screen_->canvas() if it likes ...
+screen_->draw(ui_.get(), statistics);   // the retained ui, then the statistics over it
+engine_.quads()->submit(screen_->canvas(), pass.get());
+```
 
-A key names an operation: backspace, delete, the caret moves, a return that sends the box's
-command, an escape that leaves it. A key that will arrive again as a character is taken as well
-and does nothing, so typing "w" into a box does not also walk the player forward — **in a text
-box only**. The same letter reaching a focused button goes on to the app's bindings, because a
-button is not something a player types into.
+- `begin()` begins the frame through `Engine3D::beginFrame`, sizes the canvas to the frame,
+  and clears it. It returns false when the window is minimised or there is no renderer.
+- `resized()` is true on the first frame and on any frame whose size differs from the last.
+  The app resizes its own resources then.
+- The passes, the draw order and where the canvas is submitted stay the app's.
+- `Options::dress` is a function `void(paint::Dressing*, float size)` that fills in the
+  dressing (colours and metrics, see [Themes and styles](#themes-and-styles)) for a text
+  size. When it is empty, the line height is set to 1.4 times the size.
+- `scale(factor)` redraws text larger or smaller. It rebuilds everything that depends on the
+  font size, calls `dress` again, and applies the theme again.
+- `theme(theme)` dresses the component renderer and the immediate layer from a theme, and
+  keeps it for later rebuilds.
 
-**Every control is driven, not only a text box.** Return and space activate whatever holds the
-focus, sending the command a click sends — both routers ask `ui::command()` which event a
-component carries, so a component a press activates and a key does not cannot happen. The
-arrows step through a `SelectList`'s rows and a `TabBar`'s pages, with `home` and `end` at the
-ends; neither wraps, because running off the last row is how a keyboard reaches it and stays
-there. A `Scrollbar` is moved rather than stepped: an arrow by a line — a bound list's row, or
-`Scrollbar::lineStep` for a range of pixels that says nothing about what a line of it is —
-`pageup` and `pagedown` by what the page shows, and `home` and `end` to the ends of the content.
-A bar showing all of its content takes no key at all, because a control that swallows a key it
-could not have acted on stops a game being played while it holds the focus. A component does not
-own the state it shows, so activating a check box sends its command and marks nothing —
-[ADR-0019](../adr/0019-the-ui-is-laid-out-by-what-draws-it.md).
+Do not keep a reference to `components()`, `immediate()` or `text()` across frames.
+`scale()` replaces them, and an old reference points at an object that is no longer drawn.
 
-**A selection is an anchor the caret moved away from** —
-[ADR-0057](../adr/0057-a-selection-is-an-anchor-the-caret-moved-from.md). Nothing is selected
-exactly when the two are in the same place, so every operation that moves the caret says one
-thing: whether the anchor comes with it. Shift and a caret key selects the run it travelled, and
-an arrow with nothing held lands on an end of the selection rather than a character past it.
-Typing, a backspace, a delete and a paste all replace a selected run.
+An app that needs a piece `Screen` does not build writes it beside the screen. An app that
+does not use `Engine3D` builds `TextRenderer` itself with its own `Upload`.
 
-Cut, copy, paste and select all are `control` and `x`, `c`, `v`, `a`, and the clipboard behind
-them is the app's: `Keys::Clipboard` is a pair of callbacks, for the reason text measuring is a
-callback. A router given neither still edits — a cut with nowhere to hand the run does not
-take it out, because a cut that loses the text is worse than one that did not happen, and a paste
-with nothing to read puts nothing in. Every other chord goes on to the app, so a `ctrl-s` still
-saves while somebody is typing.
+### Loading the document
 
-**Something has to give out the first focus.** `Engine::focusFirst()` puts it on the first
-focusable component, and is how a screen says it is keyboard driven — an app calls it as the
-screen goes up. `focusNext()` will not do it, on purpose: tab must not take the focus onto the
-first widget of a hud nobody is looking at, so a ui with nothing focused stays that way.
+```cpp
+vgui_ = boost::make_shared<v3d::ui::Engine>(events(), dispatcher(), logger());
+const boost::json::object* ui = document(v3d::config::Type::Ui);
+if (ui && !vgui_->load(*ui)) {
+    return false;
+}
+vgui_->resolveImages(resolver);   // once the renderer exists; see Images
+```
 
-Nothing in this tree calls it, because nothing here is that kind of screen: the editor would be
-taking the keyboard off the viewport to put it on a toolbar button, and a game's menu is
-`MenuItem`s, which are not focusable. So the call is covered by `api/ui/tests` and by no app
-here — worth knowing before trusting it in one.
+`Engine::load()` reads the themes and containers. It returns false and logs the reason when
+the document is malformed. `container(name)` returns a loaded container, and
+`Container::get(name)` finds a component anywhere inside it.
 
-**A game's menu keeps a keyboard of its own, on purpose.** It is driven by commands — the
-`menuNext`, `menuPrevious`, `selectMenu` and `showGameMenu` an app's bindings send — rather than
-by focus and `ui::Keys`, which take keys themselves. That is what lets a game bind its menu to a
-gamepad or to keys of its choosing and rebind them from inside the menu, which a focus walk
-answering raw keys could not do; and a game's menu has nothing a text box offers. The two models
-meet only where a menu item captures a key, which an app routes through `GameMenu::capture()`.
+### The keyboard adapter
 
-**A focused component is ringed**, traced around its box after it is drawn, in the `focus`
-colour at `focus-width` thick of the style class the component is drawn in — so a theme can mark
-a focused text box differently from a focused list, and one naming neither rings every control
-out of the base. `ComponentRenderer`'s `ringed()` is what says which class rings which
-component, and a component dressed by the base alone is ringed out of it. The draw walk traces
-it rather than any one component, because where the keyboard is is the ui's business and one
-ring drawn one way is the point of it.
-
-The characters come from SDL's text input — shift already applied, a dead key and the one after
-it already one character, an input method's several keys already however many characters it
-decided on. `input::Keyboard` raises them as `event::TextInput` for anything that wants them as
-an event; the ui gets them through the seam below, ahead of the bindings.
-
-## The seam an app writes
-
-`ui::Keys` names no platform type, which is what leaves it testable without a window and leaves
-an app four things to do before it runs: decode the event, read the modifiers off it, find a
-clipboard, and get the platform composing at all. That is the same work in every app, so it is
-the api's — `ui::shell::Keyboard`, per
-[ADR-0058](../adr/0058-ui-sdl-keyboard-adapter-in-ui-shell.md).
+`v3d::ui::shell::Keyboard` connects the ui to SDL keyboard events. Build one and pass it every
+event from the app's `onEvent()`:
 
 ```cpp
 uiKeys_ = boost::make_shared<v3d::ui::shell::Keyboard>(vgui_, dispatcher_, window());
@@ -418,107 +164,817 @@ bool App::onEvent(const SDL_Event& event) {
 }
 ```
 
-It goes in `onEvent()` because [ADR-0043](../adr/0043-input-apps-see-raw-events-before-bindings.md)
-puts the app ahead of the bindings: a key the ui took must not also fire the command bound to
-it, and returning true is what stops it. **Only a key going down is ever taken.** A release
-always goes through, so a key held when a box took the focus is still seen to come up and
-`input::KeyState` is not left holding it down. A key `api/input` has no name for is not taken
-either, since it is nothing the ui could have acted on.
+`onEvent()` runs before the input bindings ([Engine.md](Engine.md) covers the event order).
+Returning true stops a key the ui used from also firing the command bound to it. If an app
+overrides `onEvent()` for something else and forgets to pass the event on, the ui cannot be
+typed into and nothing reports why.
 
-The key name is `input::keyName()`'s — the same table the device binding that key reads — so a
-binding written against backspace and what a text box answers cannot drift apart. Shift and
-control come off the event rather than from the keyboard's held state, because what a key meant
-is what was down as it arrived.
+The adapter does four things:
 
-**Text input follows the focus.** The platform composes nothing until it is asked to, so the
-seam turns `Window::textInput()` on while a text box holds the keyboard and off again after. It
-follows `Engine::onFocus()` rather than checking per event, because the focus also moves under a
-press the seam never sees — a box clicked into and typed into in one frame would otherwise lose
-its first character. `onFocus()` holds one listener and the last caller wins.
+- It turns a key-down event into `Keys::press()`, and a text event into `Keys::text()`.
+- It reads shift and control off the event itself, so the modifiers are the ones held when
+  the key arrived.
+- It supplies the SDL clipboard. `Keyboard::clipboard()` is public, so an app that builds an
+  `input::Keys` directly can pass it the same pair.
+- It turns platform text input on while a `TextBox` has the focus and off when the focus
+  leaves. It follows `Engine::onFocus()`, so a box clicked and typed into in the same frame
+  does not lose its first character.
 
-The clipboard is SDL's, wired in by the seam; `shell::Keyboard::clipboard()` is public so a
-`ui::Keys` built directly can have the same pair.
+Rules the adapter follows:
 
-**The cursor stays the app's.** `ui::Cursor` takes points rather than events, and a press has to
-interleave with whatever else an app does with one — the editor offers the ui a press and drives
-a camera with the one the ui did not take — so a seam that consumed mouse events would decide
-that for every app.
+- Only a key going down is ever taken. A key release always passes through, so
+  `input::KeyState` never holds a key down that the ui took.
+- A key that `api/input` has no name for is never taken.
+- The key name comes from `input::keyName()`, the same table the bindings use.
+- `Engine::onFocus()` holds one listener, and the last caller wins. The adapter sets it. An
+  app that wants its own listener sets it after building the adapter and clears it before
+  the adapter is destroyed.
+- Only a component whose type takes typed text (a `TextBox`) turns text input on.
+
+The mouse is not routed by the adapter. See [The mouse](#the-mouse).
+
+## The ui document
+
+A ui document is JSON with three top-level keys:
+
+```json
+{
+  "theme": "default",
+  "themes": [ { "name": "default", "styles": [ ... ] } ],
+  "containers": [
+    { "name": "hud", "visible": true, "components": [ ... ] }
+  ]
+}
+```
+
+- `themes` (required) is an array of themes. See [Themes and styles](#themes-and-styles).
+- `theme` (optional) names the active theme. A name that matches no theme fails the load.
+- `containers` (required) is an array. Each container has a `name`, a `visible` flag and a
+  `components` array. A container is shown and hidden as a whole.
+
+Every component entry has a `type` and a `name`. These keys apply to every component:
+
+| Key | Type | Default | Meaning |
+|---|---|---|---|
+| `type` | string | required | the component type, from the table in [Components](#components) |
+| `name` | string | required | what the app looks it up by |
+| `position` | `[x, y]` | `Auto` | offset from the anchored corner; each a length |
+| `size` | `[width, height]` | `Auto` | each a length |
+| `anchor` | string | `top-left` | `top-left`, `top-right`, `bottom-left`, `bottom-right` or `centre` (`center` also reads) |
+| `style` | string | none | a style name within the component's style class |
+| `visible` | bool | true | |
+| `enabled` | bool | true | see [Enabled and disabled](#enabled-and-disabled) |
+| `pickable` | bool | per type | whether a press can land on it |
+| `focusable` | bool | per type | whether it can take the keyboard |
+| `clip` | bool | false | whether its children are cut off at its box |
+| `depth` | number | 0 | draw order among siblings; higher draws later |
+| `children` | array | none | component entries held inside this one |
+
+A length is a number of pixels (`120`), a percentage string (`"50%"`), or absent for `Auto`.
+A menu and a menu bar ignore `position`, `size` and `anchor`, because the renderer places
+them.
+
+## The box model
+
+Every component has a `Layout`:
+
+```
+Layout { Length x, y, width, height; Anchor anchor; }
+Length { value, unit }   unit = Auto | Pixels | Percent
+```
+
+Each frame, the ui works out every component's box from its layout and its parent's box. A
+root component's parent is the whole canvas.
+
+- **Pixels** is the number given.
+- **Percent** is a percentage of the parent's size in the same axis.
+- **Auto** for a size is the component's natural size: the width of a label's text, the
+  side of an icon, the room a button's label needs. A component with no natural size (a
+  panel, a bar, a tab bar) takes all the room it is offered.
+- **Auto** for a position is zero. The component sits exactly at its anchored corner.
+
+`anchor` names the corner of the parent that `x` and `y` are measured from. Offsets always
+point inwards. A component anchored `bottom-right` with an `x` of 8 sits 8 pixels in from the
+right edge, whatever the parent's width. With `centre`, the component is centred and `x` and
+`y` move it right and down.
+
+A component that names no position and no size fills its parent.
+
+`layout()` is the input. `position()` and `size()` are the output: the absolute box the
+component was given on the last frame. The layout does not change when it is resolved, so a
+percentage still means a percentage on the next frame.
+
+Layout never reads a box from an earlier frame. A tree laid out twice lands in the same
+place, the first frame matches the tenth, and a resize places every child against the new
+size. One consequence: writing `position()` does not move a component. Change its `layout()`
+instead.
+
+### Flow boxes
+
+`hbox` (`HorizontalBox`) and `vbox` (`VerticalBox`) place their children in a line, in the
+order the children are listed.
+
+- `spacing` is the gap between children.
+- A hidden child leaves no gap.
+- `depth` has no effect inside a flow box. The listed order is the drawn order.
+- A child's position along the line is ignored. Its offset across the line (`x` in a `vbox`,
+  `y` in an `hbox`) still applies. Its anchor is ignored.
+- Percentages resolve against the flow box's size.
+
+**`Auto` means something different inside a flow box.** Along the line, children share the
+room, so each child is offered none of it. An `Auto` extent along the line is the child's
+natural size, and a child with no natural size gets zero. Across the line, each child is
+offered the full width (or height) of the box.
+
+- In a `vbox`, an `Auto` panel is as wide as the box and zero pixels tall. Give it a height.
+- A `list` or `scrollbar` in a `vbox` with no stated height has no height.
+
+`stretch: true` forces every child to the box's full extent across the line, overriding the
+child's own size.
+
+**A flow box may wrap** with `wrap: true`.
+
+- It starts a new line, spaced by the same gap, when the next child would run past its end.
+- A child longer than the line gets a line of its own.
+- A wrapping box does not stretch.
+- Across its lines, it sizes itself to the lines its children fill. A grid of fixed-size
+  cells needs no stated height.
+- Along the line it takes the room it is offered. Inside an `hbox` that room is zero, so a
+  wrapping box inside an `hbox` needs a width.
+
+### What gets a box
+
+A component that has not been drawn has no box, and a press cannot land on it. This applies
+to its children as well. A hidden component, a tab page that is not selected, and the rows of
+a list that are scrolled out of view are not laid out on that frame.
+
+### Strips: menu bars and toolbars
+
+Menu bars and toolbars are called strips. They are placed at the edges of the canvas rather
+than by their layout, and they stack:
+
+- A menu bar takes the top of the canvas.
+- A `top` toolbar takes a band under whatever is already there.
+- A `left` toolbar runs down the side of what is left.
+
+`ComponentRenderer::insets(engine)` returns the space the strips take: the left inset in x
+and the top inset in y. An app draws its own content in the rest. It uses the same
+calculation as the draw, so the two always agree.
+
+Within a container, the draw order is:
+
+1. every non-strip component, by `depth`, with the listed order kept between equal depths
+2. toolbars, each at the corner the stacking gave it
+3. menu bars, last, so an open menu's panel drops over the strips below
+
+Containers are drawn in the order the document lists them.
+
+## Components
+
+The `type` string in the document, the class in `v3d::ui::component`, and the keys each type
+reads besides the common ones:
+
+| `type` | Class | Draws | Keys | Pickable / focusable |
+|---|---|---|---|---|
+| `panel` | `Panel` | a filled box with a border, optionally rounded | none | no / no |
+| `label` | `Label` | its text, wrapped to the width it was given, or one line when the width is `Auto` | `label` | no / no |
+| `icon` | `Icon` | an image at the component's size | `source` (required) | no / no |
+| `bar` | `Bar` | a track and the filled fraction of it | `fraction` (0 to 1), `direction` (`vertical`, else horizontal) | no / no |
+| `button` | `Button` | a label, an icon, or a nine-slice skin | `label`, `icon`, `toggle`, `command`, `context` | yes / yes |
+| `checkbox` | `CheckBox` | a square mark and a label beside it | `label`, `checked`, `command`, `context` | yes / yes |
+| `radio` | `RadioButton` | a round mark and a label beside it | as `checkbox`, plus `group` | yes / yes |
+| `scrollbar` | `Scrollbar` | a track and a thumb | `direction` (`horizontal`, else vertical), `content` and `page` (together), `offset` | yes / yes |
+| `list` | `SelectList` | a plate and as many rows as fit, the chosen row highlighted | `items` (array of strings), `selected`, `command`, `context` | yes / yes |
+| `slider` | `Slider` | a track, the fill up to the value, and a thumb | `minimum` (0), `maximum` (1), `step` (0 for continuous), `value`, `command`, `context` | yes / yes |
+| `tabs` | `TabBar` | a strip of tabs, and the selected page under it | `selected`; its `children` are `tab` entries | yes / yes |
+| `tab` | `TabPage` | the components it holds | `label` | no / no |
+| `textbox` | `TextBox` | a plate, one line of text, a highlight behind the selection, and a caret while focused | `text`, `placeholder`, `limit` (bytes), `command`, `context` | yes / yes |
+| `hbox`, `vbox` | `HorizontalBox`, `VerticalBox` | nothing; they place their children | `spacing`, `stretch`, `wrap` | no / no |
+| `toolbar` | `Toolbar` | a row or column of buttons at an edge | `edge` (`top` or `left`), `buttons` (array of button entries) | yes / no |
+| `menubar` | `MenuBar` | a strip of menu labels that drop panels | `menus`: array of `{ "label", "items" }` | yes / no |
+| `menu` | `Menu` | a game menu, one level at a time, centred | `items` | no / no |
+
+Notes on individual components:
+
+- **Natural sizes.** A label's is its text width and one line. A label given a width wraps
+  to it and its natural height is the rows it takes. An icon's is a square the height of a
+  strip (`bar-height`). A check box's is the mark plus its label. A list's width is its widest
+  row. A text box takes the width it is offered and the height of one line plus padding. A
+  slider takes the width offered and the height of its thumb (`mark-size`). A scrollbar is
+  `scrollbar-width` thick and as long as the room it is in.
+- **A component does not own the state it shows.** A click on a check box, radio button or
+  toggle button sends its command and changes nothing. The app answers the command and sets
+  `checked()`. This keeps the mark in line with the app's state, however the command was
+  sent. A radio button does not clear the others in its `group`; the app does.
+- **These components do own their state:** a `SelectList` owns which row is chosen, a
+  `Slider` its value, a `TabBar` which page is up, and a `TextBox` its text, caret and
+  selection. The app reads them when the command arrives, for example `selected()` or
+  `selection()` on a list and `text()` on a text box.
+- **A `Scrollbar`** is arithmetic only. `scrolls(list)` binds it to a `SelectList`, and it
+  then moves that list. Unbound, it holds its own `range(content, page)` and `offset()`, and
+  the app reads `offset()` and moves whatever it scrolls itself. Placing it beside what it
+  scrolls is the app's job either way. Binding is done in code; the document cannot bind
+  one.
+- **A `SelectList`** with no `items` is filled by the app with `items(rows)`. It draws only
+  the rows its box shows and clips them to its plate.
+- **A `TabBar`** draws and lays out only the selected page. Components on other pages have no
+  box that frame, so they are not picked or focused.
+- **A `Toolbar`** button entry reads every button key, plus `name`, `style`, `visible` and
+  `enabled`. A button with an `icon` is sized to the icon; otherwise to its label. A toolbar
+  button falls back to its label when its icon is not resolved.
+- **A `Menu` or `MenuBar` item** has a `label`, a `type`, and optionally `command` and
+  `context`. Item types are `action`, `submenu` (which holds its own `items`), `check`,
+  `radio`, `input`, `numeric_input` and `key_input`. A check and a radio item are marked by
+  the app, the same as a check box. Radio items are drawn with the same square mark as check
+  items.
+- **An open menu bar takes every press.** While a menu is open, a press anywhere on screen
+  closes it and is consumed. A click meant for the scene under an open menu does nothing.
+
+## Themes and styles
+
+A theme is data in the ui document. It is a list of styles. Each style has a `class`, a
+`name`, and up to four arrays of properties: `colors`, `numbers`, `fonts` and `images`.
+
+```json
+{ "class": "panel", "name": "plate",
+  "colors":  [ { "name": "background", "value": [0.1, 0.1, 0.12, 0.9] } ],
+  "numbers": [ { "name": "radius", "value": 6 } ] }
+```
+
+- A colour's `value` is four numbers, RGBA from 0 to 1.
+- A number's `value` is one number.
+- A font has `source`, and optionally `face`, `size`, `bold` and `italics`.
+- An image has a `source`, which the app resolves (see [Images](#images)).
+- Any property may carry an `align` hint.
+
+A component's `style` key names a style within its class. A component that names no style is
+dressed by the first style of its class in the theme. One style can therefore dress every
+panel without each panel naming it.
+
+Changing the active theme is `Engine::activeTheme(name)`. Pass the theme to the renderer with
+`Screen::theme()` or `ComponentRenderer::theme()`.
+
+### The `ui` class: the base for retained mode
+
+A theme's `ui` style sets the defaults every other class is applied over. A property the
+theme does not name keeps its built-in value, so a theme with no styles draws in the
+defaults.
+
+| Kind | Keys |
+|---|---|
+| colours | `panel`, `border`, `track`, `fill`, `thumb`, `mark`, `caret`, `placeholder`, `tab`, `text`, `active-text`, `disabled-text`, `highlight`, `hover`, `focus` |
+| numbers | `line-height`, `padding`, `bar-height`, `icon-size`, `panel-padding`, `scrollbar-width`, `mark-size`, `border-width`, `focus-width`, `radius` |
+
+The parts of the ui with no class of their own use the base: labels, icons, menu panels,
+toolbar strips and button labels.
+
+An app can also set these values in code through `ComponentRenderer::dressing()`, or through
+`Screen::Options::dress`. Where the theme names a value, the theme wins.
+
+### Per-component classes
+
+| Class | Read by | Keys |
+|---|---|---|
+| `panel` | `Panel` | `background`, `border`, `border-width`, `radius` |
+| `bar` | `Bar` | `track`, `fill`, `border`, `border-width`, `radius` |
+| `scrollbar` | `Scrollbar` | `track`, `thumb`, `border`, `border-width`, `radius` |
+| `slider` | `Slider` | `track`, `fill`, `thumb`, `border`, `border-width`, `radius`, `mark-size` |
+| `checkbox` | `CheckBox` | `background`, `mark`, `border`, `text`, `border-width`, `mark-size` |
+| `radio` | `RadioButton` | as `checkbox` |
+| `list` | `SelectList` | `background`, `border`, `highlight`, `text`, `active-text`, `border-width`, `radius`, `line-height` |
+| `tabs` | `TabBar`, `TabPage` | `background`, `tab`, `highlight`, `text`, `active-text`, `border`, `bar-height`, `radius` |
+| `textbox` | `TextBox` | `background`, `border`, `text`, `caret`, `placeholder`, `highlight`, `border-width`, `radius`, `line-height` |
+| `button` | `Button` | nine images and `corner`; see below |
+| `tools` | `Immediate` | see [Immediate mode](#immediate-mode) |
+
+Every class above except `tools` may also name `focus` and `focus-width`, the colour and
+thickness of the ring drawn around a component that has the keyboard. A class that names
+neither uses the base values. A component with no class (a label, an icon, a box) is ringed
+with the base values.
+
+A `textbox` `highlight` is drawn behind the selected text, and the text is drawn over it in
+its usual colour. An opaque highlight hides the selected text.
+
+The base `ui` and the `tools` class are separate because a HUD and a tool panel use the same
+keys at about twice the size of each other.
+
+### Button styles
+
+A `button` style draws a nine-slice skin: up to nine images named `top-left`, `top-right`,
+`bottom-left`, `bottom-right`, `top`, `bottom`, `left`, `right` and `center`. Corners are
+drawn at the size of the number `corner`, edges are stretched along the sides, and the centre
+fills the rest. Every image is optional. A style that resolves no image draws the button flat.
+
+A button style also names which look it dresses with `"state"`:
+
+| `state` | Used when |
+|---|---|
+| `normal` (default) | the button is idle |
+| `hover` | the cursor is over it |
+| `press` | it is held down |
+| `disabled` (or `inactive`) | it is not usable |
+
+Several button styles can share one name, one per state. A disabled button's label is
+written in `disabled-text` from the `ui` style. The focus ring on a button comes from the
+first button style with that name, whatever its state.
+
+## Images
+
+The ui document names images but never loads them. The app turns each source name into an
+image.
+
+```cpp
+std::size_t resolved = vgui_->resolveImages([this](const std::string& source) {
+    return lookUpOrUpload(source);   // returns a v3d::ui::Image
+});
+```
+
+- The callback returns a `v3d::ui::Image`: a texture handle and the two texture coordinates
+  that bound the image inside it. One sprite sheet can serve every icon on a screen. A bare
+  `TextureHandle` converts to the whole texture.
+- What a source name means is the app's choice. An app with a sprite sheet looks the name up
+  in `config::SpriteSheets` and returns the sheet's handle and the region's corners.
+- Run `resolveImages()` once the renderer exists. It resolves theme images and every icon and
+  button icon in every container. It returns how many were resolved, and logs each source it
+  could not resolve.
+- An app that never runs it draws skinned buttons flat and icons not at all, with no error.
+- `Icon::source(name)` and `Button::icon(name)` point a component at a new source. The old
+  image is dropped at once, so the component shows nothing until it is resolved again. Call
+  `resolveComponentImages(resolve, component)` to resolve just that component. A later full
+  pass keeps the change.
+
+## Commands
+
+A control sends a command when it is activated. In the document, a command is the pair
+`command` and `context`. Both must be present, or the component carries no command. The
+`context` is resolved through the event engine, and the command is sent on the ui's
+dispatcher as a `v3d::event::Event`. An app answers it like any other command.
+
+What activates each control:
+
+| Component | Mouse | Keyboard |
+|---|---|---|
+| `Button`, `CheckBox`, `RadioButton` | a press on it | `return` or `space` while focused |
+| `SelectList` | a press on a row selects it, then sends | an arrow, `home` or `end` that changes the row selects it, then sends |
+| `Slider` | a press or drag that changes the value | a key that changes the value |
+| `TextBox` | never; a click places the caret | `return` only |
+| `TabBar` | a press on a tab changes the page; nothing is sent | arrows change the page; nothing is sent |
+| `Scrollbar` | a press jumps the thumb there and a drag follows; nothing is sent | see [The keyboard](#the-keyboard); nothing is sent |
+| toolbar button, menu item | a press on it | through the game menu's own commands |
+
+The mouse and the keyboard both ask `ui::input::command()` which event a component carries,
+so a control the mouse activates is always one the keyboard activates too. A command is sent
+as the press lands, not on release.
+
+## The mouse
+
+`v3d::ui::input::Cursor` routes the mouse over a `ui::Engine`. The app passes it points, and
+each call returns whether the ui used the point. The app acts on a point only when the ui
+did not.
+
+```cpp
+uiCursor_ = boost::make_shared<v3d::ui::input::Cursor>(vgui_, dispatcher(), text->measure());
+
+bool taken = uiCursor_->press(cursor);   // also motion(point) and release(point)
+if (!taken) {
+    // the press is the app's: pick in the scene, drive a camera ...
+}
+```
+
+- `motion(point)` moves the hover highlight, and follows a held press.
+- `press(point)` offers the point to the ui and sends a command if it lands on a control.
+- `release(point)` ends a held press. It sends nothing.
+
+The `Measure` argument is optional. It places the caret when a `TextBox` is clicked. Pass the
+same `Measure` the renderer drawing the ui was given, so the two agree on where each
+character is. A cursor given none still routes every press, but a click in a text box leaves
+the caret where it was.
+
+`Cursor` is not wrapped by the shell, because an app often interleaves the ui's press with
+its own use of the mouse. The editor offers the ui a press first and drives its camera with
+any press the ui did not take.
+
+How a point is routed:
+
+- Each visible container is offered the point, in the order the document lists them. The
+  first container that takes it ends the search.
+- Within a container, the menu bars are offered the point first, then the toolbars, then the
+  component tree. This is the reverse of the draw order.
+- In the tree, the topmost component under the point is found. A child is offered the point
+  before its parent.
+- A component that is not `pickable()` is passed over, and the search continues beneath it.
+  A HUD of labels over a scene therefore leaves the scene clickable.
+- A press that lands on nothing pickable is not consumed. It belongs to the app.
+- A strip takes a press anywhere on it, including the gaps between its buttons. A strip
+  that is hidden, disabled or marked `"pickable": false` is skipped, and the press falls to
+  the tree under it.
+- A press that lands is held until release. While it is held, every `motion()` goes to the
+  held component. This is how a scrollbar thumb, a slider thumb and a text selection are
+  dragged.
+
+Hover:
+
+- A button lights up under the cursor, on a strip or in the tree. Only the component a press
+  would land on is lit, so unpickable labels never flicker as the cursor crosses them.
+- Hover is a button state only. No other component has a hover look.
+
+Everything is tested against the boxes left by the last draw. **Draw before routing input,**
+or an app sees a dead ui for one frame. Nothing can be picked before the first frame is
+drawn.
+
+An `Immediate` layer has its own equivalent: `Immediate::capturing()`. See
+[Immediate mode](#immediate-mode).
+
+Whether to offer the ui a cursor at all is the app's choice. A game that holds the mouse in
+relative mode for mouselook has no meaningful cursor. `voxel` passes its immediate debug
+panel a real `Input` only while its menu is up, and an empty `Input` otherwise.
+
+## The keyboard
+
+`v3d::ui::input::Keys` routes keys to whichever component has the focus. `shell::Keyboard`
+builds one and calls it, so most apps never call it directly.
+
+### Focus
+
+The **focus** is the one component that receives keys. `ui::Engine` holds it.
+
+- A ui with nothing focused takes no keys. A game's movement keys keep working until
+  something is clicked into or `focusFirst()` is called.
+- A press moves the focus. It lands on the component pressed if that component is
+  `focusable()`. Otherwise the focus is cleared. Clicking into a text box therefore means
+  "type here", and clicking elsewhere stops typing.
+- `escape` clears the focus.
+- `Engine::focused()` returns the focused component. `Engine::onFocus(callback)` reports
+  every change, in the same frame.
+- A focused component is drawn with a ring around its box, in the `focus` colour at
+  `focus-width` thickness of its style class.
+
+**Starting a keyboard-driven screen.** Call `Engine::focusFirst()` as the screen goes up. It
+puts the focus on the first focusable component. Nothing else gives out a first focus except
+a press: `tab` does nothing while nothing is focused, so a HUD nobody is looking at never
+takes the keyboard. No app in this tree calls `focusFirst()`; it is covered by
+`api/ui/tests` only.
+
+### Tab order
+
+`tab` moves the focus to the next focusable component, and `shift`+`tab` to the previous
+one. The order is the draw order:
+
+- containers in the order the document lists them
+- components by `depth`, keeping listed order between equal depths
+- a flow box's children in the order it holds them
+
+The order wraps at each end. Hidden and disabled components are skipped, with everything they
+hold. If the focused component has left the order (hidden, disabled or removed), `tab`
+restarts at the first component. To change the tab order, reorder the document. There is no
+tab index.
+
+`tab` is taken whenever something is focused, even if the focus cannot move.
+
+Every control is focusable by default. To leave one out of the tab order, set
+`"focusable": false`.
+
+### Keys and characters
+
+The ui receives two kinds of keyboard input:
+
+| Call | Receives | Example |
+|---|---|---|
+| `Keys::press(key, shifted, controlled)` | a key name from `api/input`, and whether shift and control are held | `"backspace"`, `"arrow_left"`, `"return"`, `"tab"` |
+| `Keys::text(utf8)` | characters the platform composed, as UTF-8 | `"e"`, `"É"` |
+
+Characters arrive with shift already applied. A dead key and the key after it arrive as one
+character. An input method's keys arrive as whatever characters it produced. `input::Keyboard`
+also raises these characters as `event::TextInput` events for anything else that wants them.
+
+The modifiers are passed in because a key name carries none, and `api/ui` cannot read SDL's
+keyboard state.
+
+### What each control does with a key
+
+| Focused | Keys it takes |
+|---|---|
+| `Button`, `CheckBox`, `RadioButton` | `return` and `space` send its command |
+| `SelectList` | `arrow_down`, `arrow_up`, `home`, `end` move the chosen row and send the command |
+| `TabBar` | `arrow_right`, `arrow_left`, `home`, `end` change the page |
+| `Scrollbar` | arrows along its direction move it by a line; `pageup` and `pagedown` by a page; `home` and `end` to the ends |
+| `Slider` | `arrow_right`, `arrow_left` by one step; `pageup`, `pagedown` by a tenth of the range; `home`, `end` to the ends; sends its command when the value changes |
+| `TextBox` | editing keys, and every key that types a character; see [Editing text](#editing-text-in-a-textbox) |
+
+Rules:
+
+- **Only a `TextBox` takes letters.** A letter reaching a focused button goes on to the
+  app's bindings. A text box takes every key that will also arrive as a character, so typing
+  "w" into a box does not also walk the player forward.
+- A list and a tab bar do not wrap at the ends. Pressing an arrow on a list with nothing
+  chosen chooses the first row.
+- A scrollbar's line is the row height of its bound list, or `Scrollbar::lineStep` pixels
+  for a range of its own. A scrollbar with nothing to scroll takes no keys.
+- A slider with no `step` moves by a hundredth of its range per arrow.
+- A key that moves nothing (an arrow at the end of a slider or scrollbar) is not taken, and
+  goes on to the app.
+- With control held, only a `TextBox` takes a key, and only the four editing chords. Every
+  other chord goes on to the app, so `ctrl`+`s` still saves while somebody is typing.
+
+### Game menus use commands, not focus
+
+A game's pause menu (`Menu` and `GameMenu`) does not use focus or `Keys`. It is driven by the
+`menuNext`, `menuPrevious`, `selectMenu` and `showGameMenu` commands that an app's bindings
+send. A game can therefore bind its menu to a gamepad or any keys, and rebind them from inside
+the menu. Menu items are not focusable. The two models meet only where a menu item captures a
+key, which the app routes through `GameMenu::capture()`.
+
+## Editing text in a TextBox
+
+A `TextBox` holds one line of UTF-8 text, a **caret** (where typing goes) and an **anchor**.
+Both are byte offsets. The selection is the run of text between the anchor and the caret.
+Nothing is selected when the two are equal.
+
+Every operation that moves the caret either brings the anchor with it, which leaves nothing
+selected, or leaves the anchor behind, which selects the run the caret crossed.
+
+| Input | Effect |
+|---|---|
+| a character | replaces the selection, or is inserted at the caret |
+| `backspace`, `delete` | remove the selection, or one character before or after the caret |
+| `arrow_left`, `arrow_right`, `home`, `end` | move the caret; with nothing held, an arrow over a selection lands on its end |
+| `shift` + any of those | move the caret and leave the anchor, extending the selection |
+| `return` | sends the box's command; the app reads `text()` |
+| `control` + `a` | selects all |
+| `control` + `c` | copies the selection |
+| `control` + `x` | copies the selection and removes it |
+| `control` + `v` | replaces the selection with the clipboard's text |
+| a press | puts the caret and the anchor at the character under the point |
+| a drag | moves the caret with the cursor, selecting from where the press landed |
+
+- `limit` caps the text's length in bytes. A character or paste that would pass it is
+  refused, but the key is still taken.
+- The line slides left when the caret would pass the far edge, so a full box can still be
+  typed into.
+- `placeholder` is shown in the `placeholder` colour while the box is empty.
+- The clipboard is a pair of callbacks, `Keys::Clipboard { read, write }`. `shell::Keyboard`
+  supplies SDL's. Without a `write`, a cut does not remove the text. Without a `read`, a
+  paste inserts nothing.
+- A copy or a cut with nothing selected does nothing, so the clipboard keeps what it had.
+- Placing the caret by clicking needs the `Measure` passed to `Cursor`.
+
+## Enabled and disabled
+
+`Component::enabled(false)` marks a component that cannot be used right now. It is a property
+of the component, not a hover or press state. It differs from `pickable()`: `pickable(false)`
+means "scenery, never clickable", such as a label or a panel.
+
+**Disabling a component disables everything it holds.** A box is how a screen greys out a
+group of controls. A disabled toolbar disables its buttons, and a disabled menu disables its
+items.
+
+`enabled()` is the component's own flag. `ui::usable(component)` is true only when the
+component and everything holding it are enabled. A component can report `enabled()` true while
+`usable()` is false. Every part of the library checks `usable()`.
+
+A disabled component, or one inside a disabled component:
+
+| Area | Behaviour |
+|---|---|
+| mouse | is not offered the point, so the press falls through to what is under it |
+| hover | its button state is left alone |
+| tab order | is skipped |
+| focus | cannot be given the focus |
+| keys and characters | are not taken, so they reach the app's bindings |
+| toolbar | its button neither lights up nor sends |
+| menu bar and menu | its item neither lights up nor sends, and is written in `disabled-text` |
+| drawing | is never lit, writes its text in `disabled-text`, tints an icon with it, and draws no focus ring |
+| state | keeps whatever state it had |
+| document | `"enabled": false` on any component; `"state": "disabled"` on a button style |
+
+A component disabled while it has the focus keeps `focused()` until something moves the
+focus. It draws no ring and takes no keys, but `Engine::focused()` still returns it and
+`onFocus()` is not called. `tab` and `escape` still move the focus off it.
 
 ## Clipping
 
-A component that asks to `clip()` cuts what it holds off at its own box, which the batch
-carries as a scissor rectangle — [ADR-0037](../adr/0037-2d-clip-with-a-per-batch-scissor.md).
-It is asked for rather than default, because a menu drops a panel out of the strip it came
-from. A `SelectList` and an `Immediate` window clip themselves.
+A component with `"clip": true` (or `clip(true)` in code) cuts off what it holds at its own
+box. Clipping is off by default, because a menu drops a panel outside its strip and a badge
+may sit half outside its plate. A `SelectList`, an `Immediate` window and an `Immediate`
+table given a height clip themselves.
 
-A clip is axis aligned and square, so a panel with rounded corners clips to the box and not to
-the curve.
+- A clip inside a clip can only shrink the visible area.
+- A clip is a rectangle. A panel with rounded corners clips its children to its box, not to
+  its curve. No theme in this tree rounds a clipped panel.
+- Clipping affects drawing only. A child clipped out of sight can still take a press where
+  its box is.
+- Each clipped region is drawn as a separate batch, so clipping costs a draw call per
+  region.
 
-The immediate layer has two things that clip and scroll, and they nest. An `Immediate` window
-cuts its body and scrolls it, deciding from last frame's content whether it needs a bar — so
-the bar arrives the frame after the one that overflowed. A table **given a height** does the
-same for its own rows, per
-[ADR-0046](../adr/0046-a-table-given-a-height-scrolls-in-its-own-right.md): it clips to that
-height, draws a bar down its own right and keeps `headerRow()`'s band above the region rather
-than in it, so the column names stay put while the rows pass under them. Its gutter is reserved
-whether or not there is anything to scroll, which is what lets its bar appear the same frame
-the content overflows and stops the columns re-flowing when a row arrives. A table given no
-height is as tall as its rows and scrolls with whatever holds it.
+[Rendering.md](Rendering.md) covers how the canvas carries a clip.
 
-The wheel turns the innermost region under the cursor, so a table takes it from the window it
-is drawn in — the same rule that lets a window drawn later take the cursor from one under it.
-It comes from `input::MouseState::wheel()`, which accumulates the notches a frame saw and is
-cleared with the button edges: a wheel sends one event per notch, so a flick that turned three
-has to read as three rather than as the last of them.
+## Immediate mode
 
-`LineCanvas` cuts its stream the same way, on different terms: its rectangle is in the pixels
-of the image drawn into and the modelview does not apply to it, because a line canvas is world
-space and no transform there would carry a screen rectangle. Nothing in this tree asks it to.
-The editor's viewport panes look like the case for it and are not: each pane is a pass of its
-own and the recorder sets the scissor to the pass's viewport, so a pane is already cut to its
-region without the canvas asking. What a `LineCanvas` clip is for is a cut *inside* one pass.
+```cpp
+v3d::ui::Immediate* layer = screen_->immediate();
+layer->begin(&screen_->canvas(), input);
+if (layer->window("Debug", glm::vec2(20, 20), glm::vec2(260, 180), 0.85f)) {
+    layer->text("chunks " + std::to_string(count));
+    if (layer->button("Reset")) {
+        reset();
+    }
+}
+layer->endWindow();               // always, even when window() returned false
+layer->end();
+```
 
-## Testing it
+### Input
 
-`api/ui/tests/` needs no window, no device and no font: `Canvas` is CPU side and the text
-callbacks are the app's. A case builds components, draws them onto a canvas, and asserts on the
-boxes the draw left or on the primitives it emitted. [Testing.md](../contributing/Testing.md) has the rest.
+`Immediate::Input` is what the cursor did since the last frame. The app fills it each frame:
 
-## What is not built yet
+| Field | Meaning |
+|---|---|
+| `cursor` | the cursor position |
+| `down` | the primary button is held |
+| `pressed`, `released` | the button went down or came up this frame |
+| `wheel` | wheel notches turned since the last frame |
 
-- **A scrollbar bound to no list scrolls nothing.** It is the arithmetic: a bar told which
-  `SelectList` it scrolls moves that list, and one given a range of its own leaves the app to
-  read `offset()` and translate whatever it scrolls. Laying one out beside the thing it scrolls
-  is the app's either way.
-- **An `Immediate` widget is hovered a frame after it is drawn**, which is what lets a window
-  drawn later take the cursor from one under it.
-- **An `Immediate` widget takes the rest of its row unless told otherwise.**
-  `nextItemWidth(float)` is what tells it, spent by the widget that follows and forgotten
-  after it, which is what lets two scrubbers share a row. A separator always takes the row.
+These come from `input::MouseState`: `position()`, `held()`, `pressed()`, `released()` and
+`wheel()`. `wheel()` adds up every notch a frame saw, so a fast flick counts every notch. A
+default-constructed `Input` is no cursor at all.
 
-None of those is unfinished, which is why [TODO.md](../TODO.md) carries none of them - each is
-what the design came to, recorded here so a reader meets it before the code does.
-[plans/UiConsolidation.md](../plans/completed/UiConsolidation.md) is what closed the ones that are gone.
+### Widgets
 
-## Still open
+| Call | Draws | Returns |
+|---|---|---|
+| `window(title, position, size, alpha)` / `endWindow()` | a window with a title bar | whether to draw its contents |
+| `text`, `textDisabled`, `textWrapped`, `bulletText` | a line of text | |
+| `button(label)`, `smallButton(label)` | a button, bar-height or line-height | true on the frame it was clicked |
+| `selectable(label, selected)` | a full-width row, highlighted when selected | true when clicked |
+| `dragInt(label, &value, low, high)` | an integer scrubbed by dragging across it | true when the value changed |
+| `progressBar(fraction, overlay)` | a filled track with text over it | |
+| `separator()` | a rule across the width | |
+| `tabBar(id)` / `tab(label)` / `endTabBar()` | a strip of tabs | `tab()` is true for the selected tab |
+| `table(id, columns, height)` / `column` / `headerRow` / `nextRow` / `nextColumn` / `endTable` | a table | |
 
-- **Nothing enforces which of the two ways to use.** The rule above is a rule of thumb in a
-  document, and a reader who wants a HUD out of `Immediate` will get one that flickers under
-  the cursor rather than an error.
-- **Adding a component means editing nine places** — `component::Type`, `component::name()`,
-  the loader's branch, the renderer's paint switch, its `ringed()`, the Arranger's `natural()`,
-  the cursor's, the keys' and `ui::input::command()`. The compiler names all nine, so forgetting
-  one is a build error rather than a component that silently is not there, and so does
-  `component::traits()`, which says what kind a type is for every rule written for a kind -
-  a strip, a flow box, a tab bar, a text field. One it does not name: a style class of its own
-  in `style::Resolver`.
-  [ADR-0047](../adr/0047-code-exhaustive-enum-switches.md) has why a registry was
-  weighed and left, and it is a trade to revisit rather than work waiting to be done.
-- **A component disabled while it holds the focus keeps `focused()`** until something moves the
-  focus. It draws no ring and answers no key, so nothing reaches it and nothing shows it, but
-  `Engine::focused()` still reports it and `onFocus()` was not told.
-  [ADR-0059](../adr/0059-ui-enabled-is-an-inherited-flag.md) has what moving it from a setter
-  would cost.
-- **A clip is square**, so a rounded panel cuts what it holds to its box and not to its curve.
-  [ADR-0037](../adr/0037-2d-clip-with-a-per-batch-scissor.md) has what lifting that would
-  cost. No theme here rounds anything, so nothing in this tree shows it.
+Layout helpers:
+
+- `sameLine()` puts the next widget beside the last one.
+- `nextItemWidth(width)` sets the width of the next widget only. Without it, a widget takes
+  the rest of the row. A separator always takes the whole row.
+- `beginDisabled()` / `endDisabled()` draw everything between them dimmed and unresponsive.
+  The scopes nest.
+- A click on a tab takes effect at `endTabBar()`, so the old tab answers for the whole frame
+  on which the click lands.
+
+### Ids, hover and capture
+
+A widget's **id** is its label hashed with the id stack. Two widgets with the same label in
+the same scope share an id, and so share hover and press state. Separate them with
+`pushId()` and `popId()`, for example around each row of a table that has a "Kill" button in
+every row.
+
+**Hover runs one frame behind.** Which widget the cursor is on is settled at `end()` and used
+on the next frame. This lets a window drawn later take the cursor from one drawn under it. A
+widget that has just appeared or moved is hovered a frame late.
+
+`Immediate::capturing()` is true when the cursor is over something the layer drew, or is
+dragging something it drew. Ask it before acting on a click of the app's own. It answers from
+the previous frame.
+
+The layer keeps a little state per id: a window's fold, drag offset and scroll, and a tab
+strip's selection. `Immediate::retention` (60 frames) is how long that state is kept after a
+widget stops being drawn. A panel behind a toggle comes back scrolled, folded and placed as
+it was. `retained()` returns how many ids hold state, for a caller that builds ids from
+changing text.
+
+### Moving and folding a window
+
+The title bar both folds a window and moves it.
+
+- A press on the bar that stays within 3 pixels folds or unfolds the window on release.
+- A press that travels further drags the window instead, and does not fold it. The first 3
+  pixels of travel are not applied, so the window lags the cursor by that much.
+- The `position` passed to `window()` is an anchor. A drag is kept as an offset from it, so a
+  window the caller moves every frame still follows and keeps the user's offset.
+- The window is clamped so its title bar stays on the canvas, and its full width stays
+  inside the canvas horizontally. A window cannot be dragged out of reach.
+- A window can end up somewhere other than where the caller put it. A caller drawing
+  something beside the window cannot rely on its position.
+- To start a window fresh, give it a new title (a new id).
+
+### Scrolling
+
+A window clips its body to its edges and scrolls when its content is taller than it.
+
+- The content height is measured as it is drawn. A window decides whether it needs a
+  scrollbar from the previous frame's content, so its bar appears one frame after the content
+  overflows.
+- The wheel scrolls three rows per notch.
+
+A **table given a height** (the third argument to `table()`) scrolls its own rows:
+
+- It clips to that height and draws its own scrollbar down its right side.
+- `headerRow()` is drawn above the scrolled region, so the column names stay put while the
+  rows move under them.
+- The width of the scrollbar is always reserved, so its bar appears on the same frame the
+  rows overflow and the columns do not shift when a row is added. A table given a height is
+  therefore narrower than the same table without one.
+- A height smaller than the header leaves no room for rows, and draws an empty table.
+
+A table given no height is as tall as its rows and scrolls with whatever holds it.
+
+The wheel turns the innermost scrolling region under the cursor. A table inside a window takes
+the wheel from the window.
+
+A row scrolled out of view can still respond to hover if the cursor is where its box went.
+
+### The `tools` theme class
+
+`Immediate::theme(theme)` reads the theme's `tools` style. `Screen::theme()` calls it for you.
+
+| Kind | Keys |
+|---|---|
+| colours | `panel`, `border`, `title-bar`, `text`, `active-text`, `dim-text`, `widget`, `highlight`, `hover`, `fill`, `rule` |
+| numbers | `line-height`, `padding`, `spacing`, `bar-height`, `border-width`, `radius`, `scrollbar-width` |
+
+## GameMenu, StatisticsOverlay and FileChooser
+
+These classes in `v3d::ui::shell` are the parts of a game's shell that every game would
+otherwise write the same way. An app that writes its own version of one has diverged from
+the api rather than customised it.
+
+### GameMenu
+
+`GameMenu` is the pause menu a game puts up over itself.
+
+```cpp
+menu_ = boost::make_shared<v3d::ui::shell::GameMenu>(vgui_, [this](bool suspended) {
+    scene_->pause(suspended);
+});
+```
+
+- It shows and hides a container, `game-menu` by default, and drives the `Menu` inside it,
+  `main-menu` by default. Both names can be passed to the constructor.
+- It answers its own commands in the `ui` context: `showGameMenu` toggles it, and
+  `menuPrevious`, `menuNext` and `selectMenu` navigate it while it is up. An app binds these
+  in its mappings, for example `escape` to `showGameMenu`. These command names cannot be
+  changed.
+- `toggle()` opens the menu, or steps back out of a submenu. Closing the top level resumes
+  the game.
+- The `Suspend` callback runs with `true` as the menu opens and `false` as it closes. Do
+  only small things in it, such as setting a flag. Tearing something down inside it can
+  break the toggle that called it.
+- `capturing()` is true while an input item is waiting for a value. The app sends the next
+  key to `capture(value)` instead of acting on it. This is how a rebinding screen works.
+- If the document names no such container, every call does nothing and the game runs without
+  a menu.
+
+### StatisticsOverlay
+
+`StatisticsOverlay` draws the loop's frame timings in the corner of the frame. `Screen`
+builds one unless told not to.
+
+- It starts hidden. `toggle()` and `visible(bool)` show it.
+- It draws from a `Sample` the app hands it each frame: the mean and last frame time in
+  nanoseconds, the simulation steps the last frame ran, and a list of named timing spans.
+  The app copies these out of `engine::Statistics`.
+- `size` defaults to 16 pixels, smaller than the ui's own text.
+- `lines(sample)` returns the text without drawing it.
+
+### FileChooser
+
+`FileChooser` lets a player choose a file to open or a name to save under, drawn in the
+game's own ui. It works over a fullscreen game and follows the theme.
+
+It adds no component type. It drives components the document names (defaults in
+`FileChooser::Names`):
+
+| Name | Component | Holds |
+|---|---|---|
+| `chooser` | a container | shown and hidden |
+| `files` | a `list` | the directory listing |
+| `name` | a `textbox` | the name typed or picked |
+| `folder` | a `label` | where the list is, or the question being asked |
+
+```cpp
+chooser_->open(FileChooser::Mode::Save, directory, ".json", [this](const boost::filesystem::path& chosen) {
+    save(chosen);
+});
+```
+
+- The app routes the list's command to `pick()`, and its buttons' commands to `accept()` and
+  `close()`.
+- The listing is `..` (except at the root), then the directories, then the files that match
+  the extension, each sorted by name.
+- `pick()` on a directory steps into it, on `..` steps up, and on a file puts its name in the
+  field.
+- `accept()` refuses an empty name or one containing a separator. In `Open` mode it refuses a
+  file that does not exist.
+- In `Save` mode a bare name is given the extension. Saving over an existing file asks first:
+  `accept()` returns false and `confirming()` is true, and accepting the same name again
+  replaces the file.
+
+## Testing a ui
+
+`api/ui/tests/` needs no window, no GPU and no font. `Canvas` is CPU-side, and the text
+callbacks can be stand-ins. A test builds components, draws them onto a canvas, and checks
+the boxes the draw left or the primitives it added. Layout alone can be checked with no
+canvas at all; see [internals/UserInterface.md](../internals/UserInterface.md).
+`TextRenderer` needs a device to upload its atlas, so it is not covered there.
+[Testing.md](../contributing/Testing.md) has the rest.

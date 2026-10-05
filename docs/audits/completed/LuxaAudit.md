@@ -21,7 +21,7 @@ is a stub. Everything else has either landed or turned out to be worth nothing.
 
 **Verdict on the recheck: one piece is left, and it is the theme.** Drawing was rebuilt on
 the batched quad and hit-testing arrived with it, both under
-[ADR-0019](../../adr/0019-the-ui-is-laid-out-by-what-draws-it.md), so items 5 and 7 of the list
+ADR-0019 (removed), so items 5 and 7 of the list
 below are answered — differently than this audit imagined them, which is recorded where each
 is discussed. What is still missing is everything under `api/ui/style/`: no config arm reads
 a style, nothing in the tree constructs one, `prop::Color` holds a colour that no
@@ -357,7 +357,7 @@ except where noted.
    choice belongs to item 3's schema work.
 5. ~~Decide where UI hit-testing, hover and focus live, and implement them against
    `Component::bound()`/`depth()` — both of which exist today with no reader.~~ **Settled
-   2026-09-04 by [ADR-0019](../../adr/0019-the-ui-is-laid-out-by-what-draws-it.md).** Hit-testing
+   2026-09-04 by ADR-0019 (removed).** Hit-testing
    lives on the component that was drawn, against the bounds its draw left on it, and the
    menu bar and the toolbars both answer the cursor that way. Hover is a state a strip
    writes on its buttons. Two things the luxa version had are deliberately not there:

@@ -1,15 +1,17 @@
 # Conventions
 
-House style. Much of this code traces back to the early 2000s and is being modernised
-incrementally, so how modern a given file is varies widely. **Match the immediate neighbours**
-where this document does not say otherwise.
+This document is for contributors. It sets out the house style for files, code, comments and
+documents. Much of the code is old and is being modernised a piece at a time, so files differ in
+how modern they are. **Where this document says nothing, match the files around the one you are
+editing.**
 
 ## Files
 
-- Headers are `.h`. Implementations are `.cpp` **or** `.cxx`, mixed even within a directory
-  (`api/render/realtime/*.cpp` alongside `api/render/realtime/vulkan/*.cxx`).
-- Every source and header opens with the copyright block, followed by `#pragma once` in a
-  header:
+- Headers are `.h`. Implementation files are `.cpp` **or** `.cxx`, and both appear even within
+  one directory (`api/render/realtime/*.cpp` beside `api/render/realtime/vulkan/*.cxx`). Use the
+  extension of the neighbouring files.
+- Every source file and header starts with the copyright block. A header follows it with
+  `#pragma once`.
 
   ```
   /**
@@ -18,62 +20,82 @@ where this document does not say otherwise.
    **/
   ```
 
-- **A header outside the including file's own directory is named by its path from the
-  repository root**, in angle brackets: `#include <api/render/realtime/Canvas.h>`, and
-  `<vertical3d/src/scene/Node.h>` for an app's own header one directory over. **A subdirectory
-  is outside it too** — `<api/ui/component/Bar.h>` from `api/ui`, not `"component/Bar.h"`. Only
-  a header in the same directory stays `"Neighbour.h"`.
-- **The check is `grep -rn '#include "[^"]*/'`**, which should return only the generated shader
-  headers below. Nothing in the build or the linter enforces this: a quoted relative include
-  resolves exactly as well as a rooted one, so the only thing that finds a lapse is looking for
-  it. Grepping for `../` alone is not enough — it misses every `"subdirectory/Header.h"`.
-- **A generated header is the exception, and stays quoted.**
-  `#include "shaders/quad.vert.inc"` names a file `v3d_add_shader` writes into
-  `${CMAKE_CURRENT_BINARY_DIR}`, which is on that target's include path and is not in the source
-  tree at all, so it has no repository-root path to be named by.
-- **Where that block goes is not a preference.** cpplint reads an angle-bracket include ending
-  in `.h` as a *C* system header, so the project block precedes every C++ system header — after
-  the file's own header or its `#pragma once`, above `<string>`. That is also where
-  `<vulkan/vulkan.h>` sits.
-- Third-party includes in angle brackets — boost, glm — go last, below the project's own. They
-  are exempt from the rule above because their names do not end in `.h`, so the linter files
-  them with the project's headers rather than with the system's.
-- **One class per header**, named after it, with its out-of-line definitions in the source of
-  the same name. A small struct beside the class that uses it is still a second class: an
-  `Allocation` gets `Allocation.h` rather than a place in `Allocator.h`. A class nested in its
-  owner stays there, and so does a helper in a source file's anonymous namespace, since neither
-  is visible to anyone else. A typedef or enum goes with the class that defines its meaning.
-  When the split leaves a family of headers that only make sense together — an AST's node
-  types, an app's ECS components — they go in a subdirectory of their own, under the rule
-  below.
-- **A directory splits when its files stop sharing a reader, not when it passes a file count.**
-  `api/grid` is sixteen files and 1,300 lines and wants nothing done to it, because they are
-  one concept; `api/ui` had 36 files above its subdirectories doing five different jobs, and they
-  are `paint/`, `input/`, `shell/` and `style/` now. A namespace follows the directory, so a
-  class whose name already carries the group word drops it — `pipeline::Builder`, not
-  `pipeline::PipelineBuilder`. Where the group *is* the noun, the name stays: `device::Device`.
-- [.gitattributes](../../.gitattributes) enforces LF (`* text=auto eol=lf`). An editor that saves
-  CRLF turns a small change into a whole-file diff, so strip the CRs rather than committing
-  them.
+- Files use LF line endings. [.gitattributes](../../.gitattributes) sets `* text=auto eol=lf`. If
+  your editor saves CRLF, the whole file shows as changed. Convert it back to LF before
+  committing.
+
+### Includes
+
+- **Include a header from another directory by its path from the repository root, in angle
+  brackets.** For example, `#include <api/render/realtime/Canvas.h>`, or
+  `#include <vertical3d/src/scene/Node.h>` for an app's own header in another directory.
+- **A subdirectory counts as another directory.** From `api/ui`, write
+  `<api/ui/component/Bar.h>`, not `"component/Bar.h"`.
+- **Only a header in the same directory is included with quotes:** `#include "Neighbour.h"`.
+- **A generated header is the exception and stays quoted.** `#include "shaders/quad.vert.inc"`
+  names a file that `v3d_add_shader` writes into the build directory. It is not in the source
+  tree, so it has no path from the repository root.
+
+Nothing in the build or in cpplint enforces the include rule, because a quoted relative include
+compiles just as well. To check for mistakes, run this over the source directories (not the
+repository root, whose `out/` directory holds the vcpkg installs):
+
+```
+grep -rn '#include "[^"]*/' api moya pong tetris voxel odyssey vertical3d imagetool v3dshell examples
+```
+
+It should report only generated `.inc` headers. Searching for `../` alone is not enough, because
+it misses `"subdirectory/Header.h"`.
+
+**Include order matters to cpplint.** cpplint treats any angle-bracket include ending in `.h` as a
+C system header. So the order in a file is:
+
+1. The file's own header (in a source file), or `#pragma once` (in a header).
+2. The project's own headers, such as `<api/...>`, together with `<vulkan/vulkan.h>`.
+3. C++ standard headers, such as `<string>`.
+4. Third-party headers such as boost and glm. Their names end in `.hpp` or have no extension, so
+   cpplint does not treat them as C headers.
+
+Background: [ADR-0048](../adr/0048-includes-name-headers-from-the-repository-root.md)
+
+### One class per header
+
+- **Each class has its own header, named after the class**, with its out-of-line definitions in
+  the source file of the same name.
+- A small struct used by one class is still a separate class. An `Allocation` struct goes in
+  `Allocation.h`, not in `Allocator.h`.
+- A class nested inside another class stays in its owner's header. A helper in a source file's
+  anonymous namespace stays in that source file. Neither is visible elsewhere.
+- A typedef or an enum goes in the header of the class that gives it meaning.
+- When splitting leaves a family of headers that are only used together, such as an AST's node
+  types or an app's ECS components, put them in a subdirectory of their own.
+
+### Directories
+
+- **Split a directory when its files serve different purposes, not when it reaches a certain
+  size.** `api/grid` has sixteen files that all implement one concept, so it stays one
+  directory. `api/ui` is split into `paint/`, `input/`, `shell/` and `style/` because those are
+  separate jobs.
+- A namespace follows its directory. A class in a subdirectory drops the subdirectory's name
+  from its own name: `pipeline::Builder`, not `pipeline::PipelineBuilder`. When the subdirectory
+  name is the class's noun, the class keeps it: `device::Device`.
 
 ## Language
 
-- Namespaces mirror the `api/` path: `v3d::asset`, `v3d::render::realtime`,
-  `v3d::render::realtime::vulkan`. Close them with `};  // namespace <full name>` — the
-  trailing semicolon is part of the style.
-- 4-space indent. Access specifiers are indented one space into the class body (` public:`,
-  ` private:`).
-- **A namespace body is not indented**, and a continuation line at namespace scope sits at
-  column 0 with it. [Linting.md](Linting.md#namespace-indentation) has the detail and the
-  reason.
-- Use `boost::shared_ptr` and `boost::make_shared`, not the `std` equivalents.
-- A `boost::shared_ptr`, a `std::string` or any other non-trivial type is a parameter by `const`
-  reference. `performance-unnecessary-value-param` is satisfied by a by-value parameter that is
-  moved from as well, and this tree takes the reference in both cases.
-- Log through the spdlog wrapper: `logger_->get()->info("... {}", value)`. The older
-  `LOG_INFO` and `LOG_ERROR` macros survive only in commented-out or non-compiling code. Do
-  not add new uses.
-- Doc comments are `/** **/` blocks, often left empty above trivial members.
+- **Namespaces mirror the path under `api/`:** `v3d::asset`, `v3d::render::realtime`,
+  `v3d::render::realtime::vulkan`. Close a namespace with `};  // namespace <full name>`,
+  including the semicolon.
+- **Indent with 4 spaces.** Indent access specifiers one space into the class body
+  (` public:`, ` private:`).
+- **Do not indent a namespace body.** A continuation line at namespace scope also starts at
+  column 0. [Linting.md](Linting.md#namespace-indentation) shows examples and explains why.
+- **Use `boost::shared_ptr` and `boost::make_shared`**, not the `std` equivalents.
+- **Pass a non-trivial type by `const` reference**, including a `boost::shared_ptr` and a
+  `std::string`. clang-tidy's `performance-unnecessary-value-param` also accepts a by-value
+  parameter that is moved from, but this tree uses the `const` reference in both cases.
+- **Log through the spdlog wrapper:** `logger_->get()->info("... {}", value)`. Do not use the
+  old `LOG_INFO` and `LOG_ERROR` macros. They appear only in commented-out or non-compiling code.
+- Doc comments are `/** **/` blocks. Many trivial members have an empty one.
 
 ## Writing
 
@@ -129,6 +151,12 @@ memory suballocation all follow this rule.
 
 **A `switch` over an enum has no `default:`.** MSVC warning C4062 is an error in this tree,
 so adding an enumerator fails the build at every switch that does not handle it.
+
+- List every enumerator. Ones that need no action are grouped together under a comment that
+  says why.
+- Adding a `default:` back silently turns the check off for that switch.
+- Where an enum is parsed from text, the parser's upper bound is the last enumerator. Keep the
+  bound and the enum in step, and keep a test that checks the round trip.
 
 ## Commits
 

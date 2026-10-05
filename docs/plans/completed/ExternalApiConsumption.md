@@ -269,3 +269,13 @@ Two are settled, two are carried to [TODO.md](../../TODO.md).
 - **Whether the example is enough. It is, for now**, having been made an app rather than a link
   check. It cannot drift, because it lives here; it also cannot catch what only a real app needs, and
   that is the thing to revisit when the second repository exists.
+
+## Outcome
+
+Drafted and closed on 2026-09-05. It made the `api/` libraries buildable inside another
+repository's tree, as source through an include root that nests, rather than as an installed
+package ([ADR-0027](../../adr/0027-build-consume-the-api-as-source.md)).
+
+Most of the work was a correction the tree needed anyway. Each library now states its own
+include root and propagates its own dependencies. Before, both came from global settings in the
+root `CMakeLists.txt`.

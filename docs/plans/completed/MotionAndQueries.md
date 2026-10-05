@@ -6,7 +6,7 @@ taking up [milestone 1](../../roadmap/completed/m1-MotionAndQueries.md) of
 named trigger.
 
 **Closed on 2026-10-03.** Steps 1 to 5 landed and pong was watched; step 6 went to TODO.md with
-its trigger. [plans/README.md](../README.md) records what came out differently.
+its trigger. [Outcome](#outcome) records what came out differently.
 
 Every piece here is something a consumer has written for itself or stubbed. moya has a `Plane`
 and a `Frustum` that are general geometry living in a renderer. retcon has a ground pick of its
@@ -146,7 +146,7 @@ int intersect(const AABBox& box) const;
 const std::array<Plane, 6>& planes() const noexcept;
 ```
 
-That is [ADR-0024](../../adr/0024-api-type-serves-both-renderers.md)'s rule applied a second time:
+That is ADR-0024 (removed)'s rule applied a second time:
 a convention one consumer needs becomes a parameter rather than a second copy of the type. The
 default is the realtime one, because that is what `api/type`'s own cameras build, and moya
 names the other. `intersect` becomes const, which it was not for no reason.
@@ -331,16 +331,46 @@ point of the step rather than something a reference could pin
 
 Update the state in the table above, and set ADR-0060's status when step 5 lands.
 
-- **Steps 1 and 3** move the geometry [Architecture.md](../../Architecture.md#geometry) describes;
+- **Steps 1 and 3** move the geometry [Types.md](../../api/Types.md) describes;
   it gains `Plane` and `Frustum`, and the frustum's depth range is an invariant worth its own
-  bullet under [Invariants that bite](../../Architecture.md#invariants-that-bite).
+  bullet under [Types.md](../../api/Types.md).
   [OfflineRendering.md](../../roadmap/completed/OfflineRendering.md#what-the-api-already-provides) gains them
   in its list of what the api provides.
 - **Step 2** is the ground pick, and the handoff note to retcon is written here, when it lands.
-- **Step 5** changes what [Architecture.md](../../Architecture.md#the-loop-has-two-virtuals-and-they-mean-different-things)
+- **Step 5** changes what [Engine.md](../../api/Engine.md)
   says about `alpha()` — "nothing reads it yet" stops being true — and
   [ECSDesign.md](../../api/ECS.md) gains `Previous<T>`. Delete [TODO.md](../../TODO.md#the-game-loop)'s
   game-loop entry rather than marking it.
 - **When the plan closes**, step 6 moves to TODO.md with its trigger, the roadmap's
   [m1](../../roadmap/completed/m1-MotionAndQueries.md) points here as done, and this file moves to
   [completed/]().
+
+## Outcome
+
+Drafted and closed on 2026-10-03. It took up
+[milestone 1](../../roadmap/completed/m1-MotionAndQueries.md) of
+[the game engine roadmap](../../roadmap/completed/GameEngine.md), and delivered:
+
+- moya's `Plane` and `Frustum` moved into `api/type`, with the frustum told its depth range;
+- a ray meeting a plane, and box overlap;
+- a component's previous step kept, so that `Engine::alpha()` has a reader
+  ([ADR-0060](../../adr/0060-ecs-interpolate-from-a-previous-step-component.md)).
+
+The sprite clip went to [TODO.md](../../TODO.md#sprite-sheets), held until a second consumer
+needed it. [Effects](Effects.md) later built it.
+
+Four things came out differently from the plan:
+
+- **The wrong depth range is a different bug for each kind of camera.** Read as `[-1, 1]`, an
+  orthographic camera's near plane falls far behind the eye, as the plan said. A perspective
+  camera's near plane falls at half the near distance, still in front. The tests put a box in
+  that gap for each.
+- **Pong had a test suite**, although the plan twice said it had none. The full build failing to
+  link that suite, not someone playing, showed that the scene now needed `api/type`. Its
+  collision and scoring cases carried step 4 unchanged.
+- **The positions could not be copied.** `Position1D` and `Position2D` declared move operations
+  and no copy, which a snapshot needs. The ADR records that they gained a copy.
+- **Watching pong after step 5 found a gameplay fault the plan had not looked for.** A paddle
+  return reversed both components of the ball's direction and ignored where the ball struck, so
+  every rally was a horizontal line. That was fixed alongside the plan rather than as a step of
+  it.

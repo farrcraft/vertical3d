@@ -162,7 +162,7 @@ reads as a mistake rather than as a design, and is the first thing anyone asks a
 
 The nineteen files are four cameras (`Camera`, `CameraProfile`, `IsometricCamera`, `ArcBall`),
 three geometry types (`AABBox`, `Bound2D`, `Ray`), `Model` — the
-[ADR-0024](../../adr/0024-api-type-serves-both-renderers.md) seam both renderers read — and two
+ADR-0024 (removed) seam both renderers read — and two
 others:
 
 - **`String.{h,cxx}`** is one function, `string_to_vec2`. It has **no
@@ -655,7 +655,7 @@ and in the commits, which is where a reader following a stale name should end up
   new `../` is nobody's fault. What it still needs from this step is the rule for when a
   directory splits — when its files stop sharing a reader, not when it passes a file count, with
   `api/dag` as the worked counter-example.
-- **[Architecture.md](../../Architecture.md)** describes the shape of `api/`, so the six changed
+- **[api/README.md](../../api/README.md)** describes the shape of `api/`, so the six changed
   libraries change in it.
 - **[v3dHelpers.cmake](../../../cmake/v3dHelpers.cmake)**'s include-root comment currently states
   the reason step 1 removes. Corrected, not deleted — the root is still the repository, for a
@@ -745,3 +745,33 @@ subdirectories would hide exactly the dependency information the split exists to
   them is out of scope here — this plan is about `api/` — but step 3 converted their internal
   includes along with the api ones, so an editor directory is now as movable as an api one and
   the question can be asked whenever someone wants to.
+
+## Outcome
+
+Drafted and closed on 2026-09-08, from a survey of `api/`. None of its eleven steps changed
+behaviour: three changed how a header is named, seven moved files, and one updated the
+documents.
+
+The ordering was the point. The first three steps were a hard prerequisite. The tree had 763
+relative includes across 337 files, and nothing used the include root that
+[ADR-0027](../../adr/0027-build-consume-the-api-as-source.md) had created. Any move made before
+the conversion would have rewritten `../` counts in libraries and apps that had nothing to do
+with it. After the conversion, a move was a `git mv`, a `CMakeLists.txt` edit and a namespace
+line.
+
+Four things came out differently from the plan:
+
+- Step 4 was drafted to wait for [OfflineRenderingPhase3](OfflineRenderingPhase3.md), and did
+  not need to. Both were sequential commits on one branch, not concurrent work.
+- `ui/immediate/` was not created. `Immediate` is one of the library's two entry points, not a
+  concern inside it. The same test kept `Layout` and `Arranger` at the top level.
+- Steps 7 and 10 became moves *and* renames. Adding a group segment to an already deep namespace
+  gave names like `vulkan::pipeline::PipelineBuilder`.
+- Two of step 9's three stated reasons were wrong. `Loader.h` above `loader/` is a base class
+  above its implementations, the same shape `api/image` uses. The step was still justified, for
+  a reason the plan had not predicted: it separated four pairs of same-named types that had been
+  told apart only by scope.
+
+The steps above also record what the renames cost, which is worth reading before attempting
+the same kind of change: three substring collisions, one of which rewrote Vulkan's own
+`VkPipelineCache`, and a forward declaration in the wrong namespace at nearly every step.

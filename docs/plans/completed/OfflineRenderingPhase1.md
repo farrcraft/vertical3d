@@ -29,7 +29,7 @@ Recorded in [docs/adr/](../../adr/), not here. The ones that shape this plan:
 |---|---|
 | [0022](../../adr/0022-offline-shared-library-with-no-vulkan.md) | Shared offline code is `api/render/offline`; each renderer is a library with a driver |
 | [0023](../../adr/0023-offline-rib-is-the-scene-format.md) | RIB is what both renderers read; the editor exports to it |
-| [0024](../../adr/0024-api-type-serves-both-renderers.md) | `api/type` serves both, and a convention is a parameter rather than a fork |
+| 0024 (removed) | `api/type` serves both, and a convention is a parameter rather than a fork |
 | [0007](../../adr/0007-ci-render-tests-on-software-vulkan.md) | Render tests on a Windows runner — which these two do not need |
 
 ## What blocks what
@@ -144,7 +144,7 @@ background colour on miss.
   have been called for the viewport being rendered.
 - **No `api/type` change.** The camera measures y downward from the top of the viewport and
   `image::Image` row 0 is the top, so the pixel loop maps straight across with the convention
-  ADR-0012 already set. The parameter [ADR-0024](../../adr/0024-api-type-serves-both-renderers.md)
+  ADR-0012 already set. The parameter ADR-0024 (removed)
   calls for is needed when moya routes a projection through `Camera`, which this phase does not
   do.
 - **Something has to write the alpha plane.** Four planes are RGBA and nothing writes the
@@ -291,3 +291,8 @@ they are settled deliberately. All three are settled:
 - How the depth plane is addressed. **By name** — `moya::FrameBuffer::Plane` names the three
   colour channels and the depth, and `CHANNELS` says how many of them are the picture. A
   position-only convention reads the same at the call site whether it is right or wrong.
+
+## Outcome
+
+Drafted and closed on 2026-09-05. It delivered the shared `api/render/offline` library, and each
+renderer computing a pixel that came from geometry.

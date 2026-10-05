@@ -14,7 +14,7 @@ the right one.
 ## Before anything else: is it already broken?
 
 Everything in the tree compiles, links and passes cpplint, `/W4` with `/WX`, `/analyze` and
-the enabled clang-tidy checks - `docs/Linting.md` states that and `docs/TODO.md` carries what
+the enabled clang-tidy checks - `docs/contributing/Linting.md` states that and `docs/TODO.md` carries what
 is deliberately left open. **So a failure is the change's until shown otherwise**, and the
 thing to rule out first is a stale CMake cache rather than known breakage.
 
@@ -138,7 +138,7 @@ Rendering is not covered: it needs a window and a GPU, which is
 ## Workflow
 
 1. **Rule out the environment.** A stale cache after a toolset update, a missing
-   `VULKAN_SDK`, an unbuilt libnoise - `docs/Build.md` has each of them.
+   `VULKAN_SDK`, an unbuilt libnoise - `docs/contributing/Build.md` has each of them.
 2. **Read the failure.** Redirect the build, find the first error, read around it.
 3. **Name the cause before touching anything.** If you cannot say why in one sentence, keep
    reading. A guessed fix that happens to compile is worse than no fix.

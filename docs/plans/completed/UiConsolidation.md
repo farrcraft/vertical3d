@@ -182,7 +182,7 @@ Recorded in [adr/](../../adr/), not here.
 | ADR | Decision |
 |---|---|
 | **0038** | Who turns a cursor into a command — written by step 8, and the reason step 9 is the api's rather than each app's |
-| [0019](../../adr/0019-the-ui-is-laid-out-by-what-draws-it.md) | The ui is laid out by what draws it — unchanged. Step 7 moves the walk into a class of its own; it does not move it out of the draw |
+| 0019 (removed) | The ui is laid out by what draws it — unchanged. Step 7 moves the walk into a class of its own; it does not move it out of the draw |
 | [0034](../../adr/0034-ui-layout-is-resolved-while-drawing.md) | A component has children and a box — unchanged |
 | [0035](../../adr/0035-ui-immediate-mode-beside-the-retained-tree.md) | An immediate mode layer over the same canvas — **corrected** twice by this plan: its state map is not pruned (step 3), and its "ui" style does not dress both sides (step 10) |
 | [0020](../../adr/0020-ui-themes-are-data-apps-load-the-images.md) | A theme is data and the app resolves its images — unchanged; step 10 splits a class within it, not the rule |
@@ -433,7 +433,7 @@ In [`ComponentRenderer.{h,cpp}`](../../../api/ui/ComponentRenderer.h).
 
 `natural()`, `arrange()`, `walk()` and `insets()` become a class that resolves boxes and writes
 them onto components, and `ComponentRenderer` becomes the paint half that it calls. This does not
-move layout out of the draw — [ADR-0019](../../adr/0019-the-ui-is-laid-out-by-what-draws-it.md)
+move layout out of the draw — ADR-0019 (removed)
 stands, and one walk still decides both what is drawn and what is clicked — it moves it out of a
 1124-line class that also does theme ingestion, eleven paint routines, strip stacking, nine-slice
 skinning and menu panel placement.
@@ -586,7 +586,7 @@ default alone.
 [`docs/README.md`](../../README.md) and [`CLAUDE.md`](../../../CLAUDE.md).
 
 Eight ADRs, two paradigms, thirty classes and no owning document —
-[`Architecture.md`](../../Architecture.md) names `api/ui` once, in passing, and the CLAUDE.md routing
+`Architecture.md` names `api/ui` once, in passing, and the CLAUDE.md routing
 table has rows for the realtime renderer, the offline renderers and the editor but not for this.
 
 What it owns: the two ways to write a ui and which to reach for, the box model and how a `Length`
@@ -667,3 +667,26 @@ consumer pressure behind it. Reopen it when a registry has a second reason to ex
 - **Should `natural()` become virtual on `Component`?** Raised in step 8 and deliberately left
   open there, because the answer depends on whether step 10 gives components more behaviour of
   their own or less.
+
+## Outcome
+
+Drafted on 2026-09-06 from an architecture review of `api/ui`, and closed on 2026-09-07. Its
+fourteen steps covered a library that had gained four ADRs in a day and had not had its shape
+reviewed since.
+
+The ordering mattered for two reasons:
+
+- Three steps were shipping defects: an opaque "translucent" panel, an `Immediate` state map that
+  grew without bound although its ADR said it did not, and a `window()` alpha argument that did
+  nothing. Those were separate fixes that did not wait behind the structural work.
+- The structural work had a strict order. Names and headers came before the draw path, or the
+  draw path would have been written twice. The style resolver came before the renderer was split,
+  because the resolver is one half of that split.
+
+Two things came out differently from the plan:
+
+- Step 8 did not split layout out of the renderer. Layout and paint call each other by design.
+  The defect the split was meant to fix, two implementations of the strip rule that disagreed
+  about a left toolbar's width on the first frame, was fixed without it.
+- Step 12 found that a game which owns the mouse has no cursor to give the immediate layer, so
+  voxel's debug window cannot be folded.
