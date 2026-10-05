@@ -77,7 +77,7 @@ class Lamp final {
                 machine_.value(where).triple(point, surface.triple(point));
             }
         }
-        if (!machine_.run(program_)) {
+        if (!machine_.run()) {
             return false;
         }
         const int away = program_.symbol("L");
@@ -146,7 +146,7 @@ class Lit final {
     }
 
     void run() {
-        BOOST_REQUIRE_MESSAGE(machine_.run(program_), machine_.error());
+        BOOST_REQUIRE_MESSAGE(machine_.run(), machine_.error());
     }
 
     glm::vec3 colour(unsigned int point) const {

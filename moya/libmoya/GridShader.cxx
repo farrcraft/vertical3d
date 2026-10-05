@@ -151,7 +151,6 @@ void GridShader::shade(const Shading & shading, MicroPolygonGrid* grid) {
     tracer_.time(context_->sampling().shutter.x);
 
     Run & held = run(shading.surface, batch);
-    const v3d::render::offline::sl::runtime::Program & program = shading.surface->program();
     shading.surface->write(&held.machine, shading.placement);
 
     // the grid parameters dicing already walks: vertex (i, j) is at i and j over the span,
@@ -187,7 +186,7 @@ void GridShader::shade(const Shading & shading, MicroPolygonGrid* grid) {
     }
     held.globals.eye(&held.machine, glm::vec3(0.0f));
 
-    if (!held.machine.run(program)) {
+    if (!held.machine.run()) {
         shading_ = nullptr;
         return;
     }

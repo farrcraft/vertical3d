@@ -121,7 +121,7 @@ glm::vec3 HitShader::shade(glm::vec3* opacity) {
     held.globals.surface(&held.machine, 0, point);
     held.globals.eye(&held.machine, tracer_->scene() == nullptr ? glm::vec3(0.0f) : tracer_->scene()->eye());
 
-    if (!held.machine.run(surface.shader->program())) {
+    if (!held.machine.run()) {
         return primitive.colour();
     }
     *opacity = held.globals.opacity(held.machine, 0, *opacity);

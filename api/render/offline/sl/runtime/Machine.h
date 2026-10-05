@@ -37,24 +37,27 @@ namespace v3d::render::offline::sl::runtime {
 class Machine final {
  public:
     /**
-     * Size the register file for this program and batch, and write its constants in. A batch
-     * of zero is read as one.
+     * Size the register file for this program and batch, write its constants in, and hold the
+     * program for run() and initialise(), so a register file cannot be run with a program it
+     * was not sized for. The program has to outlive the machine's use of it. A batch of zero is
+     * read as one.
      **/
     void prepare(const Program & program, unsigned int batch);
 
     /**
-     * Run it. False when something went wrong, which error() names.
+     * Run the program prepare() was given. False when something went wrong, which error()
+     * names - and when nothing was prepared.
      *
      * Starts after the program's prologue, which is the declared parameter defaults:
      * running those again per grid would overwrite whatever a scene bound.
      **/
-    bool run(const Program & program);
+    bool run();
 
     /**
      * Run only the prologue, which leaves each parameter register holding the default the
      * shader declared. What `Shader` reads its defaults out of, once.
      **/
-    bool initialise(const Program & program);
+    bool initialise();
 
     /**
      * A register, by the index the program gave it. The first `Program::symbols` of them
@@ -238,6 +241,8 @@ class Machine final {
     std::vector<std::string> reports_;
     std::vector<std::string> printed_;
     Renderer* renderer_ = nullptr;
+    /** What prepare() sized the register file for. **/
+    const Program* program_ = nullptr;
     unsigned int batch_ = 1;
     std::string error_;
 };

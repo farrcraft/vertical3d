@@ -98,7 +98,7 @@ bool Globals::shine(const Placed & light, runtime::Machine* machine, unsigned in
         put(machine, lit_, lane, surface.triple(lane));
         put(machine, position_, lane, origin);
     }
-    if (!machine->run(light.shader->program())) {
+    if (!machine->run()) {
         return false;
     }
 

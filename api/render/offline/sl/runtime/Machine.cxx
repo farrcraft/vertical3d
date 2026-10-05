@@ -62,6 +62,7 @@ float combine(Opcode opcode, float left, float right) {
 };  // namespace
 
 void Machine::prepare(const Program & program, unsigned int batch) {
+    program_ = &program;
     batch_ = batch == 0 ? 1 : batch;
     point_ = program.symbol("P");
     s_ = program.symbol("s");
@@ -461,12 +462,20 @@ void Machine::leave(bool loop) {
     }
 }
 
-bool Machine::initialise(const Program & program) {
-    return execute(program, 0, program.prologue);
+bool Machine::initialise() {
+    if (program_ == nullptr) {
+        error_ = "the machine was run before it was prepared";
+        return false;
+    }
+    return execute(*program_, 0, program_->prologue);
 }
 
-bool Machine::run(const Program & program) {
-    return execute(program, program.prologue, program.instructions.size());
+bool Machine::run() {
+    if (program_ == nullptr) {
+        error_ = "the machine was run before it was prepared";
+        return false;
+    }
+    return execute(*program_, program_->prologue, program_->instructions.size());
 }
 
 bool Machine::execute(const Program & program, std::size_t from, std::size_t until) {

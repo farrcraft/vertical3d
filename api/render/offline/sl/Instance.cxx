@@ -153,7 +153,7 @@ void Instance::bind(const rib::ParameterList & parameters) {
 void Instance::write(runtime::Machine* machine, const glm::mat4x4 & placement) const {
     // the declared defaults, run rather than remembered: what a coordinate space in one
     // comes to is the renderer's answer, and the machine has one now
-    machine->initialise(*program_);
+    machine->initialise();
 
     for (const Binding & held : bindings_) {
         if (!held.bound) {

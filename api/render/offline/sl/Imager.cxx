@@ -40,7 +40,7 @@ bool Imager::run(FrameBuffer* frame, unsigned int coverage) {
                 frame->value(2, column, row)), frame->value(coverage, column, row),
                 glm::vec3(static_cast<float>(column) + 0.5f, static_cast<float>(row) + 0.5f, 0.0f));
         }
-        if (!machine_.run(program)) {
+        if (!machine_.run()) {
             return false;
         }
         for (unsigned int column = 0; column < width; column++) {

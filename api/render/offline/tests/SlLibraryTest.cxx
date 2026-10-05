@@ -51,7 +51,7 @@ class Shaded final {
         BOOST_REQUIRE_MESSAGE(emitter.emit(&program_), emitter.error() + " in: " + body);
         machine_.renderer(renderer);
         machine_.prepare(program_, batch);
-        BOOST_REQUIRE_MESSAGE(machine_.run(program_), machine_.error());
+        BOOST_REQUIRE_MESSAGE(machine_.run(), machine_.error());
     }
 
     float number(const std::string & name, unsigned int point = 0) const {
