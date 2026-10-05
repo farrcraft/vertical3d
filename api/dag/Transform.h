@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <api/type/Transform.h>
+
 #include <glm/glm.hpp>
 #include <glm/ext/quaternion_float.hpp>
 
@@ -36,17 +38,17 @@ class Transform {
     void translate(const glm::vec3 & offset);
 
     /**
-     * @return the composition, translation * rotation * scale.
-     *
-     * Scale is applied first so that it acts along the object's own axes: composed the
-     * other way round, a non-uniform scale shears everything the rotation turned.
+     * @return the composition, translation * rotation * scale - type::Transform::matrix()
      **/
     glm::mat4 matrix(void) const;
 
+    /**
+     * @return all three parts at once, as the value an ecs entity is placed by
+     **/
+    const v3d::type::Transform & value(void) const;
+
  private:
-    glm::vec3 translation_;
-    glm::vec3 scale_;
-    glm::quat rotation_;
+    v3d::type::Transform value_;
 };
 
 };  // namespace v3d::dag

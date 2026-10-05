@@ -2,6 +2,7 @@ v3d_add_api_library(type
 "Model.h" "Model.cxx"
 "Random.h" "Random.cxx"
 "Skeleton.h" "Skeleton.cxx"
+"Transform.h" "Transform.cxx"
 "animation/Channel.h"
 "animation/Clip.h" "animation/Clip.cxx"
 "animation/Clock.h" "animation/Clock.cxx"

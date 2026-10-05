@@ -22,7 +22,8 @@ beside its own code — pong has `Score`, `Travel`, `Offset`, `PaddleSize`, `Siz
 in [pong/src/component/](../pong/src/component/); odyssey has `engine::Path`.
 
 `Transform` is where a thing stands in a 3D world: a position, a quaternion and a scale, with
-`aboutY()` for a world that turns about one axis
+`aboutY()` for a world that turns about one axis. It is `type::Transform`, the value an editor
+mesh's `dag::Transform` holds too, so the composition is written once
 ([ADR-0063](adr/0063-an-entity-is-drawn-from-a-transform-and-a-component-per-kind.md)). The
 components that say how a thing is drawn are not here but in `api/render/realtime/component/`,
 beside the handles they name, and `realtime::sprites()` walks every entity carrying a

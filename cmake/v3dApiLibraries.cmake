@@ -46,7 +46,7 @@ set(V3D_API_config_REQUIRES log asset type)
 set(V3D_API_config_PACKAGES glm)
 
 set(V3D_API_dag_PATH "dag")
-set(V3D_API_dag_REQUIRES)
+set(V3D_API_dag_REQUIRES type)
 set(V3D_API_dag_PACKAGES glm)
 
 set(V3D_API_ecs_PATH "ecs")

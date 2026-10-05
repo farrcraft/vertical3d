@@ -5,53 +5,50 @@
 
 #include "Transform.h"
 
-#include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 
 namespace v3d::dag {
 
-Transform::Transform() :
-    translation_(0.0f, 0.0f, 0.0f),
-    scale_(1.0f, 1.0f, 1.0f),
-    rotation_(1.0f, 0.0f, 0.0f, 0.0f) {
+Transform::Transform() {
 }
 
 Transform::~Transform() {
 }
 
 void Transform::scale(const glm::vec3& s) {
-    scale_ = s;
+    value_.scale = s;
 }
 
 void Transform::rotation(const glm::quat& r) {
-    rotation_ = r;
+    value_.rotation = r;
 }
 
 void Transform::translation(const glm::vec3& t) {
-    translation_ = t;
+    value_.position = t;
 }
 
 void Transform::translate(const glm::vec3& offset) {
-    translation_ += offset;
+    value_.position += offset;
 }
 
 glm::vec3 Transform::scale(void) const {
-    return scale_;
+    return value_.scale;
 }
 
 glm::quat Transform::rotation(void) const {
-    return rotation_;
+    return value_.rotation;
 }
 
 glm::vec3 Transform::translation(void) const {
-    return translation_;
+    return value_.position;
 }
 
 glm::mat4 Transform::matrix(void) const {
-    glm::mat4 transform = glm::translate(glm::mat4(1.0f), translation_);
-    transform *= glm::mat4_cast(rotation_);
-    transform = glm::scale(transform, scale_);
-    return transform;
+    return value_.matrix();
+}
+
+const v3d::type::Transform& Transform::value(void) const {
+    return value_;
 }
 
 };  // namespace v3d::dag
