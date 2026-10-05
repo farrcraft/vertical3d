@@ -602,6 +602,13 @@ Fix OfflineRenderers.md:45.
 
 B1, B2.
 
+**Closed.** `BRep::validate()` owns the reference rule and `Project` reports what it names.
+`faceLoop`, `loopSegment`, `ownsEdge`, `edgeSelected`, `center` and `faceUV` are const, `Index`
+based functions in `api/brep/Topology.h`, so the editor's `MeshTopology` and its second copy of
+"two halves are one edge" go, and so do the iterators, which nothing outside the tests used.
+`findPair` is bounded, so a ring that does not close ends it. `Face()` already initialised its
+edge. The editor's index casts are gone.
+
 `BRep::validate()`, or a builder that checks on finish, and `Project` calls it instead of owning
 the rule. Face-loop, segment and edge-identity queries move into `api/brep` as const,
 index-based functions; the iterators are deleted or rebuilt on them; `Index` is used throughout,

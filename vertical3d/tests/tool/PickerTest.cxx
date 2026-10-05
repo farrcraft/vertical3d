@@ -3,8 +3,8 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/brep/Topology.h>
 #include <vertical3d/src/scene/CreatePoly.h>
-#include <vertical3d/src/scene/MeshTopology.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/tool/Picker.h>
 #include <vertical3d/src/view/ViewPort.h>
@@ -131,10 +131,10 @@ BOOST_AUTO_TEST_CASE(picker_face_test) {
     BOOST_CHECK_LT(hit.component, cube->faceCount());
 
     // the face hit is the one nearest the camera, so the ray enters through it
-    const std::vector<unsigned int> loop = v3d::editor::faceLoop(cube, hit.component);
+    const std::vector<v3d::brep::Index> loop = v3d::brep::faceLoop(*cube, hit.component);
     BOOST_CHECK_GE(loop.size(), 3u);
     glm::vec3 from;
-    BOOST_CHECK_EQUAL(v3d::editor::loopSegment(cube, loop, 0, &from, nullptr), true);
+    BOOST_CHECK_EQUAL(v3d::brep::loopSegment(*cube, loop, 0, &from, nullptr), true);
     BOOST_CHECK_LT(from[2], 0.0f);
 }
 
@@ -196,11 +196,11 @@ BOOST_AUTO_TEST_CASE(picker_edge_test) {
     boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
     v3d::editor::Picker picker;
 
-    const std::vector<unsigned int> loop = v3d::editor::faceLoop(cube, 0);
+    const std::vector<v3d::brep::Index> loop = v3d::brep::faceLoop(*cube, 0);
     BOOST_REQUIRE_GE(loop.size(), 3u);
     glm::vec3 from;
     glm::vec3 to;
-    BOOST_REQUIRE_EQUAL(v3d::editor::loopSegment(cube, loop, 0, &from, &to), true);
+    BOOST_REQUIRE_EQUAL(v3d::brep::loopSegment(*cube, loop, 0, &from, &to), true);
 
     // the middle of an edge, which is the point furthest from either of its vertices
     v3d::editor::Picker::Hit hit = picker.pick(scene, *view, screen(view, (from + to) * 0.5f),

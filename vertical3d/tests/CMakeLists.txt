@@ -23,7 +23,6 @@ v3d_add_test(vertical3d
 	"../src/view/ViewPort.cxx"
 	"../src/view/ConstructionPlane.cxx"
 	"../src/scene/Scene.cxx"
-	"../src/scene/MeshTopology.cxx"
 	"../src/scene/CreatePoly.cxx"
 	"../src/scene/WireframeVisitor.cxx"
 	"../src/scene/RIBExportVisitor.cxx"

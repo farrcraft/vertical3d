@@ -86,17 +86,6 @@ bool index(const boost::json::object& entry, const char* key, v3d::brep::Index* 
 }
 
 /**
- * Whether a reference names something the mesh holds. INVALID_ID is allowed
- * wherever a reference may be absent - an edge on a boundary has no pair.
- **/
-bool refers(v3d::brep::Index id, std::size_t count, bool optional) {
-    if (optional && id == v3d::brep::INVALID_ID) {
-        return true;
-    }
-    return id < count;
-}
-
-/**
  **/
 boost::json::array vector(const glm::vec3& v) {
     return boost::json::array{ v.x, v.y, v.z };
@@ -118,13 +107,13 @@ class WriteVisitor final : public SceneVisitor {
         transform["scale"] = vector(mesh->scale());
 
         boost::json::array vertices;
-        for (std::size_t id = 0; id < mesh->vertexCount(); id++) {
-            vertices.push_back(vector(mesh->vertex(static_cast<unsigned int>(id))->point()));
+        for (v3d::brep::Index id = 0; id < mesh->vertexCount(); id++) {
+            vertices.push_back(vector(mesh->vertex(id)->point()));
         }
 
         boost::json::array edges;
-        for (std::size_t id = 0; id < mesh->edgeCount(); id++) {
-            const v3d::brep::HalfEdge* edge = mesh->edge(static_cast<unsigned int>(id));
+        for (v3d::brep::Index id = 0; id < mesh->edgeCount(); id++) {
+            const v3d::brep::HalfEdge* edge = mesh->edge(id);
             boost::json::object entry;
             entry["vertex"] = edge->vertex();
             entry["face"] = edge->face();
@@ -134,8 +123,8 @@ class WriteVisitor final : public SceneVisitor {
         }
 
         boost::json::array faces;
-        for (std::size_t id = 0; id < mesh->faceCount(); id++) {
-            const v3d::brep::Face* face = mesh->face(static_cast<unsigned int>(id));
+        for (v3d::brep::Index id = 0; id < mesh->faceCount(); id++) {
+            const v3d::brep::Face* face = mesh->face(id);
             boost::json::object entry;
             entry["normal"] = vector(face->normal());
             entry["edge"] = face->edge();
@@ -228,8 +217,7 @@ bool readFaces(const boost::json::array& faces, const std::string& path,
             logger->get()->error("A face in {} is missing its normal or its edge", path);
             return false;
         }
-        mesh->addFace(v3d::brep::Face(glm::vec3(normal[0], normal[1], normal[2]),
-            static_cast<unsigned int>(edge)));
+        mesh->addFace(v3d::brep::Face(glm::vec3(normal[0], normal[1], normal[2]), edge));
     }
     return true;
 }
@@ -240,21 +228,10 @@ bool readFaces(const boost::json::array& faces, const std::string& path,
  **/
 bool validMesh(const boost::shared_ptr<v3d::brep::BRep>& mesh, const std::string& path,
     const boost::shared_ptr<v3d::log::Logger>& logger) {
-    for (std::size_t id = 0; id < mesh->edgeCount(); id++) {
-        const v3d::brep::HalfEdge* edge = mesh->edge(static_cast<unsigned int>(id));
-        if (!refers(edge->vertex(), mesh->vertexCount(), false) ||
-            !refers(edge->face(), mesh->faceCount(), true) ||
-            !refers(edge->pair(), mesh->edgeCount(), true) ||
-            !refers(edge->next(), mesh->edgeCount(), true)) {
-            logger->get()->error("Edge {} in {} names something the mesh does not hold", id, path);
-            return false;
-        }
-    }
-    for (std::size_t id = 0; id < mesh->faceCount(); id++) {
-        if (!refers(mesh->face(static_cast<unsigned int>(id))->edge(), mesh->edgeCount(), false)) {
-            logger->get()->error("Face {} in {} names an edge the mesh does not hold", id, path);
-            return false;
-        }
+    std::string problem;
+    if (!mesh->validate(&problem)) {
+        logger->get()->error("A mesh in {} is not whole: {}", path, problem);
+        return false;
     }
     return true;
 }

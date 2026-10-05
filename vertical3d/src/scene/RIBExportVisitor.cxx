@@ -5,10 +5,11 @@
 
 #include "RIBExportVisitor.h"
 
+#include <api/brep/Topology.h>
+
 #include <ostream>
 #include <vector>
 
-#include "MeshTopology.h"
 
 namespace v3d::editor {
 
@@ -75,9 +76,8 @@ void RIBExportVisitor::visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
     matrix(mesh->matrix());
     *stream_ << "\n";
 
-    const v3d::brep::Index faces = static_cast<v3d::brep::Index>(mesh->faceCount());
-    for (v3d::brep::Index face = 0; face < faces; face++) {
-        const std::vector<unsigned int> loop = faceLoop(mesh, face);
+    for (v3d::brep::Index face = 0; face < mesh->faceCount(); face++) {
+        const std::vector<v3d::brep::Index> loop = v3d::brep::faceLoop(*mesh, face);
         if (loop.size() < 3) {
             continue;
         }
@@ -87,7 +87,7 @@ void RIBExportVisitor::visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
         for (std::size_t index = 0; index < loop.size(); index++) {
             glm::vec3 from(0.0f);
             glm::vec3 to(0.0f);
-            if (!loopSegment(mesh, loop, index, &from, &to)) {
+            if (!v3d::brep::loopSegment(*mesh, loop, index, &from, &to)) {
                 points.clear();
                 break;
             }

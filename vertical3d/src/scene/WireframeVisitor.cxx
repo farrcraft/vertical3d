@@ -5,13 +5,13 @@
 
 #include "WireframeVisitor.h"
 
+#include <api/brep/Topology.h>
 #include <api/type/geometry/AABBox.h>
 
 #include <algorithm>
 #include <cstddef>
 #include <vector>
 
-#include "MeshTopology.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -66,56 +66,35 @@ void WireframeVisitor::visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
     canvas_->transform(mesh->matrix());
 
     const std::size_t faces = mesh->faceCount();
-    for (std::size_t index = 0; index < faces; index++) {
-        const unsigned int number = static_cast<unsigned int>(index);
-        v3d::brep::Face* face = mesh->face(number);
+    for (v3d::brep::Index number = 0; number < faces; number++) {
+        const v3d::brep::Face* face = mesh->face(number);
         // a selected face is drawn as its boundary, there being no filled primitive to
         // shade it with
         const bool selected = face != nullptr && face->selected();
-        const std::vector<unsigned int> loop = faceLoop(mesh, number);
+        const std::vector<v3d::brep::Index> loop = v3d::brep::faceLoop(*mesh, number);
         if (loop.size() < 2) {
             continue;
         }
 
         for (std::size_t entry = 0; entry < loop.size(); entry++) {
-            const unsigned int current = loop[entry];
-            if (!ownsEdge(mesh, current)) {
+            const v3d::brep::Index current = loop[entry];
+            if (!v3d::brep::ownsEdge(*mesh, current)) {
                 continue;
             }
 
             glm::vec3 from;
             glm::vec3 to;
-            if (!loopSegment(mesh, loop, entry, &from, &to)) {
+            if (!v3d::brep::loopSegment(*mesh, loop, entry, &from, &to)) {
                 continue;
             }
 
-            canvas_->line(from, to, selected || edgeSelected(mesh, current) ? component_ : base);
+            canvas_->line(from, to, selected || v3d::brep::edgeSelected(*mesh, current) ? component_ : base);
         }
     }
 
     markers(mesh);
 
     canvas_->pop();
-}
-
-/**
- **/
-bool WireframeVisitor::edgeSelected(const boost::shared_ptr<v3d::brep::BRep>& mesh, unsigned int edge) {
-    v3d::brep::HalfEdge* half = mesh->edge(edge);
-    if (half == nullptr) {
-        return false;
-    }
-    if (half->selected()) {
-        return true;
-    }
-    // the two halves are one edge to a selection, so either being selected colours
-    // the segment
-    const uint64_t pair = half->pair();  // NOLINT(build/include_what_you_use) - the half edge, not std::pair
-    if (pair == v3d::brep::INVALID_ID) {
-        return false;
-    }
-    v3d::brep::HalfEdge* other = mesh->edge(static_cast<unsigned int>(pair));
-    return other != nullptr && other->selected();
 }
 
 /**
@@ -136,8 +115,8 @@ void WireframeVisitor::markers(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
     }
 
     const glm::vec3 corner(size, size, size);
-    for (std::size_t index = 0; index < count; index++) {
-        v3d::brep::Vertex* vertex = mesh->vertex(static_cast<unsigned int>(index));
+    for (v3d::brep::Index index = 0; index < count; index++) {
+        const v3d::brep::Vertex* vertex = mesh->vertex(index);
         if (vertex == nullptr || !vertex->selected()) {
             continue;
         }

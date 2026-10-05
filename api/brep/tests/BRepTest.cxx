@@ -4,8 +4,10 @@
  **/
 
 #include <api/brep/BRep.h>
+#include <api/brep/Topology.h>
 
 #include <type_traits>
+#include <string>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -77,30 +79,22 @@ BOOST_AUTO_TEST_CASE(brep_face_test) {
     BOOST_CHECK_EQUAL((bound.max() == glm::vec3(1.0f, 1.0f, 0.0f)), true);
 }
 
-BOOST_AUTO_TEST_CASE(brep_iterator_test) {
+BOOST_AUTO_TEST_CASE(brep_face_loop_test) {
     boost::shared_ptr<v3d::brep::BRep> mesh = boost::make_shared<v3d::brep::BRep>();
     mesh->addFace(quad(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
-    // the edge iterator walks the ring once and then stops
-    unsigned int edges = 0;
-    for (v3d::brep::BRep::edge_iterator it(mesh, 0); *it != nullptr; it++) {
-        ++edges;
-        BOOST_REQUIRE(edges <= 4);
-    }
-    BOOST_CHECK_EQUAL(edges, 4u);
+    // the loop walks the ring once and then stops
+    const std::vector<v3d::brep::Index> loop = v3d::brep::faceLoop(*mesh, 0);
+    BOOST_REQUIRE_EQUAL(loop.size(), 4u);
 
-    // the vertex iterator walks the same ring, resolving each edge to its vertex
-    unsigned int vertices = 0;
+    // and each entry resolves to the vertex its half edge ends at
     glm::vec3 sum(0.0f);
-    for (v3d::brep::BRep::vertex_iterator it(mesh, 0); *it != nullptr; it++) {
-        sum += (*it)->point();
-        ++vertices;
-        BOOST_REQUIRE(vertices <= 4);
+    for (const v3d::brep::Index entry : loop) {
+        sum += mesh->vertex(mesh->edge(entry)->vertex())->point();
     }
-    BOOST_CHECK_EQUAL(vertices, 4u);
 
     // which is what center averages
-    glm::vec3 middle = v3d::brep::center(mesh, 0);
+    glm::vec3 middle = v3d::brep::center(*mesh, 0);
     BOOST_CHECK_CLOSE(middle[0], 0.5f, 0.01f);
     BOOST_CHECK_CLOSE(middle[1], 0.5f, 0.01f);
     BOOST_CHECK_EQUAL(middle[2], 0.0f);
@@ -164,4 +158,41 @@ BOOST_AUTO_TEST_CASE(brep_selection_test) {
     BOOST_CHECK_EQUAL(mesh.face(0)->selected(), false);
     // the object's own selection survives a component deselect
     BOOST_CHECK_EQUAL(mesh.selected(), true);
+}
+
+/**
+ * A mesh built face by face holds only what it refers to, and one whose references reach past
+ * what it holds - as a document edited by hand might - says which reference it is.
+ **/
+BOOST_AUTO_TEST_CASE(brep_validate_test) {
+    v3d::brep::BRep mesh;
+    mesh.addFace(quad(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    std::string problem;
+    BOOST_CHECK(mesh.validate(&problem));
+    BOOST_CHECK(problem.empty());
+
+    mesh.edge(2)->next(40);
+    BOOST_CHECK(!mesh.validate(&problem));
+    BOOST_CHECK_EQUAL(problem, "edge 2 names something the mesh does not hold");
+
+    mesh.edge(2)->next(3);
+    mesh.face(0)->edge(v3d::brep::INVALID_ID);
+    BOOST_CHECK(!mesh.validate(&problem));
+    BOOST_CHECK_EQUAL(problem, "face 0 names an edge the mesh does not hold");
+}
+
+/**
+ * A ring that does not close - what an unfinished modelling operation leaves - ends a face's
+ * loop rather than spinning it, and a face added after it still finds its pairs.
+ **/
+BOOST_AUTO_TEST_CASE(brep_open_ring_test) {
+    v3d::brep::BRep mesh;
+    mesh.addFace(quad(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    // the last edge points back into the ring part way round, so it never reaches the first
+    mesh.edge(3)->next(1);
+    const std::vector<v3d::brep::Index> loop = v3d::brep::faceLoop(mesh, 0);
+    BOOST_CHECK_LE(loop.size(), mesh.edgeCount() + 1);
+
+    mesh.addFace(quad(0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+    BOOST_CHECK_EQUAL(mesh.faceCount(), 2u);
 }

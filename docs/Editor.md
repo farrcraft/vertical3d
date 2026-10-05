@@ -21,6 +21,13 @@ face, since all three are offsets into a `BRep`'s arrays. `INVALID_ID` is `1 << 
 value is part of the project file format**, so changing it would invalidate documents already
 written.
 
+**The mesh keeps its own rules.** `BRep::validate()` says whether every reference a mesh holds is
+to something it holds, which is what the project loader refuses a document over. Walking a face
+is `brep::faceLoop()`, which ends rather than spins on a ring that does not close, and what a
+segment of it draws, which half of a pair stands for the edge and whether an edge is selected are
+`api/brep/Topology.h` too - const, and by `Index`. The editor walks a mesh through them rather than
+along `next()` itself.
+
 ## What the ADRs settle
 
 Read the record rather than inferring the rule from the code.

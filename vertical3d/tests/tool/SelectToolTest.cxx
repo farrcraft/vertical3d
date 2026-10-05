@@ -4,7 +4,6 @@
  **/
 
 #include <vertical3d/src/scene/CreatePoly.h>
-#include <vertical3d/src/scene/MeshTopology.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/tool/SelectTool.h>
 #include <vertical3d/src/view/ViewPort.h>
