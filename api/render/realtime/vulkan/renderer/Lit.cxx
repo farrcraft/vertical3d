@@ -116,14 +116,14 @@ Lit::Shaders Lit::Shaders::embedded() {
  **/
 Lit::Lit(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<pipeline::Cache>& cache,
     const boost::shared_ptr<pipeline::Resources>& resources, const boost::shared_ptr<frame::Ring>& ring,
-    const boost::shared_ptr<frame::FrameUniforms>& uniforms, const boost::shared_ptr<Quad>& quads,
+    const boost::shared_ptr<frame::FrameUniforms>& uniforms, const boost::shared_ptr<Textures>& textures,
     VkFormat colour, VkFormat depth, VkFormat shadow, const Shaders& shaders) :
     device_(device),
     cache_(cache),
     resources_(resources),
     ring_(ring),
     uniforms_(uniforms),
-    quads_(quads) {
+    textures_(textures) {
     VkDescriptorSetLayoutBinding block{};
     block.binding = 0;
     block.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -169,7 +169,7 @@ void Lit::createPipelines(const Shaders& shaders, VkFormat colour, VkFormat dept
             .blend(false)
             .colourFormat(colour)
             .depthFormat(depth);
-        declare(&cel, uniforms_->layout(), quads_->materialLayout(), scenes_->layout());
+        declare(&cel, uniforms_->layout(), textures_->layout(), scenes_->layout());
         (skinned ? skinnedCel_ : cel_) = resources_->add(cel.build(cache_));
 
         // the back of a slightly larger hull, so the front faces are the ones culled
@@ -184,7 +184,7 @@ void Lit::createPipelines(const Shaders& shaders, VkFormat colour, VkFormat dept
             .blend(false)
             .colourFormat(colour)
             .depthFormat(depth);
-        declare(&outline, uniforms_->layout(), quads_->materialLayout(), scenes_->layout());
+        declare(&outline, uniforms_->layout(), textures_->layout(), scenes_->layout());
         (skinned ? skinnedOutline_ : outline_) = resources_->add(outline.build(cache_));
 
         if (shadow == VK_FORMAT_UNDEFINED) {
@@ -202,7 +202,7 @@ void Lit::createPipelines(const Shaders& shaders, VkFormat colour, VkFormat dept
             .depthBias(true)
             .colourFormats({})
             .depthFormat(shadow);
-        declare(&caster, uniforms_->layout(), quads_->materialLayout(), scenes_->layout());
+        declare(&caster, uniforms_->layout(), textures_->layout(), scenes_->layout());
         (skinned ? skinnedShadow_ : shadow_) = resources_->add(caster.build(cache_));
     }
 }
@@ -324,7 +324,7 @@ VkDescriptorSet Lit::scene(const SceneUniforms& uniforms, const TextureHandle& s
     const pipeline::Texture* texture = resources_->texture(shadowMap);
     if (texture == nullptr || !texture->image) {
         // white reads as the far plane, so nothing is in shadow
-        texture = resources_->texture(quads_->white());
+        texture = resources_->texture(textures_->white());
     }
     VkDescriptorImageInfo image{};
     // a depth image is left read only for depth by the recorder - ADR-0044 - and a colour one

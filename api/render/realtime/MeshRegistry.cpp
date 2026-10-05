@@ -158,9 +158,9 @@ MeshHandle MeshRegistry::upload(const std::string& key, const type::Model& model
 /**
  **/
 std::string MeshRegistry::acquire(const Source& source, Part* part) {
-    const boost::shared_ptr<vulkan::renderer::Quad> quads = context_->quads();
-    part->texture = quads->white();
-    part->material = quads->material(part->texture);
+    const boost::shared_ptr<Textures> textures = context_->textures();
+    part->texture = textures->white();
+    part->material = textures->material(part->texture);
     const std::string& key = source.key;
     if (key.empty()) {
         return std::string();
@@ -182,8 +182,8 @@ std::string MeshRegistry::acquire(const Source& source, Part* part) {
 
         Albedo albedo;
         // a lit albedo is decoded to linear before it is lit - ADR-0066
-        albedo.texture = quads->texture(image, vulkan::memory::TextureFactory::Encoding::Srgb);
-        albedo.material = quads->material(albedo.texture);
+        albedo.texture = textures->texture(image, vulkan::memory::TextureFactory::Encoding::Srgb);
+        albedo.material = textures->material(albedo.texture);
         albedo.users = 0;
         found = albedos_.emplace(key, albedo).first;
     }
@@ -204,7 +204,7 @@ void MeshRegistry::drop(const std::string& key) {
     found->second.users--;
     if (found->second.users == 0) {
         // the texture and its material go together, each once no frame can still read it
-        context_->quads()->release(found->second.texture);
+        context_->textures()->release(found->second.texture);
         albedos_.erase(found);
     }
 }

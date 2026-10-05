@@ -111,7 +111,7 @@ void TetrisRenderer::loadPieces(const boost::shared_ptr<v3d::asset::Manager>& as
         sprites_[colour] = sprite;
     }
 
-    pieces_ = engine_.quads()->texture(atlas.image());
+    pieces_ = engine_.textures()->texture(atlas.image());
 }
 
 /**

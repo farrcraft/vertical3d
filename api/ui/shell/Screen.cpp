@@ -37,14 +37,14 @@ Screen::Screen(v3d::render::realtime::Engine3D* engine, const boost::shared_ptr<
         options_.dress = lineHeight;
     }
 
-    // the atlas is the quad renderer's texture, which is the one line of this that knows
-    // there is a device - and why it is here rather than in an app, per ADR-0074
+    // the atlas is a texture on the device, which is the one line of this that knows there is
+    // a device - and why it is here rather than in an app, per ADR-0074
     text_ = boost::make_shared<paint::TextRenderer>(assets, logger,
         [engine](const boost::shared_ptr<v3d::image::Image>& atlas) {
-            if (engine == nullptr || !engine->quads()) {
+            if (engine == nullptr || !engine->textures()) {
                 return v3d::render::realtime::TextureHandle();
             }
-            return engine->quads()->texture(atlas);
+            return engine->textures()->texture(atlas);
         });
     if (options_.statistics) {
         statistics_ = boost::make_shared<StatisticsOverlay>(text_);

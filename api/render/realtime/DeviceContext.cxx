@@ -21,6 +21,7 @@ depthFormat_(VK_FORMAT_UNDEFINED) {
     pipelineCache_ = boost::make_shared<vulkan::pipeline::Cache>(device_);
     resources_ = boost::make_shared<vulkan::pipeline::Resources>(device_, ring_);
     uploader_ = boost::make_shared<vulkan::memory::Uploader>(device_);
+    textures_ = boost::make_shared<Textures>(device_, resources_, ring_, uploader_);
     frameUniforms_ = boost::make_shared<vulkan::frame::FrameUniforms>(device_, ring_);
     // settled here even though the image may never be built, because every pipeline that
     // could draw into a depth pass is built against it
@@ -114,10 +115,16 @@ bool DeviceContext::hasDepth() const noexcept {
 
 /**
  **/
+boost::shared_ptr<Textures> DeviceContext::textures() const {
+    return textures_;
+}
+
+/**
+ **/
 boost::shared_ptr<vulkan::renderer::Quad> DeviceContext::quads() {
     if (!quads_) {
         quads_ = boost::make_shared<vulkan::renderer::Quad>(logger_, device_, pipelineCache_, resources_, ring_,
-            frameUniforms_, colourFormat_, depthFormat_);
+            frameUniforms_, textures_, colourFormat_, depthFormat_);
     }
     return quads_;
 }
@@ -149,7 +156,7 @@ bool DeviceContext::hasLines() const noexcept {
 boost::shared_ptr<vulkan::renderer::World> DeviceContext::worldQuads() {
     if (!worldQuads_) {
         worldQuads_ = boost::make_shared<vulkan::renderer::World>(logger_, device_, pipelineCache_, resources_,
-            ring_, frameUniforms_, quads(), colourFormat_, depthFormat_);
+            ring_, frameUniforms_, textures_, colourFormat_, depthFormat_);
     }
     return worldQuads_;
 }

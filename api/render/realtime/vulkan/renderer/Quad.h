@@ -9,6 +9,7 @@
 #include <api/render/realtime/Canvas.h>
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Pass.h>
+#include <api/render/realtime/Textures.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
@@ -76,7 +77,7 @@ class Quad final {
     Quad(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<device::Device>& device,
         const boost::shared_ptr<pipeline::Cache>& cache, const boost::shared_ptr<pipeline::Resources>& resources,
         const boost::shared_ptr<frame::Ring>& ring, const boost::shared_ptr<frame::FrameUniforms>& uniforms,
-        VkFormat colour, VkFormat depth);
+        const boost::shared_ptr<Textures>& textures, VkFormat colour, VkFormat depth);
 
     /**
      **/
@@ -84,67 +85,6 @@ class Quad final {
 
     Quad(const Quad&) = delete;
     Quad& operator=(const Quad&) = delete;
-
-    /**
-     * Upload an image and register it, so a canvas can name it.
-     * @param encoding how a shader reads it back - as authored unless something lights it
-     * @return the handle to draw with
-     **/
-    TextureHandle texture(const boost::shared_ptr<v3d::image::Image>& image,
-        memory::TextureFactory::Encoding encoding = memory::TextureFactory::Encoding::Display);
-
-    /**
-     * @param pixels tightly packed rows of width * channels bytes
-     * @param channels 1 for a coverage mask such as a glyph atlas, 3 or 4 for colour
-     **/
-    TextureHandle texture(const unsigned char* pixels, uint32_t width, uint32_t height, uint32_t channels);
-
-    /**
-     * Register a render target so that a canvas can sample what a pass drew into it.
-     *
-     * What is registered shares the target's images. A target that is resized allocates
-     * new ones, and the handle this returned goes on naming the old ones, which it keeps
-     * alive: after a recreate(), release the old handle and register the target again.
-     *
-     * A target with no colour image has nothing to register, and comes back as the white
-     * texture for the same reason depthTexture() gives one for a target with no depth to read.
-     *
-     * @param slot which of the target's images - one handle per slot for a target holding one
-     *        per frame in flight, of which a reader names current() or previous() each frame
-     * @return the handle to draw with
-     **/
-    TextureHandle texture(const frame::RenderTarget& target, uint32_t slot = 0);
-
-    /**
-     * Register a render target's depth image, so that a draw can sample what a pass tested
-     * against rather than what it painted - which is the read half of a shadow map.
-     *
-     * The same shared contract, and the same rule about releasing and registering again
-     * after a recreate(). A target built without a depth image, or with one it was not told
-     * would be sampled, has nothing to register: it comes back as the white texture, because a
-     * descriptor set written against an image with no sampled usage is undefined and a
-     * flat white shadow map is a scene that is merely unshadowed.
-     *
-     * @param slot which of the target's images, as texture() takes it
-     * @return the handle to draw with
-     **/
-    TextureHandle depthTexture(const frame::RenderTarget& target, uint32_t slot = 0);
-
-    /**
-     * @return the 1x1 white texture an untextured quad is drawn against
-     **/
-    TextureHandle white() const noexcept;
-
-    /**
-     * Release a texture and the material drawn with it - ADR-0061. The handle resolves to
-     * nothing at once, and the image and the descriptor set are reclaimed once no frame in
-     * flight can still be reading them.
-     *
-     * @return whether anything was released. The white texture is never released, so a
-     *         handle depthTexture() gave back for a target with nothing to sample can be
-     *         released like any other without taking it away from everything else.
-     **/
-    bool release(const TextureHandle& handle);
 
     /**
      * Upload a canvas and add a draw item to the pass for each of its batches.
@@ -165,30 +105,7 @@ class Quad final {
      **/
     void endFrame() noexcept;
 
-    /**
-     * The descriptor set that binds a texture at set 1, created on first use and kept.
-     *
-     * Public because the world space quad of ADR-0042 samples through the same layout, so
-     * an atlas uploaded once serves both primitives out of one descriptor pool.
-     *
-     * @return the material to name on a draw item, or an unset handle for a texture this
-     *         does not hold
-     **/
-    MaterialHandle material(const TextureHandle& handle);
-
-    /**
-     * @return set 1's layout, which a second pipeline sampling a texture the same way
-     *         declares so that a material allocated here is compatible with it
-     **/
-    VkDescriptorSetLayout materialLayout() const noexcept;
-
  private:
-    /**
-     * Build the per material descriptor set layout. Set 0's belongs to frame::FrameUniforms,
-     * because every pipeline in the engine has to declare the same one.
-     **/
-    void createLayouts();
-
     /**
      * Compile the quad pipeline twice - once for a pass with a depth attachment and once
      * for a pass without.
@@ -214,26 +131,16 @@ class Quad final {
      **/
     Geometry claim();
 
-    /**
-     * The 1x1 white texture, so that an untextured quad needs no second pipeline.
-     **/
-    void createWhite();
-
     boost::shared_ptr<v3d::log::Logger> logger_;
     boost::shared_ptr<device::Device> device_;
     boost::shared_ptr<pipeline::Cache> cache_;
     boost::shared_ptr<pipeline::Resources> resources_;
     boost::shared_ptr<frame::Ring> ring_;
     boost::shared_ptr<frame::FrameUniforms> uniforms_;
-    boost::shared_ptr<memory::TextureFactory> factory_;
-
-    boost::shared_ptr<pipeline::DescriptorPool> materialSets_;  /**< set 1, the sampler every quad reads through **/
+    boost::shared_ptr<Textures> textures_;
 
     PipelineHandle pipeline_;               /**< for a pass with no depth attachment **/
     PipelineHandle depthPipeline_;          /**< for a pass with one **/
-    TextureHandle white_;
-    /**< keyed by the whole handle, so a slot reused after a release never finds the old set **/
-    std::map<TextureHandle, MaterialHandle> materials_;
 
     /**< a ring of geometry per frame in flight, grown as a frame's submissions ask **/
     std::vector<std::vector<Geometry>> geometry_;

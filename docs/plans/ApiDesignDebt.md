@@ -474,6 +474,12 @@ loader tests `Type::TabBar` rather than `"tabs"`.
 
 R2.
 
+**Closed.** `realtime::Textures` is built with the `DeviceContext`, owns set 1's pool and layout,
+the white texture and the material map, and copies through the context's one uploader; `Quad`,
+`World`, `Lit` and `MeshRegistry` take it, and every app and test asks `textures()`. A context with
+no colour format registers a texture and a textured mesh and never builds the quad renderer, which
+the device suite asserts. ADR-0042 and ADR-0065 are amended.
+
 Write ADR-0082. A `Textures` service on `DeviceContext` owns the factory, set 1's pool, the white
 texture and the texture-to-material map, using the context's uploader. Quad, World, Lit and
 `MeshRegistry` depend on it, not on Quad. `RenderTarget::ready()` stops making an uploader per

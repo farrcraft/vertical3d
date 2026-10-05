@@ -131,7 +131,7 @@ void Renderer::ui(const boost::shared_ptr<v3d::ui::Engine>& ui) {
         if (!asset || !asset->image()) {
             return v3d::render::realtime::TextureHandle();
         }
-        return engine_.quads()->texture(asset->image());
+        return engine_.textures()->texture(asset->image());
     });
 
     // the metrics the constructor worked out from the font size stand unless the theme

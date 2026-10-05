@@ -151,7 +151,7 @@ pipeline::Builder(device)
     .vertexBinding(0, sizeof(Vertex))
     .vertexAttribute(0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, position))
     .set(uniforms->layout())     // set 0 first - they are numbered in the order they are added
-    .set(materialLayout)
+    .set(textures->layout())     // set 1, every textured pipeline's - ADR-0082
     .push(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4))
     .colourFormat(swapchain->format())
     .build(cache);
@@ -658,7 +658,7 @@ rather than destroyed under a frame still drawing into it
 `Recorder` scans the pass list and moves a target into the attachment layout before the first
 pass that writes it, then into `SHADER_READ_ONLY_OPTIMAL` after the last. A target therefore
 costs one pair of barriers however many passes draw into it, and every later pass can read it.
-Register it with `renderer::Quad::texture(target)` to get a texture handle a canvas can
+Register it with `Textures::texture(target)` to get a texture handle a canvas can
 composite.
 
 **A pass is placed by what it reads**
@@ -671,7 +671,7 @@ was created, and reads whatever is there.
 
 **A target may hold one image per frame in flight.** A pass draws into `current()`, and
 `previous()` is what the frame before drew, which is how a pass reads its own last frame. A
-reader registers each slot once, `Quad::texture(target, slot)`, and names the handle for
+reader registers each slot once, `Textures::texture(target, slot)`, and names the handle for
 `current()` or `previous()` each frame. Each slot of such a target starts cleared to
 transparent black and readable, so `previous()` can be read on the first frame.
 
@@ -693,7 +693,7 @@ sorts by whatever the allocator handed out, which reorders a frame differently o
 context goes.
 
 **A texture is released explicitly** ([ADR-0061](adr/0061-a-resource-is-released-explicitly.md)),
-through `renderer::Quad::release`, which releases its material with it. A handle carries a slot
+through `Textures::release`, which releases its material with it. A handle carries a slot
 and a generation. A released slot is reused by the next registration with its generation moved
 on, so a handle stops resolving the moment it is released, and it can never come to mean
 whatever is put in its slot next. What it named is handed to the in-flight ring as a callback,
@@ -715,7 +715,7 @@ to sort a handle on. So `vulkan::Mesh` is owned by whatever built it — a chunk
 a slot and a generation the way `Resources` does
 ([ADR-0065](adr/0065-a-mesh-is-registered-by-path-and-released.md)). An entry holds the mesh and
 its parts ([ADR-0069](adr/0069-a-model-is-parts-over-one-array-and-may-carry-a-skin.md)). A part
-is a range of the mesh's indices, its albedo's texture and material from `renderer::Quad`, and
+is a range of the mesh's indices, its albedo's texture and material from the context's `Textures`, and
 its base colour, and it is one draw. The material is the white one when the part's material
 names no image, or names one that cannot be found, which is reported. Every part naming the same
 image shares one texture and one material, across entries. A model whose part reaches past its

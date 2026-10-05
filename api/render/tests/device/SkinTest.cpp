@@ -175,7 +175,7 @@ std::size_t differing(v3d::image::Image& a, v3d::image::Image& b) {
 
 Lit makeLit(v3d::test::Headless* headless, const boost::shared_ptr<RenderTarget>& target, VkFormat shadow) {
     return Lit(headless->device, headless->context->pipelineCache(), headless->context->resources(), headless->context->ring(),
-        headless->context->frameUniforms(), headless->context->quads(), colourFormat, target->depthFormat(), shadow);
+        headless->context->frameUniforms(), headless->context->textures(), colourFormat, target->depthFormat(), shadow);
 }
 
 };  // namespace
@@ -373,7 +373,7 @@ BOOST_AUTO_TEST_CASE(a_skinned_caster_casts_its_pose) {
     MeshRegistry meshes(headless.logger, headless.context, assets(headless));
     const MeshHandle handle = meshes.add("square", square);
     Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
-        headless.context->frameUniforms(), headless.context->quads(), colourFormat,
+        headless.context->frameUniforms(), headless.context->textures(), colourFormat,
         v3d::render::realtime::vulkan::frame::DepthBuffer::chooseFormat(headless.device->physical()), map->depthFormat());
 
     entt::registry registry;

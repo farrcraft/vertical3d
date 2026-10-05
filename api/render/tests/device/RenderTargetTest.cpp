@@ -130,7 +130,7 @@ BOOST_AUTO_TEST_CASE(a_target_per_frame_reads_the_frame_before) {
     std::vector<TextureHandle> handles;
     handles.reserve(frames);
     for (uint32_t slot = 0; slot < frames; slot++) {
-        handles.push_back(headless.context->quads()->texture(*slots, slot));
+        handles.push_back(headless.context->textures()->texture(*slots, slot));
     }
 
     VkImage first = slots->image();

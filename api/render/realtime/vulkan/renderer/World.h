@@ -9,6 +9,7 @@
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/WorldCanvas.h>
+#include <api/render/realtime/Textures.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
@@ -23,7 +24,6 @@
 #include <string>
 #include <vector>
 
-#include "Quad.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -72,7 +72,7 @@ class World final {
      * @param ring which frame in flight is being recorded, and when its buffers are free
      * @param uniforms set 0, which both pipelines declare and read - a world canvas is in
      *        world space, so the pass's camera is its whole transform
-     * @param quads where a texture becomes the set 1 descriptor a draw item names
+     * @param textures where a texture becomes the set 1 descriptor a draw item names
      * @param colour the format of the image the pass draws into, which dynamic rendering
      *        needs at pipeline creation because there is no render pass to take it from
      * @param depth the format of the depth image, for the second of the two pipelines
@@ -81,7 +81,7 @@ class World final {
     World(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<device::Device>& device,
         const boost::shared_ptr<pipeline::Cache>& cache, const boost::shared_ptr<pipeline::Resources>& resources,
         const boost::shared_ptr<frame::Ring>& ring, const boost::shared_ptr<frame::FrameUniforms>& uniforms,
-        const boost::shared_ptr<Quad>& quads, VkFormat colour, VkFormat depth);
+        const boost::shared_ptr<Textures>& textures, VkFormat colour, VkFormat depth);
 
     /**
      **/
@@ -149,7 +149,7 @@ class World final {
     boost::shared_ptr<pipeline::Resources> resources_;
     boost::shared_ptr<frame::Ring> ring_;
     boost::shared_ptr<frame::FrameUniforms> uniforms_;
-    boost::shared_ptr<Quad> quads_;
+    boost::shared_ptr<Textures> textures_;
 
     PipelineHandle pipeline_;               /**< for a pass with no depth attachment **/
     PipelineHandle depthPipeline_;          /**< for a pass with one, and it tests without writing **/

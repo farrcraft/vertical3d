@@ -4,6 +4,10 @@
 **Status**: accepted
 **Deciders**: Joshua Farr
 
+Amended by [ADR-0082](0082-textures-belong-to-the-context.md): the textures and materials this
+record takes from `renderer::Quad` come from the context's `Textures`, which keeps the one
+shared pool.
+
 ## Context
 
 The realtime renderer has two primitives and they divide the space between them the wrong way

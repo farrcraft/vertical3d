@@ -83,7 +83,7 @@ TextureHandle puffs(v3d::test::Headless* headless) {
             at[3] = static_cast<unsigned char>(inside * 255.0f);
         }
     }
-    return headless->context->quads()->texture(pixels.data(), frame * 4, frame, 4);
+    return headless->context->textures()->texture(pixels.data(), frame * 4, frame, 4);
 }
 
 /**

@@ -215,7 +215,7 @@ BOOST_AUTO_TEST_CASE(a_textured_quad_is_the_texture_that_was_uploaded) {
         }
     }
     const v3d::render::realtime::TextureHandle uploaded =
-        headless.context->quads()->texture(texels.data(), textureWidth, textureHeight, 4);
+        headless.context->textures()->texture(texels.data(), textureWidth, textureHeight, 4);
     BOOST_REQUIRE(uploaded.valid());
 
     Canvas canvas;

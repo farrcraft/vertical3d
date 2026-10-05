@@ -16,6 +16,7 @@ v3d_add_api_library(render
 	"realtime/component/Particles.h"
 	"realtime/component/Mesh.h"
 	"realtime/MeshRegistry.h" "realtime/MeshRegistry.cpp"
+	"realtime/Textures.h" "realtime/Textures.cpp"
 	"realtime/Meshes.h" "realtime/Meshes.cpp"
 	"realtime/Poses.h" "realtime/Poses.cpp"
 	"realtime/LitSettings.h"

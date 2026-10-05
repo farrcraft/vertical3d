@@ -115,7 +115,7 @@ BOOST_AUTO_TEST_CASE(a_path_loaded_twice_is_one_upload) {
     BOOST_CHECK(entry->mesh->indexCount() > 0);
     BOOST_REQUIRE_EQUAL(entry->parts.size(), 1U);
     // the fixture names an albedo.png that is not beside it, so it is drawn white
-    BOOST_CHECK(entry->parts[0].texture == headless.context->quads()->white());
+    BOOST_CHECK(entry->parts[0].texture == headless.context->textures()->white());
     BOOST_CHECK(headless.silent());
 }
 
@@ -129,7 +129,7 @@ BOOST_AUTO_TEST_CASE(an_embedded_albedo_is_uploaded) {
     const MeshRegistry::Entry* entry = meshes->resolve(meshes->load("embedded_texture.glb"));
     BOOST_REQUIRE(entry != nullptr);
     BOOST_REQUIRE_EQUAL(entry->parts.size(), 1U);
-    BOOST_CHECK(entry->parts[0].texture != headless.context->quads()->white());
+    BOOST_CHECK(entry->parts[0].texture != headless.context->textures()->white());
     BOOST_CHECK(headless.context->resources()->material(entry->parts[0].material) != nullptr);
     BOOST_CHECK(headless.silent());
 }
@@ -148,7 +148,7 @@ BOOST_AUTO_TEST_CASE(two_models_naming_one_image_share_its_material) {
 
     const MeshRegistry::Part crateEntry = meshes->resolve(crate)->parts.at(0);
     const MeshRegistry::Part barrelEntry = meshes->resolve(barrel)->parts.at(0);
-    BOOST_CHECK(crateEntry.texture != headless.context->quads()->white());
+    BOOST_CHECK(crateEntry.texture != headless.context->textures()->white());
     BOOST_CHECK(crateEntry.texture == barrelEntry.texture);
     BOOST_CHECK(crateEntry.material == barrelEntry.material);
 
@@ -159,6 +159,27 @@ BOOST_AUTO_TEST_CASE(two_models_naming_one_image_share_its_material) {
     BOOST_CHECK(meshes->release(barrel));
     BOOST_CHECK(headless.context->resources()->material(barrelEntry.material) == nullptr);
     BOOST_CHECK(headless.context->resources()->texture(barrelEntry.texture) == nullptr);
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * A context that draws nothing - no colour format, so no 2D pipeline can be built against it -
+ * still uploads a texture and registers a textured mesh. Textures are the context's rather
+ * than the quad renderer's, which asking for would have compiled a pipeline against nothing -
+ * ADR-0082.
+ **/
+BOOST_AUTO_TEST_CASE(a_context_that_draws_nothing_still_loads_textures) {
+    v3d::test::Headless headless(VK_FORMAT_UNDEFINED, width, height);
+    const unsigned char pixel[4] = {0x10, 0x20, 0x30, 0xFF};
+    const v3d::render::realtime::TextureHandle texture = headless.context->textures()->texture(pixel, 1, 1, 4);
+    BOOST_CHECK(headless.context->resources()->texture(texture) != nullptr);
+    BOOST_CHECK(headless.context->textures()->material(texture).valid());
+
+    const boost::shared_ptr<MeshRegistry> meshes = registry(&headless);
+    const MeshHandle crate = meshes->add("crate", triangle("pixel.png"));
+    BOOST_REQUIRE(meshes->resolve(crate) != nullptr);
+    BOOST_CHECK(meshes->resolve(crate)->parts.at(0).texture != headless.context->textures()->white());
+    BOOST_CHECK(!headless.context->hasQuads());
     BOOST_CHECK(headless.silent());
 }
 
@@ -193,8 +214,8 @@ BOOST_AUTO_TEST_CASE(each_part_has_its_own_albedo) {
     const MeshHandle handle = meshes->add("half textured", twoParts("pixel.png", ""));
     const MeshRegistry::Entry entry = *meshes->resolve(handle);
     BOOST_REQUIRE_EQUAL(entry.parts.size(), 2U);
-    BOOST_CHECK(entry.parts[0].texture != headless.context->quads()->white());
-    BOOST_CHECK(entry.parts[1].texture == headless.context->quads()->white());
+    BOOST_CHECK(entry.parts[0].texture != headless.context->textures()->white());
+    BOOST_CHECK(entry.parts[1].texture == headless.context->textures()->white());
 
     BOOST_CHECK(meshes->release(handle));
     BOOST_CHECK(headless.context->resources()->texture(entry.parts[0].texture) == nullptr);

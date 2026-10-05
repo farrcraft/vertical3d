@@ -4,6 +4,10 @@
 **Status**: accepted
 **Deciders**: Joshua Farr
 
+Amended by [ADR-0082](0082-textures-belong-to-the-context.md): the textures and materials this
+record takes from `renderer::Quad` come from the context's `Textures`, which keeps the one
+shared pool.
+
 Amends [ADR-0010](0010-meshes-are-owned-by-the-app.md).
 
 ## Context

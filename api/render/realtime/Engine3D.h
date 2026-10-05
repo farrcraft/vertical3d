@@ -88,6 +88,11 @@ class Engine3D : public Engine {
     boost::shared_ptr<vulkan::renderer::Quad> quads() const;
 
     /**
+     * @return where a texture is uploaded and made a material, or null before initialize()
+     **/
+    boost::shared_ptr<Textures> textures() const;
+
+    /**
      * The line primitive of ADR-0011. An app fills a LineCanvas during its tick and
      * hands both to this.
      *

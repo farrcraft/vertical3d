@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/log/Logger.h>
+#include <api/render/realtime/Textures.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/DepthBuffer.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
@@ -121,6 +122,13 @@ class DeviceContext {
      * @return the batched quad primitive of ADR-0005, which every 2D thing draws through
      * @throw std::runtime_error if its pipelines cannot be created
      **/
+    /**
+     * Where a texture is uploaded and made a material - every renderer that samples one asks
+     * here, and so does an app. Built with the context, because a context that draws nothing
+     * still loads textures - ADR-0082.
+     **/
+    boost::shared_ptr<Textures> textures() const;
+
     boost::shared_ptr<vulkan::renderer::Quad> quads();
 
     /**
@@ -178,6 +186,7 @@ class DeviceContext {
     VkFormat colourFormat_;
     VkExtent2D extent_;
     VkFormat depthFormat_;
+    boost::shared_ptr<Textures> textures_;
     boost::shared_ptr<vulkan::renderer::Quad> quads_;
     boost::shared_ptr<vulkan::renderer::Line> lines_;
     boost::shared_ptr<vulkan::renderer::World> worldQuads_;

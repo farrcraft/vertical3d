@@ -109,7 +109,7 @@ boost::shared_ptr<v3d::image::Image> grade(v3d::test::Headless* headless, const 
         size, size, colourFormat);
     boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(headless->device, headless->context->ring(),
         size, size, colourFormat);
-    const TextureHandle uploaded = headless->context->quads()->texture(texels.data(), size, size, 4);
+    const TextureHandle uploaded = headless->context->textures()->texture(texels.data(), size, size, 4);
 
     Grade graded(headless->logger, headless->context, colourFormat, VK_FORMAT_UNDEFINED, strip);
     const MaterialHandle source = graded.source(*scene);
@@ -230,7 +230,7 @@ BOOST_AUTO_TEST_CASE(a_copying_pass_is_the_identity) {
     spec.colour = colourFormat;
     FullScreen copy(headless.device, headless.context->pipelineCache(), headless.context->resources(),
         headless.context->ring(), headless.context->frameUniforms(), spec);
-    const MaterialHandle source = copy.source({headless.context->quads()->texture(*scene)});
+    const MaterialHandle source = copy.source({headless.context->textures()->texture(*scene)});
 
     // the quad case's canvas, which is what the reference holds
     Canvas canvas;
@@ -315,7 +315,7 @@ BOOST_AUTO_TEST_CASE(a_replaced_table_regrades_its_sources) {
         size, size, colourFormat);
     boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         size, size, colourFormat);
-    const TextureHandle uploaded = headless.context->quads()->texture(texels.data(), size, size, 4);
+    const TextureHandle uploaded = headless.context->textures()->texture(texels.data(), size, size, 4);
 
     Grade graded(headless.logger, headless.context, colourFormat, VK_FORMAT_UNDEFINED);
     const MaterialHandle source = graded.source(*scene);
@@ -351,7 +351,7 @@ BOOST_AUTO_TEST_CASE(a_table_replaced_in_flight_keeps_the_frame_silent) {
         size, size, colourFormat);
     boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         size, size, colourFormat);
-    const TextureHandle uploaded = headless.context->quads()->texture(texels.data(), size, size, 4);
+    const TextureHandle uploaded = headless.context->textures()->texture(texels.data(), size, size, 4);
 
     Grade graded(headless.logger, headless.context, colourFormat, VK_FORMAT_UNDEFINED);
     const MaterialHandle source = graded.source(*scene);

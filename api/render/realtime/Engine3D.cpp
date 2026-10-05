@@ -81,6 +81,12 @@ boost::shared_ptr<vulkan::renderer::Quad> Engine3D::quads() const {
 
 /**
  **/
+boost::shared_ptr<Textures> Engine3D::textures() const {
+    return context_ ? context_->textures() : boost::shared_ptr<Textures>();
+}
+
+/**
+ **/
 boost::shared_ptr<vulkan::renderer::Line> Engine3D::lines() {
     return context_ ? context_->lines() : boost::shared_ptr<vulkan::renderer::Line>();
 }

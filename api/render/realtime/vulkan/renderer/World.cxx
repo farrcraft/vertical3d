@@ -44,14 +44,14 @@ const VkDeviceSize initialIndexBytes = 16ULL * 1024;
 World::World(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<device::Device>& device,
     const boost::shared_ptr<pipeline::Cache>& cache, const boost::shared_ptr<pipeline::Resources>& resources,
     const boost::shared_ptr<frame::Ring>& ring, const boost::shared_ptr<frame::FrameUniforms>& uniforms,
-    const boost::shared_ptr<Quad>& quads, VkFormat colour, VkFormat depth) :
+    const boost::shared_ptr<Textures>& textures, VkFormat colour, VkFormat depth) :
     logger_(logger),
     device_(device),
     cache_(cache),
     resources_(resources),
     ring_(ring),
     uniforms_(uniforms),
-    quads_(quads),
+    textures_(textures),
     cursor_(0) {
     createPipelines(colour, depth);
     geometry_.resize(ring_->framesInFlight() > 0 ? ring_->framesInFlight() : 1);
@@ -88,7 +88,7 @@ PipelineHandle World::createPipeline(const std::string& name, VkFormat colour, V
         // tile highlight is seen from above and below - ADR-0042
         .cull(VK_CULL_MODE_NONE)
         .set(uniforms_->layout())
-        .set(quads_->materialLayout())
+        .set(textures_->layout())
         .colourFormat(colour);
 
     if (blend == Blend::Additive) {
@@ -132,7 +132,7 @@ void World::endFrame() noexcept {
 /**
  **/
 void World::submit(const WorldCanvas& canvas, Pass* pass, uint16_t layer, Blend blend) {
-    if (pass == nullptr || canvas.empty() || !quads_) {
+    if (pass == nullptr || canvas.empty() || !textures_) {
         return;
     }
 
@@ -161,7 +161,7 @@ void World::submit(const WorldCanvas& canvas, Pass* pass, uint16_t layer, Blend 
         }
         // an unset texture is the untextured case, drawn against white
         const MaterialHandle bound =
-            quads_->material(batch.texture.valid() ? batch.texture : quads_->white());
+            textures_->material(batch.texture.valid() ? batch.texture : textures_->white());
 
         DrawItem item;
         item.key.layer = layer;

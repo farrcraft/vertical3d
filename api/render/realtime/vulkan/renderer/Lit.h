@@ -7,6 +7,7 @@
 
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/SceneUniforms.h>
+#include <api/render/realtime/Textures.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
@@ -25,7 +26,6 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
 
-#include "Quad.h"
 
 namespace v3d::render::realtime::vulkan::renderer {
 
@@ -76,7 +76,7 @@ class Lit final {
     };
 
     /**
-     * @param quads whose material layout set 1 is, and whose white texture stands in for a
+     * @param textures whose layout set 1 is, and whose white texture stands in for a
      *        shadow map until a scene names one
      * @param colour the format of what the cel pass draws into, which ADR-0066 makes an sRGB one
      * @param depth the format of that pass's depth
@@ -86,7 +86,7 @@ class Lit final {
      **/
     Lit(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<pipeline::Cache>& cache,
         const boost::shared_ptr<pipeline::Resources>& resources, const boost::shared_ptr<frame::Ring>& ring,
-        const boost::shared_ptr<frame::FrameUniforms>& uniforms, const boost::shared_ptr<Quad>& quads,
+        const boost::shared_ptr<frame::FrameUniforms>& uniforms, const boost::shared_ptr<Textures>& textures,
         VkFormat colour, VkFormat depth, VkFormat shadow, const Shaders& shaders = Shaders::embedded());
 
     Lit(const Lit&) = delete;
@@ -170,7 +170,7 @@ class Lit final {
     boost::shared_ptr<pipeline::Resources> resources_;
     boost::shared_ptr<frame::Ring> ring_;
     boost::shared_ptr<frame::FrameUniforms> uniforms_;
-    boost::shared_ptr<Quad> quads_;
+    boost::shared_ptr<Textures> textures_;
     boost::shared_ptr<pipeline::DescriptorPool> scenes_;
     std::vector<Slot> slots_;
     PipelineHandle cel_;

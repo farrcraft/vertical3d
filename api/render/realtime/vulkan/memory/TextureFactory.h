@@ -52,7 +52,10 @@ class TextureFactory final {
     /**
      * @param device the device the images are created on
      **/
-    explicit TextureFactory(const boost::shared_ptr<device::Device>& device);
+    /**
+     * @param uploader the context's one-shot queue, which every texture is copied through
+     **/
+    TextureFactory(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Uploader>& uploader);
 
     /**
      **/

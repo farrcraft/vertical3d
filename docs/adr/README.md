@@ -90,3 +90,4 @@ old record's status and leave the file in place.
 | [0079](0079-an-asset-loader-is-registered.md) | Asset Loading — A Loader Is Registered, And A Media Loader Lives Beside What It Builds | accepted | 2026-10-04 |
 | [0080](0080-the-engine-owns-its-lifecycle.md) | App Lifecycle — The Engine Owns Its Order, And An App Supplies Hooks | accepted | 2026-10-05 |
 | [0081](0081-a-key-and-a-command-are-different-events.md) | Input Events — A Key And A Command Are Different Events, And The Command Comes After | accepted | 2026-10-05 |
+| [0082](0082-textures-belong-to-the-context.md) | Textures — Textures And Their Materials Belong To The Device Context, Not To The 2D Renderer | accepted | 2026-10-05 |

@@ -61,7 +61,7 @@ PipelineHandle scenePipeline(v3d::test::Headless* headless, VkDescriptorSetLayou
         .cull(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE)
         .blend(false)
         .set(headless->context->frameUniforms()->layout())
-        .set(headless->context->quads()->materialLayout())
+        .set(headless->context->textures()->layout())
         .set(scene)
         .colourFormat(colourFormat);
     return headless->context->resources()->add(builder.build(headless->context->pipelineCache()));

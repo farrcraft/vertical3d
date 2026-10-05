@@ -39,12 +39,6 @@ const uint32_t fragmentShader[] =
 ;  // NOLINT(whitespace/semicolon)
 
 /**
- * How many sets a descriptor pool is created with. One set per texture; another pool
- * is added when this one is full.
- **/
-const uint32_t poolSize = 64;
-
-/**
  * What each geometry buffer starts at, in bytes. A screen of quads fits without
  * growing, and the buffers double from here when something does not.
  **/
@@ -69,39 +63,24 @@ struct Push final {
 Quad::Quad(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<device::Device>& device,
     const boost::shared_ptr<pipeline::Cache>& cache, const boost::shared_ptr<pipeline::Resources>& resources,
     const boost::shared_ptr<frame::Ring>& ring, const boost::shared_ptr<frame::FrameUniforms>& uniforms,
-    VkFormat colour, VkFormat depth) :
+    const boost::shared_ptr<Textures>& textures, VkFormat colour, VkFormat depth) :
     logger_(logger),
     device_(device),
     cache_(cache),
     resources_(resources),
     ring_(ring),
     uniforms_(uniforms),
+    textures_(textures),
     cursor_(0) {
-    factory_ = boost::make_shared<memory::TextureFactory>(device_);
-    createLayouts();
     createPipelines(colour, depth);
     geometry_.resize(ring_->framesInFlight() > 0 ? ring_->framesInFlight() : 1);
-    createWhite();
 }
 
 /**
  **/
 Quad::~Quad() {
-    // the pipelines, their layouts, the textures and the materials belong to pipeline::Resources -
-    // what is owned here is the descriptor pool and the geometry buffers, which go with it
-}
-
-/**
- **/
-void Quad::createLayouts() {
-    VkDescriptorSetLayoutBinding sampler{};
-    sampler.binding = 0;
-    sampler.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    sampler.descriptorCount = 1;
-    sampler.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-    materialSets_ = boost::make_shared<pipeline::DescriptorPool>(device_, ring_,
-        std::vector<VkDescriptorSetLayoutBinding>{sampler}, poolSize, "per material");
+    // the pipelines and their layouts belong to pipeline::Resources and the textures to the
+    // context - what is owned here is the geometry buffers, which go with it
 }
 
 /**
@@ -119,7 +98,7 @@ void Quad::createPipelines(VkFormat colour, VkFormat depth) {
         // get a quad's winding wrong and have it silently disappear
         .cull(VK_CULL_MODE_NONE)
         .set(uniforms_->layout())
-        .set(materialSets_->layout())
+        .set(textures_->layout())
         .push(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(Push))
         .colourFormat(colour);
 
@@ -146,117 +125,6 @@ Quad::Geometry Quad::claim() {
  **/
 void Quad::endFrame() noexcept {
     cursor_ = 0;
-}
-
-/**
- **/
-VkDescriptorSetLayout Quad::materialLayout() const noexcept {
-    return materialSets_->layout();
-}
-
-/**
- **/
-void Quad::createWhite() {
-    const unsigned char pixel[4] = {0xFF, 0xFF, 0xFF, 0xFF};
-    white_ = texture(pixel, 1, 1, 4);
-}
-
-/**
- **/
-TextureHandle Quad::texture(const boost::shared_ptr<v3d::image::Image>& image, memory::TextureFactory::Encoding encoding) {
-    return resources_->add(factory_->create(image, encoding));
-}
-
-/**
- **/
-TextureHandle Quad::texture(const unsigned char* pixels, uint32_t width, uint32_t height, uint32_t channels) {
-    return resources_->add(factory_->create(pixels, width, height, channels));
-}
-
-/**
- **/
-TextureHandle Quad::texture(const frame::RenderTarget& target, uint32_t slot) {
-    // a depth-only target has no colour to read, and a set written against no image is a
-    // validation error - the same answer depthTexture() gives a target with no depth to read
-    if (target.view() == VK_NULL_HANDLE || slot >= target.images()) {
-        return white_;
-    }
-    return resources_->add(target.texture(slot));
-}
-
-/**
- **/
-TextureHandle Quad::depthTexture(const frame::RenderTarget& target, uint32_t slot) {
-    if (!target.sampledDepth() || slot >= target.images()) {
-        return white_;
-    }
-    return resources_->add(target.depthTexture(slot));
-}
-
-/**
- **/
-TextureHandle Quad::white() const noexcept {
-    return white_;
-}
-
-/**
- **/
-MaterialHandle Quad::material(const TextureHandle& handle) {
-    const std::map<TextureHandle, MaterialHandle>::const_iterator found = materials_.find(handle);
-    if (found != materials_.end()) {
-        return found->second;
-    }
-
-    const pipeline::Texture* texture = resources_->texture(handle);
-    if (texture == nullptr) {
-        return MaterialHandle();
-    }
-
-    // a set that was released before is written again here, so every write is a full one
-    VkDescriptorSet set = materialSets_->allocate();
-
-    VkDescriptorImageInfo image{};
-    image.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    image.imageView = texture->image->view();
-    image.sampler = texture->sampler->handle();
-
-    VkWriteDescriptorSet write{};
-    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    write.dstSet = set;
-    write.dstBinding = 0;
-    write.descriptorCount = 1;
-    write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    write.pImageInfo = &image;
-
-    vkUpdateDescriptorSets(device_->handle(), 1, &write, 0, nullptr);
-
-    pipeline::Material built;
-    built.set = set;
-    built.texture = handle;
-
-    const MaterialHandle material = resources_->add(built);
-    materials_[handle] = material;
-    return material;
-}
-
-/**
- **/
-bool Quad::release(const TextureHandle& handle) {
-    if (handle == white_) {
-        return false;
-    }
-
-    const std::map<TextureHandle, MaterialHandle>::const_iterator found = materials_.find(handle);
-    if (found != materials_.end()) {
-        const pipeline::Material* material = resources_->material(found->second);
-        if (material != nullptr) {
-            materialSets_->release(material->set);
-        }
-        resources_->release(found->second);
-        materials_.erase(found);
-    }
-
-    return resources_->release(handle);
 }
 
 /**
@@ -293,7 +161,7 @@ void Quad::submit(const Canvas& canvas, Pass* pass, uint16_t layer) {
             continue;
         }
         // an unset texture is the untextured case, drawn against white
-        const MaterialHandle bound = material(batch.texture.valid() ? batch.texture : white_);
+        const MaterialHandle bound = textures_->material(batch.texture.valid() ? batch.texture : textures_->white());
 
         DrawItem item;
         item.key.layer = layer;

@@ -43,7 +43,7 @@ TextureHandle flat(v3d::test::Headless* headless, unsigned char r, unsigned char
     for (int texel = 0; texel < 4 * 4; texel++) {
         pixels.insert(pixels.end(), {r, g, b, 0xFF});
     }
-    return headless->context->quads()->texture(pixels.data(), 4, 4, 4);
+    return headless->context->textures()->texture(pixels.data(), 4, 4, 4);
 }
 
 /**
@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_CASE(a_texture_released_in_flight_outlives_its_frame) {
     TextureHandle texture = flat(&headless, 0xFF, 0x00, 0x00);
     draw(&headless, target, texture, nullptr);
 
-    BOOST_CHECK(headless.context->quads()->release(texture));
+    BOOST_CHECK(headless.context->textures()->release(texture));
     BOOST_CHECK(headless.context->resources()->texture(texture) == nullptr);
 
     for (int frame = 0; frame < 3; frame++) {
@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE(a_reused_slot_draws_its_new_texture) {
 
     TextureHandle red = flat(&headless, 0xFF, 0x00, 0x00);
     draw(&headless, target, red, nullptr);
-    BOOST_REQUIRE(headless.context->quads()->release(red));
+    BOOST_REQUIRE(headless.context->textures()->release(red));
 
     TextureHandle green = flat(&headless, 0x00, 0xFF, 0x00);
     BOOST_REQUIRE_EQUAL(green.id(), red.id());
@@ -189,7 +189,7 @@ BOOST_AUTO_TEST_CASE(a_registered_target_keeps_its_image_through_a_resize) {
     boost::shared_ptr<RenderTarget> into = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
 
     draw(&headless, source, flat(&headless, 0x00, 0x00, 0xFF), nullptr);
-    const TextureHandle registered = headless.context->quads()->texture(*source);
+    const TextureHandle registered = headless.context->textures()->texture(*source);
     source->recreate(width / 2, height / 2);
 
     for (int frame = 0; frame < 3; frame++) {
@@ -209,9 +209,9 @@ BOOST_AUTO_TEST_CASE(a_registered_target_keeps_its_image_through_a_resize) {
 BOOST_AUTO_TEST_CASE(the_white_texture_is_not_released) {
     v3d::test::Headless headless(colourFormat, width, height);
 
-    TextureHandle white = headless.context->quads()->white();
+    TextureHandle white = headless.context->textures()->white();
 
-    BOOST_CHECK(!headless.context->quads()->release(white));
+    BOOST_CHECK(!headless.context->textures()->release(white));
     BOOST_CHECK(headless.context->resources()->texture(white) != nullptr);
 }
 

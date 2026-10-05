@@ -80,7 +80,7 @@ Renderer::Renderer(const boost::shared_ptr<v3d::render::realtime::Window>& windo
         logger_->get()->error("the player sprite is missing, so it is drawn untextured");
         return;
     }
-    sprite_ = engine_.quads()->texture(asset->image());
+    sprite_ = engine_.textures()->texture(asset->image());
 }
 
 /**
