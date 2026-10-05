@@ -24,9 +24,9 @@ v3d::engine::Features AppEngine::features() const {
 }
 
 bool AppEngine::start() {
-    window_->caption("vertical3d starter");
+    window()->caption("vertical3d starter");
 
-    renderer_ = boost::make_shared<v3d::render::realtime::Engine3D>(logger_, assetManager_);
+    renderer_ = boost::make_shared<v3d::render::realtime::Engine3D>(logger(), assets());
     if (!renderer_->initialize(window())) {
         return false;
     }

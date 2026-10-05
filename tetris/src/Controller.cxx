@@ -15,13 +15,12 @@
 #include <boost/make_shared.hpp>
 
 Controller::Controller(const std::string& path) : v3d::engine::Engine(path) {
-    logger_ = boost::make_shared<v3d::log::Logger>();
 }
 
 bool Controller::start() {
-    window_->caption("Tetris!");
+    window()->caption("Tetris!");
 
-    vgui_ = boost::make_shared<v3d::ui::Engine>(eventEngine_, dispatcher_, logger_);
+    vgui_ = boost::make_shared<v3d::ui::Engine>(events(), dispatcher(), logger());
     menu_ = boost::make_shared<v3d::ui::shell::GameMenu>(vgui_, [this](bool suspended) {
         scene_->pause(suspended);
     });
@@ -30,21 +29,21 @@ bool Controller::start() {
         return false;
     }
 
-    scene_ = boost::make_shared<TetrisScene>(logger_);
-    if (!scene_->load(assetManager_)) {
+    scene_ = boost::make_shared<TetrisScene>(logger());
+    if (!scene_->load(assets())) {
         return false;
     }
 
     boost::shared_ptr<v3d::render::realtime::Window> win = window();
-    renderer_ = boost::make_shared<TetrisRenderer>(win, logger_, assetManager_);
+    renderer_ = boost::make_shared<TetrisRenderer>(win, logger(), assets());
     renderer_->scene(scene_);
     renderer_->ui(vgui_);
 
     // register game commands
-    events_ = dispatcher_->sink<v3d::event::Event>().connect<&Controller::handleEvent>(*this);
+    events_ = dispatcher()->sink<v3d::event::Event>().connect<&Controller::handleEvent>(*this);
 
     // set the scene size according to the window canvas
-    renderer_->resize(window_->width(), window_->height());
+    renderer_->resize(window()->width(), window()->height());
 
     scene_->reset();
 

@@ -354,6 +354,10 @@ that the three handlers that are left are what makes each game that game.
 
 #### Step 16 — Engine state is reached through accessors
 
+**Closed.** Eight members are private behind const accessors, and `registry_` stays protected as
+Architecture.md decides. The one write an app made into the loop's own state, voxel timing its
+remeshing, is `measure()`. tetris no longer builds a logger the engine then replaced.
+
 E5. `registry_` stays protected, as Architecture.md decides; the other eight become const
 accessors, non-null where a `Feature` guarantees it, and `accumulator_` private. tetris stops
 assigning `logger_` in its constructor.

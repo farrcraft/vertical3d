@@ -68,40 +68,40 @@ PongEngine::PongEngine(const std::string & path) : v3d::engine::Engine(path) {
 }
 
 bool PongEngine::start() {
-    window_->caption("Pong!");
+    window()->caption("Pong!");
 
     // once the engine is up, because rebinding rebuilds the mapper the config built
-    settings_ = boost::make_shared<v3d::engine::Settings>(ORGANIZATION, APPLICATION, logger_);
+    settings_ = boost::make_shared<v3d::engine::Settings>(ORGANIZATION, APPLICATION, logger());
     settings_->load();
     applyStoredBindings();
 
-    soundEngine_ = boost::make_shared<v3d::audio::Engine>(logger_, dispatcher_);
-    v3d::audio::registerLoaders(*assetManager_, logger_);
+    soundEngine_ = boost::make_shared<v3d::audio::Engine>(logger(), dispatcher());
+    v3d::audio::registerLoaders(*assets(), logger());
     // the return is not read: a device that will not open leaves the engine silent, and the
     // engine logs why. Every clip played against it is a false return.
     soundEngine_->initialize();
 
-    vgui_ = boost::make_shared<v3d::ui::Engine>(eventEngine_, dispatcher_, logger_);
+    vgui_ = boost::make_shared<v3d::ui::Engine>(events(), dispatcher(), logger());
     menu_ = boost::make_shared<v3d::ui::shell::GameMenu>(vgui_, [this](bool suspended) {
         scene_->state().pause(suspended);
     });
 
     const boost::json::object* sounds = document(v3d::config::Type::Sound);
     if (sounds) {
-        soundEngine_->load(*sounds, *assetManager_);
+        soundEngine_->load(*sounds, *assets());
     }
     const boost::json::object* ui = document(v3d::config::Type::Ui);
     if (ui && !vgui_->load(*ui)) {
         return false;
     }
     boost::shared_ptr<v3d::render::realtime::Window> win = window();
-    renderer_ = boost::make_shared<PongRenderer>(win, logger_, assetManager_);
-    scene_ = boost::make_shared<PongScene>(&registry_, dispatcher_);
+    renderer_ = boost::make_shared<PongRenderer>(win, logger(), assets());
+    scene_ = boost::make_shared<PongScene>(&registry_, dispatcher());
     renderer_->scene(scene_);
     renderer_->ui(vgui_);
 
     // register game commands
-    events_ = dispatcher_->sink<v3d::event::Event>().connect<&PongEngine::handleEvent>(*this);
+    events_ = dispatcher()->sink<v3d::event::Event>().connect<&PongEngine::handleEvent>(*this);
 
     // reset scene & game state
     scene_->reset();
@@ -205,7 +205,7 @@ void PongEngine::rebindPaddleKey(const v3d::event::Event& event) {
     if (!rebind(std::string(command), key)) {
         return;
     }
-    logger_->get()->info("bound {} to {}", command, key);
+    logger()->get()->info("bound {} to {}", command, key);
 
     // stored as it is made rather than on the way out: there is no exit path that reliably
     // runs, and a crash after a rebinding should not lose the rebinding
@@ -222,7 +222,7 @@ void PongEngine::applyStoredBindings() {
             continue;
         }
         if (rebind(std::string(binding.second), key)) {
-            logger_->get()->info("bound {} to {} from settings", binding.second, key);
+            logger()->get()->info("bound {} to {} from settings", binding.second, key);
         }
     }
 }

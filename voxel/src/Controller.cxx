@@ -36,12 +36,12 @@ Controller::Controller(const std::string& appPath) :
 
 
 bool Controller::start() {
-    window_->caption("Voxel");
+    window()->caption("Voxel");
 
     // mouselook reads how far the mouse moved, which relative mode reports at any edge
-    window_->relativeMouse(true);
+    window()->relativeMouse(true);
 
-    vgui_ = boost::make_shared<v3d::ui::Engine>(eventEngine_, dispatcher_, logger_);
+    vgui_ = boost::make_shared<v3d::ui::Engine>(events(), dispatcher(), logger());
     menu_ = boost::make_shared<v3d::ui::shell::GameMenu>(vgui_, [this](bool suspended) {
         suspend(suspended);
     });
@@ -51,19 +51,19 @@ bool Controller::start() {
     }
 
     // register game commands
-    events_ = dispatcher_->sink<v3d::event::Event>().connect<&Controller::handleEvent>(*this);
+    events_ = dispatcher()->sink<v3d::event::Event>().connect<&Controller::handleEvent>(*this);
     // this is actually the game controller
     // maybe we need a separate player controller class to intercept mouse events?
-    motion_ = dispatcher_->sink<v3d::event::kind::MouseMotion>().connect<&Controller::handleMotion>(*this);
+    motion_ = dispatcher()->sink<v3d::event::kind::MouseMotion>().connect<&Controller::handleMotion>(*this);
 
     scene_ = boost::make_shared<Scene>();
 
     boost::shared_ptr<v3d::render::realtime::Window> win = window();
-    renderer_ = boost::make_shared<Renderer>(scene_, win, logger_, assetManager_);
+    renderer_ = boost::make_shared<Renderer>(scene_, win, logger(), assets());
     renderer_->ui(vgui_);
 
     // set the scene size according to the window canvas
-    renderer_->resize(window_->width(), window_->height());
+    renderer_->resize(window()->width(), window()->height());
 
     return true;
 }
@@ -76,7 +76,7 @@ bool Controller::tick(unsigned int delta) {
     }
     // the renderer's per-frame work stays here rather than moving to simulate(): remeshing
     // is a budget of chunks per frame, and the debug overlay averages how long a frame took
-    const v3d::engine::Statistics::Scope chunks = statistics_.scope("chunks");
+    const v3d::engine::Statistics::Scope chunks = measure("chunks");
     renderer_->tick(delta);
     return true;
 }
@@ -144,7 +144,7 @@ bool Controller::release() {
 void Controller::suspend(bool suspended) {
     scene_->state()->pause(suspended);
     // the menu wants a pointer, and leaving relative mode is what shows one
-    window_->relativeMouse(!suspended);
+    window()->relativeMouse(!suspended);
 }
 
 void Controller::handleEvent(const v3d::event::Event& event) {
@@ -181,7 +181,7 @@ void Controller::handleEvent(const v3d::event::Event& event) {
 }
 
 void Controller::handleMotion(const v3d::event::kind::MouseMotion& event) {
-    if (!window_->focused()) {
+    if (!window()->focused()) {
         return;
     }
     // the menu owns the pointer while it is up

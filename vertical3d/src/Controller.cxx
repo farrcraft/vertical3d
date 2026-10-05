@@ -49,29 +49,29 @@ Controller::Controller(const std::string& path) :
 /**
  **/
 bool Controller::start() {
-    window_->caption("Vertical|3D");
+    window()->caption("Vertical|3D");
 
-    if (!config_) {
-        logger_->get()->error("The editor needs its config to know what to draw");
+    if (!config()) {
+        logger()->get()->error("The editor needs its config to know what to draw");
         return false;
     }
 
     scene_ = boost::make_shared<Scene>();
-    project_ = boost::make_shared<Project>(logger_);
+    project_ = boost::make_shared<Project>(logger());
     commands_ = boost::make_shared<CommandStack>();
 
-    profiles_ = boost::make_shared<v3d::config::CameraProfiles>(logger_);
+    profiles_ = boost::make_shared<v3d::config::CameraProfiles>(logger());
     const boost::json::object* cameras = document(v3d::config::Type::Camera);
     if (!cameras) {
-        logger_->get()->error("The editor has no camera config, so its views would have no cameras");
+        logger()->get()->error("The editor has no camera config, so its views would have no cameras");
         return false;
     }
     if (!profiles_->load(*cameras)) {
         return false;
     }
 
-    layout_ = boost::make_shared<ViewLayout>(logger_);
-    if (!layout_->load(config_->get(v3d::config::Type::Layout))) {
+    layout_ = boost::make_shared<ViewLayout>(logger());
+    if (!layout_->load(config()->get(v3d::config::Type::Layout))) {
         return false;
     }
 
@@ -80,15 +80,15 @@ bool Controller::start() {
     }
 
     cameraTool_ = boost::make_shared<CameraControlTool>();
-    selectTool_ = boost::make_shared<SelectTool>(scene_, logger_);
-    transformTool_ = boost::make_shared<TransformTool>(scene_, logger_);
+    selectTool_ = boost::make_shared<SelectTool>(scene_, logger());
+    transformTool_ = boost::make_shared<TransformTool>(scene_, logger());
     transformTool_->commands(commands_);
 
-    events_ = dispatcher_->sink<v3d::event::Event>().connect<&Controller::handleEvent>(*this);
-    motion_ = dispatcher_->sink<v3d::event::kind::MouseMotion>().connect<&Controller::handleMotion>(*this);
-    resize_ = dispatcher_->sink<v3d::event::kind::WindowResize>().connect<&Controller::handleResize>(*this);
+    events_ = dispatcher()->sink<v3d::event::Event>().connect<&Controller::handleEvent>(*this);
+    motion_ = dispatcher()->sink<v3d::event::kind::MouseMotion>().connect<&Controller::handleMotion>(*this);
+    resize_ = dispatcher()->sink<v3d::event::kind::WindowResize>().connect<&Controller::handleResize>(*this);
 
-    renderer_ = boost::make_shared<Renderer>(window(), logger_, assetManager_);
+    renderer_ = boost::make_shared<Renderer>(window(), logger(), assets());
     renderer_->views(views_);
     renderer_->scene(scene_);
     renderer_->manipulator(transformTool_->manipulator());
@@ -101,10 +101,10 @@ bool Controller::start() {
     // after the tools and the renderer, because every handler closes over one of them
     registerCommands();
 
-    layoutViews(window_->width(), window_->height());
+    layoutViews(window()->width(), window()->height());
     syncUi();
 
-    logger_->get()->info("{} with {} views", layout_->name(), views_.size());
+    logger()->get()->info("{} with {} views", layout_->name(), views_.size());
     return true;
 }
 
@@ -114,7 +114,7 @@ bool Controller::buildViews() {
     views_.clear();
     for (const ViewLayout::View& view : layout_->views()) {
         if (!profiles_->has(view.camera)) {
-            logger_->get()->error("The layout names a camera profile that does not exist: {}", view.camera);
+            logger()->get()->error("The layout names a camera profile that does not exist: {}", view.camera);
             return false;
         }
         views_.push_back(boost::make_shared<ViewPort>(view.camera, profiles_->get(view.camera)));
@@ -130,30 +130,30 @@ bool Controller::buildViews() {
 bool Controller::buildUi() {
     const boost::json::object* config = document(v3d::config::Type::Ui);
     if (!config) {
-        logger_->get()->error("The editor has no ui config, so it would have no menus");
+        logger()->get()->error("The editor has no ui config, so it would have no menus");
         return false;
     }
 
-    vgui_ = boost::make_shared<v3d::ui::Engine>(eventEngine_, dispatcher_, logger_);
+    vgui_ = boost::make_shared<v3d::ui::Engine>(events(), dispatcher(), logger());
     if (!vgui_->load(*config)) {
         return false;
     }
     // the ui knows the order its own strips are drawn in, so it is what offers a cursor to
     // them - ADR-0038. The measure is the renderer's own, so that a press inside a text box
     // lands on the character it looks like it landed on - ADR-0057
-    uiCursor_ = boost::make_shared<v3d::ui::input::Cursor>(vgui_, dispatcher_, renderer_->measure());
+    uiCursor_ = boost::make_shared<v3d::ui::input::Cursor>(vgui_, dispatcher(), renderer_->measure());
     // the keyboard half is the api's shell, not the app's - ADR-0028
-    uiKeys_ = boost::make_shared<v3d::ui::shell::Keyboard>(vgui_, dispatcher_, window());
+    uiKeys_ = boost::make_shared<v3d::ui::shell::Keyboard>(vgui_, dispatcher(), window());
     chooser_ = boost::make_shared<v3d::ui::shell::FileChooser>(vgui_);
 
     boost::shared_ptr<v3d::ui::Container> container = vgui_->container(uiContainer);
     if (!container) {
-        logger_->get()->error("The ui config has no {} container", uiContainer);
+        logger()->get()->error("The ui config has no {} container", uiContainer);
         return false;
     }
     menu_ = boost::dynamic_pointer_cast<v3d::ui::component::MenuBar>(container->get(menuBar));
     if (!menu_) {
-        logger_->get()->error("The {} container has no {} in it", uiContainer, menuBar);
+        logger()->get()->error("The {} container has no {} in it", uiContainer, menuBar);
         return false;
     }
 
@@ -215,12 +215,12 @@ void Controller::registerCommands() {
     // handlers never running - so it is said out loud rather than returned to nobody
     auto press = [this](const std::string& name, const CommandDirectory::PressHandler& handler) {
         if (!directory_.addPress(name, handler)) {
-            logger_->get()->error("{} is registered twice", name);
+            logger()->get()->error("{} is registered twice", name);
         }
     };
     auto hold = [this](const std::string& name, const CommandDirectory::Handler& handler) {
         if (!directory_.add(name, handler)) {
-            logger_->get()->error("{} is registered twice", name);
+            logger()->get()->error("{} is registered twice", name);
         }
     };
 
@@ -290,7 +290,7 @@ void Controller::registerCommands() {
             named++;
         }
     }
-    logger_->get()->info("{} commands registered, {} of them on a menu", directory_.size(), named);
+    logger()->get()->info("{} commands registered, {} of them on a menu", directory_.size(), named);
 }
 
 /**
@@ -314,7 +314,7 @@ void Controller::createPoly(const std::string& name) {
     boost::shared_ptr<CreateCommand> command = boost::make_shared<CreateCommand>(scene_, mesh, name);
     command->redo();
     commands_->push(command);
-    logger_->get()->info("created a {} - {} meshes", name, scene_->count());
+    logger()->get()->info("created a {} - {} meshes", name, scene_->count());
 }
 
 /**
@@ -329,10 +329,10 @@ void Controller::history(const std::string& name) {
         return;
     }
     if (!command) {
-        logger_->get()->info("nothing to {}", name);
+        logger()->get()->info("nothing to {}", name);
         return;
     }
-    logger_->get()->info("{} {}", name, command->name());
+    logger()->get()->info("{} {}", name, command->name());
 }
 
 /**
@@ -345,13 +345,13 @@ std::string Controller::exportPath() const {
  **/
 void Controller::exportProject() {
     if (!activeView_ || !activeView_->camera()) {
-        logger_->get()->error("nothing to export a scene from - there is no active view");
+        logger()->get()->error("nothing to export a scene from - there is no active view");
         return;
     }
 
     std::ofstream file(exportPath().c_str());
     if (!file.is_open()) {
-        logger_->get()->error("could not write {}", exportPath());
+        logger()->get()->error("could not write {}", exportPath());
         return;
     }
 
@@ -361,7 +361,7 @@ void Controller::exportProject() {
     scene_->accept(&visitor);
     visitor.end();
 
-    logger_->get()->info("exported {} mesh(es) to {}", scene_->count(), exportPath());
+    logger()->get()->info("exported {} mesh(es) to {}", scene_->count(), exportPath());
 }
 
 /**
@@ -570,7 +570,7 @@ void Controller::handleEvent(const v3d::event::Event& event) {
         return;
     }
     if (!directory_.invoke(event)) {
-        logger_->get()->warn("no command is registered as {}", event.str());
+        logger()->get()->warn("no command is registered as {}", event.str());
         return;
     }
     // a check item shows what the editor holds rather than remembering its own state, so

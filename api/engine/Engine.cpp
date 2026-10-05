@@ -168,6 +168,12 @@ const boost::json::object* Engine::document(v3d::config::Type type) const {
 
 /**
  **/
+Statistics::Scope Engine::measure(std::string_view name) {
+    return statistics_.scope(name);
+}
+
+/**
+ **/
 bool Engine::start() {
     return true;
 }
@@ -356,6 +362,26 @@ const Statistics& Engine::statistics() const noexcept {
 
 boost::shared_ptr<v3d::render::realtime::Window> Engine::window() const {
     return window_;
+}
+
+const boost::shared_ptr<v3d::log::Logger>& Engine::logger() const noexcept {
+    return logger_;
+}
+
+const boost::shared_ptr<v3d::config::Config>& Engine::config() const noexcept {
+    return config_;
+}
+
+const boost::shared_ptr<v3d::asset::Manager>& Engine::assets() const noexcept {
+    return assetManager_;
+}
+
+const boost::shared_ptr<entt::dispatcher>& Engine::dispatcher() const noexcept {
+    return dispatcher_;
+}
+
+const boost::shared_ptr<v3d::event::Engine>& Engine::events() const noexcept {
+    return eventEngine_;
 }
 
 };  // namespace v3d::engine

@@ -29,22 +29,6 @@ class TestEngine final : public v3d::engine::Engine {
         return features_;
     }
 
-    const boost::shared_ptr<entt::dispatcher>& dispatcher() const {
-        return dispatcher_;
-    }
-
-    const boost::shared_ptr<v3d::event::Engine>& events() const {
-        return eventEngine_;
-    }
-
-    const boost::shared_ptr<v3d::config::Config>& config() const {
-        return config_;
-    }
-
-    const boost::shared_ptr<v3d::asset::Manager>& assets() const {
-        return assetManager_;
-    }
-
     /**
      * route() is where the order of ADR-0043 lives, and eventLoop() renders, so a test
      * drives the one and never the other.

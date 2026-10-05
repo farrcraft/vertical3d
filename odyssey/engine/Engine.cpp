@@ -36,10 +36,10 @@ Engine::Engine(const std::string& appPath) :
 /**
  **/
 bool Engine::start() {
-    window_->caption("Odyssey");
+    window()->caption("Odyssey");
 
-    map_ = boost::make_shared<odyssey::tile::Map>(logger_);
-    if (!map_->load(assetManager_->load<v3d::asset::kind::Json>(mapName))) {
+    map_ = boost::make_shared<odyssey::tile::Map>(logger());
+    if (!map_->load(assets()->load<v3d::asset::kind::Json>(mapName))) {
         // the map is the board and the collision rules both, so there is no sensible game
         // without one - the loader has already said what it could not read
         return false;
@@ -55,15 +55,15 @@ bool Engine::start() {
     sight_ = boost::make_shared<odyssey::tile::Sight>();
     sight_->look(*map_->grid(), start);
 
-    renderer_ = boost::make_shared<odyssey::render::Renderer>(window(), logger_, assetManager_, &registry_);
+    renderer_ = boost::make_shared<odyssey::render::Renderer>(window(), logger(), assets(), &registry_);
     renderer_->player(player_);
     renderer_->map(map_);
     renderer_->sight(sight_);
 
     // one sink for every mapped event: a device event is resolved to an action by the
     // bindings before it gets here, so nothing subscribes to a key
-    events_ = dispatcher_->sink<v3d::event::Event>().connect<&Engine::handleEvent>(*this);
-    motion_ = dispatcher_->sink<v3d::event::kind::MouseMotion>().connect<&Engine::handleMotion>(*this);
+    events_ = dispatcher()->sink<v3d::event::Event>().connect<&Engine::handleEvent>(*this);
+    motion_ = dispatcher()->sink<v3d::event::kind::MouseMotion>().connect<&Engine::handleMotion>(*this);
 
     return true;
 }

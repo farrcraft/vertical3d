@@ -147,6 +147,16 @@ class Engine {
     boost::shared_ptr<v3d::render::realtime::Window> window() const;
 
     /**
+     * What the engine built, for an app to build on. Each is null until initialize() runs,
+     * and the config until it runs with Feature::Config; the window needs Feature::Window.
+     **/
+    const boost::shared_ptr<v3d::log::Logger>& logger() const noexcept;
+    const boost::shared_ptr<v3d::config::Config>& config() const noexcept;
+    const boost::shared_ptr<v3d::asset::Manager>& assets() const noexcept;
+    const boost::shared_ptr<entt::dispatcher>& dispatcher() const noexcept;
+    const boost::shared_ptr<v3d::event::Engine>& events() const noexcept;
+
+    /**
      * What the keyboard holds, and what changed edge during this frame's events. The loop
      * clears the edges after render(), so a tick or a simulate step sees the frame it is
      * part of and never the one before.
@@ -208,15 +218,17 @@ class Engine {
      **/
     const boost::json::object* document(v3d::config::Type type) const;
 
-    boost::shared_ptr<v3d::log::Logger> logger_;
-    boost::shared_ptr<v3d::config::Config> config_;
-    boost::shared_ptr<v3d::render::realtime::Window> window_;
-    boost::shared_ptr<v3d::asset::Manager> assetManager_;
-    boost::shared_ptr<entt::dispatcher> dispatcher_;
-    boost::shared_ptr<v3d::event::Engine> eventEngine_;
+    /**
+     * Time what happens until the scope ends, as a span the statistics report by name - the
+     * one thing an app writes into what the loop measures.
+     **/
+    Statistics::Scope measure(std::string_view name);
+
+    /**
+     * The one registry an app's entities live in. Protected and writable on purpose: an app
+     * is its entities, and every system it runs reaches them here.
+     **/
     entt::registry registry_;
-    Accumulator accumulator_;
-    Statistics statistics_;
 
     /**
      * Point a command at a different key than the config bound it to - event::Bindings says
@@ -266,6 +278,15 @@ class Engine {
 
      template <typename T, typename... Args>
      friend int run(const char* executable, const std::string& name, Args&&... args);
+
+     boost::shared_ptr<v3d::log::Logger> logger_;
+     boost::shared_ptr<v3d::config::Config> config_;
+     boost::shared_ptr<v3d::render::realtime::Window> window_;
+     boost::shared_ptr<v3d::asset::Manager> assetManager_;
+     boost::shared_ptr<entt::dispatcher> dispatcher_;
+     boost::shared_ptr<v3d::event::Engine> eventEngine_;
+     Accumulator accumulator_;
+     Statistics statistics_;
 
      std::string appPath_;
      Features features_;
