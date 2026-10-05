@@ -249,6 +249,15 @@ line, the cycle is gone, and the header comment and ADR-0021 are true again. A t
 
 A2, T1, T2, and B5's header half.
 
+**Closed, except B5's header half.** ADR-0079 chose an asset core, `v3dlib_asset_media` for
+pictures, models and typefaces, and the sound loader in `api/audio`: `render` loads models and `ui`
+loads typefaces, so one media library holding sound too would have put the mixer back in their
+closures. The starter's closure has no SDL3_mixer now and `config`'s needs only glm and spdlog,
+which the manifest's closure says. `.bmp` and `.jpeg` load through the one image loader. **Moved to
+step 15:** the pimpl that would make SDL3_mixer PRIVATE to audio. Only an app that plays sound
+links audio now, so the mixer in its headers costs nobody else, and step 15 reshapes that engine
+anyway.
+
 Write ADR-0079 first. Then `Manager` gains `registerLoader(Type, loader, extensions)`, and
 `loadTypeFromExt` becomes a lookup of what was registered — so the three extension maps that
 disagree become one. The Png, Jpeg and Tga loaders collapse into one `loader::Image` over
@@ -306,9 +315,10 @@ E2, B5's wiring half, and the cross-library F6.
 `ui::shell::GameMenu` builds from the ui config and subscribes to its own navigate and toggle
 commands; the engine answers a reserved quit command as it answers a window close; a
 `StatisticsOverlay::Sample` builder lives on the ui side. Audio joins the shell behind a `Feature`
-bit with the sound resolver built in, so pong's lambda goes. Correct ECSDesign.md's claim about
-who creates the audio engine. pong, tetris and voxel each lose their copy; the test is that the
-three handlers that are left are what makes each game that game.
+bit with the sound resolver built in, so pong's lambda goes, and `audio::Engine` and `AudioClip`
+move their `MIX_*` members behind a pimpl so SDL3_mixer can become PRIVATE. Correct ECSDesign.md's
+claim about who creates the audio engine. pong, tetris and voxel each lose their copy; the test is
+that the three handlers that are left are what makes each game that game.
 
 #### Step 16 — Engine state is reached through accessors
 
@@ -525,9 +535,6 @@ disturb.
 - **Do `dag::Node` and `dag::Transform` stay a library after step 6?** They are used only by brep
   and the editor. Moving them into `api/brep` removes a library; keeping them leaves a place for a
   scene graph ADR-0013 said not to grow. Decide when step 29 is touching brep anyway.
-- **Do the media loaders move to their payload libraries, or to one `asset_media`?** ADR-0079
-  settles it. The first puts a loader beside what it builds; the second keeps `audio` and `font`
-  ignorant of `asset`.
 - **Does the reyes hider honour `Oi`?** Step 26. Compositing by coverage in `Bucket` is real work,
   and a documented difference between hiders is a legitimate answer.
 - **Is step 18 worth doing before anything headless exists?** Likely not, and closing it as

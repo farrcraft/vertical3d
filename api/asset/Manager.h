@@ -7,7 +7,10 @@
 
 #include <api/log/Logger.h>
 
+#include <string>
+#include <string_view>
 #include <unordered_map>
+#include <vector>
 
 #include "Asset.h"
 #include "Loader.h"
@@ -19,6 +22,10 @@ namespace v3d::asset {
 /**
  * The Asset Manager provides an access point for mapping and loading assets
  * within a single path.
+ *
+ * It loads what a loader has been registered for. A manager starts with the two that read a
+ * document, Json and Text; the loaders for pictures, models and typefaces are in
+ * api/asset/media and the one for sound in api/audio, and each registers its own - ADR-0079.
  **/
 class Manager final {
  public:
@@ -33,6 +40,15 @@ class Manager final {
      * @param type
      **/
     boost::shared_ptr<Asset> load(std::string_view name, asset::Type t);
+
+    /**
+     * Load through a loader for the asset's type, and resolve a file to that type by any of
+     * the extensions given. Registering a type a second time replaces the loader.
+     *
+     * @param extensions with the dot and in lower case, as ".png"; a file's own extension is
+     *        lowered before it is looked up
+     **/
+    void registerLoader(const boost::shared_ptr<Loader>& loader, const std::vector<std::string>& extensions);
 
     /**
      * Load an asset, guessing the type from its filename extension.
@@ -51,6 +67,7 @@ class Manager final {
  private:
     boost::filesystem::path path_;
     std::unordered_map<asset::Type, boost::shared_ptr<Loader>> loaders_;
+    std::unordered_map<std::string, asset::Type> extensions_;
     boost::shared_ptr<v3d::log::Logger> logger_;
 };
 

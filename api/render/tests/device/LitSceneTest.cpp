@@ -4,6 +4,7 @@
  **/
 
 #include <api/asset/Manager.h>
+#include <api/asset/media/Loaders.h>
 #include <api/ecs/component/Emitter.h>
 #include <api/ecs/component/Transform.h>
 #include <api/image/Compare.h>
@@ -193,6 +194,8 @@ boost::shared_ptr<v3d::image::Image> drawShadowed(v3d::test::Headless* headless,
         mapSize, mapSize, VK_FORMAT_UNDEFINED, true, true);
 
     const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless->logger);
+
+    v3d::asset::media::registerLoaders(*assets, headless->logger);
     MeshRegistry meshes(headless->logger, headless->context, assets);
     const MeshHandle crate = meshes.add("crate", cube(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)));
     const MeshHandle ground = meshes.add("ground", cube(glm::vec4(1.0f)));
@@ -274,6 +277,8 @@ BOOST_AUTO_TEST_CASE(a_lit_entity_is_drawn_and_silent) {
         width, height, colourFormat, true);
 
     const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
+
+    v3d::asset::media::registerLoaders(*assets, headless.logger);
     MeshRegistry meshes(headless.logger, headless.context, assets);
     const MeshHandle crate = meshes.add("crate", cube(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)));
 
@@ -360,6 +365,7 @@ BOOST_AUTO_TEST_CASE(a_lit_entity_is_drawn_and_silent) {
 BOOST_AUTO_TEST_CASE(a_released_mesh_is_not_walked) {
     v3d::test::Headless headless(colourFormat, width, height);
     const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
+    v3d::asset::media::registerLoaders(*assets, headless.logger);
     MeshRegistry meshes(headless.logger, headless.context, assets);
     Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
         headless.context->frameUniforms(), headless.context->quads(), colourFormat,
@@ -402,6 +408,8 @@ BOOST_AUTO_TEST_CASE(a_caster_is_drawn_into_the_shadow_map_at_its_depth) {
     }
 
     const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
+
+    v3d::asset::media::registerLoaders(*assets, headless.logger);
     MeshRegistry meshes(headless.logger, headless.context, assets);
     const MeshHandle block = meshes.add("block", cube(glm::vec4(1.0f)));
     Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
@@ -509,6 +517,8 @@ BOOST_AUTO_TEST_CASE(retcons_scene_is_drawn_and_silent) {
         frameWidth, frameHeight, swapchainFormat);
 
     const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
+
+    v3d::asset::media::registerLoaders(*assets, headless.logger);
     MeshRegistry meshes(headless.logger, headless.context, assets);
     const MeshHandle ground = meshes.add("ground", cube(glm::vec4(0.55f, 0.6f, 0.5f, 1.0f)));
     const MeshHandle figure = meshes.add("figure", cube(glm::vec4(0.8f, 0.3f, 0.2f, 1.0f)));
@@ -628,6 +638,8 @@ BOOST_AUTO_TEST_CASE(a_model_is_drawn_a_part_at_a_time) {
         width, height, colourFormat, true);
 
     const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
+
+    v3d::asset::media::registerLoaders(*assets, headless.logger);
     MeshRegistry meshes(headless.logger, headless.context, assets);
     const MeshHandle pair = meshes.add("pair", twoCubes());
 
@@ -698,6 +710,8 @@ BOOST_AUTO_TEST_CASE(world_quads_are_hidden_by_a_lit_scene) {
         width, height, colourFormat, true);
 
     const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
+
+    v3d::asset::media::registerLoaders(*assets, headless.logger);
     MeshRegistry meshes(headless.logger, headless.context, assets);
     const MeshHandle crate = meshes.add("crate", cube(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)));
 
@@ -765,6 +779,7 @@ BOOST_AUTO_TEST_CASE(world_quads_are_hidden_by_a_lit_scene) {
 BOOST_AUTO_TEST_CASE(the_light_has_a_colour) {
     v3d::test::Headless headless(colourFormat, width, height);
     const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
+    v3d::asset::media::registerLoaders(*assets, headless.logger);
     MeshRegistry meshes(headless.logger, headless.context, assets);
     const MeshHandle crate = meshes.add("crate", cube(glm::vec4(1.0f)));
 
@@ -825,6 +840,7 @@ BOOST_AUTO_TEST_CASE(the_light_has_a_colour) {
 BOOST_AUTO_TEST_CASE(rain_falls_in_a_lit_scene) {
     v3d::test::Headless headless(colourFormat, width, height);
     const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
+    v3d::asset::media::registerLoaders(*assets, headless.logger);
     MeshRegistry meshes(headless.logger, headless.context, assets);
     const MeshHandle crate = meshes.add("crate", cube(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)));
     const MeshHandle ground = meshes.add("ground", cube(glm::vec4(1.0f)));

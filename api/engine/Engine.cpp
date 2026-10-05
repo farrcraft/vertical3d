@@ -5,6 +5,7 @@
 
 #include "Engine.h"
 
+#include <api/asset/media/Loaders.h>
 #include <api/event/kind/WindowFocus.h>
 #include <api/event/kind/WindowResize.h>
 #include <api/input/DeviceType.h>
@@ -170,6 +171,7 @@ bool Engine::initialize(int features) {
 
     std::string dataPath = appPath_ + std::string("data/");
     assetManager_ = boost::make_shared<v3d::asset::Manager>(dataPath, logger_);
+    v3d::asset::media::registerLoaders(*assetManager_, logger_);
 
     dispatcher_ = boost::make_shared<entt::dispatcher>();
     eventEngine_ = boost::make_shared<v3d::event::Engine>(dispatcher_);

@@ -6,8 +6,8 @@
 #include "MeshRegistry.h"
 
 #include <api/asset/Manager.h>
-#include <api/asset/kind/Image.h>
-#include <api/asset/kind/Model.h>
+#include <api/asset/media/kind/Image.h>
+#include <api/asset/media/kind/Model.h>
 #include <api/image/Image.h>
 #include <api/render/realtime/DeviceContext.h>
 
@@ -76,8 +76,8 @@ MeshHandle MeshRegistry::load(const std::string& path) {
         return found->second;
     }
 
-    const boost::shared_ptr<asset::kind::Model> loaded =
-        boost::dynamic_pointer_cast<asset::kind::Model>(assets_->load(path, asset::Type::ModelGltf));
+    const boost::shared_ptr<asset::media::kind::Model> loaded =
+        boost::dynamic_pointer_cast<asset::media::kind::Model>(assets_->load(path, asset::Type::ModelGltf));
     if (!loaded || !loaded->model()) {
         throw std::runtime_error("Unable to load a model from " + path);
     }
@@ -172,8 +172,8 @@ std::string MeshRegistry::acquire(const Source& source, Part* part) {
         boost::shared_ptr<image::Image> image = source.pixels;
         if (!image) {
             try {
-                const boost::shared_ptr<asset::kind::Image> asset =
-                    boost::dynamic_pointer_cast<asset::kind::Image>(assets_->loadTypeFromExt(key));
+                const boost::shared_ptr<asset::media::kind::Image> asset =
+                    boost::dynamic_pointer_cast<asset::media::kind::Image>(assets_->loadTypeFromExt(key));
                 if (asset) {
                     image = asset->image();
                 }

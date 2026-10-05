@@ -10,7 +10,7 @@ v3d_add_test(engine
 	"EngineTest.cpp"
 	"SettingsTest.cpp")
 
-# SDL3: the engine names SDL directly, and reaches the mixer through v3dlib_asset.
+# SDL3: the engine names SDL directly.
 target_link_libraries(v3dtest_engine PRIVATE
 	v3dlib_engine
 	v3dlib_config

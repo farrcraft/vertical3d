@@ -122,8 +122,10 @@ which is every library and every package. It has to be `all` if you turned the a
 tests back on.
 
 **Targets are `v3d::<library>`**, one alias per directory under `api/`. Name only what you use.
-Each library declares what it needs, so `v3d::engine` brings `v3d::asset`, `v3d::config`,
-`v3d::event`, `v3d::input` and `v3d::render` with it. The underlying `v3dlib_*` names are what
+Each library declares what it needs, so `v3d::engine` brings `v3d::asset`, `v3d::asset_media`,
+`v3d::config`, `v3d::event`, `v3d::input` and `v3d::render` with it. Sound is the exception: an
+app that plays one names `v3d::audio` and registers its loader on the asset manager with
+`v3d::audio::registerLoaders()`. The underlying `v3dlib_*` names are what
 the tree links internally and are not the interface.
 
 **A third party package you name yourself needs your own `find_package`, after the

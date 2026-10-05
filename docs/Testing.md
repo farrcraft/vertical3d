@@ -59,7 +59,7 @@ palette is exactly the identity and its weights are exact. A skinned caster's de
 exactly, as the static one's is. The strip bent half way through its clip is asserted silent and
 different from the strip at rest, and written to `data_out/skinned_bend.png`. The same strip
 exported by Blender 5.2, from `api/asset/tests/data/make_blender_fixture.py`, is drawn at three
-points of its clip. The asset suite checks that its rest palette is the identity to rounding,
+points of its clip. The asset_media suite checks that its rest palette is the identity to rounding,
 which is the evidence that a real exporter's matrices agree with this tree's.
 
 **Effects are simulated headless and drawn on the device.** Every emitter, weather and drawn

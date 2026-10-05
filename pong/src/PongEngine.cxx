@@ -5,7 +5,8 @@
 
 #include "PongEngine.h"
 
-#include <api/asset/kind/Sound.h>
+#include <api/audio/Loaders.h>
+#include <api/audio/kind/Sound.h>
 #include <api/ecs/Previous.h>
 #include <api/ecs/component/Color3.h>
 #include <api/ecs/component/Position1D.h>
@@ -84,6 +85,7 @@ bool::PongEngine::initialize() {
     applyStoredBindings();
 
     soundEngine_ = boost::make_shared<v3d::audio::Engine>(logger_, dispatcher_);
+    v3d::audio::registerLoaders(*assetManager_, logger_);
     // the return is not read: a device that will not open leaves the engine silent, and the
     // engine logs why. Every clip played against it is a false return.
     soundEngine_->initialize();
@@ -100,7 +102,7 @@ bool::PongEngine::initialize() {
             // against the manager's path rather than the working directory
             soundEngine_->load(soundConfig->document(),
                 [this](const std::string& source) -> boost::shared_ptr<v3d::audio::AudioClip> {
-                    boost::shared_ptr<v3d::asset::kind::Sound> asset = boost::dynamic_pointer_cast<v3d::asset::kind::Sound>(
+                    boost::shared_ptr<v3d::audio::kind::Sound> asset = boost::dynamic_pointer_cast<v3d::audio::kind::Sound>(
                         assetManager_->load(source, v3d::asset::Type::AudioWav));
                     if (!asset) {
                         return boost::shared_ptr<v3d::audio::AudioClip>();

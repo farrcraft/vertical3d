@@ -110,8 +110,9 @@ set_source_files_properties("realtime/vulkan/memory/VmaImpl.cxx" PROPERTIES
 
 # PRIVATE: Canvas.h forward declares font::TextBuffer rather than including it, so a consumer
 # needs the font library only if it names one itself. The ecs components the lit renderer
-# walks are named in its sources and in no header.
-target_link_libraries(v3dlib_render PRIVATE v3dlib_font v3dlib_ecs)
+# walks are named in its sources and in no header, and so are the model and image assets
+# MeshRegistry loads.
+target_link_libraries(v3dlib_render PRIVATE v3dlib_font v3dlib_ecs v3dlib_asset_media)
 
 target_compile_options(v3dlib_render PRIVATE /EHsc)
 

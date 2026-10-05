@@ -5,16 +5,13 @@
 
 #include "Manager.h"
 
-#include <api/asset/loader/Gltf.h>
-#include <api/asset/loader/Jpeg.h>
 #include <api/asset/loader/Json.h>
-#include <api/asset/loader/Png.h>
 #include <api/asset/loader/Text.h>
-#include <api/asset/loader/TextureFont.h>
-#include <api/asset/loader/Tga.h>
-#include <api/asset/loader/Wav.h>
 
+#include <algorithm>
+#include <cctype>
 #include <string>
+#include <vector>
 
 #include <boost/make_shared.hpp>
 
@@ -26,14 +23,17 @@ Manager::Manager(std::string_view path, const boost::shared_ptr<v3d::log::Logger
     logger_(logger) {
     path_ = static_cast<std::string>(path);
     logger_->get()->info("Setting asset manager path to: {}", path);
-    loaders_[asset::Type::ImageJpeg] = boost::make_shared<v3d::asset::loader::Jpeg>(logger_);
-    loaders_[asset::Type::ImagePng] = boost::make_shared<v3d::asset::loader::Png>(logger_);
-    loaders_[asset::Type::ImageTga] = boost::make_shared<v3d::asset::loader::Tga>(logger_);
-    loaders_[asset::Type::ModelGltf] = boost::make_shared<v3d::asset::loader::Gltf>(logger_);
-    loaders_[asset::Type::JsonDocument] = boost::make_shared<v3d::asset::loader::Json>(logger_);
-    loaders_[asset::Type::AudioWav] = boost::make_shared<v3d::asset::loader::Wav>(logger_);
-    loaders_[asset::Type::Text] = boost::make_shared<v3d::asset::loader::Text>(logger_);
-    loaders_[asset::Type::TextureFont] = boost::make_shared<v3d::asset::loader::TextureFont>(logger_);
+    registerLoader(boost::make_shared<loader::Json>(logger_), {".json"});
+    registerLoader(boost::make_shared<loader::Text>(logger_), {".txt"});
+}
+
+/**
+ **/
+void Manager::registerLoader(const boost::shared_ptr<Loader>& loader, const std::vector<std::string>& extensions) {
+    loaders_[loader->type()] = loader;
+    for (const std::string& extension : extensions) {
+        extensions_[extension] = loader->type();
+    }
 }
 
 /**
@@ -60,25 +60,14 @@ boost::shared_ptr<Asset> Manager::load(std::string_view name, asset::Type t) {
 /**
  **/
 boost::shared_ptr<Asset> Manager::loadTypeFromExt(std::string_view name) {
-    boost::filesystem::path pathName(static_cast<std::string>(name));
-    boost::shared_ptr<Asset> asset;
-    std::string ext = pathName.extension().string();
-    if (ext == ".png") {
-        asset = load(name, asset::Type::ImagePng);
-    } else if (ext == ".jpg") {
-        asset = load(name, asset::Type::ImageJpeg);
-    } else if (ext == ".tga") {
-        asset = load(name, asset::Type::ImageTga);
-    } else if (ext == ".gltf" || ext == ".glb") {
-        asset = load(name, asset::Type::ModelGltf);
-    } else if (ext == ".json") {
-        asset = load(name, asset::Type::JsonDocument);
-    } else if (ext == ".wav") {
-        asset = load(name, asset::Type::AudioWav);
-    } else {
+    std::string ext = boost::filesystem::path(static_cast<std::string>(name)).extension().string();
+    std::transform(ext.begin(), ext.end(), ext.begin(),
+        [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    auto found = extensions_.find(ext);
+    if (found == extensions_.end()) {
         throw std::invalid_argument("unrecognized extension");
     }
-    return asset;
+    return load(name, found->second);
 }
 
 };  // namespace v3d::asset

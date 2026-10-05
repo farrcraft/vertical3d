@@ -9,6 +9,10 @@ record keeps one way had come back the other way: `audio::Engine::load()` took a
 `asset::kind::Json`, so `v3dlib_audio` linked `v3dlib_asset` and the two closed a cycle.
 `load()` takes the `boost::json::object` now, and audio names no asset type.
 
+Amended by [ADR-0079](0079-an-asset-loader-is-registered.md): the wav loader moved into
+`api/audio`, so the edge runs from audio to the asset core rather than from asset to audio. The
+`Resolve` seam stays.
+
 ## Context
 
 Nothing in the tree has ever made a sound, and covering `api/audio` on 2026-09-04 is what

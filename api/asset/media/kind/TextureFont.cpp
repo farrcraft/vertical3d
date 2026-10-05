@@ -7,7 +7,7 @@
 
 #include <string>
 
-namespace v3d::asset::kind {
+namespace v3d::asset::media::kind {
 /**
  **/
 TextureFont::TextureFont(const std::string& name, Type t, const boost::shared_ptr<v3d::font::TextureFont>& font) :
@@ -21,4 +21,4 @@ boost::shared_ptr<v3d::font::TextureFont> TextureFont::font() {
     return font_;
 }
 
-};  // namespace v3d::asset::kind
+};  // namespace v3d::asset::media::kind

@@ -5,7 +5,8 @@
 
 #include <api/asset/Manager.h>
 #include <api/asset/Type.h>
-#include <api/asset/kind/Model.h>
+#include <api/asset/media/Loaders.h>
+#include <api/asset/media/kind/Model.h>
 #include <api/ecs/component/Playback.h>
 #include <api/ecs/component/Transform.h>
 #include <api/image/Image.h>
@@ -65,15 +66,18 @@ const uint32_t height = 128;
 const char* STRIP = "bending_strip.glb";
 
 boost::shared_ptr<v3d::asset::Manager> assets(const v3d::test::Headless& headless) {
-    return boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
+    boost::shared_ptr<v3d::asset::Manager> manager =
+        boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
+    v3d::asset::media::registerLoaders(*manager, headless.logger);
+    return manager;
 }
 
 /**
  * The strip as a static model: the same vertices, parts and materials with its skin taken off.
  **/
 v3d::type::Model stripped(const boost::shared_ptr<v3d::asset::Manager>& manager) {
-    const boost::shared_ptr<v3d::asset::kind::Model> loaded =
-        boost::dynamic_pointer_cast<v3d::asset::kind::Model>(manager->load(STRIP, v3d::asset::Type::ModelGltf));
+    const boost::shared_ptr<v3d::asset::media::kind::Model> loaded =
+        boost::dynamic_pointer_cast<v3d::asset::media::kind::Model>(manager->load(STRIP, v3d::asset::Type::ModelGltf));
     BOOST_REQUIRE(loaded && loaded->model());
     v3d::type::Model model = *loaded->model();
     model.skeleton() = v3d::type::Skeleton();
@@ -210,7 +214,7 @@ BOOST_AUTO_TEST_CASE(an_entity_with_nothing_playing_stands_at_rest) {
     v3d::test::Headless headless(colourFormat, width, height);
     MeshRegistry meshes(headless.logger, headless.context, assets(headless));
     const MeshHandle strip = meshes.load(STRIP);
-    const MeshHandle doomed = meshes.add("doomed", *boost::dynamic_pointer_cast<v3d::asset::kind::Model>(
+    const MeshHandle doomed = meshes.add("doomed", *boost::dynamic_pointer_cast<v3d::asset::media::kind::Model>(
         assets(headless)->load(STRIP, v3d::asset::Type::ModelGltf))->model());
 
     entt::registry registry;

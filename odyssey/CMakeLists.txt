@@ -23,6 +23,7 @@ add_executable(Odyssey
 # If I don't use FindSDL3 module, I have to link it as well.
 target_link_libraries(Odyssey
 		"v3dlib_asset"
+		"v3dlib_asset_media"
 		"v3dlib_config"
 		"v3dlib_ecs"
 		"v3dlib_engine"

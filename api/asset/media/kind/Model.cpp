@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-namespace v3d::asset::kind {
+namespace v3d::asset::media::kind {
 
 /**
  **/
@@ -35,4 +35,4 @@ boost::shared_ptr<v3d::image::Image> Model::baseColourImage(std::size_t material
     return baseColours_[material];
 }
 
-};  // namespace v3d::asset::kind
+};  // namespace v3d::asset::media::kind

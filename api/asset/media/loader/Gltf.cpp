@@ -6,7 +6,7 @@
 #include "Gltf.h"
 
 #include <api/asset/Type.h>
-#include <api/asset/kind/Model.h>
+#include <api/asset/media/kind/Model.h>
 #include <api/image/Factory.h>
 #include <api/type/animation/Channel.h>
 #include <api/type/animation/Clip.h>
@@ -32,7 +32,7 @@
 #include <glm/mat3x3.hpp>
 #include <glm/mat4x4.hpp>
 
-namespace v3d::asset::loader {
+namespace v3d::asset::media::loader {
 
 namespace {
 
@@ -720,4 +720,4 @@ boost::shared_ptr<v3d::image::Image> Gltf::decodeEmbedded(const cgltf_image& ima
     return result;
 }
 
-};  // namespace v3d::asset::loader
+};  // namespace v3d::asset::media::loader

@@ -4,6 +4,7 @@
  **/
 
 #include <api/asset/Manager.h>
+#include <api/asset/media/Loaders.h>
 #include <api/render/realtime/DrawItem.h>
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/MeshRegistry.h>
@@ -49,6 +50,7 @@ const uint32_t vertexShader[] =
  **/
 boost::shared_ptr<MeshRegistry> registry(v3d::test::Headless* headless) {
     const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless->logger);
+    v3d::asset::media::registerLoaders(*assets, headless->logger);
     return boost::make_shared<MeshRegistry>(headless->logger, headless->context, assets);
 }
 

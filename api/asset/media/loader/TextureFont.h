@@ -7,7 +7,7 @@
 
 #include <api/asset/Loader.h>
 
-namespace v3d::asset::loader {
+namespace v3d::asset::media::loader {
 /**
  **/
 class TextureFont final : public Loader {
@@ -20,4 +20,4 @@ class TextureFont final : public Loader {
      **/
     boost::shared_ptr<Asset> load(std::string_view name);
 };
-};  // namespace v3d::asset::loader
+};  // namespace v3d::asset::media::loader

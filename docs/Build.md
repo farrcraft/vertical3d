@@ -153,10 +153,10 @@ time, so a build that compiles no shader is not stopped by its absence.
   minutes.
 - **cgltf has no CMake config.** It is a single header the port copies into `include/`, found
   with `find_path(V3D_CGLTF_INCLUDE_DIR ...)` in
-  [cmake/v3dDependencies.cmake](../cmake/v3dDependencies.cmake) and put on `v3dlib_asset`'s own
+  [cmake/v3dDependencies.cmake](../cmake/v3dDependencies.cmake) and put on `v3dlib_asset_media`'s own
   include path. ADR-0027 removed the alternative, a header reachable only through the vcpkg
   include directory. Its implementation half is compiled once, in
-  [api/asset/loader/CgltfImpl.cpp](../api/asset/loader/CgltfImpl.cpp), which is exempt from both
+  [api/asset/media/loader/CgltfImpl.cpp](../api/asset/media/loader/CgltfImpl.cpp), which is exempt from both
   analysers the same way `voxel/src/noise/noiseutils.cpp` is.
 - `VCPKG_ROOT` in CMakeSettings.json has a doubled path segment and points nowhere. vcpkg works
   through the toolchain file regardless.
@@ -187,9 +187,13 @@ at the next one; CI configures on every run.
   the definition it builds spdlog header-only and emits symbols the compiled library also
   defines, which surfaces as a duplicate-symbol link error in whichever app pulls the wrong
   object first.
-- **Apps name neither the mixer nor `v3dlib_audio` unless they play a sound.** `v3dlib_asset`
-  links `v3dlib_audio` PUBLIC and `v3dlib_audio` links `SDL3_mixer::SDL3_mixer` PUBLIC, so it
-  propagates.
+- **Only an app that plays sound links the mixer.** It names `v3dlib_audio`, which links
+  `SDL3_mixer::SDL3_mixer` PUBLIC, and calls `audio::registerLoaders()` on its asset manager.
+  Nothing else in the api reaches audio -
+  [ADR-0079](adr/0079-an-asset-loader-is-registered.md).
+- **An asset manager loads what was registered on it.** `engine::Engine` registers
+  `v3dlib_asset_media`'s loaders on the one it builds; a manager built anywhere else, a test
+  among them, starts with documents only and calls `asset::media::registerLoaders()` itself.
 - **There is no OpenGL in the tree.** A target naming `OpenGL::GL`, `GLEW::GLEW` or `v3dlib_gl`
   will not configure.
 - **glm and EnTT have to be linked, not assumed.** They resolved for years without a

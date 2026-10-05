@@ -12,7 +12,7 @@
 
 # Every api library, by the name that follows v3dlib_ and v3d::.
 set(V3D_API_LIBRARIES
-	asset audio brep config dag ecs engine event font grid image input log
+	asset asset_media audio brep config dag ecs engine event font grid image input log
 	render render_offline type ui)
 
 # PATH is the directory under api/ holding the library, which is the name except where a
@@ -24,11 +24,17 @@ set(V3D_API_LIBRARIES
 # unconditionally.
 
 set(V3D_API_asset_PATH "asset")
-set(V3D_API_asset_REQUIRES log audio font image type)
-set(V3D_API_asset_PACKAGES cgltf)
+set(V3D_API_asset_REQUIRES log)
+set(V3D_API_asset_PACKAGES)
+
+# Under api/asset but not part of it: the loaders for what has to be decoded rather than read,
+# which is what keeps their libraries out of a closure that only reads documents - ADR-0079.
+set(V3D_API_asset_media_PATH "asset/media")
+set(V3D_API_asset_media_REQUIRES log asset font image type)
+set(V3D_API_asset_media_PACKAGES cgltf)
 
 set(V3D_API_audio_PATH "audio")
-set(V3D_API_audio_REQUIRES log event)
+set(V3D_API_audio_REQUIRES log event asset)
 set(V3D_API_audio_PACKAGES SDL3_mixer EnTT)
 
 set(V3D_API_brep_PATH "brep")
@@ -48,7 +54,7 @@ set(V3D_API_ecs_REQUIRES type)
 set(V3D_API_ecs_PACKAGES glm EnTT)
 
 set(V3D_API_engine_PATH "engine")
-set(V3D_API_engine_REQUIRES log asset config event input render)
+set(V3D_API_engine_REQUIRES log asset asset_media config event input render)
 set(V3D_API_engine_PACKAGES SDL3 EnTT)
 
 set(V3D_API_event_PATH "event")
@@ -76,7 +82,7 @@ set(V3D_API_log_REQUIRES)
 set(V3D_API_log_PACKAGES spdlog)
 
 set(V3D_API_render_PATH "render")
-set(V3D_API_render_REQUIRES log asset ecs font image type)
+set(V3D_API_render_REQUIRES log asset asset_media ecs font image type)
 set(V3D_API_render_PACKAGES Vulkan VulkanMemoryAllocator SDL3 glm EnTT)
 
 # Under api/render but not part of it: the offline renderer of ADR-0022 is built on this and it
@@ -90,7 +96,7 @@ set(V3D_API_type_REQUIRES)
 set(V3D_API_type_PACKAGES glm)
 
 set(V3D_API_ui_PATH "ui")
-set(V3D_API_ui_REQUIRES log render asset event font image input type)
+set(V3D_API_ui_REQUIRES log render asset asset_media event font image input type)
 set(V3D_API_ui_PACKAGES glm EnTT)
 
 # The imported target each package provides, which is how the verification below recognises

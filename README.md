@@ -21,14 +21,15 @@ and namespaced to match its path (`v3d::render::realtime`, `v3d::asset`, and so 
 | [`ui`](api/ui/) | Menus, toolbars, themes and the component renderer |
 | [`brep`](api/brep/) | Boundary representation meshes, half-edge and winged-edge |
 | [`type`](api/type/) | Math and geometry — vectors, cameras, rays |
-| [`dag`](api/dag/) | Scene graph nodes and transforms |
-| [`image`](api/image/) | Image readers and writers — png, jpeg, tga |
+| [`dag`](api/dag/) | The id and the transform a mesh is placed by |
+| [`image`](api/image/) | Image readers and writers — png, jpeg, tga, bmp |
 | [`font`](api/font/) | Glyph layout and atlas packing |
-| [`asset`](api/asset/) | Loading and resolving files by type, including glTF models |
+| [`asset`](api/asset/) | Loading and resolving files by type, and the loaders for documents |
+| [`asset/media`](api/asset/media/) | The loaders for pictures, glTF models and typefaces — `v3dlib_asset_media` |
 | [`config`](api/config/) | JSON configuration documents |
 | [`event`](api/event/) | Input mapping and command dispatch |
 | [`input`](api/input/) | Keyboard and mouse state |
-| [`audio`](api/audio/) | Sound playback over SDL3_mixer |
+| [`audio`](api/audio/) | Sound playback over SDL3_mixer, and the loader for a wav |
 | [`ecs`](api/ecs/) | Components and systems over entt |
 | [`grid`](api/grid/) | Tile boards — pathfinding, line of sight and overlay geometry |
 | [`log`](api/log/) | A thin wrapper over spdlog |

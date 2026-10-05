@@ -33,6 +33,7 @@ target_link_libraries(v3dtest_ui PRIVATE
 	v3dlib_font
 	v3dlib_event
 	v3dlib_asset
+	v3dlib_asset_media
 	v3dlib_type
 	EnTT::EnTT
 	${Boost_LIBRARIES}

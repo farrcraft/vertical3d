@@ -87,3 +87,4 @@ old record's status and leave the file in place.
 | [0076](0076-a-pixel-is-a-filtered-set-of-seeded-samples.md) | Offline Sampling — A Pixel Is A Filtered Set Of Seeded Samples, Resolved By One Film Both Renderers Share | accepted | 2026-10-04 |
 | [0077](0077-one-ray-tracer-both-renderers-reach.md) | Offline Ray Tracing — One Ray Tracer In The Shared Library, Which talyn Drives And moya's Shaders Reach | accepted | 2026-10-04 |
 | [0078](0078-one-offline-renderer-with-two-hiders.md) | Offline Renderers — moya Is The One Offline Renderer, And Ray Tracing Is A Hider It Selects | accepted | 2026-10-04 |
+| [0079](0079-an-asset-loader-is-registered.md) | Asset Loading — A Loader Is Registered, And A Media Loader Lives Beside What It Builds | accepted | 2026-10-04 |

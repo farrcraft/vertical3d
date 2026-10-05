@@ -3,7 +3,8 @@
 v3d_add_test(audio
 	"TestMain.cpp"
 	"AudioClipTest.cpp"
-	"EngineTest.cpp")
+	"EngineTest.cpp"
+	"LoaderTest.cpp")
 
 # SDL3: the mixer carries SDL3 with it, whether or not a device is ever opened.
 target_link_libraries(v3dtest_audio PRIVATE

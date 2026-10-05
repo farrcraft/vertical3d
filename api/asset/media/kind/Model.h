@@ -15,7 +15,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::asset::kind {
+namespace v3d::asset::media::kind {
 /**
  * Geometry loaded from a model file, as the asset manager hands it out.
  **/
@@ -54,4 +54,4 @@ class Model : public Asset {
     boost::shared_ptr<v3d::type::Model> model_;
     std::vector<boost::shared_ptr<v3d::image::Image>> baseColours_;  /**< by material, and short when the last have none **/
 };
-};  // namespace v3d::asset::kind
+};  // namespace v3d::asset::media::kind

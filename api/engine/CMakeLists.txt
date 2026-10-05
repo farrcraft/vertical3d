@@ -20,11 +20,12 @@ target_link_libraries(v3dlib_engine PUBLIC
 	SDL3::SDL3
 	EnTT::EnTT)
 
-# PRIVATE: initialize() resolves the config path, and appPath() derives one from argv[0].
+# PRIVATE: initialize() registers the media loaders on the manager it builds - ADR-0079 -
+# resolves the config path, and appPath() derives one from argv[0].
 # boost::filesystem is named by no header here - the run() template calls appPath() rather
 # than reaching for the filesystem itself, so an app that includes Application.h does not
 # need it either.
-target_link_libraries(v3dlib_engine PRIVATE Boost::filesystem)
+target_link_libraries(v3dlib_engine PRIVATE Boost::filesystem v3dlib_asset_media)
 
 target_compile_options(v3dlib_engine PRIVATE /EHsc)
 

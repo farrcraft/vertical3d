@@ -6,7 +6,7 @@
 #include "TextRenderer.h"
 
 #include <api/asset/Type.h>
-#include <api/asset/kind/TextureFont.h>
+#include <api/asset/media/kind/TextureFont.h>
 #include <api/image/TextureAtlas.h>
 
 #include <string>
@@ -69,7 +69,7 @@ TextRenderer::TextRenderer(const boost::shared_ptr<v3d::asset::Manager>& assetMa
     loader->parameter("fontSize", value);
     v3d::asset::ParameterValue field = static_cast<float>(spread);
     loader->parameter("spread", field);
-    boost::shared_ptr<v3d::asset::kind::TextureFont> asset = boost::dynamic_pointer_cast<v3d::asset::kind::TextureFont>(
+    boost::shared_ptr<v3d::asset::media::kind::TextureFont> asset = boost::dynamic_pointer_cast<v3d::asset::media::kind::TextureFont>(
         assetManager->load(font, v3d::asset::Type::TextureFont));
     if (!asset || !asset->font()) {
         logger->get()->error("the font {} could not be loaded, so nothing drawn through it will have text", font);

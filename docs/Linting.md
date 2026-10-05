@@ -92,7 +92,7 @@ repository does not own.
 
 Two files are third party and are exempt from both analysers:
 `voxel/src/noise/noiseutils.cpp`, in the app's `set_source_files_properties` and the suite's
-since they share the file, and `api/asset/loader/CgltfImpl.cpp`. `/analyze-` takes a source out
+since they share the file, and `api/asset/media/loader/CgltfImpl.cpp`. `/analyze-` takes a source out
 of MSVC's analysis and `SKIP_LINTING TRUE` takes it out of clang-tidy's. A local fix to either
 file would be lost the next time the port moves.
 

@@ -17,6 +17,7 @@ enum class Type {
     Text = 5,
     TextureFont = 10,
     ImageTga = 11,
-    ModelGltf = 12
+    ModelGltf = 12,
+    ImageBmp = 13
 };
 };  // namespace v3d::asset

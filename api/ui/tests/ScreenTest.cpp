@@ -4,6 +4,7 @@
  **/
 
 #include <api/asset/Manager.h>
+#include <api/asset/media/Loaders.h>
 #include <api/log/Logger.h>
 #include <api/ui/shell/Screen.h>
 #include <api/ui/style/Theme.h>
@@ -24,7 +25,10 @@ v3d::ui::shell::Screen::Options sized(float size) {
 }
 
 boost::shared_ptr<v3d::asset::Manager> nowhere() {
-    return boost::make_shared<v3d::asset::Manager>("no-such-directory/", boost::make_shared<v3d::log::Logger>());
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    boost::shared_ptr<v3d::asset::Manager> manager = boost::make_shared<v3d::asset::Manager>("no-such-directory/", logger);
+    v3d::asset::media::registerLoaders(*manager, logger);
+    return manager;
 }
 
 };  // namespace

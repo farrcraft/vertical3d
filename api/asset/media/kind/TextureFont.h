@@ -12,7 +12,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::asset::kind {
+namespace v3d::asset::media::kind {
 /**
  **/
 class TextureFont : public Asset {
@@ -28,4 +28,4 @@ class TextureFont : public Asset {
  private:
     boost::shared_ptr<v3d::font::TextureFont> font_;
 };
-};  // namespace v3d::asset::kind
+};  // namespace v3d::asset::media::kind
