@@ -1,82 +1,55 @@
 # ADR-0005: 2D: one batched quad pipeline
 
+**Status**: amended
 **Date**: 2026-08-30
-**Status**: accepted
-**Deciders**: Joshua Farr
-
-Extended by [ADR-0011](0011-rendering-lines-as-a-world-space-primitive.md): the one primitive here is the
-one primitive for 2D. Lines are a second, for the editor.
-
-Amended by [ADR-0036](0036-text-sdf-glyphs-through-the-quad-shader.md): the decision below holds, but
-the fragment shader branches once, on whether a batch is text. Distance field glyphs need a
-threshold that would corrupt every other quad.
-
-Narrowed again by [ADR-0042](0042-rendering-world-space-sprites.md): a textured quad in world
-space is a third primitive, so the one primitive here is the one primitive for content in
-canvas pixels.
+**Amended by**: [ADR-0036](0036-text-sdf-glyphs-through-the-quad-shader.md), [ADR-0042](0042-rendering-world-space-sprites.md)
+**Documented in**: [api/Rendering.md](../api/Rendering.md)
 
 ## Context
 
-`v3d::gl::Canvas` batches coloured quads, but its vertices carry position and rgba only —
-no texture coordinates — so every textured thing the apps need is unserved: tetris piece
-sprites, odyssey tiles, and all text. Replacing it on Vulkan means deciding whether textured
-and untextured quads share a path, and the answer shapes the vertex format, the pipeline and
-the batcher that [ADR-0004](0004-rendering-submit-draw-items-as-data.md) submits into.
+The 2D canvas being replaced batched coloured quads only. Its vertices had no texture
+coordinates, so tile sprites, piece sprites and all text were unserved. On Vulkan, textured and
+untextured quads either share one path or get two. The answer fixes the vertex format, the
+pipeline and the batcher that feeds draw items
+([ADR-0004](0004-rendering-submit-draw-items-as-data.md)).
 
 ## Decision
 
-One vertex format — position, colour, uv — and one pipeline for all 2D drawing. Untextured
-quads sample a 1x1 opaque white texture, so `colour * texel = colour`, with no shader branch
-and no second pipeline. A new draw is emitted whenever the bound texture changes, which
-preserves painter ordering without sorting.
+All 2D content in canvas pixels is one primitive: a quad with one vertex format (position,
+colour, texture coordinates) drawn through one pipeline. An untextured quad samples a 1x1 white
+texture, so it needs no separate path. The canvas starts a new batch whenever the bound texture
+changes, which keeps painter order without sorting.
 
-## Alternatives Considered
+## Alternatives
 
-### Alternative 1: One primitive, batch broken on texture change — **chosen**
-- **Pros**: One pipeline, one shader pair, one upload path. Ordering across mixed content is
-  correct with no sorting. Text is the same primitive drawing from a glyph atlas. Needs no
-  Vulkan feature beyond what is already in use.
-- **Cons**: Every vertex carries a uv even when unused. Draw count depends on how often the
-  bound texture changes, so it relies on an atlas to stay low.
-- **Why not**: n/a — chosen.
+### Separate coloured and textured paths
+- **For**: each path is simpler on its own, and the coloured one matches the old canvas, so
+  porting is more mechanical. No unused vertex attributes. The coloured path could ship first.
+- **Against**: two pipelines, two vertex layouts and two upload paths. Order between the two
+  kinds of batch has to be managed by interleaving draws.
+- **Rejected because**: text is textured quads and the first app needs text in its first frame,
+  so the textured path has to be built anyway. Two near-identical families of draw are also the
+  two-engine split of [ADR-0003](0003-rendering-one-engine-for-2d-and-3d.md) one layer down.
 
-### Alternative 2: Separate coloured and textured paths
-- **Pros**: Each path is simpler alone, and the coloured one is exactly what `Canvas` is
-  today, so pong's port is more mechanical. No unused vertex attributes. The coloured path
-  could ship first and put something on screen sooner.
-- **Cons**: Two pipelines, two vertex layouts, two upload paths. Ordering between the two
-  batches has to be managed by interleaving draws, which reintroduces the complexity the
-  split was meant to avoid.
-- **Why not**: Text is textured quads and pong needs it in its first frame, so the textured
-  path gets built regardless — the simpler-alone claim expires immediately. Two near
-  identical operation families is also the `Engine2D`/`Engine3D` split one layer down, which
-  [ADR-0003](0003-rendering-one-engine-for-2d-and-3d.md) just removed.
-
-### Alternative 3: Bindless — a texture array with a per-vertex texture index
-- **Pros**: One draw per frame regardless of how many textures are involved. No atlas
-  needed, no flushing.
-- **Cons**: Needs descriptor indexing, feature queries, and a fallback decision for devices
-  that do not support it.
-- **Why not**: Deferred, not rejected. [ADR-0002](0002-vulkan-require-version-1-3.md) makes
-  descriptor indexing available, so this is now a question of complexity rather than
-  capability — worth doing when measurement asks for it, not before.
+### Bindless: a texture array with a texture index per vertex
+- **For**: one draw per canvas however many textures it uses, with no atlas and no batch breaks.
+- **Against**: needs descriptor indexing, feature queries, and a decision about devices that
+  lack it.
+- **Rejected because**: deferred rather than ruled out. [ADR-0002](0002-vulkan-require-version-1-3.md)
+  makes descriptor indexing available, so this is a question of complexity, worth taking on when
+  measurement shows draw counts matter.
 
 ## Consequences
 
-### Positive
-- One code path serves pong, tetris and odyssey, and text along with them.
-- Painter ordering is preserved with no sort key and no layer comparison in the batcher.
-- Upgrading to alternative 3 later means adding a texture-index attribute, not redesigning
-  the vertex format's meaning.
-
-### Negative
-- The engine must own a 1x1 white texture as a permanent resource.
-- Eight bytes a vertex are wasted on untextured quads. Irrelevant at 2D quad counts, and
-  worth stating so nobody re-opens it as an optimisation.
-
-### Risks
-- `v3d::image::TextureAtlas` becomes load-bearing rather than an optimisation. Without it,
-  tetris drawing a board of mixed piece colours breaks the batch on nearly every block —
-  worst case one draw per block. Packing all seven piece textures into one atlas makes the
-  board a single draw, and the same applies to odyssey's tiles. The atlas already exists and
-  is proven by the font path, so the risk is forgetting it is required, not building it.
+- **Gains**:
+  - One code path serves every 2D app, and text with them.
+  - Painter order holds with no sort key and no layer comparison in the batcher.
+  - Moving to bindless later adds a vertex attribute rather than changing what the format means.
+- **Costs**:
+  - The engine owns a 1x1 white texture for the life of the context.
+  - Untextured quads carry eight bytes of unused texture coordinates per vertex. This is
+    negligible at 2D quad counts.
+  - Draw count depends on how often the texture changes, so a texture atlas is required rather
+    than optional. Drawing many small textures without one breaks the batch on nearly every quad.
+- **Revisit when**: draw counts from texture changes show up in profiles, which is the case for
+  bindless.

@@ -43,7 +43,7 @@ content went. Numbers are never reused.
 | 0055 | *Not a decision. Now in api/image/TextureAtlas.h* | removed |
 | 0056 | *Not a decision. Now in api/type/camera/Profile.h* | removed |
 | [0061](0061-resources-explicit-release-generational-handles.md) | Resources: explicit release, generational handles | accepted |
-| [0064](0064-lighting-lit-passes-use-the-shared-recorder.md) | Lighting: lit passes use the shared recorder | accepted |
+| [0064](0064-lighting-lit-passes-use-the-shared-recorder.md) | Lighting: lit passes use the shared recorder | amended by 0071 |
 | [0065](0065-meshes-shared-registry-keyed-by-path.md) | Meshes: shared registry keyed by path | amended by 0082 |
 | [0066](0066-lighting-light-in-linear-draw-to-srgb.md) | Lighting: light in linear, draw to sRGB | accepted |
 | 0067 | *Not a decision. Now in api/Rendering.md and vulkan/renderer/Lit.h* | removed |

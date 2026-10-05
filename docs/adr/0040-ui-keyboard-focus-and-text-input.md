@@ -1,167 +1,69 @@
 # ADR-0040: UI: keyboard focus and text input
 
+**Status**: amended
 **Date**: 2026-09-07
-**Status**: accepted
-**Deciders**: Joshua Farr
+**Amended by**: [ADR-0058](0058-ui-sdl-keyboard-adapter-in-ui-shell.md)
+**Documented in**: [The User Interface](../api/UserInterface.md), [User Interface Internals](../internals/UserInterface.md)
 
 ## Context
 
-[ADR-0038](0038-ui-the-ui-hit-tests-the-mouse-before-the-app.md) gave the ui a cursor: a point
-is offered to what was drawn, the first thing that takes it stops the walk, and a press
-dispatches the component's command. It left the keyboard alone, and that is the one thing
-stopping a text box being written — `TODO.md` records it as "the one missing component that
-needs something the library does not have: a key goes to the app's input engine and nothing
-routes one to a focused component".
-
-Two things are missing rather than one. **Where a key goes**: `api/input` dispatches a
-`KeyDown` to whoever is listening, and every listener hears every key, so there is nowhere for
-"this one is being typed into a box" to live. **What a key carries**: `input::Keyboard` maps an
-`SDL_Keycode` to a name — "a", "space", "return" — which is the right thing for a binding and
-the wrong thing for a text box. The name cannot tell "a" from "A", cannot carry the character a
-dead key and the one after it compose into, and cannot carry what an input method decided.
+`api/input` sends each key to every listener, so there is no place to say that a key belongs to
+the control being typed into. A key reaches the app as a name such as "a", "space" or "return",
+which suits a binding but not a text box. A name cannot tell "a" from "A", and cannot carry a
+character composed from a dead key or chosen by an input method. `api/ui` has to stay testable
+without a window, so it cannot read platform events itself.
 
 ## Decision
 
-**The focus is the ui's, a press moves it, and `ui::Keys` routes a key to whatever holds it —
-the keyboard's `ui::Cursor`.** `ui::Engine` holds which component is focused because both
-routers reach it; `Component::focusable()` is opt-in the way `pickable()` is, and
-`Component::focused()` is the flag the engine writes so that drawing a component reads the
-component.
+The ui holds a keyboard focus: `ui::Engine` records which component has it, a press moves it,
+and `v3d::ui::input::Keys` routes each key to the focused component. Typed text arrives
+separately, as a UTF-8 string from the platform's text input event (`event::TextInput` in
+`api/input`), and `Keys::text()` delivers it. While a text box has the focus, the keys that
+compose text are consumed, so typing does not also trigger the app's bindings.
 
-**A character is a second kind of input, not a key.** `input::Keyboard` turns
-`SDL_EVENT_TEXT_INPUT` into an `event::TextInput` carrying utf-8, and `Keys::text()` is what
-puts it in. `Keys::press()` handles the keys that name an operation — backspace, delete, the
-caret moves, return, escape — and also consumes the keys that will arrive again as characters,
-so that typing "w" into a box does not also walk the player forward.
+## Alternatives
 
-### Amendment: every control is driven, not only a text box
+### Route a key by hit-testing, the way the cursor is routed
+- **For**: one mechanism for both devices, and no focus state.
+- **Against**: a keyboard has no position. Routing to the component under the cursor would stop
+  a box taking typed text as soon as the mouse moved off it.
+- **Rejected because**: keyboard input needs a target that persists.
 
-The decision above was implemented for `TextBox` alone, which left a screen of buttons
-unreachable: `Keys::act()` answered no other component, nothing but `TextBox` set
-`focusable()`, and a focused component was drawn exactly like an unfocused one. Three further
-decisions close that, none of them replacing the shape above.
+### The app owns the focus and tells the ui which component has it
+- **For**: the library holds no state, and an app with its own idea of focus stays in charge.
+- **Against**: every app writes the same code. The press that should move the focus is already
+  handled by `ui::input::Cursor`, so the app would ask the cursor what it picked and hand that
+  back.
+- **Rejected because**: the library already sees the press; passing the answer through the app
+  adds work for nothing.
 
-**A key activates what a press activates, through one lookup.** `ui::command()` answers which
-event a component sends when it is activated, and both routers ask it — `ui::Cursor` for a
-press, `ui::Keys` for a return or a space. A component a press activates and a key does not is
-then unrepresentable, which is the defect this is preventing rather than a tidiness argument.
-A `TextBox` is deliberately not in that list: a click into one is somebody starting to type
-rather than saying they are done, so only a return sends its command and `ui::Keys` reaches for
-the event itself.
+### Build text from key names and the shift state
+- **For**: no new event, and the key names already exist.
+- **Against**: correct only for unshifted ASCII on a US layout. Accented characters, non-Latin
+  scripts and input methods are out of reach, and the ui would hold a keyboard layout table.
+- **Rejected because**: the platform already implements keyboard layouts.
 
-**Only a text box swallows the keys that compose text.** A letter reaching a focused button
-goes on to the app's bindings. The consumption rule above exists so that typing into a box does
-not also play the game; a button is not something a player types into, and a control that ate
-every key would stop a game being played for as long as anything was focused — which on a menu
-screen is always.
-
-**A screen says it is keyboard driven by calling `Engine::focusFirst()`.** `focusNext()`
-deliberately leaves a ui with nothing focused alone, so a press was the only thing that ever
-gave out a first focus — exactly the mouse a keyboard-driven screen does not have. Seeding the
-focus automatically was rejected for the reason `focusNext()` does not: it would put a ring on
-the first widget of a hud nobody is looking at. Making it the app's one call keeps that
-choice where the app already makes it, as the screen goes up.
-
-The components that answer a press now ask for `pickable()` and `focusable()` in their own
-constructors, the way `TextBox` always did, rather than waiting for a config flag nobody set.
-
-## Alternatives Considered
-
-### Alternative 1: A focus on the ui, a `Keys` router, and text separate from keys — **chosen**
-- **Pros**: The shape the library already has for the cursor, so there is one story for input
-  rather than two: a router is handed what the app saw and answers whether the ui took it, and
-  the component carries out what the router names. Text arriving composed is the only way a
-  text box works outside ASCII, and it is free — SDL has already done it.
-- **Cons**: Two entry points to keep in step, and an app must call both. A key that composes
-  text is seen twice — consumed by `press()` and acted on by `text()` — which reads oddly until
-  the reason is known.
-- **Why not**: n/a — chosen.
-
-### Alternative 2: Route a key by hit testing, the way a point is routed
-- **Pros**: One mechanism for both, and no focus state at all.
-- **Cons**: There is nothing to hit test against. A keyboard has no position, and "the
-  component under the cursor" means a box stops taking what is typed into it the moment the
-  mouse is moved off it.
-- **Why not**: It is not what a keyboard is.
-
-### Alternative 3: Let the app own the focus and tell the ui which component is focused
-- **Pros**: The library holds no state it has to keep right, and an app that has its own idea
-  of focus — a modal, a console — stays in charge of it.
-- **Cons**: Every app writes the same code, and the press that ought to move the focus is
-  already in `ui::Cursor`, so the app would have to ask the cursor what it picked and hand the
-  answer back. That is the shell work [ADR-0028](0028-apps-the-shared-app-shell-lives-in-the-api.md) says
-  belongs to the api.
-- **Why not**: The press already knows. Making the app carry the answer across is work for
-  nothing.
-
-### Alternative 4: Build the text from key names and the shift state
-- **Pros**: No new event, no `SDL_StartTextInput`, and the key names are already there.
-- **Cons**: Correct for unshifted ASCII on a US layout and wrong everywhere else. Every
-  accented character, every non-Latin script and every input method is out of reach, and the
-  shift table would live in the ui rather than in the platform that owns it.
-- **Why not**: It is a keyboard layout implementation, and the platform has one.
-
-### Alternative 5: A `TextBox` that reads the raw SDL events itself
-- **Pros**: Nothing to route: the component asks for what it needs.
-- **Cons**: Puts SDL in `api/ui`, which is a library that today draws onto a cpu-side canvas
-  and needs no window, no device and no font to test — the property that makes every case in
-  `api/ui/tests` runnable in CI.
-- **Why not**: It would cost the library its testability for one component's convenience.
+### A text box reads raw SDL events itself
+- **For**: nothing to route.
+- **Against**: it puts SDL in `api/ui`, which today draws onto a CPU-side canvas and is tested
+  with no window, device or font.
+- **Rejected because**: it gives up the library's testability for one component.
 
 ## Consequences
 
-### Positive
-- `TextBox` is a component like any other: a type, a loader branch, a draw path, a natural
-  size and a style class. It owns its text and its caret the way a `SelectList` owns its rows,
-  and a return sends its command so that what the text *means* stays the app's.
-- The caret is a byte offset into utf-8 that only ever lands on a character boundary, so an
-  accented character is inserted, stepped over and erased whole.
-- An app with nothing focused is unchanged: `Keys` takes no key, so a game's movement bindings
-  go on working until something is clicked into.
-- `event::TextInput` is the ui's today and anybody's tomorrow — a console, a chat line and a
-  rename field all want composed characters rather than key names.
-- A screen of controls is drivable without a mouse: tab and shift-tab reach every one of them,
-  return and space activate whatever is reached, the arrows step through a list's rows and a
-  bar's pages, and a ring says where the keyboard is. Which is also most of what a gamepad
-  would need, whenever one arrives.
-- `ui::command()` is one list of which components carry a command, so a component added later
-  is activatable by both routers or by neither.
-
-### Negative
-- **Every control is now in the tab order by default**, so a screen that wants a widget skipped
-  says `focusable(false)` rather than saying nothing. That is the reverse of what it was, and a
-  hud built before this gains a tab order it never asked for — harmless while nothing focuses
-  it, and the reason `focusFirst()` is a call rather than something the engine does itself.
-- **A focus ring is drawn from the base dressing rather than per component**, so a theme cannot
-  ring a button differently from a list. One ring for every control is most of the point of
-  one, but it does mean `focus` and `focus-width` are chrome properties with no per-class
-  override.
-- `SDL_StartTextInput` is called for the life of the window rather than as a box takes the
-  focus. On a desktop that costs nothing; on a platform with an on-screen keyboard it would
-  raise one and never lower it. Taken up by
-  [ADR-0058](0058-ui-sdl-keyboard-adapter-in-ui-shell.md), which made text input
-  follow the focus.
-- A key that composes text is consumed while a box has the focus even when the box then refuses
-  the character, so an app cannot bind a letter to anything that should work while typing.
-- A press was the only thing that moved the focus, so there was no tab order. This decision has
-  since been extended rather than replaced: `Engine::focusNext()` is a second caller of
-  `focus()`, walking the tree in draw order, `Engine::focusFirst()` is a third, and
-  `Keys::press()` routes tab to `focusNext()`.
-- `Cursor` and `Keys` are two objects an app has to hold and two calls it has to make, and
-  nothing enforces that it makes both. Still true of the cursor:
-  [ADR-0058](0058-ui-sdl-keyboard-adapter-in-ui-shell.md) gave the keyboard half a
-  seam of its own and deliberately left the mouse to the app.
-
-### Risks
-- **A list and a tab bar do not wrap under the arrows**, while tab wraps at each end. Running
-  off the last row is how a keyboard reaches it and stays there, but the two behaviours sit
-  next to each other on the same screen and read as an inconsistency until the reason is known.
-- **A press moves the focus before the component acts on it**, so a component that wanted the
-  focus left alone cannot say so. The escape hatch is `focusable(false)`, which is the default.
-- A caret cannot be placed by clicking: a press focuses the box and leaves the caret where it
-  was. Doing it needs the `Measure` callback in `ui::Cursor`, which today names no text at all,
-  and that is a change to what `Cursor` is rather than an addition to it. Taken up by
-  [ADR-0057](0057-a-selection-is-an-anchor-the-caret-moved-from.md), which made that change.
-- There is no selection, so there is no cut, copy or paste over a range. `insert()` takes a run
-  of characters, so a paste is expressible the moment something delivers one. Also taken up by
-  [ADR-0057](0057-a-selection-is-an-anchor-the-caret-moved-from.md).
+- **Gains**:
+  - A text box works outside ASCII, because composition is the platform's job.
+  - The keyboard follows the same pattern as the cursor: a router is given what the app saw and
+    answers whether the ui took it.
+  - An app with nothing focused is unaffected, so game bindings work until something takes the
+    focus.
+  - A screen of controls can be driven without a mouse.
+- **Costs**:
+  - Keys and text are two entry points, and something must feed both.
+  - A key that composes text is consumed while a text box has the focus, even when the box
+    refuses the character, so an app cannot bind a letter to anything that should work while
+    typing.
+  - A press moves the focus before the component acts, so a component cannot refuse the focus
+    except by not being focusable.
+- **Revisit when**: a component other than a text box needs typed text, or an app needs its own
+  focus model.

@@ -1,101 +1,68 @@
 # ADR-0063: ECS: draw from a transform plus a component per kind
 
-**Date**: 2026-10-03
 **Status**: accepted
-**Deciders**: Joshua Farr
-
-Amended in place: `PositionFixed2D` is gone, and `Transform` is `type::Transform`, the value an
-editor mesh's `dag::Transform` holds as well.
+**Date**: 2026-10-03
+**Documented in**: [api/ECS.md](../api/ECS.md), [api/Rendering.md](../api/Rendering.md)
 
 ## Context
 
-Nothing in the api says what an entity carries so that something can draw it, and
-[RenderingPipeline.md](../api/Rendering.md#how-this-meets-the-ecs) has called
-that open since before either game existed. `api/ecs` has four 2D components, and neither game
-uses them. retcon has written `Transform` (position, yaw, scale) and `MeshRenderer` (a mesh
-handle and a shadow flag), with a scene renderer that walks both. cozy has a `Position` at its
-feet and draws its two world sprites by hand. [Milestone 4](../roadmap/completed/m4-LitScene.md)'s mesh
-pass walks entities, so this has to be settled before that pass is written to retcon's shape by
-default. [Renderable component](../plans/completed/RenderableComponent.md) is the plan that needs it, and
-its survey of both games is the evidence here.
+A game draws an entity by reading where it stands and what it looks like, and the api has to say
+which components carry each. Placement is written by simulation, so it belongs with the ECS, which
+links only glm and EnTT. What a thing looks like names a texture or mesh handle that `api/render`
+defines. Sprites and meshes draw differently: sprites are one stream of quads batched by texture
+([ADR-0042](0042-rendering-world-space-sprites.md)), and meshes are a draw each.
 
 ## Decision
 
-**Where a thing stands is `v3d::ecs::component::Transform`**: a position, a quaternion and a
-scale, with `aboutY(radians)` for a game whose world turns about one axis. It lives in `api/ecs`
-because simulation writes it. **What a thing looks like is a component per kind of drawing,
-beside the handle it names in `api/render/realtime/component/`**: `Sprite` for an upright
-billboard drawn into one world canvas, and a mesh component that milestone 4 builds with its
-mesh registry. **The api walks them**, with a function called from `render()` that reads
-`interpolated<Transform>` ([ADR-0060](0060-ecs-interpolate-from-a-previous-step-component.md)), so an
-entity with a previous step is drawn between steps. No parent component exists until something
-is carried.
+Where an entity stands is `v3d::ecs::component::Transform`, a position, a quaternion rotation and
+a scale. What it looks like is one component per kind of drawing, such as `Sprite` or `Mesh`, kept
+in `api/render/realtime/component/` beside the handle it names. The api walks them, with a
+function per kind called from `render()` that reads the transform through `interpolated<Transform>`
+([ADR-0060](0060-ecs-interpolate-from-a-previous-step-component.md)).
 
-## Alternatives Considered
+## Alternatives
 
-### Alternative 1: A yaw rather than a quaternion
-- **Pros**: retcon's shape, four bytes rather than sixteen, and a placement can be written from
-  a tile and a facing without building a rotation.
-- **Cons**: A float angle interpolated between steps turns the long way round: 170° to -170° is
-  20 degrees, and a lerp sweeps 340. Anything that ever pitches, or a skinned character in
-  [milestone 5](../roadmap/completed/m5-SkeletalAnimation.md), changes the component's representation,
-  which breaks every game that reads it.
-- **Why not**: The cost is twelve bytes per entity at a scale of hundreds, and `aboutY` keeps
-  the convenience.
+### A yaw angle rather than a quaternion
+- **For**: four bytes rather than sixteen, and a placement can be written from a tile and a facing
+  without building a rotation.
+- **Against**: an angle interpolated between steps can turn the long way round: 170° to -170° is
+  20 degrees, and a plain blend sweeps 340. Anything that pitches, or a skinned character, would
+  change the component's representation and break every game that reads it.
+- **Rejected because**: twelve bytes per entity is cheap, and `aboutY(radians)` keeps the
+  convenience of a yaw.
 
-### Alternative 2: A sprite is a mesh whose mesh is a quad
-- **Pros**: One renderable component, and one walk.
-- **Cons**: cozy's sprites are one stream of quads cut by texture
-  ([ADR-0042](0042-rendering-world-space-sprites.md)). An item per sprite, each with its own
-  mesh and push constants, is the opposite of that batching.
-- **Why not**: The kinds draw differently, so they are described differently.
+### A sprite is a mesh whose mesh is a quad
+- **For**: one renderable component and one walk.
+- **Against**: an item per sprite, each with its own mesh and push constants, is the opposite of
+  batching sprites as one stream of quads.
+- **Rejected because**: the kinds draw differently, so they are described differently.
 
-### Alternative 3: The api provides the components and each game writes the walk
-- **Pros**: Nothing in the api decides how anything is drawn, and both games already walk their
-  own registries.
-- **Cons**: The walk is the part that is the same in every game: read the transform,
-  interpolate it, emit. A component with no walk behind it is a struct a game could have
+### The api provides the components, and each game writes the walk
+- **For**: nothing in the api decides how anything is drawn.
+- **Against**: the walk is the part every game writes the same way: read the transform,
+  interpolate it, emit a draw. A component with no walk behind it is a struct a game could have
   written.
-- **Why not**: The walk is what makes the component worth having in the api at all.
+- **Rejected because**: the walk is what makes the components worth having in the api.
 
-### Alternative 4: The renderable components in `api/ecs`
-- **Pros**: Every component in one place.
-- **Cons**: Each names a texture or mesh handle that `api/render` defines, so `api/ecs`, which
-  links glm and EnTT, would link Vulkan. A headless test of a game's rules would then link a
-  device to place a unit.
-- **Why not**: A component lives beside what it names.
-
-### Alternative 5: A transform, a component per kind beside its handle, and a walk in the api — **chosen**
-- **Pros**: retcon's components map onto it field for field, and its walk keeps its shape.
-  cozy's two sprites become two entities and one call, still drawn as one batch.
-- **Cons**: `api/render` links `api/ecs`, and a game that already has its own position keeps a
-  `Transform` in sync with it, as retcon already does from its tiles.
-- **Why chosen**: It is the shape both games had arrived at, with the walk moved to where both
-  can share it.
+### The renderable components in `api/ecs`
+- **For**: every component in one place.
+- **Against**: each names a handle `api/render` defines, so `api/ecs` would link Vulkan, and a
+  headless test of a game's rules would link a device to place a unit.
+- **Rejected because**: a component lives beside what it names.
 
 ## Consequences
 
-### Positive
-- `alpha()` has a reader for anything the api draws, and interpolating is one
-  `snapshot<Transform>` call at the top of `simulate()`.
-- Milestone 4's mesh pass knows what it walks: `view<const Transform, const Mesh>()`, with the
-  material on the registry entry where retcon has it.
-- retcon's two components map across with one line changed. `matrix()` keeps its order and its
-  callers, its shadow fit reads only `position`, `MeshRenderer` is the mesh component under
-  another name with the same two fields, and the line that writes a facing becomes
-  `rotation = aboutY(facingYaw(facing))`.
-
-### Negative
-- **A sprite ignores its transform's rotation.** An upright billboard faces the camera, so a
-  game chooses a facing by choosing the uvs. A sprite that lies on the ground is not covered.
-- A sprite holds resolved uvs rather than a region name, so a game resolves again when a sheet
-  is reloaded.
-- `Position1D`, `Position2D` and `PositionFixed2D` stay beside `Transform`, so the api has two
-  ways to say where a thing is, split by whether it is drawn in the world.
-
-### Risks
-- **The walk's depth key is an axis, `dot(position, axis)`.** That serves an orthographic ground
-  plane and a perspective view, and not an order that depends on a sprite's footprint. The
-  escape hatch is `DepthOrder` itself, which takes any key from a game that walks its own.
-- A parent, when it comes, is a component the walk resolves before it reads `Transform`, so
-  `Transform` does not change shape for it.
+- **Gains**:
+  - Anything the api draws is drawn between steps, for one `snapshot<Transform>()` call at the top
+    of `simulate()`.
+  - A game with several sprites makes them entities and calls one walk, still drawn as one batch.
+- **Costs**:
+  - `api/render` links `api/ecs`.
+  - A game that keeps its own position, such as a tile coordinate, has to keep a `Transform` in
+    sync with it, so the api has two ways to say where a thing is.
+  - A sprite ignores its transform's rotation. An upright billboard faces the camera, so a game
+    picks a facing by picking the uvs, and a sprite lying on the ground is not covered.
+  - The sprite walk sorts by distance along one axis. That serves an orthographic ground plane and
+    a perspective view, not an order that depends on a sprite's footprint.
+- **Revisit when**: something is carried by something else. A parent component would be resolved
+  by the walk before it reads `Transform`, so `Transform` would not change shape.

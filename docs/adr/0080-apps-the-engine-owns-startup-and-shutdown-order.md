@@ -1,67 +1,55 @@
 # ADR-0080: Apps: the engine owns startup and shutdown order
 
-**Date**: 2026-10-05
 **Status**: accepted
-**Deciders**: Joshua Farr
+**Date**: 2026-10-05
+**Documented in**: [api/Engine.md](../api/Engine.md)
 
 ## Context
 
-`engine::Engine::initialize(int)` and `shutdown()` were public, and `shutdown()` virtual. Every
-app wrapped both: its own `bool initialize()` called the base with a feature mask and then did its
-work, and its own `shutdown()` tore its renderer down and then called the base. Six engines carried
-that shape, and two rules CLAUDE.md lists as its costliest were kept only by copying it correctly:
-a renderer goes before the window, and a quit handler calls `quit()` rather than `shutdown()`. Five
-handlers carried a comment saying so. The app's `initialize()` hid the base's rather than
-overriding it, and three apps declared `render()` and `shutdown()` without `override`. The review
-is [E1](../audits/completed/ApiDesignReview.md).
+An app's startup sets up the engine's features before its own work, and its teardown must release
+its renderer before the engine destroys the window. A quit handler must ask the loop to stop with
+`quit()` rather than tear the engine down from inside an event. When `initialize()` and
+`shutdown()` are public virtuals that every app wraps, both rules hold only if every app copies
+the wrapper correctly. Nothing in the compiler checks either one.
 
 ## Decision
 
-**The base owns the order, and an app supplies what runs inside it.** `initialize()` is not
-virtual and takes nothing: it sets up the `features()` the app asks for — all four by default —
-and then calls the app's `start()`. `shutdown()` is not virtual and is private to `run<T>()`: it
-calls the app's `release()` once, then destroys the window and quits SDL. An app's handler cannot
-reach `shutdown()` at all, so `quit()` is the only thing left to call. Features are a
-`type::Flags<Feature>` rather than an `int`.
+The engine owns the order, and an app supplies the work that runs inside it. `initialize()` sets
+up the features the app asks for in `features()` and then calls the app's `start()`, and
+`shutdown()` calls the app's `release()` once and then destroys the window and quits SDL. Neither
+is virtual, and `shutdown()` is private to `run<T>()`, so an app's handler cannot reach it and
+`quit()` is the only thing left to call.
 
-## Alternatives Considered
+## Alternatives
 
-### Alternative 1: Teardown in destructors
-- **Pros**: no `shutdown()` at all. C++ destroys a derived class's members before its base's, so
-  an app's renderer would go before the engine's window by construction, and `run<T>()` would only
-  let the engine go out of scope.
-- **Cons**: every renderer's destructor has to do what its `shutdown()` does now, waiting for the
-  device among it, and a teardown that fails has no way to say so. The order would hold by a
-  property of the language a reader has to know, rather than by a call they can read.
-- **Why not**: it trades a rule nobody could break for one nobody can see.
+### Teardown in destructors
+- **For**: no `shutdown()` at all. C++ destroys a derived class's members before its base's, so an
+  app's renderer would go before the engine's window by construction.
+- **Against**: every renderer's destructor has to do what its teardown does now, including waiting
+  for the device, and a teardown that fails has no way to report it. The order would rest on a
+  rule of the language a reader has to know, rather than on a call they can read.
+- **Rejected because**: it trades a rule nobody can break for one nobody can see.
 
-### Alternative 2: Keep the virtual pair and refuse `shutdown()` while the loop runs
-- **Pros**: the smallest change, and it stops the quit mistake at run time.
-- **Cons**: the order of teardown is still each app's to get right, and the mistake is still
-  written, only refused.
-- **Why not**: it catches one of the two rules and neither of them at compile time.
-
-### Alternative 3: Hooks, with the base owning the order — **chosen**
-- **Pros**: the two rules are structural: release runs before the window goes because the base
-  calls it there, and a handler cannot call `shutdown()` because it cannot see it. An app's
-  lifecycle is only its own work. The default feature set removes the mask five apps repeated.
-- **Cons**: see below.
+### Keep the virtual pair, and refuse `shutdown()` while the loop runs
+- **For**: the smallest change, and it stops the quit mistake at run time.
+- **Against**: teardown order is still each app's to get right, and the quit mistake can still be
+  written, only refused when it runs.
+- **Rejected because**: it catches one of the two rules, and neither at compile time.
 
 ## Consequences
 
-### Positive
-- No app tears down the window, so no app can do it in the wrong order or from a handler.
-- `EngineTest` asserts at compile time that `shutdown()` is out of reach and `quit()` is not.
-- An app that wants fewer features says so once, in `features()`.
-
-### Negative
-- Teardown is two places, `release()` and `~Engine`. The destructor covers a run that never got
-  to `shutdown()` — a test, a failed start — and can only release the engine's own window, since
-  an app's members are gone by the time a base destructor runs.
-- `run<T>()` is a friend of `Engine`. Anything else that wants to drive an engine to completion
-  goes through it.
-
-### Risks
-- An app that holds something presenting to the window outside `release()` — a second renderer
-  built later, say — still has to put it there. The escape hatch is that `release()` is the one
-  place to look.
+- **Gains**:
+  - No app tears down the window, so no app can do it in the wrong order or from a handler.
+  - A test asserts at compile time that `shutdown()` is out of an app's reach and `quit()` is not.
+  - An app's lifecycle code is only its own work, and an app that wants fewer features says so once,
+    in `features()`.
+- **Costs**:
+  - Teardown is in two places, `release()` and the engine's destructor. The destructor covers a
+    run that never reached `shutdown()`, such as a test or a failed start, and can release only the
+    engine's own window, since the app's members are already gone.
+  - `run<T>()` is a friend of `Engine`, so anything else that drives an engine to completion has to
+    go through it.
+  - Something that presents to the window and is built outside `start()`, such as a second
+    renderer created later, still has to be released in `release()` by hand.
+- **Revisit when**: an app needs to drive the engine some way other than `run<T>()`, or needs work
+  between its own release and the window's destruction.

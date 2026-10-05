@@ -1,64 +1,53 @@
 # ADR-0066: Lighting: light in linear, draw to sRGB
 
-**Date**: 2026-10-03
 **Status**: accepted
-**Deciders**: Joshua Farr
+**Date**: 2026-10-03
+**Amends**: [ADR-0009](0009-colour-display-space-unorm-swapchain.md)
+**Documented in**: [api/Rendering.md](../api/Rendering.md)
 
 ## Context
 
-[ADR-0009](0009-colour-display-space-unorm-swapchain.md) has every colour in the tree authored in
-display space and written out unchanged through a `UNORM` chain, and it named lighting as the
-thing that could not simply be added to that. Lighting is arithmetic on light, which is only
-right in linear. [ADR-0049](0049-swapchain-caller-picks-the-format.md) lets a consumer ask
-for an `_SRGB` chain, and retcon does. Its lit tier writes linear and lets the target encode it,
-but it uploads its albedo as `UNORM`. So a texture authored in display space enters the lighting
-undecoded, and retcon's reference capture has that baked in.
-[LitScene](../plans/completed/LitScene.md) brings that tier into the api and has to say which of the two it
-keeps.
+[ADR-0009](0009-colour-display-space-unorm-swapchain.md) has every colour authored in display
+space and written unchanged through a `UNORM` target, and names lighting as what that cannot
+accommodate. Lighting adds and multiplies light, which is only correct in linear values.
+[ADR-0049](0049-swapchain-caller-picks-the-format.md) lets an app present through an `_SRGB`
+swapchain, which encodes linear output on store. Textures are authored in display space, so a
+lit renderer has to decode them or they enter the lighting maths undecoded. glTF defines a base
+colour texture as sRGB and a base colour factor as linear.
 
 ## Decision
 
-**The lit pipelines compute in linear and are drawn into an `_SRGB` target**, a swapchain named
-under ADR-0049 or an offscreen target in an `_SRGB` format, which encodes on store. **A lit
-model's albedo is uploaded as `_SRGB`**, so it is decoded to linear when it is sampled.
-`TextureFactory` takes an encoding whose default stays `UNORM`, so ADR-0009 is unchanged for
-everything that is not lit. A base colour factor is linear, as glTF defines it.
+The lit pipelines compute in linear and draw into an `_SRGB` target, either a swapchain chosen
+under ADR-0049 or an offscreen target, which encodes on store. A lit model's albedo is uploaded
+in an sRGB format so that sampling decodes it to linear, and the texture factory's default
+encoding stays display space, so ADR-0009 holds for everything that is not lit. A base colour
+factor is linear, as glTF defines it.
 
-## Alternatives Considered
+## Alternatives
 
-### Alternative 1: Keep retcon's `UNORM` albedo
-- **Pros**: retcon's reference capture is unchanged when it adopts the tier.
-- **Cons**: Every texture is lit as if it were already linear, so mid tones come out dark and
-  saturated. The tier would be linear everywhere except the one input most of the picture comes
-  from, and every later consumer would inherit that.
-- **Why not**: It copies a defect so that one picture holds.
+### Upload the albedo as `UNORM`, like every other texture
+- **For**: One way to upload a texture, lit or not.
+- **Against**: Every texture is lit as if it were already linear, so mid tones come out dark and
+  oversaturated. The renderer would be linear everywhere except in the input most of the
+  picture comes from.
+- **Rejected because**: It is wrong for every lit model, and every later app would inherit it.
 
-### Alternative 2: Light in display space through a `UNORM` target
-- **Pros**: The same target and textures as everything else in the tree.
-- **Cons**: Adding two lights in display space is not adding two lights, and banding thresholds
-  tuned against one display curve are wrong against another.
-- **Why not**: It is the thing ADR-0009 said lighting could not do.
-
-### Alternative 3: Linear lighting, an sRGB target, decoded albedo — **chosen**
-- **Pros**: Correct throughout, and it is what glTF's colour space says a base colour texture is.
-- **Cons**: retcon's capture moves once on adoption, by exactly the albedo's decoding. A lit
-  scene and a 2D ui drawn into one `_SRGB` target need the ui's colours encoded, which the quad
-  pipeline does not do.
-- **Why not**: n/a — chosen.
+### Light in display space through a `UNORM` target
+- **For**: The same targets and textures as the rest of the tree.
+- **Against**: Adding two lights in display space does not give the sum of the two lights, and
+  cel band thresholds tuned against one display curve are wrong against another.
+- **Rejected because**: It is what ADR-0009 says lighting cannot do.
 
 ## Consequences
 
-### Positive
-- A light, a fill and a shadow combine as light does.
-- The difference retcon's capture shows on adoption is named in advance rather than hunted for.
-
-### Negative
-- A consumer drawing a lit scene picks an `_SRGB` format for that target, and a 2D overlay over
-  it draws into another target or accepts that its colours read lighter.
-- Two encodings of texture in one tree. A texture's encoding has to be chosen at upload, by
-  what samples it.
-
-### Risks
-- A lit model's albedo registered `UNORM` by mistake looks dark rather than failing. The
-  `MeshRegistry` is the one place that uploads a lit albedo, so the choice is made there and
-  nowhere else.
+- **Gains**:
+  - Lights, fills and shadows combine correctly, and textures match what glTF says they are.
+- **Costs**:
+  - A lit scene needs an `_SRGB` target. A 2D overlay drawn into the same target reads
+    lighter, because the quad pipeline does not encode its colours; it has to draw to another
+    target or accept that.
+  - Two texture encodings in one tree, chosen at upload by what will sample the texture.
+  - An albedo uploaded as `UNORM` by mistake looks dark rather than failing. `MeshRegistry` is
+    the one place that uploads a lit albedo, so the choice is made there only.
+- **Revisit when**: the 2D pipelines move to linear colour, so that one encoding serves every
+  texture and target.

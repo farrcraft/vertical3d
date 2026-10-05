@@ -1,96 +1,72 @@
 # ADR-0007: CI: render tests on software Vulkan
 
+**Status**: amended
 **Date**: 2026-08-30
-**Status**: accepted
-**Deciders**: Joshua Farr
+**Amended by**: [ADR-0054](0054-testing-golden-images-hold-only-spec-exact-output.md)
+**Documented in**: [Testing.md](../contributing/Testing.md)
 
 ## Context
 
-The modernization plan's testing workstream wants automated coverage across the api
-libraries, and [ADR-0003](0003-rendering-one-engine-for-2d-and-3d.md) removed the `SDL_Renderer` software
-fallback that would have made headless render tests trivial. This repository is public and
-CI runs on GitHub's free tier: standard runners are free and unmetered for public repos, but
-they have no GPU, and GPU-equipped runners are part of the paid larger-runner tier. The
-project also builds only under MSVC — the root `CMakeLists.txt` passes `/std:c++latest` and
-`/permissive-` unconditionally — and the sole workflow today is cpplint on `ubuntu-latest`,
-which compiles nothing at all.
+The renderer is Vulkan only, with no software fallback, so a render test needs a Vulkan device.
+The repository is public and CI runs on GitHub's free tier, whose standard runners have no GPU.
+GPU runners are part of the paid tier. The project builds only under MSVC, so a CI job that
+compiles it must run on Windows.
 
 ## Decision
 
-From Phase 2 onward, render tests run on a `windows-latest` runner against a software Vulkan
-implementation (Mesa's lavapipe), and assert the absence of validation-layer errors rather
-than comparing rendered pixels. Until Phase 2 produces a frame loop there are no render
-tests, and CI covers cpplint plus unit tests for the api libraries that need no device.
+Render tests run in CI on a `windows-latest` runner, against Mesa's lavapipe, a software Vulkan
+implementation. The assertion every render test makes is that the validation layers report
+nothing. A test does not depend on a reference picture produced by one implementation.
 
-## Alternatives Considered
+## Alternatives
 
-### Alternative 1: Windows runner with a software Vulkan ICD — **chosen**
-- **Pros**: Free on the standard runner. Builds with the MSVC toolchain the project already
-  uses, so it needs no portability work. Lavapipe is a conformant Vulkan 1.3 implementation,
-  which matters given [ADR-0002](0002-vulkan-require-version-1-3.md). Validation-layer errors are
-  the highest-yield class of Vulkan defect, and catching them costs no reference data.
-- **Cons**: Adds a compiling job to a CI that currently compiles nothing. Lavapipe is a
-  software rasterizer, so tests have to stay small. Passing on lavapipe does not prove
-  correctness on a real driver.
-- **Why not**: n/a — chosen.
+### Linux runner with lavapipe
+- **For**: The cheapest setup. Lavapipe is one package install on `ubuntu-latest`, with no
+  third-party download to pin.
+- **Against**: The project would have to build under gcc or clang. That means removing the
+  MSVC-only compiler flags and auditing every Windows assumption in the tree.
+- **Rejected because**: Portability is a large piece of work that nothing else needs, and CI
+  alone does not justify it.
 
-### Alternative 2: Linux runner with lavapipe
-- **Pros**: The cheapest infrastructure of any option; lavapipe is one `apt install` away on
-  `ubuntu-latest`, with no third-party download to pin.
-- **Cons**: Requires the project to build under gcc or clang, which it cannot. That means
-  removing the unconditional MSVC flags and auditing every Windows assumption in the tree.
-- **Why not**: Portability is a substantial workstream that is not on the plan and is not
-  otherwise wanted. Paying for it to enable CI would be the tail wagging the dog.
+### Self-hosted runner with a real GPU
+- **For**: Tests run on a real driver, which is the only place driver-specific bugs appear. No
+  GitHub charge.
+- **Against**: A machine must stay online and maintained. On a public repository, a pull request
+  from a fork can run arbitrary code on a self-hosted runner, and GitHub warns against it.
+- **Rejected because**: The security exposure is not acceptable for a public repository, and
+  workflow configuration cannot fully close it.
 
-### Alternative 3: Self-hosted runner with a real GPU
-- **Pros**: Tests run against a real driver, which is the only place driver-specific bugs
-  appear. No GitHub charge.
-- **Cons**: Requires a machine to be online and maintained. GitHub explicitly warns against
-  self-hosted runners on public repositories, because a pull request from a fork can execute
-  arbitrary code on the runner.
-- **Why not**: The security posture is unacceptable for a public repo, and no amount of
-  workflow configuration fully closes it.
+### No render tests in CI
+- **For**: No infrastructure, no flaky tests, and the fastest CI.
+- **Against**: The Vulkan layer, the largest body of new code, gets no automated regression
+  protection.
+- **Rejected because**: The renderer is the code most in need of a regression check.
 
-### Alternative 4: No render tests in CI, ever
-- **Pros**: Zero infrastructure, zero flakiness, fastest possible CI.
-- **Cons**: Leaves the newest and largest body of code — the entire Vulkan layer — with no
-  automated regression protection.
-- **Why not**: Adopted as the interim position until Phase 2 exists, but not as the end
-  state.
-
-### Alternative 5: Golden-image comparison rather than validation errors
-- **Pros**: Catches visual regressions that validation layers cannot see.
-- **Cons**: Reference images must be generated by the same software rasterizer to be stable,
-  which makes them useless as a check of hardware behaviour. Adds binary files to the repo
-  and a tolerance to tune, and is a familiar source of flaky tests.
-- **Why not**: Deferred rather than rejected. Worth revisiting once there is stable output
-  worth pinning, but it should not be the first thing built.
+### Golden images as the general assertion
+- **For**: Catches visual regressions that validation layers cannot see.
+- **Against**: A reference is stable only on the implementation that produced it, so a picture
+  made on lavapipe says nothing about a hardware driver. It also adds binary files and a
+  tolerance to tune, a common source of flaky tests.
+- **Rejected because**: Validation errors are the most common class of Vulkan defect, and
+  checking for them needs no reference data. Which pictures can be compared exactly is
+  [ADR-0054](0054-testing-golden-images-hold-only-spec-exact-output.md).
 
 ## Consequences
 
-### Positive
-- No new spend, and no dependency on the project ever becoming portable.
-- The engine gains an offscreen render path, because tests need to render without a window.
-  The pass and render-target model already implies one, so this pulls a design requirement
-  forward rather than adding one.
-- Validation coverage in CI catches synchronisation and lifetime mistakes early, which is
-  where most Vulkan defects live and where they are hardest to diagnose late.
-
-### Negative
-- CI starts compiling, which makes it meaningfully slower than a lint-only workflow.
-- A green CI run is weaker evidence than it looks: software rasterization exercises the API
-  but not the driver, and driver-specific bugs will still reach a real GPU first.
-- Render tests must stay small enough for a software rasterizer, so anything resembling a
-  performance or load test stays local.
-
-### Risks
-- Lavapipe's Vulkan 1.3 and dynamic-rendering support must be confirmed before this is
-  relied on, since [ADR-0002](0002-vulkan-require-version-1-3.md) makes both mandatory. If it falls short, SwiftShader is the alternative implementation, though its
-  1.3 coverage is less certain; the fallback beyond that is to test a headless device with
-  no swapchain and no dynamic rendering at all, which still covers instance, device and
-  resource lifetime.
-- The Mesa Windows build is fetched from a third-party release rather than a package
-  manager. Pin an exact version in the workflow, or CI will drift silently when upstream
-  changes.
-- If GitHub's free-tier terms for public repositories change, this reverts to alternative 4.
-  The escape hatch is the workflow file and the test target's guard, not the engine.
+- **Gains**:
+  - No new spending, and no dependency on the project becoming portable.
+  - Lavapipe is a conformant Vulkan 1.3 implementation, so it meets
+    [ADR-0002](0002-vulkan-require-version-1-3.md).
+  - Synchronization and lifetime mistakes are caught in CI, where they are cheapest to diagnose.
+  - The engine has an offscreen render path, because tests render without a window.
+- **Costs**:
+  - CI compiles the tree, so it is much slower than a lint-only workflow.
+  - A green run is weaker evidence than it looks. Software rasterization exercises the API, not a
+    driver, and driver-specific bugs still reach a real GPU first.
+  - Render tests must stay small enough for a software rasterizer, so performance and load tests
+    stay local.
+  - Mesa's Windows build comes from a third-party release, not a package manager. The workflow
+    pins an exact version, which has to be raised by hand.
+- **Revisit when**: GitHub's free tier for public repositories changes, or lavapipe stops
+  supporting what [ADR-0002](0002-vulkan-require-version-1-3.md) requires. SwiftShader is the
+  other software implementation to try.

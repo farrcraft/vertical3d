@@ -1,67 +1,56 @@
 # ADR-0081: Input: key events and commands are separate
 
-**Date**: 2026-10-05
 **Status**: accepted
-**Deciders**: Joshua Farr
+**Date**: 2026-10-05
+**Amends**: [ADR-0043](0043-input-apps-see-raw-events-before-bindings.md)
+**Documented in**: [api/Engine.md](../api/Engine.md)
 
 ## Context
 
-A device sent the key it read as an `event::Event` flagged `Type::Source`, on the same sink as
-every command, and the event engine listened there, mapped the key and sent its commands from
-inside the key's own publish. So every listener on `sink<Event>` heard keys and commands both and
-had to filter by the flag at run time; [ADR-0017](0017-a-command-is-a-name-in-a-context.md)
-records the editor handling every keypress twice before it learned to. And the order a listener
-heard a key and its command in depended on the order things had connected, which a dispatcher
-publishes in reverse. Pong's key capture worked by that accident. The review is
-[E4](../audits/completed/ApiDesignReview.md).
+A device reports a key or button edge, and the event engine maps it to the commands an app's
+bindings name. When keys and commands share one event type on one dispatcher sink, every listener
+hears both and has to filter by a flag at run time, and a listener that forgets handles every
+keypress twice. When the event engine maps a key from inside the key's own delivery, whether a
+listener hears the key or its command first depends on the order things connected, and an EnTT
+dispatcher calls the last-connected listener first. A key capture, such as a rebinding screen,
+needs to take a key before the key makes any command.
 
 ## Decision
 
-**A key is an `event::Source` and a command an `event::Event`, on two sinks.** `Source` derives
-from `Event`, because a binding names both ends in the same terms and a `Mapper` keys on them, but
-a listener on `sink<Event>` hears commands and nothing else. **`event::publish()` is the one way a
-source is sent**: it sends the key to every listener on `sink<Source>`, then — unless one called
-`consume()` — hands it to the event engine, which sends the commands it is bound to. The event
-engine listens for that hand-off rather than for the key, so every listener has heard the key
-before any hears the command, whatever order they connected in.
+A key is an `event::Source` and a command an `event::Event`, delivered on two sinks, so a listener
+on `sink<Event>` hears commands and nothing else. `event::publish()` is the one way to send a
+source: it delivers the key to every listener on `sink<Source>` and then, unless one called
+`consume()`, hands it to the event engine to send the commands it is bound to. Every listener
+therefore hears the key before any hears its command, whatever order they connected in.
 
-## Alternatives Considered
+## Alternatives
 
-### Alternative 1: One type, commands delivered after the source
-- **Pros**: much smaller; the ordering hazard goes.
-- **Cons**: every listener still filters by a flag, and the next one to forget hears every key.
-- **Why not**: it fixes the order and leaves the double handling ADR-0017 recorded.
+### One event type, with commands delivered after the key
+- **For**: a much smaller change, and the ordering problem goes.
+- **Against**: every listener still filters by a flag, and the next one to forget hears every key.
+- **Rejected because**: it fixes the order and leaves the double handling.
 
-### Alternative 2: Queue the commands on the dispatcher and flush after the source
-- **Pros**: no hand-off type; the event engine stays a listener on the source.
-- **Cons**: a capture cannot drop the commands its key made, because a dispatcher calls a sink's
+### Queue the commands on the dispatcher and flush them after the key
+- **For**: no hand-off step, and the event engine stays an ordinary listener on the key.
+- **Against**: a capture cannot drop the commands its key made, because the dispatcher calls
   listeners last-connected first and the event engine has usually not queued them yet when the
-  capture runs. Tried, and the test written for it failed for exactly that reason.
-- **Why not**: what a capture needs depends on connection order, which is the hazard being fixed.
-
-### Alternative 3: Two types, the event engine after every listener — **chosen**
-- **Pros**: a listener takes keys or commands by the sink it names. The order is structural, and
-  consuming a key is one call.
-- **Cons**: see below.
+  capture runs. A test written for this approach failed for exactly that reason.
+- **Rejected because**: what a capture can do would still depend on connection order.
 
 ## Consequences
 
-### Positive
-- No listener in the tree filters by `Type` any more: the editor's guard, the engine's quit
-  handler and `GameMenu` lose theirs, and pong's capture is a listener on `sink<Source>` that
-  consumes what it captures.
-- [ADR-0058](0058-ui-sdl-keyboard-adapter-in-ui-shell.md)'s Alternative 4 rested on a
-  listener being unable to take a key before the bindings did. A listener on `sink<Source>` now
-  can, though `ui::Keys` still has no reason to move.
-
-### Negative
-- `Source` shares its consumed flag between copies, because a dispatcher hands each listener a
-  copy of what it was sent and `publish()` asks the one it sent. It is the one piece of shared
-  mutable state on an event.
-- `Event` still carries `Type`, now redundant with the class. It is left because every ui
-  component sets it on the command it sends, and removing it is churn with no consumer.
-
-### Risks
-- A source triggered straight onto the dispatcher, rather than through `publish()`, reaches its
-  listeners and is never mapped. Every device and test sends through `publish()`; the escape hatch
-  is that it is the one function to look for.
+- **Gains**:
+  - A listener takes keys or commands by the sink it names, and no listener filters by type.
+  - The order is structural, and capturing a key is one `consume()` call.
+  - A listener on `sink<Source>` can take a key before the bindings do, without overriding
+    `onEvent()`.
+- **Costs**:
+  - `Source` shares its consumed flag between copies, because the dispatcher hands each listener a
+    copy and `publish()` reads the original. It is the one piece of shared mutable state on an
+    event.
+  - `Event` still carries a type field that the class now makes redundant, because every ui
+    component sets it on the command it sends.
+  - A source triggered straight onto the dispatcher, rather than through `publish()`, reaches its
+    listeners and is never mapped to a command.
+- **Revisit when**: a source needs to be sent from somewhere that cannot call `publish()`, or the
+  redundant type field is removed from `Event`.

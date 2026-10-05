@@ -1,114 +1,69 @@
 # ADR-0031: Rendering: passes draw into offscreen targets
 
+**Status**: amended
 **Date**: 2026-09-06
-**Status**: accepted
-**Deciders**: Joshua Farr
-
-Amended by [ADR-0068](0068-rendering-order-passes-by-what-they-read.md):
-a target may hold one image per frame in flight, which is alternative 4 below taken up for what
-a barrier cannot order, a pipeline is checked against the formats it draws into, and a pass is
-placed by the targets it reads rather than by `Frame::passBefore`, which is gone.
+**Amended by**: [ADR-0068](0068-rendering-order-passes-by-what-they-read.md)
+**Documented in**: [api/Rendering.md](../api/Rendering.md), [internals/RealtimeRenderer.md](../internals/RealtimeRenderer.md)
 
 ## Context
 
-Every pass drew into the swapchain image. `Pass.h` said so outright — "only the swapchain
-image is a valid target so far, so a pass has no target field yet" — and `Recorder::Target`
-was the acquired image and the context's one depth buffer.
-
-That is the wall in front of everything a renderer does in more than one step. A shadow map is
-a depth image written by one pass and sampled by the next. A colour grade is a scene rendered
-somewhere, then read back through a lookup. A second view of one scene — a mirror, a security
-monitor, a thumbnail — is a smaller image drawn before the one it appears in. None of them can
-be faked from outside: `Recorder` owns the pass walk, and `DrawItem::record` is an escape hatch
-for one draw ([ADR-0004](0004-rendering-submit-draw-items-as-data.md)), not for a whole pass with its own
-attachment and its own layout transitions.
-
-The engine already had the pieces around the hole. Passes are a list rather than a single pass
-precisely because "compositing, offscreen targets and an editor's several viewports are all
-more passes over the same frame" ([ADR-0003](0003-rendering-one-engine-for-2d-and-3d.md)). Drawing is dynamic
-rendering, so an attachment is a view named at `vkCmdBeginRendering` and not a
-`VkFramebuffer` baked at load time. What was missing was somewhere for a pass to name, and
-someone to move the image between the layout it is written in and the one it is read in.
+Every pass draws into the swapchain image, which rules out any rendering done in more than one
+step. A shadow map is a depth image written by one pass and sampled by a later one. A colour
+grade reads a scene rendered somewhere else, and a second view of a scene is a smaller image
+drawn before the one it appears in. An app cannot build these from outside, because the recorder
+owns the walk over the passes and a draw item's record callback covers one draw, not a pass with
+its own attachments and layout transitions. Drawing already uses dynamic rendering, so an
+attachment is any image view named when the pass begins.
 
 ## Decision
 
-**A pass names an optional `vulkan::RenderTarget`, and draws into the swapchain image when it
-names none.** A target owns a colour image created with sampled usage, its view, its sampler,
-and optionally a depth image of its own size.
+A pass may name a `frame::RenderTarget` and draws into the swapchain image when it names none.
+The recorder moves a target's images into an attachment layout before the first pass that draws
+into it and into a readable layout after the last one, so every later pass can sample it as an
+ordinary texture. A target's depth can be sampled too, as a shadow map needs, and the target is
+told so at creation because a device may allow a depth format as an attachment but not for
+sampling.
 
-**The recorder makes a target readable.** It transitions a target into
-`COLOR_ATTACHMENT_OPTIMAL` before the first pass of the frame that draws into it and into
-`SHADER_READ_ONLY_OPTIMAL` after the last one, so two passes drawing into one target cost one
-pair of barriers. Every pass recorded after that point can sample it.
+## Alternatives
 
-**A target is sampled the way every other image is** — registered in `Resources` and named as
-a material's texture — so nothing about reading one is special. What is registered names the
-target's images rather than taking them over: `Texture::owned` is false, and `Resources` does
-not free them.
+### A target handle registered in `pipeline::Resources`
+- **For**: `Pass` would name a handle and stay free of Vulkan types, matching how a draw item
+  names everything else.
+- **Against**: registered things are built once and live for many frames. A target's images
+  are discarded and rebuilt whenever its size changes, so its handle would go stale on every
+  resize.
+- **Rejected because**: the lifetimes do not match. Handles are for things that outlive frames.
 
-**A target's size and format are the caller's.** It does not follow the swapchain, because a
-shadow map is sized by the detail it needs; an app that wants one to track the window recreates
-it when `Engine3D::beginFrame` reports a new size.
+### A second engine, or a second recorder, for offscreen work
+- **For**: the swapchain path stays exactly as it is.
+- **Against**: two recorders means two places that bind materials and skip redundant binds.
+- **Rejected because**: [ADR-0003](0003-rendering-one-engine-for-2d-and-3d.md) already settled that
+  there is one engine and the pass is what varies.
 
-## Alternatives Considered
-
-### Alternative 1: A pass holds a target, and the recorder transitions it — **chosen**
-- **Pros**: The pass is already the unit of variation, so this is the field it was missing
-  rather than a new concept. Nothing about submitting a draw changes. A frame stays one command
-  buffer and one submission.
-- **Cons**: `Pass`, which was Vulkan-free in its own body, now holds a pointer to a Vulkan
-  object. The recorder has to reason about first and last use of each target across the frame.
-- **Why not**: n/a — chosen.
-
-### Alternative 2: A target handle into `Resources`, like a pipeline or a texture
-- **Pros**: `Pass` would name a `TargetHandle` and stay free of Vulkan types; it matches how a
-  draw item names everything else.
-- **Cons**: `Resources` never frees an individual resource and never reuses a slot, on purpose —
-  its things are built at load time and live until the context does. A target is thrown away and
-  rebuilt whenever what it is sized against changes, so it would either leak on every resize or
-  break the invariant that makes a handle's sort order meaningful.
-- **Why not**: The lifetimes are opposite. Handles are for what outlives frames.
-
-### Alternative 3: A second engine, or a second recorder, for offscreen work
-- **Pros**: The swapchain path stays exactly as it was.
-- **Cons**: [ADR-0003](0003-rendering-one-engine-for-2d-and-3d.md) settled that there is one engine and the
-  pass is where drawing varies. Two recorders means two places that know how to bind a material
-  and skip a rebind.
-- **Why not**: It is the same decision ADR-0003 already made, asked again.
-
-### Alternative 4: A target per frame in flight
-- **Pros**: No write-after-read between a frame and the one still sampling the previous
-  contents, which is the hazard a single image has with two frames in flight.
-- **Cons**: Three images, three views, three samplers and three descriptor sets per target, and
-  an app that samples one has to know which slot the frame is in.
-- **Why not**: A barrier answers it instead. The transition into `COLOR_ATTACHMENT_OPTIMAL`
-  names `FRAGMENT_SHADER` in its first scope, and a barrier's first scope reaches work already
-  submitted to the queue, so this frame's writes are ordered after the previous frame's reads.
-  Revisit if a target is ever wanted for something a barrier cannot order.
+### One image per frame in flight in every target
+- **For**: a frame never writes the image the previous frame is still sampling.
+- **Against**: three images, views, samplers and descriptor sets per target, and an app sampling
+  one has to know which slot the frame is in.
+- **Rejected because**: a barrier orders that hazard. The transition into the attachment layout
+  waits on fragment shader work already submitted, so this frame's writes follow the previous
+  frame's reads.
 
 ## Consequences
 
-### Positive
-- Shadow maps, post-processing and a second view are now possible app-side, over `Context3D`,
-  the way the voxel app already builds its own pipeline and descriptor layout.
-- A pass into a target gets that target's extent as its default viewport, so a smaller target is
-  not drawn as though it were window sized.
-- Registering a target as a texture means `Canvas` can composite one with no new primitive:
-  what a pass rendered is a quad's texture.
-
-### Negative
-- A target is single-buffered and carries nothing from one frame to the next. A pass that wants
-  the previous frame's contents needs two targets and has to swap them itself.
-- The pipeline drawing into a target is built against that target's colour format, so a target
-  of a different format needs its own pipeline. Nothing catches a mismatch at submission time.
-- `Frame::passBefore` exists because `Engine3D` creates the colour pass in its constructor, so
-  an app's offscreen pass would otherwise be recorded after the pass that samples it. Ordering
-  is the caller's, and getting it wrong reads what is in the image rather than failing.
-
-### Risks
-- Reading a target in the same pass that writes it, or before the last pass that writes it, is
-  not diagnosed. Synchronization validation catches it when it becomes a hazard, but a pass that
-  merely reads stale contents is silent.
-- `RenderTarget::recreate` allocates new images, so a `TextureHandle` registered for the old
-  ones names images that no longer exist. Registering again after a resize is the caller's, and
-  a stale handle is a use-after-free rather than a blank picture.
+- **Gains**:
+  - Shadow maps, post-processing and second views are possible, with no change to how a draw is
+    submitted. A frame stays one command buffer and one submission.
+  - A pass into a target gets the target's extent as its default viewport.
+  - What a pass rendered can be drawn as a quad's texture, so compositing needs no new
+    primitive.
+- **Costs**:
+  - `Pass` holds a pointer to a Vulkan object, and the recorder tracks the first and last use of
+    each target across the frame.
+  - A pipeline is built against the formats it draws into, so a target of a different format
+    needs its own pipeline.
+  - A target's size is the caller's. A target that should follow the window is recreated by the
+    app on resize, and anything registered against the old images has to be registered again.
+  - A pass that samples a target's depth while also drawing into it is a hazard the recorder
+    does not detect; only the validation layer reports it.
+- **Revisit when**: a pass needs what a target held in the previous frame, which a single image
+  cannot hold while it is being drawn again.

@@ -1,75 +1,62 @@
 # ADR-0064: Lighting: lit passes use the shared recorder
 
+**Status**: amended
 **Date**: 2026-10-03
-**Status**: accepted
-**Deciders**: Joshua Farr
-
-Amended by [ADR-0071](0071-skinning-joint-matrices-in-one-storage-buffer.md): the scene
-set also holds the frame's joint palettes, at binding 2, and a lit item's push block names where
-its palette starts.
+**Amends**: [ADR-0008](0008-shaders-descriptor-sets-by-update-frequency.md)
+**Amended by**: [ADR-0071](0071-skinning-joint-matrices-in-one-storage-buffer.md)
+**Documented in**: [internals/RealtimeRenderer.md](../internals/RealtimeRenderer.md)
 
 ## Context
 
-[Milestone 4](../roadmap/completed/m4-LitScene.md) brings a lit mesh tier into the api. The only one that
-exists is retcon's, which binds three descriptor sets: the camera, the material, and the scene
-(a light, cel bands and a shadow map). `Recorder` binds set 0 and set 1 and nothing more, and
-nothing in the tree records `vkCmdSetDepthBias`, so a biased shadow pipeline compiles and cannot
-be drawn. retcon declined `Frame`, `Pass` and `DrawItem` for the first of those reasons and
-hand-records every pass. [LitScene](../plans/completed/LitScene.md) is the plan that needs this settled,
-and its survey is the evidence here.
+A lit mesh renderer binds three descriptor sets: the camera, the material, and the scene (a
+light, cel bands and a shadow map). A shadow pipeline also needs a depth bias recorded with
+`vkCmdSetDepthBias` before it draws. [ADR-0008](0008-shaders-descriptor-sets-by-update-frequency.md)
+puts per-frame data in set 0, which every pipeline in the tree declares. A renderer whose
+needs the shared recorder cannot meet records its own passes outside `Frame` and `Pass`, and
+nothing else can draw into them.
 
 ## Decision
 
-**A `Pass` may name a scene set, which the recorder binds at set 2 once for the pass, and a
-depth bias, which it records whenever it binds a pipeline built with one.** A biased pipeline
-drawn in a pass that names no bias is an error at record time. The lit tier's passes are
-ordinary passes in a `Frame`, so a lit scene, its shadow and whatever a game draws with `Quad`,
-`World` or `Line` are recorded by one recorder. This amends
-[ADR-0008](0008-shaders-descriptor-sets-by-update-frequency.md): its per-frame set is split into the camera at
-set 0 and the scene at set 2.
+A `Pass` may name a scene set, which the recorder binds at set 2 once per pass, and a depth
+bias, which it records whenever it binds a pipeline built with one; a biased pipeline in a pass
+that names no bias is an error at record time. Lit passes are ordinary passes in a `Frame`,
+recorded by the same recorder as quad, world and line passes. ADR-0008's per-frame set is split
+into the camera at set 0 and the scene at set 2.
 
-## Alternatives Considered
+## Alternatives
 
-### Alternative 1: Move retcon's `SceneRenderer` as it is
-- **Pros**: The least code, and retcon's reference capture is unchanged by construction.
-- **Cons**: A second way to record a frame beside the recorder. Its pass order is a class rather
-  than a frame, and nothing drawn by the api's other renderers can share one of its passes,
-  which is why retcon draws its own canvas and debug lines.
-- **Why not**: The api would carry a frame model only one game uses, and every later tier
-  (skinning, particles) would have to choose between the two.
+### A separate lit renderer that records its own passes
+- **For**: The least code, and a working lit renderer could be moved in unchanged.
+- **Against**: A second way to record a frame beside the recorder. Its pass order is fixed in a
+  class rather than in a frame, and nothing drawn by the api's other renderers can share its
+  passes.
+- **Rejected because**: The api would carry a frame model that only lit scenes use, and every
+  later renderer would have to choose between the two.
 
-### Alternative 2: The scene data in set 0
-- **Pros**: No recorder change. One set per frame, as ADR-0008 wrote it.
-- **Cons**: Every pipeline in the tree declares set 0, so widening it changes every shader. A
-  shadow map in set 0 is bound for the 2D passes that never sample it.
-- **Why not**: It costs every pipeline for what only the lit ones read.
+### The scene data in set 0
+- **For**: No recorder change, and one per-frame set as ADR-0008 has it.
+- **Against**: Every pipeline declares set 0, so widening it changes every shader, and the 2D
+  passes would bind a shadow map they never sample.
+- **Rejected because**: It costs every pipeline for data only the lit ones read.
 
-### Alternative 3: The scene data in push constants
-- **Pros**: No set, no pool, no descriptor write.
-- **Cons**: The light's matrix alone is 64 of the 128 bytes, and retcon's per-object data is 96.
-  A shadow map cannot be a push constant at all.
-- **Why not**: It does not fit, and half of it cannot.
-
-### Alternative 4: A scene set and a bias on the pass, recorded by the recorder — **chosen**
-- **Pros**: One bind per pass, the frequency the data changes at. The sort key does not change.
-  Set 0 stays compatible across quad, line and lit pipelines within a pass, because
-  compatibility runs from set 0 upwards. retcon's reason for leaving the frame model is gone.
-- **Cons**: The recorder learns two more things a pass can carry. A pipeline has to say whether
-  its layout declares a set 2 and whether it is biased.
-- **Why not**: n/a — chosen.
+### The scene data in push constants
+- **For**: No set, no pool and no descriptor write.
+- **Against**: Push constants are 128 bytes. The light's matrix alone is 64, and the per-object
+  data already takes most of the block. A shadow map cannot be a push constant at all.
+- **Rejected because**: It does not fit.
 
 ## Consequences
 
-### Positive
-- A lit pass, a shadow pass and a post pass are placed by the frame, as every other pass is.
-- A depth bias left unset is reported rather than drawn with whatever was last recorded.
-
-### Negative
-- Two sets per frame-rate frequency where ADR-0008 had one. A reader has to know that set 2 is
-  the scene and that only lit pipelines declare it.
-- retcon adopts the frame model to adopt the tier, which is more than replacing its classes.
-
-### Risks
-- A second consumer of set 2 with different contents (a particle pass wanting a wind field, say)
-  would share the slot by convention only. The escape hatch is that the set is the pass's, not
-  the tier's: a pass names whichever set its pipelines declare at 2.
+- **Gains**:
+  - A lit pass, a shadow pass and a post pass are ordered by the frame like every other pass,
+    and 2D content can draw into them.
+  - The scene set is bound once per pass, the rate it changes at, and the sort key is
+    unchanged. Set 0 stays compatible across quad, line and lit pipelines in one pass.
+  - A depth bias left unset is reported rather than drawn with whatever was last recorded.
+- **Costs**:
+  - The recorder handles two more pass properties, and a pipeline has to state whether it
+    declares set 2 and whether it is biased.
+  - A reader has to know that set 2 is the scene and that only lit pipelines declare it.
+  - A second user of set 2 with different contents shares the slot by convention only.
+- **Revisit when**: a non-lit pass needs different data at set 2. The set belongs to the pass,
+  so a pass can name whatever set its pipelines declare there.

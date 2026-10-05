@@ -1,82 +1,56 @@
 # ADR-0049: Swapchain: caller picks the format
 
-**Date**: 2026-09-08
 **Status**: accepted
-**Deciders**: Joshua Farr
+**Date**: 2026-09-08
+**Amends**: [ADR-0009](0009-colour-display-space-unorm-swapchain.md)
+**Documented in**: [internals/RealtimeRenderer.md](../internals/RealtimeRenderer.md)
 
 ## Context
 
-[ADR-0009](0009-colour-display-space-unorm-swapchain.md) settled that colour is authored in
-display space and presented through a `UNORM` chain, and `Swapchain::chooseFormat` has
-preferred one ever since. That record named the condition it rests on: *"the engine draws no
-lit geometry yet"*, and paying the authoring cost for correctness nothing can exercise gets
-the trade backwards.
-
-An external consumer now draws lit geometry. retcon — the first app on this api that is not
-in this tree ([ADR-0027](0027-build-consume-the-api-as-source.md)) — cel-shades a scene from a
-directional light, renders a shadow map, and composites through a colour-grading LUT. It
-presents through `B8G8R8A8_SRGB` and writes linear light into it, so the target's encode is
-part of its pipeline rather than an accident of it. Its ui layer converts to linear on write
-for the same reason, and its translucent panels blend in linear space because the hardware
-blends before it encodes.
-
-A `UNORM` chain is not a re-tuning for such an app. Both its composite and its ui would have
-to apply the transfer function themselves, which moves every alpha blend into encoded space —
-the outcome ADR-0009's own alternative 2 weighs and declines, for an engine that draws what
-this one now does not.
+[ADR-0009](0009-colour-display-space-unorm-swapchain.md) has colour authored in display space
+and presented through a `UNORM` swapchain, on the condition that nothing draws lit geometry. An
+app that lights its scene writes linear light and needs the target to encode it to sRGB, so
+that blending happens in linear space before the encode. Through a `UNORM` chain such an app
+has to encode in its own shaders, which moves every alpha blend into encoded space. The apps in
+this tree still author their colours in display space.
 
 ## Decision
 
-`Swapchain` takes a preferred colour format and honours it where the surface offers one in a
-non-linear sRGB colour space; `Context3D` passes one through. The parameter defaults to
-`VK_FORMAT_UNDEFINED`, which is ADR-0009's rule unchanged, and a preference the surface does
-not offer falls back to it rather than failing.
+`Swapchain` takes a preferred colour format and uses it where the surface offers it in a
+non-linear sRGB colour space, and `Context3D` passes one through. The default,
+`VK_FORMAT_UNDEFINED`, keeps ADR-0009's choice. A preference the surface does not offer falls
+back to that choice rather than failing.
 
-## Alternatives Considered
+## Alternatives
 
-### Alternative 1: A preferred format the caller may name — **chosen**
-- **Pros**: ADR-0009 is unamended for every app in this tree, which passes nothing and gets
-  what it got before. The decision moves to the layer that knows whether its colours are
-  linear, which is the app. `chooseFormat` stays a pure function and is now testable without
-  a device.
-- **Cons**: Two presentation conventions exist in one api, so a pipeline cannot assume the
-  chain's format. It never could — dynamic rendering already builds against
-  `Swapchain::format()`.
-- **Why not**: n/a — chosen.
+### Reverse ADR-0009 and present through sRGB for every app
+- **For**: One convention, and physically correct blending everywhere.
+- **Against**: Every colour literal in the 2D apps and the editor would stop meaning what it
+  looks like, and text antialiasing blended in linear space reads thin. ADR-0009 weighed this
+  and nothing about it has changed.
+- **Rejected because**: The apps in this tree still author in display space, and one app's
+  lighting does not make their colours wrong.
 
-### Alternative 2: Reverse ADR-0009 and present through sRGB again
-- **Pros**: One convention. Physically correct blending everywhere.
-- **Cons**: Every colour literal in pong, tetris, voxel and the editor becomes a value that
-  does not mean what it looks like, and text antialiasing composited in linear space reads
-  thin. ADR-0009 measured all of that and it has not changed.
-- **Why not**: The apps in this tree still author in display space. Nothing about a second
-  consumer's needs makes their colours wrong.
-
-### Alternative 3: The consumer keeps its own swapchain and presenter
-- **Pros**: No change here at all.
-- **Cons**: A swapchain, an acquire/present loop and its synchronization are duplicated in
-  the consumer forever — the part of a device tier that is least app-specific and most worth
-  sharing. It also leaves `Presenter` unreachable, since it takes a `Swapchain`.
-- **Why not**: The api being unusable by its second consumer is a fault in the api, not in
-  the consumer.
+### The lit app keeps its own swapchain and presenter
+- **For**: No change to the api.
+- **Against**: The swapchain, the acquire and present loop and their synchronisation would be
+  duplicated outside the api, though they are the least app-specific part of the device layer.
+  `Presenter` takes a `Swapchain`, so it would be unusable too.
+- **Rejected because**: An api that a lit app cannot present through is incomplete, and the fix
+  belongs in the api.
 
 ## Consequences
 
-### Positive
-- An app that lights and grades its scene can present through the format its shaders were
-  written against, and its blending stays in linear space.
-- `chooseFormat` is public and pure, so the rule is covered by a test on a machine with no
-  gpu.
-
-### Negative
-- `Swapchain::format()` is now the only answer to what the chain is, rather than something a
-  reader can infer from ADR-0009. Anything building a pipeline against a guess is wrong, in a
-  way it would not have been before.
-
-### Risks
-- A caller naming a format the surface offers only in a different colour space silently gets
-  the default instead, and an app whose shaders depend on the encode would then be wrong
-  everywhere rather than obviously broken in one place. Mitigated by matching on the colour
-  space as well as the format, by `format()` reporting what was settled on rather than what
-  was asked for, and by a warning when a preference was asked for and not met — silence means
-  it was.
+- **Gains**:
+  - An app that lights its scene presents through the format its shaders assume, and its
+    blending stays linear.
+  - Every app in the tree passes nothing and gets ADR-0009's format as before.
+  - `Swapchain::chooseFormat` is a pure function, so the rule is tested without a GPU.
+- **Costs**:
+  - Two presentation conventions exist in one api. `Swapchain::format()` is the only reliable
+    answer to what the chain is, and a pipeline built against a guess is wrong.
+  - A preference offered only in another colour space silently falls back to the default. An
+    app whose shaders rely on the encode is then wrong everywhere; a warning is logged, and
+    `format()` reports what was chosen.
+- **Revisit when**: the apps in this tree move to linear colour, which would reverse ADR-0009
+  and make sRGB the default.

@@ -1,88 +1,71 @@
 # ADR-0070: Animation: CPU sampling, playback on the fixed step
 
-**Date**: 2026-10-03
 **Status**: accepted
-**Deciders**: Joshua Farr
+**Date**: 2026-10-03
+**Documented in**: [api/ECS.md](../api/ECS.md), [api/Types.md](../api/Types.md)
 
 ## Context
 
-A model can carry a skeleton
-([ADR-0069](0069-models-material-parts-over-one-vertex-buffer.md)), and nothing reads a
-clip, samples a pose or advances one. [SkeletalAnimation](../plans/completed/SkeletalAnimation.md) needs
-three things settled before writing that: where the code lives, what is kept per step so that
-[ADR-0060](0060-ecs-interpolate-from-a-previous-step-component.md) can draw a character between steps,
-and whether the api decides which clip plays. retcon, the consumer, has about twelve
-characters on screen and no state machine. Its clip selectors would be its own components:
-awareness, intent, the result of a move. [MotionAndQueries](../plans/completed/MotionAndQueries.md#step-6--a-sprite-clip)
-held a sprite clip's clock until a second consumer needed it, and this is that consumer.
+A model can carry a skeleton and clips ([ADR-0069](0069-models-material-parts-over-one-vertex-buffer.md)),
+and something has to advance a clip and sample a pose from it. Simulation runs on a fixed step
+and drawing runs once a frame, so a character has to be drawn between steps the way a transform
+is ([ADR-0060](0060-ecs-interpolate-from-a-previous-step-component.md)). A skeleton has dozens of
+joints, and a game shows at most a few dozen animated characters. The rules for choosing a clip
+differ between games and come from each game's own components.
 
 ## Decision
 
-**The clock, clips, poses, sampling and blending live in `api/type`**, in
-`type::animation`. They are glm and arithmetic, readable by either renderer
-([ADR-0024](0024-api-type-serves-both-renderers.md)). The clock keeps no time of its own, so a
-sprite clip can be written over it later.
+What is interpolated between steps is the playback state, not the pose: playback is an `api/ecs`
+component advanced in `simulate()`, and each frame the CPU samples a pose from the interpolated
+state. Clips, poses, sampling and blending are value code in `type::animation`, in `api/type`.
+Which clip plays is the game's, and the api offers only a way to play a clip with a fade.
 
-**Playback is a component in `api/ecs`**, advanced in `simulate()` on the fixed step
-([ADR-0032](0032-loop-fixed-step-simulation-variable-rate-rendering.md)). It has an `interpolate()`, so
-ADR-0060's snapshot draws it between steps. **What is interpolated is the playback state** (a
-clip, an unwrapped time and a fade), **not the pose.** The pose is sampled once a frame, at
-draw time, from the interpolated state.
+## Alternatives
 
-**Which clip plays, and when it gives way to another, is the game's.** The api offers a way to
-play a clip with a fade, and nothing that chooses one.
+### A pose per step, interpolated
+- **For**: the renderer reads poses and nothing else, and sampling happens once a step rather
+  than once a frame.
+- **Against**: every character keeps a previous copy of every joint's transform. Interpolating
+  them means blending two whole poses every frame anyway.
+- **Rejected because**: it copies every pose each step to save a sample that costs about the same
+  as the blend that replaces it.
 
-## Alternatives Considered
+### Sampling on the GPU
+- **For**: it scales to thousands of characters, with no per-joint work on the CPU.
+- **Against**: clip data goes into device buffers, and a compute pass writes the joint matrices
+  before the lit passes read them. None of it can be tested headless.
+- **Rejected because**: a few dozen characters do not need it. It can replace the CPU sampler
+  behind the same joint matrices if a count ever does.
 
-### Alternative 1: A library of its own, `api/animation`
-- **Pros**: One place to look for everything animation-shaped, and a name that says so.
-- **Cons**: One more manifest entry
-  ([ADR-0033](0033-build-select-api-libraries-through-a-manifest.md)) for code that has no
-  dependency beyond what `api/type` and `api/ecs` already carry. The playback component would
-  still belong beside `Transform`, so the split would remain.
-- **Why not**: The data is a value type and the playback is a component, and both already have
-  a home.
+### A library of its own, `api/animation`
+- **For**: one place for everything animation-shaped.
+- **Against**: one more library to select
+  ([ADR-0033](0033-build-select-api-libraries-through-a-manifest.md)) for code that needs nothing
+  beyond `api/type` and `api/ecs`. The playback component still belongs beside `Transform`, so
+  the split would remain.
+- **Rejected because**: the data is a value type and the playback is a component, and both
+  already have a home.
 
-### Alternative 2: A pose per step, interpolated
-- **Pros**: The renderer reads poses and nothing else, and sampling happens once per step rather
-  than once per frame.
-- **Cons**: A `Previous` of every joint's transform, about 65 of them for a Mixamo rig, for every
-  character. Interpolating that means slerping each joint, which is a blend of two whole poses
-  every frame anyway.
-- **Why not**: It costs a copy of every pose per step to save a sample that costs about the same
-  as the blend it replaces.
-
-### Alternative 3: Sampling on the device
-- **Pros**: It scales to thousands of characters. The cpu does no per-joint work.
-- **Cons**: Clip data goes into buffers, and a compute pass writes the palette before the lit
-  passes read it. None of it can be tested headless.
-- **Why not**: Twelve characters do not need it. It can replace the cpu sampler behind the same
-  palette if a count ever does.
-
-### Alternative 4: A state machine in the api
-- **Pros**: Every game would get transitions, conditions and blend trees without writing them.
-- **Cons**: No game here has written one, so its edges would be guessed. retcon's turn-based
-  moves and its real-time horde want different rules, and its selectors are its own
-  components.
-- **Why not**: The roadmap asked for this line to be drawn after a game had written one. None
-  has.
+### A state machine in the api
+- **For**: every game would get transitions, conditions and blend trees without writing them.
+- **Against**: no game here has written one, so its shape would be guessed. Turn-based moves and
+  real-time crowds want different rules.
+- **Rejected because**: the line between the api and the game should be drawn after a game has
+  written one.
 
 ## Consequences
 
-### Positive
-- The clock is written once, for the sprite clip and any later timeline as well.
-- A character is drawn between steps by the same mechanism a transform is, with nothing new in
-  the loop.
-- Everything but the palette's upload is tested headless.
-
-### Negative
-- Each frame samples every animated character, even one whose state did not change.
-- A game writes its own selection: which clip, when, and how long a fade.
-- Interpolating across a change of clip has no meaningful halfway point. The frame after a
-  `play()` draws the new clip, and only the fade smooths it.
-
-### Risks
-- Time kept unwrapped grows without bound on a clip that loops forever. At the fixed step, a
-  float stops resolving a millisecond after a little over two hours. The component can
-  rebase its time by whole loops when it advances, which changes nothing the interpolation
-  sees.
+- **Gains**:
+  - A character is drawn between steps by the same mechanism as a transform, with nothing new in
+    the loop.
+  - The clock is written once and also serves sprite clips.
+  - Everything except the upload of joint matrices is tested headless.
+- **Costs**:
+  - Every animated character is sampled every frame, even when its state did not change.
+  - Each game writes its own clip selection: which clip, when, and how long a fade.
+  - Interpolating across a change of clip has no meaningful halfway point, so only the fade smooths
+    it.
+  - An unwrapped time grows without limit on a looping clip, and a float loses millisecond
+    resolution after about two hours.
+- **Revisit when**: the character count makes CPU sampling show in a profile, or two games write
+  the same clip-selection logic.

@@ -1,83 +1,63 @@
 # ADR-0068: Rendering: order passes by what they read
 
-**Date**: 2026-10-03
 **Status**: accepted
-**Deciders**: Joshua Farr
+**Date**: 2026-10-03
+**Amends**: [ADR-0031](0031-rendering-passes-draw-into-offscreen-targets.md)
+**Documented in**: [api/Rendering.md](../api/Rendering.md), [internals/RealtimeRenderer.md](../internals/RealtimeRenderer.md)
 
 ## Context
 
-[ADR-0031](0031-rendering-passes-draw-into-offscreen-targets.md) gave a pass a target and listed three
-things it left to the caller. A target is one image, so a pass cannot read what it drew last
-frame. A pipeline drawn into a target of another format is not caught at submission. And a pass
-is recorded in the order it was created, with `Frame::passBefore` as the way in front of
-`Engine3D`'s colour pass. The fourth alternative that record rejected, an image per frame in
-flight, was to be revisited "if a target is ever wanted for something a barrier cannot order".
-A pass that reads its own previous frame is that: one image cannot be read as last frame and
-written as this one in the same frame. [LitScene](../plans/completed/LitScene.md) step 10's post chain
-is the first chain of more than two passes, and its order is the frame's to get right.
+[ADR-0031](0031-rendering-passes-draw-into-offscreen-targets.md) gives each pass a target of one
+image, and records passes in the order they were created. A shadow pass, a lit pass and a chain
+of post passes depend on each other, and the engine creates its own colour pass before an app
+adds any. A pass recorded in the wrong order reads stale contents and nothing reports it. One
+image also cannot be read as last frame's result and written as this frame's, so a pass cannot
+read what it drew the frame before.
 
 ## Decision
 
-**A `RenderTarget` is built with one image or one per frame in flight.** A pass draws into
-the frame's own image. `current()` and `previous()` name the slots, and a reader registers
-each slot once and names the one it wants per frame. A target with more than one image starts
-each one cleared and readable, so `previous()` can be read on the first frame.
+A pass declares the targets it reads with `Pass::reads()`, and the frame records every pass that
+writes a target before every pass that reads it, otherwise keeping creation order; a cycle
+throws. A `RenderTarget` holds either one image or one per frame in flight, and with more than
+one a pass draws into `current()` and a reader may sample `previous()`.
 
-**The recorder checks a pipeline's formats against what it draws into** when it binds it, where
-both sides state one, and throws naming the pass.
+## Alternatives
 
-**A pass declares the targets it reads with `Pass::reads()`.** The frame records every pass
-that writes a target before every pass that reads it, and otherwise keeps the order the passes
-were created in. A cycle throws. `Frame::passBefore` is deleted.
+### Two targets, swapped by the caller each frame
+- **For**: No change to `RenderTarget`. It is ADR-0031's own answer.
+- **Against**: Every reader of last frame writes the same swap. The pass's target changes every
+  frame, so the recorder sees two unrelated targets.
+- **Rejected because**: It is the same images with the bookkeeping moved into every app.
 
-This amends ADR-0031.
+### The order stays the caller's, set by placing one pass before another
+- **For**: Nothing to compute, and whoever builds the frame knows the chain.
+- **Against**: The order is spread across everyone who adds a pass, and the engine's colour pass
+  exists before an app says anything. A wrong order reads stale contents silently.
+- **Rejected because**: The recorder already finds a target's writers. Adding readers lets the
+  frame place passes rather than only check them.
 
-## Alternatives Considered
-
-### Alternative 1: Two targets, swapped by the caller
-- **Pros**: No change to `RenderTarget` at all. ADR-0031's own answer.
-- **Cons**: Every reader of last frame writes the same swap. The pass's target changes every
-  frame, so the recorder sees two unrelated targets and cannot say which one a pass meant.
-- **Why not**: It is the same images with the bookkeeping moved into every consumer.
-
-### Alternative 2: The order stays the caller's, with `passBefore` and friends
-- **Pros**: Nothing to compute. Whoever builds the frame already knows the chain.
-- **Cons**: The order is spread across whoever adds a pass, and `Engine3D` creates its pass
-  before an app says anything. Getting it wrong reads stale contents and reports nothing.
-- **Why not**: The recorder already finds a target's writers by identity. Adding readers
-  means the frame can place passes, not just check them.
-
-### Alternative 3: Readers found from the draw items' materials
-- **Pros**: No declaration to forget. A material names a texture that names a target's image.
-- **Cons**: A scene set at set 2 names its shadow map outside any material, and `Resources`
-  would need to map an image back to its target.
-- **Why not**: The one reader step 8 added would already be missed.
-
-### Alternative 4: A slot count, a format check and declared reads — **chosen**
-- **Pros**: The writer-and-reader scan works per image as it did per target. The check costs a
-  comparison per pipeline bind. The order is stated once, where each pass is made.
-- **Cons**: A reader that forgets `reads()` is recorded where it was created, which is today's
-  behaviour and no worse. A two-slot target spends twice the memory.
-- **Why not**: n/a — chosen.
+### Readers found from the draw items' materials
+- **For**: No declaration to forget.
+- **Against**: The scene set binds the shadow map outside any material, and `Resources` would
+  need to map an image back to its target.
+- **Rejected because**: It would miss a reader that already exists.
 
 ## Consequences
 
-### Positive
-- A pass can read what it drew last frame, which a temporal effect or a feedback buffer needs.
-- A shadow map written per slot lets one frame's shadow pass overlap the previous frame's lit
-  pass, where one shared image serialises them with a barrier.
-- `Engine3D` creating its colour pass first no longer decides where an app's passes go.
-
-### Negative
-- A reader of a two-slot target holds one handle per slot and chooses between them each frame.
-- Validation already reports a format mismatch when its layers are on. The check duplicates it
-  so that a release build, or a test, sees the mistake by name rather than as a wrong picture.
-- Creating a multi-slot target submits once and waits, to leave its images readable.
-
-### Risks
-- A reader that names no `reads()` still depends on creation order. Synchronization validation
-  catches it only as a hazard; the escape hatch is that `reads()` is one line where the pass is
-  made.
-- A target's slot is chosen by the ring's frame index, so a frame built for one index and
-  recorded under another would draw into the wrong slot. The index moves only after a submit,
-  so a frame built during the tick and recorded at its end, as an engine does, keeps one.
+- **Gains**:
+  - A pass can read what it drew last frame, which temporal effects and feedback buffers need.
+  - A shadow map with one image per frame lets one frame's shadow pass overlap the previous
+    frame's lit pass.
+  - The order is stated once, where each pass is made, and the engine creating its pass first
+    does not decide where an app's passes go.
+- **Costs**:
+  - A pass that forgets `reads()` is recorded in creation order. Synchronisation validation
+    reports it only as a hazard.
+  - A multi-image target costs memory per image. Its reader holds one handle per slot and
+    chooses each frame, and creating it submits once and waits so every image starts readable.
+  - The slot is chosen by the ring's frame index, so a frame built for one index and recorded
+    under another draws into the wrong slot.
+  - The recorder also checks a pipeline's formats against its pass, documented in the
+    internals.
+- **Revisit when**: passes need to depend on something other than a render target, such as a
+  buffer written by one pass and read by another.

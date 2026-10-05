@@ -1,61 +1,52 @@
 # ADR-0082: Textures: owned by the device context
 
-**Date**: 2026-10-05
 **Status**: accepted
-**Deciders**: Joshua Farr
+**Date**: 2026-10-05
+**Amends**: [ADR-0042](0042-rendering-world-space-sprites.md), [ADR-0065](0065-meshes-shared-registry-keyed-by-path.md)
+**Documented in**: [internals/RealtimeRenderer.md](../internals/RealtimeRenderer.md), [api/Rendering.md](../api/Rendering.md)
 
 ## Context
 
-`renderer::Quad`, the batched 2D primitive, owned the texture factory, set 1's descriptor pool,
-the white texture and the map from a texture to its material, because it was the first thing to
-sample a texture. [ADR-0042](0042-rendering-world-space-sprites.md) and
-[ADR-0065](0065-meshes-shared-registry-keyed-by-path.md) then had the world quad, the lit
-renderer and `MeshRegistry` take their textures and materials from it, so that one pool served
-every primitive and an atlas was uploaded once. That reasoning holds; where it put the pool did
-not. 3D code depended on the 2D renderer, and asking `quads()` for a texture built the quad's
-pipelines, which `pipeline::Builder` refuses against an undefined colour format — so a headless
-context, which [ADR-0051](0051-frames-in-flight-ring-separate-from-presenting.md) says can build every
-renderer, could not load a mesh. The factory also made its own uploader beside the context's.
-The review is [R2](../audits/completed/ApiDesignReview.md).
+Every primitive that samples a texture shares one texture factory, one descriptor pool and
+layout for set 1, one white texture and one map from texture to material, so that an atlas is
+uploaded once and is one material ([ADR-0042](0042-rendering-world-space-sprites.md),
+[ADR-0065](0065-meshes-shared-registry-keyed-by-path.md)). Whatever owns that pool is a
+dependency of every 2D and 3D renderer and of `MeshRegistry`. If the 2D quad renderer owns it,
+3D code depends on the 2D renderer, and reaching a texture builds the quad's pipelines, which
+need a colour format. A context with no window has no colour format
+([ADR-0051](0051-frames-in-flight-ring-separate-from-presenting.md)), yet still has to load
+textures and meshes.
 
 ## Decision
 
-**A `realtime::Textures` on `DeviceContext` owns the texture factory, set 1's pool and layout,
-the white texture and the material map**, and copies through the context's one uploader. It is
-built with the context. `Quad`, `World`, `Lit` and `MeshRegistry` take it rather than `Quad`, and
-an app asks `context->textures()` — or `Engine3D::textures()` — for what it asked `quads()` for.
+`realtime::Textures`, owned by `DeviceContext` and built with it, holds the texture factory, set
+1's pool and layout, the white texture and the material map, and uploads through the context's
+one uploader. `Quad`, `World`, `Lit` and `MeshRegistry` take it, and an app reaches it through
+`DeviceContext::textures()` or `Engine3D::textures()`.
 
-## Alternatives Considered
+## Alternatives
 
-### Alternative 1: Keep it on `Quad`, and build `Quad`'s pipelines lazily
-- **Pros**: the smallest change; a headless context could load textures again.
-- **Cons**: 3D code still depends on the 2D renderer, and a change to how textures work is still
+### Keep the pool on the quad renderer and build its pipelines lazily
+- **For**: The smallest change, and a context with no window could load textures.
+- **Against**: 3D code still depends on the 2D renderer, and any change to how textures work is
   a change to the 2D primitive.
-- **Why not**: it fixes the symptom and keeps the coupling that caused it.
+- **Rejected because**: It removes the symptom and keeps the coupling that caused it.
 
-### Alternative 2: Give each renderer a pool of its own
-- **Pros**: no shared service at all.
-- **Cons**: an atlas drawn by the quad and the world quad both would be a material twice, which
-  is what ADR-0042 shared the pool to avoid.
-- **Why not**: it undoes the one thing the old shape got right.
-
-### Alternative 3: A `Textures` service on the context — **chosen**
-- **Pros**: one pool, as before, owned by what owns the device; nothing 3D names the 2D renderer;
-  a context that draws nothing loads textures and meshes.
-- **Cons**: see below.
+### A pool per renderer
+- **For**: No shared service at all.
+- **Against**: An atlas drawn by both the quad and the world quad would be uploaded and bound as
+  two materials, which ADR-0042 shares the pool to avoid.
+- **Rejected because**: It gives up the sharing the pool exists for.
 
 ## Consequences
 
-### Positive
-- `MeshRegistryTest` registers a texture and a textured mesh against a context with no colour
-  format, and the quad renderer is never built.
-- One uploader per context, where the factory made a second.
-
-### Negative
-- Every context uploads a white texture as it is built, whether or not anything samples one.
-- An app's `quads()->texture(...)` is `textures()->texture(...)` now; the change went through
-  every app and test in the tree, and a consumer outside it makes the same one.
-
-### Risks
-- A second set 1 layout — a texture array, a second sampler — would be a second service or a
-  second layout here. The escape hatch is that this is the one class to grow.
+- **Gains**:
+  - One pool, owned by what owns the device, and nothing 3D names the 2D renderer.
+  - A context that draws nothing can load textures and meshes, so mesh tests need no colour
+    format.
+  - One uploader per context.
+- **Costs**:
+  - Every context uploads a white texture when it is built, whether or not anything samples it.
+  - A second set 1 layout, such as a texture array or a second sampler, needs a second service
+    or a second layout in this one.
+- **Revisit when**: a renderer needs a set 1 layout this class does not provide.

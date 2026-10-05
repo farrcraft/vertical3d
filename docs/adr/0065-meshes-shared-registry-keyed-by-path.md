@@ -1,79 +1,62 @@
 # ADR-0065: Meshes: shared registry keyed by path
 
+**Status**: amended
 **Date**: 2026-10-03
-**Status**: accepted
-**Deciders**: Joshua Farr
-
-Amended by [ADR-0082](0082-textures-owned-by-the-device-context.md): the textures and materials this
-record takes from `renderer::Quad` come from the context's `Textures`, which keeps the one
-shared pool.
-
-Amends [ADR-0010](0010-meshes-owned-by-the-app-that-built-them.md).
+**Amended by**: [ADR-0082](0082-textures-owned-by-the-device-context.md)
+**Supersedes**: [ADR-0010](0010-meshes-owned-by-the-app-that-built-them.md)
+**Documented in**: [api/Rendering.md](../api/Rendering.md)
 
 ## Context
 
-[ADR-0063](0063-ecs-draw-from-a-transform-plus-a-component-per-kind.md) gives a lit
-entity a mesh component that names a mesh by handle, and nothing in the api hands one out.
-[ADR-0010](0010-meshes-owned-by-the-app-that-built-them.md) kept geometry out of `Resources`, because the
-registry never freed and the sort key has no geometry field. It named a cache built over
-app-owned meshes as the way to add sharing later, and called it premature until an app needed
-it. Since then retcon's `MeshRegistry` has shown the need: ten props drawn from six files
-share one upload each. [ADR-0061](0061-resources-explicit-release-generational-handles.md) has also given
-the api a handle that can be released. Nothing in the tree puts a `type::Model` on the device
-at all. [LitScene](../plans/completed/LitScene.md) is the plan that needs this settled.
+[ADR-0063](0063-ecs-draw-from-a-transform-plus-a-component-per-kind.md) gives a lit entity a
+mesh component that names a mesh by handle, and something has to hand those handles out.
+[ADR-0010](0010-meshes-owned-by-the-app-that-built-them.md) kept geometry out of `Resources`,
+because that registry never freed and the sort key has no geometry field. Many props are drawn
+from the same few files, and each file should be uploaded once and its textures shared.
+[ADR-0061](0061-resources-explicit-release-generational-handles.md) gives the api handles that
+can be released and that go stale safely.
 
 ## Decision
 
-**`realtime::MeshRegistry` turns a model into a `memory::Mesh` once per path and hands out a
-`MeshHandle`**, a slot and a generation as ADR-0061's handles are. Its entry holds the mesh,
-the albedo's texture and material from `renderer::Quad`, white for a flat surface, and the
-base colour. An albedo is shared by every entry naming the same image. A handle is released
-explicitly: the mesh goes to the ring, and the albedo goes when the last entry naming it does.
-The vertex layout is `type::Model::Vertex`. The registry is not in `Resources`, and `DrawItem`
-still carries raw buffers, filled from the entry when an entity is walked.
+`realtime::MeshRegistry` uploads a model once per path and hands out a `MeshHandle`, a slot and
+a generation as in ADR-0061. An albedo texture is shared by every entry that names the same
+image; on release the mesh is retired through the ring, and an albedo goes with the last entry
+that names it. The registry sits beside `Resources`, not in it, and a `DrawItem` still carries
+raw buffers, filled from the entry.
 
-## Alternatives Considered
+## Alternatives
 
-### Alternative 1: A fourth registry in `Resources`
-- **Pros**: Every handle a draw names resolves through one owner.
-- **Cons**: The sort key has no geometry field, so a mesh handle in `Resources` sorts nothing,
-  which was ADR-0010's objection and is still true. A model also brings an albedo with it,
-  which `Resources` cannot load.
-- **Why not**: It is a slot in a registry for something the registry does nothing with.
+### A fourth registry in `Resources`
+- **For**: Every handle a draw names resolves through one owner.
+- **Against**: The sort key has no geometry field, so a mesh handle in `Resources` sorts
+  nothing. A model also brings its albedo with it, which `Resources` cannot load.
+- **Rejected because**: It is a slot in a registry that does nothing with it.
 
-### Alternative 2: Leave meshes to the app, as ADR-0010 has it
-- **Pros**: No new type. The step from a model to a mesh is four lines an app can write.
-- **Cons**: A component naming a mesh needs something to name it by. Every game would write
-  the de-duplication, the albedo lookup and the release, which is the part that goes wrong.
-- **Why not**: The walk ADR-0063 puts in the api has nothing to read without it.
+### Meshes stay the app's, as ADR-0010 has it
+- **For**: No new type. Turning a model into a mesh is a few lines an app can write.
+- **Against**: A mesh component needs something to name its mesh by. Every game would write the
+  de-duplication, the albedo lookup and the release, which is the part that goes wrong.
+- **Rejected because**: The draw walk ADR-0063 puts in the api would have nothing to read.
 
-### Alternative 3: retcon's registry as it is
-- **Pros**: It works at retcon's scale.
-- **Cons**: Its handle is a bare index that never goes stale because nothing is ever released,
-  and it gives every textured mesh a new albedo slot, up to a fixed ceiling of 64.
-- **Why not**: Released and shared are the two properties a world loaded by region needs.
-
-### Alternative 4: A registry beside `Resources`, keyed by path, releasable — **chosen**
-- **Pros**: One upload per file and one texture per image, and a stale handle resolves to
-  nothing. Meshes an app builds itself, a voxel chunk say, are untouched by it.
-- **Cons**: Two lifetimes for geometry: a registered mesh lives until it is released, and an
-  app's own lives as long as its owner.
-- **Why not**: n/a — chosen.
+### A registry with plain index handles and nothing released
+- **For**: Simple, and sufficient when everything loads at startup.
+- **Against**: An index is only safe while nothing is released, and a texture per mesh
+  duplicates shared images.
+- **Rejected because**: A world loaded by region needs both release and sharing.
 
 ## Consequences
 
-### Positive
-- `component::Mesh` names something, and a lit walk can resolve it.
-- Props sharing an atlas share a material, so their draws sort together.
-
-### Negative
-- A model's vertex layout is the api's now. A game wanting another layout builds its own
-  `memory::Mesh` and walks its own components.
-- A model is one surface, per [ADR-0030](0030-models-one-interleaved-array.md).
-  A file whose parts need different materials is several registrations until milestone 5 splits
-  a file by material.
-
-### Risks
-- A released handle still named by a component draws nothing, and nothing reports it. That is
-  ADR-0061's stale handle in a new place, and the escape hatch is the same: resolve returns null,
-  and a walk that wants to know can ask.
+- **Gains**:
+  - A mesh component names something, and a lit walk resolves it.
+  - One upload per file and one texture per image. Props that share an atlas share a material,
+    so their draws sort together.
+  - Meshes an app builds itself, such as voxel chunks, are untouched.
+- **Costs**:
+  - The vertex layout of a registered model is the api's. A game wanting another layout builds
+    its own `memory::Mesh` and walks its own components.
+  - Geometry has two lifetimes: a registered mesh lives until released, and an app's own mesh
+    as long as its owner.
+  - A component naming a released handle draws nothing and nothing reports it, as with any
+    stale ADR-0061 handle.
+- **Revisit when**: draws need to sort or batch by geometry, as instancing would, which would
+  give a mesh handle a reason to live in `Resources`.

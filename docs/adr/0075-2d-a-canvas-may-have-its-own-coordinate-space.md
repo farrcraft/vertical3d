@@ -1,74 +1,60 @@
 # ADR-0075: 2D: a canvas may have its own coordinate space
 
-**Date**: 2026-10-04
 **Status**: accepted
-**Deciders**: Joshua Farr
+**Date**: 2026-10-04
+**Documented in**: [api/Rendering.md](../api/Rendering.md)
 
 ## Context
 
-A `Canvas` draws in pixels. pong's court is the window in pixels with 800 by 600 written into its
-rules: the paddle travel, where the right paddle stands, and the ball's speeds. A FIXME asks for
-variables. tetris fits its well to the window by hand, and odyssey picks through a hard-coded
-tile width. [RenderingPipeline.md](../api/Rendering.md#what-is-not-built-yet) also records
-that the 2D pass does not read set 0, and the roadmap took the two to be one change. They are
-not. Set 0 is a camera per pass. The quad projection is a push constant per submit, and so per
-canvas. pong draws its court and its menu in one pass, and the menu is in pixels.
+A `Canvas` draws in window pixels. A 2D game wants its own units: a court of fixed size, shown
+whole in a window of any shape, with the cursor mapped back into the same units. Without help,
+each game writes the same scale and offset and the reverse mapping, and a clip drawn in game
+units is scissored in the wrong place. The 2D quad pipeline takes its projection from a push
+constant per submit, which is per canvas, while set 0 holds one camera per pass. A game often
+draws its play area and its menu in one pass, and the menu is in pixels.
 
 ## Decision
 
-**A canvas may be given a space, a size in the game's own units with its origin at the top left,
-and a fit: stretched to the canvas, or contained in it at its own aspect with bars either side.**
-`projection()` then maps the space into its viewport, and `toSpace()` maps a pixel back. A clip
-rectangle is mapped out to pixels, because a scissor is in pixels. A canvas with no space draws
-in pixels, exactly as before. **The 2D pass keeps taking its projection from the canvas, and does
-not read set 0.**
+A canvas may be given a space: a size in the game's units with its origin at the top left, and
+a fit, either stretched to the canvas or contained at its own aspect ratio with bars either
+side. `projection()` maps the space into the viewport, `toSpace()` maps a pixel back, and a clip
+rectangle is mapped to pixels for the scissor. A canvas with no space draws in pixels, and the
+2D pass keeps taking its projection from the canvas rather than reading set 0.
 
-## Alternatives Considered
+## Alternatives
 
-### Alternative 1: A space on the canvas, through the push constant it already has — **chosen**
-- **Pros**: A projection per submit is a projection per canvas, which is what a game space is. A
-  court and a menu share one pass as two canvases. No shader or pipeline changes, and the
-  mapping is headless, so a test asserts it.
-- **Cons**: A space is a scale and an offset, not a camera, so it does not pan, zoom or rotate.
-  A 2D game that scrolls translates what it draws, as it does today.
-- **Why not**: n/a — chosen.
+### The quad pipeline reads set 0's camera, as the other pipelines do
+- **For**: One way for every pipeline to be told where it looks, and a 2D camera could pan and
+  zoom.
+- **Against**: One camera per pass puts a play area and its menu in separate passes, or the menu
+  in game units. It changes every quad shader and every app's submit.
+- **Rejected because**: It costs a pass per space, for a camera no 2D app here moves.
 
-### Alternative 2: The quad pipeline reads set 0's camera, as the other pipelines do
-- **Pros**: One way for every pipeline to be told where it looks, and a 2D camera could pan and
-  zoom like any other.
-- **Cons**: A camera per pass puts the court and the menu in separate passes, or the menu in
-  court units. It changes every quad shader and every app's submit, to buy a camera that no 2D
-  app here moves.
-- **Why not**: It costs a pass per space, and nothing in this tree needs what it buys.
+### An orthographic `type::camera::Camera` handed to the canvas
+- **For**: The camera classes already build orthographic projections.
+- **Against**: `Camera`'s orthographic projection is centred and symmetric with y up, so it
+  cannot express "800 by 600 from the top left" without a new mode. It also brings a view matrix
+  and depth range a canvas does not use.
+- **Rejected because**: It is a third way to say what a size and a fit say.
 
-### Alternative 3: An orthographic `type::camera::Camera` the app hands to the canvas
-- **Pros**: The camera classes already build orthographic projections, and a profile could carry
-  the space.
-- **Cons**: `Camera::orthographic` is centred and symmetric, with y up, so it cannot say "800 by
-  600 from the top left" without a new mode. It also brings a view matrix and a depth range that
-  a canvas has no use for.
-- **Why not**: It is a third way to say what a size and a fit say.
-
-### Alternative 4: Each game maps its own coordinates
-- **Pros**: Nothing to decide, and a game keeps whatever arithmetic it likes.
-- **Cons**: That is the FIXME. Each game also maps the cursor back by hand, and a clip drawn in
-  game units would be scissored in the wrong place.
-- **Why not**: Every 2D game writes the same scale and offset, and a clip is easy to get wrong.
+### Each game maps its own coordinates
+- **For**: Nothing in the api changes, and each game keeps its own arithmetic.
+- **Against**: Every 2D game writes the same scale and offset and the same cursor mapping, and
+  each gets the clip wrong in its own way.
+- **Rejected because**: The mapping is the same in every game and belongs in one place.
 
 ## Consequences
 
-### Positive
-- pong's rules are written against its court, and a window of any shape shows the court whole.
-- A cursor reaches a game in its own units through `toSpace()`.
-- The set 0 item in RenderingPipeline.md is closed as decided, rather than left open.
-
-### Negative
-- Something drawn outside the space lands in the bars, because nothing clips to the viewport.
-  A game that draws past its court clips there itself.
-- A contained space scales text with it, so text in a space grows and shrinks with the window,
-  where the ui's stays at its size.
-
-### Risks
-- **A 2D game that wants a camera** — one that scrolls a world larger than the screen and zooms
-  it — would want alternative 2. That is a camera on the quad pipeline. A space need not be
-  undone for it, because a canvas with no space would read the camera instead.
+- **Gains**:
+  - A game's rules are written against its own court, and a window of any shape shows it
+    whole.
+  - The cursor reaches a game in its own units through `toSpace()`.
+  - No shader or pipeline changes, and the mapping is tested without a GPU.
+- **Costs**:
+  - A space is a scale and an offset, not a camera, so it cannot pan, zoom or rotate. A
+    scrolling game translates what it draws.
+  - Anything drawn outside the space lands in the bars, because nothing clips to the viewport.
+  - Text in a contained space scales with the window, while the UI's text stays its own size.
+- **Revisit when**: a 2D game scrolls and zooms a world larger than the screen. That needs a
+  camera on the quad pipeline, and a canvas with no space could read the camera without undoing
+  this.

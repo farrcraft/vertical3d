@@ -4,6 +4,7 @@
 **Date**: YYYY-MM-DD
 **Amends**: ADR-NNNN (omit the line if none)
 **Amended by**: ADR-NNNN (omit the line if none)
+**Supersedes**: ADR-NNNN (omit the line if none)
 **Superseded by**: ADR-NNNN (omit the line if none)
 **Documented in**: the reference doc or header that states the current rule
 

@@ -1,98 +1,76 @@
 # ADR-0058: UI: SDL keyboard adapter in ui/shell
 
-**Date**: 2026-09-13
 **Status**: accepted
-**Deciders**: Joshua Farr
+**Date**: 2026-09-13
+**Amends**: [ADR-0040](0040-ui-keyboard-focus-and-text-input.md)
+**Documented in**: [The User Interface](../api/UserInterface.md), [User Interface Internals](../internals/UserInterface.md)
 
 ## Context
 
-[ADR-0040](0040-ui-keyboard-focus-and-text-input.md) gave `api/ui` a keyboard router that
-names no platform type: `Keys::press()` takes a key name and `Keys::text()` takes utf-8, which
-is what keeps the library testable without a window. It left an app four things to do before
-any of that runs — decode the `SDL_Event`, read shift and control off it, find a clipboard, and
-get the platform composing characters at all — and recorded the cost as two of its own negative
-consequences: that `Cursor` and `Keys` are two objects an app has to hold with nothing enforcing
-both, and that `SDL_StartTextInput` was called for the life of the window because nothing was
-following the focus.
-
-Nothing in this tree had written that wiring. `ui::Keys` was constructed only in
-`api/ui/tests`, `event::TextInput` had no listener outside `api/input`, and the editor built a
-`ui::Cursor` with no keys, no measure and no clipboard. So the routing was proven and the seam
-was not, which is the arrangement where the library looks finished and the first app to want a
-text box discovers otherwise.
+`ui::input::Keys` takes key names and UTF-8 text, and names no platform type, so the library is
+testable without a window. Before it runs, an app has to decode the `SDL_Event`, read the shift
+and control state, supply a clipboard, and turn the platform's text input on. Text input should
+be on only while something that takes text has the focus, because on some platforms it raises
+an on-screen keyboard. The focus also moves under a mouse press, which the keyboard path never
+sees. A binding and a text box need to agree on key names.
 
 ## Decision
 
-`ui::shell::Keyboard` is the platform half: it holds a `ui::Keys`, turns an `SDL_Event` into the
-two calls that router takes, supplies the SDL clipboard, and starts and stops text input as the
-focus reaches a text box and leaves it — following `ui::Engine::onFocus()` rather than polling,
-because the focus also moves under a press it never sees. The key name comes from
-`input::keyName()`, so one table serves both the binding and the box.
+`v3d::ui::shell::Keyboard` is the platform half of the keyboard: it holds a `ui::input::Keys`,
+turns each `SDL_Event` into the calls `Keys` takes, and supplies the SDL clipboard. It turns
+text input on and off as the focus reaches and leaves a component that takes text, by listening
+to `ui::Engine::onFocus()` rather than checking per event. Key names come from
+`input::keyName()`, so bindings and the ui read one table.
 
-## Alternatives Considered
+## Alternatives
 
-### Alternative 1: Each app writes the decode, as ADR-0040 left it
-- **Pros**: `api/ui` names no `SDL_Event` at all, and the seam is whatever each app needs
-- **Cons**: it is the same switch, the same two modifier masks and the same clipboard pair in
-  every app, and each copy is a place the key names can drift from `mappings.json`
-- **Why not**: [ADR-0028](0028-apps-the-shared-app-shell-lives-in-the-api.md) already decided this class
-  of question, and SDL3 is public on every `v3dlib_ui` consumer through `v3dlib_render`, so
-  writing it once costs no dependency that was not already there.
+### Each app writes the decode itself
+- **For**: `api/ui` names no `SDL_Event`.
+- **Against**: every app writes the same switch, the same modifier masks and the same clipboard
+  pair, and each copy can drift from the binding key names.
+- **Rejected because**: shared app wiring belongs in the api, per
+  [ADR-0028](0028-apps-the-shared-app-shell-lives-in-the-api.md), and SDL3 already reaches every
+  `v3dlib_ui` consumer through `v3dlib_render`.
 
-### Alternative 2: The seam routes the mouse too, so an app holds one object rather than two
-- **Pros**: closes ADR-0040's "two objects and two calls" outright
-- **Cons**: a press has to interleave with whatever else an app does with one — the editor
-  offers the ui a press and drives a camera with the one the ui did not take — so consuming
-  mouse events in `onEvent` would decide that ordering for every app
-- **Why not**: `ui::Cursor` takes points rather than events for that reason, and the object
-  count is a smaller cost than taking the ordering away.
+### The adapter routes the mouse too, so an app holds one object
+- **For**: one object and one call for all ui input.
+- **Against**: apps interleave a press with their own handling. The editor offers a press to the
+  ui and drives a camera with the press the ui did not take. Consuming mouse events inside the
+  adapter would fix that order for every app.
+- **Rejected because**: `ui::input::Cursor` takes points rather than events so that each app
+  keeps control of that order.
 
-### Alternative 3: Text input is turned on and off by the text box, or checked per event
-- **Pros**: no callback on `ui::Engine`, and the component that needs composing is what asks
-- **Cons**: a component owns no window, and checking per event is a frame late — a box clicked
-  into and typed into in the same frame loses its first character, because the press that
-  focused it is not an event this seam sees
-- **Why not**: the focus is the engine's, so the engine is what can say it moved, and saying so
-  is cheaper than every other way of finding out.
+### The text box turns text input on and off, or it is checked per event
+- **For**: no callback on `ui::Engine`, and the component that needs text asks for it.
+- **Against**: a component owns no window. Checking per event is late: a box clicked and typed
+  into in the same frame loses its first character, because the adapter never saw the press
+  that focused it.
+- **Rejected because**: the engine owns the focus, so the engine is what can report that it
+  moved.
 
-### Alternative 4: `Keys` listens for `event::KeyDown` on the dispatcher instead
-- **Pros**: no SDL anywhere near `api/ui`, and the events already carry the api's key names
-- **Cons**: `input::Keyboard` triggers `KeyDown` and the mapper's source event in one call, so a
-  listener cannot take a key before the bindings turn it into a command
-- **Why not**: a key that both edits a box and fires a command is the bug
-  [ADR-0043](0043-input-apps-see-raw-events-before-bindings.md) put the app ahead of the
-  bindings to prevent.
+### `Keys` listens for key events on the dispatcher
+- **For**: no SDL near `api/ui`, and the events already carry the api's key names.
+- **Against**: the adapter still needs the window to switch text input with the focus, so it
+  already sits where the SDL event is. When this was decided, a listener could not take a key
+  before the bindings did. [ADR-0081](0081-input-key-events-and-commands-are-separate.md) since
+  made that possible.
+- **Rejected because**: reading the SDL event in the adapter that already holds the window
+  needs no extra wiring. Nothing has needed the dispatcher route since ADR-0081 made it viable.
 
 ## Consequences
 
-### Positive
-- An app's `onEvent()` is one line, and it is the same line in every app.
-- One key name table. A binding written against "backspace" and a text box answering it cannot
-  disagree, because `input::keyName()` is what both read.
-- `SDL_StartTextInput` is no longer on for the life of the window, which was ADR-0040's
-  consequence and is now paid: on a platform with an on screen keyboard it rises with a text
-  box and lowers with it.
-- `Engine::onFocus()` is useful to more than this — an app wanting to show what the keyboard is
-  on, or to suspend something while a field is being typed into, has the same hook.
-- A release is never consumed, so a key held as a box took the focus is still seen to come up
-  and `input::KeyState` cannot be left holding it down.
-
-### Negative
-- `v3dlib_ui` now links `v3dlib_input`, for one function. The alternative was a second copy of
-  the key table, which is the thing worth avoiding, but it is a dependency the library did not
-  have and the manifest in `cmake/v3dApiLibraries.cmake` records it.
-- A `ui::Keys` built directly still needs its clipboard and its text input found by hand.
-  `shell::Keyboard::clipboard()` is public for that reason, but nothing makes the direct route
-  hard to take.
-- `onFocus()` holds one listener and the last caller wins, so an app that wants the hook and the
-  seam has to order the two. A list of listeners would not have this problem and is not worth
-  the allocation until something needs two.
-- The mouse is still the app's, so ADR-0040's "two objects, two calls" stands for the cursor.
-
-### Risks
-- **An app that overrides `onEvent` for something else has to remember to offer the seam the
-  event**, and forgetting it is a ui that cannot be typed into with nothing reporting why. It is
-  the failure ADR-0043 already named for `onEvent` generally, diagnosed the same way.
-- **Text input follows the focus, so a component that is typed into but is not a `TextBox` gets
-  no characters.** `shell::Keyboard::follow()` is the one place that decides, and a second such
-  component is a line there rather than a new mechanism.
+- **Gains**:
+  - An app's keyboard wiring for the ui is one call in its event handler, the same in every app.
+  - One key name table serves bindings and the ui.
+  - Text input follows the focus, so an on-screen keyboard rises and falls with a text box.
+  - `Engine::onFocus()` is available to anything else that needs to know where the keyboard is.
+  - A key release is never consumed, so `input::KeyState` never sees a key stuck down.
+- **Costs**:
+  - `v3dlib_ui` links `v3dlib_input`, for the key name table.
+  - `onFocus()` holds one listener, and the last caller replaces the others.
+  - The mouse is still the app's, so an app holds a `Cursor` and a `Keyboard`.
+  - An app that overrides its event handler must remember to pass events to the adapter, or the
+    ui cannot be typed into, with no error.
+  - Only components whose type is marked as taking text receive characters.
+- **Revisit when**: a second listener needs `onFocus()`, or an app needs the keyboard path
+  without SDL.

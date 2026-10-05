@@ -1,89 +1,57 @@
 # ADR-0008: Shaders: descriptor sets by update frequency
 
+**Status**: amended
 **Date**: 2026-08-31
-**Status**: accepted
-**Deciders**: Joshua Farr
-
-Amended by [ADR-0064](0064-lighting-lit-passes-use-the-shared-recorder.md): a pass may also bind a
-scene at set 2, once for the pass and only for a pipeline that declares one. That is this
-record's per frame set split in two, not the per object set it rejects below.
+**Amended by**: [ADR-0064](0064-lighting-lit-passes-use-the-shared-recorder.md)
+**Documented in**: [internals/RealtimeRenderer.md](../internals/RealtimeRenderer.md)
 
 ## Context
 
-[ADR-0004](0004-rendering-submit-draw-items-as-data.md) made a draw item a description that names its
-pipeline and material by handle, and left how those are actually bound open. The phase 2
-frame loop cannot stay open on it: the sort key's field order, what a material owns, and
-whether two adjacent items can be merged all follow from where a piece of data is bound.
-Every pipeline layout built from here on encodes the answer, and changing it later means
-rewriting every shader and every pipeline layout at once.
+A draw item names its pipeline and material by handle
+([ADR-0004](0004-rendering-submit-draw-items-as-data.md)), but how data reaches a shader is still
+open. Where each piece of data is bound decides the sort key's field order, what a material
+owns, and whether two adjacent items can be merged. Every pipeline layout and every shader
+encodes the answer, so changing it later means rewriting all of them at once.
 
 ## Decision
 
-Descriptor sets are organised by how often their contents change: **set 0 per frame** —
-camera, projection, viewport, time — bound once by the pass; **set 1 per material** — the
-sampled texture and anything else the material needs. Anything that changes per object —
-transform and tint — goes in **push constants**, not in a third set. The draw item's sort
-key is ordered to match: layer, pipeline, material, depth.
+Descriptor sets are grouped by how often their contents change. Set 0 holds per-frame data such
+as the camera and is bound once by the pass; set 1 holds a material, such as its texture; data
+that changes per object, such as a transform or tint, goes in push constants rather than a third
+set. The sort key is ordered to match: layer, pipeline, material, depth.
 
-## Alternatives Considered
+## Alternatives
 
-### Alternative 1: Two sets by frequency plus push constants — **chosen**
-- **Pros**: Two sets bound per draw at most, and merging adjacent items is a comparison of
-  two handles. Push constants need no allocation, no pool and no descriptor write, which
-  suits transform and tint exactly — small, different every draw. The sort key's fields fall
-  out of the same order, so sorting groups precisely what can be merged.
-- **Cons**: Push constants are a small guaranteed budget — 128 bytes on the floor of what
-  Vulkan requires — so anything per-object that does not fit has to become a material or a
-  buffer indexed by push constant. Fixes the set numbering across every shader in the tree.
-- **Why not**: n/a — chosen.
+### One set per draw, holding everything
+- **For**: the simplest to write. One layout, no thought about which frequency a value belongs
+  to, and one uniform block in every shader.
+- **Against**: camera data is copied into every draw's set, so descriptor writes grow with draw
+  count. No two draws share a set, so nothing can be merged.
+- **Rejected because**: it defeats the reason draw items are data. The engine would sort a frame
+  it could never merge, and the quad batching of
+  [ADR-0005](0005-2d-one-batched-quad-pipeline.md) would gain nothing.
 
-### Alternative 2: One set per draw, holding everything
-- **Pros**: The simplest thing to write first. One layout, no thinking about which frequency
-  a value belongs to, and the shaders read one uniform block.
-- **Cons**: Camera data is duplicated into every draw's set, so a frame allocates and writes
-  descriptors in proportion to draw count. Nothing can be merged, because no two draws share
-  a set. It is the shape that makes the batching in
-  [ADR-0005](0005-2d-one-batched-quad-pipeline.md) pointless.
-- **Why not**: It defeats the reason draw items are data. The engine would sort a frame it
-  can never merge.
-
-### Alternative 3: Three sets — per frame, per material, per object
-- **Pros**: Uniform: everything is a descriptor set, and per-object data is not limited to
-  the push constant budget. Object data can live in one large buffer with a dynamic offset,
-  which is a well-trodden pattern.
-- **Cons**: A third bind per draw, a descriptor pool sized by object count, and per-frame
-  descriptor writes or dynamic-offset bookkeeping for data that is a handful of bytes.
-- **Why not**: The per-object data this repo actually has is a transform and a tint. Paying a
-  descriptor set for that is the expensive way to move 80 bytes. This is the alternative to
-  revisit if per-object data grows — the escape hatch is a push constant holding an index
-  into a storage buffer, which changes neither set 0 nor set 1.
+### Three sets: per frame, per material, per object
+- **For**: uniform, since everything is a descriptor set. Per-object data is not limited by the
+  push constant budget and can live in one large buffer with a dynamic offset, a common pattern.
+- **Against**: a third bind per draw, a descriptor pool sized by object count, and per-frame
+  descriptor writes or offset bookkeeping for a few bytes of data.
+- **Rejected because**: the per-object data here is a transform and a tint. A descriptor set is
+  the expensive way to move 80 bytes.
 
 ## Consequences
 
-### Positive
-- Merging is decidable from the draw item alone: same pipeline, same material, adjacent
-  after sorting, therefore mergeable.
-- The batched quad of [ADR-0005](0005-2d-one-batched-quad-pipeline.md) fits without special
-  casing — the atlas is a material, and a flush is a material change.
-- An editor viewport is a pass with its own set 0, which is what
-  [ADR-0003](0003-rendering-one-engine-for-2d-and-3d.md) needs multiple viewports to be.
-
-### Negative
-- The 128 byte push constant floor is a real ceiling on per-object data. A 4x4 transform and
-  an rgba tint is 80 bytes, leaving little room; a second matrix does not fit.
-- Every shader in the tree has to agree on the set numbers, including ones not yet written.
-  There is no compiler check for getting it wrong — the symptom is a validation error or
-  garbage uniforms.
-- A value whose frequency is genuinely between per-frame and per-material has nowhere
-  natural to go and will be pushed into set 1, duplicating it across materials.
-
-### Risks
-- Guessing a value's frequency wrong is cheap to fix while there is one pipeline and
-  expensive once there are several. Phase 3 builds the first one, and it is the point at
-  which to check the choice against something real rather than against this document.
-  **Checked on 2026-09-01**: voxel's terrain pipeline is the second, and the first shader in
-  the tree to read set 0. A frame is one camera at set 0, one block palette at set 1 shared
-  by every chunk in the world, and a chunk's origin in a 16 byte push constant — which is
-  the split this decided, arrived at without wanting to move anything.
-- Devices vary in maximum bound descriptor sets, but the floor is four and this uses two, so
-  nothing here is at risk from a weak device.
+- **Gains**:
+  - Whether two items can merge is decided from the items alone: the same pipeline and material,
+    adjacent after sorting.
+  - A texture atlas is a material, so a batch break is a material change, with no special case.
+  - A second viewport is a pass with its own set 0.
+- **Costs**:
+  - Push constants are guaranteed only 128 bytes, which caps per-object data. A 4x4 transform
+    and a tint take 80 of them.
+  - Every shader has to agree on the set numbers, and nothing checks it at compile time. A
+    mismatch shows as a validation error or wrong uniforms.
+  - A value whose frequency falls between per frame and per material has no natural home and
+    ends up duplicated across materials in set 1.
+- **Revisit when**: per-object data outgrows the push constant budget. The first step is then a
+  push constant holding an index into a storage buffer, which leaves sets 0 and 1 unchanged.
