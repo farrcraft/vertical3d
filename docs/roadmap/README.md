@@ -24,12 +24,13 @@ the others; a roadmap exists because the ordering between its items is the inter
 
 | Roadmap | Area |
 |---|---|
-| [OfflineRendering.md](OfflineRendering.md) | `talyn` and `moya` — the raytracer and the reyes renderer; phases 4 to 6 taken up by [OfflineRenderingPhases4To6](../plans/OfflineRenderingPhases4To6.md) |
+| — | No roadmap is open. |
 
 ## Completed
 
 | Roadmap | Area | Done by |
 |---|---|---|
+| [OfflineRendering.md](completed/OfflineRendering.md) | `talyn` and `moya` — a RIB reader, a shading language, sampling through one film, a trace that recurses, textures, and one ray tracer both reach; area lights, displacement and acceleration are in [TODO.md](../TODO.md#offline-rendering) | three phase plans and [OfflineRenderingPhases4To6](../plans/completed/OfflineRenderingPhases4To6.md), 2026-09-05 to 2026-10-04 |
 | [GameEngine.md](completed/GameEngine.md) | The realtime api, for games rather than demos — the index of the seven milestones below; what each left is in [TODO.md](../TODO.md) | the seven plans below, 2026-10-03 to 2026-10-04 |
 | [m7-ShellAndShipping.md](completed/m7-ShellAndShipping.md) | 7 — strips that respect `pickable()`, a held command, a relative mouse, a document read forward, one screen for the ui's renderers, a game space on a canvas, a wrapping box, a file chooser, pass timings and a slider; asynchronous loading is in [TODO.md](../TODO.md#loading) | [ShellAndShipping](../plans/completed/ShellAndShipping.md), 2026-10-04 |
 | [m6-Effects.md](completed/m6-Effects.md) | 6 — a sprite clip, a seeded random source, particles on the step, weather, a tint over the world, and a lit scene's colour over time; the panned voice is in [TODO.md](../TODO.md#audio) | [Effects](../plans/completed/Effects.md), 2026-10-04 |

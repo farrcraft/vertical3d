@@ -6,7 +6,7 @@
 
 ## Context
 
-Phase 2 of [the offline rendering roadmap](../roadmap/OfflineRendering.md) left both offline
+Phase 2 of [the offline rendering roadmap](../roadmap/completed/OfflineRendering.md) left both offline
 renderers able to read a scene and unable to shade it. `Surface "plastic"` and
 `LightSource "distantlight"` reach a handler with their parameters typed by the declaration table
 ([ADR-0025](0025-the-rib-reader-dispatches-a-cpp-request-interface.md)), and both renderers drop

@@ -9,13 +9,17 @@ every phase is closed it moves to [completed/](completed/), and any open item it
 moves to [TODO.md](../TODO.md). The plan itself stays, because the reasoning behind an ordering
 outlives the schedule.
 
-One plan is open. [OfflineRenderingPhases4To6.md](OfflineRenderingPhases4To6.md) was drafted on
-2026-10-04, taking up the last three phases of [the offline rendering
-roadmap](../roadmap/OfflineRendering.md): a pixel as a filtered set of seeded samples in a film
-both renderers share, depth of field, motion blur of a transform and adaptive sampling; a trace
-that recurses, reflection, refraction, transparency, spheres, `texture()` and `noise()`; and
-phase 6 answered as one ray tracer both renderers reach, which gives moya shadows. Area lights,
-displacement and an acceleration structure are held.
+No plan is open.
+
+[completed/OfflineRenderingPhases4To6.md](completed/OfflineRenderingPhases4To6.md) was drafted and
+closed on 2026-10-04, taking up the last three phases of [the offline rendering
+roadmap](../roadmap/completed/OfflineRendering.md): a pixel as a filtered set of seeded samples in a
+film both renderers share, depth of field, motion blur of a transform and adaptive sampling; a
+trace that recurses, reflection, refraction, transparency, spheres, `texture()` and `noise()`;
+and phase 6 answered as one ray tracer both renderers reach
+([ADR-0077](../adr/0077-one-ray-tracer-both-renderers-reach.md)), which gives moya shadows. Area
+lights, displacement and an acceleration structure went to
+[TODO.md](../TODO.md#offline-rendering).
 
 [completed/ShellAndShipping.md](completed/ShellAndShipping.md) was drafted and closed on
 2026-10-04, taking up [milestone 7](../roadmap/completed/m7-ShellAndShipping.md) of
@@ -315,7 +319,7 @@ the mouse has no cursor to give the immediate layer, so voxel's debug window can
 
 [completed/OfflineRenderingPhase3.md](completed/OfflineRenderingPhase3.md) was drafted on
 2026-09-05 and closed on 2026-09-10. Twelve steps taking up phase 3 of
-[the offline rendering roadmap](../roadmap/OfflineRendering.md) — light and surface — and
+[the offline rendering roadmap](../roadmap/completed/OfflineRendering.md) — light and surface — and
 answering the question that roadmap had left open since it was written: shading is a language
 ([ADR-0026](../adr/0026-shading-is-a-language-over-a-batch.md)) rather than a fixed set of
 shaders. That answer made it a subsystem rather than a weekend, and the plan states the

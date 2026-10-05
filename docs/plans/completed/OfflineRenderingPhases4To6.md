@@ -1,10 +1,13 @@
 # Offline Rendering, Phases 4 To 6 — Samples, Rays That Recurse, And One Ray Tracer For Both
 
+**Closed on 2026-10-04**, every step landed but the held one, whose three items are in
+[TODO.md](../../TODO.md#offline-rendering) with their triggers.
+
 Drafted 2026-10-04 against `f61f898`. Seventeen steps across `api/render/offline`, `moya`,
 `talyn` and the documents, three of them held, taking up the last three phases of
-[the offline rendering roadmap](../roadmap/OfflineRendering.md): phase 4, sampling and quality;
+[the offline rendering roadmap](../../roadmap/completed/OfflineRendering.md): phase 4, sampling and quality;
 phase 5, talyn's own list; and phase 6, whether the two renderers unify.
-[Phase 3](completed/OfflineRenderingPhase3.md) closed on 2026-09-10 and left all three unblocked.
+[Phase 3](OfflineRenderingPhase3.md) closed on 2026-09-10 and left all three unblocked.
 
 Both renderers are in this tree, and nothing outside it consumes them. Their suites run in CI on
 every pull request, so every step here is checked by a machine rather than by a person looking
@@ -33,7 +36,7 @@ The tree was read at `f61f898`.
 * **There is no shared sample store.** Both renderers write `offline::FrameBuffer` planes
   directly, one sample per pixel centre, and then run `sl::Imager`. The coverage plane was built
   to hold a fraction once there is more than one sample
-  ([OfflineRenderers.md](../OfflineRenderers.md)).
+  ([OfflineRenderers.md](../../OfflineRenderers.md)).
 * **The RIB reader knows none of the sampling requests.** `PixelSamples`, `PixelFilter`,
   `PixelVariance`, `Shutter`, `DepthOfField`, `Exposure`, `Quantize` and `MotionBegin` fall to
   `unrecognised_` and are skipped (`rib/Reader.cxx:582-591`), and `rib::Handler` has no method for
@@ -90,11 +93,11 @@ The tree was read at `f61f898`.
   talyn drops it silently. The largest test scene is four triangles.
 * **Texture coordinates are barycentric**, standing in for `s` and `t`, with no `du` or `dv`.
 
-**Carried from phase 3** ([its plan](completed/OfflineRenderingPhase3.md), "What this does not
+**Carried from phase 3** ([its plan](OfflineRenderingPhase3.md), "What this does not
 do"): area lights, deferred to phase 4 as a sampling problem; no displacement or volume shaders;
 no `Sides` or `Orientation`; `calculatenormal` stubbed; `"object"` space unanswered in moya; a
 distant light's shadow ray of fixed length; and the C array helper still in moya rather than in
-`rib/`. [TODO.md](../TODO.md#rirotates-sign) holds `RiRotate`'s sign.
+`rib/`. [TODO.md](../../TODO.md#rirotates-sign) holds `RiRotate`'s sign.
 
 ---
 
@@ -118,7 +121,7 @@ distant light's shadow ray of fixed length; and the C array helper still in moya
 | [14](#step-14--the-record-one-ray-tracer-both-renderers-reach) | The record: one ray tracer both renderers reach | `docs/adr` | **0077** | done, accepted |
 | [15](#step-15--the-ray-tracer-moves-into-the-shared-library) | talyn's scene and hit shading move into the shared library | `api/render/offline`, `talyn` | 0077 | done |
 | [16](#step-16--moya-traces) | moya traces: shadows and `trace()` | `moya` | 0077 | done |
-| [17](#step-17--held-area-lights-displacement-and-acceleration) | Area lights, displacement and bump, and an acceleration structure | — | — | held |
+| [17](#step-17--held-area-lights-displacement-and-acceleration) | Area lights, displacement and bump, and an acceleration structure | — | — | held, in [TODO.md](../../TODO.md#offline-rendering) |
 
 Steps 1 and 2 depend on nothing. Step 4 needs step 3. Step 5 needs steps 2 and 4. Step 7 needs
 steps 4 and 6. Steps 8 and 9 need steps 5 and 7. Step 10 needs step 5. Step 12 needs step 11.
@@ -612,7 +615,7 @@ cannot give.**
 largest test scene is four triangles, and step 12's adds a few more. **The trigger is a scene that
 takes a second to render**, which the suites' times would show.
 
-Each moves to [TODO.md](../TODO.md) with its trigger when the plan closes.
+Each moved to [TODO.md](../../TODO.md#offline-rendering) with its trigger when the plan closed.
 
 ---
 
@@ -636,7 +639,7 @@ nothing, and step 16 changes moya's shaded picture on purpose.
 
 ## Verification
 
-Per [sdlc.md](../sdlc.md), every step that changes code: `ninja -C out/build/x64-Debug`, `ctest`,
+Per [sdlc.md](../../sdlc.md), every step that changes code: `ninja -C out/build/x64-Debug`, `ctest`,
 cpplint, and the `/W4 /WX`, `/analyze` and clang-tidy gates with the apps built. The tree is clean
 at all of them, so every finding is the step's. CI runs both renderers' suites on the pull request.
 
@@ -661,15 +664,15 @@ that changes in any other step is a fault.
 * **No `Sides`, `Orientation` or volume shaders**, which phase 3 also left.
 * **No threads.** Each renderer renders on one, and a seed per pixel is what would let it render on
   more without changing a picture.
-* **`RiRotate`'s sign** stays in [TODO.md](../TODO.md#rirotates-sign).
+* **`RiRotate`'s sign** stays in [TODO.md](../../TODO.md#rirotates-sign).
 
 ## When a step lands
 
 Update the state in the table above.
 
-* **Drafting** points [the roadmap](../roadmap/OfflineRendering.md)'s phases 4, 5 and 6 here, and
+* **Drafting** points [the roadmap](../../roadmap/completed/OfflineRendering.md)'s phases 4, 5 and 6 here, and
   says in the plans index that this plan is open.
-* **Step 1** corrects the roadmap and [OfflineRenderers.md](../OfflineRenderers.md).
+* **Step 1** corrects the roadmap and [OfflineRenderers.md](../../OfflineRenderers.md).
 * **Step 2** adds the requests to OfflineRenderers.md's account of the reader.
 * **Step 3** adds the index row for 0076 as `proposed`; **step 5** accepts it.
 * **Steps 4, 5 and 7** describe the film and the sampler in OfflineRenderers.md, and replace its
@@ -679,4 +682,4 @@ Update the state in the table above.
 * **Step 14** adds the row for 0077 as `proposed`; **step 16** accepts it, and the roadmap's phase 6
   says it is answered.
 * **When the plan closes**, the roadmap moves to `roadmap/completed/` and points here, the held
-  items move to TODO.md with their triggers, and this file moves to [completed/](completed/).
+  items move to TODO.md with their triggers, and this file moves to [completed/](./).

@@ -8,7 +8,7 @@
 
 `moya` and `talyn` are the two offline renderers, and they already duplicate: a `FrameBuffer`
 of float planes with the same design and the same doc comment, and a `RenderContext` with the
-same name. Phase 1 of [the offline rendering roadmap](../roadmap/OfflineRendering.md) needs a
+same name. Phase 1 of [the offline rendering roadmap](../roadmap/completed/OfflineRendering.md) needs a
 framebuffer-to-`image::Image` conversion in both, which would be the third copy of something.
 
 The layouts differ too. moya is `libmoya` + a driver + a suite of 39 ctest cases; talyn is one

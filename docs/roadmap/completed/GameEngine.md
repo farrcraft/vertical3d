@@ -124,5 +124,5 @@ Each has a trigger rather than a reason it can never happen.
   which is the first thing a string table would hit.
 * **Gamepad.** retcon has ruled it out and cozy has not scheduled it; `api/input` is keyboard
   and mouse only.
-* **The offline renderers.** [OfflineRendering.md](../OfflineRendering.md) owns them, and they
+* **The offline renderers.** [OfflineRendering.md](OfflineRendering.md) owns them, and they
   stay out of the realtime work.

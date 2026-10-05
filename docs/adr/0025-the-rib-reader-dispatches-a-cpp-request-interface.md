@@ -9,7 +9,7 @@
 [ADR-0023](0023-rib-is-the-offline-scene-description.md) settled that one RIB reader in
 `api/render/offline` drives both offline renderers, dispatching requests onto an interface each
 implements. It did not settle what that interface is made of, and phase 2 of
-[the offline rendering roadmap](../roadmap/OfflineRendering.md) cannot write the reader without
+[the offline rendering roadmap](../roadmap/completed/OfflineRendering.md) cannot write the reader without
 it.
 
 moya already declares a full RI interface in `RenderMan.h` — `RtToken`, `RtPointer`, `RtMatrix`

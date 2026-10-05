@@ -55,6 +55,17 @@ it as an open question and could not settle it.
    rotation was expected to make it visible and did not. What would settle it is a scene whose
    correct picture is known from outside this tree
 
+## Offline rendering
+
+Held by [OfflineRenderingPhases4To6](plans/completed/OfflineRenderingPhases4To6.md#step-17--held-area-lights-displacement-and-acceleration),
+each until a scene asks for it.
+
+[] area lights render as point lights. Sampling a light's area is the film's lens disc in another place, but a RenderMan area light runs its light shader at points on a primitive, and `AreaLightSource` binds a shader to geometry neither renderer keeps as a light. It is due with a scene that wants soft shadows, which both renderers can now cast through the shared tracer
+
+[] displacement shaders are refused and `calculatenormal` is a stub, so neither displacement nor bump is possible. Displacement reaches back into moya's dicing, moves a grid after it is shaded and needs a bound grown by `displacementbound`; in talyn it needs a tessellation a ray tracer does not otherwise do. Bump needs derivatives across a batch, and a traced hit is a batch of one. It is due with a scene that needs surface detail a texture cannot give
+
+[] `offline::trace::Scene::nearest` tests every primitive. Since moya traces too, every shadow ray from every grid point pays for the whole scene. An acceleration structure goes inside `offline::trace` and neither renderer changes; it is due with a scene that takes a second to render, which the suites' times would show
+
 ## Tile grids
 
 `api/grid` is a library of its own - [ADR-0029](adr/0029-tile-grids-are-an-api-library.md) - and

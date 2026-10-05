@@ -1,7 +1,7 @@
 # Offline Rendering, Phase 1 — Each Renderer Computes A Pixel
 
 Drafted 2026-09-05, **closed 2026-09-05**. Took up phase 1 of
-[the offline rendering roadmap](../../roadmap/OfflineRendering.md), which stays the account of
+[the offline rendering roadmap](../../roadmap/completed/OfflineRendering.md), which stays the account of
 where both renderers stand and what the later phases are; this plan does not repeat it.
 
 **All six steps landed.** Both renderers produce a picture whose pixels came from geometry,

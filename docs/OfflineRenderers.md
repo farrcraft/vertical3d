@@ -16,11 +16,11 @@ That library **names neither Vulkan nor SDL**, and neither renderer touches a wi
 or a swapchain, so their suites render in CI where everything below the recorder in
 `api/render` cannot.
 
-[roadmap/OfflineRendering.md](roadmap/OfflineRendering.md) says where they stand and what each
-would need next. [plans/OfflineRenderingPhases4To6.md](plans/OfflineRenderingPhases4To6.md) is
-open against them, taking up sampling, talyn's recursion and the shared ray tracer;
-[plans/completed/OfflineRenderingPhase3.md](plans/completed/OfflineRenderingPhase3.md) closed on
-2026-09-10 and is the account of how the shading language got here.
+No plan is open against them. [The roadmap](roadmap/completed/OfflineRendering.md) is complete,
+[OfflineRenderingPhase3](plans/completed/OfflineRenderingPhase3.md) is the account of how the
+shading language got here, and [OfflineRenderingPhases4To6](plans/completed/OfflineRenderingPhases4To6.md)
+of sampling, recursion and the shared ray tracer. What is left is in
+[TODO.md](TODO.md#offline-rendering).
 
 ## Building
 

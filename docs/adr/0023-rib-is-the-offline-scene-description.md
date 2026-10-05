@@ -6,7 +6,7 @@
 
 ## Context
 
-Phase 2 of [the offline rendering roadmap](../roadmap/OfflineRendering.md) is blocked on which
+Phase 2 of [the offline rendering roadmap](../roadmap/completed/OfflineRendering.md) is blocked on which
 scene description is primary, because that decides where the reader lives and what the phase
 costs.
 

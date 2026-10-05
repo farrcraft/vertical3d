@@ -10,11 +10,19 @@ scene file asked for and moya wrote no file at all. That was the shape of the pr
 the scaffolding around the renderer was further along than the renderer. What is left of it is
 one sample per pixel centre.
 
+**Completed on 2026-10-04**, when phases 4 to 6 closed with
+[OfflineRenderingPhases4To6](../../plans/completed/OfflineRenderingPhases4To6.md): sampling through a
+shared film, a trace that recurses, textures, and one ray tracer both renderers reach
+([ADR-0077](../../adr/0077-one-ray-tracer-both-renderers-reach.md)). What it left is in
+[TODO.md](../../TODO.md#offline-rendering). The rest of this file is the roadmap as it stood before
+those phases, kept as the reasoning they were drafted from, and
+[OfflineRenderers.md](../../OfflineRenderers.md) is the account of the tree as it is.
+
 State as of 2026-09-10. Phases 1 and 2 closed on 2026-09-05, the same day as their own plans
-([one](../plans/completed/OfflineRenderingPhase1.md),
-[two](../plans/completed/OfflineRenderingPhase2.md)), and phase 3 closed on 2026-09-10 with
-[a plan of its own](../plans/completed/OfflineRenderingPhase3.md). Nothing beyond that is
-scheduled; per [the modernization plan's conclusion](../plans/completed/Modernization.md) both
+([one](../../plans/completed/OfflineRenderingPhase1.md),
+[two](../../plans/completed/OfflineRenderingPhase2.md)), and phase 3 closed on 2026-09-10 with
+[a plan of its own](../../plans/completed/OfflineRenderingPhase3.md). Nothing beyond that is
+scheduled; per [the modernization plan's conclusion](../../plans/completed/Modernization.md) both
 renderers are deliberately kept out of the realtime work, and this roadmap does not change
 that.
 
@@ -26,14 +34,14 @@ that.
 file through the shared reader and `moya/tests/` as a suite of 55 cases that pass.
 
 There are **two ways into a render context**, and by
-[ADR-0025](../adr/0025-the-rib-reader-dispatches-a-cpp-request-interface.md) neither goes
+[ADR-0025](../../adr/0025-the-rib-reader-dispatches-a-cpp-request-interface.md) neither goes
 through the other: the RI C entry points, and
-[`moya::RIBHandler`](../../moya/libmoya/RIBHandler.cxx). Both drive `RenderContext`, which is
+[`moya::RIBHandler`](../../../moya/libmoya/RIBHandler.cxx). Both drive `RenderContext`, which is
 where the behaviour is. A reader cannot use the C API, because a `va_list` cannot be built at
 runtime.
 
 The **RenderMan interface** is declared in full — every entry point in
-[RenderMan.h](../../moya/libmoya/RenderMan.h) has a definition, which is what RI compliance
+[RenderMan.h](../../../moya/libmoya/RenderMan.h) has a definition, which is what RI compliance
 asks for even from a renderer that supports nothing. About forty of them have a body. `RiSphere`
 is empty, `RiSurface` is empty, and `RiLightSource` returns 0. **The `V` forms are the ones
 still worth having** — `RiPolygonV` and its siblings are the standard's own answer to a caller
@@ -41,7 +49,7 @@ holding a runtime parameter list, and implementing them on the handler would giv
 the reader one path rather than two.
 
 The **first reyes pass** is real and is the most finished code in either renderer.
-[`RenderContext::addPolygon`](../../moya/libmoya/RenderContext.cxx) bounds a polygon in object
+[`RenderContext::addPolygon`](../../../moya/libmoya/RenderContext.cxx) bounds a polygon in object
 space, moves the bound to eye space, culls it against hither and yon, marks it undiceable if it
 crosses the eye plane, moves the bound to raster space, culls it against the view frustum, marks
 it undiceable if it is larger than a grid, transforms a diceable polygon's vertices to eye space,
@@ -49,7 +57,7 @@ and files it in the bucket its upper left corner lands in. The supporting maths 
 `Frustum` plane extraction, `AABBox` classification, the Sutherland-Hodgman clip — is written.
 
 The **second pass** dices, shades and hides.
-[`Bucket::render`](../../moya/libmoya/Bucket.cxx) splits a primitive too large for one grid and
+[`Bucket::render`](../../../moya/libmoya/Bucket.cxx) splits a primitive too large for one grid and
 its pieces go back through the first pass until each fits; a primitive that fits is diced into
 one `MicroPolygonGrid` by bilinear interpolation over its first four vertices, and sampled at
 one pixel centre per micropolygon against a depth plane. Dicing interpolates the primitive's
@@ -74,23 +82,23 @@ handed to each bucket it touches — and no more than four vertices per polygon.
 
 `talyn/libtalyn` builds `v3dlib_talyn`, with `talyn/talyn/talyn.cxx` as a driver and
 `talyn/tests/` as a suite, mirroring moya per
-[ADR-0022](../adr/0022-offline-rendering-shares-an-api-library.md).
+[ADR-0022](../../adr/0022-offline-rendering-shares-an-api-library.md).
 
 `main` parses eight options with `program_options`, dispatches on the file extension, and
 drives a `RenderContext` to an image written through `image::Factory` — `--outfile foo.png`
 works, and the format comes from the extension, so bmp, jpeg, png and tga are all reachable.
 `talyn --file scene.rib` reads that scene through the shared reader and
-[`talyn::RIBHandler`](../../talyn/libtalyn/RIBHandler.cxx), which fans a polygon into triangles
+[`talyn::RIBHandler`](../../../talyn/libtalyn/RIBHandler.cxx), which fans a polygon into triangles
 through the current transformation and builds the camera at `WorldBegin`.
 
 **The camera is the one thing talyn cannot take from an arbitrary RIB file.** `CameraProfile`
 holds an eye and a rotation, and `Camera::createView()` composes them, so a world to camera
 matrix that reverses handedness — which is what RI's camera basis is for any general lookat —
 cannot be expressed. Such a scene is refused with a message rather than rendered mirrored. It
-is the shape [ADR-0024](../adr/0024-api-type-serves-both-renderers.md) anticipated and the
+is the shape [ADR-0024](../../adr/0024-api-type-serves-both-renderers.md) anticipated and the
 first thing that would make it concrete.
 
-[`RenderContext::render`](../../talyn/libtalyn/RenderContext.cxx) casts a primary ray through
+[`RenderContext::render`](../../../talyn/libtalyn/RenderContext.cxx) casts a primary ray through
 every pixel centre, takes the nearest triangle hit and writes that triangle's flat colour or
 the scene background. The 30-line comment above it gives the recursive algorithm the later
 phases fill in — shadow rays with attenuation, reflection and refraction at depth.
@@ -103,22 +111,22 @@ that wants one draws a backdrop polygon, which is what the reference fixture doe
 
 Neither renderer needs to write intersection maths or camera maths from scratch.
 
-* **[`type::Ray`](../../api/type/geometry/Ray.h)** has an origin, a direction, `transformed()`, a slab
+* **[`type::Ray`](../../../api/type/geometry/Ray.h)** has an origin, a direction, `transformed()`, a slab
   test against `AABBox` and Möller-Trumbore against a triangle, all with tests. It was written
-  for the editor's picker ([ADR-0014](../adr/0014-picking-is-a-cpu-ray-cast.md)) and it is
+  for the editor's picker ([ADR-0014](../../adr/0014-picking-is-a-cpu-ray-cast.md)) and it is
   exactly what a primary ray and a triangle-mesh raytracer need.
-* **[`type::geometry::Plane`](../../api/type/geometry/Plane.h)** is a plane held as its equation:
+* **[`type::geometry::Plane`](../../../api/type/geometry/Plane.h)** is a plane held as its equation:
   it classifies a point or an `AABBox` against itself and meets a ray or an edge, and `Ray` can
   be asked where it crosses one. moya's polygon clip is `Polygon::clip(const Plane&)`, and stays
   in moya.
-* **[`type::geometry::Frustum`](../../api/type/geometry/Frustum.h)** extracts six planes from a
+* **[`type::geometry::Frustum`](../../../api/type/geometry/Frustum.h)** extracts six planes from a
   matrix and classifies a box against them. It is told the depth range of the clip space the
   matrix builds, and moya's `RenderContext` names `MinusOneToOne`.
-* **[`type::Camera`](../../api/type/camera/Camera.h)** builds the matrices and `project()`/`unproject()`
-  are inverses ([ADR-0012](../adr/0012-camera-builds-vulkan-clip-space.md)), so a primary ray
+* **[`type::Camera`](../../../api/type/camera/Camera.h)** builds the matrices and `project()`/`unproject()`
+  are inverses ([ADR-0012](../../adr/0012-camera-builds-vulkan-clip-space.md)), so a primary ray
   through a pixel is an unproject and a subtract. It builds *Vulkan* clip space, which an
   offline renderer has no reason to want; by
-  [ADR-0024](../adr/0024-api-type-serves-both-renderers.md) that convention becomes a parameter
+  [ADR-0024](../../adr/0024-api-type-serves-both-renderers.md) that convention becomes a parameter
   rather than a reason for a second camera.
 * **`api/image`** reads and writes bmp, jpeg, png and tga, and `Image` row 0 is the top of the
   picture, which is what both framebuffers assume.
@@ -169,7 +177,7 @@ unconditionally.
 
 ### Phase 1 — each renderer computes a pixel
 
-**Done, 2026-09-05.** [OfflineRenderingPhase1.md](../plans/completed/OfflineRenderingPhase1.md) is
+**Done, 2026-09-05.** [OfflineRenderingPhase1.md](../../plans/completed/OfflineRenderingPhase1.md) is
 the plan, and carries the step ordering and what landed; what follows is why the phase was first.
 
 Everything else was blocked on this, for a reason that is not obvious: **a renderer that
@@ -191,19 +199,19 @@ the picture will not be the one that was computed.
 left is filling that grid from a polygon, then allocating `planes_`, writing a flat colour per
 micropolygon, and adding the framebuffer-to-`image::Image` conversion talyn already has. That
 last piece is what makes `--output` mean something, and by
-[ADR-0022](../adr/0022-offline-rendering-shares-an-api-library.md) it is written once in
+[ADR-0022](../../adr/0022-offline-rendering-shares-an-api-library.md) it is written once in
 `api/render/offline` rather than copied across.
 
 ### Phase 2 — a scene worth rendering
 
-**Done, 2026-09-05.** [OfflineRenderingPhase2.md](../plans/completed/OfflineRenderingPhase2.md)
+**Done, 2026-09-05.** [OfflineRenderingPhase2.md](../../plans/completed/OfflineRenderingPhase2.md)
 is the plan, and carries the step ordering and what landed; what follows is why the phase was
 second.
 
 Blocked by phase 1, which is done: parsing a scene format nobody can render is unverifiable work.
 
 RIB is the format both renderers read, by
-[ADR-0023](../adr/0023-rib-is-the-offline-scene-description.md), and the reader is in the wrong
+[ADR-0023](../../adr/0023-rib-is-the-offline-scene-description.md), and the reader is in the wrong
 tree for it: talyn has one that recognises requests and acts on one of them, and moya has the RI
 entry points it should be calling. The reader moves to `api/render/offline` and needs a real
 tokenizer first — quoted strings, bracketed arrays and typed parameter lists, none of which the
@@ -211,7 +219,7 @@ current whitespace split handles, and a declaration table without which the firs
 is not `P` has no type.
 
 The editor is the other end of the same decision. Its project file
-([ADR-0018](../adr/0018-a-project-is-json-and-stores-topology-verbatim.md)) stays the editor's
+([ADR-0018](../../adr/0018-a-project-is-json-and-stores-topology-verbatim.md)) stays the editor's
 own and gains a RIB export, one way. That export carries topology and a placement per mesh and
 **nothing else** — the editor's `Scene` has no lights and no materials, and `SceneVisitor` is
 written in anticipation of them rather than for them — so a scene out of the editor renders grey
@@ -221,12 +229,12 @@ renderers are fed until then, and is what a test fixture is either way.
 ### Phase 3 — light and surface
 
 **Closed 2026-09-10.**
-[OfflineRenderingPhase3.md](../plans/completed/OfflineRenderingPhase3.md) is the plan and holds
+[OfflineRenderingPhase3.md](../../plans/completed/OfflineRenderingPhase3.md) is the plan and holds
 what came out differently; this is what the tree now has.
 
 The large question sitting underneath the phase was whether shading is fixed-function C++ or a
 shading language, and it is answered as a language by
-[ADR-0026](../adr/0026-shading-is-a-language-over-a-batch.md). `api/render/offline/sl` is that
+[ADR-0026](../../adr/0026-shading-is-a-language-over-a-batch.md). `api/render/offline/sl` is that
 language: a lexer, a parser, a checker with a varying inference, and a machine that runs a
 compiled program over a **batch** of shading points under an execution mask. moya's batch is a
 micropolygon grid, talyn's is a single hit, and an imager's is a row of pixels — the same
@@ -246,7 +254,7 @@ and that displacement and volume shaders parse and are reported as unsupported.
 
 ### Phase 4 — sampling and quality
 
-**Taken up by [OfflineRenderingPhases4To6](../plans/OfflineRenderingPhases4To6.md)**, with phases
+**Taken up by [OfflineRenderingPhases4To6](../../plans/completed/OfflineRenderingPhases4To6.md)**, with phases
 5 and 6. Unblocked since phase 3 closed, and there is now something worth antialiasing.
 
 The five `Ri*Filter` functions — box, triangle, gaussian, catmull-rom, sinc — all return `0.0`
@@ -257,7 +265,7 @@ talyn has no equivalent: depth of field and motion blur have nowhere shared to l
 
 ### Phase 5 — talyn's own list
 
-**Taken up by [OfflineRenderingPhases4To6](../plans/OfflineRenderingPhases4To6.md).** Unblocked
+**Taken up by [OfflineRenderingPhases4To6](../../plans/completed/OfflineRenderingPhases4To6.md).** Unblocked
 since phase 3 closed. Reflection and refraction are the recursion the algorithm
 comment already describes, and the hook is in: `trace()` is a built-in talyn answers, with a
 depth of one and no shipped shader calling it. Index of refraction and transparency come with
@@ -268,15 +276,15 @@ built on principle.
 
 ### Phase 6 — whether they unify
 
-**Answered by [ADR-0077](../adr/0077-one-ray-tracer-both-renderers-reach.md)**: two renderers
-that share one ray tracer, built by [OfflineRenderingPhases4To6](../plans/OfflineRenderingPhases4To6.md).
+**Answered by [ADR-0077](../../adr/0077-one-ray-tracer-both-renderers-reach.md)**: two renderers
+that share one ray tracer, built by [OfflineRenderingPhases4To6](../../plans/completed/OfflineRenderingPhases4To6.md).
 talyn drives it and moya's shaders trace into it.
 
 The question talyn's driver used to ask in a comment at the top of it, until phase 1 removed the
 comment: one renderer with two algorithms behind a common interface, or two renderers that share
 libraries. Sharing libraries is settled —
-[ADR-0022](../adr/0022-offline-rendering-shares-an-api-library.md) gives them one, and
-[ADR-0023](../adr/0023-rib-is-the-offline-scene-description.md) gives them one way in — so what
+[ADR-0022](../../adr/0022-offline-rendering-shares-an-api-library.md) gives them one, and
+[ADR-0023](../../adr/0023-rib-is-the-offline-scene-description.md) gives them one way in — so what
 is left is whether talyn becomes moya's raytracing component, reached from a shader's `trace()`.
 Phase 3 was the precondition and it has closed: shading is a language, `trace()` is a built-in
 both renderers see, and the two now share the library, the reader, the shader instance and the
@@ -291,24 +299,24 @@ reasoning; these are pointers, not summaries.
 * **Where the shared offline code lives** — `api/render/offline`, a second library beside
   `v3dlib_render` that links neither Vulkan nor SDL, and talyn splits into a library, a driver
   and a suite the way moya already is:
-  [ADR-0022](../adr/0022-offline-rendering-shares-an-api-library.md).
+  [ADR-0022](../../adr/0022-offline-rendering-shares-an-api-library.md).
 * **Which scene description is primary** — RIB, read by one reader in that library; the editor's
   project file stays the editor's and gains a one-way export:
-  [ADR-0023](../adr/0023-rib-is-the-offline-scene-description.md).
+  [ADR-0023](../../adr/0023-rib-is-the-offline-scene-description.md).
 * **Whether the offline renderers use `api/type`** — yes, and a convention only one renderer
   needs becomes a parameter of the type rather than a second copy of it, starting with the clip
-  space `Camera` builds: [ADR-0024](../adr/0024-api-type-serves-both-renderers.md), which
-  narrows [ADR-0012](../adr/0012-camera-builds-vulkan-clip-space.md) without reversing it.
+  space `Camera` builds: [ADR-0024](../../adr/0024-api-type-serves-both-renderers.md), which
+  narrows [ADR-0012](../../adr/0012-camera-builds-vulkan-clip-space.md) without reversing it.
 * **Fixed-function shading or a shading language** — a language, a subset of SL compiled at
   runtime, run by a machine that operates over a batch of shading points so that moya's grid and
   talyn's single hit are one code path:
-  [ADR-0026](../adr/0026-shading-is-a-language-over-a-batch.md).
+  [ADR-0026](../../adr/0026-shading-is-a-language-over-a-batch.md).
 
 ## What this still needs decided
 
 **Nothing this roadmap opened is still open.** The last of them — fixed-function shading or a
 shading language — is answered as a language by
-[ADR-0026](../adr/0026-shading-is-a-language-over-a-batch.md). What that answer does *not* settle
+[ADR-0026](../../adr/0026-shading-is-a-language-over-a-batch.md). What that answer does *not* settle
 is phase 6: a shader can call `trace()`, which is what makes the question of whether moya's
 raytracing is talyn answerable, and answering it is still that phase's own work.
 
@@ -318,7 +326,7 @@ This is the part worth knowing before any of the above starts.
 
 **The offline renderers are the only renderers in this tree CI can run.** Everything below the
 recorder in `api/render` needs a window and a GPU and is waiting on
-[ADR-0007](../adr/0007-ci-rendering-tests.md); a rendering change is verified today by running
+[ADR-0007](../../adr/0007-ci-rendering-tests.md); a rendering change is verified today by running
 an app and reading the validation log. Neither of these renderers touches a window, a device or
 a swapchain — `moya/tests/CMakeLists.txt` already says so, and its suite runs in CI now.
 
@@ -342,13 +350,13 @@ test.
 ## Not on this roadmap
 
 **Integration with the realtime stack.** Settled in
-[the modernization plan](../plans/completed/Modernization.md): the offline renderers consume the
+[the modernization plan](../../plans/completed/Modernization.md): the offline renderers consume the
 non-realtime `api/` libraries and nothing else, they are not scheduled into the Vulkan work, and
 trying to make them fit the realtime pipeline is the wrong goal. Nothing found in this review
 changes that.
 
 **RenderMan compliance as a goal.** moya declares the full interface, which is what compliance
-asks for, but [Renderer.h](../../moya/libmoya/Renderer.h) records that having a second API
+asks for, but [Renderer.h](../../../moya/libmoya/Renderer.h) records that having a second API
 violates the one-true-API clause and that moya is therefore not compliant. It prints Pixar's
 copyright, which is what a modelling program using the standard is required to do. Chasing the
 label is not on the list; implementing the requests is.

@@ -334,7 +334,7 @@ Update the state in the table above, and set ADR-0060's status when step 5 lands
 - **Steps 1 and 3** move the geometry [Architecture.md](../../Architecture.md#geometry) describes;
   it gains `Plane` and `Frustum`, and the frustum's depth range is an invariant worth its own
   bullet under [Invariants that bite](../../Architecture.md#invariants-that-bite).
-  [OfflineRendering.md](../../roadmap/OfflineRendering.md#what-the-api-already-provides) gains them
+  [OfflineRendering.md](../../roadmap/completed/OfflineRendering.md#what-the-api-already-provides) gains them
   in its list of what the api provides.
 - **Step 2** is the ground pick, and the handoff note to retcon is written here, when it lands.
 - **Step 5** changes what [Architecture.md](../../Architecture.md#the-loop-has-two-virtuals-and-they-mean-different-things)

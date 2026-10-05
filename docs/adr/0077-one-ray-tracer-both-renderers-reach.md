@@ -6,8 +6,8 @@
 
 ## Context
 
-Phase 6 of [the offline rendering roadmap](../roadmap/OfflineRendering.md) asks whether talyn and
-moya unify. [OfflineRenderingPhases4To6](../plans/OfflineRenderingPhases4To6.md) answers it here,
+Phase 6 of [the offline rendering roadmap](../roadmap/completed/OfflineRendering.md) asks whether talyn and
+moya unify. [OfflineRenderingPhases4To6](../plans/completed/OfflineRenderingPhases4To6.md) answers it here,
 after its step 11 made talyn's `trace()` re-entrant and step 12 gave it transparency, reflection,
 refraction and spheres. moya keeps no scene: primitives go into buckets in camera space and are
 diced once, so `GridShader` answers neither `trace()` nor `transmission()`, and moya has no

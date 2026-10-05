@@ -1,7 +1,7 @@
 # Offline Rendering, Phase 2 — A Scene Worth Rendering
 
 Drafted 2026-09-05, **closed 2026-09-05**. Took up phase 2 of
-[the offline rendering roadmap](../../roadmap/OfflineRendering.md), which stays the account of
+[the offline rendering roadmap](../../roadmap/completed/OfflineRendering.md), which stays the account of
 where both renderers stand and what the later phases are; this plan does not repeat it.
 
 Phase 1 ended with both renderers computing a pixel from geometry, and with the geometry

@@ -8,8 +8,8 @@
 
 talyn and moya both take one sample per pixel centre and write it straight into
 `offline::FrameBuffer`'s planes. Phase 4 of [the offline rendering
-roadmap](../roadmap/OfflineRendering.md) asks for supersampling, the five RI pixel filters, depth
-of field and motion blur, and [OfflineRenderingPhases4To6](../plans/OfflineRenderingPhases4To6.md)
+roadmap](../roadmap/completed/OfflineRendering.md) asks for supersampling, the five RI pixel filters, depth
+of field and motion blur, and [OfflineRenderingPhases4To6](../plans/completed/OfflineRenderingPhases4To6.md)
 takes it up. Two constraints shape the answer. Every reference in both suites is compared at one
 8-bit step, which absorbs float rounding across compilers and not noise. And moya renders a bucket
 at a time while talyn renders a pixel at a time, so anything that depends on render order would
