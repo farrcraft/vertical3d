@@ -25,13 +25,9 @@ bool Controller::start() {
     menu_ = boost::make_shared<v3d::ui::shell::GameMenu>(vgui_, [this](bool suspended) {
         scene_->pause(suspended);
     });
-    if (config_) {
-        boost::shared_ptr<v3d::asset::kind::Json> uiConfig = config_->get(v3d::config::Type::Ui);
-        if (uiConfig) {
-            if (!vgui_->load(uiConfig->document())) {
-                return false;
-            }
-        }
+    const boost::json::object* ui = document(v3d::config::Type::Ui);
+    if (ui && !vgui_->load(*ui)) {
+        return false;
     }
 
     scene_ = boost::make_shared<TetrisScene>(logger_);
@@ -120,10 +116,6 @@ void Controller::rotate(Tetrad::RotationDirection direction) {
 
 void Controller::handleEvent(const v3d::event::Event& event) {
     if (event.context()->name() == "tetris") {
-        if (event.name() == "toggleMenu") {
-            menu_->toggle();
-            return;
-        }
         if (event.name() == "toggleStatistics") {
             renderer_->statistics()->toggle();
             return;
@@ -155,16 +147,6 @@ void Controller::handleEvent(const v3d::event::Event& event) {
         if (event.name() == "newGame") {
             scene_->reset();
             menu_->toggle();
-            return;
         }
-        if (event.name() == "quit") {
-            quit();
-            return;
-        }
-        if (event.name() == "toggleMenu") {
-            menu_->toggle();
-            return;
-        }
-        menu_->navigate(event.name());
     }
 }

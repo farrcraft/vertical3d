@@ -333,6 +333,17 @@ enforces.
 
 E2, B5's wiring half, and the cross-library F6.
 
+**Closed, two parts differently.** The engine answers `ui::quit`; `GameMenu` answers
+`ui::showGameMenu` and the navigation commands off the ui's dispatcher, and tetris's escape key
+sends the same command as the others; `Engine::document()` is the one lookup of a config document,
+so the ui and sound blocks each app copied are a line. SDL3_mixer is PRIVATE to audio, through
+forward declared handles rather than a pimpl. **Audio did not join the engine behind a `Feature`
+bit**: the engine would link audio and the mixer would be back in every closure ADR-0079 took it
+out of. `audio::Engine::load(config, assets)` resolves clips through the manager instead, so pong's
+lambda went all the same. **The statistics sample builder was not written**: ui and engine may not
+depend on each other, so it has nowhere to live, and what it would replace is one aggregate in each
+app.
+
 `ui::shell::GameMenu` builds from the ui config and subscribes to its own navigate and toggle
 commands; the engine answers a reserved quit command as it answers a window close; a
 `StatisticsOverlay::Sample` builder lives on the ui side. Audio joins the shell behind a `Feature`

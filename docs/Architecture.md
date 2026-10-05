@@ -30,12 +30,13 @@ it that game. Five pieces live in the api:
 
 - `v3d::engine::run<T>(argv[0], "<name>")` is an app's `main`. It derives the app path, runs
   initialize and eventLoop inside a try block that logs what a renderer threw, and shuts down
-  outside it.
+  outside it. The engine answers `ui::quit` itself, as it answers a closed window.
 - `v3d::ui::paint::TextRenderer` owns the font, the atlas and the glyphs. It hands
   `ComponentRenderer` the `measure()` and `write()` callbacks that
   [ADR-0019](adr/0019-the-ui-is-laid-out-by-what-draws-it.md) keeps it built from.
 - `v3d::ui::shell::GameMenu` is the menu the escape key puts up. It holds the pause as a `Suspend`
-  callback.
+  callback, and answers its own commands off the ui's dispatcher: `ui::showGameMenu` toggles it
+  and the navigation commands drive it, so an app's handler has only its game's commands.
 - `v3d::ui::shell::StatisticsOverlay` draws what the loop measured about its own pacing, hidden
   until something shows it. It copies the numbers into a `Sample` rather than reading an
   `engine::Statistics`, because `api/ui` sits below `api/engine` and cannot name that class.

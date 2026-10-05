@@ -61,12 +61,12 @@ bool Controller::start() {
     commands_ = boost::make_shared<CommandStack>();
 
     profiles_ = boost::make_shared<v3d::config::CameraProfiles>(logger_);
-    const boost::shared_ptr<v3d::asset::kind::Json> cameras = config_->get(v3d::config::Type::Camera);
+    const boost::json::object* cameras = document(v3d::config::Type::Camera);
     if (!cameras) {
         logger_->get()->error("The editor has no camera config, so its views would have no cameras");
         return false;
     }
-    if (!profiles_->load(cameras->document())) {
+    if (!profiles_->load(*cameras)) {
         return false;
     }
 
@@ -128,14 +128,14 @@ bool Controller::buildViews() {
 /**
  **/
 bool Controller::buildUi() {
-    boost::shared_ptr<v3d::asset::kind::Json> config = config_->get(v3d::config::Type::Ui);
+    const boost::json::object* config = document(v3d::config::Type::Ui);
     if (!config) {
         logger_->get()->error("The editor has no ui config, so it would have no menus");
         return false;
     }
 
     vgui_ = boost::make_shared<v3d::ui::Engine>(eventEngine_, dispatcher_, logger_);
-    if (!vgui_->load(config->document())) {
+    if (!vgui_->load(*config)) {
         return false;
     }
     // the ui knows the order its own strips are drawn in, so it is what offers a cursor to

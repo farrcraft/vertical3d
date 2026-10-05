@@ -35,6 +35,10 @@ Engine::Engine(const boost::shared_ptr<v3d::event::Engine>& eventEngine, const b
     eventEngine_(eventEngine), dispatcher_(dispatcher), logger_(logger) {
 }
 
+const boost::shared_ptr<entt::dispatcher>& Engine::dispatcher() const noexcept {
+    return dispatcher_;
+}
+
 bool Engine::load(const boost::json::object& config) {
     Loader loader(eventEngine_, dispatcher_, logger_);
     if (!loader.load(config)) {

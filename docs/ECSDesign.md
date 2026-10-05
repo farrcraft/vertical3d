@@ -67,5 +67,5 @@ one, and `PositionFixed2D` deliberately does not, so `interpolated` refuses it a
 - A registry can bind a listener to component and entity lifecycle events: on construct, on
   destroy, and on update (patch). Nothing in the tree does yet.
 - The `entt::dispatcher` beside it is not part of the ECS work. `Engine::initialize` creates it
-  and hands it to the event, input and audio engines, which is how a sound event reaches
-  `audio::Engine`.
+  and hands it to the event and input engines; an app that plays sound builds an
+  `audio::Engine` over the same dispatcher, which is how a sound event reaches it.

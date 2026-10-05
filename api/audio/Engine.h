@@ -10,10 +10,9 @@
 #define NOMINMAX
 #endif
 
+#include <api/asset/Manager.h>
 #include <api/event/kind/Sound.h>
 #include <api/log/Logger.h>
-
-#include <SDL3_mixer/SDL_mixer.h>
 
 #include <cstdint>
 #include <functional>
@@ -55,10 +54,10 @@ class Engine final {
     Engine& operator=(const Engine&) = delete;
 
     /**
-     * What turns the source a sound config names into a loaded clip, per ADR-0021.
-     *
-     * This library never reaches the asset manager: `v3dlib_asset` loads through
-     * `v3dlib_audio`, so the dependency cannot run both ways.
+     * What turns the source a sound config names into a loaded clip, per ADR-0021: an app
+     * with clips that do not come from files hands one of these. The manager overload of
+     * load() below is this over the asset manager, which is what an app that loads its clips
+     * as assets wants.
      **/
     typedef std::function<boost::shared_ptr<AudioClip>(const std::string& source)> Resolve;
 
@@ -80,6 +79,13 @@ class Engine final {
      *         load - the clips that did load are kept either way
      **/
     bool load(const boost::json::object & config, const Resolve & resolve);
+
+    /**
+     * Load every clip a sound config names through an asset manager, which has to have had
+     * registerLoaders() called on it - the resolver every app that plays sound would
+     * otherwise write. A source resolves against the manager's path like any other asset.
+     **/
+    bool load(const boost::json::object & config, v3d::asset::Manager & assets);
 
     /**
      * File an already loaded clip under the id a sound event will name.

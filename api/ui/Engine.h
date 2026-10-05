@@ -57,6 +57,12 @@ class Engine {
     bool load(const boost::json::object& config);
 
     /**
+     * The dispatcher this ui sends its commands through, for something in the shell that
+     * answers some of them itself.
+     **/
+    const boost::shared_ptr<entt::dispatcher>& dispatcher() const noexcept;
+
+    /**
      * Hand every image the config named to a resolver and keep what comes back - the
      * image properties of every loaded theme, and every icon in every container.
      *

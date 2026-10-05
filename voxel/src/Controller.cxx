@@ -45,13 +45,9 @@ bool Controller::start() {
     menu_ = boost::make_shared<v3d::ui::shell::GameMenu>(vgui_, [this](bool suspended) {
         suspend(suspended);
     });
-    if (config_) {
-        boost::shared_ptr<v3d::asset::kind::Json> uiConfig = config_->get(v3d::config::Type::Ui);
-        if (uiConfig) {
-            if (!vgui_->load(uiConfig->document())) {
-                return false;
-            }
-        }
+    const boost::json::object* ui = document(v3d::config::Type::Ui);
+    if (ui && !vgui_->load(*ui)) {
+        return false;
     }
 
     // register game commands
@@ -152,19 +148,6 @@ void Controller::suspend(bool suspended) {
 }
 
 void Controller::handleEvent(const v3d::event::Event& event) {
-    if (event.context()->name() == "ui") {
-        if (event.name() == "showGameMenu") {
-            menu_->toggle();
-            return;
-        }
-        if (event.name() == "quit") {
-            quit();
-            return;
-        }
-        menu_->navigate(event.name());
-        return;
-    }
-
     if (event.context()->name() != "voxel") {
         return;
     }

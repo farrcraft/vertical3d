@@ -64,6 +64,7 @@ bool Engine::initialize() {
 
     dispatcher_ = boost::make_shared<entt::dispatcher>();
     eventEngine_ = boost::make_shared<v3d::event::Engine>(dispatcher_);
+    quitCommand_ = dispatcher_->sink<v3d::event::Event>().connect<&Engine::command>(*this);
 
     if (features_.has(Feature::Config)) {
         config_ = boost::make_shared<v3d::config::Config>(logger_);
@@ -157,6 +158,16 @@ Features Engine::features() const {
 
 /**
  **/
+const boost::json::object* Engine::document(v3d::config::Type type) const {
+    if (!config_) {
+        return nullptr;
+    }
+    const boost::shared_ptr<v3d::asset::kind::Json> held = config_->get(type);
+    return held ? &held->document() : nullptr;
+}
+
+/**
+ **/
 bool Engine::start() {
     return true;
 }
@@ -185,6 +196,14 @@ bool Engine::shutdown() {
     SDL_Quit();
     needShutdown_ = false;
     return released;
+}
+
+/**
+ **/
+void Engine::command(const v3d::event::Event& event) {
+    if (event.type() == v3d::event::Type::Destination && event.str() == "ui::quit") {
+        quit();
+    }
 }
 
 /**

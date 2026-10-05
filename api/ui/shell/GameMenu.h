@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <api/event/Event.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
 #include <api/ui/component/menu/Menu.h>
@@ -14,6 +15,7 @@
 #include <string_view>
 
 #include <boost/shared_ptr.hpp>
+#include <entt/entt.hpp>
 
 namespace v3d::ui::shell {
 
@@ -26,6 +28,9 @@ namespace v3d::ui::shell {
  * Both names come from the app's ui config, so a container this cannot find leaves every
  * call here doing nothing rather than failing - a game whose config names no menu still
  * runs, without one.
+ *
+ * It answers its own commands. "ui::showGameMenu" toggles it and the navigation commands
+ * navigate() names drive it, so an app's handler has only the commands that are its game's.
  **/
 class GameMenu {
  public:
@@ -51,6 +56,16 @@ class GameMenu {
      **/
     GameMenu(const boost::shared_ptr<Engine>& engine, const Suspend& suspend,
         const std::string& container = defaultContainer, const std::string& menu = defaultMenu);
+
+    // the dispatcher holds a delegate to this object, which a copy would leave pointing at
+    // the original
+    GameMenu(const GameMenu&) = delete;
+    GameMenu& operator=(const GameMenu&) = delete;
+
+    /**
+     * The command a game's escape key and its menu's back item send, which toggles the menu.
+     **/
+    static const char* const toggleCommand;
 
     /**
      * @return whether the menu is up, which is what suspends the game under it
@@ -97,11 +112,13 @@ class GameMenu {
  private:
     boost::shared_ptr<Container> container() const;
     boost::shared_ptr<component::Menu> menu() const;
+    void command(const v3d::event::Event& event);
 
     boost::shared_ptr<Engine> engine_;
     Suspend suspend_;
     std::string containerName_;
     std::string menuName_;
+    entt::scoped_connection commands_;
 };
 
 };  // namespace v3d::ui::shell

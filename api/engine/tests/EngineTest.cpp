@@ -436,6 +436,25 @@ BOOST_AUTO_TEST_CASE(engine_rebind_without_bindings_test) {
 
 // shutdown() is run()'s alone - ADR-0080 - so no handler in an app can tear the window down
 // under the frame after it. quit() is what is left to call.
+/**
+ * "ui::quit" is the one command every app means the same thing by, so the engine answers it
+ * as it answers a closed window, and no app writes the handler.
+ **/
+BOOST_AUTO_TEST_CASE(engine_answers_ui_quit_test) {
+    TestEngine engine(appPath("good"), configFeature);
+    BOOST_REQUIRE(engine.initialize());
+
+    v3d::event::Event other("quit", engine.events()->resolveContext("game"));
+    other.type(v3d::event::Type::Destination);
+    engine.dispatcher()->trigger(other);
+    BOOST_TEST(!engine.quitting());
+
+    v3d::event::Event quit("quit", engine.events()->resolveContext("ui"));
+    quit.type(v3d::event::Type::Destination);
+    engine.dispatcher()->trigger(quit);
+    BOOST_TEST(engine.quitting());
+}
+
 template <typename T>
 concept ShutsDown = requires(T& engine) { engine.shutdown(); };
 template <typename T>

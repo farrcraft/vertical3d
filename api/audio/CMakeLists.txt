@@ -2,10 +2,12 @@ v3d_add_api_library(audio "AudioClip.h" "AudioClip.cpp" "Engine.h" "Engine.cpp" 
 	"Loaders.h" "Loaders.cpp" "kind/Sound.h" "kind/Sound.cpp" "loader/Wav.h" "loader/Wav.cpp")
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
-# The mixer is PUBLIC for the same reason - AudioClip and Engine name MIX_ types in their
-# headers, so anything compiling them needs its include directory.
 # EnTT: Engine.h holds a registry.
-target_link_libraries(v3dlib_audio PUBLIC v3dlib_log SDL3_mixer::SDL3_mixer EnTT::EnTT)
+target_link_libraries(v3dlib_audio PUBLIC v3dlib_log EnTT::EnTT)
+
+# PRIVATE: AudioClip.h declares the MIX_ handles it names rather than including the header
+# that defines them, so only these sources compile SDL_mixer.h.
+target_link_libraries(v3dlib_audio PRIVATE SDL3_mixer::SDL3_mixer)
 
 # Engine.h names an event::Sound, and the boost::json::object a sound config is.
 # v3dlib_asset: the wav loader and the sound it builds are an asset::Loader and an

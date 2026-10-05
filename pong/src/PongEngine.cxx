@@ -6,7 +6,6 @@
 #include "PongEngine.h"
 
 #include <api/audio/Loaders.h>
-#include <api/audio/kind/Sound.h>
 #include <api/ecs/Previous.h>
 #include <api/ecs/component/Color3.h>
 #include <api/ecs/component/Position1D.h>
@@ -87,27 +86,13 @@ bool PongEngine::start() {
         scene_->state().pause(suspended);
     });
 
-    if (config_) {
-        boost::shared_ptr<v3d::asset::kind::Json> soundConfig = config_->get(v3d::config::Type::Sound);
-        if (soundConfig) {
-            // a clip is an asset like any other, so the file the config names is resolved
-            // against the manager's path rather than the working directory
-            soundEngine_->load(soundConfig->document(),
-                [this](const std::string& source) -> boost::shared_ptr<v3d::audio::AudioClip> {
-                    boost::shared_ptr<v3d::audio::kind::Sound> asset = assetManager_->load<v3d::audio::kind::Sound>(source, v3d::asset::Type::AudioWav);
-                    if (!asset) {
-                        return boost::shared_ptr<v3d::audio::AudioClip>();
-                    }
-                    return asset->clip();
-                });
-        }
-
-        boost::shared_ptr<v3d::asset::kind::Json> uiConfig = config_->get(v3d::config::Type::Ui);
-        if (uiConfig) {
-            if (!vgui_->load(uiConfig->document())) {
-                return false;
-            }
-        }
+    const boost::json::object* sounds = document(v3d::config::Type::Sound);
+    if (sounds) {
+        soundEngine_->load(*sounds, *assetManager_);
+    }
+    const boost::json::object* ui = document(v3d::config::Type::Ui);
+    if (ui && !vgui_->load(*ui)) {
+        return false;
     }
     boost::shared_ptr<v3d::render::realtime::Window> win = window();
     renderer_ = boost::make_shared<PongRenderer>(win, logger_, assetManager_);
@@ -201,17 +186,7 @@ void PongEngine::handleUiEvent(const v3d::event::Event& event) {
     } else if (event.name() == "setCoopMode") {
         scene_->state().coop(true);
         scene_->reset();
-    } else if (event.name() == "quit") {
-        quit();
-        return;
     }
-
-    if (event.name() == "showGameMenu") {
-        menu_->toggle();
-        return;
-    }
-
-    menu_->navigate(event.name());
 }
 
 /**

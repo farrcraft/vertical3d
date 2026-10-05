@@ -202,6 +202,12 @@ class Engine {
      **/
     virtual bool release();
 
+    /**
+     * One of the documents config.json names, or null when there is no config or it names
+     * none of that type - which is a document an app treats as optional.
+     **/
+    const boost::json::object* document(v3d::config::Type type) const;
+
     boost::shared_ptr<v3d::log::Logger> logger_;
     boost::shared_ptr<v3d::config::Config> config_;
     boost::shared_ptr<v3d::render::realtime::Window> window_;
@@ -242,6 +248,12 @@ class Engine {
       **/
      void handleEvent(const SDL_Event& event);
 
+     /**
+      * Answer the one command every app means the same thing by: "ui::quit", which a menu's
+      * quit item and a quit key both send, ends the loop as a closed window does.
+      **/
+     void command(const v3d::event::Event& event);
+
      // what the binding config says, which held() asks and rebind() rebuilds
      boost::shared_ptr<v3d::event::Bindings> bindings_;
 
@@ -259,6 +271,8 @@ class Engine {
      Features features_;
      bool needShutdown_;
      bool released_ = false;
+     // after dispatcher_, so it disconnects before the dispatcher it points into can go
+     entt::scoped_connection quitCommand_;
      bool quitting_;
      boost::shared_ptr<v3d::input::Engine> inputEngine_;
 };

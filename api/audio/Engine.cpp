@@ -5,7 +5,10 @@
 
 #include "Engine.h"
 
+#include <api/audio/kind/Sound.h>
 #include <api/event/kind/Sound.h>
+
+#include <SDL3_mixer/SDL_mixer.h>
 
 #include <map>
 #include <string>
@@ -111,6 +114,13 @@ bool Engine::load(const boost::json::object& doc, const Resolve& resolve) {
     }
 
     return loaded;
+}
+
+bool Engine::load(const boost::json::object& config, v3d::asset::Manager& assets) {
+    return load(config, [&assets](const std::string& source) -> boost::shared_ptr<AudioClip> {
+        const boost::shared_ptr<kind::Sound> sound = assets.load<kind::Sound>(source, v3d::asset::Type::AudioWav);
+        return sound ? sound->clip() : boost::shared_ptr<AudioClip>();
+    });
 }
 
 bool Engine::addClip(const boost::shared_ptr<AudioClip>& clip, const std::string_view& key) {

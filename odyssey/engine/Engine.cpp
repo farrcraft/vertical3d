@@ -74,10 +74,6 @@ void Engine::handleEvent(const v3d::event::Event& event) {
     if (event.context()->name() != "odyssey") {
         return;
     }
-    if (event.name() == "quit") {
-        quit();
-        return;
-    }
     // the movement bindings name no state, so both edges arrive here and only the press
     // is a move - a release would otherwise take a second step off every key
     if (event.state() == v3d::event::State::Released) {

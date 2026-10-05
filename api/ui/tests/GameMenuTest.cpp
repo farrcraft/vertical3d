@@ -290,4 +290,30 @@ BOOST_AUTO_TEST_CASE(a_toggle_during_a_capture_abandons_it) {
     BOOST_TEST(active(ui) == "Resume");
 }
 
+/**
+ * The menu answers its own commands off the ui's dispatcher, so an app's handler does not
+ * route the toggle and the navigation to it - and a command of another context is not its.
+ **/
+BOOST_AUTO_TEST_CASE(the_menu_answers_its_own_commands) {
+    boost::shared_ptr<v3d::ui::Engine> ui = load(document);
+    v3d::ui::shell::GameMenu menu(ui, [](bool) {});
+    boost::shared_ptr<v3d::event::Engine> events = boost::make_shared<v3d::event::Engine>(ui->dispatcher());
+
+    auto send = [&](const std::string& context, const std::string& name) {
+        v3d::event::Event command(name, events->resolveContext(context));
+        command.type(v3d::event::Type::Destination);
+        ui->dispatcher()->trigger(command);
+    };
+
+    send("game", v3d::ui::shell::GameMenu::toggleCommand);
+    BOOST_TEST(!menu.visible());
+
+    send("ui", v3d::ui::shell::GameMenu::toggleCommand);
+    BOOST_TEST(menu.visible());
+
+    const std::string before = active(ui);
+    send("ui", "menuNext");
+    BOOST_TEST(active(ui) != before);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
