@@ -5,14 +5,13 @@
 
 #include "Json.h"
 
+#include <api/asset/File.h>
 #include <api/asset/Type.h>
 #include <api/asset/kind/Json.h>
-#include <api/asset/JsonFile.h>
 
-#include <iostream>
+#include <optional>
 #include <string>
 
-#include <boost/filesystem.hpp>
 #include <boost/json.hpp>
 #include <boost/make_shared.hpp>
 
@@ -25,34 +24,19 @@ loader::Json::Json(const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(T
 /**
  **/
 boost::shared_ptr<Asset> loader::Json::load(std::string_view name) {
-    boost::shared_ptr<v3d::asset::kind::Json> asset;
-    try {
-        logger_->get()->info("Looking for json asset at: {}", name);
-        JsonFile file(static_cast<std::string>(name).c_str(), "r");
-        boost::json::stream_parser parser;
-        boost::system::error_code err;
-        do {
-            char buf[4096];
-            auto const nread = file.read(buf, sizeof(buf));
-            parser.write(buf, nread, err);
-        } while (!file.eof());
-        if (err) {
-            return asset;
-        }
-        parser.finish(err);
-        if (err) {
-            return asset;
-        }
-        auto const document = parser.release();
-        //  boost::json::object const& object = document.as_object();
-
-        asset = boost::make_shared<v3d::asset::kind::Json>(std::string(name), Type::JsonDocument, document.as_object());
+    logger_->get()->info("Looking for json asset at: {}", name);
+    const std::optional<std::string> text = readFile(name);
+    if (!text) {
+        logger_->get()->error("Could not read json asset: {}", name);
+        return boost::shared_ptr<Asset>();
     }
-    catch (std::exception const& e) {
-        logger_->get()->error("Caught exception loading JSON asset: {}", e.what());
+    boost::system::error_code error;
+    const boost::json::value document = boost::json::parse(*text, error);
+    if (error || !document.is_object()) {
+        logger_->get()->error("{} is not a json object: {}", name, error ? error.message() : "it is some other value");
+        return boost::shared_ptr<Asset>();
     }
-
-    return asset;
+    return boost::make_shared<v3d::asset::kind::Json>(std::string(name), Type::JsonDocument, document.as_object());
 }
 
 };  // namespace v3d::asset

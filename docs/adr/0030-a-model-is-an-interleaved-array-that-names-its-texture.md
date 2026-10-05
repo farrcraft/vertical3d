@@ -4,6 +4,12 @@
 **Status**: accepted
 **Deciders**: Joshua Farr
 
+Corrected 2026-10-04 by step 12 of [ApiDesignDebt](../plans/ApiDesignDebt.md). Alternative 1's
+Pro that a texture named once is loaded once "by the thing that already caches" was never true:
+`asset::Manager` has never cached, and reads the file on every load. A texture is loaded once
+because `MeshRegistry` keeps what it uploaded by name - ADR-0065 - and nothing else has needed a
+cache, so the manager still has none.
+
 Amended by [ADR-0069](0069-a-model-is-parts-over-one-array-and-may-carry-a-skin.md): a file is
 one model in parts, a part per material, rather than several models or its first material
 alone. The loader places each mesh by its node, and a model may carry a skin.

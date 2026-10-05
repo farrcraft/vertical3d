@@ -24,10 +24,12 @@ Nothing graphical loads a sound.
 
 **`Manager` keeps only the loaders that read a document** — Json and Text — and a loader is
 registered with the extensions it answers to, so the extension table is the registrations. **A new
-library, `v3dlib_asset_media`** in `api/asset/media`, holds the image, glTF and typeface loaders and
-the kinds they build, and registers them with `media::registerLoaders()`. **The wav loader and the
+library, `v3dlib_asset_media`** in `api/asset/media`, holds the image and glTF loaders and the
+kinds they build, and registers them with `media::registerLoaders()`. **The wav loader and the
 sound kind move to `api/audio`**, which links the asset core and registers its own with
-`audio::registerLoaders()`.
+`audio::registerLoaders()`. **A typeface stops being an asset**: what it is rasterized at is the
+caller's to say, which a shared loader could only be told through state left on it, so
+`ui::TextRenderer` opens the face itself at the path the manager resolves.
 
 `engine::Engine` registers the media loaders on the manager it builds; an app that plays sound
 registers the audio ones. This reverses the direction

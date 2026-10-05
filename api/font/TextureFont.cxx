@@ -109,6 +109,11 @@ TextureFont::TextureFont(const std::string& filename, float size, const boost::s
     lcdWeights_[3] = 0x40;
     lcdWeights_[4] = 0x10;
 
+    // what the face would have set, for a face that does not open
+    underlinePosition_ = 0.0f;
+    underlineThickness_ = 0.0f;
+    linegap_ = 0.0f;
+
     freetype_ = boost::make_shared<Freetype>(logger);
 
     // the face is loaded at its own size. Asking for a hundred times the size - the

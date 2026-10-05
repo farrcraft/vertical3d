@@ -102,8 +102,7 @@ bool::PongEngine::initialize() {
             // against the manager's path rather than the working directory
             soundEngine_->load(soundConfig->document(),
                 [this](const std::string& source) -> boost::shared_ptr<v3d::audio::AudioClip> {
-                    boost::shared_ptr<v3d::audio::kind::Sound> asset = boost::dynamic_pointer_cast<v3d::audio::kind::Sound>(
-                        assetManager_->load(source, v3d::asset::Type::AudioWav));
+                    boost::shared_ptr<v3d::audio::kind::Sound> asset = assetManager_->load<v3d::audio::kind::Sound>(source, v3d::asset::Type::AudioWav);
                     if (!asset) {
                         return boost::shared_ptr<v3d::audio::AudioClip>();
                     }

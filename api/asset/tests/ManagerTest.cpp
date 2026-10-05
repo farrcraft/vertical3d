@@ -8,7 +8,6 @@
 #include <api/asset/kind/Json.h>
 #include <api/asset/kind/Text.h>
 
-#include <stdexcept>
 #include <string>
 
 #include <boost/test/unit_test.hpp>
@@ -39,8 +38,9 @@ BOOST_AUTO_TEST_CASE(manager_loader_per_registered_type_test) {
 BOOST_AUTO_TEST_CASE(manager_unregistered_type_test) {
     auto assets = manager();
 
-    BOOST_CHECK_THROW(assets->resolveLoader(v3d::asset::Type::Undefined), std::invalid_argument);
-    BOOST_CHECK_THROW(assets->resolveLoader(v3d::asset::Type::ImagePng), std::invalid_argument);
+    BOOST_TEST(!assets->resolveLoader(v3d::asset::Type::Undefined));
+    BOOST_TEST(!assets->resolveLoader(v3d::asset::Type::ImagePng));
+    BOOST_TEST(!assets->load("pixel.png", v3d::asset::Type::ImagePng));
 }
 
 /**
@@ -84,13 +84,29 @@ BOOST_AUTO_TEST_CASE(manager_register_loader_test) {
 }
 
 /**
- * An extension nothing registered is an exception rather than a null asset.
+ * An extension nothing registered is no asset, the same as a missing file.
  **/
 BOOST_AUTO_TEST_CASE(manager_unknown_extension_test) {
     auto assets = manager();
 
-    BOOST_CHECK_THROW(assets->loadTypeFromExt("plain.qwe"), std::invalid_argument);
-    BOOST_CHECK_THROW(assets->loadTypeFromExt("document"), std::invalid_argument);
+    BOOST_TEST(!assets->loadTypeFromExt("plain.qwe"));
+    BOOST_TEST(!assets->loadTypeFromExt("document"));
+}
+
+/**
+ * A typed load answers a file of another kind with null rather than with the wrong object,
+ * and says so in the log rather than looking like a missing file.
+ **/
+BOOST_AUTO_TEST_CASE(manager_typed_load_test) {
+    auto assets = manager();
+
+    auto document = assets->load<v3d::asset::kind::Json>("document.json");
+    BOOST_REQUIRE(document);
+    BOOST_TEST((document->type() == v3d::asset::Type::JsonDocument));
+    BOOST_TEST(document->name().find("document.json") != std::string::npos);
+
+    BOOST_TEST(!assets->load<v3d::asset::kind::Text>("document.json"));
+    BOOST_TEST(!assets->load<v3d::asset::kind::Json>("absent.json"));
 }
 
 /**

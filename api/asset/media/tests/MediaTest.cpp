@@ -37,7 +37,7 @@ BOOST_AUTO_TEST_CASE(media_registered_by_extension_test) {
     BOOST_TEST(static_cast<bool>(boost::dynamic_pointer_cast<v3d::asset::media::kind::Model>(model)));
 
     for (auto type : {v3d::asset::Type::ImagePng, v3d::asset::Type::ImageJpeg, v3d::asset::Type::ImageTga,
-        v3d::asset::Type::ImageBmp, v3d::asset::Type::ModelGltf, v3d::asset::Type::TextureFont}) {
+        v3d::asset::Type::ImageBmp, v3d::asset::Type::ModelGltf}) {
         BOOST_TEST((assets->resolveLoader(type)->type() == type));
     }
 }

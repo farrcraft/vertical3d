@@ -69,7 +69,7 @@ bool Settings::load() {
     // could not parse
     v3d::asset::Manager assets(directory_, logger_);
     const boost::shared_ptr<v3d::asset::kind::Json> document =
-        boost::dynamic_pointer_cast<v3d::asset::kind::Json>(assets.loadTypeFromExt(DOCUMENT));
+        assets.load<v3d::asset::kind::Json>(DOCUMENT);
     if (!document) {
         logger_->get()->error("{} is not a settings document - running on defaults", path_);
         return false;

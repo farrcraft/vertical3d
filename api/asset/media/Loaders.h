@@ -13,8 +13,8 @@
 namespace v3d::asset::media {
 
 /**
- * Register the loaders for pictures, models and typefaces with a manager, and the
- * extensions each is found by.
+ * Register the loaders for pictures and models with a manager, and the extensions each is
+ * found by.
  *
  * engine::Engine does this for the manager it builds. A manager built anywhere else loads
  * none of these until something calls it - ADR-0079.

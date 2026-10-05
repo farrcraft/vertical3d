@@ -41,20 +41,26 @@ void Manager::registerLoader(const boost::shared_ptr<Loader>& loader, const std:
 boost::shared_ptr<Loader> Manager::resolveLoader(asset::Type t) {
     auto search = loaders_.find(t);
     if (search == loaders_.end()) {
-        throw std::invalid_argument("no loader for type");
+        return boost::shared_ptr<Loader>();
     }
     return search->second;
 }
 
 /**
  **/
-boost::shared_ptr<Asset> Manager::load(std::string_view name, asset::Type t) {
-    boost::filesystem::path assetPath = path_;
-    assetPath /= static_cast<std::string>(name);
+std::string Manager::path(std::string_view name) const {
+    return (path_ / static_cast<std::string>(name)).string();
+}
 
+/**
+ **/
+boost::shared_ptr<Asset> Manager::load(std::string_view name, asset::Type t) {
     boost::shared_ptr<Loader> loader = resolveLoader(t);
-    boost::shared_ptr<Asset> asset = loader->load(assetPath.string());
-    return asset;
+    if (!loader) {
+        logger_->get()->error("Nothing is registered to load {} as type {}", name, static_cast<int>(t));
+        return boost::shared_ptr<Asset>();
+    }
+    return loader->load(path(name));
 }
 
 /**
@@ -65,7 +71,8 @@ boost::shared_ptr<Asset> Manager::loadTypeFromExt(std::string_view name) {
         [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
     auto found = extensions_.find(ext);
     if (found == extensions_.end()) {
-        throw std::invalid_argument("unrecognized extension");
+        logger_->get()->error("Nothing is registered to load a {} file, so {} is not loaded", ext.empty() ? "nameless" : ext, name);
+        return boost::shared_ptr<Asset>();
     }
     return load(name, found->second);
 }

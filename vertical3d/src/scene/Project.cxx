@@ -5,7 +5,7 @@
 
 #include "Project.h"
 
-#include <api/asset/JsonFile.h>
+#include <api/asset/File.h>
 #include <api/asset/Migration.h>
 #include <api/asset/Writer.h>
 #include <api/brep/BRep.h>
@@ -16,6 +16,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -315,14 +316,14 @@ bool Project::read(const std::string& path, const boost::shared_ptr<Scene>& scen
         return false;
     }
 
-    const std::string text = v3d::asset::read_file(path.c_str());
-    if (text.empty()) {
+    const std::optional<std::string> text = v3d::asset::readFile(path);
+    if (!text || text->empty()) {
         logger_->get()->error("No project to read at {}", path);
         return false;
     }
 
     boost::system::error_code error;
-    const boost::json::value document = boost::json::parse(text, error);
+    const boost::json::value document = boost::json::parse(*text, error);
     if (error || !document.is_object()) {
         logger_->get()->error("{} is not a project: {}", path, error.message());
         return false;

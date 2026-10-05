@@ -7,7 +7,6 @@
 #include <api/asset/Type.h>
 #include <api/asset/kind/Text.h>
 
-#include <stdexcept>
 #include <string>
 
 #include <boost/test/unit_test.hpp>
@@ -34,8 +33,8 @@ BOOST_AUTO_TEST_CASE(text_content_test) {
 }
 
 /**
- * Unlike every other loader here, a missing file throws rather than returning null.
+ * A missing file is no asset, the same as every other loader.
  **/
 BOOST_AUTO_TEST_CASE(text_missing_file_test) {
-    BOOST_CHECK_THROW(manager()->load("absent.txt", v3d::asset::Type::Text), std::runtime_error);
+    BOOST_TEST(!manager()->load("absent.txt", v3d::asset::Type::Text));
 }

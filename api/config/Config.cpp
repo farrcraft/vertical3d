@@ -5,7 +5,6 @@
 
 #include "Config.h"
 
-#include <exception>
 #include <string>
 
 #include <boost/make_shared.hpp>
@@ -20,7 +19,7 @@ Config::Config(const boost::shared_ptr<v3d::log::Logger>& logger) :
 /**
  **/
 bool Config::load(const boost::shared_ptr<v3d::asset::Manager>& assetManager) {
-    boost::shared_ptr<v3d::asset::kind::Json> config = boost::dynamic_pointer_cast<v3d::asset::kind::Json>(assetManager->loadTypeFromExt("config.json"));
+    boost::shared_ptr<v3d::asset::kind::Json> config = assetManager->load<v3d::asset::kind::Json>("config.json");
     if (!config) {
         return false;
     }
@@ -58,18 +57,11 @@ bool Config::load(const boost::shared_ptr<v3d::asset::Manager>& assetManager) {
             logger_->get()->error("Unknown config type: {}", typeName);
             return false;
         }
-        // loadTypeFromExt throws for an extension it has no loader for, which is the one
-        // way a config file can reject this function rather than being rejected by it.
-        boost::shared_ptr<v3d::asset::kind::Json> asset;
-        try {
-            asset = boost::dynamic_pointer_cast<v3d::asset::kind::Json>(assetManager->loadTypeFromExt(fileName));
-        }
-        catch (std::exception const& e) {
-            logger_->get()->error("Config file could not be loaded: {} - {}", fileName, e.what());
-            return false;
-        }
+        // a file that is missing, is not json, or names an extension nothing loads is no
+        // asset, and the manager has logged which
+        const boost::shared_ptr<v3d::asset::kind::Json> asset = assetManager->load<v3d::asset::kind::Json>(fileName);
         if (!asset) {
-            logger_->get()->error("Config file not found: {}", fileName);
+            logger_->get()->error("Config file could not be loaded: {}", fileName);
             return false;
         }
         configs_[type] = asset;

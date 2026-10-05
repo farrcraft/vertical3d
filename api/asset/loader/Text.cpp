@@ -5,10 +5,11 @@
 
 #include "Text.h"
 
+#include <api/asset/File.h>
 #include <api/asset/Type.h>
 #include <api/asset/kind/Text.h>
 
-#include <fstream>
+#include <optional>
 #include <string>
 
 #include <boost/make_shared.hpp>
@@ -23,22 +24,11 @@ Text::Text(const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(Type::Tex
 /**
  **/
 boost::shared_ptr<Asset> Text::load(std::string_view name) {
-    // read shader file content
-    std::ifstream file(std::string(name).c_str(), std::ios::in | std::ios::binary);
-    if (!file) {
-        char reason[256] = {};
-        strerror_s(reason, sizeof(reason), errno);
-        std::string err = std::string("error loading asset file: ") + std::string(name) + std::string(" - ") + reason;
-        throw std::runtime_error(err);
+    const std::optional<std::string> content = readFile(name);
+    if (!content) {
+        logger_->get()->error("Could not read text asset: {}", name);
+        return boost::shared_ptr<Asset>();
     }
-    std::string content;
-    file.seekg(0, std::ios::end);
-    content.resize(static_cast<unsigned int>(file.tellg()));
-    file.seekg(0, std::ios::beg);
-    file.read(content.data(), content.size());
-    file.close();
-    boost::shared_ptr<Asset> text = boost::make_shared<v3d::asset::kind::Text>(std::string(name), Type::Text, content);
-
-    return text;
+    return boost::make_shared<v3d::asset::kind::Text>(std::string(name), Type::Text, *content);
 }
 };  // namespace v3d::asset::loader

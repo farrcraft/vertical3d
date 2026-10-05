@@ -30,7 +30,7 @@ set(V3D_API_asset_PACKAGES)
 # Under api/asset but not part of it: the loaders for what has to be decoded rather than read,
 # which is what keeps their libraries out of a closure that only reads documents - ADR-0079.
 set(V3D_API_asset_media_PATH "asset/media")
-set(V3D_API_asset_media_REQUIRES log asset font image type)
+set(V3D_API_asset_media_REQUIRES log asset image type)
 set(V3D_API_asset_media_PACKAGES cgltf)
 
 set(V3D_API_audio_PATH "audio")
@@ -96,7 +96,7 @@ set(V3D_API_type_REQUIRES)
 set(V3D_API_type_PACKAGES glm)
 
 set(V3D_API_ui_PATH "ui")
-set(V3D_API_ui_REQUIRES log render asset asset_media event font image input type)
+set(V3D_API_ui_REQUIRES log render asset event font image input type)
 set(V3D_API_ui_PACKAGES glm EnTT)
 
 # The imported target each package provides, which is how the verification below recognises

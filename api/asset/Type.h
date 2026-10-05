@@ -15,7 +15,6 @@ enum class Type {
     JsonDocument = 3,
     AudioWav = 4,
     Text = 5,
-    TextureFont = 10,
     ImageTga = 11,
     ModelGltf = 12,
     ImageBmp = 13

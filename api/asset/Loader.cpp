@@ -5,27 +5,12 @@
 
 #include "Loader.h"
 
-#include <map>
-#include <string>
-
 namespace v3d::asset {
 /**
     **/
 Loader::Loader(Type t, const boost::shared_ptr<v3d::log::Logger>& logger) :
-    type_(t),
-    logger_(logger) {
-}
-
-void Loader::parameter(const std::string& name, const ParameterValue& value) {
-    parameters_[name] = value;
-}
-
-boost::optional<ParameterValue> Loader::parameter(std::string_view name) {
-    std::map<std::string, ParameterValue>::iterator it = parameters_.find(std::string(name));
-    if (it != parameters_.end()) {
-        return it->second;
-    }
-    return boost::none;
+    logger_(logger),
+    type_(t) {
 }
 
 /**

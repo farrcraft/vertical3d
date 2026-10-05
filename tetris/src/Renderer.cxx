@@ -84,7 +84,7 @@ void TetrisRenderer::loadPieces(const boost::shared_ptr<v3d::asset::Manager>& as
     for (const char* const colour : colours) {
         const std::string name = std::string("pieces/") + colour + ".tga";
         boost::shared_ptr<v3d::asset::media::kind::Image> asset =
-            boost::dynamic_pointer_cast<v3d::asset::media::kind::Image>(assetManager->load(name, v3d::asset::Type::ImageTga));
+            assetManager->load<v3d::asset::media::kind::Image>(name, v3d::asset::Type::ImageTga);
         if (!asset || !asset->image()) {
             logger_->get()->error("unable to load the piece texture {}", name);
             continue;

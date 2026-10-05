@@ -25,7 +25,7 @@ and namespaced to match its path (`v3d::render::realtime`, `v3d::asset`, and so 
 | [`image`](api/image/) | Image readers and writers — png, jpeg, tga, bmp |
 | [`font`](api/font/) | Glyph layout and atlas packing |
 | [`asset`](api/asset/) | Loading and resolving files by type, and the loaders for documents |
-| [`asset/media`](api/asset/media/) | The loaders for pictures, glTF models and typefaces — `v3dlib_asset_media` |
+| [`asset/media`](api/asset/media/) | The loaders for pictures and glTF models — `v3dlib_asset_media` |
 | [`config`](api/config/) | JSON configuration documents |
 | [`event`](api/event/) | Input mapping and command dispatch |
 | [`input`](api/input/) | Keyboard and mouse state |

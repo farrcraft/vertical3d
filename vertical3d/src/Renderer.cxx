@@ -127,7 +127,7 @@ void Renderer::ui(const boost::shared_ptr<v3d::ui::Engine>& ui) {
         const v3d::asset::Type type = source.ends_with(".png")
             ? v3d::asset::Type::ImagePng : v3d::asset::Type::ImageTga;
         boost::shared_ptr<v3d::asset::media::kind::Image> asset =
-            boost::dynamic_pointer_cast<v3d::asset::media::kind::Image>(assetManager_->load(source, type));
+            assetManager_->load<v3d::asset::media::kind::Image>(source, type);
         if (!asset || !asset->image()) {
             return v3d::render::realtime::TextureHandle();
         }

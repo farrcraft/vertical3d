@@ -5,8 +5,7 @@
 
 #include "TextRenderer.h"
 
-#include <api/asset/Type.h>
-#include <api/asset/media/kind/TextureFont.h>
+#include <api/font/TextureFont.h>
 #include <api/image/TextureAtlas.h>
 
 #include <string>
@@ -64,27 +63,20 @@ TextRenderer::TextRenderer(const boost::shared_ptr<v3d::asset::Manager>& assetMa
     markup_.backgroundColor_ = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
     markup_.size_ = size_;
 
-    boost::shared_ptr<v3d::asset::Loader> loader = assetManager->resolveLoader(v3d::asset::Type::TextureFont);
-    v3d::asset::ParameterValue value = markup_.size_;
-    loader->parameter("fontSize", value);
-    v3d::asset::ParameterValue field = static_cast<float>(spread);
-    loader->parameter("spread", field);
-    boost::shared_ptr<v3d::asset::media::kind::TextureFont> asset = boost::dynamic_pointer_cast<v3d::asset::media::kind::TextureFont>(
-        assetManager->load(font, v3d::asset::Type::TextureFont));
-    if (!asset || !asset->font()) {
-        logger->get()->error("the font {} could not be loaded, so nothing drawn through it will have text", font);
+    // the face is opened here rather than loaded as an asset: what it is rasterized at is this
+    // renderer's to say, and the manager only says where the file is
+    const boost::shared_ptr<v3d::font::TextureFont> face =
+        boost::make_shared<v3d::font::TextureFont>(assetManager->path(font), markup_.size_, logger, spread);
+    face->atlas(cache_->atlas());
+    if (!face->loadGlyphs(charcodes)) {
+        // a face that would not open packs nothing, and one that opened into an atlas too
+        // small packs some - drawing what did fit would be text with characters missing,
+        // measured short, laid out around the short measure
+        logger->get()->error("{} could not be packed at size {}, so nothing drawn through it will have text", font, size_);
         return;
     }
-
-    asset->font()->atlas(cache_->atlas());
-    if (!asset->font()->loadGlyphs(charcodes)) {
-        // the font itself is fine and the atlas is not - drawing what did fit would be
-        // text with characters missing, measured short, laid out around the short measure
-        logger->get()->error("the atlas could not hold {} at size {}, so nothing drawn through it will have text", font, size_);
-        return;
-    }
-    cache_->add(asset->font());
-    markup_.font_ = asset->font();
+    cache_->add(face);
+    markup_.font_ = face;
 
     // every glyph is packed by now, so the atlas can go to the device once and stay there
     atlas_ = upload(cache_->atlas()->image());

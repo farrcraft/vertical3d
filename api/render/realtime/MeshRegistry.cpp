@@ -12,7 +12,6 @@
 #include <api/render/realtime/DeviceContext.h>
 
 #include <cstddef>
-#include <exception>
 #include <map>
 #include <optional>
 #include <stdexcept>
@@ -77,7 +76,7 @@ MeshHandle MeshRegistry::load(const std::string& path) {
     }
 
     const boost::shared_ptr<asset::media::kind::Model> loaded =
-        boost::dynamic_pointer_cast<asset::media::kind::Model>(assets_->load(path, asset::Type::ModelGltf));
+        assets_->load<asset::media::kind::Model>(path, asset::Type::ModelGltf);
     if (!loaded || !loaded->model()) {
         throw std::runtime_error("Unable to load a model from " + path);
     }
@@ -171,14 +170,9 @@ std::string MeshRegistry::acquire(const Source& source, Part* part) {
     if (found == albedos_.end()) {
         boost::shared_ptr<image::Image> image = source.pixels;
         if (!image) {
-            try {
-                const boost::shared_ptr<asset::media::kind::Image> asset =
-                    boost::dynamic_pointer_cast<asset::media::kind::Image>(assets_->loadTypeFromExt(key));
-                if (asset) {
-                    image = asset->image();
-                }
-            } catch (const std::exception& e) {
-                logger_->get()->warn("The albedo {} could not be loaded, and is drawn white - {}", key, e.what());
+            const boost::shared_ptr<asset::media::kind::Image> asset = assets_->load<asset::media::kind::Image>(key);
+            if (asset) {
+                image = asset->image();
             }
         }
         if (!image) {

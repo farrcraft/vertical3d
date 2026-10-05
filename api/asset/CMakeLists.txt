@@ -1,6 +1,6 @@
 v3d_add_api_library(asset
 	"Asset.h" "Asset.cpp"
-	"JsonFile.h" "JsonFile.cpp"
+	"File.h" "File.cpp"
 	"Loader.h" "Loader.cpp"
 	"Manager.h" "Manager.cpp"
 	"Migration.h" "Migration.cpp"
@@ -16,8 +16,7 @@ v3d_add_api_library(asset
 # so this library links neither them nor what they decode - ADR-0079.
 target_link_libraries(v3dlib_asset PUBLIC v3dlib_log)
 
-# PUBLIC: Manager.h names a boost::filesystem::path, and Json.h, JsonFile.h and Text.h each
-# name a boost::json type.
+# PUBLIC: Manager.h names a boost::filesystem::path, and Json.h a boost::json type.
 target_link_libraries(v3dlib_asset PUBLIC Boost::filesystem Boost::json)
 
 target_compile_options(v3dlib_asset PRIVATE /EHsc)

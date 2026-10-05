@@ -272,6 +272,15 @@ Verify against the narrow-closure starter: its closure loses SDL3_mixer and Free
 
 A4, A5, A8, the smaller asset defects, and ADR-0030's cache.
 
+**Closed.** Every way into the manager answers a failure with null and a log line, and `load<T>()`
+does the cast once and logs a file of the wrong kind; the eleven production casts use it. `Asset`
+says its name and type. **The options went rather than becoming typed:** the typeface loader was
+their only user, so a typeface stopped being an asset and `ui::TextRenderer` opens the face at the
+path `Manager::path()` resolves - ADR-0079 says so. `JsonFile` went too: `asset::readFile()` reads
+a whole file for the Json and Text loaders and the editor's project. The cache was decided against:
+`MeshRegistry` already keeps what it uploaded by name, so ADR-0030's Pro is struck rather than made
+true.
+
 `Loader::load` returns null and logs on every failure; Text, the font loader, and `Manager`'s
 unknown type and extension stop throwing, and `config/Config.cpp`'s comment about the throw goes.
 `TextureFont`'s constructor initialises every member before it can return early. `JsonFile::read`

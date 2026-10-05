@@ -72,7 +72,7 @@ Renderer::Renderer(const boost::shared_ptr<v3d::render::realtime::Window>& windo
     engine_.clearColour(clearColour);
 
     boost::shared_ptr<v3d::asset::media::kind::Image> asset =
-        boost::dynamic_pointer_cast<v3d::asset::media::kind::Image>(assetManager->loadTypeFromExt(spriteName));
+        assetManager->load<v3d::asset::media::kind::Image>(spriteName);
     if (!asset || !asset->image()) {
         // the loader has already said which file it could not read. An unset handle draws
         // against the renderer's white texture rather than nothing at all, so the sprite

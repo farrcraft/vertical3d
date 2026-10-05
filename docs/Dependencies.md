@@ -21,8 +21,8 @@ Through the manifest in [vcpkg.json](../vcpkg.json):
 
 **boost 1.91 removed `boost::json::error_code` and `boost::json::system_error`.** Name
 `boost::system` and include `<boost/system/error_code.hpp>` and
-`<boost/system/system_error.hpp>` directly. [api/asset/JsonFile.h](../api/asset/JsonFile.h) is
-where the tree's json error handling lives.
+`<boost/system/system_error.hpp>` directly; [api/asset/loader/Json.cpp](../api/asset/loader/Json.cpp)
+parses with a `boost::system::error_code` and is the pattern to copy.
 
 ## Not from vcpkg
 

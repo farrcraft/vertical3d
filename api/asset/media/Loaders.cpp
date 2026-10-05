@@ -7,7 +7,6 @@
 
 #include <api/asset/media/loader/Gltf.h>
 #include <api/asset/media/loader/Image.h>
-#include <api/asset/media/loader/TextureFont.h>
 
 #include <boost/make_shared.hpp>
 
@@ -19,9 +18,6 @@ void registerLoaders(Manager& manager, const boost::shared_ptr<v3d::log::Logger>
     manager.registerLoader(boost::make_shared<loader::Image>(Type::ImageTga, logger), {".tga"});
     manager.registerLoader(boost::make_shared<loader::Image>(Type::ImageBmp, logger), {".bmp"});
     manager.registerLoader(boost::make_shared<loader::Gltf>(logger), {".gltf", ".glb"});
-    // a typeface is loaded by type and never by extension: the loader needs a size to load
-    // at, which a file name does not carry
-    manager.registerLoader(boost::make_shared<loader::TextureFont>(logger), {});
 }
 
 };  // namespace v3d::asset::media
