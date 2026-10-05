@@ -61,11 +61,7 @@ Builder& Builder::shader(VkShaderStageFlagBits stage, const uint32_t* code, std:
 
     VkShaderModule module = VK_NULL_HANDLE;
     VkResult result = vkCreateShaderModule(device_->handle(), &info, nullptr, &module);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to create a shader module for the " << name_ << " pipeline - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    device::check(result, "Unable to create a shader module for the " + name_ + " pipeline");
     modules_.push_back(module);
 
     VkPipelineShaderStageCreateInfo created{};
@@ -290,11 +286,7 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
 
     if (ownsLayout) {
         VkResult result = vkCreatePipelineLayout(device, &layout, nullptr, &built.layout);
-        if (result != VK_SUCCESS) {
-            std::stringstream msg;
-            msg << "Unable to create the " << name_ << " pipeline layout - " << device::resultString(result);
-            throw std::runtime_error(msg.str());
-        }
+        device::check(result, "Unable to create the " + name_ + " pipeline layout");
     } else {
         built.layout = layout_;
     }
@@ -370,9 +362,7 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
         if (ownsLayout) {
             vkDestroyPipelineLayout(device, built.layout, nullptr);
         }
-        std::stringstream msg;
-        msg << "Unable to create the " << name_ << " pipeline - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
+        throw device::failure(result, "Unable to create the " + name_ + " pipeline");
     }
 
     return built;

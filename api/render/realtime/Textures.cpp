@@ -107,10 +107,7 @@ MaterialHandle Textures::material(const TextureHandle& handle) {
     // a set that was released before is written again here, so every write is a full one
     VkDescriptorSet set = sets_->allocate();
 
-    VkDescriptorImageInfo image{};
-    image.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    image.imageView = texture->image->view();
-    image.sampler = texture->sampler->handle();
+    const VkDescriptorImageInfo image = texture->descriptor();
 
     VkWriteDescriptorSet write{};
     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

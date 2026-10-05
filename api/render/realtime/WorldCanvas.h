@@ -7,9 +7,9 @@
 
 #include <array>
 #include <cstdint>
-#include <deque>
 #include <vector>
 
+#include "CanvasStacks.h"
 #include "Handle.h"
 
 #include <glm/mat4x4.hpp>
@@ -171,7 +171,7 @@ class WorldCanvas final {
      **/
     void fan(uint32_t first);
 
-    std::deque<glm::mat4> transforms_;
+    TransformStack transforms_;
     glm::vec4 tint_;
     std::vector<Vertex> vertices_;
     std::vector<uint32_t> indices_;

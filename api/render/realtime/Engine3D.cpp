@@ -162,14 +162,7 @@ void Engine3D::renderFrame() {
 
     // the depth buffer is allocated the first frame a pass asks for one, so an app that
     // never depth tests never pays for a full screen image it does not read
-    bool depth = false;
-    for (const boost::shared_ptr<Pass>& pass : frame_->passes()) {
-        if (pass->depth()) {
-            depth = true;
-            break;
-        }
-    }
-    if (depth) {
+    if (frame_->swapchainDepth()) {
         const boost::shared_ptr<vulkan::frame::DepthBuffer> buffer = context_->depth();
         if (buffer->valid()) {
             target.depthImage = buffer->image();

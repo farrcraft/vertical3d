@@ -5,6 +5,7 @@
 
 #include "RenderTarget.h"
 
+#include <api/render/realtime/vulkan/memory/Barriers.h>
 #include <api/render/realtime/vulkan/memory/Uploader.h>
 
 #include <stdexcept>
@@ -16,76 +17,6 @@
 namespace v3d::render::realtime::vulkan::frame {
 
 namespace {
-
-/**
- * A barrier from one layout to another for the whole of a single level, single layer image.
- **/
-VkImageMemoryBarrier2 barrier(VkImage image, VkImageAspectFlags aspect, VkImageLayout from, VkImageLayout to) {
-    VkImageMemoryBarrier2 barrier{};
-    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-    barrier.oldLayout = from;
-    barrier.newLayout = to;
-    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.image = image;
-    barrier.subresourceRange.aspectMask = aspect;
-    barrier.subresourceRange.levelCount = 1;
-    barrier.subresourceRange.layerCount = 1;
-    return barrier;
-}
-
-void submit(VkCommandBuffer commands, const std::vector<VkImageMemoryBarrier2>& barriers) {
-    VkDependencyInfo dependency{};
-    dependency.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-    dependency.imageMemoryBarrierCount = static_cast<uint32_t>(barriers.size());
-    dependency.pImageMemoryBarriers = barriers.data();
-    vkCmdPipelineBarrier2(commands, &dependency);
-}
-
-/**
- * Into the layouts a pass draws in, from nothing: a new image holds nothing to wait on.
- **/
-std::vector<VkImageMemoryBarrier2> toAttachment(VkImage colour, VkImage depth) {
-    std::vector<VkImageMemoryBarrier2> barriers;
-    if (colour != VK_NULL_HANDLE) {
-        barriers.push_back(barrier(colour, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
-        barriers.back().dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-        barriers.back().dstAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
-    }
-    if (depth != VK_NULL_HANDLE) {
-        barriers.push_back(barrier(depth, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
-            VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL));
-        barriers.back().dstStageMask = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT;
-        barriers.back().dstAccessMask = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    }
-    return barriers;
-}
-
-/**
- * Into the layouts the recorder leaves a target in after its last pass - ADR-0031 and
- * ADR-0044 - so that a slot no pass has drawn into looks like one a pass has.
- **/
-std::vector<VkImageMemoryBarrier2> toReadable(VkImage colour, VkImage depth) {
-    std::vector<VkImageMemoryBarrier2> barriers;
-    if (colour != VK_NULL_HANDLE) {
-        barriers.push_back(barrier(colour, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
-        barriers.back().srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-        barriers.back().srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
-    }
-    if (depth != VK_NULL_HANDLE) {
-        barriers.push_back(barrier(depth, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-            VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL));
-        barriers.back().srcStageMask = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
-        barriers.back().srcAccessMask = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    }
-    for (VkImageMemoryBarrier2& each : barriers) {
-        each.dstStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
-        each.dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
-    }
-    return barriers;
-}
 
 /**
  * Clear what is attached to transparent black and the far plane, with no draws.
@@ -218,10 +149,23 @@ void RenderTarget::ready() const {
             const bool depth = slot.depth && slot.depth->sampled();
             VkImage colourImage = slot.image ? slot.image->handle() : VK_NULL_HANDLE;
             VkImage depthImage = depth ? slot.depth->image() : VK_NULL_HANDLE;
-            submit(commands, toAttachment(colourImage, depthImage));
+            // into what a pass draws in and then into what the recorder leaves a target in
+            // after its last pass - ADR-0031 and ADR-0044 - so that a slot no pass has drawn
+            // into looks like one a pass has
+            if (colourImage != VK_NULL_HANDLE) {
+                memory::record(commands, {memory::colourForDrawing(colourImage)});
+            }
+            if (depthImage != VK_NULL_HANDLE) {
+                memory::record(commands, {memory::depthForDrawing(depthImage)});
+            }
             clear(commands, slot.image ? slot.image->view() : VK_NULL_HANDLE, depth ? slot.depth->view() : VK_NULL_HANDLE,
                 extent_);
-            submit(commands, toReadable(colourImage, depthImage));
+            if (colourImage != VK_NULL_HANDLE) {
+                memory::record(commands, {memory::colourAfterDrawing(colourImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)});
+            }
+            if (depthImage != VK_NULL_HANDLE) {
+                memory::record(commands, {memory::depthForSampling(depthImage)});
+            }
         }
     });
 }

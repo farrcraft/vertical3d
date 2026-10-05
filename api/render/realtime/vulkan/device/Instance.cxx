@@ -91,11 +91,7 @@ Instance::Instance(const boost::shared_ptr<v3d::log::Logger>& logger, const std:
     }
 
     VkResult result = vkCreateInstance(&createInfo, nullptr, &instance_);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to create vulkan instance - " << resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    check(result, "Unable to create vulkan instance");
 
     logger_->get()->info("Created vulkan instance with {} extension(s), validation {}",
         enabled.size(), validating_ ? "on" : "off");
@@ -229,20 +225,12 @@ bool Instance::hasExtension(const char* extension) {
 void Instance::requireExtensions(const std::vector<const char*>& extensions) {
     uint32_t count = 0;
     VkResult result = vkEnumerateInstanceExtensionProperties(nullptr, &count, nullptr);
-    if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-        std::stringstream msg;
-        msg << "Unable to count vulkan instance extensions - " << resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    check(result, "Unable to count vulkan instance extensions", VK_INCOMPLETE);
 
     std::vector<VkExtensionProperties> available(count);
     if (count > 0) {
         result = vkEnumerateInstanceExtensionProperties(nullptr, &count, available.data());
-        if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-            std::stringstream msg;
-            msg << "Unable to enumerate vulkan instance extensions - " << resultString(result);
-            throw std::runtime_error(msg.str());
-        }
+        check(result, "Unable to enumerate vulkan instance extensions", VK_INCOMPLETE);
     }
 
     std::stringstream missing;

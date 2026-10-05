@@ -110,28 +110,6 @@ class Recorder final {
     };
 
     /**
-     * Move the colour image between layouts with a synchronization2 barrier.
-     **/
-    static void transition(VkCommandBuffer commands, VkImage image, VkImageLayout from, VkImageLayout to);
-
-    /**
-     * Bring the depth image into the layout a pass attaches it in. The contents are
-     * discarded, which is why the first pass to use it in a frame has to clear.
-     **/
-    static void transitionDepth(VkCommandBuffer commands, VkImage image);
-
-    /**
-     * Leave a sampled depth image where a descriptor set can read it.
-     *
-     * DEPTH_READ_ONLY_OPTIMAL rather than SHADER_READ_ONLY_OPTIMAL: it is the layout a
-     * depth aspect is both sampled and tested in, and it is what makes the promise a pass
-     * sampling this depends on - that nothing writes the image while it is being read. A
-     * pass that both samples a target's depth and draws into it is the hazard that
-     * forbids rather than detects.
-     **/
-    static void transitionDepthForReading(VkCommandBuffer commands, VkImage image);
-
-    /**
      * Bring a target into the layouts a pass draws into, before the first pass of the frame
      * that writes it. A target with no colour image has only its depth moved.
      **/

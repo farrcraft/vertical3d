@@ -7,8 +7,7 @@
 
 #include <api/render/realtime/DeviceContext.h>
 #include <api/render/realtime/vulkan/frame/RenderTarget.h>
-#include <api/render/realtime/vulkan/memory/Buffer.h>
-#include <api/render/realtime/vulkan/memory/Image.h>
+#include <api/render/realtime/vulkan/memory/TextureFactory.h>
 #include <api/render/realtime/vulkan/pipeline/Sampler.h>
 #include <api/render/realtime/vulkan/renderer/FullScreen.h>
 
@@ -30,52 +29,6 @@ const uint32_t gradeShader[] =
 ;  // NOLINT(whitespace/semicolon)
 
 const std::size_t TEXELS = static_cast<std::size_t>(Grade::SIZE) * Grade::SIZE * Grade::SIZE;
-
-/**
- * Copy the table into a 3D image and leave it ready to sample.
- **/
-void upload(const boost::shared_ptr<DeviceContext>& context, const vulkan::memory::Image& image,
-    const std::vector<uint8_t>& texels) {
-    vulkan::memory::Buffer staging(context->device(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, texels.size());
-    staging.write(texels.data(), texels.size());
-
-    VkImage target = image.handle();
-    VkBuffer source = staging.handle();
-    context->uploader()->oneShot([target, source](VkCommandBuffer commands) {
-        VkImageMemoryBarrier2 barrier{};
-        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.image = target;
-        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        barrier.subresourceRange.levelCount = 1;
-        barrier.subresourceRange.layerCount = 1;
-        barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        barrier.dstStageMask = VK_PIPELINE_STAGE_2_COPY_BIT;
-        barrier.dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
-
-        VkDependencyInfo dependency{};
-        dependency.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-        dependency.imageMemoryBarrierCount = 1;
-        dependency.pImageMemoryBarriers = &barrier;
-        vkCmdPipelineBarrier2(commands, &dependency);
-
-        VkBufferImageCopy region{};
-        region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        region.imageSubresource.layerCount = 1;
-        region.imageExtent = {Grade::SIZE, Grade::SIZE, Grade::SIZE};
-        vkCmdCopyBufferToImage(commands, source, target, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-
-        barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        barrier.srcStageMask = VK_PIPELINE_STAGE_2_COPY_BIT;
-        barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
-        barrier.dstStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
-        barrier.dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
-        vkCmdPipelineBarrier2(commands, &dependency);
-    });
-}
 
 };  // namespace
 
@@ -102,8 +55,6 @@ Grade::Grade(const boost::shared_ptr<log::Logger>& logger, const boost::shared_p
         texels = identity();
     }
 
-    // linear between entries, which is what makes sixteen of them enough
-    linear_ = boost::make_shared<vulkan::pipeline::Sampler>(context_->device(), vulkan::pipeline::Sampler::Spec());
     tableTexture_ = createTable(texels);
 
     // a texel per pixel, so the scene is read exactly rather than filtered
@@ -187,18 +138,10 @@ void Grade::submit(const MaterialHandle& source, Pass* pass) const {
 /**
  **/
 TextureHandle Grade::createTable(const std::vector<uint8_t>& texels) {
-    // UNORM, because the table holds linear colour and is read as it is stored
-    vulkan::memory::Image::Spec volume;
-    volume.width = SIZE;
-    volume.height = SIZE;
-    volume.depth = SIZE;
-    volume.format = VK_FORMAT_R8G8B8A8_UNORM;
-    volume.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    vulkan::pipeline::Texture texture;
-    texture.image = boost::make_shared<vulkan::memory::Image>(context_->device(), volume);
-    upload(context_, *texture.image, texels);
-    texture.sampler = linear_;
-    return context_->resources()->add(texture);
+    // sampled linearly between entries, the factory's default, which is what makes sixteen of
+    // them enough
+    const vulkan::memory::TextureFactory factory(context_->device(), context_->uploader());
+    return context_->resources()->add(factory.volume(texels.data(), SIZE, SIZE, SIZE));
 }
 
 /**

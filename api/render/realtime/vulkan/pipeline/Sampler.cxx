@@ -7,8 +7,6 @@
 
 #include <api/render/realtime/vulkan/device/Result.h>
 
-#include <sstream>
-#include <stdexcept>
 
 namespace v3d::render::realtime::vulkan::pipeline {
 
@@ -41,9 +39,7 @@ Sampler::Sampler(const boost::shared_ptr<device::Device>& device, const Spec& sp
     const VkResult result = vkCreateSampler(device_->handle(), &info, nullptr, &sampler_);
     if (result != VK_SUCCESS) {
         sampler_ = VK_NULL_HANDLE;
-        std::stringstream msg;
-        msg << "Unable to create a vulkan sampler - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
+        throw device::failure(result, "Unable to create a vulkan sampler");
     }
 }
 

@@ -7,8 +7,6 @@
 
 #include <api/render/realtime/vulkan/device/Result.h>
 
-#include <sstream>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -35,9 +33,7 @@ DescriptorPool::DescriptorPool(const boost::shared_ptr<device::Device>& device, 
     const VkResult result = vkCreateDescriptorSetLayout(device_->handle(), &info, nullptr, &layout_);
     if (result != VK_SUCCESS) {
         layout_ = VK_NULL_HANDLE;
-        std::stringstream msg;
-        msg << "Unable to create the " << name_ << " descriptor set layout - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
+        throw device::failure(result, "Unable to create the " + name_ + " descriptor set layout");
     }
 
     // a pool holds enough of each type for every set it is created with
@@ -83,11 +79,7 @@ void DescriptorPool::addPool() {
 
     VkDescriptorPool pool = VK_NULL_HANDLE;
     const VkResult result = vkCreateDescriptorPool(device_->handle(), &info, nullptr, &pool);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to create a " << name_ << " descriptor pool - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    device::check(result, "Unable to create a " + name_ + " descriptor pool");
 
     pools_.push_back(pool);
     remaining_ = setsPerPool_;
@@ -114,11 +106,7 @@ VkDescriptorSet DescriptorPool::allocate() {
 
     VkDescriptorSet set = VK_NULL_HANDLE;
     const VkResult result = vkAllocateDescriptorSets(device_->handle(), &info, &set);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to allocate a " << name_ << " descriptor set - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    device::check(result, "Unable to allocate a " + name_ + " descriptor set");
     remaining_--;
     return set;
 }

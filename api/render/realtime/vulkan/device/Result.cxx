@@ -6,6 +6,7 @@
 #include "Result.h"
 
 #include <sstream>
+#include <stdexcept>
 #include <string>
 
 namespace v3d::render::realtime::vulkan::device {
@@ -58,6 +59,20 @@ std::string resultString(VkResult result) {
     std::stringstream msg;
     msg << "error " << static_cast<int>(result);
     return msg.str();
+}
+
+/**
+ **/
+std::runtime_error failure(VkResult result, const std::string& what) {
+    return std::runtime_error(what + " - " + resultString(result));
+}
+
+/**
+ **/
+void check(VkResult result, const std::string& what, VkResult tolerated) {
+    if (result != VK_SUCCESS && result != tolerated) {
+        throw failure(result, what);
+    }
 }
 
 };  // namespace v3d::render::realtime::vulkan::device

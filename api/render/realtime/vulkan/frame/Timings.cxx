@@ -7,8 +7,6 @@
 
 #include <api/render/realtime/vulkan/device/Result.h>
 
-#include <sstream>
-#include <stdexcept>
 #include <vector>
 
 namespace v3d::render::realtime::vulkan::frame {
@@ -34,11 +32,7 @@ Timings::Timings(const boost::shared_ptr<device::Device>& device, uint32_t frame
         info.queryType = VK_QUERY_TYPE_TIMESTAMP;
         info.queryCount = capacity * 2;
         const VkResult result = vkCreateQueryPool(device_->handle(), &info, nullptr, &slot.pool);
-        if (result != VK_SUCCESS) {
-            std::stringstream msg;
-            msg << "Unable to create a vulkan timestamp pool - " << device::resultString(result);
-            throw std::runtime_error(msg.str());
-        }
+        device::check(result, "Unable to create a vulkan timestamp pool");
     }
 }
 

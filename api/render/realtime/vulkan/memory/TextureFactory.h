@@ -23,6 +23,8 @@ class Image;
 
 namespace v3d::render::realtime::vulkan::memory {
 
+class Buffer;
+
 /**
  * Turns pixels into a sampled image the shaders can read.
  *
@@ -83,11 +85,18 @@ class TextureFactory final {
      **/
     pipeline::Texture create(const boost::shared_ptr<v3d::image::Image>& image, Encoding encoding = Encoding::Display) const;
 
+    /**
+     * A 3D texture, read as it is stored - a lookup table rather than a colour anyone authored.
+     * @param texels four bytes a texel, rows then slices
+     * @throw std::runtime_error if there are no texels or any part of the upload fails
+     **/
+    pipeline::Texture volume(const unsigned char* texels, uint32_t width, uint32_t height, uint32_t depth) const;
+
  private:
     /**
-     * Move the image between layouts either side of the copy.
+     * Copy what is staged into the whole of an image, leaving it ready to sample.
      **/
-    static void transition(VkCommandBuffer commands, VkImage image, VkImageLayout from, VkImageLayout to);
+    void upload(const Buffer& staging, const Image& image, const VkExtent3D& extent) const;
 
     boost::shared_ptr<device::Device> device_;
     boost::shared_ptr<Uploader> uploader_;

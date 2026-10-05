@@ -98,6 +98,17 @@ std::vector<std::size_t> Frame::order(const std::vector<Node>& nodes) {
 
 /**
  **/
+bool Frame::swapchainDepth() const noexcept {
+    for (const boost::shared_ptr<Pass>& pass : passes_) {
+        if (pass->depth() && !pass->target()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ **/
 void Frame::reset() noexcept {
     for (const boost::shared_ptr<Pass>& pass : passes_) {
         pass->reset();

@@ -7,8 +7,6 @@
 
 #include <api/render/realtime/vulkan/device/Result.h>
 
-#include <sstream>
-#include <stdexcept>
 #include <utility>
 
 #include <boost/make_shared.hpp>
@@ -35,11 +33,7 @@ Ring::Ring(const boost::shared_ptr<device::Device>& device, uint32_t framesInFli
     for (uint32_t index = 0; index < framesInFlight_; index++) {
         VkFence fence = VK_NULL_HANDLE;
         VkResult result = vkCreateFence(device_->handle(), &fenceInfo, nullptr, &fence);
-        if (result != VK_SUCCESS) {
-            std::stringstream msg;
-            msg << "Unable to create a vulkan fence - " << device::resultString(result);
-            throw std::runtime_error(msg.str());
-        }
+        device::check(result, "Unable to create a vulkan fence");
         inFlight_.push_back(fence);
     }
 }
@@ -81,11 +75,7 @@ uint32_t Ring::frame() const noexcept {
 void Ring::waitFrame() const {
     VkFence fence = inFlight_[frame_];
     VkResult result = vkWaitForFences(device_->handle(), 1, &fence, VK_TRUE, UINT64_MAX);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to wait on a vulkan frame fence - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    device::check(result, "Unable to wait on a vulkan frame fence");
 }
 
 /**
@@ -119,30 +109,18 @@ VkCommandBuffer Ring::begin() {
 
     VkFence fence = inFlight_[frame_];
     VkResult result = vkResetFences(device_->handle(), 1, &fence);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to reset a vulkan frame fence - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    device::check(result, "Unable to reset a vulkan frame fence");
 
     VkCommandBuffer commands = commands_[frame_];
     result = vkResetCommandBuffer(commands, 0);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to reset a vulkan command buffer - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    device::check(result, "Unable to reset a vulkan command buffer");
 
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
     result = vkBeginCommandBuffer(commands, &beginInfo);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to begin a vulkan command buffer - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    device::check(result, "Unable to begin a vulkan command buffer");
 
     // what this slot timed the last time it was used is readable now its fence has signalled
     timings_->begin(commands, frame_);

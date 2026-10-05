@@ -18,8 +18,9 @@ namespace v3d::render::realtime {
  * it whatever pipeline or material either of them uses. Within a layer, grouping by
  * pipeline and then material is what lets the recorder merge adjacent items.
  *
- * A pass is recorded in submission order unless Pass::sort() asks for key order, and
- * filling the key in is a caller's obligation that nothing enforces.
+ * A pass is recorded in submission order unless Pass::sort() asks for key order. The
+ * pipeline and material are filled in by Pass::submit from the item's handles; the layer and
+ * depth are the caller's, and are zero when nobody sets them.
  **/
 struct SortKey final {
     /**
@@ -36,8 +37,8 @@ struct SortKey final {
     bool operator<(const SortKey& other) const noexcept;
 
     uint16_t layer;     /**< painter order - lower layers are recorded first **/
-    uint16_t pipeline;  /**< the pipeline handle's slot, so items sharing a pipeline group **/
-    uint16_t material;  /**< the material handle's slot, so items sharing a descriptor set group **/
+    uint16_t pipeline;  /**< the pipeline handle's slot, so items sharing a pipeline group - set by the pass **/
+    uint16_t material;  /**< the material handle's slot, so items sharing a descriptor set group - set by the pass **/
     uint16_t depth;     /**< view depth quantized to 16 bits, for front to back ordering within a material **/
 };
 

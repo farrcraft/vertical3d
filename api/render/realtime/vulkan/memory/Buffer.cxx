@@ -11,7 +11,6 @@
 #include "Memory.h"
 
 #include <cstring>
-#include <sstream>
 #include <stdexcept>
 
 namespace v3d::render::realtime::vulkan::memory {
@@ -43,27 +42,19 @@ void Buffer::create(VkDeviceSize bytes) {
     info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
     VkResult result = vkCreateBuffer(device_->handle(), &info, nullptr, &buffer_);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to create a vulkan buffer - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    device::check(result, "Unable to create a vulkan buffer");
 
     result = device_->allocator().bind(buffer_, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &memory_);
     if (result != VK_SUCCESS) {
         vkDestroyBuffer(device_->handle(), buffer_, nullptr);
         buffer_ = VK_NULL_HANDLE;
-        std::stringstream msg;
-        msg << "Unable to allocate memory for a vulkan buffer - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
+        throw device::failure(result, "Unable to allocate memory for a vulkan buffer");
     }
 
     result = device_->allocator().map(memory_, &mapped_);
     if (result != VK_SUCCESS) {
         destroy();
-        std::stringstream msg;
-        msg << "Unable to map a vulkan buffer - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
+        throw device::failure(result, "Unable to map a vulkan buffer");
     }
 
     size_ = bytes;

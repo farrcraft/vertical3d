@@ -326,14 +326,7 @@ VkDescriptorSet Lit::scene(const SceneUniforms& uniforms, const TextureHandle& s
         // white reads as the far plane, so nothing is in shadow
         texture = resources_->texture(textures_->white());
     }
-    VkDescriptorImageInfo image{};
-    // a depth image is left read only for depth by the recorder - ADR-0044 - and a colour one
-    // for sampling
-    image.imageLayout = (texture->image->spec().aspect & VK_IMAGE_ASPECT_DEPTH_BIT) != 0
-        ? VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL
-        : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    image.imageView = texture->image->view();
-    image.sampler = texture->sampler->handle();
+    const VkDescriptorImageInfo image = texture->descriptor();
 
     VkWriteDescriptorSet write{};
     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

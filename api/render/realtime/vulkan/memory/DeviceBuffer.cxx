@@ -7,7 +7,6 @@
 
 #include <api/render/realtime/vulkan/device/Result.h>
 
-#include <sstream>
 #include <stdexcept>
 
 #include "Allocator.h"
@@ -58,17 +57,13 @@ void DeviceBuffer::create(VkBufferUsageFlags usage, VkDeviceSize bytes) {
     VkResult result = vkCreateBuffer(device_->handle(), &info, nullptr, &buffer_);
     if (result != VK_SUCCESS) {
         buffer_ = VK_NULL_HANDLE;
-        std::stringstream msg;
-        msg << "Unable to create a device local vulkan buffer - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
+        throw device::failure(result, "Unable to create a device local vulkan buffer");
     }
 
     result = device_->allocator().bind(buffer_, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &memory_);
     if (result != VK_SUCCESS) {
         destroy();
-        std::stringstream msg;
-        msg << "Unable to allocate device local memory for a vulkan buffer - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
+        throw device::failure(result, "Unable to allocate device local memory for a vulkan buffer");
     }
 
     size_ = bytes;

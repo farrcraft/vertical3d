@@ -31,7 +31,6 @@ Canvas::Canvas() :
     height_(0),
     space_(0.0f, 0.0f),
     fit_(Fit::Stretch) {
-    transforms_.push_back(glm::mat4(1.0f));
 }
 
 /**
@@ -40,9 +39,8 @@ void Canvas::clear() {
     vertices_.clear();
     indices_.clear();
     batches_.clear();
-    transforms_.clear();
-    transforms_.push_back(glm::mat4(1.0f));
-    clips_.clear();
+    transforms_.reset();
+    clips_.reset();
 }
 
 /**
@@ -138,22 +136,19 @@ glm::mat4 Canvas::projection() const {
 /**
  **/
 void Canvas::push() {
-    transforms_.push_back(transforms_.back());
+    transforms_.push();
 }
 
 /**
  **/
 void Canvas::pop() {
-    // the identity at the bottom of the stack is the canvas's own and not a caller's to pop
-    if (transforms_.size() > 1) {
-        transforms_.pop_back();
-    }
+    transforms_.pop();
 }
 
 /**
  **/
 void Canvas::translate(const glm::vec2& offset) {
-    glm::mat4& current = transforms_.back();
+    glm::mat4& current = transforms_.top();
     current[3][0] += offset.x;
     current[3][1] += offset.y;
 }
@@ -161,7 +156,7 @@ void Canvas::translate(const glm::vec2& offset) {
 /**
  **/
 void Canvas::scale(const glm::vec2& factor) {
-    glm::mat4& current = transforms_.back();
+    glm::mat4& current = transforms_.top();
     current[0][0] *= factor.x;
     current[0][1] *= factor.x;
     current[1][0] *= factor.y;
@@ -171,7 +166,7 @@ void Canvas::scale(const glm::vec2& factor) {
 /**
  **/
 void Canvas::clip(const glm::vec2& min, const glm::vec2& max) {
-    const glm::mat4& transform = transforms_.back();
+    const glm::mat4& transform = transforms_.top();
     const glm::vec2 first = toPixels(glm::vec2(
         transform[0][0] * min.x + transform[1][0] * min.y + transform[3][0],
         transform[0][1] * min.x + transform[1][1] * min.y + transform[3][1]));
@@ -179,39 +174,21 @@ void Canvas::clip(const glm::vec2& min, const glm::vec2& max) {
         transform[0][0] * max.x + transform[1][0] * max.y + transform[3][0],
         transform[0][1] * max.x + transform[1][1] * max.y + transform[3][1]));
 
-    // a negative scale swaps the corners, so which is the smaller is worked out after the
-    // transform rather than assumed from the arguments
-    glm::vec4 rect(std::min(first.x, second.x), std::min(first.y, second.y),
-        std::max(first.x, second.x), std::max(first.y, second.y));
-
-    if (!clips_.empty()) {
-        const glm::vec4& outer = clips_.back();
-        rect.x = std::max(rect.x, outer.x);
-        rect.y = std::max(rect.y, outer.y);
-        rect.z = std::min(rect.z, outer.z);
-        rect.w = std::min(rect.w, outer.w);
-    }
-    // two clips that miss each other leave nothing rather than an inverted rectangle,
-    // which is a validation error by the time it reaches a scissor
-    rect.z = std::max(rect.x, rect.z);
-    rect.w = std::max(rect.y, rect.w);
-
-    clips_.push_back(rect);
+    // a negative scale swaps the corners, so the stack orders them after the transform
+    clips_.push(first, second);
 }
 
 /**
  **/
 void Canvas::unclip() {
-    if (!clips_.empty()) {
-        clips_.pop_back();
-    }
+    clips_.pop();
 }
 
 /**
  **/
 void Canvas::open(const TextureHandle& texture, bool text) {
-    const bool clipped = !clips_.empty();
-    const glm::vec4 clip = clipped ? clips_.back() : glm::vec4(0.0f);
+    const bool clipped = clips_.clipped();
+    const glm::vec4 clip = clips_.top();
 
     if (!batches_.empty() && batches_.back().texture == texture && batches_.back().text == text &&
         batches_.back().clipped == clipped && batches_.back().clip == clip) {
@@ -230,7 +207,7 @@ void Canvas::open(const TextureHandle& texture, bool text) {
 /**
  **/
 void Canvas::vertex(const glm::vec2& position, const glm::vec2& uv, const glm::vec4& colour) {
-    const glm::mat4& transform = transforms_.back();
+    const glm::mat4& transform = transforms_.top();
 
     Vertex added;
     added.position.x = transform[0][0] * position.x + transform[1][0] * position.y + transform[3][0];

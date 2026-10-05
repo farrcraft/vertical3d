@@ -10,7 +10,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -103,19 +102,11 @@ Swapchain::Support Swapchain::querySupport() const {
     VkSurfaceKHR surface = device_->surface()->handle();
 
     VkResult result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical, surface, &support.capabilities);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to read the vulkan surface capabilities - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    device::check(result, "Unable to read the vulkan surface capabilities");
 
     uint32_t formatCount = 0;
     result = vkGetPhysicalDeviceSurfaceFormatsKHR(physical, surface, &formatCount, nullptr);
-    if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-        std::stringstream msg;
-        msg << "Unable to count the vulkan surface formats - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    device::check(result, "Unable to count the vulkan surface formats", VK_INCOMPLETE);
     support.formats.resize(formatCount);
     if (formatCount > 0) {
         vkGetPhysicalDeviceSurfaceFormatsKHR(physical, surface, &formatCount, support.formats.data());
@@ -123,11 +114,7 @@ Swapchain::Support Swapchain::querySupport() const {
 
     uint32_t modeCount = 0;
     result = vkGetPhysicalDeviceSurfacePresentModesKHR(physical, surface, &modeCount, nullptr);
-    if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-        std::stringstream msg;
-        msg << "Unable to count the vulkan present modes - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    device::check(result, "Unable to count the vulkan present modes", VK_INCOMPLETE);
     support.presentModes.resize(modeCount);
     if (modeCount > 0) {
         vkGetPhysicalDeviceSurfacePresentModesKHR(physical, surface, &modeCount, support.presentModes.data());
@@ -244,9 +231,7 @@ void Swapchain::create(uint32_t width, uint32_t height) {
     VkResult result = vkCreateSwapchainKHR(device_->handle(), &createInfo, nullptr, &swapchain_);
     if (result != VK_SUCCESS) {
         swapchain_ = VK_NULL_HANDLE;
-        std::stringstream msg;
-        msg << "Unable to create the vulkan swapchain - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
+        throw device::failure(result, "Unable to create the vulkan swapchain");
     }
 
     format_ = surfaceFormat.format;
@@ -254,19 +239,11 @@ void Swapchain::create(uint32_t width, uint32_t height) {
 
     uint32_t count = 0;
     result = vkGetSwapchainImagesKHR(device_->handle(), swapchain_, &count, nullptr);
-    if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-        std::stringstream msg;
-        msg << "Unable to count the vulkan swapchain images - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    device::check(result, "Unable to count the vulkan swapchain images", VK_INCOMPLETE);
     images_.resize(count);
     if (count > 0) {
         result = vkGetSwapchainImagesKHR(device_->handle(), swapchain_, &count, images_.data());
-        if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-            std::stringstream msg;
-            msg << "Unable to read the vulkan swapchain images - " << device::resultString(result);
-            throw std::runtime_error(msg.str());
-        }
+        device::check(result, "Unable to read the vulkan swapchain images", VK_INCOMPLETE);
     }
 
     logger_->get()->info("Created a vulkan swapchain of {} images at {} x {}", images_.size(), extent_.width, extent_.height);
@@ -301,11 +278,7 @@ void Swapchain::createViews() {
 
         VkImageView view = VK_NULL_HANDLE;
         VkResult result = vkCreateImageView(device_->handle(), &createInfo, nullptr, &view);
-        if (result != VK_SUCCESS) {
-            std::stringstream msg;
-            msg << "Unable to create a view onto a vulkan swapchain image - " << device::resultString(result);
-            throw std::runtime_error(msg.str());
-        }
+        device::check(result, "Unable to create a view onto a vulkan swapchain image");
         views_.push_back(view);
     }
 }

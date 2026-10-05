@@ -231,22 +231,14 @@ bool Device::hasRequiredFeatures(VkPhysicalDevice device) {
 void Device::selectPhysical() {
     uint32_t count = 0;
     VkResult result = vkEnumeratePhysicalDevices(instance_->handle(), &count, nullptr);
-    if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-        std::stringstream msg;
-        msg << "Unable to count the physical vulkan devices - " << resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    check(result, "Unable to count the physical vulkan devices", VK_INCOMPLETE);
     if (count == 0) {
         throw std::runtime_error("No physical vulkan devices are available");
     }
 
     std::vector<VkPhysicalDevice> devices(count);
     result = vkEnumeratePhysicalDevices(instance_->handle(), &count, devices.data());
-    if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-        std::stringstream msg;
-        msg << "Unable to enumerate the physical vulkan devices - " << resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    check(result, "Unable to enumerate the physical vulkan devices", VK_INCOMPLETE);
 
     VkPhysicalDeviceProperties selectedProperties{};
     for (VkPhysicalDevice device : devices) {
@@ -340,11 +332,7 @@ void Device::createLogical() {
     createInfo.ppEnabledExtensionNames = extensions.data();
 
     VkResult result = vkCreateDevice(physical_, &createInfo, nullptr, &device_);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to create a logical vulkan device - " << resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    check(result, "Unable to create a logical vulkan device");
 
     vkGetDeviceQueue(device_, families_.graphics, 0, &graphicsQueue_);
     if (presenting()) {

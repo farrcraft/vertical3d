@@ -138,8 +138,6 @@ void World::submit(const WorldCanvas& canvas, Pass* pass, uint16_t layer, Blend 
 
         DrawItem item;
         item.key.layer = layer;
-        item.key.pipeline = static_cast<uint16_t>(handle.id());
-        item.key.material = static_cast<uint16_t>(bound.id());
         item.pipeline = handle;
         item.material = bound;
         item.vertexBuffer = claimed.vertices->handle();

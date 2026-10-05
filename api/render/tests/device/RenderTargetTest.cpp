@@ -194,4 +194,24 @@ BOOST_AUTO_TEST_CASE(a_pipeline_for_another_format_throws) {
         std::runtime_error);
 }
 
+/**
+ * The context's depth buffer is for the passes drawing into the swapchain image, so a frame
+ * whose only depth test is into a target of its own does not ask for it.
+ **/
+BOOST_AUTO_TEST_CASE(only_a_swapchain_pass_wants_the_swapchain_depth) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height,
+        colourFormat, true);
+
+    Frame frame;
+    boost::shared_ptr<Pass> offscreen = frame.pass("offscreen");
+    offscreen->target(target);
+    offscreen->depth(true);
+    frame.pass("overlay");
+    BOOST_CHECK(!frame.swapchainDepth());
+
+    frame.pass("scene")->depth(true);
+    BOOST_CHECK(frame.swapchainDepth());
+}
+
 BOOST_AUTO_TEST_SUITE_END()

@@ -256,8 +256,6 @@ void Renderer::drawTerrain(v3d::render::realtime::Pass* pass) {
         std::memcpy(item.push.data(), &origin, sizeof(origin));
         item.pushSize = sizeof(origin);
 
-        item.key.pipeline = static_cast<uint16_t>(pipeline_.id());
-        item.key.material = static_cast<uint16_t>(material_.id());
         // near chunks first, so the depth test rejects what is behind them before it is
         // shaded. The far plane is 1000 blocks and a chunk is 16, so quantizing the distance
         // to whole blocks is finer than the ordering can use

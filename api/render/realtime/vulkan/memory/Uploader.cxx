@@ -7,8 +7,6 @@
 
 #include <api/render/realtime/vulkan/device/Result.h>
 
-#include <sstream>
-#include <stdexcept>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -39,31 +37,19 @@ void Uploader::oneShot(const std::function<void(VkCommandBuffer)>& record) const
     }
 
     VkResult result = vkResetCommandBuffer(commands_, 0);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to reset the vulkan upload command buffer - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    device::check(result, "Unable to reset the vulkan upload command buffer");
 
     VkCommandBufferBeginInfo begin{};
     begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
     result = vkBeginCommandBuffer(commands_, &begin);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to begin the vulkan upload command buffer - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    device::check(result, "Unable to begin the vulkan upload command buffer");
 
     record(commands_);
 
     result = vkEndCommandBuffer(commands_);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to end the vulkan upload command buffer - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    device::check(result, "Unable to end the vulkan upload command buffer");
 
     VkCommandBufferSubmitInfo info{};
     info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
@@ -75,11 +61,7 @@ void Uploader::oneShot(const std::function<void(VkCommandBuffer)>& record) const
     submission.pCommandBufferInfos = &info;
 
     result = vkQueueSubmit2(device_->graphicsQueue(), 1, &submission, VK_NULL_HANDLE);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to submit a vulkan upload - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    device::check(result, "Unable to submit a vulkan upload");
 
     // the caller's staging allocation goes away when this returns
     vkQueueWaitIdle(device_->graphicsQueue());

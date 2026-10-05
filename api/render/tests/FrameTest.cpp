@@ -165,12 +165,12 @@ BOOST_AUTO_TEST_CASE(a_pass_records_in_submission_order_by_default) {
     v3d::render::realtime::Pass pass("overlay");
 
     v3d::render::realtime::DrawItem panel;
-    panel.key.material = 9;
+    panel.material = v3d::render::realtime::MaterialHandle(9);
     panel.vertices = 6;
     pass.submit(panel);
 
     v3d::render::realtime::DrawItem text;
-    text.key.material = 2;
+    text.material = v3d::render::realtime::MaterialHandle(2);
     text.vertices = 12;
     pass.submit(text);
 
@@ -194,19 +194,19 @@ BOOST_AUTO_TEST_CASE(a_sorted_pass_records_in_key_order) {
 
     v3d::render::realtime::DrawItem overlay;
     overlay.key.layer = 1;
-    overlay.key.pipeline = 0;
+    overlay.pipeline = v3d::render::realtime::PipelineHandle(0);
     pass.submit(overlay);
 
     v3d::render::realtime::DrawItem second;
     second.key.layer = 0;
-    second.key.pipeline = 3;
-    second.key.material = 1;
+    second.pipeline = v3d::render::realtime::PipelineHandle(3);
+    second.material = v3d::render::realtime::MaterialHandle(1);
     pass.submit(second);
 
     v3d::render::realtime::DrawItem first;
     first.key.layer = 0;
-    first.key.pipeline = 3;
-    first.key.material = 0;
+    first.pipeline = v3d::render::realtime::PipelineHandle(3);
+    first.material = v3d::render::realtime::MaterialHandle(0);
     pass.submit(first);
 
     BOOST_CHECK(pass.sorts());
@@ -327,6 +327,31 @@ BOOST_AUTO_TEST_CASE(a_frame_with_no_reads_records_as_created) {
     BOOST_CHECK_EQUAL(ordered[0]->name(), "first");
     BOOST_CHECK_EQUAL(ordered[1]->name(), "second");
     BOOST_CHECK(frame.pass("second")->reads().empty());
+}
+
+/**
+ * The key groups by what an item binds, so a pass reads the pipeline and material from the
+ * handles - a caller who set the key's fields otherwise, or not at all, sorts the same - and a
+ * slot past sixteen bits groups at the end rather than wrapping to the front.
+ **/
+BOOST_AUTO_TEST_CASE(a_pass_keys_an_item_by_what_it_binds) {
+    v3d::render::realtime::Pass pass("scene");
+
+    v3d::render::realtime::DrawItem told;
+    told.pipeline = v3d::render::realtime::PipelineHandle(4);
+    told.material = v3d::render::realtime::MaterialHandle(7);
+    told.key.pipeline = 1;
+    told.key.material = 1;
+    pass.submit(told);
+
+    v3d::render::realtime::DrawItem far;
+    far.material = v3d::render::realtime::MaterialHandle(0x10001);
+    pass.submit(far);
+
+    BOOST_CHECK_EQUAL(pass.items()[0].key.pipeline, 4);
+    BOOST_CHECK_EQUAL(pass.items()[0].key.material, 7);
+    BOOST_CHECK_EQUAL(pass.items()[1].key.material, 0xFFFF);
+    BOOST_CHECK_EQUAL(pass.items()[1].key.pipeline, 0xFFFF);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

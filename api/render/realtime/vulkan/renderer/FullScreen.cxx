@@ -86,12 +86,7 @@ MaterialHandle FullScreen::source(const std::vector<TextureHandle>& textures) {
         if (texture == nullptr || !texture->image || !texture->sampler) {
             throw std::runtime_error("A full screen source names a texture that has been released, or has no image");
         }
-        // a depth image is left read only for depth by the recorder, and a colour one for sampling
-        images[binding].imageLayout = (texture->image->spec().aspect & VK_IMAGE_ASPECT_DEPTH_BIT) != 0
-            ? VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL
-            : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        images[binding].imageView = texture->image->view();
-        images[binding].sampler = texture->sampler->handle();
+        images[binding] = texture->descriptor();
     }
 
     VkDescriptorSet set = sources_->allocate();

@@ -214,6 +214,9 @@ class Pass final {
 
     /**
      * Add a draw item to the pass. The engine decides when it is recorded.
+     *
+     * The key's pipeline and material are taken from the item's handles here, so whatever a
+     * caller set them to is replaced; its layer and depth are the caller's.
      **/
     void submit(const DrawItem& item);
 

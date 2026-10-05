@@ -7,7 +7,6 @@
 
 #include <api/render/realtime/vulkan/device/Result.h>
 
-#include <sstream>
 #include <stdexcept>
 
 #include "Allocator.h"
@@ -58,17 +57,13 @@ Image::Image(const boost::shared_ptr<device::Device>& device, const Spec& spec) 
     VkResult result = vkCreateImage(device_->handle(), &info, nullptr, &image_);
     if (result != VK_SUCCESS) {
         image_ = VK_NULL_HANDLE;
-        std::stringstream msg;
-        msg << "Unable to create a vulkan image - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
+        throw device::failure(result, "Unable to create a vulkan image");
     }
 
     result = device_->allocator().bind(image_, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &memory_);
     if (result != VK_SUCCESS) {
         destroy();
-        std::stringstream msg;
-        msg << "Unable to allocate memory for a vulkan image - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
+        throw device::failure(result, "Unable to allocate memory for a vulkan image");
     }
 
     VkImageViewCreateInfo view{};
@@ -85,9 +80,7 @@ Image::Image(const boost::shared_ptr<device::Device>& device, const Spec& spec) 
     if (result != VK_SUCCESS) {
         view_ = VK_NULL_HANDLE;
         destroy();
-        std::stringstream msg;
-        msg << "Unable to create a vulkan image view - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
+        throw device::failure(result, "Unable to create a vulkan image view");
     }
 }
 

@@ -23,7 +23,6 @@ indices(0) {
  **/
 WorldCanvas::WorldCanvas() :
     tint_(1.0f) {
-    transforms_.push_back(glm::mat4(1.0f));
 }
 
 /**
@@ -32,42 +31,38 @@ void WorldCanvas::clear() {
     vertices_.clear();
     indices_.clear();
     batches_.clear();
-    transforms_.clear();
-    transforms_.push_back(glm::mat4(1.0f));
+    transforms_.reset();
     tint_ = glm::vec4(1.0f);
 }
 
 /**
  **/
 void WorldCanvas::push() {
-    transforms_.push_back(transforms_.back());
+    transforms_.push();
 }
 
 /**
  **/
 void WorldCanvas::pop() {
-    // the identity at the bottom of the stack is the canvas's own and not a caller's to pop
-    if (transforms_.size() > 1) {
-        transforms_.pop_back();
-    }
+    transforms_.pop();
 }
 
 /**
  **/
 void WorldCanvas::transform(const glm::mat4& applied) {
-    transforms_.back() = transforms_.back() * applied;
+    transforms_.top() = transforms_.top() * applied;
 }
 
 /**
  **/
 void WorldCanvas::translate(const glm::vec3& offset) {
-    transforms_.back() = glm::translate(transforms_.back(), offset);
+    transforms_.top() = glm::translate(transforms_.top(), offset);
 }
 
 /**
  **/
 const glm::mat4& WorldCanvas::transform() const noexcept {
-    return transforms_.back();
+    return transforms_.top();
 }
 
 void WorldCanvas::tint(const glm::vec4& colour) {
@@ -140,7 +135,7 @@ void WorldCanvas::open(const TextureHandle& texture) {
  **/
 void WorldCanvas::vertex(const glm::vec3& position, const glm::vec2& uv, const glm::vec4& colour) {
     Vertex added;
-    added.position = glm::vec3(transforms_.back() * glm::vec4(position, 1.0f));
+    added.position = glm::vec3(transforms_.top() * glm::vec4(position, 1.0f));
     added.uv = uv;
     added.colour = colour * tint_;
     vertices_.push_back(added);

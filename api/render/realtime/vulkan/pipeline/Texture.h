@@ -9,6 +9,8 @@
 
 #include "Sampler.h"
 
+#include <vulkan/vulkan.h>
+
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::render::realtime::vulkan::pipeline {
@@ -22,6 +24,21 @@ namespace v3d::render::realtime::vulkan::pipeline {
  * destroyed by the last reference going, which the ring holds until no frame can read it.
  **/
 struct Texture final {
+    /**
+     * What a descriptor write names to sample this texture, in the layout the image is left in
+     * for sampling: a depth image read only for depth, as the recorder leaves one - ADR-0044 -
+     * and a colour one read only for shaders.
+     **/
+    VkDescriptorImageInfo descriptor() const noexcept {
+        VkDescriptorImageInfo info{};
+        info.imageLayout = (image->spec().aspect & VK_IMAGE_ASPECT_DEPTH_BIT) != 0
+            ? VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL
+            : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        info.imageView = image->view();
+        info.sampler = sampler->handle();
+        return info;
+    }
+
     boost::shared_ptr<memory::Image> image;
     boost::shared_ptr<Sampler> sampler;
 };

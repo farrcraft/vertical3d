@@ -509,6 +509,18 @@ commit, and so does the logger the three renderers are handed and never read. Te
 
 R3, R4, R6, R7.
 
+**Closed.** `pipeline::Texture::descriptor()` names the layout a texture is sampled in, and the
+three image descriptor writes use it; a target's depth drawn on a canvas, which the validation
+layer reported, is clean, and the device suite has the case. `vulkan/memory/Barriers.h` names the
+nine transitions and records them; the recorder, `RenderTarget::ready`, `TextureFactory` and
+`Capture` use it, and `RenderTarget` now makes the same transitions the recorder does rather than
+a copy of them. Grade's table is `TextureFactory::volume`. `Pass::submit` sets the key's pipeline
+and material, saturating a slot past sixteen bits, so a lit pass and `FullScreen` sort by them
+now. `Frame::swapchainDepth()` is the one depth decision, and `Engine3D` no longer allocates the
+window depth for a frame whose only depth test is offscreen. The canvases hold a `TransformStack`
+and a `ClipStack`. `device::check` and `device::failure` replace 47 throw blocks. R7's vestigial
+bases went in step 8. The golden images pass unchanged.
+
 A texture answers its own `VkDescriptorImageInfo`, layout included, and the six descriptor writes
 use it — which fixes a depth texture named on a canvas. One internal `Barriers.h` of named
 transitions serves the recorder, `RenderTarget`, `TextureFactory`, `Grade` and `Capture`; Grade's

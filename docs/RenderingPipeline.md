@@ -66,7 +66,9 @@ whether its items are sorted.
 
 A `DrawItem` describes one draw rather than performing it
 ([ADR-0004](adr/0004-operations-as-draw-data.md)). It names its pipeline and material by
-handle and carries a `SortKey`. The engine owns sorting, merging and recording.
+handle and carries a `SortKey`. The engine owns sorting, merging and recording, and
+`Pass::submit` fills the key's pipeline and material in from the item's handles, so a caller
+sets only the layer and the depth.
 
 **Sorting is per pass and off by default.** `Pass::ordered()` hands the recorder either the
 submission order or the sort key order; `Pass::sort(true)` asks for the second. The default
@@ -203,9 +205,10 @@ described below. The quad is split across the cpu/gpu line:
   and scales that applies as vertices are added, and it produces the pixels-to-clip-space
   projection the pipeline is pushed. None of it touches vulkan, so the batching has unit
   tests.
-- **`vulkan::renderer::Quad`** owns the one pipeline, the descriptor pool and layouts, the 1x1
-  white texture an untextured quad is drawn against, and a vertex and index buffer per frame
-  in flight. `submit(canvas, pass)` uploads the canvas into the buffers belonging to the frame
+- **`vulkan::renderer::Quad`** owns the one pipeline and a vertex and index buffer per frame
+  in flight; the 1x1 white texture an untextured quad is drawn against, and the material it
+  binds at set 1, are the context's `Textures`
+  ([ADR-0082](adr/0082-textures-belong-to-the-context.md)). `submit(canvas, pass)` uploads the canvas into the buffers belonging to the frame
   about to be recorded, and turns each batch into a `DrawItem`.
 
 **A clip is batch state and the device scissors the draw**, per
@@ -354,7 +357,7 @@ A registered model drawn with light is three things: a `MeshRegistry` entry, an 
 the pass they draw into, the shadow pipeline, compiled against the shadow map's depth format,
 and the scene set each frame binds at set 2
 ([ADR-0064](adr/0064-a-pass-carries-a-scene-set-and-a-depth-bias.md)). Every lit pipeline
-declares the camera at set 0, the albedo at set 1 in `Quad`'s material layout, and the scene
+declares the camera at set 0, the albedo at set 1 in the `Textures` material layout, and the scene
 at set 2, with one push block holding the model matrix, the base colour and the outline's
 thickness. Front faces are clockwise, because a model is wound counter clockwise seen from
 outside and the cameras in `api/type` flip y into Vulkan's clip space
@@ -535,7 +538,11 @@ one place that does that. Every other texture keeps the `Display` default.
 2. `Recorder::record` transitions the image to `COLOR_ATTACHMENT_OPTIMAL`, walks the passes —
    `vkCmdBeginRendering`, viewport and scissor, the items and the scissor any of them asks
    for, `vkCmdEndRendering` — then
-   transitions the image to `PRESENT_SRC_KHR`. Both transitions are synchronization2 barriers.
+   transitions the image to `PRESENT_SRC_KHR`. Both transitions are synchronization2 barriers,
+   and like every layout transition the engine makes they are the named ones in
+   `vulkan/memory/Barriers.h`, which decides the stages and access either side so that two
+   places moving an image the same way cannot disagree. A `VkResult` that is not a success
+   throws through `device::check`, naming the call and the result.
 3. `Presenter::present` ends the buffer, submits it with `vkQueueSubmit2`, and presents.
 
 **Every pass is timed on the device.** The ring owns a `vulkan::frame::Timings`, a timestamp query
@@ -664,7 +671,9 @@ rather than destroyed under a frame still drawing into it
 ([ADR-0061](adr/0061-a-resource-is-released-explicitly.md)).
 
 `Recorder` scans the pass list and moves a target into the attachment layout before the first
-pass that writes it, then into `SHADER_READ_ONLY_OPTIMAL` after the last. A target therefore
+pass that writes it, then into `SHADER_READ_ONLY_OPTIMAL` after the last - and a sampled depth
+into `DEPTH_READ_ONLY_OPTIMAL`, which is the layout `pipeline::Texture::descriptor()` names for a
+depth image wherever one is sampled, a canvas included. A target therefore
 costs one pair of barriers however many passes draw into it, and every later pass can read it.
 Register it with `Textures::texture(target)` to get a texture handle a canvas can
 composite.

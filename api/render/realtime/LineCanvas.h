@@ -6,8 +6,9 @@
 #pragma once
 
 #include <cstdint>
-#include <deque>
 #include <vector>
+
+#include "CanvasStacks.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
@@ -175,9 +176,8 @@ class LineCanvas final {
      **/
     void vertex(const glm::vec3& position, const glm::vec4& colour);
 
-    std::deque<glm::mat4> transforms_;
-    /**< what each open clip cuts to, already intersected; empty is uncut **/
-    std::deque<glm::vec4> clips_;
+    TransformStack transforms_;
+    ClipStack clips_;
     std::vector<Vertex> vertices_;
     std::vector<Batch> batches_;
 };

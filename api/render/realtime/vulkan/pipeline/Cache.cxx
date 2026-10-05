@@ -7,8 +7,6 @@
 
 #include <api/render/realtime/vulkan/device/Result.h>
 
-#include <sstream>
-#include <stdexcept>
 
 namespace v3d::render::realtime::vulkan::pipeline {
 
@@ -23,9 +21,7 @@ Cache::Cache(const boost::shared_ptr<device::Device>& device) :
     VkResult result = vkCreatePipelineCache(device_->handle(), &createInfo, nullptr, &cache_);
     if (result != VK_SUCCESS) {
         cache_ = VK_NULL_HANDLE;
-        std::stringstream msg;
-        msg << "Unable to create the vulkan pipeline cache - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
+        throw device::failure(result, "Unable to create the vulkan pipeline cache");
     }
 }
 

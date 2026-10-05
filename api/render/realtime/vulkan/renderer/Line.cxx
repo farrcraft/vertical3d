@@ -107,7 +107,6 @@ void Line::submit(const LineCanvas& canvas, Pass* pass, uint16_t layer) {
 
         DrawItem item;
         item.key.layer = layer;
-        item.key.pipeline = static_cast<uint16_t>(handle.id());
         item.pipeline = handle;
         item.vertexBuffer = vertices->handle();
         // a line list is not indexed

@@ -6,9 +6,9 @@
 #pragma once
 
 #include <cstdint>
-#include <deque>
 #include <vector>
 
+#include "CanvasStacks.h"
 #include "Handle.h"
 
 #include <glm/mat4x4.hpp>
@@ -291,9 +291,8 @@ class Canvas final {
     uint32_t height_;
     glm::vec2 space_;
     Fit fit_;
-    std::deque<glm::mat4> transforms_;
-    /**< what each open clip cuts to, already transformed and intersected; empty is uncut **/
-    std::deque<glm::vec4> clips_;
+    TransformStack transforms_;
+    ClipStack clips_;  /**< in the image's pixels, already transformed **/
     std::vector<Vertex> vertices_;
     std::vector<uint32_t> indices_;
     std::vector<Batch> batches_;

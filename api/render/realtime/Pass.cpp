@@ -6,10 +6,23 @@
 #include "Pass.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <string>
 #include <vector>
 
 namespace v3d::render::realtime {
+
+namespace {
+
+/**
+ * A handle's slot as a key field. Slots past what sixteen bits hold - and an unset handle -
+ * group together at the end, which costs a merge between them and never the order of a layer.
+ **/
+uint16_t slot(uint32_t id) noexcept {
+    return static_cast<uint16_t>(std::min<uint32_t>(id, 0xFFFFu));
+}
+
+};  // namespace
 
 /**
  **/
@@ -141,6 +154,8 @@ bool Pass::sorts() const noexcept {
  **/
 void Pass::submit(const DrawItem& item) {
     items_.push_back(item);
+    items_.back().key.pipeline = slot(item.pipeline.id());
+    items_.back().key.material = slot(item.material.id());
 }
 
 /**

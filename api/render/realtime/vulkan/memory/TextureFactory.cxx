@@ -12,6 +12,7 @@
 #include <stdexcept>
 #include <vector>
 
+#include "Barriers.h"
 #include "Buffer.h"
 #include "Image.h"
 
@@ -103,57 +104,50 @@ pipeline::Texture TextureFactory::create(const unsigned char* pixels, uint32_t w
     texture.image = boost::make_shared<Image>(device_, spec);
     texture.sampler = sampler_;
 
-    VkBuffer source = staging.handle();
-    VkImage image = texture.image->handle();
-    uploader_->oneShot([source, image, width, height](VkCommandBuffer commands) {
-        transition(commands, image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-        VkBufferImageCopy copy{};
-        copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        copy.imageSubresource.layerCount = 1;
-        copy.imageExtent.width = width;
-        copy.imageExtent.height = height;
-        copy.imageExtent.depth = 1;
-        vkCmdCopyBufferToImage(commands, source, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
-
-        transition(commands, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    });
-
+    upload(staging, *texture.image, VkExtent3D{width, height, 1});
     return texture;
 }
 
 /**
  **/
-void TextureFactory::transition(VkCommandBuffer commands, VkImage image, VkImageLayout from, VkImageLayout to) {
-    VkImageMemoryBarrier2 barrier{};
-    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-    barrier.oldLayout = from;
-    barrier.newLayout = to;
-    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.image = image;
-    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    barrier.subresourceRange.levelCount = 1;
-    barrier.subresourceRange.layerCount = 1;
-
-    if (to == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-        barrier.srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
-        barrier.srcAccessMask = VK_ACCESS_2_NONE;
-        barrier.dstStageMask = VK_PIPELINE_STAGE_2_COPY_BIT;
-        barrier.dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
-    } else {
-        barrier.srcStageMask = VK_PIPELINE_STAGE_2_COPY_BIT;
-        barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
-        barrier.dstStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
-        barrier.dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
+pipeline::Texture TextureFactory::volume(const unsigned char* texels, uint32_t width, uint32_t height, uint32_t depth) const {
+    if (texels == nullptr || width == 0 || height == 0 || depth == 0) {
+        throw std::runtime_error("A vulkan volume texture needs texels and a non-zero size");
     }
+    const VkDeviceSize bytes = static_cast<VkDeviceSize>(width) * height * depth * 4;
+    Buffer staging(device_, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, bytes);
+    staging.write(texels, bytes);
 
-    VkDependencyInfo dependency{};
-    dependency.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-    dependency.imageMemoryBarrierCount = 1;
-    dependency.pImageMemoryBarriers = &barrier;
+    Image::Spec spec;
+    spec.width = width;
+    spec.height = height;
+    spec.depth = depth;
+    spec.format = VK_FORMAT_R8G8B8A8_UNORM;
+    spec.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
-    vkCmdPipelineBarrier2(commands, &dependency);
+    pipeline::Texture texture;
+    texture.image = boost::make_shared<Image>(device_, spec);
+    texture.sampler = sampler_;
+    upload(staging, *texture.image, VkExtent3D{width, height, depth});
+    return texture;
+}
+
+/**
+ **/
+void TextureFactory::upload(const Buffer& staging, const Image& image, const VkExtent3D& extent) const {
+    VkBuffer source = staging.handle();
+    VkImage target = image.handle();
+    uploader_->oneShot([source, target, extent](VkCommandBuffer commands) {
+        record(commands, {forUpload(target)});
+
+        VkBufferImageCopy copy{};
+        copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        copy.imageSubresource.layerCount = 1;
+        copy.imageExtent = extent;
+        vkCmdCopyBufferToImage(commands, source, target, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
+
+        record(commands, {uploadedForSampling(target)});
+    });
 }
 
 };  // namespace v3d::render::realtime::vulkan::memory

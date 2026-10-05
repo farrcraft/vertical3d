@@ -241,4 +241,40 @@ BOOST_AUTO_TEST_CASE(a_stream_holds_what_one_frame_asked_for) {
     BOOST_CHECK(headless.silent());
 }
 
+/**
+ * A target's depth drawn on a canvas is sampled in the layout the recorder leaves it in, which
+ * is read only for depth rather than for shaders - the layer reports the draw otherwise.
+ **/
+BOOST_AUTO_TEST_CASE(a_depth_texture_draws_on_a_canvas) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    boost::shared_ptr<RenderTarget> source = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height,
+        colourFormat, true, true);
+    boost::shared_ptr<RenderTarget> into = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const TextureHandle depth = headless.context->textures()->depthTexture(*source);
+
+    Canvas canvas;
+    canvas.resize(width, height);
+    canvas.clear();
+    canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(static_cast<float>(width), static_cast<float>(height)), glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f),
+        glm::vec4(1.0f), depth);
+
+    Frame frame;
+    boost::shared_ptr<Pass> drawn = frame.pass("colour");
+    drawn->target(into);
+    drawn->reads(source);
+    drawn->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    headless.context->quads()->submit(canvas, drawn.get());
+    boost::shared_ptr<Pass> cleared = frame.pass("depth");
+    cleared->target(source);
+    cleared->depth(true);
+
+    VkCommandBuffer commands = headless.context->ring()->begin();
+    Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
+        headless.context->frameUniforms().get());
+    headless.submit(commands);
+    headless.context->ring()->waitIdle();
+
+    BOOST_CHECK(headless.silent());
+}
+
 BOOST_AUTO_TEST_SUITE_END()

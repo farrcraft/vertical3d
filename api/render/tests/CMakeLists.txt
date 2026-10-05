@@ -21,7 +21,8 @@ v3d_add_test(render
 	"LitSettingsTest.cpp"
 	"ShadowTest.cpp"
 	"GradeTest.cpp"
-	"CaptureConvertTest.cpp")
+	"CaptureConvertTest.cpp"
+	"ResultTest.cpp")
 
 target_link_libraries(v3dtest_render PRIVATE v3dlib_render v3dlib_font v3dlib_image v3dlib_type EnTT::EnTT ${SDL3_LIBRARIES} ${Vulkan_LIBRARIES} Freetype::Freetype)
 

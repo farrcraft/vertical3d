@@ -135,7 +135,6 @@ class Grade final {
 
     boost::shared_ptr<DeviceContext> context_;
     boost::shared_ptr<vulkan::renderer::FullScreen> pass_;
-    boost::shared_ptr<vulkan::pipeline::Sampler> linear_;
     boost::shared_ptr<vulkan::pipeline::Sampler> nearest_;
     TextureHandle tableTexture_;
     std::map<MaterialHandle, Source> sources_;
