@@ -77,7 +77,7 @@ Scene::Poses Scene::poses(float time) const {
     poses.ahead.resize(motions_.size());
     poses.backward.resize(motions_.size());
     for (std::size_t i = 0; i < motions_.size(); i++) {
-        poses.ahead[i] = motions_[i].at(time) * glm::inverse(motions_[i].open());
+        poses.ahead[i] = motions_[i].at(time) * glm::inverse(motions_[i].reference());
         poses.backward[i] = glm::inverse(poses.ahead[i]);
     }
     return poses;
@@ -114,6 +114,7 @@ bool Scene::nearest(const v3d::type::geometry::Ray & ray, float from, Hit* hit, 
     hit->primitive = met;
     hit->distance = nearest.distance;
     hit->point = ray.origin() + ray.direction() * nearest.distance;
+    hit->colour = met->colour();
     met->describe(nearest, hit);
     // a moving primitive's normals are carried forward to the time its hit was found at
     const int motion = met->motion();

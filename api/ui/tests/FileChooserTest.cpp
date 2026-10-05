@@ -3,6 +3,8 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/ui/Engine.h>
+#include <api/ui/component/SelectList.h>
 #include <api/ui/shell/FileChooser.h>
 
 #include <fstream>
@@ -10,7 +12,11 @@
 #include <vector>
 
 #include <boost/filesystem/operations.hpp>
+#include <boost/json.hpp>
+#include <boost/make_shared.hpp>
 #include <boost/test/unit_test.hpp>
+
+#include <entt/entt.hpp>
 
 namespace {
 
@@ -54,6 +60,32 @@ class Sandbox final {
 /**
  * The names of a listing, in order, with a directory marked by a trailing slash.
  **/
+/**
+ * A container holding what a chooser writes into: the list, the name field and the folder
+ * label, under the names a chooser looks for by default.
+ **/
+boost::shared_ptr<v3d::ui::Engine> chooserUi() {
+    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
+        boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher, boost::make_shared<v3d::log::Logger>());
+    const char* const document = R"({
+      "themes": [ { "name": "default" } ],
+      "containers": [
+        {
+          "name": "chooser",
+          "visible": false,
+          "components": [
+            { "name": "files", "type": "list" },
+            { "name": "name", "type": "textbox" },
+            { "name": "folder", "type": "label" }
+          ]
+        }
+      ]
+    })";
+    BOOST_REQUIRE(ui->load(boost::json::parse(document).as_object()));
+    return ui;
+}
+
 std::vector<std::string> names(const v3d::ui::shell::FileChooser& chooser) {
     std::vector<std::string> found;
     for (const v3d::ui::shell::FileChooser::Entry& entry : chooser.entries()) {
@@ -128,7 +160,7 @@ BOOST_AUTO_TEST_CASE(a_name_that_is_not_one_is_refused) {
     chooser.open(v3d::ui::shell::FileChooser::Mode::Open, sandbox.path(), ".json",
         [&called](const boost::filesystem::path&) { called = true; });
 
-    for (const std::string& name : { std::string(), std::string("../a.json"), std::string("art\a.json"),
+    for (const std::string& name : { std::string(), std::string("../a.json"), std::string("art\\a.json"),
             std::string(".."), std::string("missing.json"), std::string("art") }) {
         chooser.name(name);
         BOOST_CHECK(!chooser.accept());
@@ -175,6 +207,30 @@ BOOST_AUTO_TEST_CASE(saving_over_a_file_asks_first) {
     BOOST_CHECK(chooser.accept());
     BOOST_CHECK_EQUAL(calls, 1);
     BOOST_CHECK(!chooser.confirming());
+}
+
+/**
+ * A directory opened from the list shows its own listing with no row chosen, so a pick that
+ * follows does not open whatever now sits at the row chosen before.
+ **/
+BOOST_AUTO_TEST_CASE(a_new_listing_has_nothing_chosen) {
+    const Sandbox sandbox("chosen");
+    // enough in the directory opened that the row chosen before still names one of its rows
+    sandbox.touch("art/c.json");
+    sandbox.touch("art/d.json");
+    const boost::shared_ptr<v3d::ui::Engine> ui = chooserUi();
+    v3d::ui::shell::FileChooser chooser(ui);
+    chooser.open(v3d::ui::shell::FileChooser::Mode::Open, sandbox.path(), ".json", {});
+
+    const boost::shared_ptr<v3d::ui::component::SelectList> files =
+        boost::dynamic_pointer_cast<v3d::ui::component::SelectList>(ui->container("chooser")->get("files"));
+    BOOST_REQUIRE(files);
+    // "art/", the first directory after the way up
+    files->selected(1);
+    chooser.pick();
+
+    BOOST_CHECK(chooser.directory() == sandbox.path() / "art");
+    BOOST_CHECK_EQUAL(files->selected(), v3d::ui::component::SelectList::none);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

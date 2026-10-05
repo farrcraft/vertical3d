@@ -311,6 +311,13 @@ BOOST_AUTO_TEST_CASE(the_menu_answers_its_own_commands) {
     const std::string before = active(ui);
     send("ui", "menuNext");
     BOOST_TEST(active(ui) != before);
+
+    // a held key's repeats do not flick the menu shut
+    v3d::event::Event repeated(v3d::ui::shell::GameMenu::toggleCommand, events->resolveContext("ui"));
+    repeated.type(v3d::event::Type::Destination);
+    repeated.repeat(true);
+    ui->dispatcher()->trigger(repeated);
+    BOOST_TEST(menu.visible());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

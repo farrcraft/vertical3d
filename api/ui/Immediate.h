@@ -109,6 +109,13 @@ class Immediate {
     ~Immediate();
 
     /**
+     * Replace how strings are measured and drawn, as when the text is rescaled. Everything
+     * the layer remembers between frames - where windows were dragged, what is folded, how
+     * far a list is scrolled - is kept.
+     **/
+    void text(const paint::Measure& measure, const paint::Write& write);
+
+    /**
      * @return the colours and metrics, to be changed in place
      **/
     Dressing& dressing() noexcept;

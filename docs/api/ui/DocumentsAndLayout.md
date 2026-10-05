@@ -123,9 +123,13 @@ a list that are scrolled out of view are not laid out on that frame.
 Menu bars and toolbars are called strips. They are placed at the edges of the canvas rather
 than by their layout, and they stack:
 
-- A menu bar takes the top of the canvas.
-- A `top` toolbar takes a band under whatever is already there.
-- A `left` toolbar runs down the side of what is left.
+- Every menu bar takes the top of the canvas.
+- Each `top` toolbar takes a band under the menu bars and the top toolbars listed before it.
+- Each `left` toolbar runs down the side, below every menu bar and top toolbar, beside the
+  left toolbars listed before it.
+
+The order a document lists strips in decides the order within each edge, never whether a left
+strip starts above a top one.
 
 `ComponentRenderer::insets(engine)` returns the space the strips take: the left inset in x
 and the top inset in y. An app draws its own content in the rest. It uses the same

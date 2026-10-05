@@ -6,6 +6,7 @@
 #include "DepthOrder.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <numeric>
 #include <vector>
@@ -42,7 +43,14 @@ void DepthOrder::into(WorldCanvas* canvas) const {
     std::stable_sort(order.begin(), order.end(), [this](std::size_t left, std::size_t right) {
         const Entry& a = entries_[left];
         const Entry& b = entries_[right];
-        if (a.key != b.key) {
+        // a key that is not a number goes last, because a sort given NaN compared as a number
+        // has no consistent order and its result is undefined
+        const bool aMissing = std::isnan(a.key);
+        const bool bMissing = std::isnan(b.key);
+        if (aMissing != bMissing) {
+            return bMissing;
+        }
+        if (!aMissing && a.key != b.key) {
             return a.key > b.key;
         }
         return a.texture < b.texture;

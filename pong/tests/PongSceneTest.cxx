@@ -518,3 +518,51 @@ BOOST_AUTO_TEST_CASE(pong_scene_is_frame_rate_independent_test) {
     BOOST_TEST(near(slow.scene_.ball().position(), fast.scene_.ball().position()));
     BOOST_TEST(slow.scene_.left().position() == fast.scene_.left().position(), boost::test_tools::tolerance(0.01f));
 }
+
+/**
+ * A paddle key let go while the game is paused stops the paddle, so the paddle does not run on
+ * by itself when the menu closes. A key pressed while paused does nothing.
+ **/
+BOOST_AUTO_TEST_CASE(pong_scene_a_release_while_paused_stops_the_paddle_test) {
+    Fixture fixture;
+
+    BOOST_TEST(fixture.scene_.steer("leftPaddleUp", true));
+    BOOST_TEST(fixture.scene_.left().up());
+    fixture.scene_.state().pause(true);
+    BOOST_TEST(fixture.scene_.steer("leftPaddleUp", false));
+    BOOST_TEST(!fixture.scene_.left().up());
+
+    BOOST_TEST(fixture.scene_.steer("leftPaddleDown", true));
+    BOOST_TEST(!fixture.scene_.left().down());
+    BOOST_TEST(!fixture.scene_.steer("showGameMenu", true));
+}
+
+/**
+ * The computer moves the right paddle when a player has not got it. Changing to coop stops it,
+ * so the player who takes it over does not find it already moving.
+ **/
+BOOST_AUTO_TEST_CASE(pong_scene_coop_stops_the_computer_paddle_test) {
+    Fixture fixture;
+    fixture.scene_.coop(false);
+    // a ball headed right and above the paddle, which the computer moves up to meet
+    fixture.scene_.ball().direction(glm::vec2(60.0f, 0.0f));
+    fixture.scene_.ball().position(glm::vec2(400.0f, 100.0f));
+    fixture.scene_.tick(STEP);
+    BOOST_REQUIRE(fixture.scene_.right().up());
+
+    fixture.scene_.coop(true);
+    fixture.scene_.reset();
+    BOOST_TEST(!fixture.scene_.right().up());
+    BOOST_TEST(!fixture.scene_.right().down());
+}
+
+/**
+ * A reset starts a new round and leaves a paused game paused, so a mode chosen from the open
+ * menu does not set the ball moving behind it.
+ **/
+BOOST_AUTO_TEST_CASE(pong_scene_reset_keeps_the_pause_test) {
+    Fixture fixture;
+    fixture.scene_.state().pause(true);
+    fixture.scene_.reset();
+    BOOST_TEST(fixture.scene_.state().paused());
+}

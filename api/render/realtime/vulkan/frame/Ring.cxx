@@ -33,6 +33,14 @@ Ring::Ring(const boost::shared_ptr<device::Device>& device, uint32_t framesInFli
     for (uint32_t index = 0; index < framesInFlight_; index++) {
         VkFence fence = VK_NULL_HANDLE;
         VkResult result = vkCreateFence(device_->handle(), &fenceInfo, nullptr, &fence);
+        if (result != VK_SUCCESS) {
+            // the destructor does not run for a constructor that throws, so the fences
+            // already made are destroyed here
+            for (VkFence made : inFlight_) {
+                vkDestroyFence(device_->handle(), made, nullptr);
+            }
+            inFlight_.clear();
+        }
         device::check(result, "Unable to create a vulkan fence");
         inFlight_.push_back(fence);
     }
@@ -92,14 +100,29 @@ uint64_t Ring::begun() const noexcept {
 
 /**
  **/
+void Ring::skip() noexcept {
+    skipped_++;
+}
+
+/**
+ **/
+uint64_t Ring::turns() const noexcept {
+    return begun_ + skipped_;
+}
+
+/**
+ **/
 void Ring::retire(std::function<void()> destroy) {
     retired_.retire(begun_, std::move(destroy));
 }
 
 /**
  **/
-VkFence Ring::fence() const noexcept {
-    return inFlight_[frame_];
+VkFence Ring::submitting() {
+    VkFence fence = inFlight_[frame_];
+    const VkResult result = vkResetFences(device_->handle(), 1, &fence);
+    device::check(result, "Unable to reset a vulkan frame fence");
+    return fence;
 }
 
 /**
@@ -107,12 +130,8 @@ VkFence Ring::fence() const noexcept {
 VkCommandBuffer Ring::begin() {
     waitFrame();
 
-    VkFence fence = inFlight_[frame_];
-    VkResult result = vkResetFences(device_->handle(), 1, &fence);
-    device::check(result, "Unable to reset a vulkan frame fence");
-
     VkCommandBuffer commands = commands_[frame_];
-    result = vkResetCommandBuffer(commands, 0);
+    VkResult result = vkResetCommandBuffer(commands, 0);
     device::check(result, "Unable to reset a vulkan command buffer");
 
     VkCommandBufferBeginInfo beginInfo{};

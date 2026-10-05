@@ -8,6 +8,8 @@
 #include <api/type/geometry/Plane.h>
 #include <api/type/geometry/Ray.h>
 
+#include <cmath>
+
 #include <boost/test/unit_test.hpp>
 
 #include <glm/geometric.hpp>
@@ -235,4 +237,19 @@ BOOST_AUTO_TEST_CASE(ray_plane_orthographic_pick_test) {
     BOOST_CHECK_SMALL(rightHit[1], 0.001f);
     BOOST_CHECK_GT(glm::length(rightHit - leftHit), 0.1f);
     BOOST_CHECK_CLOSE(leftDistance, rightDistance, 0.01f);
+}
+
+/**
+ * A ray that is not a number anywhere meets no box. Compared slab by slab it would pass every
+ * test, because every comparison with NaN is false.
+ **/
+BOOST_AUTO_TEST_CASE(ray_that_is_not_a_number_misses_test) {
+    v3d::type::geometry::AABBox box;
+    box.extents(glm::vec3(-1.0f, -1.0f, -1.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+
+    const float nan = std::nanf("");
+    v3d::type::geometry::Ray lost(glm::vec3(0.0f, 0.0f, -5.0f), glm::vec3(nan, 0.0f, 1.0f));
+    BOOST_CHECK(!lost.intersects(box, nullptr));
+    v3d::type::geometry::Ray nowhere(glm::vec3(nan, 0.0f, -5.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    BOOST_CHECK(!nowhere.intersects(box, nullptr));
 }

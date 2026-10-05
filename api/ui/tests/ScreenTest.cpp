@@ -68,7 +68,8 @@ BOOST_AUTO_TEST_CASE(the_dressing_is_filled_in_for_the_size) {
 
 /**
  * A rescale rebuilds what closes over the size and dresses it for the new one. The theme goes
- * to what was rebuilt, and the overlay is the same overlay, at a new size and as visible as it
+ * to what was rebuilt. The immediate layer is the same layer, given the new text, and the
+ * overlay is the same overlay, at a new size and as visible as it
  * was - so an app that toggles it through a handle it kept still reaches the one drawn.
  **/
 BOOST_AUTO_TEST_CASE(a_rescale_rebuilds_what_closes_over_the_size) {
@@ -80,6 +81,7 @@ BOOST_AUTO_TEST_CASE(a_rescale_rebuilds_what_closes_over_the_size) {
     const boost::shared_ptr<v3d::ui::shell::StatisticsOverlay> overlay = screen.statistics();
     overlay->toggle();
     const v3d::ui::paint::ComponentRenderer* before = &screen.components();
+    const v3d::ui::Immediate* layer = screen.immediate();
 
     screen.scale(1.5f);
 
@@ -89,6 +91,8 @@ BOOST_AUTO_TEST_CASE(a_rescale_rebuilds_what_closes_over_the_size) {
     BOOST_CHECK(screen.components().theme() == theme);
     BOOST_REQUIRE(screen.immediate() != nullptr);
     BOOST_CHECK_CLOSE(screen.immediate()->dressing().lineHeight, 42.0f, 0.001f);
+    // the immediate layer is the one that was there, so what it remembered is kept
+    BOOST_CHECK(screen.immediate() == layer);
 
     BOOST_CHECK(screen.statistics() == overlay);
     BOOST_CHECK(overlay->visible());

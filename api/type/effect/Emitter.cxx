@@ -68,7 +68,9 @@ void travel(const Emitter& emitter, State* state, float seconds, const glm::vec3
 }
 
 uint32_t owing(State* state, float rate, float seconds) {
-    state->owed += rate * seconds;
+    // a rate below nothing earns nothing, rather than a count that wraps round when it is
+    // made unsigned
+    state->owed += std::max(0.0f, rate * seconds);
     const float whole = std::floor(state->owed + owedSlack);
     state->owed = std::max(0.0f, state->owed - whole);
     return static_cast<uint32_t>(whole);

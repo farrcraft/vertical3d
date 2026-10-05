@@ -28,7 +28,7 @@ content went. Numbers are never reused.
 | [0005](0005-2d-one-batched-quad-pipeline.md) | 2D: one batched quad pipeline | amended by 0036, 0042 |
 | [0008](0008-shaders-descriptor-sets-by-update-frequency.md) | Shaders: descriptor sets by update frequency | amended by 0064 |
 | [0009](0009-colour-display-space-unorm-swapchain.md) | Colour: display space, UNORM swapchain | amended by 0049, 0066 |
-| [0010](0010-meshes-owned-by-the-app-that-built-them.md) | Meshes: owned by the app that built them | superseded by 0065 |
+| [0010](0010-meshes-owned-by-the-app-that-built-them.md) | Meshes: owned by the app that built them | amended by 0061; superseded by 0065 |
 | [0011](0011-rendering-lines-as-a-world-space-primitive.md) | Rendering: lines as a world-space primitive | accepted |
 | [0012](0012-camera-projection-targets-vulkan-clip-space.md) | Camera: projection targets Vulkan clip space | amended by 0052 |
 | [0031](0031-rendering-passes-draw-into-offscreen-targets.md) | Rendering: passes draw into offscreen targets | amended by 0068 |

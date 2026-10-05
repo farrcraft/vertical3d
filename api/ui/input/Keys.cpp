@@ -101,6 +101,12 @@ bool Keys::press(std::string_view key, bool shifted, bool controlled) {
         // are above this, so the focus is never stuck on one
         return false;
     }
+    if (!ui_->reachable(focused)) {
+        // hidden while it held the focus, as a dialog's field is when the dialog closes. It
+        // gives the focus up, and the key goes on to the app
+        ui_->focus(boost::shared_ptr<Component>());
+        return false;
+    }
     return act(focused, key, shifted, controlled);
 }
 
@@ -112,6 +118,11 @@ bool Keys::text(std::string_view utf8) {
     if (!focused || !component::traits(focused->type()).text || !usable(*focused)) {
         // a box disabled while it held the focus takes no characters either, so what is
         // typed reaches the app rather than a field nobody can use
+        return false;
+    }
+    if (!ui_->reachable(focused)) {
+        // and a box hidden while it held the focus gives it up
+        ui_->focus(boost::shared_ptr<Component>());
         return false;
     }
     const boost::shared_ptr<component::TextBox> box =

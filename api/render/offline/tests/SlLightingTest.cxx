@@ -203,6 +203,28 @@ BOOST_AUTO_TEST_CASE(sllighting_solar_test) {
 }
 
 /**
+ * A solar light with an angle is lit along its axis, and the machine reports once that the
+ * angle is not honoured rather than lighting a cone it cannot choose a direction in.
+ **/
+BOOST_AUTO_TEST_CASE(sllighting_solar_angle_is_reported_test) {
+    std::string error;
+    Program program;
+    BOOST_REQUIRE_MESSAGE(build(
+        "light wide() {\n"
+        "    solar(vector (0, 0, -1), 0.5) {\n"
+        "        Cl = color (1, 1, 1);\n"
+        "    }\n"
+        "}\n", &program, &error), error);
+    Machine machine;
+    machine.prepare(program, 2);
+    BOOST_REQUIRE(machine.run());
+
+    BOOST_CHECK_CLOSE(machine.value(program.symbol("L")).triple(0).z, 1.0f, 0.01f);
+    BOOST_REQUIRE_EQUAL(machine.reports().size(), 1u);
+    BOOST_CHECK_EQUAL(machine.reports()[0], "solar with an angle is lit along its axis only, as if the angle were 0");
+}
+
+/**
  * A light with a position aims a cone, and the points outside it are not lit at all. This is
  * the light shader's side of the mask: L is written for every point it reaches, and the
  * surface never runs the body for the points it misses.
@@ -399,4 +421,38 @@ BOOST_AUTO_TEST_CASE(sllighting_specular_test) {
     dulled.normal(0, glm::vec3(0.0f, 0.0f, 1.0f));
     dulled.run();
     BOOST_CHECK_CLOSE(dulled.colour(0).r, 1.0f, 0.1f);
+}
+
+/**
+ * A lane that returns from inside an illuminance loop has finished, and so has one that
+ * breaks out of it. Neither runs the body again for the next light.
+ **/
+BOOST_AUTO_TEST_CASE(sllighting_return_and_break_leave_illuminance_test) {
+    Scene scene;
+    scene.add(OVERHEAD, 1);
+    scene.add(
+        "light sideways() {\n"
+        "    solar(vector (-1, 0, 0), 0) {\n"
+        "        Cl = color (0, 0.25, 0);\n"
+        "    }\n"
+        "}\n", 1);
+
+    Lit returned(
+        "color first() {\n"
+        "    illuminance(P) {\n"
+        "        return Cl;\n"
+        "    }\n"
+        "    return color (9, 9, 9);\n"
+        "}\n"
+        "Ci = first();", &scene, 1);
+    returned.normal(0, glm::vec3(0.0f, 0.0f, 1.0f));
+    returned.run();
+    BOOST_CHECK_CLOSE(returned.colour(0).r, 1.0f, 0.1f);
+    BOOST_CHECK_CLOSE(returned.colour(0).g, 1.0f, 0.1f);
+
+    Lit broken("color sum = 0;\nilluminance(P) { sum += Cl; break; }\nCi = sum;", &scene, 1);
+    broken.normal(0, glm::vec3(0.0f, 0.0f, 1.0f));
+    broken.run();
+    BOOST_CHECK_CLOSE(broken.colour(0).r, 1.0f, 0.1f);
+    BOOST_CHECK_CLOSE(broken.colour(0).g, 1.0f, 0.1f);
 }

@@ -76,8 +76,10 @@ class Instance final {
      * @param placement the shader's own space to the machine's current one, which is the
      *        transform that was in force when the scene instanced this shader. A position
      *        a scene binds is stated in that space, and arrives in this one.
+     * @return false if the defaults failed to run, in which case nothing is bound and the
+     *         machine's error() says why
      **/
-    void write(runtime::Machine* machine,
+    [[nodiscard]] bool write(runtime::Machine* machine,
         const glm::mat4x4 & placement = glm::mat4x4(1.0f)) const;
 
  private:

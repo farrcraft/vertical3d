@@ -38,6 +38,7 @@ target_link_libraries(vertical3d PRIVATE
 	v3dlib_asset_media
 	v3dlib_brep
 	v3dlib_config
+	v3dlib_dag
 	v3dlib_ecs
 	v3dlib_engine
 	v3dlib_event

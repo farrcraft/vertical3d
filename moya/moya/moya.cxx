@@ -26,8 +26,13 @@ int run(int argc, char *argv[]) {
         ("version", "display version info")
         ("file", boost::program_options::value<std::string>(), "input filename to be rendered")
         ("output", boost::program_options::value<std::string>(), "filename to be written")
-        ("grid", boost::program_options::value<int>(), "micropolygon grid size")
-        ("bucket", boost::program_options::value<int>(), "nXm pixel bucket size");
+        ("width", boost::program_options::value<unsigned int>(), "image width, replacing the scene's Format; needs --height")
+        ("height", boost::program_options::value<unsigned int>(), "image height, replacing the scene's Format; needs --width")
+        ("silent", "print no progress line")
+        ("grid", boost::program_options::value<int>(),
+            "micropolygon grid size, used unless the scene sets one with Option \"limits\"")
+        ("bucket", boost::program_options::value<int>(),
+            "square bucket size in pixels, used unless the scene sets one with Option \"limits\"");
 
     // parse options
     boost::program_options::variables_map var_map;
@@ -73,6 +78,13 @@ int run(int argc, char *argv[]) {
     if (!outfile.empty()) {
         handler.output(outfile);
     }
+    const bool width = var_map.count("width") > 0;
+    const bool height = var_map.count("height") > 0;
+    if (width && height) {
+        handler.resolution(var_map["width"].as<unsigned int>(), var_map["height"].as<unsigned int>());
+    } else if (width || height) {
+        std::cout << "--width and --height have to be given together, so the scene's Format is used" << "\n";
+    }
     // the command line sets the grid and bucket sizes before the scene is read, so a scene
     // that names its own with Option "limits" replaces them
     if (var_map.count("grid")) {
@@ -85,7 +97,9 @@ int run(int argc, char *argv[]) {
 
     // flushed rather than left to the buffer: the render that follows takes the rest of the
     // run, and the progress line has to appear before it starts
-    std::cout << "Rendering scene file: " << infile << "\n" << std::flush;
+    if (!var_map.count("silent")) {
+        std::cout << "Rendering scene file: " << infile << "\n" << std::flush;
+    }
 
     v3d::render::offline::rib::Reader reader(logger);
     if (!reader.read(infile, &handler)) {

@@ -26,6 +26,7 @@ Newest first.
 
 | Plan | Area | Closed | What it delivered |
 |---|---|---|---|
+| [ReviewFixes](completed/ReviewFixes.md) | All of `api/`, moya, pong, voxel, docs | 2026-10-05 | Fixed the findings of a code review of `feat/motion-and-queries`, each with a test that failed first, and recorded the four that were not defects |
 | [DocumentationRefresh](completed/DocumentationRefresh.md) | Documentation | 2026-10-05 | Plain-language docs split by reader, ADRs renamed and rewritten with a qualification test, and comments that state their rules without citing ADRs |
 | [ApiDesignDebt](completed/ApiDesignDebt.md) | All of `api/` | 2026-10-05 | Fixed the twelve defects found by the api design review, and gave each rule that was written in several places one implementation |
 | [OfflineRenderingPhases4To6](completed/OfflineRenderingPhases4To6.md) | Offline rendering | 2026-10-04 | Seeded samples in a shared film, depth of field, motion blur, recursive ray tracing, and one ray tracer for both renderers |

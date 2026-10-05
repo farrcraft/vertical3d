@@ -47,8 +47,8 @@ std::string userPath(const std::string& org, const std::string& app);
 /**
  * Build an engine, run it to completion and shut it down. This is all of an app's main().
  *
- * shutdown() runs outside the loop and outside the catch, so it runs whether the loop ended
- * normally or by throwing. An event handler calls quit() instead: tearing the window down
+ * shutdown() runs outside the loop and after its catch, so it runs whether the loop ended
+ * normally or by throwing. A throw from shutdown() is caught and logged too. An event handler calls quit() instead: tearing the window down
  * inside a handler would leave the next frame drawing to a destroyed window.
  *
  * @param T the engine to run: the app's subclass of v3d::engine::Engine, with its own
@@ -65,7 +65,8 @@ template <typename T, typename... Args>
 int run(const char* executable, const std::string& name, Args&&... args) {
     const std::string path = appPath(executable);
     // beside the executable, whatever directory it was started from: a windowed app has no
-    // console, so the log is the only place its errors appear
+    // console, so the log is the only place its errors appear. A directory that cannot be
+    // written to sends the log to stderr, and the app still runs
     v3d::log::Logger::open(path + "v3d.log");
     T engine(path, std::forward<Args>(args)...);
 
@@ -82,7 +83,15 @@ int run(const char* executable, const std::string& name, Args&&... args) {
         exitStatus = EXIT_FAILURE;
     }
 
-    if (!engine.shutdown()) {
+    // a throw from release(), such as a lost device found while waiting for it to go idle,
+    // is caught and logged in the same way
+    try {
+        if (!engine.shutdown()) {
+            exitStatus = EXIT_FAILURE;
+        }
+    } catch (const std::exception& error) {
+        v3d::log::Logger logger;
+        logger.get()->error("{} failed to shut down: {}", name, error.what());
         exitStatus = EXIT_FAILURE;
     }
 

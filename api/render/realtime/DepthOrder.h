@@ -23,7 +23,7 @@ namespace v3d::render::realtime {
  * a sprite's feet are, which nothing here can compute. A larger key is further away
  * and is drawn first. Equal keys are drawn grouped by texture and otherwise in the order they
  * were added, so a caller that wants fewer batch cuts quantises its key - to a tile row, say -
- * and lets the tie-break merge them.
+ * and lets the tie-break merge them. A key that is not a number is drawn last.
  *
  * WorldCanvas itself still draws in submission order. This is one way of choosing that order.
  **/

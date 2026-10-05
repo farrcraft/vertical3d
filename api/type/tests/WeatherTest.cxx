@@ -154,4 +154,23 @@ BOOST_AUTO_TEST_CASE(weather_is_carried_by_the_wind_test) {
     BOOST_CHECK(carried);
 }
 
+/**
+ * An ease below nothing moves the intensity nowhere, and a target outside 0 to 1 eases only as
+ * far as the end of that range.
+ **/
+BOOST_AUTO_TEST_CASE(weather_out_of_range_settings_are_held_in_range_test) {
+    const Emitter emitter = rain();
+    Weather weather = shower();
+    weather.intensity = 0.5f;
+    weather.ease = -1.0f;
+    State state(1);
+    run(emitter, &weather, &state, 10);
+    BOOST_CHECK_EQUAL(weather.intensity, 0.5f);
+
+    weather.ease = 10.0f;
+    weather.target = 4.0f;
+    run(emitter, &weather, &state, 10);
+    BOOST_CHECK_EQUAL(weather.intensity, 1.0f);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

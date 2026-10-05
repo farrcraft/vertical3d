@@ -238,4 +238,21 @@ BOOST_AUTO_TEST_CASE(the_thumb_is_drawn_at_the_fraction) {
     BOOST_CHECK_CLOSE(right, 210.0f, 0.001f);
 }
 
+/**
+ * A press on the middle of the thumb leaves the value where it was, so grabbing the thumb
+ * does not make it jump. The thumb's centre runs half a thumb in from each end of the track.
+ **/
+BOOST_AUTO_TEST_CASE(a_press_on_the_thumb_keeps_the_value) {
+    v3d::ui::component::Slider slider;
+    slider.range(0.0f, 1.0f, 0.0f);
+    slider.position(glm::vec2(100.0f, 50.0f));
+    slider.size(glm::vec2(200.0f, 20.0f));
+    for (const float value : {0.0f, 0.2f, 0.9f, 1.0f}) {
+        slider.value(value);
+        const float centre = 100.0f + 10.0f + 180.0f * slider.fraction();
+        slider.drag(glm::vec2(centre, 60.0f));
+        BOOST_CHECK_CLOSE(slider.value() + 1.0f, value + 1.0f, 0.001f);
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()

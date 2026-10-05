@@ -413,3 +413,25 @@ BOOST_AUTO_TEST_CASE(trace_a_primitive_has_its_own_lights_test) {
     v3d::render::offline::trace::Tracer shader(&scene);
     BOOST_CHECK_CLOSE(shader.shade(at(scene, 0.0f, 0.0f)).r, 0.5f, 0.5f);
 }
+
+/**
+ * A shader that fails to run leaves the primitive drawn in its own colour, as one with no
+ * shader is, and its opacity still applies to that colour.
+ **/
+BOOST_AUTO_TEST_CASE(trace_a_failed_shader_keeps_its_opacity_test) {
+    static ShaderLibrary shaders(boost::make_shared<v3d::log::Logger>());
+    shaders.searchpath("data");
+
+    v3d::render::offline::trace::Scene scene;
+    v3d::render::offline::trace::Triangle pane = facing(2.0f, glm::vec3(1.0f));
+    Placed endless;
+    endless.shader = shaders.instance("endless", v3d::render::offline::sl::ShaderType::SURFACE, ParameterList());
+    BOOST_REQUIRE(endless.shader);
+    pane.surface(endless);
+    pane.opacity(glm::vec3(0.5f));
+    scene.add(pane);
+
+    v3d::render::offline::trace::Tracer shader(&scene);
+    const glm::vec3 colour = shader.shade(at(scene, 0.0f, 0.0f));
+    BOOST_CHECK_CLOSE(colour.r, 0.5f, 0.1f);
+}

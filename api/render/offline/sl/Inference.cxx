@@ -74,10 +74,10 @@ void Inference::spread(int symbol, const syntax::ExpressionPtr & from) {
 
 std::string Inference::run() {
     // a loop can carry a varying value back to a name that was read before it was written,
-    // so one pass is not enough. Nothing ever changes from varying back to uniform, so the
-    // traversal is monotone and terminates
+    // so one pass is not enough. A round only ever changes a symbol from uniform to varying, so
+    // there are at most as many rounds as symbols and the loop runs until nothing changes
     results_.assign(shader_->functions.size(), Storage::UNIFORM);
-    for (int round = 0; round < 64; round++) {
+    for (;;) {
         changed_ = false;
         for (std::size_t i = 0; i < shader_->functions.size(); i++) {
             inside_ = static_cast<int>(i);
@@ -197,6 +197,18 @@ void Inference::inferOutputs(const syntax::ExpressionPtr & expression, bool vary
         return;
     }
     const Signature & signature = builtins()[static_cast<std::size_t>(call.signature)];
+    if (signature.updates >= 0) {
+        // the argument changed in place is as varying as anything else the call reads
+        const std::size_t updated = static_cast<std::size_t>(signature.updates);
+        bool varying = varyingContext || signature.varying;
+        for (std::size_t argument = 0; argument < call.arguments.size(); argument++) {
+            varying = varying || (argument != updated && call.arguments[argument]->storage == Storage::VARYING);
+        }
+        if (varying && updated < call.arguments.size()) {
+            spread(static_cast<const syntax::Variable &>(*call.arguments[updated]).symbol, expression);
+        }
+        return;
+    }
     if (signature.outputs < 0) {
         return;
     }

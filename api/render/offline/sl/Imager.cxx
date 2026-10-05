@@ -33,7 +33,9 @@ bool Imager::run(FrameBuffer* frame, unsigned int coverage) {
 
     const Globals globals(program);
     for (unsigned int row = 0; row < height; row++) {
-        shader_->write(&machine_);
+        if (!shader_->write(&machine_)) {
+            return false;
+        }
         for (unsigned int column = 0; column < width; column++) {
             // the pixel's centre in raster space
             globals.pixel(&machine_, column, glm::vec3(frame->value(0, column, row), frame->value(1, column, row),

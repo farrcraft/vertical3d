@@ -33,7 +33,8 @@ namespace v3d::ui::component {
 class TabBar : public Component {
  public:
     /**
-     * What selected() answers when the bar holds no pages.
+     * What selected() answers when no page is chosen: the bar holds none, or an index outside
+     * them was chosen.
      **/
     static const int none = -1;
 
@@ -52,7 +53,7 @@ class TabBar : public Component {
     int selected() const noexcept;
 
     /**
-     * @return the page that is up, or null when the bar holds none
+     * @return the page that is up, or null when no page is chosen
      **/
     boost::shared_ptr<TabPage> page() const;
 

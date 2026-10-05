@@ -17,6 +17,12 @@ MenuItem::MenuItem(menu::ItemType type, const std::string& label) :
     label_(label), type_(type), checked_(false), hasValue_(false) {
 }
 
+MenuItem::~MenuItem() {
+    if (submenu_) {
+        disown(*submenu_);
+    }
+}
+
 void MenuItem::label(const std::string& str) {
     label_ = str;
 }
@@ -24,6 +30,9 @@ void MenuItem::label(const std::string& str) {
 void MenuItem::submenu(const boost::shared_ptr<Menu>& sub) {
     submenu_ = sub;
     sub->parent(menu_);
+    // the submenu inherits from the item that opens it, so disabling the item, or the menu it
+    // is in, disables what the submenu holds
+    adopt(*sub);
 }
 
 std::string_view MenuItem::label() const {

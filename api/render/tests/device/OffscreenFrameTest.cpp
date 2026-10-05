@@ -300,4 +300,20 @@ BOOST_AUTO_TEST_CASE(a_suballocated_device_clears_the_same_way) {
     }
 }
 
+/**
+ * A frame that is begun and never submitted, as when recording throws, leaves its fence
+ * signalled. Beginning the same slot again then returns rather than waiting forever, and the
+ * frame after it draws and is silent.
+ **/
+BOOST_AUTO_TEST_CASE(an_abandoned_frame_can_be_begun_again) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    VkCommandBuffer abandoned = headless.context->ring()->begin();
+    BOOST_REQUIRE(abandoned != VK_NULL_HANDLE);
+
+    VkCommandBuffer commands = headless.context->ring()->begin();
+    BOOST_REQUIRE(commands == abandoned);
+    headless.submitAndWait(commands);
+    BOOST_CHECK(headless.silent());
+}
+
 BOOST_AUTO_TEST_SUITE_END()

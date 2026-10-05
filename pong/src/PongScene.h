@@ -6,6 +6,7 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 
 #include "Ball.h"
 #include "Paddle.h"
@@ -34,6 +35,22 @@ class PongScene {
     void tick(float step);
 
     void reset();
+
+    /**
+     * Apply a paddle command: one of leftPaddleUp, leftPaddleDown, rightPaddleUp and
+     * rightPaddleDown, with whether its key is now held. A press is ignored while the game is
+     * paused, and the right paddle takes presses only in coop mode. A release is always
+     * applied, so a key let go while the menu is up does not leave its paddle moving.
+     *
+     * @return whether the name was a paddle command
+     **/
+    bool steer(std::string_view command, bool held);
+
+    /**
+     * Change between coop and playing against the computer. Both paddles stop, so a paddle the
+     * computer was moving does not keep moving once a player has it.
+     **/
+    void coop(bool mode);
 
     Ball & ball();
     Paddle & left();

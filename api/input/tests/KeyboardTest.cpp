@@ -39,10 +39,11 @@ struct Recorder {
     std::vector<v3d::event::Event> source_;
 };
 
-SDL_Event keyEvent(uint32_t type, SDL_Keycode key) {
+SDL_Event keyEvent(uint32_t type, SDL_Keycode key, bool repeat = false) {
     SDL_Event event{};
     event.type = type;
     event.key.key = key;
+    event.key.repeat = repeat;
     return event;
 }
 };  // namespace
@@ -190,12 +191,12 @@ BOOST_AUTO_TEST_CASE(keyboard_held_key_test) {
     Recorder recorder;
     dispatcher->sink<v3d::event::Source>().connect<&Recorder::sourceEvent>(recorder);
 
-    // SDL repeats key down while a key is held. Every repeat is still a press, and the
-    // release that follows is still a release - the state tracking must not invert on the
-    // way through.
+    // SDL repeats key down while a key is held. Every repeat is still a press, marked as a
+    // repeat, and the release that follows is still a release - the state tracking must not
+    // invert on the way through.
     keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_W));
-    keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_W));
-    keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_W));
+    keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_W, true));
+    keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_W, true));
     keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_UP, SDLK_W));
     keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_W));
 
@@ -205,6 +206,10 @@ BOOST_AUTO_TEST_CASE(keyboard_held_key_test) {
     BOOST_CHECK(recorder.source_[2].state() == v3d::event::State::Pressed);
     BOOST_CHECK(recorder.source_[3].state() == v3d::event::State::Released);
     BOOST_CHECK(recorder.source_[4].state() == v3d::event::State::Pressed);
+    BOOST_CHECK(!recorder.source_[0].repeat());
+    BOOST_CHECK(recorder.source_[1].repeat());
+    BOOST_CHECK(recorder.source_[2].repeat());
+    BOOST_CHECK(!recorder.source_[4].repeat());
 }
 
 /**

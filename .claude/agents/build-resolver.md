@@ -123,12 +123,11 @@ namespace body is not indented here, continuation lines at namespace scope inclu
 
 ## Tests
 
-16 Boost.Test binaries over 332 cases, built from `api/<lib>/tests/` and `<app>/tests/` and
-run with `ctest --test-dir out/build/x64-Debug`. They cover `type`, `brep`, `dag`, `image`,
-`font`, `input`, `event`, `asset`, `config`, the window-free half of `render` and of `ui`,
-and the apps `pong`, `tetris`, `voxel`, `vertical3d` and `moya`. Nothing covers `ecs`,
-`audio`, `log`, `engine` or anything in `api/render` below the recorder, so for a change
-there building is still the only available check. CI runs the whole thing —
+25 Boost.Test binaries over about 1,500 cases, built from `api/<lib>/tests/` and
+`<app>/tests/` and run with `ctest --test-dir out/build/x64-Debug`. Every api library has one,
+and so do `pong`, `tetris`, `voxel`, `odyssey`, `vertical3d` and `moya`. `render_device` tests the
+realtime renderer on a real Vulkan device and skips, with exit code 77, on a machine without
+one. CI runs the whole thing, on lavapipe for the device suite -
 [.github/workflows/ctest.yml](../../.github/workflows/ctest.yml).
 
 Rendering is not covered: it needs a window and a GPU, which is

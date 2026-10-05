@@ -11,7 +11,8 @@ Input reaches an app in four ways. Use whichever fits:
 - **Source events**, on the dispatcher's `sink<event::Source>`. Use this to capture a key.
 - **Commands**, on the dispatcher's `sink<event::Event>`, made from source events by the
   binding document. Use this when the action should be named in config rather than in code.
-- **Polling**, through `keys()`, `mouse()` and `held()`, from `tick()` or `simulate()`.
+- **Polling**, through `keys()`, `mouse()` and `held()`. Read `held()` from `simulate()`, and
+  the edges from `tick()` or `render()`.
 
 ### Event routing
 
@@ -74,6 +75,12 @@ A command's identity is `context::name`, for example `pong::leftPaddleUp`. Its `
 `Pressed` or `Released`, copied from the source that triggered it, so one binding can serve both
 edges. Its `data()` is the binding's `param`, if it has one.
 
+A held key repeats at the platform's repeat rate. Each repeat is another `Pressed`, with
+`repeat()` true on the source and on the command made from it. A command that acts for as long
+as its key is held, such as moving a tetris piece, takes repeats. A command that toggles
+something, such as a menu or an overlay, ignores a command whose `repeat()` is true. Otherwise
+holding its key flicks it on and off.
+
 Background: [ADR-0081](../../adr/0081-input-key-events-and-commands-are-separate.md)
 
 ### Bindings
@@ -122,9 +129,11 @@ Either is null if the app did not ask for that device's feature.
 
 Keys and buttons are named, using the same names as the binding document.
 
-The loop clears the edges after `render()`, so `tick()`, `simulate()` and `render()` all see the
-current frame's edges. A key pressed and released within one frame answers both `pressed()` and
-`released()`, and is never `held()`. Polling SDL directly cannot tell you that.
+The loop clears the edges after `render()`, so `tick()` and `render()` see the current frame's
+edges. Read edges there and not in `simulate()`. A frame runs as many simulation steps as time
+has passed for, which can be none or several, so an edge read in `simulate()` can be missed or seen twice.
+A key pressed and released within one frame answers both `pressed()` and `released()`, and is
+never `held()`. Polling SDL directly cannot tell you that.
 
 `Engine::held("context::name")` is true while any key bound to that command is down. Use it for
 movement or a camera pan read on the fixed step. It reads the keyboard state rather than

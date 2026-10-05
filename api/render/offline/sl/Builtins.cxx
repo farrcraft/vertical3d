@@ -54,6 +54,15 @@ Signature writing(const char* name, Body body, int first, const std::vector<Argu
     return signature;
 }
 
+/**
+ * A function that changes its first argument in place and returns nothing.
+ **/
+Signature updating(const char* name, Body body, const std::vector<Argument> & arguments) {
+    Signature signature = declare(name, body, Type::VOID, arguments);
+    signature.updates = 0;
+    return signature;
+}
+
 Signature shading(const char* name, Body body, Type result, const std::vector<Argument> & arguments) {
     Signature signature = declare(name, body, result, arguments);
     signature.varying = true;
@@ -118,11 +127,10 @@ std::vector<Signature> build() {
         { "setzcomp", Body::SETZCOMP }
     };
     for (const auto & entry : writers) {
-        table.push_back(declare(entry.name, entry.body, Type::VOID, { Argument::POINTLIKE, Argument::FLOAT }));
+        table.push_back(updating(entry.name, entry.body, { Argument::POINTLIKE, Argument::FLOAT }));
     }
     table.push_back(declare("comp", Body::COMP, Type::FLOAT, { Argument::NUMBER, Argument::FLOAT }));
-    table.push_back(declare("setcomp", Body::SETCOMP, Type::VOID,
-        { Argument::NUMBER, Argument::FLOAT, Argument::FLOAT }));
+    table.push_back(updating("setcomp", Body::SETCOMP, { Argument::NUMBER, Argument::FLOAT, Argument::FLOAT }));
 
     // the transforms, which treat the three point-like types differently
     table.push_back(declare("ptransform", Body::PTRANSFORM, Type::POINT, { Argument::STRING, Argument::POINTLIKE }));

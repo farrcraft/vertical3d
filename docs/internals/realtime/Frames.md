@@ -26,11 +26,12 @@ not on the presenter, because pacing is not presenting.
   presentation is tied to the image.
 
 **The fence is shared.** The ring creates and waits on it; the submit in `Presenter::present()`
-signals it. A submit that does not signal `ring.fence()` leaves the next turn around the ring
+signals it. That submit passes `ring.submitting()`, which resets the fence and returns it, and
+nothing else resets it. A submit that does not signal it leaves the next turn around the ring
 waiting forever. `acquire()` waits on the ring's fence *before* acquiring, rather than leaving it
 to `Ring::begin()`, because this slot's image-available semaphore may still be pending from its
-last use. `begin()` is what resets the fence, so a chain found out of date between the wait and
-`begin()` leaves the ring unchanged.
+last use. Because the fence stays signalled until the submit, a chain found out of date after
+the wait, or a frame abandoned because recording threw, leaves nothing waiting on it.
 
 **`vulkan::frame::Swapchain`** owns the images and views.
 

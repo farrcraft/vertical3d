@@ -35,7 +35,7 @@ namespace v3d::ui::component {
 class MenuBar : public Component {
  public:
     MenuBar();
-    ~MenuBar() = default;
+    ~MenuBar() override;
 
     /**
      * Add a menu to the end of the row.

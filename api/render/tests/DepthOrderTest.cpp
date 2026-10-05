@@ -8,6 +8,8 @@
 
 #include <cstddef>
 
+#include <cmath>
+
 #include <boost/test/unit_test.hpp>
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -132,6 +134,25 @@ BOOST_AUTO_TEST_CASE(an_order_handed_to_a_tinted_canvas_is_tinted) {
 
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4u);
     BOOST_TEST((canvas.vertices()[0].colour == glm::vec4(0.25f, 0.5f, 1.0f, 0.5f)));
+}
+
+/**
+ * A key that is not a number is drawn after every key that is, and the rest keep their order.
+ **/
+BOOST_AUTO_TEST_CASE(a_key_that_is_not_a_number_is_drawn_last) {
+    DepthOrder order;
+    order.quad(std::nanf(""), tile(0.0f, 0.0f), white);
+    order.quad(1.0f, tile(1.0f, 0.0f), white);
+    order.quad(std::nanf(""), tile(2.0f, 0.0f), white);
+    order.quad(2.0f, tile(3.0f, 0.0f), white);
+
+    WorldCanvas canvas;
+    order.into(&canvas);
+
+    BOOST_CHECK_EQUAL(quadAt(canvas, 0), 3.0f);
+    BOOST_CHECK_EQUAL(quadAt(canvas, 1), 1.0f);
+    BOOST_CHECK_EQUAL(quadAt(canvas, 2), 0.0f);
+    BOOST_CHECK_EQUAL(quadAt(canvas, 3), 2.0f);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

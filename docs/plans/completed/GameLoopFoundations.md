@@ -169,7 +169,7 @@ this plan.
 switch's `default:`.
 
 `api/event/WindowFocus.h` and `.cpp`, modelled on
-[`WindowResize`](../../../api/event/WindowResize.h) — twenty lines, one bool for whether focus was
+[`WindowResize`](../../../api/event/kind/WindowResize.h) — twenty lines, one bool for whether focus was
 gained. Add it to [`api/event/CMakeLists.txt`](../../../api/event/CMakeLists.txt), and add the two cases to
 the loop's switch with a `dispatcher_->trigger(...)`, exactly as `SDL_EVENT_WINDOW_RESIZED` already
 does a case above.
@@ -178,7 +178,7 @@ What it unlocks for every windowed app: auto-pause, muting on focus loss, and dr
 that a key released while unfocused does not stay stuck down. Without it the only route is polling
 `SDL_GetWindowFlags` — an app polling for something the loop has in hand and discards.
 
-**While in there:** [`WindowResize.cpp`](../../../api/event/WindowResize.cpp) carries a `#pragma once`
+**While in there:** [`WindowResize.cpp`](../../../api/event/kind/WindowResize.cpp) carries a `#pragma once`
 at the top of a `.cpp`. Harmless, and a copy-paste artifact from the header. Delete it in the same
 commit and do not reproduce it in `WindowFocus.cpp`.
 

@@ -46,7 +46,7 @@ void add(ParameterList* list, const std::string & name, Declaration::Type type,
 glm::vec3 bound(const InstancePtr & instance, const std::string & name) {
     v3d::render::offline::sl::runtime::Machine machine;
     machine.prepare(instance->program(), 1);
-    instance->write(&machine);
+    BOOST_REQUIRE(instance->write(&machine));
     const int reg = instance->program().symbol(name);
     BOOST_REQUIRE_MESSAGE(reg >= 0, "no parameter named " + name);
     return machine.value(reg).triple(0);
@@ -241,7 +241,7 @@ BOOST_AUTO_TEST_CASE(slshaderlibrary_shader_space_test) {
     v3d::render::offline::sl::runtime::Machine machine;
     machine.renderer(&renderer);
     machine.prepare(shader->program(), 1);
-    shader->write(&machine, glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 2.0f, 0.0f)));
+    BOOST_REQUIRE(shader->write(&machine, glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 2.0f, 0.0f))));
 
     // the default, computed against the renderer rather than against the identity
     BOOST_CHECK_CLOSE(machine.value(shader->program().symbol("to")).triple(0).y, 2.0f, 0.01f);

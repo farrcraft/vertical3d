@@ -72,6 +72,20 @@ glm::vec2 Triangle::st(float u, float v) const {
     return sta_ * (1.0f - u - v) + stb_ * u + stc_ * v;
 }
 
+void Triangle::colours(const glm::vec3 & a, const glm::vec3 & b, const glm::vec3 & c) {
+    coloured_ = true;
+    ca_ = a;
+    cb_ = b;
+    cc_ = c;
+}
+
+glm::vec3 Triangle::colour(float u, float v) const {
+    if (!coloured_) {
+        return Primitive::colour();
+    }
+    return ca_ * (1.0f - u - v) + cb_ * u + cc_ * v;
+}
+
 bool Triangle::intersect(const v3d::type::geometry::Ray & ray, float from, const Pose & pose,
     Intersection* found) const {
     const v3d::type::geometry::Ray local = pose.backward == nullptr ? ray :
@@ -106,6 +120,7 @@ void Triangle::describe(const Intersection & found, Hit* hit) const {
     const glm::vec2 coordinates = st(found.u, found.v);
     hit->s = coordinates.x;
     hit->t = coordinates.y;
+    hit->colour = colour(found.u, found.v);
 }
 
 };  // namespace v3d::render::offline::trace

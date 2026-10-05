@@ -114,16 +114,22 @@ class Recorder final {
     };
 
     /**
-     * Bring a target into the layouts a pass draws into, before the first pass of the frame
+     * Bring a target into the layouts its passes draw into, before the first pass of the frame
      * that writes it. A target with no colour image has only its depth moved.
+     *
+     * @param depth whether any pass of the frame that writes the target uses its depth, which
+     *        is not always the first one
      **/
-    static void openTarget(VkCommandBuffer commands, const Pass& pass, const Target& into);
+    static void openTarget(VkCommandBuffer commands, bool depth, const Target& into);
 
     /**
      * Leave a target readable after the last pass of the frame that writes it: colour in
      * SHADER_READ_ONLY_OPTIMAL, and a sampled depth image in DEPTH_READ_ONLY_OPTIMAL.
+     *
+     * @param depth whether any pass of the frame that writes the target uses its depth, which
+     *        is not always the last one
      **/
-    static void closeTarget(VkCommandBuffer commands, const Pass& pass, const Target& into);
+    static void closeTarget(VkCommandBuffer commands, bool depth, const Target& into);
 
     /**
      * @param frameSet what the pass binds at set 0, or null if it binds nothing there

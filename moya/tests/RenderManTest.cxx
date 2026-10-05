@@ -95,6 +95,9 @@ BOOST_AUTO_TEST_CASE(renderman_sampling_test) {
     BOOST_CHECK(sampling.filter == v3d::render::offline::Filter::CatmullRom);
     BOOST_CHECK_EQUAL(sampling.width.x, 3.0f);
     BOOST_CHECK_EQUAL(sampling.fstop, 8.0f);
+    BOOST_CHECK_EQUAL(sampling.focalLength, 0.1f);
+    BOOST_CHECK_EQUAL(sampling.focalDistance, 3.0f);
+    BOOST_CHECK_EQUAL(sampling.shutter.x, 0.0f);
     BOOST_CHECK_EQUAL(sampling.shutter.y, 0.5f);
 
     RiPixelFilter(nullptr, 1.0f, 1.0f);

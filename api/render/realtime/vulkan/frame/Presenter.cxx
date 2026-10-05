@@ -110,7 +110,7 @@ Presenter::Status Presenter::acquire(Acquisition* acquisition) {
     // the wait belongs here rather than being left to begin(): the semaphore the acquire
     // signals is one per frame, and this slot's may still be pending from its last turn until
     // that submission completes. begin() waits again, which costs nothing on a fence that is
-    // already signalled, and it is begin() that unsignals - so a chain found out of date below
+    // already signalled, and the fence is unsignalled only by the submit - so a chain found out of date below
     // leaves the ring exactly as it was found
     ring_->waitFrame();
 
@@ -167,7 +167,7 @@ Presenter::Status Presenter::present(const Acquisition& acquisition) {
     submit.pSignalSemaphoreInfos = &signal;
 
     // the ring's fence, which its next turn around waits on
-    result = vkQueueSubmit2(device_->graphicsQueue(), 1, &submit, ring_->fence());
+    result = vkQueueSubmit2(device_->graphicsQueue(), 1, &submit, ring_->submitting());
     device::check(result, "Unable to submit a vulkan frame");
 
     VkSwapchainKHR chain = swapchain_->handle();

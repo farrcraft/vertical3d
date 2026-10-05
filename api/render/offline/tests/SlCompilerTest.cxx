@@ -385,6 +385,58 @@ BOOST_AUTO_TEST_CASE(slcompiler_written_arguments_test) {
 
     BOOST_CHECK_EQUAL(compile("surface s() { float kt; fresnel(I, N, 0.5, 1, kt); Ci = Cs; }"),
         "argument 4 of 'fresnel' is written, so it has to be a variable at line 1, column 44");
+    BOOST_CHECK_EQUAL(compile("surface s() { float kr; fresnel(I, N, 0.5, kr, s); Ci = Cs; }"),
+        "argument 5 of 'fresnel' is written, and 's' cannot be assigned at line 1, column 48");
+}
+
+/**
+ * A setter changes its first argument in place. That argument is written as an assignment
+ * would write it: it has to be a variable the shader may assign, and it takes the storage of
+ * the value written into it.
+ **/
+BOOST_AUTO_TEST_CASE(slcompiler_updated_argument_test) {
+    std::vector<Symbol> symbols;
+    BOOST_CHECK_EQUAL(compile(
+        "surface s() {\n"
+        "    point p = point (0, 0, 0);\n"
+        "    point q = point (0, 0, 0);\n"
+        "    color c = 0;\n"
+        "    setxcomp(p, s);\n"
+        "    setycomp(q, 1);\n"
+        "    setcomp(c, 1, t);\n"
+        "    Ci = Cs;\n"
+        "}\n", &symbols), "");
+    BOOST_CHECK(storageOf(symbols, "p") == Storage::VARYING);
+    BOOST_CHECK(storageOf(symbols, "q") == Storage::UNIFORM);
+    BOOST_CHECK(storageOf(symbols, "c") == Storage::VARYING);
+
+    BOOST_CHECK_EQUAL(compile("surface s() { setxcomp(P + I, 1); Ci = Cs; }"),
+        "argument 1 of 'setxcomp' is written, so it has to be a variable at line 1, column 26");
+    BOOST_CHECK_EQUAL(compile("surface s() { setxcomp(P, 1); Ci = Cs; }"),
+        "argument 1 of 'setxcomp' is written, and 'P' cannot be assigned at line 1, column 24");
+}
+
+/**
+ * Storage inference runs until nothing changes. Each assignment here reads a name that is
+ * only written further down, so each round of inference reaches one more link of the chain,
+ * and a chain of a hundred needs a hundred rounds.
+ **/
+BOOST_AUTO_TEST_CASE(slcompiler_inference_reaches_the_end_of_a_long_chain_test) {
+    const int links = 100;
+    std::string source = "surface s() {\n";
+    for (int i = 0; i <= links; i++) {
+        source += "    float a" + std::to_string(i) + " = 0;\n";
+    }
+    source += "    float i = 0;\n    while (i < 2) {\n";
+    for (int i = 0; i < links; i++) {
+        source += "        a" + std::to_string(i) + " = a" + std::to_string(i + 1) + ";\n";
+    }
+    source += "        a" + std::to_string(links) + " = s;\n        i += 1;\n    }\n    Ci = Cs;\n}\n";
+
+    std::vector<Symbol> symbols;
+    BOOST_REQUIRE_EQUAL(compile(source, &symbols), "");
+    BOOST_CHECK(storageOf(symbols, "a" + std::to_string(links)) == Storage::VARYING);
+    BOOST_CHECK(storageOf(symbols, "a0") == Storage::VARYING);
 }
 
 /**

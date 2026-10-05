@@ -78,7 +78,7 @@ api/asset/loader/TextureFont.cpp:12:  #include "../../font/TextureFont.h"
 ```
 
 Three different types with one name, told apart by a `../` count.
-[`Font2D.cpp`](../../../api/asset/loader/Font2D.cpp) beside it does the same.
+`Font2D.cpp` beside it does the same.
 
 **The convention the tree is documented as having is the one it does not use.** ADR-0027
 installs nothing and consumes as source; the include root is how. A new consumer copies
@@ -171,7 +171,7 @@ others:
   namespace** and defines `RANDOM_FLOAT` as a macro calling `rand_r`, which MSVC does not have,
   so the macro would not compile if anything used it. Nothing does. `floor_log2` is called only
   by its own test. `npot` has exactly one caller,
-  [`api/font/Font2D.cxx:147`](../../../api/font/Font2D.cxx#L147). Two moya files include the header
+  `api/font/Font2D.cxx:147`. Two moya files include the header
   and use none of it.
 
 It is the oldest surviving file in `api/` and the only one that puts a name in the global
@@ -626,7 +626,7 @@ If a config parser wants it back later it is four lines, and it belongs to which
 parsing rather than to `type`.
 
 **`3dtypes.h` is retired.** `npot` has one caller,
-[`api/font/Font2D.cxx`](../../../api/font/Font2D.cxx) — it moves there, into `v3d::font`, as a static
+`api/font/Font2D.cxx` — it moves there, into `v3d::font`, as a static
 free function. `floor_log2` has no caller but its own test; it goes with `npot` if the same file
 wants it and is deleted otherwise. `RANDOM_FLOAT` is deleted outright: it is a macro naming
 `rand_r`, which does not exist on this toolchain, so it has never been compiled and cannot be.

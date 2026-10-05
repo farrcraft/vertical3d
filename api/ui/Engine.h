@@ -103,6 +103,13 @@ class Engine {
     boost::shared_ptr<Component> focused() const;
 
     /**
+     * Whether a component could be focused now: it is drawn, so neither it, its container nor
+     * anything it is inside is hidden, and it is on a tab page that is up. A component hidden
+     * while it holds the focus is no longer reachable, and keys pass it by.
+     **/
+    bool reachable(const boost::shared_ptr<Component>& component) const;
+
+    /**
      * What the focus having moved is announced to.
      *
      * @param focused what the keyboard is now on, or null for nothing

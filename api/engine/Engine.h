@@ -153,8 +153,12 @@ class Engine {
 
     /**
      * What the keyboard holds, and what changed edge during this frame's events. The loop
-     * clears the edges after render(), so a tick or a simulate step sees the frame it is
-     * part of and never the one before.
+     * clears the edges after render(), so a tick sees the frame it is part of and never the
+     * one before.
+     *
+     * Read the edges in tick() or render(), which run once a frame. A frame runs as many
+     * simulate() steps as time has passed for, which can be none or several, so an edge read in simulate()
+     * can be missed or seen twice. Read held() there instead.
      *
      * @return nullptr when the app did not ask for Feature::KeyboardInput
      **/

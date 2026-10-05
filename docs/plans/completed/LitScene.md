@@ -470,7 +470,7 @@ consumer inherits a tier that is not linear in the one place it claims to be.
 **ADR-0067: the api's lit shaders are embedded, and a consumer may hand in its own.**
 
 * The api's are compiled by `v3d_add_shader` like the rest, for the reason
-  [RenderingPipeline.md](../../api/rendering/README.md#shaders) gives: a shader on disk beside an
+  [RenderingPipeline.md](../../internals/realtime/Pipelines.md#shaders) gives: a shader on disk beside an
   executable goes stale silently.
 * Every lit pipeline takes its modules as SPIR-V words, defaulting to the embedded ones, so a
   game that loads from a directory hands over what it loaded. retcon's "swappable without a

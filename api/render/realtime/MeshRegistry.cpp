@@ -127,7 +127,7 @@ MeshHandle MeshRegistry::upload(const std::string& key, const type::Model& model
     if (!model.skeleton().empty() && model.influences().size() != model.vertices().size()) {
         throw std::runtime_error("The model " + key + " has a skeleton and not an influence for every vertex");
     }
-    // checked before anything is acquired, so that a bad part leaves no albedo counted
+    // checked before anything is acquired, so that a bad part acquires nothing
     for (const type::Model::Part& part : model.parts()) {
         if (part.material >= model.materials().size() ||
             static_cast<std::size_t>(part.firstIndex) + part.indexCount > model.indices().size()) {
@@ -141,16 +141,27 @@ MeshHandle MeshRegistry::upload(const std::string& key, const type::Model& model
     if (!model.skeleton().empty()) {
         slot.entry.skin = boost::make_shared<const Skin>(Skin{ model.skeleton(), model.clips() });
     }
-    for (const type::Model::Part& source : model.parts()) {
-        Part part;
-        part.firstIndex = source.firstIndex;
-        part.indexCount = source.indexCount;
-        part.baseColour = model.materials()[source.material].baseColour;
-        slot.albedos.push_back(acquire(sources[source.material], &part));
-        slot.entry.parts.push_back(part);
+    MeshHandle handle;
+    try {
+        for (const type::Model::Part& source : model.parts()) {
+            Part part;
+            part.firstIndex = source.firstIndex;
+            part.indexCount = source.indexCount;
+            part.baseColour = model.materials()[source.material].baseColour;
+            slot.albedos.push_back(acquire(sources[source.material], &part));
+            slot.entry.parts.push_back(part);
+        }
+        handle = meshes_.add(slot);
+    } catch (...) {
+        // an albedo can fail to load or upload part way through, and the ones acquired for the
+        // earlier parts are given back, so a failed upload leaves no texture counted
+        for (const std::string& acquired : slot.albedos) {
+            if (!acquired.empty()) {
+                drop(acquired);
+            }
+        }
+        throw;
     }
-
-    const MeshHandle handle = meshes_.add(slot);
     keys_[key] = handle;
     return handle;
 }

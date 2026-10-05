@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <functional>
 #include <string>
+#include <utility>
 
 #include "Renderer.h"
 #include "Scene.h"
@@ -88,6 +89,16 @@ bool Controller::simulate(float step) {
         return false;
     }
     if (!scene_->state()->paused()) {
+        // movement follows the keys held now rather than counting presses, so a key let go
+        // while the menu was up is not still moving the player when the menu closes
+        const std::pair<const char*, Player::Movement> moves[] = {
+            { "voxel::moveForward", Player::MOVE_FORWARD }, { "voxel::moveBackward", Player::MOVE_BACKWARD },
+            { "voxel::moveLeft", Player::MOVE_LEFT }, { "voxel::moveRight", Player::MOVE_RIGHT },
+            { "voxel::moveUp", Player::MOVE_UP }, { "voxel::moveDown", Player::MOVE_DOWN }
+        };
+        for (const auto& [command, direction] : moves) {
+            scene_->player()->move(direction, held(command));
+        }
         scene_->tick(step);
     }
     return true;
@@ -152,31 +163,11 @@ void Controller::handleEvent(const v3d::event::Event& event) {
         return;
     }
 
-    // the debug overlay is readable whether or not the world is running
-    if (event.name() == "debug") {
+    // the debug overlay is readable whether or not the world is running. It is a toggle, so a
+    // held key's repeats are ignored
+    if (event.name() == "debug" && !event.repeat()) {
         debug_ = !debug_;
         renderer_->debug(debug_);
-        return;
-    }
-
-    // nothing moves while the menu is up
-    if (menu_->visible()) {
-        return;
-    }
-
-    // player commands
-    if (event.name() == "moveForward") {
-        scene_->player()->move(Player::MOVE_FORWARD);
-    } else if (event.name() == "moveBackward") {
-        scene_->player()->move(Player::MOVE_BACKWARD);
-    } else if (event.name() == "moveLeft") {
-        scene_->player()->move(Player::MOVE_LEFT);
-    } else if (event.name() == "moveRight") {
-        scene_->player()->move(Player::MOVE_RIGHT);
-    } else if (event.name() == "moveUp") {
-        scene_->player()->move(Player::MOVE_UP);
-    } else if (event.name() == "moveDown") {
-        scene_->player()->move(Player::MOVE_DOWN);
     }
 }
 

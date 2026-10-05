@@ -51,6 +51,17 @@ bool lastWrite(const std::vector<boost::shared_ptr<Pass>>& passes, std::size_t i
 }
 
 /**
+ * Whether any pass that writes the same target as passes[index] uses its depth. A target is
+ * opened and closed once a frame, so its depth image is moved if any of its passes needs it.
+ **/
+bool depthWritten(const std::vector<boost::shared_ptr<Pass>>& passes, std::size_t index) {
+    const boost::shared_ptr<RenderTarget>& target = passes[index]->target();
+    return std::ranges::any_of(passes, [&target](const boost::shared_ptr<Pass>& other) {
+        return other->target() == target && other->depth();
+    });
+}
+
+/**
  * Where a pass actually draws: a target of its own, or what the frame was given.
  **/
 Recorder::Target resolve(const Pass& pass, const Recorder::Target& frame) {
@@ -151,7 +162,7 @@ void Recorder::record(VkCommandBuffer commands, const Frame& frame, const Target
         const bool offscreen = static_cast<bool>(pass->target());
 
         if (offscreen && firstWrite(passes, index)) {
-            openTarget(commands, *pass, into);
+            openTarget(commands, depthWritten(passes, index), into);
         }
 
         if (timings != nullptr) {
@@ -163,7 +174,7 @@ void Recorder::record(VkCommandBuffer commands, const Frame& frame, const Target
         }
 
         if (offscreen && lastWrite(passes, index)) {
-            closeTarget(commands, *pass, into);
+            closeTarget(commands, depthWritten(passes, index), into);
         }
     }
 
@@ -174,28 +185,28 @@ void Recorder::record(VkCommandBuffer commands, const Frame& frame, const Target
 
 /**
  **/
-void Recorder::openTarget(VkCommandBuffer commands, const Pass& pass, const Target& into) {
+void Recorder::openTarget(VkCommandBuffer commands, bool depth, const Target& into) {
     // undefined as the source layout: a target carries nothing from one frame to the next,
     // the same way the swapchain image and the depth buffer do not. The barrier still orders
     // this frame's writes after the reads the previous frame made of the same image
     if (into.image != VK_NULL_HANDLE) {
         memory::record(commands, {memory::colourForDrawing(into.image)});
     }
-    if (pass.depth() && into.depthImage != VK_NULL_HANDLE) {
+    if (depth && into.depthImage != VK_NULL_HANDLE) {
         memory::record(commands, {memory::depthForDrawing(into.depthImage)});
     }
 }
 
 /**
  **/
-void Recorder::closeTarget(VkCommandBuffer commands, const Pass& pass, const Target& into) {
+void Recorder::closeTarget(VkCommandBuffer commands, bool depth, const Target& into) {
     // every pass after the last one that wrote the target can sample it
     if (into.image != VK_NULL_HANDLE) {
         memory::record(commands, {memory::colourAfterDrawing(into.image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)});
     }
     // and the same for its depth when it was created sampled: DEPTH_READ_ONLY_OPTIMAL lets a
     // later pass both sample it and depth test against it. A shadow map has only this half
-    if (pass.depth() && into.sampledDepth && into.depthImage != VK_NULL_HANDLE) {
+    if (depth && into.sampledDepth && into.depthImage != VK_NULL_HANDLE) {
         memory::record(commands, {memory::depthForSampling(into.depthImage)});
     }
 }

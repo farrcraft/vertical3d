@@ -227,7 +227,9 @@ orthographic camera on an orbit around a target on the ground.
 quaternion rotation and a scale. ECS entities and editor meshes are both placed by it.
 
 - `matrix()` scales first, then rotates, then translates. Scaling first keeps a non-uniform
-  scale along the object's own axes.
+  scale along the object's own axes. It normalises the rotation first, so a quaternion that has
+  drifted off unit length through repeated turns still only turns. A rotation of zero length
+  is no rotation.
 - `interpolate(from, to, alpha)` lerps position and scale and slerps the rotation the short way
   round.
 

@@ -698,7 +698,7 @@ size. `Bar` is a readout that is not pickable, by design. Making either do both 
 in every switch that reads it.
 
 **The cost is a component type**: the eight places
-[UserInterface.md](../../api/ui/README.md#still-open) counts, a ninth in `ui::input::command()`, and
+[UserInterface.md](../../internals/UserInterface.md) counts, a ninth in `ui::input::command()`, and
 two that the compiler does not check. Those are the resolver's class and the drag-follow `if`s in
 `Cursor::motion` and `Cursor::release` (`api/ui/input/Cursor.cpp:104`, `:200`). The two `if`s
 become one test that names both dragging types, so a third is added in one place. The loader reads

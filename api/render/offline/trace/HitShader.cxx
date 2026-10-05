@@ -96,20 +96,22 @@ glm::vec3 HitShader::shade(glm::vec3* opacity) {
     *opacity = primitive.opacity();
     const v3d::render::offline::sl::Placed & surface = primitive.surface();
     if (!surface.shader) {
-        // a primitive built without a shader is drawn in its own colour
-        return primitive.opacity() * primitive.colour();
+        // a primitive built without a shader is drawn in its own colour, which is Cs at the hit
+        return primitive.opacity() * hit_.colour;
     }
 
     Tracer::Run & held = tracer_->run(surface.shader);
     held.machine.renderer(this);
-    surface.shader->write(&held.machine, surface.placement);
+    if (!surface.shader->write(&held.machine, surface.placement)) {
+        return primitive.opacity() * hit_.colour;
+    }
 
     v3d::render::offline::sl::Point point;
     point.position = hit_.point;
     point.normal = hit_.normal;
     point.geometric = hit_.geometric;
     point.incident = hit_.incident;
-    point.colour = primitive.colour();
+    point.colour = hit_.colour;
     point.opacity = primitive.opacity();
     point.s = hit_.s;
     point.t = hit_.t;
@@ -119,10 +121,11 @@ glm::vec3 HitShader::shade(glm::vec3* opacity) {
     held.globals.eye(&held.machine, tracer_->scene() == nullptr ? glm::vec3(0.0f) : tracer_->scene()->eye());
 
     if (!held.machine.run()) {
-        return primitive.colour();
+        // drawn as if it had no shader, so its opacity still applies
+        return primitive.opacity() * hit_.colour;
     }
     *opacity = held.globals.opacity(held.machine, 0, *opacity);
-    return held.globals.colour(held.machine, 0, primitive.colour());
+    return held.globals.colour(held.machine, 0, hit_.colour);
 }
 
 };  // namespace v3d::render::offline::trace

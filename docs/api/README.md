@@ -249,7 +249,7 @@ Terms are grouped by subject. Each entry links to the document that covers it.
   The **in-flight ring** (`vulkan::frame::Ring`) holds each one's buffers and fences, and frees
   released resources once no frame in flight uses them. See
   [internals/realtime/](../internals/realtime/README.md).
-- **Presenter** — `vulkan::Presenter`, which acquires a swapchain image, submits the recorded
+- **Presenter** — `vulkan::frame::Presenter`, which acquires a swapchain image, submits the recorded
   frame and presents it. See [internals/realtime/](../internals/realtime/README.md).
 - **Recorder** — the code that turns a pass's draw items into Vulkan commands, binding a
   pipeline, set or buffer only when it changes. See

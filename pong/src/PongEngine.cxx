@@ -144,26 +144,15 @@ bool PongEngine::release() {
 }
 
 void PongEngine::handlePlayEvent(const v3d::event::Event& event) {
-    // play commands
-    // the paddle moves while its key is held, so these follow the event's edge
-    bool held = (event.state() == v3d::event::State::Pressed);
-    if (event.name() == "leftPaddleUp") {
-        if (!scene_->state().paused()) {
-            scene_->left().up(held);
-        }
-    } else if (event.name() == "leftPaddleDown") {
-        if (!scene_->state().paused()) {
-            scene_->left().down(held);
-        }
-    } else if (event.name() == "rightPaddleUp") {
-        if (!scene_->state().paused() && scene_->state().coop()) {
-            scene_->right().up(held);
-        }
-    } else if (event.name() == "rightPaddleDown") {
-        if (!scene_->state().paused() && scene_->state().coop()) {
-            scene_->right().down(held);
-        }
-    } else if (event.name() == "showGameMenu") {
+    // the paddle moves while its key is held, so a paddle command follows the event's edge
+    if (scene_->steer(event.name(), event.state() == v3d::event::State::Pressed)) {
+        return;
+    }
+    if (event.repeat()) {
+        // the rest toggle, and a held key would flick them on and off at the repeat rate
+        return;
+    }
+    if (event.name() == "showGameMenu") {
         menu_->toggle();
     } else if (event.name() == "toggleStatistics") {
         renderer_->statistics()->toggle();
@@ -182,10 +171,10 @@ void PongEngine::handleUiEvent(const v3d::event::Event& event) {
         rebindPaddleKey(event);
     } else if (event.name() == "setSingleplayerMode" || event.name() == "setMultiplayerMode") {
         // coop is the only mode that differs; the second paddle is the same opponent
-        scene_->state().coop(false);
+        scene_->coop(false);
         scene_->reset();
     } else if (event.name() == "setCoopMode") {
-        scene_->state().coop(true);
+        scene_->coop(true);
         scene_->reset();
     }
 }

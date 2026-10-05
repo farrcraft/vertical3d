@@ -317,26 +317,27 @@ float Arranger::wrapped(const component::Box& box, const v3d::type::geometry::Bo
     return placed ? line + deepest - bounds.position()[across] : 0.0f;
 }
 
-
-
+/**
+ **/
 glm::vec2 Arranger::stack(const Container& container,
     std::vector<std::pair<boost::shared_ptr<component::Toolbar>, glm::vec2>>* strips,
     std::vector<boost::shared_ptr<component::MenuBar>>* bars) const {
-    // what the strips before this one have taken off the top and the left edges, which is
-    // where the next one starts
-    glm::vec2 taken(0.0f, 0.0f);
+    const float row = styles_.base().barHeight + ruleWidth;
+    std::vector<boost::shared_ptr<component::Toolbar>> shown;
+    // a menu bar is drawn at the top of the canvas, so every menu bar comes first, then the
+    // top strips under them in the order they are listed, and the left strips start below all
+    // of those whatever order they are listed in
+    float menus = 0.0f;
+    float tops = 0.0f;
     for (const boost::shared_ptr<Component>& component : container.ordered()) {
-        if (!component || !component->visible()) {
-            continue;
-        }
-        if (!component::traits(component->type()).strip) {
+        if (!component || !component->visible() || !component::traits(component->type()).strip) {
             continue;
         }
         if (component->type() == component::Type::MenuBar) {
             if (bars != nullptr) {
                 bars->push_back(boost::dynamic_pointer_cast<component::MenuBar>(component));
             }
-            taken.y += styles_.base().barHeight + ruleWidth;
+            menus += row;
             continue;
         }
         const boost::shared_ptr<component::Toolbar> bar =
@@ -344,19 +345,28 @@ glm::vec2 Arranger::stack(const Container& container,
         if (!bar) {
             continue;
         }
-        const glm::vec2 corner = bar->edge() == component::Toolbar::Edge::Top
-            ? glm::vec2(0.0f, taken.y) : taken;
+        if (bar->edge() == component::Toolbar::Edge::Top) {
+            tops += row;
+        }
+        shown.push_back(bar);
+    }
+
+    glm::vec2 taken(0.0f, menus);
+    for (const boost::shared_ptr<component::Toolbar>& bar : shown) {
+        const bool top = bar->edge() == component::Toolbar::Edge::Top;
+        const glm::vec2 corner = top ? glm::vec2(0.0f, taken.y) : glm::vec2(taken.x, menus + tops);
         if (strips != nullptr) {
             strips->push_back(std::make_pair(bar, corner));
         }
-        if (bar->edge() == component::Toolbar::Edge::Top) {
-            taken.y += styles_.base().barHeight + ruleWidth;
+        if (top) {
+            taken.y += row;
         } else {
             // what the strip will be drawn at rather than the box it was last drawn in,
             // which is nothing until it has been drawn once
             taken.x += widest(*bar) + styles_.base().padding + ruleWidth;
         }
     }
+    taken.y = menus + tops;
     return taken;
 }
 
@@ -387,7 +397,7 @@ float Arranger::widest(const component::Toolbar& bar) const {
     float widest = 0.0f;
     for (std::size_t index = 0; index < bar.count(); index++) {
         const boost::shared_ptr<component::Button> button = bar.button(index);
-        if (button) {
+        if (button && button->visible()) {
             widest = std::max(widest, extent(*button));
         }
     }
@@ -425,7 +435,8 @@ void Arranger::strip(component::Toolbar& bar, const glm::vec2& corner, const glm
     glm::vec2 pen = corner;
     for (std::size_t index = 0; index < bar.count(); index++) {
         const boost::shared_ptr<component::Button> button = bar.button(index);
-        if (!button) {
+        // a hidden button takes no room, so the ones after it close up
+        if (!button || !button->visible()) {
             continue;
         }
         // the strip decides how big a button in it is - a row's is as wide as its label and

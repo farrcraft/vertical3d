@@ -46,6 +46,20 @@ float compare(Opcode opcode, float left, float right) {
     }
 }
 
+/**
+ * Component i of a value read as one of wide components. A float fills every component, except
+ * that a float read as a matrix is the diagonal matrix, which is how an assignment promotes it.
+ **/
+float promoted(const Value & value, unsigned int point, unsigned int i, unsigned int wide) {
+    if (value.components() != 1) {
+        return value.component(point, i);
+    }
+    if (wide == 16 && i % 5 != 0) {
+        return 0.0f;
+    }
+    return value.number(point);
+}
+
 float combine(Opcode opcode, float left, float right) {
     switch (opcode) {
         case Opcode::ADD:
@@ -206,12 +220,23 @@ void Machine::compare(const Instruction & instruction) {
     // a string holds no number, so two of them are equal or not by their text
     const bool text = left.type() == Type::STRING && right.type() == Type::STRING;
     const float same = left.text() == right.text() ? 1.0f : 0.0f;
+    // two colours, points or matrices are equal when every component is; a float on one side
+    // is promoted as an assignment promotes it, so a matrix compares against a diagonal
+    const bool whole = (instruction.opcode == Opcode::EQUAL || instruction.opcode == Opcode::NOT_EQUAL) &&
+        (left.components() > 1 || right.components() > 1);
+    const unsigned int wide = std::max(left.components(), right.components());
     for (unsigned int point = 0; point < count; point++) {
         if (!writable(target, point)) {
             continue;
         }
         if (text) {
             target.number(point, instruction.opcode == Opcode::NOT_EQUAL ? 1.0f - same : same);
+        } else if (whole) {
+            bool equal = true;
+            for (unsigned int i = 0; i < wide && equal; i++) {
+                equal = promoted(left, point, i, wide) == promoted(right, point, i, wide);
+            }
+            target.number(point, equal == (instruction.opcode == Opcode::EQUAL) ? 1.0f : 0.0f);
         } else {
             target.number(point, runtime::compare(instruction.opcode,
                 left.number(point), right.number(point)));
@@ -320,7 +345,7 @@ bool Machine::nextLight() {
             // the cone, and ambient() sums it instead
             continue;
         }
-        std::vector<char> lanes = round.base;
+        std::vector<char> lanes = loops_[round.loop].lanes;
         bool any = false;
         for (unsigned int point = 0; point < batch_; point++) {
             if (lanes[point] == 0) {
@@ -368,6 +393,11 @@ bool Machine::illuminate(const Instruction & instruction, bool solar) {
             // the argument is the way the light travels, and L points back along it
             toward = -file_[static_cast<std::size_t>(given[0])].triple(point);
             direction.triple(point, toward);
+            // an angle lets L be any direction inside a cone, chosen against the surface's own
+            // cone, which a light shader is not given. The light comes along its axis instead
+            if (given.size() > 1 && file_[static_cast<std::size_t>(given[1])].number(point) != 0.0f) {
+                report("solar with an angle is lit along its axis only, as if the angle were 0");
+            }
         } else {
             toward = file_[static_cast<std::size_t>(given[0])].triple(point) - surface.triple(point);
             direction.triple(point, toward);
@@ -609,8 +639,13 @@ bool Machine::execute(const Program & program, std::size_t from, std::size_t unt
                 frames_.pop_back();
                 break;
             case Opcode::ILLUMINANCE: {
+                Loop loop;
+                loop.lanes = masks_.back();
+                loop.depth = masks_.size();
+                loop.exit = instruction.target;
+                loops_.push_back(loop);
                 Illumination round;
-                round.base = masks_.back();
+                round.loop = loops_.size() - 1;
                 round.direction = instruction.left;
                 round.colour = instruction.right;
                 round.arguments = instruction.arguments;
@@ -629,6 +664,7 @@ bool Machine::execute(const Program & program, std::size_t from, std::size_t unt
                 break;
             case Opcode::POP_ILLUMINANCE:
                 illuminations_.pop_back();
+                loops_.pop_back();
                 break;
             case Opcode::RETURN:
                 // like a break it does not jump: the masks and the loops between here and

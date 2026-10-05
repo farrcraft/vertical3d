@@ -77,7 +77,10 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
     void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override;
     void pointsPolygons(const std::vector<unsigned int> & counts, const std::vector<unsigned int> & indices,
         const v3d::render::offline::rib::ParameterList & parameters) override;
-    /** Not drawn: moya dices polygons only. The first one a scene names is reported. **/
+    /**
+     * Drawn by the ray hider only, because the reyes hider dices polygons only. The first
+     * sphere a scene names under the reyes hider is reported.
+     **/
     void sphere(float radius, float zmin, float zmax, float thetamax,
         const v3d::render::offline::rib::ParameterList & parameters) override;
 
@@ -95,9 +98,17 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
      **/
     void output(const std::string & name);
 
+    /**
+     * The size of the picture whatever the scene's Format says. A scene's Format still sets
+     * the pixel aspect ratio, and arrives after this is set.
+     **/
+    void resolution(unsigned int width, unsigned int height);
+
  private:
     Renderer * renderer_;
     std::string output_;
+    unsigned int width_ = 0;
+    unsigned int height_ = 0;
     bool spheres_ = false;
 };
 

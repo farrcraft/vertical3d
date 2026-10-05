@@ -835,12 +835,21 @@ Type Compiler::checkBuiltinCall(syntax::Call & call, const std::vector<Type> & g
         throw fail("'" + call.name + "' cannot be called with those arguments", call.line, call.column);
     }
     const Signature & signature = table[chosen];
-    for (std::size_t argument = signature.outputs < 0 ? given.size() :
-        static_cast<std::size_t>(signature.outputs); argument < given.size(); argument++) {
-        if (call.arguments[argument]->kind != syntax::Expression::Kind::VARIABLE) {
+    for (std::size_t argument = 0; argument < given.size(); argument++) {
+        const bool output = signature.outputs >= 0 && argument >= static_cast<std::size_t>(signature.outputs);
+        const bool updated = signature.updates >= 0 && argument == static_cast<std::size_t>(signature.updates);
+        if (!output && !updated) {
+            continue;
+        }
+        const syntax::ExpressionPtr & written = call.arguments[argument];
+        if (written->kind != syntax::Expression::Kind::VARIABLE) {
             throw fail("argument " + std::to_string(argument + 1) + " of '" + call.name +
-                "' is written, so it has to be a variable", call.arguments[argument]->line,
-                call.arguments[argument]->column);
+                "' is written, so it has to be a variable", written->line, written->column);
+        }
+        const syntax::Variable & variable = static_cast<const syntax::Variable &>(*written);
+        if (!symbols_[static_cast<std::size_t>(variable.symbol)].writable) {
+            throw fail("argument " + std::to_string(argument + 1) + " of '" + call.name +
+                "' is written, and '" + variable.name + "' cannot be assigned", written->line, written->column);
         }
     }
     call.signature = static_cast<int>(chosen);

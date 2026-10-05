@@ -22,6 +22,16 @@ MenuBar::MenuBar() : Component(component::Type::MenuBar), hover_(-1), open_(-1) 
 
 /**
  **/
+MenuBar::~MenuBar() {
+    for (const boost::shared_ptr<Menu>& menu : menus_) {
+        if (menu) {
+            disown(*menu);
+        }
+    }
+}
+
+/**
+ **/
 void MenuBar::add(const std::string& label, const boost::shared_ptr<Menu>& menu) {
     labels_.push_back(label);
     // nothing is hit until a renderer has said where the label went

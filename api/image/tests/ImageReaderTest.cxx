@@ -203,10 +203,7 @@ BOOST_AUTO_TEST_CASE(imagereader_bmp_refuses_rather_than_throws) {
     boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::Factory factory(logger);
 
-    // a depth the reader has no conversion for
-    BOOST_CHECK(!factory.read("data/2x2x32_green.bmp"));
-
-    // and a file cut short, at each of the places a length is checked
+    // a file cut short, at each of the places a length is checked
     const std::vector<unsigned char> bmp = bytes("data/2x2x24_red.bmp");
     BOOST_REQUIRE(bmp.size() > 60);
     BOOST_CHECK(!factory.read(bmp.data(), 8, "bmp"));
@@ -224,4 +221,92 @@ BOOST_AUTO_TEST_CASE(imagereader_format_is_the_whole_extension) {
     BOOST_CHECK(!factory.read(""));
     // and a name with no extension at all
     BOOST_CHECK(!factory.read("data/2x2x24_red"));
+}
+
+/**
+ * A 32 bit bmp packed by the masks its header gives, as an external tool writes one, reads
+ * with its alpha. This fixture's masks put green in the second byte and leave alpha unused,
+ * so it is opaque green.
+ **/
+BOOST_AUTO_TEST_CASE(imagereader_bmp_reads_32_bits_through_its_masks) {
+    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    v3d::image::Factory factory(logger);
+
+    const boost::shared_ptr<v3d::image::Image> image = factory.read("data/2x2x32_green.bmp");
+    BOOST_REQUIRE(image);
+    BOOST_CHECK_EQUAL(image->bpp(), 32u);
+    for (unsigned int pixel = 0; pixel < 4; ++pixel) {
+        BOOST_TEST_CONTEXT("pixel " << pixel) {
+            BOOST_CHECK_EQUAL((*image)[pixel * 4], 0);
+            BOOST_CHECK_EQUAL((*image)[pixel * 4 + 1], 0xFF);
+            BOOST_CHECK_EQUAL((*image)[pixel * 4 + 2], 0);
+            BOOST_CHECK_EQUAL((*image)[pixel * 4 + 3], 0xFF);
+        }
+    }
+}
+
+/**
+ * A bmp is stored bottom up unless its height is negative. Built here byte by byte rather
+ * than written by the writer, so a reader and a writer that both turned rows over cannot pass
+ * by agreeing: the top row is red and the bottom green, at 24 bits and through a palette at 8.
+ **/
+BOOST_AUTO_TEST_CASE(imagereader_bmp_orientation) {
+    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    v3d::image::Factory factory(logger);
+
+    const auto put16 = [](std::vector<unsigned char>* out, uint32_t value) {
+        out->push_back(static_cast<unsigned char>(value));
+        out->push_back(static_cast<unsigned char>(value >> 8));
+    };
+    const auto put32 = [&put16](std::vector<unsigned char>* out, uint32_t value) {
+        put16(out, value);
+        put16(out, value >> 16);
+    };
+    // one pixel wide and two high, so every row is a single pixel padded to four bytes
+    const auto file = [&](int bits, bool bottomUp, const std::vector<unsigned char>& palette,
+        const std::vector<unsigned char>& top, const std::vector<unsigned char>& bottom) {
+        std::vector<unsigned char> out;
+        const uint32_t offset = 14 + 40 + static_cast<uint32_t>(palette.size());
+        put16(&out, 19778);
+        put32(&out, offset + 8);
+        put32(&out, 0);
+        put32(&out, offset);
+        put32(&out, 40);
+        put32(&out, 1);
+        put32(&out, static_cast<uint32_t>(bottomUp ? 2 : -2));
+        put16(&out, 1);
+        put16(&out, static_cast<uint32_t>(bits));
+        for (int field = 0; field < 6; ++field) {
+            put32(&out, field == 4 && !palette.empty() ? static_cast<uint32_t>(palette.size() / 4) : 0);
+        }
+        out.insert(out.end(), palette.begin(), palette.end());
+        const std::vector<unsigned char>& first = bottomUp ? bottom : top;
+        const std::vector<unsigned char>& second = bottomUp ? top : bottom;
+        for (const std::vector<unsigned char>* row : { &first, &second }) {
+            std::vector<unsigned char> padded = *row;
+            padded.resize(4, 0);
+            out.insert(out.end(), padded.begin(), padded.end());
+        }
+        return out;
+    };
+    // blue, green, red on disk; and a palette of red at 0 and green at 1
+    const std::vector<unsigned char> red24 = { 0, 0, 0xFF };
+    const std::vector<unsigned char> green24 = { 0, 0xFF, 0 };
+    const std::vector<unsigned char> palette = { 0, 0, 0xFF, 0, 0, 0xFF, 0, 0 };
+
+    for (const bool bottomUp : { true, false }) {
+        for (const int bits : { 24, 8 }) {
+            BOOST_TEST_CONTEXT((bottomUp ? "bottom up" : "top down") << " at " << bits << " bits") {
+                const std::vector<unsigned char> bytes = bits == 24
+                    ? file(24, bottomUp, {}, red24, green24)
+                    : file(8, bottomUp, palette, { 0 }, { 1 });
+                const boost::shared_ptr<v3d::image::Image> image = factory.read(bytes.data(), bytes.size(), "bmp");
+                BOOST_REQUIRE(image);
+                BOOST_CHECK_EQUAL((*image)[0], 0xFF);
+                BOOST_CHECK_EQUAL((*image)[1], 0);
+                BOOST_CHECK_EQUAL((*image)[3], 0);
+                BOOST_CHECK_EQUAL((*image)[4], 0xFF);
+            }
+        }
+    }
 }

@@ -141,7 +141,7 @@ Independent of the language and blocking all of it. Neither renderer has a norma
   comment, and leave it for the phase that gives `Plane::clip` an interpolating edge split.
 - talyn: `Triangle` gains a normal, or three of them. The hit needs barycentric coordinates to
   interpolate, and Möller-Trumbore computes them on the way to the distance —
-  [`type::Ray::intersects`](../../api/type/Ray.h) throws them away. **An overload that also reports
+  [`type::Ray::intersects`](../../../api/type/geometry/Ray.h) throws them away. **An overload that also reports
   `u` and `v`** is the change, additive rather than a signature change, and by
   ADR-0024 (removed) it belongs in `api/type` where the
   editor's picker can have it too.

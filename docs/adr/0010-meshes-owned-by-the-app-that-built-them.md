@@ -2,6 +2,7 @@
 
 **Status**: superseded
 **Date**: 2026-08-31
+**Amended by**: [ADR-0061](0061-resources-explicit-release-generational-handles.md)
 **Superseded by**: [ADR-0065](0065-meshes-shared-registry-keyed-by-path.md)
 **Documented in**: [api/rendering/TexturesAndMeshes.md](../api/rendering/TexturesAndMeshes.md)
 

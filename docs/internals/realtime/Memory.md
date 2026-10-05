@@ -95,9 +95,11 @@ Background: [ADR-0053](../../adr/0053-memory-optional-vma-suballocation.md)
 - `claim(vertexBytes, indexBytes)` waits on the frame's fence (`Ring::waitFrame()`), then returns
   the next pair in the current frame's list, growing it as needed. That is the fence `acquire`
   waits on anyway, so it costs nothing extra.
-- The cursor restarts the first time a slot is claimed from after the ring has begun another
-  frame (it compares `Ring::begun()`). Nothing has to be told a frame ended, so a renderer an app
-  builds itself reuses its buffers the same way.
+- The cursor restarts the first time a slot is claimed from after the ring has begun or skipped
+  another frame (it compares `Ring::turns()`). Nothing has to be told a frame ended, so a
+  renderer an app builds itself reuses its buffers the same way. `Engine3D` calls
+  `Ring::skip()` for a frame it does not draw, out of date or with no swapchain, so the claims
+  of a run of skipped frames reuse one frame's buffers rather than piling up.
 - **Each submission gets its own pair.** Appending several canvases into one buffer would break,
   because growing it replaces the allocation and invalidates the handle earlier items hold.
 - A buffer the content outgrows is replaced by one twice the size, and the old one is retired

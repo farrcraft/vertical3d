@@ -199,6 +199,16 @@ boost::shared_ptr<Component> Engine::focused() const {
     return focused_.lock();
 }
 
+/**
+ **/
+bool Engine::reachable(const boost::shared_ptr<Component>& component) const {
+    if (!component) {
+        return false;
+    }
+    const std::vector<boost::shared_ptr<Component>> order = tabOrder();
+    return std::find(order.begin(), order.end(), component) != order.end();
+}
+
 namespace {
 
 /**

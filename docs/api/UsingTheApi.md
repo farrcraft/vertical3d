@@ -338,8 +338,7 @@ two files:
 - **`vcpkg.json`.** If vertical3d's package list changed, update yours. Yours is the one that is
   installed.
 
-The api is still changing (see [the roadmap](../roadmap) and [plans/](../plans)), so expect to
-update a call site now and then.
+The api is still changing, so expect to update a call site now and then.
 
 ## Changing the tree from a consumer
 

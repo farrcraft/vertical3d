@@ -68,7 +68,7 @@ TextureHandle Textures::texture(const vulkan::frame::RenderTarget& target, uint3
     if (target.view() == VK_NULL_HANDLE || slot >= target.images()) {
         return white_;
     }
-    return resources_->add(target.texture(slot));
+    return registered(target.texture(slot));
 }
 
 /**
@@ -77,7 +77,20 @@ TextureHandle Textures::depthTexture(const vulkan::frame::RenderTarget& target, 
     if (!target.sampledDepth() || slot >= target.images()) {
         return white_;
     }
-    return resources_->add(target.depthTexture(slot));
+    return registered(target.depthTexture(slot));
+}
+
+/**
+ **/
+TextureHandle Textures::registered(const vulkan::pipeline::Texture& texture) {
+    VkImageView view = texture.image->view();
+    const std::map<VkImageView, TextureHandle>::const_iterator found = targets_.find(view);
+    if (found != targets_.end()) {
+        return found->second;
+    }
+    const TextureHandle handle = resources_->add(texture);
+    targets_[view] = handle;
+    return handle;
 }
 
 /**
@@ -144,6 +157,12 @@ bool Textures::release(const TextureHandle& handle) {
         }
         resources_->release(found->second);
         materials_.erase(found);
+    }
+    for (std::map<VkImageView, TextureHandle>::const_iterator target = targets_.begin(); target != targets_.end(); ++target) {
+        if (target->second == handle) {
+            targets_.erase(target);
+            break;
+        }
     }
 
     return resources_->release(handle);

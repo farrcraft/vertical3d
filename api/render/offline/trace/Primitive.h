@@ -95,7 +95,7 @@ class Primitive {
 
     /**
      * Which of the scene's motions carries the primitive, or negative for none. It is
-     * stored where the motion's open end put it.
+     * stored where the motion's reference end put it.
      **/
     int motion() const;
 

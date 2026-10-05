@@ -55,7 +55,8 @@ Notes on individual components:
   box that frame, so they are not picked or focused.
 - **A `Toolbar`** button entry reads every button key, plus `name`, `style`, `visible` and
   `enabled`. A button with an `icon` is sized to the icon; otherwise to its label. A toolbar
-  button falls back to its label when its icon is not resolved.
+  button falls back to its label when its icon is not resolved. A hidden button takes no room
+  in its strip, is not drawn and takes no press, and the buttons after it close up.
 - **A `Menu` or `MenuBar` item** has a `label`, a `type`, and optionally `command` and
   `context`. Item types are `action`, `submenu` (which holds its own `items`), `check`,
   `radio`, `input`, `numeric_input` and `key_input`. A check and a radio item are marked by
@@ -72,7 +73,8 @@ means "scenery, never clickable", such as a label or a panel.
 
 **Disabling a component disables everything it holds.** A box is how a screen greys out a
 group of controls. A disabled toolbar disables its buttons, and a disabled menu disables its
-items.
+items. A disabled submenu item disables the submenu it opens, and the keyboard does not open
+it.
 
 `enabled()` is the component's own flag. `ui::usable(component)` is true only when the
 component and everything holding it are enabled. A component can report `enabled()` true while

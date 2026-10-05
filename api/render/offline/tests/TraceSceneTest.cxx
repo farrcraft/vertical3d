@@ -196,6 +196,44 @@ BOOST_AUTO_TEST_CASE(scene_sphere_cut_test) {
 }
 
 /**
+ * A triangle given a colour at each corner is hit with those colours weighted as its normals
+ * are, and one given none is hit with the colour it was built with.
+ **/
+BOOST_AUTO_TEST_CASE(triangle_corner_colours_test) {
+    v3d::render::offline::trace::Triangle graded(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f));
+    graded.colours(glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    v3d::render::offline::trace::Scene scene;
+    scene.add(graded);
+
+    v3d::render::offline::trace::Hit hit;
+    BOOST_REQUIRE(downward(scene, 0.25f, 0.5f, &hit));
+    BOOST_CHECK_CLOSE(hit.colour.r, 0.25f, 0.01f);
+    BOOST_CHECK_CLOSE(hit.colour.g, 0.25f, 0.01f);
+    BOOST_CHECK_CLOSE(hit.colour.b, 0.5f, 0.01f);
+
+    v3d::render::offline::trace::Scene flat;
+    flat.add(v3d::render::offline::trace::Triangle(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.5f, 0.25f, 0.125f)));
+    BOOST_REQUIRE(downward(flat, 0.25f, 0.5f, &hit));
+    BOOST_CHECK_CLOSE(hit.colour.g, 0.25f, 0.01f);
+}
+
+/**
+ * A sphere whose radius is negative or not a number can be built and is never met.
+ **/
+BOOST_AUTO_TEST_CASE(scene_sphere_with_no_size_test) {
+    v3d::render::offline::trace::Scene scene;
+    scene.add(v3d::render::offline::trace::Sphere(-1.0f, -1.0f, 1.0f, 360.0f, glm::mat4x4(1.0f), glm::vec3(1.0f)),
+        v3d::render::offline::MovingTransform());
+    scene.add(v3d::render::offline::trace::Sphere(std::nanf(""), -1.0f, 1.0f, 360.0f, glm::mat4x4(1.0f),
+        glm::vec3(1.0f)), v3d::render::offline::MovingTransform());
+
+    v3d::render::offline::trace::Hit hit;
+    BOOST_CHECK(!downward(scene, 0.0f, 0.0f, &hit));
+}
+
+/**
  * A kind of primitive defined outside the library is met, nearest first among the rest, and
  * describes its own hit.
  **/

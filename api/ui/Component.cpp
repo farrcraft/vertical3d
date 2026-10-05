@@ -41,6 +41,12 @@ Component::Component(component::Type type) :
 }
 
 Component::~Component() {
+    // a child an app still holds must not name this as its parent once this is gone
+    for (const boost::shared_ptr<Component>& child : children_) {
+        if (child) {
+            disown(*child);
+        }
+    }
 }
 
 bool Component::visible() const {
@@ -98,6 +104,12 @@ void Component::add(const boost::shared_ptr<Component>& child) {
 void Component::adopt(Component& item) noexcept {
     if (item.parent_ == nullptr && &item != this) {
         item.parent_ = this;
+    }
+}
+
+void Component::disown(Component& item) noexcept {
+    if (item.parent_ == this) {
+        item.parent_ = nullptr;
     }
 }
 

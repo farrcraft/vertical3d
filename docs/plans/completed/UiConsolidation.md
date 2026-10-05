@@ -5,7 +5,7 @@ Fourteen steps across `api/ui`, `api/render/realtime`, the editor's cursor routi
 debug readout. No app data file changed after all - see step 13.
 
 `api/ui` is ~9,100 lines of library and ~3,750 of tests, and a third of the library is three
-files: [`ComponentRenderer.cpp`](../../../api/ui/ComponentRenderer.cpp) at 1124,
+files: [`ComponentRenderer.cpp`](../../../api/ui/paint/ComponentRenderer.cpp) at 1124,
 [`Engine.cpp`](../../../api/ui/Engine.cpp) at 912 and [`Immediate.cpp`](../../../api/ui/Immediate.cpp)
 at 762. It grew fast — [ADR-0034](../../adr/0034-ui-layout-is-resolved-while-drawing.md),
 [0035](../../adr/0035-ui-immediate-mode-beside-the-retained-tree.md),
@@ -22,14 +22,14 @@ that puts the JSON loader into every app that wants to draw a string.
 
 ### A translucent panel is opaque, and `window(alpha)` does nothing
 
-[`plateBox()`](../../../api/ui/Painter.cpp) fills the **whole** box with the outline colour and
+[`plateBox()`](../../../api/ui/paint/Painter.cpp) fills the **whole** box with the outline colour and
 then fills the inset over it. Shipped defaults are `border` at alpha 1.0 and `panel` at alpha
-0.92, on both sides of the library — [`ComponentRenderer::Style`](../../../api/ui/ComponentRenderer.cpp)
+0.92, on both sides of the library — [`ComponentRenderer::Style`](../../../api/ui/paint/ComponentRenderer.cpp)
 and [`Immediate::Style`](../../../api/ui/Immediate.cpp) declare the same two values. So a panel's
 interior is `0.92 × panel + 0.08 × border`, which is **fully opaque**: the scene behind never
 shows through, and the panel is tinted 8% toward its own border.
 
-[`fillBox()`](../../../api/ui/Painter.cpp) goes to some trouble to lay its three bands and four
+[`fillBox()`](../../../api/ui/paint/Painter.cpp) goes to some trouble to lay its three bands and four
 wedges down without overlapping — *"which matters because a box is usually drawn with an alpha,
 and anything drawn twice under one would show"* — and then `plateBox` does exactly that at the
 scale of the whole box.
@@ -43,19 +43,19 @@ is inert.** A window at alpha 0.5 is as opaque as one at 1.0 and differs only in
 
 ### The draw path allocates per component, per frame
 
-Every drawn component runs [`lookup()`](../../../api/ui/ComponentRenderer.cpp), which calls
+Every drawn component runs [`lookup()`](../../../api/ui/paint/ComponentRenderer.cpp), which calls
 [`Theme::getStyleSet()`](../../../api/ui/style/Theme.cpp) — a `std::vector` of every matching style,
 built by linear scan with `std::string` comparison, of which `front()` is kept and the rest
 discarded — plus a `std::string(name)` allocation from the `string_view` on the way in. Then it
 runs four to seven `readColour`/`readMetric` calls, each of which constructs a
-`pair<std::string, std::string>` key ([`Style.cpp`](../../../api/ui/Style.cpp)) and does a
+`pair<std::string, std::string>` key ([`Style.cpp`](../../../api/ui/style/Style.cpp)) and does a
 `dynamic_pointer_cast` to recover a type the class string already named. A select list does seven
 of these per frame, a check box six, a panel four.
 
 Three more on the same path:
 
 - **Text measurement allocates.** `Measure` takes `const std::string&` while components store
-  text and hand back `string_view`, so [`ComponentRenderer.cpp`](../../../api/ui/ComponentRenderer.cpp)
+  text and hand back `string_view`, so [`ComponentRenderer.cpp`](../../../api/ui/paint/ComponentRenderer.cpp)
   reads `measure_(std::string(label->text()))` at three sites.
 - **`natural()` for a `SELECT_LIST` measures every item, every frame**, to find the widest row —
   a hundred-row list is a hundred text measurements per frame for a number that changes only when
@@ -91,7 +91,7 @@ every app repeats.
 
 ### Two `Style` structs, one style class, and defaults that differ by 2×
 
-[`ComponentRenderer::theme()`](../../../api/ui/ComponentRenderer.cpp) and
+[`ComponentRenderer::theme()`](../../../api/ui/paint/ComponentRenderer.cpp) and
 [`Immediate::theme()`](../../../api/ui/Immediate.cpp) both read the `"ui"` style class, with
 overlapping key names — `line-height`, `padding`, `bar-height`, `radius`, `scrollbar-width` —
 into two different structs whose defaults are roughly a factor of two apart:
@@ -120,7 +120,7 @@ drift on their own.
 ### Three types called `Style`, and three namespace rules in one directory
 
 `v3d::ui::Style` (a bag of properties), `v3d::ui::style::Theme`'s notion of one, and
-[`ComponentRenderer::Style`](../../../api/ui/ComponentRenderer.h) (a struct of colours and metrics)
+[`ComponentRenderer::Style`](../../../api/ui/paint/ComponentRenderer.h) (a struct of colours and metrics)
 are three concepts within one letter of each other. It already costs a docblock:
 `lookup()` has to say *"the return type is the library's Style and not this class's."* When a
 signature needs a paragraph to say which type it returns, the naming is the defect.
@@ -132,22 +132,22 @@ everything is `v3d::ui::style::prop`, an abbreviation the path does not have. Th
 subtree.
 
 The headers are wrong in the other direction too.
-[`ComponentRenderer.h`](../../../api/ui/ComponentRenderer.h) includes `Engine.h` and fourteen
+[`ComponentRenderer.h`](../../../api/ui/paint/ComponentRenderer.h) includes `Engine.h` and fourteen
 component headers purely to name types in signatures, and `Engine.h` pulls `boost::json`, EnTT,
 the event engine and the logger behind it. Then
-[`TextRenderer.h`](../../../api/ui/TextRenderer.h) includes `ComponentRenderer.h` — only to name
+[`TextRenderer.h`](../../../api/ui/paint/TextRenderer.h) includes `ComponentRenderer.h` — only to name
 the `Measure` and `Write` typedefs. So every app renderer that wants to draw a string compiles
 the JSON loader and the whole widget set. All of it is forward-declarable.
 
 `Measure` and `Write` are themselves declared twice as unrelated types, on
-[`ComponentRenderer`](../../../api/ui/ComponentRenderer.h) and on
+[`ComponentRenderer`](../../../api/ui/paint/ComponentRenderer.h) and on
 [`Immediate`](../../../api/ui/Immediate.h). They interoperate only because both are `std::function`
 of the same signature, so `TextRenderer::measure()` returning the `ComponentRenderer` one and
 being handed to `Immediate` reads as a mistake that happens to compile.
 
 ### Dead weight
 
-[`Overlay.h`](../../../api/ui/Overlay.h) has no consumer, opens with a stray doubled `/**`, and its
+[`Overlay.h`](../../../api/grid/Overlay.h) has no consumer, opens with a stray doubled `/**`, and its
 premise — a transparent *mode* against a colour mode — is contradicted outright by `Color.h`
 above. [`Menu::navigate()`](../../../api/ui/component/menu/Menu.cpp) ignores its `wrap` argument,
 moves nothing, and returns `true` for any valid enum value, under a header that promises
@@ -163,8 +163,8 @@ naming classes actually called `HorizontalBox` and `VerticalBox`.
 
 [TODO.md](../../TODO.md) already records the stubs and the undriven `Immediate`. It does not record
 that two ad-hoc replacements for `Immediate` exist in the tree —
-[`voxel/src/DebugOverlay.h`](../../../voxel/src/DebugOverlay.h) and
-[`api/ui/StatisticsOverlay.h`](../../../api/ui/StatisticsOverlay.h) are both a rolling frame average
+`voxel/src/DebugOverlay.h` and
+[`api/ui/StatisticsOverlay.h`](../../../api/ui/shell/StatisticsOverlay.h) are both a rolling frame average
 rendered as lines of text, which is the panel the immediate layer was built for.
 
 ### Two small ones
@@ -267,7 +267,7 @@ between them where the corners are round. `Canvas::ring()` is the arc with a hol
 draws one, which was the alternative the plan preferred over a mitred approximation. Confirmed
 by eye in voxel at step 12 - the sky shows through the debug window.
 
-**Was.** In [`api/ui/Painter.cpp`](../../../api/ui/Painter.cpp).
+**Was.** In [`api/ui/Painter.cpp`](../../../api/ui/paint/Painter.cpp).
 
 Draw the border as bands around the interior rather than as a full box behind it, so that a
 `panel` colour with alpha lets the scene through as `Color.h` says it should, and
@@ -351,8 +351,8 @@ is in flight. It touches four apps only where they name a menu type.
 **Closed.** `Immediate.h` got the same treatment, which the plan had not asked for and which
 takes `Canvas.h` off it too.
 
-**Was.** New `api/ui/Text.h`, plus [`ComponentRenderer.h`](../../../api/ui/ComponentRenderer.h),
-[`Immediate.h`](../../../api/ui/Immediate.h) and [`TextRenderer.h`](../../../api/ui/TextRenderer.h).
+**Was.** New `api/ui/Text.h`, plus [`ComponentRenderer.h`](../../../api/ui/paint/ComponentRenderer.h),
+[`Immediate.h`](../../../api/ui/Immediate.h) and [`TextRenderer.h`](../../../api/ui/paint/TextRenderer.h).
 
 One pair of typedefs in `v3d::ui`, taken by both consumers, so that
 `TextRenderer::measure()` returns the type `Immediate` accepts rather than a different type that
@@ -379,9 +379,9 @@ component by const reference, because it now writes what it measured onto a list
 draw writes a box.
 
 **Was.** New `api/ui/style/Resolver.{h,cpp}`, plus
-[`ComponentRenderer.cpp`](../../../api/ui/ComponentRenderer.cpp),
-[`Immediate.cpp`](../../../api/ui/Immediate.cpp), [`Style.h`](../../../api/ui/Style.h) and
-[`Text.h`](../../../api/ui/Text.h).
+[`ComponentRenderer.cpp`](../../../api/ui/paint/ComponentRenderer.cpp),
+[`Immediate.cpp`](../../../api/ui/Immediate.cpp), [`Style.h`](../../../api/ui/style/Style.h) and
+`Text.h`.
 
 The single highest-value change in the plan. A resolver holds the active theme and a
 `map<pair<class, name>, Dressing>`; `Dressing` is the plain struct of colours and metrics each
@@ -429,7 +429,7 @@ implementations of the strip rule, is closed without it. `natural()` and `arrang
 where the walk that calls them is. Reopen it if a test ever needs layout without paint, which
 is the one benefit that would have been real; nothing has asked.
 
-In [`ComponentRenderer.{h,cpp}`](../../../api/ui/ComponentRenderer.h).
+In [`ComponentRenderer.{h,cpp}`](../../../api/ui/paint/ComponentRenderer.h).
 
 `natural()`, `arrange()`, `walk()` and `insets()` become a class that resolves boxes and writes
 them onto components, and `ComponentRenderer` becomes the paint half that it calls. This does not
@@ -534,9 +534,9 @@ mouselook, so its window cannot be folded or scrolled. TODO carries it.
 with a different owner, and the useful change there is giving it to the three apps that hold a
 `TextRenderer` and do not draw it - which TODO already records and which is not this plan's.
 
-**Was.** In [`voxel/src/`](../../../voxel/src/) and [`api/ui/StatisticsOverlay.h`](../../../api/ui/StatisticsOverlay.h).
+**Was.** In [`voxel/src/`](../../../voxel/src/) and [`api/ui/StatisticsOverlay.h`](../../../api/ui/shell/StatisticsOverlay.h).
 
-`voxel`'s [`DebugOverlay`](../../../voxel/src/DebugOverlay.h) — 123 lines producing a build string, a
+`voxel`'s `DebugOverlay` — 123 lines producing a build string, a
 rolling frame rate and a player position as lines of text — becomes a call into `Immediate` and is
 deleted. It is exactly the panel ADR-0035 argued for, and it was written in the same tree in the
 same week.

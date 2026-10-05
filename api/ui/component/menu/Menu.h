@@ -25,6 +25,7 @@ class Menu : public Component {
       * @param dispatcher the dispatcher activated menu items send their bound event to
       **/
      explicit Menu(const boost::shared_ptr<entt::dispatcher>& dispatcher);
+     ~Menu() override;
 
     /**
         * Make the next item in the menu active.

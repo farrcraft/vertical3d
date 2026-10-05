@@ -68,9 +68,11 @@ class Textures final {
     /**
      * Register a render target so that a draw can sample what a pass drew into it.
      *
-     * What is registered shares the target's images. A target that is resized allocates new
-     * ones, and the handle this returned goes on naming the old ones, which it keeps alive:
-     * after a recreate(), release the old handle and register the target again.
+     * What is registered shares the target's images. Registering the same image again gives
+     * back the handle it already has, so calling this every frame costs nothing. A target that
+     * is resized allocates new images, and the handle this returned goes on naming the old
+     * ones, which it keeps alive: after a recreate(), release the old handle and register the
+     * target again.
      *
      * A target with no colour image has nothing to register, and comes back as the white
      * texture for the same reason depthTexture() gives one for a target with no depth to read.
@@ -129,6 +131,15 @@ class Textures final {
     TextureHandle white_;
     /**< keyed by the whole handle, so a slot reused after a release never finds the old set **/
     std::map<TextureHandle, MaterialHandle> materials_;
+    /**
+     * The handle each registered render target image has, by its view. A view cannot be reused
+     * while its entry is here, because the registered texture keeps the image alive until it is
+     * released, and a release removes the entry.
+     **/
+    std::map<VkImageView, TextureHandle> targets_;
+
+    /** A render target image's handle, registered the first time it is asked for. **/
+    TextureHandle registered(const vulkan::pipeline::Texture& texture);
 };
 
 };  // namespace v3d::render::realtime

@@ -488,15 +488,6 @@ bool transforming(Body body) {
         body == Body::NTRANSFORM || body == Body::MTRANSFORM;
 }
 
-/**
- * Whether the body writes the argument it was given rather than returning a value. This
- * decides which register the mask is checked against and where the result goes.
- **/
-bool setter(Body body) {
-    return body == Body::SETXCOMP || body == Body::SETYCOMP ||
-        body == Body::SETZCOMP || body == Body::SETCOMP;
-}
-
 };  // namespace
 
 void Machine::builtin(const Instruction & instruction) {
@@ -533,7 +524,11 @@ void Machine::builtin(const Instruction & instruction) {
         shadowed(body == Body::TRACE, *given[0], *given[1], &answer);
         return;
     }
-    site.written = setter(body) ? &file_[static_cast<std::size_t>(instruction.arguments[0])] : site.target;
+    // a function that changes an argument in place writes that register rather than its result.
+    // That register is both where the value goes and the one the mask is checked against
+    const int updates = table[index].updates;
+    site.written = updates >= 0 && static_cast<std::size_t>(updates) < instruction.arguments.size() ?
+        &file_[static_cast<std::size_t>(instruction.arguments[static_cast<std::size_t>(updates)])] : site.target;
     std::vector<Value*> outputs = written(instruction, table[index].outputs);
     if (!outputs.empty()) {
         // the mask is checked against the first: the compiler gives every one the

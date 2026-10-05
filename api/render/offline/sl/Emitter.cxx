@@ -278,15 +278,22 @@ void Emitter::emitConditional(const syntax::StatementPtr & statement) {
         return;
     }
 
-    // the condition varies between points, so both arms run, each under the lanes that took it
-    const int taken = put(runtime::Opcode::MASK, -1, condition, -1, conditional.condition);
+    // the condition varies between points, so both arms run, each under the lanes that took it.
+    // The else arm's mask reads the condition again after the true arm has run. A bare variable
+    // is its own register, and the true arm may assign it, so it is copied first.
+    int tested = condition;
+    if (conditional.whenFalse && conditional.condition->kind == syntax::Expression::Kind::VARIABLE) {
+        tested = temporary(conditional.condition->type, conditional.condition->storage);
+        put(runtime::Opcode::MOVE, tested, condition, -1, conditional.condition);
+    }
+    const int taken = put(runtime::Opcode::MASK, -1, tested, -1, conditional.condition);
     emitStatement(conditional.whenTrue);
     patch(taken, here());
     put(runtime::Opcode::POP_MASK, -1, -1, -1, conditional.condition);
     if (!conditional.whenFalse) {
         return;
     }
-    const int other = put(runtime::Opcode::MASK_NOT, -1, condition, -1, conditional.condition);
+    const int other = put(runtime::Opcode::MASK_NOT, -1, tested, -1, conditional.condition);
     emitStatement(conditional.whenFalse);
     patch(other, here());
     put(runtime::Opcode::POP_MASK, -1, -1, -1, conditional.condition);

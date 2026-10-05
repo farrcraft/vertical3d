@@ -64,6 +64,32 @@ void PongScene::checkVictory() {
     }
 }
 
+bool PongScene::steer(std::string_view command, bool held) {
+    const bool left = command == "leftPaddleUp" || command == "leftPaddleDown";
+    const bool right = command == "rightPaddleUp" || command == "rightPaddleDown";
+    if (!left && !right) {
+        return false;
+    }
+    if (held && (gameState_.paused() || (right && !gameState_.coop()))) {
+        return true;
+    }
+    Paddle & paddle = left ? left_ : right_;
+    if (command == "leftPaddleUp" || command == "rightPaddleUp") {
+        paddle.up(held);
+    } else {
+        paddle.down(held);
+    }
+    return true;
+}
+
+void PongScene::coop(bool mode) {
+    gameState_.coop(mode);
+    for (Paddle * paddle : { &left_, &right_ }) {
+        paddle->up(false);
+        paddle->down(false);
+    }
+}
+
 void PongScene::steerOpponent(const glm::vec2& ballPosition) {
     // give AI a turn in single player mode
     if (gameState_.coop()) {
@@ -258,9 +284,6 @@ void PongScene::reset() {
     left_.reset();
     right_.reset();
     gameState_.reset();
-    // hide menu and unpause
-    // menu()->show(false);
-    // pause(false);
 }
 
 Ball & PongScene::ball() {

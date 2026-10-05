@@ -5,6 +5,7 @@
 
 #include "Instance.h"
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -150,10 +151,12 @@ void Instance::bind(const rib::ParameterList & parameters) {
     }
 }
 
-void Instance::write(runtime::Machine* machine, const glm::mat4x4 & placement) const {
+bool Instance::write(runtime::Machine* machine, const glm::mat4x4 & placement) const {
     // the declared defaults, run rather than remembered: the renderer resolves a coordinate
     // space in one, and the machine has a renderer attached now
-    machine->initialise();
+    if (!machine->initialise()) {
+        return false;
+    }
 
     for (const Binding & held : bindings_) {
         if (!held.bound) {
@@ -179,6 +182,7 @@ void Instance::write(runtime::Machine* machine, const glm::mat4x4 & placement) c
             }
         }
     }
+    return true;
 }
 
 };  // namespace v3d::render::offline::sl

@@ -26,6 +26,16 @@ Toolbar::Toolbar(const boost::shared_ptr<entt::dispatcher>& dispatcher, Edge edg
 
 /**
  **/
+Toolbar::~Toolbar() {
+    for (const boost::shared_ptr<Button>& button : buttons_) {
+        if (button) {
+            disown(*button);
+        }
+    }
+}
+
+/**
+ **/
 Toolbar::Edge Toolbar::edge() const noexcept {
     return edge_;
 }
@@ -55,9 +65,9 @@ boost::shared_ptr<Button> Toolbar::button(std::size_t index) const {
  **/
 boost::shared_ptr<Button> Toolbar::buttonAt(const glm::vec2& cursor) const {
     for (const boost::shared_ptr<Button>& button : buttons_) {
-        // a button that cannot be used is not offered the cursor, so the strip neither
-        // lights it nor sends its command
-        if (!button || !usable(*button)) {
+        // a button that cannot be used or is hidden is not offered the cursor, so the strip
+        // neither lights it nor sends its command
+        if (!button || !button->visible() || !usable(*button)) {
             continue;
         }
         v3d::type::geometry::Bound2D bound = button->bound();

@@ -115,3 +115,22 @@ BOOST_AUTO_TEST_CASE(previous_snapshot_covers_every_entity_test) {
     BOOST_TEST(registry.get<v3d::ecs::Previous<v3d::ecs::component::Position1D>>(second).value.value == 2.0f);
     BOOST_TEST(!registry.all_of<v3d::ecs::Previous<v3d::ecs::component::Position1D>>(other));
 }
+
+/**
+ * An entity that loses its value and is given one again later is drawn at the new one. The
+ * snapshot between the two takes its previous step away with the value, so nothing is blended
+ * from where it was before it lost it.
+ **/
+BOOST_AUTO_TEST_CASE(previous_removed_with_its_value_test) {
+    entt::registry registry;
+    const entt::entity entity = registry.create();
+    registry.emplace<v3d::ecs::component::Position1D>(entity, 0.0f);
+    v3d::ecs::snapshot<v3d::ecs::component::Position1D>(registry);
+
+    registry.remove<v3d::ecs::component::Position1D>(entity);
+    v3d::ecs::snapshot<v3d::ecs::component::Position1D>(registry);
+    BOOST_CHECK(!registry.all_of<v3d::ecs::Previous<v3d::ecs::component::Position1D>>(entity));
+
+    registry.emplace<v3d::ecs::component::Position1D>(entity, 100.0f);
+    BOOST_CHECK_EQUAL(v3d::ecs::interpolated<v3d::ecs::component::Position1D>(registry, entity, 0.0f).value, 100.0f);
+}

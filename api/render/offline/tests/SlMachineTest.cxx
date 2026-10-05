@@ -415,6 +415,94 @@ BOOST_AUTO_TEST_CASE(slmachine_cast_and_compound_test) {
 }
 
 /**
+ * == and != compare every component. Two colours that share their first component are not
+ * equal, a float compares against every component of a point, and a float compares against a
+ * matrix as the diagonal matrix it promotes to.
+ **/
+BOOST_AUTO_TEST_CASE(slmachine_equality_compares_every_component_test) {
+    std::string error;
+    Program program;
+    BOOST_REQUIRE_MESSAGE(build(
+        "surface s() {\n"
+        "    color a = color (0, 1, 1);\n"
+        "    color b = color (0, 0, 0);\n"
+        "    point p = point (2, 2, 2);\n"
+        "    matrix m = 1;\n"
+        "    float sameColour = a == b;\n"
+        "    float differentColour = a != b;\n"
+        "    float pointIsTwo = p == 2;\n"
+        "    float pointIsNotTwo = p != 2;\n"
+        "    float matrixIsOne = m == 1;\n"
+        "    float matrixIsTwo = m == 2;\n"
+        "    float anyIsDifferent = point (2, 2, 3) == p;\n"
+        "    Ci = color (sameColour, differentColour, pointIsTwo);\n"
+        "    Oi = color (pointIsNotTwo + anyIsDifferent, matrixIsOne, matrixIsTwo);\n"
+        "}\n", &program, &error), error);
+
+    v3d::render::offline::sl::runtime::Machine machine;
+    machine.prepare(program, 1);
+    BOOST_REQUIRE(machine.run());
+
+    const glm::vec3 first = machine.value(program.symbol("Ci")).triple(0);
+    BOOST_CHECK_EQUAL(first.r, 0.0f);
+    BOOST_CHECK_EQUAL(first.g, 1.0f);
+    BOOST_CHECK_EQUAL(first.b, 1.0f);
+    const glm::vec3 second = machine.value(program.symbol("Oi")).triple(0);
+    BOOST_CHECK_EQUAL(second.r, 0.0f);
+    BOOST_CHECK_EQUAL(second.g, 1.0f);
+    BOOST_CHECK_EQUAL(second.b, 0.0f);
+}
+
+/**
+ * A setter that writes a varying value into a variable makes that variable varying, so every
+ * point keeps its own value rather than the first point's.
+ **/
+BOOST_AUTO_TEST_CASE(slmachine_setter_writes_every_point_test) {
+    std::string error;
+    Program program;
+    BOOST_REQUIRE_MESSAGE(build(
+        "surface s() {\n"
+        "    point p = point (0, 0, 0);\n"
+        "    setxcomp(p, s);\n"
+        "    Ci = color (xcomp(p), 0, 0);\n"
+        "}\n", &program, &error), error);
+
+    v3d::render::offline::sl::runtime::Machine machine;
+    machine.prepare(program, 2);
+    machine.value(program.symbol("s")).number(0, 0.25f);
+    machine.value(program.symbol("s")).number(1, 0.75f);
+    BOOST_REQUIRE(machine.run());
+
+    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(0).r, 0.25f);
+    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(1).r, 0.75f);
+}
+
+/**
+ * A varying if reads its condition once. A true arm that assigns the condition does not send
+ * its lanes through the else arm as well.
+ **/
+BOOST_AUTO_TEST_CASE(slmachine_condition_is_read_once_test) {
+    std::string error;
+    Program program;
+    BOOST_REQUIRE_MESSAGE(build(
+        "surface s() {\n"
+        "    float flag = s;\n"
+        "    float other = 0;\n"
+        "    if (flag) { flag = 0; } else { other = 1; }\n"
+        "    Ci = color (other, 0, 0);\n"
+        "}\n", &program, &error), error);
+
+    v3d::render::offline::sl::runtime::Machine machine;
+    machine.prepare(program, 2);
+    machine.value(program.symbol("s")).number(0, 1.0f);
+    machine.value(program.symbol("s")).number(1, 0.0f);
+    BOOST_REQUIRE(machine.run());
+
+    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(0).r, 0.0f);
+    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(1).r, 1.0f);
+}
+
+/**
  * The complete `constant` shader, compiled and run.
  **/
 BOOST_AUTO_TEST_CASE(slmachine_constant_shader_test) {

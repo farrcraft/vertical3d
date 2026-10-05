@@ -25,8 +25,10 @@ const float PI = 3.14159265358979323846f;
 Sphere::Sphere(float radius, float zmin, float zmax, float thetamax, const glm::mat4x4 & placement,
     const glm::vec3 & colour) :
     Primitive(colour), radius_(radius),
-    zmin_(std::clamp(std::min(zmin, zmax), -radius, radius)),
-    zmax_(std::clamp(std::max(zmin, zmax), -radius, radius)),
+    // clamped by the size of the radius, so a negative one is still a valid range; such a
+    // sphere is never hit anyway
+    zmin_(std::clamp(std::min(zmin, zmax), -std::fabs(radius), std::fabs(radius))),
+    zmax_(std::clamp(std::max(zmin, zmax), -std::fabs(radius), std::fabs(radius))),
     thetamax_(std::clamp(thetamax, 0.0f, 360.0f) * PI / 180.0f),
     toObject_(glm::inverse(placement)) {
 }

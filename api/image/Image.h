@@ -34,11 +34,6 @@ class Image {
          * @param b bits per pixel
          */
         Image(uint32_t w, uint32_t h, uint8_t b);
-        /**
-         * Constructor
-         * @param len length of the image data in bytes
-         */
-        explicit Image(uint64_t len);
         virtual ~Image();
 
         /**

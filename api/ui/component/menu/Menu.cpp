@@ -12,6 +12,14 @@ Menu::Menu(const boost::shared_ptr<entt::dispatcher>& dispatcher) :
     Component(component::Type::Menu), dispatcher_(dispatcher), active_(-1) {
 }
 
+Menu::~Menu() {
+    for (const boost::shared_ptr<MenuItem>& item : items_) {
+        if (item) {
+            disown(*item);
+        }
+    }
+}
+
 /**
  **/
 void Menu::parent(const boost::weak_ptr<Menu>& p) {
@@ -117,7 +125,8 @@ bool Menu::down() {
         return false;
     }
     boost::shared_ptr<MenuItem> item = lvl->active();
-    if (!item) {
+    // a disabled item, or one in a disabled menu, is not opened
+    if (!item || !usable(*item)) {
         return false;
     }
     boost::shared_ptr<Menu> sm = item->submenu();

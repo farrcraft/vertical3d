@@ -37,6 +37,12 @@ class MovingTransform final {
     bool moving() const;
     const glm::mat4x4 & open() const;
     const glm::mat4x4 & close() const;
+    /**
+     * The end a moving primitive is stored at, and moved from to any other time by
+     * at(time) * inverse(reference()). The open end, unless it has no inverse, as when it
+     * scales an axis to nothing; then the close end.
+     **/
+    const glm::mat4x4 & reference() const;
     /** The times the motion block named for its two ends. **/
     const glm::vec2 & times() const;
 

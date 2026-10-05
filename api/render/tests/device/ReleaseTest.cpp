@@ -242,6 +242,47 @@ BOOST_AUTO_TEST_CASE(a_stream_holds_what_one_frame_asked_for) {
 }
 
 /**
+ * Registering a target's image again gives back the handle it already has, so registering it
+ * every frame does not grow the registry. Once that handle is released, registering it again
+ * gives a new one.
+ **/
+BOOST_AUTO_TEST_CASE(a_target_registered_twice_has_one_handle) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+        width, height, colourFormat, true, true);
+
+    const TextureHandle first = headless.context->textures()->texture(*target);
+    BOOST_CHECK(headless.context->textures()->texture(*target) == first);
+    const TextureHandle depth = headless.context->textures()->depthTexture(*target);
+    BOOST_CHECK(headless.context->textures()->depthTexture(*target) == depth);
+    BOOST_CHECK(depth != first);
+
+    BOOST_REQUIRE(headless.context->textures()->release(first));
+    const TextureHandle again = headless.context->textures()->texture(*target);
+    BOOST_CHECK(again != first);
+    BOOST_CHECK(headless.context->resources()->texture(again) != nullptr);
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * A frame that is skipped, because there was no image to draw into, never begins. The next
+ * frame reuses what the skipped one claimed rather than claiming after it, so a run of
+ * skipped frames holds no more than one frame's worth.
+ **/
+BOOST_AUTO_TEST_CASE(a_skipped_frame_gives_its_claims_back) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    v3d::render::realtime::vulkan::frame::StreamRing stream(headless.device, headless.context->ring(), 64, 32);
+
+    for (int frame = 0; frame < 12; ++frame) {
+        stream.claim(16, 8);
+        stream.claim(16, 8);
+        headless.context->ring()->skip();
+    }
+    BOOST_CHECK_EQUAL(stream.held(), 2u);
+    BOOST_CHECK(headless.silent());
+}
+
+/**
  * A target's depth drawn on a canvas is sampled in the layout the recorder leaves it in, which
  * is read only for depth rather than for shaders. The layer reports the draw if any other
  * layout is used.

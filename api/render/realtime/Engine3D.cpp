@@ -138,6 +138,7 @@ void Engine3D::renderFrame() {
         // the window changed size between the last present and this acquire - rebuild
         // the chain and let the next frame draw into it
         context_->resize();
+        context_->ring()->skip();
         endFrame();
         return;
     }
@@ -148,6 +149,7 @@ void Engine3D::renderFrame() {
         if (window() && window()->width() > 0 && window()->height() > 0) {
             context_->resize();
         }
+        context_->ring()->skip();
         endFrame();
         return;
     }

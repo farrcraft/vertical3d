@@ -29,8 +29,13 @@ class Logger final {
          *
          * Called after something has logged, it moves the log there from then on; a handle
          * taken before still writes where it was taken.
+         *
+         * A path that cannot be opened, such as one in a directory that is not writable, does
+         * not throw. The log goes to stderr instead, and its first line says why.
+         *
+         * @return whether the log is written to path
          **/
-        static void open(const std::string& path);
+        static bool open(const std::string& path);
 
         /**
          **/

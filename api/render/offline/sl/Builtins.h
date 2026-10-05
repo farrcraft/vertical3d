@@ -97,6 +97,11 @@ class Signature final {
      * it on is written, so each has to be a variable: `fresnel` writes four of them.
      **/
     int outputs = -1;
+    /**
+     * The argument the function changes in place, or -1. It is read and then written, so it
+     * has to be a variable the shader can assign: `setxcomp` changes one component of it.
+     **/
+    int updates = -1;
     std::vector<Argument> arguments;
 };
 

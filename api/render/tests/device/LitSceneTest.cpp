@@ -185,8 +185,11 @@ Shading compare(const boost::shared_ptr<v3d::image::Image>& without, const boost
  *
  * @param strength LitSettings::shadowStrength, so a case can draw the same frame with the
  *        shadow ignored
+ * @param frames how many frames to draw into the same shadow map. Every frame but the last is
+ *        submitted without waiting, as a presented frame is, so two of them are in flight at once
  **/
-boost::shared_ptr<v3d::image::Image> drawShadowed(v3d::test::Headless* headless, float strength, const std::string& path) {
+boost::shared_ptr<v3d::image::Image> drawShadowed(v3d::test::Headless* headless, float strength, const std::string& path,
+    int frames = 1) {
     const uint32_t mapSize = 256;
     boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless->device, headless->context->ring(),
         width, height, colourFormat, true);
@@ -232,29 +235,34 @@ boost::shared_ptr<v3d::image::Image> drawShadowed(v3d::test::Headless* headless,
     VkDescriptorSet scene = lit.scene(v3d::render::realtime::pack(settings, light, 1.0f / mapSize),
         headless->context->textures()->depthTexture(*map));
 
-    // the lit pass is made first, as an engine's colour pass is, and reads the map, so the
-    // frame records the shadow pass ahead of it
-    Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("lit");
-    boost::shared_ptr<Pass> casting = frame.pass("shadow");
-    casting->target(map);
-    casting->depth(true);
-    casting->scene(scene);
-    casting->depthBias(settings.constantBias, settings.slopeBias);
-    v3d::render::realtime::casters(registry, 1.0f, meshes, lit, casting.get());
+    for (int drawn = 1; ; drawn++) {
+        // the lit pass is made first, as an engine's colour pass is, and reads the map, so the
+        // frame records the shadow pass ahead of it
+        Frame frame;
+        boost::shared_ptr<Pass> pass = frame.pass("lit");
+        boost::shared_ptr<Pass> casting = frame.pass("shadow");
+        casting->target(map);
+        casting->depth(true);
+        casting->scene(scene);
+        casting->depthBias(settings.constantBias, settings.slopeBias);
+        v3d::render::realtime::casters(registry, 1.0f, meshes, lit, casting.get());
 
-    pass->reads(map);
-    pass->target(target);
-    pass->depth(true);
-    pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
-    pass->camera(camera.view(), camera.projection());
-    pass->scene(scene);
-    v3d::render::realtime::meshes(registry, 1.0f, meshes, lit, settings.outline, pass.get());
+        pass->reads(map);
+        pass->target(target);
+        pass->depth(true);
+        pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+        pass->camera(camera.view(), camera.projection());
+        pass->scene(scene);
+        v3d::render::realtime::meshes(registry, 1.0f, meshes, lit, settings.outline, pass.get());
 
-    VkCommandBuffer commands = headless->context->ring()->begin();
-    Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
-        headless->context->frameUniforms().get());
-    return readBack(headless, commands, target, path);
+        VkCommandBuffer commands = headless->context->ring()->begin();
+        Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
+            headless->context->frameUniforms().get());
+        if (drawn == frames) {
+            return readBack(headless, commands, target, path);
+        }
+        headless->submit(commands);
+    }
 }
 
 };  // namespace
@@ -471,6 +479,20 @@ BOOST_AUTO_TEST_CASE(a_caster_is_drawn_into_the_shadow_map_at_its_depth) {
  *
  * The picture is written to data_out/lit_shadow.png for a person to look at.
  **/
+/**
+ * Two frames in flight share one shadow map. The second frame's shadow pass writes the map
+ * while the first frame's lit pass may still be sampling it, so the barrier that opens the map
+ * has to wait for that read. Only synchronization validation reports it when it does not, so
+ * the case checks that the layer is silent; CI runs it with VK_LAYER_VALIDATE_SYNC=1.
+ **/
+BOOST_AUTO_TEST_CASE(a_shadow_map_is_shared_by_frames_in_flight) {
+    v3d::test::Headless headless(colourFormat, width, height);
+
+    boost::shared_ptr<v3d::image::Image> picture = drawShadowed(&headless, 1.0f, "data_out/lit_shadow_twice.png", 2);
+    BOOST_REQUIRE(picture);
+    BOOST_CHECK(headless.silent());
+}
+
 BOOST_AUTO_TEST_CASE(a_shadow_falls_on_the_ground) {
     v3d::test::Headless headless(colourFormat, width, height);
 

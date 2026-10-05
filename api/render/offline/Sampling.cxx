@@ -38,7 +38,9 @@ float filter(Filter kind, const glm::vec2 & offset, const glm::vec2 & width) {
     case Filter::Triangle:
         return (1.0f - std::fabs(offset.x) / half.x) * (1.0f - std::fabs(offset.y) / half.y);
     case Filter::CatmullRom: {
-        // radial, with a support of two pixels whatever the width says
+        // radial and not scaled by the width. The kernel reaches zero two pixels out, so a
+        // width under four cuts it off at the box tested above, which is RI's rule for every
+        // filter
         const float r2 = offset.x * offset.x + offset.y * offset.y;
         const float r = std::sqrt(r2);
         if (r >= 2.0f) {

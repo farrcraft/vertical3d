@@ -24,6 +24,8 @@ moya.exe --file data/raytrace-scene.rib --output scene.png
 |---|---|
 | `--file <path>` | The RIB scene to render, relative to the working directory. Without it, moya prints the help and exits |
 | `--output <path>` | The image to write. It replaces whatever file the scene's `Display` names |
+| `--width <n>` `--height <n>` | The picture's size, replacing the one the scene's `Format` names. Both are needed; one alone is reported and the scene's size is used. The scene still sets the pixel aspect ratio |
+| `--silent` | Print no progress line |
 | `--grid <n>` | Micropolygons per grid. Default 256 |
 | `--bucket <n>` | Bucket size, n by n pixels. Default 16 |
 | `--help` | Print the options |

@@ -33,6 +33,7 @@ void Engine::handleSourceEvent(const Unclaimed& unclaimed) {
             // carry the edge across so a handler can tell press from release without
             // needing a separate binding for each
             mapped->state(source.state());
+            mapped->repeat(source.repeat());
             dispatcher_->trigger(*mapped);
         }
     }

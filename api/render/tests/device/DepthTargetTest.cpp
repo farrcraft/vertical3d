@@ -131,6 +131,56 @@ float at(const std::vector<float>& depths, uint32_t x, uint32_t y) {
     return depths[static_cast<std::size_t>(y) * width + x];
 }
 
+/**
+ * Draw the two quads into a depth-only target from a pass that uses depth, alongside a pass
+ * that writes the same target without depth, and read the depth back.
+ *
+ * @param depthFirst whether the pass with depth comes before the one without
+ **/
+std::vector<float> drawBeside(v3d::test::Headless* headless, const boost::shared_ptr<RenderTarget>& target,
+    bool depthFirst) {
+    const std::vector<float> vertices = quads();
+    Buffer buffer(headless->device, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertices.size() * sizeof(float));
+    buffer.write(vertices.data(), vertices.size() * sizeof(float));
+
+    Frame frame;
+    boost::shared_ptr<Pass> without;
+    if (!depthFirst) {
+        without = frame.pass("without");
+    }
+    boost::shared_ptr<Pass> with = frame.pass("with");
+    if (depthFirst) {
+        without = frame.pass("without");
+    }
+    without->target(target);
+    without->depth(false);
+    without->keepColour();
+    with->target(target);
+    with->depth(true);
+    with->clearColour(glm::vec4(0.0f));
+
+    DrawItem item;
+    item.pipeline = depthPipeline(headless, target->depthFormat(), false);
+    item.vertexBuffer = buffer.handle();
+    item.vertices = static_cast<uint32_t>(vertices.size() / 3);
+    with->submit(item);
+
+    VkCommandBuffer commands = headless->context->ring()->begin();
+    Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources());
+
+    Capture capture(headless->device, headless->logger);
+    Capture::Source source;
+    source.image = target->depthImage();
+    source.extent = target->extent();
+    source.format = target->depthFormat();
+    source.layout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
+    source.depth = true;
+    capture.record(commands, source);
+
+    headless->submitAndWait(commands);
+    return capture.depth();
+}
+
 };  // namespace
 
 BOOST_AUTO_TEST_SUITE(depth_target_test)
@@ -182,6 +232,31 @@ BOOST_AUTO_TEST_CASE(a_pass_bias_moves_the_depth_drawn) {
     BOOST_CHECK_LT(at(depths, 4, 8), farDepth);
     BOOST_CHECK_GT(at(depths, 11, 8), farDepth);
     BOOST_CHECK_EQUAL(at(depths, 0, 0), 1.0f);
+}
+
+/**
+ * A target written by a pass without depth and by one with it has its depth opened and closed
+ * once a frame, whichever of the two comes first. The validation layer reports a depth image
+ * used in the wrong layout, so the case checks that it is silent and that the depth is right.
+ **/
+BOOST_AUTO_TEST_CASE(a_pass_without_depth_beside_one_with_it) {
+    for (const bool depthFirst : {false, true}) {
+        BOOST_TEST_CONTEXT("the pass with depth " << (depthFirst ? "first" : "second")) {
+            v3d::test::Headless headless(colourFormat, width, height);
+            boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device,
+                headless.context->ring(), width, height, VK_FORMAT_UNDEFINED, true, true);
+            if (target->depthFormat() != VK_FORMAT_D32_SFLOAT) {
+                BOOST_TEST_MESSAGE("The device gives no sampled D32_SFLOAT, so there is no exact depth to compare");
+                return;
+            }
+
+            const std::vector<float> depths = drawBeside(&headless, target, depthFirst);
+            BOOST_CHECK(headless.silent());
+            BOOST_REQUIRE_EQUAL(depths.size(), static_cast<std::size_t>(width) * height);
+            BOOST_CHECK_EQUAL(at(depths, 4, 8), nearDepth);
+            BOOST_CHECK_EQUAL(at(depths, 8, 8), 1.0f);
+        }
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -55,6 +55,7 @@ class MenuItem : public Component {
      * @param param the command paramater
      */
     MenuItem(menu::ItemType type, const std::string & label);
+    ~MenuItem() override;
 
     /**
       * Set the menu item text label 

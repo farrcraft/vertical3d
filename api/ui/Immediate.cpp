@@ -183,6 +183,13 @@ Immediate::Immediate(const paint::Measure& measure, const paint::Write& write) :
 Immediate::~Immediate() {
 }
 
+/**
+ **/
+void Immediate::text(const paint::Measure& measure, const paint::Write& write) {
+    measure_ = measure;
+    write_ = write;
+}
+
 Immediate::Dressing& Immediate::dressing() noexcept {
     return dressing_;
 }

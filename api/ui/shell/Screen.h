@@ -42,7 +42,8 @@ namespace v3d::ui::shell {
  * and submits it where it likes.
  *
  * Everything that closes over the font's size is rebuilt by scale(), so a component renderer
- * or an immediate layer this hands out is one to draw with now and not to keep.
+ * this hands out is one to draw with now and not to keep. The immediate layer is the same one
+ * across a rescale, given the new text, so what it remembers between frames survives.
  **/
 class Screen final {
  public:

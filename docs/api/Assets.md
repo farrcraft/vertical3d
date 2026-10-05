@@ -202,6 +202,10 @@ factory.write("out.tga", picture);
 
 - `read(data, size, kind)` decodes from memory. Pass the format key, such as `"png"`, because a
   buffer has no extension. A glTF file's embedded images are read this way.
+- Every reader returns rows top to bottom. A bmp is read at 8, 16, 24 or 32 bits, uncompressed
+  or, at 16 and 32 bits, packed by the masks its header gives. 16 bits uncompressed is five bits
+  a channel. 32 bits reads as RGBA, and as opaque when its alpha is zero everywhere, since most
+  writers leave it unused. Every other depth comes back as RGB.
 - Each read returns null when the file will not open or does not decode.
 - Through the asset manager, an image file loads as `asset::media::kind::Image`, and `image()`
   returns the `image::Image`.
@@ -305,6 +309,8 @@ described in [Types.md](Types.md#models).
 - Positions are required. Normals and uvs are read where a primitive has them, and are zero
   where it does not.
 - A primitive with no indices gets a sequential run, so the model is always indexed.
+- Triangle strips and fans become triangle lists, wound as glTF winds them. A primitive of
+  points or lines is left out with a warning, because a model holds triangles.
 - A file that does not read or parse gives no asset and a log line.
 
 ### Materials and textures
@@ -312,12 +318,14 @@ described in [Types.md](Types.md#models).
 **Only the base colour is read**, from the metallic-roughness model.
 
 - **A texture the file names arrives as a name**, in `Material::baseColourTexture`. The name is
-  as the file wrote it, so it is relative to the model file. It is resolved through the asset
+  the file's uri with its percent-escapes decoded, so `my%20texture.png` arrives as
+  `my texture.png`. It is relative to the model file. It is resolved through the asset
   manager and uploaded by whoever draws the model: the renderer's `MeshRegistry` does this for
   a model it loads. The model never holds the pixels of a named texture.
 - **A texture the file embeds arrives decoded.** A `.glb` stores images in its own buffer, and a
-  `.gltf` may inline one as a data uri. Neither has a name to give, so the loader decodes it and
-  `kind::Model::baseColourImage(material)` returns it. It is null for a named texture or no
+  `.gltf` may inline one as a data uri, whose `data:image/png` or `data:image/jpeg` prefix
+  states its type when the file gives no `mimeType`. Neither has a name to give, so the loader
+  decodes it and `kind::Model::baseColourImage(material)` returns it. It is null for a named texture or no
   texture.
 - An embedded image in a format glTF does not allow, or one that does not decode, costs the
   model that texture. The model still loads.

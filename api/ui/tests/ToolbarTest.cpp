@@ -311,3 +311,43 @@ BOOST_AUTO_TEST_CASE(a_disabled_strip_disables_its_buttons) {
     bar->press(Fixture::centre(*bar->button(1)));
     BOOST_TEST(fixture.sent.empty());
 }
+
+/**
+ * A hidden button takes no room in its strip, is not drawn and takes no press. The buttons
+ * after it close up, so a press where it would have been lands on the next one.
+ **/
+BOOST_AUTO_TEST_CASE(a_hidden_button_takes_no_room_and_no_press) {
+    Fixture fixture;
+    boost::shared_ptr<v3d::ui::component::Toolbar> bar =
+        fixture.bar(v3d::ui::component::Toolbar::Edge::Top);
+    bar->button(0)->visible(false);
+    fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0f, 0.0f));
+
+    BOOST_TEST(bar->button(1)->position().x == 0.0f);
+
+    BOOST_TEST(bar->press(glm::vec2(5.0f, 5.0f)));
+    BOOST_REQUIRE_EQUAL(fixture.sent.size(), 1U);
+    BOOST_TEST(fixture.sent.front() == "test::translate");
+}
+
+/**
+ * A left strip starts below every top strip, whichever of the two a document lists first, so
+ * the two never overlap.
+ **/
+BOOST_AUTO_TEST_CASE(a_left_strip_listed_first_still_starts_below_a_top_one) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::Toolbar> left =
+        fixture.bar(v3d::ui::component::Toolbar::Edge::Left);
+    const boost::shared_ptr<v3d::ui::component::Toolbar> top =
+        fixture.bar(v3d::ui::component::Toolbar::Edge::Top);
+
+    v3d::ui::Container container("editor", true);
+    container.add(left);
+    container.add(top);
+    fixture.renderer.draw(&fixture.canvas, container);
+
+    const v3d::ui::Component& column = *left;
+    const v3d::ui::Component& row = *top;
+    BOOST_TEST(row.position().y == 0.0f);
+    BOOST_TEST(column.position().y == row.size().y + 1.0f);
+}

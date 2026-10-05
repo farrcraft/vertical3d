@@ -321,4 +321,28 @@ BOOST_AUTO_TEST_CASE(a_control_on_a_hidden_page_is_not_focused) {
     BOOST_CHECK_EQUAL(focusedName(fixture.ui), "panels");
 }
 
+/**
+ * A box hidden while it holds the focus, as a dialog's name field is when the dialog closes,
+ * takes no more keys or text. It gives the focus up on the next one, which goes on to the app,
+ * so a game's movement keys work again without a click first. Hiding the container it is in
+ * does the same.
+ **/
+BOOST_AUTO_TEST_CASE(a_component_hidden_while_focused_lets_keys_through) {
+    Fixture fixture(ONE_CONTAINER);
+    const boost::shared_ptr<v3d::ui::Container> hud = fixture.ui->container("hud");
+    hud->add(box("field"));
+
+    fixture.ui->focus(hud->get("field"));
+    hud->get("field")->visible(false);
+    BOOST_CHECK(!fixture.keys->text("w"));
+    BOOST_CHECK(!fixture.ui->focused());
+    BOOST_CHECK(!fixture.keys->press("w"));
+
+    hud->get("field")->visible(true);
+    fixture.ui->focus(hud->get("field"));
+    hud->visible(false);
+    BOOST_CHECK(!fixture.keys->press("a"));
+    BOOST_CHECK(!fixture.ui->focused());
+}
+
 BOOST_AUTO_TEST_SUITE_END()

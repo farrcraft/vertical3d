@@ -50,7 +50,7 @@ all. Step 7 would take step 6's reader as its input if it is taken up.
 resource's lifetime.**
 
 [`Registry`](../../../api/render/realtime/Registry.h) is a `std::vector` that grows. Its class
-comment and [RenderingPipeline.md](../../api/rendering/README.md#resource-handles) both state the
+comment and [RenderingPipeline.md](../../internals/realtime/Memory.md#resources-and-deferred-destruction) both state the
 invariant "slots are never reused, so a handle cannot come to refer to something other than
 what it was given for". The second half of that stays true; the first half has to go.
 
@@ -446,7 +446,7 @@ what to watch for.
 Update the state in the table above, and set ADR-0061's status when step 2 lands and ADR-0062's
 when step 6 does.
 
-- **Steps 1 to 3** change [RenderingPipeline.md](../../api/rendering/README.md#resource-handles): "slots
+- **Steps 1 to 3** change [RenderingPipeline.md](../../internals/realtime/Memory.md#resources-and-deferred-destruction): "slots
   are never reused" and "nothing frees an individual resource" both stop being true, and the
   section says what replaced them. The target bullet under the offscreen section changes from
   "a handle registered before a resize is stale" to the release-then-register rule.

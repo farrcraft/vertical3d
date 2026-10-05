@@ -76,8 +76,8 @@ BOOST_AUTO_TEST_CASE(texturetextbuffer_scales_to_the_markup_size_test) {
     BOOST_CHECK_CLOSE(advanceOf(font, line, kBase * 2.0f), base * 2.0f, 0.01f);
     BOOST_CHECK_CLOSE(advanceOf(font, line, kBase * 0.5f), base * 0.5f, 0.01f);
 
-    // and a markup with no size set uses the base size
-    BOOST_CHECK_CLOSE(advanceOf(font, line, kBase), base, 0.01f);
+    // and a markup with no size set, which is zero, uses the base size
+    BOOST_CHECK_CLOSE(advanceOf(font, line, 0.0f), base, 0.01f);
 }
 
 /**

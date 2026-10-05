@@ -28,8 +28,8 @@ class Frustum final {
      * plane is.
      **/
     enum class Depth {
-        ZeroToOne,      // Vulkan, and every camera in api/type
-        MinusOneToOne   // OpenGL, and moya's RenderContext
+        ZeroToOne,      // depth from 0 to 1, as Vulkan clips and every camera in api/type builds
+        MinusOneToOne   // depth from -1 to 1, as glm::perspective and glm::ortho build by default
     };
 
     enum HitClassification {
@@ -56,7 +56,9 @@ class Frustum final {
     int intersect(const AABBox& box) const;
 
     /**
-     * The planes, in the order left, right, bottom, top, near, far.
+     * The planes, in the order left, right, bottom, top, near, far. They are read straight
+     * out of the matrix and are not normalised, so signedDistance() on one tells the side a
+     * point is on but is not a distance.
      **/
     const std::array<Plane, 6>& planes() const noexcept;
 

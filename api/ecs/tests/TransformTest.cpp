@@ -98,3 +98,15 @@ BOOST_AUTO_TEST_CASE(transform_interpolated_test) {
 
     BOOST_TEST(same(quarter.position, glm::vec3(0.0f, 0.0f, 2.5f)));
 }
+
+/**
+ * A rotation that has drifted off unit length still only turns: the matrix is built from it
+ * normalised, so it neither scales nor shears.
+ **/
+BOOST_AUTO_TEST_CASE(transform_a_drifted_rotation_only_turns_test) {
+    v3d::ecs::component::Transform transform;
+    transform.rotation = v3d::ecs::component::aboutY(glm::half_pi<float>()) * 1.5f;
+
+    const glm::vec3 moved(transform.matrix() * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+    BOOST_TEST(same(moved, glm::vec3(0.0f, 0.0f, -1.0f)));
+}

@@ -35,6 +35,7 @@ target_link_libraries(Odyssey
 )
 
 v3d_add_app_data(Odyssey)
+v3d_add_shared_data(Odyssey)
 
 if(V3D_BUILD_TESTS)
 	add_subdirectory("tests")

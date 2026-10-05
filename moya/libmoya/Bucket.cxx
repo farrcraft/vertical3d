@@ -37,7 +37,7 @@ typedef std::array<glm::vec3, 4> Corners;
     centre of the lens and a unit along each axis of it, and every sample's corners are a sum
     of those, and the lens's four extremes bound them all.
 
-    A moving one is placed afresh for every sample, by the primitive's motion from its open
+    A moving one is placed afresh for every sample, by the primitive's motion from its reference
     end to the sample's time. Its bound is the union of where it is at a run of times across
     the shutter, grown by the furthest a corner moves between two of them, which covers a
     path that curves between them.
@@ -47,7 +47,7 @@ class Placement {
     Placement(const glm::mat4x4 & toRaster, float radius, float focus,
         const v3d::render::offline::MovingTransform & motion, const glm::vec2 & shutter) :
         toRaster_(toRaster), radius_(radius), focus_(focus), motion_(motion), shutter_(shutter),
-        fromOpen_(glm::inverse(motion.open())) {
+        fromReference_(glm::inverse(motion.reference())) {
     }
 
     /**
@@ -95,10 +95,10 @@ class Placement {
     }
 
     /**
-     * How the primitive has moved from its open end by a time, in eye space.
+     * How the primitive has moved from its reference end by a time, in eye space.
      */
     glm::mat4x4 delta(float time) const {
-        return motion_.at(time) * fromOpen_;
+        return motion_.at(time) * fromReference_;
     }
 
     /**
@@ -216,7 +216,7 @@ class Placement {
     float focus_;
     const v3d::render::offline::MovingTransform & motion_;
     glm::vec2 shutter_;
-    glm::mat4x4 fromOpen_;
+    glm::mat4x4 fromReference_;
     Corners eye_;
     Corners still_;
     Corners across_;
@@ -231,8 +231,13 @@ class Placement {
     float stride_ { 0.0f };
 };
 
+/**
+ * The most motions one grid caches: a million matrices, which is 64 MB.
+ **/
+const std::size_t MOTION_CACHE_LIMIT = std::size_t(1) << 20;
+
 /*
-    The motion from a moving primitive's open end to each sample's time, worked out once per
+    The motion from a moving primitive's reference end to each sample's time, worked out once per
     sample over a region of the frame. Every micropolygon of a grid whose swept bound reaches a
     sample tests it, so without this the same motion is worked out for each of them.
 */
@@ -344,7 +349,14 @@ void hide(MicroPolygonGrid & grid, const ReyesPrimitive & primitive, RenderConte
             }
         }
         const std::array<int, 4> region = pixels(min, max, samples);
-        motions = boost::make_shared<Motions>(placement, samples.perPixel(), region[0], region[1], region[2], region[3]);
+        const std::size_t entries = static_cast<std::size_t>(std::max(0, region[2] - region[0] + 1)) *
+            static_cast<std::size_t>(std::max(0, region[3] - region[1] + 1)) * samples.perPixel();
+        // a grid that sweeps much of the frame would need gigabytes of motions; past the cap each
+        // micropolygon works out its own instead, which is slower and needs no memory
+        if (entries <= MOTION_CACHE_LIMIT) {
+            motions = boost::make_shared<Motions>(placement, samples.perPixel(), region[0], region[1], region[2],
+                region[3]);
+        }
     }
 
     for (unsigned int i = 0; i + 1 < grid.size(); i++) {

@@ -151,7 +151,7 @@ state from before the last step and blend towards the current state by `Engine::
 
 | Function | What it does |
 |---|---|
-| `snapshot<T>(registry)` | Copies every entity's `T` into its `Previous<T>`, adding one if missing. |
+| `snapshot<T>(registry)` | Copies every entity's `T` into its `Previous<T>`, adding one if missing, and removes `Previous<T>` from every entity that no longer has a `T`. |
 | `settle<T>(registry, entity)` | Makes an entity's previous value equal to its current one. |
 | `interpolated<T>(registry, entity, alpha)` | Blends previous to current by `alpha`. An entity with no previous value yet gives its current value. |
 
@@ -160,8 +160,11 @@ The rules:
 - **Call `snapshot<T>` at the top of `simulate()`, before anything moves**, once for each type
   you draw between steps. Every entity with a `T` is snapshotted whether or not it is about to
   move, so a stopped entity is drawn where it stopped.
-- **Call `settle<T>` after a teleport.** An entity put somewhere rather than moved there is
-  otherwise drawn sweeping across the screen for one frame, and nothing reports it.
+- **Call `settle<T>` after a teleport, once the new value is written.** It copies the value the
+  entity has when it is called. An entity put somewhere rather than moved there is otherwise
+  drawn sweeping across the screen for one frame, and nothing reports it.
+- An entity that loses its `T` and is given one again is drawn at the new value from the next
+  snapshot on, not blended from the value it lost.
 - **`T` must be copyable and have an `interpolate(const T&, const T&, float)`** in its own
   namespace, found by argument-dependent lookup. A type without one fails to compile in
   `interpolated()`, rather than snapping silently. `grid::TileCoord` deliberately has none; a

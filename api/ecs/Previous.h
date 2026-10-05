@@ -30,24 +30,29 @@ concept Interpolable = std::copy_constructible<T> && requires(const T& from, con
 };
 
 /**
- * Copy every entity's T into its Previous<T>, giving one to an entity that has none.
+ * Copy every entity's T into its Previous<T>, giving one to an entity that has none, and take
+ * Previous<T> off every entity that no longer has a T.
  *
  * Called at the top of simulate(), before anything moves, once for each type a renderer
  * draws between steps. Every entity carrying T is snapshotted whether or not it is about to
- * move, so one that has stopped is drawn where it stopped.
+ * move, so one that has stopped is drawn where it stopped. An entity that loses its T and is
+ * given one again later is drawn at its new value, not blended from the one it lost.
  **/
 template <typename T>
 void snapshot(entt::registry& registry) {
     for (auto [entity, current] : registry.view<T>().each()) {
         registry.emplace_or_replace<Previous<T>>(entity, current);
     }
+    const auto orphaned = registry.view<Previous<T>>(entt::exclude<T>);
+    registry.remove<Previous<T>>(orphaned.begin(), orphaned.end());
 }
 
 /**
  * Make an entity's previous step its current one, so it is drawn with no motion.
  *
- * A teleport calls this, such as a ball put back on the centre spot. Otherwise the frame
- * after it draws the entity sweeping from where it was to where it was put.
+ * A teleport calls this, such as a ball put back on the centre spot, after it has written the
+ * new value: this copies the T the entity has now. Otherwise the frame after it draws the
+ * entity sweeping from where it was to where it was put.
  **/
 template <typename T>
 void settle(entt::registry& registry, entt::entity entity) {

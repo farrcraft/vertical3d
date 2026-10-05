@@ -99,3 +99,23 @@ BOOST_AUTO_TEST_CASE(moving_transform_requests_around_a_block_test) {
     moving.replace(glm::mat4x4(1.0f));
     BOOST_CHECK(!moving.moving());
 }
+
+/**
+ * A moving primitive is stored at the open end of its motion, unless that end has no inverse:
+ * a motion that grows from nothing is stored at its close end instead.
+ **/
+BOOST_AUTO_TEST_CASE(moving_transform_reference_test) {
+    v3d::render::offline::MovingTransform sliding;
+    sliding.begin({ 0.0f, 1.0f });
+    sliding.concat(translation(0.0f));
+    sliding.concat(translation(1.0f));
+    sliding.end();
+    BOOST_CHECK(sliding.reference() == sliding.open());
+
+    v3d::render::offline::MovingTransform growing;
+    growing.begin({ 0.0f, 1.0f });
+    growing.concat(glm::scale(glm::mat4x4(1.0f), glm::vec3(0.0f, 1.0f, 1.0f)));
+    growing.concat(glm::mat4x4(1.0f));
+    growing.end();
+    BOOST_CHECK(growing.reference() == growing.close());
+}

@@ -7,6 +7,8 @@
 #include <api/type/geometry/Plane.h>
 #include <moya/libmoya/Polygon.h>
 
+#include <cmath>
+
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
 
@@ -102,5 +104,35 @@ BOOST_AUTO_TEST_CASE(polygon_clip_frustum_test) {
         BOOST_TEST(point.x <= 1.0001f);
         BOOST_TEST(point.y >= -1.0001f);
         BOOST_TEST(point.y <= 1.0001f);
+    }
+}
+
+/**
+ * A vertex the clip makes where an edge crosses the plane has texture coordinates as far
+ * along the edge as it is.
+ **/
+BOOST_AUTO_TEST_CASE(polygon_clip_carries_texture_coordinates_test) {
+    v3d::moya::Polygon polygon;
+    const glm::vec3 corners[3] = { glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(1.0f, 0.0f, 1.0f),
+        glm::vec3(0.0f, 1.0f, 1.0f) };
+    const glm::vec2 st[3] = { glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 0.0f), glm::vec2(0.0f, 1.0f) };
+    for (unsigned int k = 0; k < 3; k++) {
+        v3d::moya::Vertex v = vertex(corners[k].x, corners[k].y, corners[k].z);
+        v.st(st[k]);
+        polygon.addVertex(v);
+    }
+
+    polygon.clip(zPlane());
+
+    BOOST_REQUIRE(polygon.vertexCount() > 0u);
+    for (size_t i = 0; i < polygon.vertexCount(); i++) {
+        const v3d::moya::Vertex & v = polygon.vertex(i);
+        BOOST_TEST_CONTEXT("vertex " << i) {
+            BOOST_REQUIRE(v.hasTexCoord());
+            // every vertex on the plane is half way along an edge from the first corner
+            if (std::fabs(v.point().z) < 1.0e-5f) {
+                BOOST_CHECK_CLOSE(v.st().x + v.st().y, 0.5f, 0.01f);
+            }
+        }
     }
 }

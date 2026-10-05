@@ -491,3 +491,85 @@ BOOST_AUTO_TEST_CASE(rayhider_inverts_the_projection_test) {
         BOOST_CHECK_CLOSE(projected.y, raster.y, 0.01f);
     }
 }
+
+/**
+ * A polygon with a colour at each vertex is shaded with those colours blended across it, by
+ * both hiders, and the two agree to within the reyes hider's micropolygon size.
+ **/
+BOOST_AUTO_TEST_CASE(rayhider_vertex_colours_test) {
+    const char* hiders[2] = { "hidden", "raytrace" };
+    glm::vec3 seen[2][2];
+    for (unsigned int i = 0; i < 2; i++) {
+        v3d::moya::RenderContext rc;
+        frame(rc);
+        rc.hider(hiders[i]);
+        rc.prepareWorld();
+        rc.surface("constant", v3d::render::offline::rib::ParameterList());
+        rc.color(glm::vec3(1.0f));
+        boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+        const glm::vec3 corners[3] = { glm::vec3(-1.0f, -1.0f, 1.0f), glm::vec3(1.0f, -1.0f, 1.0f),
+            glm::vec3(-1.0f, 1.0f, 1.0f) };
+        const glm::vec3 colours[3] = { glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f),
+            glm::vec3(0.0f, 0.0f, 1.0f) };
+        for (unsigned int k = 0; k < 3; k++) {
+            v3d::moya::Vertex vertex;
+            vertex.point(corners[k]);
+            vertex.color(colours[k]);
+            polygon->addVertex(vertex);
+        }
+        rc.addPolygon(polygon);
+        rc.render();
+
+        const v3d::render::offline::FrameBuffer & planes = *rc.framebuffer()->planes();
+        // near the red corner at the lower left, and near the green one at the lower right
+        const unsigned int near[2][2] = { { 1, 14 }, { 12, 14 } };
+        for (unsigned int k = 0; k < 2; k++) {
+            seen[i][k] = glm::vec3(planes.value(Planes::RED, near[k][0], near[k][1]),
+                planes.value(Planes::GREEN, near[k][0], near[k][1]), planes.value(Planes::BLUE, near[k][0], near[k][1]));
+        }
+    }
+    // the ray hider shades each pixel centre exactly. The one near the red corner is at
+    // x = y = -0.8125, which is 0.09375 of the way to each of the other two corners
+    BOOST_CHECK_CLOSE(seen[1][0].r, 0.8125f, 0.1f);
+    BOOST_CHECK_CLOSE(seen[1][0].g, 0.09375f, 0.1f);
+    BOOST_CHECK_CLOSE(seen[1][0].b, 0.09375f, 0.1f);
+    BOOST_CHECK_CLOSE(seen[1][1].g, 0.78125f, 0.1f);
+    // the reyes hider shades the corners of micropolygons and blends across each one, so it
+    // is close to the exact colour rather than equal to it
+    for (unsigned int k = 0; k < 2; k++) {
+        BOOST_CHECK_SMALL(glm::length(seen[1][k] - seen[0][k]), 0.1f);
+    }
+}
+
+/**
+ * A motion that starts from nothing, here a quad whose width grows from zero while the
+ * shutter is open, is drawn by both hiders. The quad is centred on the frame, so it covers
+ * the centre pixel at every time but the first.
+ **/
+BOOST_AUTO_TEST_CASE(rayhider_motion_from_nothing_test) {
+    const char* hiders[2] = { "hidden", "raytrace" };
+    for (const char* hider : hiders) {
+        BOOST_TEST_CONTEXT("hider " << hider) {
+            v3d::moya::Renderer renderer;
+            v3d::moya::RIBHandler handler(&renderer);
+            BOOST_REQUIRE(read(
+                std::string("Hider \"") + hider + "\"\n"
+                "Format 16 16 1\n"
+                "PixelSamples 4 4\n"
+                "PixelFilter \"box\" 1 1\n"
+                "Shutter 0 1\n"
+                "Projection \"orthographic\"\n"
+                "Clipping 0.001 100\n"
+                "WorldBegin\n"
+                "MotionBegin [0 1]\n"
+                "Scale 0 1 1\n"
+                "Scale 1 1 1\n"
+                "MotionEnd\n"
+                "Polygon \"P\" [-0.5 -0.5 2  0.5 -0.5 2  0.5 0.5 2  -0.5 0.5 2]\n"
+                "WorldEnd\n", &handler));
+
+            const v3d::render::offline::FrameBuffer & planes = *handler.context().framebuffer()->planes();
+            BOOST_CHECK_GT(planes.value(Planes::COVERAGE, 8, 8), 0.9f);
+        }
+    }
+}

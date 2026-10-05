@@ -77,9 +77,17 @@ BOOST_AUTO_TEST_CASE(engine_mapping_test) {
     BOOST_REQUIRE_EQUAL(recorder.events_.size(), 2u);
     BOOST_CHECK(recorder.events_[1].state() == v3d::event::State::Released);
 
+    // and whether the press was a held key repeating, so a toggle can ignore it
+    v3d::event::Source repeated = source(keyboard, "w", v3d::event::State::Pressed);
+    repeated.repeat(true);
+    v3d::event::publish(*dispatcher, repeated);
+    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 3u);
+    BOOST_CHECK(recorder.events_[2].repeat());
+    BOOST_CHECK(!recorder.events_[0].repeat());
+
     // an unbound key produces nothing
     v3d::event::publish(*dispatcher, source(keyboard, "q", v3d::event::State::Pressed));
-    BOOST_CHECK_EQUAL(recorder.events_.size(), 2u);
+    BOOST_CHECK_EQUAL(recorder.events_.size(), 3u);
 }
 
 BOOST_AUTO_TEST_CASE(engine_lets_the_dispatcher_go_test) {

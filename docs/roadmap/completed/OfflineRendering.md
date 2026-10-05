@@ -88,7 +88,7 @@ handed to each bucket it touches — and no more than four vertices per polygon.
 drives a `RenderContext` to an image written through `image::Factory` — `--outfile foo.png`
 works, and the format comes from the extension, so bmp, jpeg, png and tga are all reachable.
 `talyn --file scene.rib` reads that scene through the shared reader and
-[`talyn::RIBHandler`](../../../talyn/libtalyn/RIBHandler.cxx), which fans a polygon into triangles
+[`talyn::RIBHandler`](../../../moya/libmoya/RIBHandler.cxx), which fans a polygon into triangles
 through the current transformation and builds the camera at `WorldBegin`.
 
 **The camera is the one thing talyn cannot take from an arbitrary RIB file.** `CameraProfile`
@@ -98,7 +98,7 @@ cannot be expressed. Such a scene is refused with a message rather than rendered
 is the shape ADR-0024 (removed) anticipated and the
 first thing that would make it concrete.
 
-[`RenderContext::render`](../../../talyn/libtalyn/RenderContext.cxx) casts a primary ray through
+[`RenderContext::render`](../../../moya/libmoya/RenderContext.cxx) casts a primary ray through
 every pixel centre, takes the nearest triangle hit and writes that triangle's flat colour or
 the scene background. The 30-line comment above it gives the recursive algorithm the later
 phases fill in — shadow rays with attenuation, reflection and refraction at depth.

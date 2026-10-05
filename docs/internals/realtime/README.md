@@ -84,8 +84,8 @@ Background: [ADR-0003](../../adr/0003-rendering-one-engine-for-2d-and-3d.md),
   allocation and invalidates the handle earlier draw items hold.
 - **Write per-frame data after `Ring::waitFrame()`** and before the ring begins the frame.
   `StreamRing::claim()` and `Lit::scene()` do this; anything new keeping per-frame data must too.
-- **A submit must signal `Ring::fence()`.** Otherwise the next turn around the ring waits
-  forever.
+- **A submit must signal `Ring::submitting()`, called immediately before it.** Otherwise the
+  next turn around the ring waits forever.
 - **Drive frames through `Ring::begin()`.** Otherwise retired objects are never destroyed.
 - **The first pass to use an attachment in a frame must clear it.** Attachments are transitioned
   from `UNDEFINED` every frame.

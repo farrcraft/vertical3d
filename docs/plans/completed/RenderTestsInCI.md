@@ -37,7 +37,7 @@ device-agnostic or window-agnostic, and were built that way for other reasons:
 | [`device::Instance`](../../../api/render/realtime/vulkan/device/Instance.h#L32) | Takes a list of extensions and nothing else. Already knows nothing about a window, and already routes the validation layer through the logger |
 | [`frame::RenderTarget`](../../../api/render/realtime/vulkan/frame/RenderTarget.h#L56) | Device, extent and format. Needs no swapchain — [ADR-0031](../../adr/0031-rendering-passes-draw-into-offscreen-targets.md) |
 | [`frame::Recorder::record`](../../../api/render/realtime/vulkan/frame/Recorder.h#L57) | A static function over a `Target` struct of raw handles. No presenter, no chain |
-| [`Frame`](../../../api/render/realtime/Frame.cpp#L18) and `Pass` | `Frame` holds a `shared_ptr<Context>` and never dereferences it — it stores it and hands it back. The base [`Context`](../../../api/render/realtime/Context.h) is an empty class with a virtual destructor |
+| [`Frame`](../../../api/render/realtime/Frame.cpp#L18) and `Pass` | `Frame` holds a `shared_ptr<Context>` and never dereferences it — it stores it and hands it back. The base [`Context`](../../../api/event/Context.h) is an empty class with a virtual destructor |
 
 So the untested code is not structurally window-bound. Three specific couplings are, and they
 are what the first three steps cut.
@@ -236,7 +236,7 @@ Two shapes, and the plan recommends the second:
    changes. But the eleven-line constructor is duplicated, and the two will drift — the next
    member added to one is missing from the other, silently, because nothing links them.
 2. **Lift what needs only a device into a shared base, with `Context3D` adding the chain and the
-   presenter.** The base [`Context`](../../../api/render/realtime/Context.h) exists and is empty,
+   presenter.** The base [`Context`](../../../api/event/Context.h) exists and is empty,
    so there is a place to put it. `Frame` already holds the base and never dereferences it, so
    the seam is free on that side.
 

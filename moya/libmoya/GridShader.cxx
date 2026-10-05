@@ -151,7 +151,10 @@ void GridShader::shade(const Shading & shading, MicroPolygonGrid* grid) {
     tracer_.time(context_->sampling().shutter.x);
 
     Run & held = run(shading.surface, batch);
-    shading.surface->write(&held.machine, shading.placement);
+    if (!shading.surface->write(&held.machine, shading.placement)) {
+        shading_ = nullptr;
+        return;
+    }
 
     // the grid parameters dicing uses: vertex (i, j) is at i and j over the span, and the
     // spacing between two of them is the step a derivative divides by

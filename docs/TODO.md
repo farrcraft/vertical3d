@@ -91,6 +91,23 @@ Each of these waits until a scene needs it.
   instead of a ray's hits.
 - Due when a scene needs glass or smoke drawn by the reyes hider.
 
+[] **The reyes hider adds every polygon to the traced scene.**
+
+- moya fans each polygon into the traced scene as it arrives, before culling, and shades its
+  lights once for it. This is what lets an off-screen caster cast a shadow.
+- A scene that never calls `trace()` or `transmission()` pays the memory and the time anyway.
+- The fix adds geometry only when a surface or light shader in the scene traces.
+- Due when a large reyes-only scene's memory or load time shows it.
+
+[] **`solar` with an angle lights along its axis only.**
+
+- A non-zero angle lets L be any direction inside a cone around the axis. RenderMan chooses the
+  one nearest the surface's illuminance cone.
+- A light shader is run with the surface's position only, so the machine cannot choose. It
+  reports the angle once and uses the axis.
+- The fix passes the surface's illuminance axis and angle to the light along with its position.
+- Due when a scene needs a sky or another wide distant light.
+
 [] **`offline::trace::Scene::nearest` tests every primitive.**
 
 - moya traces shadow rays, so every shadow ray from every grid point pays for the whole scene.
@@ -181,9 +198,20 @@ matches the asset manager's path handling only because the manager passes cgltf 
 
 - `shadow::fit` fits the shadow map to its casters once. Anything that moves out of that sphere
   is not covered.
+- The fit covers each caster's position and the margin the caller passes, not the caster's
+  extent or scale, and it reads the stepped position rather than the one drawn between steps. A
+  caller with large or fast casters has to pass a margin big enough for both.
 - A world larger than one look-dev scene needs the fit to follow the camera, and beyond that,
   cascaded shadow maps.
 - Background: [LitScene, step 8](plans/completed/LitScene.md#step-8--a-shadow-map).
+
+[] **The colour grade's table is sampled by linear colour.**
+
+- `Grade` stores a 16-entry cube as UNORM and indexes it by the scene's linear colour. A strip
+  authored for display, as most are, grades wrongly, and 16 entries over linear light leave
+  little resolution in the shadows.
+- The fix encodes the lookup coordinate to sRGB before sampling, or stores a larger table.
+- Due when a game uses a grade authored outside the tree.
 
 [] **The grade tests allow a one-step tolerance that may not be needed.**
 
@@ -216,6 +244,18 @@ matches the asset manager's path handling only because the manager passes cgltf 
 - This would be the first thread in `api/`, which needs an ADR of its own.
 - Due when a game streams regions, or any load is long enough for a player to see.
 - Background: [ShellAndShipping, step 12](plans/completed/ShellAndShipping.md#step-12--asynchronous-loading-held).
+
+[] **A path outside the ANSI code page cannot be opened.**
+
+- `engine::appPath()` builds a narrow string with `boost::filesystem::path::string()`, which
+  converts through the ANSI code page. A character that page cannot hold becomes `?`.
+- spdlog opens its file with a narrow name, because the vcpkg port is built without
+  `SPDLOG_WCHAR_FILENAMES`. `asset::Manager` takes the narrow path as its root.
+- An app under such a directory logs to stderr instead of `v3d.log`, and finds none of its
+  assets.
+- The fix carries paths as `boost::filesystem::path` or UTF-8 through `appPath()`, the logger
+  and the asset manager, or gives every app a manifest that sets the UTF-8 code page.
+- Due when a player reports it, or before a release.
 
 ## Frames
 
@@ -264,15 +304,10 @@ none.
 
 ## Documentation
 
-[] **The reasons for moving to Vulkan and to SDL3 are not recorded.**
-[ADR-0001](adr/0001-rendering-replace-opengl-with-vulkan.md) records the decision to move to
-Vulkan, but not the reasoning, and nothing records why SDL3 replaced SDL2.
+[] **The reasons for moving to SDL3 are not recorded.** No ADR records why SDL3 replaced
+SDL2.
 
 ## Games
-
-[] **pong's `data/` is not copied into the build.** `pong/CMakeLists.txt` calls
-`v3d_add_shared_data(pong)` but not `v3d_add_app_data(pong)`, so a fresh build has no
-`window.json` beside the executable. Every other game calls both.
 
 [] **Three bindings name commands nothing handles:** F1 → `pong::toggleFS`,
 F1 → `tetris::toggleFS` and Space → `odyssey::moveUp`.

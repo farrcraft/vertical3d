@@ -85,7 +85,7 @@ void Headless::submit(VkCommandBuffer commands) {
     submit.commandBufferInfoCount = 1;
     submit.pCommandBufferInfos = &buffer;
 
-    result = vkQueueSubmit2(device->graphicsQueue(), 1, &submit, context->ring()->fence());
+    result = vkQueueSubmit2(device->graphicsQueue(), 1, &submit, context->ring()->submitting());
     if (result != VK_SUCCESS) {
         throw std::runtime_error("Unable to submit the test's command buffer");
     }

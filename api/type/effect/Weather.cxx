@@ -34,8 +34,11 @@ float wrapping(float value, float low, float high) {
 
 void fall(const Emitter& emitter, Weather* weather, State* state, const glm::vec3& minimum,
     const glm::vec3& maximum, float seconds) {
-    const float easing = weather->ease * seconds;
-    weather->intensity += std::clamp(weather->target - weather->intensity, -easing, easing);
+    // an ease below nothing moves nothing, and an intensity is between 0 and 1 whatever the
+    // target asks for, which also keeps the density that falls from going below nothing
+    const float easing = std::max(0.0f, weather->ease * seconds);
+    const float target = std::clamp(weather->target, 0.0f, 1.0f);
+    weather->intensity += std::clamp(target - weather->intensity, -easing, easing);
 
     travel(emitter, state, seconds, weather->wind);
     std::vector<Particle>& particles = state->particles;

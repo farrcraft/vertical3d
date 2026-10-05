@@ -46,6 +46,15 @@ class Event {
     State state() const;
 
     /**
+     * Whether a press is the platform repeating a key that is held down, rather than a new
+     * press. A binding carries it from the key to the command. A command that acts while its
+     * key is held, such as moving a piece, takes repeats; one that toggles something, such as
+     * a menu, ignores them, or holding the key would flick it on and off.
+     **/
+    void repeat(bool repeated) noexcept;
+    bool repeat() const noexcept;
+
+    /**
      * The event's parameter. A binding may configure one, and a menu item carries its
      * value here; either way it reaches the handler as the event's data.
      **/
@@ -64,6 +73,7 @@ class Event {
     EventData data_;
     Type type_;
     State state_;
+    bool repeat_ = false;
 };
 
 };  // namespace v3d::event

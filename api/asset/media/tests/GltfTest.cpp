@@ -22,6 +22,7 @@
 
 #include <boost/make_shared.hpp>
 #include <boost/test/unit_test.hpp>
+#include <glm/geometric.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/mat4x4.hpp>
@@ -558,4 +559,45 @@ BOOST_AUTO_TEST_CASE(gltf_a_blender_clip_bends_the_rig_test) {
     BOOST_CHECK_SMALL(top.x, 1e-3f);
     BOOST_CHECK_SMALL(top.y - 1.0f, 1e-3f);
     BOOST_CHECK_SMALL(top.z - 1.0f, 1e-3f);
+}
+
+/**
+ * A triangle strip and a triangle fan become triangle lists, wound as glTF winds them, and a
+ * primitive of lines or points is left out. Every triangle of the fixture faces +z, so a strip
+ * that did not swap every other triangle shows up as one facing the other way.
+ * api/asset/tests/data/make_modes_fixture.py generates it.
+ **/
+BOOST_AUTO_TEST_CASE(gltf_strips_and_fans_become_lists_test) {
+    boost::shared_ptr<v3d::type::Model> model = load("primitive_modes.gltf");
+    BOOST_REQUIRE(model);
+
+    BOOST_REQUIRE_EQUAL(model->indices().size(), 12u);
+    BOOST_CHECK_EQUAL(model->vertices().size(), 8u);
+    for (std::size_t first = 0; first < model->indices().size(); first += 3) {
+        const glm::vec3 a = model->vertices()[model->indices()[first]].position;
+        const glm::vec3 b = model->vertices()[model->indices()[first + 1]].position;
+        const glm::vec3 c = model->vertices()[model->indices()[first + 2]].position;
+        BOOST_TEST_CONTEXT("triangle " << first / 3) {
+            BOOST_CHECK_GT(glm::cross(b - a, c - a).z, 0.0f);
+        }
+    }
+
+    // a uri is percent-encoded, and the name handed over is the file's own
+    BOOST_CHECK_EQUAL(model->materials()[0].baseColourTexture, "my texture.png");
+}
+
+/**
+ * An image inlined as a data uri needs no mimeType, because the uri states its type.
+ **/
+BOOST_AUTO_TEST_CASE(gltf_a_data_uri_states_its_own_type_test) {
+    boost::shared_ptr<v3d::asset::media::kind::Model> asset = loadAsset("data_uri_texture.gltf");
+    BOOST_REQUIRE(asset);
+    boost::shared_ptr<v3d::image::Image> embedded = asset->baseColourImage(0);
+    BOOST_REQUIRE(embedded);
+
+    v3d::image::Factory factory(logger());
+    boost::shared_ptr<v3d::image::Image> onDisk = factory.read("data/pixel.png");
+    BOOST_REQUIRE(onDisk);
+    const v3d::image::Difference difference = v3d::image::compare(*embedded, *onDisk, 0);
+    BOOST_CHECK_MESSAGE(difference.match, difference.description());
 }

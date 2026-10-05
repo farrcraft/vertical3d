@@ -57,6 +57,15 @@ class Triangle final : public Primitive {
     /** SL's s and t at a hit, weighted as shadingNormal() weighs the normals. **/
     glm::vec2 st(float u, float v) const;
 
+    /**
+     * A colour at each corner, from a scene's varying "Cs". A triangle given none is the one
+     * colour it was built with.
+     **/
+    void colours(const glm::vec3 & a, const glm::vec3 & b, const glm::vec3 & c);
+    /** SL's Cs at a hit, weighted as shadingNormal() weighs the normals. **/
+    glm::vec3 colour(float u, float v) const;
+    using Primitive::colour;
+
     bool intersect(const v3d::type::geometry::Ray & ray, float from, const Pose & pose,
         Intersection* found) const override;
     void describe(const Intersection & found, Hit* hit) const override;
@@ -72,6 +81,10 @@ class Triangle final : public Primitive {
     glm::vec2 sta_ = glm::vec2(0.0f, 0.0f);
     glm::vec2 stb_ = glm::vec2(1.0f, 0.0f);
     glm::vec2 stc_ = glm::vec2(0.0f, 1.0f);
+    bool coloured_ = false;
+    glm::vec3 ca_ = glm::vec3(0.0f);
+    glm::vec3 cb_ = glm::vec3(0.0f);
+    glm::vec3 cc_ = glm::vec3(0.0f);
 };
 
 };  // namespace v3d::render::offline::trace

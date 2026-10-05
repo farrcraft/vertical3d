@@ -98,9 +98,10 @@ bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
 
     // each row is copied on its own, because the padding is per row and the source
     // image has none of it. A single index over both buffers would run off the end of
-    // each.
+    // each. The height is written positive, which means the rows are stored bottom up, so
+    // the image's top row goes last
     for (uint64_t row = 0; row < rows; ++row) {
-        unsigned char* dest = data + row * pad;
+        unsigned char* dest = data + (rows - 1 - row) * pad;
         const unsigned char* src = temp + row * rowBytes;
         if (grey) {
             // an index is one byte and has no channel order to correct

@@ -368,4 +368,50 @@ BOOST_AUTO_TEST_CASE(a_disabled_item_sends_nothing) {
     fixture.bar->press(Fixture::centre(*(*panel)[0]));
     BOOST_CHECK(fixture.sent.empty());
 }
+
+/**
+ * A submenu inherits from the item that opens it. Disabling the item disables what the
+ * submenu holds, and keyboard navigation does not open it.
+ **/
+BOOST_AUTO_TEST_CASE(a_disabled_submenu_item_disables_its_submenu) {
+    Fixture fixture;
+    boost::shared_ptr<v3d::ui::component::Menu> shading = fixture.menu();
+    shading->addItem(fixture.item(v3d::ui::component::menu::ItemType::Action, "Flat", "flat"));
+    boost::shared_ptr<v3d::ui::component::MenuItem> deeper =
+        fixture.item(v3d::ui::component::menu::ItemType::Submenu, "Shading", "");
+    boost::shared_ptr<v3d::ui::component::Menu> view = fixture.menu();
+    deeper->menu(view);
+    deeper->submenu(shading);
+    view->addItem(deeper);
+    view->level(view);
+    view->active(0);
+
+    BOOST_TEST(v3d::ui::usable(*(*shading)[0]));
+    deeper->enabled(false);
+    BOOST_TEST(!v3d::ui::usable(*(*shading)[0]));
+    BOOST_TEST(!view->down());
+    BOOST_TEST(view->level() == view);
+
+    deeper->enabled(true);
+    BOOST_TEST(view->down());
+    BOOST_TEST(view->level() == shading);
+}
+
+/**
+ * An item an app still holds after its menu is gone names no parent, so asking whether it is
+ * usable does not walk into the menu that was destroyed.
+ **/
+BOOST_AUTO_TEST_CASE(an_item_outlives_its_menu) {
+    Fixture fixture;
+    boost::shared_ptr<v3d::ui::component::MenuItem> kept =
+        fixture.item(v3d::ui::component::menu::ItemType::Action, "Open", "open");
+    {
+        boost::shared_ptr<v3d::ui::component::Menu> menu = fixture.menu();
+        menu->addItem(kept);
+        BOOST_TEST(kept->parent() == menu.get());
+    }
+    BOOST_TEST(kept->parent() == nullptr);
+    BOOST_TEST(v3d::ui::usable(*kept));
+}
+
 BOOST_AUTO_TEST_SUITE_END()

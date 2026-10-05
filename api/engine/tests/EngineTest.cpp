@@ -4,9 +4,11 @@
  **/
 
 #include <api/event/Source.h>
+#include <api/engine/Application.h>
 #include <api/engine/Engine.h>
 #include <api/engine/Feature.h>
 
+#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -438,3 +440,65 @@ template <typename T>
 concept Quits = requires(T& engine) { engine.quit(); };
 static_assert(!ShutsDown<TestEngine>);
 static_assert(Quits<TestEngine>);
+
+namespace {
+
+/**
+ * How often an engine's hooks ran, kept outside the engine so a test can read them after
+ * run() has destroyed it.
+ **/
+struct Lifecycle final {
+    int started = 0;
+    int released = 0;
+    bool starts = true;
+};
+
+/**
+ * An engine with no features that counts its hooks. One that starts asks to quit at once, so
+ * run() returns without a window or a frame.
+ **/
+class LifecycleEngine final : public v3d::engine::Engine {
+ public:
+    LifecycleEngine(const std::string& path, Lifecycle* counts) :
+        Engine(path),
+        counts_(counts) {
+    }
+
+ protected:
+    v3d::engine::Features features() const override {
+        return v3d::engine::Features();
+    }
+
+    bool start() override {
+        counts_->started++;
+        quit();
+        return counts_->starts;
+    }
+
+    bool release() override {
+        counts_->released++;
+        return true;
+    }
+
+ private:
+    Lifecycle* counts_;
+};
+
+};  // namespace
+
+/**
+ * run() starts an app once and releases it once, and the release happens whether start()
+ * succeeded or not, since start() may have built something before it failed.
+ **/
+BOOST_AUTO_TEST_CASE(engine_releases_once_whether_or_not_it_started_test) {
+    Lifecycle started;
+    BOOST_CHECK_EQUAL(v3d::engine::run<LifecycleEngine>("engine_test.exe", "lifecycle", &started), EXIT_SUCCESS);
+    BOOST_CHECK_EQUAL(started.started, 1);
+    BOOST_CHECK_EQUAL(started.released, 1);
+
+    Lifecycle failed;
+    failed.starts = false;
+    BOOST_CHECK_EQUAL(v3d::engine::run<LifecycleEngine>("engine_test.exe", "lifecycle", &failed), EXIT_FAILURE);
+    BOOST_CHECK_EQUAL(failed.started, 1);
+    BOOST_CHECK_EQUAL(failed.released, 1);
+}

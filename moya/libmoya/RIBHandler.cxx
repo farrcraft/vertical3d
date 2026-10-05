@@ -113,6 +113,10 @@ void RIBHandler::imager(const std::string & name, const ParameterList & paramete
 }
 
 void RIBHandler::format(unsigned int width, unsigned int height, float pixelAspect) {
+    if (width_ > 0 && height_ > 0) {
+        width = width_;
+        height = height_;
+    }
     context().imageResolution(static_cast<int>(width), static_cast<int>(height), pixelAspect);
 }
 
@@ -158,6 +162,12 @@ void RIBHandler::pixelVariance(float variation) {
 void RIBHandler::output(const std::string & name) {
     output_ = name;
     context().display(name, "file", "rgb");
+}
+
+void RIBHandler::resolution(unsigned int width, unsigned int height) {
+    width_ = width;
+    height_ = height;
+    context().imageResolution(static_cast<int>(width), static_cast<int>(height), 1.0f);
 }
 
 void RIBHandler::display(const std::string & name, const std::string & type, const std::string & mode,

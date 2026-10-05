@@ -23,6 +23,8 @@ namespace v3d::moya {
 
 namespace {
 
+Vertex crossing(const Vertex & a, const Vertex & b, const glm::vec3 & hit);
+
 /**
  * A piece is worth handing back only if it bounds something and is strictly smaller
  * than what it came from on some axis. A split that does not shrink its input would be
@@ -101,7 +103,6 @@ void Polygon::clip(const v3d::type::geometry::Plane & plane) {
         return;
     }
     std::vector<Vertex> clipped;
-    Vertex i;
     glm::vec3 hit;
     Vertex s = vertices_[nverts - 1];  // start with last vertex
     for (size_t j = 0; j < nverts; j++) {
@@ -118,14 +119,12 @@ void Polygon::clip(const v3d::type::geometry::Plane & plane) {
         if (pInside) {  // cases 1 & 4
             if (!sInside) {  // case 4
                 plane.intersectEdge(s.point(), p.point(), &hit);
-                i.point(hit);
-                clipped.push_back(i);
+                clipped.push_back(crossing(s, p, hit));
             }
             clipped.push_back(p);
         } else if (sInside) {  // case 2
             plane.intersectEdge(s.point(), p.point(), &hit);
-            i.point(hit);
-            clipped.push_back(i);
+            clipped.push_back(crossing(s, p, hit));
         }
         // case 3: the entire edge is clipped
         s = p;

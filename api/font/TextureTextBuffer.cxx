@@ -44,9 +44,9 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
     const bool lines = black != nullptr;
 
     // every metric below is in pixels of the size the face was rasterized at, so another
-    // size scales them by the ratio. A markup whose size is the font's own, as it is when
-    // the caller sets no size, leaves this at one
-    const float scale = markup.font_->size() > 0.0f ? markup.size_ / markup.font_->size() : 1.0f;
+    // size scales them by the ratio. A markup that sets no size, or the font's own, leaves
+    // this at one
+    const float scale = markup.size_ > 0.0f && markup.font_->size() > 0.0f ? markup.size_ / markup.font_->size() : 1.0f;
     const float advance = glyph->advance_.x * scale;
     const float height = markup.font_->height() * scale;
     const float descender = markup.font_->descender() * scale;

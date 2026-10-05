@@ -57,6 +57,18 @@ State Event::state() const {
     return state_;
 }
 
+/**
+ **/
+void Event::repeat(bool repeated) noexcept {
+    repeat_ = repeated;
+}
+
+/**
+ **/
+bool Event::repeat() const noexcept {
+    return repeat_;
+}
+
 std::string Event::str() const {
     if (!context_) {
         return name_;

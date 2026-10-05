@@ -6,9 +6,11 @@
 #include "MovingTransform.h"
 
 #include <algorithm>
+#include <cmath>
 #include <vector>
 
 #include <glm/geometric.hpp>
+#include <glm/matrix.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/mat3x3.hpp>
@@ -63,6 +65,15 @@ const glm::mat4x4 & MovingTransform::open() const {
 }
 
 const glm::mat4x4 & MovingTransform::close() const {
+    return close_;
+}
+
+const glm::mat4x4 & MovingTransform::reference() const {
+    const float determinant = glm::determinant(glm::mat3(open_));
+    // written so that a NaN determinant also falls through to the close end
+    if (std::fabs(determinant) > 1.0e-12f) {
+        return open_;
+    }
     return close_;
 }
 

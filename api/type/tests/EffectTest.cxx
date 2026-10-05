@@ -236,4 +236,14 @@ BOOST_AUTO_TEST_CASE(effect_a_sphere_and_drag_test) {
     BOOST_CHECK_CLOSE(glm::length(state.particles[0].velocity), 4.0f * (1.0f - sixtieth), 1e-3f);
 }
 
+/**
+ * A rate below nothing earns nothing, rather than a count that wraps round to billions when it
+ * is made unsigned.
+ **/
+BOOST_AUTO_TEST_CASE(effect_a_negative_rate_owes_nothing_test) {
+    State state(1);
+    BOOST_CHECK_EQUAL(owing(&state, -5.0f, 1.0f), 0u);
+    BOOST_CHECK_EQUAL(owing(&state, 5.0f, 0.2f), 1u);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

@@ -125,13 +125,15 @@ class Machine final {
     };
 
     /**
-     * An illuminance loop in progress: which light the body runs for next, the lanes the
-     * loop opened with, and the registers the construct named.
+     * An illuminance loop in progress: which light the body runs for next, the loop entry that
+     * holds the lanes still going round it, and the registers the construct named. The lanes
+     * live in a loop entry so that a break, a continue and a return clear them as they clear
+     * any other loop's.
      **/
     class Illumination final {
      public:
         unsigned int light = 0;
-        std::vector<char> base;
+        std::size_t loop = 0;
         int direction = -1;
         int colour = -1;
         std::vector<int> arguments;

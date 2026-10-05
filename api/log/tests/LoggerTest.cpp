@@ -8,6 +8,8 @@
 #include <spdlog/spdlog.h>
 
 #include <cstdio>
+#include <fstream>
+#include <iterator>
 #include <memory>
 #include <string>
 
@@ -62,12 +64,39 @@ BOOST_AUTO_TEST_CASE(logger_open_moves_the_log_test) {
     const std::string path = "logger_open_test.log";
     std::remove(path.c_str());
 
-    v3d::log::Logger::open(path);
+    BOOST_TEST(v3d::log::Logger::open(path));
     v3d::log::Logger logger;
-    logger.get()->info("opened");
+    logger.get()->info("written to the moved log");
     logger.get()->flush();
-    BOOST_TEST(boost::filesystem::exists(path));
 
-    // back to the default for whatever runs after
+    // the file exists as soon as it is opened, so it is the line in it that shows the log moved
+    std::string contents;
+    {
+        std::ifstream file(path);
+        contents.assign(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+    }
+    BOOST_TEST(contents.find("written to the moved log") != std::string::npos);
+
+    // back to the default for whatever runs after, which also closes the test's file
     v3d::log::Logger::open("v3d.log");
+    std::remove(path.c_str());
+}
+
+/**
+ * A path that cannot be opened does not throw. The log goes to stderr instead, so an app in a
+ * directory it cannot write to still starts.
+ **/
+BOOST_AUTO_TEST_CASE(logger_open_falls_back_when_the_file_cannot_be_opened_test) {
+    // a directory is not a file the log can be opened as
+    const std::string path = "logger_open_test_directory";
+    boost::filesystem::create_directory(path);
+
+    bool opened = true;
+    BOOST_CHECK_NO_THROW(opened = v3d::log::Logger::open(path));
+    BOOST_TEST(!opened);
+    v3d::log::Logger logger;
+    BOOST_CHECK_NO_THROW(logger.get()->info("still logging"));
+
+    v3d::log::Logger::open("v3d.log");
+    boost::filesystem::remove(path);
 }

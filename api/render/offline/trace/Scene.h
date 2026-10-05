@@ -54,7 +54,7 @@ class Scene final {
     glm::vec3 eye() const;
 
     /**
-     * A primitive placed by the open end of a transformation that may move. One that does
+     * A primitive placed by the reference end of a transformation that may move. One that does
      * not is added as it stands.
      **/
     void add(const boost::shared_ptr<Primitive> & primitive, const v3d::render::offline::MovingTransform & placed);

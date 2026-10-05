@@ -883,7 +883,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
 
     for (std::size_t index = 0; index < bar->count(); index++) {
         const boost::shared_ptr<component::Button> button = bar->button(index);
-        if (button) {
+        if (button && button->visible()) {
             draw(canvas, button);
         }
     }

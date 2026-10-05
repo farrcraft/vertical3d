@@ -404,3 +404,18 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_mirror_traces_test) {
     BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::GREEN, 32, 24), 1.0e-6f);
     BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::BLUE, 32, 24), 1.0e-6f);
 }
+
+/**
+ * A size given to the handler replaces the size a scene's Format names, as a command line
+ * does, while the scene still renders at that size.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_resolution_override_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    handler.resolution(8, 4);
+
+    BOOST_REQUIRE(read("Format 64 48 1\nWorldBegin\nWorldEnd\n", &handler));
+
+    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->width(), 8u);
+    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->height(), 4u);
+}

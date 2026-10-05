@@ -91,7 +91,8 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_orientation_test, OutputDirectory) {
     boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::Factory factory(logger);
 
-    const char* lossless[] = { "data_out/test_orientation.tga", "data_out/test_orientation.png" };
+    const char* lossless[] = { "data_out/test_orientation.tga", "data_out/test_orientation.png",
+        "data_out/test_orientation.bmp" };
     for (const char* filename : lossless) {
         BOOST_TEST_CONTEXT(filename) {
             BOOST_REQUIRE_EQUAL(factory.write(filename, image), true);

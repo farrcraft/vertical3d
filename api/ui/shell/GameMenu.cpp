@@ -34,7 +34,10 @@ void GameMenu::command(const v3d::event::Event& event) {
         return;
     }
     if (event.name() == toggleCommand) {
-        toggle();
+        // a held key would otherwise open and close the menu at the repeat rate
+        if (!event.repeat()) {
+            toggle();
+        }
         return;
     }
     navigate(event.name());

@@ -49,8 +49,10 @@ engine_.quads()->submit(screen_->canvas(), pass.get());
 - `theme(theme)` dresses the component renderer and the immediate layer from a theme, and
   keeps it for later rebuilds.
 
-Do not keep a reference to `components()`, `immediate()` or `text()` across frames.
-`scale()` replaces them, and an old reference points at an object that is no longer drawn.
+Do not keep a reference to `components()` across frames. `scale()` replaces it, and an old
+reference points at an object that is no longer drawn. `immediate()` and `text()` are the same
+objects across a rescale, given the new size, so the immediate layer keeps where its windows
+were dragged, what is folded and how far each list is scrolled.
 
 An app that needs a piece `Screen` does not build writes it beside the screen. An app that
 does not use `Engine3D` builds `TextRenderer` itself with its own `Upload`.

@@ -30,6 +30,7 @@ target_link_libraries(pong PRIVATE
 	v3dlib_ui
 )
 
+v3d_add_app_data(pong)
 v3d_add_shared_data(pong)
 
 # a console subsystem executable is given a console of its own alongside the app's window.

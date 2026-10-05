@@ -14,7 +14,7 @@ reasoning the plan was drafted from, as it stood then.
 ## What exists
 
 * **The question is written down in two places.** [ECSDesign.md](../../api/ECS.md) was written
-  around it, and [RenderingPipeline.md](../../api/rendering/README.md#how-this-meets-the-ecs)
+  around it, and [RenderingPipeline.md](../../api/rendering/Entities.md)
   states it: `Scene::collect()` returning a frame fits the pass model, a `Renderable` marker says
   nothing about how to draw, and components named after the old operation classes are the
   design [ADR-0004](../../adr/0004-rendering-submit-draw-items-as-data.md) moved away from. The likely answer it

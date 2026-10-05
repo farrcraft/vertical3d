@@ -312,7 +312,7 @@ Update the state in the table above.
 - **Step 3** adds `api/ecs` to `api/render`'s dependencies in [Build.md](../../contributing/Build.md) if that
   document lists them.
 - **Step 4** sets ADR-0063 to accepted. It replaces RenderingPipeline.md's
-  [still-open section](../../api/rendering/README.md#how-this-meets-the-ecs) with what was
+  [still-open section](../../api/rendering/Entities.md) with what was
   decided, and ECSDesign.md's opening paragraph stops calling the question open. It also writes
   cozy's handoff note, to be read when cozy takes the feature up: `Transform`, `Sprite` and
   `sprites()`, the axis to pass, and `snapshot<Transform>` to interpolate.

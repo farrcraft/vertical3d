@@ -152,6 +152,13 @@ class Component {
     void adopt(Component& item) noexcept;
 
     /**
+     * Let go of an item adopt() took, so it no longer names this as its parent. A holder calls
+     * this for each item from its own destructor: an app may still hold an item after its
+     * holder is gone, and usable() on it must not walk into the holder.
+     **/
+    void disown(Component& item) noexcept;
+
+    /**
      * Get whether the component takes the cursor.
      *
      * False by default: a hud is mostly labels and bars drawn over a scene that has to

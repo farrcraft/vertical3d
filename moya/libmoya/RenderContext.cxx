@@ -407,7 +407,7 @@ void RenderContext::attributeEnd() {
 }
 
 void RenderContext::saveCoordinateSystem(const std::string& name) {
-    coordinateSystems_[name] = transform_.open();
+    coordinateSystems_[name] = transform_.reference();
 }
 
 void RenderContext::setCoordinateSystem(const std::string& name) {
@@ -509,7 +509,7 @@ void RenderContext::surface(const std::string & name,
     surface_ = shaders_->instance(name, v3d::render::offline::sl::ShaderType::SURFACE, parameters);
     // RI says a shader's own space is the transform in force when the scene instanced it,
     // and a "point \"shader\" (0, 0, 1)" in it is stated against that space
-    surfacePlacement_ = coordinateSystems_["camera"] * transform_.open();
+    surfacePlacement_ = coordinateSystems_["camera"] * transform_.reference();
 }
 
 void RenderContext::lightSource(const std::string & name, const std::string & handle,
@@ -517,7 +517,7 @@ void RenderContext::lightSource(const std::string & name, const std::string & ha
     LightSource light;
     light.handle = handle;
     light.shader = shaders_->instance(name, v3d::render::offline::sl::ShaderType::LIGHT, parameters);
-    light.placement = coordinateSystems_["camera"] * transform_.open();
+    light.placement = coordinateSystems_["camera"] * transform_.reference();
     if (!light.shader) {
         // the library has already logged why. A light that will not compile is left out
         // rather than replaced by a light of some other kind
@@ -562,7 +562,7 @@ Shading RenderContext::shading() {
         state.surface = shaders_->instance("constant",
             v3d::render::offline::sl::ShaderType::SURFACE,
             v3d::render::offline::rib::ParameterList());
-        state.placement = coordinateSystems_["camera"] * transform_.open();
+        state.placement = coordinateSystems_["camera"] * transform_.reference();
     }
     for (const LightSource & light : lights_) {
         if (std::find(lit_.begin(), lit_.end(), light.handle) == lit_.end()) {
@@ -618,7 +618,7 @@ void RenderContext::trace(const Polygon & poly, const Shading & state) {
     if (poly.vertexCount() < 3) {
         return;
     }
-    const glm::mat4x4 & toWorld = transform_.open();
+    const glm::mat4x4 & toWorld = transform_.reference();
     const glm::mat3 toWorldNormal = glm::transpose(glm::inverse(glm::mat3(toWorld)));
 
     // a fan, since RI says a polygon is planar and convex
@@ -638,6 +638,9 @@ void RenderContext::trace(const Polygon & poly, const Shading & state) {
             v3d::render::offline::trace::Triangle(points[0], points[1], points[2], color_);
         if (corners[0].hasTexCoord() && corners[1].hasTexCoord() && corners[2].hasTexCoord()) {
             triangle.st(corners[0].st(), corners[1].st(), corners[2].st());
+        }
+        if (corners[0].hasColor() && corners[1].hasColor() && corners[2].hasColor()) {
+            triangle.colours(corners[0].color(), corners[1].color(), corners[2].color());
         }
         shade(&triangle, state);
         traced_.add(triangle, transform_);
@@ -659,8 +662,12 @@ bool RenderContext::addSphere(float radius, float zmin, float zmax, float thetam
     if (!hider_->traces()) {
         return false;
     }
-    // placed by the open end of its motion, as a polygon's points are
-    v3d::render::offline::trace::Sphere sphere(radius, zmin, zmax, thetamax, transform_.open(), color_);
+    if (!(radius > 0.0f)) {
+        logger_->get()->warn("a sphere of radius {} is not drawn", radius);
+        return true;
+    }
+    // placed by the reference end of its motion, as a polygon's points are
+    v3d::render::offline::trace::Sphere sphere(radius, zmin, zmax, thetamax, transform_.reference(), color_);
     shade(&sphere, shading());
     traced_.add(sphere, transform_);
     return true;
@@ -685,7 +692,7 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     if (!poly->placed()) {
         const Shading state = shading();
         trace(*poly, state);
-        poly->place(coordinateSystems_["camera"] * transform_.open(), color_, poly->geometricNormal(),
+        poly->place(coordinateSystems_["camera"] * transform_.reference(), color_, poly->geometricNormal(),
             state);
         poly->motion(transform_.before(coordinateSystems_["camera"]));
     }
@@ -918,8 +925,8 @@ void RenderContext::render() {
         return;
     }
 
-    // the alpha and depth modes need planes the hider does not write, so every mode
-    // writes the three colour channels
+    // every display mode writes the three colour channels. The coverage and depth planes
+    // are resolved, and are not written to the file
     auto logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::Factory factory(logger);
     factory.write(displayName_, frameBuffer_->planes()->image(FrameBuffer::CHANNELS));

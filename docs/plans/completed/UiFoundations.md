@@ -16,7 +16,7 @@ scaled. `Window::resize()` does not resize a window.
 
 ### One size per atlas, worked around four times
 
-[`ui::TextRenderer`](../../../api/ui/TextRenderer.h) rasterizes a font at a size fixed in its
+[`ui::TextRenderer`](../../../api/ui/paint/TextRenderer.h) rasterizes a font at a size fixed in its
 constructor and packs it into a 512×512 single-channel atlas whose dimensions are hardcoded.
 Nothing scales a glyph afterwards — [`Canvas`](../../../api/render/realtime/Canvas.h) has a modelview
 stack but exposes only `translate()` — so a second size is a second instance and a second atlas.
@@ -169,7 +169,7 @@ field is built from the outline, so `FT_LOAD_RENDER` had to stop rendering one f
 dimensions, the base size and the spread are all `ui::TextRenderer` constructor arguments.
 
 In [`api/font/TextureFont.cxx`](../../../api/font/TextureFont.cxx) and
-[`api/ui/TextRenderer.h`](../../../api/ui/TextRenderer.h).
+[`api/ui/TextRenderer.h`](../../../api/ui/paint/TextRenderer.h).
 
 `FT_Glyph_To_Bitmap` gains `FT_RENDER_MODE_SDF` for the single-channel case. FreeType's SDF
 renderer is documented as slow; that is irrelevant for ~95 glyphs once at startup, and the `bsdf`
@@ -210,7 +210,7 @@ step both sets the flag in `Canvas::text()` and makes the shader act on it, so a
 one half draws every glyph wrong. Steps 2 and 4 together move text from correct to correct.
 
 In [`api/render/realtime/Canvas.h`](../../../api/render/realtime/Canvas.h),
-[`vulkan/QuadRenderer.cxx`](../../../api/render/realtime/vulkan/QuadRenderer.cxx) and
+`vulkan/QuadRenderer.cxx` and
 [`shaders/quad.frag`](../../../api/render/shaders/quad.frag), as step 1 settled it.
 
 `Canvas::Batch` carries the flag, `Canvas::text()` sets it, `open()` refuses to merge across it,
@@ -228,7 +228,7 @@ left step 6 free to be what it should be, four apps choosing a size, rather than
 repaired. The ratio is computed in `TextureTextBuffer::addCharacter` from `markup.size_` against
 `font->size()`, both of which it already held, so no field was added to carry it.
 
-In [`api/ui/TextRenderer.h`](../../../api/ui/TextRenderer.h).
+In [`api/ui/TextRenderer.h`](../../../api/ui/paint/TextRenderer.h).
 
 One atlas at one base size, and `draw()` and `width()` take the size they are wanted at.
 `glyph->advance_`, and the width, height and offset that
@@ -387,7 +387,7 @@ this plan is for.
 - **Base size and spread.** ~~What single base size serves 12 px to 200 px acceptably?~~
   **48 and 8**, picked by packing printable ascii at each of 32, 48 and 64 against spreads of 4, 8
   and 12 and seeing what fit. Recorded beside the constants in
-  [`TextRenderer.cpp`](../../../api/ui/TextRenderer.cpp).
+  [`TextRenderer.cpp`](../../../api/ui/paint/TextRenderer.cpp).
 - **Does the atlas still fit at that base size?** ~~It should not have to.~~ **It does, and the
   default stayed 512.** It is close, though: 48 with a spread of 12 overflows it, and so does 64
   with a spread of 8. Both halves are asserted in `texturefont_distance_field_packing_test`, so the

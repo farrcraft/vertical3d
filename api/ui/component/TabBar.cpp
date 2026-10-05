@@ -46,8 +46,8 @@ int TabBar::selected() const noexcept {
 
 boost::shared_ptr<TabPage> TabBar::page() const {
     const std::vector<boost::shared_ptr<TabPage>> held = pages();
-    // the first page is what a bar shows until something chose another, so an index that
-    // was set before the pages were added still lands on one
+    // a bar starts on its first page, and that index is held from before any page is added,
+    // so it lands on the first page once there is one
     if (held.empty()) {
         return nullptr;
     }

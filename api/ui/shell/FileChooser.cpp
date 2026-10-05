@@ -117,6 +117,15 @@ bool FileChooser::list(const boost::filesystem::path& directory) {
     entries_.insert(entries_.end(), directories.begin(), directories.end());
     entries_.insert(entries_.end(), files.begin(), files.end());
     directory_ = where;
+    // a new listing has nothing chosen in it. The row chosen in the last one would name
+    // whatever now sits at that index
+    const boost::shared_ptr<Container> shown = container();
+    const boost::shared_ptr<component::SelectList> rows = shown
+        ? boost::dynamic_pointer_cast<component::SelectList>(shown->get(names_.list))
+        : boost::shared_ptr<component::SelectList>();
+    if (rows) {
+        rows->selected(component::SelectList::none);
+    }
     show();
     return true;
 }

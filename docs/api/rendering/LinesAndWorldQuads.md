@@ -77,7 +77,8 @@ order.into(&world);                                     // furthest first
 ```
 
 Equal keys are grouped by texture and otherwise keep the order they were added. Rounding the
-key to a tile row means fewer texture changes and so fewer draws.
+key to a tile row means fewer texture changes and so fewer draws. A key that is not a number is
+drawn after every key that is.
 
 ### How the three primitives treat depth
 

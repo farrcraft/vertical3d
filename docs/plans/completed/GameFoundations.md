@@ -26,8 +26,8 @@ linked from here, because those paths do not resolve from this one.
 
 ### Nothing in the api writes a document
 
-[`asset::Json`](../../../api/asset/Json.h) holds a parsed `boost::json::object` and hands it out.
-[`asset::JsonFile`](../../../api/asset/JsonFile.h) opens a file and reads it. `config::Config` resolves
+`asset::Json` holds a parsed `boost::json::object` and hands it out.
+`asset::JsonFile` opens a file and reads it. `config::Config` resolves
 a document by type. **There is no write path anywhere in `api/asset`**, and the tree has one
 consumer that needs one and has built its own:
 
@@ -70,8 +70,8 @@ That is not a game's problem. It is a sentence in an api header describing a hol
 
 ### `MouseButton` drops the position SDL gave it
 
-[`ui::Cursor::press(point)`](../../../api/ui/Cursor.h) takes a point.
-[`event::MouseButton`](../../../api/event/MouseButton.h) carries a button index and an edge and no
+[`ui::Cursor::press(point)`](../../../api/ui/input/Cursor.h) takes a point.
+[`event::MouseButton`](../../../api/event/kind/MouseButton.h) carries a button index and an edge and no
 position. [`input::Mouse::handleEvent`](../../../api/input/Mouse.cpp) reads `event.button.x` and
 `event.button.y` — the position SDL puts on every button event — writes them into its own
 `MouseState`, and then constructs the dispatched event without them:
@@ -88,7 +88,7 @@ must track the last `event::MouseMotion` itself** to reconstruct a number this l
 stored and discarded three lines earlier. There are no such consumers in this tree yet, which is
 exactly why it should be fixed before there are several.
 
-[`MouseMotion`](../../../api/event/MouseMotion.h) already carries a position and a delta. The
+[`MouseMotion`](../../../api/event/kind/MouseMotion.h) already carries a position and a delta. The
 asymmetry is an oversight rather than a design.
 
 ### A ui with no tab order and a scrollbar that scrolls nothing
@@ -153,7 +153,7 @@ rather than from a sprite, and that is the argument for settling it once.
 ### A sprite sheet has a packer and no reader
 
 [`image::TextureAtlas`](../../../api/image/TextureAtlas.h) packs regions and is what `api/font` builds
-a glyph atlas with. [`QuadRenderer::texture(image)`](../../../api/render/realtime/vulkan/QuadRenderer.h)
+a glyph atlas with. `QuadRenderer::texture(image)`
 uploads one. `Canvas::rect` takes a uv pair. Every piece of drawing a sprite out of a sheet is
 present.
 
@@ -374,7 +374,7 @@ answers the new key, delete the file, restart, confirm it answers the shipped on
 **Landed.** The constructor takes the point and the button case in `Mouse::handleEvent` was
 braced so it can be a `const` local rather than a member of the enclosing function.
 
-In [`api/event/MouseButton.h`](../../../api/event/MouseButton.h) and
+In [`api/event/MouseButton.h`](../../../api/event/kind/MouseButton.h) and
 [`api/input/Mouse.cpp`](../../../api/input/Mouse.cpp).
 
 A `glm::vec2 position()` beside `button()` and `pressed()`, filled from the `event.button.x`/`y`
@@ -400,7 +400,7 @@ parent would otherwise produce.
 
 In [`api/ui/`](../../../api/ui/), out of [`Immediate.cpp`](../../../api/ui/Immediate.cpp)'s anonymous
 namespace, and then [`component/Label.h`](../../../api/ui/component/Label.h) and the label's draw path
-in [`ComponentRenderer`](../../../api/ui/ComponentRenderer.cpp).
+in [`ComponentRenderer`](../../../api/ui/paint/ComponentRenderer.cpp).
 
 Two halves:
 
@@ -428,7 +428,7 @@ A key name carries no modifier, `api/ui` cannot reach `api/input` without taking
 and there is no key name for shift-tab — so the app that saw the key says. It defaults to
 false, which is forward-only tab for a caller that ignores it. No `tabIndex` was added.
 
-In [`api/ui/Engine.h`](../../../api/ui/Engine.h) and [`Keys.cpp`](../../../api/ui/Keys.cpp), extending
+In [`api/ui/Engine.h`](../../../api/ui/Engine.h) and [`Keys.cpp`](../../../api/ui/input/Keys.cpp), extending
 [ADR-0040](../../adr/0040-ui-keyboard-focus-and-text-input.md).
 
 `Engine::focus()` holds one component at a time and a press is the only thing that calls it. It

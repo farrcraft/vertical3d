@@ -51,7 +51,7 @@ A pass has these settings:
 | `depth(bool)` | Test depth. 2D passes do not; they rely on drawing order. | Off |
 | `target(renderTarget)` | Draw into an offscreen target instead of the window. | The window |
 | `reads(renderTarget)` | Declare that this pass samples a target another pass draws. | None |
-| `viewport(x, y, w, h)` | The region of the target to draw into, in pixels. Zero width or height means all of it. | All |
+| `viewport(glm::vec4(x, y, w, h))` | The region of the target to draw into, in pixels. Zero width or height means all of it. | All |
 | `camera(view, projection)` | The camera for every item in the pass. | Identity |
 | `sort(bool)` | Record items in sort-key order instead of submission order. | Off |
 | `scene(set)` / `depthBias(...)` | Used by the lit pass. See [The lit pass](Lighting.md#the-lit-pass). | None |
@@ -126,7 +126,8 @@ TextureHandle shadowMap = renderer_->textures()->depthTexture(*map);   // its de
 ```
 
 `texture()` and `depthTexture()` return the white texture for a target with nothing of that
-kind to read.
+kind to read. Registering the same image again returns the handle it already has, so calling
+either every frame costs nothing.
 
 **Register again after a resize.** A registration keeps the target's old images alive and goes
 on drawing them. After `recreate()`, release the old handle and register the target again.

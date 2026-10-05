@@ -104,6 +104,7 @@ struct Dropped final {
     bool influences{ false };  /**< a second set of joints and weights **/
     bool unweighted{ false };  /**< a skinned primitive with no joints, or none that weigh anything **/
     bool channels{ false };    /**< a channel animating a node that is not one of the skeleton's joints **/
+    bool lines{ false };       /**< a primitive of points or lines, which a model of triangles cannot hold **/
 };
 
 /**
@@ -322,6 +323,13 @@ void collect(const cgltf_node& node, const Rig& rig, std::vector<Bucket>* bucket
             if (attributes.position == nullptr) {
                 continue;
             }
+            // a strip and a fan become a list as they are appended; points and lines are not
+            // triangles at all
+            if (primitive.type != cgltf_primitive_type_triangles && primitive.type != cgltf_primitive_type_triangle_strip &&
+                primitive.type != cgltf_primitive_type_triangle_fan) {
+                dropped->lines = true;
+                continue;
+            }
             std::vector<Bucket>::iterator bucket = buckets->begin();
             while (bucket != buckets->end() && bucket->material != primitive.material) {
                 ++bucket;
@@ -371,6 +379,50 @@ v3d::type::Model::Influence influenceOf(const Attributes& attributes, cgltf_size
 }
 
 /**
+ * Append a primitive's triangles to the merged index list, as a list whatever mode the primitive
+ * was drawn in.
+ *
+ * A primitive's indices address its own vertices, so every one after the first primitive
+ * addresses the wrong geometry unless it is offset into the merge. One drawn straight out of
+ * its vertex array still has to be indexed once it is merged, or it is lost.
+ *
+ * A strip or a fan becomes a list wound as glTF winds them: every other triangle of a strip
+ * swaps its first two corners so that all of them face the same way, and every triangle of a
+ * fan shares the fan's first vertex.
+ **/
+void appendIndices(const cgltf_primitive& primitive, std::size_t baseVertex, cgltf_size count,
+    std::vector<std::uint32_t>* indices) {
+    std::vector<std::uint32_t> order;
+    if (primitive.indices != nullptr) {
+        order.resize(primitive.indices->count);
+        for (cgltf_size index = 0; index < order.size(); ++index) {
+            order[index] = static_cast<std::uint32_t>(cgltf_accessor_read_index(primitive.indices, index) + baseVertex);
+        }
+    } else {
+        order.resize(count);
+        std::iota(order.begin(), order.end(), static_cast<std::uint32_t>(baseVertex));
+    }
+
+    if (primitive.type == cgltf_primitive_type_triangles) {
+        indices->insert(indices->end(), order.begin(), order.end());
+        return;
+    }
+    const bool strip = primitive.type == cgltf_primitive_type_triangle_strip;
+    for (std::size_t first = 0; first + 2 < order.size(); ++first) {
+        const bool swapped = strip && (first % 2) == 1;
+        if (strip) {
+            indices->push_back(order[swapped ? first + 1 : first]);
+            indices->push_back(order[swapped ? first : first + 1]);
+            indices->push_back(order[first + 2]);
+        } else {
+            indices->push_back(order[first + 1]);
+            indices->push_back(order[first + 2]);
+            indices->push_back(order[0]);
+        }
+    }
+}
+
+/**
  * Append one primitive's vertices to the merged array, placed by its node and with its
  * indices rebased onto the array.
  **/
@@ -410,24 +462,7 @@ void appendPrimitive(const Placed& placed, const Rig& rig, v3d::type::Model* mod
         }
     }
 
-    const std::size_t baseIndex = model->indices().size();
-    if (primitive.indices != nullptr) {
-        const cgltf_size indices = primitive.indices->count;
-        model->indices().resize(baseIndex + indices);
-        for (cgltf_size index = 0; index < indices; ++index) {
-            // a primitive's indices address its own vertices, so every one after the first
-            // primitive addresses the wrong geometry unless it is offset into the merge
-            model->indices()[baseIndex + index] =
-                static_cast<std::uint32_t>(cgltf_accessor_read_index(primitive.indices, index) + baseVertex);
-        }
-        return;
-    }
-
-    // a primitive drawn straight out of its vertex array still has to be indexed once it
-    // is merged, or its geometry is lost rather than drawn
-    model->indices().resize(baseIndex + count);
-    std::iota(model->indices().begin() + static_cast<std::ptrdiff_t>(baseIndex), model->indices().end(),
-        static_cast<std::uint32_t>(baseVertex));
+    appendIndices(primitive, baseVertex, count, &model->indices());
 }
 
 /**
@@ -533,7 +568,10 @@ v3d::type::Model::Material readMaterial(const cgltf_material& source, const cglt
         return material;
     }
     if (texture->image->uri != nullptr && std::strncmp(texture->image->uri, "data:", 5) != 0) {
-        material.baseColourTexture = texture->image->uri;
+        // a uri is percent-encoded, and the app resolves the file it names
+        std::string decoded(texture->image->uri);
+        decoded.resize(cgltf_decode_uri(decoded.data()));
+        material.baseColourTexture = decoded;
         return material;
     }
 
@@ -550,10 +588,15 @@ v3d::type::Model::Material readMaterial(const cgltf_material& source, const cglt
  * @return the key api/image registers its readers under, or nothing
  **/
 std::string readerFor(const cgltf_image& image) {
-    if (image.mime_type == nullptr) {
-        return std::string();
+    // the mime type is optional for an image inlined as a data uri, which states its own
+    std::string mime = image.mime_type != nullptr ? std::string(image.mime_type) : std::string();
+    if (mime.empty() && image.uri != nullptr && std::strncmp(image.uri, "data:", 5) == 0) {
+        const char* type = image.uri + 5;
+        const char* end = std::strpbrk(type, ";,");
+        if (end != nullptr) {
+            mime.assign(type, static_cast<std::size_t>(end - type));
+        }
     }
-    const std::string mime(image.mime_type);
     if (mime == "image/png") {
         return "png";
     }
@@ -648,6 +691,9 @@ boost::shared_ptr<Asset> Gltf::load(std::string_view name) {
     }
     if (dropped.unweighted) {
         logger_->get()->warn("{} has skinned vertices with no weight, which follow the skeleton's first root", name);
+    }
+    if (dropped.lines) {
+        logger_->get()->warn("{} has primitives of points or lines, which a model of triangles leaves out", name);
     }
 
     if (model->empty()) {

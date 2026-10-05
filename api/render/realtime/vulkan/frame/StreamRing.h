@@ -77,7 +77,7 @@ class StreamRing final {
     VkDeviceSize indexBytes_;
     std::vector<std::vector<Geometry>> slots_;  /**< a set of geometry per frame in flight, grown as a frame claims more **/
     std::size_t cursor_ = 0;                    /**< how far into the current frame's set the claims have got **/
-    uint64_t counted_ = std::numeric_limits<uint64_t>::max();  /**< the ring's begun() the cursor counts in **/
+    uint64_t counted_ = std::numeric_limits<uint64_t>::max();  /**< the ring's turns() the cursor counts in **/
 };
 
 };  // namespace v3d::render::realtime::vulkan::frame

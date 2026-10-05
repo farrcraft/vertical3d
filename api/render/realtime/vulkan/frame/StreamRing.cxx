@@ -27,8 +27,10 @@ StreamRing::StreamRing(const boost::shared_ptr<device::Device>& device, const bo
 StreamRing::Geometry StreamRing::claim(VkDeviceSize vertexBytes, VkDeviceSize indexBytes) {
     // the device may still be reading what this slot held framesInFlight frames ago
     ring_->waitFrame();
-    if (ring_->begun() != counted_) {
-        counted_ = ring_->begun();
+    // a frame that was skipped never began, and its claims were never drawn, so the next
+    // frame reuses them rather than claiming after them
+    if (ring_->turns() != counted_) {
+        counted_ = ring_->turns();
         cursor_ = 0;
     }
 

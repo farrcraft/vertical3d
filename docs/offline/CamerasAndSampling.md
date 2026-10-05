@@ -113,9 +113,13 @@ Background: [ADR-0076](../adr/0076-offline-seeded-samples-resolved-by-one-shared
   `0 0`, which means no blur.
 - **The ray hider carries each ray into the pose at its sample's time.** Its shadow and traced
   rays see that same time.
+- **A moving primitive is stored at its reference end**, `MovingTransform::reference()`: the
+  open end, unless that end has no inverse, as when a motion grows a primitive from nothing; then
+  the close end. Both hiders move it from there to a sample's time by `at(time)` times the
+  reference's inverse.
 - **The reyes hider places a moving micropolygon per sample.** A primitive carries its moving
-  object to eye transformation. The hider moves the eye space corners from the open end to the
-  sample's time. The micropolygon's bound is the union of where it is at eight slices of the
+  object to eye transformation. The hider moves the eye space corners from the reference end to
+  the sample's time. The micropolygon's bound is the union of where it is at eight slices of the
   shutter, grown by the furthest a corner moves in one slice. A sample is rejected by its own
   slice's bound before anything is placed.
 - **A moving primitive is culled by its bound at both ends**, and measured for splitting at the

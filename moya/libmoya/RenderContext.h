@@ -251,9 +251,10 @@ class RenderContext {
         /**
             *	maps to RiSphere()
             *	Only the ray hider draws one, intersected where it is defined; the reyes
-            *	hider does not dice spheres.
+            *	hider does not dice spheres. A sphere whose radius is not positive is
+            *	logged and not drawn.
             *
-            *	@return false when the hider cannot draw it
+            *	@return false when the hider cannot draw spheres
             */
         bool addSphere(float radius, float zmin, float zmax, float thetamax);
 

@@ -52,8 +52,10 @@ named. The language is in `api/render/offline/sl`.
   It looks like a shading bug and is a compiler bug.
 - **A run covers a batch, and a batch of one is not a special case.** The machine runs a flat
   program under a stack of execution masks. A condition all points agree on compiles to a jump.
-  A condition they disagree on runs both branches, each with the points that took it. `break`,
-  `continue` and `return` clear mask bits instead of jumping. A grid's batch is its vertices, a
+  A condition they disagree on runs both branches, each with the points that took it, and the
+  condition is read once. `break`, `continue` and `return` clear mask bits instead of jumping.
+  An `illuminance` body is a loop over the lights, so a `break` or a `return` inside it ends it
+  for those points and they run it for no later light. A grid's batch is its vertices, a
   traced hit's batch is one point, and an imager's batch is a row of pixels.
 - **A function call is inlined.** A run has no call stack and no register file per call. A
   shader's own function is pasted in at each call, bracketed so that a `return` inside it ends
@@ -130,9 +132,17 @@ files on disk.
   shader's own definition of the name wins.
 - **`ambient()` is C++.** An ambient light uses neither `illuminate` nor `solar`, so it has no
   direction, and an `illuminance` loop cannot reach it.
+- **`solar` is lit along its axis.** An angle other than 0 would let `L` be any direction inside a
+  cone, chosen against the surface's own `illuminance` cone, which a light shader is not given.
+  The machine reports such an angle once and uses the axis.
+- **`==` and `!=` compare every component** of a colour, point, vector, normal or matrix. A
+  float compared with one is promoted as an assignment promotes it, so a float against a matrix
+  is the diagonal matrix.
 - **A built-in may return results through its arguments.** `Signature::outputs` names the first
-  argument it writes. The compiler requires a variable there and propagates the storage class
-  of the call's inputs into it, as an assignment would. `fresnel` is the one that does: it
+  argument it writes, and every one from it on is written. `Signature::updates` names one it
+  reads and writes in place, which is what `setxcomp`, `setycomp`, `setzcomp` and `setcomp` do
+  to their first. The compiler requires a variable there that the shader may assign, and
+  propagates the storage class of the call's inputs into it, as an assignment would. `fresnel` is the one that does: it
   returns the unpolarised reflectance of a dielectric, with `refract`'s conventions, and writes
   the reflected and refracted directions.
 - **A cast chooses between built-ins that differ only in their result type.** The compiler takes

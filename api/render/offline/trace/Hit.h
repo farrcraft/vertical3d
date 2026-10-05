@@ -29,6 +29,11 @@ class Hit final {
     /** SL's I, the direction the surface was seen along. **/
     glm::vec3 incident = glm::vec3(0.0f);
     /**
+     * SL's Cs at the hit: the primitive's colour, or a triangle's corner colours weighted as
+     * its normals are.
+     **/
+    glm::vec3 colour = glm::vec3(0.0f);
+    /**
      * The surface parameters: a sphere's u and v, and a triangle's barycentric weights,
      * which stand in for them.
      **/

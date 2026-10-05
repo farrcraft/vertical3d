@@ -116,10 +116,16 @@ void Controller::rotate(Tetrad::RotationDirection direction) {
 void Controller::handleEvent(const v3d::event::Event& event) {
     if (event.context()->name() == "tetris") {
         if (event.name() == "toggleStatistics") {
-            renderer_->statistics()->toggle();
+            // a toggle, so a held key's repeats are ignored rather than flicking it on and off
+            if (!event.repeat()) {
+                renderer_->statistics()->toggle();
+            }
             return;
         }
         if (event.name() == "debugMode") {
+            if (event.repeat()) {
+                return;
+            }
             scene_->debug(!scene_->debug());
             scene_->board()->debug(scene_->debug());
             return;

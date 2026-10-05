@@ -35,14 +35,16 @@ int main(int argc, char* argv[]) {
 in order:
 
 1. Works out the app path, the directory the executable is in, from `argv[0]`.
-2. Opens the log at `v3d.log` in that directory.
+2. Opens the log at `v3d.log` in that directory. If that file cannot be opened, as in a
+   directory the app cannot write to, the log goes to stderr instead and the app still runs.
 3. Constructs `T` with the app path, followed by any extra `args` you passed. Use those for
    options parsed from the command line before the engine exists.
 4. Calls `initialize()` and then `eventLoop()` inside a `try` block. An exception is written to
    the log as `"<name> failed: <message>"`. A windowed app has no console, so the log is the
    only place an error is readable.
-5. Calls `shutdown()` outside the `try` block, so it runs whether the loop ended normally or by
-   throwing.
+5. Calls `shutdown()` after the `try` block, so it runs whether the loop ended normally or by
+   throwing. A throw from `shutdown()`, such as a lost device found by `release()`, is caught
+   and logged the same way.
 
 It returns `EXIT_FAILURE` if startup, the loop or shutdown failed, and `EXIT_SUCCESS`
 otherwise.

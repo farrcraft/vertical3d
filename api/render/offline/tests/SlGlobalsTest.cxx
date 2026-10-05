@@ -50,7 +50,7 @@ BOOST_AUTO_TEST_CASE(slglobals_surface_test) {
     point.colour = glm::vec3(1.0f, 0.0f, 0.0f);
     point.opacity = glm::vec3(1.0f);
     globals.surface(&machine, 1, point);
-    shader->write(&machine);
+    BOOST_REQUIRE(shader->write(&machine));
     BOOST_REQUIRE(machine.run());
 
     const glm::vec3 first = globals.colour(machine, 0, glm::vec3(-1.0f));

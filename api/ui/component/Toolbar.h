@@ -47,6 +47,7 @@ class Toolbar : public Component {
      * @param edge which edge the strip runs along
      **/
     Toolbar(const boost::shared_ptr<entt::dispatcher>& dispatcher, Edge edge);
+    ~Toolbar() override;
 
     /**
      * @return which edge the strip runs along

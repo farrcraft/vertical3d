@@ -52,7 +52,8 @@ BOOST_AUTO_TEST_CASE(film_filter_weights_test) {
     BOOST_CHECK_CLOSE(weight(Filter::Gaussian, 1.0f, 0.0f, 2.0f), std::exp(-2.0f), 1.0e-4f);
     BOOST_CHECK_EQUAL(weight(Filter::Gaussian, 1.5f, 0.0f, 2.0f), 0.0f);
 
-    // catmull-rom is radial with a support of two, peaks at two and has a negative lobe
+    // catmull-rom is radial, reaches zero two pixels out, is 2 at the centre and has a
+    // negative lobe
     BOOST_CHECK_EQUAL(weight(Filter::CatmullRom, 0.0f, 0.0f, 4.0f), 2.0f);
     BOOST_CHECK_CLOSE(weight(Filter::CatmullRom, 0.5f, 0.0f, 4.0f), 1.125f, 1.0e-4f);
     BOOST_CHECK_SMALL(weight(Filter::CatmullRom, 1.0f, 0.0f, 4.0f), 1.0e-6f);

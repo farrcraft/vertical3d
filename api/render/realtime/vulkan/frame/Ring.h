@@ -31,7 +31,7 @@ namespace v3d::render::realtime::vulkan::frame {
  *
  * The fence is created here and waited on here, but is signalled by whichever submit the
  * caller makes - Presenter's, or a test's. The caller's submit must signal it, which is why
- * fence() is public.
+ * submitting() is public.
  *
  * Because the ring tracks when a frame has finished, it is also where something released
  * during play waits to be destroyed. Anything driving frames has to begin them through
@@ -93,6 +93,19 @@ class Ring final {
     uint64_t begun() const noexcept;
 
     /**
+     * Record a frame that ended without being begun, because there was no image to draw
+     * into. Per-frame state that is reset when a frame begins is reset by this too, through
+     * turns().
+     **/
+    void skip() noexcept;
+
+    /**
+     * @return how many frames have been begun or skipped since the ring was built, which
+     *         changes once every frame whether or not it was drawn
+     **/
+    uint64_t turns() const noexcept;
+
+    /**
      * Hold a destruction back until every frame begun so far has finished.
      *
      * For something released while a frame recorded before the release may still be reading
@@ -102,18 +115,21 @@ class Ring final {
     void retire(std::function<void()> destroy);
 
     /**
-     * The fence the current frame's submit has to signal, and that waitFrame() waits on. A
-     * submit that does not signal it leaves the next turn around the ring waiting forever.
+     * Unsignal the current frame's fence and return it, for the submit that ends the frame to
+     * signal. Called immediately before that submit and nowhere else: a frame that is begun and
+     * then abandoned, because recording threw, leaves the fence signalled, so nothing that
+     * waits on it later waits forever.
+     *
+     * @throw std::runtime_error if the fence cannot be reset
      **/
-    VkFence fence() const noexcept;
+    VkFence submitting();
 
     /**
-     * Wait for the current frame's last submission, unsignal its fence and begin its command
-     * buffer.
+     * Wait for the current frame's last submission and begin its command buffer.
      *
-     * The fence is only reset once the frame is going to be submitted, so a caller that gives
-     * up between waitFrame() and here leaves the ring as it found it. Once the frame is begun,
-     * whatever was retired framesInFlight frames ago is destroyed.
+     * The fence stays signalled until submitting(), so a caller that gives up at any point
+     * before the submit leaves the ring able to begin the frame again. Once the frame is
+     * begun, whatever was retired framesInFlight frames ago is destroyed.
      *
      * @return the buffer to record into
      * @throw std::runtime_error if the fence or the buffer cannot be made ready
@@ -141,6 +157,7 @@ class Ring final {
     uint32_t framesInFlight_;
     uint32_t frame_;
     uint64_t begun_;
+    uint64_t skipped_ = 0;
     Retirement retired_;
     boost::shared_ptr<Timings> timings_;
 };

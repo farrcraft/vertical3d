@@ -61,7 +61,15 @@ void Screen::build() {
     components_->theme(theme_);
 
     if (options_.immediate) {
-        immediate_ = boost::make_shared<Immediate>(text_->measure(drawn), text_->write(&canvas_, drawn));
+        // built once and given the new text after that, so a rescale keeps where its windows
+        // were dragged, what is folded and how far each list is scrolled
+        if (immediate_) {
+            immediate_->text(text_->measure(drawn), text_->write(&canvas_, drawn));
+        } else {
+            immediate_ = boost::make_shared<Immediate>(text_->measure(drawn), text_->write(&canvas_, drawn));
+        }
+        // the immediate layer has a dressing of its own kind, which the app's dress does not
+        // fill, so only the line height is carried across
         immediate_->dressing().lineHeight = components_->dressing().lineHeight;
         immediate_->theme(theme_);
     }
