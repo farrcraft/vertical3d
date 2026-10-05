@@ -2,7 +2,7 @@
 
 **Status**: accepted
 **Date**: 2026-09-01
-**Documented in**: [api/Rendering.md](../api/Rendering.md)
+**Documented in**: [api/rendering/LinesAndWorldQuads.md](../api/rendering/LinesAndWorldQuads.md)
 
 ## Context
 

@@ -3,7 +3,7 @@
 **Status**: accepted
 **Date**: 2026-10-03
 **Amends**: [ADR-0031](0031-rendering-passes-draw-into-offscreen-targets.md)
-**Documented in**: [api/Rendering.md](../api/Rendering.md), [internals/RealtimeRenderer.md](../internals/RealtimeRenderer.md)
+**Documented in**: [api/rendering/FramesAndTargets.md](../api/rendering/FramesAndTargets.md), [internals/RealtimeRenderer.md](../internals/RealtimeRenderer.md)
 
 ## Context
 

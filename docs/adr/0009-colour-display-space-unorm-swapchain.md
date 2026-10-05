@@ -3,7 +3,7 @@
 **Status**: amended
 **Date**: 2026-08-31
 **Amended by**: [ADR-0049](0049-swapchain-caller-picks-the-format.md), [ADR-0066](0066-lighting-light-in-linear-draw-to-srgb.md)
-**Documented in**: [api/Rendering.md](../api/Rendering.md)
+**Documented in**: [api/rendering/ColourAndPost.md](../api/rendering/ColourAndPost.md)
 
 ## Context
 

@@ -4,7 +4,7 @@ This page is for someone writing an app against the api. It covers how the tree 
 [EnTT](https://github.com/skypjack/entt/wiki/Crash-Course:-entity-component-system): the
 registry an app's entities live in, `ecs::System`, the shared components in `api/ecs`, and
 drawing entities between simulation steps. How entities are drawn is in
-[Rendering.md](Rendering.md). Terms are defined in the [glossary](README.md#glossary).
+[rendering/](rendering/README.md). Terms are defined in the [glossary](README.md#glossary).
 
 - [The registry](#the-registry)
 - [Systems](#systems)
@@ -144,7 +144,7 @@ Background: [ADR-0072](../adr/0072-particles-an-emitter-component-owns-its-parti
 The loop simulates at 60 Hz and draws at the display's rate. Drawn as simulated, motion snaps
 to the last step and judders on a faster display. To draw smoothly, keep each moving value's
 state from before the last step and blend towards the current state by `Engine::alpha()`.
-[Engine.md](Engine.md#the-loop) explains the loop and alpha.
+[engine/Loop.md](engine/Loop.md#the-loop) explains the loop and alpha.
 
 [api/ecs/Previous.h](../../api/ecs/Previous.h) does this with a second component,
 `ecs::Previous<T>`:
@@ -203,7 +203,7 @@ snapshots `Transform` is therefore drawn between steps with no further work.
 A sprite ignores its transform's rotation, because a billboard faces the camera. A game shows
 which way a sprite faces by choosing its region. A `Sprite` holds the region's texture
 coordinates (`uv0`, `uv1`), not the region's name, so a game that reloads a sprite sheet must
-look its regions up again and write them back. [Rendering.md](Rendering.md) covers these
+look its regions up again and write them back. [rendering/](rendering/README.md) covers these
 functions and the components in full.
 
 Background: [ADR-0063](../adr/0063-ecs-draw-from-a-transform-plus-a-component-per-kind.md)
@@ -215,4 +215,4 @@ Background: [ADR-0063](../adr/0063-ecs-draw-from-a-transform-plus-a-component-pe
 - The `entt::dispatcher` the engine creates is separate from the registry. The engine builds it
   in `initialize()` and hands it to the event and input engines. An app that plays sound builds
   an `audio::Engine` over the same dispatcher, so a sound event published anywhere reaches it.
-  See [Engine.md](Engine.md#audio).
+  See [engine/Audio.md](engine/Audio.md#audio).

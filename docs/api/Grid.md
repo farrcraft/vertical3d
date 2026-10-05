@@ -184,7 +184,7 @@ case can be tested without a device.
   z-fight with ground drawn at `y = 0`. Draw every layer of one overlay with the same lift.
 - A tile off the board emits nothing.
 
-[Rendering.md](Rendering.md) covers the line primitive and `WorldCanvas`.
+[rendering/](rendering/README.md) covers the line primitive and `WorldCanvas`.
 
 ## An example: odyssey
 

@@ -116,7 +116,7 @@ gives for a word wider than the line. It is good code and the retained component
 it: [`component::Label`](../../../api/ui/component/Label.h) holds a `std::string` and
 `ComponentRenderer` draws *"one line of text at the position it holds"*.
 
-[UserInterface.md](../../api/UserInterface.md) says the two ways to write a ui are for different jobs and
+[UserInterface.md](../../api/ui/README.md) says the two ways to write a ui are for different jobs and
 that a hud belongs to the retained one. A hud, a tooltip, an item description and a line of
 dialogue are all more than one line, and all four are on the consuming game's roadmap. This is a
 helper moving up a level, not a feature.
@@ -350,7 +350,7 @@ it.
 ### Step 5 — Pong remembers what it was told
 
 **Landed**, with the org and app recorded in
-[Engine.md](../../api/Engine.md) where the next app will look. Verified by running it:
+[Engine.md](../../api/engine/README.md) where the next app will look. Verified by running it:
 rebound Player 1 Up to `j` through the menu, confirmed the document, restarted and confirmed
 `j` moves the paddle and `w` no longer does, deleted the document and confirmed `w` does again.
 

@@ -2,7 +2,7 @@
 
 **Status**: accepted
 **Date**: 2026-10-05
-**Documented in**: [api/Engine.md](../api/Engine.md)
+**Documented in**: [api/engine/Lifecycle.md](../api/engine/Lifecycle.md)
 
 ## Context
 

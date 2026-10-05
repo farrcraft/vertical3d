@@ -4,7 +4,7 @@
 **Date**: 2026-10-03
 **Amended by**: [ADR-0082](0082-textures-owned-by-the-device-context.md)
 **Supersedes**: [ADR-0010](0010-meshes-owned-by-the-app-that-built-them.md)
-**Documented in**: [api/Rendering.md](../api/Rendering.md)
+**Documented in**: [api/rendering/TexturesAndMeshes.md](../api/rendering/TexturesAndMeshes.md)
 
 ## Context
 

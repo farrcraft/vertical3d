@@ -3,7 +3,7 @@
 **Status**: accepted
 **Date**: 2026-10-03
 **Amends**: [ADR-0009](0009-colour-display-space-unorm-swapchain.md)
-**Documented in**: [api/Rendering.md](../api/Rendering.md)
+**Documented in**: [api/rendering/ColourAndPost.md](../api/rendering/ColourAndPost.md)
 
 ## Context
 

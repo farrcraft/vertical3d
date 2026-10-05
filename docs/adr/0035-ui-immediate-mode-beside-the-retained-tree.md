@@ -2,7 +2,7 @@
 
 **Status**: accepted
 **Date**: 2026-09-06
-**Documented in**: [The User Interface](../api/UserInterface.md), [User Interface Internals](../internals/UserInterface.md)
+**Documented in**: [api/ui/ImmediateMode.md](../api/ui/ImmediateMode.md), [internals/UserInterface.md](../internals/UserInterface.md)
 
 ## Context
 

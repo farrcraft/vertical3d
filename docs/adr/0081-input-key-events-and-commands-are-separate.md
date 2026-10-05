@@ -3,7 +3,7 @@
 **Status**: accepted
 **Date**: 2026-10-05
 **Amends**: [ADR-0043](0043-input-apps-see-raw-events-before-bindings.md)
-**Documented in**: [api/Engine.md](../api/Engine.md)
+**Documented in**: [api/engine/Input.md](../api/engine/Input.md)
 
 ## Context
 

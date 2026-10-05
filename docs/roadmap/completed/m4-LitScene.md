@@ -161,7 +161,7 @@ validation silence and a screenshot, per [Testing.md](../../contributing/Testing
   [milestone 5](m5-SkeletalAnimation.md#4-instancing)'s, because a horde of skinned characters is
   what needs it.
 * **Merging draws, a second depth buffer, and the 2D pass reading set 0** — the rest of
-  [RenderingPipeline.md](../../api/Rendering.md#what-is-not-built-yet)'s list. None is needed
+  [RenderingPipeline.md](../../api/rendering/README.md#what-is-not-built-yet)'s list. None is needed
   by a lit scene, and each is its own change.
 * **Ambient occlusion, fog, night and weather passes.** retcon lists them as polish, and they
   are passes a chain allows rather than pieces of it.

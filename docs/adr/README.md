@@ -35,7 +35,7 @@ content went. Numbers are never reused.
 | [0036](0036-text-sdf-glyphs-through-the-quad-shader.md) | Text: SDF glyphs through the quad shader | accepted |
 | [0037](0037-2d-clip-with-a-per-batch-scissor.md) | 2D: clip with a per-batch scissor | accepted |
 | [0042](0042-rendering-world-space-sprites.md) | Rendering: world-space sprites | amended by 0082 |
-| 0044 | *Not a decision. Now in internals/RealtimeRenderer.md and vulkan/frame/DepthBuffer.h* | removed |
+| 0044 | *Not a decision. Now in docs/internals/RealtimeRenderer.md and vulkan/frame/DepthBuffer.h* | removed |
 | [0049](0049-swapchain-caller-picks-the-format.md) | Swapchain: caller picks the format | accepted |
 | [0051](0051-frames-in-flight-ring-separate-from-presenting.md) | Frames: in-flight ring separate from presenting | accepted |
 | [0052](0052-camera-selectable-handedness.md) | Camera: selectable handedness | accepted |
@@ -46,7 +46,7 @@ content went. Numbers are never reused.
 | [0064](0064-lighting-lit-passes-use-the-shared-recorder.md) | Lighting: lit passes use the shared recorder | amended by 0071 |
 | [0065](0065-meshes-shared-registry-keyed-by-path.md) | Meshes: shared registry keyed by path | amended by 0082 |
 | [0066](0066-lighting-light-in-linear-draw-to-srgb.md) | Lighting: light in linear, draw to sRGB | accepted |
-| 0067 | *Not a decision. Now in api/Rendering.md and vulkan/renderer/Lit.h* | removed |
+| 0067 | *Not a decision. Now in docs/api/rendering/Lighting.md and vulkan/renderer/Lit.h* | removed |
 | [0068](0068-rendering-order-passes-by-what-they-read.md) | Rendering: order passes by what they read | accepted |
 | [0071](0071-skinning-joint-matrices-in-one-storage-buffer.md) | Skinning: joint matrices in one storage buffer | accepted |
 | [0075](0075-2d-a-canvas-may-have-its-own-coordinate-space.md) | 2D: a canvas may have its own coordinate space | accepted |
@@ -58,7 +58,7 @@ content went. Numbers are never reused.
 |---|---|---|
 | [0022](0022-offline-shared-library-with-no-vulkan.md) | Offline: shared library with no Vulkan | amended by 0078 |
 | [0023](0023-offline-rib-is-the-scene-format.md) | Offline: RIB is the scene format | accepted |
-| 0024 | *Not a decision. Now in never built; its principle is in contributing/Conventions.md#api-design* | removed |
+| 0024 | *Never built. Its principle is in docs/contributing/Conventions.md, under API design* | removed |
 | [0025](0025-offline-rib-reader-calls-a-typed-handler-interface.md) | Offline: RIB reader calls a typed handler interface | accepted |
 | [0026](0026-offline-shaders-run-over-batches-of-points.md) | Offline: shaders run over batches of points | accepted |
 | [0076](0076-offline-seeded-samples-resolved-by-one-shared-film.md) | Offline: seeded samples resolved by one shared film | accepted |
@@ -76,12 +76,12 @@ content went. Numbers are never reused.
 | [0038](0038-ui-the-ui-hit-tests-the-mouse-before-the-app.md) | UI: the UI hit-tests the mouse before the app | accepted |
 | 0039 | *Merged into 0034* | removed |
 | [0040](0040-ui-keyboard-focus-and-text-input.md) | UI: keyboard focus and text input | amended by 0058 |
-| 0045 | *Not a decision. Now in api/UserInterface.md and api/ui/Immediate.h* | removed |
-| 0046 | *Not a decision. Now in api/UserInterface.md and api/ui/Immediate.h* | removed |
-| 0057 | *Not a decision. Now in api/UserInterface.md and api/ui/component/TextBox.h* | removed |
+| 0045 | *Not a decision. Now in docs/api/ui/ImmediateMode.md and api/ui/Immediate.h* | removed |
+| 0046 | *Not a decision. Now in docs/api/ui/ImmediateMode.md and api/ui/Immediate.h* | removed |
+| 0057 | *Not a decision. Now in docs/api/ui/Keyboard.md and api/ui/component/TextBox.h* | removed |
 | [0058](0058-ui-sdl-keyboard-adapter-in-ui-shell.md) | UI: SDL keyboard adapter in ui/shell | accepted |
 | [0059](0059-ui-enabled-is-an-inherited-flag.md) | UI: enabled is an inherited flag | accepted |
-| 0074 | *Not a decision. Now in api/UserInterface.md and api/ui/shell/Screen.h* | removed |
+| 0074 | *Not a decision. Now in docs/api/ui/Setup.md and api/ui/shell/Screen.h* | removed |
 
 ## Engine, input and assets
 
@@ -118,7 +118,7 @@ content went. Numbers are never reused.
 | [0014](0014-editor-pick-by-cpu-ray-cast.md) | Editor: pick by CPU ray cast | accepted |
 | [0015](0015-editor-manipulators-edit-the-object-transform.md) | Editor: manipulators edit the object transform | accepted |
 | [0016](0016-editor-undo-records-completed-changes.md) | Editor: undo records completed changes | accepted |
-| 0017 | *Not a decision. Now in Editor.md and vertical3d/src/command/CommandDirectory.h* | removed |
+| 0017 | *Not a decision. Now in docs/Editor.md and vertical3d/src/command/CommandDirectory.h* | removed |
 | [0018](0018-editor-projects-saved-as-json-with-exact-topology.md) | Editor: projects saved as JSON with exact topology | amended by 0041 |
 
 ## Build, testing and code
@@ -137,4 +137,4 @@ content went. Numbers are never reused.
 
 | ADR | Decision | Status |
 |---|---|---|
-| 0006 | *Not a decision. Now in a project-scope call, recorded in plans/completed/Modernization.md* | removed |
+| 0006 | *Not a decision: a project-scope call to keep tetris. Noted in docs/plans/completed/Modernization.md* | removed |

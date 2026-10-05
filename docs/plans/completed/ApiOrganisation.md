@@ -660,8 +660,8 @@ and in the commits, which is where a reader following a stale name should end up
 - **[v3dHelpers.cmake](../../../cmake/v3dHelpers.cmake)**'s include-root comment currently states
   the reason step 1 removes. Corrected, not deleted — the root is still the repository, for a
   reason that survives.
-- **[RenderingPipeline.md](../../api/Rendering.md)** for step 7,
-  **[UserInterface.md](../../api/UserInterface.md)** for steps 5 and 6,
+- **[RenderingPipeline.md](../../api/rendering/README.md)** for step 7,
+  **[UserInterface.md](../../api/ui/README.md)** for steps 5 and 6,
   **[OfflineRenderers.md](../../OfflineRenderer.md)** for step 4. Each of these names files by
   path.
 - **[ADR-0027](../../adr/0027-build-consume-the-api-as-source.md)**'s fourth Negative bullet gets a

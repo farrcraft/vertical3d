@@ -3,7 +3,7 @@
 **Status**: amended
 **Date**: 2026-09-07
 **Amended by**: [ADR-0081](0081-input-key-events-and-commands-are-separate.md)
-**Documented in**: [api/Engine.md](../api/Engine.md)
+**Documented in**: [api/engine/Input.md](../api/engine/Input.md)
 
 ## Context
 

@@ -3,7 +3,7 @@
 This document is for someone changing `api/ui` itself. It covers how the library is split into
 classes, how a frame is laid out and drawn, how input is routed, and what to touch when adding
 a component type. How to use the library is in
-[api/UserInterface.md](../api/UserInterface.md), and this document assumes it.
+[api/ui/](../api/ui/README.md), and this document assumes it.
 
 - [The classes](#the-classes)
 - [Layout and drawing are one pass](#layout-and-drawing-are-one-pass)
@@ -350,7 +350,7 @@ Places the compiler does not name:
 - **The paint overload.** `ComponentRenderer` has one `draw()` overload per type, called from
   `paint()`.
 - **Tests** in [api/ui/tests/](../../api/ui/tests), and the component table and theme tables
-  in [api/UserInterface.md](../api/UserInterface.md).
+  in [api/ui/](../api/ui/README.md).
 
 Group the enumerators a switch does nothing for under one comment saying why. A reader of
 `input::command()`, for example, can then see which types carry no command.

@@ -718,7 +718,7 @@ Update the state in the table above.
 * **Step 1** adds the ADR index row for 0069 as `proposed`, and amends ADR-0030's header. It
   replaces [TODO.md](../../TODO.md#models)'s sentence that splitting a file by material is milestone
   5's. The plans index says this plan is open.
-* **Step 2** updates [RenderingPipeline.md](../../api/Rendering.md)'s account of the mesh
+* **Step 2** updates [RenderingPipeline.md](../../api/rendering/README.md)'s account of the mesh
   registry and the walk.
 * **Step 4** adds ADR-0070 as `proposed`.
 * **Step 5** rewrites TODO.md's sprite-clip entry: the clock it waited for now exists, and what

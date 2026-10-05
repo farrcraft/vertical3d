@@ -685,7 +685,7 @@ Update the state in the table above.
 * **Step 3** adds the ADR index row for 0072 as `proposed`.
 * **Step 4** adds `Emitter` to [ECSDesign.md](../../api/ECS.md) beside `Playback`.
 * **Step 5** accepts ADR-0072, and adds `particles()` and `component::Particles` to
-  [RenderingPipeline.md](../../api/Rendering.md) beside the sprites.
+  [RenderingPipeline.md](../../api/rendering/README.md) beside the sprites.
 * **Step 7** adds the tint to RenderingPipeline.md's account of `WorldCanvas`.
 * **Step 8** adds the additive pipeline and the world pass in a lit frame to RenderingPipeline.md.
 * **Step 9** adds the colours to RenderingPipeline.md's binding table, and the table swap to its

@@ -470,7 +470,7 @@ consumer inherits a tier that is not linear in the one place it claims to be.
 **ADR-0067: the api's lit shaders are embedded, and a consumer may hand in its own.**
 
 * The api's are compiled by `v3d_add_shader` like the rest, for the reason
-  [RenderingPipeline.md](../../api/Rendering.md#shaders) gives: a shader on disk beside an
+  [RenderingPipeline.md](../../api/rendering/README.md#shaders) gives: a shader on disk beside an
   executable goes stale silently.
 * Every lit pipeline takes its modules as SPIR-V words, defaulting to the embedded ones, so a
   game that loads from a directory hands over what it loaded. retcon's "swappable without a
@@ -885,7 +885,7 @@ any other is blessed. Step 4 needed none, so that is step 10's identity LUT if i
 * **It does not move `DebugLines` or `GridOverlay`.** `renderer::Line` is the same pipeline.
 * **It does not instance.** That is [milestone 5](../../roadmap/completed/m5-SkeletalAnimation.md#4-instancing)'s.
 * **It does not merge draws, add a second depth buffer, or put the 2D pass on set 0.** That is
-  the rest of [RenderingPipeline.md](../../api/Rendering.md#what-is-not-built-yet)'s list.
+  the rest of [RenderingPipeline.md](../../api/rendering/README.md#what-is-not-built-yet)'s list.
 * **It does not add cascades or a self-growing shadow radius.** Step 8 says why.
 * **It does not light voxel.** voxel's vertex layout and its per-vertex lighting are its own.
   Step 3 is what it takes.
@@ -899,7 +899,7 @@ Update the state in the table above.
 
 * **Step 1** adds the ADR index row for 0064 as `proposed`, and the plans index says this plan
   is open.
-* **Step 2** rewrites [RenderingPipeline.md](../../api/Rendering.md)'s offscreen-targets
+* **Step 2** rewrites [RenderingPipeline.md](../../api/rendering/README.md)'s offscreen-targets
   section where it describes `Texture::owned`. It also deletes "a depth target that can be
   read" from what is not built yet, which ADR-0044 built and the list never lost.
 * **Step 3** deletes voxel's pool from the binding section's account of voxel.

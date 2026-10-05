@@ -2,7 +2,7 @@
 
 **Status**: accepted
 **Date**: 2026-08-30
-**Documented in**: [api/Rendering.md](../api/Rendering.md)
+**Documented in**: [api/rendering/FramesAndTargets.md](../api/rendering/FramesAndTargets.md)
 
 ## Context
 

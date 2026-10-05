@@ -337,7 +337,7 @@ Update the state in the table above, and set ADR-0060's status when step 5 lands
   [OfflineRendering.md](../../roadmap/completed/OfflineRendering.md#what-the-api-already-provides) gains them
   in its list of what the api provides.
 - **Step 2** is the ground pick, and the handoff note to retcon is written here, when it lands.
-- **Step 5** changes what [Engine.md](../../api/Engine.md)
+- **Step 5** changes what [Engine.md](../../api/engine/README.md)
   says about `alpha()` — "nothing reads it yet" stops being true — and
   [ECSDesign.md](../../api/ECS.md) gains `Previous<T>`. Delete [TODO.md](../../TODO.md#the-game-loop)'s
   game-loop entry rather than marking it.

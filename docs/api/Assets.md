@@ -55,7 +55,7 @@ for one `asset::Type` and a list of extensions.
 
 - **The game engine registers the media loaders on the manager it builds.** It does not register
   the audio loader; an app that plays sound calls `audio::registerLoaders()` itself. See
-  [Engine.md](Engine.md#audio).
+  [engine/Audio.md](engine/Audio.md#audio).
 - **A manager you build yourself**, in a test or a tool, has only the JSON and text loaders.
   Call `registerLoaders()` for the others. Forgetting is a failed load at run time, not a link
   error.
@@ -263,7 +263,7 @@ log.
 
 `api/font` (`v3d::font`) rasterizes typefaces with FreeType into a texture atlas and lays out
 text as quads. Most apps do not use it directly: `ui::paint::TextRenderer` owns a font, its atlas
-and the drawing of text. See [UserInterface.md](UserInterface.md).
+and the drawing of text. See [ui/](ui/README.md).
 
 - **`TextureFont(filename, size, logger, spread)`** loads one face at one size.
   - With `spread` 0 the glyphs are plain coverage.
@@ -338,6 +338,6 @@ described in [Types.md](Types.md#models).
 ### Drawing a model
 
 A `type::Model` holds no device resources. To draw it, register it with the renderer's
-`MeshRegistry`, which uploads it once per path. [Rendering.md](Rendering.md) covers that.
+`MeshRegistry`, which uploads it once per path. [rendering/](rendering/README.md) covers that.
 
 Background: [ADR-0069](../adr/0069-models-material-parts-over-one-vertex-buffer.md)

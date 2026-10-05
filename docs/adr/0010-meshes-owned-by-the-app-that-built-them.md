@@ -3,7 +3,7 @@
 **Status**: superseded
 **Date**: 2026-08-31
 **Superseded by**: [ADR-0065](0065-meshes-shared-registry-keyed-by-path.md)
-**Documented in**: [api/Rendering.md](../api/Rendering.md)
+**Documented in**: [api/rendering/TexturesAndMeshes.md](../api/rendering/TexturesAndMeshes.md)
 
 ## Context
 

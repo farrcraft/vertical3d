@@ -3,7 +3,7 @@
 **Status**: amended
 **Date**: 2026-09-04
 **Amended by**: [ADR-0079](0079-assets-loaders-are-registered.md)
-**Documented in**: [api/Engine.md](../api/Engine.md)
+**Documented in**: [api/engine/Audio.md](../api/engine/Audio.md)
 
 ## Context
 

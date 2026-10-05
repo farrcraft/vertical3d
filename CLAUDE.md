@@ -27,12 +27,12 @@ is SDL3.
 | Tests, or verifying a rendering change | [docs/contributing/Testing.md](docs/contributing/Testing.md) |
 | A lint or analyser finding | [docs/contributing/Linting.md](docs/contributing/Linting.md) |
 | Style, comments and documents | [docs/contributing/Conventions.md](docs/contributing/Conventions.md) |
-| `api/engine`, `config`, `event`, `input`, `audio`, `log` | [docs/api/Engine.md](docs/api/Engine.md) |
+| `api/engine`, `config`, `event`, `input`, `audio`, `log` | [docs/api/engine/](docs/api/engine/README.md) |
 | `api/type`, `api/grid`, `api/ecs` | [docs/api/Types.md](docs/api/Types.md), [Grid.md](docs/api/Grid.md), [ECS.md](docs/api/ECS.md) |
 | `api/asset`, `api/image`, `api/font` | [docs/api/Assets.md](docs/api/Assets.md) |
-| Using `api/render/realtime` | [docs/api/Rendering.md](docs/api/Rendering.md) |
+| Using `api/render/realtime` | [docs/api/rendering/](docs/api/rendering/README.md) |
 | Changing `api/render/realtime` | [docs/internals/RealtimeRenderer.md](docs/internals/RealtimeRenderer.md) |
-| Using `api/ui` | [docs/api/UserInterface.md](docs/api/UserInterface.md) |
+| Using `api/ui` | [docs/api/ui/](docs/api/ui/README.md) |
 | Changing `api/ui` | [docs/internals/UserInterface.md](docs/internals/UserInterface.md) |
 | `moya`, `api/render/offline`, RIB | [docs/OfflineRenderer.md](docs/OfflineRenderer.md) |
 | `vertical3d/`, `api/brep` | [docs/Editor.md](docs/Editor.md) |
@@ -79,7 +79,7 @@ new one**.
 - **Simulation goes in `simulate(float step)`, not `tick(unsigned int delta)`.** The loop calls
   both. Nothing enforces the split, so simulation left in `tick()` compiles and then runs at a
   speed that depends on the frame rate. `tick` takes milliseconds and `simulate` takes seconds.
-  [docs/api/Engine.md](docs/api/Engine.md) has the rest of the loop.
+  [docs/api/engine/](docs/api/engine/README.md) has the rest of the loop.
 - **An app starts up in `start()` and tears down in `release()`.** The engine calls both, in an
   order it controls. Anything that presents to the window, a renderer above all, is released in
   `release()`. A quit command calls `Engine::quit()`. Only `run<T>` calls `shutdown()`, and an

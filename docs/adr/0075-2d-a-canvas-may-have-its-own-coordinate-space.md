@@ -2,7 +2,7 @@
 
 **Status**: accepted
 **Date**: 2026-10-04
-**Documented in**: [api/Rendering.md](../api/Rendering.md)
+**Documented in**: [api/rendering/Canvas.md](../api/rendering/Canvas.md)
 
 ## Context
 

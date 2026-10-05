@@ -24,7 +24,7 @@ the realtime one. The namespaces are `v3d::type` and, below it, `geometry`, `cam
 What `api/type` does not do:
 
 - It does not load files. [Assets.md](Assets.md) covers loading a model.
-- It does not draw. [Rendering.md](Rendering.md) covers that.
+- It does not draw. [rendering/](rendering/README.md) covers that.
 - It does not decide when things happen. Which animation clip plays, and when an effect fires,
   is the game's decision. [ECS.md](ECS.md) covers the components that step these types from
   entities.
@@ -136,7 +136,7 @@ The camera classes are in `v3d::type::camera` ([api/type/camera/](../../api/type
 - `ArcBall` turns a mouse drag into a rotation for `Camera::rotate()`.
 
 `config::CameraProfiles` reads named profiles from a config document.
-[Engine.md](Engine.md#camera-profiles) describes the format.
+[engine/Config.md](engine/Config.md#camera-profiles) describes the format.
 
 ### Clip space and matrices
 
@@ -239,7 +239,7 @@ quaternion rotation and a scale. ECS entities and editor meshes are both placed 
 |---|---|
 | `brep::BRep` | Half-edge topology the editor models with. See [Editor.md](../Editor.md). |
 | `type::Model` | Interleaved vertices, indices, materials and parts: what a model file loads into. |
-| The renderer's mesh | Two device buffers, made from a `type::Model`. See [Rendering.md](Rendering.md). |
+| The renderer's mesh | Two device buffers, made from a `type::Model`. See [rendering/](rendering/README.md). |
 
 ### type::Model
 
@@ -329,7 +329,7 @@ Background: [ADR-0070](../adr/0070-animation-cpu-sampling-playback-on-the-fixed-
 
 Particle simulation is in `v3d::type::effect` ([api/type/effect/](../../api/type/effect/)). The
 component that steps an emitter from an entity is in [ECS.md](ECS.md#emitter), and drawing
-particles is in [Rendering.md](Rendering.md).
+particles is in [rendering/](rendering/README.md).
 
 ### Emitter and State
 

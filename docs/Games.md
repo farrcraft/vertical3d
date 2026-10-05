@@ -34,7 +34,7 @@ Every game follows the same pattern:
 - Keys are bound to commands in `data/mappings.json`. A command is a context and a name,
   written `context::name`.
 
-[api/Engine.md](api/Engine.md) explains the app lifecycle, the loop, config and bindings.
+[api/engine/](api/engine/README.md) explains the app lifecycle, the loop, config and bindings.
 
 | Game | Target | Window | Config types | Tests |
 |---|---|---|---|---|
@@ -165,7 +165,7 @@ says how to build it.
 - **`tick()` versus `simulate()`.** Voxel overrides both. The world, including player movement,
   advances in `simulate(float step)`, which runs at a fixed step in seconds. Chunk remeshing
   stays in `tick(unsigned int delta)`: it has a budget of chunks per frame and is not
-  simulation. [api/Engine.md](api/Engine.md) explains the loop.
+  simulation. [api/engine/](api/engine/README.md) explains the loop.
 - **Mouse look.** `Window::relativeMouse(true)` hides the pointer and holds it in the window.
   `Controller::handleMotion` turns `MouseMotion::motion()`, the distance moved, into heading and
   pitch. When the menu opens, the game leaves relative mode so the pointer shows; it returns to

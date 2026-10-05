@@ -3,7 +3,7 @@
 **Status**: accepted
 **Date**: 2026-09-06
 **Amends**: [ADR-0005](0005-2d-one-batched-quad-pipeline.md)
-**Documented in**: [api/Rendering.md](../api/Rendering.md)
+**Documented in**: [api/rendering/Canvas.md](../api/rendering/Canvas.md)
 
 ## Context
 

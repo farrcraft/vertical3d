@@ -2,7 +2,7 @@
 
 This document is for someone changing `api/render/realtime`. It covers how the objects own each
 other, how a frame reaches the GPU, the memory and descriptor layout, and the invariants that
-are easy to break. How an app uses the renderer is in [api/Rendering.md](../api/Rendering.md);
+are easy to break. How an app uses the renderer is in [api/rendering/](../api/rendering/README.md);
 this document does not repeat it.
 
 - [Object chain and ownership](#object-chain-and-ownership)
@@ -662,7 +662,7 @@ The lit shaders share their blocks through includes:
   and the joint and weight attributes at locations 3 and 4).
 
 `Lit::Shaders::embedded()` returns the built-in SPIR-V; a consumer may pass its own (see
-[api/Rendering.md](../api/Rendering.md#replacing-the-lit-shaders)). Pipeline creation is the only
+[api/rendering/Lighting.md](../api/rendering/Lighting.md#replacing-the-lit-shaders)). Pipeline creation is the only
 check that a replacement matches the layout. When changing a block in `lit.glsl`, change
 `SceneUniforms` or `Lit::Object` to match; reordering members is not caught by anything.
 
@@ -683,7 +683,7 @@ its own row, and `ui::shell::StatisticsOverlay` draws a line per span it is give
 ## Frame capture
 
 `vulkan::frame::Capture` copies an image into a host-visible `Buffer` and writes a PNG. Its use is
-in [api/Rendering.md](../api/Rendering.md#reading-a-frame-back). Inside:
+in [api/rendering/FramesAndTargets.md](../api/rendering/FramesAndTargets.md#reading-a-frame-back). Inside:
 
 - `record()` takes a `Capture::Source` (image, extent, format, layout, depth flag), so one code
   path reads a swapchain image or a target. The swapchain overload fills one in from an acquired

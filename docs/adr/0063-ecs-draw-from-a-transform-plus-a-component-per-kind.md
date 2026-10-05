@@ -2,7 +2,7 @@
 
 **Status**: accepted
 **Date**: 2026-10-03
-**Documented in**: [api/ECS.md](../api/ECS.md), [api/Rendering.md](../api/Rendering.md)
+**Documented in**: [api/ECS.md](../api/ECS.md), [api/rendering/Entities.md](../api/rendering/Entities.md)
 
 ## Context
 

@@ -2,7 +2,7 @@
 
 **Status**: accepted
 **Date**: 2026-09-05
-**Documented in**: [api/Engine.md](../api/Engine.md), [api/UserInterface.md](../api/UserInterface.md)
+**Documented in**: [api/engine/](../api/engine/README.md), [api/ui/](../api/ui/README.md)
 
 ## Context
 

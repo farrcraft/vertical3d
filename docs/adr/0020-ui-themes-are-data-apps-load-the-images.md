@@ -2,7 +2,7 @@
 
 **Status**: accepted
 **Date**: 2026-09-04
-**Documented in**: [The User Interface](../api/UserInterface.md)
+**Documented in**: [api/ui/Themes.md](../api/ui/Themes.md)
 
 ## Context
 

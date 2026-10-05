@@ -4,7 +4,7 @@
 **Date**: 2026-09-07
 **Amends**: [ADR-0005](0005-2d-one-batched-quad-pipeline.md)
 **Amended by**: [ADR-0082](0082-textures-owned-by-the-device-context.md)
-**Documented in**: [api/Rendering.md](../api/Rendering.md)
+**Documented in**: [api/rendering/LinesAndWorldQuads.md](../api/rendering/LinesAndWorldQuads.md)
 
 ## Context
 

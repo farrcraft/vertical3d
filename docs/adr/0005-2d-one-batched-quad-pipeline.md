@@ -3,7 +3,7 @@
 **Status**: amended
 **Date**: 2026-08-30
 **Amended by**: [ADR-0036](0036-text-sdf-glyphs-through-the-quad-shader.md), [ADR-0042](0042-rendering-world-space-sprites.md)
-**Documented in**: [api/Rendering.md](../api/Rendering.md)
+**Documented in**: [api/rendering/Canvas.md](../api/rendering/Canvas.md)
 
 ## Context
 

@@ -579,10 +579,10 @@ default alone.
 
 ### Step 14 — `docs/UserInterface.md`
 
-**Closed.** [UserInterface.md](../../api/UserInterface.md), with rows added to
+**Closed.** [UserInterface.md](../../api/ui/README.md), with rows added to
 [docs/README.md](../../README.md) and [CLAUDE.md](../../../CLAUDE.md).
 
-**Was.** New [`docs/UserInterface.md`](../../api/UserInterface.md), plus
+**Was.** New [`docs/UserInterface.md`](../../api/ui/README.md), plus
 [`docs/README.md`](../../README.md) and [`CLAUDE.md`](../../../CLAUDE.md).
 
 Eight ADRs, two paradigms, thirty classes and no owning document —

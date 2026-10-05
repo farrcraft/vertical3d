@@ -3,7 +3,7 @@
 **Status**: amended
 **Date**: 2026-09-07
 **Amended by**: [ADR-0058](0058-ui-sdl-keyboard-adapter-in-ui-shell.md)
-**Documented in**: [The User Interface](../api/UserInterface.md), [User Interface Internals](../internals/UserInterface.md)
+**Documented in**: [api/ui/Keyboard.md](../api/ui/Keyboard.md), [internals/UserInterface.md](../internals/UserInterface.md)
 
 ## Context
 

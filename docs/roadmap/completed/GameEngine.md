@@ -21,7 +21,7 @@ The api is consumed as source ([ADR-0027](../../adr/0027-build-consume-the-api-a
 most of what consumes it is outside this tree, so the evidence came from four places:
 
 * **The api itself** — what each library offers, and the gaps [TODO.md](../../TODO.md) and
-  [RenderingPipeline.md](../../api/Rendering.md#what-is-not-built-yet) already record.
+  [RenderingPipeline.md](../../api/rendering/README.md#what-is-not-built-yet) already record.
 * **The apps in this tree** — what each implements locally that is engine-shaped: pong's
   hand-written box tests, voxel's collision stub and raw Vulkan, odyssey's map format and fog
   of war, moya's `Plane` and `Frustum`, and the renderer setup four apps write identically.

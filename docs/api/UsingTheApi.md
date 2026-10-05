@@ -200,7 +200,7 @@ vertical3d's CMake functions are global once defined, so you can call its two da
 
 An app is a subclass of `v3d::engine::Engine`, plus a `main` that runs it.
 [examples/starter/src/](../../examples/starter/src) is a complete example.
-[Engine.md](Engine.md) describes the app lifecycle, the loop, input and config in full. The
+[engine/](engine/README.md) describes the app lifecycle, the loop, input and config in full. The
 points below are the ones a first app needs.
 
 **`main` is one line:**
@@ -225,7 +225,7 @@ int main(int /* argc */, char* argv[]) {
 
 Do not write your own `main` loop, menu or text renderer. The api provides
 `v3d::ui::paint::TextRenderer` for text and `v3d::ui::shell::GameMenu` for a menu that the Escape
-key opens. See [UserInterface.md](UserInterface.md).
+key opens. See [ui/](ui/README.md).
 
 **Includes start at `api/` and use angle brackets:** `#include <api/engine/Engine.h>`. Files
 inside vertical3d use the same form, so a header has one spelling everywhere. If you run cpplint
@@ -260,7 +260,7 @@ the `<api/...>` includes go above `<string>` and the other C++ standard headers.
 3. Submit it with `renderer_->quads()->submit(canvas_, pass.get())`.
 4. Call `renderer_->renderFrame()`.
 
-[Rendering.md](Rendering.md) covers drawing in full.
+[rendering/](rendering/README.md) covers drawing in full.
 
 ## 5. The config
 
@@ -285,7 +285,7 @@ the `<api/...>` includes go above `<string>` and the other C++ standard headers.
 The api reads these types: `window`, `binding`, `ui`, `sound`, `camera`, `layout` and `sprite`.
 A type the api does not read is kept for the app to look up by name. An entry with no `type` or
 no `file`, or a file that does not load, stops startup with an error in the log.
-[Engine.md](Engine.md) describes each type.
+[engine/](engine/README.md) describes each type.
 
 ## 6. Build and run
 

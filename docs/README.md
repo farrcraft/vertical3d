@@ -25,9 +25,9 @@ For anyone using the libraries under `api/`, inside this tree or from another re
 |---|---|
 | [api/README.md](api/README.md) | What each library is for, how they depend on each other, and a glossary |
 | [api/UsingTheApi.md](api/UsingTheApi.md) | Starting a project in another repository and choosing libraries |
-| [api/Engine.md](api/Engine.md) | The app lifecycle, the game loop, input, config files, settings, logging and audio |
-| [api/Rendering.md](api/Rendering.md) | Drawing: frames and passes, 2D and world primitives, meshes, lighting, capture |
-| [api/UserInterface.md](api/UserInterface.md) | Building a UI from documents or in immediate mode, themes, focus and input |
+| [api/engine/](api/engine/README.md) | The app lifecycle, the game loop, input, config files, settings, logging and audio |
+| [api/rendering/](api/rendering/README.md) | Drawing: frames and passes, 2D and world primitives, meshes, lighting, capture |
+| [api/ui/](api/ui/README.md) | Building a UI from documents or in immediate mode, themes, focus and input |
 | [api/ECS.md](api/ECS.md) | The entity registry, shared components, interpolation, animation and particles |
 | [api/Types.md](api/Types.md) | Geometry, cameras, transforms, random numbers, animation and effect data |
 | [api/Grid.md](api/Grid.md) | Tile grids: movement, line of sight, terrain maps |

@@ -431,10 +431,10 @@ verified by the four apps still drawing text. Step 7 is the render-verification 
 
 Update the state note in the table above, set the ADR's status if the step carried one, and for
 step 7 delete [TODO.md](../../TODO.md)'s depth-target line rather than marking it done. Steps 1, 3
-and 7 each move something a document owns: [Engine.md](../../api/Engine.md) for the loop's
-new seam, [UserInterface.md](../../api/UserInterface.md) for `TextRenderer`'s constructor and
+and 7 each move something a document owns: [Engine.md](../../api/engine/README.md) for the loop's
+new seam, [UserInterface.md](../../api/ui/README.md) for `TextRenderer`'s constructor and
 `Immediate`'s two additions, and
-[RenderingPipeline.md](../../api/Rendering.md) for a target whose depth can be read.
+[RenderingPipeline.md](../../api/rendering/README.md) for a target whose depth can be read.
 
 ## Outcome
 

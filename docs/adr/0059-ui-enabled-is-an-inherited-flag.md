@@ -2,7 +2,7 @@
 
 **Status**: accepted
 **Date**: 2026-09-13
-**Documented in**: [The User Interface](../api/UserInterface.md), [User Interface Internals](../internals/UserInterface.md)
+**Documented in**: [api/ui/Components.md](../api/ui/Components.md), [internals/UserInterface.md](../internals/UserInterface.md)
 
 ## Context
 

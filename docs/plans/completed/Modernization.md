@@ -369,7 +369,7 @@ Done, 2026-08-31. A window clears to a colour and survives a resize and a minimi
   outside the cache is not retroactively put into it. Nothing is registered yet - phase 3
   fills these when it builds the quad pipeline.
 - ~~Bind by update frequency, and write the convention down.~~ Done, in
-  [docs/RenderingPipeline.md](../../api/Rendering.md): set 0 per frame bound by the pass,
+  [docs/RenderingPipeline.md](../../api/rendering/README.md): set 0 per frame bound by the pass,
   set 1 per material, push constants per object. The sort key's field order matches it.
 
 Two things landed alongside, neither of them planned:
