@@ -26,7 +26,7 @@ class CountingSystem final : public v3d::ecs::System {
         ticks_++;
         registry_->view<v3d::ecs::component::Position1D>().each(
             [](v3d::ecs::component::Position1D& position) {
-                position.set(position.value() + 1.0f);
+                position.value = position.value + 1.0f;
             });
         return true;
     }
@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE(system_simulate_test) {
     BOOST_TEST(system.simulate(1.0f / 60.0f));
 
     BOOST_TEST(system.ticks() == 2);
-    BOOST_TEST(registry.get<v3d::ecs::component::Position1D>(moving).value() == 2.0f);
+    BOOST_TEST(registry.get<v3d::ecs::component::Position1D>(moving).value == 2.0f);
     BOOST_TEST(!registry.try_get<v3d::ecs::component::Position1D>(still));
 }
 

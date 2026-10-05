@@ -6,7 +6,6 @@
 #include "Renderer.h"
 
 #include <api/asset/media/kind/Image.h>
-#include <api/ecs/component/PositionFixed2D.h>
 #include <api/grid/TileCoord.h>
 #include <api/grid/TileGrid.h>
 #include <odyssey/engine/Unit.h>
@@ -163,8 +162,8 @@ void Renderer::drawPlayer() {
     if (!player_) {
         return;
     }
-    const v3d::ecs::component::PositionFixed2D* position =
-        registry_->try_get<v3d::ecs::component::PositionFixed2D>(player_->entity());
+    const v3d::grid::TileCoord* position =
+        registry_->try_get<v3d::grid::TileCoord>(player_->entity());
     if (position == nullptr) {
         return;
     }
@@ -172,8 +171,8 @@ void Renderer::drawPlayer() {
     // the position is in tiles, and the canvas is in pixels with the origin at its top
     // left, so a tile of (0, 0) is the top left tile of the screen
     const glm::vec2 min(
-        static_cast<float>(position->x() * odyssey::engine::unit::tile_width),
-        static_cast<float>(position->y() * odyssey::engine::unit::tile_height));
+        static_cast<float>(position->x * odyssey::engine::unit::tile_width),
+        static_cast<float>(position->y * odyssey::engine::unit::tile_height));
     const glm::vec2 max = min + glm::vec2(
         static_cast<float>(odyssey::engine::unit::tile_width),
         static_cast<float>(odyssey::engine::unit::tile_height));

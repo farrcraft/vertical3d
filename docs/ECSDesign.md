@@ -16,8 +16,11 @@ a raw `entt::registry*`. There is no accessor; only a subclass reaches it.
 is: a registry pointer and a `virtual bool simulate(float step)`.
 `odyssey::system::Movement` is the one subclass in the tree.
 
-`api/ecs/component/` holds the components more than one app could want, and there are seven:
-`Color3`, `Emitter`, `Playback`, `Position1D`, `Position2D`, `PositionFixed2D` and `Transform`. An app defines the rest
+`api/ecs/component/` holds the components more than one app could want, and there are six:
+`Color3`, `Emitter`, `Playback`, `Position1D`, `Position2D` and `Transform`. Each is a value - an
+aggregate entt builds from what `emplace` is given, copied as a snapshot is - written directly
+rather than through setters. A component need not live here at all: odyssey's player stands on a
+`grid::TileCoord`, the type its pathfinding already speaks. An app defines the rest
 beside its own code — pong has `Score`, `Travel`, `Offset`, `PaddleSize`, `Size` and `Direction`
 in [pong/src/component/](../pong/src/component/); odyssey has `engine::Path`.
 
@@ -47,7 +50,7 @@ An entity's components are emplaced by the class that owns the entity id, and re
 through the registry:
 
 ```
-registry->emplace<v3d::ecs::component::Position2D>(id_, 0.0f, 0.0f);
+registry->emplace<v3d::ecs::component::Position2D>(id_, glm::vec2(0.0f));
 ...
 v3d::ecs::component::Position2D& position = registry_->get<v3d::ecs::component::Position2D>(id_);
 ```
@@ -61,7 +64,7 @@ simulation step, so a renderer can draw between steps
 top of `simulate()` copies every entity's `T` into its `Previous<T>`; `settle<T>` makes the two
 equal after a teleport; `interpolated<T>(registry, entity, alpha)` blends them through an
 `interpolate(const T&, const T&, float)` found beside `T`. `Position1D` and `Position2D` have
-one, and `PositionFixed2D` deliberately does not, so `interpolated` refuses it at compile time.
+one, and a tile coordinate deliberately does not, so `interpolated` refuses it at compile time.
 
 ## Notes
 

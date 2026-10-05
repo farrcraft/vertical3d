@@ -137,9 +137,13 @@ class TileGrid {
      **/
     void setCover(TileCoord tile, Cover cover);
 
- private:
+    /**
+     * Where a tile's entry is in anything kept a value per tile: row major, y * width + x. A
+     * tile off the grid has no index, so a caller asks contains() first.
+     **/
     std::size_t index(TileCoord tile) const;
 
+ private:
     int width_{0};
     int height_{0};
     float tileSize_{DEFAULT_TILE_SIZE};

@@ -1,8 +1,7 @@
 v3d_add_api_library(ecs
-	"component/PositionFixed2D.h" "component/PositionFixed2D.cpp"
- "component/Position2D.h" "component/Position2D.cpp"
+	"component/Position2D.h" "component/Position2D.cpp"
  "component/Position1D.h" "component/Position1D.cpp"
- "component/Color3.h" "component/Color3.cpp"
+ "component/Color3.h"
  "component/Transform.h" "component/Transform.cpp"
  "component/Playback.h" "component/Playback.cpp"
  "component/Emitter.h" "component/Emitter.cpp"

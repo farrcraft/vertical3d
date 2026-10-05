@@ -18,7 +18,7 @@ Paddle::Paddle(entt::registry* registry) :
     id_ = registry->create();
     // create the components attached to paddle entity
     registry->emplace<v3d::ecs::component::Position1D>(id_, 0.0f);
-    registry->emplace<v3d::ecs::component::Color3>(id_, 1.0f, 1.0f, 1.0f);
+    registry->emplace<v3d::ecs::component::Color3>(id_, glm::vec3(1.0f));
     registry->emplace<Score>(id_, 0);
     registry->emplace<Travel>(id_, false, false);
     registry->emplace<Offset>(id_, 0.0f);
@@ -27,23 +27,22 @@ Paddle::Paddle(entt::registry* registry) :
 
 glm::vec3 Paddle::color() const {
     v3d::ecs::component::Color3& color = registry_->get<v3d::ecs::component::Color3>(id_);
-    return color.value();
+    return color.value;
 }
 
 void Paddle::color(const glm::vec3 & color) {
     v3d::ecs::component::Color3& component = registry_->get<v3d::ecs::component::Color3>(id_);
-    component.set(color);
+    component.value = color;
 }
 
 void Paddle::move(float delta) {
     v3d::ecs::component::Position1D& pos = registry_->get<v3d::ecs::component::Position1D>(id_);
-    float lastPosition = pos.value();
-    pos.set(lastPosition + delta);
+    pos.value += delta;
 }
 
 void Paddle::position(const float pos) {
     v3d::ecs::component::Position1D& component = registry_->get<v3d::ecs::component::Position1D>(id_);
-    component.set(pos);
+    component.value = pos;
 }
 
 void Paddle::offset(const float off) {
@@ -53,11 +52,11 @@ void Paddle::offset(const float off) {
 
 float Paddle::position() const {
     v3d::ecs::component::Position1D& component = registry_->get<v3d::ecs::component::Position1D>(id_);
-    return component.value();
+    return component.value;
 }
 
 float Paddle::drawn(float alpha) const {
-    return v3d::ecs::interpolated<v3d::ecs::component::Position1D>(*registry_, id_, alpha).value();
+    return v3d::ecs::interpolated<v3d::ecs::component::Position1D>(*registry_, id_, alpha).value;
 }
 
 void Paddle::settle() {

@@ -5,7 +5,7 @@
 
 #include "Engine.h"
 
-#include <api/ecs/component/PositionFixed2D.h>
+#include <api/grid/TileCoord.h>
 #include <api/engine/Feature.h>
 #include <api/grid/Pathfinding.h>
 
@@ -40,7 +40,7 @@ bool Engine::start() {
 
     player_ = boost::make_shared<Player>(&registry_);
     const v3d::grid::TileCoord start = map_->start();
-    registry_.replace<v3d::ecs::component::PositionFixed2D>(player_->entity(), start.x, start.y);
+    registry_.replace<v3d::grid::TileCoord>(player_->entity(), start.x, start.y);
     registry_.emplace<odyssey::engine::Path>(player_->entity());
 
     movementSystem_ = boost::make_shared<odyssey::system::Movement>(&registry_);
@@ -94,9 +94,7 @@ void Engine::handleMotion(const v3d::event::kind::MouseMotion& event) {
 /**
  **/
 v3d::grid::TileCoord Engine::playerTile() const {
-    const v3d::ecs::component::PositionFixed2D& position =
-        registry_.get<v3d::ecs::component::PositionFixed2D>(player_->entity());
-    return v3d::grid::TileCoord{position.x(), position.y()};
+    return registry_.get<v3d::grid::TileCoord>(player_->entity());
 }
 
 /**
@@ -131,7 +129,7 @@ void Engine::step(int dx, int dy) {
     if (!map_->grid()->passable(to)) {
         return;
     }
-    registry_.replace<v3d::ecs::component::PositionFixed2D>(player_->entity(), to.x, to.y);
+    registry_.replace<v3d::grid::TileCoord>(player_->entity(), to.x, to.y);
 }
 
 /**

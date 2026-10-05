@@ -6,17 +6,26 @@
 #include <api/ecs/Previous.h>
 #include <api/ecs/component/Position1D.h>
 #include <api/ecs/component/Position2D.h>
-#include <api/ecs/component/PositionFixed2D.h>
 
 #include <boost/test/unit_test.hpp>
 
 #include <entt/entt.hpp>
+#include <glm/vec2.hpp>
 
-// the positions can be drawn between steps, and a tile cannot: interpolated<PositionFixed2D>
-// fails to compile rather than snapping
+namespace {
+
+/** A tile address, which has no interpolate() and so no position between two of it. **/
+struct Tile {
+    int x = 0;
+};
+
+};  // namespace
+
+// the positions can be drawn between steps, and a tile cannot: interpolated<Tile> fails to
+// compile rather than snapping
 static_assert(v3d::ecs::Interpolable<v3d::ecs::component::Position1D>);
 static_assert(v3d::ecs::Interpolable<v3d::ecs::component::Position2D>);
-static_assert(!v3d::ecs::Interpolable<v3d::ecs::component::PositionFixed2D>);
+static_assert(!v3d::ecs::Interpolable<Tile>);
 
 /**
  * A snapshot then a move is drawn at the snapshot at alpha 0, at the move at alpha 1, and
@@ -25,14 +34,14 @@ static_assert(!v3d::ecs::Interpolable<v3d::ecs::component::PositionFixed2D>);
 BOOST_AUTO_TEST_CASE(previous_interpolated_test) {
     entt::registry registry;
     const entt::entity entity = registry.create();
-    registry.emplace<v3d::ecs::component::Position2D>(entity, 10.0f, 20.0f);
+    registry.emplace<v3d::ecs::component::Position2D>(entity, glm::vec2(10.0f, 20.0f));
 
     v3d::ecs::snapshot<v3d::ecs::component::Position2D>(registry);
-    registry.get<v3d::ecs::component::Position2D>(entity).set(glm::vec2(30.0f, 60.0f));
+    registry.get<v3d::ecs::component::Position2D>(entity).value = glm::vec2(30.0f, 60.0f);
 
-    const glm::vec2 start = v3d::ecs::interpolated<v3d::ecs::component::Position2D>(registry, entity, 0.0f).value();
-    const glm::vec2 end = v3d::ecs::interpolated<v3d::ecs::component::Position2D>(registry, entity, 1.0f).value();
-    const glm::vec2 quarter = v3d::ecs::interpolated<v3d::ecs::component::Position2D>(registry, entity, 0.25f).value();
+    const glm::vec2 start = v3d::ecs::interpolated<v3d::ecs::component::Position2D>(registry, entity, 0.0f).value;
+    const glm::vec2 end = v3d::ecs::interpolated<v3d::ecs::component::Position2D>(registry, entity, 1.0f).value;
+    const glm::vec2 quarter = v3d::ecs::interpolated<v3d::ecs::component::Position2D>(registry, entity, 0.25f).value;
 
     BOOST_TEST((start == glm::vec2(10.0f, 20.0f)));
     BOOST_TEST((end == glm::vec2(30.0f, 60.0f)));
@@ -49,11 +58,11 @@ BOOST_AUTO_TEST_CASE(previous_snapshot_replaces_test) {
     registry.emplace<v3d::ecs::component::Position1D>(entity, 0.0f);
 
     v3d::ecs::snapshot<v3d::ecs::component::Position1D>(registry);
-    registry.get<v3d::ecs::component::Position1D>(entity).set(4.0f);
+    registry.get<v3d::ecs::component::Position1D>(entity).value = 4.0f;
     v3d::ecs::snapshot<v3d::ecs::component::Position1D>(registry);
-    registry.get<v3d::ecs::component::Position1D>(entity).set(8.0f);
+    registry.get<v3d::ecs::component::Position1D>(entity).value = 8.0f;
 
-    BOOST_TEST(v3d::ecs::interpolated<v3d::ecs::component::Position1D>(registry, entity, 0.5f).value() == 6.0f);
+    BOOST_TEST(v3d::ecs::interpolated<v3d::ecs::component::Position1D>(registry, entity, 0.5f).value == 6.0f);
 }
 
 /**
@@ -64,10 +73,10 @@ BOOST_AUTO_TEST_CASE(previous_created_after_the_snapshot_test) {
     v3d::ecs::snapshot<v3d::ecs::component::Position2D>(registry);
 
     const entt::entity entity = registry.create();
-    registry.emplace<v3d::ecs::component::Position2D>(entity, 5.0f, 7.0f);
+    registry.emplace<v3d::ecs::component::Position2D>(entity, glm::vec2(5.0f, 7.0f));
 
     BOOST_TEST(!registry.all_of<v3d::ecs::Previous<v3d::ecs::component::Position2D>>(entity));
-    const glm::vec2 drawn = v3d::ecs::interpolated<v3d::ecs::component::Position2D>(registry, entity, 0.5f).value();
+    const glm::vec2 drawn = v3d::ecs::interpolated<v3d::ecs::component::Position2D>(registry, entity, 0.5f).value;
     BOOST_TEST((drawn == glm::vec2(5.0f, 7.0f)));
 }
 
@@ -77,13 +86,13 @@ BOOST_AUTO_TEST_CASE(previous_created_after_the_snapshot_test) {
 BOOST_AUTO_TEST_CASE(previous_settle_test) {
     entt::registry registry;
     const entt::entity entity = registry.create();
-    registry.emplace<v3d::ecs::component::Position2D>(entity, 0.0f, 0.0f);
+    registry.emplace<v3d::ecs::component::Position2D>(entity, glm::vec2(0.0f, 0.0f));
 
     v3d::ecs::snapshot<v3d::ecs::component::Position2D>(registry);
-    registry.get<v3d::ecs::component::Position2D>(entity).set(glm::vec2(400.0f, 300.0f));
+    registry.get<v3d::ecs::component::Position2D>(entity).value = glm::vec2(400.0f, 300.0f);
     v3d::ecs::settle<v3d::ecs::component::Position2D>(registry, entity);
 
-    const glm::vec2 drawn = v3d::ecs::interpolated<v3d::ecs::component::Position2D>(registry, entity, 0.25f).value();
+    const glm::vec2 drawn = v3d::ecs::interpolated<v3d::ecs::component::Position2D>(registry, entity, 0.25f).value;
     BOOST_TEST((drawn == glm::vec2(400.0f, 300.0f)));
 }
 
@@ -98,11 +107,11 @@ BOOST_AUTO_TEST_CASE(previous_snapshot_covers_every_entity_test) {
     const entt::entity other = registry.create();
     registry.emplace<v3d::ecs::component::Position1D>(first, 1.0f);
     registry.emplace<v3d::ecs::component::Position1D>(second, 2.0f);
-    registry.emplace<v3d::ecs::component::Position2D>(other, 0.0f, 0.0f);
+    registry.emplace<v3d::ecs::component::Position2D>(other, glm::vec2(0.0f, 0.0f));
 
     v3d::ecs::snapshot<v3d::ecs::component::Position1D>(registry);
 
-    BOOST_TEST(registry.get<v3d::ecs::Previous<v3d::ecs::component::Position1D>>(first).value.value() == 1.0f);
-    BOOST_TEST(registry.get<v3d::ecs::Previous<v3d::ecs::component::Position1D>>(second).value.value() == 2.0f);
+    BOOST_TEST(registry.get<v3d::ecs::Previous<v3d::ecs::component::Position1D>>(first).value.value == 1.0f);
+    BOOST_TEST(registry.get<v3d::ecs::Previous<v3d::ecs::component::Position1D>>(second).value.value == 2.0f);
     BOOST_TEST(!registry.all_of<v3d::ecs::Previous<v3d::ecs::component::Position1D>>(other));
 }

@@ -618,6 +618,14 @@ which removes the editor's casts.
 
 B6.
 
+**Closed.** `type::Transform` is the TRS value, its matrix and its interpolation; the ecs
+`Transform` component is it, and `dag::Transform` holds one, so `dag` requires `type`. The
+editor's `Placement` stays its own: it is an undo record compared with a tolerance, not a
+composition. odyssey stores a `grid::TileCoord` and `PositionFixed2D` is gone; `Position1D`,
+`Position2D` and `Color3` are aggregates with a `value`, so all three copy. `grid` floods once,
+for both `reachableTiles` and `DistanceField`, and `TileGrid::index` is public and is what the
+walk indexes by.
+
 `dag::Transform` holds the ecs TRS value rather than restating it. odyssey stores a
 `grid::TileCoord` and `PositionFixed2D` goes. The class-style ecs components become aggregates,
 or move into the one app each serves. `grid` gets one `flood` and exposes its index.

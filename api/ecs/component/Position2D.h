@@ -8,56 +8,13 @@
 #include <glm/vec2.hpp>
 
 namespace v3d::ecs::component {
+
 /**
- * A 2D position
+ * Where a thing is on a plane. An aggregate, so it is copied as a snapshot of the previous step
+ * is - ADR-0060 - and written directly, since simulation sets it every step.
  **/
-class Position2D final {
- public:
-    Position2D(float x, float y) noexcept;
-
-    /**
-     * Copy constructor - a snapshot of the previous step is a copy, per ADR-0060
-     **/
-    Position2D(const Position2D& p) noexcept = default;
-
-    /**
-     * Move constructor
-     **/
-    Position2D(Position2D&& p) noexcept;
-
-    /**
-     * Default destructor
-     **/
-    ~Position2D() noexcept = default;
-
-    /**
-     **/
-    float x() const;
-
-    /**
-     **/
-    float y() const;
-
-    /**
-     **/
-    glm::vec2 value() const;
-
-    /**
-     **/
-    void set(const glm::vec2& position);
-
-    /**
-     * Move assignment
-     **/
-    Position2D& operator=(Position2D&& p) noexcept;
-
-    /**
-     * Copy assignment
-     **/
-    Position2D& operator=(const Position2D& p) noexcept = default;
-
- private:
-    glm::vec2 position_;
+struct Position2D final {
+    glm::vec2 value{0.0f};
 };
 
 /**
