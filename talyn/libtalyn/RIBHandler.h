@@ -98,7 +98,7 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
      * transformation. RI says a polygon is planar and convex, so a fan is the whole of it.
      **/
     void fan(const std::vector<glm::vec3> & points, const std::vector<glm::vec3> & normals,
-        const std::vector<unsigned int> & indices);
+        const std::vector<float> & st, const std::vector<unsigned int> & indices);
 
     /**
      * What RiAttributeBegin saves and RiAttributeEnd puts back.

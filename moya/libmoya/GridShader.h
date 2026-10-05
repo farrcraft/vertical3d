@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <api/render/offline/Texture.h>
 #include <api/render/offline/sl/runtime/Machine.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
 
@@ -56,6 +57,7 @@ class GridShader final : public v3d::render::offline::sl::runtime::Renderer {
         v3d::render::offline::sl::runtime::Value* direction,
         v3d::render::offline::sl::runtime::Value* colour,
         std::vector<char>* reached, bool* ambient) override;
+    const v3d::render::offline::Texture* texture(const std::string & name) override;
 
  private:
     /**

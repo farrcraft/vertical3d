@@ -119,9 +119,16 @@ implements it as `<renderer>::RIBHandler`. RIB is also what the editor exports t
   divides out. A parameter list is therefore parsed before the count is known, and an
   unbracketed varying or vertex parameter ends the parse rather than being guessed at.
 - **A parameter is typed by a declaration or it is dropped.** The reader declares RI's standard
-  names, `Option "trace"`'s `maxdepth` and `Option "searchpath"`'s `shader` among them, and
-  nothing else. A shader's own parameter that is not one of those needs `Declare` or an inline
+  names, `Option "trace"`'s `maxdepth` and `Option "searchpath"`'s `shader` and `texture` among
+  them, and nothing else. A shader's own parameter that is not one of those needs `Declare` or an inline
   type, `"uniform float size" [0.5]`, or the shader runs with its default.
+- **`MakeTexture` is understood and makes nothing.** There is no `txmake`: the image a scene
+  names in a shader is the texture, read through `image::Factory`, so a scene that converts one
+  first should name the image rather than what it converted it to.
+- **A polygon's `"st"` is its texture coordinates**, two floats a vertex. talyn weights a
+  triangle's three by the hit's barycentrics, and a triangle given none has `s` and `t` equal to
+  them. moya interpolates them across a grid as it does `"Cs"` and carries them through a split;
+  a grid whose corners have none takes its own parameters.
 - **talyn intersects a `Sphere` where it is defined**, cut to its slab of heights and its sweep,
   with RI's outward normal and its `u` and `v`. moya dices polygons only: a sphere is not drawn,
   and the first in a scene is logged.
@@ -223,7 +230,24 @@ rather than a tour.
   of a dielectric, with `refract`'s conventions, and the reflected and refracted directions.
 - **`shinymetal` traces where RI's reads an environment map**, and **`glass`** is this tree's,
   since RI has no refracting shader. glass sets `Oi` to one, because it shows what is behind it
-  by refraction, and its `Os` is what a shadow through it reads.
+  by refraction, and its `Os` is what a shadow through it reads. **`paintedplastic`** is RI's,
+  multiplying `Cs` by the texture its `texturename` names.
+- **`texture()` is an image the renderer holds for the frame.** `offline::Textures` reads each
+  name once, looking on `Option "searchpath" "texture"` and then at the name as it is, and
+  remembers a name that does not read; the machine answers black for it and says so once.
+  `offline::Texture` samples bilinearly between texel centres and wraps periodically, RI's
+  defaults, with `t` running down the image. Called with only a name, it reads at the shader's
+  `s` and `t`.
+- **`noise()` is Perlin's improved noise in SL's range**, `[0, 1]` and `0.5` on the lattice, over a
+  permutation shuffled by a `type::Random` of a fixed seed, so a pattern is the same on every
+  machine. Its float, pair and point forms read a line, a plane and a volume of it.
+- **A cast chooses between built-ins that differ only in their result.** The compiler takes the
+  first signature that accepts a call unless the call is a cast's operand and a later one answers
+  the cast's type: `color noise(P)` is three patterns rather than a grey one, and
+  `float texture(name)` is the first channel. Without a cast, `noise` is a float and `texture` a
+  colour.
+- **Two strings compare by their text**, which is how `paintedplastic` asks whether it was given
+  a texture at all. `shadow` is the one built-in left declared and stubbed.
 
 ## Normals
 

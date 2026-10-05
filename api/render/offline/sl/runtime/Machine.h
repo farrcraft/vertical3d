@@ -153,7 +153,7 @@ class Machine final {
     /**
      * A standard library call. Defined in Library.cxx, which is most of the language by
      * volume and none of it by mechanism: every body there is arithmetic over the value
-     * model, and the four that are not ask the renderer.
+     * model, and the few that are not ask the renderer.
      **/
     void builtin(const Instruction & instruction);
     /**
@@ -162,6 +162,17 @@ class Machine final {
      * ambient light has no direction, so an illuminance loop cannot reach it.
      **/
     void ambient(Value* target);
+    /**
+     * The registers a call writes rather than reads, from its first written argument on, or
+     * none for a call that answers through its result.
+     **/
+    std::vector<Value*> written(const Instruction & instruction, int first);
+    /**
+     * The image a texture() call names, and the s and t it reads at: its own arguments, or
+     * the shader's s and t when it was given only the name. Null, and said once, when the
+     * renderer cannot read it.
+     **/
+    const Texture* texture(const std::vector<const Value*> & given, const Value** s, const Value** t);
     /**
      * transmission and trace, which are the two the renderer answers about a line between
      * two points. A renderer that cannot lets all the light through and traces nothing,
@@ -219,6 +230,9 @@ class Machine final {
     Value colour_;
     /** The register P is, for the built-in that asks the lights about the batch. **/
     int point_ = -1;
+    /** The registers s and t are, which texture() reads when it is not told where. **/
+    int s_ = -1;
+    int t_ = -1;
     std::vector<char> lit_;
     std::vector<std::string> reports_;
     std::vector<std::string> printed_;

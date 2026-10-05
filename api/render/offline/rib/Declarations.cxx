@@ -211,6 +211,7 @@ Declarations::Declarations() {
     // and Option "trace" and Option "searchpath", whose names are the standard's
     declarations_["maxdepth"] = Declaration(Storage::UNIFORM, Type::INTEGER, 1);
     declarations_["shader"] = Declaration(Storage::UNIFORM, Type::STRING, 1);
+    declarations_["texture"] = Declaration(Storage::UNIFORM, Type::STRING, 1);
 }
 
 bool Declarations::declare(const std::string & name, const std::string & text) {

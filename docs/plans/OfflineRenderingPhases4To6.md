@@ -114,7 +114,7 @@ distant light's shadow ray of fixed length; and the C array helper still in moya
 | [10](#step-10--adaptive-sampling-in-talyn) | Adaptive sampling in talyn | `talyn` | — | done |
 | [11](#step-11--a-trace-that-recurses) | A trace that recurses, to a depth a scene sets | `talyn` | — | done |
 | [12](#step-12--reflection-refraction-and-transparency) | Reflection, refraction, transparency and spheres | `api/render/offline`, `talyn` | — | done |
-| [13](#step-13--texture-and-noise) | `texture()` from an image, and `noise()` | `api/render/offline`, `moya`, `talyn` | — | not started |
+| [13](#step-13--texture-and-noise) | `texture()` from an image, and `noise()` | `api/render/offline`, `moya`, `talyn` | — | done |
 | [14](#step-14--the-record-one-ray-tracer-both-renderers-reach) | The record: one ray tracer both renderers reach | `docs/adr` | **0077** | not started |
 | [15](#step-15--the-ray-tracer-moves-into-the-shared-library) | talyn's scene and hit shading move into the shared library | `api/render/offline`, `talyn` | 0077 | not started |
 | [16](#step-16--moya-traces) | moya traces: shadows and `trace()` | `moya` | 0077 | not started |
@@ -489,6 +489,25 @@ falls back to the barycentrics it uses today. moya's grid already has them.
 * a textured quad renders the same in both renderers to the tolerance, which is the first
   picture the two are asked to agree on;
 * a missing texture answers black and reports once.
+
+**Landed, with the agreement pinned at sixteen pixels rather than a whole picture.** moya
+colours a micropolygon by one corner, so where a texture blends between texels the two
+renderers differ by about a pixel's worth of the gradient, which is far more than one step.
+`textured.rib`, one scene in both suites, shows `blocks.png` through `paintedplastic`: eight by
+eight texels in two by two blocks of one colour, so a pixel inside a block reads its colour
+exactly in either renderer, and both suites pin the same sixteen. The quad is larger than a
+grid, so moya splits it, and a split now carries `st` to its pieces, which the case was checked
+to catch by dropping it.
+
+Four things the step did not foresee. **SL picks a built-in by the type it is cast to**: `noise`
+answers a float, a point or a colour, and the compiler now prefers the signature whose result a
+surrounding cast names. **`noise`'s permutation is shuffled by a fixed seed** rather than typed in
+from Perlin's table, which is as deterministic and has nothing to transcribe wrong.
+**Two strings compared as two numbers**, so `texturename != ""` was always false; they compare by
+their text now. **moya's `Polygon::split` dropped everything but position**; it carries `st` and
+nothing else, so no existing picture moves. `Option "searchpath" "texture"` is the texture's,
+and its splitting moved out of `ShaderLibrary` into `offline::searchpath`. `paintedplastic`
+joined the standard shaders, and `shadow` is the one stub left.
 
 ### Step 14 — The record: one ray tracer both renderers reach
 

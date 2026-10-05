@@ -46,7 +46,8 @@ void put(Machine* machine, int reg, float value) {
 
 };  // namespace
 
-HitShader::HitShader(const Scene* scene) : scene_(scene) {
+HitShader::HitShader(const Scene* scene, v3d::render::offline::Textures* textures) :
+    scene_(scene), textures_(textures) {
 }
 
 HitShader::Run & HitShader::run(const v3d::render::offline::sl::InstancePtr & shader) {
@@ -166,6 +167,10 @@ bool HitShader::transmission(const Value & from, const Value & to, Value* fracti
     return true;
 }
 
+const v3d::render::offline::Texture* HitShader::texture(const std::string & name) {
+    return textures_ == nullptr ? nullptr : textures_->find(name);
+}
+
 void HitShader::time(float when) {
     time_ = when;
 }
@@ -270,9 +275,8 @@ glm::vec3 HitShader::shade(const Hit & hit, glm::vec3* opacity) {
     put(&held.machine, program.symbol("Cs"), primitive.colour());
     put(&held.machine, program.symbol("Os"), primitive.opacity());
     put(&held.machine, program.symbol("Oi"), primitive.opacity());
-    // a sphere's are its own, and a triangle's barycentric weights stand in for them
-    put(&held.machine, program.symbol("s"), hit.u);
-    put(&held.machine, program.symbol("t"), hit.v);
+    put(&held.machine, program.symbol("s"), hit.s);
+    put(&held.machine, program.symbol("t"), hit.t);
     put(&held.machine, program.symbol("u"), hit.u);
     put(&held.machine, program.symbol("v"), hit.v);
 

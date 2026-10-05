@@ -117,6 +117,9 @@ void fill(const Nearest & found, const v3d::type::geometry::Ray & ray, const Pos
         hit->geometric = found.triangle->geometricNormal();
         hit->u = found.u;
         hit->v = found.v;
+        const glm::vec2 st = found.triangle->st(found.u, found.v);
+        hit->s = st.x;
+        hit->t = st.y;
     } else {
         hit->primitive = found.sphere;
         hit->normal = found.sphere->normal(found.point);
@@ -124,6 +127,8 @@ void fill(const Nearest & found, const v3d::type::geometry::Ray & ray, const Pos
         const glm::vec2 parameters = found.sphere->parameters(found.point);
         hit->u = parameters.x;
         hit->v = parameters.y;
+        hit->s = parameters.x;
+        hit->t = parameters.y;
     }
     const int motion = hit->primitive->motion();
     if (motion >= 0) {
@@ -199,6 +204,16 @@ glm::vec3 Triangle::shadingNormal(float u, float v) const {
     // normals cancel give none at all - the plane is what is left to answer with
     const float length = glm::length(normal);
     return length > 0.0f ? normal / length : geometric_;
+}
+
+void Triangle::st(const glm::vec2 & a, const glm::vec2 & b, const glm::vec2 & c) {
+    sta_ = a;
+    stb_ = b;
+    stc_ = c;
+}
+
+glm::vec2 Triangle::st(float u, float v) const {
+    return sta_ * (1.0f - u - v) + stb_ * u + stc_ * v;
 }
 
 Sphere::Sphere(float radius, float zmin, float zmax, float thetamax, const glm::mat4x4 & placement,

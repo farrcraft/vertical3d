@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <api/render/offline/Texture.h>
+
 #include <string>
 #include <vector>
 
@@ -89,6 +91,15 @@ class Renderer {
      * @return whether the renderer traced it; one that did not answers black and says so
      **/
     virtual bool trace(const Value & origin, const Value & direction, Value* colour);
+
+    /**
+     * The texture a shader names, which the renderer holds for the frame so that each is
+     * read once however many batches ask for it.
+     *
+     * @return null when the name cannot be read, or when the renderer holds no textures;
+     *         the machine answers black and says so
+     **/
+    virtual const Texture* texture(const std::string & name);
 };
 
 };  // namespace v3d::render::offline::sl::runtime

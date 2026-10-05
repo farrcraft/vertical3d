@@ -733,3 +733,36 @@ BOOST_AUTO_TEST_CASE(talyn_trace_reference_from_rib_test) {
     rc->render();
     check(rc->framebuffer()->image(3), TRACE, TRACE_RIB_RENDERED);
 }
+
+/**
+ * A quad showing a texture through paintedplastic, from the scene moya's suite reads too.
+ *
+ * The image's 2 by 2 texel blocks are each one colour, so a pixel well inside a block reads
+ * that colour exactly whether it is sampled at the pixel or a micropolygon away from it.
+ * Both suites pin the same sixteen pixels, which is the first picture the two renderers are
+ * asked to agree on: the same s and t, the same way up, and the same texel at each.
+ **/
+BOOST_AUTO_TEST_CASE(talyn_textured_quad_test) {
+    auto rc = boost::make_shared<v3d::talyn::RenderContext>();
+    v3d::talyn::RIBHandler handler(rc);
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(reader.read("data/textured.rib", &handler));
+    BOOST_CHECK(reader.unrecognised().empty());
+    BOOST_REQUIRE_EQUAL(handler.error(), "");
+    rc->render();
+    boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = rc->framebuffer();
+
+    // red counts the block across and green the block down, and blue is the same in each
+    for (unsigned int across = 0; across < 4; across++) {
+        for (unsigned int down = 0; down < 4; down++) {
+            const unsigned int column = 20 + 8 * across;
+            const unsigned int row = 12 + 8 * down;
+            BOOST_CHECK_SMALL(planes->value(0, column, row) - 85.0f * across / 255.0f, 1.0f / 255.0f);
+            BOOST_CHECK_SMALL(planes->value(1, column, row) - 85.0f * down / 255.0f, 1.0f / 255.0f);
+            BOOST_CHECK_SMALL(planes->value(2, column, row) - 128.0f / 255.0f, 1.0f / 255.0f);
+        }
+    }
+    // and outside the quad is the background
+    BOOST_CHECK_EQUAL(planes->value(2, 4, 4), 0.0f);
+}

@@ -145,14 +145,22 @@ std::vector<Signature> build() {
     table.push_back(shading("transmission", Type::COLOR, { Argument::POINT, Argument::POINT }));
     table.push_back(shading("trace", Type::COLOR, { Argument::POINT, Argument::POINTLIKE }));
 
+    // an image, read at s and t when it is not told where. A colour unless a cast asks for
+    // a float, which is the first channel
+    for (const Type result : { Type::COLOR, Type::FLOAT }) {
+        table.push_back(shading("texture", result, { Argument::STRING }));
+        table.push_back(shading("texture", result,
+            { Argument::STRING, Argument::FLOAT, Argument::FLOAT }));
+    }
+    // a float unless a cast asks for three of them, each its own pattern
+    for (const Type result : { Type::FLOAT, Type::COLOR, Type::POINT, Type::VECTOR }) {
+        table.push_back(declare("noise", result, { Argument::FLOAT }));
+        table.push_back(declare("noise", result, { Argument::FLOAT, Argument::FLOAT }));
+        table.push_back(declare("noise", result, { Argument::POINT }));
+    }
+
     // declared, stubbed and reported once - see stubbed()
-    table.push_back(shading("texture", Type::COLOR, { Argument::STRING }));
-    table.push_back(shading("texture", Type::COLOR,
-        { Argument::STRING, Argument::FLOAT, Argument::FLOAT }));
     table.push_back(shading("shadow", Type::FLOAT, { Argument::STRING, Argument::POINT }));
-    table.push_back(declare("noise", Type::FLOAT, { Argument::FLOAT }));
-    table.push_back(declare("noise", Type::FLOAT, { Argument::FLOAT, Argument::FLOAT }));
-    table.push_back(declare("noise", Type::FLOAT, { Argument::POINT }));
 
     // and the one anybody actually debugs with
     Signature print = declare("printf", Type::VOID, { Argument::STRING });
@@ -232,7 +240,7 @@ std::vector<Signature> builtin(const std::string & name) {
 }
 
 bool stubbed(const std::string & name) {
-    return name == "texture" || name == "shadow" || name == "noise";
+    return name == "shadow";
 }
 
 };  // namespace v3d::render::offline::sl

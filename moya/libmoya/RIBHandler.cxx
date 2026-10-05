@@ -17,13 +17,14 @@ namespace {
 typedef v3d::render::offline::rib::ParameterList ParameterList;
 
 /**
- * One polygon from a run of the position array, with whatever colour and shading normal
- * the scene gave each corner. A vertex left without either takes the primitive's in
- * addPolygon() - the current colour, and the plane the polygon lies in.
+ * One polygon from a run of the position array, with whatever colour, shading normal and
+ * texture coordinates the scene gave each corner. A vertex left without a colour or a
+ * normal takes the primitive's in addPolygon() - the current colour, and the plane the
+ * polygon lies in.
  **/
 boost::shared_ptr<Polygon> build(const std::vector<glm::vec3> & points,
     const std::vector<glm::vec3> & colors, const std::vector<glm::vec3> & normals,
-    const std::vector<unsigned int> & indices) {
+    const std::vector<float> & st, const std::vector<unsigned int> & indices) {
     boost::shared_ptr<Polygon> polygon = boost::make_shared<Polygon>();
     for (unsigned int index : indices) {
         if (index >= points.size()) {
@@ -36,6 +37,10 @@ boost::shared_ptr<Polygon> build(const std::vector<glm::vec3> & points,
         }
         if (index < normals.size()) {
             vertex.normal(normals[index]);
+        }
+        const std::size_t pair = 2 * static_cast<std::size_t>(index);
+        if (pair + 2 <= st.size()) {
+            vertex.st(glm::vec2(st[pair], st[pair + 1]));
         }
         polygon->addVertex(vertex);
     }
@@ -59,9 +64,12 @@ RenderContext & RIBHandler::context() {
 void RIBHandler::option(const std::string & name, const ParameterList & parameters) {
     if (name == "searchpath") {
         // RI writes it as Option "searchpath" "shader" ["./shaders:&"], and the shader
-        // path is the only one this renderer looks anything up on
+        // and texture paths are the ones this renderer looks anything up on
         if (parameters.has("shader")) {
             context().searchpath(parameters.string("shader", std::string()));
+        }
+        if (parameters.has("texture")) {
+            context().textures().searchpath(parameters.string("texture", std::string()));
         }
         return;
     }
@@ -224,6 +232,7 @@ void RIBHandler::polygon(unsigned int vertices, const ParameterList & parameters
     const std::vector<glm::vec3> points = parameters.points("P");
     const std::vector<glm::vec3> colors = parameters.points("Cs");
     const std::vector<glm::vec3> normals = parameters.points("N");
+    const std::vector<float> & st = parameters.floats("st");
     std::vector<unsigned int> indices;
     for (unsigned int i = 0; i < vertices && i < points.size(); i++) {
         indices.push_back(i);
@@ -231,7 +240,7 @@ void RIBHandler::polygon(unsigned int vertices, const ParameterList & parameters
     if (indices.size() < 3) {
         return;
     }
-    context().addPolygon(build(points, colors, normals, indices));
+    context().addPolygon(build(points, colors, normals, st, indices));
 }
 
 void RIBHandler::sphere(float radius, float zmin, float zmax, float thetamax, const ParameterList & parameters) {
@@ -251,6 +260,7 @@ void RIBHandler::pointsPolygons(const std::vector<unsigned int> & counts, const 
     const std::vector<glm::vec3> points = parameters.points("P");
     const std::vector<glm::vec3> colors = parameters.points("Cs");
     const std::vector<glm::vec3> normals = parameters.points("N");
+    const std::vector<float> & st = parameters.floats("st");
     std::size_t offset = 0;
     for (unsigned int count : counts) {
         if (offset + count > indices.size()) {
@@ -258,7 +268,7 @@ void RIBHandler::pointsPolygons(const std::vector<unsigned int> & counts, const 
         }
         if (count >= 3) {
             const std::vector<unsigned int> face(indices.begin() + offset, indices.begin() + offset + count);
-            context().addPolygon(build(points, colors, normals, face));
+            context().addPolygon(build(points, colors, normals, st, face));
         }
         offset += count;
     }

@@ -597,6 +597,12 @@ Reader::Result Reader::shaderRequest(const std::string & name, Lexer * lexer, Ha
         handler->illuminate(first, on != 0.0f);
         return Result::Handled;
     }
+    if (name == "MakeTexture") {
+        // the image a scene names is the texture, so there is nothing to make and the
+        // request is understood rather than unrecognised
+        skipArguments(lexer);
+        return Result::Handled;
+    }
     return Result::Unhandled;
 }
 

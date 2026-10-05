@@ -820,6 +820,9 @@ Type Compiler::checkCast(const ExpressionPtr & expression) {
         expression->type = cast.type;
         return expression->type;
     }
+    if (cast.operand->kind == Expression::Kind::CALL) {
+        wanted_ = cast.type;
+    }
     const Type given = checkExpression(cast.operand);
     if (!coercible(given, cast.type)) {
         throw fail(std::string(name(given)) + " cannot be cast to " + name(cast.type),
@@ -831,6 +834,8 @@ Type Compiler::checkCast(const ExpressionPtr & expression) {
 
 Type Compiler::checkCall(const ExpressionPtr & expression) {
     Call & call = static_cast<Call &>(*expression);
+    const Type wanted = wanted_;
+    wanted_ = Type::VOID;
     std::vector<Type> given;
     given.reserve(call.arguments.size());
     for (const ExpressionPtr & argument : call.arguments) {
@@ -847,7 +852,7 @@ Type Compiler::checkCall(const ExpressionPtr & expression) {
         expression->type = shader_->functions[static_cast<std::size_t>(function)].type;
         return expression->type;
     }
-    return checkBuiltinCall(call, given);
+    return checkBuiltinCall(call, given, wanted);
 }
 
 int Compiler::checkShaderCall(Call & call, const std::vector<Type> & given) {
@@ -873,9 +878,10 @@ int Compiler::checkShaderCall(Call & call, const std::vector<Type> & given) {
     return -1;
 }
 
-Type Compiler::checkBuiltinCall(Call & call, const std::vector<Type> & given) {
+Type Compiler::checkBuiltinCall(Call & call, const std::vector<Type> & given, Type wanted) {
     const std::vector<Signature> & table = builtins();
     bool named = false;
+    std::size_t chosen = table.size();
     for (std::size_t index = 0; index < table.size(); index++) {
         const Signature & signature = table[index];
         if (signature.name != call.name) {
@@ -885,23 +891,33 @@ Type Compiler::checkBuiltinCall(Call & call, const std::vector<Type> & given) {
         if (!suits(signature, given)) {
             continue;
         }
-        for (std::size_t argument = signature.outputs < 0 ? given.size() :
-            static_cast<std::size_t>(signature.outputs); argument < given.size(); argument++) {
-            if (call.arguments[argument]->kind != Expression::Kind::VARIABLE) {
-                throw fail("argument " + std::to_string(argument + 1) + " of '" + call.name +
-                    "' is written, so it has to be a variable", call.arguments[argument]->line,
-                    call.arguments[argument]->column);
-            }
+        if (chosen == table.size()) {
+            chosen = index;
         }
-        call.signature = static_cast<int>(index);
-        call.type = signature.resultFrom >= 0 ?
-            given[static_cast<std::size_t>(signature.resultFrom)] : signature.result;
-        return call.type;
+        if (signature.resultFrom < 0 && signature.result == wanted) {
+            chosen = index;
+            break;
+        }
     }
     if (!named) {
         throw fail("'" + call.name + "' is not a function", call.line, call.column);
     }
-    throw fail("'" + call.name + "' cannot be called with those arguments", call.line, call.column);
+    if (chosen == table.size()) {
+        throw fail("'" + call.name + "' cannot be called with those arguments", call.line, call.column);
+    }
+    const Signature & signature = table[chosen];
+    for (std::size_t argument = signature.outputs < 0 ? given.size() :
+        static_cast<std::size_t>(signature.outputs); argument < given.size(); argument++) {
+        if (call.arguments[argument]->kind != Expression::Kind::VARIABLE) {
+            throw fail("argument " + std::to_string(argument + 1) + " of '" + call.name +
+                "' is written, so it has to be a variable", call.arguments[argument]->line,
+                call.arguments[argument]->column);
+        }
+    }
+    call.signature = static_cast<int>(chosen);
+    call.type = signature.resultFrom >= 0 ?
+        given[static_cast<std::size_t>(signature.resultFrom)] : signature.result;
+    return call.type;
 }
 
 bool Compiler::escapes(const StatementPtr & loop) const {

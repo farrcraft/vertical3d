@@ -5,6 +5,8 @@
 
 #include "ShaderLibrary.h"
 
+#include <api/render/offline/SearchPath.h>
+
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -63,6 +65,19 @@ surface plastic(float Ka = 1; float Kd = 0.5; float Ks = 0.5; float roughness = 
     vector V = -normalize(I);
     Oi = Os;
     Ci = Os * (Cs * (Ka * ambient() + Kd * diffuse(Nf)) +
+        specularcolor * Ks * specular(Nf, V, roughness));
+}
+
+surface paintedplastic(float Ka = 1; float Kd = 0.5; float Ks = 0.5; float roughness = 0.1;
+        color specularcolor = 1; string texturename = "") {
+    normal Nf = faceforward(normalize(N), I);
+    vector V = -normalize(I);
+    Oi = Os;
+    Ci = Cs;
+    if (texturename != "") {
+        Ci *= color texture(texturename);
+    }
+    Ci = Os * (Ci * (Ka * ambient() + Kd * diffuse(Nf)) +
         specularcolor * Ks * specular(Nf, V, roughness));
 }
 
@@ -156,32 +171,6 @@ ShaderPtr find(const std::vector<ShaderPtr> & shaders, const std::string & name)
     return shaders.size() == 1 ? shaders[0] : ShaderPtr();
 }
 
-/**
- * The directories a search path names.
- *
- * RI separates them with a colon, which is also what a Windows drive letter is followed
- * by, so a lone letter before one does not end a directory.
- **/
-std::vector<std::string> split(const std::string & path) {
-    std::vector<std::string> found;
-    std::string current;
-    for (std::size_t i = 0; i < path.size(); i++) {
-        const bool drive = path[i] == ':' && current.size() == 1 && std::isalpha(current[0]) != 0;
-        if (path[i] != ':' || drive) {
-            current += path[i];
-            continue;
-        }
-        if (!current.empty()) {
-            found.push_back(current);
-        }
-        current.clear();
-    }
-    if (!current.empty()) {
-        found.push_back(current);
-    }
-    return found;
-}
-
 };  // namespace
 
 ShaderLibrary::ShaderLibrary(const boost::shared_ptr<v3d::log::Logger> & logger) :
@@ -189,19 +178,7 @@ ShaderLibrary::ShaderLibrary(const boost::shared_ptr<v3d::log::Logger> & logger)
 }
 
 void ShaderLibrary::searchpath(const std::string & path) {
-    std::vector<std::string> next;
-    for (const std::string & directory : split(path)) {
-        if (directory != "&") {
-            next.push_back(directory);
-            continue;
-        }
-        // '&' is whatever the path was before, which is how a scene appends to it rather
-        // than replacing what a driver put there
-        for (const std::string & held : directories_) {
-            next.push_back(held);
-        }
-    }
-    directories_ = next;
+    directories_ = offline::searchpath(path, directories_);
 }
 
 std::string ShaderLibrary::file(const std::string & name, std::string* where) const {

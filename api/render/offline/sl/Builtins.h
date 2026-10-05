@@ -68,7 +68,9 @@ class Signature final {
  *
  * A name may appear more than once: `faceforward` takes two arguments or three, and `noise`
  * takes a float, a point or a pair. The compiler tries each in turn and takes the first that
- * accepts the call.
+ * accepts the call, unless the call is the operand of a cast and a later one answers the
+ * cast's type: `color noise(P)` is a colour of noise rather than a grey one, which is how
+ * SL chooses between functions that differ only in what they answer.
  **/
 const std::vector<Signature> & builtins();
 
@@ -94,8 +96,8 @@ std::vector<Signature> builtin(const std::string & name);
 std::vector<Function> sources();
 
 /**
- * Whether the built-in is declared but does nothing yet - texture, shadow and noise, each of
- * which returns its default and is reported once.
+ * Whether the built-in is declared but does nothing yet - shadow, which returns its default
+ * and is reported once.
  *
  * A scene that rendered nothing and a scene that was not understood look identical from
  * outside, which is why a stub is loud rather than silent.

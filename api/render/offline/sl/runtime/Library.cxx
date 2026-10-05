@@ -14,6 +14,8 @@
 
 #include "Machine.h"
 
+#include <api/render/offline/Noise.h>
+#include <api/render/offline/Texture.h>
 #include <api/render/offline/sl/Builtins.h>
 #include <api/render/offline/sl/Types.h>
 
@@ -53,6 +55,8 @@ enum class Body {
     PTRANSFORM, VTRANSFORM, NTRANSFORM, CTRANSFORM, MTRANSFORM, DEPTH,
     // a matrix
     DETERMINANT, TRANSLATE, ROTATE, SCALE,
+    // a pattern, out of an image or out of nothing
+    TEXTURE, NOISE,
     // what the renderer answers rather than the machine
     AMBIENT, TRANSMISSION, TRACE,
     PRINTF
@@ -81,6 +85,7 @@ Body lookup(const std::string & name) {
         { "mtransform", Body::MTRANSFORM }, { "depth", Body::DEPTH },
         { "determinant", Body::DETERMINANT }, { "translate", Body::TRANSLATE },
         { "rotate", Body::ROTATE }, { "scale", Body::SCALE },
+        { "texture", Body::TEXTURE }, { "noise", Body::NOISE },
         { "ambient", Body::AMBIENT }, { "transmission", Body::TRANSMISSION },
         { "trace", Body::TRACE }, { "printf", Body::PRINTF }
     };
@@ -236,6 +241,10 @@ class Site final {
     const std::vector<Value*>* outputs = nullptr;
     /** The matrix a named coordinate space came to, for the bodies that take one. **/
     glm::mat4x4 matrix = glm::mat4x4(1.0f);
+    /** The image texture() reads, and where: its own arguments, or the shader's s and t. **/
+    const Texture* texture = nullptr;
+    const Value* s = nullptr;
+    const Value* t = nullptr;
 
     const Value & argument(std::size_t which) const {
         return *(*given)[which];
@@ -273,6 +282,40 @@ void fresnel(const Site & site, unsigned int point) {
     if (outputs.size() == 4) {
         outputs[2]->triple(point, incident - 2.0f * glm::dot(incident, normal) * normal);
         outputs[3]->triple(point, refract(incident, normal, eta));
+    }
+}
+
+/**
+ * Where three components of noise are read from, so that a colour of noise is three patterns
+ * rather than one grey one. The offsets are far apart and off the lattice.
+ **/
+const float STREAMS[3][3] = {
+    { 0.0f, 0.0f, 0.0f }, { 31.416f, 47.853f, 12.793f }, { -73.218f, 9.631f, 58.437f }
+};
+
+void pattern(const Site & site, unsigned int point) {
+    if (site.body == Body::TEXTURE) {
+        const float s = site.s == nullptr ? 0.0f : site.s->number(point);
+        const float t = site.t == nullptr ? 0.0f : site.t->number(point);
+        const glm::vec3 colour = site.texture == nullptr ? glm::vec3(0.0f) : site.texture->sample(s, t);
+        if (site.target->components() == 1) {
+            site.target->number(point, colour.r);
+        } else {
+            site.target->triple(point, colour);
+        }
+        return;
+    }
+    // one float is a line through the noise and two are a plane of it
+    glm::vec3 at(0.0f);
+    if (site.count() == 1 && site.argument(0).components() == 3) {
+        at = site.argument(0).triple(point);
+    } else {
+        at.x = site.argument(0).number(point);
+        at.y = site.count() > 1 ? site.argument(1).number(point) : 0.0f;
+    }
+    for (unsigned int i = 0; i < site.target->components() && i < 3; i++) {
+        const glm::vec3 stream(STREAMS[i][0], STREAMS[i][1], STREAMS[i][2]);
+        site.target->component(point, i, offline::noise(at + stream));
     }
 }
 
@@ -418,6 +461,10 @@ void apply(const Site & site, unsigned int point) {
         case Body::FRESNEL:
             fresnel(site, point);
             return;
+        case Body::TEXTURE:
+        case Body::NOISE:
+            pattern(site, point);
+            return;
         case Body::XCOMP:
         case Body::YCOMP:
         case Body::ZCOMP:
@@ -547,11 +594,8 @@ void Machine::builtin(const Instruction & instruction) {
         return;
     }
     site.written = setter(body) ? &file_[static_cast<std::size_t>(instruction.arguments[0])] : site.target;
-    std::vector<Value*> outputs;
-    if (table[index].outputs >= 0) {
-        for (std::size_t which = static_cast<std::size_t>(table[index].outputs); which < instruction.arguments.size(); which++) {
-            outputs.push_back(&file_[static_cast<std::size_t>(instruction.arguments[which])]);
-        }
+    std::vector<Value*> outputs = written(instruction, table[index].outputs);
+    if (!outputs.empty()) {
         // the first is the one the mask is asked about: the compiler gives every one the
         // same storage
         site.written = outputs.front();
@@ -568,6 +612,8 @@ void Machine::builtin(const Instruction & instruction) {
         }
     } else if (body == Body::DEPTH) {
         site.matrix = space("NDC");
+    } else if (body == Body::TEXTURE) {
+        site.texture = texture(given, &site.s, &site.t);
     } else if (body == Body::CTRANSFORM && given[0]->text() != "rgb") {
         // there is one colour space here and it is the one a framebuffer holds; a scene
         // asking for another gets its colours back unchanged rather than wrong
@@ -587,6 +633,34 @@ void Machine::builtin(const Instruction & instruction) {
         }
         apply(site, point);
     }
+}
+
+std::vector<Value*> Machine::written(const Instruction & instruction, int first) {
+    std::vector<Value*> outputs;
+    if (first < 0) {
+        return outputs;
+    }
+    for (std::size_t which = static_cast<std::size_t>(first); which < instruction.arguments.size(); which++) {
+        outputs.push_back(&file_[static_cast<std::size_t>(instruction.arguments[which])]);
+    }
+    return outputs;
+}
+
+const Texture* Machine::texture(const std::vector<const Value*> & given, const Value** s, const Value** t) {
+    if (given.size() == 3) {
+        *s = given[1];
+        *t = given[2];
+    } else {
+        *s = s_ < 0 ? nullptr : &file_[static_cast<std::size_t>(s_)];
+        *t = t_ < 0 ? nullptr : &file_[static_cast<std::size_t>(t_)];
+    }
+    // a name is uniform, so the image is found once for the batch
+    const std::string & name = given[0]->text();
+    const Texture* found = renderer_ == nullptr ? nullptr : renderer_->texture(name);
+    if (found == nullptr) {
+        report("the texture \"" + name + "\" cannot be read, so it answers black");
+    }
+    return found;
 }
 
 void Machine::ambient(Value* target) {

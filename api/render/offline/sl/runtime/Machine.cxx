@@ -64,6 +64,8 @@ float combine(Opcode opcode, float left, float right) {
 void Machine::prepare(const Program & program, unsigned int batch) {
     batch_ = batch == 0 ? 1 : batch;
     point_ = program.symbol("P");
+    s_ = program.symbol("s");
+    t_ = program.symbol("t");
     direction_.reset(Type::VECTOR, Storage::VARYING, batch_);
     colour_.reset(Type::COLOR, Storage::VARYING, batch_);
     file_.resize(program.registers.size());
@@ -200,8 +202,16 @@ void Machine::compare(const Instruction & instruction) {
     const Value & left = file_[static_cast<std::size_t>(instruction.left)];
     const Value & right = file_[static_cast<std::size_t>(instruction.right)];
     const unsigned int count = target.storage() == Storage::VARYING ? batch_ : 1;
+    // a string holds no number, so two of them are equal or not by their text
+    const bool text = left.type() == Type::STRING && right.type() == Type::STRING;
+    const float same = left.text() == right.text() ? 1.0f : 0.0f;
     for (unsigned int point = 0; point < count; point++) {
-        if (writable(target, point)) {
+        if (!writable(target, point)) {
+            continue;
+        }
+        if (text) {
+            target.number(point, instruction.opcode == Opcode::NOT_EQUAL ? 1.0f - same : same);
+        } else {
             target.number(point, runtime::compare(instruction.opcode,
                 left.number(point), right.number(point)));
         }

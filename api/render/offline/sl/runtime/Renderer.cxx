@@ -5,6 +5,7 @@
 
 #include "Renderer.h"
 
+#include <string>
 #include <vector>
 
 namespace v3d::render::offline::sl::runtime {
@@ -34,6 +35,10 @@ bool Renderer::transmission(const Value & /* from */, const Value & /* to */,
 bool Renderer::trace(const Value & /* origin */, const Value & /* direction */,
     Value* /* colour */) {
     return false;
+}
+
+const Texture* Renderer::texture(const std::string & /* name */) {
+    return nullptr;
 }
 
 };  // namespace v3d::render::offline::sl::runtime

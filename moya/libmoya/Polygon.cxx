@@ -15,6 +15,7 @@
 #include <vector>
 
 #include <glm/common.hpp>
+#include <glm/geometric.hpp>
 
 #include "RenderContext.h"
 
@@ -205,31 +206,57 @@ polygons
 namespace {
 
 /**
+ * A corner of a piece: its position, and the texture coordinates of the vertex it came
+ * from. Nothing else is carried, since a piece takes its colour and normal from the state
+ * its parent was submitted under.
+ **/
+Vertex carried(const Vertex & from) {
+    Vertex vert;
+    vert.point(from.point());
+    if (from.hasTexCoord()) {
+        vert.st(from.st());
+    }
+    return vert;
+}
+
+/**
+ * Where an edge meets the plane, with the texture coordinates as far along the edge as the
+ * point is.
+ **/
+Vertex crossing(const Vertex & a, const Vertex & b, const glm::vec3 & hit) {
+    Vertex vert;
+    vert.point(hit);
+    if (a.hasTexCoord() && b.hasTexCoord()) {
+        const float span = glm::length(b.point() - a.point());
+        const float along = span > 0.0f ? glm::length(hit - a.point()) / span : 0.0f;
+        vert.st(a.st() + (b.st() - a.st()) * along);
+    }
+    return vert;
+}
+
+/**
  * An edge that crosses the plane. hit is the vertex both halves come to share, so it goes
  * into each of them; which half keeps A and which keeps B follows the side A is on.
  **/
-void addCrossingEdge(const glm::vec3& a, const glm::vec3& b, const glm::vec3& hit, int side,
+void addCrossingEdge(const Vertex& a, const Vertex& b, const glm::vec3& hit, int side,
     bool first, bool last, const boost::shared_ptr<Polygon>& p1, const boost::shared_ptr<Polygon>& p2) {
-    Vertex vert;
-    vert.point(a);
     if (first) {
         if (side < 0) {
-            p1->addVertex(vert);
+            p1->addVertex(carried(a));
         } else {
-            p2->addVertex(vert);
+            p2->addVertex(carried(a));
         }
     }
 
-    vert.point(hit);
-    p1->addVertex(vert);
-    p2->addVertex(vert);
+    const Vertex shared = crossing(a, b, hit);
+    p1->addVertex(shared);
+    p2->addVertex(shared);
 
-    vert.point(b);
     if (!last) {
         if (side < 0) {
-            p2->addVertex(vert);
+            p2->addVertex(carried(b));
         } else {
-            p1->addVertex(vert);
+            p1->addVertex(carried(b));
         }
     }
 }
@@ -240,17 +267,14 @@ void addCrossingEdge(const glm::vec3& a, const glm::vec3& b, const glm::vec3& hi
  * Only the first edge contributes its A and only a non-final edge contributes its B: every
  * other vertex is the B of the edge before it.
  **/
-void addWholeEdge(const glm::vec3& a, const glm::vec3& b, int side, bool first, bool last,
+void addWholeEdge(const Vertex& a, const Vertex& b, int side, bool first, bool last,
     const boost::shared_ptr<Polygon>& p1, const boost::shared_ptr<Polygon>& p2) {
     const boost::shared_ptr<Polygon>& half = side <= 0 ? p1 : p2;
-    Vertex vert;
-    vert.point(a);
     if (first) {
-        half->addVertex(vert);
+        half->addVertex(carried(a));
     }
-    vert.point(b);
     if (!last) {
-        half->addVertex(vert);
+        half->addVertex(carried(b));
     }
 }
 
@@ -258,27 +282,21 @@ void addWholeEdge(const glm::vec3& a, const glm::vec3& b, int side, bool first, 
 
 void Polygon::split(const v3d::type::geometry::Plane& plane, const boost::shared_ptr<Polygon> & p1, const boost::shared_ptr<Polygon> & p2) {
     // intersect each edge with the plane
-    glm::vec3 A;
-    glm::vec3 B;
     glm::vec3 hit;
     for (unsigned int i = 0; i < vertices_.size(); i++) {
         const size_t vcount = vertices_.size();
-        A = vertices_[i].point();
-        if (i == (vcount - 1)) {
-            B = vertices_[0].point();
-        } else {
-            B = vertices_[i + 1].point();
-        }
+        const Vertex & a = vertices_[i];
+        const Vertex & b = i == (vcount - 1) ? vertices_[0] : vertices_[i + 1];
         // classify which side of the plane A is on
-        const int side = plane.classify(A);
+        const int side = plane.classify(a.point());
         const bool first = (i == 0);
         const bool last = (i == (vcount - 1));
-        if (plane.intersectEdge(A, B, &hit)) {
-            addCrossingEdge(A, B, hit, side, first, last, p1, p2);
+        if (plane.intersectEdge(a.point(), b.point(), &hit)) {
+            addCrossingEdge(a, b, hit, side, first, last, p1, p2);
         } else {
             // since there was no intersection, B will be on the same side
-            assert(side == plane.classify(B));
-            addWholeEdge(A, B, side, first, last, p1, p2);
+            assert(side == plane.classify(b.point()));
+            addWholeEdge(a, b, side, first, last, p1, p2);
         }
     }
 }
@@ -401,6 +419,16 @@ bool Polygon::dice(boost::shared_ptr<MicroPolygonGrid> & grid, RenderContext & r
     // the geometric normal is one value across the primitive, so there is nothing to
     // interpolate: addPolygon() wrote the same one onto every vertex
     const glm::vec3 geometric = vertices_[0].geometricNormal();
+    // texture coordinates interpolate only when the scene gave every corner one; a grid
+    // without them takes its own parameters as s and t when it is shaded
+    const bool textured = vertices_[0].hasTexCoord() && vertices_[1].hasTexCoord() &&
+        vertices_[2].hasTexCoord() && vertices_[fourth].hasTexCoord();
+    const glm::vec2 st[4] = {
+        vertices_[0].st(),
+        vertices_[1].st(),
+        vertices_[2].st(),
+        vertices_[fourth].st()
+    };
 
     const unsigned int size = grid->size();
     const float span = static_cast<float>(size - 1);
@@ -425,6 +453,12 @@ bool Polygon::dice(boost::shared_ptr<MicroPolygonGrid> & grid, RenderContext & r
             const float length = glm::length(normal);
             vert.normal(length > 0.0f ? normal / length : geometric);
             vert.geometricNormal(geometric);
+            if (textured) {
+                vert.st(st[0] * ((1.0f - u) * (1.0f - w)) +
+                        st[1] * (u * (1.0f - w)) +
+                        st[2] * (u * w) +
+                        st[3] * ((1.0f - u) * w));
+            }
             grid->addVertex(vert, i, j);
         }
     }

@@ -10,6 +10,7 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/matrix.hpp>
+#include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
 #include "RenderContext.h"
@@ -103,6 +104,10 @@ bool GridShader::space(const std::string & name, glm::mat4x4* matrix) {
     return false;
 }
 
+const v3d::render::offline::Texture* GridShader::texture(const std::string & name) {
+    return context_->textures().find(name);
+}
+
 unsigned int GridShader::lights() {
     return shading_ == nullptr ? 0u : static_cast<unsigned int>(shading_->lights.size());
 }
@@ -194,8 +199,10 @@ void GridShader::shade(const Shading & shading, MicroPolygonGrid* grid) {
             put(&held.machine, incident, point, vert.point());
             put(&held.machine, surfaceColor, point, vert.color());
             put(&held.machine, surfaceOpacity, point, opacity);
-            put(&held.machine, s, point, static_cast<float>(i) / span);
-            put(&held.machine, t, point, static_cast<float>(j) / span);
+            const glm::vec2 st = vert.hasTexCoord() ? vert.st() :
+                glm::vec2(static_cast<float>(i) / span, static_cast<float>(j) / span);
+            put(&held.machine, s, point, st.x);
+            put(&held.machine, t, point, st.y);
             put(&held.machine, u, point, static_cast<float>(i) / span);
             put(&held.machine, v, point, static_cast<float>(j) / span);
             put(&held.machine, du, point, 1.0f / span);

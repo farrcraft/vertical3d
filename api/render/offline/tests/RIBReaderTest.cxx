@@ -33,6 +33,9 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
     void option(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override {
         (void)name;
         bucket_ = parameters.floats("bucketsize");
+        if (parameters.has("texture")) {
+            texturePath_ = parameters.string("texture", std::string());
+        }
         counts_["Option"]++;
     }
     void format(unsigned int width, unsigned int height, float pixelAspect) override {
@@ -167,6 +170,7 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
     std::vector<std::string> illuminated_;
     std::vector<glm::vec3> background_;
     std::vector<float> bucket_;
+    std::string texturePath_;
     std::vector<float> motionTimes_;
     std::vector<glm::vec3> points_;
     std::vector<glm::vec3> colors_;
@@ -425,6 +429,26 @@ BOOST_AUTO_TEST_CASE(ribreader_unrecognised_request_test) {
     BOOST_CHECK_EQUAL(reader.unrecognised()[1], "Displacement");
     // and everything after them still arrived
     BOOST_CHECK_EQUAL(handler.count("WorldBegin"), 1u);
+    BOOST_CHECK_EQUAL(handler.vertices_, 3u);
+}
+
+/**
+ * MakeTexture is understood and makes nothing, because the image a scene names is the
+ * texture; and the texture search path is a string the renderers are handed.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_texture_requests_test) {
+    CountingHandler handler;
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(read(
+        "Option \"searchpath\" \"texture\" [\"maps:&\"]\n"
+        "MakeTexture \"grid.png\" \"grid.tx\" \"periodic\" \"periodic\" \"gaussian\" 2 2 \"float fov\" [1]\n"
+        "WorldBegin\n"
+        "Polygon \"P\" [0 0 1  1 0 1  1 1 1]\n"
+        "WorldEnd\n", &handler, &reader));
+
+    BOOST_CHECK(reader.unrecognised().empty());
+    BOOST_CHECK_EQUAL(handler.texturePath_, "maps:&");
     BOOST_CHECK_EQUAL(handler.vertices_, 3u);
 }
 

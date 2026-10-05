@@ -55,6 +55,14 @@ class Vertex {
     glm::vec3 geometricNormal(void) const;
     void geometricNormal(const glm::vec3 & n);
 
+    /**
+     * The texture coordinates, SL's s and t, from a scene's varying "st". A grid whose
+     * corners were given none takes its own parameters instead.
+     */
+    glm::vec2 st(void) const;
+    void st(const glm::vec2 & value);
+    bool hasTexCoord(void) const;
+
  private:
     // a grid is filled in by writing over default constructed vertices, so a vertex that
     // has not been written to yet has to read as one rather than as whatever was there
@@ -62,6 +70,7 @@ class Vertex {
     glm::vec3 color_ = glm::vec3(0.0f);
     glm::vec3 normal_ = glm::vec3(0.0f);
     glm::vec3 geometric_ = glm::vec3(0.0f);
+    glm::vec2 st_ = glm::vec2(0.0f);
     unsigned int bits_ = 0;
 };
 };  // namespace v3d::moya

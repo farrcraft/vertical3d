@@ -8,6 +8,7 @@
 #include <api/log/Logger.h>
 #include <api/render/offline/MovingTransform.h>
 #include <api/render/offline/Sampling.h>
+#include <api/render/offline/Texture.h>
 #include <api/render/offline/rib/Declarations.h>
 #include <api/render/offline/sl/ShaderLibrary.h>
 
@@ -200,6 +201,12 @@ class RenderContext {
         void searchpath(const std::string & path);
 
         /**
+            *	The images the scene's shaders read, each once, and where a relative
+            *	name is looked for, from Option "searchpath" "texture".
+            */
+        v3d::render::offline::Textures & textures();
+
+        /**
             *	The surface shader and the lights a primitive submitted now is shaded by.
             */
         Shading shading();
@@ -306,6 +313,7 @@ class RenderContext {
         v3d::render::offline::rib::Declarations declarations_;
         boost::shared_ptr<v3d::log::Logger> logger_;
         boost::shared_ptr<v3d::render::offline::sl::ShaderLibrary> shaders_;
+        boost::shared_ptr<v3d::render::offline::Textures> textures_;
         boost::shared_ptr<GridShader> shader_;
         std::vector<LightSource> lights_;
         v3d::render::offline::sl::InstancePtr surface_;

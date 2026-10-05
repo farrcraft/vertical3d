@@ -3,6 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/image/Image.h>
+#include <api/render/offline/Noise.h>
+#include <api/render/offline/Texture.h>
 #include <api/render/offline/sl/Compiler.h>
 #include <api/render/offline/sl/Emitter.h>
 #include <api/render/offline/sl/Parser.h>
@@ -318,24 +321,128 @@ BOOST_AUTO_TEST_CASE(sllibrary_printf_missing_argument_test) {
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_stubs_report_once_test) {
     const Shaded shaded(
-        "float a = noise(s);\n"
-        "float b = noise(t);\n"
-        "color c = texture(\"nowhere.tx\");\n"
-        "float d = shadow(\"nowhere.shd\", P);\n"
-        "Ci = c * (a + b + d);", 16);
+        "float a = shadow(\"nowhere.shd\", P);\n"
+        "float b = shadow(\"nowhere.shd\", P + 1);\n"
+        "Ci = a + b;", 16);
 
     BOOST_CHECK_SMALL(shaded.number("a"), 0.0001f);
-    BOOST_CHECK_SMALL(shaded.triple("c").r, 0.0001f);
 
     const std::vector<std::string> & reports = shaded.machine().reports();
-    BOOST_REQUIRE_EQUAL(reports.size(), 3u);
-    // two calls to noise over sixteen points is one line, and the three names are three
+    BOOST_REQUIRE_EQUAL(reports.size(), 1u);
     BOOST_CHECK_EQUAL(reports[0],
-        "'noise' is declared and does nothing yet, so it answers its default");
-    BOOST_CHECK_EQUAL(reports[1],
-        "'texture' is declared and does nothing yet, so it answers its default");
-    BOOST_CHECK_EQUAL(reports[2],
         "'shadow' is declared and does nothing yet, so it answers its default");
+}
+
+namespace {
+
+/**
+ * Two by two texels: red and green across the top, blue and white across the bottom.
+ **/
+v3d::render::offline::Texture quartered() {
+    v3d::image::Image image(2, 2, 24);
+    const unsigned char texels[12] = {
+        255, 0, 0,   0, 255, 0,
+        0, 0, 255,   255, 255, 255
+    };
+    for (unsigned int i = 0; i < 12; i++) {
+        image[i] = texels[i];
+    }
+    return v3d::render::offline::Texture(image);
+}
+
+/**
+ * A renderer holding one texture, under the name "quarters".
+ **/
+class Textured final : public v3d::render::offline::sl::runtime::Renderer {
+ public:
+    bool space(const std::string & /* name */, glm::mat4x4* /* matrix */) override {
+        return false;
+    }
+
+    const v3d::render::offline::Texture* texture(const std::string & name) override {
+        return name == "quarters" ? &texture_ : nullptr;
+    }
+
+ private:
+    v3d::render::offline::Texture texture_ = quartered();
+};
+
+};  // namespace
+
+/**
+ * texture() reads the renderer's image at the s and t it is given, or at the shader's own
+ * when it is given none, and a cast to float takes the first channel.
+ **/
+BOOST_AUTO_TEST_CASE(sllibrary_texture_test) {
+    Textured renderer;
+    const Shaded shaded(
+        "color placed = texture(\"quarters\", 0.75, 0.25);\n"
+        "color between = texture(\"quarters\", 0.5, 0.75);\n"
+        "color own = texture(\"quarters\");\n"
+        "float red = float texture(\"quarters\", 0.25, 0.25);", 1, &renderer);
+
+    BOOST_CHECK_SMALL(glm::length(shaded.triple("placed") - glm::vec3(0.0f, 1.0f, 0.0f)), 0.0001f);
+    BOOST_CHECK_SMALL(glm::length(shaded.triple("between") - glm::vec3(0.5f, 0.5f, 1.0f)), 0.0001f);
+    // a batch of one has s and t at zero, which is the corner the four texels meet at
+    BOOST_CHECK_SMALL(glm::length(shaded.triple("own") - glm::vec3(0.5f, 0.5f, 0.5f)), 0.0001f);
+    BOOST_CHECK_CLOSE(shaded.number("red"), 1.0f, 0.01f);
+    BOOST_CHECK(shaded.machine().reports().empty());
+}
+
+/**
+ * A name that cannot be read answers black, and says so once however many points asked.
+ **/
+BOOST_AUTO_TEST_CASE(sllibrary_missing_texture_test) {
+    Textured renderer;
+    const Shaded shaded(
+        "color a = texture(\"nowhere.png\", s, t);\n"
+        "color b = texture(\"nowhere.png\");", 16, &renderer);
+
+    BOOST_CHECK_SMALL(glm::length(shaded.triple("a", 7)), 0.0001f);
+    const std::vector<std::string> & reports = shaded.machine().reports();
+    BOOST_REQUIRE_EQUAL(reports.size(), 1u);
+    BOOST_CHECK_EQUAL(reports[0], "the texture \"nowhere.png\" cannot be read, so it answers black");
+}
+
+/**
+ * noise() of a float, a pair and a point is a float, and a cast asks for three of it, each
+ * its own pattern: a colour of noise is not grey.
+ **/
+BOOST_AUTO_TEST_CASE(sllibrary_noise_test) {
+    const Shaded shaded(
+        "float line = noise(1.3);\n"
+        "float plane = noise(1.3, 0);\n"
+        "float space = noise(point (1.3, 0.7, 2.1));\n"
+        "color tint = color noise(point (1.3, 0.7, 2.1));\n"
+        "point moved = point noise(2.6);");
+
+    BOOST_CHECK_EQUAL(shaded.number("line"), shaded.number("plane"));
+    BOOST_CHECK_EQUAL(shaded.number("line"), v3d::render::offline::noise(glm::vec3(1.3f, 0.0f, 0.0f)));
+    BOOST_CHECK_EQUAL(shaded.number("space"), v3d::render::offline::noise(glm::vec3(1.3f, 0.7f, 2.1f)));
+    const glm::vec3 tint = shaded.triple("tint");
+    BOOST_CHECK_EQUAL(tint.r, shaded.number("space"));
+    BOOST_CHECK_NE(tint.r, tint.g);
+    BOOST_CHECK_NE(tint.g, tint.b);
+    for (int i = 0; i < 3; i++) {
+        BOOST_CHECK_GE(shaded.triple("moved")[i], 0.0f);
+        BOOST_CHECK_LE(shaded.triple("moved")[i], 1.0f);
+    }
+    BOOST_CHECK(shaded.machine().reports().empty());
+}
+
+/**
+ * Two strings are equal by their text, which is how a shader asks whether it was given a
+ * texture name at all.
+ **/
+BOOST_AUTO_TEST_CASE(sllibrary_string_comparison_test) {
+    const Shaded shaded(
+        "string name = \"blocks.png\";\n"
+        "float named = name != \"\";\n"
+        "float empty = name == \"\";\n"
+        "float same = name == \"blocks.png\";");
+    BOOST_CHECK_EQUAL(shaded.number("named"), 1.0f);
+    BOOST_CHECK_EQUAL(shaded.number("empty"), 0.0f);
+    BOOST_CHECK_EQUAL(shaded.number("same"), 1.0f);
 }
 
 namespace {

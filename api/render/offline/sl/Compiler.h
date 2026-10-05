@@ -129,7 +129,11 @@ class Compiler final {
      * function wins over a standard one of the same name.
      **/
     int checkShaderCall(Call & call, const std::vector<Type> & given);
-    Type checkBuiltinCall(Call & call, const std::vector<Type> & given);
+    /**
+     * The first standard signature that accepts the call, preferring one that answers the
+     * type a cast around the call wants.
+     **/
+    Type checkBuiltinCall(Call & call, const std::vector<Type> & given, Type wanted);
     Type checkUnary(const ExpressionPtr & expression);
     Type checkBinary(const ExpressionPtr & expression);
     Type checkTernary(const ExpressionPtr & expression);
@@ -200,6 +204,11 @@ class Compiler final {
     int inside_ = -1;
     /** How many lighting constructs enclose the statement being checked. **/
     int depth_ = 0;
+    /**
+     * The type a cast wants from the call that is its operand, or void. Read by that call
+     * alone, and cleared before its arguments are checked.
+     **/
+    Type wanted_ = Type::VOID;
 };
 
 };  // namespace v3d::render::offline::sl

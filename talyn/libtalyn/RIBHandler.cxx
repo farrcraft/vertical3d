@@ -208,10 +208,13 @@ void RIBHandler::motionEnd() {
 }
 
 void RIBHandler::option(const std::string & name, const ParameterList & parameters) {
-    // RI writes it as Option "searchpath" "shader" ["./shaders:&"], and the shader path
-    // is the only one this renderer looks anything up on
+    // RI writes it as Option "searchpath" "shader" ["./shaders:&"], and the shader and
+    // texture paths are the ones this renderer looks anything up on
     if (name == "searchpath" && parameters.has("shader")) {
         shaders_->searchpath(parameters.string("shader", std::string()));
+    }
+    if (name == "searchpath" && parameters.has("texture")) {
+        rc_->textures().searchpath(parameters.string("texture", std::string()));
     }
     if (name == "trace" && parameters.has("maxdepth")) {
         const float depth = parameters.number("maxdepth", 0.0f);
@@ -328,7 +331,7 @@ void RIBHandler::color(const glm::vec3 & value) {
 }
 
 void RIBHandler::fan(const std::vector<glm::vec3> & points, const std::vector<glm::vec3> & normals,
-    const std::vector<unsigned int> & indices) {
+    const std::vector<float> & st, const std::vector<unsigned int> & indices) {
     if (indices.size() < 3) {
         return;
     }
@@ -358,6 +361,12 @@ void RIBHandler::fan(const std::vector<glm::vec3> & points, const std::vector<gl
                 glm::normalize(toWorldNormal * normals[indices[i]]),
                 glm::normalize(toWorldNormal * normals[indices[i + 1]])) :
             Triangle(a, b, c, color_);
+        // "st" is two floats a vertex, and a scene that gives too few keeps the barycentrics
+        const std::size_t furthest = std::max(indices[0], std::max(indices[i], indices[i + 1]));
+        if (2 * furthest + 2 <= st.size()) {
+            const auto corner = [&st](std::size_t index) { return glm::vec2(st[2 * index], st[2 * index + 1]); };
+            triangle.st(corner(indices[0]), corner(indices[i]), corner(indices[i + 1]));
+        }
         // the colour is the triangle's Cs and the shader is what multiplies it
         triangle.surface(shading());
         triangle.opacity(opacity_);
@@ -368,11 +377,12 @@ void RIBHandler::fan(const std::vector<glm::vec3> & points, const std::vector<gl
 void RIBHandler::polygon(unsigned int vertices, const ParameterList & parameters) {
     const std::vector<glm::vec3> points = parameters.points("P");
     const std::vector<glm::vec3> normals = parameters.points("N");
+    const std::vector<float> & st = parameters.floats("st");
     std::vector<unsigned int> indices;
     for (unsigned int i = 0; i < vertices && i < points.size(); i++) {
         indices.push_back(i);
     }
-    fan(points, normals, indices);
+    fan(points, normals, st, indices);
 }
 
 void RIBHandler::sphere(float radius, float zmin, float zmax, float thetamax, const ParameterList & parameters) {
@@ -389,13 +399,14 @@ void RIBHandler::pointsPolygons(const std::vector<unsigned int> & counts, const 
     const ParameterList & parameters) {
     const std::vector<glm::vec3> points = parameters.points("P");
     const std::vector<glm::vec3> normals = parameters.points("N");
+    const std::vector<float> & st = parameters.floats("st");
     std::size_t offset = 0;
     for (unsigned int count : counts) {
         if (offset + count > indices.size()) {
             return;
         }
         const std::vector<unsigned int> face(indices.begin() + offset, indices.begin() + offset + count);
-        fan(points, normals, face);
+        fan(points, normals, st, face);
         offset += count;
     }
 }

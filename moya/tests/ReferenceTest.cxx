@@ -676,3 +676,38 @@ BOOST_AUTO_TEST_CASE(moya_motion_spreads_linearly_test) {
 
     checkRamp(*rc.framebuffer()->planes(), v3d::moya::FrameBuffer::COVERAGE, 24);
 }
+
+/**
+ * A quad showing a texture through paintedplastic, from the scene talyn's suite reads too.
+ *
+ * The image's 2 by 2 texel blocks are each one colour, so a pixel well inside a block reads
+ * that colour exactly whether it is sampled at the pixel or a micropolygon away from it.
+ * Both suites pin the same sixteen pixels, which is the first picture the two renderers are
+ * asked to agree on: the same s and t, the same way up, and the same texel at each. The quad
+ * is larger than a grid, so it splits, and its pieces carry their st with them.
+ **/
+BOOST_AUTO_TEST_CASE(moya_textured_quad_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(reader.read("data/textured.rib", &handler));
+    BOOST_CHECK(reader.unrecognised().empty());
+    boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
+
+    // red counts the block across and green the block down, and blue is the same in each
+    for (unsigned int across = 0; across < 4; across++) {
+        for (unsigned int down = 0; down < 4; down++) {
+            const unsigned int column = 20 + 8 * across;
+            const unsigned int row = 12 + 8 * down;
+            BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::RED, column, row) - 85.0f * across / 255.0f,
+                1.0f / 255.0f);
+            BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::GREEN, column, row) - 85.0f * down / 255.0f,
+                1.0f / 255.0f);
+            BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::BLUE, column, row) - 128.0f / 255.0f,
+                1.0f / 255.0f);
+        }
+    }
+    // and outside the quad is the background
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::BLUE, 4, 4), 0.0f);
+}

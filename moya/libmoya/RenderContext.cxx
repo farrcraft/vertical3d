@@ -49,6 +49,7 @@ RenderContext::~RenderContext() {
 void RenderContext::initialize() {
     logger_ = boost::make_shared<v3d::log::Logger>();
     shaders_ = boost::make_shared<v3d::render::offline::sl::ShaderLibrary>(logger_);
+    textures_ = boost::make_shared<v3d::render::offline::Textures>(logger_);
 
     // initialize the predefined coordinate systems to defaults (identity matrix)
     glm::mat4x4 def(1.0f);
@@ -512,6 +513,10 @@ void RenderContext::imager(const std::string & name,
 
 void RenderContext::searchpath(const std::string & path) {
     shaders_->searchpath(path);
+}
+
+v3d::render::offline::Textures & RenderContext::textures() {
+    return *textures_;
 }
 
 Shading RenderContext::shading() {

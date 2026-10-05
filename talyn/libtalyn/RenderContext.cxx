@@ -13,6 +13,7 @@
 #include <array>
 #include <vector>
 
+#include <boost/make_shared.hpp>
 #include <glm/geometric.hpp>
 #include <glm/matrix.hpp>
 
@@ -121,7 +122,7 @@ class Spread {
 
 };  // namespace
 
-RenderContext::RenderContext() {
+RenderContext::RenderContext() : textures_(boost::make_shared<v3d::log::Logger>()) {
 }
 
 void RenderContext::format(unsigned int width, unsigned int height) {
@@ -135,6 +136,10 @@ Scene & RenderContext::scene() {
 
 const Scene & RenderContext::scene() const {
     return scene_;
+}
+
+v3d::render::offline::Textures & RenderContext::textures() {
+    return textures_;
 }
 
 void RenderContext::render() {
@@ -188,7 +193,7 @@ void RenderContext::render() {
 
     // one of these for the render rather than one per pixel: it holds the register files,
     // and sizing one per pixel is the one allocation a tracer would notice
-    HitShader shader(&scene_);
+    HitShader shader(&scene_, &textures_);
 
     // a sample at a time into the film, which filters them into pixels once every ray is
     // cast, per ADR-0076

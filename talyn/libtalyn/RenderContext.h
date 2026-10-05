@@ -7,6 +7,7 @@
 
 #include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/Sampling.h>
+#include <api/render/offline/Texture.h>
 
 #include <vector>
 
@@ -44,6 +45,9 @@ class RenderContext {
     Scene & scene();
     const Scene & scene() const;
 
+    /** The images the scene's shaders read, each once. **/
+    v3d::render::offline::Textures & textures();
+
     /**
      * The imager shader run over the finished frame, which is how a scene says what a
      * ray that hit nothing is worth. Empty until a scene names one.
@@ -67,6 +71,7 @@ class RenderContext {
  private:
     boost::shared_ptr<v3d::render::offline::FrameBuffer> framebuffer_;
     Scene scene_;
+    v3d::render::offline::Textures textures_;
     v3d::render::offline::sl::Placed imager_;
     v3d::render::offline::Sampling sampling_;
     std::vector<unsigned int> taken_;

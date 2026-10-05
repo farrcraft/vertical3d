@@ -96,6 +96,14 @@ class Triangle final : public Primitive {
      **/
     glm::vec3 shadingNormal(float u, float v) const;
 
+    /**
+     * The texture coordinates at each corner, from a scene's varying "st". A triangle given
+     * none has (0, 0), (1, 0) and (0, 1), so its s and t are its barycentric weights.
+     **/
+    void st(const glm::vec2 & a, const glm::vec2 & b, const glm::vec2 & c);
+    /** SL's s and t at a hit, weighted as shadingNormal() weighs the normals. **/
+    glm::vec2 st(float u, float v) const;
+
  private:
     glm::vec3 a_;
     glm::vec3 b_;
@@ -104,6 +112,9 @@ class Triangle final : public Primitive {
     glm::vec3 nb_;
     glm::vec3 nc_;
     glm::vec3 geometric_;
+    glm::vec2 sta_ = glm::vec2(0.0f, 0.0f);
+    glm::vec2 stb_ = glm::vec2(1.0f, 0.0f);
+    glm::vec2 stc_ = glm::vec2(0.0f, 1.0f);
 };
 
 /**
@@ -176,6 +187,9 @@ class Hit final {
      **/
     float u = 0.0f;
     float v = 0.0f;
+    /** SL's s and t: a sphere's u and v, and a triangle's "st" at the hit. **/
+    float s = 0.0f;
+    float t = 0.0f;
 };
 
 /**

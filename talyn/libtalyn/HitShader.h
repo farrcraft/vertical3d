@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <api/render/offline/Texture.h>
 #include <api/render/offline/sl/runtime/Machine.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
 
@@ -37,7 +38,11 @@ namespace v3d::talyn {
  **/
 class HitShader final : public v3d::render::offline::sl::runtime::Renderer {
  public:
-    explicit HitShader(const Scene* scene);
+    /**
+     * @param textures the images a shader may name, or null for a scene that names none,
+     *        which leaves every texture() black
+     **/
+    explicit HitShader(const Scene* scene, v3d::render::offline::Textures* textures = nullptr);
 
     /**
      * What a ray sees: every surface along it composited front to back by its Oi, until
@@ -89,6 +94,7 @@ class HitShader final : public v3d::render::offline::sl::runtime::Renderer {
     bool trace(const v3d::render::offline::sl::runtime::Value & origin,
         const v3d::render::offline::sl::runtime::Value & direction,
         v3d::render::offline::sl::runtime::Value* colour) override;
+    const v3d::render::offline::Texture* texture(const std::string & name) override;
 
  private:
     /**
@@ -109,6 +115,7 @@ class HitShader final : public v3d::render::offline::sl::runtime::Renderer {
     Run & run(const v3d::render::offline::sl::InstancePtr & shader);
 
     const Scene* scene_;
+    v3d::render::offline::Textures* textures_;
     float time_ = 0.0f;
     /** The hit being shaded, for the space table and for the shadow ray's offset. **/
     const Hit* hit_ = nullptr;
