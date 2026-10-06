@@ -6,12 +6,14 @@
 #pragma once
 
 #include <api/asset/Manager.h>
+#include <api/font/TextureFont.h>
 #include <api/font/TextureFontCache.h>
 #include <api/font/TextureTextBuffer.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/Canvas.h>
 
+#include <cstddef>
 #include <functional>
 #include <string>
 #include <string_view>
@@ -130,7 +132,19 @@ class TextRenderer {
     float size() const noexcept;
 
     /**
+     * The code points a UTF-8 string holds, one per character.
+     *
+     * A byte that does not begin a well formed sequence becomes U+FFFD, the replacement
+     * character, and decoding resumes at the next byte. Overlong forms and surrogates count
+     * as malformed.
+     **/
+    static std::u32string decode(std::string_view utf8);
+
+    /**
      * How wide a string is when it is drawn at a size, in pixels.
+     *
+     * The string is UTF-8. A code point that is not in the packed set adds nothing, the same
+     * as draw() draws nothing for it.
      *
      * @param size the size it will be drawn at, defaulting to the one the atlas holds
      **/
@@ -138,6 +152,10 @@ class TextRenderer {
 
     /**
      * Lay a string out at the pen and append its glyphs to a canvas.
+     *
+     * The string is UTF-8. A code point that is not in the packed set draws nothing and
+     * advances the pen by nothing. The atlas is never added to after the upload, so a glyph
+     * packed later would not be on the device.
      *
      * @param pen where the baseline of the first glyph goes
      * @param size the size to draw at, defaulting to the one the atlas holds
@@ -168,6 +186,18 @@ class TextRenderer {
      * is not a size, means the base - so a caller that does not care never scales.
      **/
     float ratio(float size) const noexcept;
+
+    /**
+     * Decode the code point that starts at *index and move *index past it. Malformed input
+     * yields U+FFFD and moves one byte, as decode() describes.
+     **/
+    static char32_t next(std::string_view utf8, std::size_t* index);
+
+    /**
+     * The packed glyph for a code point, or null. This never packs one, because the atlas
+     * is already on the device.
+     **/
+    boost::shared_ptr<v3d::font::TextureFont::Glyph> packed(char32_t point) const;
 
     boost::shared_ptr<v3d::font::TextureFontCache> cache_;
     boost::shared_ptr<v3d::font::TextureTextBuffer> buffer_;

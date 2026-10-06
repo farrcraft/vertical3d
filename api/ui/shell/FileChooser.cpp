@@ -201,9 +201,12 @@ std::string FileChooser::name() const {
 bool FileChooser::accept() {
     std::string typed = name();
     // a name is a name in the directory shown, so one that would step out of it is refused
-    // rather than followed
+    // rather than followed. On Windows a colon makes a drive relative path such as "C:name"
+    // or an alternate data stream such as "name:stream", so it is refused too. A name that
+    // is not its own file name has some other form that leaves the directory
     if (typed.empty() || typed == "." || typed == parent ||
-        typed.find_first_of("/\\") != std::string::npos) {
+        typed.find_first_of("/\\:") != std::string::npos ||
+        boost::filesystem::path(typed).filename().string() != typed) {
         return false;
     }
     if (mode_ == Mode::Save && !extension_.empty() && boost::filesystem::path(typed).extension().string() != extension_) {

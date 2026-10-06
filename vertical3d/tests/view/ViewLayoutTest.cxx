@@ -123,4 +123,9 @@ BOOST_AUTO_TEST_CASE(viewlayout_rejects_test) {
     BOOST_CHECK(!layout.load(config("{\"layout\": {\"root\": {\"split\": \"vertical\", \"children\": []}}}")));
     // a node that is neither a camera nor a split
     BOOST_CHECK(!layout.load(config("{\"layout\": {\"root\": {\"name\": \"neither\"}}}")));
+    // a name, a camera or a split that is not a string is refused rather than thrown
+    BOOST_CHECK_NO_THROW(BOOST_CHECK(!layout.load(config("{\"layout\": {\"name\": 1, \"root\": {\"camera\": \"Top\"}}}"))));
+    BOOST_CHECK_NO_THROW(BOOST_CHECK(!layout.load(config("{\"layout\": {\"root\": {\"camera\": 3}}}"))));
+    BOOST_CHECK_NO_THROW(BOOST_CHECK(!layout.load(config(
+        "{\"layout\": {\"root\": {\"split\": 2, \"children\": [{\"camera\": \"Top\"}]}}}"))));
 }

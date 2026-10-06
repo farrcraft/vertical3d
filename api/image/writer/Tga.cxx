@@ -56,14 +56,16 @@ bool Tga::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
         return false;
     }
 
-    std::fstream file;
-    file.open(static_cast<std::string>(filename).c_str(), std::fstream::out | std::fstream::binary);
-    if (file.fail()) {
+    // checked before the open, which truncates: a picture the header cannot describe
+    // leaves any file already at that name as it was
+    if (img->width() > std::numeric_limits<uint16_t>::max() ||
+        img->height() > std::numeric_limits<uint16_t>::max()) {
         return false;
     }
 
-    if (img->width() > std::numeric_limits<uint16_t>::max() ||
-        img->height() > std::numeric_limits<uint16_t>::max()) {
+    std::fstream file;
+    file.open(static_cast<std::string>(filename).c_str(), std::fstream::out | std::fstream::binary);
+    if (file.fail()) {
         return false;
     }
 

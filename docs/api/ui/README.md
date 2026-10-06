@@ -72,6 +72,12 @@ must stay valid for the length of the call.
 signed distance field glyphs. `measure(size)` and `write(canvas, size)` return callbacks for
 one drawn size. Two sizes from one `TextRenderer` share the same atlas.
 
+The glyphs a `TextRenderer` can draw are the charcodes given to its constructor, which default
+to printable ascii. They are packed and uploaded once, and the atlas is not added to afterwards.
+Text is UTF-8 and is decoded to code points. A code point outside the packed set measures as
+zero width and draws nothing. An app that shows other characters passes them as `charcodes`, and
+may need a larger atlas to hold them.
+
 `TextRenderer` uploads its atlas through an `Upload` callback rather than a Vulkan type. No
 `api/ui` header names a Vulkan type. An app that draws the canvas through its own renderer
 can supply its own `Upload`.

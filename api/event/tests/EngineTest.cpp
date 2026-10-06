@@ -77,7 +77,8 @@ BOOST_AUTO_TEST_CASE(engine_mapping_test) {
     BOOST_REQUIRE_EQUAL(recorder.events_.size(), 2u);
     BOOST_CHECK(recorder.events_[1].state() == v3d::event::State::Released);
 
-    // and whether the press was a held key repeating, so a toggle can ignore it
+    // a source also carries whether the press was a held key repeating, so a toggle can
+    // ignore it
     v3d::event::Source repeated = source(keyboard, "w", v3d::event::State::Pressed);
     repeated.repeat(true);
     v3d::event::publish(*dispatcher, repeated);

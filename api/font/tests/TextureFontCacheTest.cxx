@@ -180,3 +180,30 @@ BOOST_AUTO_TEST_CASE(texturefont_distance_field_packing_test) {
     BOOST_CHECK(wide->st_[0][1] >= 0.0f);
     BOOST_CHECK(wide->st_[1][1] <= 1.0f);
 }
+
+/**
+ * packed() finds a glyph that was loaded and never loads one that was not.
+ *
+ * glyph() packs a charcode it has not seen, so asking it for one is what shows packed()
+ * left the atlas alone.
+ **/
+BOOST_AUTO_TEST_CASE(texturefont_packed_never_loads_test) {
+    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    v3d::font::TextureFontCache cache(256, 256, 1, logger);
+
+    boost::shared_ptr<v3d::font::TextureFont> font =
+        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 12.0f, logger);
+    font->atlas(cache.atlas());
+    BOOST_REQUIRE_EQUAL(font->loadGlyphs(L"a"), true);
+
+    BOOST_CHECK(font->packed(L'a') != nullptr);
+    BOOST_CHECK(font->packed(L'a') == font->glyph(L'a'));
+
+    // asked twice, because a load on the first call would answer the second
+    BOOST_CHECK(font->packed(L'z') == nullptr);
+    BOOST_CHECK(font->packed(L'z') == nullptr);
+
+    // glyph() is the call that loads
+    BOOST_CHECK(font->glyph(L'z') != nullptr);
+    BOOST_CHECK(font->packed(L'z') != nullptr);
+}

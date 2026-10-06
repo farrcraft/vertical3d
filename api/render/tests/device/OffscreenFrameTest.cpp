@@ -319,7 +319,7 @@ BOOST_AUTO_TEST_CASE(an_abandoned_frame_can_be_begun_again) {
     headless.submitAndWait(commands);
     BOOST_CHECK(headless.silent());
 
-    // and once that frame is submitted, the next begin is a new frame
+    // once that frame is submitted, the next begin is a new frame
     headless.submitAndWait(headless.context->ring()->begin());
     BOOST_CHECK_EQUAL(headless.context->ring()->begun(), begun + 1);
 }

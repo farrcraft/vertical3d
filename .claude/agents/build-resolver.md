@@ -1,6 +1,6 @@
 ---
 name: build-resolver
-description: Diagnoses and fixes build and link failures in this repository with minimal changes. Knows the Ninja/vcpkg/MSVC setup, the targets that are already broken and why, and the traps that waste the most time — a stale CMake cache after a toolset update, a source file missing from a hand-written CMakeLists list, and the vcpkg install that must never be deleted. Use when a build or link fails, or when cpplint reports something.
+description: Diagnoses and fixes build and link failures in this repository with minimal changes. Knows the Ninja/vcpkg/MSVC setup and the traps that waste the most time — a stale CMake cache after a toolset update, a source file missing from a hand-written CMakeLists list, and the vcpkg install that must never be deleted. Use when a build or link fails, or when cpplint reports something.
 tools: Read, Write, Edit, Bash, Grep, Glob
 model: sonnet
 ---
@@ -25,8 +25,8 @@ thing to rule out first is a stale CMake cache rather than known breakage.
 a target to dodge a link error.
 
 Warnings are errors here: `V3D_WARNINGS_AS_ERRORS` is on by default and adds `/WX`, and the
-tree is clean at it. So a new warning fails the build, and the fix is to correct the code, not
-to silence the warning.
+tree is clean at it. A new warning therefore fails the build, and the fix is to correct the
+code, not to silence the warning.
 
 If you genuinely believe a diagnostic is wrong, **stop and say so** with the reasoning
 rather than suppressing it.

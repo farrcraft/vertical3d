@@ -24,7 +24,8 @@ function(v3d_add_api_library name)
 	add_library(v3d::${name} ALIAS ${target})
 	target_include_directories(${target} PUBLIC $<BUILD_INTERFACE:${V3D_ROOT}>)
 	target_compile_options(${target} INTERFACE /EHsc /utf-8)
-	# Every library names boost in a header, if only for shared_ptr.
+	# Most libraries name boost in a header, if only for shared_ptr, so every one is given
+	# the headers.
 	target_link_libraries(${target} PUBLIC Boost::headers)
 endfunction()
 
@@ -99,10 +100,9 @@ function(v3d_add_test lib)
 	set(target "v3dtest_${lib}")
 	add_executable(${target} ${ARGN})
 	target_link_libraries(${target} PRIVATE Boost::unit_test_framework)
-	# A suite includes headers by their path from the repository root. Most get the root
-	# from the api library they cover, whose include directory is PUBLIC. A suite that links
-	# no api library, such as voxel's meshing tests, which link only boost and libnoise, has
-	# no other source for it, and every one of its includes fails to resolve without this.
+	# A suite includes headers by their path from the repository root. An api library gives
+	# the root PUBLIC, but an app suite also compiles the app's own sources, which include
+	# each other by that path, so the root is named here rather than left to a link.
 	target_include_directories(${target} PRIVATE ${V3D_ROOT})
 	target_compile_options(${target} PRIVATE /EHsc /utf-8)
 	# Boost.Test's CRT leak check reports at exit, before spdlog's global registry is torn

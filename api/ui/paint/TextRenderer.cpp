@@ -8,6 +8,8 @@
 #include <api/font/TextureFont.h>
 #include <api/image/TextureAtlas.h>
 
+#include <array>
+#include <limits>
 #include <string>
 #include <string_view>
 
@@ -60,6 +62,9 @@ TextRenderer::TextRenderer(const boost::shared_ptr<v3d::asset::Manager>& assetMa
         logger->get()->error("{} could not be packed at size {}, so nothing drawn through it will have text", font, size_);
         return;
     }
+    // the opaque white square a line or a background is drawn with. The text buffer asks
+    // for it with every glyph, so it is packed now rather than after the upload
+    face->glyph(static_cast<wchar_t>(-1));
     cache_->add(face);
     markup_.font_ = face;
 
@@ -92,13 +97,87 @@ float TextRenderer::ratio(float size) const noexcept {
 
 /**
  **/
+std::u32string TextRenderer::decode(std::string_view utf8) {
+    std::u32string decoded;
+    decoded.reserve(utf8.size());
+    std::size_t index = 0;
+    while (index < utf8.size()) {
+        decoded.push_back(next(utf8, &index));
+    }
+    return decoded;
+}
+
+/**
+ **/
+char32_t TextRenderer::next(std::string_view utf8, std::size_t* index) {
+    const char32_t replacement = 0xFFFD;
+    // the smallest code point each sequence length may encode; anything below is overlong
+    const std::array<char32_t, 5> minimum = {0, 0, 0x80, 0x800, 0x10000};
+
+    const std::size_t start = *index;
+    const unsigned char lead = static_cast<unsigned char>(utf8[start]);
+    std::size_t length = 0;
+    char32_t point = 0;
+    if (lead < 0x80) {
+        length = 1;
+        point = lead;
+    } else if ((lead & 0xE0) == 0xC0) {
+        length = 2;
+        point = static_cast<char32_t>(lead & 0x1F);
+    } else if ((lead & 0xF0) == 0xE0) {
+        length = 3;
+        point = static_cast<char32_t>(lead & 0x0F);
+    } else if ((lead & 0xF8) == 0xF0) {
+        length = 4;
+        point = static_cast<char32_t>(lead & 0x07);
+    }
+
+    bool valid = length > 0 && start + length <= utf8.size();
+    for (std::size_t offset = 1; valid && offset < length; offset++) {
+        const unsigned char following = static_cast<unsigned char>(utf8[start + offset]);
+        if ((following & 0xC0) != 0x80) {
+            valid = false;
+        } else {
+            point = (point << 6) | static_cast<char32_t>(following & 0x3F);
+        }
+    }
+    if (valid && (point < minimum.at(length) || point > 0x10FFFF || (point >= 0xD800 && point <= 0xDFFF))) {
+        valid = false;
+    }
+
+    if (!valid) {
+        *index = start + 1;
+        return replacement;
+    }
+    *index = start + length;
+    return point;
+}
+
+/**
+ **/
+boost::shared_ptr<v3d::font::TextureFont::Glyph> TextRenderer::packed(char32_t point) const {
+    // a code point wider than wchar_t cannot have been packed, since charcodes are wchar_t
+    if (point > static_cast<char32_t>(std::numeric_limits<wchar_t>::max())) {
+        return boost::shared_ptr<v3d::font::TextureFont::Glyph>();
+    }
+    const wchar_t character = static_cast<wchar_t>(point);
+    // -1 names the white square lines are drawn with, which is not a character of text
+    if (character == static_cast<wchar_t>(-1)) {
+        return boost::shared_ptr<v3d::font::TextureFont::Glyph>();
+    }
+    return markup_.font_->packed(character);
+}
+
+/**
+ **/
 float TextRenderer::width(std::string_view text, float size) const {
     if (!loaded()) {
         return 0.0f;
     }
     float width = 0.0f;
-    for (char character : text) {
-        boost::shared_ptr<v3d::font::TextureFont::Glyph> glyph = markup_.font_->glyph(static_cast<wchar_t>(character));
+    std::size_t index = 0;
+    while (index < text.size()) {
+        const boost::shared_ptr<v3d::font::TextureFont::Glyph> glyph = packed(next(text, &index));
         if (glyph) {
             width += glyph->advance_.x;
         }
@@ -118,9 +197,20 @@ void TextRenderer::draw(v3d::render::realtime::Canvas* canvas, std::string_view 
     // the markup's size against the font's is what the layout scales its metrics by
     markup_.size_ = size > 0.0f ? size : size_;
 
+    // only code points with a packed glyph reach the layout, so it never packs one after
+    // the upload. A newline has no glyph and is kept, since it moves the pen
+    std::wstring drawable;
+    drawable.reserve(text.size());
+    std::size_t index = 0;
+    while (index < text.size()) {
+        const char32_t point = next(text, &index);
+        if (point == U'\n' || packed(point)) {
+            drawable.push_back(static_cast<wchar_t>(point));
+        }
+    }
+
     glm::vec2 cursor = pen;
-    const std::wstring wide(text.begin(), text.end());
-    buffer_->addText(&cursor, markup_, wide);
+    buffer_->addText(&cursor, markup_, drawable);
 
     canvas->text(*buffer_, atlas_);
 }

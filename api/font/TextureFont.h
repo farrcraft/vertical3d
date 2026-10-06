@@ -56,6 +56,14 @@ class TextureFont {
     boost::shared_ptr<Glyph> glyph(wchar_t charcode);
 
     /**
+     * The glyph already packed for a charcode, or null.
+     *
+     * glyph() rasterizes and packs a charcode it has not seen. This never does, so the atlas
+     * is unchanged. A caller that has uploaded the atlas looks glyphs up through this.
+     **/
+    boost::shared_ptr<Glyph> packed(wchar_t charcode) const;
+
+    /**
      **/
     void atlas(const boost::shared_ptr<v3d::image::TextureAtlas>& atlas);
 

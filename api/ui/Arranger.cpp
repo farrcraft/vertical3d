@@ -38,10 +38,6 @@ namespace v3d::ui {
 
 const float Arranger::ruleWidth = 1.0f;
 
-namespace {
-
-};  // namespace
-
 Arranger::Arranger(const paint::Measure& measure, const style::Resolver& styles) :
     measure_(measure),
     styles_(styles) {

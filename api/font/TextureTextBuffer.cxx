@@ -24,7 +24,9 @@ TextureTextBuffer::TextureTextBuffer() :
 void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar_t current) {
     if (current == L'\n') {
         pen->x = origin_.x;
-        const float lineScale = markup.font_->size() > 0.0f ? markup.size_ / markup.font_->size() : 1.0f;
+        // the same ratio as a glyph's metrics, so a markup with no size moves down one line
+        // at the font's own size
+        const float lineScale = markup.size_ > 0.0f && markup.font_->size() > 0.0f ? markup.size_ / markup.font_->size() : 1.0f;
         pen->y += (markup.font_->height() - markup.font_->descender()) * lineScale;
         /*
         descender_ = 0.0f;

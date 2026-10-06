@@ -356,6 +356,9 @@ void matrices(const Site & site, unsigned int point) {
         case Body::DETERMINANT:
             site.target->number(point, glm::determinant(site.argument(0).matrix(point)));
             return;
+        // glm::translate(m, t) is m times a translation, which a column vector meets first.
+        // RenderMan's translate(m, t) also applies t before m, as ConcatTransform does, and
+        // rotate and scale follow the same rule
         case Body::TRANSLATE:
             site.target->matrix(point,
                 glm::translate(site.argument(0).matrix(point), site.argument(1).triple(point)));

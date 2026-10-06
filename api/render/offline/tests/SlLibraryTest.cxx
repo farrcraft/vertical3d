@@ -514,6 +514,47 @@ BOOST_AUTO_TEST_CASE(sllibrary_transform_between_two_spaces_test) {
 }
 
 /**
+ * The order of matrix composition, against literals written as RenderMan writes them. A
+ * literal is row major, and a point is a row vector on the left, so its last row is the
+ * translation. The two scales and the translation are chosen so that every order gives a
+ * different literal.
+ *
+ * "world" is checked first, against the point ptransform moves, so the literals are read the
+ * way the renderer's transforms are. A * B applies A and then B, and A / B is A times the
+ * inverse of B. translate, rotate and scale apply their own transform before the matrix they
+ * are given, as ConcatTransform does. mtransform applies its matrix before the space change.
+ **/
+BOOST_AUTO_TEST_CASE(sllibrary_matrix_order_test) {
+    Spaces renderer;
+    const Shaded shaded(
+        "matrix world = mtransform(\"world\", matrix 1);\n"
+        "matrix moved = translate(matrix 1, vector (1, 0, 0));\n"
+        "matrix doubled = scale(matrix 1, vector (2, 2, 2));\n"
+        "float worldIsLiteral = world == matrix (1, 0, 0, 0,  0, 1, 0, 0,  0, 0, 2, 0,  2, 3, 4, 1);\n"
+        "float moveThenDouble = moved * doubled == matrix (2, 0, 0, 0,  0, 2, 0, 0,  0, 0, 2, 0,  2, 0, 0, 1);\n"
+        "float doubleThenMove = doubled * moved == matrix (2, 0, 0, 0,  0, 2, 0, 0,  0, 0, 2, 0,  1, 0, 0, 1);\n"
+        "float moveThenHalve = moved / doubled == matrix (0.5, 0, 0, 0,  0, 0.5, 0, 0,  0, 0, 0.5, 0,  0.5, 0, 0, 1);\n"
+        "float translateFirst = translate(doubled, vector (1, 0, 0)) == moved * doubled;\n"
+        "float scaleFirst = scale(moved, vector (2, 2, 2)) == doubled * moved;\n"
+        "float rotateFirst = rotate(moved, radians(90), vector (0, 0, 1)) ==\n"
+        "    rotate(matrix 1, radians(90), vector (0, 0, 1)) * moved;\n"
+        "float spaceLast = mtransform(\"world\", doubled) ==\n"
+        "    matrix (2, 0, 0, 0,  0, 2, 0, 0,  0, 0, 4, 0,  2, 3, 4, 1);", 1, &renderer);
+
+    // ptransform moves (1, 1, 1) to (3, 4, 6) through "world": scaled by (1, 1, 2), then moved
+    // by (2, 3, 4), which is the literal's last row
+    BOOST_CHECK_EQUAL(shaded.number("worldIsLiteral"), 1.0f);
+    BOOST_CHECK_EQUAL(shaded.number("moveThenDouble"), 1.0f);
+    BOOST_CHECK_EQUAL(shaded.number("doubleThenMove"), 1.0f);
+    BOOST_CHECK_EQUAL(shaded.number("moveThenHalve"), 1.0f);
+    BOOST_CHECK_EQUAL(shaded.number("translateFirst"), 1.0f);
+    BOOST_CHECK_EQUAL(shaded.number("scaleFirst"), 1.0f);
+    BOOST_CHECK_EQUAL(shaded.number("rotateFirst"), 1.0f);
+    BOOST_CHECK_EQUAL(shaded.number("spaceLast"), 1.0f);
+    BOOST_CHECK(shaded.machine().reports().empty());
+}
+
+/**
  * A matrix through a space is the two composed, and a colour through one is the colour:
  * there is one colour space here and it is the one a framebuffer holds, so a scene naming
  * another gets its colours back unchanged and a report.

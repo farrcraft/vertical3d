@@ -74,8 +74,10 @@ chooser_->open(FileChooser::Mode::Save, directory, ".json", [this](const boost::
 - `pick()` on a directory steps into it, on `..` steps up, and on a file puts its name in the
   field. A new listing has no row chosen, so a `pick()` with no row named does nothing until one
   is chosen in it.
-- `accept()` refuses an empty name or one containing a separator. In `Open` mode it refuses a
-  file that does not exist.
+- `accept()` refuses a name that is empty, `.` or `..`, or that contains a separator or a
+  colon. A colon is refused on every platform: on Windows it makes a drive relative path or an
+  alternate data stream. A name must also be its own file name, so no other form leaves the
+  directory. In `Open` mode `accept()` refuses a file that does not exist.
 - In `Save` mode a bare name is given the extension. Saving over an existing file asks first:
   `accept()` returns false and `confirming()` is true. Listing another directory clears the
   question. Accepting the same name again in the same directory replaces the file.

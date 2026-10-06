@@ -22,8 +22,8 @@ The ray hider casts every primary ray into it. Under either hider, a shader's `t
 - **A traced primitive carries its colour, opacity, surface shader and lights** from the moment
   it was made. A primitive with no surface shader, or whose shader fails to run, is drawn in its
   own colour at its own opacity. A triangle made from a polygon with a varying `"Cs"` carries a
-  colour at each corner, and a hit's `Cs` blends them by the hit's barycentric weights. So a
-  gradient draws the same under both hiders, and a shader's `trace()` sees it too.
+  colour at each corner, and a hit's `Cs` blends them by the hit's barycentric weights. A
+  gradient therefore draws the same under both hiders, and a shader's `trace()` sees it too.
 - **A traced primitive carries the lights that were on when it was made**, as one set shared by
   every primitive made until the lights change (`trace::Lights`). A primitive given no lights,
   as in a scene built in code, is lit by the scene's own list, `Scene::lights()`.

@@ -84,7 +84,8 @@ A viewport is a camera, a rectangle of the window, and a set of display flags. I
 device state.
 
 **Layout.** `data/layout.json` is a tree of vertical and horizontal splits. Each leaf names a
-camera profile. `ViewLayout` turns the tree into one region per leaf. The default layout is
+camera profile. `ViewLayout` turns the tree into one region per leaf. A name, camera or split
+that is not a string makes `load()` return false. The default layout is
 Front, Top, Left and Perspective. The menu bar and the toolbars take strips along two edges of
 the window, and the views divide the rest.
 
@@ -117,4 +118,5 @@ change while a drag is under way, so a drag that crosses a border keeps its came
 select and transform tools all work in the active view.
 
 The editor draws lines only. A shaded display mode is not built, which is why a selected face is
-drawn as its outline and a selected vertex as a small box.
+drawn as its outline and a selected vertex as a small box. The outline covers every edge of
+the face, including the edges it shares with a neighbour.

@@ -794,3 +794,20 @@ code the branch rewrote. All are fixed:
   tetris suite's links and the build comments state the tree as it is;
 - comments that opened with "So" or "and", and the docs on a disabled and hidden focus, data
   copy order and failed shader defaults, state the rules as they are.
+
+### After a seventh review
+
+A seventh review found older defects in code the branch moved or rewrote. All are fixed:
+
+- a shader run that fails is reported once per machine, so a runaway loop is no longer silent;
+  a float bound to a matrix parameter is the diagonal matrix; matrix `*` and `/` follow
+  RenderMan's row vector order, which a test pins against literals;
+- text is decoded from UTF-8, and a code point the font did not pack measures and draws nothing
+  rather than growing an atlas that has already been uploaded; a newline in a markup with no
+  size moves one line;
+- the file chooser refuses a name with a colon, or any name that is not its own file name; the
+  tga writer checks the size before it truncates the file;
+- a selected face is outlined on every edge, including those its neighbour draws; a view layout
+  whose name, camera or split is not a string is refused rather than thrown;
+- FreeType and boost filesystem are linked PRIVATE where only sources include them, libmoya
+  names glm, and stale build comments, agent prompts and doc sentences state the tree as it is.

@@ -13,6 +13,8 @@
 #include <vector>
 
 #include <glm/geometric.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/matrix.hpp>
 #include <glm/vec3.hpp>
 
 namespace v3d::render::offline::sl::runtime {
@@ -193,14 +195,18 @@ void Machine::arithmetic(const Instruction & instruction) {
     const unsigned int count = target.storage() == Storage::VARYING ? batch_ : 1;
     const unsigned int wide = target.components();
 
-    // a matrix times a matrix is the matrix product, the only multiplication that is not
-    // done a component at a time
-    if (instruction.opcode == Opcode::MULTIPLY &&
+    // a matrix times a matrix is the matrix product, and a matrix over a matrix is the left
+    // times the inverse of the right. SL states both in row vectors, so A * B applies A and
+    // then B. A glm matrix applies to a column vector on its right, so the order is reversed
+    if ((instruction.opcode == Opcode::MULTIPLY || instruction.opcode == Opcode::DIVIDE) &&
         left.type() == Type::MATRIX && right.type() == Type::MATRIX) {
         for (unsigned int point = 0; point < count; point++) {
-            if (writable(target, point)) {
-                target.matrix(point, left.matrix(point) * right.matrix(point));
+            if (!writable(target, point)) {
+                continue;
             }
+            const glm::mat4x4 second = instruction.opcode == Opcode::MULTIPLY ?
+                right.matrix(point) : glm::inverse(right.matrix(point));
+            target.matrix(point, second * left.matrix(point));
         }
         return;
     }
@@ -509,9 +515,16 @@ bool Machine::initialise() {
 bool Machine::run() {
     if (program_ == nullptr) {
         error_ = "the machine was run before it was prepared";
+        report(error_);
         return false;
     }
-    return execute(*program_, program_->prologue, program_->instructions.size());
+    if (!execute(*program_, program_->prologue, program_->instructions.size())) {
+        // reported here, so no renderer has to log a failed run itself; initialise() does not
+        // report, because Instance::write reports it with the shader's name
+        report(error_);
+        return false;
+    }
+    return true;
 }
 
 bool Machine::execute(const Program & program, std::size_t from, std::size_t until) {

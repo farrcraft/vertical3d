@@ -48,12 +48,6 @@ namespace v3d::ui::paint {
 namespace {
 
 /**
- * The width of the columns either side of a dropped panel's labels, as a fraction of
- * a row's height: the mark a checked item draws on the left and the arrow a submenu
- * item draws on the right.
- **/
-
-/**
  * The colour a component's own text is drawn in: what it would be drawn in, or the theme's
  * disabled colour when the component - or anything holding it - cannot be used. An icon is
  * tinted with the same colour, so one key greys both a label and the picture beside it.

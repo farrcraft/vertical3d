@@ -8,6 +8,7 @@
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/sl/ShaderLibrary.h>
 
+#include <cstdio>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -132,6 +133,38 @@ BOOST_AUTO_TEST_CASE(slshaderlibrary_binds_a_colour_test) {
     BOOST_CHECK_CLOSE(bound(shader, "lightcolor").r, 0.25f, 0.01f);
     BOOST_CHECK_CLOSE(bound(shader, "lightcolor").g, 0.5f, 0.01f);
     BOOST_CHECK_CLOSE(bound(shader, "lightcolor").b, 0.75f, 0.01f);
+}
+
+/**
+ * A matrix bound with one value is the diagonal matrix, as an assignment promotes a float,
+ * not a matrix with that value in all sixteen components.
+ **/
+BOOST_AUTO_TEST_CASE(slshaderlibrary_binds_a_matrix_from_a_float_test) {
+    {
+        std::ofstream file("diagonal.sl");
+        BOOST_REQUIRE(file.is_open());
+        file << "surface diagonal(matrix m = 0) { Ci = Cs; }\n";
+    }
+
+    ShaderLibrary library(logger());
+    library.searchpath(".");
+    ParameterList list;
+    add(&list, "m", Declaration::Type::FLOAT, { 2.0f });
+    const InstancePtr shader = library.instance("diagonal", ShaderType::SURFACE, list);
+    BOOST_REQUIRE(shader);
+    BOOST_REQUIRE_EQUAL(shader->name(), "diagonal");
+
+    v3d::render::offline::sl::runtime::Machine machine;
+    machine.prepare(shader->program(), 1);
+    BOOST_REQUIRE(shader->write(&machine));
+    const int reg = shader->program().symbol("m");
+    BOOST_REQUIRE(reg >= 0);
+    const v3d::render::offline::sl::runtime::Value & m = machine.value(reg);
+    for (unsigned int i = 0; i < 16; i++) {
+        BOOST_CHECK_EQUAL(m.component(0, i), i % 5 == 0 ? 2.0f : 0.0f);
+    }
+
+    std::remove("diagonal.sl");
 }
 
 /**

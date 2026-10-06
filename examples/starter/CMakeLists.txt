@@ -42,8 +42,8 @@ add_executable(v3dstarter
 
 # A CMake function is global once defined, so the tree's data helpers are callable here. This
 # one copies data/ beside the executable, because the engine resolves every asset relative to
-# the exe. v3d_add_shared_data(v3dstarter) would add the tree's own data/ - the fonts and themes
-# - which this app does not draw and so does not ask for.
+# the exe. v3d_add_shared_data(v3dstarter) would add the tree's own data/, which holds the
+# shared font, and this app draws no text and so does not ask for it.
 v3d_add_app_data(v3dstarter)
 
 # Three targets and no third party package of its own. boost::filesystem is compiled by these

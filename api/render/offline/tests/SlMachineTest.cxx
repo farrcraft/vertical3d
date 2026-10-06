@@ -570,6 +570,38 @@ BOOST_AUTO_TEST_CASE(slmachine_endless_loop_test) {
 }
 
 /**
+ * A run that fails is reported, so it reaches the log without the renderer logging it. A
+ * second run that fails the same way is not reported again.
+ **/
+BOOST_AUTO_TEST_CASE(slmachine_failed_run_reported_once_test) {
+    std::string error;
+    Program program;
+    BOOST_REQUIRE_MESSAGE(build(
+        "surface s() {\n"
+        "    float i = 0;\n"
+        "    while (1) { i += 1; }\n"
+        "    Ci = Cs;\n"
+        "}\n", &program, &error), error);
+
+    v3d::render::offline::sl::runtime::Machine machine;
+    machine.prepare(program, 1);
+    BOOST_CHECK(!machine.run());
+    BOOST_CHECK(!machine.run());
+    BOOST_REQUIRE_EQUAL(machine.reports().size(), 1u);
+    BOOST_CHECK_EQUAL(machine.reports()[0], "the shader 's' ran without end");
+}
+
+/**
+ * A machine run before it was prepared fails, and the failure is reported.
+ **/
+BOOST_AUTO_TEST_CASE(slmachine_unprepared_run_reported_test) {
+    v3d::render::offline::sl::runtime::Machine machine;
+    BOOST_CHECK(!machine.run());
+    BOOST_REQUIRE_EQUAL(machine.reports().size(), 1u);
+    BOOST_CHECK_EQUAL(machine.reports()[0], "the machine was run before it was prepared");
+}
+
+/**
  * A run reuses the register file rather than allocating one: a renderer shading a thousand
  * grids over one program prepares once and runs a thousand times.
  **/

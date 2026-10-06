@@ -997,7 +997,9 @@ void RenderContext::render() {
 
     if (imager_) {
         // after the last bucket, once every sample of the frame is in: an imager is a
-        // function of the finished picture rather than of a piece
+        // function of the finished picture rather than of a piece. A failed run is logged by
+        // the shader's machine. It leaves that row and the rows below it as the hider wrote
+        // them, and the frame is still written
         v3d::render::offline::sl::Imager imager(imager_, &shader());
         imager.run(frameBuffer_->planes().get(), FrameBuffer::COVERAGE);
     }

@@ -515,7 +515,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_rotated_polygon_is_not_culled_test) {
 
     boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
     BOOST_CHECK_GT(coverage(*planes), 0u);
-    // x = 1 and y = 0.71 is inside the quad, and lands at column 56 and row 7
+    // the centre of column 56, row 7 is near x = 1.02 and y = 0.69, which is inside the quad
     BOOST_CHECK_GT(planes->value(v3d::moya::FrameBuffer::RED, 56, 7), 0.5f);
 }
 

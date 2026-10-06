@@ -191,18 +191,27 @@ boost::shared_ptr<TextureFont::Glyph> TextureFont::createGlyph() {
     return glyph;
 }
 
+boost::shared_ptr<TextureFont::Glyph> TextureFont::packed(wchar_t charcode) const {
+    const wchar_t lineCode = static_cast<wchar_t>(-1);
+
+    for (const boost::shared_ptr<Glyph>& candidate : glyphs_) {
+        if ((candidate->charcode_ == charcode) &&
+            ((charcode == lineCode) ||
+                ((candidate->outline_ == outline_) &&
+                    (candidate->outlineThickness_ == outlineThickness_)))) {
+            return candidate;
+        }
+    }
+    return boost::shared_ptr<Glyph>();
+}
+
 boost::shared_ptr<TextureFont::Glyph> TextureFont::glyph(wchar_t charcode) {
     wchar_t lineCode = static_cast<wchar_t>(-1);
 
-    for (unsigned int i = 0; i < glyphs_.size(); ++i) {
-        if ((glyphs_[i]->charcode_ == charcode) &&
-            ((charcode == lineCode) ||
-                ((glyphs_[i]->outline_ == outline_) &&
-                    (glyphs_[i]->outlineThickness_ == outlineThickness_)))) {
-            return glyphs_[i];
-        }
+    boost::shared_ptr<Glyph> glyph = packed(charcode);
+    if (glyph) {
+        return glyph;
     }
-    boost::shared_ptr<Glyph> glyph;
     // -1 is used for line drawing (overline, underline, strikethrough) and background
     if (charcode == lineCode) {
         glm::ivec4 region = atlas_->region(4, 4);

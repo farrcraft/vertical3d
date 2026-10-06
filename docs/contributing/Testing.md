@@ -57,7 +57,8 @@ These have no automated test:
 - `audio::Engine::initialize()`, which opens the audio device. The rest of `api/audio` is tested,
   but not whether a sound is audible. An engine with no device gives back no voice, so its suite
   runs anywhere.
-- `ui::paint::TextRenderer`.
+- The upload in `ui::paint::TextRenderer`, which needs a device. Its measuring and layout are
+  tested with an upload that returns a handle and draws nothing.
 
 `Engine::eventLoop()` renders, so a test cannot drive it. The order in which an event reaches the
 app, the bindings and the engine is in `Engine::route()`, which a test calls directly with no

@@ -9,14 +9,14 @@ v3d_add_api_library(image
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
 target_link_libraries(v3dlib_image PUBLIC v3dlib_log)
 
-# Factory resolves paths through boost::filesystem, so anything linking this library needs
-# it too.
-target_link_libraries(v3dlib_image PUBLIC Boost::filesystem)
+# PRIVATE: Factory resolves paths through boost::filesystem in its source only.
+target_link_libraries(v3dlib_image PRIVATE Boost::filesystem)
 
 # glm is named by TextureAtlas.h.
 target_link_libraries(v3dlib_image PUBLIC glm::glm)
 
-# PRIVATE: the codecs are reached only from reader/ and writer/, never from a header.
+# PRIVATE: the codecs are reached only from reader/ and writer/. JpegError.h includes the
+# jpeg header, and only the two jpeg sources include JpegError.h, so no consumer needs it.
 target_link_libraries(v3dlib_image PRIVATE PNG::PNG JPEG::JPEG)
 
 target_compile_options(v3dlib_image PRIVATE /EHsc)

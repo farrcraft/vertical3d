@@ -23,6 +23,7 @@ v3d_add_test(ui
 	"StatisticsOverlayTest.cpp"
 	"TabBarTest.cpp"
 	"TextBoxTest.cpp"
+	"TextRendererTest.cpp"
 	"ThemeTest.cpp"
 	"ToolbarTest.cpp"
 	"TypeTest.cpp")
@@ -40,3 +41,6 @@ target_link_libraries(v3dtest_ui PRIVATE
 	${SDL3_LIBRARIES}
 	${Vulkan_LIBRARIES}
 	Freetype::Freetype)
+
+# TextRendererTest packs real glyphs, so the shared font has to sit beside the executable.
+v3d_add_shared_data(v3dtest_ui)

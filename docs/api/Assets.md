@@ -281,7 +281,10 @@ and the drawing of text. See [ui/](ui/README.md).
   Text drawn with a partly packed font is missing characters and measures short, so layout
   around it is wrong as well.
 - `glyph(charcode)` returns a glyph's size, offset, advance and uvs, or null if it was not
-  loaded. `glyph(-1)` is an opaque white square, used to draw lines and backgrounds.
+  loaded. A charcode it has not seen is rasterized and packed then. `glyph(-1)` is an opaque
+  white square, used to draw lines and backgrounds.
+- `packed(charcode)` returns a glyph only if it is already packed, and never adds one. Use it
+  once the atlas has been uploaded, since a glyph packed afterwards is not on the device.
 - `ascender()`, `descender()`, `height()`, `linegap()`, `underlinePosition()` and
   `underlineThickness()` are the face's metrics.
 - **`TextureFontCache(width, height, depth, logger)`** shares one atlas among several fonts.

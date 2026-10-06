@@ -170,6 +170,28 @@ BOOST_AUTO_TEST_CASE(a_name_that_is_not_one_is_refused) {
 }
 
 /**
+ * A name with a colon is refused when saving. On Windows "C:name" is relative to another
+ * drive's directory and "name:stream" is an alternate data stream, so either would write
+ * outside the directory shown.
+ **/
+BOOST_AUTO_TEST_CASE(a_saved_name_with_a_colon_is_refused) {
+    const Sandbox sandbox("colon");
+    bool called = false;
+    v3d::ui::shell::FileChooser chooser(nullptr);
+    chooser.open(v3d::ui::shell::FileChooser::Mode::Save, sandbox.path(), ".json",
+        [&called](const boost::filesystem::path&) { called = true; });
+
+    for (const std::string& name : { std::string("C:evil"), std::string("C:evil.json"), std::string("scene:stream"),
+            std::string("scene.json:stream") }) {
+        chooser.name(name);
+        BOOST_CHECK(!chooser.accept());
+    }
+    BOOST_CHECK(!called);
+    BOOST_CHECK(!chooser.confirming());
+    BOOST_CHECK(chooser.visible());
+}
+
+/**
  * Saving gives a bare name the extension, and a new file is chosen at once.
  **/
 BOOST_AUTO_TEST_CASE(a_saved_name_is_given_the_extension) {

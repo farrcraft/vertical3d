@@ -485,20 +485,6 @@ class Immediate {
     void label(const std::string& line, const glm::vec2& min, const glm::vec2& size, const glm::vec4& colour) const;
 
     /**
-     * Draw the bar down the right of a region that has more content than it shows, and
-     * scroll it where the cursor drags the thumb to.
-     *
-     * A window and a table each have one, so the region is passed rather than read: the
-     * bar is drawn inside the rectangle given, against the right of it.
-     *
-     * @param id the id the thumb is hit tested under
-     * @param min the top left of the region the bar runs down
-     * @param max its bottom right, which the bar is drawn against
-     * @param view how much of the content the region shows, in pixels
-     * @param span how much of it it does not, which is the furthest it can be scrolled
-     * @param scroll read and written - where the region is scrolled to
-     **/
-    /**
      * Whether a scrolled region puts up its scrollbar: a window decides at its start, from
      * what it drew last frame, and a table whenever there is more than it shows.
      **/
@@ -512,6 +498,20 @@ class Immediate {
      **/
     void closeScroll(Id id, Id scroll, float contentTop, const glm::vec2& bodyMax, Bar bar);
 
+    /**
+     * Draw the bar down the right of a region that has more content than it shows, and
+     * scroll it where the cursor drags the thumb to.
+     *
+     * A window and a table each have one, so the region is passed rather than read: the
+     * bar is drawn inside the rectangle given, against the right of it.
+     *
+     * @param id the id the thumb is hit tested under
+     * @param min the top left of the region the bar runs down
+     * @param max its bottom right, which the bar is drawn against
+     * @param view how much of the content the region shows, in pixels
+     * @param span how much of it it does not, which is the furthest it can be scrolled
+     * @param scroll read and written - where the region is scrolled to
+     **/
     void scrollbar(Id id, const glm::vec2& min, const glm::vec2& max, float view, float span,
         float* scroll);
 

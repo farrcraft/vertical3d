@@ -117,8 +117,8 @@ class FileChooser final {
     /**
      * Choose the name in the field, in the directory shown.
      *
-     * A name that is empty, or that holds a separator, is refused. Opening refuses a file
-     * that is not there. Saving over a file that is there asks first: this returns false and
+     * A name that is empty, "." or "..", or that holds a separator or a colon, is refused.
+     * Opening refuses a file that is not there. Saving over a file that is there asks first: this returns false and
      * confirming() is true, and accepting the same name again replaces it.
      *
      * @return whether a path was chosen, and the chooser closed

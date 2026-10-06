@@ -43,6 +43,10 @@ bool ViewLayout::load(const boost::shared_ptr<v3d::asset::kind::Json>& config) {
     }
     auto const layout = doc.at("layout").as_object();
     if (layout.contains("name")) {
+        if (!layout.at("name").is_string()) {
+            logger_->get()->error("A layout's name is a string");
+            return false;
+        }
         name_ = boost::json::value_to<std::string>(layout.at("name"));
     }
     if (!layout.contains("root") || !layout.at("root").is_object()) {
@@ -67,6 +71,10 @@ bool ViewLayout::load(const boost::shared_ptr<v3d::asset::kind::Json>& config) {
 bool ViewLayout::loadNode(const boost::json::object& entry, Node* into) {
     // a leaf names the camera it shows; anything else is a split
     if (entry.contains("camera")) {
+        if (!entry.at("camera").is_string()) {
+            logger_->get()->error("A layout node's camera is a name");
+            return false;
+        }
         View view;
         view.camera = boost::json::value_to<std::string>(entry.at("camera"));
         into->view = views_.size();
@@ -79,6 +87,10 @@ bool ViewLayout::loadNode(const boost::json::object& entry, Node* into) {
         return false;
     }
     // horizontal puts its children side by side; vertical stacks them
+    if (entry.contains("split") && !entry.at("split").is_string()) {
+        logger_->get()->error("A layout node's split is horizontal or vertical");
+        return false;
+    }
     const std::string split = entry.contains("split") ?
         boost::json::value_to<std::string>(entry.at("split")) : std::string("vertical");
     into->vertical = (split != "horizontal");

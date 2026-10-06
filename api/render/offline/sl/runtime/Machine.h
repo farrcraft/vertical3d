@@ -50,7 +50,8 @@ class Machine final {
 
     /**
      * Run the program prepare() was given. False when something went wrong, which error()
-     * names - and when nothing was prepared.
+     * names - and when nothing was prepared. A failure is also reported, so it reaches the log
+     * once per machine however many runs fail the same way.
      *
      * Starts after the program's prologue, which is the declared parameter defaults:
      * running those again per grid would overwrite whatever a scene bound.
@@ -59,7 +60,8 @@ class Machine final {
 
     /**
      * Run only the prologue, which leaves each parameter register holding the default the
-     * shader declared. `Instance::write()` calls it before writing a scene's values.
+     * shader declared. `Instance::write()` calls it before writing a scene's values. A failure
+     * here is not reported: `Instance::write()` reports it with the shader's name.
      **/
     bool initialise();
 

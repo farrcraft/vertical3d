@@ -210,7 +210,7 @@ Specific rules:
   api library depends on audio.
 - **An asset manager loads only the file types registered on it.** `engine::Engine` registers
   `v3dlib_asset_media`'s loaders on the manager it builds. A manager built anywhere else,
-  including in a test, starts with JSON documents only and must call
+  including in a test, starts with JSON and text documents only and must call
   `asset::media::registerLoaders()` itself.
 - **There is no OpenGL in the tree.** A target that names `OpenGL::GL`, `GLEW::GLEW` or
   `v3dlib_gl` will not configure.

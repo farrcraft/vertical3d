@@ -82,9 +82,8 @@ environment fault is not, and `docs/contributing/Build.md` lists the ones that r
 - 4-space indent; access specifiers indented one space into the class body (` public:`).
 - Headers are `.h`; implementations are `.cpp` **or** `.cxx`, mixed even within a directory.
   Match the immediate neighbours rather than picking a favourite.
-- Logging is spdlog through the wrapper: `logger_->get()->info("... {}", value)`. The old
-  `LOG_INFO`/`LOG_ERROR` macros survive only in dead or non-compiling code — a new use is a
-  finding.
+- Logging is spdlog through the wrapper: `logger_->get()->info("... {}", value)`. There are
+  no logging macros, and a new one is a finding.
 - LF line endings. `.gitattributes` enforces it; a file that arrives with CRLF turns a small
   change into a whole-file diff.
 
@@ -92,7 +91,7 @@ environment fault is not, and `docs/contributing/Build.md` lists the ones that r
 
 - **The offline renderer must not acquire a realtime dependency.** `moya` is offline and
   consumes only the non-realtime libraries — `render_offline`, `image`, `log`
-  and `type`. A change that pulls `render`, `gl`, `ui`, `input` or Vulkan into that set,
+  and `type`. A change that pulls `render`, `ui`, `input` or Vulkan into that set,
   or into that app, is a design finding even if it links.
 - **App logic does not belong in `api/`, and api concerns do not belong in an app.** The
   test is whether a second app would want it.

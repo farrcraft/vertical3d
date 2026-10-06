@@ -387,3 +387,22 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_tga_alpha_test, OutputDirectory) {
     BOOST_CHECK_EQUAL((*image)[3], 0x80);
     BOOST_CHECK_EQUAL((*image)[7], 0x80);
 }
+
+/**
+ * A picture wider than a TGA header can describe is refused before the file is opened, so a
+ * file already at that name keeps its contents.
+ **/
+BOOST_FIXTURE_TEST_CASE(imagewriter_tga_too_wide_leaves_the_file_test, OutputDirectory) {
+    v3d::image::Factory factory(boost::make_shared<v3d::log::Logger>());
+    const std::string filename = "data_out/too_wide.tga";
+
+    boost::shared_ptr<v3d::image::Image> small = boost::make_shared<v3d::image::Image>(2, 1, 8);
+    BOOST_REQUIRE(factory.write(filename, small));
+    const boost::uintmax_t before = boost::filesystem::file_size(filename);
+    BOOST_REQUIRE(before > 0u);
+
+    // one row of one byte a pixel, so the picture is wide and still costs only 64 KiB
+    boost::shared_ptr<v3d::image::Image> wide = boost::make_shared<v3d::image::Image>(65536, 1, 8);
+    BOOST_CHECK(!factory.write(filename, wide));
+    BOOST_CHECK_EQUAL(boost::filesystem::file_size(filename), before);
+}

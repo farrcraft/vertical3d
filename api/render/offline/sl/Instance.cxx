@@ -142,7 +142,11 @@ void Instance::bind(const rib::ParameterList & parameters) {
         held->values.assign(components(held->type), 0.0f);
         for (unsigned int component = 0; component < held->values.size(); component++) {
             // a float bound onto a colour replicates, as RI promotes it; "Color [1]" and a
-            // one value "specularcolor" both rely on this
+            // one value "specularcolor" both rely on this. A float bound onto a matrix is the
+            // diagonal matrix, as an assignment promotes it, so its other components stay 0
+            if (values.size() == 1 && held->type == Type::MATRIX && component % 5 != 0) {
+                continue;
+            }
             const std::size_t which = values.size() == 1 ? 0 : component;
             if (which < values.size()) {
                 held->values[component] = values[which];

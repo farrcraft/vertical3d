@@ -140,9 +140,23 @@ files on disk.
   machine as a warning, through the logger of the shader instance that wrote the machine's
   parameters. A shader whose parameter defaults fail to run is reported in the same way, once
   per machine, and the renderer treats it as a run that failed.
+- **A run that fails is reported by the machine.** `Machine::run()` returns false and reports
+  `error()`, such as a shader that runs without end. No renderer logs it again. A grid or a
+  traced hit whose surface fails is drawn as if it had no shader. A light that fails lights
+  nothing.
+- **A failed imager stops at the row that failed.** The rows above it are shaded, and that row
+  and the rows below it keep what the hider wrote. moya still writes the frame.
 - **`==` and `!=` compare every component** of a colour, point, vector, normal or matrix. A
   float compared with one is promoted as an assignment promotes it, so a float against a matrix
   is the diagonal matrix.
+- **A float bound onto a matrix parameter is the diagonal matrix**, as an assignment promotes
+  it. A float bound onto a colour, point, vector or normal fills every component.
+- **Matrices follow RenderMan's row vector convention.** A matrix literal is row major, and its
+  last row is the translation. A point is a row vector on the left, so `A * B` applies `A` and
+  then `B`. `A / B` is `A` times the inverse of `B`. `translate`, `rotate` and `scale` apply their
+  own transform before the matrix they are given, as `ConcatTransform` does. `mtransform`
+  applies its matrix and then the change of space. In the machine, glm's column vector
+  matrices hold the same sixteen floats, so each product is written in the reverse order.
 - **A built-in may return results through its arguments.** `Signature::outputs` names the first
   argument it writes, and every one from it on is written. `Signature::updates` names one it
   reads and writes in place, which is what `setxcomp`, `setycomp`, `setzcomp` and `setcomp` do

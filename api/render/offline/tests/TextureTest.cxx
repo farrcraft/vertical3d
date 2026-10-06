@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE(texture_periodic_wrap_test) {
     // a coordinate far from the first repeat is taken into it rather than overflowing an index
     same(texture.sample(1.0e6f + 0.25f, 0.25f), texture.sample(0.25f, 0.25f));
     same(texture.sample(1.0e9f, 0.25f), texture.sample(0.0f, 0.25f));
-    // and one that is not finite names no texel
+    // a coordinate that is not finite names no texel
     same(texture.sample(std::nanf(""), 0.25f), glm::vec3(0.0f));
 }
 

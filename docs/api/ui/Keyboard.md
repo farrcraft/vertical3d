@@ -19,9 +19,9 @@ The **focus** is the one component that receives keys. `ui::Engine` holds it.
 - `escape` clears the focus.
 - An enabled component hidden while it has the focus, or whose container or tab page is
   hidden, gives the focus up on the next key or character, which then goes on to the app's
-  bindings. That includes `tab` and `escape`. A component both disabled and hidden keeps the
-  focus, and the ui still takes `tab` and `escape`. A dialog that closes over a focused text box therefore does not
-  keep taking the game's keys.
+  bindings. That includes `tab` and `escape`. A dialog that closes over a focused text box
+  therefore does not keep taking the game's keys. A component both disabled and hidden keeps
+  the focus, and the ui still takes `tab` and `escape`.
   `Engine::reachable(component)` answers whether a component is still in the tab order.
 - A component disabled while it has the focus keeps it. `tab` and `escape` still go to the ui.
   Every other key goes through to the app's bindings.

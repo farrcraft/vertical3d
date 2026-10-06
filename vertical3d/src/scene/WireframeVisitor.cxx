@@ -66,11 +66,19 @@ void WireframeVisitor::visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
     canvas_->transform(mesh->matrix());
 
     const std::size_t faces = mesh->faceCount();
+    // a selected face is drawn as its boundary, there being no filled primitive to shade it
+    // with. An edge is drawn once, by one of its two halves, so it is highlighted when the face
+    // on either side of it is selected
+    const auto faceSelected = [&mesh](v3d::brep::Index edge) {
+        const v3d::brep::HalfEdge* half = mesh->edge(edge);
+        if (half == nullptr) {
+            return false;
+        }
+        const v3d::brep::Face* face = mesh->face(half->face());
+        return face != nullptr && face->selected();
+    };
+
     for (v3d::brep::Index number = 0; number < faces; number++) {
-        const v3d::brep::Face* face = mesh->face(number);
-        // a selected face is drawn as its boundary, there being no filled primitive to
-        // shade it with
-        const bool selected = face != nullptr && face->selected();
         const std::vector<v3d::brep::Index> loop = v3d::brep::faceLoop(*mesh, number);
         if (loop.size() < 2) {
             continue;
@@ -88,7 +96,10 @@ void WireframeVisitor::visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
                 continue;
             }
 
-            canvas_->line(from, to, selected || v3d::brep::edgeSelected(*mesh, current) ? component_ : base);
+            const v3d::brep::Index pair = mesh->edge(current)->pair();
+            const bool selected = faceSelected(current) || (pair != v3d::brep::INVALID_ID && faceSelected(pair)) ||
+                v3d::brep::edgeSelected(*mesh, current);
+            canvas_->line(from, to, selected ? component_ : base);
         }
     }
 
