@@ -85,9 +85,9 @@ device state.
 
 **Layout.** `data/layout.json` is a tree of vertical and horizontal splits. Each leaf names a
 camera profile. `ViewLayout` turns the tree into one region per leaf. A name, camera or split
-that is not a string makes `load()` return false, and so does a split with no children. The default layout is
-Front, Top, Left and Perspective. The menu bar and the toolbars take strips along two edges of
-the window, and the views divide the rest.
+that is not a string makes `load()` return false, and so does a split with no children. The
+default layout is Front, Top, Left and Perspective. The menu bar and the toolbars take strips
+along two edges of the window, and the views divide the rest.
 
 **Drawing.** Each frame, every `ViewPort` fills two line canvases:
 

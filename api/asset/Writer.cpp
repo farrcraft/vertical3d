@@ -62,14 +62,15 @@ void indent(std::string* out, int depth) {
 }
 
 /**
- * Write a double in its shortest form, as a float when it fits in one.
+ * Write a double in its shortest form, as a float when it was widened from one.
  *
  * boost::json serializes a double as 0E0 rather than as 0, a form that is valid but hard to
  * read and to edit by hand. A double widened from a float prints every digit of the double
- * unless it is narrowed back first. The narrowing is exact for such a double, and every number
- * in a document this tree writes is one.
+ * unless it is narrowed back first.
  *
- * A double beyond the range of a float is printed as a double. Narrowing it would overflow.
+ * Only a double that a float holds exactly is narrowed, so the narrowing never changes the
+ * value. Any other double is printed as a double. The range is checked before the cast, because
+ * casting a double beyond the range of a float is undefined.
  **/
 void printNumber(std::string* out, const boost::json::value& value) {
     if (!value.is_double()) {
@@ -78,8 +79,9 @@ void printNumber(std::string* out, const boost::json::value& value) {
     }
     const double number = value.as_double();
     char buffer[32];
-    const bool fits = std::isfinite(number) && std::fabs(number) <= std::numeric_limits<float>::max();
-    const std::to_chars_result result = fits ?
+    const bool widened = std::isfinite(number) && std::fabs(number) <= std::numeric_limits<float>::max() &&
+        static_cast<double>(static_cast<float>(number)) == number;
+    const std::to_chars_result result = widened ?
         std::to_chars(buffer, buffer + sizeof(buffer), static_cast<float>(number)) :
         std::to_chars(buffer, buffer + sizeof(buffer), number);
     if (result.ec != std::errc()) {

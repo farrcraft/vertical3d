@@ -13,7 +13,10 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <glm/mat4x4.hpp>
+#include <glm/matrix.hpp>
 #include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
 
 namespace {
 
@@ -246,4 +249,29 @@ BOOST_AUTO_TEST_CASE(moya_a_light_runs_in_its_own_space_test) {
     // two units away as above; taking the surface's space for the light's would put the
     // light at the origin, five units away
     BOOST_CHECK_CLOSE(grid.vertex(0, 0).color().r, 0.25f, 1.0f);
+}
+
+/**
+ * NDC is raster space divided by the resolution: x runs right and y runs down from the upper
+ * left corner of the picture. A point on the top row of the picture has an NDC y of 0, and the
+ * lower right corner is (1, 1).
+ **/
+BOOST_AUTO_TEST_CASE(moya_ndc_runs_down_from_the_top_test) {
+    v3d::moya::RenderContext rc;
+    prepare(&rc);
+    glm::mat4x4 raster(1.0f);
+    glm::mat4x4 ndc(1.0f);
+    BOOST_REQUIRE(rc.shader().space("raster", &raster));
+    BOOST_REQUIRE(rc.shader().space("NDC", &ndc));
+
+    // a quarter of the way across the top row, back in camera space, where y is up
+    const glm::vec4 top = glm::inverse(raster) * glm::vec4(16.0f, 0.0f, 1.0f, 1.0f);
+    BOOST_CHECK_GT(top.y, 0.0f);
+    const glm::vec4 high = ndc * top;
+    BOOST_CHECK_CLOSE(high.x, 0.25f, 0.1f);
+    BOOST_CHECK_SMALL(high.y, 0.0001f);
+
+    const glm::vec4 corner = ndc * (glm::inverse(raster) * glm::vec4(64.0f, 48.0f, 1.0f, 1.0f));
+    BOOST_CHECK_CLOSE(corner.x, 1.0f, 0.1f);
+    BOOST_CHECK_CLOSE(corner.y, 1.0f, 0.1f);
 }

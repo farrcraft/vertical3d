@@ -1,6 +1,6 @@
 ---
 name: build-resolver
-description: Diagnoses and fixes build and link failures in this repository with minimal changes. Knows the Ninja/vcpkg/MSVC setup and the traps that waste the most time — a stale CMake cache after a toolset update, a source file missing from a hand-written CMakeLists list, and the vcpkg install that must never be deleted. Use when a build or link fails, or when cpplint reports something.
+description: Diagnoses and fixes build and link failures in this repository with minimal changes. Covers the Ninja/vcpkg/MSVC setup and the traps that waste the most time — a stale CMake cache after a toolset update, a source file missing from a hand-written CMakeLists list, and the vcpkg install that must never be deleted. Use when a build or link fails, or when cpplint reports something.
 tools: Read, Write, Edit, Bash, Grep, Glob
 model: sonnet
 ---
@@ -14,9 +14,9 @@ the right one.
 ## Before anything else: is it already broken?
 
 Everything in the tree compiles, links and passes cpplint, `/W4` with `/WX`, `/analyze` and
-the enabled clang-tidy checks - `docs/contributing/Linting.md` states that and `docs/TODO.md` carries what
-is deliberately left open. **So a failure is the change's until shown otherwise**, and the
-thing to rule out first is a stale CMake cache rather than known breakage.
+the enabled clang-tidy checks - `docs/contributing/Linting.md` states that and `docs/TODO.md`
+carries what is deliberately left open. **A failure is therefore the change's until shown
+otherwise**, and the thing to rule out first is a stale CMake cache rather than known breakage.
 
 ## The one rule that outranks finishing
 
@@ -50,15 +50,19 @@ prints the error and then the instantiation chain that caused it. Redirect and r
 whole thing:
 
 ```bash
-ninja -C out/build/x64-Debug > "$SCRATCH/build.log" 2>&1
-grep -nE 'error C[0-9]|error LNK|fatal error|^FAILED' "$SCRATCH/build.log" | head -40
+./scripts/build.cmd > "$TEMP/v3d-build.log" 2>&1        # add a target name to build one
+grep -nE 'error C[0-9]|error LNK|fatal error|^FAILED' "$TEMP/v3d-build.log" | head -40
 ```
+
+Run it from the repository root, in the Bash tool. The log goes to the system temp directory,
+outside the tree. From `cmd.exe` the first line is
+`scripts\build.cmd > "%TEMP%\v3d-build.log" 2>&1`.
 
 Then read ±20 lines around the first hit. **Fix the first error and rebuild** — later
 errors are usually cascades.
 
 Two practical notes. Paths passed through the shell should use forward slashes; backslashes
-get mangled on the way through. And a full build from cold is slow, so prefer building the
+get mangled on the way through. A full build from cold is slow, so prefer building the
 single target you broke.
 
 ## The expensive mistakes
@@ -108,10 +112,11 @@ is a defect to fix, not noise.
 
 Every `VkResult` is checked. Most calls pass it to `vulkan::device::check`, which throws with
 the result in words from `vulkan::device::resultString`. A call whose failure is recoverable
-tests the result inline and carries on without throwing. The device extension enumeration, the
-debug messenger's creation and the read of GPU timestamp queries do this. A wait for the device
-to go idle in a destructor or a teardown must not throw, and `Ring::waitIdleNoThrow()` exists
-for that. A call whose result is dropped is a defect even if it builds.
+tests the result inline and carries on without throwing. Examples are the device extension
+enumeration, the surface support query in device selection, the debug messenger's creation and
+the read of GPU timestamp queries. A wait for the device to go idle in a destructor or a
+teardown must not throw, and `Ring::waitIdleNoThrow()` exists for that. A call whose result is
+dropped is a defect even if it builds.
 
 ## Lint
 

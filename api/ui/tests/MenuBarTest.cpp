@@ -398,6 +398,25 @@ BOOST_AUTO_TEST_CASE(a_disabled_submenu_item_disables_its_submenu) {
 }
 
 /**
+ * A null menu is not added, so the row holds only real menus and opening any of them shows one.
+ **/
+BOOST_AUTO_TEST_CASE(a_null_menu_is_not_added) {
+    Fixture fixture;
+    fixture.bar->add("Empty", boost::shared_ptr<v3d::ui::component::Menu>());
+    BOOST_CHECK_EQUAL(fixture.bar->count(), 0U);
+
+    build(&fixture);
+    BOOST_REQUIRE_EQUAL(fixture.bar->count(), 2U);
+    BOOST_CHECK_EQUAL(fixture.bar->label(0), "File");
+    fixture.draw();
+
+    BOOST_CHECK(fixture.bar->press(fixture.label(0)));
+    BOOST_CHECK_EQUAL(fixture.bar->open(), 0);
+    BOOST_REQUIRE_EQUAL(fixture.bar->panels().size(), 1U);
+    BOOST_CHECK(fixture.bar->panels().front() == fixture.bar->menu(0));
+}
+
+/**
  * An item an app still holds after its menu is gone names no parent, so asking whether it is
  * usable does not walk into the menu that was destroyed.
  **/

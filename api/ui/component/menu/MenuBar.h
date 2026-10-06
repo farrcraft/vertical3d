@@ -38,7 +38,7 @@ class MenuBar : public Component {
     ~MenuBar() override;
 
     /**
-     * Add a menu to the end of the row.
+     * Add a menu to the end of the row. A null menu is ignored, and the row is left as it was.
      * @param label what the bar shows for it
      * @param menu the menu that drops down from it
      **/

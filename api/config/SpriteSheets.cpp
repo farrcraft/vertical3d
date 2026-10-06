@@ -6,6 +6,7 @@
 #include "SpriteSheets.h"
 
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -92,6 +93,7 @@ bool SpriteSheets::load(const boost::json::object& doc) {
     }
 
     bool understood = true;
+    std::set<std::string> seen;
     for (const boost::json::value& value : doc.at("sheets").as_array()) {
         if (!value.is_object()) {
             logger_->get()->error("Unrecognized sprite sheet");
@@ -113,7 +115,10 @@ bool SpriteSheets::load(const boost::json::object& doc) {
 
         understood = readSprites(entry, &sheet, logger_) && understood;
 
-        if (sheets_.emplace(sheet.name_, sheet).second) {
+        if (!seen.insert(sheet.name_).second) {
+            logger_->get()->warn("The sprite config names sheet {} more than once, and the last is kept", sheet.name_);
+        }
+        if (sheets_.insert_or_assign(sheet.name_, sheet).second) {
             names_.push_back(sheet.name_);
         }
     }

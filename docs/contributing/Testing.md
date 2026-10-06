@@ -82,16 +82,24 @@ target_link_libraries(v3dtest_image PRIVATE v3dlib_image)
 - Adds the repository root to the include path, so a test includes its subject as
   `<api/<lib>/...>` like any other file.
 - Registers the ctest entry `<lib>`, with the working directory set to the executable's
-  directory. Fixtures in a `data/` directory beside the executable then resolve.
+  directory. Fixtures copied beside the executable then resolve by a relative path.
 - Passes `--detect_memory_leaks=0`. Without it, Boost.Test reports a false leak in every suite
   that builds a `Logger`, because spdlog's registry is destroyed after the report.
 
 You link the library under test yourself, and every other library whose header the suite
-includes, rather than reaching it through the library under test. Each suite's `TestMain` defines `BOOST_TEST_MODULE` and
-nothing else. The exception is `render_device`, whose `main` checks for a device first.
+includes, rather than reaching it through the library under test. Each suite's `TestMain`
+defines `BOOST_TEST_MODULE` and nothing else. The exception is `render_device`, whose `main`
+checks for a device first.
 
-A suite with fixture files copies its `tests/data/` directory beside the executable in a
-`POST_BUILD` command. See [Traps](#traps) for what that means when you add a fixture.
+A suite with fixture files copies a directory of them beside the executable in a `POST_BUILD`
+command, which the suite's `tests/CMakeLists.txt` writes. Most suites copy their `tests/data/`
+to `data/`. Three copy something else:
+
+- `engine` copies `api/engine/tests/fixtures/` to `fixtures/`.
+- `asset_media` copies the asset suite's `api/asset/tests/data/` to `data/`.
+- `render_device` copies `api/render/tests/device/data/` to `data/`.
+
+See [Traps](#traps) for what the copy means when you add a fixture.
 
 ### Patterns the suites use
 
@@ -189,10 +197,10 @@ on them:
 - An interpolated channel value that is not at 0.0 or 1.0.
 
 A texture and a render target are read through a linear sampler, the default
-`vulkan::pipeline::Sampler::Spec`. So a textured reference must draw its texture at exactly one
-texel per pixel. Only two samplers use nearest filtering: the one `Grade` reads the scene
-through, and the one a sampled `DepthBuffer` is read through. A case that draws through those
-is still bound by the rules above.
+`vulkan::pipeline::Sampler::Spec`. A textured reference must therefore draw its texture at
+exactly one texel per pixel. Only two samplers use nearest filtering: the one `Grade` reads the
+scene through, and the one a sampled `DepthBuffer` is read through. A case that draws through
+those is still bound by the rules above.
 
 A case that needs anything outside these rules checks chosen pixels by hand and has no
 reference.
@@ -245,10 +253,12 @@ change locally by running an app and reading its log.
 
 ## Traps
 
-- **A new or changed fixture is copied only when its suite relinks.** Suites copy `tests/data/`
-  in a `POST_BUILD` command, which runs only when the executable is relinked. Adding a reference
-  image and rebuilding copies nothing. Touch one of the suite's sources, or copy the file into
-  the `data/` directory beside the executable by hand. A fresh CI checkout always relinks.
+- **A new or changed fixture is copied only when its suite relinks.** A suite copies its
+  fixture directory in a `POST_BUILD` command, which runs only when the executable is relinked.
+  Adding a reference image and rebuilding copies nothing. Touch one of the suite's sources, or
+  copy the file by hand into the directory the suite copies to, beside the executable.
+  [Writing a test](#writing-a-test) lists which directory each suite copies. A fresh CI
+  checkout always relinks.
 - **voxel's suite must link libnoise**, even for cases that generate no noise. `Chunk` is built
   against a `TerrainMap`, and the vtable of the flat map a test supplies refers to the Perlin
   implementation. See [Dependencies.md](Dependencies.md#building-libnoise).

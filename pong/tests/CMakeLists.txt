@@ -15,7 +15,5 @@ v3d_add_test(pong
 target_link_libraries(v3dtest_pong PRIVATE
 	v3dlib_ecs
 	v3dlib_event
-	v3dlib_log
 	v3dlib_type
-	EnTT::EnTT
 	${Boost_LIBRARIES})

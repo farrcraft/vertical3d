@@ -23,8 +23,8 @@ BOOST_AUTO_TEST_CASE(game_state_defaults_test) {
 }
 
 /**
- * reset() puts the ball's start speed back, but leaves the options a player chose - the mode and the
- * target score outlive a round - and leaves the pause to the menu that set it.
+ * reset() puts the ball's start speed back, but leaves the options a player chose - the mode
+ * and the target score outlive a round - and leaves the pause to the menu that set it.
  **/
 BOOST_AUTO_TEST_CASE(game_state_reset_test) {
     GameState state;

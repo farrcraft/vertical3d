@@ -6,6 +6,7 @@
 #include "PongEngine.h"
 
 #include <api/audio/Loaders.h>
+#include <api/config/Type.h>
 #include <api/ecs/Previous.h>
 #include <api/ecs/component/Color3.h>
 #include <api/ecs/component/Position1D.h>

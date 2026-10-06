@@ -270,6 +270,16 @@ v3d::type::Skeleton readSkeleton(const cgltf_skin& skin, Rig* rig) {
 }
 
 /**
+ * Whether a skin's inverse bind matrices can be read for every one of its joints. They are read
+ * by joint index, and cgltf checks neither that index against the accessor's count nor the
+ * accessor's type. A skin without them binds every joint by the identity.
+ **/
+bool bindsEveryJoint(const cgltf_skin& skin) {
+    const cgltf_accessor* matrices = skin.inverse_bind_matrices;
+    return matrices == nullptr || (matrices->type == cgltf_type_mat4 && matrices->count >= skin.joints_count);
+}
+
+/**
  * The joint an unskinned mesh in a skinned model follows: its own node or nearest ancestor that
  * is a joint, or the first root when it is under none.
  **/
@@ -636,7 +646,9 @@ boost::shared_ptr<Asset> Gltf::load(std::string_view name) {
         return boost::shared_ptr<Asset>();
     }
     // cgltf reads an accessor without checking its bounds, so every accessor is checked
-    // against its buffer view, and every view against its buffer, before any is read
+    // against its buffer view, and every view against its buffer, before any is read. It also
+    // requires a primitive's attributes to share one count, and a sampler's output to match its
+    // input. It does not compare a skin's inverse bind matrices with its joints.
     if (cgltf_validate(data) != cgltf_result_success) {
         logger_->get()->error("Gltf asset failed validation: {}", name);
         cgltf_free(data);
@@ -651,6 +663,12 @@ boost::shared_ptr<Asset> Gltf::load(std::string_view name) {
     for (const cgltf_node* start : starts) {
         const cgltf_skin* skin = firstSkin(*start);
         if (skin != nullptr && skin->joints_count > 0) {
+            if (!bindsEveryJoint(*skin)) {
+                logger_->get()->error("The skin of gltf asset {} does not give each of its joints an inverse bind matrix",
+                    name);
+                cgltf_free(data);
+                return boost::shared_ptr<Asset>();
+            }
             model->skeleton() = readSkeleton(*skin, &rig);
             break;
         }

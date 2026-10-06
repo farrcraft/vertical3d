@@ -9,14 +9,17 @@ that:
 
 - reports an API version below 1.3,
 - lacks a required extension (`VK_KHR_swapchain`, only when presenting),
-- lacks the 1.3 features `dynamicRendering` and `synchronization2`, or
+- lacks the 1.3 features `dynamicRendering` and `synchronization2`, or the 1.2 feature
+  `separateDepthStencilLayouts`, which every 1.2 device supports, or
 - has no graphics family, or no present family for the surface when presenting.
 
 Of the devices left, the first discrete GPU wins; otherwise the first acceptable device. If none
 qualifies, the constructor throws naming the requirement.
 
-Both features are requested explicitly through a `VkPhysicalDeviceVulkan13Features` chained
-onto `VkPhysicalDeviceFeatures2`. A chained features struct and `pEnabledFeatures` are mutually
+The 1.3 features are requested explicitly through a `VkPhysicalDeviceVulkan13Features`, and
+`separateDepthStencilLayouts` through a `VkPhysicalDeviceVulkan12Features`, both chained onto
+`VkPhysicalDeviceFeatures2`. `separateDepthStencilLayouts` lets a barrier move only the depth
+aspect of a combined depth and stencil format, which is what every depth barrier does. A chained features struct and `pEnabledFeatures` are mutually
 exclusive, so the base features travel in the chain too. `wideLines` is not requested, which is
 why lines are one pixel wide.
 

@@ -135,7 +135,8 @@ class MeshRegistry final {
 
     /**
      * Stop addressing an entry. What only it was using is destroyed once no frame in flight
-     * can still be using it.
+     * can still be using it. That includes a frame whose draw items were queued before the
+     * release and which has not been recorded yet.
      *
      * @return whether the handle referred to anything
      **/

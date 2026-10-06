@@ -337,12 +337,13 @@ BOOST_AUTO_TEST_CASE(a_replaced_table_regrades_its_sources) {
 }
 
 /**
- * A table replaced while a frame that grades with the old one is still in flight is not
- * destroyed under it, and neither is the material that paired it with the scene. Only the
- * validation layer would report either, so the case checks that it reports no errors, and that
- * the frame after the swap grades with the new table.
+ * A table replaced straight after a frame that grades with the old one is submitted, without
+ * waiting for it, leaves that frame silent, and the frame after the swap grades with the new
+ * table. replace() uploads the new table and waits for the queue to go idle, so the submitted
+ * frame has finished before the old table and material are released. The case checks that the
+ * validation layer reports no errors and that the second frame gives the complement.
  **/
-BOOST_AUTO_TEST_CASE(a_table_replaced_in_flight_keeps_the_frame_silent) {
+BOOST_AUTO_TEST_CASE(a_table_replaced_after_a_submit_keeps_the_frame_silent) {
     const uint32_t size = 64;
     v3d::test::Headless headless(colourFormat, size, size);
     const std::vector<unsigned char> texels = sweep(size);
@@ -374,6 +375,33 @@ BOOST_AUTO_TEST_CASE(a_table_replaced_in_flight_keeps_the_frame_silent) {
     const boost::shared_ptr<v3d::image::Image> picture = png.read("data_out/grade_replaced_in_flight.png");
     BOOST_REQUIRE(picture);
     BOOST_CHECK_LE(largest(picture, complement(texels)), 1);
+}
+
+/**
+ * A grade registers its table, and each source registers its scene. Destroying the grade
+ * releases its table and any source still held, so the context holds the same number of
+ * textures as before the grade was made.
+ **/
+BOOST_AUTO_TEST_CASE(a_destroyed_grade_releases_its_table_and_sources) {
+    const uint32_t size = 16;
+    v3d::test::Headless headless(colourFormat, size, size);
+    boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+        size, size, colourFormat);
+    const std::size_t before = headless.context->resources()->textureCount();
+
+    {
+        Grade graded(headless.logger, headless.context, colourFormat, VK_FORMAT_UNDEFINED);
+        BOOST_CHECK_EQUAL(headless.context->resources()->textureCount(), before + 1);
+        BOOST_CHECK(graded.source(*scene).valid());
+        BOOST_CHECK_EQUAL(headless.context->resources()->textureCount(), before + 2);
+    }
+    BOOST_CHECK_EQUAL(headless.context->resources()->textureCount(), before);
+
+    for (uint32_t frame = 0; frame <= headless.context->ring()->framesInFlight(); frame++) {
+        headless.submit(headless.context->ring()->begin());
+    }
+    headless.context->ring()->waitIdle();
+    BOOST_CHECK(headless.silent());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

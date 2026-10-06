@@ -52,9 +52,10 @@ enum class Opcode {
      **/
     CALL,
     /**
-     * A named coordinate space: target = left through the matrix the renderer returns for
-     * the space in the string register `right`, treating it as the target register's type -
-     * a point translates, a vector does not, a normal goes by the inverse transpose.
+     * A cast with a named coordinate space: target = left, stated in the space in the string
+     * register `right`, moved into current space. That is the inverse of the matrix the
+     * renderer returns for the space. The target register's type picks the transform: a point
+     * translates, a vector does not, a normal goes by the inverse transpose.
      **/
     TRANSFORM,
     /** Jump to `target`. **/

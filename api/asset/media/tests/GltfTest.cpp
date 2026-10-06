@@ -272,6 +272,22 @@ BOOST_AUTO_TEST_CASE(gltf_an_accessor_past_its_buffer_view_is_no_asset_test) {
     BOOST_CHECK_EQUAL(static_cast<bool>(load("accessor_overrun.gltf")), false);
 }
 
+/**
+ * A skin's inverse bind matrices are read one per joint. inverse_bind_overrun.gltf has three
+ * joints and one matrix, so the file is refused rather than read past the end of the accessor.
+ **/
+BOOST_AUTO_TEST_CASE(gltf_fewer_inverse_binds_than_joints_is_no_asset_test) {
+    BOOST_CHECK_EQUAL(static_cast<bool>(load("inverse_bind_overrun.gltf")), false);
+}
+
+/**
+ * inverse_bind_not_matrices.gltf gives each of its three joints a vec4 rather than a matrix, so
+ * the file is refused.
+ **/
+BOOST_AUTO_TEST_CASE(gltf_an_inverse_bind_that_is_not_a_matrix_is_no_asset_test) {
+    BOOST_CHECK_EQUAL(static_cast<bool>(load("inverse_bind_not_matrices.gltf")), false);
+}
+
 BOOST_AUTO_TEST_CASE(gltf_resolves_by_extension_test) {
     v3d::asset::Manager manager("data", logger());
     v3d::asset::media::registerLoaders(manager, logger());
@@ -502,8 +518,13 @@ BOOST_AUTO_TEST_CASE(gltf_a_clip_read_bends_the_skeleton_test) {
  * A model with no skeleton has no clips, and neither has a skin with no animations.
  **/
 BOOST_AUTO_TEST_CASE(gltf_no_animations_are_no_clips_test) {
-    BOOST_CHECK(load(FIXTURE)->clips().empty());
-    BOOST_CHECK(load(SHUFFLED)->clips().empty());
+    const boost::shared_ptr<v3d::type::Model> still = load(FIXTURE);
+    BOOST_REQUIRE(still);
+    BOOST_CHECK(still->clips().empty());
+
+    const boost::shared_ptr<v3d::type::Model> skinned = load(SHUFFLED);
+    BOOST_REQUIRE(skinned);
+    BOOST_CHECK(skinned->clips().empty());
 }
 
 /**

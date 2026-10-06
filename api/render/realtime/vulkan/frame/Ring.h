@@ -107,17 +107,23 @@ class Ring final {
     void skip() noexcept;
 
     /**
-     * @return how many frames have been begun or skipped since the ring was built, which
-     *         changes once every frame whether or not it was drawn
+     * @return a count that changes every time a frame is begun, begun again after being
+     *         abandoned, or skipped. Per-frame state that restarts when a frame begins
+     *         compares against it. Unlike begun(), it counts a slot begun again, because the
+     *         state recorded for the abandoned attempt was never drawn.
      **/
     uint64_t turns() const noexcept;
 
     /**
-     * Hold a destruction back until every frame begun so far has finished.
+     * Hold a destruction back until every frame that may name the released object has
+     * finished.
      *
      * For something released while a frame recorded before the release may still be reading
-     * it. The callback runs from a later begin(), or from the destructor once the device is
-     * idle, and is the last use of whatever it captured.
+     * it. Between a submit and the next begin(), that includes the frame about to be begun,
+     * because draw items queued for it before the release may name the object. While a frame
+     * is begun and not yet submitted, it is the last frame counted. The callback runs from a
+     * later begin(), or from the destructor once the device is idle, and is the last use of
+     * whatever it captured.
      **/
     void retire(std::function<void()> destroy);
 
@@ -170,6 +176,7 @@ class Ring final {
     uint32_t frame_;
     uint64_t begun_;
     uint64_t skipped_ = 0;
+    uint64_t starts_ = 0;   /**< every successful begin(), a slot begun again included **/
     bool pending_ = false;  /**< whether the current slot was begun and not yet submitted **/
     Retirement retired_;
     boost::shared_ptr<Timings> timings_;

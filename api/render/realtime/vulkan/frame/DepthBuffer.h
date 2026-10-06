@@ -88,7 +88,8 @@ class DepthBuffer final {
     const VkExtent2D& extent() const noexcept;
 
     /**
-     * @return whether the format carries a stencil aspect, which a barrier has to name
+     * @return whether the format carries a stencil aspect. Barriers name only the depth
+     *         aspect, which the device's separate depth and stencil layouts allow
      **/
     bool stencil() const noexcept;
 

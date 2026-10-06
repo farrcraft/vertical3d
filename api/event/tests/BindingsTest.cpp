@@ -78,3 +78,26 @@ BOOST_FIXTURE_TEST_CASE(bindings_known_test, Fixture) {
     BOOST_TEST(asked.size() == 3u);
     BOOST_TEST(bindings.sources("ui::quit").size() == 1u);
 }
+
+/**
+ * A name, a context or a state that is not a string is refused like any other document the
+ * bindings do not understand, and leaves the bindings already in place.
+ **/
+BOOST_FIXTURE_TEST_CASE(bindings_refuse_a_value_that_is_not_a_string_test, Fixture) {
+    BOOST_REQUIRE(bindings.load(boost::json::parse(DOCUMENT).as_object()));
+
+    BOOST_TEST(!bindings.load(boost::json::parse(R"({"mappings": [
+        {"source": {"name": 5, "context": "keyboard"}, "destination": {"name": "up", "context": "game"}}
+    ]})").as_object()));
+    BOOST_TEST(!bindings.load(boost::json::parse(R"({"mappings": [
+        {"source": {"name": "w", "context": "keyboard"}, "destination": {"name": "up", "context": null}}
+    ]})").as_object()));
+    BOOST_TEST(!bindings.load(boost::json::parse(R"({"mappings": [
+        {"source": {"name": "w", "context": "keyboard", "state": 1}, "destination": {"name": "up", "context": "game"}}
+    ]})").as_object()));
+    BOOST_TEST(bindings.sources("game::up").size() == 2u);
+
+    // the document kept is the one that loaded, so a rebind still rebuilds from it
+    BOOST_TEST(bindings.rebind("ui::quit", "escape"));
+    BOOST_TEST(bindings.sources("game::up").size() == 2u);
+}

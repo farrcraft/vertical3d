@@ -223,14 +223,21 @@ bool Device::hasRequiredFeatures(VkPhysicalDevice device) {
     VkPhysicalDeviceVulkan13Features features13{};
     features13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
 
+    VkPhysicalDeviceVulkan12Features features12{};
+    features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+    features12.pNext = &features13;
+
     VkPhysicalDeviceFeatures2 features{};
     features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-    features.pNext = &features13;
+    features.pNext = &features12;
 
     vkGetPhysicalDeviceFeatures2(device, &features);
 
-    // the renderer draws through dynamic rendering and synchronizes with the 1.3 barrier forms
-    return features13.dynamicRendering == VK_TRUE && features13.synchronization2 == VK_TRUE;
+    // the renderer draws through dynamic rendering and synchronizes with the 1.3 barrier forms.
+    // Separate depth and stencil layouts let a barrier move only the depth aspect of a combined
+    // depth and stencil format; every 1.2 device supports them
+    return features13.dynamicRendering == VK_TRUE && features13.synchronization2 == VK_TRUE &&
+        features12.separateDepthStencilLayouts == VK_TRUE;
 }
 
 /**
@@ -321,11 +328,18 @@ void Device::createLogical() {
     features13.dynamicRendering = VK_TRUE;
     features13.synchronization2 = VK_TRUE;
 
+    // the depth barriers name only the depth aspect, which a combined depth and stencil format
+    // allows only with this feature on. Nothing uses the stencil aspect
+    VkPhysicalDeviceVulkan12Features features12{};
+    features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+    features12.pNext = &features13;
+    features12.separateDepthStencilLayouts = VK_TRUE;
+
     // a feature struct chained onto pNext and pEnabledFeatures are mutually exclusive, so
     // the base features travel in the chain as well
     VkPhysicalDeviceFeatures2 features{};
     features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-    features.pNext = &features13;
+    features.pNext = &features12;
 
     const std::vector<const char*> extensions = deviceExtensions(presenting());
 

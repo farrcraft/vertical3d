@@ -70,8 +70,8 @@ class HitShader final : public v3d::render::offline::sl::runtime::Renderer {
     Tracer* tracer_;
     const Hit & hit_;
     /**
-     * The placement of the shader being run, which is its own space: the surface's, and a
-     * light's while that light runs.
+     * The placement of the shader being run, which maps its own space into world space: the
+     * surface's, and a light's while that light runs.
      **/
     glm::mat4x4 placement_;
 };

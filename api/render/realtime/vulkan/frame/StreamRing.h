@@ -26,9 +26,9 @@ namespace v3d::render::realtime::vulkan::frame {
  *
  * A submission claims the next pair of the frame being recorded, and a frame takes as many as
  * it submits. The ring identifies the frame. Claims restart from the front of a slot the first
- * time it is claimed from after the ring has begun another frame, so nothing has to signal
- * that a frame ended. A renderer an app built itself reuses its buffers the same way as one
- * the engine holds.
+ * time it is claimed from after the ring has begun, begun again, skipped or advanced, so
+ * nothing has to signal that a frame ended. A renderer an app built itself reuses its buffers
+ * the same way as one the engine holds.
  *
  * A buffer the content outgrows is replaced by one twice the size, and the old one is retired
  * through the ring rather than destroyed while the device may be reading it.
@@ -78,6 +78,7 @@ class StreamRing final {
     std::vector<std::vector<Geometry>> slots_;  /**< a set of geometry per frame in flight, grown as a frame claims more **/
     std::size_t cursor_ = 0;                    /**< how far into the current frame's set the claims have got **/
     uint64_t counted_ = std::numeric_limits<uint64_t>::max();  /**< the ring's turns() the cursor counts in **/
+    uint32_t countedFrame_ = std::numeric_limits<uint32_t>::max();  /**< the ring's frame() the cursor counts in **/
 };
 
 };  // namespace v3d::render::realtime::vulkan::frame

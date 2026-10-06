@@ -9,6 +9,7 @@ set(CMAKE_C_FLAGS "/utf-8")
 
 v3d_add_api_library(render_offline
 	"Characters.h" "Characters.cxx"
+	"Lexeme.h"
 	"FrameBuffer.h" "FrameBuffer.cxx"
 	"Sampling.h" "Sampling.cxx"
 	"Sampler.h" "Sampler.cxx"
@@ -74,6 +75,8 @@ v3d_add_api_library(render_offline
 	"sl/Globals.h" "sl/Globals.cxx"
 	"sl/ShaderLibrary.h" "sl/ShaderLibrary.cxx"
 	"sl/Imager.h" "sl/Imager.cxx"
+	"trace/Pose.h"
+	"trace/Intersection.h"
 	"trace/Primitive.h" "trace/Primitive.cxx"
 	"trace/Triangle.h" "trace/Triangle.cxx"
 	"trace/Sphere.h" "trace/Sphere.cxx"

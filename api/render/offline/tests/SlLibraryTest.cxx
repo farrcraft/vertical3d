@@ -471,12 +471,15 @@ BOOST_AUTO_TEST_CASE(sllibrary_string_comparison_test) {
 namespace {
 
 /**
- * A renderer that defines two spaces, so that the transforming built-ins have something to
- * transform through.
+ * A renderer that defines three spaces, so that the transforming built-ins have something to
+ * transform through. Each matrix maps current space into the named one.
  *
  * "world" both scales one axis and translates, so the three transforms give different
  * results. Under a rotation or a uniform scale a normal and a vector transform the same way;
  * under a non-uniform scale they do not.
+ *
+ * "shader" is a shader the scene placed two units up y. Its origin is (0, 2, 0) in current
+ * space, so the matrix from current space into it moves a point two units down.
  **/
 class Spaces final : public v3d::render::offline::sl::runtime::Renderer {
  public:
@@ -484,6 +487,10 @@ class Spaces final : public v3d::render::offline::sl::runtime::Renderer {
         if (name == "world") {
             *matrix = glm::translate(glm::mat4x4(1.0f), glm::vec3(2.0f, 3.0f, 4.0f)) *
                 glm::scale(glm::mat4x4(1.0f), glm::vec3(1.0f, 1.0f, 2.0f));
+            return true;
+        }
+        if (name == "shader") {
+            *matrix = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, -2.0f, 0.0f));
             return true;
         }
         if (name == "NDC") {
@@ -536,6 +543,63 @@ BOOST_AUTO_TEST_CASE(sllibrary_transform_between_two_spaces_test) {
     // back the other way, which undoes the case above
     BOOST_CHECK_CLOSE(shaded.triple("out").x, 1.0f, 0.01f);
     BOOST_CHECK_CLOSE(shaded.triple("out").z, 1.0f, 0.01f);
+}
+
+/**
+ * ptransform("space", P) maps P out of current space and into the named one, for "shader"
+ * as for every other space. The shader's origin is (0, 2, 0) in current space, so that point
+ * is the origin of shader space. A function that took the other direction would answer
+ * (0, 4, 0).
+ **/
+BOOST_AUTO_TEST_CASE(sllibrary_transform_maps_current_into_the_named_space_test) {
+    Spaces renderer;
+    const Shaded shaded(
+        "point origin = ptransform(\"world\", point (0, 0, 0));\n"
+        "point moved = ptransform(\"shader\", point (0, 2, 0));", 1, &renderer);
+
+    // the current origin through the world matrix is that matrix's translation
+    BOOST_CHECK_CLOSE(shaded.triple("origin").x, 2.0f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("origin").y, 3.0f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("origin").z, 4.0f, 0.01f);
+    BOOST_CHECK_SMALL(shaded.triple("moved").x, 0.0001f);
+    BOOST_CHECK_SMALL(shaded.triple("moved").y, 0.0001f);
+    BOOST_CHECK_SMALL(shaded.triple("moved").z, 0.0001f);
+    BOOST_CHECK(shaded.machine().reports().empty());
+}
+
+/**
+ * A cast states its value in the named space, and the result is that value in current space.
+ * It is the inverse of ptransform, vtransform and ntransform through the same space.
+ *
+ * The world matrix scales z by two and then moves by (2, 3, 4). The world origin in current
+ * space is therefore (-2, -3, -2). A vector loses the move and halves its z. A normal goes by
+ * the inverse transpose of the inverse, which doubles its z.
+ **/
+BOOST_AUTO_TEST_CASE(sllibrary_cast_maps_the_named_space_into_current_test) {
+    Spaces renderer;
+    const Shaded shaded(
+        "point origin = point \"world\" (0, 0, 0);\n"
+        "vector along = vector \"world\" (1, 1, 1);\n"
+        "normal facing = normal \"world\" (0, 0, 1);\n"
+        "point back = ptransform(\"world\", point \"world\" (1, 1, 1));\n"
+        "point placed = point \"shader\" (0, 0, 1);", 1, &renderer);
+
+    BOOST_CHECK_CLOSE(shaded.triple("origin").x, -2.0f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("origin").y, -3.0f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("origin").z, -2.0f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("along").x, 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("along").z, 0.5f, 0.01f);
+    BOOST_CHECK_SMALL(shaded.triple("facing").x, 0.0001f);
+    BOOST_CHECK_CLOSE(shaded.triple("facing").z, 2.0f, 0.01f);
+    // the cast and ptransform undo each other
+    BOOST_CHECK_CLOSE(shaded.triple("back").x, 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("back").y, 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("back").z, 1.0f, 0.01f);
+    // stated in the shader's own space, which is two units up y in current space
+    BOOST_CHECK_SMALL(shaded.triple("placed").x, 0.0001f);
+    BOOST_CHECK_CLOSE(shaded.triple("placed").y, 2.0f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("placed").z, 1.0f, 0.01f);
+    BOOST_CHECK(shaded.machine().reports().empty());
 }
 
 /**

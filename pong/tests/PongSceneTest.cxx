@@ -192,7 +192,7 @@ BOOST_AUTO_TEST_CASE(pong_scene_paddle_travel_angles_the_return_test) {
 
     fixture.scene_.tick(STEP);
 
-    BOOST_TEST(fixture.scene_.ball().direction().x == 60.0f);
+    BOOST_TEST(fixture.scene_.ball().direction().x > 0.0f);
     BOOST_TEST(fixture.scene_.ball().direction().y < 0.0f);
 
     Fixture right;
@@ -202,8 +202,31 @@ BOOST_AUTO_TEST_CASE(pong_scene_paddle_travel_angles_the_return_test) {
 
     right.scene_.tick(STEP);
 
-    BOOST_TEST(right.scene_.ball().direction().x == -60.0f);
+    BOOST_TEST(right.scene_.ball().direction().x < 0.0f);
     BOOST_TEST(right.scene_.ball().direction().y > 0.0f);
+}
+
+/**
+ * A travelling paddle turns the return but does not speed it up. The ball leaves at the speed
+ * it arrived at, however many times a moving paddle returns it.
+ **/
+BOOST_AUTO_TEST_CASE(pong_scene_moving_paddle_keeps_the_speed_test) {
+    Fixture fixture;
+    fixture.scene_.left().down(true);
+    glm::vec2 incoming(-60.0f, 0.0f);
+    for (int hit = 0; hit < 3; hit++) {
+        fixture.scene_.ball().position(glm::vec2(20.0f, 300.0f));
+        fixture.scene_.ball().direction(incoming);
+
+        fixture.scene_.tick(STEP);
+
+        const glm::vec2 returned = fixture.scene_.ball().direction();
+        BOOST_TEST(returned.x > 0.0f);
+        BOOST_TEST(returned.y > 0.0f);
+        BOOST_TEST(glm::length(returned) == 60.0f, boost::test_tools::tolerance(0.001f));
+        // the next return meets the ball coming back the way this one left
+        incoming = glm::vec2(-returned.x, returned.y);
+    }
 }
 
 /**

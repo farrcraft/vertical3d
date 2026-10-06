@@ -329,10 +329,9 @@ BOOST_AUTO_TEST_CASE(render_context_dice_interpolates_normal_test) {
 }
 
 /**
- * A split builds its pieces from intersection points, which carry no normal and no colour, so a
- * piece takes the whole primitive's plane through place(), the same route the colour takes. A
- * surface large enough to split is therefore faceted per piece, because the edge split does not
- * interpolate the normal.
+ * A piece takes the whole primitive's plane through place(), the same route the colour takes.
+ * The plane is the piece's geometric normal, and it fills any vertex of the piece that has no
+ * shading normal of its own.
  **/
 BOOST_AUTO_TEST_CASE(render_context_split_carries_the_normal_test) {
     v3d::moya::RenderContext rc;

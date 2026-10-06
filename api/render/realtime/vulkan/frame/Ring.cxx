@@ -114,13 +114,16 @@ void Ring::skip() noexcept {
 /**
  **/
 uint64_t Ring::turns() const noexcept {
-    return begun_ + skipped_;
+    return starts_ + skipped_;
 }
 
 /**
  **/
 void Ring::retire(std::function<void()> destroy) {
-    retired_.retire(begun_, std::move(destroy));
+    // between a submit and the next begin, items already queued for the next frame may name
+    // what is released, so that frame is counted as begun. While a frame is being recorded, it
+    // is the last that can name it
+    retired_.retire(pending_ ? begun_ : begun_ + 1, std::move(destroy));
 }
 
 /**
@@ -163,6 +166,8 @@ VkCommandBuffer Ring::begin() {
         begun_++;
         retired_.collect(begun_);
     }
+    // counted on a begin again too, so per-frame state reset through turns() is reset for it
+    starts_++;
     pending_ = true;
 
     return commands;

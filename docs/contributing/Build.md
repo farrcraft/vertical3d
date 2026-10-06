@@ -187,8 +187,18 @@ and voxel call it, so a configure that includes none of them does not need glslc
 `v3dlib_engine` links asset, asset_media, config, event, input, render and the rest of its
 manifest entry, so an app that links `v3dlib_engine` gets them too.
 
-**An app names the `v3dlib_*` targets it uses and nothing else.** The exception is a package the
-app uses directly, such as `Boost::program_options` in the apps that parse a command line.
+**An app names the `v3dlib_*` targets whose headers it includes, and nothing else.** An app that
+uses a type from a library includes that library's header and names the library, even when
+another header already brings the type in. A library whose headers the app never includes is left
+out, even when another library links it. An app's test suite follows the same rule for every
+source it compiles, including the app sources it shares.
+
+**An app takes third-party packages through the `v3dlib_*` targets.** A library links a package
+PUBLIC when its headers include it, so the package reaches every app that links the library. glm
+comes through `v3dlib_type`, EnTT through `v3dlib_event`, Boost.Filesystem and Boost.JSON through
+`v3dlib_asset`, and SDL3 through `v3dlib_engine`. The one exception is a package the app uses
+directly that no `v3dlib_*` target provides. Examples are `Boost::program_options` in the apps
+that parse a command line, and voxel's vendored `libnoise`.
 
 **PUBLIC or PRIVATE:** link a package or another api library PUBLIC when one of the library's
 headers includes it, and PRIVATE when only its sources do. The configure enforces this for api
@@ -214,8 +224,8 @@ Specific rules:
   `asset::media::registerLoaders()` itself.
 - **There is no OpenGL in the tree.** A target that names `OpenGL::GL` or `GLEW::GLEW` fails
   to configure, because no package defines those targets. A target that names `v3dlib_gl`
-  configures, because CMake takes a plain name it does not know as a library file. The build
-  then fails at link, when `v3dlib_gl.lib` cannot be opened.
+  configures, because CMake treats a plain name that is not a target as a library file. The
+  build then fails at link, when `v3dlib_gl.lib` cannot be opened.
 - **glm and EnTT must be linked explicitly.** Each library whose headers use them names
   `glm::glm` or `EnTT::EnTT`. Do not rely on their headers being reachable through another
   package's include directory.

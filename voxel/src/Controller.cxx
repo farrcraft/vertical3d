@@ -7,6 +7,7 @@
 
 #include <api/config/Type.h>
 #include <api/engine/Feature.h>
+#include <api/input/MouseState.h>
 #include <api/render/realtime/Window.h>
 #include <voxel/src/game/GameState.h>
 #include <voxel/src/game/Player.h>

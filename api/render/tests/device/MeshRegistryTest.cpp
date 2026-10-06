@@ -316,4 +316,53 @@ BOOST_AUTO_TEST_CASE(a_mesh_released_in_flight_outlives_its_frame) {
     BOOST_CHECK(headless.silent());
 }
 
+/**
+ * A mesh released after an item drawing it is queued, and before the frame is begun, is still
+ * drawn by that frame. It is destroyed only once that frame has finished. The case passes if the
+ * validation layer reports no errors.
+ **/
+BOOST_AUTO_TEST_CASE(a_mesh_released_after_its_items_are_queued_outlives_its_frame) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    const boost::shared_ptr<MeshRegistry> meshes = registry(&headless);
+    const MeshHandle handle = meshes->add("triangle", triangle(""));
+
+    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+        width, height, VK_FORMAT_UNDEFINED, true, true);
+
+    Builder builder(headless.device);
+    builder.name("mesh-depth")
+        .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
+        .vertexBinding(0, sizeof(v3d::type::Model::Vertex))
+        .vertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0)
+        .cull(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE)
+        .depth(true, true)
+        .depthFormat(target->depthFormat())
+        .colourFormats({});
+    const PipelineHandle pipeline = headless.context->resources()->add(builder.build(headless.context->pipelineCache()));
+
+    // one frame submitted first, so the ring has begun a frame before the release
+    headless.submitAndWait(headless.context->ring()->begin());
+
+    Frame frame;
+    boost::shared_ptr<Pass> pass = frame.pass("depth");
+    pass->target(target);
+    pass->depth(true);
+    DrawItem item;
+    item.pipeline = pipeline;
+    meshes->resolve(handle)->mesh->describe(&item);
+    pass->submit(item);
+
+    BOOST_CHECK(meshes->release(handle));
+
+    VkCommandBuffer commands = headless.context->ring()->begin();
+    Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources());
+    headless.submit(commands);
+    for (uint32_t turn = 0; turn <= headless.context->ring()->framesInFlight(); turn++) {
+        headless.submit(headless.context->ring()->begin());
+    }
+    headless.context->ring()->waitIdle();
+
+    BOOST_CHECK(headless.silent());
+}
+
 BOOST_AUTO_TEST_SUITE_END()

@@ -41,6 +41,11 @@ Only `Polygon` and `PointsPolygons` reach this pass. Spheres are not diced.
   of its bound, perpendicular to its plane and to each other. Each piece goes back through the
   first pass, which bounds, culls and buckets it again. A piece with fewer than three vertices,
   or one no smaller than its parent on any axis, is dropped, so splitting terminates.
+- **A split carries `"st"`, colour and shading normal.** A corner of a piece keeps the values of
+  the vertex it came from. A vertex made where a plane cuts an edge takes each value as far
+  along the edge as it lies, when both ends of the edge have one, and its normal is
+  renormalised. A value a vertex does not get is filled from the primitive's colour and plane,
+  as on a primitive the scene gave none.
 - **A diceable primitive is diced into one grid** of `sqrt(gridsize)` by `sqrt(gridsize)`
   micropolygons, 16 by 16 at the default. Dicing interpolates position, colour, shading normal
   and `"st"` bilinearly over the first four vertices. A triangle's fourth corner is its third. A
@@ -57,7 +62,8 @@ Rules:
 
 - **A `ReyesPrimitive` carries the transformation, colour, normal and shading state it was
   submitted under.** A split resubmits pieces through the first pass during the second, when
-  none of that state is current.
+  none of that state is current. The colour and normal fill a piece's vertices that carried
+  none, and the normal is every piece's `Ng`.
 - **The sweep repeats while any bucket split something.** A piece is bucketed where it lands,
   which can be a bucket the sweep has already passed. A primitive already diced yields no more
   grids, so a repeated sweep costs one pass over the buckets.

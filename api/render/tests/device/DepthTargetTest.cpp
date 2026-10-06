@@ -9,7 +9,9 @@
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/Recorder.h>
 #include <api/render/realtime/vulkan/frame/RenderTarget.h>
+#include <api/render/realtime/vulkan/memory/Barriers.h>
 #include <api/render/realtime/vulkan/memory/Buffer.h>
+#include <api/render/realtime/vulkan/memory/Image.h>
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
 
 #include <cstddef>
@@ -29,6 +31,7 @@ using v3d::render::realtime::vulkan::frame::Capture;
 using v3d::render::realtime::vulkan::frame::Recorder;
 using v3d::render::realtime::vulkan::frame::RenderTarget;
 using v3d::render::realtime::vulkan::memory::Buffer;
+using v3d::render::realtime::vulkan::memory::Image;
 using v3d::render::realtime::vulkan::pipeline::Builder;
 
 namespace {
@@ -257,6 +260,44 @@ BOOST_AUTO_TEST_CASE(a_pass_without_depth_beside_one_with_it) {
             BOOST_CHECK_EQUAL(at(depths, 8, 8), 1.0f);
         }
     }
+}
+
+/**
+ * A depth image whose format also has stencil is moved by the depth barriers, which name only
+ * its depth aspect. The device enables separate depth and stencil layouts, so the layer reports
+ * nothing. A device that offers neither combined format as an attachment has nothing to check.
+ **/
+BOOST_AUTO_TEST_CASE(a_combined_depth_format_moves_by_its_depth_aspect) {
+    v3d::test::Headless headless(colourFormat, width, height);
+
+    VkFormat combined = VK_FORMAT_UNDEFINED;
+    for (const VkFormat candidate : {VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT}) {
+        VkFormatProperties properties{};
+        vkGetPhysicalDeviceFormatProperties(headless.device->physical(), candidate, &properties);
+        if ((properties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0) {
+            combined = candidate;
+            break;
+        }
+    }
+    if (combined == VK_FORMAT_UNDEFINED) {
+        BOOST_TEST_MESSAGE("the device has no combined depth and stencil attachment format - this case asserts nothing");
+        return;
+    }
+
+    Image::Spec spec;
+    spec.width = width;
+    spec.height = height;
+    spec.format = combined;
+    spec.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    spec.aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
+    const boost::shared_ptr<Image> image = boost::make_shared<Image>(headless.device, spec);
+
+    VkCommandBuffer commands = headless.context->ring()->begin();
+    v3d::render::realtime::vulkan::memory::record(commands, {v3d::render::realtime::vulkan::memory::depthForDrawing(image->handle())});
+    v3d::render::realtime::vulkan::memory::record(commands, {v3d::render::realtime::vulkan::memory::depthForSampling(image->handle())});
+    headless.submitAndWait(commands);
+
+    BOOST_CHECK(headless.silent());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

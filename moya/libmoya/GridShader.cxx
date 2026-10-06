@@ -46,19 +46,17 @@ GridShader::Run & GridShader::run(const v3d::render::offline::sl::InstancePtr & 
 bool GridShader::space(const std::string & name, glm::mat4x4* matrix) {
     /*
         Every one of these maps out of camera space, because the reyes hider works there and
-        so its current space is camera space. A traced hit's current space is world space, so
-        this is a callback rather than a table the library holds. The context's own table runs
-        the other way, holding world to camera and camera to screen, so half of these are an
-        inverse of it.
+        so its current space is camera space. The context's table holds world to camera and
+        camera to screen, so "world" is an inverse of it and "screen" is the entry itself.
     */
     if (name == "current" || name == "camera") {
         *matrix = glm::mat4x4(1.0f);
         return true;
     }
     if (name == "shader") {
-        // the transform that was in force when the scene instanced the shader, against which
-        // a "point \"shader\" (0, 0, 1)" in it is stated
-        *matrix = placement_;
+        // the placement maps the shader's own space into camera space, and this maps out of
+        // camera space, so it is the inverse
+        *matrix = glm::inverse(placement_);
         return true;
     }
     if (name == "world") {
@@ -75,10 +73,11 @@ bool GridShader::space(const std::string & name, glm::mat4x4* matrix) {
         return true;
     }
     if (name == "NDC") {
-        // screen space is the canonical volume over [-1, 1] and NDC is the same volume
-        // over [0, 1], so the matrix halves and shifts
-        glm::mat4x4 normalised = glm::scale(glm::mat4x4(1.0f), glm::vec3(0.5f));
-        normalised = glm::translate(normalised, glm::vec3(1.0f));
+        // raster divided by the resolution: x runs right and y runs down over [0, 1] from the
+        // upper left corner. Screen space has y up over [-1, 1], so y is negated as raster
+        // negates it. z is screen depth moved from [-1, 1] onto [0, 1]
+        glm::mat4x4 normalised = glm::scale(glm::mat4x4(1.0f), glm::vec3(0.5f, -0.5f, 0.5f));
+        normalised = glm::translate(normalised, glm::vec3(1.0f, -1.0f, 1.0f));
         *matrix = normalised * screen;
         return true;
     }

@@ -34,10 +34,11 @@ to a window, so for those disciplined reading and bisection matter most.
 
 **Goal: know exactly what fails, and where, before forming any theory.**
 
-- **Read the whole error.** MSVC prints the error and then the instantiation chain that
-  caused it, and the useful half is usually not the first line. Nothing is logged to a file
-  by default, so redirect and read the file rather than the console tail:
-  `ninja -C out/build/x64-Debug > build.log 2>&1`.
+- **Read the whole error.** MSVC prints the error and then the instantiation chain that caused
+  it, and the useful half is usually not the first line. Nothing is logged to a file by
+  default, so redirect and read the file rather than the console tail. From the repository root
+  in the Bash tool, `./scripts/build.cmd > "$TEMP/v3d-build.log" 2>&1` writes the log outside
+  the tree. From `cmd.exe` it is `scripts\build.cmd > "%TEMP%\v3d-build.log" 2>&1`.
 - **Check whether it is the environment rather than the code.** A stale CMake cache, a
   missing `VULKAN_SDK`, an unbuilt libnoise. `docs/contributing/Build.md` has each of them, and the tree
   is otherwise clean at every gate `docs/contributing/Linting.md` lists.

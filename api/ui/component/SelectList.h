@@ -77,7 +77,8 @@ class SelectList : public Component {
      *
      * Sizing a list to its content means measuring every row, and the result changes only
      * when the rows or the measure do. The width is kept with the key of the measure that
-     * produced it. items() clears it, and so does asking with a different key.
+     * produced it. items() clears it. Asking with a different key returns a negative number
+     * and leaves the stored width in place. Storing a width under a new key replaces it.
      *
      * @param measure a key naming the measure, which is never zero
      * @return the width, or a negative number when nothing has measured it with that key

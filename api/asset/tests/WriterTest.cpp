@@ -142,6 +142,15 @@ BOOST_AUTO_TEST_CASE(writer_double_beyond_float_range_test) {
 }
 
 /**
+ * A double inside the range of a float that no float holds exactly prints as the double it is.
+ * Narrowed to a float, the first would print as 0 and the second as 123456790.
+ **/
+BOOST_AUTO_TEST_CASE(writer_double_no_float_holds_test) {
+    const boost::json::array numbers{ 1e-50, 123456789.123 };
+    BOOST_CHECK_EQUAL(v3d::asset::serializeDocument(numbers), "[1e-50, 123456789.123]");
+}
+
+/**
  * JSON has no form for infinity or NaN, so a document holding one, however deeply, is refused
  * and the file already there is untouched.
  **/

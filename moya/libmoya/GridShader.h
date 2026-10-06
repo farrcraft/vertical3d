@@ -93,8 +93,8 @@ class GridShader final : public v3d::render::offline::sl::runtime::Renderer {
     /** What is being shaded, for the space table and for the lights. **/
     const Shading* shading_ = nullptr;
     /**
-     * The shader being run's own space: the surface's, and a light's while that light runs,
-     * so a light's `point "shader" (0, 0, 0)` lands where the scene placed it.
+     * The shader being run's own space into camera space: the surface's, and a light's while
+     * that light runs, so a light's `point "shader" (0, 0, 0)` lands where the scene placed it.
      **/
     glm::mat4x4 placement_ = glm::mat4x4(1.0f);
     unsigned int batch_ = 1;

@@ -107,7 +107,8 @@ The binding document is the config document of type `binding`, conventionally
 - `destination.context` and `destination.name` name the command. `destination.param` is
   optional and becomes the command's data. It may be a whole number, a boolean or a string.
 - A name no device can send is logged and bound anyway. It never fires.
-- A malformed document is logged, and startup fails.
+- Every `name`, `context` and `state` is a string. A malformed document, including one that
+  gives any of them another type, is logged, and startup fails.
 
 `Engine::rebind(command, key)` points a command at a different key while the app runs, for a
 rebinding screen. The command keeps the context and the edge the document gave it. A rebinding

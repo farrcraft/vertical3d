@@ -83,6 +83,10 @@ std::size_t Engine::resolveThemeImages(const Resolve& resolve) {
 }
 
 std::size_t Engine::resolveComponentImages(const Resolve& resolve, const boost::shared_ptr<Component>& component) {
+    // a container accepts a null entry, and a null component has no image to resolve
+    if (!component) {
+        return 0;
+    }
     std::size_t resolved = 0;
 
     boost::shared_ptr<component::Icon> icon = boost::dynamic_pointer_cast<component::Icon>(component);

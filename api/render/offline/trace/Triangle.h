@@ -8,6 +8,8 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
+#include "Intersection.h"
+#include "Pose.h"
 #include "Primitive.h"
 
 namespace v3d::render::offline::trace {

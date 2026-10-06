@@ -67,6 +67,11 @@ menu offers Singleplayer, Co-op and Multiplayer. In Singleplayer the right paddl
 the computer. Multiplayer currently behaves the same as Singleplayer. Choosing a mode resets the
 match.
 
+**Returns.** Where the ball strikes a paddle sets the angle it goes back at: flat off the centre,
+up to fifty degrees off either end. A paddle that is moving also turns the return the way it is
+going. A return always leaves at the speed the ball arrived at, so no number of returns speeds
+the ball up.
+
 **The Options menu** sets the number of points that wins a match ("Rounds", 5 by default) and
 lets the player rebind each of the four paddle keys. A key item captures the next key pressed.
 Escape is never captured; it leaves the menu.

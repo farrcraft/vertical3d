@@ -5,6 +5,8 @@
 
 #include <api/render/offline/MovingTransform.h>
 #include <api/render/offline/trace/Hit.h>
+#include <api/render/offline/trace/Intersection.h>
+#include <api/render/offline/trace/Pose.h>
 #include <api/render/offline/trace/Scene.h>
 #include <api/render/offline/trace/Sphere.h>
 #include <api/render/offline/trace/Triangle.h>

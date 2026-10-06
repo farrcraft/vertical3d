@@ -138,7 +138,8 @@ class Device final {
     static bool hasRequiredExtensions(VkPhysicalDevice device, bool presenting);
 
     /**
-     * @return whether a physical device offers the 1.3 features the renderer draws with
+     * @return whether a physical device offers the 1.3 features the renderer draws with, and
+     *         the separate depth and stencil layouts its depth barriers rely on
      **/
     static bool hasRequiredFeatures(VkPhysicalDevice device);
 

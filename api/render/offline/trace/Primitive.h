@@ -11,8 +11,10 @@
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
-#include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
+
+#include "Intersection.h"
+#include "Pose.h"
 
 namespace v3d::render::offline::trace {
 
@@ -23,30 +25,6 @@ namespace v3d::render::offline::trace {
 typedef boost::shared_ptr<const std::vector<v3d::render::offline::sl::Placed> > Lights;
 
 class Hit;
-
-/**
- * Where a moving primitive is at a ray's time: the transform from there back to the pose it
- * is stored in, and the transform forward again. Both null for a primitive that does not move.
- **/
-class Pose final {
- public:
-    const glm::mat4x4* ahead = nullptr;
-    const glm::mat4x4* backward = nullptr;
-};
-
-/**
- * Where a ray met a primitive, as far as the primitive needs to describe the hit afterwards.
- **/
-class Intersection final {
- public:
-    /** Along the ray, in the ray's own units. **/
-    float distance = 0.0f;
-    /** A triangle's barycentric weights. **/
-    float u = 0.0f;
-    float v = 0.0f;
-    /** A sphere's point in its own space. **/
-    glm::vec3 point = glm::vec3(0.0f);
-};
 
 /**
  * What every primitive is shaded with: the colour, opacity, surface shader and lights that

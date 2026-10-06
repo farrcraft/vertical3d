@@ -119,16 +119,16 @@ class DeviceContext {
     bool hasDepth() const noexcept;
 
     /**
-     * @return the batched quad primitive, which every 2D thing draws through
-     * @throw std::runtime_error if its pipelines cannot be created
-     **/
-    /**
      * Where a texture is uploaded and made a material. Every renderer that samples a texture
      * gets it here, and so does an app. Built with the context, because a context that draws
      * nothing still loads textures.
      **/
     boost::shared_ptr<Textures> textures() const;
 
+    /**
+     * @return the batched quad primitive, which every 2D thing draws through
+     * @throw std::runtime_error if its pipelines cannot be created
+     **/
     boost::shared_ptr<vulkan::renderer::Quad> quads();
 
     /**

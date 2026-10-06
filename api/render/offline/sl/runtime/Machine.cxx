@@ -305,10 +305,11 @@ void Machine::transform(const Instruction & instruction) {
     Value & target = file_[static_cast<std::size_t>(instruction.target)];
     const Value & source = file_[static_cast<std::size_t>(instruction.left)];
     // only a position or a direction is in a coordinate space, so nothing else asks the
-    // renderer for one
+    // renderer for one. A cast states its value in the named space and the shader works in
+    // the current one, so the cast applies the inverse of the matrix the renderer returns
     const bool geometric = pointlike(target.type());
     const glm::mat4x4 matrix = geometric ?
-        space(file_[static_cast<std::size_t>(instruction.right)].text()) : glm::mat4x4(1.0f);
+        glm::inverse(space(file_[static_cast<std::size_t>(instruction.right)].text())) : glm::mat4x4(1.0f);
     const unsigned int count = target.storage() == Storage::VARYING ? batch_ : 1;
     for (unsigned int point = 0; point < count; point++) {
         if (!writable(target, point)) {

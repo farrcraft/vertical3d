@@ -194,7 +194,8 @@ class Engine {
     /**
      * Resolve the images the loaded themes name, and the ones the loaded components do.
      * resolveComponentImages() is also how an app resolves the one component it has just
-     * pointed at a different source, without resolving the whole ui again.
+     * pointed at a different source, without resolving the whole ui again. A null component,
+     * or a null entry in a container, resolves nothing.
      * @return how many images were set
      **/
     std::size_t resolveThemeImages(const Resolve& resolve);

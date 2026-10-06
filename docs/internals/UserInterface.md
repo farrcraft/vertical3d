@@ -125,10 +125,11 @@ Breaking the rule brings back two defects. An `Auto` extent read from `size()` i
 first frame. An `Auto` position read from `position()` sticks at the canvas origin, because the
 origin is where the component was on the first frame.
 
-What the rule allows: a component may keep a measurement it took during the layout pass, if that
-measurement depends only on its own content and the measure. A `SelectList` keeps its widest row,
-keyed by the arranger that measured it, and its row height. A `TextBox` keeps the pen position of its line for caret placement. A `TabBar` keeps
-where its tabs were drawn for hit testing. None of these feed back into a box.
+What the rule allows: a component may keep a measurement it took during the layout pass, if
+that measurement depends only on its own content and the measure. A `SelectList` keeps its
+widest row, keyed by the arranger that measured it, and its row height. A `TextBox` keeps the
+pen position of its line for caret placement. A `TabBar` keeps where its tabs were drawn for
+hit testing. None of these feed back into a box.
 
 ## Draw order and hit testing
 

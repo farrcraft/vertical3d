@@ -12,6 +12,7 @@
 #include <api/render/realtime/vulkan/renderer/FullScreen.h>
 
 #include <cstddef>
+#include <exception>
 #include <iterator>
 #include <map>
 #include <stdexcept>
@@ -36,6 +37,7 @@ const std::size_t TEXELS = static_cast<std::size_t>(Grade::SIZE) * Grade::SIZE *
  **/
 Grade::Grade(const boost::shared_ptr<log::Logger>& logger, const boost::shared_ptr<DeviceContext>& context,
     VkFormat colour, VkFormat depth, const boost::shared_ptr<image::Image>& strip) :
+    logger_(logger),
     context_(context) {
     vulkan::renderer::FullScreen::Spec spec;
     spec.name = "grade";
@@ -66,7 +68,20 @@ Grade::Grade(const boost::shared_ptr<log::Logger>& logger, const boost::shared_p
 
 /**
  **/
-Grade::~Grade() = default;
+Grade::~Grade() {
+    // a destructor must not throw. Releasing only hands objects to the ring, which fails only
+    // when out of memory, and then they stay registered until the context goes
+    try {
+        for (const std::pair<const MaterialHandle, Source>& source : sources_) {
+            pass_->release(source.second.current);
+            context_->resources()->release(source.second.scene);
+        }
+        sources_.clear();
+        context_->resources()->release(tableTexture_);
+    } catch (const std::exception& error) {
+        logger_->get()->error("A grade could not release its table and sources: {}", error.what());
+    }
+}
 
 /**
  **/
@@ -77,8 +92,17 @@ MaterialHandle Grade::source(const vulkan::frame::RenderTarget& scene, uint32_t 
     }
     texture.sampler = nearest_;
     const TextureHandle sceneTexture = context_->resources()->add(texture);
-    const MaterialHandle material = pass_->source({sceneTexture, tableTexture_});
-    sources_[material] = Source{sceneTexture, material};
+    MaterialHandle material;
+    try {
+        material = pass_->source({sceneTexture, tableTexture_});
+        sources_[material] = Source{sceneTexture, material};
+    } catch (...) {
+        if (material.valid()) {
+            pass_->release(material);
+        }
+        context_->resources()->release(sceneTexture);
+        throw;
+    }
     return material;
 }
 

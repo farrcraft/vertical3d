@@ -301,6 +301,67 @@ BOOST_AUTO_TEST_CASE(a_suballocated_device_clears_the_same_way) {
 }
 
 /**
+ * A pass drawing into part of its target, with a clip rectangle that reaches outside that part.
+ * The scissor is clamped to the pass's region, so the layer reports nothing, and only the
+ * pixels inside both the clip and the region are drawn. The rest of the region is the clear
+ * colour. Pixels outside the region are undefined and are not checked.
+ **/
+BOOST_AUTO_TEST_CASE(a_clip_is_cut_to_the_pass_viewport) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+
+    // the region is the middle of the target: 32 by 16 at 16, 8
+    const uint32_t regionX = 16;
+    const uint32_t regionY = 8;
+    const uint32_t regionWidth = 32;
+    const uint32_t regionHeight = 16;
+
+    // the canvas covers the region, and the clip is in the image's pixels: 0,0 to 24,12 overlaps
+    // the region only from 16,8 to 24,12
+    Canvas canvas;
+    canvas.resize(regionWidth, regionHeight);
+    canvas.clear();
+    canvas.clip(glm::vec2(0.0f, 0.0f), glm::vec2(24.0f, 12.0f));
+    canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(static_cast<float>(regionWidth), static_cast<float>(regionHeight)),
+        glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+    canvas.unclip();
+
+    Frame frame;
+    boost::shared_ptr<Pass> pass = frame.pass("colour");
+    pass->viewport(glm::vec4(static_cast<float>(regionX), static_cast<float>(regionY), static_cast<float>(regionWidth),
+        static_cast<float>(regionHeight)));
+    pass->clearColour(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+    headless.context->quads()->submit(canvas, pass.get());
+
+    Capture capture(headless.device, headless.logger);
+    VkCommandBuffer commands = headless.context->ring()->begin();
+    Recorder::record(commands, frame, describe(target), *headless.context->resources(), headless.context->frameUniforms().get());
+    Capture::Source source;
+    source.image = target->image();
+    source.extent = target->extent();
+    source.format = target->format();
+    source.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    capture.record(commands, source);
+    headless.submitAndWait(commands);
+
+    BOOST_CHECK(headless.silent());
+
+    BOOST_REQUIRE(capture.write("data_out/offscreen_clipped_viewport.png"));
+    boost::shared_ptr<v3d::image::Image> picture = written(headless.logger, "data_out/offscreen_clipped_viewport.png");
+    BOOST_REQUIRE(picture);
+    for (uint32_t y = regionY; y < regionY + regionHeight; y++) {
+        for (uint32_t x = regionX; x < regionX + regionWidth; x++) {
+            const bool clipped = x < 24 && y < 12;
+            const std::vector<unsigned char> expected = clipped ? rgba(255, 0, 0, 255) : rgba(0, 255, 0, 255);
+            if (texel(picture, x, y) != expected) {
+                BOOST_ERROR("texel " << x << "," << y << " should be " << (clipped ? "the quad" : "the clear colour"));
+                return;
+            }
+        }
+    }
+}
+
+/**
  * A frame that is begun and never submitted, as when recording throws, leaves its fence
  * signalled. Beginning the same slot again then returns rather than waiting forever, and the
  * frame after it draws and is silent.
@@ -322,6 +383,42 @@ BOOST_AUTO_TEST_CASE(an_abandoned_frame_can_be_begun_again) {
     // once that frame is submitted, the next begin is a new frame
     headless.submitAndWait(headless.context->ring()->begin());
     BOOST_CHECK_EQUAL(headless.context->ring()->begun(), begun + 1);
+}
+
+/**
+ * Something retired between a submit and the next begin may be named by items queued for the
+ * frame about to begin, so it outlives that frame: it is destroyed only once framesInFlight
+ * frames after it have begun. Something retired while a frame is being recorded is destroyed
+ * once framesInFlight frames after that one have begun.
+ **/
+BOOST_AUTO_TEST_CASE(a_retirement_outlives_the_frame_about_to_begin) {
+    // declared before the device, because the ring runs whatever is still held when it goes
+    bool queued = false;
+    bool recording = false;
+    v3d::test::Headless headless(colourFormat, width, height);
+    const boost::shared_ptr<v3d::render::realtime::vulkan::frame::Ring> ring = headless.context->ring();
+    headless.submitAndWait(ring->begin());
+
+    ring->retire([&queued]() { queued = true; });
+    for (uint32_t frame = 0; frame < ring->framesInFlight(); frame++) {
+        headless.submit(ring->begin());
+        BOOST_CHECK(!queued);
+    }
+    headless.submit(ring->begin());
+    BOOST_CHECK(queued);
+
+    VkCommandBuffer commands = ring->begin();
+    ring->retire([&recording]() { recording = true; });
+    headless.submit(commands);
+    for (uint32_t frame = 1; frame < ring->framesInFlight(); frame++) {
+        headless.submit(ring->begin());
+        BOOST_CHECK(!recording);
+    }
+    headless.submit(ring->begin());
+    BOOST_CHECK(recording);
+
+    ring->waitIdle();
+    BOOST_CHECK(headless.silent());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

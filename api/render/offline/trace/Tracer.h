@@ -28,9 +28,6 @@ namespace v3d::render::offline::trace {
  * Each hit is shaded by a HitShader made for it on the stack, which handles the shader's
  * callbacks. A traced ray shades its hit with another HitShader, so a shader that traces
  * part way through its run is left as it was.
- *
- * **One shader run per pixel is slow.** Batching the hits of a scanline that share a shader
- * would make it faster.
  **/
 class Tracer final {
  public:

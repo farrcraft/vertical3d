@@ -5,6 +5,7 @@
 
 #include "Controller.h"
 
+#include <api/config/Type.h>
 #include <api/engine/Feature.h>
 
 #include <string>

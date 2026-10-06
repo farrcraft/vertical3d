@@ -33,7 +33,26 @@ class Renderer {
     virtual ~Renderer() = default;
 
     /**
-     * The matrix from the shader's current space into the named one.
+     * The matrix from the shader's current space into the named one, as RenderMan defines it.
+     *
+     * Every space follows that one direction, so a point in current space times the matrix is
+     * the same point in the named space:
+     *
+     * - "current" is the identity.
+     * - "shader" is the inverse of the shader's placement. The placement maps the shader's own
+     *   space into current space, as the transformation in force when the scene instanced the
+     *   shader running now. While a light runs, it is the light's placement.
+     * - "object" is the inverse of the primitive's placement, which maps its object space into
+     *   current space.
+     * - "world" and "camera" are the scene's world and camera spaces.
+     * - "screen" is the projection, with the visible picture over [-1, 1] in x and y.
+     * - "raster" is pixels: x to the right and y down from the upper left corner of the
+     *   picture.
+     * - "NDC" is raster divided by the resolution: x to the right and y down, over [0, 1]
+     *   from the upper left corner. Its z is what depth() returns.
+     *
+     * transform("space", P) applies this matrix. A cast such as `point "space" (x, y, z)` states
+     * a value in the named space, so it applies the inverse.
      *
      * moya's grids are shaded in camera space and a traced hit in world space, which is why this is
      * a callback rather than a table the library holds.

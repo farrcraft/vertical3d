@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+#include <glm/matrix.hpp>
+
 #include "Tracer.h"
 
 namespace v3d::render::offline::trace {
@@ -29,7 +31,9 @@ bool HitShader::space(const std::string & name, glm::mat4x4* matrix) {
         return true;
     }
     if (name == "shader") {
-        *matrix = placement_;
+        // the placement maps the shader's own space into world space, and this maps out of
+        // world space, so it is the inverse
+        *matrix = glm::inverse(placement_);
         return true;
     }
     if (name == "camera" && tracer_->scene() != nullptr) {

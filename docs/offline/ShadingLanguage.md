@@ -97,6 +97,19 @@ named. The language is in `api/render/offline/sl`.
   nor a traced hit has an answer for `"object"`, because that is the transformation at the
   primitive, and neither kind of primitive carries it. The machine reports the space as
   unknown and leaves the value where it was.
+- **`Renderer::space(name)` maps current space into the named space**, as RenderMan defines
+  it. Every space follows that direction, `"shader"` included: it is the inverse of the
+  shader's placement, since the placement maps the shader's own space into current space.
+- **`ptransform("space", P)` maps `P` from current space into the named space**, as RenderMan's
+  `transform("space", P)` does. `vtransform`, `ntransform` and `mtransform` take the same
+  direction. The two-space forms map out of the first space and into the second.
+- **A cast states its value in the named space.** `point "world" (0, 0, 0)` is the world
+  origin expressed in current space, so a cast applies the inverse of `space(name)`. A vector
+  cast drops the translation, and a normal cast takes the inverse transpose of that inverse.
+- **NDC is raster space divided by the resolution.** x runs right and y runs down over
+  [0, 1], from the upper left corner of the picture, as raster does. Its z is screen depth
+  moved from [-1, 1] onto [0, 1], which is what `depth()` returns. moya's grids define NDC. A
+  traced hit has no screen, raster or NDC space.
 
 ### Built-in shaders
 
@@ -179,7 +192,7 @@ files on disk.
   colour space: `color "rgb" (...)` is the colour as given, and any other space compiles to
   `ctransform(space, "rgb", ...)`. A space on a matrix is rejected at compile time, because
   RenderMan's meaning for it is not implemented. A space on a float or a string is rejected.
-- **`ctransform` knows one colour space, `"rgb"`.** Any other space it is given, whether to
+- **`ctransform` implements one colour space, `"rgb"`.** Any other space it is given, whether to
   convert from or into, is reported once and the colour is returned unchanged.
 - **A cast chooses between built-ins that differ only in their result type.** The compiler takes
   the first signature that accepts a call, unless the call is the operand of a cast and a later
@@ -218,9 +231,12 @@ Rules:
 - **moya's `Vertex` holds both.** `RenderContext::addPolygon` fills them from
   `Polygon::geometricNormal()` before transforming anything. The diceable branch moves both into
   eye space. Dicing interpolates `N` and renormalises it. `Ng` is copied, since there is one.
-- **A split does not carry per-vertex normals or colours.** Its pieces are built from
-  intersection points, which have neither. Each piece takes the whole primitive's plane through
-  `ReyesPrimitive::place()`, so a surface large enough to split is faceted per piece.
+- **A split carries `N` across.** A corner of a piece keeps the normal of the vertex it came
+  from. Where a cut crosses an edge, the new vertex's normal is interpolated along the edge and
+  renormalised, so a surface large enough to split is smooth rather than faceted per piece. A
+  vertex with no normal of its own, or on an edge with an end that has none, takes the
+  primitive's plane, which each piece is given through `ReyesPrimitive::place()`. That plane is
+  also every piece's `Ng`.
 - **`trace::Triangle` has one constructor per case**: with and without per-corner normals.
   `shadingNormal(u, v)` interpolates over the barycentric coordinates `type::Ray::intersects`
   reports: `u` weights corner `b`, `v` weights corner `c`, and `a` takes the rest. That overload

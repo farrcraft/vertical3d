@@ -239,7 +239,8 @@ namespace {
 
 /**
  * A renderer that has placed the shader two units up, as a scene's transform in force at
- * the `LightSource` request would.
+ * the `LightSource` request would. The matrix maps current space into shader space, so it
+ * moves a point two units down.
  **/
 class Placed final : public v3d::render::offline::sl::runtime::Renderer {
  public:
@@ -247,7 +248,7 @@ class Placed final : public v3d::render::offline::sl::runtime::Renderer {
         if (name != "shader") {
             return false;
         }
-        *matrix = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 2.0f, 0.0f));
+        *matrix = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, -2.0f, 0.0f));
         return true;
     }
 };

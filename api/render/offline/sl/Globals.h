@@ -90,7 +90,7 @@ class Globals final {
      *
      * The light's parameters are written through its placement, and its P is the origin of
      * that space, so a light placed by a transform lands where the scene put it. While this
-     * runs, the renderer resolves "shader" space to the light's placement.
+     * runs, the renderer resolves "shader" space from the light's placement.
      *
      * @param machine prepared for the light's program, whose globals these are
      * @param surface the points being lit, in the renderer's current space

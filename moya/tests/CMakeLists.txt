@@ -17,8 +17,10 @@ v3d_add_test(moya
 	"VertexTest.cxx")
 
 # the suite names the libraries it includes: it compares pictures through api/image, which is
-# where the png and jpeg codecs come in, and reads RIB through api/render/offline
-target_link_libraries(v3dtest_moya PRIVATE v3dlib_moya v3dlib_image v3dlib_render_offline v3dlib_type
+# where the png and jpeg codecs come in, reads RIB through api/render/offline, and builds
+# loggers and reads what they wrote through api/log and the spdlog it carries. glm comes
+# through the api libraries, as a package does
+target_link_libraries(v3dtest_moya PRIVATE v3dlib_moya v3dlib_image v3dlib_log v3dlib_render_offline v3dlib_type
 	${Boost_LIBRARIES} ${PNG_LIBRARIES} JPEG::JPEG)
 
 # The reference image is resolved against the working directory, which v3d_add_test points at

@@ -47,9 +47,10 @@ std::vector<Event> Bindings::sources(std::string_view command) const {
 }
 
 bool Bindings::build() {
-    // every lookup below is guarded by a contains() rather than reaching straight for at():
-    // boost::json::at throws, and a document this does not understand has to come back as a
-    // false return, not as an exception out of startup
+    // every lookup below is guarded by a contains() rather than reaching straight for at(), and
+    // every value is checked for its type before it is read: boost::json::at and value_to
+    // throw, and a document this does not understand has to come back as a false return, not
+    // as an exception out of startup
     const boost::json::object& doc = *document_;
     if (!doc.contains("mappings") || !doc.at("mappings").is_array()) {
         logger_->get()->error("Missing mappings in config");
@@ -98,6 +99,10 @@ bool Bindings::readSource(const boost::json::object& mapping, Event* event) {
         logger_->get()->error("Mapping source needs both a name and a context");
         return false;
     }
+    if (!source.at("name").is_string() || !source.at("context").is_string()) {
+        logger_->get()->error("Mapping source needs a name and a context that are strings");
+        return false;
+    }
     const std::string name = boost::json::value_to<std::string>(source.at("name"));
     const std::string context = boost::json::value_to<std::string>(source.at("context"));
     *event = Event(name, events_->resolveContext(context));
@@ -105,6 +110,10 @@ bool Bindings::readSource(const boost::json::object& mapping, Event* event) {
     // an optional "state" binds one edge only - "pressed"/"down" or "released"/"up". Without
     // it the binding matches both, as most actions need.
     if (source.contains("state")) {
+        if (!source.at("state").is_string()) {
+            logger_->get()->error("Mapping source state for [{}] is not a string", name);
+            return false;
+        }
         event->state(stringToState(boost::json::value_to<std::string>(source.at("state"))));
     }
     return true;
@@ -118,6 +127,10 @@ bool Bindings::readDestination(const boost::json::object& mapping, Event* event)
     const boost::json::object& destination = mapping.at("destination").as_object();
     if (!destination.contains("name") || !destination.contains("context")) {
         logger_->get()->error("Mapping destination needs both a name and a context");
+        return false;
+    }
+    if (!destination.at("name").is_string() || !destination.at("context").is_string()) {
+        logger_->get()->error("Mapping destination needs a name and a context that are strings");
         return false;
     }
     const std::string name = boost::json::value_to<std::string>(destination.at("name"));

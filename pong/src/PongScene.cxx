@@ -21,8 +21,9 @@ namespace {
 // its whole run in a little under six seconds.
 constexpr float PADDLE_SPEED = 90.0f;
 
-// the vertical velocity a travelling paddle adds to the return, in pixels per second - a third
-// of the paddle's own speed, enough to steer a return without overriding where it was struck
+// the vertical velocity a travelling paddle adds to the return, in pixels per second, before
+// the return is scaled back to the ball's incoming speed. It is a third of the paddle's own
+// speed, enough to steer a return without overriding where it was struck
 constexpr float PADDLE_ENGLISH = 30.0f;
 
 // the steepest return, off either end of a paddle, in radians: fifty degrees from the
@@ -150,6 +151,12 @@ void PongScene::returnBall(Paddle& paddle, const glm::vec2& ballPosition, float 
         returned.y -= PADDLE_ENGLISH;
     } else if (paddle.down()) {
         returned.y += PADDLE_ENGLISH;
+    }
+    // the paddle turns the ball but does not speed it up, so the return leaves at the speed
+    // the ball arrived at
+    const float returnedLength = glm::length(returned);
+    if (returnedLength > 0.0f) {
+        returned *= speed / returnedLength;
     }
 
     ball_.direction(returned);

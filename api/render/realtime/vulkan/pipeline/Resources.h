@@ -10,6 +10,8 @@
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
 
+#include <cstddef>
+
 #include "Material.h"
 #include "Pipeline.h"
 #include "Texture.h"
@@ -92,6 +94,11 @@ class Resources final {
      * @return the texture the handle refers to, or nullptr
      **/
     const Texture* texture(const TextureHandle& handle) const;
+
+    /**
+     * @return how many textures are registered and not released
+     **/
+    std::size_t textureCount() const noexcept;
 
  private:
     boost::shared_ptr<device::Device> device_;

@@ -201,7 +201,7 @@ than per grid, or compute the matrix per sample.
 
 #### Step 9 — moya's command line and its stale comments
 
-**Closed.** `--width`, `--height` and `--silent` are back, through `RIBHandler::resolution`. `clip` now carries `st` across a crossing through `crossing()`, as `split` does; like `split`, it does not carry colour or normal, because a piece takes those from the state its parent was submitted under. No error report was added: every request moya cannot honour is logged and the scene still renders, so there is no case where the retired renderer's report would fire.
+**Closed.** `--width`, `--height` and `--silent` are back, through `RIBHandler::resolution`. `clip` now carries `st`, colour and normal across a crossing through `crossing()`, as `split` does. No error report was added: every request moya cannot honour is logged and the scene still renders, so there is no case where the retired renderer's report would fire.
 
 In [`moya/`](../../../moya/).
 
@@ -861,3 +861,25 @@ Left as it is, on purpose:
   having a component. That is state, not history.
 - ADR-0054's costs say every sampler filters linearly. A record is changed only by a later
   ADR, so Testing.md states the current rule instead.
+
+### After a tenth review
+
+The tenth review read whole files more consistently and found four major defects, three older
+than the branch and one from the third round's fixes. All are fixed:
+
+- every coordinate space maps current space into the named one, and a cast maps the named space
+  into current space, as RenderMan has them; `"NDC"` runs down from the top as raster does;
+- a split carries per-vertex colour and normal as it carries st, so a split surface shades
+  smoothly; the shaded and sampled references are rendered again to show it;
+- a glTF skin with fewer inverse bind matrices than joints, or ones that are not 4x4, gives no
+  asset;
+- a frame begun again after an abandoned one starts a new turn, and a stream claim cannot pass
+  the end of its slot;
+- the smaller findings: `Bindings` refuses values that are not strings, pong's returns keep
+  their speed, `Grade` releases its table, a release before submit outlives its frame, `clip()`
+  bounds every edge, combined depth formats move by their depth aspect, `Writer` narrows only
+  exact floats, sprite sheets keep the last of a name, two headers hold one class each, apps
+  name only the `v3dlib_*` targets they include, and the docs, comments and prompts the review
+  named state the rules plainly.
+
+Deferred to docs/TODO.md: a transform into a projected space does not divide by w.

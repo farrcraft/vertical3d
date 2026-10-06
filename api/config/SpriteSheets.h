@@ -45,6 +45,10 @@ class SpriteSheets final {
      * stops at the first bad profile. A region outside its sheet is skipped the same way,
      * because SpriteSheet::place() refuses it.
      *
+     * A sheet replaces any sheet of the same name already held, as add() does, and keeps that
+     * name's place in names(). A name the document gives more than once logs a warning, and
+     * the last sheet of that name is kept.
+     *
      * @param doc the parsed sprites document
      * @return whether every sheet in it was understood
      **/

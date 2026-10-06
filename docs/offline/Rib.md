@@ -78,7 +78,7 @@ accepts and ignores. `Option` acts on `"limits"` (`bucketsize`, `gridsize`), `"s
 - **A polygon's `"st"` is its texture coordinates**, two floats per vertex. A traced triangle
   weights its corners' values by its barycentric coordinates. A triangle given none has `s` and
   `t` equal to those coordinates. The reyes hider interpolates `"st"` across a grid, as it does
-  `"Cs"`, and carries it through a split. A grid whose corners have none uses its own
+  `"Cs"`, and carries both through a split. A grid whose corners have none uses its own
   parameters.
 - **A `PointsPolygons` face with fewer than three vertices is skipped.** The first face whose
   indices run past the end of the index list ends the request.

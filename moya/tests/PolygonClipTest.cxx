@@ -136,3 +136,60 @@ BOOST_AUTO_TEST_CASE(polygon_clip_carries_texture_coordinates_test) {
         }
     }
 }
+
+/**
+ * A vertex the clip makes where an edge crosses the plane has the colour and the shading
+ * normal as far along the edge as it is, the normal at unit length. An edge with an end that
+ * has no normal gives the crossing none, so it is filled from the primitive later.
+ **/
+BOOST_AUTO_TEST_CASE(polygon_clip_carries_colour_and_normal_test) {
+    v3d::moya::Polygon polygon;
+    const glm::vec3 corners[3] = { glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(1.0f, 0.0f, 1.0f),
+        glm::vec3(0.0f, 1.0f, 1.0f) };
+    const glm::vec3 colours[3] = { glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f),
+        glm::vec3(0.0f, 0.0f, 1.0f) };
+    const glm::vec3 normals[3] = { glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(1.0f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 1.0f, 0.0f) };
+    for (unsigned int k = 0; k < 3; k++) {
+        v3d::moya::Vertex v = vertex(corners[k].x, corners[k].y, corners[k].z);
+        v.color(colours[k]);
+        // the second corner is left without a normal
+        if (k != 1) {
+            v.normal(normals[k]);
+        }
+        polygon.addVertex(v);
+    }
+
+    polygon.clip(zPlane());
+
+    // the first corner is clipped away, and each of its two edges is cut half way along
+    unsigned int found = 0;
+    for (size_t i = 0; i < polygon.vertexCount(); i++) {
+        const v3d::moya::Vertex & v = polygon.vertex(i);
+        if (std::fabs(v.point().z) > 1.0e-4f) {
+            continue;
+        }
+        BOOST_TEST_CONTEXT("vertex " << i) {
+            BOOST_REQUIRE(v.hasColor());
+            if (v.point().x > 0.25f) {
+                // on the edge to the second corner, which has no normal
+                BOOST_TEST(v.color().x == 0.5f, boost::test_tools::tolerance(0.0001f));
+                BOOST_TEST(v.color().y == 0.5f, boost::test_tools::tolerance(0.0001f));
+                BOOST_CHECK_SMALL(v.color().z, 1.0e-4f);
+                BOOST_TEST(!v.hasNormal());
+            } else {
+                // on the edge to the third corner
+                BOOST_TEST(v.color().x == 0.5f, boost::test_tools::tolerance(0.0001f));
+                BOOST_CHECK_SMALL(v.color().y, 1.0e-4f);
+                BOOST_TEST(v.color().z == 0.5f, boost::test_tools::tolerance(0.0001f));
+                BOOST_REQUIRE(v.hasNormal());
+                const float half = std::sqrt(0.5f);
+                BOOST_CHECK_SMALL(v.normal().x, 1.0e-4f);
+                BOOST_TEST(v.normal().y == half, boost::test_tools::tolerance(0.0001f));
+                BOOST_TEST(v.normal().z == half, boost::test_tools::tolerance(0.0001f));
+            }
+            found++;
+        }
+    }
+    BOOST_TEST(found == 2u);
+}

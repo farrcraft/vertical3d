@@ -761,6 +761,7 @@ BOOST_AUTO_TEST_CASE(ribreader_sizes_that_are_not_sizes_are_skipped_test) {
         "FrameEnd\n", &handler, &reader));
     BOOST_CHECK_EQUAL(handler.width_, 0u);
     BOOST_CHECK_EQUAL(handler.filterWidth_.x, 0.0f);
+    BOOST_CHECK_EQUAL(handler.count("PixelFilter"), 0u);
     BOOST_CHECK_EQUAL(handler.count("FrameBegin"), 0u);
     BOOST_CHECK_EQUAL(handler.count("FrameEnd"), 1u);
 

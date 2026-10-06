@@ -71,6 +71,12 @@ bool Resources::release(const TextureHandle& handle) {
 
 /**
  **/
+std::size_t Resources::textureCount() const noexcept {
+    return textures_.count();
+}
+
+/**
+ **/
 const Pipeline* Resources::pipeline(const PipelineHandle& handle) const {
     return pipelines_.resolve(handle);
 }

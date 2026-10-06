@@ -5,6 +5,7 @@
 
 #include "StreamRing.h"
 
+#include <algorithm>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -27,15 +28,20 @@ StreamRing::StreamRing(const boost::shared_ptr<device::Device>& device, const bo
 StreamRing::Geometry StreamRing::claim(VkDeviceSize vertexBytes, VkDeviceSize indexBytes) {
     // the device may still be reading what this slot held framesInFlight frames ago
     ring_->waitFrame();
-    // a frame that was skipped never began, and its claims were never drawn, so the next
-    // frame reuses them rather than claiming after them
-    if (ring_->turns() != counted_) {
+    // claims restart whenever the ring turns or moves to another slot. A frame that was
+    // skipped, or begun and abandoned, was never drawn, so the next attempt reuses its claims
+    // rather than claiming after them
+    if (ring_->turns() != counted_ || ring_->frame() != countedFrame_) {
         counted_ = ring_->turns();
+        countedFrame_ = ring_->frame();
         cursor_ = 0;
     }
 
     std::vector<Geometry>& slot = slots_[ring_->frame()];
-    if (cursor_ >= slot.size()) {
+    // the cursor never passes the end of the slot it indexes, so the claim below either takes
+    // a held pair or appends exactly one
+    cursor_ = std::min(cursor_, slot.size());
+    if (cursor_ == slot.size()) {
         Geometry geometry;
         geometry.vertices = boost::make_shared<memory::Buffer>(device_, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertexBytes_);
         if (indexBytes_ > 0) {

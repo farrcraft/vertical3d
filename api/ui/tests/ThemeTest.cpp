@@ -635,6 +635,25 @@ BOOST_AUTO_TEST_CASE(an_icon_given_a_new_source_keeps_it_across_a_resolve) {
 }
 
 /**
+ * A null entry in a container is passed over, and the icons beside it still resolve.
+ **/
+BOOST_AUTO_TEST_CASE(resolving_images_passes_over_a_null_component) {
+    bool loaded = false;
+    const boost::shared_ptr<v3d::ui::Engine> ui = load(R"({
+        "themes": [ { "name": "dark" } ],
+        "containers": [ { "name": "hud", "visible": true, "components": [
+            { "type": "icon", "name": "slot", "source": "items/wood" }
+        ] } ]
+    })", &loaded);
+    BOOST_REQUIRE(loaded);
+    ui->container("hud")->add(nullptr);
+
+    const Sheet sheet;
+    BOOST_CHECK_EQUAL(ui->resolveImages(sheet), 1U);
+    BOOST_CHECK_EQUAL(ui->resolveComponentImages(sheet, nullptr), 0U);
+}
+
+/**
  * A button pointed at a different icon falls back to its label until the new one is
  * resolved, rather than drawing the old picture under the new name.
  **/

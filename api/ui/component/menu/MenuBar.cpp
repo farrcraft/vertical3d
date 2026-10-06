@@ -24,21 +24,21 @@ MenuBar::MenuBar() : Component(component::Type::MenuBar), hover_(-1), open_(-1) 
  **/
 MenuBar::~MenuBar() {
     for (const boost::shared_ptr<Menu>& menu : menus_) {
-        if (menu) {
-            disown(*menu);
-        }
+        disown(*menu);
     }
 }
 
 /**
  **/
 void MenuBar::add(const std::string& label, const boost::shared_ptr<Menu>& menu) {
+    // opening a label shows its menu, so a label without one is not added
+    if (!menu) {
+        return;
+    }
     labels_.push_back(label);
     // nothing is hit until a renderer has said where the label went
     bounds_.push_back(v3d::type::geometry::Bound2D(0.0f, 0.0f, 0.0f, 0.0f));
-    if (menu) {
-        adopt(*menu);
-    }
+    adopt(*menu);
     menus_.push_back(menu);
 }
 

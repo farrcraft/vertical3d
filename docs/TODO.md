@@ -64,6 +64,13 @@ Background: [OfflineRenderingPhase3](plans/completed/OfflineRenderingPhase3.md#o
 
 Each of these waits until a scene needs it.
 
+[] **A transform into a projected space does not divide by w.** `ptransform` drops w, so
+`transform("screen", P)`, `"raster"`, `"NDC"` and `depth()` are right under an orthographic
+projection and not under a perspective one.
+
+- The fix divides by w for the projected spaces, in the transform built-ins and in a cast.
+- Due when a shader reads a projected position under a perspective camera.
+
 [] **Area lights render as point lights.**
 
 - A RenderMan area light runs its light shader at points on a primitive.
@@ -113,6 +120,14 @@ Each of these waits until a scene needs it.
 - moya traces shadow rays, so every shadow ray from every grid point pays for the whole scene.
 - An acceleration structure goes inside `offline::trace`. Neither renderer needs to change.
 - Due when a scene takes a second to render. The test suites' timings would show it.
+
+[] **`offline::trace::Tracer` runs a shader once per hit.**
+
+- Each hit gets its own `HitShader` and its own run of the machine, so a ray-hidden image pays
+  the machine's per-run cost once per pixel sample.
+- The fix batches the hits of a scanline that share a shader into one run, as the reyes hider
+  shades a grid.
+- Due when a ray-hidden scene's shading time shows it.
 
 [] **moya's `--grid` and `--bucket` do not override a scene's `Option "limits"`.** The driver
 applies them before reading the scene, so a scene that names its own sizes replaces them.

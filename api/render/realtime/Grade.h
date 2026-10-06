@@ -62,6 +62,10 @@ class Grade final {
     Grade(const boost::shared_ptr<log::Logger>& logger, const boost::shared_ptr<DeviceContext>& context,
         VkFormat colour, VkFormat depth, const boost::shared_ptr<image::Image>& strip = boost::shared_ptr<image::Image>());
 
+    /**
+     * Release the table, and every source not yet released, through the ring, so a frame in
+     * flight finishes with them.
+     **/
     ~Grade();
 
     Grade(const Grade&) = delete;
@@ -70,10 +74,12 @@ class Grade final {
     /**
      * Bind one slot of a scene target as what is graded, with the table.
      *
-     * The same contract as FullScreen::source: a target that is resized is bound again, and a
-     * source is released before the grade goes.
+     * A target that is resized is bound again. A source not released by the time the grade
+     * goes is released by its destructor. If binding throws, the scene's registration is
+     * released before the exception leaves.
      *
      * @return the source submit() names
+     * @throw std::runtime_error if the scene has no colour image, or the source cannot be bound
      **/
     MaterialHandle source(const vulkan::frame::RenderTarget& scene, uint32_t slot = 0);
 
@@ -89,9 +95,10 @@ class Grade final {
      * a slow change between two tables a game lerps itself.
      *
      * The table is made anew and the old one released through the ring, so a frame in flight
-     * finishes with the table it was recorded against. Every source keeps the handle source()
-     * gave it. Call this before the frame's submit(), because it releases the material a submit
-     * earlier in the same frame would have used.
+     * finishes with the table it was recorded against. Uploading the new table waits for the
+     * device's queue to go idle. Every source keeps the handle source() gave it. Call this
+     * before the frame's submit(), because it releases the material a submit earlier in the
+     * same frame would have used.
      *
      * @param texels SIZE cubed RGBA texels in the order table() gives them
      * @return false for texels of the wrong count, which leave the table as it was
@@ -132,6 +139,7 @@ class Grade final {
      **/
     TextureHandle createTable(const std::vector<uint8_t>& texels);
 
+    boost::shared_ptr<log::Logger> logger_;
     boost::shared_ptr<DeviceContext> context_;
     boost::shared_ptr<vulkan::renderer::FullScreen> pass_;
     boost::shared_ptr<vulkan::pipeline::Sampler> nearest_;

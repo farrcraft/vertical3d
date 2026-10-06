@@ -43,8 +43,8 @@ Both hiders render through them.
   one-pixel box therefore reproduces a render taken at pixel centres exactly.
 - **A `PixelSamples` rate below one still takes one sample**, and a rate above 256 takes 256
   along that axis.
-- **A sample is filtered into every pixel whose centre lies within the filter's width**, as it
-  arrives. The film holds a weighted sum per pixel, not the samples.
+- **A sample is filtered into every pixel whose centre lies within half the filter's width**
+  on each axis, as it arrives, since the width is the filter's whole extent. The film holds a weighted sum per pixel, not the samples.
 - **The filters use RI's formulas**, cut off at the width the scene gives. Catmull-rom peaks at
   two and has a negative lobe, so a pixel's weights can sum to nearly zero. The film writes
   black there instead of dividing.

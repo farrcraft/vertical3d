@@ -16,6 +16,8 @@
 #include <glm/vec3.hpp>
 
 #include "Hit.h"
+#include "Intersection.h"
+#include "Pose.h"
 #include "Primitive.h"
 #include "Sphere.h"
 #include "Triangle.h"

@@ -205,13 +205,19 @@ polygons
 namespace {
 
 /**
- * A corner of a piece: its position, and the texture coordinates of the vertex it came
- * from. Nothing else is carried, since a piece takes its colour and normal from the state
- * its parent was submitted under.
+ * A corner of a piece: the vertex it came from, with the position, colour, shading normal and
+ * texture coordinates that vertex has. A value the vertex was not given stays unset, so the
+ * piece fills it from the primitive's state as its parent was filled.
  **/
 Vertex carried(const Vertex & from) {
     Vertex vert;
     vert.point(from.point());
+    if (from.hasColor()) {
+        vert.color(from.color());
+    }
+    if (from.hasNormal()) {
+        vert.normal(from.normal());
+    }
     if (from.hasTexCoord()) {
         vert.st(from.st());
     }
@@ -219,15 +225,43 @@ Vertex carried(const Vertex & from) {
 }
 
 /**
- * Where an edge meets the plane, with the texture coordinates as far along the edge as the
- * point is.
+ * The shading normal part of the way from a to b, as a unit vector. Two equal normals give
+ * that normal back unchanged. Opposite normals meeting half way give zero, which names no
+ * direction, so false is returned and the crossing is left without a normal of its own.
+ **/
+bool between(const glm::vec3 & a, const glm::vec3 & b, float along, glm::vec3* normal) {
+    if (a == b) {
+        *normal = a;
+        return true;
+    }
+    // interpolating unit normals does not give a unit one back
+    const glm::vec3 mixed = a + (b - a) * along;
+    const float length = glm::length(mixed);
+    if (!(length > 0.0f)) {
+        return false;
+    }
+    *normal = mixed / length;
+    return true;
+}
+
+/**
+ * Where an edge meets the plane. Colour, shading normal and texture coordinates are taken as
+ * far along the edge as the point is, each only when both ends of the edge have one. The
+ * normal is renormalised.
  **/
 Vertex crossing(const Vertex & a, const Vertex & b, const glm::vec3 & hit) {
     Vertex vert;
     vert.point(hit);
+    const float span = glm::length(b.point() - a.point());
+    const float along = span > 0.0f ? glm::length(hit - a.point()) / span : 0.0f;
+    if (a.hasColor() && b.hasColor()) {
+        vert.color(a.color() + (b.color() - a.color()) * along);
+    }
+    glm::vec3 normal(0.0f);
+    if (a.hasNormal() && b.hasNormal() && between(a.normal(), b.normal(), along, &normal)) {
+        vert.normal(normal);
+    }
     if (a.hasTexCoord() && b.hasTexCoord()) {
-        const float span = glm::length(b.point() - a.point());
-        const float along = span > 0.0f ? glm::length(hit - a.point()) / span : 0.0f;
         vert.st(a.st() + (b.st() - a.st()) * along);
     }
     return vert;

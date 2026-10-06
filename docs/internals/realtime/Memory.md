@@ -17,7 +17,11 @@ tests depth shares this one image.
 `D32_SFLOAT`, `D32_SFLOAT_S8_UINT`, `D24_UNORM_S8_UINT` whose optimal-tiling features include
 `DEPTH_STENCIL_ATTACHMENT`. With `sampled` true it also requires `SAMPLED_IMAGE`, which can give a
 different answer: a device may draw depth into a format without letting a shader sample it.
-`stencil()` says whether the format has a stencil aspect, which a barrier must name.
+`stencil()` says whether the format has a stencil aspect. Nothing uses the stencil aspect, and
+every depth barrier names only the depth aspect, in `DEPTH_ATTACHMENT_OPTIMAL` or
+`DEPTH_READ_ONLY_OPTIMAL`. For a combined format that is valid only because the device enables
+`separateDepthStencilLayouts`. Naming the stencil aspect as well would be an error, because
+those two layouts are depth-only.
 
 **Sampled depth** is chosen at construction and cannot be switched on later, because it can
 change the format. A sampled buffer:
@@ -97,9 +101,11 @@ Background: [ADR-0053](../../adr/0053-memory-optional-vma-suballocation.md)
 - `claim(vertexBytes, indexBytes)` waits on the frame's fence (`Ring::waitFrame()`), then returns
   the next pair in the current frame's list, growing it as needed. That is the fence `acquire`
   waits on anyway, so it costs nothing extra.
-- The cursor restarts the first time a slot is claimed from after the ring has begun or skipped
-  another frame (it compares `Ring::turns()`). Nothing has to be told a frame ended, so a
-  renderer an app builds itself reuses its buffers the same way. `Engine3D` calls
+- The cursor restarts the first time a slot is claimed from after the ring has begun, begun
+  again, skipped or advanced (it compares `Ring::turns()` and `Ring::frame()`). A slot begun
+  again after an abandoned attempt reuses that attempt's claims. The cursor never passes the end
+  of the slot's list, so a claim takes a held pair or appends one. Nothing has to be told a frame
+  ended, so a renderer an app builds itself reuses its buffers the same way. `Engine3D` calls
   `Ring::skip()` for a frame it does not draw, out of date or with no swapchain, so the claims
   of a run of skipped frames reuse one frame's buffers rather than piling up.
 - **Each submission gets its own pair.** Appending several canvases into one buffer would break,
@@ -128,10 +134,14 @@ resolves to nothing at once, and can never come to name whatever fills its slot 
 slot is a sort order.
 
 **Deferred destruction.** Releasing a handle hands the objects behind it to the ring as a
-callback (`Ring::retire()`). `vulkan::frame::Retirement` stores each callback with the count of
-frames begun at release. `Ring::begin()` runs every callback whose frames have finished: a frame
-begun before the release has finished once `framesInFlight` more frames have begun, because
-beginning a frame waits on the fence of the slot's previous use. The ring's destructor waits for
+callback (`Ring::retire()`). `vulkan::frame::Retirement` stores each callback with the last frame
+that may name the released object. While a frame is begun and not yet submitted, that is the
+frame being recorded. Between a submit and the next begin, it is the frame about to be begun,
+because draw items queued for it before the release may name the object. So a mesh or texture
+released after its items are queued and before `renderFrame()` outlives that frame.
+`Ring::begin()` runs every callback whose frames have finished: a frame has finished once
+`framesInFlight` more frames have begun, because beginning a frame waits on the fence of the
+slot's previous use. The ring's destructor waits for
 the device and runs everything left.
 
 - **Anything driving frames must call `Ring::begin()`,** or nothing retired is ever collected. A

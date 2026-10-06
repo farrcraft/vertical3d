@@ -84,13 +84,15 @@ table of named rectangles in an image:
   by the other to give the uv pair a canvas takes.
 - A sheet with no name, image or size is rejected and the others are kept. So is a sprite whose
   rectangle runs off the sheet.
+- A document that names a sheet more than once logs a warning, and the last sheet of that name
+  is kept. It keeps the place in `names()` that the name first took.
 - `get()` returns an empty sheet or region for a name it does not hold, and `uv()` returns
   false. A missing sprite draws nothing and logs nothing, so check `has()` if it matters.
 - **This is the one config document the api also writes.** A sprite sheet is usually made by a
   packing tool. Build sheets with `SpriteSheet(name, image, width, height)` and `place()`, add
   them with `SpriteSheets::add()`, and write `document()` with
-  [`asset::writeDocument()`](Files.md#writing-files). `add()` replaces a sheet of the same name. To keep
-  the sheets you did not repack, `load()` the existing document first. Sheets and sprites are
-  written in the order they were added, so a repack produces a readable diff.
+  [`asset::writeDocument()`](Files.md#writing-files). `add()` replaces a sheet of the same
+  name. To keep the sheets you did not repack, `load()` the existing document first. Sheets and
+  sprites are written in the order they were added, so a repack produces a readable diff.
 
 A ui image can name one region of a sheet. [ui/](../ui/README.md) covers that.

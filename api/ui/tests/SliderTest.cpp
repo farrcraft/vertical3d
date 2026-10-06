@@ -162,6 +162,8 @@ BOOST_AUTO_TEST_CASE(a_press_and_a_drag_set_the_value_and_send_on_a_change) {
 BOOST_AUTO_TEST_CASE(the_keys_move_a_slider) {
     Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::Slider> slider = fixture.placed();
+    // a step of one over a range of a hundred, so a page of ten differs from a line
+    slider->range(0.0f, 100.0f, 1.0f);
     fixture.ui->focus(slider);
 
     BOOST_CHECK(!fixture.keys->press("arrow_left"));
@@ -171,13 +173,16 @@ BOOST_AUTO_TEST_CASE(the_keys_move_a_slider) {
     BOOST_CHECK(fixture.keys->press("arrow_right"));
     BOOST_CHECK_EQUAL(slider->value(), 1.0f);
     BOOST_CHECK(fixture.keys->press("pageup"));
-    BOOST_CHECK_EQUAL(slider->value(), 2.0f);
-    BOOST_CHECK(fixture.keys->press("end"));
+    BOOST_CHECK_EQUAL(slider->value(), 11.0f);
+    BOOST_CHECK(fixture.keys->press("arrow_left"));
     BOOST_CHECK_EQUAL(slider->value(), 10.0f);
+    BOOST_CHECK(fixture.keys->press("end"));
+    BOOST_CHECK_EQUAL(slider->value(), 100.0f);
     BOOST_CHECK(!fixture.keys->press("arrow_right"));
+    BOOST_CHECK(!fixture.keys->press("pageup"));
     BOOST_CHECK(fixture.keys->press("pagedown"));
-    BOOST_CHECK_EQUAL(slider->value(), 9.0f);
-    BOOST_CHECK_EQUAL(fixture.sent.size(), 4u);
+    BOOST_CHECK_EQUAL(slider->value(), 90.0f);
+    BOOST_CHECK_EQUAL(fixture.sent.size(), 5u);
 
     // and a key a slider has nothing to do with goes on past it
     BOOST_CHECK(!fixture.keys->press("w"));

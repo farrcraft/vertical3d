@@ -3,12 +3,18 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/log/Logger.h>
 #include <api/render/offline/rib/Reader.h>
 #include <api/render/offline/trace/Sphere.h>
 #include <moya/libmoya/RIBHandler.h>
+#include <spdlog/sinks/ringbuffer_sink.h>
 
+#include <algorithm>
+#include <memory>
 #include <sstream>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
@@ -37,6 +43,74 @@ unsigned int coverage(const v3d::render::offline::FrameBuffer & planes) {
     }
     return covered;
 }
+
+/**
+ * The lines a log writes while this is alive. It adds a sink to the log for its lifetime and
+ * takes it away again, so a case can read what a render said without reading the log file.
+ **/
+class Heard {
+ public:
+    explicit Heard(std::shared_ptr<spdlog::logger> logger) :
+        logger_(std::move(logger)),
+        sink_(std::make_shared<spdlog::sinks::ringbuffer_sink_mt>(64)) {
+        logger_->sinks().push_back(sink_);
+    }
+
+    ~Heard() {
+        std::vector<spdlog::sink_ptr> & sinks = logger_->sinks();
+        sinks.erase(std::remove(sinks.begin(), sinks.end(), sink_), sinks.end());
+    }
+
+    Heard(const Heard &) = delete;
+    Heard & operator=(const Heard &) = delete;
+
+    /**
+     * Whether a line logged so far holds the text.
+     **/
+    bool said(const std::string & text) const {
+        const std::vector<std::string> lines = sink_->last_formatted();
+        return std::any_of(lines.begin(), lines.end(), [&text](const std::string & line) {
+            return line.find(text) != std::string::npos;
+        });
+    }
+
+ private:
+    std::shared_ptr<spdlog::logger> logger_;
+    std::shared_ptr<spdlog::sinks::ringbuffer_sink_mt> sink_;
+};
+
+/**
+ * A quad 1.8 units across facing the camera, at one sample a pixel under a one pixel box, with
+ * the grid size given. At 64 by 48 the quad is 43 pixels across. A grid of 16 is 4 a side, so
+ * the quad is split four times over, into 256 pieces under 3 pixels across. A grid of 4096 is
+ * 64 a side, and dices it whole. Both make the same lattice of micropolygons, 64 a side, so
+ * the two pictures agree wherever a split keeps what its vertices carried.
+ **/
+boost::shared_ptr<v3d::render::offline::FrameBuffer> quad(unsigned int grid, const std::string & shading,
+    const std::string & varying) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    BOOST_REQUIRE(read(
+        "Option \"limits\" \"gridsize\" [" + std::to_string(grid) + "]\n"
+        "Format 64 48 1\n"
+        "PixelSamples 1 1\n"
+        "PixelFilter \"box\" 1 1\n"
+        "Projection \"orthographic\"\n"
+        "Clipping 1 100\n"
+        "WorldBegin\n" + shading +
+        "Polygon \"P\" [-0.9 -0.9 5  0.9 -0.9 5  0.9 0.9 5  -0.9 0.9 5]\n" + varying +
+        "WorldEnd\n", &handler));
+    return handler.context().framebuffer()->planes();
+}
+
+/**
+ * Pixels inside the quad, spread over it.
+ **/
+const unsigned int INSIDE[][2] = {
+    { 14, 8 }, { 32, 8 }, { 50, 8 },
+    { 14, 24 }, { 22, 24 }, { 32, 24 }, { 42, 24 },
+    { 14, 40 }, { 42, 40 }, { 50, 40 }
+};
 
 };  // namespace
 
@@ -390,11 +464,12 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_output_override_test) {
 
 /**
  * The reyes hider dices polygons only, so a scene with a sphere in it renders without the
- * sphere and says so, rather than failing. The ray hider draws one.
+ * sphere and logs a warning that says so, rather than failing. The ray hider draws one.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_sphere_is_skipped_test) {
     v3d::moya::Renderer renderer;
     v3d::moya::RIBHandler handler(&renderer);
+    const Heard heard(handler.context().logger()->get());
 
     BOOST_REQUIRE(read(
         "Format 64 48 1\n"
@@ -406,6 +481,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_sphere_is_skipped_test) {
         "WorldEnd\n", &handler));
 
     BOOST_CHECK_EQUAL(handler.context().framebuffer()->primitiveCount(), 1u);
+    BOOST_TEST(heard.said("does not dice spheres"));
 }
 
 /**
@@ -584,4 +660,59 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_repeated_head_polygon_splits_test) {
     boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
     BOOST_CHECK_GT(coverage(*planes), 0u);
     BOOST_CHECK_GT(planes->value(v3d::moya::FrameBuffer::RED, 32, 24), 0.5f);
+}
+
+/**
+ * A split carries each corner's "Cs" onto its pieces, interpolated where it cuts an edge. A
+ * quad with a different colour at each corner comes out the same split as diced whole.
+ * Colour is bilinear across a grid, and a split of a rectangle through its middle keeps it so,
+ * which leaves only rounding between the two.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_split_carries_colour_test) {
+    const std::string shading = "Surface \"constant\"\n";
+    const std::string colours = "\"Cs\" [1 0 0  0 1 0  0 0 1  1 1 1]\n";
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> split = quad(16, shading, colours);
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> whole = quad(4096, shading, colours);
+
+    for (const auto & pixel : INSIDE) {
+        BOOST_TEST_CONTEXT("pixel " << pixel[0] << ", " << pixel[1]) {
+            for (unsigned int channel = 0; channel < 3; channel++) {
+                BOOST_CHECK_SMALL(split->value(channel, pixel[0], pixel[1]) - whole->value(channel, pixel[0], pixel[1]),
+                    0.03f);
+            }
+        }
+    }
+    // the colours do vary across it, so the comparison is not of two flat pictures. The
+    // lower left corner is red and the upper right blue
+    BOOST_TEST(split->value(v3d::moya::FrameBuffer::RED, 14, 40) > 0.8f);
+    BOOST_TEST(split->value(v3d::moya::FrameBuffer::BLUE, 14, 40) < 0.2f);
+    BOOST_TEST(split->value(v3d::moya::FrameBuffer::BLUE, 50, 8) > 0.8f);
+    BOOST_TEST(split->value(v3d::moya::FrameBuffer::RED, 50, 8) < 0.2f);
+}
+
+/**
+ * A split carries each corner's "N" onto its pieces too, so a quad lit through normals that
+ * sweep across it shades as a gradient whether it is split or not. A piece without them would
+ * shade with the quad's plane, and be lit full on.
+ *
+ * The normals are interpolated and renormalised at each cut, which is not quite the bilinear
+ * blend a whole grid makes, so the two agree to a few hundredths rather than exactly.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_split_carries_normal_test) {
+    const std::string shading =
+        "LightSource \"distantlight\" 1 \"to\" [0 0 1]\n"
+        "Surface \"matte\" \"Ka\" [0]\n";
+    const std::string normals = "\"N\" [-0.9 0 -0.436  0 0 -1  0 0 -1  -0.9 0 -0.436]\n";
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> split = quad(16, shading, normals);
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> whole = quad(4096, shading, normals);
+
+    for (const auto & pixel : INSIDE) {
+        BOOST_TEST_CONTEXT("pixel " << pixel[0] << ", " << pixel[1]) {
+            BOOST_CHECK_SMALL(split->value(v3d::moya::FrameBuffer::RED, pixel[0], pixel[1]) -
+                whole->value(v3d::moya::FrameBuffer::RED, pixel[0], pixel[1]), 0.04f);
+        }
+    }
+    // the left edge leans away from the light and the right faces it
+    BOOST_TEST(split->value(v3d::moya::FrameBuffer::RED, 14, 24) < 0.7f);
+    BOOST_TEST(split->value(v3d::moya::FrameBuffer::RED, 50, 24) > 0.9f);
 }

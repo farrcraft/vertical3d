@@ -149,8 +149,8 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_missing_document_test) {
 }
 
 /**
- * The document write() emits is the document load() reads, through the text form that
- * actually reaches a file.
+ * What document() returns is the document load() reads, through the text form that actually
+ * reaches a file.
  *
  * A sheet written wrongly would fail silently: place() drops a region it rejects and keeps
  * the sheet, get() returns an empty region for a missing name, and uv() returns false. This
@@ -279,4 +279,26 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_add_replaces_one_sheet_test) {
     BOOST_CHECK(!loaded.add(v3d::config::SpriteSheet()));
     BOOST_CHECK(!loaded.add(v3d::config::SpriteSheet("sizeless", "sizeless.png", 0, 0)));
     BOOST_CHECK_EQUAL(loaded.names().size(), 2u);
+}
+
+/**
+ * A document that names a sheet twice keeps the last sheet of that name, as add() does, in the
+ * place the name first took.
+ **/
+BOOST_AUTO_TEST_CASE(sprite_sheets_load_keeps_the_last_of_a_repeated_name_test) {
+    const char* const repeated =
+        "{\"sheets\": ["
+        "{\"name\": \"terrain\", \"image\": \"first.png\", \"width\": 64, \"height\": 64},"
+        "{\"name\": \"actors\", \"image\": \"actors.png\", \"width\": 64, \"height\": 64},"
+        "{\"name\": \"terrain\", \"image\": \"last.png\", \"width\": 128, \"height\": 128}"
+        "]}";
+    v3d::config::SpriteSheets loaded(logger());
+    BOOST_REQUIRE_EQUAL(loaded.load(config(repeated)), true);
+
+    BOOST_REQUIRE_EQUAL(loaded.names().size(), 2u);
+    BOOST_CHECK_EQUAL(loaded.names()[0], "terrain");
+    BOOST_CHECK_EQUAL(loaded.names()[1], "actors");
+    const v3d::config::SpriteSheet terrain = loaded.get("terrain");
+    BOOST_CHECK_EQUAL(terrain.image(), "last.png");
+    BOOST_CHECK_EQUAL(terrain.width(), 128);
 }

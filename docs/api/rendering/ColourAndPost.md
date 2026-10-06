@@ -47,8 +47,11 @@ grade.submit(source, colour.get());
 - The scene is read one texel per pixel, so the grade must draw into a target the scene's size.
 - `replace(texels)` changes the table from the next frame. Use it for a zone's own look, or lerp
   two tables yourself for a slow change. Call it before the frame's `submit()`. The texels are
-  in the order `Grade::table()` returns. Sources keep their handles.
-- `grade.release(source)` lets a source go. Release every source before the grade is destroyed.
+  in the order `Grade::table()` returns. Sources keep their handles. Uploading the new table
+  waits for the GPU queue to go idle, so a lerp that replaces the table every frame stalls every
+  frame.
+- `grade.release(source)` lets a source go. Destroying the grade releases its table and any
+  source still held.
 
 ## Colour
 

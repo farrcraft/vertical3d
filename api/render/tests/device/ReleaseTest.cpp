@@ -283,6 +283,51 @@ BOOST_AUTO_TEST_CASE(a_skipped_frame_gives_its_claims_back) {
 }
 
 /**
+ * A renderer claims before the frame begins. A frame begun and abandoned, because recording
+ * threw, was never drawn, so the attempt that follows reuses its claims. The first claim on
+ * the next slot then takes that slot's first pair.
+ **/
+BOOST_AUTO_TEST_CASE(a_frame_begun_again_restarts_its_claims) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    v3d::render::realtime::vulkan::frame::StreamRing stream(headless.device, headless.context->ring(), 64, 32);
+
+    stream.claim(16, 8);
+    headless.context->ring()->begin();
+
+    stream.claim(16, 8);
+    headless.submit(headless.context->ring()->begin());
+
+    const v3d::render::realtime::vulkan::frame::StreamRing::Geometry next = stream.claim(16, 8);
+    BOOST_CHECK(next.vertices != nullptr);
+    BOOST_CHECK_EQUAL(stream.held(), 2u);
+    headless.context->ring()->waitIdle();
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * Claims made after a frame begins count in that slot. A claim made after the submit, before
+ * the next frame begins, is in the next slot and starts from its front, whatever the slot
+ * before claimed.
+ **/
+BOOST_AUTO_TEST_CASE(a_claim_on_the_next_slot_starts_from_its_front) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    v3d::render::realtime::vulkan::frame::StreamRing stream(headless.device, headless.context->ring(), 64, 32);
+
+    headless.context->ring()->begin();
+    stream.claim(16, 8);
+
+    VkCommandBuffer commands = headless.context->ring()->begin();
+    stream.claim(16, 8);
+    headless.submit(commands);
+
+    const v3d::render::realtime::vulkan::frame::StreamRing::Geometry next = stream.claim(16, 8);
+    BOOST_CHECK(next.vertices != nullptr);
+    BOOST_CHECK_EQUAL(stream.held(), 2u);
+    headless.context->ring()->waitIdle();
+    BOOST_CHECK(headless.silent());
+}
+
+/**
  * A target's depth drawn on a canvas is sampled in the layout the recorder leaves it in, which
  * is read only for depth rather than for shaders. The layer reports the draw if any other
  * layout is used.

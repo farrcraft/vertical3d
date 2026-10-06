@@ -33,6 +33,10 @@ VkImageMemoryBarrier2 colourAfterDrawing(VkImage image, VkImageLayout to);
 /**
  * Into DEPTH_ATTACHMENT for a pass to test against. What the image held is discarded, which
  * is why the first pass to use it in a frame has to clear.
+ *
+ * This and depthForSampling() name only the depth aspect, because their layouts are depth-only
+ * and naming the stencil aspect with them is an error. For a format that also has stencil, that
+ * relies on the device enabling separateDepthStencilLayouts.
  **/
 VkImageMemoryBarrier2 depthForDrawing(VkImage image);
 

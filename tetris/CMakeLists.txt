@@ -11,15 +11,11 @@ target_link_libraries(tetris PRIVATE
 	v3dlib_asset
 	v3dlib_asset_media
 	v3dlib_config
-	v3dlib_ecs
 	v3dlib_engine
 	v3dlib_event
-	v3dlib_font
 	v3dlib_image
-	v3dlib_input
 	v3dlib_log
 	v3dlib_render
-	v3dlib_type
 	v3dlib_ui
 )
 

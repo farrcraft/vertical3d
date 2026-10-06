@@ -20,8 +20,9 @@ namespace v3d::asset {
 
 /**
  * Render a document as text a person can read and diff: a scalar, a vector and a record of
- * those stay on one line, everything else is indented two spaces a level, and a double prints
- * as the float it was widened from. A double beyond the range of a float prints in full.
+ * those stay on one line, and everything else is indented two spaces a level. A double that a
+ * float holds exactly prints as that float, in the float's shortest form. Any other double
+ * prints as a double, in its own shortest form.
  *
  * JSON has no form for infinity or NaN, and this prints them as std::to_chars spells them.
  * writeDocument() refuses a document holding one.

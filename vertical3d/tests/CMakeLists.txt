@@ -50,7 +50,4 @@ target_link_libraries(v3dtest_vertical3d PRIVATE
 	v3dlib_render
 	v3dlib_render_offline
 	v3dlib_type
-	glm::glm
-	Boost::filesystem
-	Boost::json
 	${Boost_LIBRARIES})

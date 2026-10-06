@@ -25,12 +25,9 @@ target_link_libraries(Odyssey
 		"v3dlib_ecs"
 		"v3dlib_engine"
 		"v3dlib_event"
-		"v3dlib_font"
 		"v3dlib_grid"
 		"v3dlib_input"
 		"v3dlib_log"
-		"v3dlib_image"
-		"v3dlib_type"
 		"v3dlib_render"
 )
 

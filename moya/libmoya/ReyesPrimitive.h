@@ -52,10 +52,10 @@ class ReyesPrimitive {
          * A primitive keeps them because splitting resubmits its pieces through that pass
          * during the second one, when none of it is current any more - a scene that places
          * and colours two objects would otherwise measure a split piece of the first
-         * against the state of the last. The pieces need the colour and the normal for a
-         * second reason: a split builds its vertices from intersection points, so they
-         * carry neither. A piece therefore takes the whole primitive's plane, which is the
-         * plane it lies in too.
+         * against the state of the last. A split carries each vertex's own colour and
+         * shading normal onto the pieces, interpolating them where an edge is cut, so the
+         * colour and the normal here fill only a vertex that has none. The normal is also
+         * every piece's geometric normal, since a piece lies in its parent's plane.
          */
         bool placed(void) const;
         void place(const glm::mat4x4 & toEye, const glm::vec3 & color, const glm::vec3 & normal,
