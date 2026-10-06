@@ -111,8 +111,10 @@ void GameBoard::reset() {
     over_ = false;
 }
 
-bool GameBoard::dropTetrad() {
-    fastFall_ = !fastFall_;
+bool GameBoard::dropTetrad(bool repeated) {
+    if (!repeated) {
+        fastFall_ = !fastFall_;
+    }
     return fastFall_;
 }
 

@@ -194,7 +194,13 @@ std::string MeshRegistry::acquire(const Source& source, Part* part) {
         Albedo albedo;
         // a lit albedo is decoded to linear before it is lit
         albedo.texture = textures->texture(image, vulkan::memory::TextureFactory::Encoding::Srgb);
-        albedo.material = textures->material(albedo.texture);
+        try {
+            albedo.material = textures->material(albedo.texture);
+        } catch (...) {
+            // the texture is not counted yet, so nothing else would release it
+            textures->release(albedo.texture);
+            throw;
+        }
         albedo.users = 0;
         found = albedos_.emplace(key, albedo).first;
     }

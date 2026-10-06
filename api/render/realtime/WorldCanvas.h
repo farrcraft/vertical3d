@@ -31,7 +31,7 @@ namespace v3d::render::realtime {
  * Nothing here calls Vulkan.
  *
  * **The caller sets the draw order.** Quads are drawn in the order they were added, because
- * only the caller knows what a quad's depth means. In an isometric projection a sprite is
+ * a quad's depth means something only to the caller. In an isometric projection a sprite is
  * behind another when its feet are further up the ground plane, not when it is further from
  * the camera. Depth testing hides a quad behind solid geometry and never behind another
  * quad.

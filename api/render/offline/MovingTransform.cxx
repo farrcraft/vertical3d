@@ -22,17 +22,33 @@ namespace {
 /**
  * A matrix as a translation, a rotation and a scale along each axis, with any shear folded
  * into the rotation's columns before they are normalised.
+ *
+ * An axis scaled to nothing leaves its column empty. With one such axis the other two still
+ * fix the rotation, and the empty column is rebuilt as their cross product. With two or more,
+ * the matrix says nothing about rotation, and turned is false.
  **/
 class Parts {
  public:
     explicit Parts(const glm::mat4x4 & m) {
         translation = glm::vec3(m[3]);
         glm::mat3 basis(m);
+        int flat = 0;
+        int empty = 0;
         for (int axis = 0; axis < 3; axis++) {
             scale[axis] = glm::length(basis[axis]);
             if (scale[axis] > 0.0f) {
                 basis[axis] /= scale[axis];
+            } else {
+                flat++;
+                empty = axis;
             }
+        }
+        if (flat > 1) {
+            turned = false;
+            return;
+        }
+        if (flat == 1) {
+            basis[empty] = glm::cross(basis[(empty + 1) % 3], basis[(empty + 2) % 3]);
         }
         // a reflection is a negative scale, kept on x so the rest is a rotation
         if (glm::determinant(basis) < 0.0f) {
@@ -44,7 +60,9 @@ class Parts {
 
     glm::vec3 translation;
     glm::vec3 scale;
-    glm::quat rotation;
+    glm::quat rotation{ 1.0f, 0.0f, 0.0f, 0.0f };
+    /** Whether the matrix fixes a rotation at all. **/
+    bool turned = true;
 };
 
 };  // namespace
@@ -68,13 +86,21 @@ const glm::mat4x4 & MovingTransform::close() const {
     return close_;
 }
 
+namespace {
+
+/** Whether a transformation has an inverse. Written so that a NaN determinant has none. **/
+bool invertible(const glm::mat4x4 & matrix) {
+    return std::fabs(glm::determinant(glm::mat3(matrix))) > 1.0e-12f;
+}
+
+};  // namespace
+
 const glm::mat4x4 & MovingTransform::reference() const {
-    const float determinant = glm::determinant(glm::mat3(open_));
-    // written so that a NaN determinant also falls through to the close end
-    if (std::fabs(determinant) > 1.0e-12f) {
-        return open_;
-    }
-    return close_;
+    return invertible(open_) ? open_ : close_;
+}
+
+bool MovingTransform::placeable() const {
+    return invertible(reference());
 }
 
 const glm::vec2 & MovingTransform::times() const {
@@ -105,10 +131,12 @@ void MovingTransform::settle() {
     const Parts to(close_);
     openTranslation_ = from.translation;
     openScale_ = from.scale;
-    openRotation_ = from.rotation;
+    // an end flattened on two axes or more has no rotation of its own, so it turns as the
+    // other end does
+    openRotation_ = from.turned ? from.rotation : to.rotation;
     closeTranslation_ = to.translation;
     closeScale_ = to.scale;
-    closeRotation_ = to.rotation;
+    closeRotation_ = to.turned ? to.rotation : from.rotation;
 }
 
 MovingTransform MovingTransform::after(const glm::mat4x4 & matrix) const {

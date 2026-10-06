@@ -24,10 +24,9 @@ thing to rule out first is a stale CMake cache rather than known breakage.
 `#pragma warning(disable:)`, not a widened cpplint filter, not deleting a source file from
 a target to dodge a link error.
 
-Note honestly what this project does *not* have: warnings are not errors here, there is no
-`/WX`, and the tree already carries some warnings — `Window.cpp` has two `C4244`
-conversions from the SDL3 upgrade. So the rule is not "the build stays green"; it is **do
-not add new warnings, and do not silence existing ones instead of fixing them.**
+Warnings are errors here: `V3D_WARNINGS_AS_ERRORS` is on by default and adds `/WX`, and the
+tree is clean at it. So a new warning fails the build, and the fix is to correct the code, not
+to silence the warning.
 
 If you genuinely believe a diagnostic is wrong, **stop and say so** with the reasoning
 rather than suppressing it.
@@ -81,10 +80,10 @@ single target you broke.
 |---|---|---|
 | `LNK2019` unresolved external | A `.cpp`/`.cxx` not added to its `CMakeLists.txt`, or a missing library on the link line | Add the file to the target's hand-written source list, or add the library |
 | `LNK2019` on `vk*` symbols | The executable links `v3dlib_render` but not `${Vulkan_LIBRARIES}` | Add it to that target's `target_link_libraries` |
-| `C1083` cannot open include | A header that does not exist, or a wrong relative path | Check it exists before assuming a path problem — `api/gl/GLFontRenderer.h` is referenced by tetris and has never existed |
+| `C1083` cannot open include | A header that does not exist, or a wrong relative path | Check it exists before assuming a path problem; includes are named from the repository root |
 | `C2039` no member | Member dropped from the header while a use remained | Correct the use or restore the member; do not add a member to make a call site compile without understanding why it went |
 | `C2065` undeclared | Missing include, or drift behind an api change | Include the header, or update the call site |
-| `C2259` cannot instantiate abstract class | A pure virtual not overridden because the signature differs | Match the base signature exactly — this is the `Operation::run` bug in `odyssey` |
+| `C2259` cannot instantiate abstract class | A pure virtual not overridden because the signature differs | Match the base signature exactly |
 | `C2244`/`C2440` conversion | `size_t` to `int`, `int` to `float` | `static_cast` at the boundary, not a C-style cast |
 | `static_assert` in spdlog's bundled fmt | `/utf-8` missing from the target | Add it; the assert is real, not spurious |
 
@@ -130,9 +129,8 @@ realtime renderer on a real Vulkan device and skips, with exit code 77, on a mac
 one. CI runs the whole thing, on lavapipe for the device suite -
 [.github/workflows/ctest.yml](../../.github/workflows/ctest.yml).
 
-Rendering is not covered: it needs a window and a GPU, which is
-[ADR-0007](../../docs/adr/0007-ci-render-tests-on-software-vulkan.md). For anything under `api/render`,
-"it builds" plus a run with the validation layer is the whole of the signal.
+What the suites cannot cover is a window: presenting to a swapchain is checked by running an
+app with the validation layer on, and reading its log.
 
 ## Workflow
 

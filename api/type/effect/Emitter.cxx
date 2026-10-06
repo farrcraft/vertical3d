@@ -28,6 +28,12 @@ namespace {
 const float owedSlack = 1e-4f;
 
 /**
+ * The most particles one step can owe: the largest float below 2^32, so that the count still
+ * fits the unsigned it is returned as. An emitter's cap keeps far fewer than this alive.
+ **/
+const float mostOwed = 4294967040.0f;
+
+/**
  * Where a particle is born, in the emitter's own space.
  **/
 glm::vec3 birthplace(const Emitter& emitter, Random* random) {
@@ -68,9 +74,13 @@ void travel(const Emitter& emitter, State* state, float seconds, const glm::vec3
 }
 
 uint32_t owing(State* state, float rate, float seconds) {
-    // a rate below nothing earns nothing, rather than a count that wraps round when it is
-    // made unsigned
-    state->owed += std::max(0.0f, rate * seconds);
+    // a rate below nothing earns nothing, and so does one that is not a finite number, rather
+    // than a count that wraps round or is undefined when it is made unsigned. What is owed is
+    // capped at the largest count a step can return
+    const float earned = rate * seconds;
+    if (std::isfinite(earned) && earned > 0.0f) {
+        state->owed = std::min(state->owed + earned, mostOwed);
+    }
     const float whole = std::floor(state->owed + owedSlack);
     state->owed = std::max(0.0f, state->owed - whole);
     return static_cast<uint32_t>(whole);

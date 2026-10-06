@@ -26,8 +26,8 @@ int run(int argc, char *argv[]) {
         ("version", "display version info")
         ("file", boost::program_options::value<std::string>(), "input filename to be rendered")
         ("output", boost::program_options::value<std::string>(), "filename to be written")
-        ("width", boost::program_options::value<unsigned int>(), "image width, replacing the scene's Format; needs --height")
-        ("height", boost::program_options::value<unsigned int>(), "image height, replacing the scene's Format; needs --width")
+        ("width", boost::program_options::value<int>(), "image width, replacing the scene's Format; needs --height")
+        ("height", boost::program_options::value<int>(), "image height, replacing the scene's Format; needs --width")
         ("silent", "print no progress line")
         ("grid", boost::program_options::value<int>(),
             "micropolygon grid size, used unless the scene sets one with Option \"limits\"")
@@ -80,8 +80,16 @@ int run(int argc, char *argv[]) {
     }
     const bool width = var_map.count("width") > 0;
     const bool height = var_map.count("height") > 0;
+    // a picture larger than this on a side is far more than a frame buffer can be allocated for
+    const int largest = 65536;
     if (width && height) {
-        handler.resolution(var_map["width"].as<unsigned int>(), var_map["height"].as<unsigned int>());
+        const int x = var_map["width"].as<int>();
+        const int y = var_map["height"].as<int>();
+        if (x < 1 || y < 1 || x > largest || y > largest) {
+            std::cout << "--width and --height have to be between 1 and " << largest << ", so the scene's Format is used" << "\n";
+        } else {
+            handler.resolution(static_cast<unsigned int>(x), static_cast<unsigned int>(y));
+        }
     } else if (width || height) {
         std::cout << "--width and --height have to be given together, so the scene's Format is used" << "\n";
     }

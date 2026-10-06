@@ -65,9 +65,12 @@ BOOST_AUTO_TEST_CASE(logger_open_moves_the_log_test) {
     std::remove(path.c_str());
 
     BOOST_TEST(v3d::log::Logger::open(path));
-    v3d::log::Logger logger;
-    logger.get()->info("written to the moved log");
-    logger.get()->flush();
+    {
+        // a handle keeps the file open, so it is let go of before the file is removed below
+        v3d::log::Logger logger;
+        logger.get()->info("written to the moved log");
+        logger.get()->flush();
+    }
 
     // the file exists as soon as it is opened, so it is the line in it that shows the log moved
     std::string contents;
@@ -77,9 +80,10 @@ BOOST_AUTO_TEST_CASE(logger_open_moves_the_log_test) {
     }
     BOOST_TEST(contents.find("written to the moved log") != std::string::npos);
 
-    // back to the default for whatever runs after, which also closes the test's file
+    // back to the default for whatever runs after. With no handle left on the test's log, that
+    // closes its file, and the removal can succeed
     v3d::log::Logger::open("v3d.log");
-    std::remove(path.c_str());
+    BOOST_CHECK_EQUAL(std::remove(path.c_str()), 0);
 }
 
 /**

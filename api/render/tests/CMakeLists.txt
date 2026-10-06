@@ -23,7 +23,7 @@ v3d_add_test(render
 	"CaptureConvertTest.cpp"
 	"ResultTest.cpp")
 
-target_link_libraries(v3dtest_render PRIVATE v3dlib_render v3dlib_font v3dlib_image v3dlib_type EnTT::EnTT ${SDL3_LIBRARIES} ${Vulkan_LIBRARIES} Freetype::Freetype)
+target_link_libraries(v3dtest_render PRIVATE v3dlib_render v3dlib_ecs v3dlib_font v3dlib_image v3dlib_type EnTT::EnTT ${SDL3_LIBRARIES} ${Vulkan_LIBRARIES} Freetype::Freetype)
 
 # A second binary, because these cases need a Vulkan device and the first must run on a machine
 # with none. CI provides a software implementation. Where there is no device at all, the binary
@@ -73,5 +73,5 @@ v3d_add_shader(v3dtest_render_device "shaders/copy.frag")
 # the mesh registry's cases load models, and the asset suite already keeps the fixtures
 target_compile_definitions(v3dtest_render_device PRIVATE V3D_ASSET_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/../../asset/tests/data")
 
-target_link_libraries(v3dtest_render_device PRIVATE v3dlib_render v3dlib_image v3dlib_asset v3dlib_asset_media v3dlib_type Boost::filesystem EnTT::EnTT ${SDL3_LIBRARIES} ${Vulkan_LIBRARIES})
+target_link_libraries(v3dtest_render_device PRIVATE v3dlib_render v3dlib_ecs v3dlib_image v3dlib_asset v3dlib_asset_media v3dlib_type Boost::filesystem EnTT::EnTT ${SDL3_LIBRARIES} ${Vulkan_LIBRARIES})
 set_tests_properties(render_device PROPERTIES SKIP_RETURN_CODE 77)

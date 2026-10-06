@@ -323,8 +323,8 @@ BOOST_AUTO_TEST_CASE(a_control_on_a_hidden_page_is_not_focused) {
 
 /**
  * A box hidden while it holds the focus, as a dialog's name field is when the dialog closes,
- * takes no more keys or text. It gives the focus up on the next one, which goes on to the app,
- * so a game's movement keys work again without a click first. Hiding the container it is in
+ * takes no more keys or text. It gives the focus up on the next one, tab and escape included,
+ * which goes on to the app, so a game's keys work again without a click first. Hiding the container it is in
  * does the same.
  **/
 BOOST_AUTO_TEST_CASE(a_component_hidden_while_focused_lets_keys_through) {
@@ -343,6 +343,15 @@ BOOST_AUTO_TEST_CASE(a_component_hidden_while_focused_lets_keys_through) {
     hud->visible(false);
     BOOST_CHECK(!fixture.keys->press("a"));
     BOOST_CHECK(!fixture.ui->focused());
+
+    // tab and escape go on to the app too, rather than being spent on a ui nobody can see
+    for (const char* key : {"tab", "escape"}) {
+        hud->visible(true);
+        fixture.ui->focus(hud->get("field"));
+        hud->visible(false);
+        BOOST_CHECK(!fixture.keys->press(key));
+        BOOST_CHECK(!fixture.ui->focused());
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

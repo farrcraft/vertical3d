@@ -68,6 +68,10 @@ There is one log per process, written by spdlog. `run<T>` opens it as `v3d.log` 
 executable before anything logs. A test or a tool that never calls `log::Logger::open()` writes
 `v3d.log` in its working directory.
 
+`Logger::open(path)` returns whether the log is written to `path`. A path that cannot be opened,
+such as one in a directory the process cannot write to, does not throw: the log goes to stderr
+and its first line says why. A handle taken before `open()` keeps writing where it was taken.
+
 A `v3d::log::Logger` is a handle on that one log. Passing a logger to a class says where it
 logs; it does not give the class a separate log. Log through `get()`, with spdlog's `{}`
 placeholders:

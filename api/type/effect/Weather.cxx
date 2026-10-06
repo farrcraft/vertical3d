@@ -37,7 +37,8 @@ void fall(const Emitter& emitter, Weather* weather, State* state, const glm::vec
     // an ease below nothing moves nothing, and an intensity is between 0 and 1 whatever the
     // target asks for, which also keeps the density that falls from going below nothing
     const float easing = std::max(0.0f, weather->ease * seconds);
-    const float target = std::clamp(weather->target, 0.0f, 1.0f);
+    // a target that is not a number is no target, and the intensity stays where it is
+    const float target = std::isfinite(weather->target) ? std::clamp(weather->target, 0.0f, 1.0f) : weather->intensity;
     weather->intensity += std::clamp(target - weather->intensity, -easing, easing);
 
     travel(emitter, state, seconds, weather->wind);

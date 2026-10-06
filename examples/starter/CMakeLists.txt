@@ -1,4 +1,4 @@
-# A windowed application outside the vertical3d tree; see docs/api/UsingTheApi.md. CI
+# A windowed application outside the vertical3d tree, built against it as a consumer would. CI
 # configures it to check that each api target carries its own include path and dependencies.
 # Inside the tree that cannot be checked, because the root's global settings and the apps that
 # name every library always supply them.

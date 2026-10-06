@@ -151,7 +151,8 @@ Nothing carries between frames, so the first pass to use an image in a frame mus
 **A target costs one pair of barriers per frame** however many passes draw into it: opened before
 its first writer and closed after its last. After closing, colour is in
 `SHADER_READ_ONLY_OPTIMAL` and sampled depth in `DEPTH_READ_ONLY_OPTIMAL`, so every later pass can
-read it. A target with no colour image has only its depth moved.
+read it. A target with no colour image has only its depth moved. Its depth image is moved if any
+pass of the frame that writes the target uses depth, whichever passes are first and last.
 
 ## Timings and statistics
 

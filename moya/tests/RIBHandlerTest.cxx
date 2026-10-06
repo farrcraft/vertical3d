@@ -4,6 +4,7 @@
  **/
 
 #include <api/render/offline/rib/Reader.h>
+#include <api/render/offline/trace/Sphere.h>
 #include <moya/libmoya/RIBHandler.h>
 
 #include <sstream>
@@ -418,4 +419,27 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_resolution_override_test) {
 
     BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->width(), 8u);
     BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->height(), 4u);
+}
+
+/**
+ * A sphere whose radius is not positive is not drawn by the ray hider: it is logged and left
+ * out of the traced scene, rather than built with a range that has no meaning. One with a
+ * positive radius in the same scene is drawn.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_a_sphere_with_no_size_is_skipped_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+
+    BOOST_REQUIRE(read(
+        "Hider \"raytrace\"\n"
+        "Format 16 16 1\n"
+        "Projection \"orthographic\"\n"
+        "Clipping 1 100\n"
+        "WorldBegin\n"
+        "Sphere -1 -1 1 360\n"
+        "Sphere 0 -1 1 360\n"
+        "Sphere 1 -1 1 360\n"
+        "WorldEnd\n", &handler));
+
+    BOOST_CHECK_EQUAL(handler.context().traced().all<v3d::render::offline::trace::Sphere>().size(), 1u);
 }

@@ -5,8 +5,12 @@
 
 #pragma once
 
+#include <api/log/Logger.h>
+
 #include <string>
 #include <vector>
+
+#include <boost/shared_ptr.hpp>
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
@@ -82,6 +86,12 @@ class Machine final {
      * copies of one message.
      **/
     const std::vector<std::string> & reports() const;
+
+    /**
+     * Where a report also goes, as a warning, the first time it is made. Without one, reports
+     * are only kept for reports() to read.
+     **/
+    void logger(const boost::shared_ptr<v3d::log::Logger> & logger);
 
     /**
      * What a `printf` in the shader wrote, in the order it wrote it, cleared at the start
@@ -238,6 +248,7 @@ class Machine final {
     int t_ = -1;
     std::vector<char> lit_;
     std::vector<std::string> reports_;
+    boost::shared_ptr<v3d::log::Logger> logger_;
     std::vector<std::string> printed_;
     Renderer* renderer_ = nullptr;
     /** What prepare() sized the register file for. **/

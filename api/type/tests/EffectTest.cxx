@@ -9,6 +9,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <limits>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -244,6 +245,18 @@ BOOST_AUTO_TEST_CASE(effect_a_negative_rate_owes_nothing_test) {
     State state(1);
     BOOST_CHECK_EQUAL(owing(&state, -5.0f, 1.0f), 0u);
     BOOST_CHECK_EQUAL(owing(&state, 5.0f, 0.2f), 1u);
+}
+
+/**
+ * A rate that is not a finite number earns nothing, and a huge one earns no more than a count
+ * can hold, so neither is undefined when it is made unsigned.
+ **/
+BOOST_AUTO_TEST_CASE(effect_a_rate_out_of_range_owes_a_count_test) {
+    State infinite(1);
+    BOOST_CHECK_EQUAL(owing(&infinite, std::numeric_limits<float>::infinity(), 1.0f), 0u);
+    BOOST_CHECK_EQUAL(owing(&infinite, std::nanf(""), 1.0f), 0u);
+    State huge(1);
+    BOOST_CHECK_GT(owing(&huge, 1.0e30f, 1.0f), 0u);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

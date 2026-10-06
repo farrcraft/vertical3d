@@ -287,7 +287,7 @@ and the drawing of text. See [ui/](ui/README.md).
   Depth is 1 for coverage or a distance field, and 3 for subpixel coverage.
 - **`TextureTextBuffer::addText(&pen, markup, text)`** lays out a wide string as quads, moving
   the pen. A `Markup` sets the size, colours, gamma, underline, overline, strikethrough and the
-  font.
+  font. A size of zero or less, which is a new markup's, means the font's own size.
 
 ## Models and glTF
 

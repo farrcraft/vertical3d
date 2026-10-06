@@ -9,6 +9,7 @@
 #include <api/type/effect/Weather.h>
 
 #include <cmath>
+#include <limits>
 
 #include <boost/test/unit_test.hpp>
 
@@ -170,6 +171,23 @@ BOOST_AUTO_TEST_CASE(weather_out_of_range_settings_are_held_in_range_test) {
     weather.ease = 10.0f;
     weather.target = 4.0f;
     run(emitter, &weather, &state, 10);
+    BOOST_CHECK_EQUAL(weather.intensity, 1.0f);
+}
+
+/**
+ * A target that is not a number leaves the intensity where it is, rather than turning it into
+ * a NaN that no later target could recover from.
+ **/
+BOOST_AUTO_TEST_CASE(weather_a_target_that_is_not_a_number_is_ignored_test) {
+    const Emitter emitter = rain();
+    Weather weather = shower();
+    weather.intensity = 0.5f;
+    weather.target = std::nanf("");
+    State state(1);
+    run(emitter, &weather, &state, 10);
+    BOOST_CHECK_EQUAL(weather.intensity, 0.5f);
+    weather.target = 1.0f;
+    run(emitter, &weather, &state, 1000);
     BOOST_CHECK_EQUAL(weather.intensity, 1.0f);
 }
 

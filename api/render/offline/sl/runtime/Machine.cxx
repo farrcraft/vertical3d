@@ -135,7 +135,14 @@ void Machine::report(const std::string & message) {
     // to say one thing
     if (std::ranges::find(reports_, message) == reports_.end()) {
         reports_.push_back(message);
+        if (logger_) {
+            logger_->get()->warn("shader: {}", message);
+        }
     }
+}
+
+void Machine::logger(const boost::shared_ptr<v3d::log::Logger> & logger) {
+    logger_ = logger;
 }
 
 bool Machine::live(unsigned int point) const {

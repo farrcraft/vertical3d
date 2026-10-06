@@ -9,6 +9,7 @@
 #include <api/engine/Feature.h>
 
 #include <cstdlib>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -451,6 +452,7 @@ struct Lifecycle final {
     int started = 0;
     int released = 0;
     bool starts = true;
+    bool throws = false;
 };
 
 /**
@@ -477,6 +479,9 @@ class LifecycleEngine final : public v3d::engine::Engine {
 
     bool release() override {
         counts_->released++;
+        if (counts_->throws) {
+            throw std::runtime_error("the device was lost");
+        }
         return true;
     }
 
@@ -501,4 +506,15 @@ BOOST_AUTO_TEST_CASE(engine_releases_once_whether_or_not_it_started_test) {
     BOOST_CHECK_EQUAL(v3d::engine::run<LifecycleEngine>("engine_test.exe", "lifecycle", &failed), EXIT_FAILURE);
     BOOST_CHECK_EQUAL(failed.started, 1);
     BOOST_CHECK_EQUAL(failed.released, 1);
+}
+
+/**
+ * A release that throws is caught and logged by run(), which reports a failure, and it runs
+ * once like any other.
+ **/
+BOOST_AUTO_TEST_CASE(engine_a_release_that_throws_is_a_failure_test) {
+    Lifecycle throwing;
+    throwing.throws = true;
+    BOOST_CHECK_EQUAL(v3d::engine::run<LifecycleEngine>("engine_test.exe", "lifecycle", &throwing), EXIT_FAILURE);
+    BOOST_CHECK_EQUAL(throwing.released, 1);
 }

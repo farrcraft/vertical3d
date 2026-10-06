@@ -83,6 +83,12 @@ bool Keys::press(std::string_view key, bool shifted, bool controlled) {
     if (!focused) {
         return false;
     }
+    if (usable(*focused) && !ui_->reachable(focused)) {
+        // hidden while it held the focus, as a dialog's field is when the dialog closes. It
+        // gives the focus up, and the key goes on to the app, tab and escape included
+        ui_->focus(boost::shared_ptr<Component>());
+        return false;
+    }
     if (key == "tab") {
         // taken whether or not it moved: a form holding one field still swallows the tab
         // rather than letting it reach a binding while somebody is typing
@@ -99,12 +105,6 @@ bool Keys::press(std::string_view key, bool shifted, bool controlled) {
         // a component disabled while it held the focus answers no key, and the key goes on
         // to the app's bindings the way one reaching an unfocused ui does. Tab and escape
         // are above this, so the focus is never stuck on one
-        return false;
-    }
-    if (!ui_->reachable(focused)) {
-        // hidden while it held the focus, as a dialog's field is when the dialog closes. It
-        // gives the focus up, and the key goes on to the app
-        ui_->focus(boost::shared_ptr<Component>());
         return false;
     }
     return act(focused, key, shifted, controlled);

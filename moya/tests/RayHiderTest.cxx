@@ -95,7 +95,7 @@ void adaptive(v3d::moya::RenderContext & rc) {
 };  // namespace
 
 /**
- * RI's default hider is the reyes one, named "hidden". A name moya does not know leaves the
+ * RI's default hider is the reyes one, named "hidden". A name moya has no hider for leaves the
  * hider as it was, so a scene written for another renderer still renders.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_hider_is_chosen_by_name_test) {

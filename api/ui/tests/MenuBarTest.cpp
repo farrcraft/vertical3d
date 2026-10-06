@@ -414,4 +414,26 @@ BOOST_AUTO_TEST_CASE(an_item_outlives_its_menu) {
     BOOST_TEST(v3d::ui::usable(*kept));
 }
 
+/**
+ * A submenu that is replaced no longer names the item as its parent, so it does not walk into
+ * the item once the item is gone. A null submenu removes the one there was.
+ **/
+BOOST_AUTO_TEST_CASE(a_replaced_submenu_is_let_go) {
+    Fixture fixture;
+    boost::shared_ptr<v3d::ui::component::Menu> first = fixture.menu();
+    boost::shared_ptr<v3d::ui::component::Menu> second = fixture.menu();
+    {
+        boost::shared_ptr<v3d::ui::component::MenuItem> deeper =
+            fixture.item(v3d::ui::component::menu::ItemType::Submenu, "Shading", "");
+        deeper->submenu(first);
+        BOOST_TEST(static_cast<const v3d::ui::Component&>(*first).parent() == deeper.get());
+        deeper->submenu(second);
+        BOOST_TEST(static_cast<const v3d::ui::Component&>(*first).parent() == nullptr);
+        BOOST_TEST(static_cast<const v3d::ui::Component&>(*second).parent() == deeper.get());
+        deeper->submenu(boost::shared_ptr<v3d::ui::component::Menu>());
+        BOOST_TEST(static_cast<const v3d::ui::Component&>(*second).parent() == nullptr);
+    }
+    BOOST_TEST(v3d::ui::usable(*first));
+}
+
 BOOST_AUTO_TEST_SUITE_END()

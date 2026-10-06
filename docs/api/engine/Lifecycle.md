@@ -43,8 +43,8 @@ in order:
    the log as `"<name> failed: <message>"`. A windowed app has no console, so the log is the
    only place an error is readable.
 5. Calls `shutdown()` after the `try` block, so it runs whether the loop ended normally or by
-   throwing. A throw from `shutdown()`, such as a lost device found by `release()`, is caught
-   and logged the same way.
+   throwing. A throw from `release()`, such as a lost device, still has the window destroyed
+   and SDL shut down after it, and is then caught and logged the same way.
 
 It returns `EXIT_FAILURE` if startup, the loop or shutdown failed, and `EXIT_SUCCESS`
 otherwise.

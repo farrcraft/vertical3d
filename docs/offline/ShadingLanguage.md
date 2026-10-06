@@ -135,6 +135,11 @@ files on disk.
 - **`solar` is lit along its axis.** An angle other than 0 would let `L` be any direction inside a
   cone, chosen against the surface's own `illuminance` cone, which a light shader is not given.
   The machine reports such an angle once and uses the axis.
+- **A machine's reports reach the log.** A report says what a run could not do, such as a space
+  no renderer named or an angle `solar` cannot honour. Each distinct report is logged once per
+  machine as a warning, through the logger of the shader instance that wrote the machine's
+  parameters. A shader whose parameter defaults fail to run is logged as an error, and the
+  renderer treats it as a run that failed.
 - **`==` and `!=` compare every component** of a colour, point, vector, normal or matrix. A
   float compared with one is promoted as an assignment promotes it, so a float against a matrix
   is the diagonal matrix.
@@ -142,9 +147,9 @@ files on disk.
   argument it writes, and every one from it on is written. `Signature::updates` names one it
   reads and writes in place, which is what `setxcomp`, `setycomp`, `setzcomp` and `setcomp` do
   to their first. The compiler requires a variable there that the shader may assign, and
-  propagates the storage class of the call's inputs into it, as an assignment would. `fresnel` is the one that does: it
-  returns the unpolarised reflectance of a dielectric, with `refract`'s conventions, and writes
-  the reflected and refracted directions.
+  propagates the storage class of the call's inputs into it, as an assignment would. `fresnel` is
+  the one built-in with outputs: it returns the unpolarised reflectance of a dielectric, with
+  `refract`'s conventions, and writes the reflected and refracted directions.
 - **A cast chooses between built-ins that differ only in their result type.** The compiler takes
   the first signature that accepts a call, unless the call is the operand of a cast and a later
   signature returns the cast's type. `color noise(P)` is three patterns, not one grey one, and

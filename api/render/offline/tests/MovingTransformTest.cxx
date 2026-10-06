@@ -119,3 +119,34 @@ BOOST_AUTO_TEST_CASE(moving_transform_reference_test) {
     growing.end();
     BOOST_CHECK(growing.reference() == growing.close());
 }
+
+/**
+ * A turned primitive that grows from nothing along one axis is turned the whole way through.
+ * Halfway, the axis it grows along points where the turn puts it, at half its length, rather
+ * than wherever an empty column would have sent the rotation.
+ **/
+BOOST_AUTO_TEST_CASE(moving_transform_a_flat_end_keeps_its_turn_test) {
+    const glm::mat4x4 turn = glm::rotate(glm::mat4x4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    v3d::render::offline::MovingTransform growing;
+    growing.begin({ 0.0f, 1.0f });
+    growing.concat(turn * glm::scale(glm::mat4x4(1.0f), glm::vec3(0.0f, 1.0f, 1.0f)));
+    growing.concat(turn);
+    growing.end();
+
+    const glm::vec3 x = apply(growing.at(0.5f), glm::vec3(1.0f, 0.0f, 0.0f));
+    BOOST_CHECK_SMALL(x.x, 1.0e-4f);
+    BOOST_CHECK_CLOSE(x.y, 0.5f, 1.0e-3f);
+    BOOST_CHECK(growing.placeable());
+}
+
+/**
+ * A motion flat at both ends has no end to store a primitive at.
+ **/
+BOOST_AUTO_TEST_CASE(moving_transform_flat_at_both_ends_test) {
+    v3d::render::offline::MovingTransform flat;
+    flat.begin({ 0.0f, 1.0f });
+    flat.concat(glm::scale(glm::mat4x4(1.0f), glm::vec3(0.0f, 1.0f, 1.0f)));
+    flat.concat(glm::scale(glm::mat4x4(1.0f), glm::vec3(1.0f, 0.0f, 1.0f)));
+    flat.end();
+    BOOST_CHECK(!flat.placeable());
+}

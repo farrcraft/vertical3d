@@ -70,7 +70,7 @@ In [`api/render/offline/sl/`](../../../api/render/offline/sl/). Tests go in
 
 #### Step 1 — `==` and `!=` compare every component
 
-**Closed.** `Machine::compare` compares every component, and promotes a float to a matrix as an assignment does, as a diagonal. One case in `SLMachineTest.cxx`.
+**Closed.** `Machine::compare` compares every component, and promotes a float to a matrix as an assignment does, as a diagonal. One case in `SlMachineTest.cxx`.
 
 **Verified.** `Machine::compare` reads `left.number(point)`, which is component 0 only. The
 compiler accepts `==` between colours, points, vectors, normals and matrices. So
@@ -84,7 +84,7 @@ Tests: equal and unequal colours that share component 0, a point against a float
 
 #### Step 2 — The component setters are writing built-ins
 
-**Closed.** The setters are declared with a new `Signature::updates`, the argument a built-in changes in place, rather than with `outputs`, whose arguments are written only. The compiler requires every written argument, `fresnel`'s included, to be a variable the shader may assign. Cases in `SLCompilerTest.cxx` and `SLMachineTest.cxx`.
+**Closed.** The setters are declared with a new `Signature::updates`, the argument a built-in changes in place, rather than with `outputs`, whose arguments are written only. The compiler requires every written argument, `fresnel`'s included, to be a variable the shader may assign. Cases in `SlCompilerTest.cxx` and `SlMachineTest.cxx`.
 
 **Verified.** `setxcomp`, `setycomp`, `setzcomp` and `setcomp` are declared with `declare()`, not
 `writing()`, in `Builtins.cxx`. Their outputs index is therefore −1. This has three consequences:
@@ -102,7 +102,7 @@ Tests: both compile errors, and a varying `s` written into a point that ends up 
 
 #### Step 3 — A varying condition is read once
 
-**Closed.** One case in `SLMachineTest.cxx`.
+**Closed.** One case in `SlMachineTest.cxx`.
 
 `emitConditional` emits `MASK_NOT` from the condition register after the true branch has run. A bare
 variable as the condition is its own register, so the true branch can change it. In
@@ -201,7 +201,7 @@ than per grid, or compute the matrix per sample.
 
 #### Step 9 — moya's command line and its stale comments
 
-**Closed.** `--width`, `--height` and `--silent` are back, through `RIBHandler::resolution`. No error report was added: every request moya cannot honour is logged and the scene still renders, so there is no case where the retired renderer's report would fire.
+**Closed.** `--width`, `--height` and `--silent` are back, through `RIBHandler::resolution`. `clip` now carries `st` across a crossing through `crossing()`, as `split` does; like `split`, it does not carry colour or normal, because a piece takes those from the state its parent was submitted under. No error report was added: every request moya cannot honour is logged and the scene still renders, so there is no case where the retired renderer's report would fire.
 
 In [`moya/`](../../../moya/).
 
@@ -685,3 +685,24 @@ Drafted and closed on 2026-10-05. Every step is closed.
     in code this plan changed.
   - The device suite is clean under synchronization validation locally. The golden images
     across drivers are checked on a PR.
+
+### After a second review
+
+A second review of the branch found one defect the first round missed, and gaps in this
+round's own fixes. All are fixed, each with a test where the fix is code:
+
+- tetris's `dropPiece` is a toggle and took key repeats; `GameBoard::dropTetrad` now ignores one;
+- a focused component hidden by a closing dialog still took the first `tab` or `escape`;
+- an end flattened on one axis decomposed to the wrong rotation, and a motion flat at both ends
+  now logs once and is left out;
+- the bound of a moving primitive stored at its close end left out its open end;
+- a failed shader prologue now logs, and a machine's reports reach the log;
+- a material that fails after its texture is made releases that texture, and a replaced submenu
+  is disowned;
+- out-of-range emitter rates, a NaN weather target, an infinite rotation, a throwing
+  `release()` and bad `--width` and `--height` values are handled;
+- the motion cache's limit is `RenderContext::motionCache()`, so its fallback is tested;
+- the documents and comments the review named state the rules as they are.
+
+A fully transparent 32 bit bmp reads back opaque. That is the stated trade for writers that
+leave alpha at zero, and it stays.

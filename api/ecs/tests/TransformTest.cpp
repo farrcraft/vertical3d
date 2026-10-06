@@ -6,6 +6,9 @@
 #include <api/ecs/Previous.h>
 #include <api/ecs/component/Transform.h>
 
+#include <cmath>
+#include <limits>
+
 #include <boost/test/unit_test.hpp>
 
 #include <entt/entt.hpp>
@@ -109,4 +112,16 @@ BOOST_AUTO_TEST_CASE(transform_a_drifted_rotation_only_turns_test) {
 
     const glm::vec3 moved(transform.matrix() * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
     BOOST_TEST(same(moved, glm::vec3(0.0f, 0.0f, -1.0f)));
+}
+
+/**
+ * A rotation of no finite length is treated as no rotation, rather than turning the matrix into
+ * NaNs.
+ **/
+BOOST_AUTO_TEST_CASE(transform_an_infinite_rotation_is_no_rotation_test) {
+    v3d::ecs::component::Transform transform;
+    const float inf = std::numeric_limits<float>::infinity();
+    transform.rotation = glm::quat(inf, 0.0f, 0.0f, 0.0f);
+    const glm::vec3 moved(transform.matrix() * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+    BOOST_TEST(same(moved, glm::vec3(1.0f, 0.0f, 0.0f)));
 }

@@ -72,7 +72,8 @@ chooser_->open(FileChooser::Mode::Save, directory, ".json", [this](const boost::
 - The listing is `..` (except at the root), then the directories, then the files that match
   the extension, each sorted by name.
 - `pick()` on a directory steps into it, on `..` steps up, and on a file puts its name in the
-  field.
+  field. A new listing has no row chosen, so a `pick()` with no row named does nothing until one
+  is chosen in it.
 - `accept()` refuses an empty name or one containing a separator. In `Open` mode it refuses a
   file that does not exist.
 - In `Save` mode a bare name is given the extension. Saving over an existing file asks first:

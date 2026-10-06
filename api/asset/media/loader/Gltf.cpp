@@ -379,8 +379,8 @@ v3d::type::Model::Influence influenceOf(const Attributes& attributes, cgltf_size
 }
 
 /**
- * Append a primitive's triangles to the merged index list, as a list whatever mode the primitive
- * was drawn in.
+ * Append a primitive's triangles to the merged index list. They are appended as a list,
+ * whatever mode the primitive was drawn in.
  *
  * A primitive's indices address its own vertices, so every one after the first primitive
  * addresses the wrong geometry unless it is offset into the merge. One drawn straight out of

@@ -27,7 +27,7 @@ class Sphere final : public Primitive {
     /**
      * @param zmin, zmax the slab it is cut to, clamped to the radius
      * @param thetamax the sweep about z, in degrees
-     * @param placement object to world, at the open end of its motion
+     * @param placement object to world, at the reference end of its motion
      **/
     Sphere(float radius, float zmin, float zmax, float thetamax, const glm::mat4x4 & placement,
         const glm::vec3 & colour);

@@ -465,6 +465,14 @@ void RenderContext::gridSize(unsigned int size) {
     gridSize_ = size;
 }
 
+void RenderContext::motionCache(std::size_t entries) {
+    motionCache_ = entries;
+}
+
+std::size_t RenderContext::motionCache() const {
+    return motionCache_;
+}
+
 glm::mat4x4 RenderContext::coordinateSystem(const std::string& name) {
     return coordinateSystems_[name];
 }
@@ -502,6 +510,45 @@ void orderBound(glm::vec3* min, glm::vec3* max) {
     }
 }
 
+/**
+ * Grow an eye space bound to cover where a moving primitive is at both ends of the shutter,
+ * from its object space bound. A still primitive's bound is left as it is.
+ **/
+void sweep(const v3d::render::offline::MovingTransform & motion, const glm::vec3 & objectMin,
+    const glm::vec3 & objectMax, glm::vec3* min, glm::vec3* max) {
+    if (!motion.moving()) {
+        return;
+    }
+    for (const glm::mat4x4* end : { &motion.open(), &motion.close() }) {
+        glm::vec3 endMin(*end * glm::vec4(objectMin, 1.0f));
+        glm::vec3 endMax(*end * glm::vec4(objectMax, 1.0f));
+        orderBound(&endMin, &endMax);
+        *min = glm::min(*min, endMin);
+        *max = glm::max(*max, endMax);
+    }
+}
+
+/**
+ * Give every vertex that brought no colour or normal of its own the primitive's, and every
+ * vertex the primitive's plane as its geometric normal.
+ *
+ * A vertex with no "Cs" takes the primitive's colour, which the surface shader then reads as
+ * Cs. The normals go the same way: Ng is the primitive's plane on every vertex, and a vertex
+ * that brought no varying "N" shades with it, so a polygon that gives no normals is shaded
+ * faceted.
+ **/
+void fillVertices(Polygon* poly) {
+    for (unsigned int i = 0; i < poly->vertexCount(); i++) {
+        if (!(*poly)[i].hasColor()) {
+            (*poly)[i].color(poly->color());
+        }
+        (*poly)[i].geometricNormal(poly->normal());
+        if (!(*poly)[i].hasNormal()) {
+            (*poly)[i].normal(poly->normal());
+        }
+    }
+}
+
 };  // namespace
 
 void RenderContext::surface(const std::string & name,
@@ -524,7 +571,7 @@ void RenderContext::lightSource(const std::string & name, const std::string & ha
         return;
     }
     lights_.push_back(light);
-    // RiLightSource creates the light and switches it on, so a scene that wants one light
+    // RiLightSource creates the light and switches it on, so a scene with one light
     // needs one request
     illuminate(handle, true);
 }
@@ -674,6 +721,14 @@ bool RenderContext::addSphere(float radius, float zmin, float zmax, float thetam
 }
 
 void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
+    if (transform_.moving() && !transform_.placeable()) {
+        // both ends of its motion flatten it, so there is no pose to move it from
+        if (!flatMotionReported_) {
+            flatMotionReported_ = true;
+            logger_->get()->warn("a primitive whose motion is flat at both ends is not drawn");
+        }
+        return;
+    }
     // if an output stream exists
     // echo RiPolygon RIB command to output stream
 
@@ -697,21 +752,7 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
         poly->motion(transform_.before(coordinateSystems_["camera"]));
     }
 
-    // a vertex that brought no "Cs" of its own takes the primitive's colour, which the
-    // surface shader then reads as Cs.
-    //
-    // The normals go the same way: Ng is the primitive's plane on every vertex, and a
-    // vertex that brought no varying "N" shades with it, so a polygon that gives no
-    // normals is shaded faceted
-    for (unsigned int i = 0; i < poly->vertexCount(); i++) {
-        if (!(*poly)[i].hasColor()) {
-            (*poly)[i].color(poly->color());
-        }
-        (*poly)[i].geometricNormal(poly->normal());
-        if (!(*poly)[i].hasNormal()) {
-            (*poly)[i].normal(poly->normal());
-        }
-    }
+    fillVertices(poly.get());
 
     v3d::type::geometry::AABBox bound = poly->bound();
 
@@ -737,18 +778,12 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     // camera transform might've flipped some components of min & max
     orderBound(&bound_min, &bound_max);
 
-    // a moving primitive is culled by where it is at either end of the shutter as well as
-    // where it opened; the size test below reads where it opened, because a split shrinks a
+    // a moving primitive is culled by where it is at both ends of the shutter as well as where
+    // it is stored; the size test below reads where it is stored, because a split shrinks a
     // primitive and never the distance it travels
     glm::vec3 swept_min = bound_min;
     glm::vec3 swept_max = bound_max;
-    if (poly->motion().moving()) {
-        glm::vec3 closeMin(poly->motion().close() * glm::vec4(objectMin, 1.0f));
-        glm::vec3 closeMax(poly->motion().close() * glm::vec4(objectMax, 1.0f));
-        orderBound(&closeMin, &closeMax);
-        swept_min = glm::min(swept_min, closeMin);
-        swept_max = glm::max(swept_max, closeMax);
-    }
+    sweep(poly->motion(), objectMin, objectMax, &swept_min, &swept_max);
 
     // do hither-yon cull
     if ((swept_max[2] > far_ && swept_min[2] > far_)  // bound is completely outside far plane (too far away for the camera to see)

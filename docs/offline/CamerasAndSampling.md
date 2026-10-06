@@ -116,14 +116,18 @@ Background: [ADR-0076](../adr/0076-offline-seeded-samples-resolved-by-one-shared
 - **A moving primitive is stored at its reference end**, `MovingTransform::reference()`: the
   open end, unless that end has no inverse, as when a motion grows a primitive from nothing; then
   the close end. Both hiders move it from there to a sample's time by `at(time)` times the
-  reference's inverse.
+  reference's inverse. A moving primitive flat at both ends has no reference to move from,
+  and moya logs it once and leaves it out.
+- **The reyes hider caches the motion to each sample's time** over the region a moving grid
+  sweeps, up to `RenderContext::motionCache()` entries, a million by default. A grid that
+  sweeps more works out the motion for each micropolygon instead, and draws the same picture.
 - **The reyes hider places a moving micropolygon per sample.** A primitive carries its moving
   object to eye transformation. The hider moves the eye space corners from the reference end to
   the sample's time. The micropolygon's bound is the union of where it is at eight slices of the
   shutter, grown by the furthest a corner moves in one slice. A sample is rejected by its own
   slice's bound before anything is placed.
-- **A moving primitive is culled by its bound at both ends**, and measured for splitting at the
-  open end only, because a split shrinks a primitive but not the distance it travels.
+- **A moving primitive is culled by its bound at both ends**, and measured for splitting at its
+  reference end only, because a split shrinks a primitive but not the distance it travels.
 - **A moving occluder's shadow is sharp under the reyes hider**, because a grid's shadow rays
   are cast at shutter open.
 - **A pixel's seed is its position**, so two frames of an animation share their sample

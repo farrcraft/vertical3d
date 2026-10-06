@@ -19,6 +19,7 @@
 #include "Samples.h"
 #include "Shading.h"
 
+#include <cstddef>
 #include <vector>
 #include <map>
 #include <string>
@@ -188,6 +189,13 @@ class RenderContext {
         void shadingRate(float size);
         void bucketSize(unsigned int width, unsigned int height);
         void gridSize(unsigned int size);
+        /**
+            *	The most sample motions one moving grid caches. A grid that sweeps more samples
+            *	than this works out each micropolygon's motion afresh instead, which is slower
+            *	and needs no memory. A million by default, which is 64 MB.
+            */
+        void motionCache(std::size_t entries);
+        std::size_t motionCache() const;
 
         /**
             *	maps to RiSurface()
@@ -360,6 +368,7 @@ class RenderContext {
         std::map<std::string, glm::mat4x4> coordinateSystems_;
         v3d::render::offline::rib::Declarations declarations_;
         boost::shared_ptr<v3d::log::Logger> logger_;
+        bool flatMotionReported_ = false;
         boost::shared_ptr<v3d::render::offline::sl::ShaderLibrary> shaders_;
         boost::shared_ptr<v3d::render::offline::Textures> textures_;
         boost::shared_ptr<GridShader> shader_;
@@ -424,6 +433,7 @@ class RenderContext {
         unsigned int bucketWidth_ = 16;
         unsigned int bucketHeight_ = 16;
         unsigned int gridSize_ = 256;
+        std::size_t motionCache_ = std::size_t(1) << 20;
         float shadingRate_ = 1.0f;
 };
 

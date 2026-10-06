@@ -154,7 +154,10 @@ void Instance::bind(const rib::ParameterList & parameters) {
 bool Instance::write(runtime::Machine* machine, const glm::mat4x4 & placement) const {
     // the declared defaults, run rather than remembered: the renderer resolves a coordinate
     // space in one, and the machine has a renderer attached now
+    // every run a renderer makes starts here, so this is where its reports find the log
+    machine->logger(logger_);
     if (!machine->initialise()) {
+        logger_->get()->error("the defaults of shader {} did not run: {}", name(), machine->error());
         return false;
     }
 

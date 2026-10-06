@@ -43,6 +43,12 @@ class MovingTransform final {
      * scales an axis to nothing; then the close end.
      **/
     const glm::mat4x4 & reference() const;
+    /**
+     * Whether the reference end has an inverse. False only when both ends flatten the
+     * primitive. A moving primitive is then dropped, because nothing stored at the reference
+     * end can be moved to another time. A still one needs no inverse and is drawn as it is.
+     **/
+    bool placeable() const;
     /** The times the motion block named for its two ends. **/
     const glm::vec2 & times() const;
 

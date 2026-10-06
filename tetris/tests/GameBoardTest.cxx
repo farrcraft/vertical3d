@@ -187,3 +187,15 @@ BOOST_AUTO_TEST_CASE(gameboard_fall_rate_is_a_duration_test) {
     // it actually fell, so the comparison is not between two pieces sitting at the top
     BOOST_CHECK_GT(coarse->currentTetrad().position().second, 0);
 }
+
+/**
+ * Dropping toggles fast fall, and a held key's repeats leave it as the first press set it,
+ * rather than flicking it on and off at the repeat rate.
+ **/
+BOOST_AUTO_TEST_CASE(gameboard_a_held_drop_does_not_flick_test) {
+    boost::shared_ptr<GameBoard> game = board();
+    BOOST_CHECK(game->dropTetrad());
+    BOOST_CHECK(game->dropTetrad(true));
+    BOOST_CHECK(game->dropTetrad(true));
+    BOOST_CHECK(!game->dropTetrad());
+}

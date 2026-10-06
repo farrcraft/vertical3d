@@ -36,7 +36,8 @@ concept Interpolable = std::copy_constructible<T> && requires(const T& from, con
  * Called at the top of simulate(), before anything moves, once for each type a renderer
  * draws between steps. Every entity carrying T is snapshotted whether or not it is about to
  * move, so one that has stopped is drawn where it stopped. An entity that loses its T and is
- * given one again later is drawn at its new value, not blended from the one it lost.
+ * given one again in a later step is drawn at its new value, not blended from the one it lost.
+ * One that loses and regains it within one step keeps its Previous<T>; call settle() for it.
  **/
 template <typename T>
 void snapshot(entt::registry& registry) {

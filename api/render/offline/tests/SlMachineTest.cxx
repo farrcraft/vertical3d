@@ -434,9 +434,9 @@ BOOST_AUTO_TEST_CASE(slmachine_equality_compares_every_component_test) {
         "    float pointIsNotTwo = p != 2;\n"
         "    float matrixIsOne = m == 1;\n"
         "    float matrixIsTwo = m == 2;\n"
-        "    float anyIsDifferent = point (2, 2, 3) == p;\n"
+        "    float differentPointIsEqual = point (2, 2, 3) == p;\n"
         "    Ci = color (sameColour, differentColour, pointIsTwo);\n"
-        "    Oi = color (pointIsNotTwo + anyIsDifferent, matrixIsOne, matrixIsTwo);\n"
+        "    Oi = color (pointIsNotTwo + differentPointIsEqual, matrixIsOne, matrixIsTwo);\n"
         "}\n", &program, &error), error);
 
     v3d::render::offline::sl::runtime::Machine machine;

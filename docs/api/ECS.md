@@ -163,8 +163,9 @@ The rules:
 - **Call `settle<T>` after a teleport, once the new value is written.** It copies the value the
   entity has when it is called. An entity put somewhere rather than moved there is otherwise
   drawn sweeping across the screen for one frame, and nothing reports it.
-- An entity that loses its `T` and is given one again is drawn at the new value from the next
-  snapshot on, not blended from the value it lost.
+- An entity that loses its `T` and is given one again in a later step is drawn at the new
+  value, not blended from the value it lost. One that loses and regains it within one step keeps
+  its `Previous<T>`, so call `settle<T>` for it.
 - **`T` must be copyable and have an `interpolate(const T&, const T&, float)`** in its own
   namespace, found by argument-dependent lookup. A type without one fails to compile in
   `interpolated()`, rather than snapping silently. `grid::TileCoord` deliberately has none; a

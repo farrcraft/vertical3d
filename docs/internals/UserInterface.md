@@ -212,11 +212,14 @@ nothing.
 `input::Keys::press(key, shifted, controlled)`:
 
 1. Returns false when nothing is focused.
-2. `tab` calls `Engine::focusNext(!shifted)` and returns true.
-3. `escape` clears the focus and returns true.
-4. Returns false when the focused component is not `usable()`. Tab and escape are handled
+2. Clears the focus and returns false when the focused component is `usable()` but not
+   `Engine::reachable()`: it was hidden or removed while it held the focus, so the key goes on
+   to the app.
+3. `tab` calls `Engine::focusNext(!shifted)` and returns true.
+4. `escape` clears the focus and returns true.
+5. Returns false when the focused component is not `usable()`. Tab and escape are handled
    first, so the focus can always leave a disabled component.
-5. Calls `act()`, a switch on the focused component's type:
+6. Calls `act()`, a switch on the focused component's type:
    - `TextBox` goes to `edit()`.
    - `SelectList` to `choose()`, `TabBar` to `turn()`, `Scrollbar` to `nudge()`, `Slider`
      to `slide()`.
@@ -230,7 +233,8 @@ long, because `api/input` names a key one character wide when it types a charact
 a word when it does not.
 
 `Keys::text(utf8)` inserts into the focused component only when `traits(type).text` is set and
-the component is usable. It returns true even when the insert was refused.
+the component is usable. A usable component that is not reachable gives up the focus, as in
+`press()`. It returns true even when the insert was refused.
 
 A `TextBox` sends its command from `edit()` on `return`, reading `box->event()` directly.
 `input::command()` returns no event for a `TextBox`, so a click into a box never submits it.

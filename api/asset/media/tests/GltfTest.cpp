@@ -498,10 +498,10 @@ BOOST_AUTO_TEST_CASE(gltf_no_animations_are_no_clips_test) {
 }
 
 /**
- * The strip again, built and exported by Blender 5.2 - make_blender_fixture.py - so that the
- * loader meets what a real exporter writes: an armature node above the root joint holding a
- * Mixamo-style hundredth scale, joints a hundred units apart, and actions sampled a key a frame
- * with a channel on every joint.
+ * The strip again, built and exported by Blender 5.2 by make_blender_fixture.py, so that the
+ * loader meets what a real exporter writes. That is an armature node above the root joint
+ * holding a Mixamo-style hundredth scale, joints a hundred units apart, and actions sampled a
+ * key a frame with a channel on every joint.
  **/
 BOOST_AUTO_TEST_CASE(gltf_reads_a_blender_rig_test) {
     boost::shared_ptr<v3d::type::Model> model = load(BLENDER);

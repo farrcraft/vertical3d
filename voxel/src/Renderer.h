@@ -37,7 +37,7 @@ class MeshBuilder;
  * Two passes, because the two need opposite settings. The terrain is a depth tested, sorted
  * scene of one draw item per chunk through a pipeline of its own. The overlay and the ui
  * are painter ordered quads, drawn on top of it through the batched quad pipeline. Each pass
- * carries its own settings, so neither has to know about the other.
+ * carries its own settings, so neither depends on the other.
  */
 class Renderer {
  public:

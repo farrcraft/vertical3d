@@ -2,6 +2,7 @@
 
 **Status**: accepted
 **Date**: 2026-09-07
+**Amends**: [ADR-0018](0018-editor-projects-saved-as-json-with-exact-topology.md)
 **Documented in**: [api/Assets.md](../api/Assets.md)
 
 ## Context

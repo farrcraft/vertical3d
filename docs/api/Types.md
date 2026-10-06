@@ -49,7 +49,7 @@ The queries are in `v3d::type::geometry` ([api/type/geometry/](../../api/type/ge
   mesh's own space is then comparable with one found in world space. To test a world ray against
   a mesh, pass the inverse of the mesh's matrix.
 - `intersects(box, &distance)` is a slab test. A ray that starts inside the box hits it at
-  distance zero.
+  distance zero. A ray whose origin or direction is not finite misses every box.
 - `intersects(a, b, c, &distance)` tests a triangle from either side. The overload with `u` and
   `v` also returns barycentric weights: the hit is `a + u * (b - a) + v * (c - a)`. Use them to
   interpolate a normal or a texture coordinate.
@@ -366,7 +366,7 @@ particles an emitter has made and its own `Random`.
 | `burst(emitter, &state, origin, orientation, count)` | Spawns `count` particles at once, up to the cap. |
 | `travel(emitter, &state, seconds, wind)` | Ages, moves and removes particles without spawning. |
 | `spawn(emitter, &state, position, orientation)` | Adds one particle at a world position, unless at the cap. |
-| `owing(&state, rate, seconds)` | How many whole particles a rate has earned, keeping the fraction. |
+| `owing(&state, rate, seconds)` | How many whole particles a rate has earned, keeping the fraction. A rate below zero, or not a finite number, earns nothing. |
 
 - Each `Particle` keeps `previous`, its position before the last step. A renderer draws it
   between `previous` and `position` by alpha. A particle born this step has `previous` equal
@@ -381,6 +381,8 @@ particles an emitter has made and its own `Random`.
 `fall(emitter, &weather, &state, minimum, maximum, seconds)` steps it:
 
 - `intensity` eases towards `target` at `ease` per second. The game sets `target` and `wind`.
+  The target is held between 0 and 1, a target that is not a number is ignored, and an ease
+  below zero moves nothing.
 - `density` is particles per second per square unit of ground at full intensity. Particles are
   born across the region's top face (the `maximum` height). `+y` is up.
 - A particle that falls below `minimum` is removed. One that leaves across a side re-enters at

@@ -15,6 +15,7 @@
 #include <SDL3/SDL.h>
 
 #include <algorithm>
+#include <exception>
 #include <map>
 #include <string>
 
@@ -211,17 +212,26 @@ bool Engine::shutdown() {
     // the app's release() runs once, before the window is destroyed: whatever presents to
     // the window has to wait for the device to go idle while the window still exists
     bool released = true;
+    std::exception_ptr failed;
     if (!released_) {
         released_ = true;
-        released = release();
+        // a release that throws still has the window and SDL shut down after it, in the same
+        // order, and its exception is passed on afterwards for run() to log
+        try {
+            released = release();
+        } catch (...) {
+            failed = std::current_exception();
+        }
     }
-    if (!needShutdown_) {
-        return released;
+    if (needShutdown_) {
+        logger_->get()->info("Shutting down engine...");
+        window_->destroy();
+        SDL_Quit();
+        needShutdown_ = false;
     }
-    logger_->get()->info("Shutting down engine...");
-    window_->destroy();
-    SDL_Quit();
-    needShutdown_ = false;
+    if (failed) {
+        std::rethrow_exception(failed);
+    }
     return released;
 }
 

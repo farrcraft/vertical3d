@@ -1067,3 +1067,22 @@ BOOST_AUTO_TEST_CASE(moya_raytrace_lit_quad_test) {
     // and nothing outside the quad
     BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::RED, 2, 2), 0.0001f);
 }
+
+/**
+ * A moving grid that sweeps more samples than the motion cache holds works out each
+ * micropolygon's motion afresh, and draws the same picture as one that caches them.
+ **/
+BOOST_AUTO_TEST_CASE(reference_motion_without_a_cache_test) {
+    v3d::moya::RenderContext cached;
+    motionScene(cached);
+    cached.render();
+
+    v3d::moya::RenderContext uncached;
+    uncached.motionCache(0);
+    motionScene(uncached);
+    uncached.render();
+
+    const v3d::render::offline::FrameBuffer & a = *cached.framebuffer()->planes();
+    const v3d::render::offline::FrameBuffer & b = *uncached.framebuffer()->planes();
+    BOOST_CHECK_EQUAL(largest(a, b, 0, a.width() - 1), 0.0f);
+}

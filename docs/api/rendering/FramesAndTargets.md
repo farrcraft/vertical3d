@@ -127,7 +127,8 @@ TextureHandle shadowMap = renderer_->textures()->depthTexture(*map);   // its de
 
 `texture()` and `depthTexture()` return the white texture for a target with nothing of that
 kind to read. Registering the same image again returns the handle it already has, so calling
-either every frame costs nothing.
+either every frame costs nothing. That handle is shared by everything that registered the
+image, and releasing it releases it for all of them.
 
 **Register again after a resize.** A registration keeps the target's old images alive and goes
 on drawing them. After `recreate()`, release the old handle and register the target again.

@@ -104,8 +104,9 @@ class Engine {
 
     /**
      * Whether a component could be focused now: it is drawn, so neither it, its container nor
-     * anything it is inside is hidden, and it is on a tab page that is up. A component hidden
-     * while it holds the focus is no longer reachable, and keys pass it by.
+     * anything it is inside is hidden, it is on a tab page that is up, and it is enabled. Keys
+     * pass by a focused component that is usable and not reachable, which is one that was
+     * hidden or removed while it held the focus.
      **/
     bool reachable(const boost::shared_ptr<Component>& component) const;
 

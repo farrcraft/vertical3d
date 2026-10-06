@@ -470,20 +470,10 @@ BOOST_AUTO_TEST_CASE(a_caster_is_drawn_into_the_shadow_map_at_its_depth) {
 }
 
 /**
- * A cube on the ground, with a shadow pass before the lit pass and the map read through the
- * scene set. Where the shadow falls depends on PCF and the implementation's filtering, so there
- * is no reference picture. The case checks that the validation layer reports no errors, and
- * compares the frame against the same frame drawn with the shadow ignored: some white ground
- * went grey, and nothing else changed. Too little bias makes a surface shadow itself, which
- * would show as a change on the cube.
- *
- * The picture is written to data_out/lit_shadow.png for a person to look at.
- **/
-/**
  * Two frames in flight share one shadow map. The second frame's shadow pass writes the map
  * while the first frame's lit pass may still be sampling it, so the barrier that opens the map
  * has to wait for that read. Only synchronization validation reports it when it does not, so
- * the case checks that the layer is silent; CI runs it with VK_LAYER_VALIDATE_SYNC=1.
+ * the case checks that the layer is silent.
  **/
 BOOST_AUTO_TEST_CASE(a_shadow_map_is_shared_by_frames_in_flight) {
     v3d::test::Headless headless(colourFormat, width, height);
@@ -493,6 +483,16 @@ BOOST_AUTO_TEST_CASE(a_shadow_map_is_shared_by_frames_in_flight) {
     BOOST_CHECK(headless.silent());
 }
 
+/**
+ * A cube on the ground, with a shadow pass before the lit pass and the map read through the
+ * scene set. Where the shadow falls depends on PCF and the implementation's filtering, so there
+ * is no reference picture. The case checks that the validation layer reports no errors, and
+ * compares the frame against the same frame drawn with the shadow ignored: some white ground
+ * went grey, and nothing else changed. Too little bias makes a surface shadow itself, which
+ * would show as a change on the cube.
+ *
+ * The picture is written to data_out/lit_shadow.png for a person to look at.
+ **/
 BOOST_AUTO_TEST_CASE(a_shadow_falls_on_the_ground) {
     v3d::test::Headless headless(colourFormat, width, height);
 

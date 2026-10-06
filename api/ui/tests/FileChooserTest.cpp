@@ -58,9 +58,6 @@ class Sandbox final {
 };
 
 /**
- * The names of a listing, in order, with a directory marked by a trailing slash.
- **/
-/**
  * A container holding what a chooser writes into: the list, the name field and the folder
  * label, under the names a chooser looks for by default.
  **/
@@ -86,6 +83,9 @@ boost::shared_ptr<v3d::ui::Engine> chooserUi() {
     return ui;
 }
 
+/**
+ * The names of a listing, in order, with a directory marked by a trailing slash.
+ **/
 std::vector<std::string> names(const v3d::ui::shell::FileChooser& chooser) {
     std::vector<std::string> found;
     for (const v3d::ui::shell::FileChooser::Entry& entry : chooser.entries()) {

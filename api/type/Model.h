@@ -51,7 +51,7 @@ class Model final {
      * How a model's surface looks: a colour, and the name of the image tinting it.
      *
      * The texture is a name rather than pixels. The app resolves the name through the
-     * asset manager, which knows where assets live and what is already loaded.
+     * asset manager, which holds where assets live and what is already loaded.
      **/
     struct Material final {
         glm::vec4 baseColour{ 1.0f, 1.0f, 1.0f, 1.0f };

@@ -231,11 +231,6 @@ class Placement {
     float stride_ { 0.0f };
 };
 
-/**
- * The most motions one grid caches: a million matrices, which is 64 MB.
- **/
-const std::size_t MOTION_CACHE_LIMIT = std::size_t(1) << 20;
-
 /*
     The motion from a moving primitive's reference end to each sample's time, worked out once per
     sample over a region of the frame. Every micropolygon of a grid whose swept bound reaches a
@@ -353,7 +348,7 @@ void hide(MicroPolygonGrid & grid, const ReyesPrimitive & primitive, RenderConte
             static_cast<std::size_t>(std::max(0, region[3] - region[1] + 1)) * samples.perPixel();
         // a grid that sweeps much of the frame would need gigabytes of motions; past the cap each
         // micropolygon works out its own instead, which is slower and needs no memory
-        if (entries <= MOTION_CACHE_LIMIT) {
+        if (entries <= rc.motionCache()) {
             motions = boost::make_shared<Motions>(placement, samples.perPixel(), region[0], region[1], region[2],
                 region[3]);
         }

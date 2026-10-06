@@ -246,9 +246,10 @@ BOOST_AUTO_TEST_CASE(imagereader_bmp_reads_32_bits_through_its_masks) {
 }
 
 /**
- * A bmp is stored bottom up unless its height is negative. Built here byte by byte rather
- * than written by the writer, so a reader and a writer that both turned rows over cannot pass
- * by agreeing: the top row is red and the bottom green, at 24 bits and through a palette at 8.
+ * A bmp is stored bottom up unless its height is negative. The files are built here byte by
+ * byte rather than by the writer, so a reader and a writer that both turned rows over cannot
+ * pass by agreeing. The top row is red and the bottom green, at 24 bits and through a palette
+ * at 8.
  **/
 BOOST_AUTO_TEST_CASE(imagereader_bmp_orientation) {
     boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();

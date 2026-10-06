@@ -92,10 +92,12 @@ class GameBoard {
         bool over() const;
 
         /**
-         * toggle the falling speed of the current tetrad.
+         * Toggle the falling speed of the current tetrad.
+         * @param repeated whether this is a held key repeating rather than a new press. A
+         *        repeat leaves the speed as it is, so holding the key does not flick it
          * @return true if the tetrad is falling quickly or false if slowly.
          */
-        bool dropTetrad();
+        bool dropTetrad(bool repeated = false);
 
         /**
          * Get a piece on the board.

@@ -331,8 +331,8 @@ BOOST_AUTO_TEST_CASE(a_frame_with_no_reads_records_as_created) {
 
 /**
  * The key groups by what an item binds, so a pass reads the pipeline and material from the
- * handles - a caller who set the key's fields otherwise, or not at all, sorts the same - and a
- * slot past sixteen bits groups at the end rather than wrapping to the front.
+ * handles. A caller who set the key's fields otherwise, or not at all, sorts the same. A slot
+ * past sixteen bits groups at the end rather than wrapping to the front.
  **/
 BOOST_AUTO_TEST_CASE(a_pass_keys_an_item_by_what_it_binds) {
     v3d::render::realtime::Pass pass("scene");

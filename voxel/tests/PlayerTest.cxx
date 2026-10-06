@@ -11,9 +11,8 @@
 
 /**
  * A direction moves the player while it is held and stops when it is not. Saying a direction
- * is held twice keeps it held, which is what lets a key released while the menu was up stop the
- * player once the menu closes, rather than leaving the player moving until the key is pressed
- * again.
+ * is held twice keeps it held. So a key released while the menu was up stops the player once
+ * the menu closes, rather than leaving the player moving until the key is pressed again.
  **/
 BOOST_AUTO_TEST_CASE(player_moves_while_a_direction_is_held_test) {
     Player player(glm::vec3(0.0f));

@@ -143,7 +143,7 @@ void Controller::handleEvent(const v3d::event::Event& event) {
         } else if (event.name() == "rotatePieceCCW") {
             rotate(Tetrad::COUNTERCLOCKWISE);
         } else if (event.name() == "dropPiece") {
-            scene_->board()->dropTetrad();
+            scene_->board()->dropTetrad(event.repeat());
         }
         return;
     }

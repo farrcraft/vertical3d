@@ -324,9 +324,9 @@ glm::vec2 Arranger::stack(const Container& container,
     std::vector<boost::shared_ptr<component::MenuBar>>* bars) const {
     const float row = styles_.base().barHeight + ruleWidth;
     std::vector<boost::shared_ptr<component::Toolbar>> shown;
-    // a menu bar is drawn at the top of the canvas, so every menu bar comes first, then the
-    // top strips under them in the order they are listed, and the left strips start below all
-    // of those whatever order they are listed in
+    // a menu bar is drawn at the top of the canvas, so every menu bar comes first. The top
+    // strips go under them in the order they are listed. The left strips start below all of
+    // those, whatever order they are listed in
     float menus = 0.0f;
     float tops = 0.0f;
     for (const boost::shared_ptr<Component>& component : container.ordered()) {

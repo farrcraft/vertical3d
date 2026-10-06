@@ -35,7 +35,7 @@ class ParameterList final {
 
     /**
      * Every parameter the request carried, in name order. A consumer that binds parameters
-     * onto its own variables iterates these, rather than looking up names it knows in advance.
+     * onto its own variables iterates these, rather than looking up names fixed in advance.
      **/
     std::vector<std::string> names() const;
 

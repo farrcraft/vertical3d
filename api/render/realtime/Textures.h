@@ -69,7 +69,9 @@ class Textures final {
      * Register a render target so that a draw can sample what a pass drew into it.
      *
      * What is registered shares the target's images. Registering the same image again gives
-     * back the handle it already has, so calling this every frame costs nothing. A target that
+     * back the handle it already has, so calling this every frame costs nothing. The handle is
+     * shared by everything that registered that image, and releasing it releases it for all
+     * of them. A target that
      * is resized allocates new images, and the handle this returned goes on naming the old
      * ones, which it keeps alive: after a recreate(), release the old handle and register the
      * target again.

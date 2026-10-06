@@ -244,8 +244,8 @@ boost::shared_ptr<Image> Bmp::read(const unsigned char* encoded, std::size_t len
         logger_->get()->error("BMPReader::read - bad header magic number!");
         return empty_ptr;
     }
-    // checked before anything is sized from it: the row arithmetic below assumes a whole
-    // number of bytes a pixel and a conversion that knows the layout
+    // checked before anything is sized from it. The row arithmetic below needs a whole number
+    // of bytes a pixel, and a conversion written for the layout
     if (!supported(iheader, logger_)) {
         return empty_ptr;
     }

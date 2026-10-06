@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/log/Logger.h>
 #include <api/render/offline/sl/Compiler.h>
 #include <api/render/offline/sl/Emitter.h>
 #include <api/render/offline/sl/Parser.h>
@@ -10,6 +11,9 @@
 #include <api/render/offline/sl/runtime/Renderer.h>
 #include <api/render/offline/sl/syntax/Shader.h>
 
+#include <cstdio>
+#include <fstream>
+#include <iterator>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -222,6 +226,43 @@ BOOST_AUTO_TEST_CASE(sllighting_solar_angle_is_reported_test) {
     BOOST_CHECK_CLOSE(machine.value(program.symbol("L")).triple(0).z, 1.0f, 0.01f);
     BOOST_REQUIRE_EQUAL(machine.reports().size(), 1u);
     BOOST_CHECK_EQUAL(machine.reports()[0], "solar with an angle is lit along its axis only, as if the angle were 0");
+}
+
+/**
+ * A machine given a logger writes each report to it once, as a warning, so a report reaches
+ * someone reading the log rather than only a caller that asks for reports().
+ **/
+BOOST_AUTO_TEST_CASE(sllighting_a_report_reaches_the_log_test) {
+    const std::string path = "sl_reports_test.log";
+    std::remove(path.c_str());
+    BOOST_REQUIRE(v3d::log::Logger::open(path));
+    {
+        std::string error;
+        Program program;
+        BOOST_REQUIRE_MESSAGE(build(
+            "light wide() {\n"
+            "    solar(vector (0, 0, -1), 0.5) {\n"
+            "        Cl = color (1, 1, 1);\n"
+            "    }\n"
+            "}\n", &program, &error), error);
+        Machine machine;
+        machine.logger(boost::make_shared<v3d::log::Logger>());
+        machine.prepare(program, 2);
+        BOOST_REQUIRE(machine.run());
+        BOOST_REQUIRE(machine.run());
+        v3d::log::Logger().get()->flush();
+    }
+    // back to the default, which lets go of the test's file before it is read and removed
+    v3d::log::Logger::open("v3d.log");
+
+    std::ifstream file(path);
+    const std::string contents((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    file.close();
+    const std::string line = "solar with an angle is lit along its axis only";
+    const std::size_t first = contents.find(line);
+    BOOST_CHECK(first != std::string::npos);
+    BOOST_CHECK(contents.find(line, first + 1) == std::string::npos);
+    std::remove(path.c_str());
 }
 
 /**
@@ -455,4 +496,37 @@ BOOST_AUTO_TEST_CASE(sllighting_return_and_break_leave_illuminance_test) {
     broken.run();
     BOOST_CHECK_CLOSE(broken.colour(0).r, 1.0f, 0.1f);
     BOOST_CHECK_CLOSE(broken.colour(0).g, 1.0f, 0.1f);
+}
+
+/**
+ * Lanes of one batch leave an illuminance loop at different lights. A continue skips one light
+ * for the lanes that take it, and a break ends the loop for those lanes alone; the lanes beside
+ * them go on through every light.
+ **/
+BOOST_AUTO_TEST_CASE(sllighting_lanes_leave_illuminance_at_different_lights_test) {
+    Scene scene;
+    scene.add(OVERHEAD, 2);
+    scene.add(
+        "light sideways() {\n"
+        "    solar(vector (-1, 0, 0), 0) {\n"
+        "        Cl = color (0, 0.25, 0);\n"
+        "    }\n"
+        "}\n", 2);
+
+    Lit skipped("color sum = 0;\nilluminance(P) { if (xcomp(P) > 0) { continue; } sum += Cl; }\nCi = sum;", &scene, 2);
+    Lit broken("color sum = 0;\nilluminance(P) { sum += Cl; if (xcomp(P) > 0) { break; } }\nCi = sum;", &scene, 2);
+    for (Lit* lit : { &skipped, &broken }) {
+        lit->position(0, glm::vec3(1.0f, 0.0f, 0.0f));
+        lit->position(1, glm::vec3(-1.0f, 0.0f, 0.0f));
+        lit->normal(0, glm::vec3(0.0f, 0.0f, 1.0f));
+        lit->normal(1, glm::vec3(0.0f, 0.0f, 1.0f));
+        lit->run();
+    }
+
+    // the first lane continues past every light, and the second sums both
+    BOOST_CHECK_SMALL(skipped.colour(0).g, 0.0001f);
+    BOOST_CHECK_CLOSE(skipped.colour(1).g, 1.25f, 0.1f);
+    // the first lane breaks after the first light, and the second sums both
+    BOOST_CHECK_CLOSE(broken.colour(0).g, 1.0f, 0.1f);
+    BOOST_CHECK_CLOSE(broken.colour(1).g, 1.25f, 0.1f);
 }
