@@ -55,7 +55,7 @@ Headless::Headless(VkFormat colour, uint32_t width, uint32_t height,
 Headless::~Headless() {
     // the context waits as it goes, but a case that threw may have left a submission running
     if (context) {
-        context->ring()->waitIdle();
+        context->ring()->waitIdleNoThrow();
     }
 }
 

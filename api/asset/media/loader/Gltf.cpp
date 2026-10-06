@@ -635,6 +635,13 @@ boost::shared_ptr<Asset> Gltf::load(std::string_view name) {
         cgltf_free(data);
         return boost::shared_ptr<Asset>();
     }
+    // cgltf reads an accessor without checking its bounds, so every accessor is checked
+    // against its buffer view, and every view against its buffer, before any is read
+    if (cgltf_validate(data) != cgltf_result_success) {
+        logger_->get()->error("Gltf asset failed validation: {}", name);
+        cgltf_free(data);
+        return boost::shared_ptr<Asset>();
+    }
 
     const std::vector<const cgltf_node*> starts = roots(*data);
     boost::shared_ptr<v3d::type::Model> model = boost::make_shared<v3d::type::Model>();

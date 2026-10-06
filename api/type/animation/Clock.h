@@ -50,6 +50,10 @@ class Clock final {
      * A marker at the duration is the end: a clamped clip reports it once, the step it stops,
      * and a looping one reports every wrap.
      *
+     * A step that starts or ends at a time that is not finite passes nothing, and neither does
+     * a marker that is not a number. A count too large for the result is held at its largest
+     * value.
+     *
      * @param from where the step started, unwrapped
      * @param to where advance() put it
      **/

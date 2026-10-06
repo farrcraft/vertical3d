@@ -98,18 +98,35 @@ void faceUV(const BRep & mesh, Index face, glm::vec3* u, glm::vec3* v) {
         return;
     }
     // each edge's direction is from the vertex the next edge ends at back to its own
-    glm::vec3 sides[2];
-    for (std::size_t side = 0; side < 2; side++) {
-        const Vertex* end = mesh.vertex(mesh.edge(loop[side])->vertex());
-        const Vertex* after = mesh.vertex(mesh.edge(loop[(side + 1) % loop.size()])->vertex());
+    std::vector<glm::vec3> sides;
+    sides.reserve(loop.size());
+    for (std::size_t entry = 0; entry < loop.size(); entry++) {
+        const Vertex* end = mesh.vertex(mesh.edge(loop[entry])->vertex());
+        const Vertex* after = mesh.vertex(mesh.edge(loop[(entry + 1) % loop.size()])->vertex());
         if (end == nullptr || after == nullptr) {
             return;
         }
-        sides[side] = end->point() - after->point();
+        sides.push_back(end->point() - after->point());
     }
-    const glm::vec3 normal = glm::normalize(glm::cross(sides[0], sides[1]));
-    *v = glm::normalize(glm::cross(sides[0], normal));
-    *u = glm::normalize(glm::cross(*v, normal));
+    // the first side that has a length, and the first side after it that is not parallel to it
+    constexpr float PARALLEL = 1e-10f;
+    for (std::size_t first = 0; first < sides.size(); first++) {
+        const float firstLength = glm::dot(sides[first], sides[first]);
+        if (firstLength <= 0.0f) {
+            continue;
+        }
+        for (std::size_t second = first + 1; second < sides.size(); second++) {
+            const glm::vec3 normal = glm::cross(sides[first], sides[second]);
+            const float secondLength = glm::dot(sides[second], sides[second]);
+            if (glm::dot(normal, normal) > PARALLEL * firstLength * secondLength) {
+                const glm::vec3 unitNormal = glm::normalize(normal);
+                *v = glm::normalize(glm::cross(sides[first], unitNormal));
+                *u = glm::normalize(glm::cross(*v, unitNormal));
+                return;
+            }
+        }
+        return;
+    }
 }
 
 };  // namespace v3d::brep

@@ -81,8 +81,8 @@ bool Slider::drag(const glm::vec2& point) {
         return false;
     }
     // the thumb is a square as tall as the track. Its centre runs from half a thumb in from
-    // one end to half a thumb in from the other, and a point is read against that range. So a
-    // press on the thumb's centre lands on the value that drew it there
+    // one end to half a thumb in from the other, and a point is read against that range. A
+    // press on the thumb's centre therefore lands on the value that drew it there
     const float side = size().y;
     const float travel = size().x - side;
     const float along = travel > 0.0f

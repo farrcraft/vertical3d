@@ -10,6 +10,9 @@ v3d_add_api_library(asset_media
 # names the payload it carries - an image::Image or a type::Model.
 target_link_libraries(v3dlib_asset_media PUBLIC v3dlib_log v3dlib_asset v3dlib_image v3dlib_type)
 
+# PRIVATE: the gltf loader builds its transforms with glm, and no header here includes it.
+target_link_libraries(v3dlib_asset_media PRIVATE glm::glm)
+
 # PRIVATE: only the gltf loader and the translation unit owning cgltf's implementation
 # include the header, and no header here names a cgltf type.
 target_include_directories(v3dlib_asset_media PRIVATE "${V3D_CGLTF_INCLUDE_DIR}")

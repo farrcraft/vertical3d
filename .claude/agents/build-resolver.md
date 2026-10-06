@@ -104,8 +104,10 @@ A device-selection failure that says so is the code working, not a bug.
 The instance enables `VK_LAYER_KHRONOS_validation` whenever it is installed. A message from it
 is a defect to fix, not noise.
 
-Every `VkResult` is checked and reported through `vulkan::resultString`. A new call whose
-result is dropped is a defect even if it builds.
+Every `VkResult` is checked with `vulkan::device::check`, which throws with the result in
+words from `vulkan::device::resultString`. The one exception is a wait for the device to go
+idle in a destructor or a teardown, which must not throw: `Ring::waitIdleNoThrow()` exists for
+that. Any other call whose result is dropped is a defect even if it builds.
 
 ## Lint
 
@@ -144,10 +146,14 @@ app with the validation layer on, and reading its log.
 5. **Rebuild the target that failed**, not the whole tree.
 6. **Run cpplint on the files you touched** if you edited C++.
 
-Every directory in the root is in the build now — the legacy trees `v3dlibs/`, `luxa/`,
-`rigel/` and `vault/` were all deleted on 2026-09-04, and `vertical3d/` is the editor and is
-built. `vendor/` is the one exception: those are submodules built separately, and a fix that
-edits one is almost always a misread of the problem.
+Every code directory in the root is in the build, `vertical3d/` (the editor) included, with
+two exceptions:
+
+- `examples/` consumes the repository as another project would. The root does not add it;
+  CI builds `examples/starter` separately.
+- `vendor/` is third-party. `vendor/libnoise` is the tree's only git submodule, built
+  separately before voxel links. `vendor/vcpkg` is a gitignored clone of vcpkg. A fix that
+  edits either is almost always a misread of the problem.
 
 ## Reporting
 

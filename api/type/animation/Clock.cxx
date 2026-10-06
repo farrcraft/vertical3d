@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 
 namespace v3d::type::animation {
 
@@ -46,6 +47,9 @@ float Clock::sample(float time) const noexcept {
 }
 
 uint32_t Clock::crossed(float from, float to, float marker) const noexcept {
+    if (!std::isfinite(from) || !std::isfinite(to) || std::isnan(marker)) {
+        return 0;
+    }
     if (duration_ <= 0.0f || to <= from || marker < 0.0f || marker > duration_) {
         return 0;
     }
@@ -56,7 +60,12 @@ uint32_t Clock::crossed(float from, float to, float marker) const noexcept {
     const double length = duration_;
     const double first = std::floor((static_cast<double>(from) - marker) / length) + 1.0;
     const double last = std::floor((static_cast<double>(to) - marker) / length);
-    return last >= first ? static_cast<uint32_t>(last - first + 1.0) : 0;
+    if (last < first) {
+        return 0;
+    }
+    const double count = last - first + 1.0;
+    constexpr double most = std::numeric_limits<uint32_t>::max();
+    return count >= most ? std::numeric_limits<uint32_t>::max() : static_cast<uint32_t>(count);
 }
 
 bool Clock::finished(float time) const noexcept {

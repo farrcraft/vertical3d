@@ -772,3 +772,25 @@ A fifth review found one data-loss bug and smaller gaps. All are fixed:
   cpp-reviewer prompts, `.clang-tidy`, the starter's and imagetool's CMake comments, Build.md's
   pong data paragraph, Keyboard.md on a disabled focus, the editor's drag routing, and
   Testing.md's suite linking rule now state the code as it is.
+
+### After a sixth review
+
+The sixth review read whole files rather than only the latest fixes, and found older defects in
+code the branch rewrote. All are fixed:
+
+- moya bounds a primitive by all eight corners of its box, in eye space, at both shutter ends,
+  and in raster space, so a rotated polygon is no longer culled while on screen; a polygon whose
+  first two vertices coincide splits rather than vanishing;
+- a `PixelSamples` rate is capped at 256 a side, so a pixel's grid of samples cannot wrap its
+  count and overrun its buffer;
+- a config or sound entry whose value is not a string returns false rather than throwing; a
+  sprite region near the integer limit is refused without overflow; `readFile` detects a short
+  read; a glTF file that fails validation gives no asset rather than a read past its buffer;
+- `Clock::crossed` counts nothing for a time that is not finite; `faceUV` takes the first two
+  edges that are not parallel;
+- pong captures only keyboard keys for a paddle, so a mouse click cannot bind a dead key;
+- a shader whose defaults fail has a test for its single report; `Flags` has a suite;
+- libraries link the packages their own sources include, and the agent and skill prompts, the
+  tetris suite's links and the build comments state the tree as it is;
+- comments that opened with "So" or "and", and the docs on a disabled and hidden focus, data
+  copy order and failed shader defaults, state the rules as they are.

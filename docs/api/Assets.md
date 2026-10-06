@@ -88,8 +88,9 @@ Background: [ADR-0079](../adr/0079-assets-loaders-are-registered.md)
 first, and return false with a log line when the document is not what you expect.
 
 `asset::readFile(path)` in [api/asset/File.h](../../api/asset/File.h) reads a whole file as
-bytes, without a loader. It returns `std::nullopt` when the file will not open or a read fails.
-An empty file gives an empty string.
+bytes, without a loader. It sizes the file, then reads it. It returns `std::nullopt` when the
+file will not open, cannot be sized, or reads fewer bytes than its size. An empty file gives an
+empty string.
 
 ## Writing documents
 
@@ -312,6 +313,9 @@ described in [Types.md](Types.md#models).
 - Triangle strips and fans become triangle lists, wound as glTF winds them. A primitive of
   points or lines is left out with a warning, because a model holds triangles.
 - A file that does not read or parse gives no asset and a log line.
+- **A file that fails validation gives no asset and a log line.** The loader validates before it
+  reads an accessor, so an accessor that runs past its buffer view, or an index past the last
+  vertex, rejects the whole file.
 
 ### Materials and textures
 

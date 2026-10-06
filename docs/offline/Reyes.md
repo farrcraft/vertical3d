@@ -16,14 +16,17 @@ runs at `WorldEnd`.
    the object to eye transformation, the colour, the geometric normal and the shading state.
 2. Gives each vertex without a `"Cs"` the current colour, and each vertex without an `"N"` the
    geometric normal.
-3. Bounds the polygon in object space and moves the bound to eye space. A moving primitive's
-   bound covers both ends of the shutter.
+3. Bounds the polygon in object space and moves the bound to eye space. All eight corners of
+   the box are moved, since under a rotation any of them can hold the extreme on an axis. A
+   moving primitive's bound covers both ends of the shutter, bounded the same way.
 4. Culls the polygon if its bound is entirely beyond the far clipping plane or entirely before
    the near one.
 5. Marks it undiceable if it crosses the near plane and reaches behind the eye (z below zero).
 6. Culls it against the view frustum, testing the eye space bound against the projection.
-7. Projects the bound into raster space. If it is wider or taller than
-   `sqrt(gridsize) * ShadingRate` pixels, marks it undiceable.
+7. Projects all eight corners of the eye space bound into raster space. A corner at or behind
+   the eye has no raster position: it is left out of the raster bound and the polygon is marked
+   undiceable. If the raster bound is wider or taller than `sqrt(gridsize) * ShadingRate`
+   pixels, marks it undiceable.
 8. If it is diceable, moves its vertices and normals into eye space.
 9. Files it in the bucket that holds the upper left corner of its raster bound. A corner off
    the image is clamped to the nearest bucket.

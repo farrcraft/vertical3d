@@ -30,7 +30,7 @@ set(V3D_API_asset_PACKAGES)
 # rather than read. A selection that only reads documents does not pull in their packages.
 set(V3D_API_asset_media_PATH "asset/media")
 set(V3D_API_asset_media_REQUIRES log asset image type)
-set(V3D_API_asset_media_PACKAGES cgltf)
+set(V3D_API_asset_media_PACKAGES cgltf glm)
 
 set(V3D_API_audio_PATH "audio")
 set(V3D_API_audio_REQUIRES log event asset)
@@ -96,7 +96,7 @@ set(V3D_API_type_PACKAGES glm)
 
 set(V3D_API_ui_PATH "ui")
 set(V3D_API_ui_REQUIRES log render asset event font image input type)
-set(V3D_API_ui_PACKAGES glm EnTT)
+set(V3D_API_ui_PACKAGES SDL3 glm EnTT)
 
 # The imported target each package provides, which is how the verification below recognises
 # a package in a link line. A package that provides only an include directory, such as cgltf,

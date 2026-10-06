@@ -100,7 +100,8 @@ bool Buffer::grow(VkDeviceSize bytes) {
     }
 
     // the allocation the device may still be reading out of is about to go away
-    vkDeviceWaitIdle(device_->handle());
+    VkResult result = vkDeviceWaitIdle(device_->handle());
+    device::check(result, "Unable to wait for the vulkan device before growing a buffer");
     destroy();
     create(target);
     return true;

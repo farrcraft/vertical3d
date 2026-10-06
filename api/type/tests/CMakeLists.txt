@@ -6,6 +6,7 @@ v3d_add_test(type
 	"Bound2DTest.cxx"
 	"CameraTest.cxx"
 	"EffectTest.cxx"
+	"FlagsTest.cxx"
 	"FrustumTest.cxx"
 	"ProfileTest.cxx"
 	"IsometricTest.cxx"

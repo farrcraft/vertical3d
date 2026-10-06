@@ -263,6 +263,15 @@ BOOST_AUTO_TEST_CASE(gltf_a_file_that_is_not_gltf_is_no_asset_test) {
     BOOST_CHECK_EQUAL(static_cast<bool>(load("plain.txt")), false);
 }
 
+/**
+ * cgltf reads an accessor without checking its bounds. accessor_overrun.gltf names 4096
+ * positions in a buffer view that holds three, so the file is refused rather than read past
+ * the end of its buffer.
+ **/
+BOOST_AUTO_TEST_CASE(gltf_an_accessor_past_its_buffer_view_is_no_asset_test) {
+    BOOST_CHECK_EQUAL(static_cast<bool>(load("accessor_overrun.gltf")), false);
+}
+
 BOOST_AUTO_TEST_CASE(gltf_resolves_by_extension_test) {
     v3d::asset::Manager manager("data", logger());
     v3d::asset::media::registerLoaders(manager, logger());

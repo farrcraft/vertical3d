@@ -44,8 +44,12 @@ environment fault is not, and `docs/contributing/Build.md` lists the ones that r
 
 ## BLOCKER
 
-- **A `VkResult` ignored.** Every Vulkan call returning one is checked and reported through
-  `vulkan::resultString`. Fire-and-forget is a blocker, not a nit.
+- **A `VkResult` ignored.** Every Vulkan call returning one is checked with
+  `vulkan::device::check`, which throws with the result in words from
+  `vulkan::device::resultString`. A call whose result is tolerated, such as `VK_INCOMPLETE` or
+  `VK_SUBOPTIMAL_KHR`, names it in the check or tests for it. The one exception is a wait for
+  the device to go idle in a destructor or a teardown, which must not throw:
+  `Ring::waitIdleNoThrow()` exists for that. Any other dropped result is a blocker, not a nit.
 - **A Vulkan or OS handle not owned by a class with a destructor.** `Instance`, `Surface`,
   `Device` and `Swapchain` are RAII wrappers, non-copyable, each destroying exactly what it
   created. A raw handle stored and freed by hand somewhere else is a blocker.

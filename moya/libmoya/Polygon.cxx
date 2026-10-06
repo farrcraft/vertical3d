@@ -313,7 +313,12 @@ void Polygon::split(RenderContext & rc) {
     if (n == glm::vec3(0.0f)) {
         return;
     }
-    const glm::vec3 v0 = vertices_[0].point() - vertices_[1].point();
+    // the edge is taken from the first vertex that differs from the head. A repeated head
+    // gives a zero edge, which names no cutting plane. A polygon with a plane has such a vertex
+    glm::vec3 v0(0.0f);
+    for (size_t i = 1; i < vertices_.size() && v0 == glm::vec3(0.0f); i++) {
+        v0 = vertices_[0].point() - vertices_[i].point();
+    }
 
     // calculate plane's normal
     glm::vec3 pn;

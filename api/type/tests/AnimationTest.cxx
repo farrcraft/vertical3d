@@ -10,6 +10,8 @@
 #include <api/type/animation/Pose.h>
 
 #include <cmath>
+#include <cstdint>
+#include <limits>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -262,6 +264,24 @@ BOOST_AUTO_TEST_CASE(animation_a_marker_is_crossed_once_test) {
     BOOST_CHECK_EQUAL(clock.crossed(0.25f, 0.4f, 0.5f), 0u);
     // and a looping one passes it again the loop after
     BOOST_CHECK_EQUAL(clock.crossed(1.25f, 1.5f, 0.5f), 1u);
+}
+
+/**
+ * A step to or from a time that is not finite passes no marker, and a marker that is not a
+ * number is never passed. A count too large to hold is held at its largest value.
+ **/
+BOOST_AUTO_TEST_CASE(animation_a_clock_step_that_is_not_finite_test) {
+    const Clock looping(1.0f, true);
+    BOOST_CHECK_EQUAL(looping.crossed(0.5f, INFINITY, 1.0f), 0u);
+    BOOST_CHECK_EQUAL(looping.crossed(-INFINITY, 0.5f, 1.0f), 0u);
+    BOOST_CHECK_EQUAL(looping.crossed(0.5f, std::nanf(""), 1.0f), 0u);
+    BOOST_CHECK_EQUAL(looping.crossed(std::nanf(""), 0.5f, 1.0f), 0u);
+    BOOST_CHECK_EQUAL(looping.crossed(0.25f, 0.75f, std::nanf("")), 0u);
+    BOOST_CHECK_EQUAL(looping.crossed(0.0f, 1e30f, 1.0f), std::numeric_limits<uint32_t>::max());
+
+    const Clock clamped(1.0f, false);
+    BOOST_CHECK_EQUAL(clamped.crossed(0.5f, INFINITY, 1.0f), 0u);
+    BOOST_CHECK_EQUAL(clamped.crossed(0.5f, std::nanf(""), 1.0f), 0u);
 }
 
 /**

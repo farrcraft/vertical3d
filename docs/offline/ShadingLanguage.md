@@ -138,8 +138,8 @@ files on disk.
 - **A machine's reports reach the log.** A report says what a run could not do, such as a space
   no renderer named or an angle `solar` cannot honour. Each distinct report is logged once per
   machine as a warning, through the logger of the shader instance that wrote the machine's
-  parameters. A shader whose parameter defaults fail to run is logged as an error, and the
-  renderer treats it as a run that failed.
+  parameters. A shader whose parameter defaults fail to run is reported in the same way, once
+  per machine, and the renderer treats it as a run that failed.
 - **`==` and `!=` compare every component** of a colour, point, vector, normal or matrix. A
   float compared with one is promoted as an assignment promotes it, so a float against a matrix
   is the diagonal matrix.

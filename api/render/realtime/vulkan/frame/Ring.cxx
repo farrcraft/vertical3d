@@ -51,7 +51,7 @@ Ring::Ring(const boost::shared_ptr<device::Device>& device, uint32_t framesInFli
 Ring::~Ring() {
     // nothing may be waiting on a fence when it is destroyed, and nothing retired may still
     // be read by a frame
-    waitIdle();
+    waitIdleNoThrow();
     retired_.flush();
 
     for (VkFence fence : inFlight_) {
@@ -89,6 +89,13 @@ void Ring::waitFrame() const {
 /**
  **/
 void Ring::waitIdle() const {
+    VkResult result = vkDeviceWaitIdle(device_->handle());
+    device::check(result, "Unable to wait for the vulkan device to go idle");
+}
+
+/**
+ **/
+void Ring::waitIdleNoThrow() const noexcept {
     vkDeviceWaitIdle(device_->handle());
 }
 

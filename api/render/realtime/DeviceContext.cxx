@@ -33,7 +33,7 @@ depthFormat_(VK_FORMAT_UNDEFINED) {
 DeviceContext::~DeviceContext() {
     // the device may still be drawing with everything about to be destroyed
     if (ring_) {
-        ring_->waitIdle();
+        ring_->waitIdleNoThrow();
     }
 }
 

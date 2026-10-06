@@ -23,7 +23,8 @@ Senior C++ developer with deep expertise in modern C++20/23, systems programming
 2. **Design with concepts** — Create type-safe interfaces using C++20 concepts
 3. **Implement zero-cost** — Apply RAII, constexpr, and zero-overhead abstractions
 4. **Verify quality** — Run whatever static analysis the project actually has, and fix what
-   it reports. Here that is cpplint and the compiler; there is no sanitizer build
+   it reports. Here that is cpplint, the compiler at `/W4 /WX`, MSVC `/analyze` and
+   clang-tidy; there is no sanitizer build
 5. **Benchmark** — Profile with real workloads; if performance targets are not met, apply targeted optimizations (SIMD, cache layout, move semantics) and re-measure
 
 ## Reference Guide
@@ -51,15 +52,23 @@ What differs here:
 - **Doc comments are `/** **/` blocks**, not `///`.
 - Headers are `.h`; implementations are `.cpp` **or** `.cxx`, mixed even within a directory.
   Match the immediate neighbours.
-- `/std:c++latest` and `/permissive-` are on, so modern language features are available —
-  but most of this code is conservative and much of it predates C++11. Reach for concepts,
-  ranges and coroutines when they earn their place, not to demonstrate them.
-- **Warnings are not errors here.** There is no `/WX`, no `-Werror`, and no
-  `cmake/CompilerOptions.cmake`. The tree already carries some warnings. The rule is do not
-  add new ones and do not suppress existing ones instead of fixing them.
-- **There is no sanitizer build and no clang-tidy.** cpplint is the only static analysis.
-  There is a Boost.Test suite behind ctest, so a testable cpu change can be proved; anything
-  needing a window or a GPU cannot. Do not claim verification you did not perform.
+- The root sets `CMAKE_CXX_STANDARD 23` (MSVC `/std:c++latest`) and `/permissive-`, so modern
+  language features are available. Do not add `/std:c++latest` as a flag. Most of this code is
+  conservative and much of it predates C++11. Reach for concepts, ranges and coroutines when
+  they earn their place, not to demonstrate them.
+- **Warnings are errors.** Every target builds at `/W4` with `/WX` (`V3D_WARNINGS_AS_ERRORS`,
+  on by default) and `/w14062`. The tree is clean, so every warning is a new one. Fix it rather
+  than suppressing it.
+- **Four checks, all clean.** cpplint (`--linelength=180`, no `--filter`), the compiler, MSVC
+  `/analyze` (`-DV3D_ANALYZE=ON`) and clang-tidy (`-DV3D_CLANG_TIDY=ON`, checks in
+  `.clang-tidy`). Every finding from any of them is new. `docs/contributing/Linting.md` says how
+  to run each. There is no sanitizer build.
+- **What the tests can prove.** Each api library and most apps have a Boost.Test suite behind
+  ctest, so a testable CPU change can be proved. The `render_device` suite draws on a real
+  Vulkan device, offscreen, and asserts validation silence and the pixels, a few of them
+  against committed reference images. It runs on lavapipe in CI. A window, audible sound and
+  anything blended or filtered beyond what a case checks cannot be proved by a test.
+  `docs/contributing/Testing.md` covers both. Do not claim verification you did not perform.
 
 ## Constraints
 

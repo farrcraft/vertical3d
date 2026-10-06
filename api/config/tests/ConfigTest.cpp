@@ -84,6 +84,15 @@ BOOST_AUTO_TEST_CASE(config_entry_missing_file_test) {
 }
 
 /**
+ * A type or a file that is not a string is a rejection, not the exception boost::json::value_to
+ * throws for it.
+ **/
+BOOST_AUTO_TEST_CASE(config_entry_value_not_a_string_test) {
+    BOOST_CHECK_NO_THROW(BOOST_TEST(!loads("type-not-string")));
+    BOOST_CHECK_NO_THROW(BOOST_TEST(!loads("file-not-string")));
+}
+
+/**
  * A type the api has no name for is an app's own document, filed like the rest for the app to
  * ask for by name - not a reason to refuse the whole config.
  **/

@@ -16,6 +16,7 @@
 #include <cassert>
 #include <cmath>
 #include <iostream>
+#include <limits>
 #include <string>
 #include <utility>
 #include <vector>
@@ -507,16 +508,29 @@ void RenderContext::scale(float sx, float sy, float sz) {
 namespace {
 
 /**
- * Put a bound's two corners back the right way round.
- *
- * A transform reverses an axis whenever it scales it negatively or turns the box past a
- * right angle, and the corner named min then holds the larger value on that axis.
+ * One of the eight corners of a box. Bit 0 of the index picks x, bit 1 picks y and bit 2
+ * picks z, each from max when set and from min when clear.
  **/
-void orderBound(glm::vec3* min, glm::vec3* max) {
-    for (glm::length_t axis = 0; axis < 3; axis++) {
-        if ((*min)[axis] > (*max)[axis]) {
-            std::swap((*min)[axis], (*max)[axis]);
-        }
+glm::vec3 boxCorner(const glm::vec3 & min, const glm::vec3 & max, int index) {
+    return glm::vec3((index & 1) ? max.x : min.x,
+                     (index & 2) ? max.y : min.y,
+                     (index & 4) ? max.z : min.z);
+}
+
+/**
+ * The axis aligned bound of a box carried through an affine matrix.
+ *
+ * All eight corners go through the matrix. Under a rotation any corner can hold the extreme
+ * on an axis, so the two diagonal corners alone can leave part of the box outside.
+ **/
+void transformBound(const glm::mat4x4 & m, const glm::vec3 & objectMin, const glm::vec3 & objectMax,
+    glm::vec3* min, glm::vec3* max) {
+    *min = glm::vec3(std::numeric_limits<float>::max());
+    *max = glm::vec3(std::numeric_limits<float>::lowest());
+    for (int k = 0; k < 8; k++) {
+        const glm::vec3 corner(m * glm::vec4(boxCorner(objectMin, objectMax, k), 1.0f));
+        *min = glm::min(*min, corner);
+        *max = glm::max(*max, corner);
     }
 }
 
@@ -530,9 +544,9 @@ void sweep(const v3d::render::offline::MovingTransform & motion, const glm::vec3
         return;
     }
     for (const glm::mat4x4* end : { &motion.open(), &motion.close() }) {
-        glm::vec3 endMin(*end * glm::vec4(objectMin, 1.0f));
-        glm::vec3 endMax(*end * glm::vec4(objectMax, 1.0f));
-        orderBound(&endMin, &endMax);
+        glm::vec3 endMin;
+        glm::vec3 endMax;
+        transformBound(*end, objectMin, objectMax, &endMin, &endMax);
         *min = glm::min(*min, endMin);
         *max = glm::max(*max, endMax);
     }
@@ -792,11 +806,7 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     const glm::mat4x4 toEye = poly->placement();
     const glm::vec3 objectMin = bound_min;
     const glm::vec3 objectMax = bound_max;
-    bound_max = glm::vec3(toEye * glm::vec4(objectMax, 1.0f));
-    bound_min = glm::vec3(toEye * glm::vec4(objectMin, 1.0f));
-
-    // camera transform might've flipped some components of min & max
-    orderBound(&bound_min, &bound_max);
+    transformBound(toEye, objectMin, objectMax, &bound_min, &bound_max);
 
     // a moving primitive is culled by where it is at both ends of the shutter as well as where
     // it is stored; the size test below reads where it is stored, because a split shrinks a
@@ -865,15 +875,33 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     // bound = poly->bound();
     // the raster transform reads the canonical volume the projection writes, so it goes
     // on the left - a matrix applies to what is on its right
-    glm::mat4x4 screen = coordinateSystems_["raster"] * coordinateSystems_["screen"];
-    // two corners through a perspective projection bound the box only approximately - the
-    // eight are not the two once w varies - which is enough for the size test and the
-    // bucket this picks, and is what the split below re-measures anyway
-    bound_min = project(screen, bound_min);
-    bound_max = project(screen, bound_max);
-
-    // screen transform might've flipped some components of min & max
-    orderBound(&bound_min, &bound_max);
+    const glm::mat4x4 screen = coordinateSystems_["raster"] * coordinateSystems_["screen"];
+    // all eight corners of the eye space bound are projected. Under a perspective projection
+    // the raster extremes need not lie at the two diagonal corners. A corner at or behind the
+    // eye has no raster position, so it is left out and the primitive is split instead. The
+    // test on w is the one project() makes before it divides
+    glm::vec3 raster_min(std::numeric_limits<float>::max());
+    glm::vec3 raster_max(std::numeric_limits<float>::lowest());
+    bool projected = false;
+    for (int k = 0; k < 8; k++) {
+        const glm::vec3 corner = boxCorner(bound_min, bound_max, k);
+        if ((screen * glm::vec4(corner, 1.0f)).w <= 1.0e-6f) {
+            poly->diceable(false);
+            continue;
+        }
+        const glm::vec3 point = project(screen, corner);
+        raster_min = glm::min(raster_min, point);
+        raster_max = glm::max(raster_max, point);
+        projected = true;
+    }
+    if (!projected) {
+        // no corner is in front of the eye. The primitive is split, and its pieces are
+        // bucketed again, so the first bucket holds it until then
+        raster_min = glm::vec3(0.0f);
+        raster_max = glm::vec3(0.0f);
+    }
+    bound_min = raster_min;
+    bound_max = raster_max;
 
     bound.extents(bound_min, bound_max);
 

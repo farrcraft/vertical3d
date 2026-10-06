@@ -46,7 +46,8 @@ Swapchain::~Swapchain() {
  **/
 void Swapchain::recreate(uint32_t width, uint32_t height) {
     // the images cannot go away while the queues are still reading them
-    vkDeviceWaitIdle(device_->handle());
+    VkResult result = vkDeviceWaitIdle(device_->handle());
+    device::check(result, "Unable to wait for the vulkan device before recreating the swapchain");
     destroy();
     create(width, height);
     createViews();
@@ -109,7 +110,9 @@ Swapchain::Support Swapchain::querySupport() const {
     device::check(result, "Unable to count the vulkan surface formats", VK_INCOMPLETE);
     support.formats.resize(formatCount);
     if (formatCount > 0) {
-        vkGetPhysicalDeviceSurfaceFormatsKHR(physical, surface, &formatCount, support.formats.data());
+        result = vkGetPhysicalDeviceSurfaceFormatsKHR(physical, surface, &formatCount, support.formats.data());
+        device::check(result, "Unable to read the vulkan surface formats", VK_INCOMPLETE);
+        support.formats.resize(formatCount);
     }
 
     uint32_t modeCount = 0;
@@ -117,7 +120,9 @@ Swapchain::Support Swapchain::querySupport() const {
     device::check(result, "Unable to count the vulkan present modes", VK_INCOMPLETE);
     support.presentModes.resize(modeCount);
     if (modeCount > 0) {
-        vkGetPhysicalDeviceSurfacePresentModesKHR(physical, surface, &modeCount, support.presentModes.data());
+        result = vkGetPhysicalDeviceSurfacePresentModesKHR(physical, surface, &modeCount, support.presentModes.data());
+        device::check(result, "Unable to read the vulkan present modes", VK_INCOMPLETE);
+        support.presentModes.resize(modeCount);
     }
 
     if (support.formats.empty() || support.presentModes.empty()) {

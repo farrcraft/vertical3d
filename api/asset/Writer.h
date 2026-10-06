@@ -13,7 +13,7 @@
 namespace v3d::asset {
 
 /**
- * Writing documents to disk, the counterpart of JsonFile for reading.
+ * Writing documents to disk, the counterpart of readFile and the Json loader for reading.
  *
  * A caller decides what its document holds; this decides only how it reaches the disk.
  **/

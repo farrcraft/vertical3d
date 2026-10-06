@@ -33,6 +33,21 @@ ShaderLibrary & library() {
 };  // namespace
 
 /**
+ * Defaults that fail fail the same way on every run, so the failure is reported once per
+ * machine rather than once per run. A machine never prepared fails them every time.
+ **/
+BOOST_AUTO_TEST_CASE(slglobals_failed_defaults_are_reported_once_test) {
+    const InstancePtr shader = library().instance("constant", ShaderType::SURFACE, ParameterList());
+    BOOST_REQUIRE(shader);
+    Machine machine;
+
+    BOOST_CHECK(!shader->write(&machine));
+    BOOST_CHECK(!shader->write(&machine));
+    BOOST_REQUIRE_EQUAL(machine.reports().size(), 1u);
+    BOOST_CHECK(machine.reports().front().contains("the defaults of shader constant did not run"));
+}
+
+/**
  * A surface reads the point a hider bound into each lane, and what it leaves in Ci and Oi
  * comes back per lane - `constant` is Os * Cs and Os.
  **/

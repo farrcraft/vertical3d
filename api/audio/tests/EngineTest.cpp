@@ -127,6 +127,19 @@ BOOST_AUTO_TEST_CASE(audio_engine_entry_missing_keys_test) {
 }
 
 /**
+ * A clip_id or a file that is not a string is a rejection, not the exception
+ * boost::json::value_to throws for it.
+ **/
+BOOST_AUTO_TEST_CASE(audio_engine_entry_value_not_a_string_test) {
+    Resolver resolve;
+    BOOST_CHECK_NO_THROW(BOOST_TEST(!engine()->load(
+        config(R"({"sounds": [{"clip_id": 3, "file": "hit.wav"}]})"), std::ref(resolve))));
+    BOOST_CHECK_NO_THROW(BOOST_TEST(!engine()->load(
+        config(R"({"sounds": [{"clip_id": "hit", "file": 3}]})"), std::ref(resolve))));
+    BOOST_TEST(resolve.asked_.empty());
+}
+
+/**
  * An empty list is a document that named no sounds rather than a malformed one.
  **/
 BOOST_AUTO_TEST_CASE(audio_engine_empty_sounds_test) {
@@ -223,19 +236,19 @@ BOOST_AUTO_TEST_CASE(audio_play_defaults_are_a_one_shot_test) {
 }
 
 /**
- * Shutdown reaches the tracks as well as the clips, whether or not a device was ever opened.
+ * Shutdown after a play that found no device, and a second shutdown after the first, both
+ * return without throwing. With no device, play() returns 0 and holds no track.
  **/
-BOOST_AUTO_TEST_CASE(audio_engine_shutdown_drops_its_tracks_test) {
+BOOST_AUTO_TEST_CASE(audio_engine_shutdown_twice_after_a_play_without_a_device_test) {
     v3dtest::writeWav("hit.wav");
 
     auto sound = engine();
     boost::shared_ptr<v3d::audio::AudioClip> clip = boost::make_shared<v3d::audio::AudioClip>();
     BOOST_REQUIRE(clip->load("hit.wav"));
     BOOST_TEST(sound->addClip(clip, "hit"));
-    sound->play("hit", v3d::audio::Play());
+    BOOST_CHECK_EQUAL(sound->play("hit", v3d::audio::Play()), 0u);
 
     BOOST_CHECK_NO_THROW(sound->shutdown());
-    // and a second shutdown finds nothing left to drop
     BOOST_CHECK_NO_THROW(sound->shutdown());
 }
 

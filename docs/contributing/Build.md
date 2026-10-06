@@ -149,11 +149,12 @@ The two data helpers add a build rule whose inputs are the files in the source d
   build time.
 - **A deleted file is not removed** from the build tree, because the copy merges rather than
   mirrors. Delete the `data/` directory beside the executable and build again to clear it.
-- An app that calls both helpers gets both directories copied into the same `data/`, shared
-  data first.
+- An app that calls both helpers gets both directories copied into the same `data/`, in the
+  order it calls them. The two should not share a file name: after an edit, only the edited
+  directory is copied again, so which copy is left depends on which was edited last.
 
-These apps call `v3d_add_app_data`: pong, tetris, voxel, odyssey, moya and vertical3d. pong
-also calls `v3d_add_shared_data`.
+These apps call `v3d_add_app_data`: pong, tetris, voxel, odyssey, moya and vertical3d. All of
+them but moya also call `v3d_add_shared_data`.
 
 ## Shaders
 

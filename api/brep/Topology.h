@@ -62,8 +62,13 @@ bool edgeSelected(const BRep & mesh, Index edge);
 glm::vec3 center(const BRep & mesh, Index face);
 
 /**
- * Two unit vectors in the plane of a face, square to each other, from its first two edges.
- * Left as they were for a face of fewer than two edges.
+ * Two unit vectors in the plane of a face, square to each other.
+ *
+ * They are taken from the face's first edge that has a length, and the first edge after it that
+ * is not parallel to it. For a face whose first two edges turn a corner, that is those two. u
+ * runs along the first edge, and v is square to it.
+ *
+ * Left as they were for a face of fewer than two edges, or one whose vertices all lie on a line.
  **/
 void faceUV(const BRep & mesh, Index face, glm::vec3* u, glm::vec3* v);
 

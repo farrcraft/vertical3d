@@ -310,7 +310,9 @@ the clock's functions.
 - `crossed(from, to, marker)` counts how many times a step passed a marker time, such as a
   footstep. A step that ends exactly on the marker passes it; one that starts on it does not.
   So each marker is reported once however the steps fall. A marker at the duration is reported
-  once when a clamped clip stops, and on every wrap of a looping one.
+  once when a clamped clip stops, and on every wrap of a looping one. A step that starts or ends
+  at a time that is not finite passes nothing, nor does a marker that is not a number. A count
+  too large for a `uint32_t` is held at its largest value.
 - `finished(time)` is true when a clamped clip has reached its end. A looping one never has.
 - A duration of zero or less is a clock that never moves.
 

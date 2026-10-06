@@ -34,7 +34,8 @@ which reads the same as a clean run. Check `validating()` alongside the counts. 
 this is in [contributing/Testing.md](../../contributing/Testing.md).
 
 A `VkResult` that is not a success throws through `device::check(result, what)`, naming the call
-and the result.
+and the result. A destructor or a teardown must not throw, so it waits for the device to go idle
+through `Ring::waitIdleNoThrow()`, which ignores the result. `Ring::waitIdle()` checks it.
 
 Background: [ADR-0001](../../adr/0001-rendering-replace-opengl-with-vulkan.md),
 [ADR-0002](../../adr/0002-vulkan-require-version-1-3.md)

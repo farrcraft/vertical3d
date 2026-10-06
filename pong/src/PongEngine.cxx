@@ -235,6 +235,11 @@ void PongEngine::handleSource(const v3d::event::Source& source) {
     if (source.name() == "escape") {
         return;
     }
+    // a paddle is steered by keys, and a mouse button shares names with some of them, so
+    // only a keyboard source is captured
+    if (!source.context() || source.context()->name() != "keyboard") {
+        return;
+    }
     // a menu item capturing a key takes the key itself rather than the command it is bound
     // to, so the key is consumed and its bindings do not fire
     menu_->capture(std::string(source.name()));

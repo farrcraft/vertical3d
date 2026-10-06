@@ -8,6 +8,7 @@
 #include <api/config/SpriteSheets.h>
 #include <api/asset/Writer.h>
 
+#include <limits>
 #include <string>
 
 #include <boost/test/unit_test.hpp>
@@ -212,6 +213,22 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_build_a_document_test) {
     overruns.width = 16;
     overruns.height = 16;
     BOOST_CHECK(!packed.place("overruns", overruns));
+
+    // a corner and a size whose sum overflows an int is still off the sheet
+    v3d::config::SpriteRegion overflows;
+    overflows.x = 100;
+    overflows.y = 0;
+    overflows.width = std::numeric_limits<int>::max() - 50;
+    overflows.height = 16;
+    BOOST_CHECK(!packed.place("overflows", overflows));
+    overflows.x = std::numeric_limits<int>::max() - 8;
+    overflows.width = 16;
+    BOOST_CHECK(!packed.place("overflows", overflows));
+    overflows.x = 0;
+    overflows.y = 32;
+    overflows.width = 16;
+    overflows.height = std::numeric_limits<int>::max() - 16;
+    BOOST_CHECK(!packed.place("overflows", overflows));
 
     v3d::config::SpriteSheets built(logger());
     BOOST_REQUIRE(built.add(packed));

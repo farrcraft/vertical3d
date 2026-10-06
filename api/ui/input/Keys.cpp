@@ -121,7 +121,7 @@ bool Keys::text(std::string_view utf8) {
         return false;
     }
     if (!ui_->reachable(focused)) {
-        // and a box hidden while it held the focus gives it up
+        // a box hidden while it held the focus gives it up
         ui_->focus(boost::shared_ptr<Component>());
         return false;
     }

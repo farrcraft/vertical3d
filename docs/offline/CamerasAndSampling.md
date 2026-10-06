@@ -41,7 +41,8 @@ Both hiders render through them.
   the same on every run, every standard library, and any order of pixels or buckets.
 - **An axis with one stratum is sampled at the pixel centre**, not jittered. One sample under a
   one-pixel box therefore reproduces a render taken at pixel centres exactly.
-- **A `PixelSamples` rate below one still takes one sample.**
+- **A `PixelSamples` rate below one still takes one sample**, and a rate above 256 takes 256
+  along that axis.
 - **A sample is filtered into every pixel whose centre lies within the filter's width**, as it
   arrives. The film holds a weighted sum per pixel, not the samples.
 - **The filters use RI's formulas**, cut off at the width the scene gives. Catmull-rom peaks at

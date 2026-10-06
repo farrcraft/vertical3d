@@ -86,6 +86,10 @@ v3d_add_api_library(render_offline
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
 target_link_libraries(v3dlib_render_offline PUBLIC v3dlib_log v3dlib_image v3dlib_type glm::glm)
 
+# PRIVATE: Textures.cxx searches for a texture file with boost::filesystem, and no header here
+# includes it.
+target_link_libraries(v3dlib_render_offline PRIVATE Boost::filesystem)
+
 target_compile_options(v3dlib_render_offline PRIVATE /EHsc)
 
 if(V3D_BUILD_TESTS)

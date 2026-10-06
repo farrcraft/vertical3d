@@ -13,6 +13,8 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
 
+#include <glm/geometric.hpp>
+
 namespace {
 /**
  * A unit quad in the z = 0 plane, wound counter-clockwise.
@@ -195,4 +197,62 @@ BOOST_AUTO_TEST_CASE(brep_open_ring_test) {
 
     mesh.addFace(quad(0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
     BOOST_CHECK_EQUAL(mesh.faceCount(), 2u);
+}
+
+/**
+ * A face's u runs along its first edge and v is square to it, both in its plane: on the top
+ * of a unit cube they are x and y, and on its +x side they are y and z.
+ **/
+BOOST_AUTO_TEST_CASE(brep_face_uv_of_a_cube_face_test) {
+    v3d::brep::BRep mesh;
+    mesh.addFace(quad(1.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    std::vector<glm::vec3> side;
+    side.push_back(glm::vec3(1.0f, 0.0f, 0.0f));
+    side.push_back(glm::vec3(1.0f, 1.0f, 0.0f));
+    side.push_back(glm::vec3(1.0f, 1.0f, 1.0f));
+    side.push_back(glm::vec3(1.0f, 0.0f, 1.0f));
+    mesh.addFace(side, glm::vec3(1.0f, 0.0f, 0.0f));
+
+    glm::vec3 u(0.0f);
+    glm::vec3 v(0.0f);
+    v3d::brep::faceUV(mesh, 0, &u, &v);
+    BOOST_CHECK_SMALL(glm::length(u - glm::vec3(1.0f, 0.0f, 0.0f)), 1e-6f);
+    BOOST_CHECK_SMALL(glm::length(v - glm::vec3(0.0f, 1.0f, 0.0f)), 1e-6f);
+
+    v3d::brep::faceUV(mesh, 1, &u, &v);
+    BOOST_CHECK_SMALL(glm::length(u - glm::vec3(0.0f, 1.0f, 0.0f)), 1e-6f);
+    BOOST_CHECK_SMALL(glm::length(v - glm::vec3(0.0f, 0.0f, 1.0f)), 1e-6f);
+}
+
+/**
+ * A face whose first two edges run along one line takes the next edge that turns, rather than
+ * normalising a zero cross product. A face whose vertices all lie on a line leaves u and v as
+ * they were.
+ **/
+BOOST_AUTO_TEST_CASE(brep_face_uv_of_a_degenerate_face_test) {
+    v3d::brep::BRep mesh;
+    std::vector<glm::vec3> straight;
+    straight.push_back(glm::vec3(0.0f, 0.0f, 0.0f));
+    straight.push_back(glm::vec3(1.0f, 0.0f, 0.0f));
+    straight.push_back(glm::vec3(2.0f, 0.0f, 0.0f));
+    straight.push_back(glm::vec3(2.0f, 1.0f, 0.0f));
+    straight.push_back(glm::vec3(0.0f, 1.0f, 0.0f));
+    mesh.addFace(straight, glm::vec3(0.0f, 0.0f, 1.0f));
+    std::vector<glm::vec3> line;
+    line.push_back(glm::vec3(0.0f, 0.0f, 5.0f));
+    line.push_back(glm::vec3(1.0f, 0.0f, 5.0f));
+    line.push_back(glm::vec3(2.0f, 0.0f, 5.0f));
+    mesh.addFace(line, glm::vec3(0.0f, 0.0f, 1.0f));
+
+    glm::vec3 u(0.0f);
+    glm::vec3 v(0.0f);
+    v3d::brep::faceUV(mesh, 0, &u, &v);
+    BOOST_CHECK_SMALL(glm::length(u - glm::vec3(1.0f, 0.0f, 0.0f)), 1e-6f);
+    BOOST_CHECK_SMALL(glm::length(v - glm::vec3(0.0f, 1.0f, 0.0f)), 1e-6f);
+
+    u = glm::vec3(7.0f);
+    v = glm::vec3(9.0f);
+    v3d::brep::faceUV(mesh, 1, &u, &v);
+    BOOST_CHECK_EQUAL((u == glm::vec3(7.0f)), true);
+    BOOST_CHECK_EQUAL((v == glm::vec3(9.0f)), true);
 }

@@ -55,14 +55,14 @@ const char* const terrainPass = v3d::render::realtime::Engine3D::colourPass;
 const char* const overlayPass = "overlay";
 
 /**
- * The size the ui and the debug overlay are drawn at. Glyphs are distance fields, so the
- * atlas is scaled to this size rather than rasterized at it.
- **/
-/**
  * What the debug readout's window is titled, which is also its id in the immediate layer.
  **/
 const char* const debugTitle = "Debug";
 
+/**
+ * The size the ui and the debug overlay are drawn at. Glyphs are distance fields, so the
+ * atlas is scaled to this size rather than rasterized at it.
+ **/
 const float fontSize = 18.0f;
 
 constexpr glm::vec4 sky(0.4f, 0.6f, 0.9f, 1.0f);

@@ -38,7 +38,7 @@ Presenter::Presenter(const boost::shared_ptr<v3d::log::Logger>& logger, const bo
 Presenter::~Presenter() {
     // nothing may be waiting on a semaphore when it is destroyed. The ring's fences are the
     // ring's to wait on, and it outlives this because this holds it
-    ring_->waitIdle();
+    ring_->waitIdleNoThrow();
 
     destroyImageSync();
 

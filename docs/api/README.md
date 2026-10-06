@@ -58,11 +58,11 @@ Boost.
 | `font` | log, image | FreeType, glm |
 | `config` | log, asset, type | glm |
 | `input` | event, type | **SDL3**, glm, EnTT |
-| `asset_media` | log, asset, image, type | cgltf |
+| `asset_media` | log, asset, image, type | cgltf, glm |
 | `audio` | log, event, asset | **SDL3_mixer**, EnTT |
 | `render_offline` | log, image, type | glm |
 | `render` | log, asset, asset_media, ecs, font, image, type | **Vulkan**, VulkanMemoryAllocator, **SDL3**, glm, EnTT |
-| `ui` | log, render, asset, event, font, image, input, type | glm, EnTT |
+| `ui` | log, render, asset, event, font, image, input, type | **SDL3**, glm, EnTT |
 | `engine` | log, asset, asset_media, config, event, input, render, type | **SDL3**, EnTT |
 
 The same picture as layers, lowest first. A library uses only libraries in the rows above it.

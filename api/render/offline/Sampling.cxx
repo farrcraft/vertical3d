@@ -72,6 +72,11 @@ unsigned int sampleCount(float rate) {
     if (!(rate >= 1.0f)) {
         return 1;
     }
+    // capped so that the count fits the conversion, and a pixel's grid of samples fits an
+    // unsigned count
+    if (!(rate <= static_cast<float>(maximumSamples))) {
+        return maximumSamples;
+    }
     return static_cast<unsigned int>(std::lround(rate));
 }
 

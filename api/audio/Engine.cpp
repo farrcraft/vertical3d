@@ -103,6 +103,11 @@ bool Engine::load(const boost::json::object& doc, const Resolve& resolve) {
             logger_->get()->error("Sound config names no clip_id or no file");
             return false;
         }
+        // value_to throws for a value that is not a string
+        if (!sound.at("clip_id").is_string() || !sound.at("file").is_string()) {
+            logger_->get()->error("Sound config gives a clip_id or a file that is not a string");
+            return false;
+        }
         const std::string clipId = boost::json::value_to<std::string>(sound.at("clip_id"));
         const std::string fileName = boost::json::value_to<std::string>(sound.at("file"));
         // a clip that will not load leaves the rest of the document to load anyway - one

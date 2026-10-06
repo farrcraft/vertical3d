@@ -43,7 +43,7 @@ yourself:
 | `ownsEdge(mesh, edge)` | Whether this half edge represents its edge. The lower-numbered half of a pair owns it; an unpaired half edge owns itself |
 | `edgeSelected(mesh, edge)` | Whether either half of the edge is selected |
 | `center(mesh, face)` | The average of a face's vertices |
-| `faceUV(mesh, face, &u, &v)` | Two perpendicular unit vectors in the plane of a face |
+| `faceUV(mesh, face, &u, &v)` | Two perpendicular unit vectors in the plane of a face. `u` runs along the first edge with a length, and the first edge after it that is not parallel sets the plane. A face of fewer than two edges, or whose vertices all lie on a line, leaves `u` and `v` unchanged |
 
 **Identity and placement.** `BRep` derives from `v3d::dag::Node` and `v3d::dag::Transform`, so
 `v3dlib_brep` links `v3dlib_dag` publicly.

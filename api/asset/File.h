@@ -18,8 +18,11 @@ namespace v3d::asset {
  * happened: a loader turns it into no asset and a log line, and a reader of a document the
  * user chose turns it into a message.
  *
- * @return the contents, or nothing when the file would not open or a read failed - an empty
- *         file is an empty string, not nothing
+ * The file is sized before it is read, and a read that returns fewer bytes than that size is
+ * a failure.
+ *
+ * @return the contents, or nothing when the file would not open, could not be sized or a read
+ *         failed - an empty file is an empty string, not nothing
  **/
 std::optional<std::string> readFile(std::string_view path);
 

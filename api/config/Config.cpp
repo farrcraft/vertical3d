@@ -50,6 +50,11 @@ bool Config::load(const boost::shared_ptr<v3d::asset::Manager>& assetManager) {
             logger_->get()->error("Config entry needs both a type and a file");
             return false;
         }
+        // value_to throws for a value that is not a string
+        if (!entry.at("type").is_string() || !entry.at("file").is_string()) {
+            logger_->get()->error("Config entry gives a type or a file that is not a string");
+            return false;
+        }
         std::string typeName = boost::json::value_to<std::string>(entry.at("type"));
         std::string fileName = boost::json::value_to<std::string>(entry.at("file"));
         // a type the api does not read is the app's, and is filed for it to ask for by name

@@ -44,7 +44,7 @@ v3d::event::Event command(const boost::shared_ptr<Component>& component);
  * Send a command, if it is one.
  *
  * Every place the ui sends a command comes through here: the cursor, the keys, a strip's
- * button and a menu's item. So the one rule about sending is written once. An event with no
+ * button and a menu's item. The one rule about sending is therefore written once. An event with no
  * context is not bound to anything, and Event::str() dereferences the context, so such an
  * event is never sent.
  *

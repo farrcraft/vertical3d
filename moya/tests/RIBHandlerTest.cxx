@@ -23,6 +23,21 @@ bool read(const std::string & source, v3d::moya::RIBHandler * handler) {
     return reader.read(stream, handler);
 }
 
+/**
+ * The number of pixels whose red is more than half.
+ **/
+unsigned int coverage(const v3d::render::offline::FrameBuffer & planes) {
+    unsigned int covered = 0;
+    for (unsigned int row = 0; row < planes.height(); row++) {
+        for (unsigned int column = 0; column < planes.width(); column++) {
+            if (planes.value(v3d::moya::FrameBuffer::RED, column, row) > 0.5f) {
+                covered++;
+            }
+        }
+    }
+    return covered;
+}
+
 };  // namespace
 
 /**
@@ -473,4 +488,54 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_motion_flat_at_both_ends_test) {
         BOOST_REQUIRE(read("Hider \"raytrace\"\n" + flat + "Sphere 1 -1 1 360\nWorldEnd\n", &handler));
         BOOST_CHECK(handler.context().traced().all<v3d::render::offline::trace::Sphere>().empty());
     }
+}
+
+/**
+ * A rotated polygon is bounded by all eight corners of its object space bound. Its two
+ * diagonal corners land at x = 1.5, off the right of the screen window, while the quad
+ * reaches in to x = 0.79, so a bound built from those two culls a quad that is on screen.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_rotated_polygon_is_not_culled_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+
+    BOOST_REQUIRE(read(
+        "Format 64 48 1\n"
+        "PixelSamples 1 1\n"
+        "PixelFilter \"box\" 1 1\n"
+        "Hider \"hidden\"\n"
+        "Projection \"orthographic\"\n"
+        "Clipping 1 100\n"
+        "WorldBegin\n"
+        "Surface \"constant\"\n"
+        "Translate 1.5 0 0\n"
+        "Rotate 45 0 0 1\n"
+        "Polygon \"P\" [0 0 5  1 0 5  1 1 5  0 1 5]\n"
+        "WorldEnd\n", &handler));
+
+    boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
+    BOOST_CHECK_GT(coverage(*planes), 0u);
+    // x = 1 and y = 0.71 is inside the quad, and lands at column 56 and row 7
+    BOOST_CHECK_GT(planes->value(v3d::moya::FrameBuffer::RED, 56, 7), 0.5f);
+}
+
+/**
+ * A polygon whose first two vertices coincide still splits. Its cutting plane comes from the
+ * first edge with a length, and a polygon too large to dice is drawn rather than lost.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_repeated_head_polygon_splits_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+
+    BOOST_REQUIRE(read(
+        "Format 64 48 1\n"
+        "Projection \"orthographic\"\n"
+        "Clipping 1 100\n"
+        "WorldBegin\n"
+        "Polygon \"P\" [-1 -1 5  -1 -1 5  1 -1 5  1 1 5  -1 1 5]\n"
+        "WorldEnd\n", &handler));
+
+    boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
+    BOOST_CHECK_GT(coverage(*planes), 0u);
+    BOOST_CHECK_GT(planes->value(v3d::moya::FrameBuffer::RED, 32, 24), 0.5f);
 }

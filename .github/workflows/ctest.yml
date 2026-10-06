@@ -1,6 +1,6 @@
 # Builds the tree and runs the Boost.Test suites through ctest. This is a separate workflow
 # from cpplint rather than a step added to it: cpplint needs nothing but python, and this
-# needs a compiler, the Vulkan SDK, a vcpkg install and both vendor submodules built.
+# needs a compiler, the Vulkan SDK, a vcpkg install and the libnoise submodule built.
 name: ctest
 
 # push is filtered to the default branch and pull_request is not: a branch in this repository

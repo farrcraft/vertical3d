@@ -64,7 +64,8 @@ void Uploader::oneShot(const std::function<void(VkCommandBuffer)>& record) const
     device::check(result, "Unable to submit a vulkan upload");
 
     // the caller's staging allocation goes away when this returns
-    vkQueueWaitIdle(device_->graphicsQueue());
+    result = vkQueueWaitIdle(device_->graphicsQueue());
+    device::check(result, "Unable to wait for a vulkan upload");
 }
 
 };  // namespace v3d::render::realtime::vulkan::memory

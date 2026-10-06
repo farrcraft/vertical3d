@@ -70,7 +70,7 @@ v3d_add_api_library(render
 	"realtime/vulkan/renderer/FullScreen.h" "realtime/vulkan/renderer/FullScreen.cxx")
 
 # The batched quad primitive. Every shader is compiled to SPIR-V and embedded rather than
-# loaded from disk - see v3d_add_shader in the root CMakeLists.
+# loaded from disk - see v3d_add_shader in cmake/v3dHelpers.cmake.
 v3d_add_shader(v3dlib_render "shaders/quad.vert")
 v3d_add_shader(v3dlib_render "shaders/quad.frag")
 
@@ -117,8 +117,9 @@ set_source_files_properties("realtime/vulkan/memory/VmaImpl.cxx" PROPERTIES
 # PRIVATE: Canvas.h forward declares font::TextBuffer rather than including it, so a consumer
 # needs the font library only if it names one itself. The ecs components the lit renderer
 # reads are named in its sources and in no header, and so are the model and image assets
-# MeshRegistry loads.
-target_link_libraries(v3dlib_render PRIVATE v3dlib_font v3dlib_ecs v3dlib_asset_media)
+# MeshRegistry loads. MeshRegistry.cpp names a texture beside its model with
+# boost::filesystem.
+target_link_libraries(v3dlib_render PRIVATE v3dlib_font v3dlib_ecs v3dlib_asset_media Boost::filesystem)
 
 target_compile_options(v3dlib_render PRIVATE /EHsc)
 

@@ -305,8 +305,8 @@ bool Project::read(const std::string& path, const boost::shared_ptr<Scene>& scen
         logger_->get()->error("{} is not a project: {}", path, error.message());
         return false;
     }
-    // an older file is migrated one version at a time. The format has one version, so
-    // there are no migration steps yet
+    // an older file is migrated one version at a time. The format has one version, so the
+    // migration chain is empty
     boost::json::object root = document.as_object();
     switch (v3d::asset::readForward(&root, VERSION, {})) {
         case v3d::asset::Reading::Current:

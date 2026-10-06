@@ -84,8 +84,15 @@ class Ring final {
 
     /**
      * Wait until the device has finished everything that was submitted to it.
+     * @throw std::runtime_error if the wait fails
      **/
     void waitIdle() const;
+
+    /**
+     * waitIdle() for a destructor or a teardown, which must not throw. A failed wait is
+     * ignored, because the caller has no way to report it.
+     **/
+    void waitIdleNoThrow() const noexcept;
 
     /**
      * @return how many frames have been begun since the ring was built

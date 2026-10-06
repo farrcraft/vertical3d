@@ -93,10 +93,11 @@ bool SpriteSheet::uv(const std::string& sprite, glm::vec2* uv0, glm::vec2* uv1) 
 /**
  **/
 bool SpriteSheet::place(const std::string& sprite, const SpriteRegion& region) {
-    // a region running off the sheet would give a uv outside 0..1
+    // a region running off the sheet would give a uv outside 0..1. The far edge is measured
+    // as the room left after the corner, because x + width can overflow an int.
     if (sprite.empty() || region.width <= 0 || region.height <= 0 ||
-        region.x < 0 || region.y < 0 ||
-        region.x + region.width > width_ || region.y + region.height > height_) {
+        region.x < 0 || region.y < 0 || region.x > width_ || region.y > height_ ||
+        region.width > width_ - region.x || region.height > height_ - region.y) {
         return false;
     }
     if (regions_.emplace(sprite, region).second) {

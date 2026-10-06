@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/offline/Sampling.h>
 #include <api/render/offline/rib/Reader.h>
 
 #include <cmath>
@@ -404,6 +405,11 @@ BOOST_AUTO_TEST_CASE(ribreader_pinhole_and_rate_test) {
     BOOST_CHECK(std::isinf(handler.lens_.x));
     BOOST_CHECK_EQUAL(handler.samples_.x, 1u);
     BOOST_CHECK_EQUAL(handler.samples_.y, 1u);
+
+    // a rate too large for a pixel's grid of samples, or for the conversion, is capped
+    BOOST_REQUIRE(read("PixelSamples 65536 1e39\n", &handler, &reader));
+    BOOST_CHECK_EQUAL(handler.samples_.x, v3d::render::offline::maximumSamples);
+    BOOST_CHECK_EQUAL(handler.samples_.y, v3d::render::offline::maximumSamples);
 
     v3d::render::offline::Sampling sampling;
     sampling.fstop = handler.lens_.x;

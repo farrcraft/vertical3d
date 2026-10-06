@@ -3,10 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/asset/File.h>
 #include <api/asset/Manager.h>
 #include <api/asset/Type.h>
 #include <api/asset/kind/Text.h>
 
+#include <optional>
 #include <string>
 
 #include <boost/test/unit_test.hpp>
@@ -37,4 +39,19 @@ BOOST_AUTO_TEST_CASE(text_content_test) {
  **/
 BOOST_AUTO_TEST_CASE(text_missing_file_test) {
     BOOST_TEST(!manager()->load("absent.txt", v3d::asset::Type::Text));
+}
+
+/**
+ * readFile returns the bytes on disk, nothing for a file that will not open, and an empty
+ * string for an empty file.
+ **/
+BOOST_AUTO_TEST_CASE(read_file_test) {
+    const std::optional<std::string> plain = v3d::asset::readFile("data/plain.txt");
+    BOOST_REQUIRE(plain.has_value());
+    BOOST_TEST(plain.value_or("") == "one\ntwo\n");
+
+    BOOST_TEST(!v3d::asset::readFile("data/absent.txt").has_value());
+
+    const std::optional<std::string> empty = v3d::asset::readFile("data/empty.txt");
+    BOOST_TEST(empty.value_or("not empty").empty());
 }

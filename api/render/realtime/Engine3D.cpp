@@ -42,7 +42,7 @@ bool Engine3D::shutdown() {
     if (context_) {
         // every submitted frame has to finish before the swapchain, the device and the
         // window are destroyed
-        context_->ring()->waitIdle();
+        context_->ring()->waitIdleNoThrow();
     }
     // the context has to go before the window does. It owns the device, which holds
     // the window's surface alive, and the window's teardown unloads the vulkan library -

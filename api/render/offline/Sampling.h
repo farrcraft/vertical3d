@@ -38,9 +38,13 @@ bool filterNamed(const std::string & name, Filter * filter);
  **/
 float filter(Filter kind, const glm::vec2 & offset, const glm::vec2 & width);
 
+/** The most samples a pixel takes along one axis. **/
+constexpr unsigned int maximumSamples = 256;
+
 /**
- * How many samples a PixelSamples rate requests along one axis. RI takes a float, and a
- * rate below one still takes one sample.
+ * How many samples a PixelSamples rate requests along one axis. RI takes a float. A rate
+ * below one, or one that is not a number, takes one sample, and a rate above
+ * maximumSamples takes maximumSamples.
  **/
 unsigned int sampleCount(float rate);
 

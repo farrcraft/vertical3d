@@ -5,6 +5,8 @@
 
 #include "DepthBuffer.h"
 
+#include <api/render/realtime/vulkan/device/Result.h>
+
 #include <stdexcept>
 
 #include <boost/make_shared.hpp>
@@ -120,7 +122,8 @@ void DepthBuffer::destroy() {
  **/
 void DepthBuffer::recreate(uint32_t width, uint32_t height) {
     // a frame in flight may still be testing against the image about to go away
-    vkDeviceWaitIdle(device_->handle());
+    VkResult result = vkDeviceWaitIdle(device_->handle());
+    device::check(result, "Unable to wait for the vulkan device before recreating the depth buffer");
     destroy();
     create(width, height);
 }
