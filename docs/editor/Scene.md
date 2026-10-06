@@ -38,7 +38,7 @@ yourself:
 
 | Function | Returns |
 |---|---|
-| `faceLoop(mesh, face)` | The half edges of a face in order. It stops after the mesh's edge count, so an unclosed chain ends rather than looping forever |
+| `faceLoop(mesh, face)` | The half edges of a face in order, each at most once. A chain that never returns to the face's first edge yields the edges walked before it repeats one or ends, which is an open path rather than a ring |
 | `loopSegment(mesh, loop, entry, &from, &to)` | The two endpoints of one entry of a loop |
 | `ownsEdge(mesh, edge)` | Whether this half edge represents its edge. The lower-numbered half of a pair owns it; an unpaired half edge owns itself |
 | `edgeSelected(mesh, edge)` | Whether either half of the edge is selected |
@@ -85,7 +85,7 @@ device state.
 
 **Layout.** `data/layout.json` is a tree of vertical and horizontal splits. Each leaf names a
 camera profile. `ViewLayout` turns the tree into one region per leaf. A name, camera or split
-that is not a string makes `load()` return false. The default layout is
+that is not a string makes `load()` return false, and so does a split with no children. The default layout is
 Front, Top, Left and Perspective. The menu bar and the toolbars take strips along two edges of
 the window, and the views divide the rest.
 

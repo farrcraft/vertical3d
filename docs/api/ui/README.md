@@ -108,9 +108,9 @@ as the press lands, not on release.
 ## Testing a ui
 
 `api/ui/tests/` needs no window and no GPU. `Canvas` is CPU-side, the text callbacks can be
-stand-ins, and the shared font is copied beside the suite. A test builds components, draws them onto a canvas, and checks
-the boxes the draw left or the primitives it added. Layout alone can be checked with no
-canvas at all; see [internals/UserInterface.md](../../internals/UserInterface.md).
-`TextRenderer` is tested there with a stand-in upload, which leaves only the upload itself
-uncovered.
+stand-ins, and the shared font is copied beside the suite. A test builds components, draws them
+onto a canvas, and checks the boxes the draw left or the primitives it added. Layout alone can
+be checked with no canvas at all; see
+[internals/UserInterface.md](../../internals/UserInterface.md). `TextRenderer` is tested there
+with a stand-in upload, which leaves only the upload itself uncovered.
 [Testing.md](../../contributing/Testing.md) has the rest.

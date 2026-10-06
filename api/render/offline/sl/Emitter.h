@@ -83,6 +83,11 @@ class Emitter final {
      **/
     int emitInline(const syntax::ExpressionPtr & expression);
     int emitCast(const syntax::ExpressionPtr & expression);
+    /**
+     * A colour whose values were given in a named colour space, converted into rgb as
+     * ctransform converts it. The value's own register when the space is already rgb.
+     **/
+    int emitColourSpace(const std::string & space, int value, const syntax::ExpressionPtr & expression);
 
     Failure fail(const std::string & message, unsigned int line, unsigned int column);
 

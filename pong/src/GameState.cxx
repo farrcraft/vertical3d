@@ -18,10 +18,8 @@ bool GameState::paused() const {
 }
 
 void GameState::reset() {
-    // percentage to increase ball speed each round
-    ballSpeedup_ = 1.0f;
-    // court units per second: the ball crosses the 800 unit court in a little over thirteen
-    // seconds when it is served, and faster every round after
+    // court units per second: a served ball crosses the 800 unit court in a little over
+    // thirteen seconds
     ballStartSpeed_ = 60.0f;
 }
 
@@ -35,10 +33,6 @@ bool GameState::coop() const {
 
 float GameState::ballSize() const {
     return ballSize_;
-}
-
-float GameState::ballSpeedup() const {
-    return ballSpeedup_;
 }
 
 float GameState::ballStartSpeed() const {

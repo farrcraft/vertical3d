@@ -56,9 +56,12 @@ class Frustum final {
     int intersect(const AABBox& box) const;
 
     /**
-     * The planes, in the order left, right, bottom, top, near, far. They are read straight
-     * out of the matrix and are not normalised, so signedDistance() on one tells the side a
-     * point is on but is not a distance.
+     * The planes, in the order clip-space -x, +x, -y, +y, near, far. Plane 2 bounds clip
+     * y = -w and plane 3 bounds clip y = w. The cameras in api/type build a y-down clip space,
+     * so for them plane 2 is the top of the screen and plane 3 the bottom.
+     *
+     * The planes are read straight out of the matrix and are not normalised. signedDistance()
+     * on one tells the side a point is on, but its value is not a distance.
      **/
     const std::array<Plane, 6>& planes() const noexcept;
 

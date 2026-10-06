@@ -6,6 +6,7 @@
 #include "SelectList.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -18,6 +19,7 @@ SelectList::SelectList() :
     offset_(0.0f),
     rowHeight_(0.0f),
     widest_(-1.0f),
+    measured_(0),
     selected_(none) {
     // a control is pickable and focusable from the start; a plain component is neither, so a
     // panel laid over a scene lets presses through
@@ -28,16 +30,18 @@ SelectList::SelectList() :
 void SelectList::items(const std::vector<std::string>& rows) {
     items_ = rows;
     widest_ = -1.0f;
+    measured_ = 0;
     selected(selected_);
     offset(offset_);
 }
 
-void SelectList::widest(float width) noexcept {
+void SelectList::widest(float width, std::uint64_t measure) noexcept {
     widest_ = width;
+    measured_ = measure;
 }
 
-float SelectList::widest() const noexcept {
-    return widest_;
+float SelectList::widest(std::uint64_t measure) const noexcept {
+    return measure == measured_ ? widest_ : -1.0f;
 }
 
 const std::vector<std::string>& SelectList::items() const noexcept {

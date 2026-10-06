@@ -93,6 +93,18 @@ BOOST_AUTO_TEST_CASE(config_entry_value_not_a_string_test) {
 }
 
 /**
+ * An empty type is refused. Filed under the empty name, it would be what
+ * get(Type::Unknown) finds.
+ **/
+BOOST_AUTO_TEST_CASE(config_entry_empty_type_test) {
+    v3d::config::Config config(boost::make_shared<v3d::log::Logger>());
+    BOOST_TEST(!config.load(assets("empty-type")));
+
+    BOOST_TEST(!config.get(v3d::config::Type::Unknown));
+    BOOST_TEST(!config.get(""));
+}
+
+/**
  * A type the api has no name for is an app's own document, filed like the rest for the app to
  * ask for by name - not a reason to refuse the whole config.
  **/

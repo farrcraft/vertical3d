@@ -141,6 +141,10 @@ bool Engine::addClip(const boost::shared_ptr<AudioClip>& clip, const std::string
     return true;
 }
 
+bool Engine::has(const std::string_view & clip) const {
+    return sounds_.contains(std::string(clip));
+}
+
 bool Engine::playClip(const std::string_view & clip) {
     // a one shot nobody holds is still a track underneath, so that it can be stopped by
     // stopAll() and mixed on whatever the master gain is
@@ -153,14 +157,32 @@ void Engine::reap() {
             ++playing;
             continue;
         }
-        if (!playing->second.bus.empty()) {
-            // an untagged track, so that being played again on another bus does not leave
-            // it mixed on both
-            MIX_UntagTrack(playing->second.track, playing->second.bus.c_str());
-        }
-        free_.push_back(playing->second.track);
-        playing = voices_.erase(playing);
+        playing = retire(playing);
     }
+}
+
+std::map<Voice, Engine::Playing>::iterator Engine::retire(const std::map<Voice, Playing>::iterator & playing) {
+    if (!playing->second.bus.empty()) {
+        // an untagged track, so that being played again on another bus does not leave it
+        // mixed on both
+        MIX_UntagTrack(playing->second.track, playing->second.bus.c_str());
+    }
+    free_.push_back(playing->second.track);
+    return voices_.erase(playing);
+}
+
+std::map<Voice, Engine::Playing>::iterator Engine::live(Voice voice) {
+    std::map<Voice, Playing>::iterator found = voices_.find(voice);
+    if (found == voices_.end()) {
+        return found;
+    }
+    // a finished sound keeps its entry until the next play() reaps it, so a lookup checks
+    // the track itself and takes back one that has finished
+    if (!MIX_TrackPlaying(found->second.track)) {
+        retire(found);
+        return voices_.end();
+    }
+    return found;
 }
 
 MIX_Track* Engine::claim() {
@@ -233,7 +255,7 @@ Voice Engine::play(const std::string_view & clip, const Play & how) {
 }
 
 bool Engine::stop(Voice voice, int fadeOutMs) {
-    const std::map<Voice, Playing>::const_iterator found = voices_.find(voice);
+    const std::map<Voice, Playing>::iterator found = live(voice);
     if (found == voices_.end()) {
         return false;
     }
@@ -257,7 +279,7 @@ bool Engine::playing(Voice voice) const {
 }
 
 bool Engine::gain(Voice voice, float level) {
-    const std::map<Voice, Playing>::const_iterator found = voices_.find(voice);
+    const std::map<Voice, Playing>::iterator found = live(voice);
     if (found == voices_.end()) {
         return false;
     }

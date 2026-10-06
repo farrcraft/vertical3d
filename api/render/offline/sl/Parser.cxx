@@ -57,9 +57,13 @@ std::string describe(const Token & token) {
             return "the number " + std::to_string(token.value());
         case Token::Kind::STRING:
             return "the string \"" + token.text() + "\"";
-        default:
+        case Token::Kind::IDENTIFIER:
+        case Token::Kind::KEYWORD:
+        case Token::Kind::OPERATOR:
+        case Token::Kind::PUNCTUATION:
             return "'" + token.text() + "'";
     }
+    return "'" + token.text() + "'";
 }
 
 bool shaderType(const Token & token, ShaderType* type) {

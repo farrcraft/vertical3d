@@ -16,7 +16,6 @@ BOOST_AUTO_TEST_CASE(game_state_defaults_test) {
     GameState state;
 
     BOOST_TEST(state.ballSize() == 10.0f);
-    BOOST_TEST(state.ballSpeedup() == 1.0f);
     BOOST_TEST(state.ballStartSpeed() == 60.0f);
     BOOST_TEST(state.maxScore() == 5);
     BOOST_TEST(state.coop());
@@ -24,7 +23,7 @@ BOOST_AUTO_TEST_CASE(game_state_defaults_test) {
 }
 
 /**
- * reset() puts the ball speeds back, but leaves the options a player chose - the mode and the
+ * reset() puts the ball's start speed back, but leaves the options a player chose - the mode and the
  * target score outlive a round - and leaves the pause to the menu that set it.
  **/
 BOOST_AUTO_TEST_CASE(game_state_reset_test) {
@@ -38,7 +37,6 @@ BOOST_AUTO_TEST_CASE(game_state_reset_test) {
     state.reset();
 
     BOOST_TEST(state.ballStartSpeed() == 60.0f);
-    BOOST_TEST(state.ballSpeedup() == 1.0f);
     BOOST_TEST(state.paused());
     BOOST_TEST(!state.coop());
     BOOST_TEST(state.maxScore() == 11);

@@ -15,7 +15,8 @@ namespace v3d::type {
  * A deterministic source of random numbers, whose whole state is one integer.
  *
  * The generator is splitmix64, and every seed is valid, including zero. state() is also a seed
- * that resumes the sequence where it stands, which is how a save restores it.
+ * that resumes the sequence where it stands. A save stores state(), and a load passes it to
+ * the constructor.
  *
  * Every value is derived here rather than through <random>, whose distributions are
  * implementation-defined: a seed gives the same floats under any standard library, so a test
@@ -45,7 +46,10 @@ class Random final {
     float unit() noexcept;
 
     /**
-     * @return a float in [low, high)
+     * When low + (high - low) * unit() rounds up to high, the largest float below high is
+     * returned instead. A span with high not above low is returned unchecked.
+     *
+     * @return a float in [low, high) when high > low
      **/
     float range(float low, float high) noexcept;
 

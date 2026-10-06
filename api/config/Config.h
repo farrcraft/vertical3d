@@ -31,6 +31,9 @@ class Config final {
      * 
      * @param assetManager loads JSON files as managed assets
      * 
+     * An entry with an empty type is refused. typeName() returns the empty string for
+     * Type::Unknown, so get(Type::Unknown) would otherwise find that entry.
+     *
      * @return true if all of the config is successfully loaded
      **/
     bool load(const boost::shared_ptr<v3d::asset::Manager>& assetManager);

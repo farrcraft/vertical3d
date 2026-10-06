@@ -39,8 +39,8 @@ class Paddle final {
     bool up();
     bool down();
     int score();
-    float length();
-    float size();
+    float length() const;
+    float size() const;
 
     void up(bool k);
     void down(bool k);

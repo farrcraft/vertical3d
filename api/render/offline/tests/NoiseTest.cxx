@@ -62,8 +62,10 @@ BOOST_AUTO_TEST_CASE(noise_deterministic_test) {
 
 /**
  * A point that is not finite reads 0.5, the value of every lattice point. A coordinate past
- * the range of an int is still on the lattice, which repeats every 256 cells, so it reads the
- * same as the coordinate a whole number of periods nearer the origin.
+ * the range of an int has a defined cell. Every float that large is a whole number of
+ * periods, so its cell is 0. It reads as the coordinate a whole number of periods nearer the
+ * origin does. A plain conversion to int is undefined there, and gives cell 0 under MSVC as
+ * well. These checks pin the result, and cannot tell the two apart on that compiler.
  **/
 BOOST_AUTO_TEST_CASE(noise_far_and_not_finite_test) {
     const float nan = std::numeric_limits<float>::quiet_NaN();

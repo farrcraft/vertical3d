@@ -178,6 +178,18 @@ bool accepts(Argument wanted, Type given) {
 }
 
 /**
+ * The type a call's arguments promote to, as an arithmetic operator promotes its operands.
+ * Void when two of them have no arithmetic between them, such as a colour and a point.
+ **/
+Type promoted(const std::vector<Type> & given) {
+    Type result = Type::FLOAT;
+    for (const Type type : given) {
+        result = arithmetic(result, type);
+    }
+    return result;
+}
+
+/**
  * Whether one way of calling a standard library function takes these argument types.
  **/
 bool suits(const Signature & signature, const std::vector<Type> & given) {
@@ -191,7 +203,8 @@ bool suits(const Signature & signature, const std::vector<Type> & given) {
             return false;
         }
     }
-    return true;
+    const bool unmixable = signature.promotes && promoted(given) == Type::VOID;
+    return !unmixable;
 }
 
 bool defines(const std::vector<syntax::Function> & functions, const std::string & name) {
@@ -726,8 +739,8 @@ Type Compiler::checkCast(const syntax::ExpressionPtr & expression) {
     if (cast.type == Type::VOID) {
         throw fail("nothing can be cast to void", expression->line, expression->column);
     }
-    if (!cast.space.empty() && cast.type == Type::FLOAT) {
-        throw fail("a coordinate space means nothing to a float", expression->line, expression->column);
+    if (!cast.space.empty()) {
+        checkSpace(cast);
     }
     if (cast.operand->kind == syntax::Expression::Kind::TUPLE) {
         // a parenthesised list is a literal for the type in front of it: three floats are a
@@ -760,6 +773,27 @@ Type Compiler::checkCast(const syntax::ExpressionPtr & expression) {
     }
     expression->type = cast.type;
     return expression->type;
+}
+
+void Compiler::checkSpace(const syntax::Cast & cast) {
+    switch (cast.type) {
+        case Type::POINT:
+        case Type::VECTOR:
+        case Type::NORMAL:
+        case Type::COLOR:
+            // a coordinate space, which the renderer resolves when the shader runs, or for a
+            // colour a colour space, which the emitter converts out of as ctransform does
+            return;
+        case Type::MATRIX:
+            // RenderMan reads this as a matrix relative to the named space. That reading is
+            // not implemented, so the cast is rejected rather than ignored
+            throw fail("a matrix relative to a named space is not supported", cast.line, cast.column);
+        case Type::VOID:
+        case Type::FLOAT:
+        case Type::STRING:
+            throw fail(std::string("a coordinate space means nothing to a ") + name(cast.type),
+                cast.line, cast.column);
+    }
 }
 
 Type Compiler::checkCall(const syntax::ExpressionPtr & expression) {
@@ -807,35 +841,8 @@ int Compiler::checkShaderCall(syntax::Call & call, const std::vector<Type> & giv
     return -1;
 }
 
-Type Compiler::checkBuiltinCall(syntax::Call & call, const std::vector<Type> & given, Type wanted) {
-    const std::vector<Signature> & table = builtins();
-    bool named = false;
-    std::size_t chosen = table.size();
-    for (std::size_t index = 0; index < table.size(); index++) {
-        const Signature & signature = table[index];
-        if (signature.name != call.name) {
-            continue;
-        }
-        named = true;
-        if (!suits(signature, given)) {
-            continue;
-        }
-        if (chosen == table.size()) {
-            chosen = index;
-        }
-        if (signature.resultFrom < 0 && signature.result == wanted) {
-            chosen = index;
-            break;
-        }
-    }
-    if (!named) {
-        throw fail("'" + call.name + "' is not a function", call.line, call.column);
-    }
-    if (chosen == table.size()) {
-        throw fail("'" + call.name + "' cannot be called with those arguments", call.line, call.column);
-    }
-    const Signature & signature = table[chosen];
-    for (std::size_t argument = 0; argument < given.size(); argument++) {
+void Compiler::checkWritten(const syntax::Call & call, const Signature & signature) {
+    for (std::size_t argument = 0; argument < call.arguments.size(); argument++) {
         const bool output = signature.outputs >= 0 && argument >= static_cast<std::size_t>(signature.outputs);
         const bool updated = signature.updates >= 0 && argument == static_cast<std::size_t>(signature.updates);
         if (!output && !updated) {
@@ -852,9 +859,46 @@ Type Compiler::checkBuiltinCall(syntax::Call & call, const std::vector<Type> & g
                 "' is written, and '" + variable.name + "' cannot be assigned", written->line, written->column);
         }
     }
+}
+
+Type Compiler::checkBuiltinCall(syntax::Call & call, const std::vector<Type> & given, Type wanted) {
+    const std::vector<Signature> & table = builtins();
+    bool named = false;
+    std::size_t chosen = table.size();
+    for (std::size_t index = 0; index < table.size(); index++) {
+        const Signature & signature = table[index];
+        if (signature.name != call.name) {
+            continue;
+        }
+        named = true;
+        if (!suits(signature, given)) {
+            continue;
+        }
+        if (chosen == table.size()) {
+            chosen = index;
+        }
+        const bool fixed = signature.resultFrom < 0 && !signature.promotes;
+        if (fixed && signature.result == wanted) {
+            chosen = index;
+            break;
+        }
+    }
+    if (!named) {
+        throw fail("'" + call.name + "' is not a function", call.line, call.column);
+    }
+    if (chosen == table.size()) {
+        throw fail("'" + call.name + "' cannot be called with those arguments", call.line, call.column);
+    }
+    const Signature & signature = table[chosen];
+    checkWritten(call, signature);
     call.signature = static_cast<int>(chosen);
-    call.type = signature.resultFrom >= 0 ?
-        given[static_cast<std::size_t>(signature.resultFrom)] : signature.result;
+    if (signature.promotes) {
+        call.type = promoted(given);
+    } else if (signature.resultFrom >= 0) {
+        call.type = given[static_cast<std::size_t>(signature.resultFrom)];
+    } else {
+        call.type = signature.result;
+    }
     return call.type;
 }
 

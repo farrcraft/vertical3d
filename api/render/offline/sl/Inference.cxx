@@ -157,8 +157,17 @@ void Inference::inferStatement(const syntax::StatementPtr & statement, bool vary
                 inferExpression(argument);
             }
             // the body runs once per light with L and Cl set per point, so everything it
-            // writes is varying whatever reached it
+            // writes is varying whatever reached it. An illuminance body is a loop over the
+            // lights, so a break or a continue inside it leaves that loop rather than one
+            // around it
+            const bool loop = lighting.construct == syntax::Lighting::Construct::ILLUMINANCE;
+            if (loop) {
+                enclosing_.push_back(statement.get());
+            }
             inferStatement(lighting.body, true);
+            if (loop) {
+                enclosing_.pop_back();
+            }
             return;
         }
     }

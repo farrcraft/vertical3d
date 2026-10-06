@@ -33,6 +33,7 @@
 #include <string>
 #include <vector>
 
+#include "Builtins.h"
 #include "Types.h"
 
 namespace v3d::render::offline::sl {
@@ -80,6 +81,21 @@ runtime::Opcode binaryOpcode(const std::string & op) {
         return runtime::Opcode::AND;
     }
     return runtime::Opcode::OR;
+}
+
+/**
+ * The index of the ctransform that names both spaces, from and to, or -1 when the table has
+ * none.
+ **/
+int conversion() {
+    const std::vector<Signature> & table = builtins();
+    for (std::size_t i = 0; i < table.size(); i++) {
+        const bool twoSpaces = table[i].body == Signature::Body::CTRANSFORM && table[i].arguments.size() == 3;
+        if (twoSpaces) {
+            return static_cast<int>(i);
+        }
+    }
+    return -1;
 }
 
 };  // namespace
@@ -427,12 +443,37 @@ int Emitter::emitCast(const syntax::ExpressionPtr & expression) {
     if (cast.space.empty()) {
         return result;
     }
+    if (expression->type == Type::COLOR) {
+        return emitColourSpace(cast.space, result, expression);
+    }
     // a space name makes a cast a transform, and the type decides which transform: a point
     // translates, a vector does not, a normal goes by the inverse transpose
     const int space = string(cast.space);
     const int moved = temporary(expression->type, expression->storage);
     put(runtime::Opcode::TRANSFORM, moved, result, space, expression);
     return moved;
+}
+
+int Emitter::emitColourSpace(const std::string & space, int value, const syntax::ExpressionPtr & expression) {
+    // "rgb" is the space a colour is already in
+    if (space == "rgb") {
+        return value;
+    }
+    // the values are in the named space, so the cast is ctransform out of it and into rgb
+    const int signature = conversion();
+    if (signature < 0) {
+        throw fail("the standard library has no ctransform to convert a colour space with",
+            expression->line, expression->column);
+    }
+    runtime::Instruction instruction;
+    instruction.opcode = runtime::Opcode::CALL;
+    instruction.target = temporary(expression->type, expression->storage);
+    instruction.left = signature;
+    instruction.line = expression->line;
+    instruction.column = expression->column;
+    instruction.arguments = { string(space), string("rgb"), value };
+    program_->instructions.push_back(instruction);
+    return instruction.target;
 }
 
 int Emitter::emitCall(const syntax::ExpressionPtr & expression) {

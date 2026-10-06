@@ -63,7 +63,7 @@ class Manipulator {
     Manipulator& operator=(const Manipulator&) = delete;
 
     /**
-     * @return which handle is highlighted, which is what a drag is constrained to
+     * @return which handle is highlighted. A drag is constrained to that handle.
      **/
     Axis axis() const noexcept;
 

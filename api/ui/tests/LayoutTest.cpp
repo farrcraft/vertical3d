@@ -237,6 +237,24 @@ BOOST_AUTO_TEST_CASE(a_container_draws_in_depth_order) {
 }
 
 /**
+ * A container holding a null still sorts what else it holds, and leaves the null out.
+ **/
+BOOST_AUTO_TEST_CASE(a_null_component_is_left_out_of_the_draw_order) {
+    v3d::ui::Container container("hud", true);
+    const boost::shared_ptr<v3d::ui::component::Panel> first = panel("first");
+    const boost::shared_ptr<v3d::ui::component::Panel> second = panel("second");
+    first->depth(5);
+    container.add(first);
+    container.add(boost::shared_ptr<v3d::ui::Component>());
+    container.add(second);
+
+    const std::vector<boost::shared_ptr<v3d::ui::Component>> order = container.ordered();
+    BOOST_REQUIRE_EQUAL(order.size(), 2U);
+    BOOST_CHECK_EQUAL(order[0]->name(), "second");
+    BOOST_CHECK_EQUAL(order[1]->name(), "first");
+}
+
+/**
  * Nothing is picked until something has been drawn, only a pickable component takes the
  * point, and a child is offered it before the component holding it.
  **/

@@ -33,8 +33,10 @@ rather than suppressing it.
 
 ## How this project builds
 
-`scripts\build.cmd` and `scripts\test.cmd` enter the MSVC Developer environment and run the
-two commands below. By hand, the build needs that environment, then Ninja:
+`scripts\build.cmd` enters the MSVC Developer environment and runs
+`ninja -C out/build/x64-Debug` with any arguments passed to it. `scripts\test.cmd` does the
+same for `ctest --test-dir out/build/x64-Debug --output-on-failure`. By hand, the build needs
+that environment, then Ninja:
 
 ```
 vcvars64.bat                              # or run from a Developer Command Prompt
@@ -104,10 +106,12 @@ A device-selection failure that says so is the code working, not a bug.
 The instance enables `VK_LAYER_KHRONOS_validation` whenever it is installed. A message from it
 is a defect to fix, not noise.
 
-Every `VkResult` is checked with `vulkan::device::check`, which throws with the result in
-words from `vulkan::device::resultString`. The one exception is a wait for the device to go
-idle in a destructor or a teardown, which must not throw: `Ring::waitIdleNoThrow()` exists for
-that. Any other call whose result is dropped is a defect even if it builds.
+Every `VkResult` is checked. Most calls pass it to `vulkan::device::check`, which throws with
+the result in words from `vulkan::device::resultString`. A call whose failure is recoverable
+tests the result inline and carries on without throwing. The device extension enumeration, the
+debug messenger's creation and the read of GPU timestamp queries do this. A wait for the device
+to go idle in a destructor or a teardown must not throw, and `Ring::waitIdleNoThrow()` exists
+for that. A call whose result is dropped is a defect even if it builds.
 
 ## Lint
 

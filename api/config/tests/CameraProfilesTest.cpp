@@ -116,4 +116,9 @@ BOOST_AUTO_TEST_CASE(cameraprofiles_vector_of_strings_test) {
 
     BOOST_CHECK_NO_THROW(BOOST_REQUIRE(profiles.load(config("{\"cameras\": [{\"name\": \"a\", \"eye\": [\"x\", 1, 2]}]}"))));
     BOOST_CHECK(profiles.has("a"));
+
+    const glm::vec3 eye = profiles.get("a").eye();
+    BOOST_CHECK_SMALL(eye[0], 0.001f);
+    BOOST_CHECK_SMALL(eye[1], 0.001f);
+    BOOST_CHECK_CLOSE(eye[2], -10.0f, 0.01f);
 }

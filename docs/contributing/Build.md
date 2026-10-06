@@ -212,8 +212,10 @@ Specific rules:
   `v3dlib_asset_media`'s loaders on the manager it builds. A manager built anywhere else,
   including in a test, starts with JSON and text documents only and must call
   `asset::media::registerLoaders()` itself.
-- **There is no OpenGL in the tree.** A target that names `OpenGL::GL`, `GLEW::GLEW` or
-  `v3dlib_gl` will not configure.
+- **There is no OpenGL in the tree.** A target that names `OpenGL::GL` or `GLEW::GLEW` fails
+  to configure, because no package defines those targets. A target that names `v3dlib_gl`
+  configures, because CMake takes a plain name it does not know as a library file. The build
+  then fails at link, when `v3dlib_gl.lib` cannot be opened.
 - **glm and EnTT must be linked explicitly.** Each library whose headers use them names
   `glm::glm` or `EnTT::EnTT`. Do not rely on their headers being reachable through another
   package's include directory.

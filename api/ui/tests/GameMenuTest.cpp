@@ -262,6 +262,26 @@ BOOST_AUTO_TEST_CASE(a_capture_takes_nothing_until_it_is_open) {
 }
 
 /**
+ * Activating a disabled input item opens no capture, so the next key is not swallowed and
+ * the item is not given a value.
+ **/
+BOOST_AUTO_TEST_CASE(a_disabled_input_item_opens_no_capture) {
+    boost::shared_ptr<v3d::ui::Engine> ui = load(bindings);
+    v3d::ui::shell::GameMenu menu(ui, v3d::ui::shell::GameMenu::Suspend());
+    boost::shared_ptr<v3d::ui::component::Menu> component =
+        boost::dynamic_pointer_cast<v3d::ui::component::Menu>(ui->container("game-menu")->get("main-menu"));
+    (*component)[0]->enabled(false);
+
+    menu.toggle();
+    BOOST_TEST(active(ui) == "Player 1 Up: ");
+    BOOST_TEST(menu.navigate("selectMenu"));
+    BOOST_TEST(!menu.capturing());
+
+    BOOST_TEST(!menu.capture(std::string("w")));
+    BOOST_TEST(!(*component)[0]->value());
+}
+
+/**
  * Backing out of a capture abandons it, and leaves the menu where it was rather than
  * leaving the level the item sits on.
  **/

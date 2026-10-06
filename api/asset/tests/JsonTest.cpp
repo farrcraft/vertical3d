@@ -42,16 +42,16 @@ BOOST_AUTO_TEST_CASE(json_malformed_document_test) {
 }
 
 /**
- * The loader catches its own exceptions, so a file that is not there comes back null.
- * Config::load takes null to mean the config is missing.
+ * A file that is not there comes back null rather than throwing. Config::load takes null to
+ * mean the config is missing.
  **/
 BOOST_AUTO_TEST_CASE(json_missing_document_test) {
     BOOST_TEST(!document("absent.json"));
 }
 
 /**
- * A top level array parses but is not an object, and as_object() throws on it. The loader
- * catches that too, so the rejection looks like any other.
+ * A top level array parses but is not an object. The loader checks is_object() before it
+ * calls as_object(), so the rejection is a null like any other.
  **/
 BOOST_AUTO_TEST_CASE(json_non_object_document_test) {
     BOOST_TEST(!document("array.json"));

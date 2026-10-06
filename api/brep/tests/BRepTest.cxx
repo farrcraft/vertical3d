@@ -6,6 +6,7 @@
 #include <api/brep/BRep.h>
 #include <api/brep/Topology.h>
 
+#include <algorithm>
 #include <type_traits>
 #include <string>
 #include <vector>
@@ -184,8 +185,8 @@ BOOST_AUTO_TEST_CASE(brep_validate_test) {
 }
 
 /**
- * A ring that does not close - what an unfinished modelling operation leaves - ends a face's
- * loop rather than spinning it, and a face added after it still finds its pairs.
+ * A ring that does not close ends a face's loop after each edge has been walked once. A face
+ * added after it, wound the other way, pairs with the edges whose ring is intact.
  **/
 BOOST_AUTO_TEST_CASE(brep_open_ring_test) {
     v3d::brep::BRep mesh;
@@ -193,15 +194,36 @@ BOOST_AUTO_TEST_CASE(brep_open_ring_test) {
     // the last edge points back into the ring part way round, so it never reaches the first
     mesh.edge(3)->next(1);
     const std::vector<v3d::brep::Index> loop = v3d::brep::faceLoop(mesh, 0);
-    BOOST_CHECK_LE(loop.size(), mesh.edgeCount() + 1);
+    const std::vector<v3d::brep::Index> walked = {0, 1, 2, 3};
+    BOOST_CHECK_EQUAL_COLLECTIONS(loop.begin(), loop.end(), walked.begin(), walked.end());
+    BOOST_CHECK_LE(loop.size(), mesh.edgeCount());
 
-    mesh.addFace(quad(0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
-    BOOST_CHECK_EQUAL(mesh.faceCount(), 2u);
+    // the same square wound the other way, so its edges run opposite the first face's
+    std::vector<glm::vec3> reversed = quad(0.0f);
+    std::reverse(reversed.begin() + 1, reversed.end());
+    mesh.addFace(reversed, glm::vec3(0.0f, 0.0f, -1.0f));
+    BOOST_REQUIRE_EQUAL(mesh.faceCount(), 2u);
+    BOOST_REQUIRE_EQUAL(mesh.edgeCount(), 8u);
+
+    // edge 6 runs from vertex 3 to 2 and edge 7 from 2 to 1, opposite edges 3 and 2
+    BOOST_CHECK_EQUAL(mesh.edge(6)->pair(), 3u);
+    BOOST_CHECK_EQUAL(mesh.edge(3)->pair(), 6u);
+    BOOST_CHECK_EQUAL(mesh.edge(7)->pair(), 2u);
+    BOOST_CHECK_EQUAL(mesh.edge(2)->pair(), 7u);
+    // the broken ring gives edge 0 no predecessor and edge 1 the wrong one, so neither pairs
+    BOOST_CHECK_EQUAL(mesh.edge(0)->pair(), v3d::brep::INVALID_ID);
+    BOOST_CHECK_EQUAL(mesh.edge(1)->pair(), v3d::brep::INVALID_ID);
+    BOOST_CHECK_EQUAL(mesh.edge(4)->pair(), v3d::brep::INVALID_ID);
+    BOOST_CHECK_EQUAL(mesh.edge(5)->pair(), v3d::brep::INVALID_ID);
+
+    const std::vector<v3d::brep::Index> second = v3d::brep::faceLoop(mesh, 1);
+    const std::vector<v3d::brep::Index> ring = {4, 5, 6, 7};
+    BOOST_CHECK_EQUAL_COLLECTIONS(second.begin(), second.end(), ring.begin(), ring.end());
 }
 
 /**
- * A face's u runs along its first edge and v is square to it, both in its plane: on the top
- * of a unit cube they are x and y, and on its +x side they are y and z.
+ * A face's u runs along its first edge and v is square to it, both in its plane. On the top
+ * of a unit cube they are x and y. On its +x side they are y and z.
  **/
 BOOST_AUTO_TEST_CASE(brep_face_uv_of_a_cube_face_test) {
     v3d::brep::BRep mesh;

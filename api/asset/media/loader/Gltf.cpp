@@ -386,9 +386,9 @@ v3d::type::Model::Influence influenceOf(const Attributes& attributes, cgltf_size
  * addresses the wrong geometry unless it is offset into the merge. One drawn straight out of
  * its vertex array still has to be indexed once it is merged, or it is lost.
  *
- * A strip or a fan becomes a list wound as glTF winds them: every other triangle of a strip
- * swaps its first two corners so that all of them face the same way, and every triangle of a
- * fan shares the fan's first vertex.
+ * A strip or a fan becomes a list wound as glTF winds them. Every other triangle of a strip
+ * swaps its first two corners, so that all of them face the same way. Every triangle of a fan
+ * shares the fan's first vertex.
  **/
 void appendIndices(const cgltf_primitive& primitive, std::size_t baseVertex, cgltf_size count,
     std::vector<std::uint32_t>* indices) {

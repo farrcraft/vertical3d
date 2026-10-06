@@ -24,6 +24,11 @@ class PongScene {
      **/
     static constexpr float width = 800.0f;
     static constexpr float height = 600.0f;
+    /**
+     * The thickness of the top and bottom walls, in court units. The ball turns at a wall's
+     * face, and a paddle stops with its end against one.
+     **/
+    static constexpr float wall = 15.0f;
 
     explicit PongScene(entt::registry* registry, const boost::shared_ptr<entt::dispatcher> & dispatcher);
     ~PongScene();
@@ -45,8 +50,8 @@ class PongScene {
 
     /**
      * Apply a paddle command: one of paddleCommands, with whether its key is held now. A held
-     * key is ignored while the game is paused, and a key that is not held stops its paddle, so
-     * a key let go while the menu is up does not leave its paddle moving. Outside coop mode the
+     * key is ignored while the game is paused. A key that is not held stops its paddle, so a key
+     * let go while the menu is up does not leave its paddle moving. Outside coop mode the
      * computer steers the right paddle, and its commands do nothing.
      *
      * @return whether the name was a paddle command

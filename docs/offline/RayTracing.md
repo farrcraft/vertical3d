@@ -66,7 +66,9 @@ The ray hider casts every primary ray into it. Under either hider, a shader's `t
   started exactly on the surface hits that surface, and every lit pixel turns black in a
   pattern that looks like a normal fault.
 - **`trace()` goes as deep as `Option "trace" "maxdepth"`**, two by default. Past that depth it
-  returns the background, which stops two surfaces that trace into each other.
+  returns the background, which stops two surfaces that trace into each other. moya takes a
+  depth above 16 as 16, with a warning, because a shader that traces twice at every hit
+  doubles the rays at every level. A depth that is negative or not finite is not used.
 - **A grid traces through the same scene.** `GridShader` carries a shading point's ray from
   camera space into world space, starting it off the grid's plane. A ray from a grid of a warped
   quad may hit the exact polygon the grid was diced from, because the two agree only when the

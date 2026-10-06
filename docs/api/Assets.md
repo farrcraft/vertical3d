@@ -119,7 +119,9 @@ temporary is removed, and the function returns false.
 **The output is always readable, and there is no compact mode.** Scalars, short vectors, and
 objects of those stay on one line. Everything else is indented two spaces per level. A double
 prints as the float it was widened from, so `0.1f` prints as `0.1` rather than
-`0.10000000149011612`. Call `asset::serializeDocument()` by its full name. An unqualified
+`0.10000000149011612`. A double beyond the range of a float prints in full rather than
+overflowing. JSON has no form for infinity or NaN, so `writeDocument()` returns false for a
+document holding one and leaves the file untouched. Call `asset::serializeDocument()` by its full name. An unqualified
 `serialize()` on a `boost::json::value` finds `boost::json::serialize` by argument-dependent
 lookup, and that writes the whole document on one line.
 

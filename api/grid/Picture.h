@@ -42,8 +42,8 @@ struct Picture final {
  * @param rows the picture, row y of it being tile row y, all the same length
  * @param legend what each glyph is made of
  * @param tileSize the grid's tile edge length in world units
- * @return the grid, or no grid and the reason when there are no rows, a row is empty, or the
- *         rows differ in length - none of which has a tile to hand back
+ * @return the grid, or no grid and the reason when the tile size is not positive, there are
+ *         no rows, a row is empty, or the rows differ in length. It never throws for these.
  **/
 Picture fromPicture(const std::vector<std::string>& rows, const std::map<char, Terrain>& legend,
     float tileSize = TileGrid::DEFAULT_TILE_SIZE);

@@ -7,8 +7,10 @@
 
 #include <algorithm>
 #include <charconv>
+#include <cmath>
 #include <cstddef>
 #include <fstream>
+#include <limits>
 #include <string>
 #include <system_error>
 
@@ -60,20 +62,26 @@ void indent(std::string* out, int depth) {
 }
 
 /**
- * Write a number as a float.
+ * Write a double in its shortest form, as a float when it fits in one.
  *
  * boost::json serializes a double as 0E0 rather than as 0, a form that is valid but hard to
- * read and to edit by hand. The narrowing is exact for a double widened from a float, and every
- * number in a document this tree writes is one.
+ * read and to edit by hand. A double widened from a float prints every digit of the double
+ * unless it is narrowed back first. The narrowing is exact for such a double, and every number
+ * in a document this tree writes is one.
+ *
+ * A double beyond the range of a float is printed as a double. Narrowing it would overflow.
  **/
 void printNumber(std::string* out, const boost::json::value& value) {
     if (!value.is_double()) {
         out->append(boost::json::serialize(value));
         return;
     }
+    const double number = value.as_double();
     char buffer[32];
-    const std::to_chars_result result =
-        std::to_chars(buffer, buffer + sizeof(buffer), static_cast<float>(value.as_double()));
+    const bool fits = std::isfinite(number) && std::fabs(number) <= std::numeric_limits<float>::max();
+    const std::to_chars_result result = fits ?
+        std::to_chars(buffer, buffer + sizeof(buffer), static_cast<float>(number)) :
+        std::to_chars(buffer, buffer + sizeof(buffer), number);
     if (result.ec != std::errc()) {
         out->append(boost::json::serialize(value));
         return;
@@ -153,6 +161,24 @@ void print(std::string* out, const boost::json::value& value, int depth) {
 }
 
 /**
+ * Whether every number in a value is finite. JSON has no form for infinity or NaN.
+ **/
+bool allFinite(const boost::json::value& value) {
+    if (value.is_double()) {
+        return std::isfinite(value.as_double());
+    }
+    if (value.is_array()) {
+        return std::ranges::all_of(value.as_array(), allFinite);
+    }
+    if (value.is_object()) {
+        return std::ranges::all_of(value.as_object(), [](const auto& entry) {
+            return allFinite(entry.value());
+        });
+    }
+    return true;
+}
+
+/**
  * The sibling the bytes are written to before the rename. Named from the target rather than
  * uniquely, so one left behind by a killed process is overwritten by the next write to that
  * path instead of accumulating.
@@ -204,6 +230,10 @@ bool writeFile(const boost::filesystem::path& path, const std::string& bytes) {
 /**
  **/
 bool writeDocument(const boost::filesystem::path& path, const boost::json::value& document) {
+    // a document holding inf or nan would be written as text no JSON parser reads back
+    if (!allFinite(document)) {
+        return false;
+    }
     return writeFile(path, serializeDocument(document) + "\n");
 }
 

@@ -32,8 +32,7 @@ BOOST_AUTO_TEST_CASE(ball_components_test) {
 }
 
 /**
- * The direction is a velocity in units per second, so a move scales it by the step. The
- * scene speeds the ball up by multiplying the direction.
+ * The direction is a velocity in units per second, so a move scales it by the step.
  **/
 BOOST_AUTO_TEST_CASE(ball_move_test) {
     entt::registry registry;

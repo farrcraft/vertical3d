@@ -8,6 +8,7 @@
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/paint/Text.h>
 
+#include <cstdint>
 #include <functional>
 #include <utility>
 #include <vector>
@@ -223,6 +224,11 @@ class Arranger final {
 
     paint::Measure measure_;
     const style::Resolver& styles_;
+    /**
+     * Which arranger this is, unique for the life of the program. A list keeps its widest
+     * row against it, so a new measure, which comes with a new arranger, measures again.
+     **/
+    std::uint64_t serial_;
 };
 
 };  // namespace v3d::ui

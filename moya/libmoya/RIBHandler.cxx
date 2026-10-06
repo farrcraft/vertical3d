@@ -5,6 +5,7 @@
 
 #include "RIBHandler.h"
 
+#include <algorithm>
 #include <cmath>
 #include <string>
 #include <vector>
@@ -22,6 +23,12 @@ namespace {
 bool count(float value) {
     return std::isfinite(value) && value >= 1.0f && value <= 65536.0f;
 }
+
+/**
+ * The deepest a scene may ask trace() to go. A shader that traces twice at every hit doubles
+ * the rays at every level, and every level holds a shader on the stack.
+ **/
+const float DEEPEST_TRACE = 16.0f;
 
 typedef v3d::render::offline::rib::ParameterList ParameterList;
 
@@ -84,7 +91,15 @@ void RIBHandler::option(const std::string & name, const ParameterList & paramete
     }
     if (name == "trace" && parameters.has("maxdepth")) {
         const float depth = parameters.number("maxdepth", 0.0f);
-        context().traced().traceDepth(depth > 0.0f ? static_cast<unsigned int>(depth) : 0u);
+        const bool usable = std::isfinite(depth) && depth >= 0.0f;
+        if (!usable) {
+            context().logger()->get()->warn("a trace depth of {} is not a depth, and is not used", depth);
+            return;
+        }
+        if (depth > DEEPEST_TRACE) {
+            context().logger()->get()->warn("a trace depth of {} is deeper than {}, and {} is used", depth, DEEPEST_TRACE, DEEPEST_TRACE);
+        }
+        context().traced().traceDepth(static_cast<unsigned int>(std::min(depth, DEEPEST_TRACE)));
         return;
     }
     if (name != "limits") {

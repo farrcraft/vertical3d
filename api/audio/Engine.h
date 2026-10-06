@@ -96,6 +96,12 @@ class Engine final {
     bool addClip(const boost::shared_ptr<AudioClip> & clip, const std::string_view & key);
 
     /**
+     * Whether a clip is filed under an id. This needs no device, so it shows what load()
+     * and addClip() filed on a machine that has none.
+     **/
+    bool has(const std::string_view & clip) const;
+
+    /**
      * Start a clip without keeping a handle to it: a one shot.
      *
      * @return whether it started
@@ -166,6 +172,19 @@ class Engine final {
      * nothing until a new one is needed.
      **/
     void reap();
+
+    /**
+     * Take one finished voice's track back onto the free list.
+     *
+     * @return the entry after it
+     **/
+    std::map<Voice, Playing>::iterator retire(const std::map<Voice, Playing>::iterator & playing);
+
+    /**
+     * @return the voice's entry while its track is playing, or the end of voices_. A voice
+     *         whose track has finished is retired here rather than at the next play().
+     **/
+    std::map<Voice, Playing>::iterator live(Voice voice);
 
     /**
      * @return a track off the free list, or a new one, or null when the mixer will give

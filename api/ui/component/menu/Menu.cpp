@@ -206,6 +206,11 @@ void Menu::activate() {
         return;
     }
     boost::shared_ptr<MenuItem> item = lvl->active();
+    // a disabled item, or one in a disabled menu, does nothing. An input item would otherwise
+    // open a capture and swallow the next key
+    if (item && !usable(*item)) {
+        return;
+    }
     if (item) {
         if (item->itemType() == menu::ItemType::Submenu && item->submenu()) {  // menu item has a submenu so activate the submenu
             down();

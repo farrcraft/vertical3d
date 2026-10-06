@@ -86,8 +86,10 @@ nothing. Layout can be checked in a test, or asked for before drawing, this way.
 
 `Arranger::natural(component, room)` returns a component's natural size, used for an `Auto`
 extent. Its cases are listed in the user document. A component with no natural size returns
-`room.size()`. A list records its widest row on itself as a side effect, and forgets it when
-its rows change.
+`room.size()`. A list records its widest row on itself as a side effect. It keeps the width
+with the serial of the `Arranger` that measured it. Each `Arranger` holds one measure and takes a
+serial no other arranger has. A rescale builds a new renderer and so a new arranger, and the
+list measures again. New rows clear the width too.
 
 `Arranger::lineRoom()` is the room a flow box offers each child: zero along the line, the full
 extent across it. `arrange()` and `wrapped()` write the children's boxes. `box()` is a flow
@@ -124,8 +126,8 @@ first frame. An `Auto` position read from `position()` sticks at the canvas orig
 origin is where the component was on the first frame.
 
 What the rule allows: a component may keep a measurement it took during the layout pass, if that
-measurement depends only on its own content. A `SelectList` keeps its widest row and its row
-height. A `TextBox` keeps the pen position of its line for caret placement. A `TabBar` keeps
+measurement depends only on its own content and the measure. A `SelectList` keeps its widest row,
+keyed by the arranger that measured it, and its row height. A `TextBox` keeps the pen position of its line for caret placement. A `TabBar` keeps
 where its tabs were drawn for hit testing. None of these feed back into a box.
 
 ## Draw order and hit testing

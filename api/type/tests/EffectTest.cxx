@@ -260,4 +260,31 @@ BOOST_AUTO_TEST_CASE(effect_a_rate_out_of_range_owes_a_count_test) {
     BOOST_CHECK_EQUAL(owing(&huge, 1.0e30f, 1.0f), 4294967040u);
 }
 
+/**
+ * life() is age over lifetime, clamped to [0, 1]. A particle with no positive lifetime is at
+ * the end of its life.
+ **/
+BOOST_AUTO_TEST_CASE(effect_particle_life_test) {
+    Particle particle{};
+    particle.lifetime = 4.0f;
+    particle.age = 1.0f;
+    BOOST_CHECK_CLOSE(particle.life(), 0.25f, 0.0001f);
+    particle.age = 0.0f;
+    BOOST_CHECK_EQUAL(particle.life(), 0.0f);
+    particle.age = 4.0f;
+    BOOST_CHECK_EQUAL(particle.life(), 1.0f);
+
+    // past its lifetime, or with a negative age, the fraction is clamped
+    particle.age = 10.0f;
+    BOOST_CHECK_EQUAL(particle.life(), 1.0f);
+    particle.age = -1.0f;
+    BOOST_CHECK_EQUAL(particle.life(), 0.0f);
+
+    particle.age = 1.0f;
+    particle.lifetime = 0.0f;
+    BOOST_CHECK_EQUAL(particle.life(), 1.0f);
+    particle.lifetime = -2.0f;
+    BOOST_CHECK_EQUAL(particle.life(), 1.0f);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

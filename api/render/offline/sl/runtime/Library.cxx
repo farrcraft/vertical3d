@@ -8,8 +8,8 @@
 
     A second translation unit for Machine rather than a class of its own, because every
     body here reads the live mask, writes the register file and says what it could not do,
-    and all three of those are the machine's own state. What is here is most of the language
-    by volume and almost none of it by mechanism.
+    and all three of those are the machine's own state. The file holds most of the built-in
+    functions, and none of the control flow or the masking they run under.
 */
 
 #include "Machine.h"
@@ -493,6 +493,17 @@ bool transforming(Body body) {
 
 };  // namespace
 
+void Machine::colourSpaces(const std::vector<const Value*> & given) {
+    // there is one colour space here and it is the one a framebuffer holds; a scene naming
+    // another gets its colours back unchanged. Every argument before the colour names a
+    // space: the one to convert into, or the one to convert from and then into
+    for (std::size_t which = 0; which + 1 < given.size(); which++) {
+        if (given[which]->text() != "rgb") {
+            report("the colour space \"" + given[which]->text() + "\" is not one this renderer knows");
+        }
+    }
+}
+
 void Machine::builtin(const Instruction & instruction) {
     const std::vector<Signature> & table = builtins();
     const std::size_t index = static_cast<std::size_t>(instruction.left);
@@ -552,10 +563,8 @@ void Machine::builtin(const Instruction & instruction) {
         site.matrix = space("NDC");
     } else if (body == Body::TEXTURE) {
         site.texture = texture(given, &site.s, &site.t);
-    } else if (body == Body::CTRANSFORM && given[0]->text() != "rgb") {
-        // there is one colour space here and it is the one a framebuffer holds; a scene
-        // naming another gets its colours back unchanged
-        report("the colour space \"" + given[0]->text() + "\" is not one this renderer knows");
+    } else if (body == Body::CTRANSFORM) {
+        colourSpaces(given);
     }
 
     const unsigned int count = site.written->storage() == Storage::VARYING ? batch_ : 1;

@@ -248,8 +248,8 @@ BOOST_AUTO_TEST_CASE(findpath_a_goal_the_filter_blocks_has_no_path_test) {
 BOOST_AUTO_TEST_CASE(findpath_cannot_squeeze_between_two_blocked_tiles_test) {
     TileGrid grid = makeGrid();
 
-    // a wall laid corner to corner across the centre. passing from (3,3) to (4,4) would mean
-    // slipping between (4,3) and (3,4), which is what the corner rule forbids
+    // a wall laid corner to corner across the centre. The corner rule forbids passing from
+    // (3,3) to (4,4), because that step slips between (4,3) and (3,4)
     grid.setPassable(at(4, 3), false);
     grid.setPassable(at(3, 4), false);
 

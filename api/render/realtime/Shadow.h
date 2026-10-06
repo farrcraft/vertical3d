@@ -51,10 +51,10 @@ glm::mat4 light(const glm::vec3& towards, const glm::vec3& centre, float radius)
  *
  * The centre is the mean of the positions and the radius the farthest of them from it, plus
  * the margin. The radius is at least minimumRadius, which one caster with no margin, or a
- * negative margin, would otherwise take to zero or below. A position is an origin rather than an extent, so the margin is what covers a
- * caster's size and the length of the shadow it throws. What casts nothing is left out,
- * because a ground plane reaches past anything that shadows it and would spread the map's
- * texels over ground no shadow falls on.
+ * negative margin, would otherwise take to zero or below. A position is an origin rather than
+ * an extent, so the margin is what covers a caster's size and the length of the shadow it
+ * throws. What casts nothing is left out, because a ground plane reaches past anything that
+ * shadows it and would spread the map's texels over ground no shadow falls on.
  *
  * @param alsoCover points that should be inside the map whether or not anything stands there,
  *        such as where a character will walk to

@@ -28,7 +28,7 @@ namespace v3d::editor {
 class Scene final {
  public:
     /**
-     * @return the id of the mesh, which is what a selection names
+     * @return the id of the mesh. A selection names a mesh by this id.
      **/
     unsigned int add(const boost::shared_ptr<v3d::brep::BRep>& mesh);
 

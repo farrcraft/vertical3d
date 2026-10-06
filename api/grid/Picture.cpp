@@ -18,6 +18,11 @@ namespace v3d::grid {
 
 Picture fromPicture(const std::vector<std::string>& rows, const std::map<char, Terrain>& legend, float tileSize) {
     Picture picture;
+    // checked here so the grid's constructor never throws; NaN fails the test too
+    if (!(tileSize > 0.0f)) {
+        picture.error = "the tile size " + std::to_string(tileSize) + " is not positive";
+        return picture;
+    }
     if (rows.empty()) {
         picture.error = "the picture has no rows";
         return picture;

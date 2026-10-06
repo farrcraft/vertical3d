@@ -7,6 +7,7 @@
 
 #include <api/render/offline/sl/syntax/Block.h>
 #include <api/render/offline/sl/syntax/Call.h>
+#include <api/render/offline/sl/syntax/Cast.h>
 #include <api/render/offline/sl/syntax/Expression.h>
 #include <api/render/offline/sl/syntax/Shader.h>
 #include <api/render/offline/sl/syntax/Statement.h>
@@ -18,6 +19,8 @@
 #include "Types.h"
 
 namespace v3d::render::offline::sl {
+
+class Signature;
 
 /**
  * Symbols, types and the varying inference: the pass between the syntax tree and the
@@ -105,10 +108,17 @@ class Compiler final {
      * type of a cast around the call.
      **/
     Type checkBuiltinCall(syntax::Call & call, const std::vector<Type> & given, Type wanted);
+    /** Refuse a call that writes an argument which is not a variable that can be assigned. **/
+    void checkWritten(const syntax::Call & call, const Signature & signature);
     Type checkUnary(const syntax::ExpressionPtr & expression);
     Type checkBinary(const syntax::ExpressionPtr & expression);
     Type checkTernary(const syntax::ExpressionPtr & expression);
     Type checkCast(const syntax::ExpressionPtr & expression);
+    /**
+     * Whether a cast's type can carry the space named in front of it. A position or a
+     * direction takes a coordinate space and a colour takes a colour space.
+     **/
+    void checkSpace(const syntax::Cast & cast);
 
     Failure fail(const std::string & message, unsigned int line, unsigned int column);
 

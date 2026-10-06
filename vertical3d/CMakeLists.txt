@@ -33,22 +33,24 @@ add_executable("vertical3d"
 	"src/manipulator/RotateManipulator.h" "src/manipulator/RotateManipulator.cxx"
 	"src/manipulator/ScaleManipulator.h" "src/manipulator/ScaleManipulator.cxx")
 
+# The packages are named here rather than reached through a library because the editor's own
+# sources include them: glm and EnTT throughout, Boost.JSON and Boost.Filesystem for projects.
 target_link_libraries(vertical3d PRIVATE
 	v3dlib_asset
 	v3dlib_asset_media
 	v3dlib_brep
 	v3dlib_config
 	v3dlib_dag
-	v3dlib_ecs
 	v3dlib_engine
 	v3dlib_event
-	v3dlib_font
-	v3dlib_image
-	v3dlib_input
 	v3dlib_log
 	v3dlib_render
 	v3dlib_type
 	v3dlib_ui
+	glm::glm
+	EnTT::EnTT
+	Boost::filesystem
+	Boost::json
 )
 
 v3d_add_shared_data(vertical3d)

@@ -836,3 +836,28 @@ Left as it is, on purpose:
 
 - pong maps Escape to its own `pong::showGameMenu` rather than to the api's `ui::showGameMenu`.
   Games.md documents it, and moving pong onto the api's command changes its bindings document.
+
+### After a ninth review
+
+The ninth review found nothing above minor: 46 findings, about half older than the branch and
+half wording. All are fixed but one:
+
+- the shading language promotes the componentwise maths, so `max(0, Ci)` is a colour; a cast
+  names a colour space on a colour and is refused on a matrix; `ctransform` reports either
+  space; a jump inside `illuminance` leaves the illuminance and not the loop around it;
+- moya caps a trace depth at 16; a finished sound is no longer stoppable; `Writer` refuses a
+  number that is not finite; an empty config type is refused; audio clips can be counted
+  without a device; a list measures again under a new arranger; a disabled menu input opens no
+  capture; a null child is left out of the draw order;
+- `faceLoop` stops at a repeated edge; a ray that is not finite hits nothing; `Random::range`
+  stays below its top; a bad tile size and a nested empty split are refused; pong's paddle
+  stops at the wall and its sizes come from the scene;
+- the editor links what it includes; tests that proved less than they claimed now check it; and
+  the comments and docs the review named state the rules plainly.
+
+Left as it is, on purpose:
+
+- "no longer" in comments that describe a change at run time, such as an entity that stops
+  having a component. That is state, not history.
+- ADR-0054's costs say every sampler filters linearly. A record is changed only by a later
+  ADR, so Testing.md states the current rule instead.

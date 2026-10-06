@@ -86,6 +86,11 @@ bool ViewLayout::loadNode(const boost::json::object& entry, Node* into) {
         logger_->get()->error("A layout node is either a camera or a split with children");
         return false;
     }
+    // place() treats a node with no children as a leaf, so an empty split would take a view
+    if (entry.at("children").as_array().empty()) {
+        logger_->get()->error("A layout split has no children");
+        return false;
+    }
     // horizontal puts its children side by side; vertical stacks them
     if (entry.contains("split") && !entry.at("split").is_string()) {
         logger_->get()->error("A layout node's split is horizontal or vertical");

@@ -21,8 +21,11 @@ namespace v3d::brep {
  * A half edge names the next edge round its face, so a face's geometry is reached by walking
  * the chain - there is no array of a face's vertices to index into.
  *
- * Bounded by the mesh's edge count, so a next chain that does not close, as an unfinished
- * modelling operation leaves behind, ends the traversal rather than looping forever.
+ * Each half edge appears at most once, so the result never holds more entries than the
+ * mesh has half edges. An unfinished modelling operation can leave a next chain that does
+ * not return to the face's first edge. For such a chain the result is the distinct edges
+ * walked, in order, until the chain repeats an edge, names INVALID_ID or names an edge the
+ * mesh does not hold. That result is an open path rather than a ring.
  *
  * @return the half edges, or nothing if the face does not exist
  **/

@@ -194,6 +194,43 @@ BOOST_AUTO_TEST_CASE(slcompiler_tuple_test) {
 }
 
 /**
+ * A space in front of a cast is a coordinate space for a position or a direction and a colour
+ * space for a colour. A matrix relative to a space is not supported, and a float or a string
+ * has no space to be in.
+ **/
+BOOST_AUTO_TEST_CASE(slcompiler_cast_space_test) {
+    BOOST_CHECK_EQUAL(compile("surface s() { vector v = vector \"world\" (0, 1, 0); Ci = Cs; }"), "");
+    BOOST_CHECK_EQUAL(compile("surface s() { Ci = color \"rgb\" (1, 0, 0); }"), "");
+    BOOST_CHECK_EQUAL(compile("surface s() { Ci = color \"hsv\" (1, 0, 0); }"), "");
+    BOOST_CHECK_EQUAL(compile("surface s() { matrix m = matrix \"world\" 1; Ci = Cs; }"),
+        "a matrix relative to a named space is not supported at line 1, column 26");
+    BOOST_CHECK_EQUAL(compile("surface s() { float f = float \"world\" 1; Ci = Cs; }"),
+        "a coordinate space means nothing to a float at line 1, column 25");
+    BOOST_CHECK_EQUAL(compile("surface s() { string n = string \"rgb\" \"x\"; Ci = Cs; }"),
+        "a coordinate space means nothing to a string at line 1, column 26");
+}
+
+/**
+ * The componentwise maths returns the type its arguments promote to, as an arithmetic
+ * operator does. A float beside a colour gives a colour, and a colour beside a point has no
+ * arithmetic and is rejected.
+ **/
+BOOST_AUTO_TEST_CASE(slcompiler_promoted_builtin_test) {
+    BOOST_CHECK_EQUAL(compile("surface s() { Ci = max(0, Cs); }"), "");
+    BOOST_CHECK_EQUAL(compile("surface s() { Ci = abs(Cs); }"), "");
+    BOOST_CHECK_EQUAL(compile("surface s() { point p = floor(P); Ci = pow(Cs, 2); }"), "");
+    BOOST_CHECK_EQUAL(compile("surface s() { float f = max(0, Cs); Ci = Cs; }"),
+        "'f' is float and is given color at line 1, column 21");
+    BOOST_CHECK_EQUAL(compile("surface s() { float f = mix(0, Cs, 0.5); Ci = Cs; }"),
+        "'f' is float and is given color at line 1, column 21");
+    BOOST_CHECK(compile("surface s() { Ci = max(Cs, P); }").starts_with(
+        "'max' cannot be called with those arguments"));
+    // the trigonometry is declared for floats only
+    BOOST_CHECK(compile("surface s() { Ci = sin(Cs); }").starts_with(
+        "'sin' cannot be called with those arguments"));
+}
+
+/**
  * A shader may only write the globals its type owns. A light shader assigning Ci is told that
  * Ci belongs to a surface and an imager, rather than that the name is undeclared.
  **/
@@ -325,6 +362,31 @@ BOOST_AUTO_TEST_CASE(slcompiler_fixed_point_test) {
 
     BOOST_CHECK(storageOf(symbols, "carried") == Storage::VARYING);
     BOOST_CHECK(storageOf(symbols, "early") == Storage::VARYING);
+}
+
+/**
+ * An illuminance body is a loop over the lights, so a break inside it leaves that loop and
+ * not the loop around it. The outer loop's body stays uniform, so a uniform declared there
+ * still compiles.
+ **/
+BOOST_AUTO_TEST_CASE(slcompiler_break_in_illuminance_test) {
+    std::vector<Symbol> symbols;
+    BOOST_CHECK_EQUAL(compile(
+        "surface s() {\n"
+        "    float i = 0;\n"
+        "    color C = 0;\n"
+        "    for (i = 0; i < 2; i += 1) {\n"
+        "        uniform float k = 1;\n"
+        "        illuminance(P) {\n"
+        "            C += Cl;\n"
+        "            break;\n"
+        "        }\n"
+        "    }\n"
+        "    Ci = C;\n"
+        "}\n", &symbols), "");
+
+    BOOST_CHECK(storageOf(symbols, "i") == Storage::UNIFORM);
+    BOOST_CHECK(storageOf(symbols, "C") == Storage::VARYING);
 }
 
 /**

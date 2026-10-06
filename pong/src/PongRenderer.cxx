@@ -26,7 +26,6 @@ constexpr glm::vec4 ballColour(1.0f, 1.0f, 1.0f, 1.0f);
 constexpr glm::vec4 scoreColour(0.85f, 0.85f, 0.85f, 1.0f);
 
 const unsigned int ballSides = 32;
-const unsigned int wallThickness = 15;
 const unsigned int centreLineWidth = 14;
 
 };  // namespace
@@ -108,7 +107,7 @@ void PongRenderer::drawBoard() {
     const float width = PongScene::width;
     const float height = PongScene::height;
     const float half = centreLineWidth * 0.5f;
-    const float wall = static_cast<float>(wallThickness);
+    const float wall = PongScene::wall;
 
     court_.rect(glm::vec2(0.0f, 0.0f), glm::vec2(width, height), courtColour);
 
@@ -144,8 +143,8 @@ void PongRenderer::drawBall(float alpha) {
 void PongRenderer::drawPaddle(const Paddle& paddle, float alpha) {
     court_.push();
     // the paddle's position is the centre of its travel; its rectangle is drawn from the corner
-    court_.translate(glm::vec2(paddle.offset(), paddle.drawn(alpha) - 25.0f));
+    court_.translate(glm::vec2(paddle.offset(), paddle.drawn(alpha) - paddle.length() / 2.0f));
     const glm::vec3 colour = paddle.color();
-    court_.rect(glm::vec2(0.0f, 0.0f), glm::vec2(15.0f, 50.0f), glm::vec4(colour, 1.0f));
+    court_.rect(glm::vec2(0.0f, 0.0f), glm::vec2(paddle.size(), paddle.length()), glm::vec4(colour, 1.0f));
     court_.pop();
 }

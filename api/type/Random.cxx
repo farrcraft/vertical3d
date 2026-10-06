@@ -51,7 +51,12 @@ float Random::unit() noexcept {
 }
 
 float Random::range(float low, float high) noexcept {
-    return low + ((high - low) * unit());
+    const float value = low + ((high - low) * unit());
+    // the sum rounds to high when the span is small beside low, so step back below it
+    if (high > low && value >= high) {
+        return std::nextafter(high, low);
+    }
+    return value;
 }
 
 glm::vec3 Random::inside(const glm::vec3& minimum, const glm::vec3& maximum) noexcept {

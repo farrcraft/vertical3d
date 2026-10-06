@@ -129,3 +129,11 @@ BOOST_AUTO_TEST_CASE(viewlayout_rejects_test) {
     BOOST_CHECK_NO_THROW(BOOST_CHECK(!layout.load(config(
         "{\"layout\": {\"root\": {\"split\": 2, \"children\": [{\"camera\": \"Top\"}]}}}"))));
 }
+
+BOOST_AUTO_TEST_CASE(viewlayout_rejects_a_nested_empty_split_test) {
+    // an empty split beside a camera is refused, so it never takes the camera's region
+    v3d::editor::ViewLayout layout(logger());
+    BOOST_CHECK(!layout.load(config(
+        "{\"layout\": {\"root\": {\"split\": \"horizontal\", \"children\": "
+        "[{\"camera\": \"Top\"}, {\"split\": \"vertical\", \"children\": []}]}}}")));
+}

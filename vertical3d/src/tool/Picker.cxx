@@ -228,7 +228,7 @@ void Picker::edges(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
  **/
 bool Picker::screen(const glm::vec3& point, glm::vec2* position, float* depth) const {
     const glm::vec3 world(model_ * glm::vec4(point, 1.0f));
-    const glm::vec3 projected = camera_->project(world, const_cast<int*>(viewport_));
+    const glm::vec3 projected = camera_->project(world, viewport_);
 
     // outside the depth range is behind the near plane or beyond the far one. A point
     // behind a perspective camera divides by a negative w and lands beyond one, so it

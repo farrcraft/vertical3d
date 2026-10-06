@@ -51,9 +51,9 @@ class Container {
      * with add order kept between equal depths.
      *
      * Sorted on each call rather than on insertion, because a component's depth can
-     * change after it was added.
+     * change after it was added. A null that was added is left out.
      *
-     * @return the components, deepest first
+     * @return the components, lowest depth first, so the last is drawn on top
      **/
     std::vector<boost::shared_ptr<Component>> ordered() const;
     /**

@@ -114,6 +114,26 @@ BOOST_AUTO_TEST_CASE(random_floats_are_in_range_test) {
 }
 
 /**
+ * A span of half a unit at 100000 is 64 floats wide. About one draw in 128 rounds up to high,
+ * so ten thousand draws reach the top, and each one stays below high.
+ **/
+BOOST_AUTO_TEST_CASE(random_range_stays_below_high_when_rounding_test) {
+    Random random(19);
+
+    const float low = 100000.0f;
+    const float high = 100000.5f;
+    float highest = low;
+    bool inside = true;
+    for (int draw = 0; draw < 10000; draw++) {
+        const float ranged = random.range(low, high);
+        highest = std::max(highest, ranged);
+        inside = inside && ranged >= low && ranged < high;
+    }
+    BOOST_CHECK(inside);
+    BOOST_CHECK_EQUAL(highest, std::nextafter(high, low));
+}
+
+/**
  * A point in a box lies within both corners on every axis.
  **/
 BOOST_AUTO_TEST_CASE(random_a_point_in_a_box_test) {

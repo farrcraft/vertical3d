@@ -1,6 +1,6 @@
 # The manager, the loader base and the two text-shaped loaders need neither a window nor a
-# device - they resolve a path and read a file. The loaders for pictures, models and
-# typefaces are api/asset/media's, and the one for sound api/audio's, each with its own suite.
+# device - they resolve a path and read a file. The loaders for pictures and models are
+# api/asset/media's, and the one for sound api/audio's, each with its own suite.
 v3d_add_test(asset
 	"TestMain.cpp"
 	"ManagerTest.cpp"

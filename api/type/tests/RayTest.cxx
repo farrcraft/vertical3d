@@ -253,3 +253,29 @@ BOOST_AUTO_TEST_CASE(ray_that_is_not_a_number_misses_test) {
     v3d::type::geometry::Ray nowhere(glm::vec3(nan, 0.0f, -5.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     BOOST_CHECK(!nowhere.intersects(box, nullptr));
 }
+
+/**
+ * A ray that is not a number anywhere meets no triangle and crosses no plane, and leaves the
+ * distance it was given untouched.
+ **/
+BOOST_AUTO_TEST_CASE(ray_that_is_not_a_number_misses_triangle_and_plane_test) {
+    const float nan = std::nanf("");
+    const v3d::type::geometry::Ray lost(glm::vec3(0.25f, 0.25f, -5.0f), glm::vec3(nan, 0.0f, 1.0f));
+    const v3d::type::geometry::Ray nowhere(glm::vec3(nan, 0.25f, -5.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    const glm::vec3 a(0.0f, 0.0f, 0.0f);
+    const glm::vec3 b(1.0f, 0.0f, 0.0f);
+    const glm::vec3 c(0.0f, 1.0f, 0.0f);
+    const v3d::type::geometry::Plane facing(a, b, c);
+
+    for (const v3d::type::geometry::Ray & ray : {lost, nowhere}) {
+        float distance = -1.0f;
+        float u = -1.0f;
+        float v = -1.0f;
+        BOOST_CHECK(!ray.intersects(a, b, c, &distance));
+        BOOST_CHECK(!ray.intersects(a, b, c, &distance, &u, &v));
+        BOOST_CHECK(!ray.intersects(facing, &distance));
+        BOOST_CHECK_EQUAL(distance, -1.0f);
+        BOOST_CHECK_EQUAL(u, -1.0f);
+        BOOST_CHECK_EQUAL(v, -1.0f);
+    }
+}

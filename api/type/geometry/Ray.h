@@ -19,6 +19,9 @@ namespace v3d::type::geometry {
  * A distance along a ray is in units of its direction vector. The constructor
  * normalises, so that is world units; transformed() does not, so a distance found in
  * one space is comparable with one found in another.
+ *
+ * A ray whose origin or direction has a component that is NaN or infinite meets nothing.
+ * Every intersects() overload returns false for it and leaves its outputs untouched.
  **/
 class Ray final {
  public:

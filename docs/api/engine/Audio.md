@@ -33,6 +33,7 @@ The sound document lists clips by id:
   a gain.
 - `stop(voice, fadeOutMs)`, `stopAll()`, `playing(voice)` and `gain(voice, level)` control
   playing sounds. A voice that has finished is refused, never confused with a newer sound.
+- `has(id)` says whether a clip is filed under an id. It works without a device.
 - `busGain(bus, level)` sets the volume of a named bus such as `music` or `sfx`. It may be set
   before anything plays on that bus.
 - **A device that does not open leaves the app silent, not broken.** `initialize()` returns

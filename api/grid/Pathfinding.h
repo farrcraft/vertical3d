@@ -47,8 +47,8 @@ int tileDistance(TileCoord a, TileCoord b);
  *
  * The returned path always includes the tile the mover is standing on, so its cost is
  * path.size() - 1 and a route to where you already stand is one tile long. An empty result
- * means there is no route at all, which is why the start is included: it keeps "nowhere to
- * go" distinct from "already there".
+ * means there is no route at all. Including the start keeps "no route" distinct from "already
+ * there".
  *
  * start itself is never tested against the grid or the filter - the mover is standing on
  * it, and whatever makes a tile unenterable does not trap whoever is already there.

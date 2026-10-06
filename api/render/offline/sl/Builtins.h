@@ -41,7 +41,8 @@ class Signature final {
          **/
         STUB,
         // each component of the result is this function of the same component of each
-        // argument, so abs() of a colour is the three absolute values
+        // argument, so abs() of a colour is the three absolute values. The trigonometry and
+        // the angle conversions are declared for floats only
         ABS, SIGN, FLOOR, CEIL, ROUND, SQRT, EXP, LOG, RADIANS, DEGREES,
         SIN, COS, TAN, ASIN, ACOS, ATAN, MOD, POW, MIN, MAX, CLAMP, MIX, STEP, SMOOTHSTEP,
         // a triple read as a direction rather than as three numbers
@@ -81,10 +82,15 @@ class Signature final {
 
     std::string name;
     Body body = Body::STUB;
-    /** The result type, unless resultFrom names an argument to take it from. **/
+    /** The result type, unless resultFrom or promotes says where else to take it from. **/
     Type result = Type::FLOAT;
     /** The argument whose type the result takes, or -1 for the fixed one above. **/
     int resultFrom = -1;
+    /**
+     * The result is the type the arguments promote to, as an arithmetic operator's result is.
+     * `max(0, Ci)` is a colour, and `max(Cs, P)` is rejected as `Cs + P` is.
+     **/
+    bool promotes = false;
     /**
      * Varying however uniform its arguments are, because it reads the shading point.
      * `ambient()` takes nothing and returns something different at every point on a grid.

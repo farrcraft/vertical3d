@@ -60,7 +60,7 @@ bool numbers(const boost::json::object& entry, const char* key, std::size_t coun
 }
 
 /**
- * Read a whole number, which is what every reference within a mesh is.
+ * Read a whole number. Every reference within a mesh is one.
  * A double, a negative, or one too large for brep::Index is a malformed index
  * rather than one to round or truncate.
  * @return false when the entry is missing or is not one, leaving out alone

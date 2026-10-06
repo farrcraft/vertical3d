@@ -12,6 +12,7 @@
 #include <api/ui/component/Label.h>
 #include <api/ui/component/Panel.h>
 #include <api/ui/component/Scrollbar.h>
+#include <api/ui/component/SelectList.h>
 #include <api/ui/component/VerticalBox.h>
 #include <api/ui/style/Resolver.h>
 #include <api/ui/style/Style.h>
@@ -436,6 +437,27 @@ BOOST_AUTO_TEST_CASE(a_box_that_does_not_wrap_is_as_it_was) {
     arranger.walk(nullptr, box, box->layout().resolve(room, natural), v3d::ui::Arranger::Paint());
     BOOST_CHECK_CLOSE(cells[5]->position().x, 280.0f, 0.001f);
     BOOST_CHECK_SMALL(cells[5]->position().y, 0.001f);
+}
+
+/**
+ * A list sized to its widest row measures it again under a new measure. Rescaling the ui
+ * builds a new measure over the same tree, and the list's width has to follow it.
+ **/
+BOOST_AUTO_TEST_CASE(a_list_measures_its_rows_again_under_a_new_measure) {
+    v3d::ui::style::Resolver styles;
+    const boost::shared_ptr<v3d::ui::component::SelectList> list =
+        boost::make_shared<v3d::ui::component::SelectList>();
+    list->items({"ab", "abcdef"});
+    const v3d::type::geometry::Bound2D room = canvasArea(800.0f, 600.0f);
+
+    const float before = v3d::ui::Arranger(measure(), styles).natural(*list, room).x;
+    const v3d::ui::paint::Measure doubled = [](std::string_view text) {
+        return static_cast<float>(text.size()) * characterWidth * 2.0f;
+    };
+    const float after = v3d::ui::Arranger(doubled, styles).natural(*list, room).x;
+
+    // the widest row is six characters, and the padding is the same under both
+    BOOST_CHECK_CLOSE(after - before, 6.0f * characterWidth, 0.001f);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

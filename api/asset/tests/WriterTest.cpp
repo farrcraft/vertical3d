@@ -6,6 +6,7 @@
 #include <api/asset/Writer.h>
 
 #include <fstream>
+#include <limits>
 #include <sstream>
 #include <string>
 
@@ -119,6 +120,48 @@ BOOST_AUTO_TEST_CASE(writer_readable_test) {
 
     BOOST_CHECK_EQUAL(v3d::asset::serializeDocument(boost::json::object()), "{}");
     BOOST_CHECK_EQUAL(v3d::asset::serializeDocument(boost::json::array()), "[]");
+}
+
+/**
+ * A double too large for a float prints as the double it is, and parses back to it.
+ **/
+BOOST_AUTO_TEST_CASE(writer_double_beyond_float_range_test) {
+    boost::json::array numbers{ 1e300, -1e300, 1e39 };
+    const std::string text = v3d::asset::serializeDocument(numbers);
+    BOOST_CHECK(text.find("inf") == std::string::npos);
+
+    boost::system::error_code error;
+    const boost::json::value parsed = boost::json::parse(text, error);
+    BOOST_REQUIRE(!error);
+    BOOST_REQUIRE(parsed.is_array());
+    const boost::json::array& read = parsed.as_array();
+    BOOST_REQUIRE_EQUAL(read.size(), 3u);
+    BOOST_CHECK_CLOSE(read[0].to_number<double>(), 1e300, 1e-9);
+    BOOST_CHECK_CLOSE(read[1].to_number<double>(), -1e300, 1e-9);
+    BOOST_CHECK_CLOSE(read[2].to_number<double>(), 1e39, 1e-9);
+}
+
+/**
+ * JSON has no form for infinity or NaN, so a document holding one, however deeply, is refused
+ * and the file already there is untouched.
+ **/
+BOOST_AUTO_TEST_CASE(writer_refuses_a_non_finite_number_test) {
+    const Sandbox sandbox("non_finite");
+    const boost::filesystem::path path = sandbox.file("settings.json");
+    BOOST_REQUIRE(v3d::asset::writeFile(path, "first"));
+
+    boost::json::object infinite;
+    infinite["scale"] = boost::json::array{ 1.0, std::numeric_limits<double>::infinity() };
+    BOOST_CHECK(!v3d::asset::writeDocument(path, infinite));
+
+    boost::json::object undefined;
+    undefined["nested"] = boost::json::object{ { "value", std::numeric_limits<double>::quiet_NaN() } };
+    BOOST_CHECK(!v3d::asset::writeDocument(path, undefined));
+
+    BOOST_CHECK(!v3d::asset::writeDocument(path, boost::json::value(-std::numeric_limits<double>::infinity())));
+
+    BOOST_CHECK_EQUAL(contents(path), "first");
+    BOOST_CHECK(!boost::filesystem::exists(sandbox.file("settings.json.tmp")));
 }
 
 /**

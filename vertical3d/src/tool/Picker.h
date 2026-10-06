@@ -39,11 +39,11 @@ class Picker final : public SceneVisitor {
          **/
         bool valid;
         /**
-         * The dag::Node id of the mesh, which is what a selection names.
+         * The dag::Node id of the mesh. A selection names a mesh by this id.
          **/
         unsigned int mesh;
         /**
-         * Which kind of thing was hit, which is the mask the pick was made under.
+         * Which kind of thing was hit. It is the mask the pick was made under.
          **/
         SelectMask kind;
         /**

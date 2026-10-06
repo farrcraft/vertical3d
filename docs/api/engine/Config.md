@@ -42,7 +42,8 @@ the same document as a `boost::json::object`, or null if the config lists none.
 How failures are reported:
 
 - `config.json` missing, an entry without a `type` or `file`, an entry whose `type` or `file`
-  is not a string, or a listed file that does not load, is logged and stops startup.
+  is not a string, an entry whose `type` is empty, or a listed file that does not load, is
+  logged and stops startup.
 - The window document and the bindings check every key they read. A document they do not
   understand is a line in the log and a failed startup, not an exception.
 - A config document names images and never loads them. The app resolves a theme's images and a

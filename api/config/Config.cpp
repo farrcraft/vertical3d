@@ -60,6 +60,12 @@ bool Config::load(const boost::shared_ptr<v3d::asset::Manager>& assetManager) {
         }
         std::string typeName = boost::json::value_to<std::string>(entry.at("type"));
         std::string fileName = boost::json::value_to<std::string>(entry.at("file"));
+        // the empty name is what typeName gives Type::Unknown, so a document filed under it
+        // would be found by get(Type::Unknown)
+        if (typeName.empty()) {
+            logger_->get()->error("Config entry for {} has an empty type", fileName);
+            return false;
+        }
         // a type the api does not read is the app's, and is filed for it to ask for by name
         if (stringToType(typeName) == Type::Unknown) {
             logger_->get()->debug("Config names a {} document, which the api does not read", typeName);

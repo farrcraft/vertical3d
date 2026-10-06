@@ -6,7 +6,6 @@
 #include "Controller.h"
 
 #include <api/config/Type.h>
-#include <api/engine/Feature.h>
 #include <api/render/realtime/Window.h>
 #include <api/ui/Container.h>
 #include <vertical3d/src/command/CreateCommand.h>

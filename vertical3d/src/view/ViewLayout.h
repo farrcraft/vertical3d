@@ -23,7 +23,8 @@ namespace v3d::editor {
  * leaf. There are no widgets here, so the tree is flattened into one pixel region per
  * viewport, and a pass draws into that region.
  *
- * A split divides its area evenly between its children, and the divisions are fixed.
+ * A split divides its area evenly between its children, and the divisions are fixed. A split
+ * with no children is refused, at any depth.
  **/
 class ViewLayout final {
  public:

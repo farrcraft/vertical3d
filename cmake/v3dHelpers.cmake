@@ -101,8 +101,8 @@ function(v3d_add_test lib)
 	add_executable(${target} ${ARGN})
 	target_link_libraries(${target} PRIVATE Boost::unit_test_framework)
 	# A suite includes headers by their path from the repository root. An api library gives
-	# the root PUBLIC, but an app suite also compiles the app's own sources, which include
-	# each other by that path, so the root is named here rather than left to a link.
+	# the root PUBLIC. An app suite also compiles the app's own sources, which include each
+	# other by that path, so the root is named here rather than left to a link.
 	target_include_directories(${target} PRIVATE ${V3D_ROOT})
 	target_compile_options(${target} PRIVATE /EHsc /utf-8)
 	# Boost.Test's CRT leak check reports at exit, before spdlog's global registry is torn

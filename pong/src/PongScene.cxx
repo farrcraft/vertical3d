@@ -29,9 +29,6 @@ constexpr float PADDLE_ENGLISH = 30.0f;
 // horizontal. A ball struck by the paddle's centre goes back flat
 constexpr float MAX_RETURN_ANGLE = 0.8727f;
 
-// the top and bottom walls' thickness, which the renderer draws at the same size
-constexpr float WALL = 15.0f;
-
 /**
  * The area a paddle returns the ball from: its own length vertically, and from left to right
  * horizontally, which the caller sets from the paddle's face to beyond the court's edge.
@@ -145,7 +142,7 @@ void PongScene::returnBall(Paddle& paddle, const glm::vec2& ballPosition, float 
     const float along = std::clamp((ballPosition.y - paddle.position()) / reach, -1.0f, 1.0f);
 
     const float angle = along * MAX_RETURN_ANGLE;
-    const float speed = glm::length(ball_.direction()) * gameState_.ballSpeedup();
+    const float speed = glm::length(ball_.direction());
     glm::vec2 returned(away * speed * std::cos(angle), speed * std::sin(angle));
 
     // a travelling paddle carries the ball along the way it is going: up is towards smaller y
@@ -183,13 +180,10 @@ void PongScene::scorePoint(const glm::vec2& ballPosition) {
     const float mid_x = width / 2.0f;
     glm::vec2 v(mid_x, mid_y);
     ball_.position(v);
-    // set the ball rolling
-    float speed = gameState_.ballStartSpeed() * gameState_.ballSpeedup();
-    // last winner serves the ball
+    // last winner serves the ball, at the start speed
+    const float speed = gameState_.ballStartSpeed();
     glm::vec2 dir(speed * victor, 0.0f);
     ball_.direction(dir);
-    // start at this slightly faster speed next time
-    gameState_.ballStartSpeed(speed);
 
     // reset the default paddle positions
     left_.position(mid_y);
@@ -207,8 +201,8 @@ void PongScene::bounceWalls(const glm::vec2& ballPosition) {
     // turned back into it
     const float half = gameState_.ballSize() / 2.0f;
     glm::vec2 direction = ball_.direction();
-    const bool intoTop = ballPosition.y - half <= WALL && direction.y < 0.0f;
-    const bool intoBottom = ballPosition.y + half >= height - WALL && direction.y > 0.0f;
+    const bool intoTop = ballPosition.y - half <= wall && direction.y < 0.0f;
+    const bool intoBottom = ballPosition.y + half >= height - wall && direction.y > 0.0f;
     if (!intoTop && !intoBottom) {
         return;
     }
@@ -218,24 +212,16 @@ void PongScene::bounceWalls(const glm::vec2& ballPosition) {
 }
 
 void PongScene::movePaddles(float step) {
-    // a paddle stops with its end against a wall
+    // a paddle stops with its end against a wall, however far a step would have taken it
     const float travel = PADDLE_SPEED * step;
-    const float top = WALL + left_.length() / 2.0f;
-    const float bottom = height - top;
-    if (left_.up()) {
-        if (left_.position() > top)
-            left_.position(left_.position() - travel);
-    } else if (left_.down()) {
-        if (left_.position() < bottom)
-            left_.position(left_.position() + travel);
-    }
-
-    if (right_.up()) {
-        if (right_.position() > top)
-            right_.position(right_.position() - travel);
-    } else if (right_.down()) {
-        if (right_.position() < bottom)
-            right_.position(right_.position() + travel);
+    for (Paddle * paddle : { &left_, &right_ }) {
+        const float top = wall + paddle->length() / 2.0f;
+        const float bottom = height - top;
+        if (paddle->up()) {
+            paddle->position(std::clamp(paddle->position() - travel, top, bottom));
+        } else if (paddle->down()) {
+            paddle->position(std::clamp(paddle->position() + travel, top, bottom));
+        }
     }
 }
 

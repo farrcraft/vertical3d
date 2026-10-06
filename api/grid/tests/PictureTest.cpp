@@ -8,6 +8,7 @@
 #include <api/grid/TileCoord.h>
 #include <api/grid/TileGrid.h>
 
+#include <limits>
 #include <map>
 #include <string>
 #include <vector>
@@ -98,6 +99,19 @@ BOOST_AUTO_TEST_CASE(a_picture_that_is_not_a_rectangle_is_refused) {
     const v3d::grid::Picture blank = v3d::grid::fromPicture({""}, legend());
     BOOST_CHECK(!blank.grid.has_value());
     BOOST_CHECK(!blank.error.empty());
+}
+
+/**
+ * A tile size that is zero, negative or NaN is refused with a reason rather than thrown.
+ **/
+BOOST_AUTO_TEST_CASE(a_tile_size_that_is_not_positive_is_refused) {
+    const float sizes[] = {0.0f, -1.0f, std::numeric_limits<float>::quiet_NaN()};
+    for (const float size : sizes) {
+        v3d::grid::Picture picture;
+        BOOST_CHECK_NO_THROW(picture = v3d::grid::fromPicture({"."}, legend(), size));
+        BOOST_CHECK(!picture.grid.has_value());
+        BOOST_CHECK(!picture.error.empty());
+    }
 }
 
 /**

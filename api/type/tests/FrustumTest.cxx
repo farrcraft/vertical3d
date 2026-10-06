@@ -23,8 +23,7 @@ v3d::type::geometry::AABBox box(const glm::vec3 & min, const glm::vec3 & max) {
 }
 
 /**
- * A symmetric orthographic volume two units on a side, with glm's [-1, 1] depth, which is the
- * shape moya's render context builds.
+ * A symmetric orthographic volume two units on a side, with glm's default [-1, 1] depth.
  **/
 glm::mat4x4 volume() {
     return glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);

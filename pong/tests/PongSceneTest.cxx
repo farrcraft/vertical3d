@@ -433,6 +433,23 @@ BOOST_AUTO_TEST_CASE(pong_scene_paddle_travel_is_bounded_test) {
 }
 
 /**
+ * A paddle less than a step from the end of its run stops at the end rather than carrying the
+ * whole step into the wall. A step is a pixel and a half, and each paddle starts one pixel in.
+ **/
+BOOST_AUTO_TEST_CASE(pong_scene_paddle_stops_at_the_wall_test) {
+    Fixture fixture;
+    fixture.scene_.left().position(41.0f);
+    fixture.scene_.left().up(true);
+    fixture.scene_.right().position(559.0f);
+    fixture.scene_.right().down(true);
+
+    fixture.scene_.tick(STEP);
+
+    BOOST_TEST(fixture.scene_.left().position() == 40.0f);
+    BOOST_TEST(fixture.scene_.right().position() == 560.0f);
+}
+
+/**
  * Out of coop the right paddle is played by the scene, and it travels towards the ball it is
  * about to have to return.
  **/

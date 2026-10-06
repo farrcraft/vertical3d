@@ -407,9 +407,9 @@ BOOST_AUTO_TEST_CASE(imagereader_bmp_keeps_a_used_alpha) {
 }
 
 /**
- * Rows wider than one pixel are padded on disk and not in the image, and every channel of
- * every pixel comes back where it was: two rows of three at 24 bits, each pixel a different
- * colour.
+ * Rows wider than one pixel are padded on disk and not in the image. Every channel of every
+ * pixel comes back where it was. The image is two rows of three at 24 bits, each pixel a
+ * different colour.
  **/
 BOOST_AUTO_TEST_CASE(imagereader_bmp_rows_wider_than_a_pixel) {
     boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();

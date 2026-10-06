@@ -153,6 +153,31 @@ BOOST_AUTO_TEST_CASE(sllibrary_componentwise_over_a_colour_test) {
 }
 
 /**
+ * The result of a componentwise built-in is the type its arguments promote to, so a float
+ * first does not make the result a float. "max(0, Ci)" is three maxima rather than one
+ * repeated three times. The one argument maths takes a triple as well as a float.
+ **/
+BOOST_AUTO_TEST_CASE(sllibrary_componentwise_promotes_test) {
+    const Shaded shaded(
+        "color floored = max(0, color (-1, 0.5, 2));\n"
+        "color mixed = mix(0, color (2, 4, 6), 0.5);\n"
+        "color absolute = abs(color (-1, -2, 3));\n"
+        "color squared = pow(color (1, 2, 3), 2);\n"
+        "point rooted = sqrt(point (4, 9, 16));");
+
+    BOOST_CHECK_SMALL(shaded.triple("floored").r, 0.0001f);
+    BOOST_CHECK_CLOSE(shaded.triple("floored").g, 0.5f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("floored").b, 2.0f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("mixed").r, 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("mixed").b, 3.0f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("absolute").r, 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("absolute").g, 2.0f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("squared").b, 9.0f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("rooted").x, 2.0f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("rooted").z, 4.0f, 0.01f);
+}
+
+/**
  * The geometry that is a number out of directions.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_geometry_test) {
@@ -557,21 +582,45 @@ BOOST_AUTO_TEST_CASE(sllibrary_matrix_order_test) {
 /**
  * A matrix through a space is the two composed, and a colour through one is the colour:
  * there is one colour space here and it is the one a framebuffer holds, so a scene naming
- * another gets its colours back unchanged and a report.
+ * another gets its colours back unchanged and a report. With two spaces named, either one
+ * that is not rgb is reported.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_matrix_and_colour_spaces_test) {
     Spaces renderer;
     const Shaded shaded(
         "float bulk = determinant(mtransform(\"world\", matrix 1));\n"
         "color kept = ctransform(\"rgb\", color (0.25, 0.5, 0.75));\n"
-        "color other = ctransform(\"hsv\", color (0.25, 0.5, 0.75));", 1, &renderer);
+        "color other = ctransform(\"hsv\", color (0.25, 0.5, 0.75));\n"
+        "color both = ctransform(\"rgb\", \"rgb\", color (0.25, 0.5, 0.75));\n"
+        "color into = ctransform(\"rgb\", \"xyz\", color (0.25, 0.5, 0.75));", 1, &renderer);
 
     // the world matrix scales one axis by two and nothing else changes a volume
     BOOST_CHECK_CLOSE(shaded.number("bulk"), 2.0f, 0.01f);
     BOOST_CHECK_CLOSE(shaded.triple("kept").g, 0.5f, 0.01f);
     BOOST_CHECK_CLOSE(shaded.triple("other").g, 0.5f, 0.01f);
-    BOOST_REQUIRE_EQUAL(shaded.machine().reports().size(), 1u);
+    BOOST_CHECK_CLOSE(shaded.triple("both").g, 0.5f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("into").g, 0.5f, 0.01f);
+    BOOST_REQUIRE_EQUAL(shaded.machine().reports().size(), 2u);
     BOOST_CHECK_EQUAL(shaded.machine().reports()[0],
+        "the colour space \"hsv\" is not one this renderer knows");
+    BOOST_CHECK_EQUAL(shaded.machine().reports()[1],
+        "the colour space \"xyz\" is not one this renderer knows");
+}
+
+/**
+ * A space in front of a colour cast is a colour space, never a coordinate space. "rgb" is
+ * the space a colour is already in, so nothing is asked of the renderer and nothing is
+ * reported. Any other colour space is converted as ctransform converts it.
+ **/
+BOOST_AUTO_TEST_CASE(sllibrary_colour_cast_space_test) {
+    const Shaded rgb("color red = color \"rgb\" (1, 0, 0);");
+    BOOST_CHECK_CLOSE(rgb.triple("red").r, 1.0f, 0.01f);
+    BOOST_CHECK(rgb.machine().reports().empty());
+
+    const Shaded hsv("color other = color \"hsv\" (0.25, 0.5, 0.75);");
+    BOOST_CHECK_CLOSE(hsv.triple("other").g, 0.5f, 0.01f);
+    BOOST_REQUIRE_EQUAL(hsv.machine().reports().size(), 1u);
+    BOOST_CHECK_EQUAL(hsv.machine().reports()[0],
         "the colour space \"hsv\" is not one this renderer knows");
 }
 

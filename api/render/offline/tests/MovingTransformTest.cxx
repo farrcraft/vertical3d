@@ -153,8 +153,8 @@ BOOST_AUTO_TEST_CASE(moving_transform_flat_at_both_ends_test) {
 
 /**
  * A flat end is found whatever order its scale and its turns were applied in. Here the turn
- * comes after the flattening scale, so no column of the open end is empty, yet the end is flat
- * and the motion between the ends is the straight blend of the two.
+ * comes after the flattening scale, and no column of the open end is empty. The end is still
+ * flat, and the motion between the ends is the straight blend of the two.
  **/
 BOOST_AUTO_TEST_CASE(moving_transform_a_turn_after_a_flat_scale_test) {
     const glm::mat4x4 turn = glm::rotate(glm::mat4x4(1.0f), glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
@@ -173,9 +173,9 @@ BOOST_AUTO_TEST_CASE(moving_transform_a_turn_after_a_flat_scale_test) {
 }
 
 /**
- * A small uniform scale is not flat: the test is the determinant against the lengths of the
- * basis, so a primitive scaled to a ten thousandth on every axis is still stored at its open
- * end and placeable.
+ * A small uniform scale is not flat. The test compares the determinant with the lengths of the
+ * basis. A primitive scaled to a ten thousandth on every axis is still stored at its open end,
+ * and is placeable.
  **/
 BOOST_AUTO_TEST_CASE(moving_transform_a_small_scale_is_not_flat_test) {
     v3d::render::offline::MovingTransform tiny;

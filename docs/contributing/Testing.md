@@ -55,8 +55,9 @@ These have no automated test:
 
 - `Feature::Window`, which opens the SDL window. A CI runner has no display.
 - `audio::Engine::initialize()`, which opens the audio device. The rest of `api/audio` is tested,
-  but not whether a sound is audible. An engine with no device gives back no voice, so its suite
-  runs anywhere.
+  but not whether a sound is audible. An engine with no device gives back no voice, so every
+  case but one runs without a device. `audio_engine_lets_the_dispatcher_go_test` needs SDL's
+  audio subsystem to start, and fails on a machine where it cannot.
 - The upload in `ui::paint::TextRenderer`, which needs a device. Its measuring and layout are
   tested with an upload that returns a handle and draws nothing.
 
@@ -187,8 +188,11 @@ on them:
 - A multisample resolve.
 - An interpolated channel value that is not at 0.0 or 1.0.
 
-Every sampler in the tree uses linear filtering, so a textured reference must draw its texture
-at exactly one texel per pixel.
+A texture and a render target are read through a linear sampler, the default
+`vulkan::pipeline::Sampler::Spec`. So a textured reference must draw its texture at exactly one
+texel per pixel. Only two samplers use nearest filtering: the one `Grade` reads the scene
+through, and the one a sampled `DepthBuffer` is read through. A case that draws through those
+is still bound by the rules above.
 
 A case that needs anything outside these rules checks chosen pixels by hand and has no
 reference.

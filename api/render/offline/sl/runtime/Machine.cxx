@@ -304,7 +304,11 @@ glm::mat4x4 Machine::space(const std::string & name) {
 void Machine::transform(const Instruction & instruction) {
     Value & target = file_[static_cast<std::size_t>(instruction.target)];
     const Value & source = file_[static_cast<std::size_t>(instruction.left)];
-    const glm::mat4x4 matrix = space(file_[static_cast<std::size_t>(instruction.right)].text());
+    // only a position or a direction is in a coordinate space, so nothing else asks the
+    // renderer for one
+    const bool geometric = pointlike(target.type());
+    const glm::mat4x4 matrix = geometric ?
+        space(file_[static_cast<std::size_t>(instruction.right)].text()) : glm::mat4x4(1.0f);
     const unsigned int count = target.storage() == Storage::VARYING ? batch_ : 1;
     for (unsigned int point = 0; point < count; point++) {
         if (!writable(target, point)) {
@@ -320,8 +324,13 @@ void Machine::transform(const Instruction & instruction) {
             case Type::NORMAL:
                 target.triple(point, ntransform(matrix, source.triple(point)));
                 break;
-            default:
-                // a colour space and a matrix space are ctransform's and mtransform's
+            case Type::VOID:
+            case Type::FLOAT:
+            case Type::COLOR:
+            case Type::MATRIX:
+            case Type::STRING:
+                // the compiler sends a colour's space to ctransform and rejects a space on
+                // any other type, so the value is copied unchanged
                 target.assign(source, point);
                 break;
         }

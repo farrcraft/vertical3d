@@ -329,6 +329,27 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_limits_test) {
 }
 
 /**
+ * Option "trace" "maxdepth" sets how deep trace() goes. A depth above sixteen is taken as
+ * sixteen. A depth that is negative or not finite is not used, and the depth stays as it was.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_trace_depth_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+
+    BOOST_REQUIRE(read("Option \"trace\" \"maxdepth\" [5]\n", &handler));
+    BOOST_CHECK_EQUAL(handler.context().traced().traceDepth(), 5u);
+
+    BOOST_REQUIRE(read("Option \"trace\" \"maxdepth\" [-3]\n", &handler));
+    BOOST_CHECK_EQUAL(handler.context().traced().traceDepth(), 5u);
+
+    BOOST_REQUIRE(read("Option \"trace\" \"maxdepth\" [1e30]\n", &handler));
+    BOOST_CHECK_EQUAL(handler.context().traced().traceDepth(), 16u);
+
+    BOOST_REQUIRE(read("Option \"trace\" \"maxdepth\" [0]\n", &handler));
+    BOOST_CHECK_EQUAL(handler.context().traced().traceDepth(), 0u);
+}
+
+/**
  * TransformEnd restores what TransformBegin saved, rather than leaving the current
  * transformation wherever the block moved it.
  **/
@@ -492,8 +513,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_motion_flat_at_both_ends_test) {
 
 /**
  * A rotated polygon is bounded by all eight corners of its object space bound. Its two
- * diagonal corners land at x = 1.5, off the right of the screen window, while the quad
- * reaches in to x = 0.79, so a bound built from those two culls a quad that is on screen.
+ * diagonal corners land at x = 1.5, off the right of the screen window. The quad reaches in
+ * to x = 0.79. A bound built from those two corners alone culls a quad that is on screen.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_rotated_polygon_is_not_culled_test) {
     v3d::moya::Renderer renderer;

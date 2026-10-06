@@ -45,6 +45,19 @@ Signature same(const char* name, Body body, int argument, const std::vector<Argu
 }
 
 /**
+ * A function whose result is the type its arguments promote to, as an arithmetic operator's
+ * is: max(0, Ci) is a colour, and abs() of a point is a point.
+ **/
+Signature promoting(const char* name, Body body, const std::vector<Argument> & arguments) {
+    Signature signature;
+    signature.name = name;
+    signature.body = body;
+    signature.promotes = true;
+    signature.arguments = arguments;
+    return signature;
+}
+
+/**
  * A function that returns its results through the arguments from `first` on rather than
  * through a return value.
  **/
@@ -72,26 +85,33 @@ Signature shading(const char* name, Body body, Type result, const std::vector<Ar
 std::vector<Signature> build() {
     std::vector<Signature> table;
 
-    // maths, which is arithmetic over the value model
-    const struct { const char* name; Body body; } unary[] = {
+    // maths, which is arithmetic over the value model. These take a float or a triple, and
+    // a triple gives each of its components the same function
+    const struct { const char* name; Body body; } numeric[] = {
         { "abs", Body::ABS }, { "sign", Body::SIGN }, { "floor", Body::FLOOR },
         { "ceil", Body::CEIL }, { "round", Body::ROUND }, { "sqrt", Body::SQRT },
-        { "exp", Body::EXP }, { "log", Body::LOG }, { "radians", Body::RADIANS },
-        { "degrees", Body::DEGREES }, { "sin", Body::SIN }, { "cos", Body::COS },
-        { "tan", Body::TAN }, { "asin", Body::ASIN }, { "acos", Body::ACOS },
-        { "atan", Body::ATAN }
+        { "exp", Body::EXP }, { "log", Body::LOG }
     };
-    for (const auto & entry : unary) {
+    for (const auto & entry : numeric) {
+        table.push_back(promoting(entry.name, entry.body, { Argument::NUMBER }));
+    }
+    // angles, which are floats only
+    const struct { const char* name; Body body; } angular[] = {
+        { "radians", Body::RADIANS }, { "degrees", Body::DEGREES }, { "sin", Body::SIN },
+        { "cos", Body::COS }, { "tan", Body::TAN }, { "asin", Body::ASIN },
+        { "acos", Body::ACOS }, { "atan", Body::ATAN }
+    };
+    for (const auto & entry : angular) {
         table.push_back(declare(entry.name, entry.body, Type::FLOAT, { Argument::FLOAT }));
     }
     table.push_back(declare("atan", Body::ATAN, Type::FLOAT, { Argument::FLOAT, Argument::FLOAT }));
     table.push_back(declare("log", Body::LOG, Type::FLOAT, { Argument::FLOAT, Argument::FLOAT }));
-    table.push_back(declare("mod", Body::MOD, Type::FLOAT, { Argument::FLOAT, Argument::FLOAT }));
-    table.push_back(declare("pow", Body::POW, Type::FLOAT, { Argument::FLOAT, Argument::FLOAT }));
-    table.push_back(same("min", Body::MIN, 0, { Argument::NUMBER, Argument::NUMBER }));
-    table.push_back(same("max", Body::MAX, 0, { Argument::NUMBER, Argument::NUMBER }));
-    table.push_back(same("clamp", Body::CLAMP, 0, { Argument::NUMBER, Argument::NUMBER, Argument::NUMBER }));
-    table.push_back(same("mix", Body::MIX, 0, { Argument::NUMBER, Argument::NUMBER, Argument::FLOAT }));
+    table.push_back(promoting("mod", Body::MOD, { Argument::NUMBER, Argument::NUMBER }));
+    table.push_back(promoting("pow", Body::POW, { Argument::NUMBER, Argument::NUMBER }));
+    table.push_back(promoting("min", Body::MIN, { Argument::NUMBER, Argument::NUMBER }));
+    table.push_back(promoting("max", Body::MAX, { Argument::NUMBER, Argument::NUMBER }));
+    table.push_back(promoting("clamp", Body::CLAMP, { Argument::NUMBER, Argument::NUMBER, Argument::NUMBER }));
+    table.push_back(promoting("mix", Body::MIX, { Argument::NUMBER, Argument::NUMBER, Argument::FLOAT }));
     table.push_back(declare("step", Body::STEP, Type::FLOAT, { Argument::FLOAT, Argument::FLOAT }));
     table.push_back(declare("smoothstep", Body::SMOOTHSTEP, Type::FLOAT,
         { Argument::FLOAT, Argument::FLOAT, Argument::FLOAT }));

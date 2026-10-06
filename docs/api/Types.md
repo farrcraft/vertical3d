@@ -49,7 +49,7 @@ The queries are in `v3d::type::geometry` ([api/type/geometry/](../../api/type/ge
   mesh's own space is then comparable with one found in world space. To test a world ray against
   a mesh, pass the inverse of the mesh's matrix.
 - `intersects(box, &distance)` is a slab test. A ray that starts inside the box hits it at
-  distance zero. A ray whose origin or direction is not finite misses every box.
+  distance zero.
 - `intersects(a, b, c, &distance)` tests a triangle from either side. The overload with `u` and
   `v` also returns barycentric weights: the hit is `a + u * (b - a) + v * (c - a)`. Use them to
   interpolate a normal or a texture coordinate.
@@ -57,6 +57,8 @@ The queries are in `v3d::type::geometry` ([api/type/geometry/](../../api/type/ge
   origin. A ray parallel to the plane, or one that would have to run backwards, does not cross
   it.
 - Every hit is at a non-negative distance. Each `distance` pointer may be null.
+- A ray whose origin or direction has a NaN or infinite component misses everything. Every
+  `intersects()` overload returns false for it and leaves its outputs unchanged.
 
 ### Plane, boxes and bounds
 
@@ -72,6 +74,10 @@ The queries are in `v3d::type::geometry` ([api/type/geometry/](../../api/type/ge
 `Frustum(viewProjection, depth)` extracts the six planes of a matrix. Each plane faces inward.
 The frustum is in whatever space the matrix reads: a projection alone gives eye space, and a
 projection times a view gives world space.
+
+`planes()` returns them in the order clip-space -x, +x, -y, +y, near, far. The cameras in
+`api/type` build a y-down clip space, so for them the -y plane is the top of the screen and the
++y plane the bottom.
 
 **Tell it the depth range of the matrix.** The default, `Depth::ZeroToOne`, matches the
 matrices `type::camera::Camera` builds. moya's matrices use `Depth::MinusOneToOne`. With the wrong one,
@@ -103,7 +109,8 @@ numbers.
   file to restore the sequence.
 - `next()` gives 64 bits. `below(n)` gives a whole number in `[0, n)` with no modulo bias, and
   throws for `n` of zero. `unit()` gives a float in `[0, 1)`. `range(low, high)` gives a float
-  in `[low, high)`.
+  in `[low, high)` when `high > low`. Where the sum rounds up to `high`, it returns the largest
+  float below `high` instead.
 - `inside(min, max)` gives a point in a box. `cone(axis, angle)` gives a unit direction spread
   evenly within `angle` radians of `axis`.
 - It is not thread-safe, and the values depend on the order of calls.

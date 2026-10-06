@@ -107,12 +107,12 @@ void Paddle::score(int s) {
     component.score_ = s;
 }
 
-float Paddle::size() {
+float Paddle::size() const {
     PaddleSize& paddle = registry_->get<PaddleSize>(id_);
     return paddle.size_;
 }
 
-float Paddle::length() {
+float Paddle::length() const {
     PaddleSize& paddle = registry_->get<PaddleSize>(id_);
     return paddle.length_;
 }

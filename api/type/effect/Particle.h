@@ -22,8 +22,10 @@ struct Particle final {
     float phase;         /**< in [0, 1), the particle's own offset into anything periodic about it **/
 
     /**
-     * @return how far through its life the particle is, from 0 to 1, which its tracks are
-     *         sampled at
+     * The particle's tracks are sampled at this value.
+     *
+     * @return how far through its life the particle is, from 0 to 1. A lifetime that is not
+     *         positive gives 1.
      **/
     float life() const noexcept;
 };

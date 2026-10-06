@@ -176,6 +176,8 @@ class Machine final {
      * the value model except the few that call the renderer.
      **/
     void builtin(const Instruction & instruction);
+    /** Report each colour space a ctransform names that is not "rgb". **/
+    void colourSpaces(const std::vector<const Value*> & given);
     /**
      * The sum of what every ambient light adds to the batch. Its own body rather than one
      * of Library.cxx's, because it is the only built-in that runs the lights itself: an

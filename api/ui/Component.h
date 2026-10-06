@@ -231,9 +231,9 @@ class Component {
 
 /**
  * Sort components into the order they are drawn: by z index, keeping the order they were
- * added in between equal depths.
+ * added in between equal depths. A null entry is left out of the copy.
  *
- * @return a sorted copy, deepest first
+ * @return a sorted copy, lowest depth first, so the last is drawn on top
  **/
 std::vector<boost::shared_ptr<Component>> ordered(const std::vector<boost::shared_ptr<Component>>& components);
 

@@ -18,18 +18,20 @@ std::vector<Index> faceLoop(const BRep & mesh, Index face) {
     if (start == nullptr) {
         return edges;
     }
+    // an edge is visited at most once, so a chain that never returns to the start ends
+    std::vector<bool> seen(mesh.edgeCount(), false);
     Index current = start->edge();
-    while (edges.size() <= mesh.edgeCount()) {
-        const HalfEdge* edge = mesh.edge(current);
-        if (edge == nullptr) {
-            break;
-        }
+    const HalfEdge* edge = mesh.edge(current);
+    while (edge != nullptr && !seen[current]) {
+        seen[current] = true;
         edges.push_back(current);
         const Index next = edge->next();
-        if (next == INVALID_ID || next == start->edge()) {
+        if (next == start->edge()) {
             break;
         }
         current = next;
+        // null when next is INVALID_ID or past the end of the mesh
+        edge = mesh.edge(current);
     }
     return edges;
 }

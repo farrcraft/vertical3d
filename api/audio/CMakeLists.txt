@@ -2,7 +2,7 @@ v3d_add_api_library(audio "AudioClip.h" "AudioClip.cpp" "Engine.h" "Engine.cpp" 
 	"Loaders.h" "Loaders.cpp" "kind/Sound.h" "kind/Sound.cpp" "loader/Wav.h" "loader/Wav.cpp")
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
-# EnTT: Engine.h holds a registry.
+# EnTT: Engine.h holds a dispatcher and a scoped_connection to it.
 target_link_libraries(v3dlib_audio PUBLIC v3dlib_log EnTT::EnTT)
 
 # PRIVATE: AudioClip.h declares the MIX_ handles it names rather than including the header

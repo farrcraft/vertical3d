@@ -8,6 +8,7 @@
 #include <api/event/Event.h>
 #include <api/ui/Component.h>
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -75,11 +76,14 @@ class SelectList : public Component {
      * How wide the widest row is when it is drawn, left here by whatever measured it.
      *
      * Sizing a list to its content means measuring every row, and the result changes only
-     * when the rows do. items() clears it and the next draw measures it again. Negative
-     * until something has measured it.
+     * when the rows or the measure do. The width is kept with the key of the measure that
+     * produced it. items() clears it, and so does asking with a different key.
+     *
+     * @param measure a key naming the measure, which is never zero
+     * @return the width, or a negative number when nothing has measured it with that key
      **/
-    void widest(float width) noexcept;
-    float widest() const noexcept;
+    void widest(float width, std::uint64_t measure) noexcept;
+    float widest(std::uint64_t measure) const noexcept;
 
     /**
      * @return how tall all the rows come to, which a scrollbar uses as its content
@@ -107,6 +111,7 @@ class SelectList : public Component {
     float offset_;
     float rowHeight_;
     float widest_;
+    std::uint64_t measured_;
     int selected_;
 };
 

@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <iterator>
 #include <string>
 #include <vector>
 
@@ -209,7 +210,11 @@ bool inDrawOrder(const std::vector<boost::shared_ptr<Component>>& components) no
 }
 
 std::vector<boost::shared_ptr<Component>> ordered(const std::vector<boost::shared_ptr<Component>>& components) {
-    std::vector<boost::shared_ptr<Component>> sorted(components);
+    // a null entry has no depth to sort by and nothing to draw, so it is left out
+    std::vector<boost::shared_ptr<Component>> sorted;
+    sorted.reserve(components.size());
+    std::copy_if(components.begin(), components.end(), std::back_inserter(sorted),
+        [](const boost::shared_ptr<Component>& component) { return component != nullptr; });
     std::stable_sort(sorted.begin(), sorted.end(),
         [](const boost::shared_ptr<Component>& first, const boost::shared_ptr<Component>& second) {
             return first->depth() < second->depth();

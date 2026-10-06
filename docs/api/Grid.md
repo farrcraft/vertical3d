@@ -151,8 +151,9 @@ for (const v3d::grid::Unknown& unknown : picture.unknown) {
   one in the order it first appears, with every tile it stands on. Those tiles are left
   impassable with no cover, for the game to set. A game that treats an unknown glyph as an error
   checks the list itself.
-- The picture is refused, with no grid and a reason in `error`, when there are no rows, a row is
-  empty, or rows differ in length. Pad a ragged map before the call.
+- The picture is refused, with no grid and a reason in `error`, when the tile size is not
+  positive, there are no rows, a row is empty, or rows differ in length. None of these throws.
+  Pad a ragged map before the call.
 
 **The grid parses terrain only.** The file the rows came from, its format, and everything else
 a map means belong to the game: props, spawns, items, objectives and the start position. A

@@ -58,11 +58,16 @@ glm::vec3 moved(Type type, const glm::mat4x4 & placement, const glm::vec3 & give
             return vtransform(placement, given);
         case Type::NORMAL:
             return ntransform(placement, given);
-        default:
+        case Type::VOID:
+        case Type::FLOAT:
+        case Type::COLOR:
+        case Type::MATRIX:
+        case Type::STRING:
             // a colour has no space to be in, and a matrix is written component by
             // component below rather than through this
             return given;
     }
+    return given;
 }
 
 };  // namespace

@@ -25,7 +25,9 @@
 #include <api/ui/style/Resolver.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <utility>
 #include <vector>
@@ -36,11 +38,22 @@
 
 namespace v3d::ui {
 
+namespace {
+
+/**
+ * The serial the next arranger takes. It starts at one because a list that has never been
+ * measured holds zero.
+ **/
+std::atomic<std::uint64_t> nextSerial(1);
+
+};  // namespace
+
 const float Arranger::ruleWidth = 1.0f;
 
 Arranger::Arranger(const paint::Measure& measure, const style::Resolver& styles) :
     measure_(measure),
-    styles_(styles) {
+    styles_(styles),
+    serial_(nextSerial++) {
 }
 
 /**
@@ -153,14 +166,15 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::geometry::Bou
                 return glm::vec2(0.0f, 0.0f);
             }
             // measuring every row is what this costs, and the answer only changes when the
-            // rows do - so the list keeps it and forgets it when it is given new ones
-            float widest = list->widest();
+            // rows or the measure do. The list keeps it against this arranger, which holds
+            // one measure, and forgets it when it is given new rows
+            float widest = list->widest(serial_);
             if (widest < 0.0f) {
                 widest = 0.0f;
                 for (const std::string& item : list->items()) {
                     widest = std::max(widest, measure_(item));
                 }
-                list->widest(widest);
+                list->widest(widest, serial_);
             }
             return glm::vec2(
                 widest + styles_.resolve(style::Resolver::Class::List, component.style()).padding,

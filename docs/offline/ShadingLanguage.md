@@ -49,7 +49,9 @@ named. The language is in `api/render/offline/sl`.
   to a name that was read before it was written. Anything assigned under a varying condition is
   varying. A value declared `uniform` that a varying value reaches is an error, not a silent
   widening. Inferring uniform where varying was correct gives a whole grid one point's answer.
-  It looks like a shading bug and is a compiler bug.
+  It looks like a shading bug and is a compiler bug. A `break` or `continue` under a varying
+  condition makes the body of the loop it leaves varying. Inside an `illuminance` body, that
+  loop is the `illuminance`, not a loop around it.
 - **A run covers a batch, and a batch of one is not a special case.** The machine runs a flat
   program under a stack of execution masks. A condition all points agree on compiles to a jump.
   A condition they disagree on runs both branches, each with the points that took it, and the
@@ -159,12 +161,26 @@ files on disk.
   applies its matrix and then the change of space. In the machine, glm's column vector
   matrices hold the same sixteen floats, so each product is written in the reverse order.
 - **A built-in may return results through its arguments.** `Signature::outputs` names the first
-  argument it writes, and every one from it on is written. `Signature::updates` names one it
-  reads and writes in place, which is what `setxcomp`, `setycomp`, `setzcomp` and `setcomp` do
-  to their first. The compiler requires a variable there that the shader may assign, and
-  propagates the storage class of the call's inputs into it, as an assignment would. `fresnel` is
-  the one built-in with outputs: it returns the unpolarised reflectance of a dielectric, with
-  `refract`'s conventions, and writes the reflected and refracted directions.
+  argument it writes, and every one from it on is written. `Signature::updates` names one
+  argument that the built-in reads and then writes in place. `setxcomp`, `setycomp`, `setzcomp`
+  and `setcomp` each update their first argument. The compiler requires a variable there that
+  the shader may assign, and propagates the storage class of the call's inputs into it, as an
+  assignment would. `fresnel` is the one built-in with outputs: it returns the unpolarised
+  reflectance of a dielectric, with `refract`'s conventions, and writes the reflected and
+  refracted directions.
+- **The componentwise maths takes a float or a triple.** `abs`, `sign`, `floor`, `ceil`,
+  `round`, `sqrt`, `exp`, one-argument `log`, `mod`, `pow`, `min`, `max`, `clamp` and `mix`
+  apply the same function to each component. A float argument is read for every component.
+  The result is the type the arguments promote to, as an arithmetic operator's is
+  (`Signature::promotes`). `max(0, Ci)` is a colour, and `max(Cs, P)` is rejected as `Cs + P`
+  is. The trigonometry and the angle conversions take floats only.
+- **A space in front of a cast depends on the type.** On a point, vector or normal it is a
+  coordinate space, which the renderer resolves when the shader runs. On a colour it is a
+  colour space: `color "rgb" (...)` is the colour as given, and any other space compiles to
+  `ctransform(space, "rgb", ...)`. A space on a matrix is rejected at compile time, because
+  RenderMan's meaning for it is not implemented. A space on a float or a string is rejected.
+- **`ctransform` knows one colour space, `"rgb"`.** Any other space it is given, whether to
+  convert from or into, is reported once and the colour is returned unchanged.
 - **A cast chooses between built-ins that differ only in their result type.** The compiler takes
   the first signature that accepts a call, unless the call is the operand of a cast and a later
   signature returns the cast's type. `color noise(P)` is three patterns, not one grey one, and

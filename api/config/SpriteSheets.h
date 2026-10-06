@@ -40,10 +40,10 @@ class SpriteSheets final {
     /**
      * Read every sheet in the document.
      *
-     * A sheet with no name, no image or no size is rejected and the rest are kept, the way
-     * a malformed camera profile is: one bad entry should not cost an app every sprite it
-     * has. A region outside its sheet is rejected the same way, as SpriteSheet::place()
-     * rejects it.
+     * A sheet with no name, no image or no size is rejected and the rest are kept, so one
+     * bad entry does not cost an app every sprite it has. CameraProfiles::load differs: it
+     * stops at the first bad profile. A region outside its sheet is skipped the same way,
+     * because SpriteSheet::place() refuses it.
      *
      * @param doc the parsed sprites document
      * @return whether every sheet in it was understood

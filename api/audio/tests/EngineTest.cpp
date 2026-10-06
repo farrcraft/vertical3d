@@ -83,8 +83,9 @@ BOOST_AUTO_TEST_CASE(audio_engine_load_missing_clip_test) {
     ]})"), std::ref(resolve)));
 
     BOOST_CHECK_EQUAL(resolve.asked_.size(), 2u);
-    // the clip that did not resolve was never filed, so nothing can ask for it
-    BOOST_TEST(!sound->playClip("gone"));
+    // the clip that resolved was filed, and the one that did not was never filed
+    BOOST_TEST(sound->has("hit"));
+    BOOST_TEST(!sound->has("gone"));
 }
 
 /**
@@ -96,7 +97,7 @@ BOOST_AUTO_TEST_CASE(audio_engine_load_without_resolver_test) {
     BOOST_TEST(!sound->load(config(R"({"sounds": [
         {"clip_id": "hit", "file": "hit.wav"}
     ]})"), v3d::audio::Engine::Resolve()));
-    BOOST_TEST(!sound->playClip("hit"));
+    BOOST_TEST(!sound->has("hit"));
 }
 
 /**
@@ -159,11 +160,13 @@ BOOST_AUTO_TEST_CASE(audio_engine_add_clip_test) {
     BOOST_REQUIRE(clip->load("hit.wav"));
     BOOST_TEST(sound->addClip(clip, "hit"));
 
+    BOOST_TEST(sound->has("hit"));
+
     BOOST_TEST(!sound->addClip(boost::make_shared<v3d::audio::AudioClip>(), "empty"));
     BOOST_TEST(!sound->addClip(boost::shared_ptr<v3d::audio::AudioClip>(), "null"));
 
-    BOOST_TEST(!sound->playClip("empty"));
-    BOOST_TEST(!sound->playClip("null"));
+    BOOST_TEST(!sound->has("empty"));
+    BOOST_TEST(!sound->has("null"));
 }
 
 /**

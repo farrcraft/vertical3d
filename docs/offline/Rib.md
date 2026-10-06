@@ -32,11 +32,14 @@ accepts and ignores. `Option` acts on `"limits"` (`bucketsize`, `gridsize`), `"s
 - **Only ASCII RIB is read.** A binary or gzipped stream is rejected with a message naming
   which it is. A UTF-8 byte order mark at the start is skipped, and a stream is read from where
   it stands rather than from its beginning.
-- **A size that is not a size is skipped with a warning.** A `Format` whose resolution is not
-  between 1 and 65536, a `FrameBegin` that is not a finite
-  frame number, and a `PixelFilter` whose width is not positive are skipped, and the rest of
-  the file reads. A `Format` aspect that is not a positive finite number asks for the device's
+- **A request whose number cannot be used is skipped with a warning.** This covers a `Format`
+  whose resolution is not between 1 and 65536. It also covers a `FrameBegin` whose frame number
+  is not finite, and a `PixelFilter` whose width is not positive. Reading continues with the
+  next request. A `Format` aspect that is not a positive finite number asks for the device's
   own, which is square pixels.
+- **`Option "trace" "maxdepth"` is a depth from 0 to 16.** A larger depth is taken as 16, with
+  a warning. A depth that is negative or not finite is not used, with a warning, and the depth
+  stays as it was. A fraction is rounded down.
 - **A count or a light handle that is too large is an error.** A count above 4294967040 or a
   numeric light handle beyond two billion stops the read, as any other malformed request does.
 - **An unrecognised request is reported once per name, and its arguments are skipped.**
